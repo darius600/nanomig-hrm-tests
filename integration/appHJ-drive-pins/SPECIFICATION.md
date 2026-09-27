@@ -27,8 +27,11 @@ Printed row: "1111 1111 1111 1111 1111 1111 1111 1111   Amiga standard 3.25($FFF
 - **The test cannot act as a drive.** It can drive the controller ports, the
   mouse, the keyboard, serial RxD and clock values. It cannot drive any line of
   the disk connector, so it cannot present a drive of known type. The harness
-  also serves no drive. The claim needs no data from a disk surface; what blocks
-  it is the missing device.
+  serves no disk image, and its default `floppy_config` (0, "no floppy drives",
+  `nanomig_harness.h`) serves no drive. A drive the system models once
+  `floppy_config` is set has a type that no page and no harness text states.
+  The claim needs no data from a disk surface; what blocks it is the missing
+  expected value.
 - **The pages disagree on how the I.D. is formed.** Only the label of
   $FFFF FFFF is the same on both pages.
   - p. 371: "Convert the 32 values of RDY- into a two 16-bit word. The most
@@ -49,9 +52,13 @@ Printed row: "1111 1111 1111 1111 1111 1111 1111 1111   Amiga standard 3.25($FFF
 
 Printed row: "37 LP* Light pen input I".
 
-- **A pin's direction cannot be seen.** A test could observe only the function:
-  a trigger that freezes VPOSR/VHPOSR (pp. 238-239). This claim does not state
-  that function.
+- **A pin's direction cannot be seen; only the function of a light-pen input
+  can.** The port list lets a test drive pin 6 of either controller port (the
+  fire inputs of `joystick0` and `joystick1`, mapped as in section 3.4; p. 238
+  names pin 6 the "Beam Trigger" line) and read VPOSR/VHPOSR, which a trigger
+  freezes once BPLCON0 bit 3 is set (p. 239). The claim stays declined for the
+  two reasons below, which no stimulus removes: a trigger test could not say
+  which Agnus took the trigger in.
 - **No harness setting corresponds to this chip.** The claim concerns one chip,
   the ORIGINAL AGNUS. The harness selects OCS or ECS *behaviour*, not a chip.
   The pages show two pre-ECS Agnus chips: the Original Agnus of p. 379 and the
@@ -70,7 +77,7 @@ Printed row: "78 LP* Light pen O".
 - **An output direction has nothing the test can see.** The test sees no chip
   pin. No page names an effect of Agnus driving LP* that shows at an output or
   in a register.
-- **The pages contradict each other** (see section 8.1). p. 379 gives the same
+- **The pages contradict each other** (see section 7.1). p. 379 gives the same
   signal on the Original Agnus as "Light pen input I". Chapter 8 describes the
   light pen of the A500, A2000 and A3000 as a trigger that Agnus takes in:
   - p. 238: "The pen converts this light pulse into an electrical pulse on the
@@ -91,31 +98,48 @@ Printed row: "38 7MHZ 28MHZ clk divided by four O".
 
 - **The pin is internal.** It is a clock pin between chips inside the system.
   The test sees no chip pin, and no page names a visible effect of its
-  direction.
+  direction. The port list's `clk7_en` is a clock enable of the system top; no
+  page or harness text ties it to an Agnus pin, so its presence says nothing
+  about which chip drives the 7 MHz clock.
 - **The function column cannot be checked either.** "28MHZ clk divided by four"
   describes the function, not the claim, which states the direction. Checking
   that ratio would need the test's time base ("system clock cycles") related to
   the 28 MHz master clock. Neither the claim nor the harness description gives
   that relation.
 
-### 1.5 Part of opus:AHJ-090, sol:H-064 (p. 370): "approximately 17 microseconds"
+### 1.5 opus:AHJ-090, sol:H-064 (p. 370): a RESET instruction drives DRESB- low "for approximately 17 microseconds"
 
-The duration of the DRESB- pulse after a RESET instruction gives no expected
-value:
+Declined whole: the test sees no pin of the disk connector, no page
+identifies any port of the port list with the system reset signal of which
+DRESB- is the buffered copy (so `cpu_nrst_out` has no meaning here), and
+"approximately" carries no tolerance.
 
-- the test sees neither pin 10 of the disk connector nor the system reset line;
-- the drive light shows only the state after the reset;
-- "approximately" carries no tolerance.
+### 1.6 opus:AHJ-085, sol:H-060 (p. 370): the output of the external drive's flip-flop controls its motor
 
-Proposition P10 uses the rest of the claim: a RESET instruction activates the
-system reset.
+Printed sentence: "The output of this flip-flop controls the disk drive
+motor."
 
-### 1.6 Disk surface
+- **The flip-flop is the external drive's.** p. 369 and p. 370 describe the
+  logic an external drive must have: "All external drives must have logic
+  equivalent to a D flip-flop, whose D input is the MTRXD- signal, and whose
+  clock input is activated by the off-to-on (high-to-low) transition of its
+  SELxB- signal."
+- **The only drive the ports show is not an external drive.** Drive 0 is the
+  internal drive (p. 245: "PB3 DSKSEL0* Select drive 0 (internal drive)
+  (active low)."). The port list has one drive light, `fdd_led`, and no page
+  or harness text ties it to any external drive.
+- **The sentence that covers drive 0 is not a claim of this package.** p. 244
+  gives a latch for every drive ("Each drive will latch the motor signal at
+  the time its select signal turns on."), but no claim in
+  `claims-spec-stage.jsonl` carries it.
+
+Declined whole. Section 6 records what `fdd_led` showed and grades nothing.
+
+### 1.7 Disk surface
 
 No claim in this package needs data read from or written to a disk surface.
-Propositions P9 and P10 need a drive 0 with a motor and an activity light, but
-no disk. If the harness does not model drive 0 without a disk image, their
-preconditions fail and they report "not checkable" (sections 6.5 and 7.5).
+The drive-light record of section 6 needs drive 0 with its light, but no disk
+(section 3.6).
 
 ---
 
@@ -131,8 +155,8 @@ preconditions fail and they report "not checkable" (sections 6.5 and 7.5).
 | P6 | Paula POT0Y (left port, pin 9) is bidirectional | opus:AHJ-245, sol:J-112 | 380 |
 | P7 | Paula POT1X (right port, pin 5) is bidirectional | opus:AHJ-249, sol:J-116 | 380 |
 | P8 | Paula POT1Y (right port, pin 9) is bidirectional | opus:AHJ-251, sol:J-118 | 380 |
-| P9 | A drive's motor follows its select-clocked flip-flop, not the motor line | opus:AHJ-085, sol:H-060 | 370 |
-| P10 | A RESET instruction activates the system reset, which turns a latched-on drive motor off | opus:AHJ-090, sol:H-064 | 370 |
+
+Section 6 records the drive light and grades nothing.
 
 ---
 
@@ -152,9 +176,9 @@ addresses on p. 229):
 | POTGO | $DFF034 | W | "Pot port data write and start" |
 | BPLCON0 | $DFF100 | W | bit 3 "enables the light pen latch" (p. 229) |
 
-**CIA-B registers** (p. 340). These are not custom registers. P9 and P10 need
-them. If the harness does not map CIA-B at these addresses, P9 and P10 cannot
-run.
+**CIA-B registers** (p. 340). These are not custom registers. The drive-light
+record of section 6 needs them. If the harness does not map CIA-B at these
+addresses, the record cannot run.
 
 - PRB at $BFD100: "BFD100 prb /MTR /SEL3 /SEL2 /SEL1 /SEL0 /SIDE DIR /STEP"
   (bits 7 to 0).
@@ -170,6 +194,26 @@ run.
   by the VHPOSR value read just before) into a Chip-memory buffer.
 - The test takes the time, address and data of every such write from the
   Chip-memory port. It uses nothing else the program does.
+- **Memory layout.** Everything the program places or writes lies in the
+  Chip memory that the harness maps one-to-one at $080000-$1FFFFF, which the
+  ROM overlay never covers (`nanomig.i`; `nanomig_harness.h`: while the
+  overlay is on, a write inside $000000-$07FFFF reaches no memory; p. 223:
+  after reset "the ROM image appears at location $00000000").
+
+  | Use | Address | Source |
+  |-----|---------|--------|
+  | program | from $080400 | `PROGRAM_ORG` |
+  | step marker (one word; every marker rewrites it, and the port log keeps each write) | $0C0000 | `RESULTS` |
+  | done mark | $0C0FFE | `DONE_ADDR` |
+  | sample buffer (the samples of sections 4 and 5) | from $0C1000 upward, ending below $0F0000 | above `DONE_ADDR`, clear of the stack |
+  | stack | below $0FFF00, growing down | `PROGRAM_STACK` |
+
+  The buffer starts above `DONE_ADDR`: section 4's run stores at least 2,048
+  samples of 6 bytes (four phases of at least 512 lines), which from
+  `RESULTS` would run through `DONE_ADDR`, and a stored word equal to
+  `DONE_VALUE` ($600D, a possible VHPOSR value) would end the run there.
+- Programs are assembled for the 68000 (vasm's default CPU). Every register
+  write named in this document is a plain MOVE.
 - Custom-register and CIA accesses do not appear at the Chip-memory port.
   Markers and samples are therefore the only record of when the program acted
   and what it read.
@@ -188,8 +232,15 @@ run.
   memory access cycles. A memory cycle is approximately 280 ns in duration."
   (p. 194).
 - The harness schedules its input changes, and the test measures its windows,
-  on the Chip-memory port's time base (system clock cycles). The builder
-  converts scan lines to that base with the harness's own clock definition.
+  on the Chip-memory port's time base (`clk_sys` cycles). Neither the pages nor
+  the harness state how many `clk_sys` cycles a scan line lasts. Every line
+  count that the test or the harness applies (as opposed to the program, which
+  counts VHPOSR changes itself) is therefore counted in a page-defined event
+  seen at the Chip-memory port: a change of VHPOSR bits 15-8 (p. 238), as the
+  program records it. The sampling loop of P1-P8 stores one sample per such
+  change (PJ2 checks this), so "n lines after a change" means "from the n-th
+  sample stored after it". The harness makes each input change by counting
+  samples as they appear at the port.
 
 ### 3.4 Reference frame: which controller port is which
 
@@ -204,27 +255,33 @@ The pages use four names for the two ports.
 
 In this document "left" means left / port 1 / J12. The rules are:
 
-- The builder takes from the harness documentation which harness port is the
-  manual's left port. The tests do not infer the mapping from their own
-  results.
-- **Anchor check, independent of the mapping:** P1 and P5 run on the same
-  harness port. The port whose pins 2 and 4 move JOY0DAT (P1) must be the port
-  whose pin 5 moves POTGOR bit 8 (P5). Pages 281, 282 and 327 agree that both
-  belong to the left connector. If exactly one of P1 and P5 passes on the port
-  the harness calls left, the mapping is reported as inconsistent.
+- Which connector pin each bit of `joystick0`, `joystick1` and
+  `mouse_buttons` feeds, and at which level a bit means "pressed", is harness
+  setup, not an expected value: the builder reads it from the system top and
+  states it in the package. The tests do not infer it from their own results.
+- The mapping is part of the stimulus, not a precondition: at the ports it
+  shows only through the clauses P1-P8 grade, and a precondition must not
+  depend on the clause under test.
+- **Consistency record:** P1 and P5 run on the same harness input. Pages 281,
+  282 and 327 agree that pins 2 and 4 (JOY0DAT, P1) and pin 5 (POTGOR bit 8,
+  P5) belong to the left connector. If exactly one of P1 and P5 passes, the
+  report records it. The verdicts stand as graded.
 - The fire-button bits of CIA-A are not used as an anchor, because the pages
-  disagree about them (section 8.4).
+  disagree about them (section 7.4).
 
 ### 3.5 Harness input conventions
 
 - **Direction lines.** Pins 1-4 are up/forward, down/back, left, right (p. 228,
-  Table 8-1). The harness drives their digital level: 1 = switch open, 0 =
-  pressed. p. 232: "When the switches are pressed, the input line is shorted to
-  ground. An open switch reads as "1", a closed switch as "0"."
+  Table 8-1). The schedules give each pin's level at the connector: 1 = switch
+  open, 0 = pressed. p. 232: "When the switches are pressed, the input line is
+  shorted to ground. An open switch reads as "1", a closed switch as "0"."
+  The harness sets these levels through the input bits and levels of section
+  3.4.
 - **Pot lines.** Pin 9 carries the second button and pin 5 the third (p. 232).
-  "Released" is taken to be the open switch of p. 241: "A button is a normally
-  open switch that shorts to ground." If the harness drives the line high when
-  released, the cases marked in section 5.4 have no expected value.
+  The harness drives no line level: the port list gives it one input bit per
+  button, pressed or released (`joystick0`, `joystick1`, `mouse_buttons`).
+  "Released" is therefore the open switch of p. 241, which drives nothing: "A
+  button is a normally open switch that shorts to ground."
 - **Inputs not under test.** Every controller input not named by a step is
   released throughout: all direction lines, fire buttons, pot lines, mouse
   movement and the mouse buttons. The harness's mouse count injection stays
@@ -233,13 +290,18 @@ In this document "left" means left / port 1 / J12. The rules are:
 ### 3.6 Configurations
 
 - Every proposition runs on both CPU cores, the second in its default 68000
-  mode, with PAL and 2 MB Chip memory.
-- P1-P8 run under ECS and again under OCS. p. 380's Denise table covers both
-  Denise versions and distinguishes them only at pin 34. The Paula table has no
-  version distinction.
-- P9 and P10 run under the default ECS. Chapter 8 and Appendix H make no
-  chip-set distinction.
-- The expected values are the same in every configuration.
+  mode, in the harness's default configuration only (ECS, 2 MB Chip memory;
+  `nanomig_harness.h`, `Config`). No proposition names a chip-set difference:
+  p. 380's Denise table distinguishes its two versions only at pin 34, which
+  no proposition grades, and the Paula table has no version distinction. The
+  harness has no video-standard setting, and no proposition depends on one:
+  every interval is counted in scan lines (section 3.3).
+- The drive-light record of section 6 needs drive 0. The harness's default
+  `floppy_config` is 0, "no floppy drives" (`nanomig_harness.h`). The record
+  sets it to a value that gives the system drive 0; that value is harness
+  setup, which the builder reads from the system top and states in the
+  package. No disk image is mounted: the `sdc_*` inputs stay idle as the
+  harness sets them.
 
 ### 3.7 Verdicts
 
@@ -248,7 +310,6 @@ In this document "left" means left / port 1 / J12. The rules are:
 | pass | every precondition holds and every graded value matches |
 | fail | the preconditions hold and a graded value contradicts the page |
 | not checkable | a precondition failed. The report names it. It never counts as a pass. |
-| no verdict | P9 only: the observed light matches a reading of p. 244 under which the flip-flop is not visible (section 6.4) |
 
 ---
 
@@ -310,7 +371,8 @@ usage: (pins 1,3=Yclock, pins 2,4=Xclock)".
   lines longer than the schedule. The program then writes a done marker.
 
 **Harness,** on the proposition's pins a and b only, holding each entry for at
-least 8 scan lines:
+least 8 scan lines. Here and below, lines are counted as samples stored at the
+Chip-memory port after the change (section 3.3):
 
 1. **Baseline:** a = b = 1 for at least 16 lines.
 2. **Forward:** at least 6 cycles of (a,b) = (0,1), (0,0), (1,0), (1,1). For
@@ -330,8 +392,10 @@ own baseline. All other inputs stay as in section 3.5.
 
 - **Data:** the stored samples, taken from the Chip-memory port with their
   store times.
-- **Hold window of step k:** stores with time in [t_k + 2 scan lines, t_(k+1)),
-  where t_k is the harness time of the change that starts step k.
+- **Hold window of step k:** the samples stored after t_k and before t_(k+1),
+  without the first two stored after t_k (the 2-line guard). t_k is the
+  harness time of the change that starts step k; for a baseline it is the
+  phase's first sample.
 - **Why two lines of guard:** Denise samples the pins at every colour clock
   (p. 281, "at CCK", "at CCK*"). The guard covers the delay between a register
   read and its store.
@@ -407,9 +471,12 @@ pair, 1=right controller pair").
 | Id | Precondition |
 |----|--------------|
 | PJ1 | The harness input log shows the scheduled changes, at the scheduled times, on the proposition's two pins. It shows no other controller-port input, mouse movement or mouse-button activity. |
-| PJ2 | Every hold window contains at least 3 graded samples. VHPOSR advances by one line between consecutive samples, so the loop kept pace. |
+| PJ2 | Every hold window contains at least 3 graded samples. VHPOSR bits 15-8 of consecutive samples differ by +1 modulo 256, or return to $00 at the start of a frame (V8 is in VPOSR, p. 238), so the loop kept pace. |
 | PJ3 | In the baseline window all samples of JOY0DAT and JOY1DAT are identical: nothing else moves the counters. |
-| PJ4 | The harness port used is the one documented as the manual's left port (P1, P2) or right port (P3, P4). See section 3.4. |
+
+The harness input that carries each pin is fixed by section 3.4 as part of the
+stimulus. It is not a precondition, because at the ports it shows only through
+E1-E3.
 
 **Contrasting case for each precondition:**
 
@@ -417,8 +484,7 @@ pair, 1=right controller pair").
 |----|--------|--------|
 | PJ1 | Drop one scheduled change from the harness while the grader keeps its plan. | PJ1 reports the missing change. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
-| PJ3 | Inject mouse counts on the port under test during the baseline. | The baseline samples differ, so PJ3 is not met. |
-| PJ4 | Grade P1 while the schedule runs on the other port. | The anchor check of section 3.4 flags the mapping. |
+| PJ3 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. PJ3 covers both registers, so one connector suffices. | The baseline samples differ, so PJ3 is not met. |
 
 ### 4.6 Contrasting cases
 
@@ -513,14 +579,16 @@ high."
 - Throughout the run the program samples VHPOSR and POTGOR once per scan line
   into the buffer.
 - The harness changes the button only inside steps without a POTGO write.
-- Each step lasts at least 24 scan lines.
+- Each step lasts at least 24 scan lines. Here and below, lines are counted
+  as samples stored at the Chip-memory port (section 3.3).
 - The four propositions may share one run, one phase per pin.
 
 ### 5.3 Observation
 
 - **Data:** the stored POTGOR samples.
-- **Graded samples:** those stored at least 6 scan lines after the latest change
-  (the POTGO marker or the harness button change) and before the next change.
+- **Graded samples:** those stored after the latest change (the POTGO marker
+  or the harness button change) and before the next change, without the first
+  six stored after it.
 - **Why 6 lines:** p. 240 says "There are large capacitors on these lines, and
   it can take up to 300 microseconds for the line to change state." 300 us is
   less than 5 scan lines of "about 63 microseconds" (p. 194). One more line
@@ -534,20 +602,21 @@ The following hold for **every** graded sample of the step.
 |------|--------------|--------|
 | C1, C3, C8 | 1 | p. 241: "Reading POTINP will produce a 0 if the button is pressed, a 1 if it is not." |
 | C2 | 0 | p. 241 (same sentence) |
-| C4 | 0 (*) | p. 240: "If you set the output enable for any pin to a 1, the Amiga disconnects the potentiometer control circuitry from the port, and configures the pin for output. The state of the data bit controls the logic level on the output pin." p. 282 names the bit "I/O data Paula pin nn". |
+| C4 | 0 | p. 240: "If you set the output enable for any pin to a 1, the Amiga disconnects the potentiometer control circuitry from the port, and configures the pin for output. The state of the data bit controls the logic level on the output pin." p. 282 names the bit "I/O data Paula pin nn". |
 | C5 | 0 | output low (p. 240) and button to ground (p. 241) |
 | C6 | 0 | p. 240: "To use the entire register as an input, sensing the current state of the pot pins, write all 0s to POTGO. Thereafter you can read the current state by using read-only address POTINP."; the pressed button grounds the pin (p. 241) |
 | C7 | **no expected value**; record only | With the pin as input nothing on the pages drives it. p. 241 says the pull-up exists only when the Amiga drives the line. |
 
-(*) C4 assumes that "released" does not drive the line (section 3.5). If the
-harness drives the line high when released, C4 has no expected value.
+C4 rests on section 3.5: a released button is the open switch of p. 241 and
+drives nothing, and the harness has no other state for it. The only level on
+the pin in C4 is the one the data bit sets.
 
 **The other bits.**
 
 - In every step, the other three DAT bits read 1: their pins stay in the C1
   configuration with their buttons released (p. 241).
 - Not graded: POTGOR bits 15, 13, 11 and 9 (no page says what the OUT bits read
-  back as), bits 7-1 (the pages disagree, section 8.5) and bit 0.
+  back as), bits 7-1 (the pages disagree, section 7.5) and bit 0.
 
 **Quantifiers.** p. 240 says "any pin", so all four pins are graded (P5-P8).
 "Every" graded sample is required. C1 and C3 both grade "a 1 if it is not"
@@ -557,10 +626,12 @@ after a press.
 
 | Id | Precondition |
 |----|--------------|
-| PP1 | The harness input log shows the button changes on the pin under test only. Each change lies in its intended step, at least 6 lines from that step's markers. Every other controller input and the mouse are idle. |
+| PP1 | The harness input log shows the button changes on the pin under test only. Each change lies in its intended step, with at least 6 samples stored between it and each of that step's markers. Every other controller input and the mouse are idle. |
 | PP2 | The POTGO values stored with the markers are the planned ones, and bit 0 is 0 in all of them. |
 | PP3 | Every graded window holds at least 3 samples. |
-| PP4 | Port mapping as in section 3.4. |
+
+As in section 4.5, the harness input that carries each pin is fixed by section
+3.4 as part of the stimulus, not checked as a precondition.
 
 **Contrasting case for each precondition:**
 
@@ -569,7 +640,6 @@ after a press.
 | PP1 | Omit the press of C2. | PP1 reports the scheduled change as missing instead of grading C2. |
 | PP2 | Write POTGO with bit 0 = 1 in C1. | PP2 is not met. |
 | PP3 | Shorten one step to 6 lines. | PP3 is not met. |
-| PP4 | As PJ4. | The anchor check of section 3.4 flags the mapping. |
 
 ### 5.6 Contrasting cases
 
@@ -595,268 +665,55 @@ In each case the program still finishes and the preconditions hold.
 
 ---
 
-## 6. P9: a drive's motor follows its select-clocked flip-flop
+## 6. Record: the drive light (no claim, not graded)
 
-### 6.1 Proposition
+No claim of this package is graded on the drive light (section 1.6). The
+package records what the port list's `fdd_led` output showed, in one
+`RECORDED:` line per core, with no verdict, precondition or contrast.
 
-**P9** (opus:AHJ-085, sol:H-060; p. 370: "The output of this flip-flop controls
-the disk drive motor. Thus, the system can control all four motors using only
-one signal on the cable (MTRXD-)."): a drive's motor takes the level of the
-motor line only at the moment the drive's select line goes from high to low.
-It keeps that state until the next such transition, whatever the motor line
-does in between. P9 checks this on drive 0 through its activity light.
+**Stimulus.**
 
-**Context on the same and neighbouring pages.**
+1. Write BPLCON0 = $0000 (section 3.2).
+2. Write CIA-B PRB = $FF, then DDRB = $FF. p. 354 says that after reset "The
+   port pins are set as inputs and port registers to zero (although a read of
+   the ports will return all highs because of passive pull-ups)." Writing DDRB
+   first would drive all eight lines low at once, and p. 244 says: "All
+   software that selects drives must set up the motor signal before selecting
+   any drives."
+3. Write PRB with the values below, once each, in order. Each write is
+   followed by a marker at `RESULTS` and held for 64 changes of VHPOSR bits
+   15-8. Bits 2-0 stay 1: no side change, DIR high, no step pulse. The order
+   follows p. 369: "When the system wants to turn on a disk drive motor, it
+   first deselects the drive (if selected), pulls MTRXD- low, and selects the
+   drive. To turn the motor off, the system deselects the drive, pulls MTRXD-
+   high, and selects the drive."
+4. DONE.
 
-- p. 369: "All external drives must have logic equivalent to a D flip-flop,
-  whose D input is the MTRXD- signal, and whose clock input is activated by the
-  off-to-on (high-to-low) transition of its SELxB- signal."
-- p. 334: "Motor on data, clocked into drive's motor-on flip-flop by the active
-  transition of SELxB*."
-- p. 244 extends the latch to every drive, drive 0 included: "Each drive will
-  latch the motor signal at the time its select signal turns on. The disk drive
-  motor will stay in this state until the next time select turns on. DSKMOTOR*
-  also controls the activity light on the front of the disk drive." It also
-  says: "The drive will "remember" the state of its motor when it is not
-  selected."
-- p. 245: "PB3 DSKSEL0* Select drive 0 (internal drive) (active low)."
+| Step | PRB | Change |
+|------|-----|--------|
+| S0 | $FF | motor line high, no drive selected |
+| S1 | $7F | motor line low, no drive selected |
+| S2 | $77 | select drive 0 (motor line low) |
+| S3 | $7F | deselect |
+| S4 | $FF | motor line high, no drive selected |
+| S5 | $F7 | select drive 0 (motor line high) |
+| S6 | $FF | deselect |
+| S7 | $7F | motor line low, no drive selected |
+| S8 | $FF | motor line high |
 
-**Scope.**
-
-- Appendix H states the flip-flop for external drives. The test sees only the
-  harness's drive light. The check therefore uses drive 0, which p. 244 covers.
-- "all four motors" (p. 370) cannot be graded beyond drive 0.
-
-### 6.2 Stimulus
-
-**Setup.**
-
-1. Write PRB = $FF.
-2. Then write DDRB = $FF.
-
-The order is prescribed by the pages. p. 354 says that after reset "The port
-pins are set as inputs and port registers to zero (although a read of the ports
-will return all highs because of passive pull-ups)." Writing DDRB first would
-drive all eight lines low at once: every drive selected while the motor line
-changes. p. 244 forbids that: "All software that selects drives must set up the
-motor signal before selecting any drives."
-
-**Sequence.** The sequence follows p. 369: "When the system wants to turn on a
-disk drive motor, it first deselects the drive (if selected), pulls MTRXD- low,
-and selects the drive. To turn the motor off, the system deselects the drive,
-pulls MTRXD- high, and selects the drive."
-
-- Each step is one PRB write followed by a marker.
-- Each step is held for H = 64 scan lines (at least).
-- p. 369 requires "The system will always set MTRXD- at least 1.4 microseconds
-  before it selects the drive, and will not change MTRXD- for at least
-  1.4 microseconds after selecting the drive." H meets this many times over.
-- Bits 2-0 stay 1 throughout: no side change, DIR high, no step pulse.
-- The sequence runs twice (cycle 1 and cycle 2).
-- A done marker follows.
-
-| Step | PRB | Change | Latched reading: light = motor = flip-flop | Line reading: light = DSKMOTOR* |
-|------|-----|--------|------------------|------------------|
-| S0 | $FF | motor line high, no drive selected | off | off |
-| S1 | $7F | motor line low, no drive selected | off | on |
-| S2 | $77 | select drive 0 (motor line low) | on | on |
-| S3 | $7F | deselect | on | on |
-| S4 | $FF | motor line high, no drive selected | on | off |
-| S5 | $F7 | select drive 0 (motor line high) | off | off |
-| S6 | $FF | deselect | off | off |
-| S7 | $7F | motor line low, no drive selected | off | on |
-| S8 | $FF | motor line high | off | off |
-
-### 6.3 Observation
-
-- **Signal:** the harness drive light.
-- **Window of step k:** W_k = [m_k + H/2, m_(k+1)), where m_k is the time of the
-  step's marker at the Chip-memory port.
-- **Graded value:** the light must be constant in W_k. That constant level is
-  the step's observed value.
-- Light changes outside the windows are reported, not graded.
-
-### 6.4 Expected values and verdict
-
-**The two readings.** p. 244 says "DSKMOTOR* also controls the activity light".
-It does not say whether the light is controlled through the latch. This gives
-two readings:
-
-- **latched:** the light shows the drive's motor, which the flip-flop drives;
-- **line:** the light follows DSKMOTOR* directly.
-
-Only under the latched reading does the light show the flip-flop.
-
-**Grading.**
-
-| Steps | Rule |
-|-------|------|
-| S0, S2, S3, S5, S6, S8 | Both readings agree (table above). Any other value in either cycle is a **fail**. |
-| S1, S4, S7 (discriminating) | Decided by the verdict table below. |
-
-**Verdict for S1, S4 and S7:**
-
-| Observed in both cycles | Verdict |
-|-------------------------|---------|
-| off, on, off (latched) | **pass** |
-| on, off, on (line) | **no verdict**: the light follows the motor line, and p. 244 does not settle whether it should, so the flip-flop is not observable |
-| any other combination | **fail**: it matches neither reading |
-
-**Quantifier.** "until the next time select turns on" (p. 244) is graded in
-every hold step of both cycles.
-
-### 6.5 Preconditions
-
-| Id | Precondition |
-|----|--------------|
-| P9-a | The light is off in W_S0 of cycle 1. p. 244: "All drive motors turn off after system reset." |
-| P9-b | The light is on in W_S2 of cycle 1. This shows the harness models drive 0 and its light without a disk. |
-| P9-c | All markers are present, in order, spaced at least H lines apart. |
-
-If a precondition fails, the verdict is "not checkable" and the report names
-the precondition.
-
-**Contrasting case for each precondition:**
-
-| Id | Change | Result |
-|----|--------|--------|
-| P9-a | Precede S0 with S1-S3 and write $7F instead of $FF in S0. | Both readings predict on in S0, so P9-a is not met. |
-| P9-b | Write $FF in S1 and $F7 in S2 (select drive 0 with the motor line high). | Both readings predict off, so P9-b is not met. |
-| P9-c | Omit one marker. | P9-c is not met. |
-
-### 6.6 Contrasting case
-
-In variant P9-V, S5 writes $FF instead of $F7: the motor-off select is
-omitted. Everything else is unchanged, P9-a and P9-b still hold, and the
-program still finishes.
-
-- The latched reading then predicts the light on from S5 of cycle 1 onward,
-  where the main run predicts off in S5, S6, S7 and S8.
-- Grading the variant's observations against the main run's table must
-  therefore fail for an implementation that passes the main run. This shows
-  that the check can go red.
-- Graded against its own table, the variant passes under the latched reading.
-- After the graded steps, the variant ends with a motor-off select (S3, S4, S5
-  as in the main run) so the program leaves the drive off.
-
-The in-sequence pairs S1/S2 and S4/S5 are further contrasts: in each pair the
-two steps differ only by the select edge.
-
-### 6.7 Reference frame
-
-- **Steps:** marker times at the Chip-memory port. The light is observed on the
-  same time base.
-- **Anchor check:** P9-c. The order and spacing of the markers show that the
-  program ran the sequence as planned.
+**Record.** The level of `fdd_led` in the `clk_sys` cycle before each next
+marker (before the done mark for S8), S0 to S8, as read at the port. The page
+context is p. 244: "Each drive will latch the motor signal at the time its
+select signal turns on. The disk drive motor will stay in this state until
+the next time select turns on. DSKMOTOR* also controls the activity light on
+the front of the disk drive." No claim of this package carries these
+sentences.
 
 ---
 
-## 7. P10: a RESET instruction turns a latched-on drive motor off
+## 7. Where the pages disagree or leave the point open
 
-### 7.1 Proposition
-
-**P10** (opus:AHJ-090, sol:H-064; p. 370): executing the RESET instruction
-activates the system reset signal, of which DRESB- is the buffered copy on the
-disk connector. After it, drive 0's motor is off, although its flip-flop held
-the motor on and nothing selected the drive.
-
-The page reads: "This signal is a buffered version of the system reset signal.
-Three things can make it go active (low):", and then "System CPU executes a
-RESET instruction (DRESB- will go low for approximately 17 microseconds);".
-
-**Consequences on the pages.**
-
-- p. 244: "All drive motors turn off after system reset."
-- p. 370: "External disk drives should respond to DRESB- by shutting off their
-  motor flip-flops and write protecting themselves."
-- p. 334: "Amiga system reset. Drives should reset their motor-on flip-flops
-  and set their write-protect flip-flops."
-
-**Not graded.**
-
-- The duration of the pulse (section 1.5).
-- "All drive motors": only drive 0 is visible.
-- Write protection: it needs a disk.
-
-### 7.2 Stimulus
-
-1. Set up CIA-B as in P9.
-2. Run S0 to S4 of P9 once, each held H lines, with markers. After S4, drive
-   0's flip-flop holds the motor on while the motor line is high and no drive is
-   selected.
-3. Load A0 with the address of a spin loop L (a branch to itself) in Chip
-   memory.
-4. Write marker "R". Its time at the Chip-memory port is **t_R**.
-5. Execute RESET, followed by JMP (A0).
-   - RESET is a privileged 68000 instruction, so the program runs in supervisor
-     mode. This is a CPU fact, not a page statement.
-   - p. 223: "The 68000 RESET instruction works much like external reset or
-     power on. All memory and AUTOCONFIG(TM) cards disappear, and the ROM image
-     appears at location $00000000. The difference is that the CPU continues
-     execution with the next instruction. Since RAM may not be available,
-     special care is needed to write reboot code that will reliably reboot all
-     Amiga models."
-   - The pages give no rule for this "special care". The builder places RESET
-     and JMP (A0) so that the JMP has already been fetched when RESET executes.
-   - The builder places L at an address the system still serves after RESET, if
-     one exists. p. 223: "On some Amiga models, portions of the RAM still
-     respond. On other models, no RAM responds."
-   - Precondition P10-c checks the outcome.
-6. The harness ends the run at E, at least 64 scan lines after t_R.
-
-### 7.3 Observation
-
-- The harness drive light over [t_R, E].
-- The CPU's accesses at the Chip-memory port over [t_R, E].
-
-### 7.4 Expected value
-
-- The light is off at E.
-- Once it goes off after t_R, it stays off until E.
-
-The pages give no delay between the RESET instruction and the motor turning
-off. The test records t_off - t_R and does not grade it. E is a test choice, not
-a page value, and is the same in the contrast run.
-
-### 7.5 Preconditions
-
-| Id | Precondition |
-|----|--------------|
-| P10-a | The light is off in W_S0, as P9-a. |
-| P10-b | The light is on continuously from the second half of S2 up to t_R. That includes S4, where the flip-flop holds "on" while the motor line is high. This establishes that the light shows the flip-flop (the latched reading of section 6.4). Under the line reading the light is already off in S4, and its state after RESET would show nothing about the motor. |
-| P10-c | After t_R the CPU makes no write at the Chip-memory port. Its first read of L's address comes within 2 scan lines of t_R. From then until E, every CPU access is a read of L's words, with at least one in every scan line. This shows that only the test's code ran after RESET. Other code could write CIA-B, and selecting drive 0 with the motor line high would also turn the light off. If L's reads never appear (for example because the overlay of p. 223 hides that memory), the check is "not checkable" at that address. |
-
-**Contrasting case for each precondition:**
-
-| Id | Change | Result |
-|----|--------|--------|
-| P10-a | As P9-a. | P10-a is not met. |
-| P10-b | Write $FF in S1 and $F7 in S2. | The light is off at S4, so P10-b is not met. |
-| P10-c | Point A0 at a second copy L' of the loop, at another address, while the grader expects L. | P10-c is not met. |
-
-### 7.6 Contrasting case
-
-A NOP ($4E71) replaces RESET; everything else is unchanged.
-
-- Nothing turns the flip-flop off, so the page predicts the light stays on from
-  S4 until E.
-- The CPU reaches L and loops there. P10-c holds, and the program ends by
-  reaching L.
-
-### 7.7 Reference frame
-
-- **t_R** is the time of marker "R" at the Chip-memory port. E is counted from
-  it.
-- **Anchor check:** a CPU read of the address where the program placed the
-  RESET opcode word ($4E70) appears adjacent to the marker-"R" write among the
-  CPU accesses at the Chip-memory port (just before or just after it).
-- **Cores:** P10 runs on both cores in 68000 mode.
-
----
-
-## 8. Where the pages disagree or leave the point open
-
-### 8.1 Direction of LP*
+### 7.1 Direction of LP*
 
 The pages give three different directions:
 
@@ -867,7 +724,7 @@ The pages give three different directions:
 
 Consequence: no proposition (sections 1.2 and 1.3).
 
-### 8.2 Device I.D.
+### 7.2 Device I.D.
 
 p. 371 and p. 335 differ on three points (quoted in section 1.1):
 
@@ -878,14 +735,14 @@ p. 371 and p. 335 differ on three points (quoted in section 1.1):
 Both pages print the label as "3.25". p. 241 says "One 3.5" drive is installed
 in the basic unit." The label is left as printed.
 
-### 8.3 The drive activity light
+### 7.3 The drive activity light
 
 p. 244: "DSKMOTOR* also controls the activity light on the front of the disk
 drive." The page does not say whether the light follows the latched motor state
-or the line itself. P9's verdict table and P10's precondition P10-b handle
-this.
+or the line itself. Nothing in this package is graded on the light; section 6
+only records it.
 
-### 8.4 Port numbering and the fire-button bits
+### 7.4 Port numbering and the fire-button bits
 
 The pages disagree on which CIA-A bit serves which port's fire button:
 
@@ -897,14 +754,14 @@ The pages disagree on which CIA-A bit serves which port's fire button:
 
 Consequence: no test here uses the fire bits (section 3.4).
 
-### 8.5 POTGOR bits 7-1
+### 7.5 POTGOR bits 7-1
 
 - p. 240: "chip revision identification number".
 - p. 282: "Reserved for chip ID code (presently 0)".
 
 Consequence: not graded.
 
-### 8.6 CIA-B port B naming
+### 7.6 CIA-B port B naming
 
 p. 244 prints "CIAAPRB ($BFD100)". p. 241 lists "CIABPRB ($BFD100)", and p. 340
 places prb at BFD100 in the CIAB map. The address is used.
