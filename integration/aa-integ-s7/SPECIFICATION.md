@@ -6,7 +6,7 @@ This document specifies one integration test package for an FPGA re-implementati
 
 ## 0. Claims not turned into a proposition
 
-The package has 160 claims. 124 of them support the 21 propositions in sections 2 and 3. The 36 below support none.
+The package has 160 claims. 86 of them are graded whole by the propositions C1-C11, F1-F5 and F7 in sections 2 and 3. The 74 below are declined: 36 support no proposition (0.1, 0.2), and 38 support a proposition that grades only part of them (0.3). C12, F6, F8 and F9 grade those parts and carry no claim id.
 
 ### 0.1 `~` on a read address or a dummy address: no effect of a write is stated anywhere (28 claims)
 
@@ -40,12 +40,18 @@ sol:AA-adkconr.c4 also reports a "CONFLICT" because the alphabetical entry on p.
 | DSKDATR `&` | opus:AA-dskdatr.c4, sol:AA-dskdatr.c4 | The only use the page states is the disk-to-RAM DMA transfer in read mode (p.23), which needs data read from a disk. |
 | DSKDATR `ER` | opus:AA-dskdatr.c2, sol:AA-dskdatr.c2 | "ER=Early read. This is a DMA data transfer to RAM, from either the Disk or from the Blitter" (p.6). For DSKDATR the data comes from the disk, so this also needs a disk surface. |
 
-### 0.3 Parts of used claims that are left out
+### 0.3 A proposition grades only part of the claim (38 claims)
 
-- **`&` "only" for AUD0-3DAT, BPL2-8DAT, BLTADAT, BLTBDAT, BLTCDAT.** Other pages contradict it (section 4, D1). Propositions F6, F7 and F8 specify only the part every page agrees on: the DMA channel loads the register.
-- **CDANG=1 half of the `~` claims for BLTADAT, BLTBDAT, BLTCDAT.** Whether a Copper write takes effect with COPCON bit 1 set is disputed by the same contradiction, so proposition C12 grades only the COPCON-bit-1-clear half.
-- **BLTDDAT "cannot be read by the micro" (p.13).** No page says what a CPU read of 0xDFF000 returns, so no value is graded.
-- **Reads of AUDxDAT (claims `.c2`, access `W`).** The row gives no `R`, and no page says what a read returns. Nothing about reads is graded.
+A claim id goes on a proposition only if the proposition grades the whole claim. For the claims below, the propositions named grade the part every page agrees on, and the part left over cannot be graded. Each id is therefore declined whole, with the reason in the last column. The propositions stay, because the part they grade is page-predicted, but they carry no claim credit.
+
+| Register, mark | Claims | Graded part (proposition) | Part not graded, and why |
+|---|---|---|---|
+| BLTADAT, BLTBDAT, BLTCDAT `~` | opus:AA-bltadat.c5, sol:AA-bltadat.c5, opus:AA-bltbdat.c5, sol:AA-bltbdat.c5, opus:AA-bltcdat.c5, sol:AA-bltcdat.c5 | With COPCON bit 1 clear, a Copper write does not take effect (C12) | With COPCON bit 1 set: p.6 marks these registers `&` "used by DMA channel only", while p.19 gives the Copper "access to all RGA registers" with CDANG = 1. The pages disagree on what a Copper write does then (section 4, D1). |
+| BPL2DAT-BPL8DAT `&` | opus:AA-bpl2dat.c4, opus:AA-bpl3dat.c4, opus:AA-bpl4dat.c4, opus:AA-bpl5dat.c4, opus:AA-bpl6dat.c4, opus:AA-bpl7dat.c4, opus:AA-bpl8dat.c4, sol:AA-bpl2dat.c4, sol:AA-bpl3dat.c4, sol:AA-bpl4dat.c4, sol:AA-bpl5dat.c4, sol:AA-bpl6dat.c4, sol:AA-bpl7dat.c4, sol:AA-bpl8dat.c4 | The DMA channel loads the register (F6) | "only": p.15 says "They may also be written by either micro" (D1). |
+| AUD0DAT-AUD3DAT `&` | opus:AA-aud0dat.c4, sol:AA-aud0dat.c4, opus:AA-aud1dat.c4, sol:AA-aud1dat.c4, opus:AA-aud2dat.c4, sol:AA-aud2dat.c4, opus:AA-aud3dat.c4, sol:AA-aud3dat.c4 | The DMA channel loads the register (F7) | "only": p.11 says "The Processor can also write directly to this register" (D1). |
+| BLTADAT, BLTBDAT, BLTCDAT `&` | opus:AA-bltadat.c4, sol:AA-bltadat.c4, opus:AA-bltbdat.c4, sol:AA-bltbdat.c4, opus:AA-bltcdat.c4, sol:AA-bltcdat.c4 | The DMA channel loads the register (F8) | "only": p.13 says "it may also be preloaded by the microprocessor" (D1). |
+| BLTDDAT `&` | opus:AA-bltddat.c4, sol:AA-bltddat.c4 | The destination data reaches RAM by blitter DMA (F8) | "only": p.13 says BLTDDAT "cannot be read by the micro", and no page says what a CPU read of 0xDFF000 returns, so no processor access to the register can be graded. |
+| DSKDAT `&` | opus:AA-dskdat.c4, sol:AA-dskdat.c4 | Disk DMA feeds DSKDAT from RAM (F9) | "only": a processor write to DSKDAT has its only stated effect on the disk surface (section 0.2). |
 
 ---
 
@@ -53,16 +59,22 @@ sol:AA-adkconr.c4 also reports a "CONFLICT" because the alphabetical entry on p.
 
 ### 1.1 System configuration
 
-- The AA chip set is selected (`Config.chipset_config = 0x10`). The system is PAL (default) with 2 MB of Chip memory.
-- The package runs on each CPU core separately, both as a 68000. The expected values are the same on both.
+- The AA chip set is selected (`Config.chipset_config = 0x10`), with 2 MB of Chip memory (`Config.memory_config` default). No proposition depends on whether the harness runs PAL or NTSC.
+- Drive 0 exists: `Config.floppy_config` is set to a value, taken from the harness's documented `Config` values, that configures drive 0. The builder states the value chosen in this specification. No disk image is mounted: the harness serves none, and `sdc_img_mounted` stays 0. With a drive configured, p.23's DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", which has no drive term, decides whether disk DMA runs (C2, F9). Only if no documented value configures a drive at all are C2 and F9 NOT-CHECKABLE. No other proposition depends on the drive.
+- The package is graded on the TG68K build only, built with `ENABLE_AGA`, NanoMig's AGA configuration (`nanomig.mk`). The fx68k build has no `ENABLE_AGA`, NanoMig's non-AGA configuration. It runs the same programs; its results are recorded, not graded. No proposition depends on the fx68k build having an AA feature. Both cores run as a 68000 (`Config.cpu_config = 0`).
+- Programs are assembled for the 68000 (vasm's default CPU, no `-m68010` or higher), so every register write of 0x0000 in this document is a `MOVE`, a single write cycle, and never a `CLR`, which reads the address first. The propositions write 0 to write-only registers (DSKLEN, VPOSW, POTGO, JOYTEST, COPCON), and no page says what a read of such an address does.
 - Custom registers are addressed at 0xDFF000 plus the offset printed on p.6-10.
-- Addresses in this document are byte addresses. The memory port reports word addresses; compare a byte address `a` with the port's word address `a/2`. `[a, b)` is the byte range from `a` up to, but not including, `b`.
+- Addresses in this document are byte addresses. The memory port reports word addresses; compare a byte address `a` with the port's word address `a/2`. The harness guarantees that equality only in the identity-mapped Chip RAM 0x080000-0x1FFFFF (`nanomig_harness.h`, `kChipIdentityLo`/`kChipIdentityHi`), which is why every address in this document lies there. `[a, b)` is the byte range from `a` up to, but not including, `b`.
 
 ### 1.2 Memory map
 
-- The address families S0-S9 (section 1.8) are fixed. Their regions must be zero-filled and used for nothing else.
-- Every other region is placed by the builder inside 0x000000-0x03FFFF, disjoint from every other region, and zero-filled unless stated otherwise. That covers the program, its stack and vectors, the marker word MK, the result area RES, the Copper lists, and the blitter, bitplane, audio and disk buffers.
-- Nothing except the S families lies in 0x040000-0x1FFFFF.
+- Everything lies in the identity-mapped Chip RAM 0x080000-0x1FFFFF (`nanomig.i`, `nanomig_harness.h`). Chip RAM below 0x080000 is not used: after reset "an additional copy of the system ROM responds starting at memory location $00000000" (HRM p.223), and the harness states that physical and logical addresses differ outside 0x080000-0x1FFFFF (`nanomig_harness.h`, `peek_logical`).
+- The harness fixes three places:
+  - the program at `PROGRAM_ORG` = 0x080400; it must end below 0x08CC36, the first byte of the S3 regions;
+  - the stack below `PROGRAM_STACK` = 0x0FFF00; it must stay inside [0x0FC200, 0x0FFF00), above the S7 regions;
+  - the result area RES at `RESULTS` = 0x0C0000, up to `DONE_ADDR` = 0x0C0FFE.
+- The address families S0-S9 (section 1.8) are fixed. Their regions, listed there, must be zero-filled and used for nothing else. The harness's memory starts at zero, and nothing writes these regions.
+- Every other region is placed by the builder in 0x080000-0x1FFFFF, disjoint from the three places above, from the S regions and from every other region. That covers the marker word MK, the Copper lists, and the blitter, bitplane, audio and disk buffers. Data regions are zero-filled unless stated otherwise.
 
 ### 1.3 Prologue
 
@@ -84,7 +96,7 @@ The Copper stays on in every proposition. `0xFFFF, 0xFFFE` is a WAIT (p.20: IR1 
 
 - The CPU writes a distinct marker value to the word MK at each point named `M_...`. The memory port shows each marker write with its time; `t(M_x)` is the time of that write.
 - Values the CPU reads from registers go into RES. The harness reads RES after the program ends.
-- The program writes a final marker when it finishes. A run without the final marker is NOT-CHECKABLE.
+- The program writes a final marker when it finishes: the `DONE` macro of `nanomig.i`. A run without the final marker is NOT-CHECKABLE.
 
 ### 1.5 CPU helpers (every loop has a timeout; a timeout is stored in RES)
 
@@ -97,18 +109,25 @@ The Copper stays on in every proposition. `0xFFFF, 0xFFFE` is a WAIT (p.20: IR1 
 - **BLIT_DONE:** LINES(1), then poll DMACONR until bit 14 (BBUSY, "Blitter busy status bit", p.22) is 0. Timeout: 2 frames.
 - **DMA_CHECK(bits):** read DMACONR, store it in RES, and require that the named enable bits and bit 9 (DMAEN) read 1 (p.22). This is a precondition wherever it is named.
 
-### 1.6 Memory-port classification
+### 1.6 Memory-port attribution
 
-Each access is classified by the requester the port log reports: CPU, Copper, blitter, bitplane, sprite, audio, disk, refresh.
+The RAM-port log gives, for each access, the cycle, the word address, the data, read or write, and the byte lanes (`nanomig_harness.h`, `RamAccess`). It does not say which requester made the access. Accesses are attributed by address and by nanomig.v's `refresh` output:
 
-- "Blitter write" means a blitter DMA write.
-- "Audio read" means an audio DMA read, and so on.
+- **CPU:** reads in [0x080400, program end + 16), which covers the instruction prefetch past the last instruction and holds nothing else; and accesses to the stack, MK and RES. Inside any window a proposition grades, the program accesses nothing else.
+- **Refresh:** a read sampled while the `refresh` output is high. The harness does not log that output; the test reads it through `ports()` while stepping with `run_cycles(1)`, at the cycle of each log entry.
+- **Copper:** reads of a Copper list the proposition names (IDLE, CASE, the F6 list).
+- **A DMA channel:** accesses to a region the proposition assigns to that channel. "Blitter write" means a write to one of the proposition's blitter destination regions, "audio read" a read of its audio region, "disk read" a read of its disk region, and so on.
+- **Stray DMA read:** a read that is none of the above. In each window a proposition grades, only the DMA channels it enables in DMACON run (the prologue clears the others), so a stray read is one of those channels reading outside the regions assigned to it.
+
+Where a proposition says that every read of a channel lies in its regions, the check is that the window holds no stray DMA read. Where a proposition needs to know that a channel ran at all, whatever address it used, it counts the channel's region reads plus the stray DMA reads.
+
+Precondition wherever stray DMA reads are graded: the refresh-flagged reads of the window come in groups of four, one group per line ("There are 4 refresh time slots", p.29; "4 cycles for memory refresh" per line, HRM p.194). This shows that the `refresh` output marks the refresh reads, so that none of them is counted as stray.
 
 ### 1.7 Outcomes
 
 - **PASS:** every precondition holds and every expected value holds.
 - **FAIL:** every precondition holds and an expected value does not.
-- **NOT-CHECKABLE:** any precondition fails or any timeout occurred.
+- **NOT-CHECKABLE:** any precondition fails or any timeout occurred, except the DSKBLK-poll timeouts that C2 (step 8) and F9 (step 6) grade themselves.
 
 NOT-CHECKABLE is never counted as PASS.
 
@@ -116,15 +135,21 @@ NOT-CHECKABLE is never counted as PASS.
 
 | S0 | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
 |---|---|---|---|---|---|---|---|---|---|
-| 0x06AB64 | 0x19549A | 0x173388 | 0x08CC76 | 0x043C0E | 0x1BC3F0 | 0x183E30 | 0x07C1CE | 0x0BC000 | 0x143FFE |
+| 0x0EAB64 | 0x11549A | 0x173388 | 0x08CC76 | 0x0C3C0E | 0x13C3F0 | 0x103E30 | 0x0FC1CE | 0x0BC000 | 0x143FFE |
 
 Properties:
 
 - S(2k+1) is the bitwise complement of S(2k) within A20-A1 (mask 0x1FFFFE). So every address bit A1-A20 is 1 in one address of each pair and 0 in the other.
 - Across the ten addresses, each bit A1-A20 has its own on/off pattern, so a bit that is dropped, stuck, shifted or swapped gives a wrong address in at least one family member.
 - The property still holds after XOR with x<<6 for x = 0-7 (used by F5).
-- Every address is at least 0x040000.
-- S9's regions cross a 64 KB boundary (A15 carries into A16). For S9, the check that all reads stay inside the region therefore also requires the 20-bit pointer to carry into its high part. p.6 describes PTL/PTH and LCL/LCH as "20 bit" pointer and location registers.
+- A20 and A19 differ in every address, so every address, and every region below, lies in the identity-mapped Chip RAM 0x080000-0x1FFFFF (section 1.2).
+- S9's regions cross 0x144000, so reading inside them needs the pointer's increment to carry from A13 into A14. No region crosses a 64 KB boundary, so no check depends on a carry from the low word (A15-A1) into the high word (A20-A16).
+
+The regions of each address, as used by F4 ([a, a+8)) and F5 ([a ^ (x<<6), +32) for x = 0-7), lie inside these byte ranges, which nothing else may use:
+
+| S0 | S1 | S2 | S3 | S4 | S5 | S6 | S7 | S8 | S9 |
+|---|---|---|---|---|---|---|---|---|---|
+| [0x0EAA24, 0x0EAC04) | [0x11541A, 0x1155FA) | [0x173208, 0x1733E8) | [0x08CC36, 0x08CE16) | [0x0C3C0E, 0x0C3DEE) | [0x13C230, 0x13C410) | [0x103E30, 0x104010) | [0x0FC00E, 0x0FC1EE) | [0x0BC000, 0x0BC1E0) | [0x143E3E, 0x14401E) |
 
 ### 1.9 Copper-case procedure (used by C1-C12)
 
@@ -138,11 +163,15 @@ Properties:
 
 C4 uses a different list (see C4).
 
+A DMACON enable or ADKCON setting a C proposition names is written once, before frame A: frame A's observation runs the same DMA as frame B's, and DMA runs only with its channel bit and DMAEN set (p.22).
+
 **Frame A, calibration** (once per register; the Copper runs IDLE):
 
 1. VBL_SYNC.
-2. Write V1 with the CPU and take the observation. Store it as R_cal1.
-3. Write V0 with the CPU and take the observation. Store it as R_cal0.
+2. Establish V0 with CPU writes, then write V1 with the CPU, and take the observation. Store it as R_cal1.
+3. Establish V0 with CPU writes and take the observation. Store it as R_cal0.
+
+V0 comes first in step 2 because V1 writes one register, while the observation also depends on registers only V0 sets: BLTCON1, the masks and BLTDMOD for C7, or DSKPTL for the DSKPTH case of C2. No page gives their reset values, and a DMA run leaves its pointer advanced ("After the Blitter is finished it will contain the last data address", p.13; the disk pointer "is incremented" after each transfer, HRM p.247).
 
 **Frame B, the case** (once for each COPCON value c in {0x0000, 0xFFFD, 0x0002}, except C12, which runs only 0x0000 and 0xFFFD):
 
@@ -201,33 +230,39 @@ All C propositions rest on the p.6 legend line quoted above and on the COPCON en
 
 ### C2. DSKPTH (020), DSKPTL (022)
 
-This proposition is checkable only if disk DMA runs without a disk image.
+Drive 0 is configured and no disk image is mounted (section 1.1). If no documented `floppy_config` value configures a drive at all, C2 is NOT-CHECKABLE.
 
 1. **Proposition.** A Copper MOVE to DSKPTH or DSKPTL does not change the address disk DMA reads while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-dskpth.c5, sol:AA-dskpth.c5, opus:AA-dskptl.c5, sol:AA-dskptl.c5 (p.6).
 2. **Stimulus.**
-   - Before frame B: DMACON = 0x8210 (SET, DMAEN, DSKEN); ADKCON = 0x9100 (SET, MFMPREC, FAST, p.10-11).
-   - Regions: Rd holds 4 words. Re = Rd + 0x10000 holds 4 words; choose Rd with A16 = 0 so the two addresses differ in A16. Re' = Rd + 0x0100 holds 4 words.
+   - Before frame A: DMACON = 0x8210 (SET, DMAEN, DSKEN); ADKCON = 0x9100 (SET, MFMPREC, FAST, p.10-11).
+   - Regions: Rd holds 4 words. Re = Rd + 0x10000 holds 4 words; choose Rd with A16 = 0 so the two addresses differ in A16. Re' = Rd + 0x0100 holds 4 words; choose Rd with (Rd & 0xFFFF) ≤ 0xFEF8, so that Re' has Rd's high word and the DSKPTL case changes only the low word. Rd, Re and Re' are the disk regions of section 1.6.
    - V0: DSKPTH/DSKPTL = Rd.
    - DSKPTH case: V1 = Re >> 16. DSKPTL case: V1 = Re' & 0xFFFF.
    - Step 8 starts a disk write DMA with the sequence HRM p.247 prescribes ("the DMAEN bit in the DSKLEN register must be turned on twice"; the AA pages give no procedure):
      1. DSKLEN = 0x4000.
      2. DSKLEN = 0xC004.
      3. DSKLEN = 0xC004.
-     4. Poll INTREQR bit 1 (DSKBLK) until set. Timeout: 20 lines.
-     5. DSKLEN = 0x4000; INTREQ = 0x0002.
-   - No drive is selected; the CIAs are not touched.
-3. **Observation.** The first disk read in (t(M_wait), t(M_end)).
+     4. Read DSKBYTR and store bit 14 (DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", p.23).
+     5. Poll INTREQR bit 1 (DSKBLK) until set. Timeout: 20 lines.
+     6. DSKLEN = 0x4000; INTREQ = 0x0002.
+   - Frame A's observations run the same sequence.
+   - A timeout of the DSKBLK poll is stored in RES and does not make the case NOT-CHECKABLE (section 1.7). Disk DMA that never runs would otherwise hide behind that timeout; the reads are graded instead ("Disk DMA runs" below).
+   - No drive is selected; the CIAs are not touched. p.23's DMAON has no drive term, so selection does not enter.
+3. **Observation.** The first read in (t(M_wait), t(M_end)) that is a disk read or a stray DMA read (section 1.6).
 4. **Expected.**
+   - Disk DMA runs: every run of the step-8 sequence with DMAON = 1, in frame A and in frame B, shows at least one disk read or stray DMA read. A run with DMAON = 1 and no such read is a FAIL of C2. It is graded first, because PC4 needs frame A's reads.
    - U: at Rd.
    - W: at Re for the DSKPTH case, at Re' for the DSKPTL case.
    - From p.23: "This pair of registers contains the 20 bit address of Disk DMA data." p.6 row function: "Disk pointer (High 5 bits)" / "(Low 15 bits)".
-   - Calibration: R_cal1 with the CPU writing Re (resp. Re') first reads at Re (resp. Re'); R_cal0 with the CPU writing Rd first reads at Rd.
+   - Calibration (frame A, V0 first as section 1.9 says): R_cal1, with the CPU writing DSKPTH/DSKPTL = Rd and then V1, first reads at Re (resp. Re'); R_cal0, with the CPU writing DSKPTH/DSKPTL = Rd, first reads at Rd.
 5. **Preconditions.**
    - PC1-PC5, with the disk channel in place of the blitter in PC5, and DMA_CHECK(DSKEN).
-   - PC6: at least one disk read in the window. If there is none, the harness's drive interface did not run disk DMA without an image, and the case is NOT-CHECKABLE.
+   - PC6: DMAON = 1 in every run (the stored DSKBYTR bit 14).
+   - A drive is configured (section 1.1).
+   - The refresh precondition of section 1.6.
 6. **Contrasting cases.**
    - As in section 1.9.
-   - PC6: DMACON without DSKEN makes DMAON = 0 (p.23). There are no disk reads and PC6 fails.
+   - PC6: DMACON without DSKEN makes DMAON = 0 (p.23). The stored bit 14 reads 0 and PC6 fails.
 7. **Reference frame.** The markers.
 
 ### C3. VPOSW (02A)
@@ -294,7 +329,7 @@ This proposition is checkable only if disk DMA runs without a disk image.
 
 1. **Proposition.** A Copper MOVE to BLTCON0 or BLTCON0L does not change the blitter's logic function while COPCON bit 1 is clear, and does change it while bit 1 is set. Claims: opus:AA-bltcon0.c4, sol:AA-bltcon0.c4, opus:AA-bltcon0l.c5, sol:AA-bltcon0l.c5 (p.6, p.7).
 2. **Stimulus.**
-   - Before frame B: DMACON = 0x8240 (SET, DMAEN, BLTEN).
+   - Before frame A: DMACON = 0x8240 (SET, DMAEN, BLTEN).
    - V0: BLTCON0 = 0x0100 (USED = 1, LF = 0x00), BLTCON1 = 0x0000, BLTAFWM = BLTALWM = 0xFFFF, BLTDMOD = 0.
    - V1: BLTCON0 case, MOVE BLTCON0 = 0x01FF. BLTCON0L case, MOVE BLTCON0L = 0x00FF.
    - Step 8: BLTDPTH/L = DST; BLTSIZE = 0x0044 (h = 1, w = 4); BLIT_DONE.
@@ -314,7 +349,7 @@ This proposition is checkable only if disk DMA runs without a disk image.
    - DMACON = 0x8240.
    - V0: BLTCON0 = 0x01FF, BLTCON1 = 0x0000, BLTAFWM = BLTALWM = 0xFFFF, BLTDMOD = 0.
    - V1 = 0x0002 (DESC; LINE = 0).
-   - Step 8: BLTDPTH/L = DST, where the word below DST is reserved; BLTSIZE = 0x0042 (w = 2, h = 1); BLIT_DONE.
+   - Step 8: BLTDPTH/L = DST, where the word below DST is reserved; BLTSIZE = 0x0042 (w = 2, h = 1); BLIT_DONE. C8's blitter destination region (section 1.6) is [DST-2, DST+4), so the writes of both outcomes are attributed to the blitter.
 3. **Observation.** Addresses of the blitter writes in (t(M_wait), t(M_end)).
 4. **Expected.** U: DST, then DST+2. W: DST, then DST-2. From p.14: "DESC Descending (decreasing address)control bit", bit 01 of BLTCON1 in area mode.
 5. **Preconditions.** PC1-PC5. Exactly two blitter writes in the window.
@@ -372,13 +407,13 @@ This proposition is checkable only if disk DMA runs without a disk image.
 
 ### C12. BLTCDAT (070), BLTBDAT (072), BLTADAT (074): only the COPCON-bit-1-clear half
 
-1. **Proposition.** While COPCON bit 1 is clear, a Copper MOVE to BLTxDAT (x = A, B, C) does not change the data the blitter uses from that source. Claims: opus:AA-bltadat.c5, sol:AA-bltadat.c5, opus:AA-bltbdat.c5, sol:AA-bltbdat.c5, opus:AA-bltcdat.c5, sol:AA-bltcdat.c5 (p.6, p.7).
+1. **Proposition.** While COPCON bit 1 is clear, a Copper MOVE to BLTxDAT (x = A, B, C) does not change the data the blitter uses from that source (p.6, p.7). Claims: none. The six `~` claims for these registers also state the COPCON-bit-1-set half, which C12 does not grade, so they are declined whole (section 0.3).
 2. **Stimulus.**
    - DMACON = 0x8240. BLTCON1 = 0, BLTAFWM = BLTALWM = 0xFFFF, all modulos 0.
    - Per source x, the minterm codes are from HRM p.177: LF_A = 0xF0, LF_B = 0xCC, LF_C = 0xAA. The use bits are USEA = bit 11, USEB = bit 10, USEC = bit 9 (p.14).
    - Establishing V0 uses DMA only, because processor writes to BLTxDAT are disputed (section 4, D1). Preload blit:
      - BLTCON0 = USEx | USED | LF_x;
-     - BLTxPTH/L = PX, holding the single word V0 = 0x3C3C;
+     - BLTxPTH/L = PX, holding the single word V0 = 0x3C3C, followed by one reserved zero word (the region is [PX, PX+4));
      - BLTDPTH/L = DST2; BLTSIZE = 0x0041; BLIT_DONE.
      - p.13: BLTxDAT "is normally loaded by the Blitter DMA channel".
    - V1 = 0x5A5A.
@@ -393,8 +428,8 @@ This proposition is checkable only if disk DMA runs without a disk image.
 5. **Preconditions.**
    - PC1-PC3, PC5.
    - PC4 is replaced. Frame A runs the preload blit with V0 and then with V1 (0x5A5A in PX), each followed by the observation blit. The results must be 0x3C3C ×2 (U) and 0x5A5A ×2 (W_dma).
-   - The preload blit shows exactly one blitter read at PX.
-   - The observation blit shows no blitter read.
+   - The preload blit shows exactly one read of [PX, PX+2) and no other read of [PX, PX+4).
+   - The observation blit shows no read of [PX, PX+4). The word after PX is part of C12's blitter source region, so a source pointer left running after the preload is seen.
 6. **Contrasting cases.**
    - The frame-A run with V1 preloaded by DMA gives 0x5A5A where the case gives 0x3C3C. All pages agree the DMA channel loads the register, so this is page-predicted.
    - Precondition contrasts as in section 1.9.
@@ -447,7 +482,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    
    Claims: opus:AA-bltsizv.c4, sol:AA-bltsizv.c4, opus:AA-bltsizh.c4, sol:AA-bltsizh.c4 (p.7 mark `h`).
    
-   The two legends define `h` differently: "h=new for HiRes chip set" (p.6) against "h= stuff added or changed in hires chips" (p.10). Both say the register is part of the hires chips. For these two registers the alphabetical list (p.14) prints capital `H`, "new register in hires chips" (p.10), so every page agrees they are new in the hires chips. The AA chip set extends them (section 1.1).
+   The two legends define `h` differently: "h=new for HiRes chip set" (p.6) against "h= stuff added or changed in hires chips" (p.10). Both mark the register as part of the hires chip set, and that is what these ids assert; F2 grades it whole by running the registers with the AA chip set selected, which extends the hires chips (section 1.1). Absence from older chips is not what the ids assert. For these two registers the alphabetical list (p.14) prints capital `H`, "new register in hires chips" (p.10).
 2. **Stimulus.**
    - Set-up as F1; destination DST2 of at least 32767 words.
    - Per case:
@@ -481,12 +516,12 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - Rewrite BLTSIZV = 4 before the second reuse blit: 20 instead of 15.
    - v = 8 changed to 9: 9 writes.
    - Precondition contrast as F1.
-   - Not used as a contrast: selecting OCS behaviour. "new for HiRes chip set" implies these registers are absent from the original chips. But the package runs with AA selected, and the pages do not say what the harness's OCS selection removes.
+   - Not used as a contrast: selecting OCS behaviour. The ids assert membership of the hires chip set, not absence from the original chips, and the pages do not say what the harness's OCS selection removes.
 7. **Reference frame.** The markers.
 
 ### F3. BLTCON0L writes only the minterm byte of BLTCON0
 
-1. **Proposition.** With the AA chip set selected, a write to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 (ASH3-0, USEA-USED) unchanged, whatever the upper byte of the written word. Claims: opus:AA-bltcon0l.c4, sol:AA-bltcon0l.c4 (p.7 mark `h`; p.13 capital `H` "new register in hires chips", so all pages agree it is new in the hires chips).
+1. **Proposition.** With the AA chip set selected, a write to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 (ASH3-0, USEA-USED) unchanged, whatever the upper byte of the written word. Claims: opus:AA-bltcon0l.c4, sol:AA-bltcon0l.c4 (p.7 mark `h`; p.13 capital `H` "new register in hires chips"). Both legends mark the register as part of the hires chip set, and F3 grades that whole with the AA chip set selected; absence from older chips is not what the ids assert (F2, D2).
 2. **Stimulus.**
    - DMACON = 0x8240. BLTCON1 = 0. BLTAFWM = BLTALWM = 0xFFFF. All modulos 0.
    - Pointers: BLTAPTH/L = ASRC (0x00FF, 0x0F0F); BLTBPTH/L = BSRC (2 words 0); BLTCPTH/L = CSRC (2 words 0); BLTDPTH/L = DST.
@@ -529,22 +564,23 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    11. LINES(4).
    
    Extra case for a = S0: AUDcLCH = 0xFFE0 | (S0 >> 16) and AUDcLCL = (S0 & 0xFFFF) | 1.
-3. **Observation.** Audio reads in (t(M_start), t(M_end)).
+3. **Observation.** Audio reads (reads of [a, a+8), the case's audio region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)).
 4. **Expected.**
-   - The first audio read in (t(M_go), t(M_end)) is at a; this includes the extra case.
-   - Every audio read in (t(M_go), t(M_end)) lies in [a, a+8).
+   - The first read in (t(M_go), t(M_end)) that is an audio read or a stray DMA read is at a; this includes the extra case.
+   - No stray DMA read in (t(M_go), t(M_end)): every read the channel makes lies in [a, a+8).
    - Page grounds:
      - p.7 row functions "Audio channel 0 location (High 5 bits)" / "(Low 15 bits)";
      - p.6: "+=Address register pair.Low word uses DB1-DB15,High word DB0-DB4." and "LCL,LCH=20 bit Location (starting address) of DMA data";
      - p.11: "This pair of registers contains the 20 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data."
 5. **Preconditions.**
    - DMA_CHECK(AUDcEN).
-   - No audio read in (t(M_start), t(M_go)).
-   - At least one audio read in (t(M_go), t(M_end)).
+   - No audio read and no stray DMA read in (t(M_start), t(M_go)).
+   - At least one audio read or stray DMA read in (t(M_go), t(M_end)). This counts the channel's reads wherever they go, so a wrong address fails the expected values, not this precondition.
    - Only channel c is enabled in DMACON.
+   - The refresh precondition of section 1.6.
    - No timeout.
 6. **Contrasting cases.**
-   - Each address and its complement in the family predict different first-read addresses.
+   - Each address and its complement in the family predict different first-read addresses. A read at the wrong address is a stray DMA read, so it fails through the first-read value, and the population precondition still holds.
    - Precondition: omit the DMACON enable. DMA_CHECK fails and there are no audio reads.
 7. **Reference frame.** The markers and the address family S0-S9 with its per-bit codes (section 1.8).
 
@@ -563,10 +599,10 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      5. VBL_SYNC.
      6. M2.
    - p.28: "These address registers must be initialized by the processor or coprocessor every vertical blank time." The zero control words keep every sprite off the screen.
-3. **Observation.** Sprite reads in (t(M0), t(M2)).
+3. **Observation.** Sprite reads (reads of the case's eight regions [Si ^ (x << 6), +32)) and stray DMA reads (section 1.6) in (t(M0), t(M2)). Reads of another family member's regions are stray.
 4. **Expected.**
    - For every x there is at least one sprite read at exactly Si ^ (x << 6) in (t(M1), t(M2)).
-   - Every sprite read in (t(M1), t(M2)) lies in the union of the eight regions.
+   - No stray DMA read in (t(M1), t(M2)): every sprite read lies in the union of the eight regions.
    - Page grounds:
      - p.8 row functions "Sprite x pointer (High 5 bits)" / "(Low 15 bits)";
      - p.6 `+` legend;
@@ -575,21 +611,22 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - The eight regions differ only in A8-A6, so a bit error in one sprite's pointer leaves that sprite's region start unread in at least one family member.
 5. **Preconditions.**
    - DMA_CHECK(SPREN).
-   - No sprite read in (t(M0), t(M1)).
-   - At least eight sprite reads in (t(M1), t(M2)).
+   - No sprite read and no stray DMA read in (t(M0), t(M1)).
+   - At least eight reads in (t(M1), t(M2)) that are sprite reads or stray DMA reads. This counts the sprite reads wherever they go, so a wrong address fails the expected values, not this precondition.
+   - The refresh precondition of section 1.6.
    - No timeout.
 6. **Contrasting cases.**
    - Si and its complement predict disjoint address sets.
    - Precondition: DMACON without SPREN. DMA_CHECK fails and there are no sprite reads.
 7. **Reference frame.** The VERTB frame boundary (p.25, bit 5 "Start of Vertical blank"), the markers, and the address family.
-   - Not graded: which of the eight sprite channels made a given read. The AA pages give no sprite slot order, and the port reports only "sprite".
+   - Not graded: which of the eight sprite channels made a given read. The AA pages give no sprite slot order, and the port does not report the requester.
    - Not graded: how many reads each sprite makes per frame. The page does not say.
 
 ### F6. BPL2DAT-BPL8DAT receive bitplane x's DMA data, which reaches the display as colour-index bit x-1
 
-1. **Proposition.** In an 8-bitplane lores display, the data bitplane DMA fetches for plane x (x = 2-8) goes into BPLxDAT and appears on the video output as colour index 2^(x-1). Claims (14, p.8, `&`): opus:AA-bpl2dat.c4, opus:AA-bpl3dat.c4, opus:AA-bpl4dat.c4, opus:AA-bpl5dat.c4, opus:AA-bpl6dat.c4, opus:AA-bpl7dat.c4, opus:AA-bpl8dat.c4, sol:AA-bpl2dat.c4, sol:AA-bpl3dat.c4, sol:AA-bpl4dat.c4, sol:AA-bpl5dat.c4, sol:AA-bpl6dat.c4, sol:AA-bpl7dat.c4, sol:AA-bpl8dat.c4.
+1. **Proposition.** In an 8-bitplane lores display, the data bitplane DMA fetches for plane x (x = 2-8) goes into BPLxDAT and appears on the video output as colour index 2^(x-1) (p.8, p.15). Claims: none. The 14 `&` claims for BPL2DAT-BPL8DAT also state "only", which is contradicted (section 4, D1) and not graded, so they are declined whole (section 0.3).
    
-   Only the DMA part is specified. The "only" of `&` is contradicted (section 4, D1).
+   Only the DMA part is specified.
 2. **Stimulus.**
    - Plane memory: eight regions B1-B8 of 40 × 256 bytes. Plane x = 2-8 has 0xFFFF in all 20 words of rows 20 + 8(x-2) through 23 + 8(x-2) and 0 elsewhere. Plane 1 is all 0.
    - Palette: all 256 entries are written with LOCT = 0. For bank b = 0-7: BPLCON3 = (b << 13) | 0x0C00, then COLOR00-COLOR31 (180-1BE) for the indices 32b+r. Values:
@@ -608,8 +645,9 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      "8 Bitplane 256 colours" in LORES needs "1x Bandwidth" (p.30-31).
    - A Copper list writes BPL1PTH/L-BPL8PTH/L = B1-B8 (offsets 0E0-0FE, all above 07E) and ends with 0xFFFF, 0xFFFE. COP1LC points to it, so the pointers are reloaded at every vertical blank (p.15, p.21).
    - DMACON = 0x8300 (SET, DMAEN, BPLEN).
-   - VBL_SYNC twice, then M_ready, then VBL_SYNC three times, then M_done. Afterwards COP1LC = IDLE.
-3. **Observation.** The video output of the second and third complete frames (VSYNC to VSYNC) that begin after t(M_ready). Bitplane reads during those frames.
+   - VBL_SYNC twice, then M_ready, then VBL_SYNC four times, then M_done. Afterwards COP1LC = IDLE.
+   - Four vertical blanks between M_ready and M_done give at least three complete VSYNC-to-VSYNC frames inside (t(M_ready), t(M_done)), whatever the phase of VSYNC relative to VERTB. No page fixes that phase.
+3. **Observation.** The video output of the second and third complete frames (VSYNC to VSYNC) that begin after t(M_ready); both end before t(M_done). Bitplane reads (reads of B1-B8) during those frames.
 4. **Expected** (in each of the two frames):
    - Every pixel is black (0,0,0) or one of C2-C8. The colour 0x555 never appears.
    - The non-black output lines form exactly seven bands. From top to bottom their colours are C2, C3, C4, C5, C6, C7, C8, each band a single colour.
@@ -627,16 +665,16 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - The Copper list was read in the vertical blank before each graded frame.
    - No timeout.
 6. **Contrasting cases.**
-   - Swap the band rows of planes 3 and 4. The order becomes C2, C4, C3, C5, C6, C7, C8.
-   - BPLCON0 = 0x7000 (BPU = 7): the C8 band disappears (six bands), and the precondition "reads in B8" fails as well.
+   - Swap the band rows of planes 3 and 4. The order becomes C2, C4, C3, C5, C6, C7, C8. Every precondition still holds, so the case fails through the band order.
+   - Precondition "reads in each of B1-B8": BPLCON0 = 0x7000 (BPU = 7, p.16). Plane 8 is not fetched, so there are no reads in B8 and the precondition fails. This is a precondition contrast only: it removes a fetch, so it cannot show the colour clause failing.
    - Precondition: DMACON without BPLEN. DMA_CHECK fails and there are no bitplane reads.
 7. **Reference frame.** Frame boundaries come from VSYNC on the video output. Band order is relative, top to bottom; no absolute line or column is graded. Plane memory row r is display line 0x2C + r, because vertical bitplane timing follows the display window (p.21), but this is used only to place the bands.
 
 ### F7. AUD0DAT-AUD3DAT are written by the channel's audio DMA with RAM data, output as signed bytes
 
-1. **Proposition.** With channel c's audio DMA on, the words the channel reads from RAM are written into AUDcDAT and output as two's-complement bytes, so the channel's output level follows the sign and order of the fetched bytes. Claims: opus:AA-aud0dat.c4, sol:AA-aud0dat.c4, opus:AA-aud1dat.c4, sol:AA-aud1dat.c4, opus:AA-aud2dat.c4, sol:AA-aud2dat.c4, opus:AA-aud3dat.c4, sol:AA-aud3dat.c4 (`&`); opus:AA-aud0dat.c2, sol:AA-aud0dat.c2, opus:AA-aud1dat.c2, sol:AA-aud1dat.c2, opus:AA-aud2dat.c2, sol:AA-aud2dat.c2, opus:AA-aud3dat.c2, sol:AA-aud3dat.c2 (access `W`) (p.7, p.8).
-   - Only the DMA writer is specified. The processor writer is disputed (section 4, D1).
-   - Reads are not specified (section 0.3).
+1. **Proposition.** With channel c's audio DMA on, the words the channel reads from RAM are written into AUDcDAT and output as two's-complement bytes, so the channel's output level follows the sign and order of the fetched bytes. Claims: opus:AA-aud0dat.c2, sol:AA-aud0dat.c2, opus:AA-aud1dat.c2, sol:AA-aud1dat.c2, opus:AA-aud2dat.c2, sol:AA-aud2dat.c2, opus:AA-aud3dat.c2, sol:AA-aud3dat.c2 (access `W`) (p.7, p.8).
+   - Only the DMA writer is specified. The processor writer is disputed (section 4, D1), so the eight `&` claims for AUD0DAT-AUD3DAT, whose "only" is not graded, are declined whole (section 0.3).
+   - The eight `.c2` claims state the access type the address list prints, `W` ("W=Write", p.6), and nothing more. None of them says "only" or "write only", so F7 grades each whole: the register is written, and the written data reaches the output. Reads are not graded; the row gives no `R`, and no page says what a read returns.
 2. **Stimulus.** For each channel c = 0-3 separately:
    - Region AD holds 0x4040, 0xC0C0, 0x2020, 0x0000. Each word has two equal bytes, because p.11 says the bytes are "outputed sequentially" but not which comes first.
    - AUDcLCH/L = AD; AUDcLEN = 4; AUDcPER = 400; AUDcVOL = 0x0040 (bit 6 "Forces volume to max", p.11). The other channels have DMA off and volume 0.
@@ -645,14 +683,15 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      1. M_start.
      2. DMACON = 0x8200 | (1 << c).
      3. DMA_CHECK(AUDcEN).
-     4. LINES(60).
+     4. LINES(100).
      5. M_end.
      6. DMACON = (1 << c); AUDcVOL = 0.
+   - Why LINES(100): each byte is output for one period ("The minimum period is 124 color clocks ... This corresponds to a maximum sample frequency of 28.86 khz", p.11), so one word lasts 2 × 400 and the four-word data set 3200 color clocks. Three passes, plus up to one pass before the first L1, take 12800 color clocks, besides the start of output, whose latency no page gives. 100 lines of at least 227 color clocks (HRM p.194: "227.5 cycles per horizontal line") are at least 22700.
 3. **Observation.**
-   - Audio reads in (t(M_start), t(M_end)).
-   - The audio output samples from t(first audio read) + 1600 color clocks to t(M_end), on every output signal the harness provides.
+   - Audio reads (reads of [AD, AD+8), the audio region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)).
+   - The audio output samples in (t(M_start), t(M_end)), on every output signal the harness provides. On each signal, a run is a maximal stretch of equal samples. Runs shorter than T/4 are dropped, and neighbouring runs of equal value are then merged. T is the mean interval between consecutive audio reads in the window: the time from the first to the last, divided by the number of reads less one. The channel reads one word for every two bytes it outputs (p.11), so a level held for a word lasts about T. T is measured at the ports, so no conversion between clk_sys and color clocks is assumed. T/4 only separates transitions from levels; no expected value depends on it.
 4. **Expected.**
-   - On at least one output signal, the constant-level runs lasting at least 100 color clocks, taken in time order, repeat the sequence (L1, L2, L3, L4) at least three times with the same four values, where L1 > L3 > L4 > L2.
+   - On at least one output signal, the runs, taken in time order, contain the sequence (L1, L2, L3, L4) three times in succession (twelve consecutive runs) with the same four values each time, where L1 > L3 > L4 > L2.
    - These are the levels of bytes +64, -64, +32 and 0.
    - Page grounds, p.11:
      - "This register is the Audio channel x (x=0,1,2,3) DMA data buffer. It contains 2 bytes of data (each byte is a twos complement signed integer) that are outputed sequentially (with digital to analog conversion) to the audio output pins."
@@ -663,17 +702,18 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      - which output carries which channel.
 5. **Preconditions.**
    - DMA_CHECK(AUDcEN).
-   - At least eight audio reads in [AD, AD+8) in the window, each of the four addresses at least twice, and no audio read outside it.
+   - At least eight audio reads in the window, each of the four addresses of [AD, AD+8) at least twice, and no stray DMA read in the window.
+   - The refresh precondition of section 1.6.
    - ADKCONR & 0x00FF = 0, read before M_start (p.11: USExVy / USExPy clear).
    - No timeout.
 6. **Contrasting cases.**
    - The second word 0xC0C0 changed to 0x6060 (+96): now the second level is the highest, and L1 > L3 > L4 > L2 fails, as the page predicts.
    - Precondition: omit the DMACON enable. DMA_CHECK fails and there are no audio reads.
-7. **Reference frame.** The first audio read of the window marks the start. No absolute latency between a read and its output is assumed, because the page gives none.
+7. **Reference frame.** The audio reads of the window give the time scale T. No absolute latency between a read and its output is assumed, because the page gives none. The twelve runs may start anywhere in the window, so neither the start of output nor the length of the first pass through the data affects the check.
 
 ### F8. BLTADAT/BLTBDAT/BLTCDAT are loaded by the blitter's source DMA; BLTDDAT goes to RAM by DMA
 
-1. **Proposition.** With source x enabled, the blitter loads BLTxDAT from the source pointer's RAM words and computes D from them. The destination words reach RAM as blitter DMA writes, with no processor access. Claims: opus:AA-bltadat.c4, sol:AA-bltadat.c4, opus:AA-bltbdat.c4, sol:AA-bltbdat.c4, opus:AA-bltcdat.c4, sol:AA-bltcdat.c4, opus:AA-bltddat.c4, sol:AA-bltddat.c4 (p.6-7, `&`).
+1. **Proposition.** With source x enabled, the blitter loads BLTxDAT from the source pointer's RAM words and computes D from them. The destination words reach RAM as blitter DMA writes, with no processor access (p.6-7, p.13). Claims: none. The eight `&` claims for BLTADAT, BLTBDAT, BLTCDAT and BLTDDAT also state "only", which F8 does not grade, so they are declined whole (section 0.3).
 2. **Stimulus.**
    - DMACON = 0x8240. BLTCON1 = 0. BLTAFWM = BLTALWM = 0xFFFF. All modulos 0.
    - Source regions: SRC_A, SRC_B, SRC_C, 4 words each. The source under test holds 0x8001, 0x4002, 0x2004, 0x1008; the other two hold 0xFFFF ×4.
@@ -686,10 +726,10 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      5. M_end.
      
      Reload all pointers before each blit.
-3. **Observation.** Blitter reads, blitter writes, and any other access to [DST, DST+8) in (t(M_start), t(M_end)).
+3. **Observation.** Reads of SRC_A, SRC_B and SRC_C, and writes to [DST, DST+8), in (t(M_start), t(M_end)). These are the blitter's regions; the program does not access them inside the window (section 1.6).
 4. **Expected.**
    - Four blitter writes at DST to DST+6 with data 0x8001, 0x4002, 0x2004, 0x1008 in that order.
-   - Every write to [DST, DST+8) in the window is a blitter write.
+   - No other write to [DST, DST+8) in the window. The port does not report the requester, so "no processor access" is graded as: the program makes none there, and the only writes are the blit's four.
    - Page grounds:
      - p.13: BLTxDAT "It is normally loaded by the Blitter DMA channel".
      - p.13: BLTDDAT "holds the data resulting from each word of Blitter operation until it is sent to a RAM destination ... The transfer is automatic during Blitter operation."
@@ -702,9 +742,9 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
 
 ### F9. DSKDAT is fed by the disk DMA channel from RAM for LENGTH words
 
-This proposition is checkable only if disk DMA runs without a disk image.
+Drive 0 is configured and no disk image is mounted (section 1.1). If no documented `floppy_config` value configures a drive at all, F9 is NOT-CHECKABLE.
 
-1. **Proposition.** A disk write DMA of LENGTH words reads exactly LENGTH consecutive words from RAM, starting at DSKPT, into the disk data buffer DSKDAT, and then raises the disk block request. Claims: opus:AA-dskdat.c4, sol:AA-dskdat.c4 (p.6, `&`).
+1. **Proposition.** A disk write DMA of LENGTH words reads exactly LENGTH consecutive words from RAM, starting at DSKPT, into the disk data buffer DSKDAT, and then raises the disk block request (p.6, p.23). Claims: none. The two `&` claims for DSKDAT also state "only", which F9 does not grade, so they are declined whole (section 0.3).
 2. **Stimulus.**
    - DMACON = 0x8210. ADKCON = 0x9100. INTREQ = 0x0002.
    - Region DB holds 0x1111, 0x2222, 0x3333, 0x4444, followed by the guard words 0x5555, 0x6666. DSKPTH/L = DB.
@@ -713,16 +753,18 @@ This proposition is checkable only if disk DMA runs without a disk image.
      2. DSKLEN = 0x4000.
      3. DSKLEN = 0xC004.
      4. DSKLEN = 0xC004.
-     5. Poll INTREQR bit 1 until set. Timeout: 1 frame.
-     6. M_blk.
-     7. DSKLEN = 0x4000.
-     8. LINES(4).
-     9. M_end.
-     10. INTREQ = 0x0002.
-   - No drive is selected.
-3. **Observation.** Disk reads in (t(M_start), t(M_end)). The polling result.
+     5. Read DSKBYTR and store bit 14 (DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", p.23).
+     6. Poll INTREQR bit 1 until set. Timeout: 1 frame. Store in RES whether the bit was seen set.
+     7. M_blk.
+     8. DSKLEN = 0x4000.
+     9. LINES(4).
+     10. M_end.
+     11. INTREQ = 0x0002.
+   - No drive is selected. p.23's DMAON has no drive term, so selection does not enter.
+   - The timeout of step 6 does not make the case NOT-CHECKABLE (section 1.7), because DSKBLK is part of the clause under test: when the preconditions below hold, a timeout there fails the expected value "INTREQR bit 1 becomes set".
+3. **Observation.** Disk reads (reads of [DB, DB+12), the disk region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)). The polling result.
 4. **Expected.**
-   - Exactly four disk reads, at DB, DB+2, DB+4, DB+6 in that order, and none at the guard words.
+   - Exactly four disk reads, at DB, DB+2, DB+4, DB+6 in that order, none at the guard words, and no stray DMA read in the window. With DMAON = 1, no read at all is a FAIL: p.23's DMAON has no drive term.
    - INTREQR bit 1 becomes set, with t(4th read) < t(M_blk).
    - Page grounds:
      - p.23 DSKLEN: "13-0 LENGTH Length (# of words) of DMA data".
@@ -730,10 +772,12 @@ This proposition is checkable only if disk DMA runs without a disk image.
      - p.25: bit 1 "DSKBLK Disk Block finished".
 5. **Preconditions.**
    - DMA_CHECK(DSKEN).
-   - At least one disk read in the window. Otherwise the harness's drive interface did not run disk DMA without an image, and the case is NOT-CHECKABLE.
+   - DMAON = 1 (the stored DSKBYTR bit 14).
+   - A drive is configured (section 1.1).
+   - The refresh precondition of section 1.6.
 6. **Contrasting cases.**
    - DSKLEN = 0xC003 (both writes): three reads.
-   - Precondition: DMACON without DSKEN. DMA_CHECK fails and there are no disk reads.
+   - Precondition: DMACON without DSKEN. DMA_CHECK fails, DMAON reads 0, and there are no disk reads.
 7. **Reference frame.** The markers.
 
 ---
@@ -746,14 +790,14 @@ This proposition is checkable only if disk DMA runs without a disk image.
   - p.13 (BLTxDAT): "it may also be preloaded by the microprocessor."
   - p.15 (BPLxDAT): "They may also be written by either micro."
   
-  These are the `%` description, not the `&` one. Every page agrees the DMA channel loads the register, and that is all F6, F7, F8 and C12 grade. For DSKDAT, DSKDATR and BLTDDAT no page contradicts "only", but nothing about processor writes to them is observable without a disk, or is stated at all (section 0).
-- **D2. The `h` legend.** p.6 says "h=new for HiRes chip set". p.10 says "h= stuff added or changed in hires chips" and "H= new register in hires chips". For BLTCON0L, BLTSIZV and BLTSIZH, the alphabetical list prints capital `H` (p.13-14), so every page agrees they are new in the hires chips (F2, F3). p.10 also defines lowercase `p` as "stuff added or changedin hires chips", while p.6 defines `p` as "new for IAA chip set". No proposition depends on `p`.
+  These are the `%` description, not the `&` one. Every page agrees the DMA channel loads the register, and that is all F6, F7, F8 and C12 grade. The `&` claims, and the `~` claims of BLTADAT, BLTBDAT and BLTCDAT, are declined whole for that reason (section 0.3). For DSKDAT, DSKDATR and BLTDDAT no page contradicts "only", but nothing about processor writes to them is observable without a disk, or is stated at all (section 0).
+- **D2. The `h` legend.** p.6 says "h=new for HiRes chip set". p.10 says "h= stuff added or changed in hires chips" and "H= new register in hires chips". For BLTCON0L, BLTSIZV and BLTSIZH, the alphabetical list prints capital `H` (p.13-14). Under either legend the mark places the register in the hires chip set; F2 and F3 grade that, not absence from older chips. p.10 also defines lowercase `p` as "stuff added or changedin hires chips", while p.6 defines `p` as "new for IAA chip set". No proposition depends on `p`.
 - **D3. BLTDDAT's access type.** p.6 prints "ER" and p.13 prints "W". Neither is graded (section 0.1).
 - **D4. The Copper's reach with COPCON bit 1 clear.**
   - AA p.19: "(if 0, access to RGA>7E)".
   - HRM p.310 (ECS): "If this bit is clear, the Copper can access the address range from $DFF03E through $DFF07E".
   
-  This is a disagreement between the manual and the oracle, not within the oracle. C7-C12 follow the AA page. The two sources agree that with the bit set the Copper reaches every register, and that 000-03E are closed with it clear.
+  This is a disagreement between the manual and the oracle, not within the oracle. C7-C12 follow the AA page. The two sources agree that with the bit set the Copper reaches every register, and that 000-03C are closed with it clear (HRM p.310 opens the range from 03E).
 - **D5. Left open by the pages, and not graded:**
   - what the Copper does after a refused write (only p.10's "restart of the COPPER after lockup" is printed);
   - what a CPU read of a write-only or dummy address returns;
@@ -784,13 +828,14 @@ This proposition is checkable only if disk DMA runs without a disk image.
 | BLTAFWM, BLTALWM | `~` | opus:/sol:AA-bltafwm.c4, -bltalwm.c4 | C9 |
 | BLTSIZE, BLTSIZH | `~` | opus:/sol:AA-bltsize.c4, -bltsizh.c5 | C10 |
 | BLTSIZV | `~` | opus:/sol:AA-bltsizv.c5 | C11 |
-| BLTADAT, BLTBDAT, BLTCDAT | `~` | opus:/sol:AA-bltadat.c5, -bltbdat.c5, -bltcdat.c5 | C12 |
+| BLTADAT, BLTBDAT, BLTCDAT | `~` | opus:/sol:AA-bltadat.c5, -bltbdat.c5, -bltcdat.c5 | 0.3 (declined; C12 grades the bit-1-clear half) |
 | BLTSIZE | function | opus:/sol:AA-bltsize.c5 | F1 |
 | BLTSIZV, BLTSIZH | `h` | opus:/sol:AA-bltsizv.c4, -bltsizh.c4 | F2 |
 | BLTCON0L | `h` | opus:/sol:AA-bltcon0l.c4 | F3 |
 | AUD0LCH, AUD0LCL, AUD1LCH, AUD1LCL | function | opus:/sol:AA-aud0lch.c5, -aud0lcl.c5, -aud1lch.c5, -aud1lcl.c5 | F4 |
 | SPR0PTH-SPR7PTL | function | opus:/sol:AA-spr<n>pth.c5, -spr<n>ptl.c5 | F5 |
-| BPL2DAT-BPL8DAT | `&` | opus:/sol:AA-bpl<n>dat.c4 | F6 |
-| AUD0DAT-AUD3DAT | `&`, `W` | opus:/sol:AA-aud<n>dat.c4, .c2 | F7 |
-| BLTADAT, BLTBDAT, BLTCDAT, BLTDDAT | `&` | opus:/sol:AA-bltadat.c4, -bltbdat.c4, -bltcdat.c4, -bltddat.c4 | F8 |
-| DSKDAT | `&` | opus:/sol:AA-dskdat.c4 | F9 |
+| BPL2DAT-BPL8DAT | `&` | opus:/sol:AA-bpl<n>dat.c4 | 0.3 (declined; F6 grades the DMA part) |
+| AUD0DAT-AUD3DAT | `&` | opus:/sol:AA-aud<n>dat.c4 | 0.3 (declined; F7 grades the DMA part) |
+| AUD0DAT-AUD3DAT | `W` | opus:/sol:AA-aud<n>dat.c2 | F7 |
+| BLTADAT, BLTBDAT, BLTCDAT, BLTDDAT | `&` | opus:/sol:AA-bltadat.c4, -bltbdat.c4, -bltcdat.c4, -bltddat.c4 | 0.3 (declined; F8 grades the DMA part) |
+| DSKDAT | `&` | opus:/sol:AA-dskdat.c4 | 0.3 (declined; F9 grades the DMA part) |
