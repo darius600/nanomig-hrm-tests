@@ -18,31 +18,36 @@
 // program its label calls for (I or T), in isolation, and grades only that
 // one label; it never mixes a mutant's data into another assertion.
 //
-// MUTATION P1 stimulus red NMH_MUTATE=P1: LACE=0 (I-a)
-// MUTATION PI-3 stimulus red NMH_MUTATE=PI-3: LACE=0 (I-a)
-// MUTATION P4a stimulus red NMH_MUTATE=P4a: the handler never repoints COP1LC (I-d)
-// MUTATION P4b stimulus red NMH_MUTATE=P4b: LISTB writes PIC, not PIC+40 (I-b)
-// MUTATION P4c stimulus red NMH_MUTATE=P4c: LISTB writes PIC, not PIC+40 (I-b)
-// MUTATION P4d stimulus red NMH_MUTATE=P4d: LISTB writes PIC, not PIC+40 (I-b)
-// MUTATION P4e stimulus red NMH_MUTATE=P4e: the handler never repoints COP1LC (I-d)
-// MUTATION P5 stimulus red NMH_MUTATE=P5: both lists omit the BPL1PT MOVEs (I-c)
-// MUTATION P6 stimulus red NMH_MUTATE=P6: both lists omit the SPR0PT MOVEs (I-e)
-// MUTATION PI-1 stimulus red NMH_MUTATE=PI-1: M1 waits between samples (I-j)
-// MUTATION PI-2 stimulus red NMH_MUTATE=PI-2: DMACON leaves COPEN clear (I-f)
-// MUTATION PI-4 stimulus red NMH_MUTATE=PI-4: DMACON leaves BPLEN clear (I-h)
-// MUTATION PI-5 stimulus red NMH_MUTATE=PI-5: INTENA leaves COPER clear (I-g)
-// MUTATION PI-6 stimulus red NMH_MUTATE=PI-6: PIC filled with $0000 (I-k)
-// MUTATION PI-7 stimulus red NMH_MUTATE=PI-7: BPL1PT MOVEs placed after the WAIT (I-l)
-// MUTATION PI-8 stimulus red NMH_MUTATE=PI-8: DMACON leaves SPREN clear (I-i)
-// MUTATION P2 stimulus red NMH_MUTATE=P2: PAL selected instead of NTSC (T-b)
-// MUTATION P3 stimulus red NMH_MUTATE=P3: PAL selected instead of NTSC (T-b)
-// MUTATION PT-1 stimulus red NMH_MUTATE=PT-1: M1 waits between samples (T-f)
-// MUTATION PT-2 stimulus red NMH_MUTATE=PT-2: DIWSTOP is the normal NTSC value (T-e)
-// MUTATION PT-3 stimulus red NMH_MUTATE=PT-3: line 100's mark uses H=$C0 (T-d)
-// MUTATION PT-4 stimulus red NMH_MUTATE=PT-4: the first WAIT is (0,$00) (T-c)
-// MUTATION PT-5 stimulus red NMH_MUTATE=PT-5: line 10's WAIT+MOVE is deleted (T-g)
-// MUTATION PT-6 stimulus red NMH_MUTATE=PT-6: LACE=0 (T-a)
-// MUTATION PT-7 stimulus red NMH_MUTATE=PT-7: DMACON leaves COPEN clear (T-h)
+// Measured column: the verdict this file's own "stimulus red"/"contrast
+// stays green" checks.expect() produced when actually run with
+// NMH_MUTATE=<label> against both cores' builds. Where it disagrees with
+// the record's own prediction, that disagreement is kept, not tuned away.
+//
+// MUTATION P1 stimulus red NMH_MUTATE=P1: LACE=0 (I-a) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-3 stimulus red NMH_MUTATE=PI-3: LACE=0 (I-a) -- measured: red on fx68k, red on tg68k
+// MUTATION P4a stimulus red NMH_MUTATE=P4a: both lists omit the BPL1PT MOVEs (I-c) -- measured: red on fx68k, red on tg68k
+// MUTATION P4b stimulus red NMH_MUTATE=P4b: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e measured green on fx68k, green on tg68k
+// MUTATION P4c stimulus red NMH_MUTATE=P4c: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e measured green on fx68k, green on tg68k
+// MUTATION P4d stimulus red NMH_MUTATE=P4d: LISTB writes PIC, not PIC+40 (I-b) -- measured: red on fx68k, red on tg68k; contrast P4e measured green on fx68k, green on tg68k
+// MUTATION P4e stimulus red NMH_MUTATE=P4e: the handler never repoints COP1LC (I-d) -- measured: red on fx68k, red on tg68k; contrast PI-5 measured green on fx68k, green on tg68k
+// MUTATION P5 stimulus red NMH_MUTATE=P5: both lists omit the BPL1PT MOVEs (I-c) -- measured: red on fx68k, red on tg68k
+// MUTATION P6 stimulus red NMH_MUTATE=P6: both lists omit the SPR0PT MOVEs (I-e) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-1 stimulus red NMH_MUTATE=PI-1: M1 waits between samples (I-j) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-2 stimulus red NMH_MUTATE=PI-2: DMACON leaves COPEN clear (I-f) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-4 stimulus red NMH_MUTATE=PI-4: DMACON leaves BPLEN clear (I-h) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-5 stimulus red NMH_MUTATE=PI-5: INTENA leaves COPER clear (I-g) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-6 stimulus red NMH_MUTATE=PI-6: PIC filled with $0000 (I-k) -- measured: red on fx68k, red on tg68k
+// MUTATION PI-7 stimulus red NMH_MUTATE=PI-7: BPL1PT MOVEs placed after the WAIT (I-l) -- measured: GREEN on fx68k, GREEN on tg68k (mismatch: WAIT $2D01 is satisfied at once at this restart, ~36 colour clocks in, not after ~45 lines; see the PI-7 dispatch code and SPECIFICATION.md's Build section)
+// MUTATION PI-8 stimulus red NMH_MUTATE=PI-8: DMACON leaves SPREN clear (I-i) -- measured: red on fx68k, red on tg68k
+// MUTATION P2 stimulus red NMH_MUTATE=P2: PAL selected instead of NTSC (T-b) -- measured: red on fx68k, red on tg68k
+// MUTATION P3 stimulus red NMH_MUTATE=P3: PAL selected instead of NTSC (T-b) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-1 stimulus red NMH_MUTATE=PT-1: M1 waits between samples (T-f) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-2 stimulus red NMH_MUTATE=PT-2: DIWSTOP is the normal NTSC value (T-e) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-3 stimulus red NMH_MUTATE=PT-3: line 100's mark uses H=$C0 (T-d) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-4 stimulus red NMH_MUTATE=PT-4: the first WAIT is (0,$00) (T-c) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-5 stimulus red NMH_MUTATE=PT-5: line 10's WAIT+MOVE is deleted (T-g) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-6 stimulus red NMH_MUTATE=PT-6: LACE=0 (T-a) -- measured: red on fx68k, red on tg68k
+// MUTATION PT-7 stimulus red NMH_MUTATE=PT-7: DMACON leaves COPEN clear (T-h) -- measured: red on fx68k, red on tg68k
 
 #include <cstdio>
 #include <cstdint>
@@ -73,13 +78,10 @@ constexpr uint64_t kBootBudget = 6'000'000;
 constexpr uint64_t kRunBudgetI = 16'000'000;
 constexpr uint64_t kRunBudgetT = 20'000'000;
 
-// One colour clock (p194, p24) is 8 clk_sys cycles: amiga_clk.v divides
-// clk_sys (== clk_28, its input) by 4 to get clk7_en (the 7 MHz/"7 MHz
-// period" enable the harness itself samples the RAM port on), and the
-// colour clock ("cck") toggles once every clk7_cnt==1, i.e. once every 2
-// clk7_en periods -- 8 clk_sys cycles per colour clock. This is a fixed
-// ratio from the clock generator, not a value fitted to a measurement
-// (SPECIFICATION.md 2.3).
+// One colour clock (p194, p24) is 8 clk_sys cycles: 4 clk_sys cycles per
+// the harness's own 7 MHz RAM-port sample point (nanomig_harness.h), and
+// the colour clock is half of that again. A fixed clock-generator ratio,
+// not a value fitted to a measurement (SPECIFICATION.md 2.3).
 constexpr uint64_t kClkSysPerColourClock = 8;
 
 // ---- Program I memory layout, mirrors prog_i.s -----------------------
@@ -401,12 +403,14 @@ bool pi6_tags(const IAnalysis& a) {
     return true;
 }
 
-bool pi7_bpl(const IAnalysis& a) {
+// lateLayout selects I-l's own list layout (prog_i_l.s): the BPL1PT MOVEs
+// sit after SPR0PT/SPR1-7PT and the WAIT $2D01,$FF00 (offset 36 bytes),
+// not at the list's first word (offset 0) as in the normal (I-0) layout.
+bool pi7_bpl(const IAnalysis& a, bool lateLayout = false) {
     if (!a.matched) return false;
     for (const auto& f : a.fields) {
         uint32_t listbase = (f.list == 'A') ? kI_LISTA : kI_LISTB;
-        // BPL1PTH is the list's first word in the normal (I-0) layout.
-        uint32_t wa = listbase / 2;
+        uint32_t wa = (listbase + (lateLayout ? 36u : 0u)) / 2;
         uint64_t ptrCycle = UINT64_MAX;
         for (const auto& acc : a.r.log)
             if (!acc.is_write && acc.word_addr == wa && acc.cycle >= f.begin && acc.cycle < f.end) { ptrCycle = acc.cycle; break; }
@@ -416,11 +420,13 @@ bool pi7_bpl(const IAnalysis& a) {
     return true;
 }
 
-bool pi7_spr(const IAnalysis& a) {
+// lateLayout: under I-l, SPR0PTH is the list's first word (offset 0),
+// not offset 4 as in the normal layout (which has the BPL1PT MOVEs first).
+bool pi7_spr(const IAnalysis& a, bool lateLayout = false) {
     if (!a.matched) return false;
     for (const auto& f : a.fields) {
         uint32_t listbase = (f.list == 'A') ? kI_LISTA : kI_LISTB;
-        uint32_t wa = (listbase + 4) / 2; // SPR0PTH follows the 2-word BPL1PT MOVE
+        uint32_t wa = (listbase + (lateLayout ? 0u : 4u)) / 2;
         uint64_t ptrCycle = UINT64_MAX;
         for (const auto& acc : a.r.log)
             if (!acc.is_write && acc.word_addr == wa && acc.cycle >= f.begin && acc.cycle < f.end) { ptrCycle = acc.cycle; break; }
@@ -636,7 +642,14 @@ void run_i_mutation(const std::string& dir, const std::string& label) {
     } else if (label == "PI-6") {
         checks.expect(!pi6_tags(a), label + " MUTATION stimulus red: PIC filled with $0000 -- fetched values no longer match the tag formula");
     } else if (label == "PI-7") {
-        checks.expect(!(pi7_bpl(a) && pi7_spr(a)), label + " MUTATION stimulus red: the BPL1PT MOVEs are placed after the WAIT -- the pointer fetch no longer precedes the field's first bitplane fetch");
+        // Measured (both cores): this stays GREEN, not red -- the moved
+        // BPL1PT MOVE's own fetch lands only ~288 clk_sys cycles (~36
+        // colour clocks, well under one line) after the restart, and
+        // ~80,000 cycles (~44 lines) before the field's first bitplane
+        // fetch: WAIT $2D01 (V>=45, horizontal ignored) is satisfied
+        // essentially at once, not after ~45 lines. Reported as measured,
+        // not tuned to pass: see SPECIFICATION.md's Build section.
+        checks.expect(!(pi7_bpl(a, true) && pi7_spr(a, true)), label + " MUTATION stimulus red: the BPL1PT MOVEs are placed after the WAIT -- the pointer fetch no longer precedes the field's first bitplane fetch");
     } else if (label == "PI-8") {
         checks.expect(!pi8_spr_fetched(a), label + " MUTATION stimulus red: DMACON leaves SPREN clear -- the sprite structure is never fetched");
     }

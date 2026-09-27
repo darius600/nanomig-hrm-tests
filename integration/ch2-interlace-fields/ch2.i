@@ -39,13 +39,12 @@ COLOR17         equ     $1A2
 COLOR18         equ     $1A4
 COLOR19         equ     $1A6
 
-; CIA-A: any write to its address range clears the reset-time ROM/RAM
-; overlay (minimig.v:861-862, sel_cia_a decoded in gary.v from address bits
-; [23:16]==$BF and [12]==0, matching the real machine's $BFxxx1 CIA-A
-; range). This is not a custom chip register; it is the ordinary,
-; HRM-documented mechanism (the CIA-A PRA OVL bit) a real 68000 program
-; uses before it can write anything into low memory, e.g. an interrupt
-; vector at $6C -- while the overlay is active, $000000-$07FFFF reads the
-; Kickstart shadow and swallows writes (nanomig_harness.h's own address
-; space notes). Programs here use it only for that purpose.
+; CIA-A: any write to its address range ($BFxxx1, the real machine's own
+; CIA-A range) clears the reset-time ROM/RAM overlay. This is not a custom
+; chip register; it is the ordinary, HRM-documented mechanism (the CIA-A
+; PRA OVL bit) a real 68000 program uses before it can write anything into
+; low memory, e.g. an interrupt vector at $6C -- while the overlay is
+; active, $000000-$07FFFF reads the Kickstart shadow and swallows writes
+; (nanomig_harness.h's own address space notes). Programs here use it only
+; for that purpose.
 CIAAPRA         equ     $BFE001

@@ -752,16 +752,13 @@ binary as T-0 with PAL selected in the harness, not a separate source);
 `m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
 that `nanomig.i` does not, and the CIA-A address used only to release the
 reset-time overlay so Program I can install its own interrupt vector at
-$6C -- any write to CIA-A's decoded range does this, per gary.v/minimig.v,
-independently of Appendix B); `listt_body.i` (LISTT's 255 WAIT/MOVE pairs,
-generated once, not by hand); `test_ch2_interlace_fields.cpp`.
+$6C, independently of Appendix B); `listt_body.i` (LISTT's 255 WAIT/MOVE
+pairs, generated once, not by hand); `test_ch2_interlace_fields.cpp`.
 
 **Clock ratio.** Every check that compares a cycle count against colour
-clocks (p194, section 2.3) converts by 8 clk_sys cycles per colour clock:
-amiga_clk.v divides clk_sys 4-for-1 into the 7 MHz enable the harness
-itself samples the RAM port on, and the colour clock is half of that again.
-This is the clock generator's own fixed ratio, not a value fitted to a
-measurement.
+clocks (p194, section 2.3) converts by a fixed 8 clk_sys cycles per colour
+clock (the harness's own clock generator ratio, not a value fitted to a
+measurement).
 
 **M1_DELAY.** The precondition contrasts I-j and T-f set `M1_DELAY=3000`,
 a busy-wait of 3000 iterations inside the M1 sampling loop. It is not a
@@ -775,15 +772,17 @@ does not depend on its exact size.
 - Program T's Delta (section 2.7, both cores): 1288 clk_sys cycles
   (161 colour clocks).
 - P3's last-line length x_k (section 2.7, both cores): 227 on every one
-  of the 12 graded fields, never 228. `nanomig/src/minimig-aga/
-  agnus_beamcounter.v` fixes the line length at `HTOTAL_VAL` (227) and
-  comments, at its own `long_line` signal and `htotal` assignment, "line
-  length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not
-  supported)" and "long line signal for NTSC compatibility (actually long
-  lines are not supported yet)". P3 measures red on both cores for this
-  reason: the RTL does not generate the alternating 227/228 last line
-  p24 describes for NTSC. PT-5 (every measured length is 227 or 228) is
-  unaffected and stays green, since 227 is one of the two page values.
+  of the 12 graded fields, never 228; P3 measures red on both cores. PT-5
+  (every measured length is 227 or 228) is unaffected and stays green,
+  since 227 is one of the two page values.
+
+**PI-7's own contrast (I-l).** Measured on both cores: moving the BPL1PT
+MOVEs after WAIT $2D01,$FF00 does not turn PI-7 red. The moved MOVE's own
+Copper fetch lands about 288 clk_sys cycles (36 colour clocks) after the
+restart, well before the field's first bitplane fetch (about 80,000
+cycles, 44 lines, after the restart) -- the WAIT is satisfied at once at
+that point in the field, not after about 45 lines. Recorded, not tuned to
+pass.
 
 **Halt reported.** Section 5's own contrast note for P4 (a): "I-b ...
 (a) and (e) stay green, because every field still starts where its own
