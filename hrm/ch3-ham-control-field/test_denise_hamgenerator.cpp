@@ -21,7 +21,7 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// Added proposition, opus:3-ham.c08 (p.86): "used to modify the way bits
+// Proposition opus:3-ham.c08 (p.86): "used to modify the way bits
 //   from planes 1 - 4 are treated, as follows:" -- planes 5 and 6 modify
 //   the way bits from planes 1-4 are treated. A relation, not a single
 //   value: it is established only by HAM-CONTROL-00/01/10/11-... together
@@ -35,23 +35,17 @@
 //   summarises, and that Table 3-19 (p.95, cited in Primary oracle)
 //   enumerates in full.
 //
-// BOUNDARY (from the classifier's own evidence, not from opening the RTL --
-// see "ORDER OF WORK" below): denise_hamgenerator.v:6-18 module header --
+// BOUNDARY (line numbers from the classifier's own evidence field):
+// denise_hamgenerator.v:6-18 module header --
 // ports reg_address_in, data_in[11:0], select[7:0], bplxor, bank, loct,
 // ham8, rgb[23:0]. denise_hamgenerator.v:80-92 -- OCS HAM: select_r[5:4] is
 // the control field (00 colour table, 01 modify blue, 10 modify red, 11
 // modify green), select_r[3:0] is the data field, and the held components
 // come from rgb_prev, registered at l.55-57.
 //
-// ORDER OF WORK: this file (assertions, expected values, claim-id coverage)
-// was written and committed from claims.jsonl's quotations and the
-// classifier's evidence field ONLY -- denise_hamgenerator.v itself was not
-// opened until after that commit, per the build brief's explicit gate. The
-// Harness's clocking mechanics (clk/clk7_en toggling, COLORBASE write
-// sequencing, ticks-per-pixel) are reused from hrm/denise_hamgenerator/
-// test_denise_hamgenerator.cpp -- an already-committed, already-built
-// sibling harness for the SAME module -- not learned by opening this
-// package's own forbidden-until-committed file.
+// HARNESS: the clocking mechanics (clk/clk7_en toggling, COLORBASE write
+// sequencing, ticks-per-pixel) are those of hrm/denise_hamgenerator/
+// test_denise_hamgenerator.cpp, the sibling harness for the SAME module.
 //
 // THE BPLCON0 ENABLE BIT: NOT ASSERTED, RECORDED AS A MEASUREMENT, NOT
 // RESOLVED. The manual disagrees with itself about which bit of BPLCON0
@@ -67,8 +61,8 @@
 //     (HAM); ...)".
 // Three of the four printed citations (87, 90, 271) agree the enable bit is
 // 11 (HOMOD), with bit 10 (DBLPF) required to be 0; one (95) disagrees and
-// calls bit 10 the enable. NOT resolved here, per the build brief -- and it
-// could not be settled at THIS boundary regardless: denise_hamgenerator's
+// calls bit 10 the enable. NOT resolved here -- it cannot be settled at
+// THIS boundary regardless: denise_hamgenerator's
 // own port list (above) has no BPLCON0, HOMOD or DBLPF port at all.
 // Whichever bit real hardware keys on, the decision is made upstream (by
 // whatever decodes BPLCON0 and gates what reaches this module's `select`
@@ -105,28 +99,20 @@
 // HAM-CONTROL-01/10/11 modify assertion is measured against, on the
 // identical 24-bit rgb-readback basis, in the identical Harness session.
 //
-// RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
-// above). denise_hamgenerator.v:80-92's three OCS modify-path expressions
-// ({rgb_prev[23:8],select_r[3:0],select_r[3:0]} etc.) and
+// RTL NOTES. denise_hamgenerator.v:80-92's three OCS modify-path
+// expressions ({rgb_prev[23:8],select_r[3:0],select_r[3:0]} etc.) and
 // denise_colortable_ram_mf.v's two parallel 12-bit RAMs (ram0/ram1, written
 // identically when loct=0, per denise_hamgenerator.v:31's `wr_ws = loct ?
-// 2'b01 : 2'b11`) match every numeric prediction this file's assertions
-// were written against before either file was opened -- no expected value,
-// stimulus shape or Harness mechanic needed changing. First build: 9
-// passed, 0 failed, exactly as committed. `bank` is 3 bits wide (not
-// checked before opening the file, held at 0 regardless, no effect) and
-// `reg_address_in` is declared `[9-1:1]` rather than `[8:0]` (an index-
-// naming detail that does not change the plain-integer C++ assignment
-// already in write_color()).
+// 2'b01 : 2'b11`) match the expected values below. `bank` is 3 bits wide
+// (held at 0, no effect) and `reg_address_in` is declared `[9-1:1]` rather
+// than `[8:0]` (an index-naming detail that does not change the
+// plain-integer C++ assignment in write_color()).
 //
-// MUTATION LOG (all 9 entries actually run by this agent under WSL/
-// Verilator on 10.09.2026: edit -> rebuild -> run -> confirm the named
-// assertion(s) red -> revert -> rebuild -> confirm the full suite green
-// again -- before moving to the next one. Every mutation is a STIMULUS
-// change to this file's own inputs; no expected value or oracle text was
-// ever touched, and nanomig/ was never touched. Final rebuild after the
-// last revert: 9 passed, 0 failed, confirmed again immediately before this
-// commit.):
+// MUTATION LOG (each entry run under WSL/Verilator as edit -> rebuild ->
+// run -> confirm the named assertion(s) red -> revert -> rebuild ->
+// confirm the baseline again. Every mutation is a STIMULUS change to this
+// file's own inputs; no expected value or oracle text is touched, and
+// nanomig/ is never touched.):
 //
 // MUTATION TEST-DATA-DELIVERY stimulus red: register 7's fed colour
 //   changed from 0xC91 to 0xC92 -> FAIL ("8 passed, 1 failed"), only
@@ -143,9 +129,7 @@
 //   HAM-HOLDS-... red (register 5, never loaded in this Harness, defaults
 //   to 0 in Verilator, so all three components changed, not one) AND
 //   HAM-CONTROL-01-MODIFIES-BLUE-HOLDS-RED-GREEN also red, as expected
-//   collateral of changing away from control=01 -- recorded here rather
-//   than hidden, per the standing rule against reporting a result not
-//   actually produced. Reverted: 9/0.
+//   collateral of changing away from control=01. Reverted: 9/0.
 // MUTATION HAM-CONTROL-01-MODIFIES-BLUE-HOLDS-RED-GREEN stimulus red: step
 //   2's data field changed from 0x5 to 0x6 (control left at 0x1) -> FAIL
 //   ("8 passed, 1 failed"), only this assertion red (blue now 0x66 against
@@ -200,8 +184,8 @@ public:
     int failed = 0;
 };
 
-// Reused from hrm/denise_hamgenerator/test_denise_hamgenerator.cpp's
-// already-committed harness for this same module: clk/clk7_en toggling, a
+// Taken from hrm/denise_hamgenerator/test_denise_hamgenerator.cpp's
+// harness for this same module: clk/clk7_en toggling, a
 // COLORBASE=0x180 (word address 0xC0) CPU-style register write, and 4 ticks
 // to settle one pixel's `select` through to `rgb`. Nothing about this
 // mechanism is a claim of this package's own inventory; it is
@@ -310,8 +294,7 @@ int main(int argc, char** argv) {
     // here too, but this assertion alone measures only the 00 code, the
     // one code that modifies nothing -- so both ids are also cited on
     // HAM-CONTROL-01/10/11-... below, which measure the modification.
-    // Only the four together establish the claim. No new quote, no new
-    // expected value; only the id list changes.
+    // Only the four together establish the claim.
     checks.expect(
         rgb0 == 0xAABBCCu,
         "HAM-CONTROL-00-NORMAL-SELECTION: with the 6-5 control field "
@@ -519,7 +502,7 @@ int main(int argc, char** argv) {
         "no BPLCON0, HOMOD or DBLPF port at all (same port list as "
         "above), so which bit of BPLCON0 enables HAM is not observable at "
         "this boundary, disputed or not. Recorded as a MEASUREMENT, not "
-        "an assertion, per the build brief: printed p.95 says 'This mode "
+        "an assertion: printed p.95 says 'This mode "
         "is in effect only if bit 10 of BPLCON0 = 1'; printed p.87 says "
         "'Bit 11 of register BPLCON0 selects hold-and-modify mode ... Bit "
         "HOMOD, bit 11, is 1. Bit DBLPF, bit 10, is 0'; printed p.90's "
