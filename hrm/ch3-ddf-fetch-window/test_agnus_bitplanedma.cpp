@@ -15,29 +15,26 @@
 //   effects of an early DDFSTRT (p.80, p.82, p.83) - agnus_spritedma's
 //   boundary; the Copper's ability to reset pointers during vblank (p.80) -
 //   agnus_copper's boundary and a software-usage note, not a DMA-count fact.
-//   DIWSTRT/DIWSTOP *horizontal* placement/centering (p.57, p.59) and the
-//   interlaced-field line-3 stride example (p.62) are held PENDING below:
-//   this package's given boundary evidence names only
-//   DDFSTRT_REG/DDFSTOP_REG, not DIWSTRT/DIWSTOP, and the one DIWSTOP fact
-//   already measured on this fixture (V $F2..$F6 -> 198..202 lines) is
-//   DIWSTOP's VERTICAL half, not its horizontal one - whether horizontal DIW
-//   or interlace reach this module's ports at all is an RTL question,
-//   answered below the RTL-open line.
+//   DIWSTRT/DIWSTOP *horizontal* placement/centering (p.57, p.59) reaches
+//   this module only through the `hde` output and is tested there, apart
+//   from the fetch-count assertions; the interlaced-field line-3 stride
+//   example (p.62) has no port at this boundary (see IMPLEMENTATION NOTES
+//   below for both).
 // Claim ids: the id below carries a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and it names
 //   one reader's reading of one printed sentence. They resolve in the chapter's
 //   claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// BOUNDARY (from the build brief, not yet from opening the file):
+// BOUNDARY:
 //   nanomig/src/minimig-aga/agnus_bitplanedma.v:55-56 (DDFSTRT_REG 9h092,
 //   DDFSTOP_REG 9h094), write decode l.247-259 (ddfstrt[8:2] <= data_in[7:1]),
 //   position compare l.336-354, hard limits $18/$D8 l.356-374, ddfena
 //   l.407-414.
 //
-//   The write-decode fact alone (ddfstrt[8:2] <= data_in[7:1]) already
-//   settles the "4-pixel resolution" / bit-field-width family of claims
-//   (G7, G17 below) without opening the RTL further: data_in bit 0 is never
+//   The write-decode fact alone (ddfstrt[8:2] <= data_in[7:1]) settles
+//   the "4-pixel resolution" / bit-field-width family of claims
+//   (G7, G17 below): data_in bit 0 is never
 //   read (bits 1-0 of the stored field do not exist), and the stored field's
 //   own LSB (bit 2) comes from data_in bit 1, not bit 0 - so two DDFSTRT
 //   writes differing only in their raw value's bit 0 must be indistinguishable
@@ -46,25 +43,25 @@
 //   measurable shape "4-pixel resolution" and "pixel 0 is position 0, pixel 4
 //   is position 1" take at this boundary.
 //
-// ALREADY MEASURED on this fixture (d_bpldma, 10.09.2026 - not repeated here):
+// ALREADY MEASURED on this fixture (d_bpldma - not repeated here):
 //   NTSC 320x200 lores, one bitplane: DDFSTRT=$38, DDFSTOP=$D0, BPU=1 gives
 //   exactly 20 dma cycles/line, reg_address_out=$110 each cycle, address_out
 //   stepping 2 bytes/cycle, 8,000 bytes total across 200 lines, addresses
 //   $0..$1F3E contiguous step 2 (20 words/line x 200 lines x 2 bytes/word).
 //   With DDFSTRT=$00/DDFSTOP=$FE (outside the $18/$D8 hardware limits), a
-//   line still yields at most 25 lores fetches - the hardware clamp already
-//   visible in a measurement, not yet tied to a named assertion.
+//   line still yields at most 25 lores fetches - the hardware clamp that
+//   HW-LIMIT-DDFSTRT-0018-LEFTMOST and HW-LIMIT-DDFSTOP-00D8-RIGHTMOST
+//   attribute to each limit below.
 //   DIWSTOP V $F2..$F6 -> 198/199/200/201/202 active lines.
 //   BPL1MOD 0/40/80 -> line-to-line address step 40/80/120 bytes.
 //
 // CLAIMS (verbatim quote + restatement from
-// the classify records for `ch3-ddf-fetch-window` -- a build-time
-// scratch file, never published and no longer on disk; the claim ids
-// cited below are the surviving public record,
+// the classify records for `ch3-ddf-fetch-window`, which are not
+// published; the claim ids cited below are the public record,
 // all 239 records classify.status == "testable"). Grouped by the proposition
 // each supports, not by page order; ids restating the same proposition
 // (different reader, different wording, different printed occurrence of the
-// same table row) are grouped and will be cited together on whichever
+// same table row) are grouped and cited together on whichever
 // assertion(s) test that proposition.
 //
 // -- G1: standard low-resolution playfield = 320 pixels = 20 words/line
@@ -132,15 +129,11 @@
 //   3-res.c14 (opus, p49): "...up to 16 colors." -> same reason.
 //   3-resolution.c7 (sol, p49): same "16 colors" sentence.
 //
-// -- G3: high-resolution bitplane-count ceiling (p.49) - PENDING RTL --
+// -- G3: high-resolution bitplane-count ceiling (p.49) - graded on
+//    HIRES-BPU-CEILING-MAX-4-PLANES (see IMPLEMENTATION NOTES) --
 //   3-res.c13 (opus, p49): "Note that in high resolution mode, you can have
 //     up to four bitplanes in [the playfield]."
 //   3-resolution.c6 (sol, p49): same sentence.
-//   Whether agnus_bitplanedma itself enforces a BPU<=4 ceiling in hires mode,
-//   or whether this is a software convention the RTL does not check, is
-//   answered after the RTL is open. If the RTL enforces nothing, these two
-//   ids move to the "could not assert" list, not to a green assertion built
-//   on an assumption.
 //
 // -- G6: low-resolution byte counts, 40 bytes/line, 8,000 bytes/bitplane,
 //    Figure 3-7's 40-byte line stride (p.51, 53, 54) --
@@ -161,7 +154,8 @@
 //   3-mem.f02 (opus, p54, figure): Figure 3-7 second row "Mem. location N+40"
 //     -> next display line starts 40 bytes after the previous one.
 //
-// -- PENDING RTL: DIWSTRT/DIWSTOP horizontal placement (p.57, 59) --
+// -- DIWSTRT/DIWSTOP horizontal placement (p.57, 59) - tested on `hde`,
+//    DIW-HORIZONTAL-ONE-PIXEL-RESOLUTION-VIA-HDE --
 //   3-diw.c06 (opus, p57): "[resolution of horizontal] start and stop is one
 //     low resolution pixel."
 //   3-window.c18 (sol, p57): "A starting position of ($81,$2C) centers a
@@ -171,9 +165,6 @@
 //     one low resolution pixel."
 //   3-diw.c24 (opus, p59): "...the starting position, it is interpreted in
 //     low resolution, non-interlaced [mode]." (DIWSTOP encoding convention)
-//   See the Non-goals note above: held pending whether DIWSTRT/DIWSTOP reach
-//   this module's ports at all, beyond the DIWSTOP V (vertical) field already
-//   measured for line-enable count.
 //
 // -- G7: DDFSTRT/DDFSTOP have 4-pixel resolution, unlike DIW's 1-pixel
 //    (p.60), and the "programming resolution of 16 pixels (8 clocks low-res
@@ -194,10 +185,10 @@
 //     4" half.
 //   3-ddf.c06 (opus, p60): "[rounds] to a programming resolution of 16 pixels
 //     (8 clocks in low resolution mode,"
-//   3-ddf.c07 (opus, p60): "4 clocks in high resolution mode)." - cited here
-//     as context; exactly which measurable fact this "16 pixel" figure
-//     describes (as opposed to the 4-pixel field-storage granularity G7
-//     actually asserts) is confirmed, not assumed, once the RTL is read.
+//   3-ddf.c07 (opus, p60): "4 clocks in high resolution mode)." - the
+//     "16 pixel" figure is the word-count-observable granularity measured
+//     by DDF-16-PIXEL-EFFECTIVE-GRANULARITY, distinct from the 4-pixel
+//     field-storage granularity.
 //   3-fetch.c8 (sol, p60): "there is a difference between the value of
 //     window start and data-fetch start of 4.5 color clocks." -> the DISPUTED
 //     number, see below; not asserted here, cited only as the sentence the
@@ -209,7 +200,7 @@
 //    subtracts 8.5 for the low-resolution case ($81/2 - 8.5 = $38) and 4.5
 //    only for the high-resolution case. Both $38 (lores) and $3C (hires) are
 //    independently, un-disputedly given elsewhere on the same page (G7b
-//    below) and match the pre-supplied measurement (DDFSTRT=$38 lores). The
+//    below) and match the measurement above (DDFSTRT=$38 lores). The
 //    undisputed fact is those two standard DDFSTRT values themselves, tested
 //    directly in G7b - not the subtraction formula that supposedly produces
 //    them from DIWSTRT, which is where the printed 4.5-vs-8.5 contradiction
@@ -256,8 +247,9 @@
 //   3-ddf.c13 (opus, p60): "Recall that the hardware resolution of display
 //     window start and stop is twice the hardware resolution of data
 //     fetch:" (lead-in to the formula; the "twice" comparison itself is a
-//     DIW-vs-DDF field-width statement, held pending alongside the DIW
-//     cluster above, not re-asserted from the formula's own test)
+//     DIW-vs-DDF field-width statement, graded with the DIW cluster above
+//     on DIW-HORIZONTAL-ONE-PIXEL-RESOLUTION-VIA-HDE, not re-asserted from
+//     the formula's own test)
 //   3-ddf.c14 (opus, p60): "DDFSTRT = DDFSTOP - (8 * (word count - 1)) for
 //     low resolution"
 //   3-ddf.c15 (opus, p60): "DDFSTRT = DDFSTOP - (4 * (word count - 2)) for
@@ -268,8 +260,8 @@
 //   3-fetch.c12 (sol, p60): low-resolution formula, restated in words.
 //   3-fetch.c13 (sol, p60): high-resolution formula, restated in words.
 //
-// -- G19: end-of-line condition and modulo (p.61, 81) - already covered by
-//    the pre-supplied BPL1MOD 0/40/80 -> 40/80/120 measurement --
+// -- G19: end-of-line condition and modulo (p.61, 81) - the BPL1MOD
+//    0/40/80 -> 40/80/120 measurement above --
 //   3-mod.c04 (opus, p61): "the end-of-line condition is reached (defined by
 //     the data-fetch register, [DDFSTOP])"
 //   3-mod.f02 (opus, p61, figure): Figure 3-10 note, "Screen data fetch stops
@@ -284,20 +276,19 @@
 //     continuously incremented to point [to the next word]."
 //   3-vscroll.c9 (sol, p81): "For a normal-sized, low resolution display in
 //     which the modulo is 0, the pointers would be incremented by 40 bytes
-//     each time." - the zero-modulo case of the same fact, already the
-//     BPL1MOD=0 -> 40-byte-step point on the pre-supplied measurement curve.
+//     each time." - the zero-modulo case of the same fact, the BPL1MOD=0 ->
+//     40-byte-step point on the measurement above.
 //
-// -- PENDING RTL: interlaced-field line stride (p.62) --
+// -- interlaced-field line stride (p.62) - not assertable: this module has
+//    no interlace/field-parity port (see IMPLEMENTATION NOTES, NO INTERLACE
+//    PORT) --
 //   3-mod.c15 (opus, p62): Figure/example, "Line 3 START+80" - in a
 //     320-pixel-wide interlaced picture, successive displayed lines of one
 //     field are 80 bytes apart (double the non-interlaced 40-byte stride).
-//   Whether agnus_bitplanedma's own ports carry interlace/field information,
-//   or whether interlaced addressing is assembled one level up (in `agnus`,
-//   from this module's plain per-line address plus a field-parity offset),
-//   is an RTL question.
 //
 // -- G20: dual-playfield hires bitplane-per-playfield ceiling (p.68) -
-//    PENDING RTL --
+//    fetch-side split measured, ids declined (see IMPLEMENTATION NOTES,
+//    DUAL-PLAYFIELD SPLIT) --
 //   3-dual-planes.c4 (sol, p68): "In high resolution mode, you can have up
 //     to two bitplanes in each playfield -- bitplanes 1 and 3 in playfield
 //     1 and bitplanes 2 and 4 in playfield 2."
@@ -305,13 +296,7 @@
 //     two bitplanes in each playfield." (same sentence, opening clause)
 //   This restates G3's total-of-four hires ceiling (p.49) split by
 //   playfield, and additionally names which physical bitplane goes to
-//   which playfield. Whether agnus_bitplanedma carries any
-//   playfield-assignment concept at all (DBLPF, or a signal distinguishing
-//   which fetched plane is "playfield 1" versus "playfield 2"), as opposed
-//   to only a total bitplane count, is answered after the RTL is open. If
-//   the RTL carries no such signal, these two ids move to the "could not
-//   assert" / record list, not to a green assertion built on an
-//   assumption.
+//   which playfield.
 //
 // -- G10: dual-playfield scrolling shares one DDFSTRT/DDFSTOP pair; scrolling
 //    one playfield costs one extra word (lores) or two (hires); holding the
@@ -629,156 +614,29 @@
 //     from RAM by the bitplane address pointers described above."
 //   A-bplxdat.c01 (sol, p272): same sentence, second reading.
 //
-// PLANNED ASSERTIONS (names, id groups and intent only; no RTL line numbers,
-// no fixture code below this comment block - added in the next commit, after
-// agnus_bitplanedma.v is opened for the first time):
-//
-//  0. FIXTURE-DELIVERS-KNOWN-VALUES-IN-ORDER [no page, harness self-proof]:
-//     drive several DISTINCT known data words into the fetch path and show
-//     each one is observed at the port carrying fetched data, IN THE ORDER
-//     fetched - the precondition every other assertion below depends on.
-//     Cites G18 (A-bpldat.c4, A-bplxdat.c01) as the manual's own statement of
-//     what that data path is for.
-//
-//  1. LORES-STANDARD-20-WORDS-320-PIXELS (G1): DDFSTRT=$38/DDFSTOP=$D0/BPU=1
-//     lores gives 20 fetches (already the pre-supplied measurement,
-//     re-verified here as this package's own control case and cited on the
-//     manual claims it actually proves).
-//
-//  2. HIRES-STANDARD-40-WORDS-640-PIXELS (G2): DDFSTRT=$3C/DDFSTOP=$D4/BPU=1
-//     hires gives 40 fetches - the hires half G1's control does not cover,
-//     same measurement basis (word count over one line).
-//
-//  3. LOW-RES-40-BYTES-8000-BYTES-PER-BITPLANE (G6): re-expresses assertion
-//     1's word count as bytes (20 words x 2 = 40 bytes/line; x200 lines =
-//     8,000), and checks the Figure 3-7 line-to-line stride is exactly 40
-//     bytes (BPL1MOD=0 case of the pre-supplied BPL1MOD measurement).
-//
-//  4. HIRES-DOUBLE-BYTES-32000-TWO-PLANES (G2's byte-count ids, G13):
-//     assertion 2's hires word count as bytes (80/line), and the p.76
-//     bytes*lines*planes formula checked directly: BPU=2 hires, 200 lines,
-//     total fetched bytes == 32,000.
-//
-//  5. DDF-FIELD-GRANULARITY-RAW-BIT0-IGNORED (G7): two DDFSTRT writes whose
-//     raw 16-bit values differ only in bit 0 produce IDENTICAL fetch
-//     behaviour; two writes differing by exactly 2 in raw value produce
-//     DIFFERENT behaviour (one field step) - the concrete, RTL-measurable
-//     shape of "4-pixel resolution" / "pixel 0 = position 0, pixel 4 =
-//     position 1" at this boundary, derived from the write-decode fact
-//     already in the boundary evidence.
-//
-//  6. DDFSTRT-DDFSTOP-WORD-COUNT-FORMULA (G7c): for at least one NON-standard
-//     word count in each resolution, compute the expected DDFSTRT from
-//     DDFSTOP via the printed formula (DDFSTRT = DDFSTOP - 8*(n-1) lores /
-//     DDFSTOP - 4*(n-2) hires), write it, and confirm the ACTUAL fetched
-//     word count equals n - testing the formula's own arithmetic beyond the
-//     one pre-measured standard case, entirely within the DDF domain (no
-//     disputed DIW offset needed).
-//
-//  7. STANDARD-DDFSTRT-DDFSTOP-VALUES (G7b): DDFSTRT=$0038/$003C and
-//     DDFSTOP=$00D0/$00D4 for low/high resolution are exactly the values
-//     that produce assertions 1 and 2's word counts - cites the standalone
-//     "the normal ... DDFSTRT/DDFSTOP is (...)" sentences directly, on the
-//     same runs as 1 and 2 rather than a separate run.
-//
-//  8. HW-LIMIT-DDFSTRT-LEFT-0018 / 9. HW-LIMIT-DDFSTOP-RIGHT-00D8 (G14):
-//     DDFSTRT below $18 clamps to the $18 behaviour (no further leftward
-//     fetch growth); DDFSTOP above $D8 clamps to the $D8 behaviour - the
-//     already-measured "$00/$FE gives at most 25" fact, attributed to which
-//     specific limit does the clamping, tested one at a time.
-//
-//  10. MAX-WORDS-25-LORES-49-HIRES (G14): at the hardware limits themselves
-//     ($18/$D8), lores yields exactly 25 words and hires yields exactly 49 -
-//     the two "maximum...words fetched" figures Table 3-14 states as flat
-//     numbers, not just "at most" from the wider-than-limit measurement.
-//
-//  11. MAX-DISPLAY-PIXELS-368-LORES (G14): at the lores hardware limit, 25
-//     words are fetched but Table 3-14 states max DISPLAY pixels as 368 (23
-//     words' worth), one word short of 25 - checked as its own fact (two
-//     numbers Table 3-14 gives that are NOT the same figure restated twice).
-//
-//  12. HSCROLL-EXTRA-WORD-21-FOR-20 (G16): DDFSTRT=$30 (one word earlier
-//     than the standard $38), DDFSTOP unchanged at $D0, lores, BPU=1 yields
-//     21 fetches where the unscrolled case (assertion 1) yields 20 - the
-//     "+1 word / 42 bytes" and "DDFSTOP unchanged" claims together, and
-//     (via the addresses fetched) the Figure 3-24/26 "one extra word placed
-//     before/left of the normal fetch, at START" placement.
-//
-//  13. DUAL-PLAYFIELD-SHARED-DDF-REGISTERS (G10): both playfields' bitplanes
-//     (odd/even BPU split) fetched under ONE DDFSTRT/DDFSTOP pair still
-//     produce the single combined word-count assertion 1/2's formula
-//     predicts for the total BPU - direct test of "only one data-fetch
-//     start/stop register... shared by both playfields", distinct from
-//     assertion 12's single-playfield scroll case.
-//
-//  14. END-OF-LINE-MODULO-APPLIED-AFTER-LAST-WORD (G19): re-cites the
-//     pre-supplied BPL1MOD 0/40/80 -> 40/80/120 measurement under its
-//     manual claims (DDFSTOP, not DDFSTRT, defines the end-of-line point
-//     where the modulo is added; the modulo changes the NEXT line's start,
-//     never the CURRENT line's own word count) - a control showing modulo
-//     changes address stride without changing fetched word count is the
-//     comparison basis.
-//
-//  15. WIDER-PLAYFIELD-FIRST-LINE-UNCHANGED (G11): BPL1MOD=40 (wider RAM
-//     line than displayed line) still fetches the SAME 20 words at the SAME
-//     addresses ($0..$1F3E, i.e. START..START+38) as BPL1MOD=0 for line 1 -
-//     Figure 3-15's point that a nonzero modulo changes line 2 onward, not
-//     line 1 itself.
-//
-//  16. BITPLANE-COUNT-x-BYTES-x-LINES-FORMULA [control, no new page beyond
-//     G13/A-ddf.c03/c09]: total fetched bytes over N lines scales linearly
-//     with BPU (1 vs 2 vs 4 planes, same DDFSTRT/DDFSTOP) - the general form
-//     of the p.76 arithmetic, with assertion 4 as its one concretely-cited
-//     (80*200*2=32,000) instance.
-//
 // MEASUREMENT RECORDS (not assertions - printed manual errors this package
-// must not turn into red RTL findings):
+// does not turn into red RTL findings):
 //   - The p.60 4.5-vs-8.5 color-clock offset (3-ddf.c08/c09/c10, 3-fetch.c8):
-//     whichever of {4.5, 8.5} actually produces DDFSTRT=$0038 from
-//     DIWSTRT=$81 in this RTL, if it can be observed at all at this
-//     boundary (DIWSTRT is not named in the given boundary evidence), is
-//     recorded as a measurement alongside this note - not asserted as "the"
-//     correct manual value, because the manual itself does not agree with
-//     itself on it.
-//   - Table 3-8's PAL byte-per-bitplane counts: PER THE BUILD BRIEF, the
-//     printed manual gives 8,192 / 16,384 / 16,384 / 32,768 where the
-//     arithmetic gives 10,240 / 20,480 / 20,480 / 40,960 (Table 3-7's NTSC
-//     figures rounded up to powers of two). No claim id in this package's
-//     239 quotes Table 3-8's PAL rows directly (the claims corpus for this
-//     package is entirely NTSC/generic, per the ids above) - if the fixture
-//     ends up exercising a PAL byte-per-bitplane configuration for any other
-//     reason, its result is recorded as a measurement, never asserted
-//     against the printed 8,192/16,384/16,384/32,768 figures.
+//     the manual does not agree with itself on the number, so 3-ddf.c09,
+//     3-ddf.c10 and 3-fetch.c8 are declined on a RECORDED line, and the
+//     fetch-to-window lead this boundary does show is printed as
+//     DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION (MEASURED, not graded).
+//   - Table 3-8's PAL byte-per-bitplane counts: printed p.53 gives 8,192 /
+//     16,384 / 16,384 / 32,768 where the arithmetic gives 10,240 / 20,480 /
+//     20,480 / 40,960 (Table 3-7's NTSC figures rounded up to powers of
+//     two). No claim id in this package's 239 quotes Table 3-8's PAL rows
+//     directly (the claims corpus for this package is entirely
+//     NTSC/generic, per the ids above), and no assertion here grades a PAL
+//     byte-per-bitplane figure.
 //
-// PENDING, to be resolved only after the RTL is read (moved to a real
-// assertion above, or to "could not turn into an assertion" in this
-// package's final report - never silently dropped):
-//   - G3 (3-res.c13, 3-resolution.c6): does agnus_bitplanedma enforce a
-//     BPU<=4 ceiling in hires mode, or is this a software convention this
-//     RTL does not check?
-//   - DIW cluster (3-diw.c06, 3-diw.c24, 3-window.c18, 3-window.c9): do
-//     DIWSTRT/DIWSTOP's horizontal fields reach this module's ports at all?
-//   - Interlace cluster (3-mod.c15): does this module carry any
-//     interlace/field-parity signal, or is interlaced addressing assembled
-//     one level up?
-//   - 3-ddf.c13/3-fetch.c11's "twice the hardware resolution" DIW-vs-DDF
-//     comparison: testable only if the DIW cluster above turns out to be in
-//     scope.
-//
-// No RTL has been opened yet to write this comment block. Every port name,
-// register offset and bit-slice fact above (DDFSTRT_REG/DDFSTOP_REG,
-// ddfstrt[8:2]<=data_in[7:1], the $18/$D8 limits, ddfena) comes from this
-// package's own build brief (PACKAGE.md), and every numeric fetch-count/
-// address/line-count fact comes from the ALREADY MEASURED section above,
-// itself handed to this package rather than re-derived. The fixture,
-// Harness helpers and assertion bodies are added in the next commit, after
-// agnus_bitplanedma.v is read for the first time.
+// The port names, register offsets and bit-slice facts above
+// (DDFSTRT_REG/DDFSTOP_REG, ddfstrt[8:2]<=data_in[7:1], the $18/$D8
+// limits, ddfena) are this package's boundary evidence (PACKAGE.md); the
+// numeric fetch-count/address/line-count facts are the ALREADY MEASURED
+// section above.
 
 // ============================================================================
-// IMPLEMENTATION NOTES (added in this commit, after agnus_bitplanedma.v was
-// read in full for the first time - the specification comment above this
-// point was committed on its own first, per the chapter's spec-before-RTL
-// gate; see this package's own git history, commit bdb8f55).
+// IMPLEMENTATION NOTES (from agnus_bitplanedma.v).
 //
 // PORTS (agnus_bitplanedma.v:29-47): clk, clk7_en, reset, harddis, aga, ecs,
 // a1k, sof, dmaena, vpos[10:0], hpos[8:0] are inputs; hde, dma, address_out
@@ -793,12 +651,11 @@
 // NO DATA-VALUE PORT. This module computes WHEN a fetch happens (`dma`),
 // WHERE it reads from (`address_out`) and WHICH BPLxDAT register receives it
 // (`reg_address_out`) - it does not read chip RAM itself and has no fetched
-// -word output. The "known value" this fixture can feed in and watch arrive,
-// per this package's harness-self-proof requirement, is therefore the
-// PER-PLANE POINTER, not a data word: assertion 1 below programs four
-// distinct pointers (one per bitplane) and confirms each one's OWN address
-// stream arrives, in order, at its OWN reg_address_out slot - the same
-// "silently dead data path" failure mode the requirement warns about would
+// -word output. The "known value" this fixture can feed in and watch arrive
+// is therefore the PER-PLANE POINTER, not a data word:
+// HARNESS-PROVES-PLANE-ADDRESS-ORDERING programs four distinct pointers (one
+// per bitplane) and confirms each one's OWN address stream arrives, in
+// order, at its OWN reg_address_out slot - a silently dead data path would
 // show up here as every plane reading back the same address, or addresses
 // arriving out of order.
 //
@@ -807,7 +664,7 @@
 // FMODE=9'h1fc, DIWSTRT=9'h08E, DIWSTOP=9'h090, bitplane pointer base
 // =9'h0E0. Every write is captured unconditionally on the matching
 // reg_address_in on any clk7_en tick - no bus arbitration to retry, unlike
-// the top-level `agnus` the PKG-AGNUS-DMACON package had to contend with.
+// the top-level `agnus`.
 // write_reg() below is a single one-tick pulse plus a clearing tick.
 //
 // BITPLANE POINTERS (l.217-242): BPLPTBASE_REG[8:5] decodes the 0xE0-0xFE
@@ -818,13 +675,13 @@
 // <= data_in[15:1] (address bits 15:1) - together a 20-bit word-granular
 // byte address (address_out[20:1], bit 0 implied 0). Auto-increment
 // (l.483-493): +1 to address_out[20:1] per fetch at FMODE=0 (bp_fmode0), i.e.
-// +2 bytes - matches the pre-supplied "address_out stepping 2 bytes"
-// measurement exactly, not re-derived by assumption.
+// +2 bytes - matches the ALREADY MEASURED "address_out stepping 2 bytes"
+// exactly, not re-derived by assumption.
 //
 // reg_address_out (l.496-507): a fixed lookup, plane 0-7 -> 0x88-0x8F (this
 // module's OWN 8-bit reg_address_out field; *2 gives the real BPL1DAT..
-// BPL8DAT byte address, so plane 0 -> 0x110, matching the pre-supplied
-// "reg_address_out=$110" measurement for BPU=1's one active plane).
+// BPL8DAT byte address, so plane 0 -> 0x110, matching the ALREADY MEASURED
+// "reg_address_out=$110" for BPU=1's one active plane).
 //
 // DDFSTRT/DDFSTOP GRANULARITY (l.247-259, 336-354): write decode is
 // ddfstrt[8:2] <= data_in[7:1] - data_in bit 0 is never read, so a DDFSTRT
@@ -835,15 +692,14 @@
 // 1'b0} - note the trailing 1'b0: the compared value's own LSB is hardwired,
 // so a match can only occur on an EVEN hpos[8:1], which is what "4-pixel
 // resolution" cashes out to at this boundary once hpos's own units are
-// pixel-pairs (assertion 5's DIWSTRT compare, l.171 `hpos==cur_hdiwstrt`,
+// pixel-pairs (the hde block's DIWSTRT compare, l.171 `hpos==cur_hdiwstrt`,
 // uses the FULL hpos value with no such masking - directly confirming
 // "twice the hardware resolution" (3-ddf.c13/3-fetch.c11) as a literal 2x
 // in raw register LSB significance, not merely restated from the pixel-unit
 // framing).
 //
-// ecs GATES ddfstrt[2], NOT H3 and NOT hires - corrected here after
-// NM-HRM-006 (24.09.2026) found this package had misread which stored bit
-// is H3. Read literally, not assumed: the position compare is
+// ecs GATES ddfstrt[2], NOT H3 and NOT hires (NM-HRM-006). Read literally,
+// not assumed: the position compare is
 // `{ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0}`. H3 is register bit 2 of the raw
 // DDFSTRT/DDFSTOP word (Appendix A p.277, "bit 2 = H3"); the write decode
 // ddfstrt[8:2]<=data_in[7:1] means register bit 2 (data_in[2]) is STORED as
@@ -869,11 +725,12 @@
 // cur_hdiwstop in the file (there is exactly one: the hde block at the
 // top). So the p.57/59 DIW-horizontal claims ARE testable at this
 // boundary, but only via `hde`, and are NOT part of this module's DDF
-// fetch-count story - assertion 7 tests them on `hde` specifically, kept
-// separate from the word-count assertions. The `cur_hdiwstrt`/
-// `cur_hdiwstop` values used for the comparison are only committed at a
-// vpos==0 edge from a "best window seen last field" tracker (l.150-169) -
-// assertion 7's fixture runs two full frames with DIWSTRT/DIWSTOP held
+// fetch-count story - DIW-HORIZONTAL-ONE-PIXEL-RESOLUTION-VIA-HDE tests
+// them on `hde` specifically, kept separate from the word-count
+// assertions. The `cur_hdiwstrt`/`cur_hdiwstop` values used for the
+// comparison are only committed at a vpos==0 edge from a "best window seen
+// last field" tracker (l.150-169) - its fixture (hde_rising_edge) runs two
+// full frames with DIWSTRT/DIWSTOP held
 // constant so this has latched before any hde observation is trusted.
 //
 // NO INTERLACE PORT. There is no `interlace`/field-parity input on this
@@ -883,20 +740,14 @@
 // (l.474-481, explicitly commented "adjusted for bitplane scandoubling"),
 // a display-side line-doubling feature, not genuine interlaced-field
 // addressing. 3-mod.c15 (p.62, the interlaced Line-3-at-START+80 example)
-// is therefore reported as NOT ASSERTABLE at this boundary in the final
-// report, not silently dropped: this module has nothing to assert it
-// against.
-//
-// CORRECTED - an earlier version of this note said the opposite of both
-// points below and was titled "NO HIRES BPU CEILING"; kept here with its
-// correction on the record rather than silently rewritten.
+// is therefore NOT ASSERTABLE at this boundary: this module has nothing to
+// assert it against.
 //
 // HIRES BPU CEILING, VIA THE PLANE ENCODER, NOT VIA `bpu` ITSELF. `bpu`
 // (l.298-300) is computed from bplcon0_delayed bits alone - for non-AGA it
 // is bplcon0_delayed[2:0], with the single special case that 3'b111 forces
-// bpu=4. The prior version of this note called that special case "the real
-// OCS/ECS 'BPU=7 code means dual-playfield 4+4' encoding" - WRONG against
-// the manual: Table 3-5 (p.48) and the BPLCON0 bit summary (p.90) both list
+// bpu=4. That special case is not a manual-defined "BPU=7 means
+// dual-playfield 4+4" encoding: Table 3-5 (p.48) and the BPLCON0 bit summary (p.90) both list
 // code 111 as "Value not used" / "not used", not as a defined dual-playfield
 // meaning; the sixth bitplane's dual-playfield/HAM use (p.48's own note) is
 // carried by code 110 (BPU=6), not 111. `hires` is correctly never read in
@@ -931,9 +782,9 @@
 // 3-dual.c19/c20).
 //
 // MUTATION LOG: see the bottom of this file, after main(). Recorded there
-// so it can quote this file's own assertion labels; every entry was
-// actually run - edited, rebuilt under WSL/Verilator (`make test`), run,
-// reverted, rebuilt clean - by this agent, not predicted.
+// so it can quote this file's own assertion labels; every entry was run -
+// edited, rebuilt under WSL/Verilator (`make test`), run, reverted, rebuilt
+// clean - not predicted.
 // ============================================================================
 
 #include <cstdint>
@@ -959,7 +810,7 @@ constexpr uint16_t BPL2MOD_ADDR = 0x10A;
 constexpr uint16_t BPLCON0_ADDR = 0x100;
 constexpr uint16_t FMODE_ADDR   = 0x1FC;
 
-// Standard values, p.60/p.80 (Table 3-14) and the pre-supplied measurement.
+// Standard values, p.60/p.80 (Table 3-14) and the ALREADY MEASURED values.
 constexpr uint16_t DDFSTRT_LORES_STD = 0x0038;
 constexpr uint16_t DDFSTOP_LORES_STD = 0x00D0;
 constexpr uint16_t DDFSTRT_HIRES_STD = 0x003C;
@@ -1034,7 +885,7 @@ public:
 
     // Standard setup shared by most assertions: DIW centered per p.57's
     // ($81,$2C) example, dmaena on, harddis off (hardware limits enforced,
-    // not bypassed), FMODE=0 (the pre-supplied measurement's own basis).
+    // not bypassed), FMODE=0 (the ALREADY MEASURED values' own basis).
     void setup_standard(bool ecs_on = true) {
         dut->ecs = ecs_on ? 1 : 0;
         write_reg(DIWSTRT_ADDR, DIWSTRT_STD);
@@ -1082,14 +933,11 @@ LineResult run_to_line(Harness& h, int target_vpos, int hpos_max = 456) {
 // vdiwena (which only goes active once vpos crosses vdiwstrt, l.207-215)
 // and let pipelined signals (bplcon0_delayed, dmaena_delayed, ...) settle,
 // before a fresh pointer write is trusted to be "the first fetch this
-// plane makes" rather than one more step of a run already under way. Found
-// necessary empirically: bitplane pointers auto-increment on EVERY dma
-// cycle from the moment vdiwena goes active, so a pointer written once
-// before a long run_to_line sweep is no longer at its written value by the
-// time the target line is reached (caught by HARNESS-PROVES-PLANE-ADDRESS-
-// ORDERING's first draft, which compared a 20-lines-later address against
-// the originally-written one and failed - see the MUTATION LOG's own
-// account of this, further down, for the exact numbers).
+// plane makes" rather than one more step of a run already under way.
+// Needed because bitplane pointers auto-increment on EVERY dma cycle from
+// the moment vdiwena goes active, so a pointer written once before a long
+// run_to_line sweep is no longer at its written value by the time the
+// target line is reached.
 void prime_to_line(Harness& h, int through_vpos, int hpos_max = 456) {
     for (int v = 0; v <= through_vpos; ++v) {
         h.dut->vpos = v;
@@ -1126,8 +974,7 @@ LineResult run_single_line(Harness& h, int this_vpos, int hpos_max = 456) {
 // held constant, the programmed window is captured as "best" on the first
 // ordinary line after frame 1's own vpos==0 (whose OWN commit reads the
 // power-up-zero best, not yet useful), and committed to cur_* at frame 2's
-// vpos==0 - confirmed empirically, not assumed (see the MUTATION LOG's own
-// account of this measurement).
+// vpos==0 - measured, not assumed.
 int hde_rising_edge(uint16_t diwstrt_raw, int hpos_max = 456) {
     Harness h;
     h.write_reg(DIWSTRT_ADDR, diwstrt_raw);
@@ -1512,9 +1359,7 @@ int main(int argc, char** argv) {
     // compare DOES gate by `ecs` - `ddfstrt[2] & ecs` - is STORED bit
     // ddfstrt[2], which holds register bit 1 (data_in[1]): outside the
     // manual's H8-H3 bit map entirely ("Bits 1-0 - not used", p.91/277),
-    // and NOT H3 - corrected here (NM-HRM-006, 24.09.2026) after this
-    // package's own earlier draft called ddfstrt[2] "H3" and stimulated
-    // register bit 1 ($38/$3A, $3C/$3E) instead. This tests H3 itself -
+    // and NOT H3 (NM-HRM-006). This tests H3 itself -
     // toggling ONLY register bit 2 ($0038 -> $003C, which differ in raw
     // value by exactly 0x0004 and nothing else), the SAME pair in both
     // lores and hires so any lores/hires difference in the result is H3's
@@ -1523,8 +1368,7 @@ int main(int argc, char** argv) {
     // timing (DDF-16-PIXEL-EFFECTIVE-GRANULARITY already showed total WORD
     // COUNT cannot show a single-step change - only the first fetch's exact
     // hpos timing can). A companion MEASURED note below records register
-    // bit 1's own (ecs-gated, not H3's) effect with the SAME $0038/$003A
-    // pair this assertion no longer uses for H3.
+    // bit 1's own (ecs-gated, not H3's) effect with the $0038/$003A pair.
     {
         auto first_hpos = [&](bool ecs_on, bool hires_on, uint16_t ddfstrt) {
             Harness h;
@@ -1544,9 +1388,7 @@ int main(int argc, char** argv) {
 
         // The ORACLE is the manual's own claim: H3 changes timing ONLY in
         // hires mode, REGARDLESS of ecs - i.e. shifts in both hires cases,
-        // shifts in NEITHER lores case. Unchanged from this assertion's
-        // earlier draft - only the stimulus above (which bit is toggled)
-        // was wrong.
+        // shifts in NEITHER lores case.
         bool matches_manual =
             (hi_ecs1_a != hi_ecs1_b) && (hi_ecs0_a != hi_ecs0_b) &&
             (lo_ecs1_a == lo_ecs1_b) && (lo_ecs0_a == lo_ecs0_b);
@@ -1682,7 +1524,7 @@ int main(int argc, char** argv) {
     {
         // Low resolution: DDFSTRT = DDFSTOP - 8*(n-1). Pick n=15 (not the
         // n=20 standard case) to test the formula's own arithmetic, not
-        // just repeat the pre-supplied measurement.
+        // just repeat the ALREADY MEASURED standard case.
         constexpr int kLoresN = 15;
         uint16_t ddfstrt_lores = static_cast<uint16_t>(DDFSTOP_LORES_STD - 8 * (kLoresN - 1));
         Harness hl;
@@ -1854,19 +1696,18 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- MAX-WORDS-49-HIRES-ONE-WORD-AT-LIMIT: MEASUREMENT, NOT ASSERTION (p.80) ----------------
-    // NM-HRM-007 (24.09.2026): DECLINED here after an independent review
-    // found this assertion's own pass condition self-contradictory. It
-    // read `at_49==49 && at_49!=at_48 && at_49!=at_50`, where at_50 (the
-    // p.60 formula's own DDFSTRT for target n=50, DDFSTOP_HW_LIMIT-4*48 =
-    // $0018) is EXACTLY DDFSTRT_HW_LIMIT - the SAME stimulus
-    // MAX-WORDS-49-HIRES-AT-HW-LIMITS above already grades as
+    // NM-HRM-007: DECLINED, not graded. A pass condition
+    // `at_49==49 && at_49!=at_48 && at_49!=at_50` would contradict
+    // MAX-WORDS-49-HIRES-AT-HW-LIMITS: at_50 (the p.60 formula's own
+    // DDFSTRT for target n=50, DDFSTOP_HW_LIMIT-4*48 = $0018) is EXACTLY
+    // DDFSTRT_HW_LIMIT - the SAME stimulus that assertion grades as
     // `hires_max==49`. On any RTL where that assertion passes
-    // (hires_max==49), at_50 here would also measure 49, so this
-    // assertion's own `at_49 != at_50` conjunct would require 49 != 49 -
-    // false. No RTL could ever make both assertions green at once. Its
-    // premise - that n=49 is individually reachable at some OTHER
-    // DDFSTRT, distinguishable from both n=48 and n=50 - is not a claim
-    // the printed sentence makes: 'In high resolution mode the maximum
+    // (hires_max==49), at_50 here would also measure 49, so the
+    // `at_49 != at_50` conjunct would require 49 != 49 - false. No RTL
+    // could ever make both green at once. The premise - that n=49 is
+    // individually reachable at some OTHER DDFSTRT, distinguishable from
+    // both n=48 and n=50 - is not a claim the printed sentence makes:
+    // 'In high resolution mode the maximum
     // here is 49 words, because the rightmost limit remains ($D8) and
     // only one word is fetched at this limit' (p.80) fixes 49 as the
     // maximum AT EXACTLY DDFSTRT=$0018/DDFSTOP=$00D8 (MAX-WORDS-49-HIRES-
@@ -1903,13 +1744,13 @@ int main(int argc, char** argv) {
             "EXACTLY DDFSTRT=$0018/DDFSTOP=$00D8 - MAX-WORDS-49-HIRES-AT-"
             "HW-LIMITS' own claim, graded above. It says nothing about the "
             "count at any OTHER DDFSTRT with DDFSTOP=$00D8 held fixed. "
-            "This assertion's former premise needed n=49 individually "
+            "Grading it would need n=49 individually "
             "reachable at such an OTHER position, distinguishable from "
             "both n=48 and n=50 - not a claim the sentence makes, and "
-            "self-contradictory besides: its own n=50 sample IS the "
+            "self-contradictory besides: the n=50 sample IS the "
             "$18/$D8 hardware-limit stimulus MAX-WORDS-49-HIRES-AT-HW-"
             "LIMITS already grades, so on any RTL where that assertion "
-            "measures 49 (its own pass condition), this one's required "
+            "measures 49 (its own pass condition), a required "
             "at_49!=at_50 would demand 49!=49 - the two could never both "
             "be green. 3-max-window.c14.");
     }
@@ -2136,13 +1977,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- HIRES-BPU-CEILING-MAX-4-PLANES (p.49) ----------------
-    // This package's own prior "NO HIRES BPU CEILING" note had read only
-    // the `bpu` register term (l.300) and missed the plane encoder
-    // (l.457-461):
+    // The ceiling is not in the `bpu` register term (l.300) but in the
+    // plane encoder (l.457-461):
     // in hires+FMODE0 the encoder itself is `{3'b000,~ddfseq[0],~ddfseq[1]}`
     // - two bits wide, so `plane` can never reach 4 or 5 no matter what
-    // `bpu` says. See this file's IMPLEMENTATION NOTES above main() for the
-    // corrected note and the p.48/p.90 manual correction that went with it.
+    // `bpu` says. See this file's IMPLEMENTATION NOTES above main(),
+    // including what p.48/p.90 say about BPU code 111.
     {
         Harness hh;
         hh.setup_standard();
@@ -2236,7 +2076,7 @@ int main(int argc, char** argv) {
         "3-dual.c18.");
 
     // ---------------- DDF-FETCH-LEADS-WINDOW-BY-RESOLUTION (p.60) - MEASURED, not graded ----------------
-    // 3-ddf.c10 is withdrawn to the RECORDED line below, not graded here.
+    // 3-ddf.c10 is declined on the RECORDED line below, not graded here.
     // At BPU=1 the first DMA cycle is plane 1's own slot, and Figure 6-9
     // (p.195) places that slot at $3F for BOTH the standard lores DDFSTRT
     // $38 (slot sequence _ 4 6 2 _ 3 5 1) and the standard hires DDFSTRT
@@ -2321,31 +2161,26 @@ int main(int argc, char** argv) {
         "which is what was measured. p.60's 8.5/4.5 subtract from "
         "DDFSTRT itself, not from the first DMA cycle's position, so "
         "they are not the same quantity as the sub-claim's 'offset'. "
-        "3-fetch.c8 (sol twin, already cited on DDF-16-PIXEL-EFFECTIVE-"
-        "GRANULARITY's PASS line for a DIFFERENT proposition - that "
-        "assertion does not test the 4.5 figure) is added here rather "
-        "than left implying it was tested. 3-ddf.c09, 3-ddf.c10, "
-        "3-fetch.c8.");
+        "3-fetch.c8 (the sol twin of the same 4.5-color-clock sentence) "
+        "is declined with them; no assertion here tests the 4.5 figure. "
+        "3-ddf.c09, 3-ddf.c10, 3-fetch.c8.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
 
 // ============================================================================
-// MUTATION LOG (10.09.2026). Every entry below was actually applied by this
-// agent - edited into this file, rebuilt under WSL/Verilator (`make test`),
-// run, the PASS/FAIL line for the named assertion read from real output
-// (quoted verbatim below, not predicted), then reverted and rebuilt clean
-// before the next entry. A final clean build after the last revert reproduced
-// this package's true baseline exactly: "17 passed, 2 failed" - the SAME two
-// failures (MAX-WORDS-49-HIRES-AT-HW-LIMITS, DDFSTRT-H3-BIT-RESPECTED-ONLY-
-// IN-HIRES-MODE) as before any mutation was applied, confirmed by diffing the
-// full PASS/FAIL line set, not by re-reading the two familiar labels alone.
+// MUTATION LOG. Each entry below was applied as an edit to this file,
+// rebuilt under WSL/Verilator (`make test`), run, the PASS/FAIL line for the
+// named assertion read from the output (not predicted), then reverted and
+// rebuilt clean before the next entry; the baseline's two failures
+// (MAX-WORDS-49-HIRES-AT-HW-LIMITS, DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-
+// MODE) are unchanged by the reverts.
 //
 // Every mutation is a STIMULUS change - what the module is asked to do - not
-// an ORACLE change; no expected value in any checks.expect() call was ever
-// touched. Each mutation was applied, run and reverted as its own isolated
-// build; no two assertions were mutated in the same build.
+// an ORACLE change; no expected value in any checks.expect() call is
+// touched. Each mutation is applied, run and reverted as its own isolated
+// build; no two assertions are mutated in the same build.
 //
 // 1. HARNESS-PROVES-PLANE-ADDRESS-ORDERING: BPU dropped from 4 to 3 in the
 //    setup write. Result: plane 3 (reg_address_out=0x8B) never appears, so
@@ -2429,8 +2264,7 @@ int main(int argc, char** argv) {
 //        compared `ddfstrt[8:3]` group in the position compare (l.339,349)
 //        - gated by neither `ecs` nor `hires`. (The compare's ACTUAL
 //        `ecs`-gated term, `ddfstrt[2] & ecs`, is register bit 1 - outside
-//        the manual's H8-H3 bit map, not H3; this package's own earlier
-//        draft mislabeled it H3, corrected after NM-HRM-006 measured
+//        the manual's H8-H3 bit map, not H3; NM-HRM-006 measures
 //        $38->$3C against $38->$3A directly on this fixture.) Because H3 is
 //        unconditional, any H3-only-differing DDFSTRT pair shifts the
 //        first-fetch hpos in EVERY ecs/hires combination this assertion can
@@ -2443,9 +2277,9 @@ int main(int argc, char** argv) {
 //    reaches planes 5-6 (lores_reaches_4_and_5 false), so the overall
 //    condition failed even though the hires half was untouched - the
 //    control is not a decoration, this assertion's own pass condition
-//    depends on it. Reverted; rebuilt clean. (A more direct mutation - open
-//    the hires ceiling itself via FMODE - was tried first and does not
-//    apply here: FMODE only latches when `aga` is set (l.307,
+//    depends on it. Reverted; rebuilt clean. (A more direct mutation -
+//    opening the hires ceiling itself via FMODE - does not apply here:
+//    FMODE only latches when `aga` is set (l.307,
 //    `else if (aga && ...) fmode <= data_in`), and `aga` is 0 for the whole
 //    of this Harness, always - checked, not assumed; grepped the file, one
 //    hit, in the constructor. AGA-mode fetch behaviour is NOT EXERCISED
