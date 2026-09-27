@@ -6,7 +6,7 @@
 //   (one Verilator build, this module only). This is deliberately NOT about
 //   whether the counting/blanking/sync VALUES this module produces match the
 //   manual's timing numbers -- that is hrm/ch3-beam-counters-and-
-//   blanking/'s job, already built and green at 27/3, and none of its claim
+//   blanking/'s job, and none of its claim
 //   ids or PROPOSITIONS are repeated here. Every assertion below tests
 //   exactly one of two propositions: "this register lives at this address"
 //   (Appendix B, printed pages 289/293) or "this register is write-only and
@@ -44,25 +44,18 @@
 //   vpos[10:0], _hsync, _vsync, field1, lace, _csync, hblank, vblank, vbl,
 //   vblend, eol, eof, vbl_int, htotal_out[8:0], harddis_out, varbeamen_out.
 //   This BOUNDARY text, the register-address table below, and the Harness
-//   mechanics (tick/run_cck/write_reg/read/force_vpos) are reused verbatim
-//   from two already-built, already-RTL-verified fixtures FOR THIS SAME
-//   MODULE: hrm/agnus_beamcounter/test_agnus_beamcounter.cpp (the base
-//   harness -- clk7_en/cck relationship, reset sequencing) and
-//   hrm/ch3-beam-counters-and-blanking/test_agnus_beamcounter.cpp (the
-//   register-address table, write_reg/read, force_vpos, and the specific
-//   gating facts cited in METHODOLOGY below) -- per the precedent in
-//   hrm/ch3-collision-registers/ (reusing an already-built sibling
-//   harness for the identical top module is not "opening the RTL"; the
-//   claims.jsonl evidence field already made every one of these addresses
-//   and port names public before this file was written). agnus_beamcounter.v
-//   was opened for the first time AFTER the spec-only commit of this file
-//   (git history: "spec-only commit, written before opening the RTL"
-//   precedes this version) -- see IMPLEMENTATION NOTES below for what that
-//   reading corrected. No PASS/FAIL threshold or expected value was ever
-//   chosen or adjusted because of anything seen in the RTL -- every oracle
-//   below is still the manual quotation cited on its own assertion; only
-//   the STIMULUS/OBSERVATION mechanics (which BEAMCON0 bit to set, which
-//   edge of a signal to watch) were corrected once the real RTL was read.
+//   mechanics (tick/run_cck/write_reg/read/force_vpos) are shared with two
+//   fixtures FOR THIS SAME MODULE: hrm/agnus_beamcounter/
+//   test_agnus_beamcounter.cpp (the base harness -- clk7_en/cck
+//   relationship, reset sequencing) and hrm/ch3-beam-counters-and-blanking/
+//   test_agnus_beamcounter.cpp (the register-address table, write_reg/read,
+//   force_vpos, and the specific gating facts cited in METHODOLOGY below);
+//   the claims.jsonl evidence field names every one of these addresses and
+//   port names. No PASS/FAIL threshold or expected value is chosen or
+//   adjusted because of anything in the RTL -- every oracle below is the
+//   manual quotation cited on its own assertion; the RTL decides only the
+//   STIMULUS/OBSERVATION mechanics (which BEAMCON0 bit to set, which edge of
+//   a signal to watch -- see STIMULUS MECHANICS below).
 //
 // METHODOLOGY:
 //
@@ -91,11 +84,10 @@
 //   was therefore necessarily decoded and held by Agnus circuitry; there is
 //   no other chip's decode logic in the binary that could have done it
 //   instead. Each DIRECTION/CHIP assertion below cites this reasoning
-//   rather than re-deriving it fifteen times. (The build brief's warning
-//   that Appendix B's chip column is blank for several OTHER rows in the
-//   corpus, and that a blank cell is missing information rather than a
-//   statement of no ownership, does not bear on this package's own 33
-//   claims -- every one of their quotations shows an explicit 'A'.)
+//   rather than re-deriving it fifteen times. (Appendix B's chip column is
+//   blank for several OTHER rows in the corpus -- a blank cell is missing
+//   information, not a statement of no ownership -- but every one of this
+//   package's 33 claims' quotations shows an explicit 'A'.)
 //
 // (3) DIRECTION (read/write) for the ten Appendix-C registers is tested as
 //   "writing the register produces SOME address-decode-selective effect
@@ -108,9 +100,8 @@
 //   with every other address's data_out defaulting to 0.
 //
 // (4) OBSERVATION SIGNAL PER REGISTER and its GATING PRECONDITION, as
-//   CONFIRMED by reading agnus_beamcounter.v directly (see IMPLEMENTATION
-//   NOTES below for what this corrected from the spec-only commit's
-//   guesses): HTOTAL/VTOTAL are muxed in by ecs=1 && BEAMCON0.VARBEAMEN=1
+//   read from agnus_beamcounter.v directly (see STIMULUS MECHANICS below):
+//   HTOTAL/VTOTAL are muxed in by ecs=1 && BEAMCON0.VARBEAMEN=1
 //   alone (l.223,229); HSSTRT/HSSTOP/HCENTER are additionally gated by
 //   BEAMCON0.VARHSYEN=1 (l.224-226: `varhsyen && varbeamen`); VSSTRT/VSSTOP
 //   are gated the same way by BEAMCON0.VARVSYEN=1 (l.230-231); HBSTRT/
@@ -147,66 +138,48 @@
 //   write-then-read pipe is alive on THIS package's own independently
 //   built obj_dir before anything else relies on it.
 //
-// IMPLEMENTATION NOTES (added once agnus_beamcounter.v was actually read,
-//   after the spec-only commit): none of the following changed any
-//   assertion's ORACLE (the manual quotation and what it asserts); each is
-//   a stimulus/observation-mechanics correction, confirmed by rereading the
-//   RTL, not by watching which way made a test pass:
-//   - VBSTOP's actual gating bit is VARVBEN (BEAMCON0 bit 12), not HARDDIS
-//     (bit 14) as originally guessed -- HARDDIS does not appear in any
-//     register mux, only in harddis_out's own OR combination (l.236).
-//     Confirmed the guess was live-wrong (not merely unverified): with
-//     HARDDIS=1 and VARVBEN left at its default 0, vbstop would have stayed
-//     on the pal-selected hardwired constant regardless of what was
-//     written to $1CE, making VBSTOP-ADDRESS-1CE fail even though the RTL
-//     correctly decodes the address -- a harness bug, not an RTL finding.
+// STIMULUS MECHANICS (from agnus_beamcounter.v; none of these is an
+//   ORACLE -- each decides which stimulus to apply or which edge to
+//   observe):
+//   - VBSTOP's gating bit is VARVBEN (BEAMCON0 bit 12), not HARDDIS (bit
+//     14) -- HARDDIS does not appear in any register mux, only in
+//     harddis_out's own OR combination (l.236). With HARDDIS=1 and VARVBEN
+//     left at its default 0, vbstop would stay on the pal-selected
+//     hardwired constant regardless of what is written to $1CE, and
+//     VBSTOP-ADDRESS-1CE would fail even though the RTL correctly decodes
+//     the address -- a harness bug, not an RTL finding.
 //   - HBSTRT/HBSTOP need BEAMCON0.VARBEAMEN=1 alone; HARDDIS/VARVBEN play
-//     no role in their mux (l.227-228). The original best-effort guess
-//     (VARBEAMEN+HARDDIS) would not have broken these two -- HARDDIS is
-//     simply inert there -- but is removed for accuracy.
+//     no role in their mux (l.227-228).
 //   - hblank is a plain set-at-hbstrt/clear-at-hbstop window starting from
 //     Verilator's default 0 (l.450-458), not a "blanked from hpos=0"
-//     prefix as originally assumed; the original hblank_prefix_length/
-//     hblank_active_run_after_prefix helpers would have measured 0 in
-//     every case regardless of either register, a silent no-op test.
-//     Replaced with next_hblank_rise_hpos/next_hblank_fall_hpos, the same
-//     edge-detection technique already used for _hsync/_vsync.
+//     prefix; a prefix-length measurement would read 0 in every case
+//     regardless of either register, a silent no-op test.
+//     next_hblank_rise_hpos/next_hblank_fall_hpos use the same
+//     edge-detection technique as _hsync/_vsync.
 //   - _hsync/_vsync are active-low, so hsstrt/vsstrt (the "start" registers
-//     by name) actually control each signal's FALL, and hsstop/vsstop
-//     (the "stop" registers) control the RISE -- the original draft had
-//     HSSTOP-ADDRESS-1C2/VSSTOP-ADDRESS-1CA measuring the fall (hsstrt's/
-//     vsstrt's effect, not hsstop's/vsstop's) and HSSTRT-ADDRESS-1DE/
-//     VSSTRT-ADDRESS-1E0 measuring the rise -- backwards for both pairs.
-//     Confirmed live-wrong the same way as the VBSTOP gating bug: each
-//     assertion would have compared a signal edge that its own
-//     "companion" register (fixed at a correct address in all three
-//     harnesses) already controls, so h_wrong and h_correct would read
-//     the same regardless of whether the address under test was right.
-//     All four assertions now measure the edge the RTL actually assigns.
-//   - HCENTER-ADDRESS-1E2 initially measured _vsync's rise on BOTH field
-//     parities and accepted an "either" pass, guessing the mechanism was
-//     uncertain. Reading l.399-406 directly shows hcenter controls the
-//     FALL when long_frame=0 and the RISE when long_frame=1 -- known
-//     exactly, not guessed -- so the assertion now measures the correct
-//     edge per parity and requires BOTH to show the effect. The block also
-//     dropped an unnecessary BPLCON0 LACE=1 write: LACE=1 makes
-//     `end_of_frame && lace` (l.347-348) flip long_frame every field,
-//     which would have changed which parity's condition was live partway
-//     through the guarded fall-detector's search across a field wrap.
-//     force_vpos already sets long_frame directly (VPOSW bit15), so LACE
-//     is left at its reset default 0 and long_frame stays fixed for the
-//     whole scan.
+//     by name) control each signal's FALL, and hsstop/vsstop (the "stop"
+//     registers) control the RISE. Measuring the other edge would compare
+//     a signal edge that the assertion's own "companion" register (fixed at
+//     a correct address in all three harnesses) already controls, so
+//     h_wrong and h_correct would read the same regardless of whether the
+//     address under test was right.
+//   - hcenter controls the FALL when long_frame=0 and the RISE when
+//     long_frame=1 (l.399-406), so HCENTER-ADDRESS-1E2 measures the
+//     matching edge per parity and requires BOTH to show the effect. LACE
+//     is left at its reset default 0: LACE=1 makes `end_of_frame && lace`
+//     (l.347-348) flip long_frame every field, which would change which
+//     parity's condition is live partway through the guarded
+//     fall-detector's search across a field wrap. force_vpos sets
+//     long_frame directly (VPOSW bit15), and long_frame stays fixed for
+//     the whole scan.
 //
-// MUTATION LOG (all entries below were actually run by this agent under
-//   WSL/Verilator: edit -> rebuild -> run -> confirm the named assertion(s)
-//   red -> revert -> rebuild -> confirm the full suite back to its
-//   committed baseline (26 passed, 0 failed) -- before moving to the next
-//   one. Every mutation is a STIMULUS change to this file's own inputs (a
-//   register write's target ADDRESS, or a written value/companion setup);
-//   no expected value or oracle text was ever touched, and nanomig/ was
-//   never touched. A final `diff` against the pre-mutation file (saved
-//   before this log was written) came back empty, confirming every edit
-//   below was fully reverted.
+// MUTATION LOG (each entry run under WSL/Verilator as edit -> rebuild ->
+//   run -> confirm the named assertion(s) red -> revert -> rebuild ->
+//   confirm the baseline again; the pass/fail totals quoted in an entry are
+//   those of the run that recorded it. Every mutation is a STIMULUS change
+//   to this file's own inputs (a register write's target ADDRESS, or a
+//   written value/companion setup); no expected value or oracle text is
+//   touched, and nanomig/ is never touched.
 //
 // MUTATION FIXTURE-DELIVERS-KNOWN-VALUE stimulus red: force_vpos's vpos11
 //   argument changed from 0x555 to 0x000 -> FAIL, only
@@ -333,10 +306,6 @@
 //   correct-address-write mutation as VBSTOP-ADDRESS-1CE immediately
 //   above -- both ids are red from that one change; see that entry for
 //   the measured values.
-//
-// Final rebuild after the last revert: 26 passed, 0 failed, confirmed
-//   again immediately before this commit, and byte-identical (`diff`) to
-//   the file as it stood before this mutation log was written.
 
 #include <cstdint>
 #include <cstdlib>
@@ -383,10 +352,9 @@ constexpr int A_BEAMCON0= 0x1DC >> 1;
 constexpr int A_VSSTRT  = 0x1E0 >> 1;
 constexpr int A_HCENTER = 0x1E2 >> 1;
 
-// BEAMCON0 bit numbers (appendix C p.305, reused from the sibling file,
-// plus BC_VARVBEN, confirmed directly from agnus_beamcounter.v:130 --
-// `wire varvben = beamcon0_reg[12];` -- once this file's RTL was opened;
-// the sibling file never named its bit number, only that it exists).
+// BEAMCON0 bit numbers (appendix C p.305, as in the sibling file, plus
+// BC_VARVBEN, from agnus_beamcounter.v:130 -- `wire varvben =
+// beamcon0_reg[12];`; the sibling file does not name its bit number).
 constexpr int BC_HARDDIS  = 14;
 constexpr int BC_VARVBEN  = 12;
 constexpr int BC_VARVSYEN = 9;
@@ -916,10 +884,10 @@ int main(int argc, char** argv) {
         h_correct.write_reg(A_HSSTOP, 200);
         h_correct.write_reg(A_HSSTRT, 5); // doubles to 10 (l.207), far from
                                            // the hardwired default's ~37-39
-                                           // measured fall -- 20 (->40) was
-                                           // tried first and landed too
-                                           // close to the default to clear
-                                           // this file's own >4 tick margin
+                                           // measured fall -- 20 (->40)
+                                           // would land too close to the
+                                           // default to clear this file's
+                                           // own >4 tick margin
         hsstrt_correct = next_hsync_fall_hpos(h_correct);
         hsstrt_readback = h_correct.read(A_HSSTRT);
 
@@ -960,8 +928,8 @@ int main(int argc, char** argv) {
     // (`vpos==vsstop && hpos==hcenter && long_frame`) -- field1=~long_frame
     // (l.371), so this is genuinely "on interlace", one edge per field
     // parity. Both parities are tested, each against its own confirmed
-    // edge (not "either" as an uncertain guess -- the mechanism is now
-    // known exactly). LACE is deliberately left at its reset default 0 (not
+    // edge (not "either" -- the mechanism is known exactly). LACE is
+    // deliberately left at its reset default 0 (not
     // set via BPLCON0) so long_frame -- forced directly through VPOSW bit15
     // by force_vpos -- stays FIXED for the whole scan: with LACE=1,
     // `end_of_frame && lace` (l.347-348) flips long_frame every field,
@@ -1036,11 +1004,10 @@ int main(int argc, char** argv) {
     // agnus_beamcounter.v:450-458: `if (hpos==hbstrt) hblank<=1; else if
     // (hpos==hbstop) begin vblank<=vbl; hblank<=0; end`. hblank carries no
     // reset branch but is known to start at Verilator's default 0
-    // (confirmed once the RTL was opened -- unlike _hsync/_vsync's genuine
-    // no-reset ambiguity), and the mux is gated by varbeamen ALONE (RTL
-    // l.228: `hbstop = varbeamen ? hbstop_reg : HBSTOP_VAL[8:0]`) -- no
-    // HARDDIS or VARVBEN involved, unlike this package's original
-    // best-effort guess. hbstop controls hblank's FALL (clear).
+    // (unlike _hsync/_vsync's genuine no-reset ambiguity), and the mux is
+    // gated by varbeamen ALONE (RTL l.228: `hbstop = varbeamen ?
+    // hbstop_reg : HBSTOP_VAL[8:0]`) -- no HARDDIS or VARVBEN involved.
+    // hbstop controls hblank's FALL (clear).
     int hbstop_base, hbstop_wrong, hbstop_correct;
     uint16_t hbstop_readback;
     {
@@ -1292,11 +1259,11 @@ int main(int argc, char** argv) {
         h_correct.write_reg(A_VSSTOP, 50);
         h_correct.write_reg(A_VSSTRT, 30); // no doubling for V-registers
                                             // (l.213, direct {data_in[10:0]});
-                                            // 5 (->fall at 6) was tried
-                                            // first and landed only 3 lines
-                                            // from the hardwired default's
-                                            // fall at 3, failing this
-                                            // file's own >3-line margin
+                                            // 5 (->fall at 6) would land
+                                            // only 3 lines from the
+                                            // hardwired default's fall at
+                                            // 3, failing this file's own
+                                            // >3-line margin
         vsstrt_correct = next_vsync_fall_vpos(h_correct);
         vsstrt_readback = h_correct.read(A_VSSTRT);
 
@@ -1332,10 +1299,9 @@ int main(int argc, char** argv) {
     // ================= VBSTOP-ADDRESS-1CE =================
     // agnus_beamcounter.v:233: `vbstop = varvben && varbeamen ? vbstop_reg
     // : pal ? VBSTOP_PAL_VAL : VBSTOP_NTSC_VAL` -- the gate is varvben
-    // (BEAMCON0 bit 12), NOT HARDDIS (bit 14, this package's original
-    // best-effort guess, confirmed wrong now that the RTL is open: HARDDIS
-    // does not appear anywhere in this mux, only in harddis_out's own
-    // combination). vbl = (vpos <= vbstop) (l.444), continuous.
+    // (BEAMCON0 bit 12), NOT HARDDIS (bit 14: HARDDIS does not appear
+    // anywhere in this mux, only in harddis_out's own combination).
+    // vbl = (vpos <= vbstop) (l.444), continuous.
     int vbstop_base, vbstop_wrong, vbstop_correct;
     uint16_t vbstop_readback;
     {
