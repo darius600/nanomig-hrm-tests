@@ -14,7 +14,7 @@ start:
         ; ---- fixture: a program-stored constant, read back before anything
         ; else is trusted (RESULTS is ordinary chip RAM, unaffected by the
         ; overlay regardless of its state).
-        move.w  #$BEEF,RESULTS
+        move.w  #FIXTUREVAL,RESULTS
 
         ; ---- clear the overlay: COPLIST/SPR0DAT/SPR1DAT/BPLBUF all sit
         ; below logical $080000 (sprb.i), unreachable for CPU writes while
@@ -22,6 +22,12 @@ start:
         CLEAR_OVL
 
         lea     CUSTOM,a0
+
+        ; ---- PC0: chip identification, read directly from the design and
+        ; stored for the test to grade (Appendix B p.290 VPOSR/DENISEID;
+        ; p.299 for the expected values).
+        move.w  VPOSR(a0),RESULTS+2
+        move.w  DENISEID(a0),RESULTS+4
 
         ; ---- step 1 (SPECIFICATION.md 3.4.1)
         move.w  #$7FFF,DMACON(a0)
@@ -117,7 +123,9 @@ start:
         subq.w  #1,d7
         bne.s   .poll
 
+        ifnd    MUT_CR10
         move.w  #$A5A5,MARKER
+        endif
 .hang:  bra.s   .hang
 
         ; Data tables, placed here (after all code) so they land right

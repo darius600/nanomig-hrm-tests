@@ -16,13 +16,16 @@ BPLCON2         equ     $104
 BPL1MOD         equ     $108
 COP1LCH         equ     $080
 COPJMP1         equ     $088
+DENISEID        equ     $07C    ; Appendix B p.290; PC0 reads this back (p.299)
 
-; DFF register not in nanomig.i (not a custom DMA register): any write here
-; clears the overlay (minimig.v). While the overlay is active every CPU
-; access below logical $080000 is redirected (reads) or dropped (writes),
-; and COPLIST/SPR0DAT/SPR1DAT/BPLBUF all sit below $080000
-; (SPECIFICATION.md 3.2), so the program clears the overlay first, before
-; anything else.
+; CIA-A PRA bit 0 is the OVL bit: on reset "an additional copy of the system
+; ROM responds starting at memory location $00000000. The system RAM that
+; would normally be located at this address is not available. The OVL bit
+; in one of the 8520 Chips disables the overlay" (p. 223; bit location,
+; Appendix F: p. 339 lists pra at $BFE001, p. 351 names bit 0 "OVL ...
+; memory overlay bit"). The program clears it first, before anything else,
+; because COPLIST/SPR0DAT/SPR1DAT/BPLBUF (SPECIFICATION.md 3.2) all sit
+; below $080000.
 CIAAPRA         equ     $BFE001
 
 CLEAR_OVL       macro
@@ -39,10 +42,10 @@ BPLBUF          equ     $020000
 
 ; ---- mutation-selected constants (SPECIFICATION.md section 5/6) ----------
 ;
-; Exactly one of MUT_CR1/MUT_CR2/MUT_CR3/MUT_CR4/MUT_CR5/MUT_CR6/MUT_CR8 is
-; defined (equ'd to 1) by a mutant wrapper before it includes prog_main.s;
-; prog_main.s itself (assembled standalone) defines none of them, giving
-; the baseline/normal stimulus.
+; Exactly one of MUT_CR1/MUT_CR2/MUT_CR3/MUT_CR4/MUT_CR5/MUT_CR6/MUT_CR8/
+; MUT_CR9/MUT_CR10 is defined (equ'd to 1) by a mutant wrapper before it
+; includes prog_main.s; prog_main.s itself (assembled standalone) defines
+; none of them, giving the baseline/normal stimulus.
 
 ; PC1 contrast CR4: BPLCON0 = $9000 (HIRES=1, SHRES=0) instead of $1040.
                 ifd     MUT_CR4
@@ -63,6 +66,13 @@ DMACONVAL       equ     $83A0
 FRAME_COUNT     equ     1
                 else
 FRAME_COUNT     equ     6
+                endif
+
+; FIXTURE contrast CR9: RESULTS stores $DEAD instead of $BEEF.
+                ifd     MUT_CR9
+FIXTUREVAL      equ     $DEAD
+                else
+FIXTUREVAL      equ     $BEEF
                 endif
 
 ; Data tables (SPRDESC, COPTAB) are in sprb_data.i, included at the end of
