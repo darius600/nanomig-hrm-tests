@@ -145,16 +145,15 @@ interest:
 | [NM-HRM-004](findings/NM-HRM-004.md) | the manual contradicts itself on the ECS danger bit, and NanoMig, all four implementations and Commodore's AA specification take Appendix B's side | reading two appendices, B pp. 289-290 and C p. 310; no RTL change |
 | [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
 
-**[NM-HRM-002](findings/NM-HRM-002.md) sorts first and is the worst starting
-point**: the manual contradicts itself there, and it is the one finding in the
-register that reports to nowhere; three of the four implementations and the
-8364R7 silicon side with the pin list, as NanoMig does. Read
-it for what an unresolvable case looks like, not for something to do.
+**[NM-HRM-002](findings/NM-HRM-002.md) sorts first and asks for no RTL change**:
+the manual assigns the stereo sides twice and the two disagree, and NanoMig,
+three of the four implementations, the 8364R7 silicon and Commodore's A500,
+A2000 and B2000 schematics all side with p. 326 against p. 137.
 
 
 | Key | Subject | Status | Package | Third witness |
 |---|---|---|---|---|
-| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | open · RTL · **red** | `hrm/ch5-audio-stereo-routing` | **3–1**: WinUAE, Denise and Copperline with the pin list; vAmiga with chapter 5 |
+| [NM-HRM-002](findings/NM-HRM-002.md) | audio channels 0 and 3 play on the left, where p. 137 says right and p. 326 says left | open · page · **red** | `hrm/ch5-audio-stereo-routing` | **3–1 with NanoMig against p. 137**: WinUAE, Denise and Copperline put channels 0 and 3 on the left, as p. 326 prints, and vAmiga on the right, as p. 137 prints; the 8364R7 silicon feeds them to its left pad, and Commodore's A500, A2000 and B2000 schematics take Paula's left pin to the left jack |
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/ch2-copper-control`, `hrm/ch2-copper-locreg-width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE and vAmiga narrow the BUS** on OCS (`memory.cpp:2619-2623`, `Memory.cpp:1623`), which has the same effect on a fetched address; Denise neither |
 | [NM-HRM-004](findings/NM-HRM-004.md) | p. 310 gives the ECS Copper $03E–$07E with CDANG clear, Appendix B marks that range closed, and every implementation keeps it closed | open · page · **red** | `hrm/ch2-copper-move-range`, `hrm/ch2-copper-move-sweep` | **unanimous with NanoMig and with Appendix B**: WinUAE (`custom.cpp:2809`), vAmiga (`Copper.cpp:395`), Denise (`copper.cpp:342`) and Copperline (`dma_slots.rs:697`) all block a Copper MOVE below `$080` while CDANG is clear, whatever the chipset; none cites Appendix C |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · RTL · **red** | `hrm/ch2-copper-cycle-times`, `hrm/ch2-copper-cycles` | vAmiga gives NanoMig's three numbers |
