@@ -412,10 +412,10 @@ constexpr uint16_t kBplxDatAddr[7] = {0, kBpl1DatAddr, kBpl2DatAddr, kBpl3DatAdd
 // duration from the RTL at all -- see that assertion's own header note.)
 constexpr long kLoresPixelTicks = 4;
 
-// Clocking mechanics shared with this repository's sibling harnesses for
-// other denise_* modules with the identical clk/clk7_en/c1/c3/reset/aga/
+// Clocking mechanics shared with the pre-pipeline harnesses for other
+// denise_* modules with the identical clk/clk7_en/c1/c3/reset/aga/
 // reg_address_in/data_in/chip48/hpos port set (hrm/denise_sprites,
-// hrm/denise_bitplane_shifter).
+// hrm/denise_bitplane_shifter; both removed).
 class Harness {
 public:
     Harness() : dut(new Vdenise_bitplanes) {
