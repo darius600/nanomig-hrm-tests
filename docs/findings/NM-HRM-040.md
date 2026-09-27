@@ -1,17 +1,17 @@
-# NM-HRM-040 — CIAADDRA's direction mask corresponds one-to-one for two bit positions of eight
+# NM-HRM-040 — CIAADDRA's direction mask corresponds one-to-one for two bit positions of eight [RTL review]
 
 | | |
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. The package's two red assertions decide, at PA2–PA7, only on a 1 written over an external line the fixture holds low, where p.341 makes the read the pin's state and no page says which drive sets the pin; *What the test measures* says what they must measure instead. |
+| **Evidence** | a test fails against the page; the implementations split |
+| **What is asked of a reader** | Decide whether the RTL should change, which here first needs an answer to the CIA part-number question in *What the others say*. *Suggested change* states what follows from each answer; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L252-L262) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L298-L309) |
-| **Report to** | **nobody, yet** — the package must first grade the case p.341 predicts. Then **read the third-witness section first**: two of four implementations gate this behaviour on a CIA part number |
-| **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) — PROP-1 and PROP-2 are red, `3 passed, 2 failed`, but with every external line held low |
+| **Report to** | **Minimig-AGA and NanoMig.** Both Minimig lines carry the same two-of-eight mux. **Read the third-witness section first**: two of four implementations gate this behaviour on a CIA part number |
+| **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) · `PROP-1`, claim `opus:8-dio.c44` (`test_ch8-ciaa-port-direction.cpp:380-402`), and `PROP-2`, claims `opus:8-dio.c46`, `sol:8-dio.c43` (`test_ch8-ciaa-port-direction.cpp:404-426`) — **red**, `3 passed, 2 failed`, with all six external lines released (`test_ch8-ciaa-port-direction.cpp:157`) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red, each sweeping all eight positions; at PA2–PA7 each fails only on a written 1 over a line held low. Two PA0-restricted controls pass on the identical comparator in the same run |
-| **Verdict of the four** | **a four-way split** where p.341 predicts the value, an output driven 0 on a line nothing else pulls: Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight regardless only under a chip-variant switch that is off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four. Over a line held low, the case the package grades and no page decides, they split again: Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the line |
+| **Assertions** | 2 red, each sweeping all eight positions: at PA2–PA7 each fails on the written 0 alone, read back as 1 (`test_ch8-ciaa-port-direction.cpp:264-266`, `:302-304`), and passes at PA0–PA1. Two PA0-restricted controls on the identical comparators (`test_ch8-ciaa-port-direction.cpp:428-446`) pass in the same run |
+| **Verdict of the four** | **a four-way split** where p.341 predicts the value, an output driven 0 on a line nothing else pulls: Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight regardless only under a chip-variant switch that is off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four. Over a line held low, a case no page decides and the package does not present, they split again: Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the line |
 
 ---
 
@@ -88,68 +88,63 @@ on a line nothing pulls reads 1, where p.341 predicts 0.
 
 ### Measured
 
-    PA0=PASS  PA1=PASS  PA2=FAIL  PA3=FAIL  PA4=FAIL  PA5=FAIL  PA6=FAIL  PA7=FAIL
+The CIAAPRA bit each position reads, with every external line released, as the
+two sweeps print them (`MEASURED:` lines, PROP-1 and PROP-2 alike):
+
+    printed  stimulus               PA0  PA1  PA2  PA3  PA4  PA5  PA6  PA7   expected
+    ctrl     own DDR 0, PRA 0         1    1    1    1    1    1    1    1   1
+    cross    DDR at n+1, PRA 0        1    1    1    1    1    1    1    1   1   (PROP-1 only)
+    drv0     own DDR 1, PRA 0         0    0    1    1    1    1    1    1   0
+    drv1     own DDR 1, PRA 1         1    1    1    1    1    1    1    1   1
+    PROP-1, PROP-2                 PASS PASS FAIL FAIL FAIL FAIL FAIL FAIL
+
+    3 passed, 2 failed
 
 The two PA0-restricted controls call the identical comparator functions and pass
-in the same run, so the comparator is live. What it is given to compare is the
-next section: at PA2–PA7 each FAIL is a written 1 read back as the line the
-fixture holds at 0.
+in the same run, so the comparator is live. At PA2–PA7 each FAIL is the written
+0 read back as 1, the released line `ciaa.v:254` returns whatever the direction
+bit.
 
 ## What the test measures
 
-The fixture holds all six external lines low
-(`test_ch8-ciaa-port-direction.cpp:188`):
+The fixture releases all six external lines
+(`test_ch8-ciaa-port-direction.cpp:157`):
 
 ```cpp
-dut->porta_in = 0;
+dut->porta_in = 0x3F;
 ```
 
-In the manual's active-low terms that is both fire buttons pressed and all four
-drive-status lines asserted — not the idle state p.354 gives, which reads high.
+`0x3F` is every line high in the six-bit packing Verilator gives `porta_in[7:2]`
+(`test_ch8-ciaapra-disk-sense-bits.cpp:240-247`): the idle state p.354
+describes, both fire buttons open and no drive-status line asserted.
 
-PROP-2 (`bit_output_follows_direction()`, `:313-317`) sets one position's
-direction bit, writes 0 and expects 0, then writes 1 and expects 1. Over a line
-held low the first half passes for any implementation, because the CIA and the
-line agree; the second is a 1 written over a line pulled low, the case no page
-decides. PROP-1 (`bit_position_correspondence()`, `:298-301`) takes its
-baseline with the direction bit clear — the held line, 0 — and then expects the
-written opposite, 1: the same case. So at PA2–PA7:
+- **stimulus**, for each position n, PA0–PA7: DDRA = 0 with PRA = 0, the
+  control; then DDRA = `1<<n` with PRA = 0; then PRA = `1<<n` (PROP-2,
+  `observe_bit()`, `test_ch8-ciaa-port-direction.cpp:257-273`). PROP-1
+  (`observe_position()`, `:288-311`) reads the same three and, between the
+  control and the written 0, a cross-bit control: DDRA set at the next
+  position, (n+1) mod 8, with PRA = 0 (`:297-300`);
+- **observed:** CIAAPRA (`rs` = 0) bit n after each write, printed per position
+  by both sweeps (`:337-341`, `:356-359`);
+- **expected**, from p.241, p.341 and p.354: with the position's own direction
+  bit clear, 1, the released line; with it set, 0 after
+  the written 0 and 1 after the written 1, because the read is the pin and
+  nothing but the output drives it.
 
-- an implementation whose output wins over the line, as Denise's does, passes
-  both;
-- an implementation that returns the pin with the line winning, as WinUAE does
-  on PA7/PA6, reads 0 and fails both, at exactly NanoMig's six positions.
+The written 0 is the half that decides. On a released line the control, the
+cross-bit control and the written 1 read 1 for an implementation that returns
+the line and for one that returns the written value alike; only the written 0
+tells them apart, and at PA2–PA7 `ciaa.v:254` returns the line there, 1. No
+line is held low anywhere in the package, so the written 1 over a line held
+low, the case no page decides, is not presented.
 
-The red decides between two readings of a case the manual leaves open, not
-between NanoMig and the page. At PA2–PA7 the package never writes a 0 over a
-line nothing pulls low, which is the case p.341 predicts.
-
-The suite also asserts the opposite of PROP-2 for PA2–PA5.
 [`hrm/ch8-ciaapra-disk-sense-bits`](../../hrm/ch8-ciaapra-disk-sense-bits)'s
-PROP-INPUT drives one position's line low
-(`test_ch8-ciaapra-disk-sense-bits.cpp:295`), sets that position's direction
-bit and writes 1 (`:308-309`), and expects 0 (`:311`); it is green,
-`1 passed, 0 failed`. From the same state the two packages expect opposite
-values, and no implementation passes both.
-
-**What it must measure instead**, on the same `ciaa` fixture:
-
-- **fixture:** `porta_in` with all six lines released, high — `0x3F` in the
-  six-bit packing Verilator gives `porta_in[7:2]`
-  (`test_ch8-ciaapra-disk-sense-bits.cpp:240-247`) — the idle state p.354
-  describes;
-- **stimulus**, for each position n, PA0–PA7: DDRA = `1<<n`, PRA = 0; then
-  PRA = `1<<n`; and, as the control, DDRA = 0 with PRA = 0;
-- **observed:** CIAAPRA (`rs` = 0) bit n after each write;
-- **expected**, from p.241 and p.341: with the direction bit set, 0 after the
-  written 0 and 1 after the written 1, because the pin is what the output
-  drives and nothing else drives it; with it clear, 1 whatever was written,
-  the released line.
-
-The written 0 is the half that decides: at PA2–PA7 `ciaa.v:254` returns the
-line there, 1. PROP-1's comparator needs only the fixture change, which makes
-its baseline 1 and its target 0. The written 1 over a line held low stays
-ungraded.
+PROP-INPUT grades that held-low case for PA2–PA5: it drives one position's line
+low (`test_ch8-ciaapra-disk-sense-bits.cpp:295`), sets that position's
+direction bit and writes 1 (`:308-309`), and expects 0 (`:311`); it is green,
+`1 passed, 0 failed`. The two packages grade no common state: an implementation
+in which a line held low wins over an output driving 1, and the output wins
+otherwise, passes both.
 
 ## What the others say
 
@@ -193,16 +188,16 @@ exactly the pair NanoMig implements.
 
 ## Suggested change
 
-**None yet**: the package must first grade the case p.341 predicts (*What the
-test measures*). **Then, not without an answer to the part-number question.** If
-the fitted CIA returns PRA contents for bits in output mode, `pa_out` should mux
-on `ddrporta` across all eight positions, the way Denise does in one line. If it
-does not, the page is describing a part this core does not model, and the
-finding is documentation rather than a defect.
+**Not without an answer to the part-number question.** If the fitted CIA
+returns PRA contents for bits in output mode, `pa_out` should mux on `ddrporta`
+across all eight positions, the way Denise does in one line. If it does not, the
+page is describing a part this core does not model, and the finding is
+documentation rather than a defect.
 
 What should not happen is a change made because a test is red. The package is
-red on a 1 written over a line held low, which no page decides; whether the page
-is right about the silicon is a different question with a different owner.
+red where p.341 predicts the value, an output driven 0 on a released line;
+whether the page is right about the silicon is a different question with a
+different owner.
 
 ## What holds the finding up
 
@@ -211,19 +206,20 @@ is right about the silicon is a different question with a different owner.
   line nothing else pulls reads 0.
 - At six of eight positions `ciaa.v:254` returns the line whatever the direction
   bit, for two distinct and independently readable RTL reasons, so that output
-  reads 1. This is read from the source; the package does not yet grade it.
+  reads 1. PROP-1 and PROP-2 measure it: with every line released, the written
+  0 reads 1 at PA2–PA7 and 0 at PA0–PA1.
 - Two controls on the identical comparator pass in the same run, so the
   comparator is live.
 
 ## What weakens it
 
-- The package's two reds decide, at PA2–PA7, only on a 1 written over a line
-  held low. An implementation that returns the pin with the line winning fails
-  them at the same six positions, and `hrm/ch8-ciaapra-disk-sense-bits` expects
-  that 0 for PA2–PA5 and is green.
+- The package presents only the released line, p.354's idle state. Where a
+  closed fire button or an asserting drive holds a line low, no page predicts
+  the read (*What the HRM says*), and the four split again there.
 - p.241, p.244 and p.339 describe PA2–PA5 as the disk subsystem's inputs and
   DDRA as set to 0x03. None says a direction bit cannot make them outputs, but
-  `hrm/ch8-ciaapra-disk-sense-bits` reads p.244 that way.
+  `hrm/ch8-ciaapra-disk-sense-bits` reads p.244 that way; it grades that
+  reading only over a line held low, a case p.341 does not decide.
 - Only one implementation of four does what the page says by default whatever is
   attached; vAmiga does only while no mouse is attached.
 - Two of the four treat it as part-dependent, which is a reading the page does
