@@ -404,9 +404,7 @@ int main(int argc, char** argv) {
             "shift=1, new_val=0x0002 -> out=0x0001 (bit 1 to bit 0) - "
             "confirming 'modulos, and shifts to the right' "
             "(ch6-keypoints.c16, p.200), 'The shift is normally towards "
-            "the right' (6-shifts-and-masks.c4, ch6-shifts.c4, p.179). "
-            "ch6-keypoints.c16 was overturned from a not-asserted discard "
-            "by Prompt 5's attack stage on 08.09.2026.");
+            "the right' (6-shifts-and-masks.c4, ch6-shifts.c4, p.179).");
     }
 
     // ---------------- LEFT-DESCENDING ----------------
@@ -433,9 +431,7 @@ int main(int argc, char** argv) {
             "confirming 'the modulos, and shifts to the left' "
             "(ch6-keypoints.c19, p.200), 'Shifts are then towards the "
             "left, rather than the right' (6-descending-mode.c5, "
-            "ch6-desc.c6, p.182). ch6-keypoints.c19 was overturned from a "
-            "not-asserted discard by Prompt 5's attack stage on "
-            "08.09.2026.");
+            "ch6-desc.c6, p.182).");
     }
 
     // ---------------- STRUCTURE-WINDOW ----------------
