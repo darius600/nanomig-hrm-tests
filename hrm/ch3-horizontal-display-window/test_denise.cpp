@@ -263,16 +263,21 @@
 //    reading of 'it sets direct start and stop positions' (p.306, plural,
 //    both) once the RTL made that literal.
 //
-// ONE GENUINE FINDING, KEPT RED: BPLCON3 bit 4 (BRDNTRAN, 'Border opaque')
-// is declared as a wire in denise.v and never connected to anything --
-// `//wire brdntran; //assign brdntran = bplcon3[4] & ecsena;`
-// (denise.v:235,254), both commented out. Bit 5 (BRDRBLNK) on the exact
-// same register, by contrast, IS wired (denise.v:253, used in t_blank at
-// l.515) and measurably changes the border's rendering. The
-// D-BRDNTRAN-HAS-NO-EFFECT assertion tests the manual's own claim directly
-// (setting BRDNTRAN is expected to change the border) and is left failing
-// -- the RTL does not implement what pp.296/297/307 describe, and that is
-// the correct, final state for this assertion, not a defect in the test.
+// D-BRDNTRAN-HAS-NO-EFFECT DECLINES ITS SEVEN CLAIMS AS ABSENT (NM-HRM-015,
+// withdrawn): BPLCON3 bit 4 (BRDNTRAN) is named only among the genlock
+// features -- 'BorderNotTransparent makes an opaque "frame" surrounding
+// the active area' (p.296), under the section *Genlock Extensions*
+// (p.307) -- and a genlock replaces the background colour, also the
+// border's, with external video (pp.46, 89) through Denise's ZD* pin,
+// 'Background indicator' (Appendix J, p.380). No page gives BRDNTRAN an
+// effect on the colour the border is drawn in. This fixture's `denise`
+// module has no ZD port -- its outputs are the bus, `red`, `green`,
+// `blue` and two mode bits -- so the seven claims naming this bit
+// describe a signal absent from this boundary: declined, not asserted,
+// and not left failing. Bit 5 (BRDRBLNK) on the same register, by
+// contrast, changes the border's rendering and is asserted at G11 above;
+// the manual's own mnemonic table names that effect, 'BRDRBLNK Border
+// blank' (Appendix C, p.307).
 //
 // First build after all four fixes: 12 passed, 1 failed -- matching every
 // prediction this file's assertions were written against before the RTL
@@ -342,12 +347,10 @@
 //   from 0x0020 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
 //   G11-BRDRBLNK-WORKS newly red. Replayable as MUTATE=G11-BRDRBLNK-WORKS.
 //   Reverted: 11/1.
-// MUTATION D-BRDNTRAN-HAS-NO-EFFECT none impossible: this assertion is
-//   already red at baseline (the RTL does not implement BRDNTRAN at all,
-//   see the finding above) -- there is no stimulus change left to make
-//   that could turn it red a second time; it is already at the only
-//   state this file's own measurement of the real hardware-vs-manual gap
-//   can produce.
+// D-BRDNTRAN-HAS-NO-EFFECT carries no MUTATION entry: it is a record(),
+// declining its seven claim ids as absent (NM-HRM-015, withdrawn), not an
+// assertion -- there is no red/green state for a mutation to move it
+// between.
 //
 // Final rebuild after the last revert: 11 passed, 1 failed, confirmed
 // again immediately before this commit.
@@ -426,6 +429,11 @@ public:
     // every claim declined below -- so coverage is findable by grepping
     // this file's own strings, not only its comments.
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
+    // A record is not a check either: same as note(), a separate label so
+    // a boundary decline (a claim about a signal this fixture does not
+    // have) reads distinctly from a scope decline (a claim this package's
+    // own boundary excludes).
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -1360,10 +1368,10 @@ int main(int argc, char** argv) {
         // brdntran itself (denise.v:235,254) is commented out in this
         // file -- `//wire brdntran; //assign brdntran = bplcon3[4] &
         // ecsena;` -- a real wire this RTL declares but never connects to
-        // anything. No stimulus can make BPLCON3 bit 4 produce an
-        // observable effect at this boundary: it is dead code. That is a
-        // property of the RTL, not of this Harness, and the assertion
-        // below measures it directly rather than assuming it.
+        // anything. That is consistent with, but not the reason for,
+        // D-BRDNTRAN-HAS-NO-EFFECT below: it declines its seven claims as
+        // absent (BRDNTRAN acts on Denise's ZD* pin, which this fixture
+        // has no port for), a record rather than an assertion.
         constexpr uint16_t kBplcon0Ecsena = 0x1000 | 0x0001;
 
         Harness h0;  // BPLCON3 = 0 (both bits clear): border is COLOR00.
@@ -1388,16 +1396,6 @@ int main(int argc, char** argv) {
         auto s1 = h1.scan_window(80, true);
         uint32_t border_blnk = s1[4];
 
-        Harness h2;  // BRDNTRAN=1 (bit 4) only.
-        h2.write_reg(kColorbaseAddr, kColor00Value);
-        h2.write_reg(kColor01Addr, kColor01Value);
-        h2.write_reg(kBplcon0Addr, kBplcon0Ecsena);
-        h2.write_reg(kBplcon3Addr, 0x0010);
-        h2.write_reg(kDiwstrtAddr, 0x30);
-        h2.write_reg(kDiwstopAddr, 0x50);
-        auto s2 = h2.scan_window(80, true);
-        uint32_t border_ntran = s2[4];
-
         checks.expect(
             border_blnk != border_default,
             "G11-BRDRBLNK-WORKS: "
@@ -1406,31 +1404,25 @@ int main(int argc, char** argv) {
             "renders COLOR00 exactly as every other group above measures it; "
             "setting ONLY BPLCON3 bit 5 (BRDRBLNK) changes that rendering (this "
             "fixture forces RGB to black outside the window when BRDRBLNK is set, "
-            "denise.v:515) -- 'BorderBlank creates a transparent \"frame\" "
-            "surrounding the active area' (p.296), bit 5 'BRDRBLNK Border blank' "
-            "(Appendix C, p.307), 'the border areas surrounding the active display "
-            "window may also be set to be... transparent' (p.307).");
+            "denise.v:515) -- bit 5 'BRDRBLNK Border blank' (Appendix C, p.307), "
+            "'the border areas surrounding the active display window may also be "
+            "set to be... transparent' (p.307).");
 
-        checks.expect(
-            border_ntran != border_default,
+        checks.record(
             "D-BRDNTRAN-HAS-NO-EFFECT: C-gen.c09 C-genlock.c4 C-genlock-ext.c16 "
-            "C-ecsbit.b04 C-genlock-ext.c3 C-gen.c12 C-gen.c15 : the manual documents "
-            "BPLCON3 bit 4 as BRDNTRAN, 'Border opaque' (Appendix C, p.307), and "
+            "C-ecsbit.b04 C-genlock-ext.c3 C-gen.c12 C-gen.c15 -- DECLINED at this "
+            "boundary (absent): the manual documents BPLCON3 bit 4 as BRDNTRAN, "
+            "'Border opaque' (Appendix C, p.307), among the genlock features -- "
             "'BorderNotTransparent makes an opaque \"frame\" surrounding the active "
-            "area' (p.296) -- 'borders may be explicitly transparent or opaque' "
-            "(p.297), 'the border areas... may also be set to be opaque or "
-            "transparent' (p.307) both promise this as a real, software-visible "
-            "control: setting BPLCON3 bit 4 (ECSENA set, BRDRBLNK clear, so any "
-            "change is attributable to BRDNTRAN alone) is expected to change the "
-            "border's rendering relative to leaving it clear. RED, and left red: "
-            "denise.v declares the wire and never connects it -- `//wire brdntran; "
-            "//assign brdntran = bplcon3[4] & ecsena;` (denise.v:235,254) -- so "
-            "setting BPLCON3 bit 4 alone produces the IDENTICAL border colour as "
-            "leaving it "
-            "clear: the manual's documented control has no observable effect at "
-            "this boundary. This is a red result about the RTL, not an adjustment "
-            "to the oracle -- the manual is what these seven claims are measured "
-            "against, and this fixture does not implement what it describes.");
+            "area' (p.296), under the section *Genlock Extensions* (p.307). A "
+            "genlock replaces the background colour, also the border's, with "
+            "external video (pp.46, 89); the signal it acts on is Denise's ZD* "
+            "pin, 'Background indicator' (Appendix J, p.380). No page gives "
+            "BRDNTRAN an effect on the colour the border is drawn in. This "
+            "fixture's `denise` module has no ZD port -- its outputs are the bus, "
+            "`red`, `green`, `blue` and two mode bits -- so these seven claims "
+            "describe a signal absent from this boundary: declined, not asserted "
+            "against a colour this fixture was never going to change.");
     }
 
     // ==================== G12: BACKGROUND-SHOWS-WHERE-NO-OBJECT ====================
