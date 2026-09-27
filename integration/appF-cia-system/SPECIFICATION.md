@@ -9,10 +9,9 @@ This is the specification of the integration test package `appF-cia-system`. It 
 | Claim | Page | What cannot be used, and why |
 |---|---|---|
 | opus:F-portsig.c47 | 351 | "PC...not used" (CIAB). None of the outputs a test can see shows a PC pin on either CIA, and "not used" describes no behaviour and gives no value. (The text layer puts the FLAG gloss "disk index*" on the PC line. The printed page puts it on "F....INDEX*", and the claim reads it correctly.) |
-| opus:F-signals.c1, sol:F-signals.c69: the words "TTL compatible input" | 353 | This is an electrical property of an input pin, and nothing a test sees depends on it. The rest of both claims is used in P5 and P6. |
-| sol:F-signals.c69, sol:F-signals.c70: ".715909 Mhz for NTSC or .709379 Mhz for PAL" (in their quotes) | 353 | The test measures time in system clock cycles. Absolute frequencies come from the harness's clock, not from the design. Only the stated ratio, "1/10 of the CPU clock", is checked (P5). |
-| opus:F-timers.c6, sol:F-timers.c8: "allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms" | 341 | This sentence states what the modes make possible and names no value. It yields a proposition only through the sentence quoted with it in sol:F-timers.c8, that the latch "is a divider of the input clocking frequency" (P9). The modes it refers to are specified elsewhere: pulse trains in P4, variable width and variable frequency in P9, linked timers (long delays) in P8.65. |
-| opus:F-cra.c12, opus:F-crb.c13: the reading that LOAD has a "0 setting" of force load | 349, 350 | The bitmaps print one entry for LOAD, "1=force load (strobe)", split over two lines. LOAD has no 0 setting: "writing a 0 has no effect" (p348, p349). The rest of both claims is used (P1, P3, P4, P7, P8). |
+| opus:F-signals.c1, sol:F-signals.c69 (both whole) | 353 | Both claims say that φ2 is a "TTL compatible input". That is an electrical property of an input pin, and nothing a test sees depends on it. A claim with a clause the package does not grade is not claimed, so both ids are declined whole. What else they say (φ2 is used for internal device operation and as the timing reference for the bus) is still checked, by P5 and P6, without these ids. |
+| sol:F-signals.c70: ".715909 Mhz for NTSC or .709379 Mhz for PAL" (in its quote; the claim itself says only that φ2 is the E clock) | 353 | The test measures time in system clock cycles. Absolute frequencies come from the harness's clock, not from the design. Only the stated ratio, "1/10 of the CPU clock", is checked (P5). |
+| opus:F-cra.c12, opus:F-crb.c13: the reading that LOAD has a "0 setting" of force load | 349, 350 | The bitmaps print one entry for LOAD, "1=force load (strobe)", split over two lines. LOAD has no 0 setting: "writing a 0 has no effect" (p348, p349). The rest of both claims is used (P10). |
 
 No claim in this package needs data read from or written to a disk surface.
 
@@ -64,19 +63,28 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
 ### 1.2 Program environment (every run)
 
-- **E1.** The 68000 enters the test program directly from reset, with no other code executed first. The program sits in Chip memory.
+- **E1.** The 68000 enters the test program directly from reset, with no other code executed first. The program sits in Chip memory at PROGRAM_ORG ($080400), where the harness loads it and points the reset vectors (`nanomig.i`).
 - **E2.** The program's first instructions set SR to $2700 and write $7FFF to DMACON ($DFF096) and to INTENA ($DFF09A). Bit 15 = 0 clears (bit 15 is SET/CLR in both registers, p278 and p280). p352 makes the same DMACON write before its CIA timing example.
 - **E3.** For each CIA, the program writes ICR ← $7F and then reads ICR once, discarding the value. The write clears all mask bits: "If bit 7 is a 0, then any bit 6-0 in your own mask byte which is set to a 1 clears the corresponding bit in the MASK register" (p347). The read clears the flags: "When you read the DATA register, its contents are cleared" (p346).
 - **E4.** The program never writes CIAA PRA or DDRA, because PA0 is the "memory overlay bit" and PA1 the power LED (p351). It never writes CIAB PRA or DDRA.
 - **E5. Markers.** A marker is a word store of a distinct constant to a marker area in Chip memory. The test sees it at the Chip-memory port as a write with a time. A *bracketed* CIA write is a marker, then the CIA write, then a marker, with no other instruction between them.
 - **E6. Results.** Every value the program reads for grading goes into a data register and is then stored as a word to a result area in Chip memory. Each store is visible at the Chip-memory port with its time.
 - **E7. Parameters.** Anything that differs between runs of the same program (latch values, delay counts, CR values, key timing) is read from a parameter block in Chip memory. Runs that are compared with each other must execute identical code.
-- **E8.** The program ends with a final marker and then branches to itself.
+- **E8.** The program ends with a final marker and then branches to itself. This is the `DONE` macro of `nanomig.i`: a store of DONE_VALUE to DONE_ADDR ($0C0FFE), then a branch to itself.
+- **E9. Layout.** After reset the ROM overlay covers low Chip memory ("The system RAM that would normally be located at this address is not available", p223), and E4 never clears it. So everything a program writes, and every Chip-memory byte it reads as data, lies in $080000-$1FFFFF, which the harness maps one-to-one (`nanomig.i`), at these places, none of which overlap:
+  - the program, from PROGRAM_ORG ($080400) up; the stack, below PROGRAM_STACK ($0FFF00);
+  - the result area (E6), from RESULTS ($0C0000) up and below DONE_ADDR: at most 2047 words per run. The largest run, P3's sampler of 600 iterations with two stores each, stores 1200;
+  - the final marker (E8), at DONE_ADDR;
+  - the other markers (E5), in $0C1000-$0C1FFF;
+  - the parameter block (E7), from $0C2000;
+  - the Copper list of EP2's contrast, at $0C3000;
+  - the Chip-memory byte that P6's loop K3 reads, at $0C4000.
+- **E10. Plain writes, 68000 code.** Every CIA register write is one byte MOVE of the whole value (for PRB, the value the case needs in every bit). No CLR, BSET, BCLR, BCHG, AND, OR or other instruction that reads its operand before writing it is used on a CIA register. A read of PRB returns the pins, not the data register (p341), so a read-modify-write would copy a pulled-up input or an overridden PB6/PB7 level into the data register; a read of ICR clears it (p346); a read of TODHI latches the TOD registers until TODLO is read (p344). The programs are assembled for the 68000 (vasm's default): with `-m68010` or higher, vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, which on the 68000 reads its operand first.
 
 **Environment preconditions.** Every run asserts all three.
 
 - **EP1 (reset state).** The program's first reads of CRA and CRB on both CIAs, made before any write to them, return $00. Source: "The timer control registers are set to zero" (p354). *Contrast:* a variant that writes CRA ← $0A before the read gets $0A back.
-- **EP2 (DMA quiet).** Between the first and the last marker, the Chip-memory port shows only CPU accesses and memory-refresh accesses. *Contrast:* start Copper DMA in the order p30 prescribes: write COP1LC, strobe COPJMP1, then write DMACON ← $8280 (SET, DMAEN, COPEN). Copper fetches then appear.
+- **EP2 (DMA quiet).** Between the first and the last marker, the Chip-memory port shows only CPU accesses and memory-refresh accesses. *Contrast:* start Copper DMA in the order p30 prescribes: write COP1LC, strobe COPJMP1, then write DMACON ← $8280 (SET, DMAEN, COPEN). COP1LC points at the list of E9, a single WAIT that never completes, $FFFF,$FFFE ("ends Copper list", p23). Copper fetches from $0C3000 then appear.
 - **EP3 (completion).** The final marker appears. A run without it has failed; it has no graded result.
 
 ### 1.3 Observation channels
@@ -86,7 +94,9 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
   > "Disk motor control (active low). [...] Each drive will latch the motor signal at the time its select signal turns on. The disk drive motor will stay in this state until the next time select turns on. DSKMOTOR* also controls the activity light on the front of the disk drive." [...] "All drive motors turn off after system reset."
 
-  *Routine R-SELECT.* CIAB DDRB bit 3 = 1. Write PRB with bit 3 = 1, then with bit 3 = 0 (select turns on and the drive latches MTR*), then with bit 3 = 1. Each write keeps the other PRB bits the case needs.
+  *Drive.* The latch and the light belong to a drive ("Each drive will latch the motor signal at the time its select signal turns on"; "the activity light on the front of the disk drive", p244), and SEL0* is "select internal drive" (p351). The harness's default `floppy_config` is 0, "no floppy drives" (`nanomig_harness.h`). So every run that grades O2 sets `floppy_config` so that the internal drive is present, and the build states the value; LP is the check that the drive and its light respond. No disk and no disk image is needed: nothing used here from p244 depends on one. The light is read at the `fdd_led` output (port list).
+
+  *Routine R-SELECT.* CIAB DDRB bit 3 = 1. Write PRB with bit 3 = 1, then with bit 3 = 0 (select turns on and the drive latches MTR*), then with bit 3 = 1. Each write is a plain byte write of the whole PRB value (E10) that keeps the other data bits the case needs.
 
   *Expected channel behaviour:* if MTR* is 0 when select turns on, the LED is on; if it is 1, the LED is off.
 
@@ -94,7 +104,7 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
   *Calibration precondition LP.* This applies to every run that grades O2, and must hold before any O2 leg is graded:
   1. At program entry the LED is off (p244).
-  2. With CIAB CRB = $00 and DDRB = $88, write PRB bit 7 = 0 and run R-SELECT: the LED turns on.
+  2. With CIAB CRB at its reset value $00 (EP1; LP writes no control register, so P2's leg R keeps the first CRB write) and DDRB = $88, write PRB bit 7 = 0 and run R-SELECT: the LED turns on.
   3. Write PRB bit 7 = 1 and run R-SELECT: the LED turns off.
 
   If LP fails, every O2 leg is ungraded and reported; the O1 legs of the same run are still graded. *Contrast:* change bit 7 without running R-SELECT, and the LED keeps its previous state ("stay in this state until the next time select turns on").
@@ -103,10 +113,10 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
 ### 1.4 Reference frames
 
-- **F1. CPU clock.** T_CPU is the CPU clock period in system clock cycles, a constant of the harness that the builder states.
-  - The CPU clock is 7.09379 MHz on PAL and 7.15909 MHz on NTSC (p2).
-  - A memory cycle is "approximately 280 ns" (p194), which is two CPU clock periods.
-  - *Anchor check (every run):* accesses the harness reports in consecutive memory slots are 2·T_CPU apart. *Contrast:* the same check evaluated with 1.25·T_CPU fails.
+- **F1. CPU clock.** T_CPU is the CPU clock period in system clock cycles. It is measured at the ports, not assumed.
+  - A memory cycle is a colour clock ("227.5 "color clocks", or memory access cycles", p194). A colour clock is two CPU clock periods: it is 281.94 ns on PAL and 279.36 ns on NTSC (p255), and the CPU clock is 7.09379 MHz on PAL and 7.15909 MHz on NTSC (p2).
+  - Figure 6-9 (p195) draws the four refresh slots of a line in alternate memory cycles. So T_CPU is one quarter of the spacing between consecutive refresh accesses of one F4 group.
+  - *Anchor check (every run):* consecutive F4 line marks are 454·T_CPU apart throughout ("In PAL, they are all 227 long", p23), or alternately 456·T_CPU and 454·T_CPU ("Every other line is a long line (228 color clocks ...), with the others being 227 color clocks long", NTSC, p23). *Contrast:* the same check evaluated with 1.25·T_CPU fails.
 - **F2. E period and E-index.** T_E = 10·T_CPU, from "The "E" clock runs at 1/10 of the CPU clock." (p353), which p352 repeats ("count down at 1/10 the CPU clock").
   - The E-index of a store at time t, taken relative to an earlier store t0 in the same loop, is e = round((t − t0) / T_E).
   - An E-index is defined only in a run that passes P6's phase check for that loop. If the check fails, every grade that needs an E-index is not given for that run, and P6 is red.
@@ -116,7 +126,7 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
   - The pages leave open whether P(L) is L or L+1 (Section 3, item 1).
 - **F4. Lines.** Each line has "4 cycles for memory refresh" (p194).
   - The first refresh access of each group of four marks a line. The number of lines between two events is the number of marks between their times.
-  - *Anchor:* consecutive marks are 227 or 228 slots apart, averaging between those values ("227.5 "color clocks", or memory access cycles" per line, p194). *Contrast:* taking groups of three misaligns the marks and the anchor fails.
+  - *Anchor:* each group is four refresh accesses two memory cycles apart (Figure 6-9, p195), and the marks pass F1's anchor check: 227 memory cycles apart on PAL, or alternately 228 and 227 on NTSC (p23; p194's 227.5 is the NTSC average). *Contrast:* taking groups of three misaligns the marks and the anchor fails.
 
 ### 1.5 Routines
 
@@ -126,16 +136,16 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
   - RUNMODE must be 0 during the write because of p342: "In one-shot mode, a write to timer-high [...] will transfer the timer latch to the counter and initiate counting regardless of the start bit". Timers in this package are started only by writing START = 1 (P2 depends on what counts as a start).
 - **R-SAMPLE(n; X [, Y]).** Run n iterations of: read register X and store it (E6); optionally, read register Y and store it. The loop body is fixed code with no data-dependent branch.
 - **R-SELECT.** See O2.
-- **R-KEY.** The harness's keyboard sends one key code, $35 ("B" pressed, p358), starting d_k ≥ 100 E periods after the test sees the program's "ready" marker.
-  - Per p357 and p358, the eight bits are each "followed by a pulse on KCLK (low then high)". KCLK stays low "about 20 microseconds", at "about 60 microseconds per bit". Before the transmission "both KCLK and KDAT are high".
-  - The test records the start and end of each of the 8 KCLK low intervals it drives. Their lengths in E periods are ℓ_1..ℓ_8.
-  - No handshake is given. Every case that uses R-KEY ends within 143 ms of the last clock, since the keyboard resyncs only after "143 ms" without a handshake (p359). The harness sends no other key in the run.
-  - **KP (keyboard idle).** In the same program without R-KEY, a CIAA timer B running with CRB INMODE 01 (CRB ← $21) is unchanged over a window of the same length. *Contrast:* with R-KEY inside that window, it changes by 8.
+- **R-KEY.** The test sends one key code, $35 ("B" pressed, p358), on the keyboard inputs of the port list (`kbd_mouse_type`, `kbd_mouse_data`, `kbd_mouse_level`, listed under "mouse and keyboard"), in the form those inputs take a key code, d_k ≥ 100 E periods after it sees the program's "ready" marker. A code sent there is the keyboard of p357: its KCLK is CIAA's CNT and its KDAT is CIAA's SP (p351).
+  - Per p357 and p358, the keyboard puts out each of the eight bits "followed by a pulse on KCLK (low then high)". KCLK stays low "about 20 microseconds", at "about 60 microseconds per bit". Before the transmission "both KCLK and KDAT are high".
+  - No port carries KCLK or KDAT, so the test sees neither, and no check uses the time or the length of a KCLK pulse. The page's timing only sizes the waits (P7.5) and gives the direction graded in P8.65 mode 11. Where a case needs the transmission inside its window, the window precondition of P7.5 places it: the code is sent after the ready marker, and the SP flag is read set before the stop write.
+  - No handshake is given. Every case that uses R-KEY ends within 143 ms of sending the code, and so within 143 ms of the last clock, since the keyboard resyncs only after "143 ms" without a handshake (p359). The test sends no other code in the run.
+  - **KP (keyboard idle).** A run of the case's program without R-KEY, in which the CIAA timer that the case does not grade counts CNT: CRB ← $21 when timer A is graded, CRA ← $21 when timer B is graded. Where the case uses that timer otherwise, this write replaces its start write. The probe timer is unchanged over a window of the same length. The probe is always the other timer, so that a wrong INMODE on the timer under test cannot fail KP in place of its own check. *Contrast:* with R-KEY inside that window, it changes by 8.
 
 ### 1.6 Runs
 
 - **CPU.** Every run is made on the 68000 core, and on the second core in its default 68000 behaviour. No claim concerns the 68010 or 68020 settings, and p353 speaks of the "680x0 "E" clock" without saying how another CPU derives it, so those settings are not run.
-- **Video standard.** PAL. P5 is also run on NTSC.
+- **Video standard.** Whatever the harness's configuration gives. Its `Config` has no field for choosing PAL or NTSC (`nanomig_harness.h` documents `chipset_config` bit 3, ECS, and bit 4, AGA, only), and the harness drives a single `clk_sys`, so a run cannot be moved to the other standard's crystal (p352: "NTSC 28.63636 MHz", "PAL 28.37516 MHz"). No second run on another standard is made. Nothing graded here needs a particular standard: T_CPU and the line length are measured (F1, F4), and "The "E" clock runs at 1/10 of the CPU clock" (p353) is stated for both.
 - **Chip set and memory.** ECS (the default), 2 MB of Chip memory. No claim distinguishes OCS from ECS.
 - **Separate runs.** Each leg of a proposition is its own run from reset unless its stimulus says otherwise.
 
@@ -147,18 +157,20 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
 **Proposition.** With PBON = 1 (CRA bit 1 for timer A, CRB bit 1 for timer B), the timer's output appears on PB6 (timer A) or PB7 (timer B) of the same CIA, and the line is an output whatever DDRB and the PR data bit say. PBON affects only that one line. With PBON = 0 the line is back in normal operation.
 
-**Claims.**
+**Claims.** Graded whole here:
 - p342: opus:F-timers.c10, opus:F-timers.c11, sol:F-timers.c12.
 - p341: opus:F-ports.c7, sol:F-ports.c7.
-- p349, CRA bitmap PBON column: sol:F-cra.c17, opus:F-cra.c12, opus:F-cra.c13.
+- p349, CRA bitmap PBON column: sol:F-cra.c17.
 - p349, CRB text: sol:F-crb.c3, opus:F-crb.c2.
-- p350, CRB bitmap: sol:F-crb.c14, opus:F-crb.c13, opus:F-crb.c14.
+- p350, CRB bitmap PBON column: sol:F-crb.c14.
+
+P1 also grades the PBON columns of the whole-bitmap claims opus:F-cra.c12, opus:F-cra.c13, opus:F-crb.c13 and opus:F-crb.c14. Those ids are carried by P10.
 
 **Instances.** There are four: (CIAA, timer A, n = 6), (CIAA, timer B, n = 7), (CIAB, timer A, n = 6), (CIAB, timer B, n = 7). In what follows, m = 1 << n, and o is the other one of bits 6 and 7.
 
 **Other-bit pattern.** For bits 0-5, DDRB = 1 and the PR data are:
 - CIAA: pattern Q1 = %101010 and pattern Q2 = %010101.
-- CIAB: pattern Q1 = %111101 (DIR = 0, SIDE* = 1) and pattern Q2 = %111011 (DIR = 1, SIDE* = 0). SEL0*-SEL3* and STEP* always stay 1, except when R-SELECT drives SEL0*.
+- CIAB: pattern Q1 = %111101 (DIR = 0, SIDE* = 1) and pattern Q2 = %111011 (DIR = 1, SIDE* = 0). SEL0*-SEL3* and STEP* are always written as 1. Two lines leave 1 all the same: SEL0* when R-SELECT drives it, and on the timer-A instance PB6 (SEL3*), which is line n.
 
 Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit 3 = 1, which the pattern already provides.
 
@@ -181,12 +193,12 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - **b1 bit n = 0**, although DDRB bit n = 1 and the data bit is 1.
 - **c1 bit n = 1**, although the data bit is 0 (set high on start, no underflow).
 - **d1 bit n = 0** (the data bit) **and d2 bit n = 1** (an input with a pull-up): "0 = PB6 is normal operation" (p348), "0 = PB7 is normal operation" (p349).
-- **Other bits.** In a1, a2, b1 and c1, every bit other than n equals what the same DDRB and PR contents give with PBON = 0: the pattern bits, and 1 for the input bit o. The override affects "the appropriate PB line" only.
+- **Other bits.** In a1, a2, b1 and c1, every bit other than n equals what the same DDRB and PR contents give with PBON = 0. An output bit reads its PR data bit. An input bit reads the same bit of r0, the level that pin had undriven in step 2 ("you read the actual current state of the I/O pins", p341). In a1 and a2 this is r0 apart from bit n; in b1 and c1 it is the pattern bits, and r0's bit o. The override affects "the appropriate PB line" only.
 - **LED (CIAB, timer B).** LED-A1 on, LED-C off, LED-D1 on, LED-D2 off.
 - **Quantifier.** The claims name PB6 for timer A and PB7 for timer B generally, so all four instances must pass.
 
 **Preconditions.**
-- **Pre1.1.** r0 bit n = 1. The undriven line reads high: "Ports A and B have passive pull-up devices" (p341); "a read of the ports will return all highs because of passive pull-ups" (p354). Without this, legs A1 and A2 cannot tell a driven 0 from an undriven one. If r0 bit n = 0, legs A1 and A2 are not graded and the value is reported; legs B, C and D still are. *Contrast:* set DDRB bit n = 1 and the data bit to 0 before the read, and r0 bit n = 0.
+- **Pre1.1.** r0 bit n = 1. The undriven line reads high: "Ports A and B have passive pull-up devices" (p341); "a read of the ports will return all highs because of passive pull-ups" (p354). Without this, legs A1 and A2 cannot tell a driven 0 from an undriven one, and d2 and LED-D2 cannot tell an input from an output driving 0. If r0 bit n = 0, legs A1 and A2, d2 and LED-D2 are not graded and the value is reported; legs B and C, d1 and LED-D1 still are. *Contrast:* set DDRB bit n = 1 and the data bit to 0 before the read, and r0 bit n = 0.
 - **Pre1.2.** Exactly one underflow happens before leg A1: CR bit 0 reads 0 within the poll limit, and i1 has TA (timer A) or TB (timer B) set. *Contrast:* with L = $FFFF in step 4, the poll limit runs out with bit 0 still 1 and the i1 flag at 0.
 - **Pre1.3.** No underflow happens during leg C: the i2 flag is 0. *Contrast:* with L = $0004 in step 7, the flag is 1, and c1 is then not graded.
 - **LP** for the O2 legs (O2).
@@ -209,7 +221,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Proposition.** Before any start after reset, the toggle output is low. Every start of the timer sets it high, whether it was low or high before.
 
-**Claims.** opus:F-timers.c14, sol:F-timers.c13 (p342).
+**Claims.** opus:F-timers.c14 (p342), graded whole here. P2 also grades the start and RES clauses of sol:F-timers.c13 (p342), which P10 carries.
 
 **Instances.** The four of P1.
 
@@ -224,27 +236,25 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
   After the one-shot the counter again holds $0020: "reload the latched value, then stop" (p342).
 - **Leg H** (start from high). CR ← $06. R-LATCH($FFFF). CR ← $07; read PRB → h1. CR ← $06 (stop); read PRB → h2. CR ← $07 (start again); read PRB → h3. Read ICR → ih. All within 2000 E periods.
 
-**Observation.** The O1 values. The E-indices (F2) of the s_k samples relative to the marker after the start write. The LED (O2).
+**Observation.** The O1 values, and the order of the s_k samples. The LED (O2).
 
 **Expected.**
 - **Leg R.** r1 bit n = 0: "set low by RES" (p342), with no start since reset. LED-R is on (MTR* low at the select).
-- **Leg S, for every k.**
-  - The level before the start is 0: r1 for k = 1, z_(k−1) otherwise.
-  - Every sample of s_k whose E-index lies in [L/4, 3L/4] = [8, 24] has bit n = 1: set high on start ("whenever the timer is started", p342). This window lies well inside the countdown, so no latency at either end can matter.
-  - Every sample with E-index ≥ 5L/4 = 40 has bit n = 0. The single one-shot underflow toggled the output once, and a one-shot does not underflow again.
-  - z_k bit n = 0.
+- **Leg S, for every start k whose Pre2.3 holds.** In bit n, the level before the start (0, Pre2.3) followed by s_k[0..63] reads 0…0 1…1 0…0: at least one 1, and exactly one rise. The rise is the start setting the output high ("The toggle output is set high whenever the timer is started", p342).
+  - Only this order is graded. No page states how soon after the start write the output rises, or when the underflow comes, so no E-index window is graded.
+  - The trailing 0s, from the one-shot's underflow toggling the output (p342), are allowed and not required: the toggle is P3's clause.
 - **Leg H.** h1 = 1 and h3 = 1 (bit n). h2 is reported, not graded (see Left open). h3 separates "set high" from "toggle" only when h2 = 1: a design that toggles on start would then give h3 = 0. If h2 = 0, h3 = 1 is still required, and the report says the leg did not separate the two.
 - **Quantifier.** "Whenever" means all four starts of leg S, plus leg H.
 
 **Preconditions.**
 - **Pre2.1 (leg R).** E1 holds, and EP1 read CR = $00. The program's first write to this CR is the one in leg R. If the harness runs any code before the test program, leg R cannot be graded, and that is reported. *Contrast:* insert R-LATCH($FFFF) and CR ← $07 before leg R's write. The page then predicts r1 = 1 (started, no underflow) and LED-R off.
 - **Pre2.2 (leg S).** Before each restart, the previous one-shot has ended: CR bit 0 read 0 within the poll limit and i_k has the flag. *Contrast:* with R-LATCH($FFFF), the poll limit runs out with bit 0 still 1.
-- **Pre2.3.** The E-index frame is valid for the R-SAMPLE loop (P6's phase check). *Contrast:* see P6.
+- **Pre2.3 (leg S, start k).** The level before start k is 0: r1 bit n for k = 1, z_(k−1) bit n otherwise (the previous one-shot's underflow toggled the output low, p342). A start whose level before is not 0 is not graded, and the value is reported. *Contrast:* write start k−1 as CR ← $0D (PBON = 0). That one-shot still ends, so Pre2.2 holds, but with DDRB bit n = 0 the line reads its pull-up: z_(k−1) = 1, and start k is not graded.
 - **Pre2.4 (leg H).** The ih flag is 0 (no underflow in leg H). *Contrast:* with R-LATCH($0008), the flag is 1.
 
-**Contrasting case.** In leg S, replace the start write with CR ← $0E (START = 0). The page predicts no start and no underflow, so every sample of s_k reads 0, including the [8, 24] window. For leg R, see Pre2.1's contrast.
+**Contrasting case.** In leg S, write start 4 as CR ← $0E (START = 0). The page predicts no start, so s_4 reads 0 throughout, with no rise, and the check fails for k = 4. Every precondition of start 4 still holds (start 3's one-shot ended, and z_3 = 0), and no later start depends on start 4's underflow. The pulse mode (CR ← $0B) is not a contrast for an order-only check: its one-cycle pulse at the underflow (p342) can fall on a sample and read as a single rise. For leg R, see Pre2.1's contrast.
 
-**Reference frame.** F2. Leg S counts E-indices from the store of the marker right after the bracketed start write.
+**Reference frame.** The order of the samples only; P2 needs no E-index. P9 leg W reuses leg S with E-indices (F2), counted from the store of the marker right after the bracketed start write.
 
 **Left open.** These are not graded:
 - What stopping the timer does to the toggle output.
@@ -257,7 +267,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Proposition.** With OUTMODE = 1 (bit 2) and PBON = 1, the PB line changes level once at each underflow and never otherwise.
 
-**Claims.**
+**Claims.** None graded whole here. P3 grades the toggle half of these claims; P4 grades their pulse half, and P10 carries the ids:
 - p342: opus:F-timers.c12, opus:F-timers.c13, sol:F-timers.c13.
 - p349: OUTMODE "1=toggle" in sol:F-cra.c16, opus:F-cra.c12, opus:F-cra.c13, opus:F-crb.c3, sol:F-crb.c4.
 - p350: sol:F-crb.c13, opus:F-crb.c13, opus:F-crb.c14.
@@ -289,7 +299,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Proposition.** With OUTMODE = 0 and PBON = 1, the PB line is low, except that at every underflow it goes high for exactly one φ2 cycle.
 
-**Claims.** The OUTMODE "0=pulse" readings in the P3 claim list, together with opus:F-timers.c12, opus:F-timers.c13 and sol:F-timers.c13 (p342).
+**Claims.** None graded whole here. P4 grades the OUTMODE "0=pulse" half of the claims P3 lists, and the pulse half of opus:F-timers.c12, opus:F-timers.c13 and sol:F-timers.c13 (p342). It also shows the "pulse trains" of opus:F-timers.c6 and sol:F-timers.c8 (p341). P10 carries all these ids.
 
 **Instances.** The four of P1.
 
@@ -326,13 +336,14 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 ### P5: φ2 is the E clock, one tenth of the CPU clock
 
-**Proposition.** A timer counting φ2 pulses (CRA INMODE = 0, CRB INMODE = 00) decrements once per E cycle, that is once per 10 CPU clock periods, on PAL and on NTSC.
+**Proposition.** A timer counting φ2 pulses (CRA INMODE = 0, CRB INMODE = 00) decrements once per E cycle, that is once per 10 CPU clock periods.
 
 **Claims.**
-- p353: opus:F-signals.c1, sol:F-signals.c69, opus:F-signals.c2, sol:F-signals.c70.
-- The φ2 input-mode settings: sol:F-cra.c13 and opus:F-cra.c12 (p349); sol:F-crb.c7 (p349); sol:F-crb.c10 and opus:F-crb.c13 (p350).
+- Graded whole here, p353: opus:F-signals.c2, sol:F-signals.c70.
+- P5 also grades the φ2 input-mode settings of sol:F-cra.c13 and opus:F-cra.c12 (p349), sol:F-crb.c7 (p349), and sol:F-crb.c10 and opus:F-crb.c13 (p350). P10 carries those ids.
+- opus:F-signals.c1 and sol:F-signals.c69 are declined whole (Section 0).
 
-**Instances.** Four timers (CIAA A and B, CIAB A and B) × {PAL, NTSC}.
+**Instances.** Four timers (CIAA A and B, CIAB A and B), on the harness's one clock (1.6).
 
 **Stimulus.**
 - **Leg (a), differential.** CR ← $00. R-LATCH($FFFF). Bracketed write CR ← $01 (START, φ2, continuous). A delay loop of D iterations. Bracketed write CR ← $00. Read HI, read LO → V. Read ICR → i.
@@ -363,26 +374,35 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Proposition.** CPU transfers to and from a CIA happen in step with φ2 (E). In a loop whose only element not paced by Chip-memory cycles is a CIA access, every iteration starts at the same phase of the E cycle.
 
-**Claims.** opus:F-signals.c1, sol:F-signals.c69 (p353). The context is the CS paragraph on p353 and the DB7-DB0 paragraph on p354.
+**Claims.** None. The two claims whose bus-timing clause it checks, opus:F-signals.c1 and sol:F-signals.c69 (p353), are declined whole (Section 0). P6 is run and graded all the same: it is the check that F2's E-index frame holds for a loop. Its sources are the Clock Input and CS paragraphs on p353 and the DB7-DB0 paragraph on p354.
 
 **Stimulus.** Environment (1.2), then three loops of 200 iterations, each iteration reading one byte and storing it (E6):
 - **K1:** the byte is read from CIAA PRB.
 - **K2:** the byte is read from CIAB PRB.
-- **K3 (contrast):** the same instruction reads a Chip-memory byte instead. The builder pads the loop body so that the iteration time I3 is not a multiple of 10·T_CPU.
+- **K3 (contrast, graded in the same run):** the same instruction reads a Chip-memory byte instead ($0C4000, E9). The builder pads the loop body so that the iteration time I3 is not a multiple of 10·T_CPU.
 
-The R-SAMPLE loops used in P2, P4, P5(b) and P9 are checked the same way, once for each store instruction in the body.
+The R-SAMPLE loops used in P4, P5(b) and P9 (including P2 leg S's loop, which P9 leg W reuses) are checked the same way, once for each store instruction in the body.
 
 **Observation.** The store times t_i. Their phases φ_i = (t_i − t_0) mod T_E, folded into [−T_E/2, T_E/2).
 
-**Expected.** For K1, K2 and every R-SAMPLE loop, all φ_i of one store instruction lie within a band no wider than 4·T_CPU.
+**Expected.**
+- **K1, K2 and every R-SAMPLE loop:** the φ_i of one store instruction lie within a band no wider than 2·T_CPU. They take at most two values, 2·T_CPU apart.
+- **K3:** its φ_i take all five values 0, 2, 4, 6 and 8·T_CPU mod T_E, a spread of 8·T_CPU, so the 2·T_CPU band does not hold for it. This is a bound derived from the pages below, not an order.
 
-Why: "A low level on CS while 02 is high causes the device to respond to signals on the R/W and address (RS) lines" (p353), and the data pins drive "unless CS is low and R/W and 02 are high" (p354). So each transfer occupies the φ2-high part of an E cycle, and the instruction after it starts at a fixed phase of E. The only other timing influence is Chip-memory slot allocation, whose unit is a memory cycle of 2·T_CPU (p194). With DMA off, only the "4 cycles for memory refresh" per line (p194) can delay a CPU access, and the band allows two memory cycles for that.
+Why the band is 2·T_CPU:
+- "A low level on CS while 02 is high causes the device to respond to signals on the R/W and address (RS) lines" (p353), and the data pins drive "unless CS is low and R/W and 02 are high" (p354). So each transfer occupies the φ2-high part of an E cycle and ends at a fixed phase of E.
+- "The 68000 uses only the even-numbered memory access cycles" (p196), and Figure 6-10 (p196) marks the odd cycle "assigned to other devices", the even cycle "available to the 68000". A memory cycle is 2·T_CPU (F1), so the 68000's cycles come every 4·T_CPU.
+- T_E is 10·T_CPU, five memory cycles, an odd number. The 68000's cycles therefore fall at one of two offsets from the E cycle, alternating from one E cycle to the next, one memory cycle (2·T_CPU) apart.
+- So the first Chip-memory access after a CIA transfer lands at one of two phases 2·T_CPU apart. The fixed code after it runs on the same 4·T_CPU grid, and keeps that offset up to the store.
+- Nothing else moves it: refresh and the other devices take the odd cycles (Figure 6-10), and with DMA off (EP2) no device takes an even one.
+
+Why K3 spreads: every access of K3's loop, which contains no CIA access, is on the 68000's 4·T_CPU grid (p196), so I3 is a whole multiple of 4·T_CPU. With I3 mod T_E not 0 (Pre6.1), I3 mod T_E is 2, 4, 6 or 8·T_CPU. Each shares only the factor 2 with 10, so five consecutive stores already take all five phases 0, 2, 4, 6 and 8·T_CPU.
 
 **Preconditions.**
 - **EP2 and the F1 anchor.**
 - **Pre6.1 (K3).** The measured I3 mod T_E is not 0. *Contrast:* padding that makes I3 a multiple of 10·T_CPU fails this precondition.
 
-**Contrasting case.** K3. Its iterations are paced by memory cycles only (a multiple of 2·T_CPU) and not by E. With I3 a non-zero multiple of 2·T_CPU mod 10·T_CPU, the phases step through all five even values mod 10·T_CPU. They span 8·T_CPU, more than the band, so the check fails.
+**Contrasting case.** K3 is the contrast to K1 and K2: the same loop with the CIA read replaced by a Chip-memory read, which no page ties to E. It is graded in the same run, and the band that K1 and K2 must meet does not hold for it.
 
 **Reference frame.** F1 and F2.
 
@@ -394,7 +414,7 @@ Why: "A low level on CS while 02 is high causes the device to respond to signals
 
 Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
-**Claims (all sub-propositions).** opus:F-cra.c12, opus:F-cra.c13 (p349, the CRA bitmap: "E CRA unused 0=input 0=02 1=force 0=cont. 0=pulse 0=PB6OFF 0=stop / unused 1=output 1=CNT load 1=one- 1=toggle 1=PB6ON 1=start / (strobe) shot"), and sol:F-cra.c13 (p349, INMODE). The bitmap is read from the printed image, because the text layer prints "=" as "*" and "1" as "l". Each sub-proposition applies to CIAA and CIAB unless stated: "There are two control registers in the 8520, CRA and CRB" (p348), and the system has two 8520s (p339).
+**Claims.** None is graded whole by one sub-proposition. Each sub-proposition grades one field of the CRA bitmap claims opus:F-cra.c12 and opus:F-cra.c13 (p349: "E CRA unused 0=input 0=02 1=force 0=cont. 0=pulse 0=PB6OFF 0=stop / unused 1=output 1=CNT load 1=one- 1=toggle 1=PB6ON 1=start / (strobe) shot"); P7.5 also grades the CNT half of sol:F-cra.c13 (p349, INMODE). P10 carries these ids. The bitmap is read from the printed image, because the text layer prints "=" as "*" and "1" as "l". Each sub-proposition applies to CIAA and CIAB unless stated: "There are two control registers in the 8520, CRA and CRB" (p348), and the system has two 8520s (p339).
 
 #### P7.0: Bit 0 is START (1 start, 0 stop)
 
@@ -407,13 +427,14 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
 #### P7.3: Bit 3 is RUNMODE (1 one-shot, 0 continuous)
 
-- **Stimulus.** CR ← $00. R-LATCH(40). Read ICR (discard). CR ← $09 (START, one-shot). R-SAMPLE(400; ICR). Read CRA → c. Read TAHI, TALO → u.
-- **Expected.** Source: "In one-shot mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, then stop." (p342), and "This bit is automatically reset (= 0) when underflow occurs during one-shot mode." (p348).
-  - Exactly one ICR sample has TA = 1.
-  - c bit 0 = 0.
-  - u = 40.
-- **Precondition.** The iteration spacing is ≤ P/2 E periods (the continuous run below shows no two flags in adjacent reads). *Contrast:* with L = 2, flags appear in adjacent reads.
-- **Contrasting case.** CR ← $01 (bit 3 = 0, continuous), which "repeat[s] the procedure continuously" (p342): at least 5 samples have TA = 1, one per P(40), and c bit 0 = 1.
+- **Stimulus.** Two legs, one run each, identical except for the start value, which comes from the parameter block (E7).
+  - *Leg O (one-shot):* CR ← $00. R-LATCH(40). Read ICR (discard). CR ← $09 (START, one-shot). R-SAMPLE(400; ICR). Read CRA → c. Read TAHI, TALO → u.
+  - *Leg C (continuous):* the same with CR ← $01 (START, continuous) as the start write.
+- **Expected.** Source: "1 = one-shot mode, 0 = continuous mode." (p348); "In one-shot mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, then stop. In continuous mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, and repeat the procedure continuously." (p342); and "This bit is automatically reset (= 0) when underflow occurs during one-shot mode." (p348).
+  - Leg O: exactly one ICR sample has TA = 1; c bit 0 = 0; u = 40.
+  - Leg C: more than one ICR sample has TA = 1, and c bit 0 = 1 (START is reset only by an underflow "during one-shot mode"). u is reported, not graded: the counter is running when it is read.
+- **Precondition.** Consecutive ICR stores are at most 20 E periods apart (P/2 for any P ≥ 40, F3), from their store times (F1, F2), so that a timer that repeats shows more than one flag. *Contrast:* a loop body padded beyond 20 E periods fails it.
+- **Contrasting case.** Each leg is the other's. CR ← $01 in leg O gives more than one TA sample, so "exactly one" fails; CR ← $09 in leg C gives exactly one, so "more than one" fails.
 
 #### P7.4: Bit 4 is LOAD (force load, strobe, reads 0)
 
@@ -430,14 +451,17 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
 #### P7.5: Bit 5 is INMODE (1 counts positive CNT transitions, 0 counts φ2)
 
-- **Stimulus, CIAA.** CR ← $00. R-LATCH($1000). Read ICR (discard). CR ← $21 (START, CNT). "Ready" marker. R-KEY. The program waits W E periods, with 1500 ≤ W ≤ 3000 (the 8 bits take about 8 × 60 µs, about 340 E periods, per p358; the upper bound keeps the φ2 contrast below the latch). Bracketed write CR ← $00. Read TAHI, TALO → v. Read ICR → i.
+- **Stimulus, CIAA.** CR ← $00. R-LATCH($1000). Read ICR (discard). CR ← $21 (START, CNT). "Ready" marker. R-KEY. The program waits W E periods, with 1500 ≤ W ≤ 3000 (the 8 bits take about 8 × 60 µs, about 340 E periods, per p358; the upper bound keeps the φ2 contrast below the latch). Read ICR → i. Bracketed write CR ← $00. Read TAHI, TALO → v.
 - **Stimulus, CIAB.** The same without R-KEY (CIAB CNT is POUT, which nothing drives).
 - **Expected.** Source: "1 = Timer A counts positive CNT transitions" (p348), with CNT = KCLK (p351) and "a pulse on KCLK (low then high)" per bit, "until all eight data bits have been sent" (p357).
-  - CIAA: $1000 − v = 8, and i has SP = 1. The serial port was in input mode (bit 6 = 0): "After eight CNT pulses, the data in the shift register is dumped into the serial data register and an interrupt is generated." (p345).
+  - CIAA: $1000 − v = 8.
   - CIAB: v = $1000.
 - **Preconditions.**
-  - KP. *Contrast:* KP's own contrast.
-  - The whole transmission lies between the start and stop writes, judged from the harness's KCLK drive times against the markers. *Contrast:* send the key after the stop write, and v = $1000.
+  - KP (its probe is timer B, CRB ← $21). *Contrast:* KP's own contrast.
+  - **Window (CIAA).** The whole transmission lies between the start write and the stop write.
+    - It starts after the start write: the test sends the code d_k ≥ 100 E periods after the ready marker, which follows the start write, as the test's own send time against the marker's store time shows.
+    - It has ended before the stop write: i, read before the stop write, has SP = 1. The serial port is in input mode (CRA bit 6 = 0), and "After eight CNT pulses, the data in the shift register is dumped into the serial data register and an interrupt is generated." (p345).
+    - *Contrast:* send the key after the stop write. i then has SP = 0.
 - **Contrasting case.** CR ← $01 (bit 5 = 0, φ2): $1000 − v = round(W/T_E) ± 2, on both CIAs.
 - **Left open.** The SDR value is reported, not graded. What it should hold depends on the keyboard's bit order and polarity (p357-p358), which are claims outside this package.
 
@@ -445,7 +469,7 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
 - **Stimulus, CIAB.** CR ← $00. R-LATCH(10). Read ICR (discard). CR ← $41 (START, SPMODE output, continuous). SDR ← $A5. R-SAMPLE(300; ICR). CR ← $00.
 - **Expected, CIAB.** Source: "1 = Serial port=output (CNT is the source of the shift clock)" (p348), and p345: "Transmission will start following a write to the serial data register. [...] After eight CNT pulses, an interrupt is generated". At least one sample has SP = 1. The number of TA flags before the first SP flag is reported, not graded: its value, 16 by "Data is shifted out on the SP pin at 1/2 the underflow rate of Timer A" (p345), belongs to claims outside this package.
-- **CIAA.** Only the input setting is exercised. The SP = 1 in P7.5's run with CR ← $21 (bit 6 = 0) is this leg's positive result. Its contrast is the same run without R-KEY: SP = 0. CIAA is not put into output mode, because its SP and CNT are the keyboard's KDAT and KCLK (p351), and the host drives KDAT as the keyboard handshake (p357).
+- **CIAA.** Only the input setting is exercised. SP = 1 in i, the ICR read that P7.5's CIAA run (CR ← $21, bit 6 = 0) makes before its stop write, is this leg's positive result; P7.5 uses the same value as its window precondition. Its contrast is the same run without R-KEY: SP = 0. CIAA is not put into output mode, because its SP and CNT are the keyboard's KDAT and KCLK (p351), and the host drives KDAT as the keyboard handshake (p357).
 - **Precondition (CIAB).** Timer A underflows during the window: at least 20 samples have TA = 1. *Contrast:* CR ← $40 (not started) gives no TA and no SP.
 - **Contrasting case (CIAB).** CR ← $01 (bit 6 = 0, input): SP = 0 in every sample. In input mode, data shift only "on the rising edge of the signal applied to the CNT pin" (p345), and CIAB's CNT (POUT) is not driven.
 
@@ -457,7 +481,10 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
   - c2 = $01.
   - |w81 − w01| ≤ 1: the timer behaves as it does with $01.
 - **Precondition.** Both runs have the same bracket-to-bracket time within 1 E period. *Contrast:* a different delay count D breaks this.
-- **Contrasting case.** c2' bit 0 = 1: a used bit reads back set while the timer runs. p348 describes START being cleared only by a one-shot underflow; see Section 3, item 7.
+- **Contrasting case.** One for each half of the page's sentence.
+  - *Forced to 0 on a read:* CR ← $02 (PBON, a used bit; the timer stays stopped, so R-LATCH still applies) in place of CR ← $80. A used bit reads back (Section 3, item 7), so the page predicts c1 = $02, and c1 = $00 fails.
+  - *Unaffected by a write:* CR ← $21 (START and INMODE, a used bit) in place of CR ← $81. The timer then "counts positive CNT transitions" (p348), and there are none (no key is sent: KP on CIAA; CIAB's CNT is not driven, P7.5), so w21 = $8000, far from w01, and |w − w01| ≤ 1 fails.
+- **Control.** c2' = $01 in the second run: a used bit reads back set while the timer runs. p348 describes START being cleared only by a one-shot underflow.
 
 ---
 
@@ -465,7 +492,7 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
 Bits 1 (PBON) and 2 (OUTMODE) of CRB are graded in P1, P3 and P4.
 
-**Claims (all sub-propositions).** opus:F-crb.c13, opus:F-crb.c14, sol:F-crb.c10 (p350, the CRB bitmap, read from the printed image: "F CRB 0=TOD 00=02 1=force 0=cont. 0=pulse 0=PB7OFF 0=stop / 1=Alarm 01=CNT load 1=one- 1=toggle 1=PB7ON 1=start / 10=Timer A (strobe) shot / 11=CNT+ Timer A"), and sol:F-crb.c7 (p349, the INMODE table). Both CIAs unless stated.
+**Claims.** None is graded whole by one sub-proposition. Each sub-proposition grades one field of the CRB bitmap claims opus:F-crb.c13 and opus:F-crb.c14 (p350, read from the printed image: "F CRB 0=TOD 00=02 1=force 0=cont. 0=pulse 0=PB7OFF 0=stop / 1=Alarm 01=CNT load 1=one- 1=toggle 1=PB7ON 1=start / 10=Timer A (strobe) shot / 11=CNT+ Timer A"); P8.65 also grades modes 01, 10 and 11 of sol:F-crb.c10 (p350) and sol:F-crb.c7 (p349, the INMODE table). P10 carries these ids. Both CIAs unless stated.
 
 #### P8.0, P8.3, P8.4: START, RUNMODE, LOAD
 
@@ -477,19 +504,25 @@ Source: "CRB6 CRB5 Mode Selected: 0 0 Timer B counts 02 pulses; 0 1 Timer B coun
 
 - **Mode 00.** P5, the timer-B instances.
 - **Mode 01.**
-  - *CIAA:* CRB ← $00. R-LATCH_B($1000). CRB ← $21. "Ready" marker. R-KEY. Wait W E periods, with 1500 ≤ W ≤ 3000. CRB ← $00. Read → v. Expected: $1000 − v = 8.
+  - *CIAA:* CRB ← $00. R-LATCH_B($1000). CRB ← $21. "Ready" marker. R-KEY. Wait W E periods, with 1500 ≤ W ≤ 3000. Read ICR → i. Bracketed write CRB ← $00. Read TBHI, TBLO → v. Expected: $1000 − v = 8.
   - *CIAB:* the same without R-KEY. Expected: v = $1000.
-  - Preconditions as in P7.5. *Contrasting case:* CRB ← $01 gives $1000 − v = round(W/T_E) ± 2.
+  - Preconditions as in P7.5: KP, with timer A as its probe (CRA ← $21), and on CIAA the window (the code sent after the ready marker; SP = 1 in i, CRA staying $00 so that the serial port is in input mode). *Contrasting case:* CRB ← $01 gives $1000 − v = round(W/T_E) ± 2.
 - **Mode 10 (both CIAs).**
   - *Stimulus:* CRA ← $00; R-LATCH_A(30); CRB ← $00; R-LATCH_B($FFFF). Read ICR (discard). CRB ← $41 (START, INMODE 10). CRA ← $01. R-SAMPLE(300; ICR). CRA ← $00. Read ICR (final). CRB ← $00. Read TBHI, TBLO → v.
   - *Expected:* $FFFF − v = N_A, the number of ICR reads after CRA's start write, including the final one, that have TA = 1.
   - *Precondition:* the iteration spacing is ≤ P(30)/2, so each TA flag is exactly one underflow. *Contrast:* with R-LATCH_A(2), flags appear in consecutive reads.
-  - *Contrasting case:* CRB ← $01 (mode 00) gives $FFFF − v ≥ (window/T_E) − 2, far more than N_A. A second contrast: with CRA left at $00 (timer A stopped), v = $FFFF.
+  - *Contrasting case:* CRB ← $01 (mode 00) gives $FFFF − v ≥ (window/T_E) − 2, far more than N_A. Leaving CRA at $00 is not a contrast: v = $FFFF and N_A = 0 still satisfy the expected equality, and with no TA flag the precondition cannot be measured.
 - **Mode 11 (CIAA only; CIAB's CNT has no driver).**
-  - *Stimulus:* two runs, X and Y, identical except for the CRB value: X writes $41 (mode 10), Y writes $61 (mode 11). In both: CRA ← $00; R-LATCH_A(3); CRB ← $00; R-LATCH_B($FFFF); CRB ← value; CRA ← $01; "ready" marker; R-KEY at the same d_k; wait W ≥ 1500 E periods; CRA ← $00; CRB ← $00; read TBHI, TBLO. The results are D_X and D_Y (the decrements).
-  - *Expected:* D_Y < D_X. With P_A = 3 + δ (δ from P9), the difference D_X − D_Y lies in [Σ_j (⌊ℓ_j/P_A⌋ − 1), Σ_j (⌈ℓ_j/P_A⌉ + 1)], summed over the 8 KCLK low intervals. The ±1 per interval allows for the page not saying when "held high" is sampled relative to an underflow.
-  - *Preconditions:* KP. The transmission lies inside the window. P9 has determined δ. *Contrast for KP:* its own. *Contrast for the window:* send the key after CRA's stop write, and D_Y = D_X.
-  - *Contrasting case:* the same pair of runs without R-KEY. Then D_Y = D_X, because CNT stays high throughout ("Before the transmission starts, both KCLK and KDAT are high", p357).
+  - *Stimulus:* two pairs of runs. In each pair, runs X and Y are identical except for the CRB value, which comes from the parameter block (E7): X writes $41 (mode 10), Y writes $61 (mode 11). Every run: CRA ← $00; R-LATCH_A(3); CRB ← $00; R-LATCH_B($FFFF); CRB ← value; bracketed write CRA ← $01; "ready" marker; wait W E periods, with 1500 ≤ W ≤ 3000; read ICR → i; bracketed write CRA ← $00; CRB ← $00; read TBHI, TBLO. The decrements are D_X and D_Y. Pair K sends R-KEY, at the same d_k in both runs; pair N sends no key.
+  - *Expected:* only the order is graded.
+    - Pair N: D_Y = D_X. Without a key, CNT is high throughout ("Before the transmission starts, both KCLK and KDAT are high", p357), so mode 11 counts every timer A underflow that mode 10 counts: "1 0 Timer B counts Timer A underflow pulses; 1 1 Timer B counts Timer A underflow pulses while CNT pin is held high" (p349).
+    - Pair K: D_Y < D_X. With a key, KCLK goes low once per bit ("a pulse on KCLK (low then high)", p357) for "about 20 microseconds" (p358), about 14 E periods at 1/10 of the CPU clock (p353, p2), while timer A with latch 3 underflows every 3 or 4 E periods (F3; Section 3, item 1). Underflows then fall while CNT is low, and mode 11 does not count them.
+    - The size of D_X − D_Y is reported, not graded: no page gives the low time exactly, and no port shows KCLK.
+  - *Preconditions:*
+    - KP, with timer A as the probe: its own run is the pair's program without R-KEY and with CRA ← $21 in place of CRA ← $01, and timer A is unchanged. *Contrast:* its own.
+    - Pair K: the window of P7.5, with i read before CRA's stop write: the code is sent after the ready marker, and i has SP = 1 (CRA bit 6 is 0, input mode). *Contrast:* send the key after CRA's stop write; i then has SP = 0.
+    - In each pair, the two runs' windows, from the marker after CRA's start write to the marker after its stop write, are equally long in system clock cycles, so that modes 10 and 11 are offered the same timer A underflows. *Contrast:* a different wait W in run Y breaks it.
+  - *Contrasting case:* each pair is the other's. Sending the key in pair N gives D_Y < D_X, and "D_Y = D_X" fails; leaving it out of pair K gives D_Y = D_X, and "D_Y < D_X" fails.
 
 #### P8.7: Bit 7 is ALARM (1: TOD writes set the alarm; 0: they set the TOD clock)
 
@@ -516,18 +549,18 @@ Source: "1 = writing to TOD registers sets Alarm, 0 = writing to TOD registers s
 
 **Proposition.** When the timer counts φ2, the underflow period is P(L) = L + δ E periods, with one constant δ for every latch value L. So the toggle waveform's frequency, and the width of a one-shot's high output, follow the latch.
 
-**Claims.** opus:F-timers.c6 and sol:F-timers.c8 (p341): "This latch (prescalar) value is a divider of the input clocking frequency." [...] "Various timer operating modes allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms."
+**Claims.** None graded whole here. P9 grades the divider sentence of sol:F-timers.c8, and the "variable width pulses" and "variable frequency waveforms" of both sol:F-timers.c8 and opus:F-timers.c6 (p341): "This latch (prescalar) value is a divider of the input clocking frequency." [...] "Various timer operating modes allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms." P10 carries both ids.
 
-**Instances.** CIAA timer A and CIAB timer B are required; the other two are optional.
+**Instances.** The four of P1. The sentence is about the latch of every timer: "Each interval timer consists of a 16-bit read-only timer counter and a 16-bit write-only timer latch" (p341).
 
 **Stimulus.**
-- **Leg F (frequency).** P3's run, with L ∈ {40, 41, 64, 100}.
+- **Leg F (frequency).** P3's run, with L ∈ {40, 41, 64, 100}. Where 600 iterations do not cover the 16 flags F3 needs (L = 100 with a short loop body), the sampler is made longer, within the result area (E9); F3's own condition is the guard.
 - **Leg W (width).** P2 leg S, with L ∈ {40, 100} and R-SAMPLE long enough to pass the underflow.
 
 **Observation.**
 - P(L) from the ICR stores (F3).
 - The toggle half-period: the E-index difference between consecutive PRB transitions.
-- W(L): the E-index of the first bit-n = 0 sample after the start marker, minus the E-index of that marker.
+- W(L): the E-index of the first bit-n = 0 sample that follows a bit-n = 1 sample of the same start, minus the E-index of that start's marker. A 0 read before the output has gone high is not its end.
 
 **Expected.**
 - δ = P(L) − L is the same for all four L, and δ ∈ {0, 1}.
@@ -536,13 +569,38 @@ Source: "1 = writing to TOD registers sets Alarm, 0 = writing to TOD registers s
 
 Why δ is 0 or 1: p342 says the timer will "count down from the latched value to zero, generate an interrupt, reload"; p346 calls an underflow "timer counts down past 0". The pages leave open which of L or L+1 the period is, so only δ's constancy and range are graded.
 
-**Preconditions.** Those of P3 (Pre3.1, Pre3.2) and of F3.
+**Preconditions.** Leg F: those of P3 (Pre3.1, Pre3.2) and of F3. Leg W: P2's Pre2.2 and Pre2.3, and the E-index frame for leg S's loop (P6's phase check). *Contrasts:* those of P3, F3, P2 and P6.
 
 **Contrasting case.**
-- Changing L by Δ changes the period by exactly Δ: every pair of latch values in leg F is a contrast to the others.
-- With CNT counting and no input (CR ← $27, or CRB ← $27), the page predicts no underflow and no transitions at all.
+- Changing L by Δ changes the period by exactly Δ: every pair of latch values in leg F is a contrast to the others. The run for L = 41 made with a latch of 42 gives a δ one larger than the other three, and "the same for all four L" fails.
+- Leg W: the L = 40 run made with a latch of 20 gives W(100) − W(20) = 80, outside 60 ± s. (A larger latch in the L = 100 run could outlast its sampler and leave W undefined.)
+
+A run counting CNT with no input (CR ← $27, or CRB ← $27) is not a contrast: with no underflow, Pre3.2 and F3 fail and the run is not graded instead of red.
 
 **Reference frame.** F2 and F3.
+
+---
+
+### P10: Claims that several propositions grade together
+
+Each claim below states more than any one of P1-P9 grades, so no one of them carries its id. The id is carried by an assertion of its own, one per row, per core:
+- it passes when every assertion it lists passed on that core;
+- it fails when any of them failed;
+- otherwise it is not graded, and its ids go on a record line that names the listed assertion that was not graded.
+
+| Claim | Page | What it states | Graded whole by |
+|---|---|---|---|
+| sol:F-timers.c13 | 342 | one bit selects toggle or a one-cycle positive pulse on every underflow; the toggle output is set high on start and low by RES | P2, P3, P4 (all four instances each) |
+| opus:F-timers.c12, opus:F-timers.c13 | 342 | one bit selects the output while PB on/off is on; every underflow toggles it or gives a one-cycle positive pulse | P3, P4 (all four instances each) |
+| sol:F-cra.c16 | 349 | CRA OUTMODE: 0 pulse, 1 toggle | P3, P4 (timer-A instances) |
+| opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13 | 349, 350 | CRB OUTMODE: 0 pulse, 1 toggle | P3, P4 (timer-B instances) |
+| sol:F-cra.c13 | 349 | CRA INMODE: 0 φ2, 1 CNT | P5 (timer-A instances), P7.5 |
+| sol:F-crb.c7, sol:F-crb.c10 | 349, 350 | CRB INMODE: 00 φ2, 01 CNT, 10 timer A underflows, 11 timer A underflows while CNT is high | P5 (timer-B instances), P8.65 modes 01, 10 and 11 |
+| opus:F-cra.c12, opus:F-cra.c13 | 349 | every field of the CRA bitmap | P7.0 (START); P1, timer-A instances (PBON); P3 and P4, timer-A instances (OUTMODE); P7.3 (RUNMODE); P7.4 (LOAD); P5, timer-A instances, and P7.5 (INMODE); P7.6 (SPMODE); P7.7 (bit 7) |
+| opus:F-crb.c13, opus:F-crb.c14 | 350 | every field of the CRB bitmap | P8.0 (START); P1, timer-B instances (PBON); P3 and P4, timer-B instances (OUTMODE); P8.3 (RUNMODE); P8.4 (LOAD); P5, timer-B instances, and P8.65 (INMODE); P8.7 (ALARM) |
+| opus:F-timers.c6, sol:F-timers.c8 | 341 | the modes "allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms"; sol:F-timers.c8 adds that the latch "is a divider of the input clocking frequency" | P4 (pulse trains); P9 leg F (variable frequency, and the latch as divider) and leg W (variable width); P8.65 mode 10 (timers "linked for extended operations", p341: long delays) |
+
+The sentence of opus:F-timers.c6 names no value. Each capability it lists is shown by the proposition named in its row, and nothing else of it is graded.
 
 ---
 
@@ -559,7 +617,7 @@ Why δ is 0 or 1: p342 says the timer will "count down from the latched value to
 4. **Pulse idle level.** No page states that the pulse output is low between pulses; "positive pulse" implies it. P1 leg A2 and P4 rely on this reading. P1 legs A1, B and C do not.
 5. **CIA address bits, p353.** The binary patterns "CIAA ... 101x xxxx xx01 rrrr xxxx xxx0" and "CIAB ... 101x xxxx xx10 rrrr xxxx xxx1" give A13 = 0, A12 = 1, A0 = 0 for CIAA. That contradicts the same page's "CIAA is selected when A12 is low, A13 high" and its named addresses (BFEr01, BFDr00), which p339, p340, p351 and Appendix D p314 also give. The two patterns appear swapped. This spec uses only the named addresses, on which every page agrees.
 6. **p244** says "Bits labeled "PB" are output bits located in CIAAPRB ($BFD100)". The address is CIAB's, and the page's own heading reads "CIAAPRA/CIABPRB". This spec uses CIAB $BFD100.
-7. **Read-back of used control-register bits** is not stated directly. p340 ("16 registers that you may read or write") and p348 (START "automatically reset (= 0)" on a one-shot underflow; LOAD "will always read back a zero") imply that used bits read back. Only P7.7's contrast depends on this.
+7. **Read-back of used control-register bits** is not stated directly. p340 ("16 registers that you may read or write") and p348 (START "automatically reset (= 0)" on a one-shot underflow; LOAD "will always read back a zero") imply that used bits read back. These depend on it: P7.7's c2 = $01, its first contrasting case and its control; leg C of P7.3 and of P8.3 (c bit 0 = 1); and EP1's contrast. The polls of P1 step 4 and P2 leg S also read START; a poll that ended at once would leave the i1 or i_k flag at 0, and Pre1.2 or Pre2.2 would then fail.
 8. **The CIAA TOD source** is "VSync or line tick" (p339). P8.7 grades CIAA only in a way that holds for either source.
 9. **p352's example** sets one-shot mode before writing TAHI, so its TAHI write already starts the timer (p342). Its DMACON write carries the comment "Kill all chip interrupts". This spec takes from p352 only the latch write order.
 10. **The claims' text readings of the bitmaps on p349 and p350** print "=" as "*" or "-" and "1" as "l". The printed images confirm the readings used here.
