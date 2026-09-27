@@ -98,8 +98,10 @@
 //   - cia_int.v: icr[4]<=icr[4]|flag on any non-read cycle (line 57), a
 //     level-sensitive OR with no edge detector anywhere in the module --
 //     this is finding #1 from the build brief's "five things already
-//     measured", and it is what makes PROP-FLAG-EXISTS constructible (flag
-//     is live) while the edge-polarity half stays out of scope here.
+//     measured", and it is what PROP-FLAG-EXISTS's liveness check (flag is
+//     live) and PROP-FLAG-EDGE-POLARITY's clocked-read measurement (p.341,
+//     p.346; repaired per NM-HRM-063 -- see that function's own doc
+//     comment) both observe.
 //
 // Every mutation below was actually applied via `make test MUT=<NAME>`
 // (which -D's the corresponding MUT_* flag to 1 and forces a full
@@ -112,14 +114,20 @@
 //   omits driving `flag` high (ICR stays armed but the pin is never
 //   actually driven) -> FAIL, ICR bit 4 read 0 both before and after.
 //   RUN: 6 passed, 4 failed. Reverted.
-// MUTATION PROP-FLAG-EDGE-POLARITY oracle green: PROP-FLAG-EDGE-POLARITY's
-//   expected outcome is inverted (expect ICR bit 4 TO set when FLAG is held
-//   high with zero negative transitions, matching actual RTL behaviour) ->
-//   PASS, proving the comparator is RTL-sensitive rather than a hard-coded
-//   fail; PROP-CRA-PBON and PROP-CRA-OUTMODE (untouched by this flag)
-//   stayed RED. RUN: 8 passed, 2 failed. Reverted. (Added by coordinator
-//   correction after this package's first build and first capture; see the
-//   claim-inventory note in SPECIFICATION.md.)
+// MUTATION sol:F-handshake.c7 opus:F-handshake.c6 stimulus red: repaired
+//   per NM-HRM-063. PROP-FLAG-EDGE-POLARITY's stimulus omits driving
+//   `flag` high at all before step 2's clocked read (no transition
+//   anywhere in the stimulus) -> FAIL, step 2's clocked read comes back
+//   0x00 (bit 4 clear) where the unmutated comparator still expects it
+//   SET -- proving that clause requires a real negative transition to
+//   pass, not merely a read of whatever ICR already holds. RUN: 7 passed,
+//   3 failed (same totals as baseline: the assertion is still the same
+//   one FAIL, now through the step-2 clause instead of step-3's).
+//   Reverted. (The proposition's first build, and its original mutation
+//   here, took the single 0->1 on `flag` as a positive transition and
+//   inverted the oracle to expect the bit SET under a held level; both
+//   were wrong about which transition `flag` carries -- see the doc
+//   comment above prop_flag_edge_polarity() and SPECIFICATION.md.)
 // MUTATION sol:F-ciab-map.c23 stimulus red: PROP-DDRA-POSITION's stimulus
 //   skips the DDRA=0xFF write (leaves DDRA=0, input mode) while still
 //   writing PRA=0xC0 then 0x00 -> FAIL, porta_out read pulled-high (0x3)
@@ -291,6 +299,34 @@ public:
         return v;
     }
 
+    // Clocked ICR read (p.346, "When you read the DATA register, its
+    // contents are cleared (set to 0), and the IRQ line returns to a high
+    // state"): read_reg() above only calls eval() and never moves `clk`, so
+    // it can select rs=4'hD and see whatever data_out already holds, but it
+    // never gives cia_int.v's clear-on-read branch a clock edge to run on --
+    // a read made this way can select ICR but can never clear it. This
+    // method makes a real CPU read cycle instead: aen=1, rd=1, wr=0,
+    // rs=4'hD held; data_out is sampled first (what the bus sees this
+    // cycle); then one rising clk edge, with clk7_en held 1 for the
+    // harness's whole life (see the constructor), lets the clear-on-read
+    // branch actually run; then aen/rd are deasserted.
+    uint8_t read_icr_clocked() {
+        dut->aen = 1;
+        dut->rd = 1;
+        dut->wr = 0;
+        dut->rs = RS_ICR;
+        dut->eval();
+        const uint8_t v = dut->data_out;
+        dut->clk = 1;
+        dut->eval();
+        dut->clk = 0;
+        dut->eval();
+        dut->aen = 0;
+        dut->rd = 0;
+        dut->eval();
+        return v;
+    }
+
     uint8_t portb_out_now() {
         dut->eval();
         return dut->portb_out;
@@ -405,63 +441,82 @@ bool prop_flag_exists(Harness& h, bool omit_drive_bug) {
 // consistent with BOTH an edge reading and a level reading, so it settles
 // no verdict about which this RTL implements. p.341 states something
 // strictly narrower and is the only page in the corpus that states the
-// polarity at all: a NEGATIVE TRANSITION specifically is required, not
-// merely a period where FLAG reads high. Held HIGH from a single rising
-// edge onward, with ZERO negative transitions anywhere in the stimulus,
-// ICR bit 4 must stay CLEAR if the page's specific wording holds.
-// MEASURED (reproduced here independently, matching what
-// appF-cia-interrupt-control's builder found at its own fixture): it does
-// not stay clear -- cia_int.v:57 is `icr[4] <= icr[4] | flag`, a
-// level-sensitive OR with no edge detector and no previous-state register
-// anywhere in cia_int.v (lines 1-69), so any cycle where `flag` reads 1
-// sets the bit regardless of whether a negative transition ever occurs.
-// Four third-party emulators surveyed independently (WinUAE, vAmiga,
-// Denise, Copperline) unanimously implement a real falling-edge detector
-// for this bit; this RTL does not. Genuine RTL gap, not a fixture defect --
-// see the paired control below, which uses the identical ICR arm/read
-// channel with a stimulus that DOES contain a negative transition, and
-// PASSES, so this RED cannot be read as a dead measurement channel.
-// Whether the gap is a defect is for Amiga/RTL specialists to adjudicate,
-// not this package. `invert_oracle_mutation`, when true, is the ORACLE
-// mutation: the expected outcome is inverted to match what the RTL
-// actually does (bit 4 DOES set), which must then read GREEN.
+// polarity at all.
+//
+// Repaired per NM-HRM-063: the first build of this assertion took the
+// single 0->1 on `flag` as a POSITIVE transition and required ICR bit 4 to
+// stay clear across it -- the opposite of what `flag` actually stands for.
+// At `ciab`'s boundary `flag` is DSKINDEX*'s active-high form (the pin
+// itself is active low: p.245 "FLAG DSKINDEX* Disk index pulse", p.334 the
+// signal fires "whenever the INDEX* input goes active", p.379 `*` marks an
+// active-low pin), so a 0->1 on `flag` IS the negative transition p.341
+// names, and p.341 requires it to SET the bit, not leave it clear. That
+// first build also read ICR with read_reg() (see its own comment above),
+// which never moves `clk`, so cia_int.v's clear-on-read branch never ran in
+// any stimulus this assertion drove; read_icr_clocked() (see above) is used
+// throughout below instead.
+//
+// Three steps, each through a clocked ICR read:
+//   1. After reset, flag=0: write ICR 0x90 (set-mode, mask bit 4).
+//   2. flag 0->1 -- the negative transition -- held 3 ticks. Clocked read:
+//      bit 4 must be SET (p.341).
+//   3. flag held at 1 for 5 more ticks -- no further transition. Clocked
+//      read: bit 4 must be CLEAR, and bit 7 (IR) with it -- the step-2 read
+//      already cleared ICR (p.346, "When you read the DATA register, its
+//      contents are cleared"), and p.341 gives nothing that sets the bit
+//      again without a fresh negative transition, and none occurs here.
+// `omit_transition_bug`, when true, is the STIMULUS mutation: `flag` is
+// never driven high at all before step 2's read (no transition anywhere in
+// the stimulus), so the unmutated comparator's step-2 expectation (bit 4
+// SET) must go RED -- proving that clause actually requires a real
+// negative transition to pass, not merely a read of whatever ICR already
+// holds.
 // ---------------------------------------------------------------------
-bool prop_flag_edge_polarity_held_high(Harness& h, bool invert_oracle_mutation) {
+bool prop_flag_edge_polarity(Harness& h, bool omit_transition_bug) {
+    h.set_flag(false);
     h.write_reg(RS_ICR, 0x90);  // set-mode (bit7=1), mask bit 4 (FLG); icr[4] is 0 post-reset.
+
+    if (!omit_transition_bug) h.set_flag(true);  // the negative transition: 0->1 on flag = INDEX* active.
+    for (int i = 0; i < 3; ++i) h.tick();
+    const uint8_t r_step2 = h.read_icr_clocked();
+    const bool bit4_set_after_transition = (r_step2 & 0x10) == 0x10;
+
+    for (int i = 0; i < 5; ++i) h.tick();  // flag held; no further transition.
+    const uint8_t r_step3 = h.read_icr_clocked();
+    const bool bit4_clear_after_hold = (r_step3 & 0x10) == 0x00;
+    const bool bit7_clear_after_hold = (r_step3 & 0x80) == 0x00;
+
     h.set_flag(false);
-    h.tick();
-    h.set_flag(true);           // the ONLY transition anywhere in this stimulus: 0->1 (positive).
-    for (int i = 0; i < 5; ++i) h.tick();  // held high; no negative transition at all.
-    const uint8_t r = h.read_reg(RS_ICR);  // read while flag is STILL high.
-    const bool bit4_stayed_clear = (r & 0x10) == 0x00;
-    h.set_flag(false);
-    return invert_oracle_mutation ? !bit4_stayed_clear : bit4_stayed_clear;
+    return bit4_set_after_transition && bit4_clear_after_hold && bit7_clear_after_hold;
 }
 
 // ---------------------------------------------------------------------
-// Control for PROP-FLAG-EDGE-POLARITY, same ICR arm/read channel: a
-// stimulus that DOES contain a real negative transition (0->1->0, the
-// ordinary disk-index-pulse shape ch8-disk-index-interrupt-path already
-// grades under its own uids) must set ICR bit 4 -- proving the channel this
-// package uses to observe FLAG/ICR is alive and can show a SET bit at all,
-// so PROP-FLAG-EDGE-POLARITY's RED result above is not explained by a dead
-// read/arm path. Not itself a distinct page claim -- note()'d, not graded,
-// no uid, unmutated (matching FIXTURE-LIVE's own convention above).
+// Control for PROP-FLAG-EDGE-POLARITY, same channel and timing: the
+// identical three steps, but `flag` is returned to 0 before the first
+// clocked read, so nothing is held across it. Bit 4 must read SET after
+// the transition, then CLEAR after the hold, regardless of implementation
+// -- with `flag` back at 0, a level-sensitive read and an edge-sensitive
+// read agree. This isolates step 3 of the graded assertion above: a set
+// bit surviving that read is specifically the held level surviving the
+// read, and nothing else. Not itself a distinct page claim -- note()'d,
+// not graded, no uid, unmutated (matching FIXTURE-LIVE's own convention
+// above).
 // ---------------------------------------------------------------------
-bool control_flag_negative_transition_sets_bit(Harness& h) {
-    // Start from a cleanly-cleared ICR: drop flag low, then read once while
-    // it is low (icr[4] <= flag directly on a read, clearing it to 0).
+bool control_flag_low_before_read(Harness& h) {
     h.set_flag(false);
-    h.tick();
-    h.read_reg(RS_ICR);
-    // The real pulse: rising edge, hold, falling edge (the negative
-    // transition p.341 names), hold, then read.
+    h.write_reg(RS_ICR, 0x90);
+
     h.set_flag(true);
     for (int i = 0; i < 3; ++i) h.tick();
-    h.set_flag(false);  // the negative transition.
-    for (int i = 0; i < 3; ++i) h.tick();
-    const uint8_t r = h.read_reg(RS_ICR);
-    return (r & 0x10) != 0x00;
+    h.set_flag(false);  // returned to 0 before the first read.
+    const uint8_t r_set = h.read_icr_clocked();
+    const bool bit4_set = (r_set & 0x10) == 0x10;
+
+    for (int i = 0; i < 5; ++i) h.tick();
+    const uint8_t r_clear = h.read_icr_clocked();
+    const bool bit4_clear = (r_clear & 0x10) == 0x00;
+
+    return bit4_set && bit4_clear;
 }
 
 // ---------------------------------------------------------------------
@@ -685,26 +740,27 @@ int main(int argc, char** argv) {
 
     {
         Harness h;
-        const bool result = prop_flag_edge_polarity_held_high(h, MUT_A10_FLAG_EDGE_POLARITY);
+        const bool result = prop_flag_edge_polarity(h, MUT_A10_FLAG_EDGE_POLARITY);
         checks.expect(result,
-            "PROP-FLAG-EDGE-POLARITY: FLAG's interrupt bit requires a NEGATIVE TRANSITION specifically, "
-            "not merely a period where FLAG reads high -- held HIGH from a single rising edge onward, "
-            "with zero negative transitions anywhere in the stimulus, ICR bit 4 must stay CLEAR. "
-            "MEASURED: it does not -- cia_int.v:57 is a level-sensitive OR (`icr[4] <= icr[4] | flag`) "
-            "with no edge detector and no previous-state register anywhere in cia_int.v, so any cycle "
-            "where flag reads 1 sets the bit regardless of transitions. Four third-party emulators "
-            "(WinUAE, vAmiga, Denise, Copperline) unanimously implement a real falling-edge detector for "
-            "this bit; this RTL does not. Genuine RTL gap, not a fixture defect -- see the paired control "
-            "below, which shows this same ICR arm/read channel DOES read the bit set under a stimulus "
-            "that contains a real negative transition [p.341 \"Any negative transition on FLAG will set "
-            "the FLAG interrupt bit\"] sol:F-handshake.c7 opus:F-handshake.c6");
+            "PROP-FLAG-EDGE-POLARITY: a negative transition on FLAG sets the FLAG interrupt bit (p.341); "
+            "in this fixture flag is DSKINDEX*'s active-high form, the pin itself active low (p.245, "
+            "p.334, p.379), so a 0->1 on flag IS that negative transition. Step 2: flag 0->1, held 3 "
+            "ticks, a clocked ICR read (a real CPU read cycle: aen=1 rd=1 wr=0 rs=4'hD, one rising clk "
+            "edge) must show bit 4 SET. Step 3: flag held at 1 for 5 more ticks -- no further transition "
+            "-- a second clocked read must show bit 4 CLEAR and bit 7 (IR) with it, because the step-2 "
+            "read already cleared ICR (p.346, \"When you read the DATA register, its contents are "
+            "cleared\") and p.341 gives nothing that sets it again without a fresh negative transition. "
+            "See the paired control below, same channel and timing, flag returned to 0 before the first "
+            "read [p.341, p.346, p.245, p.334, p.379] sol:F-handshake.c7 opus:F-handshake.c6");
         Harness hc;
-        const bool ctrl = control_flag_negative_transition_sets_bit(hc);
-        checks.note(std::string("CONTROL (PROP-FLAG-EDGE-POLARITY, same ICR arm/read channel): a real "
-            "negative transition (flag 0->1->0, the ordinary disk-index-pulse shape) sets ICR bit 4 -- ") +
-            (ctrl ? "PASS" : "FAIL") + " -- proving the channel is alive and the RED result above is not "
-            "a dead measurement path; not itself a distinct page claim, not graded, no uid [no page -- "
-            "infrastructure control]");
+        const bool ctrl = control_flag_low_before_read(hc);
+        checks.note(std::string("CONTROL (PROP-FLAG-EDGE-POLARITY, same channel and timing): the "
+            "identical three steps, but flag is returned to 0 before the first read -- bit 4 read SET "
+            "after the transition, then CLEAR after the hold -- ") + (ctrl ? "PASS" : "FAIL") +
+            " -- proving the read genuinely clears ICR on this fixture when nothing holds flag across "
+            "it, so a set bit surviving the graded assertion's step 3 is the held level and nothing "
+            "else; not itself a distinct page claim, not graded, no uid [no page -- infrastructure "
+            "control]");
     }
 
     {

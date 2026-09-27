@@ -876,21 +876,33 @@ int main(int argc, char** argv) {
         h.tick();
         const uint8_t after_pulse = h.peek();
 
-        // Condition (b): flag transitions LOW->HIGH once (a POSITIVE edge)
-        // and is then HELD high for several ticks -- zero negative
-        // transitions occur anywhere in this window.
+        // Condition (b): flag transitions LOW->HIGH once and is then HELD
+        // high for several ticks. Whether this window is free of negative
+        // transitions depends on what flag stands for, which this bare
+        // cia_int fixture does not itself bind: at ciab's own boundary flag
+        // is DSKINDEX*'s active-high form, the pin itself active low (p.245,
+        // p.334, p.379), so a 0->1 there IS the negative transition p.341
+        // names, not a positive one -- and this window then contains
+        // exactly one, the same as (a), not zero.
         Harness h2;
         set_flag(h2, 1);
-        for (int i = 0; i < 5; ++i) h2.tick();  // held high, never returns low
+        for (int i = 0; i < 5; ++i) h2.tick();  // held high after the single 0->1 transition
         const uint8_t held_high = h2.peek();
 
         checks.note("FLAG level-vs-edge measured (cia_int.v:57, p.341): "
             "a genuine negative-transition pulse (flag 0->1->0) -> DATA " +
             hex8(after_pulse) + " (FLG bit set, as expected either way); "
-            "flag held HIGH for 5 ticks with ZERO negative transitions in "
-            "the window -> DATA " + hex8(held_high) + " -- the FLG bit "
-            "(0x10) is " + std::string((held_high & 0x10) ? "SET" : "clear") +
-            " despite no negative transition ever occurring. cia_int.v:57 "
+            "flag transitioned once (0->1) then held HIGH for 5 ticks -> "
+            "DATA " + hex8(held_high) + " -- the FLG bit (0x10) is " +
+            std::string((held_high & 0x10) ? "SET" : "clear") + ". Whether "
+            "that single 0->1 is itself a negative transition depends on "
+            "what flag stands for: at ciab's own boundary flag is "
+            "DSKINDEX*'s active-high form, the pin itself active low (p.245, "
+            "p.334, p.379), so there a 0->1 IS the negative transition p.341 "
+            "names, and the SET result above is exactly what p.341 predicts "
+            "for it -- this stimulus does not, on its own, discriminate an "
+            "edge reading from a level reading. This bare cia_int fixture "
+            "carries no binding of its own. cia_int.v:57 "
             "is `icr[4] <= icr[4] | flag;`, a level-sensitive OR with no "
             "edge-detect register anywhere in this file or in ciab.v's "
             "wiring of the real `flag` port (ciab.v:185, straight through, "
