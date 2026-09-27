@@ -3,15 +3,15 @@
 | | |
 |---|---|
 | **Lifecycle** | open |
-| **Filed against** | the RTL |
-| **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. |
+| **Filed against** | the printed page |
+| **Evidence** | none |
+| **What is asked of a reader** | No RTL change follows from this. p.252's keycode table and Appendix G's table of independently readable keys on p.363 give the right Alt `$65`; both keyboard drawings on p.254 print `64` on it. NanoMig returns `$65`, measured and recorded but graded on neither side, and all four implementations name `$65` too. The drawings are the likely defect, and the entry exists so the next reader does not grade them and take NanoMig's `$65` for an implementation fault. |
 | **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/amiga_keymap.v#L135-L139) |
-| **Report to** | **nobody, yet.** Two printed pages contradict each other; which is right is an Amiga-history question, not a conformance question |
+| **Report to** | **nobody, as an RTL defect.** The printed pages contradict each other; which is right is an Amiga-history question, not a conformance question |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table) — `RIGHTALT-CONFLICT`, six claims declined on a `record()` line, **graded on neither side** |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | none. Deliberately |
-| **Verdict of the four** | **unanimous for p.252, and it settles nothing.** All four name `$65` for the right Alt — evidence about which reading practitioners took, not about which page is right |
+| **Verdict of the four** | **unanimous with NanoMig and with p.252 and p.363**: all four name `$65` for the right Alt, and none takes the `64` both p.254 drawings print — evidence about which reading practitioners took, not about which page is right |
 
 ---
 
@@ -21,6 +21,10 @@
 
        64      Left Alt
        65      Right Alt
+
+**Appendix G, printed p.363**, gives the same code in its table of the keys that
+"are independently readable", one per bit: `LEFT ALT (64)` in bit 5, `RIGHT ALT
+(65)` in bit 1. Read from the image, not from the text layer.
 
 **p.254** draws two keyboards, Figure 8-9 the A1000 and Figure 8-10 the
 A500/2000/3000, with each key's code printed on its cap. **Both figures print
@@ -51,7 +55,8 @@ A conformance test needs an oracle, and here the manual speaks with two voices
 on the same fact. Grading the table would report a defect the figures deny;
 grading the figures would report one the table denies. Either way the test would
 be asserting a choice between two printed pages, which is not its job — the same
-reasoning as [NM-HRM-044](NM-HRM-044.md).
+reasoning as [NM-HRM-044](NM-HRM-044.md). Appendix G's p.363 sides with the
+table, and the manual still gives the key two codes.
 
 The six claims that carry this — four of them flagged `source_defines:
 conflict` by the classification, two recorded against p.252 without the flag —
@@ -73,6 +78,14 @@ Four independent implementations all took the table and none took the figures.
 That is worth recording — but it is evidence about what implementers read, not
 about what the hardware did, and it does not license grading a test against
 p.252. A real A1000 or A500 is what would settle it.
+
+## Why this is filed against the page
+
+The manual contradicts itself, and NanoMig takes the side of p.252 and p.363:
+its right-Alt input returns `$65`, and so does every independent implementation
+read here. Nothing read here returns `$64` for the right Alt, as the p.254
+drawings print. The drawings are the likely defect; which code a real keyboard
+sends is the question, not an RTL change.
 
 ## What the figures do settle
 

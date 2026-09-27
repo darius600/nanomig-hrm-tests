@@ -3,14 +3,14 @@
 | | |
 |---|---|
 | **Lifecycle** | open |
-| **Filed against** | the RTL |
-| **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. One assertion does carry it as red; *Why the status is not red* says why that is not a conformance failure. |
+| **Filed against** | the printed page |
+| **Evidence** | a test fails against the page |
+| **What is asked of a reader** | No RTL change follows from this. The manual says two things about the Copper and DSKPTH: p.279 names the Copper as one of the two agents that must initialise it before disk DMA is enabled, and p.289 marks `$020` `*`, not writable by the Copper, as p.26 says of every register from `$00` to `$3E`. On OCS the suite grades both, `P1` red against p.279 and `APPBSTAR $10 DSKPTH ecs=0` green against p.289. NanoMig blocks the Copper there on OCS and lets it write under ECS with CDANG set, as p.310 allows, and so do all four implementations. The question is which page describes the hardware; the entry exists so the next reader does not take `P1`'s red for an implementation fault. |
 | **Module** | — · the RTL is described below because it is evidence, not because it is the subject |
-| **Report to** | **nobody.** There is no repository that can fix a disagreement between two printed pages |
-| **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertion `P1`, graded red against p.279 |
+| **Report to** | **nobody.** There is no repository that can fix a disagreement between printed pages |
+| **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertion `P1`, graded red against p.279; [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) — `APPBSTAR $10 DSKPTH ecs=0`, graded green against p.289 |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **unanimous — and it decides nothing.** All four block a Copper write to $020 at OCS and allow it under ECS with CDANG set. That is which reading practitioners took, not which page is right |
+| **Verdict of the four** | **unanimous with NanoMig**: all four block a Copper write to `$020` on OCS, as p.289 marks it, and allow it under ECS with CDANG set, as p.310 allows; none lets the Copper initialise DSKPTH on OCS, as p.279 would. That is which reading practitioners took, not which page is right |
 | **See also** | [NM-HRM-014](NM-HRM-014.md), the precedent for a finding about the manual rather than about the implementation. **Not [NM-HRM-004](NM-HRM-004.md)**, which is the ECS danger-bit *range* — a different claim, register and page |
 
 ---
@@ -46,9 +46,16 @@ the conditional form exists on the same page and is a different glyph —
 
 — and DSKPTH does not carry it.
 
+**Chapter 2, printed p.26**, says the same of the whole block the `*` marks:
+
+> "Those it cannot affect at all are numbered $00 to $3E inclusive."
+
+It sends ECS to Appendix C (p.36), where p.310 lets the ECS Copper reach every
+register once CDANG is set.
+
 **One page names the Copper as a permitted initialiser of this register. The
 other says the Copper cannot write it.** Both are appendices to the same edition,
-ten pages apart.
+ten pages apart, and chapter 2 sides with p.289.
 
 ## Two things that look like corroboration and are not
 
@@ -77,9 +84,9 @@ sentences describes the hardware", and both were printed by the same publisher
 about the same chip. An assertion has to pick one page as the oracle and measure
 against it, which answers a different question.
 
-That is the shape [NM-HRM-014](NM-HRM-014.md) set: a manual conflict is recorded, not graded.
+That is why the entry is filed against the printed page, as [NM-HRM-014](NM-HRM-014.md) is.
 
-## Why the status is not red, although an assertion is
+## Why the red asks for no RTL change
 
 **This entry differs from [NM-HRM-014](NM-HRM-014.md) in one way and the difference should not
 be hidden.** [NM-HRM-014](NM-HRM-014.md) has no assertion behind it at all; it is a `note()` in
@@ -94,9 +101,18 @@ about whether p.279 is right, because p.289 says NanoMig is correct to refuse.
 A red graded against one half of a contradiction is not a conformance failure; it
 is the measurement that makes the contradiction visible.
 
-So the register carries this as a source observation whatever colour the
-assertion shows, and the assertion stays as it is. Changing it would delete the
-evidence.
+**The other half is graded too, and it passes.**
+[`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) grades p.289's
+`*` on the same register, at the same chipset:
+
+    PASS: APPBSTAR $10 DSKPTH ecs=0: rejected on reg_address_out with CDANG clear
+          and with CDANG set (Appendix B '*', p.289, byte $020)
+
+`P1` asserts the opposite at the same address, chipset and CDANG state. No
+implementation can make both green, and NanoMig makes p.289's green.
+
+So the entry is filed against the printed page, and both assertions stay as they
+are. Changing either would delete the evidence.
 
 ### The control that makes the red readable
 
@@ -110,8 +126,10 @@ the Copper write anything at all.
 
 `P1` was graded with `ecs` = 0. That is deliberate: it is the condition under
 which appendix B's `*` and appendix C's ECS relaxation of the low address range
-do not interact, and the ECS-plus-CDANG case is [NM-HRM-004](NM-HRM-004.md)'s territory rather
-than a fresh number. The package's own run records the boundary it did not cross:
+do not interact, and the ECS-plus-CDANG case is p.310's ECS sentence, which
+[NM-HRM-053](NM-HRM-053.md) (withdrawn) records, rather than a fresh number. The
+package's own run records the boundary it did not cross, under the name of
+[NM-HRM-004](NM-HRM-004.md):
 
 > **MEASURED:** NM-HRM-004 check: this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
 > against the $008-$026 range … Nothing in this package's build fell into that
@@ -148,10 +166,12 @@ under ECS with the danger bit set.
 [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper)
 grades `P1`, "the Copper may initialise DSKPTH before disk DMA is enabled,"
 red against p.279, one of the package's `4 passed, 3 failed`, with `COPLIVE`
-green as its control that the harness can make the Copper write at all. See
-*Why the status is not red, although an assertion is* above for what the red
-does and does not mean, and *What was measured, and at which chipset* for the
-boundary it was measured at.
+green as its control that the harness can make the Copper write at all.
+[`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) grades
+`APPBSTAR $10 DSKPTH ecs=0` green against p.289 at the same corner, one of that
+package's `92 passed, 1 failed`. See *Why the red asks for no RTL change* above
+for what the red does and does not mean, and *What was measured, and at which
+chipset* for the boundary it was measured at.
 
 ## What the others say
 
@@ -181,16 +201,20 @@ about the pages:
 - **All four halt the Copper** on the blocked MOVE rather than merely dropping the
   write, so this is modelled as a hard access rule, not as a filter.
 - **All four condition the $000-$03E block on the chipset**, which appendix B's
-  legend does not. That conditioning comes from appendix C, and whether it is
-  read correctly is [NM-HRM-004](NM-HRM-004.md)'s question, not this one.
+  legend does not. That conditioning is p.310's ECS sentence
+  ([NM-HRM-053](NM-HRM-053.md), withdrawn); it does not reach the OCS corner
+  graded here.
 - **Under ECS with CDANG set, all four let the Copper write DSKPTH** — so on the
   configuration NanoMig and the four agree is the modern one, p.279's sentence
   holds. p.279 simply does not say it is conditional.
 
-## What holds the observation up
+## What holds the finding up
 
 - **Both sentences are quoted from the printed pages** in this project's own
   extraction of the scan, not from the Developer CD re-edit.
+- **Both are graded on OCS at `$020`**, `P1` red against p.279 and
+  `APPBSTAR $10 DSKPTH ecs=0` green against p.289, and p.26 says of the whole
+  `$00`-`$3E` block what p.289 marks.
 - **The legend that gives the `*` its meaning is on p.287**, in the same
   appendix, and it defines a conditional alternative (`~`) that this register
   does not carry. The prohibition is the unconditional one by the manual's own
@@ -205,9 +229,9 @@ about the pages:
   loose rather than contradictory — the same weakness [NM-HRM-042](NM-HRM-042.md) carries about
   the width. Nothing on the page supports or refutes that reading.
 - **This is one of at least two places where appendix B's Copper marks and the
-  rest of the manual do not line up**; [NM-HRM-004](NM-HRM-004.md) is the other, and all four
-  implementations read appendix C the opposite way from the way this suite reads
-  it. Whoever settles either one should look at both.
+  rest of the manual do not line up**; [NM-HRM-004](NM-HRM-004.md) is the other, and there all four
+  implementations follow appendix B against the p.310 sentence this suite grades.
+  Whoever settles either one should look at both.
 
 ## Why this entry is kept
 
