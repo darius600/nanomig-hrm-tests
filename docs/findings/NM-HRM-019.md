@@ -1,16 +1,17 @@
-# NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented
+# NM-HRM-019 — SPRxCTL bit 4 (SHSH1) is not implemented [RTL review]
 
 | | |
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. The package's one red assertion sets bit 4 outside SuperHires, where p. 303 gives it no position; *What the test measures* says what it must measure instead. |
+| **Evidence** | a test fails against the page |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. Read *For the specialists* before deciding: the 8373R4 silicon stores the bit and applies it as p. 303 describes, and Commodore's 1988 ECS Denise specification prints it as not used. |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) — `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` is red, `10 passed, 1 failed`, but sets bit 4 at the lores sprite rate, outside SuperHires |
+| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states |
+| **Assertions** | 1 red: `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` (`10 passed, 1 failed`). In SuperHires, sampled every 35 ns, SH0 alone moves the sprite's first lit sample 4 samples later and SHSH1 alone 0, where p. 303 predicts 2; the oracle-flip mutation, which expects 0, is green on the same two numbers |
+| **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states; outside the emulators, the 8373R4 dissection latches the bit for sprites 0 to 3 and applies it in the sprite's data path, not in the position compare — see *What other Commodore documents say* |
 | **Origin** | the surviving half of the withdrawn [NM-HRM-013](NM-HRM-013.md) |
 
 ---
@@ -102,53 +103,53 @@ At `2'b10` the sprite's pixels shift out at 70 ns, `2'b10   : shift = ~c1 ^ c3;`
 but the start is compared once per 7 MHz cycle against the 9-bit `hstart`,
 whose low bit is SH0
 ([`denise_sprites_shifter.v#L113-L116`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites_shifter.v#L113-L116)).
-Nothing places the start on the 70 ns position between two SH0 steps.
+Nothing places the start on the 70 ns position between two SH0 steps; measured,
+SHSH1 does not move it at all (*What the test measures*).
 
 ---
 
 ## What the test measures
 
-`SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` in `hrm/ch3-sprite-registers` arms
-sprite 0 at SPR0POS = `$40`, writes SPR0CTL = `$10` against `$00`, and requires
-the `sprdata` trace to change (`test_denise_sprites.cpp:1017-1019`):
+`SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` in `hrm/ch3-sprite-registers` runs
+the `denise_sprites` fixture without AGA and with `spres` = `2'b10`, the value
+line 391 of `denise.v` supplies when SHRES is set. On a fresh DUT each time it
+arms sprite 0 at SPR0POS `$40` with SPR0DATB `$0000` and SPR0DATA `$8000`,
+writes SPR0CTL `$00`, `$01` (SH0 alone) or `$10` (SHSH1 alone), and samples
+`sprdata` on every 28 MHz clock, 35 ns apart, keeping the first sample at which
+it is non-zero (`test_denise_sprites.cpp:671-689`). The assertion reads p. 303's
+two rows together, "70ns increment" and "140 ns increment": SHSH1 alone must
+move that sample later by half as many samples as SH0 alone does
+(`test_denise_sprites.cpp:1079-1126`):
 
 ```cpp
-Meas base = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
-Meas mut = measure(/*pos=*/0x40, static_cast<uint8_t>(1u << 4), /*spres=*/0, /*aga=*/0);
-bool differs = base.trace != mut.trace;
+bool relation = sh0_delta != 0 && sh0_delta % 2 == 0
+              && shsh1_delta == sh0_delta / 2;
 ```
 
-It is red, one of the package's `10 passed, 1 failed`, but it does not grade the
-row:
+It is red, one of the package's `10 passed, 1 failed`:
 
-- `spres` = 0 is the module's default case, a 140 ns lores shift
-  (`denise_sprites.v:164`), and a value `denise.v:391` never supplies. p. 303
-  gives bit 4 no position outside SuperHires, and none of the four
-  implementations gives it one there or changes a lores sprite for it. An
-  implementation that does what p. 303 describes leaves this trace identical
-  and fails the assertion too.
-- `measure()` samples `sprdata` once per `hpos` step, 140 ns apart
-  (`test_denise_sprites.cpp:631-636`), so even in SuperHires it could not see a
-  start that moves by 70 ns.
+```
+MEASURED: SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at spres=0b10 (SuperHires), 28 MHz (35 ns) sample deltas from the ctl=0x00 baseline -- SH0 alone (ctl=0x01): 4, SHSH1 alone (ctl=0x10): 0 (p.303 predicts 4 and 2).
+```
 
-**What it must measure instead**, on the same `denise_sprites` fixture with
-`aga` = 0:
+SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1
+leaves it where it was, where its row predicts 2.
 
-- `spres` = `2'b10`, the value `denise.v:391` supplies when SHRES is set;
-- sprite 0 armed as now (SPR0POS `$40`, SPR0DATB `$0000`, SPR0DATA `$8000`),
-  once each with SPR0CTL `$00`, `$01` (SH0 alone) and `$10` (SHSH1 alone), each
-  on a fresh DUT;
-- `sprdata` sampled at every 28 MHz clock, 35 ns apart, not once per `hpos`
-  step;
-- expected, from the two rows' "70ns increment" and "140 ns increment": SHSH1
-  alone moves the first non-zero sample later by half as many samples as SH0
-  alone does, two against four.
+**The red is the relation's, not the measurement's.** Built with
+`MUT_BIT4_ORACLE`, which changes only the expected relation, to
+`shsh1_delta == 0`, the package reads the same two numbers and is green,
+`11 passed, 0 failed`
+(the mutation record, `test_denise_sprites.cpp:385`). An
+implementation that does what p. 303 describes moves the first lit sample by 2
+and passes, whether it moves the start compare, as the four implementations
+do, or delays the sprite's output by one 70 ns pixel, as the 8373R4 does
+(*What other Commodore documents say*): the assertion reads only where the
+sprite first lights.
 
-Outside SuperHires the page asks only that bit 4 give no 70 ns position, and in
-Hires nothing at all. The package's own `superhires_spres` cannot stand in for
-`2'b10`: it is the first `spres` at which SH0 moves the start
-(`test_denise_sprites.cpp:848-852`), SH0 moves it at every value, and so it is
-1, the lores default.
+Outside SuperHires the package asserts nothing about bit 4, since p. 303 gives
+it no position there and Hires nothing at all. It records that bit 4 alone
+leaves the Lores trace, sampled once per 140 ns step, identical
+(`test_denise_sprites.cpp:1128-1148`).
 
 [`integration/ch4-sprite-registers`](../../integration/ch4-sprite-registers)
 specifies the same measurement at the video output: P1 sweeps the start in 70
@@ -197,6 +198,18 @@ and none decides this finding. What they are and how they were read is in
 
   In Commodore's ECS Denise specification (it defines SHRES and names the 8373 revisions) the SPRxCTL table gives bits 06-04 as 'Not used' and has no row for bit 3; SHSH1 and 70 ns sprite positioning appear nowhere in its 14 pages. That sides with NanoMig not reading bit 4. Caveat: the table has the shape of an OCS-era SPRxCTL table, without even the EV8 row, so it may have been carried over rather than written for ECS.
 
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 6d, 6j1, 6a, 6c and 6k and the second pass of section 6 — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 6d latches D4in into S0C4 on SPR0CTL's write strobe, cSPR0CTL; the second-pass sheet draws the same latch for sprites 0 to 3, S0C4 to S3C4, and none for sprites 4 to 7. S0C4 is not an input of sprite 0's position match, the line isSPR0, which sheets 6a and 6c drive from H3 to H10 against SPR0POS and from H2 against SH0. It steers the sprite's two outputs instead (sheet 6j1): with S0C4 clear, S0_AF carries bit 15 of the shift register and S0_AG bit 14; with S0C4 set, S0_AG carries bit 15 and S0_AF carries bit 14 as it was one 140 ns cycle earlier. S0_AG reaches the display only in SuperHires, where it takes the channel of sprite 4 (sheet 6k).
+  <!-- drawing: denise-8373r4-dissection/sheet_028.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_039.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_034.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_025.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_027.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
+
+  In SuperHires the shift register advances two bits per 140 ns cycle and S0_AF and S0_AG are the sprite's two 70 ns pixels (see [NM-HRM-071](NM-HRM-071.md)), so setting bit 4 moves the sprite one 70 ns pixel to the right: p. 303's "70ns increment", made in the data path rather than in the start compare. Outside SuperHires the register advances one bit per cycle, and bit 14 one cycle earlier is the current bit 15 except in the cycle a new word is loaded. So bit 4 is stored and live on the 8373R4, which NanoMig does not model. The latch, the output selection and the channel switch are traced in the netlist for sprite 0; sprites 1 to 3 are read from the overview sheet. The dissection is a work in progress, and of one revision.
+
 Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989; US patent 5,103,499, Commodore-Amiga, filed 1989 as a division of the 1986 application, granted 1992.
 
 ---
@@ -213,6 +226,31 @@ wire sprite_hsub_70ns = sprctl[4];   // SHSH1, appendix p.303 -- SuperHires only
 
 with the position arithmetic taking it only when the sprite resolution is
 SuperHires.
+
+The 8373R4 makes the same move elsewhere: it leaves the start compare alone and,
+with the bit set, sends each 70 ns pixel out one pixel later, for sprites 0 to
+3 (*What other Commodore documents say*). Either form moves the first lit
+sample by 2 and turns the red green.
+
+---
+
+## For the specialists
+
+Two Commodore-side sources speak to the bit, and they disagree (*What other
+Commodore documents say*). The 8373R4 dissection, a third-party reading of an
+ECS Denise's silicon, latches SPRxCTL bit 4 for sprites 0 to 3 and, in
+SuperHires, moves the sprite one 70 ns pixel to the right: p. 303's row.
+Commodore's 1988 ECS Denise specification prints SPRxCTL bits 06-04 as not
+used, with no row for bit 3: NanoMig's register. The dissection traces the
+latch and the output selection transistor by transistor for sprite 0 and is
+of one revision; the specification's SPRxCTL table is the one Appendix A prints
+on p. 284 without its EV8 row, and the manual itself gives the ECS bits on
+p. 303. Neither is the oracle: the red stands on p. 303.
+
+A measurement on an 8373 Denise would settle what the chip does: a one-line
+sprite of `$8000` over a SuperHires display, SPR0CTL `$00` and then `$10`,
+measured in 35 ns pixels. Two pixels later is p. 303's row and the silicon's;
+no move is the specification's table and NanoMig.
 
 ---
 

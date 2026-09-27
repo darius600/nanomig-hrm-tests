@@ -5,12 +5,12 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The 8373R4 silicon stores bit 7 for the odd sprites only; *For the specialists* says what that settles for the `!aga` term and what it leaves open. |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v#L474) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites) |
 | **Chapter** | 4 — Sprites · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states |
+| **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states; outside the emulators, the 8373R4 dissection stores bit 7 for the odd sprites only — see *What other Commodore documents say* |
 
 ---
 
@@ -91,6 +91,14 @@ and none decides this finding. What they are and how they were read is in
 
   Places the attach bit in the odd sprites' control registers only, as the manual does; like the manual it gives the even sprite's bit 7 no role.
 
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheet 6c and the second pass of section 6 — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 6c draws the control cells of sprites 0 and 1 transistor by transistor. SPR1CTL's write strobe, cSPR1CTL, latches D7in into S1C7#; SPR0CTL's, cSPR0CTL, latches D0in (SH0) there but not D7in, which passes sprite 0's cell unlatched. The second-pass sheet of section 6 draws a row of bit-7 latches under cSPR7CTL, cSPR5CTL, cSPR3CTL and cSPR1CTL, with the cells under the even sprites' strobes empty.
+  <!-- drawing: denise-8373r4-dissection/sheet_027.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_039.txt -->
+
+  The 8373R4 does not store bit 7 of an even sprite's control word, so nothing downstream can attach a pair from it: the manual's rule, not NanoMig's even-sprite term. To the question *For the specialists* asks of the `!aga` term, it answers that the term encodes no behaviour of this revision; the OCS Denise is not dissected. The sprite 0/1 cells are traced in the netlist; the other three pairs are read from the overview sheet. It speaks for the ECS Denise 8373R4 only, and the dissection is a work in progress.
+
 Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988.
 
 ---
@@ -106,12 +114,19 @@ if (attach1) // sprites are attached -> 15 colors + transparant
 Denise's `(nr & 1) && (value & 0x80)` is the same rule stated at the register
 write instead of at the compositor, which may be the tidier place for it.
 
-**One caution.** The `!aga` gate looks deliberate rather than accidental — someone
-wrote a chipset condition around the even-sprite term on purpose. Before removing
-it, find out what it was for: the likeliest answer is a title that sets the wrong
-control word and relies on OCS/ECS Denise accepting it, which would make this
-another [NM-HRM-008](NM-HRM-008.md)-shaped case where the RTL knows something the manual does
-not.
+**One caution, for the original chip set.** The `!aga` gate looks deliberate
+rather than accidental — someone wrote a chipset condition around the
+even-sprite term on purpose — and it covers the original and the enhanced chip
+set alike: the module takes `aga` and no ECS strap
+([`denise_sprites.v#L39`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v#L39),
+`input aga,`). For the enhanced chip set the silicon answers what it could be
+for: the 8373R4 has no bit-7 latch for an even sprite, so there the even
+sprite's bit attaches nothing and the term encodes no behaviour of that Denise.
+The original Denise is not dissected. Before removing the term, find out
+whether it was written for that one: the likeliest answer is a title that sets
+the wrong control word and relies on the original Denise accepting it, which
+would make this another [NM-HRM-008](NM-HRM-008.md)-shaped case where the RTL
+knows something the manual does not.
 
 ---
 
@@ -126,12 +141,21 @@ not.
 - **The data path is proven live first.** A separate
   `[control] FIXTURE-LIVE-DATA-PATH` shows the sprite path delivers distinct
   known values in order before anything reads one.
+- **The enhanced chip set's silicon agrees.** The 8373R4 latches bit 7 on the
+  write strobes of SPR1CTL, SPR3CTL, SPR5CTL and SPR7CTL and on no even
+  sprite's (*What other Commodore documents say*).
 
 ---
 
 ## For the specialists
 
-The `!aga` term is the whole question. If it encodes real OCS/ECS Denise
-behaviour, the manual's two sentences are incomplete and this becomes a source
-observation. If it is a workaround for one title, it belongs behind a narrower
+The `!aga` term is the whole question, and the silicon answers half of it. On
+the enhanced chip set it encodes no behaviour of the 8373R4, which stores
+SPRxCTL bit 7 for the odd sprites only: for that Denise the manual's two
+sentences hold and the term models nothing. On the original chip set nothing read here speaks to
+it: the OCS Denise is not dissected, and none of the four implementations
+conditions the attach bit on the chip set. If the term encodes real OCS Denise
+behaviour, the manual's two sentences are incomplete for that chip, and the
+term belongs behind an OCS condition rather than `!aga`, which admits the ECS
+Denise too. If it is a workaround for one title, it belongs behind a narrower
 condition than a chipset strap.

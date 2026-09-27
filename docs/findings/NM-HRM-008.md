@@ -1,16 +1,16 @@
-# NM-HRM-008 — playfield-1 collision depends on playfield 2, by design, undocumented [RTL review]
+# NM-HRM-008 — playfield-1 collision depends on playfield 2 in single-playfield mode, where pp. 214 and 273 name no mode
 
 | | |
 |---|---|
 | **Lifecycle** | open |
-| **Filed against** | the RTL |
+| **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. Read *What the others say* before deciding: every implementation read here does what NanoMig does, and WinUAE's changelog calls p. 214's sentence wrong. |
+| **What is asked of a reader** | No RTL change follows from this. pp. 214 and 273 make the playfield-1 collision bits independent of the playfield mode; NanoMig registers a playfield-1 collision in single-playfield mode only where playfield 2's enabled planes match as well, as all four independent implementations do and as the 8373R4 silicon gates it, and the red is against the printed page. Whether pp. 214 and 273 lack a single-playfield condition is for an Amiga specialist to say; the entry exists so the next reader does not take the red for an implementation fault. |
 | **Module** | `denise_collision.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_collision.v#L62-L63) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. `denise_collision.v` is identical in NanoMig, MiSTer and TC64, so there is no fix to port; no implementation read here follows pp. 214 and 273 in single-playfield mode — see *What the others say* |
+| **Report to** | **the manual, not the RTL.** pp. 214 and 273 are contradicted by all four independent implementations and by the 8373R4 silicon, which gates the playfield-1 match on the even planes while BPLCON0's DPF bit is clear; `denise_collision.v` is identical in NanoMig, MiSTer and TC64 — see *Why this is filed against the page* |
 | **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) · [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode) |
 | **Chapter** | 3 — Playfield, and 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **unanimous with NanoMig, against pp. 214 and 273**: WinUAE, vAmiga, Denise and Copperline all register a playfield-1 collision in single-playfield mode only where playfield 2's enabled planes match as well. Copperline's expression is NanoMig's term for term; WinUAE's changelog calls p. 214's sentence wrong and vAmiga's comment calls the gate a hardware oddity; vAmiga also applies it in dual-playfield mode where playfield 1 is opaque and shown |
+| **Verdict of the four** | **unanimous with NanoMig, against pp. 214 and 273**: WinUAE, vAmiga, Denise and Copperline all register a playfield-1 collision in single-playfield mode only where playfield 2's enabled planes match as well. Copperline's expression is NanoMig's term for term; WinUAE's changelog calls p. 214's sentence wrong and vAmiga's comment calls the gate a hardware oddity; vAmiga also applies it in dual-playfield mode where playfield 1 is opaque and shown; outside the emulators, the 8373R4 dissection gates the playfield-1 match on the even planes when BPLCON0's DPF bit is clear, as NanoMig does — see *What other Commodore documents say* |
 
 ---
 
@@ -164,42 +164,78 @@ and none decides this finding. What they are and how they were read is in
 
   Describes the odd-bitplanes-to-sprite bit as registering an overlap of the odd bitplanes with a sprite, with no playfield-mode condition; p021 likewise defines objects as 'any non-zero bits used to display any of eight sprites or two playfields'. Weak: this is the table-level statement again and says nothing about single vs dual playfield; the FIG. 12 gate diagram (p011) is illegible in the text layer.
 
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 7p, 7j, 7n, 4hi and 3a — **agrees with NanoMig**:
+
+  *Read from the drawing, not quoted:* sheet 7p, drawn transistor by transistor, forms one term per bitplane that is high when CLXCON enables the plane and the plane's bit differs from its match value (a node pulled low by ENBPn# or by MVBPn#). One pull-down network takes the terms of planes 1, 3 and 5, a second all six; a pass switch driven by DPF (through an inverter from DPF#) selects the first, one driven by DPF# the second, and the result, latched on C7M1, drives MBPB#. MBPA# takes the terms of planes 2, 4 and 6 alone. DPF is BPLCON0 bit 10 as written, latched from D10in on sheet 7j, and DPF# its complement; each MVBPn# compares a CLXCON match bit with the plane's shifter output, Bn_Q15 (sheet 7n). On sheet 4hi the cells of CLXDAT bits 1 to 4 take MBPB# with the sprite-pair signals S10C# to S76C#, the cells of bits 5 to 8 take MBPA#, and bit 0 takes both.
+  <!-- drawing: denise-8373r4-dissection/sheet_053.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_049.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_051.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_017.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_006.txt -->
+
+  With DPF clear, in single-playfield mode, the odd-plane match that CLXDAT bits 1 to 4 record fails wherever an enabled even plane misses its match value; with DPF set the even planes drop out. That is NanoMig's playfield-2 term on line 62, and not what pp. 214 and 273 print. The DPF gate is traced in the transistor-level netlist of sheet 7p, the latch in that of sheet 7j; the data-bus input is drawn for D0 alone (sheet 3a, where D0in follows D0), and D10in is taken to be alike. That bits 1 to 4 take MBPB# is read from sheet 4hi, which draws bit 0's cell transistor by transistor and the other cells as blocks with their inputs, noting "layout of all cells is pretty similar"; sheet 7n draws the match comparison transistor by transistor for planes 1 and 2 only. The dissection is a work in progress, and of one revision.
+
 Silent on this point: US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988.
 
 ---
 
 ## Suggested change
 
-If the manual's reading is accepted, drop the playfield-2 term from line 62:
+**No RTL change.** NanoMig already gates playfield 1 on playfield 2 in
+single-playfield mode, as all four independent implementations and the 8373R4
+silicon do. Dropping the playfield-2 term from line 62,
 
 ```verilog
 assign oddmatch = bm[6] & bm[4] & bm[2] & bm[0];
 ```
 
-That one line turns all nine reds green and leaves every other assertion in
-the six packages that build `denise_collision.v` green (*Measured*, above). It also makes NanoMig the
-only implementation read here that registers a playfield-1 collision without
-playfield 2 in single-playfield mode, and it removes the behaviour the RTL
-comment ties to Rotor, Spaceport and Archon-1 and WinUAE's changelog to
+would satisfy pp. 214 and 273: it turns all nine reds green and leaves every
+other assertion in the six packages that build `denise_collision.v` green
+(*Measured*, above). It would also make NanoMig the only implementation read
+here that registers a playfield-1 collision without playfield 2 in
+single-playfield mode, depart from the silicon, and remove the behaviour the
+RTL comment ties to Rotor, Spaceport and Archon-1 and WinUAE's changelog to
 Inferior and Sub Rally.
 
-The other option is to keep the RTL and read the gate as what Denise does; the
-manual would then need a single-playfield condition on pp. 214 and 273 that it
-does not print, and this project does not own that document.
+The change, if one is made, belongs to the manual: a single-playfield condition
+on p. 214's sentence and on p. 273's playfield-1 rows. That is a decision for
+Amiga specialists, and a documentation decision rather than a hardware one.
 
 ---
 
-## For the specialists
+## Why this is filed against the page
 
-The question is which side describes the silicon. For the manual: three
-printed statements that agree with each other — p. 214's sentence, Table 7-3's
-"Odd bitplanes" rows, and p. 273's note and table — and Commodore's 1988 ECS
-Denise specification, which repeats the note and the table; no printed page
-makes the playfield-1 bit depend on the playfield mode. For NanoMig: all four
-independent implementations, WinUAE's changelog naming p. 214's sentence as
-wrong and the two games it fixed, vAmiga's comment and the forum post it cites,
-and the RTL comment crediting a reverse-engineered Denise function. None of the
-implementations cites a Commodore document for the gate.
+The manual states one rule three times and conditions it on no mode: p. 214's
+sentence, Table 7-3's "Odd bitplanes" rows, and p. 273's note and table.
+Commodore's 1988 ECS Denise specification repeats the note and the table, and
+the shared patent specification describes the odd-bitplane bits with no mode
+condition; both are table-level statements, and neither says what
+single-playfield mode does (*What other Commodore documents say*).
 
-The red stands either way: the manual is this suite's oracle, and NanoMig does
-not do what its three statements say.
+Against them stand all four independent implementations, two of which say why
+— WinUAE's changelog names p. 214's sentence as wrong and the two games the
+gate fixed, and vAmiga's comment calls it a hardware oddity — the RTL comment
+crediting a reverse-engineered function of the real Denise, and the one
+reading of the silicon, the 8373R4 dissection. Its transistor-level netlist of
+sheet 7p forms the match that CLXDAT bits 1 to 4 record from the terms of
+planes 1, 3 and 5 alone while DPF is set, and from the terms of all six planes
+while DPF is clear; the match that bits 5 to 8 record is formed from the terms
+of planes 2, 4 and 6. In single-playfield mode, then, the playfield-1 match
+requires the playfield-2 match: NanoMig's `(dblpf | evenmatch)` on line 62.
+That the gate depends on DPF at all is what p. 214's "does not change when you
+select either single- or dual-playfield mode" rules out.
+
+The red stays because each printed sentence is graded on its own authority:
+the nine checks measure pp. 214 and 273, fail against them, and pass for an
+implementation without the playfield-2 term (*Measured*). The finding key
+names the pair that disagrees, NanoMig and pp. 214 and 273, and does not
+prejudge which is wrong.
+
+**What this does not settle.** The dissection reads one revision, the ECS
+Denise 8373R4, and is a work in progress; the original chip set's Denise is
+not dissected, and for it the four implementations, none of which conditions
+the gate on the chip set, are the only witnesses. The gate and the DPF latch
+are traced transistor by transistor (sheets 7p and 7j); that CLXDAT bits 1 to 4
+take the gated match is read from sheet 4hi, which draws bit 0's cell
+transistor by transistor and the others as blocks with their inputs; and the
+data-bus input is drawn for D0 alone.
