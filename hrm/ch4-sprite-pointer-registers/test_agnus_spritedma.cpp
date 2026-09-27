@@ -51,8 +51,8 @@
 //   byte address >> 1 -- reqdma/ackdma DMA-grant handshake, reg_address_out
 //   as the granted register's own word address, the vstart/vstop arm-a-
 //   window-then-sweep-hpos/vpos pattern) are those of
-//   hrm/agnus_spritedma/test_agnus_spritedma.cpp, the sibling harness for
-//   the SAME module.
+//   hrm/agnus_spritedma/test_agnus_spritedma.cpp, the pre-pipeline harness
+//   for the SAME module (removed).
 //   (2) agnus_spritedma's `address_out` value -- the composed chip-memory
 //   word address a sprite's DMA fetch actually uses, distinct from
 //   reg_address_out -- is the port claims.jsonl's own classify.evidence
@@ -249,7 +249,7 @@ public:
 // Byte addresses, per the appendix-B table (p.291) and appendix A (p.285):
 // SPRxPTH at $120+4x, SPRxPTL at $122+4x; SPRxPOS at $140+8x, SPRxCTL at
 // $142+8x, SPRxDATA at $144+8x, SPRxDATB at $146+8x (word-address base and
-// +4-per-sprite layout as in hrm/agnus_spritedma/
+// +4-per-sprite layout as in the pre-pipeline (removed) hrm/agnus_spritedma/
 // test_agnus_spritedma.cpp for SPR0PTH/SPR0PTL/SPR0POS/SPR0CTL, extended
 // here to sprites 1..7 by the appendix-B table's own printed addresses,
 // each independently in this package's inventory).
