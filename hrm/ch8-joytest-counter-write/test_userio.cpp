@@ -25,16 +25,15 @@
 // mapping. JOYTEST's ADDRESS and its read/write direction are graded by
 // ch8-register-map-userio and are not re-graded here.
 //
-// REPAIR (2026-09-15, independent validation report B, finding 10): the
-// twelve claims about the table's "xx" cells (opus .c11 .c12 .c19 .c20 .c27
-// .c28 .c35 .c36; sol .c6 .c8 .c10 .c12) were originally graded through
-// expect(), asserting that toggling such a write bit must leave the counter
-// unchanged. The claims themselves only say the table defines no test-data
-// value there -- "undefined" is not "must be ignored", and nothing on p.282
-// states a required behaviour for those positions. Checked for a printed
-// rule before repairing, not assumed: pp.227-241 (chapter body), the
-// Appendix A preamble (pp.263-264), pp.281-282 themselves, and pp.287-289
-// (Appendix B) were read. One relevant rule exists, p.264: "If a bit is
+// DECLINED CELLS. The twelve claims about the table's "xx" cells (opus .c11
+// .c12 .c19 .c20 .c27 .c28 .c35 .c36; sol .c6 .c8 .c10 .c12) are declined via
+// record() as unspecified, not graded. The claims only say the table defines
+// no test-data value there -- "undefined" is not "must be ignored", and
+// nothing on p.282 states a required behaviour for those positions, so
+// asserting that toggling such a write bit must leave the counter unchanged
+// would grade an invented rule. Pages read for a printed rule: pp.227-241
+// (chapter body), the Appendix A preamble (pp.263-264), pp.281-282
+// themselves, and pp.287-289 (Appendix B). One relevant rule exists, p.264: "If a bit is
 // described as unused in a write-only register, be sure to keep that bit
 // clear when writing values to that register. ... Setting unused bits in a
 // write-only register ... may cause serious future software incompatibility
@@ -42,15 +41,13 @@
 // That is advice to the PROGRAMMER about what to write, and a warning that
 // present hardware behaviour on such bits is deliberately left open for
 // future use -- it does not promise the current implementation leaves the
-// counter unchanged. No rule found defines these twelve positions, so they
-// are now declined via record() as unspecified rather than graded, and carry
-// no MUTATION record (declined claims take no mutation record). The
-// twelve's old MUT_UNDEFSHIFT mutations rerouted the probe onto a defined
-// neighbouring bit -- which only shows that comparator CAN fail somewhere,
-// not that the invented "must be unchanged" rule is real. That is preserved
-// here only as history in this comment, not as a record line.
+// counter unchanged. No rule found defines these twelve positions. They
+// carry no MUTATION record (declined claims take no mutation record); a
+// mutation rerouting the probe onto a defined neighbouring bit would only
+// show that the comparator CAN fail somewhere, not that a "must be
+// unchanged" rule is real.
 //
-// Measured mechanism (userio.v, read after SPECIFICATION.md was committed):
+// Measured mechanism (userio.v):
 //   - JOYTEST decode is a level, not a strobe: `test_load` is simply
 //     `reg_address_in == JOYTEST` (userio.v:317). This harness therefore reads
 //     data_out with a purely combinational address change immediately after
@@ -72,27 +69,25 @@
 //     idle input pattern by this harness (_joy1=_joy2=16'h0000), so those
 //     bits settle at a fixed, nonzero pattern before the first write and are
 //     carried unchanged through every JOYTEST write after that.
-//   - This is the RTL clearing different bits on the two ports the task
-//     description warned about: MEASURED here, an all-1s write ($FFFF)
-//     produced JOY0DAT=$FCFC and JOY1DAT=$FEFE -- matching the carried-
-//     forward finding exactly, for the mechanistic reason above, not by
-//     coincidence.
+//   - So the RTL clears different bits on the two ports: an all-1s write
+//     ($FFFF) produces JOY0DAT=$FCFC and JOY1DAT=$FEFE (MEASURED below), for
+//     the mechanistic reason above, not by coincidence.
 //
-// Every assertion is graded through expect(), labelled with the exact
+// Every graded assertion goes through expect(), labelled with the exact
 // classify.uid from the claims file (opus:8-appa-joytest.cN /
 // sol:8-appa-joytest.cN) -- the ledger reads uids off graded lines, so a uid
 // appearing on an expect() line counts as ASSERTED regardless of nearby
-// prose. One infrastructure check (fixture word delivery) is graded without
-// a uid, since it is not a manual claim.
+// prose. The twelve "xx" claims go through record() instead (see DECLINED
+// CELLS above). One infrastructure check (fixture word delivery) is graded
+// without a uid, since it is not a manual claim.
 //
 // Mutation policy: every assertion's *stimulus* is changed, its expected
 // value is left alone, per assertion below. Because several assertions are
 // structurally identical (same comparator, same kind of proposition, only
 // the bit position or register differs), four `MUT_*` flags each guard a
 // *family* of assertions rather than one flag per uid; every uid in a family
-// was independently re-run with its family's flag defined and confirmed red
-// (see the coverage note in the header list). `make clean && make MUT=<NAME>`
-// replays any one of them.
+// goes red with its family's flag defined (see the MUTATION lines below).
+// `make clean && make MUT=<NAME>` replays any one of them.
 //
 // MUTATION opus:8-appa-joytest.c4 stimulus red wrote to address 0x00, not JOYTEST (MUT_ADDR)
 // MUTATION sol:8-appa-joytest.c4 stimulus red wrote to address 0x00, not JOYTEST (MUT_ADDR)
@@ -135,8 +130,8 @@
 #include "verilated.h"
 
 // ---------------------------------------------------------------------------
-// harness -- three verbs, not interchangeable. record() is kept character-
-// identical to the form fixed by the brief.
+// harness -- three verbs, not interchangeable. record() keeps the suite's
+// fixed form.
 // ---------------------------------------------------------------------------
 
 struct Checks {
@@ -222,8 +217,8 @@ static void reset_dut(Vuserio* top) {
 }
 
 // One JOYTEST write: hold the address for exactly the one active cycle that
-// captures it. userio.v has no separate write strobe (task-carried fact,
-// confirmed at userio.v:317: test_load is bare address-match, a level) --
+// captures it. userio.v has no separate write strobe (userio.v:317:
+// test_load is bare address-match, a level) --
 // this is the actually-observable conjunction that loads data, not something
 // asserted from the manual's "W" column.
 static void write_joytest(Vuserio* top, uint16_t value) {
@@ -305,10 +300,9 @@ template <int N>
 static int arrlen(const BitProp (&)[N]) { return N; }
 
 // ---------------------------------------------------------------------------
-// mutation helpers -- move the driven bit within its own 6-bit field
-// (data-bit family), or reroute an "undefined" bit's probe onto its nearest
-// data-carrying neighbour (undefined-bit family). Both keep the write
-// one-hot; only which position is exercised changes.
+// mutation helper -- move the driven bit within its own 6-bit field
+// (data-bit family). The write stays one-hot; only which position is
+// exercised changes.
 // ---------------------------------------------------------------------------
 
 static int shift_within_group(int wbit) {
@@ -322,7 +316,7 @@ static int shift_within_group(int wbit) {
 
 // Per-bit data proposition: a one-hot write of this bit must produce the
 // identically-positioned one-hot readback, masked to the bits JOYTEST
-// actually loads (0xFCFC) so the separately-graded "no test data" bits never
+// actually loads (0xFCFC) so the separately-declined "no test data" bits never
 // contaminate this comparison.
 static void test_data_bit(Vuserio* top, ReadFn rd, const BitProp& p) {
     reset_dut(top);
@@ -353,13 +347,13 @@ static void test_range(Vuserio* top, ReadFn rd, uint16_t pattern6, int lo, const
     expect(got == expected, uid);
 }
 
-// Per-bit "xx" cell -- DECLINED, not asserted. See the REPAIR note at the top
+// Per-bit "xx" cell -- DECLINED, not asserted. See the DECLINED CELLS note at the top
 // of this file: p.282's write-test-data table defines no test-data value for
 // this write-bit position, and no printed rule (checked: pp.227-241, the
 // Appendix A preamble pp.263-264, pp.281-282, pp.287-289) requires an
 // implementation to leave the corresponding counter bit unchanged when the
 // position is written. "Undefined" is not "must be ignored". Declined
-// claims take no mutation record. The clear/set readback is still measured
+// claims take no mutation record. The clear/set readback is measured anyway
 // and folded into the record() message below, since it is cheap and honest
 // to show what this RTL actually does at the position even though nothing
 // here grades it.
@@ -455,8 +449,8 @@ int main(int argc, char** argv) {
     test_g0(top, "opus:8-appa-joytest.c4");
     test_g0(top, "sol:8-appa-joytest.c4");
 
-    // A directly measured, undisguised look at the asymmetry the task
-    // description named: same $FFFF write, two different results.
+    // A directly measured look at the asymmetry between the two ports:
+    // same $FFFF write, two different results.
     {
         reset_dut(top);
         write_joytest(top, 0xFFFF);
@@ -475,7 +469,7 @@ int main(int argc, char** argv) {
     test_range(top, read_joy0dat, 0b101101, 10, "sol:8-appa-joytest.c5");
 
     // 0DAT / Y-half: bits 9,8 are "xx" in the table -- declined as unspecified,
-    // not asserted (see REPAIR note, top of file; validation finding 10).
+    // not asserted (see the DECLINED CELLS note, top of file).
     for (int i = 0; i < arrlen(k0DatYUndef); i++)
         decline_undef_bit(top, read_joy0dat, k0DatYUndef[i], "0DAT", "Y");
     decline_undef_range(top, read_joy0dat, k0DatYUndef, "sol:8-appa-joytest.c6", "0DAT", "Y");
