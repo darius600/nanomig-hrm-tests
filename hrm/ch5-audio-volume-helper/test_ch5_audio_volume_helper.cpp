@@ -1,12 +1,8 @@
 // Test purpose: Assert the HRM's stated audio volume-scaling facts - AUDxDAT
 //   bytes read as two's complement, and AUDxVOL bits 5-0 selecting a linear
 //   64-level field including its "no output" zero level - against the
-//   six-bit paula_audio_volume multiply helper. This EXTENDS
-//   hrm/paula_audio_volume (an RTL_REGRESSION package whose own header names
-//   only its module contract as oracle, exhaustively sweeping the multiplier
-//   for regression purposes) with an HRM_CONFORMANCE package that cites
-//   Appendix A quotations by page and claim id. hrm/paula_audio_volume is
-//   not modified, weakened or deleted by this file.
+//   six-bit paula_audio_volume multiply helper, citing Appendix A
+//   quotations by page and claim id.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix
 //   A, printed pp. 265-266.
@@ -15,10 +11,10 @@
 //   six bits, 0-63. Appendix A printed p.266 describes 65 linear levels
 //   (0-64) with bit 6 forcing maximum, and chapter 5's own printed p.140
 //   gives a volume range of 0-64 (see BOUNDARIES.md item 1). Writing 64 into
-//   a six-bit field is writing 0 (64 mod 64 = 0): a previous measurement of
-//   what happens if you try gave 127*64=8128, a product this hardware cannot
-//   construct - the fixture being wrong, not the design (CANDIDATES.md,
-//   "What is NOT a finding"). Volume 64 is already tested, red, at the
+//   a six-bit field is writing 0 (64 mod 64 = 0); driving 64 into this
+//   Verilated port unmasked gives 127*64=8128, a product this hardware
+//   cannot construct - the fixture being wrong, not the design (see
+//   VOLUME-64-OUT-OF-SCOPE below). Volume 64 is tested, red, at the
 //   mixer/PWM boundary in hrm/ch5-audio-volume-scale; it is not asserted,
 //   attempted or worked around here. This package also does not touch
 //   sample_okk, the PWM-gated second volume path on paula_audio_channel
@@ -28,14 +24,10 @@
 //   sentence of the manual in this chapter's reading. They carry no reader
 //   prefix, and they resolve in the claim files that
 //   hrm-testpipeline/acceptance/ch5.json lists under `inventories`.
-// RTL read before this spec was written: paula_audio_volume.v (24 lines,
-//   read in full) and this chapter's BOUNDARIES.md/CANDIDATES.md, both of
-//   which already quote this module's lines verbatim - per BRIEF.md's own
-//   note that the chapter's literal "write the spec, commit it, then open
-//   the RTL" order cannot be met here because the working documents already
-//   forced the RTL open. What that rule protects is still honoured: every
-//   expected value below is taken from an Appendix A quotation named by
-//   page, never from what the RTL happens to do. Where the manual's range
+// RTL AND EXPECTED VALUES: paula_audio_volume.v (24 lines) supplies the
+//   wiring the labels cite; every expected value below is taken from an
+//   Appendix A quotation named by page, never from what the RTL happens to
+//   do. Where the manual's range
 //   (0-64) and the port's width (0-63) disagree, the disagreement is
 //   declared out of scope above, not silently re-based on the RTL.
 //
@@ -46,8 +38,8 @@
 //
 // FIXTURE. paula_audio_volume is purely combinational (no clk, no clk7_en) -
 // every input drives out directly through eval(), so there is no DMA/latch
-// handshake for a silence trap to hide in the way BRIEF.md warns about for
-// paula_audio_channel's fixtures; every assertion below IS its own
+// handshake for a silence trap to hide in, the way paula_audio_channel's
+// fixtures have one; every assertion below IS its own
 // data-delivery proof (a wrong or dead wiring would show up as a wrong `out`
 // on the very first case), so no separate fixture-liveness block is added.
 //
@@ -67,14 +59,11 @@
 //   sample left untouched) -> FAIL, actual -1 != expected 0; every other
 //   assertion PASS.
 //
-// VOLUME-64-OUT-OF-SCOPE, REPAIRED per NM-HRM audit V-11: this block was a
-//   host-arithmetic assertion (`64 & 0x3F == 0`, computed in C++, never
-//   applied to the Verilated module) that inflated the green/non-vacuous
-//   count without being a DUT check. It is now DEMOTED to a note() -- a
-//   real DUT observation (eval_case(127, 64) against the Verilated module),
-//   printed as MEASURED, carrying no claim id, no pass/fail, and no
-//   mutation record, per BRIEF.md's own rule that a row the manual does not
-//   rule on gets a recorded number, not an assertion. See the block's own
+// VOLUME-64-OUT-OF-SCOPE is a note(), not an assertion: a real DUT
+//   observation (eval_case(127, 64) against the Verilated module, not host
+//   arithmetic such as `64 & 0x3F == 0`), printed as MEASURED, carrying no
+//   claim id, no pass/fail, and no mutation record -- a row the manual
+//   does not rule on gets a recorded number, not an assertion. See the block's own
 //   comment, just above it, for why neither candidate expected value (the
 //   0 a real 6-bit register write would truncate to, or the 8128 this
 //   fixture's unmasked port actually produces) has an HRM oracle behind it.
@@ -181,25 +170,20 @@ int main(int argc, char** argv) {
             "the signal, not a stuck-low fixture.");
     }
 
-    // ---------------- VOLUME-64-OUT-OF-SCOPE (boundary demonstration, DEMOTED from an assertion to a note -- NM-HRM audit V-11) ----------------
-    // V-11 found the previous version of this block computed `64 & 0x3F` in
-    // host C++ and asserted the result was zero, never applying 64 to the
-    // Verilated module at all -- its mutation changed a host constant, so it
-    // was a host-arithmetic green, not a DUT check. Repaired by choosing the
-    // "recorded note" option BRIEF.md itself names for exactly this
-    // situation ("a row the manual does not rule on gets a recorded number,
-    // not a pass/fail"): Appendix A gives no ruling for register values
-    // above 64 at this six-bit port, so there is no manual oracle for a
-    // pass/fail here. It is not left as pure host arithmetic either -- the
-    // note below now actually drives volume=64 into the DUT's volume[5:0]
-    // port via eval_case() and reports what paula_audio_volume.v itself
-    // produces, which turns out to be informative on its own: the Verilated
-    // harness does NOT itself truncate an out-of-range value to the port's
-    // declared width (unlike a real hardware register write, which would),
-    // so 64 passes through unmasked and multiplies as if it were 64, not 0
-    // -- reproducing the exact 127*64=8128 artifact CANDIDATES.md already
-    // recorded under "What is NOT a finding: Volume 64 at
-    // paula_audio_volume". Asserting either 0 (the truncation a real
+    // ---------------- VOLUME-64-OUT-OF-SCOPE (boundary demonstration, a note, not an assertion) ----------------
+    // Appendix A gives no ruling for register values above 64 at this
+    // six-bit port, so there is no manual oracle for a pass/fail here, and a
+    // row the manual does not rule on gets a recorded number, not a
+    // pass/fail. Host arithmetic (`64 & 0x3F` computed in C++) would never
+    // apply 64 to the Verilated module at all, and its mutation would change
+    // only a host constant. The note below instead drives volume=64 into the
+    // DUT's volume[5:0] port via eval_case() and reports what
+    // paula_audio_volume.v itself produces, which is informative on its
+    // own: the Verilated harness does NOT itself truncate an out-of-range
+    // value to the port's declared width (unlike a real hardware register
+    // write, which would), so 64 passes through unmasked and multiplies as
+    // if it were 64, not 0 -- the 127*64=8128 artifact, not a finding.
+    // Asserting either 0 (the truncation a real
     // register write would perform) or 8128 (what this fixture happens to
     // pass through) would both be asserting a fact with no HRM oracle behind
     // it, so this stays a note(), with no claim id and no mutation record --
@@ -218,9 +202,8 @@ int main(int argc, char** argv) {
             "real six-bit hardware register write would have reduced 64 to "
             "before this module ever saw it). The Verilated harness does not "
             "enforce the port's declared width the way a real register write "
-            "does, so this reproduces the exact 127*64=8128 artifact "
-            "CANDIDATES.md already recorded (\"What is NOT a finding: Volume "
-            "64 at paula_audio_volume\") - a fixture boundary fact, not a "
+            "does, so this is the 127*64=8128 artifact, not a finding - a "
+            "fixture boundary fact, not a "
             "hardware behaviour the manual rules on. Volume 64 is asserted, "
             "red, at the mixer/PWM boundary in hrm/ch5-audio-volume-scale "
             "instead, where the DUT's own OR-collapse (not fixture leakage) "
