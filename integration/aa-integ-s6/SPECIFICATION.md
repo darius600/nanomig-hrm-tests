@@ -13,7 +13,8 @@ over unchanged (the sprite data structure, the colour-register grouping of
 sprite pairs, the attached-sprite colour numbers, standard display-window and
 data-fetch values).
 
-The package has ten propositions, P1 to P10.
+The package has seventeen propositions: P1 to P12, and P2a, P5a, P6a, P6b and
+P6c, each of which grades one cell or one width of P2, P5 or P6 on its own.
 
 ---
 
@@ -25,9 +26,7 @@ Parts of claims that no test grades, and why:
 
 | Claim part | Why it is not graded |
 |---|---|
-| "on any display resolution" (AA p.31) read as including the VGA mode of AA p.30 | AA p.30 lists "VGA (640x480 non-interlaced)" beside LORES, HIRES and SUPERHIRES. No page gives the beam-counter register values that produce it, and a test must not invent them. "Any display resolution" is graded over the three resolutions BPLCON0 selects, which AA p.2 calls "all 3 resolutions". |
-| "Sprites can be attached in any mode" (AA p.31) read as including the 32- and 64-bit sprite widths | The sentence follows the width sentence, but its parenthesis ("formerly could not attach sprites in the ECS SHRES 35nS resolution mode") and AA p.2 ("Attached Sprites are now available in all resolutions") speak of resolutions only. What the pages agree on is graded: the four sprite resolution modes on the three display resolutions. Attachment at 32 or 64 bits is left open. |
-| Each individual 35 ns sprite pixel (AA p.31 "4) 35ns") | The harness drops every second pixel of the fastest resolution. A 35 ns sprite pixel can be shown only through what the page implies for the visible half: the sprite's extent and the loss of pixel-to-pixel alternation (P5). Which of each pair of 35 ns pixels is visible is a property of the harness, not of the page. |
+| Each individual 35 ns sprite pixel (AA p.31 "4) 35ns") | At one sample per 70 ns of display (u = 1, 3.7) each sample shows one of each pair of 35 ns pixels. A 35 ns sprite pixel can then be shown only through what the page implies for the visible half: the sprite's extent and the loss of pixel-to-pixel alternation (P5). Which of each pair of 35 ns pixels is visible is a property of the harness, not of the page. |
 | "init. to 1" as the effect of the RST_ pin (AA p.1, p.16) | AA p.2 and p.16 tie the value to LISA's RST_ input going low. The test cannot see that pin; it takes the harness's system reset as that event (P9, P10, precondition R1). |
 
 No claim needs a disk.
@@ -97,7 +96,10 @@ Manual's (HRM p.121-122, Table 4-5): the odd sprite's high-order word gives
 bit 3, its low-order word bit 2, the even sprite's high-order word bit 1, its
 low-order word bit 0; value v selects register 16+v, and 0 is transparent.
 Low-order word = SPRxDATA = first word of each line in memory (HRM p.105,
-p.126; AA p.29: "DATA bits are LSBs of the pixels").
+p.126; AA p.29: "DATA bits are LSBs of the pixels"). "Any mode" follows the
+width sentence, while its parenthesis and AA p.2 speak of resolutions; P7
+grades both: the four sprite resolution modes on the three display
+resolutions, and the three wider sprite widths of FMODE (AA p.3, p.24).
 
 **Colour banks.** AA p.31: "Can use any bank of 16 colours from the 256 colour
 palette for the sprite colours." BPLCON4 ($10C; AA p.8, p.16) bits 7-4 ESPRM7-4
@@ -142,10 +144,18 @@ for BPLCON4; this package never writes CLXCON2.
 
 ### 3.1 System
 
-AA chip set selected (`Config.chipset_config = 0x10`), PAL, 2 MB Chip memory,
-no interlace. Every case runs on both CPU cores (the 68000, and the second core
-in its default 68000 behaviour); no expectation depends on the CPU, and both
-must give the same verdicts.
+AA chip set selected (`Config.chipset_config = 0x10`), 2 MB Chip memory (the
+harness default), no interlace. The video standard is the one the harness gives
+after reset; the program writes no BEAMCON0. The display-window values of 3.3
+are the PAL ones of HRM p.59; no check depends on the standard, since every
+graded line lies between $2C and $C0.
+
+Every case runs on both CPU builds of `nanomig.mk`. The AA specification is
+graded on the TG68K build only: it is built with `ENABLE_AGA`, NanoMig's AGA
+configuration, and runs with `cpu_config` = 0 (68000 behaviour). The fx68k build is NanoMig's non-AGA
+configuration (`nanomig.mk` gives it no `ENABLE_AGA`): its results are recorded,
+not graded, and no proposition, precondition or harness constant (u, r) is
+taken from it.
 
 ### 3.2 Palette
 
@@ -173,8 +183,11 @@ otherwise:
 
 1. INTENA ($09A) = $7FFF, DMACON ($096) = $7FFF (bit 15 = 0: clear every
    enable; AA p.22, p.25).
-2. Load the palette (3.2).
-3. BPLCON0 ($100) = case value; BPLCON1 ($102) = $0000; BPLCON2 ($104) = $0024;
+2. BPLCON2 ($104) = $0024, then load the palette (3.2). BPLCON2 is written
+   first so that RDRAM (bit 8) is 0 before any colour register write (AA p.5:
+   "RDRAM bit in BPLCON2 causes LISA to interpret all color table accesses as
+   reads").
+3. BPLCON0 ($100) = case value; BPLCON1 ($102) = $0000;
    BPLCON3 ($106) = $0C00 | (SPRES << 6); BPLCON4 ($10C) = case value (never
    written in case R); FMODE ($1FC) = case value (bits 15-4 and 1-0 always 0);
    BPL1MOD ($108) = BPL2MOD ($10A) = 0; DIWSTRT ($08E) = $2C81, DIWSTOP ($090) =
@@ -188,30 +201,31 @@ otherwise:
    0 with SHRES, HRM p.300; BPU3 = 0; ECSENA = 0).
    BPLCON2 = $0024 keeps RDRAM (bit 8) and KILLEHB at 0; no sprite overlaps a
    non-zero playfield pixel, so no check depends on the priority code.
-4. Prepare the data (3.4, 3.5) and the Copper list (3.6) in Chip memory, or
-   load them as part of the image.
+4. Prepare the data (3.4, 3.5) and the Copper list (3.6) at the addresses of
+   3.9, by program writes or as part of the image.
 5. COP1LCH/COP1LCL ($080/$082) = list address, strobe COPJMP1 ($088), and only
    then DMACON = $83A0 (SET, DMAEN, BPLEN, COPEN, SPREN). AA p.21: "It is
    important that one of the jump registers be initalized and it's jump strobe
    address hit, after power up but before Coprocessor DMA is initalized."
-6. Write the done marker (a fixed word, e.g. $600D) to the address DONE, then
-   loop on a branch to itself.
+6. End with the `DONE` macro of `nanomig.i`: it writes DONE_VALUE ($600D) to
+   DONE_ADDR ($0C0FFE), then loops on a branch to itself.
 
 The harness runs each case for at least three complete frames after the frame
 in which the DONE write appears.
 
 ### 3.4 Bitplane data (calibration rows)
 
-One bitplane, BPL1PT = a word-aligned area of 48 KiB, all zero except its first
-640 bytes, which hold the word $CCCC. Displayed from the first line of the
-display window (line $2C), these 640 bytes fill the first rows (16 lines at the
-20 words per line of standard LORES, 8 at the 40 of HIRES, fewer at SHRES).
+One bitplane, BPL1PT = the 48 KiB bitplane area at $090000 (3.9), all zero
+except its first 640 bytes, which hold the word $CCCC. Displayed from the
+first line of the display window (line $2C), these 640 bytes fill the first
+rows (16 lines at the 20 words per line of standard LORES, 8 at the 40 of
+HIRES, fewer at SHRES).
 These rows are the **calibration rows**; every sprite in the package starts at
 line $40 or lower on the screen, below them.
 
 ### 3.5 Sprite data structures
 
-Every structure is in Chip memory at an address that is a multiple of 8.
+Every structure is at the address 3.9 gives it, a multiple of 8.
 Positions: SPRxPOS = (VSTART & $FF) << 8 | (HSTART >> 1); SPRxCTL =
 (VSTOP & $FF) << 8 | ATT << 7 | (HSTART & 1) (AA p.28, HRM p.107). All VSTART
 and VSTOP values in this package are below 256 and of equal parity (AA p.4's
@@ -250,22 +264,40 @@ at every vertical blank (AA p.21).
 
 - **Frame, row, sample.** A frame of the video output lies between two vertical
   syncs, a row between two horizontal syncs, a sample is one recorded pixel of a
-  row. With the line doubler, one beam line may give more than one row; no
-  check depends on how many.
+  row. The scan doubler is always on (`nanomig_harness.h`, `find_lines`), so
+  one beam line gives more than one row; r counts them.
+- **Sample index.** A sample's index counts from the rising hs edge that starts
+  its row. Indices compare across rows only if every row starts at the same
+  point of its beam line; C7 asserts that on the calibration rows, whose first
+  colour(1) sample lies at the same beam position on every line (the same
+  DIWSTRT and DDFSTRT, HRM p.59-60, and the same data).
+- **r.** The number of rows per beam line, a harness constant. It is measured
+  in the HIRES calibration rows: 640 bytes at the 40 words per line that
+  DDFSTRT $3C and DDFSTOP $D4 fetch (HRM p.60: "DDFSTRT = DDFSTOP - (4 * (word
+  count - 2)) for high resolution") are 8 beam lines, so the HIRES calibration
+  rows number 8r. Runs without a HIRES screen use the r of the package's HIRES
+  runs (M-H-*); C7 confirms it in every LORES run (20 words per line, "DDFSTRT
+  = DDFSTOP - (8 * (word count - 1)) for low resolution": 16 beam lines, 16r
+  rows). Beam line m of a band is its rows [m*r, (m+1)*r), counted from the
+  band's first row.
 - **Graded frame.** The last complete frame of the run.
 - **u.** The number of samples per 70 ns of display, a harness constant. It is
   measured in the HIRES calibration rows, where $CCCC gives runs of two HIRES
   pixels (140 ns) of colour(1) and colour(0): each run is 2u samples. Anchor:
-  AA p.17-18 print the pixel widths (LORES 140 ns, HIRES 70 ns, SHRES 35 ns);
-  the harness shows one of every two 35 ns pixels, i.e. one visible pixel per
-  70 ns. Runs without a HIRES screen use the u of the package's HIRES runs
-  (M-H-*). In every run the calibration rows must confirm u: runs of 4u (LORES),
-  2u (HIRES), u (SHRES). In SHRES the two 35 ns pixels of $CC pairs make 70 ns
-  runs, so consecutive visible pixels alternate whichever phase is dropped.
-- **Why counts are exact.** Any 2k consecutive 35 ns pixels contain exactly k
-  visible ones, whatever the phase of the dropped pixel. So a run of sprite
-  pixels of total length T ns gives exactly (T/70)*u samples, and a group of
-  pixels spanning 70 ns gives exactly u samples in order.
+  AA p.17-18 print the pixel widths (LORES 140 ns, HIRES 70 ns, SHRES 35 ns).
+  If u = 1 (one sample per 70 ns of display), each sample shows one of every
+  two 35 ns pixels; which one is a property of the harness, not of the page.
+  Runs without a HIRES screen use the u of the package's HIRES runs (M-H-*). In
+  every run the calibration rows must confirm u: runs of 4u (LORES), 2u
+  (HIRES), u (SHRES). In SHRES the two 35 ns pixels of $CC pairs make 70 ns
+  runs, so the SHRES runs are u samples long whichever of each pair is shown.
+- **Why counts are exact.** With u = 1, any 2k consecutive 35 ns pixels contain
+  exactly k shown ones, whatever the phase of the dropped pixel; with an even u
+  every 35 ns pixel has u/2 samples of its own. Either way a run of sprite
+  pixels that starts on a 140 ns boundary and lasts T ns (a multiple of 70)
+  gives exactly (T/70)*u samples, and a group of pixels spanning 70 ns gives
+  exactly u samples in order. An odd u above 1 gives a 35 ns pixel no whole
+  number of samples; the 35 ns checks of (d) are then recorded, not graded.
 - **Background.** colour(0), shown in border and in playfield zero pixels
   (BRDRBLNK = 0). A sample is **opaque** if it decodes to an index other than
   0.
@@ -277,27 +309,57 @@ at every vertical blank (AA p.21).
 ### 3.8 Common preconditions
 
 Each run asserts these before grading. A failed precondition makes the run
-inconclusive, not green.
+inconclusive, not green. C7 is a precondition of every run.
+
+The RAM-port log (`nanomig_harness.h`, `RamAccess`) records address, data and
+direction, not which unit made the access. A fetch or read named below is a
+read at the address of the structure it names (3.9); after the DONE write the
+CPU reads only its closing loop.
 
 | Id | Precondition | How the test checks it | Contrasting case (precondition must fail, program still finishes) |
 |---|---|---|---|
-| C1 | The program reached its end. | The trace holds the CPU write of the done word to DONE. | CP-1: case M-S-01 without step 6's write. |
-| C2 | The display is in steady state. | The graded frame and the frame before it are identical in every calibration row and every band row. | CP-2: case M-S-01 where, after step 6, the program polls INTREQR ($01E) bit 5 (VERTB), clears it via INTREQ ($09C) = $0020, and toggles COLOR00 between colour(0) and colour(2) in every vertical blank. |
+| C1 | The program reached its end. | The trace holds the CPU write of DONE_VALUE to DONE_ADDR. | CP-1: case M-S-01 without step 6's write. |
+| C2 | The display is in steady state. | The graded frame and the frame before it are identical in every calibration row and every band row. | CP-2: case M-S-01 where, after step 6's write and in place of the branch to itself, the program polls INTREQR ($01E) bit 5 (VERTB), clears it via INTREQ ($09C) = $0020, and toggles COLOR00 between colour(0) and colour(2) in every vertical blank. |
 | C3 | The display resolution is the case's, and the colour path is direct. | The calibration rows contain only colour(0) and colour(1) between the first and last colour(1) sample, alternating in runs of 4u (LORES), 2u (HIRES) or u (SHRES), ignoring the first and last run of each row. | CP-3: case M-S-01 with BPLCON0 = $9200 (HIRES) instead of $1240: runs of 2u where C3 expects u. |
-| C4 | Sprite DMA used the prepared structures. | For every sprite structure of the case, the trace of the graded frame holds a DMA read of its first word. | CP-4: case M-S-01 with DMACON = $8380 (SPREN missing): no such reads. |
-| C5 | No sprite is clipped by the display window. | Rows are aligned at horizontal sync, so sample indices compare across rows. In the calibration rows, the first colour(1) sample lies left of the leftmost sprite segment's L, and the last colour(1) sample lies at or right of the rightmost segment's L plus its expected length (from the proposition). | CP-5: case M-L-00 with DIWSTRT = $2CB0 (window starts at horizontal position $B0, inside the sprites that start at $A0): the calibration pattern starts right of the sprites' L. |
+| C4 | Sprite DMA used the prepared structures. | For every sprite structure of the case, the trace of the graded frame holds a read at the address of its first word. | CP-4: case M-S-01 with DMACON = $8380 (SPREN missing): no such reads. |
+| C5 | No sprite is clipped by the display window. | Sample indices compare across rows (C7). In the calibration rows, the first colour(1) sample lies left of the leftmost sprite segment's L, and the last colour(1) sample lies at or right of the rightmost segment's L plus its expected length (from the proposition). | CP-5: case M-L-00 with DIWSTRT = $2CB0 (window starts at horizontal position $B0, inside the sprites that start at $A0): the calibration pattern starts right of the sprites' L. |
+| C7 | The row grid holds: rows map to beam lines r at a time, and sample indices compare across rows (3.7). | HIRES runs: the calibration rows number 8r for a whole number r >= 1. LORES runs: they number 16r, with the r of the HIRES runs. Every run: the first colour(1) sample has the same index in every calibration row. | CP-7a: case M-L-00 with 1280 bytes of $CCCC (32 beam lines, $2C-$4B, above the first band at $50): 32r calibration rows where C7 expects 16r. CP-7b: case M-L-00 whose Copper list adds, after the pointer MOVEs, MOVE BPLCON1 ($102) = $0000, WAIT $3007,$FFFE and MOVE $0102,$0033 (PF1H5-2 = PF2H5-2 = 0011, AA p.16 table; AA p.5: the old PF1H0 "now it's called PF1H2", the 140 ns step): from line $30 the playfield is delayed by 3 LORES pixels, so the first colour(1) sample of the later calibration rows lies 6u further right, while C3's runs and the row count stay. |
 
 The CP cases need only to be run once each, on the case named.
 
+### 3.9 Memory layout
+
+Every address the package fixes lies in the Chip memory that `nanomig.i` names
+identity-mapped, $080000-$1FFFFF. Below $080000 the ROM overlay answers after
+reset (HRM p.223: "The OVL bit in one of the 8520 Chips disables the overlay"),
+and `nanomig_harness.h` notes that a CPU write there reaches no memory while
+the overlay is set. No program in this package writes CIA-A, and nothing is
+placed below $080000.
+
+| Use | Address | Size |
+|---|---|---|
+| Program image (`PROGRAM_ORG`, `nanomig.i`) | $080400-$087FFF | code; data assembled into the image sits only at the addresses below |
+| Copper list | $088000-$0880FF | at most 204 bytes (3.6 with P8's sixteen WAIT/MOVE pairs) |
+| Prologue Copper list (RP-1 only) | $088100 | one instruction |
+| Sprite structure of sprite k (k = 0..7) | $089000 + $400*k | at most 520 bytes (B-N, B-A); every start a multiple of 8 (3.5) |
+| Bitplane area (3.4) | $090000-$09BFFF | 48 KiB |
+| RESULTS, DONE_ADDR (`nanomig.i`) | $0C0000-$0C0FFF | the done word at $0C0FFE |
+| Stack (`PROGRAM_STACK`, `nanomig.i`) | below $0FFF00 | |
+
+No two uses overlap.
+
 ---
 
-## 4. Sprite resolution modes (P1 to P5)
+## 4. Sprite resolution modes (P1 to P5, P2a, P5a, P11, P12)
 
 ### 4.1 Cases M-<res>-<spres> (twelve runs)
 
 For every display resolution res in {L = LORES, H = HIRES, S = SHRES} and every
 SPRES1,SPRES0 in {00, 01, 10, 11}: skeleton 3.3 with that BPLCON0, BPLCON3 =
 $0C00 | (SPRES << 6), BPLCON4 = $0011, FMODE = $0000 (16-bit sprites).
+"Any display resolution" (AA p.31) is graded over the three resolutions
+BPLCON0 selects, which AA p.2 calls "all 3 resolutions"; VGA is a display
+mode (AA p.30 lists it under "NEW LISA DISPLAY MODES"), not a resolution.
 
 All eight sprites, stacked: sprite k (k = 0..7) has VSTART = $50 + 10k, VSTOP =
 VSTART + 6, HSTART = $A0, ATT = 0. Its six lines are:
@@ -309,9 +371,9 @@ VSTART + 6, HSTART = $A0, ATT = 0. Its six lines are:
 
 The Copper list is 3.6 with no case-specific part.
 
-**Observation.** Graded frame, bands 0..7 (band k = sprite k). The band's rows
-split into a first half (solid) and second half (alternating) by beam line; a
-band's row count is 6r, r being the rows per beam line.
+**Observation.** Graded frame, bands 0..7 (band k = sprite k). A band's row
+count is 6r (r from 3.7, confirmed by C7); its beam lines 0-2 (rows [0, 3r))
+are solid rows, beam lines 3-5 (rows [3r, 6r)) alternating rows.
 
 **Common checks per band and row** (W from the table in 2, in samples:
 140 ns → 32u, 70 ns → 16u, 35 ns → 8u for 16 pixels):
@@ -321,17 +383,17 @@ band's row count is 6r, r being the rows per beam line.
 - (c) solid rows: the segment has one colour, c3;
 - (d) alternating rows: at 140 ns, the segment is 16 runs of 2u samples,
   alternating c3 and a colour c1 != c3, starting with c3; at 70 ns, 16 runs of
-  u samples, same alternation; at 35 ns, one colour throughout (c3 or c1; the
-  page cannot say which, since the harness shows only one of each pair of
-  35 ns pixels).
+  u samples, same alternation; at 35 ns with u = 1, one colour throughout (c3
+  or c1: each sample shows one of each pair of 35 ns pixels, and the page cannot
+  say which), and at 35 ns with an even u, 16 runs of u/2 samples, same
+  alternation (3.7).
 
 There must be exactly 8 bands. A missing band is a failure of the proposition,
 not of a precondition.
 
 ### P1. In ECS default mode every sprite has the ECS pixel width on each display resolution
 
-- **Claims:** opus:AA-sprites.c1, opus:AA-sprites.c2, opus:AA-sprites.c6,
-  sol:AA-sprites.c1; AA p.31.
+- **Claims:** opus:AA-sprites.c2, sol:AA-sprites.c1; AA p.31.
 - **Stimulus:** cases M-L-00, M-H-00, M-S-00.
 - **Observation:** 4.1.
 - **Expected:** checks (a)-(d) with pixel width 140 ns on LORES and HIRES and
@@ -341,7 +403,7 @@ not of a precondition.
   1 sprite pixel is 2 bitplane pixels." Quantifiers: "All sprites" - every
   sprite 0..7; "any display resolution" - all three resolutions; one sprite or
   one resolution does not establish either.
-- **Preconditions:** C1-C5.
+- **Preconditions:** C1-C5, C7.
 - **Contrasting case:** the output of M-L-10 graded against P1's LORES
   expectation must fail (W = 16u, not 32u); likewise M-S-01 against P1's SHRES
   expectation (32u, not 16u).
@@ -349,23 +411,36 @@ not of a precondition.
 
 ### P2. In 140 ns mode every sprite has 140 ns pixels on each display resolution
 
-- **Claims:** opus:AA-sprites.c1, opus:AA-sprites.c3, opus:AA-sprites.c6,
-  sol:AA-sprites.c2, sol:AA-sprites.c7; AA p.31.
+- **Claims:** sol:AA-sprites.c2; AA p.31.
 - **Stimulus:** cases M-L-01, M-H-01, M-S-01.
 - **Observation:** 4.1.
 - **Expected:** checks (a)-(d) with 140 ns pixels (W = 32u) on all three
   resolutions, all eight sprites, every row. AA p.17: "0 | 1 | LORES(140nS)".
   The cell M-S-01 is the page's own example ("140ns sprites on a superhires
-  screen", sol:AA-sprites.c7) and must pass on its own.
-- **Preconditions:** C1-C5.
+  screen"); P2a grades it on its own.
+- **Preconditions:** C1-C5, C7.
 - **Contrasting case:** M-S-00 graded against P2's SHRES expectation must fail
   (16u, not 32u).
 - **Reference frame:** 3.7.
 
+### P2a. 140 ns sprites on a superhires screen (cell M-S-01)
+
+- **Claims:** sol:AA-sprites.c7; AA p.31: "eg ... 140ns sprites on a superhires
+  screen."
+- **Stimulus:** case M-S-01.
+- **Observation:** 4.1.
+- **Expected:** P2's checks on M-S-01 alone: (a)-(d) with 140 ns pixels
+  (W = 32u), all eight sprites, every row.
+- **Preconditions:** C1-C5, C7.
+- **Contrasting case:** M-S-00 graded against this expectation must fail (16u,
+  not 32u).
+- **Reference frame:** 3.7.
+
 ### P3. The 140 ns mode is not the ECS default mode
 
-- **Claims:** sol:AA-sprites.c3 (and the parenthesis quoted in
-  opus:AA-sprites.c3); AA p.31: "2) 140ns (this is not ECS mode!)".
+- **Claims:** sol:AA-sprites.c3; AA p.31: "2) 140ns (this is not ECS mode!)".
+  The parenthesis is also part of opus:AA-sprites.c3, which P12 grades with
+  P2.
 - **Stimulus:** cases M-S-00 and M-S-01.
 - **Observation:** 4.1, SHRES runs, each band.
 - **Expected:** on a SHRES screen the two settings differ: segment length 16u
@@ -373,7 +448,7 @@ not of a precondition.
   (SHRES=70nS under ECS defaults; LORES(140nS) under 01). On LORES and HIRES the
   same table gives 140 ns for both settings, so the page predicts no difference
   there; the claim is graded on SHRES only.
-- **Preconditions:** C1-C5 in both runs.
+- **Preconditions:** C1-C5, C7 in both runs.
 - **Contrasting case:** the same comparison on M-L-00 against M-L-01 (and
   M-H-00 against M-H-01): the page predicts equal lengths (32u), so a check that
   demands a difference must fail there.
@@ -381,76 +456,135 @@ not of a precondition.
 
 ### P4. In 70 ns mode every sprite has 70 ns pixels on each display resolution
 
-- **Claims:** opus:AA-sprites.c1, opus:AA-sprites.c4, opus:AA-sprites.c6,
-  sol:AA-sprites.c4; AA p.31.
+- **Claims:** opus:AA-sprites.c4, sol:AA-sprites.c4; AA p.31.
 - **Stimulus:** cases M-L-10, M-H-10, M-S-10.
 - **Observation:** 4.1.
 - **Expected:** checks (a)-(d) with 70 ns pixels (W = 16u), all three
   resolutions, all eight sprites, every row. AA p.17: "1 | 0 | HIRES(70nS)".
-- **Preconditions:** C1-C5.
+- **Preconditions:** C1-C5, C7.
 - **Contrasting case:** M-L-01 graded against P4's LORES expectation must fail
   (32u, not 16u).
 - **Reference frame:** 3.7.
 
 ### P5. In 35 ns mode every sprite has 35 ns pixels on each display resolution
 
-- **Claims:** opus:AA-sprites.c1, opus:AA-sprites.c5, opus:AA-sprites.c6,
-  sol:AA-sprites.c5, sol:AA-sprites.c6; AA p.31.
+- **Claims:** opus:AA-sprites.c5, sol:AA-sprites.c5; AA p.31.
 - **Stimulus:** cases M-L-11, M-H-11, M-S-11.
 - **Observation:** 4.1.
 - **Expected:** checks (a)-(d) with 35 ns pixels: W = 8u, and on alternating
-  rows a single colour across the segment. AA p.18: "1 | 1 | SHRES(35nS)". The
-  cell M-L-11 is the page's own example ("35ns sprites on a lores screen",
-  sol:AA-sprites.c6) and must pass on its own. What cannot be established: the
-  value of each individual 35 ns pixel (section 1).
-- **Preconditions:** C1-C5.
+  rows (d)'s 35 ns form (with u = 1, a single colour across the segment). AA
+  p.18: "1 | 1 | SHRES(35nS)". The cell M-L-11 is the page's own example ("35ns
+  sprites on a lores screen"); P5a grades it on its own. What cannot be
+  established: the value of each individual 35 ns pixel (section 1).
+- **Preconditions:** C1-C5, C7.
 - **Contrasting case:** M-L-10 graded against P5's LORES expectation must fail
-  (16u and alternating runs of u, not 8u and one colour).
+  (16u and alternating runs of u, not 8u and (d)'s 35 ns form).
 - **Reference frame:** 3.7. The phase of the dropped 35 ns pixel is not
   assumed; checks (a) and (d) hold for either phase.
 
+### P5a. 35 ns sprites on a lores screen (cell M-L-11)
+
+- **Claims:** sol:AA-sprites.c6; AA p.31: "eg 35ns sprites on a lores screen".
+- **Stimulus:** case M-L-11.
+- **Observation:** 4.1.
+- **Expected:** P5's checks on M-L-11 alone: (a)-(d) with 35 ns pixels
+  (W = 8u), all eight sprites, every row.
+- **Preconditions:** C1-C5, C7.
+- **Contrasting case:** M-L-10 graded against this expectation must fail (16u,
+  not 8u).
+- **Reference frame:** 3.7.
+
+### P11. Every sprite can be displayed in each of the four modes on each display resolution
+
+- **Claims:** opus:AA-sprites.c1, opus:AA-sprites.c6; AA p.31: "All sprites can
+  now be displayed in either: 1) ECS default mode 2) 140ns (this is not ECS
+  mode!) 3) 70ns 4) 35ns on any display resolution."
+- **Stimulus:** the twelve runs M-<res>-<spres>.
+- **Observation:** 4.1.
+- **Expected:** P1, P2, P4 and P5 all pass. Each of them grades one mode for all
+  eight sprites on the three resolutions; these two claims state their
+  quantifier ("All sprites"; "on any display resolution") over all four modes
+  at once, so only the conjunction grades either whole.
+- **Preconditions:** those of P1, P2, P4 and P5.
+- **Contrasting case:** one contrast of P1, P2, P4 or P5 in place of its cell,
+  e.g. M-L-10's output in place of M-L-00's: P1 fails, so P11 must fail.
+- **Reference frame:** 3.7.
+
+### P12. The 140 ns mode is available to every sprite on each display resolution and is not the ECS default mode
+
+- **Claims:** opus:AA-sprites.c3; AA p.31: "2) 140ns (this is not ECS mode!)".
+- **Stimulus:** cases M-L-01, M-H-01, M-S-01 and M-S-00.
+- **Observation:** 4.1.
+- **Expected:** P2 and P3 both pass. The claim states the mode (graded by P2)
+  and its parenthesis (graded by P3).
+- **Preconditions:** those of P2 and P3.
+- **Contrasting case:** M-S-00's output in place of M-S-01's: P2's SHRES cell
+  and P3 fail, so P12 must fail.
+- **Reference frame:** 3.7.
+
 ---
 
-## 5. Sprite width (P6)
+## 5. Sprite width (P6, P6a, P6b, P6c)
 
 ### P6. A sprite is 16, 32 or 64 pixels wide, selected by FMODE SPAGEM and SPR32
 
-- **Claims:** opus:AA-sprites.c7, sol:AA-sprites.c8, sol:AA-sprites.c9,
-  sol:AA-sprites.c10; AA p.31, with AA p.3 and the table on AA p.24.
+- **Claims:** opus:AA-sprites.c7; AA p.31, with AA p.3 and the table on AA
+  p.24. P6a, P6b and P6c grade each width on its own.
 - **Stimulus:** cases W-00, W-01, W-10, W-11 (SPAGEM,SPR32). Skeleton 3.3 on
   LORES (BPLCON0 = $1200), SPRES = 00 (140 ns pixels by P1's table), BPLCON4 =
   $0011, FMODE = $0000, $0004, $0008, $000C. Eight sprites stacked as in 4.1
   (VSTART = $50 + 10k, VSTOP = VSTART + 6, HSTART = $A0), each in the layout of
   3.5 for its FMODE (16-bit for W-00, 32-bit for W-01 and W-10, 64-bit for
   W-11). Lines 0-2 (**solid rows**): every DATA and DATB word $FFFF. Lines 3-5
-  (**pattern rows**): in each DATA and in each DATB fetch, the first word
-  (lowest address) $FFFF and every other word $0000 (for W-00 this equals a
-  solid row).
-- **Observation:** graded frame, bands 0..7 (band k = sprite k).
+  (**pattern rows**): in each DATA fetch the first word (lowest address) $FFFF
+  and every other word $0000; every DATB word $0000 (for W-00 a row of value 1
+  over the sprite's 16 pixels, checked as its solid rows are: one segment, one
+  colour, 32u).
+- **Observation:** graded frame, bands 0..7 (band k = sprite k); beam lines 0-2
+  of a band (rows [0, 3r), 3.7) are solid rows, beam lines 3-5 (rows [3r, 6r))
+  pattern rows.
 - **Expected:**
   - solid rows: exactly one segment, one colour, length 32u (W-00), 64u (W-01),
     64u (W-10), 128u (W-11): 16, 32, 32, 64 pixels of 140 ns;
   - pattern rows of W-01, W-10, W-11: exactly one segment of length 32u (one
     16-bit word's pixels), starting at L + q*32u, where L is the solid rows'
     start and q is an integer with 0 <= q < 2 (32-bit) or 0 <= q < 4 (64-bit).
-    The page does not say which word is leftmost, so q is not fixed; DATA and
-    DATB are taken to be read the same way, since AA p.3 treats SPRxDATA and
-    SPRxDATB alike. This row type shows that the wider sprite is made of
-    distinct data bits, not of one 16-bit word stretched (which would give 64u
-    or no opaque samples);
+    The page does not say which word is leftmost, so q is not fixed; nor does
+    it say that DATA and DATB are read in the same word order, and with DATB
+    all zero no expectation depends on it. This row type shows that the wider
+    sprite is made of distinct data bits, not of one 16-bit word stretched
+    (which would give 64u or no opaque samples);
   - over the four cases the widths are exactly the set {16, 32, 64}, as "either
     16, 32, or 64" requires, with the mapping from AA p.24's increments (2, 4,
     4, 8 bytes). All eight sprites in every case.
-- **Preconditions:** C1-C5 (C5 with the widest expected sprite, 128u from L).
+- **Preconditions:** C1-C5, C7 (C5 with the widest expected sprite, 128u from L).
 - **Contrasting case:** W-00's output graded against W-01's expectation must
   fail (32u, not 64u); W-01's against W-11's (64u, not 128u).
+- **Reference frame:** 3.7.
+
+### P6a, P6b, P6c. Sprites 16, 32 and 64 bits wide, each width on its own
+
+Three propositions, one assertion each:
+
+- **Claims:** P6a: sol:AA-sprites.c8 (16 bits); P6b: sol:AA-sprites.c9 (32
+  bits); P6c: sol:AA-sprites.c10 (64 bits). AA p.31: "Sprites are either 16,
+  32, or 64 bits wide."
+- **Stimulus:** P6a: W-00; P6b: W-01 and W-10, the two settings AA p.24 gives a
+  4-byte increment; P6c: W-11. Each as in P6.
+- **Observation:** as P6.
+- **Expected:** P6's expectations for those cases alone: solid rows 32u (P6a),
+  64u (P6b), 128u (P6c); pattern rows as in P6.
+- **Preconditions:** as P6.
+- **Contrasting case:** P6a: W-01's output graded against W-00's expectation
+  must fail (64u, not 32u); P6b: W-00's against W-01's (32u, not 64u); P6c:
+  W-01's against W-11's (64u, not 128u).
 - **Reference frame:** 3.7.
 
 ---
 
 ## 6. Attachment, colour banks, reset values (P7 to P10)
 
-### P7. Sprites can be attached in every sprite mode on every display resolution
+### P7. Sprites can be attached in every sprite resolution mode on every display resolution, and at every sprite width
 
 - **Claims:** opus:AA-sprites.c8, sol:AA-sprites.c11; AA p.31: "Sprites can be
   attached in any mode (formerly could not attach sprites in the ECS SHRES 35nS
@@ -471,26 +605,48 @@ not of a precondition.
 
   (Bit order from HRM p.121: odd high-order word = bit 3, odd low-order = bit
   2, even high-order = bit 1, even low-order = bit 0; DATA = low-order.)
+- **Stimulus, width runs AW-01, AW-10, AW-11:** skeleton 3.3 on LORES (BPLCON0
+  = $1200), SPRES = 00 (140 ns pixels), BPLCON4 = $0011, FMODE = $0004, $0008,
+  $000C (SPAGEM,SPR32 = 01, 10, 11; AA p.23-24). The same four pairs, lines and
+  table, each structure in the layout of 3.5 for its FMODE (32-bit for AW-01
+  and AW-10, 64-bit for AW-11), with every word of a DATA or DATB fetch equal
+  to the table's word for that line type, sprite and register. Whichever word
+  of a fetch appears leftmost (section 2 leaves it open), each 16-pixel part of
+  the sprite then shows the table's 16 pixels, so no expectation depends on the
+  word order.
 - **Observation:** graded frame, bands 0..3 (band p = pair p); in each row, L =
-  first opaque sample; group g (g = 0..7) is the samples [L + g*G, L + (g+1)*G),
-  G = 2 sprite pixels: 4u at 140 ns, 2u at 70 ns, u at 35 ns (widths from the
-  table in 2; ECS default: 4u on LORES and HIRES, 2u on SHRES). Row type by
-  beam line within the band: even lines A, odd lines B.
+  first opaque sample; group g is the samples [L + g*G, L + (g+1)*G), G = 2
+  sprite pixels: 4u at 140 ns, 2u at 70 ns, u at 35 ns (widths from the table
+  in 2; ECS default: 4u on LORES and HIRES, 2u on SHRES). g = 0..7 in the
+  A-<res>-<spres> runs; in the width runs g = 0..15 (32-bit) or 0..31 (64-bit),
+  and group g has the table's value for group g mod 8. Row type by beam line m
+  of the band (rows [m*r, (m+1)*r), 3.7): even m type A, odd m type B.
 - **Expected:** every group of every row shows colour(16 + v), v the group's
-  value from the table (type B group 7: background). HRM p.122 Table 4-5 maps
-  value v to register 16 + v; AA p.4 makes the bank OSPRM, which is 0001 here.
-  On SHRES the palette entry is shown directly (AA p.5: "There is no longer any
-  need to 'scramble' SHRES color table entries"; AA p.30: "as ECS, but with no
-  colour fudging"). Quantifier "any mode": all twelve cells, each on its own,
-  with all four pairs; the cell A-S-00 is the one the parenthesis says was
+  value from the table (type B groups 7, and in the width runs every group
+  with g mod 8 = 7: background, so a type B row of a width run has 2 or 4
+  segments). HRM p.122 Table 4-5 maps value v to register 16 + v; AA p.4 makes
+  the bank OSPRM, which is 0001 here. On SHRES the palette entry is shown
+  directly (AA p.5: "There is no longer any need to 'scramble' SHRES color
+  table entries"; AA p.30: "as ECS, but with no colour fudging"). The widths of
+  the width runs, 32 and 64 pixels, are P6's reading of AA p.24. Quantifier
+  "any mode": all twelve resolution cells and all three width runs, each on its
+  own, with all four pairs; the cell A-S-00 is the one the parenthesis says was
   formerly impossible.
-- **Preconditions:** C1-C5; 4 bands present.
+- **Preconditions:** C1-C5, C7 (in the width runs C5 with the expected length
+  64u for AW-01 and AW-10, 128u for AW-11); 4 bands present.
 - **Contrasting case:** runs AX-S-00 and AX-L-11: the same as A-S-00 and A-L-11
   with ATT = 0. The sprites are then unattached; each pixel shows the lower
   numbered sprite if its 2-bit value is non-zero (HRM p.118: lowest number has
   highest priority), else the higher; colours 16 + 4p + (2-bit value) (HRM
-  p.103). For every pair at least the groups with values 4..15 then differ
-  from colour(16 + v), so P7's check must fail on both runs.
+  p.103). In every pair the groups of values 4, 8 and 12, where the even
+  sprite's two bits are 0, then show the odd sprite's colour 16 + 4p + v/4,
+  which differs from colour(16 + v) for every p; so P7's check must fail on
+  both runs, in every pair and in both row types. Other groups may coincide
+  (for p = 1 the even sprite's colours 21-23 are those P7 expects for values
+  5-7). Width runs AWX-01, AWX-10, AWX-11: the same as AW-01, AW-10, AW-11
+  with ATT = 0; in every 16-pixel part the groups of values 4, 8 and 12 then
+  show colour(16 + 4p + v/4) in place of colour(16 + v), so P7's check must
+  fail on each of the three runs.
 - **Reference frame:** 3.7; groups located from L as there.
 
 ### P8. Each of the 16 colour banks can be selected for the even sprites, the odd sprites and attached pairs
@@ -517,19 +673,22 @@ not of a precondition.
   lines use P7's words, types A and B alternating starting with A on the first
   line after each gap line.
 - **Observation:** graded frame. Bands 0..15 (band b = the seven non-gap lines
-  after the b-th MOVE). B-N: 8 segments per row, segment k = sprite k, groups
-  g = 0,1,2 of 8u samples from L (value v = g + 1). B-A: 4 segments per row,
-  segment p = pair p, groups of 4u (2 pixels of 140 ns) as in P7.
+  after the b-th MOVE, 7r rows). B-N: 8 segments per row, segment k = sprite k,
+  groups g = 0,1,2 of 8u samples from L (value v = g + 1). B-A: 4 segments per
+  row, segment p = pair p, groups of 4u (2 pixels of 140 ns) as in P7; beam
+  line m of the band (rows [m*r, (m+1)*r), 3.7) is type A for even m, type B
+  for odd m.
 - **Expected:**
   - B-N: every group shows colour(BANK*16 + (k>>1)*4 + v), BANK = b for even k
     and 15 - b for odd k (AA p.18 "provides the 4 high order color table address
     bits"; HRM p.103 for the low four bits);
-  - B-A: every group shows colour((15 - b)*16 + v), v from P7's table (AA p.4
-    OSPRM for attached; HRM p.122); a pair that used ESPRM would show
-    colour(b*16 + v), which differs for every b;
+  - B-A: every group shows colour((15 - b)*16 + v), v from P7's table (type B
+    group 7: background, as in P7) (AA p.4 OSPRM for attached; HRM p.122); a
+    pair that used ESPRM would show colour(b*16 + v), which differs for every
+    b;
   - quantifier "any bank": all 16 banks for the even field, all 16 for the odd
     field, all 16 for attached pairs, in all rows of every band.
-- **Preconditions:** C1-C5; exactly 16 bands; 8 (B-N) or 4 (B-A) segments in
+- **Preconditions:** C1-C5, C7; exactly 16 bands; 8 (B-N) or 4 (B-A) segments in
   every graded row; and **C6**: the trace of the graded frame holds the Copper
   fetches of all sixteen MOVE instructions of the list, in list order.
 - **Contrasting case:** BX-N and BX-A: as B-N and B-A with band 5's MOVE data
@@ -560,25 +719,33 @@ not of a precondition.
   bits 7-5 as a separate observation, not as a failure of this claim.
   "Initialised" is graded at the only point the test can see: the display
   after reset, before any write to BPLCON4.
-- **Preconditions:** C1-C5, and:
-  - **R1** No code ran before the test program: the first CPU access in the
-    trace is the reset-vector read or the first instruction fetch of the
-    program at its entry address, and no Copper, bitplane or sprite fetch
-    precedes it. Contrast RP-1: a prologue at another address, executed first,
-    that enables Copper DMA on a one-instruction list and then jumps to the
-    entry: the first instruction fetch is no longer at the entry, and Copper
-    fetches precede it; R1 fails.
-  - **R2** Nothing wrote BPLCON4: the program has no write to $DFF10C (by
-    construction), the Copper list has no MOVE whose first word is $010C, and
-    every Copper fetch in the run's trace is from the list's own addresses.
-    Contrast RP-2: add `MOVE $010C,$0011` to the list: R2 fails although the
-    value written equals the default, which shows R2 checks the write, not the
-    outcome.
+- **Preconditions:** C1-C5, C7, and:
+  - **R1** No code ran before the test program: in the RAM-port log the reads
+    of the reset vectors (logical $000000-$000007, which the overlay maps to
+    physical $780000-$780007, `kKickShadowByteBase` in `nanomig_harness.h`)
+    are followed by an instruction fetch at the program's entry, the address
+    of its first instruction, and no read at the address of a Copper list, a
+    sprite structure or the bitplane area (3.9) precedes that fetch. Contrast
+    RP-1: a prologue at PROGRAM_ORG, executed first, that enables Copper DMA
+    on a one-instruction list at $088100 (3.9) and then jumps to the entry,
+    placed after it: the first instruction fetch is no longer at the entry,
+    and reads of that list precede it; R1 fails.
+  - **R2** Nothing wrote BPLCON4: the program has no write to $DFF10C (its
+    listing); the Copper list has no MOVE whose first word is $010C (its words
+    in memory at the end of the run); and the program writes COP1LC only with
+    the list's address and never writes COP2LCH, COP2LCL ($084, $086) or
+    COPJMP2 ($08A) (its listing), so the Copper runs no other list (AA p.21:
+    COP1LC "is automatically used at the beginning of each vertical blank
+    time"). Contrast RP-2: add `MOVE $010C,$0011` to the list: R2 fails
+    although the value written equals the default, which shows R2 checks the
+    write, not the outcome.
   - 8 segments in every row of the band.
 - **Contrasting case:** RX-E, case R with BPLCON4 = $0001 written in step 3
   (ESPRM = 0000, OSPRM = 0001): the even sprites' indices become (k>>1)*4 + v,
   bit 4 = 0, and P9 must fail; the odd sprites are unchanged, so P10 still
-  passes in RX-E.
+  passes in RX-E. In RX-E, R2's first clause reads "the program's only write to
+  $DFF10C is this one"; C1-C5, C7, R1, the rest of R2 and the 8 segments still
+  hold, so P9 goes red through bit 4 and not through a precondition.
 - **Reference frame:** 3.7.
 
 ### P10. OSPRM4 is 1 after reset
@@ -591,38 +758,41 @@ not of a precondition.
   every odd sprite (bit 4 is OSPRM4, AA p.18). Full index per AA p.16: 16 +
   (k>>1)*4 + v; bits 7-5 recorded separately as in P9. Graded separately from
   P9, because each field can be wrong alone.
-- **Preconditions:** as P9 (C1-C5, R1, R2, 8 segments).
+- **Preconditions:** as P9 (C1-C5, C7, R1, R2, 8 segments).
 - **Contrasting case:** RX-O, case R with BPLCON4 = $0010 (ESPRM = 0001, OSPRM
   = 0000): the odd sprites' bit 4 becomes 0 and P10 must fail; P9 still passes
-  in RX-O.
+  in RX-O. R2 reads in RX-O as in RX-E (P9), and every other precondition
+  still holds.
 - **Reference frame:** 3.7.
 
 ---
 
 ## 7. Claim index
 
-| Claim uid | Proposition(s) |
+Each claim id is carried by one proposition, which grades it whole.
+
+| Claim uid | Proposition |
 |---|---|
-| opus:AA-sprites.c1 | P1, P2, P4, P5 (the "all sprites" quantifier) |
+| opus:AA-sprites.c1 | P11 (the "all sprites" quantifier, over the four modes) |
 | opus:AA-sprites.c2 | P1 |
-| opus:AA-sprites.c3 | P2, P3 |
+| opus:AA-sprites.c3 | P12 (the 140 ns mode, P2, and its parenthesis, P3) |
 | opus:AA-sprites.c4 | P4 |
 | opus:AA-sprites.c5 | P5 |
-| opus:AA-sprites.c6 | P1, P2, P4, P5 (the "any display resolution" quantifier) |
+| opus:AA-sprites.c6 | P11 (the "any display resolution" quantifier, over the four modes) |
 | opus:AA-sprites.c7 | P6 |
-| opus:AA-sprites.c8 | P7 |
+| opus:AA-sprites.c8 | P7 (every resolution mode and every width) |
 | opus:AA-sprites.c10 | P8 |
 | sol:AA-sprites.c1 | P1 |
 | sol:AA-sprites.c2 | P2 |
 | sol:AA-sprites.c3 | P3 |
 | sol:AA-sprites.c4 | P4 |
 | sol:AA-sprites.c5 | P5 |
-| sol:AA-sprites.c6 | P5 (cell M-L-11) |
-| sol:AA-sprites.c7 | P2 (cell M-S-01) |
-| sol:AA-sprites.c8 | P6 (16 bits) |
-| sol:AA-sprites.c9 | P6 (32 bits) |
-| sol:AA-sprites.c10 | P6 (64 bits) |
-| sol:AA-sprites.c11 | P7 |
+| sol:AA-sprites.c6 | P5a (cell M-L-11) |
+| sol:AA-sprites.c7 | P2a (cell M-S-01) |
+| sol:AA-sprites.c8 | P6a (16 bits) |
+| sol:AA-sprites.c9 | P6b (32 bits) |
+| sol:AA-sprites.c10 | P6c (64 bits) |
+| sol:AA-sprites.c11 | P7 (every resolution mode and every width) |
 | sol:AA-sprites.c13 | P8 |
 | opus:AA-revlist.c1 | P9 |
 | sol:AA-revision.c1 | P9 |
@@ -633,16 +803,16 @@ not of a precondition.
 
 | Run | Used by |
 |---|---|
-| M-L-00, M-H-00, M-S-00 | P1, P3 (S), contrasts of P2, P3 |
-| M-L-01, M-H-01, M-S-01 | P2, P3 (S), contrasts of P1, P3, P4; CP-3 base |
-| M-L-10, M-H-10, M-S-10 | P4, contrasts of P1, P5 |
-| M-L-11, M-H-11, M-S-11 | P5 |
-| W-00, W-01, W-10, W-11 | P6 and its contrasts |
-| A-<res>-<spres> (12) | P7 |
-| AX-S-00, AX-L-11 | P7 contrast |
+| M-L-00, M-H-00, M-S-00 | P1, P11, P3 (S), P12 (S), contrasts of P2, P2a, P3, P12; CP-5, CP-7a, CP-7b base |
+| M-L-01, M-H-01, M-S-01 | P2, P11, P12, P2a (S), P3 (S), contrasts of P1, P3, P4, P5a; CP-1 ... CP-4 base (S) |
+| M-L-10, M-H-10, M-S-10 | P4, P11, contrasts of P1, P5, P5a |
+| M-L-11, M-H-11, M-S-11 | P5, P11, P5a (L) |
+| W-00, W-01, W-10, W-11 | P6, P6a, P6b, P6c and their contrasts |
+| A-<res>-<spres> (12), AW-01, AW-10, AW-11 | P7 |
+| AX-S-00, AX-L-11, AWX-01, AWX-10, AWX-11 | P7 contrasts |
 | B-N, B-A | P8 |
 | BX-N, BX-A, BP | P8 contrasts, C6 contrast |
 | R | P9, P10 |
 | RX-E, RX-O | P9, P10 contrasts |
 | RP-1, RP-2 | R1, R2 contrasts |
-| CP-1 … CP-5 | C1 … C5 contrasts |
+| CP-1 … CP-5, CP-7a, CP-7b | C1 … C5, C7 contrasts |
