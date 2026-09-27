@@ -436,8 +436,8 @@ constexpr uint16_t kColor01Value = 0xF00;
 // constant".
 constexpr uint16_t kColor00AltValue = 0x00A;
 
-// Clocking mechanics for this fixture, on the same port set this
-// repository's own hrm/denise/test_denise.cpp declares on its Vdenise
+// Clocking mechanics for this fixture, on the same port set the
+// pre-pipeline hrm/denise/test_denise.cpp (removed) declares on its Vdenise
 // object (clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in,
 // data_in, chip48, blank, a1k, ecs, aga; red/green/blue out) --
 // infrastructure, not a claim of this package's own inventory. `cck`
