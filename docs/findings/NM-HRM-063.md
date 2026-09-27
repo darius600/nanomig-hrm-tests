@@ -24,7 +24,9 @@ Printed page 341, on the 8520's handshaking and interrupt inputs:
 > negative transition on FLAG will set the FLAG interrupt bit.**
 
 The requirement is a *transition*, and specifically a negative one. p.341 is the
-only page in the whole corpus that states the polarity at all.
+only page in the whole corpus that calls FLAG edge-sensitive. Appendix E says of
+the signal wired to CIA-B's FLAG only that the interrupt comes *"whenever the
+INDEX\* input goes active"* (p.334), and `*` means an active-low signal (p.379).
 
 ## What the RTL does
 
@@ -66,8 +68,8 @@ red is not a dead measurement path. Its mutation inverts the oracle and turns
 the assertion green, so the comparator is not tautologically false.
 
 **Measured independently at a second fixture.** `hrm/appF-cia-interrupt-control`
-reached the same result at the `cia_int` boundary while building a different
-package, without having seen this one's number.
+records the same result at the `cia_int` boundary — `flag` held high for 5
+ticks, ICR `0x10` — as a measurement, not a graded assertion.
 
 ## What the others say
 
@@ -77,8 +79,8 @@ package, without having seen this one's number.
 | **vAmiga** | explicit, in two separate methods | `CIA.cpp:250-266`: `emulateRisingEdgeOnFlagPin()` only calls `wakeUp()`; `emulateFallingEdgeOnFlagPin()` calls `wakeUp()` and then `icr \|= 0x10` |
 | **Denise** | an event; no level input exists | `emulation/cia/new/cia.cpp:302-304`'s `setFlag()` sets `intIncomming \|= 0x10`, called from `libami/drive/diskDrive.cpp:79` exactly when the head wraps past the end of a track — once per revolution |
 | **Copperline** | an explicit edge detector over retained pin state | `src/chipset/cia.rs:373-380`: `set_flag_pin` computes `let falling_edge = self.flag_pin_high && !high;` and latches `ICR_FLG` only when that is true |
-| **MiSTer** | descendant — same statement, in an otherwise-rewritten file | descendant — `rtl/cia_int.v:81` — the same statement, `icr[4] <= icr[4] \| flag;`; 113 of the file's lines differ from NanoMig, nearly all of them added commentary, and this one is unchanged by it |
-| **TC64** | descendant — byte-identical to NanoMig | descendant — `rtl/minimig/cia_int.v:57` — byte-identical to NanoMig line for line, down to the "intterupts" typo in the comment on the ICR-clear branch. TC64 is the closer sibling: its whole file is untouched from NanoMig's, so a fix here is one clean edit against an otherwise-identical file. MiSTer's copy has been rewritten around the same statement — the fix lands in a file that has drifted everywhere else. Either way the statement is identical in both, and a fix belongs to both lines equally: `icr[4] <= icr[4] \| flag; |
+| **MiSTer** | descendant — same statement, in an otherwise-rewritten file | descendant — `rtl/cia_int.v:81` — the same statement, `icr[4] <= icr[4] \| flag;`; 115 of the file's lines differ from NanoMig, nearly all of them added commentary, and this one is unchanged by it |
+| **TC64** | descendant — byte-identical to NanoMig | descendant — `rtl/minimig/cia_int.v:57` — byte-identical to NanoMig line for line, down to the "intterupts" typo in the comment on the ICR-clear branch. TC64 is the closer sibling: its whole file is untouched from NanoMig's, so a fix here is one clean edit against an otherwise-identical file. MiSTer's copy has been rewritten around the same statement — the fix lands in a file that has drifted everywhere else. Either way the statement is identical in both, and a fix belongs to both lines equally: `icr[4] <= icr[4] \| flag;` |
 
 **Not one of the four independent implementations sets the bit from a level.**
 Two of them cannot even represent a held level; the one that does model the pin
@@ -93,13 +95,6 @@ sets ICR bit 4 and raises irq"*, and it passes. A pulse satisfies both the level
 reading and the edge reading, so that assertion cannot separate them — and
 chapter 8 was built without the appendix that specifies the part. p.341 is
 narrower than anything chapter 8 had to work from.
-
-This package first **declined** the claim against `PROP-FLAG-PIN`, following a
-build-brief instruction to decline rather than re-grade an adjacent proposition
-at the same register bit. The builder recorded in the same breath that
-`PROP-FLAG-PIN` grades a pulse and not this page's polarity. The instruction was
-wrong for a claim that is strictly narrower than the assertion it is measured
-against; see `OPEN-ISSUES.md` O78.
 
 ## What is left for specialists
 

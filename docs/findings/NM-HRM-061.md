@@ -71,11 +71,11 @@ explicit note that a finding there does not transfer to the shared chipset
 lineage. Asking whether a board's configuration menu offers a 68030 is not
 asking whether the Amiga chipset has been reimplemented correctly.
 
-**Nothing on the other side to compare with.** The other three findings filed
-this week each set NanoMig beside WinUAE, vAmiga, Denise and Copperline on the
-same question. Here there is no same question: none of the four has a
-`system_cpu` field, because none of them is a board that must be told which CPU
-to instantiate. The absence of a comparison is itself the evidence that this is
+**Nothing on the other side to compare with.** [NM-HRM-060](NM-HRM-060.md),
+[NM-HRM-062](NM-HRM-062.md) and [NM-HRM-063](NM-HRM-063.md) each set NanoMig
+beside WinUAE, vAmiga, Denise and Copperline on the same question. Here there
+is no same question: none of the four has a `system_cpu` field, because none of
+them is a board that must be told which CPU to instantiate. The absence of a comparison is itself the evidence that this is
 not a conformance question.
 
 **Nor do the two Minimig lines have anything to set beside it.** Neither has a

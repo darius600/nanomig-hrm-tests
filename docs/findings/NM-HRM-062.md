@@ -11,7 +11,7 @@
 | **Test** | none yet. Raised at classification by the appendix-F lot-E classifier and verified here against the render |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.353 |
 | **Assertions** | 0. This is a defect in the source, found before a test was built against it |
-| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline's lineage all decode the way the page's PROSE says |
+| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's PROSE says |
 
 ---
 
@@ -60,7 +60,8 @@ with the two printed binary patterns, including on A0.
 ## This is the PRINT, not the scan
 
 Read off `figures/p353.png` rendered at 200 dpi from PDF page 368 and cropped.
-The text layer agrees with the render character for character on both patterns.
+The text layer agrees with the render bit for bit on both patterns; its `l`, `O`
+and `irrr` are OCR misreadings of `1`, `0` and `rrrr`.
 `corpus-defects.md` lists p.353 as undamaged, and it is: the defect is the
 manual's.
 
@@ -75,10 +76,10 @@ rather than by any package.
 
 | | | |
 |---|---|---|
-| **WinUAE** | follows the prose, and enforces A0 | `cia.cpp:2586-2592`: `mask = addr & 0xf000` is valid only for `0xe000` or `0xd000`; `0xe000` additionally requires `(addr & 1) != 0` and `0xd000` requires `(addr & 1) == 0`. `$E` is `1110` — A13 high, A12 low — for CIAA, with A0=1 |
+| **WinUAE** | follows the prose, and enforces A0 | `cia.cpp:2677-2701`: `cia_bget` switches on `cia_chipselect(addr)`, which is `(addr >> 12) & 3`, A13:A12 (`:2636`); case 2 (A13 high, A12 low) reads CIAA only on an odd address, case 1 (A13 low, A12 high) CIAB only on an even one. The debugger's `validate_cia` (`:2586-2592`) logs as invalid anything but `mask = addr & 0xf000` equal to `0xe000` with `(addr & 1) != 0` or `0xd000` with `(addr & 1) == 0` |
 | **vAmiga** | follows the prose | `Memory.cpp:2236-2252`: `sel = (addr >> 12) & 0b11` selects on A13:A12, and `0b01` (A13=0, A12=1) with `a0` false reaches `ciab` |
 | **Denise** | follows the prose | `libami/agnus/memory.cpp:61-66`: `switch(adr & 0x3000)`, `0x2000` (A13=1, A12=0) with an odd address reaches `cia1`, `0x1000` (A13=0, A12=1) with an even one reaches `cia2` |
-| **Copperline** | follows the prose | its CIA windows are the standard `$BFE001` / `$BFD000` pair; no implementation anywhere decodes the printed patterns |
+| **Copperline** | follows the prose | its CIA windows are `CIA_A_BASE: u32 = 0x00BF_E000` and `CIA_B_BASE: u32 = 0x00BF_D000`, 4K each (`src/cpu.rs:18-21`), matched by address range at `:4154-4161` — CIA-A where A13 is high and A12 low, CIA-B the reverse |
 | **MiSTer** | descendant — no module; this finding is against the printed page, not an implementation | descendant — nor |
 | **TC64** | descendant — no module; this finding is against the printed page, not an implementation | descendant — has anything to answer for either |
 

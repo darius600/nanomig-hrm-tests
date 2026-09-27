@@ -142,7 +142,8 @@ the other lacks:
 - **`cpu_cache_new.v` sits in a different place in each line.** MiSTer keeps it
   at `rtl/cpu_cache_new.v`, 142 lines from NanoMig's; TC64 at
   `rtl/sdram/cpu_cache_new.v`, 979 lines from it — and yet the statement
-  NM-HRM-060 is about is identical in all three, commented-out guard included.
+  NM-HRM-060 is about is the same in all three, commented-out guard included
+  (TC64's carries a `#1` delay).
   A file-level line count is not an answer to a finding.
 - Where they diverge they diverge in both directions: TC64 is closer on
   `agnus_blitter.v` (whitespace only, against MiSTer's 51 lines), `ciab.v`

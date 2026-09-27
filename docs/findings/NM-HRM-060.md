@@ -52,7 +52,9 @@ what was just written.
 
 There is a second path. `cpu_cache_new.v:511` does the same from the SDRAM side,
 `sdr_sm_iram0_we <= sdr_itag0_match && sdr_itag0_valid`, so a write arriving over
-the chip bus updates the instruction cache too.
+the chip bus updates the instruction cache too. That path runs only where
+`CHIPRAM_CACHE` is defined: `nanomig.v:333` feeds the snoop port from the chip
+bus under it, and ties `snoop_act` to 0 without it (`:394`).
 
 Measured by the test, at the module's own boundary:
 
@@ -79,11 +81,11 @@ fixture.
 | | | |
 |---|---|---|
 | **WinUAE** | does not monitor writes | `caches020` is invalidated in exactly two places, both inside `flush_cpu_caches` (`newcpu.cpp:1573-1582`): the whole cache when CACR bit 3 is set, one line when bit 2 is. No write path touches it |
-| **vAmiga** | does not monitor writes | Moira's `flushInstructionCache` / `invalidateCacheEntry` are called from reset (`Moira.cpp:105`, `:230`) and from the CACR write handler alone — `:573` for bit 2, `:576` for bit 3 |
-| **Copperline** | does not monitor writes, and says so | `src/cache.rs:25-28`: *"Like the real silicon, the instruction cache does NOT snoop writes — it is invalidated only by explicit cache control (CACR on the 020/030 …), and DMA (blitter/copper/disk) never invalidates it. The data cache is write-through; a write that hits invalidates the entry"* |
+| **vAmiga** | does not monitor writes | Moira's `flushInstructionCache` / `invalidateCacheEntry` are called from a CPU-model change (`Moira.cpp:105`), from reset (`:230`) and from the CACR write handler alone — `:573` for bit 2, `:576` for bit 3 |
+| **Copperline** | does not monitor writes, and says so | `src/cache.rs:25-28`: *"Like the real silicon, the instruction cache does NOT snoop writes - self-modifying code must clear it (through CACR on the 020/030, through CINV/CPUSH on the 040), and DMA (blitter/copper/disk) never invalidates it. The data cache is write-through; a write that hits invalidates the entry"* |
 | **Denise** | cannot disagree | its CPU is `libami/cpu/m68000`, a 68000. Zero occurrences of `CACR` or an instruction cache anywhere in it. The 68000 has no instruction cache, so the sentence has no counterpart to implement |
 | **MiSTer** | descendant — identical statement | `rtl/cpu_cache_new.v:306-307` carries the same `cpu_sm_iram0_we <= itag0_match && itag0_valid /*&& !cc_fr*/;` (and its `iram1` twin), commented-out guard included. It carries the same commented-out `/*&& !cc_fr*/` guard. |
-| **TC64** | descendant — identical statement, different location | **Not absent, only relocated.** There is no `cpu_cache_new.v` under `rtl/minimig/`, but `rtl/sdram/cpu_cache_new.v` carries the same two lines verbatim, guard included — the same module under the same 2015 `rok.krajnc@gmail.com` authorship, instantiated with `cache_en` hardwired to `1'b1` in `rtl/sdram/sdram_ctrl.v:274`, itself part of the real board target `rtl/soc/minimig_mist_top.v`. Its `CPU_SM_WRITE` state carries the identical statement and the identical commented-out guard. A fix here diverges from neither line. |
+| **TC64** | descendant — identical statement, different location | **Not absent, only relocated.** There is no `cpu_cache_new.v` under `rtl/minimig/`, but `rtl/sdram/cpu_cache_new.v` carries the same two lines, guard included, differing only by a `#1` delay — the same module under the same 2015 authorship header, instantiated with `cache_en` hardwired to `1'b1` in `rtl/sdram/sdram_ctrl.v:274`, itself part of the real board target `rtl/soc/minimig_mist_top.v`. Its `CPU_SM_WRITE` state carries the same statement and the same commented-out guard. A fix here diverges from neither line. |
 
 Copperline is the sharpest witness, because it draws the distinction NanoMig does
 not: **instruction cache no snoop, data cache invalidate on write hit.**
@@ -100,9 +102,10 @@ that cannot tell a cache from a wire, and it is not a cache that is simply
 absent.
 
 **The path is live, not dead code.** `cpu_wrapper.v:96/258` exports CACR from the
-TG68K core and `nanomig.v:312/422` carries it into `cpu_cache_new` as
-`cpu_cache_ctrl`; `src/tang/nano20k/top_020.sv:12` and `src/mistle/gw3a_20/top.sv:9`
-define `ENABLE_TG68K`.
+TG68K core and `nanomig.v:316/426` carries it into `cpu_cache_new` as
+`cpu_cache_ctrl`, inside the `ENABLE_CACHE` block that begins at `nanomig.v:320`;
+`src/tang/nano20k/top_020.sv:12/15/16` and `src/mistle/gw3a_20/top.sv:9/12/13`
+define `ENABLE_TG68K`, `ENABLE_CACHE` and `CHIPRAM_CACHE`.
 
 **The implementation is SAFER than the manual, not more permissive.** Software
 written to page 13 flushes the cache and works on both. What differs is a

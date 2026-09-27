@@ -49,13 +49,13 @@ red, one of the package's `17 passed, 2 failed`.
 | **Denise** | bit 15 always 0 in practice | read unmasked (`emulation/libami/paula/paula.cpp:80`), write masks with `value & 0x7fff` (`:87`) |
 | **Copperline** | bit 15 always 0 in practice | read unmasked (`src/bus/custom_regs.rs:41`), write masks (`src/chipset/paula.rs:1182-1184`) |
 | **MiSTer** | bit 15 always 0 | `rtl/paula.v:127` (register) and `:193` (`adkconr` assign) — descendant, carries the identical lines |
-| **TC64** | bit 15 always 0 | `rtl/minimig/paula.v:146` and `:212` — descendant, carries them too: `reg [14:0] adkcon;` and `assign adkconr[15:0] = (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]} : 16'h0000;`, word for word, even though `paula.v` as a whole diverges by 52 (MiSTer) and 193 (TC64) lines elsewhere. The fifteen-bit register and the forced-zero bit 15 on read are inherited unchanged by both lines; the red is against p.265, not against any of the three RTL trees |
+| **TC64** | bit 15 always 0 | `rtl/minimig/paula.v:146` and `:212` — descendant, carries them too: `reg [14:0] adkcon;` and `assign adkconr[15:0] = (reg_address_in[8:1]==ADKCONR[8:1]) ? {1'b0,adkcon[14:0]} : 16'h0000;`, word for word, even though `paula.v` as a whole diverges by 50 (MiSTer) and 107 (TC64) lines elsewhere. The fifteen-bit register and the forced-zero bit 15 on read are inherited unchanged by both lines; the red is against p.265, not against any of the three RTL trees |
 
 **All four store sixteen bits and none stores fifteen**, so NanoMig's narrower
 register is its own; but the observable result — ADKCONR bit 15 reads 0 despite
 p.265 listing it — is what every one of them produces.
 
-One structural difference the survey drew out and it is worth keeping. Only
+One structural difference is worth keeping. Only
 WinUAE masks on the **read**, so its zero survives any path that assigns
 `adkcon` directly. Savestate restore is exactly such a path: WinUAE's
 `custom.cpp:7768` `adkcon = RW;` is unmasked and its read-side mask is what saves

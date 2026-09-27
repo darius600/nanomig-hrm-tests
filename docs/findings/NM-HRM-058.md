@@ -1,4 +1,4 @@
-# NM-HRM-058 — the received-character window is longer than p.256 prints, and every implementation agrees
+# NM-HRM-058 — the received-character window is longer than p.256 prints, and every implementation with a receiver agrees
 
 | | |
 |---|---|
@@ -20,14 +20,10 @@
 **p.256:27** — *"up to one full character-receive time (8 to 10 bit times) to
 accept the data and clear"*.
 
-The entry an earlier draft of the candidates file put on p.257; the builder
-checked it and it is p.256. `grep -n "8 to 10"` over pp.255–257 returns exactly
-one hit.
-
 ## What NanoMig does
 
-**10 bit times for an 8-bit frame, 11 for a 9-bit frame** — one past the printed
-ceiling in the short case and three past it in the long one. Two packages
+**10 bit times for an 8-bit frame, 11 for a 9-bit frame** — at the printed
+ceiling in the short case and one past it in the long one. Two packages
 measured it independently and differ only in where they start counting: 10.0 and
 11.0 from one, 9.68 and 10.68 from the other.
 
@@ -55,13 +51,13 @@ passed, 3 failed`.
 
 **Three independent implementations arrive at exactly NanoMig's numbers.** A
 frame of one start bit, eight or nine data bits and one stop bit is ten or eleven
-bit times by construction, and the page's "8 to 10" cannot describe it.
+bit times by construction, and the page's "8 to 10" cannot describe the eleven.
 
 So the red is real and it is not about this design. What p.256 means by "8 to
 10" — whether it counts differently, describes a different interval, or is
 simply wrong — is a question for someone who can read it against a real Paula.
 This entry records that no implementation, including the two that model the
-receiver most carefully, produces a number inside the printed range.
+receiver most carefully, produces a 9-bit-frame number inside the printed range.
 
 ---
 
