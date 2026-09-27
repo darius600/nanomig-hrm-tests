@@ -29,8 +29,11 @@ printed page numbers, and quotations follow the printed page.
 | `ch2-using-the-copper-with-the-blitter.c9` | 35 | "It could possibly prevent some screen displays": the page only says this is possible, so there is no expected value. It is also unclear what "This bit" refers to (section 4, item 7). |
 | `COP2-using-the-copper-with-the-blitter.c10` | 35 | Same sentence. It states a possibility, not an outcome. |
 | `COP2-using-the-copper-with-the-blitter.c11` | 35 | Same sentence. It states a possibility, not an outcome. |
+| `COP2-putting-together-a-copper-instruction-list.c8` | 27 | Locates a point: "Coordinate (0,0) lies at the upper-left corner of the screen." The point cannot be checked: position (0,0) is on line 0, which is vertical blanking (p.219), so nothing is displayed there. P6 grades the orientation of the beam coordinates on the screen, which is not this claim, and carries no claim id. |
+| `COP2-putting-together-a-copper-instruction-list.c11` | 27 | Locates a point: "The display endpoint lies at the lower-right corner of the screen." The point cannot be checked: the pages disagree on its coordinates (section 4, item 5). P6 grades only the orientation, which is not this claim (see above). |
 
-The other 27 claims support the twelve propositions below.
+The other 25 claims support eleven of the twelve propositions below. P6
+carries no claim id.
 
 | # | Proposition (short) | Claims |
 |---|---|---|
@@ -39,7 +42,7 @@ The other 27 claims support the twelve propositions below.
 | P3 | DMACON controls every DMA channel | `ch2-stopping-the-copper.c8`, `COP2-stopping-the-copper.c11` |
 | P4 | Setting a location register and writing its strobe before enabling gives a known start address | `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` |
 | P5 | With COP1LC unchanged, the Copper restarts at the same place and the screen is stable | `ch2-starting-the-copper-after-reset.c7.s2`, `COP2-starting-the-copper-after-reset.c4` |
-| P6 | Beam coordinates run left to right and top to bottom on the screen | `COP2-putting-together-a-copper-instruction-list.c8`, `COP2-putting-together-a-copper-instruction-list.c11` |
+| P6 | Beam coordinates run left to right and top to bottom on the screen | none (both p.27 claims declined above) |
 | P7 | A WAIT for $0F under a $0F mask is true on every line past 128 | `ch2-a-copper-loop-example.c5.s2` |
 | P8 | The 680x0 can poll INTREQ flags that various devices set | `ch2-the-copper-and-the-680x0.c2`, `COP2-the-copper-and-the-680x0.c2`, `COP2-the-copper-and-the-680x0.c3` |
 | P9 | A Copper MOVE of a 1 into INTREQ bit 4 interrupts the 680x0 | `ch2-the-copper-and-the-680x0.c1`, `ch2-the-copper-and-the-680x0.c3.s2`, `ch2-the-copper-and-the-680x0.c7`, `COP2-the-copper-and-the-680x0.c9` |
@@ -86,6 +89,23 @@ The other 27 claims support the twelve propositions below.
   proposition depends on the extra ECS address bits (p.273, p.309). Once a
   Copper list has been written, the 68000 never reads it and never writes it
   again, except where a proposition says so.
+- Overlay (P3 and P5–P12): the area below $80000 is not Chip RAM after
+  reset. p.223: "An additional copy of the system ROM responds starting at
+  memory location $00000000. The system RAM that would normally be located
+  at this address is not available … The OVL bit in one of the 8520 Chips
+  disables the overlay". So the common prologue of P3 and P5–P12 begins,
+  before anything is written below $80000, with CIA-A DDRA ($BFE201) = $03
+  and then CIA-A PRA ($BFE001) with bit 0 (OVL) = 0. p.339: PRA bit 0 is
+  OVL, and DDRA is "Direction for port A (BFE001);1-output (set to 0x03)".
+  The 680x0 reads its interrupt vectors from the lowest kilobyte of this
+  area, so no list or data region uses $000000–$0003FF, and a handler
+  (2.6, and the contrasting cases of P8 and P10 that install one) is
+  installed only after the overlay is off.
+- Programs are assembled for the 68000, vasm's default CPU (`nanomig.mk`
+  passes no CPU option). With `-m68010` or higher vasm assembles
+  `MOVE #0,<ea>` as `CLR`, which on the 68000 reads its operand before it
+  writes it. A strobe written that way would also be read, which the
+  strobe rule above and section 4, item 4 keep out of this package.
 
 ### 2.2 Copper list encoding
 
@@ -112,9 +132,19 @@ Taken from p.21, p.22, p.31 and the summary on p.36 (Table 2-2):
 
 - **Copper fetch**: a read at the Chip-memory port at an address inside a
   Copper-list region that is neither a 68000 access nor a memory-refresh
-  access. The test's port record distinguishes these, as the test's view
-  lists CPU accesses and refresh separately. The instruction word follows
-  from the offset from the list start: IR1 at 0 mod 4, IR2 at 2 mod 4.
+  access. The RAM log (`RamAccess` in `nanomig_harness.h`) names no
+  requester, so both exclusions rest on something else:
+  - 68000 accesses: once a list has been written, the 68000 never reads it
+    (2.1), so no read inside a list region is the 68000's.
+  - Refresh in P1, P2 and P4: recognised by its address. The build
+    measured every refresh access as a read of word address 0 and of no
+    other address, and no list region of those propositions contains word
+    address 0 (5.1: lists at $001000 and above).
+  - Refresh in P3 and P5–P12: a refresh access is one made while the
+    `refresh` output (port list: "ram refresh cycle") is asserted.
+
+  The instruction word follows from the offset from the list start: IR1 at
+  0 mod 4, IR2 at 2 mod 4.
 - **MOVE execution** = the fetch of that MOVE's IR2 word. p.20: "Each time
   the Copper fetches an instruction, it fetches both words". p.275: "RD =RAM
   data moved by MOVE instruction at IR2 time directly from RAM to the
@@ -127,7 +157,12 @@ Taken from p.21, p.22, p.31 and the summary on p.36 (Table 2-2):
   if it falls in that channel's data region and is neither a 68000 access
   nor a refresh access. The slot numbers of Figure 6-9 (p.195) are not used
   to find refresh, because the figure's own footnote says "this timing chart
-  has been 'adjusted'".
+  has been 'adjusted'". As for Copper fetches, the RAM log names no
+  requester. So in P3, P8 and P12 the 68000 is kept out by layout: it
+  writes a data region only to prepare it, before the window graded on
+  that region opens, and makes no access there inside the window. A
+  refresh access is recognised by the `refresh` output, as for Copper
+  fetches in P3 and P5–P12.
 
 ### 2.4 Reference frame B: beam records (lines and frames)
 
@@ -176,14 +211,22 @@ too. Each record's stores are visible at the port with their times.
 ### 2.5 Reference frame V: video frames and rows
 
 The video output is split into frames at vertical-sync pulses and into rows
-at horizontal-sync pulses. A pixel's column is its pixel-clock count from
-the row's horizontal sync. Rows and columns are compared only for order
-(above/below, left/right) and for identity. No absolute mapping from beam
-counts to rows or columns is derived from the pages. Anchor check (V1):
-every compared frame has the same number of rows, and every row the same
-number of pixel clocks. Contrasting case: set LACE (BPLCON0 bit 2) before
-the compared frames. Fields then alternate between 312 and 313 lines (p.24:
-"long and short fields (interlace only)"), and V1 fails.
+at horizontal-sync pulses. The harness samples the video pins once per
+clk_sys cycle (`VideoSample` in `nanomig_harness.h`), so a pixel's column
+is its count of clk_sys samples from the row's horizontal-sync edge. The
+harness also records that the video output passes through a scan doubler:
+a row is one output line of the doubler, not one chipset line
+(`find_lines`), and one chipset line can appear as more than one row. Rows
+and columns are compared only for order (above/below, left/right) and for
+identity; no count of rows per chipset line is used. No absolute mapping
+from beam counts to rows or columns is derived from the pages. Anchor check
+(V1): every compared frame has the same number of clk_sys samples and the
+same number of rows. Row lengths are not compared: the harness gives the
+doubler's rows only as coming "at roughly twice the rate" of the
+chipset's own horizontal sync, and no page describes the doubler.
+Contrasting case: set LACE (BPLCON0 bit 2) before the compared frames.
+Fields then alternate between 312 and 313 lines (p.24: "long and short
+fields (interlace only)"), and V1 fails.
 
 ### 2.6 Interrupt-level recorders (P9, P11)
 
@@ -193,8 +236,10 @@ buffer. The level-3 handler also does what the proposition says. The pages
 give the level ("Bit 4, COPER, is used by the Copper to issue a level 3
 interrupt", p.219; LEVEL column on p.280) but not the vector, so the
 handlers are installed through whatever vectors the 680x0 uses for those
-levels. The program lowers the 680x0 interrupt mask so that levels 1–6 are
-accepted.
+levels. Those vectors lie in low memory, which is Chip RAM only once the
+overlay is off (2.1, p.223), so the program clears the overlay before it
+installs them. The program lowers the 680x0 interrupt mask so that levels
+1–6 are accepted.
 
 ### 2.7 Starting the Copper (used by every proposition)
 
@@ -204,6 +249,40 @@ write COPJMP1, then write DMACON with SET/CLR, DMAEN (bit 9) and COPEN (bit
 bitplanes it is $8380, the p.30 example
 `DMAF_SETCLR!DMAF_COPPER!DMAF_RASTER!DMAF_MASTER`. Bit positions are from
 p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
+
+### 2.8 Starting the Copper at a chosen list (P3, P5–P12)
+
+P4 grades whether a strobe written before Copper DMA is turned on sets the
+Copper's start address. So that no other proposition's stimulus depends on
+the clause P4 grades, P3 and P5–P12 start the Copper with the sequence of
+2.7 followed by one more strobe, written while Copper DMA is on:
+
+1. COP1LC = the list (a long word to COP1LCH), then COPJMP1 (p.30).
+2. DMACON with SET/CLR, DMAEN, COPEN and the proposition's other channel
+   bits (2.7).
+3. COPJMP1 again, followed immediately by a marker MJ.
+
+p.25: "When a jump address strobe is written, the corresponding location
+register is loaded into the Copper program counter." p.26: "When you write
+to a Copper strobe address, the Copper reloads its program counter from the
+corresponding location register." p.276: "When written to, they cause the
+Copper to jump indirect using the address contained in the first or second
+location registers". None of these makes the reload depend on DMACON, and
+the p.33 loop writes COPJMP1 from a running list. From the step-3 strobe
+on, the Copper runs the list from its IR1, whatever the step-1 strobe did.
+Where the Copper fetches between the step-2 DMACON write and t(MJ) is not
+graded; P3 counts such fetches only as accesses to region COP. Where a
+list's first instruction is not a WAIT that holds the Copper until
+after t(MJ), the list can run twice from its start in the frame of the
+start; where that would disturb a check, the proposition says when the
+sequence is written.
+
+A *restart* is the first Copper fetch after a fetch of the IR2 of a list's
+final WAIT (`$FFFF,$FFFE`). That WAIT "never finishes" (p.30), and while
+waiting the Copper "does not use the memory bus at all" (p.19), so the next
+Copper fetch is the one the restart from COP1LC in vertical blanking causes
+(p.25, p.30, p.32). This locates the restart in the fetch sequence without
+placing it against a frame boundary.
 
 ---
 
@@ -314,11 +393,25 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    (Table 7-6) and p.278.
 
    The quantifier "all" is graded over every channel p.222 lists, each as a
-   case of its own. Memory refresh is also DMA (p.20, p.194), but no page
-   gives it a DMACON bit, so refresh is not graded (section 4, item 11).
-2. **Stimulus.** Nine disjoint data regions of 64 KB each: BPL, SPR, AUD0,
-   AUD1, AUD2, AUD3, DSK, BLT, COP. Each case below is its own run.
-   1. Common prologue.
+   case of its own. p.30's sentence ("The register called DMACON controls
+   all of the DMA channels") stands in the paragraph on disabling Copper
+   DMA through DMACON, and speaks of the channels DMACON enables. Memory
+   refresh is also DMA (p.20, p.194), but no page gives it a DMACON bit, so
+   it is not one of those channels and is not graded (section 4, item 11).
+   Both claims are graded whole by the nine channel cases and case M.
+2. **Stimulus.** Nine disjoint data regions of 32 KB ($8000 bytes) each,
+   in the order BPL, SPR, AUD0, AUD1, AUD2, AUD3, DSK, BLT, COP: region k
+   (k = 0 … 8) starts at $10000 + k × $8000, so together they fill
+   $10000–$57FFF. That keeps them below $80000 (2.1), clear of the vector
+   table (2.1) and clear of the program, stack, results and record buffers
+   at $080000 and above (`nanomig.i`: `PROGRAM_ORG` $080400, `RESULTS`
+   $0C0000). The largest use is BPL: with its pointer written once, one
+   plane of 40 bytes × 256 lines (p.59, p.60, p.64) is fetched in each of
+   the two frames the window spans, 20,480 bytes in all. Every other
+   channel uses less
+   (audio 16 words, disk 100 words, blitter 64 × 32 words, Copper one
+   instruction). Each case below is its own run.
+   1. Common prologue, with the overlay cleared (2.1).
    2. Bitplane registers (p.59, p.60, p.63, p.64): BPLCON0 = $1200 (one
       plane, bits 14–12 = 1, colour bit 9), DIWSTRT = $2C81, DIWSTOP = $2CC1
       ("The normal PAL DIWSTOP is ($2CC1)", p.59), DDFSTRT = $0038, DDFSTOP
@@ -336,7 +429,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       = their structures (p.110: "During the vertical blanking interval
       before the first display of the sprite, you need to write the sprite's
       memory address into these pointers").
-   8. M1; DMACON = $8000 | P (the case's pattern, below); M2.
+   8. M1; DMACON = $8000 | P (the case's pattern, below); M2; then
+      COPJMP1 again and MJ (2.8, step 3), so that the Copper's start in
+      the runs with bits 9 and 7 set does not depend on the step-4
+      strobe.
    9. Disk, in p.247's order (DMACON has just been written):
       - DSKPTH = start of DSK, as a long word (p.246).
       - DSKLEN = $4000.
@@ -361,8 +457,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
 3. **Observation.** Accesses attributed to each region (2.3) from t(M2) to
    the end of the first complete frame after M2. Also DSKBYTR bit 14 (DMAON).
 4. **Expected.**
-   - Base: every region has at least one access.
-   - Case X: region X has none, and every other region has at least one.
+   - Base: every region other than DSK has at least one access (DSK is
+     precondition (a)).
+   - Case X: region X has none, and every other region that has an access
+     in Base has at least one.
    - Case M: every region has none.
    - DSKBYTR bit 14 = 1 in Base and 0 in the DSK case and in case M.
 
@@ -376,23 +474,31 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      DMA bits must be true. This means the DMAEN bit in DSKLEN, and the DSKEN
      & DMAEN bits in DMACON."
 5. **Preconditions.**
-   - (a) Base shows at least one access in every region. The pages do not
-     say whether disk DMA runs with no drive attached, so the Base run must
-     show it. Without it, the DSK case is inconclusive, not green.
+   - (a) Region DSK has at least one access in Base. The pages do not say
+     whether disk DMA runs with no drive attached (section 4, item 12), so
+     the Base run must show it. Without it, the DSK case is inconclusive,
+     not green, and region DSK is left out of the other cases' "every other
+     region" check; DSKBYTR bit 14 is graded either way.
    - (b) In every run, the stored DMACONR bits 9–0 equal P (p.222).
-   - (c) In Base, each region's first access is at the address the program
-     wrote into that channel's pointer, so no channel reaches into another
-     channel's region.
+   - (c) In Base, the lowest address accessed in each region is the
+     address the program wrote into that region's own channel (its pointer
+     or location register; for SPR, the lowest of SPR0PT–SPR7PT). So no
+     other channel's accesses land in the region below it. The check uses
+     addresses, not the order of accesses in time, which the pages do not
+     fix between channels.
    - (d) B1 and B3 for the frame boundary.
 6. **Contrasting cases.**
    - Main: the case runs contrast with Base. Each differs only in one bit,
      and the page predicts that region falls silent.
-   - For (a): in Base, point AUD0LC outside all regions. Region AUD0 is then
-     silent in Base.
+   - For (a): in Base, leave out the second DSKLEN = $C064 write (p.247:
+     "Write this value again into the DSKLEN register. This actually starts
+     the DMA"). Region DSK is then silent in Base.
    - For (b): write the pattern without SET/CLR ($03FF). DMACONR bits then
      read 0.
-   - For (c): point SPR1PT into region AUD0. The first-address check then
-     fails.
+   - For (c): in Base, point SPR1PT at the start of region AUD0, and AUD0LC
+     256 bytes above it. The lowest address accessed in AUD0 is then
+     SPR1PT's, and the check fails whichever of the two channels is fetched
+     first.
 7. **Reference frames.** Data regions (2.3), frames (2.4).
 
 ### P4: Loading a location register and writing its strobe before enabling gives a known start address
@@ -507,18 +613,22 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       - `$9601,$FF00` (WAIT for line 150).
       - COLOR00–03 = $0000, $0FF0, $00FF, $0F0F.
       - `$FFFF,$FFFE`.
-   5. Start per 2.7 with DMACON = $8380.
+   5. Start per 2.8 with DMACON = $8380.
    6. Run the sampler for six complete frames. COP1LC is never written
       again.
 3. **Observation.**
    - (i) Video frames 2, 3, 4 and 5 after the enable (2.5). Frame 1 is not
      graded.
-   - (ii) At the port, the first Copper fetch after each frame wrap (2.4).
+   - (ii) At the port, every restart (2.8) after t(MJ).
 4. **Expected.**
-   - (i) Video frames 2–5 are identical at every pixel clock (RGB and sync).
-   - (ii) In every complete frame, the first Copper fetch is S's IR1 at the
-     same address. While the Copper waits on the final WAIT it makes no
-     fetches (p.19: "it does not use the memory bus at all").
+   - (i) Video frames 2–5 are identical at every clk_sys sample (r, g, b,
+     hs and vs; 2.5).
+   - (ii) Each of the six complete frames contains a restart (2.8), frame
+     membership taken on the frame time ranges of 5.2 (the rule P1's
+     per-frame fetch check uses), and every restart is a fetch of S's IR1,
+     at S's address. While the Copper waits on the final WAIT it makes no
+     fetches (p.19: "it does not use the memory bus at all"), so each
+     restart is the Copper's first fetch of a new frame.
 
    Sentence, p.30: "Now, if the contents of COP1LC are not changed, every
    time vertical blanking occurs the Copper will restart at the same
@@ -532,7 +642,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    Where in vertical blanking the restart happens is not graded, because
    the pages disagree (section 4, item 2).
 5. **Preconditions.**
-   - (a) (ii) holds: the list runs every frame.
+   - (a) The Copper runs S: after t(MJ), S's IR1 is fetched and that run
+     reaches the fetch of S's final WAIT. This rests on the strobe of 2.8,
+     not on the restart that (ii) grades, so a missing restart shows as a
+     red (ii), not as an ungraded one.
    - (b) In each graded video frame, both colour sets appear, with the rows
      showing the second set below the rows showing the first. The frames
      must not match merely because the Copper stopped or the display is
@@ -540,36 +653,44 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    - (c) In each complete frame, the first bitplane fetches are at P1 and P2
      (the pointer reload, p.27).
    - (d) V1 (2.5), and B1 and B3 over the six frames.
+
+   (b) and (c) guard (i) only; (ii) is graded whenever (a) and (d) hold.
 6. **Contrasting cases.**
    - Main: once per frame, when a record shows V = $A0, the 68000 writes
      COP1LC, alternating between S and S'. S' is S with its first COLOR00
-     value changed to $0F0F. Expected: each frame's first fetch is at the
-     list written in the frame before (p.32: "The value in the COP1LC
-     location registers will be restored to the Copper's program counter at
-     the start of the vertical blanking period"). The video frames alternate
-     between two different images, so consecutive frames are not identical.
-   - For (a) and (b): remove the four MOVEs after the line-150 WAIT. The
-     lower rows then show the upper colours, and (b) fails.
+     value changed to $0F0F. Expected: each restart is at the list written
+     in the frame before (p.32: "The value in the COP1LC location registers
+     will be restored to the Copper's program counter at the start of the
+     vertical blanking period"), so every second restart is at S', not S,
+     and (ii) fails. The video frames alternate between two different images,
+     so consecutive frames are not identical.
+   - Also for (ii): once, when a record in the third complete frame shows
+     V = $A0, write DMACON = $0080 (COPEN clear, p.30: "You can also stop
+     the Copper by disabling its ability to use DMA"). The later frames
+     then contain no restart, and (ii) fails.
+   - For (a): start with DMACON = $8200 (COPEN clear). S is never fetched.
+   - For (b): remove the four MOVEs after the line-150 WAIT. The lower rows
+     then show the upper colours, and (b) fails.
    - For (c): remove the four bitplane-pointer MOVEs. The frames after the
      first no longer fetch from P1/P2 (p.63: "the pointers have been
      incremented … and must be repointed").
-   - For (d): as in 2.4.
-7. **Reference frames.** 2.4 (port frames), 2.5 (video frames). The page's
-   line 150 is not mapped to a video row; only "below" is graded.
+   - For (d): as in 2.4 for B1 and B3, and as in 2.5 for V1.
+7. **Reference frames.** 2.4 (port frames), 2.5 (video frames), 2.8
+   (restarts). The page's line 150 is not mapped to a video row; only
+   "below" is graded.
 
 ### P6: Beam coordinates run left to right and top to bottom on the screen
 
-1. **Proposition.** Beam positions (x,y) map onto the screen with (0,0) in
-   the upper left and the end of the display in the lower right. A Copper
-   change at a larger x on the same line appears further right, and one at a
-   larger y appears lower. Claims
-   `COP2-putting-together-a-copper-instruction-list.c8`,
-   `COP2-putting-together-a-copper-instruction-list.c11`; p.27.
+1. **Proposition.** Beam positions (x,y) run across the screen from the
+   upper left towards the lower right. A Copper change at a larger x on the
+   same line appears further right, and one at a larger y appears lower.
+   p.27. No claim id: this is a graded orientation check only.
 
    The corner points themselves cannot be checked. Position (0,0) is on line
    0, which is vertical blanking (p.219). The end-point coordinates disagree
-   between pages (section 4, item 5). What the test can see is the
-   orientation.
+   between pages (section 4, item 5). The two p.27 claims locate those
+   points, so both are declined whole (section 1). What the test can see is
+   the orientation, and that is what P6 grades.
 2. **Stimulus.**
    1. Common prologue.
    2. BPLCON0 = $0200 (no bitplanes, colour on). The whole displayed area
@@ -584,7 +705,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       C0–C3 = $0F00, $00F0, $000F, $0FF0. Horizontal counts $60 and $A0 lie
       outside horizontal blanking ("$0F to $35", p.23). Lines $60 and $A0
       lie after vertical blanking ("ends at … line 25 for PAL", p.219).
-   4. Start per 2.7 (DMACON $8280).
+   4. Start per 2.8 (DMACON $8280).
+   5. Run the sampler of 2.4 until four frame wraps have passed after
+      t(MJ), then end. The records only time the run; none is graded, so
+      B1–B3 do not apply.
 3. **Observation.** The second complete video frame after the enable. Let
    r1 be the first row that contains C1 and r3 the first row that contains
    C3. On row r1, find the runs of C0, C1 and C2.
@@ -597,8 +721,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    position."
 5. **Preconditions.**
    - (a) All four colours appear in the frame.
-   - (b) At the port, each of the four MOVEs is executed exactly once in the
-     frame, in list order.
+   - (b) At the port, at least three restarts (2.8) follow t(MJ), and
+     between each two consecutive restarts each of the four MOVEs is
+     executed exactly once, in list order. Restarts are used because the
+     pages give no mapping from a video frame to port time.
    - (c) V1.
 6. **Contrasting cases.**
    - (i) Change the second WAIT from `$60A1` to `$60C1`. Expected: the right
@@ -606,8 +732,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    - (ii) Change the third WAIT from `$A061` to `$B061`. Expected: r3
      increases.
    - For (a): place the C3 MOVE after the final WAIT. C3 then never appears.
-   - For (b): DMACON = $8200. No MOVE is executed.
-7. **Reference frames.** 2.5, used for order only.
+   - For (b): DMACON = $8200. The Copper makes no fetch, so there is no
+     restart and no MOVE is executed.
+   - For (c): as in 2.5.
+7. **Reference frames.** 2.5, used for order only; 2.3 and 2.8 for (b).
 
 ### P7: A WAIT for $0F under a $0F vertical mask is true on every line past 128
 
@@ -626,18 +754,27 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       - `$00E3,$80FE`
       - `$0088,$0000` (MOVE COPJMP1)
    3. Write INTREQ = $0010 and read INTREQR (store it).
-   4. Write COP1LC = A and COPJMP1, then DMACON = $8280.
+   4. Start per 2.8 (DMACON $8280).
    5. Run the sampler (VPOSR/VHPOSR only) for the frame in progress and two
       complete frames.
    6. Read INTREQR and store it.
 3. **Observation.** Executions of the MOVE to INTREQ (IR2 fetch at A+6) in
-   the second complete frame, assigned to lines per 2.4.
-4. **Expected.** Every line from $81 to $FF has at least one decided
-   execution. Sentence, p.32: "When the Copper is waiting for $0F and the
-   vertical position is past 128 (hex $80), this test will always be true.
-   In this case, the minimum value in the comparison will be $80, which is
-   always greater than $0F, and the interrupt will happen on every scan
-   line."
+   the second complete frame, placed against the middles of lines (2.4).
+4. **Expected.** Every window from the middle of line L−1 to the middle of
+   line L, for L = $81 to $FF, contains at least one execution. Sentence,
+   p.32: "When the Copper is waiting for $0F and the vertical position is
+   past 128 (hex $80), this test will always be true. In this case, the
+   minimum value in the comparison will be $80, which is always greater
+   than $0F, and the interrupt will happen on every scan line."
+
+   The windows are built like those of precondition (a). The loop's $E2
+   WAIT holds the Copper to the end of a line (p.32: "This will
+   force the Copper to the next line before the next WAIT"), so the jump
+   and the next MOVE can fall at the very start of the following line.
+   There the last record stored before the MOVE can still show the
+   previous line, and the line-of-event rule of 2.4 would leave the
+   execution undecided. The window ending at the middle of line L holds
+   the execution at the start of line L either way.
 
    The quantifier "every" is graded over all 127 lines, not a sample. Three
    things are left ungraded:
@@ -660,16 +797,17 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
 6. **Contrasting cases.**
    - Main: the page's second loop, WAIT `$8F01,$8F00` and `$80E3,$80FE`
      with the rest unchanged. p.33: "it waits for $xF with the high bit set
-     (binary 1xxx1111)". Expected: in lines $81–$FF there is exactly one
-     execution in each window from mid-line $xE to mid-line $xF, for x = 8
-     to F, and none elsewhere. So lines such as $81 have none, and the
-     main check goes red.
+     (binary 1xxx1111)". Expected: between the middle of line $80 and the
+     middle of line $FF there is exactly one execution in each window from
+     mid-line $xE to mid-line $xF, for x = 8 to F, and none elsewhere. So
+     windows such as the one ending at the middle of line $81 are empty,
+     and the main check goes red.
    - For (a): first WAIT's IR2 = $8000 (no vertical enable bits). p.32: "If
      the corresponding enable bit is 0, the comparison is always true".
      Executions then occur on every line below 128 as well.
    - For (b): MOVE data $0010. Bit 4 is then never set (P10).
    - For (c): as in 2.4.
-7. **Reference frames.** 2.4 (lines, middle of line), list offsets (2.3).
+7. **Reference frames.** 2.4 (frames, middle of line), list offsets (2.3).
 
 ### P8: The 680x0 can poll INTREQ flags that various devices set
 
@@ -687,26 +825,31 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
 2. **Stimulus.** Common prologue (INTENA cleared: polling only). The polling
    sampler's record is INTREQR followed by VPOSR/VHPOSR. Each case below is
    its own run.
+   In each case the program's clear of the case's bit is followed
+   immediately by a marker MC (2.3), so the records stored after the clear
+   can be told from those stored before it.
    - **COP**:
      1. List `$8001,$FF00`, `$009C,$8010`, `$FFFF,$FFFE`.
-     2. Start per 2.7.
-     3. When a record shows V between $40 and $60, write INTREQ = $0010.
+     2. Start per 2.8.
+     3. When a record shows V between $40 and $60, write INTREQ = $0010;
+        MC.
      4. Poll until the end of the frame.
    - **VB**:
-     1. When a record shows V ≥ $F0, write INTREQ = $0020.
+     1. Once a record has shown a frame wrap (2.4) after the prologue, and
+        then a record shows V ≥ $F0, write INTREQ = $0020; MC.
      2. Poll through the next frame wrap until V = $20.
    - **BLIT**:
-     1. DMACON = $8240; INTREQ = $0040.
+     1. DMACON = $8240; INTREQ = $0040; MC.
      2. D-only blit: BLTCON0 = $01FF, BLTCON1 = 0, BLTDMOD = 0, BLTDPT =
         region D, BLTSIZE = $1020 last.
      3. Poll for one complete frame.
-3. **Observation.** The case's bit in each poll record, and the time of the
-   device's event:
+3. **Observation.** The case's bit in each poll record stored after t(MC),
+   and the time of the device's event:
    - COP: the MOVE's IR2 fetch.
    - VB: the frame wrap.
    - BLIT: the last write in region D.
 4. **Expected.**
-   - (i) Every record stored before the event reads 0.
+   - (i) Every record stored after t(MC) and before the event reads 0.
    - (ii) A later record reads 1.
    - (iii) After the first record that reads 1, every record in the window
      reads 1.
@@ -728,7 +871,7 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
 5. **Preconditions.**
    - (a) INTENAR bits 14–0 read 0 (read and stored): the flags are polled,
      not serviced.
-   - (b) The first record after the clear reads 0, so a later 1 is new.
+   - (b) The first record stored after t(MC) reads 0, so a later 1 is new.
    - (c) The event happens inside the window:
      - COP: the IR2 fetch is present.
      - BLIT: 2048 writes of $FFFF appear in D.
@@ -737,13 +880,21 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    - COP: replace the MOVE with `$0180,$0F00`. Bit 4 stays 0.
    - BLIT: omit the BLTSIZE write. Bit 6 stays 0.
    - VB: poll only from V = $40 to V = $F0 of one frame. Bit 5 stays 0
-     (p.219 places the event at line 0).
+     (p.219 places the event at line 0). This removes the event as well,
+     so VB's (c) fails with it: no page gives an input that keeps line 0
+     in the window and VERTB clear. The contrast shows only that (ii)'s
+     comparator can fail.
+   - For (iii), COP case: once a poll record stored after t(MC) reads 1,
+     the program writes INTREQ = $0010 again. p.280: the status
+     bits "must be reset when desired by writing to this address". A later
+     record then reads 0, and (iii) fails.
    - For (a): INTENA = $C020 with a level-3 handler that clears bit 5.
      INTENAR is then non-zero.
-   - For (b): skip the clear in the VB case. The previous frame's bit 5 then
-     reads 1 at once.
+   - For (b): skip the clear in the VB case. Line 0 has passed since the
+     prologue's clear (VB step 1), so bit 5 reads 1 at once.
    - For (c), COP case: DMACON = $8200. No IR2 fetch occurs.
-7. **Reference frames.** 2.4 (record positions and frame wraps), 2.3.
+7. **Reference frames.** 2.4 (record positions and frame wraps), 2.3
+   (markers, data region).
 
 ### P9: A Copper MOVE that stores a 1 into INTREQ bit 4 interrupts the 680x0
 
@@ -761,8 +912,14 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    3. Write INTREQ = $0010, then read INTREQR and store it.
    4. Write INTENA = $C010; read INTENAR and store it.
    5. List I: `$8001,$FF00`, `$009C,$8010`, `$FFFF,$FFFE`.
-   6. Start per 2.7. The 68000 then loops for three complete frames without
-      writing INTREQ or INTENA. It may run the sampler to find the frames.
+   6. Start per 2.8 when a record shows V between $20 and $60: vertical
+      blanking has ended (p.219) and I's WAIT for line $80 holds the Copper
+      until after t(MJ). So I's MOVE is executed once in that frame, even
+      if the Copper also ran from I's start before the second strobe; two
+      executions in quick succession would leave no room for a handler
+      record between them. The 68000 then loops for three complete frames
+      without writing INTREQ or INTENA. It runs the sampler to find the
+      frames.
 3. **Observation.** The IR2 fetch times of I's MOVE, and the handler
    records with their store times, levels and INTREQR values.
 4. **Expected.**
@@ -787,6 +944,8 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      address "has no meaning" (p.218).
    - (b) The INTREQR read in step 3 shows bit 4 = 0.
    - (c) I's MOVE is executed once in each of the three frames.
+   - (d) B1 and B3 (lines $10–$FF) for the frame boundaries. B2 is not
+     asserted: P9 grades no line, and the handler interrupts the sampler.
 6. **Contrasting cases.**
    - Main: MOVE data $0010 (bit 15 = 0, so bit 4 is cleared: p.35 Table
      2-1, p.218). No level-3 record appears.
@@ -795,10 +954,11 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      prevent them from generating a 680x0 interrupt"). With INTENA = $8010
      (no INTEN), p.218 predicts the same: "If this bit is a 0, it disables
      all other interrupts".
-   - For (b): the 68000 writes INTREQ = $8010 before the read. Bit 4 reads
-     1.
+   - For (b): the 68000 writes INTREQ = $8010 before the read, and INTREQ =
+     $0010 after it. Bit 4 reads 1, and the rest of the run is unchanged.
    - For (c): list I without the MOVE.
-7. **Reference frames.** 2.3, 2.6.
+   - For (d): as in 2.4.
+7. **Reference frames.** 2.3, 2.4 (frames), 2.6.
 
 ### P10: INTREQ bit 15 decides whether bits written as 1 are set or cleared
 
@@ -823,7 +983,9 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       - `$6001,$FF00`, `$009C,$0004`
       - `$7001,$FF00`, `$009C,$8010`
       - `$FFFF,$FFFE`
-   4. Start per 2.7 while V < $30.
+   4. Start per 2.8 while a record shows V < $30. R's first WAIT (line
+      $40) holds the Copper until after t(MJ), and the samples below lie in
+      this same frame, so R's first run is the one graded.
    5. Run the polling sampler (INTREQR and position). Its records at lines
       $38, $48, $58, $68 and $78 are the five samples. For each line, the
       sample is the first record on that line.
@@ -853,14 +1015,17 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      before the store of the record just before sample k. So each sample is
      read after exactly one more MOVE.
    - (b) The $38 sample shows (0,0).
-   - (c) INTENAR bits 14–0 read 0, and the 68000 writes INTREQ nowhere
-     after step 2.
+   - (c) INTENAR bits 14–0 read 0 (read and stored after step 2), and the
+     68000 writes INTREQ nowhere after step 2.
 6. **Contrasting cases.**
    - Main: change the second MOVE's data from $0010 to $8010. Expected at
      $58: (1,1). Change the third MOVE's data from $0004 to $8004. Expected
      at $68: bit 2 = 1.
-   - For (a): change the second WAIT to `$5801,$FF00` (after the $58
-     sample). The order check then fails.
+   - For (a): change the second WAIT to `$5A01,$FF00`, two lines after the
+     $58 sample. MOVE 2 then follows the store of sample 2, and the order
+     check fails. (A WAIT for line $58 itself would place MOVE 2 at the
+     start of the sample's own line, where the order against the record
+     just before the sample is not fixed.)
    - For (b): in step 2 write INTREQ = $8004. The first sample then shows
      bit 2 = 1.
    - For (c): INTENA = $C004 with a level-1 handler that clears bit 2 (SOFT
@@ -881,7 +1046,8 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    Two things are not graded. p.35 says COP1LC "will be automatically reset
    to point to the original list" (section 4, item 3). And no page ties
    either list to a particular field parity: p.34 says only that the even
-   field starts one line later.
+   field's data start one line further on in memory ("the starting address
+   for the even-numbered fields is one line greater").
 2. **Stimulus.**
    1. Common prologue.
    2. Interlaced one-plane display: BPLCON0 = $1204 (one plane, colour, LACE
@@ -904,23 +1070,33 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       2. MH1; write COP1LC = the list it did not write last time (B first);
          MH2.
       3. Store its record.
-   7. Start per 2.7 with COP1LC = A, then DMACON = $8380.
+   7. Start per 2.8 with COP1LC = A and DMACON = $8380, when a record
+      shows V between $1A and $28: vertical blanking has ended (p.219:
+      line 25 for PAL) and A's WAIT for line $2D has not come yet. So the
+      handler runs once in that field, even if the Copper also ran from A's
+      start before the second strobe.
    8. Run the sampler for six fields.
 3. **Observation.**
    - Fields are delimited by frame wraps (2.4).
-   - In each field:
-     - the first Copper fetch after the wrap;
-     - the handler's MH1 and MH2 times;
-     - fetches of the running list's instructions after its INTREQ MOVE;
-     - the address of the first bitplane fetch.
+   - Restarts (2.8).
+   - The handler's MH1 and MH2 times.
+   - Copper fetches in A's and B's regions between each MH2 and the next
+     restart.
+   - The address of the first bitplane fetch after each restart.
 4. **Expected.**
-   - (R1) Field k+1's first Copper fetch is the IR1 of the list the handler
-     wrote into COP1LC in field k, so the fields run A, B, A, B, …
-   - (R2) In field k after MH2, the running list's WAIT for $96 and its
-     following MOVE are fetched at their own addresses: writing COP1LC
-     causes no jump.
-   - (R3) In a field that runs A the first bitplane fetch is at P; in one
-     that runs B it is at P+40.
+   - (R1) The first restart after each MH2 is a fetch of the IR1 of the
+     list that handler run wrote into COP1LC. The handler alternates, so
+     consecutive restarts alternate between A's IR1 and B's IR1: the
+     fields run A, B, A, B, …
+   - (R2) Between each MH2 and the next restart, the running list's MOVE
+     after its WAIT for $96 is fetched (IR1 and IR2) at its own address,
+     and no Copper fetch lies in the other list's region: writing COP1LC
+     causes no jump. The fetch of the WAIT for $96 itself is not graded:
+     the Copper fetches it right after the INTREQ MOVE, and no page says
+     whether that comes before or after the handler's write.
+   - (R3) The first bitplane fetch after a restart at A's IR1 is at P, and
+     after a restart at B's IR1 at P+40, so it alternates between P and
+     P+40 from field to field.
 
    Sentences:
    - p.35: "To get the Copper to execute the correct list, you set an
@@ -939,29 +1115,36 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      p.24: "there are also long and short fields (interlace only). In NTSC,
      the fields are 262, then 263 lines and in PAL, 312, then 313 lines".
      Field lengths are measured as the highest V per field (2.4).
-   - (b) In every field, a level-3 record follows the IR2 fetch of the
-     INTREQ MOVE, and MH1 and MH2 lie in the same field, after that fetch
-     and before the next wrap.
-   - (c) One restart per field: in every field, the first Copper fetch after
-     the wrap is the IR1 of A or of B.
+   - (b) In every complete field, a level-3 record, MH1 and MH2 follow the
+     IR2 fetch of the running list's INTREQ MOVE, before the next restart;
+     and MH2 is stored before the first record on line $96, so
+     R2's MOVE comes after MH2.
+   - (c) One restart per field: each complete field (time ranges as in
+     5.2) contains exactly one restart, and every restart is a fetch of
+     A's or B's IR1.
+   - (d) B1 and B3 (lines $10–$FF) for the field boundaries. B2 is not
+     asserted: P11 grades no line, and the handler interrupts the sampler.
 6. **Contrasting cases.**
-   - Main (R1, R3): the handler always writes COP1LC = A. Every field then
-     starts at A and fetches bitplanes from P (p.30: "if the contents of
-     COP1LC are not changed … the Copper will restart at the same location").
+   - Main (R1, R3): the handler always writes COP1LC = A. Every restart is
+     then A's IR1 and every first bitplane fetch is at P (p.30: "if the
+     contents of COP1LC are not changed … the Copper will restart at the
+     same location"). The alternation that R1 and R3 grade fails.
    - For R2: in the first handled field only, the handler writes COPJMP1
      after COP1LC. p.26: "When you write to a Copper strobe address, the
      Copper reloads its program counter from the corresponding location
-     register". Expected in that field: B's IR1 is fetched after MH2, and
-     A's WAIT for $96 and its MOVE are not fetched. B then runs to its end
-     and the program still finishes. B's WAIT for $2D is already true, so
-     the handler runs once more and writes COP1LC = A without a strobe.
+     register". Expected in that field: B's instructions are fetched after
+     MH2 (B runs from its start), and A's MOVE after its WAIT for $96 is
+     not fetched before the next restart. B then runs to its end and the
+     program still finishes. B's WAIT for $2D is already true, so the
+     handler runs once more and writes COP1LC = A without a strobe.
    - For (a): BPLCON0 = $1200 (LACE clear). All fields then have equal
      length.
    - For (b): INTENA = $C000. No handler runs.
    - For (c): in one field the handler writes COP1LC = X, a third list that
-     holds only `$FFFF,$FFFE`. The next field's first fetch is then X's IR1,
-     which belongs to neither A nor B.
-7. **Reference frames.** 2.4 (fields), 2.3, markers.
+     holds only `$FFFF,$FFFE`. The next restart is then X's IR1, which
+     belongs to neither A nor B.
+   - For (d): as in 2.4.
+7. **Reference frames.** 2.4 (fields), 2.3, 2.8 (restarts), markers.
 
 ### P12: A WAIT with BFD = 0 holds the Copper until the blit it started has finished
 
@@ -978,13 +1161,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    blitter registers while a blit is running.
 2. **Stimulus.**
    1. Common prologue.
-   2. COPCON = $0002 (CDANG). p.26: "When CDANG is 1, these registers can be
-      written by the Copper". p.310, for the ECS: "if this bit is set, the
-      Copper can access all of the Amiga chip registers". So every page
-      lets the Copper write $40–$7E here (section 4, item 9).
-   3. Region D1 (64 lines × 32 words) and D2 (one word), both prefilled with
-      $0000.
-   4. List K:
+   2. Region D1 (64 lines × 32 words) and D2 (one word), both prefilled with
+      $0000 by the 68000 before step 4 (2.3: the 68000 stays out of a data
+      region inside its graded window).
+   3. List K:
       - `$4001,$FF00`
       - `$009C,$0040` (clears INTREQ bit 6, the blitter-finished interrupt
         flag, p.220/p.187)
@@ -997,15 +1177,31 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
       - `$0001,$0000` (W2: BFD = 0)
       - `$0054,hi(D2)`, `$0056,lo(D2)`, `$0058,$0041` (blit 2)
       - `$FFFF,$FFFE`
-   5. Start per 2.7 with DMACON = $82C0 (SET/CLR, DMAEN, COPEN, BLTEN;
-      BLTPRI, bit 10, stays 0).
+   4. Start per 2.8 with DMACON = $82C0 (SET/CLR, DMAEN, COPEN, BLTEN;
+      BLTPRI, bit 10, stays 0), when a record shows V between $1A and $30.
+      K's first WAIT (line $40) then holds the Copper until after t(MJ),
+      so K's first run after t(MJ) begins at its IR1, and no blitter
+      register is written twice by a list that also ran from K's start
+      before the second strobe.
+   5. Immediately after MJ, COPCON = $0002 (CDANG). p.26: "When CDANG is 1,
+      these registers can be written by the Copper". p.310, for the ECS:
+      "if this bit is set, the Copper can access all of the Amiga chip
+      registers". So every page lets the Copper write $40–$7E here (section
+      4, item 9). CDANG is set only once the second strobe has pointed the
+      Copper at K: until then it may be running from an address the program
+      did not choose, and p.26 gives CDANG's purpose as "Preventing the
+      Copper from accessing the blitter control registers prevents a
+      runaway Copper (caused by a poorly formed instruction list) from
+      accidentally affecting system memory". Line $40 is at least 16 lines
+      after MJ, so CDANG is set before K's first blitter MOVE.
    6. After the first complete frame, read INTREQR and store it.
-3. **Observation.** In the first frame in which K runs from its start:
+3. **Observation.** In K's first run after t(MJ) (2.8), up to K's next
+   restart:
    - t_s1: the IR2 fetch of blit 1's BLTSIZE MOVE.
    - t_mk: the IR2 fetch of the marker MOVE.
    - t_s2: the IR2 fetch of blit 2's BLTSIZE MOVE.
-   - The first and last writes in D1 (t_last1 for the last).
-   - t_b2: the write in D2.
+   - The first and last writes of $FFFF in D1 (t_last1 for the last).
+   - t_b2: the write of $FFFF in D2.
 4. **Expected.** t_mk > t_last1, and t_s2 > t_last1, and t_b2 > t_last1.
 
    Sentences, p.35:
@@ -1032,11 +1228,17 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
      register is written during a blit.
    - For (a): DMACON = $8280 (no BLTEN). No write appears in D1. The program
      still finishes. What the Copper does at W1 in this run is not graded.
-   - For (b): the main contrasting case itself.
+   - For (b): the main contrasting case (W1 BFD = 1) with blit 1's BLTSIZE
+     = $0041, one word. p.193 gives a blit using only D four ticks per word
+     ("The minimum blitter cycle is four ticks"; PAL clock "7.09
+     megahertz"), under one microsecond, while W1 and the marker MOVE take
+     six and four memory-cycle times (p.20) of about 280 ns each (p.194).
+     Blit 1 then ends before the marker MOVE, and (b) fails.
    - For (c): drop both BLTSIZE MOVEs. Bit 6 stays 0 after the list's clear.
      This contrast only shows that check (c) can fail. What W1 does when no
      blit was started is not graded; the pages do not say.
-7. **Reference frames.** 2.3 (list offsets and data regions).
+7. **Reference frames.** 2.3 (list offsets and data regions), 2.4 (the
+   start window only), 2.8 (MJ, restart).
 
 ---
 
@@ -1069,7 +1271,8 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
    says "PAL has 312 lines normally". Lines 262 and 312 would therefore exist
    only in long interlaced fields (p.24, p.216 "PAL line counts (313)").
    p.23 gives NTSC long lines as "0-$E3", not a maximum of 226. P6 grades
-   orientation only.
+   orientation only, and the two p.27 claims that locate the corner points
+   are declined (section 1).
 6. **Where the mask problem begins.** p.32 says "past 128 (hex $80)"; p.33
    says "fail after vertical position 127" and "greater than or equal 127".
    P7 grades only lines $81–$FF, where both statements agree.
@@ -1100,7 +1303,10 @@ p.222 (Table 7-6) and p.278. P4 tests this sequence itself.
     records (2.4).
 11. **"All of the DMA channels"** (p.30). Memory refresh is DMA (p.20, p.194,
     Figure 6-9), but neither DMACON table (p.222, p.278) has a bit for it.
-    P3 grades the channels the tables name.
+    p.30's sentence stands in the paragraph on disabling Copper DMA through
+    DMACON, and speaks of the channels DMACON enables; refresh, with no
+    DMACON bit, is not one of them. P3 grades the channels the tables name,
+    and so grades its two claims whole.
 12. **Disk DMA with no drive.** p.246–248 do not say whether disk DMA
     transfers words when no drive is attached. P3 turns this into a
     precondition ((a)) rather than an expected value.
