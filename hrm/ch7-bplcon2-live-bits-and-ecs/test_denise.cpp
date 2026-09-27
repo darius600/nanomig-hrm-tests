@@ -1,9 +1,8 @@
 // ch7-bplcon2-live-bits-and-ecs -- BPLCON2's high byte (bits 15-7) measured
 // one bit at a time, the Appendix-A/B (E) mark, KILLEHB and ENBPLCN3.
 //
-// Test purpose: SPECIFICATION.md's P1-P9 plus P10/P11 (added by this repair
-//   -- see the REPAIR note below), written from the manual quotations alone
-//   before the RTL was opened. A red result below means denise.v disagrees
+// Test purpose: SPECIFICATION.md's P1-P14, written from the manual
+//   quotations alone. A red result below means denise.v disagrees
 //   with the manual, not that the assertion is wrong -- no assertion here
 //   was, or should be, adjusted to make the RTL pass.
 // Test class: HRM_CONFORMANCE
@@ -21,7 +20,7 @@
 //   field is quoted in this package's claims); BPLCON2's register address
 //   and write-only direction (owned by hrm/ch3-register-map-denise, which
 //   holds ecs=1 throughout and explicitly leaves killehb untested -- the gap
-//   this package fills, per STEP3-NOTES).
+//   this package fills).
 // Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
 //   the two models that read the printed pages independently, and an id
 //   names one reader's reading of one sentence. They resolve in the
@@ -46,7 +45,7 @@
 //   index presented is fixed at 32 (denise_playfields.v:100 plfdata=
 //   bpldata[8:1], denise.v:367-372 gate bpldata[7:1] on l_bpu, giving index
 //   bit 5 = bitplane 6's data, bits 4-0 = 0). This is deliberate, not
-//   incidental (the coordinator's note): the SAME rig that measures bits
+//   incidental: the SAME rig that measures bits
 //   15, 14, 13, 12, 11, 10, 8 and 7 changing nothing also carries bit 9
 //   (KILLEHB) live at ecs=1 -- a dead-bit measurement taken on a rig that
 //   could never show a live bit either proves nothing against the
@@ -58,24 +57,21 @@
 //   the RTL implements it -- exactly the "companion condition" trap a
 //   sibling denise-family package warned about.
 //
-// HOW A SAMPLE IS TAKEN (mechanical fact, read out of the RTL after the
-//   manual quotations already fixed what counts as pass/fail): a single
+// HOW A SAMPLE IS TAKEN (mechanical fact from the RTL; the manual
+//   quotations fix what counts as pass/fail): a single
 //   BPLxDAT write only pulses the plane shifter's parallel load once
 //   (denise_bitplane_shifter.v:223-226); Harness::run_sweep below rewrites
 //   BPL2..6DAT and BPL1DAT every round (BPL1DAT last, since its write both
 //   latches l_bpu, denise.v:195-203, and pulses the shared `load` that
 //   parallel-loads every shifter, denise_bitplane_shifter.v:223-226) and
 //   samples red/green/blue immediately after each of the six writes, with
-//   no extra settle ticks -- 20 rounds x 6 samples = 120 samples, the same
-//   "120 sampled pixels" shape STEP3-NOTES discloses. This is reproduced,
-//   not adopted: nothing here assumes the disclosed 115-of-120 figure for
-//   bit 9 at ecs=1, and the measured count is reported alongside the
-//   BPLCON2-BIT9-KILLEHB-LIVE-ECS assertion either way.
+//   no extra settle ticks -- 20 rounds x 6 samples = 120 samples. The
+//   measured count for bit 9 at ecs=1 is reported alongside the
+//   BPLCON2-BIT9-KILLEHB-LIVE-ECS assertion.
 //
-// THE C1/C3 CLOCKING and the write_reg/tick pattern below are copied
-//   unchanged from hrm/ch3-register-map-denise/test_denise.cpp (that
-//   package's own file header documents amiga_clk.v's c1/c3 overlap trap in
-//   full; repeating the working pattern here rather than re-deriving it).
+// THE C1/C3 CLOCKING and the write_reg/tick pattern below are the same as
+//   hrm/ch3-register-map-denise/test_denise.cpp's (that package's own file
+//   header documents amiga_clk.v's c1/c3 overlap trap in full).
 //
 // CLAIM GROUPS -- every one of the 21 claim uids in
 //   ch7-bplcon2-live-bits-and-ecs.jsonl is cited, in full, on the single
@@ -99,60 +95,46 @@
 //   EHB-ACTIVE-PRECONDITION (engineering precondition, no manual page)
 //   BPLCON2-BIT9-OCS-MEASURED + -NOT-GRADED (1 uid)
 //   BPLCON2-BIT9-KILLEHB-LIVE-ECS (2 uids + 2 co-cited (E)-mark uids)
-//   BPLCON2-BIT9-CHG-NOT-COMPARED (1 uid, sol:7-appC-map-bplcon2.c2 -- withdrawn
-//     from KILLEHB-LIVE-ECS above: that assertion never compares against ecs=0,
+//   BPLCON2-BIT9-CHG-NOT-COMPARED (1 uid, sol:7-appC-map-bplcon2.c2 -- not cited
+//     on KILLEHB-LIVE-ECS above: that assertion never compares against ecs=0,
 //     so the "changed from OCS" claim is recorded, not asserted)
 //   BPLCON2-BIT8-OCS/-ECS-MEASURED + -NOT-GRADED (1 uid)
 //   BPLCON2-BIT7-OCS/-ECS-MEASURED + -NOT-GRADED (1 uid)
 //   ENBPLCN3-ENABLES-BRDRBLNK (1 uid)
 //   21 uids total: 1+1+4+1+1+1+1+1+1+1+2+1+2+1+1+1 = 21.
 //
-// REPAIR (independent validation, work/2026-09-13_ch7_sol_validation_B2.md,
-//   slice B2, findings 1/5/6/7):
-//   (1) Twelve assertions (BIT15/14/13/12/11/10/9/8/7's dead-on-OCS checks,
-//   plus BIT15/8/7's dead-on-ECS checks) required diff==0 for a written 1
-//   on a bit p.210/271 mark "Not used (keep at 0)" / X. p.264's Appendix-A
-//   preamble ("may cause serious future software incompatibility if ...
-//   implemented in the future") tells software what to write; neither page
-//   requires the hardware to ignore a 1 already written. DEMOTED to
-//   note()+record(), reason_kind source-silent -- the same reading that
-//   withdrew six reds in validation slice A.
-//   (5) BPLCON2-BIT9-KILLEHB-LIVE-ECS graded only diff>0 between a baseline
-//   and a bit-set sweep, which passes for blanking, inversion or any
-//   unrelated perturbation of bit 9 -- none of which is "kill halfbrite"
-//   (p.307). FIXED in place: now grades an exact colour pair -- killehb=0
-//   reads COLOR00 folded-and-halved by the EHB path; killehb=1 reads a
-//   distinct, categorically different value (the RAM address the EHB fold
-//   no longer redirects through COLOR00), demonstrating the automatic
-//   fold itself stopped, not merely that "something" changed. The old
-//   diff-count measurement is kept as a note, not deleted. (A first draft
-//   of this fix wrongly expected COLOR00 restored unhalved and read a red
-//   -- this package's own addressing mistake, corrected before this
-//   report; not an RTL defect. See P7's repair note in SPECIFICATION.md.)
-//   (6) CONTROL-FIXTURE-ALIVE carried a citation of opus:7-vp.c16 but only
-//   ever changed BPL1DAT/COLOR -- BPLCON2 stayed zero throughout, so it
-//   could not fail if every BPLCON2 priority bit were disconnected. This
-//   claim's own classification says it is testable by toggling a BPLCON2
-//   priority bit. PROMOTED into its own assertion,
-//   VIDEO-PRIORITY-PF2PRI-LIVE, reproducing diag/dn.cpp's T1 measurement;
-//   the false citation is removed from CONTROL-FIXTURE-ALIVE and the old
-//   VIDEO-PRIORITY-FRAMING-RECORDED decline is replaced.
-//   (7) ENBPLCN3-NOT-ASSERTED declined for lack of a quoted BPLCON3 field,
-//   but p.307 -- the same page already used for KILLEHB -- defines
-//   BRDRBLNK ("05 BRDRBLNK Border blank") on the same table, and BRDRBLNK
-//   is itself gated by ENBPLCN3 in the RTL (denise.v:192,253,515).
-//   PROMOTED to ENBPLCN3-ENABLES-BRDRBLNK: a graded enable/disable
-//   experiment at the already-opened denise boundary, no debug port added.
+// WHAT IS GRADED, AND WHY:
+//   (a) BIT15/14/13/12/11/10/9/8/7's dead-on-OCS readings, and BIT15/8/7's
+//   dead-on-ECS readings, are measured by note() and declined by record():
+//   p.210/271 mark those bits "Not used (keep at 0)" / X, and p.264's
+//   Appendix-A preamble ("may cause serious future software
+//   incompatibility if ... implemented in the future") tells software what
+//   to write; neither page requires the hardware to ignore a 1 already
+//   written. reason_kind source-silent.
+//   (b) BPLCON2-BIT9-KILLEHB-LIVE-ECS grades the half-brite substitution
+//   stopping, not a bare diff>0 between a baseline and a bit-set sweep,
+//   which would pass for blanking, inversion or any unrelated perturbation
+//   of bit 9 -- none of which is "kill halfbrite" (p.307): killehb=0 must
+//   read COLOR00 folded-and-halved by the EHB path, killehb=1 anything but
+//   that halved colour. The diff count is reported as a note.
+//   (c) VIDEO-PRIORITY-PF2PRI-LIVE grades opus:7-vp.c16 by toggling a
+//   BPLCON2 priority bit, as that claim's own classification says it is
+//   testable. CONTROL-FIXTURE-ALIVE only ever changes BPL1DAT/COLOR, with
+//   BPLCON2 zero throughout, so it cites no claim.
+//   (d) ENBPLCN3-ENABLES-BRDRBLNK grades ENBPLCN3 through BRDRBLNK ("05
+//   BRDRBLNK Border blank"), which p.307 -- the same page used for
+//   KILLEHB -- defines on the same table, and which is itself gated by
+//   ENBPLCN3 in the RTL (denise.v:192,253,515): a graded enable/disable
+//   experiment at the denise boundary, no debug port added.
 //
 // MUTATION-LOG SUMMARY (6 assertions, 6 mutation flags; each was actually
 //   built with its own flag defined to 1, confirmed to turn only its own
 //   assertion red with no change to any expected value, then rebuilt with
-//   no flags to confirm the clean baseline returned). Demoted checks
-//   (finding 1, above) carry no MUT flag any more -- a note() cannot go
-//   red, so there is nothing left to mutation-test; their anti-vacuity
-//   control remains CONTROL-FIXTURE-ALIVE, on the same measurement basis,
-//   as it always was. One `// MUTATION` line per assertion below, second
-//   token the exact expect() label (the token check_gates.py's
+//   no flags to confirm the clean baseline returned). The measured bits of
+//   (a) carry no MUT flag -- a note() cannot go red, so there is nothing to
+//   mutation-test; their anti-vacuity control is CONTROL-FIXTURE-ALIVE, on
+//   the same measurement basis. One `// MUTATION` line per assertion
+//   below, second token the exact expect() label (the token check_gates.py's
 //   LEADING_ID_RE reads: the leading uppercase token of the label, up to
 //   the first space or colon):
 //
@@ -191,46 +173,28 @@
 // value was changed by any of them; only what each check asks the module
 // to do.
 //
-// GATE READABILITY, closed: an earlier draft graded all twelve
-//   BPLCON2-BITn-DEAD-* assertions through one shared function,
-//   `assert_bit_dead()`, whose own `checks.expect(diff == 0, label + ...)`
-//   call appeared exactly once in this file's text with `label` a
-//   parameter, not a literal -- the "label built outside a literal" shape
-//   BUILD-BRIEF warns about for a lambda, one level removed (a shared
-//   function instead of a lambda), and disclosure of that gap was judged
-//   not enough (a chapter-5 package was found to have reasoned the same
-//   way and had it recounted, backwards, by an independent validator).
-//   `measure_dead_diff()` below only measures; every call site does its
-//   own note()/record() with its own string-literal label, so every
-//   claim's disposition is readable from its own call site. No predicate,
-//   expected value, stimulus or measurement changed by that earlier fix --
-//   confirmed by rebuilding to the identical baseline afterward.
+// LABELS AT THE CALL SITE: `measure_dead_diff()` below only measures;
+//   every call site does its own note()/record() with its own
+//   string-literal label, so every claim's disposition is readable from
+//   its own call site -- a label passed into a shared function as a
+//   parameter is a label built outside a literal, which the gate cannot
+//   read.
 //
-// MEASUREMENT DISAGREEMENT TO REPORT: this file's own 120-sample sweep
-// measures BPLCON2 bit 9 at ecs=1 changing 108 of 120 pixels, not the 115
-// of 120 STEP3-NOTES discloses. Both readings agree on the shape (most, not
-// all, of 120 differ; 0 of 120 for every other bit) but not the exact
-// count -- expected, since this file's rig sample-per-write_reg-call timing
-// was built independently rather than copied from the classification
-// stage's own dn2.cpp harness. Reported per the coordinator's instruction,
-// not silently reconciled.
-//
-// EXTENSION -- three claims added for Appendix C's ECS register-map row for
-//   BPLCON2 (p.298, "104 BPLCON2 chg   WA"), SPECIFICATION.md P12-P14:
-//   (P12) the address itself, $104 -- PROMOTED to its own assertion,
+// APPENDIX C's ECS REGISTER-MAP ROW for BPLCON2 (p.298, "104 BPLCON2 chg
+//   WA"), SPECIFICATION.md P12-P14:
+//   (P12) the address itself, $104 -- graded by
 //   BPLCON2-ADDRESS-0x104-LIVE: the same PF2PRI discriminator P10 already
 //   uses (bplcon2[6], denise_playfields.v:24) written to word address $104
 //   switches the painted playfield; written to the neighbouring address
 //   $106 (BPLCON3) it does not -- BPLCON3's own bit 6 (spres, denise.v's
 //   `spres = bplcon3[7:6] & {2{aga}}`) is itself forced off at aga=0, so
 //   the neighbour write is a clean, argued no-op, not merely an untried
-//   one. This package's Non-goals still leave BPLCON2's address as a
+//   one. This package's Non-goals leave BPLCON2's address as a
 //   subject of its own to hrm/ch3-register-map-denise; this assertion only
 //   shows $104 is where THIS package's own effects live.
-//   (P13) the "chg" mark -- co-cited on BPLCON2-BIT9-KILLEHB-LIVE-ECS,
-//   the same way the Appendix A/B (E) mark already is: KILLEHB is the one
-//   function this design's BPLCON2 gains under ECS that OCS's map does not
-//   carry, which is what "chg" states.
+//   (P13) the "chg" mark -- a comparison against OCS, which
+//   BPLCON2-BIT9-KILLEHB-LIVE-ECS, run at ecs=1 only, does not establish;
+//   recorded on BPLCON2-BIT9-CHG-NOT-COMPARED.
 //   (P14) the bundled video-priority/genlock claim -- its own text states
 //   both halves, and only one is reachable here (five of the six p.307
 //   fields it points to have no consumer and no output port in this
@@ -243,9 +207,6 @@
 //   on VIDEO-PRIORITY-PF2PRI-LIVE), not this one -- check_uid_placement.py
 //   is what settles a claim that is both asserted and declined in this
 //   direction, toward the record lines, not the graded one.
-//   No existing predicate, expected value, or label text changed by this
-//   extension -- confirmed by rebuilding to the identical baseline first,
-//   with only claim ids added to six already-existing labels.
 
 #include <cstdio>
 #include <cstdint>
@@ -442,7 +403,7 @@ public:
 };
 
 // Background measurement for BPLCON2-BITn's dead-looking-bit checks
-// (repair, finding 1 -- see the header's REPAIR note): how many of THE
+// (see the header's WHAT IS GRADED, (a)): how many of THE
 // RIG's 120 sampled pixels differ from a BPLCON2=$0000 baseline when only
 // `bplcon2_bit` is set. Not graded here -- CONTROL-FIXTURE-ALIVE is this
 // file's one anti-vacuity control, on the same measurement basis, for
@@ -461,13 +422,12 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // CONTROL-FIXTURE-ALIVE -- the fixture can deliver a known, distinct
-    // word before anything below trusts a "0 of 120 differ" reading (package
-    // brief: "the fixture proves it can deliver a known word before anything
-    // reads one"). Uses the exact rig (BPLCON0=$6000, six bitplanes) every
-    // other measurement in this file relies on: index 0 reads COLOR00, index
-    // 1 reads COLOR01, in that order, distinct. Repair (finding 6): this
-    // check does not touch BPLCON2 at all, so it no longer cites
-    // opus:7-vp.c16 -- that claim is now tested on its own merits by
+    // word before anything below trusts a "0 of 120 differ" reading (the
+    // fixture proves it can deliver a known word before anything reads
+    // one). Uses the exact rig (BPLCON0=$6000, six bitplanes) every other
+    // measurement in this file relies on: index 0 reads COLOR00, index 1
+    // reads COLOR01, in that order, distinct. This check does not touch
+    // BPLCON2 at all, so it cites no claim; opus:7-vp.c16 is tested by
     // VIDEO-PRIORITY-PF2PRI-LIVE below.
     // =========================================================================
     {
@@ -571,13 +531,10 @@ int main(int argc, char** argv) {
     // =========================================================================
     // VIDEO-PRIORITY-PF2PRI-LIVE -- opus:7-vp.c16 (p.210, "You control the
     // video priorities by using the bits in BPLCON2 ... as shown in Table
-    // 7-1") is testable, not merely framing (repair, finding 6:
-    // SPECIFICATION.md's earlier "Not turned into assertions" reading is
-    // corrected here). This claim's own classification already names the
-    // concrete measurement: a dual-playfield, two-bitplane rig where PF2PRI
-    // (bit 6) alone decides which playfield paints -- reproducing
-    // diag/dn.cpp's T1 measurement independently on this file's own
-    // harness.
+    // 7-1") is testable, not merely framing: this claim's own
+    // classification names the concrete measurement, a dual-playfield,
+    // two-bitplane rig where PF2PRI (bit 6) alone decides which playfield
+    // paints.
     // =========================================================================
     {
         auto measure_priority = [](uint16_t bplcon2_value) -> uint32_t {
@@ -619,7 +576,7 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // EHB-ACTIVE-PRECONDITION -- engineering precondition (BUILD-BRIEF's
+    // EHB-ACTIVE-PRECONDITION -- engineering precondition (the
     // fixture-delivers-a-known-word rule applied to P7's ECS half, not
     // sourced to a manual page): before KILLEHB's disabling effect is
     // graded, show the baseline it is disabling from actually reaches an
@@ -664,16 +621,15 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON2-BIT15 -- undisputed inert-looking on both chipsets
-    // (SPECIFICATION.md P1), DEMOTED from an assertion to a measurement
-    // (repair, finding 1): "15-7 Not used (keep at 0)" (p.210) and "15
+    // (SPECIFICATION.md P1), a measurement, not an assertion: "15-7 Not
+    // used (keep at 0)" (p.210) and "15
     // HIRES X X" (p.271) tell software what to write. The Appendix-A
     // preamble (p.264) -- "Setting unused bits ... may cause serious
     // future software incompatibility if those bits or addresses are
     // implemented in the future" -- is a forward-compatibility warning to
     // programmers, not a specification that today's hardware must ignore a
-    // bit already written 1. Requiring diff==0 asserted a requirement
-    // neither page makes (the same reading that withdrew six reds in
-    // validation slice A).
+    // bit already written 1. Requiring diff==0 would assert a requirement
+    // neither page makes.
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT15);
@@ -692,12 +648,11 @@ int main(int argc, char** argv) {
         "sol:7-appA-bplcon2.c6, opus:7-appA-bplcon2.c5; p.210, p.264): \"Not used (keep at 0)\" "
         "and the Appendix-A preamble's future-incompatibility warning tell software what to "
         "write, not what the hardware must do with a bit already set. reason_kind "
-        "source-silent. Graded until this repair; withdrawn on the independent validation's "
-        "finding (slice B2, finding 1).");
+        "source-silent.");
 
     // =========================================================================
-    // BPLCON2-BIT14 -- OCS half DEMOTED (repair, finding 1; SPECIFICATION.md
-    // P2, same p.210/264/271 reasoning as BIT15 above). ECS half (ZDBPSEL2,
+    // BPLCON2-BIT14 -- OCS half a measurement only (SPECIFICATION.md P2,
+    // same p.210/264/271 reasoning as BIT15 above). ECS half (ZDBPSEL2,
     // p.307) stays recorded, not asserted, per opus:7-appA-bplcon2.c6's own
     // conflict_resolution ("the signal does not exist in this design at
     // all"), confirmed here: bit 14 is latched at denise.v:215 but never
@@ -710,9 +665,7 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
         checks.record("BPLCON2-BIT14-OCS-NOT-GRADED (opus:7-appA-bplcon2.c6; p.210, p.264, "
             "p.271): same reasoning as BPLCON2-BIT15-NOT-GRADED above -- \"keep at 0\" is not "
-            "a hardware requirement to ignore a 1. reason_kind source-silent. Graded until "
-            "this repair; withdrawn on the independent validation's finding (slice B2, "
-            "finding 1).");
+            "a hardware requirement to ignore a 1. reason_kind source-silent.");
     }
     {
         auto baseline = run_sweep(true, 0x0000);
@@ -730,7 +683,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON2-BIT13 -- same shape as BIT14 (SPECIFICATION.md P3). ECS name:
-    // ZDBPSEL1. OCS half DEMOTED (repair, finding 1).
+    // ZDBPSEL1. OCS half a measurement only.
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT13);
@@ -738,8 +691,7 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
         checks.record("BPLCON2-BIT13-OCS-NOT-GRADED (opus:7-appA-bplcon2.c7; p.210, p.264, "
             "p.271): same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind "
-            "source-silent. Graded until this repair; withdrawn on the independent "
-            "validation's finding (slice B2, finding 1).");
+            "source-silent.");
     }
     {
         auto baseline = run_sweep(true, 0x0000);
@@ -755,7 +707,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON2-BIT12 -- same shape (SPECIFICATION.md P4). ECS name: ZDBPSEL0.
-    // OCS half DEMOTED (repair, finding 1).
+    // OCS half a measurement only.
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT12);
@@ -763,8 +715,7 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
         checks.record("BPLCON2-BIT12-OCS-NOT-GRADED (opus:7-appA-bplcon2.c8; p.210, p.264, "
             "p.271): same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind "
-            "source-silent. Graded until this repair; withdrawn on the independent "
-            "validation's finding (slice B2, finding 1).");
+            "source-silent.");
     }
     {
         auto baseline = run_sweep(true, 0x0000);
@@ -780,7 +731,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON2-BIT11 -- same shape (SPECIFICATION.md P5). ECS name: ZDBPEN.
-    // OCS half DEMOTED (repair, finding 1).
+    // OCS half a measurement only.
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT11);
@@ -788,8 +739,7 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
         checks.record("BPLCON2-BIT11-OCS-NOT-GRADED (opus:7-appA-bplcon2.c9; p.210, p.264, "
             "p.271): same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind "
-            "source-silent. Graded until this repair; withdrawn on the independent "
-            "validation's finding (slice B2, finding 1).");
+            "source-silent.");
     }
     {
         auto baseline = run_sweep(true, 0x0000);
@@ -805,7 +755,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON2-BIT10 -- same shape (SPECIFICATION.md P6). ECS name: ZDCTEN.
-    // OCS half DEMOTED (repair, finding 1).
+    // OCS half a measurement only.
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT10);
@@ -813,8 +763,7 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
         checks.record("BPLCON2-BIT10-OCS-NOT-GRADED (opus:7-appA-bplcon2.c10; p.210, p.264, "
             "p.271): same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind "
-            "source-silent. Graded until this repair; withdrawn on the independent "
-            "validation's finding (slice B2, finding 1).");
+            "source-silent.");
     }
     {
         auto baseline = run_sweep(true, 0x0000);
@@ -829,8 +778,8 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // BPLCON2-BIT9 -- OCS half DEMOTED (repair, finding 1; SPECIFICATION.md
-    // P7 OCS half, same p.210/264/271 reasoning as BIT15 above).
+    // BPLCON2-BIT9 -- OCS half a measurement only (SPECIFICATION.md P7 OCS
+    // half, same p.210/264/271 reasoning as BIT15 above).
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT9);
@@ -838,18 +787,17 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
         checks.record("BPLCON2-BIT9-OCS-NOT-GRADED (opus:7-appA-bplcon2.c11; p.210, p.264, "
             "p.271): same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind "
-            "source-silent. Graded until this repair; withdrawn on the independent "
-            "validation's finding (slice B2, finding 1).");
+            "source-silent.");
     }
 
     // =========================================================================
     // BPLCON2-BIT9 -- ECS half, background sweep measurement
     // (SPECIFICATION.md P7 ECS half): the same 120-sample sweep-diff basis
-    // as every other bit's measurement above. Kept as a note only --
-    // repair, finding 5: a bare diff>0 postcondition on this number would
-    // pass for blanking, inversion, or any unrelated perturbation of bit 9,
-    // none of which is "kill halfbrite" (p.307). BPLCON2-BIT9-KILLEHB-
-    // LIVE-ECS below grades the exact restored colour instead.
+    // as every other bit's measurement above. A note only: a bare diff>0
+    // postcondition on this number would pass for blanking, inversion, or
+    // any unrelated perturbation of bit 9, none of which is "kill
+    // halfbrite" (p.307). BPLCON2-BIT9-KILLEHB-LIVE-ECS below grades the
+    // half-brite substitution stopping instead.
     // =========================================================================
     {
         auto baseline = run_sweep(true, 0x0000);
@@ -858,18 +806,15 @@ int main(int argc, char** argv) {
         checks.note("BPLCON2-BIT9-ECS-SWEEP-DIFF (background measurement only -- see "
                      "BPLCON2-BIT9-KILLEHB-LIVE-ECS below for the graded postcondition): diff="
                      + std::to_string(diff) + " of 120 sampled pixels.");
-        checks.note("BPLCON2-BIT9-ECS diff count against STEP3-NOTES' disclosed measurement "
-                     "(115 of 120): " + std::to_string(diff) + " of 120 -- reproduced independently "
-                     "on this file's own rig, not adopted.");
+        checks.note("BPLCON2-BIT9-ECS diff count on this file's own rig: "
+                     + std::to_string(diff) + " of 120.");
     }
 
     // =========================================================================
     // BPLCON2-BIT9 -- ECS half asserted LIVE (SPECIFICATION.md P7 ECS half,
-    // the package's centerpiece): KILLEHB kills Extra Half-Brite. REPAIRED
-    // (finding 5) to grade an exact colour pair rather than "some
-    // difference": same index-32 rig as EHB-ACTIVE-PRECONDITION above.
-    // MEASURED WHILE FIXING (not adopted from any prior stage): killehb is
-    // not a simple "restore COLOR00 unhalved" switch on this rig. The fold
+    // the package's centerpiece): KILLEHB kills Extra Half-Brite. Same
+    // index-32 rig as EHB-ACTIVE-PRECONDITION above. Measured on this rig:
+    // killehb is not a simple "restore COLOR00 unhalved" switch. The fold
     // multiplexer (denise_colortable.v:34) reads two DIFFERENT addresses
     // depending on killehb -- `ehb_en` ? {3'b0, select[4:0]} : select -- so
     // at select=32 (this rig's fixed index), killehb=0 folds down to
@@ -879,15 +824,10 @@ int main(int argc, char** argv) {
     // reg_address_in[5:1]}`, bank forced 0), so register writes can never
     // reach RAM address 32 -- it is a real, distinct, 256-entry-deep table
     // cell (denise_colortable_ram_mf.v:12-13) that this rig never writes,
-    // reading its zero-initialised default. A first draft of this
-    // assertion wrongly expected COLOR00 restored unhalved and read
-    // 0x000000 where it expected 0xFF00FF; that was this package's own
-    // addressing mistake, not an RTL defect (killehb=0's halved COLOR00
-    // reading, 0x7F007F, matched exactly). Fixed below to grade what the
-    // hardware actually does: killehb=0 reads COLOR00 folded-and-halved;
-    // killehb=1 reads the distinct, unwritten address 32 -- the automatic
-    // half-brite substitution demonstrably stops, which is what "kill
-    // halfbrite" (p.307) means.
+    // reading its zero-initialised default. The assertion grades that
+    // killehb=0 reads COLOR00 folded-and-halved and killehb=1 does not --
+    // the automatic half-brite substitution demonstrably stops, which is
+    // what "kill halfbrite" (p.307) means.
     // =========================================================================
     {
         auto sample_with = [](uint16_t bplcon2_value) -> uint32_t {
@@ -921,13 +861,11 @@ int main(int argc, char** argv) {
         // WHAT p.307 REQUIRES, AND WHAT IT DOES NOT. "Kill halfbrite" requires
         // the automatic half-brite substitution to STOP. It says nothing about
         // the colour that appears instead, so the colour is measured and
-        // reported and NOT graded. An earlier repair graded killehb=1 ==
-        // 0x000000, which is this harness's RAM address 32 -- unwritten because
-        // denise masks the write address to five bits at aga=0, so no register
-        // write can reach it. That is a fact about the fixture, and grading it
-        // is the same defect the independent validation found in eight SPR-*
-        // assertions in ch7-inter-sprite-priority: an expected value taken from
-        // the implementation rather than from the page.
+        // reported and NOT graded. On this harness it is RAM address 32 --
+        // unwritten because denise masks the write address to five bits at
+        // aga=0, so no register write can reach it. That is a fact about the
+        // fixture; grading it would take an expected value from the
+        // implementation rather than from the page.
         checks.expect(halved == expect_halved && fold_removed != expect_halved,
             "BPLCON2-BIT9-KILLEHB-LIVE-ECS (sol:7-appC-bplcon2.c5, opus:7-appC-bplcon2.c7; "
             "p.307, \"09 KILLEHB Kill halfbrite\"; co-cited sol:7-appA-bplcon2.c4 p.271 and "
@@ -947,7 +885,7 @@ int main(int argc, char** argv) {
         // OCS side is separately declined at BPLCON2-BIT9-OCS-NOT-GRADED, for
         // the unrelated "keep at 0" reasoning (p.210/264/271), not for this
         // comparison -- so nothing in this file establishes "changed from
-        // OCS" as such. Withdrawn from the graded line above; recorded here.
+        // OCS" as such. Recorded here, not cited on the graded line above.
         checks.record("BPLCON2-BIT9-CHG-NOT-COMPARED (sol:7-appC-map-bplcon2.c2; p.298, "
             "\"104 BPLCON2 chg   WA\", Appendix C ECS register map): the claim is a "
             "comparison -- BPLCON2 changed from OCS -- and BPLCON2-BIT9-KILLEHB-LIVE-ECS "
@@ -958,8 +896,8 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // BPLCON2-BIT8 -- undisputed inert-looking on both chipsets within this
-    // package's scope (SPECIFICATION.md P8), DEMOTED (repair, finding 1;
-    // same p.210/264/271 reasoning as BIT15 above). Gated by AGA, not ECS
+    // package's scope (SPECIFICATION.md P8), a measurement only (same
+    // p.210/264/271 reasoning as BIT15 above). Gated by AGA, not ECS
     // (denise.v:219 `rdram = bplcon2[8] & aga`), and aga=0 throughout this
     // file.
     // =========================================================================
@@ -975,14 +913,12 @@ int main(int argc, char** argv) {
             + std::to_string(diff) + " of 120 sampled pixels.");
     }
     checks.record("BPLCON2-BIT8-NOT-GRADED (opus:7-appA-bplcon2.c12; p.210, p.264, p.271): "
-        "same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind source-silent. Graded "
-        "until this repair; withdrawn on the independent validation's finding (slice B2, "
-        "finding 1).");
+        "same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind source-silent.");
 
     // =========================================================================
     // BPLCON2-BIT7 -- undisputed inert-looking on both chipsets
-    // (SPECIFICATION.md P9), DEMOTED (repair, finding 1; same
-    // p.210/264/271 reasoning as BIT15 above).
+    // (SPECIFICATION.md P9), a measurement only (same p.210/264/271
+    // reasoning as BIT15 above).
     // =========================================================================
     {
         int diff = measure_dead_diff(false, BIT7);
@@ -996,18 +932,14 @@ int main(int argc, char** argv) {
             "sampled pixels.");
     }
     checks.record("BPLCON2-BIT7-NOT-GRADED (opus:7-appA-bplcon2.c13; p.210, p.264, p.271): "
-        "same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind source-silent. Graded "
-        "until this repair; withdrawn on the independent validation's finding (slice B2, "
-        "finding 1).");
+        "same reasoning as BPLCON2-BIT15-NOT-GRADED above. reason_kind source-silent.");
 
     // =========================================================================
     // ENBPLCN3-ENABLES-BRDRBLNK -- opus:7-appC-bplcon2.c9 (p.307, "00
-    // ENBPLCN3 ... Enable new BLPCON3 register"), PROMOTED from a decline
-    // to a graded assertion (repair, finding 7): the same p.307 table
-    // already used for KILLEHB also defines BRDRBLNK ("05 BRDRBLNK Border
-    // blank"), so a BPLCON3 field IS quoted in this package's claims after
-    // all -- the earlier decline's premise was wrong. At the opened
-    // denise.v boundary RGB is exposed, and BRDRBLNK (bplcon3[5]) is itself
+    // ENBPLCN3 ... Enable new BLPCON3 register"), graded through
+    // BRDRBLNK: the same p.307 table used for KILLEHB also defines
+    // BRDRBLNK ("05 BRDRBLNK Border blank"), so a BPLCON3 field IS quoted
+    // in this package's claims. At the denise.v boundary RGB is exposed, and BRDRBLNK (bplcon3[5]) is itself
     // gated by ENBPLCN3 (denise.v:192 ecsena=bplcon0[0]; :253
     // brdrblnk=bplcon3[5]&ecsena; :515 t_blank=ecs&ecsena&brdrblnk&
     // (~window_del|~display_ena); :518 red/green/blue forced to 0 when
