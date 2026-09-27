@@ -6,7 +6,8 @@ MADIR := $(NANOMIG)/src/minimig-aga
 # each is elaborated separately and the joins (paula_floppy.index -> ciab.flag,
 # ciab.irq -> paula_intcontroller.int6) are made in the C++ harness, per
 # SPECIFICATION.md. paula_floppy_ebr.v is deliberately NOT in PF_SRC: it
-# declares a second `module paula_floppy` (build brief rig hazard).
+# declares a second `module paula_floppy`, and Verilator, run with
+# -Wno-fatal as here, only warns MODDUP and builds one of the two.
 PF_SRC  := $(MADIR)/paula_floppy.v $(MADIR)/paula_floppy_fifo.v
 CB_SRC  := $(MADIR)/ciab.v $(MADIR)/cia_int.v $(MADIR)/cia_timera.v \
            $(MADIR)/cia_timerb.v $(MADIR)/cia_timerd.v
