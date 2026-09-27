@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch8-drive-step-timing`](../../hrm/ch8-drive-step-timing) — assertion `RATIO-A` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red of 5 graded, plus two explicit `record()` declines (`STEP-POLARITY`, `PULSE-WIDTH-FLOOR`) and `RATIO-B` declined for measuring two quantities that are not of the same kind |
-| **Verdict of the four** | **unanimous with NanoMig on the gate**, and none of the four uses the printed numbers for it. All four accept step pulses on a single direction-independent floor in the tens of microseconds; three of them carry 3 ms and 18 ms elsewhere, as a *settle* effect NanoMig does not model at all |
+| **Verdict of the four** | **unanimous with NanoMig on the gate**, and none of the four uses the printed pair for it. All four accept step pulses on a direction-independent floor — tens of microseconds in WinUAE, vAmiga and Copperline, off by default in Denise; three of them carry a seek or *settle* delay elsewhere (Copperline 3 ms and 18 ms by direction, vAmiga 3 ms plus 9 ms, Denise up to 18 ms and off by default), an effect NanoMig does not model at all |
 
 ---
 
@@ -33,7 +33,7 @@ Printed p.245 lines 37–39:
 > the last step pulse.  Settle time for Amiga drives is specified at 15
 > milliseconds."
 
-**Figure 8-8** prints the pair as arrows in one frame — 18 ms, 18 ms, 3 ms — a
+**Figure 8-8** prints the pair as arrows in one frame — 18 ms, 3 ms, 18 ms — a
 **6:1 ratio** between the reversal case and the same-direction case.
 
 **The two sentences are not phrased alike, and the entry should not pretend they
@@ -120,51 +120,40 @@ is too short.
 
 ### How both cases were made reachable
 
-**The fixture construction is stage 8's and is described in
-`2026-09-15_ch8_s2_stage8_repairs.md`; it is cited here rather than re-derived.**
+`_track0` is the only external read-back of head position, and it is one bit
+meaning "at track 0 or not". A reversal probe can be read against it directly,
+because it steps back toward track 0. A same-direction probe cannot — it moves
+the head *further* from track 0, so acceptance and rejection both land off the
+boundary and look alike.
 
-The obstacle that document records: `_track0` is the only external read-back of
-head position, and it is one bit meaning "at track 0 or not". A reversal probe
-can be read against it directly, because it steps back toward track 0. A
-same-direction probe cannot — it moves the head *further* from track 0, so
-acceptance and rejection both land off the boundary and look alike.
+The test's answer (`gap_accepted_same_direction` in
+[`test_ch8-drive-step-timing.cpp`](../../hrm/ch8-drive-step-timing/test_ch8-drive-step-timing.cpp)):
+after the probed same-direction edge, drive one more **reversal**, 600 ticks
+later, that is accepted regardless, folding the state back onto the track-0
+boundary — 2→1 if the probe was accepted, 1→0 if it was rejected. That fold-back
+is never blocked by the track-0 underflow guard, because the head is never at
+track 0 when it fires.
 
-The builder's answer, quoting that record:
+**The 253:253 quoted above is one genuine reversal gap and one genuine
+same-direction gap**, each binary-searched for its own minimum accepted spacing.
 
-> "after the probed same-direction edge, drive one more generously-spaced
-> **reversal** that is accepted regardless, folding the state back onto the
-> track-0 boundary — 2→1 if the probe was accepted, 1→0 if it was rejected. That
-> fold-back is never blocked by the track-0 underflow guard, because the head is
-> never at track 0 when it fires."
-
-**This matters because of what it repaired.** The same record states it plainly:
-
-> "RATIO-A's old form probed a direction reversal at both positions, so its two
-> 253-tick captures were one case twice. The repair drives both cases for real."
-
-The earlier version of this assertion did not measure a same-direction
-continuation at all. It measured a reversal, twice, and reported the resulting
-1:1 as if it were the comparison the page asks for. That was caught during stage
-8 and the assertion was restated. **The 253:253 quoted above is one genuine
-reversal gap and one genuine same-direction gap**, each binary-searched for its
-own minimum accepted spacing, and the finding was restated with it.
-
-The package's own mutation run agrees the assertion now discriminates:
-`ch8-drive-step-timing` came back `7/7` — 6 killed, 1 green-at-red — with
+The package's mutation switches agree the assertion discriminates:
+`ch8-drive-step-timing` comes back `5/5` — 4 killed, 1 green-at-red — with
 nothing surviving.
 
 ## What the others say
 
 **Not one of the four independent implementations gates step-pulse acceptance
-on the printed numbers, and only one of the four gates it on direction at
-all.** Three of them do carry 3 ms and 18 ms in their code — as a settle
-effect on read data, which is a different mechanism from admitting the pulse.
+on the printed pair, and only one of the four gates it on direction at
+all.** Three of them do carry a seek or settle delay in their code — Copperline
+3 ms and 18 ms, vAmiga 3 ms plus 9 ms, Denise up to 18 ms — which is a different
+mechanism from admitting the pulse.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`disk.cpp:1855-1864`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L1855-L1864), [`:246`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L246) | **one threshold, no direction term** — the same shape as NanoMig: <pre>if (drv-&gt;steplimit && get_cycles() - drv-&gt;steplimitcycle &lt; MIN_STEPLIMIT_CYCLE) {<br>&nbsp;&nbsp;write_log(_T(" step ignored drive %ld, %lu\n"), ...);<br>&nbsp;&nbsp;return;<br>}</pre> with `#define MIN_STEPLIMIT_CYCLE (CYCLE_UNIT * 140)`. `drive_step` receives the direction as an argument and never consults it for spacing. The gate is **off entirely unless cycle-exact**: `set_steplimit` returns immediately when `currprefs.m68k_speed != 0` ([`:1795-1802`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L1795-L1802)) |
-| **vAmiga** | [`FloppyDrive.cpp:881-899`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L881-L899) | **the only one of the four with a direction-conditioned acceptance term** — and its two values are equal: <pre>if (agnus.clock - latestStep &lt; getStepPulseDelay()) return false;<br>// If the step direction reverses, some extra-time is needed (?)<br>if (agnus.clock - latestStepDown &lt; getRevStepPulseDelay()) return false;</pre> mirrored in `readyToStepDown` ([`:901-919`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L901-L919)). Under the default `A1010` mechanics both are `USEC(40)` ([`:636-659`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L636-L659)), so the structure is two thresholds and the **measured ratio is 1:1, exactly NanoMig's**. The `(?)` in the author's own comment is his |
-| **Denise** | [`emulation/libami/drive/diskDrive.cpp:526-532`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/drive/diskDrive.cpp#L526-L532) | **one threshold, and its comment is the 3 ms sentence verbatim**: <pre>auto DiskDrive::step(bool dir, bool updTrack) -&gt; void {<br>&nbsp;&nbsp;// The drives used for the Amiga are guaranteed to get to the next<br>&nbsp;&nbsp;// track within 3 milliseconds. Some drives will support a much<br>&nbsp;&nbsp;// faster rate, others will fail.<br>&nbsp;&nbsp;if (stepperMinTime && (agnus.fallBackCycles(stepClock) &lt; stepperMinTime))<br>&nbsp;&nbsp;&nbsp;&nbsp;return;</pre> `dir` is the very next thing read, for the move — never for the gate. Both its stepper timings are **user sliders that default to 0**, i.e. off ([`libami/interface.cpp:43-44`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/interface.cpp#L43-L44), applied at [`program/program.cpp:257`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/program/program.cpp#L257)); at maximum they reach 3.0 ms and 18.0 ms |
+| **WinUAE** | [`disk.cpp:1855-1864`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L1855-L1864), [`:246`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L246) | **one threshold, no direction term** — the same shape as NanoMig: <pre>if (drv-&gt;steplimit && get_cycles() - drv-&gt;steplimitcycle &lt; MIN_STEPLIMIT_CYCLE) {<br>&nbsp;&nbsp;write_log(_T(" step ignored drive %ld, %lu\n"), ...);<br>&nbsp;&nbsp;return;<br>}</pre> with `#define MIN_STEPLIMIT_CYCLE (CYCLE_UNIT * 140)`. `drive_step` receives the direction as an argument and never consults it for spacing. The gate is **off entirely unless the CPU runs at real speed**: `set_steplimit` returns immediately when `currprefs.m68k_speed != 0`, a setting its own comment calls *"cycle-exact or approximate CPU speed"* ([`:1795-1802`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L1795-L1802)) |
+| **vAmiga** | [`FloppyDrive.cpp:881-899`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L881-L899) | **the only one of the four with a direction-conditioned acceptance term** — and its two values are equal: <pre>if (agnus.clock - latestStep &lt; getStepPulseDelay()) return false;<br>// If the step direction reverses, some extra-time is needed (?)<br>if (agnus.clock - latestStepDown &lt; getRevStepPulseDelay()) return false;</pre> mirrored in `readyToStepDown` ([`:901-919`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L901-L919)). Under the default `A1010` mechanics both are `USEC(40)` ([`:636-659`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L636-L659)), so the structure is two thresholds and the **ratio is 1:1, exactly NanoMig's**. The `(?)` in the author's own comment is his |
+| **Denise** | [`emulation/libami/drive/diskDrive.cpp:526-532`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/drive/diskDrive.cpp#L526-L532) | **one threshold, and its comment is the 3 ms sentence verbatim**: <pre>auto DiskDrive::step(bool dir, bool updTrack) -&gt; void {<br>&nbsp;&nbsp;// The drives used for the Amiga are guaranteed to get to the next<br>&nbsp;&nbsp;// track within 3 milliseconds. Some drives will support a much<br>&nbsp;&nbsp;// faster rate, others will fail.<br>&nbsp;&nbsp;if (stepperMinTime && (agnus.fallBackCycles(stepClock) &lt; stepperMinTime))<br>&nbsp;&nbsp;&nbsp;&nbsp;return;</pre> `dir` is the very next thing read, for the move — never for the gate. Both its stepper timings are **user sliders that default to 0**, i.e. off ([`libami/interface.cpp:43-44`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/interface.cpp#L43-L44), applied at [`program/program.cpp:257`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/program/program.cpp#L257)); at maximum the acceptance floor ("Drive Stepper Access") reaches 3.0 ms, the same for both directions, and the step deferral ("Drive Stepper Delay") 18.0 ms |
 | **Copperline** | [`src/floppy/mod.rs:3131-3153`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L3131-L3153) | **two checks, one constant** — it tests the reversal case explicitly and then applies the same floor to it: <pre>if since(self.last_step_cck) &lt; MIN_STEP_PULSE_CCK { return false; }<br>let opposite = if inward { self.last_step_outward_cck }<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;else { self.last_step_inward_cck };<br>if since(opposite) &lt; MIN_STEP_PULSE_CCK { return false; }</pre> its own comment says so: *"a reversal needs the same gap after the last step the other way"*. `MIN_STEP_PULSE_CCK = 140` ([`:112`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L112)) — the same 140 WinUAE uses, and its comment says it was calibrated against vAmigaTS `Drive/step2` and `step3` |
 | **MiSTer** | [`rtl/paula_floppy.v:292-301`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L292-L301) | descendant — byte-identical to NanoMig's `:594-603` |
 | **TC64** | [`rtl/minimig/paula_floppy.v:528-537`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L528-L537) | descendant — the same counter and the same `assign step_ena = step_ena_cnt[8];`, with one literal written more explicitly: `step_ena_cnt <= 9'd0;` where NanoMig and MiSTer both write `step_ena_cnt <= 0;` — same value, same reset condition. No line in any of the three trees reads `direc` or `_sel` in this block; the single, direction-independent floor is inherited by both lines |
@@ -194,17 +183,18 @@ not model at all:
   with its own comment: *"Continuous stepping can be done very quickly. The last
   step, however, requires about 10 ms until data can be reliably read."*
 
-**The four agree with NanoMig about the gate and disagree with it about the
-settle.** On the question RATIO-A grades — does the acceptance threshold depend
+**The four agree with NanoMig about the gate; three of them disagree with it
+about the settle.** On the question RATIO-A grades — does the acceptance threshold depend
 on direction? — the answer is *no* in WinUAE, Denise and Copperline, and *yes
 structurally but 1:1 numerically* in vAmiga. NanoMig is in the majority. What
-separates it is that three of the four then spend the printed 3 ms and 18 ms on
-withholding read data during the seek, and `paula_floppy.v` has no equivalent:
+separates it is that three of the four then spend a delay on the seek — 3 ms and
+18 ms in Copperline, 3 ms plus 9 ms in vAmiga, up to 18 ms in Denise — holding
+back read data or the head move itself, and `paula_floppy.v` has no equivalent:
 the track register updates and the data follows immediately.
 
 **None of them decides this finding.** The manual does. Their agreement is
-reported because four independent authors, each with the page in front of them,
-all put the printed numbers somewhere other than the step gate.
+reported because four independent authors all left the printed pair out of the
+step gate.
 
 ## Suggested change
 
@@ -229,10 +219,9 @@ them.
 
 ## What holds the finding up
 
-- **Both cases are now driven for real**, one genuine reversal and one genuine
-  same-direction continuation, each read through the same `_track0` observable —
-  the stage-8 repair, cited above, that replaced a form measuring one case
-  twice.
+- **Both cases are driven for real**, one genuine reversal and one genuine
+  same-direction continuation, each read through the same `_track0` observable,
+  as described above.
 - **The RTL cannot have two thresholds.** `step_ena_cnt` is one nine-bit counter
   with no direction input and an ungated reset; this is a structural fact, not a
   value that happened to come out equal.
@@ -244,7 +233,7 @@ them.
   run** — `FIXTURE-LIVE`, `DIREC-PROTOCOL`, `TRACK00-POLARITY` and `SEL-GATING`
   — so direction, stepping and the track-0 sensor all demonstrably work before
   RATIO-A leans on them.
-- **Mutation: 7/7, nothing survived** — 6 killed, 1 green-at-red.
+- **Mutation: 5/5, nothing survived** — 4 killed, 1 green-at-red.
 
 ## What weakens it
 
@@ -277,9 +266,10 @@ Three pieces of evidence bear on it, and they do not all point the same way:
 1. **The page's own framing.** The 18 ms sentence says *"is required"* — the
    language of a requirement. The 3 ms sentence describes what the drive
    guarantees. That asymmetry may be deliberate.
-2. **What the implementations did.** All four put a short, direction-independent
-   floor on pulse acceptance, and three of them spent the printed 3 ms and 18 ms
-   on read-data settle instead. Copperline's is the closest thing to the page's
+2. **What the implementations did.** All four put a direction-independent floor
+   on pulse acceptance — short in three, off by default in Denise — and three of
+   them spent a seek or settle delay instead: Copperline the printed 3 ms and
+   18 ms, vAmiga 3 ms plus 9 ms, Denise up to 18 ms. Copperline's is the closest thing to the page's
    6:1 anywhere in the four — and it deliberately leaves /TRK0 and head position
    instant, so recalibration is unaffected.
 3. **vAmiga's author was unsure.** His comment on the reversal check reads *"If

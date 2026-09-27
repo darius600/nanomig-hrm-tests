@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding) — `A2-MFM-ONE-ENCODES-01`, `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red of four. One of the two greens is green by coincidence and says so in its own message |
-| **Verdict of the four** | **unanimous against.** All four implement the page's three rules exactly, and all four carry the previous data bit across the word or byte boundary to do it. Denise prints the manual's table verbatim as the comment above its encoder |
+| **Verdict of the four** | **unanimous against.** All four implement the page's three rules exactly, and all four carry the previous data bit across the word or byte boundary to do it. Denise prints the manual's table as the comment above its encoder |
 
 ---
 
@@ -67,8 +67,8 @@ Against the page's three rules:
 | 0 | 0 | `10` | `10` | `00` |
 | 0 | 1 | `00` | `10` | `00` |
 
-The payload path gets one row of three right; the header path gets a different
-one right. Each is wrong in a different place, and neither can be right in all
+The payload path gets one row of three right; the header path gets the other
+two right. Each is wrong in a different place, and neither can be right in all
 three, because the page's table is not a function of the current bit alone.
 
 *The header column is read from the RTL and is not measured — the package grades
@@ -108,49 +108,36 @@ the like-for-like comparison, and it is the one cited below. No emulator's
 
 | | | |
 |---|---|---|
-| **Denise** | [`adf.cpp:181-203`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/drive/adf.cpp#L181-L203) | the page's rule as an explicit state machine, with an explicit carry: `bool dataZeroBefore = false;` across the whole track, and `if (dataZeroBefore) word \|= 2 << i; // in MFM clock bit becomes "one" only, if data bit 0 follows another data bit 0`. The comment directly above the function ([`:173-176`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/drive/adf.cpp#L173-L176)) reprints the manual's table: `1 => 01`, `0 => 10 or 00 (if previous data bit is 1)` |
-| **WinUAE** | [`disk.cpp:2061-2072`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L2061-L2072) | the same rule as bit arithmetic, carried across the word boundary by `lastword`: `uae_u32 lv = (lastword << 16) \| v; uae_u32 nlv = 0x55555555 & ~lv; uae_u32 mfmbits = (nlv << 1) & (nlv >> 1);` — a clock bit is set only where the data bit *and* the data bit before it are both zero. The header encoder repeats the boundary case by hand at [`:2092-2100`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L2092-L2100) |
+| **Denise** | [`adf.cpp:181-203`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/drive/adf.cpp#L181-L203) | the page's rule as an explicit state machine, with an explicit carry: `bool dataZeroBefore = false;` across the 540 words that follow each sector's sync mark (a separate flag in the track encoder carries the boundary between sectors), and `if (dataZeroBefore) word \|= 2 << i; // in MFM clock bit becomes "one" only, if data bit 0 follows another data bit 0`. The comment directly above the function ([`:173-176`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/drive/adf.cpp#L173-L176)) reprints the manual's table: `1 => 01`, `0 => 10 or 00 (if previous data bit is 1)` |
+| **WinUAE** | [`disk.cpp:2061-2072`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L2061-L2072) | the same rule as bit arithmetic, carried across the word boundary by `lastword`: `uae_u32 lv = (lastword << 16) \| v; uae_u32 nlv = 0x55555555 & ~lv; uae_u32 mfmbits = (nlv << 1) & (nlv >> 1);` — a clock bit is set only where the data bit *and* the data bit before it are both zero. The PC-DOS track encoder, `mfmcoder`, repeats the boundary case by hand at [`:2092-2100`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L2092-L2100) |
 | **vAmiga** | [`MFM.cpp:89-105`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/rvlib/Images/Encoders/MFM.cpp#L89-L105) | `u8 addClockBits(u8 value, u8 previous)` — the previous byte is a parameter, so the context cannot be dropped by accident. `rShifted = (value >> 1 \| previous << 7);` supplies the bit before the first one in the byte |
 | **Copperline** | [`mod.rs:4535-4543`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L4535-L4543) | the same rule per 32-bit long, with the cross-long carry written out: `encoded \|= ((inv >> 1) \| 0x8000_0000) & (inv << 1);` then `if dest.last().copied().unwrap_or(0) & 1 != 0 { encoded &= 0x7FFF_FFFF; }` — the top clock bit of a long is cleared when the previous long ended on a data 1 |
-| **MiSTer** | [`rtl/paula_floppy_fifo.v:23`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy_fifo.v#L23) | descendant — **no counterpart: neither pinned Minimig tree contains an MFM encoder.** The only mention of MFM here is the FIFO-size comment at this line, `reg [15:0] mem [2047:0]; // 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)`. This line leaves MFM encoding to the CPU or blitter, as real Paula does |
-| **TC64** | [`rtl/minimig/paula_floppy_fifo.v:23`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy_fifo.v#L23) | descendant — the identical comment at the identical line. Both lines leave MFM encoding to the CPU or blitter; **NanoMig is the only one of the three trees that synthesises a cell stream in RTL**, and so the only one that has to get the context-sensitivity right. This defect belongs to NanoMig alone, with no ancestor line to file it against |
+| **MiSTer** | [`rtl/paula_floppy_fifo.v:23`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy_fifo.v#L23) | descendant — **no counterpart in RTL: neither pinned Minimig tree encodes MFM in the core.** The only mention of MFM in this tree is the FIFO-size comment at this line, `reg [15:0] mem [2047:0]; // 2048 words by 16 bit wide fifo memory (for 2 MFM-encoded sectors)`. The core takes its read stream as ready-made MFM words from the host firmware, which is not in this tree |
+| **TC64** | [`rtl/minimig/paula_floppy_fifo.v:23`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy_fifo.v#L23) | descendant — the identical comment at the identical line, and no encoder in its RTL either. Its tree does carry the host firmware that fills the FIFO, and that firmware's `SendSector` ([`fw/ctrl_832/fdd.c:56-161`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/fw/ctrl_832/fdd.c#L56-L161)) writes the header with clock bits 0 and the data field with clock bits forced to 1, `SPI(*p++ >> 1 \| 0xAA);`, under the comment *"we do not insert clock bits because they will be stripped by the Amiga software anyway"* — the constant clocks NanoMig's own comments at :440-452 attribute to "minimig firmware". **NanoMig is the only one of the three trees that synthesises a cell stream in RTL**; this RTL defect belongs to NanoMig alone, with no ancestor RTL to file it against |
 
 **Four independent implementations, four different idioms, one rule.** A state
 machine with a boolean, 32-bit mask arithmetic, a function whose signature
 takes the previous byte, and per-long arithmetic with an explicit carry. Not
-one of them encodes a cell without consulting the bit before it, and two of
-them reprint the manual's table in their own comments while doing it. There is
-no disagreement to report here among the four — which is itself worth saying,
-because on most findings in this register there is. Both maintained Minimig
-lines sidestep the question entirely: with no encoder in either, there is
-nothing for them to get right or wrong, and no disagreement to have.
+one of them encodes a cell without consulting the bit before it, and one of
+them, Denise, reprints the manual's table in its own comments while doing it.
+There is no disagreement to report here among the four — which is itself worth
+saying, because on most findings in this register there is. Neither maintained
+Minimig line encodes MFM in its core; the TC64 tree's host firmware does, with
+the same constant clock bits as NanoMig.
 
-## The package used to require the defect it reports
+## The package does not depend on the defect it reports
 
-This belongs in the record. Before repair lot F (independent validation,
-2026-09-15) two of this package's four graded assertions were built on `0xFF ->
-0xFFFF` — a value that only *this* encoder produces, because p.250's `1 -> 01` is
-unconditional and a uniform `0xFF` byte page-encodes to `0x5555`. A conforming
-encoder would have made both of them fail.
+`0xFF -> 0xFFFF` is a value only *this* encoder produces, because p.250's
+`1 -> 01` is unconditional and a uniform `0xFF` byte page-encodes to `0x5555`.
+Nothing the package grades or calibrates on rests on it:
 
-| | before | after |
-|---|---|---|
-| `A0` fixture liveness | graded through `expect()` on `0xFF -> 0xFFFF` | demoted to `note()`. It carries no claim uid, so it was never conformance evidence and removing the grade cost no coverage |
-| `A1-MFM-DOUBLES-SIZE` | counted occurrences of `0xFFFF` across the whole drained stream | counts `0xAAAA` within the known payload index range. `0x00` page-encodes to `0xAAAA` under p.250's own `0 -> 10 ;if following a 0`, and under this RTL's context-free encoder as well, so the count is correct against either |
+| | what it uses |
+|---|---|
+| `A0` fixture liveness | a `note()`, not a grade. It carries no claim uid, so it is not conformance evidence |
+| `A1-MFM-DOUBLES-SIZE` | counts `0xAAAA` within the known payload index range. `0x00` page-encodes to `0xAAAA` under p.250's own `0 -> 10 ;if following a 0`, and under this RTL's context-free encoder as well, so the count is correct against either |
+| the payload word `A2`, `A3` and `A4` read | a fixed index, DSKDATR pop #33 (`FIRST_PAYLOAD_POP_INDEX` in [`test_ch8-mfm-cell-encoding.cpp`](../../hrm/ch8-mfm-cell-encoding/test_ch8-mfm-cell-encoding.cpp)), taken from the RTL's word layout — words 0 to 31 are framing and the payload starts at word 32 (`paula_floppy.v:484-497`) — not from what any cell encodes to |
 
-A test suite that encodes the defect it reports cannot report it: on the day the
-encoder is fixed, the old `A1` would have counted zero and announced a doubling
-defect that was not there.
-
-**One dependency survives the repair, and whoever fixes the RTL needs to know
-about it.** The helper that locates the payload word,
-`find_ff_marker_pop_index()` ([`test_ch8-mfm-cell-encoding.cpp:326-339`](../../hrm/ch8-mfm-cell-encoding/test_ch8-mfm-cell-encoding.cpp)), still
-finds it by searching for exactly `0xFFFF` in a uniform-`0xFF` sector, and `A2`,
-`A3` and `A4` all call it. No graded assertion requires the defect any more, but
-that calibration does: against a conforming encoder the search returns `-1` and
-the package stops locating anything. **A repair to the encoder must be made
-together with a new calibration marker** — one that is page-legal under both
-schemes, as `A1`'s `0x00 -> 0xAAAA` already is.
+A repaired encoder is therefore measured by the same package unchanged.
 
 ## Suggested change
 
@@ -185,9 +172,9 @@ something that could not come off a disk.
 
 - p.250's first rule, `1 -> 01`, carries no condition at all: a data 1 encodes as
   `01` unconditionally, and this encoder never produces `01` on the payload path.
-- Both reds come from the same measured word, read at a payload index calibrated
-  on that same build in that same run, not from a hard-coded offset.
-- `A3` passes on the identical mechanism — same payload-word search, same
+- Both reds come from the same measured word, read at a payload index taken from
+  the RTL's word layout, not from what any cell encodes to.
+- `A3` passes on the identical mechanism — same payload-word index, same
   `bits[13:12]` extraction, same two-bit comparator — which is what stops the two
   reds being a stuck check, and its own message says why its green proves less
   than it looks.
@@ -196,7 +183,7 @@ something that could not come off a disk.
   `1110_1010_1110_1010`. The measurement and the source agree bit for bit.
 - The RTL says so itself, in its own comments, twice.
 - All four other implementations implement all three rules, in four different
-  idioms, and two reprint the manual's table while doing it.
+  idioms, and Denise reprints the manual's table while doing it.
 
 ## What weakens it
 
@@ -209,9 +196,6 @@ something that could not come off a disk.
   for AmigaDOS-shaped use the defect is invisible. The case for fixing it rests
   on software that inspects the stream rather than on anything that has been
   observed to break.
-- The package's payload-word calibration still depends on the defect, as recorded
-  above. That does not weaken the finding — no graded assertion relies on it any
-  more — but it does mean the measurement and the repair have to move together.
 
 ---
 

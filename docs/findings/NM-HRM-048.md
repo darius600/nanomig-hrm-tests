@@ -11,15 +11,15 @@
 | **Test** | [`hrm/ch8-dsklen-dma-arming`](../../hrm/ch8-dsklen-dma-arming) — `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red. A control assertion drives the identical apparatus with a different payload and reports it correctly in the same run |
-| **Verdict of the four** | **3–1, and the one is the interesting one.** Copperline reproduces the bug on purpose, with a named constant for it. WinUAE, vAmiga and Denise all write whole bytes or words and lose nothing — but WinUAE alone emulates the *other* sentence of the same printed paragraph, and calls it a Paula bug in its own comment |
+| **Verdict of the four** | **3–1, and the one is the interesting one.** Copperline reproduces the bug on purpose, with a named constant for it, in images that keep raw MFM cells. WinUAE, vAmiga and Denise all write the last word whole and lose nothing — but WinUAE and Denise both emulate the *other* sentence of the same printed paragraph, and WinUAE calls it a Paula bug in its own comment |
 
 ---
 
 ## This one runs the other way
 
-Every other finding in this register says the implementation does less than the
-manual describes. This one says the opposite: the printed page documents a
-hardware **defect**, and NanoMig does not have it. The assertion is red because
+This is the only finding in this register whose evidence is that NanoMig lacks
+a documented bug: the printed page documents a hardware **defect**, and NanoMig
+does not have it. The assertion is red because
 the page states the defect unconditionally and the measurement contradicts it —
 which is exactly what a conformance test should report — but nothing here should
 be changed to make the red go away. The entry exists so that the divergence is on
@@ -42,8 +42,8 @@ each is treated here.
 
 ## What NanoMig does
 
-The write path is byte-buffered end to end. A CPU write to DSKDAT goes into the
-FIFO; the write state machine strips clock bits into a byte and hands whole bytes
+The write path is byte-buffered end to end. A write to DSKDAT during write DMA
+goes into the FIFO; the write state machine strips clock bits into a byte and hands whole bytes
 to the sector buffer:
 
 ```verilog
@@ -69,8 +69,8 @@ toward a medium at all; it emits sectors toward an SD card.
     sdc_byte_out_data at offset 511 (the last byte of the sector) = 0x00FF
     (upper 5 bits intact=1, low 3 bits lost=0)
 
-The last byte of the sector arrives whole. The page requires the low three bits
-to be gone; all eight are there.
+The last byte of the sector arrives whole. The page says the last three bits
+sent are lost; all eight bits of the last byte are there.
 
 The same apparatus, fed a payload of `0x00` instead of `0xFF`, reports `0x0000`
 at the same offset in the same run (`A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE`) —
@@ -85,12 +85,12 @@ way.
 
 | | | |
 |---|---|---|
-| **Copperline** | [`mod.rs:161-162`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L161-L162) | **reproduces it, deliberately, with a name.** `// Paula's disk write shifter does not emit the final three bits of a write.` / `const DISK_WRITE_LOST_BITS: usize = 3;` |
+| **Copperline** | [`mod.rs:161-162`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L161-L162) | **reproduces it, deliberately, with a name.** `// Paula's disk write shifter does not emit the final three bits of a write.` / `const DISK_WRITE_LOST_BITS: usize = 3;` — applied where the image keeps raw MFM cells. A standard ADF, which stores sectors as NanoMig's SD image does, is written by decoding the stream into sectors, and that path never consults the flag ([`mod.rs:2315-2325`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L2315-L2325)) |
 | **WinUAE** | [`disk.cpp:4062`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/disk.cpp#L4062) | **does not.** The write DMA stores a whole 16-bit word into the track buffer, `drv2->bigmfmbuf[drv2->mfmpos >> 4] = w;`, and nothing trims the tail of the last one |
 | **vAmiga** | [`DiskController.cpp:468-472`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/DiskController/DiskController.cpp#L468-L472) | **does not.** At the end of a write transfer it flushes the FIFO whole — `while (!fifoIsEmpty()) { u8 value = readFifo(); if (drive) drive->write8AndRotate(value); }` — into [`FloppyDrive::write8AndRotate`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Drive/FloppyDrive.cpp#L833-L838), which writes eight bits and rotates. A search of `Core/` for the bug turns up nothing |
 | **Denise** | [`fdc.cpp:467-533`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L467-L533) | **does not**, and it is the one that could have most easily. `handleFDControllerWrite()` has a genuine bit-serial path for flux and extended images — `disk0.writeBit(state);` — beside the byte path for ADF, and neither drops a tail. A search of `emulation/libami/` for the bug turns up nothing |
 | **MiSTer** | [`rtl/paula_floppy.v:234`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L234) | descendant — disk write hands whole FIFO words to host firmware over `IO_DOUT` (`rtl/paula_floppy.v:234`, already cited on this page). **cannot have the bug either.** Neither MiSTer nor TC64 has an in-core bit-serial disk-write stage for the documented race to occur in. |
-| **TC64** | [`rtl/minimig/paula_floppy.v:468`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L468) | descendant — the same, over its own host link: `sdo`/`sdi`/`sck` SPI pins to an external flash/SD controller, with whole words handed out through `rtl/minimig/paula_floppy.v:468`, `spi_tx_data_3 = fifo_out;`. Neither line trims a tail of bits on the way out; there is no upstream line in either tree to file this against |
+| **TC64** | [`rtl/minimig/paula_floppy.v:468`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L468) | descendant — the same, over its own host link: `sdo`/`sdi`/`sck` SPI pins to the control CPU running the Minimig firmware, with whole words handed out through `rtl/minimig/paula_floppy.v:468`, `spi_tx_data_3 = fifo_out;`. Neither line trims a tail of bits on the way out; there is no upstream line in either tree to file this against |
 
 **Copperline's is a decision, not an accident.** The loss is applied where a
 write DMA *finishes* ([`finish_write_dma`, `mod.rs:2192-2200`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L2192-L2200), passing `lose_tail_bits: true`) and deliberately **not** where a track change
@@ -112,12 +112,18 @@ Paula bug in its own comment. So WinUAE did not decline to emulate documented
 Paula bugs in general; it emulated the half its own timing model reaches and not
 the half it does not.
 
-**That split is the result.** Two of the four implement one sentence each of the
-same printed paragraph, and each implements the sentence its own model has a
+**Denise emulates it too, without naming it.** When the length reaches zero
+with the FIFO empty, its read path ends the transfer without queueing the last
+word, `if (!dskTransferLength && fifoEmpty())`, the same condition as WinUAE's
+([`fdc.cpp:402-410`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L402-L410);
+the byte-mode path repeats it at [`:348-356`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L348-L356)).
+
+**That split is the result.** Three of the four implement one sentence each of
+the same printed paragraph, and each implements the sentence its own model has a
 mechanism for: Copperline has a write shifter and models the write loss;
-WinUAE has cycle-level FIFO status and models the read-side race. vAmiga and
-Denise implement neither. No two of the four agree on this paragraph, which is
-worth knowing before anyone treats it as settled.
+WinUAE and Denise have FIFO status at the moment the length runs out and model
+the read-side race. vAmiga implements neither. Only WinUAE and Denise agree on
+this paragraph, which is worth knowing before anyone treats it as settled.
 
 ## The other half of the paragraph, and why it is not a red
 
@@ -160,8 +166,8 @@ one this fixture can answer.
   readback is live and content-dependent.
 - The RTL reason is readable without running anything: there is no bit-serial
   write stage for the race to occur in.
-- One of the four implementations reproduces the bug on purpose, which settles
-  that it is a real, emulatable behaviour and not a misprint.
+- One of the four implementations reproduces the bug on purpose, which shows
+  that it is an emulatable behaviour.
 
 ## What weakens it
 
