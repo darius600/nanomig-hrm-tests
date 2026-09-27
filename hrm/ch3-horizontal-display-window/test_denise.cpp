@@ -28,8 +28,9 @@
 //    3-diw.c02, 3-window.c2) -- this package's own boundary ("What it
 //    tests": HSTART/HSTOP, the forced H8 bits, where the window opens/
 //    closes, the border) never names sprites, and this repository has a
-//    dedicated sibling package (ch3-sprite-registers / hrm/denise_sprites)
-//    for sprite conformance. Exercising real sprite pixel output here would
+//    dedicated sibling package (hrm/ch3-sprite-registers, on the
+//    denise_sprites fixture) for sprite conformance. Exercising real
+//    sprite pixel output here would
 //    need sprite-register addresses this package's own claim inventory
 //    never cites, and would duplicate that sibling package's own claims.
 //  * Dual-playfield transparency (3-dual.c12) -- covered by the sibling
@@ -112,9 +113,9 @@
 // LACE for the mode-invariance measurements; BRDNTRAN/BRDRBLNK for the one
 // group of claims that is actually about BPLCON3) -- these two addresses
 // are standard, ubiquitously-documented Amiga custom-register addresses
-// (also the exact convention this repository's own hrm/denise/
-// test_denise.cpp already uses: its BPLCON4 write at reg_address_in 0x86
-// is custom address 0x10C, i.e. the same BPLCON0=0x100/.../BPLCON4=0x10C
+// (also the exact convention the pre-pipeline hrm/denise/
+// test_denise.cpp, removed, used: its BPLCON4 write at reg_address_in 0x86
+// was custom address 0x10C, i.e. the same BPLCON0=0x100/.../BPLCON4=0x10C
 // ladder).
 //
 // THE C1/C3 TRAP (not itself a claim): amiga_clk.v:
@@ -403,8 +404,8 @@ constexpr uint16_t kColorbaseAddr = 0x180;  // COLOR00
 constexpr uint16_t kColor01Addr = 0x182;    // COLOR01 (COLORBASE + 2)
 // Infrastructure-only addresses (not themselves a claim of this package --
 // see BOUNDARY above): the standard Amiga BPLCON0/BPLCON1/BPLCON3/BPL1DAT
-// ladder, the same one this repository's own hrm/denise/test_denise.cpp
-// already relies on (its BPLCON4 write at reg_address_in 0x86 is custom
+// ladder, the same one the pre-pipeline hrm/denise/test_denise.cpp
+// (removed) relied on (its BPLCON4 write at reg_address_in 0x86 was custom
 // address 0x10C on this identical ladder).
 constexpr uint16_t kBplcon0Addr = 0x100;
 constexpr uint16_t kBplcon1Addr = 0x102;
@@ -500,8 +501,8 @@ public:
     }
 
     // Pulses strhor (the horizontal-start pulse this fixture's own boundary
-    // evidence and this repository's own hrm/denise/test_denise.cpp both
-    // use to reset denise.v's internal horizontal position counter to the
+    // evidence names, and the pre-pipeline hrm/denise/test_denise.cpp
+    // (removed) used, to reset denise.v's internal horizontal position counter to the
     // start of a line) for four ticks.
     void reset_line() {
         while (phase != 0) tick();
@@ -1519,7 +1520,7 @@ int main(int argc, char** argv) {
         "DIWHIGH, the border, first/last displayed pixel) never mentions "
         "sprites, no sprite-register address is cited by any claim in this "
         "package's 174-record inventory, and this repository already has a "
-        "dedicated sibling package (ch3-sprite-registers / hrm/denise_sprites) "
+        "dedicated sibling package (ch3-sprite-registers, on the denise_sprites fixture) "
         "for sprite conformance -- exercising sprite pixel output here would "
         "duplicate that package. Declined, not resolved.");
     checks.note(
