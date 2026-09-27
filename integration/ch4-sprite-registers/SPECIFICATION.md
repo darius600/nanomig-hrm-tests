@@ -29,16 +29,25 @@ the byte address divided by two.
 | `APPC2-BEAMCON0.uhres3` (p.298) | SPRHDAT is "Ext. logic UHRES sprite pointer and data id" (p.290). No page describes its bits or any effect a program, the port, the video or the audio could show. The only reading "ext. logic" allows is a signal to logic outside the chip set, which a test cannot see. The pages also disagree on whether SPRHDAT is an ECS register (section 2.4). |
 | `CH4-APPB-LEGEND.c016` (p.287) | "An early-read DMA transfer can originate at the disk" needs data read from a disk surface. The test harness cannot serve a floppy disk yet (no disk image), so this cannot be checked yet. P11 keeps the stimulus for later, marked as deferred. |
 
-Claims used only in part:
+Claims a proposition grades only in part. A claim id is carried only by an
+assertion that grades the whole claim, so each of these is declined whole. The
+part that is graded stays in the named proposition, without the id.
 
-| claim | part used | part not used, and why |
+| claim | part graded | part not graded, and why |
 |---|---|---|
-| `APPC2-copcon.c3` | P12: with CDANG set, the standard chip set's Copper writes $040–$07E | The lower end $03E is disputed (section 2.2). |
-| `APPC2-copcon.c4` | P12: with CDANG set, the ECS Copper writes $040–$07E | "all of the Amiga chip registers" below $040 is disputed (section 2.1). |
+| `APPC2-copcon.c3` | P12: with CDANG set, the standard chip set's Copper writes the blitter registers in $040–$074 | The lower end $03E is disputed (section 2.2). $07E (DSKSYNC) acts only on a disk read, which needs a disk image the harness does not provide. |
+| `APPC2-copcon.c4` | P12: with CDANG set, the ECS Copper writes the blitter registers in $040–$074 and $05A–$05E | "all of the Amiga chip registers" below $040 is disputed (section 2.1). |
 | `APPB2-legend.tilde`, `CH4-APPB-LEGEND.c007` | P12: with COPCON set true, "~" rows are writable by the Copper | "not writable ... unless" (the ban when the bit is clear) is disputed (section 2.1). |
-| `APPC-pos.c3`, `CH4-appC-position.c3` | P1: displacements come in 70 ns steps | The phase of those steps against the SuperHires pixel grid ("on 70ns boundaries") cannot be seen, because the video output drops every second SuperHires pixel. |
+| `APPC-pos.c3`, `CH4-appC-position.c3` | P1: displacements come in 70 ns steps | The phase of those steps against the SuperHires pixel grid ("on 70ns boundaries") cannot be seen, because the video output drops every second SuperHires pixel. For the same reason a step finer than 70 ns could not be seen, so "70 ns granularity" is not graded either. |
 | `APPC-pos.c13`, `CH4-appC-position.c21` | P1 (bit 4 acts on ECS), P3 (bits 3 and 4 do nothing on OCS) | Bit 3 on ECS "(unimplemented)" (p.303) has no effect a test could use to show that it exists. |
 | `APPB2-legend.er1`, `APPB2-legend.er2`, `CH4-APPB-LEGEND.c014`, `CH4-APPB-LEGEND.c015` | P11: the blitter's destination transfer is a DMA write into Chip memory | The disk half needs a disk image, which the harness does not provide yet (row `c016` above). |
+| `CH4-build.c11` | P7: sprite data is read by DMA from Chip memory | "like all other data accessed by the custom chips" covers every DMA channel. This package reads sprite data only. |
+| `APPC-pos.c14`, `CH4-appC-position.c22` | P2: in Lores, bit 4 gives no 70 ns position | "only available in SuperHires mode" covers Hires too. For Hires the page itself says "Attempting to use 70ns sprite positioning with Hires mode under the current system may lead to unpredictable results" (p.303), so it gives no expected value and no test grades it (2.9). |
+
+`CH4-fig4-13.c9` and `CH4-fig413.f6` name two sources for every load, "68000 or
+DMA". P5 grades the 68000 and P6 grades DMA, so neither grades them alone. They
+are carried by one assertion that holds only when P5's and P6's expected values
+both hold (P6, section 1).
 
 ---
 
@@ -101,8 +110,8 @@ sprite pointer register" (p.126); "the 18-bit address of sprite x" (p.285,
 checked in print). Against this, p.127 says "This pair of registers contains the
 32-bit word address of Sprite 0 DMA data". The ECS list of pointers that gained
 two bits (p.309) names DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH, but not
-SPRxPTH. Every address in this document is below $80000. Every page's pointer
-width reaches that far.
+SPRxPTH. Every address a DMA channel reads or writes in this document is below
+$80000. Every page's pointer width reaches that far.
 
 ### 2.4 SPRHDAT, UHRES and BEAMCON0
 
@@ -155,6 +164,20 @@ say it applies to every sprite.
 system may lead to unpredictable results." (p.303). No test sets SPRxCTL bit 4
 in Hires mode.
 
+### 2.10 Lines in an interlaced NTSC frame
+
+- p.24 (checked in print): "there are also long and short fields (interlace
+  only). In NTSC, the fields are 262, then 263 lines and in PAL, 312, then 313
+  lines." That is 525 and 625 per frame.
+- p.304: "NTSC (525 lines, 227.5 colorclocks per scan line)" and "PAL (625
+  lines, 227.5 colorclocks per scan line)".
+- p.34 (checked in print): "Whereas a normal NTSC display has 262 lines, an
+  interlaced NTSC display has 524 lines. PAL has 312 lines normally and 625 in
+  interlaced mode."
+
+The pages agree on 625 for PAL and disagree on NTSC, 525 against 524. P14
+grades no NTSC line count. It records the one it measures.
+
 ---
 
 ## 3. Common setup, conventions and reference frames
@@ -166,16 +189,49 @@ else says so. The programs are plain 68000 code, and every run uses both CPU
 cores with 68000 behaviour, their default. No proposition here sets 68010 or
 68020 behaviour.
 
-### 3.2 Memory map (byte addresses, all even, all below $80000)
+The chip set, the video standard (PAL or NTSC) and the Chip-memory size are
+harness configuration. The builder sets them from the documented `Config`
+values of `nanomig_harness.h`. A configuration the harness cannot make leaves
+the runs that need it recorded as not made, and they grade nothing. If that is
+the NTSC configuration, P14 is not made, and `APPC2-BEAMCON0.uhres1` is
+declined for that reason.
+
+Every program is assembled for the 68000, vasm's default: the package's
+`VASMFLAGS` (`nanomig.mk`) select no CPU above it. With `-m68010` or higher,
+vasm assembles `MOVE.x #0,<ea>` as `CLR.x <ea>`, and on the 68000 a CLR reads
+its destination before writing it. P10 writes COPJMP2 with $0000 and grades a
+write ("Writing the register causes the effect", p.287). P4 grades what reads of
+SPR0POS and SPR0CTL return, and P5 writes $0000 to SPR0CTL, SPR4CTL and
+SPR4DATB, where an added read is an access no page gives an effect for.
+
+### 3.2 Memory map (byte addresses, all even)
+
+Everything a DMA channel reads or writes lies below $80000 (2.3). After reset
+the CPU cannot reach that memory: "An additional copy of the system ROM responds
+starting at memory location $00000000. The system RAM that would normally be
+located at this address is not available. ... The OVL bit in one of the 8520
+Chips disables the overlay" (p.223). Every program therefore clears the overlay
+first, before it writes anything below $80000 and before it starts any DMA. It
+writes $03 to ddra ($BFE201, "Direction for port A (BFE001);1=output (set to
+0x03)") and then $00 to pra ($BFE001), whose bit 0 is OVL (p.339, the address
+map checked in print). The program then fills every list, structure and buffer
+below $80000 itself.
+
+The harness maps only $080000–$1FFFFF one-to-one (`nanomig.i`,
+`nanomig_harness.h`); for $000000–$07FFFF with the overlay cleared it states no
+port address. Anchor check: every CPU write that fills a list, structure or
+buffer below $80000 appears at the port at the byte address divided by two. A
+run in which it does not grades nothing that relies on an address below $80000.
+
+The words only the CPU uses lie in the harness's results area, `RESULTS` =
+$0C0000 ("where a program stores what it measured", `nanomig.i`), which the test
+reads back after the run.
 
 | address | content |
 |---|---|
 | $20000 | Copper list L1 |
 | $20800 | Copper list L2 (P10) |
 | $21000 | NULL: the null sprite, two words $0000,$0000 (p.111, p.114) |
-| $22000 | MARK: marker words, one word per event |
-| $22100 | RESULT: values the program read, one word each |
-| $22200 | DECOY: one word $A5A5 |
 | $25000 | S1: sprite-0 structure (P6–P9) |
 | $27000 | S2: sprite-0 structure differing from S1 (P7, P9) |
 | $28000 | S4: reference sprite-4 structure (P6–P9) |
@@ -185,8 +241,12 @@ cores with 68000 behaviour, their default. No proposition here sets 68010 or
 | $30400–$30409 | disk buffer (P11, deferred half only) |
 | $40000–$4FFFF | RULER: bitplane buffer, every word $FF00 |
 | $50000–$5FFFF | ZERO: bitplane buffer, every word $0000 |
+| $0C0000 | RESULT (`RESULTS`): values the program read, one word each |
+| $0C0100 | MARK: marker words, one word per event |
+| $0C0200 | DECOY: one word $A5A5 |
 
-The program's code, data and stack must lie outside $20000–$5FFFF.
+The program's code, data and stack must lie outside $20000–$5FFFF and outside
+$0C0000–$0C0201. `DONE` writes $0C0FFE (`DONE_ADDR`, `nanomig.i`), above them.
 
 ### 3.3 Markers, results, quiet windows
 
@@ -284,10 +344,12 @@ line of the next usage by at least one horizontal scan line" (p.117).
 
 ### 3.9 Reference frames
 
-- **R1, column.** On each output line, a column is the number of pixel clocks
-  since HSYNC became active on that line. Positions are compared only on the
-  same line, as the distance between two edges. Anchor check: each line of the
-  graded interval has exactly one HSYNC activation.
+- **R1, column.** An output line is the span from one HSYNC activation at the
+  port to the next; there are about two per scan line (R5). On each output line,
+  a column is the number of pixel clocks since HSYNC became active on that line.
+  Positions are compared only on the same line, as the distance between two
+  edges. Anchor check: each line of the graded interval has exactly one HSYNC
+  activation.
 - **R2, pixel size.** An output pixel is 70 ns. It equals two SuperHires pixels
   ("SuperHires mode provides a 35ns pixel display rate", p.300; the video output
   shows every second pixel of the fastest resolution). It is half a lores pixel
@@ -304,11 +366,34 @@ line of the next usage by at least one horizontal scan line" (p.117).
   pixels (G ≠ 0 with the SuperHires-safe set, or a sprite colour with the plain
   set). On one line, e_A is the first such edge and e_B the first edge after e_A
   that follows at least one non-sprite pixel.
-- **R5, field.** A field is the interval from one VSYNC activation to the next.
-  For Copper-timed checks, a field is the interval from one Copper fetch of L1's
-  first word to the next (see 2.7). Line counts within a field are HSYNC
-  activations counted from the field's VSYNC activation. Only differences of
-  line counts are graded.
+- **R5, field and scan line.** A field is the interval from one VSYNC
+  activation to the next. The port's vs is the chip set's own: "vs is passed
+  straight through the scan doubler ... so each span here is one real
+  field/frame" (`nanomig_harness.h`, `find_frames`). For Copper-timed checks, a
+  field is the interval from one Copper fetch of L1's first word to the next
+  (see 2.7).
+
+  The port's hs is not the chip set's: "hs toggles at roughly twice the rate of
+  the chipset's own horizontal sync ... so a "line" here is one scan-doubler
+  output line, not one Amiga scanline" (`nanomig_harness.h`, `find_lines`). An
+  output line (R1) is therefore not a scan line, and HSYNC activations are never
+  counted as scan lines. Every number of lines in this document (a height, an
+  offset, a frame) is a number of scan lines, counted by the memory refresh each
+  scan line carries; a check made "on every line" is made on every output line.
+  "The time-slot allocation per horizontal line is: 4 cycles for memory
+  refresh" (p.194). A refresh group is the four memory-refresh cycles of one
+  scan line as the ports show them (the RAM port, or the port list's `refresh`
+  output).
+  - The number of scan lines between two times is the number of refresh groups
+    that begin between them.
+  - The height in scan lines of something the video output shows is the number
+    of refresh groups that begin between the start of the first output line
+    that shows it and the start of the first output line after it that does not.
+  - The offset in scan lines between two such things is the number of refresh
+    groups that begin between the starts of their first output lines.
+
+  Anchor check: in every graded field, every refresh group has four refresh
+  cycles (p.194). Only differences of scan-line counts are graded.
 - **R6, chip identification (p.299).** VPOSR bits 14–8 are "the chip
   identification": $00 PAL, $10 NTSC for the original Agnus, and "20 for PAL, 30
   for NTSC" for "the enhanced HighRes Agnus". Where a proposition needs to know
@@ -324,10 +409,11 @@ line of the next usage by at least one horizontal scan line" (p.117).
 **1. Proposition.** On ECS with SuperHires active, setting SPRxCTL bit 4 (SHSH1)
 starts the sprite one 70 ns step, two SuperHires pixels, later than with the bit
 clear. With SH0 (140 ns) and SH8–SH1, it reaches every 70 ns position in
-between. Claims: `APPC-pos.c2`, `APPC-pos.c3` (step only),
-`CH4-appC-position.c18`, `CH4-appC-position.c3` (step only),
-`CH4-appC-position.c4`, and the ECS half of `APPC-pos.c13` and
-`CH4-appC-position.c21`. Page 303.
+between. Claims: `APPC-pos.c2`, `CH4-appC-position.c18`,
+`CH4-appC-position.c4`. Page 303. The 70 ns step and bit 4's effect on ECS are
+also parts of `APPC-pos.c3`, `CH4-appC-position.c3`, `APPC-pos.c13` and
+`CH4-appC-position.c21`, which this proposition does not grade whole and which
+are declined (section 1).
 
 **2. Stimulus** (run SHR-SWEEP, ECS PAL).
 
@@ -360,18 +446,21 @@ between. Claims: `APPC-pos.c2`, `APPC-pos.c3` (step only),
    - End.
 6. Start the Copper as in 3.4, with DMACON = $83A0 (SET, DMAEN, BPLEN, COPEN,
    SPREN, as on p.112).
-7. Wait for 3 VERTB, write M1, wait for 3 VERTB, write M2. The program writes
-   no custom register after step 6.
+7. Wait for 3 VERTB, write M1, wait for 3 VERTB, write M2. After step 6 the
+   program writes no custom register other than INTREQ, which clears VERTB
+   (3.8).
 
 **3. Observation.** Video output of every field that begins after M1 and ends
-before M2. On each line where the SWP usages appear, measure the edges e_A
-(sprite 0) and e_B (sprite 2) as in R4, and compute d = e_B − e_A in output
-pixels. Usage k is the k-th group of consecutive lines, counted from the top,
-that shows an e_B.
+before M2. On each output line where the SWP usages appear, measure the edges
+e_A (sprite 0) and e_B (sprite 2) as in R4, and compute d = e_B − e_A in output
+pixels. Usage k is the k-th group of consecutive output lines, counted from the
+top, that shows an e_B.
 
-**4. Expected.** On every line of group k, d = 80 + k, for all k = 0..9. So each
-step of P changes d by exactly +1 output pixel, which is 70 ns and two
-SuperHires pixels.
+**4. Expected.** Ten groups appear, and on every line of group k, d = 80 + k,
+for all k = 0..9. So each step of P changes d by exactly +1 output pixel, which
+is 70 ns and two SuperHires pixels. A missing group fails this check, not a
+precondition: whether a usage with bit 4 or SH0 set is displayed at all is part
+of what is graded.
 
 - "04 SHSH1 Start horizontal (SHR mode) 70ns increment" (p.303).
 - "00 SH0 Start horiz. value Low bit 140 ns increment" (p.303).
@@ -380,7 +469,10 @@ SuperHires pixels.
 
 Quantifier "every other SuperHires pixel": the sweep covers ten consecutive
 positions. It crosses changes of SH0, SH1 and SH2, and grades every one of them.
-It does not establish positions outside 400–409.
+It does not establish positions outside 400–409. `APPC-pos.c2` states the
+granularity of the positioning, one position every other SuperHires pixel, not
+a range of positions, and the sweep grades that granularity at each of its nine
+steps, so it grades the claim whole.
 
 "On 70ns boundaries" is graded only as "steps of 70 ns". Where a step lies
 against the 35 ns grid is invisible (R2).
@@ -390,10 +482,12 @@ against the 35 ns grid is invisible (R2).
 1. R2's anchor holds with period 8 on the ruler lines. This shows SuperHires is
    active in this field. BPLCON0 is written once, before DMA starts, so the mode
    holds for the whole field.
-2. Every line of the ten groups shows both an e_A and an e_B.
-3. Each group has exactly 4 lines. "The value (VSTOP - VSTART) defines how many
-   scan lines high the sprite will be" (p.107).
-4. d is the same on all lines of one group.
+2. SREF shows an e_A, at one column, on every output line of its 80 scan lines
+   (R5), VSTART $40 to VSTOP $90 (p.107). SREF sets neither bit 3 nor bit 4 of
+   SPRxCTL, so this does not depend on the clause under test.
+3. Group 0 has exactly 4 scan lines (R5). "The value (VSTOP - VSTART) defines
+   how many scan lines high the sprite will be" (p.107). Usage 0 sets neither
+   SH0 nor SHSH1.
 
 **6. Contrasting cases.**
 
@@ -401,14 +495,13 @@ against the 35 ns grid is invisible (R2).
   The page predicts d_{2j+1} = d_{2j}, and the "+1 per step" check goes red.
 - Precondition 1: BPLCON0 = $1200. The ruler period becomes 32, so the check
   fails. This is run SHR-LORES, P2.
-- Precondition 2: DMACON without SPREN ($8380). No e_A or e_B appears.
+- Precondition 2: DMACON without SPREN ($8380). No e_A appears.
 - Precondition 3: usage 0 with VSTOP = VSTART + 5 (CTL $4500). Group 0 has 5
-  lines.
-- Precondition 4: none is needed. Every stimulus change the pages speak to moves
-  all lines of a group together.
+  scan lines.
 
 **7. Reference frame.** R1 (same-line distance, so no line-start anchor enters
-d), R2, R3, R4. The groups are identified by order (R5).
+d), R2, R3, R4. The groups are identified by order; heights are in scan lines
+(R5).
 
 **Open.** Sprite pixel width in SuperHires is not stated for this purpose and is
 not graded. Only edges are.
@@ -419,8 +512,10 @@ not graded. Only edges are.
 
 **1. Proposition.** On ECS in Lores mode, a sprite with SPRxCTL bit 4 set starts
 at a whole multiple of 140 ns from the same sprite with the bit clear, never at
-an odd multiple of 70 ns. Claims: `APPC-pos.c14`, `CH4-appC-position.c22`.
-Page 303.
+an odd multiple of 70 ns. Page 303. It carries no claim id: it grades the
+Lores part of `APPC-pos.c14` and `CH4-appC-position.c22`, whose "only" also
+covers Hires, which the page says "may lead to unpredictable results" and no
+test grades, so both are declined (section 1).
 
 **2. Stimulus.** Run SHR-LORES: identical to SHR-SWEEP (P1) except BPLCON0 =
 $1200. Hires is never run with bit 4 set (see 2.9).
@@ -428,16 +523,18 @@ $1200. Hires is never run with bit 4 set (see 2.9).
 **3. Observation.** As in P1: d on every line of the ten groups, in the fields
 between M1 and M2.
 
-**4. Expected.** d is even on every line of every group, and in particular for
-odd k, where SHSH1 = 1.
+**4. Expected.** Ten groups appear, and d is even on every line of every group,
+in particular for odd k, where SHSH1 = 1. As in P1, a missing group fails this
+check, not a precondition.
 
 - "Warning: 70ns sprite positions are only available in SuperHires mode."
   (p.303).
 
 Quantifier "only": the Lores run grades all five SHSH1 = 1 usages, at five
-different SH8–SH0 values. Hires is excluded by the page. The page does not say
-which even value an odd-k usage takes, whether that of SHSH1 = 0 or another, so
-no value is expected beyond parity.
+different SH8–SH0 values. Hires has no expected value (2.9), which is why the
+claims are declined. The page does not say which even value an odd-k usage
+takes, whether that of SHSH1 = 0 or another, so no value is expected beyond
+parity.
 
 **5. Preconditions.**
 
@@ -447,7 +544,7 @@ no value is expected beyond parity.
 3. The paired run SHR-SWEEP, under the same configuration, passes P1. This shows
    that bit 4 is live in this configuration, so that a parity pass cannot come
    from a bit that is ignored everywhere.
-4. P1's preconditions 2–4 hold here too.
+4. P1's preconditions 2 and 3 hold here too.
 
 **6. Contrasting cases.**
 
@@ -457,7 +554,7 @@ no value is expected beyond parity.
 - Precondition 2: usage 2 with CTL $5400 (SH0 cleared). d_2 = 80, not 82.
 - Precondition 3: SHR-SWEEP with SHSH1 cleared everywhere. P1's step check
   fails.
-- Precondition 4: as in P1.
+- Precondition 4: as P1's contrasts for its preconditions 2 and 3.
 
 **7. Reference frame.** As in P1.
 
@@ -466,8 +563,10 @@ no value is expected beyond parity.
 ### P3 — SPRxCTL bits 3 and 4 are not in the original chips: on OCS, setting them changes nothing
 
 **1. Proposition.** On OCS, setting SPRxCTL bit 3, bit 4 or both leaves the
-sprite's position and image exactly as with both bits clear. Claims:
-`APPC-pos.c13`, `CH4-appC-position.c21` (OCS half). Page 303.
+sprite's position and image exactly as with both bits clear. Page 303. It
+carries no claim id: it grades the OCS half of `APPC-pos.c13` and
+`CH4-appC-position.c21`, whose ECS half for bit 3 no test can grade, so both are
+declined (section 1).
 
 **2. Stimulus.** Run BITS-OCS, OCS PAL. As SHR-LORES (P2), except that SWP has
 five usages k = 0..4 (VSTART = $40 + 8k, VSTOP = VSTART + 4, 4 pairs of $FFFF,
@@ -486,8 +585,11 @@ The program reads VPOSR into RESULT+0 before DMA starts.
 **3. Observation.** d on every line of groups 0–4, and the length of the sprite-2
 run on each of those lines, in the fields between M1 and M2.
 
-**4. Expected.** d = 80 on every line of groups 0, 1, 2 and 3. The sprite-2 run
-length is the same in groups 0–3. The expected value rests on "Note: bits 3 and 4
+**4. Expected.** Five groups appear. d = 80 on every line of groups 0, 1, 2 and
+3. The sprite-2 run length is the same in groups 0–3, and each of groups 1, 2
+and 3 has 4 scan lines (R5), as group 0 has. A missing group, a changed run
+length or a changed height fails this check, not a precondition: each is a
+change of the sprite's image. The expected value rests on "Note: bits 3 and 4
 are in the ECS chips only." (p.303): a bit that the original chips do not have
 cannot act. p.107 ("Unused (make zero)"), p.128 ("reserved for future use") and
 p.284 ("Not used") give the bits no function on the original chips (see 2.5).
@@ -497,7 +599,9 @@ p.284 ("Not used") give the bits no function on the original chips (see 2.5).
 1. VPOSR bits 14–8 = $00, which identifies the original PAL Agnus (R6).
 2. R2's anchor holds with period 32.
 3. Group 4 has d = 82. This shows a 140 ns change is visible in this run.
-4. Each group has exactly 4 lines.
+4. Group 0 has exactly 4 scan lines (R5). Usage 0 sets neither bit 3 nor bit 4.
+5. SREF shows an e_A on every output line of its 80 scan lines, as in P1's
+   precondition 2.
 
 **6. Contrasting cases.**
 
@@ -506,9 +610,10 @@ p.284 ("Not used") give the bits no function on the original chips (see 2.5).
 - Precondition 1: the ECS configuration. VPOSR gives $20.
 - Precondition 2: BPLCON0 = $1240 on ECS (period 8).
 - Precondition 3: usage 4 with CTL $6400. d_4 = 80.
-- Precondition 4: as in P1.
+- Precondition 4: usage 0 with CTL $4500. Group 0 has 5 scan lines.
+- Precondition 5: DMACON without SPREN ($8380). No e_A appears.
 
-**7. Reference frame.** R1–R4, R6.
+**7. Reference frame.** R1–R6.
 
 **Open.** Bit 3 on ECS is "(unimplemented)" (p.303). No test grades it.
 
@@ -540,11 +645,18 @@ marker RB. Values written before the reads:
 | B | X2 = $0061 | C2 = $0000 |
 
 **3. Observation.** RESULT+4..+10 after the run. The port during the reads.
+P5's d on the display-window lines of fields A and B.
 
-**4. Expected.**
+**4. Expected.** Both halves:
 
-- NOT (RESULT+4 = $0060 and RESULT+8 = $0061).
-- NOT (RESULT+6 = $0001 and RESULT+10 = $0000).
+- Write: d = 66 on every display-window line of field A and d = 68 on every
+  display-window line of field B, up to the last one (P5's d checks). d follows
+  SPR0POS and SPR0CTL (P5's derivation), so the writes of X1, C1, X2 and C2
+  took effect, and each register held the value written when it was read. This
+  half is graded here, not assumed: a write that does not take effect is a
+  failure of "write-only", not a missing precondition.
+- Read: NOT (RESULT+4 = $0060 and RESULT+8 = $0061), and NOT (RESULT+6 = $0001
+  and RESULT+10 = $0000).
 
 That is, the values read do not follow the values written. Sources: "SPRxPOS W
 ... SPRxCTL W" (p.303), and "W=write-only; R=read-only" (p.287). No page states
@@ -555,23 +667,23 @@ left-over bus value from matching the written value in both fields by chance.
 
 **5. Preconditions.**
 
-1. P5's field-A and field-B display checks pass, with edges and patterns up to
-   the last display-window line. So at the time of each read, the register held
-   the value written.
-2. At the port, a CPU read of DECOY appears before each register read and after
-   the preceding one.
-3. The reads fall after the last display-window line of their field and before
+1. At the port, a CPU read of DECOY appears after the store that precedes each
+   register read (a RESULT store or a marker) and before the RESULT store that
+   follows it. A read of a custom register is no Chip-memory access and does not
+   appear at the port; the stores around it place it.
+2. The reads fall after the last display-window line of their field and before
    the next vertical blank.
 
 **6. Contrasting cases.**
 
-- Proposition: read back, instead of the register, a Chip-memory word into which
-  the program wrote X1 (field A) and X2 (field B) just before the read. Memory
-  returns what was written, so the "does not follow" check goes red.
-- Precondition 1: omit the field-B write of SPR0POS. Field B then has d = 64
-  (POS $0060 with CTL $0000) instead of 68, so P5's field-B check fails.
-- Precondition 2: omit the DECOY reads.
-- Precondition 3: read at V7–V0 = $80 instead. The read falls inside the display
+- Proposition, read half: read back, instead of the register, a Chip-memory word
+  into which the program wrote X1 (field A) and X2 (field B) just before the
+  read. Memory returns what was written, so the "does not follow" check goes
+  red.
+- Proposition, write half: omit the field-B write of SPR0POS. Field B then has
+  d = 64 (POS $0060 with CTL $0000) instead of 68, so the write check goes red.
+- Precondition 1: omit the DECOY reads.
+- Precondition 2: read at V7–V0 = $80 instead. The read falls inside the display
   window.
 
 **7. Reference frame.** Field A and field B as delimited by markers MA/RA and
@@ -586,8 +698,9 @@ graded.
 
 **1. Proposition.** Each of the four load decodes in Figure 4-13 accepts a load
 from the 68000. SPRxDATA and SPRxDATB, although normally loaded by DMA, lie in the
-processor's address space, and a processor write to them is displayed. Claims:
-`CH4-fig4-13.c9`, `CH4-fig413.f6` (68000 half), `CH4-data.c1`. Pages 125
+processor's address space, and a processor write to them is displayed. Claim:
+`CH4-data.c1`. Its expected values are also the 68000 half of
+`CH4-fig4-13.c9` and `CH4-fig413.f6`, which P6 carries (section 1). Pages 125
 (figure, checked in print), 129 and 123.
 
 **2. Stimulus.** Run MANUAL, ECS PAL.
@@ -622,7 +735,15 @@ from DIWSTRT's $2C to DIWSTOP's $F4) in field A (between MA and RA) and field B
 - d = e_B − e_A.
 - The colours of the 24 output pixels from e_B.
 
-**4. Expected.** On every display-window line:
+**4. Expected.** In each field, the sprite-4 run appears, at one column, on
+every display-window line: on consecutive output lines without a gap, from the
+first output line of the field that shows it, over at least 200 scan lines
+(R5). The window runs from DIWSTRT's line $2C to DIWSTOP's line $F4 (pp.58–59),
+$F4 − $2C = 200; no page says whether line $F4 itself is inside, so the count
+has no upper bound here. Sprite 4 is displayed only through the 68000 loads
+this proposition grades, so its absence, a gap or a shorter run fails this
+check; if no output line of the field shows the sprite-4 run, the check fails.
+On every line of that run:
 
 | field | d | output pixels 0–7 | 8–15 | 16–23 |
 |---|---|---|---|---|
@@ -659,22 +780,22 @@ on every display-window line of both fields.
 
 1. RESULT+2 (DMACONR) has bit 5 = 0 and bit 9 = 1, so no sprite DMA can have
    loaded these registers.
-2. The reference (sprite 4) edge is present, and at the same column, on every
-   display-window line of both fields.
-3. Markers MA and MB precede the display window of their field.
+2. Markers MA and MB precede the display window of their field.
 
 **6. Contrasting cases.**
 
 - Proposition: field B with SPR0CTL = $0001. The page predicts d = 70 in field B,
   and the check goes red.
+- Proposition, the reference: omit the SPR4DATA write. Sprite 4 is not armed
+  ("You write to SPRxDATA last because that address "arms" the sprite", p.123),
+  no sprite-4 run appears, and the check goes red.
 - Precondition 1: DMACON = $83A0 (SPREN set). Bit 5 = 1.
-- Precondition 2: omit the SPR4DATA write. Sprite 4 is not armed, and no
-  reference appears.
-- Precondition 3: delay the field-B writes until V7–V0 = $80. MB then falls
+- Precondition 2: delay the field-B writes until V7–V0 = $80. MB then falls
   inside the display window.
 
-**7. Reference frame.** R1, R4. The display-window lines are counted from the
-first line on which the sprite-4 run appears. Fields are delimited by markers.
+**7. Reference frame.** R1, R4, R5. The display-window lines are counted from
+the first output line on which the sprite-4 run appears; that run is graded, not
+assumed (section 4). Fields are delimited by markers.
 
 ---
 
@@ -683,7 +804,10 @@ first line on which the sprite-4 run appears. Fields are delimited by markers.
 **1. Proposition.** Each of the four load decodes in Figure 4-13 accepts a load
 from DMA. A second usage of one sprite channel, fetched by DMA, replaces all four
 registers, and the display follows the new contents. Claims: `CH4-fig4-13.c9`,
-`CH4-fig413.f6` (DMA half). Pages 125 (figure), 126 and 108.
+`CH4-fig413.f6`. They name both sources of every load, "68000 or DMA" (p.125),
+and this proposition grades DMA only. The assertion that carries them therefore
+holds only when P5's expected values (the 68000 loads) and this proposition's
+(the DMA loads) both hold. Pages 125 (figure), 126 and 108.
 
 **2. Stimulus.** Run AUTO, ECS PAL.
 
@@ -709,17 +833,22 @@ registers, and the display follows the new contents. Claims: `CH4-fig4-13.c9`,
 
 The program never writes SPR0POS, SPR0CTL, SPR0DATA or SPR0DATB.
 
-**3. Observation.** Video output of every field between M1 and M2. On each line
-where sprite 4 appears, measure e_A (sprite 4), e_B (sprite 0), d, and the colours
-of the 24 pixels from e_B. Also measure the line counts (R5) of the first line of
-sprite 4, of each sprite-0 group, and the group heights.
+**3. Observation.** Video output of every field between M1 and M2. On each
+output line where sprite 4 appears, measure e_A (sprite 4), e_B (sprite 0), d,
+and the colours of the 24 pixels from e_B. Also measure, in scan lines (R5), the
+height of sprite 4 and of each sprite-0 group, and the offsets between their
+first lines.
 
 **4. Expected.**
 
-- Sprite 0 appears as two groups of consecutive lines.
-- Group 1 has 4 lines, and its first line is 8 lines after sprite 4's first
-  line.
-- Group 2 has 6 lines, and its first line is 8 lines after group 1's first line.
+- Sprite 4 appears on 32 consecutive scan lines, at one column. Its words reach
+  the display only through the DMA loads this proposition grades, so its absence
+  fails this check.
+- Sprite 0 appears as two groups of consecutive output lines.
+- Group 1 has 4 scan lines, and its first line is 8 scan lines after sprite 4's
+  first line.
+- Group 2 has 6 scan lines, and its first line is 8 scan lines after group 1's
+  first line.
 - On group-1 lines, d = 66 and the colours are 19, 17, 18 (as field A in P5).
 - On group-2 lines, d = 68 and the colours are 19, 18, 17 (as field B).
 
@@ -745,19 +874,21 @@ between the usages, so a pass shows all four loads by DMA.
    precedes the first port read in $25000–$25032. "During the vertical blanking
    interval before the first display of the sprite, you need to write the
    sprite's memory address into these pointers." (p.110).
-3. Sprite 4 appears on exactly 32 consecutive lines, at one column.
 
 **6. Contrasting cases.**
 
 - Proposition: usage 2 with CTL $5E01. The page predicts d = 70 on group-2
   lines, and the check goes red.
+- Proposition, the reference: S4 with CTL $6700 (VSTOP $67) and 31 pairs. The
+  page predicts 31 scan lines ("VSTOP - VSTART", p.107), and the check goes red.
+  Both sprite-0 groups still lie within sprite 4's lines, so d is still
+  measured.
 - Precondition 1: DMACON = $8380. SPREN is clear, and no sprite appears.
 - Precondition 2: move the SPR0PT MOVEs behind a WAIT for line $60. The first S1
   read then precedes them, or S1 is not read in that field.
-- Precondition 3: SPR4PT = NULL. No reference appears.
 
-**7. Reference frame.** R1, R4, R5 (line counts relative to sprite 4's first
-line).
+**7. Reference frame.** R1, R4, R5 (scan-line offsets relative to sprite 4's
+first line).
 
 ---
 
@@ -766,8 +897,9 @@ line).
 **1. Proposition.** The custom chips read a sprite's data structure from Chip
 memory. Every word of S1 appears as a read at the Chip-memory port, at
 consecutive word addresses starting from the pointer, in the order of Table 4-1.
-Claims: `CH4-build.c11`, `CH4-p104.c6`, `CH4-mem.c5`, `CH4-p105.c12`. Pages 104
-and 105.
+Claims: `CH4-p104.c6`, `CH4-mem.c5`, `CH4-p105.c12`. Pages 104 and 105.
+`CH4-build.c11` says the same of "all other data accessed by the custom chips"
+and is declined (section 1).
 
 **2. Stimulus.** Run AUTO (P6).
 
@@ -789,9 +921,9 @@ $25000, $25002, …, $25032, in ascending order, each once. Sources:
   end-of-data words." (p.110).
 
 Quantifier: all 26 words of the structure are graded. "all other data accessed by
-the custom chips" goes beyond this package and is not graded. Reads after the
-end-of-data words are not graded, because the pages do not say whether the
-channel fetches after them.
+the custom chips" goes beyond this package and is not graded, which is why
+`CH4-build.c11` is declined. Reads after the end-of-data words are not graded,
+because the pages do not say whether the channel fetches after them.
 
 **5. Preconditions.** P6's preconditions 1 and 2.
 
@@ -865,9 +997,11 @@ the high word goes to SPR0PTH and the low word to SPR0PTL. Claims:
    - `MOVE.W #$7000,SPR0PTL`
    - `MOVE.L #$00025000,SPR0PTH`
    - marker P_f.
+3. After the next VERTB, marker P_5 and nothing else. It closes field 4.
 
-**3. Observation.** The port and the video output of fields 2–4. For each field,
-the interval runs from P_f to the next VERTB.
+**3. Observation.** The port and the video output of fields 2–4. For each field
+f, the interval runs from P_f to P_{f+1}. VERTB itself is not seen at the port,
+and P_f comes right after it.
 
 **4. Expected.** In each graded field:
 
@@ -895,7 +1029,9 @@ Sources:
   group 1 has d = 2 × ($E1 − $A0) = 130. The check goes red.
 - Precondition 1: do the writes at V7–V0 = $60 instead of at VERTB. P_f then
   follows the first sprite read.
-- Preconditions 2 and 3: as in P6.
+- Precondition 2: as P6's precondition 1.
+- Precondition 3: SPR4PT = NULL in the Copper list. No sprite-4 run appears.
+  Sprite 4 is not the clause under test here, which is the pointer write.
 
 **7. Reference frame.** The interval from P_f. R1, R4.
 
@@ -974,11 +1110,11 @@ it is not graded.
 
 **1. Proposition.** The blitter's destination output reaches Chip memory by DMA.
 Each result word appears at the port as a write, not as a read, at the address
-the destination pointer names, with no CPU write involved. Claims:
-`APPB2-legend.er1`, `APPB2-legend.er2`, `CH4-APPB-LEGEND.c014` and
-`CH4-APPB-LEGEND.c015` (blitter half each), `CH4-APPB-LEGEND.c017`. Page 287,
-with pp.269 and 289. The disk half cannot be checked yet; see "Deferred" at the
-end of this proposition.
+the destination pointer names, with no CPU write involved. Claim:
+`CH4-APPB-LEGEND.c017`. Page 287, with pp.269 and 289. It is also the blitter
+half of `APPB2-legend.er1`, `APPB2-legend.er2`, `CH4-APPB-LEGEND.c014` and
+`CH4-APPB-LEGEND.c015`, which are declined until their disk half can be checked
+(section 1); see "Deferred" at the end of this proposition.
 
 **2. Stimulus** (run BLIT, ECS PAL).
 
@@ -1035,7 +1171,8 @@ graded.
 
 **Deferred: the disk half** (`CH4-APPB-LEGEND.c016`, and the disk half of
 `APPB2-legend.er1`, `APPB2-legend.er2`, `CH4-APPB-LEGEND.c014` and
-`CH4-APPB-LEGEND.c015`). This needs data read from a disk surface, and the
+`CH4-APPB-LEGEND.c015`; once it is built, together with this proposition it
+grades those four whole). This needs data read from a disk surface, and the
 harness serves no disk image yet. It is not built now. The recorded stimulus
 follows p.247's sequence (run DISK, ECS PAL):
 
@@ -1065,11 +1202,14 @@ Reads replace the writes.
 
 **1. Proposition.** With COPCON bit 1 (CDANG) set, Copper MOVEs to the blitter
 registers in $040–$07E take effect. A blit set up and started entirely by the
-Copper runs exactly as the Copper's values specify, on OCS and on ECS. Claims:
-`APPC2-copcon.c2`, `APPC2-copcon.c3` (range $040–$07E), `APPC2-copcon.c4`
-($040–$07E only), `APPB2-legend.tilde` and `CH4-APPB-LEGEND.c007` (the "set"
-half). Pages 310, 287, 289–290, 26, 274 and 21. All of them agree on this part
-(2.1).
+Copper runs exactly as the Copper's values specify, on OCS and on ECS. Claim:
+`APPC2-copcon.c2`. Pages 310, 287, 289–290, 26, 274 and 21. All of them agree on
+this part (2.1). On ECS the Blitter hardware also has BLTCON0L, BLTSIZV and
+BLTSIZH (pp.308–309, "new" on p.298). The ECS run writes them in blit 3 below,
+so the claim is graded whole on both chip sets. It is also part of
+`APPC2-copcon.c3`, `APPC2-copcon.c4`, `APPB2-legend.tilde` and
+`CH4-APPB-LEGEND.c007`, which it does not grade whole and which are declined
+(section 1).
 
 **2. Stimulus.** Run COPBLT-v with v = $0002, on OCS PAL and on ECS PAL.
 
@@ -1078,6 +1218,7 @@ half). Pages 310, 287, 289–290, 26, 274 and 21. All of them agree on this part
    - SRCB $30010 = $F0F0, $0FF0, $FF00, $00FF.
    - SRCC $30020 = $FF0F, $F0FF, $0FFF, $FFF0.
    - DST1 $30200–$30207 and DST2 $30210–$30217 = $EEEE.
+   - DST3 $30220–$3023F = $EEEE.
    - Decoy sources $30100–$301FF = $3333.
    - Decoy destinations $30300–$303FF = $EEEE.
 2. Decoys, written by the CPU. The CPU may always write these registers.
@@ -1087,8 +1228,11 @@ half). Pages 310, 287, 289–290, 26, 274 and 21. All of them agree on this part
      words).
    - BLTAMOD = BLTBMOD = BLTCMOD = BLTDMOD = $0002.
    - BLTADAT = BLTBDAT = BLTCDAT = $0000.
+   - ECS run only: BLTSIZV = $0003. Writing BLTSIZV starts nothing: "BLTSIZV
+     should be written first, followed by BLTSIZH, which starts the blitter"
+     (p.308).
 
-   The CPU does not write BLTSIZE.
+   The CPU writes neither BLTSIZE nor BLTSIZH.
 3. COPCON ($DFF02E) = v.
 4. Copper list L1:
 
@@ -1105,14 +1249,31 @@ half). Pages 310, 287, 289–290, 26, 274 and 21. All of them agree on this part
    end
    ```
 
-   The two blits are:
+   On the ECS run only, the list continues before its end with blit 3:
+
+   ```
+   WAIT line $60
+   BLTCON0L $00CC
+   BLTBPTH $0003   BLTBPTL $0010   BLTCPTH $0003   BLTCPTL $0020
+   BLTDPTH $0003   BLTDPTL $0220
+   BLTSIZV $0001   BLTSIZH $0004
+   end
+   ```
+
+   The blits are:
    - Blit 1: D = A·B·C, minterm $80 (p.174: "ABC = 1, bit 7"), with B and C
      constant $FFFF, over 2 rows of 2 words.
    - Blit 2: D = A·B·C with A constant $FFFF and B, C by DMA.
+   - Blit 3 (ECS): D = B, minterm $CC (Table 6-1, p.177), over 1 row of 4
+     words. BLTCON0L "writes the low bits of BLTCON0" (p.309), so the upper bits
+     stay those of blit 2's BLTCON0 $0780: USEB, USEC and USED. "BLTSIZV should
+     be written first, followed by BLTSIZH, which starts the blitter" (p.308);
+     BLTSIZV holds the height in rows and BLTSIZH the width in words (p.308).
 
    The offsets are those of pp.289–290: $040, $042, $044, $046, $048/$04A,
    $04C/$04E, $050/$052, $054/$056, $058, $060, $062, $064, $066, $070, $072
-   and $074.
+   and $074, and on ECS $05A (BLTCON0L), $05C (BLTSIZV) and $05E (BLTSIZH),
+   marked "(E)" on p.289.
 5. Start the Copper with DMACON = $82C0 (SET, DMAEN, COPEN, BLTEN). Read DMACONR
    into RESULT+2.
 6. Write M1, wait for 3 VERTB, write M2. M1–M2 is a quiet window.
@@ -1126,6 +1287,9 @@ $30000–$303FF.
   $DEF0.
 - Writes at $30210, $30212, $30214, $30216 with data $F000, $00F0, $0F00,
   $00F0.
+- ECS run only: exactly four writes in $30220–$3023F, at $30220, $30222,
+  $30224, $30226 with data $F0F0, $0FF0, $FF00, $00FF (SRCB, D = B). On the
+  OCS run, no write in $30220–$3023F.
 - Reads of SRCA, SRCB and SRCC.
 - No access in $30100–$301FF or $30300–$303FF.
 
@@ -1139,22 +1303,35 @@ Sources:
 
 Each Copper write that did not take effect would leave its decoy in force and
 change the result: zero data, descending addresses, masked words, decoy regions,
-or gaps between rows. So a pass shows every listed register was written by the
-Copper. Not covered: $05A–$05E (ECS only), $078, $07C (read-only) and $07E, whose
-effect needs a synchronized disk read.
+or gaps between rows. Blit 3 does the same for the ECS registers:
+- A lost BLTCON0L write leaves blit 2's minterm $80, so D = A·B·C with A =
+  $FFFF gives $F000, $00F0, $0F00, $00F0.
+- A lost BLTSIZV write leaves a height other than 1: the CPU's $0003, or 2 from
+  the last BLTSIZE. No page says which, but either gives more than four writes.
+- A lost BLTSIZH write starts no blit 3.
+- A lost pointer write leaves blit 2's end addresses.
+
+So a pass shows every listed register was written by the Copper. On OCS,
+$05A–$05E are not registers ("new" on p.298). Not covered: $078, $07C
+(read-only) and $07E, whose effect needs a synchronized disk read.
 
 **5. Preconditions.**
 
 1. In each graded field, the Copper reads every word of L1 up to and including
-   the second BLTSIZE MOVE.
+   the second BLTSIZE MOVE, and on the ECS run up to and including the BLTSIZH
+   MOVE.
 2. RESULT+2 has bits 9, 7 and 6 set.
-3. The CPU never writes BLTSIZE in this run (program structure). M1–M2 is quiet.
+3. The CPU never writes BLTSIZE or BLTSIZH in this run (program structure).
+   M1–M2 is quiet.
 
 **6. Contrasting cases.**
 
 - Proposition: the first BLTSIZE MOVE carries $0081 (2 rows × 1 word). The page
   predicts only two writes at DST1, $1234 at $30200 and $5678 at $30202 ("h=height
   ... w=width", p.269). The check goes red.
+- Proposition, ECS registers: on the ECS run, the BLTSIZH MOVE carries $0003.
+  The page predicts three writes at DST3, $F0F0, $0FF0 and $FF00 at $30220,
+  $30222 and $30224 ("w = Width", p.308). The check goes red.
 - Precondition 1: DMACON without COPEN. There are no list reads.
 - Precondition 2: DMACON without BLTEN. Bit 6 = 0.
 - Precondition 3: add a CPU write BLTSIZE = $0082 before M1. The structural check
@@ -1195,8 +1372,14 @@ the equality is graded. Sources:
 
 **5. Preconditions.** In every run:
 
-1. P12's preconditions 1 and 2.
-2. The CPU writes BLTSIZE only where a contrasting case below says so.
+1. P12's precondition 2. In the $0002 and $FFFF runs, also P12's precondition 1.
+   In the $0000 and $FFFD runs, the Copper fetches L1's first word in each
+   graded field (R5, "no matter what the Copper is doing", p.25), and nothing
+   more is required of its reads: no page says whether the Copper goes on
+   reading its list after a MOVE it may not perform, so how far it reads L1 with
+   CDANG clear is not a precondition.
+2. The CPU writes BLTSIZE only where a contrasting case below says so, and
+   never BLTSIZH.
 3. M1–M2 is a quiet window.
 
 **6. Contrasting cases.**
@@ -1224,27 +1407,42 @@ standard chip set. Writing its PAL bit turns an NTSC ECS system into PAL line
 timing. The same write on OCS changes nothing. Claim: `APPC2-BEAMCON0.uhres1`.
 Page 298, with pp.304, 305 and 299.
 
-**2. Stimulus.** Run BEAM, on ECS NTSC and on OCS NTSC.
+**2. Stimulus.** Run BEAM, on ECS NTSC and on OCS NTSC. Both runs need the NTSC
+configuration; if the harness cannot make it, P14 is not made (3.1).
 
 1. BPLCON0 = $0204 (COLOR, LACE: "LACE =Interlace enable", p.271), so that a
-   frame of two fields has the line count p.304 names.
+   frame is a long and a short field (p.24) and has the line count the pages
+   give for an interlaced frame (2.10).
 2. DMACON = $7FFF (all DMA off).
 3. Read VPOSR into RESULT+0.
-4. Wait for 4 VERTB, write M1.
+4. Wait for 6 VERTB, write M1.
 5. Write BEAMCON0 ($DFF1DC) = $0020 (bit 5 "PAL Programmable pal mode enable",
    p.305; all other bits 0).
 6. Wait for 8 VERTB, write M2.
 
-**3. Observation.** The video sync outputs. For each VSYNC activation V_i,
-N_i = the number of HSYNC activations in [V_i, V_{i+2}), one frame. Graded:
+Steps 1–3 follow the overlay clear of 3.2 and come before anything else.
 
-- The N_i with V_{i+2} before M1.
+**3. Observation.** The vs output and the refresh groups (R5). For
+each VSYNC activation V_i, N_i = the number of scan lines (R5) in
+[V_i, V_{i+2}), one frame: the refresh groups that begin in it. HSYNC
+activations at the port are not counted; they are the scan doubler's (R5).
+Graded:
+
+- The N_i whose V_i is the second VSYNC activation after the program's first
+  instruction fetch at the port, or a later one, and whose V_{i+2} precedes M1.
+  The video capture begins with the harness's `boot()`, before the program runs
+  (`nanomig_harness.h`), so it also holds fields in which LACE is not yet set;
+  and the pages do not say from which field on a LACE write takes effect.
 - The four N_i starting at the third VSYNC activation after M1.
 
 **4. Expected.**
 
-- Before M1, N = 525 on both chip sets.
-- After, N = 625 on ECS and N = 525 on OCS.
+- ECS: every graded N after M1 is 625.
+- OCS: every graded N after M1 equals the N of the graded frames before M1.
+
+No NTSC line count is graded: the pages give 525 (p.24, p.304) and 524 (p.34)
+for an interlaced NTSC frame (2.10). Recorded, not graded: N before M1 on both
+chip sets, and N after M1 on OCS.
 
 Sources:
 
@@ -1253,8 +1451,9 @@ Sources:
   Amiga's Enhanced Chip Set" (p.298).
 - "A new register in the enhanced Agnus, BEAMCON0, provides a programmable signal
   generator." (p.305).
-- "NTSC (525 lines, 227.5 colorclocks per scan line)" and "PAL (625 lines, 227.5
-  colorclocks per scan line)" (p.304).
+- "PAL (625 lines, 227.5 colorclocks per scan line)" (p.304), and "PAL has 312
+  lines normally and 625 in interlaced mode" (p.34, checked in print): the pages
+  agree on 625.
 - "Programmable changes between PAL and NTSC modes are new for V2.0." (p.305).
 
 The first two fields after the write are not graded, because the pages do not say
@@ -1266,21 +1465,32 @@ writes only the PAL bit.
 
 1. VPOSR bits 14–8 = $30 on the ECS run and $10 on the OCS run: the NTSC Agnus of
    each kind (R6).
-2. N = 525 for the graded frames before M1.
-3. Each frame contains two VSYNC activations, so the fields alternate as
-   interlace requires.
+2. The graded frames before M1 all have the same N, and it is not 625. This
+   shows NTSC timing is in force: every page's NTSC frame, 525 or 524, differs
+   from PAL's 625 (2.10).
+3. In every graded frame before M1, the two fields [V_i, V_{i+1}) and
+   [V_{i+1}, V_{i+2}) differ in length by one scan line (R5): "there are also
+   long and short fields (interlace only). In NTSC, the fields are 262, then 263
+   lines and in PAL, 312, then 313 lines" (p.24). This shows interlace is on,
+   which the frame counts of 2.10 assume. After M1, the ECS value 625 and the
+   OCS equality with an interlaced count already need interlace.
 
 **6. Contrasting cases.**
 
 - Proposition (ECS): write BEAMCON0 = $0000. The page predicts that PAL is not
-  enabled and N stays 525, so the "625 after" check goes red.
+  enabled, so N stays at the NTSC count, which no page gives as 625 (2.10). The
+  "625 after" check goes red.
+- Proposition (OCS): at M1, write BPLCON0 = $0200 (LACE clear) as well as
+  BEAMCON0. Long and short fields are "interlace only" (p.24). After M1 a frame
+  is then two fields of equal length, an even count. Before M1 it is two fields
+  that differ by one, an odd count. The "after = before" check goes red.
 - Precondition 1: the other chip set, or PAL selected. The identification
   differs.
 - Precondition 2: PAL selected. N = 625 before M1.
-- Precondition 3: BPLCON0 = $0200 (LACE clear). The frame count is no longer
-  fixed by p.304, and the check reports the precondition unmet.
+- Precondition 3: BPLCON0 = $0200 (LACE clear) in step 1. The two fields of a
+  frame before M1 have the same length, and the precondition goes red.
 
-**7. Reference frame.** VSYNC and HSYNC activations on the output (R1, R5).
-Markers M1 and M2 for the timing of the write.
+**7. Reference frame.** VSYNC activations on the output and refresh groups
+(R5). Markers M1 and M2 for the timing of the write.
 
 **Open.** What the other BEAMCON0 bits do, and what "UHRES" names (2.4).
