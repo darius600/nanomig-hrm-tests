@@ -254,8 +254,3 @@ See "The p.332/p.333 conflict" above. Measured, not graded.
 No claim in this package needs RTL changed, a port added, or a requirement
 invented. Every ASSERT claim is measurable at `userio.v` alone with the
 existing port list. No HALT.
-
----
-*Written after `userio.v` was opened (the file was already read in full to
-verify every classify.evidence line's citations before this document was
-drafted, per "erst prüfen, dann behaupten").*
