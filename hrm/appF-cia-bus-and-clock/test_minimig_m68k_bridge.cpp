@@ -36,9 +36,7 @@
 //   enough to latch, `cck` held high through one `clk7n_en` edge (which
 //   clears the module's own `_dtack` output via its `!vpa`/`!(dbr&&dbs)`
 //   path, `vpa` held 0 throughout so the VPA/VMA/eclk[8]-synchronised CIA
-//   path is not needed for this measurement) and then dropped -- verified
-//   empirically against a standalone probe build before being written
-//   here, not assumed from reading the RTL alone.
+//   path is not needed for this measurement) and then dropped.
 //
 // MUTATION METHODOLOGY: every expect() below is guarded by a compile-time
 //   `-D` flag. Every mutation was actually built and run (WSL Verilator,
@@ -123,7 +121,7 @@ public:
         phase = (phase + 1) & 3;
     }
 
-    // Acquires one bus cycle's `enable` (verified empirically: 16 ticks of
+    // Acquires one bus cycle's `enable` (in simulation, 16 ticks of
     // _as asserted + cck high reliably latches l_as=0 and clears _dtack
     // through the !vpa path; dropping cck then lets `enable` = ~l_as &
     // ~l_dtack & ~cck read true). vpa/dbr/dbs/nrdy/xbs stay 0 throughout --

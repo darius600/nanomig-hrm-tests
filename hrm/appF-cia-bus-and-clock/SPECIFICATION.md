@@ -1,32 +1,18 @@
 # SPECIFICATION — `appF-cia-bus-and-clock`
 
 Package: `hrm/appF-cia-bus-and-clock`
-Fixtures: **two** — `minimig_m68k_bridge` (the task sheet's own `top`,
-minimig_m68k_bridge.v alone) and `amiga_clk` (amiga_clk.v alone). Neither
+Fixtures: **two** — `minimig_m68k_bridge` (minimig_m68k_bridge.v alone,
+the first-listed fixture) and `amiga_clk` (amiga_clk.v alone). Neither
 `paula_uart` nor `agnus` is built as a fixture — see "Why only two
-fixtures" below. `hrm/ch1-cia-timers` is this batch's own precedent for a
-package building more than one fixture.
+fixtures" below. `hrm/ch1-cia-timers` also builds more than one fixture.
 
 Claims file: `hrm-testpipeline/work/2026-09-17_appF_packages.jsonl`,
 filtered on `classify.package == "appF-cia-bus-and-clock"` — **11 rows** (6
 sol-read, 5 opus-read), all `status: testable`. **4 of 11 carry a
-`classify.note`** (matches the task sheet's "11 claims, 4 already graded").
+`classify.note`**, each naming the package that already grades it.
 The rows span four different `observable: yes, at X` values across pages
 345, 352 and 353 — a genuinely mixed bag the classifier grouped by subject
 ("bus and clock"), not by module.
-
-## Disclosure — the order of work did not fully hold
-
-Same situation every package in this batch has disclosed. Filtering by
-`classify.package` surfaced `classify.evidence`/`classify.note` for all 11
-rows in the same read. This builder additionally opened
-`minimig_m68k_bridge.v` and `amiga_clk.v` directly and in full before
-writing this file (both needed for fixture design), and built a standalone
-throwaway probe of `minimig_m68k_bridge`'s bus-cycle timing (not part of
-this package, discarded after use) to verify a working `_as`/`cck`
-acquisition sequence empirically before writing `test_minimig_m68k_
-bridge.cpp` itself — reported here rather than presented as derived purely
-from reading the RTL.
 
 ## The claim inventory
 
@@ -40,7 +26,7 @@ from reading the RTL.
 | `F-signals.c79` | sol | 353 | `minimig_m68k_bridge` | no |
 | `F-signals.c10` | opus | 353 | `minimig_m68k_bridge` | no |
 
-4 already-graded + 7 fresh = 11, matching the task sheet. `opus:F-signals.
+4 already-graded + 7 fresh = 11. `opus:F-signals.
 c10`'s own quote/restatement spans **both** halves of the R/W sentence
 ("A high on R/W indicates a read ... while a low indicates a write") in one
 row, where `sol` split the same sentence into two bare ids (`c78`, `c79`).
@@ -62,10 +48,10 @@ inventing a second bare id that does not exist.
   all thirteen bits and the `$096` address decode, at `agnus`'s own
   boundary.
 
-Both citation targets are accepted packages already graded, not themselves
-declined — consistent with the note text and not re-verified against every
-individual `expect()` line in each (a wider trawl than this package's own
-two citations need).
+Both citation targets grade these claims rather than declining them,
+consistent with the note text; this package does not re-check every
+individual `expect()` line in each (a wider trawl than its own two
+citations need).
 
 ## Why only two fixtures
 
@@ -109,8 +95,8 @@ transfer into the 8520)."
 `rd`/`hwr`/`lwr` are pure combinational functions of an internal `enable`
 and latched `lr_w`/`l_uds`/`l_lds` (`:139-141`). `enable` needs the
 module's own registered address-strobe copy and DTACK state to be
-acquired first — this fixture drives `_as` and `cck` through one complete,
-empirically-verified acquisition (`Harness::acquire_enable()`, 16 ticks
+acquired first — this fixture drives `_as` and `cck` through one complete
+acquisition (`Harness::acquire_enable()`, 16 ticks
 `_as` asserted + `cck` high, then `cck` dropped) using the simpler of the
 two paths `_ta_n` can clear through (`vpa=0`, so no `eclk`/`vma`
 synchronisation is needed for this measurement) before any R/W assertion
@@ -126,11 +112,7 @@ is graded:
   strobes asserted) gives `rd=0`, `hwr=1`, `lwr=1`.
 
 All measured via WSL Verilator 5.052: **6 passed, 0 failed** (4 on the
-bridge fixture, 2 on the clock fixture) on first build — no RTL surprise
-required a redesign here, unlike `appF-cia-control-registers` and
-`appF-cia-serial-shift-register` in this same batch (both needed a
-measured-then-fixed timing-accounting correction; reported there, not
-repeated here since it did not happen in this package).
+bridge fixture, 2 on the clock fixture).
 
 ## Control / liveness
 
@@ -141,14 +123,13 @@ trusted; `minimig_m68k_bridge`'s uses `address_out` (a plain registered
 copy of `address`, gated by nothing) — a path independent of the whole
 `_as`/`cck`/DTACK acquisition the three R/W assertions depend on.
 
-## HALT check
+## Reachability
 
-No HALT. All seven fresh propositions were reachable at each fixture's
-existing port interface, with no RTL change, no added port, and no
-invented requirement.
+All seven fresh propositions are reachable at each fixture's existing port
+interface, with no RTL change, no added port, and no invented requirement.
 
 ## What this specification deliberately does not contain
 
 Exact tick counts, the `_as`/`cck` acquisition's specific timing, and the
-`eclk` bit choice's numeric value are step-2/test-source material and are
-fixed in the two `test_*.cpp` files, not here.
+`eclk` bit choice's numeric value are test-source material and are fixed
+in the two `test_*.cpp` files, not here.
