@@ -30,9 +30,8 @@
 //   rdram, select[7:0], bank, loct, ehb_en, rgb[23:0]. clk/clk7_en/bplxor
 //   and the reg_address_in write-address convention (COLORBASE 9'h180 ->
 //   word address $C0..$DF, i.e. reg_address_in = 0xC0 + register index)
-//   are copied from the sibling package hrm/denise_colortable/'s harness,
-//   as instructed, along with its Makefile shape; no other port and no
-//   RTL body was read before this file was written and committed.
+//   are taken from the sibling package hrm/denise_colortable/'s harness,
+//   along with its Makefile shape.
 //
 // ASSUMPTION carried into the byte-extraction helpers R_of/G_of/B_of
 //   below: a port literally named `rgb[23:0]` is assumed to pack Red in
@@ -118,35 +117,26 @@
 //
 //   Two additional checks carry no claim id: CONTROL-KNOWN-VALUES-ARRIVE
 //   (the write/select/rgb data path is alive before anything above trusts
-//   it) and the EHB group's own reproducibility control, both required by
-//   the package brief as the control basis for the suspect assertions.
+//   it) and the EHB group's own reproducibility control, both the control
+//   basis for the suspect assertions.
 //
-// RETRACTED: a HIGH-NIBBLE-NO-EFFECT assertion (bits 15-12 unused) was
-//   written and first built in this shape: write data_in=$0456, read;
-//   write data_in=$F456 (top nibble deliberately set) to the same
-//   register, read; expect the two readings equal. Built and run before
-//   this retraction: it went RED, but not for a reason that says anything
-//   about the RTL. data_in is declared `[12-1:0]` in denise_colortable.v
-//   (confirmed only after this file's first commit, per the package
-//   brief's own ordering) -- there are only 12 wires here, none for bits
-//   15-12 at all, so "presenting $F456" was never a real 16-bit bus value
-//   landing on a 12-bit port; it was poking Verilator's wider C++ storage
-//   for that port past the width the generated model's own masking is
-//   written for. Measured directly: data_in read back as 0 immediately
-//   after that write (the $F456 value did not survive even as raw
-//   storage), and the two "identical low 12 bits" readings differed
-//   anyway -- $445566 vs $4455F6, blue only, not the all-or-nothing result
-//   a genuine masking question would produce. That is a Verilator/testbench
-//   boundary artifact, not a measurement of denise_colortable, so the
-//   assertion is removed rather than reported red. The 9 ids it covered
-//   move to OUT OF SCOPE below with this finding as their reason -- this
-//   is exactly PACKAGE.md's own "MEASURED (d_denise)" note for these same
-//   ids: it was already established one level up, at a boundary that
-//   actually has a 16-bit-wide bus to truncate, and cannot be re-derived
-//   from a 12-bit port that never received the extra bits in the first
-//   place. No RTL, oracle, or expected value was changed by this
-//   retraction; a stimulus that could not be legitimately applied at this
-//   boundary was removed.
+// NO HIGH-NIBBLE ASSERTION (bits 15-12 unused): data_in is declared
+//   `[12-1:0]` in denise_colortable.v -- there are only 12 wires here, none
+//   for bits 15-12 at all, so presenting $F456 (top nibble set) is not a
+//   real 16-bit bus value landing on a 12-bit port; it pokes Verilator's
+//   wider C++ storage for that port past the width the generated model's
+//   own masking is written for. Measured directly: data_in reads back as 0
+//   immediately after such a write (the $F456 value does not survive even
+//   as raw storage), and a $0456 write and a $F456 write, identical in
+//   their low 12 bits, read back differently anyway -- $445566 vs $4455F6,
+//   blue only, not the all-or-nothing result a genuine masking question
+//   would produce. That is a Verilator/testbench boundary artifact, not a
+//   measurement of denise_colortable, so no assertion is made on it. The 9
+//   "bits 15-12 unused" ids sit in OUT OF SCOPE below with this as their
+//   reason -- PACKAGE.md's own "MEASURED (d_denise)" note for these same
+//   ids establishes the fact one level up, at a boundary that actually has
+//   a 16-bit-wide bus to truncate, and it cannot be re-derived from a
+//   12-bit port that never receives the extra bits.
 //
 // OUT OF SCOPE -- not asserted anywhere below; each names a mechanism
 //   this fixture's ports cannot reach (denise_colortable only sees
@@ -154,7 +144,7 @@
 //   3-colortable.c13, 3-t3.c01, 3-colorsum.c6, 3-colorsum.c7, A-color.c10,
 //     A-color.c7, A-color.c8, A-color.c9, A-colorxx.bits1 (p.46/92/273):
 //     "bits 15-12 unused" -- data_in is declared exactly [11:0] at this
-//     boundary; see the RETRACTED note above. Settling this needs the
+//     boundary; see NO HIGH-NIBBLE ASSERTION above. Settling this needs the
 //     wider boundary (denise.v / d_denise) where a real 16-bit bus exists
 //     and is truncated before reaching this module - PACKAGE.md's own
 //     evidence for these ids already places that measurement there, not
@@ -181,7 +171,7 @@
 //     geometry/timing concern with no port on this boundary.
 //
 // MUTATION REG-09 stimulus red: register 9's two write calls were redirected to register 10 (write_idx = idx+1) while the read stayed at register 9; register 9 was never touched, so after_a == after_b instead of differing.
-// MUTATION ADDR-32-DISTINCT stimulus red: register 15 was written with register 14's 12-bit pattern instead of its own distinct one (register 15 still correctly targeted - only the value changed), so two of the 32 registers held identical content and the pairwise-distinct check found a collision. (An earlier version of this mutation redirected the address instead of the value - idx=15's write landing on register 14 - and stayed green: register 14 ends up holding pattern(15), a value still unique among the 32, and register 15's untouched reset/black value is also unique, so nothing collides. Recorded here since it is the reason this mutation is value-based, not address-based.)
+// MUTATION ADDR-32-DISTINCT stimulus red: register 15 was written with register 14's 12-bit pattern instead of its own distinct one (register 15 still correctly targeted - only the value changed), so two of the 32 registers held identical content and the pairwise-distinct check found a collision. (Redirecting the address instead of the value - idx=15's write landing on register 14 - stays green: register 14 ends up holding pattern(15), a value still unique among the 32, and register 15's untouched reset/black value is also unique, so nothing collides. That is why this mutation is value-based, not address-based.)
 // MUTATION SWEEP-12BIT-DISTINCT stimulus red: sweep entry 4 (0x555) was replaced with entry 3's pattern (0x3F0) instead of its own value, producing a duplicate among the 9 writes and a collision in the distinctness check.
 // MUTATION RED-FIELD-BITS-11-8 stimulus red: the bit probed for R3 (bit 11) was moved to bit 7 (G3) instead, so the green byte changes when the check expects only the red byte to move.
 // MUTATION GREEN-FIELD-BITS-7-4 stimulus red: the bit probed for G3 (bit 7) was moved to bit 11 (R3) instead, so the red byte changes when the check expects only the green byte to move.
@@ -286,7 +276,7 @@ public:
 
     // Writes `val` (0..0xFFF; data_in is declared [11:0] in the RTL, so
     // any caller-supplied bits above that are not meaningful here - see
-    // the RETRACTED note near the top of this file) to color register
+    // NO HIGH-NIBBLE ASSERTION near the top of this file) to color register
     // `idx` (0..31) via reg_address_in/data_in, then parks reg_address_in
     // on an address the write decode does not recognise so the value is
     // not re-latched on later ticks (mirrors hrm/denise_colortable/'s
@@ -333,8 +323,7 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // CONTROL -- the fixture can deliver a known value before anything below
-    // is trusted to read one back (package brief, "the fixture proves it can
-    // deliver a known value before anything reads one").
+    // is trusted to read one back.
     // =========================================================================
     {
         Harness h;
@@ -774,10 +763,8 @@ int main(int argc, char** argv) {
     // whole-nibble stimulus: a register that stored only some of a
     // nibble's bits would still pass a whole-nibble ($F00/$0F0/$00F)
     // stimulus, because that only checks that the byte moved at all, not
-    // that all four bits of the nibble each move it. The whole-nibble
-    // stimulus was the control originally here and could not tell that
-    // case apart from a design that stores all four bits; replaced with
-    // the per-bit walk. This claim bundles all three channels in one
+    // that all four bits of the nibble each move it. This claim bundles all
+    // three channels in one
     // sentence, so it gets one assertion of its own rather than a citation
     // split across those three single-channel groups. This module has no
     // SuperHires-mode port at all, so this measurement already sits
