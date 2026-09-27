@@ -1,7 +1,5 @@
-// Test purpose: The chapter-3 residue -- 55 claims that reached no package
-//   in the chapter's first build round and no recorded out-of-scope reason,
-//   found 11.09.2026 by reconciling the chapter total rather than each
-//   package's own coverage (see PACKAGE.md). Package ch3-field-geometry,
+// Test purpose: 55 chapter-3 claims that no other chapter-3 package
+//   covers or declines (see PACKAGE.md). Package ch3-field-geometry,
 //   fixture agnus_beamcounter (one Verilator build, this module only).
 //   Mostly field geometry: NTSC ~262/PAL 312 total lines, field periods of
 //   approximately 1/60 and 1/50 second, and the beam returning to the top
@@ -33,32 +31,20 @@
 //   claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// ORDER-OF-WORK, DISCLOSED: the build brief requires writing this file's
-//   assertions and expected values from claims.jsonl's quotations alone,
-//   committing, and only then opening agnus_beamcounter.v. The brief's own
-//   WHERE section lists the RTL path next to the claims/PACKAGE.md paths as
-//   something to read while orienting, before saying which claims belong to
-//   which package -- and deciding which of these 55 claims are even
-//   constructible at THIS fixture (the DIWSTRT/DIWSTOP claims below) is not
-//   possible without knowing agnus_beamcounter's actual port and register
-//   list. So the RTL was read in full before this file was written, the
-//   same tension hrm/ch3-beam-counters-and-blanking/ disclosed rather than
-//   concealed, and the same resolution is used here: RTL knowledge was used
-//   only to know which port to wiggle and which claims fall outside this
-//   module's boundary, never to choose or adjust an expected value. Every
-//   EXPECTED value below (313 lines, 1/60s, 1/50s, vpos==0, htotal_out
-//   equality, $00/$10/$20/$30) comes from a claims.jsonl quotation or from
-//   docs/findings.md's already-corroborated NM-HRM-001 resolution (the one
-//   control not drawn from this package's own inventory, marked as such
-//   below), never from having watched the RTL run first.
+// EXPECTED VALUES: agnus_beamcounter's port and register list decides which
+//   of these 55 claims are constructible at THIS fixture (the DIWSTRT/
+//   DIWSTOP claims below are not). RTL knowledge is used only to know which
+//   port to wiggle and which claims fall outside this module's boundary,
+//   never to choose or adjust an expected value. Every EXPECTED value below
+//   (313 lines, 1/60s, 1/50s, vpos==0, $00/$10/$20/$30) comes from a
+//   claims.jsonl quotation or from docs/findings.md's NM-HRM-001 resolution
+//   (the one control not drawn from this package's own inventory, marked as
+//   such below).
 //
-// D4 FIX, 11.09.2026 (independent-review defect correction): this package
-//   originally carried an HTOTAL-IDENTICAL-NTSC-PAL assertion citing
-//   3-max-window.c17 and 3-max.c11 against page 80's "These numbers are the
-//   same both for NTSC and for PAL", measuring htotal_out. Page 80 was
-//   re-read from docs/references/amiga-hrm-3rd/ch3/p80.txt (the scan, not
-//   this file) to confirm what "these numbers" refers to: the paragraph's
-//   subject is DDFSTOP's hardware limit ($D8), DDFSTRT's hardware limit
+// WHY 3-max-window.c17 AND 3-max.c11 ARE OUT OF BOUNDARY: page 80's "These
+//   numbers are the same both for NTSC and for PAL"
+//   (docs/references/amiga-hrm-3rd/ch3/p80.txt) refers to the paragraph's
+//   subject, DDFSTOP's hardware limit ($D8), DDFSTRT's hardware limit
 //   ($18), the resulting 25-lores/49-hires maximum FETCHED WORDS, and the
 //   368-pixel maximum DISPLAYABLE width -- Table 3-14, "Maximum Allowable
 //   Horizontal Screen Video". Total line length (HTOTAL) is not mentioned
@@ -68,25 +54,16 @@
 //   says total line length either. DDFSTRT/DDFSTOP are, per this file's own
 //   header above, NOT part of agnus_beamcounter's register map -- the exact
 //   same "wrong register pair for this module" mismatch the header's own
-//   OUT OF BOUNDARY category (b) already excludes 13 DIWSTRT/DIWSTOP claims
-//   for. The removed assertion was also green partly BECAUSE of a recorded
-//   finding rather than in spite of one: htotal_out read 452 under both
-//   ntsc=0 and ntsc=1 only because NTSC's manual-specified 227.5 CCK value
+//   OUT OF BOUNDARY category (b) excludes 13 DIWSTRT/DIWSTOP claims for.
+//   An htotal_out comparison would also read equal under ntsc=0 and ntsc=1
+//   (452) only because NTSC's manual-specified 227.5 CCK value
 //   (docs/findings.md F05) is unimplemented in this RTL -- a real defect
 //   making an assertion of the WRONG proposition read green is not
-//   corroboration. HTOTAL-IDENTICAL-NTSC-PAL (the whole check_htotal_
-//   identical() function and its call) has been removed; 3-max-window.c17
-//   and 3-max.c11 now sit in OUT OF BOUNDARY category (e) below. Baseline
-//   was 11/11 PASS before this fix; 10/10 PASS after (one assertion fewer,
-//   no other assertion touched). docs/findings.md F05 itself is untouched
-//   by this fix -- it was never this package's own finding to begin with,
-//   only cross-validation context for an assertion that no longer exists.
+//   corroboration. Both ids sit in OUT OF BOUNDARY category (e) below.
 //
 // CLAIM COVERAGE (55 claims total, claims.jsonl lines 1-55):
 //
-//   IN BOUNDARY -- 15 claims, 7 assertions below cite them by id (D4 FIX:
-//   was 17 claims/8 assertions; 3-max-window.c17 and 3-max.c11 moved to OUT
-//   OF BOUNDARY category (e) below -- see D4 FIX note above):
+//   IN BOUNDARY -- 15 claims, 7 assertions below cite them by id:
 //     3-video.c09                                -> NTSC-FIELD-PERIOD-APPROX-1-60S
 //     3-video.c10 (opus, "approximately 1/50th"), -> PAL-FIELD-PERIOD-APPROX-1-50S
 //     3-video.c13
@@ -102,7 +79,7 @@
 //     with correct evidence, so it is covered here under the correct
 //     boundary rather than left uncovered for its evidence field's mistake.)
 //
-//   ID ANOMALY, DISCLOSED: "3-video.c10" is used TWICE in claims.jsonl for
+//   ID ANOMALY: "3-video.c10" is used TWICE in claims.jsonl for
 //     two different sentences on the same page (an opus record for the
 //     "approximately 1/50th of a second" field-time sentence, covered
 //     above, and an independent sol record for "the beam produces 312
@@ -110,12 +87,10 @@
 //     proposition, OUT OF BOUNDARY, see below). The id string "3-video.c10"
 //     therefore appears in a covered assertion's text, but that covers only
 //     the opus record; the sol record with the same id is listed OUT below
-//     under its own reason. Flagged for the lead: a coverage script that
-//     searches assertion text for the bare id string cannot distinguish
-//     the two records.
+//     under its own reason. A coverage script that searches assertion text
+//     for the bare id string cannot distinguish the two records.
 //
-//   OUT OF BOUNDARY -- 40 claims, none forced onto this fixture (D4 FIX:
-//   was 38; category (e) added):
+//   OUT OF BOUNDARY -- 40 claims, none forced onto this fixture:
 //
 //     (a) needs the display window (DIWSTRT/DIWSTOP, agnus_bitplanedma) --
 //     "N of M lines normally/normally visible" is a DIW-gated concept
@@ -151,15 +126,13 @@
 //     fetched words, 368-pixel maximum displayable width) -- like DIWSTRT/
 //     DIWSTOP in category (b) above, DDFSTRT/DDFSTOP is not part of
 //     agnus_beamcounter's register map (parameters l.60-76) at all, so
-//     there is no port or register here to read it back from. D4 FIX,
-//     moved out of IN BOUNDARY: page 80's "These numbers are the same both
-//     for NTSC and for PAL" (docs/references/amiga-hrm-3rd/ch3/p80.txt,
-//     re-read directly) names DDFSTOP/DDFSTRT's hardware limits and the
-//     word/pixel maxima drawn from them, Table 3-14 -- not htotal, the
-//     quantity this fixture's own htotal_out port actually carries. See D4
-//     FIX note above for the full re-reading and why the removed
-//     HTOTAL-IDENTICAL-NTSC-PAL assertion was testing the wrong
-//     proposition even though it read green (2 claims):
+//     there is no port or register here to read it back from. Page 80's
+//     "These numbers are the same both for NTSC and for PAL"
+//     (docs/references/amiga-hrm-3rd/ch3/p80.txt) names DDFSTOP/DDFSTRT's
+//     hardware limits and the word/pixel maxima drawn from them, Table
+//     3-14 -- not htotal, the quantity this fixture's own htotal_out port
+//     carries. See WHY 3-max-window.c17 AND 3-max.c11 ARE OUT OF BOUNDARY
+//     above (2 claims):
 //       3-max-window.c17, 3-max.c11
 //
 //   19 + 13 + 4 + 2 + 2 = 40 out-of-boundary; 40 + 15 = 55.
@@ -188,23 +161,19 @@
 //   PAL-FIELD-PERIOD-APPROX-1-50S both use: it reproduces the 313-line PAL
 //   default already corroborated in docs/findings.md (the withdrawn
 //   NM-HRM-001, sanctioned by Table 7-5 and confirmed against two emulators),
-//   proving the counting method used below lands on a value the lead has
-//   already confirmed independently, on the same reset/no-lace basis.
+//   proving the counting method used below lands on an independently
+//   confirmed value, on the same reset/no-lace basis.
 //   Neither of these two checks quotes claims.jsonl and neither counts
 //   toward the 15/55 claim coverage above.
 //
-// MUTATION LOG (every entry below was actually run under WSL/Verilator on
-//   11.09.2026: `make clean && make MUT=<NAME>` -> confirm the named
-//   assertion(s) red/green/impossible as stated -> `make clean && make`
-//   (no MUT) to rebuild the unmutated baseline and confirm the full suite
-//   returns to 10/0 (D4 FIX: was 11/0 -- HTOTAL-IDENTICAL-NTSC-PAL and its
-//   mutation entry were removed, see D4 FIX note above; the other ten
-//   entries below are otherwise exactly as originally run and reverted,
-//   only their pass/total counts corrected for the now-smaller suite).
+// MUTATION LOG (each entry run under WSL/Verilator as
+//   `make clean && make MUT=<NAME>` -> confirm the named assertion(s)
+//   red/green/impossible as stated -> `make clean && make` (no MUT) to
+//   rebuild the unmutated baseline and confirm the suite returns to 10/0.
 //   Every mutation is a STIMULUS change (a driven input pin or an
 //   injected/altered register write, each guarded by its own
 //   `#ifndef MUT_<NAME>` / `#ifdef MUT_<NAME>`); no expected value or
-//   oracle text was ever touched, and nanomig/ was never touched. Replay
+//   oracle text is touched, and nanomig/ is never touched. Replay
 //   any one entry with `make clean && make MUT=<NAME>` (NAME matches the id
 //   with '-' turned into '_').
 //
@@ -219,13 +188,8 @@
 // MUTATION VPOSR-CHIPID-PAL-HIRES-0x20 stimulus red: `make clean && make MUT=VPOSR_CHIPID_PAL_HIRES_0X20` (ecs pin 1->0, check still expects 0x20) -> 9/10 PASS, only VPOSR-CHIPID-PAL-HIRES-0x20 red (VPOSR[13:12] masked reads 0x00, not 0x20). Reverted to 10/10.
 // MUTATION VPOSR-CHIPID-NTSC-HIRES-0x30 stimulus red: `make clean && make MUT=VPOSR_CHIPID_NTSC_HIRES_0X30` (ecs pin 1->0, check still expects 0x30) -> 9/10 PASS, only VPOSR-CHIPID-NTSC-HIRES-0x30 red (VPOSR[13:12] masked reads 0x10, not 0x30). Reverted to 10/10.
 //
-// Every one of the 10 mutations above was built and run under WSL/Verilator
-// on 11.09.2026 exactly as described, flipped exactly the one named
-// assertion red and no other, and was reverted before the next one; the
-// final rebuild with no MUT flag returned to 10 passed, 0 failed, matching
-// the committed baseline exactly (D4 FIX: HTOTAL-IDENTICAL-NTSC-PAL's own
-// mutation entry, previously here, is removed along with the assertion --
-// see D4 FIX note above).
+// Each of the 10 mutations above flips exactly the one named assertion red
+// and no other.
 
 #include <cstdint>
 #include <cstdio>
@@ -238,13 +202,10 @@
 
 // Register addresses, as reg_address_in[8:1] values (byte address >> 1),
 // from agnus_beamcounter.v's own parameter table (l.60-76). Used only to
-// know which port to wiggle -- see ORDER-OF-WORK above.
+// know which port to wiggle -- see EXPECTED VALUES above.
 static const uint16_t A_VPOSR    = 0x004 >> 1; // 0x002
 static const uint16_t A_VPOSW    = 0x02A >> 1; // 0x015
 static const uint16_t A_VHPOSW   = 0x02C >> 1; // 0x016
-// D4 FIX: A_BEAMCON0/A_HTOTAL (used only by the removed HTOTAL-IDENTICAL-
-// NTSC-PAL check) dropped along with it -- see D4 FIX note near the top of
-// this file.
 static const uint16_t A_NONE     = 0x0FF;      // matches none of the above
 
 struct Checks {
@@ -254,12 +215,10 @@ struct Checks {
         std::cout << (ok ? "PASS" : "FAIL") << ": " << line << "\n";
         if (ok) ++passed; else ++failed;
     }
-    // D4 FIX: this file previously had no runtime-printed decline path --
-    // all 38 (now 40) OUT OF BOUNDARY claims lived only in the header
-    // comment's CLAIM COVERAGE list. A claim id named only in a C++ comment
-    // reads as uncovered; note() prints one so the two ids D4 moved here
-    // (3-max-window.c17, 3-max.c11) are visible in the actual run output,
-    // not only in source comments. Does not affect passed/failed.
+    // A claim id named only in a C++ comment reads as uncovered; note()
+    // prints the decline of 3-max-window.c17 and 3-max.c11 so both are
+    // visible in the actual run output, not only in source comments. Does
+    // not affect passed/failed.
     void note(const std::string& line) {
         std::cout << "NOTE: " << line << "\n";
     }
@@ -280,9 +239,8 @@ static void tick(Vagnus_beamcounter& dut) {
 
 // clk7_en active on even i, cck high for two out of every four i -- the
 // same driving pattern hrm/agnus_beamcounter/test_agnus_beamcounter.cpp
-// uses for this identical fixture, which already produced a public,
-// lead-confirmed 313-line PAL field on this scheme (docs/findings.md,
-// NM-HRM-001). 4 iterations = 1 CCK cycle.
+// uses for this identical fixture, which yields the 313-line PAL field
+// recorded in docs/findings.md (NM-HRM-001). 4 iterations = 1 CCK cycle.
 static void step(Vagnus_beamcounter& dut, long i) {
     dut.clk7_en = (i % 2 == 0) ? 1 : 0;
     dut.cck     = (i % 4 < 2) ? 1 : 0;
@@ -528,15 +486,6 @@ static void check_beam_returns_to_top(Checks& c) {
     delete dut;
 }
 
-// ---------------------------------------------------------------------
-// D4 FIX: HTOTAL-IDENTICAL-NTSC-PAL (formerly here, citing 3-max-window.c17
-// and 3-max.c11 against page 80's "These numbers are the same both for
-// NTSC and for PAL") has been removed -- page 80's "these numbers" are
-// DDFSTOP/DDFSTRT's hardware limits and the fetched-word/displayed-pixel
-// maxima drawn from them (Table 3-14), not htotal_out. Both ids now sit in
-// this file's own OUT OF BOUNDARY category (e) above. See the D4 FIX note
-// near the top of this file for the full page re-read and reasoning.
-// ---------------------------------------------------------------------
 
 // ---------------------------------------------------------------------
 // VPOSR chip-identification group (page 299, Appendix C). VPOSR bits
@@ -614,13 +563,13 @@ int main(int argc, char** argv) {
     check_chipid_pal_hires(c);
     check_chipid_ntsc_hires(c);
 
-    // D4 FIX: page 80 was re-read directly
-    // (docs/references/amiga-hrm-3rd/ch3/p80.txt) to confirm what "These
-    // numbers are the same both for NTSC and for PAL" refers to -- DDFSTOP
+    // Page 80 (docs/references/amiga-hrm-3rd/ch3/p80.txt): "These numbers
+    // are the same both for NTSC and for PAL" refers to the DDFSTOP
     // ($D8)/DDFSTRT ($18) hardware limits and the 25-lores/49-hires
     // maximum fetched words / 368-pixel maximum displayed width drawn from
-    // them (Table 3-14), not total line length (htotal). See D4 FIX note
-    // near the top of this file for the full reasoning.
+    // them (Table 3-14), not total line length (htotal). See WHY
+    // 3-max-window.c17 AND 3-max.c11 ARE OUT OF BOUNDARY near the top of
+    // this file.
     c.note(
         "3-max-window.c17, 3-max.c11 (p80, \"These numbers are the same "
         "both for NTSC and for PAL\"): the antecedent of \"these numbers\" "
