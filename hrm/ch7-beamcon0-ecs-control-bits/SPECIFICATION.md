@@ -323,9 +323,9 @@ fixture-delivers-a-known-word rule applied to this fixture and these claims:
 
 ## Control case
 
-P4, P6, P7, P8 and P9 (bits 14, 11, 9, 8, 7) and P10's bit-table half (bit
-5) are, per their own `covered_by` fields, already independently asserted
-by `hrm/ch3-beam-counters-and-blanking` on this same fixture. They are this
+P4, P7, P8 and P9 (bits 14, 9, 8, 7) and P10's bit-table half (bit 5) are,
+per their own `covered_by` fields, already independently asserted by
+`hrm/ch3-beam-counters-and-blanking` on this same fixture. They are this
 package's control cases against the units-error objection: measured here on
 the identical fixture and the identical "toggle the bit, observe the
 effect" technique as P5 (VARVBEN, graded by no other package) and P11-P13
@@ -334,6 +334,11 @@ known to be live from another package's testing reads live here too, that
 confirms this package's own measurement technique is sound on this fixture
 -- so that a red result on P5 or P11-P13 can be trusted as a finding about
 the design, not blamed on a broken meter.
+
+P6 (bit 11, LOLDIS) is not a control case, although its `covered_by` field
+names the same package: `hrm/ch3-beam-counters-and-blanking` sets LOLDIS
+together with VARBEAMEN, while P6 sets LOLDIS alone, as p.305 prints the
+bit, and P6 is red (NM-HRM-033).
 
 ## Claims accounted for
 

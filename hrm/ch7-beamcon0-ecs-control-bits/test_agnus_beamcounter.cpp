@@ -510,9 +510,9 @@ int main(int argc, char** argv) {
             "10>6) once VARVBEN and VARBEAMEN are both set -- 'assign vbl "
             "= (vpos <= vbstop)' (l.444), 'wire [10:0] vbstop = varvben && "
             "varbeamen ? vbstop_reg : ...' (l.233). '12 VARVBEN Use "
-            "VBSTRT/STOP disable hard window stop' (p.305). THE NEW "
-            "ASSERTION on this fixture -- claimed nowhere else in the "
-            "suite today. sol:7-appC-beamcon0.c5, opus:7-appC-beamcon0.c5.");
+            "VBSTRT/STOP disable hard window stop' (p.305). No other "
+            "package in the suite cites this row. "
+            "sol:7-appC-beamcon0.c5, opus:7-appC-beamcon0.c5.");
 
         Harness h_varvben_alone(/*ecs=*/true, /*ntsc=*/true);
         h_varvben_alone.write_reg(A_VBSTOP, 6);
