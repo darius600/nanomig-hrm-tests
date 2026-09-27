@@ -117,8 +117,9 @@ exclusivity word ("only") whose bare grading would overreach.
   report a DATA-field defect against a conforming encoder that would not be
   there. THIS IS THE SAME UNDERLYING FACT as
   `ch8-dskbytr-status-register`/A9 and
-  `ch8-disk-register-map-paula-floppy`/B4, graded identically in all three
-  packages. RED: measured `known_word=0xFFFF` (bound, at pop #33), DSKBYTR's
+  `ch8-disk-register-map-paula-floppy`/B4, graded against a known, bound
+  byte in all three packages (A9 finds the payload index by search; B4 and
+  this package use the fixed index). RED: measured `known_word=0xFFFF` (bound, at pop #33), DSKBYTR's
   DATA field reads 0x00 (`paula_floppy.v:699` hardwires bits 7:0 to 8'h00).
 - **P-CIAAPRA-FOUR-BITS** — `opus:8-dsk.c21`, `sol:8-reglist.c4` (twins),
   and **P-CIAAPRA-SENSING** — `opus:8-dsk.c22`. Four independently-

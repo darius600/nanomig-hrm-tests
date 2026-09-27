@@ -96,8 +96,9 @@
 //   KNOWN incoming byte (0xFF) is bound to the DSKBYTR sampling instant
 //   through the DSKDATR/FIFO, the technique ch8-mfm-cell-encoding uses.
 //   THIS IS THE SAME UNDERLYING FACT as ch8-dskbytr-status-register/A9 and
-//   ch8-disk-register-map-paula-floppy/B4 -- one fact, graded identically
-//   in all three packages that carry it.
+//   ch8-disk-register-map-paula-floppy/B4 -- one fact, graded against a
+//   known, bound byte in all three packages that carry it (A9 there finds
+//   the payload index by search; B4 and this package use the fixed index).
 //   The locator is the fixed, RTL-structural FIRST_PAYLOAD_POP_INDEX (=33)
 //   defined below, taken from paula_floppy.v's own word-counter framing
 //   thresholds (:484-497), a piece of logic structurally distinct from the
@@ -624,9 +625,9 @@ int main(int argc, char** argv) {
     // A KNOWN incoming byte (0xFF) is bound to the DSKBYTR sampling instant
     // (see the file header's DSKBYTR DATA-FIELD SAMPLING note). THIS IS THE
     // SAME UNDERLYING FACT as ch8-dskbytr-status-register/A9 and
-    // ch8-disk-register-map-paula-floppy/B4 -- one fact, graded identically
-    // in all three packages that carry it (each package's own
-    // header/SPECIFICATION.md says so).
+    // ch8-disk-register-map-paula-floppy/B4 -- one fact, graded against a
+    // known, bound byte in all three packages that carry it (each
+    // package's own header/SPECIFICATION.md says so).
     //
     // The trial feeds a uniform 0xFF sector, discards pops up to just
     // before the fixed payload-start index (FIRST_PAYLOAD_POP_INDEX, defined
