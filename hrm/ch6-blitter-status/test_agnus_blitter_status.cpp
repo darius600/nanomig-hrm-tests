@@ -27,11 +27,9 @@
 //   claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// Supersedes hrm/agnus_blitter_zero, per the build register. That package
-// compiles a local copy of agnus_blitter.v:481-487 pasted into its own .v file
-// (see docs/evidence/blitter-prior-art.md, "Defect 1") - a change to agnus_blitter.v
-// cannot make it go red. It is NOT deleted here: it stays in the tree, unchanged
-// and still green, until this package is confirmed green in its place.
+// Supersedes hrm/agnus_blitter_zero, which tested a local copy of
+// agnus_blitter.v:481-487 rather than the design; see
+// docs/evidence/blitter-prior-art.md, "Defect 1".
 //
 // CLAIM COVERAGE. Seven claims below are declined, each with its own
 // RECORDED: line printed at runtime (see the "Claims declined at this
@@ -61,15 +59,15 @@
 //     about historical deployment, not a hardware behaviour with any signal
 //     to name - not asserted, and not constructible.
 //
-// PROPOSITIONS. Quote, restatement and page for each, with the disposition
-// each reached after the RTL was opened given last:
+// PROPOSITIONS. Quote, restatement and page for each, with each one's
+// disposition given last:
 //   ch6-blockdiag.c11 (p.198) quote "Not shown on this diagram is the logic
 //     for zero detection, which" -- restated: the logic for zero detection
 //     is not shown on Figure 6-13. RECORDED (same claim as above).
 //   6-blitter-done-flag.c4 (p.186) quote "A blitter done flag, also called
 //     the blitter busy flag, is provided as" -- restated: the blitter-done
-//     flag is also called the blitter-busy flag. RECORDED (revised from an
-//     earlier GRADED disposition): the restatement is nomenclature - both
+//     flag is also called the blitter-busy flag. RECORDED: the restatement
+//     is nomenclature - both
 //     BUSY-MIDBLIT and BUSY-FLAG-ON-COMPLETION would print the same whatever
 //     the flag is called, and would still pass beside a separate "done"
 //     output. The behaviour actually measured, set during the blit and
@@ -88,8 +86,8 @@
 //   ch6-done.c7 (p.186) quote "DMAF_BLTDONE (bit 14) in DMACONR. This flag
 //     is set when a blit is in" -- restated: the blitter done flag is set
 //     when a blit is in progress. GRADED: this is exactly what BUSY-MIDBLIT
-//     measures (busy=1 after two of four words stored); its twin
-//     6-blitter-done-flag.c6 was already on that label, this id joins it.
+//     measures (busy=1 after two of four words stored), cited on that label
+//     alongside its twin 6-blitter-done-flag.c6.
 //   6-blitter-done-flag.c13 (p.187) quote "when the blitter gets its first
 //     DMA cycle. However, not all machines" -- restated: on pre-Fat-Agnus
 //     chips, the busy bit becomes set when the blitter receives its first
@@ -103,20 +101,17 @@
 //     newer chips in which the busy bit is fixed. RECORDED (same claim as
 //     above).
 //
-// FIXTURE NOTE FOR THE NEXT NINE agnus_blitter PACKAGES.
-//   The starting harness salvaged into scratchpad/salvaged-harness/diag.cpp had
-//   correct busy/int3/we timing but never actually delivered data: every
-//   data_out at every we came back 0. The cause, found by diffing against the
-//   known-good hrm/ch2-copper-waitskip-range harness: on a DMA grant, that
-//   harness sets ackdma/reg_address_in/data_in and then calls dut->eval() AGAIN
-//   before toggling the clock. The salvaged diag.cpp skipped that second eval()
-//   - it set the grant signals and went straight to `clk=1; eval();`. The fix
-//   below (see Harness::cycle) restores that second eval(). TEST-DATA-DELIVERY
-//   below is the assertion that proves the fix actually works - it must stay
-//   green for any data-dependent assertion in this file (or a descendant
-//   fixture) to mean anything.
+// FIXTURE NOTES FOR agnus_blitter HARNESSES.
+//   First: on a DMA grant, Harness::cycle sets ackdma/reg_address_in/data_in
+//   and then calls dut->eval() AGAIN before toggling the clock, as the
+//   hrm/ch2-copper-waitskip-range harness does. A harness that sets the grant
+//   signals and goes straight to `clk=1; eval();` still shows correct
+//   busy/int3/we timing but never delivers data: every data_out at every we
+//   reads 0. TEST-DATA-DELIVERY below is the assertion that proves data
+//   arrives - it must stay green for any data-dependent assertion in this
+//   file (or a descendant fixture) to mean anything.
 //
-//   Second trap, found while building this package: BLTAFWM/BLTALWM (the A
+//   Second: BLTAFWM/BLTALWM (the A
 //   channel's first/last-word masks) default to 0 after reset. bltamask uses
 //   them whenever first_word or last_word is true (agnus_blitter.v:311-319), so
 //   any test that drives the A channel and does not explicitly write
@@ -156,19 +151,14 @@
 //   state, and that is also the value the busy register's non-blocking update
 //   captures on this same clock edge - so int3 must be sampled BEFORE this
 //   tick's own edge to land on the same tick index as the busy-registered
-//   fall it causes. Sampled after the edge (the natural thing to do, and what
-//   an early draft of this harness did), int3 reads one tick early relative to
+//   fall it causes. Sampled after the edge (the natural thing to do), int3
+//   reads one tick early relative to
 //   when busy is observed to fall, because by then the FSM has already moved
 //   past the state that made `done` true. See Harness::cycle's `last_int3`.
 //
 // Every mutation below was actually applied (edit -> rebuild -> run -> revert
 // -> rebuild-clean) and the FAIL/PASS lines quoted are what the run printed,
-// not predictions. Two were wrong on the first attempt and are recorded that
-// way: BUSY-NO-DMA-NEEDED stayed green under BUSY-SET's mutation (a first
-// draft of this comment claimed it would also fail - it does not, and that is
-// the correct shape, not a defect); Z-CLEAR's first version passed under the
-// Z-FINAL mutation for the wrong reason (see below) and was fixed before being
-// counted as covered.
+// not predictions.
 //
 // MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed from
 //   0x9ABC to 0x9ABD (expected constants left untouched) -> FAIL, the third
@@ -204,15 +194,12 @@
 //   0x0000, making the whole run all-zero -> Z-FINAL and Z-CLEAR both FAIL
 //   (zero never clears, so there is no clearing tick to find and the
 //   post-completion sample stays 1); Z0 and Z-CTRL stay PASS (an all-zero run
-//   still starts at 1 and is still 1 mid-blit). Z-CLEAR only failed here after
-//   a fixture bug found BY this mutation was fixed first: its original search
-//   for "the first tick zero reads 0" scanned the WHOLE log, including the
-//   few cycles before the blit's own BLT_INIT sets zero to 1 for the first
-//   time (zero has no reset branch and defaults to 0) - so it was finding
-//   that pre-init tick and passing regardless of whether a real clearing word
-//   was ever stored. Restricting the search to ticks after Z0's "zero is now
-//   1" point (zero_set_tick) fixed it; re-run, this mutation then failed
-//   Z-CLEAR as it should.
+//   still starts at 1 and is still 1 mid-blit). Z-CLEAR fails here because
+//   its search for "the first tick zero reads 0" starts after Z0's "zero is
+//   now 1" point (zero_set_tick): zero has no reset branch and defaults to 0,
+//   so a search over the WHOLE log would find a tick before the blit's own
+//   BLT_INIT sets zero to 1 and pass regardless of whether a real clearing
+//   word was ever stored.
 // MUTATION Z-NEVER-RESTORED stimulus red: the middle (nonzero) word changed
 //   from 0x0001 to 0x0000, making the whole 3-word run all-zero -> both the
 //   "[setup] after the second word zero has cleared" check and
@@ -229,11 +216,6 @@
 // MUTATION Z-AND-RESULT stimulus red: b_words[1] changed from 0x2222 to 0x1111 (now
 //   equal to a_words[1]), so the second word's AND is 0x1111, not 0 -> both
 //   Z-AND-RESULT and Z-AND-STAYS FAIL as expected.
-//
-// SEVEN MORE, added after the gate's mutation check pointed out these seven
-// assertions were only ever discussed inside another assertion's record above,
-// never carrying one of their own under their own id. Each was re-run to get
-// its own line; none of the ten records above were altered.
 //
 // MUTATION BUSY-RELEASES stimulus red: same edit as BUSY-SET above (the
 //   register written to start the blit changed from BLTSIZE to BLTCON1, same
@@ -268,14 +250,14 @@
 //   discriminating mutation above, just a reminder that this stimulus is not
 //   the one that exercises it.
 // MUTATION BUSY-NO-DMA-NEEDED stimulus red: enadma left true (the
-//   h.set_enadma(false) call removed) across the BLTSIZE write. FIRST
-//   ATTEMPT, wait left at h.run_cycles(1): MISS, stayed PASS (green) - one
-//   cycle is not enough for the FSM to reach a DMA-requesting state (BLT_INIT
-//   has no dma_req; BLT_A's dma_req is `usea`, and this fixture never sets
-//   USEA), so no request had appeared yet at the point the check runs.
-//   REPLACEMENT, same enadma change with the wait widened from 1 to 20
-//   cycles: FAILs - reqdma is seen and the single word is actually delivered
-//   before the check runs. Collateral in the replacement run: BUSY-SET and
+//   h.set_enadma(false) call removed) across the BLTSIZE write, with the wait
+//   widened from 1 to 20 cycles: FAILs - reqdma is seen and the single word
+//   is actually delivered before the check runs. The wider wait is needed:
+//   with the wait left at h.run_cycles(1) the same enadma change stays PASS
+//   (green) - one cycle is not enough for the FSM to reach a DMA-requesting
+//   state (BLT_INIT has no dma_req; BLT_A's dma_req is `usea`, and this
+//   fixture never sets USEA), so no request has appeared yet at the point
+//   the check runs. Collateral in this run: BUSY-SET and
 //   BUSY-RELEASES FAIL too, because with 20 cycles and enadma on throughout,
 //   this 1-word blit runs to completion and busy has already fallen back to 0
 //   by the time BUSY-SET samples it - not a counterexample to their own
@@ -283,9 +265,7 @@
 //   doing more than the one thing it was aimed at.
 // MUTATION Z-AND-STAYS stimulus red: same edit as the "Z-AND-RESULT" record above
 //   (b_words[1] changed from 0x2222 to 0x1111) -> Z-AND-STAYS FAILs alongside
-//   Z-AND-RESULT. The existing record above used the id "Z-AND", which is not
-//   the same token as either "Z-AND-RESULT" or "Z-AND-STAYS"; this line
-//   closes that gap for Z-AND-STAYS under its own actual id.
+//   Z-AND-RESULT.
 
 #include <cstdint>
 #include <deque>
@@ -444,9 +424,9 @@ private:
         // read post-edge) at the SAME tick index. Sampling int3 after the edge
         // instead reads the NEXT state's `done`, which has already gone back
         // to 0 (the FSM has moved on) - that reads one tick late and never
-        // lines up with the busy-falls tick. Measured, not assumed: an earlier
-        // draft of this harness sampled post-edge and got int3 one tick ahead
-        // of the busy-falls tick every time.
+        // lines up with the busy-falls tick. Measured, not assumed: sampled
+        // post-edge, int3 lands one tick ahead of the busy-falls tick every
+        // time.
         last_int3 = dut->int3;
         last_we = false;
         last_data_out = 0;
@@ -467,9 +447,8 @@ private:
             dut->reg_address_in = reg;
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the combinational
-            // network BEFORE the clock edge. This is the step the salvaged
-            // diag.cpp harness skipped (see file header) - without it, every
-            // data_out at every we reads 0.
+            // network BEFORE the clock edge (see the file header's FIXTURE
+            // NOTES) - without it, every data_out at every we reads 0.
             dut->eval();
             // `we`/`data_out` are combinational off ackdma&&chsel==CHD, and
             // chsel changes on the VERY SAME edge that completes this grant
@@ -691,8 +670,8 @@ int main(int argc, char** argv) {
     {
         // Z0 / Z-CTRL / Z-FINAL / Z-CLEAR: one 4-word blit whose first three
         // words are zero and whose last is not. Z0 is the baseline before any
-        // word is stored; Z-CTRL is the deliberate mid-blit control sample the
-        // task brief calls for; Z-FINAL is the post-completion sample the
+        // word is stored; Z-CTRL is the deliberate mid-blit control sample;
+        // Z-FINAL is the post-completion sample the
         // sampling-rule claim is actually about; Z-CLEAR checks the clearing
         // tick itself, tying to p.198's "if there are any 1-bits... zero detect
         // is false".
