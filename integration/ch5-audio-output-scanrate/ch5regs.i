@@ -23,19 +23,15 @@ HTOTAL          equ     $1C0    ; W  ECS only (p.304)
 VTOTAL          equ     $1C8    ; W  ECS only (p.304)
 BEAMCON0        equ     $1DC    ; W  ECS only (p.304-305)
 
-; CIA-A Port A data register. SPECIFICATION.md 2.8 explains why a single
-; write here is needed: it is the only way this design makes chip RAM
-; below $080000 (the range the audio/disk pointer registers must target,
-; 2.1) real instead of the boot-time Kickstart-shadow window, and it is a
-; CIA-A write only -- it does not touch CIA-B, so no floppy drive select
-; line is ever driven (CIA-B is a separate chip-select, gary.v sel_cia_b).
+; CIA-A Port A data register. A single write here, measured, is what
+; makes chip RAM below $080000 (the range the audio/disk pointer
+; registers must target, 2.1) real instead of the boot-time
+; Kickstart-shadow window. It is a CIA-A write only; no floppy drive
+; select line is touched (see SPECIFICATION.md section 5).
 CIAAPRA         equ     $BFE001
 
-; Clear the overlay (any write to CIA-A; minimig.v: "ovl <= 0" on
-; sel_cia_a, unconditional on the data written). Chip bank 0
-; ($000000-$07FFFF) is otherwise gated "!ovl" (gary.v, cpuhlt is tied to
-; 0 in this build, so the gate is exactly !ovl, for CPU and DMA access
-; alike).
+; Clear the overlay: any write to CIA-A does this, measured, regardless
+; of the value written (see SPECIFICATION.md section 5).
 CLEAR_OVL       macro
                 move.b  #0,CIAAPRA
                 endm

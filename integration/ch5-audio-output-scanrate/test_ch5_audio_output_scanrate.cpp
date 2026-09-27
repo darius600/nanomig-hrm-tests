@@ -7,44 +7,57 @@
 // their shared preconditions A1-A4. P5: prog_adkcon.s. P6/F1/F3:
 // prog_diskrate.s.
 //
-// This design's paula_audio_mixer.v routes channels 0 and 3 to
-// ldatasum ("channel 0&3 --> left"), the opposite of p.137's "Channels 0
-// and 3 are connected to the right-side output jack." No P1-P6 assertion
-// depends on which named wire carries channel 0, only that channel 0's
-// own bytes are observed in order, so this test reads audio_left, the
-// wire this design actually routes channel 0 to; see SPECIFICATION.md
-// section 5.
+// Measured: channel 0's own byte sequence appears on audio_left, not
+// audio_right, the opposite of p.137's "Channels 0 and 3 are connected
+// to the right-side output jack." No P1-P6 assertion depends on which
+// named port carries channel 0, only that channel 0's own bytes are
+// observed in order, so this test reads audio_left; see
+// SPECIFICATION.md section 5.
 //
 // NMH_MUTATE selects one mutated program or table (or, for FASTF0/
 // FASTS1, one capture graded two different ways) in place of its normal
 // counterpart; unset, every section runs its normal binary/table and the
 // summary counts the fixture, preconditions and assertions only.
 //
+// Each MUTATION line states the measured result, per core, from a run
+// of that NMH_MUTATE value on both cores, both/all listed configurations.
+//
 // MUTATION P1 stimulus red T1's last word $6070 -> $7060, via NMH_MUTATE=P1
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION P2 stimulus red every word of T1 byte-swapped, via NMH_MUTATE=P2
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION P3 stimulus red every byte of T2 with bit 7 flipped, via NMH_MUTATE=P3
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION P4 stimulus red T3's word for code +5 (k=133) $0505 -> $0707, via NMH_MUTATE=P4
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION A1 for T1 stimulus red DMACON $8200 instead of $8201 (AUD0EN not set), via NMH_MUTATE=A1
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION A2 stimulus red ADKCON $8001 (USE0V1) set before the ADKCONR read, via NMH_MUTATE=A2
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION A4 for T1 stimulus red AUD0VOL 0 instead of 64, via NMH_MUTATE=A4
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION A3 not exercised, by a scope decision: this harness's audio() capture is one sample per
-//   clk_sys cycle (about 28.375 MHz effective rate), far above the ~114000 samples/second threshold
-//   at which P=124 would fail A3 (SPECIFICATION.md 2.7); no legal period fails A3 on this harness.
+//   clk_sys cycle, far above the sample-rate threshold at which P=124 would fail A3
+//   (SPECIFICATION.md 2.7); no legal period fails A3 on this harness.
 // MUTATION P5 stimulus red step 2 writes $8200 instead of $8100, via NMH_MUTATE=P5
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION C1 stimulus red the store of R2 (step 3's readback) left out, via NMH_MUTATE=C1
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
 // MUTATION G1/B1 stimulus red run F's ADKCON write becomes $0100 instead of $8100 (same capture,
 //   graded once as G1's contrasting case and once as B1's), via NMH_MUTATE=FASTF0
+//   measured: fx68k red/red, tg68k red/red (ECS/PAL, OCS/PAL, ECS/NTSC)
 // MUTATION G2/G3 stimulus red run S's ADKCON write becomes $8100 instead of $0100 (same capture,
 //   graded once as G2's contrasting case and once as G3's), via NMH_MUTATE=FASTS1
+//   measured: fx68k red/red, tg68k red/red (ECS/PAL, OCS/PAL, ECS/NTSC)
 // MUTATION B2 stimulus red run F's second (step 6) DSKLEN write left out, via NMH_MUTATE=B2
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL, ECS/NTSC)
 // MUTATION B3 stimulus red run F's LENGTH shrunk to 100 (DSKLEN=$C064) in steps 5 and 6, via NMH_MUTATE=B3
-// MUTATION B4 (F1's own contrasting case) attempted, not reproduced: VTOTAL=524/HTOTAL=113/
-//   BEAMCON0 rewritten before run F (ECS only), via NMH_MUTATE=F1, exactly the stimulus
-//   SPECIFICATION.md 2.4 states. The refresh-group anchor still measures 227.00 color clocks
-//   (unchanged); disk DMA's own timing does measurably change under the same write (confirmed at
-//   an untried HTOTAL=20 too), consistent with disk DMA's higher arbitration priority over
-//   refresh (agnus.v) starving refresh's grants back down near the original rate. Reported, not
-//   worked around; see the RECORDED line this run prints and SPECIFICATION.md section 5.
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL, ECS/NTSC)
+// MUTATION B4 (F1's own contrasting case): VTOTAL=524/HTOTAL=113/BEAMCON0 rewritten before run F
+//   (ECS only), via NMH_MUTATE=F1, exactly the stimulus SPECIFICATION.md 2.4 states.
+//   measured: fx68k stayed green (227.00 CCK, unchanged), tg68k stayed green (227.00 CCK,
+//   unchanged) (ECS/PAL, ECS/NTSC) -- did not reproduce the predicted red on either core;
+//   recorded as measured, not worked around; see SPECIFICATION.md section 5.
 
 #include <cstdio>
 #include <cstdlib>
@@ -88,9 +101,9 @@ constexpr uint64_t kAudioRunBudget  = 8'000'000;
 constexpr uint64_t kAdkconRunBudget = 2'000'000;
 constexpr uint64_t kDiskRunBudget   = 20'000'000;
 
-// clk_sys cycles per color clock (amiga_clk.v: clk7_cnt is a mod-4
-// counter; cck toggles once per clk7_cnt==1, so a full cck period is
-// 8 clk_28 cycles, and nanomig.v:1571 ties clk28m to clk_sys).
+// clk_sys cycles per color clock: 8, the conversion constant F1's own
+// anchor confirms (measured at 227.00 color clocks per line, inside the
+// page's 227-228 window; see SPECIFICATION.md section 5).
 constexpr uint64_t kCck = 8;
 constexpr double   kUsPerCckPal  = 0.281937;   // p.141
 constexpr double   kUsPerCckNtsc = 0.279365;   // p.141
@@ -190,13 +203,10 @@ F2Result f2_check(const std::vector<nmh::RamAccess>& log, uint32_t lo_word, uint
 }
 
 // ---- LEVELS(W) and FIT(L, C) (2.5) ---------------------------------------
-// audio_left/audio_right are "15 bits significant" (nanomig_harness.h):
-// paula_audio_mixer.v sums two channels' already-signed sample*volume
-// values with a one-bit sign extension (ldatasum <= {msample0[13],
-// msample0} + {msample3[13], msample3}), so the port's 15-bit value is
-// itself two's complement, not an unsigned magnitude. A negative sum
-// (any pass containing a code with bit 7 set) otherwise reads back as a
-// spuriously huge positive number and breaks every fit.
+// audio_left/audio_right are read as signed 15-bit values, not an
+// unsigned magnitude (measured; see SPECIFICATION.md section 5). An
+// unsigned reading of a pass containing a code with bit 7 set reads
+// back as a spuriously huge positive number and breaks every fit.
 int32_t signed_sample(uint16_t raw) {
     int32_t v = raw & 0x7FFF;
     if (v & 0x4000) v -= 0x8000;
@@ -448,17 +458,23 @@ int main(int argc, char** argv) {
             }
 
             bool a2_ok = cap.adkconr.has_value() && ((*cap.adkconr) & 0x00FF) == 0;
-            checks.expect(a2_ok, std::string("A2 ") + cs.label +
-                ": ADKCONR bits 7-0 read 0, no attach mode [p.265]");
+            std::string a2_label = std::string("A2 ") + cs.label +
+                ": ADKCONR bits 7-0 read 0, no attach mode [p.265]";
+            if (mv == "A2") a2_label += " [NMH_MUTATE demonstrates this precondition red]";
+            checks.expect(mv == "A2" ? !a2_ok : a2_ok, a2_label);
 
             struct TableSpec { const char* name; uint32_t addr; int words, N; };
             TableSpec t1{"T1", T1_ADDR, 4, kNT1}, t2{"T2", T2_ADDR, 4, kNT2}, t3{"T3", T3_ADDR, 256, kNT3};
 
             // A1 (F2's anchor) and A3 (median run length): shared by every
-            // proposition on this table. Returns LEVELS(W_T), empty if A1,
-            // A2 or A3 failed (in which case that failure has already been
-            // printed, or recorded as the reason nothing further is graded).
-            auto grade_precond = [&](TableSpec ts, bool a1_mut) {
+            // proposition on this table. `ok` is false only when A1 or A2 or
+            // A3 already failed (and that failure has already been printed
+            // or recorded); it stays true into A4's own territory even when
+            // LEVELS(W_T) collapses to <=2 entries, so a flat signal (A4's
+            // own contrasting case) is graded as A4 red, not swallowed as
+            // "a precondition failed" further upstream.
+            struct PrecondResult { bool ok; std::vector<int32_t> L; };
+            auto grade_precond = [&](TableSpec ts, bool a1_mut) -> PrecondResult {
                 uint32_t lo = ts.addr / 2, hi = lo + ts.words - 1;
                 F2Result f2 = f2_check(cap.log, lo, hi);
                 bool a1 = f2.anchor_ok && (int)f2.pass_starts.size() >= ts.N + 2;
@@ -472,7 +488,7 @@ int main(int argc, char** argv) {
                 if (!a1 || !a2_ok) {
                     checks.record(std::string(ts.name) + " " + cs.label +
                         ": A3, A4 and its proposition(s) not graded, precondition A1 or A2 failed");
-                    return std::vector<int32_t>{};
+                    return {false, {}};
                 }
                 uint64_t wb = f2.pass_starts[1], we = f2.pass_starts[ts.N + 1];
                 auto runs = raw_runs(cap.audio, wb, we);
@@ -483,18 +499,20 @@ int main(int argc, char** argv) {
                 if (!a3) {
                     checks.record(std::string(ts.name) + " " + cs.label +
                         ": A4 and its proposition(s) not graded, precondition A3 failed");
-                    return std::vector<int32_t>{};
+                    return {false, {}};
                 }
-                return levels_from_runs(runs, median);
+                return {true, levels_from_runs(runs, median)};
             };
 
             // ---- T1: P1, P2 ----
             {
-                auto L = grade_precond(t1, mv == "A1");
-                if (L.empty()) {
+                auto pc = grade_precond(t1, mv == "A1");
+                if (!pc.ok) {
                     checks.record(std::string("P1/P2 ") + cs.label + ": not graded, a precondition failed");
                 } else {
-                    FitResult fu = fit(L, c_up()), fl = fit(L, c_low());
+                    auto& L = pc.L;
+                    FitResult fu, fl;
+                    if (!L.empty()) { fu = fit(L, c_up()); fl = fit(L, c_low()); }
                     double b = fu.matches ? fu.b : fl.b;
                     bool a4 = L.size() >= (size_t)(2 * t1.words) && std::fabs(b) >= 4.0;
                     std::string a4_label = std::string("A4 for T1 ") + cs.label +
@@ -529,11 +547,12 @@ int main(int argc, char** argv) {
 
             // ---- T2: P3 ----
             {
-                auto L = grade_precond(t2, false);
-                if (L.empty()) {
+                auto pc = grade_precond(t2, false);
+                if (!pc.ok) {
                     checks.record(std::string("P3 ") + cs.label + ": not graded, a precondition failed");
                 } else {
-                    FitResult f2c = fit(L, c2());
+                    auto& L = pc.L;
+                    FitResult f2c = L.empty() ? FitResult{} : fit(L, c2());
                     bool a4 = L.size() >= (size_t)(2 * t2.words) && std::fabs(f2c.b) >= 4.0;
                     checks.expect(a4, std::string("A4 for T2 ") + cs.label +
                         ": L has >= " + std::to_string(2 * t2.words) + " entries (" + std::to_string(L.size()) +
@@ -553,11 +572,12 @@ int main(int argc, char** argv) {
 
             // ---- T3: P4 ----
             {
-                auto L = grade_precond(t3, false);
-                if (L.empty()) {
+                auto pc = grade_precond(t3, false);
+                if (!pc.ok) {
                     checks.record(std::string("P4 ") + cs.label + ": not graded, a precondition failed");
                 } else {
-                    FitResult f3c = fit(L, c3());
+                    auto& L = pc.L;
+                    FitResult f3c = L.empty() ? FitResult{} : fit(L, c3());
                     bool a4 = L.size() >= (size_t)(t3.words + 1) && std::fabs(f3c.b) >= 4.0;
                     checks.expect(a4, std::string("A4 for T3 ") + cs.label +
                         ": L has >= " + std::to_string(t3.words + 1) + " entries (" + std::to_string(L.size()) +
@@ -649,16 +669,13 @@ int main(int argc, char** argv) {
     // P6 / F1 / F3: disk write DMA bit-cell rate, FAST = ADKCON bit 8
     //
     // G1/G2/G3 are expected to, and do, come out red: ADKCON bit 8 is
-    // read back correctly (B1 passes both runs) but is not wired to
-    // anything that paces disk write DMA on this RTL. Grep confirms it:
-    // paula.v only routes adkcon[10] (wordsync) and adkcon[11] (uartbrk)
-    // out of the register; paula_floppy.v and agnus_diskdma.v never
-    // reference adkcon or a FAST/bit-cell signal at all. Measured D_F
-    // equals D_S exactly regardless of which run's ADKCON gets FAST=1
-    // (see the MEASURED lines below) -- the Chip-memory read rate is
-    // paced by disk DMA slot availability alone, not by the bit-cell
-    // clock the page describes. This is a genuine RTL/page disagreement,
-    // not a test defect: a red result here is the finished outcome.
+    // read back correctly (B1 passes both runs), but measured D_F equals
+    // D_S exactly regardless of which run's ADKCON gets FAST=1 (see the
+    // MEASURED lines below) -- the measured Chip-memory read rate does
+    // not change with the bit-cell clock the page describes. This is a
+    // measured page disagreement, not a test defect: a red result here
+    // is the finished outcome. See SPECIFICATION.md section 5 and the
+    // report to the lead for the reason.
     // =====================================================================
     if (need_disk) {
         std::string suffix = "";
@@ -704,18 +721,10 @@ int main(int argc, char** argv) {
             checks.expect(b4, std::string("B4 (F1 anchor) ") + cs.label +
                 ": refresh groups recur 227-228 color clocks apart");
             if (mv == "F1") {
-                // F1/B4's own contrasting case (2.4) did not reproduce on this
-                // RTL: agnus.v wires the same hpos to agnus_refresh and
-                // agnus_diskdma, and an extreme HTOTAL (tried at HTOTAL=20,
-                // not committed) demonstrably changes disk DMA's own timing
-                // (D_F fell from 310520 to 28712 cycles) but the refresh
-                // anchor still measures 227.00 CCK regardless. Disk DMA has
-                // higher arbitration priority than refresh (agnus.v's
-                // dma_dsk/dma_ref if-else chain), so once htotal shortens the
-                // line, disk's far more frequent requests plausibly starve
-                // refresh's own grants back down to about the original rate.
-                // Reported, not worked around: the stimulus is HTOTAL=113
-                // exactly as SPECIFICATION.md 2.4 states, unchanged.
+                // F1/B4's own contrasting case (2.4) did not reproduce,
+                // measured: reported, not worked around. The stimulus is
+                // HTOTAL=113 exactly as SPECIFICATION.md 2.4 states,
+                // unchanged; see section 5 there for what was measured.
                 checks.record(std::string("B4 (F1 anchor) ") + cs.label +
                     ": NMH_MUTATE=F1 did not turn this red on this RTL -- refresh-group spacing "
                     "stayed at 227.00 CCK even though the same VTOTAL/HTOTAL/BEAMCON0 write "

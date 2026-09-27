@@ -3,12 +3,11 @@
 ; and about 4 us with FAST=0. Two runs in sequence, F (FAST=1, buffer A)
 ; then S (FAST=0, buffer B), each following the manual's own DSKLEN
 ; sequence (p.247 steps 1-5). No drive is selected and the program makes
-; no CIA-B write (2.9: CIA-B is a separate chip-select from CIA-A, gary.v
-; sel_cia_b, so no floppy select/motor line is ever driven); the one
-; CIA-A write (CLEAR_OVL) is needed only so that chip bank 0, where the
-; two buffers sit (both below $080000, 2.1), is real memory instead of
-; the boot-time Kickstart-shadow window (see prog_audio.s's header for
-; the same mechanism).
+; no CIA-B write, so no floppy select/motor line is ever driven (2.9);
+; the one CIA-A write (CLEAR_OVL) is needed only so that chip bank 0,
+; where the two buffers sit (both below $080000, 2.1), is real memory
+; instead of the boot-time Kickstart-shadow window (see prog_audio.s's
+; header for the same mechanism, and SPECIFICATION.md section 5).
 ;
 ; Buffers A and B are poked with $AAAA in every word by the C++ test
 ; before boot() (p.249/p.250: a run of data zeros encodes as $AAAA),

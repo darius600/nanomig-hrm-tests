@@ -14,10 +14,9 @@
 ; audio DMA engine where to read it. CLEAR_OVL (ch5regs.i) is still
 ; needed once, first, so that chip bank 0 (where the tables and T1_ADDR/
 ; T2_ADDR/T3_ADDR sit, all below $080000 per 2.1) is real memory and not
-; the boot-time Kickstart-shadow window -- true for both the CPU's own
-; accesses and the audio DMA engine's, since this design ties cpu_hlt to
-; 0 (minimig.v), so chip bank 0 is gated by "!ovl" alone (gary.v),
-; regardless of which engine is reading it.
+; the boot-time Kickstart-shadow window (measured to hold for both the
+; CPU's own accesses and the audio DMA engine's; see SPECIFICATION.md
+; section 5).
 ;
 ; P1-P4's own contrasting cases (T1's last word, every T1 word's bytes,
 ; every T2 byte's bit 7, T3's word for code +5) are pure data and need no
@@ -62,10 +61,11 @@ start:
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
         move.w  #$7FFF,DMACON(a0)
-        ifd     MUT_A2
-        move.w  #$8001,ADKCON(a0)      ; MUT_A2: attach mode (USE0V1) set before the read
-        endc
         move.w  #$7FFF,ADKCON(a0)
+        ifd     MUT_A2
+        move.w  #$8001,ADKCON(a0)      ; MUT_A2: attach mode (USE0V1) set, after the
+                                        ; preamble's own clear, so it survives to the read
+        endc
 
         ; ---- step 2: read ADKCONR, store it (precondition A2) ----
         move.w  ADKCONR(a0),RESULTS
