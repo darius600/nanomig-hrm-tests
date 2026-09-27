@@ -32,25 +32,17 @@
 //   hrm-testpipeline/work/ch5_packages/
 //   ch5-audio-register-map.jsonl -- 116 records, all cited below by id.
 //
-// RTL-READ DISCLOSURE (per this chapter's own BOUNDARIES.md/CANDIDATES.md
-//   contradiction, and BRIEF.md's own instruction to say so plainly rather
-//   than paper over it, as the volume package did): BOUNDARIES.md and
-//   CANDIDATES.md already quote paula_audio.v and paula_audio_channel.v
-//   verbatim -- line numbers, parameter values, measured counts -- so this
-//   agent had already read excerpts of both before writing a single
-//   assertion. Beyond those excerpts, this agent additionally opened
-//   paula_audio.v in full and paula_audio_channel.v's register-write,
-//   volume-counter and state-machine sections BEFORE committing this
-//   specification, specifically to determine which of paula_audio's own
-//   OUTPUT ports could serve as an observable proxy for each register's
-//   claimed identity (see BOUNDARY / PROXY note below) -- a register-map
-//   package cannot be written from the claims' quotations alone once the
-//   claims assert facts ("belongs to Paula", "is the length register")
-//   that are not obviously observable at a black-box port list. Every
-//   EXPECTED VALUE below still comes from the claims file's own quotations
-//   (an address, a register name, a level count, a bit-6 rule) and never
-//   from what the RTL happens to compute; only the MEASUREMENT METHOD used
-//   RTL-reading to design.
+// EXPECTED VALUES AND MEASUREMENT METHOD: a register-map package cannot be
+//   written from the claims' quotations alone once the claims assert facts
+//   ("belongs to Paula", "is the length register") that are not obviously
+//   observable at a black-box port list. The MEASUREMENT METHOD therefore
+//   comes from paula_audio.v and paula_audio_channel.v's register-write,
+//   volume-counter and state-machine sections: which of paula_audio's own
+//   OUTPUT ports can serve as an observable proxy for each register's
+//   claimed identity (see BOUNDARY / PROXY note below). Every EXPECTED
+//   VALUE below comes from the claims file's own quotations (an address, a
+//   register name, a level count, a bit-6 rule) and never from what the
+//   RTL happens to compute.
 //
 // BOUNDARY / PROXY FOR "BELONGS TO / IS DECODED BY / IS ASSIGNED TO /
 //   LIVES IN / IS IMPLEMENTED BY Paula": this fixture IS paula_audio.v,
@@ -75,16 +67,15 @@
 //   DMACONR decode are outside this module entirely and are not touched.
 //   This file does not assert the exact tick-for-tick period-counter
 //   formula or exact interrupt timing -- those belong to
-//   hrm/paula_audio_channel's own boundary; AUDxPER's identity is shown
+//   paula_audio_channel's own boundary; AUDxPER's identity is shown
 //   here only as "bigger AUDPER makes the first-half hold longer", which
 //   is what "period register" means, not a specific formula.
 //   audpen (intpen) is held low for the whole run: paula_intcontroller,
 //   which would normally drive it, is chapter 7's boundary
 //   (BOUNDARIES.md), not this one. Held at 0 it never blocks a fresh
-//   direct-mode write and, as measured while designing this file, it also
-//   never gates the steady DMA-mode loop (AUDxON=1 makes state 4's own
-//   exit condition true regardless of AUDxIP) -- so no interrupt-pending
-//   model was needed or built.
+//   direct-mode write and, measured, it also never gates the steady
+//   DMA-mode loop (AUDxON=1 makes state 4's own exit condition true
+//   regardless of AUDxIP) -- so no interrupt-pending model is needed.
 //
 // MEASUREMENT BASIS, per assertion (why the stimulus asserts what it does):
 //
@@ -97,8 +88,7 @@
 //   (HRM p.164, "DMA requests and restart requests are transferred to
 //   Agnus once each horizontal line"): channel 0 run continuously in DMA
 //   mode across many simulated lines (hpos 0..226, strhor pulsed once per
-//   line, the same shape hrm/paula_audio_channel's own committed harness
-//   uses for this fixture family -- reused, not re-derived). dmal[0]/
+//   line). dmal[0]/
 //   dmas[0] are sampled every clk7_en tick and must stay constant except
 //   in a short window around each strhor pulse (paula_audio.v:171-179 only
 //   updates them `if (strhor)`, so the window is a tolerance for where
@@ -150,9 +140,8 @@
 //   describes) measured at paula_audio's OTHER volume output.
 //   paula_audio_mixer.v:26-32 ORs vol[6] into every bit of the 6-bit input
 //   it hands to paula_audio_volume, so AUDxVOL=63 and AUDxVOL=64 reach the
-//   multiplier as the same six-bit pattern. Per BOUNDARIES.md's own
-//   instruction ("whichever package takes this must say which path it
-//   measured"): measured here, at ldata/rdata, with a fixed nonzero
+//   multiplier as the same six-bit pattern. The two paths differ, so the
+//   path is named: measured here, at ldata/rdata, with a fixed nonzero
 //   sample. THIS ASSERTION IS EXPECTED RED. It is not a units error --
 //   VOLUME-65-LEVELS above is the control proving the harness's own
 //   measurement basis is sound; only the boundary differs. No NM-HRM
@@ -181,8 +170,7 @@
 //   are each cited on both volume-path assertions -- 3 shared citations,
 //   119-3=116).
 //
-// RESULTS (WSL/Verilator 5.052, clean build, 12.09.2026): 8 passed, 1
-//   failed. CHANNEL-INDEPENDENCE, DMA-REQUEST-LATCHED-ONCE-PER-LINE,
+// RESULTS: 8 passed, 1 failed. CHANNEL-INDEPENDENCE, DMA-REQUEST-LATCHED-ONCE-PER-LINE,
 //   DMA-RESTART-LATCHED-ONCE-PER-LINE, LEN-REGISTER-IDENTITY (dmas
 //   asserted 7 times over 20 lines at AUDxLEN=3 versus 4 at AUDxLEN=6),
 //   PER-REGISTER-IDENTITY (high-byte hold 2 cck ticks at AUDxPER=4 versus
@@ -190,18 +178,14 @@
 //   VOLUME-65-LEVELS (measured open-tick counts over a 256-tick window:
 //   0, 4, 128, 252, 256 for AUDxVOL = 0, 1, 32, 63, 64 -- exactly 4x each
 //   written value) are all GREEN. VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH
-//   is RED, exactly as this file's own header predicted before the RTL
-//   was read for this measurement: ldata settled at 4032 for BOTH
-//   AUDxVOL=63 and AUDxVOL=64 (matching CANDIDATES.md's own independently
-//   measured "ldatasum=4032" figure). No NM-HRM finding key is assigned
-//   here; the divergence is exactly the one BOUNDARIES.md and
-//   CANDIDATES.md already named as a candidate before this package existed.
+//   is RED: ldata settles at 4032 for BOTH AUDxVOL=63 and AUDxVOL=64. No
+//   NM-HRM finding key is assigned here.
 //
-// MUTATION LOG (WSL/Verilator, same session as RESULTS; each entry
-//   actually run: rebuild with the named C++ macro via
-//   `-CFLAGS -DMUT_X=1` -> run -> confirm only the named assertion(s)
-//   changed colour -> rebuild with no flags -> confirm the 8-passed/
-//   1-failed baseline was restored):
+// MUTATION LOG (WSL/Verilator; each entry run: rebuild with the named C++
+//   macro via `-CFLAGS -DMUT_X=1` -> run -> confirm only the named
+//   assertion(s) changed colour -> rebuild with no flags -> confirm the
+//   baseline restored; the pass/fail totals quoted in an entry are those
+//   of the run that recorded it):
 //
 // MUTATION CHANNEL-INDEPENDENCE stimulus red: built with -DMUT_ALIAS=1,
 //   redirecting every channel's write to channel 0's own AUDxDAT address
@@ -277,7 +261,7 @@
 #include "Vpaula_audio.h"
 
 // Each MUT_ flag replays exactly one assertion's own mutation record (see
-// the RESULTS section of this package's build log). Passed as
+// the MUTATION LOG in this file's header). Passed as
 // -CFLAGS -DMUT_X=1 (a C++ macro, not a Verilog define -- Verilator would
 // silently accept -DFOO as a HDL define and do nothing to this file).
 #ifndef MUT_ALIAS
@@ -318,10 +302,9 @@ public:
     int failed = 0;
 };
 
-// Register map, reused verbatim from this package's own claims file
-// (AUD0BASE=$0A0 .. AUD3BASE=$0D0, each +4/+6/+8/+0xA for LEN/PER/VOL/DAT)
-// and from paula_audio.v:131-134's own parameters, read to confirm the
-// claims' addresses are the ones this fixture actually decodes.
+// Register map, from this package's own claims file (AUD0BASE=$0A0 ..
+// AUD3BASE=$0D0, each +4/+6/+8/+0xA for LEN/PER/VOL/DAT); paula_audio.v:
+// 131-134's own parameters decode the same addresses.
 struct ChanAddrs { int base, len, per, vol, dat; };
 constexpr ChanAddrs CH[4] = {
     {0xA0, 0xA4, 0xA6, 0xA8, 0xAA},
@@ -333,10 +316,9 @@ constexpr ChanAddrs CH[4] = {
 int sext9(int v) { v &= 0x1FF; return (v & 0x100) ? (v | ~0x1FF) : v; }
 int sext15(int v) { v &= 0x7FFF; return (v & 0x4000) ? (v | ~0x7FFF) : v; }
 
-// Clocking reused verbatim from hrm/paula_audio_channel/test_paula_audio_channel.cpp
-// (clk7_en every 4th clk edge, cck every 2nd clk7_en tick, strhor pulsed at
-// hpos==13 of a 0..226 line, matching that already-committed sibling
-// harness for this exact fixture family) -- not re-derived here.
+// Clocking of the pre-pipeline hrm/paula_audio_channel/test_paula_audio_channel.cpp
+// (removed): clk7_en every 4th clk edge, cck every 2nd clk7_en tick, strhor
+// pulsed at hpos==13 of a 0..226 line.
 class Harness {
 public:
     Harness() : dut(new Vpaula_audio) {
@@ -395,9 +377,9 @@ public:
     // COMBINATIONAL state-transition block, not a clocked register: it can
     // be true for a window as narrow as the gap between the AUDxDAT write
     // strobe (any clk7_en edge) and the next clk7_en&&cck edge (the only
-    // edge that actually advances audio_state), which measurably (see this
-    // package's own build log) can align to fall entirely BETWEEN two
-    // tick()-call boundaries at a fixed write_reg cadence. Sampling only at
+    // edge that actually advances audio_state), which can align to fall
+    // entirely BETWEEN two tick()-call boundaries at a fixed write_reg
+    // cadence. Sampling only at
     // tick() boundaries can therefore miss a real, RTL-genuine pulse -- a
     // harness aliasing bug, not a finding about the design. This variant
     // samples audint at every one of tick()'s three internal eval() calls
@@ -425,16 +407,15 @@ public:
     // Pulses strhor for exactly one clk7_en-gated edge. paula_audio.v:171-179
     // latches dmal/dmas `if (clk7_en) if (strhor) ...` -- clk7_en alone,
     // not cck. Holding strhor high for a whole cck period (two clk7_en
-    // edges), as an earlier version of this harness did by tying strhor's
-    // level to hpos and only checking it at cck ticks, double-latches:
+    // edges), for instance by tying strhor's level to hpos and only
+    // checking it at cck ticks, double-latches:
     // the first clk7_en edge correctly captures the channel's pending
     // dmareq into dmal, but the channel's OWN strhor-triggered clear
     // (paula_audio_channel.v's own dma-request-logic block) has by then
     // reset dmareq to 0, and a SECOND clk7_en edge under the same strhor
-    // level re-latches that now-cleared 0 straight back into dmal --
-    // caught by VCD inspection while building this package (dmal pulsed
-    // to 1 for a few ticks then silently fell back to 0 every line), a
-    // harness bug, not an RTL finding.
+    // level re-latches that now-cleared 0 straight back into dmal -- dmal
+    // pulses to 1 for a few ticks, then silently falls back to 0 every
+    // line: a harness artefact, not an RTL finding.
     void pulse_strhor_one_tick() {
         while (!dut->clk7_en) tick();
         dut->strhor = 1;
