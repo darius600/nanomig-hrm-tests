@@ -353,8 +353,8 @@ public:
 
 // Register addresses, as reg_address_in values (the port carries address
 // bits [8:1]; a custom-chip byte address is always even, so the port value
-// is the byte address shifted right by one -- confirmed against the sibling
-// hrm/denise_hamgenerator harness's own write_color(), which drives
+// is the byte address shifted right by one -- as in the pre-pipeline
+// hrm/denise_hamgenerator harness's write_color() (removed), which drove
 // COLORBASE $180 as reg_address_in=0xC0).
 constexpr int A_VPOSR   = 0x004 >> 1;
 constexpr int A_VPOSW   = 0x02A >> 1;
@@ -424,8 +424,9 @@ public:
     }
 
     // One full colour-clock period, exactly the clk7_en/cck relationship
-    // proven in hrm/agnus_beamcounter/test_agnus_beamcounter.cpp's own main
-    // loop (`clk7_en = (i%2==0); cck = (i%4<2);` over 4 raw ticks). hpos's
+    // of the pre-pipeline hrm/agnus_beamcounter/test_agnus_beamcounter.cpp
+    // main loop (removed): `clk7_en = (i%2==0); cck = (i%4<2);` over 4 raw
+    // ticks. hpos's
     // own LSB tracks cck combinationally (`always @(cck) hpos_0 = cck;`,
     // l.273-274), so hpos only settles to an even, stable value at the end
     // of a full 4-tick period -- which is why bulk advancement below samples
@@ -442,7 +443,8 @@ public:
     }
 
     // A single register write: one clk7_en=1 edge with reg_address_in/
-    // data_in set, per hrm/denise_hamgenerator's write_color() pattern.
+    // data_in set, per the pre-pipeline hrm/denise_hamgenerator
+    // write_color() pattern (removed).
     // None of the write-decode conditions in agnus_beamcounter.v depend on
     // cck, only on clk7_en, so the write's position within a CCK period does
     // not matter.
