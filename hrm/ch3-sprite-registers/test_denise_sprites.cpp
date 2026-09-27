@@ -382,13 +382,14 @@
 // MUTATION SH0-IS-HALF-OF-POS-BYTE-STEP stimulus red: the "hi" measurement's SPR0CTL value changed from 0x01 (SH0) to 0x02 (bit 1, a bit this RTL never stores anywhere) -> FAIL ("4 passed, 3 failed"), only SH0-IS-HALF-OF-POS-BYTE-STEP newly red (measured delta became 0, not the asserted 1). Reverted to 0x01: 5/2, same two findings.
 // MUTATION SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING stimulus red: the attached-case SPR1CTL write changed from 0x80 (ATTACH set) to 0x00, so sprite 1 is armed but never actually attached -> FAIL ("4 passed, 3 failed"), only SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING newly red (the attached measurement returned colour 1, the same as the unattached one, instead of 13). Reverted to 0x80: 5/2, same two findings.
 // MUTATION SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT stimulus red: built with -DMUT_BIT0=1, which withholds the SH0 stimulus in this assertion's own independent hi0 measurement (SPR0CTL held at 0x00 instead of 0x01, spres=0) -> FAIL ("5 passed, 2 failed"), only SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT newly red (sh0_delta0 became 0, not the asserted 1); SH0-IS-HALF-OF-POS-BYTE-STEP, which shares this block's earlier delta[]/superhires_spres loop but not this flag, stayed green, confirming the isolation held. Rebuilt with no flags: 6/1, the one finding unchanged.
-// MUTATION SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE none impossible: already red at baseline (the FINDING above). Bit 4 of SPRxCTL is not captured by any register in this RTL at all (only bits 7 and 0 are), so no stimulus this harness can present makes it observable; there is nothing green here to break.
+// MUTATION SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (rebuilt, this repair pass, run under WSL/Verilator against p.303 at spres=0b10/SuperHires, 28 MHz sampling) none impossible: measured sh0_delta=4, shsh1_delta=0 against p.303's own prediction of 4 and 2 -- still red, the same underlying fact as before (bit 4 of SPRxCTL moves nothing this harness can observe, at any spres or sampling rate), just measured correctly this time. shsh1_delta is 0 for every ctl_byte whose bit 4 is the only bit set, because no register in this RTL ever captures data_in[4] from a CTL write; there is no stimulus this harness can present that moves it, so there is nothing green here to break. (The formula's other half, sh0_delta, is independently exercised -- and shown breakable -- by SH0-IS-HALF-OF-POS-BYTE-STEP's own MUT_SH0HALF mutation below.)
 // MUTATION SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED: no record -- this claim is declined (checks.note only, no checks.expect), so there is no red/green state for a mutation to move.
 // MUTATION SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES stimulus red (extension pass, run under WSL/Verilator this session against the then-current 7-passed/1-failed baseline): built with -DMUT_BIT3=1, which substitutes bit 0 (SH0, already proven live above) for bit 3 in this assertion's own per-spres toggle, so the "identical trace" comparator has a live bit to catch -> FAIL ("6 passed, 2 failed"), only SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES newly red (the off/on traces differed at every spres once bit 0 was the one toggled); every other line, including SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (already red, unrelated), was unchanged. Rebuilt with `make -B test` (no flags): 7/1, the one finding unchanged.
 // MUTATION APPC-pos.c10, APPC2-SPRxCTL.conf2: no record -- both are recorded, not asserted (checks.record only, no checks.expect carrying either id), so there is no red/green state of their own for a mutation to move; the assertion they are recorded beside, SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE, already carries its own mutation record above (none, impossible -- already red at baseline).
 // MUTATION PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL stimulus red (repair pass, run under WSL/Verilator this session against the then-current 10-passed/1-failed baseline): built with -DMUT_PROC_CTL=1, which withholds the SPR0CTL stimulus in this assertion's own independent ctl_hi measurement (held at 0x00 instead of 0x01) -> FAIL ("9 passed, 2 failed"), only PROCESSOR-WRITE-REACHES-SPRXPOS-AND-SPRXCTL newly red (ctl_reached became false; pos_reached, measured independently, stayed true). Rebuilt with no flags: 10/1, the one finding unchanged.
 // MUTATION SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED stimulus red (repair pass, run under WSL/Verilator this session against the then-current 10-passed/1-failed baseline): built with -DMUT_POSBITS=1, which at k=5 substitutes bit 4's own stimulus for bit 5's -> FAIL ("9 passed, 2 failed"), only SPRXPOS-EACH-BIT-IS-SH8-SH1-WEIGHTED newly red (deltas[5] read 32, the weight of bit 4, not the asserted 64). Rebuilt with no flags: 10/1, the one finding unchanged; the per-bit MEASURED note above the assertion confirms the clean deltas 2,4,8,16,32,64,128,256 at baseline.
 // MUTATION SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA stimulus red (repair pass, run under WSL/Verilator this session against the then-current 10-passed/1-failed baseline): built with -DMUT_CTL_ATTACH=1, which withholds the ATTACH stimulus in this assertion's own independent "attached" measurement (SPR1CTL held at 0x00 instead of 0x80) -> FAIL ("9 passed, 2 failed"), only SPRXCTL-HOLDS-POSITION-AND-CONTROL-DATA newly red (attached read 1, the same as plain, not the asserted 13; position_via_ctl, measured independently, stayed true). Rebuilt with no flags: 10/1, the one finding unchanged.
+// MUTATION SH0-IS-HALF-OF-POS-BYTE-STEP (rebuilt, this repair pass, run under WSL/Verilator against the then-current 10-passed/1-failed baseline, now measured at spres=0b10/SuperHires instead of the old superhires_spres): built with -DMUT_SH0HALF=1, which withholds the SH0 stimulus in this assertion's own hi measurement (ctl held at 0x00 instead of 0x01) -> FAIL ("9 passed, 2 failed"), only SH0-IS-HALF-OF-POS-BYTE-STEP newly red (sh0_delta_at_shres became 0, not the asserted 1); SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (already red, unrelated) was unchanged. Rebuilt with no flags: 10/1, the one finding unchanged.
 
 // SPECIFICATION ADDENDUM (extension pass, from ch3-sprite-registers-
 // spec-stage.jsonl's 17 records -- quotation, restatement and page only;
@@ -505,6 +506,14 @@
 #define MUT_CTL_ATTACH 0
 #endif
 
+// MUT_SH0HALF: replay stimulus for SH0-IS-HALF-OF-POS-BYTE-STEP's own
+// mutation record below (-DMUT_SH0HALF=1, this repair pass). Withholds
+// the SH0 toggle in that assertion's own hi measurement (ctl held at
+// 0x00 instead of 0x01), so the assertion, and only it, goes red.
+#ifndef MUT_SH0HALF
+#define MUT_SH0HALF 0
+#endif
+
 namespace {
 
 class Checks {
@@ -540,6 +549,12 @@ constexpr int SPR1DATB = 0xA7;
 constexpr int IDLE_ADDR = 0x00;
 
 constexpr int HPOS_MAX = 512;  // SH8..SH0 is a 9-bit value: 0..511 covers it.
+
+// This fixture's own `spres` encoding for SuperHires (repair pass, per
+// NM-HRM-019's specification: "the SuperHires sprite resolution setting").
+// Distinct from `superhires_spres` below, which is not a SuperHires
+// encoding at all -- see that block's own comment.
+constexpr uint8_t SPRES_SUPERHIRES = 0b10;
 
 struct Meas {
     int start = -1;                 // first hpos at which sprdata != 0, or -1.
@@ -636,6 +651,35 @@ Meas measure(uint8_t pos_byte, uint8_t ctl_byte, uint8_t spres, uint8_t aga) {
         if (v != 0 && m.start == -1) m.start = hp;
     }
     return m;
+}
+
+// Repair pass (NM-HRM-019, What the test measures): arms sprite 0 exactly
+// as measure() above (SPR0POS=$40, SPR0DATB=$0000, SPR0DATA=$8000) at
+// spres=SPRES_SUPERHIRES, aga=0, on a fresh DUT, then writes SPR0CTL=
+// ctl_byte and samples `sprdata` on every 28 MHz clock (tick_phase(),
+// 35 ns apart) instead of once per 140 ns hpos step -- measure() above
+// samples too coarsely to tell a 70 ns move from a 140 ns one apart.
+// Returns the 28 MHz sample index (0-based, 35 ns apart) at which
+// sprdata first goes non-zero across the full hpos 0..511 sweep, or -1
+// if it never does.
+int measure_superhires_start(uint8_t ctl_byte) {
+    Harness h(/*aga=*/0, SPRES_SUPERHIRES);
+    h.write_reg(SPR0POS, 0x40);
+    h.write_reg(SPR0CTL, ctl_byte);
+    h.write_reg(SPR0DATB, 0x0000);
+    h.write_reg(SPR0DATA, 0x8000);  // arms sprite 0.
+
+    int sample = 0;
+    for (int hp = 0; hp < HPOS_MAX; ++hp) {
+        h.dut->hpos = hp;
+        for (int ph = 0; ph < 4; ++ph) {
+            h.tick_phase();
+            uint8_t v = static_cast<uint8_t>(h.dut->sprdata);
+            if (v != 0) return sample;
+            ++sample;
+        }
+    }
+    return -1;
 }
 
 // Arms sprite 0 alone (attach=false), or sprite 0 together with sprite 1
@@ -832,11 +876,15 @@ int main(int argc, char** argv) {
         // 0x40, for each of the 4 values spres (a 2-bit input, per
         // PACKAGE.md's own evidence "spres = bplcon3[7:6] & aga") can take.
         // Unchanged from the predecessor assertion and NOT gated by
-        // MUT_BIT0 below -- kept only so SH0-IS-HALF-OF-POS-BYTE-STEP
-        // still has a SuperHires-like spres value to measure its own
-        // 70ns-boundary claim at, exactly as before; this file no longer
-        // claims that value is where SH0 becomes exclusively significant,
-        // only measures it for that one downstream assertion's own use.
+        // MUT_BIT0 below. `superhires_spres` itself is NOT a SuperHires
+        // encoding (repair pass, per NM-HRM-019's What the test measures:
+        // SH0 moves the start at every spres value, so the loop below,
+        // which starts searching at sp=1, always lands on sp=1 regardless
+        // of chip mode) -- kept here only as the source for the per-spres
+        // MEASURED note just below, which this file's own RETRACTED
+        // history above cites. SH0-IS-HALF-OF-POS-BYTE-STEP below (this
+        // repair pass) no longer reads this variable; it measures its own
+        // SuperHires spres value directly, at SPRES_SUPERHIRES.
         int delta[4];
         bool armed[4];
         for (int sp = 0; sp < 4; ++sp) {
@@ -895,32 +943,39 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- SH0-IS-HALF-OF-POS-BYTE-STEP ----------------
+    // Rebuilt this repair pass (NM-HRM-019, What the test measures): the
+    // previous body measured at `superhires_spres` above, which is not a
+    // SuperHires encoding -- SH0 moves the start at every spres value, so
+    // that loop always lands on sp=1 regardless of chip mode, while this
+    // assertion's own label names SuperHires specifically. This body
+    // measures at spres=SPRES_SUPERHIRES (0b10) directly instead, so the
+    // label and the spres value it runs at agree.
     {
+        Meas lo = measure(/*pos=*/0x40, /*ctl=*/0x00, SPRES_SUPERHIRES, /*aga=*/0);
+#if MUT_SH0HALF
+        Meas hi = measure(/*pos=*/0x40, /*ctl=*/0x00, SPRES_SUPERHIRES, /*aga=*/0);  // MUTATION: SH0 stimulus withheld (ctl held at 0x00 instead of 0x01).
+#else
+        Meas hi = measure(/*pos=*/0x40, /*ctl=*/0x01, SPRES_SUPERHIRES, /*aga=*/0);
+#endif
         bool ok = false;
         int sh0_delta_at_shres = -1000;
-        if (superhires_spres != -1) {
-            Meas lo = measure(/*pos=*/0x40, /*ctl=*/0x00,
-                               static_cast<uint8_t>(superhires_spres), /*aga=*/0);
-            Meas hi = measure(/*pos=*/0x40, /*ctl=*/0x01,
-                               static_cast<uint8_t>(superhires_spres), /*aga=*/0);
-            if (lo.start != -1 && hi.start != -1) {
-                sh0_delta_at_shres = hi.start - lo.start;
-                // Fixed, quote-derived target (2 / 2 == 1), independent of
-                // whatever SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 measured above,
-                // so this assertion cannot pass merely by chaining a
-                // possibly-wrong runtime value into itself.
-                ok = sh0_delta_at_shres == 1;
-            }
+        if (lo.start != -1 && hi.start != -1) {
+            sh0_delta_at_shres = hi.start - lo.start;
+            // Fixed, quote-derived target (2 / 2 == 1), independent of
+            // whatever SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2 measured above,
+            // so this assertion cannot pass merely by chaining a
+            // possibly-wrong runtime value into itself.
+            ok = sh0_delta_at_shres == 1;
         }
         checks.expect(ok,
-            "SH0-IS-HALF-OF-POS-BYTE-STEP: at the SuperHires spres value "
-            "found above, toggling SPR0CTL bit 0 (SH0) alone moves the "
-            "measured start by exactly 1 raw unit -- half of the 2-unit "
-            "step a +1 change to SPRxPOS's own byte produces -- i.e. SH0 "
-            "lands the sprite on the position exactly between two "
-            "SPRxPOS-addressable points, matching 'This allows for "
-            "positioning the sprite every other SuperHires pixel on 70ns "
-            "boundaries.' (p.303). C-shres-sprite.c3, C-spr.c02 .");
+            "SH0-IS-HALF-OF-POS-BYTE-STEP: at spres=0b10 (SuperHires), "
+            "toggling SPR0CTL bit 0 (SH0) alone moves the measured start "
+            "by exactly 1 raw unit -- half of the 2-unit step a +1 change "
+            "to SPRxPOS's own byte produces -- i.e. SH0 lands the sprite "
+            "on the position exactly between two SPRxPOS-addressable "
+            "points, matching 'This allows for positioning the sprite "
+            "every other SuperHires pixel on 70ns boundaries.' (p.303). "
+            "C-shres-sprite.c3, C-spr.c02 .");
     }
 
     // ---------------- SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING ----------------
@@ -1013,18 +1068,40 @@ int main(int argc, char** argv) {
     // CORRECTION above). Bit 3's half of that old assertion is declined
     // just below instead, not asserted -- the manual prints bit 3's own
     // row's verdict already, "(unimplemented)".
+    //
+    // Rebuilt this repair pass (NM-HRM-019, What the test measures): the
+    // previous body set bit 4 at spres=0 (a value this fixture's own
+    // resolution encoding does not use for SuperHires) and sampled
+    // sprdata once per 140 ns hpos step, too coarse to see a 70 ns move
+    // even in SuperHires. This body measures at spres=SPRES_SUPERHIRES
+    // (0b10), samples every 28 MHz clock (35 ns apart), and compares
+    // three fresh-DUT measurements against p.303's own two rows together:
+    // bit 0 (SH0) alone a 140 ns increment, bit 4 (SHSH1) alone a 70 ns
+    // increment -- half as many 35 ns samples.
     {
-        Meas base = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
-        Meas mut = measure(/*pos=*/0x40, static_cast<uint8_t>(1u << 4), /*spres=*/0, /*aga=*/0);
-        bool differs = base.trace != mut.trace;
-        checks.expect(differs,
-            "SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: setting SPR0CTL bit "
-            "4 alone (all other bits, including SH0, held at 0) changes "
-            "the full sprdata trace measured across hpos 0..511 -- a "
-            "real, non-ignored field, matching its own row: "
+        int base = measure_superhires_start(0x00);
+        int sh0 = measure_superhires_start(0x01);
+        int shsh1 = measure_superhires_start(0x10);
+        bool armed = base != -1 && sh0 != -1 && shsh1 != -1;
+        int sh0_delta = armed ? (sh0 - base) : -1000;
+        int shsh1_delta = armed ? (shsh1 - base) : -1000;
+        checks.note("SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at "
+            "spres=0b10 (SuperHires), 28 MHz (35 ns) sample deltas from "
+            "the ctl=0x00 baseline -- SH0 alone (ctl=0x01): " +
+            std::to_string(sh0_delta) + ", SHSH1 alone (ctl=0x10): " +
+            std::to_string(shsh1_delta) + " (p.303 predicts 4 and 2).");
+        checks.expect(armed && sh0_delta != 0 && sh0_delta % 2 == 0
+                          && shsh1_delta == sh0_delta / 2,
+            "SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at spres=0b10 "
+            "(SuperHires), with sprdata sampled on every 28 MHz clock "
+            "(35 ns apart, not once per 140 ns hpos step), the start "
+            "measured with SPR0CTL bit 4 (SHSH1) alone set moves from the "
+            "ctl=0x00 baseline by exactly half as many samples as bit 0 "
+            "(SH0) alone does -- matching the two rows together: "
             "'04      SHSH1     Start horizontal (SHR mode) 70ns "
-            "increment' (p.303), a field the page itself scopes to "
-            "SuperHires resolution ('70ns sprite positions are only "
+            "increment' and '00      SH0       Start horiz. value Low bit "
+            "140 ns increment' (p.303), 70ns being half of 140ns, scoped "
+            "to SuperHires resolution ('70ns sprite positions are only "
             "available in SuperHires mode.' p.303; 'This allows for "
             "positioning the sprite every other SuperHires pixel on 70ns "
             "boundaries.' p.303; 'The new SuperHires mode provides 35ns "
@@ -1039,6 +1116,28 @@ int main(int argc, char** argv) {
             "C-shres-sprite.c2, C-spr.c01, C-shres-sprite.c15, C-spr.c10, "
             "C-shres-sprite.c14, C-spr.c09 "
             ".");
+    }
+
+    // ---- Outside SuperHires: recorded, not asserted ----
+    // p.303 gives bit 4 no position outside SuperHires ('70ns sprite
+    // positions are only available in SuperHires mode.') and Hires is
+    // promised nothing at all -- this boundary asserts nothing about bit
+    // 4 there (repair pass, per NM-HRM-019's own specification). Recorded
+    // only, at spres=0 (Lores), sampled once per 140 ns hpos step
+    // (measure() above): whether bit 4 alone moves the trace at all.
+    {
+        Meas lores_base = measure(/*pos=*/0x40, /*ctl=*/0x00, /*spres=*/0, /*aga=*/0);
+        Meas lores_bit4 = measure(/*pos=*/0x40, static_cast<uint8_t>(1u << 4), /*spres=*/0, /*aga=*/0);
+        bool lores_identical = lores_base.trace == lores_bit4.trace;
+        checks.record(
+            std::string("Outside SuperHires (spres=0, Lores) [recorded, "
+            "not asserted]: setting SPR0CTL bit 4 alone leaves the "
+            "sprdata trace, sampled once per 140 ns hpos step, ") +
+            (lores_identical ? "identical to" : "different from") +
+            " the ctl=0x00 baseline. p.303 promises bit 4 no position "
+            "outside SuperHires, and Hires nothing at all -- this is "
+            "silence in the manual, not a requirement, so it is recorded "
+            "rather than asserted.");
     }
 
     // ---- APPC-pos.c1, CH4-appC-position.c1/c2 [withdrawn, recorded] ----
