@@ -1,16 +1,24 @@
 // Test purpose: assert the general CIAADDRA/CIAAPRA data-direction mechanism
-//   described on printed p.241 -- that CIAADDRA is a one-to-one,
-//   per-bit-position direction mask over CIAAPRA, and that setting a
-//   direction bit to 1 makes the corresponding data bit an output whose
-//   read-back follows what was written -- at the `ciaa` module boundary,
-//   compiled alone. PROP-1 and PROP-2 are graded across all eight bit
-//   positions (PA0-PA7): the printed claim is byte-wide ("a mask that
+//   described on printed p.241 and p.341 (Appendix F) -- that CIAADDRA is a
+//   one-to-one, per-bit-position direction mask over CIAAPRA, and that
+//   setting a direction bit to 1 makes the corresponding data bit an output
+//   whose read-back is the pin the output drives -- at the `ciaa` module
+//   boundary, compiled alone. PROP-1 and PROP-2 are graded across all eight
+//   bit positions (PA0-PA7): the printed claim is byte-wide ("a mask that
 //   corresponds one-to-one ... makes the corresponding bit an output"), not
 //   a claim about one bit, so the assertion carrying these uids must
 //   exercise all eight positions, not one.
+// Fixture: all six external port-A lines are held released -- porta_in =
+//   0x3F, the idle state p.354 describes ("a read of the ports will return
+//   all highs because of passive pull-ups"). With nothing outside
+//   contesting the line, a bit read back as 0 can only come from the port
+//   driving it, so PROP-1 and PROP-2 grade the written-0 half p.341
+//   predicts (an output driven 0 reads 0); a written 1 over a line held
+//   low is a different case, one no page in this package's oracle set
+//   decides, and this fixture does not present it.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 228 and 241; committed specification 02448ac (SPECIFICATION.md,
+//   pages 241, 341 and 354; committed specification 02448ac (SPECIFICATION.md,
 //   this package).
 // Requirement IDs: PROP-1, PROP-2, per SPECIFICATION.md's claim inventory.
 //   Claims file: hrm-testpipeline/work/ch8-s1-build/ch8-ciaa-port-direction.jsonl
@@ -47,56 +55,16 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (02448ac): read
-//   ciaa.v (388 lines) in full, plus its four instantiated submodules
-//   (cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v -- needed only for
-//   Verilator to elaborate the top module, not opened/read for content).
-//   Also read, per the build brief's "read a sibling's Makefile for the
-//   build pattern only after the spec is committed, and say so if you read
-//   anything else in one": hrm/ch8-potgo-register-bit-layout/Makefile and,
-//   beyond the Makefile itself, that package's full test .cpp (Checks
-//   class, main()-layout, and MUTATION-comment convention -- suite coding
-//   convention, not RTL content, and it is the class the top-level build
-//   brief itself mandates character-identical); and, because it is the only
-//   other package in the suite that already builds this exact fixture
-//   (`ciaa`), hrm/ch5-audio-filter-bypass/Makefile and its full test .cpp
-//   (Harness/write_reg/read_reg/porta_out_now/tick bus-timing protocol for
-//   ciaa.v specifically -- reused verbatim below as verified RTL-interface
-//   plumbing, not as a source of this package's own assertions or
-//   expected values, which come only from SPECIFICATION.md).
-//
-// RTL facts established by that reading (none of this shaped
-//   SPECIFICATION.md, which was committed first):
-//   - ciaa.v:82-104 port list: rs[3:0] selects the register (rs=0 -> PRA,
-//     rs=2 -> DDRA, ciaa.v:136-150), never by name/address.
-//   - ciaa.v:222-238: writing PRA (rs=0) latches
-//     regporta[3:0] <= {data_in[7:6], data_in[1:0]} -- i.e. only PA7, PA6,
-//     PA1 and PA0 have a writable data-output register bit at all; PA5-PA2
-//     have none, and a write to those bit positions is simply dropped.
-//   - ciaa.v:242-248: writing DDRA (rs=2) latches ddrporta[7:0] <=
-//     data_in[7:0] in full (all 8 bits stored, even though only 4 have any
-//     observable effect below).
-//   - ciaa.v:262: porta_out[3:0] = {(~ddrporta[7:6] | regporta[3:2]),
-//     (~ddrporta[1:0] | regporta[1:0])} -- porta_out[0]/[1] are PA0's/PA1's
-//     driven values; porta_out[2]/[3] are PA6's/PA7's. PA2-PA5's direction
-//     bits (ddrporta[5:2]) drive nothing in this expression at all.
-//   - ciaa.v:253-254 (pa_out, PRA's own read mux): reading PRA returns
-//     {porta_in2[7:2], porta_out[1:0]} -- bits 7 down to 2 of a PRA read are
-//     ALWAYS the raw synchronised input, unconditionally, regardless of
-//     ddrporta; only bits 1 and 0 come from porta_out, the only pair wired
-//     to honour ddrporta at this read mux.
-//   - Consequence, confirmed by direct measurement below: a CIAAPRA read at
-//     this fixture boundary shows write-follows-read ("output") behaviour
-//     ONLY for PA0 and PA1. PA2-PA5 have no captured register bit at all
-//     (dropped on a PRA write). PA6-PA7's write IS captured (into
-//     regporta[3:2]) and DOES drive the porta_out port -- consumed
-//     downstream by the fire-button wiring in minimig.v/userio.v, out of
-//     scope here -- but pa_out never reads porta_out[3:2] back, so a
-//     CIAAPRA read never reflects it for those two positions either. Two
-//     different RTL reasons, one shared observable result: the one-to-one
-//     mask/output claim fails for six of the eight printed bit positions
-//     when graded against the register the manual names, "the data read
-//     register, CIAAPRA".
+// What changed and why: PROP-1 and PROP-2 originally held the fixture's six
+//   external port-A lines low (all switches closed / drives asserted, in
+//   the manual's active-low terms) and then wrote a 1 over that held-low
+//   line -- a case p.241, p.341 and p.354 together leave undecided (no page
+//   says whether the CIA's own output or an outside pull wins that
+//   contest). That made both assertions decide on the undecided case
+//   instead of the one p.341 and p.354 do decide: an output driven 0 where
+//   nothing outside pulls the line, and a released input reading high. The
+//   fixture now releases all six lines (porta_in = 0x3F) so every
+//   observation below grades only what the cited pages state.
 //
 // MUTATION FIXTURE-LIVE, CONTROL-PA0-POSITIONAL and CONTROL-PA0-OUTPUT below
 // are runtime switches, guarded by mutating("<ID>") and read once from the
@@ -108,21 +76,22 @@
 //   second reading no longer differs from the first (both 0xA5)
 //   (MUTATE=FIXTURE-LIVE: FIXTURE-LIVE FAIL, 2 passed, 3 failed).
 // MUTATION opus:8-dio.c44 stimulus green: PROP-1 is graded at baseline
-//   across all eight bit positions and is red there (own-position-governs
-//   fails for PA2-PA7). Already-red assertions cannot be mutated redder, so
-//   this is a substitution proof: the identical bit_position_correspondence()
-//   comparator PROP-1 sweeps above, instantiated at bit 0 alone instead of
-//   swept across all eight (CONTROL-PA0-POSITIONAL below, PA0 proven live by
-//   FIXTURE-LIVE) reads PASS, in the same run (no switch: this control
-//   assertion is unconditional baseline code). The comparator is therefore
-//   not vacuously false: it returns true for the one position where the
-//   mechanism actually works.
+//   across all eight bit positions and is red there (MEASURED: PA0=PASS
+//   PA1=PASS PA2=FAIL PA3=FAIL PA4=FAIL PA5=FAIL PA6=FAIL PA7=FAIL).
+//   Already-red assertions cannot be mutated redder, so this is a
+//   substitution proof: the identical observe_position() comparator PROP-1
+//   sweeps above, instantiated at bit 0 alone instead of swept across all
+//   eight (CONTROL-PA0-POSITIONAL below, PA0 proven live by FIXTURE-LIVE)
+//   reads PASS, in the same run (no switch: this control assertion is
+//   unconditional baseline code). The comparator is therefore not
+//   vacuously false: it returns true for the one position where p.241 and
+//   p.341's prediction holds.
 // MUTATION opus:8-dio.c46 stimulus green: PROP-2 is graded at baseline
-//   across all eight bit positions and is red there
-//   (bit_output_follows_direction() fails for PA2-PA7). Substitution proof:
-//   the identical comparator instantiated at bit 0 alone (CONTROL-PA0-OUTPUT
-//   below) reads PASS, in the same run (no switch: this control assertion is
-//   unconditional baseline code).
+//   across all eight bit positions and is red there (MEASURED: PA0=PASS
+//   PA1=PASS PA2=FAIL PA3=FAIL PA4=FAIL PA5=FAIL PA6=FAIL PA7=FAIL).
+//   Substitution proof: the identical observe_bit() comparator instantiated
+//   at bit 0 alone (CONTROL-PA0-OUTPUT below) reads PASS, in the same run
+//   (no switch: this control assertion is unconditional baseline code).
 // MUTATION CONTROL-PA0-POSITIONAL stimulus red: the "different position"
 //   stimulus changed from DDRA=0x04 (bit 2 only) to DDRA=0x05 (bit 2 AND
 //   bit 0), leaving the expected value unchanged, so PRA bit 0 now reads 0
@@ -166,11 +135,10 @@ public:
     int failed = 0;
 };
 
-// Bus-timing protocol for ciaa.v, reused from hrm/ch5-audio-filter-bypass's
-// own Harness (the only other package in this suite that builds this exact
-// fixture): regporta/ddrporta are posedge-clk, clk7_en-gated (ciaa.v:227-
-// 248), so a write needs one tick to latch; pa_out and porta_out are
-// combinational (ciaa.v:250-262) and need only eval().
+// Bus-timing protocol for this fixture, reused from hrm/ch5-audio-filter-
+// bypass's own Harness (the only other package in this suite that builds
+// this exact fixture): a register write needs one tick to latch; a read is
+// combinational and needs only eval().
 class Harness {
 public:
     Harness() : dut(new Vciaa) {
@@ -185,7 +153,7 @@ public:
         dut->data_in = 0;
         dut->tick = 0;
         dut->eclk = 0;
-        dut->porta_in = 0;
+        dut->porta_in = 0x3F;
         dut->portb_in = 0;
         dut->kms_level = 0;
         dut->kbd_mouse_type = 0;
@@ -257,65 +225,101 @@ bool fixture_live(Harness& h, bool repeat_first_word_bug = false) {
 }
 
 // ---------------------------------------------------------------------
-// Shared per-bit comparators. PROP-1 and PROP-2 sweep these across all
+// Shared per-bit observation. PROP-1 and PROP-2 sweep this across all
 // eight bit positions; CONTROL-PA0-POSITIONAL and CONTROL-PA0-OUTPUT call
-// the SAME functions restricted to bit 0 -- the substitution proof for
-// PROP-1/PROP-2's red result needs the identical comparator, not a
+// the SAME underlying observation restricted to bit 0 -- the substitution
+// proof for PROP-1/PROP-2's result needs the identical comparator, not a
 // reimplementation of it, put through a mechanism proven live.
+//
+// The fixture releases all six external port-A lines (porta_in = 0x3F,
+// the idle state p.354 describes: "a read of the ports will return all
+// highs because of passive pull-ups"). With nothing outside contesting
+// the line, three values at each bit position are graded against p.241
+// and p.341:
+//   - control (direction bit 0, PRA written 0): the released input,
+//     expected 1;
+//   - drive0 (direction bit 1, PRA written 0): the pin is what the
+//     output drives (p.341's read-returns-the-pin rule) and nothing else
+//     pulls it, expected 0;
+//   - drive1 (direction bit still 1, PRA written 1): expected 1.
+// Each observed value is carried out alongside the verdict so the run's
+// own output shows the numbers p.241/p.341/p.354 predict, not just
+// PASS/FAIL.
 // ---------------------------------------------------------------------
+struct BitObservation {
+    bool ok;
+    int control;  // observed CIAAPRA bit, DDRA bit = 0, PRA bit = 0
+    int drive0;   // observed CIAAPRA bit, DDRA bit = 1, PRA bit = 0
+    int drive1;   // observed CIAAPRA bit, DDRA bit = 1, PRA bit = 1
+};
 
-// One-to-one positional correspondence at a single bit position: switching
-// a DIFFERENT bit's direction to output must not move this position's
-// read-back away from its own input-state baseline; switching THIS
-// position's own direction to output, then writing the opposite of that
-// baseline, must move the read-back to that opposite value. Baseline is
-// measured, not assumed to be 1: this implementation only models an input
-// pull-up on bits 0/1 (ciaa.v:262's ~ddrporta term), so other positions
-// read the harness's fixed porta_in=0 as their input-state baseline
-// instead of a pulled-high 1.
-bool bit_position_correspondence(Harness& h, int bit, int other_bit,
-                                  bool cross_bit_bug = false) {
+BitObservation observe_bit(Harness& h, int bit, bool omit_direction_bug = false) {
+    const uint8_t mask = static_cast<uint8_t>(1u << bit);
+
+    h.write_reg(RS_DDRA, 0x00);
+    h.write_reg(RS_PRA, 0x00);
+    const int control = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
+
+    h.write_reg(RS_DDRA, omit_direction_bug ? uint8_t{0x00} : mask);
+    h.write_reg(RS_PRA, 0x00);
+    const int drive0 = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
+
+    h.write_reg(RS_PRA, mask);
+    const int drive1 = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
+
+    return BitObservation{control == 1 && drive0 == 0 && drive1 == 1,
+                           control, drive0, drive1};
+}
+
+// Positional correspondence adds one more observation ahead of the same
+// three: a DIFFERENT position's direction bit switched to output, this
+// position's own direction bit still 0, same PRA write (0) -- this
+// position's reading must stay at the released-input value, 1. Only this
+// position's own direction bit may move it.
+struct PositionObservation {
+    bool ok;
+    int control;
+    int crosstalk;  // observed CIAAPRA bit, other position's DDRA bit = 1
+    int drive0;
+    int drive1;
+};
+
+PositionObservation observe_position(Harness& h, int bit, int other_bit,
+                                      bool cross_bit_bug = false) {
     const uint8_t mask = static_cast<uint8_t>(1u << bit);
     const uint8_t other_mask = static_cast<uint8_t>(1u << other_bit);
 
-    // (a) baseline: bit under test left as input.
     h.write_reg(RS_DDRA, 0x00);
     h.write_reg(RS_PRA, 0x00);
-    const uint8_t baseline = h.read_reg(RS_PRA) & mask;
+    const int control = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
 
-    // (b) a DIFFERENT position's direction switched to output, bit under
-    // test still input, same PRA write (0) -> its reading must stay at
-    // baseline: another bit's direction bit must not govern it.
     h.write_reg(RS_DDRA, cross_bit_bug
         ? static_cast<uint8_t>(other_mask | mask) : other_mask);
     h.write_reg(RS_PRA, 0x00);
-    const bool no_crosstalk = (h.read_reg(RS_PRA) & mask) == baseline;
+    const int crosstalk = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
 
-    // (c) the bit's OWN direction switched to output, PRA written to the
-    // opposite of baseline -> the reading must now show that opposite
-    // value: it is this bit's own direction bit, and only its own, that
-    // governs it.
-    const uint8_t target = baseline ? uint8_t{0x00} : mask;
     h.write_reg(RS_DDRA, mask);
-    h.write_reg(RS_PRA, target);
-    const bool own_governs = (h.read_reg(RS_PRA) & mask) == target;
+    h.write_reg(RS_PRA, 0x00);
+    const int drive0 = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
+    h.write_reg(RS_PRA, mask);
+    const int drive1 = (h.read_reg(RS_PRA) & mask) ? 1 : 0;
 
-    return no_crosstalk && own_governs;
+    return PositionObservation{
+        control == 1 && crosstalk == 1 && drive0 == 0 && drive1 == 1,
+        control, crosstalk, drive0, drive1};
 }
 
-// Output behaviour at a single bit position: with that position's own
-// direction bit set to 1, its CIAAPRA read-back must follow what was just
-// written to CIAAPRA at that position, both 0->0 and 1->1, not stuck at
-// either value.
+// Thin bool wrappers: CONTROL-PA0-POSITIONAL and CONTROL-PA0-OUTPUT below
+// call these directly, unchanged, so they keep calling the identical
+// comparator PROP-1/PROP-2 use rather than a reimplementation of it.
+bool bit_position_correspondence(Harness& h, int bit, int other_bit,
+                                  bool cross_bit_bug = false) {
+    return observe_position(h, bit, other_bit, cross_bit_bug).ok;
+}
+
 bool bit_output_follows_direction(Harness& h, int bit,
                                    bool omit_direction_bug = false) {
-    const uint8_t mask = static_cast<uint8_t>(1u << bit);
-    h.write_reg(RS_DDRA, omit_direction_bug ? uint8_t{0x00} : mask);
-    h.write_reg(RS_PRA, 0x00);
-    const bool tracks_zero = (h.read_reg(RS_PRA) & mask) == 0x00;
-    h.write_reg(RS_PRA, mask);
-    const bool tracks_one = (h.read_reg(RS_PRA) & mask) == mask;
-    return tracks_zero && tracks_one;
+    return observe_bit(h, bit, omit_direction_bug).ok;
 }
 
 // ---------------------------------------------------------------------
@@ -328,9 +332,13 @@ bool prop1_universal_positional_correspondence(Harness& h, std::string& detail) 
     bool all_ok = true;
     for (int i = 0; i < 8; ++i) {
         const int other = (i + 1) % 8;
-        const bool ok = bit_position_correspondence(h, i, other);
-        detail += "PA" + std::to_string(i) + "=" + (ok ? "PASS " : "FAIL ");
-        all_ok = all_ok && ok;
+        const PositionObservation r = observe_position(h, i, other);
+        detail += "PA" + std::to_string(i) + "=" + (r.ok ? "PASS" : "FAIL") +
+            "(ctrl=" + std::to_string(r.control) +
+            " cross=" + std::to_string(r.crosstalk) +
+            " drv0=" + std::to_string(r.drive0) +
+            " drv1=" + std::to_string(r.drive1) + ") ";
+        all_ok = all_ok && r.ok;
     }
     return all_ok;
 }
@@ -343,9 +351,12 @@ bool prop1_universal_positional_correspondence(Harness& h, std::string& detail) 
 bool prop2_universal_direction_makes_output(Harness& h, std::string& detail) {
     bool all_ok = true;
     for (int i = 0; i < 8; ++i) {
-        const bool ok = bit_output_follows_direction(h, i);
-        detail += "PA" + std::to_string(i) + "=" + (ok ? "PASS " : "FAIL ");
-        all_ok = all_ok && ok;
+        const BitObservation r = observe_bit(h, i);
+        detail += "PA" + std::to_string(i) + "=" + (r.ok ? "PASS" : "FAIL") +
+            "(ctrl=" + std::to_string(r.control) +
+            " drv0=" + std::to_string(r.drive0) +
+            " drv1=" + std::to_string(r.drive1) + ") ";
+        all_ok = all_ok && r.ok;
     }
     return all_ok;
 }
@@ -372,16 +383,20 @@ int main(int argc, char** argv) {
         checks.expect(result,
             "opus:8-dio.c44 PROP-1: CIAADDRA's direction mask corresponds "
             "one-to-one, by bit position, with CIAAPRA -- graded across all "
-            "eight bit positions (PA0-PA7): for each position, a DIFFERENT "
+            "eight bit positions (PA0-PA7), fixture released (porta_in = "
+            "0x3F, p.354's idle-high state): for each position, a DIFFERENT "
             "bit's direction setting must leave that position's read-back "
-            "at its own input-state baseline, and that position's OWN "
+            "at the released-input value, 1; and that position's OWN "
             "direction bit, switched to output, must move its read-back to "
-            "the written value. True only for PA0 and PA1; false for "
-            "PA2-PA7, whose own direction bit never governs a CIAAPRA "
-            "read-back at this fixture boundary -- the correspondence the "
-            "page claims does not hold across the eight positions "
+            "the written value -- 0 after a written 0, 1 after a written 1 "
+            "-- because a read returns the pin (p.341) and, released, "
+            "nothing else drives it. See MEASURED below for the per-bit "
+            "control/cross/drv0/drv1 values this run read "
             "[p.241 \"CIAADDRA ($BFE201) contains a mask that corresponds "
-            "one-to-one with the data read register, CIAAPRA ($BFE001)\"]");
+            "one-to-one with the data read register, CIAAPRA ($BFE001)\"; "
+            "p.341 \"When you READ a PR register, you read the actual "
+            "current state of the I/O pins\"; p.354 \"a read of the ports "
+            "will return all highs because of passive pull-ups\"]");
         checks.note("PROP-1 per-bit positional correspondence: " + detail);
     }
 
@@ -392,17 +407,20 @@ int main(int argc, char** argv) {
         checks.expect(result,
             "opus:8-dio.c46 sol:8-dio.c43 PROP-2: setting a 1 in CIAADDRA's "
             "direction position makes the corresponding CIAAPRA bit an "
-            "output -- graded across all eight bit positions (PA0-PA7): "
+            "output -- graded across all eight bit positions (PA0-PA7), "
+            "fixture released (porta_in = 0x3F, p.354's idle-high state): "
             "each position's read-back must follow what was just written "
-            "to CIAAPRA at that position, both 0->0 and 1->1, once its own "
-            "direction bit is set to 1. True only for PA0 and PA1; false "
-            "for PA2-PA7 -- PA2-PA5 have no output register bit captured on "
-            "a PRA write at all, and PA6/PA7's write IS captured and does "
-            "drive the porta_out port, but that value is never read back "
-            "through a CIAAPRA read (pa_out uses only porta_out[1:0]), so a "
-            "CPU read of CIAAPRA never reflects it for those two positions "
-            "either [p.241 \"Setting a 1 in the direction position makes "
-            "the corresponding bit an output\"]");
+            "to CIAAPRA at that position, 0->0 and 1->1, once its own "
+            "direction bit is set to 1, because a read returns the pin "
+            "(p.341) and, released, nothing else drives it; with the "
+            "direction bit left at 0 (control), the read-back must stay at "
+            "the released value, 1, whatever was written. See MEASURED "
+            "below for the per-bit control/drv0/drv1 values this run read "
+            "[p.241 \"Setting a 1 in the direction position makes the "
+            "corresponding bit an output\"; p.341 \"When you READ a PR "
+            "register, you read the actual current state of the I/O "
+            "pins\"; p.354 \"a read of the ports will return all highs "
+            "because of passive pull-ups\"]");
         checks.note("PROP-2 per-bit output-follows-direction: " + detail);
     }
 
