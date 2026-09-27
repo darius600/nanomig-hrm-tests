@@ -72,9 +72,15 @@ Cited by: `sol:7-interrupts.c11`; co-cited (same sentence, combined quote):
 > corpus typo)
 
 Testable form: the enable register's write address accepts a SET/CLR-encoded
-write (P11-P13) that sets or clears selected enable bits, and reading that
-same write address back never exposes the stored enable content (the
-write-only half).
+write that sets or clears selected enable bits -- graded on INTENA by P12
+and P13 under their own claims.
+
+The write-only half is measured and recorded, not graded: "write only" fixes
+the access direction, not a read value, and printed pp.263-264 call a read
+of a write-only address undefined ("may trash the register and crash the
+system"). The test source reads INTENA's own write address back after a SET
+write, prints the value (`note`), and records this claim pair with that
+reason (`record`, reason_kind source-silent).
 
 Cited by: `sol:7-interrupts.c12`, `opus:7-int.c10`.
 
@@ -101,8 +107,12 @@ Cited by: `sol:7-interrupts.c13`, `opus:7-int.c11`.
 
 Testable form: a SET-encoded write to the request register's write address
 can itself set a pending-request bit with no external hardware pulse
-involved (the manual's own example of a purely software-driven request), and
-reading that write address back never exposes stored content.
+involved (the manual's own example of a purely software-driven request).
+
+The write-only half is measured and recorded, not graded, for the reason
+given under P4: the test source prints what a read of INTREQ's own write
+address returns (`note`) and records it (`record`, with the
+software-request half marked as graded).
 
 Cited by: `sol:7-interrupts.c14` (restored quote), `sol:7-interrupts.c15`,
 `opus:7-int.c12` (restored quote, complete sentence).
