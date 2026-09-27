@@ -1,27 +1,62 @@
-# NM-HRM-040 — CIAADDRA's direction mask corresponds one-to-one for two bit positions of eight [RTL review]
+# NM-HRM-040 — CIAADDRA's direction mask corresponds one-to-one for two bit positions of eight
 
 | | |
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
+| **Evidence** | seen in the RTL source; no test yet |
+| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. The package's two red assertions decide, at PA2–PA7, only on a 1 written over an external line the fixture holds low, where p.341 makes the read the pin's state and no page says which drive sets the pin; *What the test measures* says what they must measure instead. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L252-L262) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L298-L309) |
-| **Report to** | **read the third-witness section first.** Two of four implementations gate this behaviour on a CIA part number |
-| **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) |
+| **Report to** | **nobody, yet** — the package must first grade the case p.341 predicts. Then **read the third-witness section first**: two of four implementations gate this behaviour on a CIA part number |
+| **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) — PROP-1 and PROP-2 are red, `3 passed, 2 failed`, but with every external line held low |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red, each sweeping all eight positions. Two PA0-restricted controls pass on the identical comparator in the same run |
-| **Verdict of the four** | **a four-way split.** Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight regardless only under a chip-variant switch that is off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four |
+| **Assertions** | 2 red, each sweeping all eight positions; at PA2–PA7 each fails only on a written 1 over a line held low. Two PA0-restricted controls pass on the identical comparator in the same run |
+| **Verdict of the four** | **a four-way split** where p.341 predicts the value, an output driven 0 on a line nothing else pulls: Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight regardless only under a chip-variant switch that is off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four. Over a line held low, the case the package grades and no page decides, they split again: Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the line |
 
 ---
 
 ## What the HRM says
 
-**p.241**: *"CIAADDRA ($BFE201) contains a mask that corresponds one-to-one with
-the data read register, CIAAPRA ($BFE001). Setting a 1 in the direction position
-makes the corresponding bit an output."*
+**p.241**, the paragraph whole:
 
-One-to-one, across the register. The page names no exception.
+> The joystick fire buttons can also be configured as outputs. CIAADDRA ($BFE201) contains a mask that corresponds one-to-one with the data read register, CIAAPRA ($BFE001). Setting a 1 in the direction position makes the corresponding bit an output. See Appendix F for more details.
+
+One-to-one, across the register, and p.241 names no exception. It does not say
+what a read of an output bit returns; it sends the reader to Appendix F.
+
+**p.341**, Appendix F's port section:
+
+> If a bit in the DDR is set to a 1, the corresponding bit position in the PR becomes an output. If a DDR bit is set to a 0, the corresponding PR bit is defined as an input.
+>
+> When you READ a PR register, you read the actual current state of the I/O pins (PA0-PA7, PB0-PB7, regardless of whether you have set them to be inputs or outputs.
+
+**p.354** gives the state of a pin nothing drives:
+
+> The port pins are set as inputs and port registers to zero (although a read of the ports will return all highs because of passive pull-ups).
+
+So the manual predicts a read of an output bit as the pin. Where nothing outside
+pulls the line, the pin is what the CIA drives: a written 0 reads 0 and a
+written 1 reads 1, at every position. Where something outside pulls the line
+low while the CIA drives 1 — for PA5 and PA4 the drive, of which p.244 says
+*"The drive will pull this line low"*, for PA6 and PA7 a closed fire button,
+p.329's *"normally opened switches"* — no page says which of the two sets the
+pin, so none predicts what the read returns.
+
+**PA6 and PA7** as outputs are named twice more. p.229 lists `CIAAPRA ($BFE001)
+Input and output for pin 6 (port 1 & 2 fire buttons)`, and p.329 presupposes
+that a set direction bit changes what those two bits read:
+
+> Before reading this register, the corresponding bits of the data direction register must be cleared to define input mode
+
+**PA2–PA5** are called inputs for what the disk subsystem does with them. p.241
+lists `CIAAPRA ($BFE001) four input bits for disk sensing`; p.339's CIAA
+address map gives `ddra` as `Direction for port A (BFE001);1=output (set to
+0x03)`, read from the render; and p.244 says:
+
+> Bits labeled PA are input bits in CIAAPRA ($BFE001).
+
+None of the three says a direction bit cannot make those bits outputs; each says
+how the system uses them.
 
 ## What NanoMig does
 
@@ -40,21 +75,90 @@ Two different reasons, which is why this is one finding rather than two:
   the same read mux never reads it back, so a CPU read of CIAAPRA never reflects
   a value it set.
 
+Nothing above the module brings the written PA6/PA7 value back either.
+`minimig.v` takes it out as `_fire1_dat,_fire0_dat`
+([`:605`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L605))
+and feeds the fire lines in from `userio`
+([`:622`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L622)),
+where outside the CD32-pad mode they are the joystick and mouse alone
+([`userio.v:313-314`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L313-L314)):
+`assign _fire0 = cd32pad && !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft;`.
+At PA2–PA7 a read is the line whatever the direction bit, so an output driven 0
+on a line nothing pulls reads 1, where p.341 predicts 0.
+
 ### Measured
 
     PA0=PASS  PA1=PASS  PA2=FAIL  PA3=FAIL  PA4=FAIL  PA5=FAIL  PA6=FAIL  PA7=FAIL
 
 The two PA0-restricted controls call the identical comparator functions and pass
-in the same run, which is what stops this being a defect in the measurement.
+in the same run, so the comparator is live. What it is given to compare is the
+next section: at PA2–PA7 each FAIL is a written 1 read back as the line the
+fixture holds at 0.
+
+## What the test measures
+
+The fixture holds all six external lines low
+(`test_ch8-ciaa-port-direction.cpp:188`):
+
+```cpp
+dut->porta_in = 0;
+```
+
+In the manual's active-low terms that is both fire buttons pressed and all four
+drive-status lines asserted — not the idle state p.354 gives, which reads high.
+
+PROP-2 (`bit_output_follows_direction()`, `:313-317`) sets one position's
+direction bit, writes 0 and expects 0, then writes 1 and expects 1. Over a line
+held low the first half passes for any implementation, because the CIA and the
+line agree; the second is a 1 written over a line pulled low, the case no page
+decides. PROP-1 (`bit_position_correspondence()`, `:298-301`) takes its
+baseline with the direction bit clear — the held line, 0 — and then expects the
+written opposite, 1: the same case. So at PA2–PA7:
+
+- an implementation whose output wins over the line, as Denise's does, passes
+  both;
+- an implementation that returns the pin with the line winning, as WinUAE does
+  on PA7/PA6, reads 0 and fails both, at exactly NanoMig's six positions.
+
+The red decides between two readings of a case the manual leaves open, not
+between NanoMig and the page. At PA2–PA7 the package never writes a 0 over a
+line nothing pulls low, which is the case p.341 predicts.
+
+The suite also asserts the opposite of PROP-2 for PA2–PA5.
+[`hrm/ch8-ciaapra-disk-sense-bits`](../../hrm/ch8-ciaapra-disk-sense-bits)'s
+PROP-INPUT drives one position's line low
+(`test_ch8-ciaapra-disk-sense-bits.cpp:295`), sets that position's direction
+bit and writes 1 (`:308-309`), and expects 0 (`:311`); it is green,
+`1 passed, 0 failed`. From the same state the two packages expect opposite
+values, and no implementation passes both.
+
+**What it must measure instead**, on the same `ciaa` fixture:
+
+- **fixture:** `porta_in` with all six lines released, high — `0x3F` in the
+  six-bit packing Verilator gives `porta_in[7:2]`
+  (`test_ch8-ciaapra-disk-sense-bits.cpp:240-247`) — the idle state p.354
+  describes;
+- **stimulus**, for each position n, PA0–PA7: DDRA = `1<<n`, PRA = 0; then
+  PRA = `1<<n`; and, as the control, DDRA = 0 with PRA = 0;
+- **observed:** CIAAPRA (`rs` = 0) bit n after each write;
+- **expected**, from p.241 and p.341: with the direction bit set, 0 after the
+  written 0 and 1 after the written 1, because the pin is what the output
+  drives and nothing else drives it; with it clear, 1 whatever was written,
+  the released line.
+
+The written 0 is the half that decides: at PA2–PA7 `ciaa.v:254` returns the
+line there, 1. PROP-1's comparator needs only the fixture change, which makes
+its baseline 1 and its target 0. The written 1 over a line held low stays
+ungraded.
 
 ## What the others say
 
 | | | |
 |---|---|---|
-| **Denise** | [`libami/system/system.cpp:54`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/system/system.cpp#L54) | the CPU read of CIA-A port A: `out = (lines->pra & lines->ddra) \| (out & ~lines->ddra);` — all eight, and every external contribution passes through `~ddra`. The only one that implements the page as printed whatever is attached |
+| **Denise** | [`libami/system/system.cpp:54`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/system/system.cpp#L54) | the CPU read of CIA-A port A: `out = (lines->pra & lines->ddra) \| (out & ~lines->ddra);` — all eight, and every external contribution passes through `~ddra`, so an output returns the written value whatever the line does: 0 on a released line, and 1 over a line held low, which no page states. The only one of the four that returns the written 0 at every position whatever is attached |
 | **Copperline** | [`bus.rs:8998-9010`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L8998-L9010) | its generic core is full width, and `cia_a_read` then discards it: PA7/PA6 are overwritten from the fire buttons, then `v = (v & !0x3C) \| self.floppy.cia_a_status_bits();`, no DDR term. **NanoMig's split, bit for bit** |
-| **WinUAE** | [`cia.cpp:1916-1917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1916-L1917) | `:1917` implements the rule for PA1/PA0, and `handle_joystick_buttons(c->pra, c->dra)` on the line above reads an output-low PA7/PA6 as 0 ([`inputdevice.cpp:4012-4015`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L4012-L4015)), so a written value comes back on those two while the fire button is released. PA2–PA5 are never stored: the write keeps only those four bits at [`:2128`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2128) — `c->pra = (c->pra & ~0xc3) \| (val & 0xc3);` |
-| **vAmiga** | [`CIA.cpp:863-867`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L863-L867) | muxes all eight, then lets an attached control-port device override PA7/PA6 *after* the mux without consulting `ddra`. A port has no device until the host sends it mouse or joystick input ([`ControlPort.h:50`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Ports/ControlPort.h#L50)); a mouse with its default pull-ups then forces a released fire bit to 1 even when it is an output driven 0 ([`Mouse.cpp:155-169`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Mouse/Mouse.cpp#L155-L169)) |
+| **WinUAE** | [`cia.cpp:1916-1917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1916-L1917) | `:1917` implements the rule for PA1/PA0, and `handle_joystick_buttons(c->pra, c->dra)` on the line above reads an output-low PA7/PA6 as 0 ([`inputdevice.cpp:4012-4015`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L4012-L4015)), so a written value comes back on those two while the fire button is released; a pressed button reads 0 whatever was written ([`inputdevice.cpp:4005-4006`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L4005-L4006)), the pin with the line winning. PA2–PA5 are never stored: the write keeps only those four bits at [`:2128`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2128) — `c->pra = (c->pra & ~0xc3) \| (val & 0xc3);` |
+| **vAmiga** | [`CIA.cpp:863-867`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L863-L867) | muxes all eight, then lets an attached control-port device override PA7/PA6 *after* the mux without consulting `ddra`. A port has no device until the host sends it mouse or joystick input ([`ControlPort.h:50`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Ports/ControlPort.h#L50)); a mouse with its default pull-ups then forces a released fire bit to 1 even when it is an output driven 0 ([`Mouse.cpp:155-169`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Mouse/Mouse.cpp#L155-L169)), and a pressed joystick button forces it to 0 ([`Joystick.cpp:198`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Joystick/Joystick.cpp#L198)). The drive status enters only through `~ddra`, so over a line held low PA2–PA5 return the written 1 |
 | **MiSTer** | [`rtl/ciaa.v:300`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L300) | descendant — the same split, plus one added trailing comment: `pa_out[7:0] = {porta_in2[7:2],porta_out[1:0]};  // Mix inputs and outputs` |
 | **TC64** | [`rtl/minimig/ciaa.v:230`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa.v#L230), [`:238`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa.v#L238) | descendant — `rtl/minimig/ciaa.v:230,238` — byte-identical to NanoMig, no comment added either: the same `pa_out` assignment and the same `porta_out[3:0]` pull-up assign. A fix diverges from both lines equally; neither has the eight-bit mask this page requires |
 
@@ -76,10 +180,10 @@ so an output-mode read of those four returns their reset value, zero
 ([`cia.cpp:2389`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2389)),
 whatever was written.
 
-**That is why this finding is marked contested.** The question behind p.241 may
-not be "does the implementation obey the page" but "which CIA part is fitted",
-and two independent emulator authors evidently concluded the answer differs by
-part. That is a decision for Amiga specialists.
+**That is what the split may be about.** The question behind p.241 may not be
+"does the implementation obey the page" but "which CIA part is fitted", and two
+independent emulator authors evidently concluded the answer differs by part.
+That is a decision for Amiga specialists.
 
 One corroboration worth passing on: vAmiga logs *"DDRA: Setting unusual value"*
 for CIA-A whenever the write is not `0x03`
@@ -89,25 +193,37 @@ exactly the pair NanoMig implements.
 
 ## Suggested change
 
-**Not without an answer to the part-number question.** If the fitted CIA returns
-PRA contents for bits in output mode, `pa_out` should mux on `ddrporta` across
-all eight positions, the way Denise does in one line. If it does not, the page is
-describing a part this core does not model, and the finding is documentation
-rather than a defect.
+**None yet**: the package must first grade the case p.341 predicts (*What the
+test measures*). **Then, not without an answer to the part-number question.** If
+the fitted CIA returns PRA contents for bits in output mode, `pa_out` should mux
+on `ddrporta` across all eight positions, the way Denise does in one line. If it
+does not, the page is describing a part this core does not model, and the
+finding is documentation rather than a defect.
 
-What should not happen is a change made because a test is red. The test is red
-because the page is unambiguous; whether the page is right about the silicon is
-a different question with a different owner.
+What should not happen is a change made because a test is red. The package is
+red on a 1 written over a line held low, which no page decides; whether the page
+is right about the silicon is a different question with a different owner.
 
 ## What holds the finding up
 
-- The page states one-to-one and names no exception.
-- Two controls on the identical comparator pass in the same run.
-- Six of eight positions fail, for two distinct and independently readable RTL
-  reasons.
+- p.241 makes the mask one-to-one, and p.341, to which it refers, makes every PR
+  bit whose DDR bit is 1 an output and the read the pin: an output driven 0 on a
+  line nothing else pulls reads 0.
+- At six of eight positions `ciaa.v:254` returns the line whatever the direction
+  bit, for two distinct and independently readable RTL reasons, so that output
+  reads 1. This is read from the source; the package does not yet grade it.
+- Two controls on the identical comparator pass in the same run, so the
+  comparator is live.
 
 ## What weakens it
 
+- The package's two reds decide, at PA2–PA7, only on a 1 written over a line
+  held low. An implementation that returns the pin with the line winning fails
+  them at the same six positions, and `hrm/ch8-ciaapra-disk-sense-bits` expects
+  that 0 for PA2–PA5 and is green.
+- p.241, p.244 and p.339 describe PA2–PA5 as the disk subsystem's inputs and
+  DDRA as set to 0x03. None says a direction bit cannot make them outputs, but
+  `hrm/ch8-ciaapra-disk-sense-bits` reads p.244 that way.
 - Only one implementation of four does what the page says by default whatever is
   attached; vAmiga does only while no mouse is attached.
 - Two of the four treat it as part-dependent, which is a reading the page does
