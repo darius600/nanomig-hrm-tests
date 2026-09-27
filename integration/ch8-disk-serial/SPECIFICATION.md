@@ -7,7 +7,7 @@ Reference Manual*, 3rd edition, by an author who never saw the
 implementation or any test. Page numbers are printed page numbers.
 Quotations follow the printed page (the scan), which governs where the text
 layer differs. The package has five propositions, P1 to P5. Of the 34
-claims, 7 carry propositions and 27 do not (section 1).
+claims, 6 carry propositions and 28 do not (section 1).
 
 ---
 
@@ -32,13 +32,7 @@ claims, 7 carry propositions and 27 do not (section 1).
 | Claims | Page | Reason |
 |---|---|---|
 | `sol:8-serper.c4`, `sol:8-serper.c5` | 255 | These give the color clock as 279.36 ns (NTSC) and 281.94 ns (PAL). A test measures time only in system clock cycles, and no page ties the re-implementation's clock to nanoseconds. Selecting NTSC or PAL changes no count a test can take. These values are used only to convert: microseconds into color clocks in P4 (R3), and a bit time into a rate in P3. They are not graded. |
-
-### 1.4 Claim used only in part
-
-`opus:8-serper.c10` has two problems:
-
-- **Page.** The claim records p.283, but the printed SERPER entry is on **p.284**. Printed p.283 ends with SERDATR bit 00, and SERPER heads p.284.
-- **What is used.** Its "(N+1)" form is used in P1 and P2. Its constant ".2794 microseconds" cannot be observed (1.3). On a PAL machine that constant disagrees with p.255 (see P2), and this limits what P2 grades.
+| `opus:8-serper.c10` | printed 284 | The claim's `says` is only a constant, ".2794 microseconds", for no named machine. The claim records p.283, but the printed SERPER entry is on **p.284**: printed p.283 ends with SERDATR bit 00, and SERPER heads p.284. The constant cannot be observed for the same reason as `sol:8-serper.c4`/`c5` above (a test measures cycles, not nanoseconds), and on a PAL machine it disagrees with p.255's own color clock (P2), so it cannot stand in for either page's machine-specific value. |
 
 ---
 
@@ -99,7 +93,8 @@ A color clock is 0.27936 µs on NTSC and 0.28194 µs on PAL (p.255). p.24 gives 
   - Memory refresh is not a DMACON channel and keeps running.
 - **G2: lead-in.** INTREQ ← $0020 (clear VERTB, bit 5). Then twice: poll INTREQR bit 5 until it is 1, and clear it again. VERTB is set "at line 0 (start of vertical blank)" (p.219), so after the lead-in at least one whole field lies in the trace.
 - **G3: markers.** At the points named below, the program writes a word to a fixed Chip address MARK. Each value is distinct: 0, k, BRK, UNBRK, READY, START, DONE. The trace shows each marker write with its time.
-  - All program data (MARK, the probe addresses, the RESULT area, the disk buffer) lies below $80000. That is the range an OCS disk pointer reaches (p.279: DSKPTH holds the "high 3 bits, high 5 bits if ECS" and DSKPTL the "low 15 bits"), so the same addresses work under OCS and ECS.
+  - All program data (MARK, the probe addresses, the RESULT area, the disk buffer) is specified below $80000. That is the range an OCS disk pointer reaches (p.279: DSKPTH holds the "high 3 bits, high 5 bits if ECS" and DSKPTL the "low 15 bits"), so the same addresses work under OCS and ECS.
+  - Below $80000 is also the ROM overlay window while the overlay is on, the reset default (p.223: "the system RAM that would normally be located at this address is not available... Software must assume that memory is not available"). A CPU write there does not reach Chip RAM until the overlay is cleared, which p.223 says is done through the OVL bit "in one of the 8520 Chips" (Appendix F, p.339: CIA-A ddra $BFE201 set to $03, pra $BFE001 bit 0 is OVL). Any G3 data placed below $80000 needs that clear first.
   - Program data is kept apart from the program code.
   - The probe addresses are PROBE_I, PROBE_D and RESULT.
 - **G4: bounded polls.** Every poll loop has a bound of at least three times the expected wait.
@@ -122,7 +117,6 @@ A color clock is 0.27936 µs on NTSC and 0.28194 µs on PAL (p.255). p.24 gives 
 **Claims.**
 
 - `sol:8-serper.c8` (p.255)
-- `opus:8-serper.c10` (printed p.284)
 
 **Page.**
 
@@ -225,7 +219,6 @@ The tolerance ±C/2 grades at the unit the page counts in, whole color clocks. E
 **Claims.**
 
 - `sol:8-serper.c9` (p.255)
-- `opus:8-serper.c10` (printed p.284)
 
 **The pages disagree on PAL.**
 
@@ -307,7 +300,8 @@ So a disk write fetches one word from Chip memory every 32 µs or every 64 µs.
 **Stimulus.** There is one run for each combination of FAST value (1 or 0), standard (NTSC or PAL) and core.
 
 1. G1, then G2.
-2. Fill L = 256 words starting at B = $20000 with $AAAA.
+2. Clear the ROM overlay, then fill L = 256 words starting at B = $20000 with $AAAA.
+   - The overlay is on at reset (p.223), and B lies inside its window ($0-$7FFFF); a CPU write there is otherwise lost (G3). Clear it first: CIA-A DDRA ($BFE201) ← $03, then CIA-A PRA ($BFE001) ← 0, clearing OVL (bit 0) (p.223; Appendix F, p.339).
    - p.246: "The lowest bit of the address must be zero, and the buffer must be in Chip memory".
    - $AAAA is valid raw MFM. By the table on p.250, a data 0 that follows a 0 is written as 10. p.249 requires valid raw MFM for FAST = 1.
 3. ADKCON ← $7F00. This clears bits 14-8 (PRECOMP1/0, MFMPREC, UARTBRK, WORDSYNC, MSBSYNC and FAST).
@@ -497,7 +491,7 @@ The RxD driver behaves the same in both runs:
 
 - For (c): write SERPER ← $8173 in run B as well. The page then predicts no difference between the runs, so the difference is near 0 and (c) fails.
 - For (a): drive run A at a bit time of 2T, and (a) fails.
-- For (b): grade run B's events against s_j + 9T, and (b) fails.
+- For (b): a stimulus contrast through (b)'s own clause, run A with SERPER ← $80B9 (N=185), the driver unchanged. p.255's own N+1 rule then has the receiver sample about every 186 colour clocks, near half the driver's own bit time, so it reaches nine samples well before the driver's own ninth bit begins, and (b) fails.
 
 **Recorded, not graded.** A run-A variant in which every ninth bit is 0. Its RESULT bit 8 is recorded. p.257 predicts 0 and p.283 predicts 1, so the pages disagree and the test does not grade it.
 
@@ -520,28 +514,45 @@ are unchanged from what this document committed to before the build.
 
 `Makefile`, `test_ch8_disk_serial.cpp`; `ch8_defs.i` (register offsets from
 Appendix B not already in `nanomig.i`, and the bounded-poll macro `POLLBIT`
-every program uses for G4); `tx_core.s` (P1/P2/P3's shared engine) and its
+every program uses for G4, which also ORs a `POLL_TIMEOUT` flag whenever a
+poll's own bound is reached); `tx_core.s` (P1/P2/P3's shared engine) and its
 nine wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`,
 their three `_plus1` contrast variants, and `prog_tx_n371_1c/1d/1e.s`
 (precondition contrasts); `fast_core.s` (P4's shared engine) and its six
 wrappers `prog_fast0.s`, `prog_fast1.s`, `prog_fast1_4c/4d/4e/4f.s`; `rx_core.s`
-(P5's shared engine, driven from the C++ test's own RxD schedule) and its six
-wrappers `prog_rx_a.s`, `prog_rx_b.s`, `prog_rx_a_5b/5c/5d/5e.s` (precondition
-contrasts; (a)'s, 5f's and (c)'s own contrasts are driver/comparator-level,
-needing no separate program).
+(P5's shared engine, driven from the C++ test's own RxD schedule) and its
+seven wrappers `prog_rx_a.s`, `prog_rx_b.s`, `prog_rx_a_5b/5c/5d/5e.s`
+(precondition contrasts), `prog_rx_a_altper.s` ((b)'s own contrast; (a)'s,
+5f's and (c)'s own contrasts are driver/comparator-level, needing no
+separate program).
+
+`ch8_defs.i`'s MARK, RESULT, PROBE_D, PROBE_I and POLL_TIMEOUT sit at
+$0C0000 and above, not below $80000 as G3 specifies for program data in
+general: below $80000 is the ROM overlay window while the overlay is on
+(p.223), and only P4's own stimulus clears it (before its buffer fill); no
+other program in this package does, so a lower address would never be
+written. P4's own disk buffer, DBUF, does sit at $020000 (below $80000),
+inside the range the same overlay-clear step opens up.
 
 **Tuned, not page-defined.** Every poll loop is bounded at least 3x its own
 expected wait (G4): `BND_VERTB` = 500000 iterations (VERTB's wait is at
-most one field, independent of SERPER); `BND_TBE` = 500 (TBE's wait is a
-near-instant register-to-shift-register transfer, independent of the bit
-period); `BND_TSRE` is set per program from that program's own N and W (200
+most one field, independent of SERPER); `BND_TBE` = 1000 (only the WMULTI
+wrapper's per-word poll uses it; TBE resets after about one word time,
+10*(N+1)*C, and per-iteration cost differs enough between the two cores
+that 1000 is needed for at least 3x that wait on the faster-executing
+core); `BND_TSRE` is set per program from that program's own N and W (200
 for N=0, 15000 for N=371, 200000 for N=32396); P4's `BND_POLL` = 200000;
-P5's `BND_VERTB` = 500000, `BND_RBF` = 200000 (RBF's own wait scales with
-the driver's schedule, not with a program-visible quantity, so one bound
-covers every character). None of these bounds is reached in an unmutated
-run; 1e's, 4d's and 5c's own contrasts are the cases built to reach one (5c
-deliberately delays past the bound of a different poll, its own next one,
-rather than exhausting its own).
+P5's `BND_VERTB` = 500000, `BND_RBF` = 1500 (RBF's own wait scales with the
+driver's schedule, not with a program-visible quantity, so one bound covers
+every character; tuned above 3x the per-character step, 16.125*(N+1)*C,
+while staying small enough that exhausting it on every one of the eight
+polls still fits the run's own cycle budget); `prog_rx_a_5c.s`'s `C5DELAY`
+= 2000 (tuned to land the delayed read past the following character's own
+completion, not merely past its own); `prog_rx_a_5e.s`'s `SLOWCOUNT` = 120;
+`prog_fast1_4f.s`'s `MIDSTOP_DELAY` = 100000. None of these bounds is
+reached in an unmutated run; 1e's, 2e's, 4d's and 5c's own contrasts are
+the cases built to reach one (5c's own poll for the character past the end
+of the driven data is what exhausts `BND_RBF`).
 
 ### 4.2 Measured values
 
@@ -549,57 +560,50 @@ rather than exhausting its own).
   capture, both standards, both cores.
 - R2's field-line count measured 263 (NTSC) and 313 (PAL) on every capture,
   both cores.
-- P4: no read of the disk buffer (DBUF = B = $20000, p.246) is observed in
-  ram_log() at all, on any of NTSC/PAL x FAST=0/FAST=1, both cores. See 4.3.
-- P5's (c): mean_j D_j(run A) - mean_j D_j(run B) measured 2945.0 cycles
-  against T=2976.0 (0.9896T), inside [T/2,3T/2].
+- P4's T_cell measured 1.331189 us (NTSC) and 1.343483 us (PAL), identical
+  for FAST=1 and FAST=0, on both cores.
+- P2's own PAL colour-clock ratios: U_N/C measured 1.000000 (N=0), 1.000103
+  (N=371) and 1.000000 (N=32396), on both cores.
+- P5's (c): mean_j D_j(run A) - mean_j D_j(run B) measured 2944.5 cycles on
+  fx68k and 2978.0 cycles on TG68K, against T=2976.0 (0.9896T and 1.0007T),
+  both inside [T/2,3T/2].
 
 ### 4.3 What the build found
 
-**P1, P2(ii) and P3 are red on both cores, on the same run.** Measured on
-the N=371, W=4 NTSC run (both standards, both cores): the main grid check
+**P1, P2 and P3 are red on both cores, on the same run.** Measured on the
+N=371, W=4 NTSC run (both standards, both cores): the main grid check
 matches 20 of 40 changes (words 1-2 land inside the +/-C/2 tolerance,
-words 3-4 do not); the single-word runs (N=0, N=32396) match 10 of 10. P2's
-own uniform-grid check (i) passes on every run; P2(ii)'s pairwise U
-comparison, whose tolerance is under a thousandth of a colour clock, is red
-already from the N=371 run alone (measured |U0-U371| = 0.000827, tolerance
-0.000579-0.889440 depending on the pair). Not exercised by N=0 or the other
-single-word runs, only by back-to-back transmission (W>1); the cause is in
-the report to the lead, not here.
+words 3-4 do not); the single-word runs (N=0, N=32396) match 10 of 10, and
+the within-word intervals of the N=371 run are all exact -- both are
+graded as their own controls, and both pass. P2's own uniform-grid check
+(i) passes on every run; the pairwise U comparison (ii) is red through the
+pairs that include N=371: |U371-U32396| = 0.000827 against a tolerance of
+0.000579. The pairs that exclude N=371 pass on their own tolerance:
+|U0-U371| = 0.000827 against 0.889440, and |U0-U32396| = 0.000000 against
+0.888916 (graded on its own as a control). Not exercised by N=0 or N=32396
+alone, only by back-to-back transmission (W>1).
 
-**P4's own proposition, and preconditions 4d/4e/4f, are halted, not red: the
-stimulus in this document does not produce an observable disk-buffer read on
-this harness.** Measured: on every capture (both standards, both FAST
-settings, both cores), no read of word B+2i for any i up to 192 appears in
-ram_log() at all, so the window opus:8-adkcon.c33, 4d, 4e, 4f and P4-MAIN
-grade cannot be formed. Precondition 4c (ADKCONR reads back the bit the
-program wrote) does not depend on that window and still holds on every
-capture, with its own contrast (NMH_MUTATE=P4-4C) still showing a genuine
-SETCLR error can be caught. Reported to the lead, not reasoned about here.
+**P4's own proposition, and preconditions 4d/4e/4f, are graded and red on
+every capture, both cores.** With the buffer address and the overlay-clear
+step both repaired, the DMA fetch of B+2i (DBUF=$020000) is observed on
+every capture: 4a, 4b, 4c, 4d and 4e all pass. T_cell measured 1.331189 us
+(NTSC) and 1.343483 us (PAL), identical for FAST=1 and FAST=0 and identical
+on both cores; both values lie below both of p.265/p.249's bands
+(1.5-2.5 us and 3.5-4.5 us), so P4-MAIN is red under either FAST setting's
+band, on every capture. 4f (steady state) passes: the fetch cadence does
+not drift.
 
-**P5's mechanism preconditions (5a-5e) and derived checks (b, c) all pass on
-both runs, both cores; (a) and 5f are red on an open, unresolved anomaly in
-one specific character, not a mechanism failure.** Every character except
-index 2 (0-based; the third of eight, byte $81) reads back correctly on
-both run A and run B: RESULT bits 7-0 match byte_j, bit 9 and bit 8 read 1
-on run A, and the G5 brackets, RBF-observed and no-early-signal checks all
-hold. Character 2's own RESULT reads back $0800 on both runs -- SERDATR's
-own RXD-level bit (bit 11) set, every other bit including the data bits
-zero, which is what SERDATR shows before any character is ever received --
-yet
-5d's own check (an RBF=0 sample precedes the first RBF=1 sample inside that
-same character's own poll window) still passes for it, and 5c's own check
-(no OVRUN) also passes for it. Byte $81 is the only one of the eight bytes
-with a run of six consecutive same-level data bits (d1-d6, all 0); the
-byte with the next-longest run, $C3 (four consecutive 0s, d2-d5), reads
-back correctly. The build could not root-cause this within budget: it is
-reported here, not compensated for by loosening (a) or 5f, per this
-package's own rule that a check that went red stays red until the cause is
-found and fixed.
+**P5: every character (0-7) reads back correctly on both runs, both
+cores.** RESULT bits 7-0 match byte_j for every j on run A and run B, bit 9
+and bit 8 read 1 on run A, and the G5 brackets, RBF-observed and
+no-early-signal checks all hold. Bit 9 and bit 8 are not graded against
+run A alone (they read 1 on run B too, SPECIFICATION.md P5); the
+proposition rests on run A's data match together with its own one-bit-
+later timing against run B.
 
 ### 4.4 Mutations
 
 See `test_ch8_disk_serial.cpp`'s own header comment for the full list, the
 `NMH_MUTATE` value each uses, and which labels each one flips (several
 share a binary or a capture, so one substitution can flip more than one
-label). 4f's mutation is recorded, not graded, per 4.3.
+label).

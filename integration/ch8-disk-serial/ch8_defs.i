@@ -2,7 +2,13 @@
 ; from the Hardware Reference Manual's Appendix B, Register Summary Address
 ; Order (p.289-290). Offsets from CUSTOM (nanomig.i defines CUSTOM itself).
 ; MARK/probe addresses used by the package's own programs (SPECIFICATION.md
-; G3): all below $80000, distinct from RESULTS/DONE_ADDR (nanomig.i).
+; G3), distinct from RESULTS/DONE_ADDR (nanomig.i). MARK, RESULT, PROBE_D,
+; PROBE_I and POLL_TIMEOUT sit above $80000, not below it: p.223 says that
+; while the ROM overlay is on -- the reset default -- "the system RAM that
+; would normally be located at this address is not available... Software
+; must assume that memory is not available", and every program but P4's own
+; disk-buffer fill runs with the overlay on throughout (see SPECIFICATION.md
+; section 4).
 
 ADKCONR         equ $010
 SERDATR         equ $018
@@ -25,14 +31,20 @@ MARK_DONE       equ $00F5
 
 ; P4's own addresses (disk write DMA), per SPECIFICATION.md's own stimulus.
 DBUF            equ $020000     ; L=256-word raw-MFM buffer, even address (p.246)
-RESULT          equ $0C0000     ; ADKCONR readback (RESULTS, nanomig.i)
-PROBE_D         equ $0C0002     ; DSKBYTR probe stream
-PROBE_I         equ $0C0004     ; INTREQR probe stream (unused space reserved)
+RESULT          equ $0C0000     ; ADKCONR readback (RESULTS, nanomig.i); P5's
+                                 ; eight-word RESULT array also starts here
+                                 ; (RESULT..RESULT+$0E) -- P4 and P5 never run
+                                 ; concurrently.
+PROBE_D         equ $0C0010     ; DSKBYTR probe stream (kept clear of P5's RESULT array)
+PROBE_I         equ $0C0012     ; INTREQR probe stream (kept clear of P5's RESULT array)
+POLL_TIMEOUT    equ $0C0020     ; G4: ORed with 1 by POLLBIT whenever a poll's own bound is reached
 
 ; G4: every poll loop is bounded (>= 3x its expected wait), and falls
 ; through on timeout rather than hanging -- the program always reaches
-; DONE. \1 = register offset from a0, \2 = bit number, \3 = bound
-; (iteration count, a 32-bit immediate).
+; DONE. A poll that reaches its bound ORs 1 into POLL_TIMEOUT before
+; falling through, so a run can be checked for "no poll ended at its
+; bound" directly. \1 = register offset from a0, \2 = bit number, \3 =
+; bound (iteration count, a 32-bit immediate).
 POLLBIT         macro
                 move.l  #\3-1,d2
 .poll\@         move.w  \1(a0),d0
@@ -40,5 +52,6 @@ POLLBIT         macro
                 bne.s   .done\@
                 subq.l  #1,d2
                 bpl.s   .poll\@
+                ori.w   #1,POLL_TIMEOUT
 .done\@
                 endm

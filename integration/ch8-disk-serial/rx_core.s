@@ -10,7 +10,12 @@
         include "ch8_defs.i"
 
 BND_VERTB       equ 500000
-BND_RBF         equ 200000
+; BND_RBF: tuned well above 3x the per-character step (16.125*T), so it
+; still holds when a character's own RBF genuinely never comes (as in the
+; 5c contrast's own cascade); large enough to satisfy G4, small enough that
+; exhausting it on every one of the eight polls still fits the run's own
+; cycle budget (see SPECIFICATION.md 4.1).
+BND_RBF         equ 1500
 DELAYCOUNT      equ 300
 
         org     PROGRAM_ORG
@@ -41,7 +46,13 @@ start:
 
 ; ---- step 3: SERPER (N=371; LONG per run) ----
         ifd MUT_LONG
+        ifd MUT_ALTPER
+; ---- MUTATION (b) contrast: N=185 instead of 371, driver unchanged (p.255:
+; N+1 color clocks between samples) ----
+        move.w  #$80B9,SERPER(a0)
+        else
         move.w  #$8173,SERPER(a0)
+        endif
         else
         move.w  #$0173,SERPER(a0)
         endif

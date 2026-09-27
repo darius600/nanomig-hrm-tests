@@ -5,15 +5,18 @@
 ; including this file. NTSC vs PAL is not a program difference: the
 ; harness selects it via Config before boot.
 ;
-; BND_VERTB and BND_TBE do not depend on N or W: VERTB's expected wait is
-; at most one field regardless of SERPER, and TBE's is a near-instant
-; register-to-shift-register transfer regardless of the bit period.
+; BND_VERTB does not depend on N or W: VERTB's expected wait is at most one
+; field regardless of SERPER. BND_TBE only bounds the WMULTI loop's
+; per-word poll (N=371, the only wrapper that sets WMULTI): TBE resets once
+; the shift register empties, so the wait is about one word time,
+; 10*(N+1)*C, and BND_TBE is tuned well above 3x that for N=371 on the
+; faster-executing core (see SPECIFICATION.md 4.1).
 
         include "nanomig.i"
         include "ch8_defs.i"
 
 BND_VERTB       equ 500000
-BND_TBE         equ 500
+BND_TBE         equ 1000
 
         org     PROGRAM_ORG
 

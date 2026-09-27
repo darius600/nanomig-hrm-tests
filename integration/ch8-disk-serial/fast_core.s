@@ -26,6 +26,17 @@ start:
         POLLBIT INTREQR,5,BND_VERTB
         move.w  #$0020,INTREQ(a0)
 
+; ---- step 2 (repaired): clear the ROM overlay before the CPU fills DBUF.
+; The overlay is the reset default (p.223: "the system RAM that would
+; normally be located at this address is not available... Software must
+; assume that memory is not available"); the OVL bit that disables it lives
+; in CIA-A (p.223, "See Appendix F for the bit location"). Appendix F
+; (p.339): CIA-A's ddra ($BFE201) is "set to 0x03", and pra ($BFE001) bit 0
+; is OVL. DBUF ($020000) is below the overlay window, so without this the
+; fill below never reaches Chip RAM. ----
+        move.b  #$03,$BFE201
+        move.b  #$00,$BFE001
+
 ; ---- step 2: fill L=256 words at B=DBUF with $AAAA (valid raw MFM, p.250) ----
         lea     DBUF,a1
         move.w  #DBUF_LEN-1,d1
