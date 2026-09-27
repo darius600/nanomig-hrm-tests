@@ -40,8 +40,11 @@ start:
         move.l  a0,$20                  ; vector 8: privilege violation
 
 ; ---- step 3: VBR (68010/68020 runs only) --------------------------------
-        ifd     MUT_VBR
+; The 68000-mode image keeps the same MOVEQ #0,D0 and replaces only the
+; two-word MOVEC D0,VBR with two NOPs, so the two images are equal except
+; for those two words (SPECIFICATION.md section 7 step 3).
         moveq   #0,d0
+        ifd     MUT_VBR
         movec   d0,vbr
         else
         nop

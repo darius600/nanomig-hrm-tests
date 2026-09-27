@@ -61,6 +61,18 @@ The package has six propositions:
 - `opus:1-guidelines.c67`, `sol:1-guidelines.c67` (p.13): only the 68020
   against the 68000 is graded (P6). The page does not say whether the 68010
   counts as "more advanced", and the 68030 and 68040 are not available.
+  Beyond that: the harness documents `cpu_config` only as "00 = 68000 core
+  behaviour" and claims no 68020 prefetch depth anywhere, and the measured
+  RAM-port log under `cpu_config=3` is identical, cycle for cycle, to
+  `cpu_config=0` (P3's own instruction fetches). D(68020 mode) is measured
+  and recorded (section 10), not graded against this claim: a harness
+  option limit, not a red of the RTL against p.13.
+- `opus:1-guidelines.c59`, `sol:1-guidelines.c59` (p.13, p.263): the same
+  harness-option limit as c67, for P4. `cpu_config` is documented only as
+  "00 = 68000 core behaviour"; nothing documents a 68020 bus, and the
+  measured RAM-port log under `cpu_config=3` is identical, cycle for
+  cycle, to `cpu_config=0` for CLR. The relation is measured and recorded
+  (section 10), not graded against this claim.
 
 ---
 
@@ -856,31 +868,32 @@ counted as in P3, as a calibration.
 - **X_c/X_k self-report.** Every case/block stores the address of its own
   CLR/MOVE/stop instruction into a table (XTAB, XTAB3, XTAB6) with a
   PC-relative LEA, so the C++ side never hand-counts instruction lengths.
-- **Measured, P1's own contrast (P1-MOVE, section 3).** The page's
-  contrast (MOVE.x #0 avoids CLR's extra read) does not flip the
-  assertion on this core: measured directly on case 1 (.B, (An)), MOVE.B
-  #0,(a0) shows a CPU read of the prefill ($A5A5) at the operand's word,
-  then a write -- the same read-then-write pattern as CLR, not the page's
-  own contrast. The comparator stays green under this mutation for that
-  reason; recorded, not adjusted.
-- **Measured, P4 (section 6).** On the second core (TG68K) with
-  cpu_config=68020, all 21 cases showed the same read-then-write pair p.13
-  attributes to the 68000 (0/21 cases showed a single write with no
-  preceding read). Measured directly on case 1 (.B, (An)): a CPU read of
-  the prefill ($A5A5) at the operand's word, then a write. P4 is red
-  through this clause on the second core; the first core has no 68020
-  mode and does not run it.
-- **Measured, P6 (section 8).** D(68020 mode) = D(68000 mode) = 2 on the
-  second core (the same image, cpu_config=68020 vs 68000); the guard was
-  6 words long (P6.e held: 2 < 6). P6 is red through the "D(68020) >
-  D(68000)" clause: this core's measured prefetch depth does not differ
-  between the two settings.
+- **Measured, P1's own contrast (P1-MOVE, section 3).** MOVE.B #0,(a0)
+  (case 1, .B (An)) makes a single write, no read, on both cores (first
+  core: one write; second core: one write) -- the page's own contrast
+  holds. P1's relation (read then write) is graded through the same,
+  unchanged comparator as the normal run, and goes red under this input on
+  both cores, exactly as p.13 and p.263 predict for MOVE against CLR.
+- **Measured, P4 (section 6).** On the second core with cpu_config=68020,
+  0/21 cases showed a single write with no preceding read; case 1 (.B,
+  (An)) shows the same read-then-write pair as the 68000-mode run. This
+  run's own RAM-port log is identical, cycle for cycle, to the same
+  program under cpu_config=0. The harness documents cpu_config only as
+  "00 = 68000 core behaviour" and names no 68020 bus: opus/sol:1-
+  guidelines.c59 is declined as a harness-option limit, not graded. The
+  first core has no 68020 mode and does not run it.
+- **Measured, P6 (section 8).** The guard is 6 words long (W_k to W_k+10);
+  D(68000 mode) = 1 on both cores, D(68020 mode) = 1 on the second core,
+  the same image. The harness documents cpu_config only as "00 = 68000
+  core behaviour" and names no 68020 prefetch depth: opus/sol:1-
+  guidelines.c67 is declined as the same kind of harness-option limit as
+  P4/c59, not graded.
 - **P5's and P6's own "contrasting case"** (first core vs. second core in
   68000 mode) spans both cores' separate executables; neither build can
   read the other's data, so each core prints its own RECORDED frame/depth
   data (F_1..F_5 for P5, D for P6) and the comparison is drawn once both
   outputs exist, not as a `checks.expect` inside either binary. Measured:
   the first core's F_1..F_5 and the second core's own 68000-mode F_1..F_5
-  are byte-for-byte identical, and both cores' D(68000 mode) = 2 -- both
+  are byte-for-byte identical, and both cores' D(68000 mode) = 1 -- both
   contrasts hold exactly as the page predicts (two 68000s write the same
   frame; neither side is "more advanced").

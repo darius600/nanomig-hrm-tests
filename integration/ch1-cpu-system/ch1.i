@@ -7,11 +7,10 @@
 ;
 ; SPECIFICATION.md 2.2's addresses ($3FF0, $4000.., $8000+) are used
 ; literally, below, as absolute addresses -- but PROGRAM_ORG ($080400,
-; nanomig_harness.h) is the harness's own fixed code-entry constant, which
-; SPECIFICATION.md's author did not see, so code cannot start at "$8000"
-; as 2.2 says; it starts at PROGRAM_ORG, comfortably above every data
-; address below (2.2's own "the builder may shift it if the rules above
-; still hold").
+; nanomig_harness.h) is the harness's own fixed code-entry constant, not
+; $8000 as 2.2 literally says; code starts at PROGRAM_ORG, comfortably
+; above every data address below (2.2's own "the builder may shift it if
+; the rules above still hold").
 ;
 ; Every program below clears the boot overlay (CLEAR_OVL) as its very
 ; first instruction, exactly as ch2-copper-control, ch4-shres-sprite-b,

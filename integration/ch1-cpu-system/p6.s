@@ -12,13 +12,24 @@
 ; Each block stores its own stop instruction's address (X_k) into
 ; XTAB6+4*(k-1) via a self-reporting LEA+MOVE.L, exactly as p3.s does;
 ; the C++ test reads X_k back and classifies alignment (X_k mod 4) itself
-; rather than this file guaranteeing a specific parity by hand -- a single
-; one-word MOVEQ #0,D2 pad between each pair's two copies is enough to
-; guarantee they differ in parity from each other, whichever way around.
+; and asserts that the two copies of a pair differ, rather than this file
+; guaranteeing a specific parity by construction alone.
+;
+; The pad between a pair's two copies is MOVEQ #0,D2, widened to two words
+; for the BRA.S/JMP/RTS pairs (blocks 1-6): each of those pairs' own
+; preparation (none, or a 2-word LEA/PEA) leaves the gap between the two
+; copies a multiple of 4 bytes, so a single pad word would leave both
+; copies at the same X_k mod 4. The BEQ.S pair (blocks 7-8) prepares with
+; the 1-word CMP.W D0,D0, which by itself already shifts that pair's gap
+; by 2 bytes, so its pad stays one word. (Confirmed against the assembled
+; listing, not derived by hand -- see the new alignment precondition.)
 ;
 ; Optional assembly-time symbols:
 ;   MUT_E   every guard is shortened to a single word, DC.W $4AFC
 ;           (ILLEGAL), still never executed (P6.e's contrast)
+;   MUT_ALIGN  the first pair's extra pad word is left out, so X1 and X2
+;              land at the same parity mod 4 (the alignment precondition's
+;              contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
 ;
 ; P3.a-P3.d's own contrasts (MUT_NOP, MUT_C [static-check], MUT_D) are not
@@ -30,11 +41,16 @@
         include "ch1.i"
 
 ; ---- one guard: six words, never executed, W_k = X_k+2 -----------------
+; MOVE.W #imm,abs.L (2.2: "Every sentinel is written with MOVE.W
+; #imm,abs.L") assembles as 4 words; BRA.W is 2 words: 6 words total. The
+; .l suffix is needed -- S_X ($400E) fits an absolute-short address too,
+; which vasm otherwise prefers, assembling only 3 words and shortening the
+; guard to 5.
 GUARD           macro
                 ifd     MUT_E
                 dc.w    $4AFC
                 else
-                move.w  #$DEAD,S_X
+                move.w  #$DEAD,(S_X).l
                 bra.w   FAILRUN
                 endc
                 endm
@@ -55,7 +71,10 @@ L1:     move.w  #1,S_L
         lea     X1,a6
         move.l  a6,XTAB6+0
 
-        moveq   #0,d2                   ; parity pad
+        moveq   #0,d2                   ; parity pad (2 words: see header)
+        ifnd    MUT_ALIGN
+        nop
+        endc
 
         move.w  #2,S_P
         move.l  #$1000,d0
@@ -77,7 +96,8 @@ L3:     move.w  #3,S_L
         lea     X3,a6
         move.l  a6,XTAB6+8
 
-        moveq   #0,d2
+        moveq   #0,d2                   ; parity pad (2 words: see header)
+        nop
 
         move.w  #4,S_P
         lea     L4,a0
@@ -100,7 +120,8 @@ L5:     move.w  #5,S_L
         lea     X5,a6
         move.l  a6,XTAB6+16
 
-        moveq   #0,d2
+        moveq   #0,d2                   ; parity pad (2 words: see header)
+        nop
 
         move.w  #6,S_P
         pea     L6
