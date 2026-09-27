@@ -33,8 +33,7 @@
 // pin phase into the counter's own low 2 bits).
 //
 // MUTATION lines use the label exactly as passed to expect() (uids,
-// comma-joined, no spaces so it is one token) as required by the build
-// brief. The MUT_<NAME> preprocessor guards are a separate, arbitrary replay
+// comma-joined, no spaces so it is one token). The MUT_<NAME> preprocessor guards are a separate, arbitrary replay
 // key (Makefile: `make MUT=<NAME>`) -- never the assertion label itself.
 
 #include <cstdint>
@@ -90,20 +89,20 @@ static uint16_t read_reg(uint8_t addr) {
 
 // ---- quadrature stimulus ---------------------------------------------------
 // Legal single-bit-flip Gray ring for one (A,B) pin pair, in the order that
-// userio.v's own increment boolean recognises as forward (verified against
-// the RTL's four INC clauses by hand before writing this table, and again
-// empirically by the fixture-liveness and row1/row2 checks below).
+// userio.v's own increment boolean recognises as forward (checked against
+// the RTL's four INC clauses by hand, and empirically by the
+// fixture-liveness and row1/row2 checks below).
 static const int RING[4][2] = { {0,0}, {0,1}, {1,1}, {1,0} };
 static const int IDLE_IDX = 2; // (1,1) -- both pins idle-high
 
 enum Dir { INC, DEC };
 
 // Ring position is real hardware state and must be tracked *across* calls,
-// not re-guessed each time: assuming "idle" at the start of every call (an
-// earlier version of this file did that) silently emits an illegal two-bit
-// jump whenever the pins are not actually at idle, which the RTL sometimes
-// still happens to score as one step (by ring symmetry) and sometimes does
-// not -- exactly the kind of bug a single-shot measurement would not catch.
+// not re-guessed each time: assuming "idle" at the start of every call would
+// silently emit an illegal two-bit jump whenever the pins are not actually
+// at idle, which the RTL sometimes happens to score as one step (by ring
+// symmetry) and sometimes does not -- exactly the kind of bug a single-shot
+// measurement would not catch.
 // One idx per independently-driven channel; reset_counters() resets both.
 static int idx_joy1x = IDLE_IDX; // _joy1 bits {0,2} -> dmouse1dat[7:0] (JOY1DAT)
 static int idx_joy2x = IDLE_IDX; // _joy2 bits {0,2} -> dmouse0dat[7:0] (JOY0DAT)
@@ -229,8 +228,8 @@ int main(int argc, char** argv) {
     // ---- Fixture liveness (not a page-231 claim) --------------------------
     // The harness must prove it can deliver a known word on each of the two
     // counters, and that the two are not aliased, before anything reads one.
-    // These are graded through expect(), so per the (corrected) brief they
-    // get real stimulus mutations too -- a liveness check that cannot fail
+    // These are graded through expect(), so they get real stimulus
+    // mutations too -- a liveness check that cannot fail
     // would report "the data path is live" whether or not it actually is.
     // MUTATION harness:fixture-liveness-joy0dat-known-word stimulus red drove 6 steps into JOY0DAT's channel instead of 7 (comparator still checks for 7); measured (MUT=L1) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
     // MUTATION harness:fixture-liveness-joy1dat-known-word stimulus red drove 12 steps into JOY1DAT's channel instead of 13 (comparator still checks for 13); measured (MUT=L2) 15 passed/3 failed -> 14 passed/4 failed, only this line flipped
@@ -418,12 +417,12 @@ int main(int argc, char** argv) {
     // opus:8-limits.c20, sol:8-mouse-limit.c17 (the footnote's numeric claim)
     // "* Because 200-45 = 155, ... the true count must be 255 - (200-45) = 100."
     // (opus:8-limits.c18 / sol:8-mouse-limit.c15 -- the bare row's "...Down"
-    // label -- are NOT this claim's count half; see A9b below. A validator
-    // found both direction uids printed on this count-only predicate, which
-    // measure_min_steps() never exercises: it tries both edge senses and
-    // keeps only the smaller step count, never which sense won. Repaired by
-    // splitting the row+footnote claim into its count half (here) and its
-    // direction half (A9b), each carrying only the uids it actually tests.)
+    // label -- are NOT this claim's count half; see A9b below. This
+    // count-only predicate never exercises direction: measure_min_steps()
+    // tries both edge senses and keeps only the smaller step count, never
+    // which sense won. So the row+footnote claim is split into its count
+    // half (here) and its direction half (A9b), each carrying only the uids
+    // it actually tests.)
     {
         int measured = measure_min_steps(200, 45);
         note("row3+footnote*: manual's true count is 100; measured " +
@@ -475,9 +474,8 @@ int main(int argc, char** argv) {
     // opus:8-limits.c21, sol:8-mouse-limit.c18 (the footnote's numeric claim)
     // "** 45 - 200 = -155. ... the true count must be 255 + (-155) = 100."
     // (opus:8-limits.c19 / sol:8-mouse-limit.c16 -- the row/table's "...Up"
-    // label -- are NOT this claim's count half; see A10b below. Same repair
-    // as A9a: the validator found both direction uids on this count-only
-    // predicate, which never checks which edge sense won.)
+    // label -- are NOT this claim's count half; see A10b below. Split as in
+    // A9a: this count-only predicate never checks which edge sense won.)
     {
         int measured = measure_min_steps(45, 200);
         note("row4+footnote**: manual's true count is 100; measured " +
