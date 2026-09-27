@@ -309,7 +309,9 @@ manual" was a statement about how many had been read.
 ### NM-HRM-006 — the DDF mask: four of four, and one of them says why
 
 All four gate the DDF register granularity on the **chipset**. Not one of them
-gates it on resolution.
+gates it on resolution. Every mask is `0xFC` or `0xFE`: both keep register bit
+2, H3 (`0x04`), and what the chipset decides is register bit 1 (`0x02`), kept on
+ECS and cleared on OCS.
 
 ```cpp
 // WinUAE, custom.cpp:1210 -- applied at :1113-1114 and at the DDFSTRT/DDFSTOP
@@ -339,9 +341,13 @@ resolution is the thing one might expect to matter here, and the body says it
 does not.
 
 Printed page 91's *"bit H3 only respected in Hires Mode"* now stands against four
-independent implementations and NanoMig. The finding's red is correct — the manual
-is this project's oracle — but the question for the specialists has moved: it is
-whether that sentence survived from an OCS-era draft, not whether NanoMig is wrong.
+independent implementations and NanoMig. The red stays, because the test grades
+the sentence as printed, and the finding is filed against the printed page
+([`NM-HRM-006`](../findings/NM-HRM-006.md)): NanoMig and all four respect H3 at
+every resolution, and p.91 is the only source that conditions it on hires. No
+RTL change follows from it; the question for the specialists is what real Agnus
+does with H3 in lores, and whether ECS Agnus uses register bit 1 as the
+implementations do.
 
 ### NM-HRM-008 — playfield-1 collision: four of four
 

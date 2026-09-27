@@ -1,4 +1,4 @@
-# Chapters 3 and 6: what two emulators do about ten unregistered reds
+# Chapters 3 and 6: what two emulators do about ten reds
 
 A report for whoever decides what NanoMig should do. **Nothing here changes a
 test**, and no expectation in the suite comes from an emulator.
@@ -29,10 +29,15 @@ count from the register table in [`findings.md`](../findings.md). Chapters 2 and
 NM-HRM-004, NM-HRM-005, NM-HRM-002 — and three of those already carry an emulator
 comparison in [`third-witness.md`](third-witness.md).
 
-Chapters 3 and 6 have seventeen families between them and **not one is in the
-register**. They exist only as a FAIL line. Both chapters were accepted with
-those reds present, so this is not new breakage; it is a register that was never
-written.
+The register in [`findings.md`](../findings.md) now holds **nineteen rows whose
+package is a chapter-3 or chapter-6 unit package** (`hrm/ch3-*`, `hrm/ch6-*`):
+thirteen open — NM-HRM-006, 007, 008, 010, 011, 014, 016, 017, 019 and 068 from
+chapter 3's packages, NM-HRM-020, 021 and 022 from `hrm/ch6-blitter-ecs` — and
+six withdrawn, NM-HRM-001, 009, 012, 013, 015 and 018. Every section below is
+one of them. Two findings whose pages name chapter 3 or 6 are measured outside
+those packages and not counted here: NM-HRM-066 in
+`hrm/ch7-dmacon-register-bits` and NM-HRM-069 in the integration package
+`integration/ch6-blitter-cpu-sharing`.
 
 ## The rule, unchanged
 
@@ -347,12 +352,15 @@ lands mid-block, which this register pair never produces.
 
 | | |
 |---|---|
-| Manual | pp.91, 277: "(bit H3 only respected in Hires Mode.)" |
+| Manual | p.91: "Bits 7-2 - pixel position H8-H3 (bit H3 only respected in Hires Mode.)"; p.277's bit map gives bits 7-2 to H8-H3 and marks bits 1-0 unused |
 | NanoMig | changing it moves fetch timing in lores as well |
 | Test | `ch3-ddf-fetch-window` / `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE` |
 
 Both emulators mask DDFSTRT and DDFSTOP **by chipset generation only**, never by
-resolution, and both masks keep bit 3:
+resolution, and both masks keep register bit 2, H3 (`0x04`). Where the two masks
+differ is register bit 1 (`0x02`): kept on ECS, cleared on OCS. p.277 marks that
+bit unused, and vAmiga's own register comment calls it H2
+(`Sequencer/SequencerRegs.cpp:22-23`):
 
 ```cpp
 // vAmiga, Agnus.h:405        0xFC = 11111100, 0xFE = 11111110
@@ -362,8 +370,13 @@ ddf_mask = ecs_agnus ? 0xfe : 0xfc;
 ```
 
 `isOCS()` and `ecs_agnus` are both chipset-model settings, unrelated to BPLCON0.
-The reading searched both trees for any resolution-conditional masking of that
-bit and found none in either.
+The reading searched both trees for any resolution-conditional masking of H3
+and found none in either.
+
+**The finding is filed against the printed page**
+([`NM-HRM-006`](../findings/NM-HRM-006.md)). NanoMig and all four independent
+implementations respect H3 at every resolution, on both chipsets; p.91's
+sentence is the only source that conditions it on hires.
 
 ### B6 — PAL vertical blank lasts 26 lines, not 29
 

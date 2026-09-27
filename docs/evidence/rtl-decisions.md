@@ -38,11 +38,11 @@ The same commits `third-witness.md` already records, so earlier citations and
 these agree. Both are shallow clones under `_oracle/`, never built, nothing
 copied.
 
-**Read the arithmetic, not the comments** - the rule that caught a mistake while
-this file was being written. vAmiga defines a chipset-dependent `ptrMask` and I
-first recorded it as enforcing the pointer width. It appears in info and log paths
-throughout; the enforcement is somewhere else entirely, in `Memory.cpp`. A
-definition is not an implementation.
+**Read the arithmetic, not the comments.** vAmiga defines a chipset-dependent
+`ptrMask` in `Agnus.cpp`, and the definition is easy to take for the enforcement
+of the pointer width. It appears in info and log paths throughout; the
+enforcement is somewhere else entirely, in `Memory.cpp`. A definition is not an
+implementation.
 
 ---
 
@@ -135,7 +135,7 @@ four do ([`findings/NM-HRM-021.md`](../findings/NM-HRM-021.md)).
 | Measured | `ecs=0` and `ecs=1` both give `address_out = 0xF8000` from `BLTAPTH=$001F` |
 | Test | `hrm/ch6-blitter-ecs`, `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` (red) |
 
-**This is finding 4 in a second engine.** The Copper does the same thing from the
+**This is NM-HRM-003 in a second engine.** The Copper does the same thing from the
 same bits with no chipset condition. Two findings, one design decision.
 
 **WinUAE** stores the full high word at the register and never narrows it there -
@@ -204,12 +204,12 @@ manual whatever that width is.
     }
 
 **vAmiga** - `Copper/CopperRegs.cpp:82` `cop1lc = REPLACE_HI_WORD(cop1lc, value);`,
-with the same chipset-dependent narrowing on access as in finding 3.
+with the same chipset-dependent narrowing on access as in NM-HRM-022.
 
-**Decide findings 3 and 4 together.** They are one question asked in two engines,
-and both emulators answer it the same way in both. Fixing one and not the other
-would leave Agnus internally inconsistent in a way neither the manual nor either
-emulator is.
+**Decide NM-HRM-022 and NM-HRM-003 together.** They are one question asked in
+two engines, and both emulators answer it the same way in both. Fixing one and
+not the other would leave Agnus internally inconsistent in a way neither the
+manual nor either emulator is.
 
 ## NM-HRM-004 — ECS with CDANG=0 rejects 32 addresses the appendix allows
 
