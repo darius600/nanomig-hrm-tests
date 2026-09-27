@@ -830,8 +830,8 @@ int main() {
             "real, capacity-bounded quantity at this boundary: the full "
             "2MB the custom-chip side can address is correctly, "
             "distinctly reachable end to end, and nothing beyond it can "
-            "even be presented. (Reworded from SPECIFICATION.md's own "
-            "\"scales with memory_config\" framing -- gary.v:147-150 shows "
+            "even be presented. (Graded as a ceiling, not as scaling with "
+            "memory_config -- gary.v:147-150 shows "
             "sel_chip during DMA does not depend on memory_config at all; "
             "see this file's header.) 'The amount of Chip memory is "
             "important since it determines how much graphics, audio, and "
@@ -1128,9 +1128,11 @@ int main() {
             "below Chip RAM is labeled 'PSEUDO' FAST RAM with a "
             "footnote marker.' -- the restatement says only \"a footnote "
             "marker,\" not \"optional\"; whether the dashed drawing style "
-            "itself means anything is an over-read the OTHER reading of this figure makes -- no uid may be named on a graded line, not even to disown it, because the ledger reads uids off the line and counted it as asserted here; "
-            "makes and this package does not -- see the record() near the "
-            "end of this file).");
+            "itself means anything is an over-read the OTHER reading of this "
+            "figure makes and this package does not; that reading's uid is "
+            "not named on this graded line, not even to disown it, because "
+            "the ledger reads uids off the line and would count it as "
+            "asserted -- see the record() near the end of this file).");
     }
 
     // ---------------- PROP-FOOTNOTE-1MB-AGNUS ----------------
@@ -1260,8 +1262,8 @@ int main() {
             "(measured " + std::to_string((int)ram_to_cpu) + ") -- one "
             "data path, shared between the CPU side (through BUFFERS AND "
             "ARBITRATION LOGIC), Chip RAM, and the custom-chip side. "
-            "CAUTION (already checked against the image before either "
-            "restatement was read, SPECIFICATION.md): this data junction "
+            "CAUTION (checked against the page image, "
+            "SPECIFICATION.md): this data junction "
             "reaches Paula, not Agnus or Denise -- Agnus is fed by the "
             "separate CHIP ADR BUS, Denise only by REG ADR BUS. "
             "sol:1-blockdiag.c20 ('A CHIP DATA path connects the buffers/"
