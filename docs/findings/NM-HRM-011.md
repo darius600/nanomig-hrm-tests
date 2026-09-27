@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's figure is upheld — see *Suggested change* |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · [`hrm/ch7-vertb-vertical-blank-timing`](../../hrm/ch7-vertb-vertical-blank-timing) |
 | **Chapter** | 3 — Playfield, and 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | Denise's PAL−NTSC gap is five lines like NanoMig's; the manual's is eight |
+| **Verdict of the four** | Denise's and Copperline's PAL−NTSC gap is five lines like NanoMig's; the manual's is eight |
 
 ---
 
@@ -45,13 +45,14 @@ agrees with Table 3-13 as well. **For NTSC there is no deviation at all except
 against one of the two sentences on p. 219.**
 
 PAL is where this finding lives, and chapter 7 narrows it: NanoMig's 26 agrees
-with p. 219 read inclusively and disagrees only with Table 3-13's 29. The gap
+with p. 219 read inclusively and, beyond the count sentence NTSC misses as
+well, disagrees only with Table 3-13's 29. The gap
 this finding reports is therefore between **two places in the manual**, with
 NanoMig sitting on one of them.
 
 `hrm/ch7-vertb-vertical-blank-timing` grades the count reading — because it is
 printed and it is a requirement — and `record()`s the inclusive reading beside
-it rather than choosing silently. Both of its assertions are red.
+it rather than choosing silently. Both of its duration assertions are red.
 
 ---
 
@@ -86,7 +87,7 @@ rather than an arithmetic slip.
 ### Measured
 
 [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking)
-drives `vbl` and counts consecutive blanked lines from `vpos=0`: 21 under
+reads `vbl` and counts consecutive blanked lines from `vpos=0`: 21 under
 NTSC, matching Table 3-13 — `VBLANK-DURATION-NTSC-MATCHES-MANUAL`, green —
 and 26 under PAL, three short of the table's 29 —
 `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`, red.
@@ -104,13 +105,14 @@ where it gives 25 — `PAL-VBLANK-DURATION-25-LINES`, red.
 | **WinUAE** | — |
 | **vAmiga** | — |
 | **Denise** | PAL−NTSC gap is **five lines, like NanoMig's** |
-| **Copperline** | models a programmable blank — a different quantity from Table 3-13's fixed figure, and not comparable without running it |
+| **Copperline** | models the fixed blank beside the programmable one — [`src/bus.rs:8660-8666`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L8660-L8666): *"The fixed blank begins on the final field line, wraps through line zero, and clears at the first display-DMA line (PAL $19, NTSC $14)"*, as `VideoStandard::Pal => 25` and `VideoStandard::Ntsc => 20`. PAL−NTSC gap **five lines, like NanoMig's** |
 | **MiSTer** | descendant — `rtl/agnus_beamcounter.v:89-90` — identical to NanoMig: `VBSTOP_PAL_VAL = 9'd25`, `VBSTOP_NTSC_VAL = 9'd20` |
 | **TC64** | descendant — `rtl/minimig/agnus_beamcounter.v:105-106` — the same two values (as `11'd25`, `11'd20`; the constant is wider, not the number), the same comment. If Table 3-13's 29 is upheld, a fix diverges from both lines equally |
 
-The manual's gap is **eight** lines, 29 − 21. NanoMig's and Denise's are five.
-That the gap agrees between two independent implementations, and disagrees with
-the manual by the same amount, is the useful signal here.
+The manual's gap is **eight** lines, 29 − 21. NanoMig's, Denise's and
+Copperline's are five. That the gap agrees between three independent
+implementations, and disagrees with the manual by the same amount, is the
+useful signal here.
 
 
 ---
@@ -134,16 +136,16 @@ If the manual's figure is upheld, one parameter:
 parameter VBSTOP_PAL_VAL  = 9'd28;   // Table 3-13: PAL vertical blank stop $1D (29)
 ```
 
-**But check Denise first.** Two implementations agreeing on a five-line gap
+**But check Denise and Copperline first.** Three implementations agreeing on a five-line gap
 against the manual's eight is the kind of coincidence that usually means the
 manual is being read differently — for instance counting the stop line
-inclusively or exclusively — rather than two projects making the same mistake.
+inclusively or exclusively — rather than three projects making the same mistake.
 
 ---
 
 ## What holds the finding up
 
-**The NTSC twin passes on the same measurement basis.** `VBLANK-DURATION-NTSC`
+**The NTSC twin passes on the same measurement basis.** `VBLANK-DURATION-NTSC-MATCHES-MANUAL`
 matches Table 3-13's 21 exactly, on the same fixture, the same counter and the
 same counting convention. That is what makes the PAL red survive the units-error
 objection: if the test were counting lines wrongly, NTSC would be wrong too.

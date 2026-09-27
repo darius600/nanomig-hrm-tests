@@ -37,7 +37,7 @@ The two bits part company, and the split is what the withdrawal produced:
 
 | bit | what the manual prints | outcome |
 |---|---|---|
-| 3 | `(unimplemented)` | declined, quoting the manual's own word |
+| 3 | `(unimplemented)` | declined as a live field, quoting the manual's own word; `SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES` asserts it inert at every resolution, green |
 | 4 | `SHSH1  Start horizontal (SHR mode) 70ns increment` | a behaviour — re-asserted on its own as [NM-HRM-019](NM-HRM-019.md), and red for a reason that holds |
 
 **The original finding was right that something is missing, and wrong about

@@ -22,7 +22,7 @@
 ```
 
 SH0 is the ordinary **140 ns low bit**. The SuperHires positions are bits 4
-(70 ns) and 3 (35 ns), two rows further down.
+(70 ns) and 3 (35 ns), printed four and three rows above it.
 
 The assertion demanded that SH0 work only in SuperHires — which is not merely
 unstated, it is the opposite of what the row says.
@@ -57,6 +57,6 @@ Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 19
 
 ## Why this entry is kept
 
-Three of four implementations take SH0 at every resolution, as NanoMig does. The
+All four implementations take SH0 at every resolution, as NanoMig does. The
 entry records that the disagreement was in the reading, and prevents the same
 row being read the same way twice.

@@ -25,11 +25,12 @@ Everything below is evidence for that reading.
 
 ---
 
-## Chapter 7 found the same thing from two more pages
+## Chapter 7 found the same thing from two more sentences
 
 This finding was opened from appendix A's table of collision bits. Chapter 7
-reached it independently, from the chapter body and from a different appendix
-page, and five assertions in `hrm/ch7-collision-playfield-mode` are red on it.
+reached it independently, from the chapter body and from the note printed
+above the same appendix table, and five assertions in
+`hrm/ch7-collision-playfield-mode` are red on it.
 
 > "collision detection does not change when you select either single- or
 > dual-playfield mode" (printed p. 214)
@@ -46,7 +47,7 @@ and the implementations — all four of them — contradict all of it. A single
 incomplete table is an editing slip; the same proposition printed three times in
 three places is what the manual means.
 
-The obvious objection was checked and rejected by the independent validation:
+The obvious objection does not hold:
 pp. 211-212 do not limit collision independence to dual-playfield mode, they
 discuss display priority.
 
@@ -76,7 +77,7 @@ With `dblpf = 0` — single playfield — `oddmatch` additionally requires
 > this is the implementation of an undocumented function in the real Denise chip,
 > developed by Yaqube. trigger was the game Rotor. mentioned in WinUAE sources to
 > be the only known game needing this feature. it also fixes the Spaceport
-> instantly helicopter crash at takeoff and Archon-1 'sticky effect' of player
+> instandly helicopter crash at takeoff and Archon-1 'sticky effect' of player
 > sprite at the battlefield.
 
 ### Measured
@@ -87,8 +88,8 @@ sets its own `CLXDAT` bit, and none of the four does —
 `BITMAP-PAIR PF1-SPR01`, `PF1-SPR23`, `PF1-SPR45` and `PF1-SPR67` are all red,
 four of the package's `32 passed, 4 failed`; `BITMAP-PAIR PF1-PF2`, where PF2
 is present too, stays green. [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode)
-corroborates this from two more pages — see *Chapter 7 found the same thing
-from two more pages* above.
+corroborates this from two more sentences — see *Chapter 7 found the same thing
+from two more sentences* above.
 
 ---
 
@@ -96,9 +97,9 @@ from two more pages* above.
 
 | | code | |
 |---|---|---|
-| **WinUAE** | — | PF1 gated by PF2 |
-| **vAmiga** | — | PF1 gated by PF2 |
-| **Denise** | [`emulation/libami/video/denise.cpp:478-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L478-L480) | <pre>if (!clxNoCol)&nbsp;clxDat \|= (v1 &lt;&lt; 5) \| (v1 &lt;&lt; 1) \| 1;<br>else if ((clxNoCol & 2) == 0)&nbsp;clxDat \|= (v1 &lt;&lt; 5);<br>else if (((clxNoCol & 1) == 0) && _doublePlayfield)&nbsp;clxDat \|= (v1 &lt;&lt; 1);</pre> the PF1 group only when `_doublePlayfield` |
+| **WinUAE** | [`drawing.cpp:4518-4531`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L4518-L4531) | PF1 gated by PF2: with `bpldualpf` clear, the odd-plane test `if ((apixel & clxcon_bpl_enable_55) == clxcon_bpl_match_55)` is reached only inside the even-plane one. Sprite–bitplane collisions need `currprefs.collision_level > 1`; the default is 3 ([`cfgfile.cpp:8642`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cfgfile.cpp#L8642)) |
+| **vAmiga** | [`Core/Components/Denise/Denise.cpp:1554-1560`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L1554-L1560) | PF1 gated by PF2: *"There is a hardware oddity in single-playfield mode. If PF2 doesn't match, PF1 doesn't match either."*, then `if (!(zBuffer[pos] & Z_DPF)) continue;`. The sprite–playfield check runs only under `if (config.clxSprPlf)` ([`Denise.cpp:1226`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L1226)), an option that defaults to `false` ([`Core/Infrastructure/Defaults.cpp:174`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Infrastructure/Defaults.cpp#L174)) |
+| **Denise** | [`emulation/libami/video/denise.cpp:478-480`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L478-L480) | <pre>if (!clxNoCol)&nbsp;clxDat \|= (v1 &lt;&lt; 5) \| (v1 &lt;&lt; 1) \| 1;<br>else if ((clxNoCol & 2) == 0)&nbsp;clxDat \|= (v1 &lt;&lt; 5);<br>else if (((clxNoCol & 1) == 0) && _doublePlayfield)&nbsp;clxDat \|= (v1 &lt;&lt; 1);</pre> the PF1 group without a PF2 match only when `_doublePlayfield` |
 | **Copperline** | [`src/video/bitplane.rs:6797`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane.rs#L6797) | <pre>let odd_match = odd_match_raw && (dual_playfield \|\| even_match);</pre> |
 | **MiSTer** | [`rtl/denise_collision.v:62-63`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63) | descendant — byte-identical: `assign oddmatch = bm[6] & bm[4] & bm[2] & bm[0] & (dblpf \| evenmatch);` gates PF1 on PF2 exactly as NanoMig does |
 | **TC64** | [`rtl/minimig/denise_collision.v:62-63`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_collision.v#L62-L63) | descendant — the same two lines, unchanged. The whole file is identical on both lines; there is no divergence anywhere to fix, so changing NanoMig here means diverging from both ancestors at once |
