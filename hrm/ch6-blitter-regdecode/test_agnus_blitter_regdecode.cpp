@@ -32,53 +32,33 @@
 // BOUNDARY: `agnus_blitter`, per hrm-testpipeline/work/2026-09-08_fpga-090_
 // packages.md row 5 and .../2026-09-08_fpga-090_build_register.md.
 //
-// SPEC-BEFORE-RTL GATE: satisfied cleanly. The specification (this file's
-// claim listing, planned-assertion list and deferred-claims list, all
-// unchanged in substance below) was committed in isolation, as a
-// placeholder `int main(){return 0;}`, BEFORE agnus_blitter.v,
-// agnus_blitter_adrgen.v or any other nanomig/ source file was opened by
-// this agent. Every register offset, port name and RTL citation in that
-// commit's header was reproduced from material already handed to this
-// task -- the build brief's own quoted line numbers, the classify.evidence
-// field already present on the inventory (itself a Prompt-4 deliverable,
-// not fresh reading), and already-committed sibling test files this brief
-// named as the harness/pattern to copy -- never from this agent's own
-// reading. RTL reading began only after that commit. Full per-claim
-// quotations and restatements remain in that commit's history
-// (`git log -p -- hrm/ch6-blitter-regdecode` shows the spec commit in
-// full); this header keeps the coverage-relevant summary and the findings
-// the RTL reading actually produced, matching the pattern already
-// established by hrm/ch6-blitter-bltcon/test_agnus_blitter_bltcon.cpp
-// for a package this size.
+// SPECIFICATION. The full per-claim quotations and restatements are in the
+// package's specification commit (`git log -p --
+// hrm/ch6-blitter-regdecode`); this header keeps the coverage-relevant
+// summary and the RTL findings, the same shape as
+// hrm/ch6-blitter-bltcon/test_agnus_blitter_bltcon.cpp.
 //
-// FIXTURE. Harness copied from hrm/ch6-blitter-cycles/ (the corrected-
-// clkena harness, per the build brief -- NOT agnus_blitter_status's
-// constant-clkena one). Carries the same traps documented in that file's
-// header and in hrm-testpipeline/work/2026-09-08_fpga-090_build_register.md,
-// verified still present and still necessary by reading both before
-// writing this file:
+// FIXTURE. The harness is hrm/ch6-blitter-cycles/'s (clkena toggled, not
+// agnus_blitter_status's constant clkena). It carries the traps documented
+// in that file's header and in
+// hrm-testpipeline/work/2026-09-08_fpga-090_build_register.md:
 //   1. `clkena` toggled once per cycle() call (true divide-by-2, matching
-//      agnus.v's `cck`), not held high -- trap #7, eight false reds in
-//      PKG-BLT-CYCLES otherwise.
+//      agnus.v's `cck`), not held high -- trap #7.
 //   2. TEST-DATA-DELIVERY: the settling `dut->eval()` right after setting
 //      ackdma/reg_address_in/data_in, before the clock edge, reproduced as
 //      this file's own first assertion before anything data-dependent.
 //   3. BLTAFWM/BLTALWM default to 0 after reset (agnus_blitter.v:296,305)
 //      and mask channel A's first/last word (agnus_blitter.v:311-319) --
 //      every assertion here that drives channel A writes both to 0xFFFF
-//      first. THIS TRAP WAS HIT DURING THIS BUILD (A23's first draft),
-//      not just read about -- see MUTATION LOG / build note below.
+//      first.
 //   4/5. `we`/`data_out` captured AT the grant (the settling eval(), before
 //      the clock edge), never polled after; `int3` not used by this
 //      package (no duration is measured) so its own sampling-order trap
-//      does not bite here, carried over anyway since the harness is
-//      copied whole.
-//   6. Confirmed which `chsel`/`reg_address_out` value each state actually
-//      sets by reading agnus_blitter.v in full (:594-601) before writing
-//      any per-channel assertion, rather than assuming.
+//      does not bite here.
+//   6. The `chsel`/`reg_address_out` value each state sets is taken from
+//      agnus_blitter.v:594-601, not assumed.
 //
-// ADDITIONAL MECHANISM, found while building this specific package and not
-// already in build_register.md: `reg_address_out` (agnus_blitter.v:594-
+// ADDITIONAL MECHANISM: `reg_address_out` (agnus_blitter.v:594-
 // 601) reflects BLTADAT/BLTBDAT/BLTCDAT/BLTDDAT's own address depending on
 // `chsel`, purely combinationally, independent of whether a grant is even
 // in progress -- and `address_out` (agnus_blitter_adrgen.v's `bltptr_out`)
@@ -88,10 +68,9 @@
 // grant, without modelling addressed memory at all -- used throughout
 // A10-A14 instead of re-deriving pointer correctness from data content.
 //
-// RTL FINDINGS (agnus_blitter.v read in full, 951 lines; agnus_blitter_
-// adrgen.v read in full, 126 lines; agnus_blitter_minterm.v read for its
-// LF encoding only -- none of the other three submodules opened, per this
-// package's non-goals):
+// RTL FINDINGS (agnus_blitter.v and agnus_blitter_adrgen.v;
+// agnus_blitter_minterm.v for its LF encoding only -- the other three
+// submodules fall under this package's non-goals):
 //   - All 24 offsets this package names (BLTCON0/BLTCON1/BLTCON0L/BLTAFWM/
 //     BLTALWM/BLTAPTH/BLTAPTL/BLTBPTH/BLTBPTL/BLTCPTH/BLTCPTL/BLTDPTH/
 //     BLTDPTL/BLTSIZE/BLTSIZH/BLTSIZV/BLTAMOD/BLTBMOD/BLTCMOD/BLTDMOD/
@@ -119,14 +98,14 @@
 //   - DMACON is NOT decoded anywhere in agnus_blitter.v or agnus_blitter_
 //     adrgen.v (`grep -in dmacon` over both files: zero matches). The only
 //     DMACON-derived signal reaching this module is `enadma`, a pre-decoded
-//     input port -- confirming the DEFERRED entry below was right to be
-//     cautious rather than asserting it.
+//     input port -- which is why DMACON's claim is DEFERRED below rather
+//     than asserted.
 //   - agnus_blitter.v:500-501 confirms BLTSIZE (or BLTSIZH under ecs) sets
 //     `busy` unconditionally on the write, independent of any other
 //     register -- the strobe behaviour A16 measures directly.
 //
-// DEFERRED -- claims classified into this package that this agent could
-// NOT turn into a PKG-BLT-REGDECODE assertion, with the reason for each.
+// DEFERRED -- claims classified into this package that are NOT a
+// PKG-BLT-REGDECODE assertion, with the reason for each.
 // All 109 claims filtered from classify.package=="PKG-BLT-REGDECODE" in
 // work/2026-09-08_fpga-090_classified.jsonl are either cited inside an
 // assertion string below or listed here; none is invented.
@@ -145,16 +124,14 @@
 //   6-appa-registers.c93 (p.270, "Modulo application advances the address
 //     to the next line's start.") -- a behaviour/content claim about what
 //     a modulo DOES, not that BLTxMOD decodes at its offset (which IS
-//     asserted, A6-A9). PKG-BLT-ADRGEN's domain (92 claims, already built).
+//     asserted, A6-A9). PKG-BLT-ADRGEN's domain (92 claims).
 //   ch6-appa-bltxmod.c13 (p.270, "That width is normally two times the
 //     screen width in words.") -- typical-value content, not decode.
 //     PKG-BLT-ADRGEN's domain.
 //   ch6-appb-dmacon.rw (p.290, "Appendix B marks DMACON W in the R/W
-//     column and A D P in the CHIP column.") -- CONFIRMED, not merely
-//     tentative: DMACON has no decode of its own inside agnus_blitter (see
-//     RTL FINDINGS above). Needs the wider `agnus` boundary -- PKG-AGNUS-
-//     DMACON's job, the package concurrently being built in this same
-//     repository as this one.
+//     column and A D P in the CHIP column.") -- DMACON has no decode of its
+//     own inside agnus_blitter (see RTL FINDINGS above). Needs the wider
+//     `agnus` boundary -- PKG-AGNUS-DMACON's job.
 //
 // CLAIM COVERAGE. All 109 records of classify.package==
 // "PKG-BLT-REGDECODE" and classify.status=="testable" in work/2026-09-08_
@@ -166,15 +143,14 @@
 // classify.package=="PKG-BLT-REGDECODE" -- exact match, no id missing, no
 // id invented.
 //
-// EXTENSION -- SPECIFICATION, from quotations alone; no RTL reasoning
-// appears in this block. 24 claims, all reader opus, all page 289 or
-// 290, all flagged by the reader itself as print-only and not named in the
-// chapter, and none cross-read by a second reader -- disclosed here, not
-// smoothed over. Every one is chapter 3's own
-// reading of Appendix B's address column for a blitter register -- the
-// same table this package's original build already read (p289-290) under
-// its own ch6-appb-*.addr claim ids. Each restatement below is quoted
-// verbatim from the source.
+// APPENDIX B ADDRESS TWINS -- SPECIFICATION, from quotations alone; no RTL
+// reasoning appears in this block. 24 claims, all reader opus, all page 289
+// or 290, all flagged by the reader itself as print-only and not named in
+// the chapter, and none cross-read by a second reader. Every one is chapter
+// 3's own reading of Appendix B's address column for a blitter register --
+// the same table this package reads (p289-290) under its own
+// ch6-appb-*.addr claim ids. Each restatement below is quoted verbatim from
+// the source.
 //
 //   B-bltafwm.addr  (p289) "BLTAFWM      ~044   W     A          Blitter
 //     first word mask for source A" -> Appendix B, address order: BLTAFWM
@@ -240,12 +216,11 @@
 //     source A data register" -> BLTADAT is listed at address $074.
 //
 // Every one of these 24 propositions is, on its face, the identical
-// address-order fact this package's original build already read off the
-// same Appendix B table for the same 24 registers (its own ch6-appb-
-// *.addr claims, p289-290) -- confirmed or withdrawn only after re-opening
-// the full claims file and the RTL, next.
+// address-order fact this package reads off the same Appendix B table for
+// the same 24 registers (its own ch6-appb-*.addr claims, p289-290); each
+// B-*.addr id is cited in the label of an assertion below.
 //
-// MUTATION LOG. Every mutation below was actually run by this agent: the
+// MUTATION LOG. Every mutation below was actually run: the
 // named line(s) edited, `make test` rebuilt and re-run, the resulting
 // PASS/FAIL line read, then reverted and rebuilt again to confirm the
 // 26/26-green baseline (`24 planned assertions + TEST-DATA-DELIVERY + A16's
@@ -309,13 +284,11 @@
 //     bits stayed at their post-reset default instead of the written
 //     pattern). Run together with A10-A12 in the same batch; Reverted.
 //   MUTATION A14 stimulus red: the source pointer's BLTAPTH write
-//     retargeted to 0x035 -> RED (the strengthened address check, added
-//     during this build once the first version proved insensitive to this
-//     mutation -- see build note below -- caught the now-wrong channel-A
-//     grant address; data content was unaffected, confirming the
-//     strengthening was necessary). Reverted.
+//     retargeted to 0x035 -> RED (the address check caught the now-wrong
+//     channel-A grant address; data content was unaffected, so the data
+//     check alone would not have caught this mutation). Reverted.
 //   MUTATION A15 stimulus red: h1's BLTSIZE write (via start_blit's
-//     now-mutable bltsize_reg parameter) retargeted to 0x035 -> RED (h1
+//     bltsize_reg parameter) retargeted to 0x035 -> RED (h1
 //     produced 0 destination writes instead of 1 -- the blit never started
 //     at all). Reverted.
 //   MUTATION A16 stimulus red: the BLTSIZE write retargeted to 0x035 ->
@@ -352,46 +325,25 @@
 //     underlying fact -- BLTDDAT's write never reaching any internal
 //     register -- by using a measurement (does the value surface in a
 //     blit result) that a plain write's absence of read-back cannot
-//     distinguish. A22 is retained because its own two citations
-//     (6-appa-registers.c29/.c30 -- "no processor-visible register
-//     address", "not processor-readable or -writable") are propositions
-//     about the ADDRESS FIELD and the READ half specifically, which A23
-//     does not separately name.
+//     distinguish. A22 stands as its own assertion because its own two
+//     citations (6-appa-registers.c29/.c30 -- "no processor-visible
+//     register address", "not processor-readable or -writable") are
+//     propositions about the ADDRESS FIELD and the READ half specifically,
+//     which A23 does not separately name.
 //   MUTATION A23 stimulus red: hadat's control write (BLTADAT, the arm
 //     that is SUPPOSED to matter) retargeted to 0x035 -> RED (0xDEAD no
 //     longer surfaced; `adat_affected` went false, and the assertion's
 //     `ddat_unaffected && adat_affected` conjunction correctly flipped).
 //     Reverted.
 //   MUTATION A24 stimulus red: the self-contained control blit's BLTSIZE
-//     write (added to this assertion during this build -- see build note)
-//     retargeted to 0x035 -> RED (`control_fired` went false: no
+//     write retargeted to 0x035 -> RED (`control_fired` went false: no
 //     D-channel grant ever occurred, so the sweep's all-zero result could
 //     no longer be told apart from a dead data_out/we probe). Reverted.
-//   MUTATION TEST-DATA-DELIVERY stimulus red: re-run for this gate
-//     repair (no prior record existed for this precondition check -- see
-//     PKG-BLT-REGDECODE gate-repair commit). h.a_words's last word changed
+//   MUTATION TEST-DATA-DELIVERY stimulus red: h.a_words's last word changed
 //     from 0x4444 to 0x9999 (stimulus only, the expected 0x1111/0x2222/
 //     0x3333/0x4444 sequence in the assertion left untouched) -> RED
 //     (25 passed, 1 failed; only TEST-DATA-DELIVERY flipped, all other 25
 //     checks stayed green). Reverted, rebuilt, confirmed back to 26/0.
-//
-// BUILD NOTE, recorded rather than smoothed over: A23's first draft
-// (writing 0xDEAD to BLTADAT and expecting it to surface via LF_A_
-// PASSTHROUGH) initially FAILED on its very first build -- not a red
-// finding, a fixture defect: the control harness had not written BLTAFWM/
-// BLTALWM=0xFFFF first, so channel A's only word (both first and last) was
-// masked to 0 regardless of BLTADAT's content (build_register.md trap #3,
-// hit directly rather than only read about). Fixed by adding the two mask
-// writes; re-run, green. A24's first draft reused the SAME Harness for its
-// sweep and its positive-control blit, which failed because the sweep
-// itself writes BLTSIZE (one of the 24 offsets under test) with a garbage
-// value, legitimately starting an uncontrolled blit per A16's own finding
-// -- the subsequent "control" BLTCON0 write then landed mid-blit, which
-// agnus_blitter.v:244-250 gives a special (D-channel-disabling) meaning to.
-// Fixed by giving the control blit its own fresh Harness. Neither fix
-// changed any expected value or any manual quotation; both are stimulus/
-// fixture corrections, recorded per the build brief's own instruction to
-// say so rather than paper over a first-attempt defect.
 //
 #include <cstdint>
 #include <deque>
@@ -409,7 +361,7 @@ constexpr uint16_t to_reg(uint16_t byte_address) { return static_cast<uint16_t>(
 // Offsets and reg_address_in encoding verified against agnus_blitter.v:101-112
 // (BLTCON0/BLTCON0L/BLTCON1/BLTAFWM/BLTALWM/BLTADAT/BLTBDAT/BLTCDAT/BLTDDAT/
 // BLTSIZE/BLTSIZH/BLTSIZV parameters) and agnus_blitter_adrgen.v:23-34
-// (BLTxMOD/BLTxPTH/BLTxPTL parameters), read after the spec commit.
+// (BLTxMOD/BLTxPTH/BLTxPTL parameters).
 constexpr uint16_t BLTDDAT  = to_reg(0x000);  // agnus_blitter.v:109 -- no CPU write decode anywhere in the file
 constexpr uint16_t BLTCON0  = to_reg(0x040);
 constexpr uint16_t BLTCON1  = to_reg(0x042);
@@ -454,7 +406,7 @@ constexpr uint16_t USED = 1u << 8;
 constexpr uint16_t DESC = 1u << 1;
 
 // Minterm LF settings, agnus_blitter_minterm.v: bit k of LF selects the
-// (A,B,C) minterm whose value is k (A=MSB). Confirmed by reading the module:
+// (A,B,C) minterm whose value is k (A=MSB). In the module,
 // LF=0xFF sets every output bit regardless of A/B/C; LF=0x00 clears all.
 constexpr uint16_t LF_ALWAYS_ONE    = 0xFF;
 constexpr uint16_t LF_ALWAYS_ZERO   = 0x00;
@@ -553,8 +505,8 @@ private:
     char last_grant_channel = 0;
     uint32_t last_grant_address = 0;
     // agnus.v:437 wires clkena to cck, a true divide-by-2 of clk7_en
-    // (amiga_clk.v). Toggled once per cycle() call rather than held high,
-    // per the build brief's trap #7 (PKG-BLT-CYCLES's eight false reds).
+    // (amiga_clk.v). Toggled once per cycle() call rather than held high
+    // (FIXTURE trap 1 in the header).
     bool clkena_phase = true;
 
     void tick_bookkeeping() {
@@ -596,8 +548,8 @@ private:
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the combinational
             // network BEFORE the clock edge -- TEST-DATA-DELIVERY. Without
-            // this second eval() no fetched data arrives (build brief trap
-            // #2 / build_register.md's salvaged-harness defect).
+            // this second eval() no fetched data arrives (FIXTURE trap 2 in
+            // the header).
             dut->eval();
             last_granted = true;
             last_grant_channel = ch;
@@ -1141,17 +1093,16 @@ int main() {
     // (unconditionally stored, but only READ into height_cnt by a
     // subsequent ecs-gated BLTSIZH write). With ecs=0, a BLTSIZH write
     // leaves `busy` at 0 (control, same measurement as A16).
-    // GAP, found by independent validation: this assertion
-    // reads only `busy` right after the BLTSIZH write, so it establishes
-    // BLTSIZH's own decode (moving that write elsewhere leaves busy at 0,
-    // per its own MUTATION log below) but never varies BLTSIZV's address --
-    // a design that ignored the BLTSIZV write entirely would print the same
-    // PASS. Validator probe: with BLTSIZV's write retargeted to 0x035, A17
-    // stayed green (27 passed, 0 failed). ch6-appb-bltsizv.addr and
-    // B-bltsizv.addr are graded below instead, in A17B, which does vary
-    // BLTSIZV's own decoded value. ch6-appb-bltsizh.addr/B-bltsizh.addr
-    // stay here: BLTSIZH's write IS what this assertion's own MUTATION
-    // moves.
+    // This assertion reads only `busy` right after the BLTSIZH write, so it
+    // establishes BLTSIZH's own decode (moving that write elsewhere leaves
+    // busy at 0, per its own MUTATION log) but never varies BLTSIZV's
+    // address -- a design that ignored the BLTSIZV write entirely would
+    // print the same PASS (measured: with BLTSIZV's write retargeted to
+    // 0x035, A17 stays green, 27 passed, 0 failed). ch6-appb-bltsizv.addr
+    // and B-bltsizv.addr are therefore graded below, in A17B, which does
+    // vary BLTSIZV's own decoded value. ch6-appb-bltsizh.addr/B-bltsizh.addr
+    // are graded here: BLTSIZH's write IS what this assertion's own
+    // MUTATION moves.
     // ---------------------------------------------------------------
     {
         Harness he;
@@ -1311,8 +1262,8 @@ int main() {
         h.a_words = {0x00FF};
         h.b_words = {0x0F0F};
         h.c_words = {0x3333};
-        // LF=0x96: D = A^B^C (odd-parity minterms), agnus_blitter_cycles's
-        // proven constant, reused here as a three-channel discriminator.
+        // LF=0x96: D = A^B^C (odd-parity minterms), the same constant as
+        // agnus_blitter_cycles, used here as a three-channel discriminator.
         start_blit(h, USEA | USEB | USEC | USED, 0x96, 1, 1);
         h.run_until_writes(1, 300);
         uint16_t expected = static_cast<uint16_t>(0x00FF ^ 0x0F0F ^ 0x3333);
@@ -1335,8 +1286,8 @@ int main() {
     // (p269).
     // ids: 6-appa-registers.c29, 6-appa-registers.c30, 6-appa-registers.c34,
     //      ch6-appa-bltddat.c1, ch6-appa-bltddat.c2, ch6-appa-bltddat.c5
-    // Mechanism: the port list (agnus_blitter.v:79-98, read for this
-    // commit) has exactly one data-carrying output, `data_out`, and it is
+    // Mechanism: the port list (agnus_blitter.v:79-98) has exactly one
+    // data-carrying output, `data_out`, and it is
     // gated `ackdma && chsel==CHD` (agnus_blitter.v:490) -- a DMA WRITE
     // grant, never a processor-initiated read (there is no read-strobe
     // input anywhere on the port list). Driving reg_address_in to BLTDDAT's
@@ -1381,8 +1332,7 @@ int main() {
     // ids: 6-appa-registers.c31, 6-appa-registers.c32, 6-appa-registers.c33,
     //      6-appa-registers.c35, ch6-appa-bltddat.c3, ch6-appa-bltddat.c4,
     //      ch6-appa-bltddat.c6, 6-appendix-b.c3
-    // Mechanism: confirmed by reading agnus_blitter.v in full for this
-    // commit -- BLTDDAT (parameter, =9'h000) is compared against
+    // Mechanism: BLTDDAT (parameter, =9'h000) is compared against
     // reg_address_in EXACTLY NOWHERE in the file (every other register
     // above has its own `reg_address_in[8:1]==BLTxxx[8:1]` branch;
     // BLTDDAT's only appearance is as an OUTPUT value of reg_address_out
@@ -1528,10 +1478,10 @@ int main() {
         // to UNUSED_REG (0x035), the same mechanism A15/A16 use -> RED (no
         // blit ever starts -- `busy` stays 0 per A16's own finding -- so
         // `we` never fires across 200 cycles and saw_we_at_bltddat stays
-        // false). MEASURED FIRST, NOT ASSUMED: a simpler mutation was tried
-        // first -- clearing the USED (D-enable) bit alone while leaving
-        // BLTSIZE untouched -- did NOT go red. Built and run: `we` still
-        // fired once, at reg_address_out==BLTDDAT, even with `used`==0.
+        // false). Clearing the USED (D-enable) bit alone while leaving
+        // BLTSIZE untouched is not a usable mutation: measured, it does NOT
+        // go red - `we` still fires once, at reg_address_out==BLTDDAT, even
+        // with `used`==0.
         // Read back against agnus_blitter.v's BLT_A/BLT_D transitions
         // (:668-757): with useb=usec=0, BLT_A unconditionally advances to
         // BLT_D regardless of `used`, and BLT_D's own next-state logic can
@@ -1540,8 +1490,6 @@ int main() {
         // this RTL, not a fixture defect, and not this assertion's
         // proposition (which is only about what reg_address_out reads
         // WHEN `we` fires, not about whether `used` gates `we` at all).
-        // Reverted from that first attempt before building the version
-        // above.
     }
 
     // ---------------------------------------------------------------
