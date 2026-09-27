@@ -49,8 +49,8 @@ it is used.
 | `ch2-what-is-a-copper-instruction.c2` | 20 | "The Copper adds its own instruction set to the instructions provided by the 680x0." This describes the programming model. Nothing is observable. |
 | `ch2-about-the-copper.c5` | 19 | "Using the Copper frees the 680x0 to execute program logic." This states a benefit. No stimulus makes the page predict a 680x0 that is *not* free, so no contrasting case exists, and the page gives no quantity. |
 | `COP2-about-the-copper.c4` | 19 | Same as the row above. |
-| `ch2-about-the-copper.c31` | 20 | "The Copper can retrieve its instructions only from the chip RAM area." The *only* cannot be exercised. The system has no memory besides Chip memory, and the test sees only the Chip-memory port, so no fetch can be directed anywhere else. No page says what happens when a location register points beyond the selected Chip-memory size. |
-| `ch2-about-the-copper.c32` | 20 | "Every DMA channel ... can retrieve data only from the chip RAM area." Same reason, for all channels. |
+| `ch2-about-the-copper.c31` | 20 | "The Copper can retrieve its instructions only from the chip RAM area." The *only* cannot be exercised. A location register holds at most 21 bits (p.309: "high 5 bits", with the 15 low bits of 3.2), which reaches only the 2 MB of Chip memory (4.1). So no page gives a stimulus that sends a Copper fetch to other memory. |
+| `ch2-about-the-copper.c32` | 20 | "Every DMA channel ... can retrieve data only from the chip RAM area." Same reason, for every channel: no page gives a DMA pointer more than 5 high bits (pp.289-291, 309), so no pointer reaches beyond the 2 MB of Chip memory. |
 
 ## 2. Claims used only in part
 
@@ -58,7 +58,7 @@ it is used.
 |---|---|---|---|
 | `ch2-about-the-copper.c6.s2` | 19 | P1 | "most of the chip control registers": the page defines neither the set nor the fraction. The pages disagree on which registers the Copper may write (3.1), and the effect of a write is visible to a test for only some registers. P1 establishes "can directly affect the contents" for INTENA (Paula), COP2LCH, COP2LCL and COPJMP2 (Agnus) only. |
 | `ch2-location-registers.c3.s2`, `ch2-location-registers.c5.s2` | 25 | P5, P1 | "Low 16 bits": p.25 says 16 in its list and "low 15 bits" two paragraphs later, and p.273 says "(low 15 bits)" (3.2). Only bits 15-1 are graded. Every written value keeps bit 0 at 0. |
-| `COP2-location-registers.c6`, `COP2-location-registers.c9` | 25 | P5 | The claims are about names ("H", "L"), and names cannot be observed. P5 checks what the same sentences say about content: the register at the lower address holds the most significant bits. The "always" (every register pair in the chip set) is graded only for the pairs used: COP1LC and COP2LC, plus AUD0LC in P7. |
+| `COP2-location-registers.c6`, `COP2-location-registers.c9` | 25 | P5 | The claims are about names ("H", "L"), and names cannot be observed. P5 checks what the same sentences say about content: the register at the lower address holds the most significant bits. The "always" (every register pair in the chip set) is graded only for the pairs used: COP1LC and COP2LC. P7 loads AUD0LC with one long write to AUD0LCH, but only its precondition P7-p3 depends on that, and a precondition grades nothing. |
 | The ten location-register "write-only" claims (section 6, P5) and `ch2-appb-legend.c6.s2` | 273, 287, 290, 309 | P5 | Only the *write* half is graded (a CPU write takes effect). The *only* half has no expected value, because no page says what a read of these addresses returns. |
 
 ## 3. What the pages leave open or disagree on
@@ -104,12 +104,16 @@ That state is irrelevant for these addresses on every page.
   registers".
 
 This package uses only bits 15-1 of the L word (p.25's list gives 16 bits
-against its own text and p.273, so bit 0 is never set). It also uses bits 2-0
-of the H word, which all pages give. Bits 4-3 of the H word (address bits
-A20-A19) rest only on the ECS pages (pp.273, 290, 309). p.25 gives 3 bits
-without naming a chip set. Checks on those two bits run with ECS selected and
-are reported as a separate verdict, so that a reader who takes p.25 as binding
-for ECS can set them aside.
+against its own text and p.273, so bit 0 is never set). It uses all five bits
+of the H word. Every run selects the Enhanced Chip Set with 2 MB of Chip
+memory (4.1), and in that configuration the ECS widths are binding: "high 5
+bits if ECS" (pp.273, 290) and "high 5 bits,was 3 bits" (p.309). Every list
+and target this package places at $080000 or above has A19 or A20 set, so G3
+in every Copper run and every landing in P1-B and P5 rest on them. p.25's 3
+bits describe the original chips, which this package does not run, and are
+graded nowhere here. Finding NM-HRM-003 holds that question. The verdicts of
+P1-B and P5 are reported per bit group (L bits 15-1, H bits 2-0, H bits 4-3)
+only so that a red is located by bit.
 
 ### 3.3 When the Copper restarts from COP1LC
 
@@ -153,7 +157,7 @@ gives it (X ... X, DA8-DA1, 0; RD15-RD00). So the "differing between editions"
 remarks in some of those claims do not reflect a different MOVE column in the
 print. The same holds for Table 2-2 on p.36.
 
-### 3.6 Audio: the first block and the restart request
+### 3.6 Audio: the first pass and the restart request
 
 - p.164: "Because of pipelining in Agnus, the first data word must be thrown
   away." ... "When it finishes, a DMA restart request goes to Agnus along with
@@ -168,9 +172,16 @@ print. The same holds for Table 2-2 on p.36.
 - p.145: "Enabling an audio channel almost always starts the data output again
   from the top".
 
-p.164 leaves open the exact fetch sequence of the first block after the
-channel is enabled. P7 therefore makes no assertion about the first block and
-checks every block end after it, where the pages agree.
+p.164 leaves open the exact fetch sequence of the first pass through the data
+after the channel is enabled, and whether that pass is one word short is open
+(p.145 step 4 against p.164). P7 therefore makes no assertion about the first
+pass: the channel-0 fetches before the first fetch whose address is lower than
+that of the fetch before it, but never more than the first N + 1. N + 1 is the
+most any reading gives the first pass: N words "to be retrieved" (p.145) and
+one "thrown away" (p.164). The bound does not rest on the restart that P7
+grades, so an implementation that never returns to AUDxLC is still graded
+from fetch N + 2 on. P7 checks every block end after the first pass, where
+the pages agree.
 
 ### 3.7 Smaller points
 
@@ -200,7 +211,7 @@ areas below.
 
 | Area | Use |
 |---|---|
-| $0C0000-$0CFFFF | P1-B/P5 targets, set S_L1 (defined in P1), plus the P1 contrasting-case park at $0C0060 |
+| $0C0000-$0CFFFF | P1-B/P5 targets, set S_L1 (defined in P1), plus the P1 contrasting-case pad at $0C0060-$0C006F. `RESULTS` ($0C0000, nanomig.i) is not used by this package; `DONE_ADDR` ($0C0FFE, nanomig.i), which the `DONE` macro writes, lies in no pad or park |
 | $0D0000-$0DFFFF | P1-B/P5 targets, set S_L0 |
 | $01F000, $02F000, $04F000, $08F000, $10F000 (16 bytes each) | P1-B/P5 targets, set S_H1 |
 | $1EF000, $1DF000, $1BF000, $17F000, $0FF000 (16 bytes each) | P1-B/P5 targets, set S_H0 |
@@ -208,7 +219,7 @@ areas below.
 | $0E0000-$0E0203 | list L_A (P1-A, P2) |
 | $0E1000-$0E1013 | list L_B (P1-B) |
 | $0E2000-$0E200F | list L_3 (P3) |
-| $0E3000, $0E3100, $0E3200 (4 bytes each) | lists L6a, L6b, L6c (P6) |
+| $0E3000-$0E300F, $0E3100-$0E310F, $0E3200-$0E320F (16 bytes each) | lists L6a, L6b, L6c (P6) |
 | $0E4000-$0E400F, $0E4100-$0E410F | audio buffers A and B, each 4 words followed by 4 guard words (P7) |
 | $0E6000-$0E607F | P4 scratch |
 | $0E7000-$0E71FF | markers and CPU-stored readbacks |
@@ -245,6 +256,27 @@ Every program performs these steps, in this order:
 7. A final marker, after which the program idles in a loop in its own code
    region. The harness ends the capture after the number of fields the run
    names.
+
+**Chip memory below $080000.** After reset "An additional copy of the system
+ROM responds starting at memory location $00000000. The system RAM that would
+normally be located at this address is not available" (p.223), and the harness
+identity-maps only $080000-$1FFFFF (nanomig.i). Runs that place words below
+$080000 (P1-B and P5, with their calibration, baseline and contrasting runs)
+therefore clear the overlay between steps 2 and 3: a byte write of $03 to
+CIA-A DDRA at $BFE201 (p.339: "Direction for port A (BFE001);1=output (set to
+0x03)"), then a byte write of $00 to CIA-A PRA at $BFE001, whose bit 0 is OVL
+(p.339; p.223: "The OVL bit in one of the 8520 Chips disables the overlay").
+OVL carries no `*` (active-low) mark on p.337 ("PA0..OVL ... ROM/RAM overlay
+bit"), unlike LED*, so a 0 turns the overlay off. DDRA is written first so
+that bit 0 is an output when PRA is written. P1-p4 asserts the result at the
+port.
+
+**Assembly.** Every program is assembled for the 68000 (vasm without
+`-m68010` or higher). For the 68010 and up vasm assembles `MOVE.x #0,<ea>` as
+`CLR.x <ea>`, and on the 68000 CLR reads its destination before it writes it.
+A $0000 word written that way into a Copper region would be a CPU read there,
+which I1 would count as a Copper read, and a read of COPJMP1 is itself a
+strobe on p.30 (3.4).
 
 ### 4.4 Instruments and reference frames
 
@@ -400,9 +432,13 @@ the sets below, in this order: S_L1, then S_L0, then S_H1, then S_H0.
 
 At each T[k] (k = 1 ... 39) there is a 16-byte pad:
 `$0084,H(T[k+1])` at T[k], `$0086,L(T[k+1])` at T[k]+4, `$008A,$0000` at
-T[k]+8, and the park `$FFFF,$FFFE` at T[k]+12. At T[40] there is only a
-park. H words have bits 15-5 = 0 and L words have bit 0 = 0 (3.2). p.26
-describes this use: "you might MOVE an indirect address into the COP2LC
+T[k]+8, and the park `$FFFF,$FFFE` at T[k]+12. At T[40] there is a park
+followed by six words $0000 (T[40]+4 ... T[40]+14), so that a read of the word
+after that park (4. below) is a read of a word this specification
+prescribes (G4). Three S_H1 targets ($01F000, $02F000, $04F000) lie below
+$080000, so the run clears the ROM overlay before step 3 (4.3, P1-p4). H words
+have bits 15-5 = 0 and L words have bit 0 = 0 (3.2). p.26 describes this use:
+"you might MOVE an indirect address into the COP2LC
 location register. Then, any MOVE instruction that addresses COPJMP2 strobes
 this indirect address into the program counter."
 
@@ -443,8 +479,13 @@ OR L. Here H and L are the IR2 data of the two MOVEs to $084 and $086 that
 precede J_k, as read at the port. No instruction fetch at Z_k occurs in the
 field. A single unpaired read at Z_k is allowed and reported, because no page
 says whether the Copper may read the next word before the jump takes effect.
-The chain must reach T[40] in every field. Sources: p.26 (quoted
-above); p.25: the lower-addressed register "contains the most significant
+For the same reason one unpaired read of T[40]+4, the word after the last
+park, before each vertical-blank restart is allowed and reported: no page says
+whether a restart that ends a WAIT takes a memory cycle before its first fetch
+(p.20: the WAIT "takes one extra memory cycle to wake up"; p.19: while waiting
+"it does not use the memory bus at all"). The chain must reach T[40] in every
+field. Sources: p.26 (quoted above); p.25: the lower-addressed register
+"contains the most significant
 data" and the higher-addressed one "the least significant data"; pp.273, 290
 and 309 for the widths (3.2); p.25: "This causes the Copper to jump to a new
 location, from which its next instruction will be fetched."
@@ -463,17 +504,21 @@ values for bits 5-15 carry none.
 | 15 | A: every b_i of the set run (bit 15 = 1 sets); B: $0C8000 | A: every b_i of the clear run (bit 15 = 0 clears); B: $0D7FFE |
 
 B's verdict is reported in three parts: L bits 15-1, H bits 2-0, and H bits
-4-3 (ECS pages only, 3.2). The quantifier "most of the chip control registers"
+4-3 (3.2: all three are graded, and the parts only locate a red). The
+quantifier "most of the chip control registers"
 is not graded (section 2).
 
-**5. Preconditions.** Runs P1-A-set and P1-A-clear: G1-G6. Run P1-B: G1-G4
-(it runs the monitor loop but uses no samples). In addition:
+**5. Preconditions.** Runs P1-A-set and P1-A-clear: G1-G6. Run P1-B: G1-G5
+(its fields run from wrap to wrap, and wraps come from the I2 samples, so the
+beam readings they rest on must be sane; it counts no samples in an interval,
+so G6 does not apply). In addition:
 
 | Id | Precondition | Contrasting stimulus | Predicted result |
 |---|---|---|---|
-| P1-p1 | In every field, every half-step's WAIT and MOVE instruction fetches (A), or every pad's three MOVE fetches (B), are present, in list order | Half-step a_5's WAIT is replaced by a park ($FFFF,$FFFE) | Half-steps from a_5 on are never fetched, so P1-p1 goes red. The program still finishes. |
+| P1-p1 | In every field, every half-step's WAIT and MOVE instruction fetches (A), or every pad's three MOVE fetches (B), are present, in list order | Half-step a_5's WAIT is replaced by a park ($FFFF,$FFFE). For B: the MOVE COPJMP2 at T[20]+8 is replaced by a park | Half-steps from a_5 on are never fetched, so P1-p1 goes red. The program still finishes. For B: pads T[21] ... T[40] are never fetched, so P1-p1 goes red |
 | P1-p2 | The instrument works: the CPU's own INTENA writes read back as $0000, $5555 and $0000 (masked) | The $D555 write is omitted | Second value $0000, P1-p2 red |
-| P1-p3 | In B, COP2LC holds the decoy D when the chain starts, so a landing at T[1] cannot come from a stale COP2LC. Asserted by a *calibration run*: L_B with its two MOVEs to $084/$086 replaced by `$009A,$0000` (no effect: p.280, bits written with zero are unchanged). The first fetch after J_0 must be at D ($0E8000). | In the calibration run the CPU writes COP2LC = $000E9010 (the P5 park) instead of D | The first fetch after J_0 is at $0E9010, so P1-p3 goes red |
+| P1-p3 | In B, COP2LC holds the decoy D when the chain starts, so a landing at T[1] cannot come from a stale COP2LC. Asserted by a *calibration run*: L_B with its two MOVEs to $084/$086 replaced by `$009A,$0000` (no effect: p.280, bits written with zero are unchanged). The first fetch after J_0 must be at D ($0E8000). | In the calibration run the CPU writes COP2LC = $000E9010 (the P5 park, which this run's setup writes in step 3) instead of D | The first fetch after J_0 is at $0E9010, so P1-p3 goes red |
+| P1-p4 | In B, the ROM overlay is cleared (4.3): each setup write to a pad below $080000 ($01F000, $02F000, $04F000) appears at the port at its own word address (byte address / 2) with the word written, so the Copper reads there are graded against it (G4) | The two overlay-clearing writes are omitted | With the overlay in place "The system RAM that would normally be located at this address is not available" (p.223), and nanomig_harness.h states that a CPU write in $000000-$07FFFF then "hits no bank at all". No setup write at $01F000 appears at the port, so P1-p4 goes red |
 
 **6. Contrasting cases.**
 
@@ -484,8 +529,11 @@ is not graded (section 2).
 - C2 (one data bit): in run P1-A-set, b_0's IR2 is $8002. Prediction: the hold
   interval shows $0002.
 - C3 (B, one L bit): pad T[1] ($0C0020) moves L = $0060 instead of $0040, and
-  a park sits at $0C0060. Prediction: the jump lands at $0C0060, and T[2] ...
-  T[40] are not visited in that field.
+  $0C0060 holds a pad that sends the chain on to T[2]: `$0084,$000C`,
+  `$0086,$0040`, `$008A,$0000` and a park. Prediction: the jump J_1 lands at
+  $0C0060, not at T[2] = $0C0040, so B's expectation fails for J_1. The chain
+  then continues through T[2] ... T[40], so P1-p1 still holds and the red
+  comes through the L bit, not through a missing pad.
 
 **7. Reference frames.** Copper fetches follow I1 and are anchored by G3 (the
 list starts at L) and by P1-p1 (list order). Hold intervals are anchored on
@@ -526,7 +574,10 @@ The samples are those of the hold intervals of P1, plus the samples with
 **4. Expected value.** For every execution e:
 
 - (i) r2(e) is at A+2 and immediately follows r1(e) at A as the next Copper
-  read.
+  read. I1 pairs the reads exactly this way, and that every MOVE of L_A is
+  fetched as such a pair in every field is P1-p1, a precondition. So (i)
+  defines the population of executions and is not a separate check: it cannot
+  fail on its own.
 - (ii) For b_0, d(e) = $8001 if t2(e) precedes the CPU write of $AAAA at the
   port, and $AAAA if it follows it.
 - (iii) The hold interval after e shows the state that d(e) produces
@@ -553,15 +604,21 @@ and every sample stored more than M after it does. "Directly from RAM" is
 graded by (ii) and (iii): the value follows the RAM word at each execution,
 not a copy of an earlier one. Every MOVE execution in the capture counts.
 
-**5. Preconditions.** G1-G6, P1-p1, and:
+**5. Preconditions.** G1-G6, P1-p1, and P2-p1 below. G4 applies at every
+address except $0E000E: the word there changes during the run by a write that
+is not a step-3 setup write, and (ii) grades what the Copper reads there.
 
 | Id | Precondition | Contrasting stimulus | Predicted result |
 |---|---|---|---|
 | P2-p1 | The CPU write falls strictly between two IR2 reads of b_0's MOVE, and at least one execution precedes it and at least one follows it within the capture | The CPU writes $AAAA to $0E000E in step 3, before the Copper starts | No execution precedes it, so P2-p1 goes red |
 
-**6. Contrasting case.** The CPU write is omitted. Prediction: every
-execution reads $8001 and the b_0 interval shows $0001 in every field. The
-main run's expectation ($2AAA after the write) fails.
+**6. Contrasting case.** The CPU writes $AAA8 instead of $AAAA, at the same
+point, and the run is graded against the main run's words (4.5, G4: a check's
+own dedicated mutation). Prediction: every execution after the write reads
+$AAA8, so (ii) fails, and the b_0 hold intervals after it show $2AA8 instead
+of $2AAA, so (iii) fails. P2-p1 still holds, because the write still falls
+between two executions, so the red comes through (ii) and (iii) and not
+through a precondition.
 
 **7. Reference frames.** Execution identity comes from I1 pairs. The before
 and after split is the port order of the CPU write against r2(e). Sample
@@ -703,30 +760,51 @@ part, section 2); `ch2-location-registers.c3.s2`, `ch2-location-registers.c5.s2`
 the location-register claims are used in part, as section 2 says.
 
 **2. Stimulus.** Run P5 (no monitor loop; the CPU paces steps by polling
-VHPOSR). At each of the 40 targets of P1 (S_L1, S_L0, S_H1, S_H0) there is a
-park. The program frame starts the Copper with L = D ($0E8000).
+VPOSR and VHPOSR). At each of the 40 targets of P1 (S_L1, S_L0, S_H1, S_H0),
+in P1-B's order, there is a park followed by six words $0000 (T to T+15, the
+area of a P1-B pad), so that a read of the word after a park (4. below) is a
+read of a word this specification prescribes (G4). Three targets lie below
+$080000, so the run clears the ROM overlay before step 3 (4.3). The program
+frame starts the Copper with L = D ($0E8000).
 
-- *Phase 1* (COP1): for each target T, at a beam line between $28 and $FA
-  (polled), the CPU executes `MOVE.L #T,$DFF080`, writes marker M_T, and then
-  writes a word to $DFF088 (COPJMP1). It then waits until the next line.
+All steps of the run lie in one field. The CPU first waits until VPOSR bit 0
+(V8, p.285) reads 0 and the V field of VHPOSR (bits 15-8) reads $28. It then
+performs one step per line, starting each step once the line after the
+previous step's line has begun. The run's 81 steps (82 in C2) and its final
+marker thus take lines $28 to $7A at most, inside $28-$FA, so no
+vertical-blank restart falls between the first step and the final marker
+(P5-p1). This matters because p.25 has COP1LC used at vertical blank, and in
+phase 2 COP1LC holds D, not the target.
+
+- *Phase 1* (COP1): for each target T, the CPU executes
+  `MOVE.L #T,$DFF080`, writes marker M_T, and then writes a word to $DFF088
+  (COPJMP1).
 - *Phase 2* (COP2): the CPU first executes `MOVE.L #$000E8000,$DFF080`
   (COP1LC = D). Then, for each target T: `MOVE.L #T,$DFF084`, marker M_T,
-  word write to $DFF08A (COPJMP2), wait.
+  word write to $DFF08A (COPJMP2).
 - *Phase 3* (separate word writes): `MOVE.W #$000E,$DFF080`,
   `MOVE.W #$9010,$DFF082`, marker, word write to $DFF088.
+
+Once the line after phase 3's step has begun, the CPU writes the final marker
+(4.3, step 7).
 
 This follows p.25 ("you write the 18-bit address by moving one long word to
 the register whose name ends in "H"") and p.139, which gives the same long
 write for AUDxLCH.
 
 **3. Observation.** I1 instruction fetches between marker M_T and the next
-step's marker.
+marker (for phase 3's step, the final marker).
 
 **4. Expected value.** For each step, the first Copper instruction fetch after
-M_T is at T, and all Copper reads until the next marker belong to the park at
-T. In phase 3 the fetch is at $0E9010. T is formed as in P1-B:
+M_T is at T, and every instruction fetch until the next marker is at T. In
+phase 3 the fetch is at $0E9010. T is formed as in P1-B:
 ((H AND $1F) << 16) OR L, with H = T >> 16 written to the lower register
-address.
+address. Besides the fetches at T, the only Copper read allowed in the window
+is one read, before the first fetch at T, of the word after the park the
+Copper was stopped at; it is reported. No page says whether the Copper reads
+that word when a strobe ends a WAIT (p.20: the WAIT "takes one extra memory
+cycle to wake up"; p.19: while waiting "it does not use the memory bus at
+all"), as for Z_k in P1-B.
 
 Sources: p.25: "The register with the lower address always has a name ending
 in "H" and contains the most significant data, or high 3 bits of the address.
@@ -740,16 +818,18 @@ COPJMP1 or COPJMP2 are written." p.287: "W=write-only".
 
 *Quantifiers:* each address bit A1-A20 is exercised as a walking one and as a
 walking zero (the sets of P1, with the background for bits 1-4 noted there).
-The verdict is reported as bits A15-A1, A18-A16, and A20-A19 (ECS pages only,
-3.2). "Always" (every register pair) is graded only for COP1LC,
-COP2LC and, in P7, AUD0LC. "Only" in write-only is not graded (section 2).
+The verdict is reported as bits A15-A1, A18-A16, and A20-A19 (3.2: all three
+are graded, and the parts only locate a red). "Always" (every register pair)
+is graded only for COP1LC and
+COP2LC (section 2). "Only" in write-only is not graded (section 2).
 
 **5. Preconditions.** G1-G4 (G3 with L = D), and:
 
 | Id | Precondition | Contrasting stimulus | Predicted result |
 |---|---|---|---|
-| P5-p1 | Every marker's beam reading lies between lines $28 and $FA, so no vertical-blank restart falls inside a step | One phase-2 step is performed at line 5 | The marker reads line 5 and P5-p1 goes red. A fetch at D may precede the landing, because p.25 has COP1LC used at vertical blank. |
-| P5-p2 | Before each marker the Copper is parked: no Copper read occurs between the previous landing's park fetch and M_T | The park at $0C0020 is replaced by `$F001,$FF00` (WAIT line $F0) followed by a park | A Copper read at line $F0 falls into a later step and P5-p2 goes red |
+| P5-p1 | Every marker from the first step's M_T to the final marker reads a line (VHPOSR bits 15-8) between $28 and $FA, and each reads a higher line than the one before it, so all of them lie in one field and no vertical-blank restart falls between them | Before the tenth phase-2 step the CPU waits for line 5 of the next field | That step's marker reads line 5, lower than the one before it, and P5-p1 goes red. A fetch at D may precede the landing, because p.25 has COP1LC (D in phase 2) used at vertical blank. |
+| P5-p2 | Before each marker the Copper is parked: no Copper read occurs between the previous landing's park fetch and M_T | The park at $0C0020 is replaced by `$0001,$FF00` (WAIT line 0, satisfied at once: p.22, "equal to (or greater than)") followed by a park at $0C0024 | The Copper fetches the park at $0C0024 after landing at $0C0020 and before the next marker, so P5-p2 goes red |
+| P5-p3 | The ROM overlay is cleared: as P1-p4, for P5's parks below $080000 | The two overlay-clearing writes are omitted | As P1-p4: no setup write at $01F000 appears at the port, so P5-p3 goes red |
 
 **6. Contrasting cases.**
 
@@ -757,9 +837,9 @@ COP2LC and, in P7, AUD0LC. "Only" in write-only is not graded (section 2).
   exchanged, `MOVE.W #$9010,$DFF080` and `MOVE.W #$000E,$DFF082`, with a park
   at $10000E. Prediction: the fetch is at ($9010 AND $1F) << 16 OR $000E =
   $10000E, not at $0E9010.
-- C2 (L alone): directly after the phase-1 step to $0C8000,
-  `MOVE.W #$4000,$DFF082` only, then a marker and COPJMP1. Prediction: the
-  fetch is at $0C4000, because COP1LCH keeps $000C.
+- C2 (L alone): directly after the phase-1 step to $0C8000, one extra step in
+  the next line: `MOVE.W #$4000,$DFF082` only, then a marker and COPJMP1.
+  Prediction: the fetch is at $0C4000, because COP1LCH keeps $000C.
 - C3 (strobe selects the register): in one phase-2 step, COPJMP1 is written
   instead of COPJMP2. Prediction: the fetch is at D, the COP1LC value, not at
   T.
@@ -777,14 +857,18 @@ Claim: `appB-note.c9` (p.288: "Used to automatically restart pointers, such as
 the Copper program counter (during vertical blank)").
 
 **2. Stimulus.** Run P6 (5 fields captured, monitor loop running), in PAL and
-in NTSC. Parks L6a ($0E3000), L6b ($0E3100) and L6c ($0E3200). Before step 5
+in NTSC. Parks L6a ($0E3000), L6b ($0E3100) and L6c ($0E3200), each followed
+by six words $0000 up to the end of its 16-byte area (4.2), so that a read of
+the word after a park (4. below) is a read of a word this specification
+prescribes (G4), and so that P6-p1's contrasting list fits. Before step 5
 the CPU executes `MOVE.L #$000E3200,$DFF084` (COP2LC = L6c). The frame then
 starts the Copper with L = L6a. The program never writes a strobe after
 step 5.
 
 **3. Observation.** I1 instruction fetches, and the I2 samples around each
-fetch. A *restart* is the first instruction fetch in a field. The page says
-"during vertical blank", and the test knows vertical blanking holds from the
+fetch. A *restart* is the first instruction fetch after the time *s* of the
+previous field's last kept sample. The page says "during vertical blank",
+and the test knows vertical blanking holds from the
 beam line: line 0 up to line $1D (PAL) or $15 (NTSC), the widest reading of
 the pages that still agrees on the start (3.3). The first field (the one with
 the start strobe) is excluded.
@@ -792,12 +876,23 @@ the start strobe) is excluded.
 **4. Expected value.**
 
 - (i) In every field there is exactly one instruction fetch, at the value of
-  COP1LC (L6a), and no other Copper read.
+  COP1LC (L6a). A field's fetches are counted from the previous field's last
+  kept sample to its own last kept sample, the same boundary the restart is
+  defined by. Copper reads that I1 pairs into no fetch are reported with
+  their address and line, and are not graded. P6's claim (p.288) concerns the
+  program counter, not the bus, and no page says whether the restart of a
+  Copper stopped at a WAIT takes a memory cycle before its first fetch. p.20
+  gives the WAIT "one extra memory cycle to wake up", p.19 says that while
+  waiting "it does not use the memory bus at all", and p.30 says of the final
+  WAIT that it "never finishes".
 - (ii) The restart's IR1 read time t_r lies after the time *s* of the last
-  sample of the previous field, and before the time *s* of the first sample
-  of its own field that reads line $1E or later (PAL) or $16 or later (NTSC).
-  Because a sample's beam is read shortly after its *s*, the bounds carry a
-  tolerance of less than M at each end.
+  kept sample of the previous field, and before the port time of the VHPOSR
+  store of the first kept sample of its own field that reads line $1E or
+  later (PAL) or $16 or later (NTSC). Both bounds follow from I2's program
+  order, with no margin. The last sample of the previous field read its beam
+  after its *s* and still saw that field, so the wrap, and any restart at or
+  after it, follows that *s*. The first sample reading line $1E (or $16) read
+  its beam before it stored VHPOSR, so that line had begun before the store.
 - (iii) No fetch occurs at L6c, the COP2LC value.
 
 The measured restart line is reported.
@@ -811,12 +906,18 @@ blanking.
 both video standards. p.25's "no matter what the Copper is doing" is tested
 only with the Copper parked and is not graded otherwise.
 
-**5. Preconditions.** G1-G6, and:
+**5. Preconditions.** G1-G6, and P6-p1 to P6-p3 below. In the NTSC run G5
+takes p.23's NTSC values, which its own text allows ("NTSC runs allow 227 and
+228"). H stays within $00-$E3 ("Every other line is a long line (228 color
+clocks, 0-$E3)"), and the mean corrected gap lies within 227 - 0.3 ... 228 +
+0.3 memory cycles. With the PAL bound of $E2, a correct NTSC machine would
+fail G5 on every long line.
 
 | Id | Precondition | Contrasting stimulus | Predicted result |
 |---|---|---|---|
-| P6-p1 | Between restarts the Copper is parked: no Copper read between one restart's pair and the next | L6a is `$6401,$FF00` followed by a park | Reads at line $64 occur in mid-field, P6-p1 red |
+| P6-p1 | Between restarts the Copper is parked: no instruction fetch between one restart's pair and the next | L6a is `$6401,$FF00` followed by a park at $0E3004 | The park at $0E3004 is fetched at line $64, in mid-field, and P6-p1 goes red |
 | P6-p2 | At least four wraps fall in the capture | The capture is 2 fields long | P6-p2 red |
+| P6-p3 | The video standard selected is in effect: the largest kept V of every complete field (wrap to wrap) is $105 or $106 in the NTSC run and $137 or $138 in the PAL run (p.24: "There are actually 262 NTSC (312 PAL) possible vertical positions"; "In NTSC, the fields are 262, then 263 lines and in PAL, 312, then 313 lines"). Without it the NTSC run could pass on a PAL machine. | The NTSC run is made with PAL selected | Largest V $137 or $138, so P6-p3 goes red |
 
 **6. Contrasting case.** In field 3 the CPU executes
 `MOVE.L #$000E3100,$DFF080` (COP1LC = L6b) once, at a beam line between $64
@@ -861,19 +962,25 @@ Start the audio DMA"):
 
 The CPU then idles in its own code region.
 
-**3. Observation.** Channel-0 fetches: reads in the audio regions. A *block*
-is a maximal run of consecutive channel-0 fetches whose addresses step by +2.
-The page says "whenever the audio length count is finished". The test knows
-the count has finished when the block holds N = 4 fetches. The first block
-after the enable is excluded (3.6).
+**3. Observation.** Channel-0 fetches: reads in the audio regions. The *first
+pass* is excluded (3.6). It is the channel-0 fetches before the first fetch
+whose address is lower than that of the fetch before it, but never more than
+the first N + 1 = 5. A *block* is a maximal run of consecutive channel-0
+fetches after the first pass whose addresses step by +2. The last block of
+the capture may be cut off by the capture's end, so only blocks followed by
+another channel-0 fetch in the capture count. The page says "whenever the
+audio length count is finished". The test knows the count has finished when
+the block holds N = 4 fetches.
 
 **4. Expected value.**
 
-- (i) Every block after the first is exactly LC, LC+2, LC+4, LC+6, where LC is
-  the value in AUD0LC.
-- (ii) Every fetch at LC+6 is followed, as the next channel-0 fetch, by a
-  fetch at LC.
-- (iii) No read ever occurs at a guard word.
+- (i) Every counted block is exactly LC, LC+2, LC+4, LC+6, where LC is the
+  value in AUD0LC.
+- (ii) After the first pass, every fetch at LC+6 is followed, as the next
+  channel-0 fetch, by a fetch at LC. A fetch at LC+6 that is the capture's
+  last channel-0 fetch has no successor and does not count.
+- (iii) After the first pass, no read occurs at a guard word. Reads at guard
+  words in the first pass are reported, not graded (3.6).
 
 Sources: p.139: "Each time the system retrieves the last audio word from the
 data area, it uses the contents of these location registers to again find the
@@ -882,7 +989,7 @@ starting at the address currently in AUDxLC". p.147: "Each time the length
 counter reaches zero, both the location and length registers are reloaded
 with the same values to continue the audio output."
 
-*Quantifier "whenever":* every block end in the capture.
+*Quantifier "whenever":* every end of a counted block in the capture.
 
 **5. Preconditions.**
 
@@ -891,14 +998,21 @@ with the same values to continue the audio output."
 | P7-p1 | Audio fetches are identifiable: a baseline with DMACON $8200 shows no read in the audio regions | The baseline program also reads $0E4000 once | P7-p1 red |
 | P7-p2 | DMACONR at $0E7108 has bits 9 and 0 set and bits 3-1 clear (p.278), so only channel 0 runs | DMACON is written $8203, with AUD1LC also pointing at A | Bit 1 reads 1 and P7-p2 goes red |
 | P7-p3 | The first channel-0 fetch after the marker lies in A's buffer (p.148: the location "will be used as a pointer showing current data word to fetch") | AUD0LC is set to B instead | The first fetch is in B's buffer and P7-p3 goes red (for the main-run expectation) |
-| P7-p4 | At least 10 block ends after the first block fall in the capture. With a period of 500 per sample, a word lasts 1000 memory cycles (about 4.4 lines), so a PAL field holds about 17 blocks of 4 words. | AUD0LEN = 64 | About one block per field, so P7-p4 goes red |
+| P7-p4 | At least 10 ends of counted blocks fall in the capture. With a period of 500 per sample, a word lasts 1000 memory cycles (about 4.4 lines), so a PAL field holds about 17 blocks of 4 words. | AUD0LEN = 64 | About one block per field, so P7-p4 goes red |
 
-**6. Contrasting case.** At a time inside the fourth block, after its second
-fetch and before its last (bracketed by markers, which the checker verifies
-against the fetch times), the CPU executes `MOVE.L #$000E4100,$DFF0A0`
-(AUD0LC = B). Prediction (p.147: "Once the original registers have been read
-by the DMA channel, you can change their values without disturbing the
-operation you started"; p.148): the fourth block completes at A+6, the next
+**6. Contrasting case.** At a time inside the fourth block (counting the first
+pass as the first), after its second fetch and before its third (bracketed by
+markers, which the checker verifies against the fetch times), the CPU
+executes `MOVE.L #$000E4100,$DFF0A0` (AUD0LC = B). The write thus lies at
+least one word period before the block's last fetch. It precedes the reload
+under every reading of when the reload happens: p.139 has the location
+registers used "Each time the system retrieves the last audio word", while
+p.164 has the restart request go out "along with the regular DMA request",
+with requests transferred "once each horizontal line" and the data coming
+back "about 14 clock cycles later". Prediction (p.147: "Once the original
+registers have been read by the DMA channel, you can change their values
+without disturbing the operation you started"; p.148): the fourth block
+completes at A+6, the next
 fetch is at B, and every later block is B, B+2, B+4, B+6. The main run's
 expectation (return to A) fails.
 
