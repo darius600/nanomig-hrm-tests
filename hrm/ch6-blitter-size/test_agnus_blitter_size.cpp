@@ -33,29 +33,23 @@
 //   they resolve in the claim files that hrm-testpipeline/acceptance/ch6.json
 //   lists under `inventories`.
 //
-// NO PRIOR ART IS SUPERSEDED. docs/evidence/blitter-prior-art.md was read in full
-// before writing this file, per the build brief's explicit instruction to
-// say so rather than assume it. Its "eight blitter tests" table lists
-// barrelshifter, fill, minterm, modulo, ptr, line_octant, mask and zero -
-// none of the eight writes BLTSIZE for anything but incidental plumbing to
-// start a blit, none asserts a single fact about BLTSIZE's own field widths,
-// its zero-wrap encoding, or the width/height unit distinction. This is a
-// genuinely new directory with no predecessor to confirm, extend or
-// supersede.
+// NO PRIOR ART IS SUPERSEDED. The "eight blitter tests" table in
+// docs/evidence/blitter-prior-art.md lists barrelshifter, fill, minterm,
+// modulo, ptr, line_octant, mask and zero - none of the eight writes BLTSIZE
+// for anything but incidental plumbing to start a blit, none asserts a
+// single fact about BLTSIZE's own field widths, its zero-wrap encoding, or
+// the width/height unit distinction.
 //
 // A MANUAL SELF-INCONSISTENCY, FLAGGED RATHER THAN SILENTLY RESOLVED: p.200
 // ("Blitter Key Points") states "width is in words and height is in
-// pixels" (6-blitter-key-points.c5, ch6-keypoints.c6) - verified verbatim
-// against docs/references/amiga-hrm-3rd/ch6/p200.txt line 14, "pixels." is
-// genuinely what is printed there, not an OCR artefact. p.171 states the
+// pixels" (6-blitter-key-points.c5, ch6-keypoints.c6) -
+// docs/references/amiga-hrm-3rd/ch6/p200.txt line 14 prints "pixels.", not
+// an OCR artefact. p.171 states the
 // same field, in the same chapter, as "Blit height is in lines with a zero
 // representing 1024 lines" (6-dma-channels.c51 and neighbours) and
 // p.269/p.308 both give the field's own unit as "height=vertical lines".
-// This conflict was not among the six recorded in packages.md's "Source
-// conflicts, all six" section - it is an additional one, found while
-// grounding this package's assertions against the actual printed pages
-// (per this task's "erst pruefen, dann behaupten" requirement) rather than
-// trusting the classifier's restatement alone. Per the playbook's own rule
+// This conflict is not among the six recorded in packages.md's "Source
+// conflicts, all six" section. Per the playbook's own rule
 // ("FLAG CONFLICTS ... record both and mark it. Do not resolve it."), both
 // readings are cited under SIZE-WIDTH-DEFINES-ROW-HEIGHT-COUNTS-ROWS below,
 // which tests the one thing both wordings are trying to describe - a
@@ -67,55 +61,47 @@
 // CLAIM COVERAGE. All 118 records of classify.package=="PKG-BLT-SIZE" and
 // classify.status=="testable" in work/2026-09-08_fpga-090_classified.jsonl
 // are covered below, either by an assertion or under NOT ASSERTED with a
-// reason - verified by script (a claim-id set built from the same filter,
-// diffed against every id cited anywhere in this file: 118 cited, 0 missing,
-// 0 extra, 0 duplicated) before this header was finalized, so the count is
-// not a hand tally. Both readers (sol/opus) cover much of the same ground -
+// reason - the count is scripted (a claim-id set built from the same
+// filter, diffed against every id cited anywhere in this file: 118 cited, 0
+// missing, 0 extra, 0 duplicated), not a hand tally. Both readers (sol/opus)
+// cover much of the same ground -
 // the appendix-A (p.269) and appendix-C (p.308) BLTSIZE bit tables in
 // particular are stated by both readers, one claim per bit, on both pages,
 // so many ids below are the same proposition stated up to four times. Every
-// id is written out in full, never a shared-prefix shorthand - two packages
-// before this one had to redo their citations for exactly that shortcut.
-// Four further claims from outside the original 118-claim PKG-BLT-SIZE
-// filter above: three were classified into sibling packages (ch6-line.c43
-// was classify.package=="PKG-BLT-LINE"; 6-appc-big-blits.c22 and .c24 were
-// classify.package=="PKG-BLT-ECS"), one (ch6-dma.c45) was already inside
-// the original 118 but was only declined in this header's prose and never
-// printed on a runtime line - a gap the coverage-counting rule ("HOW
-// COVERAGE IS COUNTED ... by searching the text of lines the test actually
-// printed") does not allow a header comment to close. What was checked for
-// the four added ids specifically, directly: `grep` on this file before
-// any edit confirmed none of the four appeared anywhere in it as an id (a
-// genuine gap, not already-covered ground under a different name), and
-// `grep` after confirms all four now appear inside an `expect()` or
-// `record()` call's own string argument, not only in a comment.
-// 6-appc-big-blits.c22 sits inside SIZE-ZERO-HEIGHT-WRAPS-TO-1024's own
-// already-mutated assertion. ch6-line.c43 does not establish what
+// id is written out in full, never a shared-prefix shorthand.
+// Four further claims: three are classified into sibling packages
+// (ch6-line.c43 is classify.package=="PKG-BLT-LINE"; 6-appc-big-blits.c22
+// and .c24 are classify.package=="PKG-BLT-ECS"), and one, ch6-dma.c45, is
+// inside the 118 but cannot be covered by a header comment alone under the
+// coverage-counting rule ("HOW COVERAGE IS COUNTED ... by searching the
+// text of lines the test actually printed"). All four appear inside an
+// `expect()` or `record()` call's own string argument, not only in a
+// comment. 6-appc-big-blits.c22 sits inside SIZE-ZERO-HEIGHT-WRAPS-TO-1024's
+// own assertion. ch6-line.c43 does not establish what
 // BLTSIZE-WRITE-SETS-BUSY measures, so it sits on its own RECORDED line
-// (NOT-ASSERTED-BLTSIZE-WRITE-ORDER, above) instead; ch6-dma.c45 and
+// (NOT-ASSERTED-BLTSIZE-WRITE-ORDER, below) instead; ch6-dma.c45 and
 // 6-appc-big-blits.c24 are graded on SIZE-WIDTH-FIELD-BITS-LITERAL and/or
 // SIZE-ZERO-WIDTH-WRAPS-TO-64 (see "UNIT CONVERSION, GRADED" below).
 //
-// One further claim, sol:3-large.c26 (p.76, originally
+// One further claim, sol:3-large.c26 (p.76, filed under
 // classify.package=="ch3-ddf-fetch-window" - a chapter-3 playfield
 // package, not a blitter one; page 76's own classify.evidence there is
 // about agnus_bitplanedma's DDF fetch window, a different module
 // entirely), quote "With the original chip set the largest area the
 // blitter can draw in is 1008 by 1024.", restated "On OCS, the blitter's
-// maximum drawable area is 1008x1024 pixels." Written from the quote
-// alone.
+// maximum drawable area is 1008x1024 pixels."
 //
-// RESOLVED after opening the RTL: DECLINED (recorded, not asserted) - see
+// DECLINED (recorded, not asserted) - see
 // "NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT" below. Page 171 itself (already
 // this package's oracle for the raw maxima) derives 1008 as "the largest
 // blit possible ... is 1024 by 1024 pixels. However, shifting and masking
 // operations MAY REQUIRE an extra word be fetched ... making the maximum
-// PRACTICAL horizontal width 1008 pixels" - verified directly against
-// docs/references/amiga-hrm-3rd/ch6/p171.txt before writing this note. The
+// PRACTICAL horizontal width 1008 pixels"
+// (docs/references/amiga-hrm-3rd/ch6/p171.txt). The
 // hedge ("may require", "practical") marks this as a programming
 // convention about the barrel shifter (agnus_blitter_barrelshifter,
 // ash/bsh), not a register-enforced limit BLTSIZE's own width decode
-// carries - confirmed by grep: neither `63` nor `1008` occurs anywhere in
+// carries - neither `63` nor `1008` occurs anywhere in
 // agnus_blitter.v, and the width decode (agnus_blitter.v:519-525) treats
 // 64 identically regardless of the shift value. Two sibling packages
 // already own barrel-shifter correctness (hrm/ch6-blitter-barrelshifter,
@@ -130,8 +116,7 @@
 //
 //   TEST-DATA-DELIVERY: fixture check, no claim id - reproduces
 //     hrm/ch6-blitter-status's TEST-DATA-DELIVERY through this file's own
-//     Harness before anything data-dependent is asserted, per the build
-//     brief.
+//     Harness before anything data-dependent is asserted.
 //
 //   BLTSIZE-WRITE-SETS-BUSY [reused fact, control precondition - see below]
 //     (pp.169, 186, 191, 192, 200, 269): 6-intro.c19, ch6-intro.c19,
@@ -143,8 +128,7 @@
 //     ordering instruction, not a "writing BLTSIZE starts the blit" claim -
 //     this assertion measures only the latter and would print the same if
 //     registers written after BLTSIZE were still honoured. See
-//     NOT-ASSERTED-BLTSIZE-WRITE-ORDER below, where the id is declined
-//     instead, on an independent validator's finding.)
+//     NOT-ASSERTED-BLTSIZE-WRITE-ORDER below, where the id is declined.)
 //
 //   NOT-ASSERTED-BLTSIZE-WRITE-ORDER [recorded, not asserted]
 //     (p.191): ch6-line.c43 . Printed as one RECORDED: line - the ordering
@@ -208,10 +192,9 @@
 //     ch6-dma.c48, ch6-dma.c56, 6-appa-registers.c63, ch6-appa-bltsize.w2,
 //     ch6-dma.c45, 6-dma-channels.c45, 6-appc-big-blits.c24,
 //     ch6-appc-bltsize.w .
-//     (the last four, added on an independent validator's finding that the
-//     original RECORDED/WIDTH-LITERAL-only placement did not establish
-//     their "64 words" / "16 to 1024 bits" / "1024 pixels max" clause:
-//     this assertion is exactly where writing 0 is shown to produce 64
+//     (the last four carry a "64 words" / "16 to 1024 bits" / "1024 pixels
+//     max" clause that SIZE-WIDTH-FIELD-BITS-LITERAL alone does not
+//     establish: this assertion is exactly where writing 0 is shown to produce 64
 //     destination writes, and 1 word = 16 bits = 16 pixels is the
 //     manual's own fixed arithmetic on that same count, not a separate
 //     RTL fact needing a port this boundary does not have.)
@@ -240,26 +223,23 @@
 // UNIT CONVERSION, GRADED (not recorded). ch6-dma.c45 (p.171, "A width of 1
 //   to 64 words is 16 to 1024 bits") and 6-appc-big-blits.c24 (p.308,
 //   "w = Width  (6 bit width  = 1024 pixels max)", restated
-//   "Original-chip-set BLTSIZE width has a 1024-pixel maximum") were first
-//   declined here as absent_signal (no bit-count or pixel-count port on
-//   agnus_blitter). An independent validator found that reasoning did not
-//   hold: 1 word = 16 bits = 16 pixels is the manual's own fixed
-//   arithmetic on the word count that SIZE-WIDTH-FIELD-BITS-LITERAL and
-//   SIZE-ZERO-WIDTH-WRAPS-TO-64 already measure in full (1..63 and 64
-//   respectively) - not a separate hardware fact needing its own port -
-//   the same reading PKG-BLT-ECS's own sibling package gives the identical
-//   p.308 pixel claims. Both ids are graded there instead; see those two
-//   assertions' own id lists above.
+//   "Original-chip-set BLTSIZE width has a 1024-pixel maximum") state bit
+//   and pixel counts, and agnus_blitter has no bit-count or pixel-count
+//   port. They are graded anyway: 1 word = 16 bits = 16 pixels is the
+//   manual's own fixed arithmetic on the word count that
+//   SIZE-WIDTH-FIELD-BITS-LITERAL and SIZE-ZERO-WIDTH-WRAPS-TO-64 measure in
+//   full (1..63 and 64 respectively) - not a separate hardware fact needing
+//   its own port - the same reading PKG-BLT-ECS's own sibling package gives
+//   the identical p.308 pixel claims. Both ids are graded on those two
+//   assertions; see their own id lists above.
 //
-// FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
-// (the only agnus_blitter fixture in the tree proven to deliver data
-// correctly) - TEST-DATA-DELIVERY below reproduces its TEST-DATA-DELIVERY
-// assertion first, before anything data-dependent, per the build brief.
-// Harness::cycle's DMA-grant handshake (the settling eval() before the
-// clock edge, and capturing we/data_out AT the grant rather than polling
-// afterwards) is the same mechanism as agnus_blitter_status, agnus_blitter_
-// ecs, agnus_blitter_masks, agnus_blitter_shift_chain and agnus_blitter_
-// line - all read before writing this file. `ecs` is tied to 0 for the
+// FIXTURE. The harness is hrm/ch6-blitter-status/'s - TEST-DATA-DELIVERY
+// below reproduces its TEST-DATA-DELIVERY assertion first, before anything
+// data-dependent. Harness::cycle's DMA-grant handshake (the settling eval()
+// before the clock edge, and capturing we/data_out AT the grant rather than
+// polling afterwards) is the same mechanism as agnus_blitter_status,
+// agnus_blitter_ecs, agnus_blitter_masks, agnus_blitter_shift_chain and
+// agnus_blitter_line. `ecs` is tied to 0 for the
 // whole file: every claim covered here is the OCS BLTSIZE encoding, which
 // PKG-BLT-ECS's own BACKWARD-COMPAT-BLTSIZE-WORKS-WITH-ECS assertion
 // already shows is unconditional on `ecs` anyway (agnus_blitter.v:500,
@@ -267,8 +247,7 @@
 // nothing here needs to drive it high.
 //
 // Every write-counting assertion below (every one except
-// BLTSIZE-WRITE-SETS-BUSY) is exactly the case the build brief calls out
-// by name: busy/int3 signal completion BEFORE the pipeline has flushed the
+// BLTSIZE-WRITE-SETS-BUSY) depends on this: busy/int3 signal completion BEFORE the pipeline has flushed the
 // last word to memory (agnus_blitter.v:905, `done` fires while BLT_D/BLT_C
 // is fetching/storing the SECOND-TO-LAST word, not the last one - the true
 // last word is flushed one to two cycles later through BLT_E/BLT_F). Every
@@ -284,9 +263,9 @@
 // `git diff --stat` after every revert) and the PASS/FAIL lines quoted are
 // what the run printed, not predictions. Every mutation is a STIMULUS
 // mutation to this test file's OWN inputs (a register value written to the
-// DUT) - never to nanomig/, which this task forbids touching for any
-// reason. Every mutation run's full total is quoted alongside the specific
-// assertion(s) it moved, confirming nothing else in the file moved.
+// DUT) - never to nanomig/. Every mutation run's full total is quoted
+// alongside the specific assertion(s) it moved, confirming nothing else in
+// the file moved.
 //
 // MUTATION TEST-DATA-DELIVERY stimulus red: fed C word at index 2 changed
 //   from 0x9ABC to 0x9ABD (expected constants left untouched) -> FAIL, the
@@ -356,9 +335,8 @@ constexpr uint16_t bltsize_word(uint16_t width, uint16_t height) {
     return static_cast<uint16_t>((height << 6) | width);
 }
 
-// Copied in mechanism from hrm/ch6-blitter-status (the DMA-grant
-// second-eval() fix and the at-the-grant we/data_out capture point), read
-// in full before writing this file.
+// The same mechanism as hrm/ch6-blitter-status (the DMA-grant second
+// eval() and the at-the-grant we/data_out capture point).
 class Harness {
 public:
     Harness() : dut(new Vagnus_blitter) {
@@ -455,8 +433,7 @@ private:
             dut->reg_address_in = reg;
             dut->data_in = v;
             // Settle ackdma/reg_address_in/data_in against the
-            // combinational network BEFORE the clock edge - the step the
-            // salvaged diag.cpp harness skipped (see
+            // combinational network BEFORE the clock edge (see
             // hrm/ch6-blitter-status's header). we/data_out are
             // transient and only valid here.
             dut->eval();
@@ -731,16 +708,10 @@ int main(int argc, char** argv) {
             "6-appc-big-blits.c24, ch6-appc-bltsize.w .");
     }
 
-    // ch6-dma.c45 and 6-appc-big-blits.c24 were RECORDED here (not asserted)
-    // until an independent validator found the decline did not hold - see
-    // "UNIT CONVERSION, GRADED" in the file header. Both ids now sit on
-    // SIZE-WIDTH-FIELD-BITS-LITERAL and/or SIZE-ZERO-WIDTH-WRAPS-TO-64
-    // above instead, with no assertion here.
-
     // ---------- NOT-ASSERTED-PRACTICAL-SHIFT-LIMIT (recorded, not asserted) ----------
     {
-        // sol:3-large.c26's own quote, verified directly against
-        // docs/references/amiga-hrm-3rd/ch6/p171.txt (already this package's
+        // sol:3-large.c26's own figure, set against p.171
+        // (docs/references/amiga-hrm-3rd/ch6/p171.txt, already this package's
         // own primary oracle page for the raw 64-word/1024-row maxima):
         // "Thus, the largest blit possible with the current Amiga blitter is
         // 1024 by 1024 pixels. However, shifting and masking operations MAY
