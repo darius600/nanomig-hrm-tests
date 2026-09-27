@@ -1,4 +1,4 @@
-# NM-HRM-058 — the received-character window is longer than p.256 prints, and every implementation with a receiver agrees
+# NM-HRM-058 — the nine-bit received-character window is longer than p.256 prints, and every implementation with a receiver agrees
 
 | | |
 |---|---|
@@ -20,6 +20,14 @@
 **p.256:27** — *"up to one full character-receive time (8 to 10 bit times) to
 accept the data and clear"*.
 
+The same page offers the frame that range does not reach:
+
+> Bit 15 is a 1 if you chose nine data bits for the receive-register full signal, and a 0 if you chose eight data bits.
+
+One start bit, eight data bits and one stop bit make ten bit times, the printed
+ceiling; with nine data bits the frame is eleven. The finding rests on the
+nine-bit frame alone.
+
 ## What NanoMig does
 
 **10 bit times for an 8-bit frame, 11 for a 9-bit frame** — at the printed
@@ -36,7 +44,8 @@ back-to-back receive window at 9.681818 bit times for an 8-bit frame and
 passed, 3 failed`. [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)
 measures the same window from its own starting point at 10 bit-cells for an
 8-bit frame and 11 for a 9-bit frame — `B11`, red, one of the package's `48
-passed, 3 failed`.
+passed, 3 failed`. Both reds come from the 9-bit frame: the 8-bit values, 9.68
+and 10, lie inside 8 to 10.
 
 ## Why this is filed against the page
 

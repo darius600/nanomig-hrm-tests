@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
 | **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control), [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Verdict of the four** | **three of the four narrow by chipset**, to 19 bits on OCS: Copperline masks the stored pointer, WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1623`) mask the address the DMA drives. Denise does not. They do it in different places and the effect on a fetched address is the same |
+| **Verdict of the four** | **three of the four narrow by chipset**, to 19 bits on OCS: Copperline masks the stored pointer, WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1623`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. The three do it in different places and the effect on a fetched address is the same |
 | **See also** | [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
 
 ---
@@ -47,13 +47,16 @@ is unconditional.
 |---|---|---|
 | **WinUAE** | [`memory.cpp:2619-2623`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623) | **narrows the BUS, not the register.** `chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear — 19 bits on OCS, on the Agnus-side chip-RAM path disk and every other DMA fetch uses. The register itself stays full width. Two caveats in the same function stop it being a clean vote for the manual: `cs_agnussize` overrides it either way (`:2627-2644`), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` (`:2646-2648`) drops the chipset term entirely |
 | **vAmiga** | [`Core/Components/Memory/Memory.cpp:1623`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L1623) | <pre>addr &= agnus.ptrMask;</pre> **narrows the BUS, not the register**, as WinUAE does. Every Agnus DMA read goes through this `peek16 <Accessor::AGNUS>`, the Copper's included ([`AgnusDma.cpp:264`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L264)), and [`Agnus.cpp:190-191`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L191) sets `ptrMask = 0x07FFFF` for an OCS Agnus: 19 bits. The register keeps the whole high word (`cop1lc = REPLACE_HI_WORD(cop1lc, value);`, [`CopperRegs.cpp:82`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/CopperRegs.cpp#L82)) |
-| **Denise** | [`emulation/libami/agnus/copper.cpp:345-347`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L345-L347) | <pre>auto Copper::setCOP1LCH(uint16_t value) -&gt; void {<br>&nbsp;&nbsp;&nbsp;&nbsp;cop1lc = (cop1lc & 0xffff) \| (value &lt;&lt; 16);</pre> takes the whole write, no mask |
+| **Denise** | [`emulation/libami/agnus/copper.cpp:345-347`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L345-L347)<br>[`emulation/libami/agnus/dma.cpp:416-424`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/dma.cpp#L416-L424) | <pre>auto Copper::setCOP1LCH(uint16_t value) -&gt; void {<br>&nbsp;&nbsp;&nbsp;&nbsp;cop1lc = (cop1lc & 0xffff) \| (value &lt;&lt; 16);</pre> takes the whole write, no mask. The fetch masks with `dmaChipMemMask` (`addrBus = adr & dmaChipMemMask;`), the installed chip RAM less one, not the Agnus revision |
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118) | <pre>Self::Ocs =&gt; 0x0007_FFFF,</pre> **narrows to 19 bits on OCS** — the manual's width |
 | **MiSTer** | [`rtl/agnus_copper.v:142-144`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144) | descendant — identical to NanoMig: `cop1lch[20:16] <= data_in[4:0];`, five bits latched unconditionally |
 | **TC64** | [`rtl/minimig/agnus_copper.v:142-144`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L142-L144) | descendant — the same three lines, byte for byte. Each line's only difference from NanoMig in this file is elsewhere, lines 234-274, where both assign `copjmp1`/`copjmp2`/`strobe1`/`strobe2`/`strobe` blocking and NanoMig non-blocking — the *same* eighteen lines, the same difference, in each — and none of it touches COP1LCH. A fix here diverges from neither line |
 
-**One of the four independent implementations narrows the register as the
-manual describes; WinUAE and vAmiga narrow the address it drives instead.**
+**Three of the four independent implementations narrow by chipset; only Denise
+does not.** Copperline narrows the register as the manual describes; WinUAE and
+vAmiga narrow the address it drives instead, which has the same effect on a
+fetched address. MiSTer and TC64 carry NanoMig's unconditional latch, inherited
+rather than independently arrived at.
 
 
 ---
@@ -116,10 +119,13 @@ Three separate patches in three engines is the option to avoid.
 
 ## For the specialists
 
-Three of four implementations keep a register as wide as NanoMig's, but WinUAE
-and vAmiga narrow the address it drives on OCS; only Denise fetches with no
-chipset term. Read together with the other
-two pointer findings, that points at the manual being read too strictly rather
-than at the RTL being wrong — but the manual is this project's oracle and an
-implementation never promotes to that. What the agreement earns is a careful
-re-reading of pp. 273 and 309 before anyone patches three modules.
+Three of the four independent implementations narrow an OCS fetch address to 19
+bits, the width pp. 273 and 309 print: Copperline in the register, WinUAE and
+vAmiga on the bus. Only Denise leaves the chipset out, and it masks to the
+installed chip RAM instead. The implementations side with the manual, not with
+NanoMig's unconditional five bits, and do not make the printed page the outlier.
+
+What is left to decide is scope, and it is the same decision as in
+[NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and
+[NM-HRM-043](NM-HRM-043.md): whether this core models an OCS Agnus at all. The
+manual is this project's oracle and an implementation never promotes to that.

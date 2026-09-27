@@ -76,6 +76,25 @@ widths, so 64 stays above 63:
 assign volgate = (volcnt < audvol);
 ```
 
+**Only the multiply path leaves the design.** `nanomig.v` connects the multiply
+outputs to its own audio ports and leaves the PWM outputs unconnected:
+
+[`src/nanomig.v#L1535-L1538`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1535-L1538)
+
+```verilog
+	.ldata        (audio_left       ), // left DAC data
+	.rdata        (audio_right      ), // right DAC data
+	.ldata_okk    (                 ), // 9bit
+	.rdata_okk    (                 ), // 9bit
+```
+
+`ldata` is the mixer's `ldatasum` (`paula_audio.v:282`, through `paula.v:303`
+and `minimig.v:528`), so volume 64 reaches `audio_left` as 63. Every board top
+in the tree instantiates `nanomig` and takes its audio from `audio_left` and
+`audio_right` ([`src/tang/nano20k/top.sv:666-667`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/tang/nano20k/top.sv#L666-L667)
+is one of twelve); no file outside `src/minimig-aga/` other than `nanomig.v`
+names `ldata_okk` or `rdata_okk`. The correct PWM path reaches no output.
+
 ### Measured
 
 | path | volumes 63, 64, 65, 96, 127 | levels |
@@ -138,8 +157,9 @@ the helper itself to widen, or the mixer to special-case it:
 with `paula_audio_volume`'s `volume` port widened to `[6:0]`. That change makes
 the multiply path agree with the PWM path already in the same design.
 
-**This is a suggestion, not a decision.** Whether it matters depends on which
-path reaches the DAC in a real build — see the closing note.
+**This is a suggestion, not a decision.** The multiply path is the one
+`nanomig.v` sends to its audio outputs, so the collapse is in what every build
+plays; the PWM path, which already keeps 64 apart from 63, reaches no output.
 
 ### Confirming a fix, and what stays red afterwards
 
@@ -193,5 +213,10 @@ concluding anything: each one names the finding it belongs to.
 
 Measured against the multiply path's own maximum, the whole of Table 5-9 runs
 **+0.09 to +0.18 dB high** there, and reproduces to the printed decimal on the PWM
-path. Which of the two reaches the DAC in a real build decides whether this is
-audible or bookkeeping.
+path. The multiply path is the one a NanoMig build plays: `nanomig.v:1535-1538`
+connects `ldata`/`rdata` to `audio_left`/`audio_right` and leaves
+`ldata_okk`/`rdata_okk` unconnected. MiSTer, a descendant, carries both paths to
+its top level and lets a status bit choose:
+[`Minimig.sv:1227-1230`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/Minimig.sv#L1227-L1230)
+sends `ldata_okk` to its output when `paula_pwm` (`status[50]`) is set and
+`ldata` otherwise.

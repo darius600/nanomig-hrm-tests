@@ -4,14 +4,14 @@
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | a test fails against the page |
+| **Evidence** | a test fails against the page; the implementations split |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L136-L150) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L157-L171) |
-| **Report to** | **Minimig-AGA and NanoMig.** All four implementations model a hold; this one models none |
+| **Report to** | **Minimig-AGA and NanoMig.** All four implementations keep the reset interval out of the final count; this one counts through it |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 4 red — two from the body text, two from Figure 8-5 |
-| **Verdict of the four** | **all four hold, and all four put PAL at eight lines.** They split on NTSC: WinUAE and vAmiga flat 8, Denise and Copperline 7 |
+| **Verdict of the four** | **2–2 on what the package measures, unanimous on the final count.** Denise and Copperline hold the counters at zero through the reset interval, so a read inside it returns 0, as the assertions require; WinUAE and vAmiga run the counters through the interval and restart them from zero at its end, so they too read non-zero after one line. All four keep the interval out of the final count, which NanoMig includes, and all four put PAL at eight lines; on NTSC WinUAE and vAmiga use a flat 8, Denise and Copperline 7 |
 
 ---
 
@@ -21,6 +21,8 @@
 **seven or eight** horizontal scan lines after a POTGO write, and the POT counter
 is incremented only on the lines after that interval. The page is explicit that
 this is the **hardware** doing it, not advice about what software should wait for.
+With **p.236**'s "All counts are reset to zero when POTGO is written with bit
+zero high", a counter read inside the interval holds zero.
 
 **Figure 8-5**, p.235: the charging curves begin **eight lines** after POTGO.
 
@@ -50,15 +52,23 @@ through the identical comparator, which accepts it.
 
 | | | hold |
 |---|---|---|
-| **WinUAE** | [`inputdevice.cpp:485`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L485) | `#define POTDAT_DELAY 8`; while `pot_dat < POTDAT_DELAY` the charge is forced to `-2` ([`:3905-3917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L3905-L3917)). `pot_dat` is the POTxDAT count itself: it counts the delay lines, is zeroed on the eighth h-sync, and the count proper starts on the ninth. No PAL/NTSC branch |
-| **vAmiga** | [`PaulaRegs.cpp:188`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L188) | `pokePOTGO` schedules `POT_DISCHARGE` with a payload of **8**, decremented once per line. Hard-wired to `PAL::HPOS_CNT` even in NTSC. The end-of-line handler keeps incrementing the counters while the capacitors are discharged ([`Agnus.cpp:877-880`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L877-L880)); the last event sets input counters to -1 ([`PaulaEvents.cpp:88-93`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaEvents.cpp#L88-L93)), so the count proper starts after the eighth line |
-| **Denise** | [`libami/paula/pot.cpp:88`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/pot.cpp#L88) | `pot.dischargeCounter = agnus.ntsc ? 7 : 8;` — and only when it is exhausted does counting begin |
-| **Copperline** | [`bus.rs:7930-7934`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L7930-L7934) | `VideoStandard::Pal => 8, Ntsc => 7`, held in `tick_pot_hsync` while `pot_discharge_lines < discharge_lines` |
+| **WinUAE** | [`inputdevice.cpp:485`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L485) | `#define POTDAT_DELAY 8`; while `pot_dat < POTDAT_DELAY` the charge is forced to `-2` ([`:3905-3917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L3905-L3917)). `pot_dat` is the POTxDAT count itself: it counts the delay lines, is zeroed on the eighth h-sync, and the count proper starts on the ninth, so a read inside the delay returns 1 to 8, not 0. No PAL/NTSC branch |
+| **vAmiga** | [`PaulaRegs.cpp:188`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L188) | `pokePOTGO` schedules `POT_DISCHARGE` with a payload of **8**, decremented once per line. Hard-wired to `PAL::HPOS_CNT` even in NTSC. The end-of-line handler keeps incrementing the counters while the capacitors are discharged ([`Agnus.cpp:877-880`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L877-L880)); the last event sets input counters to -1 ([`PaulaEvents.cpp:88-93`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaEvents.cpp#L88-L93)), so the count proper starts after the eighth line and a read inside the interval is non-zero |
+| **Denise** | [`libami/paula/pot.cpp:88`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/pot.cpp#L88) | `pot.dischargeCounter = agnus.ntsc ? 7 : 8;` — and only when it is exhausted does counting begin ([`:100-117`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/pot.cpp#L100-L117)); until then the counters keep the zero the POTGO write gave them |
+| **Copperline** | [`bus.rs:7930-7934`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L7930-L7934) | `VideoStandard::Pal => 8, Ntsc => 7`, held in `tick_pot_hsync` while `pot_discharge_lines < discharge_lines`, with the counters forced to zero on each of those lines: `self.pot_counters = [0; 4];` ([`src/chipset/paula.rs:1298-1301`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1298-L1301)) |
 | **MiSTer** | [`rtl/userio.v:151-172`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L151-L172) | descendant — byte-identical: `potcnt` is set to `4'b1111` on a POTGO write, but that flag only gates the analog-joystick match logic; the digital branch increments on the very next `pot_cnt_en` tick, same as NanoMig. |
 | **TC64** | [`rtl/minimig/userio.v:189-201`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L189-L201) | descendant — the same construct with `anajoy` for `joy_ana_en` and no analog branch for port 1: `potcnt <= 4'b1111;` on POTGO write (`:191`), and the digital increments (`:194-195` unconditionally, `:200-201` in the non-analog branch) happen on the next `pot_cnt_en`. No reset-hold construct in either line. |
 
-**This is the most useful third-witness result in the chapter.** The page's
-unresolved "seven **or** eight" is read by two of four independent
+**All four delay the count proper by the reset interval; only two hold the
+counter at zero through it.** Denise and Copperline leave POTxDAT at zero until
+the interval ends, as p.235 and p.236 read together predict. WinUAE and vAmiga
+count the interval's lines in the same counter and restart it from zero at its
+end, so a read inside the interval is non-zero in both — after one line, as
+in NanoMig. The package's four red assertions take the first non-zero read, so
+they would be red on WinUAE and vAmiga as well; what separates NanoMig from all
+four is the final count, which in NanoMig includes the interval's lines.
+
+The page's unresolved "seven **or** eight" is read by two of four independent
 implementations as a **video-standard distinction**, with PAL landing on exactly
 the 8 that Figure 8-5 draws. The other two use a flat 8. None of the four
 independent implementations uses zero — though both maintained Minimig lines
@@ -68,7 +78,9 @@ yet travelled.
 
 ## Suggested change
 
-Hold the four pot counters for eight scan lines after a POTGO start on PAL. Two
+Hold the four pot counters at zero for eight scan lines after a POTGO start on
+PAL, as Denise and Copperline do; that satisfies both the package's first-read
+assertions and the final count all four agree on. Two
 of four implementations use seven on NTSC and two use eight; that difference is
 a hardware question this project cannot settle, and whoever implements it should
 decide it deliberately rather than inheriting whichever number is convenient.
@@ -78,7 +90,10 @@ decide it deliberately rather than inheriting whichever number is convenient.
 - The page says **hardware**, not software, so this is not advice being read as
   a requirement.
 - The figure independently draws the same interval.
-- All four implementations model a hold, and all four agree on PAL.
+- All four implementations keep the reset interval out of the final count, and
+  all four agree on PAL. Two of them, Denise and Copperline, also hold the
+  counter at zero through the interval, which is what the red assertions
+  measure; WinUAE and vAmiga do not.
 - The deviation is not an off-by-one against an unclear boundary: it is zero
   against seven or eight.
 
