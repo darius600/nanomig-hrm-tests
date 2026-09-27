@@ -23,11 +23,11 @@
 //   correctness - PKG-BLT-MINTERM's job, used here strictly as plumbing
 //   (C-passthrough) to get a countable word through the pipeline; register
 //   read-back / write-only completeness for BLTSIZE - PKG-BLT-REGDECODE's
-//   job; the manual's own word-to-bit/pixel arithmetic (1 word = 16 bits) -
-//   this RTL exposes only a word-count field (width) and a line-count field
-//   (height), never a bit or pixel count, so converting either is the
-//   programmer's own arithmetic, not observable at this boundary (see NOT
-//   ASSERTED below).
+//   job; a bit or pixel count as a port of its own - this RTL exposes only
+//   a word-count field (width) and a line-count field (height), never a bit
+//   or pixel count. The manual's bit and pixel figures for the width are
+//   graded anyway, on the word count with its fixed 16 bits per word (see
+//   "UNIT CONVERSION, GRADED" below).
 // Claim ids: ids such as `6-intro.c19` and `ch6-intro.c19` name one sentence
 //   of the manual in this chapter's reading. They carry no reader prefix, and
 //   they resolve in the claim files that hrm-testpipeline/acceptance/ch6.json
@@ -491,8 +491,8 @@ int main(int argc, char** argv) {
             "fixture arrive at data_out, in order, at the we cycles they were fetched "
             "on - proves the DMA grant handshake actually delivers data and that the "
             "trailing-flush settle margin is sufficient to see the true last word. "
-            "Reproduced from hrm/ch6-blitter-status's TEST-DATA-DELIVERY first, per "
-            "the build brief, before anything data-dependent.");
+            "The same check as hrm/ch6-blitter-status's TEST-DATA-DELIVERY, run "
+            "first, before anything data-dependent.");
     }
 
     // ---------------- BLTSIZE-WRITE-SETS-BUSY [reused fact, control] ----------------
