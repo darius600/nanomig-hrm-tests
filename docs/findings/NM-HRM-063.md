@@ -1,16 +1,16 @@
-# NM-HRM-063 — FLAG is negative edge-sensitive; the RTL ORs a level
+# NM-HRM-063 — FLAG is negative edge-sensitive; the RTL ORs a level [RTL review]
 
 | | |
 |---|---|
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
-| **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. One assertion does carry it as red; *What the test measures* says why that red grades the wrong transition, and what the assertion must measure instead. |
+| **Evidence** | a test fails against the page |
+| **What is asked of a reader** | Decide whether the RTL should change; the decision belongs to Amiga and RTL specialists, not to this repository. The test holds `flag` at 1 across an ICR read, and the read leaves the bit set. In NanoMig `flag` is a one-cycle pulse, so the difference shows only for a driver that holds FLAG. |
 | **Module** | `src/minimig-aga/cia_int.v:57` |
-| **Report to** | **nobody, yet.** If the assertion *What it must measure* describes is red: Minimig/MiSTer maintainers, once Amiga specialists confirm it matters in practice |
-| **Test** | `hrm/appF-ciab-port-assignments` · `PROP-FLAG-EDGE-POLARITY` — **red, on the transition p.341 names**: an implementation that follows the page is red on it too |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and **minimig-dev/MinimigAGA-MiST-TC64**, once Amiga specialists confirm it matters in practice — both lines carry the same statement; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) · `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:465-481`) — **red**, at its second clocked ICR read, made while `flag` is still held at 1; its control (`test_appF-ciab-port-assignments.cpp:495-510`) passes |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.341 |
-| **Assertions** | 1 red that grades the wrong transition; none yet that measures this finding |
+| **Assertions** | 1 red: `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:465-481`) reads ICR `0x90` after the transition and `0x90` again after five more ticks with `flag` held, where p.346 clears bit 4 and IR at the first read and p.341 gives nothing that sets them again. Its control, `flag` returned to 0 before the first read (`test_appF-ciab-port-assignments.cpp:495-510`), is reported rather than graded and passes: `0x90`, then `0x00` |
 | **Verdict of the four** | **unanimous, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all set the bit once per index pulse, on a transition — vAmiga and Copperline name it the pin's falling edge, the transition at which NanoMig's `flag` rises — and none of them from a held level |
 
 ---
@@ -80,68 +80,64 @@ bit is set once per pulse and a read clears it, as the page predicts.
 
 [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments)
 grades `PROP-FLAG-EDGE-POLARITY` red, one of the package's `7 passed, 3 failed`.
-The red is the RTL setting the bit on the transition p.341 names; *What the test
-measures* below gives the assertion in full. No graded assertion holds `flag` at
-1 across an ICR read, the one stimulus on which the RTL and the page part.
+It holds `flag` at 1 across a clocked ICR read, the one stimulus on which the RTL
+and the page part, and the read leaves the bit set: the next read returns `0x90`,
+bit 4 and IR still set. *What the test measures* below gives the assertion in
+full.
 
 ## What the test measures
 
-`PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:429-439`) arms
-FLG, drives `flag` 0→1, holds it for five ticks, reads ICR once and expects bit
-4 **clear**. It takes `flag` for the pin's level, so it counts the 0→1 as a
-positive transition and the stimulus as free of negative ones. At this port
-`flag` is 1 while INDEX\* is active (*What the RTL does*): the 0→1 is the
-negative transition p.341 names, and p.341 predicts the bit **set**. The RTL
-sets it, and the assertion is red. An implementation that sets FLG on exactly
-that transition is red on it as well; the assertion goes green only for one that
-leaves FLG clear for five ticks after `flag` rises — one that sets it when
-`flag` falls, as INDEX\* goes inactive, or one that ignores `flag`.
+`PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:465-481`) runs
+on the `ciab` fixture (`TOP := ciab` in the package's `Makefile`) and reads ICR
+only through `read_icr_clocked()` (`test_appF-ciab-port-assignments.cpp:307-322`),
+the way a CPU read cycle makes it: `aen=1`, `rd=1`, `wr=0`, `rs=4'hD` held,
+`data_out` sampled, then one rising `clk` edge with `clk7_en=1`.
 
-The same package asserts the opposite. `PROP-FLAG-EXISTS`
-(`test_appF-ciab-port-assignments.cpp:386-398`) drives the same 0→1, holds it
-two ticks, requires bit 4 **set**, and passes. An implementation that keeps a
-set bit until it is read cannot pass both.
-
-Nor does the stimulus reach the case where edge and level differ. The package's
-`read_reg` (`test_appF-ciab-port-assignments.cpp:281-292`) raises `aen` and
-`rd`, evaluates, and lowers them again without a clock edge, so the branch a
-read takes (`cia_int.v:43-50`) never runs and no read in the package clears
-ICR. The paired control, `flag` 0→1→0
-(`test_appF-ciab-port-assignments.cpp:451-465`), passes under either reading and
-shows only that the arm-and-read path is live; the oracle mutation shows only
-that the comparator can change its answer.
-
-`hrm/appF-cia-interrupt-control` records the same stimulus at the `cia_int`
-boundary as a `note()`, not an assertion
-(`test_appF-cia-interrupt-control.cpp:879-885`): `flag` 0→1, held five ticks,
-DATA `0x10`, described there too as free of negative transitions. The value is
-the one p.341 predicts for that transition.
-
-### What it must measure
-
-The same fixture, `ciab` (`TOP := ciab` in the package's `Makefile`), with a
-read of ICR made the way a CPU read cycle makes it: `aen=1`, `rd=1`, `wr=0`,
-`rs=4'hD` held across one rising `clk` edge with `clk7_en=1`, and `data_out`
-sampled before that edge, so that `cia_int.v:43-50` runs.
+So every read in the assertion runs the branch a read takes,
+`cia_int.v:43-50`.
 
 1. After reset with `flag=0`, write ICR `0x90` (set FLG in the mask).
 2. Drive `flag` 0→1 — INDEX\* goes active, the negative transition — and hold it
-   three ticks. Read ICR: bit 4 **set** (p.341).
+   three ticks. Read ICR: bit 4 must be **set** (p.341).
 3. Keep `flag` at 1 for five more ticks — INDEX\* held active, no transition.
-   Read ICR again: bit 4 **clear**, and bit 7 (IR) with it (p.346, *"When you
-   read the DATA register, its contents are cleared"*; p.341 gives nothing that
-   sets it again).
+   Read ICR again: bit 4 must be **clear**, and bit 7 (IR) with it (p.346,
+   *"When you read the DATA register, its contents are cleared"*; p.341 gives
+   nothing that sets it again).
 
-Control on the same channel: the same steps with `flag` returned to 0 before the
-first read must read bit 4 set, then clear — the clocked read clears ICR on this
-fixture, so a set bit at step 3 is the held level and nothing else.
+Measured on this fixture, the step-2 read returns `0x90`: bit 4 set, as p.341
+requires, and IR with it. The step-3 read returns `0x90` again, and the
+assertion is red there. Step 3 separates edge from level: a level-OR sets bit 4
+again at the read (`cia_int.v:49`) and on every cycle after it
+(`cia_int.v:57`); an edge detector does not. Step 2 fixes the polarity: an
+implementation that sets the bit when `flag` falls reads it clear there.
 
-Step 3 separates edge from level: a level-OR sets bit 4 again at the read
-(`cia_int.v:49`) and on every cycle after it (`cia_int.v:57`); an edge detector
-does not. Step 2 fixes the polarity: an implementation that sets the bit when
-`flag` falls reads it clear there. Copperline's own test asserts step 3 at its
-CIA: a second `assert_flag()` with no `release_flag()` between leaves ICR
-reading 0 (`cia.rs:1496-1499`).
+The control (`test_appF-ciab-port-assignments.cpp:495-510`) runs the same steps
+with `flag` returned to 0 before the first read. It passes: the first read
+returns `0x90`, the second `0x00`. The clocked read clears ICR on this fixture,
+so a set bit at step 3 is the held level and nothing else. The control is
+reported as a `note()`, not graded. With the stimulus mutated so that `flag`
+never rises before step 2 (`MUT_A10_FLAG_EDGE_POLARITY`), step 2 reads `0x00`
+and the assertion fails there: the set bit it requires comes from the
+transition.
+
+Copperline's own test asserts step 3 at its CIA: a second `assert_flag()` with
+no `release_flag()` between leaves ICR reading 0 (`cia.rs:1496-1499`).
+
+`PROP-FLAG-EXISTS` (`test_appF-ciab-port-assignments.cpp:416-428`) drives the
+same 0→1, holds it two ticks, requires bit 4 **set**, and passes, as step 2
+does. It reads ICR through `read_reg`
+(`test_appF-ciab-port-assignments.cpp:283-294`), which raises `aen` and `rd`,
+evaluates, and lowers them again without a clock edge, so none of its reads
+runs the branch a read takes and it cannot reach the case where edge and level
+differ.
+
+`hrm/appF-cia-interrupt-control` records, at the bare `cia_int` boundary, a
+`note()` rather than an assertion
+(`test_appF-cia-interrupt-control.cpp:879-890`): `flag` 0→1, held five ticks,
+then one read that moves no clock, DATA `0x10`, the value p.341 predicts for
+that transition. The note says so itself: at `ciab`'s boundary the 0→1 is the
+negative transition p.341 names, and the stimulus alone does not tell an edge
+reading from a level reading (`test_appF-cia-interrupt-control.cpp:895-904`).
 
 ## What the others say
 
@@ -166,13 +162,13 @@ falling edge, the transition at which NanoMig's `flag` rises — and NanoMig's
 one-cycle pulse gives the same one bit per revolution. They part from NanoMig only where the pin stays active across an ICR
 read, and of the four only Copperline can hold it there.
 
-## Why this was not found until appendix F was read
+## Why the chapter-8 test does not see it
 
 `hrm/ch8-disk-index-interrupt-path`'s `PROP-FLAG-PIN` grades *"a pulse on `flag`
 sets ICR bit 4 and raises irq"*, and it passes. A pulse satisfies both the level
-reading and the edge reading, so that assertion cannot separate them — and
-chapter 8 was built without the appendix that specifies the part. p.341 is
-narrower than anything chapter 8 had to work from.
+reading and the edge reading, so that assertion cannot separate them. Chapter
+8's pages name the pin and its interrupt (p.245) but not its edge; p.341 is the
+only page that calls FLAG edge-sensitive.
 
 ## What is left for specialists
 
@@ -191,10 +187,10 @@ input that sets its ICR bit, and its one driver delivers a single-cycle event.
 
 That judgement, and whether the Minimig line should carry an edge detector,
 belongs to Amiga and RTL specialists. **This suite's part is the measurement,
-and no graded assertion makes it yet: the page requires a transition, the RTL
-re-sets the bit from a held level at the read, all four independent
-implementations follow the page, and the one red assertion grades a transition
-on which the RTL already does what the page says.**
+and `PROP-FLAG-EDGE-POLARITY` makes it: the page requires a transition, the RTL
+sets the bit on the transition p.341 names and re-sets it from a held level at
+the read, the assertion is red at that read, and all four independent
+implementations follow the page.**
 
 ---
 
