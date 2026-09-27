@@ -505,8 +505,8 @@ int main(int argc, char** argv) {
             "minimig.v:456. Graded via a minimal channel-D-only blit "
             "(DMACON BLTEN+DMAEN, `blten = dmacon[6] & dmacon[9]`, "
             "agnus.v:301) rather than disk DMA -- disk's own grant has no "
-            "DMACON dependency at all (agnus_diskdma.v:49, measured while "
-            "designing this assertion, see the comment above) and so gave "
+            "DMACON dependency at all (agnus_diskdma.v:49, see the comment "
+            "above) and so gives "
             "no falsifiable lever here; DMAL-IS-INPUT below still grades "
             "disk_dmal on its own, distinct lever. dbr rises with "
             "address_out at the blit's own destination pointer -- a real, "
@@ -546,7 +546,7 @@ int main(int argc, char** argv) {
             "p.381 pin 21 RRW \"DRAM Write/Read\" O -- WEAKEST identity in "
             "this package, checked rather than assumed: `grep -ri arw` "
             "and `grep -ri rrw` over nanomig/src/minimig-aga and "
-            "nanomig/src/misc, independently re-run for this build, "
+            "nanomig/src/misc "
             "return ZERO hits for both -- neither printed name occurs "
             "anywhere in the RTL, and the binding to `dbwe` rests on two "
             "RTL comments (agnus.v:71 \"agnus does a memory write cycle\", "
@@ -593,8 +593,9 @@ int main(int argc, char** argv) {
             "name, same direction, graded once): `int3` (agnus.v:89, "
             "output, \"blitter finished interrupt (to Paula)\") is wired "
             "at minimig.v:475 to the net Paula's own int3 input consumes "
-            "(minimig.v:511, graded separately at "
-            "hrm/paula_intcontroller, not here). A minimal channel-D-only "
+            "(minimig.v:511, graded separately by "
+            "hrm/appJ-paula-port-directions's PAULA-INT3-DIRECTION, not "
+            "here). A minimal channel-D-only "
             "blit (BLTCON0 LF=$FF, no source channels) is armed and run "
             "to completion; int3 fires. sol:J-010 opus:AHJ-141 sol:J-134 "
             "opus:AHJ-268");
@@ -754,8 +755,8 @@ int main(int argc, char** argv) {
             "register semantics alone -- a register on `posedge clk` "
             "provably cannot update without a clk edge, with no need to "
             "run the simulator to know it -- so it would test the "
-            "language, not this RTL. Demoted per this package's build "
-            "task: graded instead via a positive-control liveness "
+            "language, not this RTL. It is graded instead via a "
+            "positive-control liveness "
             "measurement -- over a normal run, clk-derived sequential "
             "state (`_hsync`, driven from the beam counters "
             "agnus_beamcounter.v clocks on `posedge clk`) reads both low "
@@ -764,7 +765,7 @@ int main(int argc, char** argv) {
             "nothing behind it. NO RATE is asserted -- the printed cell "
             "says \"Master clock\", minimig.v:181 and nanomig.v:130 "
             "disagree on the actual number (28.37516 vs 28.6875 MHz), and "
-            "this record grades neither. sol:J-158 opus:AHJ-292");
+            "this assertion grades neither. sol:J-158 opus:AHJ-292");
     }
     // MUTATION CLK-IS-INPUT none impossible: freezing clk to falsify this claim would be tautologically true by Verilog's own clocked-register semantics (no posedge, no update) and would demonstrate nothing about this RTL that its own language definition does not already guarantee -- not a genuine stimulus mutation, unlike every other assertion in this file. Graded instead via the positive-control CLK-LIVENESS measurement in the same block: a normal run's _hsync genuinely toggles (both low and high observed), proving clk reaches real, live sequential logic rather than being an unconsumed port name.
 
