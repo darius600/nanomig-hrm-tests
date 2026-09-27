@@ -401,9 +401,9 @@ int main(int argc, char** argv) {
             "[fixture check] TEST-DATA-DELIVERY: four distinct C words fed into the "
             "fixture arrive at data_out, in order, at the grant they were fetched on - "
             "proves the DMA grant handshake actually delivers data, which every "
-            "data-dependent assertion below depends on. Reproduced from "
-            "hrm/ch6-blitter-bltcon's/hrm/ch6-blitter-cycles's own TEST-DATA-DELIVERY "
-            "before anything data-dependent, per the build brief.");
+            "data-dependent assertion below depends on. The same check as "
+            "hrm/ch6-blitter-bltcon's and hrm/ch6-blitter-cycles's TEST-DATA-DELIVERY, "
+            "run before anything data-dependent.");
     }
 
     // ---------------- POINTER STEP: ascending vs descending (p.200, p.182) ----------------
