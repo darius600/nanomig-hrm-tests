@@ -6,11 +6,11 @@
 //   DSKSYNC, 1 for DSKBLK), AND the 68000 interrupt level minimig.v's own
 //   top-level `_cpu_ipl` port presents to the CPU, all observed together.
 //   Package ch8-disk-interrupt-path, fixture `minimig` (the whole chipset
-//   module, per the task sheet -- same boundary as ch7-nmi-level-seven and
+//   module -- same boundary as ch7-nmi-level-seven and
 //   ch7-overlay-source, the two precedents this file's harness is built
 //   from). INDEX (level 6, the 8520 Flag pin) is deliberately NOT covered
-//   here: hrm/ch8-disk-index-interrupt-path already carries it (read-only,
-//   not modified) and duplicating it was explicitly out of scope.
+//   here: hrm/ch8-disk-index-interrupt-path carries it, and this package
+//   does not duplicate it.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 250 (the three-kinds-of-interrupts paragraph and its DSKSYNC/DSKBLK
@@ -65,13 +65,13 @@
 //       blckint, paula_intcontroller.v:108/130. This is the SAME register
 //       the manual's own "INTREQ bit 12"/"INTREQ bit 1" language names.)
 //     dut->_cpu_ipl (top-level minimig port, read directly -- not
-//       PAULA1->_ipl, which is one wire short of what the manual and the
-//       task sheet call "the CPU level"; see the header note on
+//       PAULA1->_ipl, which is one wire short of what the manual calls
+//       "the CPU level"; see the header note on
 //       hrm/ch8-disk-index-interrupt-path below for why that distinction
-//       matters and was checked, not assumed.)
+//       matters.)
 //
-// REGISTER-WRITE MECHANISM, confirmed by reading paula.v/paula_intcontroller.v/
-//   ciab.v/gary.v/minimig_m68k_bridge.v myself (none of the sibling
+// REGISTER-WRITE MECHANISM, read from paula.v/paula_intcontroller.v/
+//   ciab.v/gary.v/minimig_m68k_bridge.v (none of the sibling
 //   paula_floppy-only packages needed this -- they drive paula_floppy's own
 //   simplified reg_address_in/data_in ports directly, which are NOT exposed
 //   at minimig.v's own boundary; at this boundary every custom-chip register
@@ -82,8 +82,8 @@
 //     paula.v (DMACON, :156-174; ADKCON, :182-198) and paula_intcontroller.v
 //     (INTENA/INTREQ, :47-97). DSKLEN ($DFF024) and DSKSYNC ($DFF07E) are
 //     plain direct-load registers (no SET/CLR bit), confirmed in
-//     paula_floppy.v (already disclosed by the sibling packages' own headers,
-//     re-confirmed here): "dsklen[15] loads from data_in[15] on every DSKLEN
+//     paula_floppy.v (as the sibling packages' own headers also state):
+//     "dsklen[15] loads from data_in[15] on every DSKLEN
 //     write; dmaen becomes 1 only when the CURRENT write's data_in[15] AND
 //     the PREVIOUS (already-latched) dsklen[15] are both 1" -- the
 //     double-write arm. Because dsklen[15] is left at 1 after an ordinary
@@ -92,9 +92,7 @@
 //     always issues one priming write (data_in[15]=0) before the real arm
 //     write(s), so a later trial's single-write MUTATION cannot be
 //     accidentally armed by a PREVIOUS trial's leftover dsklen[15]=1 -- see
-//     the priming-write comment on arm_dsklen() below; caught by reasoning
-//     about the RTL's own stated arming rule, not discovered by a failing
-//     run.
+//     the priming-write comment on arm_dsklen() below.
 //   - Disk DMA additionally needs paula.v's own `dsken` (`= dmacon[4] &
 //     dmaen`, paula.v:174, wired to paula_floppy's `enable` port, paula.v:251)
 //     -- a SEPARATE gate from paula_floppy's own internal dmaen (the
@@ -115,8 +113,7 @@
 //     DDRB is 0 (input, the reset default) reads back forced HIGH regardless
 //     of what PRB is written -- DDRB must be written to $FF (all outputs,
 //     address $BFD300, rs=3) BEFORE any PRB write can actually move
-//     `_sel0`/`_motor`; caught by reading ciab.v's own output-mux expression,
-//     not discovered by a silently-stuck drive-select.
+//     `_sel0`/`_motor`.
 //   - The generic bus_cycle() helper below is ch7-overlay-source's own
 //     bus_cycle(), copied and extended with a `full_word` mode (both UDS and
 //     LDS asserted, for the custom-register space) alongside its original
@@ -127,7 +124,7 @@
 //     confirmed by this file's own BUS-REGISTER-LIVE result below, not
 //     assumed from the CIA case.
 //
-// PERSISTENT INSTANCE, DISCLOSED AS A DESIGN CHOICE: like
+// PERSISTENT INSTANCE, A DESIGN CHOICE: like
 //   ch7-overlay-source (whose header states the same reasoning), this file
 //   builds ONE Harness, resets it ONCE (the ~2.27M-raw-tick chip reset every
 //   sibling minimig-boundary package measures), and reuses the SAME running
@@ -143,9 +140,8 @@
 //   one trial into the next -- this is the actual, ordinary operating mode
 //   of a real disk controller across successive reads, not a workaround.
 //
-// CLAIM COVERAGE. Every uid below is copied verbatim (never retyped from the
-//   task sheet) from the record()/expect() lines of the three named sibling
-//   packages, read but not modified:
+// CLAIM COVERAGE. Every uid below is copied verbatim from the
+//   record()/expect() lines of these sibling packages:
 //     hrm/ch8-disk-interrupt-requests: opus:8-dskint.c1, sol:8-int.c1
 //       (P-THREE-KINDS, its CPU-visible-interrupt half declined there),
 //       opus:8-dskint.c4, sol:8-int.c4 (P-DSKSYNC-MATCH, "level 5, INTREQ
@@ -177,8 +173,8 @@
 //   instead, naming what was actually established, not which claim it
 //   partially serves.
 //
-// WHAT THIS PACKAGE FOUND IN hrm/ch8-disk-index-interrupt-path (read-only,
-//   NOT modified, and its own assertions NOT duplicated here): its rig is
+// WHAT hrm/ch8-disk-index-interrupt-path DOES AND DOES NOT REACH (its own
+//   assertions are NOT duplicated here): its rig is
 //   THREE independently-instantiated Verilated tops (paula_floppy, ciab,
 //   paula_intcontroller) wired together entirely in its own C++ harness, no
 //   shared Verilog parent. Its PROP-LEVEL6 reads `7 - pic->_ipl`, where
@@ -198,12 +194,12 @@
 //   that decodes to level 6" at paula_intcontroller's own boundary
 //   (PROP-LEVEL6, PROP-NOT-OWN-BIT/CONTROL) -- but it does not reach
 //   minimig.v's actual top-level `_cpu_ipl` port in its own run, which is
-//   the literal thing page 250 and the task sheet both call "the CPU level."
+//   the literal thing page 250 calls "the CPU level."
 //   This package's own PROP-DSKSYNC-FULLJOIN/PROP-DSKBLK-FULLJOIN below DO
 //   read that exact port, in the same run as the stimulus and the INTREQ
 //   bit, for DSKSYNC/DSKBLK -- the gap this note identifies for INDEX is
-//   real but is INDEX's own package's business, not fixed here (duplicating
-//   its assertions was explicitly out of scope for this package).
+//   real but is INDEX's own package's business, not addressed here (this
+//   package does not duplicate its assertions).
 //
 // THE NEGATIVE: IDLE-CONTROL-NO-STIMULUS below grades that with INTENA
 //   configured for both bits but DSKLEN never armed (so neither blckint nor
@@ -221,10 +217,8 @@
 //   (MUTATE=<id>). `mutating(...)` is always hoisted into a local `bool mut`
 //   before the `expect()` it guards.
 //
-// RESULTS AND MUTATION RUN LOG: filled in below the closing brace of main(),
-//   after this file was actually built and run under WSL -- see that block
-//   for the measured pass/fail tallies and the per-mutation observations.
-//   Nothing in this header states a result that was not first measured.
+// RESULTS AND MUTATION RUN LOG: below the closing brace of main() -- the
+//   measured pass/fail tallies and the per-mutation observations.
 
 #include <cstdint>
 #include <cstdio>
@@ -275,9 +269,8 @@ std::string hex2(uint32_t v) {
 // independently confirmed against paula.v/paula_intcontroller.v's own
 // `parameter ... = 9'hxxx` declarations (the 9-bit parameter value IS the
 // byte offset -- DMACON=9'h096 -> $DFF096, ADKCON=9'h09e -> $DFF09E, both
-// read directly in paula.v; DSKLEN/DSKSYNC/DSKBYTR/DSKDATR already
-// disclosed identically by the sibling paula_floppy packages, re-confirmed
-// here against the same paula_floppy.v).
+// read directly in paula.v; DSKLEN/DSKSYNC/DSKBYTR/DSKDATR as the sibling
+// paula_floppy packages also give them, from the same paula_floppy.v).
 constexpr uint32_t DSKDATR = 0xDFF008;
 constexpr uint32_t DSKBYTR = 0xDFF01A;
 constexpr uint32_t DSKLEN  = 0xDFF024;
@@ -457,34 +450,33 @@ public:
         // _cpu_dtack this loop just polled -- so the addressed peripheral's
         // read data is NOT yet on `cpu_data` at the exact tick dtack_seen
         // first goes true; it lands a couple of clk edges later. Capturing
-        // immediately read a stale (pre-latch) 0x0000 every time, measured
-        // directly (BUS-REGISTER-LIVE's first baseline run, both DSKBYTR
-        // reads came back 0x0000).
+        // at that first tick reads a stale (pre-latch) 0x0000 every time,
+        // measured directly (both of BUS-REGISTER-LIVE's DSKBYTR reads come
+        // back 0x0000).
         //
-        // A SECOND, independently measured timing fact fixed here at the
-        // same time: agnus.v's own `reg_address_cpu` (agnus.v:119,
+        // A SECOND, independently measured timing fact: agnus.v's own
+        // `reg_address_cpu` (agnus.v:119,
         // `(aen&(rd|hwr|lwr)) ? address_in : 8'hFF`) and the bridge's
         // `rd`/`hwr`/`lwr` strobes (`enable = ~l_as & ~l_dtack & ~cck`) are
         // COMBINATIONAL, gated on `~cck` -- with cck toggling every 4 raw
         // ticks (ClkGen), the write-visible-to-paula_floppy window recurs
         // once every cck low phase for as long as `_cpu_as` stays asserted
-        // with `_cpu_dtack` already low. A first attempt at fixing this
-        // held the cycle open a FIXED number of extra raw ticks after
-        // dtack: 16 ticks reliably spanned a SECOND such window (measured:
-        // the DSKLEN single-write MUTATION still completed a full DMA
-        // transfer, because the held-open cycle re-presented dsklen[15]=1
-        // on a second qualifying edge, self-arming `dmaen` --
-        // paula_floppy.v:730, `data_in[15] & dsklen[15]` -- inside one
-        // nominal reg_write()); 8 ticks fixed that but a DIFFERENT
-        // over-strike then showed up on DSKDATR reads (also address-matched
-        // and level-sensitive, paula_floppy.v:744/900, `fifo_rd = (busrd &
-        // dmaon) | stbdat`, no separate strobe of its own either): the
-        // pop-short MUTATION (drain len-1 words) still emptied the FIFO,
-        // measured directly as "pops=7 (mutated, one short) correlated=1"
-        // -- neither a fixed raw-tick count nor a fixed clk7_en-edge count
-        // could be trusted not to straddle more than one `enable` window in
-        // general (tried both; both still over-struck DSKDATR in some
-        // form). Fixed properly here by watching minimig_m68k_bridge's own
+        // with `_cpu_dtack` already low. Holding the cycle open a FIXED
+        // number of extra raw ticks after dtack can span a SECOND such
+        // window (measured: with 16 ticks, the DSKLEN single-write MUTATION
+        // still completes a full DMA transfer, because the held-open cycle
+        // re-presents dsklen[15]=1 on a second qualifying edge, self-arming
+        // `dmaen` -- paula_floppy.v:730, `data_in[15] & dsklen[15]` --
+        // inside one nominal reg_write(); with 8 ticks, a DIFFERENT
+        // over-strike shows up on DSKDATR reads instead (also
+        // address-matched and level-sensitive, paula_floppy.v:744/900,
+        // `fifo_rd = (busrd & dmaon) | stbdat`, no separate strobe of its
+        // own either): a pop-short drain (len-1 words) still empties the
+        // FIFO, measured directly as "pops=7 (mutated, one short)
+        // correlated=1"). Neither a fixed raw-tick count nor a fixed
+        // clk7_en-edge count can be trusted not to straddle more than one
+        // `enable` window in general (both over-strike DSKDATR in some
+        // form). So this helper watches minimig_m68k_bridge's own
         // internal `enable` net directly (CPU1__DOT__enable, reached via
         // --public-flat-rw exactly like PAULA1's own internal nets already
         // are) instead of guessing its duration: wait for it to RISE (the
@@ -533,8 +525,7 @@ public:
     // regardless of what the last trial left behind. Without this, a LATER
     // trial's single-write MUTATION (double_write=false, meant to leave
     // dmaen unarmed) would instead arm immediately off the previous trial's
-    // leftover dsklen[15]=1 -- reasoned from paula_floppy.v's own disclosed
-    // arming rule before it could bite, not discovered by a failing run.
+    // leftover dsklen[15]=1, by paula_floppy.v's own arming rule.
     void arm_dsklen(int len, bool double_write) {
         reg_write(DSKLEN, 0x0000);
         reg_write(DSKLEN, (uint16_t)(0x8000 | (len & 0x3FFF)));
@@ -667,7 +658,7 @@ int main(int argc, char** argv) {
     // depends on, arrive unmodified and mutually distinguishable when read
     // back via a real bus READ of DSKBYTR -- paula_floppy.v's own WRITE-bit
     // mirror (dskbytr bit13=dsklen[14]), same proposition the paula_floppy-
-    // only sibling packages check at their own simplified ports, now proven
+    // only sibling packages check at their own simplified ports, here shown
     // over the actual CPU bus this file uses for every other write/read.
     // =========================================================================
     {
@@ -738,9 +729,9 @@ int main(int argc, char** argv) {
     // PROP-DSKSYNC-FULLJOIN -- four uids, one shared trial shape. A real
     // DSKSYNC stream match (DSKSYNC left at its post-reset default, 0x4489,
     // the SAME word paula_floppy's own generator hardwires into every
-    // sector's structural sync mark -- paula_floppy.v:704-705, already
-    // disclosed and now re-confirmed by BUS-REGISTER-LIVE's own proof that
-    // this file's writes land correctly) sets INTREQ bit 12 AND drives
+    // sector's structural sync mark -- paula_floppy.v:704-705;
+    // BUS-REGISTER-LIVE shows this file's writes land correctly) sets
+    // INTREQ bit 12 AND drives
     // _cpu_ipl to the level-5 encoding, observed in the SAME cycle -- not
     // three facts asserted to be connected. MUTATION (stimulus): DSKSYNC is
     // instead written to 0x1234, a value nothing in the generated stream
@@ -793,8 +784,8 @@ int main(int argc, char** argv) {
     // independent of the WORDSYNC enable" (p.250): the SAME same-cycle
     // INTREQ-bit12/level-5 correlation is checked with WORDSYNC=0 and again
     // with WORDSYNC=1, both against a real matching stream -- graded at the
-    // real INTREQ bit and _cpu_ipl now, not at syncint pulse counts as
-    // hrm/ch8-dsksync-word-match's own package left it. MUTATION (stimulus):
+    // real INTREQ bit and _cpu_ipl, not at syncint pulse counts as
+    // hrm/ch8-dsksync-word-match grades it. MUTATION (stimulus):
     // the wordsync=1 trial's DSKSYNC is redirected to a non-matching value,
     // so its own correlation fails while the wordsync=0 trial (untouched)
     // still succeeds -- confirming the pair's equality check can fail.
@@ -851,10 +842,9 @@ int main(int argc, char** argv) {
     // comment below) agnus's own disk-DMA engine draining DSKDATR
     // automatically -- and sets INTREQ bit 1 AND drives _cpu_ipl to the
     // level-1 encoding, in the same cycle. The first pair
-    // (dskblk_trial_singlewrite) still also issues `len` explicit
+    // (dskblk_trial_singlewrite) also issues `len` explicit
     // drain_dskdatr() bus reads itself, harmlessly redundant with agnus's
-    // own automatic drain, kept only because it was already proven correct
-    // before that finding; the second pair (dskblk_trial_dsken_gate) does
+    // own automatic drain; the second pair (dskblk_trial_dsken_gate) does
     // not, relying on agnus alone.
     // =========================================================================
     auto dskblk_trial_singlewrite = [&](const char* uid, const char* label) {
@@ -889,27 +879,24 @@ int main(int argc, char** argv) {
         "sol:8-int.c7 (p.250, twin of opus:8-dskint.c7, same printed quote, independent reader): same "
         "same-cycle INTREQ-bit1/level-1 measurement, graded independently under its own uid.");
 
-    // RIG FACT, discovered while designing this trial's own mutation (not
-    // disclosed anywhere upstream, and worth recording here as its own
-    // finding): unlike the paula_floppy-only sibling packages, THIS
+    // RIG FACT: unlike the paula_floppy-only sibling packages, THIS
     // fixture instantiates the whole chip, agnus included -- and agnus.v's
     // own disk-DMA engine (`dma_dsk`, agnus.v:139-146) pops DSKDATR's FIFO
     // AUTOMATICALLY, entirely on its own schedule, once dmaen/enable are
     // both live (paula_floppy.v:1008, `if(!dmaen || !enable) ...`). A CPU
-    // bus read of DSKDATR is NOT needed to drain it here -- confirmed
-    // directly (not assumed) by watching paula_floppy_fifo.v's own
+    // bus read of DSKDATR is NOT needed to drain it here -- measured
+    // directly by watching paula_floppy_fifo.v's own
     // `out_ptr` (db1__DOT__out_ptr) advance from 0 to 8 with ZERO
     // drain_dskdatr() calls made, purely from agnus's own automatic
     // draining, and blckint firing ~3870 raw ticks later from that alone.
     // This matches Appendix A's own quoted words for these two uids
     // exactly ("The DMA controller automatically transfers data to or
     // from this register and RAM") -- it is the real mechanism the claim
-    // describes, not an artifact. An attempted MUTATION built on CPU-side
-    // pop counts (tried first: skip one pop, then two) could not produce a
-    // red for this reason -- agnus's own engine drained the FIFO
-    // regardless of what this harness's own bus reads did or didn't do.
-    // Replaced below with a mutation that targets the actual gate this
-    // automatic path depends on instead.
+    // describes, not an artifact. A MUTATION built on CPU-side pop counts
+    // cannot produce a red for this reason -- agnus's own engine drains the
+    // FIFO regardless of what this harness's own bus reads do -- so the
+    // mutation below targets the actual gate this automatic path depends
+    // on.
     auto dskblk_trial_dsken_gate = [&](const char* uid, const char* label) {
         // MUTATION (stimulus): DMACON's DSKEN bit (bit4) is left CLEARED
         // for this trial instead of enabled. paula.v's own `dsken` wire
@@ -967,12 +954,11 @@ int main(int argc, char** argv) {
     // established above), and the two levels are shown distinct from each
     // other. index is NOT covered here -- see this file's header note on
     // hrm/ch8-disk-index-interrupt-path. Grading that PARTIAL result under
-    // the original uids would silently claim the full three-way statement
-    // for them -- exactly the failure mode hrm/ch8-disk-interrupt-requests
-    // replaced its own predecessor for. So: this label names what was
-    // actually measured (two of three paths, distinct CPU levels), the two
-    // uids move to the record() call right after the two expect()s below
-    // (their only appearance on a graded or measured line in this file),
+    // those uids would silently claim the full three-way statement for
+    // them. So: this label names what is actually measured (two of three
+    // paths, distinct CPU levels), the two uids appear only in the
+    // record() call right after the two expect()s below (their only
+    // appearance on a graded or measured line in this file),
     // and the FULL three-way claim ("exactly three, all CPU-visible, in one
     // joined measurement") remains unasserted by any single package in this
     // suite -- recorded, not silently dropped, and not silently claimed
@@ -1025,7 +1011,7 @@ int main(int argc, char** argv) {
                     std::to_string(resOther.correlated_seen) + ")");
         checks.expect(distinct, label);
     };
-    // MUTATION PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A stimulus red: the "DSKBLK" half is reconfigured to use DSKSYNC's own stimulus and INTENA bit 12 instead of DSKBLK's, so the two measured levels collapse onto the same encoding instead of two distinct ones. (Runtime mutation selector read from MUTATE is unchanged, "opus:8-dskint.c1" -- an internal id only, never printed to stdout; the graded label below carries no uid, see the section note above.)
+    // MUTATION PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A stimulus red: the "DSKBLK" half is reconfigured to use DSKSYNC's own stimulus and INTENA bit 12 instead of DSKBLK's, so the two measured levels collapse onto the same encoding instead of two distinct ones. (Runtime mutation selector read from MUTATE: "opus:8-dskint.c1" -- an internal id only, never printed to stdout; the graded label below carries no uid, see the section note above.)
     two_of_three_trial("opus:8-dskint.c1", "PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A",
         "PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A (p.250, quote 'The disk controller can issue "
         "three kinds of interrupts:', reader one, PARTIAL closure of the CPU-visible-interrupt half "
@@ -1035,7 +1021,7 @@ int main(int argc, char** argv) {
         "(5 and 1), and the two levels differ from each other -- two of the three ports, shown reaching the "
         "CPU as two genuinely distinct requests, not aliases of one wire. index (the third) is NOT covered "
         "by this package.");
-    // MUTATION PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-B stimulus red: same reconfiguration as reader one, independent reader. (Runtime mutation selector unchanged, "sol:8-int.c1".)
+    // MUTATION PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-B stimulus red: same reconfiguration as reader one, independent reader. (Runtime mutation selector: "sol:8-int.c1".)
     two_of_three_trial("sol:8-int.c1", "PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-B",
         "PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-B (p.250, twin quote, reader two, PARTIAL "
         "closure of the CPU-visible-interrupt half declined in hrm/ch8-disk-interrupt-requests): same "
@@ -1048,10 +1034,10 @@ int main(int argc, char** argv) {
         "ch8-disk-interrupt-requests's own record() for opus:8-dskint.c1/sol:8-int.c1 declined. The "
         "remaining third, out of this package's boundary: index's own CPU-visible half needs ciab (the "
         "8520 Flag-pin journey), which this package does not instantiate -- that is hrm/"
-        "ch8-disk-index-interrupt-path's own boundary, read but not modified here (see this file's header "
+        "ch8-disk-index-interrupt-path's own boundary (see this file's header "
         "note on what that package does and does not reach). No single package in this suite asserts, in "
         "one run, that all three ports -- and no other paula_floppy output -- are exactly the three "
-        "interrupts the CPU receives; that full three-way join is still not graded anywhere. This record() "
+        "interrupts the CPU receives; that full three-way join is not graded anywhere. This record() "
         "line is the whole story for opus:8-dskint.c1/sol:8-int.c1 in this package: two thirds measured "
         "above under PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A/-B, the INDEX third out of "
         "boundary, neither uid appearing on any graded expect() line in this file.");
@@ -1060,7 +1046,7 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL/Verilator 5.052, this session, `make test`, no MUT):
+// RESULTS (WSL/Verilator 5.052, `make test`, no MUT):
 //   15 checks.expect() calls, 15 passed, 0 failed. Baseline PASS on every
 //   assertion; the one CONTROL-RESET-RELEASES precondition, one fixture-
 //   liveness check (BUS-REGISTER-LIVE), one negative control (IDLE-
@@ -1080,33 +1066,17 @@ int main(int argc, char** argv) {
 //   run, matching ch7-nmi-level-seven's/ch7-overlay-source's own
 //   independent measurements of the identical reset chain.
 //
-//   POST-HOC FIX, THIS SESSION: opus:8-dskint.c1/sol:8-int.c1 originally
-//   led the two expect() labels below (as well as the record() line) --
-//   the same coverage-ledger rule this note explains caught that as a
-//   double-count (the ledger reads the uid off the graded line, not the
-//   word PARTIAL next to it), so both labels were renamed to PROP-TWO-OF-
-//   THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A/-B, carrying no uid, and the
-//   record() line was extended to stand alone as the whole story for those
-//   two uids (two thirds measured under the new label, INDEX out of
-//   boundary). The measurement itself (checks.expect's condition, its
-//   trial shape, its two mutations) is UNCHANGED -- only the label text and
-//   the matching two `// MUTATION` comments' leading token moved; the tally
-//   above (15/15/0) is identical before and after, rebuilt from clean and
-//   re-confirmed, not assumed to still hold.
-//
 // MUTATION RUN LOG -- every one of the 15 built (`make MUT=MUT_RESET` for
 //   the one compile-time flag; `MUTATE=<id> make test` for the other 14),
-//   run, confirmed, and reverted this session (re-run in full after the
-//   label fix above, since two `// MUTATION` records' leading token
-//   changed with the label -- see POST-HOC FIX above). For every one of
+//   run, confirmed, and reverted. For every one of
 //   the 14 MUTATE-based mutations, the run was 14 passed / 1 failed, with
 //   the ONE FAIL line being exactly that mutation's own targeted assertion
 //   and NO other assertion moving -- confirmed by grepping each run's own
-//   FAIL lines, not by pass/fail count alone. The runtime MUTATE id each
-//   trial reads is unchanged by the label fix (still literally
-//   "opus:8-dskint.c1" / "sol:8-int.c1", an internal selector never printed
-//   to stdout); only the graded label and the `// MUTATION` comment above
-//   each call site now read PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-
+//   FAIL lines, not by pass/fail count alone. The runtime MUTATE ids for
+//   PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A/-B are
+//   "opus:8-dskint.c1" / "sol:8-int.c1", internal selectors never printed
+//   to stdout; the graded labels and the `// MUTATION` comment above each
+//   call site read PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-
 //   LEVELS-A/-B. MUT_RESET's own run is the one exception in shape (0
 //   passed / 1 failed, HALT-CANDIDATE, matching ch7-overlay-source's own
 //   identical mutation's documented behavior): it flips CONTROL-RESET-
@@ -1138,28 +1108,24 @@ int main(int argc, char** argv) {
 //     still succeeds -- the pair's AND collapses to false.
 //   MUTATION opus:8-dskint.c7 / sol:8-int.c7 stimulus red: DSKLEN written
 //     only once instead of twice -- dmaen never arms, correlated_seen stays
-//     0. (This mutation only became reliable after a real bus_cycle()
-//     timing bug was found and fixed -- see the bus_cycle() header comment:
-//     an over-long held-open write cycle was re-presenting the write to
+//     0. (This mutation depends on bus_cycle() closing each write cycle on
+//     CPU1__DOT__enable's fall -- see the bus_cycle() header comment: an
+//     over-long held-open write cycle re-presents the write to
 //     paula_floppy.v on a second qualifying edge, self-arming dmaen inside
-//     what was meant to be a single write. Fixed by watching
-//     CPU1__DOT__enable rise and fall directly instead of guessing a tick
-//     count; re-confirmed this mutation flips correctly afterward.)
+//     what is meant to be a single write.)
 //   MUTATION opus:8-appA-dskdat.c15 / sol:8-appa-dskdata.c8 stimulus red:
 //     DMACON's DSKEN bit (bit4) left cleared for the trial -- correlated_seen
-//     stays 0. (Also reworked after a real finding: this fixture's own
-//     agnus.v instantiates the chip's real disk-DMA engine, which drains
-//     DSKDATR automatically, on its own schedule, independent of any CPU
-//     bus read -- confirmed directly by watching paula_floppy_fifo.v's own
-//     out_ptr advance from 0 to 8 with zero drain_dskdatr() calls made. A
-//     CPU-side pop-count mutation -- tried first at one pop short, then two
-//     -- could not produce a red for this reason; the DSKEN gate targets
-//     the real mechanism instead, matching Appendix A's own quoted words
-//     for these two uids, "The DMA controller automatically transfers
-//     data.")
+//     stays 0. (The DSKEN gate is the mechanism to mutate: this fixture's
+//     own agnus.v instantiates the chip's real disk-DMA engine, which
+//     drains DSKDATR automatically, on its own schedule, independent of any
+//     CPU bus read -- measured directly by watching paula_floppy_fifo.v's
+//     own out_ptr advance from 0 to 8 with zero drain_dskdatr() calls
+//     made -- so a CPU-side pop-count mutation cannot produce a red; the
+//     DSKEN gate matches Appendix A's own quoted words for these two uids,
+//     "The DMA controller automatically transfers data.")
 //   MUTATION PROP-TWO-OF-THREE-PATHS-REACH-DISTINCT-CPU-LEVELS-A (runtime
 //     id "opus:8-dskint.c1") / -B (runtime id "sol:8-int.c1") stimulus red,
-//     re-run independently after the label fix above: the "DSKBLK" half of
+//     each run independently: the "DSKBLK" half of
 //     the trial reconfigured to use DSKSYNC's own stimulus and INTENA bit
 //     12 instead of DSKBLK's -- the two measured _cpu_ipl values collapse
 //     onto the same encoding (0x2 both times, MEASURED line confirms it
