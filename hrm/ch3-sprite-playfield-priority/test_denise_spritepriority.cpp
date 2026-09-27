@@ -55,9 +55,9 @@
 // (PF1_ON = 0x01, PF2_ON = 0x02 for `input [2:1] nplayfield`) is
 // Verilator's own documented, tool-level behaviour for a non-zero-based
 // range -- flattened to a contiguous LSB-based scalar regardless of the
-// range's own numbering -- the same as in
-// hrm/denise_spritepriority/test_denise_spritepriority.cpp's harness for
-// this SAME module; it is tool plumbing, not a claim from this package's
+// range's own numbering -- the same as in the pre-pipeline
+// hrm/denise_spritepriority/test_denise_spritepriority.cpp harness for
+// this SAME module (removed); it is tool plumbing, not a claim from this package's
 // own 19-record inventory.
 //
 // CLAIM COVERAGE: all 19 records of claims.jsonl are accounted for below,
@@ -212,9 +212,9 @@ public:
 
 // input [2:1] nplayfield: Verilator packs a non-zero-based range to a
 // contiguous LSB-based scalar -- bit 0 of the packed value is Verilog
-// index 1 (PF1), bit 1 is Verilog index 2 (PF2). As in
-// hrm/denise_spritepriority/test_denise_spritepriority.cpp's harness for
-// this same module; tool plumbing, not a claim.
+// index 1 (PF1), bit 1 is Verilog index 2 (PF2). As in the pre-pipeline
+// hrm/denise_spritepriority/test_denise_spritepriority.cpp harness for
+// this same module (removed); tool plumbing, not a claim.
 constexpr uint8_t PF1_ON = 0x01;
 constexpr uint8_t PF2_ON = 0x02;
 
