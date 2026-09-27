@@ -128,12 +128,11 @@ the Copper write anything at all.
 which appendix B's `*` and appendix C's ECS relaxation of the low address range
 do not interact, and the ECS-plus-CDANG case is p.310's ECS sentence, which
 [NM-HRM-053](NM-HRM-053.md) (withdrawn) records, rather than a fresh number. The
-package's own run records the boundary it did not cross, under the name of
-[NM-HRM-004](NM-HRM-004.md):
+package's own run records the boundary it did not cross:
 
-> **MEASURED:** NM-HRM-004 check: this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
-> against the $008-$026 range … Nothing in this package's build fell into that
-> territory.
+> **MEASURED:** NM-HRM-053 check: this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
+> against the $008-$026 range (the reach case p.310's ECS sentence gives, which
+> NM-HRM-053 records).
 
 **DSKPTL ($022) was not separately exercised.** It sits in the same measured
 blocked range, but an illegal MOVE halts the Copper's instruction sequencer
