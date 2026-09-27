@@ -5,8 +5,8 @@
 //   ordering (SP01 > SP23 > SP45 > SP67), both as observable at the
 //   denise_sprites module boundary. Package ch7-inter-sprite-priority,
 //   fixture denise_sprites (denise_sprites.v + denise_sprites_shifter.v, the
-//   same two-file build hrm/denise_sprites/ and hrm/ch4-attached-sprites/
-//   already use).
+//   same two-file build hrm/ch4-attached-sprites/ uses and the pre-pipeline
+//   hrm/denise_sprites/, removed, used).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 207-209 (text) and Figures 7-1 (p.208) and 7-2 (p.209), both opened
