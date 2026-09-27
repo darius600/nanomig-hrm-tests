@@ -3,12 +3,10 @@ NANOMIG ?= ../../nanomig
 
 all: test_paula_audio_mixer
 
-# `test` is an ALIAS, added for O67. This package answered only to
-# `all: test_paula_audio_mixer`, so a sweep running `make test` got "No rule to make
-# target" and the package read as having no graded output rather than as
-# having failed to run. The alias adds no recipe and changes no output. Four
-# packages named their target after their module; all four answer to `make
-# test` now.
+# `test` is an ALIAS for the module-named target, so a sweep running `make
+# test` builds and runs this package instead of getting "No rule to make
+# target" and reading it as having no graded output rather than as having
+# failed to run. The alias adds no recipe and changes no output.
 .PHONY: all test test_paula_audio_mixer clean
 
 test: test_paula_audio_mixer

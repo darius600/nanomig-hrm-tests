@@ -1,8 +1,10 @@
 ﻿// Test purpose: Check the HRM stereo routing and retain a separate NanoMig mixer-arithmetic regression.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 5,
-//   printed p. 137, corroborated by WinUAE and vAmiga against the
-//   contradicting appendix pin list - see docs/evidence/third-witness.md.
+//   printed p. 137. The appendix E pin list, printed p. 326, contradicts
+//   it, and three of the four independent implementations (WinUAE, Denise,
+//   Copperline) take p. 326's side, vAmiga alone p. 137's - see
+//   docs/findings/NM-HRM-002.md and docs/evidence/third-witness.md.
 // Non-goals: This does not claim numeric DAC scaling for HRM volume-register
 //   value 64.
 // Claim ids: none. The four checks are named by the channel they route and by
@@ -65,20 +67,30 @@ int main(int argc, char **argv) {
 
     // The manual states the stereo assignment twice and contradicts itself:
     //
-    //   chapter 5, p.137   channels 1+2 -> left, channels 0+3 -> right
-    //   appendix pin list  "AUDO - Audio output from left (channels 0, 3) port",
-    //                      "AUDI - Audio input to right (channels 1, 2) port"
+    //   chapter 5, p.137         channels 1+2 -> left, channels 0+3 -> right
+    //   appendix E pin list,     "AUDO - Audio output from left (channels 0, 3) port",
+    //   p.326                    "AUDI - Audio input to right (channels 1, 2) port"
     //
     // Both appear in both the printed and the Developer-CD edition, so the
-    // manual alone cannot decide this. These checks were withdrawn on 07.09.2026
-    // on that basis, and restored the same day once a third witness was
-    // consulted. Two emulators, independently written and both validated against
-    // real hardware, agree with chapter 5:
+    // manual alone cannot decide this. paula_audio_mixer.v follows p.326
+    // (ldatasum = channels 0+3, rdatasum = channels 1+2), and so do three of
+    // the four independent implementations:
     //
-    //   WinUAE, audio.cpp L1093-L1104 at commit ccc407e:
-    //     put_sound_word_right(data0);  put_sound_word_left(data1);
-    //     put_sound_word_right2(data3); put_sound_word_left2(data2);
-    //     github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1093-L1104
+    //   WinUAE, audio.cpp L1153-L1165 at commit ccc407e, the stereo mix:
+    //     data1 = datas[0] + datas[3];  data2 = datas[1] + datas[2];
+    //     put_sound_word_right(data1);  put_sound_word_left(data2);
+    //     The function is named for the right, but data1 is the FIRST sample
+    //     of each stereo frame ("Always put the right word before the left
+    //     word", L516), and the frame is played as KSAUDIO_SPEAKER_STEREO,
+    //     whose first sample is the left speaker: channels 0 and 3 are heard
+    //     on the left.
+    //     github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1153-L1165
+    //
+    //   Denise (emulation/libami/paula/paula.cpp L354-L355) and Copperline
+    //   (src/chipset/paula.rs L2178-L2182) put channels 0 and 3 on the left
+    //   too.
+    //
+    // vAmiga alone takes p.137's side:
     //
     //   vAmiga, Core/Ports/AudioPort.cpp L472-L473 at commit 35de004:
     //     r = sum(ch_i * pan_i), l = sum(ch_i * (1-pan_i)); pan is
@@ -87,14 +99,15 @@ int main(int argc, char **argv) {
     //     0.85/0.15/0.15/0.85 - channels 0 and 3 on the right.
     //     github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Ports/AudioPort.cpp#L472-L473
     //
-    // The appendix pin list is the outlier. paula_audio_mixer.v follows it and is
-    // therefore wrong: the NanoMig stereo channels are swapped. See
-    // docs/evidence/third-witness.md for how this was established.
+    // NM-HRM-002 is filed against the page: the four checks below grade p.137
+    // and stay red against it. Whether p.137 is a misprint is for an Amiga
+    // specialist to say; see docs/findings/NM-HRM-002.md and
+    // docs/evidence/third-witness.md.
     // MUTATION GUARD for four reds. An assertion red at baseline cannot be
     // made to fail harder; the proof that it measures the side a channel
     // reaches is a mechanism that turns it GREEN through the same comparator.
     // Under MUTATE=ROUTE-TO-PARTNER each sample is driven on its partner
-    // channel (0<->1, 2<->3) -- the one this RTL puts on the side the manual
+    // channel (0<->1, 2<->3) -- the one this RTL puts on the side p.137
     // names -- and the expected side is left alone.
     const char *mut_env = std::getenv("MUTATE");
     auto mutating = [&](const char *id) {
@@ -120,13 +133,14 @@ int main(int argc, char **argv) {
         }
     };
 
-    // All four are expected RED: this is NM-HRM-002, not a broken assertion.
-    // See docs/findings.md and docs/evidence/third-witness.md - the
+    // All four are expected RED against p.137: this is NM-HRM-002, filed
+    // against the page, not a broken assertion. See
+    // docs/findings/NM-HRM-002.md and docs/evidence/third-witness.md - the
     // manual says both things, chapter 5 p.137 putting channels 1+2 left and
-    // 0+3 right while the appendix pin list says the opposite, and two
-    // independent emulators side with chapter 5 against the RTL. Making these
-    // pass would delete the finding, and where to correct it is still open:
-    // the swap may belong in the top level rather than in this module.
+    // 0+3 right while the appendix pin list on p.326 says the opposite, and
+    // three of the four independent implementations take p.326's side, as
+    // this RTL does. The reds stay red against p.137: making these pass would
+    // delete the finding, and no RTL change follows from it.
     check_hrm("channel 0 routes right [NM-HRM-002, expected red]", 17, 0, 0, 0, 0, 17);
     check_hrm("channel 1 routes left [NM-HRM-002, expected red]", 0, 23, 0, 0, 23, 0);
     check_hrm("channel 2 routes left [NM-HRM-002, expected red]", 0, 0, 31, 0, 31, 0);
