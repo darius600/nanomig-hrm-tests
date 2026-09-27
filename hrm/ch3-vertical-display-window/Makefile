@@ -1,4 +1,4 @@
-# Wo liegt der NanoMig-Checkout? Standard ist das Submodul in diesem Repo.
+# Where is the NanoMig checkout? Default is the submodule in this repo.
 NANOMIG ?= ../../nanomig
 
 TOP_MODULE = agnus_bitplanedma
