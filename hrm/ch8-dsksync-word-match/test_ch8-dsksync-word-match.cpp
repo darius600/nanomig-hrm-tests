@@ -389,11 +389,8 @@ int main(int argc, char** argv) {
             "preamble word (0xAAAA, the steady-state all-zero encoding p.250's own rule produces, independent "
             "of this RTL's per-bit encoder) and its fixed sync-mark word (0x4489, the value the manual itself "
             "names as the usual MFM sync mark, not merely an RTL default) -- read back via DSKDATR with "
-            "wordsync=0 (ungated), before any match-based claim below is trusted. Repairs the previous pair, "
-            "whose second word (0xFF -> 0xFFFF) was this RTL's own non-conformant encoder output, not a "
-            "page-legal value (p.250's 'the 1 -> 01' rule makes the page-correct encoding 0x5555); the first "
-            "word (0x00 -> 0xAAAA) was already page-legal and is carried forward unchanged, now as a "
-            "structural word rather than an engineered payload byte");
+            "wordsync=0 (ungated), before any match-based claim below is trusted. Both are fixed structural "
+            "words of the fixture, not the encoder's output for an engineered payload byte");
     }
 
     // ========================================================================
