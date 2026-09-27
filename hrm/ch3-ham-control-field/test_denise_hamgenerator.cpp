@@ -11,8 +11,8 @@
 // Non-goals: AGA HAM8 (the `ham8` port's alternate decode path) is out of
 //   scope -- every stimulus below holds ham8=0; the Third Edition HRM's
 //   chapter-3 HAM text is an OCS/ECS 6-bitplane oracle, not an AGA HAM8 one
-//   (same non-goal already recorded by hrm/denise_hamgenerator's own
-//   header). `bank`, `loct` and `bplxor` are held at their power-up default
+//   (the same non-goal the pre-pipeline hrm/denise_hamgenerator header,
+//   removed, recorded). `bank`, `loct` and `bplxor` are held at their power-up default
 //   (0) throughout -- no claim in this package's 77-record inventory names
 //   them, and nothing asserted below depends on them.
 // Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
