@@ -5,30 +5,26 @@ Appendix B DSKPTH row's OCS/ECS bit-width split and `(E)` mark (p.289,
 composed with p.288), and p.279's claim that the Copper may initialise the
 disk pointer before DMA is enabled.
 
-Written from the six claims in `ch8-disk-pointer-ecs-and-copper.jsonl` and
-from what classification already measured and recorded in
-`work/2026-09-15_ch8_s2_finding_candidates.md` (candidates C13 and C14) and
-in the build assignment itself. No fact about a port, a bit range or a
-measured value below is a fresh reading of the RTL; each is drawn from the
-claims' own `classify.evidence` fields or from the two "already measured"
-paragraphs the assignment hands this package directly.
+The package grades the six claims in `ch8-disk-pointer-ecs-and-copper.jsonl`.
+No fact about a port, a bit range or a measured value below is a fresh
+reading of the RTL; each is drawn from the claims' own `classify.evidence`
+fields or from a measurement elsewhere in this suite, named where it is used.
 
 ## Why `agnus`, not `agnus_diskdma`
 
-The sibling package `ch8-disk-dma-pointer` already built and graded, at the
-`agnus_diskdma` boundary, that a `$020` write moves `data_in[4:0]` into
-`address_out[20:16]` -- five bits, unconditionally -- and that this makes
-both the OCS "high 3 bits" reading and the `(E)` "5 bits if ECS" reading
-fail, for the single cause that `agnus_diskdma` has no `ecs` port at all
-(`agnus.v:326-340` instantiates it with none). **Those two reds already
-exist and this package must not repeat them.**
+The sibling package `ch8-disk-dma-pointer` measures, at the `agnus_diskdma`
+boundary, that a `$020` write moves `data_in[4:0]` into `address_out[20:16]`
+-- five bits, unconditionally. `agnus_diskdma` has no `ecs` port at all
+(`agnus.v:326-340` instantiates it with none), so that boundary cannot put
+the OCS "high 3 bits" reading or the `(E)` "5 bits if ECS" reading to the
+question; the sibling declines both and names P5 and P4 here.
 
 What `agnus_diskdma`'s boundary cannot do is ask whether a *real*, drivable
 `ecs` signal -- one that exists as an actual input somewhere in this
 design -- changes anything about the pointer. `ecs` is a real port on
 `agnus` itself. This package drives it there and observes whether it makes
 any difference to what reaches the pointer, which is the one question the
-sibling package structurally could not put.
+sibling package structurally cannot put.
 
 The same wider boundary is also the only place a Copper-issued write can be
 told apart from a CPU-issued write to the same register: `agnus_diskdma`'s
@@ -36,22 +32,20 @@ told apart from a CPU-issued write to the same register: `agnus_diskdma`'s
 says who put them there, so a claim about *the Copper specifically* being
 able to initialise the pointer cannot be settled one level down.
 
-## Candidate C13's hard instruction
+## Why the Copper is aimed at the pointer only with `ecs`=0
 
-C13 records, at `agnus_copper`, that the Copper write-protect logic blocks
-$008-$026 (which contains $020/DSKPTH and $022/DSKPTL) at OCS/cdang=0,
-OCS/cdang=1 **and** ECS/cdang=0, and lets a Copper write reach only at
-ECS/cdang=1. The assignment's hard instruction is to **grade the printed
-`*` mark with `ecs`=0** here, and to treat the ECS/cdang=1 reach case as
-**already NM-HRM-004's territory** (`hrm/ch2-copper-move-range`'s red
-finding that the ECS danger bit admits too small a range) rather than
-grading it as a new number. This package therefore only ever drives `ecs`=0
-when a Copper MOVE is aimed at the protected pointer registers; it does not
-build an ECS/cdang=1 Copper-write assertion, and if anything encountered
-while building falls in that territory it is recorded and pointed at
-NM-HRM-004, not graded fresh. (Note also, from the assignment: T4/T6 in
-`agnus_copper_move_range` are not usable evidence here -- they exercise
-$07E under the printed name BLTSIZE, not a disk register.)
+The Copper's write-protect logic (`agnus_copper`) blocks $008-$026 (which
+contains $020/DSKPTH and $022/DSKPTL) at OCS/cdang=0, OCS/cdang=1 **and**
+ECS/cdang=0, and lets a Copper write reach only at ECS/cdang=1;
+`hrm/ch2-copper-move-sweep` measures the Copper's accepted destinations at
+all four corners. This package **grades the printed `*` mark with `ecs`=0**,
+where Appendix B's `*` on $020 (p.289) stands without p.310's ECS extension.
+The ECS/cdang=1 reach case is p.310's ECS sentence, which NM-HRM-053 records and `hrm/ch2-copper-move-sweep`'s `SWEEP ecs=1 cdang=1 vs
+Appendix C` grades; p.310 is not among this package's pages. This package
+therefore only ever drives `ecs`=0 when a Copper MOVE is aimed at the
+protected pointer registers and does not build an ECS/cdang=1 Copper-write
+assertion. (T4/T6 in `agnus_copper_move_range` are not usable evidence here
+-- they exercise $07E under the printed name BLTSIZE, not a disk register.)
 
 ## Propositions
 
@@ -69,18 +63,17 @@ by a CPU write, which is not in dispute), a Copper MOVE instruction
 targeting $020 (DSKPTH), executed with `ecs`=0, changes the pointer to the
 MOVE's operand.
 
-Expected: **RED**. Per C13's measured write-protect table, $020 is inside
-$008-$026 and is blocked at OCS regardless of `cdang`; the Copper cannot
-reach it under the condition this package is instructed to grade.
+Expected: **RED**. $020 is inside $008-$026, which the Copper's
+write-protect logic blocks at OCS regardless of `cdang` (see above); the
+Copper cannot reach it at `ecs`=0.
 
 DSKPTL ($022) is not independently exercised through a second, chained
 Copper MOVE: an illegal MOVE halts the Copper's own instruction sequencer
-(per the classify evidence and the assignment's own framing of the
-write-protect mechanism) rather than letting it continue to a next
+(per the classify evidence) rather than letting it continue to a next
 instruction, so a list of two MOVEs cannot demonstrate anything about the
 second one once the first is blocked. $022 sits in the same $008-$026
-range C13 measured as blocked under the same condition; this is recorded,
-not separately asserted.
+range, blocked under the same condition; this is recorded, not separately
+asserted.
 
 ### P2 -- the high three pointer bits ARE carried by DSKPTH [opus:8-appB-dskpth.c6, p.289]
 
@@ -132,9 +125,8 @@ ask, asked here and answered.
 Testable form: with `ecs`=0, a $020 write's bits 3 and 4 do **not** reach
 `address_out[19]`/`address_out[20]`.
 
-Expected: **RED**, for the same single cause as the sibling package's C7
-red and P4 above: the five-bit load is unconditional, so bits 3 and 4 land
-regardless of `ecs`.
+Expected: **RED**, for the same single cause as P4 above: the five-bit load
+is unconditional, so bits 3 and 4 land regardless of `ecs`.
 
 ## Fixture liveness and control
 
@@ -161,11 +153,10 @@ proposition above is trusted:
   first blocked MOVE, so a second instruction in the same list is never
   reached, and $022 is in the same measured-blocked range as $020. Recorded
   under P1, not separately graded.
-- **The ECS/cdang=1 reach case for the Copper write-protect mark** -- per
-  C13's hard instruction, this is NM-HRM-004's territory
-  (`hrm/ch2-copper-move-range`) and is not re-graded here as a new
-  finding. If the build encounters it, it is recorded pointing at
-  NM-HRM-004, not asserted as new.
+- **The ECS/cdang=1 reach case for the Copper write-protect mark** -- this
+  is p.310's ECS sentence, which NM-HRM-053 records and
+  `hrm/ch2-copper-move-sweep` grades; it is not graded here. The run prints
+  a `MEASURED` line stating that no Copper MOVE in this package reaches it.
 
 ## Claims accounted for
 
@@ -177,8 +168,8 @@ merged: `opus:8-appB-dskpth.c7`, `sol:8-appb-dskpth.c10`), P4 (1:
 ## Mutation plan
 
 Every graded proposition gets one mutation, recorded in
-`test_ch8_disk_pointer_ecs_and_copper.cpp`'s header per BUILD-BRIEF, with
-the baseline colour named beside the result:
+`test_ch8_disk_pointer_ecs_and_copper.cpp`'s header, with the baseline
+colour named beside the result:
 
 - LIVENESS (CPU path, green baseline): stimulus -- feed a different DSKPTH
   value than the one the hardcoded expected constant was built from; expect
@@ -210,4 +201,4 @@ the baseline colour named beside the result:
   expect green. Revert.
 
 All mutation results, with the baseline colour beside each, are recorded in
-the test source's header comment and in the build report, per BUILD-BRIEF.
+the test source's header comment.

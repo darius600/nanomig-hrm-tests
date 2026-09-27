@@ -3,17 +3,18 @@
 //   the real Agnus top-level bus -- the boundary where `ecs` is an actual,
 //   drivable port and a Copper-issued write can be told apart from a
 //   CPU-issued one. Neither is true at the narrower `agnus_diskdma` boundary
-//   the sibling package `ch8-disk-dma-pointer` used.
+//   the sibling package `ch8-disk-dma-pointer` uses.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp. 279, 288-289.
-// Non-goals: This test does not re-grade the OCS "high 3 bits" or the "(E)"
-//   readings already graded RED at `agnus_diskdma` by `ch8-disk-dma-pointer`
-//   (candidates C7/C14). It does not build a Copper-write assertion at
-//   ECS/cdang=1 for the protected register range -- that case is
-//   `hrm/ch2-copper-move-range`'s existing red NM-HRM-004, and grading it
-//   again here would silently fold it into a new number, which the build
-//   assignment forbids. It does not cite `agnus_copper_move_range`'s T4/T6:
+// Non-goals: This test does not grade the OCS "high 3 bits" or the "(E)"
+//   readings at `agnus_diskdma`, where `ch8-disk-dma-pointer` measures the
+//   unconditional five-bit load and declines both for want of an `ecs` port,
+//   naming P5 and P4 here. It does not build a Copper-write assertion at
+//   ECS/cdang=1 for the protected register range -- that case is p.310's ECS
+//   sentence, which NM-HRM-053 records and `hrm/ch2-copper-move-sweep`'s
+//   "SWEEP ecs=1 cdang=1 vs Appendix C" grades; p.310 is not among this
+//   package's pages. It does not cite `agnus_copper_move_range`'s T4/T6:
 //   those exercise $07E under the printed name BLTSIZE, not a disk register.
 // Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
 //   two models that read the printed pages independently, and an id names
@@ -60,13 +61,13 @@ constexpr uint16_t COP1LCH = to_reg(0x080);
 constexpr uint16_t COP1LCL = to_reg(0x082);
 constexpr uint16_t COPJMP1 = to_reg(0x088);
 
-// Fixture, built from the given classify evidence (agnus_diskdma's port
-// list -- reg_address_in, data_in, address_out, dmal, dmas, dma, wr, hpos,
-// speed; agnus's disk_dmal/disk_dmas/ecs/floppy_speed top-level ports) and
-// from reading hrm/ch2-copper-control/test_agnus_top_copper_dma.cpp for
-// how to bring the Agnus top level up (its DUT init list and CPU
-// write/fetch-serving pattern are reused here almost verbatim; nothing is
-// cited from it as an oracle).
+// Fixture: the Agnus top level (agnus_diskdma's port list -- reg_address_in,
+// data_in, address_out, dmal, dmas, dma, wr, hpos, speed; agnus's
+// disk_dmal/disk_dmas/ecs/floppy_speed top-level ports, as the claims'
+// classify evidence names them), brought up the way
+// hrm/ch2-copper-control/test_agnus_top_copper_dma.cpp brings it up (its DUT
+// init list and CPU write/fetch-serving pattern; nothing is cited from it as
+// an oracle).
 class AgnusHarness {
 public:
     AgnusHarness() : dut(new Vagnus) {
@@ -315,8 +316,8 @@ int main(int argc, char** argv) {
     }
 
     // P1 -- sol:8-appa-dskptr.c3, p.279: the Copper may initialise DSKPTH
-    // before disk DMA is enabled. Graded at ecs=0, per the assignment's hard
-    // instruction to grade the printed write-protect mark that way.
+    // before disk DMA is enabled. Graded at ecs=0, where Appendix B's `*` on
+    // $020 (p.289) stands without p.310's ECS extension.
     {
         AgnusHarness h;
         h.set_ecs(false);
@@ -327,8 +328,9 @@ int main(int argc, char** argv) {
         h.write_reg(DSKPTH, kSentinelHigh);
         h.write_reg(DSKPTL, kSentinelLow);
 
-        checks.record("DSKPTL ($022) sits inside the same $008-$026 range C13 "
-            "measured as blocked at OCS under either cdang value, but a "
+        checks.record("DSKPTL ($022) sits inside the same $008-$026 range as "
+            "$020, which hrm/ch2-copper-move-sweep measures blocked at OCS "
+            "under either cdang value, but a "
             "Copper program halts on its first illegal MOVE (does not "
             "advance to a next instruction) rather than continuing, so a "
             "second MOVE in the same list to $022 could never be reached to "
@@ -435,14 +437,11 @@ int main(int argc, char** argv) {
                       "P5 on OCS, DSKPTH holds only the high three bits [sol:8-appb-dskpth.c9, p.289]");
     }
 
-    checks.note("NM-HRM-004 check: this package never drives a Copper MOVE "
-        "at ecs=1/cdang=1 against the $008-$026 range (the reach case C13 "
-        "assigns to that existing finding). P4's ecs comparison above uses "
-        "plain CPU writes, which are never gated by the Copper's "
-        "write-protect logic at all, so it does not touch NM-HRM-004's "
-        "territory either. Nothing in this package's build fell into that "
-        "territory; there is nothing further to point at NM-HRM-004 beyond "
-        "this record.");
+    checks.note("NM-HRM-053 check: this package never drives a Copper MOVE "
+        "at ecs=1/cdang=1 against the $008-$026 range (the reach case p.310's "
+        "ECS sentence gives, which NM-HRM-053 records). P4's ecs comparison "
+        "above uses plain CPU writes, which are never gated by the Copper's "
+        "write-protect logic at all, so it does not reach that case either.");
 
     std::cout << checks.passed() << " passed, " << checks.failed() << " failed\n";
     return checks.result();
