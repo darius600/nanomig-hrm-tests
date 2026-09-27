@@ -162,11 +162,11 @@ assertion:
   7800 are one step, from the fetch at $08040E to the branch target $080408,
   3 slots apart; the other is the program's first two fetches after reset.
   Every other step of the loop is 2 slots, so an iteration takes 11 slots.
-  The step that crosses BRA.S's two-clock internal operation is 3 slots 7800
-  times and 4 slots 200 times. Inside a four-plane lores fetch window, where
-  the planes hold the odd slots, the same step is 4 slots in 9984 of 9984
-  cases (`SYSDMA-C29`, green): there the fx68k waits for the next even slot,
-  as p. 196 says, because a DMA channel is in the odd one.
+  Within a line, the step that crosses BRA.S's two-clock internal operation
+  is 3 slots 7800 times and 4 slots 200 times. Inside a four-plane lores
+  fetch window, where the planes hold the odd slots, the same step is 4 slots
+  in 9984 of 9984 cases (`SYSDMA-C29`, green): there the fx68k waits for the
+  next even slot, as p. 196 says, because a DMA channel is in the odd one.
 - **No DMA, TG68K.** Every step of its loop is 2 slots, including the one
   after the branch; its bus timing has no two-clock step in this loop, so
   it never reaches an odd slot and the no-DMA half cannot show the behaviour
