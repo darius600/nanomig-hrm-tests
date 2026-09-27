@@ -1,8 +1,7 @@
 ; prog.s -- ch4-shres-sprite-a: the register writes of SPECIFICATION.md
 ; section 3.3 and the pointer writes of section 3.2. The sprite, bitplane
 ; and Copper-list *data* is poked directly into chip RAM by the C++ test
-; (test_ch4_shres_sprite_a.cpp) at the fixed addresses ch4.i defines, the
-; same technique the ch6 packages use for their own DMA data areas; this
+; (test_ch4_shres_sprite_a.cpp) at the fixed addresses ch4.i defines; this
 ; source only ever performs CPU register writes.
 ;
 ; Wrapper sources set one mutation symbol and include this file, each

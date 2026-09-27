@@ -92,15 +92,22 @@ because the colour registers hold `0x0RGB` (p. 301), and no check reads them.
 
 ### 1.4 The "--" half of every key row: no expected value
 
-Each key claim (`APPC-sprkeykey.*`, `CH4-appC-color.c2`–`c13`) also says
-that the lower two bits of each four-bit component are not encoded. The
-only other thing page 302 says about them is: "Keep in mind that because
-of the loss of lower bits of precision in specifying SuperHires colors,
-pastel colors in a closely graduated color scheme may be visually
-difficult to distinguish from each other." No page states what bits 1 and
-0 of a displayed component show. They have no expected value. The checks
-mask them, record them in the log, and never grade them. For colours 17,
-18 and 19, the letter half of these claims is propositions P2 to P4.
+Each key claim (`APPC-sprkeykey.*`, `CH4-appC-color.c2`–`c13`) bundles two
+halves: a letter half (which bit carries which key letter) and a dash half
+("--", the claim that the remaining two bits of that four-bit component
+are not encoded). The dash half has no observable expected value: a bit
+the key does not encode predicts nothing a test can see. The only other
+thing page 302 says about these bits is: "Keep in mind that because of the
+loss of lower bits of precision in specifying SuperHires colors, pastel
+colors in a closely graduated color scheme may be visually difficult to
+distinguish from each other." No page states what bits 1 and 0 of a
+displayed component show.
+
+No claim is split. Each id stays whole on the letter assertion (P2 to P4
+for colours 17-19; none, for colour 16, section 1.1); the checks mask bits
+1-0, record them in the log, and never grade them. The RECORDED line for
+the dash half states the reason above: a bit the key does not encode
+predicts nothing a test can see.
 
 ---
 
@@ -149,7 +156,11 @@ mask them, record them in the log, and never grade them. For colours 17,
 
 Everything is in Chip memory below `$80000` and word aligned (p. 104:
 "Be sure all of your sprite data structures are word aligned in Chip
-Memory").
+Memory"; p. 110: SPRxPTH "contains the high three bits of the memory
+address of the first word in the sprite", also p. 285, p. 291 ("Sprite x
+pointer (high 3 bits)"); p. 309, the Enhanced Chip Set's own two additional
+addressing bits are for DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH, not
+for the sprite or bitplane pointers).
 
 - **Bitplane buffer:** 32768 words, each `$FF00`. Every fetched word is the
   same, so the displayed pattern does not depend on how many words the
@@ -236,10 +247,13 @@ Register addresses are from Appendix B.
    `$02C`.
 8. Count four frames. Four times: wait for a vertical position of at least
    `$100`, then wait for one below `$020`.
-9. Read `DENISEID` (`$07C`) and store the value at result+2. This value is
+9. Read `DENISEID` (`$07C`) and store the value at result+0. This value is
    recorded and not graded. p. 299: "The enhanced HighRes Denise (8373)
-   will return $FC in the lower 8 bits".
-10. Store the completion marker `$600D` at result+0, then halt.
+   will return $FC in the lower 8 bits". Store the fixture constant `$BEEF`
+   at result+2 (a program-stored constant, asserted before anything else is
+   read; not an HRM claim).
+10. Store the completion marker `$600D` at `DONE_ADDR` (the harness's own
+    completion address, `nanomig.i`), then halt.
 
 ### 3.4 Copper list
 
@@ -341,23 +355,37 @@ No expected sprite colour equals (00,00,00), (10,10,10) or (11,11,11).
   "GH--". So the first letter is bit 3 of the displayed four-bit component
   and the second letter is bit 2. For a visible pixel, U = (R bits 3–2,
   G bits 3–2, B bits 3–2).
-  *Anchor check:* in the calibration run C1 (section 3.8), COLOR17 to
+  *Anchor check:* in the calibration capture C1 (section 3.8), COLOR17 to
   COLOR19 act as ordinary colour registers, "stored as 0x0RGB" (p. 301;
   Table 4-6). The same U values as in section 3.5 must appear there. If
   they do not, the test's channel or bit order is not established, and no
-  verdict is given.
-- **R2: visible pixels and widths.** The harness shows one sample per two
-  SuperHires pixel times, that is, one per high-resolution pixel. From
-  p. 300 ("a 35ns pixel display rate - twice the horizontal resolution of
-  Hires mode, and four times the Lores rates") and pp. 101 and 128 (sprite
-  size and resolution are independent of the playfield), it follows that:
-  - the `$FF00` pattern repeats every 16 SuperHires pixels, which is 8
-    visible pixels;
-  - a 16-pixel sprite is 64 SuperHires pixel times, which is 32 visible
-    pixels.
+  verdict is given. The normal run captures C1 itself and asserts this
+  anchor before grading P1 to P4, so every graded run carries its own proof
+  that the channel and bit order hold, not only the separate C1 replay.
+- **R2: visible pixels.** The harness shows one sample per two SuperHires
+  pixel times, that is, one per high-resolution pixel (p. 300: "a 35ns
+  pixel display rate - twice the horizontal resolution of Hires mode, and
+  four times the Lores rates"). The `$FF00` bitplane pattern therefore
+  repeats every 16 SuperHires pixels, which is 8 visible pixels.
 
-  *Anchor check:* in the calibration run C1, the pattern repeats every 16
-  visible pixels and each sprite run is 32 visible pixels.
+  No page states the width of a sprite pixel in SuperHires mode. Chapter
+  4's own rule (p. 101: "Sprites, however, are independent of playfield
+  modes of display, so changing the resolution or interlace mode of the
+  playfield has no effect on the size or resolution of a sprite") is what
+  chapter 4 itself hands to Appendix C for SuperHires sprites (p. 131:
+  "For information relating to sprites in the Enhanced Chip Set (ECS),
+  such as SuperHires sprites and SuperHires sprite positioning, see
+  Appendix C"), and Appendix C revokes p. 101's placement counterpart for
+  SuperHires (p. 303: "SuperHires mode has a finer granularity of sprite
+  positioning than either Hires or Lores modes") without restating a size
+  for SuperHires. R2 therefore keeps only its HIRES anchor: p. 101's own
+  pixel ("Sprite size is based on a pixel that is 1/320th of a screen's
+  width") applied directly to HIRES mode, where one visible sample is half
+  of that pixel, predicts a 32-visible-pixel sprite run, which the
+  calibration capture C1 (section 3.8) measures.
+
+  *Anchor check:* in the calibration capture C1, the pattern repeats every
+  16 visible pixels and each sprite run is 32 visible pixels.
 - **R3: frames.** A Copper restart is a Copper fetch from the address
   written to COP1LC (p. 25). A *graded frame* is an output frame whose
   sprite lines (`$50` to `$E0`) are displayed after the second restart and
@@ -395,8 +423,9 @@ No expected sprite colour equals (00,00,00), (10,10,10) or (11,11,11).
   - *Interior:* a run without its first and its last pixel.
 
   The edge pixels are left out because no page says what is shown where a
-  pixel pair straddles the sprite's edge (section 2). This is why a run of
-  31 to 33 pixels is accepted for the 32 expected.
+  pixel pair straddles the sprite's edge (section 2); the colour check's
+  interior (section 3.7) excludes the first and last pixel of every run for
+  this reason, independently of the run's own length.
   *Anchor check:* PC2 establishes on the bus that the sprites carry
   exactly 15 non-transparent blocks of lines, separated by transparent
   lines, in the order of section 3.2. The colour check's requirement of
@@ -412,7 +441,11 @@ all of the following hold:
 - The sprite region contains exactly 15 groups.
 - Every line of every group has exactly two runs, the sprite-0 run on the
   left and the sprite-1 run on the right.
-- Each run is 31 to 33 visible pixels long (R2, R5).
+- Every run of every graded group line has the same length as every other
+  (p. 101: "Sprites are 16 pixels wide"). No page states the width of a
+  sprite pixel in SuperHires mode (section 3.6 R2); this guard grades only
+  the equal-length ordering every sprite shares by its own fixed width, not
+  a number of visible pixels of its own.
 - Every interior pixel of every run has the U of its group's band and
   colour (section 3.5).
 
@@ -430,18 +463,20 @@ than the one named still holds.
 | id | precondition | how the test knows | contrast (the change) | what then happens |
 |---|---|---|---|---|
 | PC1 | SuperHires is in effect. | Every graded frame has at least one pattern line (R5) above the sprite region, and every such pattern line has a spacing of 8 visible pixels. p. 300: "35ns pixel display rate - twice the horizontal resolution of Hires mode". Sixteen pattern pixels per period at 35 ns make 8 visible pixels (R2). | **C1:** `BPLCON0` ← `$9000` (HIRES, one bitplane, SHRES = 0). | The spacing is 16 visible pixels, so PC1 goes red. By design, the colour check still passes in C1: this is the calibration of R1 and R2. It also shows why PC1 is indispensable: without SuperHires, COLOR17 to COLOR19 already show the key's bits (section 1.2). |
-| PC2 | Sprites 0 and 1 fetched exactly the prepared data. | In each graded frame, each sprite fetches POS, CTL and 145 data pairs with the prepared values, one pair per line from `$50` to `$E0` (R4), then the two end words. | **C2:** SPR1PT points to the null structure, both in step 5 and in the Copper list. | Sprite 1 fetches no data, so PC2 goes red. |
-| PC3 | Sprites 2 to 7 are idle. | In each graded frame, their DMA reads only the two words of the null structure. | **C3:** SPR2PT points to the sprite-0 structure. | Sprite 2 fetches data, so PC3 goes red. The output is unchanged, because sprite 0 hides sprite 2 (p. 115: "The lowest numbered sprite has the highest priority and appears in front of all other sprites"). |
-| PC4 | Colour loads fall between displayed sprite pixels. | (a) Every MOVE fetch at the top of the list comes before the frame's first bitplane fetch. (b) The MOVE fetches after `WAIT $4041` come before sprite 0's pair fetch for line `$50`. (c) For b = 1 to 4, all MOVE fetches of band b's reload come after sprite 0's pair fetch for line s_b, and before its pair fetch for line s_b+2 (R4). Sprite 1 fetches in the same horizontal blanking interval (p. 126), so sprite 0's fetches are enough to mark the lines. | **C4:** band 2's WAIT becomes `$9141` (the fifth colour-17 line of band 2). | Part (c) fails for band 2, so PC4 goes red. |
-| PC5 (P1 only) | Band 4's load of the lower registers took effect. | On every line of groups 12 to 14, every visible pixel outside the two runs, apart from the pixel next to each end of a run, has U = (10,10,10). On groups 0 to 11 it has U = (00,00,00). | **C5:** leave out the MOVEs to COLOR00–COLOR15 after `WAIT $C541`. | Band 4 keeps U = (00,00,00), so PC5 goes red. The colour check still passes. |
+| PC2 | Sprites 0 and 1 fetched exactly the prepared data. | In each graded frame, each sprite fetches POS, CTL and 145 data pairs with the prepared values, each pair at its own fixed offset in the sprite's structure (Table 4-1), then the two end words. The check grades that every offset's value was fetched somewhere in the graded frame; it does not test that a pair's fetch fell inside that particular line's own horizontal blanking interval (R4). | **C2:** SPR1PT points to the null structure, both in step 5 and in the Copper list. | Sprite 1 fetches no data, so PC2 goes red. |
+| PC3 | Sprites 2 to 7 are idle. | In each graded frame, the null structure's two words are each read at least once, and no word of sprite 0's own structure is read more than once (the signature a second sprite channel reading it besides sprite 0 would leave). | **C3:** SPR2PT points to the sprite-0 structure. | Sprite 2 fetches data, so PC3 goes red. The output is unchanged, because sprite 0 hides sprite 2 (p. 115: "The lowest numbered sprite has the highest priority and appears in front of all other sprites"). |
+| PC4 | Colour loads fall between displayed sprite pixels. | (a) Every MOVE fetch at the top of the list comes before the frame's first bitplane fetch. (b) The MOVE fetches after `WAIT $4041` come before sprite 0's pair fetch for line `$50`. (c) For b = 1 to 4, all MOVE fetches of band b's reload (including, for b = 4, the COLOR00-COLOR15 MOVEs after `WAIT $C541`) come after sprite 0's pair fetch for line s_b, and before its pair fetch for line s_b+2 (R4). Sprite 1 fetches in the same horizontal blanking interval (p. 126), so sprite 0's fetches are enough to mark the lines. | **C4:** band 2's WAIT becomes `$9141` (the fifth colour-17 line of band 2). | Part (c) fails for band 2, so PC4 goes red. |
+| PC5 (P1 only) | Band 4's load of the lower registers took effect. | On every line of groups 12 to 14, within the display window (DIWSTRT to DIWSTOP as the program sets them, p. 59) and outside the two runs, every visible pixel, apart from the pixel next to each end of a run, has U = (10,10,10). On groups 0 to 11 it has U = (00,00,00). | **C5:** leave out the MOVEs to COLOR00–COLOR15 after `WAIT $C541`. | Band 4 keeps U = (00,00,00), so PC5 goes red. The colour check still passes. |
 | PC6 | There are graded frames. | At least two graded frames (R3). | **C6:** step 10 comes right after step 7, with no frame count. | There is no graded frame, so PC6 goes red. |
 
-The run-length requirement of section 3.7 is part of the check, not a
+The equal-length guard of section 3.7 is part of the check, not a
 precondition. It stops a run of a few pixels from passing on an almost
 empty interior. Its contrast is **C7**: the colour-17 lines of band 0
 (`$53` to `$5A`) of both sprites get the low word `$FF00` and the high word
-`$0000`. Those runs become 16 visible pixels long, so the colour check goes
-red for group 0 only.
+`$0000`. Group 0's own runs narrow to 8 visible pixels while every other
+group's runs stay at their own (equal) length, so the guard no longer
+holds and the colour check goes red for group 0 (P2) through that clause
+alone.
 
 ---
 
@@ -576,46 +611,28 @@ of section 3.2; wrapper sources (`prog_c1.s`, `prog_c2.s`, `prog_c3.s`,
 `prog_c6.s`) each set one symbol and `include "prog.s"`, giving the CPU-side
 contrasts (C1, C2, C3, C6) their own assembled program. The sprite,
 bitplane and Copper-list data of sections 3.2 and 3.4 is poked directly
-into chip RAM by `test_ch4_shres_sprite_a.cpp`, the same technique the
-ch6 packages use for their own DMA data areas; the data-only contrasts (C4,
+into chip RAM by `test_ch4_shres_sprite_a.cpp`; the data-only contrasts (C4,
 C5, C7, C8, C9, C10, C11) select a different poked value in place of a
 separate assembled program. `ch4.i` gives the register offsets (Appendix
-B, pp. 289-292) and this package's own chip-RAM addresses.
-
-Section 3.2's "Chip memory below `$80000`" is cited to p.104 for word
-alignment only, not for the `$80000` figure itself, which is not tied to
-any claim. This harness's Chip RAM is identity-mapped at `$080000`-`$1FFFFF`
-regardless of the CIA-A overlay bit; reaching addresses below `$080000`
-needs a CIA-A write to clear that bit first (a real, standard technique,
-not used here). The sprite structures, the bitplane buffer and the Copper
-list are placed at `$082000`, `$090000` and `$0A0000`, still ordinary
-word-aligned Chip RAM on the 2 MB machine the harness runs.
+B, pp. 289-292) and this package's own chip-RAM addresses, all below
+`$80000` as section 3.2 states.
 
 **Measured: the sprite pixel period in SuperHires.** R2's own anchor
-(section 3.6) is confirmed by the C1 (HIRES) run: there, each sprite run
-measures 31-33 samples and the shared colour check (section 3.7) passes in
-full, including the run-length clause. In the normal (SuperHires) run, on
-both cores, every sprite run instead measures 16 samples -- half the
-expected width -- while every interior pixel still shows exactly the U
-value section 3.5 predicts for its band and colour (confirmed group by
-group). This package therefore reads red on P1, P2, P3 and P4 through the
-run-length clause of section 3.7 alone: the colour-match clause passes
-throughout (see the "Report back" for the per-check breakdown). Table 4-1
-and pp. 101, 128 state that sprite size is independent of the playfield
-resolution; this build's own measurement is that this RTL's sprite pixel
-period in SuperHires is half of what that independence predicts, relative
-to the same bitplane-pattern calibration (R2) that the HIRES run confirms
-at full width.
+(section 3.6) is confirmed by the C1 (HIRES) capture: there, each sprite
+run measures 31-33 samples. In the normal (SuperHires) run, on both cores,
+every sprite run instead measures 16 samples, while every interior pixel
+still shows exactly the U value section 3.5 predicts for its band and
+colour (confirmed group by group). Both numbers are labelled measurements;
+section 3.7's own equal-length guard does not depend on either one being
+32 or 16, only on every run of a graded frame sharing the same length as
+every other, which both captures satisfy on their own terms.
 
-**Build note: PC5's own background reads only the gap between the two
-runs.** Outside the display window's own active area, and in the narrow
-approach to it, the design forces the video output to (0,0,0) regardless
-of any colour register (blanking, nanomig.v). A whole output line's
-non-run pixels therefore are not uniformly "the background colour
-register's own value": they read (0,0,0) wherever blanking reaches, which
-coincides with groups 0-11's own expected background but not with groups
-12-14's (10,10,10). PC5 reads only the interior of the gap strictly
-between sprite 0's and sprite 1's own runs (excluding the pixel next to
-each run's ends, as section 3.7 already does), since that gap is confirmed
-visible by construction (it sits between two confirmed-visible runs); it
-does not read the line outside that gap.
+**PC5's window.** The window is DIWSTRT to DIWSTOP as the program sets
+them (p. 59), less the one pixel next to each end of a run (section 3.7's
+own exclusion, applied at every run boundary within the window). The
+window's own bounds are found once per graded frame from the pattern line
+above the sprite region (R5, PC1's own marker, set once in step 4 and
+never rewritten): its first and last sample outside the video port's own
+blanked output (`nanomig_harness.h`'s `VideoSample`, already blanked during
+hbl/vbl) bracket the display window, independently of any sprite or colour
+register any proposition in section 4 grades.

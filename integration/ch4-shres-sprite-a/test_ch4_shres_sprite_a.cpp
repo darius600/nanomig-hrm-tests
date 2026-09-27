@@ -2,12 +2,15 @@
 // for every assertion's proposition, program, observation and expected
 // value. This file only implements what SPECIFICATION.md already
 // committed to. The sprite/bitplane/Copper-list *data* is poked directly
-// into chip RAM by this file (the same technique the ch6 packages use for
-// their own DMA data areas); prog.s and its mutation wrappers only perform
+// into chip RAM by this file; prog.s and its mutation wrappers only perform
 // the CPU register writes of section 3.3.
 //
 // NMH_MUTATE selects a mutation in place of the normal run, one at a time;
-// none is exercised by a plain `make test`.
+// none is exercised by a plain `make test`. The normal run itself also
+// captures C1 (prog_c1.bin) once, internally, to assert the R1/R2 anchor
+// (SPECIFICATION.md 3.6 R1) before P1-P4 are graded; that capture is
+// separate from the NMH_MUTATE=C1 replay below, which grades PC1's own
+// mutation record.
 //
 // MUTATION PC1 stimulus red NMH_MUTATE=C1: BPLCON0=$9000 (HIRES, SHRES=0) instead of $1040 -- pattern spacing becomes 16 visible pixels instead of 8
 // MUTATION PC2 stimulus red NMH_MUTATE=C2: SPR1PTH (step 5 and the Copper list) points at the null structure instead of sprite 1's data
@@ -15,22 +18,11 @@
 // MUTATION PC4 stimulus red NMH_MUTATE=C4: band 2's WAIT changed from $8B41 to $9141 (the fifth colour-17 line of band 2)
 // MUTATION PC5 stimulus red NMH_MUTATE=C5: the COLOR00-COLOR15 <- B4 MOVEs after WAIT $C541 are left out
 // MUTATION PC6 stimulus red NMH_MUTATE=C6: DONE right after step 7, no four-frame wait, so there is no graded frame
-//
-// P2, P3 and P4 already read FAIL in the normal run, through the run-length
-// clause of section 3.7 alone (see SPECIFICATION.md section 6): every
-// SuperHires sprite run measures half its expected width on this RTL. Their
-// own natural check cannot show C7-C11's own, additional effect on top of
-// that pre-existing redness, so C7-C11 isolate the colour-match clause (or,
-// for C7, the run-length clause on one group alone) with a live, unmutated
-// group from the same run as its comparator -- the same technique ch6 uses
-// for an assertion that is already red (see ch6-blitter-cpu-sharing's own
-// A8/A8-SHARE). Each prints PASS when the isolated clause shows exactly the
-// row's own predicted difference.
-// MUTATION P2 stimulus isolated (run-length clause) NMH_MUTATE=C7: colour-17 lines of band 0 ($53-$5A), both sprites, get low=$FF00/high=$0000 instead of $FFFF/$0000 -- group 0's own run narrows relative to group 3 (same colour, band 1, live and unmutated)
-// MUTATION P1 stimulus isolated (colour-match clause) NMH_MUTATE=C8: band 4's COLOR16-COLOR31 reload (after WAIT $C541) uses band 0's values instead of band 3's -- groups 12-14 stop matching band 3 (PC5 stays green: it does not depend on COLOR16-COLOR31)
-// MUTATION P2 stimulus isolated (colour-match clause) NMH_MUTATE=C9: band 1's COLOR16-COLOR31 reload swaps G and H -- group 3 alone stops matching, groups 0/6/9/12 (same colour, other bands) still match
-// MUTATION P3 stimulus isolated (colour-match clause) NMH_MUTATE=C10: band 2's COLOR16-COLOR31 reload swaps O and P -- group 7 alone stops matching, groups 1/4/10/13 still match
-// MUTATION P4 stimulus isolated (colour-match clause) NMH_MUTATE=C11: band 2's COLOR16-COLOR31 reload swaps W and X -- group 8 alone stops matching, groups 2/5/11/14 still match
+// MUTATION P2 stimulus red NMH_MUTATE=C7: colour-17 lines of band 0 ($53-$5A), both sprites, get low=$FF00/high=$0000 instead of $FFFF/$0000 -- group 0's own runs narrow to 8 visible pixels while every other group's runs stay at their own (equal) length, breaking the equal-length guard (section 3.7)
+// MUTATION P1 stimulus red NMH_MUTATE=C8: band 4's COLOR16-COLOR31 reload (after WAIT $C541) uses band 0's values instead of band 3's -- groups 12-14 stop matching band 3 (PC5 stays green: it does not depend on COLOR16-COLOR31)
+// MUTATION P2 stimulus red NMH_MUTATE=C9: band 1's COLOR16-COLOR31 reload swaps G and H -- group 3 alone stops matching
+// MUTATION P3 stimulus red NMH_MUTATE=C10: band 2's COLOR16-COLOR31 reload swaps O and P -- group 7 alone stops matching
+// MUTATION P4 stimulus red NMH_MUTATE=C11: band 2's COLOR16-COLOR31 reload swaps W and X -- group 8 alone stops matching
 
 #include <algorithm>
 #include <array>
@@ -69,11 +61,11 @@ constexpr uint32_t kResults  = 0x0C0000;
 constexpr uint32_t kDoneAddr = 0x0C0FFE;
 constexpr uint16_t kDoneValue = 0x600D;
 
-constexpr uint32_t kSpr0Data = 0x082000;
-constexpr uint32_t kSpr1Data = 0x082400;
-constexpr uint32_t kNullData = 0x082800;
-constexpr uint32_t kBplBuf   = 0x090000;
-constexpr uint32_t kCopList  = 0x0A0000;
+constexpr uint32_t kSpr0Data = 0x002000;
+constexpr uint32_t kSpr1Data = 0x002400;
+constexpr uint32_t kNullData = 0x002800;
+constexpr uint32_t kBplBuf   = 0x010000;
+constexpr uint32_t kCopList  = 0x020000;
 constexpr size_t   kBplWords = 32768;
 
 constexpr uint64_t kBootBudget = 6'000'000;
@@ -442,12 +434,19 @@ FrameAnalysis analyze_frame(const std::vector<nmh::VideoSample>& video, nmh::Spa
 struct ColourCheck {
     bool groups_count_ok=false;
     bool runs_per_line_ok=true;
-    bool run_length_ok=true;
-    std::array<bool,15> colour_ok; // per group: every interior pixel matches expected_u(group)
+    bool run_length_ok=true;         // equal-length guard (p.101: "Sprites are 16 pixels wide")
+    std::array<bool,15> colour_ok;   // per group: every interior pixel matches expected_u(group)
     std::array<bool,15> group_present{};
-    std::array<int,15>  run_len_min; // per group: shortest run (of either sprite) observed, samples
+    int run_len_min=-1, run_len_max=-1; // observed run lengths this frame, samples
+    // bits 1-0 of every graded pixel, per group per channel (section 3.7's own
+    // logged, ungraded record): the smallest and largest value observed.
+    std::array<int,15> r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
     std::string detail;
-    ColourCheck() { colour_ok.fill(true); run_len_min.fill(-1); }
+    ColourCheck() {
+        colour_ok.fill(true);
+        r_lo.fill(3); g_lo.fill(3); b_lo.fill(3);
+        r_hi.fill(0); g_hi.fill(0); b_hi.fill(0);
+    }
     bool structural_ok() const { return groups_count_ok && runs_per_line_ok && run_length_ok; }
     bool group_ok_all() const { for (bool b: colour_ok) if(!b) return false; return true; }
     bool all_ok() const { return structural_ok() && group_ok_all(); }
@@ -468,47 +467,91 @@ ColourCheck colour_check(const std::vector<nmh::VideoSample>& video, const Frame
             std::sort(runs.begin(), runs.end(), [](const Run&a, const Run&b){ return a.start<b.start; });
             for (auto& r : runs) {
                 size_t len = r.end-r.start;
-                if (len<31 || len>33) cc.run_length_ok=false;
-                if (cc.run_len_min[g]<0 || (int)len<cc.run_len_min[g]) cc.run_len_min[g]=(int)len;
+                if (cc.run_len_min<0 || (int)len<cc.run_len_min) cc.run_len_min=(int)len;
+                if ((int)len>cc.run_len_max) cc.run_len_max=(int)len;
                 for (size_t i=r.start+1; i+1<r.end; ++i) {
                     U u = sample_u(video[i]);
                     if (!(u==want)) cc.colour_ok[g]=false;
+                    int br = video[i].r & 3, bgc = video[i].g & 3, bb = video[i].b & 3;
+                    if (br<cc.r_lo[g]) cc.r_lo[g]=br;
+                    if (br>cc.r_hi[g]) cc.r_hi[g]=br;
+                    if (bgc<cc.g_lo[g]) cc.g_lo[g]=bgc;
+                    if (bgc>cc.g_hi[g]) cc.g_hi[g]=bgc;
+                    if (bb<cc.b_lo[g]) cc.b_lo[g]=bb;
+                    if (bb>cc.b_hi[g]) cc.b_hi[g]=bb;
                 }
             }
         }
     }
+    // Every run of every graded group line the same length as every other
+    // (p.101: "Sprites are 16 pixels wide"; SPECIFICATION.md 3.7). No page
+    // states the width of a sprite pixel in SuperHires mode, so this grades
+    // only the equality, not a number of visible pixels of its own.
+    cc.run_length_ok = (cc.run_len_min>=0) && (cc.run_len_min==cc.run_len_max);
     return cc;
 }
 
-// PC5: background pixels outside the two runs (excluding the pixel next to
-// each run's ends), per group, must show the group's expected background.
-// Scans only the interior of the GAP between the two runs (excluding the
-// pixel next to each run's own ends, section 3.7's own exclusion). Outside
-// the two runs, but still on the same line, is hblank-adjacent territory the
-// design forces to (0,0,0) regardless of any colour register (nanomig.v's
-// blanking override); that would misread as "background" for groups 0-11
-// (whose own expected background happens to be (0,0,0)) but wrongly so for
-// groups 12-14 (expected (2,2,2)). The gap strictly between two confirmed
-// visible runs is not blanking by construction, so it is the only region
-// this check reads.
-bool pc5_group_ok(const std::vector<nmh::VideoSample>& video, const GroupLines& gl, U want_bg, std::string* dbg=nullptr) {
+// ---- PC5's window (SPECIFICATION.md 3.8, section 6: "PC5's window") -------
+//
+// The window is DIWSTRT to DIWSTOP as the program sets them (p.59), less the
+// one pixel next to each end of a run. Its bounds (as an offset from any
+// line's own begin -- constant, since DIWSTRT/DIWSTOP are set once in step 4
+// and never rewritten) are found from the pattern line above the sprite
+// region: PC1's own marker, anchored independently of every sprite and
+// colour register any proposition in section 4 grades (rule: an anchor never
+// depends on the clause under test). Its first and last sample outside the
+// video port's own blanked output (nanomig_harness.h's VideoSample, already
+// blanked during hbl/vbl) bracket the display window.
+struct Window { size_t lo_off=0, hi_off=0; bool ok=false; };
+
+Window measure_window(const std::vector<nmh::VideoSample>& video, const FrameAnalysis& fa) {
+    Window w;
+    for (auto it = fa.pre_region.rbegin(); it != fa.pre_region.rend(); ++it) {
+        if (!it->is_pattern_line) continue;
+        size_t begin = it->span.begin, end = it->span.end;
+        size_t lo = begin, hi = end;
+        while (lo < hi && !(video[lo].r || video[lo].g || video[lo].b)) ++lo;
+        while (hi > lo && !(video[hi-1].r || video[hi-1].g || video[hi-1].b)) --hi;
+        if (hi <= lo) continue;
+        w.lo_off = lo - begin;
+        w.hi_off = hi - begin;
+        w.ok = true;
+        break;
+    }
+    return w;
+}
+
+// PC5: within the window, outside however many runs the line has (0, 1 or 2
+// -- generalised so a precondition contrast that removes a run, such as C2,
+// does not itself break this check), every visible pixel, apart from the one
+// pixel next to each run's own ends, must show the group's expected
+// background.
+bool pc5_group_ok(const std::vector<nmh::VideoSample>& video, const GroupLines& gl, U want_bg,
+                   const Window& w, std::string* dbg=nullptr) {
+    if (!w.ok) { if (dbg && dbg->empty()) *dbg = "no window anchor (no pattern line found)"; return false; }
     for (auto& line : gl.lines) {
+        size_t wlo = line.begin + w.lo_off;
+        size_t whi = line.begin + w.hi_off;
+        if (whi > line.end) whi = line.end;
         auto runs = find_runs(video, line);
-        if (runs.size()!=2) { if (dbg && dbg->empty()) *dbg = "runs!=2 (" + std::to_string(runs.size()) + ")"; return false; }
         std::sort(runs.begin(), runs.end(), [](const Run&a,const Run&b){ return a.start<b.start; });
-        size_t gap_lo = runs[0].end+1, gap_hi = runs[1].start>0? runs[1].start-1 : runs[1].start;
-        for (size_t i=gap_lo;i<gap_hi;++i) {
-            U u = sample_u(video[i]);
-            if (!(u==want_bg)) {
-                if (dbg && dbg->empty())
-                    *dbg = "pixel " + std::to_string(i) + " U=(" + std::to_string(u.r) + "," + std::to_string(u.g) +
-                           "," + std::to_string(u.b) + ") want=(" + std::to_string(want_bg.r) + "," +
-                           std::to_string(want_bg.g) + "," + std::to_string(want_bg.b) + ") gap=[" +
-                           std::to_string(gap_lo) + "," + std::to_string(gap_hi) + ") run0=[" +
-                           std::to_string(runs[0].start) + "," + std::to_string(runs[0].end) + ") run1=[" +
-                           std::to_string(runs[1].start) + "," + std::to_string(runs[1].end) + ")";
-                return false;
+        size_t cur = wlo;
+        for (size_t ri=0; ri<=runs.size(); ++ri) {
+            size_t seg_hi = (ri<runs.size()) ? (runs[ri].start>0 ? runs[ri].start-1 : runs[ri].start) : whi;
+            size_t seg_lo = std::max(cur, wlo);
+            seg_hi = std::min(seg_hi, whi);
+            for (size_t i=seg_lo; i<seg_hi; ++i) {
+                U u = sample_u(video[i]);
+                if (!(u==want_bg)) {
+                    if (dbg && dbg->empty())
+                        *dbg = "pixel " + std::to_string(i) + " U=(" + std::to_string(u.r) + "," + std::to_string(u.g) +
+                               "," + std::to_string(u.b) + ") want=(" + std::to_string(want_bg.r) + "," +
+                               std::to_string(want_bg.g) + "," + std::to_string(want_bg.b) + ") window=[" +
+                               std::to_string(wlo) + "," + std::to_string(whi) + ")";
+                    return false;
+                }
             }
+            if (ri<runs.size()) cur = runs[ri].end+1;
         }
     }
     return true;
@@ -629,7 +672,10 @@ bool pc4_frame_ok(const Capture& c, nmh::Span f) {
     bool b_ok = b0.any && line50 && b0.hi < *line50;
 
     bool c_ok = true;
-    static const char* starts[5] = {nullptr,"band1_start","band2_start","band3_start","band4_start"};
+    // Band 4's chunk starts at "b4_start", not "band4_start": that range
+    // also covers the COLOR00-COLOR15<-B4 MOVEs, which band 4 alone carries
+    // between the same two sprite-line fetches (SPECIFICATION.md 3.8, PC4c).
+    static const char* starts[5] = {nullptr,"band1_start","band2_start","band3_start","b4_start"};
     static const char* ends[5]   = {nullptr,"band1_end","band2_end","band3_end","band4_end"};
     for (int b=1;b<=4;++b) {
         auto chunk = chunk_range(c.log, cop0, c.cop_words, c.mark.at(starts[b]), c.mark.at(ends[b]), f.begin, f.end);
@@ -639,6 +685,71 @@ bool pc4_frame_ok(const Capture& c, nmh::Span f) {
         if (!(chunk.any && lo && hi && *lo < chunk.lo && chunk.hi < *hi)) c_ok = false;
     }
     return a_ok && b_ok && c_ok;
+}
+
+// ---- assertion labels shared between the normal run and its mutations -----
+// (BRIEF.md: a mutation's record names the assertion-label its own expect()
+// uses "exactly". C7-C11 replay these same strings through the same
+// computation the normal run uses, expecting the opposite polarity.)
+
+const char* kP1Label =
+    "P1 p.302 CH4-appC-color.c1: SuperHires sprite colours are held in COLOR16-COLOR31, not in "
+    "the lower sixteen registers (groups 0-11 track their band, groups 12-14 match band 3's "
+    "colours unchanged by band 4's own reload of COLOR00-COLOR15)";
+const char* kP2Label =
+    "P2 p.302 APPC-sprkeykey.c17r APPC-sprkeykey.c17g APPC-sprkeykey.c17b "
+    "CH4-appC-color.c5 CH4-appC-color.c6 CH4-appC-color.c7: colour 17 is displayed with red "
+    "bits3-2=GH, green bits3-2=IJ, blue bits3-2=KL on groups 0,3,6,9,12";
+const char* kP3Label =
+    "P3 p.302 APPC-sprkeykey.c18r APPC-sprkeykey.c18g APPC-sprkeykey.c18b "
+    "CH4-appC-color.c8 CH4-appC-color.c9 CH4-appC-color.c10: colour 18 is displayed with red "
+    "bits3-2=MN, green bits3-2=OP, blue bits3-2=QR on groups 1,4,7,10,13";
+const char* kP4Label =
+    "P4 p.302 APPC-sprkeykey.c19r APPC-sprkeykey.c19g APPC-sprkeykey.c19b "
+    "CH4-appC-color.c11 CH4-appC-color.c12 CH4-appC-color.c13: colour 19 is displayed with red "
+    "bits3-2=ST, green bits3-2=UV, blue bits3-2=WX on groups 2,5,8,11,14";
+const char* kPc5Label =
+    "PC5 p.302 p.59: band 4's reload of COLOR00-COLOR15 took effect (background U=(10,10,10) on "
+    "groups 12-14, U=(00,00,00) on groups 0-11, within the display window, every graded frame)";
+
+// ---- the colour check, evaluated across every graded frame -----------------
+// Shared by the normal run and by the mutations that replay P1-P4 as
+// "stimulus red" (C7-C11, SPECIFICATION.md 3.8 and section 4).
+
+struct Verdict {
+    bool any_frame=false;
+    bool p1=true, p2=true, p3=true, p4=true, pc5=true;
+    std::array<int,15> r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
+};
+
+Verdict evaluate(const Capture& c, const GradedRun& g) {
+    Verdict v;
+    v.r_lo.fill(3); v.g_lo.fill(3); v.b_lo.fill(3);
+    v.r_hi.fill(0); v.g_hi.fill(0); v.b_hi.fill(0);
+    for (auto& f : g.frames) {
+        FrameAnalysis fa = analyze_frame(c.video, f);
+        if (!fa.ok) { v.p1=v.p2=v.p3=v.p4=v.pc5=false; continue; }
+        v.any_frame = true;
+        ColourCheck cc = colour_check(c.video, fa);
+        if (!cc.structural_ok()) { v.p1=v.p2=v.p3=v.p4=false; }
+        for (int g0=0; g0<15; ++g0)          if (!cc.colour_ok[g0]) v.p1=false;
+        for (int g0 : {0,3,6,9,12})          if (!cc.colour_ok[g0]) v.p2=false;
+        for (int g0 : {1,4,7,10,13})         if (!cc.colour_ok[g0]) v.p3=false;
+        for (int g0 : {2,5,8,11,14})         if (!cc.colour_ok[g0]) v.p4=false;
+        for (int g0=0; g0<15; ++g0) {
+            v.r_lo[g0]=std::min(v.r_lo[g0], cc.r_lo[g0]); v.r_hi[g0]=std::max(v.r_hi[g0], cc.r_hi[g0]);
+            v.g_lo[g0]=std::min(v.g_lo[g0], cc.g_lo[g0]); v.g_hi[g0]=std::max(v.g_hi[g0], cc.g_hi[g0]);
+            v.b_lo[g0]=std::min(v.b_lo[g0], cc.b_lo[g0]); v.b_hi[g0]=std::max(v.b_hi[g0], cc.b_hi[g0]);
+        }
+
+        Window w = measure_window(c.video, fa);
+        if (fa.groups.size()==15 && w.ok) {
+            for (int gi=0; gi<15; ++gi)
+                if (!pc5_group_ok(c.video, fa.groups[gi], expected_background(gi), w)) v.pc5=false;
+        } else v.pc5=false;
+    }
+    if (!v.any_frame) v.p1=v.p2=v.p3=v.p4=v.pc5=false;
+    return v;
 }
 
 // ---- the normal run ---------------------------------------------------------
@@ -691,7 +802,8 @@ void run_normal(const std::string& dir, Checks& checks) {
         if (!all_fetched(c.log, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc2=false;
     }
     checks.expect(pc2, "PC2 p.107 p.108: sprites 0 and 1 fetch POS, CTL and all 145 data pairs ($50-$E0) with "
-                       "the prepared values plus the terminator, every graded frame");
+                       "the prepared values plus the terminator, each pair at its own fixed offset, every "
+                       "graded frame");
 
     // PC3: sprites 2-7 idle (only the null structure's two words are attributable to them).
     bool pc3 = true;
@@ -703,8 +815,8 @@ void run_normal(const std::string& dir, Checks& checks) {
         for (size_t off=0; off<spr0_expected.size(); ++off)
             if (count_reads(c.log, word_addr(kSpr0Data)+(uint32_t)off, spr0_expected[off], f.begin, f.end) > 1) pc3=false;
     }
-    checks.expect(pc3, "PC3 p.114 p.115: sprites 2 to 7 are idle (their DMA reads only the null structure's two "
-                       "words; sprite 0's own data is not additionally fetched)");
+    checks.expect(pc3, "PC3 p.114 p.115: sprites 2 to 7 are idle (the null structure's two words are each read "
+                       "at least once, and no word of sprite 0's own structure is read more than once)");
 
     // PC4: Copper colour loads fall between the displayed sprite pixels.
     bool pc4 = true;
@@ -713,41 +825,40 @@ void run_normal(const std::string& dir, Checks& checks) {
                        "fetches on the bus (top-of-list before the first bitplane fetch, the B0 reload before "
                        "line $50, each band's reload between its own line and two lines later)");
 
-    // colour check (section 3.7), shared by P1-P4, plus PC5 (band 4's background).
-    bool p1=true, p2=true, p3=true, p4=true, pc5=true;
-    for (auto& f : g.frames) {
-        FrameAnalysis fa = analyze_frame(c.video, f);
-        if (!fa.ok) { p1=p2=p3=p4=pc5=false; continue; }
-        ColourCheck cc = colour_check(c.video, fa);
-        if (!cc.structural_ok()) { p1=p2=p3=p4=false; }
-        for (int g0=0; g0<3;  ++g0) if (!cc.colour_ok[g0])   p1=false;
-        for (int g0=3; g0<6;  ++g0) if (!cc.colour_ok[g0])   p1=false;
-        for (int g0=6; g0<9;  ++g0) if (!cc.colour_ok[g0])   p1=false;
-        for (int g0=9; g0<15; ++g0) if (!cc.colour_ok[g0])   p1=false;
-        for (int g0 : {0,3,6,9,12})  if (!cc.colour_ok[g0])  p2=false;
-        for (int g0 : {1,4,7,10,13}) if (!cc.colour_ok[g0])  p3=false;
-        for (int g0 : {2,5,8,11,14}) if (!cc.colour_ok[g0])  p4=false;
-
-        if (fa.groups.size()==15) {
-            for (int gi=0; gi<15; ++gi)
-                if (!pc5_group_ok(c.video, fa.groups[gi], expected_background(gi))) pc5=false;
-        } else pc5=false;
+    // R1/R2 anchor: capture C1 (HIRES) inside the normal run and assert that
+    // COLOR17-COLOR19, read as ordinary registers, already show the section
+    // 3.5 U values, before P1-P4 are graded (SPECIFICATION.md 3.6 R1).
+    Capture c1 = run_case(dir, Mut::C1);
+    bool anchor_ok = c1.loaded && c1.done.has_value();
+    if (anchor_ok) {
+        GradedRun g1 = find_graded(c1);
+        anchor_ok = !g1.frames.empty();
+        for (auto& f : g1.frames) {
+            FrameAnalysis fa = analyze_frame(c1.video, f);
+            if (!fa.ok || !colour_check(c1.video, fa).all_ok()) anchor_ok = false;
+        }
     }
-    checks.expect(pc5, "PC5 p.302: band 4's reload of COLOR00-COLOR15 took effect (background U=(10,10,10) on "
-                       "groups 12-14, U=(00,00,00) on groups 0-11, every graded frame)");
+    checks.expect(anchor_ok, "R1 p.301 p.303 (anchor): with HIRES (SHRES=0) instead of SuperHires, "
+                             "COLOR17-COLOR19 read as ordinary 0x0RGB registers already show the section 3.5 "
+                             "U values for every group, establishing the channel and bit order before P1-P4 "
+                             "are graded");
 
-    checks.expect(p1, "P1 p.302 CH4-appC-color.c1: SuperHires sprite colours are held in COLOR16-COLOR31, not in "
-                       "the lower sixteen registers (groups 0-11 track their band, groups 12-14 match band 3's "
-                       "colours unchanged by band 4's own reload of COLOR00-COLOR15)");
-    checks.expect(p2, "P2 p.302 APPC-sprkeykey.c17r APPC-sprkeykey.c17g APPC-sprkeykey.c17b "
-                       "CH4-appC-color.c5 CH4-appC-color.c6 CH4-appC-color.c7: colour 17 is displayed with red "
-                       "bits3-2=GH, green bits3-2=IJ, blue bits3-2=KL on groups 0,3,6,9,12");
-    checks.expect(p3, "P3 p.302 APPC-sprkeykey.c18r APPC-sprkeykey.c18g APPC-sprkeykey.c18b "
-                       "CH4-appC-color.c8 CH4-appC-color.c9 CH4-appC-color.c10: colour 18 is displayed with red "
-                       "bits3-2=MN, green bits3-2=OP, blue bits3-2=QR on groups 1,4,7,10,13");
-    checks.expect(p4, "P4 p.302 APPC-sprkeykey.c19r APPC-sprkeykey.c19g APPC-sprkeykey.c19b "
-                       "CH4-appC-color.c11 CH4-appC-color.c12 CH4-appC-color.c13: colour 19 is displayed with red "
-                       "bits3-2=ST, green bits3-2=UV, blue bits3-2=WX on groups 2,5,8,11,14");
+    // colour check (section 3.7), shared by P1-P4, plus PC5 (band 4's background).
+    Verdict v = evaluate(c, g);
+
+    checks.expect(v.pc5, kPc5Label);
+    checks.expect(v.p1, kP1Label);
+    checks.expect(v.p2, kP2Label);
+    checks.expect(v.p3, kP3Label);
+    checks.expect(v.p4, kP4Label);
+
+    // Bits 1-0 of every graded pixel, per group (section 3.7): recorded, never graded.
+    for (int gi=0; gi<15; ++gi) {
+        checks.note("group " + std::to_string(gi) + " bits1-0 (section 3.7, ungraded): R=[" +
+                    std::to_string(v.r_lo[gi]) + "," + std::to_string(v.r_hi[gi]) + "] G=[" +
+                    std::to_string(v.g_lo[gi]) + "," + std::to_string(v.g_hi[gi]) + "] B=[" +
+                    std::to_string(v.b_lo[gi]) + "," + std::to_string(v.b_hi[gi]) + "]");
+    }
 
     // ---- claims this package declines, restated from SPECIFICATION.md ------
     checks.record("APPC-sprkeykey.c16r, APPC-sprkeykey.c16g, APPC-sprkeykey.c16b, CH4-appC-color.c2, "
@@ -762,9 +873,10 @@ void run_normal(const std::string& dir, Checks& checks) {
     checks.record("CH4-appC-color.c14-c17, c30-c33, c46-c49, c62-c65, c78-c81, c94-c97, c110-c113, c126-c129 "
                    "(32 claims): the table's dot bits (bits 15-12 of each register); no page states a value for "
                    "them (SPECIFICATION.md 1.3)");
-    checks.record("the lower two bits of every key claim's component (APPC-sprkeykey.*, CH4-appC-color.c2-c13): "
-                   "p.302 marks them '--' and gives no expected value; masked and logged, never graded "
-                   "(SPECIFICATION.md 1.4). The letter half of colour 17/18/19's claims is graded under P2/P3/P4.");
+    checks.record("the dash half of every key claim's component (APPC-sprkeykey.*, CH4-appC-color.c2-c13): "
+                   "a bit the key does not encode predicts nothing a test can see; masked and logged, never "
+                   "graded (SPECIFICATION.md 1.4). The letter half of colour 17/18/19's claims is graded under "
+                   "P2/P3/P4.");
 }
 
 // ---- contrasts (C1-C11), one at a time under NMH_MUTATE -------------------
@@ -828,7 +940,15 @@ void run_contrast(const std::string& dir, Mut mut, Checks& checks) {
             if (!all_fetched(c.log, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc2=false;
         }
         checks.expect(pc2, "PC2 p.107 p.108: sprites 0 and 1 fetch POS, CTL and all 145 data pairs ($50-$E0) with "
-                           "the prepared values plus the terminator, every graded frame");
+                           "the prepared values plus the terminator, each pair at its own fixed offset, every "
+                           "graded frame");
+        // PC5 must not depend on this precondition (SPECIFICATION.md 3.8):
+        // with sprite 1 removed, its group lines carry one run instead of
+        // two, and PC5's own window-based check (generalised over 0, 1 or 2
+        // runs) still holds.
+        Verdict v = evaluate(c, g);
+        checks.note(std::string("PC5 stays ") + (v.pc5 ? "PASS" : "FAIL") +
+                    " under this mutation (its own window does not require two runs)");
         return;
     }
     if (mut == Mut::C3) {
@@ -851,16 +971,11 @@ void run_contrast(const std::string& dir, Mut mut, Checks& checks) {
             for (size_t off=0; off<spr0_expected.size(); ++off)
                 if (count_reads(c.log, word_addr(kSpr0Data)+(uint32_t)off, spr0_expected[off], f.begin, f.end) > 1) pc3=false;
         }
-        checks.expect(pc3, "PC3 p.114 p.115: sprites 2 to 7 are idle (their DMA reads only the null structure's "
-                           "two words; sprite 0's own data is not additionally fetched)");
-        bool colour_unchanged = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok || !colour_check(c.video, fa).group_ok_all()) colour_unchanged=false;
-        }
-        checks.note(std::string("the displayed colour-match is ") + (colour_unchanged?"unchanged":"changed") +
-                    " -- sprite 0 has priority over sprite 2 (p.115); the run-length clause of section 3.7 is "
-                    "separately red in every SuperHires run of this package, see PC5/P1-P4 in the normal run");
+        checks.expect(pc3, "PC3 p.114 p.115: sprites 2 to 7 are idle (the null structure's two words are each "
+                           "read at least once, and no word of sprite 0's own structure is read more than once)");
+        Verdict v = evaluate(c, g);
+        checks.note(std::string("the displayed colour-match is ") + (v.p1 ? "unchanged" : "changed") +
+                    " -- sprite 0 has priority over sprite 2 (p.115)");
         return;
     }
     if (mut == Mut::C4) {
@@ -878,113 +993,40 @@ void run_contrast(const std::string& dir, Mut mut, Checks& checks) {
         // Re-run PC5's own check: leaving out the COLOR00-COLOR15<-B4 MOVEs
         // means band 4's background never reaches (10,10,10), so the same
         // check that reads PASS in the normal run reads FAIL here.
-        bool pc5 = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok || fa.groups.size()!=15) { pc5=false; continue; }
-            for (int gi=0; gi<15; ++gi) if (!pc5_group_ok(c.video, fa.groups[gi], expected_background(gi))) pc5 = false;
-        }
-        checks.expect(pc5, "PC5 p.302: band 4's reload of COLOR00-COLOR15 took effect (background U=(10,10,10) on "
-                           "groups 12-14, U=(00,00,00) on groups 0-11, every graded frame)");
-        bool colour_still_ok = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok || !colour_check(c.video, fa).group_ok_all()) colour_still_ok = false;
-        }
+        Verdict v = evaluate(c, g);
+        checks.expect(v.pc5, kPc5Label);
         checks.note(std::string("the colour-match clause of the colour check itself still reads ") +
-                    (colour_still_ok?"PASS":"FAIL") + " (the run-length clause is separately red in every "
-                    "SuperHires run of this package, see PC5/P1-P4 in the normal run)");
+                    (v.p1 ? "PASS" : "FAIL"));
         return;
     }
     if (mut == Mut::C7) {
-        // C7 narrows band 0's colour-17 run only; it does not change any
-        // displayed colour, so it is isolated by comparing the shortest run
-        // measured for group 0 against group 3 (the same colour, band 1,
-        // untouched by this mutation) in the same run: a live, unchanged
-        // comparator.
-        int len0 = -1, len3 = -1;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok || fa.groups.size()<4) continue;
-            ColourCheck cc = colour_check(c.video, fa);
-            if (cc.run_len_min[0]>=0 && (len0<0 || cc.run_len_min[0]<len0)) len0 = cc.run_len_min[0];
-            if (cc.run_len_min[3]>=0 && (len3<0 || cc.run_len_min[3]<len3)) len3 = cc.run_len_min[3];
-        }
-        checks.expect(len0>=0 && len3>=0 && len0<len3,
-                      "P2 p.302 (run-length clause, section 3.7): group 0 narrows to " + std::to_string(len0) +
-                      " samples while group 3, the same colour on band 1, stays at " + std::to_string(len3) +
-                      " samples in the same run");
+        // The equal-length guard's own contrast (SPECIFICATION.md 3.8):
+        // group 0's runs narrow to 8 samples while every other group's stay
+        // at their own (equal) length, so P2 -- the same expect() the normal
+        // run uses -- goes red through that clause alone.
+        Verdict v = evaluate(c, g);
+        checks.expect(!v.p2, kP2Label);
         return;
     }
     if (mut == Mut::C8) {
-        // Isolated from the run-length clause (separately red in every
-        // SuperHires run of this package, see the normal run PC5/P1-P4):
-        // band 4 (groups 12-14) must equal band 3 (groups 9-11), not band 0.
-        bool colour_ok = true;
-        bool pc5 = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok) { colour_ok=false; pc5=false; continue; }
-            ColourCheck cc = colour_check(c.video, fa);
-            for (int g0=9; g0<15; ++g0) if (!cc.colour_ok[g0]) colour_ok=false;
-            if (fa.groups.size()==15)
-                for (int gi=12; gi<15; ++gi) if (!pc5_group_ok(c.video, fa.groups[gi], kBg2)) pc5=false;
-        }
-        checks.expect(!colour_ok, "P1 p.302 CH4-appC-color.c1 (colour-match clause): groups 12-14 no longer equal "
-                                  "band 3, colours (band 0, colours were substituted)");
-        checks.expect(pc5, "PC5 p.302: band 4, reload of COLOR00-COLOR15 still took effect (background still "
-                           "U=(10,10,10) on groups 12-14)");
+        Verdict v = evaluate(c, g);
+        checks.expect(!v.p1, kP1Label);
+        checks.expect(v.pc5, kPc5Label);
         return;
     }
     if (mut == Mut::C9) {
-        bool colour_ok = true;
-        bool others_ok = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok) { colour_ok=false; others_ok=false; continue; }
-            ColourCheck cc = colour_check(c.video, fa);
-            if (!cc.colour_ok[3]) colour_ok=false;
-            for (int g0 : {0,6,9,12}) if (!cc.colour_ok[g0]) others_ok=false;
-        }
-        checks.expect(!colour_ok, "P2 p.302 APPC-sprkeykey.c17r APPC-sprkeykey.c17g APPC-sprkeykey.c17b "
-                           "CH4-appC-color.c5 CH4-appC-color.c6 CH4-appC-color.c7 (colour-match clause): group 3 "
-                           "(band 1) no longer shows red bits3-2=GH after the G/H swap");
-        checks.note(std::string("groups 0, 6, 9, 12 (colour 17, other bands) colour-match ") +
-                    (others_ok?"still PASS":"also FAIL") + " under this mutation");
+        Verdict v = evaluate(c, g);
+        checks.expect(!v.p2, kP2Label);
         return;
     }
     if (mut == Mut::C10) {
-        bool colour_ok = true;
-        bool others_ok = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok) { colour_ok=false; others_ok=false; continue; }
-            ColourCheck cc = colour_check(c.video, fa);
-            if (!cc.colour_ok[7]) colour_ok=false;
-            for (int g0 : {1,4,10,13}) if (!cc.colour_ok[g0]) others_ok=false;
-        }
-        checks.expect(!colour_ok, "P3 p.302 APPC-sprkeykey.c18r APPC-sprkeykey.c18g APPC-sprkeykey.c18b "
-                           "CH4-appC-color.c8 CH4-appC-color.c9 CH4-appC-color.c10 (colour-match clause): group 7 "
-                           "(band 2) no longer shows green bits3-2=OP after the O/P swap");
-        checks.note(std::string("groups 1, 4, 10, 13 (colour 18, other bands) colour-match ") +
-                    (others_ok?"still PASS":"also FAIL") + " under this mutation");
+        Verdict v = evaluate(c, g);
+        checks.expect(!v.p3, kP3Label);
         return;
     }
     if (mut == Mut::C11) {
-        bool colour_ok = true;
-        bool others_ok = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok) { colour_ok=false; others_ok=false; continue; }
-            ColourCheck cc = colour_check(c.video, fa);
-            if (!cc.colour_ok[8]) colour_ok=false;
-            for (int g0 : {2,5,11,14}) if (!cc.colour_ok[g0]) others_ok=false;
-        }
-        checks.expect(!colour_ok, "P4 p.302 APPC-sprkeykey.c19r APPC-sprkeykey.c19g APPC-sprkeykey.c19b "
-                           "CH4-appC-color.c11 CH4-appC-color.c12 CH4-appC-color.c13 (colour-match clause): group 8 "
-                           "(band 2) no longer shows blue bits3-2=WX after the W/X swap");
-        checks.note(std::string("groups 2, 5, 11, 14 (colour 19, other bands) colour-match ") +
-                    (others_ok?"still PASS":"also FAIL") + " under this mutation");
+        Verdict v = evaluate(c, g);
+        checks.expect(!v.p4, kP4Label);
         return;
     }
 }
