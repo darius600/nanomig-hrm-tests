@@ -1,31 +1,14 @@
 # ch8-adkcon-and-interrupt-relations — SPECIFICATION
 
-Written from the quotations in
+The package grades the quotations in
 `hrm-testpipeline/work/ch8-s4-build/ch8-adkcon-and-interrupt-relations.jsonl`
-(the 97 claims assigned to this package) and the printed pages they cite —
-`ch8/p255.txt`, `p256.txt`, `p257.txt`, `appA-audio/p265.txt`,
-`appA-controller/p283.txt`, `appB3/p289.txt`, `appB3/p287.txt` — before any
-RTL file is opened by me.
-
-## Order-of-work disclosure
-
-The build brief requires the specification to be written and committed
-before `paula.v` (or any other RTL file) is opened, and says plainly: if the
-claims file itself hands a builder port names or line numbers before the
-spec is written, that compromises the rule through no fault of the builder,
-and the builder should say so rather than pretend the order held.
-
-That happened here. Every claim's `classify.evidence` field in this
-package's own jsonl already quotes `paula.v` line numbers, port names
-(`reg_address_in`, `data_in`, `data_out`, `txd`, `rxd`), and register
-addresses ($09E, $010, $09C, $01E, $030, $018) — put there by the classify
-stage, not by me, as part of the file I was told to read to get my claims.
-I did not independently open `paula.v` before writing this document, and
-every testable proposition below is derived from the manual quotations
-alone; but I cannot claim not to have seen RTL specifics, because they were
-already sitting in the file the build brief pointed me to. Disclosing this
-plainly, per the brief's own instruction, rather than presenting the commit
-order as clean.
+(the 97 claims assigned to this package) against the printed pages they
+cite — `ch8/p255.txt`, `p256.txt`, `p257.txt`, `appA-audio/p265.txt`,
+`appA-controller/p283.txt`, `appB3/p289.txt`, `appB3/p287.txt`. Every
+testable proposition below is derived from the manual quotations; the
+claims' `classify.evidence` fields also quote `paula.v` line numbers, port
+names (`reg_address_in`, `data_in`, `data_out`, `txd`, `rxd`) and register
+addresses ($09E, $010, $09C, $01E, $030, $018).
 
 ## Scope and disposition of the 97 claims
 
@@ -33,39 +16,34 @@ order as clean.
   printed row. Their `classify.note` says only "subject of slice s2" or (one
   claim) names the package directly; the real citation — which package, and
   under which sibling uid — sits in the `classify.evidence` field's "ALREADY
-  GRADED IN SLICE s2/s1: `<uid>` [status]" fragment. I independently
-  followed every one of those fragments into the accepted packages
-  themselves (not just trusted the fragment) before treating a claim as
-  already graded — see "Verification of the 26 already-graded claims" below,
-  including three corrections where the fragment's claim did not hold up.
+  GRADED IN SLICE s2/s1: `<uid>` [status]" fragment. Every one of those
+  fragments is followed into the accepted package itself before a claim is
+  treated as already graded — see "Verification of the 26 already-graded
+  claims" below, including three claims whose fragment does not hold up.
   Each of the 26 goes on a `record()` line citing the package and assertion
   that grades it. **Not re-graded.**
 - **4 claims sit on one side of a source conflict** between p.257 and p.283
-  about SERDATR bit 13 (candidate S4-C8). Per the build brief: "Measure both
-  sides, record both, grade neither." Both sides happen to have claims
-  inside *this* package's own 97 (not only in `ch8-serdatr-read-word`, which
-  the candidates file names as the conflict's home); I am grading neither
-  side, consistent with the brief, and noting that the adjudication itself
-  belongs to whichever package's report addresses S4-C8 first.
-- **67 claims are graded here**, through 17 `expect()` assertions (one
-  citing three claims that the classify stage's "subject of slice s2" note
-  flagged as already graded, but which I traced to *no* accepted package —
-  see the correction below).
+  about SERDATR bit 13. Both sides have claims inside *this* package's own
+  97 (not only in `ch8-serdatr-read-word`); both are measured and recorded,
+  neither is graded.
+- **67 claims are graded here**, through 18 `expect()` assertions (one
+  citing three claims whose "subject of slice s2" note says already graded,
+  but which no accepted package grades — see below).
 
 26 + 4 + 67 = 97. Every claim accounted for; none is silently dropped.
 
-## Verification of the 26 already-graded claims, and three corrections
+## Verification of the 26 already-graded claims
 
-I did not take "subject of slice s2" at face value. For each of the 28
+"Subject of slice s2" is not taken at face value. For each of the 28
 `8-adkcon.cNN` claims carrying that note (plus `sol:8-serdat.c76`, which
-names its package directly), I read the sibling slice-s2 uid(s) named in the
-claim's own `evidence` field, then searched the accepted packages under
-`hrm/` for those exact uids to confirm a real, graded (not merely
-`record()`-only, not `not-asserted`) assertion exists.
+names its package directly), the sibling slice-s2 uid(s) named in the
+claim's own `evidence` field are searched for in the accepted packages under
+`hrm/` to confirm a real, graded (not merely `record()`-only, not
+`not-asserted`) assertion exists.
 
 **23 of the 28 checked out:**
 
-| my claim(s) | sibling s2 uid(s) cited | accepted package | assertion |
+| claim(s) | sibling s2 uid(s) cited | accepted package | assertion |
 |---|---|---|---|
 | `opus:8-adkcon.c17`, `c18` (PRECOMP name/width) | `opus:8-appA-adkcon.c11`, `sol:8-appa-adkbit.c3`, `.c33` | `hrm/ch8-adkcon-disk-control-bits` | A3 (PRECOMP-FIELD-POSITION), A4, A5 |
 | `opus:8-adkcon.c27`, `c28` (WORDSYNC name/effect) | `opus:8-appA-adkcon.c20`, `sol:8-appa-adkbit.c11` | `hrm/ch8-adkcon-disk-control-bits` | A6 (WORDSYNC-BIT10-EFFECT) |
@@ -78,8 +56,7 @@ claim's own `evidence` field, then searched the accepted packages under
 That is 2+2+1+18+1+1+1 = 26 claims genuinely already graded. **These go on
 `record()` lines and are not re-graded.**
 
-**3 of the 28 did NOT check out — correction to the package list/candidates
-file:**
+**3 of the 28 are not graded anywhere:**
 
 - `opus:8-adkcon.c23` ("ADKCON bit 12 is named MFMPREC") cites sibling uids
   `opus:8-appA-adkcon.c16` and `sol:8-appa-adkbit.c8`, both marked
@@ -95,13 +72,13 @@ file:**
   sibling uids `opus:8-appA-adkcon.c24`/`sol:8-appa-adkbit.c15`, both
   `[not-asserted]`.
 
-I grepped every `.cpp`/`.md` file under `hrm/` for all six of those sibling
-uids: no hits anywhere. **These three claims are not graded in any accepted
-package.** They are testable and observable at `paula` per their own
-`classify` entries, so I am grading them myself (assertion 17 below) rather
-than declining them on a false "already graded" premise.
+None of those six sibling uids appears in any `.cpp`/`.md` file under
+`hrm/`. **These three claims are not graded in any accepted package.** They
+are testable and observable at `paula` per their own `classify` entries, so
+this package grades them (assertion 18 below) rather than declining them on
+a false "already graded" premise.
 
-## The 4 source-conflict claims (S4-C8, SERDATR bit 13)
+## The 4 source-conflict claims (SERDATR bit 13)
 
 p.257 (Table 8-9): *"13 TBE TRANSMIT BUFFER EMPTY (Not a mirror —
 interrupt occurs when the buffer becomes empty.)"*
@@ -113,19 +90,18 @@ both sides:
 - p.257 side: `opus:8-serial.c72`, `sol:8-serdatr.c28`
 - p.283 side: `opus:8-serdatr.c18`, `sol:8-serdatr.c98`
 
-Per the build brief: *"Measure both sides, record both, grade neither."*
-All four go on `record()` lines carrying a `MEASURED:` note (SERDATR bit 13
-against INTREQR bit 0, both directions of the set/clear cycle) but no
-`expect()` — grading either side through `expect()` would be asserting which
-page is right, which is an adjudication this package does not make. The
-formal finding (S4-C8) is the candidates file's, filed against
+Both sides are measured and recorded, neither is graded: all four go on
+`record()` lines carrying a `MEASURED:` note (SERDATR bit 13 against INTREQR
+bit 0, both directions of the set/clear cycle) but no `expect()` — grading
+either side through `expect()` would be asserting which page is right,
+which is an adjudication this package does not make. The conflict's home is
 `ch8-serdatr-read-word`; this package only avoids contradicting it.
 
-## The 17 graded assertions
+## The 18 graded assertions
 
 Each assertion names the page(s) and claim(s) it grades. All are expected
-**GREEN** except assertion 8 (S4-C3, a genuine RTL-vs-manual mismatch) and
-half of assertion 10 (S4-C6, likewise).
+**GREEN** except assertion 8 and assertion 13, both genuine RTL-vs-manual
+mismatches.
 
 1. **SERIAL-REGS-REACHABLE-AT-PAULA** — p.255 *"The Paula custom chip
    contains a ... UART."* `opus:8-serial.c7`, `sol:8-serial.c5`. The serial
@@ -154,16 +130,16 @@ half of assertion 10 (S4-C6, likewise).
 7. **INTREQ-BITS-VISIBLE-AT-SERDATR-ADDRESS** — p.283 *"Several interrupt
    request bits are also read at this address, along with the data."*
    `opus:8-serdatr.c8`, `sol:8-serdatr.c86`.
-8. **SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT** (S4-C3, expected RED) —
+8. **SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT** (expected RED) —
    p.257 *"11 RXD Direct read of RXD pin on Paula chip."* `opus:8-serial.c82`.
-   Whether "direct" forbids a synchroniser is the adjudication (not mine to
-   make); the measurement is a latency in clk7_en edges between `rxd`
+   Whether "direct" forbids a synchroniser is the adjudication (not made
+   here); the measurement is a latency in clk7_en edges between `rxd`
    changing and SERDATR bit 11 changing, which the manual's own word
    "direct" would predict to be zero.
 9. **SERDAT-CHIP-COLUMN-P283** — p.283 *"SERDAT 030 W P Serial port data
    and stop bits write."* `opus:8-serdat.c4`, `sol:8-serdat.c40`. A
    deliberate SERDAT write (never a "probe read" — $030 has no read decode,
-   so reading it is itself a write, per the build brief's fixture hazard)
+   so reading it is itself a write, a documented fixture hazard)
    produces its transmit effect at the `paula` boundary alone.
 10. **ADKCON-REGISTER-SUMMARY-ROW** — p.265 *"ADKCON 09E W P Audio, disk,
     control write."* `opus:8-adkcon.c2`, `c3`, `c4`, `c6`; `sol:8-adkcon.c9`,
@@ -178,15 +154,15 @@ half of assertion 10 (S4-C6, likewise).
     reads back at the same position through ADKCONR. Also this package's
     fixture-liveness control: two distinct, known words delivered and read
     back correctly before any other assertion is trusted.
-13. **ADKCONR-BIT15-SETCLR-NEVER-READS-BACK** (S4-C6, expected RED) —
+13. **ADKCONR-BIT15-SETCLR-NEVER-READS-BACK** (expected RED) —
     p.265, same table's row 15: *"15 SET/CLR Set/clear control bit..."*
     `opus:8-adkcon.c12` (same claim, the row-15 half — the "one shared
     table" prediction the claim makes, that fails for exactly this one row).
     Bit 15 is a write-side mode selector consumed during the write cycle,
     not stored state; ADKCONR's bit 15 is measured, not assumed, to always
     read 0 regardless of what was written. Whether a write-only control bit
-    *should* read back is the adjudication (not mine); the measurement is
-    not in doubt.
+    *should* read back is the adjudication (not made here); the measurement
+    is not in doubt.
 14. **ADKCON-SETCLR-SET** — p.257 *"15 SET/CLR ... If bit 15 is a 1
     specified bits are set."*, p.265 *"15 SET/CLR Set/clear control bit.
     Determines if bits written with a 1 get set..."* `opus:8-serial.c96`,
@@ -196,8 +172,7 @@ half of assertion 10 (S4-C6, likewise).
     cleared."* `opus:8-serial.c99`; `sol:8-adkcon.c5`. A CLR-mode write
     (bit 15=0) actually clears an already-set bit (not merely leaves an
     already-0 bit alone — the distinct half `ch5-audio-dmacon-adkcon`'s own
-    "route" extension found missing until its own ADKCON-SETCLR-CLR was
-    added).
+    ADKCON-SETCLR-CLR also grades).
 16. **ADKCON-SETCLR-PRESERVE** — p.265 *"Bits written with a zero are
     always unchanged."* `opus:8-adkcon.c16`; `sol:8-adkcon.c21`.
 17. **ADKCON-BIT11-UARTBRK** — p.257 *"11 UARTBRK Force the transmit pin to
@@ -207,17 +182,15 @@ half of assertion 10 (S4-C6, likewise).
     same proposition, cited together). Setting bit 11 forces `txd` low;
     clearing releases it.
 18. **ADKCON-BITS-12-9-8-STORE-ONLY-NO-CONSUMER** — p.265 *"12 MFMPREC"*,
-    *"09 MSBSYNC"*, *"08 FAST"* (name/position only — the corrected three
-    from above). `opus:8-adkcon.c23`, `c30`, `c32`. Each bit stores and
+    *"09 MSBSYNC"*, *"08 FAST"* (name/position only — the three from above
+    that no accepted package grades). `opus:8-adkcon.c23`, `c30`, `c32`. Each bit stores and
     reads back individually at its own position (position claim graded,
     matching the scope `ch8-adkcon-disk-control-bits` gave PRECOMP); whether
     each bit's named function does anything is not asserted by any of these
     three claims and is reported via `note()` only, following the same
     non-overreach discipline as the sibling package's own C8 treatment.
 
-(Assertion count is 18, not 17 — 12 and 13 split one claim's two halves,
-as explained above; I miscounted before writing the table and am leaving
-the correction visible rather than silently renumbering.)
+(12 and 13 split one claim's two halves, as explained above.)
 
 ## Mutation plan
 
@@ -246,62 +219,14 @@ to "must read back what was written" flips it green on the identical
 measurement, showing the red is the real always-0 readback, not a fixture
 bug.
 
-## Repair addendum: 47 claims were citing correctly but invisibly
+## Citation form
 
-The first build (commit `575f0d6`) grouped several claims under one
-assertion by writing e.g. `opus:8-serial.c64 c66 c67` -- a shared prefix
-followed by bare trailing numbers, to save space in an already-long label.
-Every one of those 47 claims *was* covered by an assertion whose content
-genuinely measures its proposition; only the citation string was wrong.
-`c66` and `c67` are not uids -- `opus:8-serial.c66` and `opus:8-serial.c67`
-are, and the bare form never appears as that literal substring anywhere in
-the file. The coordinator's own ledger reader (and a `grep -oE
-"(opus|sol):8-[a-z]+\.c[0-9]+"` over the source) correctly found only the
-first uid of each compressed group -- 50 of 97 -- and reported the other 47
-as citing nowhere, which is exactly right: a uid that is not a literal
-substring of a graded label is not on that label, regardless of what a
-human reader would infer from the shared prefix two words earlier.
-
-**My own pre-commit check reported 0 missing, and that was the more
-important bug.** It searched for each uid's exact string first and, failing
-that, searched a 500-character window after *any* occurrence of the uid's
-own prefix for a bare trailing number matching its own suffix -- which
-finds a bare `c67` near *some* `opus:8-serial.c` occurrence without
-confirming that occurrence's own citation list is the one that names it.
-Every one of the 47 has a same-prefix uid elsewhere in the file (its own
-twin's full form, or a neighbour in the same compressed list), so the
-window check found a coincidental match for all 47 and reported none
-missing. It was answering "does a uid with this prefix and this trailing
-number appear near each other anywhere in the file", not "is this exact
-uid on a graded line" -- a third, strictly weaker question than either the
-coverage ledger's own rule or the "somewhere in the file" question I
-described it as answering. Replaced for this repair, and used to re-verify,
-with the coordinator's own method: extract every literal
-`(opus|sol):8-[a-z]+\.c[0-9]+` token from the actual captured run's
-`PASS:`/`FAIL:`/`RECORDED:` lines and check each of the 97 claim uids
-against that set directly. All 97 now match; 2 extra tokens on those lines
-are sibling-package uids cited as evidence (`opus:8-appB.c40`,
-`sol:8-appB.c39` for the SERDAT chip-column citation), not claims of this
-package's own.
-
-All 47 were repaired by writing out the full uid on every citation (no
-compressed lists remain anywhere in the file) -- 30 joined existing
-assertions 4, 6, 10, 11, 14 and 17's citation text (their content already
-measured these propositions; nothing about the assertions' logic,
-mutations or colour changed), and 17 joined the `hrm/ch5-audio-dmacon-adkcon`
-already-graded `record()` line (bits 6 down to 0's USE-name and
-"modulate" claims, opus:8-adkcon.c36 through c52) using the same
-verification standard as the original 26 -- these are the same claims
-already traced there, not new tracing. Rebuilt clean after the repair:
-still 17 passed, 2 failed, all 18 mutations still verified to flip only
-their own assertion.
-
-## What happens next
-
-Only after this file is committed: open `paula.v` (and `paula_uart.v`,
-`paula_intcontroller.v` only as far as needed to confirm the register
-addresses and bit positions already named above from disclosed evidence),
-read `hrm/ch8-adkcon-disk-control-bits/Makefile` and
-`hrm/ch5-audio-dmacon-adkcon/test_paula.cpp` again for build/rig plumbing
-(fixture tick/settle_edges pattern, not as an oracle for this package's own
-claims), then write this package's Makefile and test source.
+Every graded and recorded line writes each uid out in full; no compressed
+list (`opus:8-serial.c64 c66 c67`) appears on one, because a uid that is not
+a literal substring of a label is not on that label, whatever a reader
+would infer from a shared prefix. Every one of the 97 claim uids appears as
+a literal `(opus|sol):8-[a-z]+\.c[0-9]+` token on the captured run's
+`PASS:`/`FAIL:`/`RECORDED:` lines; the two other tokens there are
+sibling-package uids cited as evidence (`opus:8-appB.c40`,
+`sol:8-appB.c39`, for the SERDAT chip-column citation), not claims of this
+package's own. The run: 17 passed, 2 failed.

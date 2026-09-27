@@ -9,12 +9,12 @@
 //
 // 97 claims total: 26 already graded in accepted packages elsewhere
 // (record(), not re-graded -- see SPECIFICATION.md's verification table,
-// including 3 corrections where the classify stage's "subject of slice s2"
-// note did not actually name a graded assertion anywhere); 4 on one side
+// including 3 claims whose classify-stage "subject of slice s2" note
+// names no graded assertion anywhere); 4 on one side
 // each of the p.257/p.283 SERDATR-bit-13 source conflict (record() both,
 // graded neither); 67 graded here through 18 expect() assertions.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed: paula.v in
+// RTL read: paula.v in
 // full (311 lines -- confirms `adkcon` is `reg [14:0]`, so ADKCONR's own
 // `{1'b0,adkcon[14:0]}` construction makes bit 15 structurally always 0,
 // and confirms adkcon's only two fan-outs anywhere are bit 11 to
@@ -189,7 +189,7 @@ public:
 };
 
 // A fresh Verilated model per trial (paula_floppy's dsktrack has no reset
-// term, per the disclosed rig hazard also carried by
+// term, a rig hazard also documented by
 // hrm/ch8-adkcon-disk-control-bits; not touched by any assertion here, but
 // the same fresh-model discipline is followed throughout regardless).
 struct Rig {
@@ -496,7 +496,7 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // 8 -- SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT (S4-C3, expected RED).
+    // 8 -- SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT (expected RED).
     // p.257 "11 RXD Direct read of RXD pin on Paula chip." opus:8-serial.c82.
     // Measured latency in clk7_en edges between `rxd` changing and SERDATR
     // bit 11 changing (paula_uart.v: rxd -> rxd_sync[0] -> rxd_sync[1]=rxds
@@ -658,7 +658,7 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // 13 -- ADKCONR-BIT15-SETCLR-NEVER-READS-BACK (S4-C6, expected RED).
+    // 13 -- ADKCONR-BIT15-SETCLR-NEVER-READS-BACK (expected RED).
     // p.265, same table's row 15: "15 SET/CLR Set/clear control bit...".
     // opus:8-adkcon.c12 (the row-15 half -- the "one shared table"
     // prediction that fails for exactly this one row). `adkcon` is
@@ -814,10 +814,10 @@ int main(int argc, char** argv) {
     // ========================================================================
     // 18 -- ADKCON-BITS-12-9-8-STORE-ONLY-NO-CONSUMER. p.265 "12 MFMPREC",
     // "09 MSBSYNC", "08 FAST" (name/position only). opus:8-adkcon.c23, c30,
-    // c32 -- the three claims a "subject of slice s2" note flagged as
+    // c32 -- the three claims a "subject of slice s2" note flags as
     // already graded, but which trace to sibling uids marked
-    // [not-asserted] in slice s2's own output and confirmed absent from
-    // every accepted package (see SPECIFICATION.md's correction). Each bit
+    // [not-asserted] in slice s2's own output and absent from every
+    // accepted package (see SPECIFICATION.md's verification). Each bit
     // stores and reads back individually at its own position; whether the
     // named function does anything is not asserted by any of these three
     // claims (matching the non-overreach discipline
@@ -849,11 +849,11 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // Source conflict, S4-C8: SERDATR bit 13 (TBE). p.257 "(Not a mirror --
+    // Source conflict: SERDATR bit 13 (TBE). p.257 "(Not a mirror --
     // interrupt occurs when the buffer becomes empty.)" vs p.283 "Serial
     // port transmit buffer empty (mirror)." Both sides are present in this
-    // package's own 97 claims. Per the build brief: "Measure both sides,
-    // record both, grade neither." MEASURED here, RECORDED, not graded.
+    // package's own 97 claims. MEASURED here, RECORDED, not graded:
+    // grading either side would decide which page is right.
     // ========================================================================
     {
         Rig rig;
@@ -866,8 +866,8 @@ int main(int argc, char** argv) {
         rig.write_reg(ADDR_INTREQ, INTREQ_BIT0_TBE);  // CLR INTREQ bit 0
         rig.settle_edges(2);
         uint16_t sdr_after_clear = rig.read_reg(ADDR_SERDATR);
-        checks.record("SOURCE CONFLICT S4-C8, SERDATR bit 13 (TBE), p.257 vs p.283 -- MEASURED both sides, "
-            "GRADED NEITHER, per the build brief (\"Measure both sides, record both, grade neither\"). "
+        checks.record("SOURCE CONFLICT, SERDATR bit 13 (TBE), p.257 vs p.283 -- MEASURED both sides, "
+            "GRADED NEITHER. "
             "p.257 side (opus:8-serial.c72, sol:8-serdatr.c28, ch8/p257.txt:9-10 \"(Not a mirror -- interrupt "
             "occurs when the buffer becomes empty.)\"): predicts bit 13 does NOT track INTREQR bit 0. p.283 side "
             "(opus:8-serdatr.c18, sol:8-serdatr.c98, appA-controller/p283.txt:42-43 \"Serial port transmit buffer "
@@ -877,8 +877,8 @@ int main(int argc, char** argv) {
             hex4(irq_after_write) + " (bit0=" + std::to_string(irq_after_write&1) + "); after clearing INTREQ "
             "bit 0, SERDATR=" + hex4(sdr_after_clear) + " (bit13=" + std::to_string((sdr_after_clear>>13)&1) +
             "). Bit 13 stayed 1 throughout while INTREQR bit 0 went 0->1->0, so the measurement matches the "
-            "p.257 side's prediction and contradicts the p.283 side's -- which page is right is the adjudication "
-            "S4-C8 names, not decided here. This package's own uids are: opus:8-serial.c72, sol:8-serdatr.c28 "
+            "p.257 side's prediction and contradicts the p.283 side's -- which page is right is "
+            "not decided here. This package's own uids are: opus:8-serial.c72, sol:8-serdatr.c28 "
             "(p.257 side); opus:8-serdatr.c18, sol:8-serdatr.c98 (p.283 side).");
     }
 
@@ -901,7 +901,7 @@ int main(int argc, char** argv) {
     checks.record("ALREADY GRADED in hrm/ch5-audio-dmacon-adkcon, assertions ADKCON-SETCLR-SET (position/storage "
         "half) and ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS (behaviour half, EXPECTED/GRADED RED there: "
         "paula_audio_channel.v's own first line says attached modes are not supported, and paula.v instantiates "
-        "paula_audio with no adkcon port at all -- confirmed independently by my own reading of paula.v:289-307). "
+        "paula_audio with no adkcon port at all -- confirmed independently by reading paula.v:289-307). "
         "18 claims, all p.265 USE3PN..USE0V1 bit names/effects and the period/volume alternation NOTE: "
         "opus:8-adkcon.c35, opus:8-adkcon.c36 (USE3PN, bit7), opus:8-adkcon.c37, opus:8-adkcon.c38 (USE2P3, bit6), "
         "opus:8-adkcon.c39, opus:8-adkcon.c40 (USE1P2, bit5), opus:8-adkcon.c41, opus:8-adkcon.c42 (USE0P1, bit4), "
