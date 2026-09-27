@@ -47,32 +47,22 @@
 //   they resolve in the claim files that hrm-testpipeline/acceptance/ch6.json
 //   lists under `inventories`.
 //
-// EXTENDS PRIOR ART (hrm/ch6-blitter-barrelshifter, unchanged in shape
-// since its original commit; see docs/evidence/blitter-prior-art.md). What was
-// already here and is kept, verbatim in mechanism: the `hrm_oracle()`
-// function computing the expected output from the manual's shift
-// description rather than from the RTL; the five-part exhaustive sweep
-// (shift=0 passthrough, old_val=0x0000 across every current word and every
-// nonzero shift, current=0x0000 across every old_val and every nonzero
-// shift, a walk of all 32 abstract input bit positions, and an 8x8 pattern
-// cross-product) driving all 16 shift values and both desc values
-// throughout; and the self-checked case count (4,197,376) that fails the
-// test if any section stops early. Read the exhaustive sweep sections below
-// for one correction: the original comment on the second section ("First
-// word: no predecessor, so zeros are shifted in") described a claim this
-// module cannot make (see the note at that section) - the sweep code itself
-// is untouched, only its comment.
+// The exhaustive sweep: the `hrm_oracle()` function computes the expected
+// output from the manual's shift description rather than from the RTL; five
+// sections (shift=0 passthrough, old_val=0x0000 across every current word
+// and every nonzero shift, current=0x0000 across every old_val and every
+// nonzero shift, a walk of all 32 abstract input bit positions, and an 8x8
+// pattern cross-product) drive all 16 shift values and both desc values
+// throughout; any mismatch ends the test at once, and the case count
+// (4,197,376) is checked so that a section stopping early fails the test.
+// See docs/evidence/blitter-prior-art.md.
 //
-// What the pipeline added:
-//   - `Test class:` / `Primary oracle:` header (prior art had neither).
-//   - the exhaustive sweep's completeness check is now a named, cited
-//     RANGE assertion instead of a bare `if (checks != expected_checks)
-//     return 1;` with no citation - the sweep and its total are unchanged,
-//     only how the result is reported.
-//   - RIGHT-ASCENDING and LEFT-DESCENDING: two claims overturned from
-//     not-asserted discards by Prompt 5's attack stage on 08.09.2026, each
-//     reproduced here as the exact stimulus a different model measured
-//     against this exact module before this package existed.
+// Named assertions:
+//   - RANGE: the exhaustive sweep's completeness check, as a named, cited
+//     assertion.
+//   - RIGHT-ASCENDING and LEFT-DESCENDING: the direction of the shift in
+//     each mode, each on two single-bit stimuli measured against this
+//     module.
 //   - STRUCTURE-WINDOW and SHIFT-VALUE-SELECTS: two structural claims from
 //     the block diagram (p.198 prose, Figure 6-13 on p.199) that the
 //     exhaustive sweep proves but does not report legibly on its own -
@@ -82,8 +72,7 @@
 //   - MASK-UPSTREAM: the constructible half of a figure claim about masks
 //     preceding the shifter (the other half, the AND-gate mechanics
 //     themselves, is out of scope - see Non-goals).
-//   - a stimulus `// MUTATION` record for every named assertion below
-//     (prior art had none).
+// Every named assertion carries a stimulus `// MUTATION` record below.
 //
 // CLAIM COVERAGE, all 24 of PKG-BLT-SHIFT's testable claims:
 //   RANGE            (7 ids, asserted below)
@@ -101,7 +90,7 @@
 // Every mutation below was actually applied (edit -> rebuild -> run ->
 // revert -> rebuild-clean) under WSL/Verilator and the PASS/FAIL lines
 // quoted are what the run printed, not predictions. Clean baseline:
-// "6 passed, 0 failed (named, cited assertions)" plus the kept exhaustive
+// "6 passed, 0 failed (named, cited assertions)" plus the exhaustive
 // sweep's count, "MEASURED: 4197376 HRM-derived blitter barrel shifter
 // cases".
 //
@@ -277,19 +266,17 @@ int main(int argc, char** argv) {
     }
 
     // old_val fixed at 0x0000 across every current word and every nonzero
-    // shift/desc combination. NOTE (added by the pipeline): the original
-    // comment here read "First word: no predecessor, so zeros are shifted
-    // in" - that framing overreaches what this module can state. This
-    // module has no notion of "first word" or "predecessor" at all: it is
-    // purely combinational (no clk port, no state, agnus_blitter_
-    // barrelshifter.v:6-13), and old_val=0x0000 below is just one value
-    // among many this loop happens to pass, not evidence about blit
-    // sequencing. The genuine "the first word of a blit has no predecessor,
-    // so zeros are shifted in" claim needs the agnus_blitter boundary,
-    // where bltahold/bltbhold actually start at their reset value at the
-    // start of a blit - that is PKG-BLT-SHIFT-CHAIN's territory. The sweep
-    // itself is kept unchanged: it remains one more corner of the RANGE
-    // claim below (every nonzero shift, both desc values, old_val=0x0000).
+    // shift/desc combination. This says nothing about the first word of a
+    // blit: this module has no notion of "first word" or "predecessor" at
+    // all - it is purely combinational (no clk port, no state,
+    // agnus_blitter_barrelshifter.v:6-13) - and old_val=0x0000 below is just
+    // one value among many this loop passes, not evidence about blit
+    // sequencing. The claim "the first word of a blit has no predecessor, so
+    // zeros are shifted in" needs the agnus_blitter boundary, where
+    // bltahold/bltbhold start at their reset value at the start of a blit -
+    // that is PKG-BLT-SHIFT-CHAIN's territory. This section is one more
+    // corner of the RANGE claim below (every nonzero shift, both desc
+    // values, old_val=0x0000).
     for (unsigned current = 0; current <= 0xFFFFU; ++current) {
         for (unsigned shift = 1; shift < 16U; ++shift) {
             for (unsigned desc = 0; desc < 2U; ++desc) {
@@ -363,7 +350,7 @@ int main(int argc, char** argv) {
         }
     }
 
-    // ---------------- RANGE (kept from prior art; now named/cited) ----------------
+    // ---------------- RANGE ----------------
     //
     // check_case() above already aborts the whole test (return 1) on the
     // FIRST mismatch anywhere in the sweep, so by the time this line runs
@@ -394,14 +381,7 @@ int main(int argc, char** argv) {
         "channels instantiate ('This module can shift 0-15 positions', "
         "agnus_blitter_barrelshifter.v:2).");
 
-    // ---------------- RIGHT-ASCENDING (measured, overturned from a discard) ----------------
-    //
-    // ch6-keypoints.c16 was originally discarded and overturned by Prompt 5
-    // (attack, 08.09.2026, a different model), which built its own
-    // throwaway Verilator harness against this exact module and measured
-    // these two cases directly, before this package existed. Reproduced
-    // here as named, cited assertions against the real fixture rather than
-    // left as a discard overturned only in the classification record.
+    // ---------------- RIGHT-ASCENDING ----------------
     {
         dut.desc = 0;
         dut.shift = 4;
@@ -429,7 +409,7 @@ int main(int argc, char** argv) {
             "by Prompt 5's attack stage on 08.09.2026.");
     }
 
-    // ---------------- LEFT-DESCENDING (measured, overturned from a discard) ----------------
+    // ---------------- LEFT-DESCENDING ----------------
     {
         dut.desc = 1;
         dut.shift = 1;
