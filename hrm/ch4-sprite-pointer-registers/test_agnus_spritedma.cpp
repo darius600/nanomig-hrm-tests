@@ -15,8 +15,8 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
 //   p.285, Appendix B pp.287/291 (claims.jsonl for
-//   ch4-sprite-pointer-registers, 145 records -- 176 after the extension
-//   below, 166 asserted + 10 recorded; the printed
+//   ch4-sprite-pointer-registers, 145 records, plus 31 routed ids -- see
+//   ROUTED IDS below -- 176 in all, 166 asserted + 10 recorded; the printed
 //   chapter-4 pages 105/110/114/126/127 this inventory's own
 //   conflict_resolution fields quote against are NOT independently read
 //   here -- their wording reaches this file only through those fields). A
@@ -36,7 +36,7 @@
 //   asserted; only the "even address" half is. Whether Denise also decodes
 //   these addresses is outside this single-module boundary and is RECORDED,
 //   not measured, from the inventory's own classification evidence (see
-//   ORDER OF WORK).
+//   HARNESS AND address_out).
 // Claim ids: ids such as `APPA-sprptr.c4` and `CH4-appA-sprite.c41` name one
 //   sentence of the manual in this chapter's reading. They carry no reader
 //   prefix, and they resolve in the claim files that
@@ -45,41 +45,27 @@
 // BOUNDARY: nanomig/src/minimig-aga/agnus_spritedma.v, one Verilator
 //   build, this module only.
 //
-// ORDER OF WORK: this file (assertions, expected relationships, claim-id
-// coverage, register addresses) was written and committed from
-// claims.jsonl's quotations ONLY -- agnus_spritedma.v itself was not
-// opened until after that commit, per the build brief's explicit gate.
-// Two things were nonetheless known before that commit, both disclosed
-// here rather than left silent:
+// HARNESS AND address_out:
 //   (1) The Harness's port names and clocking mechanics (clk/clk7_en
 //   toggling, reg_address_in/data_in write sequencing as a WORD address --
 //   byte address >> 1 -- reqdma/ackdma DMA-grant handshake, reg_address_out
 //   as the granted register's own word address, the vstart/vstop arm-a-
-//   window-then-sweep-hpos/vpos pattern) are reused from
-//   hrm/agnus_spritedma/test_agnus_spritedma.cpp -- an already-committed,
-//   already-built sibling harness for the SAME module, which the build
-//   brief itself names as the source to copy the Makefile from. Not
-//   learned by opening this package's own forbidden-until-committed file.
-//   (2) That agnus_spritedma additionally exposes an `address_out` value
-//   -- the composed chip-memory word address a sprite's DMA fetch actually
-//   uses, distinct from reg_address_out -- comes from claims.jsonl's own
-//   classify.evidence field (present on APPA-sprptr.c1/c2/c3 and their
-//   twins, required reading to resolve this package's own conflict
-//   status), which already records: writing $FFFF to SPR0PTH/SPR0PTL
-//   gives address_out[20:1]=fffff (20 bits); SPR0PTH=$0018 (bits 4,3)
-//   reaches address_out[20:16]=18; SPR0PTL's bit 0 is not wired into it;
-//   the eight pointer banks read back distinct. That is a measurement the
-//   inventory's own classification stage already made and recorded for
-//   this package's use, not a fact this file went and read out of the RTL
-//   independently -- but it IS RTL-derived, and every assertion built on
-//   it (P1, P3, P4 below) is accordingly a plumbing choice, never an
+//   window-then-sweep-hpos/vpos pattern) are those of
+//   hrm/agnus_spritedma/test_agnus_spritedma.cpp, the sibling harness for
+//   the SAME module.
+//   (2) agnus_spritedma's `address_out` value -- the composed chip-memory
+//   word address a sprite's DMA fetch actually uses, distinct from
+//   reg_address_out -- is the port claims.jsonl's own classify.evidence
+//   field (present on APPA-sprptr.c1/c2/c3 and their twins, required
+//   reading to resolve this package's own conflict status) measures:
+//   writing $FFFF to SPR0PTH/SPR0PTL gives address_out[20:1]=fffff (20
+//   bits); SPR0PTH=$0018 (bits 4,3) reaches address_out[20:16]=18;
+//   SPR0PTL's bit 0 is not wired into it; the eight pointer banks read
+//   back distinct. That evidence IS RTL-derived, so every assertion built
+//   on address_out (P1, P3, P4 below) uses it as plumbing, never as an
 //   expected VALUE: each compares two of this harness's OWN measurements
 //   against each other (distinct/equal/bigger-than), not against a number
-//   copied from that evidence field. If `address_out` turns out to be
-//   named or shaped differently once the module is actually opened for
-//   build, only the identifier changes, not any comparison below -- and
-//   that will be said plainly in the build/results commit, not papered
-//   over.
+//   copied from that evidence field.
 //
 // MEASUREMENT BASIS: every address-valued check below arms exactly one
 // sprite x (SPRxPOS=$2000 i.e. vstart=32, SPRxCTL=$2200 i.e. vstop=34,
@@ -97,8 +83,7 @@
 // PTH/PTL->address_out this RTL happens to implement) -- every check
 // instead compares two or more such measurements against each other.
 //
-// FIRST-GRANT-IS-CLEAN (found only once the RTL was open, in Phase 2):
-// every granted DMA cycle -- not only a SPRxDATA/SPRxDATB one -- writes
+// FIRST-GRANT-IS-CLEAN: every granted DMA cycle -- not only a SPRxDATA/SPRxDATB one -- writes
 // `sprpth[ptsel]`/`sprptl[ptsel]` from an auto-incremented `newptr`
 // whenever ackdma=1 (agnus_spritedma.v:171-196), because on real
 // hardware a granted SPRxPOS/SPRxCTL fetch also advances the pointer
@@ -108,16 +93,15 @@
 // -- which the sibling harness's own sweep (vpos 31..35, vblend=1 on
 // line 31) exercises -- would silently auto-increment the pointer bank
 // twice before this file's first SPRxDATA/SPRxDATB sample, without ever
-// changing SPRxPOS/SPRxCTL's content. The first build of this file did
-// exactly that and its MEASURED-WIDTH note read back 1, not the raw
-// composed value -- a plumbing artefact of the simplified harness, not
-// an RTL finding. Fixed by never asserting vblend and starting the
-// sweep at vpos=vstart directly (this module's own write path already
-// lets a plain bus write set SPRxPOS/SPRxCTL without any DMA fetch, so
-// nothing about arming the window depends on vblend) -- the FIRST
-// SPRxDATA/SPRxDATB grant of the sweep is then the pointer's first ever
-// use, un-incremented. This is a stimulus/harness correction, not an
-// oracle change: no expected relationship below was altered by it.
+// changing SPRxPOS/SPRxCTL's content, so MEASURED-WIDTH would report an
+// incremented pointer, not the raw composed value -- a plumbing artefact
+// of the simplified harness, not an RTL finding. The sweep therefore
+// never asserts vblend and starts at vpos=vstart directly (this module's
+// own write path lets a plain bus write set SPRxPOS/SPRxCTL without any
+// DMA fetch, so nothing about arming the window depends on vblend) --
+// the FIRST SPRxDATA/SPRxDATB grant of the sweep is then the pointer's
+// first ever use, un-incremented. This is a stimulus choice, not an
+// oracle: no expected relationship below depends on it.
 //
 // CLAIM COVERAGE: all 145 records of claims.jsonl are cited below, in
 // full, inside an expect() label, grouped by the single proposition each
@@ -151,37 +135,31 @@
 //   PTL.chip, restate only 'reads "A"' with no exclusivity claim and stay
 //   on the expect() label. Nothing else among the 145 is declined.
 //
-// EXTENSION: 31 more ids, from a later classification/routing pass over
-//   pages 105/110/114/126/127 and appendix B, written from quotations
-//   alone; the full claims file and the RTL were opened only afterward.
-//   Each id's disposition turned out to name a specific EXISTING assertion
-//   each new naming/
-//   alignment id is already fully established by -- 19 of the 20 asserted
-//   ids therefore carry no new measurement at all: they are appended, id
-//   only, to an assertion already above (SPRITE-POINTER-PAIR-PER-CHANNEL-
-//   DISTINCT gains 12, the [control] case gains 1), per this file's own
-//   "one allowed change" rule for a claim an existing, unchanged assertion
-//   already measures -- no expected value, verdict, or existing label
-//   text changes. Six of those 19 ids read their claim as a statement
-//   about every sprite ("SPRxPTL", not "SPR0PTL"): 5 on
-//   SPRITE-POINTER-EVEN-ADDRESS-PAIR and 1 on SPRXPTH-HIGH-SPRXPTL-LOW,
-//   both of which measure sprite 0 alone. Those six sit on
-//   SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL and
-//   SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL near the end of this file
-//   instead, which repeat the same comparisons for every channel x=0..7
-//   and are the only assertions that carry them. The remaining 2 ids
-//   (CH4-p110.c6, CH4-ptr.c9) needed a genuinely new measurement the
-//   router itself named ("a walking one over SPR0PTL bits 15..1"):
+// ROUTED IDS: 31 ids from pages 105/110/114/126/127 and appendix B.
+//   Each naming/alignment id's disposition names a specific assertion
+//   that already establishes it -- 19 of the 21 asserted ids therefore
+//   carry no measurement of their own: 13 are cited, id only, on an
+//   assertion above (SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT carries 12,
+//   the [control] case 1). The other six of those 19 read their claim as
+//   a statement about every sprite ("SPRxPTL", not "SPR0PTL"), while
+//   SPRITE-POINTER-EVEN-ADDRESS-PAIR and SPRXPTH-HIGH-SPRXPTL-LOW measure
+//   sprite 0 alone, so those six sit on
+//   SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL (5) and
+//   SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL (1) near the end of this file,
+//   which repeat the same comparisons for every channel x=0..7 and are
+//   the only assertions that carry them. The remaining 2 ids
+//   (CH4-p110.c6, CH4-ptr.c9) need a measurement of their own, the one
+//   their routing names ("a walking one over SPR0PTL bits 15..1"):
 //   SPRITE-POINTER-PTL-BITS-15-1-LIVE, placed directly after
 //   SPRITE-POINTER-EVEN-ADDRESS-PAIR below, drives every one of
 //   SPRxPTL's bits 15 down to 1 (x=0..7) and shows each moves
 //   address_out, AND that bit 0 alone does not -- both halves of the
 //   "only" claim, on the same condition. 19+2 = 21 asserted; their
 //   citation lists are reproduced in full inside their own expect()
-//   label, exactly as P1-P4's are. All reuse this file's existing
-//   measurement basis -- no new control case is added.
+//   label, exactly as P1-P4's are. All use this file's measurement
+//   basis and its one control case.
 //
-//   NOT ASSERTED, RECORDED (10 ids): a further 10
+//   NOT ASSERTED, RECORDED (10 ids): 10
 //   ids -- CH4-p110.c3, CH4-p110.c4, CH4-ptr.c5, CH4-ptr.c6, CH4-det.c9,
 //   CH4-p126.c9, CH4-p127.c9, CH4-ptrs.c4, APPB2-conf.c3, APPB2-conf.c4 --
 //   whose entire content is the DISPUTED total pointer width, the
@@ -195,77 +173,50 @@
 //   (APPB2-conf.c3, APPB2-conf.c4) already carry "Recorded, not resolved"
 //   in their own classification restatement text. Printed as one
 //   record() line per claim in RESULTS below, id in full, none on a
-//   graded line. 21+10 = 31, the total this extension adds.
+//   graded line. 21+10 = 31 routed ids.
 //
-// CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
-// "[control]") arms two different sprites with two different pointer
+// CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, labelled "[control]";
+// it carries one routed id, CH4-ptrs.c1) arms two different sprites with two different pointer
 // patterns and confirms both actually reach a granted DMA fetch and
 // produce two DIFFERENT, non-default address_out values, on the exact
 // same measurement basis P1/P3/P4 depend on -- before any claim-based
 // assertion relies on that path being alive.
 //
-// RESULTS: built and run under WSL/Verilator 5.052 against
+// RESULTS: run under WSL/Verilator against
 // nanomig/src/minimig-aga/agnus_spritedma.v (the pinned submodule).
-// 5 passed, 0 failed -- the control case and all four propositions are
-// GREEN. No RTL deviation was found at this boundary for any of the 145
-// claims: every sprite's pointer pair is independently addressable and
-// distinct (P1), the registers live and take effect inside this Agnus
-// module (P2), SPRxPTL's low bit is provably not part of the fetched
-// address (P3), and SPRxPTH is provably the more significant half of
-// the one composed pointer (P4). MEASURED-WIDTH's own fresh measurement
-// (SPR0PTH=SPR0PTL=$FFFF -> address_out=0xfffff, 20 bits) independently
-// reproduces the classify-stage's own prior 20-bit reading exactly,
-// confirming both measurements agree and that number sits outside all
-// four of the manual's own disputed readings (3+15=18, 18, 32) -- as
-// the build brief anticipated, it is reported here, not scored.
-// Opening the RTL (agnus_spritedma.v:171-196) also explained a plumbing
-// bug this file's own first build caught in itself, not in the RTL: see
-// FIRST-GRANT-IS-CLEAN above -- fixed before this RESULTS section was
-// written, so every PASS/FAIL and MUTATION record here reflects the
-// corrected harness.
-//
-// RESULTS, EXTENSION: after adding the one new assertion and
-// the 10 record() calls above, 6 passed, 0 failed -- the original 5 lines
-// print identically (verified by stripping the appended ids back out and
-// diffing byte-for-byte against the pre-extension capture), and the new
-// SPRITE-POINTER-PTL-BITS-15-1-LIVE assertion is GREEN: every one of
-// SPR0PTL's bits 15 down to 1, driven one at a time against an all-zero
-// baseline, independently moves address_out. No RTL deviation was found
-// for any of the 21 newly asserted ids either.
-//
-// RESULTS, INDEPENDENT-VALIDATION REPAIR: three defects were found in the
-// state above and fixed here. SPRITE-POINTER-PTL-BITS-15-1-LIVE graded
-// only the "bits 15 down to 1 move address_out" half of an "only" claim
-// and leaned on SPRITE-POINTER-EVEN-ADDRESS-PAIR, an assertion its own
-// ids are not cited on, for the other half -- it now drives bit 0 itself
-// and checks address_out stays at the baseline, for every channel. Five
-// ids on SPRITE-POINTER-EVEN-ADDRESS-PAIR and one id on
-// SPRXPTH-HIGH-SPRXPTL-LOW read their claim as a statement about every
-// sprite while both assertions measure sprite 0 alone; since those two
-// assertions predate this repair, their verdict, expected value and
-// label text are untouched and the six ids move to two new assertions,
-// SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL and
-// SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL, that repeat the same comparisons
-// for x=0..7. 8 passed, 0 failed -- every prior PASS/RECORDED line prints
-// identically (verified by stripping ids back out and diffing against the
-// pre-repair capture) and the three assertions above are GREEN. No RTL
-// deviation was found for any of the 145 original or 31 extension ids.
+// 8 passed, 0 failed -- the control case and every assertion are GREEN.
+// No RTL deviation was found at this boundary for any of the 145 claims
+// or the 31 routed ids: every sprite's pointer pair is independently
+// addressable and distinct (P1), the registers live and take effect
+// inside this Agnus module (P2), SPRxPTL's low bit is provably not part
+// of the fetched address (P3, and for every channel in
+// SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL), each of SPRxPTL's bits
+// 15 down to 1 moves address_out while bit 0 alone does not, for every
+// channel (SPRITE-POINTER-PTL-BITS-15-1-LIVE), and SPRxPTH is provably
+// the more significant half of the one composed pointer (P4, and for
+// every channel in SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL).
+// MEASURED-WIDTH's own measurement (SPR0PTH=SPR0PTL=$FFFF ->
+// address_out=0xfffff, 20 bits) agrees with the 20-bit reading in the
+// inventory's classification evidence, and that number sits outside all
+// four of the manual's own disputed readings (3+15=18, 18, 32) -- it is
+// reported, not scored.
 //
 // MUTATION LOG: each entry is one hand-edit -> rebuild -> rerun ->
 // confirm ONLY the named assertion changed colour -> revert -> rebuild
-// -> confirm the 5/0 baseline restored, run under WSL/Verilator.
+// -> confirm the baseline restored, run under WSL/Verilator; the
+// pass/fail totals quoted in an entry are those of the run that recorded
+// it.
 // MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: sprite 1's stimulus changed from (0x0002,0x2000) to (0x0001,0x1000) -- the same pattern already used for sprite 0 -- so the two sprites' address_out values collided -> FAIL ("4 passed, 1 failed"), only [control] FIXTURE-LIVE-DATA-PATH newly red (a.address_out == b.address_out). Reverted to (0x0002,0x2000): 5/0 restored.
 // MUTATION SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT stimulus red: sprite 1's stimulus in the P1 loop was overwritten to reuse sprite 0's own (pth[0],ptl[0]) pattern instead of its own (x+1, 0x1000*(x+1)) -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT newly red (m[0].address_out == m[1].address_out, all_distinct false). Reverted the loop body: 5/0 restored.
 // MUTATION SPRITE-POINTER-REGISTERS-ARE-AGNUS stimulus red: the "written" measurement's stimulus changed from (0x0006,0x6000) to (0x0000,0x0000) -- identical to the "unwritten" measurement -- so writing no longer changed anything observable -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-REGISTERS-ARE-AGNUS newly red (unwritten.address_out == written.address_out). Reverted to (0x0006,0x6000): 5/0 restored.
 // MUTATION SPRITE-POINTER-EVEN-ADDRESS-PAIR stimulus red: the "odd_low" measurement's SPR0PTL stimulus changed from $1001 (bit 0, the claimed-ignored bit) to $1002 (bit 1, a meaningful address bit) -> FAIL ("4 passed, 1 failed"), only SPRITE-POINTER-EVEN-ADDRESS-PAIR newly red (even_low.address_out != odd_low.address_out, since bit 1 does reach address_out). Reverted to $1001: 5/0 restored, confirming the check mechanism is sound and that specifically bit 0, not bit 1, is the one the RTL ignores.
 // MUTATION SPRXPTH-HIGH-SPRXPTL-LOW stimulus red: hi_h and hi_l's stimuli were swapped -- hi_h given SPRxPTL's own +1-on-bit-1 stimulus (0x0010,0x1002) and hi_l given SPRxPTH's own +1 stimulus (0x0011,0x1000), i.e. mislabelling which register's step is measured as the "high" one -> FAIL ("4 passed, 1 failed"), only SPRXPTH-HIGH-SPRXPTL-LOW newly red (delta_h, now measuring PTL's step, no longer exceeds delta_l, now measuring PTH's step). Reverted both lines to their original stimuli: 5/0 restored.
-// SPRITE-POINTER-PTL-BITS-15-1-LIVE's condition changed under the repair below (bit 0 case and x=0..7 loop added), so its bit-8 mutation record from the prior stage no longer describes the code as it stands; see the fresh mutation for this assertion below instead.
-// MUTATION SPRITE-POINTER-PTL-BITS-15-1-LIVE stimulus red: the per-channel bit-0 stimulus changed from 0x0001 (bit 0, the claimed-ignored bit) to 0x0002 (bit 1, a meaningful address bit) -> FAIL ("7 passed, 1 failed"), only SPRITE-POINTER-PTL-BITS-15-1-LIVE newly red (bit0.address_out == baseline.address_out no longer holds once bit 1 is driven instead of bit 0, all_live false). Reverted to 0x0001: 8/0 restored, confirming the new bit-0 half of the check is genuinely exercised, not vacuous.
+// MUTATION SPRITE-POINTER-PTL-BITS-15-1-LIVE stimulus red: the per-channel bit-0 stimulus changed from 0x0001 (bit 0, the claimed-ignored bit) to 0x0002 (bit 1, a meaningful address bit) -> FAIL ("7 passed, 1 failed"), only SPRITE-POINTER-PTL-BITS-15-1-LIVE newly red (bit0.address_out == baseline.address_out no longer holds once bit 1 is driven instead of bit 0, all_live false). Reverted to 0x0001: 8/0 restored, confirming the bit-0 half of the check is genuinely exercised, not vacuous.
 // MUTATION SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL stimulus red: the "odd_low" measurement's SPRxPTL stimulus changed from 0x1001 (bit 0) to 0x1002 (bit 1, a meaningful address bit) -> FAIL ("7 passed, 1 failed"), only SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL newly red (even_low.address_out != odd_low.address_out for every channel). Reverted to 0x1001: 8/0 restored.
 // MUTATION SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL stimulus red: hi_h and hi_l's per-channel stimuli were swapped -- hi_h given SPRxPTL's own +1-on-bit-1 stimulus and hi_l given SPRxPTH's own +1 stimulus, mislabelling which register's step is measured as the "high" one -> FAIL ("7 passed, 1 failed"), only SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL newly red (dh no longer exceeds dl for any channel). Reverted both lines to their original stimuli: 8/0 restored.
-// No MUTATION record for any of the 19 ids added to existing assertions' labels (SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT +12, SPRITE-POINTER-EVEN-ADDRESS-PAIR +5, SPRXPTH-HIGH-SPRXPTL-LOW +1, [control] +1): no new measurement was added for them, so that assertion's own existing mutation record (above) already covers the only code path they cite.
+// No separate MUTATION record per routed id: each of the 21 asserted routed ids is cited on an assertion that has its own mutation record above (SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT 12, SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL 5, SPRITE-POINTER-PTL-BITS-15-1-LIVE 2, SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL 1, [control] 1), which covers the only code path they cite.
 // No MUTATION record for any of the 10 record() calls: record() has no red/green state to mutate, same reasoning as the MEASURED-WIDTH note below.
-// No MUTATION record for the MEASURED-WIDTH note: it is a note(), not an expect() -- there is no red/green state for a mutation to move, per the build brief's own distinction between what is asserted and what is measured and reported.
+// No MUTATION record for the MEASURED-WIDTH note: it is a note(), not an expect() -- it reports a measurement and asserts nothing, so there is no red/green state for a mutation to move.
 
 #include <cstdint>
 #include <iostream>
@@ -298,7 +249,7 @@ public:
 // Byte addresses, per the appendix-B table (p.291) and appendix A (p.285):
 // SPRxPTH at $120+4x, SPRxPTL at $122+4x; SPRxPOS at $140+8x, SPRxCTL at
 // $142+8x, SPRxDATA at $144+8x, SPRxDATB at $146+8x (word-address base and
-// +4-per-sprite layout reused from hrm/agnus_spritedma/
+// +4-per-sprite layout as in hrm/agnus_spritedma/
 // test_agnus_spritedma.cpp for SPR0PTH/SPR0PTL/SPR0POS/SPR0CTL, extended
 // here to sprites 1..7 by the appendix-B table's own printed addresses,
 // each independently in this package's inventory).
@@ -556,16 +507,16 @@ int main(int argc, char** argv) {
             "CH4-APPB-SPR7PTL.mark");
     }
 
-    // ---- P3-EXTENSION: SPRxPTL's bits 15..1 each independently move
-    // address_out, AND bit 0 alone does not -- CH4-p110.c6/CH4-ptr.c9 read
-    // "only fifteen bits ... are used" / "Only ... bits 15 through 1
-    // contribute", an "only" claim with two halves. The earlier version of
-    // this assertion graded the first half alone and pointed to
-    // SPRITE-POINTER-EVEN-ADDRESS-PAIR for the second half -- an
-    // assertion these two ids are not cited on, so a design where bit 0
-    // also moved address_out would still have left this line green. Both
-    // halves are now driven on the same condition, for every sprite
-    // x=0..7. Per this package's own classify.conflict_resolution field,
+    // ---- SPRITE-POINTER-PTL-BITS-15-1-LIVE: SPRxPTL's bits 15..1 each
+    // independently move address_out, AND bit 0 alone does not --
+    // CH4-p110.c6/CH4-ptr.c9 read "only fifteen bits ... are used" /
+    // "Only ... bits 15 through 1 contribute", an "only" claim with two
+    // halves. Grading the first half alone and leaving the second to
+    // SPRITE-POINTER-EVEN-ADDRESS-PAIR -- an assertion these two ids are
+    // not cited on -- would leave this line green on a design where bit 0
+    // also moved address_out, so both halves are driven on the same
+    // condition, for every sprite x=0..7. Per this package's own
+    // classify.conflict_resolution field,
     // "SPRxPTL contributes bits 15-1" is the undisputed half; the exact
     // total-width count these same two ids' quotes also carry ("only
     // fifteen bits are used", "bits 15 through 1") is not a separate
@@ -719,11 +670,9 @@ int main(int argc, char** argv) {
     // ---- SPRITE-POINTER-EVEN-ADDRESS-PAIR-PER-CHANNEL -- P3 above
     // measures sprite 0 only, but CH4-p110.c5, CH4-ptr.c7, CH4-ptr.c8,
     // CH4-mem.c1 and CH4-p105.c8 read "SPRxPTL" and "sprites" (every
-    // channel), not "SPR0PTL". P3 predates this repair and its verdict,
-    // expected value and label text are unchanged; these five ids move
-    // here instead, to the assertion that actually establishes the claim
-    // for every channel -- the same even/odd comparison P3 makes, now for
-    // x=0..7.
+    // channel), not "SPR0PTL", so these five ids sit here, on the
+    // assertion that establishes the claim for every channel -- the same
+    // even/odd comparison P3 makes, for x=0..7.
     {
         bool all_even_odd_equal = true;
         for (int x = 0; x < 8; ++x) {
@@ -747,11 +696,9 @@ int main(int argc, char** argv) {
 
     // ---- SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL -- P4 above measures
     // sprite 0 only, but CH4-det.c10 ("The sprite pointer register is
-    // composed of SPRxPTH and SPRxPTL") is generic in x. P4 predates this
-    // repair and its verdict, expected value and label text are
-    // unchanged; the id moves here instead, to the assertion that
-    // actually establishes the claim for every channel -- the same
-    // high/low step comparison P4 makes, now for x=0..7.
+    // composed of SPRxPTH and SPRxPTL") is generic in x, so the id sits
+    // here, on the assertion that establishes the claim for every channel
+    // -- the same high/low step comparison P4 makes, for x=0..7.
     {
         bool all_h_gt_l = true;
         for (int x = 0; x < 8; ++x) {
