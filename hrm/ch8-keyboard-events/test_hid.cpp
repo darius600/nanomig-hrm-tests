@@ -5,20 +5,17 @@
 //   p.359's Caps Lock press-only behaviour (Appendix G), and p.361's
 //   Ctrl-Amiga-Amiga reset combination (Appendix G). Package
 //   ch8-keyboard-events, fixture `hid` alone (plus its own `keymap`
-//   instance, amiga_keymap.v). THIS IS THE FIRST PACKAGE IN THIS SUITE BUILT
-//   AGAINST `hid` -- no Makefile existed for this layer before this
-//   package's own, written at step 3.
+//   instance, amiga_keymap.v).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.251, 359, 361. Claims file ch8-keyboard-events.jsonl, 17 records (8
-//   propositions after twins/splits are grouped), PLUS four more added in a
-//   second round (see SECOND ROUND below): opus:8-appG.c54/c55,
-//   sol:8-appG.c66/c67, none of which are in ch8-keyboard-events.jsonl --
-//   they were misclassified `not-asserted` upstream and corrected into this
-//   package by an independent reviewer after the first 17 were already built
-//   and confirmed. 21 claims, 10 propositions, total. A red result below
-//   means hid.v disagrees with the manual, not that the assertion is wrong
-//   -- no assertion here was, or should be, adjusted to make the RTL pass.
+//   propositions after twins/splits are grouped), plus four Caps Lock LED
+//   claims (see CAPS LOCK LED CLAIMS below): opus:8-appG.c54/c55,
+//   sol:8-appG.c66/c67, which are not in ch8-keyboard-events.jsonl -- the
+//   classified-all file marks them `not-asserted` on a ground that does not
+//   hold. 21 claims, 10 propositions, total. A red result below means hid.v
+//   disagrees with the manual, not that the assertion is wrong -- no
+//   assertion here is adjusted to make the RTL pass.
 // Non-goals: p.252's per-key keycode VALUES (which key maps to which code)
 //   are `ch8-keycode-table`'s question, exhaustively covered there by a
 //   128-value sweep of `keymap` alone -- this package only tests the
@@ -52,42 +49,27 @@
 //   2); hid.v:107-109/163/170 is the modifier-latch/combo/pulse path
 //   (Family 3).
 //
-// ORDER OF WORK: SPECIFICATION.md (this package's 8 PROPs, grouping the 17
-// claims) was written and committed from ch8-keyboard-events.jsonl's
-// `quote`/`restatement` fields alone -- commit 54c9dca -- before hid.v or
-// amiga_keymap.v were opened. See SPECIFICATION.md's own "Order of work"
-// section for exactly what RTL-derived background this package's task
-// assignment had already supplied before that commit (module name, a
-// handful of specific hid.v line numbers) and the explicit statement that
-// none of it shaped any proposition's wording -- every PROP is argued from
-// the manual quotation alone. Port names, stimulus encodings and the test
-// design below are all step-3 work, opened only after that commit.
+// Every PROP is argued from the manual quotation alone (SPECIFICATION.md),
+// not from hid.v; port names, stimulus encodings and the test design below
+// come from hid.v and amiga_keymap.v.
 //
-// SECOND ROUND, ORDER STATED PLAINLY: after the first 17 claims were built,
-// graded and committed (12 passed, 1 failed, all mutations confirmed -- see
-// git history), an independent reviewer found that
-// `2026-09-16_ch8_s3_classified_all.jsonl` had marked opus:8-appG.c54/c55
-// and sol:8-appG.c66/c67 (p.359's Caps-Lock-LED sentence) `not-asserted`
-// with `absent_signal: caps_lock_led`, on the ground that no LED output
-// exists anywhere in the pinned tree. That ground does not hold: the
-// observable these four claims name is `kbd_mouse_data[7]`, a real hid.v
-// output already exercised throughout this file -- the LED appears only in
-// the sentence's ANTECEDENT, identifying WHICH press is under discussion,
-// not as something that has to be wired to a port. THE BUILD BRIEF'S
-// spec-before-RTL rule does not apply to this addendum: hid.v has been open
-// throughout this round, and the two new propositions below were not
-// reverse-engineered from it -- they come from p.359's LED sentence
-// (verified here against the raw scan, docs/references/amiga-hrm-3rd/
-// appG-keyboard/p359.txt) combined with p.360's own statement that the
-// keyboard's start-up sequence ends by shutting the Caps Lock LED off
+// CAPS LOCK LED CLAIMS: `2026-09-16_ch8_s3_classified_all.jsonl` marks
+// opus:8-appG.c54/c55 and sol:8-appG.c66/c67 (p.359's Caps-Lock-LED
+// sentence) `not-asserted` with `absent_signal: caps_lock_led`, on the
+// ground that no LED output exists anywhere in the pinned tree. That ground
+// does not hold: the observable these four claims name is
+// `kbd_mouse_data[7]`, a real hid.v output exercised throughout this file
+// -- the LED appears only in the sentence's ANTECEDENT, identifying WHICH
+// press is under discussion, not as something that has to be wired to a
+// port. The two propositions come from p.359's LED sentence (checked
+// against the raw scan, docs/references/amiga-hrm-3rd/appG-keyboard/
+// p359.txt) combined with p.360's own statement that the keyboard's
+// start-up sequence ends by shutting the Caps Lock LED off
 // (opus:8-appG.c112/c113, sol:8-appG.c133, p360.txt -- these three remain
-// correctly `not-asserted` at THIS boundary in their own right, since no
-// LED port exists to read the LED shutting off directly; they are cited
-// here only as the printed fact that licenses calling the first Caps Lock
-// press since reset "the press that turns the LED on"). SPECIFICATION.md
-// was updated with the two new PROPs and committed before this file's own
-// second-round edit, matching the spirit of the rule even though the
-// letter does not require it here.
+// `not-asserted` at THIS boundary in their own right, since no LED port
+// exists to read the LED shutting off directly; they are cited here only as
+// the printed fact that licenses calling the first Caps Lock press since
+// reset "the press that turns the LED on").
 //
 // A HARNESS-CONSTRUCTION FACT, worked out by tracing hid.v's two separate
 // `always @(posedge clk)` blocks (mouse/keyboard-event processing at
@@ -122,13 +104,12 @@
 //     (opus:8-appG.c51, sol:8-appG.c63), CAPS-LOCK-RELEASE-NOT-ACCEPTED
 //     (opus:8-appG.c52, sol:8-appG.c64 -- **RED at baseline, see RESULTS**),
 //     CAPS-LOCK-BIT7-CARRIES-LED-STATE (opus:8-appG.c53, sol:8-appG.c65 --
-//     renamed and re-justified in the second round; see that block's own
-//     comment for what changed and why).
-//   PROP-C4/C5 (p.359's LED sentence, SECOND ROUND) --
+//     see that block's own comment for how the bit is read).
+//   PROP-C4/C5 (p.359's LED sentence) --
 //     CAPS-LOCK-LED-ON-PRESS-BIT-ZERO (opus:8-appG.c54, sol:8-appG.c66) and
 //     CAPS-LOCK-LED-OFF-PRESS-BIT-ONE (opus:8-appG.c55, sol:8-appG.c67 --
 //     **RED at baseline, see RESULTS**), grounded in p.360's start-up
-//     sequence as described in the SECOND ROUND note above.
+//     sequence as described in the CAPS LOCK LED CLAIMS note above.
 //   PROP-A1/A2 (p.361, reset combo) -- RESET-TASK-CAPABLE
 //     (opus:8-appG.c117, sol:8-appG.c142), RESET-COMBO-FIRES-ON-ALL-THREE
 //     and RESET-COMBO-PARTIAL-DOES-NOT-FIRE (both opus:8-appG.c118,
@@ -136,30 +117,28 @@
 //     "simultaneously... the two Amiga keys" proposition).
 //
 // CONTROL CASES: CONTROL-FIXTURE-DELIVERS-KNOWN-VALUE (no claim id; the
-// build brief's "the fixture proves it can deliver a known value before
-// anything reads one" -- run first, before any claim-graded assertion).
-// CONTROL-NO-EVENT-ON-UNMAPPED-CODE (no claim id) is the required "at least
-// one control expected to PASS on the same measurement basis" for
+// fixture proves it can deliver a known value before anything reads one --
+// run first, before any claim-graded assertion).
+// CONTROL-NO-EVENT-ON-UNMAPPED-CODE (no claim id) is the same-basis PASS
+// control for
 // CAPS-LOCK-RELEASE-NOT-ACCEPTED, the one assertion in this package that is
 // RED at baseline: both read the same kbd_mouse_level toggle-or-not signal
 // through the same key_event() path, differing only in which stimulus is
 // expected (by the manual, or by the keymap's own fallback) to produce no
 // event. RESET-COMBO-PARTIAL-DOES-NOT-FIRE is PROP-A2's own built-in
 // control (fewer than all three keys must not fire), per SPECIFICATION.md.
-// CAPS-LOCK-LED-ON-PRESS-BIT-ZERO (SECOND ROUND) is the required same-basis
-// PASS control for CAPS-LOCK-LED-OFF-PRESS-BIT-ONE, the other new
-// assertion: same key, same key_event()+bit7 read, differing only in which
+// CAPS-LOCK-LED-ON-PRESS-BIT-ZERO is the same-basis PASS control for
+// CAPS-LOCK-LED-OFF-PRESS-BIT-ONE: same key, same key_event()+bit7 read, differing only in which
 // press (first vs second since a known-off LED state) the manual predicts a
 // 0 or a 1 for.
 //
-// RESULTS: baseline (no MUT flag) is 13 passed, 2 failed -- see RESULTS-2
-// below for the second round; CAPS-LOCK-RELEASE-NOT-ACCEPTED's own comment
-// covers the first.
+// RESULTS: baseline (no MUT flag) is 13 passed, 2 failed --
+// CAPS-LOCK-RELEASE-NOT-ACCEPTED (see its own comment) and
+// CAPS-LOCK-LED-OFF-PRESS-BIT-ONE (see the note after the mutation records).
 //
-// PER-ASSERTION MUTATION RECORD. Fifteen variants total (thirteen from the
-// first round, two more below), each its own full build+run
-// (`make MUT=<switch>`, e.g. `make MUT=MUT_7`), built, run, confirmed and
-// reverted -- not re-run for this header update. Format
+// PER-ASSERTION MUTATION RECORD. Fifteen variants total, each its own full
+// build+run (`make MUT=<switch>`, e.g. `make MUT=MUT_7`), confirmed and
+// reverted. Format
 // (tools/check_gates.py): // MUTATION <assertion-label> <oracle|stimulus|
 // none> <red|green|impossible> <what changed>. Every mutation below is
 // `stimulus` -- what the module is asked to do -- never `oracle`; no
@@ -173,16 +152,15 @@
 // MUTATION DOWN-VALUE-UNMODIFIED stimulus red MUT_4 presses HID code 0x1e ('1') instead of 0x04 ('a') -- kbd_mouse_data reads 0x01 (the correct value for THAT key), not the 0x20 this assertion's untouched expected value still demands for 'a'; baseline PASS goes red.
 // MUTATION UPSTROKE-ADDS-0X80 stimulus red MUT_5 presses 'a' again instead of releasing it (data_in[7] left at 0 on the second call too) -- the second reading equals the first exactly, not plus 0x80; baseline PASS goes red.
 // MUTATION CAPS-LOCK-DOWN-ACCEPTED stimulus red MUT_6 presses HID code 0x00 instead of Caps Lock's 0x39 -- unmapped-code guard failure as in MUT_1; baseline PASS goes red.
-// MUTATION CAPS-LOCK-RELEASE-NOT-ACCEPTED stimulus green MUT_7 releases HID code 0x00 (unmapped) instead of Caps Lock's own 0x39. This is the one assertion ALREADY RED at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here, per the build brief's rule for a red baseline: with no real event able to fire on an unmapped release either, "no toggle on release" reads true and the assertion flips to green -- proof the baseline FAIL is attributable to Caps Lock's own release genuinely firing an event (hid.v:101 has no per-key or data_in[7] branch), not to a vacuous, always-failing assertion.
+// MUTATION CAPS-LOCK-RELEASE-NOT-ACCEPTED stimulus green MUT_7 releases HID code 0x00 (unmapped) instead of Caps Lock's own 0x39. This is the one assertion ALREADY RED at baseline (the manual/RTL disagreement this package exists to report), so its mutation runs the opposite direction from every other assertion here, per the suite's rule for a red baseline: with no real event able to fire on an unmapped release either, "no toggle on release" reads true and the assertion flips to green -- proof the baseline FAIL is attributable to Caps Lock's own release genuinely firing an event (hid.v:101 has no per-key or data_in[7] branch), not to a vacuous, always-failing assertion.
 // MUTATION CONTROL-NO-EVENT-ON-UNMAPPED-CODE stimulus red MUT_8 uses HID code 0x04 ('a', mapped) instead of 0x00 -- the event IS accepted and kbd_mouse_level toggles, so the baseline PASS (no toggle) goes red.
 // MUTATION CAPS-LOCK-BIT7-CARRIES-LED-STATE stimulus red MUT_9 sends Caps Lock's byte with the released flag set (0xB9) instead of pressed (0x39) -- bit 7 of kbd_mouse_data then reads 1, not the 0 this assertion checks for the first downstroke since reset; baseline PASS goes red.
 // MUTATION RESET-COMBO-FIRES-ON-ALL-THREE stimulus red MUT_10 omits the third key_event() call (Right Amiga, HID 0x6f) -- lctrl_down & lamiga_down & ramiga_down never all reach 1, kbd_reset never pulses, baseline PASS goes red.
 // MUTATION RESET-COMBO-PARTIAL-DOES-NOT-FIRE stimulus red MUT_11 adds the third key_event() call (Right Amiga) that the baseline deliberately withholds -- the full combo now forms and kbd_reset pulses, so the baseline PASS (no pulse) goes red.
 // MUTATION RESET-TASK-CAPABLE stimulus red MUT_12 presses none of the three modifier keys at all -- kbd_reset stays 0 throughout, baseline PASS goes red.
 //
-// RESULTS-2 (SECOND ROUND): CAPS-LOCK-LED-ON-PRESS-BIT-ZERO passes (13
-// passed includes it); CAPS-LOCK-LED-OFF-PRESS-BIT-ONE is the second red --
-// hid.v has no memory of how many times Caps Lock has been pressed, so
+// CAPS-LOCK-LED-OFF-PRESS-BIT-ONE, the second red
+// (CAPS-LOCK-LED-ON-PRESS-BIT-ZERO passes): hid.v has no memory of how many times Caps Lock has been pressed, so
 // hid.v:104 mirrors `data_in[7]` verbatim on every press regardless of
 // position in the sequence, and the second press reads bit 7 == 0 exactly
 // like the first, where p.359's LED rule requires 1. A distinct defect from
@@ -357,8 +335,8 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // CONTROL-FIXTURE-DELIVERS-KNOWN-VALUE (no claim id; harness precondition).
-    // Per the build brief: the fixture must prove it can deliver a known
-    // value before anything below reads one.
+    // The fixture must prove it can deliver a known value before anything
+    // below reads one.
     // =========================================================================
     {
         bool level_before = h.dut->kbd_mouse_level;
@@ -585,30 +563,22 @@ int main(int argc, char** argv) {
     // PROP-C3-CAPS-UPDOWN-BIT (p.359) -- "However, the up/down bit is still
     // used." opus:8-appG.c53, sol:8-appG.c65.
     //
-    // SECOND ROUND, CORRECTED READING. This assertion's label and
-    // justification originally read: "Caps Lock's own downstroke event
-    // carries bit 7 == 0, the same up/down bit position PROP-B2-DOWN-VALUE
-    // established for an ordinary key's downstroke -- Caps Lock's byte is
-    // not shaped differently just because it is exceptional about when it
-    // fires." That is WRONG, and p.359's own next sentence (not in this
-    // package's claims file until the second round) says so directly: "When
-    // pushing the Caps Lock key turns on the Caps Lock LED, the up/down bit
-    // will be 0; when pushing Caps Lock shuts off the LED, the up/down bit
-    // will be 1." Caps Lock's byte IS shaped differently -- bit 7 here means
-    // the LED's target state after this press, not "key currently down" the
-    // way PROP-B2/B3's mechanism reads it for an ordinary key. The original
-    // reading happened to land on the right expected value for the FIRST
-    // press by coincidence (LED-target-state 0 and physical-press-state 0
-    // agree on the first press since a known-off LED, see p.360), which is
-    // exactly why it went uncaught by this assertion alone -- it takes the
-    // SECOND press, graded separately below, to tell the two readings
-    // apart. Corrected here: expected 0 is re-derived from p.359's LED rule
-    // plus p.360's start-up-shuts-the-LED-off fact, not from an assumed
-    // analogy to ordinary keys. "The up/down bit is still used" (c53/c65)
-    // is, read this way, the claim that the bit position is populated with
-    // real, LED-driven information rather than blanked out just because
-    // Caps Lock fires only on the downstroke -- and that is still exactly
-    // what this assertion checks.
+    // READING. Bit 7 on Caps Lock's own byte is not an ordinary key's
+    // up/down flag: p.359's own next sentence says "When pushing the Caps
+    // Lock key turns on the Caps Lock LED, the up/down bit will be 0; when
+    // pushing Caps Lock shuts off the LED, the up/down bit will be 1." Caps
+    // Lock's byte IS shaped differently -- bit 7 here means the LED's target
+    // state after this press, not "key currently down" the way PROP-B2/B3's
+    // mechanism reads it for an ordinary key. The expected 0 is derived from
+    // p.359's LED rule plus p.360's start-up-shuts-the-LED-off fact, not
+    // from an analogy to ordinary keys. On the FIRST press since a known-off
+    // LED the two readings agree (LED-target-state 0, physical-press-state
+    // 0), so this assertion alone cannot tell them apart; the SECOND press,
+    // graded separately below, does. "The up/down bit is still used"
+    // (c53/c65) is, read this way, the claim that the bit position is
+    // populated with real, LED-driven information rather than blanked out
+    // just because Caps Lock fires only on the downstroke -- which is what
+    // this assertion checks.
     // =========================================================================
     {
         h.do_reset(); // LED state, per p.360, is off immediately after start-up
@@ -633,7 +603,7 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // PROP-C4-CAPS-LED-ON-PRESS (p.359, SECOND ROUND) -- "When pushing the
+    // PROP-C4-CAPS-LED-ON-PRESS (p.359) -- "When pushing the
     // Caps Lock key turns on the Caps Lock LED, the up/down bit will be 0"
     // (first half of the sentence following PROP-C3's). opus:8-appG.c54,
     // sol:8-appG.c66. Grounded by p.360: "Finally, the Caps Lock LED is
@@ -641,8 +611,8 @@ int main(int argc, char** argv) {
     // keyboard's own LED is off immediately after start-up, so the FIRST
     // Caps Lock press since that point is, by p.359's own rule, the press
     // that turns the LED on. No LED port exists anywhere in the pinned
-    // tree (confirmed again here -- hid.v's complete port list, read at
-    // the top of this file, has none), and none is needed: the LED
+    // tree (hid.v's complete port list, listed at the top of this file, has
+    // none), and none is needed: the LED
     // appears only in the antecedent identifying WHICH press this is: the
     // graded observable is kbd_mouse_data[7], the same real hid.v output
     // every other assertion in this file already reads.
@@ -669,7 +639,7 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // PROP-C5-CAPS-LED-OFF-PRESS (p.359, SECOND ROUND) -- "when pushing
+    // PROP-C5-CAPS-LED-OFF-PRESS (p.359) -- "when pushing
     // Caps Lock shuts off the LED, the up/down bit will be 1" (second half
     // of the same sentence). opus:8-appG.c55, sol:8-appG.c67. The SECOND
     // Caps Lock press since the known-off start (one press, one release,
