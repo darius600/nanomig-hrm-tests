@@ -38,8 +38,9 @@
 //   silently dropping the "size" half of the claim. C-shres-sprite.c5, whose
 //   entire restatement is the "size" clause alone, is withdrawn whole to a
 //   record instead of kept there with a caveat -- see CLAIM COVERAGE below.
-//   SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE tests only that bit 4 is live
-//   (changes something observable), not the OCS/ECS chip-scoping the
+//   SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE tests bit 4's 70ns half-step
+//   at SuperHires (SHSH1 alone must move the start by half as many 28 MHz
+//   samples as SH0 alone does), not the OCS/ECS chip-scoping the
 //   manual's NOTE separately states ('Note: bits 3 and 4 are in the ECS
 //   chips only.', p.303), because this module exposes a single `aga` input,
 //   not a finer OCS-vs-ECS select -- documented in that assertion's own
