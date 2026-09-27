@@ -12,10 +12,10 @@ Hardware Reference Manual. Every expected value comes from an AA page. HRM pages
 are cited only for context and for procedures the AA pages take for granted,
 never as the source of an expected value.
 
-The package has 81 claims. 66 of them support the 14 propositions P1-P14 in
-section 3. The other 15 cannot be turned into a proposition; section 1 lists
-them with the reason for each. Section 5 maps every claim id to where it is
-used.
+The package has 81 claims. 60 of them support the propositions P1-P14 in
+section 3; P11 carries none of them and is the measurement P12 needs. The
+other 21 cannot be graded whole by any proposition; section 1 lists them with
+the reason for each. Section 5 maps every claim id to where it is used.
 
 ---
 
@@ -29,7 +29,9 @@ used.
 | opus:AA-beamcon0.b3, sol:AA-beamcon0.c18 | "3     (unused, formerly BLANKEN)" (p.12). This gives no function and no value, for the same reason. p.29 still refers to BLANKEN as a live bit (section 4, item 4). |
 | opus:AA-beamcon0.c37, sol:AA-beamcon0.c54 | "VARCSYEN= enable CSY* from the variable decoders to come out the CSY*" (p.13). The CSY* pin is not among the outputs a test can see: the harness shows 4-bit RGB, horizontal sync and vertical sync only. |
 | sol:AA-beamcon0.c50 | "(It doesn't work in 640*400*4 interlace mode)" (p.12). The page does not say what "doesn't work" looks like, so no observation can be graded against it. |
-| opus:AA-beamcon0.c18 (the first half only) | "The normal monitor uses the normal composite sync". This is a statement about the CSY* pin, which cannot be seen. The rest of the claim ("the variable composite sync & blank come out the HSY* & VSY* pins") is used in P9. |
+| opus:AA-beamcon0.c18 | The claim joins two statements. "The normal monitor uses the normal composite sync" is a statement about the CSY* pin, which cannot be seen. The rest ("the variable composite sync & blank come out the HSY* & VSY* pins") restates the CSCBEN routing that P9 grades under opus:AA-beamcon0.c15, opus:AA-beamcon0.c16, sol:AA-beamcon0.c33 and sol:AA-beamcon0.c34. A claim id is graded whole or not at all, and no test can grade the first half, so the id is not used. |
+| opus:AA-bltxpth.c2, opus:AA-bltxptl.c2, opus:AA-bltxmod.c2 | Each says the register "is write only: the entry's type column is W". The legends define only "W=Write, R=Read," (p.6, p.10) and give no value for a read of a W address, so "only" has no observable consequence and cannot be graded. That the entry's type is W, and that a write to it takes effect, is graded in P1 under sol:AA-bltxpth.c2, sol:AA-bltxptl.c2 and sol:AA-bltxmod.c2 ("makes ... W access"). |
+| opus:AA-beamcon0.c30, sol:AA-beamcon0.c47 | "DUAL= Run the horizontal comparators with the alternate horizontal beam counter" (p.12). The claim covers all the horizontal comparators, which p.24 names for the alternate counter: "doing the comparisons for HBSTRT,STOP,HTOTAL,HSSTRT,HSSTOP". P11 grades HTOTAL only, so neither id is graded whole. P11 stays, without claim ids, as the measurement P12 needs. |
 
 Several claims are tagged CONFLICT but are used all the same:
 
@@ -54,14 +56,23 @@ does speak, it agrees with the mark:
 
 ### 2.1 System
 
-- **Configuration:** `Config.chipset_config = 0x10` (AA selected), PAL, 2 MB
-  of Chip memory. The test reads these from the harness configuration and
-  asserts them before every run. P2 depends on the 2 MB.
-- **CPU cores:** every run is executed on both CPU cores, with the second core
-  left in its default 68000 mode. The program uses only 68000 instructions.
-  Every graded relation must hold on both cores. Parameters that depend on CPU
-  speed (sample counts, pulse position in P8) are fitted per core from a dry
-  run, under the constraints stated where they are used.
+- **Configuration:** `Config.chipset_config = 0x10` (AA selected) and 2 MB
+  of Chip memory (`Config.memory_config = 0x03`, "11 = 2.0 MB" in
+  `nanomig_harness.h`). The test reads these from the harness configuration
+  and asserts them before every run. P2 depends on the 2 MB. PAL is not a
+  harness setting: `Config` has no field for it. Every run selects the PAL
+  decodes itself, through BEAMCON0 bit 5 (2.2).
+- **CPU cores and which build is graded:** every run is executed on both
+  builds `nanomig.mk` makes, with the TG68K core left in its default 68000
+  mode. The program uses only 68000 instructions. The AA specification is
+  graded on the TG68K build only: it is the build made with `ENABLE_AGA`
+  (`nanomig.mk`'s `test-tg68k` rule passes `-DENABLE_AGA`), NanoMig's AGA
+  configuration. The fx68k build is made without `ENABLE_AGA`, NanoMig's
+  non-AGA configuration, so it is not an AA configuration: its results are recorded, not graded, and no proposition,
+  precondition or anchor depends on the fx68k build having an AA feature.
+  Parameters that depend on CPU speed (sample counts, pulse position in P8)
+  are fitted per build from a dry run, under the constraints stated where
+  they are used.
 - **Register addresses:** a custom register is at `$DFF000` plus the offset
   printed on pp.6-10.
 
@@ -72,8 +83,21 @@ does speak, it agrees with the mark:
   time. Custom-register reads and writes are not Chip-memory accesses, so they
   carry no time at the port. Every "time of X" in this document is the time of
   the marker the program writes immediately after or before X, as stated.
-- **Results area.** Values the program reads from registers (DMACONR, INTREQR,
-  beam samples) are stored in a results area for the test to check.
+- **Results area.** Values the program reads from registers (DMACONR,
+  INTREQR) and the outcome of every wait are stored in the results area,
+  from `RESULTS` (`$0C0000`) up to, not including, `DONE_ADDR` (`$0C0FFE`,
+  where the `DONE` mark goes); both constants are `nanomig.i`'s.
+- **Sample buffer.** Beam samples (F4) are stored from `$1B0000` upward and
+  never at or above `$200000`. How many samples a frame holds depends on the
+  CPU core, so they do not go into the results area, which ends at
+  `DONE_ADDR`: the harness ends a run at the first write of `DONE_VALUE`
+  (`$600D`) to `DONE_ADDR`, and a sample could be that write. No other
+  address this document fixes lies in `$1B0000-$1FFFFF`.
+- **Addresses the harness fixes.** The program starts at `PROGRAM_ORG`
+  (`$080400`) and the stack grows down from `PROGRAM_STACK` (`$0FFF00`), both
+  `nanomig.i`'s. No Blitter region, list or buffer of this document lies in
+  the results area or between `$0F8000` and `PROGRAM_STACK`, which is left
+  to the stack.
 - **Initial state for every run:**
   - `DMACON = $7FFF`: bit 15 SET/CLR = 0 clears every enable (p.22).
   - `INTENA = $7FFF`.
@@ -110,7 +134,8 @@ initialized."
    - The modulo registers.
 
    All values written must leave unused bits at zero. The page defines bits
-   4-0 of each PTH only ("High 5 bits"), so bits 15-5 of PTH are 0.
+   4-0 of each PTH only ("High 5 bits"), so bits 15-5 of PTH are 0. The one
+   exception is P2's contrast from above, which sets PTH bit 5 on purpose.
 3. Clear the BLIT request (`INTREQ = $0040`).
 4. Write marker `BLIT_GO`.
 5. Write `BLTSIZE = (H << 6) | W`. p.14: bits 15-6 are the height `h9-h0`,
@@ -151,7 +176,10 @@ so the minterm only has to make the blit run.
 
 - **Lines.** Channel `x`'s accesses, in time order `a_0 .. a_{WH-1}`, form
   lines: line `k` is `a_{kW} .. a_{kW+W-1}`.
-- **Anchor check.** Every enabled channel shows exactly `W*H` accesses.
+- **Anchor check.** Every enabled channel shows exactly `W*H` accesses. P1-P5
+  and P7 take this as a precondition. P6 does not: that every channel
+  processes the same area is what P6 grades, so there the count is an
+  expectation (section 3, P6).
 - **Increment.** Within every line, consecutive addresses must differ by one
   constant step `inc`, measured in the same run. This `inc` is the "increment"
   of p.13, whose size that page does not state. HRM p.172 says one word. Only
@@ -159,15 +187,44 @@ so the minterm only has to make the blit run.
 
 **F3: colour clock and port line.**
 
-- **Colour clock.** `T_C` is the duration of one Chip-memory slot in system
-  clocks, as the harness numbers slots. p.21: "(memory cycles are 280 ns)",
-  which is one colour clock (CCK).
+- **Colour clock.** `T_C` is one colour clock (CCK) in system clocks. p.21
+  gives the memory cycle as "(memory cycles are 280 ns)", and p.29 gives the
+  horizontal beam position the same unit: VHPOSR `H8 ... H1`,
+  "RESOLUTION=1/160 OF SCREEN WIDTH (280 NS)". `T_C` is therefore measured at
+  the port as the time per unit of `H` (F4): in the F4 dry run, for each line
+  `V` with at least two samples, the store time of the line's last sample
+  minus that of its first,
+  divided by their difference in `H`, averaged over all lines of the frame
+  and rounded to a whole number of system clocks. Every sample is stored by
+  the same instruction after its read, so the difference cancels the delay
+  between read and store. No harness constant and no sampling rate of the
+  harness enters `T_C`.
 - **Port line.** p.29 says "There are 4 refresh time slots" in every line.
   In a stretch where all DMA enables are clear and the CPU is halted, every
   port access is a refresh access. The CPU is halted by a 68000
-  `STOP #$2000`, woken by the level-3 vertical-blank interrupt. For that, the
-  program writes the level-3 autovector at `$6C` and a handler that clears
-  VERTB and returns.
+  `STOP #$2000`, woken by the level-3 vertical-blank interrupt (p.25:
+  "05 VERTB 3 Start of Vertical blank"). For that the program, once, before
+  its first `STOP`:
+  1. Clears the ROM overlay. After reset "An additional copy of the system
+     ROM responds starting at memory location $00000000. The system RAM that
+     would normally be located at this address is not available" (HRM
+     p.223), and while the overlay is on, the harness serves CPU reads of
+     `$000000-$07FFFF` from the ROM shadow and a CPU write there reaches no
+     memory (`nanomig_harness.h`). "The OVL bit in one of the 8520 Chips
+     disables the overlay" (HRM p.223): the program writes CIA-A `ddra`
+     (`$BFE201`) = `$03` first, which makes bit 0 an output (HRM p.339
+     "Direction for port A (BFE001);1=output (set to 0x03)"), then CIA-A
+     `pra` (`$BFE001`) with bit 0 (`OVL`) = 0.
+  2. Writes the level-3 autovector at `$6C`. It points at a handler in the
+     program image that writes `INTREQ = $0020` and returns with `RTE`.
+
+  Around every `STOP` the program writes `INTREQ = $0020`, then
+  `INTENA = $C020` (SET, bit 14 INTEN "Master interrupt (enable only , no
+  request)", bit 5 VERTB; p.25), then `STOP #$2000`. After waking it writes
+  `INTENA = $7FFF`, the initial state of 2.2. p.24: request bits "may be
+  polled by the processor, and if enabled by the bits listed in the next
+  register, they may cause processor interrupts". VERTB is enabled only
+  across the `STOP`, so every polling wait of 2.2 still sees VERTB set.
 
   If the program cannot own the vector, refresh accesses are instead the
   accesses outside every address range the program uses.
@@ -175,7 +232,8 @@ so the minterm only has to make the blit run.
   group of four. `T_L` is the time between consecutive group starts, and
   `L = T_L / T_C` is the line length in CCK.
 - **Anchor check.** Refresh accesses come in groups of exactly four, one group
-  per line period, and `L` is an integer on every line.
+  per line period, and every `T_L` is a whole multiple of `T_C`, so `L` is an
+  integer on every line.
 - **Line numbers.** The program writes a marker `VMARK(v)` as soon as its
   VHPOSR polling sees vertical position `v`. The port line containing
   `VMARK(v)` is line `v`; the following port lines are `v+1`, `v+2` and so on.
@@ -183,8 +241,8 @@ so the minterm only has to make the blit run.
 **F4: beam samples.**
 
 - **Sample loop.** The CPU reads VPOSR and VHPOSR as one long word
-  (`MOVE.L $DFF004,(An)+`) and stores it. The store is a Chip-memory write, so
-  every sample carries a time.
+  (`MOVE.L $DFF004,(An)+`) and stores it, with `An` in the sample buffer
+  (2.2). The store is a Chip-memory write, so every sample carries a time.
 - **Position fields.** From p.29 (`USE LOF I6 ... I0,LOL -- -- -- --v10 v9 V8`
   and `USE V7 ... V0,H8 ... H1`):
   - vertical `V = (VPOSR & 7) * 256 + (VHPOSR >> 8)`;
@@ -205,15 +263,33 @@ P9 and P10).
 The claims in P9 and P10 concern the HSY* and VSY* pins. The harness shows
 horizontal and vertical sync only after a line doubler, which may regenerate
 them. The following runs decide whether the pins can be seen. In all of them:
-HSSTRT = `$0020`, HSSTOP = `$0030`, VSSTRT = 100, VSSTOP = 103, all other
-BEAMCON0 bits 0 except PAL.
+HSSTRT = `$0020`, HSSTOP = `$0030`, VSSTRT = 100, VSSTOP = 103,
+HTOTAL = `$00E2`, VTOTAL = `$0138`, and BEAMCON0 has PAL (bit 5) and
+VARBEAMEN (bit 7) set and every other bit 0 except those named below.
 
-- **S-H1:** `BEAMCON0 = $0120` (PAL + VARHSYEN).
+**VARBEAMEN in every run of F5, P9 and P10.** The registers these runs
+depend on (HSSTRT, HSSTOP, HCENTER, HBSTRT, HBSTOP, VSSTRT, VSSTOP, VBSTRT)
+are compared with the beam counters. p.12: "VARBEAMEN= Enables the variable
+beam counter comparators to operate (allowing different beam counter total
+values) on the main horiz counter". p.24 says of HSSTRT and HSSTOP only "See
+BEAMCON0 for details of when these 2 are active", and of HCENTER that it "is
+necessary for interlace mode with variable beam counters". The pages do not
+say that VARHSYEN, VARVSYEN or CSCBEN alone makes the comparators operate,
+so VARBEAMEN is set together with them (section 4, item 17). With VARBEAMEN
+set, HTOTAL and VTOTAL are in use (p.24 HTOTAL "Active if VARBEAMEN=1 or
+DUAL=1"; p.29 VTOTAL "Highest numbered vertical line (VARBEAMEN=1)"), so
+every run writes them: HTOTAL = `$00E2` gives lines of 227 CCK (p.24 "Horiz
+line has this many + 1 280ns increments"; with PAL set there is no long line,
+p.13), and VTOTAL = `$0138` gives 313 lines (p.29 "there's this many + 1 in
+a field"). Every horizontal position written in F5, P9 and P10 lies below
+HTOTAL, and every vertical one below VTOTAL.
+
+- **S-H1:** `BEAMCON0 = $01A0` (PAL + VARBEAMEN + VARHSYEN).
 - **S-H2:** the same with HSSTOP = `$0034`.
-- **S-H3:** `BEAMCON0 = $0121` (adds HSYTRUE).
-- **S-V1:** `BEAMCON0 = $0220` (PAL + VARVSYEN).
+- **S-H3:** `BEAMCON0 = $01A1` (adds HSYTRUE).
+- **S-V1:** `BEAMCON0 = $02A0` (PAL + VARBEAMEN + VARVSYEN).
 - **S-V2:** the same with VSSTOP = 105.
-- **S-V3:** `BEAMCON0 = $0222` (adds VSYTRUE).
+- **S-V3:** `BEAMCON0 = $02A2` (adds VSYTRUE).
 
 The expectations come from these page statements:
 
@@ -230,23 +306,41 @@ The anchor holds when all of the following are true in the graded frame (F6):
 
 - **S-H1 against S-H2:**
   - The observed horizontal sync differs on every chip line.
-  - On each line it differs in one interval of `4*T_C`, with a tolerance of
-    one output pixel clock.
+  - On each line it differs in one interval of exactly `4*T_C`.
   - It is identical elsewhere.
   - The line period is the same in both runs.
 - **S-H3 against S-H1:** the observed horizontal sync is the logical inverse
   at every sample.
 - **S-V1 against S-V2:**
-  - The observed vertical sync differs in exactly one interval of `2*T_L`,
-    with a tolerance of one output pixel clock.
+  - The observed vertical sync differs in exactly one interval, of exactly
+    `2*T_L`.
   - It is identical elsewhere.
 - **S-V3 against S-V1:** the observed vertical sync is inverted at every sample.
+
+**Interval lengths are exact.** The pages state no tolerance for them, so
+none is applied, here or in P9 and P10. An interval is counted in video
+samples, one per `clk_sys` (`nanomig_harness.h`: `video()` holds one
+`VideoSample` per cycle), and must be exactly `4*T_C` or `2*T_L` long, with
+`T_C` and `T_L` measured in the same run: `T_L` from that run's refresh
+groups over the graded frame (F3; F6 already requires them), and `T_C` from
+an F4 dry-run frame that the same program takes before it writes the
+registers of the run (F3). Where the two lines of a `2*T_L` interval differ
+in length, `2*T_L` is the sum of their own `T_L`.
 
 A chip line on the output is an interval of length `T_L` (F3) that starts at
 an active edge of S-H1's observed horizontal sync. `V_var` is the output
 interval in which S-V1's vertical sync is active. `V_norm` is the interval in
 which the vertical sync is active in the reference run R0
-(`BEAMCON0 = $0020`, same registers).
+(`BEAMCON0 = $00A0`, PAL + VARBEAMEN with no sync enable, same registers, so
+that its beam counters run as in the runs it is compared with).
+
+Where a part needs line numbers on the output (P9 (b)), they are counted
+from `V_var`. p.12 sets the variable VSY "vertically on VSSTRT", "with the
+horizontal position for set & reset HSSTRT on short fields (all fields are
+short if LACE=0)", and VSSTRT = 100. Chip line 100 is the interval of length
+`T_L` that starts where `V_var` starts, and chip line `n` starts
+`(n - 100) * T_L` after it. This numbering uses S-V1 and F3 only, so the
+VSY* parts do not depend on S-H.
 
 If S-H fails, the HSY* parts of P9 and P10 cannot be checked in this harness.
 They are then reported as not checkable, not as red. If S-V fails, the same
@@ -276,10 +370,12 @@ has bit 15 equal to bit 14 and bit 0 clear.
 ### P1: The family members sit at the addresses of the p.7 list, the generic entries print channel A's, and A, B, C are sources while D is the destination
 
 **Claims:** opus:AA-bltxpth.c1, opus:AA-bltxptl.c1, opus:AA-bltxmod.c1,
-sol:AA-bltxpth.c1, sol:AA-bltxptl.c1, sol:AA-bltxmod.c1, opus:AA-bltxpth.c2,
-opus:AA-bltxptl.c2, opus:AA-bltxmod.c2, sol:AA-bltxpth.c2, sol:AA-bltxptl.c2,
-sol:AA-bltxmod.c2, opus:AA-bltxpth.c9, sol:AA-bltxpt.c2, opus:AA-bltxmod.c5,
-sol:AA-bltxmod.c4. **Pages:** p.13, p.7.
+sol:AA-bltxpth.c1, sol:AA-bltxptl.c1, sol:AA-bltxmod.c1, sol:AA-bltxpth.c2,
+sol:AA-bltxptl.c2, sol:AA-bltxmod.c2, opus:AA-bltxpth.c9, sol:AA-bltxpt.c2,
+opus:AA-bltxmod.c5, sol:AA-bltxmod.c4. **Pages:** p.13, p.7.
+
+The "write only" claims of the same entries are declined (section 1): P1
+grades the type W and that a write takes effect, not what a read returns.
 
 **Proposition.** A CPU write takes effect at each address below, which is the
 type W on p.13 and p.7. The pointer pair and modulo that channel `x` uses are:
@@ -315,10 +411,14 @@ channel A's. Channels A, B and C read (sources) and channel D writes
 
   | Channel | Pointer written | `R_x` | Modulo written |
   |---|---|---|---|
-  | C | `$0C0000` | `$0C0000-$0CFFFF` | 8 |
+  | C | `$0B0000` | `$0B0000-$0BFFFF` | 8 |
   | B | `$0D0000` | `$0D0000-$0DFFFF` | 16 |
   | A | `$0E0000` | `$0E0000-$0EFFFF` | 24 |
-  | D | `$0F0000` | `$0F0000-$0FFFFF` | 32 |
+  | D | `$0F0000` | `$0F0000-$0F7FFF` | 32 |
+
+  The results area (`RESULTS` `$0C0000` to `DONE_ADDR` `$0C0FFE`) is written
+  inside the window of every blit (DMACONR, template 2.3 step 7), and the
+  stack grows down from `$0FFF00`; no region reaches either (2.2).
 
 - Four blits, each with the template of 2.3, `W = 2`, `H = 2`
   (`BLTSIZE = $0082`):
@@ -365,7 +465,7 @@ would establish only its own channel.
 **Contrasting case.**
 
 - Swap the values written to `048/04A` and `050/052`: C gets `$0E0000` and A
-  gets `$0C0000`. The page then predicts that P1-A reads start at `$0C0000`
+  gets `$0B0000`. The page then predicts that P1-A reads start at `$0B0000`
   and P1-C reads at `$0E0000`. The region bounds are taken from what was
   written.
 - Swap the values written to `060` and `064`: A's line step becomes
@@ -381,7 +481,8 @@ opus:AA-bltxptl.c4. **Pages:** p.13, p.6, p.7.
 
 **Proposition.** For every channel `x`, the word address of the channel's
 first access equals `PTH[4:0] * 2^15 + PTL[15:1]`. This holds for each of the
-20 address bits individually.
+20 address bits individually, and PTH bit 5 is not an address bit: the same
+pointer written with PTH bit 5 set addresses the same word as with it clear.
 
 **Page text.**
 
@@ -403,7 +504,19 @@ value `V` in V1, V2 there is one blit, eight in all, each with `W = 1`, `H = 1`
 - For `x` = D: the D-only blit with the D pointer `V`.
 - `R_x` is `V` to `V + $FF`.
 
-**Observation.** The channel's single access (F1).
+**Contrast from above.** For each channel `x`, one more blit as above with
+`V1`, except that channel `x`'s PTH is written as `$0035` (bit 5 set; PTL
+`$5554`), four in all. p.6: "+=Address register pair.Low word uses
+DB1-DB15,High word DB0-DB4." DB5 of the high word is not among the bits the
+pair uses, so the page predicts the same access as with PTH `$0015`. An
+implementation that takes PTH bit 5 as address bit 21 accesses byte
+`$355554` (word `$1AAAAA`), which the port can show: the harness logs
+`ram_address` as a 22-bit word address (`nanomig_harness.h`, `kRamWordCount
+= 1u << 22`). For these blits `R_x` is `V1` to `V1 + $FF`, and the window is
+also searched for any access at byte `$355554-$355653`.
+
+**Observation.** The channel's single access (F1), and in the contrast from
+above any access in the window at byte `$355554-$355653`.
 
 **Expected.**
 
@@ -411,9 +524,11 @@ value `V` in V1, V2 there is one blit, eight in all, each with `W = 1`, `H = 1`
 |---|---|
 | V1 = `$155554` | `$0AAAAA` |
 | V2 = `$0AAAAA` | `$055555` |
+| V1 with PTH `$0035` | `$0AAAAA`, and no access at byte `$355554-$355653` |
 
 This holds for every channel. A dropped, stuck or swapped address bit makes at
-least one of the two differ.
+least one of the first two differ; a pointer wider than the "20 bit address"
+(p.13) makes the third differ.
 
 **Preconditions,** each with its contrasting case:
 
@@ -423,9 +538,14 @@ least one of the two differ.
   Asserted from the program's own address map.
 - **F1 anchor and blit finished,** as in P1, with the same contrasts.
 
-**Contrasting case.** V1 against V2 is the contrast. Every bit changes, so the
-page predicts a different address for every bit. Writing PTH bits 15-5 is not
-used as a contrast, because the page says nothing about them.
+**Contrasting case.**
+
+- **From below:** V1 against V2. Every bit changes, so the page predicts a
+  different address for every bit.
+- **From above:** V1 with PTH bit 5 set against V1. The page predicts the same
+  address, so a correct pair shows no difference, and a pair that uses a 21st
+  bit shows one. Only bit 5 is set: it is the bit that would be the next
+  address bit, and PTH bits 15-6 stay 0 (2.3).
 
 **Reference frame.** F1. The port's word address is compared directly; no
 further anchor is needed.
@@ -456,7 +576,7 @@ channel A, B, C and D is at the address written to that channel's pointer pair.
 |---|---|
 | A | `$0E0100` |
 | B | `$0D0100` |
-| C | `$0C0100` |
+| C | `$0B0100` |
 | D | `$0F0100` |
 
 The regions are those of P1.
@@ -498,7 +618,7 @@ data address (plus increment and modulo)."
 observed through a second blit that uses them without rewriting them.
 
 - **Blit 1:** template 2.3, `BLTCON0 = $0FF0`, `W = 3`, `H = 2`. Pointers as in
-  P1 (A `$0E0000`, B `$0D0000`, C `$0C0000`, D `$0F0000`). Modulos:
+  P1 (A `$0E0000`, B `$0D0000`, C `$0B0000`, D `$0F0000`). Modulos:
 
   | Channel | Modulo |
   |---|---|
@@ -525,7 +645,7 @@ and `M_x` sign-extended. With a one-word `inc` this gives:
 |---|---|
 | A | `$0E0018` |
 | B | `$0D0008` |
-| C | `$0C000C` |
+| C | `$0B000C` |
 | D | `$0F0020` |
 
 The grading uses the relation, not this table.
@@ -637,7 +757,11 @@ pointers and regions of P1. Modulos:
 
 **Preconditions,** each with its contrasting case:
 
-- **F1 anchor and blit finished.** Contrasts as in P1.
+- **F1 anchor, and the blit finished:** BLIT was seen and BBUSY = 0.
+  Contrasts as in P1. The number of accesses per channel is not part of this
+  precondition, unlike in P1: "an identical area of each is used" is what the
+  second expectation grades, so a channel with too many or too few accesses
+  is red there, not ungraded.
 
 **Contrasting case.** Change only B's modulo to +12. The page predicts:
 
@@ -680,7 +804,7 @@ All pages that speak agree.
    |---|---|---|
    | A | `$0E0000` | 8 |
    | B | `$0D0000` | 8 |
-   | C | `$0C0000` | 8 |
+   | C | `$0B0000` | 8 |
    | D | `$0F0000` | 8 |
 
 2. It writes `COPCON = $0000` (run P7-0) or `COPCON = $0002` (run P7-1).
@@ -734,7 +858,7 @@ All pages that speak agree.
 **Expected.**
 
 - **P7-0:** all twelve registers hold the base values. First accesses are at
-  `$0E0000`, `$0D0000`, `$0C0000` and `$0F0000`, and every step is
+  `$0E0000`, `$0D0000`, `$0B0000` and `$0F0000`, and every step is
   `inc + 8`.
 - **P7-1:** all twelve registers hold the Copper values. First accesses are at
   `$114000`, `$124000`, `$134000` and `$144000`, and every step is
@@ -750,9 +874,15 @@ reaches every register.
 
 **Preconditions,** each with its contrasting case:
 
-1. **In every frame `k`, both words of the MOVE to register `k` were fetched.**
-   A register whose MOVE was never fetched is not graded, and the run fails
-   its precondition. Contrast: replace that MOVE in `L_k` by `MOVE COLOR00,$0000`
+1. **In every frame `k`, the first word of the MOVE to register `k` was
+   fetched:** a read of `L_k+8` returned that register's address. A register
+   whose MOVE was never reached is not graded, and the run fails its
+   precondition. The second word (`L_k+10`) is observed and recorded but is
+   not part of the precondition: the page says nothing about whether a
+   Copper that may not write a register fetches the data word of the MOVE,
+   so requiring it in P7-0 would make the precondition depend on the clause
+   under test. In P7-1 a missing data fetch shows as a register that keeps
+   its base value, which is red. Contrast: replace that MOVE in `L_k` by `MOVE COLOR00,$0000`
    (`180`). The page then predicts no write to register `k` in either COPCON
    setting, so in P7-1 register `k` keeps its base value.
 2. **The Copper executes MOVEs to always-writable registers:** COPER was seen
@@ -792,8 +922,11 @@ p.12 calls the same bit "LPE" (section 4, item 5).
 
 **Trigger.** The AA pages do not say where the light-pen trigger enters. HRM
 p.238 places it on pin 6 ("Beam Trigger") of a controller port, port 1 or 2
-depending on the machine. The harness drives pin 6 of both controller ports
-together, so the port question does not arise.
+depending on the machine, and HRM p.229 names pin 6 as the fire-button line
+("Input and output for pin 6 (port 1 & 2 fire buttons)"). The harness has
+no light-pen function of its own. The test drives pin 6 of both controller
+ports together through the fire inputs of the port list's `joystick0` and
+`joystick1`, set with `ports()`, so the port question does not arise.
 
 **Stimulus.**
 
@@ -805,8 +938,8 @@ together, so the port question does not arise.
 6. Take `N` samples in one loop: the F4 long word, then HHPOSR (word).
 7. Write marker `LP_END`, then set `BPLCON0 = $0000`.
 
-**The pulse.** The harness drives pin 6 of both controller ports low for at
-most `2*T_C`, then releases it. The pulse starts at `LP_GO + D`, where `D` and
+**The pulse.** The test drives pin 6 of both controller ports to its active
+(pressed) level for at most `2*T_C`, then releases it. The pulse starts at `LP_GO + D`, where `D` and
 `N` are fitted per CPU core from the dry run below. They must satisfy all of
 the following:
 
@@ -835,7 +968,10 @@ not graded: p.12 speaks of the "beam hit position".
   - The hit position is not earlier than the last "before" sample.
   - It is not later than the position the running counter reached at the end
     of the pulse. That position is the last "before" position plus the elapsed
-    time in CCK (`T_C`, F3), plus one sample interval of tolerance.
+    time in CCK (`T_C`, F3), plus one sample interval. The added sample
+    interval is the quantisation of the measurement, not a page value: a
+    sample is dated by its store, and the read that produced it happened up
+    to one sample interval earlier.
   - The hit's `V` is 255, so VPOSR bit 0 (V8) stays 0 in the "after" samples.
 - **P8-0, HHPOSR:** all "after" samples are identical.
 - **P8-1:**
@@ -849,11 +985,16 @@ All three registers are graded in both settings, subject to precondition 3.
 
 **Preconditions,** each with its contrasting case:
 
-1. **The trigger reaches the chip.** P8-0 shows the freeze. This is also the
-   precondition for P8-1: the green of P8-1 means nothing unless the same
-   pulse froze the reads in P8-0. Contrast: P8-dry (no pulse), whose samples
-   advance throughout. The page speaks of a latched value only where a hit
-   exists; HRM p.239 describes the trigger.
+1. **The trigger reaches the chip:** the pulse freezes `(V,H)` in at least
+   one of P8-0 and P8-1 (all "after" samples identical). Which LPENDIS
+   setting shows the latched value is what P8 grades, so the precondition
+   does not name one: an implementation that reads the latch with LPENDIS
+   high instead of low still passes this precondition and is red in both
+   expectations. If neither run freezes, the chip did not see the trigger,
+   and P8 is reported as not checkable. The green of P8-1 means something
+   only when this precondition holds. Contrast: P8-dry (no pulse), whose
+   samples advance throughout. The page speaks of a latched value only where
+   a hit exists; HRM p.239 describes the trigger.
 2. **LPE enables the latch.** Contrast: P8-0 with step 4 writing
    `BPLCON0 = $0000`. The samples then advance through the pulse: "LPEN =Light
    pen enable" (p.17), and p.12 conditions the latched read on LPE.
@@ -878,11 +1019,11 @@ the page predicts running counters instead of a frozen value.
 ### P9: With CSCBEN set, the variable composite sync comes out on HSY* and the variable composite blank on VSY*
 
 **Claims:** opus:AA-beamcon0.b10, sol:AA-beamcon0.c11, opus:AA-beamcon0.c15,
-opus:AA-beamcon0.c16, opus:AA-beamcon0.c18 (second half), sol:AA-beamcon0.c33,
-sol:AA-beamcon0.c34, opus:AA-beamcon0.c38. **Pages:** p.12, p.13, p.24, p.29.
+opus:AA-beamcon0.c16, sol:AA-beamcon0.c33, sol:AA-beamcon0.c34,
+opus:AA-beamcon0.c38. **Pages:** p.12, p.13, p.24, p.29.
 
 **Proposition.** With BEAMCON0 bit 10 (CSCBEN) = 1, VARHSYEN = 0 and
-VARVSYEN = 0:
+VARVSYEN = 0 (and VARBEAMEN = 1, F5):
 
 - (a) the HSY* output carries the variable composite sync. It becomes active
   at the HSSTRT position on every line, and on vertical-sync lines HCENTER
@@ -890,7 +1031,8 @@ VARVSYEN = 0:
 - (b) the VSY* output carries the variable composite blank, which follows
   VBSTRT.
 
-With CSCBEN = 0 none of these registers affects the two pins.
+With CSCBEN = 0 (VARBEAMEN still 1) none of these registers affects the two
+pins.
 
 **Page text.**
 
@@ -922,6 +1064,8 @@ a reading of the page; section 4, item 7 explains it.
 | VSSTOP | 103 | line |
 | VBSTRT | 150 | line |
 | VBSTOP | 170 | line |
+| HTOTAL | `$00E2` | highest CCK count of a line (F5) |
+| VTOTAL | `$0138` | highest line number (F5) |
 
 The HBSTRT, HBSTOP and HCENTER values follow the page's own recipe (p.13):
 "A reasonable composite can be generated by setting HCENTER half a horiz line
@@ -930,11 +1074,12 @@ from HSSTRT, and HBSTOP at (HSSTOP-HSSTRT) before HCENTER, with HBSTRT at
 
 The runs come in pairs that differ in one register.
 
-- **With `BEAMCON0 = $0420` (PAL, CSCBEN):**
+- **With `BEAMCON0 = $04A0` (PAL, VARBEAMEN, CSCBEN):**
   - **H-pair:** HSSTRT `$20` against `$24`.
   - **C-pair:** HCENTER `$91` against `$99`. HBSTOP (`$81`) stays below both.
   - **V-pair:** VBSTRT 150 against 152.
-- **With `BEAMCON0 = $0020`:** the same three pairs (the contrasts).
+- **With `BEAMCON0 = $00A0` (PAL, VARBEAMEN):** the same three pairs (the
+  contrasts). They differ from the runs above in CSCBEN alone.
 
 **Observation.** The observed horizontal sync (for the H-pair and C-pair) and
 vertical sync (for the V-pair), over the graded frame (F6), compared sample by
@@ -946,31 +1091,64 @@ in F5.
 - **(a) H-pair, CSCBEN = 1:**
   - The two runs differ on every chip line of the graded frame. "Always" is
     graded over all lines, including vertical-sync and vertical-blank lines.
-  - On each line they differ in one interval of `4*T_C`, with a tolerance of
-    one output pixel clock.
+  - On each line they differ in one interval of exactly `4*T_C` (F5,
+    "Interval lengths are exact").
   - They are identical elsewhere.
 - **(a) C-pair, CSCBEN = 1:**
-  - The runs differ on at least one chip line of the graded frame.
-  - Every differing line lies within `V_var` or `V_norm`, with a tolerance of
-    one line.
+  - The runs differ on at least one chip line of the graded frame. On every
+    line where they differ, they differ in one interval of exactly `8*T_C`
+    (HCENTER `$91` against `$99`; p.24 HCENTER "Horizontal position (CCKs)";
+    F5, "Interval lengths are exact"), and are identical elsewhere.
+  - The differing lines are consecutive, and there are exactly as many as
+    there are lines in vertical sync under one of the two readings of which
+    vertical sync the page means (section 4, item 6):
+    - `V_var`: exactly 3. p.12 sets the variable VSY on line VSSTRT = 100 and
+      resets it on line VSSTOP = 103, both at the horizontal position HSSTRT
+      (`$20`), which lies before HCENTER in every line, so HCENTER falls
+      inside `V_var` on lines 100, 101 and 102 only.
+    - `V_norm`: `floor(|V_norm| / T_L)` or `ceil(|V_norm| / T_L)`, where
+      `|V_norm|` is the length of `V_norm`. The page does not fix where in a
+      line the hardwired vertical sync starts, and an interval of that length
+      holds one or the other number of HCENTER positions, one line apart,
+      depending on that phase. The "or" is the quantisation of counting whole
+      lines, not a page value.
+  - Where the differing lines lie on the HSY* output relative to `V_var` and
+    `V_norm` on the VSY* output is not graded. The two outputs reach the port
+    by different paths (the harness's `hs` comes from the scan doubler, its
+    `vs` is passed through; `nanomig_harness.h`), and nothing in the pages or
+    the harness fixes the delay between them in whole lines, so a
+    line-by-line comparison across the two outputs would rest on an offset no
+    anchor measures.
   - Setting VSSTRT/VSSTOP makes "in vertical sync" a known set of lines under
     either reading of which vertical sync the page means.
   - This is what makes the signal a composite sync rather than a plain
-    horizontal sync.
+    horizontal sync: HCENTER changes it on one block of consecutive lines
+    only.
 - **(b) V-pair, CSCBEN = 1:**
-  - The runs differ on chip lines 150 and 151 and nowhere else.
-  - A partial line at either end is tolerated, because the page does not say
-    at which horizontal position the vertical blank starts.
-  - Each of the two lines contains differing samples.
+  - Every differing sample lies within one interval of exactly `2*T_L` that
+    starts in chip line 150 (numbered from `V_var`, F5; both on the VSY*
+    output). The page does not say at which horizontal position the vertical
+    blank starts, but only VBSTRT differs between the two runs, so the blank
+    starts at the same point of the line in both, on line 150 in one run and
+    on line 152 in the other: the interval is exactly two lines long,
+    wherever in line 150 it starts.
+  - Each of the interval's two `T_L` halves contains differing samples.
   - Polarity and the horizontal content of the composite blank are not
-    graded: the page does not state them.
+    graded: the page does not state them, and where horizontal blanking
+    covers a sample in both runs, the runs need not differ there.
 - **Contrasting pairs, CSCBEN = 0:** all three pairs identical at every sample.
 
 **Preconditions,** each with its contrasting case:
 
 1. **F5 anchor S-H holds** (for (a)) and S-V holds (for (b)). The anchor's
    contrasts are part of F5. If S-H or S-V fails, the corresponding part is
-   reported as not checkable.
+   reported as not checkable, and its claim ids come off the assertion
+   (they are recorded as not graded, with the failed anchor as the reason):
+   - (a) grades opus:AA-beamcon0.c15, sol:AA-beamcon0.c33 and
+     opus:AA-beamcon0.c38;
+   - (b) grades opus:AA-beamcon0.c16 and sol:AA-beamcon0.c34;
+   - opus:AA-beamcon0.b10 and sol:AA-beamcon0.c11 ("10 CSCBEN") are graded
+     by either part, and come off only if neither is checkable.
 2. **All paired runs are cycle-aligned (F6).** Contrast: none. This is a
    validity check on the comparison, not a condition the page speaks to.
 3. **ERSY = 0** (sync pads are outputs; p.17). Contrast: none is run. With
@@ -1008,46 +1186,57 @@ three registers act on the pins only through the BEAMCON0 enables (p.24, p.29).
 
 **Stimulus.** The P9 register set.
 
-- **With `BEAMCON0 = $0520` (PAL, CSCBEN, VARHSYEN):**
+- **With `BEAMCON0 = $05A0` (PAL, VARBEAMEN, CSCBEN, VARHSYEN):**
   - **C-pair:** HCENTER `$91` against `$99`.
   - **S-pair:** HSSTOP `$30` against `$34`.
-- **With `BEAMCON0 = $0620` (PAL, CSCBEN, VARVSYEN):**
+- **With `BEAMCON0 = $06A0` (PAL, VARBEAMEN, CSCBEN, VARVSYEN):**
   - **V-pair:** VBSTRT 150 against 152.
   - **VS-pair:** VSSTOP 103 against 105.
+
+VARBEAMEN is set in every run, as in F5.
 
 **Observation.** As in P9.
 
 **Expected.**
 
-- **With `$0520`:**
+- **With `$05A0`:**
   - The C-pair is identical at every sample.
   - The S-pair differs on every chip line, including the vertical-sync lines,
-    in one interval of `4*T_C`, with a tolerance of one output pixel clock.
+    in one interval of exactly `4*T_C` (F5, "Interval lengths are exact").
     During VSY the composite would not be reset at HSSTOP (p.13), so a
     difference on those lines shows the comparator HSY.
-- **With `$0620`:**
+- **With `$06A0`:**
   - The V-pair is identical at every sample.
-  - The VS-pair differs in exactly one interval of `2*T_L`, with a tolerance
-    of one output pixel clock.
+  - The VS-pair differs in exactly one interval, of exactly `2*T_L` (F5,
+    "Interval lengths are exact").
 
 **Preconditions,** each with its contrasting case:
 
-- **F5 anchors S-H and S-V.** Contrasts as in F5.
+- **F5 anchors S-H and S-V.** Contrasts as in F5. Both claims,
+  opus:AA-beamcon0.c19 and sol:AA-beamcon0.c35, say that VARVSYEN and
+  VARHSYEN have priority, so each needs both halves: if S-H or S-V fails,
+  both ids come off the assertion and are recorded as not graded, with the
+  failed anchor as the reason; the checkable half is still run and reported.
 - **Cycle alignment (F6).** Contrast: none; this is a validity check on the
   comparison.
 - **The vertical-sync lines exist in the graded frame.** Asserted as in P9.
 
 **Contrasting case.**
 
-- Clear VARHSYEN (`$0420`): the C-pair differs on the vertical-sync lines
+- Clear VARHSYEN (`$04A0`): the C-pair differs on the vertical-sync lines
   (P9 (a)).
-- Clear VARVSYEN (`$0420`): the V-pair differs on lines 150-151 (P9 (b)).
+- Clear VARVSYEN (`$04A0`): the V-pair differs on lines 150-151 (P9 (b)).
 
 **Reference frame.** As in P9.
 
-### P11: DUAL runs the horizontal comparators, among them HTOTAL, on the alternate horizontal counter instead of the main one
+### P11: With DUAL set, HTOTAL bounds the alternate horizontal counter and not the main one
 
-**Claims:** opus:AA-beamcon0.c30, sol:AA-beamcon0.c47. **Pages:** p.12, p.24.
+**Claims:** none. **Pages:** p.12, p.24.
+
+P11 is the measurement P12 needs (the alternate counter's period, P12
+precondition 3 and `k`), and its assertion carries no claim id. The claims
+about DUAL's comparators name all the horizontal comparators, and P11 grades
+HTOTAL only, so they are declined (section 1).
 
 **Proposition.** With BEAMCON0 bit 6 (DUAL) = 1 and VARBEAMEN = 0, HTOTAL
 bounds the alternate counter (read via HHPOSR). It does not bound the main
@@ -1086,16 +1275,25 @@ horizontal counter (read via VHPOSR).
 
 **Preconditions,** each with its contrasting case:
 
-1. **The alternate counter runs and wraps.** On at least one main line,
-   HHPOSR decreases at least twice. Otherwise "at most `$38`" could pass with
-   a stuck counter. Contrast: the DUAL run with `HTOTAL = $00E2`. HTOTAL is
-   the alternate counter's highest count, so the page predicts that its period
-   grows by `($E2 + 1) / ($38 + 1)`. The number of wraps per main line must
-   fall by that ratio, with a tolerance of 1.
+1. **The alternate counter runs.** On every main line of the frame, HHPOSR
+   takes at least two different values. Otherwise "at most `$38`" could pass
+   with a stuck counter. Where the counter wraps is not part of this
+   precondition: that HTOTAL bounds it is what the expectation grades, and a
+   counter that ignores HTOTAL has to be red there, not fail a precondition.
+   Contrast: none beyond the contrasting cases below, which run the same
+   counter under other bounds.
 2. **F4 anchor.** Contrast as in F4.
 
 **Contrasting case.**
 
+- For the alternate counter's period: the DUAL run with `HTOTAL = $00E2`.
+  HTOTAL is the alternate counter's highest count, so the page predicts that
+  its period grows by `($E2 + 1) / ($38 + 1)`. The number of HHPOSR decreases
+  (wraps) per main line must fall by that ratio, to within 1. The 1 is the
+  quantisation of the count, not a page value: wraps are counted in whole
+  units, and a main line holds the whole number of periods just below or
+  just above its length divided by the period, depending on where in the
+  line the first wrap falls.
 - `BEAMCON0 = $08A0` (PAL, VARBEAMEN, LOLDIS; DUAL off), with
   `VTOTAL = $0138` because VTOTAL is in use when VARBEAMEN = 1 (p.29). The page
   then predicts that HTOTAL governs the main counter: the maximum `H` is at
@@ -1145,19 +1343,25 @@ The count per main line follows the number of alternate-counter resets.
 | `SPRHSTRT` | 100 |
 | `SPRHSTOP` | 110 (bit 15 SPRHWRM = 0) |
 | `HTOTAL` | `$0038` |
-| `DMACON` | `$8200` (DMAEN only) |
+| `DMACON` | `$8320` (DMAEN, BPLEN, SPREN) |
+| `SPRxPTH/L`, x = 0-7 (`120`-`13E`) | `$1A0000`, a null sprite |
 
 1. **Run P12-0:** `BEAMCON0 = $0020`. **Run P12-1:** `BEAMCON0 = $0060`
    (DUAL).
 2. In the graded frame the program writes `VMARK(90)` (F3). It then halts the
-   CPU with `STOP` until the next vertical blank, so that the port shows only
-   refresh and UHRES traffic in lines 90-120.
+   CPU with `STOP` until the next vertical blank (F3), so that the port shows
+   only refresh, UHRES and null-sprite traffic in lines 90-120.
 
-If P12-0 shows no access in either region, both runs are repeated with
-`DMACON = $8320` (adds BPLEN and SPREN). The page leaves open which DMACON bits
-"also" are needed (section 4, item 13). In that repeat all eight sprite
-pointers point at a zeroed null sprite at `$1A0000`, whose region is excluded
-from the counts. The report states which DMACON setting was used.
+DMACON sets DMAEN, BPLEN and SPREN together in both runs. p.16 says UHRES
+"also needs bits in DMACON" without naming them, and p.22 names DMAEN ("also
+UHRES dma"); the pages do not say which bits suffice, so the bit-plane and
+sprite enables are set with it (section 4, item 13). BPLCON0 has BPU = 0, so
+BPLEN fetches no bit plane (p.16 "BPUx =Bit plane use code 0000-1000 (NONE
+thru 8 inclusive)"). The eight sprite pointers point at a null sprite at
+`$1A0000`, whose first two words the program sets to zero; its region
+`$1A0000-$1AFFFF` is excluded from the counts. The program rewrites the
+sprite pointers after every frame sync (p.28: "These address registers must
+be initialized by the processor or coprocessor every vertical blank time").
 
 **Observation.**
 
@@ -1165,9 +1369,10 @@ from the counts. The report states which DMACON setting was used.
   These are the lines inside 100-110, with one line of margin at each end for
   the marker's placement.
 - `k(line)`: the number of alternate-counter resets in the line. It is
-  measured in P11's DUAL run as `T_L / T_alt`, where
-  `T_alt = (HTOTAL + 1) / r` and `r` is the HHPOSR count rate per `T_C`. `r`
-  is the slope of the HHPOSR samples against their store times between wraps.
+  `L / T_alt`, both in CCK: `L` is the length of that port line (F3), and
+  `T_alt = (HTOTAL + 1) / r` is measured in P11's DUAL run, where `r` is the
+  HHPOSR count per `T_C`, the slope of the HHPOSR samples against their
+  store times between wraps.
 
 **Expected.**
 
@@ -1188,12 +1393,14 @@ time it comes out" (BPLHPT), and with DUAL these differ (section 4, item 14).
 
 1. **UHRES DMA exists,** so that P12-0 shows its one-per-line pattern.
    Contrast: `BPLCON0 = $0000`, which shows no access in either region (p.16).
-2. **Bandwidth is left.** All DMA other than UHRES is off (and the null sprite
-   in the fallback), and the CPU is stopped. Contrast: none. The page
-   conditions the claim on free bandwidth, and this setup provides the
-   maximum.
-3. **The alternate counter wraps at least twice per main line,** so `k >= 2`
-   (P11 precondition 1). Contrast: `HTOTAL = $00E2` makes `k` fall. The page
+2. **Bandwidth is left.** No bit plane is fetched (BPU = 0), the sprites
+   fetch only the null sprite, all other DMA is off, and the CPU is stopped.
+   Contrast: none. The page conditions the claim on free bandwidth, and this
+   setup leaves as much as the enables above allow.
+3. **The alternate counter wraps at least twice per main line,** so `k >= 2`:
+   in P11's DUAL run, HHPOSR decreases at least twice within every main line.
+   Here this is a precondition and not the clause under test, which is the
+   UHRES chain. Contrast: `HTOTAL = $00E2` makes `k` fall. The page
    then predicts fewer appearances; `k` and the count must move together.
 4. **F3 anchor**, and `VMARK(90)` lies in the port line the test calls 90.
    The marker is written within a few CCK of the line start because the poll
@@ -1248,13 +1455,23 @@ Frame A: the F4 sample loop over a full frame, storing VPOSR (for LOL) with
 - **P13-0 (the contrast):**
   - port lines alternate between 227 and 228 CCK;
   - LOL alternates between consecutive sampled lines;
-  - there are exactly as many 228-CCK port lines in frame B as LOL = 1 lines
-    in frame A, with a tolerance of 1.
+  - there are as many 228-CCK port lines in frame B as LOL = 1 lines in
+    frame A, to within 1. The 1 is the quantisation of the count, not a page
+    value: frames A and B are different frames, a frame has
+    `VTOTAL + 1 = 313` lines (p.29 "there's this many + 1 in a field"), an
+    odd number, so alternating lines give a frame 156 or 157 long lines
+    according to which kind it starts with, and the page does not fix which.
 
 **Preconditions,** each with its contrasting case:
 
 1. **Variable-beam mode is in effect:** line length follows HTOTAL. Contrast:
-   `HTOTAL = $00C0` in P13-1 gives `L = 193` on every line.
+   `HTOTAL = $00C0` in P13-1. p.24 counts both settings from HTOTAL ("this
+   many + 1", "this many + 2"), so every port line of frame B is shorter by
+   `$E2 - $C0 = 34` CCK than with `HTOTAL = $00E2` (shortest line against
+   shortest, longest against longest). The precondition is this difference,
+   not an absolute length: the absolute length is what P13 grades, and an
+   implementation that got it wrong has to be red there, not fail a
+   precondition.
 2. **LOLDIS = 0,** so that only PAL can suppress the toggle. Contrast:
    P13-0 with LOLDIS set (`$0880`) shows no alternation. p.12: "LOLDIS=
    Disable long line/short line toggle".
@@ -1375,9 +1592,14 @@ the PAL = 0 (NTSC) decodes.
    increment and modulo)" but never states the increment's size. P4 and P5
    measure it (F2); HRM p.172 gives one word.
 10. **Copper access to registers.** COPCON on p.19-20 says CDANG "Allows
-    coprocessor access to all RGA registers if true", which includes `000-03E`.
-    HRM p.26 says the Copper can never write `$00-$3E`. P7 uses only `048-066`,
-    where both agree.
+    coprocessor access to all RGA registers if true. (if 0, access to
+    RGA>7E)", which includes `000-03E`, and "(on old chips- access to only
+    RGA>3E if CDANG=1)". HRM p.26 says CDANG "protects all registers numbered
+    between $40 and $7E inclusive. This range includes the blitter control
+    registers. When CDANG is 0, these registers cannot be written by the
+    Copper. When CDANG is 1, these registers can be written by the Copper."
+    HRM p.26 speaks of `$40-$7E` only. P7 uses only `048-066`, inside that
+    range, where both agree.
 11. **HSSTRT's description.** HSSTRT's alphabetical entry (p.24) repeats
     HSSTOP's description, "Horiz line position for HSYNC stop". The line below
     it says "Sets # of color clocks for sync start". The address list (p.10)
@@ -1387,7 +1609,8 @@ the PAL = 0 (NTSC) decodes.
     (HTOTAL+2), not for PAL in normal mode.
 13. **DMA enables for UHRES.** p.16 "(also needs bits in DMACON)" and p.22
     "DMAEN ... (also UHRES dma)" do not settle which DMACON bits UHRES needs.
-    P12 tries DMAEN alone first and reports the setting used.
+    P12 sets DMAEN, BPLEN and SPREN together, with no bit plane selected and
+    the sprites on a null sprite.
 14. **UHRES modulo.** p.15 says BPLHMOD is "added to the UHRES bit plane
     pointer ... every line, and then another 2 is added". Three lines later it
     says "Its modulo is added every time it comes out". With DUAL the pointer
@@ -1395,17 +1618,37 @@ the PAL = 0 (NTSC) decodes.
     not addresses. p.15 also prints "SHRHDAT" where SPRHDAT is meant.
 15. **Composite blank.** The pages do not define the composite blank's
     horizontal part or polarity (P9 (b) grades only its dependence on VBSTRT).
-16. **Pages not seen as images.** `tools/show_page.py` renders only the
-    Hardware Reference Manual's PDF, and no PDF of the AA specification is
-    among the readable references. The AA pages' lines that rest on a single
-    reading, including all of the Blitter pointer and modulo prose on p.13 and
-    the LPENDIS and DUAL paragraphs on p.12, could therefore not be compared
-    with the printed page. In substance, the HRM corroborates:
-    - the Blitter prose: HRM p.270 has the same text with "18-bit" for
-      "20 bit";
-    - LPENDIS: HRM p.305 has "Ignore latched pen value on vertical pos read".
-
-    Nothing corroborates the DUAL paragraph.
+16. **Lines compared with the printed page.** Several lines this document
+    relies on rest on a single reading of the corpus (`[1/3]` in
+    `pNN.provenance.tsv`). The band images of the printed pages
+    (`docs/references/amiga-aa-1991/bands/`) show the following lines word
+    for word as the corpus gives them:
+    - p.13: the BLTxPTH/BLTxPTL and BLTxMOD rows and all of their prose, the
+      end of the PAL paragraph ("ends up short line"), and the VARCSYEN
+      paragraph with its parenthesis never closed (item 6)
+      (`p13_band1.png`, `p13_band2.png`);
+    - p.12: the LPENDIS, CSCBEN, VARVSYEN, VARHSYEN, VARBEAMEN, DUAL and PAL
+      paragraphs (`p12_band2.png`, `p12_band3.png`);
+    - p.6: the `+` legend "Low word uses DB1-DB15,High word DB0-DB4", "W=Write,
+      R=Read,", "PTL,PTH=20 bit Pointer" and "Uses 15 bits, plus sign extend"
+      (`p06_band1.png`, `p06_band2.png`);
+    - p.21: "(memory cycles are 280 ns)" (`p21_band1.png`);
+    - p.24: the HTOTAL entry, including "Horiz line has this many + 1 280ns
+      increments" and "Active if VARBEAMEN=1 or DUAL=1", and the INTREQR
+      text (`p24_band3.png`);
+    - p.29: the STRLONG text with "There are 4 refresh time slots", the VBSTRT
+      text, and the VPOSR and VHPOSR bit rows with "RESOLUTION=1/160 OF SCREEN
+      WIDTH (280 NS)" (`p29_band1.png`, `p29_band2.png`).
+17. **Which enable makes the beam comparators operate.** p.12 says VARBEAMEN
+    "Enables the variable beam counter comparators to operate ... on the main
+    horiz counter", and DUAL runs "the horizontal comparators with the
+    alternate horizontal beam counter". p.24 says of HSSTRT and HSSTOP only
+    "See BEAMCON0 for details of when these 2 are active", and of HCENTER
+    "See BEAMCON0 for when it affects chip outputs". The VARHSYEN, VARVSYEN
+    and CSCBEN paragraphs route comparator signals to pins but do not say
+    whether the comparators operate without VARBEAMEN. F5, P9 and P10
+    therefore set VARBEAMEN with every sync enable, and write HTOTAL and
+    VTOTAL, which VARBEAMEN puts in use.
 
 ---
 
@@ -1421,9 +1664,9 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-beamcon0.c10 | P8 |
 | opus:AA-beamcon0.c15 | P9 |
 | opus:AA-beamcon0.c16 | P9 |
-| opus:AA-beamcon0.c18 | P9 (second half); first half not used (section 1) |
+| opus:AA-beamcon0.c18 | not used (section 1) |
 | opus:AA-beamcon0.c19 | P10 |
-| opus:AA-beamcon0.c30 | P11 |
+| opus:AA-beamcon0.c30 | not used (section 1) |
 | opus:AA-beamcon0.c31 | P12 |
 | opus:AA-beamcon0.c32 | P12 |
 | opus:AA-beamcon0.c35 | P14 |
@@ -1432,7 +1675,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-beamcon0.c8 | P8 |
 | opus:AA-beamcon0.c9 | P8 |
 | opus:AA-bltxmod.c1 | P1 |
-| opus:AA-bltxmod.c2 | P1 |
+| opus:AA-bltxmod.c2 | not used (section 1) |
 | opus:AA-bltxmod.c3 | not used (section 1) |
 | opus:AA-bltxmod.c4 | P7 |
 | opus:AA-bltxmod.c5 | P1 |
@@ -1441,7 +1684,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-bltxpth.c1 | P1 |
 | opus:AA-bltxpth.c10 | P3 |
 | opus:AA-bltxpth.c11 | P4 |
-| opus:AA-bltxpth.c2 | P1 |
+| opus:AA-bltxpth.c2 | not used (section 1) |
 | opus:AA-bltxpth.c3 | not used (section 1) |
 | opus:AA-bltxpth.c4 | not used (section 1) |
 | opus:AA-bltxpth.c5 | P2 |
@@ -1450,7 +1693,7 @@ the PAL = 0 (NTSC) decodes.
 | opus:AA-bltxpth.c8 | P2 |
 | opus:AA-bltxpth.c9 | P1 |
 | opus:AA-bltxptl.c1 | P1 |
-| opus:AA-bltxptl.c2 | P1 |
+| opus:AA-bltxptl.c2 | not used (section 1) |
 | opus:AA-bltxptl.c3 | not used (section 1) |
 | opus:AA-bltxptl.c4 | P2 |
 | opus:AA-bltxptl.c5 | P7 |
@@ -1465,7 +1708,7 @@ the PAL = 0 (NTSC) decodes.
 | sol:AA-beamcon0.c33 | P9 |
 | sol:AA-beamcon0.c34 | P9 |
 | sol:AA-beamcon0.c35 | P10 |
-| sol:AA-beamcon0.c47 | P11 |
+| sol:AA-beamcon0.c47 | not used (section 1) |
 | sol:AA-beamcon0.c48 | P12 |
 | sol:AA-beamcon0.c49 | P12 |
 | sol:AA-beamcon0.c50 | not used (section 1) |
