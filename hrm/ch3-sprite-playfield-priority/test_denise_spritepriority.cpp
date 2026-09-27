@@ -20,7 +20,7 @@
 //   which named field, that each field is a live, individually-significant
 //   element of the priority code, and that each field's effect is confined
 //   to its own playfield -- all directly quoted. Also NOT asserted,
-//   deliberately, after review (see "COORDINATOR REVIEW" below): that a
+//   deliberately (see "WHY SOME CONTEXT, NOT EVERY CONTEXT" below): that a
 //   bit's significance holds in EVERY context. The claims name a bit and its
 //   field; they do not claim the bit is observable under every setting of
 //   its group's other two bits.
@@ -30,52 +30,35 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// NEW CLAIMS -- SPECIFICATION ONLY, FROM QUOTATIONS ALONE (this package's
-// full claims file, with its routing and evidence, and the RTL, are not yet
-// open when this paragraph is written -- see ORDER OF WORK below for why
-// that order matters). This one proposition is added to this package's
-// specification from ch3-sprite-playfield-priority-spec-stage's own
-// quote/restatement/page fields alone; it is resolved into an assertion, a
-// note, or a decline only in the commit that follows, once the full claims
-// file and the RTL are open:
+// ROUTED CLAIM -- one proposition routed to this package from
+// ch3-sprite-playfield-priority-spec-stage's own quote/restatement/page
+// fields (see ONE ROUTED CLAIM below):
 //
 //  * 3-adv.c01 (p.86, text): "Playfields share the display with sprites."
 //    Playfields share the display with sprites.
 //
 // BOUNDARY (from the classifier's own evidence field, carried into every
-// claim record -- see "ORDER OF WORK" below): denise_spritepriority.v:5-11
+// claim record): denise_spritepriority.v:5-11
 // module header -- input [5:0] bplcon2, input [2:1] nplayfield, input
 // [7:0] nsprite, output reg sprsel. Purely combinational at this boundary:
 // no clock port is named in the evidence for any of the 18 claims.
 //
-// ORDER OF WORK -- DEVIATION DISCLOSED, NOT PAPERED OVER: this agent
-// opened denise_spritepriority.v once during initial repository
-// reconnaissance (in the same tool batch as checking `git status` and
-// looking for an existing Makefile to copy), before any line of this
-// file's assertions was drafted. That is a real breach of the intended
-// "quotations first, RTL after commit" gate, and it is recorded here
-// rather than hidden. What it did and did not change: the boundary facts
-// above (port names, widths, combinational-only) were already disclosed by
-// the classifier's own evidence field in claims.jsonl and by PACKAGE.md
-// before that viewing happened, so nothing there was learned early. What
-// WAS seen early: the module's internal priority-encoder and comparison
-// logic (how nsprite's eight bits reduce to a code and how that code is
-// compared against bplcon2). No assertion below uses that logic as an
-// oracle -- none of the 18 claims quotes the code-to-outcome table it
-// implements, so every expected value below is instead a structural
-// property directly stated by a claim's own quotation (a specific bit
-// names a specific field; a field is individually significant; a field's
-// effect is confined to its own playfield) and is checked exhaustively /
-// existentially rather than against a specific hand-picked numeric
-// prediction, so the early viewing had nothing implementation-specific to
-// leak into. The nplayfield Verilator bit-packing convention used below
+// EXPECTED VALUES: none of the 18 claims quotes the code-to-outcome table
+// the module's priority encoder implements (how nsprite's eight bits
+// reduce to a code and how that code is compared against bplcon2), so no
+// assertion below uses that logic as an oracle. Every expected value below
+// is a structural property directly stated by a claim's own quotation (a
+// specific bit names a specific field; a field is individually
+// significant; a field's effect is confined to its own playfield), checked
+// exhaustively / existentially rather than against a hand-picked numeric
+// prediction. The nplayfield Verilator bit-packing convention used below
 // (PF1_ON = 0x01, PF2_ON = 0x02 for `input [2:1] nplayfield`) is
 // Verilator's own documented, tool-level behaviour for a non-zero-based
 // range -- flattened to a contiguous LSB-based scalar regardless of the
-// range's own numbering -- and is reused, as already recorded, from
-// hrm/denise_spritepriority/test_denise_spritepriority.cpp's own
-// already-committed, already-built harness for this SAME module; it is
-// tool plumbing, not a claim from this package's own 19-record inventory.
+// range's own numbering -- the same as in
+// hrm/denise_spritepriority/test_denise_spritepriority.cpp's harness for
+// this SAME module; it is tool plumbing, not a claim from this package's
+// own 19-record inventory.
 //
 // CLAIM COVERAGE: all 19 records of claims.jsonl are accounted for below,
 // each inside an expect() assertion string. Where two readers (opus and
@@ -94,38 +77,29 @@
 // itself does not assert and that the assertion above therefore does not
 // test either.
 //
-// ONE CLAIM ADDED (3-adv.c01 -- see NEW CLAIMS above): routed here from the
-// full claims file (routing.route, not classify.package, which named a
+// ONE ROUTED CLAIM (3-adv.c01 -- see ROUTED CLAIM above): routed here from
+// the full claims file (routing.route, not classify.package, which names a
 // sibling package) with the reasoning that driving nplayfield and nsprite
 // at this boundary shows playfield and sprite data sharing the one sprsel
-// output. Needed a genuinely new measurement -- none of the 18 existing
-// assertions establishes it, so none gained the id -- added as
-// PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT with its own mutation and
-// revert. Not declined.
+// output. None of the other assertions establishes it; it has its own,
+// PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT, with its own mutation. Not
+// declined.
 //
-// COORDINATOR REVIEW, 10.09.2026 (after the build below, before this
-// commit): the first committed build measured BIT0-IS-PF1P0,
-// BIT1-IS-PF1P1, BIT3-IS-PF2P0 and BIT4-IS-PF2P1 red against a "toggling
-// this bit changes sprsel in every one of the four possible settings of
-// the other two bits" property. The coordinator reviewed the encoder
-// analysis (confirmed correct) and the claims (A-bpc.b0N.c2 / A-bplcon.cXX
-// restate the appendix table row as "bit N of BPLCON2 is field PFxPy" --
-// a bit-naming claim, not a claim that the bit is observable in every
-// context) and asked that the four assertions be weakened to what the
-// claims actually state -- significance shown by at least one context --
-// with the every-context finding moved to a MEASURED record instead of an
-// assertion, since a red on this correct, intentional behaviour is exactly
-// the defect class ("a red on correct behaviour... moves attention onto
-// the RTL and leaves any real deviation green behind it") the playbook
-// warns is actively harmful. Agreed and applied below:
-// bit_significant_in_some_context() (existential) replaces
-// bit_significant_in_every_context() (universal) for BIT0/1/3/4 only;
-// BIT2-IS-PF1P2 and BIT5-IS-PF2P2 are unchanged (already green, already
-// the correct property -- their four contexts all show a difference, so
-// "for all" and "there exists" coincide for them). The every-context
-// gap itself is not deleted -- it is real, and it is worth keeping -- it
-// is recorded via checks.note() immediately after the six BITn assertions
-// instead of via checks.expect().
+// WHY SOME CONTEXT, NOT EVERY CONTEXT: A-bpc.b0N.c2 / A-bplcon.cXX restate
+// the appendix table row as "bit N of BPLCON2 is field PFxPy" -- a
+// bit-naming claim, not a claim that the bit is observable in every
+// context (every setting of its group's other two bits). BIT0-IS-PF1P0,
+// BIT1-IS-PF1P1, BIT3-IS-PF2P0 and BIT4-IS-PF2P1 therefore use
+// bit_significant_in_some_context() (existential): under a "toggling this
+// bit changes sprsel in every one of the four contexts" property they
+// would read red on correct, intentional encoder behaviour (see ENCODER
+// AND STIMULUS below), and a red on correct behaviour moves attention
+// onto the RTL and leaves any real deviation green behind it.
+// BIT2-IS-PF1P2 and BIT5-IS-PF2P2 use bit_significant_in_every_context():
+// their four contexts all show a difference, so "for all" and "there
+// exists" coincide for them. The every-context gap is real and is recorded
+// via checks.note() immediately after the six BITn assertions instead of
+// via checks.expect().
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page -- a fixture/plumbing
 // check, not a manual claim) is the control every page-cited assertion
@@ -133,23 +107,15 @@
 // sprsel basis: it proves sprsel is a live, responsive signal before any
 // BPLCON2-based claim depends on reading it.
 //
-// RTL OPENED, BUILT AND RUN, 10.09.2026 (all after the spec-only commit
-// above). First build under WSL/Verilator, with the loop as originally
-// committed (both playfields enabled while sweeping each 3-bit-group bit):
-// 4 passed, 6 failed -- all six BITn-IS-PFxPy checks red. Investigation
-// showed this was a bug in the STIMULUS, not a finding: with the other
-// playfield also enabled and its own priority code pinned at 0, that
-// playfield's sprite-versus-playfield branch is unconditionally true, so
-// its "else if" arm in denise_spritepriority.v's final always block
-// (ll.43-53) wins outright and masks every one of the six bits
-// identically -- a saturation trap in the harness, not a manual-vs-RTL
-// conflict. Fixed by isolating each bit's own playfield (PF1_ON for bits
-// 0-2, PF2_ON for bits 3-5), exactly as the two PF1P/PF2P-GOVERNS-...
-// checks already did; see that loop's own comment for the full account.
-// Rebuild after the fix: 6 passed, 4 failed -- BIT0-IS-PF1P0,
-// BIT1-IS-PF1P1, BIT3-IS-PF2P0 and BIT4-IS-PF2P1 red; BIT2-IS-PF1P2 and
-// BIT5-IS-PF2P2 green; all four other assertions green.
-// denise_spritepriority.v's sprite-priority encoder (ll.19-36) only ever
+// ENCODER AND STIMULUS: each bit is swept with only its own playfield
+// enabled (PF1_ON for bits 0-2, PF2_ON for bits 3-5), as the two
+// PF1P/PF2P-GOVERNS-... checks do: with the other playfield also enabled
+// and its own priority code pinned at 0, that playfield's
+// sprite-versus-playfield branch is unconditionally true, so its "else if"
+// arm in denise_spritepriority.v's final always block (ll.43-53) wins
+// outright and masks every one of the six bits identically -- a saturation
+// trap in the harness, not a manual-vs-RTL conflict (see that loop's own
+// comment). denise_spritepriority.v's sprite-priority encoder (ll.19-36) only ever
 // emits raw code values {1,2,3,4,7} -- it never emits 5 or 6. Comparison
 // ll.39-40 (`sprcode[2:0]>bplcon2[2:0]` / `>bplcon2[5:3]`) is a strict,
 // ordinary greater-than against the 3-bit priority field, BUT l.45's
@@ -165,119 +131,58 @@
 // 5, value 4) every one of its four threshold pairs (0,4)/(1,5)/(2,6)/
 // (3,7) has a LOW member under 4, so a reachable, unoverridden code
 // always falls inside, and BIT2/BIT5 read green under either property.
-// (Corrected 11.09.2026 -- see "DEFECT CORRECTION" below: this paragraph
-// originally named only one dead pair per weakened bit and attributed it
-// to the encoder's value range alone; measurement found two dead pairs
-// per bit, caused by the sprcode==7 override, not the range by itself.)
+// Measured on the real DUT (sweeping all 256 nsprite values at each of the
+// four "other two bits" contexts, own playfield only): two dead pairs per
+// existential bit, caused by the sprcode==7 override, not by the
+// encoder's value range alone.
 //
-// COORDINATOR REVIEW (see the header block above for the full account):
-// the four reds were correct behaviour, not a defect, and the property
-// that made them red ("significant in every context") is stronger than
-// what A-bpc.b0N.c2 / A-bplcon.cXX actually state ("bit N is field
-// PFxPy"). Revised per the coordinator's direction: BIT0-IS-PF1P0,
-// BIT1-IS-PF1P1, BIT3-IS-PF2P0 and BIT4-IS-PF2P1 now use
-// bit_significant_in_some_context() (existential over the four contexts)
-// instead of bit_significant_in_every_context() (universal); the
-// every-context gap is recorded via two checks.note() MEASURED calls
-// right after the six BITn assertions, naming the same claim ids, instead
-// of being asserted. BIT2-IS-PF1P2 and BIT5-IS-PF2P2 are untouched.
-// Rebuild after the revision: 10 passed, 0 failed, plus the 2 MEASURED
-// notes (which are printed but do not count as pass or fail).
-//
-// MUTATION LOG (12 entries total. The first 10 were actually run by this
-// agent under WSL/Verilator on 10.09.2026 -- 6 before the coordinator
-// review, 4 (BIT0/1/3/4) re-run after it against the revised, now-green
-// assertions -- each by manually editing the call site, rebuilding,
-// confirming the named assertion(s) change colour as described,
-// reverting, rebuilding, confirming baseline, before moving on. On
-// 11.09.2026 (see "DEFECT CORRECTION" below), an independent review found
-// three defects (D1/D2/D3, corrected below) and this log gained two more
-// entries (PF1P/PF2P-DIGITS-BOUND-TO-BIT-WEIGHT, the new D3 assertions)
-// plus real `#ifndef MUT_<NAME>` / `#ifdef MUT_<NAME>` plumbing
-// (`make MUT=<NAME>`, see the Makefile) for the four BIT0/1/3/4 entries
-// and the two new entries -- this file had no MUT_ guards at all before.
-// All six of those were re-run through the plumbing (not just
-// re-described) on 11.09.2026 and confirmed red-alone, then reverted; the
-// six untouched by D1/D2/D3 (FIXTURE-LIVE-DATA-PATH,
-// BPLCON2-BITS-0-5-..., BIT2, BIT5, PF1P/PF2P-GOVERNS-...) were not
-// re-run and keep their original 10.09.2026 numbers below, measured
-// against the then-current 10-assertion file. Every mutation is a
-// STIMULUS change to this file's own inputs (which nsprite/nplayfield/
-// bplcon2 values are fed, which bit index a shared check is asked to
-// test, the mask_override argument that neutralizes one call site's
-// stimulus delta, or -- for the two new entries -- which bit index
-// flips_at_others_zero() actually uses); no expected value, oracle text
-// or comparison logic was ever touched, and nanomig/ was never touched.
-// Final rebuild after the last revert on 11.09.2026: 12 passed, 0 failed,
-// confirmed again immediately before this commit.):
+// MUTATION LOG (13 entries). Each was run under WSL/Verilator: confirm the
+// named assertion(s) change colour as described, revert, rebuild, confirm
+// the baseline, before moving on; the pass/fail totals quoted in an entry
+// are those of the run that recorded it. BIT0/1/3/4, PF1P/PF2P-DIGITS-
+// BOUND-TO-BIT-WEIGHT and PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT replay
+// through `#ifndef MUT_<NAME>` / `#ifdef MUT_<NAME>` guards
+// (`make MUT=<NAME>`, see the Makefile); the other entries are call-site
+// edits. Every mutation is a STIMULUS change to this file's own inputs
+// (which nsprite/nplayfield/bplcon2 values are fed, which bit index a
+// shared check is asked to test, the mask_override argument that
+// neutralizes one call site's stimulus delta, or which bit index
+// flips_at_others_zero() uses); no expected value, oracle text or
+// comparison logic is touched, and nanomig/ is never touched.):
 //
 // MUTATION FIXTURE-LIVE-DATA-PATH stimulus red: the swept nplayfield/nsprite stimulus sets were both shrunk from four points each to a single point (nplayfield={0x00}, nsprite={0x00}) -> FAIL ("9 passed, 1 failed"), only FIXTURE-LIVE-DATA-PATH red (a lone sample point can only ever produce a set of size 1, never 2). Reverted: 10/0.
 // MUTATION BPLCON2-BITS-0-5-ARE-LIVE-PRIORITY-FIELD stimulus red: the swept-bplcon2 loop's fixed nsprite argument changed from 0xFF (all eight sprites active) to 0x00 (no sprite active) -> FAIL ("9 passed, 1 failed"), only BPLCON2-BITS-0-5-ARE-LIVE-PRIORITY-FIELD red (with no sprite active, sprcode is always 7 and the module's own first branch forces sprsel=0 regardless of bplcon2, collapsing the observed set to size 1). Reverted: 10/0.
-// MUTATION BIT0-IS-PF1P0 stimulus red: now wired as `make MUT=BIT0_IS_PF1P0` (guards `#ifndef MUT_BIT0_IS_PF1P0` around the checks.expect() condition, l.386 area), swapping bit_significant_in_some_context(0) for bit_significant_in_some_context(0, 0), forcing mask_override=0 so base and mutant bplcon2 are identical in all four contexts; measured 11 passed, 1 failed, only BIT0-IS-PF1P0 red (no possible difference can ever be found once the fed stimulus never actually differs). Reverted (plain `make`): 12/0.
+// MUTATION BIT0-IS-PF1P0 stimulus red: wired as `make MUT=BIT0_IS_PF1P0` (guards `#ifndef MUT_BIT0_IS_PF1P0` around the checks.expect() condition, l.386 area), swapping bit_significant_in_some_context(0) for bit_significant_in_some_context(0, 0), forcing mask_override=0 so base and mutant bplcon2 are identical in all four contexts; measured 11 passed, 1 failed, only BIT0-IS-PF1P0 red (no possible difference can ever be found once the fed stimulus never actually differs). Reverted (plain `make`): 12/0.
 // MUTATION BIT1-IS-PF1P1 stimulus red: `make MUT=BIT1_IS_PF1P1` (same mask_override=0 neutralization, guarded `#ifndef MUT_BIT1_IS_PF1P1`); measured 11 passed, 1 failed, only BIT1-IS-PF1P1 red. Reverted: 12/0.
-// MUTATION BIT2-IS-PF1P2 stimulus red: the call argument changed from bit_significant_in_every_context(2) to bit_significant_in_every_context(0) -> FAIL ("9 passed, 1 failed" against the 10-assertion file this was first run against), BIT2-IS-PF1P2 flips from its genuine green to red when fed bit 0's stimulus instead of bit 2's. Reverted to bit 2: back to green. Not re-run against the 12-assertion file (unchanged by this correction; no MUT_ guard added since D1/D2/D3 did not touch this assertion).
+// MUTATION BIT2-IS-PF1P2 stimulus red: the call argument changed from bit_significant_in_every_context(2) to bit_significant_in_every_context(0) -> FAIL ("9 passed, 1 failed" in the run that recorded it), BIT2-IS-PF1P2 flips from its genuine green to red when fed bit 0's stimulus instead of bit 2's. Reverted to bit 2: back to green. A call-site edit; this assertion has no MUT_ guard.
 // MUTATION BIT3-IS-PF2P0 stimulus red: `make MUT=BIT3_IS_PF2P0` (same mask_override=0 neutralization, guarded `#ifndef MUT_BIT3_IS_PF2P0`); measured 11 passed, 1 failed, only BIT3-IS-PF2P0 red. Reverted: 12/0.
 // MUTATION BIT4-IS-PF2P1 stimulus red: `make MUT=BIT4_IS_PF2P1` (same mask_override=0 neutralization, guarded `#ifndef MUT_BIT4_IS_PF2P1`); measured 11 passed, 1 failed, only BIT4-IS-PF2P1 red. Reverted: 12/0.
-// MUTATION BIT5-IS-PF2P2 stimulus red: the call argument changed from bit_significant_in_every_context(5) to bit_significant_in_every_context(3) -> FAIL ("9 passed, 1 failed" against the 10-assertion file this was first run against), BIT5-IS-PF2P2 flips from its genuine green to red when fed bit 3's stimulus instead of bit 5's. Reverted to bit 5: back to green. Not re-run against the 12-assertion file (unchanged by this correction; no MUT_ guard added since D1/D2/D3 did not touch this assertion).
+// MUTATION BIT5-IS-PF2P2 stimulus red: the call argument changed from bit_significant_in_every_context(5) to bit_significant_in_every_context(3) -> FAIL ("9 passed, 1 failed" in the run that recorded it), BIT5-IS-PF2P2 flips from its genuine green to red when fed bit 3's stimulus instead of bit 5's. Reverted to bit 5: back to green. A call-site edit; this assertion has no MUT_ guard.
 // MUTATION PF1P-DIGITS-BOUND-TO-BIT-WEIGHT stimulus red: `make MUT=PF1P_DIGITS_BOUND_TO_BIT_WEIGHT` (guarded `#ifdef MUT_PF1P_DIGITS_BOUND_TO_BIT_WEIGHT` inside flips_at_others_zero(), swaps bits 0<->2 on the way into the DUT for the PF1P group only); measured 255 / 240 / 192 instead of 192 / 240 / 255 -- weight 1 saw weight 4's flip count and vice versa -- 11 passed, 1 failed, only PF1P-DIGITS-BOUND-TO-BIT-WEIGHT red; PF2P-DIGITS-BOUND-TO-BIT-WEIGHT stayed green (the guard is scoped to group_start==0 only). Reverted: 12/0.
 // MUTATION PF2P-DIGITS-BOUND-TO-BIT-WEIGHT stimulus red: `make MUT=PF2P_DIGITS_BOUND_TO_BIT_WEIGHT` (guarded `#ifdef MUT_PF2P_DIGITS_BOUND_TO_BIT_WEIGHT` inside flips_at_others_zero(), swaps bits 3<->5 on the way into the DUT for the PF2P group only); measured 255 / 240 / 192 instead of 192 / 240 / 255; 11 passed, 1 failed, only PF2P-DIGITS-BOUND-TO-BIT-WEIGHT red; PF1P-DIGITS-BOUND-TO-BIT-WEIGHT stayed green (the guard is scoped to group_start==3 only). Reverted: 12/0.
 // MUTATION PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P stimulus red: the inner comparison's nplayfield argument changed from PF1_ON to (PF1_ON | PF2_ON), so PF2 is also enabled while PF2P is swept -> FAIL ("9 passed, 1 failed"), only PF1P-GOVERNS-PLAYFIELD1-INDEPENDENT-OF-PF2P red (PF2P now genuinely affects sprsel once PF2 is enabled, breaking the claimed invariance). Reverted: 10/0.
 // MUTATION PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P stimulus red: the inner comparison's nplayfield argument changed from PF2_ON to (PF1_ON | PF2_ON), so PF1 is also enabled while PF1P is swept -> FAIL ("9 passed, 1 failed"), only PF2P-GOVERNS-PLAYFIELD2-INDEPENDENT-OF-PF1P red. Reverted: 10/0.
 // MUTATION PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT stimulus red: `make MUT=PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` (guarded `#ifndef MUT_PLAYFIELD_AND_SPRITE_SHARE_DISPLAY_OUTPUT` around the both_spr_priority h.read() call's bplcon2 argument), forcing it from 0x24 to 0x00 -- the same bplcon2 already used for both_pf_priority, neutralizing the priority-flip stimulus while nplayfield/nsprite stay fixed; measured 12 passed, 1 failed, only PLAYFIELD-AND-SPRITE-SHARE-DISPLAY-OUTPUT red (both_spr_priority now reads the same as both_pf_priority instead of matching sprite_only, so the "which one wins flips with bplcon2 alone" half of the check can no longer be shown). Reverted (plain `make`): 13/0.
 //
-// DEFECT CORRECTION, 11.09.2026 (independent review of the 10.09.2026
-// build above, before this commit) -- three defects, all in this file,
-// none in nanomig/ (nanomig/ was never opened for this correction):
-// D1 (assertions stated a false measured fact): BIT0-IS-PF1P0,
-//   BIT1-IS-PF1P1, BIT3-IS-PF2P0 and BIT4-IS-PF2P1's "concretely: ..."
-//   clauses, both checks.note() records right after the six BITn
-//   assertions, and the "RTL OPENED, BUILT AND RUN" paragraph above all
-//   claimed exactly ONE dead ("no difference") context per weakened bit
-//   (e.g. "only 4->5 does not [differ]"). Measured on the real DUT
-//   (sweeping all 256 nsprite values at each of the four "other two
-//   bits" contexts, own playfield only): there are TWO -- (4,5) AND
-//   (6,7) for the low bit (0/3), (4,6) AND (5,7) for the middle bit
-//   (1/4) -- not one; the claimed differing pair 6->7 (resp. 5->7) does
-//   NOT differ. Cause: l.45's `if (sprcode[2:0]==3'd7) sprsel = 1'b0`
-//   overrides pf1front/pf2front outright when sprcode==7, so the
-//   ll.39-40 comparator only ever reaches sprsel for sprcode in
-//   {1,2,3,4}; the earlier analysis reasoned about that comparator alone
-//   and missed the override. All four "concretely" clauses, both notes,
-//   and the RTL-analysis paragraph above are corrected to name both dead
-//   pairs and the override as the cause.
-// D2 (notes were static strings): the two checks.note() calls carried
-//   the every-context gap as C++ string literals -- nothing in the build
-//   evaluated it, so permuted, gutted or absent RTL would have printed
-//   the identical text, which is how D1 went undetected. Both notes now
-//   call context_counts(bit), a small helper that sweeps the DUT right
-//   there in main(), and print the counts it just measured.
-// D3 (existential form is blind to bit weight): BIT0/BIT1/BIT2 (and
-//   BIT3/BIT4/BIT5) differ from each other only in which BPLCON2 bit
-//   they name -- the digit in PF1P0/PF1P1/PF1P2 was untested, so
-//   swapping bits 0<->2 (or 3<->5) on the way into the DUT left all four
-//   weakened assertions green (confirmed: the PF1P/PF2P_DIGITS_BOUND_TO_
-//   BIT_WEIGHT mutations below reproduce exactly that swap and go red).
-//   Measured discriminator: at others=0 (this bit's own playfield only,
-//   the group's other two bits held at 0), the count of the 256 nsprite
-//   values whose sprsel flips is 192 for weight 1, 240 for weight 2, 255
-//   for weight 4 -- distinct, monotone, reproduced identically for both
-//   groups (bits 0/1/2 and bits 3/4/5). Two assertions added, one per
-//   group -- PF1P-DIGITS-BOUND-TO-BIT-WEIGHT and PF2P-DIGITS-BOUND-TO-
-//   BIT-WEIGHT -- each binding its three bits to 192/240/255 in order and
-//   citing the same claim ids the corresponding BITn-IS-PFxPy assertion
-//   already cites for the digit each bit names.
-// Baseline before this correction: 10 passed, 0 failed (confirmed by
-// this agent by running `make` before making any change). Baseline
-// after: 12 passed, 0 failed (10 original assertions, unchanged in
-// substance, plus the 2 new PxP-DIGITS-BOUND-TO-BIT-WEIGHT assertions).
-// All six new-or-changed assertions (BIT0-IS-PF1P0, BIT1-IS-PF1P1,
-// BIT3-IS-PF2P0, BIT4-IS-PF2P1, PF1P-DIGITS-BOUND-TO-BIT-WEIGHT,
-// PF2P-DIGITS-BOUND-TO-BIT-WEIGHT) were mutated via their new MUT_
-// guards, confirmed red alone, and reverted -- see the six MUTATION log
-// lines above for BIT0/1/3/4 and PF1P/PF2P-DIGITS-BOUND-TO-BIT-WEIGHT,
-// all dated in substance 11.09.2026 even though BIT0/1/3/4's underlying
-// stimulus delta (mask_override=0) is unchanged from 10.09.2026 -- only
-// its plumbing (manual edit -> `#ifndef MUT_<NAME>` guard) is new.
+// WHY THE MEASURED NOTES CALL context_counts(): the every-context gap is
+// printed from context_counts(bit), a helper that sweeps the DUT right
+// there in main(), not from a C++ string literal -- a static string would
+// print identically for permuted, gutted or absent RTL.
+//
+// WHY PF1P/PF2P-DIGITS-BOUND-TO-BIT-WEIGHT EXIST: the existential form is
+// blind to bit weight. BIT0/BIT1/BIT2 (and BIT3/BIT4/BIT5) differ from each
+// other only in which BPLCON2 bit they name, so swapping bits 0<->2 (or
+// 3<->5) on the way into the DUT leaves all four existential assertions
+// green (the PF1P/PF2P_DIGITS_BOUND_TO_BIT_WEIGHT mutations above
+// reproduce exactly that swap and go red). Measured discriminator: at
+// others=0 (this bit's own playfield only, the group's other two bits held
+// at 0), the count of the 256 nsprite values whose sprsel flips is 192 for
+// weight 1, 240 for weight 2, 255 for weight 4 -- distinct, monotone,
+// reproduced identically for both groups (bits 0/1/2 and bits 3/4/5).
+// PF1P-DIGITS-BOUND-TO-BIT-WEIGHT and PF2P-DIGITS-BOUND-TO-BIT-WEIGHT each
+// bind their three bits to 192/240/255 in order and cite the same claim ids
+// the corresponding BITn-IS-PFxPy assertion cites for the digit each bit
+// names.
 
 #include <cstdint>
 #include <iostream>
@@ -307,9 +212,9 @@ public:
 
 // input [2:1] nplayfield: Verilator packs a non-zero-based range to a
 // contiguous LSB-based scalar -- bit 0 of the packed value is Verilog
-// index 1 (PF1), bit 1 is Verilog index 2 (PF2). Reused from
-// hrm/denise_spritepriority/test_denise_spritepriority.cpp's already-built
-// harness for this same module; tool plumbing, not a claim.
+// index 1 (PF1), bit 1 is Verilog index 2 (PF2). As in
+// hrm/denise_spritepriority/test_denise_spritepriority.cpp's harness for
+// this same module; tool plumbing, not a claim.
 constexpr uint8_t PF1_ON = 0x01;
 constexpr uint8_t PF2_ON = 0x02;
 
@@ -389,19 +294,16 @@ int main(int argc, char** argv) {
     // than in a shared table elsewhere in the file.
     //
     // ONLY the bit's own playfield is enabled (PF1_ON for bits 0-2, PF2_ON
-    // for bits 3-5) -- an EARLIER draft of this loop enabled both
-    // playfields while holding the OTHER 3-bit group at 0. That was a bug
-    // in the stimulus, not a finding about the RTL: with the other
-    // playfield also enabled and its own priority code pinned at 0, that
-    // playfield's sprite-versus-playfield branch is unconditionally true
-    // (every reachable sprite code is >0) and its "else if" arm in the
-    // module's priority chain wins outright regardless of the field under
-    // test, masking every one of the six bits identically. First build
-    // under that draft: 4 passed, 6 failed, all six BITn-IS-PFxPy checks
-    // red for this reason (see the follow-up commit message for the full
-    // trace). Isolating each bit's own playfield -- exactly as the two
-    // PF1P/PF2P-GOVERNS-...-INDEPENDENT-OF-... checks below already do --
-    // removes the masking and is what is committed here.
+    // for bits 3-5). Enabling both playfields while holding the OTHER
+    // 3-bit group at 0 would be a stimulus bug, not a finding about the
+    // RTL: with the other playfield also enabled and its own priority code
+    // pinned at 0, that playfield's sprite-versus-playfield branch is
+    // unconditionally true (every reachable sprite code is >0) and its
+    // "else if" arm in the module's priority chain wins outright regardless
+    // of the field under test, masking every one of the six bits
+    // identically. Isolating each bit's own playfield -- exactly as the two
+    // PF1P/PF2P-GOVERNS-...-INDEPENDENT-OF-... checks below do -- removes
+    // the masking.
     // MUTATE-HERE(bit-significance): the diff between `others` and
     // `others | bit_mask` below is the only thing a mutation changes; the
     // "does sprsel differ" comparison itself is never touched.
@@ -561,10 +463,10 @@ int main(int argc, char** argv) {
     // for traceability: it is the SAME claim, the note just records an
     // additional, true, measured fact about it that the claim itself does
     // not assert and is therefore not what is tested by the expect() calls
-    // above. D2 fix (see "DEFECT CORRECTION" above the MUTATION LOG): the
-    // counts below come from context_counts() sweeping the DUT right now,
-    // not from a string literal -- a permuted, gutted or absent RTL would
-    // change the printed numbers, not just the prose around them.
+    // above. The counts below come from context_counts() sweeping the DUT
+    // at run time, not from a string literal (see WHY THE MEASURED NOTES
+    // CALL context_counts() in the header) -- a permuted, gutted or absent
+    // RTL would change the printed numbers, not just the prose around them.
     auto context_counts = [&](int bit, int out_counts[4]) {
         int group_start = (bit / 3) * 3;
         int other0 = group_start + ((bit - group_start + 1) % 3);
@@ -633,12 +535,12 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- PF1P-DIGITS-BOUND-TO-BIT-WEIGHT / PF2P-DIGITS-BOUND-TO-BIT-WEIGHT ----------------
-    // D3: BIT0-IS-PF1P0 / BIT1-IS-PF1P1 / BIT2-IS-PF1P2 (and the PF2P
+    // BIT0-IS-PF1P0 / BIT1-IS-PF1P1 / BIT2-IS-PF1P2 (and the PF2P
     // trio) differ from each other ONLY in which digit -- which BPLCON2
     // bit -- each claim names; nothing above tests THAT binding, so
     // swapping which bit is fed for "bit 0" vs "bit 2" on the way into
     // the DUT (a stimulus change, no RTL touched) would leave all four
-    // weakened assertions green. The existing sweep already yields a
+    // existential assertions green. The same sweep yields a
     // discriminator that is distinct per bit and monotone in bit weight:
     // at others=0, the count of the 256 nsprite values whose sprsel flips
     // is 192 for weight 1 (bit 0 / bit 3), 240 for weight 2 (bit 1 / bit
@@ -783,12 +685,12 @@ int main(int argc, char** argv) {
     // SP01 SP23 SP45 SP67" places PF1 before every sprite group, "100 SP01
     // SP23 SP45 SP67 PF1" places it after every sprite group) -- so the
     // two sources are arbitrated onto one shared output, not given one
-    // each. REPAIR (validator ch3-b): the predicate below never hardcodes
+    // each. The predicate below never hardcodes
     // which literal value of sprsel means "playfield" or "sprite" -- that
     // mapping is this module's own internal encoding, stated on no page --
     // only the RELATION between the four readings is asserted; and the
-    // "sprite wins" stimulus is now priority code 100 (bplcon2=0x24, p.210)
-    // rather than code 111 (bplcon2=0x3F), which no page prints.
+    // "sprite wins" stimulus is priority code 100 (bplcon2=0x24, p.210),
+    // not code 111 (bplcon2=0x3F), which no page prints.
     {
         uint8_t playfield_only = h.read(/*bplcon2=*/0x00,
             static_cast<uint8_t>(PF1_ON | PF2_ON), /*nsprite=*/0x00);
