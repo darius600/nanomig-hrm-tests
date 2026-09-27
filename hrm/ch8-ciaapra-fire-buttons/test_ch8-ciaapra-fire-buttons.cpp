@@ -2,7 +2,7 @@
 //   controller-port fire-button bits (6 and 7), against the `ciaa` module
 //   compiled alone. 10 claims, from
 //   work/ch8-s1-build/ch8-ciaapra-fire-buttons.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as 311ea78 before this file was written).
+//   SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.232 ("Port 1
 //   uses bit 6 and port 2 uses bit 7. A logic state of 1 means 'switch
@@ -13,13 +13,12 @@
 //   needs to elaborate it -- cia_int.v, cia_timera.v, cia_timerb.v,
 //   cia_timerd.v -- confirmed by this file's own Makefile SRC list, the
 //   only place a module could be added. That elaboration pattern (which
-//   files, in which order) was read from hrm/ch8-ciaa-port-direction's
-//   Makefile, per the build brief. This file's own harness/mutation
-//   boilerplate (the Checks class, the MUTATE env-var convention, the
-//   summary-line format) was read from
+//   files, in which order) is hrm/ch8-ciaa-port-direction's Makefile's.
+//   This file's own harness/mutation boilerplate (the Checks class, the
+//   MUTATE env-var convention, the summary-line format) follows
 //   hrm/ch8-appb-chip-column-paula/test_paula.cpp, an unrelated fixture
-//   (paula, not ciaa), to match this suite's existing convention -- no
-//   ciaa-specific fact came from that file.
+//   (paula, not ciaa), this suite's existing convention -- no
+//   ciaa-specific fact comes from that file.
 // Non-goals: anything outside the `ciaa` fixture this package builds, and
 //   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
@@ -31,8 +30,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL FACT USED THROUGHOUT (ciaa.v, read after SPECIFICATION.md was
-//   committed): the address decoder gives CIAAPRA at rs=4'h0 (ciaa.v:136,
+// RTL FACT USED THROUGHOUT (ciaa.v): the address decoder gives CIAAPRA at rs=4'h0 (ciaa.v:136,
 //   "pra = enable && rs==4'h0"). Reading it combinationally drives
 //   pa_out[7:0] = {porta_in2[7:2], porta_out[1:0]} (ciaa.v:253-254), where
 //   porta_in2[7:2] is porta_in[7:2] synchronized one clk7_en period earlier
@@ -40,54 +38,43 @@
 //   completely unmodified and ungated by DDRA -- there is no inverter and
 //   no coupling between bit 6 and bit 7 anywhere in this path.
 //
-// REPAIR (2026-09-15, this file). An independent validation
-//   (2026-09-15_ch8_s1_sol_validation_B.md, finding 9) found two defects,
-//   fixed below, and the fix was checked against the printed pages
-//   (docs/references/amiga-hrm-3rd/ch8/p232.txt, p233.txt) rather than
-//   taken on the validator's word:
+// WHAT IS GRADED AND WHAT IS DECLINED. All 10 claims in this package are
+//   declined via record(), each naming the specific fact this ciaa-alone
+//   fixture cannot supply (switch-to-pin wiring, or the disputed numeral).
+//   What is graded is fixture liveness (A0) and the raw CIA port
+//   pass-through / bit-independence facts (PROP-BIT6/7-PASSTHROUGH,
+//   PROP-BIT6/7-INDEPENDENT-OF-*), all uid-free:
 //
-//   (1) A1-A4 (now removed) drove porta_in[6]/[7] directly to the value
-//   their own expect() then checked, and labelled the pass-through result
-//   "switch open" / "switch closed" under opus:8-mbtn.c7/.c8 and
-//   sol:8-button.c6/.c7. That is only fact (i) of DECLINED BY MODULE
-//   BOUNDARY's own two-fact chain, below -- it cannot show that a
-//   mechanically open/closed switch actually drives the pin to that level
-//   (fact (ii)), the identical fact this file already declines for
-//   opus:8-joy2.c3/sol:8-joy.c19. Grading fact (i) alone under a
-//   switch-labelled uid claimed more than the fixture proves; the same
-//   module boundary cannot be outside the fixture for one claim and inside
-//   it for four others. All four uids are declined below with that
-//   identical boundary reason; the pin-level fact they partially
-//   supported is kept as two uid-free propositions,
-//   PROP-BIT6-PASSTHROUGH and PROP-BIT7-PASSTHROUGH, worded as a pass-
-//   through fact rather than a switch-state claim.
+//   (1) opus:8-mbtn.c7/.c8 and sol:8-button.c6/.c7 name a switch state
+//   ("switch open" / "switch closed"). Driving porta_in[6]/[7] and reading
+//   the bit back shows only fact (i) of DECLINED BY MODULE BOUNDARY's own
+//   two-fact chain, below -- it cannot show that a mechanically
+//   open/closed switch actually drives the pin to that level (fact (ii)),
+//   the identical fact this file declines for opus:8-joy2.c3/sol:8-joy.c19.
+//   Grading fact (i) alone under a switch-labelled uid would claim more
+//   than the fixture proves; the same module boundary cannot be outside
+//   the fixture for one claim and inside it for four others. All four
+//   uids are declined below with that identical boundary reason; the
+//   pin-level fact they partially rest on is graded as two uid-free
+//   propositions, PROP-BIT6-PASSTHROUGH and PROP-BIT7-PASSTHROUGH, worded
+//   as a pass-through fact rather than a switch-state claim.
 //
-//   (2) A5-A8 (now removed) dropped p.233's disputed port numeral from
-//   what they measured but kept the exact uid cited inside the graded
-//   `expect()` label string. The coverage ledger counts a uid ASSERTED
+//   (2) opus:8-joy2.c1/.c2 and sol:8-joy.c17/.c18 each name p.233's
+//   disputed port numeral. The coverage ledger counts a uid ASSERTED
 //   whenever it appears on a graded line, regardless of what the label
-//   says around it, so the numeral half of each claim was recorded as
-//   carried when nothing tested it. Repaired to the shape used by
-//   hrm/ch8-controller-port-io-path for the identical defect on its own
-//   page-232 numeral uids (opus:8-mbtn.c5/.c6, sol:8-button.c4/.c5): I
-//   read that package's test_controller_port_io_path.cpp
-//   (PROP-PORT-LOW6/PROP-PORT-HIGH7 and their adjoining record() calls)
-//   for the shape only, not for any ciaa-specific fact -- this file's own
-//   RTL evidence is unchanged. The undisputed ordering proposition (bit 6
-//   and bit 7 are distinct and non-interacting, whichever numeral either
-//   page attaches) now lives on two uid-free graded lines,
-//   PROP-BIT6-INDEPENDENT-OF-BIT7 and PROP-BIT7-INDEPENDENT-OF-BIT6; the
-//   four numeral uids (opus:8-joy2.c1/.c2, sol:8-joy.c17/.c18) move to
-//   record() lines beside them, naming the p.232-versus-p.233 conflict.
+//   says around it, so carrying these uids on a graded line would record
+//   the numeral half of each claim as carried when nothing tests it. The
+//   undisputed ordering proposition (bit 6 and bit 7 are distinct and
+//   non-interacting, whichever numeral either page attaches) lives on two
+//   uid-free graded lines, PROP-BIT6-INDEPENDENT-OF-BIT7 and
+//   PROP-BIT7-INDEPENDENT-OF-BIT6; the four numeral uids sit on record()
+//   lines beside them, naming the p.232-versus-p.233 conflict. This is
+//   the shape hrm/ch8-controller-port-io-path uses for its own page-232
+//   numeral uids (opus:8-mbtn.c5/.c6, sol:8-button.c4/.c5; its
+//   PROP-PORT-LOW6/PROP-PORT-HIGH7 and their adjoining record() calls) --
+//   the shape only, not any ciaa-specific fact.
 //
-//   Net effect: all 10 claims in this package are now declined via
-//   record(), each naming the specific fact this ciaa-alone fixture
-//   cannot supply (switch-to-pin wiring, or the disputed numeral). What
-//   the validation found sound is what remains graded: fixture liveness
-//   (A0) and the raw CIA port pass-through / bit-independence facts
-//   (PROP-BIT6/7-PASSTHROUGH, PROP-BIT6/7-INDEPENDENT-OF-*), all uid-free.
-//
-// KNOWN CONFLICT 3 (port numbering, carried forward from the build brief).
+// KNOWN CONFLICT 3 (port numbering).
 //   p.233 numbers the controller ports 0 and 1; p.232 and the rest of the
 //   chapter number the same two ports 1 and 2. opus:8-joy2.c1/c2 and
 //   sol:8-joy.c17/c18 each name a specific decimal port label for a
@@ -98,7 +85,7 @@
 //   own porta_in pin, never to the other port's -- on two uid-free graded
 //   lines, and never grades which decimal label attaches to which bit; the
 //   four uids that name a numeral are declined via record(), not kept on
-//   either graded line (see REPAIR above).
+//   either graded line (see above).
 //
 // DECLINED BY MODULE BOUNDARY: opus:8-joy2.c3 / sol:8-joy.c19 ("a 0 in the
 //   fire-button bit means the switch is closed") chain two facts: (i) the
@@ -111,10 +98,9 @@
 //   cannot settle fact (ii), the same kind of boundary argument that
 //   routes CIAAPRA *address* claims to ch8-ciaapra-address-window (a rig
 //   over ciaa+gary). Declined below with record(), not re-measured with a
-//   weaker guess. As of the REPAIR above, this same boundary reason now
-//   also covers opus:8-mbtn.c7/.c8 and sol:8-button.c6/.c7 -- four claims
-//   that chain the identical two facts, just naming "open"/"closed"
-//   instead of restating "closed" alone.
+//   weaker guess. The same boundary reason covers opus:8-mbtn.c7/.c8 and
+//   sol:8-button.c6/.c7 -- four claims that chain the identical two facts,
+//   naming "open"/"closed" instead of restating "closed" alone.
 //
 //   Which package could carry the full opus:8-mbtn.c7/.c8,
 //   sol:8-button.c6/.c7, opus:8-joy2.c3, sol:8-joy.c19 chain: only a rig
@@ -123,19 +109,15 @@
 //   `ciaa` together can supply fact (ii). hrm/ch8-controller-port-io-path
 //   already builds exactly that rig and its own P232-1 assertion
 //   (opus:8-mbtn.c3) already measures the identical open=1/closed=0 fact
-//   these six uids need -- but none of these six uids are in that
-//   package's own claims file (ch8-controller-port-io-path.jsonl), and
-//   adding them there is a change to another package's directory, outside
-//   this repair's scope (this commit is pathspec-scoped to
-//   hrm/ch8-ciaapra-fire-buttons only). Reported, not silently worked
-//   around.
+//   these six uids need -- but none of these six uids is in that
+//   package's own claims file (ch8-controller-port-io-path.jsonl).
 //
 // NOT RE-MEASURED: hrm/ch5-audio-filter-bypass already asserts CIA-A PRA
 //   bit 1 (the LED/audio-filter bit) on this same fixture. Nothing here
 //   names bit 1.
 //
-// UIDS NAMED BUT NOT IN THIS CLAIMS FILE: ch8-ciaa-port-direction's own
-//   build declined opus:8-tbl8-1.c36, sol:8-pin.c40 (p.228 Table 8-1's
+// UIDS NAMED BUT NOT IN THIS CLAIMS FILE: ch8-ciaa-port-direction
+//   declines opus:8-tbl8-1.c36, sol:8-pin.c40 (p.228 Table 8-1's
 //   pin-6 footnote) and opus:8-dio.c42, sol:8-dio.c41 (p.241, fire buttons
 //   configurable as outputs) to this package by name. None of the four
 //   appear in ch8-ciaapra-fire-buttons.jsonl (whose 10 ids are 8-mbtn.c7,
@@ -148,8 +130,8 @@
 //   run (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
 //   assertion). Each mutation changes what the module is ASKED TO DO (a
 //   driven pin level) and leaves the `expect()` call's own expected-value
-//   code untouched. Every one below was run with its own id after the
-//   REPAIR above, confirmed red (each mutation reddens exactly and only
+//   code untouched. Every one below was run with its own id,
+//   confirmed red (each mutation reddens exactly and only
 //   its own assertion), then reverted (MUTATE unset) and confirmed green
 //   again. Baseline with MUTATE unset: 5 passed, 0 failed (A0 plus the
 //   four PROP-* lines; all ten claim uids are record()s, not graded).
@@ -268,7 +250,7 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
-    // build brief's own requirement that the fixture prove it can deliver a
+    // fixture proves it can deliver a
     // known, distinct word before any read-based assertion is trusted.
     // A known 6-bit pattern and its bitwise complement are driven onto
     // porta_in[7:2] and read back at CIAAPRA's own address; the expected
@@ -287,7 +269,7 @@ int main(int argc, char** argv) {
         // IDENTICAL to the first instead of its complement, so the two
         // readings cannot be told apart and the liveness check fails.
         // Expected values untouched. A control that cannot fail proves
-        // nothing, and this one carried no mutation at all.
+        // nothing.
         const uint8_t word2 = mutating("A0") ? word1
                                              : (uint8_t)0b010101;  // complement
 
@@ -313,8 +295,8 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // PROP-BIT6-PASSTHROUGH / PROP-BIT7-PASSTHROUGH -- repairs A1-A4 (see
-    // REPAIR note in the file header). opus:8-mbtn.c7, opus:8-mbtn.c8,
+    // PROP-BIT6-PASSTHROUGH / PROP-BIT7-PASSTHROUGH (see the file header,
+    // item (1)). opus:8-mbtn.c7, opus:8-mbtn.c8,
     // sol:8-button.c6 and sol:8-button.c7 (p.232) each chain two facts: (i)
     // the CIAAPRA bit equals its own porta_in pin, and (ii) a mechanically
     // open/closed switch actually drives that pin to the corresponding
@@ -396,8 +378,8 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // PROP-BIT6-INDEPENDENT-OF-BIT7 / PROP-BIT7-INDEPENDENT-OF-BIT6 --
-    // repairs A5-A8 (see REPAIR note in the file header). p.233's
+    // PROP-BIT6-INDEPENDENT-OF-BIT7 / PROP-BIT7-INDEPENDENT-OF-BIT6 (see
+    // the file header, item (2)). p.233's
     // KNOWN CONFLICT 3: the undisputed core -- bit 6 and bit 7 each track
     // only their own pin, whichever decimal port label either page
     // attaches to them -- is graded on these two uid-free lines. A

@@ -8,10 +8,9 @@ Register under discussion: **CIAAPRA** ($BFE001).
 Fixture: `ciaa`, compiled alone. No other module is part of this package's
 boundary.
 
-This document is written from the claims file's `extract.quote` /
-`extract.page` / `extract.restatement` fields only. No RTL file has been
-opened yet; port names, bit widths and the exact stimulus mechanism are
-deliberately not decided here.
+This document works from the claims file's `extract.quote` /
+`extract.page` / `extract.restatement` fields; port names, bit widths and
+the exact stimulus mechanism are fixed in the test source, from `ciaa.v`.
 
 ## Propositions
 
@@ -51,7 +50,7 @@ and 7 of CIAAPRA ($BFE001). A 0 here indicates the switch is closed."*
 - `sol:8-joy.c18` — "Controller port 1's fire button is connected to CIAAPRA
   bit 7."
 
-**KNOWN CONFLICT 3** (carried forward): printed p.233 numbers the controller
+**KNOWN CONFLICT 3**: printed p.233 numbers the controller
 ports 0 and 1, where p.232 and the rest of the chapter (p.240, and per the
 claims file's own conflict note also pp.234-237) number the very same two
 ports 1 and 2. The page does not agree with itself on which numeral names
@@ -61,10 +60,12 @@ What the two pages do **not** disagree on: there are exactly two ports, each
 reports its fire button on exactly one CIAAPRA bit, and the port named first
 on the page maps to bit 6 while the port named second maps to bit 7 — i.e.
 bit 6 and bit 7 belong to two distinct ports, whichever numerals those ports
-carry. This package grades that undisputed core for all four uids above —
-two independent single-bit reports, one on bit 6 and one on bit 7 — and does
-not grade, for any of them, which decimal label (0, 1 or 2) attaches to
-which bit, since the printed page contradicts itself on that point.
+carry. This package grades that undisputed core on two uid-free lines — two
+independent single-bit reports, one on bit 6 and one on bit 7 — and declines
+all four uids above via `record()`, since each names which decimal label
+(0, 1 or 2) attaches to which bit and the printed page contradicts itself on
+that point. A uid on a graded line counts as asserted whatever the label
+says around it, so none of the four sits on one.
 
 ### P4 — restated at the point of connection: 0 on the fire-button bit means the switch is closed (p.233)
 
@@ -94,50 +95,66 @@ module's boundary" basis. See "Declined claims" below.
 
 ## Declined claims
 
+All ten claims are declined via `record()`:
+
 - `opus:8-joy2.c3`, `sol:8-joy.c19` — P4's full "closed switch -> bit reads
   0" chain needs the controller-port-to-pin wiring, which sits outside
   `ciaa` alone (see scope note above). Declined, not re-measured with a
   weakened restatement.
+- `opus:8-mbtn.c7`, `opus:8-mbtn.c8`, `sol:8-button.c6`, `sol:8-button.c7`
+  (P1, P2) — they name the switch's state ("switch open" / "switch
+  closed"), which chains the same two facts as P4: the bit equals its pin,
+  and a mechanically open/closed switch drives the pin to that level. The
+  same module boundary cannot be outside the fixture for P4 and inside it
+  for these four, so they are declined for the same reason. The pin-level
+  half is graded uid-free as PROP-BIT6-PASSTHROUGH and
+  PROP-BIT7-PASSTHROUGH.
+- `opus:8-joy2.c1`, `opus:8-joy2.c2`, `sol:8-joy.c17`, `sol:8-joy.c18` (P3)
+  — each names a port numeral KNOWN CONFLICT 3 leaves unsettled. The
+  undisputed core is graded uid-free as PROP-BIT6-INDEPENDENT-OF-BIT7 and
+  PROP-BIT7-INDEPENDENT-OF-BIT6.
 
-## Carried forward from `hrm/ch8-ciaa-port-direction` (already built, green, same fixture)
+## Related packages
 
 - `hrm/ch5-audio-filter-bypass` already builds this fixture and already
   asserts CIA-A PRA bit 1 (the LED / audio-filter bit). This package does
   not touch bit 1 and makes no assertion about it.
-- `ch8-ciaa-port-direction` declined `opus:8-tbl8-1.c36`, `sol:8-pin.c40`
+- `ch8-ciaa-port-direction` declines `opus:8-tbl8-1.c36`, `sol:8-pin.c40`
   (p.228 Table 8-1's pin-6 footnote) and `opus:8-dio.c42`, `sol:8-dio.c41`
   (p.241, fire buttons configurable as outputs) to this package by name.
-  None of the four appear in `ch8-ciaapra-fire-buttons.jsonl` (whose 10
+  None of the four appears in `ch8-ciaapra-fire-buttons.jsonl` (whose 10
   claims are `8-mbtn.c7`, `8-mbtn.c8`, `8-button.c6`, `8-button.c7`,
   `8-joy2.c1`, `8-joy2.c2`, `8-joy2.c3`, `8-joy.c17`, `8-joy.c18`,
-  `8-joy.c19`) — they are not this package's to build. Noted rather than
-  invented.
+  `8-joy.c19`) — they are not built here.
 - `ch8-ciaapra-address-window` owns WHERE CIAAPRA answers on the bus; no
   claim in this file asserts an address, so nothing is declined on that
   basis here (see P4's scope note for the analogous boundary argument that
   *is* used here).
 
-## Assertions planned (uid -> verdict), pending the RTL read
+## Verdicts (uid -> verdict)
 
-| uid | page | verdict | what is graded |
+| uid | page | verdict | why |
 |---|---|---|---|
-| `opus:8-mbtn.c7` | 232 | expect | its bit reads 1 when its pin is driven to the manual's "open" level |
-| `opus:8-mbtn.c8` | 232 | expect | its bit reads 0 when its pin is driven to the manual's "closed" level |
-| `sol:8-button.c6` | 232 | expect | twin of `8-mbtn.c7`, graded independently under its own uid |
-| `sol:8-button.c7` | 232 | expect | twin of `8-mbtn.c8`, graded independently under its own uid |
-| `opus:8-joy2.c1` | 233 | expect | bit 6 follows only its own pin, independent of bit 7's pin (undisputed core of P3) |
-| `opus:8-joy2.c2` | 233 | expect | bit 7 follows only its own pin, independent of bit 6's pin (undisputed core of P3) |
-| `sol:8-joy.c17` | 233 | expect | twin of `8-joy2.c1` |
-| `sol:8-joy.c18` | 233 | expect | twin of `8-joy2.c2` |
+| `opus:8-mbtn.c7` | 232 | record (decline) | switch-state claim; pin-level half graded by PROP-BIT6-PASSTHROUGH |
+| `opus:8-mbtn.c8` | 232 | record (decline) | same as `opus:8-mbtn.c7` |
+| `sol:8-button.c6` | 232 | record (decline) | twin of `8-mbtn.c7`, pin-level half graded by PROP-BIT7-PASSTHROUGH |
+| `sol:8-button.c7` | 232 | record (decline) | twin of `8-mbtn.c8` |
+| `opus:8-joy2.c1` | 233 | record (decline) | names "port 0"; bit independence graded by PROP-BIT6-INDEPENDENT-OF-BIT7 |
+| `opus:8-joy2.c2` | 233 | record (decline) | names "port 1"; bit independence graded by PROP-BIT7-INDEPENDENT-OF-BIT6 |
+| `sol:8-joy.c17` | 233 | record (decline) | twin of `8-joy2.c1` |
+| `sol:8-joy.c18` | 233 | record (decline) | twin of `8-joy2.c2` |
 | `opus:8-joy2.c3` | 233 | record (decline) | out of `ciaa`-alone's boundary; see P4 scope note |
 | `sol:8-joy.c19` | 233 | record (decline) | same as `opus:8-joy2.c3` |
 
-Before any of the above are graded, the fixture must be shown to deliver a
-known, distinguishable, non-default word on its input pins and read it back
-correctly — a control case, on the same measurement basis as the claims
+Graded, uid-free: A0 (fixture liveness), PROP-BIT6-PASSTHROUGH,
+PROP-BIT7-PASSTHROUGH, PROP-BIT6-INDEPENDENT-OF-BIT7 and
+PROP-BIT7-INDEPENDENT-OF-BIT6.
+
+Before anything is graded, the fixture is shown (A0) to deliver a known,
+distinguishable, non-default word on its input pins and read it back
+correctly — a control case, on the same measurement basis as the lines
 above, proving the harness's data path is live rather than silently stuck.
 
-Port names, the CIAAPRA register-select encoding, and how many pins `porta`
-actually exposes are unknown at this point and are read from `ciaa.v` (and
-whatever sibling files Verilator needs to elaborate it) only after this
-document is committed.
+Port names, the CIAAPRA register-select encoding (rs=4'h0) and the `porta`
+input pins (`porta_in[7:2]`) are read from `ciaa.v`; see the test source's
+header.
