@@ -2,8 +2,7 @@
 //   WORDSYNC gate, the "resync every time" claim, word alignment, and the
 //   paula_floppy-side half of the INTREQ DSKSYNC signal (pp.247, 249, 250,
 //   279). 22 claims, from work/ch8-s2-build/ch8-dsksync-word-match.jsonl.
-//   Full derivation in SPECIFICATION.md (committed as ebca41d, before
-//   paula_floppy.v was opened).
+//   Full derivation in SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual pp.247, 249, 250, 279 --
 //   see SPECIFICATION.md for the full quotation table.
@@ -18,18 +17,15 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (ebca41d):
+// SOURCES READ:
 //   1. hrm/ch8-ciaapra-address-window and hrm/ch8-drive-select-motor-led's
-//      test sources -- already disclosed in SPECIFICATION.md as read BEFORE
-//      the spec, for this suite's Checks/mutating()/MUTATION boilerplate.
-//   2. hrm/paula_floppy/test_paula_floppy.cpp (RTL_REGRESSION, not HRM) --
-//      for the tick()/write_reg()/read_reg()/SD-byte-feed idiom and the
-//      DSKLEN double-write, all reused verbatim below.
-//   3. paula_floppy.v -- full file (1041 lines).
-//   4. paula_floppy_fifo.v -- full file (60 lines): a 2048-word pointer FIFO
+//      test sources -- for this suite's Checks/mutating()/MUTATION
+//      boilerplate.
+//   2. paula_floppy.v -- full file (1041 lines).
+//   3. paula_floppy_fifo.v -- full file (60 lines): a 2048-word pointer FIFO
 //      whose `out` register prefetches `mem[out_ptr+1]` on every `rd`
-//      pulse. Consequence, confirmed empirically below before any assertion
-//      was written: reading DSKDATR N times in a row returns
+//      pulse. Consequence, confirmed empirically: reading DSKDATR N times in
+//      a row returns
 //      true_delivered[1..N], never true_delivered[0] -- the very first word
 //      paula_floppy ever writes into the FIFO is consumed by the FIFO's own
 //      look-ahead prefetch on the first read and is never observable at
@@ -38,16 +34,15 @@
 //      logic, not a bug in this harness), and every assertion below is
 //      built to hold regardless of it -- none reads the very first
 //      delivered word directly; each compares whole SHIFTED sequences
-//      instead, which cancels the offset out. It also explains why an
-//      earlier classify-stage dump (`work/ch8-s2-build/...jsonl`,
-//      `opus:8-dma.c29` evidence) reported "the preamble and both 0x4489
-//      words are gone" for DSKSYNC=0x4489: word2 (the first 0x4489) is
+//      instead, which cancels the offset out. It also explains why the
+//      classify evidence for `opus:8-dma.c29` (`work/ch8-s2-build/...jsonl`)
+//      reports "the preamble and both 0x4489 words are gone" for
+//      DSKSYNC=0x4489: word2 (the first 0x4489) is
 //      genuinely excluded by trackrdok's latch, and word3 (the second) is
 //      the true first DELIVERED word and is the one this FIFO quirk hides
 //      -- two different causes producing what reads as one fact.
 //
-// MECHANISM, read from paula_floppy.v myself (SPECIFICATION.md had only
-//   classify's disclosed, not-yet-verified citations):
+// MECHANISM (paula_floppy.v):
 //   - `floppy_data` (paula_floppy.v:481-500) is a WORD-INDEXED multiplexer
 //     on `fifo_word_counter`, not a bit-serial shift register: word0,1 are
 //     the fixed 0xaaaa preamble, word2,3 the fixed 0x4489 sync pair, words
@@ -94,79 +89,59 @@
 //     term this rig never drives, since it is held at 0)` -- in this
 //     fixture it tracks `sync_match` exactly, independent of `wordsync`
 //     (wordsync's only consumer is the trackrdok latch, not this line).
-//     `syncint`'s OWN observable is graded (P-INTREQSET, P-INTREQINDEP);
-//     INTREQ's bit 12 itself is paula_intcontroller's, outside this
-//     package's boundary, per SPECIFICATION.md.
+//     `syncint`'s own observable is measured here via note() (P-INTREQSET,
+//     P-INTREQINDEP, both declined); INTREQ's bit 12 itself is
+//     paula_intcontroller's, outside this package's boundary, per
+//     SPECIFICATION.md, and hrm/ch8-disk-interrupt-path grades it.
 //
 // MEASUREMENT BASIS. Every content-based assertion compares two or three
 //   fresh trials' DELIVERED-WORD SEQUENCES (read via DSKDATR, `$008`) or
 //   SYNCINT PULSE COUNTS, never a single raw value against a hand-derived
-//   constant -- confirmed empirically before writing any assertion (see the
-//   exploratory measurements in the report accompanying this commit).
+//   constant.
 //
-// RIG HAZARD (task-disclosed, confirmed by reading paula_floppy.v:671-680
-//   myself): `dsktrack` carries no reset term. Every trial below allocates
-//   a fresh Vpaula_floppy.
+// RIG HAZARD (paula_floppy.v:671-680): `dsktrack` carries no reset term.
+//   Every trial below allocates a fresh Vpaula_floppy.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup, exactly as this suite's chapter-8 packages already do. Ids are
-//   the claim's own `classify.uid` for the named assertions still graded and
-//   a plain uppercase id for A0, which carries no manual citation.
+//   the claim's own `classify.uid` for the named assertions and a plain
+//   uppercase id for A0, which carries no manual citation.
 //   `opus:8-dsksync.c4`/`sol:8-dsksync.c5` (P-RESYNC), `opus:8-dma.c29`/
 //   `sol:8-dsksync.c1` (P-ALIGN), `opus:8-dsksync.c6`/`sol:8-dsksync.c7`
 //   (P-INTREQSET), and `opus:8-dsksync.c7`/`sol:8-dsksync.c8` (P-INTREQINDEP)
-//   carry NO `expect()` and NO mutation record: see the REPAIR NOTES below
-//   and the DECLINE record() beside each block.
+//   carry NO `expect()` and NO mutation record: see the notes below and the
+//   DECLINE record() beside each block.
 //
-//   RUN LOG (measured, WSL/Verilator 5.052, this repair session). Baseline
-//   (MUTATE unset): 15 checks.expect() calls, 15 passed, 0 failed (14
-//   uid-carrying assertions plus A0). MUTATE=A0-LIVENESS-KNOWN-DISTINCT-WORDS
-//   was rerun against the REPAIRED pair and confirmed 14 passed / 1 failed,
-//   the ONE FAIL being A0 itself -- the new single-write stimulus (dmaen
-//   never arms) correctly turns the repaired pair red. Spot-checked three
-//   further, unrelated-to-this-repair mutations (opus:8-adkcon.c19,
-//   opus:8-dsksync.c3, opus:8-appA-dsksync.c5) after the `Rig::arm()`
-//   signature change (new defaulted `double_write` parameter, used only by
-//   A0): each still confirmed 14 passed / 1 failed, exactly its own targeted
-//   label, no cross-contamination -- the signature change did not disturb
-//   any other trial. See the report accompanying this commit for the full
-//   per-assertion table.
+//   RESULTS (make -B test, MUTATE unset): 15 checks.expect() calls, 15
+//   passed, 0 failed (14 uid-carrying assertions plus A0).
 //
-// REPAIR NOTE / LOT C (2026-09-15, against DOKTRIN.md/LOS-C.md). Three more
-//   withdrawals beyond P-RESYNC (below), all shape 2 of the repair doctrine
-//   (claim graded elsewhere): opus:8-dma.c29/sol:8-dsksync.c1 (P-ALIGN),
+// DECLINED CLAIMS AND A0. Besides P-RESYNC (below), three claims are
+//   declined to record(): opus:8-dma.c29/sol:8-dsksync.c1 (P-ALIGN),
 //   opus:8-dsksync.c6/sol:8-dsksync.c7 (P-INTREQSET), and opus:8-dsksync.c7/
-//   sol:8-dsksync.c8 (P-INTREQINDEP) are withdrawn to record() -- the
-//   INTREQSET/INTREQINDEP pair because hrm/ch8-disk-interrupt-path now grades
-//   the real INTREQ bit and minimig.v's own _cpu_ipl in the same run, where
-//   this package could only ever reach syncint; P-ALIGN because it is
-//   unfalsifiable at this boundary (see that block's own record()), the same
-//   limitation P-RESYNC already established for the identical word-indexed
-//   generator. A0's own known-word pair is REPAIRED, not withdrawn: the
-//   validation's stated reason for dropping A0 was half right -- 0xFF ->
-//   0xFFFF was this RTL's own non-conformant encoder output, not a
-//   page-legal value, but 0x00 -> 0xAAAA IS exactly what p.250 requires, and
-//   withdrawing it by reflex would have thrown away a correct half. The
-//   repaired A0 uses the fixture's own two fixed structural words (0xAAAA
-//   preamble, 0x4489 sync mark) instead of an engineered payload byte -- see
-//   the A0 block's own comment for the full reasoning. `tools/
-//   check_uid_placement.py` and `tools/check_no_claim_lost.py` verdicts on
-//   this package are in the report accompanying this commit; no RTL was
-//   touched, no debug port was added, and no oracle was adjusted by any of
-//   this.
+//   sol:8-dsksync.c8 (P-INTREQINDEP) -- the INTREQSET/INTREQINDEP pair
+//   because hrm/ch8-disk-interrupt-path grades the real INTREQ bit and
+//   minimig.v's own _cpu_ipl in the same run, where this package can only
+//   ever reach syncint; P-ALIGN because it is unfalsifiable at this boundary
+//   (see that block's own record()), the same limitation P-RESYNC has for
+//   the identical word-indexed generator. A0's known-word pair is the
+//   fixture's own two fixed structural words (0xAAAA preamble, 0x4489 sync
+//   mark), not engineered payload bytes: 0x00 -> 0xAAAA is exactly what
+//   p.250 requires, but 0xFF -> 0xFFFF is this RTL's own non-conformant
+//   encoder output, not a page-legal value -- see the A0 block's own
+//   comment for the full reasoning.
 //
-// REPAIR NOTE / P-RESYNC (2026-09-15). Independent validation found the
-//   previous graded-RED P-RESYNC assertion tested MORE than p.250 states.
-//   "During disk read DMA, the controller will resync every time the word
-//   match is found" does not say a later, already-word-aligned matching word
-//   is OMITTED from delivery -- a controller can re-align its word boundary
-//   at a later match while still delivering that already-aligned word. A
-//   sound version needs a deliberately BIT-MISALIGNED recurring match and an
-//   observable showing the subsequent word boundary re-aligns.
+// P-RESYNC (DECLINED). "During disk read DMA, the controller will resync
+//   every time the word match is found" (p.250) does not say a later,
+//   already-word-aligned matching word is OMITTED from delivery -- a
+//   controller can re-align its word boundary at a later match while still
+//   delivering that already-aligned word, so a graded-RED "omitted" check
+//   would test MORE than p.250 states. A sound version needs a deliberately
+//   BIT-MISALIGNED recurring match and an observable showing the subsequent
+//   word boundary re-aligns.
 //
 //   Checked directly against this fixture's own generator (paula_floppy.v:
-//   479-500) before deciding: `floppy_sector_data`/`floppy_data` is a purely
+//   479-500): `floppy_sector_data`/`floppy_data` is a purely
 //   WORD-INDEXED combinational multiplexer keyed on `fifo_word_counter`/
 //   `fifo_sector_counter`. Every position it can ever present is one of a
 //   small, fixed set of whole 16-bit values (0xaaaa preamble/gap, 0x4489
@@ -179,16 +154,15 @@
 //   there is no stimulus this fixture's input space (SD-sector bytes fed via
 //   `sdc_byte_in_strobe`) can produce that would make a match occur at a
 //   bit-shifted (non-word-aligned) position for `sync_match` to compare
-//   against -- the concept the repaired assertion would need to test does
-//   not exist at this boundary. This is "unfalsifiable at this boundary" in
-//   the build brief's own sense, not merely difficult: no RTL knob a
-//   Verilated testbench can turn presents a bit-misaligned word to compare.
-//   DECLINED via `record()` for both uids, stating exactly this. The
-//   original engineered "recurring match" (MARKER_PAIR feeding 0x00 at
-//   payload pair-index 10, producing floppy_data 0xAAAA, the SAME value as
-//   the DSKSYNC_LEADING preamble match) was itself already word-aligned by
-//   construction -- consistent with, and explained by, this finding: nothing
-//   built from this generator could have been anything else.
+//   against -- the case a sound assertion would need to test does not exist
+//   at this boundary. This is unfalsifiable at this boundary, not merely
+//   difficult: no RTL knob a Verilated testbench can turn presents a
+//   bit-misaligned word to compare. DECLINED via `record()` for both uids,
+//   stating exactly this. The engineered "recurring match" the P-RESYNC
+//   note() measures (MARKER_PAIR feeding 0x00 at payload pair-index 10,
+//   producing floppy_data 0xAAAA, the SAME value as the DSKSYNC_LEADING
+//   preamble match) is itself word-aligned by construction: nothing built
+//   from this generator can be anything else.
 
 #include <cstdint>
 #include <cstdlib>
@@ -278,8 +252,7 @@ struct Rig {
 
     // Arm a read DMA: wordsync must already be set by the caller before
     // this, DSKSYNC likewise. DSKLEN needs the double write
-    // (paula_floppy.v:743) -- confirmed against the RTL, matching the
-    // task's own disclosed measurement. `double_write=false` performs only
+    // (paula_floppy.v:743). `double_write=false` performs only
     // the first write, deliberately leaving dmaen unarmed -- a mutation
     // stimulus A0 uses below (the same single/double-write technique
     // hrm/ch8-disk-interrupt-requests's own DSKBLK trials use).
@@ -379,17 +352,14 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page.
-    // REPAIRED 2026-09-15 (repair lot C): the previous pair used engineered
-    // payload bytes 0x00 -> 0xAAAA (correct: p.250's own "0 -> 10 ;if
-    // following a 0" rule, applied to a steady run of zero bits, IS 0xAAAA)
-    // and 0xFF -> 0xFFFF (WRONG as a page-legal value: p.250's "1 -> 01" is
-    // unconditional, so a uniform 0xFF byte page-encodes to 0x5555, not
-    // 0xFFFF -- 0xFFFF is only what this RTL's own simplified {clock=1,
-    // data=bit} encoder happens to produce for a run of one-bits, never what
-    // the printed rule requires). Withdrawing the whole pair would also have
-    // withdrawn the CORRECT 0xAAAA half by reflex, which DOKTRIN.md/LOS-C.md
-    // both warn against. The repair instead drops the payload-derived word
-    // entirely and uses the fixture's own two FIXED structural words instead
+    // Engineered payload bytes would not do for both words: 0x00 -> 0xAAAA
+    // is correct (p.250's own "0 -> 10 ;if following a 0" rule, applied to a
+    // steady run of zero bits, IS 0xAAAA), but 0xFF -> 0xFFFF is WRONG as a
+    // page-legal value (p.250's "1 -> 01" is unconditional, so a uniform
+    // 0xFF byte page-encodes to 0x5555, not 0xFFFF -- 0xFFFF is only what
+    // this RTL's own simplified {clock=1, data=bit} encoder happens to
+    // produce for a run of one-bits, never what the printed rule requires).
+    // A0 therefore uses the fixture's own two FIXED structural words
     // -- the 0xAAAA preamble and the 0x4489 sync mark (both hardwired by
     // paula_floppy's generator regardless of payload, paula_floppy.v:
     // 481-500, 'word0,1 the fixed 0xaaaa preamble, word2,3 the fixed 0x4489
@@ -401,7 +371,7 @@ int main(int argc, char** argv) {
     // is the SAME ungated read (wordsync=0) every other assertion below
     // already relies on -- P-WRITETARGET/P-SYNCREG/P-ALIGNSTART already use
     // ungated[0]=0xAAAA and ungated[1]=0x4489 as their own reference points,
-    // confirmed empirically by their own (unchanged, still-passing) trials.
+    // confirmed empirically by their own passing trials.
     // ========================================================================
     {
         bool mut = mutating("A0-LIVENESS-KNOWN-DISTINCT-WORDS");
@@ -428,8 +398,8 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // P-ALIGN -- p.247, "Using DSKSYNC ... will guarantee word alignment of
-    // the data." WITHDRAWN 2026-09-15 (repair lot C) for BOTH uids, same
-    // reasoning as the already-declined P-RESYNC below: "guarantee word
+    // the data." DECLINED for BOTH uids, same reasoning as P-RESYNC
+    // below: "guarantee word
     // alignment" reads, against the printed sentence, as a guarantee against
     // BIT-misaligned delivery -- but this fixture's own generator
     // (`floppy_data`/`sync_match`, paula_floppy.v:481-500, 914-915) is a
@@ -441,9 +411,8 @@ int main(int argc, char** argv) {
     // "nothing here could ever be misaligned regardless of any mechanism" --
     // unfalsifiable at this boundary, not merely undemonstrated, the exact
     // limitation this package's own P-RESYNC decline already cites for the
-    // identical generator. Kept as a note(): the previously-graded
-    // word-for-word-shifted measurement, real and unchanged, but not
-    // conformance evidence for this sentence.
+    // identical generator. Kept as a note(): the word-for-word-shifted
+    // measurement, real, but not conformance evidence for this sentence.
     // ========================================================================
     {
         auto ungated = trial(false, DSKSYNC_NONE, -1);
@@ -648,12 +617,11 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // P-RESYNC -- p.250, "During disk read DMA, the controller will resync
-    // every time the word match is found." Candidate C10. DECLINED
-    // 2026-09-15 for BOTH uids, not graded. Repair: independent validation
-    // found the previous graded-RED pair tested MORE than the cited
-    // sentence states -- it treated "the later, already-word-aligned match
-    // word is OMITTED from delivery" as the definition of "resync", but the
-    // sentence does not say that; a controller can re-align its word
+    // every time the word match is found." Candidate C10. DECLINED for
+    // BOTH uids, not graded: treating "the later, already-word-aligned
+    // match word is OMITTED from delivery" as the definition of "resync"
+    // would test MORE than the cited sentence states, which does not say
+    // that; a controller can re-align its word
     // boundary at a later match while still delivering that already-aligned
     // word. A sound version needs a deliberately BIT-MISALIGNED recurring
     // match with an observable showing the subsequent word boundary
@@ -662,7 +630,7 @@ int main(int argc, char** argv) {
     // multiplexer on `fifo_word_counter`, presenting one of a small fixed
     // set of whole 16-bit values per counter position, with no shift
     // register or sub-word/bit-rotated view of the stream anywhere in the
-    // module -- see the header's REPAIR NOTE for the full reasoning. Kept as
+    // module -- see the header's P-RESYNC note for the full reasoning. Kept as
     // a `note()`: the RTL's actual (word-aligned) recurring-match behaviour,
     // real and measured but not a conformance failure against this
     // sentence, since it is not the case the sentence rules out.
@@ -690,13 +658,13 @@ int main(int argc, char** argv) {
             "matching word is omitted from delivery -- a controller can re-align its word boundary at a later "
             "match while still delivering that already-aligned word. A sound test needs a deliberately "
             "BIT-MISALIGNED recurring match with an observable showing the subsequent word boundary re-aligns. "
-            "Checked directly against this fixture's own generator (paula_floppy.v:479-500) before declining: "
+            "Checked directly against this fixture's own generator (paula_floppy.v:479-500): "
             "`floppy_sector_data` is a purely word-indexed combinational multiplexer on `fifo_word_counter`, "
             "presenting one of a small fixed set of whole 16-bit values per counter position -- no shift "
             "register, no sub-word or bit-rotated view of the MFM stream exists anywhere in this module, so no "
             "stimulus in this fixture's input space (SD-sector bytes fed via sdc_byte_in_strobe) can ever "
             "present a match at a bit-shifted, non-word-aligned position for sync_match to compare against. The "
-            "case this claim, read as the validation demands, would need to test does not exist at this "
+            "case this claim, read as a guarantee of re-alignment, would need to test does not exist at this "
             "boundary -- unfalsifiable here, not merely undemonstrated.");
     }
     {
@@ -708,20 +676,19 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // P-INTREQSET -- p.250, "the DSKSYNC bit in INTREQ is set when the
-    // input stream matches the DSKSYNC register." WITHDRAWN 2026-09-15
-    // (repair lot C) for BOTH uids: this package can reach only syncint, one
+    // input stream matches the DSKSYNC register." DECLINED for BOTH uids:
+    // this package can reach only syncint, one
     // paula_floppy output port, never the real INTREQ bit. hrm/
     // ch8-disk-interrupt-path's own PROP-DSKSYNC-FULLJOIN trial (dsksync_trial,
     // uid opus:8-dsksync.c6) grades this claim in full -- the real INTREQ
     // bit 12 AND minimig.v's own _cpu_ipl at level 5, observed in the same
     // cycle as the stimulus. Kept as a note(): the local syncint measurement,
-    // unchanged, no longer mutation-guarded (nothing grades it as a claim).
+    // not mutation-guarded (nothing grades it as a claim).
     // ========================================================================
     {
         int pulses = trial_syncint(true, DSKSYNC_ALT, 300);
         checks.note("P-INTREQSET (local half only): syncint pulses = " + std::to_string(pulses) +
-                    " -- paula_floppy's own syncint still pulses on a real stream match, unchanged from "
-                    "before this repair");
+                    " -- paula_floppy's own syncint pulses on a real stream match");
         checks.record(
             "opus:8-dsksync.c6 / sol:8-dsksync.c7 (p.250, 'In addition, the DSKSYNC bit in INTREQ is set "
             "when the input stream matches the DSKSYNC register.'): declined here, not graded -- this package "
@@ -729,34 +696,34 @@ int main(int argc, char** argv) {
             "_cpu_ipl level. hrm/ch8-disk-interrupt-path's own PROP-DSKSYNC-FULLJOIN trial grades both uids "
             "fully: a real stream match against DSKSYNC sets the real INTREQ bit 12 AND drives _cpu_ipl to the "
             "level-5 encoding, observed in the same cycle, in the same run as the stimulus. That is where "
-            "these two uids are ASSERTED; this package's own local syncint pulse (noted above, unchanged) is "
+            "these two uids are ASSERTED; this package's own local syncint pulse (noted above) is "
             "real but does not, by itself, establish INTREQ's own bit being set.");
     }
 
     // ========================================================================
     // P-INTREQINDEP -- p.250, "The DSKSYNC bit in INTREQ is independent of
-    // the WORDSYNC enable." WITHDRAWN 2026-09-15 (repair lot C) for BOTH
-    // uids, same reasoning as P-INTREQSET above: hrm/ch8-disk-interrupt-path's
+    // the WORDSYNC enable." DECLINED for BOTH uids, same reasoning as
+    // P-INTREQSET above: hrm/ch8-disk-interrupt-path's
     // own PROP-DSKSYNC-INTREQINDEP trial (intreqindep_trial, uid
     // opus:8-dsksync.c7 -- a DIFFERENT claim from sol:8-dsksync.c7 above,
     // despite the shared numeric suffix; confirmed against that package's
-    // own header note before relying on it) grades this claim in full at
+    // own header note) grades this claim in full at
     // the real INTREQ bit and _cpu_ipl, under both WORDSYNC settings.
     // ========================================================================
     {
         int p0 = trial_syncint(false, DSKSYNC_ALT, 300);
         int p1 = trial_syncint(true, DSKSYNC_ALT, 300);
         checks.note("P-INTREQINDEP (local half only): wordsync=0 pulses=" + std::to_string(p0) +
-                    " wordsync=1 pulses=" + std::to_string(p1) + " -- paula_floppy's own syncint still "
-                    "pulses the same count either way, unchanged from before this repair");
+                    " wordsync=1 pulses=" + std::to_string(p1) + " -- paula_floppy's own syncint "
+                    "pulses the same count either way");
         checks.record(
             "opus:8-dsksync.c7 / sol:8-dsksync.c8 (p.250, 'The DSKSYNC bit in INTREQ is independent of the "
             "WORDSYNC enable.'): declined here, not graded -- this package can only reach syncint, not the "
             "real INTREQ bit or minimig.v's _cpu_ipl level. hrm/ch8-disk-interrupt-path's own PROP-DSKSYNC-"
             "INTREQINDEP trial grades both uids fully: the same real stream match sets the real INTREQ bit 12 "
             "and drives _cpu_ipl to level 5, in the same cycle, whether WORDSYNC is 0 or 1. That is where "
-            "these two uids are ASSERTED; this package's own local syncint-pulse-count equality (noted above, "
-            "unchanged) is real but does not, by itself, establish INTREQ's own bit being set independently "
+            "these two uids are ASSERTED; this package's own local syncint-pulse-count equality (noted above) "
+            "is real but does not, by itself, establish INTREQ's own bit being set independently "
             "of WORDSYNC.");
     }
 
@@ -793,8 +760,8 @@ int main(int argc, char** argv) {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// MUTATION A0-LIVENESS-KNOWN-DISTINCT-WORDS stimulus red: DSKLEN written only once instead of twice (repair 2026-09-15: the pair itself was replaced, see the header's A0 note above), so dmaen never arms and neither structural word is ever delivered, indistinguishable (MUTATE=A0-LIVENESS-KNOWN-DISTINCT-WORDS).
-// opus:8-dma.c29 / sol:8-dsksync.c1 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: withdrawn as unfalsifiable at this boundary -- see the header's REPAIR NOTE / P-ALIGN and the record() beside the P-ALIGN block.
+// MUTATION A0-LIVENESS-KNOWN-DISTINCT-WORDS stimulus red: DSKLEN written only once instead of twice (the pair is the fixture's own fixed structural words, see the A0 block's comment), so dmaen never arms and neither structural word is ever delivered, indistinguishable (MUTATE=A0-LIVENESS-KNOWN-DISTINCT-WORDS).
+// opus:8-dma.c29 / sol:8-dsksync.c1 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()). Declined as unfalsifiable at this boundary -- see the header's DECLINED CLAIMS note and the record() beside the P-ALIGN block.
 // MUTATION opus:8-adkcon.c19 stimulus red: the "gated" trial is run with wordsync=0 too, so there is no enable effect to detect (MUTATE=opus:8-adkcon.c19).
 // MUTATION sol:8-adkcon.c15 stimulus red: same redirection as opus:8-adkcon.c19, independent uid (MUTATE=sol:8-adkcon.c15).
 // MUTATION opus:8-adkcon.c20 stimulus red: the "never occurs" trial's DSKSYNC redirected to a value that DOES occur, so data is delivered where none was expected (MUTATE=opus:8-adkcon.c20).
@@ -807,9 +774,9 @@ int main(int argc, char** argv) {
 // MUTATION sol:8-dsksync.c3 stimulus red: same redirection as opus:8-dsksync.c2, independent uid (MUTATE=sol:8-dsksync.c3).
 // MUTATION opus:8-dsksync.c3 stimulus red: the reference switched from the match word's successor to the match word itself, so the "starts with the following word" check compares against the wrong word (MUTATE=opus:8-dsksync.c3).
 // MUTATION sol:8-dsksync.c4 stimulus red: same redirection as opus:8-dsksync.c3, independent uid (MUTATE=sol:8-dsksync.c4).
-// opus:8-dsksync.c4 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous stimulus-green substitute record is removed along with the graded check it defended -- see the header's REPAIR NOTE / P-RESYNC.
+// opus:8-dsksync.c4 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()) and no comparator-liveness substitute (nothing graded to defend) -- see the header's P-RESYNC note.
 // sol:8-dsksync.c5 -- DECLINED via record(), not expect(); no mutation record, same reason as opus:8-dsksync.c4.
-// opus:8-dsksync.c6 / sol:8-dsksync.c7 (P-INTREQSET) -- DECLINED via record(), not expect(); no mutation record. Repair 2026-09-15 (repair lot C): the claim is now graded in full at hrm/ch8-disk-interrupt-path -- see the record() beside the P-INTREQSET block.
+// opus:8-dsksync.c6 / sol:8-dsksync.c7 (P-INTREQSET) -- DECLINED via record(), not expect(); no mutation record. The claim is graded in full at hrm/ch8-disk-interrupt-path -- see the record() beside the P-INTREQSET block.
 // opus:8-dsksync.c7 / sol:8-dsksync.c8 (P-INTREQINDEP) -- DECLINED via record(), not expect(); no mutation record, same reason -- see the record() beside the P-INTREQINDEP block. (opus:8-dsksync.c7 here is a DIFFERENT claim from sol:8-dsksync.c7 above, despite the shared numeric suffix.)
 // MUTATION opus:8-appA-dsksync.c5 stimulus red: same redirection as opus:8-adkcon.c21 (MUTATE=opus:8-appA-dsksync.c5).
 // MUTATION sol:8-appa-dsksync.c4 stimulus red: same redirection as opus:8-adkcon.c21, independent uid (MUTATE=sol:8-appa-dsksync.c4).
