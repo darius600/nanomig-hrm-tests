@@ -3,8 +3,7 @@
 //   and register-identity facts pages 266/298/305/309 of the manual assign
 //   to this package. Package ch7-beamcon0-ecs-control-bits, fixture
 //   agnus_beamcounter (one Verilator build, this module only). Built from
-//   SPECIFICATION.md, committed as 5fd1a70 BEFORE this file or the RTL was
-//   opened, per BUILD-BRIEF's two-step order.
+//   SPECIFICATION.md.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 266, 298, 305, 309.
@@ -40,53 +39,49 @@
 // METHODOLOGY -- VARBEAMEN AS THE MASTER ENABLE, NOT A GATING DEFECT: the
 //   manual's own row for bit 7 reads "Variable beam counter comparator
 //   enable" (p.305) -- VARBEAMEN is stated to enable "the variable beam
-//   counter comparator" as a whole, and VARVBEN/VARHSYEN/VARVSYEN/LOLDIS
-//   read naturally as selecting WHICH variable behaviour that comparator
-//   uses once it is enabled. Every assertion below that exercises one of
-//   those four bits does so together with VARBEAMEN, for exactly the
-//   reason spelled out in STEP3-NOTES-ch7-beamcon0-ecs-control-bits.md: an
-//   earlier single-bit sweep of this same register found "LOLDIS alone
-//   changes nothing, VARBEAMEN alone changes nothing, and the two together
-//   kill the long-line toggle outright" and called LOLDIS dead from the
-//   single-bit reading alone. The same RTL shape (an AND with varbeamen)
-//   governs VARVBEN (l.233), VARVSYEN (l.230-231) and VARHSYEN
-//   (l.224-226), so every "this bit selects/enables X" assertion below is
-//   measured on the combination, with the single-bit-alone reading
+//   counter comparator" as a whole, and VARVBEN/VARHSYEN/VARVSYEN read
+//   naturally as selecting WHICH variable behaviour that comparator uses
+//   once it is enabled. The same RTL shape (an AND with varbeamen) governs
+//   VARVBEN (l.233), VARVSYEN (l.230-231) and VARHSYEN (l.224-226), and
+//   measured alone none of those bits moves what its assertion observes
+//   (see the companion notes), so every "this bit
+//   selects/enables X" assertion for them below (P5, P7, P8) is measured on
+//   the combination with VARBEAMEN, with the single-bit-alone reading
 //   reported by note() as the companion that shows why the combination was
 //   necessary -- never asserted as its own manual violation, since the
-//   manual is silent on whether these bits depend on one another (BUILD-
-//   BRIEF: manual silence gets note()/record(), not expect()).
+//   manual is silent on whether these bits depend on one another (manual
+//   silence gets note()/record(), not expect()). LOLDIS is graded alone
+//   (P6): its p.305 row and p.309's STRLONG sentence state its effect with
+//   no further condition; the LOLDIS+VARBEAMEN combination is reported by
+//   note() (P6-COMBINATION-MEASURED).
 //
-// FRESH MODEL PER MEASUREMENT: the same STEP3-NOTES record explains why --
-//   long_line (l.292-300), extra_line (l.356-365), vpos (l.325-336) and
-//   hpos (l.257-274 under VERILATOR) carry no `if (reset)` branch in this
-//   RTL at all; a harness that reused one model instance across
-//   measurements silently carried a previous measurement's state forward
-//   and reported every bit "live", including an unused one. Every
+// FRESH MODEL PER MEASUREMENT: long_line (l.292-300), extra_line
+//   (l.356-365), vpos (l.325-336) and hpos (l.257-274 under VERILATOR)
+//   carry no `if (reset)` branch in this RTL at all, so a harness that
+//   reuses one model instance across measurements silently carries a
+//   previous measurement's state forward and can report every bit "live",
+//   including an unused one. Every
 //   measurement below -- every distinct written-then-observed data point,
 //   not merely every proposition -- constructs its own `Harness` instance.
 //   The INSTRUMENT CHECK below is run first and printed before any
 //   claim-bearing result, confirming this fixture delivers distinct known
 //   words correctly before anything else relies on it.
 //
-// STEP-1 EXPOSURE, ALREADY DISCLOSED IN SPECIFICATION.MD: three RTL
-//   identifiers (`_csync`, `_vsync`, `_hsync`) and a file:line pointer
-//   (agnus_beamcounter.v:123) survived in the spec-stage claims file's own
-//   classify.note fields. That disclosure is not repeated in full here;
-//   see SPECIFICATION.md's "Note on step-1 exposure". No expected value
-//   below was chosen because of that residue -- every expected value here
-//   comes from this file's own, independently reproduced measurement of
-//   the committed spec's testable-form propositions.
+// RTL NAMES IN THE CLAIMS FILE: three RTL identifiers (`_csync`,
+//   `_vsync`, `_hsync`) and a file:line pointer (agnus_beamcounter.v:123)
+//   appear in the spec-stage claims file's own classify.note fields; see
+//   SPECIFICATION.md's "RTL names in the claims file". No expected value
+//   below was chosen because of them -- every expected value here comes
+//   from this file's own measurement of the spec's testable-form
+//   propositions.
 //
-// P1, ADDRESS $1DC -- NOT RE-ASSERTED: SPECIFICATION.md's P1 left open
-//   whether this fixture's address decode belongs to this package or to
-//   hrm/ch3-register-map-agnus-beamcounter's BEAMCON0-ADDRESS-1DC, pending
-//   the port list. reg_address_in IS a real, qualified address port here
-//   (l.74, l.123), so the claim is technically constructible -- but that
-//   package already runs exactly this measurement on this same fixture.
-//   Per the lead's instruction, ownership stays there: P1 is recorded
-//   below, not re-graded, so two packages' records do not disagree with no
-//   way for a reader to tell which was actually looked at. The identical
+// P1, ADDRESS $1DC -- NOT RE-ASSERTED: reg_address_in IS a real, qualified
+//   address port here (l.74, l.123), so the claim is technically
+//   constructible -- but hrm/ch3-register-map-agnus-beamcounter's
+//   BEAMCON0-ADDRESS-1DC already runs exactly this measurement on this
+//   same fixture. Ownership stays there: P1 is recorded below, not
+//   re-graded, so two packages' records do not disagree with no way for a
+//   reader to tell which was actually looked at. The identical
 //   address-qualification technique is reused, ungraded, inside the
 //   INSTRUMENT CHECK, only to justify targeting $1DC in every assertion
 //   after it.
@@ -101,7 +96,7 @@
 //   BEAMCON0-PAL-BIT5 are none of them gated by anything else and are
 //   measured, on the identical fixture and the identical technique, as the
 //   same-basis PASS controls for the OVERRULE assertions
-//   (CSYTRUE/VSYTRUE/HSYTRUE) and for the new VARVBEN assertion -- if a
+//   (CSYTRUE/VSYTRUE/HSYTRUE) and for the VARVBEN assertion -- if a
 //   bit known to be live reads live here (it does, see results), a bit
 //   that reads dead was not made to look that way by a broken harness.
 //
@@ -119,7 +114,7 @@
 
 namespace {
 
-// ---- THE FIXED HARNESS (BUILD-BRIEF, verbatim) --------------------------
+// ---- THE FIXED HARNESS ---------------------------------------------------
 class Checks {
 public:
     void expect(bool condition, const std::string& label) {
@@ -339,8 +334,8 @@ int main(int argc, char** argv) {
     Checks checks;
 
     // ================= INSTRUMENT CHECK (methodological, no page) =================
-    // BUILD-BRIEF: "the fixture proves it can deliver a known word before
-    // anything reads one." Two distinct BEAMCON0 words, each on its own
+    // The fixture proves it can deliver a known word before anything reads
+    // one. Two distinct BEAMCON0 words, each on its own
     // FRESH harness, land distinctly and in the right place; the identical
     // bit pattern written to a neighbouring address ($1C0, HTOTAL) instead
     // of BEAMCON0 ($1DC) moves neither output -- the write path is
@@ -390,7 +385,7 @@ int main(int argc, char** argv) {
         "BEAMCON0-ADDRESS-1DC. Re-running it here would leave two "
         "packages' records answering the same question with no way for a "
         "reader to tell which one was looked at; ownership stays with "
-        "that package, per the lead's instruction.");
+        "that package.");
 
     // ================= P2 -- BEAMCON0 IS WRITE-ONLY =================
     {
@@ -449,8 +444,8 @@ int main(int argc, char** argv) {
         "the ecs=1/ecs=0 varbeamen_out contrast already exercised above at "
         "P3a's neighbour, BEAMCON0-INTRO-AND-VARBEAMEN-GATES-PROGRAMMABLE-"
         "TIMING in hrm/ch3-beam-counters-and-blanking). Reported as "
-        "measured, per SPECIFICATION.md's P3, which left the NEW-vs-"
-        "CHANGED distinction unasserted pending the port list; not "
+        "measured, per SPECIFICATION.md's P3, which leaves the NEW-vs-"
+        "CHANGED distinction unasserted; not "
         "re-graded here since that same ecs-gate measurement is already "
         "that other package's own assertion.");
     checks.record(
@@ -544,8 +539,8 @@ int main(int argc, char** argv) {
                 "at vpos=10 still reads " +
                 std::to_string(varbeamen_alone_still_default ? 1 : 0) +
                 " (also default). The manual's own row does not state "
-                "this two-bit dependency; measured, not asserted, per "
-                "BUILD-BRIEF (manual silence gets note(), not expect()).");
+                "this two-bit dependency; measured, not asserted (manual "
+                "silence gets note(), not expect()).");
     }
 
     // ================= P6 -- LOLDIS (bit 11) =================
@@ -585,10 +580,9 @@ int main(int argc, char** argv) {
             std::string("P6-COMBINATION-MEASURED (control toggles: ") +
             (control_toggles ? "yes" : "no") + "; LOLDIS+VARBEAMEN frozen: " +
             (combo_frozen ? "yes" : "no") + ") -- reported, not graded: no "
-            "printed sentence makes the two-bit combination a proposition. "
-            "This was a graded assertion until stage 8, and grading it meant "
-            "grading what the RTL does against itself. "
-            "under NTSC (pal=0), VPOSR's LOL bit (bit 7) toggles "
+            "printed sentence makes the two-bit combination a proposition, "
+            "and grading it would grade what the RTL does against itself. "
+            "Under NTSC (pal=0), VPOSR's LOL bit (bit 7) toggles "
             "line by line with BEAMCON0=0 (control) but stays frozen with "
             "LOLDIS and VARBEAMEN both set -- 'if (pal || (loldis && "
             "varbeamen)) long_line <= 0; else if (!(loldis && varbeamen)) "
@@ -652,9 +646,8 @@ int main(int argc, char** argv) {
                 "red. The expected value was not touched.");
         }
         checks.note(
-            "companion table for P6, reproducing (independently, fresh "
-            "models per leg) the measurement STEP3-NOTES-ch7-beamcon0-ecs-"
-            "control-bits.md describes: BEAMCON0=0 toggles (the control); "
+            "companion table for P6 (fresh models per leg): BEAMCON0=0 "
+            "toggles (the control); "
             "LOLDIS alone still toggles (" +
                 std::to_string(loldis_alone_still_toggles ? 1 : 0) +
                 "); VARBEAMEN alone still toggles (" +
@@ -662,7 +655,7 @@ int main(int argc, char** argv) {
                 "); only LOLDIS+VARBEAMEN together freeze it. A single-bit "
                 "sweep would have read LOLDIS as dead. The manual's own "
                 "row does not state the VARBEAMEN dependency; measured, "
-                "not asserted, per BUILD-BRIEF.");
+                "not asserted.");
     }
 
     // ================= P7 -- VARVSYEN (bit 9) =================
@@ -848,8 +841,8 @@ int main(int argc, char** argv) {
         // THE ASSERTION GRADES THE MANUAL'S CLAIM, NOT THE RTL: "polarity
         // control for the C sync pin" means toggling this bit must CHANGE
         // the _csync trace. PASS requires the traces to DIFFER; measured
-        // identical traces make this correctly, deliberately RED -- per
-        // BUILD-BRIEF, "if a check disagrees with the RTL, the RTL is what
+        // identical traces make this correctly, deliberately RED -- per the
+        // suite's rule, "if a check disagrees with the RTL, the RTL is what
         // is wrong: a red result is a valid, finished outcome," and
         // flipping the expected value here (grading "identical" as PASS)
         // would be exactly the forbidden move.
@@ -960,19 +953,15 @@ int main(int argc, char** argv) {
     // assertion P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE above is
     // RED, and docs/findings/NM-HRM-033.md is the finding built on it --
     // where all four independent implementations gate long-line on LOLDIS
-    // alone and NanoMig is the only one also requiring VARBEAMEN.
-    //
-    // The note's wording is left exactly as the build wrote it, so the
-    // package's output is unchanged; this comment only says where the
-    // verdict lives.
+    // alone and NanoMig is the only one also requiring VARBEAMEN. This
+    // comment says where the verdict lives.
     checks.note(
         "P6's own measurement bears on this claim too, offered as "
-        "measurement, not verdict, same as the step-3 evidence's own "
-        "framing: LOLDIS's effect on long_line is gated on VARBEAMEN also "
-        "being set (l.295,297, 'loldis && varbeamen'), a dependency page "
-        "305's own LOLDIS row does not state. The manual is silent on "
-        "whether LOLDIS needs any other bit; not asserted as a deviation, "
-        "per BUILD-BRIEF.");
+        "measurement, not verdict: LOLDIS's effect on long_line is gated "
+        "on VARBEAMEN also being set (l.295,297, 'loldis && varbeamen'), a "
+        "dependency page 305's own LOLDIS row does not state. The manual "
+        "is silent on whether LOLDIS needs any other bit; not asserted as "
+        "a deviation.");
 
     // ================= SUMMARY =================
     std::cout << checks.passed << " passed, " << checks.failed << " failed\n";
@@ -1006,7 +995,7 @@ int main(int argc, char** argv) {
 //   3+4+7+4+2+2+2+2+2+6+2+2+2+2 = 42.
 //
 // PER-ASSERTION MUTATION RECORDS (all entries actually run under
-// WSL/Verilator on 13.09.2026: edit -> rebuild -> run -> confirm the named
+// WSL/Verilator: edit -> rebuild -> run -> confirm the named
 // assertion(s) flip -> revert -> rebuild -> confirm the full suite matches
 // the committed baseline exactly (9 passed, 3 failed) -- before moving to
 // the next one). Baseline: 9 passed (INSTRUMENT-CHECK, P2, P4, P5, P6, P7,
@@ -1033,12 +1022,10 @@ int main(int argc, char** argv) {
 // MUTATION P2-BEAMCON0-WRITE-ONLY-READS-AS-CONSTANT-ZERO stimulus red: the readback address changed from A_BEAMCON0 to A_VPOSR -> FAIL (8/4), only this assertion red (VPOSR's own status bits, not 0, fail the beamcon0_read==0 check). Reverted: 9/3.
 // MUTATION P4-BEAMCON0-HARDDIS-BIT14-RAISES-HARDDIS-OUT stimulus red: the write changed from `1 << BC_HARDDIS` to `1 << BC_LOLDIS` -> FAIL (8/4), only this assertion red (harddis_out stays 0, HARDDIS was never actually written). Reverted: 9/3.
 // MUTATION P5-BEAMCON0-VARVBEN-BIT12-WITH-VARBEAMEN-SELECTS-WRITTEN-VBSTOP stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARVBEN)` alone) -> FAIL (8/4), only this assertion red (vbl at vpos=10 stays 1, the written VBSTOP=6 never takes over without VARBEAMEN). Reverted: 9/3.
-// WITHDRAWN AT STAGE 8 -- P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE
-//   is now the measurement P6-COMBINATION-MEASURED, because no printed sentence makes
-//   the two-bit combination a proposition. The run below happened and is kept as
-//   evidence; it is no longer a MUTATION record because it has no assertion to pair
-//   with, and its 9/3 baseline is what the package read AT THE TIME.
-//   (was: MUTATION ... stimulus red) The combo write's VARBEAMEN bit was omitted (`(1<<BC_LOLDIS)` alone) -> FAIL (8/4), only this assertion red (LOL keeps toggling, matching the exact single-bit-sweep mistake STEP3-NOTES describes). Reverted: 9/3.
+// WITHDRAWN AS AN ASSERTION -- P6-BEAMCON0-LOLDIS-BIT11-WITH-VARBEAMEN-FREEZES-LONG-LINE-TOGGLE
+//   is the measurement P6-COMBINATION-MEASURED, because no printed sentence makes the
+//   two-bit combination a proposition. It carries no MUTATION record, having no
+//   assertion to pair with.
 // MUTATION P7-BEAMCON0-VARVSYEN-BIT9-WITH-VARBEAMEN-SELECTS-WRITTEN-VSSTRT stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARVSYEN)` alone) -> FAIL (8/4), only this assertion red (_vsync keeps falling at the hardwired default, vpos==3, not the written 81). Reverted: 9/3.
 // MUTATION P8-BEAMCON0-VARHSYEN-BIT8-WITH-VARBEAMEN-SELECTS-WRITTEN-HSSTRT stimulus red: the combo write's VARBEAMEN bit was omitted (`(1<<BC_VARHSYEN)` alone) -> FAIL (8/4), only this assertion red (_hsync keeps falling near the hardwired default, not the written 200). Reverted: 9/3.
 // MUTATION P9-BEAMCON0-VARBEAMEN-BIT7-ALONE-SELECTS-WRITTEN-HTOTAL stimulus red: the enabling write changed from `1 << BC_VARBEAMEN` to `0` -> FAIL (8/4), only this assertion red (htotal_out stays 452, the written HTOTAL=500 never takes over). Reverted: 9/3.
@@ -1047,29 +1034,18 @@ int main(int argc, char** argv) {
 // MUTATION P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN stimulus green: already red at baseline, same reasoning as P11 -- vsytrue_min/vsytrue_max's comparison substituted VARVSYEN + a written VSSTRT=80 (proven live at P7) for VSYTRUE -> PASS (10/2), only this assertion flipped green. Reverted: 9/3.
 // MUTATION P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN stimulus green: already red at baseline, same reasoning as P11 -- hsytrue_min/hsytrue_max's comparison substituted VARHSYEN + a written HSSTRT=100 (proven live at P8) for HSYTRUE -> PASS (10/2), only this assertion flipped green. Reverted: 9/3.
 //
-// READABILITY FIX, NOT A RE-RUN: tools/check_gates.py reads only the FIRST
-// string literal of an expect() call, and its id pattern requires a
-// whitespace-or-colon character immediately after the id WITHIN THAT SAME
-// LITERAL. P5, P6, P7 and P8's own labels originally split their id across
-// two adjacent literals at a source line-wrap (e.g. "...SELECTS-WRITTEN-" /
-// "VBSTOP: ..."), which made the gate unable to read those four ids at all
-// -- it reported them as opaque expect() calls rather than as a violation,
-// and the package's "all gates passed" therefore did not mean those four
-// assertions had been checked. Moving the wrap to right after the id but
-// BEFORE its colon (`"...WRITTEN-VBSTOP"` / `": at a forced..."`) was tried
-// first and measured to still leave the id unreadable -- the first literal
-// then ends at the id with no trailing separator for the pattern to match,
-// same defect in a new place. The colon was moved to the end of the first
-// literal instead (`"...WRITTEN-VBSTOP: "` / `"at a forced..."`), which
-// keeps it immediately after the id in the same literal and reads clean;
-// checked directly against check_gates.py's own assertion_ids() before
-// rebuilding. No label text, predicate, expected value or stimulus changed
-// -- the printed output byte-for-byte matches the pre-fix run. The four
-// MUTATION records above needed no change: they were already keyed on the
-// full, compiler-seen id.
+// LABEL SHAPE: tools/check_gates.py reads only the FIRST string literal of
+// an expect() call, and its id pattern requires a whitespace-or-colon
+// character immediately after the id WITHIN THAT SAME LITERAL. An id split
+// across two adjacent literals at a source line-wrap, or a first literal
+// that ends at the id with its colon in the next literal, leaves the id
+// unreadable to the gate. So every label below keeps its id and the colon
+// after it together in the first literal (`"...WRITTEN-VBSTOP: "` /
+// `"at a forced..."`).
 //
 // Final rebuild after the last revert: 9 passed, 3 failed, byte-for-byte
-// identical (`diff`) to the file before the mutation sweep began.
-// That was the sweep's baseline, before P6 graded LOLDIS on its own
-// (9a85a64). The package reads 8 passed, 4 failed since: P6 is NM-HRM-033,
-// P11-P13 are NM-HRM-032.
+// identical (`diff`) to the file before the mutation sweep began. That is
+// the baseline the records above quote, in which P6 was graded on the
+// LOLDIS+VARBEAMEN combination and passed. P6 grades LOLDIS alone and the
+// package reads 8 passed, 4 failed: P6 is NM-HRM-033, P11-P13 are
+// NM-HRM-032.

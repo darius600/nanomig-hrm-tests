@@ -6,11 +6,8 @@ plus the other bit-table rows and identity facts the same pages assign to
 this package.
 
 Written from the quotations in `ch7-beamcon0-ecs-control-bits-spec-stage.jsonl`
-alone. No RTL has been opened to produce this document; neither has
-`ch7-beamcon0-ecs-control-bits.jsonl` nor
-`STEP3-NOTES-ch7-beamcon0-ecs-control-bits.md` -- both are step-3 reading.
-Every claim is cited by its `uid` (`<reader>:<id>`), never by the bare `id`,
-per BUILD-BRIEF.
+alone. Every claim is cited by its `uid` (`<reader>:<id>`), never by the
+bare `id`.
 
 The claims file carries 42 entries: 25 from reader `sol`, 17 from reader
 `opus`. Nine of the ten BEAMCON0 bit-table rows this package asserts were
@@ -18,25 +15,21 @@ independently extracted by both readers as twins of the same printed row;
 this specification treats each such pair as one proposition, cited to both
 uids, rather than as two.
 
-## Note on step-1 exposure
+## RTL names in the claims file
 
-This claims file's `classify.note` fields -- though this file has had port
-and signal fields removed for step 1, per the task sheet -- still name three
-RTL identifiers in passing: `_csync`, `_vsync` and `_hsync` (in the notes on
-`sol:7-appC-beamcon0.c15/c16/c17` and their `opus` twins, explaining why an
-earlier package's discard of those bits is being overruled), and a file:line
+The spec-stage claims file has its port and signal fields removed, but its
+`classify.note` fields still name three RTL identifiers in passing:
+`_csync`, `_vsync` and `_hsync` (in the notes on
+`sol:7-appC-beamcon0.c15/c16/c17` and their `opus` twins, explaining why
+another package's discard of those bits is overruled), and a file:line
 pointer, `agnus_beamcounter.v:123`, contrasted with `:110` for VPOSR (in the
 note on `sol:7-appC-map-beamcon0.c2`, explaining the NEW-vs-CHANGED register
-distinction). These were read because they sit inside the one file this
-order names for step 1, not sought out.
+distinction).
 
 No testable form below rests on them. P11-P13's testable form is stated
 from the manual's bit-table quotes alone (bit N controls the polarity of
 sync signal S); P1's and P3's identity facts are stated from the register-map
-and register-detail quotes alone. Whether `_csync`, `_vsync`, `_hsync` are
-in fact this module's port names, and what the NEW/CHANGED distinction
-resolves to, is left for step 3 to confirm against the real port list, not
-assumed here.
+and register-detail quotes alone.
 
 ## Chipset scope
 
@@ -61,17 +54,11 @@ whole package is read as the ECS account.
 > Beam counter control register (SHRES,UHRES,PAL)".
 
 Testable form: a write addressed to custom-chip offset $1DC is the one that
-reaches BEAMCON0, distinguishable from writes to neighbouring offsets.
-Whether the `agnus_beamcounter` fixture exposes a real address bus for this
-check, or only a pre-decoded per-register write strobe (address decoding
-done by a different module -- this claim's own `covered_by` field points to
-`hrm/ch3-register-map-agnus-beamcounter`'s `BEAMCON0-ADDRESS-1DC` on the
-same fixture), is not knowable before the port list is open. If the fixture
-carries the address bus, this is asserted here in step 3; if it only carries
-a pre-decoded strobe, this reduces to a wiring fact recorded here rather
-than a fresh assertion, and the address itself stays that other package's
-job, per BUILD-BRIEF's "wider module boundary" condition applied to one
-claim rather than to the whole package. Decided once RTL is open, not here.
+reaches BEAMCON0, distinguishable from writes to neighbouring offsets. This
+claim's own `covered_by` field points to
+`hrm/ch3-register-map-agnus-beamcounter`'s `BEAMCON0-ADDRESS-1DC`, which
+grades it on the same fixture; this package records P1 rather than grading
+it a second time (see the test source's P1 record).
 
 Cited by: `sol:7-appA-beamcon0.c1` (p.266), `sol:7-appC-map-beamcon0.c1`
 (p.298), `opus:7-appC298.c5` (p.298, same row, independently classified).
@@ -92,7 +79,7 @@ Testable form: reading back through BEAMCON0's register interface does not
 return the pattern last written to its control bits. The precise observable
 (a decoded read that returns a fixed/undefined value, versus no read decode
 existing for this address at all) depends on how this fixture models the
-register bus, and is pinned down once ports are known.
+register bus; the test source pins it down.
 
 Cited by: `sol:7-appA-beamcon0.c2` (p.266), `sol:7-appC-map-beamcon0.c3`
 (p.298), `sol:7-appC-beamcon0.c2` (p.305, direction sub-fact),
@@ -123,8 +110,7 @@ recorded as context rather than asserted.
   difference at all (for instance, a NEW register having nothing
   corresponding to it outside ECS, where a CHANGED one would still respond
   differently) turns on whether this fixture exposes any chipset-mode
-  selector at all -- undecided before the port list is open, so recorded
-  rather than asserted here.
+  selector at all, so it is recorded rather than asserted here.
 - The manual's own inconsistency in BEAMCON0's function-list parenthetical:
   p.266 and p.293 give "(SHRES,PAL)"; p.298 gives "(SHRES,UHRES,PAL)"
   (`opus:7-appA-beam.c13`, which also restates the address/direction/chip/
@@ -168,13 +154,13 @@ window's stop point from a hard-wired default to the value programmed in
 VBSTRT/VBSTOP, disabling the hard window stop; against a baseline with the
 bit clear.
 
-This is, per this claim's own note, the new assertion this package adds for
-this fixture: `hrm/ch3-beam-counters-and-blanking` asserts six other
-BEAMCON0 bits and discards five more without ever reaching bit 12;
+Per this claim's own note, no other package grades bit 12:
+`hrm/ch3-beam-counters-and-blanking` asserts six other BEAMCON0 bits and
+discards five more without ever reaching bit 12;
 `hrm/ch3-register-map-agnus-beamcounter` uses VARVBEN only as a gate to
 reach VBSTOP, asserting nothing about the bit itself. Both halves of this
 printed row are measurable here and neither is claimed anywhere else in the
-suite today.
+suite.
 
 Cited by: `sol:7-appC-beamcon0.c5`, `opus:7-appC-beamcon0.c5`.
 
@@ -267,7 +253,7 @@ composite-sync output, against a known baseline polarity with the bit
 clear.
 
 OVERRULES an existing discard, deliberately. `hrm/ch3-beam-counters-and-blanking`
-discarded this bit on the reasoning that "writing any of these five bits
+discards this bit on the reasoning that "writing any of these five bits
 changes nothing this fixture can observe" -- the design's answer, not the
 manual's. Per this claim's own note, the composite-sync signal is a port of
 this module and the manual states this bit transforms it, so the
@@ -319,15 +305,12 @@ register" (under P4).
 ## Precondition to assert
 
 Two preconditions, neither sourced to a manual quotation -- both are the
-fixture-delivers-a-known-word rule (BUILD-BRIEF) applied to this fixture
-and these claims:
+fixture-delivers-a-known-word rule applied to this fixture and these claims:
 
 1. Before any of P1-P13 is trusted, the fixture must be shown to accept
    distinct, known control-bit patterns into BEAMCON0 and to carry them
-   through to whatever it drives, in order, at the cycle they were written
-   -- the same discipline that caught chapter 6's dead data path (every
-   `data_out` reading zero because the DMA grant was sampled in the same
-   `eval()` as the request). A fixture whose write path is silently dead
+   through to whatever it drives, in order, at the cycle they were written.
+   A fixture whose write path is silently dead
    would report every one of P4-P13's "bit changes behaviour" propositions
    as a false negative rather than a true one.
 2. Before P11, P12 or P13 is trusted, whichever downstream signal serves as
@@ -336,7 +319,7 @@ and these claims:
    otherwise "polarity inverted" cannot be told apart from "output stuck".
    The same applies to P5's VBSTRT/VBSTOP compare path and P10's PAL-timing
    path. Which signal that is, and how it is driven to a known state, is
-   established once the RTL is open in step 3, not here.
+   in the test source.
 
 ## Control case
 
@@ -345,8 +328,8 @@ P4, P6, P7, P8 and P9 (bits 14, 11, 9, 8, 7) and P10's bit-table half (bit
 by `hrm/ch3-beam-counters-and-blanking` on this same fixture. They are this
 package's control cases against the units-error objection: measured here on
 the identical fixture and the identical "toggle the bit, observe the
-effect" technique as P5 (the never-before-tested VARVBEN) and P11-P13 (the
-sync-polarity bits this package deliberately un-discards). If a bit already
+effect" technique as P5 (VARVBEN, graded by no other package) and P11-P13
+(the sync-polarity bits whose discard this package overrules). If a bit already
 known to be live from another package's testing reads live here too, that
 confirms this package's own measurement technique is sound on this fixture
 -- so that a red result on P5 or P11-P13 can be trusted as a finding about
