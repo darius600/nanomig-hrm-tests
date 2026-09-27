@@ -279,8 +279,8 @@ public:
     // NO HIGH-NIBBLE ASSERTION near the top of this file) to color register
     // `idx` (0..31) via reg_address_in/data_in, then parks reg_address_in
     // on an address the write decode does not recognise so the value is
-    // not re-latched on later ticks (mirrors hrm/denise_colortable/'s
-    // harness).
+    // not re-latched on later ticks (as the pre-pipeline
+    // hrm/denise_colortable/ harness did; removed).
     void write_reg(int idx, uint32_t val) {
         dut->reg_address_in = static_cast<uint8_t>(COLOR_ADDR_BASE + idx);
         dut->data_in = val;
@@ -292,8 +292,8 @@ public:
 
     // Selects color register `idx` (0..31) for output, optionally with the
     // extra-half-brite bit (select bit 5) set, and returns rgb after two
-    // ticks (matches hrm/denise_colortable/'s harness, which reads twice
-    // after changing `select`).
+    // ticks (as the pre-pipeline hrm/denise_colortable/ harness, removed,
+    // read twice after changing `select`).
     uint32_t read_reg(int idx, bool ehb = false) {
         dut->ehb_en = ehb ? 1 : 0;
         dut->select = static_cast<uint8_t>(idx + (ehb ? 32 : 0));
@@ -699,8 +699,7 @@ int main(int argc, char** argv) {
             "identically in Appendix A's HOMOD legend (p.271). PACKAGE.md's "
             "own disclosed evidence for these ids (denise_colortable.v:52,"
             "61-66) is what turns 'half-intensity' into 'component >> 1' "
-            "here; nothing else about the RTL body was read to write this "
-            "assertion. 3-ehb.c06, 3-ehb.c07, 3-ehb.c6, A-bplcon.c66, "
+            "here. 3-ehb.c06, 3-ehb.c07, 3-ehb.c6, A-bplcon.c66, "
             "A-leg.homod4.");
 
         int normal2_read_idx = 15;
