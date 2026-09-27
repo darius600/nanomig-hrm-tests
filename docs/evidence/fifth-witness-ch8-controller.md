@@ -64,10 +64,11 @@ all four lines. Denise's is likewise constant zero: `getPotX`/`getPotY` are
 virtuals whose base returns 0 (`input/controlPort/controlPort.h:27-28`) and no
 `libami` device overrides them.
 
-**Half of A is out of reach for all four**, exactly as
-[`NM-HRM-030`](../findings/NM-HRM-030.md) already records: the pin-to-register
-mapping is visible in every source, the *which chip answers* half is modelled
-nowhere.
+**The pin-to-register mapping is visible in every source.** Which chip answers a
+read is a separate question, and not out of reach for all four:
+[`NM-HRM-030`](../findings/NM-HRM-030.md) records vAmiga, Denise and Copperline
+modelling Paula apart from Agnus, and WinUAE, with one register dispatch for the
+whole chip set, as the one that cannot answer it.
 
 ---
 
@@ -77,33 +78,45 @@ nowhere.
 or eight complete scan lines**, and Figure 8-5 draws charging beginning eight
 lines later. NanoMig holds them for **zero**.
 
-| | hold after START | depends on video standard |
-|---|---|---|
-| WinUAE | **8** h-sync ticks | no |
-| vAmiga | **8** line-length events | no |
-| Denise | **8** PAL / **7** NTSC | **yes** |
-| Copperline | **8** PAL / **7** NTSC | **yes** |
-| **NanoMig** | **0** | — |
+| | reset interval before the count proper | counter held at zero through it | depends on video standard |
+|---|---|---|---|
+| WinUAE | **8** h-sync ticks | no — counts the interval's lines | no |
+| vAmiga | **8** line-length events | no — counts the interval's lines | no |
+| Denise | **8** PAL / **7** NTSC | **yes** | **yes** |
+| Copperline | **8** PAL / **7** NTSC | **yes** | **yes** |
+| **NanoMig** | **0** | — | — |
 
 - **WinUAE** `#define POTDAT_DELAY 8` (`inputdevice.cpp:485`); while
   `pot_dat < POTDAT_DELAY` the charge is forced to `-2` (`:3905-3917`) and real
-  counting starts on the ninth h-sync. No PAL/NTSC branch in the function.
+  counting starts on the ninth h-sync. `pot_dat` is the POTxDAT count itself: it
+  counts the delay lines and is zeroed on the eighth h-sync, so a read inside the
+  delay returns 1 to 8, not 0. No PAL/NTSC branch in the function.
 - **vAmiga** `pokePOTGO` schedules `POT_DISCHARGE` with a payload of 8
   (`PaulaRegs.cpp:188`); `servicePotEvent` decrements it once per line
   (`PaulaEvents.cpp:73-97`). The interval is hard-wired to `PAL::HPOS_CNT`
-  even in NTSC, so there is no 7/8 split.
+  even in NTSC, so there is no 7/8 split. The end-of-line handler keeps
+  incrementing the counters through the interval (`Agnus.cpp:877-880`), and the
+  last event sets the input counters to -1 (`PaulaEvents.cpp:88-93`), so a read
+  inside the interval is non-zero.
 - **Denise** says it in one line: `pot.dischargeCounter = agnus.ntsc ? 7 : 8;`
-  (`paula/pot.cpp:88`), and only when it is exhausted does `:112` begin
-  incrementing the counters.
+  (`paula/pot.cpp:88`), and only when it is exhausted does counting begin
+  (`:100-117`); until then the counters keep the zero the POTGO write gave them.
 - **Copperline** holds while `pot_discharge_lines < discharge_lines`
-  (`chipset/paula.rs:1298-1301`), the value coming from
-  `VideoStandard::Pal => 8, Ntsc => 7` (`bus.rs:7930-7934`).
+  (`chipset/paula.rs:1298-1301`), forcing the counters to zero on each of those
+  lines, the value coming from `VideoStandard::Pal => 8, Ntsc => 7`
+  (`bus.rs:7930-7934`).
 
-**All four model a hold; all four put PAL at eight.** They split on NTSC, and
-that split is the useful part: **the page's own "seven or eight" is an
-unresolved wobble, and two of four independent implementations read it as a
-video-standard distinction** with PAL landing on the 8 that Figure 8-5 draws.
-NanoMig's zero is against the page and against all four.
+**All four delay the count proper by the reset interval; all four put PAL at
+eight; only Denise and Copperline hold the counter at zero through it.** WinUAE
+and vAmiga count the interval's lines in the same counter and restart it from
+zero at its end, so they too read non-zero after one line, as NanoMig does
+([`NM-HRM-038`](../findings/NM-HRM-038.md)). They split on NTSC, and that split
+is the useful part: **the page's own "seven or eight" is an unresolved wobble,
+and two of four independent implementations read it as a video-standard
+distinction** with PAL landing on the 8 that Figure 8-5 draws. What separates
+NanoMig from all four is the final count, which in NanoMig includes the
+interval's lines; on the first read it stands with WinUAE and vAmiga, against
+Denise, Copperline and the page.
 
 ---
 
@@ -157,7 +170,7 @@ of eight.
 
 | | full 8-bit DDRA | PA1/PA0 | PA5–PA2 | PA7/PA6 |
 |---|---|---|---|---|
-| WinUAE | **no** | reads back | **pin only, DDRA ignored** | pin; DDRA can pull low, never read back a 1 |
+| WinUAE | **no — four of eight** | reads back | **pin only, never stored** | reads back while the fire button is released; a pressed button reads 0 (wired-AND) |
 | vAmiga | **in the mux, yes** | reads back | reads back | overridden by an attached device |
 | Denise | **yes, all eight** | reads back | reads back | reads back |
 | Copperline | **no** | reads back | **pin only, DDRA ignored** | driven out, never read back |
@@ -176,26 +189,40 @@ of eight.
   switched to an output stays CIA-driven"*, and CIA-B applies `!ddr` to all
   three of its overlays.
 - **WinUAE** builds PRA from three hand-written pieces
-  (`cia.cpp:1896-1917`); only `:1917` implements the manual's rule, and only for
-  PA1/PA0. It will not even store a written value elsewhere:
-  `c->pra = (c->pra & ~0xc3) | (val & 0xc3);` (`:2128`) latches the same four
-  bits NanoMig latches. CIA-B's PRA one screen down is the generic form
-  (`:2030`).
+  (`cia.cpp:1896-1917`). `:1917` implements the manual's rule for PA1/PA0, and
+  `handle_joystick_buttons(c->pra, c->dra)` on the line above reads an
+  output-low PA7/PA6 as 0 (`inputdevice.cpp:4012-4015`), so a written value
+  comes back on those two while the fire button is released; a pressed button
+  reads 0 whatever was written (`inputdevice.cpp:4005-4006`). It follows the
+  write on four positions. It will not store a written value elsewhere:
+  `c->pra = (c->pra & ~0xc3) | (val & 0xc3);` (`cia.cpp:2128`) latches the same
+  four bits NanoMig latches. CIA-B's PRA one screen down is the generic form
+  (`cia.cpp:2030`).
 - **vAmiga** muxes all eight (`CIA.cpp:863`) and then lets an attached
   control-port device override PA7/PA6 *after* the mux (`:866-867`), neither
-  `Joystick::changePra` nor `Mouse::changePra` consulting `ddra`. With the
-  shipped default of no device attached, all eight read back.
+  `Joystick::changePra` nor `Mouse::changePra` consulting `ddra`. A port has no
+  device until the host sends it mouse or joystick input (`ControlPort.h:50`),
+  and until then all eight read back; a mouse with its default pull-ups then
+  forces a released fire bit to 1 even when it is an output driven 0
+  (`Mouse.cpp:155-169`).
 
 **Two of the four carry an explicit chip-variant switch for exactly this
-behaviour** — WinUAE's `391078-01` type (`cia.cpp:1923-1927`, enabled for the
-A600 alone, default off) and vAmiga's `MOS_8520_PLCC` (`CIA.cpp:869-871`,
-default off), both restoring strict one-to-one on all eight. **That suggests the
-hardware question behind p.241 is which CIA part is fitted**, which is a
-decision for Amiga specialists and not something a source reading settles.
+behaviour, and only one restores all eight.** vAmiga's `MOS_8520_PLCC`
+(`CIA.cpp:869-871`, default off) restores strict one-to-one on all eight.
+WinUAE's `391078-01` type (`cia.cpp:1923-1927`, enabled for the A600 alone,
+default off) returns PRA contents for every output bit, but the write at
+`cia.cpp:2128` never stores PA2–PA5, so an output-mode read of those four
+returns their reset value, zero (`cia.cpp:2389`), whatever was written. **That
+suggests the hardware question behind p.241 is which CIA part is fitted**, which
+is a decision for Amiga specialists and not something a source reading settles.
 
 One corroboration worth passing on: vAmiga logs *"DDRA: Setting unusual value"*
 for CIA-A whenever the write is not `0x03` (`CIARegs.cpp:230-231`) — its own
 code treats PA1/PA0-as-outputs as the only expected mask, the same two positions
 NanoMig implements.
 
-**The four split three ways and none cancels the finding.**
+**The four split four ways and none cancels the finding**
+([`NM-HRM-040`](../findings/NM-HRM-040.md)). Over a line held low, the case
+`hrm/ch8-ciaa-port-direction` grades and no page decides, they split again:
+Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the
+line.

@@ -41,30 +41,35 @@ contain.
 Both were shallow-cloned outside the repositories, never built, and nothing from
 them is copied into a test.
 
-## NM-HRM-002 — audio stereo routing — FINDING RESTORED
+## NM-HRM-002 — audio stereo routing — FILED AGAINST THE PRINTED PAGE
 
 **The conflict.** Chapter 5, p.137: *"Channels 1 and 2 are connected to the
 left-side stereo output jack. Channels 0 and 3 are connected to the right-side
-output jack."* The appendix pin list says the opposite: *"AUDO — Audio output
+output jack."* The appendix pin list, p.326, says the opposite: *"AUDO — Audio output
 from left (channels 0, 3) port"*, *"AUDI — Audio input to right (channels 1, 2)
 port"*. Both appear in the printed and the Developer-CD edition.
 
 ### WinUAE
 
-[`audio.cpp` L1093–L1104](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1093-L1104)
-— the same assignment repeats at
-[L1133–L1144](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1133-L1144)
-in a second output path:
+[`audio.cpp` L1153–L1165](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1153-L1165),
+the stereo mix:
 
 ```c
-put_sound_word_right(data0);
-put_sound_word_left(data1);
+data1 = datas[0] + datas[3];
+data2 = datas[1] + datas[2];
 ...
-put_sound_word_right2(data3);
-put_sound_word_left2(data2);
+put_sound_word_right(data1);
+put_sound_word_left(data2);
 ```
 
-Channels 0 and 3 to the right, 1 and 2 to the left.
+The function is named for the right, but it writes channels 0 and 3 as the
+**first** sample of each stereo frame (*"Always put the right word before the
+left word"*,
+[L516](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L516)),
+and the frame is played as `KSAUDIO_SPEAKER_STEREO`
+([`od-win32/sounddep/sound.cpp` L1026](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/sounddep/sound.cpp#L1026)),
+whose first sample is the left speaker. Channels 0 and 3 are heard on the left
+unless *Swap channels* is set: the pin list's side.
 
 ### vAmiga
 
@@ -93,35 +98,46 @@ are `AUD_PAN0 = 50`, `PAN1 = 350`, `PAN2 = 350`, `PAN3 = 50`:
 | 2 | 350 | −0.707 | 0.15 | left |
 | 3 | 50 | +0.707 | 0.85 | right |
 
-Same assignment as WinUAE.
+Channels 0 and 3 mostly right, 1 and 2 mostly left: chapter 5's side. The
+settings pane's *Stereo* preset, 100, 300, 300 and 100
+([AudioSettings.swift L149–L153](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/GUI/Settings/ViewControllers/AudioSettings.swift#L149-L153)),
+puts channels 0 and 3 fully right.
 
 ### Result
 
-Two independent implementations agree with chapter 5. The appendix pin list is
-the outlier. `paula_audio_mixer.v` follows the pin list:
+The two emulators split: WinUAE plays channels 0 and 3 on the left, as the pin
+list prints, and vAmiga on the right, as chapter 5 prints.
+`paula_audio_mixer.v` follows the pin list
+([L76–L77](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L76-L77)):
 
 ```verilog
-ldatasum <= msample0 + msample3;
-rdatasum <= msample1 + msample2;
+  ldatasum <= #1 {msample0[13], msample0} + {msample3[13], msample3};
+  rdatasum <= #1 {msample1[13], msample1} + {msample2[13], msample2};
 ```
 
-The finding stands and the four assertions in `hrm/ch5-audio-stereo-routing` were
-restored. **The NanoMig stereo channels are swapped.**
+Denise and Copperline put channels 0 and 3 on the left too
+([`fourth-witness-denise-copperline.md`](fourth-witness-denise-copperline.md)),
+so NanoMig's side is that of three of the four. The finding is filed against
+the printed page: p.137 is contradicted by p.326 of the same manual, and
+[`NM-HRM-002`](../findings/NM-HRM-002.md) sets out the evidence beyond the
+emulators. The four assertions in `hrm/ch5-audio-stereo-routing` stay red,
+because each printed sentence is graded on its own authority and they measure
+p.137.
 
-This corrects a withdrawal made earlier the same day. The withdrawal was reasoned
-from the manual alone — the manual said both things, so nothing could be asserted
-— and it was wrong to stop there rather than fetch a witness.
+## NM-HRM-003, NM-HRM-004, NM-HRM-005 — read out of interest
 
-## NM-HRM-003, NM-HRM-004, NM-HRM-005 — read out of interest, and the result is uncomfortable
+These three were read to see *why* the RTL deviates, and they come out three
+different ways. **On NM-HRM-003 both emulators narrow an OCS fetch address to the
+manual's width**, on the bus rather than in the register. **On NM-HRM-004 both do
+what NanoMig does and what Appendix B marks**, against Appendix C's p.310, and
+the finding is filed against the printed page because the manual contradicts
+itself. **On NM-HRM-005 vAmiga gives NanoMig's three numbers**; WinUAE was not
+compared.
 
-These three are not contested: the manual is clear and the RTL disagrees with it,
-so by the rule above an emulator cannot cancel them. They were read anyway, to see
-*why* the RTL deviates. **On all three, both emulators do what NanoMig does and
-not what the manual says.**
-
-That does not close the findings. It moves them: the question is no longer
-"is the RTL wrong" but "is the manual wrong about the hardware", and that is a
-decision, not a measurement.
+Where an emulator agrees with NanoMig against a page that is clear, as vAmiga
+does on NM-HRM-005, that does not close the finding. It moves it: the question
+is no longer "is the RTL wrong" but "is the manual wrong about the hardware",
+and that is a decision, not a measurement.
 
 **Limits of this section.** The emulators were read, not run. The vAmiga cycle
 counts below come from following its event schedule in the source, not from
@@ -153,19 +169,25 @@ Both: **CDANG=0 blocks below $80 regardless of chipset**; CDANG=1 opens $40 on
 OCS and everything on ECS. That is exactly what `agnus_copper.v` does, and it is
 what the test calls a deviation.
 
-The sentence the finding rests on is Appendix C, p.310:
+The finding sets two printed statements against each other. Appendix C, p.310:
 
 > "Now, in the ECS, if this bit is set, the Copper can access all of the Amiga
 > chip registers. **If this bit is clear**, the Copper can access the address
 > range from $DFF03E through $DFF07E, the same range as when the danger bit is
 > set in the standard chip set."
 
-Read literally, clearing the danger bit grants the range that setting it grants —
-which would make the bit do nothing. Neither emulator implements that.
+Appendix B, pp.289-290, marks every address from `$040` to `$07E` with the `~`
+its legend on p.287 defines as *"Address not writable by the Copper unless the
+"copper danger bit", COPCON is set true"*, the rows of BLTCON0L, BLTSIZV,
+BLTSIZH and DENISEID included, registers that exist only in ECS.
+
+Neither emulator implements p.310's CDANG-clear range; both do what Appendix B
+marks, as NanoMig does, and so do Denise and Copperline.
+[`NM-HRM-004`](../findings/NM-HRM-004.md) is filed against the printed page.
 
 ### NM-HRM-003 — the location register width
 
-Neither emulator narrows the Copper pointer by chipset.
+Neither emulator narrows the Copper pointer **register** by chipset.
 
 [vAmiga `Copper.cpp` L29–L31](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L29-L31):
 `setPC(u32 addr) { coppc = addr; }` — no mask. The only `isOCS()` anywhere in
@@ -175,8 +197,20 @@ vAmiga's Copper directory is the CDANG check above.
 `cop1lc = (cop1lc & 0xffff) | ((uae_u32)v << 16);` — the whole written word goes
 in.
 
-Both bound the effective address later, by chip RAM size, which is a different
-mechanism from the manual's "OCS has three high bits, ECS five".
+Both narrow the address the Copper fetches from instead, and by chipset.
+WinUAE sets `chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear
+([`memory.cpp` L2619–L2623](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623)),
+19 bits on OCS, on the Agnus-side chip-RAM path every DMA fetch uses; in the
+same function `cs_agnussize` overrides it (L2627–L2644), and with JIT on the
+mask becomes the chip RAM size (L2646–L2648). vAmiga begins every Agnus DMA read
+with `addr &= agnus.ptrMask;`
+([`Memory.cpp` L1623](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L1623)),
+the Copper's included
+([`AgnusDma.cpp` L264](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L264)),
+and sets `ptrMask = 0x07FFFF` for an OCS Agnus
+([`Agnus.cpp` L190–L191](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L191)).
+On an OCS fetch address both give the 19 bits of pp.273 and 309, not NanoMig's
+unconditional five high bits ([`NM-HRM-003`](../findings/NM-HRM-003.md)).
 
 ### NM-HRM-005 — WAIT and SKIP timing
 
@@ -188,17 +222,19 @@ transitions from one `COP_FETCH` to the next:
 
 | instruction | vAmiga path | DMA cycles | NanoMig measured | manual |
 |---|---|---:|---:|---:|
-| MOVE | FETCH → MOVE → FETCH | 4 | 4 | 2 |
+| MOVE | FETCH → MOVE → FETCH | 4 | 4 | 4 |
 | SKIP | FETCH → WAIT_OR_SKIP → SKIP1 → SKIP2 → FETCH | 8 | 8 | 4 |
 | satisfied WAIT | FETCH → WAIT_OR_SKIP → WAIT1 → WAIT2 → (`delay == 0` → `DMA_CYCLES(2)`) → FETCH | 8 | 8 | 6 |
 
 vAmiga and NanoMig agree on all three numbers.
 
-Note what that does to the manual's own figures. MOVE and SKIP differ from the
-implementations by exactly a factor of two — the unit question tracked as
-FPGA-064. The satisfied WAIT does not: 6 × 2 = 12, and both implementations give
-8. So the manual's WAIT figure does not fit its own MOVE and SKIP figures under
-any single unit convention, whichever one is chosen.
+Note what that does to the manual's own figures. The manual column is in memory
+cycle times, the manual's own unit: p.20 gives MOVE and SKIP two memory cycles
+each, *"four memory cycle times ... per instruction"*, and a WAIT *"six memory
+cycle times"*, and p.275 gives the same factor of two. In that unit MOVE agrees
+with both implementations, SKIP is exactly double, and a satisfied WAIT is 8
+against 6. No single factor maps the manual's three figures onto the
+implementations' three.
 
 ## NM-HRM-001 — PAL line count — WITHDRAWAL CONFIRMED
 
@@ -228,6 +264,9 @@ and the PAL constants at
 return maxvpos + (lof_store ? 1 : 0);
 ```
 
+and a hard reset clears the bit, `lof_store = lof_display = 0;`
+([`custom.cpp` L6739](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L6739)).
+
 Both make the count depend on the long-frame bit: 312 or 313, neither wrong.
 
 ### NanoMig
@@ -241,11 +280,14 @@ long_frame <= 1'b1;                                        // at reset
 else if (end_of_frame && lace) long_frame <= ~long_frame;  // interlace only
 ```
 
-It sets a long frame at reset and toggles only in interlace — which is what both
-emulators do. The fixture ran non-interlaced from reset, so 313 is the correct
-answer for what it drove.
+It sets a long frame at reset and toggles only in interlace. vAmiga also starts
+with the bit set; WinUAE clears it at a hard reset and runs 312-line fields
+after one ([`NM-HRM-001`](../findings/NM-HRM-001.md)). The fixture ran
+non-interlaced from reset, so 313 is the correct answer for what it drove.
 
 ### Result
 
-The withdrawal stands. There is no finding here, and the test now reports the
-vertical count without asserting it.
+The withdrawal stands. There is no finding here.
+`hrm/ch3-beam-counters-and-blanking` grades the manual's 312 with the
+long-frame bit cleared first, and `hrm/ch3-field-geometry` carries the 313-line
+control.

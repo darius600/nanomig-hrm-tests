@@ -20,15 +20,15 @@ elsewhere in the same manual.
 | Finding | Origin | Standing |
 |---|---|---|
 | [NM-HRM-003](../findings/NM-HRM-003.md) | pipeline | corroborated — p273 and p309 give two different widths |
-| [NM-HRM-004](../findings/NM-HRM-004.md) | pipeline | corroborated — two editions carry the appendix C sentence; challenged and upheld |
+| [NM-HRM-004](../findings/NM-HRM-004.md) | pipeline | **filed against the printed page** — p310 opens `$03E`–`$07E` to the ECS Copper with CDANG clear, Appendix B pp289-290 marks `$040`–`$07E` closed; NanoMig and all four implementations follow Appendix B |
 | [NM-HRM-005](../findings/NM-HRM-005.md) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
-| [NM-HRM-002](../findings/NM-HRM-002.md) | hand-written, Aug | **stands** — the manual contradicts itself, and four implementations split two against two |
+| [NM-HRM-002](../findings/NM-HRM-002.md) | hand-written, Aug | **filed against the printed page** — the manual contradicts itself, p137 against p326, and three of four implementations take p326's side, as NanoMig does |
 | [NM-HRM-001](../findings/NM-HRM-001.md) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
-neither could be decided by reading the manual harder. They were settled by a
-third witness — see [`third-witness.md`](third-witness.md) — and they went
-opposite ways: one survived, one did not.
+neither could be decided by reading the manual harder. A third witness was read
+for both — see [`third-witness.md`](third-witness.md) — and they went opposite
+ways: one was withdrawn, and the other stands, filed against the printed page.
 
 ## NM-HRM-001 is withdrawn — and why the entry stays
 
@@ -36,8 +36,9 @@ The assertion was removed rather than left red. A red test is a claim that the
 RTL is wrong, and this one could not support that claim.
 
 The field-length claim itself is graded elsewhere and stays graded:
-`ch3-field-geometry` asserts the manual's `PAL-FIELD-312-NTSC-FIELD-262-LINES`
-and `ch3-beam-counters-and-blanking` carries the 313-line control beside it.
+`ch3-beam-counters-and-blanking` grades the manual's 312 with the long-frame
+bit cleared first, and `ch3-field-geometry` carries the 313-line control
+([`NM-HRM-001`](../findings/NM-HRM-001.md)).
 
 The package that originally held the withdrawn assertion, `agnus_beamcounter`,
 also asserted that the horizontal counter spans 0..453. That number has no page
@@ -78,7 +79,7 @@ Appendix C, printed page 309, lists what ECS changed in the blitter. NanoMig's
 | `BLTSIZH` $05E new — H size and start | lines 500, 523, 557 | **yes** |
 | `BLTSIZV` $05C new — V size, 15-bit | line 548 | **no** — and the comment on that line calls it ECS |
 | `BLTxPTH` $050 chg — "high 5 bits, was 3 bits" | `agnus_blitter_adrgen.v:45`, `reg [20:16] bltpth [3:0]` | **no** — and now measured at the parent, see below |
-| `DOFF`, BLTCON1 bit 7 — disable D output in line mode | nowhere | **not implemented** |
+| `DOFF`, BLTCON1 bit 7 — disable the D output (no line-mode condition) | nowhere | **not implemented** |
 
 `bltcon1[7]` does not appear in `agnus_blitter.v`. The bits it reads are 15-12,
 4, 3, 2, 1 and 0.
@@ -181,9 +182,11 @@ document wins — and if the RTL and both disagree, say so" rule is for.
 
 The pointer row is the sibling of NM-HRM-003, one appendix over: the same register
 family, the same "three bits in OCS, five in ECS" sentence, and the same
-unconditional five bits in the RTL. The third-witness work already recorded that
-neither vAmiga nor WinUAE narrows a pointer by chipset at all, which is worth
-knowing before anyone calls the blitter case a defect on its own.
+unconditional five bits in the RTL. Neither vAmiga nor WinUAE narrows the pointer
+**register** by chipset, but both narrow the address the DMA drives to 19 bits
+on OCS (WinUAE `memory.cpp:2619-2623`, vAmiga `Agnus.cpp:190-194`), and
+Copperline narrows the register itself: three of the four side with the manual
+on an OCS fetch address ([NM-HRM-022](../findings/NM-HRM-022.md)).
 
 What this is *not* is a claim that any of the five is wrong. A design that is
 always ECS/AGA has a defensible reason to widen a pointer unconditionally. What
@@ -206,29 +209,24 @@ carries no such evidence however green it looks.
 
 ## What the emulators say about the three Copper findings
 
-Read out of interest rather than necessity — these three are not
-contested, so an emulator cannot cancel them. The result is worth knowing anyway:
+Read out of interest rather than necessity, to see why the RTL deviates. The
+three come out three different ways:
 
-**On all three, WinUAE and vAmiga do what NanoMig does and not what the manual
-says.**
-
-| Finding | Manual | Both emulators, and NanoMig |
-|---|---|---|
-| [NM-HRM-003](../findings/NM-HRM-003.md) | OCS keeps three high pointer bits | neither emulator narrows the pointer by chipset at all |
-| [NM-HRM-004](../findings/NM-HRM-004.md) | ECS with CDANG clear reaches $03E–$07E | CDANG clear blocks below $80 in both, chipset-independent |
-| [NM-HRM-005](../findings/NM-HRM-005.md) | MOVE 2, SKIP 4, satisfied WAIT 6 | 4 / 8 / 8 in vAmiga, the same three numbers NanoMig measures |
+| Finding | Manual | WinUAE and vAmiga | NanoMig |
+|---|---|---|---|
+| [NM-HRM-003](../findings/NM-HRM-003.md) | OCS keeps three high pointer bits | both keep the register wide and narrow the fetched address to 19 bits on OCS, **as the manual does** | five high bits in both chipsets |
+| [NM-HRM-004](../findings/NM-HRM-004.md) | p.310: ECS with CDANG clear reaches $03E–$07E; Appendix B pp.289-290: $040–$07E closed unless CDANG is set | CDANG clear blocks below $080 in both, chipset-independent, **as Appendix B marks** | the same |
+| [NM-HRM-005](../findings/NM-HRM-005.md) | SKIP 4, satisfied WAIT 6, WAIT − MOVE 2 memory cycle times | vAmiga 4 / 8 / 8 for MOVE / SKIP / satisfied WAIT; WinUAE not compared | the same three numbers as vAmiga |
 
 The citations are in [`third-witness.md`](third-witness.md).
 
-This does not close any of them, and none of the assertions was touched. It
-changes the question: not "is the RTL wrong" but "is the manual wrong about the
-hardware". Two independent implementations agreeing against a manual sentence is
-strong evidence, but choosing what NanoMig should follow — the manual it is
-tested against, or the hardware it emulates — is a decision, not a measurement.
-
-NM-HRM-004 is the sharpest case. Appendix C read literally says that *clearing* the
-danger bit grants the range that *setting* it grants, which would leave the bit
-with nothing to do.
+None of the assertions was touched. On NM-HRM-003 the emulators side with the
+manual. On NM-HRM-004 the manual contradicts itself, NanoMig and every
+implementation follow Appendix B, and the finding is filed against the printed
+page. On NM-HRM-005 vAmiga's agreement with NanoMig does not close the finding;
+it changes the question to "is the manual wrong about the hardware", and
+choosing what NanoMig should follow — the manual it is tested against, or the
+hardware it emulates — is a decision, not a measurement.
 
 ## NM-HRM-018: a red hidden by its own exit code
 
@@ -239,11 +237,11 @@ printing `=== ch3-bplcon0-display-modes: 225/227 PASS, 2 FAIL ===`.
 inside its own directory. It was fixed to `return g_fail ? 1 : 0;` — a harness
 correction, no oracle touched.
 
-**What the package reports now: `225 passed, 0 failed`, and NM-HRM-018 is
-withdrawn.** The two SPRHWRM reds are gone, not hidden: the finding was
-withdrawn as a conformance failure and kept as a source observation, which is
-what its page says. This entry survives because the *shape* of the defect is
-worth keeping, not because the reds are still there.
+**What the package reports now: `233 passed, 0 failed`, and NM-HRM-018 is
+withdrawn.** The two SPRHWRM reds are gone, not hidden: both claims are declined,
+and the finding was withdrawn as a conformance failure and kept as a source
+observation, which is what its page says. This entry survives because the
+*shape* of the defect is worth keeping, not because the reds are still there.
 
 That shape appeared three times in one day: **a green report from something
 that was not measuring.** The other two were the mutation gate reading one
@@ -252,7 +250,8 @@ assertion of nineteen, and six control assertions never mutated because a
 packages that printed their counts in a wording no tool read — see the suite's
 own README on why every package now prints the same summary line.
 
-*For the specialists:* NanoMig implements the AGA meaning of SPRHWRM and not the
-ECS one. Whether the bit is worth having, or whether the AGA reading should win
-outright, is a scope decision for the project — the finding records only that
-the printed ECS behaviour is absent.
+*For the specialists:* `denise.v:181` gives the bit its AGA meaning,
+`bplcon0[4] & aga`, and no ECS meaning. The manual prints no ECS behaviour to
+set against that: p.300's row is the mnemonic `SPRHWRM` with no description
+([NM-HRM-018](../findings/NM-HRM-018.md)). Whether the bit is worth an ECS
+meaning at all is a scope decision for the project, not a conformance question.

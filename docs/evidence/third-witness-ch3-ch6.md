@@ -7,11 +7,12 @@ test**, and no expectation in the suite comes from an emulator.
 > compares WinUAE and vAmiga only. Two further implementations have since been
 > read against the same findings in
 > [`fourth-witness-denise-copperline.md`](fourth-witness-denise-copperline.md),
-> and they moved three of the verdicts below: **NM-HRM-016 and NM-HRM-017 are
-> not A1 but a two-against-two split**, and **NM-HRM-006 and NM-HRM-008 are not
-> B-with-two but B-with-four.** The sections here are left as they were written,
-> because what two emulators did is still what two emulators did; the register
-> table in [`findings.md`](../findings.md) carries the current count.
+> and they move verdicts below: **NM-HRM-017 is a two-against-two split, and
+> NM-HRM-016 one of four**, and **NM-HRM-006 and NM-HRM-008 are not B-with-two
+> but B-with-four.** Each finding's page in [`findings/`](../findings/) carries
+> its verdict of the four and is the maintained statement; the sections below
+> agree with those pages about what WinUAE and vAmiga do, and
+> [The tally](#the-tally) says which sections the pages move to another letter.
 
 ## Why this exists
 
@@ -52,11 +53,17 @@ WinUAE `ccc407e9` — so this report and that one compare like with like.
 
 | | |
 |---|---|
-| Manual | pp.297, 301: in SHRES the same COLORxx registers are reinterpreted — lower sixteen registers, two bits of resolution per component |
+| Manual | pp.297, 301, 302: in SHRES the same COLORxx registers are reinterpreted — two bits of resolution per component, bitplanes in the lower sixteen registers (p.301), sprites in the upper sixteen (p.302) |
 | NanoMig | plain reading in every mode: `0x0C39` comes out R=$C, G=$3, B=$9 |
 | Tests | `ch3-shres-bitplane-colour-encoding` (19), `ch3-shres-sprite-colour-encoding` (16) |
 
-**Both emulators reinterpret, and their arithmetic is the same.**
+Of those reds, two of the bitplane package's nineteen carry NM-HRM-017, and the
+sprite package's sixteen are one measurement, of p.301's multiplexing clause
+([`NM-HRM-017`](../findings/NM-HRM-017.md),
+[`NM-HRM-016`](../findings/NM-HRM-016.md)).
+
+**Both emulators reinterpret the bitplane colours, with the same per-pixel
+arithmetic.**
 
 vAmiga, `Core/Components/Denise/Colors.cpp:126-148` — each channel's nibble split
 into its top two and bottom two bits, each replicated:
@@ -76,9 +83,21 @@ v = (denise_colors.color_regs_ecs[off] & 0xccc) << 0;  v |= v >> 2;   // top two
 v = (denise_colors.color_regs_ecs[off] & 0x333) << 2;  v |= v >> 2;   // bottom two
 ```
 
-Both restrict it to the lower sixteen registers, and both pair two adjacent
-super-hires pixels into one 4-bit index — vAmiga `PixelEngine.h:301-305`, WinUAE
-the `((p1&3)*4)+(p0&3)` term above. Arithmetically identical.
+For the bitplanes both restrict it to the lower sixteen registers and pair two
+super-hires pixels into one 4-bit index, but not the same two: WinUAE pairs
+adjacent pixels, the `((p1&3)*4)+(p0&3)` term above, while vAmiga pairs pixels 0
+and 2, and 1 and 3, of each group of four (`PixelEngine.h:301-305`), so a mixed
+pattern can read a different register than under WinUAE's pairing. A solid
+colour-1 run reads COLOR05 in both
+([`NM-HRM-017`](../findings/NM-HRM-017.md)).
+
+**For sprites they part.** WinUAE's SuperHires sprite path uses the same
+formula, and there the `((p0|p1) & 16)` term is live: a pair of sprite pixels
+selects one of the **upper** sixteen registers, as p.302 describes
+(`drawing.cpp:4622-4638`, `get_shres_spr_pix`). vAmiga pair-encodes from the
+lower sixteen alone, *"Only the first 16 registers are reachable in that mode"*
+(`PixelEngine.h:114-120`), and never looks a sprite pixel up in `$10`-`$1F`
+([`NM-HRM-016`](../findings/NM-HRM-016.md)).
 
 **The chipset condition matters and the tests already get it right.** Both
 emulators apply this to **ECS Denise only**; for AGA both fall back to a plain
@@ -170,14 +189,22 @@ behind `config.clxSprPlf`, which defaults to **false**
 Neither emulator narrows the **register**. vAmiga stores the full 16-bit value
 and only logs a diagnostic (`BlitterRegs.cpp:148-162`); its chipset-dependent
 `ptrMask` is applied later and generically to *every* Agnus access — Copper and
-blitter alike, through the same `Memory::peek16<Accessor::AGNUS>`. WinUAE has no
-chipset test at all in that path (`custom.cpp:3800-3805`), only the configured
-chip-RAM size.
+blitter alike, through the same `Memory::peek16<Accessor::AGNUS>`, which begins
+`addr &= agnus.ptrMask;` (`Memory.cpp:1621-1623`), with `ptrMask = 0x07FFFF` for
+an OCS Agnus (`Agnus.cpp:190-194`). WinUAE has no chipset test at the register
+(`custom.cpp:3800-3805`); its test is on the bus, `chipmem_full_mask = 0x80000 - 1`
+when `CSMASK_ECS_AGNUS` is clear (`memory.cpp:2619-2623`), on the Agnus-side
+chip-RAM path every DMA fetch uses.
 
-**This is NM-HRM-003's shape at a second register.** That finding already records
-both emulators declining to narrow the *Copper's* pointer by chipset; vAmiga
-funnels both through the same masking function, so the two are one behaviour.
-Consider registering them together.
+**So both narrow the address an OCS blitter drives to 19 bits**, the width
+p.270 prints, and side with the manual, not with NanoMig, on the fetched address
+([`NM-HRM-022`](../findings/NM-HRM-022.md)); this section belongs with A (see
+[The tally](#the-tally)).
+
+**This is NM-HRM-003's shape at a second register.** That finding records both
+emulators keeping the *Copper's* pointer register wide and narrowing its fetch
+address by chipset; vAmiga funnels both through the same masking function, so
+the two are one behaviour. Consider registering them together.
 
 ### B3 — BRDNTRAN has no effect on the displayed border
 
@@ -203,6 +230,12 @@ emulated. `update_bordercolor()` never reads bit 4.
 not a paintable colour change. NanoMig's behaviour matches both emulators in
 ordinary use. Whether NanoMig should implement genlock keying at all is a product
 question, not a conformance one.
+
+**The finding is withdrawn** ([`NM-HRM-015`](../findings/NM-HRM-015.md)). Every
+page that names or describes the bit places it among the genlock features
+(pp.296, 297 and 307), and no page gives it an effect on the colour the border
+is drawn in, so the manual is not on the other side of this red: the assertion,
+which requires the border's colour to change, misreads it. It still fails.
 
 ---
 
@@ -237,24 +270,31 @@ The write cycle still happens, with its address stepping and timing; the value
 stored is whatever was last on the chip bus instead of the blit result.
 
 NanoMig matches vAmiga. Which of the two is right about the silicon is not
-something this project can decide.
+something this project can decide. Of the four independent implementations,
+three implement DOFF, each gated on ECS Agnus: WinUAE, Denise and Copperline
+([`NM-HRM-021`](../findings/NM-HRM-021.md)).
 
 ### C2 — SPRxCTL bit 4, SHSH1
 
 | | |
 |---|---|
 | Manual | Appendix C p.303: `04 SHSH1 Start horizontal (SHR mode) 70ns increment` |
-| NanoMig | setting SPR0CTL bit 4 alone, SH0 at 0, changes the sprite trace — live outside SHR |
-| Test | `ch3-sprite-registers` / `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` |
+| NanoMig | reads bit 4 nowhere: a write to SPRxCTL keeps bits 7 and 0 and no other (`denise_sprites_shifter.v:133-138`) |
+| Test | `ch3-sprite-registers` / `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — red, but it sets the bit at the lores sprite rate, outside SuperHires, where p.303 gives it no position; the finding rests on the source reading ([`NM-HRM-019`](../findings/NM-HRM-019.md)) |
 
-**vAmiga: extracted, then discarded.** `Denise.cpp:167-177` packs the bit into
-`sprhpos` unconditionally, but the comparator masks it away — `sprPixelMask()`
-(`Denise.h:865-872`) clears bit 0 for HIRES and bits 0-1 for LORES, and
-`sprPixelWidth()` (`DeniseRegs.cpp:817-855`) never returns 1 for non-AGA. On
-ECS/OCS the bit is inert in every mode, SHR included.
+**vAmiga: kept in SuperHires only.** `Denise.cpp:171-173` packs the bit into the
+lowest bit of the sprite's start,
+`(sprctl[x] & 0x10) >> 4);  // SHSH1 (ECS only)`, and the start is then masked
+to the width of a sprite pixel (`Denise.cpp:968`). On OCS and ECS that width is
+two buffer entries in SuperHires and four in every other mode
+(`DeniseRegs.cpp:854`), and the buffer position is twice the start
+(`Denise.cpp:176`), so the mask keeps the bit in SuperHires and clears it
+everywhere else.
 
-**WinUAE: live, and specifically outside SHR.** `drawing.cpp:2822-2837` extracts
-it gated on chipset only. `matchsprites2` at `:5326-5329`:
+**WinUAE: kept in SuperHires only, for position.** `drawing.cpp:2825-2836` takes
+bit 4 from ECS Denise on, `sprxp |= 2;`, and bit 3 only on AGA. Outside
+SuperHires the match drops it, `cnt == (sp->xpos & ~3)` (`:5318`). In ECS hires
+it does one other thing, in `matchsprites2` at `:5325-5329`:
 
 ```c
 // ECS Denise + hires sprite bit and hires: leftmost pixel is missing
@@ -264,12 +304,13 @@ if (ecs_denise_only && denise_res == RES_HIRES && (sp->ctl & 0x10)) {
 }
 ```
 
-`denise_res` comes straight from BPLCON0, so this fires in **HIRES**, not SHRES.
+It clips the sprite's leftmost pixel; it does not move the sprite.
 
-NanoMig's report of "live outside SHR" is closer to WinUAE's shape, though
-WinUAE ties the liveness to HIRES specifically. **Neither emulator gates the bit
-as "SHR mode only"** the way the manual's one-line gloss implies — each makes it
-conditional on more than that, in its own way.
+**The two agree with each other and with p.303:** both confine the bit's effect
+on position to SuperHires, as the page's Warning states, and neither changes a
+lores sprite for it. Denise and Copperline do the same, so all four implement
+it ([`NM-HRM-019`](../findings/NM-HRM-019.md)). This section belongs with A
+(see [The tally](#the-tally)).
 
 ---
 
@@ -345,36 +386,52 @@ if (vpos == 25) { agnus_vb = 0; agnus_vb_end_line = true; }
 In vAmiga this gates real DMA behaviour, not just display geometry — sprite DMA
 enable is conditioned on it at `Agnus.cpp:854` and `AgnusRegs.cpp:489`, `:543`.
 
+**The finding is filed against the printed page**
+([`NM-HRM-011`](../findings/NM-HRM-011.md)). The manual gives the end of the PAL
+blank twice: Table 3-13's $1D, and p.219, which ends it at line 25, the last
+line NanoMig and both emulators blank. Denise and Copperline end it earlier
+still, after line 23 and line 24; none of the four reaches the table's $1D.
+
 ---
 
 ## The tally
 
-| | findings | assertions |
-|---|---:|---:|
-| **A** — both emulators with the manual, against NanoMig | 2 | 36 |
-| **B** — both emulators with NanoMig, against the manual | 6 | 10 |
-| **C** — the emulators disagree with each other | 2 | 2 |
+The section letters stay as [`findings.md`](../findings.md) cites them; the
+grouping is the one the finding pages support, which moves three sections.
 
-Six of the ten reds are places where two independently written implementations
-do what NanoMig does. That does not make the manual wrong — **this project does
-not get to decide that**, and a red stays a red until someone who can, does. What
-it does mean is that six of these are not usefully described as "the RTL departs
-from the specification"; the honest description is that the printed sentence and
+| | sections | findings | assertions |
+|---|---|---:|---:|
+| **A** — both emulators with the manual, against NanoMig | A1, A2, B2, C2 | 4 | 38 |
+| **B** — both emulators with NanoMig, against the manual | B1, B4, B5, B6 | 4 | 8 |
+| **C** — the emulators disagree with each other | C1 | 1 | 1 |
+| withdrawn | B3 | 1 | 1 |
+
+Two entries in A carry a limit. A1's sprite half, NM-HRM-016, has WinUAE alone
+reading the upper sixteen registers as p.302 describes; vAmiga reads the lower
+sixteen. C2's one red sets the bit outside SuperHires, where both emulators
+leave the sprite where NanoMig does, so it does not measure the section's
+question; NM-HRM-019 rests on the source reading.
+
+Four of the ten reds are places where two independently written implementations
+do what NanoMig does, and two of those four, B5 and B6, are filed against the
+printed page. That does not make the manual wrong — **this project does not get
+to decide that**, and a red stays a red until someone who can, does. What it
+does mean is that these four are not usefully described as "the RTL departs from
+the specification"; the honest description is that the printed sentence and
 three implementations disagree, and only one of the four can be checked against
 silicon.
 
-Two are the other shape, and those are where an RTL change would be worth
+Four are the other shape, and those are where an RTL change would be worth
 discussing: **super-hires colour reinterpretation**, absent from
-`denise_colortable.v` entirely, and **BLTSIZV's missing `&& ecs`**, a single term
-its own comment implies should be there.
+`denise_colortable.v` entirely; **BLTSIZV's missing `&& ecs`**, a single term
+its own comment implies should be there; **the OCS pointer width**, which both
+emulators apply to the address the blitter drives; and **SHSH1**, which both
+apply in SuperHires and NanoMig reads nowhere.
 
 ---
 
 ## What was not resolved, stated by the readers themselves
 
-- Whether WinUAE's "fast" line-buffer SHRES path can ever select colour registers
-  16-31 through the `+ ((p0|p1) & 16)` term. The cycle-exact path provably
-  cannot; the fast path was left untraced rather than guessed.
 - Why the manual's SHRES colour reinterpretation applies to ECS and not AGA.
   Both emulators encode the split structurally, neither states the reason in
   anything but comments, which this method excludes as evidence.

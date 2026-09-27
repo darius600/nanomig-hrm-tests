@@ -94,7 +94,7 @@ matter.
 
 | | |
 |---|---|
-| Manual | Appendix C p.309: `DOFF`, BLTCON1 bit 7 - disables the D output in line mode |
+| Manual | Appendix C p.309: `DOFF`, BLTCON1 bit 7 - "when set, disables the output of the Blitter hardware on channel D"; the page states no line-mode condition |
 | NanoMig | `bltcon1[7]` appears nowhere in `agnus_blitter.v`. The bits it reads are 15-12, 4, 3, 2, 1, 0 |
 | Measured | setting bit 7 changes no cycle, no `we` pulse and no written word |
 | Test | `hrm/ch6-blitter-ecs`, `DOFF-NO-OBSERVABLE-EFFECT` (red) |
@@ -113,16 +113,19 @@ and a search of the whole `Core/` tree finds **exactly one occurrence - that
 definition**. The name exists; nothing reads it. That is the position NanoMig is
 in, arrived at independently.
 
-**What a fix touches.** Line mode's D-channel store is `BLT_L4`
+**What a fix touches.** Every D-channel store, area mode's as well as line
+mode's: p.309 names no mode. Line mode's store is `BLT_L4`
 (`agnus_blitter.v:851-869`), where `dma_req = usec & (~bltcon1[1] | ~bltcon1[4] |
-first_pixel)`. A DOFF implementation gates the same store on `~(bltcon1[7] & ecs)`.
-The SING mechanism in that very expression is the working example of the shape.
+first_pixel)`; a DOFF implementation gates it, and the area-mode D store, on
+`~(bltcon1[7] & ecs)`. The SING mechanism in that very expression is the working
+example of the shape.
 
 **Note for whoever decides.** One mature emulator implements it, one does not.
 That is a signal about how much software depends on it, not about what the manual
 says. The manual is unambiguous, so the finding stands either way - but the cost
 of leaving it out is evidently something a widely used emulator has been willing
-to pay.
+to pay. Denise and Copperline implement it too, each ECS-gated, so three of the
+four do ([`findings/NM-HRM-021.md`](../findings/NM-HRM-021.md)).
 ## NM-HRM-022 — BLTxPTH takes five high pointer bits in both chipsets
 
 | | |
@@ -142,6 +145,12 @@ same bits with no chipset condition. Two findings, one design decision.
     {
         blt_info.bltapt = (blt_info.bltapt & 0xffff) | ((uae_u32)v << 16);
     }
+
+and **narrows on the bus**, by chipset - `memory.cpp:2619-2623` sets
+`chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear, 19 bits on
+OCS, on the Agnus-side chip-RAM path every DMA fetch uses. `cs_agnussize`
+overrides it (`:2627-2644`), and with JIT on the mask is the chip RAM size
+(`:2646-2648`).
 
 **vAmiga** does the same at the register - `BlitterRegs.cpp:157` - but **narrows on
 access**. `ptrMask` is chipset-dependent, `Agnus.cpp:191-194`:
@@ -204,14 +213,18 @@ emulator is.
 
 ## NM-HRM-004 — ECS with CDANG=0 rejects 32 addresses the appendix allows
 
-**The one finding where the emulators disagree with the manual as well - and with
-NanoMig, in the other direction.**
+**Filed against the printed page: the manual contradicts itself, and NanoMig and
+both emulators take the same side of it.**
 
 | | |
 |---|---|
-| Manual | Appendix C p.310: with ECS and CDANG=0 the writable range equals the OCS CDANG=1 range, `$20`-`$FF` |
-| NanoMig | `$40`-`$FF`; 32 addresses `$20`-`$3F` rejected, none falsely accepted |
-| Tests | `hrm/ch2-copper-move-range` `T9` and `T16` (both ends the appendix prints); `hrm/ch2-copper-move-sweep` (red) |
+| Manual | Appendix C p.310: with ECS and CDANG=0 the Copper reaches `$03E`-`$07E`, "the same range as when the danger bit is set in the standard chip set". Appendix B pp.289-290 marks every address from `$040` to `$07E` not writable by the Copper unless CDANG is set, the ECS-only `BLTCON0L`, `BLTSIZV`, `BLTSIZH` and `DENISEID` rows included |
+| NanoMig | with CDANG=0 accepts `$080`-`$1FE` at `ecs=0` and `ecs=1` alike; the 32 addresses `$040`-`$07E` rejected, none falsely accepted |
+| Tests | `hrm/ch2-copper-move-range` `T9` and `T16` (both ends the appendix prints); `hrm/ch2-copper-move-sweep` (red). Appendix B's reading is green: `hrm/ch8-appb-copper-access-marks` `CTRL-BLTCON0` |
+
+Addresses here are the manual's byte addresses. A Copper instruction encodes
+DA8-1, so the module's register ports carry them halved and the sweep prints
+them that way.
 
 **WinUAE** - `custom.cpp:2806`:
 
@@ -232,24 +245,26 @@ NanoMig, in the other direction.**
         }
     }
 
-So all three sources give three different answers for **ECS with CDANG=0**:
+So for **ECS with CDANG=0** the manual gives two answers and every implementation
+takes the same one:
 
 | source | lowest writable address |
 |---|---|
-| Appendix C p.310, as read | `$20` |
-| NanoMig | `$40` |
-| WinUAE **and** vAmiga | `$80` |
+| Appendix C p.310, as read | `$03E` |
+| Appendix B pp.289-290 | `$080` |
+| NanoMig | `$080` |
+| WinUAE **and** vAmiga | `$080` |
 
 Both emulators apply **no ECS relaxation at all while CDANG is clear** - the
-threshold is `$80` on every chipset - and they relax only for CDANG=1 on ECS.
-NanoMig sits between the manual and the emulators.
+threshold is `$080` on every chipset - and they relax only for CDANG=1 on ECS.
+NanoMig does exactly the same, and so do Denise and Copperline.
 
-**This is the one place the emulator evidence may bear on the oracle rather than
-on the fix**, because two independent implementations reading the same appendix
-both concluded something the appendix does not appear to say. Before changing RTL,
-re-read p.310 against the printed scan and ask whether the sentence means what the
-inventory took it to mean. `third-witness.md` rule 1 admits an emulator for
-exactly that question.
+**This is the one place the emulator evidence bears on the oracle rather than
+on the fix**, and it is the question `third-witness.md` rule 1 admits an
+emulator for: a contradiction inside the manual. The finding is filed against
+the printed page ([`findings/NM-HRM-004.md`](../findings/NM-HRM-004.md)); no RTL
+change follows from it, and whether p.310's CDANG-clear sentence describes the
+ECS Agnus is a question for someone who knows it.
 
 ## NM-HRM-005 — WAIT and SKIP take longer than the manual states - **compared; needs hardware**
 
@@ -283,15 +298,16 @@ is the obvious next piece if this is the finding you want to act on first.
 | Key | Finding | Manual | NanoMig | WinUAE | vAmiga |
 |---|---|---|---|---|---|
 | NM-HRM-020 | `BLTSIZV` ECS gating | ECS-only | **not gated** | gated | gated |
-| NM-HRM-021 | `DOFF` line-mode D disable | ECS, disables D | **absent** | implemented | **absent** (constant only) |
-| NM-HRM-022 | `BLTxPTH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
-| NM-HRM-003 | `COP1LCH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register | wide register, narrowed on access by chipset |
-| NM-HRM-004 | CDANG=0 lowest address | `$20` on ECS | `$40` | `$80` | `$80` |
+| NM-HRM-021 | `DOFF` D disable | ECS, disables D | **absent** | implemented | **absent** (constant only) |
+| NM-HRM-022 | `BLTxPTH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register, narrowed on the bus by chipset | wide register, narrowed on access by chipset |
+| NM-HRM-003 | `COP1LCH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register, narrowed on the bus by chipset | wide register, narrowed on access by chipset |
+| NM-HRM-004 | CDANG=0 lowest address | `$03E` on ECS (p.310); `$080` (Appendix B) | `$080` | `$080` | `$080` |
 | NM-HRM-005 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | not compared | **4 / 8 / 8 — NanoMig's own numbers** |
 
 **NM-HRM-022 and NM-HRM-003 are one decision.** NM-HRM-020 and NM-HRM-021 are
-independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 should start
-with a re-reading of the manual rather than with RTL. NM-HRM-005 has since been
+independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 asks for no
+RTL change: it is filed against the printed page, where Appendix B and p.310
+disagree, and NanoMig and both emulators follow Appendix B. NM-HRM-005 has since been
 compared and does not need more comparison: vAmiga measures exactly NanoMig's
 three numbers, so no emulator separates the two readings. What it needs is real
 hardware. The maintained statement of that is

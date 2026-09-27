@@ -20,16 +20,16 @@ and no more.
 
 ## The one that changes an existing finding
 
-### NM-HRM-002 — audio stereo sides: the 2–1 became 2–2
+### NM-HRM-002 — audio stereo sides: three of four with the pin list
 
-The register currently says two emulators settle this against the RTL. That is no
-longer supportable as written.
+The implementations do not settle this against the RTL: three of the four take
+the pin list's side, which is NanoMig's.
 
 | | channels 0 and 3 go | agrees with |
 |---|---|---|
 | chapter 5, printed p.137 | **right** | — |
-| appendix pin list | **left** | — |
-| WinUAE | right | chapter 5 |
+| appendix pin list, printed p.326 | **left** | — |
+| WinUAE `audio.cpp:1153-1165` | left | the pin list — and NanoMig |
 | vAmiga | right | chapter 5 |
 | **Denise** `paula/paula.cpp:354` | **left** | the pin list — and NanoMig |
 | **Copperline** `chipset/paula.rs:2180` | **left** | the pin list — and NanoMig |
@@ -48,16 +48,20 @@ Copperline says why, in the code:
 > routing."
 
 So one of the four knows about the contradiction and chose the pin list
-deliberately. **Two implementations on each side.** The finding's red stands —
-the manual still contradicts itself and NanoMig still has to pick a side — but
-the sentence "two emulators settle it" has to go.
+deliberately. WinUAE's stereo mix writes channels 0 and 3 as the first sample
+of each frame, which its Windows output plays on the left speaker, so it sides
+with the pin list too
+([`NM-HRM-002`](../findings/NM-HRM-002.md)). **Three against one**, vAmiga
+alone playing p.137. The finding's red stands — the manual still contradicts
+itself and each printed sentence is graded on its own — and it is filed against
+the printed page: no RTL change follows from it.
 
-## Where a fourth implementation matches the manual for the first time
+## Where a fourth implementation matches the manual in the register
 
 ### NM-HRM-003 and NM-HRM-022 — the pointer width
 
-Until now no implementation narrowed a DMA pointer by chipset. Copperline does,
-and its OCS width is exactly the manual's.
+Copperline narrows the pointer **register** by chipset, and its OCS width is
+exactly the manual's.
 
 ```rust
 // Copperline, chipset/agnus.rs:113
@@ -77,21 +81,26 @@ alike, under a comment that states the intent plainly:
 > reach as well as the installed chip RAM: an 8372A drops bit 20 even with 2 MB
 > fitted, and **OCS stops at 512 KiB**."
 
-**Denise does the opposite and applies no mask at all** —
+**Denise masks by installed chip RAM, not by chipset** —
 `agnus/copper.cpp:347` is `cop1lc = (cop1lc & 0xffff) | (value << 16);`, which
-takes the whole sixteen-bit write.
+takes the whole sixteen-bit write, and the fetch masks it with `dmaChipMemMask`,
+the chip RAM size less one (`agnus/dma.cpp:416-424`); the blitter's stored
+pointer gets the same mask (`agnus/blitter.cpp:340-344`).
 
-| | narrows the pointer by chipset |
+| | narrows an OCS fetch address to 19 bits |
 |---|---|
-| WinUAE | no |
-| vAmiga | no (narrowed on access, not by chipset) |
-| Denise | **no** — no mask on the high word at all |
-| **Copperline** | **yes, to 19 bits on OCS** |
+| WinUAE | **yes, on the bus** — `chipmem_full_mask = 0x80000 - 1` without `CSMASK_ECS_AGNUS` (`memory.cpp:2619-2623`); the register stays wide |
+| vAmiga | **yes, on the bus** — `addr &= agnus.ptrMask;` on every Agnus DMA access (`Memory.cpp:1623`), `ptrMask = 0x07FFFF` for an OCS Agnus (`Agnus.cpp:190-194`); the register stays wide |
+| Denise | no — masks to the installed chip RAM, not by Agnus revision |
+| **Copperline** | **yes, in the register** |
 | NanoMig | no |
 
-One implementation of four now does what the manual describes. That does not
-settle NM-HRM-003 or NM-HRM-022, and it is the first evidence that the manual's
-sentence is implementable rather than merely printed.
+Three implementations of four narrow an OCS fetch address to the manual's width,
+Copperline in the register, WinUAE and vAmiga on the bus
+([`NM-HRM-003`](../findings/NM-HRM-003.md),
+[`NM-HRM-022`](../findings/NM-HRM-022.md)). The manual's sentence is
+implementable rather than merely printed, and the implementations side with it,
+not with NanoMig's unconditional five high bits.
 
 ## Where the additional witnesses strengthen a finding
 
@@ -140,8 +149,10 @@ sub-pixel phase is compared only in SuperHires:
 if (spr0.armed && (hPos == spr0.x) && (!_shres || ((p & 2) == spr0.shsh10)))
 ```
 
-This was previously the weakest of the chapter-3 sprite findings, because the
-first two emulators disagreed with each other. Two more implement it.
+WinUAE and vAmiga implement it too, and on ECS all four confine its effect on
+position to SuperHires: vAmiga and WinUAE mask it out of the start position
+outside SuperHires, and Copperline adds it only while SHRES is set
+([`NM-HRM-019`](../findings/NM-HRM-019.md)).
 
 ### NM-HRM-023 — the ATTACH bit is honoured in the even sprite
 
@@ -175,28 +186,43 @@ appendix C describes:
 doff = agnus.ecsAndHigher() && (bltcon1 & 0x80);
 ```
 
-In Copperline the string appears only in a comment in `chipset/blitter.rs:359`;
-no decode was found for BLTCON1 bit 7. Recorded as not-found rather than
-not-implemented — a grep is weaker than a reading.
+Copperline implements it too, ECS-gated:
 
-WinUAE implements DOFF, vAmiga does not. With Denise, that is two of four
-implementing it.
+```rust
+// Copperline, chipset/blitter.rs:1663
+write_d: use_d && con1 & BLTCON1_DOFF == 0,
+```
 
-### NM-HRM-015 — BRDNTRAN is declared and never connected
+no D store in an area blit while the bit is set, and the bit masked off on an
+OCS Agnus (`bus/custom_regs.rs:633-641`).
+
+WinUAE implements DOFF, vAmiga does not. With Denise and Copperline, that is
+three of four implementing it, each gated on ECS Agnus
+([`NM-HRM-021`](../findings/NM-HRM-021.md)).
+
+### NM-HRM-015 — BRDNTRAN is declared and never connected (withdrawn)
 
 **Copperline implements it and has a test for it** —
-`video/bitplane/tests.rs:1389`, `bplcon3_brdntran_keeps_border_opaque_for_color_key`,
-driving `BPLCON3_BRDNTRAN`. Denise does not mention the name anywhere in its
-Amiga core.
+`video/bitplane/tests.rs:1389-1415`, `bplcon3_brdntran_keeps_border_opaque_for_color_key`,
+driving `BPLCON3_BRDNTRAN` — as genlock keying only: while the bit is set the
+border is never genlock-transparent (`video/bitplane.rs:997`), and the test
+expects the border's colour unchanged and only its alpha opaque. Denise does not
+read the bit and models no genlock; it decodes bits 5 and 0 of BPLCON3
+(`video/denise.cpp:414-415`).
 
 The earlier reading recorded that both of the first two emulators show no RGB
-effect and called it a genlock concept. One of the two new implementations
-treats it as a real, testable border behaviour.
+effect and called it a genlock concept. Copperline's test agrees: none of the
+four changes the border's colour for this bit. The finding is withdrawn
+([`NM-HRM-015`](../findings/NM-HRM-015.md)): every page that names the bit
+places it among the genlock features, and no page gives it an effect on the
+colour the border is drawn in.
 
 ## Where nothing was found, and that is the report
 
-`grep` over both cores found no chipset-revision branch in Denise's Agnus at all,
-which is why its pointer takes the full write. For NM-HRM-004 both new
+Denise's Agnus has no chipset-revision condition on a pointer's width, which is
+why its pointer takes the full write; its one chipset condition on the DMA mask
+widens it rather than narrowing it (`agnus/memory.cpp:695-698`,
+[`NM-HRM-022`](../findings/NM-HRM-022.md)). For NM-HRM-004 both new
 implementations agree with NanoMig and against the printed sentence:
 
 ```rust
@@ -219,24 +245,28 @@ cdang = (value & 2) ? (agnus.ecsAndHigher() ? 0 : 0x40) : 0x80;
 ```
 
 Both require the danger bit **set** to reach `$040`–`$07E`. Appendix C p310 says
-that on ECS a **clear** danger bit reaches `$03E`–`$07E`. **Four implementations
-now read that sentence the other way**, which is what `findings.md` already says
-about it: read literally, clearing the bit would grant the range that setting it
-grants, leaving the bit with nothing to do.
+that on ECS a **clear** danger bit reaches `$03E`–`$07E`; Appendix B, pp.289-290,
+marks every address from `$040` to `$07E` not writable by the Copper unless the
+danger bit is set, rows of registers that exist only in ECS included. **All four
+implementations do what Appendix B marks**, as NanoMig does, and none cites
+Appendix C; the finding is filed against the printed page
+([`NM-HRM-004`](../findings/NM-HRM-004.md)).
 
-Copperline adds one nuance nobody else has: `$000`–`$03E` is reachable on
-**non-OCS only**, and with the danger bit set. That is a chipset distinction the
-manual does not make in that range.
+Copperline makes `$000`–`$03E` reachable on **non-OCS only**, and with the
+danger bit set. That is not a nuance of its own: WinUAE, vAmiga and Denise do
+the same, and it is the chipset distinction p.310 makes, *"Now, in the ECS, if
+this bit is set, the Copper can access all of the Amiga chip registers"*
+([`NM-HRM-053`](../findings/NM-HRM-053.md), withdrawn).
 
 ## The second reading, and the finding it splits
 
 Eight findings carried dashes after the first pass. They were read rather than
 searched, and seven of the eight came back with an answer.
 
-### NM-HRM-016 and NM-HRM-017 — SuperHires colour: a second 2–2
+### NM-HRM-016 and NM-HRM-017 — SuperHires colour: 2–2 for bitplanes, one of four for sprites
 
 The register said *"both side with the manual; NanoMig is the outlier"*, on the
-strength of WinUAE and vAmiga. That is no longer the whole picture.
+strength of WinUAE and vAmiga. That is not the whole picture.
 
 **Denise keeps one colour per register in every mode.** `setColor` is three lines
 and none of them looks at the resolution:
@@ -261,18 +291,20 @@ fn shres_playfield_output_resolves_each_35ns_sample_through_the_palette() {
     // palette[1], never a pair-encoded entry.
 ```
 
-| | reinterprets the colour registers in SuperHires |
-|---|---|
-| WinUAE | yes, ECS Denise only |
-| vAmiga | yes, ECS Denise only |
-| **Denise** | **no** — one table, no mode |
-| **Copperline** | **no** — stated deliberately, with a test |
-| NanoMig | no |
+| | bitplanes: pairs pixels into the lower sixteen registers (NM-HRM-017) | sprites: reads `$10`–`$1F` as p.302 describes (NM-HRM-016) |
+|---|---|---|
+| WinUAE | yes, ECS Denise only | **yes**, ECS Denise only (`drawing.cpp:4622-4638`) |
+| vAmiga | yes, ECS Denise only | **no** — pair-encodes from the lower sixteen alone (`PixelEngine.h:114-120`) |
+| **Denise** | **no** — one table, no mode | **no** — one table, no mode |
+| **Copperline** | **no** — stated deliberately, with a test | **no** — one register of the classic sprite block in every mode (`video/bitplane/sprite.rs:121-146`) |
+| NanoMig | no | no |
 
-**Two against two.** The second finding after NM-HRM-002 where the four split
-evenly, and the same lesson: *two implementations agreeing is not four.* The reds
-stand — the manual describes a feature NanoMig has not built — but "both side with
-the manual" was a statement about how many had been read.
+**Two against two for the bitplanes, one of four for the sprites**
+([`NM-HRM-017`](../findings/NM-HRM-017.md),
+[`NM-HRM-016`](../findings/NM-HRM-016.md)), and the same lesson as
+NM-HRM-002: *two implementations agreeing is not four.* The reds stand — the
+manual describes a feature NanoMig has not built — but "both side with the
+manual" was a statement about how many had been read.
 
 ### NM-HRM-006 — the DDF mask: four of four, and one of them says why
 
@@ -361,7 +393,9 @@ Bit 0 in every chipset, bit 4 from ECS Denise, bit 3 only on AGA — which is th
 split NM-HRM-013 was withdrawn into and NM-HRM-019 carries. **But
 `sprite_sprctlmask` is written at those three lines and read nowhere else in this
 checkout**, so it records an intent and is not evidence of behaviour. Said plainly
-because a citation that looks decisive and is dead is worse than a dash.
+because a citation that looks decisive and is dead is worse than a dash. The
+live decode is `drawing.cpp:2825-2836`, and it makes the same split: bit 4 from
+ECS Denise on, bit 3 only on AGA ([`NM-HRM-019`](../findings/NM-HRM-019.md)).
 
 Denise and Copperline both take SH0 unconditionally — `spr.x |= value & 1;`
 (`denise.cpp:298`) and `((pos & 0x00FF) << 1) | (ctl & 0x0001)`
@@ -385,18 +419,23 @@ That is a different register function from the SPRHWRM the ECS appendix names.
 - **313 PAL lines.** Copperline states it as a constant, `PAL_LINES = 313`
   (`agnus.rs:7`), and non-interlaced fields are all long frames. Denise reaches
   the same number the other way: `lines = ntsc ? 261 : 311` (`agnus.cpp:178`) with
-  the frame restarting at `vPos == (lines + lof)`. All four run a 313-line field.
+  the frame restarting at `vPos == (lines + lof)`. All four run a 313-line field
+  with the long-frame bit set; WinUAE clears the bit at a hard reset and runs
+  312-line fields after one ([`NM-HRM-001`](../findings/NM-HRM-001.md)).
 - **The half colour clock is an alternating whole line, not a fraction.** Denise
   computes NTSC as `227.5 * 263.0` *with the long/short line flip-flop doing the
   alternation*, and PAL as a flat `227.0 * 313.0` (`agnus.cpp:1030-1032`);
   Copperline carries an integer `COLORCLOCKS_PER_LINE` plus a separate
   `NTSC_LONG_COLORCLOCKS_PER_LINE`. Both say what the source observation says.
-- **The PAL vertical blank does not settle.** Denise's fixed blank clears at
-  `vPos == (ntsc ? 19 : 24)` (`agnus.cpp:448`) — a PAL-minus-NTSC gap of five
-  lines, which is NanoMig's gap and not the manual's eight. Copperline models the
-  *programmable* blank under VARVBEN and anchors its render window at vpos `$2C`,
-  which is the display window's top, a different quantity. **Not comparable
-  without running it**, and recorded that way rather than forced into a number.
+- **The PAL vertical blank ends before Table 3-13's $1D in both.** Denise's
+  fixed blank clears at `vPos == (ntsc ? 19 : 24)` (`agnus.cpp:449-453`), so its
+  last blanked line is 23 in PAL and 18 in NTSC — a PAL-minus-NTSC gap of five
+  lines, which is NanoMig's gap and not the manual's eight. Copperline models a
+  fixed blank beside the programmable one, clearing at the first display-DMA
+  line, `VideoStandard::Pal => 25` and `VideoStandard::Ntsc => 20`
+  (`bus.rs:8655-8666`): last blanked line 24 in PAL and 19 in NTSC, again a gap
+  of five ([`NM-HRM-011`](../findings/NM-HRM-011.md), filed against the printed
+  page).
 
 ## What is still a dash, and why
 
@@ -404,8 +443,6 @@ That is a different register function from the SPRHWRM the ECS appendix names.
 |---|---|---|
 | NM-HRM-005 | WinUAE, Denise, Copperline | Copper WAIT/SKIP cycle *times*. A count in a source is not a time on a bus; this one needs the emulators run, not read. |
 | NM-HRM-007 | Denise | its fetch unit was not traced far enough to say whether an odd hires word count is producible. |
-| NM-HRM-010 | WinUAE, vAmiga | not read for this; Denise and Copperline were enough to make the point. |
-| NM-HRM-012, NM-HRM-013 | vAmiga | its SPRxCTL path defers the decode to a scheduled register change, and following it to the display was more than the question needed. |
 | NM-HRM-018 | WinUAE, vAmiga | not read for this. |
 
 **A dash in a finding's table means nobody has read that source for that

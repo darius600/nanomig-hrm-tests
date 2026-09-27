@@ -107,14 +107,14 @@ does not describe it. See the scope note in the top-level README.
 | `NM-HRM-024` audio pointer takes five high bits | `agnus_audiodma.v` | **yes** — file identical | **no** |
 | `NM-HRM-025` volume 64 collapses onto 63 | `paula_audio_mixer.v` | **yes** — file identical, OR-collapse included | **no** |
 | `NM-HRM-026` state codes differ from Figure 5-8 | `paula_audio_channel.v` | **yes** — file identical | **no** |
-| `NM-HRM-027` direct-mode interrupt is early | `paula_audio_channel.v` | **yes** — file identical | **no** |
+| `NM-HRM-027` direct-mode interrupt is early (withdrawn: Figure 5-8 raises it at the write, where NanoMig does) | `paula_audio_channel.v` | **yes** — file identical | **no** |
 | `NM-HRM-028` ADKCON attach bits reach nothing | `paula_audio_channel.v`, `paula.v` | **yes** for the channel; `paula.v` differs but not at the ADKCON wiring | **no** |
-| `NM-HRM-030` Paula does not decode DMACONR | `paula.v` | **yes** — `DMACONR` appears in none of the 50 differing lines, so both decode it the same way, which is to say not at all | **no** |
-| `NM-HRM-031` INTREQ bit 14 is settable | `paula_intcontroller.v` | **yes** — file identical | **no** |
-| `NM-HRM-015` BRDNTRAN declared and never connected | `denise.v` | **yes** — `BRDNTRAN` appears in none of the 91 differing lines | **no** |
+| `NM-HRM-030` Paula does not decode DMACONR (filed against the printed page: three of four implementations and the dissected 8364R7 answer `$002` from Agnus alone) | `paula.v` | **yes** — `DMACONR` appears in none of the 50 differing lines, so both decode it the same way, which is to say not at all | **no** |
+| `NM-HRM-031` INTREQ bit 14 is settable (filed against the printed page: Figure 7-4 serves it at level 6, as all four implementations do) | `paula_intcontroller.v` | **yes** — file identical | **no** |
+| `NM-HRM-015` BRDNTRAN declared and never connected (withdrawn: the manual gives the bit no effect on the border's colour) | `denise.v` | **yes** — `BRDNTRAN` appears in none of the 91 differing lines | **no** |
 | `NM-HRM-032` BEAMCON0 sync-polarity bits decoded nowhere | `agnus_beamcounter.v` | **yes** — the three commented-out `//wire` declarations are byte-identical (`:140-142` here, `:146-148` there) | **no** |
 | `NM-HRM-033` LOLDIS needs VARBEAMEN too | `agnus_beamcounter.v` | **yes** — `(loldis && varbeamen)` is byte-identical (`:295-297` here, `:282-284` there) | **no** |
-| `NM-HRM-034` VPOSR bit 12 carries `ntsc` in OCS | `agnus_beamcounter.v` | **yes** — the read mux differs only in a signal name (`vpos` here, `vpos_rb` there); the bit assignment is identical | **no** |
+| `NM-HRM-034` VPOSR bit 12 carries `ntsc` in OCS (withdrawn: p. 299 lists `10` in that field for the 8361 and 8370 NTSC Agnus) | `agnus_beamcounter.v` | **yes** — the read mux differs only in a signal name (`vpos` here, `vpos_rb` there); the bit assignment is identical | **no** |
 | `NM-HRM-035` any CIA-A write clears the overlay | `minimig.v` | **yes** — the two lines are byte-identical (`:861-862` here, `:933-934` there), in a file that otherwise differs in 601 lines | **no** |
 | `NM-HRM-036` chip banks 1-3 stay mapped under the overlay (withdrawn: p.223 allows it) | `gary.v` | **yes** — the four `sel_chip` lines are byte-identical (`:159-162` here, `:172-175` there), in a file that otherwise differs in 63 lines | **no** |
 
@@ -172,9 +172,9 @@ makes `ovl` a register set on reset and cleared by *any* write to CIA-A; MiSTer'
 `:933-934` is byte-identical. **TC64 has no such lines.** There `ovl` is a plain
 `wire` (`rtl/minimig/minimig.v:343`) taken straight from CIA-A's port-A output
 (`:922`), which `ciaa.v` computes from `regporta` gated by `ddrporta` — the
-effective-pin formula all four independent implementations use. TC64 moved the
-decision out of `minimig.v` entirely, to a place where it tracks the OVL bit by
-construction.
+effective-pin formula vAmiga, Denise, Copperline and WinUAE's models without
+Gayle use. TC64 moved the decision out of `minimig.v` entirely, to a place where
+it tracks the OVL bit by construction.
 
 **NM-HRM-046 — the drive light follows DMA, not the motor.** Both alternatives
 are present in all three trees and the lines differ only in which one is live:
@@ -202,12 +202,17 @@ finding: TC64's lamp is still the single aggregate, not one per drive.
   out and drives `portb_out`, but the top-level CIA-A instantiation never
   connects `.portb_out` and the read mux still ignores it. The register exists
   and reaches nothing.
-- **NM-HRM-015** — `BRDNTRAN`. Live in TC64 at `denise.v:205,224` and still
-  consumed nowhere: a dangling net rather than a connected one. Same observable
-  behaviour, different shape.
-- **NM-HRM-037** — the right port's pot X. TC64 has an `_mthird1 &` term that
-  reads like a fix, but its default build defines `MINIMIG_PS2_MOUSE`, which
-  hardwires `_mthird1` to `1'b1`. The built behaviour matches NanoMig's.
+- **NM-HRM-015** (withdrawn) — `BRDNTRAN`. Live in TC64 at `denise.v:205,224`
+  and still consumed nowhere: a dangling net rather than a connected one. Same
+  observable behaviour, different shape.
+- **NM-HRM-037** — the right port's pot X. TC64 has an `_mthird1 &` term, and
+  what it does depends on the board. The builds whose top level is
+  `minimig_virtual_top.v`, the Chameleon (TC64) builds among them, define
+  `MINIMIG_PS2_MOUSE` (`rtl/soc/minimig_defines.vh:13`), which hardwires
+  `_mthird1` to `1'b1` (`userio.v:517`); there the built behaviour matches
+  NanoMig's. The MiST and SiDi builds (`minimig_mist_top.v`) do not define it,
+  and there the term is live: a second host mouse's middle button
+  (`userio.v:574`), not a joystick pin.
 
 ### Where the second line has less than NanoMig
 
