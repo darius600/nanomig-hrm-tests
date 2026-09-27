@@ -71,8 +71,8 @@
 // the clk7_en/c1/c3 four-phase clocking, the reg_address_in/data_in write
 // sequencing, the SPR0DATA=0x8000 arm-on-write convention, and the SPR1CTL
 // bit 7 (ATTACH) -> combined-colour-index convention are those of
-// hrm/denise_sprites/test_denise_sprites.cpp, the sibling harness for the
-// SAME module. The two numeric expectations -- that a +1 step of SPRxPOS's
+// hrm/denise_sprites/test_denise_sprites.cpp, the pre-pipeline harness for
+// the SAME module (removed). The two numeric expectations -- that a +1 step of SPRxPOS's
 // byte moves the measured start by exactly 2 raw units, and that SPRxCTL's
 // bit 0 (SH0) moves it by exactly 1 -- follow directly from the two quoted
 // bit-table rows themselves ("07-00 SH8-SH1 Start horizontal value. Low bit
@@ -421,8 +421,8 @@ public:
     int failed = 0;
 };
 
-// Word-address register map, as in hrm/denise_sprites/
-// test_denise_sprites.cpp for this same module: SPRPOSCTLBASE is byte
+// Word-address register map, as in the pre-pipeline hrm/denise_sprites/
+// test_denise_sprites.cpp for this same module (removed): SPRPOSCTLBASE is byte
 // address 0x140 (PACKAGE.md's own evidence field), so word address
 // (reg_address_in) is 0x140>>1 = 0xA0 for SPR0POS; each sprite occupies
 // 4 consecutive word addresses (POS, CTL, DATA, DATB), 8 sprites total.
@@ -452,8 +452,9 @@ struct Meas {
 // optionally, sprite 1 for the ATTACH case) with a known image, sweep
 // hpos, record when/what becomes visible. Clocking (clk7_en/c1/c3
 // four-phase tick, reg_address_in/data_in write sequencing) and the
-// DATB=0/DATA=0x8000 arm-on-write convention are those of the sibling
-// harness for this same module (see HARNESS AND EXPECTED VALUES above).
+// DATB=0/DATA=0x8000 arm-on-write convention are those of the
+// pre-pipeline harness for this same module (see HARNESS AND EXPECTED
+// VALUES above).
 class Harness {
 public:
     Harness(uint8_t aga, uint8_t spres) : dut(new Vdenise_sprites) {
