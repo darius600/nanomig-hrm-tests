@@ -5,7 +5,7 @@
 //   (connector pin 6 -> FIRE0/FIRE1 -> CIAAPRA bit), p.334's EXTERNAL DISK
 //   CONNECTOR figure (pin 22, INDEX*), and p.337's PART 4 -- PORT SIGNAL
 //   ASSIGNMENTS FOR 8520 CIAS (both CIA-A and CIA-B port tables in full).
-//   Fixture `minimig`, the task sheet's own `top` for this package -- the
+//   Fixture `minimig` -- the
 //   whole chipset, needed because every proposition here is a JOIN fact
 //   (connector pin <-> CIA port bit, or CIA-A write <-> Gary's overlay
 //   decode) only visible at this boundary, exactly as
@@ -24,42 +24,34 @@
 //   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// THIS IS THE LOT'S CENTRAL PACKAGE -- the build brief named three finding
-//   candidates touching it:
-//     1. The fire buttons, predicted RED (p.329/p.327 vs the RTL).
-//     2. No assertion in the suite drives ovl=1 (the ROM/RAM overlay half
-//        of PA0, p.337 vs appendix F's p.351).
-//     3. PA1's audio-filter clause exists only in appendix E.
-//   CANDIDATE 2 IS FALSE and is not reported as a measurement -- per a
-//   correction received from the coordinator mid-build and independently
-//   re-verified here (grep on the cited package's own source, not taken on
-//   the correction's word alone) before acting on it: `hrm/ch7-reset-
-//   overlay` (TOP_MODULE=gary, accepted) already grades ovl=1 selecting
-//   Kickstart ROM at $000000 (OVERLAY-ROM-AT-000000) and ovl=0 selecting
-//   chip RAM (OVL-CONTROL-BASELINE-000000). The build brief's own premise
-//   named the wrong chapter-7 package (ch7-overlay-source instead of
-//   ch7-reset-overlay). PA0's ROM-over-RAM sub-proposition is therefore
-//   DECLINED below (PA0-ROM-OVER-RAM-ALREADY-GRADED), not graded fresh; see
-//   that record() for what this package's own fixture still adds (the
-//   CIA-A-write-to-gary-decode JOIN, measured as confirmation, not new
-//   coverage). Candidates 1 and 3 stand as the build brief described them.
-//   None of the three is adjudicated here (per the build brief: "Each is
-//   measured and recorded; none is adjudicated"). Candidate 3 is one clause
-//   of one of THIS package's own 48 claims' printed rows (PA1's audio-
-//   filter clause) and is engaged with as such -- but per the coordinator's
-//   correction on the bundled-claim shape (see PA1-DRIVES-LED-0-IS-BRIGHT
-//   and PA1-ROW-PARTIALLY-COVERED below), that row's own two uids are
-//   carried on the record() line, not a graded one. Candidate 1's textual
-//   proposition ("the LEFT port's fire is on
-//   bit 7", p.329) belongs to a DIFFERENT package (appDE-fire-buttons-ciaa)
-//   -- no uid in this package's own 48 claims states it -- so it is not
-//   graded here under a foreign uid (the build brief: "never name another
-//   claim's uid in a graded label, not even to disown it"). What this
-//   package's fixture uniquely supplies, because it alone can see the
-//   connector pins, the CIA-A port bits AND userio.v's own internal joins
-//   in one build, is the MEASUREMENT of the connector-to-bit fact the
-//   candidate depends on -- see FINDING-CANDIDATE-1-JOY0DAT-VS-FIRE-BIT
-//   below, a note(), not an expect(), for exactly that reason.
+// Three questions touch this package; each is measured and recorded, none
+//   is adjudicated here:
+//     1. The fire buttons (p.329/p.327 vs the RTL). The textual proposition
+//        ("the LEFT port's fire is on bit 7", p.329) belongs to a DIFFERENT
+//        package (appDE-fire-buttons-ciaa) -- no uid in this package's own
+//        48 claims states it -- so it is not graded here under a foreign
+//        uid, and no other claim's uid is named in a graded label, not even
+//        to disown it. What this package's fixture uniquely supplies,
+//        because it alone can see the connector pins, the CIA-A port bits
+//        AND userio.v's own internal joins in one build, is the MEASUREMENT
+//        of the connector-to-bit fact the question depends on -- see
+//        FINDING-CANDIDATE-1-JOY0DAT-VS-FIRE-BIT below, a note(), not an
+//        expect(), for exactly that reason.
+//     2. The ROM/RAM overlay half of PA0 (p.337 vs appendix F's p.351).
+//        `hrm/ch7-reset-overlay` (TOP_MODULE=gary) grades ovl=1 selecting
+//        Kickstart ROM at $000000 (OVERLAY-ROM-AT-000000) and ovl=0
+//        selecting chip RAM (OVL-CONTROL-BASELINE-000000). PA0's
+//        ROM-over-RAM sub-proposition is therefore DECLINED below
+//        (PA0-ROM-OVER-RAM-ALREADY-GRADED), not graded fresh; see that
+//        record() for what this package's own fixture adds (the
+//        CIA-A-write-to-gary-decode JOIN, measured as confirmation, not new
+//        coverage).
+//     3. PA1's audio-filter clause exists only in appendix E. It is one
+//        clause of one of THIS package's own 48 claims' printed rows (PA1's
+//        row) and is engaged with as such -- but because that row bundles
+//        it with the LED clause (see PA1-DRIVES-LED-0-IS-BRIGHT and
+//        PA1-ROW-PARTIALLY-COVERED below), the row's own two uids are
+//        carried on the record() line, not a graded one.
 //
 // CLAIM COVERAGE (48 uids, all accounted for below):
 //   Fresh, graded with expect(), UID-FREE (2 propositions; no uid in this
@@ -68,15 +60,14 @@
 //     PA1-DRIVES-LED-0-IS-BRIGHT (p.337's PA1 row's LED clause. Its own
 //       uids, sol:E-portsig.c8/opus:E-portsig.c9, are NOT named here: that
 //       row's printed sentence bundles the LED clause with an untested
-//       audio-filter clause, classify.split is unset for both, and per a
-//       coordinator correction, independently re-verified, "an id whose
-//       claim bundles a clause this package does not test is withdrawn
-//       whole, not kept with a caveat in the prose" [chapter 5's own
-//       README]. Both uids are carried on ONE record() line instead --
+//       audio-filter clause, classify.split is unset for both, and "an id
+//       whose claim bundles a clause this package does not test is
+//       withdrawn whole, not kept with a caveat in the prose" [chapter 5's
+//       own README]. Both uids are carried on ONE record() line instead --
 //       PA1-ROW-PARTIALLY-COVERED, see below.)
 //     CONTROL-RESET-RELEASES (harness precondition, no manual page)
-//   Measured, not graded, informing but not adjudicating a finding
-//   candidate (no uid -- see the header note above):
+//   Measured, not graded, informing but not adjudicating one of the
+//   questions above (no uid -- see the header note above):
 //     FINDING-CANDIDATE-1-JOY0DAT-VS-FIRE-BIT
 //     PA0-OVL-DECODE-VIA-MINIMIG-JOIN (confirmation of an already-graded
 //       result reached through a fuller path -- see PA0-ROM-OVER-RAM-
@@ -88,18 +79,15 @@
 //   exact citation each one rests on. PA1-ROW-PARTIALLY-COVERED is the one
 //   group whose own proposition IS graded above, uid-free, by design).
 //
-// RTL read directly, both for this package's own fresh work and for
-//   independently verifying the mid-build correction on candidate 2 before
-//   acting on it: gary.v:159 `sel_chip[0] = cpu_address_in[23:19]==5'b0000_0
+// RTL read directly: gary.v:159 `sel_chip[0] = cpu_address_in[23:19]==5'b0000_0
 //   && (!ovl || cpu_hlt)`, gary.v:166 `sel_kick = (...) || (cpu_rd && ovl &&
 //   cpu_address_in[23:19]==5'b0000_0)` -- both INSIDE gary.v:145's `if (dbr)
 //   ... else` CPU-side branch; the `if (dbr)` branch (Agnus DMA's own turn)
 //   drives the SAME sel_chip/sel_kick wires from `dma_address_in` instead,
-//   entirely unrelated to `ovl` -- found the hard way, not anticipated: an
-//   early version of this package's own gary-decode sampling helper
-//   (read_with_decode) ignored `dbr` and got a self-contradictory reading
-//   (sel_chip[0]=1 while ovl=1, impossible per gary.v:159 alone) before
-//   this was traced back to the time-multiplexed branch; minimig.v:398
+//   entirely unrelated to `ovl` -- a decode sample that ignores `dbr` can
+//   read the DMA branch and give a self-contradictory reading
+//   (sel_chip[0]=1 while ovl=1, impossible per gary.v:159 alone), which is
+//   why read_with_decode samples only while dbr=0; minimig.v:398
 //   `wire cpuhlt = 1'b0;` (tied low in this build, so gary's `cpu_hlt` term
 //   never masks the overlay bit's own effect); minimig.v:337/339 declare
 //   `sel_chip`/`sel_kick` as minimig's
@@ -138,13 +126,13 @@
 //
 // Fixture plumbing (ClkGen, Harness::tick/bus_cycle/write_byte/read_byte,
 //   the long reset-acquisition budget, the harness-hygiene throwaway _as
-//   edge) is reused, not reinvented, from hrm/appF-cia-pin-bindings/
-//   test_minimig.cpp, itself reused from hrm/ch7-overlay-source and
+//   edge) is shared with hrm/appF-cia-pin-bindings/test_minimig.cpp, which
+//   shares it with hrm/ch7-overlay-source and
 //   hrm/ch8-cia-disk-signal-bindings -- this suite's own validated
-//   plumbing for this identical TOP_MODULE=minimig boundary. Reused as
-//   verified plumbing, not as a source of this package's own assertions;
-//   this package's own gary decode sampling (read_with_decode) and PA1/LED
-//   sequencing are new, built for this package's own claims.
+//   plumbing for this identical TOP_MODULE=minimig boundary. It is
+//   plumbing, not a source of this package's own assertions; the gary
+//   decode sampling (read_with_decode) and PA1/LED sequencing are this
+//   package's own, for its own claims.
 //
 // MUTATION METHODOLOGY: every expect() below is guarded by a compile-time
 //   `-D` flag. Every mutation was actually built and run (WSL Verilator,
@@ -319,15 +307,13 @@ public:
         return low ? (uint8_t)(v & 0xFF) : (uint8_t)((v >> 8) & 0xFF);
     }
 
-    // NEW for this package: a full-word READ cycle at byte_addr that also
+    // A full-word READ cycle at byte_addr that also
     // samples Gary's own decode outputs (sel_chip[0], sel_kick -- minimig's
     // own top-level internal wires, GARY1's outputs, read via
     // --public-flat-rw through rootp->minimig, the same access style
     // hrm/appF-cia-pin-bindings already uses for `int2`/`int6`).
     //
-    // TWO TIMING TRAPS, both found empirically by this helper's own
-    // measurements going wrong before they were understood, not predicted
-    // in advance:
+    // TWO TIMING TRAPS, both measured with this helper:
     //
     // (1) gary.v:145's `always @(*) if (dbr) ... else ...` time-multiplexes
     //   sel_chip/sel_kick between Agnus's DMA-address decode (dbr=1, the
@@ -337,24 +323,24 @@ public:
     //   about (dbr=0, gary.v:159/:166). Chip bus arbitration keeps toggling
     //   `dbr` throughout normal operation (Agnus's own DMA slots), so a
     //   sample taken without checking `dbr` risks reading the WRONG
-    //   branch's output on the SAME wire -- measured directly: an earlier
-    //   version of this helper that OR-accumulated every tick regardless
-    //   of `dbr` read sel_chip[0]=1 even in the ovl=1 state, where gary.v's
-    //   own CPU-side formula (`addr_range && !ovl`) makes that impossible.
-    //   Fixed by gating every sample on `dbr==0`.
+    //   branch's output on the SAME wire -- measured directly: OR-
+    //   accumulating every tick regardless of `dbr` reads sel_chip[0]=1
+    //   even in the ovl=1 state, where gary.v's own CPU-side formula
+    //   (`addr_range && !ovl`) makes that impossible. Every sample is
+    //   therefore gated on `dbr==0`.
     //
     // (2) minimig_m68k_bridge.v's `rd = enable & lr_w`, `enable = ~l_as &
     //   ~l_dtack & ~cck`, is only asserted during specific `cck` phases
     //   before dtack is recognized -- a single fixed-tick or
     //   dtack-coincident sample risks catching a tick where `rd` (and
     //   therefore sel_kick's read-qualified term) is momentarily low even
-    //   though the cycle is genuinely a read -- measured directly: a
-    //   version of this helper that sampled only at the dtack-coincident
-    //   tick read sel_kick=0 in BOTH the ovl=1 and ovl=0 states, again
-    //   impossible per gary.v:166. Fixed by OR-accumulating every
-    //   dbr==0-qualified sample across the whole window: once gary's own
-    //   CPU-side decode has been true for even one qualifying tick, that
-    //   is what a 68000 latching data on `rd`'s pulse would have seen.
+    //   though the cycle is genuinely a read -- measured directly: sampling
+    //   only at the dtack-coincident tick reads sel_kick=0 in BOTH the
+    //   ovl=1 and ovl=0 states, again impossible per gary.v:166. The helper
+    //   therefore OR-accumulates every dbr==0-qualified sample across the
+    //   whole window: once gary's own CPU-side decode has been true for
+    //   even one qualifying tick, that is what a 68000 latching data on
+    //   `rd`'s pulse would have seen.
     bool read_with_decode(uint32_t byte_addr, uint8_t& chip0_out, uint8_t& kick_out) {
         dut->cpu_address = (byte_addr >> 1) & 0x7FFFFFu;
         dut->cpu_r_w = 1;
@@ -420,19 +406,13 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // PA0's "ROM/RAM overlay bit" sub-proposition (c) -- FINDING CANDIDATE 2
-    // IS FALSE, per the coordinator's correction received mid-build and
-    // independently re-verified here before acting on it (not taken on
-    // trust): the build brief's own claim ("No assertion in the suite
-    // drives ovl=1... every occurrence of ovl outside ch7-overlay-source
-    // holds it at 0") named the wrong package. `hrm/ch7-reset-overlay`
-    // (TOP_MODULE=gary, accepted) already grades exactly this decode
-    // behaviour: its OVL-CONTROL-BASELINE-000000 asserts ovl=0 at $000000
-    // gives sel_chip[0]=1/sel_kick=0, and its OVERLAY-ROM-AT-000000 asserts
-    // ovl=1 at $000000 gives sel_kick=1 (test_gary.cpp:280-330), with
-    // MUT_B1 forcing ovl=0 to redden the second. Confirmed directly here
-    // (grep on that package's own source), not accepted on the
-    // coordinator's word alone.
+    // PA0's "ROM/RAM overlay bit" sub-proposition (c) -- the header's
+    // second question. `hrm/ch7-reset-overlay` (TOP_MODULE=gary) grades
+    // exactly this decode behaviour: its OVL-CONTROL-BASELINE-000000
+    // asserts ovl=0 at $000000 gives sel_chip[0]=1/sel_kick=0, and its
+    // OVERLAY-ROM-AT-000000 asserts ovl=1 at $000000 gives sel_kick=1
+    // (test_gary.cpp:280-330), with MUT_B1 forcing ovl=0 to redden the
+    // second.
     // What this package's own fixture adds beyond that -- reaching ovl=1
     // and ovl=0 through a REAL CIA-A PRA write at `minimig` rather than by
     // hand-setting gary's `ovl` input in isolation -- is measured below as
@@ -479,9 +459,8 @@ int main(int argc, char** argv) {
     // (sol:E-portsig.c8, opus:E-portsig.c9) bundles TWO clauses in one
     // sentence -- "led light (0=bright)" AND "audio filter control (A500 &
     // A2000)" -- and classify.split is unset for both: nobody split this
-    // claim into sub-ids. Per a coordinator correction (independently
-    // re-verified: both claims' own restatement/quote text do read as one
-    // bundled sentence, not two), naming the uid inside a passing assertion
+    // claim into sub-ids. Both claims' own restatement/quote text read as
+    // one bundled sentence, not two, so naming the uid inside a passing assertion
     // that grades only the LED third of it, with the audio-filter third
     // caveated in the prose, still puts the uid on a graded line -- and
     // `check_uid_placement.py` (and any transitive coverage figure built
@@ -527,23 +506,21 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // PA1-ROW-PARTIALLY-COVERED (p.337, sol:E-portsig.c8, opus:E-portsig.c9
-    // -- BOTH uids, on this ONE record() line, per the coordinator's
-    // correction: the claim as printed bundles two clauses in one sentence
-    // ("led light (0=bright)" AND "audio filter control (A500 & A2000)"),
-    // classify.split is unset for both, and an id whose claim bundles a
-    // clause this package does not test is withdrawn whole rather than kept
-    // on a graded line with a caveat in the prose -- the precedent is
-    // chapter 5's own README, quoted by the coordinator: "Naming an id
-    // inside a passing assertion in order to disclaim it still puts the id
-    // on a graded line." So neither uid appears on any PASS/FAIL line in
-    // this package; this record states the row's whole disposition.
-    // FINDING CANDIDATE 3: "PA1's audio-filter clause exists only in
-    // appendix E."
+    // -- BOTH uids, on this ONE record() line: the claim as printed
+    // bundles two clauses in one sentence ("led light (0=bright)" AND
+    // "audio filter control (A500 & A2000)"), classify.split is unset for
+    // both, and an id whose claim bundles a clause this package does not
+    // test is withdrawn whole rather than kept on a graded line with a
+    // caveat in the prose -- the precedent is chapter 5's own README:
+    // "Naming an id inside a passing assertion in order to disclaim it
+    // still puts the id on a graded line." So neither uid appears on any
+    // PASS/FAIL line in this package; this record states the row's whole
+    // disposition. The header's third question: "PA1's audio-filter clause
+    // exists only in appendix E."
     // =========================================================================
     checks.record(
         "PA1-ROW-PARTIALLY-COVERED (p.337, \"PA1..LED*: led light "
-        "(0=bright) / audio filter control (A500 & A2000)\" -- FINDING "
-        "CANDIDATE 3, standing as the build brief states it): the row "
+        "(0=bright) / audio filter control (A500 & A2000)\"): the row "
         "bundles two clauses. The LED clause is measured and graded, "
         "UID-FREE, on PA1-DRIVES-LED-0-IS-BRIGHT above (minimig.v:604-605's "
         "`_led = porta_out[1]` and minimig.v:427's `pwr_led = ~_led`, "
@@ -556,12 +533,10 @@ int main(int argc, char** argv) {
         "gateable RC low-pass element); no signal, parameter or port in "
         "this RTL corresponds to an audio filter PA1 could gate. "
         "Independently confirms (not merely cites) ch5-audio-filter-"
-        "bypass's own finding, and matches the coordinator's own "
-        "independent re-check (four total \"filter\" hits in the whole "
-        "source tree, none a gateable element). This is not a stimulus "
+        "bypass's own finding. This is not a stimulus "
         "this harness failed to find; there is no such stimulus to find, "
         "and inventing one would test a mechanism this RTL does not "
-        "implement -- the build brief explicitly forbids that. The row's "
+        "implement. The row's "
         "third, unbundled fact -- PA1 being one of CIAA's genuinely "
         "bidirectional port-A output bits -- is separately already graded "
         "by ch5-audio-filter-bypass's CIA-A-PRA-BIT1-WRITABLE/CIA-A-PRA-"
@@ -569,20 +544,19 @@ int main(int argc, char** argv) {
         "package's own header) and, blindly as one of eight swept "
         "positions, hrm/ch8-ciaa-port-direction's PROP-1/PROP-2. SO: the "
         "claim AS PRINTED -- both clauses together -- is not established by "
-        "this package. A well-argued HALT on the audio-filter third is a "
-        "result, not a gap in the work. [claims: sol:E-portsig.c8, "
+        "this package. [claims: sol:E-portsig.c8, "
         "opus:E-portsig.c9]");
 
     // =========================================================================
-    // FINDING-CANDIDATE-1-JOY0DAT-VS-FIRE-BIT -- no claim uid. FINDING
-    // CANDIDATE 1: "The fire buttons, predicted RED." p.329's "PRAO bit 7 =
+    // FINDING-CANDIDATE-1-JOY0DAT-VS-FIRE-BIT -- no claim uid; the
+    // header's first question, the fire buttons. p.329's "PRAO bit 7 =
     // Fire* left controller port" and p.327's "J12 is the left controller
     // port connector (JOY0DAT, POT0DAT)" are BOTH claims of a different
     // package (appDE-fire-buttons-ciaa) -- no uid in this package's own 48
     // claims states either sentence, so neither is graded here under a
     // foreign uid or a uid of this package's own that does not actually
     // say it. What this package's fixture uniquely supplies is the
-    // connector-to-bit measurement the candidate depends on, entirely
+    // connector-to-bit measurement the question depends on, entirely
     // self-contained in userio.v: whichever physical connector's motion
     // produces JOY0DAT, does ITS fire line land on PRA bit 7 or bit 6?
     // Both ends trace through the SAME internal register, `_sjoy1`, so
@@ -788,12 +762,8 @@ int main(int argc, char** argv) {
         "opus:E-portsig.c10 -- PA0-specificity sub-proposition only]");
 
     checks.record(
-        "PA0-ROM-OVER-RAM-ALREADY-GRADED (p.337, \"ROM/RAM overlay bit\" -- "
-        "the build brief's own FINDING CANDIDATE 2 named this half as "
-        "uncovered; that premise is FALSE and is not reported here as a "
-        "measurement. Per a mid-build correction, independently "
-        "re-verified against hrm/ch7-reset-overlay/test_gary.cpp before "
-        "acting on it: that accepted package, TOP_MODULE=gary, grades "
+        "PA0-ROM-OVER-RAM-ALREADY-GRADED (p.337, \"ROM/RAM overlay bit\"): "
+        "hrm/ch7-reset-overlay (test_gary.cpp, TOP_MODULE=gary) grades "
         "exactly this decode behaviour -- OVL-CONTROL-BASELINE-000000 "
         "[control] asserts ovl=0 at $000000 gives sel_chip[0]=1/sel_kick=0, "
         "and OVERLAY-ROM-AT-000000 [PROP-B, sol:7-reset.c4, "
@@ -821,36 +791,31 @@ int main(int argc, char** argv) {
         "drives/reads minimig's own top-level `dtr` pin through a real CPU "
         "bus cycle, requiring the complementary pattern so a neighbouring-"
         "bit swap goes red). Already graded -- the same binding, not a "
-        "narrower one. STALE-DECLINE NOTE this package's classify stage "
-        "already caught: hrm/appF-ciab-port-assignments declined the "
-        "p.351 twin of this row saying 'no accepted package currently "
-        "grades this binding at all (verified)'; that was true of a "
-        "ciab-only fixture and is no longer true of the suite -- "
-        "appF-cia-pin-bindings grades exactly this binding at `minimig`. "
+        "narrower one. "
         "[claims: sol:E-portsig.c23, opus:E-portsig.c25]");
 
     checks.record(
         "CIAB-PA6-RTS-BINDING (p.337, hrm/appF-cia-pin-bindings' "
         "RTS-IS-PRA-BIT6 [p.340, sol:F-ciab-map.c4, opus:F-ciab-map.c2]). "
-        "Same stale-decline correction as CIAB-PA7-DTR-BINDING above. "
+        "Already graded, as CIAB-PA7-DTR-BINDING above. "
         "[claims: sol:E-portsig.c24, opus:E-portsig.c26]");
 
     checks.record(
         "CIAB-PA5-CD-BINDING (p.337, hrm/appF-cia-pin-bindings' "
         "CD-IS-PRA-BIT5 [p.340, sol:F-ciab-map.c5, opus:F-ciab-map.c2]). "
-        "Same stale-decline correction as CIAB-PA7-DTR-BINDING above. "
+        "Already graded, as CIAB-PA7-DTR-BINDING above. "
         "[claims: sol:E-portsig.c25, opus:E-portsig.c27]");
 
     checks.record(
         "CIAB-PA4-CTS-BINDING (p.337, hrm/appF-cia-pin-bindings' "
         "CTS-IS-PRA-BIT4 [p.340, sol:F-ciab-map.c6, opus:F-ciab-map.c2]). "
-        "Same stale-decline correction as CIAB-PA7-DTR-BINDING above. "
+        "Already graded, as CIAB-PA7-DTR-BINDING above. "
         "[claims: sol:E-portsig.c26, opus:E-portsig.c28]");
 
     checks.record(
         "CIAB-PA3-DSR-BINDING (p.337, hrm/appF-cia-pin-bindings' "
         "DSR-IS-PRA-BIT3 [p.340, sol:F-ciab-map.c7, opus:F-ciab-map.c2]). "
-        "Same stale-decline correction as CIAB-PA7-DTR-BINDING above. "
+        "Already graded, as CIAB-PA7-DTR-BINDING above. "
         "[claims: sol:E-portsig.c27, opus:E-portsig.c29]");
 
     checks.record(
