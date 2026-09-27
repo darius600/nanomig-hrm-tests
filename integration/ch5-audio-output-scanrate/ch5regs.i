@@ -30,8 +30,10 @@ BEAMCON0        equ     $1DC    ; W  ECS only (p.304-305)
 ; select line is touched (see SPECIFICATION.md section 5).
 CIAAPRA         equ     $BFE001
 
-; Clear the overlay: any write to CIA-A does this, measured, regardless
-; of the value written (see SPECIFICATION.md section 5).
+; Clear the overlay: a write of $00 to CIA-A port A does this, measured
+; (see SPECIFICATION.md section 5). CIA-A port A carries no drive-select
+; line (those are CIA-B port B, p.241, p.244-245, p.340); P6's "no drive
+; is selected" condition does not depend on this register.
 CLEAR_OVL       macro
                 move.b  #0,CIAAPRA
                 endm

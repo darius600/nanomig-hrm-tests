@@ -7,57 +7,77 @@
 // their shared preconditions A1-A4. P5: prog_adkcon.s. P6/F1/F3:
 // prog_diskrate.s.
 //
-// Measured: channel 0's own byte sequence appears on audio_left, not
-// audio_right, the opposite of p.137's "Channels 0 and 3 are connected
-// to the right-side output jack." No P1-P6 assertion depends on which
-// named port carries channel 0, only that channel 0's own bytes are
-// observed in order, so this test reads audio_left; see
-// SPECIFICATION.md section 5.
+// Measured, per core and per config: channel 0's own byte sequence
+// appears on whichever of audio_left/audio_right varies (see the "audio
+// output side" MEASURED line below); the manual's pages disagree on
+// which named jack carries channel 0 (p.137 vs. Appendix E's pin list,
+// p.326). SPECIFICATION.md 2.5 observes whichever side carries channel
+// 0 and does not grade which named jack that is; this test picks that
+// side at runtime (audio_side_is_right()), not by a fixed choice.
 //
 // NMH_MUTATE selects one mutated program or table (or, for FASTF0/
-// FASTS1, one capture graded two different ways) in place of its normal
-// counterpart; unset, every section runs its normal binary/table and the
-// summary counts the fixture, preconditions and assertions only.
+// FASTS1/B2, one capture graded more than one way) in place of its
+// normal counterpart; unset, every section runs its normal binary/table
+// and the summary counts the fixture, preconditions and assertions only.
 //
 // Each MUTATION line states the measured result, per core, from a run
 // of that NMH_MUTATE value on both cores, both/all listed configurations.
+// Where a mutation is impossible, the line says so and why, with no
+// NMH_MUTATE run behind it.
 //
-// MUTATION P1 stimulus red T1's last word $6070 -> $7060, via NMH_MUTATE=P1
+// MUTATION P1 unfalsifiable at this boundary: T1's own precondition A1 (SPECIFICATION.md 2.4,
+//   section 5) is red on both cores, so P1 is never graded on T1 regardless of table content;
+//   NMH_MUTATE=P1 was still run and prints the identical "not graded" record on both cores as
+//   the normal run.
+// MUTATION P2 unfalsifiable at this boundary: the same T1 precondition blocks P2 identically;
+//   NMH_MUTATE=P2 was still run and prints the identical "not graded" record on both cores.
+// MUTATION P3 stimulus red NMH_MUTATE=P3: every byte of T2 with bit 7 flipped
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION P2 stimulus red every word of T1 byte-swapped, via NMH_MUTATE=P2
+// MUTATION P4 stimulus red NMH_MUTATE=P4: T3's word for code +5 (k=133) $0505 -> $0707
+//   measured: fx68k not graded (T3's own precondition A1 is independently red there, section 5),
+//   tg68k red (ECS/PAL, OCS/PAL)
+// MUTATION A1 stimulus red NMH_MUTATE=A1: for T1, DMACON $8200 instead of $8201 (AUD0EN not set)
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION P3 stimulus red every byte of T2 with bit 7 flipped, via NMH_MUTATE=P3
+// MUTATION A2 stimulus red NMH_MUTATE=A2: ADKCON $8001 (USE0V1) set before the ADKCONR read
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION P4 stimulus red T3's word for code +5 (k=133) $0505 -> $0707, via NMH_MUTATE=P4
-//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION A1 for T1 stimulus red DMACON $8200 instead of $8201 (AUD0EN not set), via NMH_MUTATE=A1
-//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION A2 stimulus red ADKCON $8001 (USE0V1) set before the ADKCONR read, via NMH_MUTATE=A2
-//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION A4 for T1 stimulus red AUD0VOL 0 instead of 64, via NMH_MUTATE=A4
-//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION A3 not exercised, by a scope decision: this harness's audio() capture is one sample per
+// MUTATION A4 unfalsifiable at this boundary: T1's own precondition A1 (SPECIFICATION.md 2.4,
+//   section 5) is red on both cores and is checked before A4, so A4 for T1 is never reached
+//   regardless of AUD0VOL; NMH_MUTATE=A4 was still run and prints the identical "not graded"
+//   record on both cores as the normal run (its data mutation reaches no A4 check on this table).
+// MUTATION A3 unfalsifiable at this boundary: this harness's audio() capture is one sample per
 //   clk_sys cycle, far above the sample-rate threshold at which P=124 would fail A3
 //   (SPECIFICATION.md 2.7); no legal period fails A3 on this harness.
-// MUTATION P5 stimulus red step 2 writes $8200 instead of $8100, via NMH_MUTATE=P5
+// MUTATION P5 stimulus red NMH_MUTATE=P5: step 2 writes $8200 instead of $8100
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION C1 stimulus red the store of R2 (step 3's readback) left out, via NMH_MUTATE=C1
+// MUTATION C1 stimulus red NMH_MUTATE=C1: the store of R2 (step 3's readback) left out
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL)
-// MUTATION G1/B1 stimulus red run F's ADKCON write becomes $0100 instead of $8100 (same capture,
-//   graded once as G1's contrasting case and once as B1's), via NMH_MUTATE=FASTF0
-//   measured: fx68k red/red, tg68k red/red (ECS/PAL, OCS/PAL, ECS/NTSC)
-// MUTATION G2/G3 stimulus red run S's ADKCON write becomes $8100 instead of $0100 (same capture,
-//   graded once as G2's contrasting case and once as G3's), via NMH_MUTATE=FASTS1
-//   measured: fx68k red/red, tg68k red/red (ECS/PAL, OCS/PAL, ECS/NTSC)
-// MUTATION B2 stimulus red run F's second (step 6) DSKLEN write left out, via NMH_MUTATE=B2
+// MUTATION B1 stimulus red NMH_MUTATE=FASTF0: run F's ADKCON write becomes $0100 instead of $8100
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL, ECS/NTSC)
-// MUTATION B3 stimulus red run F's LENGTH shrunk to 100 (DSKLEN=$C064) in steps 5 and 6, via NMH_MUTATE=B3
+// MUTATION B1 stimulus red NMH_MUTATE=FASTS1: run S's ADKCON write becomes $8100 instead of $0100
 //   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL, ECS/NTSC)
-// MUTATION B4 (F1's own contrasting case): VTOTAL=524/HTOTAL=113/BEAMCON0 rewritten before run F
-//   (ECS only), via NMH_MUTATE=F1, exactly the stimulus SPECIFICATION.md 2.4 states.
-//   measured: fx68k stayed green (227.00 CCK, unchanged), tg68k stayed green (227.00 CCK,
-//   unchanged) (ECS/PAL, ECS/NTSC) -- did not reproduce the predicted red on either core;
-//   recorded as measured, not worked around; see SPECIFICATION.md section 5.
+// MUTATION B2 stimulus red NMH_MUTATE=B2: run F's DMACON write becomes $8010 instead of $8210
+//   (DMAEN, bit 9, clear; p.247, p.248, p.278 agree DMAON then reads 0)
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL, ECS/NTSC); B3 for run F also goes red
+//   (0 reads) on both cores, a necessary side effect of clearing the master DMA enable, not a
+//   separate defect.
+// MUTATION B3 stimulus red NMH_MUTATE=B3: run F's LENGTH shrunk to 100 (DSKLEN=$C064) in steps 5 and 6
+//   measured: fx68k red, tg68k red (ECS/PAL, OCS/PAL, ECS/NTSC)
+// MUTATION B4 stimulus red NMH_MUTATE=F1: before run F, VTOTAL=524/HTOTAL=113/BEAMCON0 rewritten
+//   (2.4, ECS only; NTSC uses BEAMCON0=$0080, PAL uses $00A0), measured inside both run F's and
+//   run S's own P6 interval (read k=16 to k=528 of each buffer)
+//   measured: fx68k red (114.00 CCK, both windows), tg68k red (114.00 CCK, both windows)
+//   (ECS/PAL, ECS/NTSC); disk write DMA's own rate is also measured to halve under this
+//   stimulus, both runs, both cores (D_F, D_S: 310520 -> 155936 cycles)
+// MUTATION G1 unfalsifiable at this boundary: no page-legal AUD0PER reaches G1's band
+//   (1.5 <= T < 2.5 us) through the same T=D/(16*512) comparator (it needs AUD0PER <= about 70
+//   color clocks; p.140/p.266 give a legal minimum of 124 NTSC / 123 PAL). G1 remains the
+//   confirmed red the normal run measures.
+// MUTATION G2 proven-live green NMH_MUTATE=AUDRATE: a legal audio rate (AUD0PER=124) run through
+//   G2's own comparator (3.5 <= T < 4.5 us)
+//   measured: fx68k green, tg68k green (ECS/PAL)
+// MUTATION G3 proven-live green NMH_MUTATE=AUDRATE: two legal audio rates in an exact 2x
+//   relationship (AUD0PER=124, then 248) run through G3's own comparator (|D_2 - 2*D_1| < 3 lines)
+//   measured: fx68k green, tg68k green (ECS/PAL)
 
 #include <cstdio>
 #include <cstdlib>
@@ -101,9 +121,11 @@ constexpr uint64_t kAudioRunBudget  = 8'000'000;
 constexpr uint64_t kAdkconRunBudget = 2'000'000;
 constexpr uint64_t kDiskRunBudget   = 20'000'000;
 
-// clk_sys cycles per color clock: 8, the conversion constant F1's own
-// anchor confirms (measured at 227.00 color clocks per line, inside the
-// page's 227-228 window; see SPECIFICATION.md section 5).
+// clk_sys cycles per color clock: 8, taken from the design (nanomig.i
+// declares no such ratio). Guarded by B4, measured inside the P6
+// interval it is used in (SPECIFICATION.md 2.4, section 5): every line
+// there comes out at 227.00 color clocks, both cores, all three
+// configurations.
 constexpr uint64_t kCck = 8;
 constexpr double   kUsPerCckPal  = 0.281937;   // p.141
 constexpr double   kUsPerCckNtsc = 0.279365;   // p.141
@@ -113,6 +135,8 @@ constexpr uint32_t T2_ADDR = 0x002100;
 constexpr uint32_t T3_ADDR = 0x002200;
 constexpr uint32_t DISKBUF_A = 0x003000;
 constexpr uint32_t DISKBUF_B = 0x004000;
+constexpr uint32_t kAudRateBufP  = 0x005000;   // AUDRATE demonstration, period P (124)
+constexpr uint32_t kAudRateBuf2P = 0x005200;   // AUDRATE demonstration, period 2P (248)
 
 constexpr int kNT1 = 8, kNT2 = 8, kNT3 = 2;   // N (2.6 table)
 
@@ -165,29 +189,42 @@ struct F2Result {
     std::string diag;   // set only when the anchor breaks, for MEASURED reporting
 };
 
-// F2 (2.4): "Each read of the first word EXCEPT t_1 is immediately
-// preceded ... by a read of the table's last word." p.164's own pipeline
-// throw-away means pass 1 (between t_1 and t_2) can be short or
-// irregular; only t_2 onward is validated strictly. Empirically (see
-// SPECIFICATION.md's build notes) pass 1 is exactly one word short on
-// this RTL: t_1's pass reads lo, lo+1, ..., hi-1 and restarts one word
-// early. Since the window graded (F2, 2.6) starts at t_2, pass 1's own
-// content is never used and does not need to be well-formed.
+// F2 (2.4): each read of the first word except t_1 is immediately
+// preceded, among the channel's reads, by a read of the table's last
+// word; within a pass, the read addresses rise by one word. Implemented
+// exactly as specified: t_1 is exempt, every later pass start (t_2, t_3,
+// ...) is checked against what precedes it. A table whose first pass
+// ends short (or otherwise breaks this) makes the anchor red for that
+// table on the core(s) where it happens; see SPECIFICATION.md section 5
+// for the per-core, per-table measurement this produces.
 F2Result f2_check(const std::vector<nmh::RamAccess>& log, uint32_t lo_word, uint32_t hi_word) {
     F2Result r;
-    bool strict = false;   // becomes true once t_2 (the second read of lo_word) is seen
     uint32_t expect = lo_word;
     bool any = false;
+    bool have_prev = false;
+    uint32_t prev_addr = 0;
     for (const auto& a : log) {
         if (a.is_write || a.word_addr < lo_word || a.word_addr > hi_word) continue;
         any = true;
         if (a.word_addr == lo_word) {
+            if (!r.pass_starts.empty() && (!have_prev || prev_addr != hi_word)) {
+                char buf[200];
+                std::snprintf(buf, sizeof buf,
+                    "t_%zu (word_addr=0x%X) at cycle %llu is preceded by 0x%X, not the "
+                    "table's last word (0x%X)",
+                    r.pass_starts.size() + 1, a.word_addr, (unsigned long long)a.cycle,
+                    have_prev ? prev_addr : 0u, hi_word);
+                r.diag = buf;
+                r.anchor_ok = false;
+                return r;
+            }
             r.pass_starts.push_back(a.cycle);
-            if (r.pass_starts.size() >= 2) strict = true;
             expect = lo_word + 1;
+            prev_addr = a.word_addr;
+            have_prev = true;
             continue;
         }
-        if (strict && a.word_addr != expect) {
+        if (have_prev && a.word_addr != expect) {
             char buf[160];
             std::snprintf(buf, sizeof buf,
                 "expected word_addr=0x%X, got 0x%X (data=0x%04X) at cycle %llu, after %zu reads of lo",
@@ -197,6 +234,8 @@ F2Result f2_check(const std::vector<nmh::RamAccess>& log, uint32_t lo_word, uint
             return r;
         }
         expect = a.word_addr + 1;
+        prev_addr = a.word_addr;
+        have_prev = true;
     }
     r.anchor_ok = any;
     return r;
@@ -215,14 +254,41 @@ int32_t signed_sample(uint16_t raw) {
 
 struct RawRun { int32_t value; uint64_t len; };
 
-std::vector<RawRun> raw_runs(const std::vector<nmh::AudioSample>& audio, uint64_t begin, uint64_t end) {
+std::vector<RawRun> raw_runs(const std::vector<nmh::AudioSample>& audio, uint64_t begin, uint64_t end,
+                             bool use_right) {
     std::vector<RawRun> runs;
     for (uint64_t i = begin; i < end && i < audio.size(); ++i) {
-        int32_t v = signed_sample(audio[i].left);
+        int32_t v = signed_sample(use_right ? audio[i].right : audio[i].left);
         if (!runs.empty() && runs.back().value == v) ++runs.back().len;
         else runs.push_back({v, 1});
     }
     return runs;
+}
+
+// SPECIFICATION.md 2.5: the observed output is whichever audio output
+// carries channel 0, not a fixed choice -- p.137 and Appendix E's pin
+// list (p.326) disagree on which named jack that is. Measured per
+// capture: audio_right stays flat throughout every run on this RTL, so
+// this returns false (use audio_left) whenever no variation is seen on
+// either side.
+bool audio_side_is_right(const std::vector<nmh::AudioSample>& audio) {
+    std::optional<int32_t> first;
+    for (auto& s : audio) {
+        int32_t v = signed_sample(s.right);
+        if (!first) first = v;
+        else if (v != *first) return true;
+    }
+    return false;
+}
+
+// A C1-style port-write check (SPECIFICATION.md section 5): every result
+// slot a proposition reads must show exactly one CPU write at the
+// Chip-memory port, so an unwritten, zero-initialised slot can never
+// pass silently.
+bool has_one_write(const std::vector<nmh::RamAccess>& log, uint32_t word_addr) {
+    int n = 0;
+    for (auto& a : log) if (a.is_write && a.word_addr == word_addr) ++n;
+    return n == 1;
 }
 
 double median_run_len(const std::vector<RawRun>& runs) {
@@ -288,10 +354,15 @@ FitResult fit(const std::vector<int32_t>& L, const std::vector<int>& s) {
 // ---- F1: refresh-group time base (2.4), used by P6 -----------------------
 struct F1Result { bool anchor_ok = false; double color_clocks = 0.0; size_t groups = 0; };
 
-F1Result f1_check(const std::vector<nmh::RamAccess>& log) {
+// Bounded to [lo_cycle, hi_cycle]: SPECIFICATION.md 2.4 says F1 is "used
+// by P6", so its 100 lines must lie inside the interval P6 itself grades
+// (F3's read k=16 to k=528 of the run in question), not before it.
+F1Result f1_check(const std::vector<nmh::RamAccess>& log, uint64_t lo_cycle, uint64_t hi_cycle) {
     F1Result r;
     std::vector<uint64_t> refresh;
-    for (const auto& a : log) if (!a.is_write && a.word_addr == 0) refresh.push_back(a.cycle);
+    for (const auto& a : log)
+        if (!a.is_write && a.word_addr == 0 && a.cycle >= lo_cycle && a.cycle <= hi_cycle)
+            refresh.push_back(a.cycle);
     std::vector<uint64_t> groups;
     constexpr uint64_t kGroupGap = 100;   // within-group ~4*kCck=32 cycles; between-group ~227.5*kCck
     for (size_t i = 0; i < refresh.size(); ++i)
@@ -321,6 +392,20 @@ F3Result f3_check(const std::vector<nmh::RamAccess>& log, uint32_t base_word, ui
     }
     r.anchor_ok = !r.times.empty();
     return r;
+}
+
+// Every read in [lo_word, hi_word], in time order, with no ordering
+// requirement (unlike f3_check): used by the AUDRATE demonstration,
+// whose buffer is replayed pass after pass (its address wraps, unlike
+// the disk buffers F3 indexes), so only the read count and timing matter.
+std::vector<uint64_t> collect_read_times(const std::vector<nmh::RamAccess>& log,
+                                          uint32_t lo_word, uint32_t hi_word) {
+    std::vector<uint64_t> times;
+    for (const auto& a : log) {
+        if (a.is_write || a.word_addr < lo_word || a.word_addr > hi_word) continue;
+        times.push_back(a.cycle);
+    }
+    return times;
 }
 
 // ---- audio program run ----------------------------------------------------
@@ -433,9 +518,11 @@ int main(int argc, char** argv) {
     const bool audio_mv   = (mv=="P1"||mv=="P2"||mv=="P3"||mv=="P4"||mv=="A1"||mv=="A2"||mv=="A4");
     const bool adkcon_mv  = (mv=="P5"||mv=="C1");
     const bool disk_mv    = (mv=="FASTF0"||mv=="FASTS1"||mv=="B2"||mv=="B3"||mv=="F1");
+    const bool audrate_mv = (mv=="AUDRATE");
     const bool need_audio  = mv.empty() || audio_mv;
     const bool need_adkcon = mv.empty() || adkcon_mv;
     const bool need_disk   = mv.empty() || disk_mv;
+    const bool need_audrate = audrate_mv;   // demonstration only, never part of the normal run
     const std::string amv  = audio_mv ? mv : "";
     const std::string kmv  = adkcon_mv ? mv : "";
 
@@ -456,6 +543,18 @@ int main(int argc, char** argv) {
                     "; A1-A4, P1-P4 not graded there");
                 continue;
             }
+
+            bool use_right = audio_side_is_right(cap.audio);
+            checks.note(std::string("audio output side carrying channel 0, ") + cs.label + ": " +
+                (use_right ? "audio_right" : "audio_left") +
+                " (p.137: right-side jack; Appendix E's pin list, p.326: left-side jack -- a "
+                "measured page disagreement; SPECIFICATION.md 2.5 does not grade which named "
+                "jack this is)");
+
+            bool a2_write = has_one_write(cap.log, kResults / 2);
+            checks.expect(a2_write, std::string("FIXTURE-WRITE ") + cs.label +
+                ": the Chip-memory port shows one CPU write to the A2 result slot "
+                "[not graded -- fixture, no claim uid]");
 
             bool a2_ok = cap.adkconr.has_value() && ((*cap.adkconr) & 0x00FF) == 0;
             std::string a2_label = std::string("A2 ") + cs.label +
@@ -491,7 +590,7 @@ int main(int argc, char** argv) {
                     return {false, {}};
                 }
                 uint64_t wb = f2.pass_starts[1], we = f2.pass_starts[ts.N + 1];
-                auto runs = raw_runs(cap.audio, wb, we);
+                auto runs = raw_runs(cap.audio, wb, we, use_right);
                 double median = median_run_len(runs);
                 bool a3 = median >= 4.0;
                 checks.expect(a3, std::string("A3 for ") + ts.name + " " + cs.label +
@@ -562,7 +661,7 @@ int main(int argc, char** argv) {
                     } else {
                         bool p3 = f2c.matches;
                         std::string p3_label = std::string("P3 ") + cs.label +
-                            " [p.265,p.138] 5-appA-p265.c42,A-audxdat.c5: each byte is output as a "
+                            " [p.265,p.138] 5-appA-p265.c42: each byte is output as a "
                             "two's-complement value (FIT(L,C2) matches, s=0,1,127,-128)";
                         if (mv == "P3") p3_label += " [NMH_MUTATE demonstrates this proposition red]";
                         checks.expect(mv == "P3" ? !p3 : p3, p3_label);
@@ -587,7 +686,7 @@ int main(int argc, char** argv) {
                     } else {
                         bool p4 = f3c.matches;
                         std::string p4_label = std::string("P4 ") + cs.label +
-                            " [p.265] A-audxdat.c5: every one-LSB step of a data byte moves the audio "
+                            " [p.265]: every one-LSB step of a data byte moves the audio "
                             "output by the same amount (FIT(L,C3) matches, all 255 adjacent steps, s=-128..127)";
                         if (mv == "P4") p4_label += " [NMH_MUTATE demonstrates this proposition red]";
                         checks.expect(mv == "P4" ? !p4 : p4, p4_label);
@@ -595,8 +694,10 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        checks.record("A-audxdat.c5's 3 mV magnitude is not observable at these ports (samples, not "
-            "volts); only the implied uniform one-LSB step is graded, in P4 above (SPECIFICATION.md 1.2)");
+        checks.record("A-audxdat.c5 (p.265, \"LSB = 3 MV\"): the 3 mV magnitude is not observable at "
+            "these ports (samples, not volts); its two's-complement wording is anchor text shared "
+            "with 5-appA-p265.c42, not a separate clause of its own -- declined in full, not "
+            "asserted on P3 or P4 (SPECIFICATION.md 1.2)");
     }
 
     // =====================================================================
@@ -642,22 +743,19 @@ int main(int argc, char** argv) {
             auto [b9_2, b8_2] = bits(cap.r2);
             auto [b9_3, b8_3] = bits(cap.r3);
             auto [b9_4, b8_4] = bits(cap.r4);
-            bool p5;
-            if (kmv == "P5") {
-                // step 2 wrote $8200 (sets bit 9, not bit 8): predicted R1=(1,0)
-                p5 = (b9_0==0&&b8_0==0) && (b9_1==1&&b8_1==0) && (b9_2==1&&b8_2==1) &&
-                     (b9_3==1&&b8_3==0) && (b9_4==0&&b8_4==0);
-            } else {
-                p5 = (b9_0==0&&b8_0==0) && (b9_1==0&&b8_1==1) && (b9_2==1&&b8_2==1) &&
-                     (b9_3==1&&b8_3==0) && (b9_4==0&&b8_4==0);
-            }
+            // The unchanged P5 comparator, graded exactly the same way whether or
+            // not NMH_MUTATE=P5 is in effect: under P5, step 2 wrote $8200 (sets
+            // bit 9, not bit 8), so this same comparator's own R1=(0,1) term is
+            // what goes red (measured R1=(1,0)), not a substitute expectation.
+            bool p5 = (b9_0==0&&b8_0==0) && (b9_1==0&&b8_1==1) && (b9_2==1&&b8_2==1) &&
+                      (b9_3==1&&b8_3==0) && (b9_4==0&&b8_4==0);
             std::string p5_label = std::string("P5 ") + label +
-                " [p.265] A-adkcon.b08,5-appA-p265.c21,A-adkcon.b09,5-appA-p265.c20: bits 8 (FAST) and "
-                "9 (MSBSYNC) of ADKCON are separate and ADKCONR reads back each state "
-                "(R0=(0,0),R1=(0,1),R2=(1,1),R3=(1,0),R4=(0,0), bit9/bit8) -- register part only, "
-                "what the bits do to disk data is not tested (SPECIFICATION.md 1.2)";
+                " [p.265]: bits 8 (FAST) and 9 (MSBSYNC) of ADKCON are separate and ADKCONR "
+                "reads back each state (R0=(0,0),R1=(0,1),R2=(1,1),R3=(1,0),R4=(0,0), bit9/bit8) "
+                "-- register part only, what the bits do to disk data is not tested "
+                "(SPECIFICATION.md 1.2)";
             if (kmv == "P5") p5_label += " [NMH_MUTATE demonstrates this proposition red]";
-            checks.expect(c1 && (kmv == "P5" ? !p5 : p5), p5_label);
+            checks.expect(c1 && p5, p5_label);
         }
         checks.record("A-adkcon.b09/5-appA-p265.c20's disk-read-synchronizing function is not tested: "
             "the harness serves no disk image and a test cannot drive the disk read-data input (SPECIFICATION.md 1.2)");
@@ -666,43 +764,55 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
-    // P6 / F1 / F3: disk write DMA bit-cell rate, FAST = ADKCON bit 8
-    //
-    // G1/G2/G3 are expected to, and do, come out red: ADKCON bit 8 is
-    // read back correctly (B1 passes both runs), but measured D_F equals
-    // D_S exactly regardless of which run's ADKCON gets FAST=1 (see the
-    // MEASURED lines below) -- the measured Chip-memory read rate does
-    // not change with the bit-cell clock the page describes. This is a
-    // measured page disagreement, not a test defect: a red result here
-    // is the finished outcome. See SPECIFICATION.md section 5 and the
-    // report to the lead for the reason.
+    // P6 / F1 / F3: disk write DMA bit-cell rate, FAST = ADKCON bit 8.
+    // G1, G2 and G3 grade the measured bit-cell time (or the ratio
+    // between two runs) against the page's values; see SPECIFICATION.md
+    // section 3 for the propositions and section 5 for the measurements.
     // =====================================================================
     if (need_disk) {
-        std::string suffix = "";
-        if (mv == "FASTF0") suffix = "_fastf0";
-        else if (mv == "FASTS1") suffix = "_fasts1";
-        else if (mv == "B2") suffix = "_b2";
-        else if (mv == "B3") suffix = "_b3";
-        else if (mv == "F1") suffix = "_f1mut";
-
-        struct CfgSpec { const char* label; nmh::Config cfg; bool ecs; double us_per_cck; };
+        struct CfgSpec { const char* label; nmh::Config cfg; bool ecs; bool ntsc; double us_per_cck; };
         std::vector<CfgSpec> configs = {
-            {"ECS/PAL", cfg_ecs_pal(), true, kUsPerCckPal},
-            {"OCS/PAL", cfg_ocs_pal(), false, kUsPerCckPal},
-            {"ECS/NTSC", cfg_ecs_ntsc(), true, kUsPerCckNtsc},
+            {"ECS/PAL", cfg_ecs_pal(), true, false, kUsPerCckPal},
+            {"OCS/PAL", cfg_ocs_pal(), false, false, kUsPerCckPal},
+            {"ECS/NTSC", cfg_ecs_ntsc(), true, true, kUsPerCckNtsc},
         };
         for (auto& cs : configs) {
             if (mv == "F1" && !cs.ecs) continue;   // F1/B4's contrasting case is ECS only (2.4)
+            std::string suffix = "";
+            if (mv == "FASTF0") suffix = "_fastf0";
+            else if (mv == "FASTS1") suffix = "_fasts1";
+            else if (mv == "B2") suffix = "_b2";
+            else if (mv == "B3") suffix = "_b3";
+            else if (mv == "F1") suffix = cs.ntsc ? "_f1mut_ntsc" : "_f1mut";
+
             DiskCapture cap = run_diskrate(dir, suffix, cs.cfg);
             bool base_ok = cap.loaded && cap.done.has_value() && cap.b1_f && cap.b2_f && cap.b1_s && cap.b2_s;
             checks.expect(base_ok, std::string("FIXTURE ") + cs.label +
                 ": prog_diskrate reached DONE and stored B1/B2 for both runs [not graded -- fixture, no claim uid]");
             if (!base_ok) { checks.record(std::string("P6 ") + cs.label + ": not graded, fixture failed"); continue; }
 
-            // ---- preconditions (2.9): each is its own PASS/FAIL line, printed
-            // as measured. A mutation deliberately breaks exactly one of these
-            // (B1 for run F under FASTF0's [B1 framing], B2/B3/B4 under their
-            // own labels); every other precondition is expected to still hold.
+            {
+                uint32_t w_b1f = (kResults + 0) / 2, w_b2f = (kResults + 2) / 2;
+                uint32_t w_b1s = (kResults + 6) / 2, w_b2s = (kResults + 8) / 2;
+                checks.expect(has_one_write(cap.log, w_b1f), std::string("FIXTURE-WRITE ") + cs.label +
+                    ": the Chip-memory port shows one CPU write to the B1-for-run-F result slot "
+                    "[not graded -- fixture, no claim uid]");
+                checks.expect(has_one_write(cap.log, w_b2f), std::string("FIXTURE-WRITE ") + cs.label +
+                    ": the Chip-memory port shows one CPU write to the B2-for-run-F result slot "
+                    "[not graded -- fixture, no claim uid]");
+                checks.expect(has_one_write(cap.log, w_b1s), std::string("FIXTURE-WRITE ") + cs.label +
+                    ": the Chip-memory port shows one CPU write to the B1-for-run-S result slot "
+                    "[not graded -- fixture, no claim uid]");
+                checks.expect(has_one_write(cap.log, w_b2s), std::string("FIXTURE-WRITE ") + cs.label +
+                    ": the Chip-memory port shows one CPU write to the B2-for-run-S result slot "
+                    "[not graded -- fixture, no claim uid]");
+            }
+
+            // ---- preconditions: each is its own PASS/FAIL line, printed as
+            // measured. A mutation deliberately breaks exactly one of these
+            // (B1 for run F under FASTF0, B1 for run S under FASTS1, B2/B3
+            // under their own labels, B4 under F1); every other precondition
+            // is expected to still hold.
             bool fast_f_bit = ((*cap.b1_f >> 8) & 1) != 0;
             bool fast_s_bit = ((*cap.b1_s >> 8) & 1) != 0;
             bool b2_f = ((*cap.b2_f >> 14) & 1) == 1 && ((*cap.b2_f >> 13) & 1) == 1;
@@ -713,33 +823,46 @@ int main(int argc, char** argv) {
             bool b3_f = f3f.anchor_ok && f3f.times.size() >= 529;
             bool b3_s = f3s.anchor_ok && f3s.times.size() >= 529;
 
-            F1Result f1r = f1_check(cap.log_raw);
-            bool b4 = f1r.anchor_ok;
-
-            checks.note(std::string("F1 anchor ") + cs.label + ": mean refresh-group spacing " +
-                fmt(f1r.color_clocks, 2) + " color clocks over " + std::to_string(f1r.groups) + " groups found");
-            checks.expect(b4, std::string("B4 (F1 anchor) ") + cs.label +
-                ": refresh groups recur 227-228 color clocks apart");
-            if (mv == "F1") {
-                // F1/B4's own contrasting case (2.4) did not reproduce,
-                // measured: reported, not worked around. The stimulus is
-                // HTOTAL=113 exactly as SPECIFICATION.md 2.4 states,
-                // unchanged; see section 5 there for what was measured.
-                checks.record(std::string("B4 (F1 anchor) ") + cs.label +
-                    ": NMH_MUTATE=F1 did not turn this red on this RTL -- refresh-group spacing "
-                    "stayed at 227.00 CCK even though the same VTOTAL/HTOTAL/BEAMCON0 write "
-                    "measurably changed disk DMA's own bit-cell timing (see the disk rate MEASURED "
-                    "line below); see SPECIFICATION.md section 5");
+            // B4 (F1 anchor), used by P6 (2.4): measured inside each run's
+            // own graded interval (F3, read k=16 to k=528), not the boot
+            // phase that precedes it.
+            if (f3f.times.size() > 528) {
+                F1Result f1rf = f1_check(cap.log_raw, f3f.times[16], f3f.times[528]);
+                bool b4_f = f1rf.anchor_ok;
+                checks.note(std::string("F1 anchor for run F ") + cs.label + ": mean refresh-group "
+                    "spacing " + fmt(f1rf.color_clocks, 2) + " color clocks over " +
+                    std::to_string(f1rf.groups) + " groups found");
+                std::string b4f_label = std::string("B4 for run F ") + cs.label +
+                    ": refresh groups recur 227-228 color clocks apart, measured in run F's own "
+                    "P6 interval";
+                if (mv == "F1") b4f_label += " [NMH_MUTATE demonstrates this precondition red]";
+                checks.expect(mv == "F1" ? !b4_f : b4_f, b4f_label);
+            } else {
+                checks.record(std::string("B4 for run F ") + cs.label + ": not graded, B3 for run F failed");
+            }
+            if (f3s.times.size() > 528) {
+                F1Result f1rs = f1_check(cap.log_raw, f3s.times[16], f3s.times[528]);
+                bool b4_s = f1rs.anchor_ok;
+                checks.note(std::string("F1 anchor for run S ") + cs.label + ": mean refresh-group "
+                    "spacing " + fmt(f1rs.color_clocks, 2) + " color clocks over " +
+                    std::to_string(f1rs.groups) + " groups found");
+                std::string b4s_label = std::string("B4 for run S ") + cs.label +
+                    ": refresh groups recur 227-228 color clocks apart, measured in run S's own "
+                    "P6 interval";
+                if (mv == "F1") b4s_label += " [NMH_MUTATE demonstrates this precondition red]";
+                checks.expect(mv == "F1" ? !b4_s : b4_s, b4s_label);
+            } else {
+                checks.record(std::string("B4 for run S ") + cs.label + ": not graded, B3 for run S failed");
             }
 
             // B1 for run F: FASTF0 shows the same capture graded two ways --
-            // as G1's own contrasting case (run F's setting is redefined to
-            // FAST=0, so B1 still holds against that redefinition) and as
-            // B1's own contrasting case (run F was always meant to be
-            // FAST=1, so the same reading now mismatches and B1 goes red).
+            // as a redefinition (run F's setting is redefined to FAST=0, so
+            // B1 still holds against that redefinition) and as B1's own
+            // contrasting case (run F was always meant to be FAST=1, so the
+            // same reading now mismatches and B1 goes red).
             if (mv == "FASTF0") {
                 checks.expect(!fast_f_bit, std::string("B1 for run F ") + cs.label +
-                    " [G1 framing]: ADKCONR bit 8 equals run F's own (redefined) setting (FAST=0)");
+                    " [redefined]: ADKCONR bit 8 equals run F's own (redefined) setting (FAST=0)");
                 checks.expect(!fast_f_bit, std::string("B1 for run F ") + cs.label +
                     " [B1 framing] [NMH_MUTATE demonstrates this precondition red]: ADKCONR bit 8 "
                     "does not equal run F's intended setting (FAST=1)");
@@ -757,23 +880,37 @@ int main(int argc, char** argv) {
                     ": disk DMA reads of buffer A, k=0..528 or more, one per k, in order (" +
                     std::to_string(f3f.times.size()) + " found)";
                 if (mv == "B3") b3f_label += " [NMH_MUTATE demonstrates this precondition red]";
-                checks.expect(mv == "B3" ? !b3_f : b3_f, b3f_label);
+                else if (mv == "B2") b3f_label += " [B2's own side effect: clearing DMACON's master "
+                    "DMA enable (bit 9) stops all disk DMA, not just DMAON's readback]";
+                bool b3f_expect = (mv == "B3" || mv == "B2") ? !b3_f : b3_f;
+                checks.expect(b3f_expect, b3f_label);
             }
-            checks.expect(!fast_s_bit == (mv != "FASTS1"),
-                std::string("B1 for run S ") + cs.label + ": ADKCONR bit 8 == " + (mv=="FASTS1"?"1":"0"));
+            if (mv == "FASTS1") {
+                checks.expect(fast_s_bit, std::string("B1 for run S ") + cs.label +
+                    " [redefined]: ADKCONR bit 8 equals run S's own (redefined) setting (FAST=1)");
+                checks.expect(fast_s_bit, std::string("B1 for run S ") + cs.label +
+                    " [B1 framing] [NMH_MUTATE demonstrates this precondition red]: ADKCONR bit 8 "
+                    "does not equal run S's intended setting (FAST=0)");
+            } else {
+                checks.expect(!fast_s_bit, std::string("B1 for run S ") + cs.label + ": ADKCONR bit 8 == 0");
+            }
             checks.expect(b2_s, std::string("B2 for run S ") + cs.label + ": DSKBYTR shows DMAON=1, DISKWRITE=1");
             checks.expect(b3_s, std::string("B3 for run S ") + cs.label +
                 ": disk DMA reads of buffer B, k=0..528 or more, one per k, in order (" +
                 std::to_string(f3s.times.size()) + " found)");
 
             if (mv == "B2" || mv == "B3") {
-                checks.record(std::string("G1/G2/G3 ") + cs.label +
-                    ": not graded under this precondition's own demonstration (B2/B3)");
+                checks.record(std::string("G1 ") + cs.label + ": not graded under this precondition's own demonstration (B2/B3)");
+                checks.record(std::string("G2 ") + cs.label + ": not graded under this precondition's own demonstration (B2/B3)");
+                checks.record(std::string("G3 ") + cs.label + ": not graded under this precondition's own demonstration (B2/B3)");
                 continue;
             }
 
             // ---- G1, G2, G3: same comparators regardless of mutation; only
-            // the input capture (selected above by `suffix`) differs. ----
+            // the input capture (selected above by `suffix`) differs. These
+            // stay red under every capture measured here (SPECIFICATION.md
+            // section 5); a proven-live green demonstration of the same
+            // comparators runs separately, under NMH_MUTATE=AUDRATE.
             bool have_df = f3f.times.size() > 528;
             bool have_ds = f3s.times.size() > 528;
             if (!have_df && !have_ds) {
@@ -790,11 +927,9 @@ int main(int argc, char** argv) {
 
             if (have_df) {
                 bool g1 = t_f_us >= 1.5 && t_f_us < 2.5;
-                std::string g1_label = std::string("G1 ") + cs.label +
+                checks.expect(g1, std::string("G1 ") + cs.label +
                     " [p.265,p.249] A-adkcon.b08,5-appA-p265.c21: FAST=1 gives a bit-cell time of about "
-                    "2 us (1.5 <= T_F < 2.5)";
-                if (mv == "FASTF0") g1_label += " [NMH_MUTATE demonstrates this proposition red]";
-                checks.expect(mv == "FASTF0" ? !g1 : g1, g1_label);
+                    "2 us (1.5 <= T_F < 2.5)");
             } else {
                 checks.record(std::string("G1 ") + cs.label + ": not graded, B3 for run F failed");
             }
@@ -803,35 +938,87 @@ int main(int argc, char** argv) {
 
             if (have_ds) {
                 bool g2 = t_s_us >= 3.5 && t_s_us < 4.5;
-                std::string g2_label = std::string("G2 ") + cs.label +
+                checks.expect(g2, std::string("G2 ") + cs.label +
                     " [p.265,p.249] A-adkcon.b08,5-appA-p265.c21: FAST=0 gives a bit-cell time of about "
-                    "4 us (3.5 <= T_S < 4.5)";
-                if (mv == "FASTS1") g2_label += " [NMH_MUTATE demonstrates this proposition red]";
-                checks.expect(mv == "FASTS1" ? !g2 : g2, g2_label);
+                    "4 us (3.5 <= T_S < 4.5)");
             } else {
                 checks.record(std::string("G2 ") + cs.label + ": not graded, B3 for run S failed");
             }
 
             if (have_df && have_ds) {
                 bool g3 = std::fabs(d_s - 2.0 * d_f) < 3.0 * 228.0 * (double)kCck;
-                std::string g3_label = std::string("G3 ") + cs.label +
-                    " [p.265,p.249]: the two settings differ by a factor of two (|D_S - 2*D_F| < 3 lines)";
-                if (mv == "FASTS1") g3_label += " [NMH_MUTATE demonstrates this proposition red, framed as G3]";
-                checks.expect(mv == "FASTS1" ? !g3 : g3, g3_label);
+                checks.expect(g3, std::string("G3 ") + cs.label +
+                    " [p.265,p.249]: the two settings differ by a factor of two (|D_S - 2*D_F| < 3 lines)");
             } else {
                 checks.record(std::string("G3 ") + cs.label + ": not graded, B3 failed for a run");
             }
         }
     }
 
+    // =====================================================================
+    // AUDRATE: a proven-live comparator demonstration for G1/G2/G3.
+    // Audio DMA's own rate does track AUD0PER on this RTL; running G2's
+    // and G3's own comparator formula on a genuine, legal audio rate
+    // shows each comparator can go green, which the FASTF0/FASTS1
+    // captures above cannot show (D_F/D_S there never change).
+    // =====================================================================
+    if (need_audrate) {
+        nmh::Config cfg = cfg_ecs_pal();
+        nmh::NanomigHarness h(cfg);
+        bool loaded = h.load_program(dir + "/prog_audiorate.bin") > 0;
+        checks.expect(loaded, "FIXTURE ECS/PAL: prog_audiorate loaded [not graded -- fixture, no claim uid]");
+        if (loaded) {
+            poke_fill(h, kAudRateBufP, 0xAAAA, 256);
+            poke_fill(h, kAudRateBuf2P, 0xAAAA, 256);
+            h.boot(kBootBudget);
+            auto done = h.run_until_write(kDoneAddr, kDoneValue,
+                kBootBudget + kAudioRunBudget + kDiskRunBudget);
+            checks.expect(done.has_value(),
+                "FIXTURE ECS/PAL: prog_audiorate reached DONE [not graded -- fixture, no claim uid]");
+            if (done.has_value()) {
+                auto log = nmh::coalesce(h.ram_log());
+                auto times_p  = collect_read_times(log, kAudRateBufP / 2, kAudRateBufP / 2 + 255);
+                auto times_2p = collect_read_times(log, kAudRateBuf2P / 2, kAudRateBuf2P / 2 + 255);
+                bool have_p = times_p.size() > 528, have_2p = times_2p.size() > 528;
+                checks.expect(have_p && have_2p,
+                    "FIXTURE ECS/PAL: prog_audiorate's two runs each delivered >= 529 reads "
+                    "[not graded -- fixture, no claim uid]");
+                if (have_p && have_2p) {
+                    double d_p  = (double)(times_p[528]  - times_p[16]);
+                    double d_2p = (double)(times_2p[528] - times_2p[16]);
+                    double t_p_us  = (d_p  / (double)kCck) * kUsPerCckPal / (16.0 * 512.0);
+                    double t_2p_us = (d_2p / (double)kCck) * kUsPerCckPal / (16.0 * 512.0);
+                    checks.note(std::string("audio-rate proof ECS/PAL: AUD0PER=124/248 gives D_P=") +
+                        fmt(d_p, 0) + " cycles, D_2P=" + fmt(d_2p, 0) + " cycles, T_P=" +
+                        fmt(t_p_us, 3) + " us, T_2P=" + fmt(t_2p_us, 3) + " us");
+                    bool g2_proof = t_p_us >= 3.5 && t_p_us < 4.5;
+                    checks.expect(g2_proof, "G2 comparator proof ECS/PAL [not graded -- demonstration "
+                        "only, no claim uid]: a legal audio rate (AUD0PER=124) run through G2's own "
+                        "comparator (3.5 <= T < 4.5) goes green");
+                    bool g3_proof = std::fabs(d_2p - 2.0 * d_p) < 3.0 * 228.0 * (double)kCck;
+                    checks.expect(g3_proof, "G3 comparator proof ECS/PAL [not graded -- demonstration "
+                        "only, no claim uid]: two legal audio rates in an exact 2x relationship "
+                        "(AUD0PER=124, 248) run through G3's own comparator (|D_2 - 2*D_1| < 3 lines) "
+                        "go green");
+                }
+            }
+        }
+        checks.record("G1 comparator proof: not attempted -- no page-legal AUD0PER reaches G1's "
+            "band (1.5 <= T < 2.5 us) through this same comparator (it needs AUD0PER <= about 70 "
+            "color clocks; p.140/p.266 give a legal minimum of 124 NTSC / 123 PAL); unfalsifiable "
+            "at this boundary");
+    }
+
     // ---- claims not turned into a proposition (SPECIFICATION.md 1.1) -----
     if (mv.empty()) {
-        checks.record("5-appC-p310.c5,c6,c7,c8,C-interp.per.c1,c2,c3,c4 (p.310, AUDxPER and the "
-            "programmable scan rate): no value or rule the page gives for any scan rate's maximum "
-            "period, the one directional statement is hedged (\"Generally\"), AUDxPER is write-only "
-            "on every page that lists it so \"the maximum value read from this register\" cannot be "
-            "read, and c3 adds a sentence (\"holds for the standard chip set only\") that appears on "
-            "neither p.310 nor p.140 -- not testable at these ports (SPECIFICATION.md 1.1)");
+        checks.record("5-appC-p310.c5, 5-appC-p310.c6, 5-appC-p310.c7, 5-appC-p310.c8, "
+            "C-interp.per.c1, C-interp.per.c2, C-interp.per.c3, C-interp.per.c4 (p.310, AUDxPER "
+            "and the programmable scan rate): no value or rule the page gives for any scan rate's "
+            "maximum period, the one directional statement is hedged (\"Generally\"), AUDxPER is "
+            "write-only on every page that lists it so \"the maximum value read from this "
+            "register\" cannot be read, and c3 adds a sentence (\"holds for the standard chip set "
+            "only\") that appears on neither p.310 nor p.140 -- not testable at these ports "
+            "(SPECIFICATION.md 1.1)");
         checks.record("5-p158.c37,5-scale.c13 (p.158, the 7 KHz cut-off filter): pp.155/156/158 give "
             "three different frequencies for the same low-pass filter and no attenuation at any stated "
             "frequency, and the filter sits outside the chips whose output this test samples "

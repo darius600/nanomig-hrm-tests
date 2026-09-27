@@ -78,8 +78,10 @@ bit). Appl type GCR." The function acts on data read from a disk. p. 250:
 every disk byte". The harness serves no disk image, and a test cannot drive
 the disk read-data input, so the function **cannot be checked yet**.
 
-What a program can still check through registers: that bit 9 exists at that
-position and holds its state (P5).
+A program can still check through registers that bit 9 exists at that
+position and holds its state; P5 (3, P5) runs that register check, but the
+check is a proxy for a different clause (whether the bit synchronizes disk
+reads), so this id is not asserted there. It stays declined.
 
 **FAST disk data clock rate (p. 265): A-adkcon.b08, 5-appA-p265.c21.**
 "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)."
@@ -88,9 +90,12 @@ position and holds its state (P5).
   disk image, and the drive's data lines are not among the outputs a test
   sees.
 - **What can still be checked:**
-  - through registers, the bit's position and state (P5);
   - at the Chip-memory port, the rate at which disk *write* DMA takes words
-    from memory (P6). The pages tie this rate to the bit-cell time.
+    from memory (G1, G2 in P6, 3). The pages tie this rate to the bit-cell
+    time, and this id is asserted there.
+  - through registers, the bit's position and state alone -- P5 runs that
+    check too, but a register readback is a proxy for the rate the bit
+    controls, not the rate itself, so this id is not asserted on P5.
 - **P6 is conditional.** It is gradable only if disk write DMA runs with no
   disk image. Its precondition B3 decides this, and a failure there means
   "not checkable yet", not red.
@@ -100,11 +105,13 @@ position and holds its state (P5).
 **AUDxDAT LSB size (p. 265): A-audxdat.c5.**
 "(LSB = 3 MV)"
 
-- **Not observable:** the magnitude, 3 mV at the output pins. The test sees
-  samples, not volts.
-- **Used:** what the single LSB value implies for the samples, namely that
-  every one-LSB step of a byte moves the output by the same amount (P4). The
-  words its quote shares with 5-appA-p265.c42 are also used (P3).
+- **Declined in full.** The magnitude, 3 mV at the output pins, is not
+  observable: the test sees samples, not volts. Its quote's two's-complement
+  words overlap 5-appA-p265.c42's own quote only so the citation is long
+  enough to anchor; P3 grades two's complement under 5-appA-p265.c42's own
+  id, not this one. P4 grades the implied uniform one-LSB step, but only as
+  a proxy (equal step size, not the literal 3 mV magnitude), so this id is
+  not asserted on P4 either.
 - The print reads "MV" (checked on the scan), which literally means
   megavolts. p. 140 supports millivolts: "For a typical output at volume 64,
   with maximum data values of -128 to 127, the voltage output is between +.4
@@ -133,11 +140,14 @@ no page separates OCS from ECS for these registers.
 Why NTSC for P6: pp. 249 and 265 give one bit-cell time for both video
 standards.
 
-Program and data placement: all program code, tables and buffers lie in Chip
-memory below $80000, at even addresses (p. 138: audio data "must start at a
-word-address boundary"; p. 246: the disk buffer's "lowest bit of the address
-must be zero, and the buffer must be in Chip memory"). This keeps the high
-pointer bits within the 3 bits OCS has (p. 266, p. 289).
+Data placement: the audio tables and disk buffers -- the data the DMA
+pointer registers target -- lie in Chip memory below $80000, at even
+addresses (p. 138: audio data "must start at a word-address boundary";
+p. 246: the disk buffer's "lowest bit of the address must be zero, and the
+buffer must be in Chip memory"). This keeps the high pointer bits within
+the 3 bits OCS has (p. 266, p. 289); it does not bear on where the program
+code itself or its result block sit, since neither is read by a
+pointer-width-limited DMA channel.
 
 ### 2.2 Registers used
 
@@ -232,10 +242,15 @@ After each transfer occurs, the value of the pointer is incremented."
 
 ### 2.5 Audio analysis procedures (P1-P4)
 
-The observed output is the right-side audio output. p. 137: "Channels 0 and 3
-are connected to the right-side output jack." If the harness offers only a
-mono mix, use the mix: the other channels are silenced (2.3, and step 3 of
-the audio program).
+The observed output is whichever audio output carries channel 0, not a
+fixed named side. The pages disagree on which named jack that is: p. 137,
+"Channels 0 and 3 are connected to the right-side output jack", against
+Appendix E's serial-connector pin list (p. 326), which pairs "Audio output
+from left (channels 0, 3) port" with the same two channels. No proposition
+of this package grades which named jack carries channel 0; the side
+actually used is measured and recorded per core (section 5, "what the
+build adds"). If the harness offers only a mono mix, use the mix: the other
+channels are silenced (2.3, and step 3 of the audio program).
 
 **LEVELS(W): the list of held levels in window W.**
 1. Take the output samples whose time lies in W.
@@ -435,12 +450,13 @@ A failing precondition means "not graded", never green.
 ### P5: ADKCON bits 8 (FAST) and 9 (MSBSYNC) are separate bits that ADKCONR reads back
 
 1. **Proposition.** Setting or clearing bit 8 or bit 9 through ADKCON shows
-   in the same bit of ADKCONR, bit 8 and bit 9 independently.
-   - Claims: A-adkcon.b08, 5-appA-p265.c21 (bit 8 is FAST), A-adkcon.b09,
-     5-appA-p265.c20 (bit 9 is MSBSYNC); p. 265.
-   - This checks the register part of those claims only: the bits' positions
-     and that they hold their state. What the bits *do* to disk data cannot
-     be checked yet (1.2).
+   in the same bit of ADKCONR, bit 8 and bit 9 independently. p. 265.
+   - No claim id of this package is established here: A-adkcon.b08 and
+     5-appA-p265.c21 (bit 8 is FAST) are established by G1/G2 in P6, which
+     grade the rate the bit controls; A-adkcon.b09 and 5-appA-p265.c20 (bit
+     9 is MSBSYNC) stay declined (1.2), since this package cannot drive a
+     disk read. A register readback is a proxy for either claim, not the
+     claim itself.
 2. **Stimulus.** Preamble (2.3). Then five steps, each an ADKCON write
    followed at once by an ADKCONR read that is stored in its own result slot
    R0-R4:
@@ -512,9 +528,15 @@ A failing precondition means "not graded", never green.
         is set, bounded by 8 vertical-blank requests (2.3). Store whether it
         was seen. It is not graded.
      9. DSKLEN = $4000 (p. 247 step 5). INTREQ = $0002.
-   - **No drive is selected.** The program makes no CIA writes. p. 248 makes
-     the DMA depend only on "the DMAEN bit in DSKLEN, and the DSKEN & DMAEN
-     bits in DMACON".
+   - **No drive is selected.** The program's one CIA write is CLEAR_OVL, a
+     single write to CIA-A port A ($BFE001); drive selection is entirely on
+     CIA-B port B (p. 241: "CIABPRB ($BFD100) eight output bits for disk
+     selection, control and stepping"; p. 244-245: the PB bits, DSKSEL0-3
+     and DSKMOTOR; p. 339-340: BFE001's own bits are /FIR1, /FIR0, /RDY,
+     /TK0, /WPRO, /CHNG, /LED, OVL, none of them a drive-select line, against
+     BFD100's /MTR, /SEL3-0, /SIDE, DIR, /STEP). p. 248 makes the DMA depend
+     only on "the DMAEN bit in DSKLEN, and the DSKEN & DMAEN bits in
+     DMACON".
 3. **Observation.** Disk DMA reads at the Chip-memory port, numbered by F3:
    t_A(k) for buffer A and t_B(k) for buffer B.
    - **Interval.** From read k = 16 to read k = 528 (M = 512 words). The
@@ -573,10 +595,15 @@ A failing precondition means "not graded", never green.
      D_F, so G3 goes red. B1 still holds.
    - **B1:** in run F, write $0100 instead of $8100. Bit 15 = 0 clears
      instead of sets, bit 8 reads 0, and B1 goes red.
-   - **B2:** in run F, leave out step 6, the second DSKLEN write. p. 247: "the
-     DMAEN bit in the DSKLEN register must be turned on twice in order to
-     actually enable the disk DMA hardware". DMAON reads 0 and B2 goes red.
-     The DSKBLK poll times out, and the program finishes.
+   - **B2:** in run F, write DMACON = $8010 instead of $8210 (DMAEN, bit 9,
+     clear; DSKEN, bit 4, stays set). p. 247's step 1 already asks to
+     "enable disk DMA in the DMACON register"; p. 248 makes DMAON depend on
+     "the DSKEN & DMAEN bits in DMACON" and p. 278 mirrors "Bit09 (DMAEN) in
+     DMACON" into the same bit -- both pages agree that clearing DMACON's
+     own DMAEN makes DMAON read 0, so B2 goes red. B3 for run F goes red as
+     well (no reads), since no disk DMA runs at all with the master enable
+     clear; that is this contrasting case's own necessary side effect, not
+     a separate defect. The DSKBLK poll times out, and the program finishes.
    - **B3:** LENGTH = 100 (DSKLEN = $C064 in steps 5 and 6). Only 100 reads
      occur, fewer than 529, so B3 goes red.
    - **B4:** the F1 contrasting case (ECS configurations only).
@@ -630,55 +657,60 @@ is poked into chip RAM directly by the C++ test before `boot()`, the same
 mechanism `load_program()` itself uses; no program instruction writes it.
 
 Every item below is a labelled measurement, on both cores unless stated
-otherwise; the reason a given result is expected belongs in the report to
-the lead, not here.
+otherwise.
 
 - **Chip bank 0.** T1/T2/T3 and the two disk buffers sit below $080000
   (2.1), inside the range the boot-time Kickstart overlay otherwise
   redirects. Both `prog_audio.s` and `prog_diskrate.s` start with a single
-  write to $BFE001 (CIA-A Port A, `CLEAR_OVL` in `ch5regs.i`). Measured: this
-  makes that range real memory for both the CPU's own accesses and the
-  audio/disk DMA engines', and it touches no floppy-drive select line (the
-  RAM-port log shows none); P6's "the program makes no CIA writes" is
-  otherwise honoured.
-- **Time base.** F1's anchor measures 227.00 color clocks per line on both
-  cores, every configuration, inside the page's 227-228 window. 8 `clk_sys`
-  cycles per color clock is the conversion constant used throughout,
-  confirmed by that measurement.
+  write of $00 to $BFE001 (CIA-A port A, `CLEAR_OVL` in `ch5regs.i`).
+  Measured: this makes that range real memory for both the CPU's own
+  accesses and the audio/disk DMA engines'. CIA-A port A carries no
+  drive-select line (those are CIA-B port B, p.241, p.244-245, p.339-340),
+  so P6's "no drive is selected" condition does not depend on this write.
+- **Time base.** F1's anchor, measured inside the interval it is used in
+  (P6's own graded interval, read k=16 to k=528 of each run), comes out at
+  227.00 color clocks per line on both cores, every configuration, inside
+  the page's 227-228 window. 8 `clk_sys` cycles per color clock (`kCck`) is
+  taken from the design, since `nanomig_harness.h` declares no such ratio;
+  B4, measured in that same interval, guards it.
 - **Audio port sign.** `audio_left`/`audio_right` are read as signed 15-bit
   values, not an unsigned magnitude. Measured: an unsigned reading breaks
   every fit whose pass contains a code with bit 7 set (T2, T3).
-- **Left/right.** Measured: channel 0's own byte sequence appears on
-  `audio_left`, not `audio_right`, the opposite of the channels-to-jacks
-  pairing on p.137 ("Channels 0 and 3 are connected to the right-side
-  output jack"). No P1-P6 assertion depends on which named port carries
-  channel 0, only that channel 0's own bytes are observed in order, so
-  this is a port-selection fact, not a graded proposition: the test reads
-  `audio_left`.
-- **F2's first pass, measured.** On both cores, pass 1 (between t_1 and
-  t_2) is exactly one word short for a 4-word table (it reads the table's
-  first 3 words and restarts one word early); every later pass reads all
-  of them. This matches p.164's own pipelining note ("the first data word
-  must be thrown away") and is exactly why F2 exempts t_1 and the window
-  graded starts at t_2 (2.4, 2.6): pass 1's own content is never used.
-- **G1/G2/G3 (P6): a measured page disagreement, not a defect.** ADKCON
-  bit 8 (FAST) reads back correctly (B1 holds on both runs, every
-  configuration, both cores). Measured D_F equals D_S exactly (310520
-  `clk_sys` cycles for 512 words, both runs, every configuration, both
-  cores), giving T_F = T_S ~= 1.336 us (PAL): the measured Chip-memory
-  read rate does not change with the FAST bit (about 75.9 color
-  clocks/word, close to the page's own "3 disk DMA slots per line",
-  p.194: 227.5/3 ~= 75.8, a second, independent check that the time base
-  above is right). G1, G2 and G3 are kept as the graded, printed, red
-  result this produces on both cores.
-- **Mutation scope.** Every mutation is demonstrated once, under the
-  ECS/PAL configuration (the F1/B4 contrasting case only under ECS, per
-  2.4); it is not repeated under OCS/PAL or, for P6, ECS/NTSC. The normal
-  run still grades every proposition in every configuration 2.1 lists.
-- **F1/B4's own contrasting case did not reproduce, on either core.**
-  Rewriting VTOTAL, HTOTAL and BEAMCON0 exactly as 2.4 states (measured
-  under NMH_MUTATE=F1) leaves the refresh-group anchor at 227.00 color
-  clocks on both cores, unchanged from the normal run. The write is not
-  inert: measured, disk write DMA's own timing changes under it. This is
-  reported as measured, not worked around: the stimulus was not tuned to
-  force a result.
+- **Audio output side.** Measured per core and per config: channel 0's own
+  byte sequence appears on `audio_left`, with `audio_right` staying flat
+  throughout. The pages disagree on which named jack that is (2.5); this
+  package observes whichever side actually carries channel 0 (measured at
+  runtime, not fixed in source) and does not grade which named jack it is.
+- **F2's anchor, measured per table and per core (2.4).** Implemented as
+  specified, t_1 exempt: for T1, t_2 is preceded by word 2 of the table, not
+  the last word, on both cores, so A1 for T1 is red on both cores and P1/P2
+  are not graded there. For T3, t_2 is preceded by the table's next-to-last
+  word on fx68k only (A1 for T3 red there, P4 not graded on fx68k; A1 for T3
+  holds on TG68K, P4 graded there). For T2, t_2 is preceded by the last word
+  on both cores (A1 for T2 holds, P3 graded on both cores).
+- **G1/G2/G3 (P6): a measured page disagreement.** ADKCON bit 8 (FAST) reads
+  back correctly (B1 holds on both runs, every configuration, both cores).
+  Measured D_F equals D_S exactly (310520 `clk_sys` cycles for 512 words,
+  both runs, every configuration, both cores), giving T_F = T_S ~= 1.336 us
+  (PAL): the measured Chip-memory read rate does not change with the FAST
+  bit. G1, G2 and G3 are kept as the graded, printed, red result this
+  produces on both cores. A separate, legal audio-rate capture (AUD0PER=124
+  then 248), run through the same two comparators G2 and G3 use, comes out
+  green on both cores (SPECIFICATION.md's claims are unaffected; this is a
+  build-side demonstration that the comparators themselves can pass, not a
+  proposition of its own).
+- **Program placement.** The harness's own `PROGRAM_ORG` ($080400) and
+  `RESULTS` ($0C0000) sit above $080000, outside the range 2.1 asks the
+  DMA-referenced tables and buffers to stay under. Harmless for the stated
+  reason: neither the program's own code nor its result block is read by a
+  pointer-width-limited DMA channel, only the CPU itself.
+- **Mutation scope.** Every mutation is replayed on both cores in every
+  configuration its own assertion or precondition is graded in (2.1); the
+  F1/B4 contrasting case is ECS only, per 2.4, and the AUDRATE demonstration
+  runs under ECS/PAL alone. The normal run never runs a mutant.
+- **F1/B4's own contrasting case, measured inside the P6 interval.**
+  Rewriting VTOTAL, HTOTAL and BEAMCON0 (2.4) halves the refresh-group
+  spacing measured there to 114.00 color clocks on both cores, both ECS
+  configurations, so B4 goes red as the page predicts. Disk write DMA's own
+  rate halves under the same stimulus (both runs, both cores): D_F and D_S
+  each fall from 310520 to 155936 `clk_sys` cycles.
