@@ -141,7 +141,7 @@ interest:
 | start here | because | what it takes |
 |---|---|---|
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer width — a red, and three of the four implementations already do what the manual says | a scope decision, read together with NM-HRM-022 and NM-HRM-024; one central mask would close all three |
-| [NM-HRM-004](findings/NM-HRM-004.md) | all four implementations read the appendix the other way round from the manual — the clearest four-way signal in the register | re-reading one page, appendix C p. 310; most likely no change |
+| [NM-HRM-004](findings/NM-HRM-004.md) | the manual contradicts itself on the ECS danger bit, and NanoMig, all four implementations and Commodore's AA specification take Appendix B's side | reading two appendices, B pp. 289-290 and C p. 310; no RTL change |
 | [NM-HRM-064](findings/NM-HRM-064.md) | AUTOCONFIG register 4C — six red assertions, and a one-line fix: stop advertising the shut-up the whole Minimig family never implemented | one `case` entry, then one package run |
 
 **[NM-HRM-002](findings/NM-HRM-002.md) sorts first and is the worst starting
@@ -155,7 +155,7 @@ it for what an unresolvable case looks like, not for something to do.
 |---|---|---|---|---|
 | [NM-HRM-002](findings/NM-HRM-002.md) | audio channels on the wrong stereo side | open · RTL · **red** | `hrm/ch5-audio-stereo-routing` | **3–1**: WinUAE, Denise and Copperline with the pin list; vAmiga with chapter 5 |
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/ch2-copper-control`, `hrm/ch2-copper-locreg-width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE and vAmiga narrow the BUS** on OCS (`memory.cpp:2619-2623`, `Memory.cpp:1623`), which has the same effect on a fetched address; Denise neither |
-| [NM-HRM-004](findings/NM-HRM-004.md) | ECS danger bit admits too small a range | open · RTL · **red** | `hrm/ch2-copper-move-range`, `hrm/ch2-copper-move-sweep` | both block below `$80` regardless of chipset |
+| [NM-HRM-004](findings/NM-HRM-004.md) | p. 310 gives the ECS Copper $03E–$07E with CDANG clear, Appendix B marks that range closed, and every implementation keeps it closed | open · page · **red** | `hrm/ch2-copper-move-range`, `hrm/ch2-copper-move-sweep` | **unanimous with NanoMig and with Appendix B**: WinUAE (`custom.cpp:2809`), vAmiga (`Copper.cpp:395`), Denise (`copper.cpp:342`) and Copperline (`dma_slots.rs:697`) all block a Copper MOVE below `$080` while CDANG is clear, whatever the chipset; none cites Appendix C |
 | [NM-HRM-005](findings/NM-HRM-005.md) | WAIT and SKIP take longer than the manual states | open · RTL · **red** | `hrm/ch2-copper-cycle-times`, `hrm/ch2-copper-cycles` | vAmiga gives NanoMig's three numbers |
 | [NM-HRM-006](findings/NM-HRM-006.md) | DDFSTRT bit H3 is respected in lores, where p.91 says hires only | open · page · **red** | `hrm/ch3-ddf-fetch-window` | **unanimous with NanoMig**: all four respect H3 at every resolution; what they gate on the chipset is register bit 1 |
 | [NM-HRM-007](findings/NM-HRM-007.md) | hires fetch cannot reach the manual's 49 words | open · RTL · **red** | `hrm/ch3-ddf-fetch-window`, `hrm/ch3-bitplane-memory-layout` | **B4** for the first two; Copperline asserts an even hires word count in its own test |
