@@ -26,7 +26,9 @@
 //     valid disk byte). THE SAME UNDERLYING FACT as
 //     ch8-dskbytr-status-register/A9 and
 //     ch8-disk-controller-overview/opus:8-dsk.c9+sol:8-dsk.c9, graded
-//     identically in all three packages that carry it. RED (the DATA field
+//     against a known, bound byte in all three packages that carry it (A9
+//     there finds the payload index by search; B4 and the overview use
+//     the fixed index). RED (the DATA field
 //     is the literal constant 8'h00, paula_floppy.v:699).
 //   - E3 is DECLINED (record(), not expect()): the manual's actual "dummy
 //     address" claim is about WHO triggers the bus cycle (Agnus timing vs.
@@ -694,7 +696,8 @@ int main(int argc, char** argv) {
     //   what the "right" byte should be. THIS IS THE SAME UNDERLYING FACT as
     //   ch8-dskbytr-status-register/A9 and
     //   ch8-disk-controller-overview/opus:8-dsk.c9+sol:8-dsk.c9 -- one
-    //   fact, graded identically in all three packages that carry it.
+    //   fact, graded against a known, bound byte in all three packages
+    //   that carry it.
     //
     //   A KNOWN incoming byte (0xFF) is bound to the DSKBYTR sampling
     //   instant (see the file header's B4/B5 SAMPLING note): the trial

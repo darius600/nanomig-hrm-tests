@@ -154,7 +154,9 @@ could never refute the claim — zero is a valid disk byte, and there would
 be no independent ground truth for what the "right" byte should be. THIS IS
 THE SAME UNDERLYING FACT as `ch8-dskbytr-status-register`/A9 and
 `ch8-disk-controller-overview`/`opus:8-dsk.c9`+`sol:8-dsk.c9` — one fact,
-graded identically in all three packages that carry it. B4 binds a KNOWN
+graded against a known, bound byte in all three packages that carry it
+(A9 there finds the payload index by search; B4 and the overview use the
+fixed index). B4 binds a KNOWN
 incoming byte (0xFF) to the DSKBYTR sampling instant with the DSKDATR/FIFO
 technique `ch8-mfm-cell-encoding` also uses: the trial feeds a uniform 0xFF
 sector, discards pops up to a FIXED locator (`FIRST_PAYLOAD_POP_INDEX` = 33,
