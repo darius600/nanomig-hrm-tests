@@ -10,7 +10,7 @@
 | **Report to** | **probably nobody.** See *Suggested change* |
 | **Test** | [`hrm/ch8-mouse-counter-wraparound`](../../hrm/ch8-mouse-counter-wraparound) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red, all on the two wrapping rows and their footnotes. The four non-wrapping rows are green in the same package |
+| **Assertions** | 3 red, all on the two wrapping rows and their footnotes. The two non-wrapping rows are green in the same package |
 | **Verdict of the four** | **unanimous on the half they can answer** — 256 states per axis in all four, and not one uses 255 as a modulus |
 
 ---
@@ -56,10 +56,10 @@ are the only ones that move.
 | **TC64** | [`rtl/minimig/userio.v:401`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L401) | descendant — the same statement, same width: `dmouse0dat[7:0] <= #1 dmouse0dat[7:0] + 1'd1;`. Both lines give the counter 256 states; neither wraps at 255 |
 
 **Not one of the four independent implementations uses 255 as a modulus or a
-wrap target in the mouse-counter path.** Denise's many `255` constants are in
-`paula/pot.cpp` and are the pot capacitor's saturation sentinel — a different
-counter. Copperline's one computation against 255 is the analogue paddle
-scale, a calibration choice. Both maintained Minimig lines give the counter
+wrap target in the mouse-counter path.** Denise's many `255` constants in its
+input and Paula code are in `paula/pot.cpp` and are the pot capacitor's
+saturation sentinel — a different counter. Copperline's computations against
+255 are the analogue paddle scale and its inverse, a calibration choice. Both maintained Minimig lines give the counter
 256 states as well; neither wraps at 255.
 
 **The honest limit.** None of the four models the quadrature *pulse* the way

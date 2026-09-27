@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red, each sweeping all eight positions. Two PA0-restricted controls pass on the identical comparator in the same run |
-| **Verdict of the four** | **a three-way split.** Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; WinUAE and vAmiga each restore the full eight only under a chip-variant switch that is off by default |
+| **Verdict of the four** | **a four-way split.** Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight regardless only under a chip-variant switch that is off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four |
 
 ---
 
@@ -51,10 +51,10 @@ in the same run, which is what stops this being a defect in the measurement.
 
 | | | |
 |---|---|---|
-| **Denise** | [`cia/new/register.cpp:194`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/register.cpp#L194) | `uint8_t ioa = lines.pra \| ~lines.ddra;` — all eight, and every external contribution passes through `~ddra`. The only one that implements the page as printed |
-| **Copperline** | [`bus.rs:9010`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L9010) | its generic core is full width, and `cia_a_read` then discards it: `v = (v & !0x3C) \| self.floppy.cia_a_status_bits();`, no DDR term. **NanoMig's split, bit for bit** |
-| **WinUAE** | [`cia.cpp:1917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1917) | only this line implements the rule, and only for PA1/PA0. It will not even store a written value elsewhere: the write masks to the same two bits at [`:2128`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2128) — `c->pra = (c->pra & ~0xc3) \| (val & 0xc3);` |
-| **vAmiga** | [`CIA.cpp:863-867`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L863-L867) | muxes all eight, then lets an attached control-port device override PA7/PA6 *after* the mux without consulting `ddra` |
+| **Denise** | [`libami/system/system.cpp:54`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/system/system.cpp#L54) | the CPU read of CIA-A port A: `out = (lines->pra & lines->ddra) \| (out & ~lines->ddra);` — all eight, and every external contribution passes through `~ddra`. The only one that implements the page as printed whatever is attached |
+| **Copperline** | [`bus.rs:8998-9010`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L8998-L9010) | its generic core is full width, and `cia_a_read` then discards it: PA7/PA6 are overwritten from the fire buttons, then `v = (v & !0x3C) \| self.floppy.cia_a_status_bits();`, no DDR term. **NanoMig's split, bit for bit** |
+| **WinUAE** | [`cia.cpp:1916-1917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1916-L1917) | `:1917` implements the rule for PA1/PA0, and `handle_joystick_buttons(c->pra, c->dra)` on the line above reads an output-low PA7/PA6 as 0 ([`inputdevice.cpp:4012-4015`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L4012-L4015)), so a written value comes back on those two while the fire button is released. PA2–PA5 are never stored: the write keeps only those four bits at [`:2128`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2128) — `c->pra = (c->pra & ~0xc3) \| (val & 0xc3);` |
+| **vAmiga** | [`CIA.cpp:863-867`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L863-L867) | muxes all eight, then lets an attached control-port device override PA7/PA6 *after* the mux without consulting `ddra`. A port has no device until the host sends it mouse or joystick input ([`ControlPort.h:50`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Ports/ControlPort.h#L50)); a mouse with its default pull-ups then forces a released fire bit to 1 even when it is an output driven 0 ([`Mouse.cpp:155-169`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Peripherals/Mouse/Mouse.cpp#L155-L169)) |
 | **MiSTer** | [`rtl/ciaa.v:300`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L300) | descendant — the same split, plus one added trailing comment: `pa_out[7:0] = {porta_in2[7:2],porta_out[1:0]};  // Mix inputs and outputs` |
 | **TC64** | [`rtl/minimig/ciaa.v:230`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa.v#L230), [`:238`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa.v#L238) | descendant — `rtl/minimig/ciaa.v:230,238` — byte-identical to NanoMig, no comment added either: the same `pa_out` assignment and the same `porta_out[3:0]` pull-up assign. A fix diverges from both lines equally; neither has the eight-bit mask this page requires |
 
@@ -64,13 +64,17 @@ after the one above, in the same function, its **port B** overlay masks with
 stays CIA-driven"*, and CIA-B applies `!ddr` to all three of its overlays.
 Somebody decided port A's status bits are different.
 
-**Two of the four gate the printed behaviour on a chip part number.** WinUAE's
-`391078-01` type ([`cia.cpp:1923-1927`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1923-L1927),
-enabled for the A600 alone, default off) and vAmiga's `MOS_8520_PLCC`
+**Two of the four gate the printed behaviour on a chip part number, one of them
+only in part.** vAmiga's `MOS_8520_PLCC`
 ([`CIA.cpp:869-871`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L869-L871),
-default off) each restore strict one-to-one on all eight. WinUAE's own comment
-on that branch reads *"391078-01 CIA: output mode bits always return PRA
-contents"*.
+default off) restores strict one-to-one on all eight. WinUAE's `391078-01` type
+([`cia.cpp:1923-1927`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1923-L1927),
+enabled for the A600 alone, default off) returns PRA contents for every output
+bit — its own comment on that branch reads *"391078-01 CIA: output mode bits
+always return PRA contents"* — but the write at `:2128` never stores PA2–PA5,
+so an output-mode read of those four returns their reset value, zero
+([`cia.cpp:2389`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2389)),
+whatever was written.
 
 **That is why this finding is marked contested.** The question behind p.241 may
 not be "does the implementation obey the page" but "which CIA part is fitted",
@@ -104,7 +108,8 @@ a different question with a different owner.
 
 ## What weakens it
 
-- Only one implementation of four does what the page says by default.
+- Only one implementation of four does what the page says by default whatever is
+  attached; vAmiga does only while no mouse is attached.
 - Two of the four treat it as part-dependent, which is a reading the page does
   not offer and the manual may simply predate.
 

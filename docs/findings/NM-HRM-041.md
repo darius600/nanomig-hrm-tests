@@ -10,14 +10,14 @@
 | **Report to** | **Minimig-AGA and NanoMig.** All four other implementations implement all three fields |
 | **Test** | [`hrm/ch8-dskbytr-status-register`](../../hrm/ch8-dskbytr-status-register), [`hrm/ch8-disk-controller-overview`](../../hrm/ch8-disk-controller-overview), [`hrm/ch8-disk-register-map-paula-floppy`](../../hrm/ch8-disk-register-map-paula-floppy) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 7 red across three packages, from four printed pages. DISKWRITE and DMAON pass through the identical read cycle in the same run |
+| **Assertions** | 7 red across three packages, from five printed pages. DISKWRITE and DMAON pass through the identical read cycle in the same run |
 | **Verdict of the four** | **unanimous against.** All four clear DSKBYT on the read, drive WORDEQUAL from a live comparator and put a real disk byte in DATA; two of them implement the page's own "as little as two microseconds" window |
 
 ---
 
 ## Why this is one finding and not seven
 
-Seven red assertions in three packages, citing four printed pages, all land on
+Seven red assertions in three packages, citing five printed pages, all land on
 one continuous assignment. Grouping by cause rather than by symptom follows the
 precedent NM-HRM-040 set.
 
@@ -127,7 +127,7 @@ samples of a periodic stream differ.
 | **Denise** | [`fdc.cpp:211-226`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L211-L226) | all three, in two forms. `getDskBytR()`, the CPU read, does `dskBytr &= ~0x8000;`; WORDEQUAL is a timed window in byte mode and the live comparator `dskShifter == dskSync` otherwise. The byte loads at [`fdc.cpp:315-316`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/fdc.cpp#L315-L316): `if ((dskShifterPos & 7) == 7) dskBytr = (dskShifter & 0xff) \| 0x8000;`. A separate `peekDskBytR()` exists so that debugger inspection does not clear bit 15 — the side effect is modelled precisely enough to need an exemption |
 | **Copperline** | [`mod.rs:1428-1455`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L1428-L1455) | all three, fed by a real bit shifter at [`mod.rs:4360-4382`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/floppy/mod.rs#L4360-L4382). Its own comment states the rule this finding measures: *"WORDEQUAL is the comparator's live level: true for the one cell in which the shift register equals DSKSYNC and gone once the next cell shifts in ... Only DSKBYT is reset by the read."* |
 | **MiSTer** | [`rtl/paula_floppy.v:397`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) | descendant — byte-identical to NanoMig's `:699`: `assign dskbytr = reg_address_in[8:1]==DSKBYTR[8:1] ? {1'b1,(trackrd\|trackwr),dsklen[14],5'b1_0000,8'h00} : 16'h00_00;` |
-| **TC64** | [`rtl/minimig/paula_floppy.v:633`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L633) | descendant — the identical line, even though the surrounding file diverges by 809 (MiSTer) and 1243 (TC64) lines elsewhere. All three constants graded here — DSKBYT, WORDEQUAL, DATA — are inherited unchanged; a fix belongs to all three lines equally, matching the "Report to: Minimig-AGA and NanoMig" already on this page |
+| **TC64** | [`rtl/minimig/paula_floppy.v:633`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_floppy.v#L633) | descendant — the identical line, even though the surrounding file diverges by 685 (MiSTer) and 1093 (TC64) lines elsewhere. All three constants graded here — DSKBYT, WORDEQUAL, DATA — are inherited unchanged; a fix belongs to all three lines equally, matching the "Report to: Minimig-AGA and NanoMig" already on this page |
 
 **Not one of the four independent implementations treats any of these three
 fields as a constant**, and this is the unusual case where they do not split
@@ -151,7 +151,7 @@ that is never false.
 
 **The 1991 AA functional specification reaches two of these three fields
 independently**, and the AA suite's own package for DSKBYTR goes red on both.
-The AA entry prints the same bit table five years later, for a different chip
+The AA entry prints the same bit table, for a different chip
 set, and says of bit 15 that a loaded disk byte sets it and that reading the
 register resets it, and of bit 12 that it is true only while the incoming disk
 data equals DSKSYNC.
@@ -175,7 +175,7 @@ Four assertions in the same package are green, which is what makes these two a
 reading of those fields rather than of a dead fixture: bit 13 follows DSKLEN's
 WRITE bit, bit 14 rises with DSKLEN's DMA enable, the four cells the table
 leaves unused read as the printed zero, and the word at $01A changes when
-DSKLEN changes. Both red baselines invert under `MUTATE=1` and go green, so
+DSKLEN changes. Both red baselines go green when `MUTATE` names their own label, so
 the comparison can see a difference when there is one.
 
 **This is corroboration, not a second finding.** The AA suite files its own
@@ -202,8 +202,9 @@ the other two and should be costed separately.
 
 ## What holds the finding up
 
-- Four printed pages state the three fields, each twice in independent wording —
-  chapter 8 and Appendix A — and not one of the three is hedged.
+- Two printed pages state all three fields in independent wording — chapter 8
+  (p.248) and Appendix A (p.278) — and not one of the three is hedged; p.241,
+  p.247 and p.289 state the register's byte-reading and polling role.
 - DISKWRITE (bit 13) and DMAON (bit 14) move correctly through the **identical**
   read cycle in the same run: `before13=0x9000 after13=0xb000`,
   `before14=0x9000 after14=0xd000`. The read path is not the problem.

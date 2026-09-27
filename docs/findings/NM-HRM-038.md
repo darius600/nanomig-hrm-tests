@@ -17,9 +17,10 @@
 
 ## What the HRM says
 
-**p.235**, body text: the counters are held reset for **seven or eight complete
-scan lines** after a POTGO write, and the page is explicit that this is the
-**hardware** doing it, not advice about what software should wait for.
+**p.235**, body text: the read circuitry stays in a reset state for the first
+**seven or eight** horizontal scan lines after a POTGO write, and the POT counter
+is incremented only on the lines after that interval. The page is explicit that
+this is the **hardware** doing it, not advice about what software should wait for.
 
 **Figure 8-5**, p.235: the charging curves begin **eight lines** after POTGO.
 
@@ -42,19 +43,19 @@ counters, and the very next `pot_cnt_en` tick increments them.
 | **NanoMig** | **0** |
 
 The first increment arrives on pulse 1, which is zero completed lines. The
-package's control measures the same quantity on a channel driven to a known
-count through the identical comparator.
+package's control drives the same counter to a known count, 7, and routes it
+through the identical comparator, which accepts it.
 
 ## What the others say
 
 | | | hold |
 |---|---|---|
-| **WinUAE** | [`inputdevice.cpp:485`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L485) | `#define POTDAT_DELAY 8`; while `pot_dat < POTDAT_DELAY` the charge is forced to `-2`, and counting starts on the ninth h-sync. No PAL/NTSC branch |
-| **vAmiga** | [`PaulaRegs.cpp:188`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L188) | `pokePOTGO` schedules `POT_DISCHARGE` with a payload of **8**, decremented once per line. Hard-wired to `PAL::HPOS_CNT` even in NTSC |
+| **WinUAE** | [`inputdevice.cpp:485`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L485) | `#define POTDAT_DELAY 8`; while `pot_dat < POTDAT_DELAY` the charge is forced to `-2` ([`:3905-3917`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/inputdevice.cpp#L3905-L3917)). `pot_dat` is the POTxDAT count itself: it counts the delay lines, is zeroed on the eighth h-sync, and the count proper starts on the ninth. No PAL/NTSC branch |
+| **vAmiga** | [`PaulaRegs.cpp:188`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaRegs.cpp#L188) | `pokePOTGO` schedules `POT_DISCHARGE` with a payload of **8**, decremented once per line. Hard-wired to `PAL::HPOS_CNT` even in NTSC. The end-of-line handler keeps incrementing the counters while the capacitors are discharged ([`Agnus.cpp:877-880`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L877-L880)); the last event sets input counters to -1 ([`PaulaEvents.cpp:88-93`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaEvents.cpp#L88-L93)), so the count proper starts after the eighth line |
 | **Denise** | [`libami/paula/pot.cpp:88`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/pot.cpp#L88) | `pot.dischargeCounter = agnus.ntsc ? 7 : 8;` — and only when it is exhausted does counting begin |
 | **Copperline** | [`bus.rs:7930-7934`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L7930-L7934) | `VideoStandard::Pal => 8, Ntsc => 7`, held in `tick_pot_hsync` while `pot_discharge_lines < discharge_lines` |
 | **MiSTer** | [`rtl/userio.v:151-172`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L151-L172) | descendant — byte-identical: `potcnt` is set to `4'b1111` on a POTGO write, but that flag only gates the analog-joystick match logic; the digital branch increments on the very next `pot_cnt_en` tick, same as NanoMig. |
-| **TC64** | [`rtl/minimig/userio.v:189-201`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L189-L201) | descendant — the same shape under renamed signals (`anajoy` for `joy_ana_en`): `potcnt <= 4'b1111;` on POTGO write (`:191`), and the non-analog branch (`:194-195`, `:200-201`) increments unconditionally on the next `pot_cnt_en`. No reset-hold construct in either line. |
+| **TC64** | [`rtl/minimig/userio.v:189-201`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L189-L201) | descendant — the same construct with `anajoy` for `joy_ana_en` and no analog branch for port 1: `potcnt <= 4'b1111;` on POTGO write (`:191`), and the digital increments (`:194-195` unconditionally, `:200-201` in the non-analog branch) happen on the next `pot_cnt_en`. No reset-hold construct in either line. |
 
 **This is the most useful third-witness result in the chapter.** The page's
 unresolved "seven **or** eight" is read by two of four independent
