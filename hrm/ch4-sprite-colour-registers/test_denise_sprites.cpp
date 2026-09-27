@@ -26,8 +26,7 @@
 //   below, not re-asserted. CH4-p128.c8 and CH4-sctl.c4 are NOT in this
 //   file at all -- hrm/ch4-attached-sprites/'s own header says they come
 //   from a different package's inventory (ch4-sprite-shifter-and-
-//   arming.jsonl). Recorded here rather than assumed, per this suite's own
-//   "erst pruefen, dann behaupten" discipline.
+//   arming.jsonl). Recorded here rather than assumed.
 //
 // A NOTE ON HOW THIS FILE WAS BUILT, IN THE INTEREST OF NOT PAPERING OVER
 //   IT: before this package's own claim-grouping pass began, one `head -c
