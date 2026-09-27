@@ -781,3 +781,127 @@ Q1 to Q4.
   address; no effect on the test.
 - **Table 8-1's header.** The printed table heads its first column "Pen" where
   the Developer CD text has "Pin". The rows are pin numbers.
+
+---
+
+## The build
+
+### Programs
+
+- `prog_fixture.s` / `prog_fixture_mut.s`: apparatus check, no claim id.
+- `prog_p1.s`: Proposition 1's stimulus exactly as sections 1-7 above (Phase
+  P: F1, F2, F3; Phase D: C0-C4, each Fa/Fb/Fc), storing every Vw0/Vw1/M1
+  (Fc also Rpre) and, per R step, four records of Vr0/M2/POTGOR/Vr1,
+  sequentially from $0C1000.
+- `prog_p1_k1.s`, `prog_p1_k3.s`, `prog_p1_k4.s`, `prog_p1_k6.s`: `prog_p1.s`
+  included with an assembly-time symbol set (K1/K3/K4/K6), for the
+  contrasting cases of section 6. K2 needs no separate program: it is
+  already inside the sequence (each configuration's own output-driven
+  line, graded by the same assertion's "1" column). K5 is a harness-side
+  stimulus variant of the unmutated `prog_p1.s` (see the K5 record below).
+- `prog_joy.s`: the joystick program (54 steps: N0, N1, Block A and Block B
+  of 26 steps each), shared by P2, P3 and P4 exactly as specified. One
+  binary serves the baseline run and every one of P2/P3/P4's contrasting
+  cases (Q1-Q4, P2's variant and anchor contrast, P3's variant, P4's
+  variant): none of them changes the program's own code, only which
+  harness port level `test_ch8_controller_ports.cpp` applies for a given
+  step, selected by `NMH_MUTATE`.
+
+### Connector assignment (measured, not assumed)
+
+`test_ch8_controller_ports.cpp` assigns Connector A (JOY0DAT, CIAAPRA bit
+6) to the harness's `joystick1` port and Connector B (JOY1DAT, CIAAPRA bit
+7) to `joystick0` — the opposite of the naive index reading ("joystick0" =
+"0=left"). This choice is confirmed, not assumed, by the P2 anchor
+(section 7): `P2-ANCHOR` printed `PASS` on both fx68k and TG68K.
+
+### Measured: the R step's own timing margin
+
+The R step's instruction count had to fit inside the one scan line (~1820
+`clk_sys` cycles at 28.375160 MHz) that PC1 grades. An earlier version of
+`READV` (`ch8_regs.i`) read `VPOSR` as one long word (p.238's own
+technique) and then extracted V7-V0/V8 with two longword shifts; measured
+directly, that left too little of the line between Vr0 and Vr1 for the
+loop to reliably land both reads on the same line: 12 of 18 R steps had at
+least one qualifying record. The version committed extracts the same two
+fields with `SWAP` and word shifts instead (cheaper on a real 68000, and
+on TG68K here); measured, 20 qualifying records across the same 18 R
+steps, none missing. PC1 is the precondition that checks this margin at
+every run; a run where it fails is "not established", not "pass". This is
+an engineering adjustment to fit the page's own one-line window, not a
+value read from the RTL.
+
+### Measured: P1's main claim on this build
+
+Both cores print the identical pattern, in every one of the four
+SPECIFICATION.md "Configurations" (PAL/NTSC x ECS/OCS): PC1 through PC4
+all print `PASS`. Every "0" column (`C0-Fc` through `C4-Fc`) prints `FAIL`:
+POTGOR does not read 0 in the input lines after START. Every "1" column
+(`C1-Fc-OUT` through `C4-Fc-OUT`) prints `PASS`: the output-driven line
+still reads 1, as p.240's output-enable sentence predicts. `P1-CONFIGS`
+prints `PASS` on both cores (all four configurations load, release and
+reach `DONE`).
+
+The four pot lines are not equally reachable at `nanomig.v`'s ports: LX
+(connector A pin 5) only through `mouse_buttons` bit 2; LY (connector A
+pin 9) through `mouse_buttons` bit 1 AND connector A's own `joystick1` bit
+5; RY (connector B pin 9) through connector B's own `joystick0` bit 5; RX
+(connector B pin 5) through no port at all. K5 (below) is scoped to the
+three reachable lines for this reason.
+
+### Mutations: what went red, and through which clause
+
+Run once each, both cores, via `NMH_MUTATE=<value>`, from each object
+directory (`./Vnanomig ..`). Every result below is the pass/fail count and
+the clause that actually printed; fx68k and TG68K printed the identical
+pattern for every mutation below, line for line.
+
+- **FIXTURE** (apparatus check): 26 passed, 6 failed on both cores (5 more
+  than the unmutated run's 5, plus `FIXTURE` itself) — the stored constant
+  read back does not match, and `FIXTURE` alone flips from `PASS` to
+  `FAIL`.
+- **K1** (`C1-Fc-OUT` through `C4-Fc-OUT`): 27 passed, 5 failed on both
+  cores — the same 5 clauses fail as the unmutated run, and `C1-Fc-OUT`
+  through `C4-Fc-OUT` (the "1"/output column) print `PASS`, unchanged.
+- **K3** (`PC1`): 22 passed, 10 failed on both cores — `PC1` itself prints
+  `FAIL` ("every R step has at least one record with Vr0=Vr1=10"), and
+  because `PC1` gates "established", `C0-Fc` through `C4-Fc` and
+  `C1-Fc-OUT` through `C4-Fc-OUT` all print `FAIL` too ("preconditions not
+  established: not graded as pass").
+- **K4** (`PC2`): 22 passed, 10 failed on both cores — `PC2` prints `FAIL`,
+  and, gated by it, the same nine `C*-Fc`/`C*-Fc-OUT` lines as K3 print
+  `FAIL` ("not established").
+- **K5** (`PC3`): 21 passed, 11 failed on both cores — `PC2` and `PC3` both
+  print `FAIL`, and the same nine `C*-Fc`/`C*-Fc-OUT` lines print `FAIL`
+  ("not established"); RX (connector B pin 5) is outside this mutation's
+  reach (`RECORDED`, see above) and is not part of what it grades.
+- **K6** (`PC4`): 22 passed, 10 failed on both cores — `PC4` prints `FAIL`,
+  and the same nine `C*-Fc`/`C*-Fc-OUT` lines print `FAIL` ("not
+  established").
+- **Q1**: 21 passed, 11 failed on both cores — `Q1` prints `FAIL`
+  ("t_apply(k) < t(T_k)"), and `P2-BLOCKA-JOY0`, `P2-FOUR-COUNTERS`,
+  `P3-Y`, `P4-PIN3` and `P4-PIN1` also print `FAIL` (they read the same
+  four Yup(A) records Q1's own delay corrupts).
+- **Q2**: 26 passed, 6 failed on both cores — the same 5 clauses fail as
+  the unmutated run, plus `Q2` alone ("POTGOR bits 14,12,10,8 read 1").
+- **Q3**: 24 passed, 8 failed on both cores — `Q3` prints `FAIL` ("JOY0DAT
+  and JOY1DAT are equal in N0 and N1"), and `P3-Y` and `P4-PIN1` also
+  print `FAIL` (both read the N1 record Q3's own injection changes).
+- **Q4**: 25 passed, 7 failed on both cores — `Q4` prints `FAIL`, and
+  `P2-ANCHOR` also prints `FAIL` (it reads the same F1(A) record).
+- **P2VAR**: 16 passed, 16 failed on both cores — `P2-BLOCKA-JOY1`,
+  `P2-BLOCKA-JOY0`, `P2-BLOCKB-JOY0`, `P2-BLOCKB-JOY1` and
+  `P2-FOUR-COUNTERS` all print `FAIL` (swapping which connector receives
+  each block's steps reverses what each register is supposed to do), and
+  `P3-Y`, `P3-X`, `P4-PIN3`, `P4-PIN4`, `P4-PIN1` and `P4-PIN2` print
+  `FAIL` alongside them (all read the same swapped records).
+- **P2ANCHOR**: 25 passed, 7 failed on both cores — `Q4` and `P2-ANCHOR`
+  both print `FAIL` (driving F1(A) on connector B instead reads the same
+  way as Q4's own change, at the CIAAPRA bit the anchor checks).
+- **P3VAR**: 22 passed, 10 failed on both cores — `P2-FOUR-COUNTERS`,
+  `P3-Y`, `P3-X`, `P4-PIN1` and `P4-PIN2` print `FAIL` (routing Yup(A)'s
+  pattern to pin 2 instead of pin 1 corrupts both axes' records, since the
+  same steps carry both).
+- **P4VAR**: 23 passed, 9 failed on both cores — `P3-Y`, `P3-X`,
+  `P4-PIN1` and `P4-PIN2` print `FAIL` (grounding pin 2 wherever
+  Buttons(A) grounds pin 1 corrupts both axes' records the same way).
