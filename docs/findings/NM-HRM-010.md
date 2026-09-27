@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The RTL names the simplification in its own comments, so whether NanoMig wants the NTSC half clock at all is a project question before it is a code one. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86) |
 | **Report to** | **NanoMig and MiSTer-devel/Minimig-AGA_MiSTer**, as a question rather than a defect: both lines, and TC64, carry the simplification with the same comment, so there is no fix in either to port |
-| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`, claim `C-scan.c02`, and `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)`, claim `opus:7-appC-beam.c2` (p. 304) |
-| **Chapter** | Appendix C — ECS, printed p. 304; 2 — Coprocessor, printed p. 23; 6 — Blitter, printed p. 194 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red, both NTSC. The control that writes HTOTAL and measures the line it produces is green in the same run; the PAL pair beside them is [NM-HRM-068](NM-HRM-068.md)'s |
+| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`, claim `C-scan.c02`, and `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)`, claim `opus:7-appC-beam.c2` (p. 304); [`integration/ch2-interlace-fields`](../../integration/ch2-interlace-fields) reproduces it at the system boundary, in ECS/NTSC on both CPU cores: `P3`, claims `ch2-vertical-beam-position.c15` to `.c19` and `COP2-vertical-beam-position.c17` to `.c22` (p. 24), red on fx68k and on TG68K |
+| **Chapter** | Appendix C — ECS, printed p. 304; 2 — Coprocessor, printed pp. 23, 24; 6 — Blitter, printed p. 194 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | In `hrm/ch3-beam-counters-and-blanking`, 2 red, both NTSC. The control that writes HTOTAL and measures the line it produces is green in the same run; the PAL pair beside them is [NM-HRM-068](NM-HRM-068.md)'s. In `integration/ch2-interlace-fields`, 1 red on each core, `P3` (28 passed, 1 failed on fx68k and on TG68K); its preconditions `PT-1` to `PT-7` are green on both, among them the gate `PT-6`: the NTSC fields alternate 262 and 263 lines |
 | **Verdict of the four** | **unanimous against NanoMig**: WinUAE, vAmiga, Denise and Copperline all make every other NTSC line 228 colour clocks. NanoMig toggles the bit that reports a long line and keeps every line at 227 |
 | **See also** | [NM-HRM-068](NM-HRM-068.md) — the PAL row of the same sentence, where p. 23 sides with the RTL; [NM-HRM-033](NM-HRM-033.md) — the condition on the same toggle; [NM-AA-005](NM-AA-005.md) — the AA specification's HTOTAL entry, the same missing long line under a programmed line length |
 
@@ -85,6 +85,24 @@ default:
 `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)` is red, and so is the bundled form,
 whose line-count half — 525 lines over a long and a short field — matches. Two
 of the package's `28 passed, 5 failed`.
+
+**At the system boundary the Copper sees the same lines.**
+[`integration/ch2-interlace-fields`](../../integration/ch2-interlace-fields)
+runs an interlaced NTSC display (ECS, BPLCON0 = $1204) whose Copper list marks
+each line with a `WAIT (v, $E0)` and a MOVE and times those marks at the
+chip-RAM port, with each line's first bitplane fetch standing in from line
+254 on, where the marks stop because a WAIT compares only eight bits of the
+line. p. 24's four-field pattern — a short field ending on a short line, a
+long field ending on a long line, a short field ending on a long line, a long
+field ending on a short line — needs a long last line, 228 colour clocks by
+p. 23, in two fields of every four. `P3` grades the pattern over twelve consecutive fields, at any
+phase. The fields do alternate, 263 and 262 lines (`PT-6`, green), but every
+field's last line lasts 1816 cycles, 227 colour clocks at the package's 8
+cycles per colour clock, so no phase fits and `P3` is red on fx68k and on
+TG68K. Read with the package's own program and analysis, instrumented to print
+every line it measures — a measurement for this page, not a graded assertion —
+all 3150 lines of those twelve fields last 1816 cycles on both cores, and none
+lasts 1824.
 
 ---
 

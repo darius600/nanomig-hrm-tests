@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `paula.v`, `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L269) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L264) |
 | **Report to** | **NanoMig.** The in-core drain that ties a disk write to the disk slots is NanoMig's own SD-card write path; in both Minimig lines the host link empties the FIFO instead. The unrouted bit 8 is inherited: neither line passes it out of `paula.v` either — see *What the others say* |
-| **Test** | [`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) — proposition P6, run on both CPU cores in ECS/PAL, OCS/PAL and ECS/NTSC: `G1` (FAST = 1, about 2 µs) and `G2` (FAST = 0, about 4 µs), claims `A-adkcon.b08`, `5-appA-p265.c21` (pp. 265, 249), and `G3` (a factor of two between the two, pp. 265, 249), red on fx68k and on TG68K in all three configurations |
+| **Test** | [`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) — proposition P6, run on both CPU cores in ECS/PAL, OCS/PAL and ECS/NTSC: `G1` (FAST = 1, about 2 µs) and `G2` (FAST = 0, about 4 µs), claims `A-adkcon.b08`, `5-appA-p265.c21` (pp. 265, 249), and `G3` (a factor of two between the two, pp. 265, 249), red on fx68k and on TG68K in all three configurations; [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial) — proposition P4, run on both CPU cores in ECS/NTSC and ECS/PAL: `P4-NTSC-FAST1`, `P4-PAL-FAST1` (FAST = 1, 1.5 µs ≤ T < 2.5 µs) and `P4-NTSC-FAST0`, `P4-PAL-FAST0` (FAST = 0, 3.5 µs ≤ T < 4.5 µs), claim `opus:8-adkcon.c33` (pp. 265, 249), red on fx68k and on TG68K |
 | **Chapter** | 8 — Interface Hardware, printed pp. 241, 249, 250; Appendix A, printed pp. 265, 279; 6 — Blitter, printed p. 194; Appendix H, printed p. 369 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 9 red on each core, the same on fx68k and TG68K: `G1`, `G2` and `G3` in each of ECS/PAL, OCS/PAL and ECS/NTSC. In the same runs the preconditions are green on both cores: `B1` reads ADKCONR bit 8 back as 1 in the FAST run and 0 in the slow one, `B2` shows DMAON and DISKWRITE set, `B3` finds all 544 words of each buffer fetched in order, and `B4` finds the refresh groups 227 colour clocks apart inside each run's own graded interval |
+| **Assertions** | 9 red on each core, the same on fx68k and TG68K: `G1`, `G2` and `G3` in each of ECS/PAL, OCS/PAL and ECS/NTSC. In the same runs the preconditions are green on both cores: `B1` reads ADKCONR bit 8 back as 1 in the FAST run and 0 in the slow one, `B2` shows DMAON and DISKWRITE set, `B3` finds all 544 words of each buffer fetched in order, and `B4` finds the refresh groups 227 colour clocks apart inside each run's own graded interval. In `integration/ch8-disk-serial`, 4 red on each core, `P4-NTSC-FAST1`, `P4-NTSC-FAST0`, `P4-PAL-FAST1` and `P4-PAL-FAST0`, with each run's preconditions `4a` to `4f` green on both cores |
 | **Verdict of the four** | **unanimous against NanoMig, and none implements the slow setting for a write**: WinUAE, vAmiga, Denise and Copperline all shift a disk write out at a fixed cell of about 1.97 µs (PAL) and take a word from memory only when their FIFO has room, so none takes every disk slot. None lets ADKCON bit 8 reach the write path: WinUAE uses it only when reading a disk, Denise only for DSKBYTR, vAmiga only to report it cleared, Copperline not at all. With a drive selected all four would pass `G1` and fail `G2` and `G3`; Copperline refuses a disk DMA with no drive selected, the package's condition |
 | **See also** | [NM-HRM-028](NM-HRM-028.md) — ADKCON's audio bits, stored and read back and reaching nothing, in the same register; [NM-HRM-041](NM-HRM-041.md) — DSKBYTR, the other disk register whose fields a serial disk stream would drive |
 
@@ -150,6 +150,27 @@ counts 171. The measured rate is p. 194's allocation of three disk slots with
 every slot of every line taken. It follows the one per-line number the manual
 gives disk DMA, which the manual gives as room, not as a rate — and it follows
 nothing either page says about FAST.
+
+**A second package measures the same behaviour at the system boundary.**
+[`integration/ch8-disk-serial`](../../integration/ch8-disk-serial), proposition
+P4, writes 256 words of $AAAA from $20000 in ECS/NTSC and ECS/PAL, once with
+ADKCON = $8100 after clearing bits 14–8 with $7F00 and once with the clear
+alone, each armed by p. 247's DSKLEN sequence, and makes no CIA-B write. It
+times the chip-RAM reads of words 64 and 192 at the RAM port and divides by
+128 words of sixteen cells, with the colour clock taken from the refresh slots
+(8 cycles, `4a`) and p. 255's colour-clock lengths. In all four runs, on both
+cores, the two reads are 78072 cycles apart: 9759 colour clocks, two short of
+43 lines of 227, three words a line as in the first package. That is a bit
+cell of **1.331 µs** NTSC and **1.343 µs** PAL with FAST = 1 and with FAST = 0,
+below both bands, so `P4-NTSC-FAST1` and `P4-PAL-FAST1` (1.5 µs ≤ T < 2.5 µs)
+and `P4-NTSC-FAST0` and `P4-PAL-FAST0` (3.5 µs ≤ T < 4.5 µs) are red on fx68k
+and on TG68K. The window is shorter, and its ends fall at other places in their
+lines, which is why the values differ from the 1.324 µs and 1.336 µs above in
+the last digits. In every run `4c` reads ADKCONR bit 8
+back as written, `4d` finds DMAON and DISKWRITE set between the two reads,
+`4e` finds words 0 to 192 read once each and in order, and `4f` finds the two
+halves of the window 221 colour clocks apart in length, inside its bound of
+456.
 
 ---
 

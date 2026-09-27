@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L111-L117) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L111-L117) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**. NanoMig has `paula_uart.v` from there unchanged and TC64 carries the same file, so there is no fix to port; vAmiga, Denise and Copperline each show where the waiting word's start bit goes — see *What the others say* |
-| **Test** | [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial) — three assertions over the same transmit programs, run on both CPU cores: `P1`, claims `sol:8-serper.c8`, `opus:8-serper.c10` (pp. 255, 284), NTSC; `P2(ii)` (pp. 255, 284), PAL; `P3`, claim `sol:8-serper.c10` (p. 255), NTSC. Each is red on fx68k and on TG68K |
+| **Test** | [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial) — three assertions over the same transmit programs, run on both CPU cores: `P1`, claim `sol:8-serper.c8` (p. 255), NTSC; `P2`, claim `sol:8-serper.c9` (p. 255), PAL, red through its clause (ii); `P3`, claim `sol:8-serper.c10` (p. 255), NTSC. Each is red on fx68k and on TG68K |
 | **Chapter** | 8 — Interface Hardware, printed pp. 255, 257, 258, 259; Appendix A, printed pp. 283, 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red on fx68k and 3 on TG68K (`P1`, `P2(ii)`, `P3`; 44 passed, 6 failed on each core, and the other three reds are not this finding). In the same run the single-word captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and `1d`/`2d`, green, show that every word after the first was written before the previous word's stop bit began |
+| **Assertions** | 3 red on fx68k and 3 on TG68K (`P1`, `P2`, `P3`; 50 passed, 7 failed on each core, and the other four reds, the disk bit-cell assertions `P4-*`, are [NM-HRM-070](NM-HRM-070.md)'s). In the same run the single-word captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and `1d`/`2d`, green, show that every word after the first was written before the previous word's stop bit began |
 | **Verdict of the four** | **unanimous against NanoMig**: vAmiga, Denise and Copperline load a waiting word in the step that ends the stop bit, so its start bit follows the stop bit after N+1 colour clocks, as p. 255 says. WinUAE has no TxD pin; in its cycle-exact mode with no serial device it starts the waiting word's frame 10(N+1) colour clocks after the previous frame began, and in its loopback mode 3 colour clocks later. None adds half a colour clock |
 
 ---
@@ -135,7 +135,7 @@ TG68K:
 | assertion | capture | what is compared | measured |
 |---|---|---|---|
 | `P1` | NTSC, N=0, 371 and 32396 | every change within ±C/2 of t0 + k·(N+1)·C | N=0 10 of 10, **N=371 20 of 40**, N=32396 10 of 10 |
-| `P2(ii)` | PAL, the same three N | U_N = T_N/(N+1), each run's mean bit interval T_N divided by N+1, equal for every N | U_0 = U_32396 = 8.000000, **U_371 = 8.000827**; the difference exceeds its tolerance of 0.000579 |
+| `P2`, clause (ii) | PAL, the same three N | U_N = T_N/(N+1), each run's mean bit interval T_N divided by N+1, equal for every N | U_0 = U_32396 = 8.000000, **U_371 = 8.000827**; the difference exceeds its tolerance of 0.000579 |
 | `P3` | NTSC, N=371 | the same grid as `P1`, at 372·C | **20 of 40** |
 
 On PAL the N=371 run spans 39 intervals in 116076 cycles, 12 more than
@@ -227,7 +227,7 @@ state no longer passes through it. This has not been run here. What it would
 change:
 
 - a stop bit with a word waiting behind it would last 2N+2 `clk7_en` edges,
-  N+1 colour clocks, and `P1`, `P2(ii)` and `P3` would read the grid p. 255
+  N+1 colour clocks, and `P1`, `P2` and `P3` would read the grid p. 255
   gives;
 - the waiting word's transfer into the shift register and its TBE interrupt
   would come one `clk7_en` edge, half a colour clock, earlier;
@@ -240,8 +240,9 @@ change:
 
 - **The comparator is exact where the page predicts exactly.** The single-word
   captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and their
-  mean bit intervals are 8.000000 cycles per colour clock in `P2(ii)`; the
-  within-word intervals of the four-word run are all N+1 colour clocks.
+  mean bit intervals are 8.000000 cycles per colour clock in `P2`'s clause
+  (ii); the within-word intervals of the four-word run are all N+1 colour
+  clocks.
 - **The words are waiting.** `1d` and `2d`, green on both cores, show every
   word after the first written before the previous word's stop bit began.
 - **The unit is the page's.** C is measured on each capture from the refresh
