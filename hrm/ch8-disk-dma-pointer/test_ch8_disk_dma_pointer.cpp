@@ -486,9 +486,9 @@ int main(int argc, char** argv) {
         }
         top->dmal = 0;
         checks.expect(grant_count >= 1 && all_matched,
-            "P8 (REPAIRED 2026-09-15, repair lot D -- narrowed from requiring exactly 3 grants "
-            "at this implementation's own hpos slots, which a correctly-scheduled but "
-            "differently-timed implementation could fail, to the page's own requirement: "
+            "P8 (graded to the page's own requirement, not to exactly 3 grants at this "
+            "implementation's own hpos slots, which a correctly-scheduled but "
+            "differently-timed implementation could fail: "
             "opus:8-dma.c26/sol:8-dsklen.c15 p.247 increment; opus:8-dma.c27/sol:8-dsklen.c16 "
             "p.247 next-word; role half opus:8-dsk.c33 p.241, opus:8-dma.c3/sol:8-dskdma.c2 "
             "p.246): across a full hpos sweep at speed=0, at least one disk-DMA cycle is "
