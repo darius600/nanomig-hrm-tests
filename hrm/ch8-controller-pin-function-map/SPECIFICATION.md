@@ -7,13 +7,14 @@ Claims: `hrm-testpipeline/work/ch8-s1-build/ch8-controller-pin-function-map.json
 42 claims, two independent readers (`opus`, `sol`), 21 twin pairs. Every uid below
 is `classify.uid` verbatim, not the bare `id`.
 
-Fixture: `userio.v`, compiled alone. This document is written from the
-quotations in the claims file only. No RTL file has been opened yet — no port
-name, signal name or bit position appears below. Where the exact device/register
-names below (JOY0DAT, POTGOR, POT0DAT/POT1DAT) are used, they are Amiga register
-names from the manual's own vocabulary (chapter 6's custom-chip register set),
-not RTL signal names; they are used only to say *which documented register* a
-behaviour is expected to surface in, not what it is called inside the module.
+Fixture: `userio.v`, compiled alone. The groups and verdicts below are
+derived from the quotations in the claims file; RTL signal names appear only
+in Group B2 and "RTL boundary finding", where the measurement needs them.
+Where the exact device/register names below (JOY0DAT, POTGOR, POT0DAT/POT1DAT)
+are used elsewhere, they are Amiga register names from the manual's own
+vocabulary (chapter 6's custom-chip register set), not RTL signal names; they
+are used only to say *which documented register* a behaviour is expected to
+surface in, not what it is called inside the module.
 
 ## Table 8-1 as quoted in the claims
 
@@ -85,8 +86,7 @@ each pair are asserted, not declined.
 | `opus:8-tbl8-1.c11` | 4 | Mouse/TB/DC | same | pin 4 = mouse/TB/DC HQ-pulse |
 | `sol:8-pin.c12` | 4 | Mouse/TB/DC | same | pin 4 = mouse/TB/DC HQ-pulse |
 
-**What will be measured, functionally (bit/port names filled in after the RTL
-is opened, per the order of work):**
+**What is measured, functionally (bit/port names are in the test source):**
 
 - *Joystick-mode direct read* (pins 1/2/3/4 = forward/back/left/right): with
   the fixture presented as a joystick port, asserting the electrical line the
@@ -115,8 +115,7 @@ describe mutually exclusive external devices with no such shared fact.
 (Right POT / POT X) are graded separately as Group B2 below rather than
 folded into this one — `userio.v` wires pin 5 asymmetrically between the two
 physical ports (one port's copy of the gate has no external term at all),
-unlike pin 9's clean, symmetric wiring here. Pin 9 stands as originally
-planned.
+unlike pin 9's clean, symmetric wiring here.
 
 | uid | pin | column | claim |
 |---|---|---|---|
@@ -125,7 +124,7 @@ planned.
 | `opus:8-tbl8-1.c33` | 9 | XY Prop. Joystick | pin 9 = POT Y |
 | `sol:8-pin.c36` | 9 | XY Prop. Joystick | pin 9 = POT Y |
 
-**What will be measured:** holding pin 9's line low for a timed interval, with
+**What is measured:** holding pin 9's line low for a timed interval, with
 the port's pot-start/charge cycle running, advances (gates) the "Y"/"Left POT"
 byte of that port's two-byte pot data register and leaves the "X"/"Right POT"
 byte unmoved. All four uids are graded against the same measured
@@ -150,7 +149,7 @@ RX 5 35 (POT1X)", "LEFT X LX 5 32 (POT0X)"), so a Table-8-1 claim worded
 identically for both physical ports (per KNOWN CONFLICT 3 above) needs both
 copies of the gate to sense it.
 
-**What was measured:** the "X"/"Right POT" byte's pot-gate (`potcap[0]` for
+**What is measured:** the "X"/"Right POT" byte's pot-gate (`potcap[0]` for
 port 1, `potcap[2]` for port 2) is the one asymmetric case in this module.
 Port 1's gate, `potcap[0] <= _mthird & joy1_pin5`, is live: `_mthird`
 (`mouse_btn[2]`) is a real external signal and holding/releasing it correctly
@@ -167,8 +166,8 @@ independently reported RED by the sibling `hrm/ch8-pot-pins-as-digital-io`
 physical omission cannot be a finding there and an unobservable boundary
 here.
 
-**Mutation:** already red at baseline, so per the build brief this is a
-substitution proof, not a stimulus mutation — port 1's live `mouse_btn[2]`
+**Mutation:** already red at baseline, so this is a substitution proof,
+not a stimulus mutation — port 1's live `mouse_btn[2]`
 channel, proven live in the same measurement, is put through the identical
 two-port comparator alone and shown to read green, proving the comparator
 is not vacuous.
@@ -202,7 +201,7 @@ line per uid, naming the pin and the reason above. (Contrast with pin 6 in
 Group D below: pin 6's two button names are declined for a *different* reason —
 scope, not observability.)
 
-### Group D — pin 6, fire-button function (4 uids, DECLINE — wrong fixture)
+### Group D — pin 6, fire-button function (4 uids, DECLINE — graded in `hrm/appDE-joystick-pinout`)
 
 | uid | pin | column | quote | claim |
 |---|---|---|---|---|
@@ -212,11 +211,11 @@ scope, not observability.)
 | `sol:8-pin.c21` | 6 | Mouse/TB/DC | same | pin 6 = mouse/TB/DC left button |
 
 **Decline reason (`record()`):** pin 6 is Table 8-1's fire line ("Button 1" /
-"Left button" are the same fire contact under two device names). Per the
-carried-forward chapter guidance, fire-line claims belong to
-`ch8-ciaapra-fire-buttons` on the `ciaa` fixture, not to `userio.v`. Declined by
-name, one `record()` line per uid, citing `ch8-ciaapra-fire-buttons` as the
-package that owns this claim.
+"Left button" are the same fire contact under two device names). The
+binding is observable at the `userio` boundary — `userio.v:313` drives the
+output port `_fire0` from `_sjoy1[4]` (pin 6) and `_mleft` (mouse button 1,
+`:361`) — and `hrm/appDE-joystick-pinout` grades it there. Declined in this
+package by name, one `record()` line per uid, naming that package.
 
 ### Group E — pins 5/9, output-configurability footnote (2 facts, 4 uids, ASSERT)
 
@@ -227,19 +226,15 @@ package that owns this claim.
 | `opus:8-tbl8-1.c37` | 9 | same | pin 9 can be configured as an output |
 | `sol:8-pin.c41` | 9 | same | pin 9 can be configured as an output |
 
-**What will be measured:** for each of pin 5 and pin 9, the fixture can drive
+**What is measured:** for each of pin 5 and pin 9, the fixture can drive
 that same electrical line to a chosen logic level under its own control (not
 only sense an externally-driven level) — i.e., the line is bidirectional, not
 input-only. Two facts (pin 5, pin 9), each graded against both readers' uids.
 
 ## Claim accounting
 
-Originally planned: 28 ASSERT (Groups A, B, E) + 14 DECLINE (Groups C, D) = 42.
-After opening `userio.v` (order-of-work step 2) and measuring pin 5's
-pot-gating asymmetry between the two controller ports (see Group B2 above and
-"RTL boundary finding" below): **28 ASSERT (Groups A, B, B2, E) + 14 DECLINE
-(Groups C, D) = 42.** Every uid in the 42-line claims file appears exactly
-once above.
+**28 ASSERT (Groups A, B, B2, E) + 14 DECLINE (Groups C, D) = 42.** Every
+uid in the 42-line claims file appears exactly once above.
 
 ## Test plan
 
@@ -251,10 +246,9 @@ once above.
 - **Control case.** One of the Group A joystick-mode direct-read assertions
   (the simplest, least interpretive shape in this file: a level in, a level
   decoded out) is the control case — same fixture, same measurement basis as
-  the quadrature and pot-gating assertions it sits beside. Which specific pin
-  serves as control is recorded in the built test's file header once the RTL
-  is open and the assertion is confirmed to hold; if none of the four holds,
-  that is itself reported rather than silently substituted.
+  the quadrature and pot-gating assertions it sits beside: pin 4/right
+  (`opus:8-tbl8-1.c10`, `sol:8-pin.c11`), the cleanest single-bit read in
+  the test source.
 - **Mutation policy.** Every ASSERT uid gets its own `// MUTATION <uid> ...`
   line, the uid used verbatim as the `expect()` label. RTL is never touched;
   a mutation changes what the *testbench* drives — e.g., asserting the
@@ -270,14 +264,13 @@ once above.
     unfalsifiable at this boundary — labelled `impossible` with that phrase.
   - If an assertion is already red against the manual (an RTL deviation), its
     mutation record substitutes a different, already-proven-live mechanism
-    through the same comparator to show the comparator itself is not vacuous,
-    per the brief.
+    through the same comparator to show the comparator itself is not vacuous.
 - **Declined claims.** Every Group C and Group D uid gets a `record()` line
   naming the pin, the column, and the reason (device-identity not observable
-  at this boundary, or wrong fixture — `ch8-ciaapra-fire-buttons`). Group B2
+  at this boundary, or graded in `hrm/appDE-joystick-pinout`). Group B2
   is graded via `expect()`, the same as Groups A, B and E — see above.
 
-## RTL boundary finding (step 2, after commit)
+## RTL boundary finding
 
 `userio.v`'s port list gives pins 1-4, 6 and 9 each a specific bit of the
 16-bit `_joy1`/`_joy2` connector vectors — a uniform, per-pin representation.
@@ -292,16 +285,9 @@ is live on one port and driven by nothing at all on the other is a genuine
 RTL deviation from the manual, graded RED, not a boundary this fixture cannot
 see. Group B2 above carries the ASSERT and its measurement.
 
-## HALT check
+## Reachability
 
-No manual ambiguity was found at the point under test; no claim needs the port
-list or a measurement to be settled at the specification stage (Groups B and C
-were separated on the quotations' own structure — shared byte-naming vs.
-mutually-exclusive device-naming — not on anything RTL-derived); the assigned
-boundary (`userio.v` alone) is sufficient for every ASSERT group above; no file
-outside this unit directory has been touched. No HALT.
-
----
-*Written before any RTL file was opened. Port names, bit positions and exact
-register field widths are filled in only after this specification is
-committed.*
+No manual ambiguity bears on the point under test; Groups B and C are
+separated on the quotations' own structure — shared byte-naming vs.
+mutually-exclusive device-naming — not on anything RTL-derived; the
+boundary (`userio.v` alone) is sufficient for every ASSERT group above.

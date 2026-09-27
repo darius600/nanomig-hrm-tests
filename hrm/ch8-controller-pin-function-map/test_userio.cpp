@@ -15,8 +15,7 @@
 // ch8-controller-pin-function-map -- Table 8-1 (p.228), userio.v alone.
 //
 // Pin map used throughout (derived from userio.v's own port list and
-// parameters, read after SPECIFICATION.md was committed -- see the RTL
-// boundary finding section of that file):
+// parameters -- see the RTL boundary finding section of SPECIFICATION.md):
 //   bit0=pin4(HQ/right)  bit1=pin3(VQ/left)  bit2=pin2(H/back)
 //   bit3=pin1(V/forward) bit4=pin6(fire)     bit5=pin9(button2/fire2)
 // on both _joy1 and _joy2. joy_swap is tied 0, so _sjoy2/_djoy2 (the "Port
@@ -401,9 +400,9 @@ int main(int argc, char** argv) {
     }
 
     // =====================================================================
-    // Group B2 -- pin 5, proportional-controller pot gating (repaired: was
-    // declined "no port carries pin 5 into the X/Right-POT gate"; that is
-    // the deviation itself, not a reason the claim stops being testable --
+    // Group B2 -- pin 5, proportional-controller pot gating. A port that
+    // carries no external signal into the X/Right-POT gate is the
+    // deviation itself, not a reason the claim stops being testable --
     // classify.status is "testable" for all four uids with no narrowing
     // "split" field, unlike Group C below, where classify's own "split"
     // text concedes the device-identity gap up front. p.282's register
@@ -487,8 +486,8 @@ int main(int argc, char** argv) {
         expect(gate_ok, "opus:8-tbl8-1.c16");
         expect(gate_ok, "sol:8-pin.c18");
 
-        // Substitution proof (newly-red assertion, per the build brief: an
-        // already-red assertion is not stimulus-mutated further). A
+        // Substitution proof (an already-red assertion is not
+        // stimulus-mutated further). A
         // mechanism proven live above -- port 1's mouse_btn[2] channel --
         // put through the identical two-port comparator alone, shown green.
         bool substitution_green = port1_senses_pin5;
@@ -537,9 +536,9 @@ int main(int argc, char** argv) {
     // Group D -- pin 6's fire-line claims: not built in this package. The
     // binding IS observable at this fixture: userio.v:313 drives the output
     // port _fire0 from _sjoy1[4] (pin 6) and _mleft (mouse button 1, :361),
-    // so no readable register bit is needed. It was declined here on the
-    // opposite reading, and hrm/appDE-joystick-pinout grades the proposition
-    // at this boundary (O86). The uids stay declined in this package.
+    // so no readable register bit is needed. hrm/appDE-joystick-pinout
+    // grades the proposition at this boundary; the uids are declined in
+    // this package.
     record("opus:8-tbl8-1.c18 (pin 6 = Joystick Button 1) declined: not "
            "built in this package. The binding is observable at the userio "
            "boundary -- userio.v:313 drives the output port _fire0 from "
