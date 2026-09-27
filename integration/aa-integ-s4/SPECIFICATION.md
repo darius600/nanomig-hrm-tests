@@ -13,8 +13,9 @@ specification builds on it, to explain a choice of stimulus or a restriction;
 no expected value below is taken from it. The quoted lines of p.21 and p.22
 were compared with the page scans and read the same there.
 
-The package has 23 propositions (P1 to P23). Fourteen claims give no
-proposition. They are listed first.
+The package has 23 propositions (P1 to P23), and three joint assertions
+(J1 to J3, 2.7) for the claims that name two registers at once. Twenty
+claims give no proposition. They are listed first.
 
 ---
 
@@ -27,6 +28,9 @@ proposition. They are listed first.
 | opus:AA-ddf.c10, sol:AA-ddf.c6 | 21 | "Note that these numbers will vary with variable beam counter mode set. (The maxes & mins, that is)". No number is given for that mode, so there is no expected value. The package keeps variable beam counter mode off (2.5). |
 | opus:AA-dmacon.b09b (DMAEN also enables UHRES DMA) | 22 | The UHRES pointer addresses VRAM ("VRam (UHRES) bit plane pointer", p.10), and its cycle is identified to external logic on the RGA bus ("BPLHDAT comes out as an identifier on the RGA lines when the pointer address is valid so that external detectors can use this to do the special cycle for the VRAMs", p.15). The test sees neither VRAM nor the RGA bus, and no page says the cycle is also a Chip-memory access. The enabling condition is incomplete as well: UHRES "(also needs bits in DMACON)" (p.16) does not name those bits. A test could never go red. |
 | opus:AA-dmacon.b10b ("Blitter Nasty") | 22 | The line gives a second name for bit 10. It states no behaviour. |
+| opus:AA-ddfstrt.t1, sol:AA-ddfstrt.c5, opus:AA-ddfstop.t3, sol:AA-ddfstop.c7 | 21 | Each claim is a row that the table labels "(max)": "Extra wide (max) * 0 0 1 0 1" and "wide (max) 1 1 0 1 1". "(max)" states a limit: no DDFSTRT value starts the fetch earlier than the extra-wide row, and no DDFSTOP value ends it later than the wide row. No proposition grades that limit. Grading it would need values beyond the rows, and for DDFSTRT the manual the page builds on puts the limit elsewhere ("a leftmost limit to DDFSTRT of ($18)", HRM p.80). The claims are declined whole. The two rows' bits (0x0028, 0x00D8) remain configurations of P1-P4, as the rows against which the other rows are placed. |
+| opus:AA-dmacon.b10c | 22 | "(disables /BLS pin, preventing micro from stealing any bus cycles while blitter DMA is running)". /BLS is a pin, not a port of `nanomig.v` (port list), so the clause about the pin cannot be graded at this boundary, and the claim is declined whole. P20 grades BLTPRI under opus:AA-dmacon.b10. |
+| opus:AA-dmacon.c6 | 22 | "This register controls all of the DMA channels, and contains Blitter DMA status bits." The page prints two status bits, BBUSY (bit 14) and BZERO (bit 13). P21 grades BBUSY's status behaviour. BZERO's status behaviour, that the bit follows the blitter's zero result, is only a precondition of P23 ((ii)), and no proposition grades it. The claim is declined whole. |
 
 None of the package's claims needs a disk surface.
 
@@ -37,8 +41,19 @@ None of the package's claims needs a disk surface.
 ### 2.1 System and program
 
 - AA chip set selected (`Config.chipset_config = 0x10`), PAL, 2 MB Chip
-  memory. Each proposition is run on each of the two CPU cores, in the core's
-  default 68000 behaviour. No proposition uses 68010 or 68020 behaviour.
+  memory. Each proposition is run on both builds that `nanomig.mk` makes, in
+  the CPU core's default 68000 behaviour. No proposition uses 68010 or 68020
+  behaviour.
+- The AA specification is graded on the TG68K build only: it is the one
+  build that `nanomig.mk` compiles with `-DENABLE_AGA`, NanoMig's AGA
+  configuration. The fx68k build is NanoMig's configuration without AGA. Its
+  results are recorded, not graded. No proposition, precondition or contrast
+  depends on the fx68k build having an AA feature; this includes the FMODE
+  contrasts of P1 and P7 and the BPLCON4 writes of 2.5.
+- The programs are assembled for the 68000, vasm's default CPU. With
+  `-m68010` or higher, vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, and on a
+  68000 a CLR reads its address before it writes it: a store of index 0 to
+  MARK would then add a CPU read in a region that 2.3 allows only CPU writes.
 - The program runs from Chip memory. Its first instruction sets the status
   register to 0x2700 (interrupts masked). It then writes INTENA <- 0x7FFF,
   INTREQ <- 0x7FFF and DMACON <- 0x7FFF. For DMACON this clears every
@@ -86,30 +101,53 @@ separately. It may also be one field of a longer run, under these rules:
 - A configuration whose display window does not close before the end of the
   field is the last of its run.
 
-### 2.3 Attributing Chip-memory accesses
+### 2.3 Memory layout and attributing Chip-memory accesses
 
-Each access is attributed by address region and direction. Where the harness
-also attributes an access to the CPU or to a DMA channel, that attribution
-is used too, and it must agree. Regions are word-aligned, disjoint, and at
-least 2 KB apart, so that a pointer running past the end of its region shows
-up:
+Every region lies in the Chip memory that the harness maps one to one:
+"Program, stack and results all live in chip RAM that nanomig.v maps
+one-to-one ($080000-$1FFFFF with 2 MB chip RAM)" (`nanomig.i`). Nothing lies
+below $080000. After reset "An additional copy of the system ROM responds
+starting at memory location $00000000. The system RAM that would normally be
+located at this address is not available." (HRM p.223), and no program of
+this package clears the overlay. Every region also lies below $100000, so
+that a DMA pointer reaches it whether the "20 bit address" of the blitter and
+sprite pointers (p.13, p.28) counts bytes or words. The program starts at
+`PROGRAM_ORG` = $080400, MARK starts at `RESULTS` = $0C0000, `DONE_ADDR` is
+$0C0FFE, and the stack grows down from `PROGRAM_STACK` = $0FFF00 (all
+`nanomig.i`). Regions are word-aligned, disjoint, and at least 2 KB apart, so
+that a pointer running past the end of its region shows up. Addresses are
+byte addresses:
 
-| Region | Content | Accessed during an observation only by |
-|---|---|---|
-| PROG | the program | CPU (instruction fetches) |
-| MARK | configuration indices, DMACONR copies, end marker | CPU writes |
-| SAMP | DMACONR samples (P21-P23) | CPU writes |
-| SCR | scratch area, 40 000 bytes (P20) | CPU writes |
-| COP | Copper list | Copper reads |
-| B1-B4 | bit-plane data, 32 KB each | bit-plane DMA reads |
-| Z | bit-plane data, 32 KB of zero | bit-plane DMA reads |
-| SPR0-SPR7 | sprite data, 40 bytes each (P19) | sprite DMA reads |
-| BLT_S, BLT_D | blitter source and destination, 8 KB each | blitter reads and writes |
+| Region | Address, size | Content | Accessed during an observation only by |
+|---|---|---|---|
+| PROG | $080400, ends below $08C000 | the program | CPU (instruction fetches) |
+| COP | $08C000, at most 2 KB | Copper list | Copper reads |
+| SPR0-SPR7 | SPRx at $090000 + x * $1000, 40 bytes each | sprite data (P19) | sprite DMA reads |
+| BLT_S | $098000, 8 KB | blitter source | blitter reads |
+| BLT_D | $09C000, 8 KB | blitter destination | blitter writes |
+| SCR | $0A0000, 40 000 bytes | scratch area (P20) | CPU writes |
+| B1 | $0B0000, 32 KB | bit-plane data | bit-plane DMA reads |
+| MARK | $0C0000, at most 2 KB | configuration indices, DMACONR copies, end marker | CPU writes |
+| SAMP | $0C2000, 16 KB | DMACONR samples (P21-P23) | CPU writes |
+| B2 | $0C8000, 32 KB | bit-plane data | bit-plane DMA reads |
+| B3 | $0D1000, 32 KB | bit-plane data | bit-plane DMA reads |
+| B4 | $0DA000, 32 KB | bit-plane data | bit-plane DMA reads |
+| Z | $0E3000, 32 KB | bit-plane data, all zero | bit-plane DMA reads |
 
 The CPU writes the content of COP, B1-B4, Z, SPRx and BLT_S before it
 enables the DMA that reads them. After that it does not access them. Every
 proposition asserts, as a precondition, that no agent other than the one
 listed accesses a region it uses during the observed interval.
+
+The harness attributes no access to an agent: a logged access carries its
+time, word address, data, direction and byte lanes (`RamAccess` in
+`nanomig_harness.h`), and apart from `refresh`, which marks a refresh cycle,
+no port in the port list says which agent made an access. Each access is
+therefore attributed by region and direction alone, and the precondition
+above is checked in the form the ports allow: during the observed interval
+every access in a region has the direction the table gives, and the program
+contains no instruction that accesses COP, B1-B4, Z, SPRx, BLT_S or BLT_D
+after it has enabled the DMA that uses them.
 
 ### 2.4 Reference frames
 
@@ -153,15 +191,27 @@ Copper fetch from the start of the list: "COP1LC is automatically used at
 the beginning of each vertical blank time." (p.21). Checks:
 
 - A(v+1) - A(v) is the same value, the line period L, for every v in range.
-  PAL has no long/short line toggle: "If the PAL bit & LOLDIS are not high,
-  long line/short line toggle will occur" (p.24).
+  In PAL, with variable beam counter mode off, there are no long lines. The
+  strobe that identifies "lines with long counts(228- NTSC, HTOTAL+2-
+  VARBEAMEN=1 hires chips only)" (p.29) names only NTSC and variable beam
+  counter mode, and the manual the page builds on says "In PAL, they are all
+  227 long." (HRM p.23). The sentence "If the PAL bit & LOLDIS are not high,
+  long line/short line toggle will occur" (p.24) belongs to HTOTAL, which is
+  "Active if VARBEAMEN=1 or DUAL=1" (p.24), and is not the source here. Both
+  set-ups that use RF-L write PAL = 1 and VARBEAMEN = 0 (2.5).
 - L and A(0x3E) - T0 are the same in every field and every run of the
   package.
 - No Copper fetch lies outside COP, and there is none between the fetch of
   the list's END instruction and the next T0.
 
-Contrast for the check: WAIT (v, 0x06) in place of (v, 0x04) in one
-configuration moves A(0x3E) - T0 by 2 memory cycles, and the check fails.
+Contrast for the check: WAIT (v, 0x0C) in place of (v, 0x04) in one
+configuration moves A(0x3E) - T0 later, and the check fails. The contrast
+position lies past the four refresh cycles, which the manual the page builds
+on draws on odd cycles up to $05 (HRM p.195, Figure 6-9). The Copper
+"requests the bus only during odd memory cycles" (p.21), so after
+WAIT (v, 0x04) its fetch falls at $05, or at $07 if refresh holds $05. A
+contrast at 0x06, whose fetch falls at $07, could then leave A(v) where it
+was.
 
 **RF-F: fields for propositions without a Copper list (P16-P23).** Field k
 is the interval between the CPU's k-th and (k+1)-th store to MARK in the
@@ -205,10 +255,23 @@ END is the pair 0xFFFF, 0xFFFE.
 
 **Marker block.**
 
-    WAIT (0x20,0x04); MOVE BPLCON3 <- 0x0C00
-    WAIT (0x21,0x04); MOVE BPLCON3 <- 0x0C20
-    WAIT (0x24,0x04); MOVE BPLCON3 <- 0x0C00
-    WAIT (0x25,0x04); MOVE BPLCON3 <- 0x0C20
+    WAIT (0x20,0x1C); MOVE BPLCON3 <- 0x0C00
+    WAIT (0x21,0x1C); MOVE BPLCON3 <- 0x0C20
+    WAIT (0x24,0x1C); MOVE BPLCON3 <- 0x0C00
+    WAIT (0x25,0x1C); MOVE BPLCON3 <- 0x0C20
+
+The WAIT position 0x1C puts each change of BRDRBLNK inside horizontal
+blanking, so that it falls between two visible stretches of the output. The
+manual the page builds on says "The horizontal beam position has a value of
+$0 to $E2." and "Horizontal blanking falls in the range of $0F to $35. The
+standard screen (320 pixels wide) has an unused horizontal portion of $04 to
+$47 (during which only the background color is displayed)." (HRM p.23). The
+visible stretch that follows the blanking of line v therefore runs from $35
+of line v to $0E of line v+1. A change made between $00 and $0E of line v
+would colour the right end of the stretch of line v-1, and the rows of line
+0x1F or 0x23 would show red. After WAIT (v, 0x1C) the Copper fetches the MOVE
+on the next two odd memory cycles (p.21), and the write lands inside
+$0F-$35.
 
 **List L-A** (propositions graded at the Chip-memory port):
 
@@ -250,15 +313,34 @@ In P6, the pointer MOVEs load Z in place of B1.
 
 **S-WIN, the window instrument** (P6, P8-P15):
 
-- BPLCON0 <- 0x1001: one plane, ECSENA = 1. BPLCON1 <- 0, BPLCON2 <- 0,
-  BPLCON3 <- 0x0C20 (BRDRBLNK = 1, PF2OF1 = PF2OF0 = 1), BPLCON4 <- 0x0011,
-  FMODE <- 0.
+- BEAMCON0 <- 0x0020 (PAL = 1, all other bits 0), as in S-FETCH, as the
+  program's first custom-register write after the three clearing writes of
+  2.1. The window propositions need a PAL field: they observe lines up to
+  0x12F, P11, P12, P14 and P15 grade window lines beyond 0x100, and the
+  "never reached" arguments of P8, P13 and P15 count on a field that ends
+  between 0x12F and 0x140. The bit that selects it is "PAL= Set appropriate
+  decodes (in normal mode) for PAL." (p.12), and the AA pages give it no
+  reset value. RF-L, which P6 uses, rests on the PAL bit as well (2.4).
+  HARDDIS = 0 is its reset value ("It is cleared upon reset", p.12).
+  VARVBEN = 0 and
+  VARBEAMEN = 0 keep the hard stops of the display window, which either bit
+  disables when set ("It also disables the hard stop on the vertical display
+  window"; "It also disables hard display stops on both horizontal &
+  vertical", p.12).
+- BPLCON0 <- 0x1001: one plane, ECSENA = 1. Then BPLCON1 <- 0,
+  BPLCON2 <- 0, BPLCON3 <- 0x0C20 (BRDRBLNK = 1, PF2OF1 = PF2OF0 = 1),
+  BPLCON4 <- 0x0011, FMODE <- 0. BPLCON0 is written before BPLCON3, so that
+  ECSENA is already high when BRDRBLNK is written. The pages describe the
+  gate three ways: ECSENA "forces" BRDRBLNK low, and "When ECSENA is set high
+  again, the former settings for these bits are restored" (p.4); the bits
+  "can always be set by writing to BPLCON3, however there effects are
+  inhibited until ECSENA goes high" (p.17); and BRDRBLNK is marked
+  "****RESET BY ECSENA*****" (p.18). This order is correct under each.
 - COLOR00 <- 0x0F00 and COLOR01 <- 0x0F00. With LOCT = 0 and BANK = 0 the
   4-bit values are extended to 8 bits (p.19).
 - DDFSTRT <- 0x0038, DDFSTOP <- 0x00D0, BPL1MOD <- 0.
 - DIWSTRT, DIWSTOP and DIWHIGH as the proposition states.
 - Copper list L-V (P6: L-A with the marker block). Then DMACON <- 0x8380.
-- BEAMCON0 is not written.
 
 Why the window becomes visible: "BRDRBLNK bit in BPLCON3 allows the
 background to be BLACK and not the contents of COLOR00." (p.4); "BRDRBLNK=
@@ -278,15 +360,36 @@ line in the stated range (RF-V). A single line never stands for "every".
 Where a page does not state an absolute value, only differences between
 configurations are graded, and the proposition says so.
 
+### 2.7 Claims that name both registers of a pair
+
+The page describes DDFSTRT and DDFSTOP together ("These registers control
+the horizontal timing of the beginning and end of the Bit Plane DMA display
+data fetch.", and one USE line for both, p.21), and DIWSTRT and DIWSTOP
+together (one USE line for both, p.22). A claim taken from such a line names
+both registers, and a proposition about one of them grades only that
+register's half of it. No single-register proposition therefore carries
+these claims. Each is carried by a joint assertion, which holds exactly when
+both of its propositions hold (item 4 of each, under the preconditions of
+each), and which is graded only when both are:
+
+- **J1 = P1 and P2** (page 21): opus:AA-ddf.c5, opus:AA-ddf.use-b03,
+  opus:AA-ddf.use-b04, opus:AA-ddf.use-b05, opus:AA-ddf.use-b06,
+  opus:AA-ddf.use-b07.
+- **J2 = P8 and P9** (page 22): opus:AA-diw.use-b08, opus:AA-diw.use-b09,
+  opus:AA-diw.use-b10, opus:AA-diw.use-b11, opus:AA-diw.use-b12,
+  opus:AA-diw.use-b13, opus:AA-diw.use-b14.
+- **J3 = P10 and P11** (page 22): opus:AA-diw.use-b15.
+
+A joint assertion's contrasts are those of its two propositions.
+
 ---
 
 ## 3 Propositions
 
 ### P1. DDFSTRT sets the left edge of the fetch; its bits H4-H8 weigh 8, 16, 32, 64 and 128 memory cycles
 
-Claims: opus:AA-ddf.c5, sol:AA-ddf.c1, opus:AA-ddfstrt.c9,
-opus:AA-ddf.use-b03, opus:AA-ddf.use-b04, opus:AA-ddf.use-b05,
-opus:AA-ddf.use-b06, opus:AA-ddf.use-b07. Page 21.
+Claims: sol:AA-ddf.c1, opus:AA-ddfstrt.c9. Page 21. The claims that name
+DDFSTRT and DDFSTOP together are carried by J1 (2.7).
 
 1. **Proposition.** In lores with FMODE = 0, changing DDFSTRT from a to b
    (H3 = H2 = 0 in both) moves the first bit-plane fetch of every fetched
@@ -334,17 +437,22 @@ opus:AA-ddf.use-b06, opus:AA-ddf.use-b07. Page 21.
      lines (P6 predicts this), and (ii) fails.
    - (iii) FMODE = 0x0001 (BPL32) gives "by 4 bytes" (p.23), and (iii)
      fails.
-   - (iv) DIWSTRT = 0x3081 puts reads before A(0x3E), and (iv) fails.
-   - (v) DMACON <- 0x8280 (no BPLEN) gives no reads and DMACONR bit 8 = 0,
-     and (v) fails.
+   - (iv) DIWSTRT = 0x3D81 in all seven configurations puts reads on line
+     0x3D, before A(0x3E), and (iv) fails. Line 0x3C, which RF-M needs free
+     of bit-plane DMA (2.4), stays free, and the set of fetched lines of
+     RF-L, which starts at 0x3E, stays the same, so (i) and (ii) still hold.
+   - (v) The DMACONR copy is read and stored before the write
+     DMACON <- 0x8380 instead of after it. After DMACON <- 0x7FFF (2.1) it
+     shows none of DMAEN, BPLEN and COPEN, while the fetch is unchanged, and
+     (v) fails alone. (DMACON <- 0x8280, without BPLEN, would clear bit 8
+     too, but it would also empty the fetch and fail (ii).)
    - (i) See the contrasts in 2.4.
 7. **Reference frame.** RF-M and RF-L.
 
 ### P2. DDFSTOP sets the right edge of the fetch; its bits H4-H8 weigh 8, 16, 32, 64 and 128 memory cycles
 
-Claims: opus:AA-ddf.c5, sol:AA-ddf.c2, opus:AA-ddfstop.c9,
-opus:AA-ddf.use-b03, opus:AA-ddf.use-b04, opus:AA-ddf.use-b05,
-opus:AA-ddf.use-b06, opus:AA-ddf.use-b07. Page 21.
+Claims: sol:AA-ddf.c2, opus:AA-ddfstop.c9. Page 21. The claims that name
+DDFSTRT and DDFSTOP together are carried by J1 (2.7).
 
 1. **Proposition.** In lores with FMODE = 0, changing DDFSTOP from c to d
    (H3 = H2 = 0 in both) moves the last bit-plane fetch of every fetched
@@ -370,9 +478,10 @@ opus:AA-ddf.use-b06, opus:AA-ddf.use-b07. Page 21.
 
 ### P3. The DDFSTRT table rows: extra wide, wide, normal, narrow
 
-Claims: opus:AA-ddfstrt.t1, opus:AA-ddfstrt.t2, opus:AA-ddfstrt.t3,
-opus:AA-ddfstrt.t4, sol:AA-ddfstrt.c5, sol:AA-ddfstrt.c6,
-sol:AA-ddfstrt.c7, sol:AA-ddfstrt.c8. Page 21.
+Claims: opus:AA-ddfstrt.t2, opus:AA-ddfstrt.t3, opus:AA-ddfstrt.t4,
+sol:AA-ddfstrt.c6, sol:AA-ddfstrt.c7, sol:AA-ddfstrt.c8. Page 21. The
+extra-wide row's claims (opus:AA-ddfstrt.t1, sol:AA-ddfstrt.c5) are declined
+(section 1).
 
 1. **Proposition.** The four DDFSTRT rows of the table place the left edge
    of the fetch in the order extra wide, wide, normal, narrow, each exactly
@@ -393,8 +502,9 @@ sol:AA-ddfstrt.c7, sol:AA-ddfstrt.c8. Page 21.
    the table heading "DDFSTRT(Left edge of display data fetch)" and the
    labels: a wider fetch has an earlier left edge. The spacing is the
    weight of H4 (2.4), because consecutive rows differ by one H4 step.
-   "(max)" is graded only as the widest of the four rows. The page does not
-   say what a value below the extra-wide row does, so no value below it is
+   The extra-wide row enters as the row against which the wide row is
+   placed. Its label "(max)" states a limit that this proposition does not
+   grade, so its claims are declined (section 1), and no value below it is
    used.
 5. **Preconditions.** (i)-(v) of P1.
 6. **Contrasting case.** Writing the narrow row's bits (0x0040) in place of
@@ -406,8 +516,9 @@ sol:AA-ddfstrt.c7, sol:AA-ddfstrt.c8. Page 21.
 
 ### P4. The DDFSTOP table rows: narrow, normal, wide
 
-Claims: opus:AA-ddfstop.t1, opus:AA-ddfstop.t2, opus:AA-ddfstop.t3,
-sol:AA-ddfstop.c5, sol:AA-ddfstop.c6, sol:AA-ddfstop.c7. Page 21.
+Claims: opus:AA-ddfstop.t1, opus:AA-ddfstop.t2, sol:AA-ddfstop.c5,
+sol:AA-ddfstop.c6. Page 21. The wide row's claims (opus:AA-ddfstop.t3,
+sol:AA-ddfstop.c7) are declined (section 1).
 
 1. **Proposition.** The three DDFSTOP rows of the table place the right
    edge of the fetch in the order narrow, normal, wide, each exactly 8
@@ -423,7 +534,9 @@ sol:AA-ddfstop.c5, sol:AA-ddfstop.c6, sol:AA-ddfstop.c7. Page 21.
 4. **Expected.** l(0x00D0) - l(0x00C8) = l(0x00D8) - l(0x00D0) = 8 x P,
    and f is equal in all three. Source: the heading "DDFSTOP(Right edge of
    display data fetch)" with its row labels, and the weight of H4 (2.4).
-   "(max)" is graded only as the widest of the three rows.
+   The wide row enters as the row against which the normal row is placed.
+   Its label "(max)" states a limit that this proposition does not grade, so
+   its claims are declined (section 1), and no value above it is used.
 5. **Preconditions.** (i)-(v) of P1.
 6. **Contrasting case.** The narrow row predicts a right edge 16 memory
    cycles before the wide row. An implementation that ignored H4 would read
@@ -499,8 +612,11 @@ Claims: opus:AA-ddf.c6, sol:AA-ddf.c3. Page 21.
    move together. An implementation that fetched a fixed range of lines, or
    followed only one of the two registers, would fail Fetch = Win in one of
    the two configurations. Contrasts for the preconditions:
-   - (ii) and (iii): DMACON <- 0x8280 (no BPLEN) empties Fetch and clears
-     DMACONR bit 8.
+   - (ii): BPLCON0 <- 0x0001 (BPU = 000, ECSENA = 1) empties Fetch: "BPUx
+     =Bit plane use code 0000-1000 (NONE thru 8 inclusive)" (p.16). The
+     window instrument shows the window whatever the fetch delivers (2.5),
+     so (i), (iii) and (iv) still hold.
+   - (iii): the DMACONR copy stored before the DMACON write, as in P1.
    - (i): BPLCON3 = 0x0C00 makes RF-V fail (see 2.4).
    - (iv): DIWSTOP = 0x10C1 makes the window run past 0xF1.
 7. **Reference frame.** RF-L for the fetch lines, RF-V for the window lines.
@@ -563,9 +679,9 @@ p.16 and p.23.
 
 ### P8. Bits 15-8 of DIWSTRT are the vertical start V7-V0: bits 8-14
 
-Claims: opus:AA-diw.use-b08, opus:AA-diw.use-b09, opus:AA-diw.use-b10,
-opus:AA-diw.use-b11, opus:AA-diw.use-b12, opus:AA-diw.use-b13,
-opus:AA-diw.use-b14 (as they apply to DIWSTRT). Page 22.
+Claims: none of its own. Page 22. Its bits are named by claims that cover
+DIWSTRT and DIWSTOP together (opus:AA-diw.use-b08 to opus:AA-diw.use-b14);
+they are carried by J2 (2.7).
 
 1. **Proposition.** With DIWHIGH never written, the first line of the
    display window is the beam line whose number equals DIWSTRT bits 15-8.
@@ -604,9 +720,9 @@ opus:AA-diw.use-b14 (as they apply to DIWSTRT). Page 22.
 
 ### P9. Bits 15-8 of DIWSTOP are the vertical stop V7-V0: bits 8-14
 
-Claims: opus:AA-diw.use-b08, opus:AA-diw.use-b09, opus:AA-diw.use-b10,
-opus:AA-diw.use-b11, opus:AA-diw.use-b12, opus:AA-diw.use-b13,
-opus:AA-diw.use-b14 (as they apply to DIWSTOP). Page 22.
+Claims: none of its own. Page 22. Its bits are named by claims that cover
+DIWSTRT and DIWSTOP together (opus:AA-diw.use-b08 to opus:AA-diw.use-b14);
+they are carried by J2 (2.7).
 
 1. **Proposition.** With DIWHIGH never written, a change in DIWSTOP bit 8+k
    (k = 0 ... 6) moves the last line of the display window by exactly 2^k
@@ -632,8 +748,8 @@ opus:AA-diw.use-b14 (as they apply to DIWSTOP). Page 22.
 
 ### P10. Without DIWHIGH, the vertical start has V8 = 0 whatever V7 is
 
-Claims: opus:AA-diwstrt.c5, sol:AA-diwstrt.c5, opus:AA-diw.use-b15 (as it
-applies to DIWSTRT). Page 22.
+Claims: opus:AA-diwstrt.c5, sol:AA-diwstrt.c5. Page 22. Bit 15 of both
+registers (opus:AA-diw.use-b15) is carried by J3 (2.7).
 
 1. **Proposition.** With DIWHIGH never written, the display window starts
    at line 0x040 + V6-V0 when V7 = 0, and at line 0x0C0 + V6-V0 when
@@ -658,8 +774,8 @@ applies to DIWSTRT). Page 22.
 
 ### P11. Without DIWHIGH, the vertical stop has V8 = not V7
 
-Claims: opus:AA-diwstop.c5, sol:AA-diwstop.c5, opus:AA-diw.use-b15 (as it
-applies to DIWSTOP). Page 22.
+Claims: opus:AA-diwstop.c5, sol:AA-diwstop.c5. Page 22. Bit 15 of both
+registers (opus:AA-diw.use-b15) is carried by J3 (2.7).
 
 1. **Proposition.** With DIWHIGH never written, clearing V7 in DIWSTOP puts
    V8 = 1. So DIWSTOP bits 15-8 = 0x10 stops the window 0x80 lines later
@@ -901,7 +1017,8 @@ Claim: opus:AA-dmacon.b05. Page 22.
 
 ### P20. BLTPRI: while blitter DMA runs, the CPU gets no bus cycle
 
-Claims: opus:AA-dmacon.b10, opus:AA-dmacon.b10c. Page 22.
+Claim: opus:AA-dmacon.b10. Page 22. (opus:AA-dmacon.b10c is declined,
+section 1: /BLS is not a port.)
 
 1. **Proposition.** With BLTPRI set, the CPU makes no Chip-memory access
    between the first and the last Chip-memory access of a running blit.
@@ -950,17 +1067,25 @@ Claims: opus:AA-dmacon.b10, opus:AA-dmacon.b10c. Page 22.
    original chips released the bus (HRM p.198: one cycle after the 68000
    has waited three consecutive cycles) is not graded. Contrasts for the
    preconditions:
-   - (i): DMACON <- 0x8600 (no BLTEN) gives no blitter access.
-   - (ii): a loop of 10 iterations ends before the blit does.
+   - (i): BLTSIZE <- 0x2010 (height 128 lines, width 16 words) gives 2048
+     reads and 2048 writes (height x width, p.14), and (i) fails, while I
+     is still bounded by blitter accesses. (DMACON <- 0x8600, without
+     BLTEN, would leave I empty.)
+   - (ii): in the BLTPRI = 0 configuration, a loop of 10 iterations ends
+     while the blit is still running, no SCR write follows I, and (ii)
+     fails. This contrast is run without BLTPRI: with it, the clause under
+     test ("preventing micro from stealing any bus cycles while blitter DMA
+     is running", p.22) would itself hold the loop back until the blit
+     ends.
 7. **Reference frame.** I, bounded by the blitter's own accesses.
 
 ### P21. BBUSY (DMACONR bit 14) reports a blit in progress
 
-Claims: opus:AA-dmacon.b14, opus:AA-dmacon.c6. Page 22.
+Claim: opus:AA-dmacon.b14. Page 22. (opus:AA-dmacon.c6 is declined,
+section 1.)
 
 1. **Proposition.** DMACONR bit 14 reads 1 while a blit is running and 0
-   before a blit is started and after it has ended. DMACONR therefore
-   carries blitter status.
+   before a blit is started and after it has ended.
 2. **Stimulus.**
    - Blit: D-only clear. BLTCON0 <- 0x0100 (USED = 1, LF7-LF0 = 0x00),
      BLTCON1 <- 0, BLTDMOD <- 0, BLTDPT <- BLT_D, BLTSIZE <- 0x2020 (4096
@@ -997,8 +1122,18 @@ Claims: opus:AA-dmacon.b14, opus:AA-dmacon.c6. Page 22.
    phase A lasts longer than the base run's first 16 samples plus its
    blit. An implementation whose bit followed the time since reset, or the
    sample count, rather than the blit fails one of the two runs.
-   Preconditions (i)-(iii) still hold in this run. Contrast for (ii): a
-   blit of height 1 and width 1 ends before any sample can fall inside it.
+   Preconditions (i)-(iii) still hold in this run. Contrasts for the
+   preconditions:
+   - (i): BLTSIZE <- 0x2010 gives 2048 writes (height x width, p.14), and
+     (i) fails.
+   - (ii): between the BLTSIZE write and phase B the program waits twice
+     for a vertical blank as in 2.2 (each time also for V7-V0 >= 0x30), a
+     whole field; by the manual the page builds on, the blit takes about
+     4 x 128 x 32 / 7.09 microseconds, 2.3 ms ("The minimum blitter cycle
+     is four ticks", HRM p.193). The blit ends before the first phase-B
+     sample, (i) and (iii) still hold, and (ii) fails. (A blit of height 1
+     and width 1 would also fail (i).)
+   - (iii): the DMACONR copy stored before the DMACON write, as in P1.
 7. **Reference frame.** The blitter's own writes bracket "inside the blit".
    Consecutive CPU stores bracket each sample.
 
@@ -1038,13 +1173,18 @@ Claim: opus:AA-dmacon.b14b. Page 22.
    between s2 and s3. The page predicts DMACONR bit 10 (BLTPRI) = 1 in s1
    and 0 in s3. This shows that DMACON writes at those positions do take
    effect, so an unchanged bit 14 is not explained by a write that never
-   happened. Contrast for (iv): 3000 samples in B1 put the clearing write
-   after the blit.
+   happened. In this run BLTPRI stays set while the blit runs, and the page
+   says that it prevents the micro "from stealing any bus cycles while
+   blitter DMA is running" (p.22). The B1 and B2 samples then need not fall
+   inside the blit, so (iv) is not required in this run, and only s1, s2
+   and s3 are read: bit 10 = 1 in s1 and s2, and 0 in s3. Contrast for (iv):
+   3000 samples in B1 put the clearing write after the blit.
 7. **Reference frame.** As in P21.
 
 ### P23. BZERO cannot be written
 
-Claims: opus:AA-dmacon.b13b, opus:AA-dmacon.c6. Page 22.
+Claim: opus:AA-dmacon.b13b. Page 22. (opus:AA-dmacon.c6 is declined,
+section 1: BZERO's status behaviour is only precondition (ii) here.)
 
 1. **Proposition.** Writing bit 13 of DMACON, with SET/CLR 1 or 0, does not
    change what DMACONR bit 13 reads, whichever value the bit holds.
@@ -1067,8 +1207,9 @@ Claims: opus:AA-dmacon.b13b, opus:AA-dmacon.c6. Page 22.
    y2. Source: "13 BZERO Blitter logic zero status bit.(read only)"
    (p.22).
 5. **Preconditions.**
-   - (i) Each blit writes its 256 words before its first sample. X writes
-     0x0000 and Y writes 0xFFFF.
+   - (i) Each blit writes its 256 words before its first sample, every
+     word the value its minterm select gives with no source enabled:
+     0x0000 for LF7-LF0 = 0x00 (X), 0xFFFF for LF7-LF0 = 0xFF (Y).
    - (ii) Bit 13 of z0 differs from bit 13 of y0. The bit reports the
      blitter's zero status ("contains Blitter DMA status bits", p.22), so
      the two blits leave it with different values, and both values are
@@ -1080,7 +1221,9 @@ Claims: opus:AA-dmacon.b13b, opus:AA-dmacon.c6. Page 22.
    The bit is live, so an unchanged value after a DMACON write is a real
    result. As in P22, DMACON <- 0x8400 at the same positions predicts
    DMACONR bit 10 = 1 in the following sample. Contrast for (ii): LF7-LF0 =
-   0x00 in both blits predicts equal values, and (ii) fails.
+   0x00 in both blits. Both then write 0x0000, which (i) expects for that
+   minterm, so (i) still holds; bit 13 is predicted equal in z0 and y0, and
+   (ii) fails.
 7. **Reference frame.** Consecutive CPU stores bracket each sample.
 
 ---
@@ -1105,14 +1248,18 @@ Claims: opus:AA-dmacon.b13b, opus:AA-dmacon.c6. Page 22.
      DIWSTOP (p.22).
    - The note "(The maxes & mins, that is)" does not say which numbers are
      the minima.
-   - The HRM's table has the same "Extra wide (max)" row, 0x28, but its
-     text gives the original chips' hardware limit for DDFSTRT as ($18)
-     (HRM p.80). So "(max)" is not a hardware limit, and nothing below
-     0x28 or above 0xD8 is specified.
-5. **Variable beam counter mode.** The pages give no DDF numbers for it. The
-   AA pages state no reset value for VARBEAMEN (p.12 states one only for
-   HARDDIS), so the package writes BEAMCON0 explicitly in the fetch
-   propositions.
+   - The package reads "(max)" as a limit: no DDFSTRT value starts the
+     fetch earlier than the extra-wide row, and no DDFSTOP value ends it
+     later than the wide row. No proposition grades it, and the four row
+     claims that carry it are declined (section 1). For DDFSTOP the row's
+     value, 0xD8, is the hardware limit of the manual the page builds on
+     ("a rightmost limit to DDFSTOP of ($D8)", HRM p.80). For DDFSTRT that
+     manual gives the limit as ($18) (HRM p.80), not the row's 0x28. No
+     value below 0x28 or above 0xD8 is used.
+5. **Variable beam counter mode and PAL.** The pages give no DDF numbers for
+   variable beam counter mode. The AA pages state no reset value for
+   VARBEAMEN or PAL (p.12 states one only for HARDDIS), so the package writes
+   BEAMCON0 explicitly in both display set-ups, S-FETCH and S-WIN.
 6. **"described above" (p.21).** The display window registers it refers to
    follow on p.21-p.22 in this alphabetical list. The sentence is carried
    over from the HRM.
