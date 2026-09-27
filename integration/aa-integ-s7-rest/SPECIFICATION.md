@@ -2,7 +2,7 @@
 
 This specification was written from the package's claims (`claims-spec-stage.jsonl`) and the pages of Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, by an author who never saw the implementation or any test. Page numbers "p.N" are the corpus pages of that specification (`corpus\pNN.txt`), and quotations are given as printed. Pages of the *Amiga Hardware Reference Manual*, 3rd edition, are cited as "HRM p.N" only where the AA specification builds on the original chip set; no expected value comes from them.
 
-The package holds 107 claims about 15 registers. Nine propositions (P1-P9) are specified. Thirty claims (the three horizontal-sync strobes) cannot be turned into a proposition; they are listed first.
+The package holds 107 claims about 15 registers. Nine propositions (P1-P9) and one joint assertion over P1 and P2 are specified; together they grade 75 claims. Thirty-two claims cannot be turned into a proposition: the thirty of the three horizontal-sync strobes and the two `&` claims of REFPTR. They are listed first.
 
 ---
 
@@ -21,13 +21,16 @@ Reason, common to all 30. A strobe is "write address with no register bits" (p.6
 - c1 (address) and c6 (function): the address and what it signals exist only on the RGA bus.
 - c2 (`S`, strobe): the fact that a write has no data bits could only be seen through an effect of the write. No page gives one.
 - c4 (`&`, "Register used by DMA channel only", p.6): this says who uses the address. It predicts nothing a test can observe, and no page says what a processor write to it does.
-- c5 (`~`, "Address not writable by the Coprocessor unless COPCON bit 1 is set true", p.6): an effective write can be told from an ineffective one only by its effect, and no page gives an effect for these three addresses. For REFPTR the write has an observable effect, so the same legend entry becomes proposition P2.
+- c5 (`~`, "Address not writable by the Coprocessor unless COPCON bit 1 is set true", p.6): an effective write can be told from an ineffective one only by its effect, and no page gives an effect for these three addresses. For REFPTR the write has an observable effect, so the same legend entry becomes the joint assertion over P1 and P2 (section 5).
 
 No claim in this package needs a disk image.
 
-### 1.2 Parts of used claims that are not graded
+### 1.2 REFPTR (028), the `&` mark: opus:AA-refptr.c4, sol:AA-refptr.c4
 
-- opus:AA-refptr.c4, sol:AA-refptr.c4 (`&`, "Register used by DMA channel only"). P1 uses them for "the refresh DMA channel takes its addresses from REFPTR". The quantifier "only", meaning that no processor uses the register, is not graded: no stimulus makes it observable.
+Reason. Both claims are the legend entry "&=Register used by DMA channel only." (p.6) applied to REFPTR. Their content is the quantifier: the refresh DMA channel uses the register, and nothing else does. P1 shows the refresh accesses taking their addresses from REFPTR, but no stimulus makes "only", that no processor uses the register, observable, and a claim is graded whole or not at all. As for the three strobes (c4 in 1.1), the entry says who uses the address and predicts nothing further a test can observe; p.27 adds that the register "should never be written by the microprocesor", which states no effect either.
+
+### 1.3 Parts of used claims that are not graded
+
 - The chip-set sentence in every page-10 claim (the `h` mark, which the p.6 and p.10 legends define differently). The claims themselves decline to name a chip set, and no proposition depends on it: the tests run with AA selected, and both legends place these registers in the "hires" (ECS) chips that AA extends (section 6, item 1).
 - The access letters `W` (c2 of every write register) are exercised by the writes each proposition makes. What a read of a write-only address returns is not stated on any page, so no check reads one.
 
@@ -35,17 +38,31 @@ No claim in this package needs a disk image.
 
 ## 2. System, units and conventions
 
-- **Configuration.** AA chip set selected (`Config.chipset_config = 0x10`), PAL, 2 MB Chip memory. Every run is made once on each CPU core in its default 68000 mode. Any comparison between two runs uses the same core and the same configuration.
+- **Configuration.** AA chip set selected (`Config.chipset_config = 0x10`), 2 MB Chip memory (the harness default `memory_config = 0x03`). The harness has no PAL/NTSC setting; every program selects PAL itself in prologue step 1, through BEAMCON0 bit 5: "PAL= Set appropriate decodes (in normal mode) for PAL" (p.12). Every run is made once on each CPU core in its default 68000 mode (`cpu_config = 0x00`). Any comparison between two runs uses the same core and the same configuration.
+- **Graded core.** The AA specification is graded on the TG68K build only: `nanomig.mk` builds TG68K with `ENABLE_AGA` defined and fx68k without it, so the fx68k build is NanoMig's non-AGA configuration. Every proposition, precondition and anchor below is graded on TG68K. The fx68k build runs the same programs, and its results are recorded, not graded. No proposition depends on the fx68k build having an AA feature.
 - **Register names** are the offsets from 0xDFF000 given in the address list (pp.6-10). The program writes them as 16-bit words.
 - **Addresses** below are byte addresses. The Chip-memory port reports word addresses (byte address / 2).
-- **Time unit.** One memory cycle (mc) is 280 ns: "memory cycles are 280 ns" (p.21). The same unit counts HTOTAL and the DUAL-mode counter: "Horiz line has this many + 1 280ns increments" (p.24), "Highest color clock count in horiz line" (p.24). The builder converts system clock cycles to mc with the harness's fixed ratio. Check the ratio on every run that does not set VARBEAMEN: the refresh accesses repeat from line to line with the same whole-number period in mc.
-- **Unused bits** are written as 0: "x= don't care; but drive to 0 for upward compatibility !" (p.16); "(x's should be driven to 0 for upward compatibility)" (p.24); the x bits of SPRHSTRT and SPRHSTOP (p.28); bits 14-11 "unused" of BPLHSTOP (p.15). Bit 15 of BPLHSTOP (BPLHWRM) and of SPRHSTOP (SPRHWRM) is always written 0. These bits "Swap the polarity of ARW*" (pp.15, 28); no claim in this package covers them, and no check grades whether a UHRES access is a read or a write.
-- **Memory layout.** The program, its data, the marker buffer MK, the Copper list L, the end-marker word END and a zero block Z of 4096 bytes of 0x0000 all lie below byte address 0x080000. The UHRES pointer targets in section 4 lie above 0x080000, and nothing else uses them.
+- **Time unit.** One memory cycle (mc) is 280 ns: "memory cycles are 280 ns" (p.21). The same unit counts HTOTAL and the DUAL-mode counter: "Horiz line has this many + 1 280ns increments" (p.24), "Highest color clock count in horiz line" (p.24). The harness states no ratio between `clk_sys` and mc, so the conversion is measured on the one 280 ns count a program can read that no proposition here grades: the H field of VHPOSR, "H8 H7 H6 H5 H4 H3 H2 H1 ... RESOLUTION=1/160 OF SCREEN WIDTH (280 NS)" (p.29). **Run HV:** the prologue (BEAMCON0 = 0x0020, so DUAL = 0), then 64 reads of VHPOSR in the loop of P8 step 5, each word stored to BUF + 2i, then the epilogue. For every pair of consecutive samples with the same V field (bits 15-8), the H field (bits 7-0) advances by ΔH mc while the stores advance by ΔT `clk_sys`. The conversion factor is ΣΔT / ΣΔH over these pairs. It is a measurement, recorded per core, and every conversion to mc below uses it. **Anchor check:** there are at least 16 such pairs, and each has ΔH ≥ 1. *Contrast:* sample VPOSR instead of VHPOSR; its bits 7-0 do not count, and the check fails.
+- **Unused bits** are written as 0: "x= don't care; but drive to 0 for upward compatibility !" (p.16); "(x's should be driven to 0 for upward compatibility)" (p.24); the x bits of SPRHSTRT and SPRHSTOP (p.28); bits 14-11 "unused" of BPLHSTOP (p.15). Bit 15 of BPLHSTOP (BPLHWRM) and of SPRHSTOP (SPRHWRM) is always written 0. Each of these bits "Swaps the polarity of ARW*" (pp.15, 28); no claim in this package covers them, and no check grades whether a UHRES access is a read or a write.
+- **Memory layout.** Every address the programs use lies in the Chip memory the harness maps one to one, 0x080000-0x1FFFFF (`kChipIdentityLo`, `kChipIdentityHi` in `nanomig_harness.h`), where the harness loads the program at `PROGRAM_ORG` = 0x080400 (`nanomig.i`). Below 0x080000 the ROM overlay covers Chip memory after reset: "An additional copy of the system ROM responds starting at memory location $00000000. ... Software must assume that memory is not available." (HRM p.223). No program uses memory there. The fixed addresses:
+
+  | use | byte addresses | from |
+  |---|---|---|
+  | program: code and its immediate data | from 0x080400, inside 0x080000-0x08FFFF | `PROGRAM_ORG` (`nanomig.i`) |
+  | zero block Z, 4096 bytes of 0x0000 | 0x090000-0x090FFF | |
+  | Copper list L, 12 bytes | 0x091000-0x09100B | |
+  | setup-done record (MK - 4), then the markers from MK = 0x0C0004 | 0x0C0000-0x0C03FF | `RESULTS` (`nanomig.i`) |
+  | sample buffer BUF (P8 and run HV), 64 words | 0x0C0400-0x0C047F | `RESULTS` + 0x400 |
+  | end marker END | 0x0C0FFE | `DONE_ADDR` (`nanomig.i`) |
+  | stack | 0x0FF000-0x0FFEFF | below `PROGRAM_STACK` = 0x0FFF00 (`nanomig.i`) |
+  | UHRES pointer targets (section 4), with the BPLH and SPRH windows of R2 | 0x0A5294-0x0A5654, 0x0CDB96-0x0CEB95, 0x132468-0x133467, 0x15A9AA-0x15ADEA | |
+
+  No two uses overlap, and nothing but the UHRES pointers uses the UHRES targets. The longest marker window (run UR, 0x040..0x120, 225 markers) ends at 0x0C0387.
 - **Common prologue**, the same in every run:
-  1. DMACON ← 0x7FFF, INTENA ← 0x7FFF, INTREQ ← 0x7FFF (clear all enables and requests; bit 15 SET/CLR = 0, p.22, p.25). BPLCON0 ← 0x0000. COPCON ← 0x0000.
+  1. DMACON ← 0x7FFF, INTENA ← 0x7FFF, INTREQ ← 0x7FFF (clear all enables and requests; bit 15 SET/CLR = 0, p.22, p.25). BPLCON0 ← 0x0000. COPCON ← 0x0000. BEAMCON0 ← 0x0020: PAL (bit 5) set, every other bit 0, DUAL and VARBEAMEN among them (p.12). No page gives BEAMCON0's value after reset, so the programs write it; every program starts with this same step, at the same time.
   2. Prepare the run's data (zero block, Copper list, buffers).
   3. Wait for the start of the vertical blank: INTREQ ← 0x0020, then poll INTREQR until bit 5 is 1 ("05 VERTB 3 Start of Vertical blank", p.25). The run's setup writes follow immediately. The frame that begins here is **the observed frame**. Pointer registers are therefore loaded in the vertical blank: "PTL,PTH=20 bit Pointer that addresses DMA data. Must be reloaded by a processor before use (Vertical blank for Bit Plane and Sprite pointers ...)" (p.6).
-- **Common epilogue:** DMACON ← 0x7FFF, BPLCON0 ← 0x0000, then the CPU writes the word 0x5A5A to END (the **end marker**) and stops.
+- **Common epilogue:** DMACON ← 0x7FFF, BPLCON0 ← 0x0000, then `DONE` (`nanomig.i`): the CPU writes `DONE_VALUE` (0x600D) to END = `DONE_ADDR` (the **end marker**) and stops.
 
 ---
 
@@ -73,12 +90,16 @@ Why the rule is sound: each marker is taken in the middle of its line, at H ≥ 
 
 ### R2. Access classification
 
-- **CPU access:** anything the harness reports as a CPU access (instruction fetches, marker and sample stores).
-- **DMA accesses** are sorted by source:
-  - Copper: a fetch inside the Copper list L.
-  - Sprite or bitplane DMA: an address inside Z.
-  - Refresh: the harness's refresh attribution. If the harness names no DMA source, refresh accesses are the DMA accesses that are neither Copper nor Z. In the UHRES runs these are identified in the UHRES-off run U0 and matched by time: refresh slots do not depend on the program.
-  - UHRES: every remaining DMA access.
+The harness names no source for an access: `ram_log()` gives each RAM-port access its time, word address, data, direction and byte lanes, and nothing else (`RamAccess` in `nanomig_harness.h`). Refresh is therefore identified by a port, and every other access by the fixed layout of section 2.
+
+- **Refresh access:** a logged access in whose `clk_sys` step the `refresh` output of `nanomig.v` is high (port list: `output refresh, // ram refresh cycle`), whatever its address. The harness does not log this port, so the test steps with `run_cycles(1)` and reads `ports()->refresh` in the step that logs each access, as the fast-RAM capture of `ch6-blitter-cpu-sharing` reads its ports. A mark on a port, not an address, keeps the refresh accesses of P1 recognisable after REFPTR is written.
+- **Cross-check against the reference run UR (fixture).** UR is made on the same core and in the same configuration as the run it serves; it is U1 with BPLCON0 ← 0x0000, DMACON ← 0x8000 and the marker window 0x040..0x120 (section 4). With DMAEN clear, "Enable all DMA below (also UHRES dma)" (p.22) is off for every DMA channel and for UHRES, and refresh is not among DMACON's channels, so every access of UR outside the CPU regions of the next item (a "non-CPU access" of UR) is a refresh access. Refresh slots do not depend on the program ("There are 4 refresh time slots" in every line, p.29), and every program starts with the same step 1, so a refresh slot comes at the same port time in every run. In UR, and in every run that uses this classification, from the end of prologue step 1 to that run's end marker, the accesses the `refresh` port marks are exactly the accesses at the port times of UR's non-CPU accesses. A disagreement is a fixture failure, not a result about the chip set: the classification is then unusable for that run, and nothing that rests on R2 is graded on it. *Contrast:* UR with DMACON ← 0x8320 (DMAEN and SPREN set); its sprite-DMA reads inside Z are non-CPU accesses the `refresh` port does not mark, and the cross-check fails.
+- **CPU access:** any other access inside the program block 0x080000-0x08FFFF (instruction and operand fetches), the results block 0x0C0000-0x0C0FFF (setup-done record, markers, samples, end marker) or the stack 0x0FF000-0x0FFEFF; and any other write inside Z or L (the data preparation of prologue step 2).
+- **DMA accesses** are all remaining accesses, sorted by source:
+  - Copper: a read inside the Copper list L.
+  - Sprite or bitplane DMA: a read inside Z.
+  - UHRES: every remaining access.
+- **Anchor check (UR):** between every two consecutive markers of UR there is at least one refresh access, and UR has no read inside Z. *Contrast:* UR with DMACON ← 0x8320 (DMAEN and SPREN set) reads Z, and the check fails. The pages give no stimulus that removes refresh, so the first part is a presence check only.
 - A UHRES access is a **BPLH access** if its address lies between the smallest and largest expected BPLH address of the run, widened by 0x100 bytes on each side. It is an **SPRH access** if its address lies in [S, S + 0x1000), where S is the run's expected UHRES sprite address. Any other UHRES access is a **stray**.
 
 ### R3. Run pairs
@@ -107,16 +128,19 @@ The UHRES pointers need the UHRES bit: "UHRES= ultrahi res enables the UHRES poi
 | U4 | 0x0015 | 0xAAAB | 0x0010 | 0x00F8 | 0x0108 | 0x0013 | 0x2469 | 0x0100 | 0x0110 | 0x0080 | 0x8320 | 0x0E8..0x120 |
 | U0 | as U1 | | | | | | | | | **0x0000** | 0x8320 | as U1 |
 | U0d | as U1 | | | | | | | | | 0x0080 | **0x8120** (no DMAEN) | as U1 |
+| UR | as U1 | | | | | | | | | **0x0000** | **0x8000** (no channel) | **0x040..0x120** |
 
-Expected first addresses: in U1, U3 and U4, P = 0x15AAAA and S = 0x132468; in U2, P = 0x0A5554 and S = 0x0CDB96. In U2 every one of the 20 pointer bits of both pointers is the complement of U1 (0x15AAAA XOR 0x0A5554 = 0x132468 XOR 0x0CDB96 = 0x1FFFFE). BPLHPTL and SPRHPTL are written with bit 0 set to exercise "Low word uses DB1-DB15" (p.6). U4's ranges cross line 0x100, so they need V8 of the 11-bit comparison.
+UR is the refresh cross-check of R2, not a UHRES run: it enables no DMA channel, and its marker window covers the latest line any run observes.
+
+Expected first addresses: in U1, U3 and U4, P = 0x15AAAA and S = 0x132468; in U2, P = 0x0A5554 and S = 0x0CDB96. In U2 every one of the 20 pointer bits of both pointers is the complement of U1 (0x15AAAA XOR 0x0A5554 = 0x132468 XOR 0x0CDB96 = 0x1FFFFE). BPLHPTL and SPRHPTL are written with bit 0 set to exercise "Low word uses DB1-DB15" (p.6). The RAM port carries word addresses (`ram_address[23:1]`), so it shows that DB15-DB1 land on A15-A1; whether DB0 is dropped has no counterpart there. U4's ranges cross line 0x100, so they need V8 of the 11-bit comparison.
 
 **Preconditions common to P3-P7** (each gets a contrasting case):
 
 - **PR-U1.** The end marker is present. *Contrast:* omit the epilogue's store; the check reports it missing.
 - **PR-U2.** The R1 anchor checks pass. *Contrast:* make the loop skip every second V; the "marker for every V" check fails.
 - **PR-U3.** The line in the setup-done record is below Vlo (setup finished before the window). *Contrast:* in a copy of U1, wait for line 0x060 before the setup; the check fails.
-- **PR-U4.** Run U0 has no UHRES and no stray access at all (R2 accounts for every access when UHRES is off). *Contrast:* U1 itself has UHRES accesses; the same check, applied to U1, reports them.
-- **PR-U5.** Every UHRES access lies at least 0x20 mc from every marker time, so the line assignment of R1 is unambiguous. *Contrast:* gate the marker loop at H in [0x00, 0x08) instead of [0x60, 0x90). The markers then sit next to the line start, where the page places the UHRES accesses, and the check must report the collision.
+- **PR-U4.** Run U0, with the UHRES bit clear, has no UHRES and no stray access: from the setup-done record to the end marker, every access of U0 is a refresh, CPU or Z access (R2 accounts for every access when UHRES is off). Refresh is identified by the `refresh` port and cross-checked against UR, not inferred from U0, so the check can fail. *Contrast:* U1 itself has UHRES accesses; the same check, applied to U1, reports them.
+- **PR-U5.** Every UHRES access lies at least 0x20 mc from every marker time, so the line assignment of R1 is unambiguous. *Contrast:* gate the marker loop at H in [0x00, 0x30) instead of [0x60, 0x90): a window as wide as the normal one, so that the loop still records a marker on every line and PR-U2 still holds. The markers then sit next to the line start, where the page places the UHRES accesses, and the check must report the collision.
 
 ---
 
@@ -124,9 +148,9 @@ Expected first addresses: in U1, U3 and U4, P = 0x15AAAA and S = 0x132468; in U2
 
 ### P1. REFPTR (028) is the refresh address generator: a Copper write to it, allowed by COPCON bit 1, changes the addresses of the refresh accesses that follow
 
-- **Claims:** opus:AA-refptr.c1, opus:AA-refptr.c2, opus:AA-refptr.c4 (see 1.2), sol:AA-refptr.c1, sol:AA-refptr.c2, sol:AA-refptr.c4. Page 6: `REFPTR    & ~028  W    A        Refresh pointer`.
+- **Claims:** opus:AA-refptr.c1, opus:AA-refptr.c2, sol:AA-refptr.c1, sol:AA-refptr.c2. The `&` claims (c4) are declined (1.2). Page 6: `REFPTR    & ~028  W    A        Refresh pointer`.
 - **Qualifying pages:**
-  - p.27: "REFPTR 028 W A Refresh pointer. This register is used as a Dynamic RAM refresh address generator. It is writeable for test purposes only, and should never be written by the microprocessor."
+  - p.27: "REFPTR 028 W A Refresh pointer / This register is used as a Dynamic RAM refresh address generator. It is writeable for test purposes only, and should never be written by the microprocesor."
   - p.19: "CDANG Coprocessor danger mode. Allows coprocessor access to all RGA registers if true."
   - p.20: "RD =RAM Data moved by MOVE instruction at IR2 time directly from RAM to the address given by the DA field."
 
@@ -163,26 +187,32 @@ Runs:
 
 **Preconditions.**
 - PR-1a. In RA and RB, the Copper fetches L+0, L+2, L+4 and L+6 in this order, exactly once in the observed frame and before the end marker, with data 0x4001, 0xFFFE, 0x0028 and the run's value. *Contrast:* list at L+0 the end WAIT (0xFFFF, 0xFFFE); the MOVE is then never fetched and the check fails.
-- PR-1b. Up to the fetch of L+6, the RA and RB traces agree in time, address and direction for every access. Their data agree except for the CPU's write of the value word into L+6. After that fetch, every non-refresh access still agrees in time and address. *Contrast:* in RB, add one CPU NOP right after the vertical-blank wait; the traces then differ in time and the check reports it.
+- PR-1b. Up to the fetch of L+6, the RA and RB traces agree in time, address and direction for every access. Their data agree except for the value word: the CPU's read of it from the program (the immediate operand, or the data word it is copied from) and its write into L+6. After that fetch, every non-refresh access still agrees in time and address. *Contrast:* in RB, add one CPU NOP right after the vertical-blank wait; the traces then differ in time and the check reports it.
 - PR-1c. Every line of the interval has refresh accesses. The pages give no contrast that removes refresh; this is a presence check only.
 
 **Contrasting cases.**
 - RE against RA (same value): the refresh address sequences are identical in every position.
 - RNA against RNB (MOVE to 1FE, "NO-OP(NULL)", p.10): identical in every position. Only a MOVE to 028 moves the refresh addresses, which is the address claim.
-- Additional contrast, predicted by p.19/p.20 for chips before the hires chips: "(on old chips- access to only RGA>3E if CDANG=1)". Repeat RA and RB with OCS behaviour selected: the refresh sequences are then identical, because 028 is below 03E. This rests on reading "old chips" as the harness's OCS mode. COPCON carries `h` on p.19, so the change came with the hires chips.
+- The old chips' Copper reach, "(on old chips- access to only RGA>3E if CDANG=1)" (p.20), is not graded here: HRM p.21 ("Any register whose address is $20 or above") disagrees with it and with HRM p.26 and p.310, no claim of this package depends on it, and a list the old chips' 18-bit location registers can reach ("(Old chips- 18 bits)", p.6) would have to lie below 0x080000, under the ROM overlay.
 
 ### P2. With COPCON bit 1 clear, the Copper cannot write REFPTR: its MOVE to 028 leaves the refresh addresses unchanged
 
-- **Claims:** opus:AA-refptr.c5, sol:AA-refptr.c5. Page 6: "~=Address not writable by the Coprocessor unless COPCON bit 1 is set true." p.19 agrees: "(if 0, access to RGA>7E)".
+- **Claims:** none of its own. The `~` claims opus:AA-refptr.c5 and sol:AA-refptr.c5 are carried by the joint assertion over P1 and P2 (below), because the page conditions the protection on COPCON bit 1 and only the two together vary it.
 - **Stimulus.** As P1, with COPCON ← 0x0000. Run RA0 uses value 0x5555 and run RB0 uses 0xAAAA.
-- **Observation.** As P1: the refresh accesses from the Copper's fetch of L+6 to the end marker.
-- **Expected relation.** The refresh address sequences of RA0 and RB0 are identical in every position. In fact the two port traces agree in every access (time, address, direction, data), except for the CPU's write of the value word into L+6 and the Copper's fetch of it.
-- **Quantifier.** "not writable ... unless" covers every Copper write. This check covers one write of each of two values at one beam position. It does not establish the statement for every timing.
-- **Open.** No AA page says what the Copper does after a MOVE it may not perform. The list ends right after the MOVE, so nothing depends on that.
+- **Observation.** The refresh accesses (R2) from the Copper's fetch of L+4 to the end marker. The anchor is the fetch of the MOVE's first word, whose destination address is "Fetched during IR1 time" (p.20), before the Copper can act on the protection; no page says whether a MOVE the Copper may not perform still fetches its second word (see Open).
+- **Expected relation.** The refresh address sequences of RA0 and RB0 are identical in every position. In fact the two port traces agree in every access (time, address, direction, data), except for the value word: the CPU's read of it from the program, its write into L+6, and the Copper's fetch of L+6 if the Copper makes one.
+- **Open.** No AA page says what the Copper does with a MOVE it may not perform: whether it still fetches the second word (L+6), and what it does afterwards. The list ends right after the MOVE, and neither the anchor nor PR-2b needs the fetch of L+6, so nothing depends on that.
 - **Preconditions.**
   - PR-2a. P1 is green (RA and RB differ). Otherwise an implementation in which REFPTR has no effect at all would make P2 green without testing the protection; P2 is then reported as not gradable. *Contrast:* P1's runs RE or RNA/RNB make the P1 relation false, and P2 must then refuse a verdict.
-  - PR-2b. PR-1a holds for RA0 and RB0. *Contrast:* as for PR-1a.
+  - PR-2b. In RA0 and RB0 the Copper fetches L+0, L+2 and L+4 in this order, exactly once in the observed frame and before the end marker, with data 0x4001, 0xFFFE and 0x0028. A fetch of L+6 is neither required nor excluded. *Contrast:* as for PR-1a: with the end WAIT listed at L+0, L+4 is never fetched and the check fails.
 - **Contrasting case.** P1 (COPCON bit 1 set): the sequences differ.
+
+### P1+P2. Joint assertion: COPCON bit 1 decides whether the Copper can write REFPTR
+
+- **Claims:** opus:AA-refptr.c5, sol:AA-refptr.c5. Page 6: `REFPTR    & ~028  W    A        Refresh pointer`, with the legend "~=Address not writable by the Coprocessor unless COPCON bit 1 is set true." p.19 agrees: "(if 0, access to RGA>7E)". Neither P1 nor P2 carries these ids.
+- **Assertion.** Green when both halves hold. With COPCON bit 1 set, P1's relation: the refresh address sequences of RA and RB differ, so the Copper's MOVE to 028 is performed. With the bit clear, P2's relation: those of RA0 and RB0 are identical in every position, so the MOVE has no effect. Graded under the preconditions of both, PR-1a to PR-1c and PR-2b. PR-2a is not needed here: a REFPTR without any effect makes the first half false.
+- **Quantifier.** The p.6 legend makes the protection depend on COPCON bit 1 alone; it names no beam position and no data value. The joint assertion varies exactly that condition, bit set (RA, RB) and bit clear (RA0, RB0), and in each case the MOVE writes two complementary values, 0x5555 and 0xAAAA, so every data bit is written both as 0 and as 1. The two values therefore grade the claim whole.
+- **Contrasting cases.** RA and RB with COPCON ← 0x0000: the first half fails. RA0 and RB0 with COPCON ← 0x0002: the second half fails. Each goes red through the COPCON bit alone; the Copper list, the values and the preconditions are unchanged.
 
 ### P3. BPLHPTH (1EC) and BPLHPTL (1EE) hold the UHRES bit-plane pointer. With UHRES enabled, the pointer's address is accessed exactly once on every line of the UHRES bit-plane range, starting at the written address
 
@@ -191,7 +221,7 @@ Runs:
 - **Stimulus.** Runs U1, U2, U3, U0 and U0d (section 4).
 - **Observation.** BPLH and stray accesses (R2), per line (R1), from the setup-done record to t(Vhi).
 - **Expected.**
-  - E3.1 ("each horiz. line"). Every line V with 0x050 ≤ V ≤ 0x06F has exactly one BPLH access. Line 0x070 is graded under P5. BEAMCON0 is not written, so DUAL = 0, and the chain starts at the normal counter's line start (p.12).
+  - E3.1 ("each horiz. line"). Every line V with 0x050 ≤ V ≤ 0x06F has exactly one BPLH access. Line 0x070 is graded under P5. BEAMCON0 holds 0x0020 from prologue step 1, so DUAL = 0, and the chain starts at the normal counter's line start (p.12).
   - E3.2. The BPLH access on line 0x050 is at P: 0x15AAAA in U1 and U3, 0x0A5554 in U2. The expected address is (BPLHPTH bits 4-0) << 16 | (BPLHPTL & 0xFFFE): high word DB0-DB4 → A20-A16, low word DB1-DB15 → A15-A1 (p.6).
   - E3.3. U1 and U2 together set and clear every one of the 20 address bits, and each run must hit its own P. This exercises "(High 5 bits)" (the page's "old chips- 18 bits", p.6, would drop A20-A19).
   - E3.4. U3 (BPLHPTH written 0xFFF5) produces the same BPLH access times and addresses as U1, because the high word uses only DB0-DB4. This check is weak: bits above A20 do not exist in a 2 MB Chip memory, so it only catches DB5-DB15 leaking into A20-A1.
@@ -232,7 +262,7 @@ Runs:
   - E5.3. Every line from start to stop-1 has one (E3.1). In U4 this includes lines 0x100-0x107, which need V8.
   - E5.4. No BPLH access after t(stop), that is, on no line from stop+1 to Vhi.
 - **Open, not graded.** Line "stop" itself. "the line when the data fetch stops" does not say whether that line still has a fetch.
-- **Preconditions.** PR-U1 to PR-U5, and E3.1 holds for the run.
+- **Preconditions.** PR-U1 to PR-U5. E3.1 is not a precondition here: a start or stop on the wrong line breaks it, so E5.3 grades it as part of P5.
 - **Contrasting case.** U4 against U1: there are no BPLH accesses on lines 0x050-0x06F (inside E5.1 for U4), and they appear on 0x0F8-0x107.
 
 ### P6. SPRHPTH (1E8) and SPRHPTL (1EA) hold the UHRES sprite pointer. It comes out twice on each line of its range, before and after the bit-plane pointer, starting at the written address and moving to higher addresses on each following line
@@ -278,7 +308,7 @@ Runs:
 - **Stimulus.**
   1. Prologue, and DMACON stays 0.
   2. HTOTAL ← N.
-  3. BEAMCON0 ← 0x2860: LPENDIS (bit 13), LOLDIS (bit 11), DUAL (bit 6), PAL (bit 5). All other bits are 0, VARBEAMEN among them. Use 0x2840 if the harness runs NTSC.
+  3. BEAMCON0 ← 0x2860: LPENDIS (bit 13), LOLDIS (bit 11), DUAL (bit 6), PAL (bit 5). All other bits are 0, VARBEAMEN among them. PAL is written, not taken from the harness: with the PAL bit and LOLDIS both high, no long line/short line toggle occurs under any reading of "If the PAL bit & LOLDIS are not high, long line/short line toggle will occur" (p.24), so the modulus stays N+1.
   4. HHPOSW ← X.
   5. At once, 64 times: read HHPOSR and store the word to BUF + 2i.
   6. Epilogue.
@@ -308,7 +338,7 @@ Runs:
 
 ### P9. In DUAL mode the counter of P8 restarts the UHRES pointer chain at each of its line starts, so the UHRES bit-plane pointer comes out once every HTOTAL+1 memory cycles: more than once per ordinary line
 
-- **Claims:** opus:AA-hhposw.c5, opus:AA-hhposr.c5, sol:AA-hhposw.c5, sol:AA-hhposr.c5 (the function "DUAL mode hires H beam counter"). Together with the BPLH pointer claims of P3.
+- **Claims:** none. P9 grades p.12's DUAL sentence and p.24's "triggering the UHRES pointers", which no claim of this package quotes. It neither writes HHPOSW nor reads HHPOSR, so it does not grade the c5 claims of those registers (the functions "DUAL mode hires H beam counter write" and "DUAL mode hires H beam counter read"); P8 writes and reads the counter and grades them whole. The BPLH pointer claims are graded whole by P3.
 - **Qualifying pages.**
   - p.24: "This is the secondary beam counter for the faster mode, triggering the UHRES pointers".
   - p.12: "DUAL= Run the horizontal comparators with the alternate horizontal beam counter, and starts the UHRES pointer chain with the reset of this counter rather than the normal one. This allows the UHRES pointers to come out more than once in a horizontal line, assuming there is some memory bandwidth left (It doesn't work in 640*400*4 interlace mode)".
@@ -320,7 +350,7 @@ Runs:
   - E9.2. In D1, each BPLH address is the previous one + 2, for every consecutive pair. BPLHMOD is 0, so both p.15 sentences ("every line, and then another 2 is added" and "added every time it comes out") give the same step.
 - **Preconditions.**
   - PR-U1, PR-U2, PR-U3 and PR-U4 as for the UHRES runs. PR-U5 does not apply: the accesses now occur throughout the line, and no per-line assignment is made.
-  - PR-9a. The ordinary line length is unchanged by DUAL. In D1 and D0, each interval t(V) - t(V-1) differs from U1's by no more than U1's own spread of that interval. Nothing on p.12 or p.24 lets DUAL alone change the main counter. *Contrast:* D1 with BEAMCON0 ← 0x28E0 (VARBEAMEN added, "allowing different beam counter total values ... on the main horiz counter", p.12) must fail PR-9a.
+  - PR-9a. The ordinary line length is unchanged by DUAL. In D1 and D0, each interval t(V) - t(V-1) differs from U1's by no more than U1's own spread of that interval. Nothing on p.12 or p.24 lets DUAL alone change the main counter. *Contrast:* D1 with BEAMCON0 ← 0x28E0 (VARBEAMEN added, "allowing different beam counter total values ... on the main horiz counter", p.12) must fail PR-9a. VARBEAMEN also puts the field length under VTOTAL ("Highest numbered Vertical line (VARBEAMEN=1)", p.10; "there's this many + 1 in a field", p.29), and no page gives VTOTAL's value after reset, so this contrast writes VTOTAL (1C8) ← 0x0100 before BEAMCON0: every marker line 0x040-0x080 then stays in the field, the run still reaches its end marker, and PR-U1 and PR-U2 still hold.
 - **Contrasting case.** D0 (DUAL = 0): K = 30, one per line 0x052..0x06F as in E3.1. This lies far outside the D1 range of about 60.
 - **Open, not graded.**
   - The exact offset of each access after a restart, beyond the ±1 per end of E9.1.
@@ -335,12 +365,12 @@ Runs:
 3. **"SHRHDAT"** (p.15) is not a register name anywhere. It is read as SPRHDAT; p.27 independently gives the UHRES sprite pointer the 1st and 3rd free cycles.
 4. **Modulo in DUAL mode.** p.15 says the modulo is added "every line, and then another 2 is added" (BPLHMOD) and also "Its modulo is added every time it comes out" (BPLHPTH,L). With one access per line the two agree. In DUAL mode they may not, so P9 grades the step only with BPLHMOD = 0.
 5. **BPLHSTOP.** "the line when the data fetch stops" leaves open whether the stop line itself is fetched.
-6. **SPRHSTRT/SPRHSTOP** are called "vertical display start/stop" (p.28) without saying on which line the fetch happens. **SPRHPTH,L** "increments for the next line" (p.27) with no step and no statement about the two accesses within one line.
+6. **SPRHSTRT/SPRHSTOP** are called "vertical display start" and "vertical display stop" (p.28) without saying on which line the fetch happens. **SPRHPTH,L** "increments for the next line" (p.27) with no step and no statement about the two accesses within one line.
 7. **UHRES needs DMA enables.** "(also needs bits in DMACON)" (p.16) does not name the bits. p.22 names only DMAEN ("also UHRES dma").
 8. **"Free" cycle** (p.15) is defined only by priority. No AA page gives the slot positions of the "fixed stuff" or of the line start, so the exact memory cycle of a UHRES access cannot be predicted.
-9. **REFPTR.** p.27 gives no bit layout and no rule for how the written value becomes refresh addresses. It calls the register "writeable for test purposes only" and says it "should never be written by the microprocessor". P1 therefore writes it with the Copper and grades only a difference between two written values.
+9. **REFPTR.** p.27 gives no bit layout and no rule for how the written value becomes refresh addresses. It calls the register "writeable for test purposes only" and says it "should never be written by the microprocesor". P1 therefore writes it with the Copper and grades only a difference between two written values.
 10. **HHPOSR/HHPOSW** are called a "hires H beam counter" (p.10, p.24) but refer to HTOTAL for their bits, and HTOTAL counts 280 ns increments. Bits 15-8 of HHPOSR are not stated. The HTOTAL row prints bit "10" where bit 01 is meant, and the HSSTRT row repeats "for HSYNC stop" (p.24); neither affects this package.
 11. **Copper access limits.** The AA pages agree with each other: p.6 `~` on 000-07E, and p.19 "(if 0, access to RGA>7E)". Two HRM statements differ from them, and neither is used:
     - HRM p.21, checked against the print, says the Copper can store into "Any register whose address is $20 or above", which would make 028 writable without CDANG.
     - HRM p.310 (ECS) says that with CDANG clear the Copper can reach $03E-$07E. This conflicts with the AA page for 040-07E, but not for 028 or 038-03C.
-12. **Alphabetical entries.** Every claim says its register's alphabetical entry lies outside its slice. In fact the entries are on pp.15, 24, 27, 28 and 29, and they agree with the address-list rows in address and access letter for all 15 registers. The function wording differs only slightly ("vertical display start/stop" for the sprite pair; "UHRES (VRAM) bit plane pntr" for the bit-plane pair).
+12. **Alphabetical entries.** Every claim says its register's alphabetical entry lies outside its slice. In fact the entries are on pp.15, 24, 27, 28 and 29, and they agree with the address-list rows in address and access letter for all 15 registers. The function wording differs only slightly ("vertical display start" and "vertical display stop" for the sprite pair; "UHRES (VRAM) bit plane pntr" for the bit-plane pair).
