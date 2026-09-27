@@ -3,8 +3,7 @@
 //   swept exhaustively -- all 5 defined codes x all 4 sprite groups, for
 //   both playfields (40 cells) -- plus the six-object fixture-liveness
 //   precondition those 40 cells depend on, plus two aggregate assertions
-//   (ids 47/48, added in the ch7 slice B1 finding-8 repair) over the
-//   relationship BETWEEN those 40 cells: that each playfield's outcome is
+//   (ids 47/48) over the relationship BETWEEN those 40 cells: that each playfield's outcome is
 //   changeable and reaches both front and behind, and that its five defined
 //   codes produce five distinct placements.
 // Test class: HRM_CONFORMANCE
@@ -12,8 +11,7 @@
 //   pp. 207-212 (Table 7-2, its p.209 descriptive-prose twin, the p.211
 //   worked example, Figures 7-2 and 7-3).
 // Package: ch7-playfield-priority-codes. Specification: SPECIFICATION.md
-//   in this directory, committed as a1bbfb7 before this file was written
-//   or the RTL below was opened.
+//   in this directory.
 // Non-goals (see SPECIFICATION.md "Out of scope" / "Declined content" for
 //   the claim-level accounting): sprite-group-to-sprite-group ordering
 //   (denise_sprites, not this fixture); PF1-vs-PF2 relative priority /
@@ -32,13 +30,11 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// BOUNDARY (opened only after SPECIFICATION.md's commit, per the two-step
-// gate): denise_spritepriority.v:5-11 -- input [5:0] bplcon2 (bits 2:0 =
+// BOUNDARY: denise_spritepriority.v:5-11 -- input [5:0] bplcon2 (bits 2:0 =
 // PF1P2-PF1P0, bits 5:3 = PF2P2-PF2P0), input [2:1] nplayfield (Verilator
 // packs this non-zero-based range to a contiguous LSB-based scalar: bit 0
 // of the packed value is Verilog index 1 / PF1, bit 1 is Verilog index 2 /
-// PF2 -- reused from hrm/denise_spritepriority's already-built harness for
-// this same module; tool plumbing, not a claim), input [7:0] nsprite (one
+// PF2 -- tool plumbing, not a claim), input [7:0] nsprite (one
 // flag per sprite 0-7, grouped in pairs into SP01/SP23/SP45/SP67), output
 // reg sprsel (0 selects playfield data, 1 selects sprite data). Purely
 // combinational: no clock port on the module, so every measurement below
@@ -58,68 +54,37 @@
 // any PF1-vs-PF2 interaction from the measurement, matching the "Out of
 // scope" note in SPECIFICATION.md.
 //
-// GATE REPAIR, 13.09.2026 (coordinator report, after the 46/46 mutation
-// runs already logged below): the first committed version of this file
-// generated each cell's label into a char[...] buffer with snprintf and a
-// runtime loop variable, then passed that buffer to checks.expect(). No
-// literal at the call site names the id, so tools/check_gates.py's
-// per-assertion mutation gate (which reads an assertion's id from the
-// FIRST STRING LITERAL of its expect() call, matched against
-// "// MUTATION <id> <kind> <result>" comments) read this file as
-// containing zero recognisable assertions -- "all gates passed" only
-// because nothing here was checked, not because it was checked and clean.
-// The old "// id N NAME ... -> ..." log lines were not in the required
-// "// MUTATION <id> stimulus red: ..." grammar either, so even the
-// mutation records were invisible on top of the labels being invisible.
+// LABEL SHAPE: tools/check_gates.py's per-assertion mutation gate reads an
+// assertion's id from the FIRST STRING LITERAL of its expect() call and
+// matches it against "// MUTATION <id> <kind> <result>" comments. So both
+// sweeps and the liveness section are written out as individual
+// checks.expect() calls, each with its own literal id as the leading token
+// of its own label string (no snprintf, no std::string label variable, no
+// id built by concatenation), and the mutation log below uses those same
+// literal ids.
 //
-// Fixed by unrolling both sweeps and the liveness section from loops into
-// 46 individual checks.expect() calls, each with its own literal id as
-// the leading token of its own label string (no snprintf, no std::string
-// label variable, no id built by concatenation), and by rewriting the
-// mutation log below into 46 "// MUTATION <id> stimulus red: ..." lines
-// using those same literal ids. NO predicate, expected value, stimulus or
-// measurement changed: measure_pf1/measure_pf2/measure_pf_live/
-// measure_group_live below perform exactly the dut->bplcon2 / ->nplayfield
-// / ->nsprite / ->eval() sequence the loop bodies performed before, in the
-// same order, on the same values; only how each call's own label is
-// spelled changed. Rebuilt after the change: still 46 passed, 0 failed,
-// no assertion changed colour.
-//
-// MUTATION MECHANISM (unchanged in substance from the first version):
-// every one of the (then) 46 graded assertions is numbered 1-46 via
-// kActiveMutation, matching the literal id in its own label 1:1 (see the
-// table below). Two more graded assertions, ids 47-48, were added on
-// 14.09.2026 (finding-8 repair, see "SWEEP-SUMMARY" below and its own
-// dated mutation-log addendum after the original 46-entry log) -- the
-// mechanism is identical, just extended by two more kActiveMutation values.
+// MUTATION MECHANISM: every graded assertion is numbered 1-48 via
+// kActiveMutation, matching the literal id in its own label 1:1 (ids 1-46
+// in the log below, 47-48 in the SWEEP-SUMMARY records after it).
 // `make MUT=<n>` defines MUT_ID=<n> for the build (see Makefile), and the
 // one call site whose sequential number matches substitutes its mutated
 // stimulus for its normal stimulus while leaving the expected value
-// untouched -- a genuine, separately-compiled stimulus change per
-// BUILD-BRIEF's "change what the module is asked to do... confirm the
-// assertion goes red... revert". `make` (MUT unset) is the baseline /
-// revert build.
+// untouched -- a genuine, separately-compiled stimulus change: change what
+// the module is asked to do, confirm the assertion goes red, revert.
+// `make` (MUT unset) is the baseline / revert build.
 //
-// MUTATION LOG (46/46 run, 12.09.2026, this agent, under WSL/Verilator,
-// against the loop-bodied version of this file whose measurement logic is
-// unchanged by the 13.09.2026 gate repair above: baseline `make` first --
-// 46 passed, 0 failed -- then `make MUT=<id>` for id = 1..46 in order,
-// each a full `rm -rf obj_dir` rebuild, each log captured; a final plain
-// `make` afterward re-confirmed the 46/0 baseline). For every id below the
-// result was identical in shape: 45 passed, 1 failed -- the failing line
-// was that id alone, all other 45 lines still PASS; no id produced 0
-// failures (a dead mutation) or more than 1 (a collateral flip). An
-// earlier automated pass over this same 46-id loop mis-reported 5 ids
-// (17, 24, 29, 35, 44) as producing zero failures; re-running those five
-// individually (output inspected directly) showed each correctly
-// producing "45 passed, 1 failed" with only that id red -- the mis-report
-// was a bug in the shell comparison used to check the log, not a property
-// of the build; the full 46-id loop was then re-run with a corrected
-// checker and every one of the 46 came back isolated, which is the result
-// recorded below. The ids in these records are now identical, character
-// for character, to the leading token of the corresponding assertion's
-// own label below -- that identity is what the gate repair above exists
-// to make checkable.
+// MUTATION LOG, ids 1-46 (WSL/Verilator; measured on a loop-bodied form of
+// this file that drives the same dut->bplcon2 / ->nplayfield / ->nsprite /
+// ->eval() sequence, in the same order, on the same values, as the calls
+// below; its tallies count ids 1-46 only: baseline `make` first -- 46
+// passed, 0 failed -- then `make MUT=<id>` for id = 1..46 in order, each a
+// full `rm -rf obj_dir` rebuild, each log captured; a final plain `make`
+// afterward re-confirmed the 46/0 baseline). For every id below the result
+// was identical in shape: 45 passed, 1 failed -- the failing line was that
+// id alone, all other 45 lines still PASS; no id produced 0 failures (a
+// dead mutation) or more than 1 (a collateral flip). The ids in these
+// records are identical, character for character, to the leading token of
+// the corresponding assertion's own label below.
 //
 // MUTATION LIVE-PF1 stimulus red: withhold PF1 (nplayfield[1]: 1->0), SP01 stays armed -> 45 passed, 1 failed (LIVE-PF1 only). Reverted.
 // MUTATION LIVE-PF2 stimulus red: withhold PF2 (nplayfield[2]: 1->0), SP01 stays armed -> 45 passed, 1 failed (LIVE-PF2 only). Reverted.
@@ -168,37 +133,19 @@
 // MUTATION PF2P-100-SP45 stimulus red: PF2P code 4->2 -> 45 passed, 1 failed (PF2P-100-SP45 only). Reverted.
 // MUTATION PF2P-100-SP67 stimulus red: PF2P code 4->3 -> 45 passed, 1 failed (PF2P-100-SP67 only). Reverted.
 //
-// FINDING-8 REPAIR, 14.09.2026 (independent validation, ch7 slice B1): the
-// final checks.record() used to carry opus:7-vp.c3, opus:7-vp.c10,
-// sol:7-video.c7, opus:7-vp.c11 and opus:7-vp.c21, saying they were
-// "demonstrated collectively" by the 40-cell sweep -- a record() cannot
-// demonstrate anything, so the coverage ledger (correctly) read them as
-// recorded-only while the sentence claimed otherwise. Checked directly
-// against pp.207-211: all five ARE genuinely demonstrated, but only in
-// aggregate across cells (changeability / both front and behind reached;
-// five distinct placements per playfield), never by any single cell alone
-// -- so neither leaving them recorded-while-claiming-tested nor attaching
-// them as citations on individual PF1P-*/PF2P-* labels (which would be a
-// fabricated per-cell citation, the exact thing this file's own PF2-
-// derivation comment already warns against) is correct. Fix: two new
-// aggregate assertions, SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS (id 47)
-// and SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS (id 48), re-deriving the
-// same 40 measurements' profiles and grading the aggregate fact directly;
-// the stale record() removed. Baseline before this repair: 46 passed, 0
-// failed. Baseline after: 48 passed, 0 failed -- 2 new PASS lines, all 46
-// original lines unchanged, 0 new fails at baseline. Built, run and
-// reverted this session (`make` between each MUT run; final `make`
+// MUTATION LOG, ids 47-48 (SWEEP-SUMMARY, see its own comment below;
+// baseline 48 passed, 0 failed; `make` between each MUT run, final `make`
 // confirmed 48 passed, 0 failed restored):
 // MUTATION SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS stimulus red: built with
 //   `make MUT=47`, which substitutes PF1 code 4's stimulus with code 0's
 //   inside this summary section's own re-derivation loop only (ids 1-46
 //   above do not re-run this loop and are untouched) -> 47 passed, 1
-//   failed (id 47 alone; all 46 original PF1P-*/PF2P-* lines and id 48
-//   stayed PASS). Reverted, rebuilt: 48/0 restored.
+//   failed (id 47 alone; ids 1-46 and id 48 stayed PASS). Reverted,
+//   rebuilt: 48/0 restored.
 // MUTATION SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS stimulus red: built
 //   with `make MUT=48`, the same substitution applied to PF2's code 4
-//   instead -> 47 passed, 1 failed (id 48 alone; all 46 original lines and
-//   id 47 stayed PASS). Reverted, rebuilt: 48/0 restored.
+//   instead -> 47 passed, 1 failed (id 48 alone; ids 1-46 and id 47 stayed
+//   PASS). Reverted, rebuilt: 48/0 restored.
 
 #include <array>
 #include <cstdint>
@@ -211,7 +158,7 @@
 
 namespace {
 
-// ---- BUILD-BRIEF's fixed Checks class, verbatim, no other macro. ----
+// ---- The suite's fixed Checks class, no other macro. ----
 class Checks {
 public:
     void expect(bool condition, const std::string& label) {
@@ -249,12 +196,9 @@ int main(int argc, char** argv) {
 
     auto eval = [&]() { dut->eval(); };
 
-    // measure_pf1/measure_pf2/measure_pf_live/measure_group_live perform
-    // exactly the stimulus sequence the original loop bodies performed
-    // (same ports, same order, same values) and return the same boolean
-    // the original code compared against expect_front / sprsel -- this
-    // refactor changes how each call's id becomes readable, not what is
-    // driven or measured.
+    // measure_pf1/measure_pf2/measure_pf_live/measure_group_live each drive
+    // one stimulus through the ports (bplcon2, nplayfield, nsprite, then
+    // eval()) and return what the assertions below compare.
     auto measure_pf1 = [&](int code, uint8_t group_bit) -> bool {
         dut->bplcon2 = (uint8_t)code;      // PF1P = code, PF2P = 0
         dut->nplayfield = PF1_ON;
@@ -287,13 +231,13 @@ int main(int argc, char** argv) {
     // -----------------------------------------------------------------
     // Fixture liveness / object identity -- LIVE-PF1, LIVE-PF2, LIVE-SP01,
     // LIVE-SP23, LIVE-SP45, LIVE-SP67 (ids 1-6). These run first and are
-    // the precondition for every sweep cell below: BUILD-BRIEF requires
-    // the fixture prove each contending object's own wire actually moves
-    // sprsel before any priority relation about it is trusted. Support:
+    // the precondition for every sweep cell below: the fixture must prove
+    // each contending object's own wire actually moves sprsel before any
+    // priority relation about it is trusted. Support:
     // opus:7-fig7-2.c9 (the two playfields, PF1 and PF2); Table 7-2's own
     // column headers (sol:7-video.c23..c27, opus:7-vp.c24..c28) naming
     // SP01/SP23/SP45/SP67. No page/claim rules on liveness itself -- this
-    // is BUILD-BRIEF's own methodology, not a manual proposition.
+    // is the suite's methodology, not a manual proposition.
     // -----------------------------------------------------------------
     int liveness_failed_before = checks.failed;
 
@@ -326,7 +270,7 @@ int main(int argc, char** argv) {
              ? "6/6 passed -- the 40 sweep cells below are evidence"
              : "at least one of LIVE-PF1..LIVE-SP67 failed -- the 40 sweep "
                "cells below are NOT evidence until this is resolved, per "
-               "BUILD-BRIEF's liveness precondition"));
+               "the liveness precondition"));
 
     // -----------------------------------------------------------------
     // PF1 exhaustive sweep -- PF1P-<code>-<group> (20 cells, ids 7-26).
@@ -437,25 +381,17 @@ int main(int argc, char** argv) {
     // opus:7-vp.c21 ("the binary value in PF1P2-PF1P0... as shown in
     // Table 7-2", p.210 -- PF1 only, per its own text).
     //
-    // REPAIR (independent validation, ch7 slice B1, finding 8): these five
-    // UIDs used to sit only in a checks.record() at the end of this file,
-    // whose own text said they were "demonstrated collectively by the
-    // PF1P-*/PF2P-* sweep" -- but a record() cannot demonstrate anything,
-    // only an expect() can, so the coverage ledger correctly read them as
-    // recorded-only while the prose claimed otherwise. They were never
-    // attached to individual PF1P-*/PF2P-* labels for a sound reason
-    // (still true, unchanged): none of the five is about one cell, so
-    // citing them there would be a fabricated per-cell citation --
-    // BUILD-BRIEF's ban this file's own PF2-derivation comment already
-    // invokes elsewhere. Checking pp.207-211 directly: all five ARE
-    // genuinely demonstrated by the sweep, but only as an AGGREGATE fact
-    // across cells (the outcome actually differs across codes; the five
-    // codes give five DISTINCT profiles) -- a fact about the relationship
-    // BETWEEN cells, not identical to any single cell's own front/behind
-    // value, and therefore assertable on its own graded line without
-    // duplicating or replacing any of the 40 cells above. That line is
-    // added here, re-deriving the same profiles the 40 cells above already
-    // measured from the same measure_pf1/measure_pf2 stimulus (no new
+    // A record() cannot demonstrate anything; only an expect() can. None
+    // of the five is about one cell, so citing them on individual
+    // PF1P-*/PF2P-* labels would be a fabricated per-cell citation.
+    // Checked against pp.207-211, all five ARE demonstrated by the sweep,
+    // but only as an AGGREGATE fact across cells (the outcome actually
+    // differs across codes; the five codes give five DISTINCT profiles) --
+    // a fact about the relationship BETWEEN cells, not identical to any
+    // single cell's own front/behind value, and therefore assertable on its
+    // own graded line without duplicating or replacing any of the 40 cells
+    // above. The lines below re-derive the same profiles the 40 cells above
+    // measure, from the same measure_pf1/measure_pf2 stimulus (no new
     // fixture behaviour introduced).
     // -----------------------------------------------------------------
     auto profile = [&](bool pf1, int code) -> std::array<bool,4> {
@@ -516,8 +452,8 @@ int main(int argc, char** argv) {
     // 0 through 4 shown in parentheses ... are the actual values you use
     // to select the playfield priority positions" (sol:7-video.c14, twin
     // opus:7-vp.c12) -- both fields are 3 bits wide (0-7) but only 0-4 are
-    // given a meaning. Per BUILD-BRIEF ("where the manual is silent,
-    // measure and report -- do not assert"), no expect() here.
+    // given a meaning. Where the manual is silent, measure and report --
+    // do not assert: no expect() here.
     // -----------------------------------------------------------------
     for (int pf = 1; pf <= 2; pf++) {
         for (int code = 5; code <= 7; code++) {

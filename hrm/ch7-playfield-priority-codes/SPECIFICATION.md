@@ -8,8 +8,8 @@ This specification is written from the quotations in the claims file alone —
 the marker-line text quotes on printed pages 207, 209, 210 and 211, and the
 two figures they point at, `ch7/figures/p209.png` (Figure 7-2, "Analogy for
 Video Priority") and `ch7/figures/p212.png` (Figure 7-3, "Sprite/Playfield
-Priority"), both opened and read as drawings. No RTL has been opened and no
-module port name is used below; every proposition is stated in the manual's
+Priority"), both opened and read as drawings. No module port name is used
+below; every proposition is stated in the manual's
 own vocabulary — a priority code's binary/decimal value, a sprite group's
 name, "in front of" / "behind" / "higher priority" — never a signal name.
 
@@ -105,23 +105,23 @@ holds" assertion is needed on top of the 20 PF2 cells themselves.
 
 Every assertion below is expected to **PASS** — nothing in this package's 46
 claims describes rows 5–7 or a boundary condition under specific suspicion.
-Per BUILD-BRIEF's requirement for a control case measured on the same basis
-as anything that might turn out red, two are nominated: `LIVE-PF1` (simplest
+As control cases measured on the same basis as anything that might turn out
+red, two are nominated: `LIVE-PF1` (simplest
 liveness check) and `PF1P-000-SP01` (simplest behaviour cell — it is also
 exactly the page-211 worked example's own case). Every other assertion here
 is measured exactly the same way as these two.
 
 Exact stimulus mechanics — how an object is made "active" at this fixture,
 what carries its identifying code, whether the two 3-bit priority fields are
-literal ports or packed into a wider bus — are not decided here; they depend
-on the module's actual ports, opened only in step 3. What is fixed now, and
-must not change once the RTL is open, is: the proposition, its expected
-result, its page(s), and the claims it is cited from.
+literal ports or packed into a wider bus — are not stated here; they depend
+on the module's actual ports and are in the test source. What this document
+fixes is: the proposition, its expected result, its page(s), and the claims
+it is cited from.
 
 ### Fixture liveness / object identity — `LIVE-PF1`, `LIVE-PF2`, `LIVE-SP01`, `LIVE-SP23`, `LIVE-SP45`, `LIVE-SP67`
 
-Per BUILD-BRIEF, before any priority relation is meaningful the fixture must
-first be shown able to deliver a known, distinguishable result for each of
+Before any priority relation is meaningful the fixture must first be shown
+able to deliver a known, distinguishable result for each of
 the six contending objects on its own. This fixture's only observable, per
 this package's own claims notes (the `absent_signal` field recorded against
 `sol:7-video.c37`, `sol:7-fig7-3.c3` and `opus:7-fig7-3.c4`: "denise_
@@ -129,8 +129,8 @@ spritepriority's only output is the 1-bit sprsel"), is a single selection
 result rather than a data word — so the liveness precondition is realized
 here as: with exactly one object active and given a distinct, known
 identifying stimulus, and every other object held inactive, the fixture's
-selection identifies that one object. This is required by BUILD-BRIEF's
-methodology, not itself a proposition drawn from a page quote; where a claim
+selection identifies that one object. This is the suite's methodology, not
+itself a proposition drawn from a page quote; where a claim
 does support the object's existence, it is cited alongside.
 
 - Proposition (one per object O in {PF1, PF2, SP01, SP23, SP45, SP67}): O
@@ -220,7 +220,7 @@ Rows 000, 001, 011 and 100 carry no worked-example or figure citation; their
 basis is the derivation alone, which is exactly why each of their 16 cells
 is graded independently rather than assumed.
 
-### Sweep summary — `SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS`, `SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS` (repair, ch7 slice B1 finding 8)
+### Sweep summary — `SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS`, `SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS`
 
 Five claims are general/definitional statements ABOUT the sweep as a whole,
 not about any one cell: `opus:7-vp.c3` ("priority... may be changed
@@ -229,15 +229,12 @@ playfields in front of or behind the sprites", p.209), `sol:7-video.c7` /
 its twin `opus:7-vp.c11` ("five possible positions", p.209), and
 `opus:7-vp.c21` ("the binary values... determine where playfield 1 occurs
 in the priority chain as shown in Table 7-2", p.210 — PF1 only, by its own
-text). These were originally left in a `record()`, whose own text claimed
-they were "demonstrated collectively" by the 40-cell sweep — but a
-`record()` cannot demonstrate anything; only a graded `expect()` can, and
-the coverage ledger correctly read these five as recorded-only while the
-sentence claimed the opposite.
+text). A `record()` cannot demonstrate anything; only a graded `expect()`
+can.
 
-Checked directly against pp.207–211, all five genuinely **are**
-demonstrated by the sweep, but only as an aggregate fact across cells, not
-by any single cell on its own:
+Checked directly against pp.207–211, all five **are** demonstrated by the
+sweep, but only as an aggregate fact across cells, not by any single cell
+on its own:
 
 - **Changeability / "either... front or behind"** (`opus:7-vp.c3`,
   `opus:7-vp.c10`): true iff, for at least one sprite group, the front/
@@ -289,8 +286,8 @@ Page 209: "The numbers 0 through 4 shown in parentheses ... are the actual
 values you use to select the playfield priority positions" (`sol:7-video.
 c14`, twin `opus:7-vp.c12`). Both codes are 3 bits wide (0–7) but only 0–4
 are given a meaning by the manual; codes 5, 6 and 7 are not ruled on for
-either playfield. Per BUILD-BRIEF ("where the manual is silent, measure and
-report — do not assert"), these are `note()`s, not `expect()`s:
+either playfield. Where the manual is silent, the rule is measure and
+report, do not assert: these are `note()`s, not `expect()`s:
 
 - `MEASURE-PF1P-101`, `MEASURE-PF1P-110`, `MEASURE-PF1P-111`: with PF1P set
   to 101/110/111 respectively (SP01/SP23/SP45/SP67 all active), record which
@@ -343,20 +340,19 @@ package's inventory actually carries a claim about it, not this one.
 `opus:7-vp.c11`/`sol:7-video.c7` (five-position umbrella), `opus:7-vp.c21`
 (PF1P2-PF1P0 bits determine Table 7-2 position), `opus:7-vp.c3` (priority
 is changeable, p.207) and `opus:7-vp.c10` (either playfield can be in
-front of or behind the sprites, p.209) are **no longer declined** — see
-"Sweep summary" above (repair, ch7 slice B1 finding 8): all five are
-genuinely demonstrated by the sweep in aggregate and are now graded via
-`SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS` / `SWEEP-PF2-VARIABILITY-AND-
-FIVE-POSITIONS`, not folded in as uncredited support.
+front of or behind the sprites, p.209) are **not declined** — see "Sweep
+summary" above: all five are demonstrated by the sweep in aggregate and are
+graded via `SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS` /
+`SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS`, not folded in as uncredited
+support.
 
-No claim in this package's 46 was left with no disposition: each is either a
+Every one of this package's 46 claims has a disposition: each is either a
 primary or additional citation on a graded assertion above (`LIVE-*`,
 `PF1P-*`, `PF2P-*`, or, for the five just listed, the two sweep-summary
 assertions), a basis for a measured-not-graded note, or declined above
-with a reason tied to the claims file's own classification. No HALT
-condition was met — a testable specification, with all 40 truth-table
-cells swept exhaustively rather than sampled, was possible without any
-module port name.
+with a reason tied to the claims file's own classification. A testable
+specification, with all 40 truth-table cells swept exhaustively rather than
+sampled, is possible without any module port name.
 
 ## Assertion accounting
 
@@ -365,7 +361,7 @@ module port name.
 - 20 PF1 sweep assertions (`PF1P-000-SP01` .. `PF1P-100-SP67`)
 - 20 PF2 sweep assertions (`PF2P-000-SP01` .. `PF2P-100-SP67`)
 - 2 sweep-summary assertions (`SWEEP-PF1-VARIABILITY-AND-FIVE-POSITIONS`,
-  `SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS`; repair, ch7 slice B1 finding 8)
+  `SWEEP-PF2-VARIABILITY-AND-FIVE-POSITIONS`)
 - 48 graded assertions in total, plus 6 measured-not-graded notes
   (`MEASURE-PF1P-101/110/111`, `MEASURE-PF2P-101/110/111`)
 - 2 nominated controls: `LIVE-PF1`, `PF1P-000-SP01`
