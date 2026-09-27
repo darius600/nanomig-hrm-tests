@@ -1,40 +1,13 @@
 # ch8-disk-interrupt-requests — SPECIFICATION
 
-Written from the quotations in
-`hrm-testpipeline/work/ch8-s2-build/ch8-disk-interrupt-requests.jsonl` alone
-(the 8 claims assigned to this package). No RTL file
-(`$(NANOMIG)/src/minimig-aga/*.v`) has been opened by me at this stage. This
-document is committed before any RTL is opened.
-
-**Process note, disclosed up front rather than left implicit:** before writing
-this file I looked at three already-built or already-specified sibling
-packages, read-only, none of them modified:
-
-- `hrm/ch8-drive-sense-lines` (`SPECIFICATION.md` and its `.cpp`, both
-  committed) — for this suite's directory layout, the `Checks` class
-  (`expect`/`note`/`record`), the `mutating(id)` / `MUTATE` env-var
-  convention, the fixed `// MUTATION` comment form, and the twin-claim
-  pattern (two readers citing the same printed sentence get two independent
-  `expect()` calls under their own `classify.uid`, not one assertion citing
-  both).
-- `hrm/ch8-dsklen-dma-arming` (`.cpp`, committed) — for the DSKLEN
-  double-write arming sequence and the `drain_until_blckint` /
-  `feed_sector_read` harness technique on the same fixture, since three of my
-  eight claims need a completed DMA transfer to observe `blckint`.
-- `hrm/ch8-disk-index-interrupt-path` (`SPECIFICATION.md` only — its `.cpp`
-  does not exist yet) — read only to confirm the boundary split stated below:
-  it is a three-module rig (`paula_floppy` + `ciab` + `paula_intcontroller`)
-  built specifically for the INDEX interrupt's journey to the CPU (page 250's
-  INDEX line, page 245's CIABPRB/FLAG row). None of my 8 claims quotes the
-  INDEX bullet, so there is no overlap to resolve — this was read to confirm
-  the division of labour, not to borrow any fact used below.
-
-None of the three is RTL, and no `paula_floppy`-specific conformance fact
-below came from any of them — only build/harness mechanics common to this
-suite's `paula_floppy` packages. Every RTL line number, signal name, and
-mechanism claim appearing below comes from my own claims file's
-`classify.evidence` fields and the build task handed to me for this unit. I
-have not opened `paula_floppy.v` or `paula_floppy_fifo.v` myself yet.
+The package carries the quotations in
+`hrm-testpipeline/work/ch8-s2-build/ch8-disk-interrupt-requests.jsonl` (the
+8 claims assigned to this package). Its harness mechanics (the `Checks`
+class, the `mutating(id)` / `MUTATE` convention, the fixed `// MUTATION`
+form, the twin-claim pattern, the DSKLEN double-write arming and the
+SD-sector ingest) follow `hrm/ch8-drive-sense-lines` and
+`hrm/ch8-dsklen-dma-arming` on the same fixture; no conformance fact below
+comes from them.
 
 ## Source claims (verbatim quotations)
 
@@ -54,7 +27,7 @@ paula_floppy`), and `package_purpose` for every one of them reads: "The three
 interrupt kinds the controller can raise, and the conditions that raise
 DSKSYNC and DSKBLK."
 
-## Reduction to four testable propositions
+## Reduction to four propositions
 
 - **P-THREE-KINDS** — `opus:8-dskint.c1`, `sol:8-int.c1` (twins, p.250). The
   disk controller's interrupt-raising outputs number exactly three.
@@ -67,179 +40,104 @@ DSKSYNC and DSKBLK."
 - **P-LENZERO-BLCKINT** — `opus:8-appA-dskdat.c15`, `sol:8-appa-dskdata.c8`
   (twins, p.279, Appendix A DSKDATR/DSKDAT register description). DMA length
   reaching zero causes a disk block interrupt. No level or INTREQ-bit
-  language in this quote.
-
-`opus:8-dskint.c7`/`sol:8-int.c7` (P-DSKBLK-COMPLETE) and
-`opus:8-appA-dskdat.c15`/`sol:8-appa-dskdata.c8` (P-LENZERO-BLCKINT) describe
-what is disclosed to be the same underlying mechanism (`blckint` on the DMA
-length counter reaching zero) from two different printed pages with two
-different exact sentences. Per this package's own rule of one assertion per
-*citing quotation*, they get four independent assertions, not two — each
-demonstrated on its own trial, against its own page, under its own uid.
+  language in this quote, but "causes a disk block interrupt" names the same
+  CPU-visible DSKBLK interrupt.
 
 ## The boundary: INTREQ and `_ipl` are not ports of `paula_floppy`
 
-Disclosed by the build task, and independently consistent with
-`classify.evidence`'s own module attribution (`paula_intcontroller.v:108`
+The INTREQ register and the `_ipl` priority output live at
+`paula_intcontroller`, one module up from this package's fixture
+(`classify.evidence`: `paula_intcontroller.v:108`
 `intreq[1]<=tmp[1]|blckint`; `:130` `intreq[12]<=tmp[12]|syncint`;
-`:152-170` the priority encoder producing `_ipl`): the INTREQ register and
-the `_ipl` priority output live at `paula_intcontroller`, one module up from
-this package's fixture. `paula_floppy` only drives the two request-line
-outputs `blckint` and `syncint`; it has no INTREQ port and no `_ipl` port.
+`:152-170` the priority encoder producing `_ipl`). `paula_floppy` only
+drives the local request-line outputs `blckint`, `syncint` and `index`; it
+has no INTREQ port and no `_ipl` port.
 
-Two of my four propositions print the interrupt number and priority level in
-the same sentence as the request-line condition:
+Every one of this package's claims names a CPU-visible interrupt: "three
+kinds of interrupts" for all three ports, "level 5, INTREQ bit 12" on
+DSKSYNC, "level 1, INTREQ bit 1" on DSKBLK, and "causes a disk block
+interrupt" in Appendix A. A uid printed on a graded line counts as fully
+asserted by this suite's coverage ledger, whatever a `record()` beside it
+says, so a local pin measurement cannot carry any of these uids:
 
-- P-DSKSYNC-MATCH's quote is "(level 5, INTREQ bit 12) -- input stream
-  matches the DSKSYNC register."
-- P-DSKBLK-COMPLETE's quote is "(level 1, INTREQ bit 1) -- disk DMA has
-  completed."
+- **P-DSKSYNC-MATCH, P-DSKBLK-COMPLETE, P-LENZERO-BLCKINT** (six uids) are
+  declined via `record()`. Each is graded in full by
+  `hrm/ch8-disk-interrupt-path` at `TOP_MODULE=minimig`, which observes the
+  real INTREQ bit and `minimig.v`'s top-level `_cpu_ipl` port in the same
+  cycle as the stimulus (PROP-DSKSYNC-FULLJOIN, PROP-DSKBLK-FULLJOIN). This
+  package's own local `syncint`/`blckint` measurements are printed via
+  `note()`.
+- **P-THREE-KINDS** — `paula_floppy` declares exactly three output ports
+  documented as disk-controller interrupt pulses (`classify.evidence`:
+  `paula_floppy.v:96-97` `blckint`, `syncint`; `paula_floppy.v:93` `index`,
+  which `minimig.v:647` ties to `ciab`'s `flag` input). That `index` is a
+  real, independently-triggerable third pulse, distinct from the other two,
+  is graded here under labels carrying no uid
+  (P-THREE-KINDS-INDEX-PULSE-A/-B). The two uids appear only on a
+  `record()`: `hrm/ch8-disk-interrupt-path` closes two of the three
+  CPU-visible paths (DSKSYNC, DSKBLK) in one run;
+  `hrm/ch8-disk-index-interrupt-path` closes INDEX's 8520 Flag-pin journey
+  at `paula_intcontroller`'s own boundary but does not reach `_cpu_ipl` in
+  the same run; so INDEX's own local-pin-to-`_cpu_ipl` join is not graded
+  anywhere in this suite.
 
-Per this suite's rule for a claim that packages a fixture-visible half
-together with a half that needs a wider boundary: **each assertion grades
-only the request-line half** (the match condition raises `syncint`; DMA
-completion raises `blckint`) **and declines the level/INTREQ-bit half**,
-naming the boundary explicitly via `record()` rather than silently dropping
-it or silently grading it as if `paula_floppy` could see it. P-LENZERO-
-BLCKINT's quote carries no such language and needs no such split.
+## Fixture boundary: `paula_floppy`
 
-**P-THREE-KINDS gets the same treatment, for a related but distinct reason.**
-`classify.evidence` (present in my own claims file, on `opus:8-dskint.c1` /
-`sol:8-int.c1`) discloses that `paula_floppy` declares exactly three output
-ports documented as disk-controller interrupt pulses:
-`paula_floppy.v:96-97` `blckint` ("disk dma has finished interrupt") and
-`syncint` ("disk syncword found"); `paula_floppy.v:93` `index` ("the disk
-index pulse"), which the same evidence says `minimig.v:647` ties to `ciab`'s
-`flag` input. That a fourth output does not exist is a fact about
-`paula_floppy`'s own port list, gradeable at this fixture. That these three
-—and only these three— actually *reach* the CPU as interrupts is not: for
-`blckint`/`syncint` it needs `paula_intcontroller` (the same boundary as
-above); for `index` it needs `paula_intcontroller` **and** `ciab`, which is
-exactly the journey `hrm/ch8-disk-index-interrupt-path` is a dedicated
-three-module rig for. So P-THREE-KINDS is graded here as: `paula_floppy`
-exposes exactly three distinct, independently-triggerable pulse-type outputs
-matching the page's count, and the CPU-visible-interrupt half of all three
-(not only the INDEX one) is declined and named, not graded.
+`paula_floppy.v` + `paula_floppy_fifo.v` only. `paula_floppy_ebr.v`
+declares a **second** `module paula_floppy` and is not compiled alongside
+it — the same hazard `hrm/ch8-drive-sense-lines` and
+`hrm/ch8-dsklen-dma-arming` record.
 
-I do not yet know the RTL condition that produces a pulse on `index` — no
-claim in this package's 8 is about it and neither the build task nor my
-claims file's `classify.evidence` discloses its driving expression to me.
-Discovering it (or discovering that it cannot be independently triggered
-within this fixture, in which case P-THREE-KINDS will grade only two of the
-three ports dynamically and say so) is deferred to the RTL-reading stage
-below, per the order-of-work rule against reading ahead to shape a
-specification.
+## Rig hazards
 
-## Fixture boundary: `paula_floppy`, assigned not derived
+- **`dsktrack` has no reset term** (`paula_floppy.v:671-680`). None of this
+  package's trials steps the drive, but **a fresh `Vpaula_floppy` instance
+  is allocated per trial** regardless, so nothing relies on trials never
+  needing head position.
+- **DSKLEN needs a double write to arm DMA** (`paula_floppy.v:743`): the
+  first write leaves `data_out`=0x9000 and `fdd_led`=0; the second gives
+  `data_out`=0xD000, `fdd_led`=1, `sdc_rd`=1; a single write (e.g. 0xC00A)
+  leaves `dmas`=0. The DSKBLK and length-zero measurements need a completed
+  DMA transfer, so both arm DSKLEN with this exact double-write sequence.
+- **The DSKSYNC match uses the structural sync word.** `floppy_data`, the
+  stream `sync_match` compares against, carries the fixed sync mark 0x4489
+  at words 2/3 of every sector, and DSKSYNC's reset default is also 0x4489,
+  so an ordinary DMA read with DSKSYNC left untouched produces a genuine
+  match; 0x1234 is used where a trial needs no match (see the test source's
+  header for the mechanism).
 
-The build task assigns `paula_floppy` as this package's fixture, compiling
-`paula_floppy.v` + `paula_floppy_fifo.v` only. `paula_floppy_ebr.v` declares
-a **second** `module paula_floppy` and must not be compiled alongside it —
-disclosed as a rig hazard by the build task, matching the same hazard
-recorded independently in `hrm/ch8-drive-sense-lines` and
-`hrm/ch8-dsklen-dma-arming`'s own specifications.
+## Checks
 
-## Rig hazards (disclosed by the build task, not derived by me from RTL)
-
-- **`dsktrack` has no reset term** (`paula_floppy.v:671-680`, per the build
-  task). Not directly relevant to this package's propositions (none of them
-  step the drive), but the build task's mandate is unconditional: **a fresh
-  `Vpaula_floppy` instance is allocated per trial**, matching the literal rig
-  hazard mandate rather than relying on my own trials never happening to need
-  head position.
-- **DSKLEN needs a double write to arm DMA** (`paula_floppy.v:743`, per the
-  build task). Measured and disclosed to me already: the first write leaves
-  `data_out`=0x9000 and `fdd_led`=0; the second gives `data_out`=0xD000,
-  `fdd_led`=1, `sdc_rd`=1; a single write (e.g. 0xC00A) leaves `dmas`=0.
-  P-DSKBLK-COMPLETE and P-LENZERO-BLCKINT both need a completed DMA transfer,
-  so both trials arm DSKLEN with this exact double-write sequence.
-- **The MFM encoder is reported context-free** (finding candidate C9 in
-  `work/2026-09-15_ch8_s2_finding_candidates.md`, a measured fact from a
-  different lot's classifier, not one of my own claims): a sector fed as all
-  `0x00` bytes reads back as `0xAAAA` on the internal data stream, all `0xFF`
-  as `0xFFFF`. This is the mechanism P-DSKSYNC-MATCH's stimulus is planned
-  around: feed a sector of one known fill byte, program DSKSYNC to the
-  correspondingly disclosed encoded word for the match trial and to a
-  deliberately different word (e.g. the classify stage's own `0x1234`, used
-  in exactly this role in `classify.evidence`) for the no-match trial. This
-  is a plan stated before RTL is opened, not a confirmed mechanism — the
-  encoding, and whether it is visible to `sync_match`'s `floppy_data` input
-  in the way I expect, is verified once `paula_floppy.v` is read, and this
-  file's account will be corrected in the `.cpp` header if reading the RTL
-  finds it working differently.
-
-## Assertions — one per citing quotation, plus what this suite's own rules require
-
-All page citations below repeat the source table above.
-
-- **A1** — `opus:8-dskint.c1` (P-THREE-KINDS, p.250). Grades the port-count
-  half only; declines the CPU-visible-interrupt half for all three ports.
-  Expected GREEN.
-- **A2** — `sol:8-int.c1` (P-THREE-KINDS, twin of A1, p.250). Expected GREEN.
-- **A3** — `opus:8-dskint.c4` (P-DSKSYNC-MATCH, p.250). Grades the
-  request-line half only; declines "level 5, INTREQ bit 12". Expected GREEN.
-- **A4** — `sol:8-int.c4` (P-DSKSYNC-MATCH, twin of A3, p.250). Expected
-  GREEN.
-- **A5** — `opus:8-dskint.c7` (P-DSKBLK-COMPLETE, p.250). Grades the
-  request-line half only; declines "level 1, INTREQ bit 1". Expected GREEN.
-- **A6** — `sol:8-int.c7` (P-DSKBLK-COMPLETE, twin of A5, p.250). Expected
-  GREEN.
-- **A7** — `opus:8-appA-dskdat.c15` (P-LENZERO-BLCKINT, p.279). No boundary
-  split needed. Expected GREEN.
-- **A8** — `sol:8-appa-dskdata.c8` (P-LENZERO-BLCKINT, twin of A7, p.279).
-  Expected GREEN.
-
-None of my 8 claims are named among the sixteen finding candidates in
-`work/2026-09-15_ch8_s2_finding_candidates.md`, and the build task states
-this package's subject matter has already been measured green on a
-throwaway rig — this is a **confirming** package, not a hunt for a red. If
-RTL reading below turns up a disagreement with any of the eight quotes
-above, that disagreement is reported as found, per this suite's rule that a
-red is a valid, finished outcome — but none is predicted here.
-
-Plus, ungraded by any manual citation but required by this suite's own
-rules:
-
-- **FIXTURE-LIVE** — the register write/read-back path must be shown to
-  deliver two distinct, known, correct values before any claim-based read
-  above is trusted.
+- **FIXTURE-LIVE** — the register write/read-back path delivers two
+  distinct, known, correct values (the DSKBYTR WRITE-bit mirror). A
+  `note()`: it carries no claim uid.
 - **INTERRUPT-LINES-IDLE-CONTROL** — this package's control case, on the
-  same two ports (`blckint`, `syncint`) the claims above grade: with the
-  fixture freshly reset and nothing armed or matched, both lines are
-  expected to read deasserted (not stuck high) — proof that a "pulses when
-  triggered" reading in A3-A8 is a real transition, not a line that is
-  simply always asserted.
+  same two ports (`blckint`, `syncint`) the local measurements read: with
+  the fixture freshly reset and nothing armed or matched, both lines read
+  deasserted (not stuck high) — proof that a "pulses when triggered"
+  reading is a real transition, not a line that is simply always asserted.
+  Graded, GREEN.
+- **P-THREE-KINDS-INDEX-PULSE-A/-B** — `index` asserts on a `sof` pulse at
+  `rpm_pulse_cnt`==0 with a drive selected and its motor commanded on,
+  while `blckint` and `syncint` stay deasserted. Graded, GREEN, no uid on
+  the label.
+- **P-DSKSYNC-MATCH, P-DSKBLK-COMPLETE, P-LENZERO-BLCKINT** — local
+  measurement printed via `note()`, uids declined via `record()` naming the
+  `hrm/ch8-disk-interrupt-path` trial that grades them.
+
+Three chapter-7 uids (`opus:7-int.c54`, `opus:7-fig7-4.c6`,
+`opus:7-fig7-4.c39`, "Bit 1, DSKBLK, indicates 'disk block finished'" and
+Figure 7-4) are also declined here via `record()`: they are CPU-visible
+statements about INTREQ bit 1, and no package in the suite grades them.
 
 ## Mutation plan
 
-Each assertion above gets its own
+Each graded check has its own
 `// MUTATION <label> <oracle|stimulus|none> <red|green|impossible> <what changed>`
 record in the C++ source, `<label>` being the exact leading token of the
-string literal passed to `expect()` — the claim's own `classify.uid` for
-A1-A8, a plain uppercase id for FIXTURE-LIVE and
-INTERRUPT-LINES-IDLE-CONTROL.
-
-All ten are expected **GREEN at baseline** (this is a confirming package, no
-red predicted per the section above), so all ten get an ordinary `stimulus
-red` mutation: change what the rig *asks* the module to do (e.g. feed a
-mismatching DSKSYNC in the match trial, skip the second DSKLEN write, drain
-one word short, never actually deselect/reset before the idle-control
-reading), leave the expected value alone, confirm the targeted assertion
-alone goes red, then revert. If RTL reading turns up that any assertion is
-in fact red at baseline, this section is corrected in the `.cpp` header and
-the substitute-mechanism rule is used for that one instead, exactly as
-`hrm/ch8-drive-sense-lines` did for its own single red.
-
-Which exact stimulus each mutation changes, and the measured before/after
-pass/fail tally, is recorded in the C++ source once the package is built and
-run — this section states the plan, not a claim that any run has happened.
-
-## What happens next
-
-Only after this file is committed: open `paula_floppy.v` in full (port list;
-the `blckint`/`syncint`/`index` declarations and their driving expressions;
-the DSKLEN double-write and DMA state machine; the `sync_match` expression
-and what `floppy_data`/`fifo_reading_sector`/`trackrd` actually are) and
-`paula_floppy_fifo.v` in full; then write this package's own Makefile and
-test source. All of that reading, and anything else opened beyond what is
-named here, will be disclosed in the next commit's file header.
+string literal passed to `expect()`. All three are GREEN at baseline, so
+each gets an ordinary `stimulus red` mutation: change what the rig *asks*
+the module to do (exercise `syncint`'s separate idle-`sof` term instead of
+leaving the fixture idle; never pulse `sof`), leave the expected value
+alone, confirm the targeted check alone goes red, then revert. A `note()`
+or `record()` carries no mutation record.

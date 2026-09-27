@@ -5,54 +5,38 @@
 //   paula_floppy_ebr.v excluded, it declares a second `module
 //   paula_floppy`). 8 claims, from
 //   hrm-testpipeline/work/ch8-s2-build/ch8-disk-interrupt-requests.jsonl,
-//   reduced to 4 propositions. Full derivation in SPECIFICATION.md
-//   (committed as e6f93d0, before this file or paula_floppy.v was opened).
+//   reduced to 4 propositions. Full derivation in SPECIFICATION.md.
 //
-// REPAIR (2026-09-15, repair lot C, against DOKTRIN.md/LOS-C.md). Independent
-//   validation of chapter 8 slice s2 found every claim in this package graded
-//   only the LOCAL paula_floppy pin -- syncint, blckint, index -- for a
-//   sentence that names a CPU interrupt (an INTREQ bit and a level), while
-//   six of the eight uids sat on BOTH a graded line and a record() line: the
-//   coverage ledger reads uids off graded lines only, so it counted every one
-//   of these six as fully asserted despite the record() beside it honestly
-//   saying the CPU half was missing. `tools/check_uid_placement.py` reported
-//   this package as one of ten offenders in the suite, naming exactly
-//   opus:8-dskint.c1/c4/c7 and sol:8-int.c1/c4/c7.
-//
-//   hrm/ch8-disk-interrupt-path was built to close the gap: it grades DSKSYNC
-//   and DSKBLK end to end at TOP_MODULE=minimig, observing the real INTREQ
-//   bit AND minimig.v's own top-level _cpu_ipl port in the SAME cycle as the
-//   stimulus (15 checks.expect() calls, 15 passed / 0 failed at baseline, 0
-//   uid-placement offenders, every mutation killed -- read, not modified,
-//   confirmed by grep in this session before relying on it). This repair:
-//     - withdraws FIXTURE-LIVE from expect() to note() -- it carries no claim
-//       uid and was never conformance evidence (doctrine shape 1);
-//     - withdraws opus:8-dskint.c4/sol:8-int.c4 (DSKSYNC bullet),
+// WHAT IS GRADED HERE AND WHAT IS NOT. Every claim in this package names a
+//   CPU interrupt (an INTREQ bit and a level) in the same sentence as a
+//   request-line condition, and this fixture reaches only the LOCAL
+//   paula_floppy pins -- syncint, blckint, index. The coverage ledger reads
+//   uids off graded lines only and counts a uid on a graded line as fully
+//   asserted whatever a record() beside it says (tools/check_uid_placement.py
+//   checks that no uid sits on both), so:
+//     - FIXTURE-LIVE is a note() -- it carries no claim uid and is not
+//       conformance evidence;
+//     - opus:8-dskint.c4/sol:8-int.c4 (DSKSYNC bullet),
 //       opus:8-dskint.c7/sol:8-int.c7 (DSKBLK bullet), and
 //       opus:8-appA-dskdat.c15/sol:8-appa-dskdata.c8 (DSKBLK, Appendix A)
-//       from expect() to record() (doctrine shape 2): each record() names
-//       the hrm/ch8-disk-interrupt-path trial that now grades the claim in
-//       full; each pair's own local syncint/blckint measurement is kept as
-//       an un-mutated note() only, since nothing grades it as a claim
-//       anymore and an orphaned mutation record travels with no expect();
-//     - keeps opus:8-dskint.c1/sol:8-int.c1's own local "index is a real,
-//       independently-triggerable third pulse" measurement GRADED, but moves
-//       its label off the uid (P-THREE-KINDS-INDEX-PULSE-A/-B carry no uid),
-//       per the mechanical placement rule: "if an assertion grades only part
-//       of a claim, the measurement keeps its expect() under a label
-//       carrying no uid, and the uid goes on a record() line alone." The two
-//       uids now appear ONLY on the record() immediately after, which also
-//       states what hrm/ch8-disk-interrupt-path and hrm/
-//       ch8-disk-index-interrupt-path between them do and do not close for
-//       INDEX -- matching hrm/ch8-disk-interrupt-path's own record() for
-//       these same two uids, so the two declines agree rather than each
-//       telling half a story.
-//   After this repair `tools/check_uid_placement.py` no longer reports this
-//   package as an offender (measured after rebuild -- see the report
-//   accompanying this commit for the exact command and output). No RTL was
-//   touched, no debug port was added, and no oracle was adjusted -- nothing
-//   here changed what any assertion requires the DUT to do; only which line,
-//   if any, each claim uid is graded or recorded on.
+//       are recorded, not graded: each record() names the
+//       hrm/ch8-disk-interrupt-path trial that grades the claim in full,
+//       at TOP_MODULE=minimig, observing the real INTREQ bit AND minimig.v's
+//       own top-level _cpu_ipl port in the SAME cycle as the stimulus; each
+//       pair's own local syncint/blckint measurement is kept as an
+//       un-mutated note() only;
+//     - opus:8-dskint.c1/sol:8-int.c1's own local "index is a real,
+//       independently-triggerable third pulse" measurement is GRADED under a
+//       label carrying no uid (P-THREE-KINDS-INDEX-PULSE-A/-B), per the
+//       placement rule: "if an assertion grades only part of a claim, the
+//       measurement keeps its expect() under a label carrying no uid, and
+//       the uid goes on a record() line alone." The two uids appear ONLY on
+//       the record() immediately after, which also states what
+//       hrm/ch8-disk-interrupt-path and hrm/ch8-disk-index-interrupt-path
+//       between them do and do not close for INDEX -- matching
+//       hrm/ch8-disk-interrupt-path's own record() for these same two uids,
+//       so the two declines agree rather than each telling half a story.
+//   No RTL is touched and no debug port is added.
 //
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.250 (disk
@@ -69,8 +53,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// THE BOUNDARY, confirmed by reading paula_floppy.v myself (SPECIFICATION.md
-//   had only the build task's disclosed, not-yet-verified citations):
+// THE BOUNDARY, read from paula_floppy.v:
 //   paula_floppy has no INTREQ port and no _ipl port anywhere in its port
 //   list (:67-117, read in full). INTREQ and _ipl are paula_intcontroller
 //   signals (disclosed via classify.evidence, not opened here -- out of this
@@ -79,34 +62,34 @@
 //   kinds of interrupts" for all three ports; "level 5, INTREQ bit 12" on
 //   DSKSYNC; "level 1, INTREQ bit 1" on DSKBLK, twice, once from the chapter
 //   body and once from Appendix A) -- this fixture can reach only the local
-//   port (index/syncint/blckint), never INTREQ or _cpu_ipl. Per the REPAIR
-//   note above: six of the eight uids are now withdrawn entirely to
-//   record() (each claim graded in full at hrm/ch8-disk-interrupt-path), and
-//   the remaining two (opus:8-dskint.c1/sol:8-int.c1) keep a PARTIAL local
-//   measurement under an uid-less label, the uids themselves on record()
-//   only, since no single package in this suite yet grades the whole
-//   "three kinds" claim (index's own local-pin-to-_cpu_ipl join is still not
-//   closed anywhere -- see that record() for the full picture).
+//   port (index/syncint/blckint), never INTREQ or _cpu_ipl. Per the note
+//   above: six of the eight uids are recorded (each claim graded in full at
+//   hrm/ch8-disk-interrupt-path), and the remaining two
+//   (opus:8-dskint.c1/sol:8-int.c1) keep a PARTIAL local measurement under
+//   an uid-less label, the uids themselves on record() only, since no single
+//   package in this suite grades the whole "three kinds" claim (index's own
+//   local-pin-to-_cpu_ipl join is not closed anywhere -- see that record()
+//   for the full picture).
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (e6f93d0):
-//   1. hrm/ch8-drive-sense-lines/test_ch8-drive-sense-lines.cpp (committed)
+// SOURCES READ:
+//   1. hrm/ch8-drive-sense-lines/test_ch8-drive-sense-lines.cpp
 //      -- for this suite's Checks class, mutating(id)/MUTATE convention, the
 //      fixed // MUTATION comment form, and the twin-claim pattern (two
 //      readers citing one printed sentence get two independent expect()
 //      calls under their own classify.uid). No paula_floppy-specific fact
 //      used below came from this; only harness mechanics.
-//   2. hrm/ch8-dsklen-dma-arming/test_ch8-dsklen-dma-arming.cpp (committed)
+//   2. hrm/ch8-dsklen-dma-arming/test_ch8-dsklen-dma-arming.cpp
 //      -- for the DSKLEN double-write arming sequence, the 4-phase
 //      clk7_en/clk7n_en tick()/settle_edges()/wait_until() clocking pattern,
 //      and the feed_sector_read() SD-ingest technique this package's
-//      blckint/syncint trials both reuse (with my own reg-address table and
-//      my own arm_dma()/dskdatr_pop() wrappers, not copied verbatim).
+//      blckint/syncint trials both use (with this package's own reg-address
+//      table and arm_dma()/dskdatr_pop() wrappers).
 //   3. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
 //   4. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file (60 lines):
 //      confirms the 2048-word-deep FIFO and that paula_floppy instantiates
 //      nothing else, so the two-file build closes.
 //
-// MECHANISM, confirmed by reading paula_floppy.v myself:
+// MECHANISM, read from paula_floppy.v:
 //
 //   blckint (:994-1036, output reg, a combinational function of dskstate):
 //     DISKDMA_IDLE: blckint=0; on dma_active (=dmaen&&!lenzero&&enable),
@@ -145,17 +128,14 @@
 //     post-reset default (:704-705) is ALSO 16'h4489. So an ordinary DMA
 //     read run, with DSKSYNC left untouched, produces a genuine sync_match
 //     without needing to know anything about MFM-encoding the payload
-//     (correcting SPECIFICATION.md's more roundabout plan, which had not
-//     read this multiplexer yet and proposed steering the match through the
-//     payload's own MFM encoding instead -- that path exists too, per
-//     finding candidate C9, but is unnecessary once the structural sync word
-//     is visible directly). The SECOND term (`~dmaen & ...`) is a genuine,
+//     (steering the match through the payload's own MFM encoding would also
+//     work, per finding candidate C9, but is unnecessary when the structural
+//     sync word is visible directly). The SECOND term (`~dmaen & ...`) is a genuine,
 //     separate NanoMig mechanism -- a spurious syncint on `sof` whenever DMA
 //     is not armed, a selected drive's motor is on, and a disk is present --
 //     unrelated to DSKSYNC matching and not described on p.250 at all; it is
 //     what INTERRUPT-LINES-IDLE-CONTROL's mutation exercises below, and it
-//     is why the P-DSKSYNC-MATCH local note() below (post-repair, no longer
-//     graded) deliberately arms DMA (dmaen=1 clamps this term to 0) rather
+//     is why the P-DSKSYNC-MATCH local note() below deliberately arms DMA (dmaen=1 clamps this term to 0) rather
 //     than leaving the fixture idle.
 //     `wordsync` (an input port) gates trackrdok's wait-for-sync LATCH
 //     (:919-927), not sync_match/syncint themselves (:915 does not reference
@@ -173,22 +153,22 @@
 //     with _motor already driven low (commanded on) latches motor_on on that
 //     same settle_edges(1).
 //
-// RIG HAZARD (build task, SPECIFICATION.md): dsktrack (paula_floppy.v:671-
+// RIG HAZARD (SPECIFICATION.md): dsktrack (paula_floppy.v:671-
 //   680) has no reset term. This package never drives _step, so dsktrack is
-//   never touched by any trial below, but per the build task's unconditional
-//   mandate, a FRESH Vpaula_floppy is still allocated for every trial --
-//   nothing here relies on trials never happening to need head position.
+//   never touched by any trial below, but a FRESH Vpaula_floppy is still
+//   allocated for every trial -- nothing here relies on trials never
+//   happening to need head position.
 //
-// DECLINED. Post-repair: opus:8-dskint.c4/sol:8-int.c4, opus:8-dskint.c7/
+// DECLINED. opus:8-dskint.c4/sol:8-int.c4, opus:8-dskint.c7/
 //   sol:8-int.c7, and opus:8-appA-dskdat.c15/sol:8-appa-dskdata.c8 (six
-//   uids) are recorded, not graded, in full -- each claim's CPU-visible half
-//   was never gradeable at this paula_floppy-only boundary, and is now
-//   graded in full at hrm/ch8-disk-interrupt-path (named in each record()).
+//   uids) are recorded, not graded -- each claim's CPU-visible half is not
+//   gradeable at this paula_floppy-only boundary, and is graded in full at
+//   hrm/ch8-disk-interrupt-path (named in each record()).
 //   opus:8-dskint.c1/sol:8-int.c1 (two uids) are recorded too, but this
 //   package's own P-THREE-KINDS-INDEX-PULSE-A/-B stay graded under an
 //   uid-less label for the part of the claim (index's local existence as a
-//   genuine third pulse) they do close. See the REPAIR note at the top of
-//   this file and the record() beside each withdrawn pair.
+//   genuine third pulse) they do close. See the note at the top of this
+//   file and the record() beside each declined pair.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
@@ -196,26 +176,20 @@
 //   (MUTATE unset) and every mutation run (MUTATE=<id>, one id per
 //   assertion). `mutating(...)` is always called into a local `bool mut`
 //   BEFORE the expect() it guards, never as a string literal inside the same
-//   expect() call, per the build task's warning about the gate reading the
-//   first string literal of a call as the assertion id. Converting an
-//   expect() to record()/note() orphans its mutation record, so this repair
-//   removed the record AND the runtime mutation guard for FIXTURE-LIVE,
+//   expect() call, because the gate reads the first string literal of a
+//   call as the assertion id. A note() or record() carries no mutation
+//   record and no runtime mutation guard: FIXTURE-LIVE,
 //   opus:8-dskint.c4/sol:8-int.c4, opus:8-dskint.c7/sol:8-int.c7, and
-//   opus:8-appA-dskdat.c15/sol:8-appa-dskdata.c8 -- none of those six is a
-//   `mutating(...)` target any more, so a runtime-mutation replay script
-//   correctly finds nothing to run for them. INTERRUPT-LINES-IDLE-CONTROL is
-//   untouched by this repair (no uid before, none after, not named in
-//   LOS-C.md's list). opus:8-dskint.c1/sol:8-int.c1 KEEP their runtime
-//   MUTATE selectors ("opus:8-dskint.c1"/"sol:8-int.c1", internal ids, never
-//   printed to stdout) unchanged, guarding the same stimulus (sof withheld)
-//   under their new uid-less graded label -- the same convention hrm/
-//   ch8-disk-interrupt-path itself uses for its own PROP-TWO-OF-THREE
-//   pair.
+//   opus:8-appA-dskdat.c15/sol:8-appa-dskdata.c8 are not `mutating(...)`
+//   targets, so a runtime-mutation replay script correctly finds nothing to
+//   run for them. P-THREE-KINDS-INDEX-PULSE-A/-B read the runtime MUTATE
+//   selectors "opus:8-dskint.c1"/"sol:8-int.c1" (internal ids, never
+//   printed to stdout), guarding the stimulus (sof withheld) under their
+//   uid-less graded label -- the same convention
+//   hrm/ch8-disk-interrupt-path uses for its own PROP-TWO-OF-THREE pair.
 //
-// MUTATION RUN LOG (measured, WSL/Verilator 5.052, this repair session,
-//   `make test` then one rerun per remaining `mutating(...)` id -- 4 runs
-//   total from this one build; see the report accompanying this commit for
-//   the full per-assertion table):
+// MUTATION RUN LOG (measured, WSL/Verilator 5.052, `make test` then one
+//   rerun per `mutating(...)` id -- 4 runs total from one build):
 //   Baseline (MUTATE unset): 3 checks.expect() calls, 3 passed, 0 failed --
 //   INTERRUPT-LINES-IDLE-CONTROL, P-THREE-KINDS-INDEX-PULSE-A, -B. Each of
 //   MUTATE=INTERRUPT-LINES-IDLE-CONTROL, MUTATE=opus:8-dskint.c1 (targets
@@ -229,7 +203,7 @@
 // MUTATION INTERRUPT-LINES-IDLE-CONTROL stimulus red: instead of leaving the fixture genuinely idle, a drive is selected with its motor commanded on and an image mounted, then sof is pulsed -- exercising syncint's OWN separate idle-sof term (paula_floppy.v:917's second OR operand) so syncint reads asserted even though no DMA was ever armed (MUTATE=INTERRUPT-LINES-IDLE-CONTROL).
 // MUTATION P-THREE-KINDS-INDEX-PULSE-A stimulus red: sof is never pulsed at all, so index's only trigger condition never occurs (MUTATE=opus:8-dskint.c1).
 // MUTATION P-THREE-KINDS-INDEX-PULSE-B stimulus red: same omission as -A, independent reader (MUTATE=sol:8-int.c1).
-// FIXTURE-LIVE, opus:8-dskint.c4/sol:8-int.c4, opus:8-dskint.c7/sol:8-int.c7, and opus:8-appA-dskdat.c15/sol:8-appa-dskdata.c8 carry NO mutation record any more: each was withdrawn from expect() to note()/record() in this repair (2026-09-15), and a mutation record travels with its assertion -- converting the assertion away removes the record with it. See the REPAIR note at the top of this file.
+// FIXTURE-LIVE, opus:8-dskint.c4/sol:8-int.c4, opus:8-dskint.c7/sol:8-int.c7, and opus:8-appA-dskdat.c15/sol:8-appa-dskdata.c8 carry NO mutation record: each is a note()/record(), not an expect(), and a mutation record travels with an assertion. See the note at the top of this file.
 
 #include <cstdint>
 #include <cstdio>
@@ -273,8 +247,7 @@ public:
     int passed = 0, failed = 0;
 };
 
-// A fresh Verilated model per trial, per the build task's rig hazard mandate
-// (dsktrack has no reset term -- see the file header). Every assertion block
+// A fresh Verilated model per trial (dsktrack has no reset term -- see the file header). Every assertion block
 // below constructs its own Rig; none is reused for a second trial.
 struct Rig {
     Vpaula_floppy* dut;
@@ -427,16 +400,16 @@ int main(int argc, char** argv) {
     std::cout << "Starting ch8-disk-interrupt-requests...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim id, no manual page: the build task's own
-    // requirement that the fixture prove it can deliver a known, distinct
-    // word before any claim-based read below is trusted. Measured on the
+    // FIXTURE-LIVE -- no claim id, no manual page: the fixture proves it
+    // can deliver a known, distinct word before any claim-based read below
+    // is trusted. Measured on the
     // DSKBYTR WRITE-bit mirror (dsklen[14]), the simplest single-cycle case
     // available on this fixture that does not itself arm DMA.
     // ========================================================================
     {
-        // FIXTURE-LIVE carries no claim uid (build task's own precondition, not
-        // conformance evidence) -- WITHDRAWN from expect() to note() per the
-        // repair doctrine's shape 1. No mutation record travels with a note().
+        // FIXTURE-LIVE carries no claim uid (a fixture precondition, not
+        // conformance evidence), so it is a note(). No mutation record
+        // travels with a note().
         Rig r;
         r.write_reg(ADDR_DSKLEN, 0x4000);  // WRITE bit set (bit14); bit15=0, DMA never arms
         uint16_t v1 = r.read_reg(ADDR_DSKBYTR);
@@ -498,15 +471,14 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // opus:8-dskint.c1 / sol:8-int.c1 (p.250, twins) -- P-THREE-KINDS.
-    // UID-PLACEMENT REPAIR (this package was a uid-placement offender: these
-    // two uids sat on both a graded line and a record() line). This trial's
+    // This trial's
     // own measurement -- index is a real, independently-triggerable THIRD
     // local pulse, distinct from blckint/syncint -- grades only PART of the
     // "three kinds of interrupts" claim (port existence, not CPU-visibility),
-    // so per the placement rule it now runs under an uid-less graded label
+    // so per the placement rule it runs under an uid-less graded label
     // (P-THREE-KINDS-INDEX-PULSE-A/-B); the uids themselves appear ONLY on
     // the record() below, never on a graded line. The runtime MUTATE
-    // selectors stay "opus:8-dskint.c1"/"sol:8-int.c1" (internal ids, never
+    // selectors are "opus:8-dskint.c1"/"sol:8-int.c1" (internal ids, never
     // printed to stdout), matching the convention hrm/ch8-disk-interrupt-path
     // itself uses for the identical situation.
     // ========================================================================
@@ -579,20 +551,20 @@ int main(int argc, char** argv) {
             "against minimig.v's real top-level _cpu_ipl port; its own record() declines the INDEX third for "
             "the identical reason stated here (needs ciab, not instantiated there). hrm/"
             "ch8-disk-index-interrupt-path further closes the 8520 Flag-pin journey and 'decodes to level 6' "
-            "at paula_intcontroller's own boundary for INDEX specifically, but (per that package's own header, "
-            "confirmed by ch8-disk-interrupt-path's read of it, not re-opened here) does not itself reach "
+            "at paula_intcontroller's own boundary for INDEX specifically, but (per that package's own header) "
+            "does not itself reach "
             "minimig.v's top-level _cpu_ipl in the same run. So: two of the three CPU-visible-interrupt paths "
             "are fully closed (hrm/ch8-disk-interrupt-path), INDEX's local existence is closed here, and "
-            "INDEX's own local-pin-to-_cpu_ipl join in one run is still not graded anywhere in this suite -- "
+            "INDEX's own local-pin-to-_cpu_ipl join in one run is not graded anywhere in this suite -- "
             "these two declines and hrm/ch8-disk-interrupt-path's own agree on that gap, not each telling half "
             "a story.");
     }
 
     // ========================================================================
     // opus:8-dskint.c4 / sol:8-int.c4 (p.250, twins) -- P-DSKSYNC-MATCH.
-    // WITHDRAWN (shape 2): this package's own local syncint measurement is
+    // DECLINED: this package's own local syncint measurement is
     // kept below as an un-mutated note() only -- the full claim ("level 5,
-    // INTREQ bit 12 -- input stream matches the DSKSYNC register") is now
+    // INTREQ bit 12 -- input stream matches the DSKSYNC register") is
     // graded END TO END (real INTREQ bit 12 AND minimig.v's own _cpu_ipl at
     // level 5, in the same cycle as the stimulus) by hrm/ch8-disk-interrupt-
     // path's PROP-DSKSYNC-FULLJOIN, under these same two uids. No mutation
@@ -607,8 +579,8 @@ int main(int argc, char** argv) {
         m.feed_sector_read(sector);
         int match_pulses = m.count_syncint(80);
         checks.note("P-DSKSYNC-MATCH (local half only): DSKSYNC=0x4489, syncint pulses over 80 qualifying "
-                    "edges=" + std::to_string(match_pulses) + " -- paula_floppy's own syncint still pulses on "
-                    "a real stream match, unchanged from before this repair");
+                    "edges=" + std::to_string(match_pulses) + " -- paula_floppy's own syncint pulses on "
+                    "a real stream match (local pin only)");
         checks.record(
             "opus:8-dskint.c4 / sol:8-int.c4 (p.250, quote '   *   DSKSYNC  (level 5,  INTREQ  bit 12) -- "
             "input stream matches the DSKSYNC register.'): declined here, not graded -- this package can only "
@@ -616,14 +588,14 @@ int main(int argc, char** argv) {
             "level. hrm/ch8-disk-interrupt-path's own PROP-DSKSYNC-FULLJOIN trial grades both uids fully: a "
             "real DSKSYNC stream match sets INTREQ bit 12 AND drives _cpu_ipl to the level-5 encoding, observed "
             "in the same cycle, in the same run as the stimulus. That is where these two uids are ASSERTED; "
-            "this package's own local syncint pulse (noted above, unchanged) is real but does not, by itself, "
+            "this package's own local syncint pulse (noted above) is real but does not, by itself, "
             "establish the claim's CPU-visible half.");
     }
 
     // ========================================================================
     // opus:8-dskint.c7 / sol:8-int.c7 (p.250, twins) -- P-DSKBLK-COMPLETE.
-    // WITHDRAWN (shape 2): same reasoning as P-DSKSYNC-MATCH above -- the
-    // full claim is now graded end to end by hrm/ch8-disk-interrupt-path's
+    // DECLINED: same reasoning as P-DSKSYNC-MATCH above -- the
+    // full claim is graded end to end by hrm/ch8-disk-interrupt-path's
     // PROP-DSKBLK-FULLJOIN, under these same two uids.
     // ========================================================================
     {
@@ -644,7 +616,7 @@ int main(int argc, char** argv) {
         checks.note("P-DSKBLK-COMPLETE (local half only): len=" + std::to_string(len) + ", blckint seen before "
                     "final pop=" + std::to_string(blckint_seen_early) + ", blckint asserted after final pop "
                     "(within settle margin)=" + std::to_string(blckint_after_final) + " -- paula_floppy's own "
-                    "blckint still behaves as before this repair");
+                    "blckint, local pin only");
         checks.record(
             "opus:8-dskint.c7 / sol:8-int.c7 (p.250, quote '   *   DSKBLK  (level 1,  INTREQ  bit 1) -- disk "
             "DMA has completed.'): declined here, not graded -- this package can only reach blckint, one "
@@ -652,13 +624,13 @@ int main(int argc, char** argv) {
             "ch8-disk-interrupt-path's own PROP-DSKBLK-FULLJOIN trial (dskblk_trial_singlewrite) grades both "
             "uids fully: a real disk-DMA completion sets INTREQ bit 1 AND drives _cpu_ipl to the level-1 "
             "encoding, observed in the same cycle, in the same run as the stimulus. That is where these two "
-            "uids are ASSERTED; this package's own local blckint measurement (noted above, unchanged) is real "
+            "uids are ASSERTED; this package's own local blckint measurement (noted above) is real "
             "but does not, by itself, establish the claim's CPU-visible half.");
     }
 
     // ========================================================================
     // opus:8-appA-dskdat.c15 / sol:8-appa-dskdata.c8 (p.279, twins) --
-    // P-LENZERO-BLCKINT. WITHDRAWN (shape 2): the printed quote carries no
+    // P-LENZERO-BLCKINT. DECLINED: the printed quote carries no
     // level/bit language of its own, but the claim it makes -- DMA
     // length-zero "causes a disk block interrupt" -- is the SAME DSKBLK
     // interrupt as opus:8-dskint.c7/sol:8-int.c7 above, and a local blckint
@@ -684,8 +656,8 @@ int main(int argc, char** argv) {
         bool blckint_after_final = r.wait_until([&]() { return (bool)r.dut->blckint; }, 8);
         checks.note("P-LENZERO-BLCKINT (local half only): len=" + std::to_string(len) + ", blckint seen early=" +
                     std::to_string(blckint_seen_early) + ", blckint after final pop=" +
-                    std::to_string(blckint_after_final) + " -- paula_floppy's own blckint still behaves as "
-                    "before this repair");
+                    std::to_string(blckint_after_final) + " -- paula_floppy's own blckint, local pin "
+                    "only");
         checks.record(
             "opus:8-appA-dskdat.c15 / sol:8-appa-dskdata.c8 (p.279, quote 'This register is the disk DMA data "
             "buffer. ... and when the DMA data is finished (length=0) it causes a disk block interrupt. See "
@@ -694,21 +666,19 @@ int main(int argc, char** argv) {
             "the local blckint pin, not INTREQ or _cpu_ipl. hrm/ch8-disk-interrupt-path's own PROP-DSKBLK-"
             "FULLJOIN trial (dskblk_trial_dsken_gate) grades both uids fully, cited from Appendix A's own "
             "DSKDATR description instead of the chapter-body bullet -- the same same-cycle INTREQ-bit1/level-1 "
-            "measurement as opus:8-dskint.c7, now carried to INTREQ and _cpu_ipl. That is where these two uids "
-            "are ASSERTED; this package's own local blckint measurement (noted above, unchanged) is real but "
+            "measurement as opus:8-dskint.c7, carried there to INTREQ and _cpu_ipl. That is where these two uids "
+            "are ASSERTED; this package's own local blckint measurement (noted above) is real but "
             "does not, by itself, establish the claim's CPU-visible half.");
         checks.record(
             "opus:7-int.c54 (p.220, quote 'Bit 1, DSKBLK, indicates \"disk block finished.\"'), "
             "opus:7-fig7-4.c6 and opus:7-fig7-4.c39 (p.221, Figure 7-4): declined here, not graded. These "
-            "three chapter-7 uids were routed to the pre-pipeline hrm/paula_floppy package, which declined "
-            "them because its oracle was a frozen module specification rather than the manual; that package "
-            "has been removed and its decline is carried here, on the conformance package that measures the "
-            "same pins. The decline itself is unchanged in substance: 'indicates disk block finished' is a "
+            "three chapter-7 uids are carried on this package because it measures the same pins. "
+            "'indicates disk block finished' is a "
             "CPU-visible statement about INTREQ bit 1, and this package reaches only paula_floppy's local "
             "blckint and syncint pins -- P-DSKBLK-COMPLETE and P-DSKSYNC-MATCH above are both marked 'local "
             "half only' for exactly that reason. hrm/ch8-disk-interrupt-path is the package that carries a "
-            "full join to INTREQ and _cpu_ipl, and it is where a grading of these three would belong; as of "
-            "this build none of the three is cited there or anywhere else in the suite, so all three remain "
+            "full join to INTREQ and _cpu_ipl, and it is where a grading of these three would belong; "
+            "none of the three is cited there or anywhere else in the suite, so all three remain "
             "UNGRADED. That is a coverage gap in chapter 7, recorded rather than closed here, because "
             "closing it means deciding what Figure 7-4's two uids actually claim -- which is a reading of "
             "the figure, not a measurement this package can make.");
