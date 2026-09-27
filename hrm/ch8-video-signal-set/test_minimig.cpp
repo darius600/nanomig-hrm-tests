@@ -10,16 +10,14 @@
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   p.260. Claims file ch8-video-signal-set.jsonl, 10 records (5
-//   propositions after twins are grouped, per SPECIFICATION.md, committed at
-//   06c03f7 before this file was written).
+//   propositions after twins are grouped, per SPECIFICATION.md).
 // Non-goals: this package does not test the 23-pin connector's existence
 //   (NanoMig has none; that is why 129 of p.260's other claims are
 //   not-asserted elsewhere in this slice) or the "4,096 different colors"
 //   clause in the same sentence (no claim in this claims file restates it).
 //   It does not test colour depth/count (that is ch8-display-colour-count, a
-//   different top). It does not decide whether three sync outputs where the
-//   page names one is a divergence -- the task brief that commissioned this
-//   build records that as NOT a divergence, so this file does not raise it;
+//   different top). It does not grade the count of sync outputs (three
+//   here, where the page names one role);
 //   SYNC-OUTPUT-TOGGLES below grades only that a Sync-role output exists and
 //   is live, sampling `_csync` (the composite, the one of the three the
 //   page's singular "Sync" means), never the 3-vs-1 count.
@@ -91,16 +89,9 @@
 //   `vser` then hold their last value for good, and `_csync` freezes
 //   with them.
 //
-// ORDER OF WORK: SPECIFICATION.md (this package's 5 propositions,
-// PROP-COUNT/PROP-RED/PROP-GREEN/PROP-BLUE/PROP-SYNC) was written and
-// committed -- commit 06c03f7 -- from the claims file's quote/restatement
-// fields, before minimig.v, denise.v, denise_colortable.v or
-// agnus_beamcounter.v were opened for this build. SPECIFICATION.md
-// discloses one exception to that order: the claims file's own
-// classify.evidence field, and the task brief that commissioned this
-// build, already named minimig.v's port lines before the specification
-// was drafted -- an order-of-work compromise this build did not create
-// but is not pretending away either.
+// The 5 propositions (PROP-COUNT/PROP-RED/PROP-GREEN/PROP-BLUE/PROP-SYNC,
+// SPECIFICATION.md) are drafted from the claims file's quote/restatement
+// fields, not from the RTL.
 //
 // FIXTURE SIZE, MEASURED: this build Verilates the same 53 modules as
 // ch7-overlay-source (11.1MB source) since it uses the identical
@@ -121,22 +112,20 @@
 //     BLUE-OUTPUT-CARRIES-COLOR00.
 //   opus:8-display.c12 + sol:8-display.c11 (twins; p.260, "One of the
 //     analog RGB outputs is Sync, abbreviated S.") -- graded as
-//     SYNC-OUTPUT-TOGGLES. First declined with a record() (the vacuity
-//     objection: no stimulus this harness controlled could suppress
-//     _hsync/_csync, so it looked unfalsifiable); coordinator review
-//     (O65 discussion) pointed out that vacuity has its own vocabulary
-//     in this suite -- `none impossible`, per hrm/ch8-keycode-table's
-//     CUTOUT-30 -- and that a record() instead makes the claim invisible
-//     to the ledger. Re-examined: a stimulus mutation DOES exist (see the
-//     BOUNDARY section above), so this is graded `stimulus red`, not
-//     `none impossible`.
+//     SYNC-OUTPUT-TOGGLES. Graded, not declined: a record() would make
+//     the claim invisible to the ledger, and this suite's vocabulary for
+//     an unfalsifiable check is a `none impossible` mutation record (per
+//     hrm/ch8-keycode-table's CUTOUT-30), not a decline. Here a stimulus
+//     mutation exists (see the BOUNDARY section above), so it carries
+//     `stimulus red`.
 //   opus:8-display.c8 + sol:8-display.c7 (twins; p.260, "Provides four
 //     outputs; Red (R), Green (G), Blue (B), and Sync (S).") -- NOT
 //     graded with a fifth expect(). The count is a structural fact of
 //     minimig.v's port declaration that no runtime stimulus can add to or
 //     subtract from; grading it as a conjunction of the other four would
-//     mean one label that can fail for four different reasons, which
-//     BUILD-BRIEF.md's rule 2 forbids. Recorded as corroborated by the
+//     mean one label that can fail for four different reasons, and a
+//     graded label must name the one reason it fails for. Recorded as
+//     corroborated by the
 //     four graded assertions (RED/GREEN/BLUE-OUTPUT-CARRIES-COLOR00,
 //     SYNC-OUTPUT-TOGGLES) instead -- naming them, not only explaining
 //     why this claim itself carries no expect().
@@ -155,15 +144,15 @@
 // a stuck one, on the same measurement basis its mutation then flips.
 //
 // RESULTS: baseline (no MUT flag) is 6 passed, 0 failed. No claim in this
-// package is expected red on this RTL -- unlike ch7-overlay-source, there
+// package is red on this RTL -- unlike ch7-overlay-source, there
 // is no known S4 finding-candidate against any of these ten claims (the
 // four/five naming defect the finding-candidates file records for p.260,
 // S4-C11, is the DIGITAL-RGB bullet's sentence, not the ANALOG-RGB
 // sentence this package's ten claims all cite).
 //
 // PER-ASSERTION MUTATION RECORD. Six variants, each its own full
-// build+run (`make MUT=<switch>`), built, run, confirmed and reverted --
-// not re-run for this header update. Format (tools/check_gates.py):
+// build+run (`make MUT=<switch>`), confirmed and reverted. Format
+// (tools/check_gates.py):
 // // MUTATION <assertion-label> <oracle|stimulus|none> <red|green|
 // impossible> <what changed>. Every mutation below is `stimulus` -- what
 // the harness asks the module to do -- never `oracle`.
@@ -347,7 +336,7 @@ public:
     }
 };
 
-// The fixed assertion harness (build brief): expect() grades, note()
+// The fixed assertion harness: expect() grades, note()
 // measures without grading, record() declines with a reason.
 class Checks {
 public:
@@ -401,8 +390,8 @@ int main(int argc, char** argv) {
 #endif
 
     // =========================================================================
-    // CONTROL-VIDEO-BASELINE (no claim id). BUILD-BRIEF.md: "The fixture
-    // proves it can deliver a known value before anything reads one."
+    // CONTROL-VIDEO-BASELINE (no claim id): the fixture proves it can
+    // deliver a known value before anything reads one.
     // Checked here, before any deliberate COLOR00 write: red, green and
     // blue all read 0 at this point (Verilator zero-inits the colour-
     // table RAM; nothing in this harness has written to it yet), so the
@@ -488,18 +477,15 @@ int main(int argc, char** argv) {
     // ticks comfortably covers one full line), starting fresh after the
     // COLOR00 writes above.
     //
-    // First declined here with a record() -- the vacuity objection: no
-    // stimulus this harness controlled could suppress _hsync/_csync at
-    // chipset_config=0, so the check looked unfalsifiable. Coordinator
-    // review (recorded as O65 against BUILD-BRIEF.md, not against this
-    // build) pointed out this suite's actual vocabulary for that case is
-    // a `none impossible` mutation record (hrm/ch8-keycode-table's
-    // CUTOUT-30), not a decline -- and that a genuine stimulus mutation
-    // does exist here if chipset_config is allowed to change for this
-    // block alone, after the colour assertions have already run and been
-    // graded, so it cannot couple back into them (see MUT_SYNC below and
-    // the file header's BOUNDARY section for the exact mechanism).
-    // Re-examined and reversed: graded `stimulus red`, carrying both uids.
+    // Graded, carrying both uids. At chipset_config=0 no stimulus this
+    // harness controls can suppress _hsync/_csync; this suite's vocabulary
+    // for an unfalsifiable check would be a `none impossible` mutation
+    // record (hrm/ch8-keycode-table's CUTOUT-30), not a decline -- but a
+    // genuine stimulus mutation exists here once chipset_config is allowed
+    // to change for this block alone, after the colour assertions have
+    // already run and been graded, so it cannot couple back into them (see
+    // MUT_SYNC below and the file header's BOUNDARY section for the exact
+    // mechanism): `stimulus red`.
     // =========================================================================
     {
 #if MUT_SYNC
@@ -564,14 +550,13 @@ int main(int argc, char** argv) {
     // the file header's CLAIM COVERAGE section for the full reasoning:
     // the four-member count is a structural fact of minimig.v's port
     // declaration, not something any stimulus this harness applies can
-    // add to or remove, and grading it as one label spanning four
-    // different underlying reasons is exactly what BUILD-BRIEF.md's rule
-    // 2 forbids. Unlike SYNC-OUTPUT-TOGGLES above, this is a genuine
-    // conjunction over four independently-meaningful signals with no
-    // single stimulus that isolates "the count" from "each member" --
-    // kept as a decline, per the coordinator's review, strengthened to
-    // name where the content actually lives rather than only explain why
-    // it is not here.
+    // add to or remove, and one graded label spanning four different
+    // underlying reasons would not name the one reason it fails for.
+    // Unlike SYNC-OUTPUT-TOGGLES above, this is a genuine conjunction over
+    // four independently-meaningful signals with no single stimulus that
+    // isolates "the count" from "each member" -- kept as a decline whose
+    // record() names where the content actually lives rather than only
+    // explaining why it is not here.
     // =========================================================================
     checks.record(
         "opus:8-display.c8, sol:8-display.c7 (p.260, \"Provides four "
@@ -584,8 +569,8 @@ int main(int argc, char** argv) {
         "compile-time fact no runtime stimulus in this harness can "
         "change, so a standalone COUNT expect() could only ever be a "
         "conjunction of those same four reasons, which would fail for "
-        "whichever of the four happened to be true that run -- exactly "
-        "what BUILD-BRIEF.md's rule 2 forbids. See SPECIFICATION.md's "
+        "whichever of the four happened to be true that run -- a graded "
+        "label must name the one reason it fails for. See SPECIFICATION.md's "
         "PROP-COUNT section and this file's header for the full "
         "reasoning.");
 

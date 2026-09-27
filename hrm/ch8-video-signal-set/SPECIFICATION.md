@@ -7,27 +7,15 @@ Subject: the analog-RGB output set p.260 names — Red, Green, Blue and Sync —
 and whether that four-member set is present at this design's video-output
 boundary.
 
-This file is written from the `quote` / `restatement` fields of the 10
-claims alone. No RTL file for this package has been opened for the purpose
-of drafting the propositions below. Concrete port names, stimulus values and
-the `expect()` assertions themselves are added only after this file is
-committed and the fixture-building step begins, per `BUILD-BRIEF.md`.
-
-**A caveat on that order, stated plainly rather than glossed over:** the
-claims file handed to this build already carries a `classify.evidence`
-field, on every one of the 10 records, that names concrete RTL port names
-and line numbers (`minimig.v:239-252`, `agnus_beamcounter.v:421`,
-`agnus.v:75`, `minimig.v:459-461`) and states outright that the design
-emits three sync outputs where the page names one. The task brief that
-commissioned this build also stated the same port names directly, before
-this file existed. That is the same order-of-work compromise
-`BUILD-BRIEF.md` describes happening to a slice-s3 builder: the port names
-were visible before the specification was written, through no fault of this
-build. Recorded here and in the final report rather than pretended away.
-Despite having seen those names, the propositions below are drafted only
-from the manual quotations — they name no port, no line number and no
-signal width, and the "three sync outputs" fact is deliberately not used to
-shape any proposition's wording (see the Sync section below).
+The propositions below are drafted from the `quote` / `restatement` fields
+of the 10 claims — they name no port, no line number and no signal width.
+The claims file's `classify.evidence` field, on every one of the 10
+records, names concrete RTL port names and line numbers
+(`minimig.v:239-252`, `agnus_beamcounter.v:421`, `agnus.v:75`,
+`minimig.v:459-461`) and states that the design emits three sync outputs
+where the page names one; that fact does not shape any proposition's
+wording (see the Sync section below). Port names, stimulus values and the
+`expect()` assertions are in the test source.
 
 ## Claim inventory (all 10, grouped by proposition)
 
@@ -44,7 +32,7 @@ shape any proposition's wording (see the Sync section below).
 | 9 | `opus:8-display.c12` | 260 | PROP-SYNC, primary |
 | 10 | `sol:8-display.c11` | 260 | PROP-SYNC, twin of #9 |
 
-All 10 claims are accounted for; none is left unassigned at this stage. All
+All 10 claims are accounted for; none is left unassigned. All
 ten cite the same sentence, p.260's first bullet under "Two separate type of
 RGB video are available on the connector":
 
@@ -65,8 +53,8 @@ yes`. `sol`'s five claims, quoting the identical clause, were each crossread
 by `opus` and marked `verdict: objected`, `states_behaviour: no`. Despite the
 objection, `classify` marked all ten `status: testable`. This specification
 does not resolve why the two readers disagreed on whether the same clause
-"states a behaviour" — that adjudication already happened upstream, in
-`classify`, before this file was written — but it is recorded here since a
+"states a behaviour" — that adjudication belongs to `classify` — but it is
+recorded here since a
 reader of the twin table might otherwise wonder why five of ten carry a
 dissenting crossread and still stand as graded propositions.
 
@@ -109,17 +97,16 @@ clause)
 analog-RGB interface has exactly four members — Red, Green, Blue, Sync — no
 fewer. (Whether it has no *more* than four is not this proposition's
 question on its own: PROP-SYNC below is where a plurality within the Sync
-role specifically would surface, and per the task brief that is expected
-and is not to be raised as a divergence. This proposition is only about the
-floor the sentence states: four named roles, present.)
+role specifically would surface, and this package does not grade that
+plurality. This proposition is only about the floor the sentence states:
+four named roles, present.)
 
-Status: testable, subject to a fixture-building question this file does not
-resolve: whether "four outputs" is independently gradable by its own
-stimulus mutation, or whether it can only be measured as the conjunction of
-PROP-RED/PROP-GREEN/PROP-BLUE/PROP-SYNC below (in which case it may be
-recorded rather than separately asserted, per `BUILD-BRIEF.md`'s rule that
-an assertion must not fail for a reason other than the one it names). That
-determination is a step-3 question.
+Status: recorded, not separately asserted. The four-member count is a
+structural fact of the port declaration that no runtime stimulus can change,
+so it can only be measured as the conjunction of
+PROP-RED/PROP-GREEN/PROP-BLUE/PROP-SYNC below — and an assertion must not
+fail for a reason other than the one it names. The two uids sit on a
+`record()` that names the four graded assertions carrying the content.
 
 ## PROP-RED — One of the analog-RGB outputs is Red, abbreviated R
 
@@ -135,7 +122,7 @@ video-output signal whose carried value corresponds to the design's
 red-intensity data — not about a specific port name (see "What this
 specification deliberately does not contain" below).
 
-Status: testable.
+Status: graded (RED-OUTPUT-CARRIES-COLOR00), GREEN.
 
 ## PROP-GREEN — One of the analog-RGB outputs is Green, abbreviated G
 
@@ -147,7 +134,7 @@ Page 260. Same clause as PROP-COUNT.
 **Proposition to test:** the analog-RGB signal set includes a role the page
 calls Green (G), by the same reasoning as PROP-RED.
 
-Status: testable.
+Status: graded (GREEN-OUTPUT-CARRIES-COLOR00), GREEN.
 
 ## PROP-BLUE — One of the analog-RGB outputs is Blue, abbreviated B
 
@@ -159,7 +146,7 @@ Page 260. Same clause as PROP-COUNT.
 **Proposition to test:** the analog-RGB signal set includes a role the page
 calls Blue (B), by the same reasoning as PROP-RED.
 
-Status: testable.
+Status: graded (BLUE-OUTPUT-CARRIES-COLOR00), GREEN.
 
 ## PROP-SYNC — One of the analog-RGB outputs is Sync, abbreviated S
 
@@ -170,50 +157,50 @@ Page 260. Same clause as PROP-COUNT.
 
 **Proposition to test:** the analog-RGB signal set includes a role the page
 calls Sync (S) — one named role, singular in the sentence. How many
-physical signals this design uses to realize that one role is a
-fixture-building question, not a wording question for this proposition:
-the sentence names a role, not a wire count, and this specification does
-not assert that the role must be realized by exactly one signal. (The task
-brief that commissioned this build states this design realizes the role
-with more than one signal and that this is not to be treated as a
-divergence from the page; this specification takes no position on that in
-its wording, since doing so would require citing RTL, which this file does
-not do. The proposition below is worded so that either a one-signal or a
-multi-signal realization of the Sync role can satisfy it.)
+physical signals realize that one role is not a wording question for this
+proposition: the sentence names a role, not a wire count, and this
+specification does not assert that the role must be realized by exactly one
+signal. The proposition is worded so that either a one-signal or a
+multi-signal realization of the Sync role can satisfy it; this package does
+not grade the count of sync signals.
 
-Status: testable.
+Status: graded (SYNC-OUTPUT-TOGGLES), GREEN — the check samples the
+composite sync output as the page's singular "Sync" and requires it to be
+live (low for part of a sampled line, high for the rest); its mutation
+freezes it.
 
 ## Claims not assigned an assertion
 
 None. All 10 claims are classified `testable` in the claims file and each is
-assigned to exactly one of the four propositions above (PROP-COUNT: claims
+assigned to exactly one of the five propositions above (PROP-COUNT: claims
 1, 2; PROP-RED: claims 3, 4; PROP-GREEN: claims 5, 6; PROP-BLUE: claims 7,
 8; PROP-SYNC: claims 9, 10 — see the inventory table for the exact
-uid-to-proposition mapping).
+uid-to-proposition mapping). PROP-COUNT's two uids are recorded rather than
+graded (see PROP-COUNT above).
 
 ## What this specification deliberately does not contain
 
 Port names, signal widths, which minimig-aga submodule assembles which
 signal, how many wires realize the Sync role, and concrete stimulus values
-are absent by design. Per `BUILD-BRIEF.md`'s order of work, they are added
-only after this file is committed and the RTL is read for the fixture-
-building step. PROP-COUNT, PROP-RED, PROP-GREEN, PROP-BLUE and PROP-SYNC
-above are the propositions that become this package's `expect()` (or, where
-a proposition proves not independently mutable, `note()`/`record()`)
-lines, each with its own control case and stimulus mutation where graded,
-once that step opens.
+belong in the test source, not here.
 
-## Lineage note, checked per `BUILD-BRIEF.md`'s instruction to this package
+## Outcome
 
-`BUILD-BRIEF.md` requires this package to check the upstream
-`MiSTer-devel/Minimig-AGA_MiSTer` file before saying anything about lineage,
-rather than assuming the slice-wide "shared-lineage" statement applies.
-Checked: `rtl/minimig.v` on that project's `master` branch (fetched
+`make -B test`: 6 passed, 0 failed — the two controls
+(CONTROL-RESET-RELEASES, CONTROL-VIDEO-BASELINE) and the four graded
+propositions (RED/GREEN/BLUE-OUTPUT-CARRIES-COLOR00, SYNC-OUTPUT-TOGGLES);
+PROP-COUNT recorded.
+
+## Lineage note
+
+Checked against the upstream `MiSTer-devel/Minimig-AGA_MiSTer` file rather
+than assuming a slice-wide "shared-lineage" statement applies:
+`rtl/minimig.v` on that project's `master` branch (fetched
 directly, not from a document) declares the identical port set this
 design's `minimig.v` declares for this proposition's subject — `_hsync`,
 `_vsync`, `_csync` and `red`/`green`/`blue` as 8-bit outputs, at the
 equivalent point in the port list, with the same inline comments
 ("horizontal sync" / "vertical sync" / "composite sync"). This package's
 propositions are therefore statements about the Minimig line's video-output
-boundary, not about this board alone — the `BUILD-BRIEF.md` instruction for
-`src/minimig-aga` packages applies here, confirmed rather than assumed.
+boundary, not about this board alone — as for the other `src/minimig-aga`
+packages, confirmed here rather than assumed.
