@@ -3,26 +3,25 @@
 //   alone with its CIA submodules -- the eight PB disk-control bits'
 //   independent bit-position transfer, their reset/pull-up deasserted (HIGH)
 //   default, the DSKDIREC/DSKSTEP* separate-write ordering rule, and
-//   DSKSTEP*'s high-momentarily-low-high pulse shape. Per SPECIFICATION.md
-//   (committed 8b20431, before this file was opened for the RTL): `ciab`
+//   DSKSTEP*'s high-momentarily-low-high pulse shape. Per SPECIFICATION.md:
+//   `ciab`
 //   alone carries no signal named DSKMOTOR*, DSKSEL3*-DSKSEL0*, DSKSIDE,
 //   DSKDIREC or DSKSTEP* -- only a generic `portb_out[7:0]`. The binding of
 //   a bit POSITION to one of those NAMES is a one-line structural fact at
 //   minimig.v:650, one level above this fixture's boundary, and is not
-//   re-derived or exercised here. What is graded is exactly the four
-//   propositions SPECIFICATION.md assigns: PROP-POSITION, PROP-RESET-
-//   DEASSERT, PROP-ORDER, PROP-STEP-SHAPE.
+//   re-derived or exercised here. What is graded is PROP-POSITION;
+//   PROP-RESET-DEASSERT, PROP-ORDER and PROP-STEP-SHAPE are measured and
+//   printed, not graded (see WHAT IS NOT GRADED, AND WHY below).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 244-245; committed specification 8b20431 (SPECIFICATION.md, this
-//   package).
+//   pages 244-245; SPECIFICATION.md (this package).
 // Requirement IDs: PROP-POSITION, PROP-RESET-DEASSERT, PROP-ORDER,
 //   PROP-STEP-SHAPE, per SPECIFICATION.md's claim inventory. Claims file:
 //   hrm-testpipeline/work/ch8-s2-build/ch8-ciabprb-disk-control-bits.jsonl
-//   (30 claims; 14 scored across the four propositions above, 16 declined
-//   -- see RECORDED lines in main() and SPECIFICATION.md's "Claims not
-//   assigned an assertion").
-// Non-goals / scope carve-outs, per the build task and SPECIFICATION.md:
+//   (30 claims; 2 graded under PROP-POSITION, 28 declined -- see RECORDED
+//   lines in main() and SPECIFICATION.md's "Claims not assigned an
+//   assertion").
+// Non-goals / scope carve-outs, per SPECIFICATION.md:
 //   - which named drive signal (DSKMOTOR*, DSKSEL3*..0*, DSKSIDE, DSKDIREC,
 //     DSKSTEP*) sits at which PB bit position is a minimig.v:650 wiring
 //     fact, out of `ciab` alone's boundary -- declined, not graded.
@@ -31,8 +30,8 @@
 //     of boundary and not graded, even where a claim's own evidence cites
 //     paula_floppy.v as corroboration.
 //   - how short "momentarily" (DSKSTEP*'s low phase) must be: a duration
-//     with no companion interval on this page to form a ratio with, left to
-//     lot c4's drive-timing package.
+//     with no companion interval on this page to form a ratio with; not
+//     graded here.
 // Non-goals: anything outside the `ciab` fixture this package builds, and
 //   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
@@ -44,23 +43,18 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL read for step 2, after SPECIFICATION.md was committed (8b20431): read
-//   ciab.v (224 lines) in full, plus its four instantiated submodules
-//   (cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v -- needed only for
-//   Verilator to elaborate the top module, not opened/read for content).
-//   Also read hrm/ch8-ciaa-port-direction/Makefile and its full test .cpp
-//   (Checks class, Harness bus-timing protocol, main()-layout, and
-//   MUTATION-comment convention -- the suite's own coding convention, which
-//   the top-level build brief mandates character-identical, and the only
-//   other package in the suite already building a `cia*` fixture), reused
-//   verbatim below as verified RTL-interface plumbing, not as a source of
-//   this package's own assertions or expected values, which come only from
-//   SPECIFICATION.md and the claims file.
+// RTL read: ciab.v (224 lines) in full, plus its four instantiated
+//   submodules (cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v --
+//   needed only for Verilator to elaborate the top module, not read for
+//   content). The Checks class, Harness bus-timing protocol, main()-layout
+//   and MUTATION-comment convention follow hrm/ch8-ciaa-port-direction's
+//   Makefile and test .cpp (the suite's own coding convention, and the only
+//   other package in the suite building a `cia*` fixture) -- verified
+//   RTL-interface plumbing, not a source of this package's own assertions
+//   or expected values, which come only from SPECIFICATION.md and the
+//   claims file.
 //
-// RTL facts established by that reading (none of this shaped
-//   SPECIFICATION.md, which was committed first; ciab.v itself was in fact
-//   opened once before that commit too, during toolchain confirmation --
-//   disclosed in SPECIFICATION.md's own closing section):
+// RTL facts from ciab.v:
 //   - ciab.v's address decoder: rs=4'h1 -> prb, rs=4'h3 -> ddrb, selected by
 //     `enable = aen & (rd | wr)` together with the rs value -- never by
 //     name or bus address (`ciab` alone has no address decoder for
@@ -89,38 +83,24 @@
 //   and read once from the MUTATE environment variable at startup
 //   (MUTATE=opus:8-cia.c4: opus:8-cia.c4 sol:8-cia.c3 PROP-POSITION FAIL --
 //   bit 3 of `portb_out` never moved off 1, so bit_moved was false for PB3;
-//   0 passed, 1 failed). (PROP-POSITION is the only assertion below still
-//   graded via expect(); its mutation record is therefore the only one
-//   kept.)
+//   0 passed, 1 failed). (PROP-POSITION is the only assertion below graded
+//   via expect(), so its mutation record is the only one.)
 //
-// REPAIR NOTE (2026-09-15) -- mutation records removed with their withdrawn
-//   assertion, per this suite's rule that a record()/note() carries no
-//   mutation: the former MUTATION FIXTURE-LIVE, MUTATION opus:8-cia.c22
-//   (PROP-RESET-DEASSERT), MUTATION opus:8-cia.c48 (PROP-ORDER), MUTATION
-//   opus:8-cia.c50 (PROP-STEP-SHAPE) and MUTATION CONTROL-BIT0 entries that
-//   stood here are gone; their historical stimulus-red results are
-//   unaffected (those assertions' logic and comparators are untouched, only
-//   their expect()/record() status changed) and are not repeated here.
-//
-// REPAIR NOTE (2026-09-15): independent validation of this package's five
-//   other checks. FIXTURE-LIVE (no uid) and CONTROL-BIT0 (no uid) are
-//   liveness/control measurements only -- converted expect() -> note(), per
-//   this suite's rule that a no-uid check is never graded. PROP-RESET-
-//   DEASSERT, PROP-ORDER and PROP-STEP-SHAPE each generate the desired
-//   software sequence and then assert the generic CIAB output mirrors it --
-//   no drive, motor or head consumer is present at this boundary to show the
-//   RESET default, the write ORDER or the pulse SHAPE actually matters
-//   beyond echoing the stimulus, so none is independent evidence beyond what
-//   PROP-POSITION already establishes generically. Converted expect() ->
-//   note() (measured, printed) plus record() (declined) for every uid each
-//   used to carry -- see the RECORDED block below. The suite's separate
-//   hrm/ch8-cia-disk-signal-bindings package now grades the 24 named-signal
-//   BINDING claims this package's own pre-existing 16 declines named "one
-//   level above this boundary"; those 16 declines are re-pointed below to
-//   name that package and the specific PBn-BINDING assertion carrying each
-//   signal, instead of the boundary in general. Their mutation records are
-//   removed with them (a record()'d assertion carries no mutation). No RTL,
-//   oracle or kept assertion (PROP-POSITION) was touched.
+// WHAT IS NOT GRADED, AND WHY. FIXTURE-LIVE (no uid) and CONTROL-BIT0 (no
+//   uid) are liveness/control measurements only, printed via note(): this
+//   suite never grades a no-uid check. PROP-RESET-DEASSERT, PROP-ORDER and
+//   PROP-STEP-SHAPE each generate the desired software sequence and then
+//   observe the generic CIAB output mirroring it -- no drive, motor or head
+//   consumer is present at this boundary to show the RESET default, the
+//   write ORDER or the pulse SHAPE actually matters beyond echoing the
+//   stimulus, so none is independent evidence beyond what PROP-POSITION
+//   already establishes generically. Each is measured and printed via
+//   note(), and every uid it would carry is declined via record() -- see
+//   the RECORDED block below. hrm/ch8-cia-disk-signal-bindings grades the
+//   named-signal BINDING claims at the minimig.v:650 join; the 16 binding
+//   declines below name that package and the specific PBn-BINDING
+//   assertion carrying each signal. None of these carries a mutation
+//   record: a record()/note() is not an assertion.
 
 #include <cstdint>
 #include <cstdlib>
@@ -236,8 +216,7 @@ public:
 };
 
 // ---------------------------------------------------------------------
-// FIXTURE-LIVE: `ciab` has never been measured by this package before.
-// Two distinct, known bytes must both arrive at PRB and read back
+// FIXTURE-LIVE: two distinct, known bytes must both arrive at PRB and read back
 // correctly and distinctly, via `portb_out`, before anything else this
 // package depends on is trusted.
 // ---------------------------------------------------------------------
@@ -447,67 +426,64 @@ int main(int argc, char** argv) {
     // ------------------------------------------------------------------
     // Declined claims. Each names a proposition this package does not
     // score, and the reason -- per SPECIFICATION.md's "Claims not assigned
-    // an assertion" plus this repair's re-pointing to hrm/ch8-cia-disk-
-    // signal-bindings. No uid below appears on a graded (expect()) line.
+    // an assertion". No uid below appears on a graded (expect()) line.
     //
     // Group 1 (16): the named-signal BINDING claims (position -> name).
-    // REPAIR NOTE (2026-09-15): previously declined generically ("one level
-    // above this boundary, not graded"); hrm/ch8-cia-disk-signal-bindings
-    // now grades all of these at the minimig.v:650 join, over a real CPU
-    // bus write, comparing the whole eight-wire group -- re-pointed to name
-    // that package and the specific PBn-BINDING assertion for each signal.
+    // hrm/ch8-cia-disk-signal-bindings grades all of these at the
+    // minimig.v:650 join, over a real CPU bus write, comparing the whole
+    // eight-wire group; each record names that package and the specific
+    // PBn-BINDING assertion for its signal.
     // ------------------------------------------------------------------
     checks.record(
         "opus:8-cia.c21 (p.244, \"PB7 DSKMOTOR* ... Disk motor control\"): "
         "names PB7's drive-signal binding. `ciab` alone has no signal "
         "named DSKMOTOR*; the binding of PB7 to that name is minimig.v:650, "
-        "one level above this boundary -- now graded in hrm/ch8-cia-disk-"
+        "one level above this boundary -- graded in hrm/ch8-cia-disk-"
         "signal-bindings' PB7-BINDING assertion. PB7's bit-position "
         "transfer is still exercised as one of PROP-POSITION's eight data "
         "points -- a different claim (byte-wide position independence). "
         "Not graded here.");
     checks.record(
         "opus:8-cia.c32 (p.245, \"PB6 DSKSEL3* ... Select drive 3\"): same "
-        "reason as opus:8-cia.c21, for PB6/DSKSEL3* -- now graded in "
+        "reason as opus:8-cia.c21, for PB6/DSKSEL3* -- graded in "
         "hrm/ch8-cia-disk-signal-bindings' PB6-BINDING assertion. Not "
         "graded here.");
     checks.record(
         "opus:8-cia.c34 (p.245, \"PB5 DSKSEL2* ... Select drive 2\"): same "
-        "reason, for PB5/DSKSEL2* -- now graded in hrm/ch8-cia-disk-signal-"
+        "reason, for PB5/DSKSEL2* -- graded in hrm/ch8-cia-disk-signal-"
         "bindings' PB5-BINDING assertion. Not graded here.");
     checks.record(
         "opus:8-cia.c36 (p.245, \"PB4 DSKSEL1* ... Select drive 1\"): same "
-        "reason, for PB4/DSKSEL1* -- now graded in hrm/ch8-cia-disk-signal-"
+        "reason, for PB4/DSKSEL1* -- graded in hrm/ch8-cia-disk-signal-"
         "bindings' PB4-BINDING assertion. Not graded here.");
     checks.record(
         "opus:8-cia.c38 (p.245, \"PB3 DSKSEL0* ... Select drive 0\"): same "
-        "reason, for PB3/DSKSEL0* -- now graded in hrm/ch8-cia-disk-signal-"
+        "reason, for PB3/DSKSEL0* -- graded in hrm/ch8-cia-disk-signal-"
         "bindings' PB3-BINDING assertion. Not graded here.");
     checks.record(
         "opus:8-cia.c41 (p.245, \"PB2 DSKSIDE ... which disk head to "
-        "use\"): same reason, for PB2/DSKSIDE -- now graded in hrm/ch8-cia-"
+        "use\"): same reason, for PB2/DSKSIDE -- graded in hrm/ch8-cia-"
         "disk-signal-bindings' PB2-BINDING assertion. DSKSIDE's MEANING (0 "
         "= upper head) remains a paula_floppy.v:669 fact "
         "(`track={dsktrack[sel],~side}`), out of both boundaries. Not "
         "graded here.");
     checks.record(
         "opus:8-cia.c45 (p.245, \"PB1 DSKDIREC ... direction to seek the "
-        "heads\"): same reason, for PB1/DSKDIREC -- now graded in "
+        "heads\"): same reason, for PB1/DSKDIREC -- graded in "
         "hrm/ch8-cia-disk-signal-bindings' PB1-BINDING assertion. "
         "DSKDIREC's MEANING (0 = towards center) remains a "
         "paula_floppy.v:673-677 fact, out of both boundaries. The "
         "register-structure half of this bit (that it survives a STEP-only "
-        "write) was previously graded here as PROP-ORDER; that assertion "
-        "is withdrawn below (no drive/head consumer at this boundary makes "
-        "the write ORDER itself observable beyond the stimulus). Not "
-        "graded here.");
+        "write) is PROP-ORDER, measured but not graded (no drive/head "
+        "consumer at this boundary makes the write ORDER itself observable "
+        "beyond the stimulus). Not graded here.");
     checks.record(
         "opus:8-cia.c49 (p.245, \"PB0 DSKSTEP* ... Step the heads\"): same "
-        "reason, for PB0/DSKSTEP* -- now graded in hrm/ch8-cia-disk-signal-"
+        "reason, for PB0/DSKSTEP* -- graded in hrm/ch8-cia-disk-signal-"
         "bindings' PB0-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c20 (p.244, composed: PB7 position + DSKMOTOR* name + "
-        "active-low polarity): now graded in hrm/ch8-cia-disk-signal-"
+        "active-low polarity): graded in hrm/ch8-cia-disk-signal-"
         "bindings' PB7-BINDING assertion, whose comparator (clearing PB7 "
         "alone reads the named join wire low, the other seven high) "
         "carries the position, name AND active-low-at-the-wire content "
@@ -517,49 +493,47 @@ int main(int argc, char** argv) {
         "here.");
     checks.record(
         "sol:8-cia.c30 (p.245, composed: PB6 + DSKSEL3* + active-low): same "
-        "reason as sol:8-cia.c20; now graded in hrm/ch8-cia-disk-signal-"
+        "reason as sol:8-cia.c20; graded in hrm/ch8-cia-disk-signal-"
         "bindings' PB6-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c31 (p.245, composed: PB5 + DSKSEL2* + active-low): same "
-        "reason; now graded in hrm/ch8-cia-disk-signal-bindings' "
+        "reason; graded in hrm/ch8-cia-disk-signal-bindings' "
         "PB5-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c32 (p.245, composed: PB4 + DSKSEL1* + active-low): same "
-        "reason; now graded in hrm/ch8-cia-disk-signal-bindings' "
+        "reason; graded in hrm/ch8-cia-disk-signal-bindings' "
         "PB4-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c33 (p.245, composed: PB3 + DSKSEL0* + active-low): same "
-        "reason; now graded in hrm/ch8-cia-disk-signal-bindings' "
+        "reason; graded in hrm/ch8-cia-disk-signal-bindings' "
         "PB3-BINDING assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c35 (p.245, \"PB2 DSKSIDE ... which disk head to use\", "
-        "twin of opus:8-cia.c41): same reason as opus:8-cia.c41; now "
+        "twin of opus:8-cia.c41): same reason as opus:8-cia.c41; "
         "graded in hrm/ch8-cia-disk-signal-bindings' PB2-BINDING "
         "assertion. Not graded here.");
     checks.record(
         "sol:8-cia.c39 (p.245, \"PB1 DSKDIREC ... direction to seek the "
         "heads\", twin of opus:8-cia.c45): same reason as opus:8-cia.c45; "
-        "now graded in hrm/ch8-cia-disk-signal-bindings' PB1-BINDING "
-        "assertion. Register-structure half previously graded as "
-        "PROP-ORDER; that assertion is withdrawn below. Not graded here.");
+        "graded in hrm/ch8-cia-disk-signal-bindings' PB1-BINDING "
+        "assertion. Register-structure half: PROP-ORDER, measured but not "
+        "graded (see its note() above). Not graded here.");
     checks.record(
         "sol:8-cia.c44 (p.245, \"PB0 DSKSTEP* ... Step the heads\", twin of "
-        "opus:8-cia.c49): same reason as opus:8-cia.c49; now graded in "
+        "opus:8-cia.c49): same reason as opus:8-cia.c49; graded in "
         "hrm/ch8-cia-disk-signal-bindings' PB0-BINDING assertion. Not "
         "graded here.");
 
     // ------------------------------------------------------------------
-    // Group 2 (12): claims withdrawn from PROP-RESET-DEASSERT (7),
-    // PROP-ORDER (3) and PROP-STEP-SHAPE (2) by this repair. Each was
-    // previously graded (expect()); independent validation found none is
-    // independent evidence beyond the stimulus/PROP-POSITION at this
-    // no-consumer boundary. See the note() calls above for the measured
-    // (still-printed) values.
+    // Group 2 (12): the claims of PROP-RESET-DEASSERT (7), PROP-ORDER (3)
+    // and PROP-STEP-SHAPE (2). None is independent evidence beyond the
+    // stimulus/PROP-POSITION at this no-consumer boundary. See the note()
+    // calls above for the measured values.
     // ------------------------------------------------------------------
     checks.record(
         "opus:8-cia.c22 (p.244, \"PB7 DSKMOTOR* ... active low\"): the "
         "active-low RESET behaviour of the specifically-named DSKMOTOR* "
-        "signal needs both the name binding (now graded in hrm/ch8-cia-"
+        "signal needs both the name binding (graded in hrm/ch8-cia-"
         "disk-signal-bindings' PB7-BINDING) and a demonstration that the "
         "RESET transition produces the deasserted level on that named "
         "signal. hrm/ch8-cia-disk-signal-bindings only exercises CPU "
