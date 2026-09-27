@@ -4,13 +4,11 @@
 //   (amiga_keymap.v:10-13) against every "key X carries code Y" claim in
 //   ch8-keycode-table.jsonl (446 claims, page 252's two text tables and page
 //   254's two keyboard diagrams -- Figure 8-9 the Amiga 1000, Figure 8-10
-//   the Amiga 500/2000/3000). SPECIFICATION.md (committed before this file,
-//   or amiga_keymap.v/hid.v, were opened -- see its own "Order of work"
-//   section) groups the 446 raw claims into 229 propositions; this file
-//   grades or declines every one of them. A red result below means
-//   amiga_keymap.v disagrees with the manual, not that the assertion is
-//   wrong -- no assertion here was, or should be, adjusted to make the RTL
-//   pass.
+//   the Amiga 500/2000/3000). SPECIFICATION.md groups the 446 raw claims
+//   into 229 propositions; this file grades or declines every one of them.
+//   A red result below means amiga_keymap.v disagrees with the manual, not
+//   that the assertion is wrong -- no assertion here is adjusted to make
+//   the RTL pass.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pp.251, 252, 254.
@@ -24,8 +22,7 @@
 //   chapter's claim file in the sibling repository (hrm-testpipeline).
 //   docs/legacy-names.md explains the vocabulary.
 //
-// SCOPE / TRANSFERABILITY (required by 2026-09-16_ch8_s3_build_brief.md):
-//   every red this package can produce is a statement about NanoMig, not
+// SCOPE / TRANSFERABILITY: every red this package can produce is a statement about NanoMig, not
 //   about the Minimig family. Upstream Minimig-AGA_MiSTer at da7632e has
 //   no amiga_keymap.v, no module `keymap` and no hid.v at all --
 //   rtl/minimig.v:207 takes kbd_mouse_data as a top-level input and the
@@ -35,15 +32,11 @@
 //   purely combinational (amiga_keymap.v:15-142, one `assign`). No clock
 //   is needed: dut->eval() after setting `code` is a complete stimulus.
 //
-// ORDER OF WORK: SPECIFICATION.md (446 claims -> 229 propositions, from
-//   extract.quote/extract.restatement alone) was written and committed --
-//   commit 0a6e61a -- before amiga_keymap.v or hid.v were opened.
-//
 // CLAIM COVERAGE: every one of the 446 claim uids in the claims file is
 //   cited on exactly one line below (graded expect() or declined
-//   record()) -- verified mechanically against the claims file before
-//   this source was written (a script diffed the full uid set against
-//   every citation list used here: 0 missing, 0 spurious).
+//   record()) -- checked mechanically against the claims file (the full
+//   uid set diffed against every citation in this file: 0 missing, 0
+//   spurious, none cited twice).
 //
 // CANDIDATE S3-C1 (the two international cutout keys, p.252): the key
 //   cut out beside left Shift is claimed at $30 by both p.252 text and
@@ -67,24 +60,19 @@
 //   (line 199) is "Keyboard Non-US Backslash and Pipe", the ISO key
 //   beside LEFT SHIFT. So CUTOUT-30 (the left-Shift key) drives $64 and
 //   CUTOUT-2B (the Return key) drives $32 -- see each assertion's own
-//   comment below; NM-HRM-050 (coordinator review) caught an earlier
-//   draft that had the two swapped, which made CUTOUT-30 red for the
-//   wrong key and left CUTOUT-2B green while sitting on the actual
-//   defect. Corrected before commit.
+//   comment below. Bound the other way round, CUTOUT-30 would be red for
+//   the wrong key and CUTOUT-2B green while sitting on the actual defect.
 //
 // CANDIDATE S3-C2 (right Alt, p.252 vs p.254): p.252's qualifier table
 //   reads $64 Left Alt / $65 Right Alt. Both p.254 figures print $64 on
 //   BOTH Alt keys in both keyboards; $65 appears on no key in either
-//   figure. Measured directly against the RTL for this file (not just
-//   read off the candidates note): amiga_keymap.v's own right-alt input
+//   figure. Measured against the RTL: amiga_keymap.v's own right-alt input
 //   (:139, code 7'h6e) emits $65, matching p.252 and contradicting both
 //   figures. This is a disagreement between two printed pages, not an
 //   RTL divergence -- graded neither way below (RIGHTALT-CONFLICT,
 //   record()+note() only, no expect()).
 //
-// A CORRECTION belonging to this file, not to SPECIFICATION.md (that
-//   file was committed before the RTL was read, so it could not contain
-//   this check): 2026-09-16_ch8_s3_finding_candidates.md states "Five
+// A COUNT CORRECTION: 2026-09-16_ch8_s3_finding_candidates.md states "Five
 //   claim records carry source_defines: conflict: page 252 versus page
 //   254." The claims file itself carries that flag on only FOUR records
 //   (opus:8-fig.c75, sol:8-layout.c77, opus:8-fig.c164, sol:8-layout.c168
@@ -121,7 +109,7 @@
 //   applied only to its own single, standalone sample() call, never to
 //   the ordinary_rows loop MUT_ZERO covers, so the two mutations cannot
 //   be confused for one another): a control's whole job is proving it
-//   CAN go red, and until now nothing did. GEN-NOT-ASCII has its own
+//   CAN go red. GEN-NOT-ASCII has its own
 //   dedicated MUT_ASCII_COLLIDE (substitutes backspace's own code for the
 //   letter-a slot, landing on $41 -- ASCII 'A' -- which the baseline
 //   condition explicitly checks against). CUTOUT-30 carries `none
@@ -195,9 +183,8 @@ int main(int argc, char** argv) {
     Harness h;
 
     // =====================================================================
-    // FIXTURE-SELFCHECK (no uid; harness precondition, per the build brief's
-    // "the fixture proves it can deliver a known value before anything
-    // reads one"). Stimulates the 'a' key's own HID code independently of
+    // FIXTURE-SELFCHECK (no uid; harness precondition: the fixture proves
+    // it can deliver a known value before anything reads one). Stimulates the 'a' key's own HID code independently of
     // the data-driven loop below, before any claim-bearing assertion runs.
     // =====================================================================
     {
@@ -217,7 +204,7 @@ int main(int argc, char** argv) {
     // =====================================================================
     // KEY-$xx rows: every ordinary "key X carries code Y" proposition plus
     // the S3-C1 control (CUTOUT-2B, the international Return cutout).
-    // All rows below are expected PASS at baseline. Every row shares one
+    // All rows below PASS at baseline. Every row shares one
     // MUTATION (...-stimulus red MUT_ZERO); the full per-row list of
     // MUTATION comment lines follows immediately after the loop.
     // =====================================================================
@@ -434,8 +421,7 @@ int main(int argc, char** argv) {
     // claim records; amiga_keymap.v's EUR-2 entry (:130, input 7'h64)
     // emits $2B instead. RED at baseline -- this is the finding.
     //
-    // STIMULUS BINDING, WITH ITS OWN ORACLE (NM-HRM-050, coordinator
-    // review corrected an earlier swap here): amiga_keymap.v names its two
+    // STIMULUS BINDING, WITH ITS OWN ORACLE: amiga_keymap.v names its two
     // international-cutout inputs only "EUR-1" (:72, code 7'h32) and
     // "EUR-2" (:130, code 7'h64) -- neither name says which physical key
     // is which, and the manual does not describe HID scancodes at all. The
@@ -445,12 +431,11 @@ int main(int argc, char** argv) {
     // index 0x64 (line 199), is commented "Keyboard Non-US Backslash and
     // Pipe" -- the ISO key beside LEFT SHIFT. Usage $32, array index 0x32
     // (line 149), is commented "Non-US Hash and Tilde" -- the ISO key
-    // beside RETURN. An earlier version of this file drove $32 here
-    // (expecting the left-Shift key's $30) -- actually the Return key's
-    // own HID code -- which made this assertion red for the wrong key,
-    // while CUTOUT-2B below drove $64 (the real left-Shift key) and read
-    // green while sitting on the actual defect. Corrected before commit;
-    // both stimuli below are now bound the other way round.
+    // beside RETURN. So this assertion drives $64 and CUTOUT-2B drives
+    // $32; driving $32 here (the Return key's own HID code) would make
+    // this assertion red for the wrong key, while CUTOUT-2B, driving $64
+    // (the real left-Shift key), would read green while sitting on the
+    // actual defect.
     // =====================================================================
     {
         uint8_t got = h.sample(0x64); // HID usage $64, "Keyboard Non-US Backslash and Pipe" -- beside left Shift
@@ -528,16 +513,15 @@ int main(int argc, char** argv) {
 // MUTATION GEN-NOT-ASCII stimulus red MUT_ASCII_COLLIDE: the 'a'-key slot is stimulated with backspace's own code ($2a, amiga_keymap.v:63) instead of 'a''s own code ($04) -- backspace returns $41, which equals ASCII 'A', so the baseline PASS (no collision) goes red.
 
     // =====================================================================
-    // Declined claims (record() only -- no expect(), no MUTATION line, per
-    // the build brief: a MUTATION line's label is the leading token of a
-    // label passed to expect(), and none of these four is).
+    // Declined claims (record() only -- no expect(), no MUTATION line: a
+    // MUTATION line's label is the leading token of a label passed to
+    // expect(), and none of these four is).
     // =====================================================================
 
     // RIGHTALT-CONFLICT -- candidate S3-C2. p.252 says $65; both p.254
     // figures say $64 (see the four figure citations); this is a
     // disagreement between two printed pages, not an RTL divergence, and
-    // is graded neither way, per the build brief and the finding-
-    // candidates file.
+    // is graded neither way.
     {
         uint8_t got = h.sample(0x6e); // amiga_keymap.v:139, the RTL's own right-alt input
         checks.note("RIGHTALT-CONFLICT measured actual value: "

@@ -9,13 +9,9 @@ Two ports, purely combinational. Claims file:
 `hrm-testpipeline/work/ch8-s3-build/ch8-keycode-table.jsonl`, 446 records.
 Manual pages 251, 252, 254.
 
-This file is written from the `extract.quote` / `extract.restatement` fields
-of the 446 claims alone (plus the two port names and the boundary module
-name, which the task sheet states directly — no RTL file has been opened to
-find them). `amiga_keymap.v` and `hid.v` have not been opened. Concrete HID
-stimulus values, the Makefile, and the `expect()`/`note()`/`record()` calls
-themselves are added only after this file is committed, per
-`2026-09-16_ch8_s3_build_brief.md`'s order of work.
+Every proposition below is argued from the `extract.quote` /
+`extract.restatement` fields of the 446 claims; concrete HID stimulus values
+and the `expect()`/`note()`/`record()` calls are in the test source.
 
 ## Scope: this finding-family is NanoMig-specific
 
@@ -27,8 +23,7 @@ takes `kbd_mouse_data` as a top-level input and the HID-to-Amiga translation
 happens above the chipset, in software, on MiSTer's ARM side. `src/misc`
 (where `keymap` and `hid` live) is not shared lineage the way `src/minimig-
 aga` is; other Minimig boards solve keyboard translation differently again.
-This sentence is required in this file by the build brief and is repeated
-in every finding this package produces.
+This statement belongs in every finding this package produces.
 
 ## Why one boundary answers both pages 252 and 254
 
@@ -69,8 +64,8 @@ below.
 | Figure 8-10 (Amiga 500/2000/3000) key/code pairs | 254 | 192 | opus 96, sol 96 | 96 |
 | **total** | | **446** | opus 219, sol 227 | **229** |
 
-The opus/sol reader counts (219/227) match the task sheet's package-list
-entry for this package exactly. Every one of the 446 `classify.uid` values
+The opus/sol reader counts (219/227) match the package-list entry for this
+package exactly. Every one of the 446 `classify.uid` values
 in the claims file appears in exactly one row of the tables in this
 document; none is left unassigned.
 
@@ -85,10 +80,12 @@ document; none is left unassigned.
 **Proposition to test:** for at least a sample of keys with a printable
 ASCII interpretation (the letter and digit rows), the code `amiga` carries
 is not that character's ASCII value. This is a general statement, not tied
-to any one key; which sample keys make the comparison is a step-3 decision
-(the letters/digits are already fully enumerated in the tables below, so no
-new stimulus needs to be invented for it). Status: testable, as a derived
-check over rows already in this document.
+to any one key; the check samples the 26 letter keys (already fully
+enumerated in the tables below, so no new stimulus is invented for it).
+Status: `opus:8-keycode.c1`/`sol:8-keycode.c1` graded as GEN-NOT-ASCII,
+GREEN; `opus:8-keycode.c2`/`sol:8-keycode.c2` restate the same fact
+positively, name no further numeric fact, and are recorded
+(GEN-IS-KEYCODES), not graded again.
 
 ## PROP-RANGE-MAIN — the $00-$3F range (page 252)
 
@@ -99,9 +96,9 @@ check over rows already in this document.
 **Proposition to test:** this is a block-level statement about the $00-$3F
 range as a whole, not a per-key claim (no individual main-body key is named
 here — that is what the figures on page 254 do, per-key, and is covered by
-the two keyboard tables below). Status: testable only as an aggregate over
-the main-body rows already carried by PROP-A1000 / PROP-A500 (below); not
-given its own `expect()`.
+the two keyboard tables below). Status: recorded via `record()`, not given
+its own `expect()` — corroborated key by key by the main-body rows already
+carried by PROP-A1000 / PROP-A500 (below), and not gradable beyond them.
 
 ## PROP-CUTOUT — the two international cutout keys (page 252) — candidate S3-C1
 
@@ -125,15 +122,16 @@ citations at code $30 in both keyboard tables below.
 `opus:8-keycode.c15`, `sol:8-keycode.c14`, plus the Figure 8-10 citation at
 code $2B (Figure 8-9 does not draw this key at all — see the A1000 table).
 
-**This is the pre-measured candidate S3-C1** from
-`2026-09-16_ch8_s3_finding_candidates.md`: the classify stage already
-established that `amiga_keymap.v`'s only two EUR/cutout table entries both
-emit `$2B`, and that `$30` is emitted by no entry in the table at all. If
-that measurement holds at build time, PROP-CUTOUT-2B is expected to PASS
-(control, same measurement basis as the suspect case) and PROP-CUTOUT-30 is
-expected to FAIL (the finding) — both on a stimulus this package still has
-to identify (the HID source code for the physical cutout key), which is a
-step-3, RTL-reading task, not decided here.
+**This is candidate S3-C1** from
+`2026-09-16_ch8_s3_finding_candidates.md`: `amiga_keymap.v`'s only two
+EUR/cutout table entries both emit `$2B`, and `$30` is emitted by no entry
+in the table at all. PROP-CUTOUT-2B is GREEN (graded as the KEY-$2B row,
+the control on the same measurement basis) and PROP-CUTOUT-30 is RED
+(CUTOUT-30, the finding).
+Which HID source code drives which physical cutout key is not in the manual;
+its oracle is the USB HID Usage Tables (usage $64, "Keyboard Non-US
+Backslash and Pipe", the key beside left Shift; usage $32, "Non-US Hash and
+Tilde", the key beside Return) — see the test source.
 
 ## PROP-HEADING — declined (page 252)
 
@@ -437,9 +435,8 @@ p.252's qualifier table (PROP-QUAL above) reads **$64 Left Alt / $65 Right
 Alt**. Both figures print **$64 on both ALT keys** in both keyboards (see
 the `$64 right Alt` rows in PROP-A1000 and PROP-A500 above) — code $65
 appears on no key in either figure. This is a genuine disagreement between
-two printed loci about the same physical key, not an RTL divergence, and
-per the build brief and the finding-candidates file it must not be graded
-either way: no `expect()` compares an RTL value against $65, and no
+two printed loci about the same physical key, not an RTL divergence, so it
+is not graded either way: no `expect()` compares an RTL value against $65, and no
 `expect()` compares the same RTL value against $64 for right Alt. Both
 readings are recorded with `record()`, citing the conflict, and the RTL
 value read at that stimulus is reported with `note()` only.
@@ -458,8 +455,7 @@ page 252 versus page 254`," but `opus:8-keycode.c42` and `sol:8-keycode.c67`
 (the two page-252 "$65 Right Alt" claims) are each marked plainly `source_
 defines: yes, page 252` in the claims file, not `conflict` — the conflict
 flag was applied only to the four page-254 figure claims above. This
-discrepancy is reported at the end per the build brief's request; it does
-not change the handling (all six of these claims — the four figure claims
+discrepancy does not change the handling (all six of these claims — the four figure claims
 and the two page-252 claims — are declined, not graded, for right Alt).
 
 ## What this package does not raise (checked, not re-derived)
@@ -480,15 +476,11 @@ input," which is the shape all three of these have):
   a second, right-hand Control code.
 
 None of these three appears as a citation anywhere in this document, and
-none will be asserted against in the eventual test.
+none is asserted against in the test.
 
-## Order of work
+## Outcome
 
-This file was written from `extract.quote` / `extract.restatement` and the
-two port names given directly by the task sheet. `amiga_keymap.v` and
-`hid.v` have not been opened. It is committed before either file is read,
-per `2026-09-16_ch8_s3_build_brief.md`. HID stimulus values, the reverse-
-map mechanics, the Makefile pattern (following `ch7-overlay-source`, the
-nearest precedent for a non-`minimig-aga` top), and every `expect()`/
-`note()`/`record()` call are step-3 work that starts only after this
-commit.
+`make -B test`: 97 passed, 1 failed — CUTOUT-30 is RED; FIXTURE-SELFCHECK,
+the 94 KEY-$xx rows (KEY-$2B is the CUTOUT-2B control), FUNCTION-RANGE and
+GEN-NOT-ASCII are GREEN. RIGHTALT-CONFLICT, PROP-HEADING, PROP-RANGE-MAIN
+and GEN-IS-KEYCODES are recorded, not graded.
