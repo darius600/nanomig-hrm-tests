@@ -222,7 +222,8 @@ code treats PA1/PA0-as-outputs as the only expected mask, the same two positions
 NanoMig implements.
 
 **The four split four ways and none cancels the finding**
-([`NM-HRM-040`](../findings/NM-HRM-040.md)). Over a line held low, the case
-`hrm/ch8-ciaa-port-direction` grades and no page decides, they split again:
-Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the
-line.
+([`NM-HRM-040`](../findings/NM-HRM-040.md)). `hrm/ch8-ciaa-port-direction`
+releases all six external lines and is red at PA2–PA7, where the written 0
+reads back 1 and p.341 predicts 0. Over a line held low, a case no page decides
+and the package does not present, they split again: Denise and vAmiga return
+the written 1 on PA2–PA5, WinUAE and Copperline the line.

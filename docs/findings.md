@@ -274,9 +274,12 @@ pair are identical upstream but for a trailing comment. Whoever they are
 reported to, it is not only NanoMig.
 The register is a record of what has been looked at, not of what is there.
 
-**Chapter 7 also strengthened two existing findings without adding a number.**
-NM-HRM-008 gains two printed sources it did not have, and NM-HRM-011 gains
-chapter 7's own page and a contradiction inside it. Each says so on its own page.
+**Chapter 7 also strengthens two existing findings without adding a number.**
+NM-HRM-008 is graded against p. 214 as well as p. 273: two of the three places
+the manual states its rule, p. 214's sentence and Table 7-3, are chapter 7's,
+and `hrm/ch7-collision-playfield-mode` measures it in both playfield modes.
+NM-HRM-011 has chapter 7's own page and a contradiction inside it. Each says so
+on its own page.
 A chapter that corroborates an existing finding from a different page has done
 more for it than a new number would.
 

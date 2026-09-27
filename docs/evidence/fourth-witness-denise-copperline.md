@@ -141,8 +141,8 @@ spr.shsh10 = (value & 0x10) >> 3;
 pub(super) fn sprite_hsub_70ns(ctl: u16) -> bool { ctl & 0x0010 != 0 }
 ```
 
-And **Denise scopes its use exactly as page 303's Warning requires** — the
-sub-pixel phase is compared only in SuperHires:
+And **Denise scopes its use as page 303's Warning states** — the sub-pixel
+phase is compared only in SuperHires:
 
 ```cpp
 // video/denise.cpp:574
@@ -152,6 +152,14 @@ if (spr0.armed && (hPos == spr0.x) && (!_shres || ((p & 2) == spr0.shsh10)))
 WinUAE and vAmiga implement it too, and on ECS all four confine its effect on
 position to SuperHires: vAmiga and WinUAE mask it out of the start position
 outside SuperHires, and Copperline adds it only while SHRES is set
+([`NM-HRM-019`](../findings/NM-HRM-019.md)).
+
+The finding's one red, `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`, measures the
+bit in SuperHires: sampled every 35 ns, SH0 alone moves the sprite's first lit
+sample 4 samples later and SHSH1 alone 0, where p.303 predicts 2. Outside the
+emulators, the 8373R4 dissection latches the bit for sprites 0 to 3 and applies
+it in the sprite's data path rather than in the start compare, and Commodore's
+1988 ECS Denise specification prints SPRxCTL bits 06-04 as not used
 ([`NM-HRM-019`](../findings/NM-HRM-019.md)).
 
 ### NM-HRM-023 — the ATTACH bit is honoured in the even sprite
@@ -368,9 +376,13 @@ Copperline has a test named for exactly this:
 `collision_pixel_single_playfield_odd_match_requires_even_match`.
 
 **All four make playfield 1's collision depend on playfield 2 when a single
-playfield is displayed.** The RTL comment crediting an undocumented Denise
-function is corroborated by every other implementation. Appendix A's table of
-independent collision bits is the thing that is incomplete.
+playfield is displayed**, and outside the emulators the 8373R4 dissection gates
+the playfield-1 match on the even planes while BPLCON0's DPF bit is clear. The
+RTL comment crediting an undocumented Denise function is corroborated by every
+other implementation. The finding is filed against the printed page
+([`NM-HRM-008`](../findings/NM-HRM-008.md)): pp.214 and 273 condition the
+collision bits on no mode, and whether they lack a single-playfield condition is
+for an Amiga specialist to say.
 
 ### NM-HRM-009 — CLXDAT bit 15: unanimous
 

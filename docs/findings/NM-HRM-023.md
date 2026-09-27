@@ -125,8 +125,8 @@ sprite's bit attaches nothing and the term encodes no behaviour of that Denise.
 The original Denise is not dissected. Before removing the term, find out
 whether it was written for that one: the likeliest answer is a title that sets
 the wrong control word and relies on the original Denise accepting it, which
-would make this another [NM-HRM-008](NM-HRM-008.md)-shaped case where the RTL
-knows something the manual does not.
+would make this a case like [NM-HRM-008](NM-HRM-008.md), where NanoMig does
+what the 8373R4 silicon does and the printed pages say otherwise.
 
 ---
 

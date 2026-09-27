@@ -171,7 +171,10 @@ was the game Rotor"*.
 
 **Both emulators implement the same gate.** vAmiga `Denise.cpp:1554-1561`:
 `else { if (!(zBuffer[pos] & Z_DPF)) continue; }` — PF2 failing to match skips
-the PF1 test entirely unless the pixel is dual-playfield. WinUAE `drawing.cpp:
+the PF1 test unless the pixel's code carries `Z_DPF`, `0x1`, which no
+single-playfield pixel does; in dual-playfield mode it also skips the PF1 test
+at pixels coded `Z_DPF1` and `Z_DPF12`, where PF1 is opaque and shown
+(`Denise.h:494-499`). WinUAE `drawing.cpp:
 4510-4536`: in the non-`bpldualpf` branch the PF1 test is *nested inside* the PF2
 test.
 
@@ -182,6 +185,12 @@ bitplane split, the per-pair sprite enable, the bit assignment.
 behind `config.clxSprPlf`, which defaults to **false**
 (`Core/Infrastructure/Defaults.cpp:174`). WinUAE's `collision_level` defaults to
 3, on.
+
+**The finding is filed against the printed page**
+([`NM-HRM-008`](../findings/NM-HRM-008.md)). NanoMig, all four independent
+implementations and the 8373R4 silicon gate playfield 1 on playfield 2 while
+BPLCON0's DPF bit is clear; pp.214 and 273 condition the collision bits on no
+mode.
 
 ### B2 — BLTxPTH carries five high bits in both chipsets
 
@@ -285,7 +294,7 @@ three implement DOFF, each gated on ECS Agnus: WinUAE, Denise and Copperline
 |---|---|
 | Manual | Appendix C p.303: `04 SHSH1 Start horizontal (SHR mode) 70ns increment` |
 | NanoMig | reads bit 4 nowhere: a write to SPRxCTL keeps bits 7 and 0 and no other (`denise_sprites_shifter.v:133-138`) |
-| Test | `ch3-sprite-registers` / `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — red, but it sets the bit at the lores sprite rate, outside SuperHires, where p.303 gives it no position; the finding rests on the source reading ([`NM-HRM-019`](../findings/NM-HRM-019.md)) |
+| Test | `ch3-sprite-registers` / `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — red in SuperHires: sampled every 35 ns, SH0 alone moves the sprite's first lit sample 4 samples later and SHSH1 alone 0, where p.303 predicts 2 ([`NM-HRM-019`](../findings/NM-HRM-019.md)) |
 
 **vAmiga: kept in SuperHires only.** `Denise.cpp:171-173` packs the bit into the
 lowest bit of the sprite's start,
@@ -419,20 +428,21 @@ grouping is the one the finding pages support, which moves three sections.
 | **C** — the emulators disagree with each other | C1 | 1 | 1 |
 | withdrawn | B3 | 1 | 1 |
 
-Two entries in A carry a limit. A1's sprite half, NM-HRM-016, has WinUAE alone
+One entry in A carries a limit. A1's sprite half, NM-HRM-016, has WinUAE alone
 reading the upper sixteen registers as p.302 describes; vAmiga reads the lower
-sixteen. C2's one red sets the bit outside SuperHires, where both emulators
-leave the sprite where NanoMig does, so it does not measure the section's
-question; NM-HRM-019 rests on the source reading.
+sixteen. C2's one red measures the section's question in SuperHires, where both
+emulators move the sprite for the bit and NanoMig does not
+([`NM-HRM-019`](../findings/NM-HRM-019.md)).
 
 Four of the ten reds are places where two independently written implementations
-do what NanoMig does, and two of those four, B5 and B6, are filed against the
-printed page. That does not make the manual wrong — **this project does not get
-to decide that**, and a red stays a red until someone who can, does. What it
+do what NanoMig does, and three of those four, B1, B5 and B6, are filed against
+the printed page. That does not make the manual wrong — **this project does not
+get to decide that**, and a red stays a red until someone who can, does. What it
 does mean is that these four are not usefully described as "the RTL departs from
 the specification"; the honest description is that the printed sentence and
-three implementations disagree, and only one of the four can be checked against
-silicon.
+three implementations disagree. One of the four, B1, has a reading of the
+silicon, the 8373R4 dissection, which gates playfield 1 on playfield 2 as
+NanoMig does ([`NM-HRM-008`](../findings/NM-HRM-008.md)).
 
 Four are the other shape, and those are where an RTL change would be worth
 discussing: **super-hires colour reinterpretation**, absent from
