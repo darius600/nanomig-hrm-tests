@@ -605,9 +605,9 @@ int main(int argc, char** argv) {
             "opus:B-dskbytr.addr): with "
             "DISKWRITE (bit 13, p.278-defined mirror of DSKLEN's WRITE bit) set via an "
             "independent DSKLEN write, that bit reads 1 only when read at $01A -- 0 at $008, "
-            "$020, $022, $024, $026 and $07E -- narrowed from the whole idle word (0x9000) since "
-            "p.278 gives DSKBYTR no reset/idle value and bits 15/12 are hardwired constants, not "
-            "documented ones");
+            "$020, $022, $024, $026 and $07E -- graded on bit 13 rather than the whole idle word "
+            "(0x9000), since p.278 gives DSKBYTR no reset/idle value and bits 15/12 are hardwired "
+            "constants, not documented ones");
     }
 
     // ========================================================================
@@ -645,7 +645,7 @@ int main(int argc, char** argv) {
             "opus:8-appB-dskbytr.c3, sol:8-appb-dskbytr.c3): writing 0x4000 at $01A changes "
             "nothing observable in DSKBYTR's own readback (before==after) -- unlike the "
             "identical payload aimed at $024 (see L1/L3), which does move DISKWRITE (bit 13) -- "
-            "proving $01A has no write decode; narrowed to a before/after equality rather than a "
+            "proving $01A has no write decode; graded as a before/after equality rather than a "
             "fixed idle word (0x9000), since p.278 gives DSKBYTR no required reset/idle value");
     }
 
@@ -681,7 +681,7 @@ int main(int argc, char** argv) {
             "B3-DSKBYTR-STATUS-HALF (p.241 sol:8-reglist.c20; p.278 sol:8-appa-dskbytr.c5; "
             "p.289 sol:8-appb-dskbytr.c6): DSKBYTR's DISKWRITE status bit (bit 13, "
             "p.278-defined) moves with module state -- this package's control case, on the same "
-            "data_out@$01A basis as B4/B5, narrowed to bit 13 alone since p.278 gives DSKBYTR no "
+            "data_out@$01A basis as B4/B5, graded on bit 13 alone since p.278 gives DSKBYTR no "
             "reset/idle word for its other bits");
     }
 
@@ -821,8 +821,8 @@ int main(int argc, char** argv) {
                 "B5-DSKBYTR-COMPOUND-BYTE-AND-STATUS (p.241 opus:8-dsk.c38; p.278 "
                 "opus:8-appA-dskbytr.c4, sol:8-appa-dskbytr.c6): the printed function cell claims "
                 "BOTH a real status portion AND a real disk-data-byte portion -- the conjunction "
-                "fails because, per B4's repaired and now-grounded measurement, the byte portion "
-                "does not reflect a known bound incoming byte");
+                "fails because, per B4's measurement against a known bound incoming byte, the "
+                "byte portion does not reflect that byte");
         }
     }
 
