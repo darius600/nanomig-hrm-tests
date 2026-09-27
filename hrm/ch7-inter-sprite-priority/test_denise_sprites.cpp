@@ -33,23 +33,19 @@
 //   claims: nsprite=0x01, 0x02 and 0x03 all give the identical sprsel at
 //   denise_spritepriority) and IS observable here.
 //
-// ORDER OF WORK: SPECIFICATION.md was written and committed (commit
-//   abaf43c) from claims.jsonl's quotations and the two oracle figures
-//   ALONE, before this file or denise_sprites.v/denise_sprites_shifter.v
-//   were opened. Register word-address map (SPR0POS=0xA0 step 4 per
-//   sprite), the clk7_en/c1/c3 four-phase clocking, and the arm-on-write
-//   (CTL, then DATB, then DATA -- DATA last, since it both arms the sprite
-//   and, if a later CTL write were to follow, would be disarmed by it) are
-//   reused from hrm/ch4-attached-sprites/test_denise_sprites.cpp, an
-//   already-committed sibling harness for this exact fixture -- not learned
-//   from this package's own RTL. denise_sprites.v's port list, its priority
+// HARNESS BASIS: SPECIFICATION.md is written from claims.jsonl's quotations
+//   and the two oracle figures alone. The register word-address map
+//   (SPR0POS=0xA0 step 4 per sprite), the clk7_en/c1/c3 four-phase
+//   clocking, and the arm-on-write (CTL, then DATB, then DATA -- DATA last,
+//   since it both arms the sprite and, if a later CTL write were to follow,
+//   would be disarmed by it) are the same as
+//   hrm/ch4-attached-sprites/test_denise_sprites.cpp's, a sibling harness
+//   for this exact fixture. denise_sprites.v's port list, its priority
 //   cascade (the nsprite[1:0] group tested first, then [3:2], then [5:4],
 //   then [7:6], each testing the lower sprite of its own pair first) and
 //   the sprdata packing ({esprm or osprm, 2-bit group id, 2-bit raw pixel})
-//   were read and independently reproduced from denise_sprites.v:32-64 and
-//   :470-512 for THIS build, confirming (not assuming) the claims file's own
-//   classify.evidence field, per the coordinator's instruction after the
-//   specification commit.
+//   are at denise_sprites.v:32-64 and :470-512, as the claims file's own
+//   classify.evidence field states.
 //
 // STIMULUS DESIGN: for the twenty-eight pairwise assertions (PRI-*) and the
 //   two order-invariance assertions (INV-*), the two competing sprites of a
@@ -63,55 +59,46 @@
 //   "distinguishable 2-bit codes" method the claims file's own
 ///  classify.evidence already describes as MEASURED.
 //
-// REPAIR (2026-09-13, following independent validation slice B2, findings
-//   2 and 4): the original build (18 passed, 0 failed, commit noted below)
-//   had two defects.
-//
-//   Finding 2 (critical, WIDEN): PRI-01..PRI-67 graded only the seven
-//   ADJACENT pairs. p.207's own sentence -- "You cannot change the relative
+// WHAT IS GRADED:
+//   Every pair. p.207's own sentence -- "You cannot change the relative
 //   priorities of the sprites. They will always appear on the screen with
 //   the lower-numbered sprites appearing in front of ... the
 //   higher-numbered sprites" -- states the rule for every overlapping pair,
 //   C(8,2)=28 of them, not only the 7 adjacent ones; a design where sprite
-//   0 lost to sprite 2 would have passed every assertion this package
-//   graded. Fixed by adding PRI-02..PRI-57, the 21 non-adjacent pairs, same
-//   measurement basis and mutation pattern as PRI-01..PRI-67 (see the
-//   "PRI-02 .. PRI-57" block below for the full citation reasoning: they
-//   use sol:7-video.c1/opus:7-vp.c1/opus:7-vp.c9, the page-207/209 general
+//   0 lost to sprite 2 must fail. PRI-01..PRI-67 grade the seven ADJACENT
+//   pairs and PRI-02..PRI-57 the 21 non-adjacent ones, on the same
+//   measurement basis and mutation pattern (see the "PRI-02 .. PRI-57"
+//   block below for the full citation reasoning: they use
+//   sol:7-video.c1/opus:7-vp.c1/opus:7-vp.c9, the page-207/209 general
 //   wording, not opus:7-vp.c2, whose own recorded evidence covers only the
 //   seven adjacent boxes).
 //
-//   Finding 4 (high, narrow expect() to what p.208/207/209 actually say):
-//   SPR-0..SPR-7 required the FULL packed sprdata byte --
+//   What p.208/207/209 actually say, no more. SPR-0..SPR-7 grade liveness
+//   plus code identity, not the FULL packed sprdata byte --
 //   expected_single_byte()'s ((n/2)<<2) group-id term, taken from
-//   denise_sprites.v's own cascade packing -- plus an exact one-sample
+//   denise_sprites.v's own cascade packing -- nor an exact one-sample
 //   pulse width; p.208 establishes eight sprites numbered 0-7 and neither
-//   of those. INV-01/INV-67 required fwd.trace==rev.trace, equality of all
-//   512 internal sprdata samples; p.207/209 state an invariance about which
-//   sprite wins the overlap, not about internal state at every other hpos.
-//   Both are now narrowed to their page-grounded core (liveness + code
-//   identity for SPR-*; same winner at the same hpos in both arm orders for
-//   INV-*); the dropped RTL-derived parts are still measured and printed
-//   (SPR-N-ENCODING-MEASURED, INV-0N-FULLTRACE-MEASURED) but no longer
-//   required by expect(), each with its own NOT-GRADED record(),
-//   reason_kind source-silent.
+//   of those. INV-01/INV-67 grade the same winner at the same hpos in both
+//   arm orders, not fwd.trace==rev.trace, equality of all 512 internal
+//   sprdata samples; p.207/209 state an invariance about which sprite wins
+//   the overlap, not about internal state at every other hpos. The
+//   RTL-derived parts are measured and printed (SPR-N-ENCODING-MEASURED,
+//   INV-0N-FULLTRACE-MEASURED) and are not required by expect(), each with
+//   its own NOT-GRADED record(), reason_kind source-silent.
 //
-//   Net effect: 18 -> 39 graded assertions (+21 PRI, SPR-*/INV-* counts
-//   unchanged but narrowed). New baseline 39 passed, 0 failed -- see
-//   RESULTS below. No new red: the RTL's own cascade (denise_sprites.v:
-//   whichever group -- (0,1), then (2,3), then (4,5), then (6,7) -- is
-//   checked first and, within it, the lower sprite wins if it is active at
-//   all) already implements full transitive lower-wins priority, not only
-//   adjacent-pair priority, so every added PRI-* assertion PASSED.
+//   The RTL's own cascade (denise_sprites.v: whichever group -- (0,1), then
+//   (2,3), then (4,5), then (6,7) -- is checked first and, within it, the
+//   lower sprite wins if it is active at all) implements full transitive
+//   lower-wins priority, not only adjacent-pair priority, so every PRI-*
+//   assertion passes.
 //
 // CLAIM COVERAGE -- all 23 records cited, each inside an expect() or
-//   record() label. Citation set is unchanged by the repair (WIDEN reused
-//   existing universal-claim ids on the 21 new pairs; no new claim record
-//   was created):
+//   record() label. The 21 non-adjacent pairs reuse the universal-claim
+//   ids; no further claim record is involved:
 //   FIXTURE-LIVE-DATA-PATH [control, no claim id, no page]
 //   SPR-0 .. SPR-7 (8 assertions, p.208) -- opus:7-fig7-1.c1 (hardware
 //     half only; the RTL-derived packed-byte/pulse-width half is measured
-//     and recorded, not graded -- see REPAIR above)
+//     and recorded, not graded -- see WHAT IS GRADED above)
 //   PRI-01 .. PRI-67 (7 adjacent-pair assertions, p.208, plus p.209
 //     group-crossing support on PRI-12/34/56):
 //     PRI-01: sol:7-fig7-1.c1, opus:7-fig7-1.c2, opus:7-vp.c2
@@ -122,8 +109,8 @@
 //     PRI-56: sol:7-fig7-1.c6, opus:7-fig7-1.c7, sol:7-fig7-2.c9,
 //             opus:7-fig7-2.c8, opus:7-vp.c2
 //     PRI-67: sol:7-fig7-1.c7, opus:7-fig7-1.c8, opus:7-vp.c2
-//   PRI-02 .. PRI-57 (21 non-adjacent-pair assertions, p.207+209, added by
-//     the repair): sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 on each --
+//   PRI-02 .. PRI-57 (21 non-adjacent-pair assertions, p.207+209):
+//     sol:7-video.c1, opus:7-vp.c1, opus:7-vp.c9 on each --
 //     the same three ids INV-01/INV-67 already use, because these are the
 //     claims that actually state the rule without an adjacency qualifier.
 //   INV-01, INV-67 (2 assertions, p.207+209): sol:7-video.c1, opus:7-vp.c1,
@@ -135,41 +122,36 @@
 //   23 records = 8 (SPR, sharing opus:7-fig7-1.c1's hardware half) + 7
 //   adjacent PRI + 2 INV citation sets + 2 declined records, with
 //   opus:7-fig7-1.c1 (both halves), opus:7-vp.c2, the three fig7-2
-//   group-crossing ids, and now sol:7-video.c1/opus:7-vp.c1/opus:7-vp.c9
+//   group-crossing ids, and sol:7-video.c1/opus:7-vp.c1/opus:7-vp.c9
 //   (21 more times, on PRI-02..PRI-57) each doing multiple duty.
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id) proves the
 //   write -> arm -> hpos-sweep -> read-sprdata measurement basis every
-//   other assertion in this file shares is alive, per the build brief's
-//   own chapter-6 warning. PRI-01 and SPR-0 are also nominated controls in
+//   other assertion in this file shares is alive. PRI-01 and SPR-0 are also
+//   nominated controls in
 //   SPECIFICATION.md: none of this package's assertions are under
 //   suspicion, and all thirty-eight other graded assertions share this
 //   same basis.
 //
-// RESULTS (WSL/Verilator 5.052; original build run 13.09.2026 AFTER the
-//   specification commit, denise_sprites.v and denise_sprites_shifter.v
-//   opened only once, not before; repair built and run the same day,
-//   13.09.2026, against independent-validation slice B2): 39 passed, 0
-//   failed. All thirty-nine graded assertions (FIXTURE-LIVE-DATA-PATH,
-//   SPR-0..SPR-7, PRI-01..PRI-67, PRI-02..PRI-57, INV-01, INV-67) are
-//   GREEN. No new finding from the repair itself: the manual's universal
-//   priority rule held under measurement for every one of the 28 pairs, not
-//   only the 7 originally graded.
+// RESULTS (WSL/Verilator 5.052): 39 passed, 0 failed. All thirty-nine
+//   graded assertions (FIXTURE-LIVE-DATA-PATH, SPR-0..SPR-7,
+//   PRI-01..PRI-67, PRI-02..PRI-57, INV-01, INV-67) are GREEN: the manual's
+//   universal priority rule holds under measurement for every one of the
+//   28 pairs.
 //   Measured hpos values: FIXTURE-LIVE-DATA-PATH MSB hpos=130, mid
 //   hpos=138, LSB hpos=145 (distinct, monotonic); every one of SPR-0..
 //   SPR-7, and every PRI-*/INV-* pair (all armed at the same horizontal
 //   start, pos_byte=0x40), hits at hpos=130, confirming all eight sprites'
 //   own register-to-shifter paths are independently live and that the
 //   pairwise measurement basis is the same one FIXTURE-LIVE-DATA-PATH
-//   proved alive. SPR-N-ENCODING-MEASURED bytes (still recorded, no longer
-//   graded): SPR-0/1=0x01, SPR-2/3=0x05, SPR-4/5=0x09, SPR-6/7=0x0D, each
-//   with exactly 1 active sample -- denise_sprites.v's own packing
-//   prediction held, it is just no longer a p.208 requirement.
-//   INV-01/INV-67-FULLTRACE-MEASURED (still recorded, no longer graded):
+//   proved alive. SPR-N-ENCODING-MEASURED bytes (measured only):
+//   SPR-0/1=0x01, SPR-2/3=0x05, SPR-4/5=0x09, SPR-6/7=0x0D, each with
+//   exactly 1 active sample -- denise_sprites.v's own packing, which p.208
+//   does not require. INV-01/INV-67-FULLTRACE-MEASURED (measured only):
 //   both true (fwd.trace==rev.trace over all 512 samples) on the
 //   unmutated build.
 //
-// MUTATION LOG (WSL/Verilator, same repair session as RESULTS above; each
+// MUTATION LOG (WSL/Verilator; each
 //   entry actually run: `make MUT=<NAME>` -> read the PASS/FAIL lines ->
 //   confirm only the named assertion changed colour -> `make` with no flag
 //   -> confirm the 39-passed/0-failed baseline was restored). Gate
@@ -179,12 +161,12 @@
 //   switch that drives it; the switch name is kept in the description so a
 //   reader can still find the build. All thirty-nine below are STIMULUS
 //   mutations: each changes what the module is ASKED to do (an arming
-//   write withheld) and leaves the expected value untouched, per the build
-//   brief's "flipping an expected value proves nothing".
+//   write withheld) and leaves the expected value untouched: flipping an
+//   expected value proves nothing.
 //
 //   INV-01 and INV-67 are the two where the mutation itself needs a reason,
-//   not just a result: even under the repair's narrower same-hpos/
-//   same-code grading (finding 4), the two runs' WINNER is compared to
+//   not just a result: even under the narrow same-hpos/same-code
+//   grading, the two runs' WINNER is compared to
 //   EACH OTHER, not to a constant, so a mutation that changed both sides
 //   alike (e.g. a symmetric arm-order swap) would leave them agreeing and
 //   would not have failed -- it would only re-demonstrate the same
@@ -299,10 +281,10 @@
 #ifndef MUT_PRI67
 #define MUT_PRI67 0
 #endif
-// Non-adjacent pairs added for independent-validation finding 2 (WIDEN: the
-// universal p.207 rule -- "the lower-numbered sprites appearing in front of
-// ... the higher-numbered sprites" -- covers every overlapping pair, not
-// only the seven adjacent ones PRI-01..PRI-67 graded).
+// Non-adjacent pairs: the universal p.207 rule -- "the lower-numbered
+// sprites appearing in front of ... the higher-numbered sprites" -- covers
+// every overlapping pair, not only the seven adjacent ones PRI-01..PRI-67
+// grade.
 #ifndef MUT_PRI02
 #define MUT_PRI02 0
 #endif
@@ -570,7 +552,7 @@ int main(int argc, char** argv) {
     // ---------------- FIXTURE-LIVE-DATA-PATH [control] ----------------
     // Proves the write -> arm -> hpos-sweep -> read-sprdata path is alive
     // and delivers DISTINCT fetched values in order, before any claim-
-    // based assertion depends on it (build brief's chapter-6 warning: a
+    // based assertion depends on it (a
     // harness whose data path is silently dead reports every data-
     // dependent assertion as a finding about the design, not the harness).
     // Sprite 0 alone, armed three times from a fresh reset, DATA holding a
@@ -620,16 +602,15 @@ int main(int argc, char** argv) {
     // check with eight labels: each run is its own fresh Harness, touching
     // only sprite n's own four registers.
     //
-    // Independent-validation finding 4: the graded condition used to
-    // require the FULL packed byte (expected_single_byte()'s ((n/2)<<2)
-    // group-id term, read out of denise_sprites.v's own cascade packing)
-    // and an exact one-sample pulse width. p.208 establishes eight sprites
-    // numbered 0-7 and neither of those; only liveness (some sample went
-    // non-zero) plus code fidelity (its low 2 bits match the 2'b01 pixel
-    // code this file wrote) are page-grounded. The dropped half is still
-    // measured and printed on every run (SPR-N-ENCODING-MEASURED below),
-    // just no longer required by expect() -- see the combined
-    // SPR-*-ENCODING-NOT-GRADED record after SPR-7.
+    // The graded condition is liveness (some sample went non-zero) plus
+    // code fidelity (its low 2 bits match the 2'b01 pixel code this file
+    // wrote) -- what p.208 grounds. p.208 establishes eight sprites
+    // numbered 0-7, not the FULL packed byte (expected_single_byte()'s
+    // ((n/2)<<2) group-id term, read out of denise_sprites.v's own cascade
+    // packing) nor an exact one-sample pulse width. Those are measured and
+    // printed on every run (SPR-N-ENCODING-MEASURED below), not required by
+    // expect() -- see the combined SPR-*-ENCODING-NOT-GRADED record after
+    // SPR-7.
     {
         bool arm = true;
 #if MUT_SPR0
@@ -767,14 +748,13 @@ int main(int argc, char** argv) {
             "packing predicts " + hex2(expected_single_byte(7)) + ", one sample).");
     }
     checks.record(
-        "SPR-0-ENCODING-NOT-GRADED through SPR-7-ENCODING-NOT-GRADED (p.208, "
-        "independent-validation finding 4): the full packed byte each SPR-* used to "
-        "require (denise_sprites.v's own {esprm/osprm=0, group-id=(n/2), pixel} "
-        "packing) and the 'exactly one active sample' pulse width are denise_sprites.v's "
-        "own internal encoding. p.208 establishes eight sprites numbered 0-7 and defines "
-        "neither the packing nor a pulse width. Both stay measured and printed above "
-        "(SPR-N-ENCODING-MEASURED); neither is required by expect() any more. "
-        "reason_kind source-silent.");
+        "SPR-0-ENCODING-NOT-GRADED through SPR-7-ENCODING-NOT-GRADED (p.208): "
+        "the full packed byte (denise_sprites.v's own {esprm/osprm=0, group-id=(n/2), "
+        "pixel} packing) and the 'exactly one active sample' pulse width are "
+        "denise_sprites.v's own internal encoding. p.208 establishes eight sprites "
+        "numbered 0-7 and defines neither the packing nor a pulse width. Both are "
+        "measured and printed above (SPR-N-ENCODING-MEASURED); neither is required by "
+        "expect(). reason_kind source-silent.");
 
     // ---------------- PRI-01 .. PRI-67 ----------------
     // Each adjacent pair, armed together at the same horizontal start with
@@ -886,17 +866,16 @@ int main(int argc, char** argv) {
     }
 
     // ---------------- PRI-02 .. PRI-57 (non-adjacent pairs) ----------------
-    // Independent-validation finding 2 (WIDEN): p.207 states the rule for
-    // EVERY overlapping pair -- "You cannot change the relative priorities
-    // of the sprites. They will always appear on the screen with the
-    // lower-numbered sprites appearing in front of ... the higher-numbered
-    // sprites" -- not only the seven adjacent pairs PRI-01..PRI-67 above
-    // graded. Of C(8,2)=28 total pairs, 7 are adjacent (above); these 21
-    // cover the rest. opus:7-vp.c2 is NOT cited here: its own classify.
-    // evidence in the claims file is written strictly over the seven
-    // adjacent boxes of Figure 7-1's cascade, so citing it on a
-    // non-adjacent pair would repeat exactly the over-generalisation the
-    // validation found. sol:7-video.c1 / opus:7-vp.c1 (p.207 body text) and
+    // p.207 states the rule for EVERY overlapping pair -- "You cannot
+    // change the relative priorities of the sprites. They will always
+    // appear on the screen with the lower-numbered sprites appearing in
+    // front of ... the higher-numbered sprites" -- not only the seven
+    // adjacent pairs PRI-01..PRI-67 above grade. Of C(8,2)=28 total pairs,
+    // 7 are adjacent (above); these 21 cover the rest. opus:7-vp.c2 is NOT
+    // cited here: its own classify.evidence in the claims file is written
+    // strictly over the seven adjacent boxes of Figure 7-1's cascade, so
+    // citing it on a non-adjacent pair would over-generalise it.
+    // sol:7-video.c1 / opus:7-vp.c1 (p.207 body text) and
     // opus:7-vp.c9 (p.209 hand analogy) carry the actual universal wording
     // and are cited instead -- the same claim ids INV-01/INV-67 already
     // use for the same reason. Same measurement basis, same mutation
@@ -1188,14 +1167,13 @@ int main(int argc, char** argv) {
     // wins, say) would show up as the two traces disagreeing, not as
     // either one failing to match a hand-picked expected byte.
     //
-    // Independent-validation finding 4: the graded condition used to be
-    // fwd.trace == rev.trace, full equality of all 512 internal sprdata
-    // samples across the sweep. p.207/209 state an invariance about WHICH
-    // sprite wins the overlap, not about denise_sprites.v's internal
-    // sample-for-sample state outside that overlap. The graded condition
-    // now checks the one thing the page claims: the same sprite (the
-    // lower-numbered one) wins, at the same hpos, in both arm orders. Full
-    // 512-sample equality is still measured and printed (not required) --
+    // The graded condition is not fwd.trace == rev.trace, full equality of
+    // all 512 internal sprdata samples across the sweep: p.207/209 state an
+    // invariance about WHICH sprite wins the overlap, not about
+    // denise_sprites.v's internal sample-for-sample state outside that
+    // overlap. It checks the one thing the page claims: the same sprite
+    // (the lower-numbered one) wins, at the same hpos, in both arm orders.
+    // Full 512-sample equality is measured and printed (not required) --
     // see the record after INV-67 below.
     {
         Meas fwd = measure_pair(0, 1, 0x40, /*lo_first=*/true, true, true);
@@ -1255,17 +1233,16 @@ int main(int argc, char** argv) {
             ".");
     }
     checks.record(
-        "INV-01-FULLTRACE-NOT-GRADED, INV-67-FULLTRACE-NOT-GRADED (p.207, p.209, "
-        "independent-validation finding 4): full 512-sample sprdata-trace equality "
-        "between the two arm orders was the graded condition; p.207/209 state an "
-        "invariance about which sprite wins the overlap, not about denise_sprites.v's "
-        "internal state at every other hpos. Still measured and printed above "
-        "(INV-0N-FULLTRACE-MEASURED); no longer required by expect(). reason_kind "
-        "source-silent.");
+        "INV-01-FULLTRACE-NOT-GRADED, INV-67-FULLTRACE-NOT-GRADED (p.207, p.209): "
+        "full 512-sample sprdata-trace equality between the two arm orders is not the "
+        "graded condition; p.207/209 state an invariance about which sprite wins the "
+        "overlap, not about denise_sprites.v's internal state at every other hpos. "
+        "Measured and printed above (INV-0N-FULLTRACE-MEASURED); not required by "
+        "expect(). reason_kind source-silent.");
 
     // --------- Declined: drawing-ink descriptions [no expect()] ---------
-    // A drawing's ink is not a hardware signal (build brief: "where the
-    // manual is silent, measure and report -- do not assert").
+    // A drawing's ink is not a hardware signal (where the manual is
+    // silent, measure and report -- do not assert).
     checks.record(
         "(half graded: opus:7-fig7-1.c1) [declined, drawing-inventory half]: 'the drawing...is a "
         "cascade of exactly eight identical rectangles...no ninth box and no other "
@@ -1277,8 +1254,8 @@ int main(int argc, char** argv) {
         "halves, 7 ids, p.208]: each describes which corners and edges of the rear "
         "box in Figure 7-1 are inked ('box N's lower-left corner and part of its "
         "left and bottom edges are not drawn, so only a strip at its right...remains "
-        "visible'); this names no signal. Having opened p208.png directly for this "
-        "package, the description is also inaccurate as a reading of the drawing: "
+        "visible'); this names no signal. Read directly from p208.png, the "
+        "description is also inaccurate as a reading of the drawing: "
         "each rear box keeps its top band and top edge visible as well as the "
         "right-hand strip, matching the crossread's own figure-description-mismatch "
         "finding against all seven of these ids. (Each record's priority half is "

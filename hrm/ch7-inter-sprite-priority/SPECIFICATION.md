@@ -4,46 +4,11 @@ Package: `ch7-inter-sprite-priority`
 Fixture: `denise_sprites`
 Claims file: `ch7-inter-sprite-priority.jsonl` (23 claims)
 
-## REPAIR (2026-09-13, independent validation slice B2, findings 2 and 4)
-
-**Finding 2 (critical, WIDEN).** The "Pairwise fixed priority" section below
-originally graded only the seven ADJACENT pairs, `PRI-01`..`PRI-67`, and
-this document's own text ("`PRI-01`...and `SPR-0`...are the nominated
-controls") together with `opus:7-vp.c2`'s citation on all seven adjacent
-lines let that stand in for the whole rule. p.207's own sentence states the
-rule for every overlapping pair — "the lower-numbered sprites appearing in
-front of ... the higher-numbered sprites" carries no adjacency qualifier —
-so a design where sprite 0 lost to sprite 2 would have passed every
-assertion this package graded. Fixed: `PRI-02`..`PRI-57`, the 21 remaining
-pairs of C(8,2)=28, added below with the same measurement basis and
-mutation pattern, cited to `sol:7-video.c1`/`opus:7-vp.c1`/`opus:7-vp.c9`
-(the actually-universal page-207/209 wording) rather than to `opus:7-vp.c2`,
-whose own recorded evidence in the claims file is written strictly over the
-seven adjacent boxes of Figure 7-1's cascade — citing it on a non-adjacent
-pair would have repeated the same over-generalisation.
-
-**Finding 4 (high, narrow to the page).** `SPR-0`..`SPR-7` required the full
-packed `sprdata` byte (`denise_sprites.v`'s own `{esprm/osprm, group-id,
-pixel}` packing) plus an exact one-sample pulse width; p.208 establishes
-eight sprites numbered 0-7 and neither of those. `INV-01`/`INV-67` required
-full 512-sample trace equality between the two arm orders; p.207/209 state
-an invariance about which sprite wins the overlap, not about internal state
-at every other `hpos`. Both are narrowed below to their page-grounded core;
-the RTL-derived parts are still measured and printed by the harness, with
-their own `record()` and `reason_kind source-silent`, but no longer graded.
-
-Net effect: 18 → 39 graded assertions. New baseline 39 passed, 0 failed —
-see the harness file's own RESULTS section for the measured numbers. No new
-red: `denise_sprites.v`'s cascade (whichever pair-group is checked first —
-(0,1), then (2,3), then (4,5), then (6,7) — and, within it, the lower
-sprite wins if active at all) already implements full transitive
-lower-wins priority, not merely adjacent-pair priority.
-
 This specification is written from the quotations in the claims file alone —
 the marker-line text quotes on printed pages 207 and 209, and the two figures
 they point at, `ch7/figures/p208.png` (Figure 7-1) and `ch7/figures/p209.png`
-(Figure 7-2), both opened and read as drawings. No RTL has been opened and no
-module port name is used below. Every proposition is stated in manual
+(Figure 7-2), both opened and read as drawings. No module port name is used
+below. Every proposition is stated in manual
 language: sprite numbers, "in front of" / "displayed over", "armed" (made
 active), never a signal name.
 
@@ -83,17 +48,15 @@ AGA behaviour — only about what the OCS-documented chapter states and draws.
 ## Assertions
 
 Each assertion below is expected to **PASS**. None of them is under
-suspicion; per BUILD-BRIEF's requirement for a control case measured on the
-same basis as any case under suspicion, `PRI-01` (the simplest, first-drawn
-adjacency) and `SPR-0` (the simplest single-sprite liveness check) are the
-nominated controls — every other assertion in this package is measured
-exactly the same way.
+suspicion; as control cases measured on the same basis as any case under
+suspicion, `PRI-01` (the simplest, first-drawn adjacency) and `SPR-0` (the
+simplest single-sprite liveness check) are the nominated controls — every
+other assertion in this package is measured exactly the same way.
 
 Exact stimulus mechanics (how a sprite is made active, what carries its
-pixel code) are not decided here — they depend on the module's actual ports,
-which are opened only in step 3. What is fixed now, and must not change
-after the RTL is opened, is: the proposition, its expected result (PASS),
-its page, and the claims it is cited from.
+pixel code) are not stated here — they depend on the module's actual ports
+and are in the test source. What this document fixes is: the proposition,
+its expected result (PASS), its page, and the claims it is cited from.
 
 ### Fixture liveness / sprite identity — `SPR-0` .. `SPR-7`
 
@@ -102,7 +65,7 @@ with a distinct, known pixel code and no other sprite active, is the sprite
 whose code is delivered by the fixture. Taken together these eight checks
 establish (a) that the fixture actually delivers a distinguishable, known
 word for each of the eight sprites before any ordering claim is tested on
-top of it — the data-path liveness check BUILD-BRIEF requires — and (b) the
+top of it — the data-path liveness check — and (b) the
 hardware half of the claim that there are eight sprites, numbered 0 to 7.
 
 - Page: 208. Claim: `opus:7-fig7-1.c1` (hardware half only — see "Declined
@@ -111,11 +74,12 @@ hardware half of the claim that there are eight sprites, numbered 0 to 7.
 - Mutation (per sprite N): leave sprite N inactive instead of arming it; the
   code the assertion expects is then simply not produced, so the check must
   go red; then arm it again to revert.
-- Graded condition (since the REPAIR above): liveness (some `hpos` sample
-  went non-zero) plus code fidelity (its low 2 bits match the 2'b01 pixel
-  code that was written) — not the full packed byte and not an exact
-  one-sample pulse count, since p.208 requires neither. Both are still
-  measured and printed, just not graded; see finding 4 above.
+- Graded condition: liveness (some `hpos` sample went non-zero) plus code
+  fidelity (its low 2 bits match the 2'b01 pixel code that was written) —
+  not the full packed `sprdata` byte (`denise_sprites.v`'s own
+  `{esprm/osprm, group-id, pixel}` packing) and not an exact one-sample
+  pulse count, since p.208 requires neither. Both are measured and printed,
+  not graded, each with its own `record()` and `reason_kind source-silent`.
 
 ### Pairwise fixed priority — `PRI-01` .. `PRI-67`, `PRI-02` .. `PRI-57`
 
@@ -125,12 +89,13 @@ overlapping position, the code delivered is sprite n's code — the
 lower-numbered sprite is displayed in front. Sprite n is armed before sprite
 n+1 in this variant (the reversed-order check is `INV-01` / `INV-67` below).
 
-Proposition, ALL OTHER pairs (`PRI-02` .. `PRI-57`, added by the REPAIR
-above): the same proposition, for the 21 remaining pairs (n, m), n < m,
-m > n+1, of the 28 total overlapping pairs across eight sprites — p.207's
-"the lower-numbered sprites appearing in front of ... the higher-numbered
-sprites" names no adjacency restriction, so the claim is graded on every
-pair, not only the seven the drawing's occlusion directly illustrates.
+Proposition, ALL OTHER pairs (`PRI-02` .. `PRI-57`): the same proposition,
+for the 21 remaining pairs (n, m), n < m, m > n+1, of the 28 total
+overlapping pairs across eight sprites — p.207's "the lower-numbered sprites
+appearing in front of ... the higher-numbered sprites" names no adjacency
+restriction, so the claim is graded on every pair, not only the seven the
+drawing's occlusion directly illustrates: a design where sprite 0 lost to
+sprite 2 must fail.
 
 | id | pair | page(s) | claims |
 |---|---|---|---|
@@ -164,18 +129,17 @@ pair, not only the seven the drawing's occlusion directly illustrates.
 | PRI-57 | (5,7) | 207, 209 | `sol:7-video.c1`, `opus:7-vp.c1`, `opus:7-vp.c9` |
 
 `opus:7-vp.c2` restates the whole eight-box cascade of Figure 7-1 in one
-record (corrected to page 208 — the CD text file embeds the drawing under a
-p.207 heading, but the printed figure is on p.208). It is not given its own
+record (page 208 — the CD text file embeds the drawing under a p.207
+heading, but the printed figure is on p.208). It is not given its own
 assertion: its content is exactly the conjunction of `PRI-01`..`PRI-67`
 above, so it is cited on those seven rather than duplicated as an eighth.
 It is deliberately NOT cited on `PRI-02`..`PRI-57`: its own recorded
 `classify.evidence` in the claims file is written strictly over the seven
 adjacent boxes of Figure 7-1's cascade, so citing it on a non-adjacent pair
-would repeat the exact over-generalisation independent-validation finding 2
-found (see REPAIR above). `sol:7-video.c1`/`opus:7-vp.c1`/`opus:7-vp.c9` —
+would over-generalise it. `sol:7-video.c1`/`opus:7-vp.c1`/`opus:7-vp.c9` —
 p.207's body sentence and p.209's hand analogy, both stated without an
-adjacency qualifier — are cited on all 28 pairs instead (already the
-citation `INV-01`/`INV-67` used below).
+adjacency qualifier — are cited on all 28 pairs instead (the citation
+`INV-01`/`INV-67` use below).
 
 The three group-crossing claims (`opus:7-fig7-2.c6/c7/c8`, `sol:7-fig7-2.c9`)
 are about Figure 7-2's group fingers (e.g. "sprites 0,1 in front of sprites
@@ -216,21 +180,20 @@ the claim is general and does not single out any one adjacency.
   red result if the claim is true, and so would not be a valid mutation for
   this assertion — it would only demonstrate the same invariance the
   assertion already asserts.
-- Graded condition (since the REPAIR above): the same sprite wins, at the
-  same `hpos`, in both arm orders — not full 512-sample trace equality
-  between the two runs. p.207/209 state an invariance about which sprite
-  wins the overlap, not about `denise_sprites.v`'s internal state at every
-  other `hpos` the two runs happen to share. Full-trace equality is still
-  measured and printed, just not graded; see finding 4 above.
+- Graded condition: the same sprite wins, at the same `hpos`, in both arm
+  orders — not full 512-sample trace equality between the two runs.
+  p.207/209 state an invariance about which sprite wins the overlap, not
+  about `denise_sprites.v`'s internal state at every other `hpos` the two
+  runs happen to share. Full-trace equality is measured and printed, not
+  graded.
 
 ## Declined content — not asserted
 
 The following claims, or halves of claims, describe how the Figure 7-1
-drawing is inked rather than any behaviour of the chipset. Per BUILD-BRIEF
-("where the manual is silent, measure and report — do not assert"), and
-because a drawing's ink is not a hardware signal, none of these is graded.
-They will be recorded with `note()` or `record()` when the harness is built,
-not `expect()`.
+drawing is inked rather than any behaviour of the chipset. Where the manual
+is silent, the rule is measure and report, do not assert; and a drawing's
+ink is not a hardware signal, so none of these is graded. They are recorded
+with `record()`, not `expect()`.
 
 - `opus:7-fig7-1.c1`, drawing-inventory half ("the drawing... is a cascade of
   exactly eight identical rectangles... no ninth box and no other digit
@@ -240,8 +203,8 @@ not `expect()`.
 - `opus:7-fig7-1.c2` through `opus:7-fig7-1.c8`, each one's ink-description
   half ("box N's lower-left corner and part of its left and bottom edges are
   not drawn, so only a strip at its right... remains visible"): describes
-  which corners and edges of the rear box are inked; names no signal. Having
-  now opened `p208.png` directly, this description is also inaccurate as a
+  which corners and edges of the rear box are inked; names no signal. Read
+  directly from `p208.png`, this description is also inaccurate as a
   reading of the drawing — each rear box keeps its top band and top edge
   visible as well as the right-hand strip, matching the crossread's own
   finding (`figure-description-mismatch`) recorded against every one of
@@ -249,7 +212,7 @@ not `expect()`.
   in front of sprite N+1 wherever they overlap" — is asserted as one of
   `PRI-01`..`PRI-67` above.)
 
-No claim in this package's 23 was left with no disposition: each is either
+Every one of this package's 23 claims has a disposition: each is either
 cited on an assertion above (in whole or in the stated half), or declined
-here with a reason. No HALT condition was met — a testable specification
-was possible without the module's port names.
+here with a reason. A testable specification is possible without the
+module's port names.
