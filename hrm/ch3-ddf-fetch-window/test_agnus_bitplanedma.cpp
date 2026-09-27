@@ -643,10 +643,10 @@
 // [20:1], reg_address_out[8:1] are outputs; reg_address_in[8:1]/data_in
 // [15:0] are the register write bus. hpos/vpos are NOT counted internally by
 // this module - they are driven in from outside (by `agnus` in the real
-// design), exactly as hrm/agnus_bitplanedma's own existing RTL_REGRESSION
-// fixture already drives them (hpos 0..455 per line, one fixture tick per
-// hpos value, vpos swept from 0 up to the target line) - reused here as a
-// proven-good drive pattern, not reinvented.
+// design), exactly as the pre-pipeline RTL_REGRESSION fixture
+// hrm/agnus_bitplanedma (removed) drove them (hpos 0..455 per line, one
+// fixture tick per hpos value, vpos swept from 0 up to the target line) -
+// the same drive pattern, not a new one.
 //
 // NO DATA-VALUE PORT. This module computes WHEN a fetch happens (`dma`),
 // WHERE it reads from (`address_out`) and WHICH BPLxDAT register receives it
@@ -909,9 +909,9 @@ struct LineResult {
 
 // Runs vpos 0..target_vpos inclusive, hpos 0..hpos_max-1 each line, and
 // records every dma pulse seen while vpos==target_vpos, in time order.
-// Mirrors hrm/agnus_bitplanedma's own existing RTL_REGRESSION fixture's
-// proven-good drive pattern (external hpos/vpos sweep, one tick per hpos
-// value) rather than inventing a new one.
+// Mirrors the drive pattern of the pre-pipeline RTL_REGRESSION fixture
+// hrm/agnus_bitplanedma (removed): external hpos/vpos sweep, one tick per
+// hpos value.
 LineResult run_to_line(Harness& h, int target_vpos, int hpos_max = 456) {
     LineResult r;
     for (int v = 0; v <= target_vpos; ++v) {
@@ -1414,9 +1414,9 @@ int main(int argc, char** argv) {
                 "(bplcon0_delayed[4]). So H3 actually shifts timing in "
                 "EVERY case measured here, lores included (which the "
                 "manual's mode rule says should NOT shift), not only in "
-                "hires mode. RED against the manual's own wording - per "
-                "this package's instructions, the RTL is what is wrong "
-                "here, not the assertion. 3-rddf.c02, 3-rddf.c03, "
+                "hires mode. RED against the manual's own wording - the "
+                "page is the oracle, so the RTL, not the assertion, is "
+                "what disagrees here. 3-rddf.c02, 3-rddf.c03, "
                 "3-regsum-ddfstrt.c4, 3-regsum-ddfstop.c4, A-ddf-bits.c14.");
 
         // Register bit 1 (ddfstrt[2], data_in[1]) has no manual claim of
@@ -1689,9 +1689,9 @@ int main(int argc, char** argv) {
                 "only one word is fetched at this limit' mechanism the "
                 "manual describes to produce an odd count from an "
                 "otherwise-even progression is not implemented in this "
-                "RTL. RED against the manual's own stated number - per "
-                "this package's instructions, the RTL is what is wrong "
-                "here, not the assertion. 3-max-window.c13, 3-max.c06, "
+                "RTL. RED against the manual's own stated number - the "
+                "page is the oracle, so the RTL, not the assertion, is "
+                "what disagrees here. 3-max-window.c13, 3-max.c06, "
                 "3-max.c07, 3-t14.c10.");
     }
 
