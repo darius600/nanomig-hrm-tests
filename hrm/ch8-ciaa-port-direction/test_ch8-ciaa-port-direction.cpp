@@ -55,16 +55,17 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// What changed and why: PROP-1 and PROP-2 originally held the fixture's six
-//   external port-A lines low (all switches closed / drives asserted, in
-//   the manual's active-low terms) and then wrote a 1 over that held-low
-//   line -- a case p.241, p.341 and p.354 together leave undecided (no page
-//   says whether the CIA's own output or an outside pull wins that
-//   contest). That made both assertions decide on the undecided case
-//   instead of the one p.341 and p.354 do decide: an output driven 0 where
-//   nothing outside pulls the line, and a released input reading high. The
-//   fixture now releases all six lines (porta_in = 0x3F) so every
-//   observation below grades only what the cited pages state.
+// Assertions: PROP-1 and PROP-2 each read a bit's control value first --
+//   direction bit 0, PRA written 0 -- which p.354 predicts as 1, the
+//   released line. Each then switches that bit's own direction to output
+//   and reads the written-0 half p.341 predicts (expected 0, because a
+//   read returns the pin and nothing else drives it, released) and the
+//   written-1 half (expected 1). PROP-1 additionally reads a bit's control
+//   value while a DIFFERENT position's direction bit is switched to
+//   output, which must stay at the released value too -- only a bit's own
+//   direction bit may move it. Every observed value is printed alongside
+//   the verdict, so the numbers p.341 and p.354 predict appear in the
+//   run's own output, not just PASS/FAIL.
 //
 // MUTATION FIXTURE-LIVE, CONTROL-PA0-POSITIONAL and CONTROL-PA0-OUTPUT below
 // are runtime switches, guarded by mutating("<ID>") and read once from the
