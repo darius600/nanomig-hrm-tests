@@ -159,7 +159,7 @@ grades that output through the CPU and is red on both cores, but its own
 preconditions `PC4` and `PC5` are red as well, so it does not hold this half
 up yet.
 
-**This is an absent feature, of the same character as [NM-HRM-015](NM-HRM-015.md) and
+**This is an absent feature, of the same character as [NM-HRM-015](withdrawn/NM-HRM-015.md) and
 [NM-HRM-021](NM-HRM-021.md):** declared in a register, accepted by the decode, reaching nothing.
 The three together are the register's clearest group — each is a bit the manual
 specifies, the RTL stores, and no logic consumes.

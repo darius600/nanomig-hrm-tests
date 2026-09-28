@@ -160,7 +160,7 @@ it infers, that at $BFC100 "NEITHER chip" should be selected "per the prose's
 own two-bit rule". The sentence does not say so. It gives a condition under
 which each chip is selected and is silent on A12 and A13 both low; reading it
 as the only condition tests a one-way statement as a two-way one, the shape
-[NM-HRM-029](NM-HRM-029.md) was withdrawn for.
+[NM-HRM-029](withdrawn/NM-HRM-029.md) was withdrawn for.
 
 Where the manual does speak to that address, on p. 351, it predicts the
 measurement: one active-low line per chip, (A12\*) for CIA-A and (A13\*) for

@@ -5,9 +5,9 @@
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
 | **Evidence** | none |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. It was split; the surviving half is [NM-HRM-019](NM-HRM-019.md). |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. It was split; the surviving half is [NM-HRM-019](../NM-HRM-019.md). |
 | **Module** | `denise_sprites.v` |
-| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) |
+| **Test** | [`hrm/ch3-sprite-registers`](../../../hrm/ch3-sprite-registers) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a scope note read as a requirement** |
 
@@ -38,7 +38,7 @@ The two bits part company, and the split is what the withdrawal produced:
 | bit | what the manual prints | outcome |
 |---|---|---|
 | 3 | `(unimplemented)` | declined as a live field, quoting the manual's own word; `SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES` asserts it inert at every resolution, green |
-| 4 | `SHSH1  Start horizontal (SHR mode) 70ns increment` | a behaviour — re-asserted on its own as [NM-HRM-019](NM-HRM-019.md), and red for a reason that holds |
+| 4 | `SHSH1  Start horizontal (SHR mode) 70ns increment` | a behaviour — re-asserted on its own as [NM-HRM-019](../NM-HRM-019.md), and red for a reason that holds |
 
 **The original finding was right that something is missing, and wrong about
 what.** That is the most useful shape a withdrawal can have.
@@ -49,7 +49,7 @@ what.** That is the most useful shape a withdrawal can have.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — **agrees with NanoMig**:
 

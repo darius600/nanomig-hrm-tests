@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The expected value was invented by the assertion. |
 | **Module** | `denise_collision.v` |
-| **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) — now green |
+| **Test** | [`hrm/ch3-collision-registers`](../../../hrm/ch3-collision-registers) — now green |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a silence read as a requirement** |
 
@@ -41,7 +41,7 @@ The implementation was right all along.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989**, PDF page 29 — agrees with the manual:
 

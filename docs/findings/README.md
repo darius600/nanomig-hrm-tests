@@ -2,14 +2,16 @@
 
 A reference for developers, not a narrative.
 
-**Sixty-nine of these pages are filed against the Hardware Reference
+**Sixty-six of these pages are filed against the Hardware Reference
 Manual, 3rd edition (1991), and five against the AA specification (1991).** The AA group (NM-AA-001 to
 NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
-the tests that hold them up live in `aa/` rather than `hrm/`. The header
-table is the same on all seventy-four.
+the tests that hold them up live in `aa/` rather than `hrm/`. The thirteen
+withdrawn findings are kept apart, with their own list, in
+[`withdrawn/`](withdrawn/README.md). The header table is the same on all
+eighty-four.
 
 **What every page has, in the same place: the header table.** These seven fields
-are on all 74 pages, and the first four answer *what am I being asked to do*
+are on all 84 pages, and the first four answer *what am I being asked to do*
 before any prose is read:
 
 | field | values |
@@ -27,16 +29,16 @@ page carries says something about it:
 
 | field | on | what its absence means |
 |---|---|---|
-| **Verdict of the four** | 69 of 74 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 66 of 74 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 44 of 74 | the finding has no graded assertions of its own; the `Test` row still names the package |
-| **See also** | 14 | no sibling finding bears on it |
-| **Error class** | 6 | it is not one of the recurring shapes |
+| **Verdict of the four** | 79 of 84 | the other implementations were not consulted, or the finding is not about behaviour they share |
+| **Report to** | 70 of 84 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 69 of 84 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **See also** | 20 | no sibling finding bears on it |
+| **Error class** | 11 | it is not one of the recurring shapes |
 | **Boundary** | 2 | no edge case was isolated |
 | **Provenance**, **Origin** | 1 each | one-offs, kept because the page needed them |
 
 A header table that is shorter than the one on the page before it is therefore
-not an incomplete page. Counted across all 74.
+not an incomplete page. Counted across all 84, the withdrawn ones included.
 
 **A title that ends in [RTL review]** marks a page whose header says three
 things: `open`, filed against `the RTL`, and a test that fails against the page. That page asks an
@@ -49,8 +51,9 @@ say something the header does not.
 HRM says* → *What NanoMig does* → *What the others say* → *Suggested change* →
 *What holds the finding up*, some adding *For the specialists*. A withdrawn
 finding instead explains the withdrawal, and a finding filed against the printed
-page has no suggested change to make. Measured over the 69 pages there are 53
-distinct heading sequences; the page is written for its own subject once the
+page has no suggested change to make. Measured over the 79 pages against the
+manual, the withdrawn ones included, there are 58 distinct sequences of `##`
+headings; the page is written for its own subject once the
 header has told you whether to read it at all.
 
 Where implementations are compared, six are quoted rather than cited: WinUAE,
@@ -59,8 +62,8 @@ and **TC64**. The last two are marked as descendants rather than witnesses, for
 the reason set out below; they sit in the same table because a reader comparing
 implementations wants them side by side.
 
-**[`../findings.md`](../findings.md) is the register** — every finding, its
-status, its package and its third witness, in one table. It is the list to go to;
+**[`../findings.md`](../findings.md) is the register** — every open finding,
+its status, its package and its third witness, in one table. It is the list to go to;
 this directory holds what it links to.
 
 ## Pinned revisions
@@ -203,23 +206,6 @@ A schematic or a patent figure cannot be quoted: where a drawing speaks, the pag
 shows, marked *read from the drawing, not quoted*, with its PDF page, and the
 check requires the net labels it names on that page. The documents themselves
 are in neither repository.
-
-## Withdrawn findings are kept, and here is why
-
-Seven entries are withdrawn. They are **not** relevant to the question "what should
-be changed in NanoMig", and they are listed separately for that reason. They are
-relevant to two other questions:
-
-- **Would someone re-file this?** `NM-HRM-001` stood as a documented finding for
-  weeks before Table 7-5 turned out to sanction the measured value. Without the
-  entry, the next reader of that page files it again.
-- **What kind of mistake was it?** Four of the seven are one error wearing four
-  hats: a permission or a silence in the manual read as a requirement. That is
-  the most common way this suite produces a false finding, and the four entries
-  together are the clearest statement of it in the project.
-
-So they keep their pages, in the same structure, with the reason for the
-withdrawal stated where the suggested change would otherwise be.
 
 ## The list of findings is one file
 

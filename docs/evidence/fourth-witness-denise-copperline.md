@@ -221,7 +221,7 @@ read the bit and models no genlock; it decodes bits 5 and 0 of BPLCON3
 The earlier reading recorded that both of the first two emulators show no RGB
 effect and called it a genlock concept. Copperline's test agrees: none of the
 four changes the border's colour for this bit. The finding is withdrawn
-([`NM-HRM-015`](../findings/NM-HRM-015.md)): every page that names the bit
+([`NM-HRM-015`](../findings/withdrawn/NM-HRM-015.md)): every page that names the bit
 places it among the genlock features, and no page gives it an effect on the
 colour the border is drawn in.
 
@@ -264,7 +264,7 @@ Copperline makes `$000`–`$03E` reachable on **non-OCS only**, and with the
 danger bit set. That is not a nuance of its own: WinUAE, vAmiga and Denise do
 the same, and it is the chipset distinction p.310 makes, *"Now, in the ECS, if
 this bit is set, the Copper can access all of the Amiga chip registers"*
-([`NM-HRM-053`](../findings/NM-HRM-053.md), withdrawn).
+([`NM-HRM-053`](../findings/withdrawn/NM-HRM-053.md), withdrawn).
 
 ## The second reading, and the finding it splits
 
@@ -439,7 +439,7 @@ That is a different register function from the SPRHWRM the ECS appendix names.
   the same number the other way: `lines = ntsc ? 261 : 311` (`agnus.cpp:178`) with
   the frame restarting at `vPos == (lines + lof)`. All four run a 313-line field
   with the long-frame bit set; WinUAE clears the bit at a hard reset and runs
-  312-line fields after one ([`NM-HRM-001`](../findings/NM-HRM-001.md)).
+  312-line fields after one ([`NM-HRM-001`](../findings/withdrawn/NM-HRM-001.md)).
 - **The half colour clock is an alternating whole line, not a fraction.** Denise
   computes NTSC as `227.5 * 263.0` *with the long/short line flip-flop doing the
   alternation*, and PAL as a flat `227.0 * 313.0` (`agnus.cpp:1030-1032`);

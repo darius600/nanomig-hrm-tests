@@ -282,7 +282,7 @@ else if (end_of_frame && lace) long_frame <= ~long_frame;  // interlace only
 
 It sets a long frame at reset and toggles only in interlace. vAmiga also starts
 with the bit set; WinUAE clears it at a hard reset and runs 312-line fields
-after one ([`NM-HRM-001`](../findings/NM-HRM-001.md)). The fixture ran
+after one ([`NM-HRM-001`](../findings/withdrawn/NM-HRM-001.md)). The fixture ran
 non-interlaced from reset, so 313 is the correct answer for what it drove.
 
 ### Result

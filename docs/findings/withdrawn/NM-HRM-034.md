@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The manual gives the value NanoMig reads: Appendix C p. 299 lists `10` in the identification field for the 8361 and 8370 NTSC Agnus, and Appendix A p. 264 says unused bits of a read-only register have no value to rely on. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L108-L110) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L114-L116) |
-| **Test** | [`hrm/ch7-beam-position-word-layout`](../../hrm/ch7-beam-position-word-layout) |
+| **Test** | [`hrm/ch7-beam-position-word-layout`](../../../hrm/ch7-beam-position-word-layout) |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | none graded: `VPOSR-OCS-BITS-14-1-UNUSED` is a `record()` that declines sol:7-beam.c7, opus:7-bp.c7, sol:7-appA-vpos.c5, sol:7-appA-vpos.c11 and opus:7-appA-beam.c10, because p. 264 and p. 299 give two readings of the band and neither decides; the band is printed as measured, `0x0000` at `ntsc=0` and `0x0800` at `ntsc=1`. The package reads `11 passed, 0 failed` |
 | **Error class** | **a silence read as a requirement** |
@@ -69,7 +69,7 @@ The zero the `ntsc=1` leg requires is printed nowhere; it is p. 216's "Unused"
 read as a value.
 
 **The suite already grades p. 299's reading, and it is green.**
-[`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking)
+[`hrm/ch3-beam-counters-and-blanking`](../../../hrm/ch3-beam-counters-and-blanking)
 asserts `VPOSR-IDENTIFICATION-FIELD-BITS-14-7` on the same module: bits 13-12
 read `$00`/`$10`/`$20`/`$30` across the four (`ecs`, `ntsc`) combinations, `$10`
 at `ecs=0`, `ntsc=1`. For that input the `ntsc=1` leg here requires bit 12 to
@@ -155,7 +155,7 @@ all four build as an identification, and split only on its OCS NTSC value.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 30 — agrees with the manual:
 

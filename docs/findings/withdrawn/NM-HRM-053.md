@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. Appendix C p. 310 gives the ECS Copper all of the chip registers once CDANG is set, and chapter 2, Appendix A and Appendix B's own `(E)` note send the reader to Appendix C for ECS; NanoMig does what p. 310 says. |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225) |
-| **Test** | [`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1` and `SERDATR-CDANG1` still fail, because they require the block p. 310 lifts; their `-CDANG0` twins and `CTRL-BLTCON0` green |
+| **Test** | [`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1` and `SERDATR-CDANG1` still fail, because they require the block p. 310 lifts; their `-CDANG0` twins and `CTRL-BLTCON0` green |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 3 red of 8, with a control that separates the two printed marks |
 | **Error class** | **a legend graded without the appendix that extends it** |
@@ -39,7 +39,7 @@ lists no register below `$05A` as new (p. 298). The six `(E)` rows in the band,
 VPOSR, POT0DAT, POT1DAT, DSKPTH, COPCON and STRLONG, are all changed registers
 the standard chip set has too, and SERDATR, SERDAT and SERPER carry no `(E)`.
 That is where this band differs from the `~` band of
-[NM-HRM-004](NM-HRM-004.md): there Appendix B puts `~` on four registers that
+[NM-HRM-004](../NM-HRM-004.md): there Appendix B puts `~` on four registers that
 exist only in ECS, so it speaks of ECS and contradicts p. 310. Here the manual
 gives one rule for the standard chip set, on p. 26 and in Appendix B, and
 states the ECS difference on p. 310.
@@ -52,9 +52,9 @@ corner where they differ, ECS with CDANG set, is the one p. 310 introduces with
 *"Now, in the ECS"*.
 
 **The suite grades p. 310's reading of the same corner, and it is green.**
-[`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep)'s
+[`hrm/ch2-copper-move-sweep`](../../../hrm/ch2-copper-move-sweep)'s
 `SWEEP ecs=1 cdang=1 vs Appendix C` expects every destination accepted, these
-three included, and passes; [`hrm/ch2-copper-move-range`](../../hrm/ch2-copper-move-range)'s
+three included, and passes; [`hrm/ch2-copper-move-range`](../../../hrm/ch2-copper-move-range)'s
 `T10` has the Copper write COPCON, `*02E` on p. 289, at ECS with CDANG set,
 from p. 310, and passes. No implementation passes both those assertions and the
 three reds here, and none that does what p. 310 says can pass the three reds.
@@ -142,7 +142,7 @@ nothing.
 
 p. 310's standard-chip-set range starts at `$DFF03E`, where Appendix B prints
 STRLONG `*` (`appB3/p289.txt:40`) and p. 26 puts the last address the Copper
-cannot affect. That one address is [NM-HRM-004](NM-HRM-004.md)'s question and
+cannot affect. That one address is [NM-HRM-004](../NM-HRM-004.md)'s question and
 none of the three graded here.
 
 ---
@@ -170,19 +170,19 @@ halts the Copper at
 
 ### Measured
 
-[`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks),
+[`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks),
 `ecs` high: a Copper MOVE to SERDATR, SERDAT and SERPER is blocked with CDANG
 clear and admitted with CDANG set. `SERDAT-CDANG1`, `SERPER-CDANG1` and
 `SERDATR-CDANG1` are red, three of the package's `5 passed, 3 failed`; their
 `-CDANG0` twins are green.
 
-[`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep), `92 passed, 1
+[`hrm/ch2-copper-move-sweep`](../../../hrm/ch2-copper-move-sweep), `92 passed, 1
 failed`: with `ecs` low, `APPBSTAR $0C SERDATR`, `APPBSTAR $18 SERDAT` and
 `APPBSTAR $19 SERPER` are rejected with CDANG clear and with it set, green, as
 is `APPBSTAR LEGEND` for the whole band; with `ecs` high and CDANG set,
 `SWEEP ecs=1 cdang=1 vs Appendix C` measures every one of the 256 destinations
 accepted, green. The one red is `SWEEP ecs=1 cdang=0`, which is
-[NM-HRM-004](NM-HRM-004.md)'s.
+[NM-HRM-004](../NM-HRM-004.md)'s.
 
 ---
 
@@ -191,7 +191,7 @@ accepted, green. The one red is `SWEEP ecs=1 cdang=0`, which is
 The package grades Appendix B's `*` at `ecs` high only; its specification
 records that p. 310 is not among the pages its slice was assigned, and that
 it grades Appendix B *"on its own terms"*
-([`SPECIFICATION.md`](../../hrm/ch8-appb-copper-access-marks/SPECIFICATION.md),
+([`SPECIFICATION.md`](../../../hrm/ch8-appb-copper-access-marks/SPECIFICATION.md),
 *Why this package is scoped to ECS*). The measurement itself is sound: the
 package grades a `~`-marked register on the same rig, and `CTRL-BLTCON0` finds
 BLTCON0 (`$040`) blocked with CDANG clear and admitted with it set, as its own
@@ -222,13 +222,13 @@ line, which confirms the ancestry, not the reading.
 
 ## What this is not
 
-**Not [NM-HRM-044](NM-HRM-044.md).** There two sentences that name no chipset,
+**Not [NM-HRM-044](../NM-HRM-044.md).** There two sentences that name no chipset,
 p. 279's *"processor or Copper"* and p. 289's `*` on DSKPTH, disagree about the
 standard chip set, where p. 310 changes nothing. Here no register-specific
 passage stands opposite the `*`, and the passage that does, p. 310, is the
 manual's own ECS extension of the rule the `*` states.
 
-**Not [NM-HRM-004](NM-HRM-004.md)**, which is the `~` band at ECS with CDANG
+**Not [NM-HRM-004](../NM-HRM-004.md)**, which is the `~` band at ECS with CDANG
 clear: there Appendix B marks rows that exist only in ECS, and those marks
 contradict p. 310.
 
@@ -238,7 +238,7 @@ contradict p. 310.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 None of them speaks to this point.
 Silent on this point: Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS), 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.

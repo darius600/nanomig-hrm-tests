@@ -7,7 +7,7 @@
 | **Evidence** | seen in the RTL source; no test yet |
 | **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. Withdrawn as a conformance finding; the source observation remains. |
 | **Module** | `denise.v` |
-| **Test** | [`hrm/ch3-bplcon0-display-modes`](../../hrm/ch3-bplcon0-display-modes) — `233 passed, 0 failed`; both claims declined |
+| **Test** | [`hrm/ch3-bplcon0-display-modes`](../../../hrm/ch3-bplcon0-display-modes) — `233 passed, 0 failed`; both claims declined |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a name read as a requirement** |
 
@@ -55,7 +55,7 @@ behaviour for this bit.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 5 — says something else:
 

@@ -127,7 +127,7 @@ the Copper write anything at all.
 `P1` was graded with `ecs` = 0. That is deliberate: it is the condition under
 which appendix B's `*` and appendix C's ECS relaxation of the low address range
 do not interact, and the ECS-plus-CDANG case is p.310's ECS sentence, which
-[NM-HRM-053](NM-HRM-053.md) (withdrawn) records, rather than a fresh number. The
+[NM-HRM-053](withdrawn/NM-HRM-053.md) (withdrawn) records, rather than a fresh number. The
 package's own run records the boundary it did not cross:
 
 > **MEASURED:** NM-HRM-053 check: this package never drives a Copper MOVE at `ecs`=1/`cdang`=1
@@ -201,7 +201,7 @@ about the pages:
   write, so this is modelled as a hard access rule, not as a filter.
 - **All four condition the $000-$03E block on the chipset**, which appendix B's
   legend does not. That conditioning is p.310's ECS sentence
-  ([NM-HRM-053](NM-HRM-053.md), withdrawn); it does not reach the OCS corner
+  ([NM-HRM-053](withdrawn/NM-HRM-053.md), withdrawn); it does not reach the OCS corner
   graded here.
 - **Under ECS with CDANG set, all four let the Copper write DSKPTH** — so on the
   configuration NanoMig and the four agree is the modern one, p.279's sentence

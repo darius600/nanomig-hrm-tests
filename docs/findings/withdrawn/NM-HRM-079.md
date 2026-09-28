@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. p. 344 stops the TOD clock "whenever a write to the register occurs" and names no register; NanoMig stops it on a write to the MSB event register ($A) alone and restarts it on a write to the LSB event register ($8), as the 8520R4 does in the 6502.org dissection, where no strobe of register $9 reaches the count enable. The assertion also requires a lone write to $8 to leave the clock stopped, which p. 344's next sentence rules out under either reading of *the register*. |
 | **Module** | `cia_timerd.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerd.v#L68-L80) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timerd.v#L81-L96) |
-| **Test** | [`hrm/appF-cia-tod-clock-and-alarm`](../../hrm/appF-cia-tod-clock-and-alarm) — `TOD-WRITE-STOPS-CLOCK` (`test_ciaa.cpp:781-818`, claims `sol:F-tod.c10`, `opus:F-tod.c9`, p. 344) still fails, because it requires a write to each of $A, $9 and $8 to stop a running clock, where p. 344 names no register for the stop and starts the clock again after the write to $8; its $A sub-check reads the stop |
+| **Test** | [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm) — `TOD-WRITE-STOPS-CLOCK` (`test_ciaa.cpp:781-818`, claims `sol:F-tod.c10`, `opus:F-tod.c9`, p. 344) still fails, because it requires a write to each of $A, $9 and $8 to stop a running clock, where p. 344 names no register for the stop and starts the clock again after the write to $8; its $A sub-check reads the stop |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 344, 349 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red; the package reads `43 passed, 1 failed`, its fixture-liveness check included. `TOD-WRITE-STOPS-CLOCK` writes $00 to one TOD register of a clock NanoMig's reset leaves running, gives one tick and requires the count not to move, for each of the three registers: the write to $A stopped the clock, the writes to $9 and $8 did not. In the same run `TOD-WRITE-STARTS-LSB-ONLY`, green, reads a write to $9 after one to $A leaving the clock stopped and the following write to $8 restarting it, and `TOD-WRITE-STARTS-ATOMIC-VALUE`, green, lands the sequence $A, $9, $8 on the value written with ticks between the writes |
 | **Error class** | **a silence read as a requirement** |
@@ -173,7 +173,7 @@ read of $A with CRB7 clear freezes the output and a read of $8 releases it,
 
 ### Measured
 
-[`hrm/appF-cia-tod-clock-and-alarm`](../../hrm/appF-cia-tod-clock-and-alarm)
+[`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm)
 builds `ciaa` alone and drives its register bus and its TOD pin.
 `TOD-WRITE-STOPS-CLOCK` starts three fresh fixtures with the clock running
 from $000000, as NanoMig's reset leaves it, writes $00 to one register in
@@ -235,7 +235,7 @@ commented-out middle-byte term included.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 219 — prints the manual's sentence, register unnamed:
 

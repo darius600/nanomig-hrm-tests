@@ -105,7 +105,7 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **3**, each run on both CPU cores: 2 green, 1 carrying a red |
 | assertions, `integration/` | **63** on fx68k — 61 pass, **2 fail**; **62** on TG68K — 61 pass, **1 fail** |
-| registered findings | **74** — 69 against the Hardware Reference Manual and 5 against the AA specification. **49 ask you to decide whether the RTL should change** — 67 open, 7 withdrawn; of the open ones 59 rest on a failing test, 4 were seen in the RTL source with no test yet, 3 rest on a passing test whose other reading fails, and one is filed against the printed page with no test yet |
+| registered findings | **71**, all open — 66 against the Hardware Reference Manual and 5 against the AA specification. **46 ask you to decide whether the RTL should change**; 62 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
@@ -125,8 +125,9 @@ finding it belongs to. An *open* finding asks for the decision its page names.
 For most of them that is whether the RTL should change; those filed against
 the printed page ask about the manual instead. A finding *seen in the RTL
 source* has no test behind it yet: read it, but nothing has been measured. A
-*withdrawn* finding asks nothing; its page keeps the reasoning that withdrew
-it. A *passing* test asks nothing either; [what a green means](#what-a-green-means)
+*withdrawn* finding asks nothing; its page, in
+[`docs/findings/withdrawn/`](docs/findings/withdrawn/), keeps the reasoning
+that withdrew it. A *passing* test asks nothing either; [what a green means](#what-a-green-means)
 says how far it reaches.
 
 **All 249 packages report both a verdict and an assertion count.**

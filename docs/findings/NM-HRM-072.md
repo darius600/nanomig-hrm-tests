@@ -232,7 +232,7 @@ change:
 - the waiting word's transfer into the shift register and its TBE interrupt
   would come one `clk7_en` edge, half a colour clock, earlier;
 - nothing would change for a word written with the transmitter idle, the
-  window [NM-HRM-056](NM-HRM-056.md) reads, or for TSRE after the last word.
+  window [NM-HRM-056](withdrawn/NM-HRM-056.md) reads, or for TSRE after the last word.
 
 ---
 

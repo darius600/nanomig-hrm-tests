@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The page that was quoted allows what NanoMig does. |
 | **Module** | `gary.v` |
-| **Test** | [`hrm/ch7-reset-overlay`](../../hrm/ch7-reset-overlay) measures the bank sweep and declines to grade it |
+| **Test** | [`hrm/ch7-reset-overlay`](../../../hrm/ch7-reset-overlay) measures the bank sweep and declines to grade it |
 | **Chapter** | 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **a sentence graded without the paragraph that qualifies it** |
 | **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE, outside its aliased 0.5 MB + 0.5 MB configuration, makes "all memory" literally true for chip RAM |
@@ -96,7 +96,7 @@ same unconditional decode of banks 1-3 that is this finding's actual subject.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **Commodore, *A500/A2000 Gary Specification*, undated**, PDF page 1 — agrees with the manual:
 

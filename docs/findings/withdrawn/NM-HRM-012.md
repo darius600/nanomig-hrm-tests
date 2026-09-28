@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The assertion imported a restriction the manual does not state. |
 | **Module** | `denise_sprites.v` |
-| **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers) — now green |
+| **Test** | [`hrm/ch3-sprite-registers`](../../../hrm/ch3-sprite-registers) — now green |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Error class** | **reading the page backwards** |
 
@@ -42,7 +42,7 @@ The implementation was right; the oracle was not.
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — agrees with the manual:
 

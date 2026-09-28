@@ -12,7 +12,7 @@
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red: `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` (`10 passed, 1 failed`). In SuperHires, sampled every 35 ns, SH0 alone moves the sprite's first lit sample 4 samples later and SHSH1 alone 0, where p. 303 predicts 2; the oracle-flip mutation, which expects 0, is green on the same two numbers |
 | **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states; outside the emulators, the 8373R4 dissection latches the bit for sprites 0 to 3 and applies it in the sprite's data path, not in the position compare — see *What other Commodore documents say* |
-| **Origin** | the surviving half of the withdrawn [NM-HRM-013](NM-HRM-013.md) |
+| **Origin** | the surviving half of the withdrawn [NM-HRM-013](withdrawn/NM-HRM-013.md) |
 
 ---
 
@@ -180,7 +180,7 @@ NanoMig has, not a vote against it.
 
 WinUAE's decode is the clearest statement of the ECS-versus-AGA split: `0x10` is
 read from ECS Denise onwards, `0x08` only on AGA. That is the split the
-withdrawn [NM-HRM-013](NM-HRM-013.md) was broken into.
+withdrawn [NM-HRM-013](withdrawn/NM-HRM-013.md) was broken into.
 
 
 ---
@@ -256,7 +256,7 @@ no move is the specification's table and NanoMig.
 
 ## Why this entry exists, and what it replaced
 
-[NM-HRM-013](NM-HRM-013.md) asserted that `SPRxCTL` bits 3 **and** 4 are live fields, resting on
+[NM-HRM-013](withdrawn/NM-HRM-013.md) asserted that `SPRxCTL` bits 3 **and** 4 are live fields, resting on
 the note *"bits 3 and 4 are in the ECS chips only"* — a statement about **which
 chips have them**, not about what they do. That is not a requirement, and the
 finding was withdrawn.

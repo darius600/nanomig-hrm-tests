@@ -1,6 +1,6 @@
 # Findings
 
-**47 of the 69 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**44 of the 66 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each opens
 > with the same three parts, in this order: what the HRM says, what NanoMig
@@ -58,7 +58,8 @@ emulators do what NanoMig does and the printed sentence is the outlier.
 
 A number is issued once. It is never reused, never reordered, and a withdrawn
 finding keeps both its number and its entry -- the reasoning that withdrew it is
-the result, not a deletion.
+the result, not a deletion. NM-HRM-076 and NM-HRM-081 to NM-HRM-083 are not in
+use.
 
 ## Two layers are under test, and a finding must say which
 
@@ -108,7 +109,9 @@ published — the claim ids beside it are the public record of the same work.
 
 ## The register
 
-Every finding, with the package that measures it and what the third witness says.
+Every open finding, with the package that measures it and what the third witness
+says; withdrawn findings ask nothing and are kept apart, with their own list, in
+[`findings/withdrawn/`](findings/withdrawn/).
 **The emulators are not an oracle and never decide a finding** -- they are read
 only for the report to the hardware developers
 ([`evidence/third-witness-ch3-ch6.md`](evidence/third-witness-ch3-ch6.md), whose section letters
@@ -117,7 +120,7 @@ specialist rules on it.
 
 **The status column reads `lifecycle · filed against · evidence`**, and every row
 is built from the three fields at the top of the page it links to, so the two can
-never disagree. Nine values occur:
+never disagree. Eight values occur:
 
 | status | what it asks of you |
 |---|---|
@@ -129,12 +132,11 @@ never disagree. Nine values occur:
 | `open · page · none` | the same, with no test built against it yet |
 | `open · page · green with an inverse control` | **no RTL change**; the printed page is the likely defect, and the assertion that holds NanoMig's reading is green |
 | `open · classification · **red**` | **no RTL change**; how the claim was classified is what is contested |
-| `**withdrawn**` | nothing; kept so the claim is not raised a second time |
 
 ### If you have one evening
 
-**If you have one evening: 47 of these 69 ask you to decide something.** The
-rest are withdrawn, answered, or observations kept for context. The table below
+**If you have one evening: 44 of these 66 ask you to decide something.** The
+rest are answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
 interest:
@@ -218,41 +220,7 @@ A2000 and B2000 schematics all side with p. 326 against p. 137.
 | [NM-HRM-075](findings/NM-HRM-075.md) | the CIAs answer only at $BF0000–$BFFFFF, where p. 353 selects them on the upper three address bits | open · RTL · **red**, contested | `hrm/appF-cia-address-decode` · `CIA-DECODE-DONTCARE` | **3–1 for p. 353 on the machines it describes**: WinUAE's models with neither Gayle nor Fat Gary, vAmiga and Denise select the CIAs anywhere in $A00000–$BFFFFF; Copperline, and WinUAE's Gayle and Fat Gary models, answer only in $BFD000–$BFDFFF and $BFE000–$BFEFFF; no named model has NanoMig's $BF0000–$BFFFFF. The package's second red, `CIA-AB-TWOBIT-RULE` (both chips selected at $BFC100), is what p. 351 predicts and what the same three do, and is not part of the finding |
 | [NM-HRM-077](findings/NM-HRM-077.md) | CIA-A has no PC output and ties FLAG to 0, where p. 351 wires them to the parallel port's DRDY\* and ACK\* | open · RTL · source observation | `hrm/appF-cia-register-map` · `CHIP-CAPABILITIES-FIVE` (constant inputs, not a measurement) | **split, two and two, and all four read as NanoMig does with nothing attached**: Copperline pulses CIA-A's PC on every port-B access as the device's strobe and feeds its acknowledge into CIA-A's FLAG, and WinUAE sets CIA-A's FLAG from a configured printer, host port or parallel-port SCSI adapter; vAmiga and Denise have no PC and never set CIA-A's FLAG, driving FLAG only from the floppy index on CIA-B |
 | [NM-HRM-078](findings/NM-HRM-078.md) | CRA bit 5 and CRB bit 5 are stored and never read: a timer set to count CNT counts φ2, and CRB's four input modes are two | open · RTL · **red** | `hrm/appF-cia-timer-modes` · `CRA-INMODE` (`cia_timera` fixture) and `CRB-INMODE-ARITY` (`cia_timerb` fixture); `integration/appF-cia-system` specifies P7.5 and P8.65, not yet built | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all stop a timer's E-clock count once its INMODE selects CNT and count CNT's rising edges instead; vAmiga, Denise and Copperline drive CIA-A's CNT from KCLK and CIA-B's from PA1 and count mode 11 only while CNT is high, WinUAE drives CIA-B's alone and counts mode 11 as mode 10. MiSTer, a descendant, already selects the source from INMODE, with CNT tied high; TC64 has NanoMig's code |
-| [NM-HRM-079](findings/NM-HRM-079.md) | a write to the TOD counter's middle byte leaves the clock running; p. 344 stops it on a write to "the register" and does not say which | open · page · **red** | `hrm/appF-cia-tod-clock-and-alarm` · `TOD-WRITE-STOPS-CLOCK` | **unanimous with NanoMig**: WinUAE (`cia.cpp:1805`), vAmiga (`CIARegs.cpp:325`), Denise (`register.cpp:319`) and Copperline (`cia.rs:596`) all stop the TOD clock on a write to $A alone, restart it on a write to $8 and leave it running across a write to $9; WinUAE and Denise put the stop on the 6526's hours register in their 6526 models. The assertion's $8 half, a lone LSB write required to leave the clock stopped, is the opposite of p. 344's next sentence and is not part of the finding |
 | [NM-HRM-080](findings/NM-HRM-080.md) | with the motor on, RDY* is asserted for a drive with no disk in it, where pp. 334 and 368 make it mean a disk installed and up to speed | open · RTL · **red** | `hrm/appH-drive-sense-and-motor` · `RDY-DISK-PRESENCE` | **unanimous against NanoMig**: WinUAE, vAmiga, Denise and Copperline assert RDY* for a drive at speed only when a disk is in it, and all four identify a standard external drive as $FFFF FFFF with the motor off, the constant NanoMig returns |
-
-### Withdrawn — kept on purpose
-
-A withdrawn finding is the record of a claim that was raised, measured and then
-**disproved**. Deleting it would mean the next reader raises it again. They sit
-in their own table so the status column above never has to be read twice, and
-they keep their numbers: a key is issued once and never reused.
-
-**NM-HRM-029 is the one worth the minute.** Its assertion tested *"dmasen is
-true only when LENFIN=1"* by looking for a case where both held and failing
-when none existed — but absence satisfies "only when". A one-way implication
-had been tested as a biconditional, which is a trap somebody will walk into
-again.
-
-| Key | Subject | Status | Package | Third witness |
-|---|---|---|---|---|
-| [NM-HRM-001](findings/NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/ch3-field-geometry` | **all four** run a 313-line PAL field with the long-frame bit set (WinUAE clears it at hard reset); Table 7-5 sanctions 313 |
-| [NM-HRM-009](findings/NM-HRM-009.md) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |
-| [NM-HRM-012](findings/NM-HRM-012.md) | SPRxCTL bit 0 (SH0) honoured at every resolution | **withdrawn** | `hrm/ch3-sprite-registers` | all four take SH0 at every resolution, as NanoMig does |
-| [NM-HRM-013](findings/NM-HRM-013.md) | SPRxCTL bits 3 and 4 are read nowhere | **withdrawn** | `hrm/ch3-sprite-registers` | bit 4 is real from ECS on, bit 3 only on AGA -- the split this was withdrawn into |
-| [NM-HRM-015](findings/NM-HRM-015.md) | BRDNTRAN is declared and never connected | **withdrawn** | `hrm/ch3-horizontal-display-window` | **B3** for the first two; **none of the four** changes the border's colour: WinUAE and Copperline implement BRDNTRAN as genlock keying only, Copperline with a test; pp. 296, 297 and 307 place it among the genlock features |
-| [NM-HRM-018](findings/NM-HRM-018.md) | ECS BPLCON0 bit 4 (SPRHWRM) has no effect | **withdrawn** | `hrm/ch3-bplcon0-display-modes` | neither Denise nor Copperline gives bit 4 an effect on ECS |
-| [NM-HRM-027](findings/NM-HRM-027.md) | in direct mode the interrupt is raised before a word is output | **withdrawn** | `hrm/ch5-audio-direct-output` | **all four** raise it at the write, as Figure 5-8 draws, and again at every word transition |
-| [NM-HRM-029](findings/NM-HRM-029.md) | Figure 5-8's `dmasen` note does not hold outside its own exception | **withdrawn** | `hrm/ch5-audio-channel-state` | not comparable — `dmasen` appears at no pin |
-| [NM-HRM-034](findings/NM-HRM-034.md) | VPOSR reports the video standard in bit 12 of an OCS configuration | **withdrawn** | `hrm/ch7-beam-position-word-layout` | **2-2**: WinUAE and Denise report $10 for an OCS NTSC Agnus, as NanoMig does; p.299 itself gives 10 for the 8361 and 8370 |
-| [NM-HRM-036](findings/NM-HRM-036.md) | chip memory banks 1-3 stay reachable while the overlay is active | **withdrawn** | `hrm/ch7-reset-overlay` | **3-1**: vAmiga, Denise and Copperline replace only the ROM's 512K, as NanoMig does; p.223 itself allows part of the RAM to respond |
-| [NM-HRM-053](findings/NM-HRM-053.md) | Appendix B's `*` mark has no ECS qualifier, and nothing honours it under ECS | **withdrawn** | `hrm/ch8-appb-copper-access-marks` | **all four** keep the Copper out of `$000`–`$03E` on OCS and let it reach every register with ECS and CDANG set, as NanoMig does; p. 310 itself gives the ECS Copper all of the chip registers once CDANG is set |
-| [NM-HRM-056](findings/NM-HRM-056.md) | SERDATR's TBE bit cannot be observed clear from outside | **withdrawn** | `hrm/ch8-serdatr-read-word` | **all four keep TBE at 0 while a second word waits**, as NanoMig does; after a write from idle vAmiga, Denise and Copperline set it again at once, and WinUAE holds it clear for one `CYCLE_UNIT` in its `ser_accurate` mode; p. 258 moves the word into the shift register at the start of the operation |
-| [NM-HRM-076](findings/NM-HRM-076.md) | a timer-high write reloads a running one-shot timer's counter, where p. 343 loads only the latch | **withdrawn** | `hrm/appF-cia-interval-timers` | **3–1**: WinUAE, vAmiga and Denise reload the counter on a timer-high write in one-shot mode whether the timer runs or not, as NanoMig does; Copperline only while it is stopped; p. 342 itself transfers the latch to the counter in one-shot mode "regardless of the start bit" |
-| [NM-HRM-081](findings/NM-HRM-081.md) | after a reset WPRO* reads a writable disk as writable, where pp. 334 and 370 have a drive set a write-protect flip-flop on DRESB* | **withdrawn** | `hrm/appDE-disk-interface` | **3–1**: WinUAE, vAmiga and Denise keep no write-protect state across a reset and read DSKPROT from the disk, as NanoMig reads it from its configuration; Copperline asserts DSKPROT on each external drive for 1 ms after every reset; pp. 334 and 370 name no clearing event and never tie the flip-flop to WPRO* |
-| [NM-HRM-082](findings/NM-HRM-082.md) | the left and right joystick lines never reach a button register, where p. 329's NOTE makes them a proportional controller's buttons | **withdrawn** | `hrm/appDE-joystick-decode` | **all four** read a closed left or right line in JOYxDAT alone, as NanoMig does, and none lets it reach POTGOR; WinUAE and Copperline wire a proportional controller's two buttons to those lines, read at bits 9 and 1; p. 332 itself sends both buttons to the digital joystick's register |
-| [NM-HRM-083](findings/NM-HRM-083.md) | an output bit of CIA-A port B reads back a line held low, not the 1 written to it, where p. 324 gives D0–D7 the direction I/O | **withdrawn** | `hrm/appDE-parallel-port-ciaa` | **split where the package measures, unanimous against NanoMig where the page decides**: over a line held low, which no page decides, Denise and Copperline return the written 1 and WinUAE the line's 0, as NanoMig does, vAmiga having nothing that holds the line low; on a released line all four return the written 0, NanoMig the line, which is NM-HRM-054 |
-
 
 Chapter 1 contributes NM-HRM-060 and NM-HRM-061, and Appendix F NM-HRM-062
 and NM-HRM-063. Appendix K contributes NM-HRM-064 and NM-HRM-065, both from

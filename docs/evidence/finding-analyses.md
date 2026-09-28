@@ -23,7 +23,7 @@ elsewhere in the same manual.
 | [NM-HRM-004](../findings/NM-HRM-004.md) | pipeline | **filed against the printed page** — p310 opens `$03E`–`$07E` to the ECS Copper with CDANG clear, Appendix B pp289-290 marks `$040`–`$07E` closed; NanoMig and all four implementations follow Appendix B |
 | [NM-HRM-005](../findings/NM-HRM-005.md) | pipeline | corroborated — p20 and p275, units settled on p275 itself |
 | [NM-HRM-002](../findings/NM-HRM-002.md) | hand-written, Aug | **filed against the printed page** — the manual contradicts itself, p137 against p326, and three of four implementations take p326's side, as NanoMig does |
-| [NM-HRM-001](../findings/NM-HRM-001.md) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
+| [NM-HRM-001](../findings/withdrawn/NM-HRM-001.md) | hand-written, Aug | **withdrawn** — the manual sanctions the measured value |
 
 Both August findings rested on a manual that says two different things, and
 neither could be decided by reading the manual harder. A third witness was read
@@ -38,7 +38,7 @@ RTL is wrong, and this one could not support that claim.
 The field-length claim itself is graded elsewhere and stays graded:
 `ch3-beam-counters-and-blanking` grades the manual's 312 with the long-frame
 bit cleared first, and `ch3-field-geometry` carries the 313-line control
-([`NM-HRM-001`](../findings/NM-HRM-001.md)).
+([`NM-HRM-001`](../findings/withdrawn/NM-HRM-001.md)).
 
 The package that originally held the withdrawn assertion, `agnus_beamcounter`,
 also asserted that the horizontal counter spans 0..453. That number has no page
@@ -253,5 +253,5 @@ own README on why every package now prints the same summary line.
 *For the specialists:* `denise.v:181` gives the bit its AGA meaning,
 `bplcon0[4] & aga`, and no ECS meaning. The manual prints no ECS behaviour to
 set against that: p.300's row is the mnemonic `SPRHWRM` with no description
-([NM-HRM-018](../findings/NM-HRM-018.md)). Whether the bit is worth an ECS
+([NM-HRM-018](../findings/withdrawn/NM-HRM-018.md)). Whether the bit is worth an ECS
 meaning at all is a scope decision for the project, not a conformance question.

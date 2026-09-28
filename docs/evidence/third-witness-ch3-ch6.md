@@ -245,7 +245,7 @@ not a paintable colour change. NanoMig's behaviour matches both emulators in
 ordinary use. Whether NanoMig should implement genlock keying at all is a product
 question, not a conformance one.
 
-**The finding is withdrawn** ([`NM-HRM-015`](../findings/NM-HRM-015.md)). Every
+**The finding is withdrawn** ([`NM-HRM-015`](../findings/withdrawn/NM-HRM-015.md)). Every
 page that names or describes the bit places it among the genlock features
 (pp.296, 297 and 307), and no page gives it an effect on the colour the border
 is drawn in. `D-BRDNTRAN-HAS-NO-EFFECT` is a record, not a red: it declines its

@@ -7,9 +7,9 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. p. 258 moves a word written from idle into the shift register at the start of the operation, so TBE returns to 1 at once, as NanoMig's does; where p. 257 needs the bit clear, while a second word waits behind a busy shift register, NanoMig holds it at 0 until the shift register takes the word. |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L139) |
-| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) — its `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` assertion writes a second word while the first is shifting, the case p. 257 describes, and requires TBE to read 0 on at least 20 consecutive reads before it reads 1 with TSRE 0 (`test_ch8-serdatr-read-word.cpp:533-592`) |
+| **Test** | [`hrm/ch8-serdatr-read-word`](../../../hrm/ch8-serdatr-read-word) — its `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` assertion writes a second word while the first is shifting, the case p. 257 describes, and requires TBE to read 0 on at least 20 consecutive reads before it reads 1 with TSRE 0 (`test_ch8-serdatr-read-word.cpp:533-592`) |
 | **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` — green: TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0; one of the package's `12 passed, 2 failed`. `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) grades p. 258 on a write from idle and is green: TBE back at 1 within 3 ticks |
+| **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` — green: TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0; one of the package's `12 passed, 2 failed`. `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit) grades p. 258 on a write from idle and is green: TBE back at 1 within 3 ticks |
 | **Error class** | **a silence read as a requirement** |
 | **Verdict of the four** | **unanimous with NanoMig where p. 257 needs the bit clear**: all four keep TBE at 0 while a second word waits behind a busy shift register. After a write from idle, vAmiga, Denise and Copperline move the word into the shift register at once, as NanoMig does; WinUAE holds TBE at 0 for one `CYCLE_UNIT` in its `ser_accurate` mode |
 
@@ -80,7 +80,7 @@ only from `TX_IDLE`:
 
 ### Measured
 
-[`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) reads SERDATR idle
+[`hrm/ch8-serdatr-read-word`](../../../hrm/ch8-serdatr-read-word) reads SERDATR idle
 as `0x3800`, writes a second word while the first is shifting and polls: TBE
 reads 0 on 219 consecutive reads, one per `clk7_en` period, until the first
 word's frame has gone, and then 1 with TSRE clear (`0x2800`), the second word
@@ -88,7 +88,7 @@ now shifting — `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY`, green, one of the
 package's `12 passed, 2 failed`. On the read after a single write from idle the
 same package finds `0x2800`, TBE already set
 (`TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION`, which grades bit 12 only).
-[`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit) measures the window
+[`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit) measures the window
 after a write from idle per tick, `tbe_duration=1 ticks, tsre_duration=374
 ticks`, and grades it green as `DOUBLE-BUFFER-AND-TBE`.
 
@@ -133,7 +133,7 @@ floor fails.
 No assertion in the package grades bit 13 on the bus read after a single write
 from idle, and the first word's own transfer is not read. The window p. 258 puts
 at the start of the operation is graded per tick by
-[`hrm/ch8-serdat-transmit`](../../hrm/ch8-serdat-transmit)'s
+[`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit)'s
 `DOUBLE-BUFFER-AND-TBE`.
 
 ---
@@ -142,7 +142,7 @@ at the start of the operation is graded per tick by
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 None of them speaks to this point.
 Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.

@@ -7,7 +7,7 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The manual sanctions the measured value. |
 | **Module** | `agnus_beamcounter.v` |
-| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) grades the manual's 312, with the long-frame bit cleared first; [`hrm/ch3-field-geometry`](../../hrm/ch3-field-geometry) carries the 313-line control |
+| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../../hrm/ch3-beam-counters-and-blanking) grades the manual's 312, with the long-frame bit cleared first; [`hrm/ch3-field-geometry`](../../../hrm/ch3-field-geometry) carries the 313-line control |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Verdict of the four** | **all four** run a 313-line PAL field with the long-frame bit set; vAmiga and Denise start with it set, as NanoMig does, Copperline ignores it outside interlace, and WinUAE clears it at hard reset |
 
@@ -42,7 +42,7 @@ The test asserted that a normal PAL non-interlace field is 312 positions, `vpos`
 
 Second documents, not oracles: each can agree or disagree with the manual,
 and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+[the findings README](../README.md#second-documents).
 
 None of them speaks to this point.
 Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS), 1988; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989.
