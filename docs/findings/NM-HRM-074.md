@@ -8,10 +8,10 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `cia_timera.v`, `cia_timerb.v`, `ciab.v`, `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L39-L40) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L54-L55) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and **minimig-dev/MinimigAGA-MiST-TC64**. NanoMig has the four modules from the Minimig line; MiSTer's own comments mark both bits not implemented and TC64 carries the same statements, so there is no fix to port — see *What the others say* |
-| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) — `PROP-CRA-PBON`, claims `sol:F-cra.c4`, `opus:F-cra.c4` (p. 348), and `PROP-CRA-OUTMODE`, claims `sol:F-cra.c5`, `opus:F-cra.c5` (p. 348), both red on the `ciab` fixture; [`integration/appF-cia-system`](../../integration/appF-cia-system) — `P1-MAIN`, claims `opus:F-timers.c10`, `opus:F-timers.c11`, `sol:F-timers.c12`, `opus:F-ports.c7`, `sol:F-ports.c7`, `sol:F-cra.c17`, `sol:F-crb.c3`, `opus:F-crb.c2`, `sol:F-crb.c14` (pp. 341, 342, 349, 350), and `P2-LEGR`, `P2-MAIN`, claim `opus:F-timers.c14` (p. 342), each red on fx68k and on TG68K |
+| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) — `PROP-CRA-PBON`, claims `sol:F-cra.c4`, `opus:F-cra.c4` (p. 348), and `PROP-CRA-OUTMODE`, claims `sol:F-cra.c5`, `opus:F-cra.c5` (p. 348), both red on the `ciab` fixture; [`integration/appF-cia-system`](../../integration/appF-cia-system) — `P1-MAIN-CRA`, claim `sol:F-cra.c17` (p. 349), `P1-MAIN-CRB`, claims `sol:F-crb.c3`, `opus:F-crb.c2` (p. 349) and `sol:F-crb.c14` (p. 350), `P1-MAIN`, claims `opus:F-timers.c10`, `opus:F-timers.c11`, `sol:F-timers.c12` (p. 342) and `opus:F-ports.c7`, `sol:F-ports.c7` (p. 341), and `P2-TOGGLE`, claim `opus:F-timers.c14` (p. 342), each red on fx68k and on TG68K and each graded on CIA-B only: CIA-A's PRB read never shows a driven level ([NM-HRM-054](NM-HRM-054.md)), which the package records instead of grading |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 341, 342, 348, 349, 350, 351, 352, 354; Appendix E, printed p. 337 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `hrm/appF-ciab-port-assignments`: 2 red (`PROP-CRA-PBON`, `PROP-CRA-OUTMODE`; 7 passed, 3 failed, the third red being [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`: 3 red on fx68k and 3 on TG68K (`P1-MAIN`, `P2-LEGR`, `P2-MAIN`; 13 passed, 4 failed on each core, the fourth red, `P1-LP`, being the drive LED and not this finding). In the same run `P1-OTHERBITS` and `P1-PRE1.1`–`P1-PRE1.3` are green, and `P1-CONTRAST` and `P2-CONTRAST` are recorded rather than graded because the PBON = 0 and not-started runs read the same as the runs they contrast with |
-| **Verdict of the four** | **unanimous against NanoMig on PBON, split on p. 342's toggle clauses.** WinUAE, vAmiga, Denise and Copperline all put a timer output on PB6 or PB7 when PBON is set, chosen by OUTMODE; none leaves the two bits without effect. How much of p. 342 they model differs: vAmiga and Denise invert the toggle at each underflow and pulse high for one cycle; WinUAE shows the START bit in toggle mode and 0 in pulse mode; Copperline inverts the toggle but starts it high after reset, does not set it on a start, and pulses low. Denise's toggle is high after reset as well, and vAmiga's CIA-B lets DDRB keep an input line at its pull-up |
+| **Assertions** | `hrm/appF-ciab-port-assignments`: 2 red (`PROP-CRA-PBON`, `PROP-CRA-OUTMODE`; 7 passed, 3 failed, the third red being [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`: 7 red on fx68k and 7 on TG68K, all of them this finding's (19 passed, 7 failed on each core): the four named in *Test* and `P2-TOGGLE`'s three component lines, which carry no claim id — `P2-LEGR` (low after RES), `P2-MAIN` (high after each start from a level of 0) and `P2-LEGH` (high after a start from high). Each is graded on CIA-B's two instances, where `P1-PRE1.4/O1` holds (with DDRB bit n = 1 and PBON off, PRB reads the data bit, 0 and then 1), and not on CIA-A's, where it fails and is recorded. In the same run `P1-CONTROL` — the PBON = 0 run, graded against the page's PBON = 0 values through the same comparator — and `P1-OTHERBITS` are green on CIA-B, as are `P1-PRE1.1`–`P1-PRE1.3` and `P2-PRE2.2`–`P2-PRE2.4`; `P2-PRE2.1`, `P2-CONTRAST` and `P2-LEGH-CONTRAST` are recorded rather than graded, because this build already reads what each contrast predicts |
+| **Verdict of the four** | **unanimous against NanoMig on PBON; split on p. 342's toggle and pulse clauses, which the silicon follows and none of the four follows in full.** WinUAE, vAmiga, Denise and Copperline all put a timer output on PB6 or PB7 when PBON is set, chosen by OUTMODE; none leaves the two bits without effect. vAmiga and Denise pulse high for one cycle, WinUAE shows 0 in pulse mode and Copperline pulses low; vAmiga, Denise and Copperline invert the toggle at each underflow, where WinUAE shows the START bit; Denise's and Copperline's toggle is high after reset, and Copperline's is not set on a start; vAmiga's CIA-B lets DDRB keep an input line at its pull-up. Outside the emulators, the 8520R4 dissection's netlist gives a positive pulse, a toggle low after RES, high after a start and inverted at every underflow, and a line driven while PBON or the DDRB bit is set, as p. 342 does — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-054](NM-HRM-054.md) (CIA-A's port B has no data register, so a PRB read of CIA-A returns the joystick-adapter inputs and cannot show PB6 or PB7 either), [NM-HRM-063](NM-HRM-063.md) (FLAG, the other red of the same unit package) |
 
 ---
@@ -175,15 +175,19 @@ it reads `7 passed, 3 failed`.
 **At the system's ports, on both CPU cores.**
 [`integration/appF-cia-system`](../../integration/appF-cia-system) runs 68000
 programs on the whole of `nanomig.v`, on fx68k and on TG68K, and reads PRB
-through the CPU, the channel p. 341 describes. It reads `13 passed, 4 failed` on
-each core, the two output files differing only in their `CORE:` line. `P1-MAIN`
-grades p. 342's override on all four timers (CIA-A and CIA-B, timer A on PB6,
-timer B on PB7); `P2-LEGR` and `P2-MAIN` grade the toggle output's level after
-RES and after each start.
+through the CPU, the channel p. 341 describes. It reads `19 passed, 7 failed` on
+each core, the two output files differing only in their `CORE:` line. `P1`
+grades p. 342's override for each timer, timer A on PB6 and timer B on PB7:
+`P1-MAIN-CRA` on the timer-A instances, `P1-MAIN-CRB` on the timer-B instances,
+and `P1-MAIN` on both, the other bits included. `P2` grades the toggle output's
+level after RES (`P2-LEGR`), after each start from low (`P2-MAIN`) and after a
+start from high (`P2-LEGH`), and `P2-TOGGLE` the three together. Each is graded
+only where a PRB read shows a driven level at all: `P1-PRE1.4/O1` requires
+PRB, with DDRB bit n = 1 and PBON off, to read the data bit, 0 and then 1. It
+holds on CIA-B's two instances and fails on CIA-A's.
 
-What `P1-MAIN`'s legs read, per instance — read for this page from the package's
-own programs on its TG68K build, not a graded result (bit n is 6 for timer A and
-7 for timer B):
+What `P1`'s legs read, per instance, as the package prints them on both cores
+(bit n is 6 for timer A and 7 for timer B):
 
 | leg | CR | DDRB bit n, data bit n | the page gives bit n | CIA-B timer A | CIA-B timer B | CIA-A, both timers |
 |---|---|---|---:|---:|---:|---:|
@@ -193,30 +197,36 @@ own programs on its TG68K build, not a graded result (bit n is 6 for timer A and
 | b1, over the data | $0E | output, 1 | **0** | $FD | $FD | $FF |
 | c1, toggle started, no underflow | $07 | output, 0 | **1** | $BB | $7B | $FF |
 | d1, PBON off | $00 | output, 0 | 0 | $BB | $48 | $FF |
-| d2, PBON off | $00 | input | 1 | $FB | $C8 | $FF |
+| o1c, PBON off | $00 | output, 1 | 1 | $FB | $FB | $FF |
+| d2, PBON off | $00 | input | 1 | $FB | $FB | $FF |
 
 On CIA-B every leg with PBON set reads what DDRB and the data register give —
-the pull-up in a2 and a1, the data in b1 and c1 — and the two legs with PBON
+the pull-up in a2 and a1, the data in b1 and c1 — and the three legs with PBON
 off read as the page predicts. The ICR flags show the timers running: one
 underflow before a1 and none during c1 on every instance (`P1-PRE1.2`,
 `P1-PRE1.3`, green). On CIA-A every read is $FF, the joystick-adapter inputs,
-so d1 misses too; CIA-A cannot show PB6 or PB7 at this boundary for the reason
-[NM-HRM-054](NM-HRM-054.md) gives, and CIA-B's legs are the ones that measure
-PBON. The same program with PBON = 0 throughout reads a2, a1, b1 and c1 bit for
-bit as the PBON = 1 run does, which is why `P1-CONTRAST` is recorded and not
-graded.
+so d1 and o1c miss too; CIA-A cannot show PB6 or PB7 at this boundary for the
+reason [NM-HRM-054](NM-HRM-054.md) gives, and CIA-B's legs are the ones that
+measure PBON. The same programs with PBON = 0 throughout read, on CIA-B, the
+PBON = 0 values the page gives — the pull-up in a2 and a1, the data in b1 and
+c1 — and `P1-CONTROL`, which grades that run through the same comparator, is
+green.
 
 `P2`'s programs set PBON with the toggle output (CR = $06) as the first write
-to the timer's control register after reset, read PRB (r1), then start a
-one-shot timer four times, sampling PRB 64 times after each start. On all four
-instances r1 reads $FF, bit n high where p. 342 gives low after RES
-(`P2-LEGR`, red), and all 4 × 64 samples read $FF: no start raises the line,
-because it never leaves the pull-up. The ICR reads after each one-shot carry
-the timer's flag on every instance, so all sixteen started and underflowed;
-`P2-PRE2.2`, green, shows that flag clear when the one-shot cannot end.
-`P2-MAIN` takes the level before the first start to be leg R's 0 rather than
-the r1 it read, so its red at the first start is not independent of
-`P2-LEGR`'s; the 256 unchanging samples are.
+to the timer's control register after reset and read PRB with the line an
+input (r1). With DDRB bit n = 1 and the data bit 0 they then read PRB (s0) and
+start a one-shot timer four times, sampling PRB 64 times after each start and
+reading it again once the one-shot has ended (z1–z4). Last they start a long
+timer, stop it and start it again, reading PRB after each of the three writes
+(h1–h3). On CIA-B, r1 reads bit n high where p. 342 gives low after RES
+(`P2-LEGR`, red); s0, z1–z4 and all 64 samples after each of the eight starts
+read bit n at the driven 0, so no start raises the line (`P2-MAIN`, red); and
+h1, h2 and h3 read the same 0, where p. 342 gives high after each start
+(`P2-LEGH`, red).
+The ICR reads show every one-shot started and ended (`P2-PRE2.2`) and no
+underflow during the long timer (`P2-PRE2.4`), both green. On CIA-A every read
+is $FF, so no start there has the level of 0 before it that `P2-MAIN` requires,
+and r1 and h1–h3 are not graded there.
 
 ---
 
@@ -228,22 +238,28 @@ underflow?
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`cia.cpp:1868-1887`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1868-L1887), [`:1977`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1977), [`:2079`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2079), [`:2296-2299`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2296-L2299) | `CIA_PBON` replaces bit 6 when CRA's PBON is set and bit 7 when CRB's is, in the value the port access has already formed: `v &= ~0x40;` / `v \|= pb6 ? 0x40 : 00;`. In toggle mode the level is the START bit, `pb6 = c->t[0].cr & CR_START;`, and in pulse mode it stays 0. Both PRB reads pass through it, `tmp = CIA_PBON(c, tmp);` on CIA-A and on CIA-B, and so does the value a CIA-B PRB write hands the drives, `val = CIA_PBON(c, val);` then `DISK_select(val);`. **PBON overrides DDRB and the data**; the toggle is high while the timer runs and low after RES and after a one-shot ends, but a continuous timer's underflows do not invert it and pulse mode has no pulse |
-| **vAmiga** | [`Core/Components/CIA/CIARegs.cpp:385-416`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIARegs.cpp#L385-L416), [`Core/Components/CIA/CIA.cpp:556-608`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L556-L608), [`:914-934`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L914-L934), [`:1066-1079`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L1066-L1079), [`:1107-1119`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L1107-L1119), [`:55-57`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L55-L57), [`Core/Components/CIA/CIA.h:408-410`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.h#L408-L410) | a start sets the toggle, `pb67Toggle \|= 0x40;`, and PBON routes it, `pb67TimerMode \|= 0x40;`. At an underflow the toggle inverts, `pb67TimerOut ^= 0x40;`, or in pulse mode goes high, `pb67TimerOut \|= 0x40;`, and is cleared again a cycle later, `if (delay & CIAPB6Low1) { pb67TimerOut &= ~0x40; }`; a reset clears `pb67Toggle` with the rest of the serialised state. CIA-A applies the timer bit after DDRB, `REPLACE_BIT(result, 6, pb67TimerOut & (1 << 6));` following `u8 result = (internal & ddrb) \| (external & ~ddrb);`, so **PBON overrides DDRB and the data**. CIA-B puts it into the data before DDRB, in `portBinternal`, and then applies `u8 result = (internal & ddrb) \| (external & ~ddrb);`: on CIA-B the timer replaces the data bit but **a line DDRB leaves an input reads its pull-up** |
+| **WinUAE** | [`cia.cpp:1868-1887`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1868-L1887), [`:1977-1981`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1977-L1981), [`:2079-2083`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2079-L2083), [`:2296-2299`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2296-L2299), [`cfgfile.cpp:9954`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cfgfile.cpp#L9954) | `CIA_PBON` replaces bit 6 when CRA's PBON is set and bit 7 when CRB's is, in the value the port access has already formed: `v &= ~0x40;` / `v \|= pb6 ? 0x40 : 00;`. In toggle mode the level is the START bit, `pb6 = c->t[0].cr & CR_START;`, and in pulse mode it stays 0. Both PRB reads pass through it, `tmp = CIA_PBON(c, tmp);` on CIA-A and on CIA-B, and so does the value a CIA-B PRB write hands the drives, `val = CIA_PBON(c, val);` then `DISK_select(val);`. **PBON overrides DDRB and the data** in the default CIA type; the other type, `391078-01`, which the A600 preset selects, `p->cs_ciatype[0] = p->cs_ciatype[1] = 1;`, puts the data register back on every line DDRB makes an output after `CIA_PBON`, `tmp &= ~c->drb;` / `tmp \|= c->prb & c->drb;`. The toggle is high while the timer runs and low after RES and after a one-shot ends, but a continuous timer's underflows do not invert it and pulse mode has no pulse |
+| **vAmiga** | [`Core/Components/CIA/CIARegs.cpp:385-416`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIARegs.cpp#L385-L416), [`Core/Components/CIA/CIA.cpp:556-608`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L556-L608), [`:914-934`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L914-L934), [`:1066-1079`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L1066-L1079), [`:1107-1119`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L1107-L1119), [`:55-57`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L55-L57), [`Core/Components/CIA/CIA.h:408-410`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.h#L408-L410), [`CIARegs.cpp:269-281`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIARegs.cpp#L269-L281), [`Core/Infrastructure/Defaults.cpp:179`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Infrastructure/Defaults.cpp#L179) | a start sets the toggle, `pb67Toggle \|= 0x40;`, and PBON routes it, `pb67TimerMode \|= 0x40;`. At an underflow the toggle inverts, `pb67TimerOut ^= 0x40;`, or in pulse mode goes high, `pb67TimerOut \|= 0x40;`, and is cleared again a cycle later, `if (delay & CIAPB6Low1) { pb67TimerOut &= ~0x40; }`; a reset clears `pb67Toggle` with the rest of the serialised state. The one-shot start a timer-high write makes sets `pb67Toggle \|= 0x40;` but not `pb67TimerOut`, the bit the port shows, so on that start the line does not rise. CIA-A applies the timer bit after DDRB, `REPLACE_BIT(result, 6, pb67TimerOut & (1 << 6));` following `u8 result = (internal & ddrb) \| (external & ~ddrb);`, so **PBON overrides DDRB and the data**. CIA-B puts it into the data before DDRB, in `portBinternal`, and then applies `u8 result = (internal & ddrb) \| (external & ~ddrb);`: on CIA-B the timer replaces the data bit but **a line DDRB leaves an input reads its pull-up**. This is the default revision, `MOS_8520_DIP`; the PLCC option puts the data register back on every line DDRB makes an output, `result = (result & ~ddrb) \| (prb & ddrb);` |
 | **Denise** | [`emulation/cia/new/register.cpp:84-89`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/register.cpp#L84-L89), [`:445-470`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/register.cpp#L445-L470), [`:368-369`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/register.cpp#L368-L369), [`emulation/cia/new/cia.cpp:266-284`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/cia.cpp#L266-L284), [`:48-58`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/cia/new/cia.cpp#L48-L58) | a PRB read, `uint8_t out = readPort(PORTB, &lines);`, then `adjustBit6And7(out);`, which clears the bit and sets it from the toggle or from the one-cycle underflow stage, `if ( ( (timerA.control & 4) ? timerA.toggle : (delay & CIA_UF_TA1) ) )`; the port lines the drives see take the same adjustment in `updatePortB`. A start sets the toggle, `timerA.toggle = true;`, and an underflow inverts it, `timerA.toggle ^= 1;`. **PBON overrides DDRB and the data, the toggle inverts at each underflow and is set on a start, and the pulse is high for one cycle**; but the reset sets the toggle high too, `timerA.toggle = true;` beside `timerA.control = 0;`, where p. 342 sets it low |
-| **Copperline** | [`src/chipset/cia.rs:483-500`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L483-L500), [`:1001-1004`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1001-L1004), [`:1014-1032`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1014-L1032), [`:721-732`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L721-L732), [`:201-202`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L201-L202), test [`:1565-1577`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1565-L1577) | `port_b_pins` sets or clears bit 6 when CRA's PBON is set, `if self.regs[REG_CRA] & CR_PBON != 0 {`, after DDRB and the data, and a guest PRB read returns it, `self.port_b_pins()`. At an underflow toggle mode inverts the level, `self.ta_pb_output_high = !self.ta_pb_output_high;`, and pulse mode drops it, `self.ta_pb_output_high = false;`, for one E-clock, under the comment *"PBON pulse mode holds PB6/PB7 low for one E-clock."* The level starts as `ta_pb_output_high: true,` and no control-register write changes it. **PBON overrides DDRB and the data and the toggle inverts at each underflow**; but the toggle is high after reset and is not set by a start, and the pulse is low where p. 342 gives a positive one. Its own test, `timer_a_toggle_output_overrides_pb6_pin`, grades the override with DDRB = $00 |
+| **Copperline** | [`src/chipset/cia.rs:483-500`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L483-L500), [`:1001-1004`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1001-L1004), [`:1014-1032`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1014-L1032), [`:721-732`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L721-L732), [`:201-202`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L201-L202), test [`:1565-1577`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1565-L1577) | `port_b_pins` sets or clears bit 6 when CRA's PBON is set, `if self.regs[REG_CRA] & CR_PBON != 0 {`, after DDRB and the data, and a guest PRB read returns it, `self.port_b_pins()`. At an underflow toggle mode inverts the level, `self.ta_pb_output_high = !self.ta_pb_output_high;`, and pulse mode drops it, `self.ta_pb_output_high = false;`, for one E-clock, under the comment *"PBON pulse mode holds PB6/PB7 low for one E-clock."* The level starts as `ta_pb_output_high: true,` and no control-register write changes it, and an underflow changes it only while PBON is set, `if control & CR_PBON == 0 {`. **PBON overrides DDRB and the data and the toggle inverts at each underflow**; but the toggle is high after reset and is not set by a start, and the pulse is low where p. 342 gives a positive one. Its own test, `timer_a_toggle_output_overrides_pb6_pin`, grades the override with DDRB = $00 |
 | **MiSTer** | [`rtl/cia_timera.v:54-55`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L54-L55), [`rtl/cia_timerb.v:54-55`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timerb.v#L54-L55), [`rtl/ciab.v:214`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciab.v#L214), [`rtl/ciaa.v:27`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L27) | descendant — the same gap, now named in the timer modules' comments: `// Bit 1: PBON - PB6 output mode (not implemented in simplified version)` and `// Bit 2: OUTMODE - PB6 output mode (not implemented)`, the same for PB7; port B is `assign portb_out[7:0] = (~ddrportb[7:0]) \| regportb[7:0];`, and CIA-A's header keeps `// toggling of PB6/PB7 by timer A/B` under "NOT implemented". The files are rewritten around it — 169 lines of `cia_timera.v` differ from NanoMig's — and none of the rewrite reaches the two bits |
 | **TC64** | [`rtl/minimig/cia_timera.v:40`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/cia_timera.v#L40), [`:115`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/cia_timera.v#L115), [`rtl/minimig/ciab.v:164`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciab.v#L164), [`rtl/minimig/ciaa.v:27`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/ciaa.v#L27) | descendant — the same statements as NanoMig: `tmcr[6:0] <= {data_in[6:5],1'b0,data_in[3:0]};` stores the register and `\| ({8{~wr&tcr}} & {1'b0,tmcr[6:0]});` reads it back, with nothing else on bits 1 and 2; port B is `assign portb_out[7:0] = (~ddrportb[7:0]) \| regportb[7:0];`, and CIA-A's header says `// toggling of PB6/PB7 by timer A/B` is not implemented. TC64 is the closer sibling here, 6 lines apart from NanoMig on `ciab.v` and 11 on `cia_timera.v`, none of them on these bits |
 
 **All four put a timer output on the line; none of them does what NanoMig
 does.** Each routes PBON to bit 6 or 7 of a PRB read and lets OUTMODE choose
 the output, and each also hands CIA-B's level to its drives when port B is
-written. Where they part is how far they follow p. 342: WinUAE models the
-toggle as the running state and has no pulse; vAmiga and Denise model the
-toggle, the start and the one-cycle pulse, Denise with the toggle high after
-reset; Copperline inverts at underflows but starts high, ignores starts and
-pulses low; and vAmiga's CIA-B lets DDRB keep an input line at its pull-up,
-where p. 342 says the function overrides DDRB. Read against `P1`'s legs by
+written. Where they part is how far they follow p. 342, and on each of those
+clauses the 8520R4 dissection's netlist reads as p. 342 does (*What other
+Commodore documents say*): the line is driven while PBON is set whatever DDRB
+holds, the pulse is positive, and the toggle is low after RES, high after a
+start and inverted at every underflow. WinUAE models the toggle as the running
+state and has no pulse; vAmiga and Denise model the toggle, the start and the
+one-cycle pulse, Denise with the toggle high after reset and vAmiga without
+raising the line on a one-shot start made by a timer-high write; Copperline
+inverts at underflows, and only while PBON is set, but starts high, ignores
+starts and pulses low; and vAmiga's CIA-B lets DDRB keep an input line at its
+pull-up, where p. 342 says the function overrides DDRB and the dissection
+drives the pad while PBON or the DDRB bit is set. Read against `P1`'s legs by
 their code, not run: WinUAE and Denise would read every PBON leg as p. 342
 predicts, vAmiga on CIA-A but not in CIA-B's input legs a2 and a1, and
 Copperline not in a2, where its idle level is high, nor in c1, where a start
@@ -278,39 +294,47 @@ and none decides this finding. What they are and how they were read is in
 
   The 6526 specification gives CRA bit 1 and bit 2 (`1=TOGGLE, O=PULSE`) as the manual does. Its PDF page 6 prints the PB On/Off and Toggle/Pulse paragraphs as p. 342 does, the override of DDRB and the toggle output set high on a start and low by RES among them; the OCR interleaves that page's two columns, so those paragraphs are not quoted here. It is a 6526 document and does not itself speak for the 8520.
 
-- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 8e, 4c and 9e — agrees with the manual:
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 8e, 4c and 9e and the overview on sheet 1 — agrees with the manual:
 
-  *Read from the drawing, not quoted:* sheet 8e, drawn transistor by transistor, forms TA_Q, the signal it sends "to PB6 pad driver". A pass switch driven by CRA2 takes it from a latch that RES sets, that a rising edge of the start bit (TA_CEN, CRA0 as sampled) clears, and that flips at each underflow pulse TA_INT; a pass switch driven by CRA2's complement takes it from TA_INT itself. Through the inverting output stage TA_Q is TA_INT in pulse mode and the latch's complement in toggle mode: low after RES, high after a start, inverted at every underflow. TA_INT is TAH_TC, the underflow, latched on PHI1; TAH_TC enters the counter-load NOR beside RES, so both are active high. Sheet 4c, drawn transistor by transistor for PB7 and annotated "PB6: CRA1" and "PB6: TA_Q" for PB6, has a pass switch driven by CRB1 put TB_Q where the PRB bit otherwise goes, and enables the pad's pull-down while CRB1 or the DDRB bit is set; the pad then follows the selected signal, its high level from a passive pull-up. Sheet 9e is "layout identical to 8e)".
+  *Read from the drawing, not quoted:* sheet 8e, drawn transistor by transistor, forms TA_Q, the signal it sends "to PB6 pad driver". A pass switch driven by CRA2 takes it from a latch that RES sets, that a rising edge of the start bit (TA_CEN, CRA0 as sampled) clears, and that flips at each underflow pulse TA_INT; CRA1 does not reach the latch. A pass switch driven by CRA2's complement takes it from an inverter of TA_INT. Through the inverting output stage TA_Q is TA_INT in pulse mode and the latch's complement in toggle mode: low after RES, high after a start, inverted at every underflow. TA_INT is TAH_TC, the underflow, latched on PHI1; TAH_TC enters the counter-load NOR beside RES, so both are active high. The overview on sheet 1 ORs SET_CRA0 into CRA0's latch, and SET_CRA0 is a TAH write in one-shot mode; the sheet's note reads "in one_shot mode: TAH write sets CRA0, what starts timer A". Sheet 4c, drawn transistor by transistor for PB7 and annotated "PB6: CRA1" and "PB6: TA_Q" for PB6, has a pass switch driven by CRB1 put TB_Q where the PRB bit otherwise goes, and enables the pad's pull-down while CRB1 or the DDRB bit is set; the pad then follows the selected signal, its high level from a passive pull-up. Sheet 9e is "layout identical to 8e)".
   <!-- drawing: cia-8520r4-dissection/sheet_012.txt -->
   <!-- drawing: cia-8520r4-dissection/sheet_005.txt -->
   <!-- drawing: cia-8520r4-dissection/sheet_013.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_001.txt -->
 
-  PBON puts the timer's output on PB6 or PB7 and makes the line an output whatever DDRB holds, and OUTMODE chooses between the toggle and the underflow pulse, as pp. 342 and 348 to 350 print. The polarities are p. 342's as well: a positive pulse, and a toggle set low by RES and high by a start. The sheet's own notes, 'CRA2=0: low pulse' and 'RES forces toggle to 1', read the other way. The toggle note matches the concept drawing, 'different from original circuitry', which takes TA_Q from the latch node without the inverting output stage of the netlist; the pulse note matches neither the concept drawing nor the netlist. The pulse's length is not traced. PB6 is read from PB7's cell by its annotation, and timer B's control logic from timer A's by the note on sheet 9. The dissection is of one revision.
+  PBON puts the timer's output on PB6 or PB7 and makes the line an output whatever DDRB holds, and OUTMODE chooses between the toggle and the underflow pulse, as pp. 342 and 348 to 350 print. The polarities are p. 342's as well: a positive pulse, and a toggle set low by RES and high by a start. A start here is a rising edge of CRA0, so the one-shot start a timer-high write makes counts when the timer was stopped, and a START = 1 write to a running timer does not; p. 342 does not say either. The sheet's own notes, 'CRA2=0: low pulse' and 'RES forces toggle to 1', read the other way. The toggle note matches the concept drawing, 'different from original circuitry', which takes TA_Q from the latch node without the inverting output stage of the netlist; the pulse note matches neither the concept drawing nor the netlist. The pulse's length is not traced. PB6 is read from PB7's cell by its annotation, and timer B's control logic from timer A's by the note on sheet 9. The dissection is of one revision.
 
 ---
 
 ## Suggested change
 
-**One option: give each timer a port-B output and let PBON select it.** In
-`cia_timera.v` and `cia_timerb.v`, a toggle flip-flop cleared by `reset`, set
-when a control-register write turns `tmcr[0]` on (and by the one-shot start a
-timer-high write makes, if a specialist reads p. 342's "started" to include
-it), and inverted on `underflow`; a pulse output that is `underflow` held for
-one `eclk` count; `tmcr[2]` choosing between them; and the result and
-`tmcr[1]` brought out as two new ports. In `ciab.v`, bit 6 and bit 7 of
-`portb_out` then take the timer output whenever the matching PBON is set,
-whatever `ddrportb` and `regportb` hold; the PRB read, which returns
-`portb_out`, follows by itself. This has not been run here. What it would
-change:
+**One option: give each timer a port-B output and let PBON select it, as the
+8520R4 dissection draws it.** In `cia_timera.v` and `cia_timerb.v`, a toggle
+flip-flop cleared by `reset`, set on every rising edge of `tmcr[0]`, and
+inverted on every `underflow`, whatever `tmcr[1]` holds. A rising edge of
+`tmcr[0]` covers a control-register write that starts a stopped timer and the
+one-shot start a timer-high write makes,
+[`cia_timera.v#L41-L42`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L41-L42),
+`else if (thi_load && oneshot)` / `tmcr[0] <= 1'd1;`, and leaves out a
+START = 1 write to a running timer, as the dissection's edge detector does.
+Beside it, a pulse output that is `underflow` held high for one `eclk` count;
+`tmcr[2]` choosing between the two; and the result and `tmcr[1]` brought out
+as two new ports. In `ciab.v`, bit 6 and bit 7 of `portb_out` then take the
+timer output whenever the matching PBON is set, whatever `ddrportb` and
+`regportb` hold, as the dissection's pad drives while PBON or the DDRB bit is
+set; the PRB read, which returns `portb_out`, follows by itself. This has not
+been run here. What it would change:
 
-- `PROP-CRA-PBON`, `PROP-CRA-OUTMODE`, and `P1-MAIN`'s and `P2-LEGR`'s CIA-B
-  instances would have a level to measure; `P1-CONTRAST` and `P2-CONTRAST`
-  would become gradeable;
+- `PROP-CRA-PBON`, `PROP-CRA-OUTMODE`, and every `P1` and `P2` line graded on
+  CIA-B would have a level to measure; `P2-PRE2.1`, `P2-CONTRAST` and
+  `P2-LEGH-CONTRAST` would read differently from their baselines and could be
+  graded;
 - the drives would see the timer on SEL3* or MTR* when a program sets PBON on
   CIA-B, as the wiring of p. 351 implies;
 - CIA-A would still read its joystick-adapter inputs on PRB: its PB6 and PB7
   show nothing until the port-B read path of [NM-HRM-054](NM-HRM-054.md)
-  carries the pins, and `P1-MAIN`'s CIA-A instances stay red until both change.
+  carries the pins, and until both change `P1-PRE1.4/O1` keeps CIA-A's
+  instances recorded rather than graded.
 
 ---
 
@@ -319,23 +343,24 @@ change:
 - **The page is plain and says it five times.** p. 341, p. 342, p. 348,
   p. 349 and p. 350's bitmap give the function to both timers of both CIAs,
   and no page of Appendix F takes it back for the Amiga's wiring. Commodore's
-  own A500/A2000 manual and the 6526 specification repeat it.
+  own A500/A2000 manual and the 6526 specification repeat it, and the 8520R4
+  dissection's netlist draws it, polarities included.
 - **The RTL says so itself.** `ciaa.v`'s header lists "toggling of PB6/PB7 by
   timer A/B" as not implemented, MiSTer's timer modules call both bits "not
   implemented", and the only uses of `tmcr` in either timer module are bits 0,
   3 and 6 and the read-back.
 - **The channels are live.** At the module, `FIXTURE-LIVE (portb)` carries two
   bytes through bit 6, and both reds turn green under their oracle mutations.
-  At the system, the same CIA-B reads show the data in d1 and the pull-up in
-  d2 as the page predicts, `P1-OTHERBITS` is green, and the ICR flags show
-  every timer underflowing where the program expects.
+  At the system, the same CIA-B reads show the data in d1 and o1c and the
+  pull-up in d2 as the page predicts, `P1-OTHERBITS` and `P1-CONTROL` are
+  green, and the ICR flags show every timer underflowing where the program
+  expects.
 - **What weakens it.** CIA-A's instances cannot show the difference at all
-  ([NM-HRM-054](NM-HRM-054.md)), so `P1-MAIN` and `P2`'s CIA-A reds are
-  overdetermined and CIA-B's carry the measurement. `P2-MAIN`'s first start is
-  graded from leg R's expected level, not from r1. `PROP-CRA-PBON` samples a
-  pulse-mode output at one instant, which a correct one-cycle pulse passes only
-  if the sample falls inside it; NanoMig's red does not depend on that, since
-  no path exists. And none of the four implements every clause of p. 342.
+  ([NM-HRM-054](NM-HRM-054.md)), so the package grades CIA-B's alone.
+  `PROP-CRA-PBON` samples a pulse-mode output at one instant, which a correct
+  one-cycle pulse passes only if the sample falls inside it; NanoMig's red does
+  not depend on that, since no path exists. And none of the four implements
+  every clause of p. 342.
 
 ---
 
@@ -347,9 +372,15 @@ change:
    carries it; whether software depends on it decides how much the gap matters.
 2. **The toggle's level after RES and at a start.** p. 342, the A500/A2000
    manual and the 6526 specification all say low after RES and high on every
-   start. WinUAE and vAmiga do that, Denise sets it high at reset, and
-   Copperline starts it high and does not set it on a start. A fix in the
-   Minimig line would do well to follow the page rather than any one of them.
+   start, and the 8520R4 dissection's netlist does the same; its margin notes,
+   'RES forces toggle to 1' and 'CRA2=0: low pulse', say otherwise, and the
+   netlist does not bear them out. WinUAE does what the page says; vAmiga does
+   too, except that a one-shot start made by a timer-high write does not raise
+   the line; Denise sets the toggle high at reset, and Copperline starts it
+   high and does not set it on a start. A fix in the Minimig line would do
+   well to follow the page rather than any one of them.
 3. **Which starts count.** p. 342 does not say whether the one-shot start that
    a timer-high write makes, or a START = 1 write to a running timer, sets the
-   toggle. `integration/appF-cia-system` leaves both ungraded.
+   toggle. The dissection sets it on a rising edge of CRA0, which the first
+   makes when the timer was stopped and the second never makes.
+   `integration/appF-cia-system` leaves both ungraded.
