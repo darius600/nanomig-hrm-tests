@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The divergence is visible and physical, not register-level. |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L971-L972) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L543-L545) |
 | **Report to** | **the NanoMig board maintainers**, not the RTL alone — `fdd_led` leaves the core and lights a real LED on the FPGA board |
-| **Test** | [`hrm/ch8-drive-select-motor-led`](../../hrm/ch8-drive-select-motor-led) — assertions `opus:8-cia.c26` and its twin `sol:8-cia.c24` |
+| **Test** | [`hrm/ch8-drive-select-motor-led`](../../hrm/ch8-drive-select-motor-led) — assertions `opus:8-cia.c26` and its twin `sol:8-cia.c24`; [`integration/appF-cia-system`](../../integration/appF-cia-system) reproduces it at the system's ports on fx68k and on TG68K, recorded, not graded: `P1-LP/P1-O2` reads `fdd_led` off after DF0 is selected with MTR* low |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red of 10 graded, a claim and its independently-read twin. **Six greens in the same run** grade the rest of the same PB7 row, including the motor latch this light fails to read |
+| **Assertions** | 2 red of 10 graded, a claim and its independently-read twin. **Six greens in the same run** grade the rest of the same PB7 row, including the motor latch this light fails to read. `integration/appF-cia-system` adds none: `P1-LP/P1-O2` and `LED-R` are RECORDED lines, and nothing in that package is graded on the light |
 | **Provenance** | **recovered by the attack stage** after classification had discarded both claims as not testable. See *How this finding was nearly lost* |
 | **Verdict of the four** | **unanimous against NanoMig.** All four model a drive light, and all four drive it from the motor. Two add a select term; two use DMA only to change the light's *colour*, never whether it is lit |
 
@@ -106,6 +106,49 @@ own latched motor bit. `fdd_led` is a single scalar for the whole controller.
 That control is what makes the two reds a measurement rather than a dead output.
 The light can be lit; it simply cannot be lit by the motor, and it *can* be lit
 with no drive selected — a state in which no real drive's lamp would be on.
+
+**At the system's ports, on both CPU cores.**
+[`integration/appF-cia-system`](../../integration/appF-cia-system) runs 68000
+programs on the whole of `nanomig.v`, on fx68k and on TG68K, with one drive,
+DF0, configured, and in its CIA-B timer-B runs reads `fdd_led` at the top-level
+port on every clock cycle. That P1 program opens with a calibration leg:
+DDRB = $88, then PRB written $00, $08 and $00, so that MTR* (PB7) is already
+low when SEL0* (PB3) falls, and a wait loop; then the same with PRB written
+$80, $88 and $80, MTR* high. `fdd_led` is read at the end of each wait. The package prints,
+the same on both cores:
+
+    RECORDED: P1-LP/P1-O2 [p244]: fdd_led follows disk DMA, not MTR* latched at drive select (NM-HRM-046) -- measured: LED before boot=off, after R-SELECT with MTR*=0 (on leg)=off, after R-SELECT with MTR*=1 (off leg)=on -- live; not distinguishable on this build, the LED already reads off through every R-SELECT here, and the only proven-live input is disk DMA, not this port's own select/motor write -- O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded
+
+With DF0's motor latched on, `fdd_led` reads 0, the on leg's `off`, where
+p. 244 has the light on. The off leg's `on` is not the light's level: the test
+prints `on` there when `fdd_led` reads 0, so the light is dark after both
+selects. `LED before boot` is read on the cycle the CPU leaves reset, before
+the program runs. The package prints no value for the four O2
+legs, nor for P2's leg R:
+
+    RECORDED: LED-R [p244]: not graded -- fdd_led follows disk DMA, not MTR* latched at select (NM-HRM-046); O2 is not observable at this port, the same fact P1-LP/P1-O2 record
+
+At leg R, PB7 is an input and reads high on this build (P2's r1 = $FF on CIA-B
+timer B), so DF0's motor latch is off at that select whatever the light
+follows. `EP2-PER-RUN` is green: between each run's first marker and its last,
+the chip-memory port shows only the CPU and memory refresh, so no disk DMA runs
+while the light is read.
+
+Read with the package's own programs, instrumented to print `fdd_led` at each
+of the P1 run's twelve markers and to count the cycles on which it is 1 — a
+measurement for this page, not a graded assertion — `fdd_led` is 0 at every
+marker and on every cycle from the CPU leaving reset to DONE, 3012613 cycles
+on fx68k and 3153605 on TG68K, and on every cycle of P2's CIA-B timer-B run,
+2455309 and 2477709. That includes the O2 legs LED-C and LED-D1, where PRB
+reads bit 7 as 0 (c1 = d1 = $7B) before DF0 is selected, so the motor latch is
+on there too.
+
+**This is the behaviour this page reports, reproduced at the system level; it
+is not a graded red of its own.** The package prints no FAIL for the light; its
+seven FAILs on each core are [NM-HRM-074](NM-HRM-074.md)'s. Its RECORDED lines
+say the light follows disk DMA, but the package starts no disk DMA: what it
+shows at the system's ports is the light not following the motor, and
+`CTRL-DMA-DRIVES-FDD-LED` above is what shows DMA lighting it.
 
 ## What a user would actually see
 

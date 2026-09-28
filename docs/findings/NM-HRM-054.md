@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L267-L279) |
 | **Report to** | **the Minimig line, not NanoMig alone.** NanoMig's copy is the upstream behaviour with the register's corpse left in place |
-| **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) — `PROP-1` red, `CONTROL-PA0-OUTPUT` green on the same comparator |
+| **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) — `PROP-1` red, `CONTROL-PA0-OUTPUT` green on the same comparator; [`integration/appF-cia-system`](../../integration/appF-cia-system) reproduces it at the system's ports on fx68k and on TG68K, recorded, not graded: its precondition `P1-PRE1.4/O1` fails on CIA-A's two instances, whose PRB reads $FF whatever DDRB and the data register hold, and holds on CIA-B's |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red of 3 |
+| **Assertions** | 1 red of 3 in `hrm/ch8-parallel-port-direction`. `integration/appF-cia-system` adds none: for CIA-A, `P1-PRE1.4/O1` is printed as a RECORDED line, not a FAIL, and CIA-A's instances are left out of every graded line; the package's 7 reds on each core are [NM-HRM-074](NM-HRM-074.md)'s, graded on CIA-B |
 | **Verdict of the four** | **unanimous against.** All four store CIA-A's port B data register and read it back through the direction mask |
 
 ---
@@ -83,6 +83,41 @@ A instead — `CONTROL-PA0-OUTPUT` — is green on the same fixture. Beside the
 graded lines the package records the direction-independence above: with
 `portb_in` held at `0x3C`, CIAAPRB reads `0x3C` under `CIAADDRB=0x00` and
 `CIAADDRB=0xFF` alike.
+
+**At the system's ports, on both CPU cores, CIA-A's PRB reads $FF whatever is
+written.** [`integration/appF-cia-system`](../../integration/appF-cia-system)
+runs 68000 programs on the whole of `nanomig.v`, on fx68k and on TG68K, and
+reads PRB through the CPU. Before it grades a CIA's port B, its precondition
+`P1-PRE1.4/O1` asks whether a PRB read shows a driven level at all: with DDRB
+bit n set and PBON off, PRB is read with the data bit written 0 (d1) and then
+1 (o1c), bit n being 6 in the timer-A program and 7 in the timer-B one. On
+CIA-A both reads are $FF, as is every other CIA-A read the package prints,
+where p. 341 — an output bit carries its data, an input bit its pull-up — gives
+$95 and $D5 in the timer-A program (DDRB = $7F, data $15 and then $55) and $55
+and $D5 in the timer-B one (DDRB = $BF, data $15 and then $95). The package
+prints, the same on both cores:
+
+    RECORDED: P1-PRE1.4/O1 [p341], CIA-A: a PRB read never shows a driven level -- measured $FF (d1) and $FF (O1 contrast) on CIAA/timer A, $FF and $FF on CIAA/timer B, whatever DDRB and the data register hold -- port B returns the lines, not the data register (NM-HRM-054) -- so CIA-A's instances are not graded on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause
+    MEASURED: P1 CIAA/TA: r0=$FF a2=$FF a1=$FF b1=$FF c1=$FF d1=$FF o1c=$FF d2=$FF
+    MEASURED: P1 CIAA/TB: r0=$FF a2=$FF a1=$FF b1=$FF c1=$FF d1=$FF o1c=$FF d2=$FF
+
+The same precondition, through the same programs, is a PASS on CIA-B's two
+instances, where d1 and o1c read $BB and $FB (timer A) and $7B and $FB
+(timer B): the data bit, 0 and then 1.
+
+$FF is what CIA-A's port B inputs carry at this boundary. `nanomig.v` ties
+joysticks 3 and 4 to zero,
+[`wire [15:0] JOY2 = 16'h0000;`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1373-L1374)
+and the same for `JOY3`, and passes both to the chipset inverted,
+[`._joy3 (~JOY2 ),` and `._joy4 (~JOY3 ),`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1505-L1506),
+so the eight joystick-adapter lines `minimig.v:624` routes into CIA-A's port B
+are all 1, and the PRB read at `ciaa.v:293-294` returns them.
+
+**This is the behaviour this page reports, reproduced at the system level; it
+is not a graded red of its own.** The package prints no FAIL for it: for CIA-A,
+`P1-PRE1.4/O1` is a RECORDED line, and CIA-A's instances are left out of every
+graded line. The package's seven FAILs on each core, of `19 passed, 7 failed`,
+are [NM-HRM-074](NM-HRM-074.md)'s, graded on CIA-B.
 
 ## What the port is actually used for here
 
