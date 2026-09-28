@@ -234,7 +234,15 @@ measured in chapter 4's sprite DMA package, the second beside the NTSC half of
 the same p. 304 sentence, which is NM-HRM-010's. Chapter 6 contributes
 NM-HRM-069, the first finding measured by an integration package — the whole
 design at `nanomig.v`'s own ports, run once with each CPU core — and red on
-both cores.
+both cores. Four more are measured by integration packages:
+- NM-HRM-070 by chapter 5's audio scan-rate package and chapter 8's disk and
+  serial package;
+- NM-HRM-071 by chapter 4's SuperHires sprite package;
+- NM-HRM-072 by the disk and serial package;
+- NM-HRM-073 by chapter 2's Copper control package.
+
+Appendix F contributes NM-HRM-074, NM-HRM-075, NM-HRM-077 and NM-HRM-078, and
+Appendix H NM-HRM-080.
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to
