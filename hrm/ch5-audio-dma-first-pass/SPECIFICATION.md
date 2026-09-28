@@ -18,20 +18,12 @@ found is listed and every one is cited by an assertion below.
 | id(s) | page | quote |
 |---|---|---|
 | `5-sum.c3` | 145 | "4. Set the length register, AUDxLEN, to the number of data words to be retrieved before starting at the address currently in AUDxLC." (step 4 of the printed enable procedure) |
-| `5-p139.c8`, `5-p139.c9`, `5-len.c1` | 139 | "The length of the data is the number of samples in your waveform divided by 2, or the number of words in the data set." |
+| `5-p139.c9`, `5-len.c1` | 139 | "The length of the data is the number of samples in your waveform divided by 2, or the number of words in the data set." |
 | `5-p139.c7`, `5-loc.c7` | 139 | "Each time the system retrieves the last audio word from the data area, it uses the contents of these location registers to again find the start of the data." |
-| `5-p164.c15`, `5-p164.c16`, `5-sm.c17`, `5-sm.c18` | 164 | "In DMA-driven operation, transition to the 001 state occurs and DMA requests are sent to Agnus as soon as DMA is turned on." |
-| `5-p164.c17`, `5-sm.c19` | 164 | "Because of pipelining in Agnus, the first data word must be thrown away." |
-| `5-p164.c18`, `5-p164.c19`, `5-sm.c20`, `5-sm.c21` | 164 | "State 101 is entered as soon as this word arrives; a request for the next data word has already gone out." |
-| `5-p164.c20`, `5-p164.c21`, `5-sm.c22`, `5-sm.c23` | 164 | "When the data arrives, state 010 is entered and the main loop continues until the DMA is turned off." |
-| `5-p164.c22`, `5-sm.c24` | 164 | "The length counter counts down once with each word that comes in." |
-| `5-p164.c23`, `5-p164.c24`, `5-sm.c25` | 164 | "When it finishes, a DMA restart request goes to Agnus along with the regular DMA request." |
+| `5-p164.c23` | 164 | "When it finishes, a DMA restart request goes to Agnus along with the regular DMA request." |
 | `5-p164.c25`, `5-sm.c26` | 164 | "This tells Agnus to reset the pointer to the beginning of the table of data." |
-| `5-p164.c26`, `5-p164.c27`, `5-sm.c27`, `5-sm.c28` | 164 | "Also, the length counter is reloaded and an interrupt request goes out soon after the length counter finishes (counts to one)." |
-| `F58.t101_010` | 166 | Figure 5-8, the 101->010 arc: cause "(AUDxON . AUDxDAT)", action bracket "[volcntrld, percntrld, pbufld1, AUDxDR if napnav]" -- no `lencount` term on this arc. |
-| `F58.loop.lenfin` | 166 | Figure 5-8, the 010/011 main-loop arcs: the bracket group "[lencntrld if (lenfin & AUDxON & AUDxDAT)], [lencount if (lenfin-bar & AUDxON & AUDxDAT)], [intreq2 if (lenfin & AUDxON & AUDxDAT)]". |
+| `5-p164.c26`, `5-sm.c27` | 164 | "Also, the length counter is reloaded and an interrupt request goes out soon after the length counter finishes (counts to one)." |
 | `5-p147.c8`, `5-p147.c9`, `5-join.c6` | 147 | "Each time the length counter reaches zero, both the location and length registers are reloaded with the same values to continue the audio output." |
-| `5-appA-p265.c46`, `5-appA-p265.c47`, `A-audxdat.c8`, `A-audxdat.c9` | 265 | AUDxDAT: "When the DMA data is finished (words outputted=length) and the data in this register has been used, an audio channel interrupt request is set." |
 
 ## Reading
 
@@ -131,24 +123,17 @@ One instance of each of the following three per LEN in {2, 3, 4, 5, 7, 8,
   address lies outside the byte range D..D+2*(LEN+16) (word range
   $8000..$8000+LEN+16). Expected, when the precondition holds: pass 1 (the
   fetches from F_j up to, not including, the next offset-0 fetch) is exactly
-  the offsets 0, 1, ..., LEN-1, in order. Cites `5-sum.c3`, `5-p139.c8`,
-  `5-p139.c9`, `5-len.c1`, `5-p164.c15`, `5-p164.c16`, `5-sm.c17`,
-  `5-sm.c18`, `5-p164.c17`, `5-sm.c19`, `5-p164.c18`, `5-p164.c19`,
-  `5-sm.c20`, `5-sm.c21`, `5-p164.c20`, `5-p164.c21`, `5-sm.c22`,
-  `5-sm.c23`, `5-p164.c22`, `5-sm.c24`, `F58.t101_010`.
+  the offsets 0, 1, ..., LEN-1, in order. Cites `5-sum.c3`, `5-p139.c9`,
+  `5-len.c1`.
 - `NO-FETCH-BEYOND-DATA-SET-LEN-<n>`: no fetch anywhere in the whole run
   (not just pass 1) has offset in LEN..LEN+15. Cites `5-p139.c7`,
-  `5-loc.c7`, `5-p164.c23`, `5-p164.c24`, `5-sm.c25`, `5-p164.c25`,
-  `5-sm.c26`, `5-p164.c26`, `5-p164.c27`, `5-sm.c27`, `5-sm.c28`,
-  `F58.loop.lenfin`, `5-p147.c8`, `5-p147.c9`, `5-join.c6`,
-  `5-appA-p265.c46`, `5-appA-p265.c47`, `A-audxdat.c8`, `A-audxdat.c9`.
+  `5-loc.c7`, `5-p164.c23`, `5-p164.c25`, `5-sm.c26`, `5-p164.c26`,
+  `5-sm.c27`, `5-p147.c8`, `5-p147.c9`, `5-join.c6`.
 - `LATER-PASSES-LEN-<n>` (green control, same basis as
   `NO-FETCH-BEYOND-DATA-SET-LEN-<n>`): passes 2 and 3 each equal exactly the
-  offsets 0, 1, ..., LEN-1, in order. Cites `5-p164.c23`, `5-p164.c24`,
-  `5-sm.c25`, `5-p164.c25`, `5-sm.c26`, `5-p164.c26`, `5-p164.c27`,
-  `5-sm.c27`, `5-sm.c28`, `F58.loop.lenfin`, `5-p147.c8`, `5-p147.c9`,
-  `5-join.c6`, `5-appA-p265.c46`, `5-appA-p265.c47`, `A-audxdat.c8`,
-  `A-audxdat.c9`.
+  offsets 0, 1, ..., LEN-1, in order. Cites `5-p139.c7`, `5-loc.c7`,
+  `5-p164.c23`, `5-p164.c25`, `5-sm.c26`, `5-p164.c26`, `5-sm.c27`,
+  `5-p147.c8`, `5-p147.c9`, `5-join.c6`.
 
 ## Mutation plan
 
