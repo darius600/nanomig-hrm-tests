@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-bitplane-colour-encoding`](../../hrm/ch3-shres-bitplane-colour-encoding) — `15 passed, 9 failed` |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 9 red: `SHRES-REINTERPRETS-SAME-REGISTERS`; `SHRES-BITPLANE-TABLE-COLOR-01`, `SHRES-BITPLANE-TABLE-COLOR-02`, `SHRES-BITPLANE-TABLE-COLOR-03`, `SHRES-BITPLANE-TABLE-COLOR-05`, `SHRES-BITPLANE-TABLE-COLOR-0A`, `SHRES-BITPLANE-TABLE-COLOR-0F`; `SHRES-USES-SIXTEEN-LOWER-REGISTERS`; `SHRES-TWO-BITS-RESOLUTION`. Each is green on a lookup that pairs adjacent pixels, and on one that pairs pixels 0/2 and 1/3 except `-01` to `-03` at two of its four group alignments (*What the test measures*) |
+| **Assertions** | 9 red: `SHRES-REINTERPRETS-SAME-REGISTERS`; `SHRES-BITPLANE-TABLE-COLOR-01`, `SHRES-BITPLANE-TABLE-COLOR-02`, `SHRES-BITPLANE-TABLE-COLOR-03`, `SHRES-BITPLANE-TABLE-COLOR-05`, `SHRES-BITPLANE-TABLE-COLOR-0A`, `SHRES-BITPLANE-TABLE-COLOR-0F`; `SHRES-USES-SIXTEEN-LOWER-REGISTERS`; `SHRES-TWO-BITS-RESOLUTION`. Each is green on a lookup that pairs adjacent pixels, and on one that pairs pixels 0/2 and 1/3, at every group alignment (*What the test measures*) |
 | **Verdict of the four** | **two against two**: WinUAE and vAmiga pair SuperHires pixels into the sixteen lower registers and show two bits per component, ECS Denise only; Denise and Copperline show each pixel's own register in full; outside the emulators, the 8373R4 dissection pairs SuperHires pixels into the lower sixteen registers and shows two bits per component, as WinUAE and vAmiga do — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-016](NM-HRM-016.md), the sprite half of the same mechanism |
 
@@ -136,12 +136,12 @@ its own colour when the registers are written by the table: *adjacent* pixels
 share one (WinUAE's), or pixels 0 and 2 and pixels 1 and 3 of each group of
 four do (*0/2–1/3*, the 8373R4 reading in *What other Commodore documents
 say*). Under both, a solid run of value *v* reads COLOR(5*v*), and each pixel
-shows two bits per component. That is all the package grades (`:768-782`):
+shows two bits per component. That is all the package grades (`:803-817`):
 each significant bit of COLOR(5*v*) must move the value-*v* run and no other;
 no bit of any other register, and no bit 15–12 of any register, may move a
-solid run. Solid runs are compared tick by tick (`:515-519`). Two mixed runs,
+solid run. Solid runs are compared tick by tick (`:549-553`). Two mixed runs,
 planes 1 and 2 loaded with `0xAAAA`/`0xCCCC` and `0xF0F0`/`0xFF00`
-(`:504-505`), are driven on every flip and reported, not graded (`:822-824`):
+(`:538-539`), are driven on every flip and reported, not graded (`:857-859`):
 which register a mixed pair reads is what the two lookups disagree on. The two
 lookup columns apply each lookup, with the two `--` positions filled either by
 repeating the pair or by zeros, to the pixel stream the fixture produces; they
@@ -149,27 +149,25 @@ are derived, not run.
 
 | assertion (`test_denise.cpp`) | NanoMig | adjacent | 0/2–1/3 | what it shows |
 |---|---|---|---|---|
-| `SHRES-REINTERPRETS-SAME-REGISTERS` (`:714`) | red | green: the run reads COLOR05 (`0x5AF`), shown as `0x55AAFF` or `0x4488CC` depending on the fill, never `0x4499EE` | green, the same | the finding |
-| `SHRES-BITPLANE-TABLE-COLOR-01` to `-03` (`:826`) | red, 12 of 12 bits | green | green when the groups start on a word's first pixel or the one before it; red, 6 of 12 bits, when they start one or two pixels into the word | the finding: the value-*v* run moves with COLOR0*v*, which neither lookup gives it |
-| `SHRES-BITPLANE-TABLE-COLOR-05`, `-0A`, `-0F` (`:826`) | red, 12 of 12 bits | green | green | the finding: COLOR(5*v*) does not reach the value-*v* run |
-| `SHRES-BITPLANE-TABLE-COLOR-00` (`:826`) | green | green | green | no difference: COLOR00 is COLOR(5·0), the register NanoMig reads too |
-| `SHRES-BITPLANE-TABLE-COLOR-04`, `-06` to `-09`, `-0B` to `-0E` (`:826`) | green | green | green | no difference: no solid run reads these registers on any of the three |
-| `SHRES-USES-SIXTEEN-LOWER-REGISTERS` (`:860`) | red | green: COLOR0A is COLOR(5·2) and moves the value-2 run | green | the finding |
-| its Hires control (`:889`) | green | green | green | a control: outside SuperHires a value-*v* run reads COLOR0*v*, so COLOR0A moves nothing |
-| `SHRES-TWO-BITS-RESOLUTION` (`:952`) | red, 6 of 18 | green, 0 of 18 | green, 0 of 18 | the finding |
+| `SHRES-REINTERPRETS-SAME-REGISTERS` (`:749`) | red | green: the run reads COLOR05 (`0x5AF`), shown as `0x55AAFF` or `0x4488CC` depending on the fill, never `0x4499EE` | green, the same | the finding |
+| `SHRES-BITPLANE-TABLE-COLOR-01` to `-03` (`:861`) | red, 12 of 12 bits | green | green | the finding: the value-*v* run moves with COLOR0*v*, which neither lookup gives it |
+| `SHRES-BITPLANE-TABLE-COLOR-05`, `-0A`, `-0F` (`:861`) | red, 12 of 12 bits | green | green | the finding: COLOR(5*v*) does not reach the value-*v* run |
+| `SHRES-BITPLANE-TABLE-COLOR-00` (`:861`) | green | green | green | no difference: COLOR00 is COLOR(5·0), the register NanoMig reads too |
+| `SHRES-BITPLANE-TABLE-COLOR-04`, `-06` to `-09`, `-0B` to `-0E` (`:861`) | green | green | green | no difference: no solid run reads these registers on any of the three |
+| `SHRES-USES-SIXTEEN-LOWER-REGISTERS` (`:895`) | red | green: COLOR0A is COLOR(5·2) and moves the value-2 run | green | the finding |
+| its Hires control (`:921`) | green | green | green | a control: outside SuperHires a value-*v* run reads COLOR0*v*, so COLOR0A moves nothing |
+| `SHRES-TWO-BITS-RESOLUTION` (`:984`) | red, 6 of 18 | green, 0 of 18 | green, 0 of 18 | the finding |
 
-Each solid run is reloaded every 36 ticks and sampled on six consecutive ticks,
-the last of them one pixel before the word's last (`solid_run`, `:455-465`).
-Adjacent pairs of those six stay inside the word at either alignment, and so
-do groups of four that start on the word's first pixel or the one before it.
-Groups that start one or two pixels into the word put the last sampled tick
-with the zero pixel after the word; that tick reads COLOR01, COLOR02 or
-COLOR03, and those three rows turn red through the six bits of the register's
-upper half.
+Each solid run is reloaded every 32 ticks and sampled on six consecutive ticks,
+pixels 5 to 10 of the word's sixteen, with five of the word's pixels on either
+side (`solid_run`, `:474-484`). Every adjacent pair and every group of four
+that holds a sampled tick lies inside the word at every alignment, so under
+both lookups each sampled tick reads COLOR(5*v*), and the six together show
+both of its halves.
 
 The four controls (`CONTROL-KNOWN-VALUES-ARRIVE`, `FIXTURE-DATA-PATH-LIVE`,
 `OCS-BASELINE-0RGB-FORMAT`, `SELECT-REGISTER-ADDRESSES-CORRECTLY`) run with
-`shres` = 0 and pass (`:570`, `:597`, `:626`, `:664`).
+`shres` = 0 and pass (`:604`, `:631`, `:660`, `:698`).
 `OCS-BASELINE-0RGB-FORMAT` checks only the top four bits of each 8-bit
 component, the part that "stored as 0x0RGB" fixes.
 
