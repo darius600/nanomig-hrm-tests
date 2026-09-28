@@ -1377,9 +1377,14 @@ that Run 1 uses.
 
 Claims `ch2-starting-the-copper-after-reset.c1.s2` (Run 1) and
 `ch2-starting-the-copper-after-reset.c2.s2` (Run 2) are graded together as
-one assertion, which is red on both cores through Run 2's clause. The
-also-check covering Run 2, Run 3 and Run 3-reorder together is red on both
-cores for the same reason.
+one assertion (`P4`), which is red on both cores through Run 2's clause. Run
+2, Run 3 and Run 3-reorder are also graded on their own, as three separate
+assertions carrying no claim id (`P4-Run2`, `P4-Run3`, `P4-Run3-reorder`):
+`P4-Run2` restates `P4`'s own clause for Run 2 alone; `P4-Run3` and
+`P4-Run3-reorder` grade the narrower clause of p.25's "is loaded into the
+Copper program counter" against each run's own location-register value at
+the moment its strobe was written. All three are red on both cores, for the
+same reason as `P4`.
 
 ### 5.4 Mutations: measured per core
 
@@ -1423,3 +1428,40 @@ same comparator that reports Run 2's red is not vacuous.
 Measured: with the phase-2 sampler unrolled (5.2), P2c (anchor checks
 B1-B3 over the two complete frames after M2) reads PASS on both fx68k and
 TG68K. Both cores agree on every check in this package.
+
+### 5.6 P3: memory layout, refresh recognition and disk DMA, measured
+
+This proposition's own nine data regions (P3 stimulus step 2), 32 KB each:
+BPL $010000-$017FFF, SPR $018000-$01FFFF, AUD0 $020000-$027FFF, AUD1
+$028000-$02FFFF, AUD2 $030000-$037FFF, AUD3 $038000-$03FFFF, DSK
+$040000-$047FFF, BLT $048000-$04FFFF, COP $050000-$057FFF.
+
+Refresh recognition (2.3): measured, on prog_p1.bin's own captured log
+(already part of P1), every RAM read where the `refresh` port reads
+asserted is at word address 0 -- the same signature 5.1 already measured
+for P1/P2/P4, now checked directly against the port instead of assumed.
+Since every one of P3's nine regions starts at $10000 or above, a
+word-address-0 read can never fall inside one; P3's own region-bounded
+checks therefore exclude word address 0 directly, exactly as P1/P2/P4
+already do, rather than sampling the refresh port cycle by cycle for every
+access.
+
+Disk DMA (precondition (a), section 4 item 12): measured, on both cores,
+disk DMA runs and completes with no floppy drive attached
+(`floppy_config` = 0): region DSK shows an access in Base, and DSKBYTR bit
+14 (DMAON) reads 1 in Base and 0 in the DSK case and in case M.
+
+### 5.7 P3 mutations: measured per core
+
+Every mutation below was run once on each core (`NMH_MUTATE=<value>`) by
+re-running the built binary with the environment variable set. Each
+measured a FAIL on exactly its own precondition, on both cores, with every
+other check unchanged from the normal run (the four known-red P4
+assertions, 5.3, aside):
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P3-A | P3a | FAIL | FAIL |
+| P3-B | P3b | FAIL | FAIL |
+| P3-C | P3c | FAIL | FAIL |
+| P3-D | P3d | FAIL | FAIL |
