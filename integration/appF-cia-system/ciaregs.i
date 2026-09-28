@@ -133,3 +133,94 @@ READ_STORE      macro
                 move.b  \1,d0
                 move.w  d0,\2
                 endm
+
+; ---- 16-bit timer read (SPECIFICATION.md "Read TAHI, TALO -> u"): HI then
+; LO, combined into one word and stored. \1=HI reg addr \2=LO reg addr
+; \3=RESULTS word address to store into.
+READ_TIMER      macro
+                moveq   #0,d0
+                move.b  \1,d0
+                lsl.w   #8,d0
+                move.b  \2,d0
+                move.w  d0,\3
+                endm
+
+; ---- R-SAMPLE(n; X) (SPECIFICATION.md 1.5): n iterations, each a plain
+; byte read of X stored (zero-extended) to the next word of an array with
+; its own distinct address (SPECIFICATION.md 1.2 E9's own per-run word
+; budget), so every iteration's store time is separately visible at the
+; Chip-memory port. \1=iteration count \2=array base address \3=X reg addr.
+RSAMPLE1        macro
+                lea     \2,a1
+                move.w  #(\1-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  \3,d0
+                move.w  d0,(a1)+
+                dbra    d2,.rs\@
+                endm
+
+; ---- R-SAMPLE(n; X, Y): as above, with a second read/store each
+; iteration. \1=count \2=array base X \3=X reg addr \4=array base Y
+; \5=Y reg addr.
+RSAMPLE2        macro
+                lea     \2,a1
+                lea     \4,a2
+                move.w  #(\1-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  \3,d0
+                move.w  d0,(a1)+
+                moveq   #0,d0
+                move.b  \5,d0
+                move.w  d0,(a2)+
+                dbra    d2,.rs\@
+                endm
+
+; ---- R-SAMPLE(n; X), padded loop body (P7.3/P8.3's own precondition
+; contrast: "a loop body padded beyond 20 E periods fails it"). \4 is an
+; inner delay-loop count added inside every iteration.
+RSAMPLE1_PAD    macro
+                lea     \2,a1
+                move.w  #(\1-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  \3,d0
+                move.w  d0,(a1)+
+                move.w  #\4,d3
+.pad\@:         dbra    d3,.pad\@
+                dbra    d2,.rs\@
+                endm
+
+; ---- parameter block (SPECIFICATION.md 1.2 E7, from $0C2000): a byte the
+; C++ side pokes before boot (nmh::NanomigHarness::poke_word, on the
+; identity-mapped chip RAM), read by the *same* assembled program in two
+; otherwise-identical runs, so the compared runs execute identical code
+; (E7). Used only where the specification names "(E7)" explicitly:
+; P7.3/P8.3's start value, and P8.65 mode 11's CRB value.
+PARAM_BASE      equ     $0C2000
+PARAM_A         equ     PARAM_BASE       ; word; low byte read at PARAM_A+1
+PARAM_B         equ     PARAM_BASE+2
+
+; ---- K3's own Chip-memory byte (SPECIFICATION.md 1.2 E9, P6's contrast) -
+CHIPBYTE_K3     equ     $0C4000
+
+; ---- 24-bit TOD write, HI/MID/LO order (SPECIFICATION.md P8.7). \1=HI reg
+; \2=MID reg \3=LO reg \4=24-bit value.
+WRTOD           macro
+                move.b  #((\4)>>16)&$FF,\1
+                move.b  #((\4)>>8)&$FF,\2
+                move.b  #(\4)&$FF,\3
+                endm
+
+; ---- 24-bit TOD read, HI/MID/LO order, into d0 (clobbers d1). \1=HI reg
+; \2=MID reg \3=LO reg.
+RDTOD24         macro
+                moveq   #0,d0
+                move.b  \1,d0
+                lsl.l   #8,d0
+                moveq   #0,d1
+                move.b  \2,d1
+                or.l    d1,d0
+                lsl.l   #8,d0
+                moveq   #0,d1
+                move.b  \3,d1
+                or.l    d1,d0
+                endm
