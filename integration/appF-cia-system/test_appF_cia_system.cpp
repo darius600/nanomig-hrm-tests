@@ -534,9 +534,9 @@ int main(int argc, char** argv) {
                    "lines, not the data register (NM-HRM-054) -- so CIA-A's instances are not graded "
                    "on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause");
 
-    // ---- P1-MAIN, split by id (the lead's decision): timer-A instances
-    // carry the CRA id, timer-B instances the CRB ids, and the p341/p342
-    // ids sit on the conjunction of all four plus the other-bits clause.
+    // ---- P1-MAIN, split by id: timer-A instances carry the CRA id,
+    // timer-B instances the CRB ids, and the p341/p342 ids sit on the
+    // conjunction of all four plus the other-bits clause.
     // Each instance's legs are gated by Pre1.1, Pre1.3 and Pre1.4/O1 above;
     // an excluded instance (O1 not live) contributes vacuously.
     bool cra_ok = p1_main_ok(ga) && p1_main_ok(gc);
@@ -574,7 +574,7 @@ int main(int argc, char** argv) {
 
     // ---- P1-LP / P1-O2: fdd_led follows disk DMA, not MTR* latched at
     // select (NM-HRM-046). Recorded, not graded; nothing is graded on the
-    // light (the lead's decision).
+    // light.
     auto mk_cycle = [&](uint32_t addr) { return mark(p1d.log, addr); };
     bool lp1 = !p1d.led_before_boot;
     bool lp2 = false, lp3 = false;
@@ -650,9 +650,9 @@ int main(int argc, char** argv) {
         return *c.peeks[idx];
     };
 
-    // ---- component lines (no claim id -- SPECIFICATION.md P2, the lead's
-    // decision: "opus:F-timers.c14 on one assertion over legs R, S and H
-    // together, component lines without the id") -----------------------
+    // ---- component lines (no claim id: SPECIFICATION.md P2 puts
+    // opus:F-timers.c14 on one assertion over legs R, S and H together,
+    // with each leg's own line carrying no id) --------------------------
     // Gated the same way as P1-MAIN (Pre1.4/O1, reused from the P1 captures
     // above: it is a fact of the instance's own read-back channel, not of
     // which program runs it) -- CIA-A's instances are excluded, as they are
