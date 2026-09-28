@@ -65,6 +65,13 @@ ICR_CLEARMASK   equ     $7F     ; SETCLR=0: clears every mask bit named here
 MARKER_SENTINEL equ     $FACE
 MK_START        equ     $0C1000
 
+; ---- fixture constant (SPECIFICATION.md 1.2 E7) -------------------------
+; A program-stored constant, delivered before anything else is graded: it
+; proves the fixture can hand back a value the program itself wrote, so a
+; check expecting $00 on a word nothing wrote cannot pass by coincidence.
+FIXTURE_ADDR    equ     $0C1FFC
+FIXTURE_VALUE   equ     $BEEF
+
 ; ---- results area ($0C0000+, SPECIFICATION.md 1.2 E9) ------------------
 ; EP1's own four reads (CRA/CRB on both CIAs, made before any other write
 ; to them) are stored first, in every program that includes SETUP below,
@@ -84,6 +91,7 @@ EP1_CRB_B       equ     RESULTS+6
 ; writes either -- every proposition's own stimulus starts with its own
 ; "CR<-$00", strictly after this macro.
 SETUP           macro
+                move.w  #FIXTURE_VALUE,FIXTURE_ADDR
                 move.w  #$2700,sr
                 lea     CUSTOM,a0
                 move.w  #$7FFF,DMACON(a0)

@@ -17,4 +17,5 @@ DDRB_INIT       equ     $08
 CIAB_PREWRITE   equ     1
 DO_O2           equ     1
 S1VAL           equ     $0D
+MUT_PRE23_NODRIVE equ   1
         include "p2_body.s"

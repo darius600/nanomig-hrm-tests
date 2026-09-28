@@ -44,6 +44,12 @@ P2_H1           equ     P2_I+4*2
 P2_H2           equ     P2_H1+2
 P2_H3           equ     P2_H2+2
 P2_IH           equ     P2_H3+2
+P2_POLL         equ     P2_IH+2         ; 4 words, one per start (Pre2.2)
+P2_S0           equ     P2_POLL+4*2     ; the driven level right before start 1
+
+        ifnd    H1VAL
+H1VAL           equ     $07
+        endc
 
 MK_R_SEL        equ     $0C1002
 MK_R_END        equ     $0C1004
@@ -57,7 +63,7 @@ MK_S4_PRE       equ     $0C1012
 MK_S4_POST      equ     $0C1014
 
 ; ---- one leg-S start, its own 64-sample loop, its own stop-poll --------
-LEGS_K          macro   ; \1=k \2=S-array addr \3=Z addr \4=I addr \5=CR start value
+LEGS_K          macro   ; \1=k \2=S-array addr \3=Z addr \4=I addr \5=CR start value \6=poll-count addr
                 move.w  #MARKER_SENTINEL,MK_S\1_PRE
                 move.b  #\5,CR
                 move.w  #MARKER_SENTINEL,MK_S\1_POST
@@ -75,6 +81,7 @@ LEGS_K          macro   ; \1=k \2=S-array addr \3=Z addr \4=I addr \5=CR start v
                 cmp.w   #1000,d1
                 blt.s   .poll\1
 .pd\1:
+                move.w  d1,\6
                 READ_STORE PRB,\3
                 READ_STORE ICR,\4
                 endm
@@ -106,17 +113,35 @@ start:
         endc
 
 ; ---- leg S (start from low, four times) --------------------------------
+; DDRB bit n=1 / PR bit n=0: a specification change from p342's own
+; wording ("This function overrides the DDRB control bit and forces the
+; appropriate PB line to become an output"), so the level before each
+; start is a driven 0 rather than an undriven pull-up. See the commit
+; message for why.
         move.b  #$00,CR
+        ifd     MUT_PRE23_NODRIVE
+; Pre2.3's own contrast: leave DDRB bit n=0 (input), so PBON=0 in start
+; 1 (S1VAL=$0D) leaves the line at its pull-up instead of a driven 0.
+        move.b  #DDRB_INIT,DDRB
+        else
+        move.b  #DDRB_INIT|M,DDRB
+        move.b  #DDRB_INIT,PRB
+        endc
+        READ_STORE PRB,P2_S0           ; the level right before start 1
         RLATCH  TLO,THI,SLATCH
-        LEGS_K  1,P2_S+0*128,P2_Z+0*2,P2_I+0*2,S1VAL
-        LEGS_K  2,P2_S+1*128,P2_Z+1*2,P2_I+1*2,S2VAL
-        LEGS_K  3,P2_S+2*128,P2_Z+2*2,P2_I+2*2,S3VAL
-        LEGS_K  4,P2_S+3*128,P2_Z+3*2,P2_I+3*2,S4VAL
+        LEGS_K  1,P2_S+0*128,P2_Z+0*2,P2_I+0*2,S1VAL,P2_POLL+0*2
+        LEGS_K  2,P2_S+1*128,P2_Z+1*2,P2_I+1*2,S2VAL,P2_POLL+1*2
+        LEGS_K  3,P2_S+2*128,P2_Z+2*2,P2_I+2*2,S3VAL,P2_POLL+2*2
+        LEGS_K  4,P2_S+3*128,P2_Z+3*2,P2_I+3*2,S4VAL,P2_POLL+3*2
 
 ; ---- leg H (start from high) --------------------------------------------
+; Same DDRB/PR override as leg S (still holds from leg S; restated here
+; so leg H does not depend on leg S's own ordering).
         move.b  #$06,CR
+        move.b  #DDRB_INIT|M,DDRB
+        move.b  #DDRB_INIT,PRB
         RLATCH  TLO,THI,HLATCH
-        move.b  #$07,CR
+        move.b  #H1VAL,CR
         READ_STORE PRB,P2_H1
         move.b  #$06,CR
         READ_STORE PRB,P2_H2

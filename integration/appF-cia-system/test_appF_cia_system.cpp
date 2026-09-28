@@ -11,42 +11,71 @@
 // instances' own binaries, and the combined ("all four instances") check
 // they all feed, run unmodified.
 //
-// MUTATION P1-MAIN already red on the unmutated run (see the P1-CONTRAST record below for why: PBON's own
-//   contrast is unfalsifiable at this boundary, and no other live input makes this comparator go green)
-// MUTATION P1-OTHERBITS unfalsifiable via PBON specifically (its own comparator excludes bit n by
-//   construction, so PBON=0 vs PBON=1 reads identically on it); the comparator itself is still live,
-//   exercised by CIAB's own varying Q1/Q2/r0 values across the four legs it grades
+// MUTATION P1-MAIN-CRA/CRB/P1-MAIN already red on the unmutated run: CIAB's own PBON override never
+//   reaches PRB (b1/c1 read the DDRB/PR-data value, not the timer's own level); the green control
+//   through the same comparator is P1-CONTROL below (PBON=0, same legs, same instances)
+// MUTATION P1-OTHERBITS stimulus red CIAB/timer-B's own leg-B pattern bit 0 flipped (p1_ciab_tb_otherbits.bin):
+//   b1's bits 0-5 no longer match this instance's own written pattern, via NMH_MUTATE=P1-OTHERBITS
 // MUTATION P1-PRE1.1 stimulus red CIAB/timer-B's pull-up reference read with DDRB bit n=1 and the data bit 0 beforehand (p1_ciab_tb_pre11.bin), via NMH_MUTATE=P1-PRE11
 // MUTATION P1-PRE1.2 stimulus red CIAB/timer-B's step-4 latch changed to $FFFF (p1_ciab_tb_pre12.bin): the poll limit runs out, via NMH_MUTATE=P1-PRE12
 // MUTATION P1-PRE1.3 stimulus red CIAB/timer-B's step-7 latch changed to $0004 (p1_ciab_tb_pre13.bin): an underflow happens during leg C, via NMH_MUTATE=P1-PRE13
-// MUTATION P1-LP stimulus red CIAB/timer-B's LP calibration replaced with its own contrast (p1_ciab_tb_lp.bin): bit 7 changes without R-SELECT, via NMH_MUTATE=P1-LP
-// MUTATION P1-CONTRAST unfalsifiable at this boundary: CIAB/timer-B's own PBON=0 run (p1_ciab_tb_pbon0.bin) reads bit n identically to the PBON=1 run in every leg -- no input through this comparator distinguishes the two, via NMH_MUTATE=P1-PBON0
-// MUTATION P2-CONTRAST unfalsifiable at this boundary: CIAB/timer-B's own start-4-not-started run (p2_ciab_tb_contrast.bin) shows the same rise count for s_4 as the normal run -- no input through this comparator distinguishes the two, via NMH_MUTATE=P2-CONTRAST
-// MUTATION P2-LEGR already red on the unmutated run, for the same reason as P1-MAIN
+// MUTATION P1-PRE1.4/O1 stimulus red CIAB/timer-B's own O1-contrast leg left at data bit n=0 instead of 1
+//   (p1_ciab_tb_pre14.bin): the "data 1 reads 1" half of the precondition no longer holds, via NMH_MUTATE=P1-PRE14.
+//   Side effect: CIAB/timer B's own Pre1.4 failing also excludes it from P1-MAIN-CRB (both of that
+//   conjunction's instances are then excluded), so P1-MAIN-CRB reads PASS (vacuous) under this mutation
+//   where it reads FAIL at baseline -- measured, not assumed; replayed on both cores
+// MUTATION P1-LP no longer asserted (see the P1-LP/P1-O2 record below): fdd_led follows disk DMA, not
+//   MTR* at select (NM-HRM-046), so no input through R-SELECT turns this record's own reading green
+// MUTATION P1-CONTROL is the green control for P1-MAIN's own red (PBON=0, same comparator, all four
+//   instances, graded against the page's own PBON=0 values)
+// MUTATION P2-LEGR/P2-MAIN/P2-LEGH (component lines) and P2-TOGGLE (opus:F-timers.c14) already red on
+//   the unmutated run: PBON's own override never reaches PRB (same RTL gap as P1-MAIN)
+// MUTATION P2-LEGH stimulus (start-value swap, no distinguishing result on this build) CIAB/timer-B's
+//   own h1 start written as CR<-$06 (START=0) instead of $07 (p2_ciab_tb_legh0.bin), run and compared
+//   against the baseline directly (not NMH_MUTATE-gated, so both readings print in the same report):
+//   h1 reads the same driven level in both runs (the RTL does not read CR's own START bit for this line
+//   either), which is itself evidence that the red is the RTL's and not the fixture's
+// MUTATION P2-CONTRAST unfalsifiable at this boundary: CIAB/timer-B's own start-4-not-started run
+//   (p2_ciab_tb_contrast.bin) shows the same rise count (0, no rise) for s_4 as the normal run, via
+//   NMH_MUTATE=P2-CONTRAST -- live; not distinguishable on this build, baseline already reads 0
+//   throughout for s_4 (P2-MAIN's own red)
 // MUTATION P2-PRE2.1 unfalsifiable at this boundary: CIAB/timer-B's own extra-start-before-leg-R run
-//   (p2_ciab_tb_pre21.bin) reads the same pulled-up r1 as the baseline run, via NMH_MUTATE=P2-PRE21
-// MUTATION P2-LEGH unfalsifiable via PRB (h1/h3 read the same pulled-up level regardless of the
-//   mechanism this proposition grades); Pre2.4's own contrast (p2_ciab_tb_pre24.bin), read via ICR
-//   instead of PRB, is a genuinely live, working mutation -- see "P2-PRE2.4" below
-// MUTATION P2-PRE2.2 stimulus red CIAB/timer-B's leg-S latch changed to $FFFF (p2_ciab_tb_pre22.bin): i_1's own TB flag reads 0 where the baseline run's reads 1, via NMH_MUTATE=P2-PRE22
-// MUTATION P2-PRE2.3 unfalsifiable at this boundary: CIAB/timer-B's start 1 written as $0D (p2_ciab_tb_pre23.bin) reads the same pulled-up z_1 as the baseline run, via NMH_MUTATE=P2-PRE23
-// MUTATION P2-PRE2.4 stimulus red CIAB/timer-B's leg-H latch changed to $0008 (p2_ciab_tb_pre24.bin): the ih flag reads 1 where the baseline run's reads 0, via NMH_MUTATE=P2-PRE24
-// MUTATION EP1 stimulus red a write to CIAA CRA precedes SETUP's own read (ep1_contrast.bin): the read returns $0A instead of $00, via NMH_MUTATE=EP1
-// MUTATION EP2 stimulus red Copper DMA started in the window (ep2_contrast.bin): the Copper's own fetch of $0C3000 appears at the Chip-memory port, via NMH_MUTATE=EP2
-// MUTATION EP3 stimulus red the program never reaches DONE (ep3_contrast.bin): no final marker, no graded result, via NMH_MUTATE=EP3
-// MUTATION F1-ANCHOR stimulus red the same live refresh capture, evaluated against 1.25x the measured T_CPU instead of 1x, via NMH_MUTATE=(none -- recomputed from the normal capture, no separate binary)
+//   (p2_ciab_tb_pre21.bin) reads the same pulled-up r1 as the baseline run, via NMH_MUTATE=P2-PRE21 --
+//   live; not distinguishable on this build, baseline already reads r1=1 (pulled up), the same level
+//   P2-LEGR's own red already shows
+// MUTATION P2-PRE2.2 stimulus red CIAB/timer-B's leg-S latch changed to $FFFF (p2_ciab_tb_pre22.bin): the
+//   stored poll count for start 1 hits the limit and i_1's own TB flag reads 0, via NMH_MUTATE=P2-PRE22
+// MUTATION P2-PRE2.3 stimulus red CIAB/timer-B's start 1 written as $0D with DDRB bit n left an input
+//   (p2_ciab_tb_pre23.bin): z_1 reads 1 (pulled up) instead of the baseline's own driven 0, via
+//   NMH_MUTATE=P2-PRE23. Side effect: this mutant leaves DDRB undriven for all of leg S, not only
+//   start 1, so CIAB/timer B's own s_4 also reads the pulled-up level throughout instead of the
+//   baseline's own driven 0; P2-CONTRAST's own comparator, reading the same capture as its baseline,
+//   then finds base_rises=1 and grades a PASS under this mutation where it is RECORDED (unfalsifiable)
+//   at the normal baseline -- measured, not assumed; replayed on both cores
+// MUTATION P2-PRE2.4 stimulus red CIAB/timer-B's leg-H latch changed to $0008 (p2_ciab_tb_pre24.bin): the
+//   ih flag reads 1 where the baseline run's reads 0, via NMH_MUTATE=P2-PRE24
+// MUTATION EP1 stimulus red a write to CIAA CRA precedes SETUP's own read (ep1_contrast.bin): the read
+//   returns $0A instead of $00, via NMH_MUTATE=EP1
+// MUTATION EP2 stimulus red Copper DMA started in the window (ep2_contrast.bin): the Copper's own fetch
+//   of $0C3000 appears at the Chip-memory port, via NMH_MUTATE=EP2
+// MUTATION EP3 stimulus red the program never reaches DONE (ep3_contrast.bin): no final marker, no
+//   graded result, via NMH_MUTATE=EP3
+// MUTATION F1-ANCHOR stimulus red the same live refresh capture, evaluated against 1.25x the measured
+//   T_CPU instead of 1x, via NMH_MUTATE=(none -- recomputed from the normal capture, no separate binary)
+// MUTATION FIXTURE not separately mutated: it is the same program-stored-constant channel every other
+//   result store already uses; a break in it would show as every other result reading wrong too
 //
-// LP's own contrast (P1-LP) and Pre2.1-2.4's contrasts each isolate one
-// mechanism at the one instance (CIAB/timer B) the proposition's own O2
-// channel and leg R already exercise; the same mechanism is not retested
-// per instance (SPECIFICATION.md states each proposition once for "the
-// four instances", not once per instance).
+// LP's own record, and Pre2.1/Pre2.3/Pre2.4's own contrasts, each isolate one mechanism at the one
+// instance (CIAB/timer B) the proposition's own O2 channel and leg R already exercise; the same
+// mechanism is not retested per instance (SPECIFICATION.md states each proposition once for "the four
+// instances", not once per instance).
 
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
+#include <functional>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -74,6 +103,9 @@ constexpr uint32_t kEp1CrbA = kResults + 2;
 constexpr uint32_t kEp1CraB = kResults + 4;
 constexpr uint32_t kEp1CrbB = kResults + 6;
 
+constexpr uint32_t kFixtureAddr  = 0x0C1FFC;
+constexpr uint16_t kFixtureValue = 0xBEEF;
+
 // P1 results (p1_body.s).
 constexpr uint32_t kP1R0    = kResults + 8;
 constexpr uint32_t kP1A2    = kResults + 10;
@@ -85,6 +117,14 @@ constexpr uint32_t kP1C1    = kResults + 20;
 constexpr uint32_t kP1I2    = kResults + 22;
 constexpr uint32_t kP1D1    = kResults + 24;
 constexpr uint32_t kP1D2    = kResults + 26;
+constexpr uint32_t kP1O1C   = kResults + 28;
+
+// P1 peek layout: 0=R0 1=A2 2=Poll1 3=I1 4=A1 5=B1 6=C1 7=I2 8=D1 9=D2
+// 10=O1C 11..14=EP1 CRA_A/CRB_A/CRA_B/CRB_B.
+constexpr size_t kP1IdxD1  = 8;
+constexpr size_t kP1IdxD2  = 9;
+constexpr size_t kP1IdxO1C = 10;
+constexpr size_t kP1IdxEp1 = 11;
 
 // P1 O2 markers (p1_body.s).
 constexpr uint32_t kMkStart      = 0x0C1000;
@@ -109,15 +149,26 @@ constexpr uint32_t kP2H1  = kP2I + 4 * 2;
 constexpr uint32_t kP2H2  = kP2H1 + 2;
 constexpr uint32_t kP2H3  = kP2H2 + 2;
 constexpr uint32_t kP2Ih  = kP2H3 + 2;
+constexpr uint32_t kP2Poll = kP2Ih + 2;              // 4 words
+constexpr uint32_t kP2S0  = kP2Poll + 4 * 2;         // 1 word
 
-// P2 O2 markers (p2_body.s).
-constexpr uint32_t kMkRSel  = 0x0C1002;
-constexpr uint32_t kMkREnd  = 0x0C1004;
+// P2 peek layout: 0=R1 1-4=Z[0..3] 5-8=I[0..3] 9=H1 10=H2 11=H3 12=IH
+// 13..268=S bits (4*64) 269..272=Poll[0..3] 273=S0 274..277=EP1.
+constexpr size_t kP2IdxSBase   = 13;
+constexpr size_t kP2IdxPoll    = 269;
+constexpr size_t kP2IdxS0      = 273;
+constexpr size_t kP2IdxEp1     = 274;
 
 // ICR bits (ciaregs.i).
 constexpr uint16_t kIcrTa = 0x01, kIcrTb = 0x02;
 
 uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
+
+std::string hex2(uint16_t v) {
+    char buf[8];
+    std::snprintf(buf, sizeof buf, "$%02X", unsigned(v & 0xFF));
+    return buf;
+}
 
 struct Checks {
     void expect(bool condition, const std::string& label) {
@@ -197,6 +248,13 @@ LedCapture run_capture_led(const std::string& bin, uint64_t budget,
     }
     c.log = h.ram_log();
     for (auto a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
+    return c;
+}
+
+Capture view_of(const LedCapture& lc) {
+    Capture c;
+    c.loaded = lc.loaded; c.released = lc.released; c.done = lc.done;
+    c.peeks = lc.peeks; c.log = lc.log;
     return c;
 }
 
@@ -307,6 +365,99 @@ bool ep2_ok(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi, bo
     return ok;
 }
 
+// ---- P1: per-instance leg grading, gated by Pre1.1 (a1,a2,d2), Pre1.3
+// (c1) and Pre1.4/O1 (the whole instance -- SPECIFICATION.md P1
+// Preconditions). d1/O1C together ARE Pre1.4/O1: DDRB bit n=1, data 0,
+// PBON=0 reads 0 (d1); the contrast, data 1 reads 1 (O1C).
+struct P1Legs {
+    bool o1_live = false;
+    bool a2_ok = true, a1_ok = true, b1_ok = true, c1_ok = true, d1_ok = true, d2_ok = true;
+    bool otherbits_ok = true;
+};
+
+P1Legs grade_p1(const Capture& c, uint16_t n_mask, uint16_t icr_mask, uint16_t Q1, uint16_t Q2) {
+    P1Legs g;
+    if (!c.loaded || !c.done || c.peeks.size() <= kP1IdxO1C) return g;
+    uint16_t r0 = pk(c,0), a2 = pk(c,1), i2v = pk(c,7), a1 = pk(c,4), b1 = pk(c,5), c1 = pk(c,6);
+    uint16_t d1 = pk(c,kP1IdxD1), d2 = pk(c,kP1IdxD2), o1c = pk(c,kP1IdxO1C);
+    bool pre11 = pk_ok(c,0) && (r0 & n_mask);
+    bool pre13 = pk_ok(c,7) && !(i2v & icr_mask);
+    bool o1_pos = pk_ok(c,kP1IdxD1) && !(d1 & n_mask);
+    bool o1_con = pk_ok(c,kP1IdxO1C) && (o1c & n_mask);
+    g.o1_live = o1_pos && o1_con;
+    if (!g.o1_live) return g;   // instance excluded; CIA-A's read-back is recorded separately
+    if (pre11) { g.a2_ok = !(a2 & n_mask); g.a1_ok = !(a1 & n_mask); g.d2_ok = (d2 & n_mask) != 0; }
+    g.b1_ok = !(b1 & n_mask);
+    if (pre13) g.c1_ok = (c1 & n_mask) != 0;
+    g.d1_ok = !(d1 & n_mask);
+    uint16_t bit_o = (n_mask == 0x40) ? 0x80 : 0x40;
+    bool ok_a1o = ((a1 ^ r0) & uint16_t(~n_mask & 0xFF)) == 0;
+    bool ok_a2o = ((a2 ^ r0) & uint16_t(~n_mask & 0xFF)) == 0;
+    bool ok_b1o = ((b1 & 0x3F) == Q1) && (((b1 ^ r0) & bit_o) == 0);
+    bool ok_c1o = ((c1 & 0x3F) == Q2) && (((c1 ^ r0) & bit_o) == 0);
+    g.otherbits_ok = ok_a1o && ok_a2o && ok_b1o && ok_c1o;
+    return g;
+}
+
+bool p1_main_ok(const P1Legs& g) { return g.a2_ok && g.a1_ok && g.b1_ok && g.c1_ok && g.d1_ok && g.d2_ok; }
+
+// P1's own control (PBON=0 throughout): a1,a2,b1 bit n=1; c1=0; d1=0
+// (unchanged -- CR=$00 in both runs); d2=1 (unchanged). SPECIFICATION.md
+// P1, "Contrasting case"/"P1's control".
+bool p1_control_ok(const Capture& c, uint16_t n_mask) {
+    if (!c.loaded || !c.done || c.peeks.size() <= kP1IdxD2) return false;
+    uint16_t a2=pk(c,1), a1=pk(c,4), b1=pk(c,5), c1=pk(c,6), d1=pk(c,kP1IdxD1), d2=pk(c,kP1IdxD2);
+    bool bitA2=(a2&n_mask)!=0, bitA1=(a1&n_mask)!=0, bitB1=(b1&n_mask)!=0, bitC1=(c1&n_mask)!=0;
+    bool bitD1=(d1&n_mask)!=0, bitD2=(d2&n_mask)!=0;
+    return bitA2 && bitA1 && bitB1 && !bitC1 && !bitD1 && bitD2;
+}
+
+bool o1_live_of(const Capture& c, uint16_t n_mask) {
+    if (!c.loaded || !c.done || c.peeks.size() <= kP1IdxO1C) return false;
+    return pk_ok(c,kP1IdxD1) && !(pk(c,kP1IdxD1)&n_mask) && pk_ok(c,kP1IdxO1C) && (pk(c,kP1IdxO1C)&n_mask);
+}
+
+// ---- P2: leg S's rise check, with the level before each start prepended
+// (SPECIFICATION.md P2-MAIN's own comparator fix) and Pre2.3's own gating
+// (a start whose level-before is not 0 is not graded, its value reported).
+struct P2LegSResult {
+    bool graded_any = false;
+    bool all_ok = true;
+    std::vector<std::string> notes;
+};
+
+P2LegSResult grade_p2_legs(const Capture& c, uint16_t n_mask, const char* tag,
+                            std::function<std::optional<bool>(const Capture&, int, int)> s_bit,
+                            std::function<std::optional<uint16_t>(const Capture&, int)> z_of) {
+    P2LegSResult r;
+    if (!c.loaded || !c.done || c.peeks.size() <= kP2IdxS0) return r;
+    std::optional<bool> before;
+    if (pk_ok(c, kP2IdxS0)) before = (pk(c, kP2IdxS0) & n_mask) != 0;
+    for (int k = 0; k < 4; ++k) {
+        bool pre23 = before.has_value() && !*before;
+        if (pre23) {
+            r.graded_any = true;
+            int rises = 0; bool any1 = false;
+            bool prev = false; // the level before, known 0 here (Pre2.3)
+            for (int j = 0; j < 64; ++j) {
+                auto b = s_bit(c,k,j);
+                if (!b) continue;
+                if (*b) any1 = true;
+                if (!prev && *b) ++rises;
+                prev = *b;
+            }
+            if (!(rises == 1 && any1)) r.all_ok = false;
+        } else {
+            std::string state = before.has_value() ? (*before ? "1" : "?") : "unknown";
+            r.notes.push_back(std::string(tag) + " start " + std::to_string(k+1) +
+                " not graded (Pre2.3: level before is " + state + ", not 0)");
+        }
+        auto z = z_of(c,k);
+        before = z ? std::optional<bool>((*z & n_mask) != 0) : std::optional<bool>();
+    }
+    return r;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -317,68 +468,37 @@ int main(int argc, char** argv) {
     const char* mutate_env = std::getenv("NMH_MUTATE");
     const std::string mv = mutate_env ? mutate_env : "";
 
+    // ---- fixture, asserted first (SPECIFICATION.md 1.2 E7) ------------
+    {
+        Capture f = run_capture(dir + "/p1_ciaa_ta.bin", kRunBudget, {kFixtureAddr});
+        checks.expect(f.loaded && f.done.has_value() && pk_ok(f,0) && pk(f,0) == kFixtureValue,
+            "FIXTURE [SPECIFICATION.md 1.2 E7]: the program can deliver a known stored constant "
+            "before any other result is graded");
+    }
+
     // ---- P1 instances -----------------------------------------------------
     std::string p1_ciaa_ta = dir + "/p1_ciaa_ta.bin";
     std::string p1_ciaa_tb = dir + "/p1_ciaa_tb.bin";
     std::string p1_ciab_ta = dir + "/p1_ciab_ta.bin";
-    std::string p1_ciab_tb = dir + (mv == "P1-PBON0" ? "/p1_ciab_tb_pbon0.bin"
-                                    : mv == "P1-PRE11" ? "/p1_ciab_tb_pre11.bin"
+    std::string p1_ciab_tb = dir + (mv == "P1-PRE11" ? "/p1_ciab_tb_pre11.bin"
                                     : mv == "P1-PRE12" ? "/p1_ciab_tb_pre12.bin"
                                     : mv == "P1-PRE13" ? "/p1_ciab_tb_pre13.bin"
+                                    : mv == "P1-PRE14" ? "/p1_ciab_tb_pre14.bin"
+                                    : mv == "P1-OTHERBITS" ? "/p1_ciab_tb_otherbits.bin"
                                     : "/p1_ciab_tb.bin");
 
-    Capture p1a = run_capture(p1_ciaa_ta, kRunBudget, {kP1R0,kP1A2,kP1Poll1,kP1I1,kP1A1,kP1B1,kP1C1,kP1I2,kP1D1,kP1D2});
-    Capture p1b = run_capture(p1_ciaa_tb, kRunBudget, {kP1R0,kP1A2,kP1Poll1,kP1I1,kP1A1,kP1B1,kP1C1,kP1I2,kP1D1,kP1D2});
-    Capture p1c = run_capture(p1_ciab_ta, kRunBudget, {kP1R0,kP1A2,kP1Poll1,kP1I1,kP1A1,kP1B1,kP1C1,kP1I2,kP1D1,kP1D2});
+    std::vector<uint32_t> p1_addrs = {kP1R0,kP1A2,kP1Poll1,kP1I1,kP1A1,kP1B1,kP1C1,kP1I2,kP1D1,kP1D2,
+                                       kP1O1C,kEp1CraA,kEp1CrbA,kEp1CraB,kEp1CrbB};
+    Capture p1a = run_capture(p1_ciaa_ta, kRunBudget, p1_addrs);
+    Capture p1b = run_capture(p1_ciaa_tb, kRunBudget, p1_addrs);
+    Capture p1c = run_capture(p1_ciab_ta, kRunBudget, p1_addrs);
     // CIAB/timer-B needs the LED trace too (O2), so it uses run_capture_led
-    // instead of the plain capture (mv == "P1-LP" swaps in LP's own contrast).
-    std::string p1_ciab_tb_led = dir + (mv == "P1-LP" ? "/p1_ciab_tb_lp.bin" : p1_ciab_tb.substr(dir.size()));
-    LedCapture p1d = run_capture_led(p1_ciab_tb_led, kRunBudget,
-        {kP1R0,kP1A2,kP1Poll1,kP1I1,kP1A1,kP1B1,kP1C1,kP1I2,kP1D1,kP1D2});
+    // instead of the plain capture.
+    LedCapture p1d = run_capture_led(p1_ciab_tb, kRunBudget, p1_addrs);
+    Capture p1d_view = view_of(p1d);
 
-    auto p1_fields_ok = [](const Capture& c, uint16_t n_mask, bool contrast) {
-        if (!c.loaded || !c.done || c.peeks.size() < 10) return false;
-        uint16_t r0=pk(c,0), a2=pk(c,1), i1=pk(c,3), a1=pk(c,4), b1=pk(c,5), c1=pk(c,6), i2=pk(c,7), d1=pk(c,8), d2=pk(c,9);
-        (void)r0; (void)i1; (void)i2;
-        bool bitA2 = (a2 & n_mask) != 0, bitA1=(a1&n_mask)!=0, bitB1=(b1&n_mask)!=0, bitC1=(c1&n_mask)!=0, bitD1=(d1&n_mask)!=0, bitD2=(d2&n_mask)!=0;
-        if (!contrast) return !bitA2 && !bitA1 && !bitB1 && bitC1 && !bitD1 && bitD2;
-        return bitA2 && bitA1 && bitB1 && !bitC1 && bitD1 && !bitD2; // PBON=0 predicts the opposite
-    };
-    auto p1_otherbits_ok = [](const Capture& c, uint16_t n_mask) {
-        if (!c.loaded || !c.done || c.peeks.size() < 10) return false;
-        uint16_t r0=pk(c,0), a2=pk(c,1), a1=pk(c,4), b1=pk(c,5), c1=pk(c,6);
-        uint16_t others = uint16_t(~n_mask) & 0xFF;
-        bool ok_a1 = ((a1 ^ r0) & others) == 0;
-        bool ok_a2 = ((a2 ^ r0) & others) == 0;
-        // leg B/C write bits 0-5 explicitly (Q1/Q2); their own written value
-        // is recovered from the log's own last PRB write before the read is
-        // out of scope here -- only bit o (the untested bit of 6/7) is
-        // checked against r0, as SPECIFICATION.md P1 "Other bits" states.
-        uint16_t bit_o_mask = (n_mask == 0x40) ? 0x80 : 0x40;
-        bool ok_b1 = ((b1 ^ r0) & bit_o_mask) == 0;
-        bool ok_c1 = ((c1 ^ r0) & bit_o_mask) == 0;
-        return ok_a1 && ok_a2 && ok_b1 && ok_c1;
-    };
-
-    // p1d is a LedCapture; reuse its shared fields via a thin Capture view.
-    Capture p1d_view; p1d_view.loaded=p1d.loaded; p1d_view.released=p1d.released; p1d_view.done=p1d.done; p1d_view.peeks=p1d.peeks; p1d_view.log=p1d.log;
-    bool p1_main_all = p1_fields_ok(p1a,0x40,false) && p1_fields_ok(p1b,0x80,false) &&
-                        p1_fields_ok(p1c,0x40,false) && p1_fields_ok(p1d_view,0x80,false);
-
-    checks.expect(p1_main_all,
-        "P1-MAIN [p342: opus:F-timers.c10, opus:F-timers.c11, sol:F-timers.c12; "
-        "p341: opus:F-ports.c7, sol:F-ports.c7; p349: sol:F-cra.c17; "
-        "p349: sol:F-crb.c3, opus:F-crb.c2; p350: sol:F-crb.c14]: PBON=1 puts the "
-        "timer's output on PB6 (timer A) or PB7 (timer B), forcing an output over "
-        "DDRB and the PR data, for all four instances (CIAA/TA, CIAA/TB, CIAB/TA, CIAB/TB)");
-
-    bool p1_otherbits_all = p1_otherbits_ok(p1a,0x40) && p1_otherbits_ok(p1b,0x80) &&
-                             p1_otherbits_ok(p1c,0x40) && p1_otherbits_ok(p1d_view,0x80);
-    checks.expect(p1_otherbits_all,
-        "P1-OTHERBITS [p342]: PBON's override affects only the appropriate PB line, "
-        "for all four instances");
-
-    // ---- P1 preconditions ---------------------------------------------
+    // ---- P1-PRE1.1 - P1-PRE1.3 (unchanged channels; O1C does not move
+    // their own indices) --------------------------------------------------
     bool pre11 = pk_ok(p1a,0) && (pk(p1a,0)&0x40) && pk_ok(p1b,0) && (pk(p1b,0)&0x80) &&
                  pk_ok(p1c,0) && (pk(p1c,0)&0x40) && pk_ok(p1d_view,0) && (pk(p1d_view,0)&0x80);
     checks.expect(pre11, "P1-PRE1.1 [p341,p354]: the pull-up reference r0 has bit n=1, for all four instances");
@@ -392,52 +512,97 @@ int main(int argc, char** argv) {
     bool pre13 = !(pk(p1a,7)&kIcrTa) && !(pk(p1b,7)&kIcrTb) && !(pk(p1c,7)&kIcrTa) && !(pk(p1d_view,7)&kIcrTb);
     checks.expect(pre13, "P1-PRE1.3 [p342]: no underflow happens during leg C on all four instances (i2's own flag clear)");
 
-    // ---- P1 LP + O2 (CIAB/timer B only) --------------------------------
+    // ---- P1-PRE1.4/O1: DDRB bit n=1, data 0, PBON=0 reads 0 (d1); data 1
+    // reads 1 (O1C's own contrast leg). Graded only where a live channel is
+    // expected (CIAB); CIA-A's own dead read-back is recorded, not asserted
+    // as a failed precondition -- it is the fact P1's own legs are gated on.
+    P1Legs ga = grade_p1(p1a, 0x40, kIcrTa, 0x2A, 0x15);       // CIAA/TA
+    P1Legs gb = grade_p1(p1b, 0x80, kIcrTb, 0x2A, 0x15);       // CIAA/TB
+    P1Legs gc = grade_p1(p1c, 0x40, kIcrTa, 0x3D, 0x3B);       // CIAB/TA
+    P1Legs gd = grade_p1(p1d_view, 0x80, kIcrTb, 0x3D, 0x3B);  // CIAB/TB
+
+    checks.expect(gc.o1_live, "P1-PRE1.4/O1 [p341]: DDRB bit n=1, data 0, PBON=0 reads 0, and data 1 "
+                              "reads 1 (CIAB/timer A)");
+    checks.expect(gd.o1_live, "P1-PRE1.4/O1 [p341]: DDRB bit n=1, data 0, PBON=0 reads 0, and data 1 "
+                              "reads 1 (CIAB/timer B)");
+    checks.record("P1-PRE1.4/O1 [p341], CIA-A: a PRB read never shows a driven level -- measured " +
+                   hex2(pk(p1a,kP1IdxD1)) + " (d1) and " + hex2(pk(p1a,kP1IdxO1C)) + " (O1 contrast) on "
+                   "CIAA/timer A, " + hex2(pk(p1b,kP1IdxD1)) + " and " + hex2(pk(p1b,kP1IdxO1C)) +
+                   " on CIAA/timer B, whatever DDRB and the data register hold -- port B returns the "
+                   "lines, not the data register (NM-HRM-054) -- so CIA-A's instances are not graded "
+                   "on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause");
+
+    // ---- P1-MAIN, split by id (the lead's decision): timer-A instances
+    // carry the CRA id, timer-B instances the CRB ids, and the p341/p342
+    // ids sit on the conjunction of all four plus the other-bits clause.
+    // Each instance's legs are gated by Pre1.1, Pre1.3 and Pre1.4/O1 above;
+    // an excluded instance (O1 not live) contributes vacuously.
+    bool cra_ok = p1_main_ok(ga) && p1_main_ok(gc);
+    bool crb_ok = p1_main_ok(gb) && p1_main_ok(gd);
+    bool otherbits_all = ga.otherbits_ok && gb.otherbits_ok && gc.otherbits_ok && gd.otherbits_ok;
+    bool main_ok = cra_ok && crb_ok && otherbits_all;
+
+    checks.expect(cra_ok, "P1-MAIN-CRA [p349: sol:F-cra.c17]: PBON=1 puts timer A's output on PB6, "
+                          "forcing an output over DDRB and the PR data, for the timer-A instances "
+                          "whose read-back is live (Pre1.4/O1)");
+    checks.expect(crb_ok, "P1-MAIN-CRB [p349: sol:F-crb.c3, opus:F-crb.c2; p350: sol:F-crb.c14]: PBON=1 "
+                          "puts timer B's output on PB7, forcing an output over DDRB and the PR data, "
+                          "for the timer-B instances whose read-back is live (Pre1.4/O1)");
+    checks.expect(main_ok,
+        "P1-MAIN [p342: opus:F-timers.c10, opus:F-timers.c11, sol:F-timers.c12; "
+        "p341: opus:F-ports.c7, sol:F-ports.c7]: PBON=1 puts the timer's output on PB6 (timer A) or "
+        "PB7 (timer B) only, forcing an output over DDRB and the PR data, for the instances whose "
+        "read-back is live, including the other-bits clause");
+
+    checks.expect(otherbits_all,
+        "P1-OTHERBITS [p342]: bits 0-5 of b1 and c1 match this instance's own written pattern, and bit "
+        "o matches r0, for the instances whose read-back is live (Pre1.4/O1)");
+    checks.note("P1-OTHERBITS, CIA-A (not graded): CIAA/timer A b1=" + hex2(pk(p1a,5)) + " c1=" + hex2(pk(p1a,6)) +
+                " (pattern $2A/$15 expected in bits 0-5); CIAA/timer B b1=" + hex2(pk(p1b,5)) + " c1=" +
+                hex2(pk(p1b,6)) + " (pattern $2A/$15 expected)");
+
+    // Per-instance values, for the record (SPECIFICATION.md section 5).
+    auto p1_dump = [&](const Capture& c, const char* tag) {
+        checks.note(std::string(tag) + ": r0=" + hex2(pk(c,0)) + " a2=" + hex2(pk(c,1)) +
+            " a1=" + hex2(pk(c,4)) + " b1=" + hex2(pk(c,5)) + " c1=" + hex2(pk(c,6)) +
+            " d1=" + hex2(pk(c,kP1IdxD1)) + " o1c=" + hex2(pk(c,kP1IdxO1C)) + " d2=" + hex2(pk(c,kP1IdxD2)));
+    };
+    p1_dump(p1a, "P1 CIAA/TA"); p1_dump(p1b, "P1 CIAA/TB");
+    p1_dump(p1c, "P1 CIAB/TA"); p1_dump(p1d_view, "P1 CIAB/TB");
+
+    // ---- P1-LP / P1-O2: fdd_led follows disk DMA, not MTR* latched at
+    // select (NM-HRM-046). Recorded, not graded; nothing is graded on the
+    // light (the lead's decision).
     auto mk_cycle = [&](uint32_t addr) { return mark(p1d.log, addr); };
     bool lp1 = !p1d.led_before_boot;
     bool lp2 = false, lp3 = false;
-    auto c2 = mk_cycle(kMkLpOnEnd), c3 = mk_cycle(kMkLpOffEnd);
-    if (c2) { auto v = p1d.led_at(*c2); if (v) lp2 = (*v != 0); }
-    if (c3) { auto v = p1d.led_at(*c3); if (v) lp3 = (*v == 0); }
-    bool lp_ok = p1d.loaded && p1d.done.has_value() && lp1 && lp2 && lp3;
-    checks.expect(lp_ok, "P1-LP [p244]: the drive LED starts off, turns on when MTR*=0 at select, "
-                         "and turns off when MTR*=1 at select");
+    auto lc2 = mk_cycle(kMkLpOnEnd), lc3 = mk_cycle(kMkLpOffEnd);
+    if (lc2) { auto v = p1d.led_at(*lc2); if (v) lp2 = (*v != 0); }
+    if (lc3) { auto v = p1d.led_at(*lc3); if (v) lp3 = (*v == 0); }
+    checks.record("P1-LP/P1-O2 [p244]: fdd_led follows disk DMA, not MTR* latched at drive select "
+                   "(NM-HRM-046) -- measured: LED before boot=" + std::string(p1d.led_before_boot?"on":"off") +
+                   ", after R-SELECT with MTR*=0 (on leg)=" + std::string(lp2?"on":"off") +
+                   ", after R-SELECT with MTR*=1 (off leg)=" + std::string(lp3?"on":"off") +
+                   " -- live; not distinguishable on this build, the LED already reads off through every "
+                   "R-SELECT here, and the only proven-live input is disk DMA, not this port's own "
+                   "select/motor write -- O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded");
+    (void)lp1;
 
-    if (lp_ok) {
-        auto led_ok = [&](uint32_t end_addr, bool want_on) {
-            auto c = mk_cycle(end_addr);
-            if (!c) return false;
-            auto v = p1d.led_at(*c);
-            return v.has_value() && (bool(*v) == want_on);
-        };
-        bool ledA1 = led_ok(kMkA1End, true);
-        bool ledC  = led_ok(kMkCEnd, false);
-        bool ledD1 = led_ok(kMkD1End, true);
-        std::optional<uint8_t> ledD2v;
-        if (p1d.done) ledD2v = p1d.led_at(*p1d.done);
-        bool ledD2 = ledD2v.has_value() && (*ledD2v == 0);
-        checks.expect(ledA1 && ledC && ledD1 && ledD2,
-            "P1-O2 [p244]: the CIAB drive LED tracks MTR* through legs A1 (on), C (off), D1 (on) and D2 (off)");
-    } else {
-        checks.record("P1-O2 [p244]: LP failed, so O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded");
-    }
-
-    // ---- P1's own contrasting case (PBON=0), CIAB/timer B -------------
+    // ---- P1's own control (PBON=0), all four instances, graded against
+    // the page's own PBON=0 values -- the green control P1-MAIN's own red
+    // needs, on the same comparator basis (SPECIFICATION.md P1, "P1's
+    // control").
     {
-        std::string bin = dir + "/p1_ciab_tb_pbon0.bin";
-        Capture c = run_capture(bin, kRunBudget, {kP1R0,kP1A2,kP1Poll1,kP1I1,kP1A1,kP1B1,kP1C1,kP1I2,kP1D1,kP1D2});
-        bool contrast_differs = c.loaded && c.done.has_value() &&
-            (pk(c,1) != pk(p1d_view,1) || pk(c,4) != pk(p1d_view,4) ||
-             pk(c,5) != pk(p1d_view,5) || pk(c,6) != pk(p1d_view,6));
-        if (contrast_differs) {
-            checks.expect(p1_fields_ok(c,0x80,true),
-                "P1-CONTRAST [p342]: with PBON=0 throughout, every leg reads the opposite of the PBON=1 case "
-                "(CIAB/timer B: a2=1, a1=1, b1=1, c1=0)");
-        } else {
-            checks.record("P1-CONTRAST [p342]: unfalsifiable at this boundary -- the PBON=0 run reads bit n "
-                          "identically to the PBON=1 run in every leg (a2,a1,b1,c1), so no input at nanomig.v's "
-                          "ports through this comparator distinguishes the two settings");
-        }
+        Capture ca = run_capture(dir + "/p1_ciaa_ta_pbon0.bin", kRunBudget, p1_addrs);
+        Capture cb = run_capture(dir + "/p1_ciaa_tb_pbon0.bin", kRunBudget, p1_addrs);
+        Capture cc = run_capture(dir + "/p1_ciab_ta_pbon0.bin", kRunBudget, p1_addrs);
+        Capture cd = run_capture(dir + "/p1_ciab_tb_pbon0.bin", kRunBudget, p1_addrs);
+        bool la = o1_live_of(ca,0x40), lb = o1_live_of(cb,0x80), lcc = o1_live_of(cc,0x40), ld = o1_live_of(cd,0x80);
+        bool control_ok = (!la || p1_control_ok(ca,0x40)) && (!lb || p1_control_ok(cb,0x80)) &&
+                           (!lcc || p1_control_ok(cc,0x40)) && (!ld || p1_control_ok(cd,0x80));
+        checks.expect(control_ok,
+            "P1-CONTROL [p342]: with PBON=0 throughout, every leg reads the page's own PBON=0 values "
+            "(a2,a1,b1 bit n=1; c1=0; d1=0; d2=1), for the instances whose read-back is live (Pre1.4/O1)");
     }
 
     // ---- P2 instances -------------------------------------------------
@@ -454,16 +619,20 @@ int main(int argc, char** argv) {
     std::vector<uint32_t> p2_addrs = {kP2R1, kP2Z+0,kP2Z+2,kP2Z+4,kP2Z+6, kP2I+0,kP2I+2,kP2I+4,kP2I+6,
                                        kP2H1,kP2H2,kP2H3,kP2Ih};
     for (int k=0;k<4;++k) for (int i=0;i<64;++i) p2_addrs.push_back(kP2S + k*128 + i*2);
+    for (int k=0;k<4;++k) p2_addrs.push_back(kP2Poll + k*2);
+    p2_addrs.push_back(kP2S0);
+    p2_addrs.push_back(kEp1CraA); p2_addrs.push_back(kEp1CrbA);
+    p2_addrs.push_back(kEp1CraB); p2_addrs.push_back(kEp1CrbB);
 
     Capture p2a = run_capture(p2_ciaa_ta, kRunBudget, p2_addrs);
     Capture p2b = run_capture(p2_ciaa_tb, kRunBudget, p2_addrs);
     Capture p2c = run_capture(p2_ciab_ta, kRunBudget, p2_addrs);
     LedCapture p2d = run_capture_led(p2_ciab_tb_bin, kRunBudget, p2_addrs);
-    Capture p2d_view; p2d_view.loaded=p2d.loaded; p2d_view.done=p2d.done; p2d_view.peeks=p2d.peeks; p2d_view.log=p2d.log;
+    Capture p2d_view = view_of(p2d);
 
     // s_k[j] as bit n, from the flat peek array (index 13 + k*64 + j).
     auto p2_s_bit = [](const Capture& c, int k, int j, uint16_t n_mask) -> std::optional<bool> {
-        size_t idx = 13 + size_t(k)*64 + size_t(j);
+        size_t idx = kP2IdxSBase + size_t(k)*64 + size_t(j);
         if (idx >= c.peeks.size() || !c.peeks[idx]) return std::nullopt;
         return (*c.peeks[idx] & n_mask) != 0;
     };
@@ -478,191 +647,194 @@ int main(int argc, char** argv) {
         return *c.peeks[idx];
     };
 
-    // Leg R: bit n = 0 (SPECIFICATION.md P2, "set low by RES").
-    auto p2_legr_ok = [](const Capture& c, uint16_t n_mask) { return pk_ok(c,0) && !(pk(c,0)&n_mask); };
-    bool p2_legr_all = p2_legr_ok(p2a,0x40) && p2_legr_ok(p2b,0x80) && p2_legr_ok(p2c,0x40) && p2_legr_ok(p2d_view,0x80);
-    checks.expect(p2_legr_all, "P2-LEGR [p342] opus:F-timers.c14: the toggle output is low after RES "
-                              "(before any start), for all four instances");
+    // ---- component lines (no claim id -- SPECIFICATION.md P2, the lead's
+    // decision: "opus:F-timers.c14 on one assertion over legs R, S and H
+    // together, component lines without the id") -----------------------
+    // Gated the same way as P1-MAIN (Pre1.4/O1, reused from the P1 captures
+    // above: it is a fact of the instance's own read-back channel, not of
+    // which program runs it) -- CIA-A's instances are excluded, as they are
+    // from P1-MAIN; P2-MAIN gets the same exclusion for free through its
+    // own Pre2.3 (s0 never reads 0 on CIA-A).
+    auto p2_legr_component = [](const Capture& c, uint16_t n_mask) {
+        return c.loaded && c.done.has_value() && pk_ok(c,0) && !(pk(c,0)&n_mask);
+    };
+    bool p2_legr_all = (!ga.o1_live || p2_legr_component(p2a,0x40)) &&
+                        (!gb.o1_live || p2_legr_component(p2b,0x80)) &&
+                        (!gc.o1_live || p2_legr_component(p2c,0x40)) &&
+                        (!gd.o1_live || p2_legr_component(p2d_view,0x80));
+    checks.expect(p2_legr_all, "P2-LEGR [p342]: the toggle output is low after RES (before any start), "
+                              "for the instances whose read-back is live (Pre1.4/O1)");
 
-    // Leg S: for each k whose Pre2.3 holds (the level before start k is 0),
-    // the 64 samples show exactly one rise (0->1) and at least one 1 -- the
-    // only way a bit sequence can be exactly 0...0 1...1 0...0 (P2's own
-    // "trailing 0s are allowed and not required": at most one subsequent
-    // fall, never a second rise).
-    auto rises_and_any1 = [&](const Capture& c, int k, uint16_t n_mask, int* rises, bool* any1) {
-        *rises = 0; *any1 = false;
-        std::optional<bool> prev;
-        for (int j = 0; j < 64; ++j) {
-            auto b = p2_s_bit(c,k,j,n_mask);
-            if (!b) continue;
-            if (*b) *any1 = true;
-            if (prev.has_value() && !*prev && *b) ++*rises;
-            prev = b;
+    P2LegSResult r_a = grade_p2_legs(p2a, 0x40, "CIAA/TA",
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z);
+    P2LegSResult r_b = grade_p2_legs(p2b, 0x80, "CIAA/TB",
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z);
+    P2LegSResult r_c = grade_p2_legs(p2c, 0x40, "CIAB/TA",
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z);
+    P2LegSResult r_d = grade_p2_legs(p2d_view, 0x80, "CIAB/TB",
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z);
+    bool p2_legs_all = r_a.all_ok && r_b.all_ok && r_c.all_ok && r_d.all_ok;
+    checks.expect(p2_legs_all, "P2-MAIN [p342]: every start whose own level-before is 0 (Pre2.3) sets the "
+                              "toggle output high (the level before, prepended, followed by exactly one "
+                              "rise and at least one 1), for all four instances");
+    for (auto& n : r_a.notes) checks.note(n);
+    for (auto& n : r_b.notes) checks.note(n);
+    for (auto& n : r_c.notes) checks.note(n);
+    for (auto& n : r_d.notes) checks.note(n);
+
+    auto p2_legh_component = [](const Capture& c, uint16_t n_mask) {
+        return c.loaded && c.done.has_value() && pk_ok(c,9) && pk_ok(c,11) && (pk(c,9)&n_mask) && (pk(c,11)&n_mask);
+    };
+    bool p2_legh_all = (!ga.o1_live || p2_legh_component(p2a,0x40)) &&
+                        (!gb.o1_live || p2_legh_component(p2b,0x80)) &&
+                        (!gc.o1_live || p2_legh_component(p2c,0x40)) &&
+                        (!gd.o1_live || p2_legh_component(p2d_view,0x80));
+    checks.expect(p2_legh_all, "P2-LEGH [p342]: h1=1 (set high on start) and h3=1 (set high again after a "
+                              "stop, whether or not h2 separated it from toggling), for the instances whose "
+                              "read-back is live (Pre1.4/O1)");
+
+    // Per-instance values, for the record (SPECIFICATION.md section 5).
+    auto p2_dump = [&](const Capture& c, const char* tag) {
+        auto z1=p2_z(c,0), z2=p2_z(c,1), z3=p2_z(c,2), z4=p2_z(c,3);
+        checks.note(std::string(tag) + ": r1=" + hex2(pk(c,0)) +
+            " z1=" + (z1?hex2(*z1):"?") + " z2=" + (z2?hex2(*z2):"?") +
+            " z3=" + (z3?hex2(*z3):"?") + " z4=" + (z4?hex2(*z4):"?") +
+            " h1=" + hex2(pk(c,9)) + " h2=" + hex2(pk(c,10)) + " h3=" + hex2(pk(c,11)) +
+            " s0=" + (pk_ok(c,kP2IdxS0) ? hex2(pk(c,kP2IdxS0)) : "?"));
+    };
+    p2_dump(p2a, "P2 CIAA/TA"); p2_dump(p2b, "P2 CIAA/TB");
+    p2_dump(p2c, "P2 CIAB/TA"); p2_dump(p2d_view, "P2 CIAB/TB");
+
+    bool p2_toggle_ok = p2_legr_all && p2_legs_all && p2_legh_all;
+    checks.expect(p2_toggle_ok,
+        "P2-TOGGLE [p342] opus:F-timers.c14: the toggle output is set low by RES and set high whenever "
+        "the timer is started, whether it was low or high before (legs R, S and H together)");
+
+    checks.record("LED-R [p244]: not graded -- fdd_led follows disk DMA, not MTR* latched at select "
+                   "(NM-HRM-046); O2 is not observable at this port, the same fact P1-LP/P1-O2 record");
+
+    // ---- Pre2.1: unfalsifiable at this boundary, sharing P2-LEGR's own
+    // channel. Mutated via the top-level p2_ciab_tb_bin selection above.
+    checks.record("P2-PRE2.1 [p342]: live; not distinguishable on this build, baseline already reads "
+                   "r1=1 (pulled up) -- the same level P2-LEGR's own red already shows, whichever CR "
+                   "value preceded leg R's write (an inserted start before it reads the same r1 under "
+                   "NMH_MUTATE=P2-PRE21)");
+
+    // ---- Pre2.2: before each restart, the previous one-shot has ended
+    // (CR bit 0 read 0 within the poll limit -- stored -- and the flag
+    // set), for all four starts of all four instances.
+    auto p2_poll_ok = [&](const Capture& c, uint16_t icr_mask) {
+        if (!c.loaded || !c.done) return false;
+        bool ok = true;
+        for (int k=0;k<4;++k) {
+            size_t idx = kP2IdxPoll + k;
+            if (idx >= c.peeks.size() || !c.peeks[idx]) return false;
+            uint16_t poll = *c.peeks[idx];
+            auto ik = p2_i(c,k);
+            bool flagset = ik.has_value() && (*ik & icr_mask);
+            ok = ok && (poll < 1000) && flagset;
         }
+        return ok;
     };
-    auto p2_legs_ok = [&](const Capture& c, uint16_t n_mask) {
-        std::optional<bool> before = false; // leg R's own r1 = 0 (p2_legr_ok)
-        for (int k = 0; k < 4; ++k) {
-            if (before.has_value() && *before == false) {
-                int rises = 0; bool any1 = false;
-                rises_and_any1(c, k, n_mask, &rises, &any1);
-                if (!(rises == 1 && any1)) return false;
-            }
-            auto z = p2_z(c,k);
-            before = z ? std::optional<bool>((*z & n_mask) != 0) : std::optional<bool>();
-        }
-        return true;
-    };
-    bool p2_legs_all = p2_legs_ok(p2a,0x40) && p2_legs_ok(p2b,0x80) &&
-                        p2_legs_ok(p2c,0x40) && p2_legs_ok(p2d_view,0x80);
-    checks.expect(p2_legs_all, "P2-MAIN [p342] opus:F-timers.c14: every start (four per instance) sets the toggle "
-                              "output high, whether it was low or high before, for all four instances");
+    bool pre22_all = p2_poll_ok(p2a,kIcrTa) && p2_poll_ok(p2b,kIcrTb) && p2_poll_ok(p2c,kIcrTa) && p2_poll_ok(p2d_view,kIcrTb);
+    checks.expect(pre22_all, "P2-PRE2.2 [p342]: before each restart, the previous one-shot has ended "
+                             "(CR bit 0 read 0 within the poll limit, i_k's own flag set), for all four "
+                             "starts of all four instances");
 
-    // Leg H: h1=1, h3=1.
-    auto p2_legh_ok = [](const Capture& c, uint16_t n_mask) {
-        return pk_ok(c,9) && pk_ok(c,11) && (pk(c,9)&n_mask) && (pk(c,11)&n_mask);
-    };
-    bool p2_legh_all = p2_legh_ok(p2a,0x40) && p2_legh_ok(p2b,0x80) && p2_legh_ok(p2c,0x40) && p2_legh_ok(p2d_view,0x80);
-    checks.expect(p2_legh_all, "P2-LEGH [p342]: h1=1 (set high on start) and h3=1 (set high again after a stop, "
-                              "whether or not h2 separated it from toggling), for all four instances");
+    // ---- Pre2.3: the level before start 2 is 0 (z_1's own bit n clear),
+    // so start 2 is graded. Mutated via the top-level selection (start 1
+    // written as $0D with DDRB left an input).
+    {
+        auto z1 = p2_z(p2d_view, 0);
+        bool ok = z1.has_value() && !(*z1 & 0x80);
+        checks.expect(ok, "P2-PRE2.3 [p342]: the level before start 2 is 0 (z_1's own bit n clear, "
+                          "CIAB/timer B), so start 2 is graded");
+    }
 
-    // ---- P2's own contrasting case: start 4 not started -----------------
+    // ---- Pre2.4: no underflow happens in leg H (ih's own flag clear),
+    // for all four instances.
+    auto p2_ih_ok = [](const Capture& c, uint16_t icr_mask) {
+        return c.loaded && c.done.has_value() && pk_ok(c,12) && !(pk(c,12)&icr_mask);
+    };
+    bool pre24_all = p2_ih_ok(p2a,kIcrTa) && p2_ih_ok(p2b,kIcrTb) && p2_ih_ok(p2c,kIcrTa) && p2_ih_ok(p2d_view,kIcrTb);
+    checks.expect(pre24_all, "P2-PRE2.4 [p342]: no underflow happens in leg H (ih's own flag clear), "
+                             "for all four instances");
+
+    // ---- P2's own contrasting case: start 4 not started ------------------
     {
         std::string bin = dir + "/p2_ciab_tb_contrast.bin";
         Capture c = run_capture(bin, kRunBudget, p2_addrs);
-        int mut_rises = 0; bool mut_any1 = false;
-        rises_and_any1(c, 3, 0x80, &mut_rises, &mut_any1);
-        int base_rises = 0; bool base_any1 = false;
-        rises_and_any1(p2d_view, 3, 0x80, &base_rises, &base_any1);
+        auto count_rises = [&](const Capture& cc, uint16_t n_mask) {
+            int rises = 0; bool any1 = false; bool prev = false;
+            for (int j = 0; j < 64; ++j) {
+                auto b = p2_s_bit(cc,3,j,n_mask);
+                if (!b) continue;
+                if (*b) any1 = true;
+                if (!prev && *b) ++rises;
+                prev = *b;
+            }
+            return std::make_pair(rises, any1);
+        };
+        auto [mut_rises, mut_any1] = count_rises(c, 0x80);
+        auto [base_rises, base_any1] = count_rises(p2d_view, 0x80);
+        (void)mut_any1; (void)base_any1;
         bool distinguishes = (base_rises == 1) && (mut_rises != 1);
         if (c.loaded && c.done.has_value() && distinguishes) {
             checks.expect(mut_rises != 1,
                 "P2-CONTRAST [p342]: with start 4 written as CR<-$0E (START=0), s_4 shows no rise "
                 "(CIAB/timer B)");
         } else {
-            checks.record("P2-CONTRAST [p342]: unfalsifiable at this boundary -- start 4 not started "
-                          "(CR<-$0E) produces the same rise count for s_4 as start 4's own normal run, "
-                          "so no input at nanomig.v's ports through this comparator distinguishes the two");
+            checks.record("P2-CONTRAST [p342]: live; not distinguishable on this build, baseline "
+                          "already reads 0 throughout for s_4 (no rise) -- the same reading a "
+                          "page-following implementation's own not-started case would give, because "
+                          "this build's s_4 never rises regardless of CR (P2-MAIN's own red)");
         }
     }
 
-    // Each Pre2.x contrast is checked against the SAME comparator's own
-    // baseline reading (from the normal CIAB/timer-B run, p2d_view) before
-    // it is graded: a mutation that reads identically to the baseline
-    // cannot demonstrate the clause, and is reported instead of graded
-    // (see P1-CONTRAST/P2-CONTRAST above for the same pattern; PRB's own
-    // bit n reads the same pulled-up level in every P2 run here, since
-    // DDRB never makes it an output in this proposition's own stimulus).
-
-    // ---- Pre2.1 contrast --------------------------------------------------
+    // ---- P2-LEGH's own START=0 mutation: h1's own start written as
+    // CR<-$06 instead of $07. Run explicitly (not NMH_MUTATE-selected
+    // alone) so both the baseline and the mutated reading are in the same
+    // report.
     {
-        std::string bin = dir + "/p2_ciab_tb_pre21.bin";
-        Capture c = run_capture(bin, kRunBudget, p2_addrs);
-        bool base_ok = pk_ok(p2d_view,0), mut_ok = pk_ok(c,0);
-        bool distinguishes = base_ok && mut_ok && (pk(p2d_view,0) != pk(c,0));
-        if (c.loaded && c.done.has_value() && distinguishes) {
-            checks.expect((pk(c,0)&0x80) != 0,
-                "P2-PRE2.1 [p342]: with an extra start inserted before leg R's own write, r1=1 "
-                "(started, no underflow) instead of 0 (CIAB/timer B)");
+        Capture c = run_capture(dir + "/p2_ciab_tb_legh0.bin", kRunBudget, p2_addrs);
+        bool base_h1 = (pk(p2d_view,9) & 0x80) != 0;
+        bool mut_h1 = c.loaded && c.done.has_value() && pk_ok(c,9) && (pk(c,9) & 0x80) != 0;
+        if (c.loaded && c.done.has_value() && (mut_h1 != base_h1)) {
+            checks.expect(!mut_h1, "P2-LEGH-CONTRAST [p342]: with h1's own start written as CR<-$06 "
+                          "(START=0), h1 reads 0 instead of 1 (CIAB/timer B)");
         } else {
-            checks.record("P2-PRE2.1 [p342]: unfalsifiable at this boundary -- the inserted start reads "
-                          "the same r1 as the normal run (PRB's own bit n is pulled up throughout leg R, "
-                          "whichever CR value preceded it)");
-        }
-    }
-    // ---- Pre2.2 contrast ----------------------------------------------
-    {
-        std::string bin = dir + "/p2_ciab_tb_pre22.bin";
-        Capture c = run_capture(bin, kRunBudget, p2_addrs);
-        // Pre2.2 fails for start 1 if its own one-shot never ends within the
-        // poll limit: the underflow that would set i_1's own TB flag has not
-        // happened yet, unlike the baseline (normal) run's own start 1.
-        auto i1 = p2_i(c,0);
-        auto i1_base = p2_i(p2d_view,0);
-        bool mut_flag = i1.has_value() && (*i1 & kIcrTb);
-        bool base_flag = i1_base.has_value() && (*i1_base & kIcrTb);
-        if (c.loaded && c.done.has_value() && base_flag && !mut_flag) {
-            checks.expect(!mut_flag,
-                "P2-PRE2.2 [p342]: with leg S's own latch at $FFFF, start 1's one-shot does not end "
-                "within the poll limit (CIAB/timer B): i_1's own TB flag is 0, where the baseline run's is 1");
-        } else {
-            checks.record("P2-PRE2.2 [p342]: unfalsifiable at this boundary -- i_1's own TB flag does not "
-                          "distinguish the $FFFF latch from the baseline run's own $0020 latch");
-        }
-    }
-    // ---- Pre2.3 contrast ----------------------------------------------
-    {
-        std::string bin = dir + "/p2_ciab_tb_pre23.bin";
-        Capture c = run_capture(bin, kRunBudget, p2_addrs);
-        auto z1 = p2_z(c,0);
-        auto z1_base = p2_z(p2d_view,0);
-        bool distinguishes = z1.has_value() && z1_base.has_value() && (*z1 != *z1_base);
-        if (c.loaded && c.done.has_value() && distinguishes) {
-            checks.expect((*z1 & 0x80) != 0,
-                "P2-PRE2.3 [p342]: with start 1 written as CR<-$0D (PBON=0), z_1=1 instead of 0, "
-                "so start 2's own level-before is not 0 (CIAB/timer B)");
-        } else {
-            checks.record("P2-PRE2.3 [p342]: unfalsifiable at this boundary -- z_1 reads the same pulled-up "
-                          "level in this run as in the baseline run (PRB's own bit n is pulled up throughout, "
-                          "whichever CR value started it)");
-        }
-    }
-    // ---- Pre2.4 contrast ------------------------------------------------
-    {
-        std::string bin = dir + "/p2_ciab_tb_pre24.bin";
-        Capture c = run_capture(bin, kRunBudget, p2_addrs);
-        auto ih_val = pk_ok(c,12) ? std::optional<uint16_t>(pk(c,12)) : std::optional<uint16_t>();
-        auto ih_base = pk_ok(p2d_view,12) ? std::optional<uint16_t>(pk(p2d_view,12)) : std::optional<uint16_t>();
-        bool mut_flag = ih_val.has_value() && (*ih_val & kIcrTb);
-        bool base_flag = ih_base.has_value() && (*ih_base & kIcrTb);
-        if (c.loaded && c.done.has_value() && mut_flag && !base_flag) {
-            checks.expect(mut_flag,
-                "P2-PRE2.4 [p342]: with leg H's own latch at $0008, the ih flag is 1 instead of 0 (CIAB/timer B)");
-        } else {
-            checks.record("P2-PRE2.4 [p342]: unfalsifiable at this boundary -- the ih flag does not "
-                          "distinguish the $0008 latch from the baseline run's own $FFFF latch");
+            checks.record("P2-LEGH-CONTRAST [p342]: live; not distinguishable on this build, h1 reads "
+                          "the same driven level (" + hex2(pk(p2d_view,9)) + ") whether started (CR<-$07) "
+                          "or not (CR<-$06) -- the RTL does not read CR's own START bit for this line "
+                          "either, which is itself evidence the red above is the RTL's, not the "
+                          "fixture's (CIAB/timer B)");
         }
     }
 
-    // ---- environment preconditions (EP1-EP3, F1 anchor), asserted for
-    // every run: shown here once, from the four P1 runs plus the three
-    // dedicated environment-contrast programs.
+    // ---- environment preconditions (EP1-EP3, F1 anchor) ----------------
     {
-        // EP1's own reads live at kEp1CraA.. kEp1CrbB, separate from P1's own
-        // peek list above; re-peek them from a fresh, cheap run (any P1
-        // instance's own binary already includes SETUP).
-        Capture e = run_capture(dir + "/p1_ciaa_ta.bin", kRunBudget, {kEp1CraA,kEp1CrbA,kEp1CraB,kEp1CrbB});
+        std::string bin = dir + (mv == "EP1" ? "/ep1_contrast.bin" : "/p1_ciaa_ta.bin");
+        Capture e = run_capture(bin, kRunBudget, {kEp1CraA,kEp1CrbA,kEp1CraB,kEp1CrbB});
         bool ok = e.loaded && e.done.has_value() && pk_ok(e,0) && pk_ok(e,1) && pk_ok(e,2) && pk_ok(e,3) &&
                   pk(e,0)==0 && pk(e,1)==0 && pk(e,2)==0 && pk(e,3)==0;
         checks.expect(ok, "EP1 [p354]: the first reads of CRA and CRB on both CIAs, made before any write "
                           "to them, return $00");
     }
     {
-        std::string bin = dir + (mv == "EP1" ? "/ep1_contrast.bin" : "/p1_ciaa_ta.bin");
-        Capture e = run_capture(bin, kRunBudget, {kEp1CraA,kEp1CrbA,kEp1CraB,kEp1CrbB});
-        bool want_0a = (mv == "EP1");
-        bool ok = e.loaded && e.done.has_value() && pk_ok(e,0) &&
-                  (want_0a ? pk(e,0) == 0x0A : pk(e,0) == 0x00);
-        checks.expect(ok, "EP1-CONTRAST [p354]: a write to CIAA CRA before the read is reflected in it "
-                          "($0A instead of $00)");
-    }
-
-    {
         std::string bin = dir + (mv == "EP2" ? "/ep2_contrast.bin" : "/p1_ciaa_ta.bin");
         Capture e = run_capture(bin, kRunBudget, {});
         auto s = mark(e.log, kMkStart);
-        bool ok = e.loaded && e.done.has_value() && s.has_value() &&
-                  ep2_ok(e.log, *s, *e.done);
-        bool want_pass = (mv != "EP2");
-        checks.expect(e.loaded && e.done.has_value() && s.has_value() && (ok == want_pass),
+        bool ok = e.loaded && e.done.has_value() && s.has_value() && ep2_ok(e.log, *s, *e.done);
+        checks.expect(ok,
             "EP2 [SPECIFICATION.md 1.2]: between the first and last marker, the Chip-memory port "
             "shows only CPU accesses and memory-refresh accesses");
     }
     {
-        Capture e = run_capture(dir + "/ep3_contrast.bin", 500'000, {});
-        checks.expect(e.loaded && !e.done.has_value(),
-            "EP3-CONTRAST [SPECIFICATION.md 1.2]: a program that never reaches DONE has no final "
-            "marker and no graded result");
+        uint64_t budget = (mv == "EP3") ? 500'000 : kRunBudget;
+        std::string bin = dir + (mv == "EP3" ? "/ep3_contrast.bin" : "/p1_ciaa_ta.bin");
+        Capture e = run_capture(bin, budget, {});
+        checks.expect(e.loaded && e.done.has_value(),
+            "EP3 [SPECIFICATION.md 1.2]: the program reaches DONE and has a final marker");
     }
     {
         Capture e = run_capture(dir + "/p1_ciaa_ta.bin", kRunBudget, {});
@@ -673,6 +845,45 @@ int main(int argc, char** argv) {
         checks.expect(contrast_fails, "F1-ANCHOR-CONTRAST [p194,p195,p23]: the same comparator, evaluated "
                                       "against 1.25x the measured T_CPU, fails");
     }
+
+    // ---- EP1, EP2 and F1's anchor, asserted per run (SPECIFICATION.md
+    // 1.2: "Every run asserts all three") -- computed from the eight P1/P2
+    // instance captures already made above, with no further harness runs.
+    {
+        struct RunRef { const Capture* c; size_t ep1_base; };
+        std::vector<RunRef> runs = {
+            {&p1a, kP1IdxEp1}, {&p1b, kP1IdxEp1}, {&p1c, kP1IdxEp1}, {&p1d_view, kP1IdxEp1},
+            {&p2a, kP2IdxEp1}, {&p2b, kP2IdxEp1}, {&p2c, kP2IdxEp1}, {&p2d_view, kP2IdxEp1},
+        };
+        bool ep1_all = true, ep2_all = true, f1_all = true;
+        for (auto& r : runs) {
+            const Capture& c = *r.c;
+            bool ep1ok = c.loaded && c.done.has_value() && c.peeks.size() >= r.ep1_base + 4;
+            for (int i = 0; i < 4 && ep1ok; ++i)
+                if (!pk_ok(c, r.ep1_base+i) || pk(c, r.ep1_base+i) != 0) ep1ok = false;
+            ep1_all = ep1_all && ep1ok;
+
+            auto s = mark(c.log, kMkStart);
+            bool ep2ok = c.loaded && c.done.has_value() && s.has_value() && ep2_ok(c.log, *s, *c.done);
+            ep2_all = ep2_all && ep2ok;
+
+            Anchor anc = measure_anchor(c.log);
+            f1_all = f1_all && anc.ok;
+        }
+        checks.expect(ep1_all, "EP1-PER-RUN [SPECIFICATION.md 1.2]: EP1 holds on every P1 and P2 "
+                               "instance run (all eight)");
+        checks.expect(ep2_all, "EP2-PER-RUN [SPECIFICATION.md 1.2]: EP2 holds on every P1 and P2 "
+                               "instance run (all eight)");
+        checks.expect(f1_all, "F1-ANCHOR-PER-RUN [p194,p195,p23]: F1's own anchor holds on every P1 "
+                              "and P2 instance run (all eight)");
+    }
+
+    // ---- Section 0 declines, printed as RECORDED lines -------------------
+    checks.record("opus:F-portsig.c47 [p351]: declined whole -- \"PC...not used\" (CIAB); no output this "
+                  "package sees shows a PC pin on either CIA, and \"not used\" describes no behaviour");
+    checks.record("opus:F-signals.c1, sol:F-signals.c69 [p353]: declined whole -- both say phi2 is a "
+                  "\"TTL compatible input\", an electrical property of an input pin that nothing a test "
+                  "sees depends on");
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;

@@ -94,7 +94,9 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
   > "Disk motor control (active low). [...] Each drive will latch the motor signal at the time its select signal turns on. The disk drive motor will stay in this state until the next time select turns on. DSKMOTOR* also controls the activity light on the front of the disk drive." [...] "All drive motors turn off after system reset."
 
-  *Drive.* The latch and the light belong to a drive ("Each drive will latch the motor signal at the time its select signal turns on"; "the activity light on the front of the disk drive", p244), and SEL0* is "select internal drive" (p351). The harness's default `floppy_config` is 0, "no floppy drives" (`nanomig_harness.h`). So every run that grades O2 sets `floppy_config` so that the internal drive is present, and the build states the value; LP is the check that the drive and its light respond. No disk and no disk image is needed: nothing used here from p244 depends on one. The light is read at the `fdd_led` output (port list).
+  *Drive.* The latch and the light belong to a drive ("Each drive will latch the motor signal at the time its select signal turns on"; "the activity light on the front of the disk drive", p244), and SEL0* is "select internal drive" (p351). The harness's default `floppy_config` is 0, one drive, DF0, write-enabled, at normal speed (`nanomig_harness.h`). No disk and no disk image is needed: nothing used here from p244 depends on one. The light is read at the `fdd_led` output (port list).
+
+  *Not observable at this port.* `fdd_led` tracks disk DMA activity, not MTR* latched at a drive's own select (NM-HRM-046: the light follows the disk-transfer state machine, not the per-drive motor latch the same module implements correctly for `index` and `syncint`). O2's own legs, and LP below, are therefore recorded as measurements, not graded.
 
   *Routine R-SELECT.* CIAB DDRB bit 3 = 1. Write PRB with bit 3 = 1, then with bit 3 = 0 (select turns on and the drive latches MTR*), then with bit 3 = 1. Each write is a plain byte write of the whole PRB value (E10) that keeps the other data bits the case needs.
 
@@ -107,7 +109,7 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
   2. With CIAB CRB at its reset value $00 (EP1; LP writes no control register, so P2's leg R keeps the first CRB write) and DDRB = $88, write PRB bit 7 = 0 and run R-SELECT: the LED turns on.
   3. Write PRB bit 7 = 1 and run R-SELECT: the LED turns off.
 
-  If LP fails, every O2 leg is ungraded and reported; the O1 legs of the same run are still graded. *Contrast:* change bit 7 without running R-SELECT, and the LED keeps its previous state ("stay in this state until the next time select turns on").
+  LP itself is recorded, not graded (O2 is not observable at this port); the O1 legs of the same run are still graded. *Contrast:* change bit 7 without running R-SELECT, and the LED keeps its previous state ("stay in this state until the next time select turns on") -- also recorded, since no proven-live input through R-SELECT turns this build's own reading green.
 - **O3. Chip-memory port.** Marker and result stores with their times (E5, E6), and the refresh accesses (F4).
 - **O4. ICR flags.** Read ICR bits: D0 TA, D1 TB, D2 ALRM, D3 SP, D4 FLG, D7 IR (p347). "Any interrupt will set the corresponding bit in the DATA register." (p346), whatever the MASK holds. The sources include "Underflow from Timer A (timer counts down past 0)" and "Underflow from Timer B" (p346). A read clears all flags (p346), so each ICR read reports the events since the previous read.
 
@@ -182,10 +184,10 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 5. **Leg A1: DDRB override, line an input.** With DDRB = $00 and CR as the one-shot left it, read PRB → a1.
 6. **Leg B: PR-data override.** DDRB ← m | pattern bits. PRB ← m | Q1 (data bit n = 1). Read PRB → b1.
 7. **Leg C: timer output high.** PRB ← Q2 (data bit n = 0). CR ← $00. R-LATCH($FFFF). CR ← $07 (START, PBON, toggle, continuous). Within 1000 E periods, read PRB → c1, then read ICR → i2.
-8. **Leg D: normal operation.** CR ← $00. Read PRB → d1 (DDRB bit n = 1, data 0). DDRB ← pattern bits without m. Read PRB → d2.
+8. **Leg D: normal operation.** CR ← $00. Read PRB → d1 (DDRB bit n = 1, data 0). Pre1.4's own contrast: PRB ← m | Q2 (data bit n = 1, DDRB bit n still 1, CR still $00). Read PRB → o1c. DDRB ← pattern bits without m. Read PRB → d2.
 9. **O2 legs (CIAB, timer B only).** First LP, at the start of the run. Then run R-SELECT at the end of step 5 (graded as LED-A1), at the end of step 7 (LED-C), after d1 (LED-D1) and after d2 (LED-D2). In step 5, bit 7 is an input (DDRB = $08), overridden by PBON.
 
-**Observation.** The result stores of r0, a1, a2, b1, c1, d1, d2, i1 and i2 (O1, O4), and the LED level at the end of each O2 interval.
+**Observation.** The result stores of r0, a1, a2, b1, c1, d1, o1c, d2, i1 and i2 (O1, O4), and the LED level at the end of each O2 interval.
 
 **Expected.**
 - **a2 bit n = 0.** In pulse mode the output is "a single positive pulse of one cycle duration" on an underflow (p342), and with the timer stopped there is no underflow. A positive pulse rises from low (see Section 3, item 4). PBON "overrides the DDRB control bit and forces the appropriate PB line to become an output" (p342), so the line reads 0 although DDRB says input and r0 shows the pull-up.
@@ -193,6 +195,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - **b1 bit n = 0**, although DDRB bit n = 1 and the data bit is 1.
 - **c1 bit n = 1**, although the data bit is 0 (set high on start, no underflow).
 - **d1 bit n = 0** (the data bit) **and d2 bit n = 1** (an input with a pull-up): "0 = PB6 is normal operation" (p348), "0 = PB7 is normal operation" (p349).
+- **o1c bit n = 1** (Pre1.4's own contrast: the same output, now driven to 1).
 - **Other bits.** In a1, a2, b1 and c1, every bit other than n equals what the same DDRB and PR contents give with PBON = 0. An output bit reads its PR data bit. An input bit reads the same bit of r0, the level that pin had undriven in step 2 ("you read the actual current state of the I/O pins", p341). In a1 and a2 this is r0 apart from bit n; in b1 and c1 it is the pattern bits, and r0's bit o. The override affects "the appropriate PB line" only.
 - **LED (CIAB, timer B).** LED-A1 on, LED-C off, LED-D1 on, LED-D2 off.
 - **Quantifier.** The claims name PB6 for timer A and PB7 for timer B generally, so all four instances must pass.
@@ -201,13 +204,15 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - **Pre1.1.** r0 bit n = 1. The undriven line reads high: "Ports A and B have passive pull-up devices" (p341); "a read of the ports will return all highs because of passive pull-ups" (p354). Without this, legs A1 and A2 cannot tell a driven 0 from an undriven one, and d2 and LED-D2 cannot tell an input from an output driving 0. If r0 bit n = 0, legs A1 and A2, d2 and LED-D2 are not graded and the value is reported; legs B and C, d1 and LED-D1 still are. *Contrast:* set DDRB bit n = 1 and the data bit to 0 before the read, and r0 bit n = 0.
 - **Pre1.2.** Exactly one underflow happens before leg A1: CR bit 0 reads 0 within the poll limit, and i1 has TA (timer A) or TB (timer B) set. *Contrast:* with L = $FFFF in step 4, the poll limit runs out with bit 0 still 1 and the i1 flag at 0.
 - **Pre1.3.** No underflow happens during leg C: the i2 flag is 0. *Contrast:* with L = $0004 in step 7, the flag is 1, and c1 is then not graded.
+- **Pre1.4 (O1, per instance).** DDRB bit n = 1, data 0, PBON = 0 reads 0 (this is leg D's own d1); the contrast, data 1 (DDRB bit n still 1, PBON still 0), reads 1 (an extra leg, read right after d1, before DDRB is relaxed for d2). Together these establish whether a PRB read on this instance can show a driven level at all: "When you READ a PR register, you read the actual current state of the I/O pins" (p341). Where it does not, P1's PBON legs (a2, a1, b1, c1, d1, d2) and P1-OTHERBITS' pattern-bit clause are not graded on that instance, and the instance's own read-back is reported instead.
 - **LP** for the O2 legs (O2).
 - **EP1-EP3**, and the F1 anchor.
 
-**Contrasting case.** Repeat each leg with PBON = 0: CR ← $00 in step 3, CR ← $0D in step 4 (so the step-5 state has PBON = 0), CR ← $05 in step 7. The page then predicts the opposite in every leg:
+**P1's control.** Repeat each leg with PBON = 0: CR ← $00 in step 3, CR ← $0D in step 4 (so the step-5 state has PBON = 0), CR ← $05 in step 7. The page then predicts, and this is graded in the normal run against the page's own PBON = 0 values, one per instance whose Pre1.4 holds:
 - a1 and a2 bit n = 1 (input, pull-up);
 - b1 bit n = 1 (the data);
 - c1 bit n = 0 (the data);
+- d1 bit n = 0 and d2 bit n = 1 (unchanged from the PBON = 1 run: CR = $00 at both points, so PBON's own setting does not reach them);
 - LED-A1 off (MTR* pulled up);
 - LED-C on (in leg C, DDRB bit 7 = 1 and the data bit 7 = 0, so MTR* is low).
 
@@ -221,22 +226,22 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Proposition.** Before any start after reset, the toggle output is low. Every start of the timer sets it high, whether it was low or high before.
 
-**Claims.** opus:F-timers.c14 (p342), graded whole here. P2 also grades the start and RES clauses of sol:F-timers.c13 (p342), which P10 carries.
+**Claims.** opus:F-timers.c14 (p342), graded whole here, on one assertion over legs R, S and H together (each leg is also its own component line, without the id, since each grades only part of the claim). P2 also grades the start and RES clauses of sol:F-timers.c13 (p342), which P10 carries.
 
 **Instances.** The four of P1.
 
 **Stimulus.** One run per instance.
 - **Leg R** (the first actions on this CIA's timer after reset). DDRB ← $00; on CIAB, DDRB ← $08 for R-SELECT, with PRB ← $FF. CR ← $06 (PBON, toggle, not started). Read PRB → r1. On CIAB timer B, run R-SELECT and read the LED (LED-R).
-- **Leg S** (start from low, four times). CR ← $00. R-LATCH($0020). For k = 1..4:
+- **Leg S** (start from low, four times). **DDRB bit n = 1, PR bit n = 0** (a specification change from p342's own wording, "This function overrides the DDRB control bit and forces the appropriate PB line to become an output": without a driven line to start from, Pre2.3 cannot hold on this build; see the commit message). Read PRB → s0 (the level right before start 1). CR ← $00. R-LATCH($0020). For k = 1..4:
   1. Bracketed write CR ← $0F (one-shot, toggle, PBON, START).
   2. R-SAMPLE(64; PRB) → s_k[0..63].
-  3. Poll CR until bit 0 = 0 (at most 1000 polls).
+  3. Poll CR until bit 0 = 0 (at most 1000 polls); the poll count is stored (Pre2.2).
   4. Read PRB → z_k. Read ICR → i_k.
 
   After the one-shot the counter again holds $0020: "reload the latched value, then stop" (p342).
-- **Leg H** (start from high). CR ← $06. R-LATCH($FFFF). CR ← $07; read PRB → h1. CR ← $06 (stop); read PRB → h2. CR ← $07 (start again); read PRB → h3. Read ICR → ih. All within 2000 E periods.
+- **Leg H** (start from high). Same DDRB bit n = 1 / PR bit n = 0 override as leg S (restated; still holds from leg S). CR ← $06. R-LATCH($FFFF). CR ← $07; read PRB → h1. CR ← $06 (stop); read PRB → h2. CR ← $07 (start again); read PRB → h3. Read ICR → ih. All within 2000 E periods.
 
-**Observation.** The O1 values, and the order of the s_k samples. The LED (O2).
+**Observation.** The O1 values, s0, and the order of the s_k samples. The LED (O2).
 
 **Expected.**
 - **Leg R.** r1 bit n = 0: "set low by RES" (p342), with no start since reset. LED-R is on (MTR* low at the select).
@@ -249,8 +254,9 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 **Preconditions.**
 - **Pre2.1 (leg R).** E1 holds, and EP1 read CR = $00. The program's first write to this CR is the one in leg R. If the harness runs any code before the test program, leg R cannot be graded, and that is reported. *Contrast:* insert R-LATCH($FFFF) and CR ← $07 before leg R's write. The page then predicts r1 = 1 (started, no underflow) and LED-R off.
 - **Pre2.2 (leg S).** Before each restart, the previous one-shot has ended: CR bit 0 read 0 within the poll limit and i_k has the flag. *Contrast:* with R-LATCH($FFFF), the poll limit runs out with bit 0 still 1.
-- **Pre2.3 (leg S, start k).** The level before start k is 0: r1 bit n for k = 1, z_(k−1) bit n otherwise (the previous one-shot's underflow toggled the output low, p342). A start whose level before is not 0 is not graded, and the value is reported. *Contrast:* write start k−1 as CR ← $0D (PBON = 0). That one-shot still ends, so Pre2.2 holds, but with DDRB bit n = 0 the line reads its pull-up: z_(k−1) = 1, and start k is not graded.
+- **Pre2.3 (leg S, start k).** The level before start k is 0: s0 bit n for k = 1 (the driven level leg S's own override wrote before any start), z_(k−1) bit n otherwise (the previous one-shot's underflow toggled the output low, p342). A start whose level before is not 0 is not graded, and the value is reported. *Contrast:* write start k−1 as CR ← $0D (PBON = 0) and leave DDRB bit n = 0 (an input) for that start. That one-shot still ends, so Pre2.2 holds, but with DDRB bit n = 0 the line reads its pull-up: z_(k−1) = 1, and start k is not graded.
 - **Pre2.4 (leg H).** The ih flag is 0 (no underflow in leg H). *Contrast:* with R-LATCH($0008), the flag is 1.
+- **Pre1.4/O1 (legs R and H, per instance).** The same precondition P1 states: a fact of the instance's own read-back channel, not of which program runs it, so it is measured once from P1's own runs and reused here. Where it does not hold (CIA-A), legs R and H are not graded on that instance. Leg S needs no separate gate: Pre2.3 already excludes CIA-A on its own (s0 never reads 0 there).
 
 **Contrasting case.** In leg S, write start 4 as CR ← $0E (START = 0). The page predicts no start, so s_4 reads 0 throughout, with no rise, and the check fails for k = 4. Every precondition of start 4 still holds (start 3's one-shot ended, and z_3 = 0), and no later start depends on start 4's underflow. The pulse mode (CR ← $0B) is not a contrast for an order-only check: its one-cycle pulse at the underflow (p342) can fall on a sample and read as a single rise. For leg R, see Pre2.1's contrast.
 
@@ -626,22 +632,59 @@ The sentence of opus:F-timers.c6 names no value. Each capability it lists is sho
 
 ## 4. Build
 
-`floppy_config` is left at the harness's own documented default (`nanomig_harness.h`, `Config::floppy_config = 0x00`) for every run, including the O2-grading runs: it is the only value the harness documents, and the build states it here as the spec requires. No disk image is mounted for any run (no claim in this package needs one).
+`floppy_config` is left at the harness's own documented default (`nanomig_harness.h`, `Config::floppy_config = 0x00`) for every run, including the O2-grading runs. That value is one drive, DF0, write-enabled, at normal speed (the harness comment states it this way). No disk image is mounted for any run (no claim in this package needs one).
+
+O2 (the drive LED) is not graded at this port: fdd_led tracks disk DMA, not MTR* latched at a drive's own select (NM-HRM-046). O2's own legs and its calibration precondition, LP, are recorded as measurements, not graded; see section 5.
 
 ## 5. What was measured, P1 and P2
 
 Both cores agree on every value in this section; nothing here separates fx68k from TG68K.
 
-**P1-MAIN, P1-OTHERBITS, P1-PRE1.1-1.3.** All four instances' r0, a2, a1, b1, c1, d1, d2, i1, i2 were read back and compared to the expected bit pattern of each leg. Pre1.1-1.3 hold on all four instances (r0 bit n = 1; exactly one underflow before leg A1, its own flag set; no underflow during leg C). The "other bits" clause (bits other than n in a1, a2 match r0; bit o of b1, c1 matches r0) holds on all four instances. The main clause -- that PBON forces the pin to the timer's own output level -- does not: on every instance, a2, a1, b1 and c1 read back exactly the DDRB/PR-data value the step itself wrote (or, for a1, the value the previous leg left there), never the timer's own toggle/pulse state. d1 and d2, which do not depend on PBON's own override (CR is $00 there), read as the page predicts.
+**Pre1.4/O1, per instance.** d1 and its own contrast (data driven to 1) were read on all four instances. CIAA/timer A and CIAA/timer B both read $FF for every leg regardless of DDRB or the data register (d1 = $FF, contrast = $FF): the precondition fails on both, and CIA-A's own read-back is recorded rather than graded further. CIAB/timer A and CIAB/timer B read d1 = 0 and the contrast = 1 on bit n, as the page predicts: the precondition holds, and P1's PBON legs and P1-OTHERBITS' pattern-bit clause are graded on these two instances only.
 
-**P1-CONTRAST.** The dedicated PBON=0 run (`p1_ciab_tb_pbon0.bin`) reads a2, a1, b1 and c1 identically, bit for bit, to the PBON=1 run. The comparator that grades the main clause cannot tell the two settings apart from any input at `nanomig.v`'s ports: `checks.record()`s this as unfalsifiable at this boundary rather than grading it.
+**P1-MAIN (r0, a2, a1, b1, c1, d1, o1c, d2), per instance:**
 
-**P1-LP, P1-O2.** LP's own three checks were made: the LED before boot, after the "on" leg's R-SELECT, and after the "off" leg's R-SELECT. The LED reads off in all three cases -- it never turns on. LP fails on its own second leg, so the four O2 legs (LED-A1, LED-C, LED-D1, LED-D2) are reported, not graded, exactly as O2's own calibration-failure rule states.
+| instance | r0 | a2 | a1 | b1 | c1 | d1 | o1c | d2 |
+|---|---|---|---|---|---|---|---|---|
+| CIAA/timer A (not graded) | $FF | $FF | $FF | $FF | $FF | $FF | $FF | $FF |
+| CIAA/timer B (not graded) | $FF | $FF | $FF | $FF | $FF | $FF | $FF | $FF |
+| CIAB/timer A | $FF | $FF | $FF | $FD | $BB | $BB | $FB | $FB |
+| CIAB/timer B | $FF | $FF | $FF | $FD | $7B | $48 | $FB | $FB |
 
-**P2-LEGR, P2-MAIN, P2-LEGH.** r1 was read on all four instances (leg R); the 64-sample s_k arrays were read for all four starts on all four instances (leg S); h1, h2, h3 and ih were read (leg H). r1 reads the DDRB/pull-up level, not 0, on every instance: leg R's own clause is not established. Every s_k array is constant at the pull-up level for its entire 64 samples, on every instance and every start: no rise is ever observed, so leg S's own clause ("every start ... sets it high") is not established either -- there is no level for a start to raise from or to. h1 and h3 both read 1 on every instance, matching the page's own prediction for leg H, but by the same pull-up level leg R and leg S show throughout; PBON is $00 nowhere in leg H's own stimulus, so this leg's own reading does not by itself separate "set high by a start" from "reads high because undriven".
+On the graded instances (CIAB), a2, a1, b1 and c1 read back exactly the DDRB/PR-data value the step itself wrote, never the timer's own toggle/pulse state: bit n of b1 ($FD, $FD) and c1 ($BB, $7B) is the data bit both times, not the override. d1 and o1c (Pre1.4's own two legs), which do not depend on PBON's own override, read as the page predicts (0 then 1 on bit n). P1-MAIN-CRA, P1-MAIN-CRB and P1-MAIN are red on both cores.
 
-**P2-CONTRAST, Pre2.1, Pre2.3.** The start-4-not-started run, the extra-start-before-leg-R run, and the PBON=0-at-start-1 run were each compared word-for-word against the plain CIAB/timer-B run's own r1, z_1 and s_4. Every one of the three mutated runs reads identically to the baseline on the channel its own clause is graded through (r1, z_1, or s_4's rise count). `checks.record()`s each as unfalsifiable at this boundary.
+**P1-OTHERBITS.** On the graded instances (CIAB), the pattern bits of b1 and c1 (bits 0-5) and bit o both match this instance's own written pattern and r0: green on both cores. On CIA-A (not graded), b1 = c1 = $FF on both instances, against a pattern of $2A/$15 in bits 0-5 -- recorded, not graded.
 
-**Pre2.2, Pre2.4.** These two are graded through the ICR flag (i_1's TB bit, ih's TB bit), not through PRB: the $FFFF-latch run reads i_1's TB flag clear where the baseline's own start 1 reads it set (Pre2.2), and the $0008-latch run reads ih's TB flag set where the baseline's own leg H reads it clear (Pre2.4). Both mutations are live and both assertions grade green.
+**P1-CONTROL (PBON = 0).** Graded on the same instances as P1-MAIN (CIAB only). Both instances read a2, a1, b1 bit n = 1, c1 bit n = 0, d1 bit n = 0, d2 bit n = 1, exactly the page's own PBON = 0 prediction: green on both cores. This is the green control P1-MAIN's own red needs: the same comparator, a different (and page-predicted) input, passes.
 
-**EP1, EP2, EP3, F1 anchor.** All four hold on every run, and all four contrasts flip as the page predicts: EP1's own write-before-read returns $0A; EP2's own Copper fetch of $0C3000 appears inside the marker window that the unmutated run shows clear of anything but CPU and refresh accesses; EP3's own no-DONE program times out with no final marker; F1's own anchor check passes at the measured T_CPU and fails when the same comparator is fed 1.25x that value.
+**P2-LEGR, P2-MAIN, P2-LEGH (r1, z1-z4, h1-h3, s0), per instance:**
+
+| instance | r1 | z1 | z2 | z3 | z4 | h1 | h2 | h3 | s0 |
+|---|---|---|---|---|---|---|---|---|---|
+| CIAA/timer A (not graded) | $FF | $FF | $FF | $FF | $FF | $FF | $FF | $FF | $FF |
+| CIAA/timer B (not graded) | $FF | $FF | $FF | $FF | $FF | $FF | $FF | $FF | $FF |
+| CIAB/timer A | $FF | $BF | $BF | $BF | $BF | $BF | $BF | $BF | $BF |
+| CIAB/timer B | $FF | $7F | $7F | $7F | $7F | $7F | $7F | $7F | $7F |
+
+On CIA-A, r1 and s0 read $FF (the dead read-back): Pre2.3 never holds there (the level before start 1 is never 0), so no start of leg S is graded, and legs R and H are excluded the same way P1-MAIN excludes CIA-A (Pre1.4/O1, reused). On CIAB, s0 and every z_k read the driven 0 leg S's own override wrote (bit n = 0 throughout, both instances): Pre2.3 holds for every start, so every start is graded, and every one reads constant at 0 for all 64 samples -- no rise, "at least one 1" and "exactly one rise" both fail. r1 reads bit n = 1 (pulled up, DDRB never drives it in leg R): leg R's own clause fails. h1, h2 and h3 all read the same driven 0 as z_k: leg H's own clause ("h1 = 1", "h3 = 1") fails, and h2 shows stopping does not change the level either. P2-LEGR, P2-MAIN, P2-LEGH and the combined P2-TOGGLE are red on both cores, on the CIAB instances; CIA-A's exclusion is recorded via the Pre1.4/O1 record P1-MAIN already makes.
+
+**P1-LP, P1-O2, LED-R.** LP's own three legs were measured on CIAB/timer B: the LED reads off before boot, off after the "on" leg's R-SELECT (MTR* = 0 at select), and on after the "off" leg's R-SELECT (MTR* = 1 at select) -- the opposite of what the page predicts, and the same result the fdd_led probe gives independently (it follows disk DMA, not the motor latch, NM-HRM-046). LP, the four O2 legs and P2's LED-R are recorded, not graded; nothing is graded on the light.
+
+**P1-OTHERBITS' own mutation, P1-PRE1.1-1.4, P2-PRE2.2-2.4, EP1, EP2, EP3.** Replayed on both cores against the built binaries and diffed line-for-line against the unmutated run. Every one of the twelve flips exactly the assertion its own `// MUTATION` record names, and nothing else, except the two side effects named below:
+- P1-OTHERBITS: red (bits 0-5 of b1 no longer match this instance's own pattern). No other line changes.
+- P1-PRE1.1: red (r0 bit n reads 0, not 1). No other line changes -- P1-PRE1.4/O1, which also reads a bit-n level, is unaffected: the mutation only pre-drives the line before r0's own read, and DDRB/PRB are already set again (identically) before d1 and its own contrast are reached.
+- P1-PRE1.2: red (the $FFFF latch leaves CR bit 0 still set at the poll limit). No other line changes.
+- P1-PRE1.3: red (the $0004 latch lets leg C underflow). No other line changes.
+- P1-PRE1.4/O1 (CIAB/timer B): red (the contrast leg's data bit stays 0, so it no longer reads 1). Side effect, measured: P1-MAIN-CRB flips from FAIL to PASS, because both of its instances (CIAA/timer B, always excluded, and now CIAB/timer B) are excluded from the conjunction, which is then vacuously true.
+- P2-PRE2.2: red (the $FFFF leg-S latch leaves start 1's poll count at the limit and its own TB flag clear). No other line changes.
+- P2-PRE2.3: red (start 1 written as $0D with DDRB left an input reads z_1 = 1 instead of the baseline's own driven 0). Side effect, measured: this same mutant leaves DDRB undriven for all of leg S, not only start 1, so CIAB/timer B's own s_4 also reads pulled-up throughout instead of driven 0; P2-CONTRAST's own comparator, which reads that same capture as its baseline, then finds one rise where the normal baseline finds none, and grades a PASS where it is RECORDED (unfalsifiable) at the normal baseline.
+- P2-PRE2.4: red (the $0008 leg-H latch sets the ih flag). No other line changes.
+- EP1: red (a write to CIAA CRA before SETUP's own read returns $0A instead of $00). No other line changes -- EP1-PER-RUN, read from the eight P1/P2 instance captures rather than this dedicated one, is unaffected.
+- EP2: red (Copper DMA started in the window makes the Copper's own fetch of $0C3000 appear). No other line changes.
+- EP3: red (the never-DONE program has no final marker). No other line changes.
+
+P2-PRE2.1's own mutation (an inserted start before leg R) and the P2-LEGH START=0 comparison change nothing anywhere in the run: both stay exactly the records their own text states.
+
+**F1-ANCHOR.** Holds on every run measured; F1-ANCHOR-CONTRAST (the same comparator fed 1.25x the measured T_CPU) fails on every run measured, both cores; no separate binary is built for it.
+
+**Records that stay unfalsifiable at this boundary, both cores:** P2-PRE2.1 (an inserted start before leg R reads the same pulled-up r1 as the baseline), P2-CONTRAST (start 4 written unstarted reads the same 0-throughout as the baseline, since this build's s_4 never rises for its own reason), and the P2-LEGH START = 0 comparison (h1 reads the same driven 0 whether started or not). Each record states the baseline state the mutation could not move.

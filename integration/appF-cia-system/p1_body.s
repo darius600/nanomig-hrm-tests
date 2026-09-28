@@ -23,6 +23,7 @@ P1_C1           equ     RESULTS+20
 P1_I2           equ     RESULTS+22
 P1_D1           equ     RESULTS+24
 P1_D2           equ     RESULTS+26
+P1_O1C          equ     RESULTS+28
 
 ; O2 markers ($0C1000 is MK_START; DONE is always the run's last marker).
 MK_LP_ON_SEL    equ     $0C1002
@@ -188,6 +189,20 @@ start:
         move.w  #MARKER_SENTINEL,MK_D1_END
         move.b  #$08,PRB
         endc
+
+; ---- Pre1.4/O1 precondition's own contrast leg: DDRB bit n=1 still,
+; PBON=0 still (CR=$00 since step 8's own move), data bit n=1 instead of
+; 0. p341's read rule predicts bit n=1 here (an output reads its own
+; data), the opposite of d1's bit n=0. Together with d1 this establishes
+; whether this instance's PRB read-back can show a driven level at all
+; (SPECIFICATION.md P1, Pre1.4).
+        ifd     MUT_PRE14
+        move.b  #Q2,PRB                ; Pre1.4 contrast: data bit n stays 0
+        else
+        move.b  #M|Q2,PRB
+        endc
+        READ_STORE PRB,P1_O1C
+
         move.b  #$3F,DDRB
         READ_STORE PRB,P1_D2
         ifd     DO_O2
