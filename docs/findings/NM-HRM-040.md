@@ -5,13 +5,13 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Decide whether the RTL should change, which here first needs an answer to the CIA part-number question in *What the others say*. *Suggested change* states what follows from each answer; the decision belongs to an Amiga specialist, not to this repository. |
+| **What is asked of a reader** | Decide whether the RTL should change. The CIA part number does not decide the red: on a released line an output driven 0 reads 0 whether the part returns the pin or the written value, and the one dissected CIA, an 8520R4, draws PA0 driven low and read as the pin. *Suggested change* states the change and the one choice it leaves, between two forms only a line held low separates; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L252-L262) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L298-L309) |
-| **Report to** | **Minimig-AGA and NanoMig.** Both Minimig lines carry the same two-of-eight mux. **Read the third-witness section first**: two of four implementations gate this behaviour on a CIA part number |
+| **Report to** | **Minimig-AGA and NanoMig.** Both Minimig lines carry the same two-of-eight mux. Two of four implementations switch this read on a CIA part number, vAmiga's switch modelled on WinUAE's; by their own comments the switch decides what an output reads only where something outside holds the line, which the package does not present (*What the others say*) |
 | **Test** | [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) · `PROP-1`, claim `opus:8-dio.c44` (`test_ch8-ciaa-port-direction.cpp:380-402`), and `PROP-2`, claims `opus:8-dio.c46`, `sol:8-dio.c43` (`test_ch8-ciaa-port-direction.cpp:404-426`) — **red**, `3 passed, 2 failed`, with all six external lines released (`test_ch8-ciaa-port-direction.cpp:157`) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red, each sweeping all eight positions: at PA2–PA7 each fails on the written 0 alone, read back as 1 (`test_ch8-ciaa-port-direction.cpp:264-266`, `:302-304`), and passes at PA0–PA1. Two PA0-restricted controls on the identical comparators (`test_ch8-ciaa-port-direction.cpp:428-446`) pass in the same run |
-| **Verdict of the four** | **a four-way split** where p.341 predicts the value, an output driven 0 on a line nothing else pulls: Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight regardless only under a chip-variant switch that is off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four. Over a line held low, a case no page decides and the package does not present, they split again: Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the line |
+| **Verdict of the four** | **a four-way split** where p.341 predicts the value, an output driven 0 on a line nothing else pulls: Denise honours all eight; Copperline reproduces NanoMig's two-of-eight bit for bit; vAmiga honours all eight until a mouse is attached, whose pull-up then overrides that port's fire bit, and restores the full eight whatever is attached only under a chip-variant switch, modelled on WinUAE's and off by default; WinUAE follows the write on four (PA7/PA6 as a wired-AND with the fire button) and never stores PA2–PA5, so its chip-variant switch does not restore those four. Over a line held low, a case no page decides and the package does not present, they split again: Denise and vAmiga return the written 1 on PA2–PA5, WinUAE and Copperline the line |
 
 ---
 
@@ -163,10 +163,13 @@ after the one above, in the same function, its **port B** overlay masks with
 stays CIA-driven"*, and CIA-B applies `!ddr` to all three of its overlays.
 Somebody decided port A's status bits are different.
 
-**Two of the four gate the printed behaviour on a chip part number, one of them
-only in part.** vAmiga's `MOS_8520_PLCC`
+**Two of the four switch the read on a chip part number, and the two switches
+are one.** vAmiga's `MOS_8520_PLCC`
 ([`CIA.cpp:869-871`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L869-L871),
-default off) restores strict one-to-one on all eight. WinUAE's `391078-01` type
+default off) restores strict one-to-one on all eight; the header that declares
+it says `CIA_8520_PLCC mimics option "[X] 391078-01" in UAE (A600)`
+([`CIATypes.h:17-20`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIATypes.h#L17-L20)).
+WinUAE's `391078-01` type
 ([`cia.cpp:1923-1927`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1923-L1927),
 enabled for the A600 alone, default off) returns PRA contents for every output
 bit — its own comment on that branch reads *"391078-01 CIA: output mode bits
@@ -175,10 +178,41 @@ so an output-mode read of those four returns their reset value, zero
 ([`cia.cpp:2389`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L2389)),
 whatever was written.
 
-**That is what the split may be about.** The question behind p.241 may not be
-"does the implementation obey the page" but "which CIA part is fitted", and two
-independent emulator authors evidently concluded the answer differs by part.
-That is a decision for Amiga specialists.
+**What the switch separates, in its authors' own words, is a line held from
+outside.** WinUAE's changelog introduces the type: *"This CIA revision has a
+bug, if IO port is in output mode, reading it will always read output mode data
+state. Other models, including original DIP 8520, 391078-02 and Akiko internal
+CIAs read IO pin external voltage level as documented."*
+([`winuaechangelog.txt:4655`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/winuaechangelog.txt#L4655)),
+and the option's label reads *"CIA revision that can't read IO pin status in
+output mode"*
+([winuae.rc:859](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/od-win32/resources/winuae.rc#L859)).
+vAmiga's default path carries *"A connected device may force the output level
+to a specific value"*
+([`CIA.cpp:865`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CIA/CIA.cpp#L865)).
+One part returns the pin, the other the written value. On a released line the
+pin is what the CIA drives, so the two agree: the written 0 reads 0 on either.
+They part only where something outside holds the line against the output, the
+case no page decides and the package does not present. The part number does not
+bear on the red; it bears on which of the two forms in *Suggested change* a fix
+takes.
+
+Where two of the four read the written 0 back as 1 on a released line, as
+NanoMig does, Copperline at PA2–PA7 and WinUAE at PA2–PA5, neither ties it to a
+part. Copperline has no part switch, and
+WinUAE's default, which its changelog says reads the pin, reads PA2–PA5 from the
+drive status alone, `DISK_status_ciaa() & 0x3c`
+([`cia.cpp:1915`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cia.cpp#L1915)),
+never from what the CIA drives there.
+
+**The one dissected CIA draws the pin read.** The 8520R4 dissection (*What
+other Commodore documents say*) draws PA0 with a pull-down on while the DDRA bit
+is set and the PRA bit clear, an active pull-up on while both are set, and a
+PRA read that returns the pad: on a released line a written 0 reads 0 and a
+written 1 reads 1, as p.341 predicts and the package expects. It draws PA0
+alone, of one revision, and names no part number beyond 8520R4, so it says
+nothing of the 391078-01 or of PA1 to PA7's cells; and the drawing does not say
+which wins when a line held low from outside meets the active pull-up.
 
 One corroboration worth passing on: vAmiga logs *"DDRA: Setting unusual value"*
 for CIA-A whenever the write is not `0x03`
@@ -188,16 +222,38 @@ exactly the pair NanoMig implements.
 
 ## Suggested change
 
-**Not without an answer to the part-number question.** If the fitted CIA
-returns PRA contents for bits in output mode, `pa_out` should mux on `ddrporta`
-across all eight positions, the way Denise does in one line. If it does not, the
-page is describing a part this core does not model, and the finding is
-documentation rather than a defect.
+**The part number does not decide this red.** On a released line a part that
+returns the pin and a part that returns the written value both read an output
+driven 0 as 0 (*What the others say*), so p.341 and both parts as WinUAE's and
+vAmiga's authors describe them give the written value back at every position
+the package sweeps, and the 8520R4 does at PA0, the one position it draws. Two
+things in `ciaa.v` stand between
+NanoMig and that value: `regporta` keeps four of the eight written bits, PA7,
+PA6, PA1 and PA0 (`ciaa.v:238`), so PA5–PA2 are never stored; and `pa_out`
+takes PA7–PA2 from the line alone (`ciaa.v:254`). A change stores all eight and
+lets every position whose `ddrporta` bit is set read back what the CIA drives.
+
+The change leaves one choice, and only a line held low separates its two forms:
+
+- **the pin**: the line ANDed with what the CIA drives, `~ddrporta | regporta`,
+  at every position; at PA1 and PA0, which have no line into `ciaa`, that term
+  alone, as now (`ciaa.v:262`). A line held low then reads 0 whatever was
+  written. This is the read WinUAE's changelog gives the DIP 8520 and WinUAE's
+  default gives PA7/PA6, and the read path the 8520R4 draws for PA0; it keeps
+  `hrm/ch8-ciaapra-disk-sense-bits`'s PROP-INPUT green.
+- **the written value**: the output register at every output bit, the way Denise
+  does in one line; what WinUAE and vAmiga model for the 391078-01. It turns
+  PROP-INPUT red, which sets a position's direction bit and writes 1 over a line
+  held low and expects 0 (`test_ch8-ciaapra-disk-sense-bits.cpp:308-311`).
+
+This package passes either. Which part a core should follow over a line held
+low is the question for Amiga specialists, and no page on this finding answers
+it.
 
 What should not happen is a change made because a test is red. The package is
-red where p.341 predicts the value, an output driven 0 on a released line;
-whether the page is right about the silicon is a different question with a
-different owner.
+red where p.341 predicts the value, an output driven 0 on a released line; one
+revision's PA0 agrees with the page there, and whether every part and position
+does is a question for the same specialists.
 
 ## What holds the finding up
 
@@ -210,6 +266,9 @@ different owner.
   0 reads 1 at PA2–PA7 and 0 at PA0–PA1.
 - Two controls on the identical comparator pass in the same run, so the
   comparator is live.
+- The one dissected CIA, an 8520R4, drives PA0 low for a written 0 with the
+  direction bit set and returns the pad on a PRA read, so there an output driven
+  0 on a released line reads 0 (*What other Commodore documents say*).
 
 ## What weakens it
 
@@ -222,8 +281,10 @@ different owner.
   reading only over a line held low, a case p.341 does not decide.
 - Only one implementation of four does what the page says by default whatever is
   attached; vAmiga does only while no mouse is attached.
-- Two of the four treat it as part-dependent, which is a reading the page does
-  not offer and the manual may simply predate.
+- Two of the four switch the read on a part number, vAmiga's switch modelled on
+  WinUAE's. By their own comments the switch decides only a line held from
+  outside, but no Commodore document read for this page says what the 391078-01
+  does, and the silicon witness is PA0 of one 8520R4.
 
 ---
 
