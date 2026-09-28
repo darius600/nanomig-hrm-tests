@@ -410,3 +410,96 @@ Claims opus:K-0164 and sol:K-0155, p.394: "an I/O-only reset, such as initiated 
 9. **CIA name on p.244.** The printed p.244 says "Bits labeled "PB" are output bits located in CIAAPRB ($BFD100)". The name says CIA-A, but $BFD100 is CIA-B's prb (p.340), and the page's own heading reads "CIAAPRA/CIABPRB". The specification uses $BFD100 with p.340's bit layout.
 10. **OVL polarity.** No page prints it (p.223, p.339, p.351). It can only be inferred: after reset the port pins read high (p.354) and the overlay is present (p.223), so OVL = 1 keeps the overlay and 0 disables it. §2.1 drives OVL to 0 to reach the vectors and checks the result at the port; no expected value relies on the inference.
 11. **Write bit position.** No page shows which bits of a written byte a nybble-wide configuration register takes. §4 assumes bits 7-4, like the reads.
+
+## 8. What the build added
+
+### 8.1 Harness configuration
+
+Every run sets `fastram_config` = 1 (the harness documents only its
+default, 0, "no Zorro II fast RAM offered"; 1 is nanomig.v's own
+`fastram_config` port's next value, and register 00's size field reads
+back as 6, the p.433 "Unextended" Zorro II code for 2 MB) and
+`floppy_config` = $04 (the harness documents only its default, 0, "no
+floppy drives"; nanomig.v's own `floppy_config` port packs the drive
+count into bits 3-2, and 1 there connects one drive, drive 0). Every run
+of P1, P2 and P6 (R1, R6 and R6m, and their contrasts) is repeated at
+`cpu_config` = 0 on core A (fx68k) and at `cpu_config` = 0, 1 and 3 on
+core B (TG68K) -- nanomig.v's own `cpu_config` port's documented values
+("00 = 68000, 01 = 68010, 11 = 68020"). Gate G and P3 run once, at
+`cpu_config` = 0, on each core; they are not in P1/P2/P6's CPU-setting
+list (§2.1).
+
+The 2 MB board puts B1 = $00200000 and, where R3/R3n and their contrasts
+need a second base, B2 = B1 + size = $00400000, both multiples of the
+board's size inside the standard 8 MB Zorro II space (p.388), per §4's
+"Choice of base address".
+
+"Wait one frame" (P1's power-LED calibration and the two-frame anchor
+wait, and P6's reuse of P1 steps a-d) polls INTREQR bit 5 (VERTB, "start
+of vertical blank", printed page 280, Appendix A Register Summary) after
+clearing it: a page-documented event, not an assumed cycle count.
+
+### 8.2 Programs
+
+- R1 and its contrasts: `prog_r1.s` (R1); `prog_r1a.s` (R1a, RESET
+  replaced by NOP); `prog_r1b.s` (R1b, the A+2 MOVE replaced by NOP);
+  `prog_r1_c1prime.s` (the display-anchor contrast, COLOR00 preset to
+  C1'=$0C3F); `prog_r1_priv.s` (the "no exception" contrast, SR set to
+  user mode before RESET).
+- Gate G and its contrast: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G').
+- P3: `prog_r3.s` (R3, and R3c/R3u/R3' select from it via an assembly
+  symbol); `prog_r3_n.s` (R3n); `prog_r3_swap.s` (R3'); `prog_r3_swap_n.s`
+  (R3n'); `prog_r3_c48first.s` (R3c); `prog_r3_nocfg.s` (R3u).
+- P6: `prog_r6.s` (R6, and R6a select from it); `prog_r6m.s` (R6m);
+  `prog_r6a.s` (R6a); `prog_r6am.s` (R6am).
+
+Every program shares one environment (interrupts and DMA cleared, the ROM
+overlay cleared, the exception vectors installed and the vector-table
+check, the M0 marker) through a package-local macro (`common.i`), applied
+once at the start of every run, including gate G's and P3's.
+
+### 8.3 Measured values (not oracles)
+
+- A frame, on this harness with this configuration, measures 568408
+  `clk_sys` cycles (from the captured video trace's vsync edges); used
+  only to size a run's cycle budget, never as an expected value.
+- P2's V0-after-M1 write count: 0, on every CPU setting, both cores
+  (recorded at P2, not graded: p.370 gives no bound on a full-system
+  reset's own restart time, and RESET is not one).
+- Gate G's own register 00 read: type = Zorro II (bits 7-6 = 11), memory
+  flag set, size field = 6 (2 MB, p.433's "Unextended" column); registers
+  0C, 34, 38 and 3C read physical 1111 at both pair addresses, as p.432's
+  own example and p.434-435 state for the reserved registers.
+- Register 08 bit 6 read: logical 0 ("can be shut up") on the PIC this
+  harness offers, confirmed both by G's own read and by R_G' proceeding
+  to grade a differing image rather than recording "cannot shut up".
+
+### 8.4 Mutations
+
+Every mutation below was run once on both cores (`NMH_MUTATE=<value>`)
+and compared against its record; results agreed between fx68k and TG68K
+in every case.
+
+| assertion | `NMH_MUTATE` | predicted | measured, both cores |
+|---|---|---|---|
+| P7-PART-I | `P1A` | part (i) fails: no LED change | fails: no LED change observed |
+| P7-PART-II | `P2` | part (ii) fails: no C2 pixel | fails: no C2 pixel observed |
+| P1-DISPANCHOR | `P1-DISPANCHOR` | the same anchor comparator recognises F_ref under the mutation's own live colour (C1') | recognises it |
+| P1-NOEXCEPTION | `P1-NOEXCEPTION` | the same "no exception" comparator now reports one | reports one (a C_E pixel and the V_E marker both appear) |
+| P3-IMG1 | `P3-IMG1` | register 48 written in step b's place configures immediately: IMG1 != IMG0 | differs from IMG0 |
+| P3-IMG2 | `P3-IMG2` | steps c and d skipped: IMG2 = IMG0 (never configured) | equals IMG0 |
+| P3-CONTENT | `P3-CONTENT` | R0's own run substitutes R3u (steps c and d skipped): R0/R1 stay at their unwritten default | fails to match P0/P1V |
+| GATE-G | `GATE-G` | the shut-up write skipped: the same PIC answers identically twice | identical to IMG0 |
+| P6-CONTRAST, P7-PART-III | `P6` | RESET replaced by NOP: the board stays configured (a differing image from IMG0, and the memory board still answers with P0') | stays configured, still answers with P0' |
+
+P3-BASE and P3-NOTOTHER carry no dedicated mutation (a scope decision:
+see the header comment of `test_appK_autoconfig.cpp`, at each check).
+Both measure red already, on the unmutated stimulus, on both cores: the
+memory board answers with what was written at the base it was not given,
+as well as at the base it was given. Reported to the lead, not worked
+around; the checks, and their red verdicts, are unchanged.
+
+GATE-G also measures red already, on the unmutated stimulus, on both
+cores: after the shut-up write, the PIC's register image is unchanged
+from IMG0, although register 08 bit 6 reads "can be shut up". Reported
+to the lead, not worked around.
