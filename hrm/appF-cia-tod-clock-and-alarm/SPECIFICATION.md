@@ -105,7 +105,7 @@ uid appears in exactly one assertion's label.
 | 5 | `TOD-ALARM-WRITE-GATE` | 344 | `sol:F-tod.c6`, `opus:F-tod.c6`, `sol:F-tod.c41`, `opus:F-tod.c19` | A control-register bit (CRB7) governs whether a write to $8/$9/$A reaches TOD (CRB7=0) or the alarm (CRB7=1). |
 | 6 | `TOD-READ-ALWAYS-TOD` | 344 | `sol:F-tod.c7`, `opus:F-tod.c7`, `sol:F-tod.c8` | The alarm is write-only: a read of $8/$9/$A always returns TOD, regardless of the ALARM bit. |
 | 7 | `TOD-SEQUENCE-MATTERS` | 344 | `sol:F-tod.c9`, `opus:F-tod.c8` | Setting/reading TOD requires a specific event sequence — writing out of the documented order produces a different (incorrect) result than writing in it. |
-| 8 | `TOD-WRITE-STOPS-CLOCK` | 344 | `sol:F-tod.c10`, `opus:F-tod.c9` | A write to a TOD register (any of $8/$9/$A) automatically stops the clock. |
+| 8 | `TOD-WRITE-STOPS-CLOCK` | 344 | `sol:F-tod.c10`, `opus:F-tod.c9` | "TOD is automatically stopped whenever a write to the register occurs. The clock will not start again until after a write to the LSB event register." — graded as: a write to the MSB event register ($A) stops a running clock, and a lone write to the LSB event register ($8) leaves it running; the page names no register for the stop sentence itself, so a write to the middle event register ($9) is not graded. |
 | 9 | `TOD-WRITE-STARTS-LSB-ONLY` | 344 | `sol:F-tod.c11`, `opus:F-tod.c10` | The clock does not resume after a stop until a write specifically to the LSB event register ($8). |
 | 10 | `TOD-WRITE-STARTS-ATOMIC-VALUE` | 344 | `sol:F-tod.c12`, `opus:F-tod.c11` | When the clock resumes, it starts counting from exactly the value written, not a value that drifted between the byte writes. |
 | 11 | `TOD-READ-LATCH-CARRY-CONSISTENCY` | 344 | `sol:F-tod.c13`, `opus:F-tod.c12` | Because a carry can occur mid-read, latching keeps all TOD bytes internally consistent across a byte-boundary carry that happens during a read sequence. |
@@ -149,15 +149,17 @@ add no separately-testable content beyond what the specific ones state.
 The task instructions named two RTL facts already measured during
 classification, to be confirmed and reported here, not adjudicated:
 
-1. **`cia_timerd.v:75`** stops the TOD count-enable latch only on a write to
-   the HIGH byte (`thi`) — the middle byte's participation is present in the
-   source only as a comment, `if (thi/* || tme*/)`. P.344 says TOD "is
-   automatically stopped whenever a write to the register occurs" (no byte
-   qualifier). `TOD-WRITE-STOPS-CLOCK` (assertion 8) tests all three byte
-   writes independently, exactly as `sol:F-tod.c10`'s own evidence proposes,
-   and is expected to fail for the LOW and MID bytes while passing for the
-   HIGH byte — this is the measurement surfacing as a real, informative red,
-   not something this package works around.
+1. **`TOD-WRITE-STOPS-CLOCK`** (assertion 8) measures p.344's own two
+   clauses: a write to the MSB event register ($A) stops a running clock,
+   and a lone write to the LSB event register ($8), on a running clock,
+   leaves it counting (p.344, "TOD is automatically stopped whenever a
+   write to the register occurs. The clock will not start again until
+   after a write to the LSB event register."). The page names no register
+   for the stop sentence itself, so a write to the middle event register
+   ($9) is measured, via `note()`, but not graded against it. The clock
+   both graded sub-checks start from is shown running by an explicit write
+   to the LSB event register, not assumed from reset — p.354 gives no TOD
+   condition after reset.
 2. **`cia_timerd.v:105-110`** resets all three alarm bytes to `8'b1111_1111`
    (`24'hFFFFFF`). No claim in this package's 61 states an expected TOD/alarm
    reset value — that table is on p.354, owned by a different appF package —
@@ -175,12 +177,15 @@ stimulus mutation, in the source, in the fixed `// MUTATION <label>
 - **Fixture liveness**, once: two distinct, known bytes written to CIAADDRA
   (`RS_DDRA`, $2) — a register no TOD/alarm assertion depends on — must both
   arrive and read back correctly before any other assertion is graded.
-- **Controls on the same measurement basis.** Several assertions below are
-  expected to legitimately fail (assertion 8, per item 1 above). Assertion 9
-  (`TOD-WRITE-STARTS-LSB-ONLY`) uses the identical write/tick/read-back
-  mechanism and page paragraph and is expected to pass, which is this
-  package's same-measurement-basis control the build brief asks for, rather
-  than a separately labeled control duplicating the mechanism.
+- **Controls on the same measurement basis.** `TOD-WRITE-STOPS-CLOCK`
+  (assertion 8) and `TOD-WRITE-STARTS-LSB-ONLY` (assertion 9) use the
+  identical write/tick/read-back mechanism and the same page paragraph:
+  assertion 8 grades a running clock's response to a write to $A and to a
+  lone write to $8, assertion 9 grades the clock's response to $9 and $8
+  after a stop. Both are graded to pass, on the same mechanism and the
+  same paragraph — this package's same-measurement-basis control the
+  build brief asks for, rather than a separately labeled control
+  duplicating the mechanism.
 - **Mutation.** Each assertion's mutation is a stimulus change (never an RTL
   edit, never a change to what an assertion treats as the expected value) —
   withholding a tick, writing to the wrong register, using the wrong CRB7

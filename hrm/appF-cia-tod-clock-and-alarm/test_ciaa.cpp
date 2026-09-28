@@ -63,13 +63,14 @@
 //   - cia_timerd.v:69-80 (count_ena): reset->1 (running by default);
 //     `wr && !crb7` and `thi` clears it (the comment `/* || tme*/` at :75
 //     shows the middle byte was deliberately excluded); `tlo` (also only
-//     under `wr && !crb7`) sets it back to 1 -- MEASURED, confirming the
-//     task instructions' first flagged item exactly: only a HIGH-byte
-//     write stops the clock; MID does nothing to count_ena, LOW does not
-//     stop it either (LOW is the "start again" byte p.344's own next
-//     sentence names) -- assertion 8 (TOD-WRITE-STOPS-CLOCK) grades the
-//     page's literal, unqualified "a write to the register" against all
-//     three bytes independently and is EXPECTED to fail on two of three.
+//     under `wr && !crb7`) sets it back to 1 -- MEASURED. Assertion 8
+//     (TOD-WRITE-STOPS-CLOCK) measures p.344's own two clauses: a write
+//     to the MSB event register ($A) stops a running clock, and a lone
+//     write to the LSB event register ($8), on a running clock, leaves
+//     it counting (p.344's next sentence, "The clock will not start
+//     again until after a write to the LSB event register"). p.344
+//     names no register for the stop sentence itself, so a write to the
+//     middle event register ($9) is measured but not graded against it.
 //   - cia_timerd.v:82-100 (tod counter): a single if/else-if chain --
 //     reset, else a `wr && !crb7` byte-write (tlo/tme/thi each landing
 //     independently, no increment on this same edge), else
@@ -136,75 +137,80 @@
 //   are exactly what those runs printed -- every mutation flipped
 //   precisely the one assertion it names and no other.
 //
-// Baseline (no MUT, WSL Verilator 5.052): "43 passed, 1 failed" -- every
-//   assertion below PASSes except TOD-WRITE-STOPS-CLOCK, which is the
-//   documented, expected red from the task instructions' first flagged
-//   measurement item (see the RTL facts above) -- a real divergence between
-//   p.344's literal text and this build's RTL, not a test defect.
+// Baseline (no MUT, WSL Verilator 5.052): "44 passed, 0 failed" -- every
+//   assertion below PASSes. TOD-WRITE-STOPS-CLOCK (repaired) measures
+//   p.344's own two clauses -- a write to the MSB event register ($A)
+//   stops a running clock, and a lone write to the LSB event register
+//   ($8), on a running clock, leaves it counting -- rather than requiring
+//   a stop from a write to any of $8/$9/$A; on this fixture both hold.
 //
 // MUTATION FIXTURE-LIVE stimulus red: MUT_FIXLIVE repeats the first DDRA
 //   byte (0x55) instead of writing a distinct second one (0xAA) -> FAIL
-//   ("42 passed, 2 failed": FIXTURE-LIVE flips to FAIL, nothing else moves).
+//   ("43 passed, 1 failed": FIXTURE-LIVE flips to FAIL, nothing else moves).
 // MUTATION TOD-COUNTER-24BIT stimulus red: MUT_24BIT loads $00FFFF instead
 //   of $FFFFFF before the one tick, so the counter lands on $010000, not
-//   $000000 -> FAIL ("42 passed, 2 failed").
+//   $000000 -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-COUNTER-POSEDGE stimulus red: MUT_POSEDGE lowers and
 //   re-raises `tick` during the "hold at level" phase -- a genuine second
 //   rising edge -- moving the counter past the value the comparator still
-//   expects -> FAIL ("42 passed, 2 failed").
+//   expects -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-ALARM-INTERRUPT stimulus red: MUT_ALARMIRQ arms the alarm
 //   at 6 while the tick loop still only runs to 5, so it never matches and
-//   `irq` never asserts -> FAIL ("42 passed, 2 failed").
+//   `irq` never asserts -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-ALARM-ADDRESSING stimulus red: MUT_ALARMADDR arms the alarm
 //   at 8 instead of 7, so the match takes one tick longer than the
-//   hard-coded expectation -> FAIL ("42 passed, 2 failed").
+//   hard-coded expectation -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-ALARM-WRITE-GATE stimulus red: MUT_WRITEGATE leaves CRB7 at
 //   0 instead of setting it to 1 before the second write, so that write
-//   reaches TOD after all and TOD changes -> FAIL ("42 passed, 2 failed").
+//   reaches TOD after all and TOD changes -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-READ-ALWAYS-TOD stimulus red: MUT_READALWAYS withholds the
 //   set_crb7(true) before the alarm-labelled write, so that write lands in
 //   TOD itself -- measured, both reads now return 0xBBBBBB (the value just
-//   written) instead of 0xAAAAAA -> FAIL ("42 passed, 2 failed").
+//   written) instead of 0xAAAAAA -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-SEQUENCE-MATTERS stimulus red: MUT_SEQORDER withholds every
-//   tick the "wrong order" branch relies on to drift away from target,
-//   collapsing it to behave like the "correct order" branch -> FAIL
-//   ("42 passed, 2 failed").
-// MUTATION TOD-WRITE-STOPS-CLOCK stimulus green: MUT_STOPCLOCK substitutes
-//   RS_TDHI (the one byte that genuinely stops the clock) for the MID- and
-//   LOW-byte sub-checks' own register too -> PASS ("44 passed, 0 failed":
-//   the only baseline-red assertion flips to green). Substitution proof,
-//   same shape as hrm/ch8-parallel-port-direction's MUT_PROP1_TARGET_A:
-//   the comparator is not vacuously false, it reads true for the byte
-//   where the mechanism actually works, on the same fixture and protocol.
+//   tick the "LSB not last" branch relies on to drift away from target,
+//   collapsing it to behave like the "LSB last" branch -> FAIL
+//   ("43 passed, 1 failed").
+// MUTATION TOD-WRITE-STOPS-CLOCK stimulus red: MUT_STOPCLOCK substitutes
+//   RS_TDHI (the byte the assertion's own first sub-check has just shown
+//   stops the clock) for RS_TDLO in the second sub-check's write under
+//   test, so that sub-check writes the MSB event register instead of a
+//   lone LSB event register -> FAIL ("43 passed, 1 failed": the clock
+//   the mutant reads does not move, so the "leaves it counting" clause
+//   the second sub-check measures goes red). Substitution proof, same
+//   shape as hrm/ch8-parallel-port-direction's MUT_PROP1_TARGET_A: the
+//   comparator is not vacuously true, it reads false for the byte where
+//   the mechanism actually stops the clock, on the same fixture and
+//   protocol.
 // MUTATION TOD-WRITE-STARTS-LSB-ONLY stimulus red: MUT_STARTLSB
 //   substitutes RS_TDLO (the byte that DOES restart it) for the "must not
-//   restart" sub-check's MID-byte write -> FAIL ("42 passed, 2 failed").
+//   restart" sub-check's MID-byte write -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-WRITE-STARTS-ATOMIC-VALUE stimulus red: MUT_STARTATOMIC
 //   writes $05 instead of $01 to the LSB byte, landing away from the
-//   hard-coded target value -> FAIL ("42 passed, 2 failed").
+//   hard-coded target value -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-READ-LATCH-CARRY-CONSISTENCY stimulus red: MUT_RLCARRY
 //   withholds the freezing MSB read, so latch_ena never clears -- measured,
 //   MID/LOW then read back the live post-carry value (0x01, 0x00) instead
-//   of the frozen pre-carry one (0x00, 0xFE) -> FAIL ("42 passed,
-//   2 failed").
+//   of the frozen pre-carry one (0x00, 0xFE) -> FAIL ("43 passed,
+//   1 failed").
 // MUTATION TOD-READ-LATCH-MSB-FREEZES-ALL stimulus red: MUT_RLFREEZE
 //   withholds the freezing MSB read, so latch_ena never clears -- measured,
 //   LOW then reads back the live value (0x04) instead of the frozen one
-//   (0x03) -> FAIL ("42 passed, 2 failed").
+//   (0x03) -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-READ-LATCH-COUNTS-UNDERNEATH stimulus red: MUT_RLCOUNTS
 //   withholds the freezing MSB read, so the "releasing" LSB read was never
 //   actually releasing anything frozen -- measured, that read itself
 //   returns the live value (0x15) instead of the stale, frozen one (0x10)
-//   -> FAIL ("42 passed, 2 failed").
+//   -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-READ-ONTHEFLY-RELEASE stimulus red: MUT_RLRELEASE withholds
 //   the releasing LSB read, so latch_ena is never set back to 1 -- measured,
 //   the post-release MSB readback stays at the frozen value (0x00) instead
-//   of tracking the counter (0x01) -> FAIL ("42 passed, 2 failed").
+//   of tracking the counter (0x01) -> FAIL ("43 passed, 1 failed").
 // MUTATION CRB7-ALARM-SPEC-P349 stimulus red: MUT_CRB7SPEC withholds the
 //   set_crb7(true) before the second write, so it lands in TOD itself --
 //   measured, both the CRB7=1 and the final CRB7=0 reads return 0x778899
-//   (the value just written) instead of 0x445566 -> FAIL ("42 passed,
-//   2 failed").
+//   (the value just written) instead of 0x445566 -> FAIL ("43 passed,
+//   1 failed").
 // MUTATION CRB7-BITMAP-P350 stimulus red: MUT_CRB7BITMAP writes the SAME
 //   bit-7=0 pattern for the second CRB write instead of toggling bit 7 to
 //   1, so that write reaches TOD too and overwrites it -> FAIL ("42
@@ -218,19 +224,19 @@
 //   MUT_R9B7..MUT_R9B0 / MUT_RAB7..MUT_RAB0) are all oracle-type, all red:
 //   each flag inverts only that ONE bit's own expected value in the shared
 //   comparison loop -> FAIL, every other one of the 43 assertions
-//   (including the other 23 per-bit checks) unaffected ("42 passed, 2
+//   (including the other 23 per-bit checks) unaffected ("43 passed, 1
 //   failed" for every one of these 24 flags, individually confirmed).
 // MUTATION TOD-BITMAP-REG8-ROW stimulus red: MUT_ROW8 reads RS_TDME
 //   (register $9) instead of RS_TDLO -- a real register-select
 //   substitution through the actual decoder/mux, not a fabricated
 //   comparison -- so the check compares $8's own written byte against $9's
-//   -> FAIL ("42 passed, 2 failed").
+//   -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-BITMAP-REG9-ROW stimulus red: MUT_ROW9 reads RS_TDHI
 //   (register $A) instead of RS_TDME, the same register-select
-//   substitution -> FAIL ("42 passed, 2 failed").
+//   substitution -> FAIL ("43 passed, 1 failed").
 // MUTATION TOD-BITMAP-REGA-ROW stimulus red: MUT_ROWA reads RS_TDLO
 //   (register $8) instead of RS_TDHI, the same register-select
-//   substitution -> FAIL ("42 passed, 2 failed").
+//   substitution -> FAIL ("43 passed, 1 failed").
 
 #include <cstdint>
 #include <cstdio>
@@ -638,6 +644,11 @@ int main(int argc, char** argv) {
         set_crb7(h, true);
         write_tod24_ordered(h, MUT_ALARMIRQ ? 6u : 5u);  // alarm target
         set_crb7(h, false);
+        // Start the clock explicitly: p.354 gives no TOD condition after
+        // reset, so the count below is driven from a write to the LSB
+        // event register, p.344's own start, not from whatever state
+        // NanoMig's reset happens to leave it in.
+        h.write_reg(RS_TDLO, 0x00);
         h.write_reg(RS_ICR, 0x84);  // unmask ALRM (bit7 set-mode, bit2 ALRM)
         const bool irq_before = h.dut->irq;
         for (int i = 0; i < 4; ++i) pulse_tod_pin(h);   // tod: 0 -> 4
@@ -737,85 +748,125 @@ int main(int argc, char** argv) {
     // -------------------------------------------------------------
     // TOD-SEQUENCE-MATTERS (p.344, sol:F-tod.c9, opus:F-tod.c8)
     // -------------------------------------------------------------
-    uint32_t seq_wrong_order_result, seq_correct_order_result;
+    uint32_t seq_lsb_not_last_result, seq_lsb_last_result;
     {
-        // MUT_SEQORDER withholds every tick this "wrong order" procedure
+        // MUT_SEQORDER withholds every tick this "LSB not last" procedure
         // relies on to drift away from target -- a stimulus change,
-        // collapsing this branch to behave like the "correct order"
-        // branch and proving the first conjunct is not vacuously true.
-        Harness h;  // wrong order: LOW, MID, HIGH, with ticks between each
+        // collapsing this branch to behave like the "LSB last" branch
+        // and proving the first conjunct is not vacuously true.
+        Harness h;  // LSB event register ($8) written first, not last
         h.write_reg(RS_TDLO, 0x00);
         for (int i = 0; i < (MUT_SEQORDER ? 0 : 3); ++i) pulse_tod_pin(h);
         h.write_reg(RS_TDME, 0x00);
         for (int i = 0; i < (MUT_SEQORDER ? 0 : 2); ++i) pulse_tod_pin(h);
         h.write_reg(RS_TDHI, 0x00);
-        seq_wrong_order_result = peek_tod24(h);
+        seq_lsb_not_last_result = peek_tod24(h);
     }
     {
-        Harness h;  // documented order: HIGH, MID, LOW, with ticks between
+        Harness h;  // LSB event register ($8) written last
         h.write_reg(RS_TDHI, 0x00);
         for (int i = 0; i < 3; ++i) pulse_tod_pin(h);
         h.write_reg(RS_TDME, 0x00);
         for (int i = 0; i < 2; ++i) pulse_tod_pin(h);
         h.write_reg(RS_TDLO, 0x00);
-        seq_correct_order_result = peek_tod24(h);
+        seq_lsb_last_result = peek_tod24(h);
     }
-    checks.note("TOD-SEQUENCE-MATTERS measured: writing LOW/MID/HIGH out of "
-                "the documented order (with ticks between each write, "
-                "targeting $000000) landed at 0x" +
-                hex6(seq_wrong_order_result) +
-                "; writing HIGH/MID/LOW in the documented order "
-                "(same tick counts) landed at 0x" +
-                hex6(seq_correct_order_result) + ".");
-    checks.expect(seq_wrong_order_result != 0x000000 &&
-                  seq_correct_order_result == 0x000000,
+    checks.note("TOD-SEQUENCE-MATTERS measured: writing LOW/MID/HIGH, with "
+                "the LSB event register ($8) written first, not last "
+                "(ticks between each write, targeting $000000) landed at "
+                "0x" + hex6(seq_lsb_not_last_result) +
+                "; writing HIGH/MID/LOW, with the LSB event register "
+                "written last (same tick counts), landed at 0x" +
+                hex6(seq_lsb_last_result) + ".");
+    checks.expect(seq_lsb_not_last_result != 0x000000 &&
+                  seq_lsb_last_result == 0x000000,
         "TOD-SEQUENCE-MATTERS (p.344 'A specific sequence of events must "
-        "be followed for proper setting and reading of TOD'): writing the "
-        "same target value out of the documented order, with the clock "
-        "still free to run between writes, lands on the wrong value; "
-        "writing in the documented HIGH/MID/LOW order lands exactly on "
-        "target regardless of ticks between the writes [sol:F-tod.c9, "
-        "opus:F-tod.c8]");
+        "be followed for proper setting and reading of TOD'; the only "
+        "order p.344 itself fixes is that the write to the LSB event "
+        "register comes last): writing the same target value with the "
+        "LSB event register written first, with the clock still free to "
+        "run between writes, lands on the wrong value; writing it last "
+        "lands exactly on target regardless of ticks between the writes "
+        "[sol:F-tod.c9, opus:F-tod.c8]");
 
     // -------------------------------------------------------------
     // TOD-WRITE-STOPS-CLOCK (p.344, sol:F-tod.c10, opus:F-tod.c9)
     // -------------------------------------------------------------
-    bool thi_stopped, tme_stopped, tlo_stopped;
+    bool a_write_stops, lsb_write_leaves_running;
     {
+        // Precondition: p.354 gives no TOD condition after reset, so the
+        // clock under test is started explicitly -- a write to the LSB
+        // event register ($8), CRB7 clear -- and shown running (one tick
+        // moves the count) before the write under test. The write under
+        // test targets the MSB event register ($A), already zero from
+        // the setup write, so the tick that follows isolates whatever
+        // the write itself did to count_ena.
         Harness h;
-        h.write_reg(RS_TDHI, 0x00);
+        write_tod24_ordered(h, 0x000000);  // HI, MID, LOW all zero; LOW last starts it
         pulse_tod_pin(h);
-        thi_stopped = (peek_tod24(h) == 0x000000);
+        const uint32_t running = peek_tod24(h);
+        h.write_reg(RS_TDHI, 0x00);        // the write under test
+        const uint32_t pre_tick = peek_tod24(h);
+        pulse_tod_pin(h);
+        const uint32_t post_tick = peek_tod24(h);
+        checks.note("TOD-WRITE-STOPS-CLOCK ($A sub-check) measured: after "
+                    "a write to $8 and one tick, TOD read 0x" +
+                    hex6(running) + " (running); after a write to $A, "
+                    "then one more tick, TOD read 0x" + hex6(post_tick) +
+                    " (was 0x" + hex6(pre_tick) + " right after the write).");
+        a_write_stops = (running == 0x000001) && (post_tick == pre_tick);
     }
     {
-        // MUT_STOPCLOCK substitutes RS_TDHI (the byte that genuinely stops
-        // the clock) for RS_TDME here -- a stimulus change, proving this
-        // sub-check's comparator is not vacuously false, the same
-        // substitution-proof shape hrm/ch8-parallel-port-direction's
-        // MUT_PROP1_TARGET_A uses.
+        // Same precondition. MUT_STOPCLOCK substitutes RS_TDHI (the byte
+        // just shown to stop the clock) for RS_TDLO here -- a stimulus
+        // change: if a lone write to $8 stopped the clock the way $A
+        // does, this sub-check's comparator would read no movement and
+        // catch it, the same substitution-proof shape
+        // hrm/ch8-parallel-port-direction's MUT_PROP1_TARGET_A uses.
         Harness h;
-        h.write_reg(MUT_STOPCLOCK ? RS_TDHI : RS_TDME, 0x00);
+        write_tod24_ordered(h, 0x000000);
         pulse_tod_pin(h);
-        tme_stopped = (peek_tod24(h) == 0x000000);
+        const uint32_t running = peek_tod24(h);
+        h.write_reg(MUT_STOPCLOCK ? RS_TDHI : RS_TDLO, 0x00);  // write under test
+        const uint32_t pre_tick = peek_tod24(h);
+        pulse_tod_pin(h);
+        const uint32_t post_tick = peek_tod24(h);
+        checks.note("TOD-WRITE-STOPS-CLOCK ($8 sub-check) measured: after "
+                    "a write to $8 and one tick, TOD read 0x" +
+                    hex6(running) + " (running); after a further lone "
+                    "write to $8, then one more tick, TOD read 0x" +
+                    hex6(post_tick) + " (was 0x" + hex6(pre_tick) +
+                    " right after the write).");
+        lsb_write_leaves_running = (running == 0x000001) &&
+            (post_tick == ((pre_tick + 1) & 0xFFFFFF));
     }
     {
+        // Not graded: p.344's stop sentence names no register, and no
+        // other sentence on the page names the middle event register
+        // ($9) for either a stop or a start.
         Harness h;
-        h.write_reg(MUT_STOPCLOCK ? RS_TDHI : RS_TDLO, 0x00);
+        write_tod24_ordered(h, 0x000000);
         pulse_tod_pin(h);
-        tlo_stopped = (peek_tod24(h) == 0x000000);
+        const uint32_t running = peek_tod24(h);
+        h.write_reg(RS_TDME, 0x00);
+        const uint32_t pre_tick = peek_tod24(h);
+        pulse_tod_pin(h);
+        const uint32_t post_tick = peek_tod24(h);
+        checks.note("TOD-WRITE-STOPS-CLOCK ($9, not graded against p.344, "
+                    "which names no register for a middle-byte stop or "
+                    "start) measured: after a write to $8 and one tick, "
+                    "TOD read 0x" + hex6(running) + " (running); after a "
+                    "further lone write to $9, then one more tick, TOD "
+                    "read 0x" + hex6(post_tick) + " (was 0x" +
+                    hex6(pre_tick) + " right after the write).");
     }
-    checks.note(std::string("TOD-WRITE-STOPS-CLOCK measured per byte: a ") +
-                "write to the HIGH byte alone stopped the clock: " +
-                (thi_stopped ? "yes" : "no") +
-                "; a write to the MID byte alone stopped it: " +
-                (tme_stopped ? "yes" : "no") +
-                "; a write to the LOW byte alone stopped it: " +
-                (tlo_stopped ? "yes" : "no") + ".");
-    checks.expect(thi_stopped && tme_stopped && tlo_stopped,
+    checks.expect(a_write_stops && lsb_write_leaves_running,
         "TOD-WRITE-STOPS-CLOCK (p.344 'TOD is automatically stopped "
-        "whenever a write to the register occurs'): a write to any one of "
-        "the three TOD byte addresses, in isolation, stops further "
-        "counting [sol:F-tod.c10, opus:F-tod.c9]");
+        "whenever a write to the register occurs. The clock will not "
+        "start again until after a write to the LSB event register.'): "
+        "a write to the MSB event register ($A) stops a running clock, "
+        "and a lone write to the LSB event register ($8), on a running "
+        "clock, leaves it counting [sol:F-tod.c10, opus:F-tod.c9]");
 
     // -------------------------------------------------------------
     // TOD-WRITE-STARTS-LSB-ONLY (p.344, sol:F-tod.c11, opus:F-tod.c10)
