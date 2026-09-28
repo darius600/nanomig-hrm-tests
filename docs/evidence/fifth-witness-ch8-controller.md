@@ -206,15 +206,17 @@ of eight.
   forces a released fire bit to 1 even when it is an output driven 0
   (`Mouse.cpp:155-169`).
 
-**Two of the four carry an explicit chip-variant switch for exactly this
-behaviour, and only one restores all eight.** vAmiga's `MOS_8520_PLCC`
+**Two of the four carry an explicit chip-variant switch for what an output
+bit reads, and only one restores all eight.** vAmiga's `MOS_8520_PLCC`
 (`CIA.cpp:869-871`, default off) restores strict one-to-one on all eight.
 WinUAE's `391078-01` type (`cia.cpp:1923-1927`, enabled for the A600 alone,
 default off) returns PRA contents for every output bit, but the write at
 `cia.cpp:2128` never stores PA2–PA5, so an output-mode read of those four
-returns their reset value, zero (`cia.cpp:2389`), whatever was written. **That
-suggests the hardware question behind p.241 is which CIA part is fitted**, which
-is a decision for Amiga specialists and not something a source reading settles.
+returns their reset value, zero (`cia.cpp:2389`), whatever was written. vAmiga's switch mimics WinUAE's option by its own header
+(`CIATypes.h:17-20`), and WinUAE's changelog describes the -01 as returning
+the output data where other parts read the pin (`winuaechangelog.txt:4655`):
+on a released line both return the written 0, so the part number decides
+only a line held from outside, not the red.
 
 One corroboration worth passing on: vAmiga logs *"DDRA: Setting unusual value"*
 for CIA-A whenever the write is not `0x03` (`CIARegs.cpp:230-231`) — its own
