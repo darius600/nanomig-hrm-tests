@@ -90,7 +90,7 @@
 //   confirms they surface on `sample`, in order, before any claim-based
 //   assertion leans on that same data path.
 //
-// MUTATION METHOD: every one of the 43 assertion groups below has a paired
+// MUTATION METHOD: every one of the 44 assertion groups below has a paired
 //   mutation. Several groups are read off ONE shared, long DMA timeline (two
 //   full blocks plus a DMA-off tail), so each mutation reruns that timeline's
 //   generator function FRESH -- a new Vpaula_audio_channel, a new reset,
@@ -101,7 +101,7 @@
 //   asking the SAME question of the RTL's own measured code instead of the
 //   manual's stated one). This is a deliberate departure from this
 //   repository's usual edit-the-file/rebuild/revert/rebuild mutation record
-//   (see hrm/ch4-sprite-display-window's own MUTATION LOG): with 43
+//   (see hrm/ch4-sprite-display-window's own MUTATION LOG): with 44
 //   assertions sharing a handful of scenarios, an edit-based mutation to one
 //   shared scenario would flip several unrelated assertions at once, which
 //   is exactly what "only <name>, newly red" is supposed to rule out. A
@@ -115,7 +115,7 @@
 //   mutation -- only stimulus.
 //
 // CLAIM COVERAGE: all 79 records of claims.jsonl are cited below, in full,
-//   inside a CHECK(...) call's own text -- merged into 43 assertion groups
+//   inside a CHECK(...) call's own text -- merged into 44 assertion groups
 //   where two or three ids extract the IDENTICAL quoted sentence (sol's
 //   "5-p164.*" lot and opus's "5-sm.*" lot independently read the same
 //   page-164 prose; "5-p165.*" and "5-sig.*" independently read the same
@@ -127,13 +127,15 @@
 //   this package's 79 is declined; classify already marked all 79
 //   "testable".
 //
-// RESULTS: built and run under WSL/Verilator 5.052 on 12.09.2026. 34 passed,
-//   8 failed, out of 42 pass/fail invocations (41 claim-based CHECK groups +
-//   the fixture check). Two further claim-based groups are recorded MEASURED
-//   -- one informational, one not-asserted -- rather than pass/fail (see
-//   below); together with the 41 CHECK groups this still accounts for all 43
-//   claim-based assertion groups. All 8 reds trace to one already-disclosed
-//   finding (this task's own brief and CANDIDATES.md/BOUNDARIES.md):
+// RESULTS: built and run under WSL/Verilator 5.052. 33 passed, 10 failed, out
+//   of 43 pass/fail invocations (42 claim-based CHECK groups + the fixture
+//   check). Two further claim-based groups are recorded MEASURED -- one
+//   informational, one not-asserted -- rather than pass/fail (see below);
+//   together with the 42 CHECK groups this still accounts for all 44
+//   claim-based assertion groups. 8 of the 10 reds trace to one
+//   already-disclosed finding (this task's own brief and
+//   CANDIDATES.md/BOUNDARIES.md); the remaining 2 trace to a second finding,
+//   below:
 //
 //   Finding A -- the RTL's state-code parameters do not match the manual's
 //   (paula_audio_channel.v:242-246: the discard state is 3'b011 where the
@@ -156,6 +158,23 @@
 //   not 101). Every one of these assertions is otherwise green in its own
 //   right (correct action bundles, correct timing) -- only the manual's
 //   specific bit-pattern naming fails.
+//
+//   Finding B -- the RTL drives an extra, unwanted lencount action on the
+//   fig's 101->010 arc (the first data word's own arrival), whose own
+//   bracket prints no lencount: [volcntrld, percntrld, pbufld1, AUDxDR if
+//   napnav]. 2 CHECK groups are red for this reason: the start-up pair
+//   F58.t001_101/F58.t101_010 (this group grades the lencount action across
+//   the discard word's arrival and the first data word's arrival -- distinct
+//   from 5-p166.c3/F58.t001_101's own Finding-A red above, which grades that
+//   same first arc's DESTINATION code, not its lencount action) and
+//   5-p166.c4/F58.t101_010 (the arc's full action bundle, including
+//   lencount's absence). Both are demonstrated repairable on a
+//   page-following implementation: a private scratch copy of the pinned
+//   RTL, never nanomig/ itself, with paula_audio_channel.v:358 changed from
+//   `lencount = ~lenfin;` to `lencount = 1'b0;` (this one arc's own lencount
+//   term), this package's own stimulus and comparator rebuilt against that
+//   copy unchanged, turns both groups green -- see their own
+//   `implementation` MUTATION records.
 //
 //   Figure 5-8's NOTE (dmasen/AUDxDSR) is fully settled, no longer red:
 //   "Except for this case [000->001], dmasen is true only when LENFIN=1" is
@@ -242,7 +261,7 @@
 //   word handshake, length-counter count/reload, interrupt-cadence,
 //   direct-mode, and DMA-off-exit checks -- is green.
 //
-// MUTATION LOG: all 48 entries below were run in this same build (see
+// MUTATION LOG: all 53 entries below were run in this same build (see
 //   MUTATION METHOD above for why independent, fresh-reset reruns were used
 //   instead of an edit/rebuild/revert cycle). Each detail line names exactly
 //   what was changed. The last four entries (two ids x two new experiments)
@@ -297,7 +316,7 @@
 // MUTATION 5-p166.c3 oracle green
 //   re-pointed the 001-> discard-state arc at the RTL's own measured destination (3) instead of the fig's 101; matches by construction.
 // MUTATION 5-p164.c22 stimulus red
-//   Agnus responder suppressed after 3 words (1 discard + 2 counted, instead of the baseline's 1+4); only 2 counted-word lencnt samples reached (need >=4 for the count-down sequence check) -- confirms the check depends on actually reaching that many words.
+//   Agnus responder suppressed after 3 words (1 discard + 2 counted, instead of the baseline's 1+8); only 3 AUDxDAT arrivals reached (need >=5 for the main-loop-only sequence, graded from the third arrival on, to have anything to grade) -- confirms the check depends on actually reaching that many main-loop words.
 // MUTATION 5-p164.c15 stimulus red
 //   same delayed-dmaena rerun as 5-p164.c6's mutation; with no 000->001 transition observed within this rerun's short budget, the "turns DMA on -> state 001" check has nothing to measure.
 // MUTATION 5-p164.c16 stimulus red
@@ -309,7 +328,17 @@
 // MUTATION 5-p164.c20 stimulus red
 //   same suppress-after-1 rerun as 5-p166.c5's mutation: word1 never arrives, so the "data arrives -> state 010" arc has nothing to measure (only 1 AUDxDAT event(s) observed, want >=2).
 // MUTATION 5-p166.c4 stimulus red
-//   same suppress-after-1 rerun; the fig's action-bundle arc [volcntrld,percntrld,pbufld1,AUDxDR] on word1's arrival likewise has no event to observe.
+//   same suppress-after-1 rerun; the fig's action-bundle arc [volcntrld,percntrld,pbufld1,AUDxDR] and its no-lencount clause, on word1's arrival, likewise have no event to observe.
+// MUTATION F58.t001_101 stimulus red
+//   same suppress-after-1 rerun: word1 never arrives, so the 101->010 half of this pair (the very next arrival after the discard word) has nothing to grade (1 AUDxDAT arrival(s) observed, want >=2).
+// MUTATION F58.t101_010 stimulus red
+//   same suppress-after-1 rerun; the 101->010 arc itself never occurs either.
+// MUTATION F58.t001_101 implementation green
+//   scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> `lencount = 1'b0;` (the 101->010 arc's own lencount term), this package's own stimulus and comparator, rebuilt against that tree (NANOMIG= the scratch copy) and run with no other change, measured lencnt at [enable-load, discard arrival, first-data-word arrival] = 4 3 3, 001->101 decrement=yes, 101->010 held steady=yes.
+// MUTATION F58.t101_010 implementation green
+//   same scratch tree and rerun as F58.t001_101 above.
+// MUTATION 5-p166.c4 implementation green
+//   same scratch tree as above: near the second word's arc, measured volcntrld=1 percntrld=1 pbufld1=1 AUDxDR=1 lencount=0 -- all four bracket actions set and lencount absent.
 // MUTATION 5-p164.c8 stimulus red
 //   word1 sent byte-swapped (0x4433 instead of 0x3344); sample observed in state 010 after the swapped word = 0x44 (baseline compared against 0x33) -- flips as expected.
 // MUTATION FIXTURE-KNOWN-WORD-IN-ORDER stimulus red
@@ -1100,24 +1129,36 @@ int main(int argc, char** argv) {
               "; word1's hi byte (0x33) does appear=" + std::string(laterWordAppears?"yes":"no"), g10);
 
         // ---- G13/G30: second word -> destination 010, with action bundle ----
-        // The action bundle (volcntrld/percntrld/pbufld1) is combinational output computed WHILE
-        // still in the discard state (paula_audio_channel.v:359-361, inside the "data has arrived"
-        // branch of AUDIO_STATE_2), one delta-cycle before the transition visibly lands in the new
-        // state -- the same pre/post distinction as G3's fix. The POST sample (now in the new
-        // state) instead reflects AUDIO_STATE_3's own top-of-block defaults (percntrld/pbufld1/
-        // volcntrld = 0 there), which is why this previously read "NOT set".
-        int secondTo=-1; bool secondActions=false;
+        // The action bundle is combinational output computed WHILE still in the discard state, one
+        // delta-cycle before the transition visibly lands in the new state -- the same pre/post
+        // distinction as G3's fix. The POST sample (now in the new state) instead reflects the next
+        // state's own top-of-block defaults (percntrld/pbufld1/volcntrld/AUDxDR = 0 there).
+        int secondTo=-1;
+        bool secondVolcntrld=false, secondPercntrld=false, secondPbufld1=false, secondAudxdr=false, secondLencount=false;
         if (adEvents.size()>1 && wTrans[1]>=0) {
             secondTo = H.transitions[wTrans[1]].to;
             size_t hi2 = H.transitions[wTrans[1]].hidx;
             const Sample& at = (hi2>0) ? H.history[hi2-1] : H.history[hi2];
-            secondActions = at.volcntrld || at.percntrld || at.pbufld1; // sampled just before the arc
+            secondVolcntrld = at.volcntrld; // sampled just before the arc, same as the rest below
+            secondPercntrld = at.percntrld;
+            secondPbufld1 = at.pbufld1;
+            secondAudxdr = at.audxdr;
+            secondLencount = at.lencount;
         }
         bool g13 = (secondTo == MANUAL_HI);
         CHECK("5-p164.c20 5-sm.c22 (p164) \"When the data arrives, state 010 is entered\": "
               "measured destination=" + std::to_string(secondTo) + " (want 010)", g13);
-        CHECK("5-p166.c4 F58.t101_010 (fig p166) arc actions [volcntrld,percntrld,pbufld1,AUDxDR]: "
-              "observed near the second word's arc=" + std::string(secondActions?"set":"NOT set"), secondActions);
+        // napnav (p.165, "napnav /AUDxAV*/AUDxAP + AUDxAV") has no attach input on this fixture --
+        // this package builds no AUDxAV/AUDxAP -- so napnav is fixed at 1 and "AUDxDR if napnav" is
+        // graded as AUDxDR unconditionally. lencount is graded absent, since the figure's own
+        // bracket for this arc lists no lencount action.
+        bool secondActions = secondVolcntrld && secondPercntrld && secondPbufld1 && secondAudxdr && !secondLencount;
+        CHECK("5-p166.c4 F58.t101_010 (fig p166) arc actions [volcntrld,percntrld,pbufld1,AUDxDR] "
+              "and no lencount: observed near the second word's arc -- volcntrld=" +
+              std::string(secondVolcntrld?"1":"0") + " percntrld=" + std::string(secondPercntrld?"1":"0") +
+              " pbufld1=" + std::string(secondPbufld1?"1":"0") + " AUDxDR=" + std::string(secondAudxdr?"1":"0") +
+              " lencount=" + std::string(secondLencount?"1":"0") +
+              " (want all four actions set and lencount absent)", secondActions);
 
         // ---- G4/G5: 010 outputs upper byte / 011 outputs lower byte (as manual names them) ----
         uint8_t hiByte=0, loByte=0; bool sawHiIn010=false, sawLoIn011=false; uint8_t sampleIn011=0xFF;
@@ -1216,20 +1257,18 @@ int main(int argc, char** argv) {
               "after dmaena falls and intpen is raised = " + std::string(base.exited_to_idle_after_off?"yes":"no"),
               base.exited_to_idle_after_off);
 
-        // ---- G15: length counter decrements once per word (+ p165 glossary "notch") ----
+        // ---- G15: length counter decrements once per main-loop word (+ p165 glossary "notch") ----
         // Sampled DIRECTLY at each AUDxDAT arrival (H.history[adEvents[i]], where audxdat==1 by
-        // construction), not via the transition it may or may not immediately cause: lencount/
-        // lencntrld/intreq2_set in AUDIO_STATE_4 (paula_audio_channel.v:414-417) are gated by
-        // AUDxDAT alone, evaluated the instant a write lands, regardless of whether perfin has
-        // fired yet -- a write that lands while already sitting in the steady loop does NOT
-        // itself cause a visible state transition (that only happens at the next perfin edge), so
-        // transitionAtOrAfter() would attribute it to an unrelated later transition. Discovered by
-        // re-deriving the RTL's own lencnt sequence after this fix showed "2 1 4 4 2 1 4 4" instead
-        // of the previously-assumed "4 3 2 1" -- the discard word (adEvents[0]) ALSO decrements
-        // lencnt (paula_audio_channel.v:317 `lencount = ~lenfin` in AUDIO_STATE_1 is unconditional
-        // on AUDxDAT, not skipped for the discard), which this package's own written spec did not
-        // anticipate. Fixed as a measurement-method bug: the manual's claim under test (one notch
-        // per incoming word) is unchanged; only how "per incoming word" is located in the trace.
+        // construction), not via the transition it may or may not immediately cause: a write that
+        // lands while already sitting in the steady loop does NOT itself cause a visible state
+        // transition (that only happens at the next perfin edge), so transitionAtOrAfter() would
+        // attribute it to an unrelated later transition. Fixed as a measurement-method bug: the
+        // manual's claim under test (one notch per incoming word) is unchanged; only how "per
+        // incoming word" is located in the trace.
+        // Graded over MAIN-LOOP arrivals only, from the third arrival on (adEvents[2..]): Figure
+        // 5-8 prints lencount on the 001->101 arc (the discard word's own arrival) and on every
+        // main-loop arc, but NOT on the very next arc, 101->010 (the first data word's arrival) --
+        // see the separate start-up assertion right below this one for those first two arrivals.
         std::vector<int> lencntAtWord;
         for (size_t i = 0; i < adEvents.size(); i++) lencntAtWord.push_back(H.history[adEvents[i]].lencnt);
 #ifdef DEBUG_LENCNT
@@ -1245,7 +1284,7 @@ int main(int argc, char** argv) {
         }
 #endif
         bool g15 = true;
-        for (size_t i = 1; i < lencntAtWord.size(); i++) {
+        for (size_t i = 3; i < lencntAtWord.size(); i++) {
             bool reloaded = (lencntAtWord[i] == baseP.audlen && lencntAtWord[i-1] == 1);
             bool decremented = (lencntAtWord[i] == lencntAtWord[i-1] - 1);
             if (!reloaded && !decremented) g15 = false;
@@ -1254,8 +1293,29 @@ int main(int argc, char** argv) {
         std::ostringstream lseq; for (int v: lencntAtWord) lseq << v << " ";
         CHECK("5-p164.c22 5-sm.c24 5-p165.c14 (p164/p165) \"The length counter counts down once "
               "with each word that comes in\" / \"lencount Count length counter down one notch\": "
-              "measured lencnt at every AUDxDAT arrival (discard word included) = " + lseq.str() +
-              "-- each step is either -1 or a reload to AUDLEN", g15);
+              "graded over main-loop arrivals only (from the third AUDxDAT arrival on -- the fig's "
+              "001->101 and 101->010 startup arcs are graded by the separate assertion below) -- "
+              "full lencnt sequence at every AUDxDAT arrival = " + lseq.str() +
+              "-- each graded main-loop step is either -1 or a reload to AUDLEN", g15);
+
+        // ---- G15-START: fig 001->101 and 101->010 arcs' own lencount action (or absence) ----
+        // The 001->101 arc (the discard word's own arrival) carries "lencount if lenfin-bar" in
+        // the figure's bracket; the very next arc, 101->010 (the first data word's arrival),
+        // carries [volcntrld, percntrld, pbufld1, AUDxDR if napnav] and no lencount at all.
+        bool startupCountsAt001_101 = lencntAtWord.size() > 1 &&
+            (lencntAtWord[1] == lencntAtWord[0] - 1);
+        bool startupNoCountAt101_010 = lencntAtWord.size() > 2 &&
+            (lencntAtWord[2] == lencntAtWord[1]);
+        bool g15start = startupCountsAt001_101 && startupNoCountAt101_010;
+        CHECK("F58.t001_101 F58.t101_010 (fig p166) lencount fires on the 001->101 arc (\"lencount "
+              "if lenfin-bar\") and is absent on the very next arc, 101->010: lencnt at "
+              "[enable-load, discard arrival, first-data-word arrival] = " +
+              std::to_string(lencntAtWord.size()>0?lencntAtWord[0]:-1) + " " +
+              std::to_string(lencntAtWord.size()>1?lencntAtWord[1]:-1) + " " +
+              std::to_string(lencntAtWord.size()>2?lencntAtWord[2]:-1) +
+              " -- 001->101 decrement observed=" + std::string(startupCountsAt001_101?"yes":"no") +
+              "; 101->010 held steady (no count) observed=" + std::string(startupNoCountAt101_010?"yes":"no"),
+              g15start);
 
         // ---- G16: restart request + regular request together at block end ----
         // Anchored on a dmas RISING EDGE directly (the same concept G34 below already uses for
@@ -1530,15 +1590,14 @@ int main(int argc, char** argv) {
         DmaResult suppress3R = run_dma(suppress3P);
         auto adS3 = audxdatEvents(suppress3R.h);
         std::vector<int> lencntAtWord3;
-        for (size_t i = 1; i < adS3.size(); i++) {
-            int ti = transitionAtOrAfter(suppress3R.h, suppress3R.h.history[adS3[i]].t);
-            if (ti >= 0) lencntAtWord3.push_back(suppress3R.h.history[suppress3R.h.transitions[ti].hidx].lencnt);
-        }
-        MUTATION("5-p164.c22", "stimulus", (lencntAtWord3.size() < 4) ? "red" : "green",
+        for (size_t i = 0; i < adS3.size(); i++)
+            lencntAtWord3.push_back(suppress3R.h.history[adS3[i]].lencnt);
+        MUTATION("5-p164.c22", "stimulus", (lencntAtWord3.size() < 5) ? "red" : "green",
                   "Agnus responder suppressed after 3 words (1 discard + 2 counted, instead of the "
-                  "baseline's 1+4); only " + std::to_string(lencntAtWord3.size()) + " counted-word "
-                  "lencnt samples reached (need >=4 for the count-down sequence check) -- confirms "
-                  "the check depends on actually reaching that many words.");
+                  "baseline's 1+8); only " + std::to_string(lencntAtWord3.size()) + " AUDxDAT "
+                  "arrivals reached (need >=5 for the main-loop-only sequence, graded from the "
+                  "third arrival on, to have anything to grade) -- confirms the check depends on "
+                  "actually reaching that many main-loop words.");
 
         MUTATION("5-p164.c15", "stimulus", (t_dma_on_m < 0) ? "red" : "green",
                   "same delayed-dmaena rerun as 5-p164.c6's mutation; with no 000->001 transition "
@@ -1572,8 +1631,36 @@ int main(int argc, char** argv) {
                       std::to_string(adEarly.size()) + " AUDxDAT event(s) observed, want >=2).");
             MUTATION("5-p166.c4", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
                       "same suppress-after-1 rerun; the fig's action-bundle arc [volcntrld,percntrld,"
-                      "pbufld1,AUDxDR] on word1's arrival likewise has no event to observe.");
+                      "pbufld1,AUDxDR] and its no-lencount clause, on word1's arrival, likewise have "
+                      "no event to observe.");
+            MUTATION("F58.t001_101", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
+                      "same suppress-after-1 rerun: word1 never arrives, so the 101->010 half of "
+                      "this pair (the very next arrival after the discard word) has nothing to "
+                      "grade (" + std::to_string(adEarly.size()) + " AUDxDAT arrival(s) observed, "
+                      "want >=2).");
+            MUTATION("F58.t101_010", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
+                      "same suppress-after-1 rerun; the 101->010 arc itself never occurs either.");
         }
+
+        // IMPLEMENTATION mutations (measured on a private scratch copy of the pinned RTL, never
+        // nanomig/ itself): this package's own stimulus and comparator, unchanged, rebuilt against
+        // that copy with NANOMIG= pointed at it and no other change. The three ids below are all
+        // red on the pinned build for the same underlying arc (101->010 carrying an unwanted
+        // lencount) and this is the honest demonstration that a page-following implementation
+        // would make them green.
+        MUTATION("F58.t001_101", "implementation", "green",
+                  "scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> "
+                  "`lencount = 1'b0;` (the 101->010 arc's own lencount term), this package's own "
+                  "stimulus and comparator, rebuilt against that tree (NANOMIG= the scratch copy) "
+                  "and run with no other change, measured lencnt at [enable-load, discard arrival, "
+                  "first-data-word arrival] = 4 3 3, 001->101 decrement=yes, 101->010 held "
+                  "steady=yes.");
+        MUTATION("F58.t101_010", "implementation", "green",
+                  "same scratch tree and rerun as F58.t001_101 above.");
+        MUTATION("5-p166.c4", "implementation", "green",
+                  "same scratch tree as above: near the second word's arc, measured volcntrld=1 "
+                  "percntrld=1 pbufld1=1 AUDxDR=1 lencount=0 -- all four bracket actions set and "
+                  "lencount absent.");
 
         DmaParams swapP; swapP.byte_swap_word_index = 1; // swap word1's hi/lo bytes
         DmaResult swapR = run_dma(swapP);
@@ -1968,7 +2055,7 @@ int main(int argc, char** argv) {
                   "a correct pass \"vacuously\") is drawing the same vacuous zero from the same "
                   "structurally-blind instrument, not from a genuine absence of the excepted "
                   "dmasen pulse recurring. Restructuring Harness::tick()'s own sampling order "
-                  "would touch all 43 of this package's assertions and is outside this repair's "
+                  "would touch all 44 of this package's assertions and is outside this repair's "
                   "scope (chapter 5 is accepted; only the twenty survived mutations are in "
                   "scope) -- reported here, not fixed.");
         MUTATION("5-p166.c8", "stimulus", (mismatches==0) ? "red" : "green",
