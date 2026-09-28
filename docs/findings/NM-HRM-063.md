@@ -207,5 +207,13 @@ and none decides this finding. What they are and how they were read is in
 
   The datasheet states the manual's p.341 rule almost word for word, 6526 where the manual has 8520: FLAG is 'a negative edge sensitive' input and a transition, not a level, sets the FLAG bit. It also has a read of the ICR data register clear it (p007), and on its edge rule a held level would not set the bit again; it is a 6526 document and does not itself speak for the 8520.
 
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 5a, 10a and 10b — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 5a, drawn transistor by transistor, takes the FLAG# pad through an inverting Schmitt trigger and a chain of five inverters; a NOR of the pad's level and the delayed one gives a short pulse only when the pad falls. A latch catches the pulse and is cleared by FLAG_INT, which a PHI2 and a PHI1 stage then raise for one cycle; a pad held low gives no further pulse. On sheet 10a, drawn for the cell of ICR bit 3, the flag latch is set by its interrupt input, sampled on PHI2 and PHI1, and cleared by RES or IFR_CLR, and the bit reads through R_ICR; on sheet 10b IFR_CLR rises in the PHI1 after a PHI2 in which the ICR read strobe R_ICR was active, and clears the IR latch as well.
+  <!-- drawing: cia-8520r4-dissection/sheet_006.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_015.txt -->
+
+  FLAG is edge-sensitive: each negative transition sets the FLAG bit once, and a read of the ICR clears it in the next PHI1, which a pad held low does not undo, as pp. 341 and 346 print. A source still high at the moment of the clear would keep its bit set, but FLAG_INT is high for one cycle per edge. The ICR cell is drawn for bit 3 under the heading ICR0..4, and bit 4's is taken to be alike. The dissection is of one revision.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
 

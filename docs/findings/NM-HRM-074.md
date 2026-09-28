@@ -278,6 +278,15 @@ and none decides this finding. What they are and how they were read is in
 
   The 6526 specification gives CRA bit 1 and bit 2 (`1=TOGGLE, O=PULSE`) as the manual does. Its PDF page 6 prints the PB On/Off and Toggle/Pulse paragraphs as p. 342 does, the override of DDRB and the toggle output set high on a start and low by RES among them; the OCR interleaves that page's two columns, so those paragraphs are not quoted here. It is a 6526 document and does not itself speak for the 8520.
 
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 8e, 4c and 9e — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 8e, drawn transistor by transistor, forms TA_Q, the signal it sends "to PB6 pad driver". A pass switch driven by CRA2 takes it from a latch that RES sets, that a rising edge of the start bit (TA_CEN, CRA0 as sampled) clears, and that flips at each underflow pulse TA_INT; a pass switch driven by CRA2's complement takes it from TA_INT itself. Through the inverting output stage TA_Q is TA_INT in pulse mode and the latch's complement in toggle mode: low after RES, high after a start, inverted at every underflow. TA_INT is TAH_TC, the underflow, latched on PHI1; TAH_TC enters the counter-load NOR beside RES, so both are active high. Sheet 4c, drawn transistor by transistor for PB7 and annotated "PB6: CRA1" and "PB6: TA_Q" for PB6, has a pass switch driven by CRB1 put TB_Q where the PRB bit otherwise goes, and enables the pad's pull-down while CRB1 or the DDRB bit is set; the pad then follows the selected signal, its high level from a passive pull-up. Sheet 9e is "layout identical to 8e)".
+  <!-- drawing: cia-8520r4-dissection/sheet_012.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_005.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_013.txt -->
+
+  PBON puts the timer's output on PB6 or PB7 and makes the line an output whatever DDRB holds, and OUTMODE chooses between the toggle and the underflow pulse, as pp. 342 and 348 to 350 print. The polarities are p. 342's as well: a positive pulse, and a toggle set low by RES and high by a start. The sheet's own notes, 'CRA2=0: low pulse' and 'RES forces toggle to 1', read the other way. The toggle note matches the concept drawing, 'different from original circuitry', which takes TA_Q from the latch node without the inverting output stage of the netlist; the pulse note matches neither the concept drawing nor the netlist. The pulse's length is not traced. PB6 is read from PB7's cell by its annotation, and timer B's control logic from timer A's by the note on sheet 9. The dissection is of one revision.
+
 ---
 
 ## Suggested change

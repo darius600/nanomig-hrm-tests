@@ -201,6 +201,15 @@ and none decides this finding. What they are and how they were read is in
 
   The OCR interleaves the page's two columns, so the sentence is quoted line by line. It is p. 344's paragraph with the 6526's registers named: the stop on a write to the hours register, the restart on a write to the tenths register, and the read latch on a read of hours where p. 344 has MSB event. The 6526's TOD is a BCD clock in four registers, tenths of seconds, seconds, minutes and hours; it is a 6526 document and does not itself speak for the 8520.
 
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 14b, 14a and the overview sheet — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 14b, drawn transistor by transistor, keeps TOD's count enable in a latch that a write strobe of register $A, the MSB, or RES clears, and that the LSB's write strobe W_TOD_LSB sets through a PHI2 and a PHI1 stage; the counter advances (TOD_CEN#) only while it is set. A second latch, set by a read strobe of register $A and cleared by RES or through a PHI2 and a PHI1 stage by R_TOD_LSB, drives TOD_RHOLD and TOD_RSAMPLE. On sheet 14a, drawn for the cell of bits 22 and 23, a pass switch driven by TOD_RSAMPLE feeds the counter bit into a read latch that TOD_RHOLD closes on itself; R_TOD_MSB reads that latch, never the counter or the alarm register, and the counter counts on. The logic-equivalent drawing of 14b and the overview sheet form the register-$A strobe of both latches from SEL_$A and CRB7#; the transistor drawing names that input RW_TOD_MSB where the block beside it is labelled RW_TOD_MSB#.
+  <!-- drawing: cia-8520r4-dissection/sheet_020.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_019.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_001.txt -->
+
+  A high-byte write stops the clock until the next low-byte write, and a high-byte read holds the read latch until a low-byte read while the counter runs on: p. 344's sequence, the register whose write stops the clock being the MSB. A write to register 9 neither stops nor starts it. Both latches act only with CRB7 clear, so with the ALARM bit set a high-byte write goes to the alarm without stopping the clock and, as the logic-equivalent drawing wires it, a high-byte read does not latch; p. 344 does not address that case. Read latches are drawn for bits 22 and 23 only. The dissection is of one revision.
+
 ---
 
 ## Why this is filed against the page

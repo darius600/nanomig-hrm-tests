@@ -240,5 +240,13 @@ and none decides this finding. What they are and how they were read is in
 
   All sixteen port lines are individually programmable, and the functional description (p005) makes each port an 8-bit PR with an 8-bit DDR, a DDR bit setting 'the corresponding bit' of the PR to an output: the manual's one-to-one mask with no position exempted, against NanoMig's two of eight. Limits: this is the 6526, not the 8520 or its Amiga variants, which the finding already records as possibly differing on read-back; and its read rule returns 'actual port pins' for output bits too, so it promises the written value back only where nothing outside drives the pin.
 
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheet 4a and the overview sheet — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 4a, drawn transistor by transistor for PA0, keeps the PRA bit and the DDRA bit in two latches written from D0io. The pad has a passive pull-up, a pull-down that is on while the DDRA bit is set and the PRA bit clear, and an active pull-up that is on while both are set; with the DDRA bit clear both are off and the pad is released. A read of PRA puts the pad's level, sampled on PHI1, on D0io; no path leads from the PRA latch to the bus. A read of DDRA returns the DDRA latch. The overview sheet names one direction bit per line, DDRA0 to DDRA7, under "port A direction register, 1=output".
+  <!-- drawing: cia-8520r4-dissection/sheet_005.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_001.txt -->
+
+  Each port A line has a direction bit of its own that alone decides whether the line is driven, and a read of PRA returns the pin, output bits included, as p. 341 prints. Only PA0's cell is drawn; that PA1 to PA7 are alike is read from the overview sheet's labels, not from a drawing of their cells. The dissection is of one revision.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 

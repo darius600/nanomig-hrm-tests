@@ -237,6 +237,19 @@ and none decides this finding. What they are and how they were read is in
 
   The 6526's handshake paragraph gives PC, pulsing after a read or write of port B, and FLAG, *"a negative edge sensitive"* input, as p. 341 gives them for the 8520; the OCR runs the sentence into the next column, so the quotation stops at the column break. It describes the part and says nothing of the Amiga's wiring.
 
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, the overview sheet and schematic sheets 4a to 4c, 5a, 5c to 5e, 8a to 9e, 10, 11 and 14 — agrees with the manual:
+
+  *Read from the drawing, not quoted:* the overview sheet, "0) cheat sheet", draws the whole chip: port lines PA0 to PA7 and PB0 to PB7, each with a data and a direction bit; timer A and timer B, 16-bit down counters; TOD, a 24-bit binary up counter with an alarm; an 8-bit shift register with its latch on the SP and CNT pads; a falling-edge detector on the FLAG# pad; the PC# pad; and an interrupt register with the sources TA_INT, TB_INT, ALARM_INT, SP_INT and FLAG_INT. Sheets 4a to 4c draw the port cells, 5a FLAG#, 5c PC#, 5d SP, 5e CNT, 8 and 9 the timers, 10 the interrupt register, 11 the serial port and 14 TOD, most of them transistor by transistor. Sheet 5c's concept drawing pulses PC# low after a PRB read or write.
+  <!-- drawing: cia-8520r4-dissection/sheet_001.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_005.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_006.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_007.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_015.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_016.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_020.txt -->
+
+  The part has all of p. 339's capabilities: sixteen port lines, a serial shift register, three timers if TOD is counted among them, an output pulse pin, PC#, and an edge-detecting input, FLAG#, whose falling edge sets the interrupt register's FLAG bit; that register has the five sources p. 346 lists. Which board lines the pins reach is outside the chip. PC#'s pulse is read from the concept drawing, not traced. The dissection is of one revision.
+
 ---
 
 ## Suggested change

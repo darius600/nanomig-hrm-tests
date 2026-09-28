@@ -233,7 +233,7 @@ and none decides this finding. What they are and how they were read is in
 
   One address line per on-board port, as p. 351 marks them, so at A12 and A13 both low both are activated. The text is the OCR's, `Al2` included.
 
-Silent on this point: Commodore, 6526 CIA specification, 1981 — it describes the chip's own CS input and not what drives it in an Amiga.
+Silent on this point: 6502.org dissection of CIA 8520R4, undated — it draws the chip's own select inputs, one active-low chip select and four register-select lines, and nothing of the system decode that drives CS#; Commodore, 6526 CIA specification, 1981 — it describes the chip's own CS input and not what drives it in an Amiga.
 
 ---
 

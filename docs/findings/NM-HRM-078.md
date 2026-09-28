@@ -196,6 +196,25 @@ drives only CIA-B's CNT and counts mode 11 as mode 10 whatever CNT's level,
 which is what p. 349 gives while CNT is high, as CIA-A's is between key codes
 (p. 357).
 
+
+---
+
+## What other Commodore documents say
+
+Second documents, not oracles: each can agree or disagree with the manual,
+and none decides this finding. What they are and how they were read is in
+[the findings README](README.md#second-documents).
+
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 8c, 9c, 12 and 5e — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 8c, drawn transistor by transistor, enables timer A's low-byte carry input (TA_cin0#) only while TA_CEN, CRA0 as sampled, is set and either CRA5 is clear or CNT_EDGE is present. CNT_EDGE is a one-cycle pulse that sheet 12 derives from a falling edge of CNT#, the inverted CNT pad of sheet 5e, so from a rising edge of CNT. Sheet 9c, drawn the same way for timer B, selects with CRB6: with CRB6 clear, every cycle (CRB5 clear) or CNT_EDGE (CRB5 set); with CRB6 set, timer A's underflow TA_INT, alone (CRB5 clear) or only while CNT, sampled from CNT#, is high (CRB5 set).
+  <!-- drawing: cia-8520r4-dissection/sheet_012.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_013.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_017.txt -->
+  <!-- drawing: cia-8520r4-dissection/sheet_007.txt -->
+
+  INMODE selects the count source: timer A counts every φ2 cycle or each rising edge of CNT, and CRB6 and CRB5 give timer B the four modes p. 349 prints, mode 11 counting timer A's underflows only while CNT is high. The dissection is of one revision.
+
 ---
 
 ## Where a fix already exists

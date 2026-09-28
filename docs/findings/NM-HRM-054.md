@@ -158,5 +158,12 @@ and none decides this finding. What they are and how they were read is in
 
   The 8520 chapter gives each port, B included, a data register as well as a direction register, and a set DDR bit makes the matching PR bit an output. NanoMig's CIA-A port B has the DDR and no PR. The source also calls the printer port an '8 bit bidirectional parallel port' (p106) and says its handshake goes through the 8520 it is connected to, but it never names CIA-A port B as that port.
 
+- **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 4b, 4c and 4a — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 4b, drawn transistor by transistor for PB0, keeps a PRB bit and a DDRB bit in two latches, written from D0io by W_PRB and W_DDRB. The pad has a passive pull-up and a pull-down that is on while the DDRB bit is set and the PRB bit clear, and no active pull-up; sheet 4c draws PB7 the same way, with CRB1 ORed into the enable. A read of PRB puts the pad's level, sampled on PHI1, on the bus; no path leads from the PRB latch to the bus, and a read of DDRB returns the DDRB latch. Sheet 4a's PA0 has an active pull-up as well.
+  <!-- drawing: cia-8520r4-dissection/sheet_005.txt -->
+
+  Port B consists of a data register and a direction register, as p. 341 prints: a set DDRB bit makes the PRB bit drive its pin, and a read of PRB returns the pin, output bits included. With nothing outside on the line, an output bit reads back what was written, a 0 driven low and a 1 held high by the passive pull-up alone, so a line pulled low from outside reads 0 whatever was written; p. 341 gives both ports active pull-ups, and as drawn only port A has one. Only PB0 and PB7 are drawn, and the chip says nothing of how a board wires CIA-A's port B. The dissection is of one revision.
+
 Silent on this point: Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
 
