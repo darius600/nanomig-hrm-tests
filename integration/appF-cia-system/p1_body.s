@@ -168,26 +168,29 @@ start:
         READ_STORE PRB,P1_C1
         READ_STORE ICR,P1_I2
         ifd     DO_O2
-        move.b  #$08,PRB
-        move.b  #$00,PRB
+; R-SELECT as the specification states it: v|$08, v&$F7, v|$08, with v the
+; case's own pattern (here Q2, still the register's own content), not a
+; literal $08/$00 that would also drive STEP*, DIR, SIDE*, SEL1* and SEL2*.
+        move.b  #Q2|$08,PRB
+        move.b  #Q2&$F7,PRB
         move.w  #MARKER_SENTINEL,MK_C_SEL
         move.w  #$0BB8,d7
 .c1sd:  dbra    d7,.c1sd
         move.w  #MARKER_SENTINEL,MK_C_END
-        move.b  #$08,PRB
+        move.b  #Q2|$08,PRB
         endc
 
 ; ---- step 8: leg D (normal operation) ----------------------------------
         move.b  #$00,CR
         READ_STORE PRB,P1_D1
         ifd     DO_O2
-        move.b  #$08,PRB
-        move.b  #$00,PRB
+        move.b  #Q2|$08,PRB
+        move.b  #Q2&$F7,PRB
         move.w  #MARKER_SENTINEL,MK_D1_SEL
         move.w  #$0BB8,d7
 .d1sd:  dbra    d7,.d1sd
         move.w  #MARKER_SENTINEL,MK_D1_END
-        move.b  #$08,PRB
+        move.b  #Q2|$08,PRB
         endc
 
 ; ---- Pre1.4/O1 precondition's own contrast leg: DDRB bit n=1 still,
@@ -206,12 +209,12 @@ start:
         move.b  #$3F,DDRB
         READ_STORE PRB,P1_D2
         ifd     DO_O2
-        move.b  #$08,PRB
-        move.b  #$00,PRB
+        move.b  #Q2|$08,PRB
+        move.b  #Q2&$F7,PRB
         move.w  #MARKER_SENTINEL,MK_D2_SEL
         move.w  #$0BB8,d7
 .d2sd:  dbra    d7,.d2sd
-        move.b  #$08,PRB                 ; deselect; DONE is the last marker
+        move.b  #Q2|$08,PRB              ; deselect; DONE is the last marker
         endc
 
         DONE
