@@ -1184,3 +1184,45 @@ alternation is not reproduced at this boundary. This is recorded, not
 graded, and does not weaken G5's own PAL-rule assertion, which is
 graded, on every capture, against every capture's own measured ratio
 (4.4) rather than an assumed one.
+
+`P2-C1` turns `P2-ii` and `P2-iii,P2-iv` red together, both grading the
+same $AAA8-instead-of-$AAAA divergence at the same point (4.5's
+dedicated-mutation exception). `P5-P2` (the park at $0C0020 replaced by
+a WAIT then a park at $0C0024) also turns `P5-L` red: $0C0020 is itself
+one of the 40 graded TARGETS entries, so the same address change is a
+bit-group divergence too, not a separate fault. `P5-P3` (the
+ROM-overlay-clearing writes omitted) goes red through the shared G4
+precondition, not a bespoke label: with the overlay left in place, the
+Copper's own read no longer matches this run's prescribed word. `P5-C1`
+(phase 3's own two words exchanged) turns only `P5-p2` red -- phase 3's
+own step carries no bit-group index, so `P5-L`/`P5-H-low`/`P5-H-high`
+are unaffected. `P5-C3` (the first phase-2 step's COPJMP1 instead of
+COPJMP2) turns `P5-L` and `P5-p2` red together, target index 0 sitting
+in the L bits-15-1 group. `P5-C2` (the extra $4000-only step) is not
+exercised as a divergence: its own landing is the specification's own
+correct one, so it is graded like any other step and reaches green.
+`P6-P1` also turns `P6-i` red at that field, the page's own consequence
+of a second, mid-field fetch, not a separate fault. For `P7-P2`,
+`P7-P3`, `P7-P4` and `P7-G1` (P7's own baseline), the test file's own
+header explains the count: each turns exactly its own named clause red,
+and since that precondition already carries the run's own red result,
+the three main assertions (P7-i, P7-ii, P7-iii) are skipped and
+recorded rather than graded.
+
+Two fixtures needed a cross-core fix, found by running TG68K and not
+just fx68k. `P6-P2`'s own capture (`MON_ITERS`, sized for "fewer than
+four wraps") was too short to reliably hold one genuinely complete
+middle field on both cores: fx68k happened to keep one, TG68K did not,
+so `P6-p3` -- an unrelated, unmutated check -- lost its own only
+complete field to grade and went red as an unintended side effect.
+Widened by one field's own iteration count; both cores now hold a
+complete field and `P6-p3` reaches its own green. `P6-C1`'s own
+field-3 write is timed by a fixed CPU-cycle count from the monitor
+loop's own start; that start itself was not beam-synchronized, and
+fx68k and TG68K reach it a different number of lines apart (boot-time
+instructions outside the memory-cycle-bound loop I4 already measures
+at a shared 8:1 ratio), landing one core outside the $64-$C8 window.
+Fixed by waiting for the beam's own V to read 0 before the count
+starts, then recalibrating the count from the smaller, remaining
+per-core gap; both cores now land inside the window (fx68k line $A8,
+TG68K line $7C) with `P6-i` the only clause red, as the header states.
