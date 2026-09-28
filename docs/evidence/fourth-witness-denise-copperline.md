@@ -444,7 +444,9 @@ That is a different register function from the SPRHWRM the ECS appendix names.
   computes NTSC as `227.5 * 263.0` *with the long/short line flip-flop doing the
   alternation*, and PAL as a flat `227.0 * 313.0` (`agnus.cpp:1030-1032`);
   Copperline carries an integer `COLORCLOCKS_PER_LINE` plus a separate
-  `NTSC_LONG_COLORCLOCKS_PER_LINE`. Both say what the source observation says.
+  `NTSC_LONG_COLORCLOCKS_PER_LINE`. Both make NTSC lines alternate 228 and 227
+  colour clocks, as WinUAE and vAmiga do; NanoMig keeps every NTSC line at 227,
+  and that is red ([`NM-HRM-010`](../findings/NM-HRM-010.md)).
 - **The PAL vertical blank ends before Table 3-13's $1D in both.** Denise's
   fixed blank clears at `vPos == (ntsc ? 19 : 24)` (`agnus.cpp:449-453`), so its
   last blanked line is 23 in PAL and 18 in NTSC — a PAL-minus-NTSC gap of five

@@ -1,4 +1,4 @@
-# Chapters 3 and 6: what two emulators do about ten reds
+# Chapters 3 and 6: what two emulators do about nine reds and a withdrawn finding
 
 A report for whoever decides what NanoMig should do. **Nothing here changes a
 test**, and no expectation in the suite comes from an emulator.
@@ -54,16 +54,16 @@ WinUAE `ccc407e9` — so this report and that one compare like with like.
 
 *The strongest case for looking at the RTL.*
 
-### A1 — Super-hires does not reinterpret the colour registers (35 assertions)
+### A1 — Super-hires does not reinterpret the colour registers (25 assertions)
 
 | | |
 |---|---|
 | Manual | pp.297, 301, 302: in SHRES the same COLORxx registers are reinterpreted — two bits of resolution per component, bitplanes in the lower sixteen registers (p.301), sprites in the upper sixteen (p.302) |
 | NanoMig | plain reading in every mode: `0x0C39` comes out R=$C, G=$3, B=$9 |
-| Tests | `ch3-shres-bitplane-colour-encoding` (19), `ch3-shres-sprite-colour-encoding` (16) |
+| Tests | `ch3-shres-bitplane-colour-encoding` (9), `ch3-shres-sprite-colour-encoding` (16) |
 
-Of those reds, two of the bitplane package's nineteen carry NM-HRM-017, and the
-sprite package's sixteen are one measurement, of p.301's multiplexing clause
+All nine of the bitplane package's reds carry NM-HRM-017, and the sprite
+package's sixteen are one measurement, of p.301's multiplexing clause
 ([`NM-HRM-017`](../findings/NM-HRM-017.md),
 [`NM-HRM-016`](../findings/NM-HRM-016.md)).
 
@@ -198,7 +198,7 @@ mode.
 |---|---|
 | Manual | Appendix A p.270: "Blitter pointer to x (high 3 bits, 5 bits if ECS)" |
 | NanoMig | five in both |
-| Test | `ch6-blitter-ecs` / `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` |
+| Test | `ch6-blitter-ecs` / `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` and `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE`, both red on one measurement |
 
 Neither emulator narrows the **register**. vAmiga stores the full 16-bit value
 and only logs a diagnostic (`BlitterRegs.cpp:148-162`); its chipset-dependent
@@ -248,8 +248,10 @@ question, not a conformance one.
 **The finding is withdrawn** ([`NM-HRM-015`](../findings/NM-HRM-015.md)). Every
 page that names or describes the bit places it among the genlock features
 (pp.296, 297 and 307), and no page gives it an effect on the colour the border
-is drawn in, so the manual is not on the other side of this red: the assertion,
-which requires the border's colour to change, misreads it. It still fails.
+is drawn in. `D-BRDNTRAN-HAS-NO-EFFECT` is a record, not a red: it declines its
+seven claims as absent at this boundary, because BRDNTRAN acts on the ZD\*
+background indicator (p.380), which the `denise` fixture does not have, and the
+package reads `13 passed, 0 failed`.
 
 ---
 
@@ -423,10 +425,10 @@ grouping is the one the finding pages support, which moves three sections.
 
 | | sections | findings | assertions |
 |---|---|---:|---:|
-| **A** — both emulators with the manual, against NanoMig | A1, A2, B2, C2 | 4 | 38 |
+| **A** — both emulators with the manual, against NanoMig | A1, A2, B2, C2 | 4 | 29 |
 | **B** — both emulators with NanoMig, against the manual | B1, B4, B5, B6 | 4 | 8 |
 | **C** — the emulators disagree with each other | C1 | 1 | 1 |
-| withdrawn | B3 | 1 | 1 |
+| withdrawn | B3 | 1 | 0 |
 
 One entry in A carries a limit. A1's sprite half, NM-HRM-016, has WinUAE alone
 reading the upper sixteen registers as p.302 describes; vAmiga reads the lower
@@ -434,7 +436,7 @@ sixteen. C2's one red measures the section's question in SuperHires, where both
 emulators move the sprite for the bit and NanoMig does not
 ([`NM-HRM-019`](../findings/NM-HRM-019.md)).
 
-Four of the ten reds are places where two independently written implementations
+Four of the nine reds are places where two independently written implementations
 do what NanoMig does, and three of those four, B1, B5 and B6, are filed against
 the printed page. That does not make the manual wrong — **this project does not
 get to decide that**, and a red stays a red until someone who can, does. What it

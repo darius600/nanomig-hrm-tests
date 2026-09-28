@@ -211,7 +211,7 @@ two engines, and both emulators answer it the same way in both. Fixing one and
 not the other would leave Agnus internally inconsistent in a way neither the
 manual nor either emulator is.
 
-## NM-HRM-004 — ECS with CDANG=0 rejects 32 addresses the appendix allows
+## NM-HRM-004 — p.310 gives the ECS Copper `$03E`-`$07E` with CDANG=0, Appendix B marks that range closed, and every implementation keeps it closed
 
 **Filed against the printed page: the manual contradicts itself, and NanoMig and
 both emulators take the same side of it.**
@@ -220,7 +220,7 @@ both emulators take the same side of it.**
 |---|---|
 | Manual | Appendix C p.310: with ECS and CDANG=0 the Copper reaches `$03E`-`$07E`, "the same range as when the danger bit is set in the standard chip set". Appendix B pp.289-290 marks every address from `$040` to `$07E` not writable by the Copper unless CDANG is set, the ECS-only `BLTCON0L`, `BLTSIZV`, `BLTSIZH` and `DENISEID` rows included |
 | NanoMig | with CDANG=0 accepts `$080`-`$1FE` at `ecs=0` and `ecs=1` alike; the 32 addresses `$040`-`$07E` rejected, none falsely accepted |
-| Tests | `hrm/ch2-copper-move-range` `T9` and `T16` (both ends the appendix prints); `hrm/ch2-copper-move-sweep` (red). Appendix B's reading is green: `hrm/ch8-appb-copper-access-marks` `CTRL-BLTCON0` |
+| Tests | `hrm/ch2-copper-move-range` `T9` (`$040`) and `T16` (`$03E` and `$07E`, both ends Appendix C prints); `hrm/ch2-copper-move-sweep` `SWEEP`, the `ecs=1 cdang=0` sweep; all three red. Appendix B's reading is green: `hrm/ch8-appb-copper-access-marks` `CTRL-BLTCON0` |
 
 Addresses here are the manual's byte addresses. A Copper instruction encodes
 DA8-1, so the module's register ports carry them halved and the sweep prints
@@ -278,18 +278,19 @@ ECS Agnus is a question for someone who knows it.
 granted bus cycles, and the appendix states that conversion rather than only the
 numbers.
 
-**No emulator comparison is recorded here, deliberately.** Copper instruction
-timing in both emulators is a cycle-accurate state machine spread across many
-branches - WinUAE's `cop_state` machine in `custom.cpp`, vAmiga's
-`Copper/CopperEvents.cpp`. Establishing what either does with a SKIP takes a
-focused reading, not a search, and a shallow answer would be worse than none: a
-timing claim that looks sourced is harder to distrust than one that is plainly
-absent.
+**vAmiga gives NanoMig's numbers**: 4 / 8 / 8 for `MOVE` / `SKIP` / satisfied
+`WAIT`. It schedules each Copper state two DMA cycles after the one before -
+`Copper/Copper.h:331`, `void schedule(EventID next, int delay = 2);` - and a
+`MOVE` passes `COP_FETCH` and `COP_MOVE`, a `SKIP` `COP_FETCH`,
+`COP_WAIT_OR_SKIP`, `COP_SKIP1` and `COP_SKIP2`, and a satisfied `WAIT`
+`COP_FETCH`, `COP_WAIT_OR_SKIP`, `COP_WAIT1` and `COP_WAIT2` before the next
+fetch (`CopperEvents.cpp`). WinUAE is not compared
+([`findings/NM-HRM-005.md`](../findings/NM-HRM-005.md)).
 
-**What it would take:** trace one satisfied WAIT and one SKIP through each state
-machine, counting the DMA slots consumed, and compare against the same two
-instructions in `hrm/ch2-copper-cycle-times`. That is a session's work, and it
-is the obvious next piece if this is the finding you want to act on first.
+**What it would take:** real hardware, not a patch. One independent
+implementation produces NanoMig's numbers, so either the manual's cycle figures
+are wrong or both implementations share a misreading. A small 68k program
+timing a loop of `WAIT`s against a CIA timer, run on a real machine, settles it.
 
 ---
 
@@ -307,12 +308,11 @@ is the obvious next piece if this is the finding you want to act on first.
 **NM-HRM-022 and NM-HRM-003 are one decision.** NM-HRM-020 and NM-HRM-021 are
 independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 asks for no
 RTL change: it is filed against the printed page, where Appendix B and p.310
-disagree, and NanoMig and both emulators follow Appendix B. NM-HRM-005 has since been
-compared and does not need more comparison: vAmiga measures exactly NanoMig's
-three numbers, so no emulator separates the two readings. What it needs is real
-hardware. The maintained statement of that is
-[`findings/NM-HRM-005.md`](../findings/NM-HRM-005.md), which this section now
-defers to.
+disagree, and NanoMig and both emulators follow Appendix B. NM-HRM-005 does not
+need more comparison: vAmiga measures exactly NanoMig's three numbers, so no
+emulator separates the two readings. What it needs is real hardware; the
+maintained statement of that is
+[`findings/NM-HRM-005.md`](../findings/NM-HRM-005.md).
 
 Every red assertion named here re-runs with `make -C hrm/<package> test` from
 `nanomig-hrm-tests`. That builds the **pinned** submodule; to test a tree you
