@@ -44,7 +44,16 @@ COLOR16         equ     $1A0
 ; -- this package's chip-RAM data addresses (below $80000, word aligned) --
 SPR0_DATA       equ     $002000         ; sprite 0: POS,CTL,145 pairs,$0000,$0000 (588 bytes)
 SPR1_DATA       equ     $002400         ; sprite 1: same layout, different POS
-NULL_DATA       equ     $002800         ; $0000,$0000 -- sprites 2-7's safe null structure
+; sprites 2-7's own safe null structures (p.114: "all eight sprite pointers
+; must be initialized to either a real sprite or a safe null sprite"), each
+; independently identifiable so PC3 can require every one of the six to be
+; read on its own address, not any one of them standing in for the rest:
+NULL2_DATA      equ     $002800         ; $0000,$0000 -- sprite 2's safe null structure
+NULL3_DATA      equ     $002804         ; sprite 3's own
+NULL4_DATA      equ     $002808         ; sprite 4's own
+NULL5_DATA      equ     $00280C         ; sprite 5's own
+NULL6_DATA      equ     $002810         ; sprite 6's own
+NULL7_DATA      equ     $002814         ; sprite 7's own
 BPL_BUF         equ     $010000         ; 32768 words, each $FF00 (64 KB)
 COP_LIST        equ     $020000         ; the Copper list of section 3.4
 

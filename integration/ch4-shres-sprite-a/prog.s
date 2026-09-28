@@ -10,13 +10,17 @@
 ;   (no symbol) -- the normal run
 ;   MUT_C1      -- P1's precondition contrast: BPLCON0 = $9000 (HIRES,
 ;                  SHRES=0) instead of $1040
-;   MUT_C2      -- PC2's contrast: SPR1PTH points at NULL_DATA instead of
-;                  SPR1_DATA (the C++ side points the Copper list's own
-;                  SPR1 MOVE the same way when NMH_MUTATE=C2)
 ;   MUT_C3      -- PC3's contrast: SPR2PTH points at SPR0_DATA instead of
-;                  NULL_DATA (Copper list likewise, when NMH_MUTATE=C3)
-;   MUT_C6      -- PC6's contrast: DONE immediately after step 7, no
-;                  four-frame wait, so there is no graded frame
+;                  NULL2_DATA (Copper list likewise, when NMH_MUTATE=C3)
+;   MUT_C6      -- PC6's contrast: three frame waits after step 7 instead
+;                  of four, so fewer than two graded frames occur while the
+;                  measured frame population stays nonempty
+;   MUT_C12     -- the fixture check's own contrast: $DEAD stored instead
+;                  of $BEEF
+;
+; NMH_MUTATE=C2 is a data-only contrast (a wrong word poked into sprite 1's
+; own structure): it runs this same, unmodified program (SPECIFICATION.md
+; section 6).
 
         include "nanomig.i"
         include "ch4.i"
@@ -52,21 +56,17 @@ start:
         ; step 5: pointers, each a long write (p.25, p.110)
         move.l  #BPL_BUF,BPL1PTH(a0)
         move.l  #SPR0_DATA,SPR0PTH(a0)
-        ifd     MUT_C2
-        move.l  #NULL_DATA,SPR1PTH(a0) ; PC2 contrast: sprite 1 -> null
-        else
         move.l  #SPR1_DATA,SPR1PTH(a0)
-        endif
         ifd     MUT_C3
         move.l  #SPR0_DATA,SPR2PTH(a0) ; PC3 contrast: sprite 2 -> sprite 0's data
         else
-        move.l  #NULL_DATA,SPR2PTH(a0)
+        move.l  #NULL2_DATA,SPR2PTH(a0)
         endif
-        move.l  #NULL_DATA,SPR3PTH(a0)
-        move.l  #NULL_DATA,SPR4PTH(a0)
-        move.l  #NULL_DATA,SPR5PTH(a0)
-        move.l  #NULL_DATA,SPR6PTH(a0)
-        move.l  #NULL_DATA,SPR7PTH(a0)
+        move.l  #NULL3_DATA,SPR3PTH(a0)
+        move.l  #NULL4_DATA,SPR4PTH(a0)
+        move.l  #NULL5_DATA,SPR5PTH(a0)
+        move.l  #NULL6_DATA,SPR6PTH(a0)
+        move.l  #NULL7_DATA,SPR7PTH(a0)
 
         ; step 6 (p.30): COP1LC then its strobe, before Copper DMA is on
         move.l  #COP_LIST,COP1LCH(a0)
@@ -75,12 +75,16 @@ start:
         ; step 7 (p.278): DMAEN, BPLEN, COPEN, SPREN
         move.w  #$83A0,DMACON(a0)
 
+        ; step 8: four frames, each a wait for V>=$100 then V<$020 --
+        ; PC6 contrast (MUT_C6): three frame waits instead of four, so
+        ; fewer than two graded frames occur while at least one still does
+        ; (the measured frame population stays nonempty; SPECIFICATION.md
+        ; 3.8).
         ifd     MUT_C6
-        bra.s   finish                 ; PC6 contrast: no frame wait at all
-        endif
-
-        ; step 8: four frames, each a wait for V>=$100 then V<$020
+        moveq   #2,d7
+        else
         moveq   #3,d7
+        endif
 .frames:
         bsr     wait_v_ge_100
         bsr     wait_v_lt_020
@@ -93,8 +97,13 @@ finish:
 
         ; fixture: a known, program-stored constant, asserted before
         ; anything else is read (not an HRM claim; proves the fixture can
-        ; deliver a value at all)
+        ; deliver a value at all). MUT_C12: the fixture check's own
+        ; contrast stores a wrong value instead.
+        ifd     MUT_C12
+        move.w  #$DEAD,(a1)+
+        else
         move.w  #$BEEF,(a1)+
+        endif
 
         ; step 10
         DONE
