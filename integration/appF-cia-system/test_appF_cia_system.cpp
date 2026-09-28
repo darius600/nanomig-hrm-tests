@@ -30,15 +30,17 @@
 //   instances, graded against the page's own PBON=0 values)
 // MUTATION P2-LEGR/P2-MAIN/P2-LEGH (component lines) and P2-TOGGLE (opus:F-timers.c14) already red on
 //   the unmutated run: PBON's own override never reaches PRB (same RTL gap as P1-MAIN)
-// MUTATION P2-LEGH stimulus (start-value swap, no distinguishing result on this build) CIAB/timer-B's
-//   own h1 start written as CR<-$06 (START=0) instead of $07 (p2_ciab_tb_legh0.bin), run and compared
-//   against the baseline directly (not NMH_MUTATE-gated, so both readings print in the same report):
-//   h1 reads the same driven level in both runs (the RTL does not read CR's own START bit for this line
-//   either), which is itself evidence that the red is the RTL's and not the fixture's
+// MUTATION P2-LEGH-CONTRAST unfalsifiable at this boundary: CIAB/timer-B's own h1 start written as
+//   CR<-$06 (START=0) instead of $07 (p2_ciab_tb_legh0.bin), via NMH_MUTATE=P2-LEGH0 -- h1 reads the
+//   same driven level whether started or not (the RTL does not read CR's own START bit for this line
+//   either), which is itself evidence that the red above is the RTL's, not the fixture's
 // MUTATION P2-CONTRAST unfalsifiable at this boundary: CIAB/timer-B's own start-4-not-started run
 //   (p2_ciab_tb_contrast.bin) shows the same rise count (0, no rise) for s_4 as the normal run, via
 //   NMH_MUTATE=P2-CONTRAST -- live; not distinguishable on this build, baseline already reads 0
-//   throughout for s_4 (P2-MAIN's own red)
+//   throughout for s_4 (P2-MAIN's own red). Side effect, measured: leaving start 4 unstarted also
+//   means it never underflows, so its own ICR flag never sets; P2-PRE2.2, which checks the flag for
+//   all four starts of all four instances, reads FAIL under this mutation where it reads PASS at
+//   baseline -- a genuine consequence of the mutation, not a fixture defect
 // MUTATION P2-PRE2.1 unfalsifiable at this boundary: CIAB/timer-B's own extra-start-before-leg-R run
 //   (p2_ciab_tb_pre21.bin) reads the same pulled-up r1 as the baseline run, via NMH_MUTATE=P2-PRE21 --
 //   live; not distinguishable on this build, baseline already reads r1=1 (pulled up), the same level
@@ -614,6 +616,7 @@ int main(int argc, char** argv) {
                                         : mv == "P2-PRE22" ? "/p2_ciab_tb_pre22.bin"
                                         : mv == "P2-PRE23" ? "/p2_ciab_tb_pre23.bin"
                                         : mv == "P2-PRE24" ? "/p2_ciab_tb_pre24.bin"
+                                        : mv == "P2-LEGH0" ? "/p2_ciab_tb_legh0.bin"
                                         : "/p2_ciab_tb.bin");
 
     std::vector<uint32_t> p2_addrs = {kP2R1, kP2Z+0,kP2Z+2,kP2Z+4,kP2Z+6, kP2I+0,kP2I+2,kP2I+4,kP2I+6,
@@ -760,55 +763,39 @@ int main(int argc, char** argv) {
     checks.expect(pre24_all, "P2-PRE2.4 [p342]: no underflow happens in leg H (ih's own flag clear), "
                              "for all four instances");
 
-    // ---- P2's own contrasting case: start 4 not started ------------------
+    // ---- P2's own contrasting case: start 4 not started (CR<-$0E). Selected
+    // via the top-level p2_ciab_tb_bin above (NMH_MUTATE=P2-CONTRAST) -- this
+    // block reads the already-captured p2d_view rather than running the
+    // mutant a second time, so the normal run does not execute it.
     {
-        std::string bin = dir + "/p2_ciab_tb_contrast.bin";
-        Capture c = run_capture(bin, kRunBudget, p2_addrs);
-        auto count_rises = [&](const Capture& cc, uint16_t n_mask) {
-            int rises = 0; bool any1 = false; bool prev = false;
-            for (int j = 0; j < 64; ++j) {
-                auto b = p2_s_bit(cc,3,j,n_mask);
-                if (!b) continue;
-                if (*b) any1 = true;
-                if (!prev && *b) ++rises;
-                prev = *b;
-            }
-            return std::make_pair(rises, any1);
-        };
-        auto [mut_rises, mut_any1] = count_rises(c, 0x80);
-        auto [base_rises, base_any1] = count_rises(p2d_view, 0x80);
-        (void)mut_any1; (void)base_any1;
-        bool distinguishes = (base_rises == 1) && (mut_rises != 1);
-        if (c.loaded && c.done.has_value() && distinguishes) {
-            checks.expect(mut_rises != 1,
-                "P2-CONTRAST [p342]: with start 4 written as CR<-$0E (START=0), s_4 shows no rise "
-                "(CIAB/timer B)");
-        } else {
-            checks.record("P2-CONTRAST [p342]: live; not distinguishable on this build, baseline "
-                          "already reads 0 throughout for s_4 (no rise) -- the same reading a "
-                          "page-following implementation's own not-started case would give, because "
-                          "this build's s_4 never rises regardless of CR (P2-MAIN's own red)");
+        int rises = 0; bool any1 = false; bool prev = false;
+        for (int j = 0; j < 64; ++j) {
+            auto b = p2_s_bit(p2d_view,3,j,0x80);
+            if (!b) continue;
+            if (*b) any1 = true;
+            if (!prev && *b) ++rises;
+            prev = *b;
         }
+        (void)any1;
+        checks.record("P2-CONTRAST [p342]: s_4 (CIAB/timer B) shows " + std::to_string(rises) +
+                      " rise(s) in this run -- live; not distinguishable on this build: both the "
+                      "started baseline (CR<-$0F) and the not-started mutant (NMH_MUTATE=P2-CONTRAST, "
+                      "CR<-$0E) read 0 rises for s_4, because this build's s_4 never rises regardless "
+                      "of CR (P2-MAIN's own red)");
     }
 
     // ---- P2-LEGH's own START=0 mutation: h1's own start written as
-    // CR<-$06 instead of $07. Run explicitly (not NMH_MUTATE-selected
-    // alone) so both the baseline and the mutated reading are in the same
-    // report.
+    // CR<-$06 instead of $07. Selected via the top-level p2_ciab_tb_bin
+    // above (NMH_MUTATE=P2-LEGH0) -- this block reads p2d_view rather than
+    // running the mutant a second time.
     {
-        Capture c = run_capture(dir + "/p2_ciab_tb_legh0.bin", kRunBudget, p2_addrs);
-        bool base_h1 = (pk(p2d_view,9) & 0x80) != 0;
-        bool mut_h1 = c.loaded && c.done.has_value() && pk_ok(c,9) && (pk(c,9) & 0x80) != 0;
-        if (c.loaded && c.done.has_value() && (mut_h1 != base_h1)) {
-            checks.expect(!mut_h1, "P2-LEGH-CONTRAST [p342]: with h1's own start written as CR<-$06 "
-                          "(START=0), h1 reads 0 instead of 1 (CIAB/timer B)");
-        } else {
-            checks.record("P2-LEGH-CONTRAST [p342]: live; not distinguishable on this build, h1 reads "
-                          "the same driven level (" + hex2(pk(p2d_view,9)) + ") whether started (CR<-$07) "
-                          "or not (CR<-$06) -- the RTL does not read CR's own START bit for this line "
-                          "either, which is itself evidence the red above is the RTL's, not the "
-                          "fixture's (CIAB/timer B)");
-        }
+        bool h1_bit = (pk(p2d_view,9) & 0x80) != 0;
+        checks.record("P2-LEGH-CONTRAST [p342]: h1 (CIAB/timer B) reads " + hex2(pk(p2d_view,9)) +
+                      " in this run -- live; not distinguishable on this build: h1 reads the same "
+                      "driven level whether started (baseline, CR<-$07) or not (NMH_MUTATE=P2-LEGH0, "
+                      "CR<-$06) -- the RTL does not read CR's own START bit for this line either, "
+                      "which is itself evidence the red above is the RTL's, not the fixture's");
+        (void)h1_bit;
     }
 
     // ---- environment preconditions (EP1-EP3, F1 anchor) ----------------

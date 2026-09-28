@@ -683,8 +683,10 @@ On CIA-A, r1 and s0 read $FF (the dead read-back): Pre2.3 never holds there (the
 - EP2: red (Copper DMA started in the window makes the Copper's own fetch of $0C3000 appear). No other line changes.
 - EP3: red (the never-DONE program has no final marker). No other line changes.
 
-P2-PRE2.1's own mutation (an inserted start before leg R) and the P2-LEGH START=0 comparison change nothing anywhere in the run: both stay exactly the records their own text states.
+P2-PRE2.1's own mutation (an inserted start before leg R, `NMH_MUTATE=P2-PRE21`) changes nothing anywhere in the run: it stays exactly the record its own text states, on both cores. P2-LEGH's own START=0 mutation (`NMH_MUTATE=P2-LEGH0`) likewise changes nothing: 19 passed, 7 failed, identical to the baseline, on both cores.
+
+P2-CONTRAST's own mutation (`NMH_MUTATE=P2-CONTRAST`) leaves s_4's own rise count at 0 (unchanged from the baseline, matching its own record) but has a measured side effect: leaving start 4 unstarted means it never underflows, so P2-PRE2.2 -- which checks the ICR flag for all four starts of all four instances -- reads FAIL under this mutation where it reads PASS at baseline: 18 passed, 8 failed under the mutation against the baseline's 19 passed, 7 failed, on both cores. This is a genuine consequence of the mutation (start 4 truly never underflows), not a fixture defect.
 
 **F1-ANCHOR.** Holds on every run measured; F1-ANCHOR-CONTRAST (the same comparator fed 1.25x the measured T_CPU) fails on every run measured, both cores; no separate binary is built for it.
 
-**Records that stay unfalsifiable at this boundary, both cores:** P2-PRE2.1 (an inserted start before leg R reads the same pulled-up r1 as the baseline), P2-CONTRAST (start 4 written unstarted reads the same 0-throughout as the baseline, since this build's s_4 never rises for its own reason), and the P2-LEGH START = 0 comparison (h1 reads the same driven 0 whether started or not). Each record states the baseline state the mutation could not move.
+**Records that stay unfalsifiable at this boundary, both cores:** P2-PRE2.1 (an inserted start before leg R reads the same pulled-up r1 as the baseline), P2-CONTRAST (start 4 written unstarted reads the same 0-throughout as the baseline, since this build's s_4 never rises for its own reason), and P2-LEGH-CONTRAST (h1 reads the same driven 0 whether started or not). Each record states the baseline state the mutation could not move.
