@@ -100,13 +100,13 @@
 // MUTATION LOG (every changed or new assertion, built with its own
 // -DMUT_*=1 flag via EXTRA_CFLAGS and run):
 //   MUT_REINTERP (input): COLOR05 is written to equal COLOR01's own
-//     content, so a page-following shres reading of a solid colour-1 run
-//     (COLOR05) equals the ocs reading (COLOR01) -- the page predicts
-//     PASS at baseline and FAIL under this mutation. On NanoMig the
-//     result is unchanged (still FAIL, 0x4499EE both): NanoMig never
-//     reads COLOR05 for this run, so the write has no effect there --
-//     which is the finding. Confirms the equality check is not vacuously
-//     true.
+//     content. p.301's key shows each pixel only half of whichever
+//     register it reads, so this write cannot make a half-register
+//     reading equal the full-register ocs reading -- the page predicts
+//     PASS both before and after; this input does not reach the "must
+//     differ" clause. The measured shres reading is unchanged (still
+//     FAIL, 0x4499EE both): confirms the FAIL verdict does not depend on
+//     this one register's own content.
 //   MUT_COLORTABLE (input): inside the COLOR sweep's own four-solid-run
 //     battery, the run labelled SOLID-v is driven with raw value v^1
 //     instead of v, so it addresses a different register than the one
@@ -116,12 +116,27 @@
 //     COLOR-05, -0A, -0F stay FAIL and COLOR-01..-04, -06..-09, -0B..-0E
 //     stay as at baseline. Confirms the per-register verdict tracks which
 //     register a run actually addresses, not its label.
-//   MUT_SIXTEEN: probes COLOR01 (one of COLOR00-03, reachable directly
-//     regardless of mode) instead of COLOR0A; the label states which
-//     register class applies under the flag instead of asserting the
-//     unmutated case unconditionally. Main assertion FAIL -> PASS, Hires
-//     control PASS -> FAIL, in lockstep, both because COLOR01 is directly
-//     reachable regardless of mode.
+//   MUT_COLORMOVE (input): the run labelled SOLID-1 alternates
+//     colour-index 1 and colour-index 0 every pixel instead of holding
+//     one constant value. p.301's row formula puts colour 1's own bits
+//     in register 1's upper half and colour 0's in its lower half, so
+//     under either printed pairing, at the alignment where this run's
+//     own first pixel of a pair is the colour-1 one, every pair reads
+//     register 1 -- the page predicts this run moves when COLOR-01 is
+//     bit-flipped, reaching the "must move no solid run" clause through
+//     a register the unmutated battery never drives that way. COLOR-01
+//     stays FAIL (12 of 12 significant bits move this run); COLOR-00
+//     additionally flips PASS -> FAIL, since the same alternating pattern
+//     also carries colour 0 on its own other half, so COLOR-00's own
+//     tied-run check now sees this run move too (14 passed, 10 failed
+//     under this build).
+//   MUT_SIXTEEN: probes COLOR01 (one of the four registers already used
+//     for a bitplane colour under Hires and Lores) instead of COLOR0A
+//     (one of the twelve p.301 gives a role only under SuperHires); the
+//     label states which register class applies under the flag instead
+//     of asserting the unmutated case unconditionally. Main assertion
+//     FAIL -> PASS, Hires control PASS -> FAIL, in lockstep, both because
+//     COLOR01 already carries a colour under Hires too.
 //   MUT_TWOBITS: substitutes colour 1 (the tested run's own colour) for
 //     the "other colours" loop; the label states this under the flag
 //     instead of asserting "the other three colours" unconditionally. 6
@@ -130,8 +145,7 @@
 //     bits reach COLOR01's low half at baseline; colour 1's own bits
 //     always reach it here).
 //   MUT_CONTROL, MUT_FIXTURE, MUT_OCSBASELINE, MUT_SELECTREG (controls):
-//     each flips its own control from PASS to FAIL, unchanged from
-//     before.
+//     each flips its own control from PASS to FAIL.
 //   Every mutation above was built and run (out.txt reflects the
 //   unmutated build; each mutated run's own PASS/FAIL line is quoted
 //   above).
@@ -172,6 +186,9 @@
 #endif
 #ifndef MUT_TWOBITS
 #define MUT_TWOBITS 0
+#endif
+#ifndef MUT_COLORMOVE
+#define MUT_COLORMOVE 0
 #endif
 
 namespace {
@@ -447,13 +464,15 @@ void write_all_registers(Harness& h, const Colour2 A[4]) {
 
 // A solid run of colour v: both live bitplanes held at v, sampled every
 // tick, refreshed before it can decay.
-// settleTicks/chunkTicks default to a budget safe for SHRES's own
-// full-rate shift (every tick, real content decays after ~16 ticks); a
-// caller driving this under a slower shift rate (plain Hires, shres=0)
-// passes a longer settle and chunk, safe under Hires's own (roughly
-// doubled) decay budget.
+// settleTicks/chunkTicks keep every sampled tick well inside its own
+// reload, clear of the reload before it and the one after -- p.301 does
+// not say which two pixels share a register, so a reader applying either
+// printed pairing to this run's own pixel stream must never pair a
+// sampled pixel with one from a neighbouring reload. A caller driving
+// this under a slower shift rate (plain Hires, shres=0) passes a longer
+// settle and chunk, safe under Hires's own slower refresh.
 std::vector<uint32_t> solid_run(Harness& h, int v, int total_ticks,
-                                 int settleTicks = 16, int chunkTicks = 6) {
+                                 int settleTicks = 12, int chunkTicks = 6) {
     std::vector<uint32_t> out;
     while (static_cast<int>(out.size()) < total_ticks) {
         h.drive_value2(v, settleTicks);
@@ -493,6 +512,21 @@ Battery run_battery(const Colour2 A[4], int invertReg, int invertBit) {
     };
     for (int v = 0; v < 4; ++v) {
         Harness h; setup(h);
+#if MUT_COLORMOVE
+        if (v == 1) {
+            // MUTATION (input): the run labelled SOLID-1 alternates
+            // colour-index 1 and colour-index 0 every pixel (BPL1DAT =
+            // 0xAAAA, BPL2DAT = 0x0000) instead of holding one constant
+            // value. p.301's row formula puts colour 1's own bits in
+            // register 1's upper half and colour 0's in its lower half,
+            // so under either printed pairing, at the alignment where
+            // this run's own first pixel of a pair is the colour-1 one,
+            // every pair reads register 1 -- the page predicts this run
+            // moves when COLOR-01 is bit-flipped.
+            out[1] = mixed_run(h, 0xAAAA, 0x0000, 24);
+            continue;
+        }
+#endif
         int driveV = v;
 #if MUT_COLORTABLE
         driveV ^= 1; // MUTATION (input): the run labelled SOLID-v is
@@ -702,10 +736,11 @@ int main(int argc, char** argv) {
         write_all_registers(h1, kPaletteA);
         h1.set_mode(true, 2);
 #if MUT_REINTERP
-        // MUTATION (input): COLOR05 written to equal COLOR01's own content,
-        // so a page-following shres reading of this run (COLOR05) equals
-        // the ocs reading (COLOR01) -- the page predicts PASS at baseline,
-        // FAIL here.
+        // MUTATION (input): COLOR05 written to equal COLOR01's own content.
+        // p.301's key shows each pixel only half of whichever register it
+        // reads, so this cannot make a half-register reading equal the
+        // full-register ocs reading -- the page predicts PASS both before
+        // and after.
         h1.write_color(5, registerValue(kPaletteA, 1));
 #endif
         h1.drive_value2(1);
@@ -836,7 +871,7 @@ int main(int argc, char** argv) {
     // =====================================================================
     {
 #if MUT_SIXTEEN
-        const int probeReg = 0x1; // MUTATION: a register COLOR00-03 reaches directly
+        const int probeReg = 0x1; // MUTATION: one of COLOR00-03, already used under Hires and Lores
 #else
         const int probeReg = 0xA;
 #endif
@@ -862,7 +897,7 @@ int main(int argc, char** argv) {
             join({"C-shrc.c04", "C-shrc.c05"}) +
             "): COLOR" + hexReg(probeReg) + " (" +
 #if MUT_SIXTEEN
-            std::string("MUTATION: one of COLOR00-03, reachable directly regardless of mode") +
+            std::string("MUTATION: one of the four registers already used under Hires and Lores") +
 #else
             std::string("one of the twelve registers outside COLOR00-03") +
 #endif
@@ -874,12 +909,9 @@ int main(int argc, char** argv) {
             "sixteen lower color registers.'");
 
         // Control: identical XOR of the same register under plain Hires.
-        // shres=0 shifts at roughly half SHRES's rate; a chunk as wide as
-        // the SHRES-tuned default leaves the tail of each chunk stale
-        // (still reading the previous load) before the next reload, which
-        // a most-frequent-sample comparison hid but a tick-vector compare
-        // does not, so this keeps the planes reloaded on a short chunk
-        // that stays inside every sample's own window instead.
+        // shres=0 shifts at roughly half SHRES's rate, so this keeps the
+        // planes reloaded on a short chunk that stays inside every
+        // sample's own window, clear of the reload before and after.
         bool hiresChanged = false;
         for (int v = 0; v < 4; ++v) {
             Harness hb; setupPlain(hb, true);
