@@ -1,7 +1,7 @@
 // Test purpose: fixture: userio.v, compiled alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 228, 232, 233, 281, 328, 329
+//   pages 228, 232, 233, 281, 328, 329, 332
 // Non-goals: anything outside the `userio` fixture this package builds, and
 //   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
@@ -55,11 +55,6 @@
 //     directly with mouse_btn==0: potcap[1] <= _mright & _djoy1[5] &
 //     ~(potreg[11] & ~potreg[10]) reduces to `_djoy1[5]` alone. That fact
 //     carries the group-H assertion below.
-//   - joy_ana_en is ALSO a hardwired constant 0 (userio.v:93): the only mode
-//     switch this module has for a non-digital (proportional/paddle)
-//     controller is permanently disabled. Cited as MEASURED, not graded --
-//     it is a compile-time constant, not a port, so no stimulus here can
-//     flip it.
 //
 // A GAP CHECKED AND NOT FILLED: p.329 also marks connector pins 5 and 9
 // "Unused". Pin 5 is testable here -- bit 5 of the 16-bit word is userio's
@@ -84,16 +79,10 @@
 // MUTATION harness:live-known-words stimulus red drove the "right" case with
 //   the second-button bit (5, no effect on the decode) instead of the right
 //   pin (0); the two delivered words collapsed to the same value.
-// MUTATION sol:E-joystick.c8+opus:E-joystick.c9 oracle green flipped the
-//   expected outcome to what userio.v actually does -- Left*/Right* never
-//   move POTINP's button bit (potcap[1] stays pinned to bit 5's state) and
-//   only ever move JOY0DAT's ordinary direction decode -- and the assertion
-//   passes against the SAME, unmutated RTL and stimulus. That confirms the
-//   baseline RED is a genuine oracle/RTL mismatch and not a stuck harness. No
-//   stimulus mutation is offered instead: joy_ana_en (userio.v:93) is a
-//   hardwired 0, so the NOTE's own precondition ("in this case", i.e. a
-//   proportional controller attached) cannot be entered by any stimulus at
-//   this module's boundary -- there is no "mode" input to mutate.
+// MUTATION sol:E-joystick.c8+opus:E-joystick.c9 stimulus red pressed the
+//   right pin instead of the left pin for the "pin 3 alone" case; bit 9
+//   stayed 0, failing the p.332-graded clause while the pin-4 pair and the
+//   POTINP control read as measured.
 // MUTATION sol:E-joystick.c9+opus:E-joystick.c10 stimulus red pressed the
 //   left pin instead of the right pin; the decode check (d.right==1) failed
 //   while the four-reads-agree half stayed true, showing the assertion reads
@@ -332,15 +321,19 @@ int main(int argc, char** argv) {
     // direction inputs are also designed to be right and left buttons,
     // respectively, for use with proportional inputs. In this case, the
     // forward and back inputs are not used, while right and left become
-    // button inputs rather than joystick inputs." (Finding candidate from
-    // the build brief: measure and report, do not adjudicate.)
+    // button inputs rather than joystick inputs." (p.329, the NOTE)
     //
-    // Table 8-1 (hrm/ch8-controller-pin-function-map, p.228) leaves the
-    // Prop-Pair "Left button"/"Right button" cells at pins 3/4 "neither
-    // asserted nor declined". This page is the one that states the
-    // behaviour. POTINP is userio's only OTHER digital "button" register
-    // besides the fire outputs (already graded elsewhere), so it is where a
-    // right/left-as-button reading would have to surface.
+    // Graded against p.332's CONNECTOR PIN USAGE FOR PROPORTIONAL INPUTS
+    // table, which gives pin 3 (LBUT*, Left button) and pin 4 (RBUT*, Right
+    // button) the same register note: "See Digital Joystick" -- p.329's own
+    // table sends those same two pins to JOY[0/1]DAT<9> and JOY[0/1]DAT<1>
+    // alone, no companion bit. The button reading the NOTE describes is
+    // therefore that same single bit: pin 3 alone sets bit 9, with bit 9
+    // xor bit 8 staying 0 (the forward input the NOTE says goes unused);
+    // pin 4 alone sets bit 1, with bit 1 xor bit 0 staying 0 (back,
+    // likewise unused). POTINP bit 10 is read alongside as a control, not a
+    // graded clause: no page sends pin 3 or pin 4 there, so it is expected
+    // to stay put.
     {
         drive_idle_and_reset();
         top->mouse_btn = 0;
@@ -350,48 +343,31 @@ int main(int argc, char** argv) {
         uint16_t idle_potinp = read_addr(POTINP_ADDR);
         int idle_btn = (idle_potinp >> 10) & 1;
 
-        top->_joy2 = stim({BIT_LEFT});
-        settle(6);
-        uint16_t left_joy0dat = read_addr(JOY0DAT_ADDR);
-        uint16_t left_potinp  = read_addr(POTINP_ADDR);
-        int left_btn = (left_potinp >> 10) & 1;
-
-        top->_joy2 = stim({BIT_RIGHT});
-        settle(6);
-        uint16_t right_joy0dat = read_addr(JOY0DAT_ADDR);
-        uint16_t right_potinp  = read_addr(POTINP_ADDR);
-        int right_btn = (right_potinp >> 10) & 1;
-
-        note("userio.v:93 hardwires `wire joy_ana_en = 1'b0;` -- the only "
-             "mode switch this module has for a non-digital (proportional) "
-             "controller is permanently disabled, so the NOTE's own "
-             "precondition (\"in this case\") cannot be entered by any "
-             "stimulus at this boundary.");
-        note("POTINP bit10 (potcap[1], userio.v:171-175, port 1's button "
-             "capture): idle=" + std::to_string(idle_btn) +
-             " Left*-pressed=" + std::to_string(left_btn) +
-             " Right*-pressed=" + std::to_string(right_btn) +
-             "; JOY0DAT while Left* pressed=" + hex16(left_joy0dat) +
-             ", while Right* pressed=" + hex16(right_joy0dat));
-
 #ifdef MUT_H
-        // mutated (ORACLE, not stimulus -- see the file-header MUTATION
-        // note for why no stimulus mutation is offered here): flip the
-        // expected outcome to what userio.v actually does against this
-        // SAME, unmutated stimulus -- Left*/Right* never move POTINP's
-        // button bit, and they register as ordinary JOY0DAT direction
-        // input instead.
-        expect(left_btn == idle_btn && right_btn == idle_btn &&
-               decode16(left_joy0dat).left == 1 &&
-               decode16(right_joy0dat).right == 1,
-               "sol:E-joystick.c8+opus:E-joystick.c9");
+        uint16_t left_word = joy0dat_for(stim({BIT_RIGHT})); // mutated: wrong pin
 #else
-        // The page's claim, graded as written: pressing Left*/Right* should
-        // be observable as a button change, not only as JOY0DAT's ordinary
-        // direction decode.
-        expect(left_btn != idle_btn && right_btn != idle_btn,
-               "sol:E-joystick.c8+opus:E-joystick.c9");
+        uint16_t left_word = joy0dat_for(stim({BIT_LEFT}));
 #endif
+        Decode left_d = decode16(left_word);
+        int left_btn = (read_addr(POTINP_ADDR) >> 10) & 1;
+
+        uint16_t right_word = joy0dat_for(stim({BIT_RIGHT}));
+        Decode right_d = decode16(right_word);
+        int right_btn = (read_addr(POTINP_ADDR) >> 10) & 1;
+
+        note("p.332 grades pin 3/pin 4 (LBUT*/RBUT*) as \"See Digital "
+             "Joystick\": pin 3 alone -> JOY0DAT bit9=" +
+             std::to_string(left_d.left) + ", bit9 xor bit8=" +
+             std::to_string(left_d.forward) + "; pin 4 alone -> JOY0DAT "
+             "bit1=" + std::to_string(right_d.right) + ", bit1 xor bit0=" +
+             std::to_string(right_d.back) + "; POTINP bit10 (control) idle=" +
+             std::to_string(idle_btn) + " pin3=" + std::to_string(left_btn) +
+             " pin4=" + std::to_string(right_btn));
+
+        expect(left_d.left == 1 && left_d.forward == 0 &&
+               right_d.right == 1 && right_d.back == 0 &&
+               left_btn == idle_btn && right_btn == idle_btn,
+               "sol:E-joystick.c8+opus:E-joystick.c9");
     }
 
     // sol:E-joystick.c9+opus:E-joystick.c10 -- "The JOY[0/1]DAT registers are
