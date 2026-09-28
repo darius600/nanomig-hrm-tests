@@ -85,11 +85,11 @@
 //     matches p.343's "if running... loads latch but not counter" exactly.
 //     While running in ONE-SHOT mode (oneshot=1), the `| oneshot` term
 //     makes thi_load fire anyway, reloading the COUNTER on the very next
-//     tick even though the timer never stopped -- **this is the pre-
-//     exposed reload-gate finding, confirmed here independently, in both
-//     cia_timera.v:76 and cia_timerb.v:74** (the task instructions named
-//     only cia_timera.v:76; the identical pattern in cia_timerb.v:74 is an
-//     additional confirmation found while reading, not asked for).
+//     tick even though the timer never stopped -- p.342's own one-shot
+//     sentence, not p.343's running-write sentence, decides this case
+//     ("a write to timer-high will transfer the timer latch to the
+//     counter... regardless of the start bit"), and this is what that
+//     transfer looks like.
 //   - Separately, thi_load&&oneshot also sets tmcr[0]<=1 (start) the same
 //     cycle (cia_timera.v:41-42, cia_timerb.v:40-41) -- this is p.342's
 //     "initiate counting regardless of the start bit" rule, and it is
@@ -125,15 +125,17 @@
 //   that run printed, filled in after building, per this suite's rule
 //   against writing a record before the measurement is taken.
 //
-// BASELINE (no MUT, WSL Verilator 5.052): "16 passed, 1 failed" -- every
-//   assertion PASSes except PROP-RUNNING-WRITE-COUNTER-GATE, which FAILs.
-//   That one red is the confirmed reload-gate defect above, not a test
-//   defect -- `make test` exits non-zero because of it, matching the build
-//   brief's own warning that a non-zero exit is not a build failure. All
-//   16 PASSing assertions, including the 8 bit-map ones, were graded on
-//   the same force-load/read-back mechanism the reload-gate finding also
-//   uses, which is this package's control basis (a mechanism that reads
-//   both true and false is not vacuous).
+// BASELINE (no MUT, WSL Verilator 5.052): "17 passed, 0 failed" -- every
+//   assertion PASSes. PROP-RUNNING-WRITE-COUNTER-GATE grades p.343's
+//   running-write sentence in CONTINUOUS mode, the case that sentence
+//   decides (p.342's own sentence is scoped to one-shot mode and does not
+//   speak to it); PROP-ONESHOT-THI-WRITE grades p.342's transfer sentence
+//   at both values of the start bit that "regardless of the start bit"
+//   names, a timer stopped and a timer already running. All PASSing
+//   assertions, including the 8 bit-map ones, were graded on the same
+//   force-load/read-back mechanism, which is this package's control basis
+//   (a mechanism that reads both true and false on this fixture is not
+//   vacuous).
 //
 // Every mutation below was actually built and run (`make MUT=<NAME> test`,
 //   full `rm -rf obj_dir_ciaa` rebuild each time) and turned only its own
@@ -178,17 +180,23 @@
 //   timer (writes CRA=0x01) before sub-case (c)'s hi-byte write, defeating
 //   the "while stopped" precondition specifically -> measured "FAIL:
 //   PROP-LATCH-LOAD-STOPPED" added, nothing else changed.
-// MUTATION PROP-RUNNING-WRITE-COUNTER-GATE stimulus green: MUT_RUNGATE
-//   switches the timer to continuous mode (CRA=0x01) instead of one-shot
-//   (CRA=0x09) for the same running hi-byte-write scenario -> measured
-//   "17 passed, 0 failed" -- the only baseline FAIL turns PASS, confirming
-//   the baseline red is tied specifically to one-shot mode's reload gate
-//   and not to a broken assertion.
+// MUTATION PROP-RUNNING-WRITE-COUNTER-GATE stimulus red: MUT_RUNGATE
+//   leaves the timer stopped (CRA=0x00) instead of running (CRA=0x01)
+//   before the same continuous-mode hi-byte write, defeating the
+//   "running" precondition p.343's sentence names -> p.343's own stopped-
+//   write clause then requires the opposite outcome, a reload -> measured
+//   "FAIL: PROP-RUNNING-WRITE-COUNTER-GATE" added, nothing else changed.
 // MUTATION PROP-ONESHOT-THI-WRITE stimulus red: MUT_ONESHOT_THIWRITE uses
 //   continuous mode (CRA=0x00) instead of one-shot (CRA=0x08) for the
-//   stopped hi-byte write -> the reload still happens (PROP-LATCH-LOAD-
-//   STOPPED's territory, unaffected) but the auto-start side effect does
-//   not -> measured "FAIL: PROP-ONESHOT-THI-WRITE" added, nothing else
+//   stopped hi-byte write (sub-case a) -> the reload still happens
+//   (PROP-LATCH-LOAD-STOPPED's territory, unaffected) but the auto-start
+//   side effect does not -> measured "FAIL: PROP-ONESHOT-THI-WRITE" added,
+//   nothing else changed.
+// MUTATION PROP-ONESHOT-THI-WRITE stimulus red: MUT_ONESHOT_THIWRITE_RUN
+//   uses continuous mode (CRA=0x01) instead of one-shot (CRA=0x09) for the
+//   running hi-byte write (sub-case b), the case p.342's sentence does not
+//   speak to -> p.343 alone governs there and the transfer does not happen
+//   -> measured "FAIL: PROP-ONESHOT-THI-WRITE" added, nothing else
 //   changed.
 // MUTATION PROP-FORCE-LOAD stimulus red: MUT_FORCELOAD writes CRA=0x01
 //   instead of 0x11 for the running sub-case, omitting the force-load
@@ -205,9 +213,9 @@
 //   normal loaded value) stays non-zero -> measured "FAIL: PROP-LINKING"
 //   added, nothing else changed.
 //
-// Every mutation above turned exactly one assertion red (green, for
-// MUT_RUNGATE) with the rest of the suite unchanged from baseline --
-// verified directly, not assumed, by diffing each run's FAIL lines.
+// Every mutation above turned exactly one assertion red with the rest of
+// the suite unchanged from baseline -- verified directly, not assumed, by
+// diffing each run's FAIL lines.
 
 #include <cstdint>
 #include <cstdio>
@@ -258,6 +266,9 @@
 #endif
 #ifndef MUT_ONESHOT_THIWRITE
 #define MUT_ONESHOT_THIWRITE 0
+#endif
+#ifndef MUT_ONESHOT_THIWRITE_RUN
+#define MUT_ONESHOT_THIWRITE_RUN 0
 #endif
 #ifndef MUT_FORCELOAD
 #define MUT_FORCELOAD 0
@@ -579,56 +590,90 @@ bool latch_load_stopped_ok(Checks& checks) {
 }
 
 // ---------------------------------------------------------------------
-// PROP-RUNNING-WRITE-COUNTER-GATE: a hi-byte write while the timer is
-// running must load the latch, not the counter (p.343). Baseline (one-
-// shot, start=1) is expected to FAIL -- the reload-gate finding, confirmed
-// independently above. Continuous mode (MUT_RUNGATE) does not have the
-// gap and is expected to flip the same assertion GREEN.
+// PROP-RUNNING-WRITE-COUNTER-GATE: p.343's running-write sentence ("if the
+// timer is running, a write to the high byte will load the timer latch
+// but not the counter") names no mode. Graded in CONTINUOUS mode, the
+// case that sentence decides on its own -- p.342's own sentence is scoped
+// to one-shot mode and does not speak to a running write in continuous
+// mode. MUT_RUNGATE leaves the timer stopped instead of running before
+// the same write, defeating the "running" precondition; p.343's own
+// stopped-write clause then predicts the opposite outcome, a reload.
 // ---------------------------------------------------------------------
 bool running_write_counter_gate_ok(Checks& checks) {
     Harness h;
     h.dut->eclk = 1;
     h.write_reg(RS_TALO, 0x00);
     h.write_reg(RS_TAHI, 0x01);              // initial latch/counter = 256
-    h.write_reg(RS_CRA, MUT_RUNGATE ? 0x01 : 0x09);  // running; one-shot unless mutated
-    for (int i = 0; i < 5; ++i) h.tick();    // counter genuinely moves away from 256
+    h.write_reg(RS_CRA, MUT_RUNGATE ? 0x00 : 0x01);  // continuous; running unless mutated (stopped)
+    for (int i = 0; i < 5; ++i) h.tick();    // counter genuinely moves away from 256 while running
     const uint16_t before_write = read_word(h, RS_TALO, RS_TAHI);
     h.write_reg(RS_TALO, 0x00);
-    h.write_reg(RS_TAHI, 0x02);              // new latch value = 512, while running
+    h.write_reg(RS_TAHI, 0x02);              // new latch value = 512
     const uint16_t after_write = read_word(h, RS_TALO, RS_TAHI);
     const uint8_t cra_after = h.read_reg(RS_CRA);
     const bool still_running = (cra_after & 0x01) != 0;
     checks.note("PROP-RUNNING-WRITE-COUNTER-GATE: counter was " +
                  std::to_string(before_write) + " before the hi-byte write "
-                 "(started at 256, running 5 ticks), " +
+                 "(continuous mode, still_running=" +
+                 (still_running ? "yes" : "no") + "), " +
                  std::to_string(after_write) + " immediately after writing "
-                 "a new latch value of 512 while running (still_running=" +
-                 (still_running ? "yes" : "no") + "); p.343 requires the "
-                 "counter to stay untouched by the write.");
+                 "a new latch value of 512; p.343 requires the counter to "
+                 "stay untouched by the write while running.");
     return still_running && before_write != 512 && after_write != 512;
 }
 
 // ---------------------------------------------------------------------
-// PROP-ONESHOT-THI-WRITE: in one-shot mode, a hi-byte write while stopped
-// both reloads the counter AND sets the start bit, even though start was
-// never written as 1. MUT_ONESHOT_THIWRITE uses continuous mode instead,
-// which still reloads (PROP-LATCH-LOAD-STOPPED's territory) but must NOT
-// auto-start.
+// PROP-ONESHOT-THI-WRITE: p.342's transfer sentence ("a write to timer-
+// high... will transfer the timer latch to the counter and initiate
+// counting regardless of the start bit") names both values of the start
+// bit, so it is graded at both: (a) stopped -- the write both reloads the
+// counter and sets the start bit, even though start was never written as
+// 1; (b) already running -- the same transfer happens again, "regardless"
+// of the start bit already being set. MUT_ONESHOT_THIWRITE defeats (a) by
+// using continuous mode instead of one-shot for the stopped write; the
+// reload still happens (PROP-LATCH-LOAD-STOPPED's territory) but the
+// auto-start side effect does not. MUT_ONESHOT_THIWRITE_RUN defeats (b)
+// the same way: continuous mode is the case p.342's sentence does not
+// speak to, and there p.343 alone governs a running write -- no reload.
 // ---------------------------------------------------------------------
 bool oneshot_thiwrite_ok(Checks& checks) {
-    Harness h;
-    h.write_reg(RS_CRA, MUT_ONESHOT_THIWRITE ? 0x00 : 0x08);  // oneshot unless mutated; start=0
-    h.write_reg(RS_TALO, 0x00);
-    h.write_reg(RS_TAHI, 0x64);   // loads/reloads counter to 0x6400
-    const uint16_t v = read_word(h, RS_TALO, RS_TAHI);
-    const uint8_t cra = h.read_reg(RS_CRA);
-    const bool start_now = (cra & 0x01) != 0;
-    checks.note("PROP-ONESHOT-THI-WRITE: counter read back 0x" +
-                 [](uint16_t x){ char buf[8]; snprintf(buf,sizeof buf,"%04X",x); return std::string(buf); }(v) +
-                 " (expected 0x6400) after writing TAHI with start never "
-                 "written as 1; start bit now reads " +
-                 (start_now ? "1" : "0") + ".");
-    return v == 0x6400 && start_now;
+    bool ok = true;
+    // (a) stopped: the write both reloads and sets start (never written 1).
+    {
+        Harness h;
+        h.write_reg(RS_CRA, MUT_ONESHOT_THIWRITE ? 0x00 : 0x08);  // oneshot unless mutated; start=0
+        h.write_reg(RS_TALO, 0x00);
+        h.write_reg(RS_TAHI, 0x64);   // loads/reloads counter to 0x6400
+        const uint16_t v = read_word(h, RS_TALO, RS_TAHI);
+        const uint8_t cra = h.read_reg(RS_CRA);
+        const bool start_now = (cra & 0x01) != 0;
+        checks.note("PROP-ONESHOT-THI-WRITE(a) stopped: counter read back 0x" +
+                     [](uint16_t x){ char buf[8]; snprintf(buf,sizeof buf,"%04X",x); return std::string(buf); }(v) +
+                     " (expected 0x6400) after writing TAHI with start never "
+                     "written as 1; start bit now reads " +
+                     (start_now ? "1" : "0") + ".");
+        if (v != 0x6400 || !start_now) ok = false;
+    }
+    // (b) running: start already 1; the same transfer applies again.
+    {
+        Harness h;
+        h.dut->eclk = 1;
+        h.write_reg(RS_TALO, 0x00);
+        h.write_reg(RS_TAHI, 0x01);              // initial latch/counter = 256
+        h.write_reg(RS_CRA, MUT_ONESHOT_THIWRITE_RUN ? 0x01 : 0x09);  // continuous unless mutated; one-shot, start=1
+        for (int i = 0; i < 5; ++i) h.tick();    // counter genuinely moves away from 256
+        h.write_reg(RS_TALO, 0x00);
+        h.write_reg(RS_TAHI, 0x02);              // new latch value = 512, while running
+        const uint16_t v = read_word(h, RS_TALO, RS_TAHI);
+        const uint8_t cra = h.read_reg(RS_CRA);
+        const bool still_running = (cra & 0x01) != 0;
+        checks.note("PROP-ONESHOT-THI-WRITE(b) running: counter read back " +
+                     std::to_string(v) + " (expected 512) after writing a "
+                     "new latch value while already running; still_running=" +
+                     (still_running ? "yes" : "no") + ".");
+        if (v != 512 || !still_running) ok = false;
+    }
+    return ok;
 }
 
 // ---------------------------------------------------------------------
@@ -883,15 +928,18 @@ int main(int argc, char** argv) {
     {
         checks.expect(running_write_counter_gate_ok(checks),
             "PROP-RUNNING-WRITE-COUNTER-GATE (p.343, sol:F-timers.c21, "
-            "opus:F-timers.c24): while the timer is running, a hi-byte "
-            "write loads the latch but leaves the counter untouched");
+            "opus:F-timers.c24): while the timer is running in continuous "
+            "mode, the case p.343's running-write sentence decides on its "
+            "own, a hi-byte write loads the latch but leaves the counter "
+            "untouched");
     }
     {
         checks.expect(oneshot_thiwrite_ok(checks),
             "PROP-ONESHOT-THI-WRITE (p.342, sol:F-timers.c15, "
             "opus:F-timers.c18): in one-shot mode, a write to timer-high "
-            "transfers the latch to the counter and starts counting even "
-            "though the start bit was never written as 1");
+            "transfers the latch to the counter and initiates counting "
+            "regardless of the start bit -- both stopped (start never "
+            "written as 1) and already running");
     }
     {
         checks.expect(force_load_ok(checks),

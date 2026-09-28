@@ -30,7 +30,9 @@ that evidence was read while filtering the claims file, before this
 document could be started at all. The task instructions that assigned this
 package additionally pre-exposed two specific measurements: `cia_timera.v:76`
 gates a reload with `(~start | oneshot)`, admitting a reload while running
-in one-shot mode where p.343 allows it only while stopped; and a built
+in one-shot mode — the case p.342's own one-shot sentence decides on its
+own terms, not p.343's running-write sentence (see PROP-ONESHOT-THI-WRITE
+and PROP-RUNNING-WRITE-COUNTER-GATE below); and a built
 fixture's readings (one-shot START self-clears at underflow, continuous does
 not; the force-load strobe reloads and reads back zero; CRA reads `0x6F` for
 a written `0xFF`). Both were independently re-derived by this builder by
@@ -52,8 +54,8 @@ reported as a graded result, never resolved by picking a looser reading.
 | A control bit selects the decrement clock (p.343, general sentence) | 2 | Graded, PROP-CLOCK-SELECT-GENERAL |
 | Per-timer clock-source enumeration naming the CNT pin (p.343) | 4 | **Declined** — no `cnt` port exists anywhere in this design |
 | Latch loaded on underflow/force-load/hi-byte-write-while-stopped (p.343) | 2 | Graded, PROP-LATCH-LOAD-STOPPED |
-| Hi-byte write while running loads latch, not counter (p.343) | 2 | Graded, PROP-RUNNING-WRITE-COUNTER-GATE (confirms the pre-exposed reload-gate measurement) |
-| One-shot hi-byte write starts counting regardless of start bit (p.342) | 2 | Graded, PROP-ONESHOT-THI-WRITE |
+| Hi-byte write while running loads latch, not counter (p.343) | 2 | Graded, PROP-RUNNING-WRITE-COUNTER-GATE, continuous mode only — p.342 decides the one-shot case, under PROP-ONESHOT-THI-WRITE |
+| One-shot hi-byte write transfers the latch and initiates counting regardless of the start bit (p.342) | 2 | Graded, PROP-ONESHOT-THI-WRITE, both stopped and running |
 | Force load strobe, any time, running or stopped (p.342) | 2 | Graded, PROP-FORCE-LOAD |
 | One-shot/continuous mode selection and behaviour (p.342) | 4 | Graded, PROP-RUN-MODE (confirms the pre-exposed self-clear measurement) |
 | Timers can be linked for extended operations (p.341) | 2 | Graded, PROP-LINKING |
@@ -195,46 +197,33 @@ will load the timer latch but not the counter."*
 
 `sol:F-timers.c20`, `opus:F-timers.c23` carry the first (three-condition)
 sentence; `sol:F-timers.c21`, `opus:F-timers.c24` carry the second
-(running-write) sentence. These are graded as two separate propositions,
-because independent verification found they do not have the same verdict.
+(running-write) sentence. These are graded as two separate propositions.
 
 - **PROP-LATCH-LOAD-STOPPED** (`sol:F-timers.c20`, `opus:F-timers.c23`):
   the counter is reloaded from the latch on (a) underflow, (b) the force-load
-  strobe, and (c) a hi-byte write while stopped. Confirmed true by direct
-  reading — expected PASS, and this package's control case (see below).
+  strobe, and (c) a hi-byte write while stopped. Expected PASS, and part of
+  this package's control case (see below).
 - **PROP-RUNNING-WRITE-COUNTER-GATE** (`sol:F-timers.c21`,
-  `opus:F-timers.c24`): while the timer is running, a hi-byte write must
-  load the latch but leave the counter alone. **This is the pre-exposed
-  reload-gate measurement, confirmed by direct reading of
-  `cia_timera.v:76`** (`cia_timerb.v:74` carries the identical pattern for
-  Timer B, an additional confirmation beyond what was pre-exposed):
-  `thi_load <= thi & wr & (~start | oneshot);`. The `| oneshot` term means
-  that in one-shot mode, a hi-byte write reloads `thi_load` — and therefore
-  the counter, one cycle later, via `reload = thi_load | forceload |
-  underflow` — **regardless of `start`**, i.e. even while the timer is
-  running. In continuous mode (`oneshot=0`) the gate reduces to `~start`
-  alone and the page's rule holds exactly. **Graded strictly as the page
-  states it, with no mode carve-out the page itself does not make**: tested
-  under one-shot running (the case the page's plain sentence covers and the
-  RTL violates), so **this proposition is expected to read FAIL at
-  baseline** — a confirmed, reported defect, not a test defect. Its
-  mutation flips the same stimulus to continuous mode, which the RTL
-  satisfies, turning the assertion GREEN — demonstrating the baseline FAIL
-  is tied to the specific gap named above and is not an always-red or
-  otherwise broken assertion.
+  `opus:F-timers.c24`): p.343's running-write sentence names no mode. p.342
+  gives the same write its own rule in one-shot mode (see
+  PROP-ONESHOT-THI-WRITE below) — *regardless of the start bit* leaves
+  neither value of the start bit out, so p.342 decides the running,
+  one-shot case; p.343's sentence is left to decide the case p.342 does not
+  speak to, a running timer in **continuous** mode. Graded there: while the
+  timer is running in continuous mode, a hi-byte write loads the latch but
+  leaves the counter untouched. Expected PASS.
 
 ## PROP-ONESHOT-THI-WRITE — p.342, "a write to timer-high... will transfer the timer latch to the counter and initiate counting regardless of the start bit"
 
 `sol:F-timers.c15`, `opus:F-timers.c18`. Register 5 for Timer A, register 7
-for Timer B (confirmed against `ciaa.v`'s own decoder: `rs==4'h5` feeds
-Timer A's `thi` port, `rs==4'h7` feeds Timer B's — matching the printed
-register numbers exactly). Distinct from PROP-RUNNING-WRITE-COUNTER-GATE:
-this is the **stopped**-timer case, and it additionally requires the start
-bit itself to change ("regardless of the start bit" reads most naturally as
-this write can start a timer that was never told to start) — a second
-effect beyond the reload PROP-LATCH-LOAD-STOPPED already grades. Confirmed
-true by direct reading of `cia_timera.v:41-42`/`cia_timerb.v:40-41` (`thi_load
-&& oneshot` sets the start bit). Expected PASS.
+for Timer B, matching the printed register numbers exactly. *Regardless of
+the start bit* leaves neither value of the start bit out, so this
+proposition is graded at both: (a) **stopped** — the write both reloads the
+counter and sets the start bit itself, even though start was never written
+as 1 (a second effect beyond the reload PROP-LATCH-LOAD-STOPPED already
+grades); (b) **already running** — the same transfer happens again; there
+is no start-bit change left to observe, but the counter still takes the new
+latch value and counting continues. Both sub-cases expected PASS.
 
 ## PROP-FORCE-LOAD — p.342, "a strobe bit allows the timer latch to be loaded into the timer counter at any time, whether the timer is running or not"
 
@@ -294,12 +283,15 @@ in this package depends on — port A is out of this package's subject) must
 both arrive and read back correctly before any interval-timer assertion is
 graded, mirroring `hrm/ch1-cia-timers`'s own `FIXTURE-LIVE-CIAA`.
 
-**Control case, on the same measurement basis as anything under suspicion.**
-PROP-LATCH-LOAD-STOPPED and PROP-FORCE-LOAD are both expected PASS, read
-through the identical write→reload→read-counter mechanism
-PROP-RUNNING-WRITE-COUNTER-GATE uses to reach its FAIL — a passing result on
-that shared mechanism, alongside a failing one, is what makes the FAIL
-mean something rather than "the harness cannot read a counter at all."
+**Control case, on the same measurement basis throughout.**
+PROP-LATCH-LOAD-STOPPED, PROP-RUNNING-WRITE-COUNTER-GATE,
+PROP-ONESHOT-THI-WRITE and PROP-FORCE-LOAD are all read through the
+identical write→reload→read-counter mechanism, with stimuli that predict
+different, page-specific counter values case by case (untouched vs.
+reloaded; the prior value vs. the new latch value) — the mechanism reads
+genuinely different results depending on which case it is applied to,
+which is what makes a PASS on it mean something rather than a mechanism
+that reads the same way regardless of stimulus.
 
 ## On mutation
 
