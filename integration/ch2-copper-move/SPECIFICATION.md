@@ -1083,9 +1083,9 @@ Every claim in `claims-spec-stage.jsonl`, in page order.
 
 ## 7. What the build added
 
-This package builds P3, P4 and P1's instrument A (P1-A: INTENA read back
-through INTENAR) only. P1's instrument B (COP2LC, the 40-target address
-chain), P2, P5, P6 and P7 are not built.
+This package builds P3, P4, P1's instrument A (P1-A: INTENA read back
+through INTENAR), P2, P5, P6 and P7. P1's instrument B (COP2LC, the
+40-target address chain) is not built.
 
 **Programs.** `ch2move.i` holds the custom-register offsets nanomig.i does
 not define and the common frame macro (section 4.3, steps 1-2), shared by
@@ -1108,6 +1108,35 @@ every program below.
   held in `p1a_list_set.i`, `p1a_list_clear.i`, `p1a_list_set_p1p1.i`,
   `p1a_list_set_c1.i`, `p1a_list_set_c2.i` and `p1a_list_clear_c1.i`: P1's
   instrument A.
+- `prog_p2.s`, with `prog_p2_mut_p2p1.s` and `prog_p2_c1.s`: P2. Reuses
+  P1-A-set's own list, addressing and capture/index machinery
+  (`p1a::kLA`, `p1a::capture_and_index`, `p1a::reference_words`); only the
+  stimulus differs. Its own monitor loop is two fixed-length segments,
+  each byte-for-byte the loop P1-A and P3 already use (no added
+  instructions in either), with the stimulus write between them.
+- `prog_p6.s`, with `prog_p6_mut_p6p1.s`, `prog_p6_mut_shortcap.s`,
+  `prog_p6_nocopen.s` and `prog_p6_c1.s`: P6, run once with the harness's
+  own ECS/PAL Config (default) and once with ECS/NTSC
+  (`chipset_config=$0A`, the value P3-G5 already established); the C++
+  side selects the Config, `check_g5` takes the video standard's own H
+  bound and mean-line-length band as parameters (PAL's own values by
+  default, so P4/P3/P1-A/P2's own calls are unchanged). `prog_p6_c1.s`'s
+  own field-3 write sits at a calibrated, fixed iteration count (its own
+  header comment states the figure it is derived from); a dedicated guard
+  checks the write's own marker against the line the specification names.
+- `prog_p7.s`, with `prog_p7_noaud0.s`, `prog_p7_noaud0_mut.s`,
+  `prog_p7_mut_p7p2.s`, `prog_p7_mut_p7p3.s` and `prog_p7_mut_p7p4.s`: P7.
+  Its own contrasting case (a mid-block AUD0LC write) is not built: it
+  needs a CPU delay tuned against this run's own measured fetch timing,
+  not yet derived.
+- `prog_p5.s`, with `prog_p5_nocopen.s`, `prog_p5_mut_p5p1.s`,
+  `prog_p5_mut_p5p2.s`, `prog_p5_mut_p5p3.s`, `prog_p5_c1.s`,
+  `prog_p5_c2.s` and `prog_p5_c3.s`: P5. No monitor loop; the CPU paces
+  its own 81 (82 in C2) steps by polling VHPOSR for the line after the
+  previous step's own line. The 40 targets are a shared table, walked
+  twice (phase 1 via COP1LCH/COPJMP1, phase 2 via COP2LCH/COPJMP2); phase
+  3 lands at the word-write target park section 4.2 reserves for it
+  ($0E9010).
 
 **Measured values.** I4's own ratio (one memory cycle to `clk_sys`
 cycles) is asserted, not assumed: every line's own first-to-last-sample
@@ -1121,6 +1150,20 @@ Every capture in this package runs the monitor loop for a fixed 30000
 iterations, comfortably longer than
 any proposition's own field count; 13 to 15 fields were observed per
 run, on both cores.
+
+P2's own capture (12000 iterations, split around the stimulus write)
+holds 11997-11999 kept samples over 6 fields, both cores, with G5's own
+mean line length within the same 0.3-memory-cycle band. P6's own PAL
+capture (11000 iterations) holds 10997-10999 kept samples over 5-6
+fields (4-5 wraps); its own NTSC capture holds 10995-10998 over 6-7
+fields (5-6 wraps); every complete field's own largest kept V is $137 or
+$138 (PAL) and $105 or $106 (NTSC), both cores, matching p.24's own line
+counts. P7's own capture (a fixed idle count, no monitor loop) shows
+423-637 reads in the audio regions and 104-158 counted block ends, both
+cores, well past the 10 its own precondition asks for. P5's own capture
+has no monitor loop and no I4/G5/G6 (its preconditions are G1-G4 only,
+4.5); its 81 markers (82 in C2) and its 40-target chain, walked twice,
+were read back and checked directly from the port log.
 
 **Mutations.** Every `NMH_MUTATE` value the test file's header names ran
 on both cores. Most go red through exactly the clause(s) their header

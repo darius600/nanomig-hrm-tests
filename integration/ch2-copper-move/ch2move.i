@@ -18,6 +18,8 @@ AUD0LCL         equ     $0A2
 AUD0LEN         equ     $0A4
 AUD0PER         equ     $0A6
 AUD0VOL         equ     $0A8
+AUD1LCH         equ     $0B0
+AUD1LCL         equ     $0B2
 
 ; Common frame steps (SPECIFICATION.md 4.3, steps 1-2), shared by every
 ; program in this package. A0 is CUSTOM ($DFF000) throughout.
