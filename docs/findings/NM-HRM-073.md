@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L196-L199) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L196-L199) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**. NanoMig has the strobe latches from there and TC64 carries the same two, so there is no fix to port; WinUAE shows a later strobe replacing a pending one — see *What the others say* |
-| **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control) — `P4`, claims `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (pp. 25, 26, 30, 276), which grades Run 1 (COP1LC, COPJMP1) and Run 2 (COP2LC, COPJMP2) together, run on both CPU cores and red on fx68k and on TG68K through Run 2. `P4-Run2,Run3,Run3-reorder` (no claim id), red on both, grades Run 2 again beside Run 3 and Run 3-reorder; its Run 3 clause is a separate question this page does not file — see *Run 3 is a separate question* |
+| **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control) — `P4`, claims `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (pp. 25, 26, 30, 276), which grades Run 1 (COP1LC, COPJMP1) and Run 2 (COP2LC, COPJMP2) together, run on both CPU cores and red on fx68k and on TG68K through Run 2. Three assertions without a claim id are red on both cores through the same start at COP1LC: `P4-Run2` (pp. 25, 26, 30, 276), Run 2 alone; `P4-Run3-reorder` (p. 25), where p. 25 gives C; and `P4-Run3` (p. 25), which expects B where all four implementations give C — a separate question this page does not file, see *Run 3 is a separate question* |
 | **Chapter** | 2 — Coprocessor Hardware, printed pp. 25, 26, 30, 32; Appendix A, printed p. 276; 7 — System Control Hardware, printed p. 219 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `P4` red on fx68k and on TG68K, through Run 2 (28 passed, 2 failed on each core; the other red is `P4-Run2,Run3,Run3-reorder`). In the same run `P4-CTRL`, COP1LC = B with COPJMP1, reads B through the same comparator on both cores, and the preconditions `P4a`, `P4b`, `P4c` hold |
+| **Assertions** | `P4`, `P4-Run2`, `P4-Run3-reorder` and `P4-Run3` red on fx68k and on TG68K, each through a first fetch at A (55 passed, 4 failed on each core; these four are the only reds). In the same run `P4-CTRL`, COP1LC = B with COPJMP1, reads B through the same comparator on both cores, and the preconditions `P4a`, `P4b` and `P4c` hold, `P4c` graded on the captures of Run 1, Run 2, Run 3 and Run 3-reorder each |
 | **Verdict of the four** | **unanimous against NanoMig on the package's runs**: WinUAE, vAmiga, Denise and Copperline all start Run 1 at A and Run 2 at B, where NanoMig starts Run 2 at A. Their mechanisms differ in a way the package's addresses do not separate: WinUAE, vAmiga and Copperline start at COP2LC whatever vertical blank came before the COPJMP2; Denise, like NanoMig, keeps the vertical blank's COP1LC strobe pending while Copper DMA is off, but merges it with the COPJMP2 and starts at COP1LC \| COP2LC, which for the package's lists, $001000 and $001200, is B's address |
 
 ---
@@ -151,22 +151,26 @@ A, B or C after M1, identical on fx68k and TG68K:
 | Run 3-reorder | COP1LC = A, COP2LC = B, COP2LC = C, COPJMP2 | **A** | C |
 | `P4-CTRL` | COP2LC = A, COP1LC = B, COPJMP1 | B | B |
 
-**This finding rests on Runs 1 and 2**, the two runs that carry the claims,
-which `P4` grades together and which is red through Run 2. Run 3-reorder
-starts at A where p. 25 gives C, by the same mechanism; Run 3 is a separate
-question (see below). `P4a` holds: the first stored DMACONR has bit 7 clear.
-`P4b` holds: no fetch in A, B or C before M1.
+**This finding rests on Runs 1 and 2**, the two runs that carry the claims:
+`P4` grades them together and `P4-Run2` grades Run 2 alone, and both are red
+through Run 2. `P4-Run3-reorder` is red because Run 3-reorder starts at A
+where p. 25 gives C, by the same mechanism. `P4-Run3` is red because Run 3
+starts at A where p. 25 gives B; the clause it grades is a separate question
+(see below). `P4a` holds: the first stored DMACONR has bit 7 clear. `P4b`
+holds: no fetch in A, B or C before M1.
 
-**No vertical blank lies between the strobe and the fetch.** Read with the
-package's own programs and records — a measurement for this page, not a graded
-assertion — the package's precondition (c), no frame wrap and no record with
-V ≤ 25 between MS and the first fetch, holds in every run on both cores. In
-every run the last record stored before MS reads line 64, no record is stored
-between MS and the first fetch, and the fetch follows MS by 420 clk_sys (Runs 1
-and 2, `P4-CTRL`) or 516 (Run 3 and its reorder) on fx68k, 428 or 524 on
-TG68K: 53 to 66 colour clocks of 8 clk_sys, in a PAL line of 227. The strobe,
-DMA-on and the first fetch all lie on line 64 or at the turn to line 65, and
-the last vertical blank before them is the one that began this frame.
+**No vertical blank lies between the strobe and the fetch.** `P4c`, the
+package's precondition (c) — no frame wrap and no record with V ≤ 25 between
+MS and the first fetch — is graded on the captures of Run 1, Run 2, Run 3 and
+Run 3-reorder, and holds on both cores; read the same way from `P4-CTRL`'s
+capture, a measurement for this page and not a graded assertion, it holds
+there too. In every run the last record stored before MS reads line 64, no
+record is stored between MS and the first fetch, and the fetch follows MS by
+420 clk_sys (Runs 1 and 2, `P4-CTRL`) or 516 (Run 3 and its reorder) on
+fx68k, 428 or 524 on TG68K: 53 to 66 colour clocks of 8 clk_sys, in a PAL
+line of 227. The strobe, DMA-on and the first fetch all lie on line 64 or at
+the turn to line 65, and the last vertical blank before them is the one that
+began this frame.
 
 **Where the start address comes from.** The same three programs, each with one
 change before MS — COP1LC pointed at a fourth list D ($001600, a WAIT that
@@ -226,8 +230,12 @@ when Copper DMA starts, and vAmiga and Copperline let a later write to the
 strobed location register move a Copper that has had no Copper DMA since the
 vertical blank. That is a question about p. 25's sentence, not about the
 standing COP1LC request this page files, and NanoMig's A in Run 3 does not
-reach it. This page does not file Run 3; Run 3 and Run 3-reorder are to be
-graded by assertions of their own, apart from Run 2.
+reach it. `P4-Run3` grades that sentence: it is red on both cores at A,
+through the standing latch this page files, and with that latch out of the
+way it would read C and stay red, so this page does not file it.
+`P4-Run3-reorder` does not reach the question: COP2LC holds C both when
+COPJMP2 is written and when Copper DMA comes on, p. 25 and all four give C,
+and its red, A, is this page's.
 
 ---
 
@@ -261,10 +269,11 @@ set both, and line 196 would still prefer COP1LC. This has not been run here;
 the scratch variant above, in which a DMA cycle has already cleared `strobe1`,
 shows what a cleared latch gives. What it would change:
 
-- Run 2 would start at B and Run 3-reorder at C, and `P4` would read A and B;
+- Run 2 would start at B and Run 3-reorder at C, and `P4` would read A and B,
+  so `P4`, `P4-Run2` and `P4-Run3-reorder` would pass;
 - Run 3 would start at C, as on each of the four, because lines 196–199 still
-  read the location register in the reload cycle — the separate question
-  above;
+  read the location register in the reload cycle, and `P4-Run3` would stay
+  red — the separate question above;
 - with Copper DMA on, the reload follows a strobe within a few colour clocks,
   so the latch is rarely pending there; a CPU COPJMP2 in the colour clocks
   between the start of frame and the vertical blank's reload would start the
@@ -279,11 +288,11 @@ shows what a cleared latch gives. What it would change:
   2, 3 and 3-reorder is not a comparator stuck on list A.
 - **Copper DMA was off, and nothing was fetched early.** `P4a` and `P4b` hold
   on both cores.
-- **No vertical blank lies between the strobe and the fetch.** The package's
-  precondition (c) holds in every run on both cores: MS, the strobe, DMA-on
-  and the first fetch follow each other within 66 colour clocks on line 64,
-  with no record between them; the restart that lies before them is the one at
-  the start of that frame.
+- **No vertical blank lies between the strobe and the fetch.** `P4c` holds on
+  both cores, graded on the captures of Runs 1, 2, 3 and 3-reorder: MS, the
+  strobe, DMA-on and the first fetch follow each other within 66 colour clocks
+  on line 64, with no record between them; the restart that lies before them
+  is the one at the start of that frame.
 - **The mechanism shows at the ports.** Given one DMA cycle earlier in the
   frame, the same Run 2 starts at B on both cores.
 - **Both cores agree**, and the Copper, not the CPU, decides the address: the
