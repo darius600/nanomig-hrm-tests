@@ -115,8 +115,8 @@
 //   (SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL) is recorded as "impossible",
 //   not skipped.
 //
-// CLAIM COVERAGE -- 92 ids are cited in full inside an expect()/note() call's
-//   own text below (never only in a header comment). Five further ids are
+// CLAIM COVERAGE -- 91 ids are cited in full inside an expect()/note() call's
+//   own text below (never only in a header comment). Six further ids are
 //   named in full inside a record() call instead, kept off every graded
 //   line:
 //   - A-audxdat.c4: its sentence bundles a measured sequential-output-
@@ -128,6 +128,13 @@
 //     than kept with a caveat. A-audxdat.c4 needs an analog/DAC output-pin
 //     boundary that does not exist anywhere in this project (no port on any
 //     module in this chipset carries a voltage or an analog signal).
+//   - 5-sum.c3: bundles a word-count clause -- already established whole,
+//     under other ids, by AUDXLEN-SETS-WORDS-PER-BLOCK and
+//     AUDXLEN-BLOCK-1-INCLUDES-DISCARD -- with a restart-address clause
+//     naming AUDxLC, agnus_audiodma's register, outside this module's
+//     boundary. A caveat inside a green credits an id on a partial
+//     predicate the same way A-audxdat.c4 would; declined whole instead.
+//     See the RECORD() call after AUDXLEN-BLOCK-1-INCLUDES-DISCARD.
 //   - 5-p147.c6, 5-join.c4, 5-p148.c4, 5-join.c9: all four restatements
 //     state the MOMENT of the audio interrupt (immediately after working
 //     copies of length and location are retrieved) -- 5-p147.c6/5-join.c4
@@ -140,14 +147,17 @@
 //     so crediting any of these four ids on that green would be the same
 //     partial-predicate defect as A-audxdat.c4 above. Declined whole; see
 //     the RECORD() call in the INTERRUPT-CADENCE-TIED-TO-LENGTH block.
-//   Nineteen assertion groups, ids folded onto whichever group tests the
-//   identical underlying proposition (many ids are the same quotation or
-//   the same fact independently read by both lots):
+//   Twenty-one assertion groups total (16 id-bearing groups below, 2
+//   fixture-liveness controls, the gap-closure group, and the 2 further
+//   page-cited block-1 groups noted after the list); ids folded onto
+//   whichever group tests the identical underlying proposition (many ids
+//   are the same quotation or the same fact independently read by both
+//   lots):
 //     SAMPLE-ITEM-WIDTH-EIGHT-BITS                    4 ids
 //     WORD-CONTAINS-TWO-SAMPLES                       14 ids
 //     SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL         3 ids (A-audxdat.c4 declined via record(), see above)
 //     AUDXDAT-IS-PERCHANNEL-DATA-BUFFER               2 ids
-//     AUDXLEN-SETS-WORDS-PER-BLOCK                    10 ids (incl. 2 terminal-count ids, recorded in a trailing note)
+//     AUDXLEN-SETS-WORDS-PER-BLOCK                    9 ids (incl. 2 terminal-count ids, recorded in a trailing note; 5-sum.c3 withdrawn to a record(), see above)
 //     DMA-CONTINUES-UNTIL-STOPPED-REPLAYS             4 ids
 //     RESTART-DOES-NOT-RESUME-MIDBUFFER               4 ids
 //     LENGTH-IS-A-BACKUP-REGISTER                     3 ids
@@ -159,11 +169,15 @@
 //     VOLUME-REGISTER-SEVEN-BITS-READBACK             9 ids
 //     PWM-PATH-DISTINGUISHES-ALL-65-LEVELS            2 ids
 //     CPU-CAN-WRITE-AUDXDAT-DIRECTLY                  10 ids
-//   Total = 4+14+3+2+10+4+4+3+4+14+5+2+1+9+2+10 = 91.
+//   Total = 4+14+3+2+9+4+4+3+4+14+5+2+1+9+2+10 = 90.
 //   Two further scenarios (FIXTURE-LIVENESS-DMA-PATH, FIXTURE-LIVENESS-
 //   DIRECT-WRITE-PATH) carry no claim id -- pure liveness controls -- and
 //   still get their own mutation, matching hrm/ch5-audio-volume-scale/'s own
-//   CONTROL-CLOCKED-LIVENESS convention.
+//   CONTROL-CLOCKED-LIVENESS convention. Two more (AUDXLEN-BLOCK-1-INCLUDES-
+//   DISCARD, INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD) carry no claim id
+//   either -- each cites its page directly in its own CHECK text -- and each
+//   gets its own `implementation` mutation record instead of a `stimulus`
+//   one (see "MUTATION LOG" below).
 //
 // GAP CLOSURE (V-10 reclassification): one further claim, previously
 //   discarded as `not-hardware`, is asserted below as a further group:
@@ -173,7 +187,7 @@
 //   endpoint pair, not a frequency. Both signed two's-complement extremes,
 //   -128 and +127, are shown reaching `sample` intact through the eight-bit
 //   path and its sign extension -- no clock, tick count, or Hz figure is
-//   involved on either side of this one. New total = 91 + 1 = 92.
+//   involved on either side of this one. New total = 90 + 1 = 91.
 //
 // WHAT IS RECORDED, NOT ASSERTED (measure-and-report, per this chapter's own
 //   silence/conflict rulings -- never forced into a graded pass/fail that
@@ -194,8 +208,11 @@
 //     state the identical fact in p.148's worked-example wording; all four
 //     are declined via record() rather than kept on the existence/cadence
 //     green, since that green does not establish the moment they claim.
-//   - 5-sum.c3's restart-address half (AUDxLC): agnus_audiodma's register,
-//     outside this module's boundary; only the word-count half is asserted.
+//   - 5-sum.c3 is declined via record() (see "CLAIM COVERAGE" above): its
+//     word-count half is already established, under other ids, by
+//     AUDXLEN-SETS-WORDS-PER-BLOCK and AUDXLEN-BLOCK-1-INCLUDES-DISCARD;
+//     its restart-address half names AUDxLC, agnus_audiodma's register,
+//     outside this module's boundary.
 //   - A-audxdat.c4 is declined via record() (see "CLAIM COVERAGE" above and
 //     the RECORD() call in main()), not partially credited: no analog
 //     boundary exists at any port this or any other module in this chipset
@@ -223,36 +240,54 @@
 //   below is about the mixer; every volume-bearing assertion below names its
 //   own port so a reader cannot conflate the two.
 //
-// RESULTS (WSL/Verilator 5.052): 19 passed, 0 failed (18 original groups +
-//   the SAMPLE-SIGNED-RANGE-FULL-SCALE gap closure). Every graded assertion
-//   in this package came back green: the register widths, read-back and
-//   effects claimed by chapter 5's body, appendix A, appendix B and appendix
-//   C for AUDxLEN/AUDxPER/AUDxVOL/AUDxDAT all match what
-//   paula_audio_channel.v implements, including the two scenarios this
+// RESULTS (WSL/Verilator 5.052): 19 passed, 2 failed, 21 groups (18 original
+//   groups + the SAMPLE-SIGNED-RANGE-FULL-SCALE gap closure + the 2 block-1
+//   groups below). The two reds are AUDXLEN-BLOCK-1-INCLUDES-DISCARD (p.164,
+//   p.145 step 4, Figure 5-8 p.166: block 1 measures 5 words, the pages give
+//   6) and INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD (same pages: block 1
+//   measures 4, the pages give 5); both are the first-block span from DMA
+//   start, and both have their own `implementation` mutation record showing
+//   green on a page-following implementation (see "MUTATION LOG" below).
+//   Every other graded assertion in this package came back green: the
+//   register widths, read-back and effects claimed by chapter 5's body,
+//   appendix A, appendix B and appendix C for AUDxLEN/AUDxPER/AUDxVOL/AUDxDAT
+//   all match what this fixture implements, including the between-reloads
+//   and between-rises cadence AUDXLEN-SETS-WORDS-PER-BLOCK and
+//   INTERRUPT-CADENCE-TIED-TO-LENGTH now grade, the two scenarios this
 //   package had to design itself rather than reuse an already-measured fact
 //   (LENGTH-IS-A-BACKUP-REGISTER, INTERRUPT-CADENCE-TIED-TO-LENGTH), the
 //   direct contradiction of appendix B's DMA-only gloss by appendix A's own
 //   "the processor can also write directly" (CPU-CAN-WRITE-AUDXDAT-
 //   DIRECTLY), and the reclassified signed-range endpoint pair (SAMPLE-
-//   SIGNED-RANGE-FULL-SCALE). No red arose, and none was manufactured to
-//   arise -- the disputes this chapter's own materials flagged in advance
-//   (the six-vs-seven-bit volume width, the interrupt's exact moment, the
-//   period/length counters' terminal value) were, per this task's own
-//   conflict-resolution guidance, recorded rather than forced into a graded
-//   comparison that would have tested wording, not behaviour.
+//   SIGNED-RANGE-FULL-SCALE). No red was manufactured, and no red was
+//   adjusted away -- the disputes this chapter's own materials flagged in
+//   advance (the six-vs-seven-bit volume width, the interrupt's exact
+//   moment, the period/length counters' terminal value) were, per this
+//   task's own conflict-resolution guidance, recorded rather than forced
+//   into a graded comparison that would have tested wording, not behaviour.
 //
-// MUTATION LOG: all 19 groups' mutations were actually built (18 with their
-//   own -DMUT_X=1 flag via CFLAGS_EXTRA, one recorded "impossible" with no
-//   build) and run against the 19-passed/0-failed baseline above. Each of
-//   the 18 buildable mutations was confirmed, by diffing every group's
-//   PASS/FAIL label against the baseline, to flip EXACTLY its own named
-//   group to FAIL and no other -- 18 separate builds, 18 two-line diffs (one
-//   PASS->FAIL pair each), nothing else moved. Every build was then reverted
-//   (baseline rebuilt with no flags) and reconfirmed at 19/0 before moving to
-//   the next. The individual mutation records, with what was actually
-//   changed and observed, are printed by this program itself at each
-//   assertion group above (search for "// MUTATION" in this file's own
-//   stdout) rather than retyped here.
+// MUTATION LOG: all 21 groups carry a mutation record. 19 are the original
+//   19-group set (18 with their own -DMUT_X=1 flag via CFLAGS_EXTRA, one
+//   recorded "impossible" with no build), run against a 19-passed/0-failed
+//   baseline on those 19 groups alone. Each of the 18 buildable mutations
+//   was confirmed, by diffing every group's PASS/FAIL label against that
+//   baseline, to flip EXACTLY its own named group to FAIL and no other -- 18
+//   separate builds, 18 two-line diffs (one PASS->FAIL pair each), nothing
+//   else moved. Every build was then reverted (baseline rebuilt with no
+//   flags) and reconfirmed before moving to the next. The 2 new block-1
+//   groups are each red already on the pinned RTL, so an in-binary stimulus
+//   mutation would show nothing (a red staying red); each instead carries an
+//   `implementation` record measured on a private scratch copy of the pinned
+//   RTL, never nanomig/ itself (paula_audio_channel.v:358 changed from
+//   `lencount = ~lenfin;` to `lencount = 1'b0;`, the method
+//   hrm/ch5-audio-dma-first-pass already uses for the same defect): rebuilt
+//   against that copy with NANOMIG= pointed at it and no other change, both
+//   block-1 groups measure green (6 and 5 words respectively) and the whole
+//   package measures 21 PASS, 0 FAIL on that tree -- no other group's result
+//   moves. The individual mutation records, with what was actually changed
+//   and observed, are printed by this program itself at each assertion group
+//   above (search for "// MUTATION" in this file's own stdout) rather than
+//   retyped here.
 
 #include <cstdint>
 #include <cstdio>
@@ -877,7 +912,11 @@ int main(int argc, char** argv) {
     // =========================================================================
     // AUDXLEN-SETS-WORDS-PER-BLOCK
     // (5-p139.c8, 5-p139.c9, 5-p139.c10, 5-len.c1, 5-appA-p266.c18,
-    //  A-audxlen.c1, 5-p147.c2, 5-sum.c3, 5-p147.c9, 5-join.c6)
+    //  A-audxlen.c1, 5-p147.c2, 5-p147.c9, 5-join.c6)
+    // 5-sum.c3 withdrawn to the RECORD() call below: its restart-address
+    // half is outside this module's boundary, and the label's own text
+    // used to admit that half is not tested here -- a caveat inside a
+    // green credits the id on a partial predicate.
     // =========================================================================
     {
         Harness h;
@@ -891,21 +930,19 @@ int main(int argc, char** argv) {
         DmaObserver obs;
         long ctr = 0;
         auto gen = [&]() -> uint16_t { ctr++; return (uint16_t)(0x1000 + ctr); };
-        dma_advance(h, obs, 227 * 4 * 4, gen);
+        dma_advance(h, obs, 227 * 4 * 8, gen);
         // Block boundaries are read on `lencnt` (--public-flat-rw), not on the ports `dmas`/
         // `intreq` -- see dma_advance's own header comment for why those two ports turned out
         // unreliable for this purpose.
-        bool ok = obs.reload_edges.size() >= 2 &&
-                  count_words_between(obs.word_cck, 0, obs.reload_edges[0]) == 5 &&
-                  count_words_between(obs.word_cck, obs.reload_edges[0], obs.reload_edges[1]) == 5;
+        bool ok = obs.reload_edges.size() >= 3 &&
+                  count_words_between(obs.word_cck, obs.reload_edges[0], obs.reload_edges[1]) == 5 &&
+                  count_words_between(obs.word_cck, obs.reload_edges[1], obs.reload_edges[2]) == 5;
         CHECK("AUDXLEN-SETS-WORDS-PER-BLOCK (5-p139.c8, 5-p139.c9, 5-p139.c10, 5-len.c1, "
-              "5-appA-p266.c18, A-audxlen.c1, 5-p147.c2, 5-p147.c9, 5-join.c6, 5-sum.c3): "
-              "writing AUDxLEN=5 makes the channel request, and the DMA answer, exactly 5 "
-              "words between successive length-counter RELOADS, for two consecutive blocks -- "
-              "the register's value is the word count per playback cycle (words = samples/2), "
-              "read before output begins and reloaded at every restart. 5-sum.c3's further "
-              "claim that the restart lands at the address in AUDxLC is NOT asserted here: "
-              "AUDxLC is agnus_audiodma's register, outside this module's boundary", ok);
+              "5-appA-p266.c18, A-audxlen.c1, 5-p147.c2, 5-p147.c9, 5-join.c6): writing "
+              "AUDxLEN=5 makes the channel request, and the DMA answer, exactly 5 words "
+              "BETWEEN two successive length-counter RELOADS, for two consecutive completed "
+              "blocks -- the register's value is the word count per playback cycle "
+              "(words = samples/2), reloaded at every restart", ok);
         NOTE("5-p147.c9 and 5-join.c6 both describe the length counter's terminal value as "
              "reaching zero; printed p164/p165 describe the same counter's terminus as the "
              "value 1 (lenfin). Measured directly at lencnt via --public-flat-rw: "
@@ -916,10 +953,62 @@ int main(int argc, char** argv) {
              "cadence: 5 words per reload, exactly as measured above.");
         MUTATION("AUDXLEN-SETS-WORDS-PER-BLOCK", "stimulus", "red",
                   "built with -DMUT_LENWORDS=1, which skips the AUDxLEN=5 write entirely, "
-                  "leaving the register at its post-reset default -- the measured words-per-"
-                  "block no longer equals 5 for either block, and the check goes red. Reverted, "
-                  "baseline restored.");
+                  "leaving the register at its post-reset default -- the measured words "
+                  "between reloads no longer equals 5 for either interval, and the check goes "
+                  "red. Reverted, baseline restored.");
+
+        // ---------------------------------------------------------------------
+        // AUDXLEN-BLOCK-1-INCLUDES-DISCARD
+        // Block 1 runs from DMA start (not from a reload) to the first
+        // length-counter reload -- a different span from the between-reloads
+        // check above. p.145 step 4 sets AUDxLEN to the number of data words
+        // fetched before the first restart; p.164 states the very first word
+        // fetched once DMA is enabled must be thrown away; Figure 5-8
+        // (p.166) puts that thrown-away word on its own arc, ahead of the
+        // main loop the between-reloads check above measures. Block 1 is
+        // therefore one word longer than every later block: the thrown-away
+        // word plus AUDxLEN data words. See also hrm/ch5-audio-dma-first-
+        // pass, which measures the same channel's first-pass fetch count at
+        // a different boundary.
+        // ---------------------------------------------------------------------
+        bool ok_block1 = !obs.reload_edges.empty() &&
+                         count_words_between(obs.word_cck, 0, obs.reload_edges[0]) == 6;
+        CHECK("AUDXLEN-BLOCK-1-INCLUDES-DISCARD (p.164, p.145 step 4, Figure 5-8 p.166): from "
+              "DMA start to the first length-counter RELOAD, the channel requests, and the DMA "
+              "answers, exactly AUDxLEN+1 words -- the thrown-away first word (p.164) plus the "
+              "AUDxLEN data words (p.145 step 4). With AUDxLEN=5 that is 6. See also "
+              "hrm/ch5-audio-dma-first-pass, which measures the same channel's first-pass "
+              "fetch count at a different boundary", ok_block1);
+        // IMPLEMENTATION mutation (measured on a private scratch copy of the pinned RTL,
+        // never nanomig/): paula_audio_channel.v:358 changed to `lencount = 1'b0;`. This
+        // package's own stimulus and comparator, rebuilt against that copy (NANOMIG
+        // pointed at it) and run with no other change, is the record -- the strongest
+        // demonstration available for an assertion no in-binary stimulus change can turn
+        // green.
+        MUTATION("AUDXLEN-BLOCK-1-INCLUDES-DISCARD", "implementation", "green",
+            "scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` "
+            "changed to `lencount = 1'b0;`. This package's own stimulus and comparator, "
+            "rebuilt against that tree (NANOMIG= the scratch copy) and run with no other "
+            "change, measured 6 words from DMA start to the first length-counter reload "
+            "with AUDxLEN=5, matching this assertion's own expectation -- 21 PASS, 0 FAIL "
+            "package-wide on that tree, every other assertion's own result unchanged from "
+            "the pinned-RTL baseline. On the pinned RTL this assertion measures 5 and is "
+            "red.");
     }
+
+    // =========================================================================
+    // 5-sum.c3 -- declined, not graded. Its word-count half is the same
+    // proposition AUDXLEN-SETS-WORDS-PER-BLOCK and AUDXLEN-BLOCK-1-INCLUDES-
+    // DISCARD already grade above; its restart-address half (AUDxLC) is
+    // agnus_audiodma's register, outside this module's boundary.
+    // =========================================================================
+    RECORD("5-sum.c3 (p.145, step 4) \"Set the length register, AUDxLEN, to the number of "
+           "data words to be retrieved before starting at the address currently in AUDxLC.\": "
+           "the word-count half of this sentence is already fully established by "
+           "AUDXLEN-SETS-WORDS-PER-BLOCK and AUDXLEN-BLOCK-1-INCLUDES-DISCARD above, on their "
+           "own cited ids; the restart-address half names AUDxLC, agnus_audiodma's register, "
+           "outside this module's boundary -- not constructible at any boundary this fixture "
+           "exposes. Declined whole rather than credited on a partial predicate.");
 
     // =========================================================================
     // DMA-CONTINUES-UNTIL-STOPPED-REPLAYS
@@ -1064,9 +1153,9 @@ int main(int argc, char** argv) {
         // request" flip-flop -- see dma_advance's own header comment for why the port `intreq`
         // itself, though real, is not reliably observable through this harness's own tick()
         // discipline for the periodic (as opposed to the one-off startup) pulse.
-        bool ok = obs.intreq2_edges.size() >= 2 &&
-                  count_words_between(obs.word_cck, 0, obs.intreq2_edges[0]) == 4 &&
-                  count_words_between(obs.word_cck, obs.intreq2_edges[0], obs.intreq2_edges[1]) == 4;
+        bool ok = obs.intreq2_edges.size() >= 3 &&
+                  count_words_between(obs.word_cck, obs.intreq2_edges[0], obs.intreq2_edges[1]) == 4 &&
+                  count_words_between(obs.word_cck, obs.intreq2_edges[1], obs.intreq2_edges[2]) == 4;
         std::ostringstream m;
         m << "measured " << obs.intreq2_edges.size() << " intreq2 (buffered interrupt request) "
           << "pulses, " << obs.intreq_edges.size() << " port-level intreq pulses (the port only "
@@ -1077,7 +1166,8 @@ int main(int argc, char** argv) {
               "5-appA-p265.c46, 5-appA-p265.c47, A-audxdat.c8, A-audxdat.c9): with AUDxLEN=4 and "
               "DMA running, the buffered interrupt request (intreq2, which `intreq` reflects onto "
               "the port at the next period-timer transition) is set once per completed 4-word "
-              "block -- existence and cadence, tied to AUDxLEN, both hold", ok);
+              "block, BETWEEN two successive intreq2 rises -- existence and cadence, tied to "
+              "AUDxLEN, both hold", ok);
         NOTE(m.str());
         NOTE("Three manual passages give three different MOMENTS for this same interrupt: "
              "p147/p148 say immediately after the location+length registers are copied into "
@@ -1101,8 +1191,42 @@ int main(int argc, char** argv) {
                "rather than credited on a partial predicate.");
         MUTATION("INTERRUPT-CADENCE-TIED-TO-LENGTH", "stimulus", "red",
                   "built with -DMUT_INTCAD=1, which shortens the run to under two full AUDxLEN "
-                  "blocks -- fewer than two intreq/dmas events have time to occur and the >=2 "
+                  "blocks -- fewer than three intreq2 rises have time to occur and the >=3 "
                   "check goes red. Reverted, baseline restored.");
+
+        // ---------------------------------------------------------------------
+        // INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD
+        // Block 1 runs from DMA start (not from an intreq2 rise) to the
+        // first intreq2 rise -- a different span from the between-rises
+        // check above. p.145 step 4 sets AUDxLEN to the number of data
+        // words fetched before the first restart; p.164 states the very
+        // first word fetched once DMA is enabled must be thrown away;
+        // Figure 5-8 (p.166) sets intreq2 on the main loop's own last word
+        // of a completed block, one delivery after the thrown-away word's
+        // own arc. Block 1 is therefore one word longer than every later
+        // block: the thrown-away word plus AUDxLEN data words. See also
+        // hrm/ch5-audio-dma-first-pass, which measures the same channel's
+        // first-pass fetch count at a different boundary.
+        // ---------------------------------------------------------------------
+        bool ok_block1 = !obs.intreq2_edges.empty() &&
+                         count_words_between(obs.word_cck, 0, obs.intreq2_edges[0]) == 5;
+        CHECK("INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD (p.164, p.145 step 4, Figure 5-8 "
+              "p.166): from DMA start to the first intreq2 (buffered interrupt request) rise, "
+              "the channel requests, and the DMA answers, exactly AUDxLEN+1 words -- the "
+              "thrown-away first word (p.164) plus the AUDxLEN data words (p.145 step 4). With "
+              "AUDxLEN=4 that is 5. See also hrm/ch5-audio-dma-first-pass, which measures the "
+              "same channel's first-pass fetch count at a different boundary", ok_block1);
+        // IMPLEMENTATION mutation, same scratch tree as AUDXLEN-BLOCK-1-INCLUDES-DISCARD
+        // above.
+        MUTATION("INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD", "implementation", "green",
+            "scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` "
+            "changed to `lencount = 1'b0;`. This package's own stimulus and comparator, "
+            "rebuilt against that tree (NANOMIG= the scratch copy) and run with no other "
+            "change, measured 5 words from DMA start to the first intreq2 rise with "
+            "AUDxLEN=4, matching this assertion's own expectation -- 21 PASS, 0 FAIL "
+            "package-wide on that tree, every other assertion's own result unchanged from "
+            "the pinned-RTL baseline. On the pinned RTL this assertion measures 4 and is "
+            "red.");
     }
 
     // =========================================================================
