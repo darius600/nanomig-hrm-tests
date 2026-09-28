@@ -20,7 +20,13 @@ SPRDESC:
                 dc.w    $D9D1,$2F94, $D9D1,$2F94       ; LA, LA
                 dc.w    $0000,$0000, $0000,$0000       ; gap, gap
     endr
-                dc.w    $0000,$0000                     ; terminator
+                ; terminator (PC2 contrast CR5: content mismatch after the
+                ; last graded line, no sprite pixel depends on it)
+                ifd     MUT_CR5
+                dc.w    $0001,$0000
+                else
+                dc.w    $0000,$0000
+                endif
 SPRDESC_END:
 
 ; ---- Copper list table (SPECIFICATION.md 3.5) -----------------------------

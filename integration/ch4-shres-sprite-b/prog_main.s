@@ -123,10 +123,16 @@ start:
         subq.w  #1,d7
         bne.s   .poll
 
-        ifnd    MUT_CR10
+        ; RUN contrast CR10: the program never writes MARKER. It still
+        ; reaches nanomig.i's own DONE (an independent completion witness),
+        ; so the run itself is demonstrably finished; only the MARKER-based
+        ; RUN check is falsified.
+        ifd     MUT_CR10
+        DONE
+        else
         move.w  #$A5A5,MARKER
-        endif
 .hang:  bra.s   .hang
+        endif
 
         ; Data tables, placed here (after all code) so they land right
         ; after the program in the flat binary -- see sprb_data.i.

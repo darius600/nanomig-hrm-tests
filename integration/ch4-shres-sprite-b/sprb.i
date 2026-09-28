@@ -43,9 +43,9 @@ BPLBUF          equ     $020000
 ; ---- mutation-selected constants (SPECIFICATION.md section 5/6) ----------
 ;
 ; Exactly one of MUT_CR1/MUT_CR2/MUT_CR3/MUT_CR4/MUT_CR5/MUT_CR6/MUT_CR8/
-; MUT_CR9/MUT_CR10 is defined (equ'd to 1) by a mutant wrapper before it
-; includes prog_main.s; prog_main.s itself (assembled standalone) defines
-; none of them, giving the baseline/normal stimulus.
+; MUT_CR9/MUT_CR10/MUT_CR11 is defined (equ'd to 1) by a mutant wrapper
+; before it includes prog_main.s; prog_main.s itself (assembled standalone)
+; defines none of them, giving the baseline/normal stimulus.
 
 ; PC1 contrast CR4: BPLCON0 = $9000 (HIRES=1, SHRES=0) instead of $1040.
                 ifd     MUT_CR4
@@ -54,18 +54,19 @@ BPLCON0VAL      equ     $9000
 BPLCON0VAL      equ     $1040
                 endif
 
-; PC2 contrast CR5: DMACON = $8380 (SPREN not set) instead of $83A0.
-                ifd     MUT_CR5
+; PC4 contrast CR8: MARKER is written after three frame starts instead of six.
+                ifd     MUT_CR8
+FRAME_COUNT     equ     3
+                else
+FRAME_COUNT     equ     6
+                endif
+
+; Reference-frame contrast CR11: DMACON = $8380 (SPREN not set) instead of
+; $83A0, removing the sprite anchor the reference frame depends on.
+                ifd     MUT_CR11
 DMACONVAL       equ     $8380
                 else
 DMACONVAL       equ     $83A0
-                endif
-
-; PC4 contrast CR8: MARKER is written after one frame start instead of six.
-                ifd     MUT_CR8
-FRAME_COUNT     equ     1
-                else
-FRAME_COUNT     equ     6
                 endif
 
 ; FIXTURE contrast CR9: RESULTS stores $DEAD instead of $BEEF.

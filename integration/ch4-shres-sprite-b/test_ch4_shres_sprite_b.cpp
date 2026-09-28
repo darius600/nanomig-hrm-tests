@@ -7,9 +7,10 @@
 // encoding of p.302 for four bands of pattern lines, plus two pattern
 // regions used only to confirm SuperHires is in effect (PC1). This test
 // finds the graded frame from the video trace alone (v0/a0/a1/d,
-// SPECIFICATION.md section 4), grades P1-P4 per letter from masked
-// samples, and checks PC0-PC4 (plus the PC2w width precondition) from the
-// same trace plus the RAM-port log.
+// SPECIFICATION.md section 4), grades that finding itself (REF) before
+// using it, grades P1-P4 per letter from masked samples, and checks
+// PC0-PC4 (plus the PC2w width precondition) from the same trace plus the
+// RAM-port log.
 //
 // NMH_MUTATE selects one contrast in place of the baseline stimulus; none
 // is exercised by a plain `make test`.
@@ -17,28 +18,33 @@
 //   NMH_MUTATE=CR2  prog_cr2.bin  (section-T COLOR16-31 = S1 instead of S0)
 //   NMH_MUTATE=CR3  prog_cr3.bin  (band-4 COLOR16-31 = S0-c18 instead of S0x)
 //   NMH_MUTATE=CR4  prog_cr4.bin  (BPLCON0 = $9000 instead of $1040)
-//   NMH_MUTATE=CR5  prog_cr5.bin  (DMACON = $8380, SPREN not set)
+//   NMH_MUTATE=CR5  prog_cr5.bin  (sprite descriptor terminator = $0001,$0000 instead of $0000,$0000)
 //   NMH_MUTATE=CR6  prog_cr6.bin  (band-1 WAIT = $5C07 instead of $5807)
-//   NMH_MUTATE=CR7  prog_main.bin (chipset_config selects OCS instead of ECS)
-//   NMH_MUTATE=CR8  prog_cr8.bin  (MARKER written after 1 frame start, not 6)
+//   NMH_MUTATE=CR7  prog_main.bin (memory_config selects a different Chip size)
+//   NMH_MUTATE=CR8  prog_cr8.bin  (MARKER written after 3 frame starts, not 6)
 //   NMH_MUTATE=CR9  prog_cr9.bin  (RESULTS stores $DEAD instead of $BEEF)
-//   NMH_MUTATE=CR10 prog_cr10.bin (the program never writes MARKER)
+//   NMH_MUTATE=CR10 prog_cr10.bin (the program never writes MARKER, but still reaches DONE)
+//   NMH_MUTATE=CR11 prog_cr11.bin (DMACON = $8380, SPREN not set)
 //
-// MUTATION P1 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- bit-3 letters G,I,K mismatch
-// MUTATION P2 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- bit-3 letters M,O,Q mismatch
-// MUTATION P3 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- bit-3 letters S,U,W mismatch
-// MUTATION P1 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- bit-2 letters H,J,L mismatch
-// MUTATION P2 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- bit-2 letters N,P,R mismatch
-// MUTATION P3 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- bit-2 letters T,V,X mismatch
-// MUTATION P4 stimulus red NMH_MUTATE=CR3: band-4 COLOR16-31 = S0-c18 instead of S0x -- colour 18's samples mismatch
-// MUTATION PC1 stimulus red NMH_MUTATE=CR4: BPLCON0=$9000 (HIRES) instead of $1040 (SHRES) -- pattern runs of two instead of one
-// MUTATION PC2w stimulus green NMH_MUTATE=CR4: already red at baseline (p.101/p.124/p.128 predict all 32 samples lit, only 16 measure); the same width comparator passes 32-of-32 lit under HIRES, where a low-resolution pixel is one Hires sample pair too
-// MUTATION PC2 stimulus red NMH_MUTATE=CR5: DMACON=$8380 (SPREN not set) instead of $83A0
-// MUTATION PC3 stimulus red NMH_MUTATE=CR6: band-1 WAIT=$5C07 (line 92) instead of $5807 (line 88)
-// MUTATION PC0 stimulus red NMH_MUTATE=CR7: chipset_config selects OCS instead of ECS
-// MUTATION PC4 stimulus red NMH_MUTATE=CR8: MARKER written after 1 frame start instead of 6
-// MUTATION FIXTURE stimulus red NMH_MUTATE=CR9: RESULTS stores $DEAD instead of $BEEF
-// MUTATION RUN stimulus red NMH_MUTATE=CR10: the program never writes MARKER (loops before the write)
+// Every record below states what fx68k and TG68K each produced on the
+// forced `make -k -B test` run this repair kept in out_fx68k.txt/out_tg68k.txt.
+//
+// MUTATION P1 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters G,I,K mismatch, H,J,L unaffected -- measured fx68k: FAIL via G,I,K red, H,J,L green (18 passed, 10 failed overall: this plus P2/P3 below plus baseline PC2w); TG68K: same (cycle counts differ, all PASS/FAIL verdicts identical)
+// MUTATION P2 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters M,O,Q mismatch, N,P,R unaffected -- measured fx68k: FAIL via M,O,Q red, N,P,R green; TG68K: same
+// MUTATION P3 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters S,U,W mismatch, T,V,X unaffected -- measured fx68k: FAIL via S,U,W red, T,V,X green; TG68K: same
+// MUTATION P1 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $48C to S1 $8C0 changes G,H,J,K,L, I unaffected -- measured fx68k: FAIL via G,H,J,K,L red, I green (13 passed, 15 failed overall: this plus P2/P3 below plus baseline PC2w); TG68K: same
+// MUTATION P2 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $8C0 to S1 $C04 changes N,O,P,R, M,Q unaffected -- measured fx68k: FAIL via N,O,P,R red, M,Q green; TG68K: same
+// MUTATION P3 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $C04 to S1 $048 changes S,T,V,W,X, U unaffected -- measured fx68k: FAIL via S,T,V,W,X red, U green; TG68K: same
+// MUTATION P4 stimulus red NMH_MUTATE=CR3: band-4 COLOR16-31 = S0-c18 instead of S0x -- colour 18's samples mismatch -- measured fx68k: FAIL via P4 colour-18 mismatch, PC0-PC4 green (26 passed, 2 failed overall: P4, baseline PC2w); TG68K: same
+// MUTATION PC1 stimulus red NMH_MUTATE=CR4: BPLCON0=$9000 (HIRES) instead of $1040 (SHRES) -- pattern runs of two instead of one -- measured fx68k: FAIL via PC1 only, PC2w flips PASS under this contrast (27 passed, 1 failed overall, PC1 the only red); TG68K: same
+// MUTATION PC2w stimulus green NMH_MUTATE=CR4: already red at baseline (p.101/p.124/p.128 predict all 32 samples lit, only 16 measure); the same width-plus-boundary comparator passes 3840/3840 lit and 240/240 boundary samples dark under HIRES, where a low-resolution pixel is one Hires sample pair too -- measured fx68k: PASS; TG68K: same
+// MUTATION PC2 stimulus red NMH_MUTATE=CR5: sprite descriptor terminator = $0001,$0000 instead of $0000,$0000 -- content mismatch after the last graded line, anchor (a0=269, a1=319) and both populations stay live -- measured fx68k: FAIL via PC2(a) content mismatch (1/1 words sprite0/sprite1), PC0/PC1/PC3/PC4 green (26 passed, 2 failed overall: PC2, baseline PC2w); TG68K: same
+// MUTATION PC3 stimulus red NMH_MUTATE=CR6: band-1 WAIT=$5C07 (line 92) instead of $5807 (line 88) -- the late colour group also leaves S0 active for band 1's first value-01 lines -- measured fx68k: FAIL via PC3 (ordering) and P1 letters G,H,J,K,L red (21 passed, 7 failed overall: PC3, 5 letters, baseline PC2w); TG68K: same
+// MUTATION PC0 stimulus red NMH_MUTATE=CR7: memory_config changed from 2 MB Chip memory (0x03) to 0x02, chipset_config (ECS, SuperHires) unchanged -- measured fx68k: FAIL via PC0's memory_config clause only, PC1-PC4 green (26 passed, 2 failed overall: PC0, baseline PC2w); TG68K: same
+// MUTATION PC4 stimulus red NMH_MUTATE=CR8: MARKER written after 3 frame starts instead of 6 -- one complete, populated graded frame preceded by 1 complete Copper pass (< 3 required) -- measured fx68k: FAIL via PC4's pass count only, PC0-PC3 green (26 passed, 2 failed overall: PC4, baseline PC2w); TG68K: same
+// MUTATION FIXTURE stimulus red NMH_MUTATE=CR9: RESULTS stores $DEAD instead of $BEEF -- measured fx68k: FAIL via FIXTURE only (26 passed, 2 failed overall: FIXTURE, baseline PC2w); TG68K: same
+// MUTATION RUN stimulus red NMH_MUTATE=CR10: the program never writes MARKER, but still writes nanomig.i's DONE_ADDR/DONE_VALUE as an independent completion witness -- measured fx68k: FAIL via RUN (marker never seen); PC4 also FAILs, since PC4's own definition requires MARKER too; REF/PC1/PC2/PC3/P1-P4 green (25 passed, 3 failed overall: RUN, PC4, baseline PC2w); TG68K: same
+// MUTATION REF stimulus red NMH_MUTATE=CR11: DMACON=$8380 (SPREN not set) instead of $83A0 -- no sprite DMA, so no >4-sample run exists and REF goes red -- measured fx68k: FAIL via REF (v0 not found); PC1/PC2w/PC2/PC3 also FAIL, each through its own clause (0 transitions, 0 lit samples, empty populations, no sprite fetches to order); RUN/FIXTURE/PC0/PC4 green, P1-P4 recorded not graded (4 passed, 5 failed overall: REF, PC1, PC2w, PC2, PC3); TG68K: same
 
 #include <cstdio>
 #include <cstdlib>
@@ -78,6 +84,8 @@ constexpr uint16_t kMarkerVal    = 0xA5A5;
 constexpr uint32_t kCoplist      = 0x010000;
 constexpr uint32_t kSpr0Dat      = 0x011000;
 constexpr uint32_t kSpr1Dat      = 0x011200;
+constexpr uint32_t kDoneAddr     = 0x0C0FFE; // nanomig.i DONE_ADDR
+constexpr uint16_t kDoneValue    = 0x600D;   // nanomig.i DONE_VALUE
 
 constexpr uint32_t kCoplistWordBase = kCoplist / 2;
 constexpr uint32_t kSpr0WordBase    = kSpr0Dat / 2;
@@ -98,7 +106,7 @@ constexpr uint64_t kChunk         = 200'000;
 constexpr uint64_t kMaxAfterBoot  = 16'000'000;
 constexpr int kFramesAfterMarker  = 2;
 
-enum class Scenario { Base, CR1, CR2, CR3, CR4, CR5, CR6, CR7, CR8, CR9, CR10 };
+enum class Scenario { Base, CR1, CR2, CR3, CR4, CR5, CR6, CR7, CR8, CR9, CR10, CR11 };
 
 Scenario parse_scenario(const std::string& v) {
     if (v == "CR1") return Scenario::CR1;
@@ -111,6 +119,7 @@ Scenario parse_scenario(const std::string& v) {
     if (v == "CR8") return Scenario::CR8;
     if (v == "CR9") return Scenario::CR9;
     if (v == "CR10") return Scenario::CR10;
+    if (v == "CR11") return Scenario::CR11;
     return Scenario::Base;
 }
 
@@ -125,6 +134,7 @@ std::string bin_for(Scenario sc) {
         case Scenario::CR8: return "prog_cr8.bin";
         case Scenario::CR9: return "prog_cr9.bin";
         case Scenario::CR10: return "prog_cr10.bin";
+        case Scenario::CR11: return "prog_cr11.bin";
         default: return "prog_main.bin"; // Base and CR7 share the baseline program
     }
 }
@@ -461,15 +471,25 @@ int main(int argc, char** argv) {
     Checks c;
 
     nmh::Config cfg;
-    cfg.chipset_config = (sc == Scenario::CR7) ? 0x00 : 0x08;
+    cfg.chipset_config = 0x08; // ECS throughout -- Denise stays SuperHires-capable in every scenario
+    cfg.memory_config = (sc == Scenario::CR7) ? 0x02 : 0x03;
     nmh::NanomigHarness h(cfg);
 
     std::string bin = dir + "/" + bin_for(sc);
     size_t loaded = h.load_program(bin);
     auto boot = h.boot(kBootBudget);
 
+    // marker_seen/marker_cycle: the program's own MARKER write, which RUN
+    // grades directly. done_seen/done_cycle: nanomig.i's own DONE_ADDR
+    // write, an independent completion witness a mutant (CR10) reaches
+    // without ever writing MARKER. completion_seen/completion_cycle bound
+    // the search for the graded frame from whichever of the two the run
+    // actually produced, so a run that skips MARKER but still finishes
+    // still yields a graded frame for every other check.
     std::optional<uint64_t> marker_cycle;
     bool marker_seen = false;
+    std::optional<uint64_t> done_cycle;
+    bool done_seen = false;
     int frames_after = 0;
     bool prev_vs = false;
     size_t video_scan = 0;
@@ -484,15 +504,24 @@ int main(int argc, char** argv) {
                         marker_cycle = a.cycle; marker_seen = true; break;
                     }
             }
+            if (!done_seen) {
+                for (auto& a : h.ram_log())
+                    if (a.is_write && a.word_addr == kDoneAddr / 2 && a.data == kDoneValue) {
+                        done_cycle = a.cycle; done_seen = true; break;
+                    }
+            }
+            bool completion_seen = marker_seen || done_seen;
             const auto& v = h.video();
             for (; video_scan < v.size(); ++video_scan) {
                 bool cur = v[video_scan].vs;
-                if (cur && !prev_vs && marker_seen) ++frames_after;
+                if (cur && !prev_vs && completion_seen) ++frames_after;
                 prev_vs = cur;
             }
-            if (marker_seen && frames_after >= kFramesAfterMarker) break;
+            if (completion_seen && frames_after >= kFramesAfterMarker) break;
         }
     }
+    bool completion_seen = marker_seen || done_seen;
+    uint64_t completion_cycle = marker_seen ? *marker_cycle : (done_seen ? *done_cycle : 0);
     bool run_ok = loaded > 0 && boot.cpu_released && marker_seen;
 
     c.expect(run_ok, "RUN: prog " + bin + " loaded (" + std::to_string(loaded) + " bytes), CPU released from "
@@ -505,9 +534,9 @@ int main(int argc, char** argv) {
     c.expect(fixture_ok, "FIXTURE: prog stores a known constant (BEEF) at RESULTS before anything else is trusted"
              " (read back " + (fixture ? hex4(*fixture) : std::string("nothing")) + ")");
 
-    // ---- PC0: chip identification, measured from the design --------------
-    // (defect 7: chipset_config/memory_config are the harness's own inputs,
-    // not a measurement; the program reads VPOSR and DENISEID instead.)
+    // ---- PC0: chip identification, measured from the design (the program
+    // reads VPOSR and DENISEID back; chipset_config/memory_config are the
+    // harness's own inputs, not something the program measures) ----------
     auto vposr = h.peek_logical(kResults + 2);
     auto deniseid = h.peek_logical(kResults + 4);
     bool pc0_vposr_ok = vposr.has_value() && (((*vposr >> 8) & 0x7F) == 0x20);
@@ -525,9 +554,9 @@ int main(int argc, char** argv) {
 
     auto frames = nmh::find_frames(video);
     std::optional<nmh::Span> graded_frame;
-    if (marker_seen) {
+    if (completion_seen) {
         for (auto& f : frames)
-            if (f.end <= *marker_cycle && f.end < video.size())
+            if (f.end <= completion_cycle && f.end < video.size())
                 if (!graded_frame || f.end > graded_frame->end) graded_frame = f;
     }
 
@@ -537,7 +566,6 @@ int main(int argc, char** argv) {
 
     Anchor anchor = find_anchor(video, lif);
     DMeasure dm = measure_d(video, lif, anchor);
-    bool have_anchor = anchor.found && dm.ok && graded_frame.has_value();
 
     if (graded_frame)
         c.note("graded frame: samples [" + std::to_string(graded_frame->begin) + "," +
@@ -550,10 +578,25 @@ int main(int argc, char** argv) {
     c.note("d measurement: run_active=" + std::to_string(dm.run_active) + " run_gap=" + std::to_string(dm.run_gap) +
            " -> d=" + std::to_string(dm.d) + (dm.ok ? " (consistent)" : " (INCONSISTENT or not measurable)"));
 
+    // ---- REF: the reference frame itself (SPECIFICATION.md section 4) --
+    // v0/a0/a1 (the sprite anchor, located by the page-grounded >4-sample
+    // run of 4.3: VSTART=80 is "where the topmost line of the sprite will
+    // be positioned", p.107, and the pattern alone reaches at most 1
+    // (SuperHires, p.300), 2 (Hires, p.271) or 4 (lores, p.271/p.300)
+    // samples) and d (the line-doubler factor, measured, not assumed) are
+    // graded here, once, before anything that depends on them. Every later
+    // check that uses v0/a0/a1/d is gated on this one precondition instead
+    // of repeating its own absence test.
+    bool ref_ok = graded_frame.has_value() && anchor.found && dm.ok;
+    c.expect(ref_ok, "REF: reference frame -- the graded frame yields a sprite anchor (v0/a0/a1, the "
+             ">4-sample run identified by p.107's VSTART=80 \"where the topmost line of the sprite will be "
+             "positioned\" against the pattern-only runs of p.271/p.300) and a consistent line-doubling "
+             "factor d, before any check that uses them");
+
     // ---- PC1: SuperHires in effect around the sprite band ------------------
-    bool pc1_ok = have_anchor;
+    bool pc1_ok = ref_ok;
     long pc1_checked = 0;
-    if (have_anchor) {
+    if (ref_ok) {
         auto check_region = [&](int lo, int hi) {
             for (int n = lo; n <= hi; ++n) for (int copy = 0; copy < dm.d; ++copy) {
                 auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
@@ -578,11 +621,15 @@ int main(int argc, char** argv) {
               "content match, not repeated here");
 
     // ---- PC2w: sprite pixel width (precondition; gates only the LA-line
-    // grading of P1-P4 below). Expected to fail against the printed page --
-    // that failure is a result, not something to repair (REPAIR-BRIEF.md).
-    bool pc2w_ok = have_anchor;
+    // grading of P1-P4 below). "Exactly" is graded both ways: every one of
+    // the 32 in-interval samples must be lit, and the sample immediately
+    // outside each edge (a0-1/a0+32, a1-1/a1+32) must be dark, both in the
+    // same boolean. Expected to fail against the printed page: that
+    // failure is a result, not something to repair.
+    bool pc2w_ok = ref_ok;
     long pc2w_lit = 0, pc2w_dark = 0, pc2w_checked = 0;
-    if (have_anchor) {
+    long pc2w_boundary_lit = 0, pc2w_boundary_dark = 0, pc2w_boundary_checked = 0;
+    if (ref_ok) {
         for (int band = 0; band < 5; ++band) {
             for (int lineInBand = 0; lineInBand < 6; ++lineInBand) { // L1,L1,L2,L2,L3,L3
                 int n = 80 + 10 * band + lineInBand;
@@ -598,18 +645,29 @@ int main(int argc, char** argv) {
                             if (lit) ++pc2w_lit; else ++pc2w_dark;
                             if (!lit) pc2w_ok = false;
                         }
+                        for (long boff : {-1L, 32L}) {
+                            ++pc2w_boundary_checked;
+                            std::optional<nmh::VideoSample> samp;
+                            if (boff >= 0 || anchor_pos >= 1) // guard the a0-1 underflow case
+                                samp = nmh::sample_at(video, *span, (size_t)((long)anchor_pos + boff));
+                            bool lit = samp && !dark(mask(*samp));
+                            if (lit) ++pc2w_boundary_lit; else ++pc2w_boundary_dark;
+                            if (lit || !samp) pc2w_ok = false;
+                        }
                     }
                 }
             }
         }
     }
     c.expect(pc2w_ok, "PC2w: on every L1/L2/L3 line of the graded frame, sprite 0 is lit exactly over samples "
-             "a0..a0+31 and sprite 1 over a1..a1+31 (p.101 \"Sprites, however, are independent of playfield "
-             "modes of display, so changing the resolution or interlace mode of the playfield has no effect "
-             "on the size or resolution of a sprite\"; p.124 \"The shift occurs once during each low "
-             "resolution pixel time\"; p.128 \"The sprite resolution is independent of the bitplane "
-             "resolution\") (" + std::to_string(pc2w_lit) + " lit, " + std::to_string(pc2w_dark) +
-             " dark of " + std::to_string(pc2w_checked) + " checked)");
+             "a0..a0+31 and dark at a0-1/a0+32, and sprite 1 exactly over a1..a1+31 and dark at a1-1/a1+32 "
+             "(p.101 \"Sprites, however, are independent of playfield modes of display, so changing the "
+             "resolution or interlace mode of the playfield has no effect on the size or resolution of a "
+             "sprite\"; p.124 \"The shift occurs once during each low resolution pixel time\"; p.128 \"The "
+             "sprite resolution is independent of the bitplane resolution\") (" + std::to_string(pc2w_lit) +
+             " lit, " + std::to_string(pc2w_dark) + " dark of " + std::to_string(pc2w_checked) +
+             " interval samples checked; " + std::to_string(pc2w_boundary_dark) + " of " +
+             std::to_string(pc2w_boundary_checked) + " boundary samples dark as required)");
     c.record("PC2w page basis: p.101 \"Sprites, however, are independent of playfield modes of display, so "
               "changing the resolution or interlace mode of the playfield has no effect on the size or "
               "resolution of a sprite.\"; p.124 \"The shift occurs once during each low resolution pixel time "
@@ -635,8 +693,8 @@ int main(int argc, char** argv) {
     bool offsets_consistent_ok = true; long offsets_checked = 0;
     std::optional<std::vector<size_t>> ref_offsets;
 
-    size_t win_len = have_anchor ? (anchor.a1 - anchor.a0) : 0;
-    if (have_anchor && win_len > 0) {
+    size_t win_len = ref_ok ? (anchor.a1 - anchor.a0) : 0;
+    if (ref_ok && win_len > 0) {
         for (int band = 0; band < 5; ++band) {
             for (int lineInBand = 0; lineInBand < 6; ++lineInBand) { // L1,L1,L2,L2,L3,L3
                 int n = 80 + 10 * band + lineInBand;
@@ -671,7 +729,7 @@ int main(int argc, char** argv) {
 
     // LA lines: mixed pixel values need the pixel-exact a0+2i/a1+2i mapping
     // (4.4), so they are graded only while PC2w holds; otherwise recorded.
-    if (have_anchor && pc2w_ok) {
+    if (ref_ok && pc2w_ok) {
         for (int band = 0; band < 5; ++band) {
             for (int lineInBand = 6; lineInBand <= 7; ++lineInBand) { // LA, LA
                 int n = 80 + 10 * band + lineInBand;
@@ -695,13 +753,13 @@ int main(int argc, char** argv) {
                 }
             }
         }
-    } else if (have_anchor) {
+    } else if (ref_ok) {
         c.record("P1-P4 LA lines (bands 0-4, pixels of value 01/10/11): not graded this run -- PC2w "
                   "(p.101/p.124/p.128, the sprite-pixel-width precondition) failed, so the exact "
                   "pixel-to-sample position the mixed-value LA lines need cannot be trusted.");
     }
 
-    bool pc2e_ok = have_anchor && pop_nonempty_ok && offsets_consistent_ok;
+    bool pc2e_ok = ref_ok && pop_nonempty_ok && offsets_consistent_ok;
 
     // ---- PC2: sprite frame (chip-bus content, guard bands, population) -----
     std::vector<uint16_t> s0d, s1d; std::vector<uint64_t> s0c, s1c; std::vector<bool> s0s, s1s;
@@ -718,11 +776,11 @@ int main(int argc, char** argv) {
     if (spr1_seq) for (int i = 0; i < kSprWords; ++i) if (s1d[i] != exp_s1[i]) { spr1_content_ok = false; ++spr1_mismatches; }
     bool pc2a_ok = spr0_seq && spr1_seq && spr0_content_ok && spr1_content_ok;
 
-    bool pc2c_ok = have_anchor;
+    bool pc2c_ok = ref_ok;
     long pc2c_checked = 0;
-    bool pc2d_ok = have_anchor;
+    bool pc2d_ok = ref_ok;
     long pc2d_checked = 0;
-    if (have_anchor) {
+    if (ref_ok) {
         pc2c_ok = (anchor.a1 > anchor.a0) && (anchor.a1 - anchor.a0 >= 33);
         for (int n = 80; n <= 129; ++n) for (int copy = 0; copy < dm.d; ++copy) {
             auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
@@ -870,18 +928,18 @@ int main(int argc, char** argv) {
                              "graded lit sample of colour" + std::to_string(16 + m.value) +
                              " (bands 0-3, uniform L1/L2/L3 lines width-free plus LA lines while PC2w holds) "
                              "matches the band-predicted value in this bit";
-        if (have_anchor) c.expect(letter_ok[L_G + i], label);
-        else c.record("not graded (no v0/d anchor found this run): " + label);
+        if (ref_ok) c.expect(letter_ok[L_G + i], label);
+        else c.record("not graded (REF, the reference-frame precondition, failed this run): " + label);
         c.record(std::string("letter ") + m.name + " ids (withdrawn, 1.1): " + m.ids + " -- the page does not "
                  "say which register a sprite pixel reads, so a letter check with all positions written "
                  "alike cannot establish one register bit.");
     }
     {
         std::string label = "P4 colour16 letters A-F p302 -- band 4's colours 17-19 match S0's G-X-predicted "
-            "values exactly in every graded lit sample (colour16's letters A-F do not show), one joint "
-            "verdict for all 24 ids";
-        if (have_anchor) c.expect(p4_ok, label);
-        else c.record("not graded (no v0/d anchor found this run): " + label);
+            "values exactly in every graded lit sample (colour16's letters A-F do not show); the colour "
+            "proposition alone is graded, and the 24 ids remain recorded below without a verdict of their own";
+        if (ref_ok) c.expect(p4_ok, label);
+        else c.record("not graded (REF, the reference-frame precondition, failed this run): " + label);
         c.record(std::string("P4 colour16 letters A-F ids (withdrawn, 1.1): ") + kP4Ids + " -- the page does "
                  "not say which register a sprite pixel reads, so a letter check with all positions written "
                  "alike cannot establish one register bit.");
