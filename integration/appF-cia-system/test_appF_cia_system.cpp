@@ -1658,8 +1658,8 @@ int main(int argc, char** argv) {
         checks.record("P8.65-MODE11-PAIRK [SPECIFICATION.md P8.65 mode 11]: a proven-live green input "
                       "through the same comparator is named but not built here: run Y with CRB<-$40 "
                       "(mode 10, START=0) gives D_Y=0<D_X, the same \"less than\" the red uses -- not "
-                      "built or run this round, by a scope decision (the lead's own list names P3, the "
-                      "not-started P7.5/P8.65 leg, P7.6-CIAB and P7.7 for this repair)");
+                      "exercised, by a scope decision: the package's other green controls cover P3, "
+                      "the CIA-B legs of P7.5 and P8.65 mode 01, P7.6-CIAB and P7.7");
         bool window_ok = kx.loaded && (kx.i & kIcrSp) && ky.loaded && (ky.i & kIcrSp);
         checks.expect(window_ok, "P8.65-MODE11-WINDOW [p345,p357]: pair K's own i has SP=1 in both runs "
                       "(the key transmission finished before CRA's stop write)");
@@ -1722,8 +1722,8 @@ int main(int argc, char** argv) {
             if (xicr.value[i] && (*xicr.value[i] & kIcrAlrm)) { if (!alrmSeenX) alrmSeenX = true; }
         }
         // The sampler reads TODLO before ICR every iteration, so the alarm
-        // may already show in the (m-1)th ICR read (SPECIFICATION.md P8.7,
-        // repaired): the first ALRM sample is ICR_(m-1) or ICR_m, none
+        // may already show in the (m-1)th ICR read (SPECIFICATION.md P8.7):
+        // the first ALRM sample is ICR_(m-1) or ICR_m, none
         // earlier.
         std::optional<size_t> firstAlrmIdx;
         for (size_t i = 0; i < xicr.size(); ++i) if (xicr.value[i] && (*xicr.value[i] & kIcrAlrm)) { firstAlrmIdx = i; break; }
@@ -2281,9 +2281,9 @@ int main(int argc, char** argv) {
         checks.record("P9-LEGW [SPECIFICATION.md P9]: a proven-live green input through the same "
                       "comparator is named but not built here: CPU-driven, PRB bit 7 set right after the "
                       "start write and cleared after the ICR read that shows TB, giving W(100)-W(40) = "
-                      "60+-s with s measured -- not built or run this round, by a scope decision (the "
-                      "lead's own list names P3, the not-started P7.5/P8.65 leg, P7.6-CIAB and P7.7 for "
-                      "this repair)");
+                      "60+-s with s measured -- not exercised, by a scope decision: the package's other "
+                      "green controls cover P3, the CIA-B legs of P7.5 and P8.65 mode 01, P7.6-CIAB and "
+                      "P7.7");
 
         // Contrasting case: changing L by a delta changes the period by the
         // same delta -- already shown by the four leg-F latches above (each
@@ -2339,7 +2339,7 @@ int main(int argc, char** argv) {
 
         // The bitmap claims split one row per id (each over its own
         // settings), not one row over "every field" (SPECIFICATION.md
-        // P10, repaired: LOAD has no 0-setting, Section 0).
+        // P10: LOAD has no 0-setting, Section 0).
         row({{pf(pv.p70),"P7.0"}, {pf(pv.p1_control),"P1-CONTROL"}, {p4v(pv.p4_ta),"P4(TA)"},
              {pf(pv.p73),"P7.3"}, {pf(pv.p74),"P7.4"}, {pf(pv.p5_ta),"P5(TA)"}, {pf(pv.p76_ciaa),"P7.6-CIAA"}},
             "opus:F-cra.c12 [p349]: every 0-setting field of the CRA bitmap (P7.0 START=0; P1-CONTROL "
