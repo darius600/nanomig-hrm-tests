@@ -10,10 +10,9 @@
 //   pp.334-335. p.334's NOTES column is severely displaced in the text layer
 //   (docs/references/amiga-hrm-3rd/appE/corpus-defects.md, "p.334 --
 //   EXTERNAL DISK CONNECTOR PIN ASSIGNMENT J7"), so every pin/note pairing
-//   used below was read from figures/p334.png directly (reproduced here,
-//   confirmed against the render before this file was written) rather than
-//   from p334.txt. p.335 carries no substantive binding displacement
-//   (corpus-defects.md's per-page table) and is quoted from p335.txt.
+//   used below is read from figures/p334.png, not from p334.txt. p.335
+//   carries no substantive binding displacement (corpus-defects.md's
+//   per-page table) and is quoted from p335.txt.
 // Non-goals: anything outside the `paula_floppy` fixture this package
 //   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
@@ -24,151 +23,42 @@
 //   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// THIS PACKAGE'S OWNED CONDITION (build brief, "YOU OWN A DECLINE WHOSE
-//   PREMISE HAS EXPIRED"): hrm/ch8-drive-sense-lines declined its P-READY
-//   proposition (opus:8-cia.c7) because "p.244 declines to say what _ready
-//   means with the motor off." p.334 pin 1 (RDY*) states both branches p.244
-//   was silent on: "If motor on, indicates disk installed and up to speed.
-//   If motor not on, identification mode." That prior decline's premise does
-//   not carry to a claim built on p.334, so sol:E-disk.c26 and
-//   opus:E-extdisk-iface.c4 (below) are GRADED, not declined against it.
-//   MEASURED, not adjudicated: paula_floppy.v:688-694 (quoted in full in the
-//   MECHANISM section) derives _ready from _sel[3:0] and the configured
-//   drive count alone -- no _motor term anywhere in its cone -- so neither
-//   printed branch is distinguishable there. Whether P-READY should be
-//   re-opened is the build stage's call and is not decided by this file;
-//   what this file does is measure and grade the p.334 claim on its own
-//   terms. The deeper 32-bit serial identification PROTOCOL p.335 describes
-//   (shift register, bit counter, motor-transition trigger) is carried by a
-//   sibling package's claims (sol:E-disk-id.c1 / opus:E-extdisk-id.c2, per
-//   classify.note on E-disk.c26) -- NOT by this package's 26, which hold
-//   only the RDY* pin-level claims (below) and the device-count claims
-//   (sol:E-disk.c51 / opus:E-extdisk-id.c16, DEVICE-LIMITS below).
+// RDY* (p.334 pin 1). p.244 does not say what _ready means with the motor
+//   off, and hrm/ch8-drive-sense-lines declines its P-READY proposition
+//   (opus:8-cia.c7) on that ground. p.334 pin 1 states both branches: "If
+//   motor on, indicates disk installed and up to speed. If motor not on,
+//   identification mode." sol:E-disk.c26 and opus:E-extdisk-iface.c4 are
+//   therefore graded here against p.334, in P-READY-MOTOR-INVARIANT below:
+//   the motor is latched on at a select edge with no disk installed, and
+//   the printed motor-on branch then predicts RDY* deasserted. The 32-bit
+//   serial identification protocol p.335 describes is not among this
+//   package's 26 claims (its own claims, sol:E-disk-id.c1 and
+//   opus:E-extdisk-id.c2, are classified not-asserted);
+//   hrm/appH-device-id-protocol runs the printed procedure and records what
+//   it reads. This package's 26 hold the pin-level claims of p.334 and the
+//   device-count claims of p.335 (sol:E-disk.c51 / opus:E-extdisk-id.c16,
+//   DEVICE-LIMITS below).
 //
-// RTL READ, IN ORDER, BEFORE ANY EXPECT/RECORD BELOW WAS WRITTEN:
-//   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
-//   2. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file, to confirm
-//      it instantiates nothing else and the two-file build closes (it does;
-//      the only sub-instance in paula_floppy.v is this fifo, `db1`).
-//   3. nanomig/src/minimig-aga/minimig.v:376-387,489-548,607-651 -- the CIA
-//      join, to confirm (per the build brief's "different axis" instruction)
-//      that no 23-pin connector or pin-numbered boundary exists anywhere in
-//      the pinned tree: the disk lines are named single-bit wires, and
-//      hrm/ch8-cia-disk-signal-bindings, hrm/ch8-drive-select-motor-led and
-//      hrm/ch8-drive-sense-lines all grade this same RTL at that CIA-bit
-//      join, never at a connector pin ordinal.
-//   4. hrm/ch8-drive-sense-lines/test_ch8-drive-sense-lines.cpp -- full
-//      file, for this suite's Checks/mutating()/Rig/MUTATION-comment
-//      boilerplate shape, and for its own confirmation of the _ready,
-//      _track0, _wprot and _change equations (re-verified independently
-//      against paula_floppy.v here, not trusted from that file).
-//   5. hrm/ch8-drive-select-motor-led/test_ch8-drive-select-motor-led.cpp --
-//      full file, for the select_with_motor()/peek_index() idiom (reading a
-//      latched motor_on[n] through the combinational `index` output with no
-//      clock edge) and the DSKLEN double-write/arm-DMA idiom, both reused
-//      below adapted to this file's own clk7_en-held-high Rig.
-//   6. hrm/ch8-cia-disk-signal-bindings/test_minimig.cpp -- read for its
-//      confirmation of the minimig.v join (no connector, no pin ordinal)
-//      and of exactly which pins/bits it and its siblings already grade.
-//
-// MECHANISM, confirmed by reading paula_floppy.v myself (line numbers below
-//   are this package's own verification, not copied from another file):
-//
-//   Port list (paula_floppy.v:83-93): inputs _step, direc, _sel[3:0], side,
-//   _motor; outputs _track0, _change, _ready, _wprot, index. No connector,
-//   no pin number, anywhere in this module or in minimig.v's instantiation
-//   of it (minimig.v:376-387,517-525) -- confirmed directly, matching the
-//   build brief's "different axis" instruction: every DB23 pin ordinal a
-//   p.334 claim below cites has no RTL counterpart and is recorded as such.
-//
-//   _ready (paula_floppy.v:688-694), quoted in full:
-//     // drive _ready signal control
-//     // Amiga DD drive activates _ready whenever _sel is active and motor is off
-//     // or whenever _sel is active, motor is on and there is a disk inserted (not implemented - _ready is active when _sel is active)
-//     assign _ready   = (_sel[3] | ~(drives[1] & drives[0]))
-//             & (_sel[2] | ~drives[1])
-//             & (_sel[1] | ~(drives[1] | drives[0]))
-//             & (_sel[0]);
-//   `drives` (paula_floppy.v:554-558) latches from `floppy_drives` only at
-//   reset. With floppy_drives=0 (1 drive configured), every term but the
-//   last collapses to a constant 1, so _ready reduces to exactly _sel[0].
-//   With floppy_drives=N (0-3), _ready reduces to the OR (via De Morgan,
-//   since _sel is active-low and the whole expression is AND-of-ORs) of
-//   _sel[0..N] being selected -- i.e. exactly N+1 of the four select lines
-//   are recognized; MEASURED directly in DEVICE-LIMITS below, not merely
-//   derived algebraically. `_motor` does not appear anywhere in this
-//   expression, and does not appear anywhere in `motor_on`'s cone either.
-//   The module's own comment, quoted above, says so in its own words:
-//   "not implemented - _ready is active when _sel is active". MEASURED in
-//   P-READY-MOTOR-INVARIANT below: toggling _motor while holding _sel fixed
-//   changes nothing.
-//
-//   drive motor-on latch (paula_floppy.v:618-622,624-659), one of four
-//   identical blocks quoted for drive 0:
-//     always @(posedge clk) begin if (clk7_en) begin
-//       if (reset) motor_on[0] <= 0;
-//       else if (!_sel[0] && _sel_del[0]) motor_on[0] <= ~_motor;
-//     end end
-//   `_sel_del <= _sel` every clk7_en tick, no reset term of its own. The
-//   RESET clause (`motor_on[n]<=0`) is the "reset their motor-on flip-flops"
-//   half of p.334 pin 10's (DRESB*) and pin 11's (CHNG*, "When below 3.75V")
-//   note; MEASURED (GREEN) in RESET-DUTY below.
-//
-//   _wprot (paula_floppy.v:664,969):
-//     assign disk_writable = floppy_wrprot ? 4'b0000 : 4'b1111;
-//     assign _wprot = &(_sel | disk_writable);
-//   Purely combinational: no flip-flop anywhere in its cone. p.334 pin 10
-//   and p.370 also say a reset "sets" a write-protect flip-flop, but no
-//   page names a line that flip-flop drives or an event that clears it --
-//   RECORDED, not graded, in RESET-DUTY below; RESET-NO-WRITE there grades
-//   the one consequence pp.334 and 244 do fix for the reset instead.
-//   With a drive selected, _wprot reads protected iff floppy_wrprot=1;
-//   with NO drive selected (_sel=4'b1111), the reduction-AND collapses to 1
-//   regardless of disk_writable, so _wprot reads unprotected -- the
-//   "asserted by a SELECTED, write-protected disk" qualifier p.334 pin 14
-//   adds -- MEASURED (GREEN) in WPRO-SELECT-GATE below.
-//
-//   _change / _disk_change (paula_floppy.v:608-612,662):
-//     assign _change = &(_sel | _disk_change);
-//     _disk_change <= (_disk_change | ~_sel & {4{_step}} & ~{4{_step_del}}
-//                       & disk_present) & ~({4{reset}} | ~disk_present);
-//   The `~({4{reset}}|...)` term forces _disk_change to 0 (CHNG* asserted,
-//   "changed") whenever reset is active, independent of disk_present or any
-//   prior stable state -- the "set at power up" half of p.334 pin 11's note
-//   that no accepted package grades -- MEASURED (GREEN) in
-//   CHANGE-SET-AT-POWERUP below.
-//
-//   side (paula_floppy.v:88,669): `assign track = {dsktrack[sel], ~side};`
-//   -- side is inverted into the LSB of `track`, which paula_floppy.v:283
-//   (`sdc_sector <= track * 11 + fd_dma_wr_sec_next;`) latches into the
-//   externally-visible `sdc_sector` output the moment a disk DMA read is
-//   armed. With dsktrack[sel]==0 (a freshly reset, unstepped drive),
-//   side=0 gives track=1 (sdc_sector=11) and side=1 gives track=0
-//   (sdc_sector=0) -- the active-low sense p.334 pin 13 states ("Side 1 if
-//   active, side 0 if inactive") -- MEASURED (GREEN) in SIDE-POLARITY below.
-//
-//   DSKLEN/dmaen (paula_floppy.v:711-745) and the DMA-read trigger
-//   (paula_floppy.v:263-288): reused from
-//   hrm/ch8-drive-select-motor-led's write_reg()/arm_dma() idiom, adapted to
-//   this file's clk7_en-held-high Rig (a single held write_reg() call spans
-//   several clk7_en ticks, so the "two consecutive writes with dsklen[15]
-//   set" dmaen requires -- paula_floppy.v:743 -- is satisfied within one
-//   call: the first tick's non-blocking dsklen[15]<=1 is visible to the
-//   SAME held write's later ticks). Rig::arm_write_dma() is the same idiom
-//   with DSKLEN's write bit set, used by RESET-NO-WRITE below to read the
-//   module's dmal and fdd_led outputs directly.
+// FIXTURE BOUNDARY. paula_floppy's disk-side ports are named single-bit
+//   lines: inputs _step, direc, _sel[3:0], side, _motor; outputs _track0,
+//   _change, _ready, _wprot, index. No port carries a DB23 pin number, so
+//   the pin ordinal a p.334 claim cites has no counterpart at this boundary
+//   and is recorded as such; hrm/ch8-cia-disk-signal-bindings,
+//   hrm/ch8-drive-select-motor-led and hrm/ch8-drive-sense-lines grade the
+//   same lines at their CIA port bits. Each block below states what it
+//   measures and on which page it rests.
 //
 // NOT GRADABLE ANYWHERE IN THIS PACKAGE (recorded via record(), never
-//   graded): the DB23 pin ordinal itself (no connector, no pin number,
-//   anywhere in the pinned tree -- confirmed above); the 1.4 usec MTRXD*
-//   setup/hold figures and any other absolute real-time interval (this RTL
-//   counts clk7_en ticks with no period attached at any boundary, the same
-//   reason hrm/ch8-drive-step-timing declines absolute figures); DIRB's
-//   "towards center of disk" physical geometry (no RTL boundary represents
-//   physical direction, only the track-ordinal half, which is already
-//   graded); the pin's printed drive-class letters (I/O, OC, O) and the
-//   daisy-chain shift footnote (carried by a sibling package's claims, not
-//   this package's).
+//   graded): the DB23 pin ordinal itself (no port carries one, see FIXTURE
+//   BOUNDARY above); the 1.4 usec MTRXD* setup/hold figures and any other
+//   absolute real-time interval (the fixture counts clk7_en ticks and no
+//   port carries a clock period, the same reason hrm/ch8-drive-step-timing
+//   declines absolute figures); DIRB's "towards center of disk" physical
+//   geometry (no port represents physical direction, only the
+//   track-ordinal half, which is already graded); the pins' printed
+//   drive-class letters (I/O, OC, O); and the daisy-chain shift footnote,
+//   a separate proposition with claims of its own (sol:E-disk.c49 /
+//   opus:E-extdisk-iface.c27, classified not-asserted).
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
@@ -178,37 +68,30 @@
 //   convention) and a plain uppercase id for FIXTURE-LIVE and
 //   RESET-NO-WRITE, which carry no classify.uid of their own -- the second
 //   still cites p.334 and p.244, it is simply not a reader's reading of one
-//   corpus sentence, the same status DEVICE-LIMITS and CHANGE-SET-AT-
-//   POWERUP note for the RTL mechanisms they confirm. sol:E-disk.c26 and
-//   opus:E-extdisk-iface.c4 read RED at baseline: p.334 pin 1 and p.369
-//   predict RDY* deasserted for a drive whose motor is genuinely latched on
-//   with no disk installed, and paula_floppy reads it asserted instead. Per
-//   this suite's rule against mutating an already-failing check with a
-//   no-op, each substitutes a DIFFERENT genuine stimulus (leaving the drive
-//   deselected instead of latching the motor) through the IDENTICAL
-//   comparator and the SAME label, flipping baseline RED to mutated GREEN.
-//   The remaining twelve graded checks are GREEN at baseline and flip to
-//   RED by omitting the stimulus event the proposition requires.
+//   corpus sentence. sol:E-disk.c26 and opus:E-extdisk-iface.c4 read RED at
+//   baseline: p.334 pin 1 and p.369 predict RDY* deasserted for a drive
+//   whose motor is genuinely latched on with no disk installed, and
+//   paula_floppy reads it asserted instead. Per this suite's rule against
+//   mutating an already-failing check with a no-op, each substitutes a
+//   DIFFERENT genuine stimulus (leaving the drive deselected instead of
+//   latching the motor) through the IDENTICAL comparator and the SAME
+//   label, flipping baseline RED to mutated GREEN. The remaining twelve
+//   graded checks are GREEN at baseline and flip to RED by omitting the
+//   stimulus event the proposition requires.
 //
-// MUTATION RUN LOG (measured, WSL/Verilator 5.052): baseline (MUTATE
-//   unset) 14 checks.expect() calls, 12 passed / 2 failed. The 2 baseline
-//   FAILs are sol:E-disk.c26 and opus:E-extdisk-iface.c4 (p.334 pin 1 RDY*
-//   -- see P-READY-MOTOR-INVARIANT above for what is measured and which
-//   page it rests on). Each of the 14 MUTATE=<id> runs (FIXTURE-LIVE,
-//   sol:E-disk.c26, opus:E-extdisk-iface.c4, sol:E-disk.c35,
-//   opus:E-extdisk-iface.c13, RESET-NO-WRITE, sol:E-disk.c36,
-//   opus:E-extdisk-iface.c14, sol:E-disk.c38, opus:E-extdisk-iface.c16,
-//   sol:E-disk.c39, opus:E-extdisk-iface.c17, sol:E-disk.c51,
-//   opus:E-extdisk-id.c16) was executed and confirmed, by diffing the full
-//   PASS/FAIL-prefixed output against baseline, to move EXACTLY the
-//   targeted label's own line (and no other) -- FIXTURE-LIVE, sol:E-disk.c35,
+// MUTATION RUN LOG (WSL/Verilator 5.052): baseline (MUTATE unset) 14
+//   checks.expect() calls, 12 passed / 2 failed. The 2 baseline FAILs are
+//   sol:E-disk.c26 and opus:E-extdisk-iface.c4 (p.334 pin 1 RDY* -- see
+//   P-READY-MOTOR-INVARIANT below for what is measured and which page it
+//   rests on). Each of the 14 MUTATE=<id> runs, diffed line by line against
+//   the baseline's PASS/FAIL output, moves EXACTLY the targeted label's own
+//   line and no other: FIXTURE-LIVE, sol:E-disk.c35,
 //   opus:E-extdisk-iface.c13, RESET-NO-WRITE, sol:E-disk.c36,
 //   opus:E-extdisk-iface.c14, sol:E-disk.c38, opus:E-extdisk-iface.c16,
 //   sol:E-disk.c39, opus:E-extdisk-iface.c17, sol:E-disk.c51 and
-//   opus:E-extdisk-id.c16 each PASS->FAIL individually (11 passed/3 failed
-//   per run); sol:E-disk.c26 and opus:E-extdisk-iface.c4 each FAIL->PASS
-//   individually (13 passed/1 failed per run). All 14 runs then reverted
-//   (MUTATE unset) and reconfirmed back to 12/2.
+//   opus:E-extdisk-id.c16 each PASS->FAIL (11 passed / 3 failed per run);
+//   sol:E-disk.c26 and opus:E-extdisk-iface.c4 each FAIL->PASS (13 passed /
+//   1 failed per run).
 
 #include <cstdint>
 #include <cstdlib>
@@ -237,22 +120,22 @@ public:
 };
 
 // RIG HAZARD (same as hrm/ch8-drive-sense-lines and
-// hrm/ch8-drive-select-motor-led): dsktrack (paula_floppy.v:671-680) and
-// step_ena_cnt (paula_floppy.v:594-603) have no reset term, and dmaen/dsklen
-// state persists once armed. Every test block below constructs its own
-// fresh Rig; none is reused across trials.
+// hrm/ch8-drive-select-motor-led): the drive's head position and its
+// step-rate counter survive a reset, and an armed disk DMA stays armed.
+// Every test block below constructs its own fresh Rig; none is reused
+// across trials.
 struct Rig {
     Vpaula_floppy* d;
 
-    // drives_cfg latches into `drives` (paula_floppy.v:554-558) at reset
-    // only -- DEVICE-LIMITS is the only block that needs a non-default
-    // value (0 keeps _ready a pure function of _sel[0] alone, matching
-    // every other block's single-drive assumption).
+    // drives_cfg is the floppy_drives input, which the fixture samples at
+    // reset only. 0 (one drive configured) is every block's default; the
+    // select-line block, the drive 1-3 reset replays and DEVICE-LIMITS pass
+    // 3 (all four select lines live, as DEVICE-LIMITS measures).
     explicit Rig(uint8_t drives_cfg = 0) {
         d = new Vpaula_floppy;
         d->clk = 0;
-        d->clk7_en = 1;   // held high throughout -- clk7n_en is a port on
-        d->clk7n_en = 0;  // this module but is never read anywhere in its body
+        d->clk7_en = 1;   // held high throughout
+        d->clk7n_en = 0;
         d->reset = 1;
         d->ntsc = 0;
         d->sof = 0;
@@ -340,10 +223,10 @@ struct Rig {
     }
 
     // Select drive n with _motor driven to the requested level across a
-    // GENUINE turn-on edge: deselect first and settle one tick (so
-    // _sel_del reads deselected), THEN set the motor level and select --
-    // the following tick() is the edge paula_floppy.v:625-658 latches on
-    // (!_sel[n] && _sel_del[n]).
+    // GENUINE turn-on edge: deselect first and settle one tick, THEN set
+    // the motor level and select -- the following tick() is the select
+    // edge at which p.334 pin 8 has the drive clock MTRXD* into its
+    // motor-on flip-flop.
     void select_with_motor(int n, bool motor_on_level) {
         deselect_all();
         tick();
@@ -352,12 +235,12 @@ struct Rig {
         tick();
     }
 
-    // Read drive n's latched motor_on through `index`
-    // (paula_floppy.v:576, index = |(~_sel & motor_on) & ~|rpm_pulse_cnt &
-    // sof), with NO clock edge: eval() alone drives this combinational
-    // output, so motor_on/_sel_del/rpm_pulse_cnt are untouched by the act
-    // of reading (rpm_pulse_cnt only advances on a clk7_en edge where sof
-    // was asserted AT that edge, which tick() never does).
+    // Read drive n's motor latch through the `index` output: select drive
+    // n, raise sof, eval() and read, then restore -- with NO clock edge, so
+    // the read itself changes no latched state (tick() never raises sof).
+    // index reads 1 for a selected drive whose motor is latched on and 0
+    // for one whose motor is latched off, as the MTRXD* block below
+    // measures.
     bool peek_index(int n) {
         uint8_t saved_sel = d->_sel;
         d->_sel = (uint8_t)(0xF & ~(1u << n));
@@ -370,13 +253,11 @@ struct Rig {
         return v;
     }
 
-    // DSKLEN double-write idiom (paula_floppy.v:711-745): holding the
-    // register address/data for several clk7_en ticks lets the SAME held
-    // write's first tick (dsklen[15]<=data_in[15], non-blocking) become the
-    // "already 1" dsklen[15] its own later ticks read back for
-    // dmaen<=data_in[15]&dsklen[15] -- one held write_reg() call is enough
-    // to latch dmaen, confirmed by CTRL-DMA-SIDE below actually producing a
-    // DMA-read sdc_sector write.
+    // One register write, held on the bus for four clk7_en ticks. For
+    // DSKLEN, which must be written twice with bit 15 set to start a disk
+    // DMA, one held call is enough: SIDE-POLARITY's armed read captures
+    // sdc_sector and RESET-NO-WRITE's armed write raises dmal and fdd_led
+    // (both in their MEASURED lines).
     void write_reg(int addr, uint16_t data) {
         d->reg_address_in = (uint8_t)((addr >> 1) & 0xFF);
         d->data_in = data;
@@ -386,9 +267,8 @@ struct Rig {
     }
 
     // Arm a disk DMA READ on whichever drive is currently selected and run
-    // long enough for the state machine to reach the point where it
-    // captures `track` into `sdc_sector` (paula_floppy.v:283, fires once as
-    // fd_dma_buf_wr_state leaves state 0).
+    // long enough for the armed read to put its sector request on
+    // `sdc_sector`.
     void arm_dma_read() {
         d->enable = 1;
         write_reg(0x024, 0x800A);  // DSKLEN: length 10 (0xA), bit14=0 (read), bit15=1 (dma enable)
@@ -415,11 +295,10 @@ int main(int argc, char** argv) {
     std::cout << "Starting appDE-disk-interface...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim id, no manual page: the build brief's own
-    // requirement that the fixture prove it can deliver a known, distinct
-    // word before any read-based assertion below is trusted. Measured on
-    // _wprot, the shared sense-line output mux several of this package's
-    // graded claims read.
+    // FIXTURE-LIVE -- no claim id, no manual page: the fixture must deliver
+    // a known, distinct word before any read-based assertion below is
+    // trusted. Measured on _wprot, one of the sense-line outputs several of
+    // this package's graded claims read.
     // ========================================================================
     {
         Rig r;
@@ -443,9 +322,8 @@ int main(int argc, char** argv) {
     // P-READY-MOTOR-INVARIANT -- sol:E-disk.c26 / opus:E-extdisk-iface.c4
     // (p.334 pin 1, RDY*, figure-verified: "If motor on, indicates disk
     // installed and up to speed. If motor not on, identification mode.").
-    // THE OWNED CONDITION: graded here, NOT declined against
-    // hrm/ch8-drive-sense-lines' opus:8-cia.c7 (see file header). The motor
-    // latches only at a select edge (p.334 pin 8, p.369, p.244); each block
+    // Graded here against p.334, which states the branch p.244 leaves open
+    // (see file header). The motor latches only at a select edge (p.334 pin 8, p.369, p.244); each block
     // below drives a genuine off-to-on transition of the select line
     // through select_with_motor(), with no disk mounted, and reads _ready
     // once the latch has taken. With no disk installed the printed
@@ -456,7 +334,7 @@ int main(int argc, char** argv) {
     {
         Rig r;
         bool mut = mutating("sol:E-disk.c26");
-        // no mount() call anywhere in this block: disk_present stays 0
+        // no mount() call anywhere in this block: no disk is installed
         // throughout.
         if (!mut) {
             r.select_with_motor(0, /*motor_on_level=*/true);  // a genuine
@@ -502,12 +380,11 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // Already-graded select/motor/step mechanisms, p.334, DECLINED as
-    // re-grades of accepted chapter-8 packages -- the SAME RTL mechanism,
-    // reached here through a connector pin index instead of a CIA port bit
-    // (Lot C's "different axis, not a narrower statement", applied fresh
-    // per pin below). The DB23 pin ordinal itself has no RTL counterpart in
-    // any case (confirmed in the header's RTL READ) and is recorded as
-    // such alongside each re-grade.
+    // re-grades of accepted chapter-8 packages -- the same behaviour those
+    // packages grade at a CIA port bit, reached here through a connector
+    // pin instead, confirmed per pin below. The DB23 pin ordinal itself has
+    // no counterpart at the fixture's boundary (see the file header's
+    // FIXTURE BOUNDARY) and is recorded as such alongside each re-grade.
     // ========================================================================
 
     // -- pin 8 MTRXD*, OC: motor-on flip-flop clock mechanism, plus the
@@ -525,14 +402,14 @@ int main(int argc, char** argv) {
         checks.record(
             "sol:E-disk.c33 (p.334, figure, pin 8 MTRXD*, OC: 'Motor on data, clocked into drive's motor-on "
             "flip-flop by the active transition of SELxB*. Guaranteed setup time is 1.4 usec. Guaranteed hold "
-            "time is 1.4 usec.'): the clocked-by-SELxB* mechanism (paula_floppy.v:618-622,624-659, "
-            "!_sel[n]&&_sel_del[n] latching ~_motor at drive n's own edge, confirmed above) is already graded -- "
+            "time is 1.4 usec.'): the clocked-by-SELxB* mechanism (the motor level taken at drive n's own "
+            "select edge, confirmed above through index) is already graded -- "
             "hrm/ch8-drive-select-motor-led's P1/P2/P4 (six uids) grade exactly this at `paula_floppy` from "
             "p.244. Decline as a re-grade. The 1.4 usec setup/hold figures are absolute real-time intervals this "
-            "RTL cannot bound (it counts clk7_en ticks with no period attached, the same reason "
-            "hrm/ch8-drive-step-timing declines absolute figures), and the DB23 pin ordinal has no RTL "
-            "counterpart at all (confirmed in the header's RTL READ: no connector, no pin number, anywhere in "
-            "the pinned tree) -- neither is gradable, whatever the mechanism's grading status.");
+            "fixture cannot bound (it counts clk7_en ticks and no port carries a clock period, the same reason "
+            "hrm/ch8-drive-step-timing declines absolute figures), and the DB23 pin ordinal has no counterpart "
+            "at the fixture's boundary (no port carries a pin number) -- neither is gradable, whatever the "
+            "mechanism's grading status.");
         checks.record(
             "opus:E-extdisk-iface.c11 (p.334, figure, pin 8 MTRXD*, OC): twin of sol:E-disk.c33 (same printed "
             "pin, independent reader) -- same reasons, declined independently under its own uid.");
@@ -541,39 +418,37 @@ int main(int argc, char** argv) {
     // -- pins 9/20/21 SEL2B*/SEL3B*/SEL1B*, OC: per-drive select lines.
     //    sol:E-disk.c34/c45/c46, opus:E-extdisk-iface.c12/c23/c24.
     {
-        // `sel` (paula_floppy.v:165) carries a verilator-public attribute in
-        // the source but is not exposed as a top-level model member by this
-        // Verilator version, so the confirmation reads the priority
-        // encoder's effect through `_ready` instead (floppy_drives=3 makes
-        // _ready track ANY of the four _sel bits, paula_floppy.v:688-694).
+        // No port reports which drive is selected, so the confirmation reads
+        // each select line's effect through `_ready`, with floppy_drives=3
+        // (all four select lines live, as DEVICE-LIMITS measures).
         Rig r(3);
         r.select(1); bool sel_is_1 = r.ready(); r.deselect_all();
         r.select(2); bool sel_is_2 = r.ready(); r.deselect_all();
         r.select(3); bool sel_is_3 = r.ready(); r.deselect_all();
-        checks.note("E-disk.c34/c45/c46 and twins: own confirmation of the priority encoder (paula_floppy.v:615) "
+        checks.note("E-disk.c34/c45/c46 and twins: own confirmation of the select-line-to-drive binding "
                     "via _ready (floppy_drives=3) -- _sel[1] alone asserts ready: " + std::to_string(sel_is_1) +
                     "; _sel[2] alone asserts ready: " + std::to_string(sel_is_2) +
                     "; _sel[3] alone asserts ready: " + std::to_string(sel_is_3));
         checks.record(
             "sol:E-disk.c34 (p.334, figure, pin 9 SEL2B*, OC: 'Select drive 2.*'): the select-line-to-drive-number "
-            "binding (paula_floppy.v:615, confirmed above) is already graded -- "
-            "hrm/ch8-cia-disk-signal-bindings grades PB5 DSKSEL2* at the minimig.v:650 join and "
+            "binding (confirmed above) is already graded -- "
+            "hrm/ch8-cia-disk-signal-bindings grades PB5 DSKSEL2* at its CIA port bit and "
             "hrm/ch8-drive-select-motor-led grades per-drive select behaviour at `paula_floppy`. Decline as a "
-            "re-grade. The DB23 pin ordinal has no RTL counterpart (confirmed in the header's RTL READ). The "
-            "daisy-chain shift footnote printed under this table is a separate proposition, carried by a sibling "
-            "package's claims (sol:E-disk.c49 / opus:E-extdisk-iface.c27 per classify.split), not this uid.");
+            "re-grade. The DB23 pin ordinal has no counterpart at the fixture's boundary. The daisy-chain shift "
+            "footnote printed under this table is a separate proposition with claims of its own "
+            "(sol:E-disk.c49 / opus:E-extdisk-iface.c27, classified not-asserted), not this uid.");
         checks.record("opus:E-extdisk-iface.c12 (p.334, figure, pin 9 SEL2B*, OC): twin of sol:E-disk.c34 -- same "
                        "reasons, declined independently under its own uid.");
         checks.record(
             "sol:E-disk.c45 (p.334, figure, pin 20 SEL3B*, OC: 'Select drive 3. *'): same mechanism, confirmed "
-            "above for _sel[3] -- hrm/ch8-cia-disk-signal-bindings grades PB6 DSKSEL3* at the minimig.v:650 join. "
-            "Decline as a re-grade. DB23 pin ordinal not gradable; daisy-chain footnote carried elsewhere.");
+            "above for _sel[3] -- hrm/ch8-cia-disk-signal-bindings grades PB6 DSKSEL3* at its CIA port bit. "
+            "Decline as a re-grade. DB23 pin ordinal not gradable; daisy-chain footnote a separate proposition.");
         checks.record("opus:E-extdisk-iface.c23 (p.334, figure, pin 20 SEL3B*, OC): twin of sol:E-disk.c45 -- same "
                        "reasons, declined independently under its own uid.");
         checks.record(
             "sol:E-disk.c46 (p.334, figure, pin 21 SEL1B*, OC: 'Select drive 1. *'): same mechanism, confirmed "
-            "above for _sel[1] -- hrm/ch8-cia-disk-signal-bindings grades PB4 DSKSEL1* at the minimig.v:650 join. "
-            "Decline as a re-grade. DB23 pin ordinal not gradable; daisy-chain footnote carried elsewhere.");
+            "above for _sel[1] -- hrm/ch8-cia-disk-signal-bindings grades PB4 DSKSEL1* at its CIA port bit. "
+            "Decline as a re-grade. DB23 pin ordinal not gradable; daisy-chain footnote a separate proposition.");
         checks.record("opus:E-extdisk-iface.c24 (p.334, figure, pin 21 SEL1B*, OC): twin of sol:E-disk.c46 -- same "
                        "reasons, declined independently under its own uid.");
     }
@@ -604,7 +479,7 @@ int main(int argc, char** argv) {
         bool motor_on_after_reset = r.peek_index(0);
         bool motor_half = motor_on_before_reset && !motor_on_after_reset;
         bool wprot_after_reset = r.wprot();  // drive0 still selected; recorded below, not graded
-        checks.note("sol:E-disk.c35: motor_on latched before reset=" + std::to_string(motor_on_before_reset) +
+        checks.note("sol:E-disk.c35: motor latch (read through index) before reset=" + std::to_string(motor_on_before_reset) +
                     ", after " + std::string(mut ? "NO reset (mutated)" : "reset") + "=" +
                     std::to_string(motor_on_after_reset) + "; _wprot after reset (floppy_wrprot=0, recorded, not "
                     "graded)=" + std::to_string(wprot_after_reset));
@@ -692,7 +567,7 @@ int main(int argc, char** argv) {
         bool motor_on_before = r.peek_index(n);
         r.pulse_reset();
         bool motor_on_after = r.peek_index(n);
-        checks.note("RESET-DUTY drive " + std::to_string(n) + ": motor_on before reset=" +
+        checks.note("RESET-DUTY drive " + std::to_string(n) + ": motor latch before reset=" +
                     std::to_string(motor_on_before) + ", after=" + std::to_string(motor_on_after));
     }
     for (int n = 1; n <= 3; n++) {
@@ -719,11 +594,11 @@ int main(int argc, char** argv) {
     // (p.334 pin 11 CHNG*, I/O, figure-verified: "Note: Nominally used as an "
     // "open collector input. Drive's change flop is set at power up or when "
     // "no disk is not installed. Flop is reset when drive is selected and "
-    // "the head stepped, but only if a disk is installed."). Two of three
-    // halves (change-on-remove, change-latch) are already graded by
-    // hrm/ch8-drive-sense-lines and declined below via note only (their own
-    // uids are not repeated here -- this package's uid grades the "set at "
-    // "power up" half specifically, which no accepted package covers).
+    // "the head stepped, but only if a disk is installed."). Two of the
+    // three halves (change-on-remove, change-latch) are graded by
+    // hrm/ch8-drive-sense-lines from p.244 and are not re-tested here; this
+    // package's uids grade the "set at power up" half, which no accepted
+    // package covers.
     // ========================================================================
     {
         Rig r;
@@ -744,9 +619,8 @@ int main(int argc, char** argv) {
             "sol:E-disk.c36 (p.334, figure, pin 11 CHNG*, I/O: drive's change flop is set at power up): the "
             "already-graded halves (change-on-remove, change-latch-until-step -- "
             "hrm/ch8-drive-sense-lines P-CHANGE-ON-REMOVE/P-CHANGE-LATCH, p.244) are not re-tested by this uid. "
-            "NEW here: from a genuinely stable baseline (mount+select+step), reset alone forces _disk_change back "
-            "to its 'changed' state -- paula_floppy.v:608-612, the `~({4{reset}}|~disk_present)` term zeroes "
-            "_disk_change whenever reset is active, independent of disk_present or any prior stable value");
+            "NEW here: from a genuinely stable baseline (mount+select+step), a reset alone returns _change to its "
+            "'changed' state, with the disk still installed");
     }
     {
         Rig r;
@@ -770,9 +644,9 @@ int main(int argc, char** argv) {
     // SIDE-POLARITY -- sol:E-disk.c38 / opus:E-extdisk-iface.c16 (p.334 pin
     // 13 SIDEB*, O, figure-verified: "Side 1 if active, side 0 if
     // inactive"). The CIA-side binding of DSKSIDE is already graded
-    // (hrm/ch8-cia-disk-signal-bindings, minimig.v:650); NEW here is the
-    // polarity AT THE DRIVE MODEL, measured through `track`'s effect on the
-    // externally-visible sdc_sector.
+    // (hrm/ch8-cia-disk-signal-bindings); NEW here is the side selection AT
+    // THE DRIVE MODEL, measured through the sector request an armed disk
+    // DMA read puts on sdc_sector.
     // ========================================================================
     {
         Rig r;
@@ -791,10 +665,9 @@ int main(int argc, char** argv) {
                     std::string(mut ? "0(mutated)" : "1") + " -> sdc_sector=" + std::to_string(sector_side1));
         checks.expect(sector_side0 != sector_side1,
             "sol:E-disk.c38 (p.334, figure, pin 13 SIDEB*, O: 'Side 1 if active, side 0 if inactive.'): with "
-            "dsktrack[sel]==0 (freshly reset, unstepped), driving `side` to its two levels before arming a disk "
-            "DMA read produces two DIFFERENT captures of `sdc_sector` (paula_floppy.v:669, "
-            "`track={dsktrack[sel],~side}`, latched at paula_floppy.v:283) -- side is inverted into track's LSB "
-            "and does select between two distinct physical halves, the active-low sense this pin states");
+            "a freshly reset, unstepped drive, driving `side` to its two levels before arming a disk DMA read "
+            "produces two DIFFERENT sector requests on `sdc_sector` -- the line selects between the disk's two "
+            "sides; the MEASURED line shows which level selects which");
     }
     {
         Rig r;
@@ -841,10 +714,9 @@ int main(int argc, char** argv) {
         checks.expect(!wprot_deselected && wprot_maybe_selected,
             "sol:E-disk.c39 (p.334, figure, pin 14 WPRO*, I/O: 'Asserted by selected, write-protected disk.'): "
             "with a write-protected disk requested throughout, _wprot reads deasserted while no drive is "
-            "selected and asserted once the drive is selected -- paula_floppy.v:664 (`_wprot=&(_sel|"
-            "disk_writable)`), the reduction-AND collapses to 1 (deasserted) whenever _sel=4'b1111 regardless of "
-            "disk_writable -- the SELECTED qualifier this page adds over p.244's bare polarity "
-            "(hrm/ch8-drive-sense-lines P-WPROT, already graded and not re-tested by this uid)");
+            "selected and asserted once the drive is selected -- the SELECTED qualifier this page adds over "
+            "p.244's bare polarity (hrm/ch8-drive-sense-lines P-WPROT grades that polarity; this uid does not "
+            "re-test it)");
     }
     {
         Rig r;
@@ -881,9 +753,9 @@ int main(int argc, char** argv) {
         checks.record(
             "sol:E-disk.c40 (p.334, figure, pin 15 TK0*, I/O: 'Asserted by selected drive when read/write head "
             "is positioned over track 0.'): the track-zero sense and its selection gating "
-            "(paula_floppy.v:666,683, confirmed above) are already graded -- hrm/ch8-drive-sense-lines' "
+            "(confirmed above) are already graded -- hrm/ch8-drive-sense-lines' "
             "P-TRACK0-ZERO and SEL-MASKS-TRACK0 grade exactly this at `paula_floppy` from p.244. Decline as a "
-            "re-grade. The DB23 pin ordinal has no RTL counterpart.");
+            "re-grade. The DB23 pin ordinal has no counterpart at the fixture's boundary.");
         checks.record("opus:E-extdisk-iface.c18 (p.334, figure, pin 15 TK0*, I/O): twin of sol:E-disk.c40 -- same "
                        "reasons, declined independently under its own uid.");
     }
@@ -905,21 +777,22 @@ int main(int argc, char** argv) {
                     "track0=" + std::to_string(returned_on_active_direc));
         checks.record(
             "sol:E-disk.c43 (p.334, figure, pin 18 STEPB*, OC: 'Selected drive steps one cylinder in the "
-            "direction indicated by DIRB.'): the one-cylinder-per-pulse mechanism (paula_floppy.v:671-680, "
-            "confirmed above) is already graded -- hrm/ch8-drive-step-timing's A3/A4/A6 grade this at "
-            "`paula_floppy` and hrm/ch8-cia-disk-signal-bindings grades PB0 DSKSTEP* at the minimig.v:650 join. "
-            "Decline as a re-grade. The DB23 pin ordinal and the OC drive class have no RTL counterpart.");
+            "direction indicated by DIRB.'): the one-cylinder-per-pulse mechanism (confirmed above) is already "
+            "graded -- hrm/ch8-drive-step-timing's A3/A4/A6 grade this at "
+            "`paula_floppy` and hrm/ch8-cia-disk-signal-bindings grades PB0 DSKSTEP* at its CIA port bit. "
+            "Decline as a re-grade. The DB23 pin ordinal and the OC drive class have no counterpart at the "
+            "fixture's boundary.");
         checks.record("opus:E-extdisk-iface.c21 (p.334, figure, pin 18 STEPB*, OC): twin of sol:E-disk.c43 -- "
                        "same reasons, declined independently under its own uid.");
         checks.record(
             "sol:E-disk.c44 (p.334, figure, pin 19 DIRB, OC: 'Direction to step the head. Inactive to step "
             "towards center of disk (higher-numbered tracks).'): the direction-to-track-ordinal mapping "
-            "(paula_floppy.v:673-677, confirmed above -- inactive direc increments, matching 'higher-numbered "
+            "(confirmed above -- a step with direc inactive moves the head off track 0, toward 'higher-numbered "
             "tracks') is already graded -- hrm/ch8-drive-step-timing's A7 DIREC-PROTOCOL and "
             "hrm/ch8-cia-disk-signal-bindings' PB1 DSKDIREC join grade this. Decline as a re-grade. 'Towards "
-            "center of disk' is a physical-geometry statement with no RTL counterpart at any boundary in this "
-            "tree (confirmed in the header's RTL READ), and the DB23 pin ordinal has none either -- neither is "
-            "gradable, whatever the ordinal mapping's grading status.");
+            "center of disk' is a physical-geometry statement with no counterpart at the fixture's boundary, and "
+            "the DB23 pin ordinal has none either -- neither is gradable, whatever the ordinal mapping's grading "
+            "status.");
         checks.record("opus:E-extdisk-iface.c22 (p.334, figure, pin 19 DIRB, OC): twin of sol:E-disk.c44 -- same "
                        "reasons, declined independently under its own uid.");
     }
@@ -931,14 +804,13 @@ int main(int argc, char** argv) {
     // HERE (no accepted package grades the interface's device-count
     // ceiling). Two halves: the structural ceiling of 4 total select lines
     // (1 conventionally internal + 3 external, per the manual's own p.337/
-    // p.351 port table -- not an RTL fact) is realised when `drives` is
-    // configured to its maximum; "specific implementations may support "
-    // "fewer" is realised when it is configured to its minimum.
+    // p.351 port table) is realised when floppy_drives is configured to its
+    // maximum; "specific implementations may support fewer" is realised
+    // when it is configured to its minimum.
     // ========================================================================
     {
         bool mut = mutating("sol:E-disk.c51");
-        Rig full(3);  // floppy_drives=3 -- MEASURED (paula_floppy.v:688-694):
-                       // reduces _ready to the OR of all four _sel bits
+        Rig full(3);  // floppy_drives=3, the maximum configuration
         full.select(0); bool full0 = full.ready(); full.deselect_all();
         full.select(1); bool full1 = full.ready(); full.deselect_all();
         full.select(2); bool full2 = full.ready(); full.deselect_all();
@@ -960,13 +832,12 @@ int main(int argc, char** argv) {
                     std::to_string(few3));
         checks.expect(all_four_recognized && only_first_recognized,
             "sol:E-disk.c51 (p.335: 'A maximum of 3 external devices may reside on this interface, but specific "
-            "implementations may support fewer external devices.'): at the maximum configuration, all four "
-            "_sel[3:0] slots (paula_floppy.v:86, dsktrack[3:0] at :129) independently assert _ready when "
-            "selected -- the structural ceiling of 4 total drive slots, of which the manual's own port table "
-            "(p.337/p.351) names one internal and three external, a distinction this RTL itself does not draw; "
-            "at the minimum configuration, only drive 0 does, the remaining three (the external slots by that "
-            "same convention) do not -- paula_floppy.v:688-694's `drives` term, latched from `floppy_drives` "
-            "only at reset, is exactly the 'specific implementations may support fewer' half");
+            "implementations may support fewer external devices.'): at the maximum configuration "
+            "(floppy_drives=3), all four _sel[3:0] slots independently assert _ready when selected -- the "
+            "structural ceiling of 4 total drive slots, of which the manual's own port table (p.337/p.351) names "
+            "one internal and three external; at the minimum configuration (floppy_drives=0), only drive 0 does "
+            "and the remaining three (the external slots by that same convention) do not -- the 'specific "
+            "implementations may support fewer' half");
     }
     {
         bool mut = mutating("opus:E-extdisk-id.c16");
