@@ -182,7 +182,7 @@ observe. This is the same boundary/ownership reasoning
 `ch8-ciaa-port-direction` used to decline CIAADDRA's bus-address claims
 ("`ciaa` alone has no address decoder").
 
-**The remaining 112 claims** are graded across 21 assertions, one per
+**The remaining 111 claims** are graded across 20 assertions, one per
 register or per general-operation proposition, listed below with every uid
 each assertion carries. Multiple claims land on one assertion where they
 restate the *same* proposition at different granularity (a per-register
@@ -216,16 +216,17 @@ bodies fifteen times over.
 | RESET-AFFECTS-REGS | RES low resets internal registers | opus:F-signals.c18; sol:F-signals.c87 |
 | RESET-ZEROS-REMAINING | "all other registers reset to zero" | opus:F-signals.c21; sol:F-signals.c90 |
 | IO-PINS-16 | "16 general purpose I/O pins" | sol:F-overview.c3 |
-| CHIP-CAPABILITIES-FIVE | 16 pins + shift reg + 3 timers + pulse pin + edge input | opus:F-intro.c3 |
 
-That is 12 + 1 + 6 + 2 = 21 assertions covering 112 uids (94 in the
-per-register/count groups + 16 in the signals groups + 2 in IO-PINS-16/
-CHIP-CAPABILITIES-FIVE), plus a `FIXTURE-LIVE` control and a
-`CONTROL-CAPABILITIES-CORE` substitution-proof control for
-CHIP-CAPABILITIES-FIVE (expected to fail on two of its five conjuncts — see
-below).
+That is 12 + 1 + 6 + 1 = 20 assertions covering 111 uids (94 in the
+per-register/count groups + 16 in the signals groups + 1 in IO-PINS-16),
+plus a `FIXTURE-LIVE` control and a `CONTROL-CAPABILITIES-CORE`
+substitution-proof control for the three CHIP-CAPABILITIES-FIVE conjuncts
+that do hold at `ciaa`'s own boundary (16 pins, the serial register, three
+timers — see below). CHIP-CAPABILITIES-FIVE itself (`opus:F-intro.c3`) is
+not one of the 20: it is a `record()`, listed with the declined claims
+below.
 
-## Claims declined with `record()` (40 total)
+## Claims declined with `record()` (41 total)
 
 ### 38 carrying `classify.note`
 
@@ -266,6 +267,18 @@ thing — see "Brief accuracy" below):
 `opus:F-conn.c4`, `sol:F-signals.c61` — "address bits A11-A8 select the
 register" needs `minimig.v`'s address bridge, outside `ciaa`'s own port
 list. See above.
+
+### 1 declined for this package's own boundary finding (NM-HRM-077)
+
+`opus:F-intro.c3` — CHIP-CAPABILITIES-FIVE's own claim, "an output pulse
+pin and an edge detection input" (p.339). p.341 names these PC and FLAG,
+both CIA-A's per p.351, p.337, p.324 and p.259. `ciaa` has neither pin at
+its own boundary: no PC-equivalent output, no FLAG-equivalent input. A
+comparator built from constants the test writes itself is not a
+measurement of them — see docs/findings/NM-HRM-077.md. The other three of
+the five conjuncts this claim names (16 pins, the serial register, three
+timers) do hold at `ciaa`'s boundary and are graded by
+`CONTROL-CAPABILITIES-CORE` above.
 
 ## Brief accuracy — checked, and not fully right
 
@@ -320,12 +333,13 @@ No other brief inaccuracy was found by this package while building it.
   `ch8-keyboard-serial-register`); the mask/bit-position semantics of ICR
   beyond "sets/clears on bit 7, clears latched bits on read" (owned by
   `appF-cia-interrupt-control`).
-- **CHIP-CAPABILITIES-FIVE is expected to fail two of its five conjuncts.**
-  `ciaa.v`'s own header comment records "NOT implemented is: ... toggling of
-  PB6/PB7 by timer A/B" (the output pulse pin), and `ciaa`'s own
-  instantiation of `cia_int` ties `.flag(1'b0)` — CIAA's edge-detection
-  input is wired to a constant, not a real pin. `CONTROL-CAPABILITIES-CORE`
-  re-runs the same capability-presence comparator restricted to the three
+- **CHIP-CAPABILITIES-FIVE is a `record()`, not an assertion.** p.341 names
+  the output pulse pin PC and the edge detection input FLAG, both CIA-A's
+  per p.351, p.337, p.324 and p.259; `ciaa` has neither pin at its own
+  boundary (docs/findings/NM-HRM-077.md). A comparator built from
+  constants the test writes itself is not a measurement of them, so the
+  two conjuncts are recorded, not graded. `CONTROL-CAPABILITIES-CORE` still
+  asserts the same capability-presence comparator restricted to the three
   conjuncts that do hold (16 pin positions exist, the serial register
   exists, three timer instances exist), as the substitution proof that the
   comparator is not vacuously false — `ch8-ciaa-port-direction`'s

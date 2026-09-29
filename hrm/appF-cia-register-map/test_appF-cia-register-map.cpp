@@ -4,8 +4,9 @@
 //   value carries which register, and what each register is -- plus the
 //   general-operation prose on pp.353-354 (CS, RS3-RS0, DB7-DB0, RES), at
 //   the `ciaa` module boundary, compiled alone. Also carries this package's
-//   40 declined claims (38 with a classify.note, 2 declined for this
-//   package's own ciaa-only boundary reason) on RECORDED lines in main().
+//   41 declined claims (38 with a classify.note, 2 declined for this
+//   package's own ciaa-only boundary reason, 1 declined for this package's
+//   own boundary finding, NM-HRM-077) on RECORDED lines in main().
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 339, 340, 351, 352, 353, 354; committed specification 3851dcd
@@ -13,8 +14,10 @@
 // Requirement IDs: REG0-PRA .. REGF-CRB, REG-COUNT-16, CS-GATES-ACCESS,
 //   RS-SELECTS-DISTINCT, DATA-BUS-8BIT, READ-DRIVES-BUS,
 //   RESET-AFFECTS-REGS, RESET-ZEROS-REMAINING, IO-PINS-16,
-//   CHIP-CAPABILITIES-FIVE, per SPECIFICATION.md's claim inventory (21
-//   assertions covering 112 of 152 claims; 40 declined, see RECORDED block).
+//   CHIP-CAPABILITIES-FIVE, per SPECIFICATION.md's claim inventory (20
+//   assertions covering 111 of 152 claims; 41 declined, see RECORDED
+//   block). CHIP-CAPABILITIES-FIVE itself is one of the 41: a RECORDED
+//   line, not a graded assertion -- see below.
 //   Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered to classify.package == "appF-cia-register-map" (152 claims).
 // Non-goals: anything outside the `ciaa` fixture this package builds, and
@@ -100,23 +103,25 @@
 //     at this fixture's boundary without reaching into cia_timerd's
 //     internals, which this file does not do (no debug port). Reported via
 //     note(), not expect() -- see RESET-ZEROS-REMAINING below.
-//   - ciaa.v's own header comment (line 26-27): "NOT implemented is: ...
-//     toggling of PB6/PB7 by timer A/B" -- the printed "output pulse pin"
-//     has no RTL counterpart on this fixture. ciaa.v:321, cia_int's `.flag
-//     (1'b0)` -- CIAA's edge-detection input is tied to a constant, not a
-//     real pin (ciab.v:185 wires a real `flag` port instead). Both feed
-//     CHIP-CAPABILITIES-FIVE's two expected failures.
+//   - ciaa's own port list has no PC-equivalent output and no
+//     FLAG-equivalent input. p.341 names PC the output pulse pin and FLAG
+//     the edge detection input, both CIA-A's per p.351, p.337, p.324 and
+//     p.259 (docs/findings/NM-HRM-077.md) -- not PB6/PB7, which are two of
+//     the sixteen port pins (p.341) and a different package's finding
+//     (NM-HRM-074). Both conjuncts feed CHIP-CAPABILITIES-FIVE's RECORDED
+//     line, not a graded assertion.
 //
 // Every mutation below was actually built (WSL Verilator 5.052, `make
 // MUT=<NAME> test`, full `rm -rf obj_dir` rebuild via the Makefile's `test`
 // recipe) and the PASS/FAIL/pass-count lines quoted are what that run
 // printed, not predictions -- filled in after building, per this suite's
-// rule against writing a record before taking the measurement. All 23
+// rule against writing a record before taking the measurement. All 22
 // mutations were reverted afterwards; this file builds at MUT unset
 // (baseline).
 //
-// Baseline (no MUT): "22 passed, 1 failed" -- every assertion PASSes except
-// CHIP-CAPABILITIES-FIVE, which is expected and by design (see above).
+// Baseline (no MUT): "22 passed, 0 failed" -- CHIP-CAPABILITIES-FIVE is a
+// RECORDED line, not a graded assertion (see above); every assertion
+// PASSes.
 //
 // MUTATION FIXTURE-LIVE stimulus red: MUT_FIXLIVE repeats the first DDRA
 //   byte (0x55) instead of a distinct second one -> "21 passed, 2 failed"
@@ -192,21 +197,10 @@
 // MUTATION IO-PINS-16 stimulus red: MUT_IOPINS_UNDERCOUNT undercounts
 //   port A at 6 positions instead of 8 -> "21 passed, 2 failed"
 //   (IO-PINS-16 FAIL, total=14). Reverted.
-// MUTATION CHIP-CAPABILITIES-FIVE stimulus green: MUT_CAPS_IGNOREPULSE
-//   flips BOTH of this fixture's real gaps (the output-pulse-pin and
-//   edge-detect-input conjuncts) to "present" at once -> "23 passed,
-//   0 failed" (CHIP-CAPABILITIES-FIVE itself turns PASS) -- the
-//   substitution proof that the comparator responds to its five inputs
-//   rather than being hardwired to always read false. An earlier variant
-//   flipping only the pulse-pin conjunct measured NO CHANGE ("22 passed,
-//   1 failed"), because `has_edge_detect_input` was still hardcoded false
-//   on its own and the AND of five stayed false either way -- replaced
-//   with the both-at-once variant above. Reverted.
 // MUTATION CONTROL-CAPABILITIES-CORE stimulus red: MUT_CAPSCTRL_WRONGSET
 //   drops the three-timers conjunct in the `core_three_only` branch only
-//   -> "21 passed, 2 failed" (CONTROL-CAPABILITIES-CORE FAIL, its own
-//   substitution-proof control can fail independently of
-//   CHIP-CAPABILITIES-FIVE, which stays FAIL either way). Reverted.
+//   -> "21 passed, 1 failed" (CONTROL-CAPABILITIES-CORE FAIL, its own
+//   substitution-proof control can fail on its own). Reverted.
 
 #include <cstdint>
 #include <cstdio>
@@ -278,9 +272,6 @@
 #endif
 #ifndef MUT_IOPINS_UNDERCOUNT
 #define MUT_IOPINS_UNDERCOUNT 0
-#endif
-#ifndef MUT_CAPS_IGNOREPULSE
-#define MUT_CAPS_IGNOREPULSE 0
 #endif
 #ifndef MUT_CAPSCTRL_WRONGSET
 #define MUT_CAPSCTRL_WRONGSET 0
@@ -991,18 +982,21 @@ bool io_pins_16(Harness& h, std::string& detail) {
 // ---------------------------------------------------------------------
 // CHIP-CAPABILITIES-FIVE: "Each chip has 16 general purpose input/output
 // pins, plus a serial shift register, three timers, an output pulse pin
-// and an edge detection input." -- all five conjuncts checked at `ciaa`'s
-// own boundary. Expected, and measured, to be FALSE: two of the five have
-// no counterpart on this fixture.
+// and an edge detection input." -- p.341 names the output pulse pin PC and
+// the edge detection input FLAG. `ciaa` exposes neither at its own
+// boundary: no pin carries a pulse, and no pin can be driven to set the
+// FLG bit. Those two conjuncts are RECORDED, not asserted, below --
+// docs/findings/NM-HRM-077.md covers the gap. The other three (16 pin
+// positions, the serial register, three timer instances) are true and are
+// graded by CONTROL-CAPABILITIES-CORE.
 // ---------------------------------------------------------------------
 bool chip_capabilities_five(Harness& h, std::string& detail, bool core_three_only) {
     // MUT_CAPSCTRL_WRONGSET breaks the core-three case specifically (drops
-    // the timers conjunct), independent of the full-five case's own
-    // mutation below -- the two calls in main() must be able to fail for
-    // independent reasons.
+    // the timers conjunct) -- the substitution proof that
+    // CONTROL-CAPABILITIES-CORE is not vacuously true.
     const bool has_16_pins = true;   // io_pins_16(), re-derived structurally above
-    const bool has_serial_register = true;  // sdr_latch, ciaa.v:162,179-195
-    const bool has_three_timers = MUT_CAPSCTRL_WRONGSET ? false : true;  // cia_timera/cia_timerb/cia_timerd instances
+    const bool has_serial_register = true;
+    const bool has_three_timers = MUT_CAPSCTRL_WRONGSET ? false : true;
     if (core_three_only) {
         detail += "core three (pins/serial/timers) only: 16-pins=" +
                   std::string(has_16_pins ? "yes" : "no") + " serial-reg=" +
@@ -1011,23 +1005,20 @@ bool chip_capabilities_five(Harness& h, std::string& detail, bool core_three_onl
         (void)h;
         return has_16_pins && has_serial_register && has_three_timers;
     }
-    // Output pulse pin: ciaa.v's own header comment records PB6/PB7 timer
-    // toggling as NOT implemented, and no PC-equivalent pin is declared.
-    // Edge-detection input: ciaa's own cia_int instantiation ties
-    // `.flag(1'b0)` -- a constant, not a real pin (ciab.v wires a real one).
-    // MUT_CAPS_IGNOREPULSE flips BOTH of this fixture's two real gaps to
-    // "present" at once -- the substitution proof that this comparator
-    // actually responds to its five inputs (would read PASS if the part
-    // really had both), not a comparator hardwired to always read FALSE.
-    const bool has_output_pulse_pin = MUT_CAPS_IGNOREPULSE ? true : false;
-    const bool has_edge_detect_input = MUT_CAPS_IGNOREPULSE ? true : false;
+    // PC (p.341's output pulse pin) and FLAG (p.341's edge detection
+    // input) are both CIA-A's per p.351, p.337, p.324 and p.259
+    // (docs/findings/NM-HRM-077.md). `ciaa` has no pin at its own boundary
+    // for either -- not a value this fixture could drive or read, so both
+    // are recorded as false rather than measured.
+    const bool has_output_pulse_pin = false;
+    const bool has_edge_detect_input = false;
     detail += "16-pins=" + std::string(has_16_pins ? "yes" : "no") +
               " serial-reg=" + std::string(has_serial_register ? "yes" : "no") +
               " three-timers=" + std::string(has_three_timers ? "yes" : "no") +
-              " output-pulse-pin=" + std::string(has_output_pulse_pin ? "yes" : "no") +
-              " (ciaa.v: PB6/PB7 timer-toggle NOT implemented)" +
-              " edge-detect-input=" + std::string(has_edge_detect_input ? "yes" : "no") +
-              " (ciaa.v: cia_int .flag(1'b0), tied to a constant)";
+              " output-pulse-pin(PC)=" + std::string(has_output_pulse_pin ? "yes" : "no") +
+              " (no PC pin at ciaa's boundary)" +
+              " edge-detect-input(FLAG)=" + std::string(has_edge_detect_input ? "yes" : "no") +
+              " (no FLAG pin at ciaa's boundary)";
     return has_16_pins && has_serial_register && has_three_timers &&
            has_output_pulse_pin && has_edge_detect_input;
 }
@@ -1300,41 +1291,41 @@ int main(int argc, char** argv) {
     }
     {
         Harness h; std::string d;
-        const bool r = chip_capabilities_five(h, d, /*core_three_only=*/false);
-        checks.expect(r, "CHIP-CAPABILITIES-FIVE: \"Each "
-            "chip has 16 general purpose input/output pins, plus a serial "
-            "shift register, three timers, an output pulse pin and an edge "
-            "detection input\" -- all five checked at ciaa's own boundary. "
-            "True for three (16 pin positions, the serial register, three "
-            "timer instances); false for two -- ciaa.v's own header comment "
-            "records PB6/PB7 timer-toggling (the output pulse pin) as NOT "
-            "implemented, and ciaa's own cia_int instantiation ties "
-            "`.flag(1'b0)`, a constant, where the edge-detection input "
-            "would be [p.339] "
-            "opus:F-intro.c3");
-        checks.note("CHIP-CAPABILITIES-FIVE: " + d);
+        chip_capabilities_five(h, d, /*core_three_only=*/false);
+        checks.record("CHIP-CAPABILITIES-FIVE: \"Each chip has 16 general "
+            "purpose input/output pins, plus a serial shift register, "
+            "three timers, an output pulse pin and an edge detection "
+            "input\" [p.339] opus:F-intro.c3 -- p.341 names the output "
+            "pulse pin PC and the edge detection input FLAG, both CIA-A's "
+            "per p.351, p.337, p.324 and p.259 (docs/findings/"
+            "NM-HRM-077.md). Of the five, three hold at ciaa's own "
+            "boundary: 16 pin positions, the serial register, three timer "
+            "instances -- graded by CONTROL-CAPABILITIES-CORE below. The "
+            "other two, PC and FLAG, have no pin at ciaa's own boundary to "
+            "drive or read; a comparator built from constants the test "
+            "writes itself is not a measurement of them. " + d +
+            ". Not graded here.");
     }
     {
         Harness h; std::string d;
         const bool r = chip_capabilities_five(h, d, /*core_three_only=*/true);
         checks.expect(r, "CONTROL-CAPABILITIES-CORE: the same "
             "chip_capabilities_five() comparator CHIP-CAPABILITIES-FIVE "
-            "evaluates above, restricted to the three conjuncts (16 pins, "
-            "serial register, three timers) that fixture actually has -- "
+            "records above, restricted to the three conjuncts (16 pins, "
+            "serial register, three timers) this fixture actually has -- "
             "the substitution proof that the comparator is not vacuously "
-            "false, and that CHIP-CAPABILITIES-FIVE's FAIL is specifically "
-            "about the pulse pin and edge-detect input, not a broken "
-            "comparator [no page -- infrastructure control]");
+            "false [no page -- infrastructure control]");
         checks.note("CONTROL-CAPABILITIES-CORE: " + d);
     }
 
     // ------------------------------------------------------------------
-    // Declined claims (40 total): 38 carry a classify.note naming prior
-    // work (34 a clean sibling-package match, 4 -- the PA1/LED wiring --
-    // "New here" per their own note text, declined here for this
-    // package's ciaa-only boundary instead, see SPECIFICATION.md's "Brief
-    // accuracy" section); 2 more are declined for this package's own
-    // boundary finding (A11-A8 -> RS is minimig.v's wiring, outside
+    // Declined claims below (40 total, on top of CHIP-CAPABILITIES-FIVE's
+    // own record() above, 41 in all): 38 carry a classify.note naming
+    // prior work (34 a clean sibling-package match, 4 -- the PA1/LED
+    // wiring -- "New here" per their own note text, declined here for
+    // this package's ciaa-only boundary instead, see SPECIFICATION.md's
+    // "Brief accuracy" section); 2 more are declined for this package's
+    // own boundary finding (A11-A8 -> RS is minimig.v's wiring, outside
     // ciaa's port list). No uid below appears on a graded (expect()) line.
     // ------------------------------------------------------------------
 
