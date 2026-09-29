@@ -425,8 +425,8 @@ int pixel_index(int mode, int x, int s) {
 
 // ---- P4 bit-to-(component,Color,upper/lower) table (SPECIFICATION.md 3,
 // "Writing the table"): COLOR[n] = R_p<<10|R_q<<8|G_p<<6|G_q<<4|B_p<<2|B_q,
-// p=n%4, q=n/4. Independent of gen_all.py -- re-derived from the printed
-// formula, not read from the generator's output.
+// p=n%4, q=n/4. Re-derived independently from the printed formula, not
+// read from the data tables' own bytes.
 enum class Comp { R, G, B };
 struct BitTarget { Comp x; int c; bool upper; };
 BitTarget bit_target(int n, int b) {
