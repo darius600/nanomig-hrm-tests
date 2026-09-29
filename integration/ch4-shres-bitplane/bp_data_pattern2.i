@@ -1,5 +1,5 @@
 ; plane-2 stream buffer: 256-word R section then 32512 pattern words (SPECIFICATION.md 4.2)
-; 32768 words, generated data -- see gen_all.py.
+; 32768 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF
 	dc.w	$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF
 	dc.w	$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF

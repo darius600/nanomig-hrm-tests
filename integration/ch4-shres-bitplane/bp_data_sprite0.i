@@ -1,5 +1,5 @@
 ; sprite 0 structure, 124 words (SPECIFICATION.md 4.2)
-; 124 words, generated data -- see gen_all.py.
+; 124 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$5060,$8C00,$FFFF,$0000,$0000,$FFFF,$FFFF,$FFFF
 	dc.w	$FFFF,$0000,$0000,$FFFF,$FFFF,$FFFF,$FFFF,$0000
 	dc.w	$0000,$FFFF,$FFFF,$FFFF,$FFFF,$0000,$0000,$FFFF

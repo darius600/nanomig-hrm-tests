@@ -1,5 +1,5 @@
 ; F4 contrast V4b/V5: BPLCON0=$A000
-; 322 words, generated data -- see gen_all.py.
+; 326 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$0100,$A000,$0102,$0000,$0104,$0024,$008E,$2C81
 	dc.w	$0090,$F4A1,$0092,$003C,$0094,$00D4,$0108,$0000
 	dc.w	$010A,$0000,$00E0,$0001,$00E2,$0000,$00E4,$0002
@@ -39,5 +39,6 @@
 	dc.w	$7C01,$FFFE,$019E,$0F05,$019E,$0E05,$7E01,$FFFE
 	dc.w	$019E,$0F05,$019E,$0D05,$8001,$FFFE,$019E,$0F05
 	dc.w	$019E,$0B05,$8201,$FFFE,$019E,$0F05,$019E,$0705
-	dc.w	$8401,$FFFE,$019E,$0F05,$0080,$0004,$0082,$6000
+	dc.w	$8401,$FFFE,$019E,$0F05,$8601,$FFFE,$019E,$0F05
+	dc.w	$0080,$0004,$0082,$6000
 	dc.w	$FFFF,$FFFE

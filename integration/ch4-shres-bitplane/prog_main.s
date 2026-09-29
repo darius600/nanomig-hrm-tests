@@ -3,8 +3,8 @@
 ; besides the CPU's own DMACON/COP1LC/strobe happens through the Copper
 ; list tables below, exactly as section 4.3/4.4/4.6 specify them. The
 ; tables themselves (bp_data_*.i, bp_cop_*.i) are generated data,
-; transcribed from SPECIFICATION.md by gen_all.py; nothing here computes a
-; register value.
+; transcribed from SPECIFICATION.md sections 3 and 4; nothing here computes
+; a register value.
 ;
 ; Assembled standalone (no MUT_xxx symbol defined) this is the baseline
 ; stimulus. Each mutant wrapper (prog_vNN.s / prog_cNN.s) equ's one symbol
@@ -18,25 +18,25 @@
 	org	PROGRAM_ORG
 
 start:
-	; ---- fixture: a program-stored constant, read back before anything
-	; else is trusted (RESULTS is ordinary chip RAM, unaffected by the
-	; overlay regardless of its state).
+	; ---- step 1 (SPECIFICATION.md 4.5.1): the fixture, a program-stored
+	; constant read back before anything else is trusted (RESULTS is
+	; ordinary chip RAM, unaffected by the overlay regardless of its state).
 	move.w	#FIXTUREVAL,RESULTS
 
 	lea	CUSTOM,a0
 
-	; ---- step 1 (SPECIFICATION.md 4.5.1)
+	; ---- step 2 (4.5.2)
 	move.w	#$7FFF,DMACON(a0)
 
-	; ---- step 2 (4.5.2): chip identification, stored for the test to grade
+	; ---- step 3 (4.5.3): chip identification, stored for the test to grade
 	move.w	VPOSR(a0),RESULTS+2
 	move.w	DENISEID(a0),RESULTS+4
 
-	; ---- step 3 (4.5.3): clear the ROM overlay -- every address below
+	; ---- step 4 (4.5.4): clear the ROM overlay -- every address below
 	; $080000 this program writes is unreachable until this runs.
 	CLEAR_OVL
 
-	; ---- step 4 (4.5.4): build every buffer and Copper list.
+	; ---- step 5 (4.5.5): build every buffer and Copper list.
 
 	; plane-1 / plane-2 stream buffers (32768 words each: 256-word R section
 	; then the xorshift pattern, SPECIFICATION.md 4.2)
@@ -153,13 +153,13 @@ start:
 	move.w	(a2)+,(a1)+
 	dbra	d0,.cpyf10
 
-	; ---- step 5 (4.5.5): start the Copper exactly as p.30 prescribes --
+	; ---- step 6 (4.5.6): start the Copper exactly as p.30 prescribes --
 	; initialise COP1LC and strobe COPJMP1 before Copper DMA is turned on.
 	move.l	#F0LIST,COP1LCH(a0)
 	move.w	COPJMP1(a0),d1
 	move.w	#$83A0,DMACON(a0)
 
-	; ---- step 6 (4.5.6): wait for at least 12 vertical blanks, writing no
+	; ---- step 7 (4.5.7): wait for at least 12 vertical blanks, writing no
 	; custom register from here on. A frame start is V dropping below 16
 	; after having been at or above 256 (VPOSR/VHPOSR, p.299/Appendix B).
 	moveq	#0,d5
@@ -184,7 +184,7 @@ start:
 	subq.w	#1,d7
 	bne.s	.poll
 
-	; ---- step 7 (4.5.7)
+	; ---- step 8 (4.5.8)
 	ifd	MUT_C2
 	; C2 precondition contrast: never reach DONE (SPECIFICATION.md 6, C2's
 	; own contrast: "Omit step 7"). The program still hangs in place, but

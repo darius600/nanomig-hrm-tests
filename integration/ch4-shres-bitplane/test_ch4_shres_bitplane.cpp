@@ -6,42 +6,42 @@
 // section 6's preconditions, section 7's propositions).
 //
 // The Copper-list and pixel-stream data poked into chip RAM by the 68000
-// program (prog_main.s and its mutation wrappers) is generated data
-// (gen_all.py, transcribed from SPECIFICATION.md sections 3 and 4); this
-// file re-derives the same literal tables independently (not by reading
-// the generator's output) so the check is against the specification, not
-// against the generator's own arithmetic.
+// program (prog_main.s and its mutation wrappers) is data transcribed from
+// SPECIFICATION.md sections 3 and 4; this file re-derives the same literal
+// tables independently (not by reading the data tables' own bytes) so the
+// check is against the specification, not against how the tables were
+// built.
 //
 // NMH_MUTATE selects one mutation in place of the normal run; none is
 // exercised by a plain `make test`.
 //
-// MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C2 stimulus red NMH_MUTATE=C2: the program never writes DONE -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6 -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C7 stimulus NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00 -- measured: fx68k PASS, TG68K PASS (no check went red; see the report to the lead)
-// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3 -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P1.3R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band (fails all twelve P1.cX) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P3.H stimulus red NMH_MUTATE=V3A: F1 in hires with S0-S3 replaced by a COLOR01 sweep (fails P3.H, P3.L, P7.1) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P3.H stimulus red NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P3.L stimulus red NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4A: F2 band 11 (n=00,b=11) also inverts COLOR01 bit11 (another Color) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P5.L stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, same build as V4B) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P4.n00b02,03,06,07,10,11 / n01.. / n02.. / n03.. stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -- measured: fx68k FAIL (all 24 previously-PASS bits), TG68K FAIL
-// MUTATION P5.L stimulus red NMH_MUTATE=V5B: F5's COLOR05 band inverts COLOR01 instead -- measured: fx68k FAIL, TG68K FAIL
+// Every record below names the clause a mutation must turn red through, and
+// what else moves with it (a mutation is a single stimulus change; the
+// preconditions it shares with other clauses move too, honestly, not
+// trimmed to look surgical). "->" separates the record's own targeted
+// clause from the rest of the cascade. Counts are fx68k's; TG68K's PASS,
+// FAIL and RECORDED lines are identical, line for line, on all twenty.
 //
-// V4B, V4D and V5's own F4 build also drops the V4c null-band control (an
-// unintended side effect of the generator call that built their variant,
-// not part of the intended contrast): C7's own precondition additionally
-// reads red on these three, through the band-count check, not through any
-// P4/P5 clause. Left as measured, not patched, given the wall-clock cost of
-// a further build-and-resimulate pass; see the report to the lead.
+// MUTATION fixture NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF -> fixture only (67 passed, 35 failed)
+// MUTATION C1 NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> C1, and every SuperHires-dependent check downstream: C5/R2, R2 (F2-F4, and the bottom-line check), C6 (F1 diversity), C8 (F1-F4 pair coverage), all twelve P1.cX, P2's three palette-diversity checks; P4, P1J and the V4c checks print nothing at all (their own frames never decode) (20 passed, 28 failed)
+// MUTATION C2 NMH_MUTATE=C2: the program never writes DONE -> C2 only; grading stops there, by the comparator's own rule (3 passed, 1 failed)
+// MUTATION C3 NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> C3, and F1's own downstream: C4 (header), C5/R2, C6's old diversity check, R2's bottom-line check, P2's three palette-diversity checks; P2.R/G/B themselves turn PASS, since F2-F4's own Q0 lines still populate them once F1 drops out (63 passed, 39 failed)
+// MUTATION C4 NMH_MUTATE=C4: F5's list points at itself instead of F6 -> C4, and F6's own downstream: C7 (both the band count and the timing check), C6 (F6), C3 (the F1-F6 aggregate), R1 (the F1-F6 aggregate), R2 (F6's lores mapping) (61 passed, 41 failed)
+// MUTATION C5/R2 NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> C5/R2, C4 (header), and P2's three palette-diversity checks; P2.R/G/B themselves turn PASS on F2-F4's own Q0 lines -- P2's own green control, on the same comparator, with the diversity check honestly reporting why (66 passed, 36 failed)
+// MUTATION C6 NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window -> C6, and F1's own downstream: C4 (header), C5/R2, C6's old diversity check, R2's bottom-line check, P2's three palette-diversity checks; P2.R/G/B turn PASS the same way as under C5 (64 passed, 38 failed)
+// MUTATION C7 NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00 -> C7's own timing check only; the band-count check and every other line stay at baseline (67 passed, 35 failed)
+// MUTATION C8 NMH_MUTATE=C8: the pattern section restricted to values 0 and 3 -> C8's own pair-coverage check, and C6's old diversity check; eighteen P4 bits that FAIL at baseline and twelve that PASS become NOT OBSERVABLE instead (the restricted pattern no longer puts every value on the perturbed lines), not a new FAIL or a lost one (48 passed, 24 failed)
+// MUTATION C9 NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> C9, and all twelve P1.cX (sprite 0 draws over F1's own playfield) (55 passed, 47 failed)
+// MUTATION P1.3R NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> all twelve P1.cX, through both letters of every component, on the Q3 band's pixels (56 passed, 46 failed)
+// MUTATION C5/R2 NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000) -> identical to C5 (same list, bp_cop_f1_v2.i); not the specification's V2, P2's own hires contrast, which the package does not build (66 passed, 36 failed)
+// MUTATION P3.H/P3.L/P7.1 NMH_MUTATE=V3A: F1 in hires with S0-S3 replaced by a COLOR01 sweep -> C4 (header), C5/R2, C7's band count, P2's three palette-diversity checks, and P2.R/G/B turning PASS the same way as under C5; P3.H, P3.L and P7.1 stay FAIL, already red at baseline through their own SuperHires half (65 passed, 37 failed)
+// MUTATION P3.H NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC -> no new red: P3.H is already FAIL at baseline (its SuperHires half). MEASURED confirms the targeted mechanism still moves: the Hires side drops from 16 to 4 distinct values under this mutation (68 passed, 34 failed)
+// MUTATION P3.L NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC -> no new red, for the same reason as V3B; MEASURED confirms the Lores side drops from 16 to 4 distinct values (68 passed, 34 failed)
+// MUTATION P4.n00b11 NMH_MUTATE=V4A: F2 band 11 (n=00,b=11) also inverts COLOR01 bit11 (another Color) -> P4.n00b11 only, of all 204 P4/P1J lines (67 passed, 35 failed)
+// MUTATION C4/R2 NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000) -> C4 (header) and R2 (F2-F4's own mapping, now checked for the SuperHires form specifically); no P4 or P1J line moves, and C7's band count holds (F4's own list carries its closing restore band) (66 passed, 36 failed)
+// MUTATION P5.L NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, same build as V4B) -> identical cascade to V4B (C4, R2); P5.L's SuperHires half stays FAIL, already red at baseline -- this run shows nothing new about it, and no mutation in this package can turn that comparator green through a live input (see the RECORDED line next to it) (66 passed, 36 failed)
+// MUTATION P4 (24 p-half bits of COLOR00-03) NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> exactly the 24 p-half bits, all PASS at baseline, turn FAIL; no other P4/P1J line moves (44 passed, 58 failed)
+// MUTATION P5.L (Hires half) NMH_MUTATE=V5B: F5's COLOR05 band inverts COLOR01 instead -> "registers COLOR04-0F change no graded pixel in Hires mode" only (67 passed, 35 failed)
 //
 // prog.bin loaded, cpu_nrst_out released within the boot budget: not
 // exercised, by a scope decision -- both are harness/boot outcomes settled
@@ -206,7 +206,19 @@ std::vector<CopEvent> parse_frame_events(const std::vector<nmh::RamAccess>& log,
     return events;
 }
 
-struct Band { uint64_t cycle; int beam; int line; std::vector<std::pair<uint16_t,uint16_t>> moves; };
+struct Band {
+    uint64_t cycle; int beam; int line;
+    uint16_t wait_w1 = 0;          // the WAIT event's own first word (C7: horizontal field)
+    // The WAIT instruction word is FETCHED as soon as the Copper reaches it
+    // in the list (immediately after the previous band's own last MOVE),
+    // well before its condition is met; `cycle` is that fetch, not useful
+    // for ordering. `first_move_cycle` is the cycle of the band's own first
+    // MOVE, fetched only once the WAIT actually releases -- the right
+    // reference point for "after the previous line's last bitplane fetch".
+    uint64_t first_move_cycle = 0;
+    uint64_t last_event_cycle = 0; // cycle of the last MOVE fetched in this band (C7: ordering)
+    std::vector<std::pair<uint16_t,uint16_t>> moves;
+};
 
 struct FrameCop {
     bool found = false;
@@ -228,11 +240,14 @@ FrameCop decode_frame(const std::vector<nmh::RamAccess>& log, int frame) {
             if (e.w1 == 0xFFFF && e.w2 == 0xFFFE) break; // terminator
             in_header = false;
             Band b; b.cycle = e.cycle; b.beam = (e.w1 >> 8) & 0xFF; b.line = b.beam - 0x2C;
+            b.wait_w1 = e.w1; b.last_event_cycle = e.cycle;
             fc.bands.push_back(b);
         } else if (in_header) {
             fc.header[e.w1] = e.w2;
         } else {
+            if (fc.bands.back().moves.empty()) fc.bands.back().first_move_cycle = e.cycle;
             fc.bands.back().moves.push_back({e.w1, e.w2});
+            fc.bands.back().last_event_cycle = e.cycle;
         }
     }
     return fc;
@@ -543,8 +558,11 @@ Baseline build_baseline(const std::vector<nmh::VideoSample>& video, const std::v
             if (!oidx) continue;
             int i = pixel_index(mode, (int)x, s);
             int v = pixel_value(lines[li], i);
-            int vm1 = pixel_value(lines[li], i - (mode==0?2:mode==1?1:2));
-            int vp1 = pixel_value(lines[li], i + (mode==0?2:mode==1?1:2));
+            // SPECIFICATION.md 7/P4 item 3 writes the baseline key literally as
+            // (v[i-1], v[i], v[i+1]) -- one source-pixel step, not one
+            // visible-pixel step, in every mode.
+            int vm1 = pixel_value(lines[li], i - 1);
+            int vp1 = pixel_value(lines[li], i + 1);
             if (v < 0) continue;
             Triple t{vm1, v, vp1};
             Full12 c = full12(video[*oidx]);
@@ -628,7 +646,7 @@ GradedFrame finish_graded_frame(const Capture& cap, FrameLines&& fl, int w, int 
     // predicted). Harness/RTL note for the report, not a change to any
     // expected value -- lines 1-23 remain a graded, spec-sized population.
     std::vector<int> top_idx;
-    for (int i = 1; i < 24 && i < (int)gf.lines.size(); ++i) top_idx.push_back(i);
+    for (int i = 0; i < 24 && i < (int)gf.lines.size(); ++i) top_idx.push_back(i);
     if (gf.xR > gf.xL) {
         SSearch ss = find_s(cap.video, gf.lines, gf.out_of, top_idx, gf.mode, w, phi,
                              (long)gf.xL, (long)gf.xR);
@@ -649,11 +667,16 @@ struct P2State {
     std::map<std::pair<int,int>, int> bykey[3];
     std::set<std::pair<int,int>> bad[3];
     long total[3] = {0};
+    // SPECIFICATION.md 7/P2 item 4: "at least one group must contain pixels
+    // from two palettes that differ in some other Color's letters of X" --
+    // tracked as the set of distinct palettes that contributed to each
+    // (c, letters) group.
+    std::map<std::pair<int,int>, std::set<std::string>> sources[3];
 };
 
 void grade_range_p1p2(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf,
                        const std::vector<uint16_t>& palette, int line_lo, int line_hi,
-                       P1State* p1, P2State* p2) {
+                       P1State* p1, P2State* p2, const std::string& band_id = "") {
     if (gf.mode != 0) return; // P1/P2 are SuperHires-only
     for (int li = line_lo; li <= line_hi && li < (int)gf.lines.size(); ++li) {
         if (gf.out_of[li].empty()) continue;
@@ -686,6 +709,7 @@ void grade_range_p1p2(const std::vector<nmh::VideoSample>& video, const GradedFr
                     else if (it->second != full[comp]) {
                         p2->bad[comp].insert(k);
                     }
+                    if (!band_id.empty()) p2->sources[comp][k].insert(band_id);
                 }
             }
         }
@@ -717,7 +741,11 @@ void collect_p3(const std::vector<nmh::VideoSample>& video, const GradedFrame& g
 }
 
 // ---- P4: per-bit table propositions ----------------------------------------
-struct P4Verdict { bool observed = false; bool fail = false; long changed = 0, checked = 0, excluded = 0; };
+struct P4Verdict {
+    bool observed = false; bool fail = false;
+    long changed = 0, checked = 0, excluded = 0;
+    long any_changed = 0; // P5.L: counts ANY bit differing, not just the allowed one
+};
 
 // Grades one perturbation band (2 graded lines, both content -- these bands
 // are 1-2 MOVEs, well under the 4-MOVE spacer threshold) against the
@@ -739,8 +767,9 @@ P4Verdict grade_p4_band(const std::vector<nmh::VideoSample>& video, const Graded
             size_t idx = *oidx;
             int i = pixel_index(gf.mode, (int)x, gf.s);
             int v = pixel_value(gf.lines[li], i);
-            int vm1 = pixel_value(gf.lines[li], i - (gf.mode==0?2:gf.mode==1?1:2));
-            int vp1 = pixel_value(gf.lines[li], i + (gf.mode==0?2:gf.mode==1?1:2));
+            // literal spec key: one source-pixel step, every mode.
+            int vm1 = pixel_value(gf.lines[li], i - 1);
+            int vp1 = pixel_value(gf.lines[li], i + 1);
             if (v < 0) continue;
             Triple tr{vm1, v, vp1};
             auto it = bl.value.find(tr);
@@ -750,6 +779,7 @@ P4Verdict grade_p4_band(const std::vector<nmh::VideoSample>& video, const Graded
             pv.checked++;
             int base_c[3] = {base.r, base.g, base.b};
             int obs_c[3]  = {obs.r, obs.g, obs.b};
+            bool any_diff = false;
             // "observed" (the allowed bit itself moved) and "no OTHER bit
             // moved" are separate questions -- a mutation (V4d) can make the
             // allowed bit move together with an extra one; that must show as
@@ -760,16 +790,24 @@ P4Verdict grade_p4_band(const std::vector<nmh::VideoSample>& video, const Graded
             bool saw_allowed_change = false;
             for (int comp = 0; comp < 3; ++comp) {
                 if (base_c[comp] == obs_c[comp]) continue;
+                any_diff = true;
                 int diff = base_c[comp] ^ obs_c[comp];
                 if (comp == shift && v == t.c) {
-                    int allowed_bit = t.upper ? 0x8 : 0x4; // bit3 or bit2 of the nibble
-                    if (diff & allowed_bit) saw_allowed_change = true;
-                    if ((diff & ~allowed_bit) == 0) continue; // only the allowed bit moved here
+                    int own_bit = t.upper ? 0x8 : 0x4; // bit3 or bit2 of the nibble: the letter THIS proposition names
+                    // SPECIFICATION.md 7/P4 item 4: the allowed places are "bit 3
+                    // or 2 of X (per L) AND bits 1-0 of X" on a value-c pixel --
+                    // the dashes (L2) are unencoded and may move on ANY
+                    // inversion of a bit that shares X's nibble, not just this
+                    // one; only OBSERVED tracks the bit this proposition itself
+                    // names.
+                    if (diff & own_bit) saw_allowed_change = true;
+                    if ((diff & ~(own_bit | 0x3)) == 0) continue; // only allowed positions moved here
                 }
                 allowed_only = false;
             }
             if (!allowed_only) pv.fail = true;
             if (saw_allowed_change) { pv.observed = true; pv.changed++; }
+            if (any_diff) pv.any_changed++;
         }
     }
     return pv;
@@ -818,12 +856,169 @@ bool precondition_c3(const GradedFrame& gf, const std::vector<uint16_t>& p1ref,
     return bad == 0 && !gf.lines.empty();
 }
 
+// ---- C8 contrast pattern (SPECIFICATION.md 6/C8): "the pattern section
+// restricted to values 0 and 3" -- confirmed against bp_data_pattern1_vc8.i
+// and bp_data_pattern2_vc8.i, which are word-for-word the baseline's own
+// plane-2 table on BOTH planes (v = 2*b2+b1 = 2*b2+b2 = 3*b2, so v in {0,3}).
+std::pair<std::vector<uint16_t>, std::vector<uint16_t>> build_pattern_vc8() {
+    auto base = build_pattern();
+    return {base.second, base.second};
+}
+
+// ---- C4: the header MOVEs carry the SPECIFICATION.md 4.3 data,
+// not just the planned count. q0 gives COLOR00-0F; COLOR10-1F (the sprite
+// palette T0) carries the identical sixteen values (SPECIFICATION.md 3: T0
+// and Q0 are numerically the same table).
+bool check_frame_header(const FrameCop& fc, uint16_t expected_bplcon0, const std::vector<uint16_t>& q0) {
+    if (!fc.found) return false;
+    auto get = [&](uint16_t reg) -> long {
+        auto it = fc.header.find(reg);
+        return it != fc.header.end() ? (long)it->second : -1;
+    };
+    if (get(0x100) != expected_bplcon0) return false;
+    if (get(0x102) != 0x0000) return false;
+    if (get(0x104) != 0x0024) return false;
+    if (get(0x08E) != 0x2C81) return false;
+    if (get(0x090) != 0xF4A1) return false;
+    if (get(0x092) != 0x003C) return false;
+    if (get(0x094) != 0x00D4) return false;
+    if (get(0x108) != 0x0000) return false;
+    if (get(0x10A) != 0x0000) return false;
+    if (get(0x0E0) != (long)(kPlane1Buf >> 16)) return false;
+    if (get(0x0E2) != (long)(kPlane1Buf & 0xFFFF)) return false;
+    if (get(0x0E4) != (long)(kPlane2Buf >> 16)) return false;
+    if (get(0x0E6) != (long)(kPlane2Buf & 0xFFFF)) return false;
+    if (q0.size() != 16) return false;
+    for (int n = 0; n < 16; ++n) if (get(color_reg(n)) != q0[n]) return false;
+    for (int n = 16; n < 32; ++n) if (get(color_reg(n)) != q0[n-16]) return false; // COLOR10-1F = T0 = Q0's values
+    return true;
+}
+
+// ---- R2: "in F1-F6 the same s fits the bottom Q0 lines" --
+// re-runs find_s on the tail population (after the frame's own closing
+// band) and checks it agrees with the s already found from the top lines.
+bool check_bottom_s(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf, int close_band_idx) {
+    if (!gf.ok || close_band_idx < 0 || close_band_idx >= (int)gf.fc.bands.size()) return false;
+    std::vector<int> idxs;
+    int lo = gf.fc.bands[close_band_idx].line + 1;
+    for (int i = lo; i <= 199 && i < (int)gf.lines.size(); ++i) idxs.push_back(i);
+    if (idxs.empty() || gf.xR <= gf.xL) return false;
+    SSearch ss = find_s(video, gf.lines, gf.out_of, idxs, gf.mode, gf.w, gf.phi, (long)gf.xL, (long)gf.xR);
+    return ss.ok && ss.s == gf.s;
+}
+
+// ---- C6: "identical ends on all pure R lines", asserted, not
+// silently filtered to the first line that happens to fit.
+struct C6Result { bool ok = false; long xL = 0, xR = 0; int lines_checked = 0, lines_mismatch = 0; };
+C6Result check_c6(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf) {
+    C6Result r;
+    bool have = false;
+    for (size_t li = 0; li < gf.lines.size(); ++li) {
+        if (!gf.lines[li].pure_r || li >= gf.out_of.size() || gf.out_of[li].empty()) continue;
+        Run12 run = find_constant_run(video, gf.out_of[li].back(), gf.mode);
+        if (!run.ok) continue;
+        nmh::Span sp = gf.out_of[li].back();
+        long xlo = (long)((run.lo - sp.begin - gf.phi + gf.w - 1) / gf.w);
+        long xhi = (long)((run.hi - sp.begin - gf.phi) / gf.w);
+        long width = xhi - xlo;
+        if (width < 256 || width > 576) continue; // SPECIFICATION.md 6/C6's own bound
+        long xL = xlo + 8, xR = xhi - 8;
+        ++r.lines_checked;
+        if (!have) { r.xL = xL; r.xR = xR; have = true; }
+        else if (xL != r.xL || xR != r.xR) ++r.lines_mismatch;
+    }
+    r.ok = have && r.lines_checked > 0 && r.lines_mismatch == 0 && r.xR > r.xL;
+    return r;
+}
+
+// ---- C7: SPECIFICATION.md 6/C7's own timing condition -- every
+// band's WAIT is at horizontal $00, fetched after the previous line's last
+// bitplane fetch and, spacer lines excepted, before its own line's first.
+// A spacer is a band of more than four MOVEs (4.4: "A band change of at
+// most four MOVEs is planned to end before the line's first bitplane
+// fetch... A band change that writes a whole palette (sixteen MOVEs)... is
+// a spacer line").
+struct C7Result { bool ok = false; int bands_checked = 0, bad_h = 0, bad_after = 0, bad_before = 0; };
+C7Result check_c7_timing(const GradedFrame& gf) {
+    C7Result r;
+    for (const Band& band : gf.fc.bands) {
+        ++r.bands_checked;
+        if ((band.wait_w1 & 0xFF) != 0x01) ++r.bad_h;
+        bool after_prev = true;
+        if (band.line > 0 && band.line - 1 < (int)gf.lines.size() && !band.moves.empty())
+            after_prev = gf.lines[band.line - 1].cycle_hi < band.first_move_cycle;
+        if (!after_prev) ++r.bad_after;
+        bool is_spacer = band.moves.size() > 4;
+        bool before_own = true;
+        if (!is_spacer && band.line >= 0 && band.line < (int)gf.lines.size())
+            before_own = band.last_event_cycle < gf.lines[band.line].cycle_lo;
+        if (!before_own) ++r.bad_before;
+    }
+    r.ok = r.bands_checked > 0 && r.bad_h == 0 && r.bad_after == 0 && r.bad_before == 0;
+    return r;
+}
+
+// ---- C8: SPECIFICATION.md 6/C8's own population -- every one of
+// the 16 ordered (v,v') pairs occurs, as (v[i],v[i+1]) and as (v[i-1],v[i]),
+// over a band's own graded lines. i ranges a little past the check
+// interval's own mapped span on each side, so the pair straddling either
+// edge is covered too.
+bool band_pair_coverage(const GradedFrame& gf, int line_lo, int line_hi) {
+    if (gf.w <= 0 || gf.xR <= gf.xL) return false;
+    long ilo = pixel_index(gf.mode, (int)gf.xL, gf.s) - 2;
+    long ihi = pixel_index(gf.mode, (int)gf.xR, gf.s) + 2;
+    std::set<std::pair<int,int>> fwd, bwd;
+    for (int li = line_lo; li <= line_hi && li < (int)gf.lines.size(); ++li) {
+        for (long i = ilo; i < ihi; ++i) {
+            int v0 = pixel_value(gf.lines[li], (int)i), v1 = pixel_value(gf.lines[li], (int)i + 1);
+            if (v0 >= 0 && v1 >= 0) fwd.insert({v0, v1});
+        }
+        for (long i = ilo + 1; i <= ihi; ++i) {
+            int vm1 = pixel_value(gf.lines[li], (int)i - 1), v = pixel_value(gf.lines[li], (int)i);
+            if (vm1 >= 0 && v >= 0) bwd.insert({vm1, v});
+        }
+    }
+    return fwd.size() == 16 && bwd.size() == 16;
+}
+
+// ---- R1: "every copy is graded and the copies must agree"
+// (SPECIFICATION.md 4.7) -- compares the FIRST and LAST output span of every
+// source line that maps to two or more, at every graded x.
+struct R1Result { bool ok = false; long pairs = 0, mismatches = 0; };
+R1Result check_r1_copies(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf) {
+    R1Result r;
+    if (gf.w <= 0 || gf.xR <= gf.xL) return r;
+    // A source line's own two doubled copies are NOT out_of[li].front() and
+    // out_of[li].back(): the fetch burst's cycle range overlaps the tail of
+    // the PREVIOUS line's second display copy and the head of this line's
+    // own first (SPECIFICATION.md 10.2's own measurement -- "the package's
+    // 'last' span of line k is the FIRST of the two output lines that show
+    // k, and its 'first' span of line k is the SECOND copy of line k-1").
+    // So line li's own pair is out_of[li].back() (its first copy) and
+    // out_of[li+1].front() (its second copy, found under li+1's own
+    // mapping).
+    for (size_t li = 0; li + 1 < gf.out_of.size(); ++li) {
+        if (gf.out_of[li].empty() || gf.out_of[li+1].empty()) continue;
+        nmh::Span a = gf.out_of[li].back();
+        nmh::Span b = gf.out_of[li+1].front();
+        for (size_t x = gf.xL; x < gf.xR; ++x) {
+            auto ia = pixel_sample(a, gf.w, gf.phi, (long)x);
+            auto ib = pixel_sample(b, gf.w, gf.phi, (long)x);
+            if (!ia || !ib) continue;
+            ++r.pairs;
+            if (!eqfull(full12(video[*ia]), full12(video[*ib]))) ++r.mismatches;
+        }
+    }
+    r.ok = r.pairs > 0 && r.mismatches == 0;
+    return r;
+}
+
 // Grades one capture against every Phase-A proposition and precondition.
 // Shared by the normal run (prog_main, default Config) and every mutation
 // (a different program and/or Config, same comparator, unchanged): the
 // SAME checks.expect() calls run either way, per BRIEF.md's own rule that a
 // mutation must never invert the expected verdict.
-void grade_capture(const Capture& cap, Checks& checks) {
+void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate) {
     checks.expect(cap.loaded && cap.released, "fixture: program loaded and CPU released from reset");
     checks.expect(cap.fixture.has_value() && *cap.fixture == 0xBEEF,
                   "fixture: the program-stored constant $BEEF was read back before anything else is graded");
@@ -843,10 +1038,15 @@ void grade_capture(const Capture& cap, Checks& checks) {
         return;
     }
 
-    auto pat = build_pattern();
+    // C8's own contrast rewrites the pattern section, so C3 must
+    // compare against what THIS run's program actually wrote, not always
+    // the baseline generator.
+    auto pat = (mutate == "C8") ? build_pattern_vc8() : build_pattern();
 
-    // ---- graded frames F1-F6 (F7-F10 (P5.U, P6, and the sprite halves of
-    // P7.2/P7.3) are not built in this pass -- see the report to the lead)
+    // ---- graded frames F1-F6. F7-F10's Copper lists and sprite data exist
+    // (prog_main.s), but P5.U, P6.1, P6.2 and the sprite halves of P7.2/P7.3
+    // are not built, by a scope decision -- see the records
+    // at the end of this function.
     FrameLines fl1 = decode_frame_lines(cap, 1, kPlane1Buf, kPlane2Buf);
     FrameLines fl2 = decode_frame_lines(cap, 2, kPlane1Buf, kPlane2Buf);
     FrameLines fl3 = decode_frame_lines(cap, 3, kPlane1Buf, kPlane2Buf);
@@ -870,45 +1070,100 @@ void grade_capture(const Capture& cap, Checks& checks) {
     GradedFrame f5 = finish_graded_frame(cap, std::move(fl5), wp.w, wp.phi);
     GradedFrame f6 = finish_graded_frame(cap, std::move(fl6), wp.w, wp.phi);
 
+    // R2's own check requires the SuperHires mapping specifically
+    // (mode == 0), not just "a mapping fits uniquely" -- the hires mapping
+    // fits just as uniquely when F2-F4 run in hires (NMH_MUTATE=V4B/V4D/V5),
+    // which the plain f2.ok/f3.ok/f4.ok test could not tell apart.
     checks.expect(f1.ok && f1.mode == 0, "C5/R2 precondition: F1's SuperHires pixel mapping (i=2x-s) fits uniquely");
     checks.expect(f5.ok && f5.mode == 1, "R2 precondition: F5's hires pixel mapping (i=x-s) fits uniquely");
     checks.expect(f6.ok && f6.mode == 2, "R2 precondition: F6's lores pixel mapping fits uniquely");
-    checks.expect(f2.ok && f3.ok && f4.ok, "R2 precondition: F2-F4's SuperHires pixel mapping fits uniquely");
+    checks.expect(f2.ok && f2.mode == 0 && f3.ok && f3.mode == 0 && f4.ok && f4.mode == 0,
+                  "R2 precondition: F2-F4's SuperHires pixel mapping (i=2x-s) fits uniquely, and is the SuperHires mapping");
 
     checks.note("R0/R1/R2 F1: ok=" + std::to_string(f1.ok) + " mode=" + std::to_string(f1.mode) +
                 " s=" + std::to_string(f1.s) + " xL=" + std::to_string(f1.xL) + " xR=" + std::to_string(f1.xR));
-    checks.expect(f1.ok && (f1.xR > f1.xL) && (f1.xR - f1.xL) >= 256,
-                  "C6 precondition: the check interval is at least 256 hires periods wide");
 
-    long c3_bad = 0;
-    bool c3 = f1.ok && precondition_c3(f1, pat.first, pat.second, &c3_bad);
-    checks.expect(c3, "C3 precondition: F1's graded lines fetch >=16 consecutive words per plane, data as written");
+    // "in F1-F6 the same s fits the bottom Q0 lines" (5/R2) --
+    // re-searched independently from the top-line s already found.
+    bool r2_bottom = true;
+    if (f1.fc.bands.size() == 12) r2_bottom = r2_bottom && check_bottom_s(cap.video, f1, 11);
+    if (f2.fc.bands.size() == 81) r2_bottom = r2_bottom && check_bottom_s(cap.video, f2, 80);
+    if (f3.fc.bands.size() == 81) r2_bottom = r2_bottom && check_bottom_s(cap.video, f3, 80);
+    if (f4.fc.bands.size() >= 33) r2_bottom = r2_bottom && check_bottom_s(cap.video, f4, 32);
+    if (f5.fc.bands.size() == 33) r2_bottom = r2_bottom && check_bottom_s(cap.video, f5, 32);
+    if (f6.fc.bands.size() == 17) r2_bottom = r2_bottom && check_bottom_s(cap.video, f6, 16);
+    checks.expect(r2_bottom, "R2 precondition: the same s that fits the top Q0 lines also fits the bottom Q0 lines, in F1-F6");
+
+    // C6: identical ends on every pure-R line, asserted per
+    // frame -- not the first fitting line, silently.
+    C6Result c6f[6] = { check_c6(cap.video, f1), check_c6(cap.video, f2), check_c6(cap.video, f3),
+                         check_c6(cap.video, f4), check_c6(cap.video, f5), check_c6(cap.video, f6) };
+    static const char* kFrameNames6[6] = {"F1","F2","F3","F4","F5","F6"};
+    bool c6_all = true;
+    for (int fi = 0; fi < 6; ++fi) {
+        c6_all = c6_all && c6f[fi].ok;
+        checks.expect(c6f[fi].ok,
+            std::string("C6 precondition ") + kFrameNames6[fi] +
+            ": the check interval has identical ends on every pure-R line (256-576 hires periods wide), " +
+            std::to_string(c6f[fi].lines_checked) + " lines checked, " + std::to_string(c6f[fi].lines_mismatch) + " mismatched");
+    }
+    (void)c6_all;
+
+    // C3: every graded line of F1-F6, not F1 alone, and
+    // independent of C5 (f1.ok no longer gates it -- a fetch-continuity
+    // precondition does not depend on whether the pixel mapping also fit).
+    long c3_bad[6] = {0,0,0,0,0,0};
+    GradedFrame* c3_frames[6] = {&f1,&f2,&f3,&f4,&f5,&f6};
+    bool c3 = true;
+    for (int fi = 0; fi < 6; ++fi)
+        c3 = precondition_c3(*c3_frames[fi], pat.first, pat.second, &c3_bad[fi]) && c3;
+    checks.expect(c3, "C3 precondition: F1-F6's graded lines fetch >=16 consecutive words per plane, data as written, bad lines=" +
+                  std::to_string(c3_bad[0]+c3_bad[1]+c3_bad[2]+c3_bad[3]+c3_bad[4]+c3_bad[5]));
 
     bool c9 = precondition_c9(cap.log, f1.fc.start_cycle, f6.fc.end_cycle);
     checks.expect(c9, "C9 precondition: no sprite-0/null-sprite fetch in F1-F6 shows a nonzero word");
 
-    // C4 (scope decision): every one of F1-F6's own lists was reached, in
-    // order, with the planned header register count (61).
-    bool c4 = f1.fc.found && f2.fc.found && f3.fc.found && f4.fc.found && f5.fc.found && f6.fc.found &&
+    // C4: the header MOVEs carry the planned register VALUES
+    // (BPLCON0-2, DIW, DDF, modulos, pointers, both palettes), not just the
+    // planned count; F0 (the lead-in copy of F1, never graded) also ran.
+    FrameCop fc0 = decode_frame(cap.log, 0);
+    bool c4_headers = check_frame_header(fc0, 0x2040, kQ0) &&
+                       check_frame_header(f1.fc, 0x2040, kQ0) && check_frame_header(f2.fc, 0x2040, kQ0) &&
+                       check_frame_header(f3.fc, 0x2040, kQ0) && check_frame_header(f4.fc, 0x2040, kQ0) &&
+                       check_frame_header(f5.fc, 0xA000, kQ0) && check_frame_header(f6.fc, 0x2000, kQ0);
+    bool c4 = fc0.found && f1.fc.found && f2.fc.found && f3.fc.found && f4.fc.found && f5.fc.found && f6.fc.found &&
               f1.fc.header.size()==61 && f2.fc.header.size()==61 && f3.fc.header.size()==61 &&
               f4.fc.header.size()==61 && f5.fc.header.size()==61 && f6.fc.header.size()==61 &&
               f1.fc.start_cycle < f2.fc.start_cycle && f2.fc.start_cycle < f3.fc.start_cycle &&
               f3.fc.start_cycle < f4.fc.start_cycle && f4.fc.start_cycle < f5.fc.start_cycle &&
-              f5.fc.start_cycle < f6.fc.start_cycle;
-    checks.expect(c4, "C4 precondition: F1-F6 ran their own lists in order, each with the planned header");
+              f5.fc.start_cycle < f6.fc.start_cycle && c4_headers;
+    checks.expect(c4, "C4 precondition: F0-F6 ran their own lists in order, each with the planned header register values");
 
-    // C7 (scope decision): every planned band was found (band count matches
-    // the stimulus plan) -- a MOVE landing behind the line's own fetch would
-    // either merge into the next band or go missing, changing this count.
-    bool c7 = f1.fc.bands.size()==12 && f2.fc.bands.size()==81 && f3.fc.bands.size()==81 &&
+    // C7 band count (a coarse proxy kept alongside the timing check below):
+    // a MOVE landing behind the line's own fetch would either merge into
+    // the next band or go missing, changing this count.
+    bool c7_count = f1.fc.bands.size()==12 && f2.fc.bands.size()==81 && f3.fc.bands.size()==81 &&
               f4.fc.bands.size()==34 && f5.fc.bands.size()==33 && f6.fc.bands.size()==17;
-    checks.expect(c7, "C7 precondition: every planned band change was found, once each, in F1-F6");
+    checks.expect(c7_count, "C7 precondition (band count): every planned band change was found, once each, in F1-F6");
 
-    // C8 (scope decision): the baseline built from F1's own Q0 lines (top and
-    // tail) covers at least half of the 64 possible (v[i-1],v[i],v[i+1])
-    // triples -- a direct measure of context diversity on the anchor lines.
+    // C7 timing: SPECIFICATION.md 6/C7's own condition -- every
+    // band's WAIT at h=$00, after the previous line's last bitplane fetch
+    // and, spacer lines excepted, before its own line's first.
+    C7Result c7t[6] = { check_c7_timing(f1), check_c7_timing(f2), check_c7_timing(f3),
+                        check_c7_timing(f4), check_c7_timing(f5), check_c7_timing(f6) };
+    bool c7_timing = true; int c7_bad_h=0,c7_bad_after=0,c7_bad_before=0;
+    for (int fi = 0; fi < 6; ++fi) {
+        c7_timing = c7_timing && c7t[fi].ok;
+        c7_bad_h += c7t[fi].bad_h; c7_bad_after += c7t[fi].bad_after; c7_bad_before += c7t[fi].bad_before;
+    }
+    checks.expect(c7_timing,
+        "C7 precondition (SPECIFICATION.md 6/C7, timing): every band's WAIT is at h=$00, after the previous line's "
+        "last bitplane fetch and, spacer lines excepted, before its own line's first, in F1-F6 -- bad_h=" +
+        std::to_string(c7_bad_h) + " bad_after=" + std::to_string(c7_bad_after) + " bad_before=" + std::to_string(c7_bad_before));
+
+    // C8 old (kept as a diversity proxy on F1's own Q0 lines):
     std::vector<int> f1_top_tail;
-    for (int i = 1; i < 24 && i < (int)f1.lines.size(); ++i) f1_top_tail.push_back(i);
+    for (int i = 0; i < 24 && i < (int)f1.lines.size(); ++i) f1_top_tail.push_back(i);
     if (f1.fc.bands.size() == 12) {
         int tail_lo = f1.fc.bands[11].line + 1, tail_hi = 199;
         for (int i = tail_lo; i <= tail_hi && i < (int)f1.lines.size(); ++i) f1_top_tail.push_back(i);
@@ -916,26 +1171,63 @@ void grade_capture(const Capture& cap, Checks& checks) {
     Baseline bl_q0_f1 = f1.ok ? build_baseline(cap.video, f1.lines, f1.out_of, f1_top_tail, f1.mode, f1.s, f1.w, f1.phi, (long)f1.xL, (long)f1.xR)
                                : Baseline{};
     checks.expect(bl_q0_f1.value.size() >= 32,
-                  "C8 precondition: F1's own Q0 lines show at least half of the 64 possible neighbour triples");
+                  "C8 precondition (F1 Q0 diversity): F1's own Q0 lines show at least half of the 64 possible neighbour triples");
+
+    // C8: SPECIFICATION.md 6/C8's own population -- all 16
+    // ordered pairs, both as (v[i],v[i+1]) and (v[i-1],v[i]), in every band
+    // of F1-F4 (F1's own eleven content bands, and F2-F4's 192 perturbation
+    // bands).
+    int c8_bands_ok = 0, c8_bands_total = 0;
+    if (f1.ok) for (size_t bi = 0; bi < kF1Bands.size() && bi < f1.fc.bands.size(); ++bi) {
+        const Band& b = f1.fc.bands[bi];
+        ++c8_bands_total; if (band_pair_coverage(f1, b.line+1, b.line+12)) ++c8_bands_ok;
+    }
+    for (int gi = 0; gi < 192; ++gi) {
+        GradedFrame* gf; int band_idx;
+        if (gi < 80) { gf=&f2; band_idx=gi; } else if (gi < 160) { gf=&f3; band_idx=gi-80; } else { gf=&f4; band_idx=gi-160; }
+        if (!gf->ok || band_idx >= (int)gf->fc.bands.size()) continue;
+        const Band& b = gf->fc.bands[band_idx];
+        ++c8_bands_total; if (band_pair_coverage(*gf, b.line, b.line+1)) ++c8_bands_ok;
+    }
+    checks.expect(c8_bands_total > 0 && c8_bands_ok == c8_bands_total,
+        "C8 precondition (SPECIFICATION.md 6/C8): every ordered pair occurs both as (v[i],v[i+1]) and (v[i-1],v[i]) "
+        "in every band of F1-F4, " + std::to_string(c8_bands_ok) + " of " + std::to_string(c8_bands_total) + " bands");
+
+    // R1: every output copy of a graded source line agrees with
+    // the others (SPECIFICATION.md 4.7) -- checked directly, not assumed
+    // from using only the last copy throughout.
+    R1Result r1f[6] = { check_r1_copies(cap.video, f1), check_r1_copies(cap.video, f2), check_r1_copies(cap.video, f3),
+                         check_r1_copies(cap.video, f4), check_r1_copies(cap.video, f5), check_r1_copies(cap.video, f6) };
+    long r1_pairs = 0, r1_mismatch = 0;
+    for (auto& r : r1f) { r1_pairs += r.pairs; r1_mismatch += r.mismatches; }
+    checks.expect(r1_pairs > 0 && r1_mismatch == 0,
+        "R1 precondition (SPECIFICATION.md 4.7): every output copy of a graded source line agrees with the others, " +
+        std::to_string(r1_pairs) + " pairs checked, " + std::to_string(r1_mismatch) + " differing");
 
     // ==== P1, P2 (SuperHires key), P3 (coarseness) ==========================
     P1State p1s; P2State p2s;
+    // The diversity source id names the PALETTE, not the
+    // stimulus instance: F1's own Q0 top/bottom and F2-F4's Q0 top/bottom
+    // are all literally the same sixteen register values, so they must
+    // collapse to one source ("Q0"), not count as six distinct ones -- only
+    // a genuinely different palette (Q1, Q2, ...) should add diversity.
     if (f1.ok) {
-        grade_range_p1p2(cap.video, f1, kQ0, 1, 23, &p1s, &p2s);
+        grade_range_p1p2(cap.video, f1, kQ0, 0, 23, &p1s, &p2s, "Q0");
         for (size_t bi = 0; bi < kF1Bands.size() && bi < f1.fc.bands.size(); ++bi) {
             const Band& b = f1.fc.bands[bi];
-            grade_range_p1p2(cap.video, f1, *kF1Bands[bi].second, b.line+1, b.line+12, &p1s, &p2s);
+            grade_range_p1p2(cap.video, f1, *kF1Bands[bi].second, b.line+1, b.line+12, &p1s, &p2s,
+                              kF1Bands[bi].first);
         }
         if (f1.fc.bands.size() == 12) {
             int tail_lo = f1.fc.bands[11].line + 1;
-            grade_range_p1p2(cap.video, f1, kQ0, tail_lo, 199, &p1s, &p2s);
+            grade_range_p1p2(cap.video, f1, kQ0, tail_lo, 199, &p1s, &p2s, "Q0");
         }
     }
     for (GradedFrame* gf : {&f2, &f3, &f4}) {
         if (!gf->ok) continue;
-        grade_range_p1p2(cap.video, *gf, kQ0, 1, 23, &p1s, &p2s);
+        grade_range_p1p2(cap.video, *gf, kQ0, 0, 23, &p1s, &p2s, "Q0");
         int last_band = (int)gf->fc.bands.size() - 1;
-        if (last_band >= 0) grade_range_p1p2(cap.video, *gf, kQ0, gf->fc.bands[last_band].line+1, 199, &p1s, &p2s);
+        if (last_band >= 0) grade_range_p1p2(cap.video, *gf, kQ0, gf->fc.bands[last_band].line+1, 199, &p1s, &p2s, "Q0");
     }
 
     static const char* kColorName[4] = {"0","1","2","3"};
@@ -962,17 +1254,39 @@ void grade_capture(const Capture& cap, Checks& checks) {
             std::to_string(p2s.bykey[comp].size()) + " groups";
         checks.expect(p2s.total[comp] > 0 && p2s.bad[comp].empty(), label);
     }
+    // ---- P2's own palette-diversity requirement (SPECIFICATION.md
+    // 7/P2 item 4): "For every (c, X), at least one group must contain
+    // pixels from two palettes that differ in some other Color's letters of
+    // X." Reported per group (how many palettes contributed) and asserted
+    // as its own check -- this is what tells a green P2 (e.g. under
+    // NMH_MUTATE=C5/V2, where only F2-F4's single Q0 palette contributes)
+    // apart from a P2 that actually exercised the claim.
+    for (int comp = 0; comp < 3; ++comp) {
+        int groups_total = (int)p2s.bykey[comp].size();
+        int groups_diverse = 0;
+        for (auto& kv : p2s.sources[comp]) if (kv.second.size() >= 2) ++groups_diverse;
+        checks.note("P2." + std::string(kCompName[comp]) + " palette diversity: " +
+                    std::to_string(groups_diverse) + " of " + std::to_string(groups_total) +
+                    " groups have >=2 contributing palettes");
+        checks.expect(groups_total > 0 && groups_diverse >= 1,
+                      std::string(kP2Id[comp]) + " p.301 (7/P2 item 4, palette diversity): at least one (value, letters) group is populated from two distinct palettes");
+    }
 
     // ---- P3: SuperHires coarser than Hires and Lores ---------------------
+    // SPECIFICATION.md 7/P3 item 2: graded over every band of F1
+    // -- the top and bottom Q0 lines and every Q1-Q5/Z/O/S0-S3 band -- not
+    // the S0-S3 bands alone, which trivially guarantees "four" because
+    // Color 0 never changes there.
     P3Comp p3shr;
     if (f1.ok) {
-        static const char* kSNames[4] = {"S0","S1","S2","S3"};
-        for (int si = 0; si < 4; ++si) {
-            for (size_t bi = 0; bi < kF1Bands.size(); ++bi) {
-                if (kF1Bands[bi].first != kSNames[si]) continue;
-                const Band& b = f1.fc.bands[bi];
-                collect_p3(cap.video, f1, b.line+1, b.line+12, 1, p3shr);
-            }
+        collect_p3(cap.video, f1, 0, 23, 1, p3shr);
+        for (size_t bi = 0; bi < kF1Bands.size() && bi < f1.fc.bands.size(); ++bi) {
+            const Band& b = f1.fc.bands[bi];
+            collect_p3(cap.video, f1, b.line+1, b.line+12, 1, p3shr);
+        }
+        if (f1.fc.bands.size() == 12) {
+            int tail_lo = f1.fc.bands[11].line + 1;
+            collect_p3(cap.video, f1, tail_lo, 199, 1, p3shr);
         }
     }
     P3Comp p3hires;
@@ -1007,23 +1321,27 @@ void grade_capture(const Capture& cap, Checks& checks) {
     auto plan = perturbation_plan_all();
     Baseline bl2, bl3, bl4;
     if (f2.ok) {
-        std::vector<int> idxs; for (int i=1;i<24 && i<(int)f2.lines.size();++i) idxs.push_back(i);
+        std::vector<int> idxs; for (int i=0;i<24 && i<(int)f2.lines.size();++i) idxs.push_back(i);
         if (f2.fc.bands.size()==81) { int lo=f2.fc.bands[80].line+1; for (int i=lo;i<=199 && i<(int)f2.lines.size();++i) idxs.push_back(i); }
         bl2 = build_baseline(cap.video, f2.lines, f2.out_of, idxs, f2.mode, f2.s, f2.w, f2.phi, (long)f2.xL, (long)f2.xR);
     }
     if (f3.ok) {
-        std::vector<int> idxs; for (int i=1;i<24 && i<(int)f3.lines.size();++i) idxs.push_back(i);
+        std::vector<int> idxs; for (int i=0;i<24 && i<(int)f3.lines.size();++i) idxs.push_back(i);
         if (f3.fc.bands.size()==81) { int lo=f3.fc.bands[80].line+1; for (int i=lo;i<=199 && i<(int)f3.lines.size();++i) idxs.push_back(i); }
         bl3 = build_baseline(cap.video, f3.lines, f3.out_of, idxs, f3.mode, f3.s, f3.w, f3.phi, (long)f3.xL, (long)f3.xR);
     }
     if (f4.ok) {
-        std::vector<int> idxs; for (int i=1;i<24 && i<(int)f4.lines.size();++i) idxs.push_back(i);
+        std::vector<int> idxs; for (int i=0;i<24 && i<(int)f4.lines.size();++i) idxs.push_back(i);
         if (f4.fc.bands.size()>=33) { int lo=f4.fc.bands[32].line+1; for (int i=lo;i<=199 && i<(int)f4.lines.size();++i) idxs.push_back(i); }
         bl4 = build_baseline(cap.video, f4.lines, f4.out_of, idxs, f4.mode, f4.s, f4.w, f4.phi, (long)f4.xL, (long)f4.xR);
     }
 
-    long p5l_shr_changed = 0, p5l_hires_changed = 0;
+    long p5l_shr_changed = 0, p5l_shr_any = 0;
     long not_observable = 0;
+    // P1J: per-(n,b) verdict for the joint key claim, filled as
+    // the 192-bit loop runs. 0 = not graded (frame not decoded), 1 = NOT
+    // OBSERVABLE, 2 = PASS, 3 = FAIL.
+    int p4_state[16][12] = {};
     for (int gi = 0; gi < 192; ++gi) {
         int n = plan[gi].first, b = plan[gi].second;
         GradedFrame* gf; Baseline* bl; int band_idx;
@@ -1032,7 +1350,6 @@ void grade_capture(const Capture& cap, Checks& checks) {
         else               { gf=&f4; bl=&bl4; band_idx=gi-160; }
         if (!gf->ok) continue;
         P4Verdict pv = grade_p4_band(cap.video, *gf, *bl, band_idx, n, b);
-        bool pass = pv.observed && !pv.fail;
         std::string label = "P4.n" + std::to_string(n) + "b" + std::to_string(b) +
             " APPC-bpltab.r" + [&]{ char buf[3]; std::snprintf(buf,sizeof buf,"%02X",n); return std::string(buf); }() +
             "b" + [&]{ char buf[3]; std::snprintf(buf,sizeof buf,"%02d",b); return std::string(buf); }() +
@@ -1040,24 +1357,87 @@ void grade_capture(const Capture& cap, Checks& checks) {
             [&]{ char buf[3]; std::snprintf(buf,sizeof buf,"%02X",n); return std::string(buf); }() +
             " changes only its own place, checked=" + std::to_string(pv.checked) +
             " changed=" + std::to_string(pv.changed) + " excluded=" + std::to_string(pv.excluded);
-        if (!pv.observed) { checks.record(label + " -- NOT OBSERVABLE (L1)"); ++not_observable; continue; }
+        // SPECIFICATION.md 7/P4 item 4: FAIL if any graded pixel differs
+        // anywhere other than the allowed places; OBSERVED if the allowed
+        // bit itself moved; PASS when OBSERVED and not FAIL; NOT OBSERVABLE
+        // when NEITHER. A failing, unobserved bit is a FAIL, not
+        // a dropped record: the old `if (!pv.observed) ... continue;` hid
+        // exactly that case.
+        if (!pv.observed && !pv.fail) {
+            checks.record(label + " -- NOT OBSERVABLE (L1)");
+            ++not_observable;
+            p4_state[n][b] = 1;
+            continue;
+        }
+        bool pass = pv.observed && !pv.fail;
         checks.expect(pass, label);
-        if (n >= 4) p5l_shr_changed += pv.changed;
+        p4_state[n][b] = pass ? 2 : 3;
+        if (n >= 4) { p5l_shr_changed += pv.changed; p5l_shr_any += pv.any_changed; }
     }
     checks.note("P4: " + std::to_string(not_observable) + " of 192 bits not observable (L1)");
 
+    // ---- V4c, the null case: each frame's own closing restore
+    // band (no new inversion) is predicted to change no graded pixel; it
+    // must come out NOT OBSERVED -- SPECIFICATION.md 7/P4's own contrast,
+    // graded nowhere before this.
+    auto grade_null_band = [&](GradedFrame& gf, Baseline& bl, int band_idx, const char* fname) {
+        if (!gf.ok || band_idx < 0 || band_idx >= (int)gf.fc.bands.size()) {
+            checks.record(std::string("V4c precondition (") + fname + "): closing restore band not decoded, not graded");
+            return;
+        }
+        const Band& band = gf.fc.bands[band_idx];
+        long checked = 0, diffs = 0;
+        for (int li = band.line; li <= band.line + 1 && li < (int)gf.lines.size(); ++li) {
+            if (gf.out_of[li].empty()) continue;
+            nmh::Span sp = gf.out_of[li].back();
+            for (size_t x = gf.xL; x < gf.xR; ++x) {
+                auto oidx = pixel_sample(sp, gf.w, gf.phi, (long)x);
+                if (!oidx) continue;
+                int i = pixel_index(gf.mode, (int)x, gf.s);
+                int v = pixel_value(gf.lines[li], i);
+                int vm1 = pixel_value(gf.lines[li], i - 1), vp1 = pixel_value(gf.lines[li], i + 1);
+                if (v < 0) continue;
+                auto it = bl.value.find(Triple{vm1, v, vp1});
+                if (it == bl.value.end()) continue;
+                ++checked;
+                if (!eqfull(it->second, full12(cap.video[*oidx]))) ++diffs;
+            }
+        }
+        checks.expect(checked > 0 && diffs == 0,
+                       std::string("V4c precondition (SPECIFICATION.md 7/P4 contrast, ") + fname +
+                       "'s closing restore band): the null case changes no graded pixel (NOT OBSERVED), checked=" +
+                       std::to_string(checked) + " diffs=" + std::to_string(diffs));
+    };
+    if (f2.fc.bands.size() == 81)  grade_null_band(f2, bl2, 80, "F2");
+    if (f3.fc.bands.size() == 81)  grade_null_band(f3, bl3, 80, "F3");
+    if (f4.fc.bands.size() >= 34)  grade_null_band(f4, bl4, 33, "F4");
+
     // ---- P5.L (SuperHires half): some register 04-0F changes a pixel ------
-    checks.expect(p5l_shr_changed > 0,
-                  "P5.L CH4-appC-context.c7 p.301/94 (SuperHires half): a register outside COLOR00-03 changes a visible playfield pixel");
+    // SPECIFICATION.md 7/P5 item 4: "Any change counts, whether P4 grades it
+    // PASS or FAIL" -- graded on the any-bit count, not P4's own
+    // allowed-bit-only "changed" count, which the old check reused.
+    checks.expect(p5l_shr_any > 0,
+                  "P5.L CH4-appC-context.c7 p.301/94 (SuperHires half): a register outside COLOR00-03 changes a visible playfield pixel, any bit, changed=" +
+                  std::to_string(p5l_shr_any) + " (allowed-bit-only count " + std::to_string(p5l_shr_changed) + ")");
+    // Searched for a live input that turns this SAME comparator
+    // (p5l_shr_any, the any-bit count over F2-F4's n=04-0F bands) green,
+    // the way NMH_MUTATE=C5/V2 does for P2 (F2-F4's Q0 lines still populate
+    // P2 when F1 drops out). None exists: every mutation that could reach
+    // this comparator (V5, V4B, V4D put F2-F4 in hires) also removes its
+    // population, since the P4 loop's own `if (!gf->ok) continue` then
+    // skips every n=04-0F band, leaving p5l_shr_any at its baseline value
+    // of 0 rather than reaching it through a different, live path.
+    checks.record("P5.L (SuperHires half): no mutation in this package turns its own comparator green through a live input; every one that could reach it (V5, V4B, V4D) removes the population instead");
 
     // ---- P5.L (Hires half): F5's registers 04-0F change nothing, 00-03
     // invert exactly the value-n pixels in all twelve bits --------------
     if (f5.ok && f5.fc.bands.size() == 33) {
-        std::vector<int> idxs; for (int i=1;i<24 && i<(int)f5.lines.size();++i) idxs.push_back(i);
+        std::vector<int> idxs; for (int i=0;i<24 && i<(int)f5.lines.size();++i) idxs.push_back(i);
         int lo = f5.fc.bands[32].line+1; for (int i=lo;i<=199 && i<(int)f5.lines.size();++i) idxs.push_back(i);
         Baseline bl5 = build_baseline(cap.video, f5.lines, f5.out_of, idxs, f5.mode, f5.s, f5.w, f5.phi,
                                        (long)f5.xL, (long)f5.xR);
         bool hires_high_clean = true, hires_low_ok = true;
+        long total_checked = 0; // a real population guard, not a discarded count
         for (int n = 0; n < 16; ++n) {
             int band_idx = 16 + n; // second half of F5's bands
             if (band_idx >= (int)f5.fc.bands.size()) continue;
@@ -1087,26 +1467,65 @@ void grade_capture(const Capture& cap, Checks& checks) {
                     if (n>=4 && differs) ++changed;
                 }
             }
-            (void)checked;
+            (void)changed;
+            total_checked += checked;
         }
-        checks.expect(hires_high_clean,
-                      "P5.L p.301/94 (Hires half): registers COLOR04-0F change no graded pixel in Hires mode");
-        checks.expect(hires_low_ok,
-                      "P5.L p.301/94 (Hires half): registers COLOR00-03 invert exactly the value-n pixels, all twelve bits");
+        checks.expect(total_checked > 0 && hires_high_clean,
+                      "P5.L p.301/94 (Hires half): registers COLOR04-0F change no graded pixel in Hires mode, checked=" +
+                      std::to_string(total_checked));
+        checks.expect(total_checked > 0 && hires_low_ok,
+                      "P5.L p.301/94 (Hires half): registers COLOR00-03 invert exactly the value-n pixels, all twelve bits, checked=" +
+                      std::to_string(total_checked));
     } else {
         checks.record("P5.L (Hires half): F5's register-invert bands not decoded as planned, not graded");
     }
 
-    // ---- P7.3 (P5.L and P5.U together): P5.U needs F7-F10 (not built) -----
-    checks.record("P7.3 APPC-shr.c8 p.301 (P5.L and P5.U together): P5.U needs F7-F10, not built in this pass");
-    checks.record("P7.2 APPC-shr.c6 p.301 (P5.L and P6.2 together): P6.2 needs F7-F10, not built in this pass");
-    checks.record("P5.U, P6.1, P6.2: need F7-F10 (sprite frames), not built in this pass");
+    // ---- P1J: the full key claim, letters and dashes together
+    // (SPECIFICATION.md 7/P1 item 8) -----------------------------------
+    {
+        static const char* kCompName[3] = {"R","G","B"};
+        static const char* kSuffix[3]   = {"r","g","b"};
+        static const int   kUpperBit[3] = {9,5,1}; // q-half upper-letter bit, per component
+        for (int c = 0; c < 4; ++c) {
+            char nhex[3]; std::snprintf(nhex, sizeof nhex, "%02X", c);
+            for (int comp = 0; comp < 3; ++comp) {
+                int bu = kUpperBit[comp], blo = bu - 1;
+                int su = p4_state[c][bu], sl = p4_state[c][blo];
+                int p1idx = c*3+comp;
+                bool p1_ok = p1s.total[p1idx] > 0 && p1s.fail[p1idx] == 0;
+                std::string label = "P1J." + std::to_string(c) + kCompName[comp] +
+                    " APPC-bplkeykey.c" + std::to_string(c) + kSuffix[comp] +
+                    " p.301: P1." + std::to_string(c) + kCompName[comp] + " (the letters) and P4.n" +
+                    nhex + "b" + std::to_string(bu) + "/b" + std::to_string(blo) +
+                    " (the dashes: no other register bit stores this component's own value) together";
+                if (su == 0 || sl == 0) { checks.record(label + " -- not graded (P4 half not decoded)"); continue; }
+                if (su == 1 || sl == 1) { checks.record(label + " -- not graded (P4 half NOT OBSERVABLE, L1)"); continue; }
+                bool p4_ok = (su == 2) && (sl == 2);
+                checks.expect(p1_ok && p4_ok, label);
+            }
+        }
+    }
+
+    // ---- P5.U, P6.1, P6.2, and the sprite halves of P7.2/P7.3:
+    // F7-F10's Copper lists and sprite/null-sprite data exist (built
+    // for a later pass), but no frame here points SPR0PT at them and no
+    // check here observes a sprite run or an upper-register (COLOR16-31)
+    // playfield pixel -- withdrawn with their reason, not built, by a scope
+    // decision. Building them needs: SPR0PT wired into F7-F10 (prog_main.s
+    // already carries the Copper lists), a sprite-line/run finder (R6),
+    // preconditions C10 and C11, and P5.U/P6.1/P6.2's own grading over
+    // F7-F9's inner pixels and F10's Hires run.
+    checks.record("P5.U (p.301/302): needs F7-F10's sprite run and preconditions C10/C11; not built, by a scope decision");
+    checks.record("P6.1 APPC-shr.c9 p.302: needs F7-F9's sprite run and inner pixels; not built, by a scope decision");
+    checks.record("P6.2 CH4-appC-context.c6 p.301: needs F7 and F10's sprite run; not built, by a scope decision");
+    checks.record("P7.3 APPC-shr.c8 p.301 (P5.L and P5.U together): P5.U not built, by a scope decision, so P7.3 is not graded");
+    checks.record("P7.2 APPC-shr.c6 p.301 (P5.L and P6.2 together): P6.2 not built, by a scope decision, so P7.2 is not graded");
 }
 
 void run_normal(const std::string& dir, Checks& checks) {
     nmh::Config cfg;
     Capture cap = run_case(dir, "prog_main", cfg);
-    grade_capture(cap, checks);
+    grade_capture(cap, checks, "");
 }
 
 // Every mutation's program (or Config) and the comparator it is run
@@ -1122,7 +1541,7 @@ void run_mutation(const std::string& dir, const std::string& mut, Checks& checks
     Capture cap = run_case(dir, prog, cfg);
     checks.record("NMH_MUTATE=" + mut + " ran " + prog + ".bin, chipset_config=" +
                    std::to_string((int)cfg.chipset_config));
-    grade_capture(cap, checks);
+    grade_capture(cap, checks, mut);
 }
 
 } // namespace

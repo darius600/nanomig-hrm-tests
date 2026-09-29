@@ -1,5 +1,5 @@
 ; C8 contrast: plane-2 pattern restricted to values 0 and 3
-; 32768 words, generated data -- see gen_all.py.
+; 32768 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF
 	dc.w	$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF
 	dc.w	$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF,$FFFF

@@ -1,5 +1,5 @@
 ; F9 contrast V6b: COLOR10-1F=T0c too
-; 170 words, generated data -- see gen_all.py.
+; 170 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$0100,$2040,$0102,$0000,$0104,$0024,$008E,$2C81
 	dc.w	$0090,$F4A1,$0092,$003C,$0094,$00D4,$0108,$0000
 	dc.w	$010A,$0000,$00E0,$0001,$00E2,$0000,$00E4,$0002
