@@ -9,6 +9,8 @@
 ; NMH_K13: BUFB is shortened so phase B ends within field B19.
 ; NMH_K14: after the wait150 that ends phase B, one extra write sets
 ;          VHPOSW ($02C) = $6400, before the phase-C BPLCON0 write.
+; NMH_K5: the phase-B loop gets a delay of at least 300 colour clocks per
+;         sample (CP2's own mutation), and BUFB is shortened to match.
         include "nanomig.i"
 
 M0      equ     $A000
@@ -21,7 +23,11 @@ BUFA_COUNT      equ     22000
         ifd     NMH_K13
 BUFB_COUNT      equ     60000
         else
+        ifd     NMH_K5
+BUFB_COUNT      equ     2000
+        else
 BUFB_COUNT      equ     90000
+        endif
         endif
 BUFC_COUNT      equ     13000
 BUFD_COUNT      equ     3500
@@ -60,6 +66,10 @@ start:
         lea     BUFB,a0
         lea     BUFB_END,a1
 .b      move.l  $dff004,(a0)+
+        ifd     NMH_K5
+        move.w  #250,d1                 ; K5: delay well over 300 colour clocks between samples
+.b5dly  dbra    d1,.b5dly
+        endif
         cmpa.l  a1,a0
         bne.s   .b
         bsr     wait150

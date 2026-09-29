@@ -14,9 +14,56 @@
 // injecting it -- SPECIFICATION.md 5.6 ("It may take the model from a
 // first run without input changes"; a run's own phase A already is one).
 //
-// MUTATION records are filled in after running each NMH_MUTATE label on
-// both cores; see the block below "MUTATION RESULTS" near the end of
-// this comment once populated.
+// Every stimulus mutation below is one line per (assertion or
+// precondition, NMH_MUTATE value): the label passed to expect(), the
+// value that selects it, and what the stimulus changes. Where more than
+// one mutation targets the same label, each gets its own line. Every
+// core's own replay result, and the clause it goes red through, is this
+// package's report, not this file (SPECIFICATION.md records only
+// per-core measurements, not process history).
+//
+// MUTATION CP1(A1) stimulus red NMH_MUTATE=K17: a pin-6 pulse (both ports) added at (200,100) in every phase-A field
+// MUTATION CP1(A2) stimulus red NMH_MUTATE=K17: same stimulus -- the largest read V per field is pinned at 200, not L
+// MUTATION CP1(A2) stimulus red NMH_MUTATE=K15: the harness Config is switched to NTSC while graded with the PAL run's own expectations
+// MUTATION CP2 stimulus red NMH_MUTATE=K5: the phase-B sampling loop gets a delay of at least 300 colour clocks per sample
+// MUTATION CP3 stimulus red NMH_MUTATE=K11: pin 6 of both ports held closed from before boot through one field after M0, then released
+// MUTATION CP4 stimulus red NMH_MUTATE=K12: every pulse placed one line later than SPECIFICATION.md section 6 says
+// MUTATION CP5 stimulus red NMH_MUTATE=K13: the phase-B buffer shortened so phase B ends within field B19
+// MUTATION CP6 stimulus red NMH_MUTATE=K14: VHPOSW written once (line 100, H 0) directly after the wait150 that ends phase B
+// MUTATION P1 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (bit 3 never set)
+// MUTATION P1 stimulus red NMH_MUTATE=K9b: B4's and B5's pin-6 pulses moved to pin 9 of the same port
+// MUTATION P2(i) stimulus red NMH_MUTATE=K9: B18's pin-1 pulse (line 40) replaced by a pin-6 pulse
+// MUTATION P2(ii) stimulus red NMH_MUTATE=K9b: B18's pin-6 pulse moved to pin 9
+// MUTATION P2(ii) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P3(a) stimulus red NMH_MUTATE=K16: the B11 pulse moved to (41,100) instead of (40,100)
+// MUTATION P3(a) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P3(b) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,122) instead of (100,102)
+// MUTATION P3(b) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P3(c) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,122) instead of (100,102)
+// MUTATION P3(c) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P4 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P5 stimulus red NMH_MUTATE=K8: B14's first pulse (line 80) removed
+// MUTATION P5 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P6 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P7 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
+// MUTATION P7 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P7(c) unfalsifiable at this boundary: every latch the pages describe comes after the last current read of its field, so no input makes the pages predict m(F_k) < m(R_k) (SPECIFICATION.md section 8, P7)
+// MUTATION P8 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P8 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
+// MUTATION P9 stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30
+// MUTATION P9 stimulus red NMH_MUTATE=K7: the line-32 pulses of B15 and B17 moved to line 12
+// MUTATION P9 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P10(a) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P10(b) stimulus red NMH_MUTATE=K3: phase C's BPLCON0 write uses $0008 instead of $0000
+// MUTATION P10(b) stimulus red NMH_MUTATE=K4: phase A's BPLCON0 write uses $0008 instead of $0000
+// MUTATION P11 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P11 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
+// MUTATION P12 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P12 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
+// MUTATION P13(port1) stimulus red NMH_MUTATE=K10: phase D drives pin 9 (not pin 5) in the windows the main run drives pin 5
+// MUTATION P13(port1) stimulus red NMH_MUTATE=K10b: phase D holds port-1 pin 5 low throughout instead of only 2-4ms
+// MUTATION P13(pin9-control) unfalsifiable at this boundary: no input this harness exposes reaches port 2's pin 5 (POTGOR bit 12) at all, so there is no stimulus whose mutated outcome the pages predict differently for this control
+// MUTATION FIXTURE unfalsifiable at this boundary: the fixture asserts the program-stored M0 marker before any other observation is made; there is no earlier point in the program for NMH_MUTATE to corrupt it from
 
 #include <cstdio>
 #include <cstdint>
@@ -65,7 +112,7 @@ constexpr uint16_t kDoneValue = 0x600D;
 constexpr uint32_t kCodeLo    = 0x080400, kCodeHi = 0x080600; // word-addr range holds code bytes
 constexpr uint32_t kMark      = 0x100000;
 constexpr uint16_t kM0 = 0xA000, kM1 = 0xA001, kM2 = 0xA002, kM3 = 0xA003, kM4 = 0xA004;
-constexpr uint32_t kBufAcount = 22000, kBufBcount = 90000, kBufBcountK13 = 60000, kBufCcount = 13000, kBufDcount = 3500;
+constexpr uint32_t kBufAcount = 22000, kBufBcount = 90000, kBufBcountK13 = 60000, kBufBcountK5 = 2000, kBufCcount = 13000, kBufDcount = 3500;
 constexpr uint32_t kBufA = 0x100010;
 constexpr uint32_t kBufAEnd = kBufA + 4 * kBufAcount;
 constexpr uint32_t kBufB = kBufAEnd;
@@ -73,7 +120,10 @@ uint32_t g_bufBcount = kBufBcount; // set per-run (K13 shortens it)
 constexpr uint64_t kBootBudget = 6'000'000;
 constexpr uint64_t kRunBudget  = 20'000'000;
 
-// joystick / mouse bit masks (see report: derived from userio.v / nanomig.v wiring)
+// joystick / mouse bit masks. The physical port each nanomig.v input
+// reaches, and which POTGOR/CIAAPRA bit each pot line and fire button
+// lands on, is measured at the ports (SPECIFICATION.md section 3 "Port
+// mapping"): joystick0 reaches port 2, joystick1 reaches port 1.
 constexpr uint8_t kBitFire  = 0x10; // pin 6 (beam trigger)
 constexpr uint8_t kBitFire2 = 0x20; // pin 9
 constexpr uint8_t kBitUp    = 0x08; // pin 1
@@ -218,15 +268,28 @@ struct BeamModel {
         int mv, mh; pos_at(s.b, &mv, &mh);
         return mv == s.V && mh == s.H;
     }
-    // torn: [a-2,b] (colour clocks) straddles a V8 change (line 255/256) or L/0
-    // wrap. The margin before `a` is widened by the model's own fitted
-    // uncertainty (u_cck), since `a` is only a bound on the read instant,
-    // not the instant itself, and the anchor is fit from samples with the
-    // same slack.
+    // torn (SPECIFICATION.md 5.3): a sample whose two register reads
+    // straddle a V8 change combines V8 of one line with V7-V0 of another.
+    // These changes happen at model line 255 to 256 and at L to 0. A
+    // sample whose [a-2, b] (colour clocks) contains such a change is
+    // exempt. The margin is the fixed two colour clocks the page's own
+    // register pair spans (VPOSR then VHPOSR), not the model's fitted
+    // uncertainty u -- u bounds the read instant within a sample, not how
+    // far a V8 change can sit from the reported bound `a`.
     bool is_torn(const Sample& s) const {
-        int64_t t0 = s.a - (u_cck + 2) * colour_clock_len, t1 = s.b;
+        int64_t t0 = s.a - 2 * colour_clock_len, t1 = s.b;
         int v0, v1; pos_at(t0, &v0, nullptr); pos_at(t1, &v1, nullptr);
-        if (v0 != v1) return true; // crossed a line boundary at least (conservative superset incl. 255/256, L/0)
+        if (v0 != v1) return true; // crossed a line boundary (255/256 or L/0) within [a-2,b]
+        // Direct value check for the same thing 5.3 describes ("combine V8
+        // of one line with V7-V0 of another"): if the raw reading matches
+        // no model position in [a,b], but the reading with V8 flipped
+        // does, the two register reads straddled exactly that V8 change --
+        // regardless of how the margin above placed the boundary.
+        if (!is_current(s)) {
+            Sample flipped = s;
+            flipped.V ^= 256;
+            if (is_current(flipped)) return true;
+        }
         return false;
     }
 };
@@ -308,7 +371,7 @@ BeamModel fit_model(const std::vector<Sample>& phaseA, const std::vector<nmh::Ra
             m.line_len_cck = line_len_clksys_exact / m.colour_clock_len;
     }
     if (m.line_len_cck <= 0) {
-        // fallback: dV==1 pairs, as before.
+        // fallback: dV==1 pairs.
         std::vector<int64_t> lenEst;
         for (size_t i = 1; i < phaseA.size(); ++i) {
             if (fieldOf[i] != fieldOf[i - 1]) continue;
@@ -379,9 +442,11 @@ void add_pulse_events(std::vector<Event>& ev, const BeamModel& m, int64_t B0_idx
 }
 
 // Pin 5 (the pen-pressed / middle-mouse-button pot line) has no digital
-// joystick bit; port 1's is reached through mouse_buttons (see the
-// report). Port 2's pin 5 cannot be driven through any nanomig.v port at
-// all, so only port 1 is pulsed here.
+// joystick bit; port 1's is reached through mouse_buttons bit 2, measured
+// at POTGOR bit 8 (SPECIFICATION.md section 3, "Port mapping"). Driving
+// every other input this harness exposes during phase D and watching
+// POTGOR (as that measurement does) finds none that reaches port 2's pin
+// 5 (POTGOR bit 12), so only port 1 is pulsed here.
 void add_mouse_pulse_events(std::vector<Event>& ev, const BeamModel& m, int64_t B0_idx, PortState* state,
                              int field_offset, int line, int H) {
     int64_t t_on = m.cycle_of(B0_idx + field_offset, line, H);
@@ -389,6 +454,14 @@ void add_mouse_pulse_events(std::vector<Event>& ev, const BeamModel& m, int64_t 
     ev.push_back({t_on, [state]() { state->mbtn |= kMouseMid; }});
     ev.push_back({t_off, [state]() { state->mbtn &= (uint8_t)~kMouseMid; }});
 }
+
+// One delivered input change, for CP4's own record: the cycle it was
+// scheduled for and the cycle at which it was actually applied (the
+// harness is stepped cycle-exactly to the scheduled cycle before the
+// port word changes, so these are expected to be equal; the record
+// exists so CP4 can assert that, not assume it).
+struct AppliedEvent { int64_t sched, applied; uint8_t j0, j1, mb; };
+std::vector<AppliedEvent> g_applied;
 
 // A run's full result: log, model, field anchors, per-phase samples.
 struct RunResult {
@@ -401,6 +474,7 @@ struct RunResult {
     bool ntsc = false;
     uint8_t fire_byte = 0xFF;
     int64_t m0cyc = -1, m1cyc = -1, m2cyc = -1, m3cyc = -1, m4cyc = -1;
+    std::vector<AppliedEvent> applied; // this run's own delivery record (CP4)
 };
 
 constexpr uint32_t kFireWordAddr = 0x100004 / 2;
@@ -424,6 +498,7 @@ void run_phase_events(nmh::NanomigHarness& h, std::vector<Event>& events, PortSt
         if (delta > 0) h.run_cycles((uint64_t)delta);
         e.apply();
         state.push(h);
+        g_applied.push_back({e.cycle, (int64_t)h.cycles(), state.joy0, state.joy1, state.mbtn});
     }
 }
 
@@ -431,6 +506,7 @@ RunResult run_one(const std::string& bin, bool ecs, bool ntsc, uint32_t bufBcoun
                    const ScheduleBFn& schedB, const ScheduleCFn& schedC, const ScheduleDFn& schedD) {
     RunResult r;
     r.ntsc = ntsc;
+    g_applied.clear();
     nmh::Config cfg = make_config(ecs, ntsc);
     auto h = std::make_unique<nmh::NanomigHarness>(cfg);
     size_t loaded = h->load_program(bin);
@@ -501,6 +577,7 @@ RunResult run_one(const std::string& bin, bool ecs, bool ntsc, uint32_t bufBcoun
     r.m2cyc = find_mark_cycle(r.log, kM2);
     r.m3cyc = find_mark_cycle(r.log, kM3);
     r.m4cyc = find_mark_cycle(r.log, kM4);
+    r.applied = g_applied;
     return r;
 }
 
@@ -510,8 +587,7 @@ bool ok_run(const RunResult& r) { return r.loaded && r.released && r.done_ok && 
 } // namespace
 
 // ===========================================================================
-// The rest of this file (preconditions, propositions, main runs and mutation
-// dispatch) is added incrementally; see PART2 marker.
+// Preconditions, propositions, main runs and mutation dispatch.
 // ===========================================================================
 #include "test_ch8_light_pen_beam_part2.inc"
 
