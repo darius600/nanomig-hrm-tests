@@ -9,12 +9,13 @@ P6_K1           equ     RESULTS+8       ; 200 words
 P6_K2           equ     P6_K1+200*2     ; 200 words
 P6_K3           equ     P6_K2+200*2     ; 200 words
 
-; K3's own padding: three NOPs (4 CPU-clock periods each, SPECIFICATION.md
+; K3's own padding: two NOPs (4 CPU-clock periods each, SPECIFICATION.md
 ; P6), chosen so the loop body's iteration time is not a multiple of
-; 10*T_CPU (a builder-tuned value, guarded by Pre6.1, which the run checks
-; against the measured I3). A whole extra dbra loop would only ever shift
-; I3 by a multiple of 10 CPU-clock periods (one taken DBcc is 10 clocks),
-; landing back on a multiple of T_E; plain NOPs do not share that property.
+; 10*T_CPU on either core (a builder-tuned value, guarded by Pre6.1, which
+; the run checks against the measured I3, per core). A whole extra dbra
+; loop would only ever shift I3 by a multiple of 10 CPU-clock periods (one
+; taken DBcc is 10 clocks), landing back on a multiple of T_E; plain NOPs
+; do not share that property.
 
         org     PROGRAM_ORG
 
@@ -28,7 +29,6 @@ start:
 .k3:    moveq   #0,d0
         move.b  CHIPBYTE_K3,d0
         move.w  d0,(a1)+
-        nop
         nop
         nop
         dbra    d2,.k3
