@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. A third package records the motor-off identification stream on the same line and grades none of it; see *The identification stream: recorded, not graded*. |
 | **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L688-L694) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L386-L392) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig has the statement and its comment from there and TC64 carries the same, so there is no fix to port; every independent implementation read here already gates the line on a disk — see *What the others say* |
-| **Test** | [`hrm/appH-drive-sense-and-motor`](../../hrm/appH-drive-sense-and-motor) · `RDY-DISK-PRESENCE`, claims `opus:AHJ-060`, `sol:H-036` (p. 368), red (`test_appH-drive-sense-and-motor.cpp:526-561`); [`hrm/appDE-disk-interface`](../../hrm/appDE-disk-interface) · `sol:E-disk.c26` and `opus:E-extdisk-iface.c4` (p. 334, pin 1 RDY*), each red (`test_appDE-disk-interface.cpp:456-501`). On the same statement, recorded and not graded: [`hrm/appH-device-id-protocol`](../../hrm/appH-device-id-protocol) · `ID-CHANNEL-EXISTS`, `MOTOR-CYCLE-INIT-CHANGES-ID-STREAM` |
+| **Test** | [`hrm/appH-drive-sense-and-motor`](../../hrm/appH-drive-sense-and-motor) · `RDY-DISK-PRESENCE`, claims `opus:AHJ-060`, `sol:H-036` (p. 368), red (`test_appH-drive-sense-and-motor.cpp:408-442`); [`hrm/appDE-disk-interface`](../../hrm/appDE-disk-interface) · `sol:E-disk.c26` and `opus:E-extdisk-iface.c4` (p. 334, pin 1 RDY*), each red (`test_appDE-disk-interface.cpp:334-379`). On the same statement, recorded and not graded: [`hrm/appH-device-id-protocol`](../../hrm/appH-device-id-protocol) · `ID-CHANNEL-EXISTS`, `MOTOR-CYCLE-INIT-CHANGES-ID-STREAM` |
 | **Chapter** | Appendix E, printed pp. 334–335; Appendix H, printed pp. 368–371; 8 — Interface Hardware, printed p. 244 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 3 red. In `hrm/appH-drive-sense-and-motor`, 1 red of 7 graded (`RDY-DISK-PRESENCE`; the package reads `7 passed, 1 failed.` with its fixture-liveness check); in the same run `CHANGE-NO-CLEAR-NO-DISK`, green, reads the fixture's disk presence through `_change`, and `INDEX-SEL-MOTOR-GATE`, green, reads its motor latch through `index`. In `hrm/appDE-disk-interface`, 2 red of 13 graded (`sol:E-disk.c26`, `opus:E-extdisk-iface.c4`; the package reads `12 passed, 2 failed.` with its fixture-liveness check); in the same run the `sol:E-disk.c33` record reads the same select-edge stimulus latching drive 0's motor on through `index`. `hrm/appH-device-id-protocol` reads `1 passed, 0 failed`, its fixture-liveness check the only graded line |
 | **Verdict of the four** | **unanimous against NanoMig.** Once the motor is up to speed, WinUAE, vAmiga, Denise and Copperline assert RDY* only for a drive with a disk in it; WinUAE, Denise and Copperline never assert it for an empty drive with the motor on, and vAmiga only while its identification mode lasts through spin-up. With the motor off all four give an external drive an identification register, and a standard external drive's ID is $FFFF FFFF, the constant NanoMig returns |
@@ -143,7 +143,7 @@ standard drive p. 335 defines.
 ### Measured
 
 [`hrm/appH-drive-sense-and-motor`](../../hrm/appH-drive-sense-and-motor),
-`RDY-DISK-PRESENCE` (`test_appH-drive-sense-and-motor.cpp:526-561`): drive 0
+`RDY-DISK-PRESENCE` (`test_appH-drive-sense-and-motor.cpp:408-442`): drive 0
 selected, the motor line low before the first clock after selection, so the
 latch takes it; then the disk is removed and mounted:
 
@@ -159,11 +159,11 @@ deselection instead and reads green, `8 passed, 0 failed.`
 **The same, graded on p. 334.**
 [`hrm/appDE-disk-interface`](../../hrm/appDE-disk-interface),
 `sol:E-disk.c26` and `opus:E-extdisk-iface.c4`
-(`test_appDE-disk-interface.cpp:456-501`), two readers' claims on p. 334's
+(`test_appDE-disk-interface.cpp:334-379`), two readers' claims on p. 334's
 pin 1, graded separately on the same measurement: drive 0 is deselected for
 one clock, then the motor line is driven low and the drive selected, so the
 next clock is a select edge and the latch takes the motor on
-(`:347-353`); no disk is mounted. Each requires RDY* deasserted and reads it
+(`:230-236`); no disk is mounted. Each requires RDY* deasserted and reads it
 asserted: both red, `12 passed, 2 failed.` In the same run the package's
 `sol:E-disk.c33` record reads the same stimulus latching drive 0's motor on
 through `index`. With each label's mutation, `MUTATE=sol:E-disk.c26` or
@@ -216,7 +216,7 @@ constant $FFFF FFFF, which is what NanoMig's selected, configured drive gives.
 `1 passed, 0 failed`; its only graded line is its fixture-liveness check. It
 runs the procedure of pp. 370–371 on drive 0, one drive configured, and records
 two lines on `_ready` without grading them
-(`test_appH-device-id-protocol.cpp:409-464`, `:482-516`):
+(`test_appH-device-id-protocol.cpp:321-375`, `:393-427`):
 
 - `ID-CHANNEL-EXISTS`, claims `sol:H-038`, `opus:AHJ-062`, `sol:H-068`,
   `opus:AHJ-094`, `sol:H-076`, `opus:AHJ-103`, `sol:H-078`, `opus:AHJ-105`,
