@@ -1339,7 +1339,11 @@ int main(int argc, char** argv) {
             "A-adkcon.note1: the "
             "merged sequence (events start only after the first genuine change) is cyclically "
             "consecutive in M_VP, alternating volume then period");
-        checks.expect(c.loaded && have_bounds && set_b,
+        // set_b starts true and no clause ever falsifies it on an empty
+        // population -- gate on a nonempty population of each kind
+        // explicitly, so an empty set shows up as its own red, not a
+        // vacuous green.
+        checks.expect(c.loaded && have_bounds && !vol_events.empty() && !per_events.empty() && set_b,
             "P4 (b): after the first change of each kind, no applied volume lies outside "
             "{24,56,8,40} and no applied period lies outside {300,700,500,900}");
         checks.expect(c.loaded && have_bounds && vol_events.size() >= 8 && per_events.size() >= 8,
