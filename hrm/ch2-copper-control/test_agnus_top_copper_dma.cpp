@@ -3,6 +3,9 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed pp. 25-26, 30, 222, and 298; frozen specification a26e813.
 // Requirement IDs: COP-05, COP-07
 // Non-goals: This test does not mirror DMACON logic in C++, inspect private state, or assert exact Copper cycle timing.
+// Claim ids: none. This file grades the printed pages above directly;
+//   COP-05 and COP-07 are requirement names of the frozen specification
+//   this package started from (docs/legacy-names.md), not claim ids.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. All five
 // T5 assertions were mutated at the STIMULUS on 05.09.2026, each reverted

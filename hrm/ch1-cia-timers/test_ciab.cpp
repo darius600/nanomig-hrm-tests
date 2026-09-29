@@ -24,6 +24,13 @@
 //   one of them -- and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision, not that the
 //   module is correct and not that the chapter is covered.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in
+//   `work/2026-09-16_ch1_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
+//   PROP-TIMER under Requirement IDs above is the specification's
+//   proposition name, not a claim id.
 //
 // Order-of-work disclosure: identical situation to test_ciaa.cpp, see that
 //   file's header and SPECIFICATION.md's own disclosure section. Nothing

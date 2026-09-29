@@ -28,6 +28,13 @@
 //   one of them -- and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision, not that the
 //   module is correct and not that the chapter is covered.
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are
+//   the two models that read the printed pages independently, and an id
+//   names one reader's reading of one sentence. They resolve in
+//   `work/2026-09-17_appF_packages.jsonl` in the sibling repository
+//   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
+//   The names under Requirement IDs above are the specification's
+//   proposition names, not claim ids.
 //
 // Order-of-work disclosure: see test_cia_timera.cpp's header, which
 //   applies identically here (both files were designed from the same

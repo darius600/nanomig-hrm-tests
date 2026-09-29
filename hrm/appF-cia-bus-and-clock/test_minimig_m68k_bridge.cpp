@@ -18,6 +18,11 @@
 //   assertions held on this fixture at the pinned revision, not that the
 //   module is correct and not that the chapter is covered.
 //
+// Claim ids: the ids below carry a reader prefix -- `sol:` and `opus:` are the
+//   two models that read the printed pages independently, and an id names
+//   one reader's reading of one sentence. They resolve in the chapter's
+//   claim file in the sibling repository (hrm-testpipeline).
+//   docs/legacy-names.md explains the vocabulary.
 // CLAIM COVERAGE: RW-SOURCE-CONTROLS-DIRECTION (sol:F-signals.c77,
 //   opus:F-signals.c9), RW-HIGH-IS-READ (sol:F-signals.c78,
 //   opus:F-signals.c10), RW-LOW-IS-WRITE (sol:F-signals.c79,
