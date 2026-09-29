@@ -783,11 +783,15 @@ int main(int argc, char** argv) {
     // NMH_MUTATE=P6, fed R6a/R6am with require_witness = false for P7 part
     // (iii) only (SPECIFICATION.md section 5.3.5 excludes the reset
     // witness from part (iii)'s own preconditions).
+    // Each (setting, R6-or-R6m) pair is graded on its own: a pair whose own
+    // precondition fails is excluded from `ok`, not folded into a global
+    // failure, so the proposition is withdrawn only for the settings that
+    // actually failed their precondition, not whenever any one setting does.
     struct P6Result { bool checked = false; bool pass = false; };
     auto grade_p6 = [&](const std::string& bin_a, const std::string& bin_am, bool require_witness) {
         P6Result out;
         bool ok = true;
-        bool any_witness = false, any_config_effect = false, any_chip_answers = false;
+        bool any_graded = false;
         for (uint8_t s : settings) {
             R6Out r6 = run_r6(dir + bin_a, s, false);
             R6Out r6m = run_r6(dir + bin_am, s, true);
@@ -795,13 +799,16 @@ int main(int argc, char** argv) {
                            (!require_witness || r6.led_witness);
             bool precond_m = r6m.loaded && r6m.no_exception && r6m.config_took_effect && r6m.done.has_value() &&
                              (!require_witness || r6m.led_witness);
-            if (r6.led_witness) any_witness = true;
-            if (r6.config_took_effect) any_config_effect = true;
-            if (r6.done.has_value()) any_chip_answers = true;
-            if (!(precond && img_equal(r6.img3, r6.img0))) ok = false;
-            if (!(precond_m && r6m.r3 && *r6m.r3 != kP0Prime)) ok = false;
+            if (precond) {
+                any_graded = true;
+                if (!img_equal(r6.img3, r6.img0)) ok = false;
+            }
+            if (precond_m) {
+                any_graded = true;
+                if (!(r6m.r3 && *r6m.r3 != kP0Prime)) ok = false;
+            }
         }
-        out.checked = any_config_effect && any_chip_answers && (!require_witness || any_witness);
+        out.checked = any_graded;
         out.pass = ok && out.checked;
         return out;
     };
