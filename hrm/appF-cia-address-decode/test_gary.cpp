@@ -62,13 +62,20 @@
 //   4 on note()-only lines plus a record() (Group H, NM-HRM-062 -- both
 //   readings measured, neither graded).
 //
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-17): see out.txt.
-//   FIXTURE-LIVENESS, CIAA-MAP-SWEEP and CIAB-MAP-SWEEP are expected GREEN.
-//   CIA-DECODE-DONTCARE and CIA-AB-TWOBIT-RULE are expected RED at
-//   baseline -- both are honest measurements of gary.v:190 and
-//   gary.v:191-192 against an unambiguous half of p.353 (the printed
-//   binary-pattern transposition, the OTHER half of p.353, is the
-//   separate NM-HRM-062 question and is not graded by either assertion).
+// RESULTS (WSL, Verilator 5.052): see out.txt.
+//   FIXTURE-LIVENESS, CIAA-MAP-SWEEP, CIAB-MAP-SWEEP and CIA-AB-TWOBIT-RULE
+//   are expected GREEN. CIA-DECODE-DONTCARE is expected RED at baseline --
+//   an honest measurement against an unambiguous half of p.353 (the printed
+//   binary-pattern transposition, the OTHER half of p.353, is the separate
+//   NM-HRM-062 question and is not graded by either assertion).
+//
+//   CIA-AB-TWOBIT-RULE is graded GREEN, not RED: p.353's sentence gives one
+//   condition under which each chip IS selected and is silent on A12 and
+//   A13 both low, so reading it as also saying what happens when neither
+//   chip's condition holds tests a one-way statement as a two-way one.
+//   Where the manual does speak to that point, p.351 does: one active-low
+//   select line per chip, so both low means both chips selected -- which is
+//   what the fixture measures.
 //
 // MUTATION LOG (5 entries, one per expect() -- every mutation below was
 //   actually built and run: `make clean; make MUT=<NAME> test`, one at a
@@ -93,11 +100,13 @@
 //   half onto a trivially-true case so the whole assertion goes green,
 //   proving the baseline RED is a live reading of those two specific
 //   addresses and not a coding error.
-// MUTATION CIA-AB-TWOBIT-RULE stimulus green: baseline is RED (a real
-//   measurement) -- the overlap probe was redirected from $BFC100 to
-//   $000000, entirely outside CIA space, where sel_cia_a and sel_cia_b are
-//   both trivially 0, so the whole assertion goes green, proving the
-//   baseline RED is a live reading of $BFC100 specifically.
+// MUTATION CIA-AB-TWOBIT-RULE stimulus red: baseline is GREEN (a real
+//   measurement) -- the overlap probe was redirected from $BFC100 (A12=0,
+//   A13=0, both p.351 select lines active) to $BFF000 (A12=1, A13=1, both
+//   p.351 select lines inactive), the opposite of what p.351 predicts for
+//   the clause under test, so sel_cia_a and sel_cia_b are both 0 and the
+//   assertion goes red, proving the baseline GREEN is a live reading of
+//   $BFC100 specifically.
 
 #include <cstdint>
 #include <cstdio>
@@ -419,8 +428,10 @@ int main() {
         std::string d2 = hexaddr(dontcare2) + ":sel_cia=" + b(h.top->sel_cia);
 
         // Control: bits 11-0 (register-select plus the genuinely free low
-        // byte) really are don't-cares in gary -- flip all twelve of them
-        // and sel_cia_a is unaffected.
+        // byte) really are don't-cares in gary -- $BFE001 and $BFEFFF flip
+        // A11-A1 (11 of those 12 bits), not A0: A0 is not present on gary's
+        // port at all and is unchanged between the two addresses (both end
+        // in ...01). sel_cia_a is unaffected.
         h.cpu_probe(0xBFE001);
         bool ctrl_low = h.top->sel_cia_a == 1;
         h.cpu_probe(0xBFEFFF);
@@ -435,7 +446,8 @@ int main() {
             "upper three address bits are 101') says they should: measured " + d1 + ", " +
             d2 + ". CONTROL, same measurement basis: bits 11-0 (register-select plus the "
             "genuinely free low byte) really are don't-cares in gary -- $BFE001 and "
-            "$BFEFFF (all twelve low bits flipped) both select CIA-A (measured ctrl_low=" +
+            "$BFEFFF (A11-A1 flipped, not A0, which gary's port does not carry) both "
+            "select CIA-A (measured ctrl_low=" +
             b(ctrl_low) + " ctrl_high=" + b(ctrl_high) + "). Reported per the outer build "
             "brief's 'measure it, report what you find, adjudicate nothing' instruction "
             "for gary.v:190 -- this is a different question from NM-HRM-062's printed-"
@@ -445,24 +457,24 @@ int main() {
     }
 
     // =========================================================================
-    // CIA-AB-TWOBIT-RULE -- Group F, 3 claims graded. This measures the
-    // outer build brief's own first named item: "gary.v:191-192 decodes
-    // each CIA on ONE address bit where p.353 requires two, so $BFC100
-    // raises sel_cia_a and sel_cia_b together."
+    // CIA-AB-TWOBIT-RULE -- Group F, 3 claims graded, GREEN.
     //
-    // Proposition: p.353 states a two-bit rule per chip (both A12 AND A13
-    // must hold for that chip, and -- read as the selection rule it is --
-    // implicitly neither chip otherwise). gary.v:191 reads A12 alone for
-    // sel_cia_a; gary.v:192 reads A13 alone for sel_cia_b. The positive
-    // halves hold at the prose's own worked points ($BFE001, $BFD000).
-    // The implied negative half does not: at $BFC100 (A12=0, A13=0,
-    // satisfying NEITHER chip's full two-bit condition) both selects
-    // assert together. ch8-cia-disk-port-windows' own
+    // Proposition: p.353 gives one condition under which each chip IS
+    // selected -- CIAA when A12 is low, A13 high; CIAB when A12 is high,
+    // A13 low -- and is silent on what happens when A12 and A13 are both
+    // low (or both high). Reading the sentence as also fixing that silent
+    // case -- as if neither chip should be selected there -- tests a
+    // one-way statement as a two-way one. Where the manual does speak to
+    // that case, p.351 does: each chip has one active-low select line,
+    // (A12*) for CIA-A and (A13*) for CIA-B, so with both low, p.351
+    // predicts both chips selected. The positive halves hold at the
+    // prose's own worked points ($BFE001, $BFD000); at $BFC100 (A12=0,
+    // A13=0) both selects assert together, as p.351 predicts. This is the
+    // first assertion in this suite to grade that fact against p.351 (see
+    // SPECIFICATION.md "Grep check"); ch8-cia-disk-port-windows' own
     // OVERLAP-BOTH-SELECTS-ACTIVE assertion already measures this same
     // $BFC100 fact but its own label/comment read "mechanism fact, not a
-    // manual citation" / "no page claims or denies this" -- this is the
-    // first assertion in this suite to grade it against p.353 itself (see
-    // SPECIFICATION.md "Grep check").
+    // manual citation" / "no page claims or denies this."
     // =========================================================================
     {
         Harness h;
@@ -471,29 +483,31 @@ int main() {
         h.cpu_probe(0xBFD000);  // prose's and the chosen-address's own CIAB point (A12=1,A13=0).
         bool ciab_point = h.top->sel_cia_b == 1;
 
-        uint32_t overlap_probe = 0xBFC100;  // A12=0,A13=0: satisfies neither chip's full rule.
+        uint32_t overlap_probe = 0xBFC100;  // A12=0,A13=0: both p.351 select lines active.
 #if MUT_TWOBIT
-        overlap_probe = 0x000000;  // MUTATION: probe moved outside CIA space entirely.
+        overlap_probe = 0xBFF000;  // MUTATION: A12=1,A13=1 -- both p.351 select lines inactive, the opposite of the clause under test.
 #endif
         h.cpu_probe(overlap_probe);
-        bool neither = (h.top->sel_cia_a == 0) && (h.top->sel_cia_b == 0);
+        bool both = (h.top->sel_cia_a == 1) && (h.top->sel_cia_b == 1);
         checks.note("CIA-AB-TWOBIT-RULE-OVERLAP: at " + hexaddr(overlap_probe) +
             " sel_cia_a=" + b(h.top->sel_cia_a) + " sel_cia_b=" + b(h.top->sel_cia_b));
 
-        checks.expect(ciaa_point && ciab_point && neither,
-            "CIA-AB-TWOBIT-RULE: p.353's rule is two-bit per chip -- gary.v:191 reads A12 "
-            "alone (sel_cia_a), gary.v:192 reads A13 alone (sel_cia_b). Positive halves "
-            "hold: $BFE001 (A12=0,A13=1) selects CIA-A (measured " + b(ciaa_point) +
-            ") and $BFD000 (A12=1,A13=0) selects CIA-B (measured " + b(ciab_point) +
-            "). The implied negative half does not: " + hexaddr(overlap_probe) +
-            " (A12=0,A13=0) should select NEITHER chip per the prose's own two-bit rule, "
-            "but both sel_cia_a and sel_cia_b are asserted together (measured neither-"
-            "selected=" + b(neither) + ", i.e. both ARE selected) -- gary.v:191-192 each "
-            "test only one of the two bits p.353 requires. Reported per the outer build "
-            "brief's 'measure it, report what you find, adjudicate nothing' instruction; "
-            "ch8-cia-disk-port-windows' OVERLAP-BOTH-SELECTS-ACTIVE already measures this "
-            "same address but explicitly declines to cite it as a manual fact -- this is "
-            "the first grade of that fact against p.353 itself, not a re-grade. "
+        checks.expect(ciaa_point && ciab_point && both,
+            "CIA-AB-TWOBIT-RULE: p.353 gives one condition under which each chip IS "
+            "selected -- CIAA when A12 is low, A13 high; CIAB when A12 is high, A13 low "
+            "-- and is silent on A12 and A13 both low; it does not say a chip is selected "
+            "ONLY under that condition. Positive halves hold: $BFE001 (A12=0,A13=1) "
+            "selects CIA-A (measured " + b(ciaa_point) + ") and $BFD000 (A12=1,A13=0) "
+            "selects CIA-B (measured " + b(ciab_point) + "). Where the manual does speak "
+            "to " + hexaddr(overlap_probe) + " (A12=0,A13=0), p.351 does: one active-low "
+            "select line per chip, (A12*) for CIA-A and (A13*) for CIA-B, both low here, "
+            "so p.351 predicts BOTH chips selected -- measured both-selected=" + b(both) +
+            ", matching p.351. Reported per the outer build brief's 'measure it, report "
+            "what you find, adjudicate nothing' instruction; ch8-cia-disk-port-windows' "
+            "OVERLAP-BOTH-SELECTS-ACTIVE already measures this same address but "
+            "explicitly declines to cite it as a manual fact ('mechanism fact, not a "
+            "manual citation') -- this is the first grade of that fact against p.351 "
+            "itself, not a re-grade. "
             "[claims: sol:F-signals.c57, sol:F-signals.c58, opus:F-conn.c2]");
     }
 

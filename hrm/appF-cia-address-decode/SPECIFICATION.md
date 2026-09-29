@@ -55,10 +55,15 @@ about whether that decode is a defect — per the brief, that judgement
 belongs to Amiga and RTL specialists, not to this package. Both are graded
 here as ordinary printed propositions (the claims that state them, `sol:
 F-signals.c57/c58/c63` and their `opus` twins, are `testable`, not
-`conflict`), and both grade RED, honestly, because the oracle (the printed
-prose, corroborated three ways — see NM-HRM-062 below) is unambiguous on
-these two points even though it is *not* unambiguous on the separate,
-already-filed transposition question.
+`conflict`). `CIA-DECODE-DONTCARE` grades RED, honestly: the oracle (the
+printed prose, corroborated three ways — see NM-HRM-062 below) is
+unambiguous that A20 and A19-A16 are don't-cares, and `gary` does not treat
+them that way. `CIA-AB-TWOBIT-RULE` grades GREEN: p.353's sentence gives one
+condition under which each chip is selected and is silent on A12 and A13
+both low; p.351, which does speak to that point (one active-low select line
+per chip), predicts both chips selected there, which is what `gary` does —
+see Group F below for why the red this assertion first measured was a
+one-way-statement-read-as-two-way error, not a finding.
 
 ## NM-HRM-062 — this package's own finding, four claims, graded neither side
 
@@ -106,7 +111,7 @@ group for what *is* measured (A12/A13 under both readings).
 | D — CIAA combined rows | opus "row carries register name Y" (15 named rows incl. r=0,2) | 15 | Partial, `record()` per Rule 1 |
 | D — CIAB combined rows | opus "row carries register name Y" (15 named rows incl. r=1,13) | 15 | Partial, `record()` per Rule 1 |
 | E — decode completeness | "top three bits select the CIAs" / "other bits are don't cares" | 4 | Graded, `expect()`, CIA-DECODE-DONTCARE (RED) |
-| F — two-bit select rule | "CIAA on A12 low+A13 high" / "CIAB on A12 high+A13 low" | 3 | Graded, `expect()`, CIA-AB-TWOBIT-RULE (RED) |
+| F — two-bit select rule | "CIAA on A12 low+A13 high" / "CIAB on A12 high+A13 low" | 3 | Graded, `expect()`, CIA-AB-TWOBIT-RULE (GREEN) |
 | G — CS/phi2 timing | "CS is normally activated at 02 by the address" | 2 | Declined, `record()` — no phi2/E-clock port at `gary` |
 | H — NM-HRM-062 conflict | printed binary patterns, transposed | 4 | Measured both (`note()`), `record()` — graded neither |
 
@@ -300,37 +305,39 @@ second half of that sentence for A20/A19-A16. Reported per the outer build
 brief's "measure it, report what you find, adjudicate nothing" instruction
 for this same item (`gary.v:190`).
 
-## Group F — CIA-AB-TWOBIT-RULE (3 claims, graded, RED)
+## Group F — CIA-AB-TWOBIT-RULE (3 claims, graded, GREEN)
 
 Uids: `sol:F-signals.c57` ("CIAA is selected when A12 is low and A13 is
 high"), `sol:F-signals.c58` ("CIAB is selected when A12 is high and A13 is
 low"), `opus:F-conn.c2` (twin, combined).
 
-**Proposition tested:** the prose states a *two-bit* rule for each chip —
-both bits must hold, together, for that chip to be selected (and, read as
-the selection rule it is, implicitly: not otherwise). `gary.v:191` reads
-A12 alone for `sel_cia_a`; `gary.v:192` reads A13 alone for `sel_cia_b`.
-The positive halves hold: at `$BFE001` (A12=0, A13=1, the prose's and the
-chosen address's own CIAA point) `sel_cia_a=1`; at `$BFD000` (A12=1, A13=0,
-CIAB's point) `sel_cia_b=1`. The rule's implicit negative half does not:
-at `$BFC100` (A12=0, A13=0 — satisfying *neither* chip's full two-bit
-condition), the prose implies neither chip should be selected, but
-`gary.v:191` never looks at A13 and `gary.v:192` never looks at A12, so
-both `sel_cia_a` and `sel_cia_b` are asserted together.
+**Proposition tested:** the prose gives *one condition* under which each
+chip is selected — CIAA when A12 is low and A13 is high; CIAB when A12 is
+high and A13 is low — and is silent on what happens when A12 and A13 are
+both low (or both high). It does not say a chip is selected *only* under
+its stated condition; reading it that way tests a one-way statement as a
+two-way one, the shape [NM-HRM-029](../../docs/findings/withdrawn/NM-HRM-029.md)
+was withdrawn for. The positive halves hold: at `$BFE001` (A12=0, A13=1,
+the prose's and the chosen address's own CIAA point) `sel_cia_a=1`; at
+`$BFD000` (A12=1, A13=0, CIAB's point) `sel_cia_b=1`.
+
+Where the manual does speak to `$BFC100` (A12=0, A13=0), it is p.351, not
+p.353: one active-low select line per chip — `(A12*)` for CIA-A, `(A13*)`
+for CIA-B — both low here, so p.351 predicts *both* chips selected. That is
+what `gary` measures: both `sel_cia_a` and `sel_cia_b` are asserted
+together at `$BFC100`.
 
 This exact mechanism fact is already measured, at this exact fixture, by
 `ch8-cia-disk-port-windows`' `OVERLAP-BOTH-SELECTS-ACTIVE` assertion — but
 that assertion's own label and comment say "mechanism fact, not a manual
-citation" and "no page claims or denies this." Page 353 does claim it.
-CIA-AB-TWOBIT-RULE is the first assertion in this suite to grade that
-mechanism fact against the manual (see "Grep check" above) — not a
-re-grade, a first grade of a proposition another package explicitly left
-ungraded.
+citation" and "no page claims or denies this." CIA-AB-TWOBIT-RULE is the
+first assertion in this suite to grade that mechanism fact against p.351
+(see "Grep check" above) — not a re-grade, a first grade of a proposition
+another package explicitly left ungraded.
 
-Status: testable, graded — **RED at baseline**, honestly, for the same
-reason as Group E: the oracle (prose, corroborated by the chosen addresses
-and, per NM-HRM-062, all four surveyed emulators) is unambiguous here even
-though the *separate* printed-binary-pattern question is not.
+Status: testable, graded — **GREEN**: p.353's own sentence never predicted
+"neither" at `$BFC100`, and the page taken whole (p.351 included) predicts
+exactly what `gary` does there.
 
 ## Group G — CS/phi2 timing (2 claims, declined)
 
@@ -400,7 +407,7 @@ Every one of the 117 claims in this package's slice of
   package), but the uid sits on `record()` alone since the register-name
   half is not gradeable here.
 - **4 uids** (Group E) on one uid-bearing `expect()`, graded RED.
-- **3 uids** (Group F) on one uid-bearing `expect()`, graded RED.
+- **3 uids** (Group F) on one uid-bearing `expect()`, graded GREEN.
 - **2 uids** (Group G) declined outright, out of this fixture's boundary.
 - **4 uids** (Group H, NM-HRM-062) measured both readings via `note()`,
   graded neither, `record()`s cite the finding.
