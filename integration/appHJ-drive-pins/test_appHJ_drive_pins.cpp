@@ -8,8 +8,9 @@
 //
 // NMH_MUTATE selects one mutated case in place of its normal counterpart;
 // none is exercised by a plain `make test`. Every mutation still runs the
-// package's own comparator -- the same expect() label -- through the same
-// four-phase or four-pin run; only the one named clause changes.
+// package's own comparator -- the same expect() label, unchanged -- through
+// the same four-phase or four-pin run; only the one named clause changes,
+// and the comparator is never inverted while a mutation is selected.
 //
 // MUTATION P1-WRONGPORT stimulus red: P1's own schedule (M0H) is applied to
 //   joystick0 instead of joystick1; JOY0DAT's lo byte stays at its baseline
@@ -23,7 +24,7 @@
 // MUTATION PJ1 stimulus red: one scheduled pin change (phase 0, step 5) is
 //   dropped while the grader keeps its plan, via NMH_MUTATE=PJ1
 // MUTATION PJ2 stimulus red: phase 0's step 5 hold is shortened to 2 lines
-//   (the window then holds 0 graded samples), via NMH_MUTATE=PJ2
+//   (the window then holds fewer than 3 real stored samples), via NMH_MUTATE=PJ2
 // MUTATION PJ3 stimulus red: a mouse count is injected through kbd_mouse_*
 //   during phase 0's baseline window, via NMH_MUTATE=PJ3
 // MUTATION P5-WRONGPIN stimulus red: P5's own button press is redirected to
@@ -33,23 +34,30 @@
 //   (mouse_buttons bit 2), via NMH_MUTATE=P6-WRONGPIN
 // MUTATION P8-WRONGPIN stimulus red: P8's own press redirected to joystick1
 //   bit 5 instead of joystick0 bit 5, via NMH_MUTATE=P8-WRONGPIN
-// MUTATION P7 already red on the unmutated run: no harness input reaches
-//   POT1X's read-back at all; P7's own comparator, pointed at P5's live
-//   channel instead (mouse_buttons bit 2 -> DATLX), reads PASS -- the
-//   comparator itself is sound, via NMH_MUTATE=(none -- recomputed from
-//   P5's own run)
 // MUTATION PP1 stimulus red: the C2 button press is omitted; PP1 reports it
 //   missing instead of grading C2, via NMH_MUTATE=PP1
 // MUTATION PP2 stimulus red: pin 5's C1 write sets POTGO bit 0 = 1
 //   (prog_pot_pp2.bin), via NMH_MUTATE=PP2
 // MUTATION PP3 stimulus red: pin 5's C1 step is shortened to 6 lines
-//   (prog_pot_pp3.bin): the window then holds 0 graded samples, via
-//   NMH_MUTATE=PP3
-// MUTATION FIXTURE not separately mutated: it is the same program-stored
-//   constant channel every other result store already uses.
+//   (prog_pot_pp3.bin), leaving fewer than 3 real stored samples in its
+//   window, via NMH_MUTATE=PP3
+// MUTATION FIXTURE (section 4) not exercised, by a scope decision: it and
+//   the five other fixture/DONE checks below verify only that chip-memory
+//   writes and reads and the DONE marker work at all, a plumbing
+//   precondition every other assertion in this package already depends on
+//   and would fail through if it did not hold.
+// MUTATION FIXTURE (section 5) not exercised, by a scope decision: as above.
+// MUTATION FIXTURE (section 6) not exercised, by a scope decision: as above.
+// MUTATION section 4 fixture (reaches DONE) not exercised, by a scope
+//   decision: as above.
+// MUTATION section 5 fixture (reaches DONE) not exercised, by a scope
+//   decision: as above.
+// MUTATION section 6 fixture (reaches DONE) not exercised, by a scope
+//   decision: as above.
 //
 // Stimulus mapping established by this build (SPECIFICATION.md 3.4, 5.1
-// assign it to the builder), from the harness's own ports:
+// assign it to the builder), from the harness's own ports, matched against
+// Table 8-1 (p.228) and Figure 8-2 (p.230) -- see SPECIFICATION.md 8.1:
 //   joystick1 drives JOY0DAT (the left port, P1/P2); joystick0 drives
 //   JOY1DAT (the right port, P3/P4). Within either port, bit 3 = up
 //   (pin 1), bit 2 = down (pin 2), bit 1 = left (pin 3), bit 0 = right
@@ -58,7 +66,7 @@
 //   button); bit 10 (POT0Y/DATLY) follows mouse_buttons bit 1 (right
 //   button) (joystick1 bit 5 presses it too; this build presses only the
 //   mouse bit); bit 14 (POT1Y/DATRY) follows joystick0 bit 5; bit 12
-//   (POT1X/DATRX) follows no harness input at all (P7, above).
+//   (POT1X/DATRX) follows no harness input at all (P7, withdrawn: SPECIFICATION.md 5.1, 8.2).
 
 #include <algorithm>
 #include <cstdint>
@@ -131,7 +139,8 @@ std::vector<MouseStep> build_mouse_schedule() {
 struct MousePhase { bool use_joystick1; int a_bit, b_bit; };
 
 // P1..P4 in order: joystick1 carries the left port (P1,P2), joystick0 the
-// right port (P3,P4) -- the swap this build measured (see header comment).
+// right port (P3,P4) -- the mapping this build established (see header
+// comment, SPECIFICATION.md 8.1).
 MousePhase kMousePhases[4] = {
     {true,  2, 0},  // P1 M0H: pin a=2(down)->bit2, pin b=4(right)->bit0
     {true,  3, 1},  // P2 M0V: pin a=1(up)->bit3,   pin b=3(left)->bit1
@@ -154,7 +163,12 @@ std::vector<Sample3> extract_samples3(const std::vector<RamAccess>& log, uint32_
     return s;
 }
 
-struct AppliedMouseEvent { size_t sample_index; int phase; size_t step; int a, b; bool skipped; };
+// One event of the harness's own action record: the sample index at which
+// it was actually applied (from live simulation), the sample index the
+// plan called for, and what it changed. This is the "logged record of the
+// input ports" SPECIFICATION.md 4.5 (PJ1) and 5.5 (PP1) ask the
+// preconditions to be checked from, not the driver's `skipped` flag alone.
+struct AppliedMouseEvent { size_t sample_index; size_t planned_index; int phase; size_t step; int a, b; bool skipped; };
 
 struct MouseRun {
     bool loaded = false, released = false;
@@ -241,7 +255,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
                         uint8_t byte = uint8_t((bit_a << ph.a_bit) | (bit_b << ph.b_bit));
                         if (ph.use_joystick1) h.ports()->joystick1 = byte; else h.ports()->joystick0 = byte;
                     }
-                    r.applied.push_back({samples_seen, e.phase, e.step, st.a, st.b, skipped});
+                    r.applied.push_back({samples_seen, e.g, e.phase, e.step, st.a, st.b, skipped});
                     ++ev_idx;
                 }
                 ++samples_seen;
@@ -299,19 +313,19 @@ std::vector<Sample2> extract_samples2(const std::vector<RamAccess>& log, uint32_
 }
 
 // Which harness input presses each pin's button, and at which bit
-// (SPECIFICATION.md 5.1; measured -- see header comment). kNone marks P7
-// (POT1X), which has no wired input at all.
+// (SPECIFICATION.md 5.1; see header comment). kNone marks P7 (POT1X),
+// which has no wired input at all (withdrawn: SPECIFICATION.md 5.1, 8.2).
 enum class Src { kMouseButtons, kJoystick0, kJoystick1, kNone };
 struct PotPin { Src src; int bit; int dat_bit; uint16_t c1, c4, c6, c8; };
 
 PotPin kPotPins[4] = {
     {Src::kMouseButtons, 2, 8,  0xFF00, 0xFE00, 0xFC00, 0xFF00},  // P5 POT0X
     {Src::kMouseButtons, 1, 10, 0xFF00, 0xFB00, 0xF300, 0xFF00},  // P6 POT0Y
-    {Src::kNone,         0, 12, 0xFF00, 0xEF00, 0xCF00, 0xFF00},  // P7 POT1X
+    {Src::kNone,         0, 12, 0xFF00, 0xEF00, 0xCF00, 0xFF00},  // P7 POT1X (withdrawn)
     {Src::kJoystick0,    5, 14, 0xFF00, 0xBF00, 0x3F00, 0xFF00},  // P8 POT1Y
 };
 
-struct AppliedPotEvent { size_t sample_index; int pin; size_t step; bool press; bool skipped; };
+struct AppliedPotEvent { size_t sample_index; size_t planned_index; int pin; size_t step; bool press; bool skipped; };
 
 struct PotRun {
     bool loaded = false, released = false;
@@ -319,7 +333,8 @@ struct PotRun {
     std::vector<RamAccess> log;
     std::optional<uint16_t> fixture;
     std::vector<AppliedPotEvent> applied;
-    std::vector<uint16_t> markers; // RESULTS writes, in order
+    std::vector<uint16_t> markers;       // RESULTS writes, in order
+    std::vector<size_t> marker_sample;   // sample index seen at each marker write
 };
 
 PotRun run_pot(const std::string& dir, const std::string& mutate) {
@@ -371,7 +386,7 @@ PotRun run_pot(const std::string& dir, const std::string& mutate) {
             const auto& a = lg[log_seen];
             if (!a.is_write) continue;
             if (a.word_addr == word_addr(kDoneAddr) && a.data == kDoneValue) done_seen = true;
-            if (a.word_addr == results_w) r.markers.push_back(a.data);
+            if (a.word_addr == results_w) { r.markers.push_back(a.data); r.marker_sample.push_back(samples_seen); }
             if (a.word_addr == buf_w0 + 2 * samples_seen) {
                 // See run_mouse() for why this uses the pre-increment count.
                 while (ev_idx < events.size() && samples_seen >= events[ev_idx].g) {
@@ -404,7 +419,7 @@ PotRun run_pot(const std::string& dir, const std::string& mutate) {
                             case Src::kNone: break;
                         }
                     }
-                    r.applied.push_back({samples_seen, e.pin, e.step, press, skipped});
+                    r.applied.push_back({samples_seen, e.g, e.pin, e.step, press, skipped});
                     ++ev_idx;
                 }
                 ++samples_seen;
@@ -474,6 +489,25 @@ int main(int argc, char** argv) {
     const char* mutate_env = std::getenv("NMH_MUTATE");
     const std::string mv = mutate_env ? mutate_env : "";
 
+    // ---- claims that give no proposition (SPECIFICATION.md section 1) ----
+    if (mv.empty()) {
+        checks.record("opus:AHJ-118, sol:H-092 [SPECIFICATION.md 1.1, p.371]: declined -- no expected value "
+                       "exists for this system: the device I.D. belongs to the attached drive, and no page "
+                       "states this system's drive type");
+        checks.record("opus:AHJ-161, sol:J-030 [SPECIFICATION.md 1.2, p.379]: declined -- a pin's direction "
+                       "cannot be seen at this boundary, and no harness setting corresponds to the Original "
+                       "Agnus specifically");
+        checks.record("opus:AHJ-326 [SPECIFICATION.md 1.3, p.381]: declined -- an output direction has nothing "
+                       "the test can see, and the pages contradict each other on this pin's direction");
+        checks.record("opus:AHJ-300, sol:J-166 [SPECIFICATION.md 1.4, p.381]: declined -- the pin is internal "
+                       "to the system, between chips, with no visible effect at this boundary");
+        checks.record("opus:AHJ-090, sol:H-064 [SPECIFICATION.md 1.5, p.370]: declined -- the test sees no pin "
+                       "of the disk connector, and \"approximately\" carries no tolerance");
+        checks.record("opus:AHJ-085, sol:H-060 [SPECIFICATION.md 1.6, p.370]: declined -- the flip-flop "
+                       "described is the external drive's own, and the only drive this system models is drive "
+                       "0, not an external drive");
+    }
+
     // ---- section 4: mouse-quadrature run ---------------------------------
     MouseRun mr = run_mouse(dir, mv);
     bool m_fixture_ok = mr.loaded && mr.fixture && *mr.fixture == kFixtureValue;
@@ -489,41 +523,53 @@ int main(int argc, char** argv) {
     auto steps = build_mouse_schedule();
     auto samples3 = extract_samples3(mr.log, word_addr(kBufBase), 2048);
 
-    // PJ1: every planned event was actually applied (the driver's own
-    // action record stands in for a harness input log: nanomig_harness.h
-    // does not log input-port writes, only the chip-memory port).
-    bool pj1_ok = true; int pj1_missing = -1;
-    for (auto& e : mr.applied) if (e.skipped) { pj1_ok = false; pj1_missing = (int)e.sample_index; }
-    if (mv == "PJ1")
-        checks.expect(!pj1_ok, "PJ1 [SPECIFICATION.md 4.5] stimulus mutation: dropping one scheduled change (phase 0 step 5) "
-                                "is reported missing, not silently graded");
-    else
-        checks.expect(pj1_ok, "PJ1 [SPECIFICATION.md 4.5]: the driver's own action record shows every scheduled change "
-                               "applied, on the proposition's two pins only, in order");
+    // PJ1 [SPECIFICATION.md 4.5]: from the driver's own action record (the
+    // logged input-port writes, each with the sample index it landed at) --
+    // every scheduled change was actually applied, at its planned sample
+    // index, and no other channel (the mouse-count injection) was touched.
+    bool pj1_missing_ok = true;
+    for (auto& e : mr.applied) if (e.skipped) pj1_missing_ok = false;
+    bool pj1_timing_ok = true;
+    for (auto& e : mr.applied) if (!e.skipped && e.sample_index != e.planned_index) pj1_timing_ok = false;
+    bool pj1_idle_ok = !mr.pj3_pulse_applied;
+    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_idle_ok;
+    checks.expect(pj1_ok, "PJ1 [SPECIFICATION.md 4.5]: the driver's own action record shows every scheduled "
+                           "change applied, at its scheduled sample index, on the proposition's two pins only, "
+                           "with no other controller-port input, mouse movement or mouse-button activity");
 
-    // Per-phase grading.
-    struct PhaseResult { bool e1_ok = true, e2_ok = true, e3_ok = true; bool pj2_ok = true; bool pj3_ok = true;
-                          uint8_t c0 = 0; int graded_windows = 0; std::string detail; };
+    // Per-phase grading. Step windows are bounded by consecutive entries of
+    // the driver's own action record (mr.applied's sample_index, taken from
+    // live simulation), never by the test's own hold-line constants
+    // (SPECIFICATION.md validator repair: PJ2/PP3 must be asserted from the
+    // stored samples).
+    struct PhaseResult { bool e1_ok = true, e2_ok = true, e3_ok = true; bool pj3_ok = true; bool population_ok = true;
+                          uint8_t c0 = 0; int graded_windows = 0; };
     PhaseResult pr[4];
-    uint8_t base_other_byte[4] = {0, 0, 0, 0};
-    uint16_t base_other_reg[4] = {0, 0, 0, 0};
     const char* names[4] = {"P1", "P2", "P3", "P4"};
     const char* pages[4] = {"p.380", "p.380", "p.380", "p.380"}; // Appendix J pin table (SPECIFICATION.md 4.1); p.281 supplies the routing, section 3.4
 
     for (int p = 0; p < 4; ++p) {
-        size_t base = (size_t)p * 512;
-        size_t acc = base;
         bool have_c0 = false;
+        bool have_other_base = false;
+        uint8_t base_other_byte = 0;
+        uint16_t base_other_reg = 0;
+        std::optional<uint16_t> base_j0, base_j1;
         for (size_t i = 0; i < steps.size(); ++i) {
-            int hold = (p == 0 && i == 5 && mv == "PJ2") ? 2 : steps[i].hold_lines;
-            size_t win_lo = acc + 2, win_hi = acc + hold - 1; // 2-line guard
-            acc += hold;
-            if (win_hi < win_lo) {
-                if (p == 0 && i == 5 && mv == "PJ2") pr[p].pj2_ok = false; // 0 graded samples
-                continue;
-            }
-            if (win_hi - win_lo + 1 < 3) { if (p == 0 && i == 5 && mv == "PJ2") pr[p].pj2_ok = false; continue; }
+            size_t ai = (size_t)p * steps.size() + i;
+            size_t start = mr.applied[ai].sample_index;
+            size_t end;
+            if (i + 1 < steps.size()) end = mr.applied[ai + 1].sample_index;
+            else if (p + 1 < 4) end = mr.applied[(size_t)(p + 1) * steps.size() + 0].sample_index;
+            else end = samples3.size();
+
+            if (end < start + 3) { pr[p].population_ok = false; continue; } // 2-line guard leaves < 1 sample
+            size_t win_lo = start + 2, win_hi = end - 1;
+            int real_count = 0;
+            for (size_t idx = win_lo; idx <= win_hi && idx < samples3.size(); ++idx)
+                if (samples3[idx].j0 && samples3[idx].j1) ++real_count;
+            if (real_count < 3) { pr[p].population_ok = false; continue; }
             ++pr[p].graded_windows;
+
             for (size_t idx = win_lo; idx <= win_hi && idx < samples3.size(); ++idx) {
                 auto& s = samples3[idx];
                 if (!s.j0 || !s.j1) { pr[p].e1_ok = pr[p].e2_ok = false; continue; }
@@ -537,7 +583,6 @@ int main(int argc, char** argv) {
 
                 if (i == 0) { // baseline window establishes c0
                     if (!have_c0) { pr[p].c0 = byte; have_c0 = true; }
-                    else if (byte != pr[p].c0) pr[p].pj3_ok = false;
                 } else {
                     uint8_t expected_count = uint8_t(pr[p].c0 + steps[i].n);
                     if (byte != expected_count) pr[p].e2_ok = false;
@@ -547,42 +592,52 @@ int main(int argc, char** argv) {
                 uint16_t other_same = (p < 2) ? *s.j0 : *s.j1;
                 uint8_t other_byte = (p % 2 == 0) ? uint8_t(other_same >> 8) : uint8_t(other_same & 0xFF);
                 uint16_t other_reg = (p < 2) ? *s.j1 : *s.j0;
-                if (idx == win_lo && i == 0) { base_other_byte[p] = other_byte; base_other_reg[p] = other_reg; }
-                if (other_byte != base_other_byte[p] || other_reg != base_other_reg[p]) pr[p].e3_ok = false;
+                if (!have_other_base) { base_other_byte = other_byte; base_other_reg = other_reg; have_other_base = true; }
+                else if (other_byte != base_other_byte || other_reg != base_other_reg) pr[p].e3_ok = false;
+
+                // PJ3 [SPECIFICATION.md 4.5]: in the baseline window, both
+                // registers (not just the byte under test) stay identical.
+                if (i == 0) {
+                    if (!base_j0) { base_j0 = s.j0; base_j1 = s.j1; }
+                    else if (*s.j0 != *base_j0 || *s.j1 != *base_j1) pr[p].pj3_ok = false;
+                }
             }
         }
-        // PJ3 (phase 0 only): the injected pulse must show up as baseline
-        // samples differing (i.e. pj3_ok flips to false under PJ3 on phase 0).
     }
 
-    // PJ3 precondition reported once, from phase 0.
-    if (mv == "PJ3")
-        checks.expect(!pr[0].pj3_ok, "PJ3 [SPECIFICATION.md 4.5] stimulus mutation: a mouse count injected during the "
-                                      "baseline window makes the baseline samples differ, so PJ3 is not met");
-    else
-        checks.expect(pr[0].pj3_ok, "PJ3 [SPECIFICATION.md 4.5]: in the baseline window all samples of JOY0DAT and "
-                                     "JOY1DAT are identical");
+    bool pj3_ok = pr[0].pj3_ok && pr[1].pj3_ok && pr[2].pj3_ok && pr[3].pj3_ok;
+    checks.expect(pj3_ok, "PJ3 [SPECIFICATION.md 4.5]: in the baseline window of every phase, all samples of "
+                           "JOY0DAT and JOY1DAT are identical");
 
-    if (mv == "PJ2")
-        checks.expect(!pr[0].pj2_ok, "PJ2 [SPECIFICATION.md 4.5] stimulus mutation: shortening one hold to 2 scan lines "
-                                      "leaves its window with fewer than 3 graded samples, so PJ2 is not met");
-    else {
-        bool pj2_all = pr[0].pj2_ok && pr[1].pj2_ok && pr[2].pj2_ok && pr[3].pj2_ok;
-        checks.expect(pj2_all, "PJ2 [SPECIFICATION.md 4.5]: every hold window contains at least 3 graded samples");
+    bool pj2_population_ok = pr[0].population_ok && pr[1].population_ok && pr[2].population_ok && pr[3].population_ok;
+    bool pj2_continuity_ok = true;
+    for (size_t idx = 1; idx < samples3.size(); ++idx) {
+        if (!samples3[idx - 1].v || !samples3[idx].v) continue;
+        uint8_t prev_hi = uint8_t(*samples3[idx - 1].v >> 8);
+        uint8_t cur_hi  = uint8_t(*samples3[idx].v >> 8);
+        if (cur_hi != uint8_t(prev_hi + 1) && cur_hi != 0) pj2_continuity_ok = false;
     }
+    bool pj2_ok = pj2_population_ok && pj2_continuity_ok;
+    checks.expect(pj2_ok, "PJ2 [SPECIFICATION.md 4.5]: every hold window contains at least 3 graded samples, "
+                           "and VHPOSR bits 15-8 of consecutive stored samples differ by +1 modulo 256 or "
+                           "return to $00 at a frame start");
 
+    // P1-P4 [spec 3.7]: gated on section 4's preconditions -- a failed
+    // precondition makes the propositions "not checkable", never FAIL.
+    bool section4_pre_ok = pj1_ok && pj2_ok && pj3_ok;
     for (int p = 0; p < 4; ++p) {
-        bool prop_ok = pr[p].e1_ok && pr[p].e2_ok && pr[p].e3_ok && pr[p].graded_windows > 0;
         std::string label = std::string(names[p]) + " [" + pages[p] + ": opus:AHJ-" +
             (p==0?"178, sol:J-046":p==1?"206, sol:J-074":p==2?"176, sol:J-044":"208, sol:J-076") +
             "]: Denise's " + (p==0?"M0H":p==1?"M0V":p==2?"M1H":"M1V") +
             " is an input; the connector pins determine the state bits and the count of " +
             (p<2?"JOY0DAT":"JOY1DAT") + "'s " + ((p%2==0)?"horizontal":"vertical") + " counter";
-        checks.expect(prop_ok, label);
+        if (section4_pre_ok) {
+            bool prop_ok = pr[p].e1_ok && pr[p].e2_ok && pr[p].e3_ok && pr[p].graded_windows > 0;
+            checks.expect(prop_ok, label);
+        } else {
+            checks.record(label + " -- not checkable: a section 4 precondition (PJ1, PJ2 or PJ3) did not hold");
+        }
     }
-
-    // P7-style "no separate binary" reuse is only meaningful once we have
-    // section 5's data; deferred below (see MUTATION P7 in header).
 
     // ---- section 5: pot-pin run -------------------------------------------
     PotRun pt = run_pot(dir, mv);
@@ -598,55 +653,77 @@ int main(int argc, char** argv) {
 
     auto samples2 = extract_samples2(pt.log, word_addr(kBufBase), 768);
 
-    // PP1
-    bool pp1_ok = true;
-    for (auto& e : pt.applied) if (e.skipped) pp1_ok = false;
-    if (mv == "PP1")
-        checks.expect(!pp1_ok, "PP1 [SPECIFICATION.md 5.5] stimulus mutation: omitting the C2 press is reported "
-                                "missing instead of graded");
-    else
-        checks.expect(pp1_ok, "PP1 [SPECIFICATION.md 5.5]: the driver's own action record shows the button changes "
-                               "on the pin under test only, each in its intended step");
+    // PP1 [SPECIFICATION.md 5.5]: from the driver's own action record --
+    // every scheduled button change applied, at its planned sample index,
+    // at least 6 samples from each of that step's POTGO markers.
+    bool pp1_missing_ok = true;
+    for (auto& e : pt.applied) if (e.skipped) pp1_missing_ok = false;
+    bool pp1_timing_ok = true;
+    for (auto& e : pt.applied) if (!e.skipped && e.sample_index != e.planned_index) pp1_timing_ok = false;
+    bool pp1_gap_ok = true;
+    {
+        // Steps 1(C2),2(C3) sit between markers 0(C1) and 1(C4); step 4(C5)
+        // between markers 1(C4) and 2(C6); step 6(C7) between markers
+        // 2(C6) and 3(C8). Steps 0,3,5,7 are the marker (POTGO-write) steps
+        // themselves, not button changes, and are skipped here.
+        int prev_j[8] = {-1, 0, 0, -1, 1, -1, 2, -1};
+        int next_j[8] = {-1, 1, 1, -1, 2, -1, 3, -1};
+        for (auto& e : pt.applied) {
+            if (e.skipped) continue;
+            if (prev_j[e.step] < 0) continue;
+            size_t pmi = (size_t)e.pin * 4 + (size_t)prev_j[e.step];
+            size_t nmi = (size_t)e.pin * 4 + (size_t)next_j[e.step];
+            if (pmi >= pt.marker_sample.size() || nmi >= pt.marker_sample.size()) { pp1_gap_ok = false; continue; }
+            size_t pm = pt.marker_sample[pmi], nm = pt.marker_sample[nmi];
+            if (e.sample_index < pm + 6) pp1_gap_ok = false;
+            if (e.sample_index + 6 > nm) pp1_gap_ok = false;
+        }
+    }
+    bool pp1_ok = pp1_missing_ok && pp1_timing_ok && pp1_gap_ok;
+    checks.expect(pp1_ok, "PP1 [SPECIFICATION.md 5.5]: the driver's own action record shows the button changes "
+                           "on the pin under test only, each in its intended step, at least 6 samples stored "
+                           "from each of that step's markers");
 
     // PP2: markers (16 expected, 4 per pin) match the planned POTGO values,
     // bit 0 = 0 in all.
+    bool pp2_ok;
     {
         std::vector<uint16_t> plan;
         for (int p = 0; p < 4; ++p) { plan.push_back(kPotPins[p].c1); plan.push_back(kPotPins[p].c4);
                                        plan.push_back(kPotPins[p].c6); plan.push_back(kPotPins[p].c8); }
         if (mv == "PP2" && !plan.empty()) plan[0] = 0xFF01; // pin 5's C1
-        bool pp2_ok = pt.markers.size() == plan.size();
+        pp2_ok = pt.markers.size() == plan.size();
         for (size_t i = 0; pp2_ok && i < plan.size(); ++i)
             if (pt.markers[i] != plan[i] || (pt.markers[i] & 1) != 0) pp2_ok = false;
-        if (mv == "PP2")
-            checks.expect(!pp2_ok, "PP2 [SPECIFICATION.md 5.5] stimulus mutation: writing POTGO with bit 0 = 1 in "
-                                    "pin 5's C1 makes PP2 not met");
-        else
-            checks.expect(pp2_ok, "PP2 [SPECIFICATION.md 5.5]: the POTGO values stored with the markers are the "
-                                   "planned ones, and bit 0 is 0 in all of them (" + std::to_string(pt.markers.size()) +
-                                   " markers seen)");
+        checks.expect(pp2_ok, "PP2 [SPECIFICATION.md 5.5]: the POTGO values stored with the markers are the "
+                               "planned ones, and bit 0 is 0 in all of them (" + std::to_string(pt.markers.size()) +
+                               " markers seen)");
     }
 
-    // Per-pin grading.
-    struct PinResult { bool ok = true; int graded_windows = 0; std::vector<uint16_t> observed_d; std::vector<int> observed_step; };
+    // Per-pin grading. Step windows, like section 4's, are bounded by
+    // consecutive entries of the driver's own action record, and a window
+    // is graded only if it holds at least 3 really-stored samples (a
+    // missing sample no longer passes silently).
+    struct PinResult { bool ok = true; int graded_windows = 0; bool population_ok = true;
+                        std::vector<uint16_t> observed_d; std::vector<int> observed_step; };
     PinResult pinr[4];
-    bool pp3_ok = true; // SPECIFICATION.md 5.5: every graded window holds >= 3 samples
     const int expect_bit[8] = {1, 0, 1, 0, 0, 0, -1, 1}; // C1..C8; -1 = not graded (C7)
     for (int p = 0; p < 4; ++p) {
-        // This pin's own sample-index base, from the same event-list logic
-        // run_pot() uses (PP3 shortens pin 0's own C1 step only).
-        size_t acc = 0;
-        for (int q = 0; q < p; ++q) {
-            int c1l = (q == 0 && mv == "PP3") ? 6 : 24;
-            acc += (size_t)c1l + 24 * 7;
-        }
-        size_t win = acc;
         for (int step = 0; step < 8; ++step) {
-            int hold = (p == 0 && step == 0 && mv == "PP3") ? 6 : 24;
-            size_t lo = win + 6, hi = win + hold - 1; // 6-line guard
-            win += hold;
-            if (hi < lo || hi - lo + 1 < 3) { pp3_ok = false; continue; }
+            size_t ai = (size_t)p * 8 + (size_t)step;
+            size_t start = pt.applied[ai].sample_index;
+            size_t end;
+            if (step + 1 < 8) end = pt.applied[ai + 1].sample_index;
+            else if (p + 1 < 4) end = pt.applied[(size_t)(p + 1) * 8 + 0].sample_index;
+            else end = samples2.size();
+
+            if (end < start + 7) { pinr[p].population_ok = false; continue; } // 6-line guard leaves < 1 sample
+            size_t lo = start + 6, hi = end - 1;
+            int real_count = 0;
+            for (size_t idx = lo; idx <= hi && idx < samples2.size(); ++idx) if (samples2[idx].pg) ++real_count;
+            if (real_count < 3) { pinr[p].population_ok = false; continue; }
             ++pinr[p].graded_windows;
+
             for (size_t idx = lo; idx <= hi && idx < samples2.size(); ++idx) {
                 auto& s = samples2[idx];
                 if (!s.pg) continue;
@@ -664,20 +741,23 @@ int main(int argc, char** argv) {
         }
     }
 
-    if (mv == "PP3")
-        checks.expect(!pp3_ok, "PP3 [SPECIFICATION.md 5.5] stimulus mutation: shortening pin 5's C1 step to 6 lines "
-                                "leaves its window with fewer than 3 graded samples, so PP3 is not met");
-    else
-        checks.expect(pp3_ok, "PP3 [SPECIFICATION.md 5.5]: every graded window holds at least 3 samples");
+    bool pp3_ok = pinr[0].population_ok && pinr[1].population_ok && pinr[2].population_ok && pinr[3].population_ok;
+    checks.expect(pp3_ok, "PP3 [SPECIFICATION.md 5.5]: every graded window holds at least 3 samples");
 
     const char* pnames[4] = {"P5", "P6", "P7", "P8"};
     const char* pids[4] = {"opus:AHJ-243, sol:J-110", "opus:AHJ-245, sol:J-112", "opus:AHJ-249, sol:J-116", "opus:AHJ-251, sol:J-118"};
     const char* ppins[4] = {"POT0X (left, pin 5)", "POT0Y (left, pin 9)", "POT1X (right, pin 5)", "POT1Y (right, pin 9)"};
+    bool section5_pre_ok = pp1_ok && pp2_ok && pp3_ok;
     for (int p = 0; p < 4; ++p) {
-        bool prop_ok = pinr[p].ok && pinr[p].graded_windows > 0;
-        std::string label = std::string(pnames[p]) + " [p.380: " + pids[p] + "]: Paula's " + ppins[p] +
+        if (p == 2) continue; // P7: withdrawn, see below (not a graded proposition)
+        std::string label = std::string(pnames[p]) + " [" + pages[p] + ": " + pids[p] + "]: Paula's " + ppins[p] +
             " is bidirectional: OUT/DAT drive the pin, and POTGOR reports its actual level including a forced button";
-        checks.expect(prop_ok, label);
+        if (section5_pre_ok) {
+            bool prop_ok = pinr[p].ok && pinr[p].graded_windows > 0;
+            checks.expect(prop_ok, label);
+        } else {
+            checks.record(label + " -- not checkable: a section 5 precondition (PP1, PP2 or PP3) did not hold");
+        }
     }
     checks.note("P5-P8 observed DAT-bit sequence (C1..C8, - = not graded): P5=" +
                 [&]{ std::string s; for (size_t i=0;i<pinr[0].observed_d.size();++i) s += std::to_string(pinr[0].observed_d[i]); return s; }() +
@@ -685,19 +765,27 @@ int main(int argc, char** argv) {
                 " P7=" + [&]{ std::string s; for (size_t i=0;i<pinr[2].observed_d.size();++i) s += std::to_string(pinr[2].observed_d[i]); return s; }() +
                 " P8=" + [&]{ std::string s; for (size_t i=0;i<pinr[3].observed_d.size();++i) s += std::to_string(pinr[3].observed_d[i]); return s; }());
 
-    // MUTATION P7 (see header): P7's own comparator (bit-equality against
-    // expect_bit[]) reused on P5's live channel (index 0) goes GREEN,
-    // recomputed from the SAME normal run's data -- no separate binary.
+    // P7 (POT1X): withdrawn (SPECIFICATION.md 5.1, 8.2). The input half (a
+    // pressed button forcing right-port pin 5) cannot be set up at this
+    // boundary. C1, C3, C4 and C8 (the output half) are measured without a
+    // claim id.
     if (mv.empty()) {
-        bool p7_via_p5_ok = true;
-        for (size_t k = 0; k < pinr[0].observed_d.size(); ++k) {
-            int step = pinr[0].observed_step[k];
-            if (expect_bit[step] >= 0 && (int)pinr[0].observed_d[k] != expect_bit[step]) p7_via_p5_ok = false;
+        bool p7_output_ok = true; int p7_output_checked = 0;
+        for (size_t k = 0; k < pinr[2].observed_d.size(); ++k) {
+            int step = pinr[2].observed_step[k];
+            if (step == 0 || step == 2 || step == 3 || step == 7) { // C1, C3, C4, C8
+                ++p7_output_checked;
+                if (expect_bit[step] >= 0 && (int)pinr[2].observed_d[k] != expect_bit[step]) p7_output_ok = false;
+            }
         }
-        checks.record("MUTATION P7: no harness input reaches POT1X's read-back at all; P7's own comparator, "
-                       "evaluated on P5's live channel (mouse_buttons bit 2 -> DATLX) in this same run, reads " +
-                       std::string(p7_via_p5_ok ? "PASS" : "FAIL") +
-                       " -- the comparator itself is sound, the gap is P7's own pin");
+        checks.note("POT1X (right, pin 5), output steps C1/C3/C4/C8 only, no claim id (the input half is "
+                     "withdrawn below): " + std::string(p7_output_ok ? "match p.240/241's OUT/DAT prediction" :
+                     "do not match") + " in " + std::to_string(p7_output_checked) + " graded samples");
+        checks.record("opus:AHJ-249, sol:J-116 [p.380: \"35 POT1X Pot 1X I/O\"]: withdrawn -- the input half (a "
+                       "button forcing right-port pin 5 low) cannot be set up at this boundary: the right port's "
+                       "only input is joystick0, and Table 8-1 (p.228) gives a joystick nothing on pin 5 "
+                       "(\"---\"); for the condition actually set up (no button), p.241's \"a 1 if it is not\" "
+                       "is what both cores read (C2)");
     }
 
     // ---- section 6: drive-light record (no claim, not graded) -------------
