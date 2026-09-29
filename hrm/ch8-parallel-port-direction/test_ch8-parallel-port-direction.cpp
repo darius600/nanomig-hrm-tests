@@ -5,8 +5,7 @@
 //   (output) -- at the `ciaa` module boundary, compiled alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   page 259; committed specification df8138f (SPECIFICATION.md, this
-//   package).
+//   page 259; SPECIFICATION.md (this package).
 // Requirement IDs: PROP-1, per SPECIFICATION.md's claim inventory.
 //   Claims file: hrm-testpipeline/work/ch8-s4-build/ch8-parallel-port-direction.jsonl
 //   (2 claims; both carried on PROP-1's single graded line -- same clause of
@@ -22,127 +21,34 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// Order-of-work disclosure (carried forward from SPECIFICATION.md, restated
-//   here because it bears on how this file's assertions were designed): the
-//   task instructions that assigned this package, and the classify.evidence
-//   field co-resident with extract.quote in both claim records, pre-exposed
-//   ciaa.v RTL detail (line numbers 267, 270-279, 268, 282-288, 296, 114)
-//   before SPECIFICATION.md was written. That document's PROP-1 wording and
-//   testability argument nonetheless rest only on extract.quote/
-//   classify.restatement and the p.259 text. The RTL facts below were
-//   independently re-verified by this builder (Read, not re-typed from what
-//   was pre-exposed) after SPECIFICATION.md's commit, as step 2.
+// What this package tests: PROP-1 at CIA-A port B's data/direction
+//   register pair (CIAAPRB/CIAADDRB), at every one of the eight bit
+//   positions, over lines released first (portb_in = 0xFF, the idle level
+//   p.354 gives a line nothing drives; a line left at the Harness default of
+//   0 is an outside line the fixture itself holds low, a state neither
+//   p.259 nor p.354 decides for a driven output). With the direction bit
+//   set to output, a written value must be what the next read of that
+//   register returns, 0 and 1 alike. CONTROL-PA0-OUTPUT (the identical
+//   comparator at CIAAPRA bit 0) and PORTB-RELEASED-CONTROL (the released
+//   lines read with the direction at input) are its measurement-basis
+//   controls.
 //
-// RTL read for step 2: ciaa.v (388 lines, pinned submodule commit
-//   d6f7df957fad655bc07f6a381e5094a9edff0be0) in full, plus its four
-//   instantiated submodules (cia_int.v, cia_timera.v, cia_timerb.v,
-//   cia_timerd.v -- needed only for Verilator to elaborate the top module).
-//   Also read, per the task instructions naming it as this package's
-//   control pattern: hrm/ch8-ciaa-port-direction/Makefile and its full test
-//   .cpp (Checks class, Harness/write_reg/read_reg/tick bus-timing protocol
-//   for ciaa.v specifically, and the MUTATION-comment convention -- reused
-//   below as verified RTL-interface plumbing and suite coding convention,
-//   not as a source of this package's own assertions or expected values,
-//   which come only from SPECIFICATION.md). Also read minimig.v's CIAA1 and
-//   CIAB1 instantiation sites (:603-651) and its 2011-04-02 change-log
-//   comment (:136), and, per the build brief and the task instructions,
-//   _emulators/minimig-aga-mister/rtl/ciaa.v (the MiSTer-devel/
-//   Minimig-AGA_MiSTer mirror this repo's `src/minimig-aga` tracks) for the
-//   lineage check.
-//
-// RTL facts established by that reading (none of this shaped
-//   SPECIFICATION.md, which was committed first):
-//   - ciaa.v:130-150 (address decoder): rs==4'h1 -> prb (CIAAPRB select),
-//     rs==4'h3 -> ddrb (CIAADDRB select), never by name/address -- same
-//     rs[3:0]-driven scheme as port A's pra (rs==4'h0) / ddra (rs==4'h2).
-//   - ciaa.v:267, `//reg [7:0] regportb;`, and :270-279 (the entire write
-//     block for it) are commented out. There is no register in this design
-//     that a write to CIAAPRB (prb) ever reaches -- confirmed by grep: the
-//     only occurrences of `regportb` in the file are inside that comment
-//     block (:267, :275, :277).
-//   - ciaa.v:268 `reg [7:0] ddrportb;` is real; written at :282-288
-//     (posedge clk, clk7_en-gated, reset-cleared -- same bus-timing shape as
-//     ddrporta) and read back at :296 on a CIAADDRB read (`!wr && ddrb`).
-//   - ciaa.v:291-299 (pb_out, PRB/DDRB's shared read mux): a CIAAPRB read
-//     (`!wr && prb`, :293-294) returns `portb_in[7:0]` -- the raw,
-//     unsynchronised external input pins -- UNCONDITIONALLY. `ddrportb` does
-//     not appear anywhere in that branch. A CIAADDRB read (:295-296)
-//     returns `ddrportb[7:0]` correctly. So: `ddrportb` is written and can
-//     be read back faithfully at its own address, but it governs nothing
-//     about what a CIAAPRB read returns -- direction is real and inert.
-//   - ciaa.v:114 `wire [7:0] portb_out;` is declared and appears nowhere
-//     else in the file (confirmed by grep: one occurrence, the declaration
-//     itself) -- never assigned, never read, never connected to a module
-//     output port (ciaa's own port list, :80-104, has `output [3:0]
-//     porta_out` but no `portb_out` output port at all).
-//   - Consequence, confirmed by direct measurement below: this interface
-//     has no write side a read can ever observe. A write to CIAAPRB is
-//     dropped (no register catches it, at any bit position); a read of
-//     CIAAPRB always echoes the external pins regardless of what was
-//     written and regardless of CIAADDRB. p.259's bi-directional claim
-//     fails at every bit position, not some.
-//   - minimig.v:607-630 (CIAA1, this interface's own instance): no
-//     `.portb_out(...)` connection appears in its port map at all -- there
-//     is nothing to connect, since `ciaa` has no such output port.
-//     `.portb_in(...)` at :624 wires `{_joy4[0..3], _joy3[0..3]}` -- port B
-//     is this tree's four-player joystick adapter, an input-only use that
-//     never touches the write side this claim is about.
-//   - minimig.v:632-651 (CIAB1, a *different* module, `ciab`, for CIA-B):
-//     `.portb_out({_motor,_sel3,_sel2,_sel1,_sel0,side,direc,_step})` at
-//     :650 is THIS instance's port, driving floppy control signals. It is
-//     not `ciaa`'s dead `portb_out` wire and is not evidence about this
-//     claim; not cited as such.
-//   - minimig.v:136's change-log comment, "2011-04-02 - added functional
-//     ciaa port b (parallel) register to let Unreal game work and some
-//     trainer store data", is stale and contradicted by the tree measured
-//     above: the register it describes does not exist in this commit.
-//
-// Lineage check (per the build brief: this package's top, `ciaa`, lives
-//   under `src/minimig-aga`, the shared-lineage layer also present in
-//   MiSTer-devel/Minimig-AGA_MiSTer -- check the upstream file and say what
-//   was found). `_emulators/minimig-aga-mister/rtl/ciaa.v`, that project's
-//   own mirror, has the identical defect at its own Port B section
-//   (:311-334): `regportb` does not exist there EITHER -- not even as a
-//   commented-out declaration, it is simply absent -- `ddrportb` is
-//   declared/written/read-back the same way nanomig's tree does, and the
-//   PRB read mux (:326-334) unconditionally returns `portb_in[7:0]` with
-//   the comment "Read port pins", never consulting `ddrportb`. Upstream's
-//   own comments name this outcome directly: ":312 // Port B - Parallel
-//   port (simplified, mostly unused in Amiga)" and ":141 wire [7:0]
-//   portb_out; // Port B output (unused)". This is not a defect NanoMig
-//   introduced -- it is inherited, comment-acknowledged behaviour in the
-//   Minimig-AGA_MiSTer line this tree derives from. A red on PROP-1 below
-//   is therefore a statement about the Minimig line, not only about this
-//   board.
-//
-// Every mutation below was actually built as a `-D` variant (WSL Verilator
-// 5.052, `make MUT=<NAME> test`, each a full `rm -rf obj_dir` rebuild) and
-// the PASS/FAIL lines quoted are what that run printed, not predictions.
-//
-// PROP-1's fixture releases CIA-A port B's lines (portb_in = 0xFF, the
-// idle level p.354 gives a line nothing drives) before the sweep below and
-// grades every one of the eight bit positions, not bit 0 alone; a line
-// left at the Harness default of 0 is an outside line the fixture itself
-// holds low, a state neither p.259 nor p.354 decides for a driven output.
-// The expected values are unchanged: with the direction bit set to
-// output, a written value must be what the next read of that register
-// returns, 0 and 1 alike.
+// Every mutation below is a `-D` variant, built and run with `make
+// MUT=<NAME> test` (a full rebuild; WSL Verilator 5.052); the PASS/FAIL
+// counts quoted are what those runs print.
 //
 // Baseline (no MUT): 3 passed, 1 failed -- FIXTURE-LIVE PASS,
 //   opus:8-par.c1/sol:8-par.c1 PROP-1 FAIL at all eight bit positions,
-//   CONTROL-PA0-OUTPUT PASS, PORTB-RELEASED-CONTROL PASS. Reproduced
-//   identically on a second from-scratch build after all four mutation
-//   runs below, to rule out ordering/state leakage between builds.
+//   CONTROL-PA0-OUTPUT PASS, PORTB-RELEASED-CONTROL PASS.
 //
 // MUTATION FIXTURE-LIVE stimulus red: MUT_FIXLIVE repeats the first DDRB
 //   word (0xA5) instead of writing a distinct second word (0x5A) -> FAIL
 //   ("2 passed, 2 failed": FIXTURE-LIVE flips to FAIL, the other three
-//   unaffected). The two readings can no longer be told apart. Reverted
-//   (this is the baseline default, MUT_FIXLIVE=0).
+//   unaffected). The two readings can no longer be told apart
+//   (MUT_FIXLIVE=0 is baseline).
 // MUTATION opus:8-par.c1 stimulus green: PROP-1 is graded at baseline
-//   against CIAAPRB/CIAADDRB and is red at every bit position there (the
-//   write side is unreachable, so a read always returns the released
-//   line). MUT_PROP1_TARGET_A retargets the IDENTICAL
+//   against CIAAPRB/CIAADDRB and is red at every bit position there.
+//   MUT_PROP1_TARGET_A retargets the IDENTICAL
 //   bit_output_follows_direction() comparator -- register-select
 //   arguments only, same code -- at CIAAPRA/CIAADDRA for every position,
 //   cycling between the two bit positions there that round-trip through a
@@ -150,14 +56,14 @@
 //   to PASS at all eight positions, the other three unaffected).
 //   Substitution proof: the comparator is not vacuously false, it returns
 //   true for the port where the mechanism actually works, on the same
-//   fixture, same protocol, same run shape as CONTROL-PA0-OUTPUT.
-//   Reverted (MUT_PROP1_TARGET_A=0 is baseline).
+//   fixture, same protocol, same run shape as CONTROL-PA0-OUTPUT
+//   (MUT_PROP1_TARGET_A=0 is baseline).
 // MUTATION CONTROL-PA0-OUTPUT stimulus red: MUT_CONTROL_NODIR leaves PA0's
 //   direction bit at its reset default (0, input) instead of writing it to
 //   output, while the same PRA bit-0 write/read sequence runs unchanged ->
 //   FAIL ("2 passed, 2 failed": CONTROL-PA0-OUTPUT flips to FAIL, the
 //   other three unaffected), proving the control is not vacuously true
-//   either. Reverted (MUT_CONTROL_NODIR=0 is baseline).
+//   either (MUT_CONTROL_NODIR=0 is baseline).
 // MUTATION PORTB-RELEASED-CONTROL stimulus red: MUT_CONTROL_HELD_LOW holds
 //   the same port-B lines low (portb_in = 0x00) instead of releasing them,
 //   while the check keeps grading against the fixed released-line
@@ -167,8 +73,7 @@
 //   proof: an unreleased line reads back 0, so the control is not
 //   vacuously true regardless of whether the fixture actually released
 //   the lines. PROP-1 is unaffected (its own sweep sets portb_in itself,
-//   still FAIL for its own reason). Reverted (MUT_CONTROL_HELD_LOW=0 is
-//   baseline).
+//   still FAIL for its own reason) (MUT_CONTROL_HELD_LOW=0 is baseline).
 
 #include <cstdint>
 #include <cstdio>
@@ -210,12 +115,10 @@ public:
     int failed = 0;
 };
 
-// Bus-timing protocol for ciaa.v, reused verbatim from
-// hrm/ch8-ciaa-port-direction's own Harness (named by the task instructions
-// as this package's control-pattern sibling, building this exact fixture):
-// regporta/ddrporta/ddrportb are posedge-clk, clk7_en-gated, so a write
-// needs one tick to latch; pa_out/pb_out/porta_out are combinational and
-// need only eval().
+// Bus-timing protocol, reused verbatim from hrm/ch8-ciaa-port-direction's
+// own Harness (the control-pattern sibling, building this exact fixture): a
+// register write is clocked, so write_reg() holds it for one tick; a read
+// is combinational and needs only eval().
 class Harness {
 public:
     Harness() : dut(new Vciaa) {
@@ -440,10 +343,10 @@ int main(int argc, char** argv) {
     }
 
     {
-        // Supporting measurement, not itself graded: demonstrates the
-        // second half of ciaa.v's finding -- that CIAADDRB, though real and
-        // faithfully read back at its own address, governs nothing about
-        // what a CIAAPRB read returns.
+        // Supporting measurement, not itself graded: whether CIAADDRB
+        // changes what a CIAAPRB read returns, with portb_in held fixed and
+        // no new CIAAPRB write in between (p.341: a set DDR bit makes the
+        // corresponding PR bit an output).
         Harness h;
         h.dut->portb_in = 0x3C;
         h.write_reg(RS_DDRB, 0x00);  // direction: all input
@@ -463,15 +366,6 @@ int main(int argc, char** argv) {
             "returns, contrary to p.341's rule that a set DDR bit makes "
             "the corresponding PR bit an output.");
     }
-
-    checks.record(
-        "minimig.v:136's change-log comment (\"2011-04-02 - added "
-        "functional ciaa port b (parallel) register to let Unreal game "
-        "work and some trainer store data\") describes a register that "
-        "does not exist in this commit -- regportb is entirely commented "
-        "out (ciaa.v:267, :270-279). A stale comment in the tree, not "
-        "evidence for or against PROP-1, and not itself a page claim; "
-        "carries no uid.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
