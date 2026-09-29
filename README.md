@@ -13,56 +13,31 @@ reader to check.
 Conformance tests for the Amiga chipset RTL in
 [NanoMig](https://github.com/harbaum/NanoMig). **The only oracle is printed
 literature:** two documents Commodore wrote about the chips. Every assertion
-in `hrm/`, `aa/` and the graded packages of `integration/` names the page it
-grades against, and no expected value
+in `hrm/`, `aa/` and the graded packages of `integration/` grades against a
+page its package names, and no expected value
 comes from NanoMig, from another core or from an emulator. Emulators appear
 on the finding pages as witnesses, never as the judge.
 
 | Oracle | Documents | Tests |
 |---|---|---|
-| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 3 graded packages |
+| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 17 graded packages |
 | Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages |
 
 **`integration/` runs whole systems** rather than one module: `nanomig.v`
 with a 68000 program assembled by vasm, on both CPU cores NanoMig offers
-(fx68k and TG68K), and `minimig.v`. Its packages are of two kinds.
-
-Graded against the manual, like `hrm/`: chapter 6, the blitter, the first
-chapter built this way.
-
-| Package | What it grades |
-|---|---|
-| `ch6-blitter-line-fill` | line mode and area fill (pp.180-192, 200, 268) |
-| `ch6-blitter-geometry` | the blitter's addressing and masking: masks, modulos, shifts, pointer order, minterms (pp.169-183, 200) |
-| `ch6-blitter-cpu-sharing` | how the blitter and the 68000 share the chip bus, and the done flag (pp.169-198) |
-
-Each package's `SPECIFICATION.md` was written from the page's claims alone
-and committed on its own, before any test code. Every assertion carries
-its claim id and page, and has been made to go red by changing the
-program. An independent validator checked every expected value against the
-page, and the reds are registered as findings.
-
-Not graded, so a red in them is not a finding:
-
-- `apparatus-cpu-to-video` and `apparatus-vasm-program` test the test
-  harness, not the chipset. They check values the test program itself
-  writes: a word stored and read back, a colour written and seen on the
-  video port. Each has a control that must fail, and the package fails if
-  the control passes.
-- `minimig_system` is a smoke test of register access and one Copper move
-  through the CPU bus. Its expected values rest partly on the manual's
-  register addresses and set/clear semantics and partly on NanoMig's own
-  bus interface, so it is not independent of the implementation. It catches
-  breakage, for example after an upstream change.
-
-**The other chapters' integration tests are work in progress.** Some of the
-manual's claims can only be checked across module boundaries, with a 68000
-program running on `nanomig.v`; the pipeline's integration inventory lists
-them, and packages for the chapters after chapter 6 are still to be built.
+(fx68k and TG68K). Seventeen packages there are graded against the manual, like
+`hrm/`, for claims that only show across module boundaries, and seventeen more
+are specified and not yet built. A red in them becomes a finding only once a
+validation has confirmed it against the page, and
+[`docs/findings.md`](docs/findings.md) names the lines that did.
+[`integration/README.md`](integration/README.md) lists the packages, what each
+grades, and the harness checks and smoke test beside them, which are graded
+against no page.
 
 **The printed page is the oracle, never the RTL.** A red test in `hrm/`,
 `aa/` or a graded package of `integration/` marks a place where the RTL does
-something the page does not describe. It is a result, not a bug in the test:
+something the page does not describe — in `integration/`, once a validation
+has confirmed it. It is a result, not a bug in the test:
 adjusting an assertion to make it pass deletes the finding.
 
 This is an add-on, not a fork. NanoMig comes in as a submodule, pinned to the
@@ -77,7 +52,8 @@ cd nanomig-hrm-tests
 ```
 
 `./run_all.sh --jobs 8` runs up to eight packages of each tree at a time and
-prints the same lines in the same order.
+prints the same lines in the same order. A full run that way took 30 minutes on
+a 16-thread machine, most of it the integration packages.
 
 Requires Verilator (last verified with **5.052**) and `make`; the tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler
@@ -98,13 +74,13 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | | |
 |---|---:|
 | test packages, `hrm/` | **217** |
-| assertions, `hrm/` | **3651** — 3448 pass, **203 fail** |
-| packages, `hrm/` | 147 green, 69 carrying at least one red, **0 build errors** |
+| assertions, `hrm/` | **3670** — 3482 pass, **188 fail** |
+| packages, `hrm/` | 155 green, 62 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
-| graded packages, `integration/` | **3**, each run on both CPU cores: 2 green, 1 carrying a red |
-| assertions, `integration/` | **63** on fx68k — 61 pass, **2 fail**; **62** on TG68K — 61 pass, **1 fail** |
+| graded packages, `integration/` | **17**, each run on both CPU cores: 6 green, 11 carrying a red; 17 more specified, not yet built |
+| assertions, `integration/` | **1124** on fx68k — 974 pass, **150 fail**; **1185** on TG68K — 1038 pass, **147 fail** |
 | registered findings | **75**, all open — 70 against the Hardware Reference Manual and 5 against the AA specification. **50 ask you to decide whether the RTL should change**; 66 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
@@ -130,9 +106,11 @@ source* has no test behind it yet: read it, but nothing has been measured. A
 that withdrew it. A *passing* test asks nothing either; [what a green means](#what-a-green-means)
 says how far it reaches.
 
-**All 249 packages report both a verdict and an assertion count.**
-`./run_all.sh` prints `tests: 147 passed, 69 failed, 0 build errors` for `hrm/`
-and `tests: 29 passed, 4 failed, 0 build errors` for `aa/`; the table comes
+**All 250 packages report both a verdict and an assertion count** in `hrm/` and
+`aa/`, and each graded `integration/` package does on both cores.
+`./run_all.sh` prints `tests: 155 passed, 62 failed, 0 build errors` for `hrm/`
+and `tests: 29 passed, 4 failed, 0 build errors` for `aa/`, and one
+line per core for each of the 17 graded `integration/` packages; the table comes
 from such a run. `check_published_counts.py --runlog`, in the separate
 `hrm-testpipeline` repository, checks it against the run's log.
 
@@ -173,9 +151,10 @@ never implied by a green.
 hrm/            217 packages against the manual, each at one module's ports;
                 chN-… or appX-… names the unit of the manual that judges it
 aa/             33 packages against the AA specification
-integration/    3 packages against the manual at nanomig.v's ports, with a
-                68000 program on both CPU cores (chapter 6); checks of the
-                test harness, and a smoke test of minimig.v
+integration/    17 packages against the manual at nanomig.v's ports, with a
+                68000 program on both CPU cores, 17 specified and not yet
+                built; checks of the test harness, and a smoke test of
+                minimig.v
 nanomig/        submodule, the RTL under test
 docs/           findings, the RTL review list, the rules for adding a test
 run_all.sh      runs all three layers; hrm/run_all.sh runs only hrm/
