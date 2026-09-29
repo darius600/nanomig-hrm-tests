@@ -660,3 +660,64 @@ This table summarizes the runs above; it adds nothing to them.
 
 Contrasts listed in the same row change fields that do not overlap, so they
 may share one run. Each contrast must still be reported red on its own.
+
+---
+
+## 4. Build notes
+
+### 4.1 Scope built
+
+Only P5 is built. P1-P4 (the light-pen trigger/latch propositions) are not
+built, by a scope decision: this build's budget covered P5 only. Building
+them would need: a beam-position model fitted from the reference-phase
+reads (section 2.6), with its uncertainty checked against the u<=2 bound
+P2(b) needs; pulses driven on the light-pen connector's pin 6, timed to
+that model's own instants across the ten-field schedule of section 2.5;
+the field/window classification of section 2.7 applied to every read; and
+a mutation for each of the four propositions and for preconditions C3-C6,
+run on both cores.
+
+Within P5, both connectors are run. J12 is graded in full: the pin-5 bit
+(POTGOR bit 8) and the pin-9 bit (bit 10). On J11, only bit 14 (pin 9,
+observed, not graded) is live at these ports; nothing this harness drives
+changes bit 12 (pin 5) -- driving the same signal that moves J12's pin-5
+bit while sampling a J11 run leaves bit 12 at a constant 1 throughout (the
+run's own MEASURED line). p.327's pin-5 proposition is therefore graded on
+J12 and declined as RECORDED on J11, per opus:E-gameport.c6,
+sol:E-gameport.c5, for that connector's half.
+
+### 4.2 Configurations run
+
+Every P5 run (base and all five contrasts) used the harness's own default
+`Config`: `chipset_config`'s ECS bit set, no other options selected. OCS
+and the PAL/NTSC distinction (section 2.1's full matrix) were not run, by
+a scope decision: no port at this boundary selects the video standard --
+it is chipset register state -- and P5's stimulus never writes BEAMCON0 or
+reads it; the pen-pressed mechanism this package exercises has no
+dependence on `chipset_config` either. Running the remaining combinations
+needs only clearing that bit (OCS) and re-running; nothing else in the
+stimulus depends on it.
+
+### 4.3 Timing margins tuned on this RTL
+
+Two spin counts and one interval length were tuned on this RTL rather than
+taken from the page, each guarded by a precondition the run checks:
+
+- The chipset's own internal reset holds the design for a fixed span
+  (measured at about 2.27 million clk_sys cycles, close to four video
+  fields) after `cpu_nrst_out` releases, before the CPU's first bus access
+  is visible on the port. The program's own first store (a fixed marker,
+  ahead of anything graded) is used to synchronise the run to this,
+  instead of assuming the span holds exactly; precondition C1 (the
+  program reaches its done mark) guards the case where it does not.
+- The connector-identity loop's and the sampling loop's own iteration
+  counts are sized so each loop keeps running for the whole span the
+  harness drives against it (the identity pin's active/released halves;
+  the four pen-pressed level intervals in turn). Precondition C1 guards
+  a loop that runs out early.
+- Each of the four level intervals is 700'000 clk_sys cycles: long enough
+  that the free-running beam (LPEN=0 throughout this program, so
+  VPOSR/VHPOSR always read the moving beam, never a latch) is guaranteed
+  to cross V=100-200 at least once inside it, on both video standards.
+  The per-window "at least 50 graded samples" precondition guards a
+  window that misses the crossing.
