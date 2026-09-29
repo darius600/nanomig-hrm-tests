@@ -765,3 +765,88 @@ Consequence: not graded.
 
 p. 244 prints "CIAAPRB ($BFD100)". p. 241 lists "CIABPRB ($BFD100)", and p. 340
 places prb at BFD100 in the CIAB map. The address is used.
+
+---
+
+## 8. Build
+
+Three programs, `prog_mouse.s` (section 4), `prog_pot.s` (section 5, with
+`prog_pot_pp2.s`/`prog_pot_pp3.s` as its own PP2/PP3 contrasts, all three
+including the shared `pot_body.s`), and `prog_drivelight.s` (section 6), run
+by `test_appHJ_drive_pins.cpp`. Fixture, buffer and CIA-B addresses used by
+the programs are in `hj_defs.i`.
+
+### 8.1 Stimulus mapping (section 3.4, 5.1: assigned to the builder)
+
+Measured with a one-off probe, from the harness's own ports:
+
+- `joystick1` drives JOY0DAT (the left port, P1/P2); `joystick0` drives
+  JOY1DAT (the right port, P3/P4).
+- Within either port, bit 3 = up (pin 1), bit 2 = down (pin 2), bit 1 = left
+  (pin 3), bit 0 = right (pin 4), each bit active high at this boundary
+  (1 = pressed).
+- POTGOR bit 8 (POT0X/DATLX) follows `mouse_buttons` bit 2 (third/middle
+  button); bit 10 (POT0Y/DATLY) follows `mouse_buttons` bit 1 (right button)
+  (`joystick1` bit 5 presses it too; this build presses only the mouse
+  bit); bit 14 (POT1Y/DATRY) follows `joystick0` bit 5; bit 12 (POT1X/DATRX)
+  follows no harness input at all -- see 8.2.
+- The harness's default `floppy_config` (0) already selects drive 0
+  (`nanomig_harness.h`'s own `Config` comment documents 0 as "one drive
+  (DF0), write-enabled, normal speed"). Section 6 uses the harness's
+  default `Config` unchanged.
+
+### 8.2 P7 (POT1X): no harness input reaches it
+
+No harness input moves POT1X's read-back at all: C2/C5/C6 read the same
+level as C1/C3/C8 regardless of any input this package can drive; the
+assertion is red on both cores through the clause C2 (and C5, C6) target.
+The MUTATION record below shows the same comparator, pointed at P5's live
+channel, going green.
+
+### 8.3 Measured results (`out_fx68k.txt`, `out_tg68k.txt`)
+
+Both cores: 19 passed, 1 failed, identically. FIXTURE, the two DONE checks,
+PJ1, PJ2, PJ3, PP1, PP2, PP3 and P1, P2, P3, P4, P5, P6, P8 pass; P7 fails
+(section 8.2). Section 6 fdd_led is recorded, not graded:
+
+    RECORDED: section 6 [p.244]: fdd_led level just before the next marker,
+    S0..S8 (motor/select sequence, drive 0): S0=off S1=off S2=off S3=off
+    S4=off S5=off S6=off S7=off S8=off
+    MEASURED: section 6 markers observed (PRB byte written, zero-extended):
+    $00FF $007F $0077 $007F $00FF $00F7 $00FF $007F $00FF
+
+fdd_led never moves over the whole sequence. Both cores read identically.
+
+### 8.4 Mutations (both cores, identically; `NMH_MUTATE=<value>`, header
+comment of `test_appHJ_drive_pins.cpp`)
+
+Assertion mutations print a literal `FAIL: <label>` line through the named
+proposition's own comparator (the same one the normal run uses):
+
+| Mutation | Prints FAIL through | Other propositions/preconditions | Totals (both cores) |
+|----------|---------------------|-----------------------------------|----------------------|
+| P1-WRONGPORT | `P1 [p.380: ...]` | unchanged (green) | 14 passed, 2 failed (P1, P7) |
+| P2-WRONGPORT | `P2 [p.380: ...]` | unchanged | 14 passed, 2 failed (P2, P7) |
+| P3-WRONGPORT | `P3 [p.380: ...]` | unchanged | 14 passed, 2 failed (P3, P7) |
+| P4-WRONGPORT | `P4 [p.380: ...]` | unchanged | 14 passed, 2 failed (P4, P7) |
+| P5-WRONGPIN | `P5 [p.380: ...]` | unchanged | 14 passed, 2 failed (P5, P7) |
+| P6-WRONGPIN | `P6 [p.380: ...]` | unchanged | 14 passed, 2 failed (P6, P7) |
+| P8-WRONGPIN | `P8 [p.380: ...]` | unchanged | 14 passed, 2 failed (P8, P7) |
+
+Precondition mutations print `PASS: <id> ... stimulus mutation: ... not met`
+-- the precondition's own comparator, reused, correctly reporting the
+contrast (SPECIFICATION.md 4.5/5.5's own "Contrasting case" tables):
+
+| Mutation | Precondition reports not met | Side effect measured | Totals (both cores) |
+|----------|-------------------------------|------------------------|----------------------|
+| PJ1 | dropping phase 0 step 5's change is reported missing, not graded | P1 also FAILs: the dropped edge is one of P1's own phase-0 transitions | 14 passed, 2 failed (P1, P7) |
+| PJ2 | the shortened window holds < 3 graded samples | none | 15 passed, 1 failed (P7) |
+| PJ3 | the injected mouse count makes the baseline samples differ | P1 also FAILs: the pulse corrupts phase 0's own baseline reference (c0) | 14 passed, 2 failed (P1, P7) |
+| PP1 | omitting pin 5's C2 press is reported missing, not graded | P5 also FAILs: the dropped press is pin 5's own C2 | 14 passed, 2 failed (P5, P7) |
+| PP2 | POTGO bit 0 = 1 in pin 5's C1 marker | none | 15 passed, 1 failed (P7) |
+| PP3 | pin 5's C1 window (6 lines) holds < 3 graded samples | none | 15 passed, 1 failed (P7) |
+
+P7 fails on every row (section 8.2; not a mutation side effect, the
+baseline state). P7's own contrast is not a separate binary: its comparator,
+evaluated on P5's live channel from the same normal run, reads PASS (the
+`RECORDED: MUTATION P7` line, section 8.3).
