@@ -75,6 +75,7 @@ start:
         bne.s   .rbf0
         subq.l  #1,d2
         bpl.s   .poll0
+        ori.w   #1,POLL_TIMEOUT
 .rbf0:
         ifd MUT_5C
 ; ---- precondition 5c contrast: read and clear character 0 only after s_2 ----
@@ -99,6 +100,7 @@ start:
         bne.s   .rbf1
         subq.l  #1,d2
         bpl.s   .poll1
+        ori.w   #1,POLL_TIMEOUT
 .rbf1:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+2
         ifnd MUT_NOCLEAR
@@ -117,6 +119,7 @@ start:
         bne.s   .rbf2
         subq.l  #1,d2
         bpl.s   .poll2
+        ori.w   #1,POLL_TIMEOUT
 .rbf2:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+4
         ifnd MUT_NOCLEAR
@@ -135,6 +138,7 @@ start:
         bne.s   .rbf3
         subq.l  #1,d2
         bpl.s   .poll3
+        ori.w   #1,POLL_TIMEOUT
 .rbf3:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+6
         ifnd MUT_NOCLEAR
@@ -153,6 +157,7 @@ start:
         bne.s   .rbf4
         subq.l  #1,d2
         bpl.s   .poll4
+        ori.w   #1,POLL_TIMEOUT
 .rbf4:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+8
         ifnd MUT_NOCLEAR
@@ -171,6 +176,7 @@ start:
         bne.s   .rbf5
         subq.l  #1,d2
         bpl.s   .poll5
+        ori.w   #1,POLL_TIMEOUT
 .rbf5:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+10
         ifnd MUT_NOCLEAR
@@ -189,6 +195,7 @@ start:
         bne.s   .rbf6
         subq.l  #1,d2
         bpl.s   .poll6
+        ori.w   #1,POLL_TIMEOUT
 .rbf6:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+12
         ifnd MUT_NOCLEAR
@@ -207,6 +214,7 @@ start:
         bne.s   .rbf7
         subq.l  #1,d2
         bpl.s   .poll7
+        ori.w   #1,POLL_TIMEOUT
 .rbf7:  move.w  SERDATR(a0),d1
         move.w  d1,RESULT+14
         ifnd MUT_NOCLEAR

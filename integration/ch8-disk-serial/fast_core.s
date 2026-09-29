@@ -26,7 +26,7 @@ start:
         POLLBIT INTREQR,5,BND_VERTB
         move.w  #$0020,INTREQ(a0)
 
-; ---- step 2 (repaired): clear the ROM overlay before the CPU fills DBUF.
+; ---- step 2: clear the ROM overlay before the CPU fills DBUF.
 ; The overlay is the reset default (p.223: "the system RAM that would
 ; normally be located at this address is not available... Software must
 ; assume that memory is not available"); the OVL bit that disables it lives
@@ -69,28 +69,47 @@ start:
         ifd MUT_LEN128
         move.w  #$4000,DSKLEN(a0)
         move.w  #$C080,DSKLEN(a0)      ; DMAEN, WRITE, LENGTH=128
-        ifnd MUT_NODSKLEN2
         move.w  #$C080,DSKLEN(a0)      ; actually starts the DMA
-        endif
         else
         move.w  #$4000,DSKLEN(a0)
         move.w  #$C100,DSKLEN(a0)      ; DMAEN, WRITE, LENGTH=256
-        ifnd MUT_NODSKLEN2
         move.w  #$C100,DSKLEN(a0)      ; actually starts the DMA
-        endif
         endif
         move.w  #MARK_START,MARK
 
 ; ---- step 7: poll, storing DSKBYTR to PROBE_D and INTREQR to PROBE_I
-; every iteration, until DSKBLK (INTREQR bit 1) is 1 ----
+; every iteration, until DSKBLK (INTREQR bit 1) is 1. G4: a poll that
+; reaches its own bound ORs 1 into POLL_TIMEOUT before falling through,
+; matching POLLBIT's own behaviour (this loop is not POLLBIT itself, since
+; it also stores PROBE_D/PROBE_I every iteration). ----
         move.l  #BND_POLL-1,d2
+        ifd MUT_MIDSTOP4D
+        moveq   #0,d4                  ; one-shot latch for the pause below
+        endif
 .poll:  move.w  DSKBYTR(a0),d0
         move.w  d0,PROBE_D
-        ifd MUT_MIDSTOP
-        cmp.l   #MIDSTOP_DELAY,d2
-        bne.s   .nomid
-        move.w  #$0100,ADKCON(a0)      ; clear FAST mid-transfer (4f contrast)
-.nomid:
+        ifd MUT_MIDSTOP4D
+; ---- precondition 4d contrast: once the poll count first drops to or below
+; MIDSTOP4D_DELAY, clear DSKEN (DMACON bit 4) and keep sampling DSKBYTR into
+; PROBE_D for PAUSE4D iterations (so the paused DMAON/DISKWRITE=0 state is
+; itself captured, not only the state right before and after the pause),
+; then set DMAEN+DSKEN again. The internal DMA-armed state and the pointer
+; are untouched by a DMACON-only write, so the same transfer resumes. d4
+; latches so this fires once. MIDSTOP4D_DELAY and PAUSE4D are tuned against
+; this build's own measured per-word cadence (not page-defined numbers; see
+; SPECIFICATION.md) to land the pause inside the t_64..t_192 window. ----
+        cmp.l   #MIDSTOP4D_DELAY,d2
+        bhi.s   .no4dstop
+        tst.l   d4
+        bne.s   .no4dstop
+        moveq   #1,d4
+        move.w  #$0010,DMACON(a0)      ; clear DSKEN
+        move.w  #PAUSE4D-1,d3
+.p4dwait: move.w DSKBYTR(a0),d0
+        move.w  d0,PROBE_D
+        dbra    d3,.p4dwait
+        move.w  #$8210,DMACON(a0)      ; DMAEN+DSKEN reasserted, resumes
+.no4dstop:
         endif
         move.w  INTREQR(a0),d0
         move.w  d0,PROBE_I
@@ -98,6 +117,7 @@ start:
         bne.s   .polldone
         subq.l  #1,d2
         bpl.s   .poll
+        ori.w   #1,POLL_TIMEOUT
 .polldone:
 
 ; ---- step 8: DSKLEN <- $4000 (stop), MARK <- DONE ----

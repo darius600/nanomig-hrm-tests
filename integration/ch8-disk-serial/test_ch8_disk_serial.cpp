@@ -9,31 +9,40 @@
 // several labels at once where they share a binary or a capture (P1, P2 and
 // P3 all grade the same N=371 NTSC run; 1c/1d/1e and 2c/2d/2e share the
 // N=371 binary across both standards) -- that is the shared stimulus, not a
-// separate mutation each. Some mutations are comparator- or driver-level
-// (R1's own contrast: no stimulus on the pages moves the refresh slots, so
-// SPECIFICATION.md grades the *checker* with a wrong slot length instead;
-// P5's (a)/5f contrasts drive the same binary at the wrong bit rate; P5's
-// (c) contrast needs no new binary, since "SERPER<-LONG in run B too" is
-// exactly run A's own program) and need no NMH_MUTATE value at all.
+// separate mutation each. Every mutation below feeds its contrasting
+// capture into the package's own, unchanged comparator, so the same label
+// that grades the normal run is what prints FAIL under the mutation -- no
+// selector adds a second, inverted line of its own.
 //
-// MUTATION P1/P2/P3/sol:8-serper.c9(U=C) stimulus red NMH_MUTATE=P1-NPLUS1: SERPER written with N+1 (1, 372, 32397) and graded against N -- flips P1, the merged P2 line, P3 and the new U_N/C=1 check, which all grade runs built from the same three binaries (P2(ii) via U_371's own N+1 divisor, P3 via reusing P1's run, U/C via pal_n0/pal_n32396)
-// MUTATION 1c/2c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK forced low then high between the lead-in and MARK=0 -- flips both (NTSC and PAL share the N=371 binary); the two extra TxD changes this injects also turn the merged P2 line red, since P2(ii)'s own comparator shares the same capture
-// MUTATION 1d/2d stimulus red NMH_MUTATE=P1-1D: next word polled on TSRE instead of TBE before being written -- flips both, and also the merged P2 line for the same reason as P1-1C
-// MUTATION 1e/2e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write left out while still polling for its transfer -- POLL_TIMEOUT sets and flips both; the page's own contrast unavoidably also turns 1d/2d red (word 3 is never marked before word 2's own stop change, since word 2 was never sent) and the merged P2 line (P2(ii) shares the capture)
-// MUTATION 1a/2a-ANCHOR, 1b/2b-STANDARD, 4a-ANCHOR, 4b-STANDARD, 5a-ANCHOR checker red: comparator-level contrasts (no stimulus on the pages moves the refresh slots or the field-line count), printed only when NMH_MUTATE selects a replay (any value), since they need no binary swap of their own
-// MUTATION 4c stimulus red NMH_MUTATE=P4-4C: FAST=1 run writes ADKCON <- $0100 instead of $8100 (bit 15 clear clears the bit) -- the only P4 precondition already gradable before the buffer-address repair
-// MUTATION 4d NMH_MUTATE=P4-4D, 4e NMH_MUTATE=P4-4E, 4f NMH_MUTATE=P4-4F: now that the buffer address is repaired, these flip 4d/4e/4f directly through grade_run's own checks
+// 1a/2a, 1b/2b, 4a/4b (all four P4 tags) and 5a's own R1-anchor and
+// R2-standard checks carry no mutation: no stimulus on the pages moves the
+// refresh slots or the field-line count, so this boundary offers no
+// contrasting capture for them (unfalsifiable, not exercised).
+//
+// Every record below states exactly which lines went from PASS to FAIL,
+// measured on this package by direct replay of the built Vnanomig binaries
+// (obj_dir_fx68k, obj_dir_tg68k) under each NMH_MUTATE value, both cores.
+// The three baseline reds (P1, P2, P3) stay red, unaffected, throughout.
+//
+// MUTATION P1-NPLUS1 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER written with N+1 (1, 372, 32397) and graded against N -- both cores (69 passed, 8 failed): flips "P1 control (green today) [p255]: N=0 (W=1) alone, same grid check", "P1 control (green today) [p255]: N=32396 (W=1) alone, same grid check", "P1 control (green today) [p255]: the within-word intervals ...", "P2(ii) control (green today) [p255]: the (N=0, N=32396) pair alone ...", and "P2 [p255]: on PAL, the fixed period equals one PAL colour clock ..." (its own U/C=1 check, via pal_n0/pal_n32396's own +1 binaries)
+// MUTATION 1c/2c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK forced low then high between the lead-in and MARK=0 -- both cores: flips "1c [p257]: TxD does not change ...", "2c [p257]: TxD idle before MARK=0, PAL N=371 run" and "P1 control (green today) [p255]: the within-word intervals ..." (the two extra TxD changes move t0). fx68k only (69 passed, 8 failed) also flips "1a [p194,p195] R1 anchor: ..." and "2a [p194,p195] R1 anchor on the PAL N=371 run: ..." through the R1 population clause (1 of 1644/1944 candidate groups malformed); TG68K does not reproduce that (71 passed, 6 failed) -- a genuine cross-core difference (G6), not reconciled
+// MUTATION 1d/2d stimulus red NMH_MUTATE=P1-1D: next word polled on TSRE instead of TBE before being written -- both cores (72 passed, 5 failed): flips "1d [p257,p283]: for k=2..4, MARK=k comes before word (k-1)'s own stop-bit change ..." and "2d [p257,p283]: words sent back to back, PAL N=371 run"
+// MUTATION 1e/2e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write left out while still polling for its transfer -- both cores (69 passed, 8 failed): flips "1d [p257,p283]: ...", "1e [p283]: MARK=DONE is present and no poll ... ended at its own bound in the N=371 NTSC run", "2d [p257,p283]: ...", "2e [p283]: run completed, no poll ... PAL N=371 run" and "P1 control (green today) [p255]: the within-word intervals ..."
+// MUTATION 4c stimulus red NMH_MUTATE=P4-4C: FAST=1 run writes ADKCON <- $0100 instead of $8100 (bit 15 clear clears the bit) -- both cores (72 passed, 5 failed): flips "P4-NTSC-FAST1 4c [p249]: ADKCONR bit 8 read back as 1 ..." and "P4-PAL-FAST1 4c [p249]: ADKCONR bit 8 read back as 1 ..."
+// MUTATION 4d stimulus red NMH_MUTATE=P4-4D: once the FAST=1 poll count first drops to or below a tuned threshold, DSKEN (DMACON bit 4) is cleared and DSKBYTR is sampled into PROBE_D while cleared, then DMAEN+DSKEN are set again -- both cores (72 passed, 5 failed): flips "P4-NTSC-FAST1 4d [p248]: every PROBE_D value between t_64 and t_192 has DMAON and DISKWRITE set ..." and "P4-PAL-FAST1 4d [p248]: ..." (199 samples on fx68k, 223/224 on TG68K; only the sample count differs, not which lines flip); the same transfer resumes and 4a, 4b, 4c, 4e and completion all stay green
+// MUTATION 4e stimulus red NMH_MUTATE=P4-4E: LENGTH=128 instead of 256 -- both cores (70 passed, 7 failed): flips "P4-NTSC-FAST1 4d [p248]: ..." (0 samples: t_192 is never read) and "P4-NTSC-FAST1 4e [p247]: reads of B+2i are seen for i=0..192 ..." and their PAL-FAST1 counterparts
 // P4-MAIN (the T_cell-vs-band comparison) is a RECORDED decline (SPECIFICATION.md 1.4, P4): no page ties the
 //   Chip-memory read rate it measures to the bit-cell time, so it is not a graded proposition and carries no
-//   mutation of its own.
-// MUTATION 5b stimulus red NMH_MUTATE=P5-5B: the UARTBRK set step left out, so the two anchor levels read equal
-// MUTATION 5c stimulus red NMH_MUTATE=P5-5C: character 0 read and cleared only after s_2, so OVRUN sets
-// MUTATION 5d stimulus red NMH_MUTATE=P5-5D: the INTREQ clear left out, so the next poll sees RBF=1 at once
-// MUTATION 5e stimulus red NMH_MUTATE=P5-5E: every poll iteration padded by >= T/4, so the G5 bracket is no longer narrower than T/4
-// MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-A: run A driven at a bit time of 2T breaks the byte match; DONE is asserted reached
-// MUTATION 5f stimulus red NMH_MUTATE=P5-5F: run B driven at a bit time of 2T breaks the byte match; DONE is asserted reached
-// MUTATION (b) stimulus red NMH_MUTATE=P5-B: run A with SERPER<-$80B9 (N=185, driver unchanged) -- the receiver samples about twice per driven bit and signals well before s_j+9T (prog_rx_a_altper.s)
-// MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-C: run A's own capture stood in for "SERPER<-LONG in run B too" -- predicts no timing difference, so the merged (a)+(c) assertion's timing half fails
+//   mutation of its own. |(t128-t64)-(t192-t128)| is measured, not graded, for the same reason (no page
+//   sentence bounds it) and likewise carries no mutation.
+// MUTATION 5b stimulus red NMH_MUTATE=P5-5B: the UARTBRK set step left out, so the two anchor levels read equal -- both cores (73 passed, 4 failed): flips "5b [p257]: TxD is 0 between MARK=BRK and MARK=UNBRK ..."
+// MUTATION 5c stimulus red NMH_MUTATE=P5-5C: character 0 read and cleared only after s_2, so OVRUN sets -- both cores (70 passed, 7 failed): flips "5a [p283]: MARK=DONE is present ..., run A", "5c [p256]: OVRUN (bit 15) is 0 ..., run A", "5d [p256]: MARK=READY precedes s_0 ..., run A" and "(a)+(c) [p255,p256,p257,p283]: ..."
+// MUTATION 5d stimulus red NMH_MUTATE=P5-5D: the INTREQ clear left out, so the next poll sees RBF=1 at once -- both cores (70 passed, 7 failed): flips "5d [p256]: ..., run A", "5e [p255]: every G5 bracket (run A) ...", "(a)+(c) [p255,p256,p257,p283]: ..." and "(b) [p256]: the G5 bracket's lower end ..."
+// MUTATION 5e stimulus red NMH_MUTATE=P5-5E: every poll iteration padded by >= T/4, so the G5 bracket is no longer narrower than T/4 -- both cores (71 passed, 6 failed): flips "5e [p255]: every G5 bracket (run A) ...", "(a)+(c) [p255,p256,p257,p283]: ..." and "(b) [p256]: ..."
+// MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-A: run A itself is driven at a bit time of 2T, so the unchanged (a)+(c) and (b) comparators read run A's own byte mismatch and timing -- both cores (72 passed, 5 failed): flips "(a)+(c) [p255,p256,p257,p283]: ..." and "(b) [p256]: ..."; 5a/5c/5d/5e (run A) stay green
+// MUTATION 5f stimulus red NMH_MUTATE=P5-5F: run B itself is driven at a bit time of 2T, so the unchanged 5f comparator reads run B's own byte mismatch -- both cores (71 passed, 6 failed): flips "5f [p255]: RESULT bits 7-0 = byte_j for every j, run B", and (c)'s own timing half also moves enough to flip "(a)+(c) [p255,p256,p257,p283]: ..." and "(b) [p256]: ..." with it
+// MUTATION (b) stimulus red NMH_MUTATE=P5-B: bin_a itself becomes prog_rx_a_altper.bin (SERPER<-$80B9, N=185, driver unchanged) -- both cores (72 passed, 5 failed): flips "(b) [p256]: ..." and, since (a)+(c)'s own timing half shares the same brackets, "(a)+(c) [p255,p256,p257,p283]: ..." with it; 5a/5c/5d/5e (run A) stay green
+// MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-C: bin_b itself becomes prog_rx_a.bin (SERPER<-LONG in run B too) -- both cores (73 passed, 4 failed): flips only "(a)+(c) [p255,p256,p257,p283]: ..." (the timing half is no longer one bit time later); 5a/5c/5d/5e/5f (run B, now really run A's own program) stay green
 
 #include <algorithm>
 #include <cmath>
@@ -104,10 +113,7 @@ std::vector<RefreshGroup> find_refresh_groups(const std::vector<nmh::RamAccess>&
 }
 
 // Check (a): every group's three internal gaps equal 2*candidate_C, in
-// every line. Passing the *measured* C grades the real anchor; passing
-// C/2 or 2C is R1's own contrast (SPECIFICATION.md: "no stimulus described
-// on the pages moves the refresh slots, so the red case is shown on the
-// checker").
+// every line. Passing the *measured* C grades the real anchor.
 bool check_r1_anchor(const std::vector<RefreshGroup>& groups, double candidate_C) {
     if (groups.empty() || candidate_C <= 0) return false;
     double expected = 2.0 * candidate_C;
@@ -117,6 +123,39 @@ bool check_r1_anchor(const std::vector<RefreshGroup>& groups, double candidate_C
             return false;
     }
     return true;
+}
+
+// R1 population: find_refresh_groups() silently drops every candidate group
+// whose size is not exactly four, so check_r1_anchor() alone can pass while
+// a malformed or missing line was discarded before it ever saw one. This
+// re-walks the same low-address-read candidates (grouped by the same >100
+// cycle gap) and reports how many of them are NOT the shape Figure 6-9
+// draws: exactly four reads, each 2*C after the one before -- the same
+// shape check_r1_anchor grades, so nothing here is a new oracle, only a
+// completeness count over every candidate group, not just the retained
+// ones.
+struct RefreshPopulation { int groups = 0, malformed = 0; };
+
+RefreshPopulation refresh_population(const std::vector<nmh::RamAccess>& log, double C) {
+    RefreshPopulation p;
+    std::vector<uint64_t> low;
+    for (const auto& a : log) if (!a.is_write && a.word_addr < 0x1000) low.push_back(a.cycle);
+    if (low.empty() || C <= 0) return p;
+    std::vector<std::vector<uint64_t>> groups;
+    groups.push_back({low[0]});
+    for (size_t i = 1; i < low.size(); ++i) {
+        if (low[i] - low[i - 1] > 100) groups.push_back({});
+        groups.back().push_back(low[i]);
+    }
+    p.groups = int(groups.size());
+    double expected = 2.0 * C;
+    for (const auto& g : groups) {
+        bool shape_ok = g.size() == 4;
+        for (size_t i = 1; shape_ok && i < g.size(); ++i)
+            if (std::abs(double(g[i] - g[i - 1]) - expected) > 0.01) shape_ok = false;
+        if (!shape_ok) ++p.malformed;
+    }
+    return p;
 }
 
 // ---- shared TX capture (P1/P2/P3) -----------------------------------------
@@ -129,6 +168,7 @@ struct TxRun {
     double C = 0.0;
     int field_lines = 0; // R2: refresh-groups in one representative field
     bool poll_timeout = false; // G4: a POLLBIT in this run reached its own bound
+    int pop_groups = 0, pop_malformed = 0; // R1 population (refresh_population)
 };
 
 std::optional<uint64_t> mark_cycle(const TxRun& r, uint16_t value) {
@@ -166,6 +206,7 @@ TxRun run_tx(const std::string& bin, bool ntsc, uint64_t post_boot_budget) {
 
     r.refresh = find_refresh_groups(h.ram_log());
     if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
+    { auto pop = refresh_population(h.ram_log(), r.C); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
 
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
@@ -269,6 +310,8 @@ struct RxRun {
     int field_lines = 0;
     uint64_t s0 = 0;
     bool scheduled = false;
+    bool poll_timeout = false; // G4: any of the custom RBF poll loops reached its own bound
+    int pop_groups = 0, pop_malformed = 0; // R1 population (refresh_population)
 };
 
 std::optional<uint64_t> mark_cycle_rx(const RxRun& r, uint16_t value) {
@@ -279,9 +322,12 @@ std::optional<uint64_t> mark_cycle_rx(const RxRun& r, uint16_t value) {
 // RxD level at cycle `cyc`: idle (1) before s0 and after the last
 // character; within a character, bit 0 is the start bit (0), bits 1-8 are
 // byte_j's own bits 0-7 (LSB first, harmless either way since every byte_j
-// is a bit-palindrome), and bit 9 (the ninth bit), bit 10 (stop) and
-// anything past bit 10 (the idle gap before the next character) are all 1.
-bool rxd_level_at(uint64_t cyc, uint64_t s0, double T, double step, const std::vector<uint8_t>& bytes) {
+// is a bit-palindrome), bit 9 (the ninth bit) is 1 unless `ninth_zero`
+// selects the recorded, not-graded variant (SPECIFICATION.md P5), and bit
+// 10 (stop) and anything past bit 10 (the idle gap before the next
+// character) are always 1.
+bool rxd_level_at(uint64_t cyc, uint64_t s0, double T, double step, const std::vector<uint8_t>& bytes,
+                   bool ninth_zero = false) {
     if (cyc < s0) return true;
     int j = int(double(cyc - s0) / step);
     if (j < 0 || j >= (int)bytes.size()) return true;
@@ -291,6 +337,7 @@ bool rxd_level_at(uint64_t cyc, uint64_t s0, double T, double step, const std::v
     int bit = int(pos / T);
     if (bit == 0) return false;
     if (bit >= 1 && bit <= 8) return (bytes[j] >> (bit - 1)) & 1;
+    if (bit == 9 && ninth_zero) return false;
     return true;
 }
 
@@ -298,7 +345,10 @@ bool rxd_level_at(uint64_t cyc, uint64_t s0, double T, double step, const std::v
 // correct N=371 rate; 2.0 = the (a)/5f contrasting cases' wrong rate).
 // `ntsc` is true for every graded P5 run (P5 is NTSC only); the MUTATION
 // 5a-STANDARD contrast passes false to capture the same binary on PAL.
-RxRun run_rx(const std::string& bin, uint64_t budget, double T, double t_scale, bool ntsc = true) {
+// `ninth_zero` selects the recorded run-A variant (SPECIFICATION.md P5)
+// whose every ninth bit is driven 0 instead of 1.
+RxRun run_rx(const std::string& bin, uint64_t budget, double T, double t_scale, bool ntsc = true,
+             bool ninth_zero = false) {
     RxRun r;
     nmh::NanomigHarness h(cfg_for(ntsc));
     r.loaded = h.load_program(bin) > 0;
@@ -315,7 +365,7 @@ RxRun run_rx(const std::string& bin, uint64_t budget, double T, double t_scale, 
     size_t seen = 0;
     for (uint64_t i = 0; i < budget && !done; ++i) {
         bool level = true;
-        if (r.scheduled) level = rxd_level_at(h.cycles(), r.s0, Tdrv, step, kRxBytes);
+        if (r.scheduled) level = rxd_level_at(h.cycles(), r.s0, Tdrv, step, kRxBytes, ninth_zero);
         h.ports()->uart_rx = level;
         h.run_cycles(1);
         bool cur_tx = h.ports()->uart_tx;
@@ -334,12 +384,15 @@ RxRun run_rx(const std::string& bin, uint64_t budget, double T, double t_scale, 
     for (int j = 0; j < 8; ++j) r.results.push_back(h.peek_logical(kResultAddr + 2 * j));
     r.refresh = find_refresh_groups(h.ram_log());
     if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
+    { auto pop = refresh_population(h.ram_log(), r.C); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
         int count = 0;
         for (const auto& g : r.refresh) if (g.r1 >= frames[1].begin && g.r1 < frames[1].end) ++count;
         r.field_lines = count;
     }
+    auto to = h.peek_logical(kPollTimeoutAddr);
+    r.poll_timeout = to.has_value() && *to != 0;
     return r;
 }
 
@@ -386,111 +439,158 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
                          mv == "P5-5D" ? "/prog_rx_a_5d.bin" :
                          mv == "P5-5E" ? "/prog_rx_a_5e.bin" :
                          mv == "P5-B"  ? "/prog_rx_a_altper.bin" : "/prog_rx_a.bin");
-    auto bin_b = dir + "/prog_rx_b.bin";
+    auto bin_b = dir + (mv == "P5-C" ? "/prog_rx_a.bin" : "/prog_rx_b.bin");
     constexpr uint64_t kP5Budget = 25'000'000;
     const double T = 372.0 * 8.0; // N=371, C confirmed 8.0 by 5a below and every other proposition's own R1
     const double step = 16.125 * T;
 
-    RxRun a = run_rx(bin_a, kP5Budget, T, 1.0);
-    RxRun b = run_rx(bin_b, kP5Budget, T, 1.0);
+    // NMH_MUTATE=P5-A drives run A itself at a bit time of 2T; NMH_MUTATE=
+    // P5-5F drives run B itself at 2T; NMH_MUTATE=P5-C already swapped
+    // bin_b to prog_rx_a.bin above. Every check below reads a/b as they
+    // come out of these two calls, so a mutation's contrasting capture
+    // reaches every check that uses it, through the check's own unchanged
+    // comparator.
+    RxRun a = run_rx(bin_a, kP5Budget, T, mv == "P5-A" ? 2.0 : 1.0);
+    RxRun b = run_rx(bin_b, kP5Budget, T, mv == "P5-5F" ? 2.0 : 1.0);
 
     checks.note("P5 capture health: a loaded=" + std::to_string(a.loaded) + " released=" + std::to_string(a.released) +
                 " marks=" + std::to_string(a.marks.size()) + " probe_i=" + std::to_string(a.probe_i.size()) +
-                " s0=" + std::to_string(a.s0) + " C=" + std::to_string(a.C) + " field_lines=" + std::to_string(a.field_lines));
+                " s0=" + std::to_string(a.s0) + " C=" + std::to_string(a.C) + " field_lines=" + std::to_string(a.field_lines) +
+                " poll_timeout=" + std::to_string(a.poll_timeout));
     checks.note("P5 capture health: b loaded=" + std::to_string(b.loaded) + " released=" + std::to_string(b.released) +
                 " marks=" + std::to_string(b.marks.size()) + " probe_i=" + std::to_string(b.probe_i.size()) +
-                " s0=" + std::to_string(b.s0));
+                " s0=" + std::to_string(b.s0) + " C=" + std::to_string(b.C) + " field_lines=" + std::to_string(b.field_lines) +
+                " poll_timeout=" + std::to_string(b.poll_timeout));
 
-    // ---- 5a: R1 anchor, R2 shows NTSC, and the driver's own C=8 assumption ----
+    // ---- 5a: R1 anchor, R2 shows NTSC, and the driver's own C=8
+    // assumption, on run A and on run B; and completion (G4), on both. ----
     {
-        bool r1ok = !a.refresh.empty() && check_r1_anchor(a.refresh, a.C);
-        checks.expect(r1ok, "5a [p194,p195] R1 anchor, run A");
-        if (!mv.empty()) {
-            bool half_fails = !check_r1_anchor(a.refresh, a.C / 2.0);
-            bool double_fails = !check_r1_anchor(a.refresh, a.C * 2.0);
-            checks.expect(half_fails && double_fails,
-                "MUTATION 5a-ANCHOR checker red: same R1 contrast, on run A");
-        }
+        checks.note("5a run A: R1 population groups=" + std::to_string(a.pop_groups) +
+                    " malformed=" + std::to_string(a.pop_malformed));
+        bool r1ok = !a.refresh.empty() && check_r1_anchor(a.refresh, a.C) &&
+                    a.pop_groups > 0 && a.pop_malformed == 0;
+        checks.expect(r1ok,
+            "5a [p194,p195] R1 anchor, run A: every candidate refresh group in the run is 2C, 2C "
+            "and 2C apart (Figure 6-9's own shape), none discarded before grading");
         bool ntsc_ok = a.field_lines == 262 || a.field_lines == 263;
-        checks.expect(ntsc_ok, "5a [p24] R2 shows NTSC (measured field_lines=" + std::to_string(a.field_lines) + ")");
-        if (!mv.empty()) {
-            RxRun a_pal = run_rx(bin_a, kP5Budget, T, 1.0, false);
-            bool pal_fails = !(a_pal.field_lines == 262 || a_pal.field_lines == 263);
-            checks.expect(pal_fails,
-                "MUTATION 5a-STANDARD checker red: the same binary's PAL capture's own field-line "
-                "count (" + std::to_string(a_pal.field_lines) + ") is not 262 or 263");
-        }
+        checks.expect(ntsc_ok, "5a [p24] R2 shows NTSC, run A (measured field_lines=" + std::to_string(a.field_lines) + ")");
         // The P5 driver's own T=372*8.0 assumes C=8.0 (comment above); 5a's own
         // run must confirm that, not just recite it (see SPECIFICATION.md).
         bool c_ok = std::abs(a.C - 8.0) < 0.001;
         checks.expect(c_ok,
-            "5a [p194,p195]: the run's own R1 anchor C equals the driver's own C=8.0 assumption "
-            "(measured C=" + std::to_string(a.C) + ")");
+            "5a [p194,p195]: the run's own R1 anchor C equals the driver's own C=8.0 assumption, "
+            "run A (measured C=" + std::to_string(a.C) + ")");
+        bool done_a = mark_cycle_rx(a, kMarkDone).has_value();
+        checks.expect(done_a && !a.poll_timeout,
+            "5a [p283]: MARK=DONE is present and no poll (G4, any of them) ended at its own bound, "
+            "run A");
+
+        checks.note("5a run B: R1 population groups=" + std::to_string(b.pop_groups) +
+                    " malformed=" + std::to_string(b.pop_malformed));
+        bool r1ok_b = !b.refresh.empty() && check_r1_anchor(b.refresh, b.C) &&
+                      b.pop_groups > 0 && b.pop_malformed == 0;
+        checks.expect(r1ok_b,
+            "5a [p194,p195] R1 anchor, run B: every candidate refresh group in the run is 2C, 2C "
+            "and 2C apart (Figure 6-9's own shape), none discarded before grading");
+        bool ntsc_ok_b = b.field_lines == 262 || b.field_lines == 263;
+        checks.expect(ntsc_ok_b, "5a [p24] R2 shows NTSC, run B (measured field_lines=" + std::to_string(b.field_lines) + ")");
+        bool c_ok_b = std::abs(b.C - 8.0) < 0.001;
+        checks.expect(c_ok_b,
+            "5a [p194,p195]: the run's own R1 anchor C equals the driver's own C=8.0 assumption, "
+            "run B (measured C=" + std::to_string(b.C) + ")");
+        bool done_b = mark_cycle_rx(b, kMarkDone).has_value();
+        checks.expect(done_b && !b.poll_timeout,
+            "5a [p283]: MARK=DONE is present and no poll (G4, any of them) ended at its own bound, "
+            "run B");
     }
 
     // ---- 5b: level anchor ----
     // NMH_MUTATE=P5-5B swaps bin_a to the no-UARTBRK-set variant above: the
-    // two sampled levels then read equal, and this same check flips.
+    // level between MARK=BRK and MARK=UNBRK then also reads 1, and this same check flips.
     {
         auto mbrk = mark_cycle_rx(a, kMarkBrk), munbrk = mark_cycle_rx(a, kMarkUnbrk);
-        bool ok = mbrk.has_value() && munbrk.has_value() &&
-                  level_before(a.tx_changes, *mbrk + 50) != level_before(a.tx_changes, *munbrk + 50);
-        checks.expect(ok, "5b [p257]: TxD between MARK=BRK and MARK=UNBRK differs from TxD after MARK=UNBRK");
+        bool brk_level = mbrk.has_value() && level_before(a.tx_changes, *mbrk + 50);
+        bool unbrk_level = munbrk.has_value() && level_before(a.tx_changes, *munbrk + 50);
+        bool ok = mbrk.has_value() && munbrk.has_value() && !brk_level && unbrk_level;
+        checks.expect(ok,
+            "5b [p257]: TxD is 0 between MARK=BRK and MARK=UNBRK (UARTBRK forces the transmit pin "
+            "to zero) and 1 after MARK=UNBRK (idle)");
     }
 
-    // ---- 5c: no overrun (run A) ----
+    // ---- 5c: no overrun, on run A and on run B ----
     // NMH_MUTATE=P5-5C swaps bin_a to the delayed-read-of-character-0
     // variant: p.256 predicts OVRUN sets, and this same check flips.
     {
         bool ok = true;
         for (const auto& res : a.results) if (!res || (*res & 0x8000)) ok = false;
         checks.expect(ok, "5c [p256]: OVRUN (bit 15) is 0 in every RESULT value, run A");
+
+        bool ok_b = true;
+        for (const auto& res : b.results) if (!res || (*res & 0x8000)) ok_b = false;
+        checks.expect(ok_b, "5c [p256]: OVRUN (bit 15) is 0 in every RESULT value, run B");
     }
 
-    // ---- 5d: every RBF event is observed ----
+    // ---- 5d: every RBF event is observed, on run A and on run B ----
     // NMH_MUTATE=P5-5D swaps bin_a to the missing-INTREQ-clear variant.
-    {
-        auto ready = mark_cycle_rx(a, kMarkReady);
-        bool ok = ready.has_value() && *ready < a.s0;
-        for (const auto& p : a.probe_i) if (p.first < a.s0 && (p.second & 0x0800)) ok = false;
+    auto check_5d = [](const RxRun& r) {
+        auto ready = mark_cycle_rx(r, kMarkReady);
+        bool ok = ready.has_value() && *ready < r.s0;
+        for (const auto& p : r.probe_i) if (p.first < r.s0 && (p.second & 0x0800)) ok = false;
         for (int j = 0; j < 8; ++j) {
-            auto [lo, hi] = rx_window(a, j);
+            auto [lo, hi] = rx_window(r, j);
             bool seen_zero = false, jok = false;
-            for (const auto& p : a.probe_i) {
+            for (const auto& p : r.probe_i) {
                 if (p.first < lo || p.first > hi) continue;
                 bool bit11 = (p.second & 0x0800) != 0;
                 if (!bit11) seen_zero = true; else { jok = seen_zero; break; }
             }
             if (!jok) ok = false;
         }
+        return ok;
+    };
+    {
+        bool ok = check_5d(a);
         checks.expect(ok,
             "5d [p256]: MARK=READY precedes s_0, no PROBE_I value before s_0 shows RBF, and every "
-            "character's own poll sees RBF=0 before its first RBF=1");
+            "character's own poll sees RBF=0 before its first RBF=1, run A");
+        bool ok_b = check_5d(b);
+        checks.expect(ok_b,
+            "5d [p256]: MARK=READY precedes s_0, no PROBE_I value before s_0 shows RBF, and every "
+            "character's own poll sees RBF=0 before its first RBF=1, run B");
     }
 
-    // ---- 5e: resolution -- every G5 bracket narrower than T/4 ----
+    // ---- 5e: resolution -- every G5 bracket narrower than T/4, on run A
+    // and on run B ----
     // NMH_MUTATE=P5-5E swaps bin_a to the padded-poll-iteration variant.
     std::vector<Bracket> brackets_a(8), brackets_b(8);
-    {
-        bool ok = true;
-        for (int j = 0; j < 8; ++j) {
-            auto [lo, hi] = rx_window(a, j);
-            brackets_a[j] = g5_bracket(a.probe_i, lo, hi);
-            double width = brackets_a[j].ok ? double(brackets_a[j].t1 - brackets_a[j].t0 + brackets_a[j].S) : 1e18;
-            if (!brackets_a[j].ok || !(width < T / 4.0)) ok = false;
-        }
-        checks.expect(ok, "5e [p255]: every G5 bracket (run A) is narrower than T/4");
+    for (int j = 0; j < 8; ++j) {
+        auto [lo, hi] = rx_window(a, j);
+        brackets_a[j] = g5_bracket(a.probe_i, lo, hi);
     }
     for (int j = 0; j < 8; ++j) {
         auto [lo, hi] = rx_window(b, j);
         brackets_b[j] = g5_bracket(b.probe_i, lo, hi);
     }
+    {
+        bool ok = true;
+        for (int j = 0; j < 8; ++j) {
+            double width = brackets_a[j].ok ? double(brackets_a[j].t1 - brackets_a[j].t0 + brackets_a[j].S) : 1e18;
+            if (!brackets_a[j].ok || !(width < T / 4.0)) ok = false;
+        }
+        checks.expect(ok, "5e [p255]: every G5 bracket (run A) is narrower than T/4");
 
-    // ---- (a)+(c): run A recovers the byte, and its RBF event comes one bit
-    // time later than run B's -- together, not separately, since neither
-    // check alone depends on the nine-bit (LONG) setting: run B stores the
-    // same bits 9 and 8 as run A (SPECIFICATION.md), so only the pair
-    // establishes the proposition. ----
+        bool ok_b = true;
+        for (int j = 0; j < 8; ++j) {
+            double width = brackets_b[j].ok ? double(brackets_b[j].t1 - brackets_b[j].t0 + brackets_b[j].S) : 1e18;
+            if (!brackets_b[j].ok || !(width < T / 4.0)) ok_b = false;
+        }
+        checks.expect(ok_b, "5e [p255]: every G5 bracket (run B) is narrower than T/4");
+    }
+
+    // ---- (a)+(c): run A recovers the byte, bit 9 and bit 8, and its RBF
+    // event comes one bit time later than run B's -- together, not
+    // separately, since the timing half alone does not depend on the
+    // nine-bit (LONG) setting. ----
     double meanD_a = 0, meanD_b = 0, diffAB = 0;
     {
         bool data_ok = true;
@@ -500,7 +600,7 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
             uint32_t got = a.results[j] ? uint32_t(*a.results[j]) : 0xFFFFFFFFu;
             std::snprintf(buf, sizeof buf, " j%d(exp %02X)=%04X", j, kRxBytes[j], got);
             dump += buf;
-            if (!a.results[j] || (*a.results[j] & 0x00FF) != kRxBytes[j]) data_ok = false;
+            if (!a.results[j] || (*a.results[j] & 0x03FF) != (0x0300 | kRxBytes[j])) data_ok = false;
         }
         checks.note("(a) run A RESULT dump:" + dump);
 
@@ -514,30 +614,36 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
         bool timing_ok = diffAB >= T / 2.0 && diffAB <= 1.5 * T;
 
         checks.expect(data_ok && timing_ok,
-            "(a)+(c) [p255,p256,p257,p283] opus:8-serial.c36,sol:8-serial.c21: run A recovers "
-            "byte_j (RESULT bits 7-0) for every j, and its RBF event comes one bit time later "
-            "than run B's own (mean_j D_j(A) - mean_j D_j(B) in [T/2,3T/2])");
+            "(a)+(c) [p255,p256,p257,p283]: run A recovers byte_j (RESULT bits 7-0), bit 9 and "
+            "bit 8 for every j, and its RBF event comes one bit time later than run B's own "
+            "(mean_j D_j(A) - mean_j D_j(B) in [T/2,3T/2])");
         checks.record(
-            "(a): bit 9 and bit 8 are not graded here -- run B (LONG clear) stores the same two "
-            "bits, so they do not discriminate the nine-bit setting; p.257 reads bit 8 as the "
-            "ninth data bit and p.283 reads it as the stop bit, and this stimulus cannot tell "
-            "the two readings apart");
+            "opus:8-serial.c36,sol:8-serial.c21 [p255,p256,p257,p283]: withdrawn from the graded "
+            "line above -- establishing that bit 8 specifically carries the ninth (parity) bit "
+            "needs a run where the ninth bit is driven 0, and p.257 and p.283 disagree on what "
+            "RESULT bit 8 should then read (0 or 1; see the run-A ninth-bit-zero variant below), "
+            "so that discriminating case cannot be graded at this boundary");
     }
 
     // ---- (b) No early signal ----
+    // G5 places the event in (t0-S, t1]; only the bracket's lower end
+    // bounds how early it could have been, so this reads t0-S, not t1
+    // (SPECIFICATION.md).
     {
         bool ok = true;
         for (int j = 0; j < 8; ++j) {
             double sj = double(a.s0) + double(j) * step;
-            if (!brackets_a[j].ok || !(double(brackets_a[j].t1) >= sj + 9.0 * T)) ok = false;
+            double lo = double(brackets_a[j].t0) - double(brackets_a[j].S);
+            if (!brackets_a[j].ok || !(lo >= sj + 9.0 * T)) ok = false;
         }
         for (int j = 0; j < 8; ++j) {
             double sj = double(b.s0) + double(j) * step;
-            if (!brackets_b[j].ok || !(double(brackets_b[j].t1) >= sj + 8.0 * T)) ok = false;
+            double lo = double(brackets_b[j].t0) - double(brackets_b[j].S);
+            if (!brackets_b[j].ok || !(lo >= sj + 8.0 * T)) ok = false;
         }
         checks.expect(ok,
-            "(b) [p256]: the RBF event for every j comes no earlier than s_j+9T (run A) or "
-            "s_j+8T (run B)");
+            "(b) [p256]: the G5 bracket's lower end (t0-S) for every j is no earlier than "
+            "s_j+9T (run A) or s_j+8T (run B)");
     }
 
     // ---- 5f: run B received the same characters ----
@@ -555,53 +661,23 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
         checks.expect(ok, "5f [p255]: RESULT bits 7-0 = byte_j for every j, run B");
     }
 
-    // ---- Mutations selected via NMH_MUTATE (each also asserts DONE is
-    // reached and the population is not empty, per BRIEF's rule 3) ----
-    if (mv == "P5-A") {
-        RxRun a2T = run_rx(bin_a, kP5Budget, T, 2.0);
-        bool byte_ok = true;
-        for (int j = 0; j < 8; ++j) if (!a2T.results[j] || (*a2T.results[j] & 0x00FF) != kRxBytes[j]) byte_ok = false;
-        bool done = mark_cycle_rx(a2T, kMarkDone).has_value();
-        checks.expect(a2T.loaded && done && !byte_ok,
-            "MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-A: driving run A at a bit time of 2T "
-            "breaks the byte match; DONE is reached");
-    }
-    if (mv == "P5-5F") {
-        RxRun b2T = run_rx(bin_b, kP5Budget, T, 2.0);
-        bool byte_ok = true;
-        for (int j = 0; j < 8; ++j) if (!b2T.results[j] || (*b2T.results[j] & 0x00FF) != kRxBytes[j]) byte_ok = false;
-        bool done = mark_cycle_rx(b2T, kMarkDone).has_value();
-        checks.expect(b2T.loaded && done && !byte_ok,
-            "MUTATION 5f stimulus red NMH_MUTATE=P5-5F: driving run B at a bit time of 2T "
-            "breaks the byte match; DONE is reached");
-    }
-    if (mv == "P5-B") {
-        // bin_a is already the prog_rx_a_altper.bin swap (below); this run
-        // IS the mutant, and (b)'s own "no early signal" predicate applied
-        // to it is the contrast.
-        bool ok = true;
+    // ---- P5 run-A ninth-bit-zero variant: recorded, not graded (p.257
+    // predicts RESULT bit 8 = 0, p.283 predicts 1; SPECIFICATION.md P5).
+    // Always the pristine run-A binary, regardless of NMH_MUTATE, since it
+    // exercises the RxD driver's own ninth-bit level, not a stimulus
+    // mutation. ----
+    {
+        RxRun a0 = run_rx(dir + "/prog_rx_a.bin", kP5Budget, T, 1.0, true, true);
+        std::string dump;
         for (int j = 0; j < 8; ++j) {
-            double sj = double(a.s0) + double(j) * step;
-            if (!brackets_a[j].ok || !(double(brackets_a[j].t1) >= sj + 9.0 * T)) ok = false;
+            char buf[16];
+            int bit8 = a0.results[j] ? int((*a0.results[j] >> 8) & 1) : -1;
+            std::snprintf(buf, sizeof buf, " j%d=%d", j, bit8);
+            dump += buf;
         }
-        bool done = mark_cycle_rx(a, kMarkDone).has_value();
-        bool pop_nonempty = !a.probe_i.empty();
-        checks.expect(a.loaded && done && pop_nonempty && !ok,
-            "MUTATION (b) stimulus red NMH_MUTATE=P5-B: run A with SERPER<-$80B9 (N=185, driver "
-            "unchanged) signals well before s_j+9T; DONE is reached, population not empty");
-    }
-    if (mv == "P5-C") {
-        // "Write SERPER <- $8173 in run B as well": that program is
-        // identical to run A's own (the only difference between A and B is
-        // the LONG bit, which is exactly what this contrast sets), so it
-        // needs no new binary -- run A's own capture stands in for "run B"
-        // on both sides of the comparison, predicting no timing difference.
-        double diff2 = meanD_a - meanD_a;
-        bool timing_ok2 = diff2 >= T / 2.0 && diff2 <= 1.5 * T;
-        checks.note("(c) contrast: SERPER<-LONG in run B too -- diff=" + std::to_string(diff2));
-        checks.expect(!timing_ok2,
-            "MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-C: writing SERPER with LONG set in run B "
-            "too predicts no timing difference between the runs, so the merged assertion fails");
+        checks.record("P5 run-A ninth-bit-zero variant [p257,p283]: RESULT bit 8 per character, "
+                       "every ninth bit driven 0:" + dump + " -- p.257 predicts 0, p.283 predicts "
+                       "1, so the pages disagree and this is not graded");
     }
 }
 
@@ -619,6 +695,8 @@ struct FastRun {
     std::vector<RefreshGroup> refresh;
     double C = 0.0;
     int field_lines = 0;
+    bool poll_timeout = false; // G4: the custom disk poll loop reached its own bound
+    int pop_groups = 0, pop_malformed = 0; // R1 population (refresh_population)
 };
 
 FastRun run_fast(const std::string& bin, bool ntsc, uint64_t budget) {
@@ -632,12 +710,15 @@ FastRun run_fast(const std::string& bin, bool ntsc, uint64_t budget) {
     r.result = h.peek_logical(kResultAddr);
     r.refresh = find_refresh_groups(r.log);
     if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
+    { auto pop = refresh_population(r.log, r.C); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
         int count = 0;
         for (const auto& g : r.refresh) if (g.r1 >= frames[1].begin && g.r1 < frames[1].end) ++count;
         r.field_lines = count;
     }
+    auto to = h.peek_logical(kPollTimeoutAddr);
+    r.poll_timeout = to.has_value() && *to != 0;
     return r;
 }
 
@@ -651,6 +732,19 @@ std::vector<std::optional<uint64_t>> extract_ti(const FastRun& r, int n = kDbufL
         if (!t[i]) t[i] = a.cycle;
     }
     return t;
+}
+
+// Total read count of each word B+2i, i=0..n-1 -- unlike extract_ti(), this
+// counts every read, not just the first, so a duplicate read of an
+// already-seen index is visible.
+std::vector<int> count_reads(const FastRun& r, int n = kDbufLen) {
+    std::vector<int> c(n, 0);
+    uint32_t base = word_addr(kDbufAddr);
+    for (const auto& a : r.log) {
+        if (a.is_write || a.word_addr < base || a.word_addr >= base + uint32_t(n)) continue;
+        ++c[int(a.word_addr - base)];
+    }
+    return c;
 }
 
 bool result_fast_bit_matches(const FastRun& r, bool expect_fast1) {
@@ -684,8 +778,7 @@ double T_cell_us(uint64_t t_lo, uint64_t t_hi, double C, bool ntsc) {
 void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
     auto bin_fast1 = dir + (mv == "P4-4C" ? "/prog_fast1_4c.bin" :
                              mv == "P4-4D" ? "/prog_fast1_4d.bin" :
-                             mv == "P4-4E" ? "/prog_fast1_4e.bin" :
-                             mv == "P4-4F" ? "/prog_fast1_4f.bin" : "/prog_fast1.bin");
+                             mv == "P4-4E" ? "/prog_fast1_4e.bin" : "/prog_fast1.bin");
     auto bin_fast0 = dir + "/prog_fast0.bin";
     constexpr uint64_t kP4Budget = 21'000'000;
 
@@ -709,7 +802,7 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
                 " done=" + std::to_string(pal_f0.done_cycle.has_value()) +
                 " C=" + std::to_string(pal_f0.C) + " field_lines=" + std::to_string(pal_f0.field_lines));
 
-    auto grade_run = [&](const FastRun& r, bool ntsc, bool fast1, const char* tag, int other_std_field_lines) {
+    auto grade_run = [&](const FastRun& r, bool ntsc, bool fast1, const char* tag) {
         auto t = extract_ti(r);
         bool has_window = t[64].has_value() && t[128].has_value() && t[192].has_value();
         double tcell = has_window ? T_cell_us(*t[64], *t[192], r.C, ntsc) : -1;
@@ -719,18 +812,17 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
 
         checks.record(std::string(tag) +
             " [p265,p249]: cannot be checked at this boundary -- the disk data clock is not "
-            "observable at nanomig.v's ports, and no page ties a Chip-memory read rate to it "
-            "(opus:8-adkcon.c33 declined, SPECIFICATION.md 1.4)");
+            "among the top-level observable ports, and no page ties a Chip-memory read rate to "
+            "it (opus:8-adkcon.c33 declined, SPECIFICATION.md 1.4)");
 
-        // 4a: R1 anchor.
-        bool r1ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C);
-        checks.expect(r1ok, std::string(tag) + " 4a [p194,p195]: R1 anchor holds on this run");
-        if (!mv.empty()) {
-            bool half_fails = !check_r1_anchor(r.refresh, r.C / 2.0);
-            bool double_fails = !check_r1_anchor(r.refresh, r.C * 2.0);
-            checks.expect(half_fails && double_fails,
-                std::string("MUTATION 4a-ANCHOR ") + tag + " checker red: C/2 and 2C both fail on this run");
-        }
+        // 4a: R1 anchor, and the run's own refresh-group population.
+        checks.note(std::string(tag) + " R1 population groups=" + std::to_string(r.pop_groups) +
+                    " malformed=" + std::to_string(r.pop_malformed));
+        bool r1ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C) &&
+                    r.pop_groups > 0 && r.pop_malformed == 0;
+        checks.expect(r1ok, std::string(tag) +
+            " 4a [p194,p195]: R1 anchor holds on this run, and every candidate refresh group is "
+            "the same four-read, 2C-apart shape (Figure 6-9), none discarded before grading");
 
         // 4b: R2 shows the standard selected.
         bool std_ok = ntsc ? (r.field_lines == 262 || r.field_lines == 263)
@@ -738,14 +830,6 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
         checks.expect(std_ok,
             std::string(tag) + " 4b [p24]: R2's own field-line count (" + std::to_string(r.field_lines) +
             ") matches the standard selected");
-        if (!mv.empty()) {
-            bool other_fails = ntsc ? !(other_std_field_lines == 262 || other_std_field_lines == 263)
-                                    : !(other_std_field_lines == 312 || other_std_field_lines == 313);
-            checks.expect(other_fails,
-                std::string("MUTATION 4b-STANDARD ") + tag + " checker red: the same binary's other-"
-                "standard capture's own field-line count (" + std::to_string(other_std_field_lines) +
-                ") does not match this run's standard");
-        }
 
         // 4c: the FAST bit took effect (ADKCONR readback).
         bool c_ok = result_fast_bit_matches(r, fast1);
@@ -761,7 +845,7 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
             std::string(tag) + " 4d [p248]: every PROBE_D value between t_64 and t_192 has DMAON "
             "and DISKWRITE set (" + std::to_string(n4d) + " samples)");
 
-        // 4e: fetches cover the window (i=0..192 seen, each once, rising order).
+        // 4e: fetches cover the window (i=0..192 seen, each exactly once, rising order).
         bool e_ok = true;
         uint64_t prev = 0; bool have_prev = false;
         for (int i = 0; i <= 192; ++i) {
@@ -769,33 +853,41 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
             if (have_prev && !(*t[i] > prev)) e_ok = false;
             prev = *t[i]; have_prev = true;
         }
+        auto counts = count_reads(r);
+        int dup_total = 0;
+        for (int i = 0; i <= 192; ++i) if (counts[i] != 1) { e_ok = false; dup_total += counts[i]; }
+        checks.note(std::string(tag) + " 4e: read counts for i=0..192, total=" + std::to_string(dup_total) +
+                    " (192 expected if every index is read exactly once)");
         checks.expect(e_ok,
-            std::string(tag) + " 4e [p247]: reads of B+2i are seen for i=0..192, each once, in "
-            "rising order");
+            std::string(tag) + " 4e [p247]: reads of B+2i are seen for i=0..192, each exactly "
+            "once (by full read count, not just first-seen), in rising order");
 
-        // 4f: steady state.
-        bool f_ok = has_window &&
-            std::llabs((int64_t)(*t[128] - *t[64]) - (int64_t)(*t[192] - *t[128])) < int64_t(456.0 * r.C);
-        checks.expect(f_ok,
-            std::string(tag) + " 4f [p194,p23]: |(t128-t64)-(t192-t128)| < 456*C" +
-            (has_window ? (" (measured " +
-                std::to_string(int64_t(*t[128] - *t[64]) - int64_t(*t[192] - *t[128])) + ")")
-                        : std::string(" (no window observed)")));
+        // Also measured, not graded: no page sentence bounds the fetch cadence.
+        bool has_span = has_window;
+        std::string span = has_span ?
+            (" (measured " + std::to_string(int64_t(*t[128] - *t[64]) - int64_t(*t[192] - *t[128])) + ")") :
+            std::string(" (no window observed)");
+        checks.note(std::string(tag) + " |(t128-t64)-(t192-t128)|" + span);
+
+        // Completion (G4): the run reached DONE and no poll ended at its own bound.
+        checks.expect(r.done_cycle.has_value() && !r.poll_timeout,
+            std::string(tag) + " [p283]: MARK=DONE is present and no poll (G4, any of them) "
+            "ended at its own bound");
     };
 
-    grade_run(ntsc_f1, true, true, "P4-NTSC-FAST1", pal_f1.field_lines);
-    grade_run(ntsc_f0, true, false, "P4-NTSC-FAST0", pal_f0.field_lines);
-    grade_run(pal_f1, false, true, "P4-PAL-FAST1", ntsc_f1.field_lines);
-    grade_run(pal_f0, false, false, "P4-PAL-FAST0", ntsc_f0.field_lines);
+    grade_run(ntsc_f1, true, true, "P4-NTSC-FAST1");
+    grade_run(ntsc_f0, true, false, "P4-NTSC-FAST0");
+    grade_run(pal_f1, false, true, "P4-PAL-FAST1");
+    grade_run(pal_f0, false, false, "P4-PAL-FAST0");
 
     // 4c's own mutation needs no separate code: NMH_MUTATE=P4-4C already
     // swapped bin_fast1 above, so ntsc_f1 (and pal_f1, sharing the same
     // binary) *is* the mutant under that env var, and grade_run's own
     // "P4-...-FAST1 4c [...]" check flips on its own (ADKCONR reads back 0
-    // instead of 1). NMH_MUTATE=P4-4D/4E/4F likewise need no separate code:
-    // they each swap bin_fast1 to their own contrast binary, and grade_run's
-    // "4d [...]"/"4e [...]"/"4f [...]" checks on P4-NTSC-FAST1/P4-PAL-FAST1
-    // flip on their own.
+    // instead of 1). NMH_MUTATE=P4-4D/4E likewise need no separate code:
+    // each swaps bin_fast1 to its own contrast binary, and grade_run's
+    // "4d [...]"/"4e [...]" checks on P4-NTSC-FAST1/P4-PAL-FAST1 flip on
+    // their own.
 }
 
 } // namespace
@@ -892,9 +984,14 @@ int main(int argc, char** argv) {
         checks.note("P1 grid: N=32396 matched " + std::to_string(g32396.matched) + "/" + std::to_string(g32396.total_expected) +
                     " of " + std::to_string(g32396.total_changes) + " changes, C=" + std::to_string(ntsc_n32396.C));
         checks.expect(g0.ok && g371.ok && g32396.ok,
-            "P1 [p255] sol:8-serper.c8: on NTSC, with SERPER=N, every TxD change lands within "
-            "+/-C/2 of t0+k*(N+1)*C for k=0..10W-1, and there is no other change, for N=0 (W=1), "
-            "N=371 (W=4) and N=32396 (W=1)");
+            "P1 [p255] \"N+1 color clocks occur ... between transmissions of output bits\": on "
+            "NTSC, with SERPER=N, every TxD change lands within +/-C/2 of t0+k*(N+1)*C for "
+            "k=0..10W-1, and there is no other change, for N=0 (W=1), N=371 (W=4) and N=32396 (W=1)");
+        checks.record(
+            "sol:8-serper.c8 [p255]: withdrawn from the graded line above -- \"the number N\" "
+            "covers every 15-bit divisor, and N=0, 371 and 32396 sample three of them, not the "
+            "whole domain; the N=371 grid above is red (words 3-4 miss +/-C/2 of t0+k*372*C), "
+            "which stands as the counterexample the claim's every-N reading would have to survive");
 
         // Controls, graded on the same comparator: P1's own N=371 run is
         // confirmed red (SPECIFICATION.md 4.3), which the AND above hides
@@ -916,18 +1013,15 @@ int main(int argc, char** argv) {
 
     // ---- precondition 1a / R1 anchor (shared with P2, P4) ----
     {
-        bool ok = !ntsc_n371.refresh.empty() && check_r1_anchor(ntsc_n371.refresh, ntsc_n371.C);
+        checks.note("1a: R1 population groups=" + std::to_string(ntsc_n371.pop_groups) +
+                    " malformed=" + std::to_string(ntsc_n371.pop_malformed));
+        bool ok = !ntsc_n371.refresh.empty() && check_r1_anchor(ntsc_n371.refresh, ntsc_n371.C) &&
+                  ntsc_n371.pop_groups > 0 && ntsc_n371.pop_malformed == 0;
         checks.expect(ok,
             "1a [p194,p195] R1 anchor: the four refresh accesses in every line of the N=371 NTSC "
-            "run are 2C, 2C and 2C apart, the same C in every line");
-        if (!mv.empty()) {
-            bool half_fails = !check_r1_anchor(ntsc_n371.refresh, ntsc_n371.C / 2.0);
-            bool double_fails = !check_r1_anchor(ntsc_n371.refresh, ntsc_n371.C * 2.0);
-            checks.expect(half_fails && double_fails,
-                "MUTATION 1a-ANCHOR checker red: grading the same refresh data with a slot length of "
-                "C/2 (" + std::to_string(half_fails ? 1 : 0) + ") or 2C (" + std::to_string(double_fails ? 1 : 0) +
-                ") must fail, since no stimulus on the pages moves the refresh slots -- both do");
-        }
+            "run are 2C, 2C and 2C apart, the same C in every line, and every candidate refresh "
+            "group in the run has that same four-read shape (Figure 6-9), none discarded before "
+            "grading");
     }
 
     // ---- precondition 1b / R2 shows NTSC ----
@@ -938,12 +1032,6 @@ int main(int argc, char** argv) {
         checks.expect(ntsc_ok,
             "1b [p24] R2: the NTSC capture's own refresh-group count between two vertical syncs is "
             "262 or 263 (measured " + std::to_string(ntsc_n371.field_lines) + ")");
-        if (!mv.empty()) {
-            bool contrast_fails = !(pal_n371.field_lines == 262 || pal_n371.field_lines == 263);
-            checks.expect(contrast_fails,
-                "MUTATION 1b-STANDARD checker red: the same binary's PAL capture's own field-line "
-                "count (" + std::to_string(pal_n371.field_lines) + ") is not 262 or 263");
-        }
     }
 
     // ---- precondition 1c: TxD idle before the window ----
@@ -993,6 +1081,41 @@ int main(int argc, char** argv) {
             "1e [p283]: MARK=DONE is present and no poll (G4's POLLBIT, any of them) ended at its "
             "own bound in the N=371 NTSC run");
     }
+
+    // ---- N=0 and N=32396 controls: the same per-run preconditions (R1
+    // anchor+population, R2 standard, TxD idle before MARK=0, completion)
+    // that 1a/1b/1c/1e grade for the N=371 run, applied to the single-word
+    // runs whose own grid checks are graded above and in P2 below. (1d
+    // does not apply: a W=1 run has no "next word".) ----
+    auto check_run_preconditions = [&](const TxRun& r, const char* tag, bool ntsc) {
+        checks.note(std::string(tag) + ": R1 population groups=" + std::to_string(r.pop_groups) +
+                    " malformed=" + std::to_string(r.pop_malformed));
+        bool anchor_ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C) &&
+                         r.pop_groups > 0 && r.pop_malformed == 0;
+        checks.expect(anchor_ok, std::string(tag) +
+            " [p194,p195] R1 anchor: the four refresh accesses in every line are 2C, 2C and 2C "
+            "apart, the same C in every line, and every candidate refresh group has that same "
+            "four-read shape (Figure 6-9), none discarded before grading");
+        bool std_ok = ntsc ? (r.field_lines == 262 || r.field_lines == 263)
+                            : (r.field_lines == 312 || r.field_lines == 313);
+        checks.expect(std_ok, std::string(tag) +
+            " [p24] R2: the run's own refresh-group count (" + std::to_string(r.field_lines) +
+            ") matches the standard selected");
+        auto m0 = mark_cycle(r, 0);
+        bool idle_ok = m0.has_value() &&
+                       std::none_of(r.tx_changes.begin(), r.tx_changes.end(),
+                                    [&](uint64_t c) { return c < *m0; });
+        checks.expect(idle_ok, std::string(tag) +
+            " [p257]: TxD does not change from the start of the run until MARK=0");
+        bool done = mark_cycle(r, kMarkDone).has_value();
+        checks.expect(done && !r.poll_timeout, std::string(tag) +
+            " [p283]: MARK=DONE is present and no poll (G4's POLLBIT, any of them) ended at its "
+            "own bound");
+    };
+    check_run_preconditions(ntsc_n0, "P1 N=0", true);
+    check_run_preconditions(ntsc_n32396, "P1 N=32396", true);
+    check_run_preconditions(pal_n0, "P2 N=0", false);
+    check_run_preconditions(pal_n32396, "P2 N=32396", false);
 
     // ---- P1's own main contrasting case: SERPER <- N+1, graded against N ----
     // NMH_MUTATE=P1-NPLUS1 swaps bin_n0/bin_n371/bin_n32396 to the N+1
@@ -1045,9 +1168,10 @@ int main(int argc, char** argv) {
         // fits each run's own period whatever it is, and only (ii) grades
         // the N+1 relation across runs, so both are graded on one line.
         checks.expect(u0.ok && u371.ok && u32396.ok && pair_ok,
-            "P2 [p255] sol:8-serper.c9: on PAL, (i) each run's own uniform grid (T_N=span/(10W-1)) "
-            "accounts for every TxD change with no other change, and (ii) every pair of runs' own "
-            "U_N=T_N/(N+1) agree within the stated tolerance, for N=0, N=371 and N=32396");
+            "P2 [p255] \"N+1 color clocks occur ... between transmissions of output bits\": on "
+            "PAL, (i) each run's own uniform grid (T_N=span/(10W-1)) accounts for every TxD "
+            "change with no other change, and (ii) every pair of runs' own U_N=T_N/(N+1) agree "
+            "within the stated tolerance, for N=0, N=371 and N=32396");
 
         checks.record("P2 diagnostic (not graded): U/C = " + std::to_string(us[0].U / pal_n371.C) +
                        " (N=0), " + std::to_string(us[1].U / pal_n371.C) + " (N=371), " +
@@ -1060,12 +1184,19 @@ int main(int argc, char** argv) {
         // (confirmed red above) does not touch.
         double ratio0 = us[0].U / pal_n371.C, ratio32396 = us[2].U / pal_n371.C;
         double tol0 = 1.0 / double(10 * us[0].W - 1), tol32396 = 1.0 / double(10 * us[2].W - 1);
-        checks.note("sol:8-serper.c9 U/C: N=0 ratio=" + std::to_string(ratio0) + " (tol " +
+        checks.note("U/C: N=0 ratio=" + std::to_string(ratio0) + " (tol " +
                     std::to_string(tol0) + "), N=32396 ratio=" + std::to_string(ratio32396) +
                     " (tol " + std::to_string(tol32396) + ")");
         checks.expect(std::abs(ratio0 - 1.0) <= tol0 && std::abs(ratio32396 - 1.0) <= tol32396,
-            "sol:8-serper.c9 [p255]: on PAL, the fixed period equals one PAL colour clock "
-            "(U_N/C = 1 within +/-1/(10W-1)), for N=0 and N=32396");
+            "P2 [p255]: on PAL, the fixed period equals one PAL colour clock (U_N/C = 1 within "
+            "+/-1/(10W-1)), for N=0 and N=32396");
+
+        checks.record(
+            "sol:8-serper.c9 [p255]: withdrawn from the graded lines above -- \"the number N\" "
+            "covers every 15-bit divisor, and N=0, 371 and 32396 sample three of them, not the "
+            "whole domain; the N=371 pairwise comparison above is red (|U371-U32396|=" +
+            std::to_string(std::abs(us[1].U - us[2].U)) + " exceeds its own tolerance), which "
+            "stands as the counterexample the claim's every-N reading would have to survive");
     }
 
     // ---- P2 preconditions 2a-2e: 1a-1e restated on the PAL run ----
@@ -1073,25 +1204,18 @@ int main(int argc, char** argv) {
     // the same NMH_MUTATE=P1-1C/1D/1E swap of bin_n371, shared with 1c/1d/1e
     // since pal_n371 is built from that same binary)
     {
-        bool ok = !pal_n371.refresh.empty() && check_r1_anchor(pal_n371.refresh, pal_n371.C);
-        checks.expect(ok, "2a [p194,p195] R1 anchor on the PAL N=371 run");
-        if (!mv.empty()) {
-            bool half_fails = !check_r1_anchor(pal_n371.refresh, pal_n371.C / 2.0);
-            bool double_fails = !check_r1_anchor(pal_n371.refresh, pal_n371.C * 2.0);
-            checks.expect(half_fails && double_fails,
-                "MUTATION 2a-ANCHOR checker red: same R1 contrast, on the PAL capture");
-        }
+        checks.note("2a: R1 population groups=" + std::to_string(pal_n371.pop_groups) +
+                    " malformed=" + std::to_string(pal_n371.pop_malformed));
+        bool ok = !pal_n371.refresh.empty() && check_r1_anchor(pal_n371.refresh, pal_n371.C) &&
+                  pal_n371.pop_groups > 0 && pal_n371.pop_malformed == 0;
+        checks.expect(ok, "2a [p194,p195] R1 anchor on the PAL N=371 run: the four refresh "
+            "accesses in every line are 2C, 2C and 2C apart, and every candidate refresh group "
+            "has that same shape (Figure 6-9), none discarded before grading");
 
         bool pal_ok = pal_n371.field_lines == 312 || pal_n371.field_lines == 313;
         checks.expect(pal_ok,
             "2b [p24] R2: the PAL capture's own refresh-group count is 312 or 313 (measured " +
             std::to_string(pal_n371.field_lines) + ")");
-        if (!mv.empty()) {
-            bool contrast_fails = !(ntsc_n371.field_lines == 312 || ntsc_n371.field_lines == 313);
-            checks.expect(contrast_fails,
-                "MUTATION 2b-STANDARD checker red: the same binary's NTSC capture's field-line count "
-                "(" + std::to_string(ntsc_n371.field_lines) + ") is not 312 or 313");
-        }
 
         auto m0 = mark_cycle(pal_n371, 0);
         checks.expect(m0.has_value() &&
@@ -1136,11 +1260,15 @@ int main(int argc, char** argv) {
         checks.note("P3: reusing P1's N=371 NTSC run, matched " + std::to_string(g.matched) + "/" +
                     std::to_string(g.total_expected));
         checks.expect(g.ok,
-            "P3 [p255] sol:8-serper.c10: every change of the N=371 NTSC run lies within +/-C/2 of "
-            "t0+k*372*C for k=0..39");
-        checks.record("P3 diagnostic (not graded): rate = 3,579,545/372 = 9622.4 bit/s; the "
-                       "page's own arithmetic (3,579,545/9600-1=371.87, printed 371) makes its "
-                       "\"9600 baud\" actually 9622 bit/s");
+            "P3 [p255] \"N+1 color clocks occur ... between transmissions of output bits\": "
+            "every change of the N=371 NTSC run lies within +/-C/2 of t0+k*372*C for k=0..39");
+        checks.record(
+            "sol:8-serper.c10 [p255]: withdrawn from the graded line above -- the claim reads 371 "
+            "as the proper NTSC setting for 9600 baud, but the rate = 3,579,545/372 = 9622.4 "
+            "bit/s; the page's own arithmetic (3,579,545/9600-1=371.87, printed 371) makes its "
+            "\"9600 baud\" actually 9622 bit/s, so 9600 itself is not graded (only the p.255 "
+            "N+1 grid above is), and that grid is red at N=371 (words 3-4 miss +/-C/2 of "
+            "t0+k*372*C)");
 
         // Preconditions 3a-3e are 1a-1e, already graded above on this same run.
         checks.record("3a-3e [p194-p257]: preconditions 1a-1e, already graded above on this same "
