@@ -8,6 +8,7 @@
 ; Optional assembly-time symbols:
 ;   MUT_P5  step 2 writes $8200 instead of $8100 (P5's own contrasting case)
 ;   MUT_C1  the store of R2 (step 3's readback) is left out (C1's contrasting case)
+;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"
@@ -19,6 +20,9 @@ R1      equ     RESULTS+2
 R2      equ     RESULTS+4
 R3      equ     RESULTS+6
 R4      equ     RESULTS+8
+KFIX    equ     RESULTS+10      ; FIXTURE: a program-stored known value, checked
+                                 ; by the test before it relies on anything else
+                                 ; this program stores (BRIEF.md)
 
 start:
         lea     CUSTOM,a0
@@ -54,5 +58,13 @@ start:
         ; step 5: clear bit 9
         move.w  #$0200,ADKCON(a0)
         move.w  ADKCONR(a0),R4
+
+        ; ---- FIXTURE: a known constant (BRIEF.md), stored last, after
+        ; every step's own timing-sensitive readback above ----
+        ifd     MUT_FIXTURE
+        move.w  #$DEAD,KFIX            ; MUT_FIXTURE: a different constant
+        else
+        move.w  #$BEEF,KFIX
+        endc
 
         DONE

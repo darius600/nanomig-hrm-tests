@@ -29,6 +29,7 @@
 ;   MUT_A1  T1's own DMA is never enabled (DMACON $8200 instead of $8201: A1 for T1 goes red)
 ;   MUT_A2  ADKCON $8001 (USE0V1) is set before the ADKCONR read (A2 goes red)
 ;   MUT_A4  T1's own AUD0VOL is 0 instead of 64 (A4 for T1 goes red)
+;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"
@@ -38,6 +39,15 @@
 T1_ADDR equ     $002000         ; 4 words, below $080000 (2.1)
 T2_ADDR equ     $002100         ; 4 words
 T3_ADDR equ     $002200         ; 256 words
+KFIX    equ     RESULTS+$20     ; FIXTURE: a program-stored known value, checked by
+                                 ; the test before it relies on anything else this
+                                 ; program stores (BRIEF.md). Stored last, right
+                                 ; before DONE: RESULTS is identity-mapped chip RAM
+                                 ; regardless of the overlay, so nothing depends on
+                                 ; the order of this store against CLEAR_OVL, and
+                                 ; placing it last leaves every table's own DMA
+                                 ; timing (T1's A1 included, measured per-core,
+                                 ; SPECIFICATION.md section 5) exactly as measured.
 
 ; Waits for one VERTB pulse (INTREQR bit 5), clearing it afterwards, with
 ; a bounded fallback loop counter so the wait can never hang (2.3
@@ -113,6 +123,14 @@ start:
         WAITVBL
         WAITVBL
         move.w  #$0001,DMACON(a0)
+
+        ; ---- FIXTURE: a known constant (BRIEF.md), stored last so it
+        ; cannot perturb any table's own DMA-restart timing above ----
+        ifd     MUT_FIXTURE
+        move.w  #$DEAD,KFIX            ; MUT_FIXTURE: a different constant
+        else
+        move.w  #$BEEF,KFIX
+        endc
 
         DONE
 

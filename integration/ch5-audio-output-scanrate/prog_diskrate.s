@@ -26,6 +26,7 @@
 ;               F1's and B4's own contrasting case. MUT_F1_NTSC selects
 ;               the NTSC BEAMCON0 value ($0080) in place of the PAL one
 ;               ($00A0), per SPECIFICATION.md 2.4.
+;   MUT_FIXTURE KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"
@@ -41,6 +42,10 @@ R_SEEN_F        equ     RESULTS+4       ; not graded
 R_B1_S          equ     RESULTS+6
 R_B2_S          equ     RESULTS+8
 R_SEEN_S        equ     RESULTS+10      ; not graded
+KFIX            equ     RESULTS+12      ; FIXTURE: a program-stored known value,
+                                         ; checked by the test before it relies on
+                                         ; anything else this program stores
+                                         ; (BRIEF.md)
 
 ; Poll DSKBLK (INTREQR bit 1), bounded by up to 8 VERTB pulses (2.3, P6
 ; step 8). Leaves D4 = 1 if seen, 0 otherwise; not graded (2.9). Each
@@ -129,5 +134,13 @@ start:
         move.w  d4,R_SEEN_S
         move.w  #$4000,DSKLEN(a0)
         move.w  #$0002,INTREQ(a0)
+
+        ; ---- FIXTURE: a known constant (BRIEF.md), stored last so it
+        ; cannot perturb either run's own F1/F3 timing above ----
+        ifd     MUT_FIXTURE
+        move.w  #$DEAD,KFIX            ; MUT_FIXTURE: a different constant
+        else
+        move.w  #$BEEF,KFIX
+        endc
 
         DONE
