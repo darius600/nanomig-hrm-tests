@@ -31,32 +31,8 @@
 //   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// RTL READ, IN ORDER, BEFORE ANY EXPECT/RECORD BELOW WAS WRITTEN:
-//   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
-//   2. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file (2048x16
-//      fifo, no reset-hazard of its own), to confirm the two-file build
-//      closes.
-//   3. hrm/appDE-disk-interface/test_appDE-disk-interface.cpp -- full
-//      file, for this suite's Checks/mutating()/Rig/MUTATION-comment
-//      boilerplate and the select()/select_with_motor()/peek_index()/
-//      mount()/unmount()/do_step()/write_reg()/arm_dma_read() idioms,
-//      several of which are reused here verbatim.
-//   4. hrm/ch8-drive-sense-lines/test_ch8-drive-sense-lines.cpp -- full
-//      file, read for its P-CHANGE-ON-REMOVE/P-CHANGE-LATCH/P-TRACK0-ZERO
-//      labels (opened per the build brief's instruction before deciding
-//      whether this package's claims are re-grades).
-//   5. hrm/ch8-drive-select-motor-led/test_ch8-drive-select-motor-led.cpp
-//      -- full file, read for its A1-A4/A7-A8 motor-latch labels (the
-//      accepted two-drive distinctness measurement this package's MTRXD
-//      claims must go wider than, not re-state).
-//   6. hrm/ch8-drive-step-timing/test_ch8-drive-step-timing.cpp -- full
-//      file, read for its SEL-GATING, DIREC-PROTOCOL and PULSE-WIDTH-FLOOR
-//      labels (none of which shares a proposition with this package's
-//      claims -- see NOT A RE-GRADE below).
-//
 // NOT A RE-GRADE, CHECKED AGAINST EACH NAMED PROPOSITION'S OWN LABEL, READ
-//   IN ITS SOURCE (build brief: "decline only where a prior assertion
-//   grades the SAME proposition"):
+//   IN ITS SOURCE:
 //   - appDE-disk-interface's RESET-DUTY (pin 10 DRESB*, a system-reset
 //     compound: motor-on flip-flop clear + write-protect flip-flop set)
 //     is about the RESET input; none of this package's 14 claims mention
@@ -80,26 +56,23 @@
 //     P-CHANGE-LATCH's own label, quoted from its source: "with the drive
 //     selected, _change stays asserted through reinsertion alone and
 //     clears only once a step pulse follows". It holds the drive selected
-//     THE WHOLE TIME and never drives a step while DESELECTED at all --
-//     the ~_sel term in the clearing arm (paula_floppy.v:610) is never
-//     exercised there. p.369's own sentence adds a conjunct P-CHANGE-LATCH's
-//     source page (p.244, "inserted AND a step pulse") does not carry:
-//     "the system must select the drive, AND step the head" -- CHANGE-
-//     CLEAR-NEEDS-SELECT grades exactly that added conjunct (a step while
-//     DESELECTED must not clear the latch, only a step while SELECTED
-//     does), and CHANGE-NO-CLEAR-NO-DISK grades a second conjunct neither
+//     THE WHOLE TIME and never drives a step while DESELECTED at all.
+//     p.369's own sentence adds a conjunct P-CHANGE-LATCH's source page
+//     (p.244, "inserted AND a step pulse") does not carry: "the system
+//     must select the drive, AND step the head" -- CHANGE-CLEAR-NEEDS-SELECT
+//     grades exactly that added conjunct (a step while DESELECTED must not
+//     clear the latch, only a step while SELECTED does), and
+//     CHANGE-NO-CLEAR-NO-DISK grades a second conjunct neither
 //     P-CHANGE-ON-REMOVE nor P-CHANGE-LATCH ever measures (disk absence
 //     held across the clearing attempt). Different, narrower propositions.
 //   - ch8-drive-sense-lines' opus:8-cia.c7 (P-READY, motor OFF, declined
-//     there as untestable because p.244 itself refuses to define _ready
-//     with the motor off) and appDE-disk-interface's re-opened
-//     P-READY-MOTOR-INVARIANT (RED: _ready has no _motor term, measured
-//     by toggling _motor with selection fixed) are both about the MOTOR
-//     axis. RDY-DISK-PRESENCE below toggles DISK PRESENCE
+//     there because p.244 does not define _ready with the motor off) and
+//     appDE-disk-interface's P-READY-MOTOR-INVARIANT (the motor latched on
+//     at a select edge, no disk installed, graded against p.334) both hold
+//     disk presence fixed. RDY-DISK-PRESENCE below toggles DISK PRESENCE
 //     (sdc_image_mounted/sdc_image_size) with selection AND motor BOTH
 //     held fixed -- a third, independently drivable axis neither prior
-//     assertion moves. See RDY-DISK-PRESENCE's own comment below for the
-//     full argument.
+//     assertion moves. See RDY-DISK-PRESENCE's own comment below.
 //   - ch8-drive-select-motor-led's P1/P2 (opus:8-cia.c24/c28,
 //     sol:8-cia.c22/c26 and siblings) grade the motor latch's
 //     latch-at-own-edge and remembers-when-deselected properties on
@@ -111,152 +84,71 @@
 //     read all four back distinctly -- wider than the accepted pair.
 //   - ch8-drive-step-timing's SEL-GATING (STEP acceptance gated by
 //     selection), DIREC-PROTOCOL (direc polarity) and PULSE-WIDTH-FLOOR
-//     (declined: absolute "1 us min.", no real-time unit in this RTL) are
-//     all about STEPB*/DIRB*, signals no claim in this package cites at
-//     all. Different signals entirely.
-//   - CORRECTED AFTER CHECKING (the classifier's own evidence for
-//     opus:AHJ-072/sol:H-048 said "grep ... finds them only in generated
-//     obj_dir files", and that is now FALSE): a fresh grep for `sdc_wr`
-//     across every test_*.cpp under nanomig-hrm-tests/hrm finds it read in
-//     hrm/ch8-dsklen-dma-arming (its A8-WRITE-DIRECTION-BIT-AND-PREVENTION
-//     block, checking `sdc_wr==0` as one of three signals proving a SINGLE
-//     DSKLEN write starts no DMA at all) and hrm/ch8-disk-controller-
-//     overview reads the sibling `sdc_rd` extensively as its own central
-//     mechanism. Read directly: ch8-dsklen-dma-arming's block never varies
+//     (declined: absolute "1 us min.", no real-time unit at the fixture's
+//     boundary) are all about STEPB*/DIRB*, signals no claim in this
+//     package cites at all. Different signals entirely.
+//   - hrm/ch8-dsklen-dma-arming reads `sdc_wr` in its
+//     A8-WRITE-DIRECTION-BIT-AND-PREVENTION block, as one of three signals
+//     proving a SINGLE DSKLEN write starts no DMA at all, and
+//     hrm/ch8-disk-controller-overview reads the sibling `sdc_rd` as its
+//     own central mechanism. ch8-dsklen-dma-arming's block never varies
 //     `_sel` and never grades which drive's `sdc_wr` bit is set -- it is
 //     about WHETHER a DMA arms at all (a single vs. double DSKLEN write),
 //     not about SELECTION gating a per-drive request. Different
-//     proposition; WRITE-DATA-SELECT-GATE below is still the first
-//     assertion anywhere in the suite to grade `sdc_wr`'s per-drive
-//     selectivity.
+//     proposition; WRITE-DATA-SELECT-GATE below is the only assertion in
+//     the suite that grades `sdc_wr`'s per-drive selectivity.
 //
-// MECHANISM, confirmed by reading paula_floppy.v myself (line numbers
-//   below are this package's own verification):
-//
-//   _ready (paula_floppy.v:688-694), quoted in full:
-//     // drive _ready signal control
-//     // Amiga DD drive activates _ready whenever _sel is active and motor is off
-//     // or whenever _sel is active, motor is on and there is a disk inserted (not implemented - _ready is active when _sel is active)
-//     assign _ready   = (_sel[3] | ~(drives[1] & drives[0]))
-//             & (_sel[2] | ~drives[1])
-//             & (_sel[1] | ~(drives[1] | drives[0]))
-//             & (_sel[0]);
-//   With floppy_drives=0 (this file's Rig default, one drive configured),
-//   every term but the last collapses to a constant 1, so `_ready` reduces
-//   to exactly `_sel[0]`. Neither `_motor` nor `disk_present` appears
-//   anywhere in this expression's cone -- confirmed directly, not merely
-//   disclosed: `disk_present` (paula_floppy.v:961, updated :963-966) feeds
-//   only `_disk_change` (paula_floppy.v:610), never `_ready`.
-//
-//   index / motor_on (paula_floppy.v:576,618-659):
-//     assign index = |(~_sel & motor_on) & ~|rpm_pulse_cnt & sof;
-//     always @(posedge clk) begin if (clk7_en) begin
-//       if (reset) motor_on[n] <= 0;
-//       else if (!_sel[n] && _sel_del[n]) motor_on[n] <= ~_motor;
-//     end end                                             // n = 0..3
-//   `index` requires BOTH a selected drive (~_sel) AND that drive's
-//   latched motor_on, ANDed with rpm_pulse_cnt==0 and sof -- this
-//   package's Rig drives sof itself when reading, so rpm_pulse_cnt==0 is
-//   guaranteed (it is also the model's reset value). The GATING condition
-//   (selected AND motor-on, vs. deselected, vs. selected-but-motor-off)
-//   is exactly what INDEX-SEL-MOTOR-GATE below measures. The RATE ("once
-//   for each revolution") is NOT gradable: `rpm_pulse_cnt`
-//   (paula_floppy.v:563-573) counts `sof` pulses against an RTL-internal
-//   constant (11, or 9 for ntsc) with no revolution-time reference at any
-//   boundary this fixture can reach -- using it as the oracle for a
-//   printed rate would be an RTL-derived oracle value, so it is reported
-//   via note(), never graded.
-//
-//   sdc_wr (paula_floppy.v:410, inside the write-DMA completion state
-//   machine, `fd_dma_buf_wr_state` case 4'd7):
-//     4'd7: begin
-//        if (!sdc_busy) begin
-//           sdc_wr <= ~_sel;
-//           fd_dma_buf_wr_state <= 4'd8;
-//        end
-//     end
-//   Reached only once a full write-DMA transfer completes with a matching
-//   header/payload checksum (the `cpu_wr_state` machine, paula_floppy.v:
-//   781-903, gates entry via `if(cpu_wr_state==4'd0)` after
-//   `wr_sector_csum` reads zero, paula_floppy.v:388-402). `sdc_wr` is
-//   registered, not a continuous function of `_sel` -- it captures
-//   whichever drive was selected AT COMPLETION and holds that value
-//   (state 4'd8 only clears it once `sdc_busy` goes high, which this
-//   Rig's `sdc_busy=0` throughout never does), so demonstrating "only the
-//   selected drive is requested, and a different selection moves the
-//   request with it" needs TWO independent, complete transfers with
-//   different drives selected -- exactly what WRITE-DATA-SELECT-GATE does
-//   below. The transfer is driven honestly through the DSKLEN register
-//   and the DSKDAT bus-write path (`buswr & dmaon`, paula_floppy.v:771),
-//   not by poking any internal signal directly: every word fed is 0x0000
-//   except the FIRST, which must equal `dsksync` (default 0x4489 after
-//   reset, paula_floppy.v:705) to satisfy the sync-marker check
-//   (paula_floppy.v:795). Because every word after the sync is uniformly
-//   zero, the header-checksum, track-match and payload-checksum
-//   verifications (paula_floppy.v:807-895) all pass trivially (an XOR
-//   accumulator seeded at 0 and XORed with 0 throughout stays 0, and the
-//   decoded track field is 0, matching a freshly-reset, unstepped drive
-//   with `side=1` so that `track={dsktrack[sel],~side}` reads 0) --
-//   exact cycle alignment among the trailing zero words therefore does
-//   not matter, only the leading sync word's exact value and count do.
-//
-//   disk-change latch (paula_floppy.v:608-612,662):
-//     assign _change = &(_sel | _disk_change);
-//     _disk_change <= (_disk_change | ~_sel & {4{_step}} & ~{4{_step_del}}
-//                       & disk_present) & ~({4{reset}} | ~disk_present);
-//   The clearing (OR) arm carries BOTH `~_sel` (drive selected) AND
-//   `disk_present` (diskette present) as separate factors alongside the
-//   `_step` rising edge -- CHANGE-CLEAR-NEEDS-SELECT measures the `~_sel`
-//   factor (a step while deselected must not clear the latch) and
-//   CHANGE-NO-CLEAR-NO-DISK measures the `disk_present` factor (a
-//   select+step attempt with no diskette mounted must not clear it,
-//   confirmed independently by the trailing `~(...|~disk_present)` term
-//   also forcing the latch to its changed state whenever `disk_present`
-//   is false, regardless of the OR arm).
+// WRITE STIMULUS. WRITE-DATA-SELECT-GATE drives a complete write-DMA
+//   transfer through the DSKLEN register and DSKDAT bus writes, never an
+//   internal signal: the sync word 0x4489 followed by 544 zero words (see
+//   push_zero_sector()). With every word after the sync zero, the sector's
+//   header and payload checksums are zero and its track field is 0, the
+//   track a freshly reset, unstepped drive is on with SIDEB* inactive
+//   (side 0, p.334 pin 13), so exact cycle alignment among the zero words
+//   does not matter. The fixture then raises its per-drive write request,
+//   `sdc_wr`, for the drive selected when the transfer completes and keeps
+//   it up (this Rig never raises sdc_busy), so showing that the request
+//   follows selection takes TWO complete transfers with different drives
+//   selected.
 //
 // NOT GRADABLE ANYWHERE IN THIS PACKAGE (recorded via note(), never
-//   graded): the RATE half of INDEX- ("once for each revolution",
-//   rpm_pulse_cnt has no revolution-time reference); MTRXD-'s printed 1.4
-//   microsecond setup/hold figures (absolute real-time intervals; this
-//   RTL counts clk7_en ticks with no period attached at any boundary,
-//   the same reason hrm/ch8-drive-step-timing declines its own absolute
-//   figures); the appendix's own tension between "MTRXD- ... for all four
-//   disk drives" and its connector table naming only three EXTERNAL
-//   select lines (SEL1B-/SEL2B-/SEL3B-) -- recorded, not resolved, same
-//   as ch8-drive-select-motor-led/appDE precedent for this exact tension.
+//   graded): the RATE half of INDEX- ("once for each revolution"): no port
+//   of the fixture carries a revolution time to grade it against; MTRXD-'s
+//   printed 1.4 microsecond setup/hold figures (absolute real-time
+//   intervals; the fixture counts clk7_en ticks and no port carries a
+//   clock period, the same reason hrm/ch8-drive-step-timing declines its
+//   own absolute figures); the appendix's own tension between "MTRXD- ...
+//   for all four disk drives" and its connector table naming only three
+//   EXTERNAL select lines (SEL1B-/SEL2B-/SEL3B-) -- recorded, not
+//   resolved, same as ch8-drive-select-motor-led/appDE precedent for this
+//   exact tension.
 //
 // MUTATION METHODOLOGY. Every `expect()` below is guarded by a runtime
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- one build serves the real run (MUTATE unset) and every
 //   mutation run (MUTATE=<id>, one id per assertion). Per this package's
-//   own convention (matching hrm/ch8-drive-step-timing, and the build
-//   brief's instruction to put uids at the END of the label): each
-//   assertion's id is its PROPOSITION NAME, not a claim uid, and each
-//   proposition's TWO claim uids (one opus, one sol) are cited together
-//   in a `[claims: ...]` suffix at the end of the label -- both count as
-//   ASSERTED by the graded line either way, per the build brief's own
-//   rule. Every proposition below is expected GREEN except
-//   RDY-DISK-PRESENCE, which is expected RED (a genuine finding); its
-//   mutation substitutes a different, independently-live stimulus
-//   (deselection, proven live by FIXTURE-LIVE below) through the
-//   IDENTICAL comparator and the SAME label, per this suite's rule
-//   against mutating an already-failing check with a no-op.
+//   convention (matching hrm/ch8-drive-step-timing), each assertion's id
+//   is its PROPOSITION NAME, not a claim uid, and each proposition's TWO
+//   claim uids (one opus, one sol) are cited together in a `[claims: ...]`
+//   suffix at the end of the label -- both count as ASSERTED by the graded
+//   line. Every proposition below is GREEN at baseline except
+//   RDY-DISK-PRESENCE, which is RED (NM-HRM-080); its mutation substitutes
+//   a different, independently-live stimulus (deselection, proven live by
+//   FIXTURE-LIVE below) through the IDENTICAL comparator and the SAME
+//   label, per this suite's rule against mutating an already-failing check
+//   with a no-op.
 //
-// MUTATION RUN LOG (measured, WSL/Verilator 5.052): baseline (MUTATE
-//   unset) 8 checks.expect() calls, 7 passed / 1 failed -- the 1 failure
-//   is RDY-DISK-PRESENCE, the expected finding. Each of MUTATE=
-//   FIXTURE-LIVE, INDEX-SEL-MOTOR-GATE, WRITE-DATA-SELECT-GATE,
-//   CHANGE-CLEAR-NEEDS-SELECT, CHANGE-NO-CLEAR-NO-DISK,
-//   MTRXD-FOUR-INDEPENDENT-LATCHES-P369 and
-//   MTRXD-FOUR-INDEPENDENT-LATCHES-P370 was executed and confirmed, by
-//   diffing the full PASS/FAIL-prefixed output against baseline, to move
-//   EXACTLY the targeted label's own line (and no other) from PASS to
-//   FAIL (6 passed / 2 failed per run, RDY-DISK-PRESENCE's baseline
-//   failure unaffected). MUTATE=RDY-DISK-PRESENCE was executed and
-//   confirmed to move exactly that line from FAIL to PASS (8 passed / 0
-//   failed), nothing else moving. All 8 runs were then reconfirmed back
-//   to baseline (MUTATE unset, 7/1) by construction (the mutation guard
-//   only fires when MUTATE matches).
+// MUTATION RUN LOG (WSL/Verilator 5.052): baseline (MUTATE unset) 8
+//   checks.expect() calls, 7 passed / 1 failed -- the 1 failure is
+//   RDY-DISK-PRESENCE. Each of MUTATE=FIXTURE-LIVE, INDEX-SEL-MOTOR-GATE,
+//   WRITE-DATA-SELECT-GATE, CHANGE-CLEAR-NEEDS-SELECT,
+//   CHANGE-NO-CLEAR-NO-DISK, MTRXD-FOUR-INDEPENDENT-LATCHES-P369 and
+//   MTRXD-FOUR-INDEPENDENT-LATCHES-P370, diffed line by line against the
+//   baseline's PASS/FAIL output, moves EXACTLY the targeted label's own
+//   line (and no other) from PASS to FAIL (6 passed / 2 failed per run,
+//   RDY-DISK-PRESENCE's baseline failure unaffected).
+//   MUTATE=RDY-DISK-PRESENCE moves exactly that line from FAIL to PASS (8
+//   passed / 0 failed), nothing else moving.
 
 #include <cstdint>
 #include <cstdlib>
@@ -285,18 +177,18 @@ public:
 };
 
 // RIG HAZARD (same as hrm/appDE-disk-interface, hrm/ch8-drive-sense-lines
-// and hrm/ch8-drive-select-motor-led): dsktrack (paula_floppy.v:671-680)
-// and step_ena_cnt (paula_floppy.v:594-603) have no reset term, and
-// dmaen/dsklen state persists once armed. Every test block below
-// constructs its own fresh Rig; none is reused across trials.
+// and hrm/ch8-drive-select-motor-led): the drive's head position and its
+// step-rate counter survive a reset, and an armed disk DMA stays armed.
+// Every test block below constructs its own fresh Rig; none is reused
+// across trials.
 struct Rig {
     Vpaula_floppy* d;
 
     explicit Rig(uint8_t drives_cfg = 0) {
         d = new Vpaula_floppy;
         d->clk = 0;
-        d->clk7_en = 1;   // held high throughout -- clk7n_en is a port on
-        d->clk7n_en = 0;  // this module but is never read anywhere in its body
+        d->clk7_en = 1;   // held high throughout
+        d->clk7n_en = 0;
         d->reset = 1;
         d->ntsc = 0;
         d->sof = 0;
@@ -307,7 +199,7 @@ struct Rig {
         d->_step = 1;   // idle high; active low
         d->direc = 0;
         d->_sel = 0xF;  // all four drives deselected; active low
-        d->side = 1;    // track={dsktrack[sel],~side} reads 0 at reset with side=1
+        d->side = 1;    // SIDEB* inactive: side 0 (p.334 pin 13), see WRITE STIMULUS
         d->_motor = 1;  // motor off; active low
 
         d->wordsync = 0;
@@ -376,10 +268,10 @@ struct Rig {
     }
 
     // Select drive n with _motor driven to the requested level across a
-    // GENUINE turn-on edge: deselect first and settle one tick (so
-    // _sel_del reads deselected), THEN set the motor level and select --
-    // the following tick() is the edge paula_floppy.v:625-658 latches on
-    // (!_sel[n] && _sel_del[n]).
+    // GENUINE turn-on edge, in p.369's order: deselect first and settle one
+    // tick, THEN set the motor level and select -- the following tick() is
+    // the off-to-on SELxB- transition that p.369 has clock MTRXD- into the
+    // drive's motor flip-flop.
     void select_with_motor(int n, bool motor_on_level) {
         deselect_all();
         tick();
@@ -388,10 +280,9 @@ struct Rig {
         tick();
     }
 
-    // Read drive n's latched motor_on through `index` (paula_floppy.v:576),
-    // FORCING _sel to select n during the read, with NO clock edge: eval()
-    // alone drives this combinational output, so motor_on/_sel_del/
-    // rpm_pulse_cnt are untouched by the act of reading.
+    // Read drive n's motor latch through the `index` output, FORCING _sel
+    // to select n and raising sof during the read, with NO clock edge, so
+    // the read itself changes no latched state (tick() never raises sof).
     bool peek_index(int n) {
         uint8_t saved_sel = d->_sel;
         d->_sel = (uint8_t)(0xF & ~(1u << n));
@@ -417,12 +308,10 @@ struct Rig {
         return v;
     }
 
-    // DSKLEN double-write idiom (paula_floppy.v:711-745): holding the
-    // register address/data for several clk7_en ticks lets the SAME held
-    // write's first tick (dsklen[15]<=data_in[15], non-blocking) become
-    // the "already 1" dsklen[15] its own later ticks read back for
-    // dmaen<=data_in[15]&dsklen[15] -- one held write_reg() call is
-    // enough to latch dmaen (confirmed working in hrm/appDE-disk-interface).
+    // One register write, held on the bus for four clk7_en ticks. For
+    // DSKLEN, which must be written twice with bit 15 set to start a disk
+    // DMA, one held call is enough: WRITE-DATA-SELECT-GATE's transfers
+    // complete and raise sdc_wr (its MEASURED line).
     void write_reg(int addr, uint16_t data) {
         d->reg_address_in = (uint8_t)((addr >> 1) & 0xFF);
         d->data_in = data;
@@ -431,10 +320,9 @@ struct Rig {
         d->data_in = 0;
     }
 
-    // Arm a disk DMA WRITE (dsklen[14]=1) on whichever drive is currently
-    // selected, with a generous length so `dmaon` (paula_floppy.v:1011,
-    // = ~lenzero while dsklen[14]=1) stays high for the whole transfer
-    // pushed by push_dskdat_word() below.
+    // Arm a disk DMA WRITE (DSKLEN bit 14 set) on whichever drive is
+    // currently selected, with a length longer than the transfer
+    // push_zero_sector() pushes, so the DMA stays on for all of it.
     void arm_dma_write(int length) {
         d->enable = 1;
         write_reg(0x024, (uint16_t)(0x8000 | 0x4000 | (length & 0x3FFF)));
@@ -442,9 +330,8 @@ struct Rig {
     }
 
     // One DSKDAT bus write, held for EXACTLY one clk7_en tick, so exactly
-    // one word enters the fifo (paula_floppy.v:771, fifo_wr = ... |
-    // (buswr & dmaon); holding the address longer would push the SAME
-    // data_in value on every held tick).
+    // one word enters the disk FIFO; holding the address longer would push
+    // the SAME data_in value again on every held tick.
     void push_dskdat_word(uint16_t w) {
         d->reg_address_in = 0x13;  // DSKDAT (9'h026) >> 1
         d->data_in = w;
@@ -453,16 +340,13 @@ struct Rig {
         d->data_in = 0;
     }
 
-    // Push one full write-DMA sector stream: a sync word (must equal
-    // dsksync, default 0x4489 after reset) followed by 544 zero words --
+    // Push one full write-DMA sector stream: the sync word (0x4489, the
+    // value the fixture matches after reset) followed by 544 zero words --
     // 24 header/header-checksum words, 4 payload-checksum-preamble words,
-    // 512 payload words and 4 margin words to flush cpu_wr_state's final
-    // state (paula_floppy.v:884-895 needs two more stbdat pulses after the
-    // 512th payload word to register "sector received" and return to
-    // state 0). Every word past the sync is uniformly zero, so no exact
-    // cycle alignment among them matters -- see the MECHANISM comment
-    // above the file header for why this makes the header/track/payload
-    // checksum verifications pass trivially.
+    // 512 payload words and 4 margin words so the fixture registers the
+    // complete sector. Every word past the sync is zero, so no exact cycle
+    // alignment among them matters -- see WRITE STIMULUS in the file
+    // header.
     void push_zero_sector(uint16_t sync_word = 0x4489) {
         push_dskdat_word(sync_word);
         for (int i = 0; i < 24; i++) push_dskdat_word(0x0000);
@@ -480,9 +364,9 @@ int main(int argc, char** argv) {
     std::cout << "Starting appH-drive-sense-and-motor...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim id, no manual page: the build brief's own
-    // requirement that the fixture prove it can deliver a known, distinct
-    // word before any read-based assertion below is trusted. Measured on
+    // FIXTURE-LIVE -- no claim id, no manual page: the fixture must deliver
+    // a known, distinct word before any read-based assertion below is
+    // trusted. Measured on
     // `_ready` responding to selection -- the same port RDY-DISK-PRESENCE
     // reads below, and the same "genuinely live, different stimulus" fact
     // that assertion's mutation substitutes for disk presence.
@@ -501,7 +385,7 @@ int main(int argc, char** argv) {
                     " -> _ready asserted=" + std::to_string(ready_selected));
         checks.expect(!ready_deselected && ready_selected,
             "FIXTURE-LIVE: deselecting every drive deasserts _ready and selecting a configured drive asserts "
-            "it -- paula_floppy.v:688-694 -- the sense-line read path is live, not stuck, and selection is a "
+            "it -- the sense-line read path is live, not stuck, and selection is a "
             "genuinely live, independent stimulus before any claim below is trusted");
     }
 
@@ -511,17 +395,15 @@ int main(int argc, char** argv) {
     // speed." [claims: opus:AHJ-060, sol:H-036]
     //
     // A THIRD AXIS, not a re-grade: hrm/ch8-drive-sense-lines' opus:8-cia.c7
-    // was declined because p.244 itself refuses to define _ready with the
-    // motor off. hrm/appDE-disk-interface's P-READY-MOTOR-INVARIANT is
-    // GRADED RED by toggling _motor alone, selection held fixed. Neither
-    // ever varies disk presence. This page's motor-ON branch names DISK
-    // PRESENCE as what the line indicates ("installed"), and disk presence
-    // (sdc_image_mounted/sdc_image_size -> disk_present, paula_floppy.v:
-    // 959-966) is a THIRD, independently drivable axis this assertion
-    // moves with selection AND motor BOTH held fixed -- an axis no
-    // accepted assertion anywhere in the suite moves against _ready.
-    // EXPECT RED: paula_floppy.v:688-694 (quoted in full in the file
-    // header) has no disk_present term anywhere in its cone.
+    // is declined because p.244 does not define _ready with the motor off.
+    // hrm/appDE-disk-interface's P-READY-MOTOR-INVARIANT latches the motor
+    // on at a select edge and reads RDY* with no disk installed, against
+    // p.334. Neither varies disk presence. This page's motor-ON branch
+    // names DISK PRESENCE as what the line indicates ("installed"), and
+    // disk presence (a mounted or unmounted image, sdc_image_mounted/
+    // sdc_image_size) is a THIRD, independently drivable axis this
+    // assertion moves with selection AND motor BOTH held fixed -- an axis
+    // no accepted assertion anywhere in the suite moves against _ready.
     // ========================================================================
     {
         Rig r;
@@ -551,12 +433,11 @@ int main(int argc, char** argv) {
             "RDY-DISK-PRESENCE (p.368, RDY-: 'When a disk drive's motor is on, this line indicates the "
             "selected disk is installed and rotating at speed.'): with selection and motor both held fixed "
             "(motor ON, drive selected throughout), _ready must read differently for disk-absent than for "
-            "disk-present to realise the printed claim -- paula_floppy.v:688-694 derives _ready from _sel[3:0] "
-            "and the configured drive count alone, with no disk_present term anywhere in its cone (disk_present "
-            "feeds only _disk_change, paula_floppy.v:610, confirmed by direct reading) -- so toggling only disk "
-            "presence changes nothing. This is a THIRD axis, distinct from the accepted motor-toggle finding and "
-            "from the page-244 claim declined for the motor's OWN off-state being undefined: here selection and "
-            "motor are both fixed and only disk presence varies, which no accepted assertion moves against "
+            "disk-present to realise the printed claim -- with the motor on, p.368 has the line indicate "
+            "whether a disk is installed, so removing or installing one must change it. This is a THIRD axis, "
+            "distinct from hrm/appDE-disk-interface's no-disk reading of p.334 and from the page-244 claim "
+            "declined for the motor's OWN off-state being undefined: here selection and motor are both fixed "
+            "and only disk presence varies, which no accepted assertion moves against "
             "_ready [claims: opus:AHJ-060, sol:H-036]");
     }
 
@@ -570,9 +451,8 @@ int main(int argc, char** argv) {
     // accepted package: hrm/ch8-disk-index-interrupt-path grades only what
     // happens to a pulse DOWNSTREAM of `index`, and hrm/ch8-drive-select-
     // motor-led reads `index` only as an uncited fixture-liveness probe.
-    // The RATE ("once for each revolution") is measured and reported
-    // separately via note(), not graded -- see NOT GRADABLE in the file
-    // header.
+    // The RATE ("once for each revolution") is reported separately via
+    // note(), not graded -- see NOT GRADABLE in the file header.
     // ========================================================================
     {
         Rig r;
@@ -583,8 +463,8 @@ int main(int argc, char** argv) {
         r2.select_with_motor(0, /*motor_on_level=*/false);
         bool no_pulse_motor_off = !r2.read_index_now();
         r.select_with_motor(0, /*motor_on_level=*/true);  // reselect r's drive0, motor back ON
-        // MUTATION: never actually deselect -- the masking condition
-        // (~_sel in the index gate) is never exercised.
+        // MUTATION: never actually deselect -- the "selected drive"
+        // condition of p.369's sentence is never exercised.
         if (!mut) r.deselect_all();
         bool no_pulse_deselected = !r.read_index_now();
         checks.note("INDEX-SEL-MOTOR-GATE: selected+motor-on pulses=" + std::to_string(pulses_selected_motor_on) +
@@ -593,15 +473,14 @@ int main(int argc, char** argv) {
                     std::to_string(!no_pulse_deselected));
         checks.expect(pulses_selected_motor_on && no_pulse_motor_off && no_pulse_deselected,
             "INDEX-SEL-MOTOR-GATE (p.369, INDEX-(Pin #22): 'A selected drive pulses this signal low once for "
-            "each revolution of its motor.'): paula_floppy.v:576 (index=|(~_sel&motor_on)&~|rpm_pulse_cnt&sof) "
-            "pulses only for a SELECTED drive whose latched motor_on is set -- a selected, motor-running drive "
+            "each revolution of its motor.'): index pulses only for a SELECTED drive whose motor is latched "
+            "on -- a selected, motor-running drive "
             "pulses; the same drive deselected does not; the same drive selected with its motor latched off "
             "does not. The RATE ('once for each revolution') is not graded here -- see the MEASURED note below "
             "[claims: opus:AHJ-065, sol:H-040]");
-        checks.note("INDEX rate (not graded): rpm_pulse_cnt (paula_floppy.v:563-573) counts `sof` pulses against "
-                    "an RTL-internal constant (11, or 9 for ntsc) with no revolution-time reference at any "
-                    "boundary this fixture can reach -- using it as the oracle for 'once per revolution' would "
-                    "be an RTL-derived oracle value");
+        checks.note("INDEX rate (not graded): no port of this fixture carries a revolution time, so 'once for "
+                    "each revolution' has nothing at this boundary to be graded against -- a rate taken from the "
+                    "fixture itself would make the fixture its own oracle");
     }
 
     // ========================================================================
@@ -612,15 +491,11 @@ int main(int argc, char** argv) {
     //
     // ch8-dsklen-dma-arming reads `sdc_wr` too, but only as a control
     // proving a SINGLE DSKLEN write arms no DMA at all -- it never varies
-    // `_sel` and never grades which drive's bit is set (see the "CORRECTED
-    // AFTER CHECKING" note in the file header: the classifier's own "grep
-    // finds it only in generated obj_dir files" evidence was wrong). This
-    // block is still the first in the suite to grade `sdc_wr`'s per-drive
-    // selectivity. A full write-DMA transfer is driven honestly through
-    // DSKLEN/DSKDAT (see MECHANISM in the file header for why an all-zero
-    // payload after the sync word passes the header/track/payload checksum
-    // checks trivially) so that paula_floppy.v:410 (`sdc_wr <= ~_sel`)
-    // actually fires.
+    // `_sel` and never grades which drive's bit is set (see the file
+    // header). This block is the only one in the suite that grades
+    // `sdc_wr`'s per-drive selectivity. A full write-DMA transfer is driven
+    // through DSKLEN/DSKDAT (see WRITE STIMULUS in the file header) so that
+    // the fixture completes the write and raises its request on `sdc_wr`.
     // ========================================================================
     {
         Rig r;
@@ -651,9 +526,9 @@ int main(int argc, char** argv) {
             "WRITE-DATA-SELECT-GATE (p.369, DKWDB-(Pin #17)/DKWEB-(Pin #16): 'The system drives write data to "
             "all disks via this signal. ... Data is written only to selected drives.'): a complete write-DMA "
             "transfer with drive 0 selected requests a write for drive 0 alone (sdc_wr==4'b0001), and the same "
-            "transfer with drive 1 selected instead requests drive 1 alone (sdc_wr==4'b0010) -- "
-            "paula_floppy.v:410 (`sdc_wr <= ~_sel`, inside the write-completion state machine) captures exactly "
-            "the selected slot and moves with selection, never touching an unselected drive's bit "
+            "transfer with drive 1 selected instead requests drive 1 alone (sdc_wr==4'b0010) -- the write "
+            "request goes to exactly the selected drive and moves with selection, never touching an unselected "
+            "drive's bit "
             "[claims: opus:AHJ-072, sol:H-048]");
     }
 
@@ -684,14 +559,12 @@ int main(int argc, char** argv) {
         // attempt, defeating the very condition under test.
         if (mut) r.select(0);
         r.do_step(false);
-        // _change is itself MASKED while deselected (paula_floppy.v:662,
-        // &(_sel|_disk_change) reads deasserted whenever no drive is
-        // selected, the same masking SEL-MASKS-TRACK0 measures for
-        // _track0) -- reselect (WITHOUT another step) before reading, so
-        // the read reports the latch's true internal state rather than
-        // the deselected mask. Reselecting alone cannot itself clear the
-        // latch: _step stays idle-high with _step_del already high, so
-        // `_step && !_step_del` (the clearing arm's edge term) stays false.
+        // _change reads deasserted whenever no drive is selected (the same
+        // masking SEL-MASKS-TRACK0 measures for _track0) -- reselect
+        // (WITHOUT another step) before reading, so the read reports the
+        // latch rather than the deselected output. Reselecting is not a
+        // step: _step stays at its idle level, so by p.369 it cannot clear
+        // the latch itself.
         if (!mut) r.select(0);
         bool still_changed_after_deselected_step = r.change();
         r.select(0);
@@ -707,8 +580,7 @@ int main(int argc, char** argv) {
             "CHANGE-CLEAR-NEEDS-SELECT (p.369, CHNG-(Pin #11): 'To reset the latch, the system must select the "
             "drive, and step the head.'): from a changed latch with the disk reinserted, a step pulse while ALL "
             "drives are deselected does not clear it, and the identical step pulse once the drive is selected "
-            "does -- paula_floppy.v:610, the clearing arm's `~_sel` factor gates the `_step` rising edge "
-            "independently of `disk_present`, the conjunct p.369 adds over the accepted P-CHANGE-LATCH reading "
+            "does -- the 'select the drive' conjunct p.369 adds over the accepted P-CHANGE-LATCH reading "
             "(which holds the drive selected throughout and never drives a step while deselected) "
             "[claims: opus:AHJ-076, sol:H-052]");
     }
@@ -729,7 +601,7 @@ int main(int argc, char** argv) {
         r.select(0);
         r.do_step(false);
         bool stable_baseline = !r.change();
-        r.unmount(0);  // disk absent -- changed, and stays changed per the latch's own trailing term
+        r.unmount(0);  // disk absent -- changed, and by p.369 it stays changed while no diskette is installed
         bool changed_after_removal = r.change();
         // MUTATION: reinsert the disk before the clear attempt, defeating
         // the "no diskette" condition under test.
@@ -749,8 +621,6 @@ int main(int argc, char** argv) {
             "CHANGE-NO-CLEAR-NO-DISK (p.369, CHNG-(Pin #11): 'Of course, the latch will not reset if there is no "
             "diskette installed.'): with the drive selected and no diskette mounted, a step pulse does not clear "
             "the changed latch, while the identical select+step sequence WITH a disk present does -- "
-            "paula_floppy.v:610's trailing `~({4{reset}}|~disk_present)` term holds `_disk_change` at its "
-            "changed value for as long as no image is mounted, independent of the `_step`/`~_sel` clearing arm -- "
             "the no-diskette case the accepted P-CHANGE-LATCH reading never measures (its trial reinserts the "
             "image before stepping) [claims: opus:AHJ-077, sol:H-053]");
     }
@@ -769,12 +639,12 @@ int main(int argc, char** argv) {
     // four DIFFERENT, alternating levels onto all four drives in one
     // trial and reads all four back distinctly.
     //
-    // RECORDED, NOT RESOLVED (matching the classifier's own note): the
-    // appendix says MTRXD- serves "all four disk drives" while its own
-    // connector table names only three EXTERNAL select lines (SEL1B-,
-    // SEL2B-, SEL3B- at pins 21, 9 and 20) -- this package records the
-    // tension and grades the four independent latches, which is what the
-    // RTL boundary presents.
+    // RECORDED, NOT RESOLVED: the appendix says MTRXD- serves "all four
+    // disk drives" while its own connector table names only three
+    // EXTERNAL select lines (SEL1B-, SEL2B-, SEL3B- at pins 21, 9 and 20)
+    // -- this package records the tension and grades the four independent
+    // latches, which is what the fixture's boundary presents (four select
+    // lines, one motor line).
     // ========================================================================
     {
         Rig r;
@@ -796,8 +666,7 @@ int main(int argc, char** argv) {
         checks.expect(d0 == false && d1 == true && d2 == false && d3 == true,
             "MTRXD-FOUR-INDEPENDENT-LATCHES-P369 (p.369, MTRXD-(Pin #8): 'This is the motor control line for all "
             "four disk drives.'): four alternating motor levels (OFF,ON,OFF,ON), each latched onto a different "
-            "drive at that drive's OWN _sel turn-on edge (paula_floppy.v:618-659, four structurally identical "
-            "always-blocks, one _motor input), read back distinctly through all four drives at once -- one "
+            "drive at that drive's OWN _sel turn-on edge, read back distinctly through all four drives at once -- one "
             "shared cable line, four independently held motor states, wider than the accepted two-drive "
             "reading. RECORDED, not resolved: the appendix's own connector table names only three EXTERNAL "
             "select lines (SEL1B-/SEL2B-/SEL3B-) against this sentence's 'all four' "
@@ -809,7 +678,7 @@ int main(int argc, char** argv) {
     // control all four motors using only one signal on the cable
     // (MTRXD-)." [claims: opus:AHJ-086, sol:H-061]
     //
-    // Same RTL mechanism and same argument as the P369 block above,
+    // Same mechanism and same argument as the P369 block above,
     // measured independently for its own printed sentence on the
     // following page (a different reader, a different page citation) --
     // matching this suite's twin convention of grading each printed
@@ -833,7 +702,7 @@ int main(int argc, char** argv) {
         checks.expect(d0 == false && d1 == true && d2 == false && d3 == true,
             "MTRXD-FOUR-INDEPENDENT-LATCHES-P370 (p.370: 'Thus, the system can control all four motors using "
             "only one signal on the cable (MTRXD-).'): twin measurement of MTRXD-FOUR-INDEPENDENT-LATCHES-P369 "
-            "above (same RTL mechanism, independent printed citation on the following page) -- four alternating "
+            "above (same mechanism, independent printed citation on the following page) -- four alternating "
             "motor levels latched onto all four drives at their own edges and read back distinctly "
             "[claims: opus:AHJ-086, sol:H-061]");
     }
@@ -843,8 +712,8 @@ int main(int argc, char** argv) {
 }
 
 // MUTATION FIXTURE-LIVE stimulus red: the drive is never actually selected, so the "asserts once selected" half is never exercised (MUTATE=FIXTURE-LIVE).
-// MUTATION RDY-DISK-PRESENCE stimulus green: this assertion is RED at baseline (disk presence has no term in _ready's cone), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label (MUTATE=RDY-DISK-PRESENCE).
-// MUTATION INDEX-SEL-MOTOR-GATE stimulus red: the deselection step is skipped, so the drive stays selected and the masking condition (~_sel in the index gate) is never exercised (MUTATE=INDEX-SEL-MOTOR-GATE).
+// MUTATION RDY-DISK-PRESENCE stimulus green: this assertion is RED at baseline (_ready reads the same with and without a disk installed), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label (MUTATE=RDY-DISK-PRESENCE).
+// MUTATION INDEX-SEL-MOTOR-GATE stimulus red: the deselection step is skipped, so the drive stays selected and the "selected drive" condition is never exercised (MUTATE=INDEX-SEL-MOTOR-GATE).
 // MUTATION WRITE-DATA-SELECT-GATE stimulus red: the second trial selects the SAME drive as the first instead of a different one, so "selecting a different drive must move the request with it" is never exercised (MUTATE=WRITE-DATA-SELECT-GATE).
 // MUTATION CHANGE-CLEAR-NEEDS-SELECT stimulus red: the drive is selected BEFORE the "deselected step" attempt, defeating the very condition under test (MUTATE=CHANGE-CLEAR-NEEDS-SELECT).
 // MUTATION CHANGE-NO-CLEAR-NO-DISK stimulus red: the disk is reinserted BEFORE the "no diskette" clear attempt, defeating the condition under test (MUTATE=CHANGE-NO-CLEAR-NO-DISK).
