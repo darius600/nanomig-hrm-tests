@@ -1,22 +1,22 @@
 # NanoMig HRM Tests
 
 **Why this exists.** Minimig is already a mature core, and NanoMig is built on
-it. This repository tries to offer means to improve it a bit further: it reads the
-chips' original documentation statement by statement, tests the RTL against
-each one, and offers what it finds to the maintainers of NanoMig and of the
-Minimig lines it descends from, as questions rather than verdicts. The reading,
-the tests and the finding pages were produced by AI models (Anthropic's Claude
-and OpenAI's Codex) under human direction. As in any review, whoever does it, a
-finding can be mistaken, so every finding page names its sources for the
-reader to check.
+it. This repository tries to offer means to improve it a bit further: it reads
+the chips' original documentation statement by statement, tests the RTL against
+the statements a test can observe, and offers what it finds to the maintainers
+of NanoMig and of the Minimig lines it descends from, as questions rather than
+verdicts. The reading, the tests and the finding pages were produced by AI
+models (Anthropic's Claude and OpenAI's Codex) under human direction. As in any
+review, whoever does it, a finding can be mistaken, so every finding page names
+its sources for the reader to check.
 
-Conformance tests for the Amiga chipset RTL in
-[NanoMig](https://github.com/harbaum/NanoMig). **The only oracle is printed
-literature:** two documents Commodore wrote about the chips. Every assertion
-in `hrm/`, `aa/` and the graded packages of `integration/` grades against a
-page its package names, and no expected value
-comes from NanoMig, from another core or from an emulator. Emulators appear
-on the finding pages as witnesses, never as the judge.
+**The only oracle is printed literature:** two documents Commodore wrote
+about the chips. Every assertion grades against a page its package names; no
+expected value comes from [NanoMig](https://github.com/harbaum/NanoMig), from
+another core or from an emulator, and emulators appear on the finding pages as
+witnesses, never as the judge. A red test marks a place where the RTL does
+something the page does not describe — in `integration/`, once a validation has
+confirmed it — and adjusting it to pass would delete the finding.
 
 | Oracle | Documents | Tests |
 |---|---|---|
@@ -37,15 +37,6 @@ against no page.
 **If you have one evening,** [the shortlist](docs/findings.md#if-you-have-one-evening)
 names three findings to start with and what each takes.
 
-**The printed page is the oracle, never the RTL.** A red test in `hrm/`,
-`aa/` or a graded package of `integration/` marks a place where the RTL does
-something the page does not describe — in `integration/`, once a validation
-has confirmed it. It is a result, not a bug in the test:
-adjusting an assertion to make it pass deletes the finding.
-
-This is an add-on, not a fork. NanoMig comes in as a submodule, pinned to the
-commit the tests were verified against; nothing under `nanomig/` is modified.
-
 ## Run it
 
 ```sh
@@ -65,9 +56,11 @@ with 2.0f) on the PATH. If *every* package reports a build error, the
 toolchain is missing rather than the tree broken; on Windows these usually
 live only inside WSL.
 
-Cloned without `--recursive`? `git submodule update --init`. NanoMig checked
-out elsewhere? `make -C hrm/<package> NANOMIG=/path/to/NanoMig`. Against
-another Minimig core, name the RTL file on the command line, for example
+NanoMig comes in as a submodule, pinned to the commit the tests were verified
+against; nothing under `nanomig/` is modified. Cloned without `--recursive`?
+`git submodule update --init`. NanoMig checked out elsewhere?
+`make -C hrm/<package> NANOMIG=/path/to/NanoMig`. Against another Minimig core,
+name the RTL file on the command line, for example
 `make -C hrm/ch5-audio-location-pointer SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test`,
 after looking up the variable in the package's `Makefile` (most use `SRC`,
 `SRC_DIR` or `RTL`). A red against another core is not a finding here.
@@ -89,25 +82,18 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
 
-**Reading a test's output.** A test prints four kinds of line:
+**Reading a test's output.** `PASS:` and `FAIL:` lines are the checks, the
+measurement against the value the page gives; only they count, and the summary
+`N passed, M failed` counts them. `MEASURED:` prints a value compared with
+nothing; `RECORDED:` names a claim the test deliberately does not check, and why.
 
-| line | what it is |
-|---|---|
-| `PASS:` / `FAIL:` | a check: the measurement compared with the value the page gives. Only these lines count, and a `FAIL` is a failing test |
-| `MEASURED:` | a value observed and printed, compared with nothing |
-| `RECORDED:` | a claim of the page this test deliberately does not check, with the reason |
-| the summary, `N passed, M failed` | the count of `PASS:` and `FAIL:` lines |
-
-**What each state of a finding asks of you.** A *failing test* is a result:
-its label names the claim, and [`docs/findings.md`](docs/findings.md) names the
-finding it belongs to. An *open* finding asks for the decision its page names.
-For most of them that is whether the RTL should change; those filed against
-the printed page ask about the manual instead. A finding *seen in the RTL
-source* has no test behind it yet: read it, but nothing has been measured. A
-*withdrawn* finding asks nothing; its page, in
-[`docs/findings/withdrawn/`](docs/findings/withdrawn/), keeps the reasoning
-that withdrew it. A *passing* test asks nothing either; [what a green means](#what-a-green-means)
-says how far it reaches.
+**What each state of a finding asks of you.** An *open* finding asks for the
+decision its page names: mostly whether the RTL should change, or, for one filed
+against the printed page, whether the manual is wrong. One *seen in the RTL
+source* has no test yet. A *withdrawn* one asks nothing; its page in
+[`docs/findings/withdrawn/`](docs/findings/withdrawn/) keeps why. A *passing*
+test asks nothing either; [what a green means](#what-a-green-means) says how far
+it reaches.
 
 **All 250 packages report both a verdict and an assertion count** in `hrm/` and
 `aa/`, and each graded `integration/` package does on both cores.
@@ -129,14 +115,10 @@ from such a run. `check_published_counts.py --runlog`, in the separate
 | see how the tests are made | the [`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository |
 
 Each finding page says what the printed page says, what NanoMig does and how
-that was measured, what four independent
-implementations (WinUAE, vAmiga, Denise, Copperline) and NanoMig's two Minimig
-ancestors do, and what is asked of the reader. A withdrawn page keeps only the
-reasoning that withdrew it. Where a page did not read one of the four, its row
-for that implementation says so. Keys are `NM-HRM-nnn` against
-the manual and `NM-AA-nnn` against the AA specification. Where a bit means
-something different under ECS and AGA, the finding says which chip set its
-fixture drives.
+that was measured, what four independent implementations (WinUAE, vAmiga,
+Denise, Copperline) and NanoMig's two Minimig ancestors do, and what is asked of
+the reader; where a page did not read one of the four, it says so. Keys are
+`NM-HRM-nnn` against the manual and `NM-AA-nnn` against the AA specification.
 
 ## What a green means
 
@@ -154,10 +136,8 @@ never implied by a green.
 hrm/            217 packages against the manual, each at one module's ports;
                 chN-… or appX-… names the unit of the manual that judges it
 aa/             33 packages against the AA specification
-integration/    17 packages against the manual at nanomig.v's ports, with a
-                68000 program on both CPU cores, 17 specified and not yet
-                built; checks of the test harness, and a smoke test of
-                minimig.v
+integration/    whole-system tests at nanomig.v's ports, on both CPU cores;
+                integration/README.md lists them
 nanomig/        submodule, the RTL under test
 docs/           findings, the RTL review list, the rules for adding a test
 run_all.sh      runs all three layers; hrm/run_all.sh runs only hrm/
@@ -165,13 +145,9 @@ run_all.sh      runs all three layers; hrm/run_all.sh runs only hrm/
 
 ## Sources
 
-> *Amiga Hardware Reference Manual*, Third Edition. Commodore-Amiga, Inc.
-> Addison-Wesley Publishing Company, 1991.
->
-> Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*,
-> 06/07/91, PRELIMINARY.
-
-Neither document is distributed here; every graded assertion in `hrm/` and
-`aa/` names the page it grades against. Which pages each unit covers, what was measured and
-what is disclosed about it are in the acceptance records,
+*Amiga Hardware Reference Manual*, Third Edition, Commodore-Amiga, Inc.,
+Addison-Wesley, 1991; Commodore, *Functional Specification for the Advanced
+Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY. Neither is distributed here.
+Which pages each unit covers, what was measured and what is disclosed about it
+are in the acceptance records,
 [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance).
