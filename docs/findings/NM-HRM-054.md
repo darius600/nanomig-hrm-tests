@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L267-L279) |
 | **Report to** | **the Minimig line, not NanoMig alone.** NanoMig's copy is the upstream behaviour with the register's corpse left in place |
-| **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) — `PROP-1` red, `CONTROL-PA0-OUTPUT` green on the same comparator; [`integration/appF-cia-system`](../../integration/appF-cia-system) reproduces it at the system's ports on fx68k and on TG68K, recorded, not graded: its precondition `P1-PRE1.4/O1` fails on CIA-A's two instances, whose PRB reads $FF whatever DDRB and the data register hold, and holds on CIA-B's |
+| **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) · `PROP-1`, claims `opus:8-par.c1`, `sol:8-par.c1` (`test_ch8-parallel-port-direction.cpp:397-412`), and [`hrm/appDE-parallel-port-ciaa`](../../hrm/appDE-parallel-port-ciaa) · `PORTB-DIRECTION`, claims `sol:E-parallel.c69` to `sol:E-parallel.c76` and `opus:E-parallel-iface.c10` (`test_appDE-parallel-port-ciaa.cpp:433-454`) — **red** in both, `3 passed, 1 failed` each, with CIA-A's port B lines released before the sweep (`test_ch8-parallel-port-direction.cpp:340`, `test_appDE-parallel-port-ciaa.cpp:362`); each package's `PORTB-RELEASED-CONTROL`, and the ch8 package's `CONTROL-PA0-OUTPUT` on the same comparator, are green in the same runs; [`integration/appF-cia-system`](../../integration/appF-cia-system) reproduces it at the system's ports on fx68k and on TG68K, recorded, not graded: its precondition `P1-PRE1.4/O1` fails on CIA-A's two instances, whose PRB reads $FF whatever DDRB and the data register hold, and holds on CIA-B's |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red of 3 in `hrm/ch8-parallel-port-direction`. `integration/appF-cia-system` adds none: for CIA-A, `P1-PRE1.4/O1` is printed as a RECORDED line, not a FAIL, and CIA-A's instances are left out of every graded line; the package's 7 reds on each core are [NM-HRM-074](NM-HRM-074.md)'s, graded on CIA-B |
+| **Assertions** | 2 red, each sweeping all eight bit positions of CIAAPRB/CIAADDRB and red at all eight: `PROP-1`, 1 of 4 in `hrm/ch8-parallel-port-direction`, and `PORTB-DIRECTION`, 1 of 4 in `hrm/appDE-parallel-port-ciaa`. At each position the written 0 reads back as the released line's 1. The controls on the same registers and lines pass: `PORTB-RELEASED-CONTROL`, CIAADDRB at input, reads CIAAPRB as $FF in both packages (`test_ch8-parallel-port-direction.cpp:371-381`, `test_appDE-parallel-port-ciaa.cpp:393-405`), and `CONTROL-PA0-OUTPUT` runs the identical comparator at CIAAPRA bit 0 (`test_ch8-parallel-port-direction.cpp:414-425`). `integration/appF-cia-system` records it rather than grading it: for CIA-A, `P1-PRE1.4/O1` is printed as a RECORDED line, not a FAIL, and CIA-A's instances are not graded on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause |
 | **Verdict of the four** | **unanimous against.** All four store CIA-A's port B data register and read it back through the direction mask |
 
 ---
@@ -75,14 +75,56 @@ CIAADDRB between all-input and all-output gives an identical read both times.
 
 ### Measured
 
-[`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction)
-sets bit 0 of CIAADDRB to output, writes 0 and then 1 to bit 0 of CIAAPRB, and
-reads each back: the 1 reads back as the pin's 0 — `PROP-1`, red, one of the
-package's `2 passed, 1 failed`. The identical comparator pointed at CIA-A port
-A instead — `CONTROL-PA0-OUTPUT` — is green on the same fixture. Beside the
-graded lines the package records the direction-independence above: with
-`portb_in` held at `0x3C`, CIAAPRB reads `0x3C` under `CIAADDRB=0x00` and
-`CIAADDRB=0xFF` alike.
+**Two unit packages are red at all eight bit positions of CIA-A's port B.** Both
+build `ciaa.v` alone and use the same comparator
+(`test_ch8-parallel-port-direction.cpp:315-324`,
+`test_appDE-parallel-port-ciaa.cpp:350-358`): for each position n, CIAADDRB is
+set to `1<<n`, 0 is written to CIAAPRB and read back, then `1<<n` is written and
+read back; the position passes when the reads give 0 and then 1 at bit n.
+
+Before the sweep each package releases the port B lines, `portb_in = 0xFF`
+(`test_ch8-parallel-port-direction.cpp:340`,
+`test_appDE-parallel-port-ciaa.cpp:362`), the level p.354 gives a line nothing
+drives: after RES the port pins are inputs and "a read of the ports will return
+all highs because of passive pull-ups". An output driven 0 on a released line
+is the case p.341 decides: the read returns the pin, and a PR bit set to output
+drives it to 0.
+
+- [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction)
+  grades p.259's "bi-directional" as `PROP-1` (`opus:8-par.c1`,
+  `sol:8-par.c1`), one of the package's `3 passed, 1 failed`:
+
+      MEASURED: PROP-1: bit 0: FAIL bit 1: FAIL bit 2: FAIL bit 3: FAIL bit 4: FAIL bit 5: FAIL bit 6: FAIL bit 7: FAIL
+
+- [`hrm/appDE-parallel-port-ciaa`](../../hrm/appDE-parallel-port-ciaa) grades
+  p.324's PARALLEL PORT (J8) table, which gives each of D0–D7 the direction I/O
+  and brackets them as "D0-D7 comprise an eight-bit bidirectional bus", as
+  `PORTB-DIRECTION` (`sol:E-parallel.c69` to `sol:E-parallel.c76`,
+  `opus:E-parallel-iface.c10`), one of the package's `3 passed, 1 failed`:
+
+      MEASURED: PORTB-DIRECTION: D0: writable=no D1: writable=no D2: writable=no D3: writable=no D4: writable=no D5: writable=no D6: writable=no D7: writable=no
+
+  The same nine ids carry `PORTB-WIDTH`, which passes: a single `portb_in`
+  line moves only its own PRB bit, at each of the eight.
+
+The packages print one verdict per position; the half that fails is the written
+0. With no data register, the read at `ciaa.v:293-294` returns the released
+line, 1, after the written 0 and after the written 1 alike.
+
+Each package runs `PORTB-RELEASED-CONTROL` on the same registers and lines:
+CIAADDRB left at input, the lines released, a read of CIAAPRB must return $FF
+(`test_ch8-parallel-port-direction.cpp:371-381`,
+`test_appDE-parallel-port-ciaa.cpp:393-405`). It passes in both:
+
+    MEASURED: PORTB-RELEASED-CONTROL: portb_in=0xFF, PRB=0xFF
+    MEASURED: PORTB-RELEASED-CONTROL: DDRB=0x00 (input), portb_in=0xFF, PRB=0xFF
+
+In the ch8 package `CONTROL-PA0-OUTPUT` points the identical comparator at
+CIAAPRA/CIAADDRA bit 0 and passes in the same run
+(`test_ch8-parallel-port-direction.cpp:414-425`). Beside the graded lines that
+package records the direction-independence above
+(`test_ch8-parallel-port-direction.cpp:442-465`): with `portb_in` held at
+`0x3C`, CIAAPRB reads `0x3C` under `CIAADDRB=0x00` and `CIAADDRB=0xFF` alike.
 
 **At the system's ports, on both CPU cores, CIA-A's PRB reads $FF whatever is
 written.** [`integration/appF-cia-system`](../../integration/appF-cia-system)
@@ -91,8 +133,8 @@ reads PRB through the CPU. Before it grades a CIA's port B, its precondition
 `P1-PRE1.4/O1` asks whether a PRB read shows a driven level at all: with DDRB
 bit n set and PBON off, PRB is read with the data bit written 0 (d1) and then
 1 (o1c), bit n being 6 in the timer-A program and 7 in the timer-B one. On
-CIA-A both reads are $FF, as is every other CIA-A read the package prints,
-where p. 341 — an output bit carries its data, an input bit its pull-up — gives
+CIA-A both reads are $FF, as is every other CIA-A PRB read the P1 and P2
+programs print, where p. 341 — an output bit carries its data, an input bit its pull-up — gives
 $95 and $D5 in the timer-A program (DDRB = $7F, data $15 and then $55) and $55
 and $D5 in the timer-B one (DDRB = $BF, data $15 and then $95). The package
 prints, the same on both cores:
@@ -114,10 +156,9 @@ so the eight joystick-adapter lines `minimig.v:624` routes into CIA-A's port B
 are all 1, and the PRB read at `ciaa.v:293-294` returns them.
 
 **This is the behaviour this page reports, reproduced at the system level; it
-is not a graded red of its own.** The package prints no FAIL for it: for CIA-A,
-`P1-PRE1.4/O1` is a RECORDED line, and CIA-A's instances are left out of every
-graded line. The package's seven FAILs on each core, of `19 passed, 7 failed`,
-are [NM-HRM-074](NM-HRM-074.md)'s, graded on CIA-B.
+is not a graded red of its own.** For CIA-A, `P1-PRE1.4/O1` is a RECORDED line,
+not a FAIL, and CIA-A's instances are not graded on P1's PBON legs or on
+P1-OTHERBITS' pattern-bit clause.
 
 ## What the port is actually used for here
 
@@ -134,13 +175,25 @@ driven anywhere in the tree is CIA-B's, carrying the floppy index pulse
 
 ## Why the red is not a broken fixture
 
-The package runs the **identical comparator** against CIA-A port **A** —
-`CONTROL-PA0-OUTPUT`, and the mutation `MUT_PROP1_TARGET_A` which retargets only
-the register-select arguments — and it passes. Port A's direction mechanism
-works on the same fixture and the same bus protocol, which is also what the
-sibling package [`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction)
-already grades. A units error or a broken rig is ruled out by the package's own
-control.
+`PORTB-RELEASED-CONTROL` reads the released lines as $FF through the same
+CIAAPRB read, so the fixture does release them and the read path works. Held at
+0 instead (`MUT_CONTROL_HELD_LOW`, `test_ch8-parallel-port-direction.cpp:373`,
+`test_appDE-parallel-port-ciaa.cpp:395`), the lines read $00 and the control
+goes red, `2 passed, 2 failed` in each package, so it is not true by
+construction.
+
+The **identical comparator** passes against CIA-A port **A**: in the ch8
+package's own run as `CONTROL-PA0-OUTPUT`, and in both packages under the
+mutations `MUT_PROP1_TARGET_A` and `MUT_DIRECTION_TARGET_A`
+(`test_ch8-parallel-port-direction.cpp:344-349`,
+`test_appDE-parallel-port-ciaa.cpp:366-370`), which retarget the whole
+eight-position sweep at CIAAPRA/CIAADDRA, bits 0 and 1 in turn, and pass at all
+eight positions, `4 passed, 0 failed` in each package. Port A's direction
+mechanism works at PA0 and PA1 on the same fixture and the same bus protocol,
+the two positions where the sibling package
+[`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) finds it
+working as well ([NM-HRM-040](NM-HRM-040.md) is about the other six). A units
+error or a broken rig is ruled out by the packages' own controls.
 
 ## Two things that point the wrong way
 
