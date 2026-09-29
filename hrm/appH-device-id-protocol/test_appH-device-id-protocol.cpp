@@ -1,25 +1,26 @@
 // Test purpose: HRM conformance package for appendix H's Device I.D.
 //   protocol -- pp.368,370-371, the nine-step-plus-31-repeats procedure that
 //   samples RDY (pin 1, _ready) 32 times to assemble a device identifier --
-//   graded against paula_floppy (this suite's only model of a physical Amiga
-//   floppy drive, and the same module hrm/appDE-disk-interface grades one
-//   page earlier). 14 claims, from work/2026-09-17_appHJ_packages.jsonl
-//   (classify.package == "appH-device-id-protocol").
+//   run against paula_floppy (this suite's only model of a physical Amiga
+//   floppy drive, and the same module hrm/appDE-disk-interface grades), with
+//   what it reads recorded against p.335's defined identifications. 14
+//   claims, from work/2026-09-17_appHJ_packages.jsonl (classify.package ==
+//   "appH-device-id-protocol").
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed
-//   pp.368, 370-371. p.368's Summary Table is NOT displaced (this package's
-//   own corpus-defects.md, "p.368 -- the table is clean"), so the RDY- entry
-//   is quoted from p368.txt directly. p.370's nine numbered steps and
-//   p.371's four prose paragraphs both survive the text layer
-//   (corpus-defects.md, "p.370", "p.371 -- the I.D. table is unusable; the
-//   prose ... is not"); only p.371's two-column bit-pattern table is
-//   unusable and irrelevant here (this package's 14 claims name none of its
-//   rows). Every quotation below was independently confirmed against
-//   figures/p370.png and figures/p371.png before this file was written (both
-//   reproduced in full: the nine steps on p370, and the "Repeat steps 7-9" /
-//   "Steps 1-4 ... initializes" / "Steps 7, 8 and 9 form a loop" / "This
-//   loop is performed 32 times" paragraphs on p371), not trusted from the
-//   claims file's own restatements.
+//   pp.368, 370-371 for the procedure and p.335 for the identification mode
+//   and its table of defined identifications. p.368's Summary Table is NOT
+//   displaced (this package's own corpus-defects.md, "p.368 -- the table is
+//   clean"), so the RDY- entry is quoted from p368.txt directly. p.370's
+//   nine numbered steps and p.371's four prose paragraphs both survive the
+//   text layer (corpus-defects.md, "p.370", "p.371 -- the I.D. table is
+//   unusable; the prose ... is not"); only p.371's two-column bit-pattern
+//   table is unusable, and the records below read p.335's copy of that
+//   table instead. Every quotation from pp.370-371 below is checked against
+//   figures/p370.png and figures/p371.png (the nine steps on p370, and the
+//   "Repeat steps 7-9" / "Steps 1-4 ... initializes" / "Steps 7, 8 and 9
+//   form a loop" / "This loop is performed 32 times" paragraphs on p371),
+//   not taken from the claims file's own restatements.
 // Non-goals: anything outside the `paula_floppy` fixture this package
 //   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
@@ -30,112 +31,28 @@
 //   `work/2026-09-17_appHJ_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// THIS IS THE PACKAGE APPENDICES H AND J WERE READ FOR. Appendix E's lot
-//   declined 21 paula_floppy claims (sol:E-disk-id.c1..c21) at CLASSIFICATION
-//   because "the external-device identification shift register and its
-//   serial output on RDY* -- ... no shift register or bit counter exists
-//   anywhere under src/minimig-aga". That is correct about the RTL (confirmed
-//   again below, independently) and is a statement about the MECHANISM.
-//   Classification asks a different question: can a fixture drive this and
-//   observe it at a boundary. It can -- every step of the printed procedure
-//   is expressed in ports paula_floppy has: steps 1 and 4 drive `_motor`;
-//   steps 2, 3, 5, 6, 7 and 9 drive `_sel`; step 8 reads `_ready`. The missing
-//   mechanism is what the measurement REPORTS -- a red -- not a reason no
-//   assertion can be built. hrm/appDE-disk-interface took exactly that route
-//   for the same port one page earlier: its P-READY-MOTOR-INVARIANT is graded
-//   RED at baseline rather than declined, on the same _ready equation. This
-//   package follows the same precedent for the deeper 32-bit protocol.
+// WHAT IS MEASURED. Every step of the printed procedure is expressed in
+//   ports paula_floppy has: steps 1 and 4 drive `_motor`; steps 2, 3, 5, 6,
+//   7 and 9 drive `_sel`; step 8 reads `_ready` (RDY*, pin 1; p.368's RDY-
+//   entry: "When the motor is off this is used as a ID data line"). The Rig
+//   configures one drive (floppy_drives=0), so drive 0 answers on `_ready`
+//   (FIXTURE-LIVE) and drive 1, unconfigured, answers as no drive -- which
+//   is what the mutations below select instead. ID-CHANNEL-EXISTS runs the
+//   procedure once and keeps its 32 samples; MOTOR-CYCLE-INIT-CHANGES-ID-
+//   STREAM runs it with and without the steps-1-4 motor cycle. Both are
+//   checks.record(), not checks.expect() -- each block's own header says
+//   why p.335's table cannot grade them for the one drive type this
+//   fixture holds.
 //
-// NOT A RE-GRADE OF hrm/appDE-disk-interface's P-READY-MOTOR-INVARIANT. That
-//   assertion's label reads "with selection held fixed, _ready must read
-//   differently for motor-on than for motor-off to realise either printed
-//   branch" -- ONE `_motor` toggle, ONE `!=` comparison, selection fixed.
-//   Every claim graded below states a comparator over a SEQUENCE OF 32 SELECT
-//   PULSES (ID-CHANNEL-EXISTS) or over TWO FULL SUCH SEQUENCES, with and
-//   without the steps-1-4 motor cycle
-//   (MOTOR-CYCLE-INIT-CHANGES-ID-STREAM) -- a different proposition on a
-//   different axis. appDE-disk-interface's own header agrees in its own
-//   words: "The deeper 32-bit serial identification PROTOCOL p.335 describes
-//   (shift register, bit counter, motor-transition trigger) is carried by a
-//   sibling package's claims ... NOT by this package's 26". This package is
-//   that sibling. Neither assertion below declines against
+// NOT A RE-GRADE OF hrm/appDE-disk-interface's P-READY-MOTOR-INVARIANT.
+//   That block reads `_ready` once, with the motor latched on at a select
+//   edge and no disk installed, against p.334's motor-on branch. The claims
+//   here run the printed identification procedure: a SEQUENCE OF 32 SELECT
+//   PULSES (ID-CHANNEL-EXISTS), or two such sequences with and without the
+//   steps-1-4 motor cycle (MOTOR-CYCLE-INIT-CHANGES-ID-STREAM), read against
+//   p.335's defined identifications -- a different proposition on a
+//   different axis. Neither record below declines against
 //   P-READY-MOTOR-INVARIANT, and neither names its label or uids.
-//
-// RTL READ, IN ORDER, BEFORE ANY EXPECT/RECORD BELOW WAS WRITTEN:
-//   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines),
-//      independently, not trusted from hrm/appDE-disk-interface's own header.
-//   2. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file, confirming
-//      it instantiates nothing else (the only sub-instance in paula_floppy.v
-//      is this fifo, `db1`), so the two-file build closes.
-//   3. hrm/appDE-disk-interface/test_appDE-disk-interface.cpp -- full file,
-//      the build brief's named model: its Rig (that file's lines 225-378)
-//      instantiates Vpaula_floppy, drives `_sel` and `_motor`, reads
-//      `_ready`, and carries a FIXTURE-LIVE check proving that path live.
-//      This package's Rig below is its own (a fresh struct in this file, not
-//      an #include of that one -- packages build independently), adapted
-//      from that shape to this package's own procedure.
-//
-// MECHANISM, confirmed by reading paula_floppy.v myself (line numbers below
-//   are this package's own verification):
-//
-//   Port list (paula_floppy.v:83-93): inputs _step, direc, _sel[3:0], side,
-//   _motor; outputs _track0, _change, _ready, _wprot, index -- the same ports
-//   hrm/appDE-disk-interface reads. `_ready` is pin 1 / RDY* (p.367 Summary
-//   Table, p.334 in appendix E; this appendix's own p.368 RDY- entry: "When
-//   the motor is off this is used as a ID data line").
-//
-//   _ready (paula_floppy.v:688-694), quoted in full:
-//     // drive _ready signal control
-//     // Amiga DD drive activates _ready whenever _sel is active and motor is off
-//     // or whenever _sel is active, motor is on and there is a disk inserted (not implemented - _ready is active when _sel is active)
-//     assign _ready   = (_sel[3] | ~(drives[1] & drives[0]))
-//             & (_sel[2] | ~drives[1])
-//             & (_sel[1] | ~(drives[1] | drives[0]))
-//             & (_sel[0]);
-//   `drives` (paula_floppy.v:554-558) latches from `floppy_drives` only at
-//   reset, and this package's Rig fixes `floppy_drives=0` throughout (one
-//   drive configured), which reduces every term but the last to a constant 1
-//   -- MEASURED directly, not merely derived: with `floppy_drives=0`,
-//   `_ready` collapses to exactly `_sel[0]`, confirmed below in FIXTURE-LIVE
-//   and used deliberately as this package's mutation vector (selecting a
-//   DIFFERENT physical line, `_sel[1]`, reads back a genuinely different,
-//   constant `_ready`, since with this config that line selects no configured
-//   drive). `_motor` does not appear anywhere in this expression, and does
-//   not appear anywhere in `motor_on`'s cone either (paula_floppy.v:624-659,
-//   the four motor_on flip-flops, feed nothing this module reads back on
-//   `_ready`). The module's own comment, quoted above, says so in its own
-//   words: "not implemented - _ready is active when _sel is active". There is
-//   no shift register and no bit counter anywhere in this file: `_ready` is
-//   pure combinational logic of `_sel[3:0]` and the reset-latched `drives`
-//   alone, so 32 samples taken with the SAME `_sel` pattern on every
-//   iteration -- exactly what the printed procedure drives, one select line
-//   pulsed low/high 32 times -- read back the SAME value 32 times. That is
-//   MEASURED below, not assumed, in ID-CHANNEL-EXISTS and
-//   MOTOR-CYCLE-INIT-CHANGES-ID-STREAM: both read a constant stream. p.335's
-//   own table defines that exact constant, inverted, as the standard external
-//   drive's identification -- see each block's own header for why that makes
-//   both checks.record(), not checks.expect().
-//
-// A CORRECTION TO APPENDIX E'S OWN DECLINE EVIDENCE. Its absent_signal text
-//   said a grep for `ident|drive_id|id_reg|shift_reg` "returns nothing
-//   anywhere under nanomig/src". Re-run myself, 17.09.2026, against the same
-//   pinned submodule (d6f7df957fad655bc07f6a381e5094a9edff0be0):
-//     grep -rniE 'ident|drive_id|id_reg|shift_reg' nanomig/src/minimig-aga
-//       -> 4 matches, all "identically"/"identical"/"INDIRECT" (an English
-//          word inside a comment or licence header; denise_bitplanes.v:251,
-//          denise_bitplane_shifter.v:26, denise_bitplanes.v:340, ide.v:19)
-//     grep -rniE 'ident|drive_id|id_reg|shift_reg' nanomig/src
-//       -> 22 matches tree-wide, same character: no register, no bit counter,
-//          no serial channel among any of them (the two additional hits under
-//          src/misc, sysctrl.v:184,210, are "identify"/"identifies" in a
-//          comment).
-//   The CONCLUSION holds -- no identification shift register or bit counter
-//   exists anywhere in the pinned tree, confirmed independently above by
-//   reading _ready's own equation rather than by this grep -- but the
-//   MEASUREMENT AS WRITTEN in the appendix E decline does not: it returns 4
-//   matches under src/minimig-aga and 22 tree-wide, not nothing. Recorded
-//   here, per the build brief, so the absence is stated correctly rather than
-//   repeated.
 //
 // NOT GRADABLE ANYWHERE IN THIS PACKAGE (recorded via record(), never
 //   graded): none of this package's 14 claims state a defect this file needs
@@ -149,10 +66,8 @@
 //   typographic variant of one name). p.371's own self-contradictory
 //   "Reserved ($x000 x000)" / "Reserved ($xFFF xFFF)" row pair and the
 //   WRPRO-/WPRO- naming split are both real (corpus-defects.md) but neither
-//   is named by any of this package's 14 claims -- none references a specific
-//   32-bit ID pattern from the table or the pin-14 write-protect signal -- so
-//   neither is recorded here as a decline; both are out of scope for this
-//   file's own claims.
+//   bears on this package's claims: the records read p.335's copy of the
+//   table, not p.371's, and no claim names the pin-14 write-protect signal.
 //
 // MUTATION METHODOLOGY. FIXTURE-LIVE is the file's only checks.expect(): its
 //   mutation runs the direction a liveness control needs -- the stimulus
@@ -175,24 +90,22 @@
 //   `expect()` or `record()` call, never inside a condition or a label (see
 //   tools/check_expect_label_shape.py).
 //
-// MUTATION RUN LOG (measured, WSL/Verilator 5.052). Baseline (MUTATE
-//   unset): 1 checks.expect() call, 1 passed / 0 failed -- FIXTURE-LIVE
-//   PASS; 2 checks.record() lines, ID-CHANNEL-EXISTS and MOTOR-CYCLE-INIT-
+// MUTATION RUN LOG (WSL/Verilator 5.052). Baseline (MUTATE unset): 1
+//   checks.expect() call, 1 passed / 0 failed -- FIXTURE-LIVE PASS; 2
+//   checks.record() lines, ID-CHANNEL-EXISTS and MOTOR-CYCLE-INIT-
 //   CHANGES-ID-STREAM, both measuring the constant 32-bit stream
 //   11111111111111111111111111111111 ($FFFFFFFF) with and without the
 //   steps-1-4 motor cycle. MUTATE=ID-CHANNEL-EXISTS: count unchanged (1
 //   passed / 0 failed, no clause on a record()); its own record text moves
-//   to the alternating-select-line stream (drive 1 unconfigured, so its
-//   samples read $0000 0000 on the odd iterations); the other two checks
-//   are unchanged. MUTATE=MOTOR-CYCLE-INIT-CHANGES-ID-STREAM: count
-//   unchanged (1/0); its own record text moves to a without-init stream
-//   read on drive 1 instead of drive 0; the other two checks are unchanged.
-//   MUTATE=FIXTURE-LIVE: 0 passed / 1 failed -- diffed against baseline,
-//   FIXTURE-LIVE moves PASS->FAIL (second reading becomes ready=1,
-//   identical to the first, once the same _sel state is driven twice
-//   instead of two distinct states); the two record()s are unchanged. All
-//   three runs then reverted (MUTATE unset) and reconfirmed back to 1
-//   passed / 0 failed.
+//   to the alternating-select-line stream, whose odd iterations (drive 1,
+//   unconfigured) read 0; the other two checks are unchanged.
+//   MUTATE=MOTOR-CYCLE-INIT-CHANGES-ID-STREAM: count unchanged (1/0); its
+//   own record text moves to a without-init stream read on drive 1 instead
+//   of drive 0; the other two checks are unchanged. MUTATE=FIXTURE-LIVE: 0
+//   passed / 1 failed -- diffed against baseline, FIXTURE-LIVE moves
+//   PASS->FAIL (the second reading becomes ready=1, identical to the first,
+//   once the same _sel state is driven twice instead of two distinct
+//   states); the two record()s are unchanged.
 
 #include <cstdint>
 #include <cstdlib>
@@ -222,18 +135,18 @@ public:
 };
 
 // RIG HAZARD (same as hrm/appDE-disk-interface, hrm/ch8-drive-sense-lines and
-// hrm/ch8-drive-select-motor-led): dsktrack and step_ena_cnt have no reset
-// term, and dmaen/dsklen state persists once armed. Not touched by this
-// package's procedure (no step, no DMA arm anywhere below), but every test
-// block still constructs its own fresh Rig; none is reused across trials.
+// hrm/ch8-drive-select-motor-led): the drive's head position and its
+// step-rate counter survive a reset, and an armed disk DMA stays armed. Not
+// touched by this package's procedure (no step, no DMA arm anywhere below),
+// but every test block still constructs its own fresh Rig; none is reused
+// across trials.
 struct Rig {
     Vpaula_floppy* d;
 
     // floppy_drives is fixed at 0 (one drive configured) for every trial in
-    // this file: with drives=0, _ready (paula_floppy.v:688-694) reduces
-    // algebraically to exactly _sel[0] -- MEASURED directly in FIXTURE-LIVE
-    // below, not merely derived -- which is what lets this package's
-    // mutations substitute "select a different physical line" as a genuine,
+    // this file, so drive 0 answers on _ready (FIXTURE-LIVE below) and drive
+    // 1 answers as no drive -- which is what lets this package's mutations
+    // substitute "select a different physical line" as a genuine,
     // independently-live stimulus difference (see file header).
     explicit Rig() {
         d = new Vpaula_floppy;
@@ -351,9 +264,9 @@ int main(int argc, char** argv) {
     std::cout << "Starting appH-device-id-protocol...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim id, no manual page: the build brief's own
-    // requirement that the fixture prove it can deliver a known, distinct
-    // reading before any read-based assertion below is trusted. Measured on
+    // FIXTURE-LIVE -- no claim id, no manual page: the fixture must deliver
+    // a known, distinct reading before any read-based assertion below is
+    // trusted. Measured on
     // `_ready` itself (this package's only observable), through `_sel` (this
     // package's only stimulus that reaches it, with floppy_drives=0): two
     // distinct, known `_sel` states must read back distinguishably.
@@ -379,8 +292,7 @@ int main(int argc, char** argv) {
                     "; second reading (" + std::string(mut ? "drive0 selected again, mutated"
                                                              : "all deselected") + ") -> ready=" +
                     std::to_string(second_ready) +
-                    " (floppy_drives=0, so _ready reduces to exactly _sel[0] -- "
-                    "paula_floppy.v:688-694)");
+                    " (floppy_drives=0: one drive configured)");
         checks.expect(first_ready != second_ready,
             "FIXTURE-LIVE: two distinct, known _sel states, driven through this package's Rig, "
             "arrive unmodified and mutually distinguishable when read back through _ready -- the "
@@ -420,9 +332,8 @@ int main(int argc, char** argv) {
             // throughout -- shows this record's text tracks the running
             // simulation rather than a fixed string. floppy_drives=0 leaves
             // drive 1 unconfigured, so p.335's "$0000 0000 - no drive
-            // present" is what the odd iterations answer (MEASURED in
-            // FIXTURE-LIVE above: with this configuration _ready == _sel[0]
-            // exactly).
+            // present" is what the odd iterations answer (the MEASURED text
+            // of this record in a MUTATE=ID-CHANNEL-EXISTS run).
             r.motor_on();     r.tick();
             r.select(0);      r.tick();
             r.deselect_all(); r.tick();
