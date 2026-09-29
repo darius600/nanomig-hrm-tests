@@ -38,7 +38,7 @@ claims, 5 carry propositions and 29 do not (section 1).
 
 | Claims | Page | Reason |
 |---|---|---|
-| `opus:8-adkcon.c33` | 265 | "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)" times the disk data clock on Paula's write-data pin (p.380: `38 DKWD* Disk write data O`). `nanomig.v` has no such pin; its disk side is the SD-card sector interface. P4 below times the rate at which disk write DMA reads words at the Chip-memory port instead. No page ties that rate to the bit-cell time -- it would need an unprinted premise (that DSKDAT is the whole of the storage between memory and the pin, or that Paula requests a word only when the previous one has been sent; p.194 lets a device leave a slot unused, "If a device does not request one of its allocated time slots, the slot is open for other uses", and pp.380-381 name only Paula's `DMAL`, "DMA request line"). P4's own rate comparison (P4-MAIN, the four `P4-*-FAST*` lines) is declined for this reason; preconditions 4a-4f, which each grade a different page sentence on their own, stay graded (see P4 below). |
+| `opus:8-adkcon.c33` | 265 | "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)" times the disk data clock on Paula's write-data pin (p.380: `38 DKWD* Disk write data O`). No such pin is among the top-level observable ports; the disk side offered there is an SD-card sector interface. P4 below times the rate at which disk write DMA reads words at the Chip-memory port instead. No page ties that rate to the bit-cell time -- it would need an unprinted premise (that DSKDAT is the whole of the storage between memory and the pin, or that Paula requests a word only when the previous one has been sent; p.194 lets a device leave a slot unused, "If a device does not request one of its allocated time slots, the slot is open for other uses", and pp.380-381 name only Paula's `DMAL`, "DMA request line"). P4's own rate comparison (P4-MAIN, the four `P4-*-FAST*` lines) is declined for this reason; preconditions 4a-4e, which each grade a different page sentence on their own, stay graded (see P4 below). |
 
 ---
 
@@ -357,18 +357,20 @@ For orientation, not graded: 32 µs per word is 114.5 color clocks on NTSC and 1
   - Contrast: in the FAST = 1 run, write ADKCON ← $0100 instead of $8100. With bit 15 = 0 this clears the bit, it reads 0, and 4c fails.
 - **4d. The disk write DMA runs throughout the window.** Every PROBE_D value stored between t_64 and t_192 has bit 14 (DMAON) = 1 and bit 13 (DISKWRITE) = 1.
   - p.248: "DMAON Indicates when DMA is actually enabled" and "DISKWRITE The disk write bit (in DSKLEN) is enabled."
-  - Contrast: leave out the second DSKLEN write (p.247 step 4). Then DMAON = 0 and there are no fetches, so 4d fails. The poll ends at its bound and DONE is still written.
-- **4e. The fetches cover the window.** Reads of B + 2i are seen for at least i = 0 to 192. Each word is read once, and in rising order of i.
+  - Contrast: partway through the transfer, clear DMACON's DSKEN bit for a while and then set DMAEN and DSKEN again. Some PROBE_D values stored during the pause then have DMAON = 0 and DISKWRITE = 0, and 4d fails, while the same transfer resumes and the window still fills.
+- **4e. The fetches cover the window.** Reads of B + 2i are seen for at least i = 0 to 192, each exactly once, and in rising order of i.
   - p.247: "After each transfer occurs, the value of the pointer is incremented."
   - The program makes no access to the buffer after step 2.
   - Contrast: use LENGTH = 128 ($C080, written twice). The fetches then end at i = 127, and 4e fails.
-- **4f. The transfer is in a steady state.** |(t_128 − t_64) − (t_192 − t_128)| < 456·C. A fetch can wait at most one line for a disk slot:
-  - p.194 lists "3 cycles for disk DMA" in every line, placed as Figure 6-9 shows;
-  - the longest line is 228 color clocks (p.23).
-  - Contrast: in the FAST = 1 run, the program waits for about the time of 128 words and then writes ADKCON ← $0100. The page then predicts 4 µs cells for the second half, and 4f fails.
+
+**Also measured, not graded.** |(t_128 − t_64) − (t_192 − t_128)|, across the window. Neither p.194
+nor p.23 bounds this quantity or says that an active disk device must request a Chip-memory slot at
+least once per line; p.194 expressly allows an allocated slot to go unused ("If a device does not
+request one of its allocated time slots, the slot is open for other uses"). So this is not a graded
+proposition; it is recorded as a measurement (MEASURED), with no mutation of its own.
 
 **Contrasting case.** None for P4-MAIN: it is a RECORDED decline, not a graded comparison, so no
-stimulus can turn it red or green (1.4). Preconditions 4a-4f keep their own contrasts, below.
+stimulus can turn it red or green (1.4). Preconditions 4a-4e keep their own contrasts, below.
 
 **Reference frames.**
 
@@ -463,7 +465,7 @@ The RxD driver behaves the same in both runs:
   Bits 10-15 are not graded here; OVRUN is precondition 5c.
 - **(b) No early signal.** In run A, the RBF event for every j comes no earlier than s_j + 9T. In run B, it comes no earlier than s_j + 8T.
   - The start bit is followed by the data bits, so the ninth data bit begins at 9T. Nine data bits cannot have been received before the ninth begins, and eight not before the eighth.
-  - This is graded on the G5 bracket: its upper end t1 must be at least s_j + 9T in run A, or at least s_j + 8T in run B.
+  - G5's own interval places the event in (t0 − S, t1]: only its lower end, t0 − S, bounds how early the event could have been. This is graded on the G5 bracket's lower end: t0 − S must be at least s_j + 9T in run A, or at least s_j + 8T in run B. That reading needs the bracket's width to be small (precondition 5e, on both runs).
 - **(c) One bit later.** Let D_j be the bracket midpoint minus s_j. Then
 
   mean_j D_j(run A) − mean_j D_j(run B) must lie in [T/2, 3T/2].
@@ -478,18 +480,18 @@ The RxD driver behaves the same in both runs:
 
 **Preconditions.**
 
-- **5a. R1 anchor, and R2 shows NTSC.** The contrasts are given in R1 and R2.
-- **5b. Level anchor.** TxD between MARK=BRK and MARK=UNBRK is at a different level from TxD after MARK=UNBRK. The driver takes its 0 and 1 levels from these two.
-  - Contrast: leave out the UARTBRK set. The two levels are then the same, and 5b fails.
-- **5c. No overrun.** Bit 15 (OVRUN) is 0 in every RESULT value.
+- **5a. R1 anchor, and R2 shows NTSC, on run A and on run B.** The contrasts are given in R1 and R2.
+- **5b. Level anchor.** TxD is at 0 between MARK=BRK and MARK=UNBRK (p.257: "Force the transmit pin to zero"), and at 1 (idle) after MARK=UNBRK. The driver takes its 0 and 1 levels from these two.
+  - Contrast: leave out the UARTBRK set. The level between MARK=BRK and MARK=UNBRK is then also 1, and 5b fails.
+- **5c. No overrun, on run A and on run B.** Bit 15 (OVRUN) is 0 in every RESULT value.
   - p.256: "If the interrupt is not cleared in time, the OVERRUN bit is set."
   - Contrast: in run A, the program reads and clears character 0 only after s_2. The page predicts OVRUN = 1, so 5c fails. The polls are bounded, so the program still finishes.
-- **5d. Every RBF event is observed.**
+- **5d. Every RBF event is observed, on run A and on run B.**
   - MARK=READY comes before s_0.
   - No PROBE_I value stored before s_0 has bit 11 = 1.
   - For every j, at least one value with bit 11 = 0, stored after s_j, comes before the first value with bit 11 = 1.
   - Contrast: leave out the INTREQ clear in step 5. The poll for the next character then sees 1 at once, and 5d fails.
-- **5e. Resolution.** Every G5 bracket is narrower than T/4, so the half-bit grading in (c) is not decided by the polling.
+- **5e. Resolution, on run A and on run B.** Every G5 bracket is narrower than T/4, so the half-bit grading in (c) is not decided by the polling.
   - Contrast: add a delay of T/4 or more to every poll iteration, and 5e fails.
 - **5f. Run B received the same characters.** In run B, RESULT bits 7-0 = byte_j for every j.
   - Contrast: the driver sends run B at a bit time of 2T. Each driven bit is then sampled twice (p.255), so bits 7-0 differ and 5f fails.
@@ -525,13 +527,15 @@ every program uses for G4, which also ORs a `POLL_TIMEOUT` flag whenever a
 poll's own bound is reached); `tx_core.s` (P1/P2/P3's shared engine) and its
 nine wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`,
 their three `_plus1` contrast variants, and `prog_tx_n371_1c/1d/1e.s`
-(precondition contrasts); `fast_core.s` (P4's shared engine) and its six
-wrappers `prog_fast0.s`, `prog_fast1.s`, `prog_fast1_4c/4d/4e/4f.s`; `rx_core.s`
+(precondition contrasts); `fast_core.s` (P4's shared engine) and its five
+wrappers `prog_fast0.s`, `prog_fast1.s`, `prog_fast1_4c/4d/4e.s`; `rx_core.s`
 (P5's shared engine, driven from the C++ test's own RxD schedule) and its
 seven wrappers `prog_rx_a.s`, `prog_rx_b.s`, `prog_rx_a_5b/5c/5d/5e.s`
 (precondition contrasts), `prog_rx_a_altper.s` ((b)'s own contrast; (a)'s,
 5f's and (c)'s own contrasts are driver/comparator-level, needing no
-separate program).
+separate program; the run-A ninth-bit-zero variant and the run-B
+preconditions are likewise driver/comparator-level, reusing `prog_rx_a.bin`
+and `prog_rx_b.bin`).
 
 `ch8_defs.i`'s MARK, RESULT, PROBE_D, PROBE_I and POLL_TIMEOUT sit at
 $0C0000 and above, not below $80000 as G3 specifies for program data in
@@ -556,10 +560,15 @@ while staying small enough that exhausting it on every one of the eight
 polls still fits the run's own cycle budget); `prog_rx_a_5c.s`'s `C5DELAY`
 = 2000 (tuned to land the delayed read past the following character's own
 completion, not merely past its own); `prog_rx_a_5e.s`'s `SLOWCOUNT` = 120;
-`prog_fast1_4f.s`'s `MIDSTOP_DELAY` = 100000. None of these bounds is
-reached in an unmutated run; 1e's, 2e's, 4d's and 5c's own contrasts are
-the cases built to reach one (5c's own poll for the character past the end
-of the driven data is what exhausts `BND_RBF`).
+`prog_fast1_4d.s`'s `MIDSTOP4D_DELAY` = 199819 and `PAUSE4D` = 40 (tuned
+against this build's own measured per-word cadence -- the P4 poll loop
+completes the whole transfer in only a few hundred iterations of its own
+`BND_POLL` = 200000, so `MIDSTOP4D_DELAY` sits close to `BND_POLL`'s own
+top, not its middle -- to land the DSKEN pause inside the t_64..t_192
+window and resume well within the run's own cycle budget). None of these
+bounds is reached in an unmutated run; 1e's, 2e's and 5c's own contrasts
+are the cases built to reach one (5c's own poll for the character past the
+end of the driven data is what exhausts `BND_RBF`).
 
 ### 4.2 Measured values
 
@@ -574,6 +583,12 @@ of the driven data is what exhausts `BND_RBF`).
 - P5's (c): mean_j D_j(run A) - mean_j D_j(run B) measured 2944.5 cycles on
   fx68k and 2978.0 cycles on TG68K, against T=2976.0 (0.9896T and 1.0007T),
   both inside [T/2,3T/2].
+- The R1 population (refresh_population) found zero malformed groups on
+  every capture this package builds, both cores: every candidate low-
+  address read group is the full four-read, 2C-apart shape.
+- The run-A ninth-bit-zero variant's own RESULT bit 8 measured 0 for every
+  character (j=0..7), on both cores -- matching p.257's reading, not
+  p.283's.
 
 ### 4.3 What the build found
 
@@ -587,26 +602,30 @@ graded as their own controls, and both pass. P2's own uniform-grid check
 pairs that include N=371: |U371-U32396| = 0.000827 against a tolerance of
 0.000579. The pairs that exclude N=371 pass on their own tolerance:
 |U0-U371| = 0.000827 against 0.889440, and |U0-U32396| = 0.000000 against
-0.888916 (graded on its own as a control). Not exercised by N=0 or N=32396
-alone, only by back-to-back transmission (W>1).
+0.888916 (graded on its own as a control). The red is not exercised by
+N=0 or N=32396 alone, only by back-to-back transmission (W>1): the R1
+anchor, R2 standard, idle-window and completion preconditions on the N=0
+and N=32396 runs all pass, on both standards and both cores.
 
-**P4-MAIN is declined; preconditions 4a-4f are graded and pass on every
-capture, both cores.** With the buffer address and the overlay-clear step
-both repaired, the DMA fetch of B+2i (DBUF=$020000) is observed on every
-capture: 4a, 4b, 4c, 4d, 4e and 4f all pass. T_cell measured 1.331189 us
-(NTSC) and 1.343483 us (PAL), identical for FAST=1 and FAST=0 and identical
-on both cores. p.265/p.249's bands (1.5-2.5 us and 3.5-4.5 us) time the disk
-data clock, a different quantity from T_cell (1.4); P4-MAIN declines the
-comparison for that reason rather than grading T_cell against either band.
-4f (steady state) passes: the fetch cadence does not drift.
+**P4-MAIN is declined; preconditions 4a-4e are graded and pass on every
+capture, both cores.** With the buffer address set below the identity-mapped
+Chip RAM and the overlay cleared before the fill, the DMA fetch of B+2i
+(DBUF=$020000) is observed on every capture: 4a, 4b, 4c, 4d and 4e all pass.
+T_cell measured 1.331189 us (NTSC) and 1.343483 us (PAL), identical for
+FAST=1 and FAST=0 and identical on both cores. p.265/p.249's bands (1.5-2.5
+us and 3.5-4.5 us) time the disk data clock, a different quantity from
+T_cell (1.4); P4-MAIN declines the comparison for that reason rather than
+grading T_cell against either band. |(t128-t64)-(t192-t128)| is also
+measured, not graded (no page sentence bounds it); the fetch cadence does
+not drift on any capture.
 
 **P5: every character (0-7) reads back correctly on both runs, both
-cores.** RESULT bits 7-0 match byte_j for every j on run A and run B, bit 9
-and bit 8 read 1 on run A, and the G5 brackets, RBF-observed and
-no-early-signal checks all hold. Bit 9 and bit 8 are not graded against
-run A alone (they read 1 on run B too, SPECIFICATION.md P5); the
-proposition rests on run A's data match together with its own one-bit-
-later timing against run B.
+cores.** RESULT bits 7-0, bit 9 and bit 8 match (a)'s own expected values
+on run A, run B's own bits 7-0 match byte_j, and the G5 brackets,
+RBF-observed and no-early-signal checks all hold, on both runs. The
+run-A ninth-bit-zero variant is recorded, not graded (p.257 and p.283
+disagree on what it should read); its own RESULT bit 8, per core, is
+under "measured values" below.
 
 ### 4.4 Mutations
 
