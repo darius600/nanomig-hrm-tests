@@ -111,8 +111,19 @@
 //     independently and forcing them into one AND would hide which half is
 //     true. PORTB-WIDTH is TRUE (measured). PORTB-DIRECTION is FALSE at
 //     every one of the eight positions (measured), for the single shared
-//     reason PROP-1 already names, now confirmed individually at bits
-//     1-7, which PROP-1 itself never exercised.
+//     reason PROP-1 already names, confirmed individually at bits 1-7,
+//     which PROP-1 itself never exercised.
+//   - PORTB-DIRECTION's fixture releases every PB line before the sweep
+//     (portb_in = 0xFF, the idle state p.354 gives a line nothing drives)
+//     instead of leaving them at the Harness default of 0 (a line held
+//     low from outside, a state no page decides for a driven output --
+//     see the withdrawn NM-HRM-083). Released, the false half is the
+//     written-0 clause, not the written-1 clause: at every position the
+//     write is unreachable (regportb absent, as above) so the read is
+//     always the released line, 1, matching a written 1 by coincidence
+//     and mismatching a written 0. This is the same missing write path,
+//     now measured on the one input state p.341 and p.354 together
+//     decide -- the finding is NM-HRM-054's, not a new one.
 //
 // Every mutation below was actually built (WSL Verilator 5.052, `make
 // MUT=<NAME> test`, full `rm -rf obj_dir` rebuild via the Makefile's `test`
@@ -120,17 +131,18 @@
 // printed, not predictions. All mutations were reverted afterwards; this
 // file builds at MUT unset (baseline).
 //
-// Baseline (no MUT): "2 passed, 1 failed" -- FIXTURE-LIVE PASS,
-//   PORTB-WIDTH PASS, PORTB-DIRECTION FAIL (expected and by design, see
-//   above -- CIAA's port B has no write path at any bit position).
+// Baseline (no MUT): "3 passed, 1 failed" -- FIXTURE-LIVE PASS,
+//   PORTB-WIDTH PASS, PORTB-DIRECTION FAIL at all eight positions on the
+//   written-0 clause (expected and by design, see above -- CIAA's port B
+//   has no write path at any bit position), PORTB-RELEASED-CONTROL PASS.
 //
 // MUTATION FIXTURE-LIVE stimulus red: MUT_FIXLIVE repeats the first DDRB
 //   byte (0xA5) instead of a distinct second one -> FIXTURE-LIVE FAIL,
-//   "1 passed, 2 failed". Reverted.
+//   "2 passed, 2 failed". Reverted.
 // MUTATION PORTB-WIDTH stimulus red: MUT_WIDTH_SAMEPATTERN presents the
 //   SAME portb_in byte (0x01) at every swept bit position instead of a
 //   distinct single-bit pattern per position -> PORTB-WIDTH FAIL,
-//   "1 passed, 2 failed" (all eight reads now equal, isolation cannot be
+//   "2 passed, 2 failed" (all eight reads now equal, isolation cannot be
 //   shown). PORTB-DIRECTION is unaffected (still FAIL, for its own
 //   independent reason). Reverted.
 // MUTATION PORTB-DIRECTION stimulus green: MUT_DIRECTION_TARGET_A
@@ -139,11 +151,20 @@
 //   through a PRA read (see RTL facts above) instead of RS_PRB/RS_DDRB --
 //   a real substitution, reusing hrm/ch8-parallel-port-direction's own
 //   validated bit_output_follows_direction() unchanged -> PORTB-DIRECTION
-//   PASS, "3 passed, 0 failed". Substitution proof: the comparator is not
+//   PASS, "4 passed, 0 failed". Substitution proof: the comparator is not
 //   hardwired false, it returns true for the register pair where the
 //   mechanism actually works, on the same fixture and protocol.
-//   PORTB-WIDTH is unaffected (still PASS; it never reads PRA/DDRA).
-//   Reverted.
+//   PORTB-WIDTH and PORTB-RELEASED-CONTROL are unaffected (still PASS;
+//   neither reads PRA/DDRA). Reverted.
+// MUTATION PORTB-RELEASED-CONTROL stimulus red: MUT_CONTROL_HELD_LOW holds
+//   the same PB lines low (portb_in = 0x00) instead of releasing them,
+//   while the check keeps grading against the fixed released-line
+//   prediction (0xFF) p.341 and p.354 give -> PORTB-RELEASED-CONTROL FAIL,
+//   "2 passed, 2 failed" (measured PRB=0x00 against the fixed 0xFF
+//   expectation). Sensitivity proof: an un-released line reads back 0, so
+//   the control is not vacuously true regardless of whether the fixture
+//   actually released the lines. PORTB-DIRECTION is unaffected (its own
+//   sweep sets portb_in itself, still FAIL for its own reason). Reverted.
 
 #include <cstdint>
 #include <cstdio>
@@ -161,6 +182,9 @@
 #endif
 #ifndef MUT_DIRECTION_TARGET_A
 #define MUT_DIRECTION_TARGET_A 0
+#endif
+#ifndef MUT_CONTROL_HELD_LOW
+#define MUT_CONTROL_HELD_LOW 0
 #endif
 
 namespace {
@@ -313,10 +337,15 @@ bool portb_width(Harness& h, std::string& detail) {
 // PORTB-DIRECTION: each of D0-D7's own DIR column reads I/O (bidirectional)
 // -- a value written to CIAAPRB at that bit position, with the direction
 // bit set to output, must be what a subsequent read of that register
-// returns, both 0 and 1. Swept across all eight bit positions; MUT_
-// DIRECTION_TARGET_A retargets the same comparator at RS_PRA/RS_DDRA,
-// cycling between the two positions (bit 0, bit 1) that genuinely
-// round-trip through a PRA read, as the substitution proof.
+// returns, both 0 and 1. Graded with every PB line released beforehand
+// (portb_in = 0xFF, the idle state p.354 gives a line nothing drives),
+// so an outside line held low is not the reason a written value fails to
+// read back -- PORTB-RELEASED-CONTROL below is the honest positive check
+// that this same released state, on these same registers, can read 1.
+// Swept across all eight bit positions; MUT_DIRECTION_TARGET_A retargets
+// the same comparator at RS_PRA/RS_DDRA, cycling between the two
+// positions (bit 0, bit 1) that genuinely round-trip through a PRA read,
+// as the substitution proof.
 // ---------------------------------------------------------------------
 bool bit_output_follows_direction(Harness& h, uint8_t rs_data, uint8_t rs_ddr, int bit) {
     const uint8_t mask = static_cast<uint8_t>(1u << bit);
@@ -330,6 +359,8 @@ bool bit_output_follows_direction(Harness& h, uint8_t rs_data, uint8_t rs_ddr, i
 
 bool portb_direction(Harness& h, std::string& detail) {
     bool all_writable = true;
+    h.dut->portb_in = 0xFF;
+    for (int i = 0; i < 4; ++i) h.step();
     for (int bit = 0; bit < 8; ++bit) {
         bool writable;
         if (MUT_DIRECTION_TARGET_A) {
@@ -344,6 +375,33 @@ bool portb_direction(Harness& h, std::string& detail) {
         all_writable = all_writable && writable;
     }
     return all_writable;
+}
+
+// ---------------------------------------------------------------------
+// PORTB-RELEASED-CONTROL: an honest positive control for PORTB-DIRECTION's
+// released-line fixture, on the same registers and protocol -- not one of
+// this package's own claims, so it carries no uid. With every PB bit's
+// direction left at input (DDRB = 0x00) and the lines released the same
+// way PORTB-DIRECTION releases them (portb_in = 0xFF), a read of CIAAPRB
+// must return the released lines' 1 at every position. This shows the
+// released fixture and the read path both work on this basis, so
+// PORTB-DIRECTION's red is the write path's absence, not an unreleased or
+// broken fixture. MUT_CONTROL_HELD_LOW holds the same lines low instead
+// (portb_in = 0x00), the opposite input p.354 predicts a 0 read for, as
+// the sensitivity proof.
+// ---------------------------------------------------------------------
+bool portb_released_control(Harness& h, std::string& detail) {
+    h.write_reg(RS_DDRB, 0x00);
+    const uint8_t portb_in = MUT_CONTROL_HELD_LOW ? 0x00 : 0xFF;
+    h.dut->portb_in = portb_in;
+    for (int i = 0; i < 4; ++i) h.step();
+    const uint8_t got = h.read_reg(RS_PRB);
+    detail = "DDRB=0x00 (input), portb_in=" + hex2(portb_in) + ", PRB=" + hex2(got);
+    // Fixed at 0xFF, the released-line reading p.341 and p.354 predict --
+    // not at portb_in's own value -- so MUT_CONTROL_HELD_LOW's un-released
+    // stimulus is graded against the same prediction the baseline is, and
+    // fails it, instead of vacuously comparing the stimulus to itself.
+    return got == 0xFF;
 }
 
 }  // namespace
@@ -393,6 +451,22 @@ int main(int argc, char** argv) {
             "sol:E-parallel.c74 sol:E-parallel.c75 sol:E-parallel.c76 "
             "opus:E-parallel-iface.c10");
         checks.note("PORTB-DIRECTION: " + d);
+    }
+
+    {
+        Harness h; std::string d;
+        const bool r = portb_released_control(h, d);
+        checks.expect(r, "PORTB-RELEASED-CONTROL: with every PB bit's "
+            "direction left at input and the lines released the same way "
+            "PORTB-DIRECTION releases them, a read of CIAAPRB must return "
+            "the released lines' 1 at every position -- an honest control "
+            "for PORTB-DIRECTION's released-line fixture, on the same "
+            "registers and protocol; grades no claim of this package's own "
+            "[p.341, 'you read the actual current state of the I/O pins' / "
+            "'the corresponding PR bit is defined as an input'; p.354, 'a "
+            "read of the ports will return all highs because of passive "
+            "pull-ups']");
+        checks.note("PORTB-RELEASED-CONTROL: " + d);
     }
 
     // ------------------------------------------------------------------
