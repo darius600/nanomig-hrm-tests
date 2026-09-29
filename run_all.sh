@@ -74,10 +74,15 @@ fi
 # against the printed page like hrm/ and aa/, on both CPU cores. -k keeps
 # make going to the second core when the first has a red. One line per core,
 # in the form of the package lines above; a core that printed no summary is a
-# build error.
+# build error. A package with no Makefile has a specification and no test yet:
+# one SPEC line, neither pass nor fail.
 for dir in integration/*/; do
     pkg=$(basename "$dir")
     case "$pkg" in harness|minimig_system|apparatus-*) continue ;; esac
+    if [ ! -f "integration/$pkg/Makefile" ]; then
+        echo "SPEC  $pkg   specification only, not built"
+        continue
+    fi
     rm -f "integration/$pkg"/out_*.txt
     make $MAKE_ARGS -k -C "integration/$pkg" test > /dev/null 2>&1
     for core in fx68k tg68k; do
