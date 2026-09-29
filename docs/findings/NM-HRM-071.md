@@ -10,7 +10,7 @@
 | **Report to** | **the manual, not the implementation.** NanoMig, both Minimig lines, all four implementations and Commodore's AA specification give an ECS sprite 70 ns pixels in SuperHires |
 | **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b) · `PC2w`, a precondition that carries no claim id, run on both CPU cores, red on fx68k and on TG68K |
 | **Chapter** | 4 — Sprite Hardware, printed pp. 101, 124, 128 and 131; Appendix C, printed pp. 297, 300 and 303; 1 — Introduction, printed p. 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red on each core: `PC2w` (26 passed, 1 failed on fx68k and on TG68K). The package's colour propositions `P1`–`P4` are green on both cores; the claims that state the width are graded nowhere (see *What grades it*) |
+| **Assertions** | 1 red on each core: `PC2w` (27 passed, 1 failed on fx68k and on TG68K). The package's colour propositions `P1`–`P4` are green on both cores; the claims that state the width are graded nowhere (see *What grades it*) |
 | **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-016](NM-HRM-016.md) (SuperHires sprite colour encoding), [NM-HRM-019](NM-HRM-019.md) (SHSH1, SuperHires sprite positioning) |
 
@@ -166,13 +166,13 @@ increment") measure 50 samples. p. 101 with p. 300 then predicts a 16-pixel
 sprite 32 samples wide.
 
 `PC2w` reads the 32 samples from each sprite's first lit sample on every uniform
-line: 5 bands × 6 lines × 2 output lines × 2 sprites × 32 samples = 3840.
+line: 5 bands × 6 lines × 2 output lines × 2 sprites × 32 samples = 3840, and
+the sample either side of each run of 32, 240 more, which must be dark.
 
 | run | BPLCON0 | chip set | `PC2w`: of 3840 samples | `a1 − a0` | fx68k | TG68K |
 |---|---|---|---|---:|---|---|
 | graded run | $1040, SuperHires | ECS | **1920 lit, 1920 dark** | 50 | **red** | **red** |
 | contrast `CR4` | $9000, Hires | ECS | 3840 lit | 50 | green | green |
-| contrast `CR7` | $1040 | OCS | **1920 lit, 1920 dark** | 50 | **red** | **red** |
 
 Each sprite is lit over exactly 16 samples of every uniform line: the run at
 the first sprite's anchor is followed by dark samples up to the second sprite
@@ -180,26 +180,25 @@ the first sprite's anchor is followed by dark samples up to the second sprite
 120 uniform sprite lines. So a 16-pixel sprite is 16 samples wide, 70 ns a
 pixel, in SuperHires, and 32 samples, 140 ns a pixel, in Hires, where the same
 comparator is green. The position does not change with the width: `a1 − a0` is
-50 in all three runs. In each of the three the two cores print identical lines
-but for the cycle at which the program's end marker arrives.
+50 in both runs. In each run the two cores print identical lines but for the
+cycle at which the program's end marker arrives.
 
 In the graded run `PC1` is green, 6138 transitions of the $CCCC pattern in runs
 of exactly one sample, so SuperHires is in effect around the sprites; `CR4`
-turns `PC1` red, and `CR7` turns `PC0` (chip identification: VPOSR $8000,
-DENISEID $FFFF) and `PC1` red, as those contrasts are built to. The sprites'
+turns `PC1` red, as that contrast is built to. The sprites'
 colours are p. 302's in every graded sample: `P1`–`P4` are green on both cores.
 
-**Under the original chip set** (`CR7`) the playfield leaves SuperHires but the
-sprite does not: bit 6 still reaches the sprite unit through the ungated
-`shres` at line 391, and the sprite stays 16 samples wide. `CR7` is a contrast,
-not the graded configuration, so nothing grades this; see *For the specialists*.
+**Under the original chip set** the source has the playfield leave SuperHires
+but not the sprite: bit 6 still reaches the sprite unit through the ungated
+`shres` at line 391. No run of the package selects the original chip set, so
+nothing measures or grades this; see *For the specialists*.
 
 ### What grades it
 
 `PC2w` is a precondition of the package's own: it gates the pixel-exact grading
 of the sprites' mixed-value lines and carries no claim id. The claims that state
-the rule it grades are classified testable at Denise's ports and are graded
-nowhere in the suite: `CH4-p101.c7`, `CH4-p101.c8`, `CH4-p101.c9`,
+the rule it grades are classified testable, observable at `denise_sprites`, and
+are graded nowhere in the suite: `CH4-p101.c7`, `CH4-p101.c8`, `CH4-p101.c9`,
 `CH4-size.c6`, `CH4-size.c7`, `CH4-size.c8`, `CH4-size.c9` (p. 101),
 `CH4-hw.c10`, `CH4-p124.c6` (p. 124), `CH4-p128.c3`, `CH4-res.c3` (p. 128).
 [`hrm/ch4-sprite-colour-registers`](../../hrm/ch4-sprite-colour-registers)
@@ -367,8 +366,8 @@ that does not repeat it.
    Denise, measured in 35 ns pixels: 2 per sprite pixel is the AA
    specification's `SHRES=70nS`, 4 is p. 101's low-resolution pixel.
 2. **The original chip set, which this finding does not grade.** With an OCS
-   configuration and BPLCON0 bit 6 set, NanoMig keeps the playfield low
-   resolution and halves the sprite (`CR7`, 16 samples), because
+   configuration and BPLCON0 bit 6 set, NanoMig's source keeps the playfield low
+   resolution and halves the sprite, because
    [`denise.v#L391`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L391)
    reads `shres` without the `ecs` term that
    [`#L362`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L362)
