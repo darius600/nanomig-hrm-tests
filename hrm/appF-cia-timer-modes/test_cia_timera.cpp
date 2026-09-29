@@ -44,7 +44,7 @@
 //   file under WSL Verilator, not predicted.
 //
 // RTL facts, independently read from cia_timera.v (112 lines, pinned
-//   submodule commit d6f7df957fad655bc07f6a381e5094a9edff0be0):
+//   submodule commit 4495f86fbb0611e53649165faa36f1125e062f18):
 //   - Three registers only: tlo/thi (latch bytes, cia_timera.v:57-71) and
 //     tcr (control register, cia_timera.v:34-45), each its own 1-bit select
 //     line (no shared address bus at this boundary) -- a write needs

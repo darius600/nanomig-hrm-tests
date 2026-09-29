@@ -13,10 +13,12 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   pages 349, 350, 354; committed specification b64c416
 //   (SPECIFICATION.md, this package).
-// Requirement IDs: CRB-START, CRB-RUNMODE, CRB-LOAD, CRB-INMODE-ARITY,
-//   CRB-INMODE-CODE-00, CRB-INMODE-CODE-10, CRA/CRB-RESET (CRB half), per
-//   SPECIFICATION.md's claim inventory table (rows 9-15). This file's 7
-//   assertions carry 18 of this package's 56 uids (2 of the 18 --
+// Requirement IDs: CRB-START, CRB-RUNMODE, CRB-LOAD, CRB-INMODE-ARITY-00-01,
+//   CRB-INMODE-ARITY-10-11, CRB-INMODE-CODE-00, CRB-INMODE-CODE-10,
+//   CRA/CRB-RESET (CRB half), per SPECIFICATION.md's claim inventory table
+//   (row 13 split into a graded half and a declined half; rows 9-15
+//   otherwise). This file's 7 graded assertions carry 18 of this
+//   package's 56 uids (2 of the 18 --
 //   sol:F-signals.c89/opus:F-signals.c20 -- are also graded in
 //   test_cia_timera.cpp, once per physical timer, the same pattern
 //   hrm/ch1-cia-timers uses for its own both-chips claim); the other 38
@@ -33,7 +35,7 @@
 //   cia_timerb.v before that document was drafted).
 //
 // RTL facts, independently read from cia_timerb.v (107 lines, pinned
-//   submodule commit d6f7df957fad655bc07f6a381e5094a9edff0be0):
+//   submodule commit 4495f86fbb0611e53649165faa36f1125e062f18):
 //   - Same three-register shape as cia_timera (tlo/thi/tcr, each its own
 //     select line; data_out combinational, cia_timerb.v:101-103) plus one
 //     extra input this module alone has: `tmra_ovf` (Timer A's underflow,
@@ -459,12 +461,17 @@ int main(int argc, char** argv) {
     // MUTATION CRB-LOAD stimulus red: MUT_CRBLOAD_NOSTROBE writes CRB=0x01 (bit4 clear) instead of 0x11 at the strobe step, so no reload happens and tlo continues decrementing from 0x3B instead of jumping back to 0x40.
 
     // =====================================================================
-    // CRB-INMODE-ARITY (p.349 "6,5 INMODE Bits CRB6 and CRB5 select one of
-    // four possible input modes for Timer B" and its four-row table: 00 =
-    // 02 pulses, 01 = positive CNT transitions, 10 = Timer A underflow
-    // pulses, 11 = Timer A underflow pulses while CNT is held high).
-    // This is the pre-exposed cia_timerb.v:31 finding, confirmed and
-    // reported here, not adjudicated. uid: opus:F-crb.c6
+    // CRB-INMODE-ARITY-00-01 (p.349 "6,5 INMODE Bits CRB6 and CRB5 select
+    // one of four possible input modes for Timer B" and its four-row
+    // table, codes 00 = 02 pulses, 01 = positive CNT transitions). Split
+    // from the combined CRB-INMODE-ARITY assertion (NM-HRM-078): this half
+    // needs no CNT pin, because codes 00 and 01 differ only in whether
+    // eclk pulses should count at all -- the SAME eclk stimulus this
+    // fixture already applies is enough to show that difference, or its
+    // absence. The 10/11 half below needs CNT held low for part of the
+    // count, which this fixture cannot supply; see that assertion.
+    // This is the pre-exposed finding named in the task instructions,
+    // confirmed and reported here, not adjudicated. uid: opus:F-crb.c6
     // =====================================================================
     {
         // A loaded count of 0x00FF (255) against only 10 stimulus pulses
@@ -472,8 +479,7 @@ int main(int argc, char** argv) {
         // what gets measured (via the decrease in the counter's own
         // value), not an underflow event 10 pulses cannot produce. start
         // MUST be 0 at the moment of the THI write (inside load_count) for
-        // the reload to happen at all (thi_load <= thi & wr & (~start |
-        // oneshot), cia_timerb.v:74) -- see test_cia_timera.cpp's
+        // the reload to happen at all -- see test_cia_timera.cpp's
         // CRA-INMODE comment for the same fact one register over. So:
         // write the code bits with start=0, load, THEN set start=1
         // separately -- for EACH stimulus run, since start never
@@ -491,33 +497,78 @@ int main(int argc, char** argv) {
         };
         Harness h00; auto m00 = measure(h00, 0b00);
         Harness h01; auto m01 = measure(h01, 0b01);
+
+        checks.note("CRB-INMODE-ARITY-00-01: (delta via eclk, delta via "
+            "tmra_ovf) per code, 10 pulses of each stimulus against a "
+            "loaded count of 255: code00=(" + std::to_string(m00.first) + "," + std::to_string(m00.second) +
+            ") code01=(" + std::to_string(m01.first) + "," + std::to_string(m01.second) + ").");
+        const bool codes_distinct = (m00 != m01);
+        checks.expect(codes_distinct,
+            "CRB-INMODE-ARITY-00-01 (p.349 opus:F-crb.c6): CRB6,CRB5=00 "
+            "and =01 must select distinguishable input modes for Timer B "
+            "(02 pulses against positive CNT transitions) -- MEASURED "
+            "FALSE: codes 00 and 01 give the identical response to the "
+            "identical eclk and tmra_ovf stimuli, so writing bit 5 (CRB5) "
+            "alone changes nothing measurable at this boundary. "
+            "Confirming and reporting the pre-measured finding named in "
+            "the task instructions (deltas 10/10 for both codes with "
+            "Timer A stopped) against this package's own, independently "
+            "built fixture; not adjudicated here -- see the report for "
+            "what belongs to Amiga/RTL specialists");
+    }
+    // MUTATION CRB-INMODE-ARITY-00-01 none impossible: red at baseline and no legitimate stimulus makes it green -- nothing this fixture can drive distinguishes codes 00 and 01, and reaching a different result would require changing the submodule under test, which this repair does not touch.
+
+    // =====================================================================
+    // CRB-INMODE-ARITY-10-11 (p.349 "6,5 INMODE Bits CRB6 and CRB5 select
+    // one of four possible input modes for Timer B" and its four-row
+    // table, codes 10 = Timer A underflow pulses, 11 = Timer A underflow
+    // pulses while CNT pin is held high). Grading codes 10 and 11 apart
+    // needs CNT driven low for part of the count: p.349 makes mode 11
+    // count Timer A's underflows only while CNT is high, so with CNT held
+    // high throughout -- the only level a fixture with no CNT input can
+    // offer -- mode 11 counts every underflow mode 10 counts, and the two
+    // ARE the same observable behaviour by the page's own words, not a
+    // defect to measure. cia_timerb's complete port list (clk, clk7_en,
+    // wr, reset, tlo, thi, tcr, data_in, data_out, eclk, tmra_ovf, irq)
+    // has no CNT-like input at all, and no module instantiating it in
+    // this pinned design carries one either (the same absence
+    // test_cia_timera.cpp's CRA-INMODE and CRA-SPMODE already record).
+    // This half cannot be driven at this boundary.
+    // uid: opus:F-crb.c6 (half graded above, as CRB-INMODE-ARITY-00-01)
+    // =====================================================================
+    {
+        auto measure = [](Harness& h, uint8_t code2) -> std::pair<int,int> {
+            h.write_tcr(static_cast<uint8_t>(code2 << 5));
+            h.load_count(0x00FF);
+            h.write_tcr(static_cast<uint8_t>((code2 << 5) | 0x01));
+            const int via_eclk = h.delta_after_eclk(10);
+            h.write_tcr(static_cast<uint8_t>(code2 << 5));
+            h.load_count(0x00FF);
+            h.write_tcr(static_cast<uint8_t>((code2 << 5) | 0x01));
+            const int via_tmraovf = h.delta_after_tmraovf(10);
+            return {via_eclk, via_tmraovf};
+        };
         Harness h10; auto m10 = measure(h10, 0b10);
         Harness h11; auto m11 = measure(h11, 0b11);
-
-        checks.note("CRB-INMODE-ARITY: (delta via eclk, delta via tmra_ovf) "
-            "per code, 10 pulses of each stimulus against a loaded count of "
-            "255: code00=(" + std::to_string(m00.first) + "," + std::to_string(m00.second) +
-            ") code01=(" + std::to_string(m01.first) + "," + std::to_string(m01.second) +
-            ") code10=(" + std::to_string(m10.first) + "," + std::to_string(m10.second) +
-            ") code11=(" + std::to_string(m11.first) + "," + std::to_string(m11.second) + ").");
-        const bool four_distinct = (m00 != m01) && (m10 != m11);
-        checks.expect(four_distinct,
-            "CRB-INMODE-ARITY (p.349 opus:F-crb.c6): CRB6 and CRB5 together "
-            "select one of FOUR distinguishable input modes for Timer B -- "
-            "MEASURED FALSE: cia_timerb.v:31 is `assign count = tmcr[6] ? "
-            "tmra_ovf : eclk`, a one-bit mux; bit 5 (CRB5) is stored and "
-            "read back (line 39/103) and consulted nowhere else in the "
-            "file. Codes 00 and 01 (bit6=0) produce an identical response "
-            "to both stimuli, and so do codes 10 and 11 (bit6=1) -- four "
-            "printed codes collapse to two distinguishable behaviours. "
-            "Confirming and reporting the pre-measured finding named in "
-            "the task instructions (deltas 10/10/0/0 with Timer A stopped, "
-            "10/10 for codes 10/11 with it running) against this "
-            "package's own, independently built fixture; not adjudicated "
-            "here -- see the report for what belongs to Amiga/RTL "
-            "specialists");
+        checks.note("CRB-INMODE-ARITY-10-11: with no CNT input to hold "
+            "low, (delta via eclk, delta via tmra_ovf) for codes 10 and "
+            "11 are code10=(" + std::to_string(m10.first) + "," + std::to_string(m10.second) +
+            ") code11=(" + std::to_string(m11.first) + "," + std::to_string(m11.second) +
+            ") -- identical, which p.349 predicts too while CNT stays "
+            "high; not informative about whether mode 11 stops counting "
+            "with CNT low, which nothing at this boundary can drive.");
+        checks.record(
+            "CRB-INMODE-ARITY-10-11 (p.349, half graded: opus:F-crb.c6): "
+            "DECLINED. Distinguishing codes 10 and 11 requires holding "
+            "CNT low for part of the count and confirming mode 11 stops "
+            "counting Timer A's underflows there while mode 10 keeps "
+            "counting them -- cia_timerb has no CNT pin to drive low, and "
+            "neither does any module instantiating it in this pinned "
+            "design. Grading cannot proceed without adding a port, which "
+            "this package does not do; the other half of the same claim, "
+            "codes 00 and 01, is graded above as CRB-INMODE-ARITY-00-01 "
+            "and carries the red.");
     }
-    // MUTATION CRB-INMODE-ARITY none impossible: red at baseline and no legitimate stimulus makes it green, because cia_timerb.v never reads tmcr[5] anywhere -- the same "stored, unconsulted" shape as CRA-INMODE, one register over.
 
     // =====================================================================
     // CRB-INMODE-CODE-00 (p.349, row "0  0  Timer B counts 02 pulses").

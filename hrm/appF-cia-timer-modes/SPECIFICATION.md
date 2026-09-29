@@ -87,7 +87,7 @@ one row's uid list, per the build brief's "one assertion per proposition."
 | 10 | CRB-START | 349, 350 | sol:F-crb.c2, opus:F-crb.c1, sol:F-crb.c15 | 3 |
 | 11 | CRB-RUNMODE | 349, 350 | sol:F-crb.c5, opus:F-crb.c4, sol:F-crb.c12 | 3 |
 | 12 | CRB-LOAD | 349, 350 | sol:F-crb.c6, opus:F-crb.c5, sol:F-crb.c11, sol:F-crb.c16, opus:F-crb.c18, opus:F-crb.c17 | 6 |
-| 13 | CRB-INMODE-ARITY | 349 | opus:F-crb.c6 | 1 |
+| 13 | CRB-INMODE-ARITY-00-01 (graded) / CRB-INMODE-ARITY-10-11 (declined, no CNT pin) | 349 | opus:F-crb.c6 | 1 |
 | 14 | CRB-INMODE-CODE-00 | 349 | opus:F-crb.c7 | 1 |
 | 15 | CRB-INMODE-CODE-10 | 349, 350 | opus:F-crb.c9, opus:F-crb.c15 | 2 |
 
@@ -188,22 +188,23 @@ fact this fixture can show directly, at its own boundary, without touching
 `cia_timerd` (where bit 7/ALARM's storage actually lives, out of this
 package's scope since ALARM has no claim of its own here).
 
-**CRB-INMODE-ARITY**, **CRB-INMODE-CODE-00**, **CRB-INMODE-CODE-10** (p.349:
-"6,5 INMODE Bits CRB6 and CRB5 select one of four possible input modes for
-Timer B" and its four-row table: 00 = phi-2 pulses, 01 = positive CNT
-transitions, 10 = Timer A underflow pulses, 11 = Timer A underflow pulses
-while CNT is held high). CRB6 and CRB5 are both stored, ordinary control-
-register bits — unlike CRA's INMODE, this is testable in full at the
-register-arity level: does writing all four 2-bit codes produce four
-distinguishable count-source behaviours? Codes 00 and 10 name behaviours this
-boundary can construct without a CNT pin (phi-2 and Timer-A-underflow are
-both already-available signals at `cia_timerb`'s own ports); codes 01 and 11
-again name the same nonexistent CNT pin as CRA-INMODE/CRA-SPMODE and are not
-separately constructible — but the **arity** claim (four distinct modes) does
-not require constructing every mode individually to test: if writing all four
-codes yields only two distinguishable behaviours, four-way selection is
-already disproven regardless of what the unreachable two modes would have
-done.
+**CRB-INMODE-ARITY-00-01**, **CRB-INMODE-ARITY-10-11**, **CRB-INMODE-CODE-00**,
+**CRB-INMODE-CODE-10** (p.349: "6,5 INMODE Bits CRB6 and CRB5 select one of
+four possible input modes for Timer B" and its four-row table: 00 = phi-2
+pulses, 01 = positive CNT transitions, 10 = Timer A underflow pulses, 11 =
+Timer A underflow pulses while CNT is held high). CRB6 and CRB5 are both
+stored, ordinary control-register bits. The claim splits into two halves that
+are not symmetric. Codes 00 and 01 are testable in full without a CNT pin:
+p.349 gives code 01 no phi-2 response at all, so the same eclk stimulus this
+boundary already drives is enough to show the two codes apart, or to show
+they collapse. Codes 10 and 11 are not: p.349 makes mode 11 count Timer A's
+underflows only while CNT is held high, so with CNT held high throughout —
+the only level a boundary with no CNT input can offer — mode 11 counting what
+mode 10 counts is what the page itself predicts, not a defect to measure.
+Collapsing the 10/11 half into the same four-way arity check as the 00/01
+half reads a page-predicted collapse as a shortfall; the two halves are
+graded separately for that reason, and the 10/11 half is declined rather
+than measured.
 
 ## On a control case, fixture liveness and mutation
 
@@ -231,18 +232,23 @@ included.
   CODE-10 are all expected GREEN — real, working mechanisms, not suspected
   defects — each with a same-measurement-basis before/after or A-vs-B split
   built into the assertion itself (e.g. one-shot vs continuous, bit-set vs
-  bit-clear). CRA-INMODE and CRB-INMODE-ARITY are expected RED: both are
-  measured, not adjusted, and the reasons are stated in the report, not
-  argued away here.
+  bit-clear). CRA-INMODE and CRB-INMODE-ARITY-00-01 are expected RED: both
+  are measured, not adjusted, and the reasons are stated in the report, not
+  argued away here. CRB-INMODE-ARITY-10-11 is declined, not graded: codes 10
+  and 11 can only be told apart with CNT driven low for part of the count,
+  which this boundary has no port to do; see the report for the reason in
+  full.
 - **Mutation.** Each control's mutation withholds or corrupts the stimulus
   the assertion depends on (a clock enable, a register write, a latch value)
   and must turn a clean PASS into a clean FAIL. CRA-INMODE and
-  CRB-INMODE-ARITY's mutations are `none impossible` — per this suite's
-  existing convention for a red baseline with no legitimate stimulus that
-  restores the printed distinction (`agnus_copper_locreg_width`'s RM2/RM4-6
-  and LW1/LW3-5 comments are the precedent cited) — because the RTL simply
-  never reads the bit in question; a real change would require touching the
-  submodule, which is out of bounds.
+  CRB-INMODE-ARITY-00-01's mutations are `none impossible` — per this
+  suite's existing convention for a red baseline with no legitimate stimulus
+  that restores the printed distinction (`agnus_copper_locreg_width`'s
+  RM2/RM4-6 and LW1/LW3-5 comments are the precedent cited) — because
+  nothing this boundary can drive distinguishes the two codes; a real change
+  would require touching the submodule, which is out of bounds.
+  CRB-INMODE-ARITY-10-11 carries no mutation record: it is a `record()`
+  decline, not a graded assertion, so nothing turns PASS to FAIL on it.
 
 ## Disclosure — what was already known before this file was drafted
 
