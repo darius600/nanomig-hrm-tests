@@ -17,6 +17,7 @@ MK_LD_A         equ     $0C1002         ; before the load/start write
 MK_LD_B         equ     $0C1004         ; after the load/start write
 MK_LD_C         equ     $0C1006         ; before the stop write
 MK_LD_D         equ     $0C1008         ; after the stop write
+MK_LD_RUNSTART  equ     $0C100A         ; after the running leg's own start write
 
         org     PROGRAM_ORG
 
@@ -43,6 +44,7 @@ start:
         move.b  #$00,CR
         RLATCH  TLO,THI,$FFFF
         move.b  #$01,CR
+        move.w  #MARKER_SENTINEL,MK_LD_RUNSTART
         move.w  #$1388,d7              ; ~5000 E periods
 .d2:    dbra    d7,.d2
 

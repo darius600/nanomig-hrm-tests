@@ -1,8 +1,9 @@
-; p3_body.s -- P3 (toggle mode): DDRB<-$00; CR<-$00; R-LATCH(LATCHVAL);
+; p3_body.s -- P3 (toggle mode): DDRB bit n<-1, PRB bit n<-0 (SPECIFICATION.md's
+; own change from p342, the same one P2 leg S makes); CR<-$00; R-LATCH(LATCHVAL);
 ; R-SAMPLE(600; PRB, ICR); CR<-$00. Generic body shared by all four
 ; instances.
 ;
-; Wrapper symbols: PRB,DDRB,CR,TLO,THI,ICR, LATCHVAL, CRVAL.
+; Wrapper symbols: PRB,DDRB,CR,TLO,THI,ICR,M, LATCHVAL, CRVAL.
 ;   Baseline: LATCHVAL=60, CRVAL=$07 (START,PBON,toggle,continuous).
 ;   Pre3.1's own contrast: LATCHVAL=2.
 ;   Pre3.2's own contrast: CRVAL=$06 (not started).
@@ -17,7 +18,8 @@ P3_ICR          equ     P3_PRB+600*2    ; 600 words
 
 start:
         SETUP
-        move.b  #$00,DDRB
+        move.b  #M,DDRB
+        move.b  #$00,PRB
         move.b  #$00,CR
         RLATCH  TLO,THI,LATCHVAL
         moveq   #0,d0

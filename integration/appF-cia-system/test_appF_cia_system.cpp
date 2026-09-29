@@ -173,6 +173,21 @@ std::string hex2(uint16_t v) {
     return buf;
 }
 
+// A full 16-bit value, for timer/counter reads (SPECIFICATION.md section 5:
+// "print 16-bit values in full") -- hex2 above is for the byte-wide CIA
+// registers (CRA, ICR, PRB, DDRB) it was written for.
+std::string hex4(uint16_t v) {
+    char buf[8];
+    std::snprintf(buf, sizeof buf, "$%04X", unsigned(v));
+    return buf;
+}
+
+int64_t floordiv(int64_t a, int64_t b) {
+    int64_t q = a / b;
+    if ((a % b != 0) && ((a < 0) != (b < 0))) --q;
+    return q;
+}
+
 struct Checks {
     void expect(bool condition, const std::string& label) {
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
@@ -360,36 +375,56 @@ PhaseCheck phase_check(const std::vector<double>& phases, uint64_t t_cpu) {
     return r;
 }
 
-// ---- F3: underflow period P(L) from a flag-indexed E-index sequence. The
-// consecutive gaps between flagged E-indices are measured; F3 requires one
-// P to fit all of them (SPECIFICATION.md 1.4 F3, "exactly one P fits").
+// ---- F3: underflow period P(L), fit exactly as SPECIFICATION.md 1.4 F3
+// states it, not as the most frequent gap between flagged E-indices (that
+// estimator is a different, weaker statistic: on a loop whose own iteration
+// spacing is not a divisor of the true period, its gaps are multiples of the
+// loop spacing, and "most frequent" picks one of those, not P).
+//
+// f_j are the E-indices of every ICR store in the series (flagged or not)
+// and q_j their TA/TB flag. P(L) is the integer P for which one phase phi
+// exists such that, for every j >= 1, q_j = 1 exactly when phi + kP lies in
+// (f_(j-1), f_j] for some integer k -- i.e. the half-open interval crosses
+// exactly one multiple of P from phi when q_j is set, and none when it is
+// clear. "Exactly one P fits" (at least 16 flags, iteration spacing at most
+// P/2) is checked by search: P(L) is unique when exactly one P in [2,400]
+// admits such a phase.
 struct PeriodResult {
-    bool ok = false;               // >=16 flags and every gap equal
+    bool ok = false;               // exactly one P fits, over >=16 flags
     int64_t P = 0;
     size_t flag_count = 0;
-    std::vector<int64_t> gaps;
 };
 
-PeriodResult measure_period(const std::vector<int64_t>& flagged_e_sorted) {
+PeriodResult measure_period(const SampleSeries& series, uint16_t mask, uint64_t t_cpu) {
     PeriodResult r;
-    r.flag_count = flagged_e_sorted.size();
-    if (flagged_e_sorted.size() < 16) return r;
-    for (size_t i = 1; i < flagged_e_sorted.size(); ++i)
-        r.gaps.push_back(flagged_e_sorted[i] - flagged_e_sorted[i - 1]);
-    if (r.gaps.empty()) return r;
-    // The mode of the gaps is P; a gap of the E-index rounding (F2: e =
-    // round((t-t0)/T_E)) can land one tick off the true period without a
-    // second underflow being missed, so a gap within 1 of the mode still
-    // counts as "the same P". "Exactly one P fits" (F3) is then: every gap
-    // is P or within 1 of it.
-    std::map<int64_t,int> counts;
-    for (auto g : r.gaps) ++counts[g];
-    int64_t best = 0; int bestc = 0;
-    for (auto& [g,c] : counts) if (c > bestc) { bestc = c; best = g; }
-    bool uniform = best > 0;
-    for (auto g : r.gaps) if (std::llabs(g - best) > 1) { uniform = false; break; }
-    r.ok = uniform;
-    r.P = best;
+    std::vector<int64_t> f;
+    std::vector<bool> q;
+    uint64_t t0 = 0; bool have = false;
+    for (size_t i = 0; i < series.size(); ++i) {
+        if (!series.cycle[i] || !series.value[i]) continue;
+        if (!have) { t0 = *series.cycle[i]; have = true; }
+        f.push_back((int64_t)e_index(*series.cycle[i], t0, t_cpu));
+        bool fl = (*series.value[i] & mask) != 0;
+        q.push_back(fl);
+        if (fl) ++r.flag_count;
+    }
+    if (r.flag_count < 16 || f.size() < 2) return r;
+    std::vector<int64_t> fits;
+    for (int64_t P = 2; P <= 400; ++P) {
+        bool anyphi = false;
+        for (int64_t phi = 0; phi < P && !anyphi; ++phi) {
+            bool ok = true;
+            for (size_t j = 1; j < f.size() && ok; ++j) {
+                int64_t cnt = floordiv(f[j] - phi, P) - floordiv(f[j - 1] - phi, P);
+                if ((cnt > 0) != q[j]) ok = false;
+            }
+            if (ok) anyphi = true;
+        }
+        if (anyphi) fits.push_back(P);
+        if (fits.size() > 1) break;   // already not unique
+    }
+    r.ok = (fits.size() == 1);
+    if (!fits.empty()) r.P = fits.front();
     return r;
 }
 
@@ -676,13 +711,14 @@ int main(int argc, char** argv) {
     // here as it computes its own verdict (SPECIFICATION.md P10: "none of
     // P1-P9 carries" a bitmap/multi-proposition claim id by itself).
     struct PropVerdicts {
-        bool p3_ta=false, p3_tb=false, p4_ta=false, p4_tb=false;
+        bool p3_ta=false, p3_tb=false, p4_ta=false, p4_tb=false, p4_graded=false;
         bool p5_ta=false, p5_tb=false;
         bool p70=false, p73=false, p74=false, p75=false, p76_ciaa=false, p76_ciab=false, p77=false;
         bool p80=false, p83=false, p84=false;
         bool p865_01=false, p865_10=false, p865_11=false;
         bool p87_alarm=false;
         bool p9_legf=false, p9_legw=false;
+        bool p1_control=false;
     } pv;
 
     const char* mutate_env = std::getenv("NMH_MUTATE");
@@ -821,6 +857,7 @@ int main(int argc, char** argv) {
         bool la = o1_live_of(ca,0x40), lb = o1_live_of(cb,0x80), lcc = o1_live_of(cc,0x40), ld = o1_live_of(cd,0x80);
         bool control_ok = (!la || p1_control_ok(ca,0x40)) && (!lb || p1_control_ok(cb,0x80)) &&
                            (!lcc || p1_control_ok(cc,0x40)) && (!ld || p1_control_ok(cd,0x80));
+        pv.p1_control = control_ok;
         checks.expect(control_ok,
             "P1-CONTROL [p342]: with PBON=0 throughout, every leg reads the page's own PBON=0 values "
             "(a2,a1,b1 bit n=1; c1=0; d1=0; d2=1), for the instances whose read-back is live (Pre1.4/O1)");
@@ -1012,8 +1049,7 @@ int main(int argc, char** argv) {
         checks.record("P2-LEGH-CONTRAST [p342]: h1 (CIAB/timer B) reads " + hex2(pk(p2d_view,9)) +
                       " in this run -- live; not distinguishable on this build: h1 reads the same "
                       "driven level whether started (baseline, CR<-$07) or not (NMH_MUTATE=P2-LEGH0, "
-                      "CR<-$06) -- the RTL does not read CR's own START bit for this line either, "
-                      "which is itself evidence the red above is the RTL's, not the fixture's");
+                      "CR<-$06)");
         (void)h1_bit;
     }
 
@@ -1141,10 +1177,15 @@ int main(int argc, char** argv) {
         // one instance's own pair of legs (O: one-shot $09, C: continuous $01),
         // same binary, differing only in the E7 parameter poked before boot.
         struct RunLegs { bool ok=false, contrast_ok=false, pre_ok=false; int flagsO=0, flagsC=0; };
-        auto grade_run_instance = [&](const std::string& bin, uint16_t icrmask) {
+        // The padded mutant (NMH_MUTATE=P73-PRE/P83-PRE) needs a budget
+        // beyond kRunBudget to reach DONE (measured: ~4.8-5.3M clk_sys
+        // against kRunBudget's 4.0M); without it, the run never finishes
+        // and the precondition goes red by an unfinished program, not by
+        // its own clause.
+        auto grade_run_instance = [&](const std::string& bin, uint16_t icrmask, uint64_t budget) {
             RunLegs r;
-            Capture co = run_capture_param(bin, 0x0C2000, 0x09, kRunBudget, {kResults+808, kResults+810});
-            Capture cc = run_capture_param(bin, 0x0C2000, 0x01, kRunBudget, {kResults+808, kResults+810});
+            Capture co = run_capture_param(bin, 0x0C2000, 0x09, budget, {kResults+808, kResults+810});
+            Capture cc = run_capture_param(bin, 0x0C2000, 0x01, budget, {kResults+808, kResults+810});
             SampleSeries so = read_series(co.log, kResults+8, 400);
             SampleSeries sc = read_series(cc.log, kResults+8, 400);
             r.flagsO = count_flags(so, icrmask);
@@ -1159,9 +1200,9 @@ int main(int argc, char** argv) {
                        double(max_gap_cycles(sc)) <= 20.0*10.0*double(ancC.t_cpu) + 1;
             return r;
         };
-        RunLegs r7a = grade_run_instance(dir+"/p7_ciaa_run.bin", kIcrTa);
+        RunLegs r7a = grade_run_instance(dir+"/p7_ciaa_run.bin", kIcrTa, kRunBudget);
         std::string p7cb = dir + (mv=="P73-PRE" ? "/p7_ciab_run_pad.bin" : "/p7_ciab_run.bin");
-        RunLegs r7b = grade_run_instance(p7cb, kIcrTa);
+        RunLegs r7b = grade_run_instance(p7cb, kIcrTa, mv=="P73-PRE" ? 10'000'000 : kRunBudget);
         pv.p73 = r7a.ok && r7b.ok;
         checks.expect(pv.p73, "P7.3 [p342,p348]: leg O (one-shot) shows exactly one TA flag and "
                       "START clears itself; leg C (continuous) shows more than one flag and START stays "
@@ -1169,14 +1210,15 @@ int main(int argc, char** argv) {
         checks.expect(r7a.contrast_ok && r7b.contrast_ok, "P7.3-CONTRAST [p342,p348]: leg O's own \"exactly "
                       "one\" comparator fails on leg C's data, and leg C's own \"more than one\" comparator "
                       "fails on leg O's data, on both CIAs");
-        checks.expect(r7b.pre_ok, "P7.3-PRE [SPECIFICATION.md P7.3]: consecutive ICR stores are at most 20 "
-                      "E periods apart (CIAB; a padded loop body fails it under NMH_MUTATE=P73-PRE)");
+        checks.expect(r7a.pre_ok && r7b.pre_ok, "P7.3-PRE [SPECIFICATION.md P7.3]: consecutive ICR stores "
+                      "are at most 20 E periods apart, on both CIAs (CIAB fails it under "
+                      "NMH_MUTATE=P73-PRE, run with a raised budget so the padded loop reaches DONE)");
         checks.note("P7.3 CIAA flags O=" + std::to_string(r7a.flagsO) + " C=" + std::to_string(r7a.flagsC) +
                     "; CIAB flags O=" + std::to_string(r7b.flagsO) + " C=" + std::to_string(r7b.flagsC));
 
-        RunLegs r8a = grade_run_instance(dir+"/p8_ciaa_run.bin", kIcrTb);
+        RunLegs r8a = grade_run_instance(dir+"/p8_ciaa_run.bin", kIcrTb, kRunBudget);
         std::string p8cb = dir + (mv=="P83-PRE" ? "/p8_ciab_run_pad.bin" : "/p8_ciab_run.bin");
-        RunLegs r8b = grade_run_instance(p8cb, kIcrTb);
+        RunLegs r8b = grade_run_instance(p8cb, kIcrTb, mv=="P83-PRE" ? 10'000'000 : kRunBudget);
         pv.p83 = r8a.ok && r8b.ok;
         checks.expect(pv.p83, "P8.3 [p342,p349]: leg O (one-shot) shows exactly one TB flag and "
                       "START clears itself; leg C (continuous) shows more than one flag and START stays "
@@ -1184,15 +1226,16 @@ int main(int argc, char** argv) {
         checks.expect(r8a.contrast_ok && r8b.contrast_ok, "P8.3-CONTRAST [p342,p349]: leg O's own \"exactly "
                       "one\" comparator fails on leg C's data, and leg C's own \"more than one\" comparator "
                       "fails on leg O's data, on both CIAs");
-        checks.expect(r8b.pre_ok, "P8.3-PRE [SPECIFICATION.md P8.3]: consecutive ICR stores are at most 20 "
-                      "E periods apart (CIAB; a padded loop body fails it under NMH_MUTATE=P83-PRE)");
+        checks.expect(r8a.pre_ok && r8b.pre_ok, "P8.3-PRE [SPECIFICATION.md P8.3]: consecutive ICR stores "
+                      "are at most 20 E periods apart, on both CIAs (CIAB fails it under "
+                      "NMH_MUTATE=P83-PRE, run with a raised budget so the padded loop reaches DONE)");
         checks.note("P8.3 CIAA flags O=" + std::to_string(r8a.flagsO) + " C=" + std::to_string(r8a.flagsC) +
                     "; CIAB flags O=" + std::to_string(r8b.flagsO) + " C=" + std::to_string(r8b.flagsC));
     }
 
     // ---- P7.4 / P8.4 (bit 4, LOAD) -----------------------------------------
     {
-        struct LoadResult { bool loaded=false; uint16_t v1=0,v2=0,c=0,v3=0; uint64_t mkA=0,mkB=0,mkC=0,mkD=0; uint64_t t_cpu=0; bool anc_ok=false; };
+        struct LoadResult { bool loaded=false; uint16_t v1=0,v2=0,c=0,v3=0; uint64_t mkA=0,mkB=0,mkC=0,mkD=0,mkRun=0; uint64_t t_cpu=0; bool anc_ok=false; };
         auto run_load = [&](const std::string& bin) {
             LoadResult r;
             Capture c = run_capture(bin, kRunBudget, {kResults+8,kResults+10,kResults+12,kResults+14});
@@ -1200,14 +1243,15 @@ int main(int argc, char** argv) {
             if (!r.loaded) return r;
             r.v1 = pk(c,0); r.v2 = pk(c,1); r.c = pk(c,2); r.v3 = pk(c,3);
             auto a = mark(c.log, 0x0C1002), b = mark(c.log, 0x0C1004), cc = mark(c.log, 0x0C1006), d = mark(c.log, 0x0C1008);
-            if (a) r.mkA = *a; if (b) r.mkB = *b; if (cc) r.mkC = *cc; if (d) r.mkD = *d;
+            auto rs = mark(c.log, 0x0C100A);
+            if (a) r.mkA = *a; if (b) r.mkB = *b; if (cc) r.mkC = *cc; if (d) r.mkD = *d; if (rs) r.mkRun = *rs;
             Anchor anc = measure_anchor(c.log);
             r.anc_ok = anc.ok; r.t_cpu = anc.t_cpu;
             return r;
         };
         auto grade_load = [&](const std::string& base_a, const std::string& base_b,
                                const std::string& ld0_b, const std::string& run01_b,
-                               const char* propid, const char* pagecite) {
+                               const char* propid, const char* pagecite, const char* mutld0, const char* mutrun01) {
             LoadResult la = run_load(base_a), lb = run_load(base_b);
             auto ok_one = [](const LoadResult& r) {
                 if (!r.loaded || !r.anc_ok) return false;
@@ -1224,37 +1268,47 @@ int main(int argc, char** argv) {
             checks.expect(ok, std::string(propid) + std::string(" [") + pagecite + "]: v2=$4000 (a force "
                           "load loads the latch), c bit4=0 (always reads 0), and $FFFF-v3 is bounded by "
                           "tau_LS/T_E+2 (the LOAD strobe reloaded the counter), on both CIAs");
-            checks.note(std::string(propid) + " CIAA v1=" + hex2(la.v1>>8)+hex2(la.v1&0xFF) + " v2=" + hex2(la.v2>>8)+hex2(la.v2&0xFF) +
-                        " c=" + hex2(la.c) + " v3=" + hex2(la.v3>>8)+hex2(la.v3&0xFF) +
-                        "; CIAB v1=" + hex2(lb.v1>>8)+hex2(lb.v1&0xFF) + " v2=" + hex2(lb.v2>>8)+hex2(lb.v2&0xFF) +
-                        " c=" + hex2(lb.c) + " v3=" + hex2(lb.v3>>8)+hex2(lb.v3&0xFF));
+            checks.note(std::string(propid) + " CIAA v1=" + hex4(la.v1) + " v2=" + hex4(la.v2) +
+                        " c=" + hex2(la.c) + " v3=" + hex4(la.v3) +
+                        "; CIAB v1=" + hex4(lb.v1) + " v2=" + hex4(lb.v2) +
+                        " c=" + hex2(lb.c) + " v3=" + hex4(lb.v3));
 
-            LoadResult ld0 = run_load(ld0_b);
-            bool ld0_ok = ld0.loaded && ld0.v2 == ld0.v1;
-            checks.expect(ld0_ok, std::string(propid) + "-LD0 [p348]: CR<-$00 instead of $10 (\"writing a "
-                          "0 has no effect\") gives v2=v1 (CIAB)");
-
-            LoadResult r01 = run_load(run01_b);
-            bool r01_ok = false;
-            if (r01.loaded && r01.anc_ok) {
-                double t_e = 10.0*double(r01.t_cpu);
-                double tau_total = double(r01.mkC) - double(r01.mkB);
-                r01_ok = double(0xFFFF - r01.v3) >= tau_total/t_e - 2.0;
+            // LD0 and CONTRAST(RUN01) are the page's own contrasting case for
+            // this proposition (SPECIFICATION.md P7.4/P8.4): moved out of the
+            // normal run, selected only through NMH_MUTATE (BRIEF rule 13; see
+            // the header's // MUTATION record), each graded through its own
+            // dedicated comparator (unchanged here) rather than folded into
+            // the pass/fail count of a `make test` with no NMH_MUTATE set.
+            if (mv == mutld0) {
+                LoadResult ld0 = run_load(ld0_b);
+                bool ld0_ok = ld0.loaded && ld0.v2 == ld0.v1;
+                checks.expect(ld0_ok, std::string(propid) + "-LD0 [p348]: CR<-$00 instead of $10 (\"writing a "
+                              "0 has no effect\") gives v2=v1 (CIAB)");
             }
-            checks.expect(r01_ok, std::string(propid) + "-CONTRAST [p342]: CR<-$01 instead of $11 (no "
-                          "LOAD) leaves the counter running the whole interval, so $FFFF-v3 is at least "
-                          "tau_total/T_E-2 (CIAB)");
+            if (mv == mutrun01) {
+                LoadResult r01 = run_load(run01_b);
+                bool r01_ok = false;
+                if (r01.loaded && r01.anc_ok && r01.mkRun && r01.mkC) {
+                    double t_e = 10.0*double(r01.t_cpu);
+                    double tau_total = double(r01.mkC) - double(r01.mkRun);
+                    r01_ok = double(0xFFFF - r01.v3) >= tau_total/t_e - 2.0;
+                }
+                checks.expect(r01_ok, std::string(propid) + "-CONTRAST [p342]: CR<-$01 instead of $11 (no "
+                              "LOAD) leaves the counter running the whole interval, so $FFFF-v3 is at least "
+                              "tau_total/T_E-2, tau_total from the marker after the running leg's own start "
+                              "write to the marker before the stop write (CIAB)");
+            }
             return ok;
         };
         pv.p74 = grade_load(dir+"/p7_ciaa_load.bin", dir+"/p7_ciab_load.bin", dir+"/p7_ciab_load_ld0.bin",
-                   dir+"/p7_ciab_load_run01.bin", "P7.4", "p342,p348");
+                   dir+"/p7_ciab_load_run01.bin", "P7.4", "p342,p348", "P74-LD0", "P74-CONTRAST");
         pv.p84 = grade_load(dir+"/p8_ciaa_load.bin", dir+"/p8_ciab_load.bin", dir+"/p8_ciab_load_ld0.bin",
-                   dir+"/p8_ciab_load_run01.bin", "P8.4", "p342,p349");
+                   dir+"/p8_ciab_load_run01.bin", "P8.4", "p342,p349", "P84-LD0", "P84-CONTRAST");
     }
 
     // ---- P7.7 (CRA bit 7, unused) -------------------------------------------
     {
-        struct UnResult { bool loaded=false; uint16_t c1=0,c2=0,w=0; uint64_t mkA=0,mkD=0; };
+        struct UnResult { bool loaded=false; uint16_t c1=0,c2=0,w=0; uint64_t mkA=0,mkD=0; uint64_t t_cpu=0; bool anc_ok=false; };
         auto run_un = [&](const std::string& bin) {
             UnResult r;
             Capture c = run_capture(bin, kRunBudget, {kResults+8,kResults+10,kResults+12});
@@ -1263,10 +1317,13 @@ int main(int argc, char** argv) {
             r.c1 = pk(c,0); r.c2 = pk(c,1); r.w = pk(c,2);
             auto a = mark(c.log, 0x0C1002), d = mark(c.log, 0x0C1008);
             if (a) r.mkA = *a; if (d) r.mkD = *d;
+            Anchor anc = measure_anchor(c.log);
+            r.anc_ok = anc.ok; r.t_cpu = anc.t_cpu;
             return r;
         };
+        std::string b81b_bin = dir + (mv == "P77-STARTOFF" ? "/p7_ciab_unused81_startoff.bin" : "/p7_ciab_unused81.bin");
         auto b81a = run_un(dir+"/p7_ciaa_unused81.bin"), b01a = run_un(dir+"/p7_ciaa_unused01.bin");
-        auto b81b = run_un(dir+"/p7_ciab_unused81.bin"), b01b = run_un(dir+"/p7_ciab_unused01.bin");
+        auto b81b = run_un(b81b_bin), b01b = run_un(dir+"/p7_ciab_unused01.bin");
         auto ok_pair = [](const UnResult& r81, const UnResult& r01) {
             if (!r81.loaded || !r01.loaded) return false;
             return r81.c1 == 0 && r01.c1 == 0 && r81.c2 == 0x01 && r01.c2 == 0x01 &&
@@ -1277,28 +1334,37 @@ int main(int argc, char** argv) {
         checks.expect(ok, "P7.7 [p349]: c1=$00 (bit7 forced to 0 on a read), c2=$01 (bit0 read back, "
                       "unaffected by bit7), and |w81-w01|<=1 (bit7 does not affect operation), on both "
                       "CIAs, in a $81-run and a $01-run of the same instance");
+        // P7.7-PRE's own margin is the run's own T_E (F2: 10*T_CPU), not a
+        // constant clk_sys figure measured on one earlier build.
         auto bracket_ok = [](const UnResult& r81, const UnResult& r01) {
-            if (!r81.loaded || !r01.loaded) return false;
+            if (!r81.loaded || !r01.loaded || !r81.anc_ok || !r01.anc_ok) return false;
             int64_t tau81 = int64_t(r81.mkD) - int64_t(r81.mkA);
             int64_t tau01 = int64_t(r01.mkD) - int64_t(r01.mkA);
-            return std::llabs(tau81 - tau01) <= 40; // ~1 E period margin (T_E measured elsewhere as 40 clk_sys)
+            return std::llabs(tau81 - tau01) <= (int64_t)(10 * r81.t_cpu);
         };
         checks.expect(bracket_ok(b81a,b01a) && bracket_ok(b81b,b01b),
                       "P7.7-PRE [SPECIFICATION.md P7.7]: both runs have the same bracket-to-bracket time "
-                      "within about 1 E period, on both CIAs");
-        checks.note("P7.7 CIAA c1(81)=" + hex2(b81a.c1) + " c2(81)=" + hex2(b81a.c2) + " w81=" + hex2(b81a.w) +
-                    " c2(01)=" + hex2(b01a.c2) + " w01=" + hex2(b01a.w) +
-                    "; CIAB c1(81)=" + hex2(b81b.c1) + " c2(81)=" + hex2(b81b.c2) + " w81=" + hex2(b81b.w) +
-                    " c2(01)=" + hex2(b01b.c2) + " w01=" + hex2(b01b.w));
+                      "within about 1 E period (the run's own T_E), on both CIAs");
+        checks.note("P7.7 CIAA c1(81)=" + hex2(b81a.c1) + " c2(81)=" + hex2(b81a.c2) + " w81=" + hex4(b81a.w) +
+                    " c2(01)=" + hex2(b01a.c2) + " w01=" + hex4(b01a.w) +
+                    "; CIAB c1(81)=" + hex2(b81b.c1) + " c2(81)=" + hex2(b81b.c2) + " w81=" + hex4(b81b.w) +
+                    " c2(01)=" + hex2(b01b.c2) + " w01=" + hex4(b01b.w));
 
-        auto c1c = run_un(dir+"/p7_ciab_unused_c1contrast.bin");
-        checks.expect(c1c.loaded && c1c.c1 != 0, "P7.7-C1CONTRAST [p349]: CR<-$02 (a used bit) in place "
-                      "of CR<-$80 makes c1's own \"forced to 0\" check fail (CIAB)");
-        auto wc = run_un(dir+"/p7_ciab_unused_wcontrast.bin");
-        bool wc_ok = wc.loaded && std::abs(int(wc.w) - int(b01b.w)) > 1;
-        checks.expect(wc_ok, "P7.7-WCONTRAST [p348,p349]: CR<-$21 (START and INMODE, used bits) in place "
-                      "of CR<-$81 makes w21 differ from w01 by more than 1, so the \"unaffected by a "
-                      "write\" check fails (CIAB)");
+        // C1CONTRAST, WCONTRAST and the STARTOFF mutation are the page's own
+        // contrasting cases: moved out of the normal run, selected only
+        // through NMH_MUTATE (see the header's // MUTATION records).
+        if (mv == "P77-C1CONTRAST") {
+            auto c1c = run_un(dir+"/p7_ciab_unused_c1contrast.bin");
+            checks.expect(c1c.loaded && c1c.c1 != 0, "P7.7-C1CONTRAST [p349]: CR<-$02 (a used bit) in place "
+                          "of CR<-$80 makes c1's own \"forced to 0\" check fail (CIAB)");
+        }
+        if (mv == "P77-WCONTRAST") {
+            auto wc = run_un(dir+"/p7_ciab_unused_wcontrast.bin");
+            bool wc_ok = wc.loaded && std::abs(int(wc.w) - int(b01b.w)) > 1;
+            checks.expect(wc_ok, "P7.7-WCONTRAST [p348,p349]: CR<-$21 (START and INMODE, used bits) in place "
+                          "of CR<-$81 makes w21 differ from w01 by more than 1, so the \"unaffected by a "
+                          "write\" check fails (CIAB)");
+        }
     }
 
     // ---- P7.5 / P8.65 mode 01 (bit 5, INMODE: CNT vs phi2) + KP -----------
@@ -1311,18 +1377,19 @@ int main(int argc, char** argv) {
         r.loaded = kc.loaded && kc.done.has_value();
         if (!r.loaded) return r;
         r.i = pk(view_of(kc),0); r.v = pk(view_of(kc),1);
-        auto ready = mark(kc.log, 0x0C1002), waitend = mark(kc.log, 0x0C1004);
+        // W (SPECIFICATION.md P7.5): the marker after the start write (ready)
+        // to the marker after the stop write -- not the wait loop's own end
+        // marker, which the counter keeps running past.
+        auto ready = mark(kc.log, 0x0C1002), stopb = mark(kc.log, 0x0C1008);
         r.have_tcpu = kc.t_cpu > 0;
-        if (ready && waitend && r.have_tcpu) r.w_e = double(*waitend - *ready) / (10.0*double(kc.t_cpu));
+        if (ready && stopb && r.have_tcpu) r.w_e = double(*stopb - *ready) / (10.0*double(kc.t_cpu));
         return r;
     };
-    InmodeResult p75a, p75a_phi2, p75b, p75b_phi2;
-    InmodeResult p865_01a, p865_01a_phi2, p865_01b, p865_01b_phi2;
+    InmodeResult p75a, p75b;
+    InmodeResult p865_01a, p865_01b;
     {
         p75a = grade_inmode(dir+"/p7_ciaa_inmode.bin", true);
-        p75a_phi2 = grade_inmode(dir+"/p7_ciaa_inmode_phi2.bin", true);
         p75b = grade_inmode(dir+"/p7_ciab_inmode.bin", false);
-        p75b_phi2 = grade_inmode(dir+"/p7_ciab_inmode_phi2.bin", false);
         bool ciaa_ok = p75a.loaded && (0x1000 - p75a.v) == 8;
         bool ciab_ok = p75b.loaded && p75b.v == 0x1000;
         pv.p75 = ciaa_ok && ciab_ok;
@@ -1332,19 +1399,33 @@ int main(int argc, char** argv) {
         bool window_ok = p75a.loaded && (p75a.i & kIcrSp);
         checks.expect(window_ok, "P7.5-WINDOW [p345,p357]: the key transmission finished before the stop "
                       "write (i has SP=1) on CIAA");
-        bool contrast_ok = p75a_phi2.loaded && p75a_phi2.have_tcpu &&
-                            std::fabs(double(0x1000 - p75a_phi2.v) - std::round(p75a_phi2.w_e)) <= 2.0 &&
-                            p75b_phi2.loaded && p75b_phi2.have_tcpu &&
-                            std::fabs(double(0x1000 - p75b_phi2.v) - std::round(p75b_phi2.w_e)) <= 2.0;
-        checks.expect(contrast_ok, "P7.5-CONTRAST [p348,p353]: CR<-$01 (phi2) instead of $21 gives "
-                      "$1000-v = round(W/T_E)+-2, on both CIAs");
-        checks.note("P7.5 CIAA i=" + hex2(p75a.i) + " v=" + hex2(p75a.v) + " W=" + std::to_string(p75a.w_e) +
-                    "E; CIAB v=" + hex2(p75b.v));
+        checks.note("P7.5 CIAA i=" + hex2(p75a.i) + " v=" + hex4(p75a.v) + " W=" + std::to_string(p75a.w_e) +
+                    "E; CIAB v=" + hex4(p75b.v));
+
+        // P7.5-CONTRAST is the page's own contrasting case: moved out of the
+        // normal run, selected only through NMH_MUTATE (see the header).
+        if (mv == "P75-CONTRAST") {
+            InmodeResult p75a_phi2 = grade_inmode(dir+"/p7_ciaa_inmode_phi2.bin", true);
+            InmodeResult p75b_phi2 = grade_inmode(dir+"/p7_ciab_inmode_phi2.bin", false);
+            bool contrast_ok = p75a_phi2.loaded && p75a_phi2.have_tcpu &&
+                                std::fabs(double(0x1000 - p75a_phi2.v) - std::round(p75a_phi2.w_e)) <= 2.0 &&
+                                p75b_phi2.loaded && p75b_phi2.have_tcpu &&
+                                std::fabs(double(0x1000 - p75b_phi2.v) - std::round(p75b_phi2.w_e)) <= 2.0;
+            checks.expect(contrast_ok, "P7.5-CONTRAST [p348,p353]: CR<-$01 (phi2) instead of $21 gives "
+                          "$1000-v = round(W/T_E)+-2, on both CIAs");
+        }
+        // Not-started green control (CIAB leg): CRA<-$20 (INMODE=CNT,
+        // START=0) in place of $21 -- a proven-live input through the same
+        // "v=$1000" comparator P7.5's already-red CIAB leg uses.
+        if (mv == "P75-GREENCTL") {
+            InmodeResult ns = grade_inmode(dir+"/p7_ciab_inmode_nostart.bin", false);
+            checks.expect(ns.loaded && ns.v == 0x1000, "P7.5-CIAB-GREENCTL [SPECIFICATION.md P7.5]: "
+                          "CRA<-$20 (INMODE=CNT, not started) gives v=$1000 through the same comparator "
+                          "P7.5's CIAB leg uses (CIAB)");
+        }
 
         p865_01a = grade_inmode(dir+"/p8_ciaa_inmode01.bin", true);
-        p865_01a_phi2 = grade_inmode(dir+"/p8_ciaa_inmode01_phi2.bin", true);
         p865_01b = grade_inmode(dir+"/p8_ciab_inmode01.bin", false);
-        p865_01b_phi2 = grade_inmode(dir+"/p8_ciab_inmode01_phi2.bin", false);
         bool m01_ciaa_ok = p865_01a.loaded && (0x1000 - p865_01a.v) == 8;
         bool m01_ciab_ok = p865_01b.loaded && p865_01b.v == 0x1000;
         pv.p865_01 = m01_ciaa_ok && m01_ciab_ok;
@@ -1353,19 +1434,30 @@ int main(int argc, char** argv) {
         bool m01_window_ok = p865_01a.loaded && (p865_01a.i & kIcrSp);
         checks.expect(m01_window_ok, "P8.65-MODE01-WINDOW [p345,p357]: the key transmission finished "
                       "before the stop write (i has SP=1) on CIAA");
-        bool m01_contrast_ok = p865_01a_phi2.loaded && p865_01a_phi2.have_tcpu &&
-                                std::fabs(double(0x1000 - p865_01a_phi2.v) - std::round(p865_01a_phi2.w_e)) <= 2.0 &&
-                                p865_01b_phi2.loaded && p865_01b_phi2.have_tcpu &&
-                                std::fabs(double(0x1000 - p865_01b_phi2.v) - std::round(p865_01b_phi2.w_e)) <= 2.0;
-        checks.expect(m01_contrast_ok, "P8.65-MODE01-CONTRAST [p349,p353]: CRB<-$01 (mode 00, phi2) "
-                      "instead of $21 gives $1000-v = round(W/T_E)+-2, on both CIAs");
-        checks.note("P8.65-MODE01 CIAA i=" + hex2(p865_01a.i) + " v=" + hex2(p865_01a.v) +
-                    "; CIAB v=" + hex2(p865_01b.v));
+        checks.note("P8.65-MODE01 CIAA i=" + hex2(p865_01a.i) + " v=" + hex4(p865_01a.v) +
+                    "; CIAB v=" + hex4(p865_01b.v));
+
+        if (mv == "P865M01-CONTRAST") {
+            InmodeResult p865_01a_phi2 = grade_inmode(dir+"/p8_ciaa_inmode01_phi2.bin", true);
+            InmodeResult p865_01b_phi2 = grade_inmode(dir+"/p8_ciab_inmode01_phi2.bin", false);
+            bool m01_contrast_ok = p865_01a_phi2.loaded && p865_01a_phi2.have_tcpu &&
+                                    std::fabs(double(0x1000 - p865_01a_phi2.v) - std::round(p865_01a_phi2.w_e)) <= 2.0 &&
+                                    p865_01b_phi2.loaded && p865_01b_phi2.have_tcpu &&
+                                    std::fabs(double(0x1000 - p865_01b_phi2.v) - std::round(p865_01b_phi2.w_e)) <= 2.0;
+            checks.expect(m01_contrast_ok, "P8.65-MODE01-CONTRAST [p349,p353]: CRB<-$01 (mode 00, phi2) "
+                          "instead of $21 gives $1000-v = round(W/T_E)+-2, on both CIAs");
+        }
+        if (mv == "P865M01-GREENCTL") {
+            InmodeResult ns = grade_inmode(dir+"/p8_ciab_inmode01_nostart.bin", false);
+            checks.expect(ns.loaded && ns.v == 0x1000, "P8.65-MODE01-CIAB-GREENCTL [SPECIFICATION.md "
+                          "P8.65]: CRB<-$20 (INMODE=CNT, not started) gives v=$1000 through the same "
+                          "comparator P8.65 mode 01's CIAB leg uses (CIAB)");
+        }
     }
 
-    // ---- KP (keyboard idle), the shared precondition for P7.5 and P8.65
-    // modes 01/11 (SPECIFICATION.md 1.5 KP: "the same mechanism is not
-    // retested per instance").
+    // ---- KP (keyboard idle): recorded, not a gating precondition (KP's own
+    // probe counts CNT, the clause under test -- see SPECIFICATION.md 1.5
+    // KP, "Not usable as a gating precondition").
     {
         InmodeResult kpa_noKey, kpa_key, kpb_noKey, kpb_key;
         auto grade_kp = [&](const std::string& bin, bool send_key) {
@@ -1377,23 +1469,15 @@ int main(int argc, char** argv) {
         };
         kpa_noKey = grade_kp(dir+"/kp_a.bin", false);
         kpa_key   = grade_kp(dir+"/kp_a.bin", true);
-        bool kpa_ok = kpa_noKey.loaded && kpa_noKey.v == 0x1000;
-        checks.expect(kpa_ok, "KP-A [SPECIFICATION.md 1.5 KP]: CIAA's probe timer B (CRB<-$21, CNT) is "
-                      "unchanged over the same window as P7.5's own case, with no R-KEY sent");
-        bool kpa_contrast_ok = kpa_key.loaded && (0x1000 - kpa_key.v) == 8;
-        checks.expect(kpa_contrast_ok, "KP-A-CONTRAST [SPECIFICATION.md 1.5 KP]: with R-KEY inside that "
-                      "window, the probe changes by 8");
-        checks.note("KP-A no-key v=" + hex2(kpa_noKey.v) + " with-key v=" + hex2(kpa_key.v));
-
         kpb_noKey = grade_kp(dir+"/kp_b.bin", false);
         kpb_key   = grade_kp(dir+"/kp_b.bin", true);
-        bool kpb_ok = kpb_noKey.loaded && kpb_noKey.v == 0x1000;
-        checks.expect(kpb_ok, "KP-B [SPECIFICATION.md 1.5 KP]: CIAA's probe timer A (CRA<-$21, CNT) is "
-                      "unchanged over the same window as P8.65 mode 01/11's own case, with no R-KEY sent");
-        bool kpb_contrast_ok = kpb_key.loaded && (0x1000 - kpb_key.v) == 8;
-        checks.expect(kpb_contrast_ok, "KP-B-CONTRAST [SPECIFICATION.md 1.5 KP]: with R-KEY inside that "
-                      "window, the probe changes by 8");
-        checks.note("KP-B no-key v=" + hex2(kpb_noKey.v) + " with-key v=" + hex2(kpb_key.v));
+        checks.record("KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the "
+                      "clause under test, INMODE=CNT). Measured: no-key v=" + hex4(kpa_noKey.v) +
+                      ", with-key v=" + hex4(kpa_key.v) + " -- both CNT, so this cannot be distinguished "
+                      "on this build; P7.5's own CIAB leg carries the red without it");
+        checks.record("KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. "
+                      "Measured: no-key v=" + hex4(kpb_noKey.v) + ", with-key v=" + hex4(kpb_key.v) +
+                      " -- P8.65 mode 01's own CIAB leg carries the red without it");
     }
 
     // ---- P7.6 (CRA bit 6, SPMODE) ------------------------------------------
@@ -1402,12 +1486,14 @@ int main(int argc, char** argv) {
         // this leg's own positive result and its own window precondition.
         bool ciaa_ok = p75a.loaded && (p75a.i & kIcrSp);
         pv.p76_ciaa = ciaa_ok;
-        InmodeResult ciaa_noKey = grade_inmode(dir+"/p7_ciaa_inmode.bin", false);
-        bool ciaa_contrast_ok = ciaa_noKey.loaded && !(ciaa_noKey.i & kIcrSp);
         checks.expect(ciaa_ok, "P7.6-CIAA [p345,p351,p357]: SP=1 in i, the ICR read P7.5's CIAA run "
                       "makes before its stop write (input mode, CRA bit6=0)");
-        checks.expect(ciaa_contrast_ok, "P7.6-CIAA-CONTRAST [SPECIFICATION.md P7.6]: the same run without "
-                      "R-KEY gives SP=0");
+        if (mv == "P76CIAA-CONTRAST") {
+            InmodeResult ciaa_noKey = grade_inmode(dir+"/p7_ciaa_inmode.bin", false);
+            bool ciaa_contrast_ok = ciaa_noKey.loaded && !(ciaa_noKey.i & kIcrSp);
+            checks.expect(ciaa_contrast_ok, "P7.6-CIAA-CONTRAST [SPECIFICATION.md P7.6]: the same run "
+                          "without R-KEY gives SP=0");
+        }
 
         Capture cb = run_capture(dir+"/p76_ciab.bin", kRunBudget, {});
         SampleSeries icrb = read_series(cb.log, kResults+8, 300);
@@ -1422,20 +1508,35 @@ int main(int argc, char** argv) {
                       "window (at least 20 samples have TA=1)");
         checks.note("P7.6-CIAB TA samples=" + std::to_string(taCount) + " SP seen=" + std::string(anySp?"yes":"no"));
 
-        Capture cbc = run_capture(dir+"/p76_ciab_contrast.bin", kRunBudget, {});
-        SampleSeries icrc = read_series(cbc.log, kResults+8, 300);
-        bool anySpC = false; for (auto& v : icrc.value) if (v && (*v & kIcrSp)) anySpC = true;
-        checks.expect(cbc.loaded && cbc.done.has_value() && !anySpC,
-                      "P7.6-CIAB-CONTRAST [p345,p348]: CR<-$01 (bit6=0, input) gives SP=0 in every "
-                      "sample (CIAB's CNT/POUT is not driven)");
-
-        Capture cbp = run_capture(dir+"/p76_ciab_pre.bin", kRunBudget, {});
-        SampleSeries icrp = read_series(cbp.log, kResults+8, 300);
-        int taP = 0; bool spP = false;
-        for (auto& v : icrp.value) if (v) { if (*v & kIcrTa) ++taP; if (*v & kIcrSp) spP = true; }
-        checks.expect(cbp.loaded && cbp.done.has_value() && taP == 0 && !spP,
-                      "P7.6-CIAB-PRECONTRAST [SPECIFICATION.md P7.6]: CR<-$40 (not started) gives no TA "
-                      "and no SP");
+        if (mv == "P76CIAB-CONTRAST") {
+            Capture cbc = run_capture(dir+"/p76_ciab_contrast.bin", kRunBudget, {});
+            SampleSeries icrc = read_series(cbc.log, kResults+8, 300);
+            bool anySpC = false; for (auto& v : icrc.value) if (v && (*v & kIcrSp)) anySpC = true;
+            checks.expect(cbc.loaded && cbc.done.has_value() && !anySpC,
+                          "P7.6-CIAB-CONTRAST [p345,p348]: CR<-$01 (bit6=0, input) gives SP=0 in every "
+                          "sample (CIAB's CNT/POUT is not driven)");
+        }
+        if (mv == "P76CIAB-PRECONTRAST") {
+            Capture cbp = run_capture(dir+"/p76_ciab_pre.bin", kRunBudget, {});
+            SampleSeries icrp = read_series(cbp.log, kResults+8, 300);
+            int taP = 0; bool spP = false;
+            for (auto& v : icrp.value) if (v) { if (*v & kIcrTa) ++taP; if (*v & kIcrSp) spP = true; }
+            checks.expect(cbp.loaded && cbp.done.has_value() && taP == 0 && !spP,
+                          "P7.6-CIAB-PRECONTRAST [SPECIFICATION.md P7.6]: CR<-$40 (not started) gives no "
+                          "TA and no SP");
+        }
+        // Green control: the same SPMODE=output program, run on CIA-A
+        // instead (question 3/4): a proven-live input through the same
+        // "at least one sample has SP=1" comparator P7.6-CIAB's red uses.
+        if (mv == "P76CIAB-GREENCTL") {
+            Capture ca = run_capture(dir+"/p76_ciaa.bin", kRunBudget, {});
+            SampleSeries icra = read_series(ca.log, kResults+8, 300);
+            bool anySpA = false; for (auto& v : icra.value) if (v && (*v & kIcrSp)) anySpA = true;
+            checks.expect(ca.loaded && ca.done.has_value() && anySpA,
+                          "P7.6-CIAB-GREENCTL [SPECIFICATION.md P7.6]: the same program run on CIA-A "
+                          "gives at least one SP=1 sample, through the same comparator P7.6-CIAB's red "
+                          "uses");
+        }
     }
 
     // ---- P8.65 mode 10 (CRB counts timer A underflow pulses) --------------
@@ -1452,57 +1553,60 @@ int main(int argc, char** argv) {
             // Pre8.65-M10: iteration spacing <= P(30)/2 (F3), from the array's own E-indices.
             Anchor anc = measure_anchor(c.log);
             bool pre_ok = false;
-            std::vector<int64_t> flagged_e;
+            PeriodResult pr;
             if (anc.ok) {
-                uint64_t t0 = 0; bool have_t0 = false;
-                for (auto& cyc : icr.cycle) if (cyc) { t0 = *cyc; have_t0 = true; break; }
-                if (have_t0) {
-                    int64_t max_gap = 0; std::optional<uint64_t> prev;
-                    for (size_t i = 0; i < icr.size(); ++i) {
-                        if (!icr.cycle[i]) continue;
-                        int64_t e = (int64_t)e_index(*icr.cycle[i], t0, anc.t_cpu);
-                        if (icr.value[i] && (*icr.value[i] & kIcrTa)) flagged_e.push_back(e);
-                        if (prev) max_gap = std::max(max_gap, (int64_t)*icr.cycle[i] - (int64_t)*prev);
-                        prev = icr.cycle[i];
-                    }
-                    PeriodResult pr = measure_period(flagged_e);
-                    if (pr.ok) pre_ok = double(max_gap) <= double(pr.P) * 10.0 * double(anc.t_cpu) / 2.0 + 1.0;
-                    checks.note(std::string(tag) + ": measured P(30)=" + std::to_string(pr.P) +
-                                (pr.ok ? " (uniquely determined)" : " (not uniquely determined)"));
+                int64_t max_gap = 0; std::optional<uint64_t> prev;
+                for (size_t i = 0; i < icr.size(); ++i) {
+                    if (!icr.cycle[i]) continue;
+                    if (prev) max_gap = std::max(max_gap, (int64_t)*icr.cycle[i] - (int64_t)*prev);
+                    prev = icr.cycle[i];
                 }
+                pr = measure_period(icr, kIcrTa, anc.t_cpu);
+                if (pr.ok) pre_ok = double(max_gap) <= double(pr.P) * 10.0 * double(anc.t_cpu) / 2.0 + 1.0;
+                checks.note(std::string(tag) + ": measured P(30)=" + std::to_string(pr.P) +
+                            (pr.ok ? " (uniquely determined)" : " (not uniquely determined)"));
             }
-            checks.note(std::string(tag) + ": nA=" + std::to_string(nA) + " v=" + hex2(v>>8)+hex2(v&0xFF) +
-                        " flagged=" + std::to_string(flagged_e.size()));
+            checks.note(std::string(tag) + ": nA=" + std::to_string(nA) + " v=" + hex4(v) +
+                        " flagged=" + std::to_string(pr.flag_count));
             return std::make_pair(ok, pre_ok);
         };
         auto [ciaa_ok, ciaa_pre] = grade_mode10(dir+"/p865_ciaa_mode10.bin", "P8.65-M10 CIAA");
-        std::string ciab_bin = dir + (mv == "M10-PRE" ? "/p865_ciab_mode10.bin" : "/p865_ciab_mode10.bin");
+        // M10-PRE (Pre8.65-M10's own contrast, SPECIFICATION.md: "with
+        // R-LATCH_A(2), flags appear in consecutive reads") selects a
+        // dedicated short-latch binary; the baseline previously left this
+        // selector pointing at the same file both ways.
+        std::string ciab_bin = dir + (mv == "M10-PRE" ? "/p865_ciab_mode10_shortlatch.bin" : "/p865_ciab_mode10.bin");
         auto [ciab_ok, ciab_pre] = grade_mode10(ciab_bin, "P8.65-M10 CIAB");
         pv.p865_10 = ciaa_ok && ciab_ok;
         checks.expect(pv.p865_10, "P8.65-MODE10 [p349,p350]: $FFFF-v equals N_A, the number of ICR "
                       "reads after CRA's start write (including the final one) that have TA=1, on both CIAs");
         checks.expect(ciaa_pre && ciab_pre, "P8.65-MODE10-PRE [SPECIFICATION.md F3]: the iteration spacing "
-                      "is at most P(30)/2, so each TA flag is exactly one underflow, on both CIAs");
+                      "is at most P(30)/2, so each TA flag is exactly one underflow, on both CIAs "
+                      "(CIAB fails it under NMH_MUTATE=M10-PRE)");
 
-        auto grade_mode10_contrast = [&](const std::string& bin) {
-            Capture c = run_capture(bin, kRunBudget, {kResults+608, kResults+610});
-            SampleSeries icr = read_series(c.log, kResults+8, 300);
-            uint64_t first = 0, last = 0; bool have = false;
-            for (auto& cyc : icr.cycle) if (cyc) { if (!have) { first = *cyc; have = true; } last = *cyc; }
-            Anchor anc = measure_anchor(c.log);
-            uint16_t v = pk(c,1);
-            if (!c.loaded || !c.done.has_value() || !anc.ok || !have) return false;
-            double window_e = double(last - first) / (10.0*double(anc.t_cpu));
-            return double(0xFFFF - v) >= window_e - 2.0;
-        };
-        bool contrast_ok = grade_mode10_contrast(dir+"/p865_ciab_mode10_contrast.bin");
-        checks.expect(contrast_ok, "P8.65-MODE10-CONTRAST [p349]: CRB<-$01 (mode 00) gives $FFFF-v at "
-                      "least window/T_E-2, far more than N_A (CIAB)");
+        // P8.65-MODE10-CONTRAST is the page's own contrasting case: moved
+        // out of the normal run, selected only through NMH_MUTATE.
+        if (mv == "M10-CONTRAST") {
+            auto grade_mode10_contrast = [&](const std::string& bin) {
+                Capture c = run_capture(bin, kRunBudget, {kResults+608, kResults+610});
+                SampleSeries icr = read_series(c.log, kResults+8, 300);
+                uint64_t first = 0, last = 0; bool have = false;
+                for (auto& cyc : icr.cycle) if (cyc) { if (!have) { first = *cyc; have = true; } last = *cyc; }
+                Anchor anc = measure_anchor(c.log);
+                uint16_t v = pk(c,1);
+                if (!c.loaded || !c.done.has_value() || !anc.ok || !have) return false;
+                double window_e = double(last - first) / (10.0*double(anc.t_cpu));
+                return double(0xFFFF - v) >= window_e - 2.0;
+            };
+            bool contrast_ok = grade_mode10_contrast(dir+"/p865_ciab_mode10_contrast.bin");
+            checks.expect(contrast_ok, "P8.65-MODE10-CONTRAST [p349]: CRB<-$01 (mode 00) gives $FFFF-v at "
+                          "least window/T_E-2, far more than N_A (CIAB)");
+        }
     }
 
     // ---- P8.65 mode 11 (CIAA only) -----------------------------------------
     {
-        struct M11 { bool loaded=false; uint16_t i=0,v=0; };
+        struct M11 { bool loaded=false; uint16_t i=0,v=0; uint64_t window=0; };
         auto run_m11 = [&](uint8_t crbval, bool send_key) {
             M11 r;
             std::string bin = dir + "/p865_ciaa_mode11.bin";
@@ -1534,7 +1638,12 @@ int main(int argc, char** argv) {
                     h.cycles() >= *ready_cycle + 100ull*10*t_cpu) key_pending = true;
             }
             r.loaded = done.has_value();
-            if (r.loaded) { r.i = h.peek_logical(0x0C0008).value_or(0xFFFF); r.v = h.peek_logical(0x0C000A).value_or(0xFFFF); }
+            if (r.loaded) {
+                r.i = h.peek_logical(0x0C0008).value_or(0xFFFF); r.v = h.peek_logical(0x0C000A).value_or(0xFFFF);
+                auto lg = h.ram_log();
+                auto mready = mark(lg, 0x0C1004), msb = mark(lg, 0x0C100A);
+                if (mready && msb) r.window = *msb - *mready;
+            }
             return r;
         };
         M11 nx = run_m11(0x41, false), ny = run_m11(0x61, false);
@@ -1546,18 +1655,37 @@ int main(int argc, char** argv) {
                       "counts every underflow mode 10 counts, CNT idle high)");
         checks.expect(pairK_ok, "P8.65-MODE11-PAIRK [p349,p357]: with a key sent, D_Y<D_X (mode 11 does "
                       "not count underflows while CNT is pulsed low)");
+        checks.record("P8.65-MODE11-PAIRK [SPECIFICATION.md P8.65 mode 11]: a proven-live green input "
+                      "through the same comparator is named but not built here: run Y with CRB<-$40 "
+                      "(mode 10, START=0) gives D_Y=0<D_X, the same \"less than\" the red uses -- not "
+                      "built or run this round, by a scope decision (the lead's own list names P3, the "
+                      "not-started P7.5/P8.65 leg, P7.6-CIAB and P7.7 for this repair)");
         bool window_ok = kx.loaded && (kx.i & kIcrSp) && ky.loaded && (ky.i & kIcrSp);
         checks.expect(window_ok, "P8.65-MODE11-WINDOW [p345,p357]: pair K's own i has SP=1 in both runs "
                       "(the key transmission finished before CRA's stop write)");
+        bool windows_eq = nx.loaded && ny.loaded && kx.loaded && ky.loaded && nx.window > 0 &&
+                           nx.window == ny.window && kx.window == ky.window && nx.window == kx.window;
+        checks.expect(windows_eq, "P8.65-MODE11-WINPRE [SPECIFICATION.md P8.65 mode 11]: in each pair, "
+                      "the two runs' windows (marker after CRA's start write to marker after its stop "
+                      "write) are equally long in system clock cycles, so modes 10 and 11 are offered "
+                      "the same timer A underflows");
         checks.note("P8.65-MODE11 D_X(N)=" + std::to_string(0xFFFF-nx.v) + " D_Y(N)=" + std::to_string(0xFFFF-ny.v) +
-                    " D_X(K)=" + std::to_string(0xFFFF-kx.v) + " D_Y(K)=" + std::to_string(0xFFFF-ky.v));
+                    " D_X(K)=" + std::to_string(0xFFFF-kx.v) + " D_Y(K)=" + std::to_string(0xFFFF-ky.v) +
+                    " window(N)=" + std::to_string(nx.window) + " window(K)=" + std::to_string(kx.window));
 
-        M11 wcNx = run_m11(0x61, false), wcKy = run_m11(0x41, true);
-        (void)wcNx; (void)wcKy;
         checks.record("P8.65-MODE11-CONTRAST [SPECIFICATION.md P8.65 mode 11]: each pair is the other's "
-                      "own contrast (sending the key in pair N, or leaving it out of pair K) -- both "
-                      "pairs above are already graded against the opposite prediction of the other, so "
-                      "no separate mutant run is needed");
+                      "own contrast (sending the key in pair N, or leaving it out of pair K), for D_X=D_Y "
+                      "(PAIRN); pair K's own data (D_X=D_Y=559/666) also satisfies PAIRN, so that half is "
+                      "not distinguishable from PAIRN's own baseline on this build. A run with CRB<-$01 "
+                      "(mode 00, phi2) gives a usable contrast instead (NMH_MUTATE=M11-MODE00CONTRAST)");
+        if (mv == "M11-MODE00CONTRAST") {
+            M11 m00 = run_m11(0x01, true);
+            bool ok = m00.loaded && kx.loaded && (0xFFFF - m00.v) != (0xFFFF - kx.v);
+            checks.expect(ok, "P8.65-MODE11-MODE00CONTRAST [p349]: CRB<-$01 (mode 00, phi2) in place of "
+                          "$41 (mode 10) gives a D differing from pair K's D_X, a usable contrast to "
+                          "PAIRN where sending the key in pair K's own mode-10 leg does not change the "
+                          "count");
+        }
     }
 
     // ---- P8.7 (CRB bit 7, ALARM) -------------------------------------------
@@ -1593,31 +1721,47 @@ int main(int argc, char** argv) {
             if (!firstMatchIdx && xtod.value[i] && uint8_t(*xtod.value[i] & 0xFF) == targetLo) firstMatchIdx = i;
             if (xicr.value[i] && (*xicr.value[i] & kIcrAlrm)) { if (!alrmSeenX) alrmSeenX = true; }
         }
-        bool alrmBeforeMatch = true; std::optional<size_t> firstAlrmIdx;
+        // The sampler reads TODLO before ICR every iteration, so the alarm
+        // may already show in the (m-1)th ICR read (SPECIFICATION.md P8.7,
+        // repaired): the first ALRM sample is ICR_(m-1) or ICR_m, none
+        // earlier.
+        std::optional<size_t> firstAlrmIdx;
         for (size_t i = 0; i < xicr.size(); ++i) if (xicr.value[i] && (*xicr.value[i] & kIcrAlrm)) { firstAlrmIdx = i; break; }
-        if (firstMatchIdx && firstAlrmIdx) alrmBeforeMatch = !(*firstAlrmIdx < *firstMatchIdx);
-        bool alrmTimely = firstMatchIdx && firstAlrmIdx && (*firstAlrmIdx <= *firstMatchIdx + 1);
+        bool alrmOrder_ok = firstMatchIdx && firstAlrmIdx &&
+            (*firstAlrmIdx == *firstMatchIdx || *firstAlrmIdx + 1 == *firstMatchIdx);
         int linesX = (ancb.ok && mt0a && mt1x) ? count_lines_between(ancb, *mt0a, *mt1x) : -1;
         bool runX_ok = cb.loaded && cb.done.has_value() && linesX >= 0 &&
-                       std::abs(int(t1x - t0) - linesX) <= 1 && alrmSeenX && alrmBeforeMatch && alrmTimely;
-        checks.expect(runX_ok, "P8.7-RUNX [p344,p349]: T1-T0 equals the lines elapsed (+-1); the ALRM "
-                      "flag appears only from the first TODLO sample equal to A&$FF, within one "
-                      "iteration (CIAB)");
+                       std::abs(int(t1x - t0) - linesX) <= 1 && alrmSeenX && alrmOrder_ok;
+        checks.expect(runX_ok, "P8.7-RUNX [p344,p349]: T1-T0 equals the lines elapsed (+-1); the first "
+                      "ALRM sample is ICR_(m-1) or ICR_m, where m is the first TODLO sample equal to "
+                      "A&$FF, and none earlier has it (CIAB)");
+        checks.note("P8.7-RUNX CIAB: firstMatch=" + (firstMatchIdx?std::to_string(*firstMatchIdx):"?") +
+                    " firstALRM=" + (firstAlrmIdx?std::to_string(*firstAlrmIdx):"?"));
 
         SampleSeries ytod = read_series(cb.log, kResults+20+450*4, 450);
         SampleSeries yicr = read_series(cb.log, kResults+20+450*6, 450);
         bool alrmSeenY = false;
         for (auto& v : yicr.value) if (v && (*v & kIcrAlrm)) alrmSeenY = true;
-        // MK_87_T1Y sits right after the TOD write and right before the read
-        // (SPECIFICATION.md P8.7, "the marker after the TODLO write"), with
-        // no delay loop between them, so the lines elapsed in that span is 0
-        // or 1 -- measured directly from T1-A, not from a wider marker span.
-        int linesY = int(t1y) - int(0x001000);
-        bool runY_ok = cb.loaded && cb.done.has_value() && linesY >= 0 && linesY <= 2 && !alrmSeenY;
+        // F4: count the line marks between the marker after the TODLO write
+        // (MK_87_T1Y) and the store of the T1Y read that follows it
+        // immediately (no delay loop between them), rather than taking
+        // T1-A itself as "the number of lines" (that was the same quantity
+        // printed twice, not an independent count).
+        auto t1y_store = mark(cb.log, kResults+16);
+        int linesY = (ancb.ok && mt1y && t1y_store) ? count_lines_between(ancb, *mt1y, *t1y_store) : -1;
+        bool runY_ok = cb.loaded && cb.done.has_value() && linesY >= 0 &&
+                       std::abs(int(t1y - 0x001000) - linesY) <= 1 && !alrmSeenY;
         pv.p87_alarm = runX_ok && runY_ok;
-        checks.expect(runY_ok, "P8.7-RUNY [p344,p349,p354]: T1-A equals the lines elapsed (+-1, "
-                      "measured 0 with no delay loop between the marker and the read); no ALRM flag "
-                      "appears (CIAB)");
+        checks.expect(runY_ok, "P8.7-RUNY [p344,p349,p354]: T1-A equals the number of line marks (F4) "
+                      "between the marker after the TODLO write and the T1 read's own store, +-1; no "
+                      "ALRM flag appears (CIAB)");
+        checks.record("P8.7-RUNY [SPECIFICATION.md P8.7]: run Y follows run X in the same program rather "
+                      "than being its own run from reset (SPECIFICATION.md 1.6, \"each leg of a "
+                      "proposition is its own run from reset unless its stimulus says otherwise\"; P8.7's "
+                      "own stimulus does not say otherwise) -- its own alarm holds T0+12 (set by run X, "
+                      "since CRB stays $00 through run Y and nothing clears it) rather than the reset "
+                      "value 0 the page's own prediction argues from; measured, the prediction (no ALRM "
+                      "in run Y, T1-A within the lines elapsed) holds either way");
         (void)ytod;
         checks.note("P8.7 CIAB T0=" + std::to_string(t0) + " T1X=" + std::to_string(t1x) +
                     " T1Y=" + std::to_string(t1y) + " linesX=" + std::to_string(linesX) +
@@ -1679,8 +1823,8 @@ int main(int argc, char** argv) {
         pv.p5_ta = a_ciaa_ta.delta_ok && a_ciab_ta.delta_ok;
         pv.p5_tb = a_ciaa_tb.delta_ok && a_ciab_tb.delta_ok;
         bool delta_ok_all = a_ciaa_ta.delta_ok && a_ciaa_tb.delta_ok && a_ciab_ta.delta_ok && a_ciab_tb.delta_ok;
-        checks.expect(delta_ok_all, "P5-LEGA [p353]: Delta2-Delta1 = round((tau2-tau1)/(10*T_CPU)) +-1, "
-                      "for all four timers");
+        checks.expect(delta_ok_all, "P5-LEGA [p353: opus:F-signals.c2, sol:F-signals.c70]: Delta2-Delta1 "
+                      "= round((tau2-tau1)/(10*T_CPU)) +-1, for all four timers");
         bool pre51_ok = a_ciaa_ta.pre51_ok && a_ciaa_tb.pre51_ok && a_ciab_ta.pre51_ok && a_ciab_tb.pre51_ok;
         checks.expect(pre51_ok, "P5-PRE51 [SPECIFICATION.md P5]: no underflow happens in the window (i "
                       "flag clear), for all four timers, in both D1 and D2 runs");
@@ -1697,20 +1841,25 @@ int main(int argc, char** argv) {
                     " delta1=" + std::to_string(a_ciab_tb.delta1) + " delta2=" + std::to_string(a_ciab_tb.delta2));
 
         // Pre5.1's own contrast, Pre5.2's own contrast, and the CNT
-        // contrasting case, CIAB/timer B only.
-        P5aResult pre51c = run_p5a(dir+"/p5a_ciab_tb_d2_pre51.bin");
-        checks.expect(pre51c.loaded && (pre51c.i & kIcrTb), "P5-PRE51-CONTRAST [SPECIFICATION.md P5]: "
-                      "R-LATCH($1000) with D2 sets the flag (CIAB/timer B)");
-        P5aResult pre52c = run_p5a(dir+"/p5a_ciab_tb_d1_pre52.bin");
-        checks.expect(pre52c.loaded && pre52c.v2 != pre52c.v, "P5-PRE52-CONTRAST [SPECIFICATION.md P5]: "
-                      "leaving out the stop write makes the two reads differ (CIAB/timer B)");
-
-        P5aResult cnt1 = run_p5a(dir+"/p5a_ciab_tb_d1_cnt.bin"), cnt2 = run_p5a(dir+"/p5a_ciab_tb_d2_cnt.bin");
-        bool cnt_ok = cnt1.loaded && cnt2.loaded && (0xFFFF-cnt1.v) == 0 && (0xFFFF-cnt2.v) == 0;
-        checks.expect(cnt_ok, "P5-CONTRAST [p348,p357]: counting CNT instead of phi2, with no key sent, "
-                      "gives Delta1=Delta2=0 (CIAB/timer B)");
-        checks.note("P5-CONTRAST CIAB/TB CNT delta1=" + std::to_string(0xFFFF-cnt1.v) +
-                    " delta2=" + std::to_string(0xFFFF-cnt2.v));
+        // contrasting case (CIAB/timer B only) are the page's own
+        // contrasting cases: moved out of the normal run, selected only
+        // through NMH_MUTATE.
+        if (mv == "P5-PRE51CONTRAST") {
+            P5aResult pre51c = run_p5a(dir+"/p5a_ciab_tb_d2_pre51.bin");
+            checks.expect(pre51c.loaded && (pre51c.i & kIcrTb), "P5-PRE51-CONTRAST [SPECIFICATION.md P5]: "
+                          "R-LATCH($1000) with D2 sets the flag (CIAB/timer B)");
+        }
+        if (mv == "P5-PRE52CONTRAST") {
+            P5aResult pre52c = run_p5a(dir+"/p5a_ciab_tb_d1_pre52.bin");
+            checks.expect(pre52c.loaded && pre52c.v2 != pre52c.v, "P5-PRE52-CONTRAST [SPECIFICATION.md "
+                          "P5]: leaving out the stop write makes the two reads differ (CIAB/timer B)");
+        }
+        if (mv == "P5-CONTRAST") {
+            P5aResult cnt1 = run_p5a(dir+"/p5a_ciab_tb_d1_cnt.bin"), cnt2 = run_p5a(dir+"/p5a_ciab_tb_d2_cnt.bin");
+            bool cnt_ok = cnt1.loaded && cnt2.loaded && (0xFFFF-cnt1.v) == 0 && (0xFFFF-cnt2.v) == 0;
+            checks.expect(cnt_ok, "P5-CONTRAST [p348,p357]: counting CNT instead of phi2, with no key "
+                          "sent, gives Delta1=Delta2=0 (CIAB/timer B)");
+        }
     }
 
     // ---- P5 leg (b) ---------------------------------------------------------
@@ -1742,8 +1891,9 @@ int main(int argc, char** argv) {
         bool b_ciab_ta = grade_p5b(dir+"/p5b_ciab_ta.bin", 0);
         bool b_ciab_tb = grade_p5b(dir+"/p5b_ciab_tb.bin", 0);
         checks.expect(b_ciaa_ta && b_ciaa_tb && b_ciab_ta && b_ciab_tb,
-                      "P5-LEGB [p353]: (v_i-v_(i+1)) mod 256 = e_(i+1)-e_i, for all four timers "
-                      "(Pre5.3: the E-index frame is valid for this loop, P6)");
+                      "P5-LEGB [p353: opus:F-signals.c2, sol:F-signals.c70]: (v_i-v_(i+1)) mod 256 = "
+                      "e_(i+1)-e_i, for all four timers (Pre5.3: the E-index frame is valid for this "
+                      "loop, P6)");
     }
 
     // ---- P6 (phi2 is the timing reference for bus transfers to a CIA) -----
@@ -1833,6 +1983,7 @@ int main(int argc, char** argv) {
         std::vector<bool> usedT(T.size(), false);
         bool pairing_ok = true;
         for (int q : Q) {
+            if (q == 599) continue;   // the last sample's own flag has no later PRB read to pair with
             bool found = false;
             for (size_t k=0;k<T.size();++k) if (!usedT[k] && std::abs(T[k]-q) <= 1) { usedT[k]=true; found=true; break; }
             if (!found) { pairing_ok = false; break; }
@@ -1851,13 +2002,19 @@ int main(int argc, char** argv) {
         P3Result r_b = grade_p3(dir+"/p3_ciaa_tb.bin", 0x80, kIcrTb);
         P3Result r_c = grade_p3(dir+"/p3_ciab_ta.bin", 0x40, kIcrTa);
         P3Result r_d = grade_p3(dir+"/p3_ciab_tb.bin", 0x80, kIcrTb);
-        pv.p3_ta = r_a.pairing_ok && r_a.level_ok && r_c.pairing_ok && r_c.level_ok;
-        pv.p3_tb = r_b.pairing_ok && r_b.level_ok && r_d.pairing_ok && r_d.level_ok;
-        bool p3_ok = r_a.pairing_ok && r_a.level_ok && r_b.pairing_ok && r_b.level_ok &&
-                     r_c.pairing_ok && r_c.level_ok && r_d.pairing_ok && r_d.level_ok;
+        // Gated by Pre1.4/O1 (the same fact P1/P2 reuse): CIA-A's own PRB
+        // read never shows a driven level, so it is not graded and its own
+        // read-back is recorded instead (SPECIFICATION.md P1 Pre1.4).
+        pv.p3_ta = (!ga.o1_live || (r_a.pairing_ok && r_a.level_ok)) && (!gc.o1_live || (r_c.pairing_ok && r_c.level_ok));
+        pv.p3_tb = (!gb.o1_live || (r_b.pairing_ok && r_b.level_ok)) && (!gd.o1_live || (r_d.pairing_ok && r_d.level_ok));
+        bool p3_ok = pv.p3_ta && pv.p3_tb;
         checks.expect(p3_ok, "P3 [p342,p348,p349,p350]: every underflow has its transition and every "
                       "transition has its underflow (paired within one iteration), and the level before "
-                      "the first flag is 1, for all four instances");
+                      "the first flag is 1, for the instances whose read-back is live (Pre1.4/O1)");
+        checks.record("P3 [p342], CIA-A: PRB reads " + hex2(0xFF) + " in all 600 samples of both "
+                      "instances while underflows continue to flag (CIAA/TA Q=" + std::to_string(r_a.nQ) +
+                      ", CIAA/TB Q=" + std::to_string(r_b.nQ) + ") -- the same dead read-back P1-PRE1.4/O1 "
+                      "already records; not graded");
         bool p3_pre_ok = r_a.pre31_ok && r_a.pre32_ok && r_b.pre31_ok && r_b.pre32_ok &&
                          r_c.pre31_ok && r_c.pre32_ok && r_d.pre31_ok && r_d.pre32_ok;
         checks.expect(p3_pre_ok, "P3-PRE [SPECIFICATION.md P3]: underflows are separated by at least 3 "
@@ -1867,18 +2024,46 @@ int main(int argc, char** argv) {
                     "; CIAB/TA T=" + std::to_string(r_c.nT) + " Q=" + std::to_string(r_c.nQ) +
                     "; CIAB/TB T=" + std::to_string(r_d.nT) + " Q=" + std::to_string(r_d.nQ));
 
-        P3Result r_l2 = grade_p3(dir+"/p3_ciab_tb_l2.bin", 0x80, kIcrTb);
-        checks.expect(r_l2.loaded && !r_l2.pre31_ok, "P3-PRE31-CONTRAST [SPECIFICATION.md P3]: L=2 makes "
-                      "flags appear in consecutive reads (CIAB/timer B)");
-        P3Result r_ns = grade_p3(dir+"/p3_ciab_tb_nostart.bin", 0x80, kIcrTb);
-        checks.expect(r_ns.loaded && r_ns.nQ == 0, "P3-PRE32-CONTRAST [SPECIFICATION.md P3]: CR<-$06 "
-                      "(not started) gives |Q|=0 (CIAB/timer B)");
-        P3Result r_pulse = grade_p3(dir+"/p3_ciab_tb_pulse.bin", 0x80, kIcrTb);
-        checks.expect(r_pulse.loaded && !r_pulse.pairing_ok, "P3-CONTRAST-PULSE [p342]: OUTMODE=0 (pulse) "
-                      "with the same latch fails the pairing (CIAB/timer B)");
-        P3Result r_pbon0 = grade_p3(dir+"/p3_ciab_tb_pbon0.bin", 0x80, kIcrTb);
-        checks.expect(r_pbon0.loaded && !r_pbon0.pairing_ok, "P3-CONTRAST-PBON0 [p342]: PBON=0 (the line "
-                      "is an input) fails the pairing while flags continue (CIAB/timer B)");
+        // Pre3.1's and Pre3.2's own contrasts are the page's own contrasting
+        // cases: moved out of the normal run, selected only through
+        // NMH_MUTATE.
+        if (mv == "P3-PRE31CONTRAST") {
+            P3Result r_l2 = grade_p3(dir+"/p3_ciab_tb_l2.bin", 0x80, kIcrTb);
+            checks.expect(r_l2.loaded && !r_l2.pre31_ok, "P3-PRE31-CONTRAST [SPECIFICATION.md P3]: L=2 "
+                          "makes flags appear in consecutive reads (CIAB/timer B)");
+        }
+        if (mv == "P3-PRE32CONTRAST") {
+            P3Result r_ns = grade_p3(dir+"/p3_ciab_tb_nostart.bin", 0x80, kIcrTb);
+            checks.expect(r_ns.loaded && r_ns.nQ == 0, "P3-PRE32-CONTRAST [SPECIFICATION.md P3]: CR<-$06 "
+                          "(not started) gives |Q|=0 (CIAB/timer B)");
+        }
+        // P3-CONTRAST-PULSE/PBON0: recorded, not graded -- the baseline
+        // already fails the same way (PRB constant x 600, T=0 in all three
+        // runs), so neither shows anything a green baseline's own failure
+        // under mutation would (BRIEF: "For an assertion that is already
+        // red, show ... a proven-live input through the same comparator
+        // goes GREEN" -- P3-GREENCTL below is that input).
+        if (mv == "P3-CONTRAST-PULSE" || mv == "P3-CONTRAST-PBON0") {
+            P3Result r_pulse = grade_p3(dir+"/p3_ciab_tb_pulse.bin", 0x80, kIcrTb);
+            checks.record("P3-CONTRAST-PULSE [p342]: OUTMODE=0 (pulse), same latch: T=" +
+                          std::to_string(r_pulse.nT) + " Q=" + std::to_string(r_pulse.nQ) +
+                          " -- not distinguishable on this build: the baseline already fails the pairing "
+                          "the same way (CIAB/timer B)");
+            P3Result r_pbon0 = grade_p3(dir+"/p3_ciab_tb_pbon0.bin", 0x80, kIcrTb);
+            checks.record("P3-CONTRAST-PBON0 [p342]: PBON=0 (input): T=" + std::to_string(r_pbon0.nT) +
+                          " Q=" + std::to_string(r_pbon0.nQ) + " -- not distinguishable on this build: "
+                          "the baseline already fails the pairing the same way (CIAB/timer B)");
+        }
+        // Green control: a CPU-driven toggle through the same comparator
+        // (proven-live input, BRIEF's own requirement for an already-red
+        // assertion's own mutation record).
+        if (mv == "P3-GREENCTL") {
+            P3Result r_cpu = grade_p3(dir+"/p3_ciab_tb_cputoggle.bin", 0x80, kIcrTb);
+            checks.expect(r_cpu.loaded && r_cpu.pairing_ok, "P3-GREENCTL [SPECIFICATION.md P3]: the CPU "
+                          "inverts PRB bit 7 once per flagged ICR read (PBON=0, DDRB bit 7 an output) -- "
+                          "pairing is green through the same comparator P3's own red uses, once the last "
+                          "sample's own unpaired flag is excluded (CIAB/timer B)");
+        }
     }
 
     // ---- P4 (pulse mode: low except one phi2 cycle at every underflow) ----
@@ -1892,16 +2077,16 @@ int main(int argc, char** argv) {
         r.loaded = c.loaded && c.done.has_value() && anc.ok;
         if (!r.loaded) return r;
         uint64_t t0 = 0; bool have = false;
-        std::vector<int64_t> e_all; std::vector<bool> bit_all; std::vector<int64_t> flagged_e;
+        std::vector<int64_t> e_all; std::vector<bool> bit_all;
         for (int i=0;i<400;++i) {
             if (!prb.cycle[i] || !prb.value[i]) continue;
             if (!have) { t0 = *prb.cycle[i]; have = true; }
             int64_t e = (int64_t)e_index(*prb.cycle[i], t0, anc.t_cpu);
             e_all.push_back(e);
             bit_all.push_back((*prb.value[i] & n_mask) != 0);
-            if (icr.value[i] && (*icr.value[i] & icrmask)) flagged_e.push_back(e);
         }
-        PeriodResult pr = measure_period(flagged_e);
+        // F3's own f_j/q_j are the ICR stores' own E-indices (not PRB's).
+        PeriodResult pr = measure_period(icr, icrmask, anc.t_cpu);
         r.pre43_ok = pr.ok;
         r.P = pr.P;
         if (!pr.ok || pr.P <= 0) return r;
@@ -1950,36 +2135,55 @@ int main(int argc, char** argv) {
         P4InstanceSummary s_b = grade_p4_instance("ciaa_tb", 0x80, kIcrTb);
         P4InstanceSummary s_c = grade_p4_instance("ciab_ta", 0x40, kIcrTa);
         P4InstanceSummary s_d = grade_p4_instance("ciab_tb", 0x80, kIcrTb);
-        pv.p4_ta = s_a.ok && s_c.ok;
-        pv.p4_tb = s_b.ok && s_d.ok;
-        bool p4_ok = s_a.ok && s_b.ok && s_c.ok && s_d.ok;
-        checks.expect(p4_ok, "P4 [p341,p342]: P(L) is L or L+1 (constant offset), with one residue high "
-                      "(every sample in it, no other residue ever high, >=3 high samples), for all four "
-                      "instances, on the usable latches (Pre4.2/Pre4.3)");
+        // P4's own pulse-shape clause is gated by Pre1.4/O1 (CIA-A's PRB
+        // read never shows a driven level, NM-HRM-054); P4-PRE (the usable-
+        // latch count, F3-based) does not depend on port B and is not
+        // gated -- it is the same on all four instances.
         bool p4_pre_ok = s_a.usable>=2 && s_b.usable>=2 && s_c.usable>=2 && s_d.usable>=2;
+        pv.p4_graded = p4_pre_ok;
         checks.expect(p4_pre_ok, "P4-PRE [SPECIFICATION.md P4]: at least 2 of the 6 latch values are "
                       "usable (coverage and a unique period), for all four instances");
+        pv.p4_ta = (!ga.o1_live || s_a.ok) && (!gc.o1_live || s_c.ok);
+        pv.p4_tb = (!gb.o1_live || s_b.ok) && (!gd.o1_live || s_d.ok);
+        bool p4_ok = pv.p4_ta && pv.p4_tb;
+        // SPECIFICATION.md P4: a run whose own Pre4.2/Pre4.3 fails "is not
+        // graded", reported rather than printed FAIL.
+        if (!p4_pre_ok) {
+            checks.record("P4 [p341,p342]: not graded -- P4-PRE (at least 2 usable latches) failed on at "
+                          "least one instance");
+        } else {
+            checks.expect(p4_ok, "P4 [p341,p342]: P(L) is L or L+1 (constant offset), with one residue "
+                          "high (every sample in it, no other residue ever high, >=3 high samples), for "
+                          "the instances whose read-back is live (Pre1.4/O1), on the usable latches "
+                          "(Pre4.2/Pre4.3)");
+        }
+        checks.record("P4 [p341,p342], CIA-A: PRB reads bit n=1 in all 400 samples of every run (the "
+                      "same dead read-back P1-PRE1.4/O1 records) -- not graded");
+        checks.record("P4 [SPECIFICATION.md P4]: no proven-live green input exists at this boundary for "
+                      "a one-phi2-cycle-wide pulse at a fixed E-residue: a CPU write lands at the R-SAMPLE "
+                      "loop's own iteration granularity (9 E here), so its own highs cannot sit on one "
+                      "residue the way the timer's own pulse output would");
         checks.note("P4 usable latches: CIAA/TA=" + std::to_string(s_a.usable) + " CIAA/TB=" + std::to_string(s_b.usable) +
                     " CIAB/TA=" + std::to_string(s_c.usable) + " CIAB/TB=" + std::to_string(s_d.usable));
 
-        P4LatchResult l3 = grade_p4_latch(dir+"/p3_ciab_tb_l2.bin", 0x80, kIcrTb); // reuse P3's own L=2/merged-flag mutant as Pre4.3's contrast basis is separate; see note
-        (void)l3;
-        P4LatchResult toggle = grade_p4_latch(dir+"/p4_ciab_tb_l20_toggle.bin", 0x80, kIcrTb);
-        checks.record("P4-CONTRAST-TOGGLE [SPECIFICATION.md P4]: OUTMODE=1 with the same L=20 "
-                      "(p4_ciab_tb_l20_toggle) -- about half of all residues should read high, which "
-                      "P4's own single-residue comparator does not test for directly; not graded as a "
-                      "pass/fail line, the array is available for inspection");
-
-        // Pre4.3's own contrast: L=3 merges flags, no unique P.
-        // (reuses the pulse-mode body with LATCHVAL=3 via the CIAB/timer B
-        // l20 wrapper's own structure is not present; recorded instead.)
-        P4LatchResult nostart = grade_p4_latch(dir+"/p4_ciab_tb_l20_nostart.bin", 0x80, kIcrTb);
-        bool nostart_ok = nostart.loaded; // coverage/period naturally fail with START=0 (no flags)
-        checks.expect(!nostart.coverage_ok || !nostart.pre43_ok,
-                      "P4-CONTRAST-NOSTART [p342]: CR<-$02 (not started) gives no high sample, so the "
-                      "\"every underflow\" check cannot be established (coverage from a started latch "
-                      "run is used instead, per SPECIFICATION.md P4)");
-        (void)nostart_ok;
+        // OUTMODE=1 and START=0 are the page's own contrasting cases:
+        // moved out of the normal run, selected only through NMH_MUTATE,
+        // each graded through P4's own comparator fields.
+        if (mv == "P4-CONTRAST-TOGGLE") {
+            P4LatchResult toggle = grade_p4_latch(dir+"/p4_ciab_tb_l20_toggle.bin", 0x80, kIcrTb);
+            checks.expect(!(toggle.loaded && toggle.pre43_ok && toggle.coverage_ok && toggle.pulse_ok),
+                          "P4-CONTRAST-TOGGLE [p342]: OUTMODE=1 with the same L=20 fails P4's own "
+                          "single-residue comparator (about half the residues read high, or -- on this "
+                          "build -- every residue does, the same PBON/PRB gap P4's own red uses) (CIAB/"
+                          "timer B)");
+        }
+        if (mv == "P4-CONTRAST-NOSTART") {
+            P4LatchResult nostart = grade_p4_latch(dir+"/p4_ciab_tb_l20_nostart.bin", 0x80, kIcrTb);
+            checks.expect(!(nostart.loaded && nostart.pre43_ok && nostart.coverage_ok && nostart.pulse_ok),
+                          "P4-CONTRAST-NOSTART [p342]: CR<-$02 (not started) fails P4's own comparator: "
+                          "no underflow means F3 finds no unique period (<16 flags), so \"the every "
+                          "underflow check\" cannot be established (CIAB/timer B)");
+        }
     }
 
     // ---- P9 (the latch is the divider of the input clock) -----------------
@@ -1991,14 +2195,7 @@ int main(int argc, char** argv) {
             SampleSeries icr = read_series(c.log, kResults+8+600*2, 600);
             Anchor anc = measure_anchor(c.log);
             if (!c.loaded || !c.done.has_value() || !anc.ok) return PeriodResult{};
-            uint64_t t0 = 0; bool have = false; std::vector<int64_t> flagged_e;
-            for (int i=0;i<600;++i) {
-                if (!icr.cycle[i]) continue;
-                if (!have) { t0 = *icr.cycle[i]; have = true; }
-                if (icr.value[i] && (*icr.value[i] & icrmask))
-                    flagged_e.push_back((int64_t)e_index(*icr.cycle[i], t0, anc.t_cpu));
-            }
-            return measure_period(flagged_e);
+            return measure_period(icr, icrmask, anc.t_cpu);
         };
         PeriodResult p40 = period_of(dir+"/p9_legf_ciab_tb_l40.bin", kIcrTb);
         PeriodResult p41 = period_of(dir+"/p9_legf_ciab_tb_l41.bin", kIcrTb);
@@ -2008,38 +2205,85 @@ int main(int argc, char** argv) {
         int64_t d40=p40.P-40, d41=p41.P-41, d64=p64.P-64, d100=p100.P-100;
         bool delta_ok = all_ok && d40==d41 && d41==d64 && d64==d100 && (d40==0||d40==1);
         pv.p9_legf = delta_ok;
-        checks.expect(delta_ok, "P9-LEGF [p341: opus:F-timers.c6, sol:F-timers.c8]: delta = P(L)-L is "
-                      "the same for L=40,41,64,100 and is 0 or 1 (CIAB/timer B)");
+        // opus:F-timers.c6/sol:F-timers.c8 bundle more than one proposition
+        // (P4, leg F, leg W and P8.65 mode 10); P10 carries them (its own
+        // row), not this component line (SPECIFICATION.md P10: "None
+        // graded whole here").
+        checks.expect(delta_ok, "P9-LEGF [p341]: delta = P(L)-L is the same for L=40,41,64,100 and is 0 "
+                      "or 1 (CIAB/timer B)");
         checks.note("P9-LEGF P(40)=" + std::to_string(p40.P) + " P(41)=" + std::to_string(p41.P) +
                     " P(64)=" + std::to_string(p64.P) + " P(100)=" + std::to_string(p100.P));
 
+        // "Consecutive PRB transitions are P(L) +- s E periods apart"
+        // (SPECIFICATION.md P9), s the PRB sampling spacing (leg F's own
+        // R-SAMPLE2 iteration time in E periods, measured, not assumed).
+        auto transitions_of = [&](const std::string& bin, const PeriodResult& pr) {
+            Capture c = run_capture(bin, kRunBudget, {});
+            SampleSeries prb = read_series(c.log, kResults+8, 600);
+            Anchor anc = measure_anchor(c.log);
+            bool ok = false; double s_e = 0;
+            if (!c.loaded || !c.done.has_value() || !anc.ok || !pr.ok) return ok;
+            uint64_t t0 = 0; bool have = false; std::vector<int64_t> e_all; std::vector<bool> bit_all;
+            double sum = 0; int n = 0; std::optional<uint64_t> prev;
+            for (int i=0;i<600;++i) {
+                if (!prb.cycle[i] || !prb.value[i]) continue;
+                if (!have) { t0 = *prb.cycle[i]; have = true; }
+                e_all.push_back((int64_t)e_index(*prb.cycle[i], t0, anc.t_cpu));
+                bit_all.push_back((*prb.value[i] & 0x80) != 0);
+                if (prev) { sum += double(*prb.cycle[i] - *prev) / (10.0*double(anc.t_cpu)); ++n; }
+                prev = prb.cycle[i];
+            }
+            s_e = n ? sum / n : 0;
+            std::vector<int64_t> trans;
+            for (size_t i=0;i+1<bit_all.size();++i) if (bit_all[i] != bit_all[i+1]) trans.push_back(e_all[i+1]);
+            if (trans.size() < 2) return ok;
+            ok = true;
+            for (size_t i=1;i<trans.size();++i)
+                if (std::fabs(double(trans[i]-trans[i-1]) - double(pr.P)) > s_e + 0.5) { ok = false; break; }
+            return ok;
+        };
+        bool trans_ok = transitions_of(dir+"/p9_legf_ciab_tb_l40.bin", p40);
+        checks.expect(trans_ok, "P9-LEGF-TRANSITIONS [p341,p342]: consecutive PRB transitions are P(L) "
+                      "+-s E periods apart, s the sampling spacing (CIAB/timer B, L=40)");
+
         // Leg W: P2 leg S's own mechanics, CIAB/timer B, for L in {40,100}.
-        auto width_of = [&](const std::string& bin) -> std::optional<double> {
+        auto width_of = [&](const std::string& bin) -> std::pair<std::optional<double>,double> {
             Capture c = run_capture(bin, kRunBudget, {});
             Anchor anc = measure_anchor(c.log);
             auto mpost = mark(c.log, 0x0C1004);
-            if (!c.loaded || !c.done.has_value() || !anc.ok || !mpost) return std::nullopt;
+            std::optional<double> w; double s_e = 0;
+            if (!c.loaded || !c.done.has_value() || !anc.ok || !mpost) return {w, s_e};
             // NSAMP differs per L (200 for 40, 300 for 100); read a generous 300-slot window --
             // slots beyond the program's own NSAMP simply have no value and are skipped.
             SampleSeries s = read_series(c.log, kResults+8, 300);
             bool prev_high = false; bool have_prev = false;
+            double sum = 0; int n = 0; std::optional<uint64_t> prev_cyc;
             for (size_t i=0;i<s.size();++i) {
                 if (!s.cycle[i] || !s.value[i]) continue;
+                if (prev_cyc) { sum += double(*s.cycle[i] - *prev_cyc) / (10.0*double(anc.t_cpu)); ++n; }
+                prev_cyc = s.cycle[i];
                 bool high = (*s.value[i] & 0x80) != 0;
-                if (have_prev && prev_high && !high) {
-                    return e_index(*s.cycle[i], *mpost, anc.t_cpu);
-                }
+                if (have_prev && prev_high && !high && !w) w = e_index(*s.cycle[i], *mpost, anc.t_cpu);
                 prev_high = high; have_prev = true;
             }
-            return std::nullopt;
+            s_e = n ? sum / n : 0;
+            return {w, s_e};
         };
-        auto w40 = width_of(dir+"/p9_legw_l40.bin");
-        auto w100 = width_of(dir+"/p9_legw_l100.bin");
-        bool w_ok = w40.has_value() && w100.has_value() && std::fabs((*w100 - *w40) - 60.0) <= 5.0;
+        auto [w40, s40] = width_of(dir+"/p9_legw_l40.bin");
+        auto [w100, s100] = width_of(dir+"/p9_legw_l100.bin");
+        double s_meas = std::max(s40, s100);
+        bool w_ok = w40.has_value() && w100.has_value() && std::fabs((*w100 - *w40) - 60.0) <= s_meas + 0.5;
         pv.p9_legw = w_ok;
-        checks.expect(w_ok, "P9-LEGW [p341: opus:F-timers.c6, sol:F-timers.c8]: W(100)-W(40) = 60+-s "
-                      "(the PRB sampling spacing), CIAB/timer B");
-        checks.note("P9-LEGW W(40)=" + (w40?std::to_string(*w40):"?") + " W(100)=" + (w100?std::to_string(*w100):"?"));
+        checks.expect(w_ok, "P9-LEGW [p341]: W(100)-W(40) = 60+-s, s the run's own measured PRB sampling "
+                      "spacing, CIAB/timer B");
+        checks.note("P9-LEGW W(40)=" + (w40?std::to_string(*w40):"?") + " W(100)=" + (w100?std::to_string(*w100):"?") +
+                    " s=" + std::to_string(s_meas) + "E");
+        checks.record("P9-LEGW [SPECIFICATION.md P9]: a proven-live green input through the same "
+                      "comparator is named but not built here: CPU-driven, PRB bit 7 set right after the "
+                      "start write and cleared after the ICR read that shows TB, giving W(100)-W(40) = "
+                      "60+-s with s measured -- not built or run this round, by a scope decision (the "
+                      "lead's own list names P3, the not-started P7.5/P8.65 leg, P7.6-CIAB and P7.7 for "
+                      "this repair)");
 
         // Contrasting case: changing L by a delta changes the period by the
         // same delta -- already shown by the four leg-F latches above (each
@@ -2052,39 +2296,75 @@ int main(int argc, char** argv) {
     // ---- P10 (claims that several propositions grade together) ------------
     // Each row is its own assertion, one per claim id (or id group), the
     // conjunction of the assertions SPECIFICATION.md's own P10 table names
-    // for it (SPECIFICATION.md P10: "no one of them carries its id").
+    // for it (SPECIFICATION.md P10: "no one of them carries its id"). The
+    // row "passes when every assertion it lists passed ...; it fails when
+    // any of them failed; otherwise it is not graded" (SPECIFICATION.md
+    // P10) -- a member can be NOTGRADED (P4, under its own failed P4-PRE)
+    // without failing the row outright.
     {
-        checks.expect(p2_toggle_ok && pv.p3_ta && pv.p3_tb && pv.p4_ta && pv.p4_tb,
-            "P10 sol:F-timers.c13 [p342]: one bit selects toggle or a one-cycle positive pulse on every "
+        enum class V { PASS, FAIL, NOTGRADED };
+        auto pf = [](bool ok) { return ok ? V::PASS : V::FAIL; };
+        auto p4v = [&](bool ok) { return !pv.p4_graded ? V::NOTGRADED : (ok ? V::PASS : V::FAIL); };
+        auto row = [&](std::initializer_list<std::pair<V,const char*>> members, const std::string& label) {
+            bool any_fail = false; std::string notgraded;
+            for (auto& [v, name] : members) {
+                if (v == V::FAIL) any_fail = true;
+                else if (v == V::NOTGRADED) { if (!notgraded.empty()) notgraded += ", "; notgraded += name; }
+            }
+            if (any_fail) { checks.expect(false, "P10 " + label); return; }
+            if (!notgraded.empty()) { checks.record("P10 " + label + ": not graded -- " + notgraded + " not graded"); return; }
+            checks.expect(true, "P10 " + label);
+        };
+
+        row({{pf(p2_toggle_ok),"P2"}, {pf(pv.p3_ta),"P3(TA)"}, {pf(pv.p3_tb),"P3(TB)"},
+             {p4v(pv.p4_ta),"P4(TA)"}, {p4v(pv.p4_tb),"P4(TB)"}},
+            "sol:F-timers.c13 [p342]: one bit selects toggle or a one-cycle positive pulse on every "
             "underflow; the toggle output is set high on start and low by RES (P2, P3, P4, all four "
             "instances each)");
-        checks.expect(pv.p3_ta && pv.p3_tb && pv.p4_ta && pv.p4_tb,
-            "P10 opus:F-timers.c12, opus:F-timers.c13 [p342]: one bit selects the output while PB on/off "
+        row({{pf(pv.p3_ta),"P3(TA)"}, {pf(pv.p3_tb),"P3(TB)"}, {p4v(pv.p4_ta),"P4(TA)"}, {p4v(pv.p4_tb),"P4(TB)"}},
+            "opus:F-timers.c12, opus:F-timers.c13 [p342]: one bit selects the output while PB on/off "
             "is on; every underflow toggles it or gives a one-cycle positive pulse (P3, P4, all four "
             "instances each)");
-        checks.expect(pv.p3_ta && pv.p4_ta,
-            "P10 sol:F-cra.c16 [p349]: CRA OUTMODE: 0 pulse, 1 toggle (P3, P4, timer-A instances)");
-        checks.expect(pv.p3_tb && pv.p4_tb,
-            "P10 opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13 [p349,p350]: CRB OUTMODE: 0 pulse, 1 toggle "
+        row({{pf(pv.p3_ta),"P3(TA)"}, {p4v(pv.p4_ta),"P4(TA)"}},
+            "sol:F-cra.c16 [p349]: CRA OUTMODE: 0 pulse, 1 toggle (P3, P4, timer-A instances)");
+        row({{pf(pv.p3_tb),"P3(TB)"}, {p4v(pv.p4_tb),"P4(TB)"}},
+            "opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13 [p349,p350]: CRB OUTMODE: 0 pulse, 1 toggle "
             "(P3, P4, timer-B instances)");
-        checks.expect(pv.p5_ta && pv.p75,
-            "P10 sol:F-cra.c13 [p349]: CRA INMODE: 0 phi2, 1 CNT (P5, timer-A instances, and P7.5)");
-        checks.expect(pv.p5_tb && pv.p865_01 && pv.p865_10 && pv.p865_11,
-            "P10 sol:F-crb.c7, sol:F-crb.c10 [p349,p350]: CRB INMODE: 00 phi2, 01 CNT, 10 timer A "
+        row({{pf(pv.p5_ta),"P5(TA)"}, {pf(pv.p75),"P7.5"}},
+            "sol:F-cra.c13 [p349]: CRA INMODE: 0 phi2, 1 CNT (P5, timer-A instances, and P7.5)");
+        row({{pf(pv.p5_tb),"P5(TB)"}, {pf(pv.p865_01),"P8.65-01"}, {pf(pv.p865_10),"P8.65-10"}, {pf(pv.p865_11),"P8.65-11"}},
+            "sol:F-crb.c7, sol:F-crb.c10 [p349,p350]: CRB INMODE: 00 phi2, 01 CNT, 10 timer A "
             "underflows, 11 timer A underflows while CNT is high (P5, timer-B instances, and P8.65 "
             "modes 01, 10 and 11)");
-        checks.expect(pv.p70 && cra_ok && pv.p3_ta && pv.p4_ta && pv.p73 && pv.p74 && pv.p5_ta && pv.p75 &&
-                      pv.p76_ciaa && pv.p76_ciab && pv.p77,
-            "P10 opus:F-cra.c12, opus:F-cra.c13 [p349]: every field of the CRA bitmap (P7.0 START; P1 "
-            "PBON, timer-A instances; P3/P4 OUTMODE, timer-A instances; P7.3 RUNMODE; P7.4 LOAD; P5/P7.5 "
-            "INMODE, timer-A instances; P7.6 SPMODE; P7.7 bit 7)");
-        checks.expect(pv.p80 && crb_ok && pv.p3_tb && pv.p4_tb && pv.p83 && pv.p84 && pv.p5_tb &&
-                      pv.p865_01 && pv.p865_10 && pv.p865_11 && pv.p87_alarm,
-            "P10 opus:F-crb.c13, opus:F-crb.c14 [p350]: every field of the CRB bitmap (P8.0 START; P1 "
-            "PBON, timer-B instances; P3/P4 OUTMODE, timer-B instances; P8.3 RUNMODE; P8.4 LOAD; P5/P8.65 "
-            "INMODE, timer-B instances; P8.7 ALARM)");
-        checks.expect(pv.p4_ta && pv.p4_tb && pv.p9_legf && pv.p9_legw && pv.p865_10,
-            "P10 opus:F-timers.c6, sol:F-timers.c8 [p341]: the modes allow long time delays, variable "
+
+        // The bitmap claims split one row per id (each over its own
+        // settings), not one row over "every field" (SPECIFICATION.md
+        // P10, repaired: LOAD has no 0-setting, Section 0).
+        row({{pf(pv.p70),"P7.0"}, {pf(pv.p1_control),"P1-CONTROL"}, {p4v(pv.p4_ta),"P4(TA)"},
+             {pf(pv.p73),"P7.3"}, {pf(pv.p74),"P7.4"}, {pf(pv.p5_ta),"P5(TA)"}, {pf(pv.p76_ciaa),"P7.6-CIAA"}},
+            "opus:F-cra.c12 [p349]: every 0-setting field of the CRA bitmap (P7.0 START=0; P1-CONTROL "
+            "PBON=0; P4 OUTMODE=0, timer-A instances; P7.3 RUNMODE=0; P7.4 LOAD reads 0; P5 INMODE=0, "
+            "timer-A instances; P7.6-CIAA SPMODE=0)");
+        row({{pf(pv.p70),"P7.0"}, {pf(cra_ok),"P1-MAIN-CRA"}, {pf(pv.p3_ta),"P3(TA)"}, {pf(pv.p73),"P7.3"},
+             {pf(pv.p74),"P7.4"}, {pf(pv.p75),"P7.5"}, {pf(pv.p76_ciab),"P7.6-CIAB"}, {pf(pv.p77),"P7.7"}},
+            "opus:F-cra.c13 [p349]: every 1-setting field of the CRA bitmap (P7.0 START=1; P1 PBON=1, "
+            "timer-A instances; P3 OUTMODE=1, timer-A instances; P7.3 RUNMODE=1; P7.4 LOAD=1; P7.5 "
+            "INMODE=1; P7.6-CIAB SPMODE=1; P7.7 bit 7)");
+        row({{pf(pv.p80),"P8.0"}, {pf(pv.p1_control),"P1-CONTROL"}, {p4v(pv.p4_tb),"P4(TB)"},
+             {pf(pv.p83),"P8.3"}, {pf(pv.p84),"P8.4"}, {pf(pv.p5_tb),"P5(TB)"}, {pf(pv.p87_alarm),"P8.7"}},
+            "opus:F-crb.c13 [p350]: every 0-setting field of the CRB bitmap (P8.0 START=0; P1-CONTROL "
+            "PBON=0; P4 OUTMODE=0, timer-B instances; P8.3 RUNMODE=0; P8.4 LOAD reads 0; P5 INMODE=00, "
+            "timer-B instances; P8.7 run Y ALARM=0)");
+        row({{pf(pv.p80),"P8.0"}, {pf(crb_ok),"P1-MAIN-CRB"}, {pf(pv.p3_tb),"P3(TB)"}, {pf(pv.p83),"P8.3"},
+             {pf(pv.p84),"P8.4"}, {pf(pv.p865_01),"P8.65-01"}, {pf(pv.p865_10),"P8.65-10"},
+             {pf(pv.p865_11),"P8.65-11"}, {pf(pv.p87_alarm),"P8.7"}},
+            "opus:F-crb.c14 [p350]: every 1-setting field of the CRB bitmap (P8.0 START=1; P1 PBON=1, "
+            "timer-B instances; P3 OUTMODE=1, timer-B instances; P8.3 RUNMODE=1; P8.4 LOAD=1; P8.65 "
+            "modes 01/10/11; P8.7 run X ALARM=1)");
+
+        row({{p4v(pv.p4_ta),"P4(TA)"}, {p4v(pv.p4_tb),"P4(TB)"}, {pf(pv.p9_legf),"P9-LEGF"},
+             {pf(pv.p9_legw),"P9-LEGW"}, {pf(pv.p865_10),"P8.65-10"}},
+            "opus:F-timers.c6, sol:F-timers.c8 [p341]: the modes allow long time delays, variable "
             "width pulses, pulse trains, and variable frequency waveforms; the latch is a divider of the "
             "input clocking frequency (P4 pulse trains; P9 leg F frequency/divider and leg W width; "
             "P8.65 mode 10 long delays)");

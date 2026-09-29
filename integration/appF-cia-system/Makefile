@@ -16,12 +16,12 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb \
             p7_ciaa_load p7_ciab_load p7_ciab_load_ld0 p7_ciab_load_run01 \
             p8_ciaa_load p8_ciab_load p8_ciab_load_ld0 p8_ciab_load_run01 \
             p7_ciaa_unused81 p7_ciaa_unused01 p7_ciab_unused81 p7_ciab_unused01 \
-            p7_ciab_unused_c1contrast p7_ciab_unused_wcontrast \
-            p7_ciaa_inmode p7_ciaa_inmode_phi2 p7_ciab_inmode p7_ciab_inmode_phi2 \
-            p8_ciaa_inmode01 p8_ciaa_inmode01_phi2 p8_ciab_inmode01 p8_ciab_inmode01_phi2 \
+            p7_ciab_unused_c1contrast p7_ciab_unused_wcontrast p7_ciab_unused81_startoff \
+            p7_ciaa_inmode p7_ciaa_inmode_phi2 p7_ciab_inmode p7_ciab_inmode_phi2 p7_ciab_inmode_nostart \
+            p8_ciaa_inmode01 p8_ciaa_inmode01_phi2 p8_ciab_inmode01 p8_ciab_inmode01_phi2 p8_ciab_inmode01_nostart \
             kp_a kp_b \
-            p76_ciab p76_ciab_contrast p76_ciab_pre \
-            p865_ciaa_mode10 p865_ciab_mode10 p865_ciab_mode10_contrast \
+            p76_ciab p76_ciab_contrast p76_ciab_pre p76_ciaa \
+            p865_ciaa_mode10 p865_ciab_mode10 p865_ciab_mode10_contrast p865_ciab_mode10_shortlatch \
             p865_ciaa_mode11 \
             p87_ciab p87_ciaa p87_ciab_nolsb \
             p5a_ciaa_ta_d1 p5a_ciaa_ta_d2 p5a_ciaa_tb_d1 p5a_ciaa_tb_d2 \
@@ -30,7 +30,7 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb \
             p5b_ciaa_ta p5b_ciaa_tb p5b_ciab_ta p5b_ciab_tb \
             p6_k123 \
             p3_ciaa_ta p3_ciaa_tb p3_ciab_ta p3_ciab_tb \
-            p3_ciab_tb_l2 p3_ciab_tb_nostart p3_ciab_tb_pulse p3_ciab_tb_pbon0 \
+            p3_ciab_tb_l2 p3_ciab_tb_nostart p3_ciab_tb_pulse p3_ciab_tb_pbon0 p3_ciab_tb_cputoggle \
             p4_ciaa_ta_l20 p4_ciaa_ta_l21 p4_ciaa_ta_l22 p4_ciaa_ta_l23 p4_ciaa_ta_l24 p4_ciaa_ta_l25 \
             p4_ciaa_tb_l20 p4_ciaa_tb_l21 p4_ciaa_tb_l22 p4_ciaa_tb_l23 p4_ciaa_tb_l24 p4_ciaa_tb_l25 \
             p4_ciab_ta_l20 p4_ciab_ta_l21 p4_ciab_ta_l22 p4_ciab_ta_l23 p4_ciab_ta_l24 p4_ciab_ta_l25 \

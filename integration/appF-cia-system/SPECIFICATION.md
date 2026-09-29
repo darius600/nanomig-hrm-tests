@@ -96,7 +96,7 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
 
   *Drive.* The latch and the light belong to a drive ("Each drive will latch the motor signal at the time its select signal turns on"; "the activity light on the front of the disk drive", p244), and SEL0* is "select internal drive" (p351). The harness's default `floppy_config` is 0, one drive, DF0, write-enabled, at normal speed (`nanomig_harness.h`). No disk and no disk image is needed: nothing used here from p244 depends on one. The light is read at the `fdd_led` output (port list).
 
-  *Not observable at this port.* `fdd_led` tracks disk DMA activity, not MTR* latched at a drive's own select (NM-HRM-046: the light follows the disk-transfer state machine, not the per-drive motor latch the same module implements correctly for `index` and `syncint`). O2's own legs, and LP below, are therefore recorded as measurements, not graded.
+  *Not observable at this port.* `fdd_led` tracks disk DMA activity, not MTR* latched at a drive's own select (NM-HRM-046). O2's own legs, and LP below, are therefore recorded as measurements, not graded.
 
   *Routine R-SELECT.* CIAB DDRB bit 3 = 1. Write PRB with bit 3 = 1, then with bit 3 = 0 (select turns on and the drive latches MTR*), then with bit 3 = 1. Each write is a plain byte write of the whole PRB value (E10) that keeps the other data bits the case needs.
 
@@ -143,6 +143,7 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
   - No port carries KCLK or KDAT, so the test sees neither, and no check uses the time or the length of a KCLK pulse. The page's timing only sizes the waits (P7.5) and gives the direction graded in P8.65 mode 11. Where a case needs the transmission inside its window, the window precondition of P7.5 places it: the code is sent after the ready marker, and the SP flag is read set before the stop write.
   - No handshake is given. Every case that uses R-KEY ends within 143 ms of sending the code, and so within 143 ms of the last clock, since the keyboard resyncs only after "143 ms" without a handshake (p359). The test sends no other code in the run.
   - **KP (keyboard idle).** A run of the case's program without R-KEY, in which the CIAA timer that the case does not grade counts CNT: CRB ← $21 when timer A is graded, CRA ← $21 when timer B is graded. Where the case uses that timer otherwise, this write replaces its start write. The probe timer is unchanged over a window of the same length. The probe is always the other timer, so that a wrong INMODE on the timer under test cannot fail KP in place of its own check. *Contrast:* with R-KEY inside that window, it changes by 8.
+  - **Not usable as a gating precondition.** KP's own probe counts CNT, the same INMODE setting that P7.5, P8.65 mode 01 and mode 11 grade on the timer under test; where CNT counting does not work at `nanomig.v`'s ports, KP cannot be established independently of the clause it would gate. This package records KP's own reading rather than grading it as a precondition, and does not gate CIAA's own P7.5/P8.65 mode 01/mode 11 legs on it: their own comparators, and the CIAB legs (which need no key and grade INMODE by its φ2 setting alone), carry the result without KP.
 
 ### 1.6 Runs
 
@@ -280,7 +281,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Instances.** The four of P1.
 
-**Stimulus.** DDRB ← $00. CR ← $00. R-LATCH(L = 60). Read ICR (discard). CR ← $07 (START, PBON, toggle, continuous). R-SAMPLE(600; PRB, ICR) → pairs (p_i, q_i). CR ← $00.
+**Stimulus.** DDRB bit n = 1, PR data bit n = 0 (a specification change from p342's own wording, "This function overrides the DDRB control bit and forces the appropriate PB line to become an output": with the line left at DDRB ← $00's own undriven pull-up, "the level before the first flag is 1" cannot separate PBON's own override from the pull-up already reading 1 on its own; the same change P2 leg S makes, for the same reason). CR ← $00. R-LATCH(L = 60). Read ICR (discard). CR ← $07 (START, PBON, toggle, continuous). R-SAMPLE(600; PRB, ICR) → pairs (p_i, q_i). CR ← $00.
 
 **Observation.** Bit n of p_i. The TA or TB flag of q_i.
 
@@ -457,7 +458,7 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
 #### P7.5: Bit 5 is INMODE (1 counts positive CNT transitions, 0 counts φ2)
 
-- **Stimulus, CIAA.** CR ← $00. R-LATCH($1000). Read ICR (discard). CR ← $21 (START, CNT). "Ready" marker. R-KEY. The program waits W E periods, with 1500 ≤ W ≤ 3000 (the 8 bits take about 8 × 60 µs, about 340 E periods, per p358; the upper bound keeps the φ2 contrast below the latch). Read ICR → i. Bracketed write CR ← $00. Read TAHI, TALO → v.
+- **Stimulus, CIAA.** CR ← $00. R-LATCH($1000). Read ICR (discard). CR ← $21 (START, CNT). "Ready" marker. R-KEY. The program waits W E periods, with 1500 ≤ W ≤ 3000 (the 8 bits take about 8 × 60 µs, about 340 E periods, per p358; the upper bound keeps the φ2 contrast below the latch). W, wherever it is measured below, runs from the marker after the start write (the "ready" marker) to the marker after the stop write, as P5 leg (a) measures τ: the counter keeps counting through the ICR read and the bracketed stop write, past the point the wait loop itself ends. Read ICR → i. Bracketed write CR ← $00. Read TAHI, TALO → v.
 - **Stimulus, CIAB.** The same without R-KEY (CIAB CNT is POUT, which nothing drives).
 - **Expected.** Source: "1 = Timer A counts positive CNT transitions" (p348), with CNT = KCLK (p351) and "a pulse on KCLK (low then high)" per bit, "until all eight data bits have been sent" (p357).
   - CIAA: $1000 − v = 8.
@@ -510,7 +511,7 @@ Source: "CRB6 CRB5 Mode Selected: 0 0 Timer B counts 02 pulses; 0 1 Timer B coun
 
 - **Mode 00.** P5, the timer-B instances.
 - **Mode 01.**
-  - *CIAA:* CRB ← $00. R-LATCH_B($1000). CRB ← $21. "Ready" marker. R-KEY. Wait W E periods, with 1500 ≤ W ≤ 3000. Read ICR → i. Bracketed write CRB ← $00. Read TBHI, TBLO → v. Expected: $1000 − v = 8.
+  - *CIAA:* CRB ← $00. R-LATCH_B($1000). CRB ← $21. "Ready" marker. R-KEY. Wait W E periods, with 1500 ≤ W ≤ 3000 (W measured as in P7.5, from the marker after the start write to the marker after the stop write). Read ICR → i. Bracketed write CRB ← $00. Read TBHI, TBLO → v. Expected: $1000 − v = 8.
   - *CIAB:* the same without R-KEY. Expected: v = $1000.
   - Preconditions as in P7.5: KP, with timer A as its probe (CRA ← $21), and on CIAA the window (the code sent after the ready marker; SP = 1 in i, CRA staying $00 so that the serial port is in input mode). *Contrasting case:* CRB ← $01 gives $1000 − v = round(W/T_E) ± 2.
 - **Mode 10 (both CIAs).**
@@ -540,7 +541,7 @@ Source: "1 = writing to TOD registers sets Alarm, 0 = writing to TOD registers s
   - *Run Y:* the same with CRB kept at $00 during the writes, and A = $001000.
 - **Expected, CIAB.**
   - *Run X:* T1 − T0 = the number of lines (F4) between the T0 and T1 read markers, ± 1. The writes did not change TOD.
-    - The ALRM flag (ICR bit 2) appears. No ICR sample before the first TODLO sample equal to A & $FF has ALRM. The first ALRM sample comes within one iteration after that TODLO sample.
+    - The ALRM flag (ICR bit 2) appears. Let m be the index of the first TODLO sample equal to A & $FF; the sampler reads TODLO before ICR in every iteration (R-SAMPLE(n; TODLO, ICR)), so the alarm may already be set by the time iteration m − 1's own ICR is read, before its own TODLO sample has reached A. The first ALRM sample is ICR_(m−1) or ICR_m; no earlier ICR sample has ALRM.
     - The last two points rest on "A programmable alarm is provided for generating an interrupt at a desired time" (p344).
   - *Run Y:* T1 − A = the number of lines between the marker after the TODLO write and the T1 read, ± 1.
     - No ALRM flag appears in the window. The alarm was never written in this run, and "All other registers are reset to zero" (p354) makes it 0. TOD counts up from $001000 and does not reach 0 within the window.
@@ -602,8 +603,10 @@ Each claim below states more than any one of P1-P9 grades, so no one of them car
 | opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13 | 349, 350 | CRB OUTMODE: 0 pulse, 1 toggle | P3, P4 (timer-B instances) |
 | sol:F-cra.c13 | 349 | CRA INMODE: 0 φ2, 1 CNT | P5 (timer-A instances), P7.5 |
 | sol:F-crb.c7, sol:F-crb.c10 | 349, 350 | CRB INMODE: 00 φ2, 01 CNT, 10 timer A underflows, 11 timer A underflows while CNT is high | P5 (timer-B instances), P8.65 modes 01, 10 and 11 |
-| opus:F-cra.c12, opus:F-cra.c13 | 349 | every field of the CRA bitmap | P7.0 (START); P1, timer-A instances (PBON); P3 and P4, timer-A instances (OUTMODE); P7.3 (RUNMODE); P7.4 (LOAD); P5, timer-A instances, and P7.5 (INMODE); P7.6 (SPMODE); P7.7 (bit 7) |
-| opus:F-crb.c13, opus:F-crb.c14 | 350 | every field of the CRB bitmap | P8.0 (START); P1, timer-B instances (PBON); P3 and P4, timer-B instances (OUTMODE); P8.3 (RUNMODE); P8.4 (LOAD); P5, timer-B instances, and P8.65 (INMODE); P8.7 (ALARM) |
+| opus:F-cra.c12 | 349 | every 0-setting field of the CRA bitmap (LOAD excepted: it has none, Section 0) | P7.0 (START=0); P1's control (PBON=0); P4, timer-A instances (OUTMODE=0); P7.3 (RUNMODE=0); P7.4 (LOAD reads 0); P5, timer-A instances (INMODE=0); P7.6-CIAA (SPMODE=0, input) |
+| opus:F-cra.c13 | 349 | every 1-setting field of the CRA bitmap | P7.0 (START=1); P1, timer-A instances (PBON=1); P3, timer-A instances (OUTMODE=1); P7.3 (RUNMODE=1); P7.4 (LOAD=1); P7.5 (INMODE=1); P7.6-CIAB (SPMODE=1); P7.7 (bit 7, unaffected) |
+| opus:F-crb.c13 | 350 | every 0-setting field of the CRB bitmap (LOAD excepted: it has none, Section 0) | P8.0 (START=0); P1's control (PBON=0); P4, timer-B instances (OUTMODE=0); P8.3 (RUNMODE=0); P8.4 (LOAD reads 0); P5, timer-B instances (INMODE=00); P8.7 run Y (ALARM=0) |
+| opus:F-crb.c14 | 350 | every 1-setting field of the CRB bitmap | P8.0 (START=1); P1, timer-B instances (PBON=1); P3 and P4, timer-B instances (OUTMODE=1); P8.3 (RUNMODE=1); P8.4 (LOAD=1); P8.65 modes 01, 10 and 11 (INMODE); P8.7 run X (ALARM=1) |
 | opus:F-timers.c6, sol:F-timers.c8 | 341 | the modes "allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms"; sol:F-timers.c8 adds that the latch "is a divider of the input clocking frequency" | P4 (pulse trains); P9 leg F (variable frequency, and the latch as divider) and leg W (variable width); P8.65 mode 10 (timers "linked for extended operations", p341: long delays) |
 
 The sentence of opus:F-timers.c6 names no value. Each capability it lists is shown by the proposition named in its row, and nothing else of it is graded.

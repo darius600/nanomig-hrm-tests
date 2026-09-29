@@ -8,6 +8,7 @@ CR              equ     CIAB_CRB
 TLO             equ     CIAB_TBLO
 THI             equ     CIAB_TBHI
 ICR             equ     CIAB_ICR
+M               equ     $80
 LATCHVAL        equ     64
 CRVAL           equ     $07
                 include "p3_body.s"

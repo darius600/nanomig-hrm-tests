@@ -1,6 +1,8 @@
 ; p865_ciab_mode10.s -- P8.65 mode 10, CIAB. See p865_ciaa_mode10.s.
 ;
 ; Optional: MUT_MODE00 (contrast: CRB<-$01, mode 00, instead of $41).
+;           MUT_SHORTLATCH (Pre8.65-M10's own contrast: R-LATCH_A(2) instead
+;           of 30, so flags appear in consecutive reads).
                 include "nanomig.i"
                 include "ciaregs.i"
 
@@ -8,12 +10,16 @@ P810_ICR        equ     RESULTS+8       ; 300 words
 P810_FINAL      equ     P810_ICR+300*2
 P810_V          equ     P810_FINAL+2
 
+        ifnd    LATCH_A
+LATCH_A         equ     30
+        endc
+
         org     PROGRAM_ORG
 
 start:
         SETUP
         move.b  #$00,CIAB_CRA
-        RLATCH  CIAB_TALO,CIAB_TAHI,30
+        RLATCH  CIAB_TALO,CIAB_TAHI,LATCH_A
         move.b  #$00,CIAB_CRB
         RLATCH  CIAB_TBLO,CIAB_TBHI,$FFFF
         moveq   #0,d0
