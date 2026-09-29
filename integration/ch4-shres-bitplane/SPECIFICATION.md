@@ -174,7 +174,7 @@ The addresses are fixed as follows. Everything the chips fetch lies in $010000�
 | Null sprite (2 words) | $040100–$040103 |
 | Copper list Ff, f = 0…10 (at most 4 KB each) | $041000 + f·$1000, so F10 at $04B000–$04BFFF |
 | Program (`PROGRAM_ORG`) | from $080400 |
-| Stored VPOSR, DENISEID | `RESULTS` ($0C0000), `RESULTS`+2 |
+| Stored fixture, VPOSR, DENISEID | `RESULTS` ($0C0000), `RESULTS`+2, `RESULTS`+4 |
 | Completion mark (`DONE`) | `DONE_ADDR` ($0C0FFE) |
 | Stack | below `PROGRAM_STACK` ($0FFF00) |
 
@@ -209,13 +209,14 @@ A band change that writes a whole palette (sixteen MOVEs, four memory cycles eac
 
 ### 4.5 The 68000 program
 
-1. Write DMACON ($096) = $7FFF (all DMA off).
-2. Read VPOSR ($004) and DENISEID ($07C) and store both words at `RESULTS` and `RESULTS`+2.
-3. Clear the ROM overlay before any write below $80000 (p.223): write CIA-A DDRA ($BFE201) = $03 ("set to 0x03", p.339), then PRA ($BFE001) = $00, which makes OVL (PRA bit 0, the "ROM/RAM overlay bit", p.337) an output at 0. That the writes below $80000 landed is shown at the port by C3 (fetched data equal to what the program wrote).
-4. Build every buffer and Copper list of §4.2 and §4.4 at the addresses of §4.2.
-5. Start the Copper exactly as p.30 prescribes: "you must initialize one of the Copper location registers (COP1LC or COP2LC) and write to its strobe address before Copper DMA is turned on". Write COP1LC (longword to $080) = address of F0, strobe COPJMP1 ($088), then write DMACON = $83A0 (SET, DMAEN, BPLEN, COPEN, SPREN; p.278).
-6. Wait until at least 12 vertical blanks have passed. Poll VPOSR/VHPOSR for the wrap of the vertical position. The CPU must not write any buffer or list while it waits.
-7. End with `DONE` (`nanomig.i`), which writes `DONE_VALUE` to `DONE_ADDR`.
+1. Store the fixture: write FIXTUREVAL ($BEEF) to `RESULTS`. It is read back before anything else is graded, so a run that never reaches this point is told apart from one that reaches it and writes the wrong value.
+2. Write DMACON ($096) = $7FFF (all DMA off).
+3. Read VPOSR ($004) and DENISEID ($07C) and store them at `RESULTS`+2 and `RESULTS`+4.
+4. Clear the ROM overlay before any write below $80000 (p.223): write CIA-A DDRA ($BFE201) = $03 ("set to 0x03", p.339), then PRA ($BFE001) = $00, which makes OVL (PRA bit 0, the "ROM/RAM overlay bit", p.337) an output at 0. That the writes below $80000 landed is shown at the port by C3 (fetched data equal to what the program wrote).
+5. Build every buffer and Copper list of §4.2 and §4.4 at the addresses of §4.2.
+6. Start the Copper exactly as p.30 prescribes: "you must initialize one of the Copper location registers (COP1LC or COP2LC) and write to its strobe address before Copper DMA is turned on". Write COP1LC (longword to $080) = address of F0, strobe COPJMP1 ($088), then write DMACON = $83A0 (SET, DMAEN, BPLEN, COPEN, SPREN; p.278).
+7. Wait until at least 12 vertical blanks have passed. Poll VPOSR/VHPOSR for the wrap of the vertical position. The CPU must not write any buffer or list while it waits.
+8. End with `DONE` (`nanomig.i`), which writes `DONE_VALUE` to `DONE_ADDR`.
 
 ### 4.6 Frame plan
 
@@ -350,6 +351,27 @@ Quantifiers:
 
 **7. Reference frame.** R0 and R1 place output samples and lines, R2 gives i and s, R3 the check interval, R4 the output bits. R0 and R1 carry their own checks; the others are checked by C5, C6 and R2's bottom-line check.
 
+**8. The full key claim (12 propositions, joint with P4).** Each key claim's own sentence asserts two things at once: the two letters in bits 3-2 (graded above by P1.cX), and, through its two dashes, that no register bit stores anything else of that component for that Color (§1 L2; graded bit by bit by P4). Graded together, as P7 grades its own two-clause claims: PASS when both halves pass, FAIL when either fails, not graded when either is not graded.
+
+For Color c's component X, the register the chip reads for a value-c pixel is COLOR0c (p.94, p.273; R2). Row 0c of the p.301 table holds Color c's own letters in the register's p-half (bits 11-10, 7-6 or 3-2, per component) and Color 0's letters in its q-half (bits 9-8, 5-4 or 1-0): the dashes claim that this q-half carries no part of Color c's own X. The joint proposition is P1.cX together with the two P4 propositions that grade that q-half: P4.n0cb(u) and P4.n0cb(u-1), where u is 9 for red, 5 for green, 1 for blue.
+
+| Id | Claim | Joint of |
+|---|---|---|
+| P1J.0R | APPC-bplkeykey.c0r | P1.0R, P4.n00b09, P4.n00b08 |
+| P1J.0G | APPC-bplkeykey.c0g | P1.0G, P4.n00b05, P4.n00b04 |
+| P1J.0B | APPC-bplkeykey.c0b | P1.0B, P4.n00b01, P4.n00b00 |
+| P1J.1R | APPC-bplkeykey.c1r | P1.1R, P4.n01b09, P4.n01b08 |
+| P1J.1G | APPC-bplkeykey.c1g | P1.1G, P4.n01b05, P4.n01b04 |
+| P1J.1B | APPC-bplkeykey.c1b | P1.1B, P4.n01b01, P4.n01b00 |
+| P1J.2R | APPC-bplkeykey.c2r | P1.2R, P4.n02b09, P4.n02b08 |
+| P1J.2G | APPC-bplkeykey.c2g | P1.2G, P4.n02b05, P4.n02b04 |
+| P1J.2B | APPC-bplkeykey.c2b | P1.2B, P4.n02b01, P4.n02b00 |
+| P1J.3R | APPC-bplkeykey.c3r | P1.3R, P4.n03b09, P4.n03b08 |
+| P1J.3G | APPC-bplkeykey.c3g | P1.3G, P4.n03b05, P4.n03b04 |
+| P1J.3B | APPC-bplkeykey.c3b | P1.3B, P4.n03b01, P4.n03b00 |
+
+For c = 0, p = q = 0: both halves of COLOR00 hold Color 0's own letters (row 00 of the table), so P1J.0X's P4 half is the "q-half of COLOR00" case, not observed under the population P4 grades (L1); P1J.0R/0G/0B are therefore not graded, by the same rule that leaves the same six P4 bits not observable. For c = 1, 2, 3, q = 0 always, so the q-half stores Color 0's letters while a value-c pixel is shown: P1J.1X/2X/3X's P4 half is exactly the eighteen q-half bits of COLOR01-03.
+
 ### P2: only two bits of red, green and blue per pixel (3 propositions)
 
 **1. Proposition.** In SuperHires mode, the 4-bit value of component X shown by a visible pixel of value c depends only on the two encoded letters of X of Color c. Pixels of value c whose Color c has the same two letters for X show the same 4-bit X, whatever the neighbours, the other Colors, the line or the frame.
@@ -396,7 +418,7 @@ Applied to the hires pixels, P2 fails. In hires a value-c pixel shows all of reg
 Page 301. APPC-shr.c1 names both comparisons ("than either Hires or Lores modes"), so neither half carries it; P7.1 does.
 
 **2. Stimulus.**
-- SuperHires: the S0–S3 bands of F1. Color 1 = (s, s, s), every register written by the table.
+- SuperHires: every band of F1 -- the top and bottom Q0 lines, and the Q1–Q5, Z, O and S0–S3 bands -- the whole population F1's own stimulus plan covers, not the S0–S3 bands alone. Every register written by the table (§3).
 - Hires: F5's sixteen bands with COLOR01 = $0kkk.
 - Lores: F6's sixteen bands with COLOR01 = $0kkk.
 
@@ -404,8 +426,8 @@ Page 301. APPC-shr.c1 names both comparisons ("than either Hires or Lores modes"
 
 **4. Expected value.**
 - Hires and Lores: in band k, each of R, G and B equals k in all four bits, so each component takes 16 distinct values. The sources are "Twelve bits of color selection allow you to define, for each of the 32 registers, one of 4,096 possible colors" (p.46), "each one has 4 bits of red, 4 bits of green, and 4 bits of blue" (p.92), and Table 3-18 (p.94: value 0001 selects register 1).
-- SuperHires: in band Ss, bits 3–2 of each component equal s (P1). Across S0–S3 each component takes exactly four distinct 4-bit values (P2).
-- The relation 4 < 16 holds for R, G and B, for each comparison.
+- SuperHires: at every value-1 pixel of every band of F1, bits 3–2 of each component equal Color 1's own two letters of that component (P1). P2 claims that a value-c pixel's whole 4-bit component depends only on those two letters; if P2 held over this population, each component would take exactly four distinct 4-bit values across it. The comparison is graded against the number of distinct 4-bit values actually observed over the population above, whatever that number is -- it is not assumed to be four.
+- The relation "SuperHires distinct-value count < 16" holds for R, G and B, for each comparison, only if the count observed above is 4; a coarser-than-claimed SuperHires (a higher count) fails it instead of trivially passing it.
 
 The source for the comparison is "SuperHires mode has a coarser granularity of color control than either Hires or Lores modes" (p.301). The quantifier "either" is graded as two separate comparisons.
 
@@ -416,7 +438,7 @@ The source for the comparison is "SuperHires mode has a coarser granularity of c
 - V3b (Hires half of P3.H): in F5, write COLOR01 = ($0kkk AND $0CCC). The pages predict four levels, so "sixteen" fails.
 - V3c (Lores half of P3.L): in F6, write COLOR01 = ($0kkk AND $0CCC). The pages predict four levels (p.46, p.92; Table 3-17 on p.93 selects register 1 for value 00001 in low resolution), so "sixteen" fails for Lores.
 
-V3a is the contrast of the SuperHires half of both P3.H and P3.L. Preconditions hold in all three.
+V3a is the contrast of the SuperHires half of both P3.H and P3.L. It also puts F1 in hires mode, so C5 (F1's SuperHires pixel mapping) and C7 (F1's planned band count, sixteen bands instead of twelve) fail alongside P3.H, P3.L and P7.1, not on their own; V3b and V3c leave every precondition of F5 and F6 unchanged.
 
 **7. Reference frame.** R2 in each mode's form, and R3.
 
@@ -564,7 +586,7 @@ APPC-shr.c1 says SuperHires is coarser "than either Hires or Lores modes"; APPC-
 
 | Claims | Proposition(s) |
 |---|---|
-| APPC-bplkeykey.c0r … c3b (12) | P1.cX, one each. P1 grades the two letters; the `--` (no register bit stores bits 1–0) is graded by P4 over all 192 register bits. |
+| APPC-bplkeykey.c0r … c3b (12) | P1.cX, one each. P1 grades the two letters; the `--` (no register bit stores bits 1–0) is graded by P4 over all 192 register bits; the same twelve ids also carry P1J.cX, the joint of P1.cX with the two P4 bits its own dashes name. |
 | APPC-bpltab.r00b00 … r0Fb11 (192) | P4.n.b, one each |
 | APPC-shr.c1 | P7.1 (P3.H and P3.L together) |
 | CH4-appC-context.c1 | P3.H |
@@ -579,7 +601,7 @@ APPC-shr.c1 says SuperHires is coarser "than either Hires or Lores modes"; APPC-
 | APPC-shr.c9 | P6.1 |
 | (none) | P5.U, graded for P7.3 |
 
-That makes 216 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3.
+That makes 228 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3 + 12 (P1J).
 
 ---
 
@@ -609,7 +631,7 @@ That makes 216 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3.
 - **R1.** The harness's scan doubler shows two output lines per source line (`nanomig_harness.h`'s own note). Of the two, the LAST one carries the source line's own fetched data; the first shows something else (checked directly: at a graded pixel, the first copy's colour does not follow the v[i] the port shows was fetched, the second copy's does, on every line checked). The test uses the last copy throughout.
 - **R2.** s is frame-specific and not small: F1's own s is 266. Window line 0 -- the line immediately after each frame's own Copper header -- shows only the border colour across its whole width on every frame checked (F1, F5), not the fetched bitplane data; window lines 1 upward show it correctly, checked directly against the four Colors' own letters (SuperHires) or against COLOR v[i] whole (hires/lores). Every population this specification calls "the top Q0 lines" is graded as window lines 1-23, not 0-23, in this build. F4's own Q0 tail (the frame plan gives no separate line count for its 32-band case, unlike F2/F3's 80-band "last 16 lines") is graded as the remainder of the frame after its bands and the V4c null band: lines 92-199.
 
-### 10.3 Measured verdicts, both cores agreeing throughout (see the report to the lead for the exact mutation table)
+### 10.3 Measured verdicts, both cores agreeing throughout
 
 - P1 (all twelve), P3 (both, and P7.1), P5.L's Hires half: PASS.
 - P4: the p-half bits (2,3,6,7,10,11) of COLOR00-03, 24 propositions: PASS. The q-half bits (0,1,4,5,8,9) of COLOR00-03 and the whole of COLOR04-0F, 168 propositions: NOT OBSERVABLE -- every graded pixel checked (1120 per bit) found a baseline match and showed no difference from it.
