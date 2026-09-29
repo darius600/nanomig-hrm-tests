@@ -63,7 +63,7 @@ the reason set out below; they sit in the same table because a reader comparing
 implementations wants them side by side.
 
 **[`../findings.md`](../findings.md) is the register** — every open finding,
-its status, its package and its third witness, in one table. It is the list to go to;
+its status, its package and the verdict of the four, in one table. It is the list to go to;
 this directory holds what it links to.
 
 ## Pinned revisions

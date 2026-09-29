@@ -107,12 +107,13 @@ module does cannot decide whether it is right. Twelve chapter-2 packages do
 still name one in their `Primary oracle` line, and they name it *second*: the
 manual and its printed pages first, then the lab document the package was
 planned from. That document is a planning artefact, not an oracle, and it is not
-published — the claim ids beside it are the public record of the same work.
+published — the claim ids beside it (the stable id of each cited statement of
+the manual) are the public record of the same work.
 
 ## The register
 
-Every open finding, with the package that measures it and what the third witness
-says; withdrawn findings ask nothing and are kept apart, with their own list, in
+Every open finding, with the package that measures it and what the four
+independent implementations do; withdrawn findings ask nothing and are kept apart, with their own list, in
 [`findings/withdrawn/`](findings/withdrawn/).
 **The emulators are not an oracle and never decide a finding** -- they are read
 only for the report to the hardware developers
@@ -155,7 +156,7 @@ three of the four implementations, the 8364R7 silicon and Commodore's A500,
 A2000 and B2000 schematics all side with p. 326 against p. 137.
 
 
-| Key | Subject | Status | Package | Third witness |
+| Key | Subject | Status | Package | Verdict of the four |
 |---|---|---|---|---|
 | [NM-HRM-002](findings/NM-HRM-002.md) | audio channels 0 and 3 play on the left, where p. 137 says right and p. 326 says left | open · page · **red** | `hrm/ch5-audio-stereo-routing` | **3–1 with NanoMig against p. 137**: WinUAE, Denise and Copperline put channels 0 and 3 on the left, as p. 326 prints, and vAmiga on the right, as p. 137 prints; the 8364R7 silicon feeds them to its left pad, and Commodore's A500, A2000 and B2000 schematics take Paula's left pin to the left jack |
 | [NM-HRM-003](findings/NM-HRM-003.md) | OCS Copper pointer uses five high bits, not three | open · RTL · **red** | `hrm/ch2-copper-control`, `hrm/ch2-copper-locreg-width` | **Copperline narrows the REGISTER to 19 bits on OCS**, matching the manual; **WinUAE and vAmiga narrow the BUS** on OCS (`memory.cpp:2619-2623`, `Memory.cpp:1623`), which has the same effect on a fetched address; Denise neither |

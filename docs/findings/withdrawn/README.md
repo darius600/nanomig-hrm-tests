@@ -35,7 +35,7 @@ Each page has the header table [the findings README](../README.md) describes,
 with `Lifecycle` reading `withdrawn`, and states the reason for the withdrawal
 where a live page would suggest a change.
 
-| Key | Subject | Status | Package | Third witness |
+| Key | Subject | Status | Package | Verdict of the four |
 |---|---|---|---|---|
 | [NM-HRM-001](NM-HRM-001.md) | PAL field terminates at 313 lines, not 312 | **withdrawn** | `hrm/ch3-field-geometry` | **all four** run a 313-line PAL field with the long-frame bit set (WinUAE clears it at hard reset); Table 7-5 sanctions 313 |
 | [NM-HRM-009](NM-HRM-009.md) | CLXDAT bit 15 reads as 1, not 0 | **withdrawn** | `hrm/ch3-collision-registers` | **all four** set bit 15 on every CLXDAT read |

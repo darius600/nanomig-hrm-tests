@@ -11,7 +11,9 @@ review, whoever does it, a finding can be mistaken, so every finding page names
 its sources for the reader to check.
 
 **The only oracle is printed literature:** two documents Commodore wrote
-about the chips. Every assertion grades against a page its package names; no
+about the chips. Each test directory, a *package*, grades its assertions
+against the pages it names, and each assertion cites the *claims* it checks:
+single statements of a page, each with a stable id. No
 expected value comes from [NanoMig](https://github.com/harbaum/NanoMig), from
 another core or from an emulator, and emulators appear on the finding pages as
 witnesses, never as the judge. A red test marks a place where the RTL does
