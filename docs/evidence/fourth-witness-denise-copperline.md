@@ -461,7 +461,6 @@ That is a different register function from the SPRHWRM the ECS appendix names.
 
 | finding | missing | why |
 |---|---|---|
-| NM-HRM-005 | WinUAE, Denise, Copperline | Copper WAIT/SKIP cycle *times*. A count in a source is not a time on a bus; this one needs the emulators run, not read. |
 | NM-HRM-007 | Denise | its fetch unit was not traced far enough to say whether an odd hires word count is producible. |
 | NM-HRM-018 | WinUAE, vAmiga | not read for this. |
 

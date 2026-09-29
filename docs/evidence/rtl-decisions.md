@@ -284,12 +284,13 @@ numbers.
 `MOVE` passes `COP_FETCH` and `COP_MOVE`, a `SKIP` `COP_FETCH`,
 `COP_WAIT_OR_SKIP`, `COP_SKIP1` and `COP_SKIP2`, and a satisfied `WAIT`
 `COP_FETCH`, `COP_WAIT_OR_SKIP`, `COP_WAIT1` and `COP_WAIT2` before the next
-fetch (`CopperEvents.cpp`). WinUAE is not compared
+fetch (`CopperEvents.cpp`). WinUAE's `generate_copper` gives the same three
+numbers, and so do Denise and Copperline, all read from their sources
 ([`findings/NM-HRM-005.md`](../findings/NM-HRM-005.md)).
 
-**What it would take:** real hardware, not a patch. One independent
-implementation produces NanoMig's numbers, so either the manual's cycle figures
-are wrong or both implementations share a misreading. A small 68k program
+**What it would take:** real hardware, not a patch. All four emulators
+produce NanoMig's numbers, so either the manual's cycle figures are wrong or
+every implementation shares a misreading. A small 68k program
 timing a loop of `WAIT`s against a CIA timer, run on a real machine, settles it.
 
 ---
@@ -303,7 +304,7 @@ timing a loop of `WAIT`s against a CIA timer, run on a real machine, settles it.
 | NM-HRM-022 | `BLTxPTH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register, narrowed on the bus by chipset | wide register, narrowed on access by chipset |
 | NM-HRM-003 | `COP1LCH` width | 3 bits OCS / 5 ECS | **5 in both** | wide register, narrowed on the bus by chipset | wide register, narrowed on access by chipset |
 | NM-HRM-004 | CDANG=0 lowest address | `$03E` on ECS (p.310); `$080` (Appendix B) | `$080` | `$080` | `$080` |
-| NM-HRM-005 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | not compared | **4 / 8 / 8 — NanoMig's own numbers** |
+| NM-HRM-005 | WAIT/SKIP cycle times | 4 / 6 | 8 / 8 | **4 / 8 / 8** | **4 / 8 / 8 — NanoMig's own numbers** |
 
 **NM-HRM-022 and NM-HRM-003 are one decision.** NM-HRM-020 and NM-HRM-021 are
 independent, and NM-HRM-020 is the cheapest to act on. NM-HRM-004 asks for no

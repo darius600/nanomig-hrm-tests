@@ -131,8 +131,8 @@ different ways. **On NM-HRM-003 both emulators narrow an OCS fetch address to th
 manual's width**, on the bus rather than in the register. **On NM-HRM-004 both do
 what NanoMig does and what Appendix B marks**, against Appendix C's p.310, and
 the finding is filed against the printed page because the manual contradicts
-itself. **On NM-HRM-005 vAmiga gives NanoMig's three numbers**; WinUAE was not
-compared.
+itself. **On NM-HRM-005 vAmiga and WinUAE both give NanoMig's three numbers**, read
+from their sources.
 
 Where an emulator agrees with NanoMig against a page that is clear, as vAmiga
 does on NM-HRM-005, that does not close the finding. It moves it: the question

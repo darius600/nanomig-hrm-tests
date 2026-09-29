@@ -216,7 +216,7 @@ three come out three different ways:
 |---|---|---|---|
 | [NM-HRM-003](../findings/NM-HRM-003.md) | OCS keeps three high pointer bits | both keep the register wide and narrow the fetched address to 19 bits on OCS, **as the manual does** | five high bits in both chipsets |
 | [NM-HRM-004](../findings/NM-HRM-004.md) | p.310: ECS with CDANG clear reaches $03E–$07E; Appendix B pp.289-290: $040–$07E closed unless CDANG is set | CDANG clear blocks below $080 in both, chipset-independent, **as Appendix B marks** | the same |
-| [NM-HRM-005](../findings/NM-HRM-005.md) | SKIP 4, satisfied WAIT 6, WAIT − MOVE 2 memory cycle times | vAmiga 4 / 8 / 8 for MOVE / SKIP / satisfied WAIT; WinUAE not compared | the same three numbers as vAmiga |
+| [NM-HRM-005](../findings/NM-HRM-005.md) | SKIP 4, satisfied WAIT 6, WAIT − MOVE 2 memory cycle times | WinUAE and vAmiga both 4 / 8 / 8 for MOVE / SKIP / satisfied WAIT, read from their sources | the same three numbers |
 
 The citations are in [`third-witness.md`](third-witness.md).
 
