@@ -965,25 +965,40 @@ int main(int argc, char** argv) {
             // drives the SAME comparator (cyclic-consecutive-in-M_V, level
             // pairs matching L_1(v)) with a proven-live stimulus: the CPU
             // writes AUD1VOL directly, unattached, in M_V's own order, for
-            // more than one full cycle (prog_p1_ctrl.bin).
+            // more than one full cycle, with a marker after each write
+            // (prog_p1_ctrl.bin). Graded per marker interval, exactly as
+            // R-VOL-1's own level_table already does (complete_runs, then
+            // discard the two settling runs after each register write) --
+            // not a single continuous scan, which would fold each
+            // transition's leftover old-level runs into a stray segment.
             Capture pc = run_capture(dir + "/prog_p1_ctrl.bin", budget_for(120000));
-            auto pmk = markers(pc);
-            auto pon = m_on(pmk), poff = m_off(pmk);
-            bool pok = pon && poff;
+            std::vector<uint16_t> p1_codes;
+            std::vector<int> p1_vals = {32};
+            for (int rep = 0; rep < 3; ++rep)
+                for (int v : {1, 2, 4, 8, 16, 63, 21, 32}) p1_vals.push_back(v);
+            for (uint16_t code = 10; code <= 33; ++code) p1_codes.push_back(code);
+            auto pb = sweep_bounds(pc, p1_codes);
+            bool pok = pb.size() == p1_vals.size() + 1;
             std::vector<int> papplied;
             bool plevel_ok = true;
             if (pok && side_of[1] >= 0) {
-                auto pruns = runs_in_window(pc.audio, *pon, plus_La(*poff), side_of[1]);
-                auto psegs = segment_by_pair(pruns);
-                plevel_ok = !psegs.empty();
-                for (auto& s : psegs) {
+                for (size_t i = 0; i < p1_vals.size(); ++i) {
+                    auto pruns = runs_in_window(pc.audio, pb[i], pb[i + 1], side_of[1]);
+                    auto pcomp = complete_runs(pruns, pb[i], pb[i + 1]);
+                    if (pcomp.size() > 2) pcomp.erase(pcomp.begin(), pcomp.begin() + 2);
+                    auto pr = level_pair(pcomp);
                     int found = -1;
-                    for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) { found = kv.first; break; }
+                    for (auto& kv : L1) if (kv.second.first == pr.first && kv.second.second == pr.second) { found = kv.first; break; }
                     if (found < 0) plevel_ok = false;
                     papplied.push_back(found);
                 }
             }
-            bool pcyclic_ok = pok && papplied.size() >= 17 && cyclic_consecutive(papplied, m_v_order);
+            bool pcyclic_ok = pok && papplied.size() >= 17 &&
+                std::find(papplied.begin(), papplied.end(), -1) == papplied.end() &&
+                cyclic_consecutive(papplied, m_v_order);
+            checks.note("P1 MUTATION control: " + std::to_string(papplied.size()) +
+                " intervals matched (need 17, none -1); cyclic-consecutive-in-M_V=" +
+                std::string(pcyclic_ok ? "yes" : "no"));
             checks.expect(pc.loaded && pc.done.has_value() && pok && pcyclic_ok && plevel_ok,
                 "P1 MUTATION stimulus green proven-live control: the CPU writes AUD1VOL directly, "
                 "unattached, in M_V order, for >=17 words -- the same comparator as P1(a)/(b) "
@@ -1105,29 +1120,35 @@ int main(int argc, char** argv) {
             // R-RAMP itself already writes AUD1PER directly, unattached, in
             // M_P's own order (PC4 R-RAMP is green) -- grade its own
             // capture (skipping its 700 settle) through P2(a)'s comparator.
+            // Per marker interval (R-RAMP's own boundaries give ground
+            // truth here), exactly as duration_table already builds DR:
+            // complete_runs, then discard the two settling runs after
+            // each register write, then the median -- not a single
+            // continuous scan, which would fold each transition's
+            // leftover old-duration run into its own stray group.
             auto rb = sweep_bounds(rramp, ramp_def.codes);
             bool rok = rb.size() == ramp_def.values.size() + 1;
             std::vector<int> m_p_order(ramp_def.values.begin() + 1, ramp_def.values.end());
             std::vector<int> rapplied;
             if (rok && side_of[1] >= 0) {
-                auto rruns = runs_in_window(rramp.audio, rb[1], rb.back(), side_of[1]);
-                auto rcomp = complete_runs(rruns, rb[1], rb.back());
-                size_t i = 0;
-                while (i < rcomp.size()) {
-                    size_t j = i; uint64_t dur0 = rcomp[i].end - rcomp[i].start;
+                for (size_t i = 1; i < ramp_def.values.size(); ++i) {
+                    auto rruns = runs_in_window(rramp.audio, rb[i], rb[i + 1], side_of[1]);
+                    auto rcomp = complete_runs(rruns, rb[i], rb[i + 1]);
+                    if (rcomp.size() > 2) rcomp.erase(rcomp.begin(), rcomp.begin() + 2);
                     std::vector<uint64_t> durs;
-                    while (j < rcomp.size() && (uint64_t)std::llabs((long long)(rcomp[j].end - rcomp[j].start) - (long long)dur0) <= 1)
-                        { durs.push_back(rcomp[j].end - rcomp[j].start); ++j; }
-                    double mean = 0; for (auto d : durs) mean += (double)d; mean /= std::max<size_t>(1, durs.size());
+                    for (auto& r : rcomp) durs.push_back(r.end - r.start);
+                    double mean = durs.empty() ? 0.0 : (double)median_u64(durs);
                     int found = -1;
                     for (auto& kv : DR) { if (kv.first == 700) continue; if (std::fabs(kv.second - mean) <= 0.5 * ticks(1)) { found = kv.first; break; } }
                     rapplied.push_back(found);
-                    i = j;
                 }
             }
             bool rcyclic_ok = rok && rapplied.size() >= 17 &&
                 std::find(rapplied.begin(), rapplied.end(), -1) == rapplied.end() &&
                 cyclic_consecutive(rapplied, m_p_order);
+            checks.note("P2 MUTATION control: " + std::to_string(rapplied.size()) +
+                " intervals matched (need 17, none -1); cyclic-consecutive-in-M_P=" +
+                std::string(rcyclic_ok ? "yes" : "no"));
             checks.expect(rramp.loaded && rramp.done.has_value() && rok && rcyclic_ok,
                 "P2 MUTATION stimulus green proven-live control: R-RAMP's own capture (AUD1PER "
                 "written directly, unattached, in M_P order) graded through P2(a)'s own comparator "
