@@ -345,12 +345,12 @@ c. The RESET sequence of §2.3. Its tail is MOVE.W #V2,MK2, then the last action
 
 - G passed.
 - The configuration took effect before RESET: for a memory board, R0 = P0 in this run; for an I/O board, P3's IMG2 ≠ IMG0 in run R3, whose configuration writes are the same.
-- P1's reset witness: at least one LED change in [t_M1, t_C2].
+- P1's reset witness, observed in run R6 itself (not R1): at least one LED change in (t_M1, t_V2].
 - M2 appears at the Chip-memory port, and the CPU's instruction fetches from A+4 onward appear there. That is, Chip memory answers at the program's addresses after RESET. The page does not promise this (p.223). If it does not happen, P6 is "not checkable on this system".
 
 **6. Contrasting cases.**
 
-- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition (§5, "P1's reset witness: at least one LED change in [t_M1, t_C2]"): with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. P6's contrast is therefore carried by P7 part (iii) instead, whose precondition list (§5.3.5) excludes the reset witness.
+- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition (§5, "P1's reset witness... at least one LED change in (t_M1, t_V2]"): with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. P6's contrast is therefore carried by P7 part (iii) instead, whose precondition list (§5.3.5) excludes the reset witness.
 - For the reset-witness precondition: R1a.
 - For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented.
 
