@@ -410,39 +410,45 @@ placing it against a frame boundary.
    the two frames the window spans, 20,480 bytes in all. Every other
    channel uses less
    (audio 16 words, disk 100 words, blitter 64 × 32 words, Copper one
-   instruction). Each case below is its own run.
+   instruction). Each channel's own pointer or location register is written
+   $100 (256 bytes) above its own region's start, not at the region's first
+   word: this leaves a band below the pointer, still inside the region,
+   where precondition (c) can catch another channel's accesses landing
+   there. Each case below is its own run.
    1. Common prologue, with the overlay cleared (2.1).
    2. Bitplane registers (p.59, p.60, p.63, p.64): BPLCON0 = $1200 (one
       plane, bits 14–12 = 1, colour bit 9), DIWSTRT = $2C81, DIWSTOP = $2CC1
       ("The normal PAL DIWSTOP is ($2CC1)", p.59), DDFSTRT = $0038, DDFSTOP
       = $00D0, BPL1MOD = 0.
-   3. Audio x = 0–3: AUDxLC = start of region AUDx (p.139), AUDxLEN = 16
-      (p.139), AUDxPER = 447 (p.143), AUDxVOL = 48 (p.140).
-   4. Copper: list `$FFFF,$FFFE` at the start of COP. Write COP1LC and
-      COPJMP1 (p.30).
-   5. Prepare the sprite data structures in SPR: sprite 0 as chapter 4
-      describes (p.110: control words, data words, end-of-data words), and
-      sprites 1–7 as end-of-data words only.
+   3. Audio x = 0–3: AUDxLC = region AUDx's start + $100 (p.139), AUDxLEN =
+      16 (p.139), AUDxPER = 447 (p.143), AUDxVOL = 48 (p.140).
+   4. Copper: list `$FFFF,$FFFE` at region COP's start + $100. Write COP1LC
+      (that same address) and COPJMP1 (p.30).
+   5. Prepare the sprite data structures in SPR, $100 above region SPR's own
+      start: sprite 0 as chapter 4 describes (p.110: control words, data
+      words, end-of-data words), and sprites 1–7 as end-of-data words only.
    6. Wait for vertical blank: INTREQ = $0020, then poll INTREQR until bit 5
       = 1 (p.219).
-   7. In that vertical blank, write BPL1PT = start of BPL and SPR0PT–SPR7PT
-      = their structures (p.110: "During the vertical blanking interval
-      before the first display of the sprite, you need to write the sprite's
-      memory address into these pointers").
+   7. In that vertical blank, write BPL1PT = region BPL's start + $100 and
+      SPR0PT–SPR7PT = their structures, $100 above region SPR's own start
+      (p.110: "During the vertical blanking interval before the first
+      display of the sprite, you need to write the sprite's memory address
+      into these pointers").
    8. M1; DMACON = $8000 | P (the case's pattern, below); M2; then
       COPJMP1 again and MJ (2.8, step 3), so that the Copper's start in
       the runs with bits 9 and 7 set does not depend on the step-4
       strobe.
    9. Disk, in p.247's order (DMACON has just been written):
-      - DSKPTH = start of DSK, as a long word (p.246).
+      - DSKPTH = region DSK's start + $100, as a long word (p.246).
       - DSKLEN = $4000.
       - DSKLEN = $C064 (bit 15 DMAEN, bit 14 WRITE "RAM -> disk", 100
         words).
       - DSKLEN = $C064 again ("This actually starts the DMA").
       - Read DSKBYTR and store it.
    10. Blitter: BLTCON0 = $01FF (USED, all minterms 1: p.267), BLTCON1 = 0,
-       BLTDMOD = 0, BLTDPT = start of BLT, BLTSIZE = $1020 last (p.200:
-       "Write BLTSIZE last; writing this register starts the blit").
+       BLTDMOD = 0, BLTDPT = region BLT's start + $100, BLTSIZE = $1020
+       last (p.200: "Write BLTSIZE last; writing this register starts the
+       blit").
    11. Read DMACONR and store it. Run the sampler until the end of the first
        complete frame after M2.
 
@@ -493,8 +499,9 @@ placing it against a frame boundary.
    - For (a): in Base, leave out the second DSKLEN = $C064 write (p.247:
      "Write this value again into the DSKLEN register. This actually starts
      the DMA"). Region DSK is then silent in Base.
-   - For (b): write the pattern without SET/CLR ($03FF). DMACONR bits then
-     read 0.
+   - For (b): write DMACON = $83FE (SET/CLR set, every channel and DMAEN on,
+     bit 0 AUD0EN left clear) graded against P = $3FF. DMACONR bits 9–0 then
+     read $3FE, not $3FF, and every channel but AUD0 keeps running.
    - For (c): in Base, point SPR1PT at the start of region AUD0, and AUD0LC
      256 bytes above it. The lowest address accessed in AUD0 is then
      SPR1PT's, and the check fails whichever of the two channels is fetched
