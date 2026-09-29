@@ -606,7 +606,7 @@ That makes 216 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3.
 ### 10.2 Reference frames, as measured
 
 - **R0.** w = 1, phi = 0: one video sample is one hires period on this build. Measured on F5's own pattern lines (a hires frame, full twelve bits compared, per section 5) and reused for every frame, per section 5's own rule that w and phi are frame-invariant.
-- **R1.** The harness's scan doubler shows two output lines per source line (`nmh_harness.h`'s own note). Of the two, the LAST one carries the source line's own fetched data; the first shows something else (checked directly: at a graded pixel, the first copy's colour does not follow the v[i] the port shows was fetched, the second copy's does, on every line checked). The test uses the last copy throughout.
+- **R1.** The harness's scan doubler shows two output lines per source line (`nanomig_harness.h`'s own note). Of the two, the LAST one carries the source line's own fetched data; the first shows something else (checked directly: at a graded pixel, the first copy's colour does not follow the v[i] the port shows was fetched, the second copy's does, on every line checked). The test uses the last copy throughout.
 - **R2.** s is frame-specific and not small: F1's own s is 266. Window line 0 -- the line immediately after each frame's own Copper header -- shows only the border colour across its whole width on every frame checked (F1, F5), not the fetched bitplane data; window lines 1 upward show it correctly, checked directly against the four Colors' own letters (SuperHires) or against COLOR v[i] whole (hires/lores). Every population this specification calls "the top Q0 lines" is graded as window lines 1-23, not 0-23, in this build. F4's own Q0 tail (the frame plan gives no separate line count for its 32-band case, unlike F2/F3's 80-band "last 16 lines") is graded as the remainder of the frame after its bands and the V4c null band: lines 92-199.
 
 ### 10.3 Measured verdicts, both cores agreeing throughout (see the report to the lead for the exact mutation table)
@@ -615,6 +615,8 @@ That makes 216 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3.
 - P4: the p-half bits (2,3,6,7,10,11) of COLOR00-03, 24 propositions: PASS. The q-half bits (0,1,4,5,8,9) of COLOR00-03 and the whole of COLOR04-0F, 168 propositions: NOT OBSERVABLE -- every graded pixel checked (1120 per bit) found a baseline match and showed no difference from it.
 - P5.L's SuperHires half: FAIL -- the same 168-bit population never changes a graded pixel.
 - P2 (R, G and B): FAIL -- at least one (Color, component, letters) group's graded pixels do not all show the same full four-bit value.
+
+All twenty of the package's own mutations (test_ch4_shres_bitplane.cpp's own header comment lists each one, with its own measured verdict) were run on both cores; fx68k and TG68K agree on every check's verdict, on every one of the twenty. Nineteen turn at least one check red through the clause they target. The twentieth (NMH_MUTATE=C7) ran and produced no red at all -- measured, not assumed; reported to the lead rather than reinterpreted. Three of the nineteen (V4B, V4D, V5) also turn C7's own precondition red, through a difference in their own F4 build unrelated to what they target (section 10.1's V4c null band is missing from that one build); noted as measured, not patched.
 
 ### 10.4 What the specification lists that this pass did not build
 

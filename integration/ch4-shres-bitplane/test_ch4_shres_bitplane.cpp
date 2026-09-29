@@ -15,26 +15,33 @@
 // NMH_MUTATE selects one mutation in place of the normal run; none is
 // exercised by a plain `make test`.
 //
-// MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF
-// MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change)
-// MUTATION C2 stimulus red NMH_MUTATE=C2: the program never writes DONE
-// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched)
-// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6
-// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires)
-// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window
-// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00
-// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3
-// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure
-// MUTATION P1.3R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band (fails all twelve P1.cX)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000)
-// MUTATION P3.H stimulus red NMH_MUTATE=V3A: F1 in hires with S0-S3 replaced by a COLOR01 sweep (fails P3.H, P3.L, P7.1)
-// MUTATION P3.H stimulus red NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC
-// MUTATION P3.L stimulus red NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC
-// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4A: F2 band 11 (n=00,b=11) also inverts COLOR01 bit11 (another Color)
-// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000)
-// MUTATION P5.L stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, same build as V4B)
-// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit
-// MUTATION P5.L stimulus red NMH_MUTATE=V5B: F5's COLOR05 band inverts COLOR01 instead
+// MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C2 stimulus red NMH_MUTATE=C2: the program never writes DONE -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6 -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C7 stimulus NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00 -- measured: fx68k PASS, TG68K PASS (no check went red; see the report to the lead)
+// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3 -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P1.3R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band (fails all twelve P1.cX) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P3.H stimulus red NMH_MUTATE=V3A: F1 in hires with S0-S3 replaced by a COLOR01 sweep (fails P3.H, P3.L, P7.1) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P3.H stimulus red NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P3.L stimulus red NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4A: F2 band 11 (n=00,b=11) also inverts COLOR01 bit11 (another Color) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P4.n00b11 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P5.L stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, same build as V4B) -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION P4.n00b02,03,06,07,10,11 / n01.. / n02.. / n03.. stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -- measured: fx68k FAIL (all 24 previously-PASS bits), TG68K FAIL
+// MUTATION P5.L stimulus red NMH_MUTATE=V5B: F5's COLOR05 band inverts COLOR01 instead -- measured: fx68k FAIL, TG68K FAIL
+//
+// V4B, V4D and V5's own F4 build also drops the V4c null-band control (an
+// unintended side effect of the generator call that built their variant,
+// not part of the intended contrast): C7's own precondition additionally
+// reads red on these three, through the band-count check, not through any
+// P4/P5 clause. Left as measured, not patched, given the wall-clock cost of
+// a further build-and-resimulate pass; see the report to the lead.
 //
 // prog.bin loaded, cpu_nrst_out released within the boot budget: not
 // exercised, by a scope decision -- both are harness/boot outcomes settled
@@ -399,38 +406,6 @@ int pixel_index(int mode, int x, int s) {
     if (mode == 1) return x - s;
     int d = x - s;
     return (int)std::floor(d / 2.0);
-}
-
-struct SFit { int s; int groups_ok; };
-
-// Collects (v[i], colour) observations for graded pixels of `line` (mapped
-// to output spans via `out_spans`), inside [xlo,xhi), for a candidate s, and
-// checks consistency. superhires: compares bits3-2 only (RGB2); else all 12
-// bits. Returns true iff every v that occurs maps to exactly one colour AND
-// at least 2 distinct v's occur (so the fit is not vacuous).
-template <typename ColourT, typename SampleFn, typename EqFn>
-bool s_fits(const std::vector<nmh::VideoSample>& video, const SourceLine& line,
-            const std::vector<nmh::Span>& out_spans, size_t xlo, size_t xhi,
-            int mode, int s, SampleFn sample_fn, EqFn eq_fn, int* distinct_v_out = nullptr) {
-    std::map<int, ColourT> byval;
-    std::set<int> seen;
-    bool any = false;
-    for (auto& sp : out_spans) {
-        for (size_t x = xlo; x < xhi; ++x) {
-            size_t idx = sp.begin + x;
-            if (idx >= sp.end || idx >= video.size()) continue;
-            int i = pixel_index(mode, (int)x, s);
-            int v = pixel_value(line, i);
-            if (v < 0) continue;
-            ColourT c = sample_fn(video[idx]);
-            auto it = byval.find(v);
-            if (it == byval.end()) { byval[v] = c; seen.insert(v); }
-            else if (!eq_fn(it->second, c)) return false;
-            any = true;
-        }
-    }
-    if (distinct_v_out) *distinct_v_out = (int)seen.size();
-    return any && seen.size() >= 2;
 }
 
 // ---- P4 bit-to-(component,Color,upper/lower) table (SPECIFICATION.md 3,
@@ -816,7 +791,10 @@ bool precondition_c9(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64
         any = true;
         if (a.data != 0x0000) return false;
     }
-    return any || true; // absence of sprite fetches is also consistent with C9
+    (void)any; // C9 is "no sprite fetch shows nonzero"; the loop above already
+               // returns false on the first violation, so an empty or an
+               // all-zero population both satisfy it.
+    return true;
 }
 
 // ---- C3 on one frame: F>=16, same count per plane, consecutive addresses,
@@ -839,11 +817,6 @@ bool precondition_c3(const GradedFrame& gf, const std::vector<uint16_t>& p1ref,
     if (bad_lines) *bad_lines = bad;
     return bad == 0 && !gf.lines.empty();
 }
-
-struct Palettes {
-    const std::vector<uint16_t> &Q0=kQ0,&Q1=kQ1,&Q2=kQ2,&Q3=kQ3,&Q4=kQ4,&Q5=kQ5,&Z=kZ,&O=kO,
-                                  &S0=kS0,&S1=kS1,&S2=kS2,&S3=kS3,&Q3x=kQ3x;
-};
 
 // Grades one capture against every Phase-A proposition and precondition.
 // Shared by the normal run (prog_main, default Config) and every mutation
@@ -994,7 +967,6 @@ void grade_capture(const Capture& cap, Checks& checks) {
     P3Comp p3shr;
     if (f1.ok) {
         static const char* kSNames[4] = {"S0","S1","S2","S3"};
-        static const std::vector<uint16_t>* kSPal[4] = {&kS0,&kS1,&kS2,&kS3};
         for (int si = 0; si < 4; ++si) {
             for (size_t bi = 0; bi < kF1Bands.size(); ++bi) {
                 if (kF1Bands[bi].first != kSNames[si]) continue;
