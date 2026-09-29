@@ -1258,3 +1258,129 @@ graded (section 1).
     not write to this register"; no page gives its value after reset.
     Specified: it is not written, and the ECS runs rest on the assumption
     stated in 3.1, checked against the OCS runs.
+
+## 8. Build (Run A only; P3-P6 and P9 are not built in this pass)
+
+Programs: `prog_a.s` (Run A, PAL, ECS or OCS selected by the harness
+`Config` the test passes; `copbeam.i` holds this package's own register
+equates and the common prologue macro). Variant wrappers, each `include`ing
+`prog_a.s` with one symbol set (SPECIFICATION.md's own pattern, matching
+the apparatus control and the chapter-6 packages): `prog_a_ntsc.s` (NTSC
+tail loop), `prog_a_lace.s` (A-LACE), `prog_a_noprep_pal.s` /
+`prog_a_noprep_ntsc.s` (A-noprep), `prog_a_slow.s` (A-slow),
+`prog_a_hold.s` (A-hold), `prog_a_nocop.s` (A-noCop), `prog_a_anchor.s`
+(A-anchor), `prog_a_shift.s` (A-shift), `prog_a_p2waited.s` (an added
+stimulus mutation for P2's own "waited" precondition, named in 8.3),
+`prog_a_nodone.s` (P1's completion-word contrasting case).
+
+The trace loop (RF2's stimulus, 3.4/5) is a flat run of `SAMPLE_COUNT`
+(50000) copies of `move.l VPOSR(a0),(a6)+`, with no loop-control
+instruction between samples: see 8.2. A-noCop and A-slow keep a `dbra`
+loop instead, since neither needs the tighter form (A-noCop only has to
+show R1 fails after DMACON is cleared; A-slow's whole point is a large
+gap). A-hold reads once and stores the same value `SAMPLE_COUNT` times.
+
+### 8.1 RF1 (slots): S measured
+
+S = 8 `clk_sys` cycles per slot, measured from refresh reads (RAM-port
+reads at word address 0, four per line, each two slots after the one
+before, Figure 6-9) in every capture, PAL and NTSC alike. The refresh
+count is taken from the harness's own uncoalesced port log, not the
+coalesced one: `coalesce()` (`nanomig_harness.h`) merges consecutive
+same-address, same-data log entries regardless of how many real cycles
+separate them, and refresh reads at address 0 always carry data 0000 --
+two genuinely distinct refresh reads with nothing else logged between them
+were observed merged into one in the coalesced log during this package's
+own build, understating the count and doubling the apparent spacing where
+it happened. The uncoalesced log does not have this failure mode (a
+same-slot access is a real bus arbitration event there, not a merge
+artefact), and RF1's own S1 collision check (3.2) is run against it.
+
+### 8.2 RF2 (T1): measured
+
+`SAMPLE_COUNT=50000` samples, PAL and NTSC, ECS: `PRE-T1` measures 9/49999
+and 10/49999 consecutive-sample gaps over 16 slots respectively (both
+cores agree). A `dbra`-looped version of the identical single instruction
+(kept for A-noCop, 8's own program list) measured roughly twice that
+violation rate, all at block boundaries (the `subq`/`bne` pair adds words
+to fetch between two samples); the flat form removes that source and
+leaves only the residual, which recurs at the same order of magnitude
+regardless of further unrolling. `PRE-T1`, `PRE-T2`, `PRE-R1`, `PRE-L1`,
+`PRE-S1a`, `PRE-S1b` and `PRE-FIELDS` are printed for both the PAL and the
+NTSC capture; `PRE-ANCHOR` (RF2, A-anchor's own precondition: every m_v
+lies on line v) is printed for both and passed (1456/1456 PAL, 1872/1872
+NTSC).
+
+### 8.3 P1: measured
+
+Every complete field, PAL and NTSC, ECS and OCS alike (3.1's own
+cross-check: the field-length set measured under OCS equals the one
+measured under ECS in both standards, so P1 is graded under the checked
+assumption, not merely the stated one): the set of distinct V values is
+exactly {313} for PAL (not {312}) and exactly {263} for NTSC (not {262}),
+over every field captured (7 PAL, 9 NTSC). The field's first trusted
+sample is at V=0 and H=0 occurs in the trace, in both standards, matching
+p.27. `P1-COUNT-PAL` and `P1-COUNT-NTSC` are therefore FAIL on both cores;
+`P1-ORIGIN-PAL` and `P1-ORIGIN-NTSC` are PASS on both cores.
+
+Mutations (`NMH_MUTATE=<value>`, run once per value on each core; both cores
+agree on every verdict below):
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P1-STD-PAL | P1-COUNT-PAL (NTSC capture graded as PAL) | FAIL | FAIL |
+| P1-STD-NTSC | P1-COUNT-NTSC (PAL capture graded as NTSC) | FAIL | FAIL |
+| P1-LACE | P1-COUNT-PAL, A-LACE | FAIL | FAIL |
+| P1-T1 | PRE-T1 PAL, A-slow (108/108 gaps over 16 slots) | FAIL | FAIL |
+| P1-T2 | PRE-T2 PAL, A-hold (49999/49999 violate T2) | FAIL | FAIL |
+| P1-R1 | PRE-R1 PAL, A-noCop (28/30 fx68k, 20/22 TG68K spans) | FAIL | FAIL |
+| P1-DONE | PRE-DONE PAL, A-nodone | FAIL | FAIL |
+
+### 8.4 P2: measured
+
+PAL: L(v) = 227 for every one of 1449 measured pairs (7 fields).
+NTSC: L(v) = 227 for every one of 1863 measured pairs (9 fields) as well
+-- no value of 228 was measured, and consequently no alternation either.
+`P2-PAL` is therefore PASS and `P2-NTSC` is FAIL, on both cores.
+
+Mutations:
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P2-STD-PAL | P2-PAL (NTSC capture graded as PAL) -- does not redden, see 8.4's own text | PASS (stays green) | PASS (stays green) |
+| P2-STD-NTSC | P2-NTSC (PAL capture graded as NTSC) | FAIL | FAIL |
+| P2-SHIFT | P2-PAL, A-shift | FAIL | FAIL |
+| P2-WAITED | an added mutation: an extra WAIT($7F,$40) inserted after MARK($7F) | FAIL through its own targeted clause (printed as its own PASS line, confirming the red) | same |
+| ANCHOR | PRE-ANCHOR PAL, A-anchor (1449/1449 markers off) | FAIL | FAIL |
+
+### 8.5 P7, P8: measured
+
+Every field captured, PAL and NTSC: the second word of WAIT($FF,$E2) is
+fetched promptly, at line 255 (the same line as m_$FF, matching A-anchor's
+own check for that marker), but the next instruction fetch (the first of
+the 16 padding moves) is not: it lands close to the field's own end, not
+"well inside line 256" as the padding's own reasoning (SPECIFICATION.md
+5, Run A) assumed. In consequence the tail loop (m_256 onward) is never
+reached in any of the 16 fields captured (`PRE-E2-REACHED`, 0/7 PAL, 0/9
+NTSC). `P7-PAL`, `P7-PAL-WAITED`, `P7-NTSC`, `P7-NTSC-WAITED` and all three
+P8 assertions are FAIL on both cores for this reason. See the report to
+the lead for what this means for Run B's own use of the same recipe
+(p.23's WAIT($FF,$E2), not yet built).
+
+Mutations:
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P7-NOPREP-PAL | P7-PAL, A-noprep: fetched on line 255 instead of 256 -- already red on the normal run (PRE-E2-REACHED), stays red here through a genuine per-marker mismatch instead of an empty population | FAIL | FAIL |
+| P7-NOPREP-NTSC | P7-NTSC, A-noprep, same reason | FAIL | FAIL |
+
+P8 carries no mutation of its own in this pass: its main clauses are
+already red on the normal run for the reason just given, and this package
+has no live input at this boundary that reaches the tail loop at all, so
+no contrasting case can show the comparator going green -- unfalsifiable
+at this boundary while `PRE-E2-REACHED` itself stays red.
+
+### 8.6 Not built
+
+P3, P4 (Run C), P5 (Run D), P6 (Run B) and P9 (Runs D, E) are not built in
+this pass.
