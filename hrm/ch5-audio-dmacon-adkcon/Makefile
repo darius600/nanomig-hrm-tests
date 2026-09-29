@@ -21,13 +21,20 @@ VERILATOR_FLAGS = --no-timing --cc --exe --build -j 0 --Mdir obj_dir --top-modul
 VERILATOR_FLAGS += -I$(SRC_DIR)
 CPP_TEST = test_$(TOP_MODULE).cpp
 
+# MUT=<NAME> replays one guarded mutation (see the "// MUTATION <NAME> ..."
+# lines in test_paula.cpp's own header) by defining MUT_<NAME>=1 for the
+# build, reproducing the exact stimulus/oracle change that assertion's log
+# entry describes. obj_dir is always removed before building (below), so
+# no separate `make clean` is needed when switching MUT values.
+MUTFLAGS := $(if $(MUT),-CFLAGS -DMUT_$(MUT)=1,)
+
 .PHONY: all test clean
 
 all: test
 
 test: $(CPP_TEST) $(VERILOG_SOURCES)
 	rm -rf obj_dir
-	$(VERILATOR) $(VERILATOR_FLAGS) $(VERILOG_SOURCES) $(CPP_TEST)
+	$(VERILATOR) $(VERILATOR_FLAGS) $(MUTFLAGS) $(VERILOG_SOURCES) $(CPP_TEST)
 	./obj_dir/V$(TOP_MODULE)
 
 clean:

@@ -285,16 +285,26 @@
 // attribution, not duplication: the grammar is <id> <kind> <result> with no
 // token between the id and the kind, so one record with both ids joined by
 // "/" would match nothing and both assertions would read as unmutated.
-// MUTATION DMACON-DECODED-BY-PAULA stimulus red: built with -CFLAGS -DMUT_CHIP=1,
-//   which writes to DMACON_W+1 (the wrong address) instead of DMACON_W -> 17/2.
+// MUTATION DMACON-DECODED-BY-PAULA stimulus red: built with -CFLAGS
+//   -DMUT_CHIP=1, which writes to DMACON_W+1 (the wrong address) instead of
+//   DMACON_W inside this assertion's own block (the block carries its own
+//   #if MUT_CHIP guard, replaying DMACON-ADDRESS-AND-WRITE-ONLY's identical
+//   edit) -> 17 passed, 4 failed: this assertion and DMACON-ADDRESS-AND-
+//   WRITE-ONLY both newly red (DMACONR-NOT-DECODED-BY-PAULA stays red from
+//   the unmutated baseline, not newly so). Measured paula_decodes_it=false
+//   -- the write at the wrong address never moves audio_dmal, so the clause
+//   under test, 'a write at $096 visibly changes its own audio_dmal output,
+//   so Paula decodes DMACON', is genuinely falsified by this stimulus.
 //   See the DMACON-ADDRESS-AND-WRITE-ONLY record below for the same edit.
+//   Rebuilt with no flags: 19/2 restored.
 // MUTATION DMACON-ADDRESS-AND-WRITE-ONLY stimulus red: built with -CFLAGS
 //   -DMUT_CHIP=1, which writes to DMACON_W+1 (the
-//   wrong address) instead of DMACON_W -> 17/2, only DMACON-ADDRESS-AND-
-//   WRITE-ONLY newly red (measured before=0 after=0 but side_effect_seen
-//   false, i.e. auden never moved). DMACON-DECODED-BY-PAULA's harness has
-//   no MUT_CHIP guard and stays green under this flag.
-//   Rebuilt with no flags: 18/1 restored.
+//   wrong address) instead of DMACON_W -> 17/4, DMACON-DECODED-BY-PAULA newly
+//   red alongside it (measured before=0 after=0 but side_effect_seen
+//   false, i.e. auden never moved). DMACON-DECODED-BY-PAULA now carries its
+//   own MUT_CHIP guard (see its own record above) and goes red under this
+//   flag too, on the same edit.
+//   Rebuilt with no flags: 19/2 restored.
 // MUTATION ADKCON-BIT11-UARTBRK-FORCES-TXD-LOW stimulus red: built with
 //   -CFLAGS -DMUT_UARTBRK=1, which writes bit 10 (WORDSYNC) instead of bit
 //   11 (UARTBRK) -> 17/2, only this assertion newly red (txd never forced
@@ -1243,9 +1253,18 @@ int main(int argc, char** argv) {
     // ---------------- DMACON-DECODED-BY-PAULA ----------------
     // Same measurement technique as DMACON-ADDRESS-AND-WRITE-ONLY, cited
     // separately because chip ownership is its own printed proposition.
+    // Carries its own MUT_CHIP guard (the same edit DMACON-ADDRESS-AND-
+    // WRITE-ONLY's guard applies above): without it, this block always
+    // wrote DMACON_W regardless of the flag, so the flag never touched
+    // the stimulus this assertion measures and it stayed green under
+    // -DMUT_CHIP=1 no matter what the mutation log claimed.
     {
         Harness h;
+#if MUT_CHIP
+        h.write_reg(DMACON_W + 1, 0x8201);  // MUTATION: wrong address (same edit as DMACON-ADDRESS-AND-WRITE-ONLY).
+#else
         h.write_reg(DMACON_W, 0x8201);
+#endif
         bool paula_decodes_it = (h.observe_audio_dmal(STRHOR_PERIOD * 4 + 8) & 0x1) == 1;
         checks.expect(paula_decodes_it,
             "DMACON-DECODED-BY-PAULA: this fixture IS paula.v, and a write "
