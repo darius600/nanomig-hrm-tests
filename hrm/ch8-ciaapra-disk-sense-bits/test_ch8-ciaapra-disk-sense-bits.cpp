@@ -120,6 +120,18 @@
 //   PA7 was actually driven low; 0 passed, 1 failed). (PROP-INPUT is the
 //   only assertion below still graded via expect(); its mutation record is
 //   therefore the only one kept.)
+// MUTATION opus:8-cia.c2-immune-write stimulus red: bit_is_pure_input's own-
+//   write clause holds a position's line low, leaves that position's own
+//   direction bit clear and writes its own PRA bit HIGH anyway, expecting a
+//   read still LOW (p.341: a clear DDR bit defines an input, and a PR read
+//   returns the actual pin regardless of any write). At PA3, this mutation
+//   releases every porta_in line -- PA3's included -- immediately before
+//   that read, leaving the fixed expectation (PA3 reads LOW) untouched, so a
+//   comparator that actually reads the pin must go red; guarded by
+//   mutating("opus:8-cia.c2-immune-write") and read once from MUTATE at
+//   startup (MUTATE=opus:8-cia.c2-immune-write: opus:8-cia.c2 sol:8-cia.c1
+//   PROP-INPUT FAIL -- PA3 read back HIGH once its own line was released;
+//   0 passed, 1 failed).
 //
 // REPAIR NOTE (2026-09-15): independent validation of this package's two
 //   other checks. FIXTURE-LIVE (no uid) is a liveness measurement only --
@@ -285,7 +297,9 @@ bool fixture_live(Harness& h, bool repeat_first_word_bug = false) {
 // reads LOW) is left untouched, so a correctly-discriminating comparator
 // must go red.
 // ---------------------------------------------------------------------
-bool bit_is_pure_input(Harness& h, int bit, int other_bit, bool wrong_bit_bug = false) {
+bool bit_is_pure_input(Harness& h, int bit, int other_bit,
+                        bool wrong_bit_bug = false,
+                        bool release_before_read_bug = false) {
     const uint8_t bit_mask = static_cast<uint8_t>(1u << bit);
     const uint8_t other_mask = static_cast<uint8_t>(1u << other_bit);
 
@@ -303,10 +317,14 @@ bool bit_is_pure_input(Harness& h, int bit, int other_bit, bool wrong_bit_bug = 
     const uint8_t r2 = h.read_reg(RS_PRA);
     const bool no_crosstalk = ((r2 >> bit) & 1u) == 0u;
 
-    // (c) `bit`'s OWN direction switched to "output" and PRA written HIGH
-    // at that position -- must still read LOW: the write has no effect.
-    h.write_reg(RS_DDRA, bit_mask);
+    // (c) `bit`'s own direction left CLEAR -- p.341 defines a position with
+    // a clear DDR bit as an input -- and `bit`'s own PRA position written
+    // HIGH anyway: a PR read returns the actual pin state regardless of any
+    // write (p.341), and `bit`'s line is still held low from (a), so the
+    // write must not move it: still LOW.
+    h.write_reg(RS_DDRA, 0x00);
     h.write_reg(RS_PRA, bit_mask);
+    if (release_before_read_bug) h.drive_porta_in(0xFC);  // MUTATION stimulus: releases every line, `bit`'s included, just before the read this clause grades.
     const uint8_t r3 = h.read_reg(RS_PRA);
     const bool immune_to_own_write = ((r3 >> bit) & 1u) == 0u;
 
@@ -317,11 +335,13 @@ bool bit_is_pure_input(Harness& h, int bit, int other_bit, bool wrong_bit_bug = 
 // PROP-INPUT: PA5, PA4, PA3 and PA2 of CIAAPRA are genuine input bits --
 // graded across all four bit positions Table 8-5 names.
 // ---------------------------------------------------------------------
-bool prop_input_sweep(Harness& h, std::string& detail, int wrong_bit_bug_at = -1) {
+bool prop_input_sweep(Harness& h, std::string& detail, int wrong_bit_bug_at = -1,
+                       int release_bug_at = -1) {
     bool all_ok = true;
     const int bits[4] = {5, 4, 3, 2};
     for (int bit : bits) {
-        const bool ok = bit_is_pure_input(h, bit, /*other_bit=*/7, bit == wrong_bit_bug_at);
+        const bool ok = bit_is_pure_input(h, bit, /*other_bit=*/7,
+            bit == wrong_bit_bug_at, bit == release_bug_at);
         detail += "PA" + std::to_string(bit) + "=" + (ok ? "PASS " : "FAIL ");
         all_ok = all_ok && ok;
     }
@@ -347,18 +367,25 @@ int main(int argc, char** argv) {
     {
         Harness h;
         std::string detail;
-        const bool result = prop_input_sweep(h, detail, mutating("opus:8-cia.c2") ? 3 : -1);
+        const bool result = prop_input_sweep(h, detail,
+            mutating("opus:8-cia.c2") ? 3 : -1,
+            mutating("opus:8-cia.c2-immune-write") ? 3 : -1);
         checks.expect(result,
             "opus:8-cia.c2 sol:8-cia.c1 PROP-INPUT: PA5, PA4, PA3 and PA2 of "
             "CIAAPRA are genuine input bits -- graded across all four "
             "positions Table 8-5 names: each position's CIAAPRA read tracks "
             "its own externally-driven pin, a DIFFERENT position's DDRA/PRA "
-            "write does not move it, and that position's OWN DDRA/PRA write "
-            "does not move it either. Not graded: which drive signal "
-            "(DSKRDY* etc.) each position is named for -- that binding is "
-            "minimig.v:622, one level above this boundary [p.244 \"Bits "
-            "labeled PA are input bits in CIAAPRA ($BFE001)\", Table 8-5 "
-            "(PA5 DSKRDY*, PA4 DSKTRACK0*, PA3 DSKPROT*, PA2 DSKCHANGE*)]");
+            "write does not move it, and a write to that position's OWN "
+            "PRA, with its own DDRA bit left clear, does not move it "
+            "either. Not graded: which drive signal (DSKRDY* etc.) each "
+            "position is named for -- that binding sits one level above "
+            "this fixture's boundary [p.244 \"Bits labeled PA are input "
+            "bits in CIAAPRA ($BFE001)\", Table 8-5 (PA5 DSKRDY*, PA4 "
+            "DSKTRACK0*, PA3 DSKPROT*, PA2 DSKCHANGE*); p.341 \"If a DDR "
+            "bit is set to a 0, the corresponding PR bit is defined as an "
+            "input\" and \"you read the actual current state of the I/O "
+            "pins ... regardless of whether you have set them to be "
+            "inputs or outputs\"]");
         checks.note("PROP-INPUT per-bit result: " + detail);
     }
 

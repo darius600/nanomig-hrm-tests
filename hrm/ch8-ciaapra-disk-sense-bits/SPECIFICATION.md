@@ -100,15 +100,21 @@ and are not graded here.)
 of PA5, PA4, PA3 and PA2: (a) a CPU read of CIAAPRA at that bit position
 reflects the value currently driven at the corresponding external input pin,
 distinctly from the other three positions; and (b) that reflection is not
-conditional on the port's configuration — no write to the port's direction
-register, and no write to CIAAPRA's own data register, at that bit position,
-changes what a subsequent CIAAPRA read reports there; it continues to track
-the external pin. "Input bit" is a meaningful, falsifiable claim — distinct
-from "an output bit that happens to currently echo the external value" —
-only if an attempt to override it through the write path provably fails to
-move it. Part (b) is therefore the necessary other half of part (a), not an
-independent claim invented here; together they are what "is an input bit"
-means for an 8520-style port.
+conditional on writes that leave the position configured as an input — a
+DIFFERENT position's direction and data registers, written to output, must
+not move it; and this position's own data register, written while its own
+direction bit stays clear (p.341: a clear DDR bit defines an input, and a PR
+read is always the actual pin), must not move it either. "Input bit" is a
+meaningful, falsifiable claim — distinct from "an output bit that happens to
+currently echo the external value" — only if an attempt to override it
+through the write path, without also reconfiguring the position itself as an
+output, provably fails to move it. Switching the position's own direction
+bit to output as well, with the same external line still held, is a
+different case: p.341 says a read is always the actual pin but does not say
+which of an external hold and an enabled output then sets that pin, so it is
+not graded here. Part (b) is therefore the necessary other half of part (a),
+not an independent claim invented here; together they are what "is an input
+bit" means for an 8520-style port, short of that undecided case.
 
 Status: testable, at `ciaa`'s own boundary — no address decoder or `minimig`
 instantiation is needed for either half.
