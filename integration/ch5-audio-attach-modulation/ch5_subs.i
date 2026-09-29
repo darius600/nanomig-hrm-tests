@@ -94,6 +94,73 @@ run_session:
         rts
 
 ; ---------------------------------------------------------------------
+; run_session_mut_ch_per -- like run_session, but after waiting half the
+; step-7 duration, rewrites one channel's AUDxPER to a new value (a
+; tripwire's own honest contrast: a mid-session period rewrite, the same
+; mechanism PC6/PC7's own contrasts already use for AUD0PER, applied here
+; to a tripwire instead), then waits the other half before step 8.
+;   entry: a2 = pointer to a session_desc (as run_session)
+;          d5.w = channel index (0-3) whose AUDxPER to rewrite
+;          d6.w = new AUDxPER value
+;   clobbers: d0-d6, a0-a1
+run_session_mut_ch_per:
+        movem.l d0-d6/a0-a1,-(sp)
+        lea     CUSTOM,a0
+        moveq   #0,d4
+.rsmp_ch:
+        move.w  d4,d0
+        mulu.w  #10,d0
+        tst.l   (a2,d0.w)
+        beq.s   .rsmp_unused
+        move.l  (a2,d0.w),a1
+        move.w  4(a2,d0.w),d1
+        move.w  6(a2,d0.w),d2
+        move.w  8(a2,d0.w),d3
+        move.w  d4,d0
+        mulu.w  #$10,d0
+        bsr     setup_channel
+        lea     CUSTOM,a0
+        bra.s   .rsmp_next
+.rsmp_unused:
+        move.w  d4,d0
+        mulu.w  #$10,d0
+        adda.w  d0,a0
+        move.w  #0,AUD0VOL(a0)
+        lea     CUSTOM,a0
+.rsmp_next:
+        addq.w  #1,d4
+        cmp.w   #4,d4
+        blt.s   .rsmp_ch
+
+        move.w  40(a2),ADKCON(a0)
+        move.w  ADKCONR(a0),ADKR_STORE
+        move.w  42(a2),DMACON(a0)
+        move.w  #1,MARKER
+        move.w  DMACONR(a0),DMACR_STORE
+
+        move.l  46(a2),d0
+        lsr.l   #1,d0
+        bsr     wait_ticks_via_lines
+
+        move.w  d5,d0
+        mulu.w  #$10,d0
+        lea     CUSTOM,a0
+        adda.w  d0,a0
+        move.w  d6,AUD0PER(a0)
+        lea     CUSTOM,a0
+
+        move.l  46(a2),d0
+        lsr.l   #1,d0
+        bsr     wait_ticks_via_lines
+
+        move.w  44(a2),DMACON(a0)
+        move.w  #2,MARKER
+        move.w  #$00FF,ADKCON(a0)
+
+        movem.l (sp)+,d0-d6/a0-a1
+        rts
+
+; ---------------------------------------------------------------------
 ; wait_lines -- busy-waits for at least d0.w horizontal-line boundaries.
 ;   entry: d0.w = number of line boundaries to wait for (>=1)
 ;   clobbers: d0-d2, a0

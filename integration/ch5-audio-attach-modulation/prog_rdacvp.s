@@ -1,5 +1,7 @@
 ; prog_rdacvp.s -- R-DAC-VP: channel 0 alone, unattached, plays M_VP.
-; Serves P8's preconditions.
+; Serves P8's preconditions and PC3 (the specification's duration is a
+; minimum; the length here is enough to show two complete cycles after
+; the first restart).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -23,7 +25,7 @@ desc:
         dc.w    $8000
         dc.w    $8201
         dc.w    $0001
-        dc.l    40000
+        dc.l    125000
 
 start:
         lea     CUSTOM,a0

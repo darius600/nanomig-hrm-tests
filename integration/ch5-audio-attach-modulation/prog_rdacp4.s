@@ -1,6 +1,7 @@
 ; prog_rdacp4.s -- R-DAC-P4: channel 0 alone, unattached, plays M_P4.
 ; Serves P8's preconditions (the unattached reference for the DAC-bypass
-; check).
+; check) and PC3 (the specification's duration is a minimum; the length
+; here is enough to show two complete cycles after the first restart).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -24,7 +25,7 @@ desc:
         dc.w    $8000
         dc.w    $8201
         dc.w    $0001
-        dc.l    24000
+        dc.l    60000
 
 start:
         lea     CUSTOM,a0

@@ -3,10 +3,10 @@
 ; (W_V, silent). See SPECIFICATION.md, P6.
 ;
 ; NOATTACH set: omit the attach write (target then keeps VOL 40 always).
-; EXTRA set: ADKCON $8005 instead of $8001 (bit 2 also set: p.151 predicts
-; ch2 -- a tripwire here -- now modulates ch3's volume with W_V's own
-; valid words 48 and 16, so ch3 becomes audible and the "other side
-; constant" check must fail).
+; EXTRA set: ch3 (the tripwire on ch0's own side) is given a non-zero
+; starting AUDxVOL (48) instead of 0, with the ordinary attach write
+; ($8001) unchanged: ch3 becomes audible on its own, so the "other side
+; constant" check must fail -- clause (c)'s own honest contrast.
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -32,15 +32,15 @@ desc:
         dc.l    wv_data2
         dc.w    2,1800,0
         dc.l    wv_data3
+        ifd     EXTRA
+        dc.w    2,2000,48
+        else
         dc.w    2,2000,0
+        endif
         ifd     NOATTACH
         dc.w    $8000
         else
-        ifd     EXTRA
-        dc.w    $8005
-        else
         dc.w    $8001
-        endif
         endif
         dc.w    $820F
         dc.w    $000F

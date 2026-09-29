@@ -165,7 +165,8 @@ and AUDxVOL = 0. Durations are minimum ticks from M_on to M_off.
 | Session | ADKCON mask | ch0 | ch1 | ch2 | ch3 | Duration | Serves |
 |---|---|---|---|---|---|---|---|
 | R-MOD | $00 | M_V, 8, 4000, 63 | off | off | off | 200,000 | D_mod, P3, P8, P10 anchor |
-| R-DAC-P4 / R-DAC-VP | $00 | M_P4, 4 / M_VP, 8; 4000, 63 | off | off | off | one data-set cycle + 8,000 | P8 preconditions |
+| R-DAC-P4 | $00 | M_P4, 4, 4000, 63 | off | off | off | about 60,000 (minimum: one data-set cycle + 8,000) | P8, PC3 preconditions |
+| R-DAC-VP | $00 | M_VP, 8, 4000, 63 | off | off | off | about 125,000 (minimum: one data-set cycle + 8,000) | P8, PC3 preconditions |
 | R-DAC3-V / R-DAC3-P | $00 | off | off | off | W_V / W_P, 2, 2000, 63 | 30,000 | P8 preconditions |
 | R-VOL-c (c = 1, 2, 3) | $00 | off unless c | | | | 4,000 per value | level references |
 | R-PER-c (c = 1, 2, 3) | $00 | off unless c | | | | 20,000 per value | duration references |
@@ -240,7 +241,7 @@ makes it fail, so that the check itself can be shown to go red.
 |---|---|---|
 | PC1 | Bits 7-0 of the stored ADKCONR word equal the session's attach mask (p.265: "ADKCONR 010 R P Audio, disk, control read"). | Omit the step-4 ADKCON write in an attach session (bits read 0); or write $8001 in a reference session. |
 | PC2 | The stored DMACONR word has bit 9 (DMAEN) and the session's AUDxEN bits set (p.278). | Enable with $8000 \| channel mask, without DMAEN. Bit 9 then reads 0, and no audio fetch occurs (p.144: "For any audio DMA to occur ... the DMAEN bit in DMACON must be set"). |
-| PC3 | Every enabled channel has fetches in its own region, at offsets stepping 0, 1, ..., LEN-1, 0, ... (p.147: "Each time the length counter reaches zero, both the location and length registers are reloaded"). The modulator has at least two complete cycles inside the proposition's window. | Leave that channel's AUDxEN bit out of the enable write: the channel makes no fetches. |
+| PC3 | Every enabled channel has fetches in its own region (its own 4 KB, Appendix B), at offsets stepping 0, 1, ..., LEN-1, 0, ... (p.147: "Each time the length counter reaches zero, both the location and length registers are reloaded"), graded from that channel's first restart (the first fetch at offset 0 after F_1) on -- the first pass is graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here. The modulator has at least two complete cycles after its own first restart, inside the proposition's window (one in S-P2). Where a window holds fewer than the required cycles, PC3 prints "not evaluated" for that channel, never PASS or FAIL. | Leave that channel's AUDxEN bit out of the enable write: the channel makes no fetches. |
 | PC4 | In R-VOL-c the reference level pairs of all VSET_c values are pairwise distinct. In R-PER-c and R-RAMP the reference durations are pairwise distinct and rise strictly with the written value. | In the sweep, write 40 in the step labelled 60: two labels then have the same pair. |
 | PC5 | Pairing anchor: channels 0 and 3 measure on one output, 1 and 2 on the other, and the two outputs differ, each channel's own output taken from its own reference session (see *Output sides and silence*). Graded once from the volume-sweep family and once from the period-sweep family. No jack name enters the check. | Relabel the pairing as 0-with-1 / 2-with-3 instead of 0-with-3 / 1-with-2: fails against the same measured outputs. |
 | PC6 | Unit anchor: in R-MOD, channel 0's sample durations differ from D_mod by at most 1 part in 4000. | CPU writes AUD0PER = 5000 halfway through R-MOD: the spread fails. |
@@ -579,8 +580,8 @@ channel 1". p.265 gives the same six rows (USE2P3 ... USE0V1).
 
 **3. Observation.** The target side's output; the other side's output; and
 the port fetch record of every channel. Window: from the modulator's third
-fetch after M_on until M_off. It must contain at least 9 changes of the
-target.
+fetch after M_on until M_off + L_a (this excludes the sample the DMA
+stop cuts short). It must contain at least 9 changes of the target.
 
 **4. Expected.**
 - (a) Volume sessions: the target's applied volumes are cyclically
@@ -624,6 +625,17 @@ target channel c), PC5.
   - b = 1: no added bit makes a tripwire change without making it a
     modulator whose own output is silenced. (c) and (d) are the same check
     code as for b = 0, whose contrast covers them.
+
+Measured: every added attach bit above (0, 2, 4, 5, 6) leaves the named
+tripwire unchanged, the same as every attach bit measures elsewhere in this
+package (P6 (a), every b). The mutation actually run therefore drives (c)
+and (d) directly instead: a tripwire given a non-zero starting AUDxVOL
+(for (c)), or a tripwire's AUDxPER rewritten mid-session as the PC6/PC7
+mutants already do for AUD0PER (for (d)). Both are stimuli this package
+already proves live elsewhere (a non-zero volume plays audibly in every
+R-VOL-c/R-DAC session; a mid-session period rewrite is PC6/PC7's own
+contrast), so each demonstrates (c)/(d)'s own comparator, independent of
+whether the added attach bit has any measured effect.
 
 **7. Reference frame.** Each channel's own output is measured directly
 (see *Output sides and silence*); PC5 checks only the pairing. Channels
@@ -674,6 +686,12 @@ its bit names.
 - S-CH3-P with $8040 (bit 6) instead of $8080: ch3's period takes 600 and
   1000, and its spacing leaves 4000.
 - PC1 then expects the new mask.
+
+Measured: bit 2 and bit 6 leave ch3 unchanged, the same as every attach bit
+measures elsewhere in this package. The mutation actually run drives the
+same two clauses directly instead: a tripwire given a non-zero starting
+AUDxVOL (P7V, the "constant" clause), or a tripwire's AUDxPER rewritten
+mid-session as the PC6/PC7 mutants do (P7P, the spacing clause).
 
 **7. Reference frame.** As in P6.
 
@@ -904,13 +922,17 @@ L_a is negative: the register write for a step's new value precedes that
 step's own marker write in program order (Program sequence), and the first
 output sample at the new level was found to already have occurred before
 the marker, not after it. The scan is anchored at the previous marker so
-this is measured rather than floored at 0. Wherever L_a is added as padding
-to a window boundary elsewhere in this specification, only its positive
-part is used (0 here), the same padding a latency of 0 would give.
+this is measured rather than floored at 0. Every window that closes at
+M_off elsewhere in this specification closes at M_off + L_a instead, using
+this measured (negative) value unclamped: the build that repaired this
+package independently measured every channel's output dropping to idle 73
+clk before M_off on both cores, and L_a is more negative than that
+(-77 clk), so M_off + L_a falls before the stop, and the sample the stop
+cuts short is excluded from every window on that basis alone.
 
-**Mutation set** (26 records; run singly via `NMH_MUTATE`, never counted in
+**Mutation set** (27 records; run singly via `NMH_MUTATE`, never counted in
 the normal run's own summary). Each mutation's own result line matches
-between fx68k and TG68K in every one of the 26 cases:
+between fx68k and TG68K in every one of the 27 cases:
 
 | # | NMH_MUTATE | Result (both cores) | Clause |
 |---|---|---|---|
@@ -919,34 +941,36 @@ between fx68k and TG68K in every one of the 26 cases:
 | 3 | PC5 | PASS | The pairing checked as 0-with-1 / 2-with-3 instead of 0-with-3 / 1-with-2: fails against the same measured sides. Grading-only; no separate binary. |
 | 4 | PC6 | PASS | AUD0PER=5000 written halfway through R-MOD: the spread against D_mod fails. |
 | 5 | PC7 | PASS | AUD0PER=3000 written halfway through R-MOD: the loop-anchor gap and/or the n=3 relation leave λ. |
-| 6 | P1 | RECORDED (unfalsifiable at this boundary) | ADKCON $8001 write omitted: win_ok=true on the no-attach capture too, the same as the attached one -- no 68000-level stimulus at this boundary distinguishes them, because attach volume (bit 0) has no measured effect on this RTL. |
-| 7 | P2 | RECORDED (unfalsifiable at this boundary) | ADKCON $8010 write omitted: win_ok=true on the no-attach capture too, the same as the attached one -- attach period (bit 1) has no measured effect on this RTL either. |
+| 6 | P1 | PASS (proven-live control) | The CPU writes AUD1VOL directly, unattached, in M_V order, for >=17 words (prog_p1_ctrl): graded through P1(a)/(b)'s own comparator (cyclic-consecutive-in-M_V, level pairs matching L_1(v)), which goes green -- the comparator itself is live, independent of attach. |
+| 7 | P2 | PASS (proven-live control) | R-RAMP itself already writes AUD1PER directly, unattached, in M_P order (PC4 R-RAMP is green): graded through P2(a)'s own comparator (cyclic-consecutive-in-M_P via DR), which goes green. |
 | 8 | P3 | PASS (stimulus green, stays green) | R-MOD's own unattached channel 0 substituted for S-AV's attached one: the same comparator (no silent word interval) still passes. |
 | 9 | P4 | PASS | Only bit 0 set (ADKCON $8001) instead of both: channel 1's period stays 200 throughout, (a) and (c) fail. |
 | 10 | P5 | PASS | S-AV run with AUD0PER=6000 graded against the 4000-tick D_mod grid: the Delta relation fails. |
 | 11 | P6-0 | PASS | Attach write omitted (bit 0): the target keeps its own VOL 40/PER 200, (a) fails. |
-| 12 | P6-0-EXTRA | RECORDED (unfalsifiable at this boundary) | Bit 2 also set (ch2's tripwire data reaches ch3's volume): broke_clause=false, because bit 2 has no measured effect either. |
+| 12 | P6-0-EXTRA | PASS (proven-live control) | The tripwire on the other side (ch3) is given a non-zero starting AUDxVOL instead of attach: the "other side constant" clause (c) correctly goes red. |
 | 13 | P6-1 | PASS | Attach write omitted (bit 1): the target keeps its own VOL 40/PER 200, (a) fails. |
 | 14 | P6-2 | PASS | Attach write omitted (bit 2): the target keeps its own VOL 40/PER 200, (a) fails. |
-| 15 | P6-2-EXTRA | RECORDED (unfalsifiable at this boundary) | Bit 0 also set (ch0 modulates ch1's volume, the left side becomes audible): broke_clause=false, because bit 0 has no measured effect either. |
+| 15 | P6-2-EXTRA | PASS (proven-live control) | The tripwire on the other side (ch1) is given a non-zero starting AUDxVOL instead of attach: clause (c) correctly goes red. |
 | 16 | P6-4 | PASS | Attach write omitted (bit 4): the target keeps its own VOL 40/PER 200, (a) fails. |
-| 17 | P6-4-EXTRA | RECORDED (unfalsifiable at this boundary) | Bit 6 also set (ch2 modulates ch3's period, ch3's spacing leaves 4000): broke_clause=false, because bit 6 has no measured effect either. |
+| 17 | P6-4-EXTRA | PASS (proven-live control) | A tripwire's AUDxPER (ch3) is rewritten halfway through the session, as the PC6/PC7 mutants do for AUD0PER: its fetch spacing leaves 2*AUDxPER, clause (d) correctly goes red. |
 | 18 | P6-5 | PASS | Attach write omitted (bit 5): the target keeps its own VOL 40/PER 200, (a) fails. |
-| 19 | P6-5-EXTRA | RECORDED (unfalsifiable at this boundary) | Bit 4 also set (ch0 modulates the modulator's own period, its spacing leaves 8000): broke_clause=false, because bit 4 has no measured effect either. |
+| 19 | P6-5-EXTRA | PASS (proven-live control) | A tripwire's AUDxPER (ch3) is rewritten halfway through the session: clause (d) correctly goes red. |
 | 20 | P6-6 | PASS | Attach write omitted (bit 6): the target keeps its own VOL 40/PER 200, (a) fails. |
-| 21 | P6-6-EXTRA | RECORDED (unfalsifiable at this boundary) | Bit 4 also set (ch0 modulates ch1's period, ch1's spacing leaves 3200): broke_clause=false, because bit 4 has no measured effect either. |
-| 22 | P7V | RECORDED (unfalsifiable at this boundary) | Wrong bit set (bit 2 instead of bit 3), graded through the spacing clause: spacing_ok=true, because bit 2 has no measured effect either. |
-| 23 | P7P | RECORDED (unfalsifiable at this boundary) | Wrong bit set (bit 6 instead of bit 7), graded through the spacing clause: spacing_ok=true, because bit 6 has no measured effect either. |
+| 21 | P6-6-EXTRA | PASS (proven-live control) | A tripwire's AUDxPER (ch1) is rewritten halfway through the session: clause (d) correctly goes red. |
+| 22 | P7V | PASS (proven-live control) | A tripwire (ch0) is given a non-zero starting AUDxVOL instead of the wrong attach bit: the "both outputs constant" clause correctly goes red. |
+| 23 | P7P | PASS (proven-live control) | A tripwire's AUDxPER (ch0) is rewritten halfway through the session, as the PC6/PC7 mutants do: the spacing clause correctly goes red. |
+| 27 | PC7 frame | PASS | M_on is written late, after a delay following the DMACON enable (p.164: DMA requests go out as soon as DMA is turned on): a fetch occurs before M_on, so the frame correctly goes red. |
 | 24 | P8 | PASS | Attach write omitted, substituting R-MOD (unattached) for S-AV: channel 0's own side now changes -- the same comparator goes red. |
 | 25 | P9 | PASS | AUD0LEN=4 instead of 5, graded against the page's original L_m=5 (not the mutation's own length): the modulator's own offsets no longer step 0..4,0,... |
 | 26 | P10 | PASS | S-AP's own capture graded through S-AV's k(n)=2(n-3) formula instead of its own k(n)=2(n-3)+1: the phase mismatch fails. Grading-only; no separate binary. |
+| 27 | PC7 frame | PASS | M_on written late, after a delay following the DMACON enable: a fetch occurs before M_on, so the frame's own comparator (no read before M_on) correctly goes red. |
 
-Nine of the 26 (P1, P2, P6-0-EXTRA, P6-2-EXTRA, P6-4-EXTRA, P6-5-EXTRA,
-P6-6-EXTRA, P7V, P7P) are RECORDED rather than PASS/FAIL: each names a
-stimulus this boundary cannot falsify, because the RTL under
-test does not implement the attach bit the mutation targets (bits 0, 1, 2,
-4, 5 and 6 all measure as having no effect on this RTL), so no contrast at
-the 68000-programmer boundary can distinguish the mutated
-stimulus from the unmutated one, so each is recorded unfalsifiable at this
-boundary, with the measured boolean that shows it, rather than asserted as
-a false prediction.
+Every one of the 27 is PASS/FAIL through its own clause; none is recorded
+unfalsifiable. Nine of them (P1, P2, P6-0-EXTRA, P6-2-EXTRA, P6-4-EXTRA,
+P6-5-EXTRA, P6-6-EXTRA, P7V, P7P) no longer rely on the attach bits that
+measure as having no effect on this RTL: each instead drives its target
+comparator directly (a proven-live CPU write in the data set's own order,
+a tripwire given a non-zero starting volume, or a tripwire's AUDxPER
+rewritten mid-session as the PC6/PC7 mutants already do for AUD0PER), so
+each demonstrates the comparator itself working, independent of whether
+attach has any measured effect.

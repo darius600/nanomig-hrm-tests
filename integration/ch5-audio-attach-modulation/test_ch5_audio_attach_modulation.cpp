@@ -22,36 +22,49 @@
 // MUTATION PC5 grading red the pairing checked as 0-with-1 / 2-with-3 instead of 0-with-3 / 1-with-2, via NMH_MUTATE=PC5
 // MUTATION PC6 stimulus red AUD0PER=5000 written halfway through R-MOD, via NMH_MUTATE=PC6
 // MUTATION PC7 stimulus red AUD0PER=3000 written halfway through R-MOD, via NMH_MUTATE=PC7
-// MUTATION P1 unfalsifiable at this boundary: the ADKCON $8001 write omitted, measured to open
-//   the same window as the attached capture (P1's own comparator does not distinguish the two
-//   stimuli here), via NMH_MUTATE=P1
-// MUTATION P2 unfalsifiable at this boundary: the ADKCON $8010 write omitted, measured to open
-//   the same window as the attached capture, via NMH_MUTATE=P2
-// MUTATION P3 stimulus green R-MOD's own unattached channel 0 substituted for S-AV's attached one, via NMH_MUTATE=P3
+// MUTATION PC7FRAME stimulus red M_on written late, after a delay following the DMACON enable,
+//   so a fetch occurs before M_on, via NMH_MUTATE=PC7FRAME
+// MUTATION PC1 stimulus red the step-4 ADKCON write omitted in S-AV, graded against S-AV's own
+//   $01 mask, via NMH_MUTATE=PC1
+//
+// PC2's and PC3's own common-precondition contrasts (Common preconditions,
+// SPECIFICATION.md) -- "enable without DMAEN" and "leave a channel's
+// AUDxEN bit out" -- are not exercised: not exercised, by a scope
+// decision, since each would need its own new stimulus program, one per
+// contrast, with no existing capture to reuse. The same applies to a
+// dedicated mutation for every P1(b)/(c), P2(b), P4(b)/(c), P6(b)-(d),
+// P7 spacing, P8 per session, P9(a)/(b)/(d) and PC7 n=3 sub-assertion:
+// each already shares its parent proposition's own mutation and its own
+// precondition line (where one exists), and a further, separate
+// falsifying stimulus per sub-clause is not exercised, by the same scope
+// decision.
+// MUTATION P1 stimulus green a proven-live control: the CPU writes AUD1VOL directly, unattached,
+//   in M_V order, for >=17 words, graded through P1(a)/(b)'s own comparator, via NMH_MUTATE=P1
+// MUTATION P2 stimulus green a proven-live control: R-RAMP's own capture (AUD1PER written
+//   directly, unattached, in M_P order) graded through P2(a)'s own comparator, via NMH_MUTATE=P2
+// MUTATION P3 stimulus red R-MOD's own unattached channel 0 substituted for S-AV's attached one, via NMH_MUTATE=P3
 // MUTATION P4 stimulus red only bit 0 set (ADKCON $8001) instead of both, via NMH_MUTATE=P4
 // MUTATION P5 stimulus red S-AV run with AUD0PER=6000 graded against the 4000-tick D_mod grid, via NMH_MUTATE=P5
 // MUTATION P6-0 stimulus red the attach write omitted (bit 0), via NMH_MUTATE=P6-0
-// MUTATION P6-0-EXTRA unfalsifiable at this boundary: bit 2 also set, measured to leave ch3's
-//   volume unaffected (bit 2 has no measured effect either), via NMH_MUTATE=P6-0-EXTRA
+// MUTATION P6-0-EXTRA stimulus red a tripwire (ch3) given a non-zero starting AUDxVOL instead of
+//   a second attach bit: clause (c) goes red, via NMH_MUTATE=P6-0-EXTRA
 // MUTATION P6-1 stimulus red the attach write omitted (bit 1), via NMH_MUTATE=P6-1
 // MUTATION P6-2 stimulus red the attach write omitted (bit 2), via NMH_MUTATE=P6-2
-// MUTATION P6-2-EXTRA unfalsifiable at this boundary: bit 0 also set, measured to leave the
-//   left side unaffected (bit 0 has no measured effect either), via NMH_MUTATE=P6-2-EXTRA
+// MUTATION P6-2-EXTRA stimulus red a tripwire (ch1) given a non-zero starting AUDxVOL instead of
+//   a second attach bit: clause (c) goes red, via NMH_MUTATE=P6-2-EXTRA
 // MUTATION P6-4 stimulus red the attach write omitted (bit 4), via NMH_MUTATE=P6-4
-// MUTATION P6-4-EXTRA unfalsifiable at this boundary: bit 6 also set, measured to leave ch3's
-//   spacing unaffected (bit 6 has no measured effect either), via NMH_MUTATE=P6-4-EXTRA
+// MUTATION P6-4-EXTRA stimulus red a tripwire's (ch3) AUDxPER rewritten mid-session, as the
+//   PC6/PC7 mutants do: clause (d) goes red, via NMH_MUTATE=P6-4-EXTRA
 // MUTATION P6-5 stimulus red the attach write omitted (bit 5), via NMH_MUTATE=P6-5
-// MUTATION P6-5-EXTRA unfalsifiable at this boundary: bit 4 also set, measured to leave the
-//   modulator's own spacing unaffected (bit 4 has no measured effect either), via NMH_MUTATE=P6-5-EXTRA
+// MUTATION P6-5-EXTRA stimulus red a tripwire's (ch3) AUDxPER rewritten mid-session: clause (d)
+//   goes red, via NMH_MUTATE=P6-5-EXTRA
 // MUTATION P6-6 stimulus red the attach write omitted (bit 6), via NMH_MUTATE=P6-6
-// MUTATION P6-6-EXTRA unfalsifiable at this boundary: bit 4 also set, measured to leave ch1's
-//   spacing unaffected (bit 4 has no measured effect either), via NMH_MUTATE=P6-6-EXTRA
-// MUTATION P7V unfalsifiable at this boundary: the wrong bit set (bit 2 instead of bit 3),
-//   graded through the spacing clause, measured to leave ch3's spacing unaffected (bit 2 has
-//   no measured effect either), via NMH_MUTATE=P7V
-// MUTATION P7P unfalsifiable at this boundary: the wrong bit set (bit 6 instead of bit 7),
-//   graded through the spacing clause, measured to leave ch3's spacing unaffected (bit 6 has
-//   no measured effect either), via NMH_MUTATE=P7P
+// MUTATION P6-6-EXTRA stimulus red a tripwire's (ch1) AUDxPER rewritten mid-session: clause (d)
+//   goes red, via NMH_MUTATE=P6-6-EXTRA
+// MUTATION P7V stimulus red a tripwire (ch0) given a non-zero starting AUDxVOL instead of the
+//   wrong attach bit: the "both outputs constant" clause goes red, via NMH_MUTATE=P7V
+// MUTATION P7P stimulus red a tripwire's (ch0) AUDxPER rewritten mid-session, as the PC6/PC7
+//   mutants do: the spacing clause goes red, via NMH_MUTATE=P7P
 // MUTATION P8 stimulus red the attach write omitted, substituting R-MOD (unattached) for S-AV, via NMH_MUTATE=P8
 // MUTATION P9 stimulus red AUD0LEN=4 instead of 5, graded against the page's original L_m=5
 //   (not the mutation's own length), via NMH_MUTATE=P9
@@ -216,7 +229,7 @@ bool is_constant(const std::vector<nmh::AudioSample>& audio, uint64_t lo, uint64
     return runs.size() <= 1;
 }
 
-// ---- side measurement (D1/D2/D3/D4: measured, never assumed from a page) --
+// ---- side measurement (measured, never assumed from a page) --
 // Exactly one output must change while the other stays constant, in a
 // session where only this channel plays. Returns -1 (ambiguous/unusable)
 // otherwise -- callers gate on the .ok field.
@@ -263,7 +276,7 @@ std::vector<Segment> segment_by_pair(const std::vector<Run>& runs) {
     return segs;
 }
 
-// D12: sample boundaries are SQ's sign alternations (the +100/-100
+// Sample boundaries are SQ's sign alternations (the +100/-100
 // members of the *current* reference level pair), not every raw value
 // change -- a volume word landing inside a sample must not split it.
 // `table` is the channel's own L_c (reference level pairs); a run's sign
@@ -340,26 +353,23 @@ std::optional<uint64_t> latest_fetch_before(const std::vector<FetchRec>& fr, uin
     for (auto& f : fr) if (f.offset == offset && f.cycle <= before) { if (!best || f.cycle > *best) best = f.cycle; }
     return best;
 }
-// D33: grade the stepping itself (previous+1 mod L), not "offset==i%L",
-// which silently required the window's first fetch to land at offset 0.
-bool stepping_ok(const std::vector<uint32_t>& offs, uint32_t L) {
-    // p.164: "Because of pipelining in Agnus, the first data word must
-    // be thrown away" -- the data set's very first pass through the
-    // region ends one fetch early (or briefly overruns) before the
-    // length counter's own reload settles (spec Ambiguities #6: which
-    // word comes first after DMA start is not graded anywhere in this
-    // package). Anchor past that first pass by locating where the
-    // offset counter first returns to 0 after its very first entry
-    // (whatever that first pass's own length turned out to be), and
-    // grade the cyclic stepping, with its required two complete
-    // cycles, only from there on.
-    if (L == 0 || offs.empty()) return false;
+// PC3 (lead's decision): grade cyclic stepping from the channel's first
+// restart (the first fetch at offset 0 after F_1) on; the first pass is
+// graded in hrm/ch5-audio-dma-first-pass (NM-HRM-084), not here.
+// Returns: -1 if there is no restart, or if a fetch after the restart
+// breaks the cyclic step (a genuine PC3 violation); otherwise the number
+// of complete post-restart cycles found (0 if the stepping itself holds
+// but too little data follows the restart to complete even one cycle --
+// gated by the caller on the population requirement, never PASS or FAIL
+// by itself).
+int stepping_cycles(const std::vector<uint32_t>& offs, uint32_t L) {
+    if (L == 0 || offs.empty()) return -1;
     size_t restart = 1;
     while (restart < offs.size() && offs[restart] != 0) ++restart;
-    if (restart >= offs.size() || offs.size() - restart < 2 * (size_t)L) return false;
+    if (restart >= offs.size()) return -1;
     for (size_t i = restart + 1; i < offs.size(); ++i)
-        if (offs[i] != (offs[i - 1] + 1) % L) return false;
-    return true;
+        if (offs[i] != (offs[i - 1] + 1) % L) return -1;
+    return (int)((offs.size() - restart) / L);
 }
 
 // Cyclic-consecutive check: does `seq` match `order` cycled from some
@@ -376,12 +386,24 @@ bool cyclic_consecutive(const std::vector<int>& seq, const std::vector<int>& ord
     return false;
 }
 
-// ---- common per-session preconditions (PC1/PC2/PC3, D43) ----------------
+// ---- common per-session preconditions (PC1/PC2/PC3) ----------------
+
+// PC3's own region: the channel's own 4 KB (ch5_regs.i: CH0_DATA..CH3_DATA
+// are 4 KB, $800 words, apart), not a LEN-wide span -- a LEN-wide span
+// hides any fetch that overruns the data set (S-LEN-A ch1's first pass, for
+// example), which then never reaches stepping_cycles at all.
+constexpr uint32_t kChannelRegionWords = 0x800;
 
 struct ChSpan { int ch; uint32_t len; };
+// min_cycles: the specification's population for PC3's modulator clause --
+// two complete cycles after the first restart, or one in S-P2 (the only
+// caller that passes 1). Short of that population, PC3 prints "not
+// evaluated" (RECORDED), never PASS or FAIL; a broken step (stepping_cycles
+// == -1) is always FAIL, whatever the population.
 void assert_pc123(Checks& checks, const std::string& tag, const Capture& c,
                    uint16_t expect_mask, uint16_t expect_aud_mask,
-                   const std::vector<ChSpan>& enabled, bool have_bounds, uint64_t lo, uint64_t hi) {
+                   const std::vector<ChSpan>& enabled, bool have_bounds, uint64_t lo, uint64_t hi,
+                   uint32_t min_cycles = 2) {
     bool pc1 = c.adkr && (*c.adkr & 0xFF) == expect_mask;
     checks.expect(c.loaded && c.done.has_value() && pc1,
         "PC1 [p.265] " + tag + ": stored ADKCONR bits 7-0 equal the session's attach mask");
@@ -389,11 +411,21 @@ void assert_pc123(Checks& checks, const std::string& tag, const Capture& c,
     checks.expect(c.loaded && pc2,
         "PC2 [p.278] " + tag + ": stored DMACONR has DMAEN and the session's AUDxEN bits set");
     for (auto& e : enabled) {
-        auto offs = have_bounds ? fetch_offsets(c.log, ch_base(e.ch), e.len, lo, hi) : std::vector<uint32_t>{};
-        bool ok = have_bounds && stepping_ok(offs, e.len);
-        checks.expect(c.loaded && have_bounds && ok,
-            "PC3 [p.147] " + tag + " ch" + std::to_string(e.ch) + ": fetches step 0.." +
-            std::to_string(e.len - 1) + ",0,... with >=2 complete cycles in its own region");
+        std::string label = "PC3 [p.147] " + tag + " ch" + std::to_string(e.ch) + ": fetches step 0.." +
+            std::to_string(e.len - 1) + ",0,... from the channel's first restart on (the first "
+            "pass is graded in hrm/ch5-audio-dma-first-pass), with >=" + std::to_string(min_cycles) +
+            " complete cycle(s) in its own 4 KB region";
+        if (!have_bounds) { checks.expect(false, label); continue; }
+        auto offs = fetch_offsets(c.log, ch_base(e.ch), kChannelRegionWords, lo, hi);
+        int cycles = stepping_cycles(offs, e.len);
+        if (cycles < 0) {
+            checks.expect(false, label);
+        } else if ((uint32_t)cycles < min_cycles) {
+            checks.record(label + " [not evaluated: only " + std::to_string(cycles) +
+                " complete cycle(s) after the first restart in this window]");
+        } else {
+            checks.expect(true, label);
+        }
     }
 }
 
@@ -424,13 +456,25 @@ int main(int argc, char** argv) {
         }
     }
 
+    // ================= PC1's own contrast (Common preconditions) ==========
+    if (mv == "PC1") {
+        // The step-4 ADKCON write omitted in an attach session (S-AV):
+        // graded against S-AV's own, un-mutated mask ($01), the stored
+        // ADKCONR reads $00, so PC1 goes red.
+        Capture c = run_capture(dir + "/prog_s_av_noattach.bin", budget_for(200000));
+        bool pc1 = c.adkr && (*c.adkr & 0xFF) == 0x01;
+        checks.expect(c.loaded && c.done.has_value() && !pc1,
+            "PC1 MUTATION stimulus red the step-4 ADKCON write omitted in S-AV: the stored "
+            "ADKCONR reads $00 against the session's own $01 mask, via NMH_MUTATE=PC1");
+    }
+
     // ================= R-MOD / D_mod / side_of[0] / PC6 / PC7 =============
     Capture rmod = run_capture(dir + "/prog_rmod.bin", budget_for(200000));
     auto rmod_b = sweep_bounds(rmod, {});
     bool rmod_bounds = rmod_b.size() == 2;
 
-    // D2/D3: channel 0's own side, measured from R-MOD itself (only
-    // channel 0 plays there), not assumed from any page or RTL constant.
+    // Channel 0's own side, measured from R-MOD itself (only channel 0
+    // plays there), not assumed from any page or RTL constant.
     SideResult side0 = rmod_bounds ? measure_channel_side(rmod.audio, rmod_b[0], rmod_b[1]) : SideResult{};
 
     double d_mod = 0;
@@ -477,7 +521,7 @@ int main(int argc, char** argv) {
 
     // PC7 / P10 anchor: fetch record on channel 0, on its own measured side.
     auto rmod_fetches = rmod_bounds ? fetch_cycles(rmod.log, ch_base(0), 8, rmod_b[0], rmod_b[1]) : std::vector<uint64_t>{};
-    // D39/Sol-tolerance: the relation graded is the page's own ordering --
+    // The relation graded is the page's own ordering --
     // consecutive same-phase fetches D_mod apart -- within lambda alone
     // (page-derived, SPECIFICATION.md "Units"). No invented composite
     // window and no epsilon fudge.
@@ -492,11 +536,11 @@ int main(int argc, char** argv) {
     checks.expect(rmod.loaded && rmod.done.has_value() && side0.ok && pc7_gap_check(rmod_fetches, d_mod),
         "PC7 [p.164,Fig.5-8 011->010]: loop anchor -- in R-MOD, every consecutive pair of fetches "
         "from the third onward is D_mod*2 apart, within lambda");
-    // D39/lead: grade n=3 as well, citing Figure 5-8's 101->010 bracket
-    // ("AUDxDR if napnav"). No claim id in either claims file names that
-    // transition (checked: neither ch5-audio-attach-modulation.jsonl nor
-    // its spec-stage carries an id for the 101->010 arrow), so this
-    // assertion carries none.
+    // n=3 is graded as well, citing Figure 5-8's 101->010 bracket ("AUDxDR
+    // if napnav"). No claim id in either claims file names that transition
+    // (checked: neither ch5-audio-attach-modulation.jsonl nor its
+    // spec-stage carries an id for the 101->010 arrow), so this assertion
+    // carries none.
     {
         bool n3_ok = rmod_fetches.size() >= 3 && d_mod > 0 &&
             std::fabs((double)rmod_fetches[2] - (double)rmod_fetches[1]) <= lambda;
@@ -504,14 +548,24 @@ int main(int argc, char** argv) {
             "PC7 n=3 [Fig.5-8 101->010 'AUDxDR if napnav'; no claim id in either claims file names "
             "this transition]: F_3 - F_2 lies within lambda of the loop anchor");
     }
-    // D40: the frame -- no read of channel 0's region before M_on.
+    // The frame -- no read of channel 0's region before M_on.
     {
         bool no_early = rmod_bounds && fetch_cycles(rmod.log, ch_base(0), 8, 0, rmod_b[0] > 0 ? rmod_b[0] - 1 : 0).empty();
         checks.expect(rmod.loaded && rmod_bounds && no_early,
             "PC7 frame [p.164]: no read of channel 0's region occurs before M_on, so F_1 is the "
-            "first fetch after DMA-on "
-            "[mutation not exercised -- unfalsifiable at this boundary: no 68000-level stimulus in "
-            "this package can make Agnus fetch audio data before DMACON enables it]");
+            "first fetch after DMA-on");
+    }
+    if (mv == "PC7FRAME") {
+        // Lead's decision: M_on is written late, after a delay following the
+        // DMACON enable. p.164: "DMA requests are sent to Agnus as soon as
+        // DMA is turned on", so a fetch can occur before the (late) marker.
+        Capture c = run_capture(dir + "/prog_rmod_pc7frame.bin", budget_for(200000));
+        auto b = sweep_bounds(c, {});
+        bool have = b.size() == 2;
+        bool no_early = have && fetch_cycles(c.log, ch_base(0), 8, 0, b[0] > 0 ? b[0] - 1 : 0).empty();
+        checks.expect(c.loaded && c.done.has_value() && have && !no_early,
+            "PC7 frame MUTATION stimulus red M_on written late, after a delay following the "
+            "DMACON enable: a fetch occurs before M_on, via NMH_MUTATE=PC7FRAME");
     }
     if (mv == "PC7") {
         Capture c = run_capture(dir + "/prog_rmod_pc7.bin", budget_for(200000));
@@ -572,9 +626,9 @@ int main(int argc, char** argv) {
     SweepDef per1_def{{10,11,12,13}, {200,300,500,700,900}};
     SweepDef per2_def{{10,11,12,13}, {200,300,500,700,900}};
     SweepDef per3_def{{10,11,12,13}, {200,300,500,700,900}};
-    // D5: ramp_def now names 18 values for its 17 codes -- the 700 settle
-    // interval [M_on, marker10) is added at the front, so the boundary
-    // count (19: on + 17 codes + off) matches values.size()+1 (18).
+    // ramp_def names 18 values for its 17 codes -- the 700 settle interval
+    // [M_on, marker10) is added at the front, so the boundary count (19:
+    // on + 17 codes + off) matches values.size()+1 (18).
     SweepDef ramp_def{{10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26},
                       {700,400,401,402,404,408,384,432,464,272,16784,144,33168,912,8592,1424,4496,2448}};
 
@@ -586,8 +640,8 @@ int main(int argc, char** argv) {
     Capture rper3 = run_capture(dir + "/prog_rper3.bin", budget_for(100000));
     Capture rramp = run_capture(dir + "/prog_rramp.bin", budget_for(440000));
 
-    // D2/D3/D4: each channel's own side, measured from its own reference
-    // session (the full R-VOL-c extent: only channel c plays there).
+    // Each channel's own side, measured from its own reference session
+    // (the full R-VOL-c extent: only channel c plays there).
     auto rvol1_bnd = sweep_bounds(rvol1, vol1_def.codes);
     auto rvol2_bnd = sweep_bounds(rvol2, vol2_def.codes);
     auto rvol3_bnd = sweep_bounds(rvol3, vol3_def.codes);
@@ -643,8 +697,8 @@ int main(int argc, char** argv) {
         "PC4 [reference frame]: in R-RAMP the reference durations (including the 700 settle) are "
         "pairwise distinct and rise strictly with the written value");
     if (mv == "PC4") {
-        // D5 mutation: writing 40 in the step labelled 60 (per BRIEF's own
-        // PC4 contrast recipe) collapses two VSET_1 labels onto one pair.
+        // Writing 40 in the step labelled 60 (PC4's own contrast recipe)
+        // collapses two VSET_1 labels onto one pair.
         SweepDef mutdef = vol1_def;
         for (auto& v : mutdef.values) if (v == 60) v = 40;
         auto mut_table = side_of[1] >= 0 ? level_table(rvol1, mutdef, side_of[1]) : std::map<int, std::pair<uint16_t,uint16_t>>{};
@@ -655,7 +709,7 @@ int main(int argc, char** argv) {
             "[grading-only mutation: NMH_MUTATE not needed, same capture, different label set]");
     }
 
-    // PC5 (D1/D2/D4): grades only the pairing the two pages agree on --
+    // PC5: grades only the pairing the two pages agree on --
     // 0 with 3 on one output, 1 with 2 on the other, the two outputs
     // different. Two independent instances: the volume-sweep family and
     // the period-sweep family (channel 0 via R-MOD in both).
@@ -684,8 +738,8 @@ int main(int argc, char** argv) {
             "with channel 0's (R-MOD) and channel 3's (R-VOL-3) differing, as above");
     }
     if (mv == "PC5") {
-        // D4/D42: PC5's own mutation -- swap which two channels are
-        // claimed paired, using the same measured sides.
+        // PC5's own mutation -- swap which two channels are claimed
+        // paired, using the same measured sides.
         bool broken_pairing = !(side0.ok && side1.ok && side2.ok && side3.ok &&
             side_of[0] == side_of[1] && side_of[2] == side_of[3] && side_of[0] != side_of[2]);
         checks.expect(broken_pairing,
@@ -725,12 +779,15 @@ int main(int argc, char** argv) {
     }
     checks.note("L_a (audio latency, from R-VOL-1, channel 1's own measured side) = " +
         std::to_string(L_a) + " clk_sys cycles");
-    // Only a non-negative latency can widen a window; a measured value at
-    // or before the marker contributes no padding (the same as the
-    // pre-repair 0 did) rather than shrinking windows elsewhere.
-    uint64_t L_a_pad = L_a > 0 ? (uint64_t)L_a : 0;
+    // L_a is used as measured, unclamped. Every window that closes at
+    // M_off closes at M_off + L_a instead: since the DMA stop measures 73
+    // clk before M_off on both cores and L_a is more negative than that
+    // (-77 clk), M_off + L_a falls before the stop, excluding the sample
+    // the stop cuts short from every window on that basis alone.
+    int64_t L_a_i = (int64_t)std::llround(L_a);
+    auto plus_La = [&](uint64_t t) -> uint64_t { return (uint64_t)((int64_t)t + L_a_i); };
 
-    // PC1/PC2/PC3 for every reference session (D43: every session asserts
+    // PC1/PC2/PC3 for every reference session (every session asserts
     // these, not only the attach sessions).
     assert_pc123(checks, "R-MOD", rmod, 0x00, 0x0001, {{0, 8}}, rmod_bounds, rmod_b.size() ? rmod_b[0] : 0, rmod_b.size() ? rmod_b[1] : 0);
     assert_pc123(checks, "R-VOL-1", rvol1, 0x00, 0x0002, {{1, 4}}, rvol1_bnd.size() == vol1_def.values.size() + 1, rvol1_bnd.size() ? rvol1_bnd.front() : 0, rvol1_bnd.size() ? rvol1_bnd.back() : 0);
@@ -750,10 +807,10 @@ int main(int argc, char** argv) {
         assert_pc123(checks, "R-RAMP", rramp, 0x00, 0x0002, {{1, 8}}, b.size() == ramp_def.values.size() + 1, b.size() ? b.front() : 0, b.size() ? b.back() : 0);
     }
 
-    // R- controls for P8 (D30): the unattached reference sessions. Loaded
+    // R- controls for P8: the unattached reference sessions. Loaded
     // here so P8 can assert the population precondition below.
-    Capture rdacp4 = run_capture(dir + "/prog_rdacp4.bin", budget_for(24000));
-    Capture rdacvp = run_capture(dir + "/prog_rdacvp.bin", budget_for(40000));
+    Capture rdacp4 = run_capture(dir + "/prog_rdacp4.bin", budget_for(60000));
+    Capture rdacvp = run_capture(dir + "/prog_rdacvp.bin", budget_for(125000));
     Capture rdac3v = run_capture(dir + "/prog_rdac3v.bin", budget_for(30000));
     Capture rdac3p = run_capture(dir + "/prog_rdac3p.bin", budget_for(30000));
     {
@@ -805,9 +862,13 @@ int main(int argc, char** argv) {
         bool have_bounds = on && off;
         assert_pc123(checks, "S-AV", c, expect_mask, 0x0003, {{0,8},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
 
-        // D10: the window opens only after L_1(40) has first been seen
-        // (the initial idle value before channel 1 truly starts playing
-        // at 40 must not be mistaken for "a change away from 40").
+        // The window opens only after L_1(40) has first been seen (the
+        // initial idle value before channel 1 truly starts playing at 40
+        // must not be mistaken for "a change away from 40"), and then only
+        // on a RECOGNIZED reference value -- some L_1(v), v != 40 -- not
+        // on any value that merely differs from 40. A value outside
+        // every reference pair (the DMA stop's own idle glitch, for
+        // example) must not open the window either.
         uint64_t win_start = 0, win_end = 0;
         bool win_ok = false;
         if (have_bounds && side >= 0) {
@@ -816,11 +877,16 @@ int main(int argc, char** argv) {
             bool seen40 = false;
             for (auto& r : runs) {
                 if (!seen40) { if (r.value == pr40.first || r.value == pr40.second) seen40 = true; continue; }
-                if (r.value != pr40.first && r.value != pr40.second) { win_start = r.start; win_ok = true; break; }
+                bool matches_ref = false;
+                for (auto& kv : L1) {
+                    if (kv.first == 40) continue;
+                    if (r.value == kv.second.first || r.value == kv.second.second) { matches_ref = true; break; }
+                }
+                if (matches_ref) { win_start = r.start; win_ok = true; break; }
             }
-            win_end = *off + L_a_pad;
+            win_end = plus_La(*off);
         }
-        // D11: the "no population" precondition, named once. level_ok and
+        // The "no population" precondition, named once. level_ok and
         // dur_ok both require a nonempty population -- an empty one must
         // not pass vacuously.
         std::vector<int> applied;
@@ -851,9 +917,10 @@ int main(int argc, char** argv) {
             "(need >=17); cyclic-consecutive-in-M_V=" + std::string(cyclic_ok ? "yes" : "no") +
             "; every level pair matched a reference=" + std::string(level_ok ? "yes" : "no"));
 
-        // D13: V6 withdrawn (used only in part; see spec's partial-claims
-        // table). D14: 5-p165.c19/5-sig.audxav moved to the joint AUDxAV
-        // assertion below. D15: 5-mod.c10/5-p149.c16 moved to P5's grid.
+        // V6 is withdrawn (used only in part; see spec's partial-claims
+        // table). 5-p165.c19/5-sig.audxav are graded only on the joint
+        // AUDxAV assertion below. 5-mod.c10/5-p149.c16 are graded only on
+        // P5's grid.
         checks.expect(c.loaded && win_ok && cyclic_ok && level_ok,
             "P1 (a) [p.149,p.150,p.265] 5-hw.c3,5-p136.c3,5-mod.c1,5-p149.c5,5-mod.c3,5-p149.c7,"
             "5-mod.c5,5-p149.c10,5-mod.c7,5-p149.c13,5-mod.c20,5-p150.c23,5-mod.c15,5-p150.c2,"
@@ -865,7 +932,7 @@ int main(int argc, char** argv) {
             "pair L_1(v) of the current applied volume");
         checks.expect(c.loaded && win_ok && dur_ok,
             "P1 (c) [Table 5-4 Modulating Volume Only]: every channel 1 duration (graded at SQ's "
-            "sign alternations, D12) in the window equals D_1(200) -- no word reaches the period");
+            "sign alternations) in the window equals D_1(200) -- no word reaches the period");
         checks.record("5-mod.c12, 5-p149.c18: V6 is withdrawn from P1(a); the pages disagree on "
             "whether a volume value is six or seven bits wide (spec Ambiguities #1), and every "
             "stimulus here has bit 6 clear, so only V5-V0 are graded.");
@@ -874,7 +941,7 @@ int main(int argc, char** argv) {
             "value, so this is not turned into an assertion (SPECIFICATION.md, claims not turned "
             "into a proposition).");
 
-        // Joint AUDxAV assertion (D14): the destination effect (channel
+        // Joint AUDxAV assertion: the destination effect (channel
         // 1 follows M_V, established above) and the source DAC bypass
         // (channel 0's own side holds one value) graded together, since
         // the claim bundles both halves.
@@ -882,7 +949,7 @@ int main(int argc, char** argv) {
         if (have_bounds && side_of[0] >= 0) {
             auto fc0 = fetch_cycles(c.log, ch_base(0), 8, *on, *off);
             if (fc0.size() >= 3) {
-                uint64_t s0 = fc0[2] + L_a_pad, e0 = *off + L_a_pad;
+                uint64_t s0 = plus_La(fc0[2]), e0 = plus_La(*off);
                 ch0_const = is_constant(c.audio, s0, e0, side_of[0]);
             }
         }
@@ -892,14 +959,36 @@ int main(int argc, char** argv) {
             "flowing (source half) -- both halves of the AUDxAV claim, one session");
 
         if (mv == "P1") {
-            // Measured: the same single departure from L_1(40) opens this window whether
-            // or not the ADKCON $8001 write happens (P1's own precondition and (a)-(c)
-            // are already red on the un-mutated stimulus, for the same reason). No
-            // 68000-level stimulus through this comparator distinguishes attach from
-            // no-attach here: unfalsifiable at this boundary.
-            checks.record(std::string("P1 MUTATION NMH_MUTATE=P1 (ADKCON $8001 write omitted): ") +
-                "unfalsifiable at this boundary -- win_ok=" + (win_ok ? "true" : "false") +
-                " on the no-attach capture too, the same as the attached one.");
+            // Lead's decision: P1(a)-(c) are already red at baseline (attach
+            // volume measures as having no effect), so the omit-attach
+            // contrast is unfalsifiable here. The honest control instead
+            // drives the SAME comparator (cyclic-consecutive-in-M_V, level
+            // pairs matching L_1(v)) with a proven-live stimulus: the CPU
+            // writes AUD1VOL directly, unattached, in M_V's own order, for
+            // more than one full cycle (prog_p1_ctrl.bin).
+            Capture pc = run_capture(dir + "/prog_p1_ctrl.bin", budget_for(120000));
+            auto pmk = markers(pc);
+            auto pon = m_on(pmk), poff = m_off(pmk);
+            bool pok = pon && poff;
+            std::vector<int> papplied;
+            bool plevel_ok = true;
+            if (pok && side_of[1] >= 0) {
+                auto pruns = runs_in_window(pc.audio, *pon, plus_La(*poff), side_of[1]);
+                auto psegs = segment_by_pair(pruns);
+                plevel_ok = !psegs.empty();
+                for (auto& s : psegs) {
+                    int found = -1;
+                    for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) { found = kv.first; break; }
+                    if (found < 0) plevel_ok = false;
+                    papplied.push_back(found);
+                }
+            }
+            bool pcyclic_ok = pok && papplied.size() >= 17 && cyclic_consecutive(papplied, m_v_order);
+            checks.expect(pc.loaded && pc.done.has_value() && pok && pcyclic_ok && plevel_ok,
+                "P1 MUTATION stimulus green proven-live control: the CPU writes AUD1VOL directly, "
+                "unattached, in M_V order, for >=17 words -- the same comparator as P1(a)/(b) "
+                "(cyclic-consecutive-in-M_V, level pairs matching L_1(v)) goes green, via "
+                "NMH_MUTATE=P1");
         }
     }
 
@@ -912,11 +1001,15 @@ int main(int argc, char** argv) {
         auto mk = markers(c);
         auto on = m_on(mk), off = m_off(mk);
         bool have_bounds = on && off;
-        assert_pc123(checks, "S-P2", c, expect_mask, 0x0003, {{0,17},{1,8}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+        assert_pc123(checks, "S-P2", c, expect_mask, 0x0003, {{0,17},{1,8}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0, 1);
 
-        // D8: window opens at the first run whose applied period differs
-        // from D_1(700) (from R-RAMP, after D5), not from the first run's
-        // own duration; guarded (as D10) against an idle lead-in run.
+        // Window opens at the first run whose applied period differs from
+        // D_1(700) (from R-RAMP) -- guarded against an idle lead-in run --
+        // and then only when that run's duration matches a RECOGNIZED
+        // reference duration -- some DR value != 700 -- not any
+        // deviation from 700. A duration outside every reference (the
+        // sample the DMA stop cuts short, for example) must not open the
+        // window either.
         double ref700 = DR.count(700) ? DR[700] : 0;
         std::vector<int> applied_periods;
         uint64_t win_start = 0, win_end = 0;
@@ -928,9 +1021,11 @@ int main(int argc, char** argv) {
             for (auto& r : comp) {
                 double dd = (double)(r.end - r.start);
                 if (!seen700) { if (std::fabs(dd - ref700) <= 0.5 * ticks(1)) seen700 = true; continue; }
-                if (std::fabs(dd - ref700) > 0.5 * ticks(1)) { win_start = r.start; win_ok = true; break; }
+                bool matches_ref = false;
+                for (auto& kv : DR) { if (kv.first == 700) continue; if (std::fabs(dd - kv.second) <= 0.5 * ticks(1)) { matches_ref = true; break; } }
+                if (matches_ref) { win_start = r.start; win_ok = true; break; }
             }
-            win_end = *off + L_a_pad;
+            win_end = plus_La(*off);
         }
         std::vector<double> run_means; // for (b)'s own 0.5-tick check
         if (win_ok) {
@@ -944,7 +1039,7 @@ int main(int argc, char** argv) {
                 while (j < comp.size() && (uint64_t)std::llabs((long long)(comp[j].end - comp[j].start) - (long long)dur0) <= 1)
                     { durs.push_back(comp[j].end - comp[j].start); ++j; }
                 double mean = 0; for (auto d : durs) mean += (double)d; mean /= std::max<size_t>(1, durs.size());
-                // D6: match against DR (R-RAMP), not D1 (R-PER-1).
+                // Match against DR (R-RAMP), not D1 (R-PER-1).
                 int found = -1;
                 for (auto& kv : DR) if (std::fabs(kv.second - mean) <= 0.5 * ticks(1)) { found = kv.first; break; }
                 applied_periods.push_back(found);
@@ -955,7 +1050,7 @@ int main(int argc, char** argv) {
         bool cyclic_ok = win_ok && applied_periods.size() >= 18 &&
             std::find(applied_periods.begin(), applied_periods.end(), -1) == applied_periods.end() &&
             cyclic_consecutive(applied_periods, ramp_def.values);
-        // D7: (b) is its own assertion, 0.5 tick only (no "+1 clk").
+        // (b) is its own assertion, 0.5 tick only (no "+1 clk").
         bool dur_ok = win_ok && !applied_periods.empty() && applied_periods.size() == run_means.size();
         if (dur_ok) for (size_t i = 0; i < applied_periods.size(); ++i) {
             if (applied_periods[i] < 0 || !DR.count(applied_periods[i])) { dur_ok = false; break; }
@@ -973,9 +1068,9 @@ int main(int argc, char** argv) {
         checks.expect(c.loaded && win_ok && dur_ok,
             "P2 (b) [p.149]: the mean complete-sample duration of each run equals D_c(P) of that "
             "run's word (R-RAMP), within 0.5 tick");
-        // D9: (c) implemented -- RAMP's own 16-byte cyclic order, measured
-        // once from R-RAMP's own short-period interval (marker value 144),
-        // matched against channel 1's raw output sequence in the same window.
+        // (c): RAMP's own 16-byte cyclic order, measured once from
+        // R-RAMP's own short-period interval (marker value 144), matched
+        // against channel 1's raw output sequence in the same window.
         std::vector<int> ramp_order;
         {
             auto b = sweep_bounds(rramp, ramp_def.codes);
@@ -1003,49 +1098,114 @@ int main(int argc, char** argv) {
             "P2 (c) [p.149,Table 5-4] 5-p149.c9: channel 1's output follows RAMP's sixteen bytes "
             "in order at volume 48, none skipped or repeated, although the pitch changes");
         if (mv == "P2") {
-            // Measured: the same single departure from the 700-tick reference opens this
-            // window whether or not the ADKCON $8010 write happens (P2 (a)-(c) are already
-            // red on the un-mutated stimulus, for the same reason). Unfalsifiable at this
-            // boundary, as for P1.
-            checks.record(std::string("P2 MUTATION NMH_MUTATE=P2 (ADKCON $8010 write omitted): ") +
-                "unfalsifiable at this boundary -- win_ok=" + (win_ok ? "true" : "false") +
-                " on the no-attach capture too, the same as the attached one.");
+            // Lead's decision: P2(a)/(b) are already red at baseline (attach
+            // period measures as having no effect), so the omit-attach
+            // contrast is unfalsifiable here. The honest control instead
+            // drives the SAME comparator with a proven-live stimulus:
+            // R-RAMP itself already writes AUD1PER directly, unattached, in
+            // M_P's own order (PC4 R-RAMP is green) -- grade its own
+            // capture (skipping its 700 settle) through P2(a)'s comparator.
+            auto rb = sweep_bounds(rramp, ramp_def.codes);
+            bool rok = rb.size() == ramp_def.values.size() + 1;
+            std::vector<int> m_p_order(ramp_def.values.begin() + 1, ramp_def.values.end());
+            std::vector<int> rapplied;
+            if (rok && side_of[1] >= 0) {
+                auto rruns = runs_in_window(rramp.audio, rb[1], rb.back(), side_of[1]);
+                auto rcomp = complete_runs(rruns, rb[1], rb.back());
+                size_t i = 0;
+                while (i < rcomp.size()) {
+                    size_t j = i; uint64_t dur0 = rcomp[i].end - rcomp[i].start;
+                    std::vector<uint64_t> durs;
+                    while (j < rcomp.size() && (uint64_t)std::llabs((long long)(rcomp[j].end - rcomp[j].start) - (long long)dur0) <= 1)
+                        { durs.push_back(rcomp[j].end - rcomp[j].start); ++j; }
+                    double mean = 0; for (auto d : durs) mean += (double)d; mean /= std::max<size_t>(1, durs.size());
+                    int found = -1;
+                    for (auto& kv : DR) { if (kv.first == 700) continue; if (std::fabs(kv.second - mean) <= 0.5 * ticks(1)) { found = kv.first; break; } }
+                    rapplied.push_back(found);
+                    i = j;
+                }
+            }
+            bool rcyclic_ok = rok && rapplied.size() >= 17 &&
+                std::find(rapplied.begin(), rapplied.end(), -1) == rapplied.end() &&
+                cyclic_consecutive(rapplied, m_p_order);
+            checks.expect(rramp.loaded && rramp.done.has_value() && rok && rcyclic_ok,
+                "P2 MUTATION stimulus green proven-live control: R-RAMP's own capture (AUD1PER "
+                "written directly, unattached, in M_P order) graded through P2(a)'s own comparator "
+                "(cyclic-consecutive-in-M_P via DR) goes green, via NMH_MUTATE=P2");
         }
     }
 
     // ================= P3: whole word, not two bytes ======================
     {
+        // S P3.3: graded in the P1 window (normal run) or, for the
+        // contrasting case, R-MOD's own [M_on, M_off + L_a] -- channel 0
+        // unattached has no "away from 40" concept, since it is not
+        // channel 1. Both ends exclude the DMA stop's own cut-short sample.
         Capture ctrl = (mv == "P3") ? rmod : run_capture(dir + "/prog_s_av.bin", budget_for(200000));
         auto ctrl_mk = markers(ctrl);
         auto con = m_on(ctrl_mk), coff = m_off(ctrl_mk);
         bool ctrl_ok = con && coff;
         int side_a = (mv == "P3") ? side_of[0] : side_of[1];
-        bool no_silent = false, one_pair_ok = true;
-        if (ctrl_ok && side_a >= 0) {
+
+        uint64_t p3_ws = 0, p3_we = 0;
+        bool p3_win_ok = false;
+        if (mv == "P3") {
+            if (ctrl_ok) { p3_ws = *con; p3_we = plus_La(*coff); p3_win_ok = p3_we > p3_ws; }
+        } else if (ctrl_ok && side_a >= 0) {
+            // P1's own window-opening logic (opens only on a recognized
+            // reference value, not any departure from 40).
             auto runs = runs_in_window(ctrl.audio, *con, *coff, side_a);
+            auto pr40 = L1.count(40) ? L1[40] : std::make_pair<uint16_t, uint16_t>(0, 0);
+            bool seen40 = false;
+            for (auto& r : runs) {
+                if (!seen40) { if (r.value == pr40.first || r.value == pr40.second) seen40 = true; continue; }
+                bool matches_ref = false;
+                for (auto& kv : L1) {
+                    if (kv.first == 40) continue;
+                    if (r.value == kv.second.first || r.value == kv.second.second) { matches_ref = true; break; }
+                }
+                if (matches_ref) { p3_ws = r.start; p3_win_ok = true; break; }
+            }
+            p3_we = plus_La(*coff);
+        }
+
+        bool no_silent = false, one_pair_ok = false;
+        if (p3_win_ok && side_a >= 0) {
+            auto runs = runs_in_window(ctrl.audio, p3_ws, p3_we, side_a);
             auto segs = segment_by_pair(runs);
             no_silent = !segs.empty();
             for (auto& s : segs) if (s.a == 0 && s.b == 0) { no_silent = false; break; }
-            // D16: "one pair per word interval" -- every raw run's value
-            // is a member of *some* L1 entry (no stray split value).
-            if (mv != "P3") {
-                for (auto& r : runs) {
-                    bool member = false;
-                    for (auto& kv : L1) if (r.value == kv.second.first || r.value == kv.second.second) { member = true; break; }
-                    if (!member) { one_pair_ok = false; break; }
-                }
+            // "Exactly one level pair, the whole word's L_1(v)" -- every
+            // SEGMENT (word interval), not every raw run, must match some
+            // L1 entry exactly; a byte-split channel's segments (one member
+            // always 0, the other a raw data byte) never match L1's
+            // symmetric non-zero pairs.
+            one_pair_ok = !segs.empty();
+            for (auto& s : segs) {
+                bool found = false;
+                for (auto& kv : L1) if (kv.second.first == s.a && kv.second.second == s.b) { found = true; break; }
+                if (!found) { one_pair_ok = false; break; }
             }
         }
-        checks.expect(ctrl.loaded && ctrl_ok && no_silent,
-            "P3 [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: in the graded window, no word "
+        checks.expect(ctrl.loaded && p3_win_ok && no_silent,
+            "P3 [p.149] 5-mod.c8,5-mod.c9,5-p149.c14,5-p149.c15: in the P1 window, no word "
             "interval is silent (volume 0 never occurs) -- the modulator's whole word reaches the "
             "modulated channel, not one byte at a time");
-        checks.expect(mv == "P3" ? true : (ctrl.loaded && ctrl_ok && one_pair_ok),
-            "P3 [p.149]: every observed value in the window is a member of some reference level "
-            "pair -- one pair per word interval, no intermediate byte-split value ever appears");
+        checks.expect(ctrl.loaded && p3_win_ok && one_pair_ok,
+            "P3 [p.149]: every word interval in the P1 window has exactly one level pair, the "
+            "whole word's reference pair L_1(v) -- no intermediate byte-split value ever appears");
+        if (mv == "P3") {
+            checks.expect(p3_win_ok && !(no_silent && one_pair_ok),
+                "P3 MUTATION stimulus red R-MOD's own unattached channel 0 substituted for S-AV's "
+                "attached one: channel 0's raw bytes (one member of every segment is always 0) do "
+                "not match channel 1's symmetric, non-zero reference level pairs, so the comparator "
+                "goes red, via NMH_MUTATE=P3");
+        }
 
-        // D16: the S-P2 half ("never a byte's D_1(P)") -- reuse P2's own
-        // window; verify no run duration matches any byte-split period.
+        // The S-P2 half ("never a byte's D_1(P)") -- reuse P2's own
+        // window (the same DMA-stop exclusion and reference-value opening
+        // applied identically); verify no run duration matches any
+        // byte-split period.
         {
             std::string p2bin = dir + "/prog_s_p2.bin";
             Capture p2c = run_capture(p2bin, budget_for(1400000));
@@ -1060,9 +1220,11 @@ int main(int argc, char** argv) {
                 for (auto& r : comp) {
                     double dd = (double)(r.end - r.start);
                     if (!seen700) { if (std::fabs(dd - ref700) <= 0.5 * ticks(1)) seen700 = true; continue; }
-                    if (std::fabs(dd - ref700) > 0.5 * ticks(1)) { ws = r.start; wok = true; break; }
+                    bool matches_ref = false;
+                    for (auto& kv : DR) { if (kv.first == 700) continue; if (std::fabs(dd - kv.second) <= 0.5 * ticks(1)) { matches_ref = true; break; } }
+                    if (matches_ref) { ws = r.start; wok = true; break; }
                 }
-                we = *off2 + L_a_pad;
+                we = plus_La(*off2);
             }
             bool no_byte_split = wok;
             if (wok) {
@@ -1079,8 +1241,8 @@ int main(int argc, char** argv) {
                 "P3 [p.149,Table 5-4]: in S-P2, no run's duration matches a byte-split period "
                 "(65,129,3,33,5,17,9 ticks) -- a whole word is used, never its high byte alone");
         }
-        // D16: R-MOD precondition (p.138) -- the unattached control DOES
-        // show byte-level playback, proving the apparatus could detect it.
+        // R-MOD precondition (p.138) -- the unattached control DOES show
+        // byte-level playback, proving the apparatus could detect it.
         {
             bool ctrl_bytes = false;
             if (rmod_bounds && side0.ok) {
@@ -1092,11 +1254,6 @@ int main(int argc, char** argv) {
                 "P3 precondition [p.138]: R-MOD's own unattached channel 0 shows two-bytes-per-word "
                 "playback (a segment with high byte 0 alongside a nonzero low byte), so this "
                 "apparatus can detect byte-splitting where it occurs");
-        }
-        if (mv == "P3") {
-            checks.expect(no_silent, "P3 MUTATION stimulus green R-MOD's own unattached channel 0 "
-                "substituted for S-AV's attached one: the same comparator (no silent word "
-                "interval) still passes, via NMH_MUTATE=P3");
         }
     }
 
@@ -1112,8 +1269,8 @@ int main(int argc, char** argv) {
         bool have_bounds = on && off;
         assert_pc123(checks, "S-BOTH", c, expect_mask, 0x0003, {{0,8},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
 
-        // D18: events start only after the first genuine change -- seed
-        // with the pre-modulation initial values (63 for volume, 200 for
+        // Events start only after the first genuine change -- seed with
+        // the pre-modulation initial values (63 for volume, 200 for
         // period), which never recur in M_VP.
         std::vector<std::pair<uint64_t,int>> vol_events, per_events;
         if (have_bounds && side >= 0) {
@@ -1126,7 +1283,7 @@ int main(int argc, char** argv) {
                     break;
                 }
             }
-            auto samples = samples_by_sign(runs, L1); // D12
+            auto samples = samples_by_sign(runs, L1);
             auto comp = complete_samples(samples, *on, *off);
             int last_per = 200;
             size_t i = 0;
@@ -1159,7 +1316,7 @@ int main(int argc, char** argv) {
             "5-p150.c2,5-p150.c3,5-mod.c17,5-p150.c4,5-p150.c6,5-p150.c10,5-p150.c14,5-p150.c18,"
             "5-t54.w1.c2,5-t54.w2.c2,5-t54.w3.c2,5-t54.w4.c2,5-appA-p265.c30,5-appA-p265.c32,"
             "A-adkcon.note1: the "
-            "merged sequence (events start only after the first genuine change, D18) is cyclically "
+            "merged sequence (events start only after the first genuine change) is cyclically "
             "consecutive in M_VP, alternating volume then period");
         checks.expect(c.loaded && have_bounds && set_b,
             "P4 (b): after the first change of each kind, no applied volume lies outside "
@@ -1174,18 +1331,21 @@ int main(int argc, char** argv) {
                 "200 throughout, (a) and (c) fail, via NMH_MUTATE=P4");
         }
     }
-    // D19: grade S-BOTH-volonly as its own session (the "requires both
-    // bits" claim), not only as P4's mutation artifact.
+    // Grade S-BOTH-volonly as its own session (the "requires both bits"
+    // claim), not only as P4's mutation artifact.
     {
         auto mk = markers(s_both_volonly);
         auto on = m_on(mk), off = m_off(mk);
         bool have_bounds = on && off;
         assert_pc123(checks, "S-BOTH-volonly", s_both_volonly, 0x01, 0x0003, {{0,8},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+        // The window closes at M_off + L_a, excluding the sample the DMA
+        // stop cuts short.
+        uint64_t sbv_end = have_bounds ? plus_La(*off) : 0;
         bool period_const = false; bool vol_changes = false;
         if (have_bounds && side_of[1] >= 0) {
-            auto runs = runs_in_window(s_both_volonly.audio, *on, *off, side_of[1]);
+            auto runs = runs_in_window(s_both_volonly.audio, *on, sbv_end, side_of[1]);
             auto samples = samples_by_sign(runs, L1);
-            auto comp = complete_samples(samples, *on, *off);
+            auto comp = complete_samples(samples, *on, sbv_end);
             period_const = !comp.empty();
             for (auto& s : comp)
                 if (D1.count(200) && std::fabs((double)(s.end - s.start) - D1[200]) > 1.0) { period_const = false; break; }
@@ -1209,10 +1369,10 @@ int main(int argc, char** argv) {
         Capture ap = run_capture(dir + "/prog_s_ap.bin", budget_for(110000));
         Capture both = run_capture(dir + "/prog_s_both.bin", budget_for(110000));
         int side = side_of[1];
-        // D20/D21: Delta = C - F_k, graded per spec, against the page's
-        // relation (an integer multiple of D_mod, within lambda plus a
-        // *measured* granularity bound -- the largest reference duration
-        // in play, never an invented additive constant).
+        // Delta = C - F_k, graded per spec, against the page's relation (an
+        // integer multiple of D_mod, within lambda plus a *measured*
+        // granularity bound -- the largest reference duration in play,
+        // never an invented additive constant).
         double eps5 = D1.count(900) ? D1[900] : (D1.count(700) ? D1[700] : 0);
         auto grid_ok = [&](std::vector<std::tuple<uint64_t,int,int>>& changes, // (time, pos, value) -- volume-only or period-only
                            const std::vector<FetchRec>& fr, double dmod) {
@@ -1226,6 +1386,17 @@ int main(int argc, char** argv) {
                 if (m < 1) m = 1;
                 double lo = m * dmod - lambda, hi = m * dmod + lambda + eps5;
                 if (!(delta >= lo && delta <= hi)) return false;
+            }
+            return true;
+        };
+        // Consecutive-change spacing: S P5.4's own ordering -- successive
+        // changes are 2*D_mod apart with one attach bit, D_mod apart with
+        // both.
+        auto consec_ok = [&](std::vector<std::tuple<uint64_t,int,int>>& changes, double step) {
+            if (changes.size() < 2 || step <= 0) return false;
+            for (size_t i = 1; i < changes.size(); ++i) {
+                double gap = (double)std::get<0>(changes[i]) - (double)std::get<0>(changes[i - 1]);
+                if (std::fabs(gap - step) > lambda) return false;
             }
             return true;
         };
@@ -1291,23 +1462,33 @@ int main(int argc, char** argv) {
         auto fr_ap = ap_win ? fetch_records(ap.log, ch_base(0), 4, ap_ws, ap_we) : std::vector<FetchRec>{};
         auto fr_both = both_win ? fetch_records(both.log, ch_base(0), 8, both_ws, both_we) : std::vector<FetchRec>{};
 
-        bool av_ok = grid_ok(av_changes, fr_av, d_mod);
-        bool ap_ok = grid_ok(ap_changes, fr_ap, d_mod);
-        bool both_ok = grid_ok(both_changes, fr_both, d_mod);
+        // Population precondition (S P5.5): at least 2L changes of
+        // channel 1 (L=4, SQ's own length) in the window.
+        checks.expect(av.loaded && av_win && av_changes.size() >= 8,
+            "P5 precondition [p.149]: S-AV -- the window (from channel 0's third fetch) has "
+            ">=2L=8 changes of channel 1");
+        checks.expect(ap.loaded && ap_win && ap_changes.size() >= 8,
+            "P5 precondition [p.149]: S-AP -- the window has >=2L=8 changes of channel 1");
+        checks.expect(both.loaded && both_win && both_changes.size() >= 8,
+            "P5 precondition [p.149]: S-BOTH -- the window has >=2L=8 changes of channel 1");
+
+        bool av_ok = grid_ok(av_changes, fr_av, d_mod) && consec_ok(av_changes, 2.0 * d_mod);
+        bool ap_ok = grid_ok(ap_changes, fr_ap, d_mod) && consec_ok(ap_changes, 2.0 * d_mod);
+        bool both_ok = grid_ok(both_changes, fr_both, d_mod) && consec_ok(both_changes, d_mod);
         checks.note("P5: S-AV " + std::to_string(av_changes.size()) + " changes, S-AP " +
             std::to_string(ap_changes.size()) + ", S-BOTH " + std::to_string(both_changes.size()) +
             "; av_ok=" + std::to_string(av_ok) + " ap_ok=" + std::to_string(ap_ok) +
             " both_ok=" + std::to_string(both_ok));
         checks.expect((mv == "P5") ? true : (av.loaded && av_win && !av_changes.empty() && av_ok),
             "P5 [p.149,p.164] 5-mod.c10,5-p149.c16: S-AV -- for every change, Delta=C-F_k lies "
-            "within [m*D_mod-lambda, m*D_mod+lambda+eps] for some integer m>=1 (as normal, "
-            "011->010)");
+            "within [m*D_mod-lambda, m*D_mod+lambda+eps] for some integer m>=1, and consecutive "
+            "changes are 2*D_mod apart (as normal, 011->010)");
         checks.expect(ap.loaded && ap_win && !ap_changes.empty() && ap_ok,
-            "P5 [p.164,p.165] 5-p165.c18,5-sig.pbufld2: S-AP -- Delta=C-F_k on the same grid "
-            "(010->011)");
+            "P5 [p.164,p.165] 5-p165.c18,5-sig.pbufld2: S-AP -- Delta=C-F_k on the same grid, "
+            "consecutive changes 2*D_mod apart (010->011)");
         checks.expect(both.loaded && both_win && !both_changes.empty() && both_ok,
-            "P5 [p.164]: S-BOTH -- Delta=C-F_k on the same grid, alternating volume and period "
-            "(both transitions)");
+            "P5 [p.164]: S-BOTH -- Delta=C-F_k on the same grid, consecutive changes D_mod apart, "
+            "alternating volume and period (both transitions)");
         if (mv == "P5") {
             bool mutant_ok = grid_ok(av_changes, fr_av, d_mod);
             checks.expect(av_win && !av_changes.empty() && !mutant_ok,
@@ -1321,18 +1502,18 @@ int main(int argc, char** argv) {
         struct Pair6 { int b; int mod_ch, tgt_ch, trip_a, trip_b; bool is_vol; std::string bin, noattach, extra; std::string extra_desc; std::string extra_clause; };
         std::vector<Pair6> cases = {
             {0,0,1,2,3,true,"/prog_s_pair0.bin","/prog_s_pair0_noattach.bin","/prog_s_pair0_extra.bin",
-             "bit 2 also set: ch2's tripwire data reaches ch3's volume","(c)"},
+             "the other-side tripwire (ch3) given a non-zero starting AUDxVOL","(c)"},
             {1,1,2,0,3,true,"/prog_s_pair1.bin","/prog_s_pair1_noattach.bin","",""," "},
             {2,2,3,0,1,true,"/prog_s_pair2.bin","/prog_s_pair2_noattach.bin","/prog_s_pair2_extra.bin",
-             "bit 0 also set: ch0 modulates ch1's volume, the left side becomes audible","(c)"},
+             "the other-side tripwire (ch1) given a non-zero starting AUDxVOL","(c)"},
             {4,0,1,2,3,false,"/prog_s_pair4.bin","/prog_s_pair4_noattach.bin","/prog_s_pair4_extra.bin",
-             "bit 6 also set: ch2 modulates ch3's period, ch3's spacing leaves 4000","(d)"},
+             "a tripwire's (ch3) AUDxPER rewritten halfway through the session","(d)"},
             {5,1,2,0,3,false,"/prog_s_pair5.bin","/prog_s_pair5_noattach.bin","/prog_s_pair5_extra.bin",
-             "bit 4 also set: ch0 modulates the modulator's own period, its spacing leaves 8000","(d)"},
+             "a tripwire's (ch3) AUDxPER rewritten halfway through the session","(d)"},
             {6,2,3,0,1,false,"/prog_s_pair6.bin","/prog_s_pair6_noattach.bin","/prog_s_pair6_extra.bin",
-             "bit 4 also set: ch0 modulates ch1's period, ch1's spacing leaves 3200","(d)"},
+             "a tripwire's (ch1) AUDxPER rewritten halfway through the session","(d)"},
         };
-        // D23: 20 orphan claim ids assigned per bit (from Table 5-5 / p.265),
+        // 20 orphan claim ids assigned per bit (from Table 5-5 / p.265),
         // matching the bit numbers the ids' own quotes name.
         std::map<int, std::string> bit_ids = {
             {1, "5-p151.c7,5-t55.b1,5-appA-p265.c28,A-adkcon.b01"},
@@ -1365,7 +1546,9 @@ int main(int argc, char** argv) {
             auto mod_fetches = have_bounds ? fetch_cycles(c.log, ch_base(pc.mod_ch), 4, *on, *off) : std::vector<uint64_t>{};
             uint64_t win_start = 0; bool win_ok = have_bounds && mod_fetches.size() >= 3;
             if (win_ok) win_start = mod_fetches[2];
-            uint64_t win_end = have_bounds ? *off : 0;
+            // The window closes at M_off + L_a, excluding the sample the
+            // DMA stop cuts short.
+            uint64_t win_end = have_bounds ? plus_La(*off) : 0;
 
             std::vector<int> applied; bool level_ok = true;
             auto& table = (pc.tgt_ch == 1) ? L1 : (pc.tgt_ch == 2) ? L2 : L3;
@@ -1407,7 +1590,7 @@ int main(int argc, char** argv) {
                    ": the target's applied periods are cyclically consecutive in M_P4, its level "
                    "pair stays at the reference for VOL 40"));
 
-            // D25: (b) -- durations (volume sessions) / level pair (period
+            // (b): durations (volume sessions) / level pair (period
             // sessions) stay at their own reference, and per-session
             // preconditions (already added above via assert_pc123).
             bool b_ok = false;
@@ -1431,7 +1614,7 @@ int main(int argc, char** argv) {
                 ? ("P6 " + tag + " (b): the target's durations stay at D_c(200)")
                 : ("P6 " + tag + " (b): the target's level pair stays at the reference for VOL 40"));
 
-            // D25: (c) uses win_start (the modulator's third fetch), not M_on.
+            // (c) uses win_start (the modulator's third fetch), not M_on.
             bool other_const = win_ok && oside >= 0 && is_constant(c.audio, win_start, win_end, oside);
             std::string c_id2225 = " 5-mod.c22,5-p150.c25";
             checks.expect(c.loaded && win_ok && other_const,
@@ -1459,77 +1642,80 @@ int main(int argc, char** argv) {
                 checks.expect(!cyclic_ok, "P6 " + tag + " MUTATION stimulus red the attach write "
                     "omitted: the target keeps its own VOL 40/PER 200, (a) fails, via NMH_MUTATE=" + tag);
             }
-            // D26: grade each EXTRA through its own clause (b=0,2 -> (c);
-            // b=4,5,6 -> (d)).
+            // Lead's decision: grade each EXTRA through its own clause
+            // (b=0,2 -> (c); b=4,5,6 -> (d)), with an honest, proven-live
+            // contrast -- a second attach bit measures as having no effect
+            // on this RTL (every bit is already shown ineffective by (a)
+            // above), so prog_*_extra.s no longer adds one. Instead: for
+            // (c), the tripwire on the OTHER side is given a non-zero
+            // starting AUDxVOL; for (d), a tripwire's AUDxPER is rewritten
+            // halfway through the session, as the PC6/PC7 mutants do for
+            // AUD0PER.
             if (!pc.extra.empty() && mv == tag + "-EXTRA") {
                 Capture ce = run_capture(dir + pc.extra, budget_for(110000));
                 auto mke = markers(ce); auto one = m_on(mke), offe = m_off(mke);
                 bool have_e = one && offe;
                 auto mfe = have_e ? fetch_cycles(ce.log, ch_base(pc.mod_ch), 4, *one, *offe) : std::vector<uint64_t>{};
                 uint64_t wse = have_e && mfe.size() >= 3 ? mfe[2] : 0;
-                bool wok_e = have_e && mfe.size() >= 3;
+                uint64_t wee = have_e ? plus_La(*offe) : 0;
+                bool wok_e = have_e && mfe.size() >= 3 && wee > wse;
                 bool broke_clause;
                 if (pc.extra_clause == "(c)") {
-                    broke_clause = wok_e && oside >= 0 && !is_constant(ce.audio, wse, *offe, oside);
+                    broke_clause = wok_e && oside >= 0 && !is_constant(ce.audio, wse, wee, oside);
+                    checks.expect(ce.loaded && ce.done.has_value() && wok_e && broke_clause,
+                        "P6 " + tag + "-EXTRA MUTATION stimulus red " + pc.extra_desc + ": clause "
+                        "(c) (the other side's output is constant) goes red, via NMH_MUTATE=" + tag + "-EXTRA");
                 } else {
-                    // The modulator's own expected period is always 4000
-                    // (M_P4 base); a tripwire's is its own fixed 1400 /
-                    // 1600 / 1800 / 2000 (channel-indexed).
                     static const double kTripPer[4] = {1400, 1600, 1800, 2000};
-                    auto expected_period = [&](int ch) { return ch == pc.mod_ch ? 4000.0 : kTripPer[ch]; };
-                    auto check_trip_e = [&](int ch) {
-                        auto fc = fetch_cycles(ce.log, ch_base(ch), ch == pc.mod_ch ? 4 : 2, wse, *offe);
-                        if (fc.size() < 2) return true; // "leaves" the spacing: fewer/irregular fetches also counts
-                        double exp = 2 * ticks(expected_period(ch));
+                    auto check_trip_e = [&](int ch, double per) {
+                        auto fc = fetch_cycles(ce.log, ch_base(ch), 2, wse, wee);
+                        if (fc.size() < 2) return true;
+                        double exp = 2 * ticks(per);
                         for (size_t i = 1; i < fc.size(); ++i)
                             if (std::fabs((double)(fc[i]-fc[i-1]) - exp) > lambda) return true;
                         return false;
                     };
-                    broke_clause = wok_e && (check_trip_e(pc.trip_a) || check_trip_e(pc.trip_b) ||
-                                              check_trip_e(pc.mod_ch));
+                    broke_clause = wok_e && check_trip_e(pc.trip_b, kTripPer[pc.trip_b]);
+                    checks.expect(ce.loaded && ce.done.has_value() && wok_e && broke_clause,
+                        "P6 " + tag + "-EXTRA MUTATION stimulus red " + pc.extra_desc + ": clause "
+                        "(d) (every non-target channel's fetch spacing) goes red, via NMH_MUTATE=" + tag + "-EXTRA");
                 }
-                // Measured: the added bit is itself one of the six confirmed to have no
-                // effect (P6 (a) is already red for its own bit, on every b), so it does
-                // not move the other channel either: broke_clause does not come true on
-                // this RTL. Unfalsifiable at this boundary, not a test defect.
-                checks.record("P6 " + tag + "-EXTRA MUTATION NMH_MUTATE=" + tag + "-EXTRA (" +
-                    pc.extra_desc + "): unfalsifiable at this boundary -- broke_clause=" +
-                    (broke_clause ? "true" : "false") + ", because the added bit has no "
-                    "measured effect either.");
             }
         }
     }
 
     // ================= P7: channel 3 attaches to nothing ===================
     {
-        struct P7Case { std::string bin, mutbin; uint16_t mask, mutmask; std::string tag; };
+        // Per-bit ids: 5-appA-p265.c22/A-adkcon.b03 name ATVOL3
+        // (bit 3) specifically; c26/b07 name ATPER3 (bit 7). 5-mod.c23 and
+        // 5-p150.c26 (p.150's general "channel 3's modulate bits" sentence)
+        // are not bit-specific and stay on both.
+        struct P7Case { std::string bin, mutbin; uint16_t mask; std::string tag, ids; };
         std::vector<P7Case> cases = {
-            {"/prog_s_ch3v.bin", "/prog_s_ch3v_extra.bin", 0x08, 0x04, "P7V"},
-            {"/prog_s_ch3p.bin", "/prog_s_ch3p_extra.bin", 0x80, 0x40, "P7P"},
+            {"/prog_s_ch3v.bin", "/prog_s_ch3v_extra.bin", 0x08, "P7V", "5-appA-p265.c22,A-adkcon.b03"},
+            {"/prog_s_ch3p.bin", "/prog_s_ch3p_extra.bin", 0x80, "P7P", "5-appA-p265.c26,A-adkcon.b07"},
         };
         for (auto& pc : cases) {
-            std::string bin = (mv == pc.tag) ? pc.mutbin : pc.bin;
-            Capture c = run_capture(dir + bin, budget_for(60000));
-            uint16_t expect = (mv == pc.tag) ? pc.mutmask : pc.mask;
+            Capture c = run_capture(dir + pc.bin, budget_for(60000));
+            uint16_t expect = pc.mask;
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
             assert_pc123(checks, pc.tag, c, expect, 0x000F, {{0,2},{1,2},{2,2},{3,2}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
             auto ch3f = have_bounds ? fetch_cycles(c.log, ch_base(3), 2, *on, *off) : std::vector<uint64_t>{};
             uint64_t win_start = have_bounds && ch3f.size() >= 3 ? ch3f[2] : 0;
-            bool win_ok = have_bounds && ch3f.size() >= 3;
-            bool both_const = win_ok && is_constant(c.audio, win_start, *off, 0) && is_constant(c.audio, win_start, *off, 1);
-            // D28: A-adkcon.b03/b07 withdrawn from P7 (they name channel 3's
-            // own disable, graded by P8), kept only on the bit-3/7 rows here
-            // as context, not as an asserted id.
+            // The window closes at M_off + L_a.
+            uint64_t win_end = have_bounds ? plus_La(*off) : 0;
+            bool win_ok = have_bounds && ch3f.size() >= 3 && win_end > win_start;
+            bool both_const = win_ok && is_constant(c.audio, win_start, win_end, 0) && is_constant(c.audio, win_start, win_end, 1);
             checks.expect(c.loaded && win_ok && both_const,
-                "P7 [p.150,p.151,p.265] 5-mod.c23,5-p150.c26,5-appA-p265.c22,5-appA-p265.c26: both "
+                "P7 [p.150,p.151,p.265] 5-mod.c23,5-p150.c26," + pc.ids + ": both "
                 "outputs are constant for the whole window -- channel 3's attach bit modulates "
                 "nothing");
             bool spacing_ok = true;
             double pers[4] = {1400,1600,1800,2000};
             if (win_ok) {
                 for (int ch = 0; ch < 4; ++ch) {
-                    auto fc = fetch_cycles(c.log, ch_base(ch), 2, win_start, *off);
+                    auto fc = fetch_cycles(c.log, ch_base(ch), 2, win_start, win_end);
                     if (fc.size() < 2) { spacing_ok = false; continue; }
                     for (size_t i = 1; i < fc.size(); ++i)
                         if (std::fabs((double)(fc[i]-fc[i-1]) - 2*ticks(pers[ch])) > lambda) spacing_ok = false;
@@ -1539,15 +1725,34 @@ int main(int argc, char** argv) {
                 "P7 [p.164]: every channel's consecutive fetch spacing equals 2*AUDxPER within "
                 "lambda (2800,3200,3600,4000 ticks)");
             if (mv == pc.tag) {
-                // D27: graded through the spacing clause (the page predicts a spacing
-                // change of a silent channel 3 at VOL 0, not necessarily audibility).
-                // Measured: the substituted bit is itself one of the six confirmed to
-                // have no effect, so it does not move ch3's spacing either.
-                // Unfalsifiable at this boundary, not a test defect.
-                checks.record("P7 " + pc.tag + " MUTATION NMH_MUTATE=" + pc.tag + " (the wrong "
-                    "bit set): unfalsifiable at this boundary -- spacing_ok=" +
-                    (spacing_ok ? "true" : "false") + ", because the substituted bit has no "
-                    "measured effect either.");
+                // Lead's decision: a second attach bit measures as having no
+                // effect on this RTL (bit 2/6, like every attach bit
+                // elsewhere), so the honest control drives the target
+                // comparator directly instead: for P7V, a tripwire (ch0)
+                // given a non-zero starting AUDxVOL (the "constant" clause);
+                // for P7P, a tripwire's (ch0) AUDxPER rewritten mid-session,
+                // as the PC6/PC7 mutants do (the spacing clause).
+                Capture ce = run_capture(dir + pc.mutbin, budget_for(60000));
+                auto mke = markers(ce); auto one = m_on(mke), offe = m_off(mke);
+                bool have_e = one && offe;
+                auto ch3fe = have_e ? fetch_cycles(ce.log, ch_base(3), 2, *one, *offe) : std::vector<uint64_t>{};
+                uint64_t wse = have_e && ch3fe.size() >= 3 ? ch3fe[2] : 0;
+                uint64_t wee = have_e ? plus_La(*offe) : 0;
+                bool wok_e = have_e && ch3fe.size() >= 3 && wee > wse;
+                if (pc.tag == "P7V") {
+                    bool econst = wok_e && is_constant(ce.audio, wse, wee, 0) && is_constant(ce.audio, wse, wee, 1);
+                    checks.expect(ce.loaded && ce.done.has_value() && wok_e && !econst,
+                        "P7V MUTATION stimulus red a tripwire (ch0) given a non-zero starting "
+                        "AUDxVOL: the 'both outputs constant' clause goes red, via NMH_MUTATE=P7V");
+                } else {
+                    auto fc0 = fetch_cycles(ce.log, ch_base(0), 2, wse, wee);
+                    bool eok = false;
+                    if (fc0.size() >= 2) for (size_t i = 1; i < fc0.size(); ++i)
+                        if (std::fabs((double)(fc0[i]-fc0[i-1]) - 2*ticks(1400)) > lambda) { eok = true; break; }
+                    checks.expect(ce.loaded && ce.done.has_value() && wok_e && eok,
+                        "P7P MUTATION stimulus red a tripwire's (ch0) AUDxPER rewritten mid-session, "
+                        "as the PC6/PC7 mutants do: the spacing clause goes red, via NMH_MUTATE=P7P");
+                }
             }
         }
     }
@@ -1567,17 +1772,25 @@ int main(int argc, char** argv) {
             int side = side_of[pc.ch];
             auto mk = markers(c); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
+            // S-AP and S-DAC3-V/S-DAC3-P get no PC1-3 assertions anywhere
+            // else in this file (S-AV, S-BOTH already do, in P1 and P4).
+            if (pc.bin == "/prog_s_ap.bin")
+                assert_pc123(checks, "S-AP", c, 0x10, 0x0003, {{0,4},{1,4}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+            else if (pc.bin == "/prog_s_dac3v.bin")
+                assert_pc123(checks, "S-DAC3-V", c, 0x08, 0x0008, {{3,2}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+            else if (pc.bin == "/prog_s_dac3p.bin")
+                assert_pc123(checks, "S-DAC3-P", c, 0x80, 0x0008, {{3,2}}, have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
             auto fc = have_bounds ? fetch_cycles(c.log, ch_base(pc.ch), pc.ch == 0 ? 17 : 2, *on, *off) : std::vector<uint64_t>{};
-            uint64_t win_start = have_bounds && fc.size() >= 3 ? fc[2] + L_a_pad : 0;
-            uint64_t win_end = have_bounds ? *off + L_a_pad : 0;
+            uint64_t win_start = have_bounds && fc.size() >= 3 ? plus_La(fc[2]) : 0;
+            uint64_t win_end = have_bounds ? plus_La(*off) : 0;
             bool win_ok = have_bounds && fc.size() >= 3 && side >= 0;
             bool constant = win_ok && is_constant(c.audio, win_start, win_end, side);
             checks.expect(c.loaded && win_ok && constant,
                 "P8 [p.165,p.151,p.265] " + pc.ids + ": channel " + std::to_string(pc.ch) +
                 "'s own side has one value for the whole window while it is attached (" + pc.bin + ")");
         }
-        // D29/D30: the unattached control -- the same channel, same data,
-        // period and volume, changes its own side >=2x per data word.
+        // The unattached control -- the same channel, same data, period
+        // and volume, changes its own side >=2x per data word.
         struct CtrlCase { int ch; Capture* c; uint32_t len; std::string name; };
         std::vector<CtrlCase> ctrls = {
             {0, &rmod, 8, "R-MOD"}, {0, &rdacp4, 4, "R-DAC-P4"}, {0, &rdacvp, 8, "R-DAC-VP"},
@@ -1597,17 +1810,17 @@ int main(int argc, char** argv) {
                 "P8 precondition [reference frame]: " + cc.name + " -- the same channel, unattached, "
                 "changes its own side at least twice per data word");
         }
-        // D32: the mutation -- the attach write omitted, substituting the
+        // The mutation -- the attach write omitted, substituting the
         // matching R- session, graded through the SAME P8 comparator
-        // (channel 0's own side constant). With the side fixed (D2), the
-        // unattached control's own side legitimately changes, so the
-        // comparator must flip to red.
+        // (channel 0's own side constant). With the side fixed to each
+        // channel's own measured output, the unattached control's own
+        // side legitimately changes, so the comparator must flip to red.
         if (mv == "P8") {
             auto mk = markers(rmod); auto on = m_on(mk), off = m_off(mk);
             bool have_bounds = on && off;
             auto fc = have_bounds ? fetch_cycles(rmod.log, ch_base(0), 8, *on, *off) : std::vector<uint64_t>{};
-            uint64_t ws = have_bounds && fc.size() >= 3 ? fc[2] + L_a_pad : 0;
-            uint64_t we = have_bounds ? *off + L_a_pad : 0;
+            uint64_t ws = have_bounds && fc.size() >= 3 ? plus_La(fc[2]) : 0;
+            uint64_t we = have_bounds ? plus_La(*off) : 0;
             bool win_ok = have_bounds && fc.size() >= 3 && side_of[0] >= 0;
             bool constant = win_ok && is_constant(rmod.audio, ws, we, side_of[0]);
             checks.expect(win_ok && !constant,
@@ -1635,6 +1848,11 @@ int main(int argc, char** argv) {
             assert_pc123(checks, is_a ? "S-LEN-A" : "S-LEN-B", c, mask9, 0x0003,
                          {{0, is_a && mv == "P9" ? 4u : (uint32_t)pc.lm}, {1,(uint32_t)pc.lc}},
                          have_bounds, have_bounds ? *on : 0, have_bounds ? *off : 0);
+            // The window opens only on a RECOGNIZED reference value --
+            // some L_1(v), v != 40, from the case's own modulator order --
+            // not on any value that merely differs from 40 (the DMA stop's
+            // idle glitch, or channel 1's own first-pass overrun, must not
+            // open the window).
             auto pr40 = L1.count(40) ? L1[40] : std::make_pair<uint16_t,uint16_t>(0,0);
             uint64_t win_start = 0; bool win_ok = false;
             if (have_bounds && side >= 0) {
@@ -1642,17 +1860,24 @@ int main(int argc, char** argv) {
                 bool seen40 = false;
                 for (auto& r : runs) {
                     if (!seen40) { if (r.value == pr40.first || r.value == pr40.second) seen40 = true; continue; }
-                    if (r.value != pr40.first && r.value != pr40.second) { win_start = r.start; win_ok = true; break; }
+                    bool matches_ref = false;
+                    for (int v : pc.mod_order) {
+                        if (v == 40 || !L1.count(v)) continue;
+                        auto& pr = L1[v];
+                        if (r.value == pr.first || r.value == pr.second) { matches_ref = true; break; }
+                    }
+                    if (matches_ref) { win_start = r.start; win_ok = true; break; }
                 }
             }
-            uint64_t win_end = have_bounds ? *off + L_a_pad : 0;
+            uint64_t win_end = have_bounds ? plus_La(*off) : 0;
             uint32_t lm_eff = (is_a && mv == "P9") ? 4 : (uint32_t)pc.lm;
             auto off0 = win_ok ? fetch_offsets(c.log, ch_base(0), lm_eff, win_start, win_end) : std::vector<uint32_t>{};
             auto off1 = win_ok ? fetch_offsets(c.log, ch_base(1), pc.lc, win_start, win_end) : std::vector<uint32_t>{};
-            // D33: grade the stepping itself (previous+1 mod L).
-            bool off0_ok = stepping_ok(off0, lm_eff);
-            bool off1_ok = stepping_ok(off1, (uint32_t)pc.lc);
-            // D11: named for P9 (a),(b) too -- graded inside a window that
+            // Grade the stepping itself (previous+1 mod L), from the
+            // channel's own first restart on.
+            bool off0_ok = stepping_cycles(off0, lm_eff) >= 0;
+            bool off1_ok = stepping_cycles(off1, (uint32_t)pc.lc) >= 0;
+            // Named for P9 (a),(b) too -- graded inside a window that
             // exists only if a genuine departure from 40 happened; an empty
             // population must show up as its own red, not as (a)/(b)'s.
             checks.expect(c.loaded && win_ok && !off0.empty() && !off1.empty(),
@@ -1672,7 +1897,7 @@ int main(int argc, char** argv) {
             }
             bool cyclic_ok = win_ok && level_ok && applied.size() >= 2*pc.mod_order.size() &&
                 cyclic_consecutive(applied, pc.mod_order);
-            // D34: (d) -- channel 1's durations stay at D_1(200).
+            // (d): channel 1's durations stay at D_1(200).
             bool dur_ok = false;
             if (win_ok && side >= 0) {
                 auto runs = runs_in_window(c.audio, win_start, win_end, side);
@@ -1703,7 +1928,7 @@ int main(int argc, char** argv) {
                 // RTL ever produced one.)
                 auto off0_L5 = win_ok ? fetch_offsets(c.log, ch_base(0), 5, win_start, win_end)
                                       : std::vector<uint32_t>{};
-                bool off0_ok_L5 = stepping_ok(off0_L5, 5);
+                bool off0_ok_L5 = stepping_cycles(off0_L5, 5) >= 0;
                 checks.expect(win_ok && !off0_ok_L5, "P9 MUTATION stimulus red AUD0LEN=4 instead "
                     "of 5: graded against the original L_m=5, the modulator's own offsets no "
                     "longer step 0..4,0,..., via NMH_MUTATE=P9");
@@ -1722,7 +1947,7 @@ int main(int argc, char** argv) {
             for (size_t n = 4; n <= fetches.size(); ++n) {
                 double kfac = k_mode == 0 ? 2.0*(double)(n-3) : k_mode == 1 ? 2.0*(double)(n-3)+1.0 : (double)(n-3);
                 double o = (double)fetches[n-1] - (double)t0 - kfac*d_mod;
-                if (std::fabs(o) > lambda) return false; // D39/Sol-tolerance: lambda alone.
+                if (std::fabs(o) > lambda) return false; // the page's own ordering: lambda alone.
             }
             return true;
         };
@@ -1730,15 +1955,22 @@ int main(int argc, char** argv) {
         Capture ap = run_capture(dir + "/prog_s_ap.bin", budget_for(110000));
         Capture both = run_capture(dir + "/prog_s_both.bin", budget_for(110000));
 
-        // D35: S-AV is graded relative to normal operation by using the
-        // identical formula, tolerance and anchor as PC7/R-MOD -- the
-        // shared k(n)=2(n-3) check IS "as they do in normal operation".
-        bool av_ok = phase_check(av, 0);
+        // S-AV is graded RELATIVE to R-MOD's own measured pattern ("as
+        // they do in normal operation"), through PC7's own gap comparator
+        // -- not the absolute k(n) formula anchored at t0, which inherits
+        // PC7 n=3's own already-established red (the missing 101->010
+        // request at F_3) and would misattribute it to S-AV's own claim
+        // ids: S-AV's fetch phase is otherwise identical to R-MOD's.
+        auto av_mk = markers(av);
+        auto av_on = m_on(av_mk), av_off = m_off(av_mk);
+        auto av_fetches = (av_on && av_off) ? fetch_cycles(av.log, ch_base(0), 8, *av_on, *av_off) : std::vector<uint64_t>{};
+        bool av_ok = pc7_gap_check(av_fetches, d_mod);
         checks.expect(av.loaded && av_ok,
-            "P10 [p.164,p.165] 5-p164.c33,5-sm.c33: S-AV -- o_n within lambda of k(n)=2(n-3), "
-            "graded by the same formula as PC7/R-MOD ('as they do in normal operation', 011->010)");
-        // D36: F58.loop.attach kept only here (the attach-period bracket
-        // S-AP alone exercises); napnav's DMA-half is recorded, not
+            "P10 [p.164,p.165] 5-p164.c33,5-sm.c33: S-AV -- the fetch gaps from the third fetch "
+            "onward match R-MOD's own pattern (PC7's gap comparator, D_mod*2 apart within lambda), "
+            "'as they do in normal operation'");
+        // F58.loop.attach kept only here (the attach-period bracket S-AP
+        // alone exercises); napnav's DMA-half is recorded, not
         // re-asserted (it is the same formula PC7 already grades).
         bool ap_ok = phase_check(ap, 1);
         checks.expect(ap.loaded && ap_ok,
@@ -1756,12 +1988,12 @@ int main(int argc, char** argv) {
         checks.expect(both.loaded && phase_check(both, 2),
             "P10 [p.164] 5-p164.c35,5-sm.c35: S-BOTH -- o_n within lambda of k(n)=n-3 (both "
             "transitions)");
-        // D37: the duplicate "P10 anchor" line removed -- PC7 already
+        // The duplicate "P10 anchor" line is not printed -- PC7 already
         // states this (see PC7's own assertion above).
         if (mv == "P10") {
-            // D38: grade S-AP's own capture through S-AV's k(n)=2(n-3)
-            // formula (not through S-AP's own, correct formula) -- this is
-            // the actual stimulus-vs-comparator mismatch the mutation must
+            // Grade S-AP's own capture through S-AV's k(n)=2(n-3) formula
+            // (not through S-AP's own, correct formula) -- this is the
+            // actual stimulus-vs-comparator mismatch the mutation must
             // demonstrate.
             bool mismatched = phase_check(ap, 0);
             checks.expect(!mismatched,

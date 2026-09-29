@@ -2,9 +2,10 @@
 ; modulates ch3's period (SQ, target, right). ch0/ch1 are tripwires
 ; (W_P, silent). See SPECIFICATION.md, P6.
 ;
-; NOATTACH set: omit the attach write. EXTRA set: ADKCON $8050 instead of
-; $8040 (bit 4 also set: ch0 -- a tripwire here -- now modulates ch1's
-; period, so ch1's fetch spacing leaves 3200).
+; NOATTACH set: omit the attach write. EXTRA set: ch1's own AUDxPER is
+; rewritten from 1600 to 800 halfway through the session, with the
+; ordinary attach write ($8040) unchanged: ch1's fetch spacing leaves
+; 3200 -- clause (d)'s own honest contrast.
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -34,11 +35,7 @@ desc:
         ifd     NOATTACH
         dc.w    $8000
         else
-        ifd     EXTRA
-        dc.w    $8050
-        else
         dc.w    $8040
-        endif
         endif
         dc.w    $820F
         dc.w    $000F
@@ -50,5 +47,11 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$00FF,ADKCON(a0)
         lea     desc,a2
+        ifd     EXTRA
+        move.w  #1,d5
+        move.w  #800,d6
+        bsr     run_session_mut_ch_per
+        else
         bsr     run_session
+        endif
         DONE

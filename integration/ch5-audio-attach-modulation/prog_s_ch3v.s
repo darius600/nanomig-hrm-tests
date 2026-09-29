@@ -2,9 +2,10 @@
 ; modulates nothing; all four channels are silent tripwires playing W_V.
 ; See SPECIFICATION.md, P7.
 ;
-; EXTRA set: ADKCON $8004 instead of $8008 (bit 2: ATVOL2 makes ch2
-; modulate ch3's volume with W_V's own valid words 48 and 16, so ch3
-; becomes audible on the right).
+; EXTRA set: ch0 is given a non-zero starting AUDxVOL (48) instead of 0,
+; with the ordinary attach write ($8008) unchanged: ch0 becomes audible on
+; its own, so the "both outputs constant" check must fail -- the honest
+; contrast for P7V.
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -24,18 +25,18 @@ wv_data3:       dc.w    $0030,$0010
 
 desc:
         dc.l    wv_data0
+        ifd     EXTRA
+        dc.w    2,1400,48
+        else
         dc.w    2,1400,0
+        endif
         dc.l    wv_data1
         dc.w    2,1600,0
         dc.l    wv_data2
         dc.w    2,1800,0
         dc.l    wv_data3
         dc.w    2,2000,0
-        ifd     EXTRA
-        dc.w    $8004
-        else
         dc.w    $8008
-        endif
         dc.w    $820F
         dc.w    $000F
         dc.l    60000

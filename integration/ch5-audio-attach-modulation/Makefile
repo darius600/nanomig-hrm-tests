@@ -2,11 +2,12 @@
 
 TEST_CPP := test_ch5_audio_attach_modulation.cpp
 PROGS    := prog_fixture prog_fixture_mut \
-            prog_rmod prog_rmod_pc6 prog_rmod_pc7 \
+            prog_rmod prog_rmod_pc6 prog_rmod_pc7 prog_rmod_pc7frame \
             prog_rdacp4 prog_rdacvp prog_rdac3v prog_rdac3p \
             prog_rvol1 prog_rvol2 prog_rvol3 \
             prog_rper1 prog_rper2 prog_rper3 \
             prog_rramp \
+            prog_p1_ctrl \
             prog_s_av prog_s_av_noattach prog_s_av_per6000 \
             prog_s_ap \
             prog_s_both prog_s_both_volonly \

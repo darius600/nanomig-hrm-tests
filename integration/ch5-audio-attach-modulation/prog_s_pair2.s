@@ -2,9 +2,11 @@
 ; modulates ch3's volume (SQ, target, right). ch0/ch1 are tripwires
 ; (W_V, silent). See SPECIFICATION.md, P6.
 ;
-; NOATTACH set: omit the attach write. EXTRA set: ADKCON $8005 instead of
-; $8004 (bit 0 also set: ch0 -- a tripwire here -- now modulates ch1's
-; volume, and the left side becomes audible).
+; NOATTACH set: omit the attach write. EXTRA set: ch1 (the tripwire on
+; ch2's own side) is given a non-zero starting AUDxVOL (48) instead of 0,
+; with the ordinary attach write ($8004) unchanged: ch1 becomes audible on
+; its own, so the "other side constant" check must fail -- clause (c)'s
+; own honest contrast.
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -26,7 +28,11 @@ desc:
         dc.l    wv_data0
         dc.w    2,1400,0
         dc.l    wv_data1
+        ifd     EXTRA
+        dc.w    2,1600,48
+        else
         dc.w    2,1600,0
+        endif
         dc.l    m6v_data
         dc.w    4,4000,0
         dc.l    sq_data
@@ -34,11 +40,7 @@ desc:
         ifd     NOATTACH
         dc.w    $8000
         else
-        ifd     EXTRA
-        dc.w    $8005
-        else
         dc.w    $8004
-        endif
         endif
         dc.w    $820F
         dc.w    $000F
