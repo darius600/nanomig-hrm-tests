@@ -857,7 +857,14 @@ the run's result where the raw run cannot turn red on its own.
      P1's port, or on the observation-only field B19.
    - The truth T(i) for "the light pen has triggered since the last
      top-of-screen": a graded pin-6 pulse lies between the start of the last
-     model line 20 and a of sample i.
+     model line 20 before a of sample i (the previous field's, if sample i
+     is itself still before its own line 20) and a of sample i, and the
+     freeze that pulse set is still in place at sample i+1 too -- step 2 can
+     only read "the same" while both reads see the same frozen value, so a
+     pair spanning the release (sample i still latched, sample i+1 already
+     past line 20) reads "not the same" whether or not a trigger occurred
+     earlier, and T(i) is graded against what the method can show, not
+     against the trigger alone.
    - The method's answer:
      - step 2: v(i) differs from v(i+1) in any bit, so "not triggered";
      - steps 3 and 4 otherwise, with m = v AND $1FFFF: m > $10500 gives "not
