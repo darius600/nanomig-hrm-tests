@@ -10,6 +10,7 @@
 | **Report to** | **nobody.** NanoMig, the three independent implementations that separate the chips and the dissected 8364R7 all answer `$002` from Agnus alone |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) · `DMACONR-NOT-DECODED-BY-PAULA` |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `DMACONR-NOT-DECODED-BY-PAULA` (`19 passed, 2 failed`; the other red is not this finding's). Its mutation, `ADKCONR` in place of `$002`, turns it green |
 | **Verdict of the four** | **three of four with NanoMig, and the fourth cannot answer**: vAmiga (`Memory.cpp:2411-2412`), Denise (`agnus/register.cpp:64-65`) and Copperline (`custom_regs.rs:12-27`) keep Paula apart from Agnus and read `$002` from Agnus's DMACON alone, while routing `ADKCONR` at `$010` to Paula; WinUAE has one `DMACONR()` for the whole chip set (`custom.cpp:7048`) and no separate Paula to ask |
 
 ---

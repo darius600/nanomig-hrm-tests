@@ -10,6 +10,7 @@
 | **Report to** | **nobody, as an RTL defect.** The question is what p. 218's warning and p. 280's parenthesis mean; the RTL's bit 14 is the one Figure 7-4 places at level 6, inherited unchanged by both Minimig lines |
 | **Test** | [`hrm/ch5-audio-interrupt`](../../hrm/ch5-audio-interrupt) · `MASTER-BIT14-NO-REQUEST`, measured and recorded, not graded; [`hrm/ch7-interrupt-priority-encoder`](../../hrm/ch7-interrupt-priority-encoder) · `P3-INTREQ-FULLY-WRITABLE`, graded and green, and `P19-BIT14-INTEN`, measured, not graded |
 | **Chapter** | Appendix A, printed p. 280; 7 — System Control, printed pp. 218, 219 and 221 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | none red. `MASTER-BIT14-NO-REQUEST` and `P19-BIT14-INTEN` are measured and not graded; `P3-INTREQ-FULLY-WRITABLE` is graded from p. 219 and green |
 | **Verdict of the four** | **unanimous with NanoMig and with Figure 7-4**: WinUAE, vAmiga, Denise and Copperline all latch a written bit 14 in INTREQ, return it through INTREQR, and serve it at level 6 when INTENA's bit 14 is set. None implements p. 280's parenthesis |
 
 ---

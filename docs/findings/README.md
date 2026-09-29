@@ -24,21 +24,24 @@ before any prose is read:
 | **Test** | the package that measures it, or `none yet` |
 | **Chapter** | which part of the manual judges it |
 
-**Eight further fields appear on some pages and not others**, and which ones a
-page carries says something about it:
+**Every open page carries three more, always in the same place:** *Report to*
+after *Module*, and *Assertions* and *Verdict of the four* after *Chapter*.
+When there is nobody to report to, no graded assertion or nothing to compare,
+the row says so; it is never left out. Only the optional rows follow them.
+Withdrawn pages keep the header they were withdrawn with, so the counts below
+include pages without one of the three:
 
-| field | on | what its absence means |
+| field | on | what it holds, or what its absence means |
 |---|---|---|
-| **Verdict of the four** | 82 of 88 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 73 of 88 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 72 of 88 | the finding has no graded assertions of its own; the `Test` row still names the package |
-| **See also** | 23 | no sibling finding bears on it |
-| **Error class** | 12 | it is not one of the recurring shapes |
-| **Boundary** | 2 | no edge case was isolated |
-| **Provenance**, **Origin** | 1 each | one-offs, kept because the page needed them |
+| **Verdict of the four** | 82 of 88 | what the four independent implementations do; absent only on withdrawn pages |
+| **Report to** | 74 of 88 | who can act on the finding, or *nobody*; absent only on withdrawn pages |
+| **Assertions** | 78 of 88 | the red assertions by name with the package's count, or *none* and what the package records instead; absent only on withdrawn pages |
+| **See also** | 23 | optional: no sibling finding bears on it |
+| **Error class** | 12 | withdrawn pages only: it is not one of the recurring shapes |
+| **Boundary** | 2 | optional: no edge case was isolated |
+| **Provenance**, **Origin** | 1 each | optional one-offs, kept because the page needed them |
 
-A header table that is shorter than the one on the page before it is therefore
-not an incomplete page. Counted across all 88, the withdrawn ones included.
+Counted across all 88, the withdrawn ones included.
 
 **A title that ends in [RTL review]** marks a page whose header says three
 things: `open`, filed against `the RTL`, and a test that fails against the page. That page asks an

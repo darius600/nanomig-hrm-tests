@@ -10,6 +10,7 @@
 | **Report to** | **nobody, as an RTL defect.** The question is Table 3-13's PAL row; the RTL's PAL blank ends on the line p. 219 prints, and both Minimig lines carry the same two constants |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · [`hrm/ch7-vertb-vertical-blank-timing`](../../hrm/ch7-vertb-vertical-blank-timing) |
 | **Chapter** | 3 — Playfield, and 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 3 red: `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL` against Table 3-13 in `hrm/ch3-beam-counters-and-blanking` (`28 passed, 5 failed`; the other four reds are NM-HRM-010's and NM-HRM-068's), and `NTSC-VBLANK-DURATION-20-LINES` and `PAL-VBLANK-DURATION-25-LINES` against p. 219 in `hrm/ch7-vertb-vertical-blank-timing` (`8 passed, 2 failed`) |
 | **Verdict of the four** | **unanimous against Table 3-13's PAL row**: WinUAE and vAmiga end the hardwired PAL blank after line 25, as NanoMig does, Copperline after line 24 and Denise after line 23; none blanks to the $1D the table prints. In NTSC WinUAE ends it after line 20, as NanoMig does, vAmiga and Copperline after line 19, Denise after line 18 |
 
 ---

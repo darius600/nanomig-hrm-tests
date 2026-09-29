@@ -7,8 +7,10 @@
 | **Evidence** | none |
 | **What is asked of a reader** | No RTL change follows from this. Appendix C p. 309 lists the pointer registers that gain two high bits under ECS and leaves out BPLxPTH and SPRxPTH, and Appendices A and B print both "(high 3 bits)" without the `(E)` mark; chapter 1 gives the ECS Agnus one or two megabytes of Chip memory and puts bitplanes and sprite lists anywhere in it. NanoMig's five high bits follow chapter 1, and all four implementations give these two pointers the reach they give every other DMA pointer. The question is whether Appendix C's list is complete. At OCS every page gives the bitplane pointer three high bits; NanoMig's five there are the construction [NM-HRM-043](NM-HRM-043.md) records, and no assertion grades them. |
 | **Module** | — |
+| **Report to** | **nobody.** There is no repository that can fix a disagreement between printed pages |
 | **Test** | [`hrm/ch3-register-map-agnus`](../../hrm/ch3-register-map-agnus) — recorded as a `note()`, not an assertion |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | none. Two `note()`s record the width, `RTL-VS-MANUAL-BPLXPTH-FIELD-WIDTH` and `POINTER-WIDTH-DISPUTED`; no assertion grades it |
 | **Verdict of the four** | **unanimous with NanoMig and with chapter 1**: WinUAE, vAmiga, Denise and Copperline give the bitplane and sprite pointers the reach they give every other DMA pointer, past 512K under ECS, and none holds them to three bits there; Copperline asserts it for `BPLxPT` and `SPRxPT` by name in a test. At OCS three of the four narrow all of them to 512K, as [NM-HRM-043](NM-HRM-043.md) records for the disk pointer |
 
 ---

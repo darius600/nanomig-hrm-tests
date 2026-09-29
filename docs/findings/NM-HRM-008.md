@@ -10,6 +10,7 @@
 | **Report to** | **the manual, not the RTL.** pp. 214 and 273 are contradicted by all four independent implementations and by the 8373R4 silicon, which gates the playfield-1 match on the even planes while BPLCON0's DPF bit is clear; `denise_collision.v` is identical in NanoMig, MiSTer and TC64 — see *Why this is filed against the page* |
 | **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers) · [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode) |
 | **Chapter** | 3 — Playfield, and 7 — System Control · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 9 red: `BITMAP-PAIR PF1-SPR01` to `PF1-SPR67` in `hrm/ch3-collision-registers` (`32 passed, 4 failed`), and `A1-PLAYFIELD-MODE-INVARIANCE PF1-SPR01` to `PF1-SPR67` with `A3-PLAYFIELD-1-IS-ODD-BITPLANES dblpf=0` in `hrm/ch7-collision-playfield-mode` (`16 passed, 5 failed`) |
 | **Verdict of the four** | **unanimous with NanoMig, against pp. 214 and 273**: WinUAE, vAmiga, Denise and Copperline all register a playfield-1 collision in single-playfield mode only where playfield 2's enabled planes match as well. Copperline's expression is NanoMig's term for term; WinUAE's changelog calls p. 214's sentence wrong and vAmiga's comment calls the gate a hardware oddity; vAmiga also applies it in dual-playfield mode where playfield 1 is opaque and shown; outside the emulators, the 8373R4 dissection gates the playfield-1 match on the even planes when BPLCON0's DPF bit is clear, as NanoMig does — see *What other Commodore documents say* |
 
 ---

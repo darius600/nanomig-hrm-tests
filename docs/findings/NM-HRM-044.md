@@ -10,6 +10,7 @@
 | **Report to** | **nobody.** There is no repository that can fix a disagreement between printed pages |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertion `P1`, graded red against p.279; [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) — `APPBSTAR $10 DSKPTH ecs=0`, graded green against p.289 |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Assertions** | 1 red: `P1` against p.279 (`4 passed, 3 failed`), with `COPLIVE` green as its control; `APPBSTAR $10 DSKPTH ecs=0` green against p.289 in `hrm/ch2-copper-move-sweep` |
 | **Verdict of the four** | **unanimous with NanoMig**: all four block a Copper write to `$020` on OCS, as p.289 marks it, and allow it under ECS with CDANG set, as p.310 allows; none lets the Copper initialise DSKPTH on OCS, as p.279 would. That is which reading practitioners took, not which page is right |
 | **See also** | [NM-HRM-014](NM-HRM-014.md), the precedent for a finding about the manual rather than about the implementation. **Not [NM-HRM-004](NM-HRM-004.md)**, which is the ECS danger-bit *range* — a different claim, register and page |
 

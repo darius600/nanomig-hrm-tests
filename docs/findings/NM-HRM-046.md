@@ -11,8 +11,8 @@
 | **Test** | [`hrm/ch8-drive-select-motor-led`](../../hrm/ch8-drive-select-motor-led) — assertions `opus:8-cia.c26` and its twin `sol:8-cia.c24`; [`integration/appF-cia-system`](../../integration/appF-cia-system) reproduces it at the system's ports on fx68k and on TG68K, recorded, not graded: `P1-LP/P1-O2` reads `fdd_led` off after DF0 is selected with MTR* low |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red of 10 graded, a claim and its independently-read twin. **Six greens in the same run** grade the rest of the same PB7 row, including the motor latch this light fails to read. `integration/appF-cia-system` adds none: `P1-LP/P1-O2` and `LED-R` are RECORDED lines, and nothing in that package is graded on the light |
-| **Provenance** | **recovered by the attack stage** after classification had discarded both claims as not testable. See *How this finding was nearly lost* |
 | **Verdict of the four** | **unanimous against NanoMig.** All four model a drive light, and all four drive it from the motor. Two add a select term; two use DMA only to change the light's *colour*, never whether it is lit |
+| **Provenance** | **recovered by the attack stage** after classification had discarded both claims as not testable. See *How this finding was nearly lost* |
 
 ---
 
