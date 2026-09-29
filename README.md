@@ -76,8 +76,8 @@ cd nanomig-hrm-tests
 ./run_all.sh
 ```
 
-`./run_all.sh --jobs 8` runs up to eight `hrm/` and `aa/` packages at a time
-and prints the same lines in the same order.
+`./run_all.sh --jobs 8` runs up to eight packages of each tree at a time and
+prints the same lines in the same order.
 
 Requires Verilator (last verified with **5.052**) and `make`; the tests at
 `nanomig.v`'s own ports under `integration/` also need the 68000 assembler

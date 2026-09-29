@@ -4,7 +4,7 @@
 #
 #   ./run_all.sh            rebuild everything (make -B) and run
 #   ./run_all.sh --fast     reuse existing binaries where possible
-#   ./run_all.sh --jobs 8   run up to 8 hrm/ and aa/ packages at a time
+#   ./run_all.sh --jobs 8   run up to 8 packages of each tree at a time
 #
 # Why this exists alongside hrm/run_all.sh: that one only looks at one tree. An
 # upstream change can break the integration tests at build time, so that not a
@@ -37,7 +37,14 @@ fi
 echo
 echo "===== Integration ====="
 MAKE_ARGS="-B"
-for arg in "$@"; do [ "$arg" = "--fast" ] && MAKE_ARGS=""; done
+JOBS=1
+prev=""
+for arg in "$@"; do
+    [ "$arg" = "--fast" ] && MAKE_ARGS=""
+    [ "$prev" = "--jobs" ] && JOBS="$arg"
+    prev="$arg"
+done
+case "$JOBS" in ''|*[!0-9]*|0) JOBS=1 ;; esac
 for target in test_minimig_system test_copper; do
     out=$(make $MAKE_ARGS -C integration/minimig_system "$target" 2>&1)
     if [ $? -eq 0 ] && echo "$out" | grep -q 'All tests passed'; then
@@ -75,7 +82,22 @@ fi
 # make going to the second core when the first has a red. One line per core,
 # in the form of the package lines above; a core that printed no summary is a
 # build error. A package with no Makefile has a specification and no test yet:
-# one SPEC line, neither pass nor fail.
+# one SPEC line, neither pass nor fail. --jobs builds and runs up to that many
+# packages at a time, as hrm/run_all.sh does, and prints the same lines in the
+# same order once all have finished; each package builds into its own
+# directory.
+graded=()
+for dir in integration/*/; do
+    pkg=$(basename "$dir")
+    case "$pkg" in harness|minimig_system|apparatus-*) continue ;; esac
+    [ -f "integration/$pkg/Makefile" ] && graded+=("$pkg")
+done
+for pkg in "${graded[@]}"; do
+    while [ "$(jobs -rp | wc -l)" -ge "$JOBS" ]; do wait -n; done
+    ( rm -f "integration/$pkg"/out_*.txt
+      make $MAKE_ARGS -k -C "integration/$pkg" test > /dev/null 2>&1 ) &
+done
+wait
 for dir in integration/*/; do
     pkg=$(basename "$dir")
     case "$pkg" in harness|minimig_system|apparatus-*) continue ;; esac
@@ -83,8 +105,6 @@ for dir in integration/*/; do
         echo "SPEC  $pkg   specification only, not built"
         continue
     fi
-    rm -f "integration/$pkg"/out_*.txt
-    make $MAKE_ARGS -k -C "integration/$pkg" test > /dev/null 2>&1
     for core in fx68k tg68k; do
         line=$(grep -E '^[0-9]+ passed, [0-9]+ failed' "integration/$pkg/out_$core.txt" 2>/dev/null | tail -1)
         if [ -z "$line" ]; then
