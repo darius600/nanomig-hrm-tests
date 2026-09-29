@@ -159,29 +159,38 @@ print. The same holds for Table 2-2 on p.36.
 
 ### 3.6 Audio: the first pass and the restart request
 
-- p.164: "Because of pipelining in Agnus, the first data word must be thrown
-  away." ... "When it finishes, a DMA restart request goes to Agnus along with
-  the regular DMA request. This tells Agnus to reset the pointer to the
-  beginning of the table of data."
 - p.145: "Set the length register, AUDxLEN, to the number of data words to be
   retrieved before starting at the address currently in AUDxLC." p.139: "Each
   time the system retrieves the last audio word from the data area, it uses the
   contents of these location registers to again find the start of the data."
   p.147: "Each time the length counter reaches zero, both the location and
-  length registers are reloaded".
-- p.145: "Enabling an audio channel almost always starts the data output again
-  from the top".
+  length registers are reloaded with the same values". p.266 (Appendix A,
+  AUDxLEN): "This register contains the length (number of words) of audio
+  channel x DMA data." None of these four makes an exception for the pass
+  that starts when the channel is enabled.
+- p.164: "Because of pipelining in Agnus, the first data word must be thrown
+  away." ... "State 101 is entered as soon as this word arrives; a request for
+  the next data word has already gone out. When the data arrives, state 010 is
+  entered and the main loop continues ... The length counter counts down once
+  with each word that comes in. ... For an explanation of the various states,
+  refer to Figure 5-8." Figure 5-8 (p.166) puts a count on the 001->101 arc
+  (the thrown-away word) but none on the 101->010 arc (the word after it);
+  read under the figure's own brackets, the first pass is AUDxLEN words, the
+  same as every later pass.
 
-p.164 leaves open the exact fetch sequence of the first pass through the data
-after the channel is enabled, and whether that pass is one word short is open
-(p.145 step 4 against p.164). P7 therefore makes no assertion about the first
-pass: the channel-0 fetches before the first fetch whose address is lower than
-that of the fetch before it, but never more than the first N + 1. N + 1 is the
-most any reading gives the first pass: N words "to be retrieved" (p.145) and
-one "thrown away" (p.164). The bound does not rest on the restart that P7
-grades, so an implementation that never returns to AUDxLC is still graded
-from fetch N + 2 on. P7 checks every block end after the first pass, where
-the pages agree.
+pp.139, 145, 147, 266 and Figure 5-8 therefore agree: AUDxLEN words are
+fetched on every pass, the first included. The length counter's own count
+across the first pass, and the fetch sequence p.164 walks through, are graded
+in `hrm/ch5-audio-dma-first-pass` (finding NM-HRM-084). P7 makes no assertion
+about the first pass regardless: its own population is the audio port's
+addresses, and every proposition it grades holds under either reading of the
+first pass's own length. The channel-0 fetches before the first fetch whose
+address is lower than that of the fetch before it count as the first pass,
+but never more than the first N + 1 -- a bound wide enough for AUDxLEN words
+(the pages) or fewer (a shorter first pass), so it never cuts the first pass
+short. The bound does not rest on the restart that P7 grades, so an
+implementation that never returns to AUDxLC is still graded from fetch N + 2
+on. P7 checks every block end after the first pass, where the pages agree.
 
 ### 3.7 Smaller points
 
@@ -1187,42 +1196,35 @@ graded, on every capture, against every capture's own measured ratio
 
 `P2-C1` turns `P2-ii` and `P2-iii,P2-iv` red together, both grading the
 same $AAA8-instead-of-$AAAA divergence at the same point (4.5's
-dedicated-mutation exception). `P5-P2` (the park at $0C0020 replaced by
-a WAIT then a park at $0C0024) also turns `P5-L` red: $0C0020 is itself
-one of the 40 graded TARGETS entries, so the same address change is a
-bit-group divergence too, not a separate fault. `P5-P3` (the
-ROM-overlay-clearing writes omitted) goes red through the shared G4
-precondition, not a bespoke label: with the overlay left in place, the
-Copper's own read no longer matches this run's prescribed word. `P5-C1`
-(phase 3's own two words exchanged) turns only `P5-p2` red -- phase 3's
-own step carries no bit-group index, so `P5-L`/`P5-H-low`/`P5-H-high`
-are unaffected. `P5-C3` (the first phase-2 step's COPJMP1 instead of
-COPJMP2) turns `P5-L` and `P5-p2` red together, target index 0 sitting
-in the L bits-15-1 group. `P5-C2` (the extra $4000-only step) is not
-exercised as a divergence: its own landing is the specification's own
-correct one, so it is graded like any other step and reaches green.
-`P6-P1` also turns `P6-i` red at that field, the page's own consequence
-of a second, mid-field fetch, not a separate fault. For `P7-P2`,
-`P7-P3`, `P7-P4` and `P7-G1` (P7's own baseline), the test file's own
-header explains the count: each turns exactly its own named clause red,
-and since that precondition already carries the run's own red result,
-the three main assertions (P7-i, P7-ii, P7-iii) are skipped and
-recorded rather than graded.
+dedicated-mutation exception). A failed precondition also fails every
+main check it gates (4.5), measured identically on both cores: `P2-P1`
+turns `P2-p1`, `P2-ii` and `P2-iii,P2-iv` red together; `P5-P1` turns
+`P5-p1` red and, since a genuine vertical-blank restart now lands a
+fetch at D inside the mutated step's own window, `P5-p2` too, with
+`P5-L`, `P5-H-low`, `P5-H-high` and `P5-phase3` following; `P5-P3` turns
+G4 and `P5-p3` red with the same four following; `P6-P1` also turns
+`P6-i` red at that field, the page's own consequence of a second,
+mid-field fetch, with `P6-ii` and `P6-iii` following `P6-p1`; `P6-P2`
+and `P6-P3` likewise carry `P6-p1`, `P6-i`, `P6-ii` and `P6-iii` along
+with their own named clause. `P5-C1` (phase 3's own two words exchanged)
+turns only `P5-phase3` red -- phase 3's own step carries no bit-group
+index, so `P5-L`/`P5-H-low`/`P5-H-high` are unaffected. `P5-C3` (the
+first phase-2 step's COPJMP1 instead of COPJMP2) turns only `P5-L` red:
+the landing goes to D, not a stray fetch, so `P5-p2` stays green.
+`P5-HLO` and `P5-HHI` (one extra phase-1 step landing at the decoy D
+where an S_H1 entry is graded) turn only `P5-H-low`, respectively only
+`P5-H-high`, red. `P5-C2` (the extra $4000-only step) is not exercised
+as a divergence: its own landing is the specification's own correct
+one, so it is graded like any other step and reaches green. For
+`P7-P2`, `P7-P3`, `P7-P4` and `P7-G1` (P7's own baseline), the test
+file's own header explains the count: each turns exactly its own named
+clause red, and since that precondition already carries the run's own
+red result, the three main assertions (P7-i, P7-ii, P7-iii) are skipped
+and recorded rather than graded.
 
-Two fixtures needed a cross-core fix, found by running TG68K and not
-just fx68k. `P6-P2`'s own capture (`MON_ITERS`, sized for "fewer than
-four wraps") was too short to reliably hold one genuinely complete
-middle field on both cores: fx68k happened to keep one, TG68K did not,
-so `P6-p3` -- an unrelated, unmutated check -- lost its own only
-complete field to grade and went red as an unintended side effect.
-Widened by one field's own iteration count; both cores now hold a
-complete field and `P6-p3` reaches its own green. `P6-C1`'s own
-field-3 write is timed by a fixed CPU-cycle count from the monitor
-loop's own start; that start itself was not beam-synchronized, and
-fx68k and TG68K reach it a different number of lines apart (boot-time
-instructions outside the memory-cycle-bound loop I4 already measures
-at a shared 8:1 ratio), landing one core outside the $64-$C8 window.
-Fixed by waiting for the beam's own V to read 0 before the count
-starts, then recalibrating the count from the smaller, remaining
-per-core gap; both cores now land inside the window (fx68k line $A8,
-TG68K line $7C) with `P6-i` the only clause red, as the header states.
+`P6-C1`'s own field-3 write is timed by a fixed iteration count
+(`SEG_A_ITERS`) from a beam-synchronized start (waiting for V=0 before
+the count starts, the same anchor on both cores since it comes from the
+beam counter, not CPU cycles); measured, the calibrated write's own
+marker reads line $A8 on fx68k and $7C on TG68K, both inside the
+$64-$C8 window its own guard checks, with `P6-i` the only clause red.
