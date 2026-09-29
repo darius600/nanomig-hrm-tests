@@ -1,6 +1,6 @@
 # Findings
 
-**48 of the 70 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**47 of the 69 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each opens
 > with the same three parts, in this order: what the HRM says, what NanoMig
@@ -135,7 +135,7 @@ never disagree. Eight values occur:
 
 ### If you have one evening
 
-**If you have one evening: 48 of these 70 ask you to decide something.** The
+**If you have one evening: 47 of these 69 ask you to decide something.** The
 rest are answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
@@ -212,7 +212,6 @@ A2000 and B2000 schematics all side with p. 326 against p. 137.
 | [NM-HRM-067](findings/NM-HRM-067.md) | sprites 6 and 7 fetch their control words after horizontal blanking ends, and no implementation keeps them inside it | open · page · **red** | `hrm/ch4-sprite-dma-control` · `SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK` | **two of four end blanking before the last sprite slots, none keeps all sixteen inside it**: vAmiga ends it at $23 and rejects the $0F and $35 bounds p. 23 prints, Denise ends it before both of sprite 6's slots and both of sprite 7's, one more than NanoMig loses; WinUAE blanks on Denise's own counter and Copperline has no hardwired end, so neither can be placed on the slot grid |
 | [NM-HRM-068](findings/NM-HRM-068.md) | p. 304 gives a PAL line 227.5 colour clocks, p. 23 gives it 227, and every implementation makes it 227 | open · page · **red** | `hrm/ch3-beam-counters-and-blanking` · `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)` and its bundled form | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate line lengths only in NTSC |
 | [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | open · RTL · **red** | `integration/ch6-blitter-cpu-sharing` · `A8` on fx68k; `PARITY` on fx68k (no DMA and beside a share-mode blit) and on TG68K (beside the blit only) | **unanimous with NanoMig, against p. 196**: WinUAE, vAmiga, Denise and Copperline all let a CPU access take any colour clock DMA leaves free, and hand the bus back from a non-nasty blitter after a count of missed cycles, not at a parity; three of them spend BRA's internal operation as one colour clock, as fx68k does |
-| [NM-HRM-070](findings/NM-HRM-070.md) | disk write DMA takes a word in every disk slot whatever FAST says, where pp. 249 and 265 give bit cells of 2 µs and 4 µs | open · RTL · **red** | `integration/ch5-audio-output-scanrate` · `G1`, `G2`, `G3` on fx68k and TG68K, in ECS/PAL, OCS/PAL and ECS/NTSC; `integration/ch8-disk-serial` · `P4-NTSC-FAST1`, `P4-NTSC-FAST0`, `P4-PAL-FAST1`, `P4-PAL-FAST0` on fx68k and TG68K | **unanimous against NanoMig, and none writes at p. 249's slow setting**: WinUAE, vAmiga, Denise and Copperline all shift a disk write out at a fixed cell of about 1.97 µs and take a word only when their FIFO has room (Copperline, which has no write FIFO, when the head has turned one word further); none lets ADKCON bit 8 reach the write path, so with a drive selected all four would pass `G1` and fail `G2` and `G3`; MiSTer and TC64, descendants, carry the same request, FIFO and disk slots |
 | [NM-HRM-071](findings/NM-HRM-071.md) | in SuperHires a sprite pixel lasts 70 ns, where p. 101 keeps it one low-resolution pixel | open · page · **red** | `integration/ch4-shres-sprite-b` · `PC2w` (a precondition, no claim id) on fx68k and TG68K | **unanimous with NanoMig and with Commodore's AA specification**: WinUAE, vAmiga, Denise and Copperline all give an ECS sprite a 70 ns pixel in SuperHires and 140 ns otherwise, the AA specification's "ECS defaults(LORES,HIRES=140nS,SHRES=70nS"; none keeps p. 101's low-resolution pixel there; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each |
 | [NM-HRM-072](findings/NM-HRM-072.md) | a stop bit with a word waiting behind it lasts N+1½ colour clocks, where p. 255 gives every transmitted bit N+1 | open · RTL · **red** | `integration/ch8-disk-serial` · `P1`, `P2`, `P3` on fx68k and TG68K | **unanimous against NanoMig**: vAmiga, Denise and Copperline load a waiting word in the step that ends the stop bit, so its start bit follows N+1 colour clocks after the stop bit's; WinUAE has no TxD pin and, in its cycle-exact mode with no serial device, starts the waiting word's frame 10(N+1) colour clocks after the previous one began, 3 colour clocks later in its loopback mode; none adds half a colour clock |
 | [NM-HRM-073](findings/NM-HRM-073.md) | a COPJMP2 written before Copper DMA is turned on starts the Copper at COP1LC, where pp. 25, 26, 30 and 276 start it at COP2LC | open · RTL · **red** | `integration/ch2-copper-control` · `P4` (through Run 2), `P4-Run2` and `P4-Run3-reorder` on fx68k and TG68K; `P4-Run3`, red on both through the same start at A, grades a separate clause of p. 25 that the page does not file | **unanimous against NanoMig on the package's runs**: WinUAE, vAmiga, Denise and Copperline all start Run 1 at A and Run 2 at B; WinUAE, vAmiga and Copperline start at COP2LC whatever vertical blank came before the COPJMP2, while Denise, like NanoMig, keeps the vertical blank's COP1LC strobe pending but merges it and starts at COP1LC \| COP2LC, which the package's addresses make B's |
@@ -238,9 +237,7 @@ measured in chapter 4's sprite DMA package, the second beside the NTSC half of
 the same p. 304 sentence, which is NM-HRM-010's. Chapter 6 contributes
 NM-HRM-069, the first finding measured by an integration package — the whole
 design at `nanomig.v`'s own ports, run once with each CPU core — and red on
-both cores. Seven more are measured by integration packages alone:
-- NM-HRM-070, from chapter 8, by chapter 5's audio scan-rate package and
-  chapter 8's disk and serial package;
+both cores. Six more are measured by integration packages alone:
 - NM-HRM-071, from chapter 4, by chapter 4's SuperHires sprite package;
 - NM-HRM-072, from chapter 8, by the disk and serial package;
 - NM-HRM-073, from chapter 2, by chapter 2's Copper control package;

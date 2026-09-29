@@ -2,10 +2,10 @@
 
 A reference for developers, not a narrative.
 
-**Seventy of these pages are filed against the Hardware Reference
+**Sixty-nine of these pages are filed against the Hardware Reference
 Manual, 3rd edition (1991), and five against the AA specification (1991).** The AA group (NM-AA-001 to
 NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
-the tests that hold them up live in `aa/` rather than `hrm/`. The thirteen
+the tests that hold them up live in `aa/` rather than `hrm/`. The fourteen
 withdrawn findings are kept apart, with their own list, in
 [`withdrawn/`](withdrawn/README.md). The header table is the same on all
 eighty-eight.
@@ -29,11 +29,11 @@ page carries says something about it:
 
 | field | on | what its absence means |
 |---|---|---|
-| **Verdict of the four** | 83 of 88 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 74 of 88 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 73 of 88 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **Verdict of the four** | 82 of 88 | the other implementations were not consulted, or the finding is not about behaviour they share |
+| **Report to** | 73 of 88 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 72 of 88 | the finding has no graded assertions of its own; the `Test` row still names the package |
 | **See also** | 23 | no sibling finding bears on it |
-| **Error class** | 11 | it is not one of the recurring shapes |
+| **Error class** | 12 | it is not one of the recurring shapes |
 | **Boundary** | 2 | no edge case was isolated |
 | **Provenance**, **Origin** | 1 each | one-offs, kept because the page needed them |
 
@@ -52,7 +52,7 @@ HRM says* → *What NanoMig does* → *What the others say* → *Suggested chang
 *What holds the finding up*, some adding *For the specialists*. A withdrawn
 finding instead explains the withdrawal, and a finding filed against the printed
 page has no suggested change to make. Measured over the 83 pages against the
-manual, the withdrawn ones included, there are 60 distinct sequences of `##`
+manual, the withdrawn ones included, there are 61 distinct sequences of `##`
 headings; the page is written for its own subject once the
 header has told you whether to read it at all.
 

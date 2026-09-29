@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**50 findings ask for a review, in 28 modules.** They are listed by the
+**49 findings ask for a review, in 28 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -181,12 +181,11 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-069](findings/NM-HRM-069.md) | the 68000 is given chip-bus slots of both parities, where p. 196 allows it only the even ones | a test fails against the page |
 
-## [`src/minimig-aga/paula.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v) — 2
+## [`src/minimig-aga/paula.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v) — 1
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | a test fails against the page |
-| [NM-HRM-070](findings/NM-HRM-070.md) | disk write DMA takes a word in every disk slot whatever FAST says, where pp. 249 and 265 give bit cells of 2 µs and 4 µs | a test fails against the page |
 
 ## [`src/minimig-aga/paula_audio_channel.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v) — 2
 
@@ -201,7 +200,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-025](findings/NM-HRM-025.md) | volume 64 and volume 63 are the same gain on the multiply path | a test fails against the page |
 
-## [`src/minimig-aga/paula_floppy.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v) — 7
+## [`src/minimig-aga/paula_floppy.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v) — 6
 
 | finding | subject | evidence |
 |---|---|---|
@@ -210,7 +209,6 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-047](findings/NM-HRM-047.md) | one step-spacing threshold where the page prints two | a test fails against the page |
 | [NM-HRM-048](findings/NM-HRM-048.md) | a documented hardware bug that does not occur here | a test fails because NanoMig lacks a documented bug |
 | [NM-HRM-049](findings/NM-HRM-049.md) | the MFM encoder is context-free | a test fails against the page |
-| [NM-HRM-070](findings/NM-HRM-070.md) | disk write DMA takes a word in every disk slot whatever FAST says, where pp. 249 and 265 give bit cells of 2 µs and 4 µs | a test fails against the page |
 | [NM-HRM-080](findings/NM-HRM-080.md) | with the motor on, RDY* is asserted for a drive with no disk in it, where pp. 334 and 368 make it mean a disk installed and up to speed | a test fails against the page |
 
 ## [`src/minimig-aga/paula_uart.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v) — 3
