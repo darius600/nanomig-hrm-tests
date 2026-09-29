@@ -3,10 +3,12 @@
 // legend states, or only conditionally so, at ECS=1 (both CDANG states).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, 3rd ed., Appendix B,
-// p.287 (the "*"/"~" legend) composed with p.289 (the four rows). See
-// SPECIFICATION.md for the full reading, why this package is scoped to ECS
-// (the OCS corners are already graded, PASS, in hrm/ch2-copper-move-sweep),
-// and the two claims routed to record() instead of graded here.
+// p.287 (the "*"/"~" legend) composed with p.289 (the four rows), and, at
+// ecs=1/cdang=1, Appendix C p.310, which governs that corner for SERDAT,
+// SERDATR and SERPER. See SPECIFICATION.md for the full reading, why this
+// package is scoped to ECS (the OCS corners are already graded, PASS, in
+// hrm/ch2-copper-move-sweep), and the five claims routed to record()
+// instead of graded here.
 // Non-goals: anything outside the `agnus_copper` fixture this package
 //   builds, and any claim it does not cite. A green here means those
 //   assertions held on this fixture at the pinned revision -- not that the
@@ -25,18 +27,13 @@
 //   (BLTCON0 is blocked, not admitted, at cdang=0).
 // MUTATION SERDAT-CDANG0 stimulus red MUT_SD0 flipped the cdang argument
 //   from false to true (still ecs=1) -> FAIL as expected (SERDAT becomes
-//   reachable at cdang=1, this package's own red finding).
-// MUTATION SERDAT-CDANG1 stimulus green MUT_SD1 flipped the cdang argument
-//   from true to false (still ecs=1) -> PASS as expected, proving the
-//   comparator is not stuck red.
+//   reachable at cdang=1, the corner p.310 governs; SERDAT-CDANG1 records
+//   that corner rather than grading it, so no mutation record is needed
+//   for it).
 // MUTATION SERPER-CDANG0 stimulus red MUT_SP0 flipped the cdang argument
 //   from false to true (still ecs=1) -> FAIL as expected.
-// MUTATION SERPER-CDANG1 stimulus green MUT_SP1 flipped the cdang argument
-//   from true to false (still ecs=1) -> PASS as expected.
 // MUTATION SERDATR-CDANG0 stimulus red MUT_SR0 flipped the cdang argument
 //   from false to true (still ecs=1) -> FAIL as expected.
-// MUTATION SERDATR-CDANG1 stimulus green MUT_SR1 flipped the cdang argument
-//   from true to false (still ecs=1) -> PASS as expected.
 
 #include <cstdint>
 #include <iostream>
@@ -56,20 +53,11 @@
 #ifndef MUT_SD0
 #define MUT_SD0 0
 #endif
-#ifndef MUT_SD1
-#define MUT_SD1 0
-#endif
 #ifndef MUT_SP0
 #define MUT_SP0 0
 #endif
-#ifndef MUT_SP1
-#define MUT_SP1 0
-#endif
 #ifndef MUT_SR0
 #define MUT_SR0 0
-#endif
-#ifndef MUT_SR1
-#define MUT_SR1 0
 #endif
 
 namespace {
@@ -310,13 +298,15 @@ int main(int argc, char** argv) {
                   "SERDAT-CDANG0 ecs=1 cdang=0: a Copper MOVE to SERDAT ($030) is blocked, matching the "
                   "unconditional * legend [claims: sol:8-serdat.c78, opus:8-regsum.c13]");
 
-    bool sd1_cdang = true;
-#if MUT_SD1
-    sd1_cdang = false;  // was true
-#endif
-    checks.expect(!move_reaches(true, sd1_cdang, SERDAT),
-                  "SERDAT-CDANG1 ecs=1 cdang=1: a Copper MOVE to SERDAT ($030) is blocked, matching the "
-                  "unconditional * legend [claims: sol:8-serdat.c78, opus:8-regsum.c13]");
+    checks.record(
+        "SERDAT-CDANG1 ecs=1 cdang=1 (SERDAT $030, p.289 '*' composed with p.287's legend) [claims: "
+        "sol:8-serdat.c78, opus:8-regsum.c13] -- at this corner the governing text is p.310 (Appendix C, "
+        "\"Interpretational Differences\"): \"Now, in the ECS, if this bit is set, the Copper can access "
+        "all of the Amiga chip registers.\" Already graded: hrm/ch2-copper-move-sweep, assertion "
+        "\"SWEEP ecs=1 cdang=1 vs Appendix C\" (SERDAT among the 256 destinations measured accepted, PASS), "
+        "and \"APPBSTAR $18 SERDAT ecs=0\" (the same row, blocked at ecs=0, the corner p.310 leaves "
+        "untouched, PASS). Not graded here against the unconditional '*' alone; SERDAT-CDANG0 above covers "
+        "this proposition's other corner.");
 
     // --- P-SERPER: SERPER ($032), *-marked (p.289:34). Same shape as
     // P-SERDAT.
@@ -328,13 +318,15 @@ int main(int argc, char** argv) {
                   "SERPER-CDANG0 ecs=1 cdang=0: a Copper MOVE to SERPER ($032) is blocked, matching the "
                   "unconditional * legend [claims: sol:8-serper.c33, opus:8-regsum.c19]");
 
-    bool sp1_cdang = true;
-#if MUT_SP1
-    sp1_cdang = false;  // was true
-#endif
-    checks.expect(!move_reaches(true, sp1_cdang, SERPER),
-                  "SERPER-CDANG1 ecs=1 cdang=1: a Copper MOVE to SERPER ($032) is blocked, matching the "
-                  "unconditional * legend [claims: sol:8-serper.c33, opus:8-regsum.c19]");
+    checks.record(
+        "SERPER-CDANG1 ecs=1 cdang=1 (SERPER $032, p.289 '*' composed with p.287's legend) [claims: "
+        "sol:8-serper.c33, opus:8-regsum.c19] -- at this corner the governing text is p.310 (Appendix C, "
+        "\"Interpretational Differences\"): \"Now, in the ECS, if this bit is set, the Copper can access "
+        "all of the Amiga chip registers.\" Already graded: hrm/ch2-copper-move-sweep, assertion "
+        "\"SWEEP ecs=1 cdang=1 vs Appendix C\" (SERPER among the 256 destinations measured accepted, PASS), "
+        "and \"APPBSTAR $19 SERPER ecs=0\" (the same row, blocked at ecs=0, the corner p.310 leaves "
+        "untouched, PASS). Not graded here against the unconditional '*' alone; SERPER-CDANG0 above covers "
+        "this proposition's other corner.");
 
     // --- P-SERDATR: SERDATR ($018), *-marked (p.289:21). Same shape as
     // P-SERDAT. `opus:8-regsum.c7`'s own restatement is the narrower
@@ -350,13 +342,15 @@ int main(int argc, char** argv) {
                   "SERDATR-CDANG0 ecs=1 cdang=0: a Copper MOVE to SERDATR ($018) is blocked, matching the "
                   "unconditional * legend [claims: opus:8-regsum.c7]");
 
-    bool sr1_cdang = true;
-#if MUT_SR1
-    sr1_cdang = false;  // was true
-#endif
-    checks.expect(!move_reaches(true, sr1_cdang, SERDATR),
-                  "SERDATR-CDANG1 ecs=1 cdang=1: a Copper MOVE to SERDATR ($018) is blocked, matching the "
-                  "unconditional * legend [claims: opus:8-regsum.c7]");
+    checks.record(
+        "SERDATR-CDANG1 ecs=1 cdang=1 (SERDATR $018, p.289 '*' composed with p.287's legend) [claims: "
+        "opus:8-regsum.c7] -- at this corner the governing text is p.310 (Appendix C, \"Interpretational "
+        "Differences\"): \"Now, in the ECS, if this bit is set, the Copper can access all of the Amiga chip "
+        "registers.\" Already graded: hrm/ch2-copper-move-sweep, assertion \"SWEEP ecs=1 cdang=1 vs "
+        "Appendix C\" (SERDATR among the 256 destinations measured accepted, PASS), and \"APPBSTAR $0C "
+        "SERDATR ecs=0\" (the same row, blocked at ecs=0, the corner p.310 leaves untouched, PASS). Not "
+        "graded here against the unconditional '*' alone; SERDATR-CDANG0 above covers this proposition's "
+        "other corner.");
 
     // ------------------------------------------------------------------
     // Claims already graded in an accepted slice -- not re-graded here.
@@ -381,14 +375,16 @@ int main(int argc, char** argv) {
         "this lot's uid set asks for it once c25 is accounted for this way.");
 
     checks.note(
-        "SERDAT/SERPER/SERDATR's reds above (ecs=1, cdang=1) come from the same RTL line as two tracked "
-        "findings on sibling registers: NM-HRM-044 (DSKPTH $020, same agnus_copper.v:225 decode, filed as a "
-        "source observation because p.279 explicitly permits Copper init of DSKPTH where p.289 forbids it) and "
-        "NM-HRM-004 (the ~-marked $040-$07E range at ecs=1/cdang=0, a different corner of the same line). "
-        "Unlike DSKPTH, p.265 and p.283 -- this slice's own Appendix-A pages for ADKCONR/SERDATR/SERDAT/SERPER "
-        "-- state nothing about Copper access in either direction, so there is no second manual passage for "
-        "these four registers playing p.279's role; see SPECIFICATION.md, \"Related history\", for why that "
-        "difference is why this package grades Appendix B directly rather than filing a source observation.");
+        "SERDAT/SERPER/SERDATR's ecs=1/cdang=1 corner, recorded above rather than graded, comes from the "
+        "same RTL line as two tracked findings on sibling registers: NM-HRM-044 (DSKPTH $020, same "
+        "agnus_copper.v:225 decode, filed against the printed page -- a graded assertion, P1, fails against "
+        "p.279 because p.279 explicitly permits Copper init of DSKPTH where p.289 forbids it) and NM-HRM-004 "
+        "(the ~-marked $040-$07E range at ecs=1/cdang=0, a different corner of the same line). Unlike DSKPTH, "
+        "p.265 and p.283 -- this slice's own Appendix-A pages for ADKCONR/SERDATR/SERDAT/SERPER -- state "
+        "nothing about Copper access in either direction, so there is no second manual passage for these four "
+        "registers playing p.279's role; see SPECIFICATION.md, \"Related history\", for why that difference "
+        "means p.310, not a competing Appendix-A sentence, is what this package now records against at "
+        "ecs=1/cdang=1 (NM-HRM-053, withdrawn).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;

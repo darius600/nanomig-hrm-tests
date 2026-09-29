@@ -135,33 +135,46 @@ correction: an earlier version graded the ECS rows against an invented
 chapter-2 rule and put a red in the wrong place; grading them against
 Appendix C fixed that.
 
-**What that leaves genuinely open**: nobody has graded, for these four
-specific `*`-marked rows, whether Appendix B's own unconditional legend
-survives at ECS=1/CDANG=1 — the corner where `agnus_copper.v:225`'s decode
-(`ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs`) admits the whole
-$000–$1FE range regardless of the `*`/`~` distinction. Appendix C's "all
-chip registers" sentence is a general permission that this package's reading
-kit does not include (p.310 is not among the pages this slice was assigned:
-`work/2026-09-16_ch8_s4_build_brief.md`'s page list stops at p.289/p.287)
-and that, on its own wording, says nothing about whether it overrides a
-register-specific unconditional exception stated elsewhere in the same
-appendix. This package grades Appendix B's own statement, on its own terms,
-at the corner no accepted package has put it to: ECS=1, both CDANG states.
+**p.310 governs the ECS=1/CDANG=1 corner for these three registers.**
+Appendix C, printed p.310, under "Interpretational Differences", extends
+COPCON's danger bit for the ECS in so many words: "Now, in the ECS, if this
+bit is set, the Copper can access all of the Amiga chip registers."
+SERDATR, SERDAT and SERPER are chip registers, and nothing in Appendix B's
+`*` band names an ECS exception for them — unlike the six `(E)`-marked rows
+in the same band, which the manual's own ECS register map (p.298) lists as
+changed. At ECS=1/CDANG=0, p.310's range is the same as the standard chip
+set's ($DFF03E–$DFF07E) and leaves these three registers out, so the
+unconditional `*` reading and p.310 agree there, and this package grades
+that corner directly (`SERDAT-CDANG0`, `SERPER-CDANG0`, `SERDATR-CDANG0`,
+against `agnus_copper.v:225`'s decode, `ir2[8:7]==2'b00 && !cdang ||
+ir2[8:6]==3'b000 && !ecs`). At ECS=1/CDANG=1 the two diverge, and p.310 is
+the passage that names the corner, so `SERDAT-CDANG1`, `SERPER-CDANG1` and
+`SERDATR-CDANG1` `record()` that corner instead of grading Appendix B's `*`
+against it — citing p.310 itself, `hrm/ch2-copper-move-sweep`'s `SWEEP
+ecs=1 cdang=1 vs Appendix C` (which measures all 256 destinations, these
+three included, accepted), and that same package's `APPBSTAR $0C SERDATR` /
+`$18 SERDAT` / `$19 SERPER` rows (which measure the same three registers
+blocked at ecs=0, the corner p.310 leaves untouched). This corner is
+`docs/findings/withdrawn/NM-HRM-053.md`'s subject; that finding was
+withdrawn because the suite already grades p.310's reading of the corner,
+and it is green.
 
 This is why five of the seven claims are graded here at ECS only, not at
 OCS: the OCS corners are already measured and accepted (cited above), and
 re-asserting them under fresh uids risks exactly the outcome the build brief
 warns against — this slice reaching a different verdict from an accepted
-one on the same printed row. The two ECS corners are not covered by any
-accepted package under any oracle that reads Appendix B.
+one on the same printed row. Of those five, the three full readings
+(P-SERDAT's, P-SERPER's and P-SERDATR's) are graded at ECS=1/CDANG=0 only;
+their ECS=1/CDANG=1 half is recorded, not graded, for the reason above.
 
 ## Related history checked before writing this up
 
 **NM-HRM-044** (`docs/findings/NM-HRM-044.md`) is the closest precedent: the
 manual permits Copper initialisation of DSKPTH ($020, also `*`-marked, same
 decode mechanism) on p.279 and forbids it on p.289; the entry's own status is
-"source observation," not a graded conformance defect, specifically because
-the contradiction is between *two manual passages*, and "no implementation
+filed against the printed page — a graded assertion, `P1`, fails against
+p.279 — not a note that declines to grade, specifically because the
+contradiction is between *two manual passages*, and "no implementation
 can settle... which of two printed sentences describes the hardware." That
 entry explicitly separates itself from `NM-HRM-004` ("a different claim,
 register and page") and explicitly declines to grade the ECS+CDANG=1 corner
@@ -174,12 +187,15 @@ contradict the first. Checked directly: p.265 (ADKCON/ADKCONR) and p.283
 (SERDAT/SERDATR/SERPER) — this slice's own Appendix-A pages for these four
 registers — say nothing at all about Copper access, in either direction.
 There is no second manual passage for SERDAT/SERPER/SERDATR/ADKCONR playing
-p.279's role. What stands opposite Appendix B's `*` here is Appendix C's
-*general* COPCON sentence, not a register-specific permission — a weaker,
-differently-shaped tension than NM-HRM-044's. **This package therefore
-grades Appendix B's statement directly, rather than filing a source
-observation that declines to grade**, and flags the Appendix-C tension in
-prose (above) for whoever adjudicates it.
+p.279's role. What stands opposite Appendix B's `*` at ECS=1/CDANG=1 is
+p.310's own sentence, naming "all of the Amiga chip registers" and reached
+from Appendix B's own `(E)` machinery (p.288) and from chapter 2 (p.36) —
+the manual's own ECS extension of the rule the `*` states, not a second,
+contradicting voice the way p.279 is for DSKPTH. **This package therefore
+grades Appendix B's statement directly at ECS=1/CDANG=0, where it and p.310
+agree, and records rather than grades it at ECS=1/CDANG=1, where p.310 is
+the governing text**, citing the Appendix-C corner explicitly (above)
+rather than grading past it.
 
 **p.289's own marks were read in slice s1**, in
 `2026-09-14_ch8_s1_classified_c5-appB.jsonl` — that is the corpus this
@@ -210,23 +226,31 @@ Testable form, scoped to ECS (see above): a Copper MOVE targeting $030,
 executed with `ecs`=1, reaches the register when `cdang`=1 and does not when
 `cdang`=0.
 
-Expected, per the unconditional legend: **blocked in both CDANG states.**
+Expected, per the unconditional legend composed with p.310 (see *Why this
+package is scoped to ECS...* above): **blocked at CDANG=0; at CDANG=1,
+p.310 governs and the corner is recorded rather than graded.**
 
-- ECS=1, CDANG=0: **PASS** expected (matches the unconditional reading; also
-  serves as this proposition's own control point).
-- ECS=1, CDANG=1: **RED** expected — this is where S4-C5 predicted a red.
+- ECS=1, CDANG=0: **PASS** expected (matches the unconditional reading, and
+  matches p.310's own standard-chip-set-equal range at CDANG=0; also serves
+  as this proposition's own control point).
+- ECS=1, CDANG=1: **not graded here.** `SERDAT-CDANG1` records the claim
+  against p.310 and against the assertions that already grade this corner
+  (`hrm/ch2-copper-move-sweep`'s `SWEEP ecs=1 cdang=1 vs Appendix C` and
+  `APPBSTAR $18 SERDAT`), per *Why this package is scoped to ECS...* above.
 
 ### P-SERPER — SERPER is not writable by the Copper [`sol:8-serper.c33`, `opus:8-regsum.c19`]
 
 > `SERPER       *032   W           P    Serial port period and control`
 composed with the p.287 `*` legend. Same testable form and same expected
-shape as P-SERDAT, at $032.
+shape as P-SERDAT, at $032 — `SERPER-CDANG1` records the CDANG=1 corner
+against p.310 and against `APPBSTAR $19 SERPER`.
 
 ### P-SERDATR — SERDATR is not writable by the Copper [`opus:8-regsum.c7`]
 
 > `SERDATR      *018   R           P    Serial port data and status read`
 composed with the p.287 `*` legend. Same testable form and same expected
-shape as P-SERDAT, at $018.
+shape as P-SERDAT, at $018 — `SERDATR-CDANG1` records the CDANG=1 corner
+against p.310 and against `APPBSTAR $0C SERDATR`.
 
 (`opus:8-regsum.c7`'s own restatement is the narrower glyph-identity form —
 "carries `*`, not `~`, not `(E)`" — but its own `classify.evidence` already
@@ -287,8 +311,12 @@ than papered over.
 
 All 7 claims are accounted for: P-SERDAT (2: `sol:8-serdat.c78`,
 `opus:8-regsum.c13`), P-SERPER (2: `sol:8-serper.c33`,
-`opus:8-regsum.c19`), P-SERDATR (1: `opus:8-regsum.c7`), and two on
-`record()` lines (`sol:8-serdatr.c145`, `opus:8-regsum.c25`).
+`opus:8-regsum.c19`) and P-SERDATR (1: `opus:8-regsum.c7`) are each graded
+at ECS=1/CDANG=0 and carried, at ECS=1/CDANG=1, on their own `record()` line
+against p.310 instead (`SERDAT-CDANG1`, `SERPER-CDANG1`, `SERDATR-CDANG1`).
+Two further claims sit on `record()` lines only, citing ECS=0 grading
+elsewhere (`sol:8-serdatr.c145`, `opus:8-regsum.c25`). Five `record()` lines
+in total.
 
 ## Mutation plan (per assertion, replayable via `-D`, see BUILD-BRIEF)
 
@@ -298,14 +326,15 @@ All 7 claims are accounted for: P-SERDAT (2: `sol:8-serdat.c78`,
 - **CTRL-BLTCON0** (green baseline): stimulus — invert which CDANG value is
   expected blocked-vs-admitted for BLTCON0; expect red.
 - **SERDAT-CDANG0** (green baseline, the control half of P-SERDAT): stimulus
-  — drive CDANG=1 instead of 0 (still ECS=1); expect red (this is P-SERDAT's
-  own red half).
-- **SERDAT-CDANG1** (red baseline, the finding): stimulus — drive CDANG=0
-  instead of 1 (still ECS=1); expect green, proving the comparator is not
-  stuck red.
-- **SERPER-CDANG0** / **SERPER-CDANG1**: same shape as SERDAT's pair, at $032.
-- **SERDATR-CDANG0** / **SERDATR-CDANG1**: same shape as SERDAT's pair, at
-  $018.
+  — drive CDANG=1 instead of 0 (still ECS=1); expect red (SERDAT is admitted
+  at CDANG=1, the corner p.310 governs and `SERDAT-CDANG1` records instead
+  of grading).
+- **SERPER-CDANG0**: same shape as SERDAT's, at $032.
+- **SERDATR-CDANG0**: same shape as SERDAT's, at $018.
+
+`SERDAT-CDANG1`, `SERPER-CDANG1` and `SERDATR-CDANG1` are `record()` lines,
+not graded assertions, so no mutation record applies to them — see *Why
+this package is scoped to ECS...* above.
 
 Every mutation is a stimulus change (which CDANG value is driven, or which
 register is targeted), never an oracle change — the expected outcome text is
