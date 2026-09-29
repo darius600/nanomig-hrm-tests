@@ -12,54 +12,70 @@
 // for P1/P2, VARHSYEN=0 for P3/P4) and run on every `make test`, never
 // behind NMH_MUTATE.
 //
+// Every capture -- normal and mutant -- asserts that its program reached
+// DONE (a `DONE [<label>]` line), so a mutant that goes red from a dead
+// setup (a crash, a halted CPU, an emptied population) is distinguishable
+// from one that goes red through the clause under test.
+//
 // The fixture requirement ("a program-stored constant asserted first") is
 // met by its own dedicated line, printed before anything else: MARK1 read
 // back through peek_logical(), the same call PC-ID's ID relies on.
 //
+// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: prog_h_h1_fixture.bin
+//   (FIXTURE_MUTANT) stores $DEAD instead of $A5A5 to MARK1; the rest of
+//   the program, including DONE, still runs.
 // MUTATION PC-ID stimulus red NMH_MUTATE=X-OCS: harness set to OCS
 //   (chipset_config clears the ECS bit); VPOSR bits 14-8 read the
 //   original-chipset value instead of the enhanced-Agnus PAL value.
 // MUTATION PC-ID stimulus red NMH_MUTATE=X-NTSC: harness set to NTSC
 //   (chipset_config sets the NTSC bit); VPOSR bits 14-8 read the
 //   enhanced-Agnus NTSC value instead of the PAL value.
-// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-H: BRA.S * inserted
-//   before H1's HTOTAL write (prog_h_h1_halt.s); neither MARK1 nor MARK2
-//   is ever written.
-// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-S: BRA.S * inserted
-//   before SA's HSSTRT write (prog_s_sa_halt.s); MARK1 is never written.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-H: MARK1's write omitted
+//   (prog_h_h1_halt.bin, MARK_OMIT); no marker appears, while the rest of
+//   the program, including DONE, still runs.
+// MUTATION PC-MARK stimulus red NMH_MUTATE=X-HALT-S: MARK1's write omitted
+//   (prog_s_sa_halt.bin, MARK_OMIT); no marker appears, while the rest of
+//   the program, including DONE, still runs.
 // MUTATION P1-LINES stimulus red NMH_MUTATE=X-SHORT: H1's sampling loop
-//   shortened to 1024 samples (prog_h_h1_short.s); fewer than 320 wraps
+//   shortened to 1024 samples (prog_h_h1_short.bin); fewer than 320 wraps
 //   appear in the graded range.
 // MUTATION P2-LINES stimulus red NMH_MUTATE=X-SHORT: the same shortened H1
 //   run (the MARK1..MARK2 window shrinks with it); fewer than 320 graded
 //   refresh periods.
 // MUTATION P1-COVER stimulus red NMH_MUTATE=X-BURST: H1's and H2's
 //   sampling loops replaced with a read-until-wrap-then-store-4 burst
-//   (prog_h_h1_burst.s, prog_h_h2_burst.s); consecutive graded sample
+//   (prog_h_h1_burst.bin, prog_h_h2_burst.bin); consecutive graded sample
 //   stores are a whole line apart between bursts.
-// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL: SA with DMACON's
-//   SET write omitting BPLEN (prog_s_sa_nobpl.s); no bitplane DMA, no
-//   white pixel, no line carries the landmark.
+// MUTATION P3/P4-LINES stimulus red NMH_MUTATE=X-NOBPL: SA with PLANE
+//   holding only 32 lines of pattern instead of 256 (prog_s_sa_nobpl.bin,
+//   SHORT_PLANE); bitplane DMA still runs, so the population is a live,
+//   reduced but nonempty one, not an emptied one.
 // MUTATION A4 stimulus red NMH_MUTATE=X-A4DOUBLE: SA's plane data changed
 //   so every line carries two transitions into white and two out of white
-//   (prog_s_sa_a4double.s), instead of one of each, while every line still
-//   carries white and MARK1 is still reached.
-// MUTATION A4-DROPPED stimulus red NMH_MUTATE=X-A4DROP: SA-shaped run
-//   with the HSYNC pulse repositioned past the landmark, s=$00C8/e=$00D8
-//   (prog_s_sa_swap.s).
-// MUTATION A1 stimulus red NMH_MUTATE=A1: H1's and H2's own graded samples
-//   (VARBEAMEN=1, bounded by N) substituted into anchors A1 [H1c] and A1
-//   [H2c]'s unchanged comparator, which expects the free-running $E2-ish
-//   range that only VARBEAMEN=0 produces.
-// MUTATION A2 stimulus red NMH_MUTATE=X-AUD0: H1 with audio channel 0 DMA
-//   started (prog_h_h1_aud0.s); a non-refresh DMA access appears at the
-//   port, so a graded period's group no longer has exactly 4 members.
+//   (prog_s_sa_a4double.bin), instead of one of each, while every line
+//   still carries white and the program still reaches DONE.
+// MUTATION A1 stimulus red NMH_MUTATE=A1: H1's/H2's own graded samples
+//   (VARBEAMEN=1, bounded by N) substituted into A1 [H1c]'s/A1 [H2c]'s
+//   unchanged comparator (which expects the free-running $E2-ish range
+//   that only VARBEAMEN=0 produces), AND H1c's/H2c's own graded samples
+//   (VARBEAMEN=0, unbounded) substituted into P1 [H1]'s/P1 [H2]'s
+//   unchanged any-exceeds comparator, AND H1's/H2's own samples substituted
+//   into P1 [H1c]'s/P1 [H2c]'s unchanged contrast comparator: one live
+//   cross-substitution, six printed lines go red.
+// MUTATION A2 stimulus red NMH_MUTATE=X-AUD0: H1, H2, H1c and H2c each
+//   with audio channel 0 DMA started (prog_h_h1_aud0.bin and its H2/H1c/
+//   H2c counterparts); a non-refresh DMA access appears at the port in
+//   every one, so no graded period's group has exactly 4 members.
 // MUTATION A3 stimulus red NMH_MUTATE=A3: H1's and H2's own graded periods
 //   (VARBEAMEN=1, T~N counts) substituted into anchors A3 [H1c] and A3
 //   [H2c]'s unchanged 227/228-CCK comparator.
-// MUTATION P2(a) [H1] stimulus red NMH_MUTATE=P2A: H1's own graded
-//   periods pooled with H2's (T1 != T2 by construction, P2(b)) fed
-//   through the same all-equal comparator P2(a) [H1] uses.
+// MUTATION P2(a) [H1] stimulus red NMH_MUTATE=P2A: H1 with HTOTAL written
+//   again mid-loop, to $00C0 in place of $00B0 (prog_h_h1_retotal.bin,
+//   RETOTAL_MID); p.280 states no exception for a second write, so the
+//   graded periods after that point are page-predicted to differ from
+//   those before it.
+// MUTATION P2(b) stimulus red NMH_MUTATE=P2B: H1c's/H2c's own periods
+//   (VARBEAMEN=0, d=0) substituted into P2(b)'s unchanged delta comparator.
 // MUTATION P2(c) stimulus red NMH_MUTATE=P2C: H1c's own period (VARBEAMEN
 //   =0, ~227 CCK) substituted into the same N/N+1 comparator meant for T1.
 // MUTATION P3 stimulus red NMH_MUTATE=P3-NOMOVE: SB's graded lines
@@ -71,24 +87,29 @@
 // their own comparator shares with a graded proposition, and are not
 // repeated behind a separate NMH_MUTATE value:
 // MUTATION P1 [H1] stimulus red via H1c (VARBEAMEN=0), the same
-//   any-exceeds comparator, run unconditionally.
+//   any-exceeds comparator, run unconditionally -- see NMH_MUTATE=A1
+//   above for the live substitution that proves it.
 // MUTATION P1 [H2] stimulus red via H2c, as H1/H1c.
-// MUTATION P1 [H1c] stimulus red via H1 (VARBEAMEN=1) substituted into the
-//   same any-exceeds comparator -- see NMH_MUTATE=A1 above, which performs
-//   exactly this substitution for anchor A1.
+// MUTATION P1 [H1c] stimulus red via H1 (VARBEAMEN=1), as above.
 // MUTATION P1 [H2c] stimulus red via H2, as H1c.
 // MUTATION P2(b) stimulus red via H1c vs H2c (P2 contrast, below): the
-//   same all-equal-pooled comparator gives d=0 where P2(b) requires d=16.
+//   same all-equal-pooled comparator gives d=0 where P2(b) requires d=16
+//   -- see NMH_MUTATE=P2B above for the live substitution into P2(b)
+//   itself.
 // MUTATION A1 [H2c] stimulus red via NMH_MUTATE=A1 (H2 substituted; see
 //   above).
 // MUTATION A3 [H2c] stimulus red via NMH_MUTATE=A3 (H2 substituted; see
 //   above).
 //
-// A2 is also asserted for H1c and H2c; the page's own 4-refresh-slot count
-// (p.194, p.285) is fixed by the chipset's slot allocation and is not a
-// function of any register this package writes for those two runs, so it
-// is not exercised by a dedicated mutation there -- unfalsifiable at this
-// boundary, by a scope decision.
+// A2 is also asserted for H1c and H2c, each with its own X-AUD0 mutation
+// (above): the page's own 4-refresh-slot count (p.194, p.285) is fixed by
+// the chipset's slot allocation and not a function of VARBEAMEN, so the
+// same live audio stimulus applies to every H run.
+//
+// A4-DROPPED is not exercised: no page gives HSSTRT/HSSTOP a layout or
+// scale (SPECIFICATION.md page note 7) from which to choose a stimulus
+// that is page-predicted -- rather than tuned against this RTL -- to land
+// the sync pulse on the landmark; a `record()` line below states this.
 
 #include <algorithm>
 #include <cstdint>
@@ -123,8 +144,15 @@ struct Checks {
 // Neither the page nor the harness header defines this ratio; it is read
 // off the implementation, and it is checked at runtime by anchor A3 (its
 // measured periods must convert to 227 or 228, the page's own PAL line
-// length, SPECIFICATION.md sec.3).
+// length, SPECIFICATION.md sec.3). Every other check that consumes this
+// ratio (P1-COVER, P2-LINES, A2, P2(a)/(b)) is gated on A3: sec.9 below.
 constexpr uint64_t kCck = 8;
+
+// nanomig.i's DONE macro: the last thing every program does, after the
+// measured work, is store DONE_VALUE at DONE_ADDR and hold. Every capture
+// below asserts this write happened.
+constexpr uint32_t kDoneAddr  = 0x0C0FFE;
+constexpr uint16_t kDoneValue = 0x600D;
 
 // ---- Program H addresses (prog_h.s) -----------------------------------
 constexpr uint32_t kHMark1   = 0x0C0100;
@@ -156,12 +184,37 @@ nmh::Config ntsc_cfg()    { nmh::Config c; c.chipset_config = 0x0A; return c; } 
 // note 9).
 bool pc_id_pal(uint16_t id) { uint16_t f = (id >> 8) & 0x7F; return f == 0x20 || f == 0x14; }
 
+bool all_equal(const std::vector<uint64_t>& v) {
+    if (v.empty()) return false;
+    for (auto p : v) if (p != v[0]) return false;
+    return true;
+}
+
+bool all_equal_i64(const std::vector<int64_t>& v) {
+    if (v.empty()) return false;
+    for (auto p : v) if (p != v[0]) return false;
+    return true;
+}
+
+// Anchor A3 (SPECIFICATION.md P2 sec.7): every graded period, not just the
+// first, must be exactly divisible by kCck and convert to 227 or 228 CCK
+// (p.23's PAL count, page note 3).
+bool a3_all_ok(const std::vector<uint64_t>& periods) {
+    if (periods.empty()) return false;
+    for (auto raw : periods) {
+        if (raw % kCck != 0) return false;
+        uint64_t v = raw / kCck;
+        if (v != 227 && v != 228) return false;
+    }
+    return true;
+}
+
 // ==== Program H capture ===================================================
 
 struct HCapture {
     bool loaded = false;
     uint16_t id = 0;
-    std::optional<uint64_t> mark1, mark2;
+    std::optional<uint64_t> mark1, mark2, done;
     bool mark1_peek_ok = false;
     uint16_t mark1_peek = 0;
     std::vector<std::pair<uint64_t, uint16_t>> samples;  // (cycle, raw VHPOSR value), store order
@@ -179,12 +232,13 @@ HCapture run_h(const std::string& bin, const nmh::Config& cfg) {
     if (auto w = h.peek_logical(kHId)) c.id = *w;
     if (auto w = h.peek_logical(kHMark1)) { c.mark1_peek = *w; c.mark1_peek_ok = true; }
 
-    const uint32_t mark1_w = kHMark1 / 2, mark2_w = kHMark2 / 2;
+    const uint32_t mark1_w = kHMark1 / 2, mark2_w = kHMark2 / 2, done_w = kDoneAddr / 2;
     const uint32_t samp_lo = kHSamples / 2, samp_hi = samp_lo + (uint32_t)kHSampleCount;
     for (const auto& a : c.log) {
         if (!a.is_write) continue;
         if (a.word_addr == mark1_w && a.data == 0xA5A5 && !c.mark1) { c.mark1 = a.cycle; continue; }
         if (a.word_addr == mark2_w && a.data == 0x5A5A && !c.mark2) { c.mark2 = a.cycle; continue; }
+        if (a.word_addr == done_w && a.data == kDoneValue && !c.done) { c.done = a.cycle; continue; }
         if (a.word_addr >= samp_lo && a.word_addr < samp_hi) c.samples.push_back({a.cycle, a.data});
     }
     return c;
@@ -192,9 +246,9 @@ HCapture run_h(const std::string& bin, const nmh::Config& cfg) {
 
 bool is_cpu_access_h(const nmh::RamAccess& a) {
     if (!a.is_write) return a.word_addr >= kProgLoW && a.word_addr < kProgHiW;
-    const uint32_t mark1_w = kHMark1 / 2, mark2_w = kHMark2 / 2, id_w = kHId / 2;
+    const uint32_t mark1_w = kHMark1 / 2, mark2_w = kHMark2 / 2, id_w = kHId / 2, done_w = kDoneAddr / 2;
     const uint32_t samp_lo = kHSamples / 2, samp_hi = samp_lo + (uint32_t)kHSampleCount;
-    return a.word_addr == mark1_w || a.word_addr == mark2_w || a.word_addr == id_w ||
+    return a.word_addr == mark1_w || a.word_addr == mark2_w || a.word_addr == id_w || a.word_addr == done_w ||
            (a.word_addr >= samp_lo && a.word_addr < samp_hi);
 }
 
@@ -251,20 +305,30 @@ P2Data analyze_p2(const HCapture& c) {
     return d;
 }
 
-bool all_equal(const std::vector<uint64_t>& v) {
-    if (v.empty()) return false;
-    for (auto p : v) if (p != v[0]) return false;
-    return true;
-}
-
 // ==== Program S capture ==================================================
 
 struct SCapture {
     bool loaded = false;
     uint16_t id = 0;
-    std::optional<uint64_t> mark1;
+    std::optional<uint64_t> mark1, done;
     std::vector<nmh::VideoSample> video;
+    std::vector<uint64_t> refresh;  // anchor A5: memory-refresh (word address 0) access cycles
 };
+
+// Anchor A5 (SPECIFICATION.md P3 sec.7): memory-refresh accesses always
+// read chip address (word) 0, exactly like refresh_groups() above relies
+// on for Program H -- a fixed per-chip-line landmark that DIWSTRT,
+// DDFSTRT, HSSTRT and HSSTOP none of them touch. Clustered the same way
+// refresh_groups() clusters: a wait-stated bus cycle can repeat the same
+// logical access across several adjacent samples.
+std::vector<uint64_t> refresh_cycles_s(const std::vector<nmh::RamAccess>& log) {
+    std::vector<uint64_t> cycles;
+    for (const auto& a : log) if (!a.is_write && a.word_addr == 0) cycles.push_back(a.cycle);
+    std::sort(cycles.begin(), cycles.end());
+    std::vector<uint64_t> out;
+    for (auto c : cycles) if (out.empty() || c - out.back() >= 32 * kCck) out.push_back(c);
+    return out;
+}
 
 SCapture run_s(const std::string& bin, const nmh::Config& cfg) {
     SCapture c;
@@ -274,9 +338,13 @@ SCapture run_s(const std::string& bin, const nmh::Config& cfg) {
     h.boot(kBootBudget);
     h.run_cycles(kSRunBudget);
     if (auto w = h.peek_logical(kSId)) c.id = *w;
-    const uint32_t mark1_w = kSMark1 / 2;
-    for (const auto& a : h.ram_log())
-        if (a.is_write && a.word_addr == mark1_w && a.data == 0xA5A5) { c.mark1 = a.cycle; break; }
+    const uint32_t mark1_w = kSMark1 / 2, done_w = kDoneAddr / 2;
+    for (const auto& a : h.ram_log()) {
+        if (!a.is_write) continue;
+        if (a.word_addr == mark1_w && a.data == 0xA5A5 && !c.mark1) { c.mark1 = a.cycle; continue; }
+        if (a.word_addr == done_w && a.data == kDoneValue && !c.done) { c.done = a.cycle; continue; }
+    }
+    c.refresh = refresh_cycles_s(h.ram_log());
     c.video = h.video();
     return c;
 }
@@ -321,15 +389,23 @@ std::vector<size_t> leading_edges(const std::vector<nmh::VideoSample>& v, nmh::S
 
 struct LineMetric {
     bool ok = false;
-    int64_t dL = 0, dT = 0;
+    // dL, dT: the landmark M's distance to L and to T (SPECIFICATION.md P3
+    // sec.3). dMR: M's own distance to R, the nearest memory-refresh access
+    // before M (anchor A5, sec.7) -- a landmark HSSTRT/HSSTOP never touch,
+    // used to check that M itself does not move (below; see A5's own
+    // comment at its call site for why this, not dL/dT, is where R is
+    // used).
+    int64_t dL = 0, dT = 0, dMR = 0;
     int64_t white_run = -1;
     int into_white = 0, out_white = 0;
 };
 
 // One canonical output line: [L, nextL). T is the sole opposite-polarity
 // transition strictly between them (anchor A4's "exactly one trailing
-// edge"); M is the first white pixel after L (spec's own wording).
-LineMetric measure_span(const std::vector<nmh::VideoSample>& v, size_t L, size_t nextL, bool pulse_is_zero) {
+// edge"); M is the first white pixel after L. R, passed in by the caller
+// (graded_lines_of()), is the nearest memory-refresh access before M.
+LineMetric measure_span(const std::vector<nmh::VideoSample>& v, size_t L, size_t nextL, bool pulse_is_zero,
+                         uint64_t R) {
     LineMetric m;
     if (nextL <= L + 1 || nextL > v.size()) return m;
     size_t T = SIZE_MAX;
@@ -348,8 +424,10 @@ LineMetric measure_span(const std::vector<nmh::VideoSample>& v, size_t L, size_t
         if (pw && !w) { m.out_white++; if (M != SIZE_MAX && white_end == SIZE_MAX) white_end = i; }
     }
     if (M == SIZE_MAX) return m;
+
     m.dL = (int64_t)M - (int64_t)L;
     m.dT = (int64_t)M - (int64_t)T;
+    m.dMR = (int64_t)M - (int64_t)R;
     if (white_end != SIZE_MAX) m.white_run = (int64_t)(white_end - M);
     m.ok = true;
     return m;
@@ -358,9 +436,10 @@ LineMetric measure_span(const std::vector<nmh::VideoSample>& v, size_t L, size_t
 // Graded lines of one S run, split into the two doubled-line parity
 // classes (SPECIFICATION.md P3 sec.7, "Doubled lines"). dropped_white
 // counts lines that carry a white pixel but that measure_span() could not
-// turn into a LineMetric (0 or >=2 trailing HSYNC edges, or no
-// black-to-white transition strictly after L) -- candidates for A4's own
-// population that measurement silently drops instead of grading.
+// turn into a LineMetric (0 or >=2 trailing HSYNC edges, no black-to-white
+// transition strictly after L, or no refresh observed before L) --
+// candidates for A4's own population that measurement silently drops
+// instead of grading.
 struct GradedLines {
     bool ok = false;
     std::vector<LineMetric> cls[2];
@@ -375,14 +454,33 @@ GradedLines graded_lines_of(const SCapture& c) {
     if (!field) return g;
     bool pulse_is_zero = pulse_is_zero_over(c.video, *field);
     auto edges = leading_edges(c.video, *field, pulse_is_zero);
+
+    // Anchor A5 (SPECIFICATION.md P3 sec.7): white content (M) is driven
+    // by DDFSTRT/DIWSTRT/PLANE data alone, never by HSSTRT/HSSTOP, so its
+    // absolute position is identical for "the same" chip line across all
+    // six S runs -- unlike a count of L-edges from the field's own start,
+    // which HSSTRT can shift enough to move a boundary line in or out of
+    // the field differently between runs (measured directly: edge counts
+    // from field->begin disagreed by one line between SA and SB). M is
+    // therefore found first, by a direct scan of the field's own video
+    // content, not by iterating per-L windows; each M then independently
+    // selects R (the nearest refresh access before M, itself content-
+    // independent) and its own enclosing [L, nextL) window.
     size_t idx = 0;
-    for (size_t i = 0; i + 1 < edges.size(); ++i) {
-        size_t L = edges[i], nextL = edges[i + 1];
-        if (L < field->begin || nextL > field->end) continue;
-        bool has_white = false;
-        for (size_t j = L; j < nextL; ++j) if (is_white(c.video[j])) { has_white = true; break; }
-        if (!has_white) { ++idx; continue; }
-        LineMetric m = measure_span(c.video, L, nextL, pulse_is_zero);
+    for (size_t i = std::max<size_t>(field->begin, 1); i < field->end && i < c.video.size(); ++i) {
+        if (!is_white(c.video[i]) || is_white(c.video[i - 1])) continue;
+        size_t M = i;
+
+        auto lit = std::upper_bound(edges.begin(), edges.end(), M);
+        if (lit == edges.begin() || lit == edges.end()) { ++idx; continue; }
+        size_t L = *(lit - 1), nextL = *lit;
+        if (L < field->begin || nextL > field->end) { ++idx; continue; }
+
+        auto rit = std::upper_bound(c.refresh.begin(), c.refresh.end(), (uint64_t)M);
+        if (rit == c.refresh.begin()) { ++idx; continue; }
+        uint64_t R = *(rit - 1);
+
+        LineMetric m = measure_span(c.video, L, nextL, pulse_is_zero, R);
         if (m.ok) { g.cls[idx % 2].push_back(m); g.total++; }
         else { g.dropped_white++; }
         ++idx;
@@ -433,9 +531,13 @@ int main(int argc, char** argv) {
 
     // ---- Fixture: a program-stored constant asserted first, through
     // peek_logical() -- the same call PC-ID's ID depends on -- before
-    // anything else reads one.
-    checks.expect(h1.loaded && h1.mark1_peek_ok && h1.mark1_peek == 0xA5A5,
+    // anything else reads one. MUTATION FIXTURE: see header.
+    HCapture fixture_cap = (mv == "FIXTURE") ? run_h(dir + "/prog_h_h1_fixture.bin", default_cfg()) : h1;
+    checks.expect(fixture_cap.loaded && fixture_cap.mark1_peek_ok && fixture_cap.mark1_peek == 0xA5A5,
         "FIXTURE: peek_logical(MARK1) [H1] == $A5A5, the literal Program H stores before anything else is read back");
+    if (mv == "FIXTURE")
+        checks.expect(fixture_cap.loaded && fixture_cap.done.has_value(),
+            "DONE [H1,FIXTURE]: the program reaches DONE");
 
     // ---- Claims without a proposition (SPECIFICATION.md sec.1) ----------
     checks.record(
@@ -454,8 +556,23 @@ int main(int argc, char** argv) {
         "and a kind of monitor; the test sees digital R/G/B and separate H/V "
         "sync, never a connector, and the colour count follows from the "
         "harness's fixed 4-bit outputs, not from the chips.");
+    checks.record(
+        "opus:8-appA-oos.c4-WITHDRAWN [p280]: HSSTOP -- the claim bundles "
+        "write-only, Agnus, ECS-mark and the address with the stop-position "
+        "functional effect (SPECIFICATION.md sec.1, \"Parts of c4, c5 and c6 "
+        "that have no proposition of their own\"); none of the bundled parts "
+        "is independently observable. P4 grades the functional effect alone, "
+        "unlabelled.");
+    checks.record(
+        "opus:8-appA-oos.c5-WITHDRAWN [p280]: HSSTRT -- as c4, for the "
+        "start-position effect. P3 grades the functional effect alone, "
+        "unlabelled.");
+    checks.record(
+        "opus:8-appA-oos.c6-WITHDRAWN [p280]: HTOTAL -- as c4, for the "
+        "highest-count effect. P1 and P2 grade the functional effect alone, "
+        "unlabelled.");
 
-    // ---- PC-ID, PC-MARK: shared preconditions, every H-group run --------
+    // ---- PC-ID, PC-MARK, DONE: shared preconditions, every H-group run --
     bool pc_h1 = false, pc_h2 = false, pc_h1c = false, pc_h2c = false;
     {
         struct Row { const char* label; const HCapture* c; bool* pc; };
@@ -470,6 +587,8 @@ int main(int argc, char** argv) {
                            r.c->mark2.has_value() && *r.c->mark2 > *r.c->mark1;
             checks.expect(mark_ok,
                 "PC-MARK [" + std::string(r.label) + "]: MARK1 appears at the port, and MARK2 later");
+            checks.expect(r.c->loaded && r.c->done.has_value(),
+                "DONE [" + std::string(r.label) + "]: the program reaches DONE");
             *r.pc = id_ok && mark_ok;
         }
     }
@@ -480,25 +599,49 @@ int main(int argc, char** argv) {
         HCapture cap = run_h(dir + "/prog_h_h1.bin", ocs_cfg());
         checks.expect(cap.loaded && pc_id_pal(cap.id),
             "PC-ID [H1, X-OCS] p.299: VPOSR bits 14-8 read the enhanced-Agnus PAL value");
+        checks.expect(cap.loaded && cap.done.has_value(), "DONE [H1,X-OCS]: the program reaches DONE");
     }
     if (mv == "X-NTSC") {
         HCapture cap = run_h(dir + "/prog_h_h1.bin", ntsc_cfg());
         checks.expect(cap.loaded && pc_id_pal(cap.id),
             "PC-ID [H1, X-NTSC] p.299: VPOSR bits 14-8 read the enhanced-Agnus PAL value");
+        checks.expect(cap.loaded && cap.done.has_value(), "DONE [H1,X-NTSC]: the program reaches DONE");
     }
     if (mv == "X-HALT-H") {
         HCapture cap = run_h(dir + "/prog_h_h1_halt.bin", default_cfg());
         checks.expect(cap.loaded && cap.mark1.has_value() && cap.mark2.has_value(),
             "PC-MARK [H1, X-HALT-H]: MARK1 appears at the port, and MARK2 later");
+        checks.expect(cap.loaded && cap.done.has_value(),
+            "DONE [H1,X-HALT-H]: the program reaches DONE (the marker is omitted, not the rest of the program)");
     }
 
     // X-SHORT/X-BURST substitute an alternate capture for one specific
     // precondition (P1-LINES/P2-LINES and P1-COVER respectively); nothing
-    // else in this run changes.
+    // else in this run changes. Their own liveness (PC-ID, PC-MARK, DONE)
+    // is asserted here too, since these captures are otherwise untested.
     HCapture h1_short, h1_burst, h2_burst;
-    if (mv == "X-SHORT") h1_short = run_h(dir + "/prog_h_h1_short.bin", default_cfg());
-    if (mv == "X-BURST") { h1_burst = run_h(dir + "/prog_h_h1_burst.bin", default_cfg());
-                           h2_burst = run_h(dir + "/prog_h_h2_burst.bin", default_cfg()); }
+    if (mv == "X-SHORT") {
+        h1_short = run_h(dir + "/prog_h_h1_short.bin", default_cfg());
+        checks.expect(h1_short.loaded && pc_id_pal(h1_short.id),
+            "PC-ID [H1,X-SHORT]: VPOSR bits 14-8 read the enhanced-Agnus PAL value");
+        checks.expect(h1_short.loaded && h1_short.mark1.has_value() && h1_short.mark2.has_value(),
+            "PC-MARK [H1,X-SHORT]: MARK1 appears at the port, and MARK2 later");
+        checks.expect(h1_short.loaded && h1_short.done.has_value(), "DONE [H1,X-SHORT]: the program reaches DONE");
+    }
+    if (mv == "X-BURST") {
+        h1_burst = run_h(dir + "/prog_h_h1_burst.bin", default_cfg());
+        h2_burst = run_h(dir + "/prog_h_h2_burst.bin", default_cfg());
+        checks.expect(h1_burst.loaded && pc_id_pal(h1_burst.id),
+            "PC-ID [H1,X-BURST]: VPOSR bits 14-8 read the enhanced-Agnus PAL value");
+        checks.expect(h1_burst.loaded && h1_burst.mark1.has_value() && h1_burst.mark2.has_value(),
+            "PC-MARK [H1,X-BURST]: MARK1 appears at the port, and MARK2 later");
+        checks.expect(h1_burst.loaded && h1_burst.done.has_value(), "DONE [H1,X-BURST]: the program reaches DONE");
+        checks.expect(h2_burst.loaded && pc_id_pal(h2_burst.id),
+            "PC-ID [H2,X-BURST]: VPOSR bits 14-8 read the enhanced-Agnus PAL value");
+        checks.expect(h2_burst.loaded && h2_burst.mark1.has_value() && h2_burst.mark2.has_value(),
+            "PC-MARK [H2,X-BURST]: MARK1 appears at the port, and MARK2 later");
+        checks.expect(h2_burst.loaded && h2_burst.done.has_value(), "DONE [H2,X-BURST]: the program reaches DONE");
+    }
 
     struct Extracted {
         bool ok = false;
@@ -517,85 +660,15 @@ int main(int argc, char** argv) {
         return e;
     };
 
-    // ---- Preconditions for P1: P1-LINES [H1]/[H2], P1-COVER [H1]/[H2] ---
-    // (SPECIFICATION.md sec.3: "Every graded run asserts these first";
-    // printed, and their real (unmutated) result captured for gating,
-    // before P1 itself.)
-    Extracted ex_h1 = extract(h1), ex_h2 = extract(h2);
-
-    // "_real" variants always use H1's/H2's own unmutated capture: they
-    // gate the propositions, which are themselves always graded on the
-    // real capture. A precondition mutation (X-SHORT, X-BURST, X-NOBPL)
-    // substitutes data for its own printed precondition line only -- it
-    // must not also silently gate an unrelated proposition to "precondition
-    // not met" as a side effect of that substitution.
-    bool p1lines_h1 = false, p1lines_h2 = false, p1lines_h1_real = false;
-    {
-        Extracted ex = extract((mv == "X-SHORT") ? h1_short : h1);
-        p1lines_h1 = ex.ok && (ex.wraps.size() - 1) >= 320;
-        checks.expect(p1lines_h1, "P1-LINES [H1]: the graded samples contain at least 320 wraps");
-        p1lines_h1_real = ex_h1.ok && (ex_h1.wraps.size() - 1) >= 320;
-    }
-    {
-        p1lines_h2 = ex_h2.ok && (ex_h2.wraps.size() - 1) >= 320;
-        checks.expect(p1lines_h2, "P1-LINES [H2]: the graded samples contain at least 320 wraps");
-    }
-    bool p1lines_h2_real = p1lines_h2;  // H2 is never X-SHORT's target
-
-    auto p1_cover_check = [&](const char* label, Extracted& ex_normal, const HCapture& burst_cap,
-                              uint16_t N, bool& real_ok) -> bool {
-        Extracted ex = (mv == "X-BURST") ? extract(burst_cap) : ex_normal;
-        bool cover_ok = false;
-        uint64_t max_gap = 0;
-        if (ex.ok) {
-            size_t gs = ex.wraps[1];
-            for (size_t i = gs + 1; i < ex.cyc.size(); ++i)
-                max_gap = std::max(max_gap, ex.cyc[i] - ex.cyc[i - 1]);
-            bool near_end = false;
-            for (size_t i = gs; i < ex.hf.size(); ++i)
-                if (ex.hf[i] >= (uint16_t)(N - 16)) near_end = true;
-            cover_ok = (max_gap <= 16 * kCck) && near_end;
-        }
-        checks.note(std::string("P1-COVER [") + label + "]: largest consecutive-sample gap in the "
-                    "graded range = " + std::to_string(max_gap / kCck) + " CCK");
-        checks.expect(cover_ok,
-            std::string("P1-COVER [") + label + "]: consecutive graded sample stores are never more "
-            "than 16 CCK apart, and at least one graded sample has H >= N-16");
-        if (ex_normal.ok) {
-            size_t gs2 = ex_normal.wraps[1];
-            uint64_t max_gap2 = 0;
-            for (size_t i = gs2 + 1; i < ex_normal.cyc.size(); ++i)
-                max_gap2 = std::max(max_gap2, ex_normal.cyc[i] - ex_normal.cyc[i - 1]);
-            bool near_end2 = false;
-            for (size_t i = gs2; i < ex_normal.hf.size(); ++i)
-                if (ex_normal.hf[i] >= (uint16_t)(N - 16)) near_end2 = true;
-            real_ok = (max_gap2 <= 16 * kCck) && near_end2;
-        } else {
-            real_ok = false;
-        }
-        return cover_ok;
-    };
-    bool p1cover_h1_real = false, p1cover_h2_real = false;
-    p1_cover_check("H1", ex_h1, h1_burst, 0x00B0, p1cover_h1_real);
-    p1_cover_check("H2", ex_h2, h2_burst, 0x00C0, p1cover_h2_real);
-
-    // ---- Preconditions for P2: P2-LINES [H1]/[H2] ------------------------
+    // ---- P2 analysis for all four H-group runs, and anchors A1/A3, ------
+    // established before any check that consumes kCck (P1-COVER, P2-LINES,
+    // A2, P2(a)/(b)) so those checks can gate on A3 (sec.9 below).
     P2Data d1 = analyze_p2(h1), d2 = analyze_p2(h2), d1c = analyze_p2(h1c), d2c = analyze_p2(h2c);
-    P2Data d1_for_lines = (mv == "X-SHORT") ? analyze_p2(h1_short) : d1;
-    bool p2lines_h1 = d1_for_lines.ok && d1_for_lines.periods.size() >= 320;
-    bool p2lines_h2 = d2.ok && d2.periods.size() >= 320;
-    checks.expect(p2lines_h1, "P2-LINES [H1]: at least 320 graded periods");
-    checks.expect(p2lines_h2, "P2-LINES [H2]: at least 320 graded periods");
-    bool p2lines_h1_real = d1.ok && d1.periods.size() >= 320;
-    bool p2lines_h2_real = p2lines_h2;  // H2 is never X-SHORT's target
 
-    // ---- Anchors A1, A2, A3 (printed, and gated on their own captures,
-    // before P1 and P2 use them; SPECIFICATION.md P1/P2 sec.7) -----------
+    // ---- Anchor A1: in H1c/H2c (VARBEAMEN=0), the largest graded H lies
+    // between $E2-16 and $E3 (p.23). MUTATION A1 stimulus red
+    // NMH_MUTATE=A1: see header -- one substitution, six printed lines.
     Extracted ex_h1c_check = extract(h1c), ex_h2c_check = extract(h2c);
-    // a1_*_ok reflects NMH_MUTATE=A1's substitution (for the anchor's own
-    // printed line); a1_*_ok_real always uses H1c's/H2c's own capture and
-    // gates P1 [H1c]/[H2c], which are themselves always graded on the real
-    // capture -- the A1 mutation must not also silently gate them.
     bool a1_h1c_ok, a1_h2c_ok, a1_h1c_ok_real, a1_h2c_ok_real;
     {
         Extracted ex = extract((mv == "A1") ? h1 : h1c);
@@ -622,65 +695,162 @@ int main(int argc, char** argv) {
         a1_h2c_ok_real = pc_h2c && ex_h2c_check.ok && maxHr >= (0xE2 - 16) && maxHr <= 0xE3;
     }
 
-    auto a2_check = [&](const char* label, P2Data& d) -> bool {
+    // ---- Anchor A3: establishes kCck. Every graded period (not just the
+    // first) must be exactly divisible by kCck and convert to 227 or 228
+    // CCK (p.23). MUTATION A3 stimulus red NMH_MUTATE=A3: see header.
+    bool a3_h1c_ok, a3_h2c_ok, a3_h1c_ok_real, a3_h2c_ok_real;
+    {
+        const auto& periods = (mv == "A3") ? d1.periods : d1c.periods;
+        a3_h1c_ok = pc_h1c && a3_all_ok(periods);
+        checks.expect(a3_h1c_ok,
+            "A3 [H1c] [p23,p194,p304]: every graded period (VARBEAMEN=0) is exactly divisible by "
+            "the clk_sys-per-CCK ratio and converts to 227 or 228 CCK");
+        a3_h1c_ok_real = pc_h1c && a3_all_ok(d1c.periods);
+    }
+    {
+        const auto& periods = (mv == "A3") ? d2.periods : d2c.periods;
+        a3_h2c_ok = pc_h2c && a3_all_ok(periods);
+        checks.expect(a3_h2c_ok,
+            "A3 [H2c] [p23,p194,p304]: every graded period (VARBEAMEN=0) is exactly divisible by "
+            "the clk_sys-per-CCK ratio and converts to 227 or 228 CCK");
+        a3_h2c_ok_real = pc_h2c && a3_all_ok(d2c.periods);
+    }
+
+    // ---- Preconditions for P1: P1-LINES [H1]/[H2] (kCck-independent), ---
+    // then P1-COVER [H1]/[H2], gated on A3 (sec.9: every kCck consumer
+    // records "precondition not met" unless A3 holds).
+    Extracted ex_h1 = extract(h1), ex_h2 = extract(h2);
+
+    bool p1lines_h1 = false, p1lines_h2 = false, p1lines_h1_real = false;
+    {
+        Extracted ex = extract((mv == "X-SHORT") ? h1_short : h1);
+        p1lines_h1 = ex.ok && (ex.wraps.size() - 1) >= 320;
+        checks.expect(p1lines_h1, "P1-LINES [H1]: the graded samples contain at least 320 wraps");
+        p1lines_h1_real = ex_h1.ok && (ex_h1.wraps.size() - 1) >= 320;
+    }
+    {
+        p1lines_h2 = ex_h2.ok && (ex_h2.wraps.size() - 1) >= 320;
+        checks.expect(p1lines_h2, "P1-LINES [H2]: the graded samples contain at least 320 wraps");
+    }
+    bool p1lines_h2_real = p1lines_h2;  // H2 is never X-SHORT's target
+
+    auto p1_cover_check = [&](const char* label, Extracted& ex_normal, const HCapture& burst_cap,
+                              uint16_t N, bool kcck_precond, bool& real_ok) -> bool {
+        Extracted ex = (mv == "X-BURST") ? extract(burst_cap) : ex_normal;
+        bool have_ex = ex.ok;
+        uint64_t max_gap = 0;
+        bool near_end = false;
+        if (have_ex) {
+            size_t gs = ex.wraps[1];
+            for (size_t i = gs + 1; i < ex.cyc.size(); ++i)
+                max_gap = std::max(max_gap, ex.cyc[i] - ex.cyc[i - 1]);
+            for (size_t i = gs; i < ex.hf.size(); ++i)
+                if (ex.hf[i] >= (uint16_t)(N - 16)) near_end = true;
+            checks.note(std::string("P1-COVER [") + label + "]: largest consecutive-sample gap in "
+                        "the graded range = " + std::to_string(max_gap / kCck) + " CCK");
+        }
+        bool cover_ok = false;
+        if (!kcck_precond) {
+            checks.record(std::string("P1-COVER [") + label + "]: precondition not met (the kCck "
+                          "conversion anchor A3 does not hold)");
+        } else {
+            cover_ok = have_ex && (max_gap <= 16 * kCck) && near_end;
+            checks.expect(cover_ok,
+                std::string("P1-COVER [") + label + "]: consecutive graded sample stores are never "
+                "more than 16 CCK apart, and at least one graded sample has H >= N-16");
+        }
+        if (ex_normal.ok) {
+            size_t gs2 = ex_normal.wraps[1];
+            uint64_t max_gap2 = 0;
+            for (size_t i = gs2 + 1; i < ex_normal.cyc.size(); ++i)
+                max_gap2 = std::max(max_gap2, ex_normal.cyc[i] - ex_normal.cyc[i - 1]);
+            bool near_end2 = false;
+            for (size_t i = gs2; i < ex_normal.hf.size(); ++i)
+                if (ex_normal.hf[i] >= (uint16_t)(N - 16)) near_end2 = true;
+            real_ok = kcck_precond && (max_gap2 <= 16 * kCck) && near_end2;
+        } else {
+            real_ok = false;
+        }
+        return cover_ok;
+    };
+    bool p1cover_h1_real = false, p1cover_h2_real = false;
+    p1_cover_check("H1", ex_h1, h1_burst, 0x00B0, a3_h1c_ok_real, p1cover_h1_real);
+    p1_cover_check("H2", ex_h2, h2_burst, 0x00C0, a3_h2c_ok_real, p1cover_h2_real);
+
+    // ---- Preconditions for P2: P2-LINES [H1]/[H2], gated on A3. ---------
+    bool p2lines_h1 = false, p2lines_h2 = false;
+    P2Data d1_for_lines = (mv == "X-SHORT") ? analyze_p2(h1_short) : d1;
+    if (!a3_h1c_ok_real) {
+        checks.record("P2-LINES [H1]: precondition not met (A3 [H1c] does not hold)");
+    } else {
+        p2lines_h1 = d1_for_lines.ok && d1_for_lines.periods.size() >= 320;
+        checks.expect(p2lines_h1, "P2-LINES [H1]: at least 320 graded periods");
+    }
+    bool p2lines_h1_real = a3_h1c_ok_real && d1.ok && d1.periods.size() >= 320;
+    if (!a3_h2c_ok_real) {
+        checks.record("P2-LINES [H2]: precondition not met (A3 [H2c] does not hold)");
+    } else {
+        p2lines_h2 = d2.ok && d2.periods.size() >= 320;
+        checks.expect(p2lines_h2, "P2-LINES [H2]: at least 320 graded periods");
+    }
+    bool p2lines_h2_real = a3_h2c_ok_real && p2lines_h2;
+
+    // ---- Anchor A2: every graded period has exactly 4 refresh accesses,
+    // gated on A3 (kCck feeds refresh_groups()'s 32-CCK clustering bound).
+    // MUTATION A2 stimulus red NMH_MUTATE=X-AUD0: see header -- all four
+    // H-group runs, each with its own audio-DMA capture.
+    HCapture h1_aud0, h2_aud0, h1c_aud0, h2c_aud0;
+    if (mv == "X-AUD0") {
+        h1_aud0  = run_h(dir + "/prog_h_h1_aud0.bin",  default_cfg());
+        h2_aud0  = run_h(dir + "/prog_h_h2_aud0.bin",  default_cfg());
+        h1c_aud0 = run_h(dir + "/prog_h_h1c_aud0.bin", default_cfg());
+        h2c_aud0 = run_h(dir + "/prog_h_h2c_aud0.bin", default_cfg());
+        checks.expect(h1_aud0.loaded  && h1_aud0.done.has_value(),  "DONE [H1,X-AUD0]: the program reaches DONE");
+        checks.expect(h2_aud0.loaded  && h2_aud0.done.has_value(),  "DONE [H2,X-AUD0]: the program reaches DONE");
+        checks.expect(h1c_aud0.loaded && h1c_aud0.done.has_value(), "DONE [H1c,X-AUD0]: the program reaches DONE");
+        checks.expect(h2c_aud0.loaded && h2c_aud0.done.has_value(), "DONE [H2c,X-AUD0]: the program reaches DONE");
+    }
+    auto a2_check = [&](const char* label, P2Data& d, bool precond, const char* why) -> bool {
+        if (!precond) {
+            checks.record(std::string("A2 [") + label + "]: precondition not met" + why);
+            return false;
+        }
         bool ok = d.ok && d.a2_all_four;
         checks.expect(ok,
             "A2 [" + std::string(label) + "] [p194,p285]: every graded period contains exactly "
             "4 refresh accesses");
         return ok;
     };
-    P2Data d1_for_a2 = (mv == "X-AUD0") ? analyze_p2(run_h(dir + "/prog_h_h1_aud0.bin", default_cfg())) : d1;
-    bool a2_h1  = a2_check("H1", d1_for_a2);
-    bool a2_h2  = a2_check("H2", d2);
-    bool a2_h1c = a2_check("H1c", d1c);
-    bool a2_h2c = a2_check("H2c", d2c);
+    P2Data d1_for_a2  = (mv == "X-AUD0") ? analyze_p2(h1_aud0)  : d1;
+    P2Data d2_for_a2  = (mv == "X-AUD0") ? analyze_p2(h2_aud0)  : d2;
+    P2Data d1c_for_a2 = (mv == "X-AUD0") ? analyze_p2(h1c_aud0) : d1c;
+    P2Data d2c_for_a2 = (mv == "X-AUD0") ? analyze_p2(h2c_aud0) : d2c;
+    bool a2_h1  = a2_check("H1",  d1_for_a2,  a3_h1c_ok_real, " (A3 [H1c] does not hold)");
+    bool a2_h2  = a2_check("H2",  d2_for_a2,  a3_h2c_ok_real, " (A3 [H2c] does not hold)");
+    bool a2_h1c = a2_check("H1c", d1c_for_a2, a3_h1c_ok_real, " (A3 [H1c] does not hold)");
+    bool a2_h2c = a2_check("H2c", d2c_for_a2, a3_h2c_ok_real, " (A3 [H2c] does not hold)");
     (void)a2_h1; (void)a2_h2; (void)a2_h1c; (void)a2_h2c;
-    checks.record(
-        "A2-NOT-EXERCISED [H1c,H2c]: no dedicated mutation -- refresh's own 4-slot count (p.194,p.285) "
-        "is fixed by the chipset's slot allocation, not by any register this package writes for these "
-        "two runs; unfalsifiable at this boundary, by a scope decision.");
 
     uint64_t T1_raw = d1.ok && !d1.periods.empty() ? d1.periods[0] : 0;
     uint64_t T2_raw = d2.ok && !d2.periods.empty() ? d2.periods[0] : 0;
     uint64_t T1c_raw = d1c.ok && !d1c.periods.empty() ? d1c.periods[0] : 0;
     uint64_t T2c_raw = d2c.ok && !d2c.periods.empty() ? d2c.periods[0] : 0;
 
-    // a3_h1c_ok_real: A3 [H1c] computed on H1c's own capture always, never
-    // substituted -- P2(c) gates on this, not on the mutation-sensitive
-    // a3_h1c_ok (see NMH_MUTATE=A3, which must not also silently gate
-    // P2(c) as a side effect of substituting into the anchor's own line).
-    bool a3_h1c_ok, a3_h2c_ok, a3_h1c_ok_real;
-    {
-        uint64_t raw = (mv == "A3") ? T1_raw : T1c_raw;
-        uint64_t cck_v = raw / kCck;
-        a3_h1c_ok = pc_h1c && raw != 0 && (cck_v == 227 || cck_v == 228);
-        checks.expect(a3_h1c_ok,
-            "A3 [H1c] [p23,p194,p304]: every graded period converts to 227 or 228 CCK (VARBEAMEN=0)");
-        uint64_t cck_r = T1c_raw / kCck;
-        a3_h1c_ok_real = pc_h1c && T1c_raw != 0 && (cck_r == 227 || cck_r == 228);
-    }
-    {
-        uint64_t raw = (mv == "A3") ? T2_raw : T2c_raw;
-        uint64_t cck_v = raw / kCck;
-        a3_h2c_ok = pc_h2c && raw != 0 && (cck_v == 227 || cck_v == 228);
-        checks.expect(a3_h2c_ok,
-            "A3 [H2c] [p23,p194,p304]: every graded period converts to 227 or 228 CCK (VARBEAMEN=0)");
-    }
-
     // ---- P1: with VARBEAMEN set, no H readback exceeds HTOTAL ------------
-    // MUTATION P1 stimulus red via the always-run contrast: H1c/H2c (VARBEAMEN=0)
-    // run unconditionally and are graded a few lines below, through the same
-    // "any_exceeds" comparator P1 [H1]/[H2] use.
+    // opus:8-appA-oos.c6 bundles this with address/write-only/Agnus/
+    // ECS-mark clauses SPECIFICATION.md sec.1 declines, so no id is
+    // carried here. MUTATION: see NMH_MUTATE=A1 in the header -- one
+    // substitution feeds all four of these lines.
     {
-        struct Run { const char* label; HCapture* cap; uint16_t N; bool contrast; bool precond; };
-        Run runs[] = {{"H1", &h1, 0x00B0, false, pc_h1 && p1lines_h1_real && p1cover_h1_real},
-                      {"H2", &h2, 0x00C0, false, pc_h2 && p1lines_h2_real && p1cover_h2_real},
-                      {"H1c", &h1c, 0x00B0, true, pc_h1c && a1_h1c_ok_real},
-                      {"H2c", &h2c, 0x00C0, true, pc_h2c && a1_h2c_ok_real}};
+        struct Run { const char* label; HCapture* cap; HCapture* mutate_cap; uint16_t N; bool contrast; bool precond; };
+        Run runs[] = {{"H1", &h1, &h1c, 0x00B0, false, pc_h1 && p1lines_h1_real && p1cover_h1_real},
+                      {"H2", &h2, &h2c, 0x00C0, false, pc_h2 && p1lines_h2_real && p1cover_h2_real},
+                      {"H1c", &h1c, &h1, 0x00B0, true, pc_h1c && a1_h1c_ok_real},
+                      {"H2c", &h2c, &h2, 0x00C0, true, pc_h2c && a1_h2c_ok_real}};
         for (auto& r : runs) {
-            Extracted ex = extract(*r.cap);
+            Extracted ex = extract((mv == "A1") ? *r.mutate_cap : *r.cap);
             if (!ex.ok) {
-                checks.expect(false, std::string("P1 [") + r.label + "] [p280] opus:8-appA-oos.c6: "
+                checks.expect(false, std::string("P1 [") + r.label + "] [p280]: "
                     "fewer than two wraps observed, no graded range");
                 continue;
             }
@@ -700,48 +870,60 @@ int main(int argc, char** argv) {
             }
             if (!r.contrast) {
                 checks.expect(!any_exceeds,
-                    "P1 [" + std::string(r.label) + "] [p280] opus:8-appA-oos.c6: while VARBEAMEN is 1, "
-                    "no graded horizontal-position readback exceeds HTOTAL");
+                    "P1 [" + std::string(r.label) + "] [p280]: while VARBEAMEN is 1, no graded "
+                    "horizontal-position readback exceeds HTOTAL");
             } else {
                 checks.expect(any_exceeds,
-                    "P1 [" + std::string(r.label) + "] [p280] opus:8-appA-oos.c6 (contrast, VARBEAMEN=0): "
-                    "at least one graded readback exceeds N, since HTOTAL's condition does not hold");
+                    "P1 [" + std::string(r.label) + "] [p280] (contrast, VARBEAMEN=0): at least one "
+                    "graded readback exceeds N, since HTOTAL's condition does not hold");
             }
         }
     }
 
     // ---- P2: with VARBEAMEN set, every line lasts N or N+1 CCK -----------
-    // MUTATION P2(b) stimulus red via the always-run contrast: P2 contrast,
-    // below, is the same all-equal machinery applied across H1c and H2c and
-    // shows d=0 where P2(b) requires d=16.
+    // No single graded line establishes the whole proposition (each of
+    // P2(a)/(b)/(c) grades one clause only); none of them carries
+    // opus:8-appA-oos.c6 (sec.1). The conjunction below is the whole
+    // proposition, still unlabelled for the same reason.
     {
-        // P2(a) [H1]/[H2]: while VARBEAMEN is 1, every graded period has one
-        // and the same value (opus:8-appA-oos.c6). MUTATION P2(a) [H1]
-        // stimulus red NMH_MUTATE=P2A: see header.
-        std::vector<uint64_t> d1_pooled_periods = d1.periods;
-        if (mv == "P2A" && d2.ok) d1_pooled_periods.insert(d1_pooled_periods.end(), d2.periods.begin(), d2.periods.end());
-        P2Data d1_for_a = d1;
-        d1_for_a.periods = d1_pooled_periods;
+        // P2(a) [H1]. MUTATION P2(a) [H1] stimulus red NMH_MUTATE=P2A: see header.
+        HCapture h1_retotal;
+        if (mv == "P2A") {
+            h1_retotal = run_h(dir + "/prog_h_h1_retotal.bin", default_cfg());
+            checks.expect(h1_retotal.loaded && h1_retotal.done.has_value(),
+                "DONE [H1,P2A]: the program reaches DONE");
+        }
+        P2Data d1_for_a = (mv == "P2A") ? analyze_p2(h1_retotal) : d1;
+        if (mv == "P2A" && d1_for_a.ok)
+            checks.note("P2 [H1,P2A]: " + std::to_string(d1_for_a.periods.size()) + " graded periods, first=" +
+                        (d1_for_a.periods.empty() ? std::string("n/a") : std::to_string(d1_for_a.periods[0])) +
+                        " clk_sys cycles");
         if (d1.ok && !d1.periods.empty())
             checks.note("P2 [H1]: " + std::to_string(d1.periods.size()) + " graded periods, first=" +
                         std::to_string(d1.periods[0]) + " clk_sys cycles");
+        bool p2a_h1_ok = false;
         if (!(pc_h1 && p2lines_h1_real)) {
             checks.record("P2(a) [H1]: precondition not met");
         } else {
-            checks.expect(d1_for_a.ok && !d1_for_a.periods.empty() && all_equal(d1_for_a.periods),
-                "P2(a) [H1] [p280,p304] opus:8-appA-oos.c6: while VARBEAMEN is 1, every graded line "
-                "period has one and the same value");
+            p2a_h1_ok = d1_for_a.ok && !d1_for_a.periods.empty() && all_equal(d1_for_a.periods);
+            checks.expect(p2a_h1_ok,
+                "P2(a) [H1] [p280,p304]: while VARBEAMEN is 1, every graded line period has one "
+                "and the same value");
         }
+
         if (d2.ok && !d2.periods.empty())
             checks.note("P2 [H2]: " + std::to_string(d2.periods.size()) + " graded periods, first=" +
                         std::to_string(d2.periods[0]) + " clk_sys cycles");
+        bool p2a_h2_ok = false;
         if (!(pc_h2 && p2lines_h2_real)) {
             checks.record("P2(a) [H2]: precondition not met");
         } else {
-            checks.expect(d2.ok && !d2.periods.empty() && all_equal(d2.periods),
-                "P2(a) [H2] [p280,p304] opus:8-appA-oos.c6: while VARBEAMEN is 1, every graded line "
-                "period has one and the same value");
+            p2a_h2_ok = d2.ok && !d2.periods.empty() && all_equal(d2.periods);
+            checks.expect(p2a_h2_ok,
+                "P2(a) [H2] [p280,p304]: while VARBEAMEN is 1, every graded line period has one "
+                "and the same value");
         }
+
         if (d1c.ok && !d1c.periods.empty())
             checks.note("P2 [H1c]: " + std::to_string(d1c.periods.size()) + " graded periods, first=" +
                         std::to_string(d1c.periods[0]) + " clk_sys cycles");
@@ -751,14 +933,20 @@ int main(int argc, char** argv) {
 
         bool have_t1t2 = pc_h1 && pc_h2 && p2lines_h1_real && p2lines_h2_real &&
                          d1.ok && !d1.periods.empty() && d2.ok && !d2.periods.empty();
+
+        // P2(b). MUTATION P2(b) stimulus red NMH_MUTATE=P2B: see header.
+        uint64_t t1_for_b = (mv == "P2B") ? T1c_raw : T1_raw;
+        uint64_t t2_for_b = (mv == "P2B") ? T2c_raw : T2_raw;
+        bool p2b_ok = false;
         if (!have_t1t2) {
             checks.record("P2(b): precondition not met");
         } else {
-            checks.expect((int64_t)(T2_raw - T1_raw) == 16 * (int64_t)kCck,
-                "P2(b) [p280,p304] opus:8-appA-oos.c6: T2 - T1 = 16 CCK ($C0 - $B0)");
+            p2b_ok = (int64_t)(t2_for_b - t1_for_b) == 16 * (int64_t)kCck;
+            checks.expect(p2b_ok, "P2(b) [p280,p304]: T2 - T1 = 16 CCK ($C0 - $B0)");
         }
 
         // P2(c). MUTATION P2(c) stimulus red NMH_MUTATE=P2C: see header.
+        bool p2c_ok = false;
         if (!have_t1t2) {
             checks.record("P2(c): precondition not met");
         } else if (!a3_h1c_ok_real) {
@@ -766,14 +954,24 @@ int main(int argc, char** argv) {
         } else {
             uint64_t t1_for_c = (mv == "P2C") ? T1c_raw : T1_raw;
             uint64_t t1_cck = t1_for_c / kCck;
-            bool c_ok = t1_for_c != 0 && (t1_cck >= 0x00B0) && (t1_cck - 0x00B0 <= 1);
-            checks.expect(c_ok,
-                "P2(c) [p280,p304] opus:8-appA-oos.c6: T1 (converted to CCK) - $B0 is 0 or 1 (page note 2)");
+            p2c_ok = t1_for_c != 0 && (t1_cck >= 0x00B0) && (t1_cck - 0x00B0 <= 1);
+            checks.expect(p2c_ok,
+                "P2(c) [p280,p304]: T1 (converted to CCK) - $B0 is 0 or 1 (page note 2)");
         }
 
-        // P2 contrast: folds the former mislabelled "P2(a) [H1c]/[H2c]"
-        // checks -- every graded period in H1c equals every graded period in
-        // H2c (not just periods[0]), through the unenabled comparator.
+        // Conjunction: the whole proposition, held only when P2(a) [H1],
+        // P2(a) [H2], P2(b) and P2(c) all hold together.
+        if (!(pc_h1 && pc_h2 && p2lines_h1_real && p2lines_h2_real && a3_h1c_ok_real)) {
+            checks.record("P2: precondition not met");
+        } else {
+            checks.expect(p2a_h1_ok && p2a_h2_ok && p2b_ok && p2c_ok,
+                "P2 [p280,p304]: while VARBEAMEN is 1, every line has one and the same length, that "
+                "length is N or N+1 CCK for HTOTAL=N, and changing HTOTAL by d changes the length by "
+                "exactly d (conjunction of P2(a) [H1], P2(a) [H2], P2(b), P2(c))");
+        }
+
+        // P2 contrast: every graded period in H1c equals every graded period
+        // in H2c (not just periods[0]), through the unenabled comparator.
         if (!(pc_h1c && pc_h2c)) {
             checks.record("P2 contrast: precondition not met");
         } else {
@@ -799,7 +997,7 @@ int main(int argc, char** argv) {
     SCapture sb0 = run_s(dir + "/prog_s_sb0.bin", default_cfg());
     SCapture sc0 = run_s(dir + "/prog_s_sc0.bin", default_cfg());
 
-    // ---- PC-ID, PC-MARK: shared preconditions, every S-group run --------
+    // ---- PC-ID, PC-MARK, DONE: shared preconditions, every S-group run --
     bool pc_sa = false, pc_sb = false, pc_sc = false, pc_sa0 = false, pc_sb0 = false, pc_sc0 = false;
     {
         struct Row { const char* label; const SCapture* c; bool* pc; };
@@ -813,6 +1011,8 @@ int main(int argc, char** argv) {
             bool mark_ok = r.c->loaded && r.c->mark1.has_value();
             checks.expect(mark_ok,
                 "PC-MARK [" + std::string(r.label) + "]: MARK1 appears at the port");
+            checks.expect(r.c->loaded && r.c->done.has_value(),
+                "DONE [" + std::string(r.label) + "]: the program reaches DONE");
             *r.pc = id_ok && mark_ok;
         }
     }
@@ -820,11 +1020,20 @@ int main(int argc, char** argv) {
         SCapture cap = run_s(dir + "/prog_s_sa_halt.bin", default_cfg());
         checks.expect(cap.loaded && cap.mark1.has_value(),
             "PC-MARK [SA, X-HALT-S]: MARK1 appears at the port");
+        checks.expect(cap.loaded && cap.done.has_value(),
+            "DONE [SA,X-HALT-S]: the program reaches DONE (the marker is omitted, not the rest of the program)");
     }
 
     // ---- Shared: graded lines per run, X-NOBPL substituted for SA when mutating ----
     SCapture sa_nobpl;
-    if (mv == "X-NOBPL") sa_nobpl = run_s(dir + "/prog_s_sa_nobpl.bin", default_cfg());
+    if (mv == "X-NOBPL") {
+        sa_nobpl = run_s(dir + "/prog_s_sa_nobpl.bin", default_cfg());
+        checks.expect(sa_nobpl.loaded && pc_id_pal(sa_nobpl.id),
+            "PC-ID [SA,X-NOBPL]: VPOSR bits 14-8 read the enhanced-Agnus PAL value");
+        checks.expect(sa_nobpl.loaded && sa_nobpl.mark1.has_value(),
+            "PC-MARK [SA,X-NOBPL]: MARK1 appears at the port");
+        checks.expect(sa_nobpl.loaded && sa_nobpl.done.has_value(), "DONE [SA,X-NOBPL]: the program reaches DONE");
+    }
     const SCapture& sa_for_lines = (mv == "X-NOBPL") ? sa_nobpl : sa;
 
     GradedLines gsa = graded_lines_of(sa_for_lines), gsb = graded_lines_of(sb), gsc = graded_lines_of(sc);
@@ -832,24 +1041,32 @@ int main(int argc, char** argv) {
     // The real (unmutated) SA capture, used for gating and for checks that
     // are not X-NOBPL's own target.
     GradedLines gsa_real = graded_lines_of(sa);
+    if (mv == "X-NOBPL")
+        checks.note("P3/P4-LINES [SA,X-NOBPL]: " + std::to_string(gsa.total) +
+                    " graded output lines (live, reduced population)");
 
+    // ---- P3/P4-LINES: p.64's programmed playfield is 256 chip lines, and
+    // the harness doubles each into two output lines, so the exact
+    // page/harness-anchored population is 256 lines in each parity class.
     bool p34lines_sa, p34lines_sb, p34lines_sc, p34lines_sa0, p34lines_sb0, p34lines_sc0;
     {
         struct Row { const char* label; GradedLines* g; bool* ok; };
         Row rows[] = {{"SA", &gsa, &p34lines_sa}, {"SB", &gsb, &p34lines_sb}, {"SC", &gsc, &p34lines_sc},
                       {"SA0", &gsa0, &p34lines_sa0}, {"SB0", &gsb0, &p34lines_sb0}, {"SC0", &gsc0, &p34lines_sc0}};
         for (auto& r : rows) {
-            checks.note(std::string("P3/P4-LINES [") + r.label + "]: " + std::to_string(r.g->total) +
-                        " graded output lines");
-            *r.ok = r.g->ok && r.g->total >= 400;
+            checks.note(std::string("P3/P4-LINES [") + r.label + "]: " + std::to_string(r.g->cls[0].size()) +
+                        " class-0, " + std::to_string(r.g->cls[1].size()) + " class-1, " +
+                        std::to_string(r.g->total) + " total graded output lines");
+            *r.ok = r.g->ok && r.g->cls[0].size() == 256 && r.g->cls[1].size() == 256;
             checks.expect(*r.ok,
-                "P3/P4-LINES [" + std::string(r.label) + "]: at least 400 graded output lines");
+                "P3/P4-LINES [" + std::string(r.label) + "] [p64]: exactly 256 graded output lines "
+                "in each parity class (512 total)");
         }
     }
     // P34-LINES [SA]'s real (unmutated) counterpart, for gating P3/P4: a
     // precondition mutation (X-NOBPL) must not also silently gate the
     // proposition itself, which is graded on SA's own real capture.
-    bool p34lines_sa_real = gsa_real.ok && gsa_real.total >= 400;
+    bool p34lines_sa_real = gsa_real.ok && gsa_real.cls[0].size() == 256 && gsa_real.cls[1].size() == 256;
 
     // A4, dL/dT helper: evaluate one metric pair across a class.
     auto class_ok = [&](std::vector<LineMetric>& cls, int64_t& med_dL, int64_t& med_dT,
@@ -864,20 +1081,33 @@ int main(int argc, char** argv) {
         }
         bool cons = consistent(dls) && consistent(dts);
         med_dL = median_of(dls); med_dT = median_of(dts);
-        a4_ok = all_singletons && (wr.empty() ? false : consistent(wr));
+        a4_ok = all_singletons && (wr.empty() ? false : all_equal_i64(wr));
         white_run = wr.empty() ? -1 : median_of(wr);
         return cons;
+    };
+    // Anchor A5 helper: the landmark M's own median distance to R (the
+    // nearest memory-refresh access before it) within a class.
+    auto class_dmr = [&](std::vector<LineMetric>& cls, int64_t& med_dMR) -> bool {
+        if (cls.empty()) return false;
+        std::vector<int64_t> v;
+        for (auto& m : cls) v.push_back(m.dMR);
+        med_dMR = median_of(v);
+        return consistent(v);
     };
 
     bool precond_s_all = pc_sa && pc_sb && pc_sc && pc_sa0 && pc_sb0 && pc_sc0;
 
-    // ---- Anchor A4: line well-formedness and white-run consistency, all six
-    // S runs together (SPECIFICATION.md P3 sec.7). MUTATION A4 stimulus red
-    // NMH_MUTATE=X-A4DOUBLE: see header -- keeps the population (every line
-    // still carries white) and goes red through the singleton clause itself.
+    // ---- Anchor A4: line well-formedness and white-run-width consistency,
+    // all six S runs together (SPECIFICATION.md P3 sec.7). Exact invariant:
+    // the pages give no tolerance band for the white run's width, so it
+    // must match exactly, not to within an invented +-1. MUTATION A4
+    // stimulus red NMH_MUTATE=X-A4DOUBLE: see header.
     {
         SCapture sa_a4d;
-        if (mv == "X-A4DOUBLE") sa_a4d = run_s(dir + "/prog_s_sa_a4double.bin", default_cfg());
+        if (mv == "X-A4DOUBLE") {
+            sa_a4d = run_s(dir + "/prog_s_sa_a4double.bin", default_cfg());
+            checks.expect(sa_a4d.loaded && sa_a4d.done.has_value(), "DONE [SA,X-A4DOUBLE]: the program reaches DONE");
+        }
         GradedLines gsa_a4 = (mv == "X-A4DOUBLE") ? graded_lines_of(sa_a4d) : gsa_real;
 
         bool green_any = false;
@@ -896,30 +1126,27 @@ int main(int argc, char** argv) {
                 wrs.push_back(wr);
             }
             checks.note("A4 class " + std::to_string(cls) + ": white run " + dump);
-            if (all_ok && consistent(wrs)) green_any = true;
+            if (all_ok && all_equal_i64(wrs)) green_any = true;
         }
         if (!precond_s_all) {
             checks.record("A4: precondition not met");
         } else {
             checks.expect(green_any,
                 "A4 [p59,p60]: every graded line has exactly one trailing edge between consecutive "
-                "leading edges, exactly one transition into white and one out of white, and the white "
-                "run's length is the same, to +-1 output pixel clock, across all six S runs, in at "
-                "least one parity class");
+                "leading edges, exactly one transition into white and one out of white, and the "
+                "white run's length is exactly the same across all six S runs, in at least one "
+                "parity class");
         }
     }
 
     // ---- A4-DROPPED: the quantifier "every" in A4 is not graded by A4
     // itself, since measure_span()/graded_lines_of() silently drop a
     // white-carrying line that fails measurement instead of grading it red.
-    // Counts such drops across all six S runs; requires 0.
-    // MUTATION A4-DROPPED stimulus red NMH_MUTATE=X-A4DROP: see header.
+    // Counts such drops across all six S runs; requires 0. Not exercised
+    // (see header): no page gives HSSTRT/HSSTOP a layout or scale from
+    // which to choose a page-predicted, rather than RTL-tuned, stimulus.
     {
-        SCapture sa_swap;
-        if (mv == "X-A4DROP") sa_swap = run_s(dir + "/prog_s_sa_swap.bin", default_cfg());
-        GradedLines gsa_drop = (mv == "X-A4DROP") ? graded_lines_of(sa_swap) : gsa_real;
-
-        size_t dropped = gsa_drop.dropped_white + gsb.dropped_white + gsc.dropped_white +
+        size_t dropped = gsa_real.dropped_white + gsb.dropped_white + gsc.dropped_white +
                          gsa0.dropped_white + gsb0.dropped_white + gsc0.dropped_white;
         checks.note("A4-DROPPED: white-carrying graded lines that failed measurement = " +
                     std::to_string(dropped));
@@ -930,11 +1157,76 @@ int main(int argc, char** argv) {
                 "A4-DROPPED [p59,p60]: no white-carrying graded line is dropped by measurement "
                 "instead of graded (0 required)");
         }
+        checks.record(
+            "A4-DROPPED-NOT-EXERCISED: no page gives HSSTRT/HSSTOP a layout or scale (page note 7) "
+            "from which to choose a stimulus that is page-predicted, rather than tuned against this "
+            "RTL, to land the sync pulse on the landmark; not exercised, by a scope decision.");
     }
 
-    // ---- P3: HSSTRT alone sets the pulse's leading edge ------------------
-    // MUTATION P3 stimulus red NMH_MUTATE=P3-NOMOVE: SB's graded lines
-    // replaced by SA's own (s equal to SA's s, so no move).
+    // ---- Anchor A5: the landmark M's own position relative to R, the
+    // nearest memory-refresh access before it (p.194, p.285) -- a landmark
+    // independent of DIWSTRT, DDFSTRT, HSSTRT and HSSTOP alike, used to
+    // check that M itself does not move. Graded on the three VARHSYEN=0
+    // contrast runs (SA0/SB0/SC0), where nothing is expected to move: if
+    // dMR (M-R) is not identical there, the apparatus itself is not
+    // precise enough to use as an independent reference at all. It is
+    // exact, not to a tolerance the pages do not give.
+    bool a5_apparatus_ok = false;
+    {
+        bool any_class = false;
+        for (int cls = 0; cls < 2; ++cls) {
+            int64_t mA0, mB0, mC0;
+            bool okA0 = class_dmr(gsa0.cls[cls], mA0);
+            bool okB0 = class_dmr(gsb0.cls[cls], mB0);
+            bool okC0 = class_dmr(gsc0.cls[cls], mC0);
+            checks.note("A5 class " + std::to_string(cls) + " (VARHSYEN=0): dMR SA0=" +
+                        (okA0 ? std::to_string(mA0) : std::string("n/a")) + " SB0=" +
+                        (okB0 ? std::to_string(mB0) : std::string("n/a")) + " SC0=" +
+                        (okC0 ? std::to_string(mC0) : std::string("n/a")));
+            if (okA0 && okB0 && okC0 && mA0 == mB0 && mB0 == mC0) any_class = true;
+        }
+        if (!(pc_sa0 && pc_sb0 && pc_sc0)) {
+            checks.record("A5: precondition not met");
+        } else {
+            a5_apparatus_ok = any_class;
+            checks.expect(a5_apparatus_ok,
+                "A5 [p194,p285]: with VARHSYEN=0 (nothing expected to move), the landmark's distance "
+                "to the nearest memory-refresh access is exactly the same in SA0, SB0 and SC0, in at "
+                "least one parity class");
+        }
+        // With VARHSYEN=1, dMR is printed but not graded: SPECIFICATION.md
+        // P3 sec.7 records why an independent reference cannot be used to
+        // attribute the live SA/SB/SC move to a specific edge at this
+        // boundary.
+        for (int cls = 0; cls < 2; ++cls) {
+            int64_t mA, mB, mC;
+            bool okA = class_dmr(gsa_real.cls[cls], mA);
+            bool okB = class_dmr(gsb.cls[cls], mB);
+            bool okC = class_dmr(gsc.cls[cls], mC);
+            checks.note("A5 class " + std::to_string(cls) + " (VARHSYEN=1, not graded): dMR SA=" +
+                        (okA ? std::to_string(mA) : std::string("n/a")) + " SB=" +
+                        (okB ? std::to_string(mB) : std::string("n/a")) + " SC=" +
+                        (okC ? std::to_string(mC) : std::string("n/a")));
+        }
+        checks.record(
+            "A5-NOT-DISPOSITIVE: with VARHSYEN=1, dMR itself changes between SA/SB/SC even though "
+            "DIWSTRT/DDFSTRT (hence M's chip-side position) are unchanged, so the harness's video "
+            "output does not preserve a fixed relationship between the sync edges and this "
+            "independent reference once the sync timing itself changes; A5 cannot attribute P3's or "
+            "P4's live move to a specific edge, only confirm the apparatus is exact when nothing "
+            "moves (above).");
+    }
+
+    // ---- P3: HSSTRT alone sets the pulse's leading edge -------------------
+    // dL, dT are the landmark M's own distance to L and to T
+    // (SPECIFICATION.md P3 sec.3); anchor A5 (above) confirms the apparatus
+    // is exact when nothing moves, but cannot attribute which of L or M
+    // moved once HSSTRT genuinely changes the sync timing (recorded above,
+    // A5-NOT-DISPOSITIVE). The pages give no size or direction for the
+    // move, so it is graded as exact inequality, and the untouched edge as
+    // exact equality (sec.6 point 4). MUTATION P3 stimulus red
+    // NMH_MUTATE=P3-NOMOVE: SB's graded lines replaced by SA's own (s
+    // equal to SA's, so no move).
     {
         GradedLines& gsb_use = (mv == "P3-NOMOVE") ? gsa_real : gsb;
         bool precond = pc_sa && pc_sb && pc_sa0 && pc_sb0 &&
@@ -951,9 +1243,9 @@ int main(int argc, char** argv) {
                 bool okA0 = class_ok(gsa0.cls[cls], medLA0, medTA0, a4a0, wra0);
                 bool okB0 = class_ok(gsb0.cls[cls], medLB0, medTB0, a4b0, wrb0);
                 if (!(okA && okB && okA0 && okB0)) continue;
-                bool b_ok = std::llabs(medLB - medLA) >= 4;
-                bool c_ok = std::llabs(medTB - medTA) <= 1;
-                bool contrast_ok = std::llabs(medLB0 - medLA0) <= 1 && std::llabs(medTB0 - medTA0) <= 1;
+                bool b_ok = medLB != medLA;
+                bool c_ok = medTB == medTA;
+                bool contrast_ok = medLB0 == medLA0 && medTB0 == medTA0;
                 checks.note("P3 class " + std::to_string(cls) + ": dL(SA)=" + std::to_string(medLA) +
                             " dL(SB)=" + std::to_string(medLB) + " dT(SA)=" + std::to_string(medTA) +
                             " dT(SB)=" + std::to_string(medTB) + " dL(SA0)=" + std::to_string(medLA0) +
@@ -962,16 +1254,18 @@ int main(int argc, char** argv) {
                 if (b_ok && c_ok && contrast_ok && a4a && a4b && a4a0 && a4b0) green_any = true;
             }
             checks.expect(green_any,
-                "P3 [p280] opus:8-appA-oos.c5: while VARHSYEN and VARBEAMEN are both 1, HSSTRT alone "
-                "moves the leading edge of the HSYNC pulse (>=4 output pixel clocks) and leaves the "
-                "trailing edge in place (<=1), and with VARHSYEN=0 neither edge moves, in at least "
-                "one parity class");
+                "P3 [p280,p304,p305]: while VARHSYEN and VARBEAMEN are both 1, dL (the landmark's "
+                "distance to the leading edge) differs between SA and SB (exact inequality) and dT "
+                "(its distance to the trailing edge) is exactly unchanged, and with VARHSYEN=0 "
+                "neither changes, in at least one parity class -- A5 records why this cannot also "
+                "attribute the difference to the leading edge specifically");
         }
     }
 
     // ---- P4: HSSTOP alone sets the pulse's trailing edge -----------------
-    // MUTATION P4 stimulus red NMH_MUTATE=P4-NOMOVE: SC's graded lines
-    // replaced by SA's own (e equal to SA's e, so no move).
+    // As P3, with T the moved edge and L the untouched one. MUTATION P4
+    // stimulus red NMH_MUTATE=P4-NOMOVE: SC's graded lines replaced by
+    // SA's own (e equal to SA's, so no move).
     {
         GradedLines& gsc_use = (mv == "P4-NOMOVE") ? gsa_real : gsc;
         bool precond = pc_sa && pc_sc && pc_sa0 && pc_sc0 &&
@@ -988,9 +1282,9 @@ int main(int argc, char** argv) {
                 bool okA0 = class_ok(gsa0.cls[cls], medLA0, medTA0, a4a0, wra0);
                 bool okC0 = class_ok(gsc0.cls[cls], medLC0, medTC0, a4c0, wrc0);
                 if (!(okA && okC && okA0 && okC0)) continue;
-                bool b_ok = std::llabs(medTC - medTA) >= 4;
-                bool c_ok = std::llabs(medLC - medLA) <= 1;
-                bool contrast_ok = std::llabs(medTC0 - medTA0) <= 1 && std::llabs(medLC0 - medLA0) <= 1;
+                bool b_ok = medTC != medTA;
+                bool c_ok = medLC == medLA;
+                bool contrast_ok = medTC0 == medTA0 && medLC0 == medLA0;
                 checks.note("P4 class " + std::to_string(cls) + ": dT(SA)=" + std::to_string(medTA) +
                             " dT(SC)=" + std::to_string(medTC) + " dL(SA)=" + std::to_string(medLA) +
                             " dL(SC)=" + std::to_string(medLC) + " dT(SA0)=" + std::to_string(medTA0) +
@@ -999,10 +1293,11 @@ int main(int argc, char** argv) {
                 if (b_ok && c_ok && contrast_ok && a4a && a4c && a4a0 && a4c0) green_any = true;
             }
             checks.expect(green_any,
-                "P4 [p280] opus:8-appA-oos.c4: while VARHSYEN and VARBEAMEN are both 1, HSSTOP alone "
-                "moves the trailing edge of the HSYNC pulse (>=4 output pixel clocks) and leaves the "
-                "leading edge in place (<=1), and with VARHSYEN=0 neither edge moves, in at least "
-                "one parity class");
+                "P4 [p280,p304,p305]: while VARHSYEN and VARBEAMEN are both 1, dT (the landmark's "
+                "distance to the trailing edge) differs between SA and SC (exact inequality) and dL "
+                "(its distance to the leading edge) is exactly unchanged, and with VARHSYEN=0 "
+                "neither changes, in at least one parity class -- A5 records why this cannot also "
+                "attribute the difference to the trailing edge specifically");
         }
     }
 

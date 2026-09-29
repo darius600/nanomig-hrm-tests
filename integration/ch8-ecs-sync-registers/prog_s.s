@@ -2,9 +2,13 @@
 ; P4)"). Never assembled directly: an includer sets BCON (BEAMCON0), SVAL
 ; (HSSTRT) and EVAL (HSSTOP) and includes this file. Optional symbols
 ; select a precondition or anchor mutation in place of the normal body:
-;   HALT_BEFORE  -- X-HALT-S: BRA.S * inserted before the HSSTRT write.
-;   NOBPL        -- X-NOBPL: the DMACON SET write omits BPLEN (bitplane
-;                   DMA never starts).
+;   MARK_OMIT    -- X-HALT-S: MARK1's write omitted. PC-MARK fails (the
+;                   marker never appears), while the rest of the program,
+;                   including DONE, still runs.
+;   SHORT_PLANE  -- X-NOBPL: PLANE holds only 32 lines of pattern instead
+;                   of 256 (the fetch continues, unmodified, into the
+;                   zero-filled memory beyond -- a live, reduced but
+;                   nonempty white-carrying population).
 ;   A4_DOUBLE    -- X-A4DOUBLE: every line's data words 14-19 become
 ;                   $FFFF,$FFFF,$0000,$FFFF,$FFFF,$FFFF instead of six
 ;                   $FFFF words, so the display carries two transitions
@@ -15,7 +19,9 @@
 ; Copper is started, exactly as SPECIFICATION.md sec.4 describes: three
 ; Copper instructions (two MOVEs loading BPL1PTH/BPL1PTL from the CPU-
 ; filled COPLIST, then a WAIT that never completes) and 256 lines of 20
-; words each.
+; words each. The program ends with DONE (nanomig.i); the display DMA
+; keeps producing video after the CPU reaches it, since bitplane and
+; Copper DMA do not depend on further CPU activity.
 ;
 ; HTOTAL and VTOTAL are written before BEAMCON0 because their own rows
 ; carry "(VARBEAMEN=1)" (p.280, p.298) and this program's BCON now sets
@@ -51,9 +57,16 @@ start:
         move.w  #$0038,DDFSTRT(a0)
         move.w  #$00D0,DDFSTOP(a0)
 
-        ; PLANE: 256 lines of 20 words each.
+        ; PLANE: 256 lines of 20 words each (32 under SHORT_PLANE; the
+        ; buffer beyond the lines actually written is the harness's own
+        ; zero-filled memory, so the fetch keeps running unmodified and the
+        ; extra lines simply carry no white).
         lea     PLANE,a1
-        move.w  #255,d1
+        ifd     SHORT_PLANE
+        move.w  #31,d1                  ; 32 lines
+        else
+        move.w  #255,d1                 ; 256 lines
+        endif
 .line:
         ifd     A4_DOUBLE
         moveq   #13,d0
@@ -87,15 +100,7 @@ start:
         move.l  #COPLIST,COP1LCH(a0)   ; one MOVE.L (p.263)
         move.w  COPJMP1(a0),d0         ; the strobe: causes Copper to load PC from COP1LC (p.30)
 
-        ifd     NOBPL
-        move.w  #$8280,DMACON(a0)      ; SET,DMAEN,COPEN (BPLEN withheld)
-        else
         move.w  #$8380,DMACON(a0)      ; SET,DMAEN,BPLEN,COPEN (p.30,p.278)
-        endif
-
-        ifd     HALT_BEFORE
-        bra.s   *
-        endif
 
         move.w  #SVAL,HSSTRT(a0)
         move.w  #EVAL,HSSTOP(a0)
@@ -103,5 +108,10 @@ start:
         move.w  #$0138,VTOTAL(a0)       ; 312: standard PAL field size (p.216), matching Program H
         move.w  #BCON,BEAMCON0(a0)
 
+        ifd     MARK_OMIT
+        ; X-HALT-S: the marker write below is omitted; PC-MARK finds no
+        ; MARK1 and fails, while everything after it (DONE) still runs.
+        else
         move.w  #$A5A5,MARK1
-        bra.s   *
+        endif
+        DONE
