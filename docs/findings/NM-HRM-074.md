@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and **minimig-dev/MinimigAGA-MiST-TC64**. NanoMig has the four modules from the Minimig line; MiSTer's own comments mark both bits not implemented and TC64 carries the same statements, so there is no fix to port — see *What the others say* |
 | **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) — `PROP-CRA-PBON`, claims `sol:F-cra.c4`, `opus:F-cra.c4` (p. 348), and `PROP-CRA-OUTMODE`, claims `sol:F-cra.c5`, `opus:F-cra.c5` (p. 348), both red on the `ciab` fixture; [`integration/appF-cia-system`](../../integration/appF-cia-system) — `P1-MAIN-CRA`, claim `sol:F-cra.c17` (p. 349), `P1-MAIN-CRB`, claims `sol:F-crb.c3`, `opus:F-crb.c2` (p. 349) and `sol:F-crb.c14` (p. 350), `P1-MAIN`, claims `opus:F-timers.c10`, `opus:F-timers.c11`, `sol:F-timers.c12` (p. 342) and `opus:F-ports.c7`, `sol:F-ports.c7` (p. 341), and `P2-TOGGLE`, claim `opus:F-timers.c14` (p. 342), each red on fx68k and on TG68K and each graded on CIA-B only: CIA-A's PRB read never shows a driven level ([NM-HRM-054](NM-HRM-054.md)), which the package records instead of grading |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 341, 342, 348, 349, 350, 351, 352, 354; Appendix E, printed p. 337 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `hrm/appF-ciab-port-assignments`: 2 red (`PROP-CRA-PBON`, `PROP-CRA-OUTMODE`; 7 passed, 3 failed, the third red being [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`: 7 red on fx68k and 7 on TG68K, all of them this finding's (19 passed, 7 failed on each core): the four named in *Test* and `P2-TOGGLE`'s three component lines, which carry no claim id — `P2-LEGR` (low after RES), `P2-MAIN` (high after each start from a level of 0) and `P2-LEGH` (high after a start from high). Each is graded on CIA-B's two instances, where `P1-PRE1.4/O1` holds (with DDRB bit n = 1 and PBON off, PRB reads the data bit, 0 and then 1), and not on CIA-A's, where it fails and is recorded. In the same run `P1-CONTROL` — the PBON = 0 run, graded against the page's PBON = 0 values through the same comparator — and `P1-OTHERBITS` are green on CIA-B, as are `P1-PRE1.1`–`P1-PRE1.3` and `P2-PRE2.2`–`P2-PRE2.4`; `P2-PRE2.1`, `P2-CONTRAST` and `P2-LEGH-CONTRAST` are recorded rather than graded, because this build already reads what each contrast predicts |
+| **Assertions** | `hrm/appF-ciab-port-assignments`: 2 red (`PROP-CRA-PBON`, `PROP-CRA-OUTMODE`; 7 passed, 3 failed, the third red being [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`, in P1, P2 and the environment checks, the first 26 graded lines (`FIXTURE` to `F1-ANCHOR-PER-RUN`): 7 red on fx68k and 7 on TG68K, all of them this finding's (19 passed, 7 failed on each core): the four named in *Test* and `P2-TOGGLE`'s three component lines, which carry no claim id — `P2-LEGR` (low after RES), `P2-MAIN` (high after each start from a level of 0) and `P2-LEGH` (high after a start from high). Each is graded on CIA-B's two instances, where `P1-PRE1.4/O1` holds (with DDRB bit n = 1 and PBON off, PRB reads the data bit, 0 and then 1), and not on CIA-A's, where it fails and is recorded. In the same run `P1-CONTROL` — the PBON = 0 run, graded against the page's PBON = 0 values through the same comparator — and `P1-OTHERBITS` are green on CIA-B, as are `P1-PRE1.1`–`P1-PRE1.3` and `P2-PRE2.2`–`P2-PRE2.4`; `P2-PRE2.1`, `P2-CONTRAST` and `P2-LEGH-CONTRAST` are recorded rather than graded, because this build already reads what each contrast predicts |
 | **Verdict of the four** | **unanimous against NanoMig on PBON; split on p. 342's toggle and pulse clauses, which the silicon follows and none of the four follows in full.** WinUAE, vAmiga, Denise and Copperline all put a timer output on PB6 or PB7 when PBON is set, chosen by OUTMODE; none leaves the two bits without effect. vAmiga and Denise pulse high for one cycle, WinUAE shows 0 in pulse mode and Copperline pulses low; vAmiga, Denise and Copperline invert the toggle at each underflow, where WinUAE shows the START bit; Denise's and Copperline's toggle is high after reset, and Copperline's is not set on a start; vAmiga's CIA-B lets DDRB keep an input line at its pull-up. Outside the emulators, the 8520R4 dissection's netlist gives a positive pulse, a toggle low after RES, high after a start and inverted at every underflow, and a line driven while PBON or the DDRB bit is set, as p. 342 does — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-054](NM-HRM-054.md) (CIA-A's port B has no data register, so a PRB read of CIA-A returns the joystick-adapter inputs and cannot show PB6 or PB7 either), [NM-HRM-063](NM-HRM-063.md) (FLAG, the other red of the same unit package) |
 
@@ -97,7 +97,9 @@ The only bits the module uses are 0, 3 and 6 —
 `| ({8{~wr&tcr}} & {1'b0,tmcr[6:0]});`. The underflow leaves the module only as
 the interrupt and as timer B's count input,
 [`#L99-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L99-L103),
-`assign tmra_ovf = underflow;` and `assign irq = underflow;`. There is no toggle
+`assign tmra_ovf = underflow;` and `assign irq = underflow;`; in CIA-A,
+`tmra_ovf` also clocks the serial port's output,
+[`ciaa.v#L213`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L213). There is no toggle
 flip-flop, no pulse, and no output port for either.
 `cia_timerb.v` is the same: it stores the register at
 [`#L38-L39`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v#L38-L39),
@@ -175,8 +177,9 @@ it reads `7 passed, 3 failed`.
 **At the system's ports, on both CPU cores.**
 [`integration/appF-cia-system`](../../integration/appF-cia-system) runs 68000
 programs on the whole of `nanomig.v`, on fx68k and on TG68K, and reads PRB
-through the CPU, the channel p. 341 describes. It reads `19 passed, 7 failed` on
-each core, the two output files differing only in their `CORE:` line. `P1`
+through the CPU, the channel p. 341 describes. Its first 26 graded lines, P1, P2
+and the environment checks (`FIXTURE` to `F1-ANCHOR-PER-RUN`), read 19 passed,
+7 failed on each core, the same lines on both. `P1`
 grades p. 342's override for each timer, timer A on PB6 and timer B on PB7:
 `P1-MAIN-CRA` on the timer-A instances, `P1-MAIN-CRB` on the timer-B instances,
 and `P1-MAIN` on both, the other bits included. `P2` grades the toggle output's
@@ -196,7 +199,7 @@ What `P1`'s legs read, per instance, as the package prints them on both cores
 | a1, toggle after one underflow | $0E | input | **0** | $FF | $FF | $FF |
 | b1, over the data | $0E | output, 1 | **0** | $FD | $FD | $FF |
 | c1, toggle started, no underflow | $07 | output, 0 | **1** | $BB | $7B | $FF |
-| d1, PBON off | $00 | output, 0 | 0 | $BB | $48 | $FF |
+| d1, PBON off | $00 | output, 0 | 0 | $BB | $7B | $FF |
 | o1c, PBON off | $00 | output, 1 | 1 | $FB | $FB | $FF |
 | d2, PBON off | $00 | input | 1 | $FB | $FB | $FF |
 
@@ -205,7 +208,7 @@ the pull-up in a2 and a1, the data in b1 and c1 — and the three legs with PBON
 off read as the page predicts. The ICR flags show the timers running: one
 underflow before a1 and none during c1 on every instance (`P1-PRE1.2`,
 `P1-PRE1.3`, green). On CIA-A every read is $FF, the joystick-adapter inputs,
-so d1 and o1c miss too; CIA-A cannot show PB6 or PB7 at this boundary for the
+so d1 misses too; CIA-A cannot show PB6 or PB7 at this boundary for the
 reason [NM-HRM-054](NM-HRM-054.md) gives, and CIA-B's legs are the ones that
 measure PBON. The same programs with PBON = 0 throughout read, on CIA-B, the
 PBON = 0 values the page gives — the pull-up in a2 and a1, the data in b1 and
