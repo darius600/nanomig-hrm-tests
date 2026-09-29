@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:629-665`, the AUTOCONFIG write path — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L629-L665) at the pinned revision |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and NanoMig — the responder is **inherited**, and MiSTer's Zorro II memory card makes the same promise; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge. See *Where the responder comes from* below |
-| **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red** |
+| **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address) · six graded assertions — **all red**; [`integration/appK-autoconfig`](../../integration/appK-autoconfig) · `GATE-G` (`test_appK_autoconfig.cpp:662-670`), run on both CPU cores, red on fx68k and on TG68K; it carries no claim id |
 | **Chapter** | Appendix K — Zorro Expansion Bus · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed pp. 433 and 436 |
-| **Assertions** | 6 red, the same six in `hrm/appK-autoconfig-base-address` and in its fx68k build `hrm/appK-autoconfig-base-address-fx68k`: `sol:K-0740`, `sol:K-0849`, `sol:K-0850`, `opus:K-0889`, `sol:K-0848` and `opus:K-0888`, with an inverse control that turns green when register 48 is written in place of 4C |
+| **Assertions** | 6 red, the same six in `hrm/appK-autoconfig-base-address` and in its fx68k build `hrm/appK-autoconfig-base-address-fx68k`: `sol:K-0740`, `sol:K-0849`, `sol:K-0850`, `opus:K-0889`, `sol:K-0848` and `opus:K-0888`, with an inverse control that turns green when register 48 is written in place of 4C. At the system boundary, 1 red on fx68k and 1 on TG68K in `integration/appK-autoconfig` (`GATE-G`; 13 passed, 3 failed on each core, the other two reds [NM-HRM-085](NM-HRM-085.md)'s), with its precondition, `GATE-G precondition` (register 08 bit 6 reads logical 0), green on both cores, and `P3-IMG2`, the green control on the same comparator, green on both cores |
 | **Verdict of the four** | **three of four implement it; vAmiga does not** |
 
 ---
@@ -65,6 +65,26 @@ writes register `4C` and reads register 00 back: raw stays `0xE`, where a
 bit-6-clear board should go silent (`0x0`) — six assertions red, of the
 package's `5 passed, 8 failed`. See *What holds the finding up* below for the
 six assertions and the inverse control in full.
+
+[`integration/appK-autoconfig`](../../integration/appK-autoconfig) measures the
+same at the system boundary: the whole design at `nanomig.v`'s ports, run once
+with each CPU core, with `fastram_config` = 1, one Zorro II memory board. Run
+R_G (`prog_rg.s`) reads the board's register image, the 32 words from $E80000,
+and run R_G' (`prog_rg_shutup.s`) writes $00 to $E8004C and then reads the same
+32 words. `GATE-G precondition [p433]` (`test_appK_autoconfig.cpp:654-661`)
+takes register 08 from R_G's image: physical nybbles $F and $F, logical $00, so
+bit 6 is 0, the board can be shut up, and the line is green on both cores.
+`GATE-G [p436]` (`:662-670`) passes on a differing image or no answer. R_G'
+finishes, and its image is R_G's, all 32 register nybbles identical, register
+00 reading physical $E6 in both, so the line is red on fx68k and on TG68K. Its
+green control on the same comparator is `P3-IMG2 [p435,p431]` (`:691-699`):
+after the byte write to register 48, run R3 finishes and reads an image that
+differs from the one it read before the write, all 32 nybbles 0, and the line
+is green on both cores. The comparator can see a board leave $E8xxxx; after the
+write to 4C the board does not. `GATE-G` carries no claim id. The nybbles were
+read from the package's own programs, run once more on each core with the same
+harness and settings and printed rather than graded; they are the same on both
+cores.
 
 ## What the others say
 
