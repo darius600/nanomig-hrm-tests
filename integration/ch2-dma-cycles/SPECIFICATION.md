@@ -159,11 +159,18 @@ p.24: *"One horizontal count takes one cycle of the system clock (processor is t
 NTSC- 3,579,545 Hz PAL - 3,546,895 Hz"*. p.194: *"A memory cycle is approximately 280 ns in
 duration."* One memory cycle is therefore one horizontal count at the colour clock of p.24.
 
-**S** is the number of trace time units in one memory cycle: S = f_harness / f_colour, with
-f_colour taken from p.24 for the selected standard.
+**S** is the number of trace time units in one memory cycle. It is measured: S is the
+shortest interval between two consecutive memory-refresh groups (§2.3), divided by 227, the
+shorter of the two line lengths p.23 gives (*"In PAL, they are all 227 long"*; NTSC alternates
+227 and 228). No constant is taken from any RTL source. F3 guards the measurement: every
+observed line's own interval must equal exactly 227·S or 228·S, or the derivation is wrong for
+that run.
 
-- **Precondition F1 (slot grid).** S is an integer, and every access time t in the run
-  satisfies t ≡ φ (mod S) for one phase φ.
+- **Precondition F1 (slot grid).** Graded over the run's DMA accesses only -- every population
+  §2.2 declares a block for, excluding the CPU block. S is an integer, and every DMA access
+  time t satisfies t ≡ φ (mod S) for one phase φ. No page gives the 680x0's own accesses a
+  phase at these ports (D5): the CPU's phase relative to the DMA grid is measured and reported
+  on its own line, not folded into F1.
 - **Contrast for F1.** None exists. No page describes a stimulus that moves an access off
   the memory-cycle grid. The checker is instead verified by a self-test: a copy of a
   recorded trace with one access moved by one time unit (when S > 1) must fail F1.
@@ -278,8 +285,13 @@ separately. Register addresses are those of Appendix B.
   ADKCON (`$09E`). Bit 15 = 0 clears every bit written as 1: Appendix A p.278 (DMACON:
   *"Determines if bits written with a 1 get set or cleared"*), Appendix A p.280 (INTENA,
   INTREQ), and p.249 (ADKCON). Clearing ADKCON also clears the audio modulation bits 7–0
-  (p.249).
-- **S1 — prepare Chip memory** as §2.7 and §2.9 describe for the run.
+  (p.249). Every block §2.7 places below logical `$080000` is unreachable to a CPU write
+  while the CIA-A boot overlay covers it, so S0 also releases the overlay: write DDRA
+  (`$BFE201`) ← `$03`, then PRA (`$BFE001`) ← `$00` (p.223: *"The OVL bit in one of the 8520
+  Chips disables the overlay"*; Appendix F p.339: DDRA *"1-output (set to 0x03)"*, PRA bit 0
+  OVL).
+- **S1 — prepare Chip memory**, by CPU write, as §2.7 and §2.9 describe for the run: the
+  Copper list(s) and every sprite structure the run's own Copper list points at.
 - **S2 — write the run's registers** (§2.9). Every sprite and bitplane pointer the run's
   Copper list rewrites is also written here once, with the same value (p.114: *"all eight
   sprite pointers must be initialized to either a real sprite or a safe null sprite"*).
@@ -813,16 +825,12 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | P2 | PASS | PASS |
 | P3, K3 | PASS | PASS |
 | P4, K4 | PASS | PASS |
-| P6 | **FAIL** (C5, C6, C7a, C7b; C0/C1a/C1b/C2a/C2b/C3/C4-1..6/C4-4w/S1/S2 PASS) | **FAIL** (same runs) |
+| P6 | **FAIL**: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b) Copper-block reads at even s = 226 (the cycle before the next line's first refresh), each repeating the previous read (s = 225) of the same word; every other Copper-block read in these runs, and every read in C0/C1a/C1b/C2a/C2b/C3/C4-1..6/C4-4w/S1/S2, is on odd s | **FAIL**, identical counts |
 | A1 | PASS | PASS |
 | P5, K5 | PASS | PASS |
 | K6, T1, T2, T3 | PASS | PASS |
 | P7 | PASS (0 of 339 segment/frame pairs mismatch) | PASS (0 mismatches) |
 | summary | 17 passed, 1 failed | 17 passed, 1 failed |
-
-P6's own FAIL reproduced identically across four independent rebuilds, one with the object
-cache disabled; P7's result is likewise a rebuild with the object cache disabled, run three
-times over from the same binary with no difference.
 
 Every mutation of the header comment was run once on both cores from the built object
 directories (`NMH_MUTATE=<value>`) and went red through the clause it targets, or (K2a, K3, K4,
@@ -837,7 +845,7 @@ K5) through the precondition it targets. F1 is a self-test, not an RTL run.
   extraction from the captured video trace, none of which exists in this package yet. S1 and S2
   (§2.9) are built and already graded for P4 (sprite DMA parity); the structure/colour
   mutations `ZMut::EndAfterU1/ShortU2Height/SwapU2Line5` and `list_L_S1`'s `colours_variant`
-  are present but unused, ready for whoever builds P9–P12's own video apparatus.
+  are present but unused, available to whichever future package builds P9–P12's own video
+  apparatus.
 - **NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1** (§2.10), for P1 and P6:
-  not run. No new program is needed (only a different `Config` per run), so this is inexpensive
-  to add later; it was not exercised in this pass.
+  not run. No new program is needed, only a different `Config` per run.
