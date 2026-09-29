@@ -547,3 +547,61 @@ These are listed because they shaped the stimuli above.
 9. **p. 305 on LPENDIS and BEAMCON0.** LPENDIS is described in one line and leaves open which register and bits "vertical pos read" means and what is returned. No reset value of BEAMCON0 is given.
 10. **p. 304 against p. 23 on PAL line length.** p. 304 says "PAL … 227.5 colorclocks per scan line" and p. 23 says "In PAL, they are all 227 long". Only measured periods and differences within one line are used.
 11. **p. 24 on waiting for lines above 255.** The method (WAIT for (0,255), then WAIT for lines 0 through 5) would, read literally, end the second wait at once, because line 255 already compares as greater than or equal to lines 0–5. The design does not have the Copper wait past line 255.
+
+---
+
+## Build notes
+
+### Scope
+
+P1 and P2 are not built. Each needs, beyond what P3 and P4 needed: per-configuration bitplane and sprite image data for fifteen (P1) plus one (P2) configurations, a video-output sample classifier applying the window/row/sprite-column reference frames of the "Reference frames" sections above to every graded sample of every graded row, the four P1 contrast programs (A-mirror, B-swap, PF2PRI flip, E-reverse) and the two P2 contrast programs (SPREN clear, BPL4PT retarget). This is substantially more program and comparator code than P3 and P4's register-read timing checks, and was not attempted for lack of budget.
+
+P3's run matrix calls for OCS and ECS, PAL and NTSC; only OCS-PAL and ECS-PAL are built and run. P4 runs PAL only, as the run matrix already allows. The NTSC combinations are not built, by a scope decision: each needs its own driven run (an OCS-NTSC program in addition to the existing ECS-NTSC one, plus a matching entry in the run matrix), doubling the number of driven runs already built for PAL.
+
+### P4_SPIN
+
+P4's own "the CPU waits about 20 lines" after E250 (p.24's own ambiguity above rules out a second Copper WAIT there: a WAIT's V field is 8 bits, so it cannot target line 250+20=270) is built as a fixed instruction count, `P4_SPIN` = 2000 iterations of a one-instruction `dbra` loop, not a poll of VPOSR/VHPOSR: polling the very register the proposition grades would be circular on an implementation that actually freezes it. `P4_SPIN` is tuned on this RTL; the reference-frame precondition already specified above (X and X' stored at least 156×228 colour clocks after their own field's t(A1), and before the next field's own t(A1) minus 100×228) is what guards it, checked on every run. Measured: X's own store lands 353548–369068 colour-clock-equivalent cycles after t(A1) across the two cores, against a floor of 284544 -- comfortably inside the bound.
+
+### Measured, per core
+
+| Check | Page | fx68k | TG68K |
+|---|---|---|---|
+| P3 item 1, "latched after a trigger" (OCS-PAL) | p.216,p.239 | FAIL | FAIL |
+| P3 item 1 (ECS-PAL) | p.216,p.239 | FAIL | FAIL |
+| P3 item 2, "the latched value is the light-pen position" (OCS-PAL) | p.239 | FAIL | FAIL |
+| P3 item 2 (ECS-PAL) | p.239 | FAIL | FAIL |
+| P3 item 5, "no trigger: latched at the end of the field" (OCS-PAL) | p.239 | FAIL | FAIL |
+| P3 item 5 (ECS-PAL) | p.239 | FAIL | FAIL |
+| P3-PRE-ANCHOR (OCS-PAL, ECS-PAL) | p.22 | PASS | PASS |
+| P3-PRE-READTIME (OCS-PAL, ECS-PAL) | p.22 | PASS | PASS |
+| P3-PRE-DDRA (OCS-PAL, ECS-PAL) | p.228,p.229,p.351 | PASS | PASS |
+| P3-PRE-PULSE (OCS-PAL, ECS-PAL) | -- | PASS | PASS |
+| P3-PRE-LIVE, items 4/5 (OCS-PAL, ECS-PAL) | p.216 | PASS | PASS |
+| P3-PRE-PERIOD (ECS-PAL) | p.24 | PASS | PASS |
+| P4 graded relation, "the pair (V8,V7-0) of X is not (0,100)" | p.305 | PASS | PASS |
+| P4-PRE-DDRA | p.228,p.229,p.351 | PASS | PASS |
+| P4-PRE-ANCHOR | p.22 | PASS | PASS |
+| P4-PRE-REFFRAME | p.239 | PASS | PASS |
+| P4-PRE-PERIOD | p.305,p.24 | PASS | PASS |
+| P4-PRE-LATCHF1, "the latch is present in F1" | p.239 | FAIL | FAIL |
+| P4-PRE-CONTROL, "the control field shows the latched value" | p.239 | FAIL | FAIL |
+
+Both cores: 25 passed, 8 failed (`out_fx68k.txt`, `out_tg68k.txt`).
+
+### Mutations
+
+| Mutation | Target | fx68k | TG68K |
+|---|---|---|---|
+| `P3-ANCHOR` | P3-PRE-ANCHOR | FAIL | FAIL |
+| `P3-READTIME` | P3-PRE-READTIME | FAIL | FAIL |
+| `P3-DDRA` | P3-PRE-DDRA-MUTATION | RECORDED, unfalsifiable at this boundary | RECORDED, unfalsifiable at this boundary |
+| `P3-NOPULSE` | P3-PRE-PULSE | FAIL | FAIL |
+| `P3-HOLD` | P3-PRE-LIVE (contrast) | PASS -- E40/E60 of F2 still read the live beam | PASS |
+| `P3-OFFSET` | P3-PRE-OFFSET-MUTATION | RECORDED, unfalsifiable at this boundary | RECORDED, unfalsifiable at this boundary |
+| `P3-BEAMCON0` | P3-PRE-PERIOD-MUTATION | RECORDED, unfalsifiable at this boundary | RECORDED, unfalsifiable at this boundary |
+| `P3-LPEN` | P3-LPEN (contrast) | PASS -- E110 of F1 reads V=110 (live) | PASS -- E110 of F1 reads V=110 (live) |
+| `P4-NOLPENDIS` | P4-MUTATION | RECORDED, unfalsifiable at this boundary | RECORDED, unfalsifiable at this boundary |
+| `P4-F3LPENDIS` | P4-MUTATION | RECORDED, unfalsifiable at this boundary | RECORDED, unfalsifiable at this boundary |
+| `P4-NOPULSE-F1` | P4-MUTATION | RECORDED, unfalsifiable at this boundary | RECORDED, unfalsifiable at this boundary |
+
+Every mutation ran on both cores from `obj_dir_fx68k` and `obj_dir_tg68k`, matching how `make test` runs the normal build.
