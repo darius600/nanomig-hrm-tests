@@ -119,34 +119,55 @@
 // 5.052, `make MUT=<NAME> test`, each a full `rm -rf obj_dir` rebuild) and
 // the PASS/FAIL lines quoted are what that run printed, not predictions.
 //
-// Baseline (no MUT): 2 passed, 1 failed -- FIXTURE-LIVE PASS,
-//   opus:8-par.c1/sol:8-par.c1 PROP-1 FAIL, CONTROL-PA0-OUTPUT PASS.
-//   Reproduced identically on a second from-scratch build after all three
-//   mutation runs below, to rule out ordering/state leakage between builds.
+// PROP-1's fixture releases CIA-A port B's lines (portb_in = 0xFF, the
+// idle level p.354 gives a line nothing drives) before the sweep below and
+// grades every one of the eight bit positions, not bit 0 alone; a line
+// left at the Harness default of 0 is an outside line the fixture itself
+// holds low, a state neither p.259 nor p.354 decides for a driven output.
+// The expected values are unchanged: with the direction bit set to
+// output, a written value must be what the next read of that register
+// returns, 0 and 1 alike.
+//
+// Baseline (no MUT): 3 passed, 1 failed -- FIXTURE-LIVE PASS,
+//   opus:8-par.c1/sol:8-par.c1 PROP-1 FAIL at all eight bit positions,
+//   CONTROL-PA0-OUTPUT PASS, PORTB-RELEASED-CONTROL PASS. Reproduced
+//   identically on a second from-scratch build after all four mutation
+//   runs below, to rule out ordering/state leakage between builds.
 //
 // MUTATION FIXTURE-LIVE stimulus red: MUT_FIXLIVE repeats the first DDRB
 //   word (0xA5) instead of writing a distinct second word (0x5A) -> FAIL
-//   ("1 passed, 2 failed": FIXTURE-LIVE flips to FAIL, PROP-1 stays FAIL
-//   unaffected, CONTROL-PA0-OUTPUT stays PASS unaffected). The two readings
-//   can no longer be told apart. Reverted (this is the baseline default,
-//   MUT_FIXLIVE=0).
+//   ("2 passed, 2 failed": FIXTURE-LIVE flips to FAIL, the other three
+//   unaffected). The two readings can no longer be told apart. Reverted
+//   (this is the baseline default, MUT_FIXLIVE=0).
 // MUTATION opus:8-par.c1 stimulus green: PROP-1 is graded at baseline
-//   against RS_PRB/RS_DDRB and is red there (regportb's write path is
-//   entirely commented out, so a CIAAPRB read always echoes portb_in
-//   regardless of what was written). MUT_PROP1_TARGET_A retargets the
-//   IDENTICAL bit_output_follows_direction() comparator -- register-select
-//   arguments only, same code, same bit 0 -- at RS_PRA/RS_DDRA instead ->
-//   PASS ("3 passed, 0 failed": all three flip to/stay PASS). Substitution
-//   proof: the comparator is not vacuously false, it returns true for the
-//   port where the mechanism actually works, on the same fixture, same
-//   protocol, same run shape as CONTROL-PA0-OUTPUT. Reverted
-//   (MUT_PROP1_TARGET_A=0 is baseline).
+//   against CIAAPRB/CIAADDRB and is red at every bit position there (the
+//   write side is unreachable, so a read always returns the released
+//   line). MUT_PROP1_TARGET_A retargets the IDENTICAL
+//   bit_output_follows_direction() comparator -- register-select
+//   arguments only, same code -- at CIAAPRA/CIAADDRA for every position,
+//   cycling between the two bit positions there that round-trip through a
+//   read of the same register -> PASS ("4 passed, 0 failed": PROP-1 flips
+//   to PASS at all eight positions, the other three unaffected).
+//   Substitution proof: the comparator is not vacuously false, it returns
+//   true for the port where the mechanism actually works, on the same
+//   fixture, same protocol, same run shape as CONTROL-PA0-OUTPUT.
+//   Reverted (MUT_PROP1_TARGET_A=0 is baseline).
 // MUTATION CONTROL-PA0-OUTPUT stimulus red: MUT_CONTROL_NODIR leaves PA0's
 //   direction bit at its reset default (0, input) instead of writing it to
 //   output, while the same PRA bit-0 write/read sequence runs unchanged ->
-//   FAIL ("1 passed, 2 failed": CONTROL-PA0-OUTPUT flips to FAIL, PROP-1
-//   stays FAIL unaffected, FIXTURE-LIVE stays PASS unaffected), proving the
-//   control is not vacuously true either. Reverted (MUT_CONTROL_NODIR=0 is
+//   FAIL ("2 passed, 2 failed": CONTROL-PA0-OUTPUT flips to FAIL, the
+//   other three unaffected), proving the control is not vacuously true
+//   either. Reverted (MUT_CONTROL_NODIR=0 is baseline).
+// MUTATION PORTB-RELEASED-CONTROL stimulus red: MUT_CONTROL_HELD_LOW holds
+//   the same port-B lines low (portb_in = 0x00) instead of releasing them,
+//   while the check keeps grading against the fixed released-line
+//   prediction (0xFF) p.341 and p.354 give -> FAIL ("2 passed, 2 failed":
+//   measured PRB=0x00 against the fixed 0xFF expectation, PORTB-RELEASED-
+//   CONTROL flips to FAIL, the other three unaffected). Sensitivity
+//   proof: an unreleased line reads back 0, so the control is not
+//   vacuously true regardless of whether the fixture actually released
+//   the lines. PROP-1 is unaffected (its own sweep sets portb_in itself,
+//   still FAIL for its own reason). Reverted (MUT_CONTROL_HELD_LOW=0 is
 //   baseline).
 
 #include <cstdint>
@@ -165,6 +186,9 @@
 #endif
 #ifndef MUT_CONTROL_NODIR
 #define MUT_CONTROL_NODIR 0
+#endif
+#ifndef MUT_CONTROL_HELD_LOW
+#define MUT_CONTROL_HELD_LOW 0
 #endif
 
 namespace {
@@ -299,6 +323,63 @@ bool bit_output_follows_direction(Harness& h, uint8_t rs_data, uint8_t rs_ddr,
     return tracks_zero && tracks_one;
 }
 
+// ---------------------------------------------------------------------
+// PROP-1: CIA-A port B's lines are released (portb_in = 0xFF, the idle
+// level p.354 gives a line nothing drives) before this sweep, so a bit
+// read back after a write is never confused with an outside line the
+// fixture itself would otherwise hold low. Graded at every one of the
+// eight bit positions of CIAAPRB/CIAADDRB, through the identical
+// bit_output_follows_direction() comparator CONTROL-PA0-OUTPUT uses.
+// MUT_PROP1_TARGET_A retargets that comparator at CIAAPRA/CIAADDRA for
+// every position, cycling between the two bit positions there that
+// round-trip through a read of the same register, as the substitution
+// proof.
+// ---------------------------------------------------------------------
+bool prop1_bidirectional(Harness& h, std::string& detail) {
+    bool all_bidirectional = true;
+    h.dut->portb_in = 0xFF;
+    for (int i = 0; i < 4; ++i) h.tick();
+    for (int bit = 0; bit < 8; ++bit) {
+        bool result;
+        if (MUT_PROP1_TARGET_A) {
+            const int real_bit = bit % 2;
+            result = bit_output_follows_direction(h, RS_PRA, RS_DDRA, real_bit);
+            detail += "bit " + std::to_string(bit) + " (retargeted at CIAAPRA/"
+                       "CIAADDRA bit " + std::to_string(real_bit) + "): " +
+                       (result ? "PASS " : "FAIL ");
+        } else {
+            result = bit_output_follows_direction(h, RS_PRB, RS_DDRB, bit);
+            detail += "bit " + std::to_string(bit) + ": " + (result ? "PASS " : "FAIL ");
+        }
+        all_bidirectional = all_bidirectional && result;
+    }
+    return all_bidirectional;
+}
+
+// ---------------------------------------------------------------------
+// PORTB-RELEASED-CONTROL: an honest positive control for PROP-1's
+// released-line fixture, on the same registers and protocol -- not
+// itself one of this package's page claims, so it carries no uid. With
+// CIAADDRB left at input (0x00) and CIA-A port B's lines released the
+// same way PROP-1 releases them, a read of CIAAPRB must return the
+// released lines' 1 at every position. This shows the released fixture
+// and the read path both work on this basis, so PROP-1's red is not an
+// unreleased or broken fixture. MUT_CONTROL_HELD_LOW holds the same
+// lines low instead, the opposite reading p.354 predicts, as the
+// sensitivity proof.
+// ---------------------------------------------------------------------
+bool portb_released_control(Harness& h, std::string& detail) {
+    h.write_reg(RS_DDRB, 0x00);
+    const uint8_t portb_in = MUT_CONTROL_HELD_LOW ? 0x00 : 0xFF;
+    h.dut->portb_in = portb_in;
+    for (int i = 0; i < 4; ++i) h.tick();
+    const uint8_t got = h.read_reg(RS_PRB);
+    char hexbuf[64];
+    std::snprintf(hexbuf, sizeof(hexbuf), "portb_in=0x%02X, PRB=0x%02X", portb_in, got);
+    detail = hexbuf;
+    return got == 0xFF;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -314,22 +395,20 @@ int main(int argc, char** argv) {
     }
 
     {
-        Harness h;
-        const uint8_t rs_data = MUT_PROP1_TARGET_A ? RS_PRA : RS_PRB;
-        const uint8_t rs_ddr  = MUT_PROP1_TARGET_A ? RS_DDRA : RS_DDRB;
-        const bool result = bit_output_follows_direction(h, rs_data, rs_ddr, /*bit=*/0);
+        Harness h; std::string d;
+        const bool result = prop1_bidirectional(h, d);
         checks.expect(result,
             "opus:8-par.c1 sol:8-par.c1 PROP-1: the general-purpose "
             "parallel interface is bi-directional -- with its direction "
             "bit set to output, a value written to its data register must "
             "be what a subsequent read of that register returns, both 0 "
-            "and 1, at bit position 0. False: CIAAPRB's write path "
-            "(regportb) is entirely commented out in this tree, so a "
-            "CIAAPRB read always echoes the raw external portb_in pins, "
-            "never what was written, at any bit position "
+            "and 1, at every bit position, over lines the fixture leaves "
+            "released beforehand so a held-low outside line cannot stand "
+            "in for a driven one "
             "[p.259 \"The general-purpose bi-directional parallel "
             "interface is a 25-pin connector on the back panel of the "
-            "computer\"]");
+            "computer\"; p.354, the idle level a released line reads]");
+        checks.note("PROP-1: " + d);
     }
 
     {
@@ -343,6 +422,21 @@ int main(int argc, char** argv) {
             "shows working there, on the same fixture and bus protocol. Not "
             "itself a page claim: it is PROP-1's measurement-basis control "
             "[no page -- infrastructure control]");
+    }
+
+    {
+        Harness h; std::string d;
+        const bool r = portb_released_control(h, d);
+        checks.expect(r, "PORTB-RELEASED-CONTROL: with CIAADDRB left at "
+            "input and CIA-A port B's lines released the same way PROP-1 "
+            "releases them, a read of CIAAPRB must return the released "
+            "lines' 1 at every position -- an honest control for PROP-1's "
+            "released-line fixture, on the same registers and protocol; "
+            "grades no claim of this package's own "
+            "[p.341, \"you read the actual current state of the I/O "
+            "pins\"; p.354, \"a read of the ports will return all highs "
+            "because of passive pull-ups\"]");
+        checks.note("PORTB-RELEASED-CONTROL: " + d);
     }
 
     {
@@ -364,9 +458,10 @@ int main(int argc, char** argv) {
         checks.note(
             std::string("Direction-independence: with portb_in fixed at ") +
             "0x3C, CIAAPRB reads " + hexbuf + ", same prior CIAAPRB write -- "
-            "identical either way. CIAADDRB is real and reads back "
-            "faithfully at its own address (ciaa.v:296) but governs nothing "
-            "about a CIAAPRB read (ciaa.v:293-294).");
+            "identical either way. CIAADDRB reads back faithfully at its "
+            "own address but has no measured effect on what a CIAAPRB read "
+            "returns, contrary to p.341's rule that a set DDR bit makes "
+            "the corresponding PR bit an output.");
     }
 
     checks.record(
