@@ -962,3 +962,55 @@ the blitter registers should be written").
 | P10 | `C-interp.copcon`, `C-interp.copcon.ecs` |
 | P11 | `C-interp.copcon`, `C-interp.copcon.ecs` |
 | none (section 1) | `5-appA-p264.c2`, `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8`, `5-appA-p263.c9`, `A-pre.c9`, `5-appB-p287.c5`, `5-appB-p290.c3` |
+
+## 6. What the build adds
+
+Nothing below changes a proposition or an expected value. `ch5.i` defines
+the registers of section 2.2 not already in `nanomig.i`, the memory map of
+section 2.3, and the mechanism items below.
+
+- **Clearing the ROM overlay.** G, R and MK (section 2.3) sit at $78000,
+  $7C000 and $7D000; every DMA block sits at $60000-$75FFF. All of it is
+  below $80000, inside the ROM overlay window: "An additional copy of the
+  system ROM responds starting at memory location $00000000. The system
+  RAM that would normally be located at this address is not available. ...
+  The OVL bit in one of the 8520 Chips disables the overlay" (p.223).
+  Every program's first steps write $03 to CIA-A ddra ($BFE201) and then
+  $00 to CIA-A pra ($BFE001), clearing OVL (bit 0) before any other write
+  (p.223; Appendix F, p.339, gives the two addresses and "Direction for
+  port A (BFE001);1=output (set to 0x03)"). Measured: every marker write,
+  every DMACONR store into R, and G3's own mutation write, land at the
+  RAM port at exactly the byte address the program names, on both cores.
+- **DMA-block content.** Every DMA block a proposition reads from (audio
+  data, sprite structures, the Copper list, blit source patterns) is
+  poked into chip RAM directly before `boot()`, the same mechanism
+  `load_program()` itself uses; no program instruction writes it. Content
+  is immaterial where the page says so (p.263, "any values"; the sprite
+  and Copper-list content follow the pages P1/P6/P10/P11 cite).
+- **R's stored values are read from the RAM port's own log** of the CPU's
+  store instructions (the write's data field), not peeked from memory
+  content: a value the program never actually stored is then absent, not
+  stale. This is stricter than a memory peek and needed regardless, since
+  R sits below $80000, outside the identity-mapped range the harness's
+  `peek_logical()` resolves.
+- **P5 step 1 ("The CPU clears [Q, Q + `$200`)")** is a CPU loop (256
+  words), now that the overlay is cleared, rather than relying on a fresh
+  instance's own zero-initialised memory.
+- **Tuned constants.** The per-channel delay/gap counts (P1, P10) and the
+  per-proposition delay counts (P3-P6, P11) are spin-loop counts with no
+  value the page states; each is guarded by its own G4 (or, for P10/P11,
+  the vertical-sync count the proposition itself names), which is what is
+  graded, not the count. P10's run budget (40,000,000 cycles) is sized
+  from measurement, not tuned to a pass: fx68k needs measurably more
+  cycles than TG68K for the same program (P1's own run, common to both,
+  finishes at cycle 22,616,005 on fx68k against 15,776,325 on TG68K), and
+  P10 repeats that same run inside a larger program.
+- **G3 (no CPU write falls into any DMA block during any window)** is
+  mutated for P1, P3, P4, P5 and P6 (one extra CPU write into that
+  proposition's own block under test, inside its window): A0 for P1, P
+  for P3, L for P4, Q for P5 (past the blit's own destination footprint,
+  which the main assertion already grades on its own terms), S0 for P6.
+  P10 and P11 check G3 as a live invariant on their own blocks and
+  windows but do not repeat the mutation, per this document's own
+  cross-reference (P10, P11: "the other preconditions: section 2.6 and
+  P1").
