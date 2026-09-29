@@ -68,16 +68,11 @@
 //   measured: fx68k red (114.00 CCK, both windows), tg68k red (114.00 CCK, both windows)
 //   (ECS/PAL, ECS/NTSC); disk write DMA's own rate is also measured to halve under this
 //   stimulus, both runs, both cores (D_F, D_S: 310520 -> 155936 cycles)
-// MUTATION G1 unfalsifiable at this boundary: no page-legal AUD0PER reaches G1's band
-//   (1.5 <= T < 2.5 us) through the same T=D/(16*512) comparator (it needs AUD0PER <= about 70
-//   color clocks; p.140/p.266 give a legal minimum of 124 NTSC / 123 PAL). G1 remains the
-//   confirmed red the normal run measures.
-// MUTATION G2 proven-live green NMH_MUTATE=AUDRATE: a legal audio rate (AUD0PER=124) run through
-//   G2's own comparator (3.5 <= T < 4.5 us)
-//   measured: fx68k green, tg68k green (ECS/PAL)
-// MUTATION G3 proven-live green NMH_MUTATE=AUDRATE: two legal audio rates in an exact 2x
-//   relationship (AUD0PER=124, then 248) run through G3's own comparator (|D_2 - 2*D_1| < 3 lines)
-//   measured: fx68k green, tg68k green (ECS/PAL)
+// G1, G2 and G3 are RECORDED declines (SPECIFICATION.md 1.2, P6 3-4): no page ties the
+//   Chip-memory read rate they measure to the bit-cell time of pp.249/265, so they are not
+//   graded propositions and carry no mutation of their own. The AUDRATE capture below still
+//   demonstrates that G2's and G3's own comparator formulas can go green on a genuine, legal
+//   input; it is a build-side demonstration, not a proposition.
 
 #include <cstdio>
 #include <cstdlib>
@@ -759,8 +754,11 @@ int main(int argc, char** argv) {
         }
         checks.record("A-adkcon.b09/5-appA-p265.c20's disk-read-synchronizing function is not tested: "
             "the harness serves no disk image and a test cannot drive the disk read-data input (SPECIFICATION.md 1.2)");
-        checks.record("A-adkcon.b08/5-appA-p265.c21's \"(fast for MFM, slow for MFM or GCR)\" advisory "
-            "is not graded (advice on use, SPECIFICATION.md 1.2); the rate itself is graded in P6");
+        checks.record("A-adkcon.b08/5-appA-p265.c21's disk data clock rate cannot be checked at this "
+            "boundary: nanomig.v has no disk data clock port (the disk side is the SD-card sector "
+            "interface), and no page ties a Chip-memory read rate to it -- G1/G2/G3 in P6 measure "
+            "that read rate and decline the comparison for this reason (SPECIFICATION.md 1.2); the "
+            "\"(fast for MFM, slow for MFM or GCR)\" advisory is separately not graded (advice on use)");
     }
 
     // =====================================================================
@@ -926,10 +924,10 @@ int main(int argc, char** argv) {
                 fmt(d_s, 0) + " cycles, T_F=" + fmt(t_f_us, 3) + " us, T_S=" + fmt(t_s_us, 3) + " us");
 
             if (have_df) {
-                bool g1 = t_f_us >= 1.5 && t_f_us < 2.5;
-                checks.expect(g1, std::string("G1 ") + cs.label +
-                    " [p.265,p.249] A-adkcon.b08,5-appA-p265.c21: FAST=1 gives a bit-cell time of about "
-                    "2 us (1.5 <= T_F < 2.5)");
+                checks.record(std::string("G1 ") + cs.label +
+                    " [p.265,p.249]: cannot be checked at this boundary -- the disk data clock is "
+                    "not observable at nanomig.v's ports, and no page ties a Chip-memory read rate "
+                    "to it (A-adkcon.b08,5-appA-p265.c21 declined, SPECIFICATION.md 1.2)");
             } else {
                 checks.record(std::string("G1 ") + cs.label + ": not graded, B3 for run F failed");
             }
@@ -937,18 +935,19 @@ int main(int argc, char** argv) {
             if (mv == "FASTF0") continue;   // G2/G3 use run S, unaffected by this mutation
 
             if (have_ds) {
-                bool g2 = t_s_us >= 3.5 && t_s_us < 4.5;
-                checks.expect(g2, std::string("G2 ") + cs.label +
-                    " [p.265,p.249] A-adkcon.b08,5-appA-p265.c21: FAST=0 gives a bit-cell time of about "
-                    "4 us (3.5 <= T_S < 4.5)");
+                checks.record(std::string("G2 ") + cs.label +
+                    " [p.265,p.249]: cannot be checked at this boundary -- the disk data clock is "
+                    "not observable at nanomig.v's ports, and no page ties a Chip-memory read rate "
+                    "to it (A-adkcon.b08,5-appA-p265.c21 declined, SPECIFICATION.md 1.2)");
             } else {
                 checks.record(std::string("G2 ") + cs.label + ": not graded, B3 for run S failed");
             }
 
             if (have_df && have_ds) {
-                bool g3 = std::fabs(d_s - 2.0 * d_f) < 3.0 * 228.0 * (double)kCck;
-                checks.expect(g3, std::string("G3 ") + cs.label +
-                    " [p.265,p.249]: the two settings differ by a factor of two (|D_S - 2*D_F| < 3 lines)");
+                checks.record(std::string("G3 ") + cs.label +
+                    " [p.265,p.249]: cannot be checked at this boundary -- the disk data clock is "
+                    "not observable at nanomig.v's ports, and no page ties a Chip-memory read rate "
+                    "to it (SPECIFICATION.md 1.2, 3)");
             } else {
                 checks.record(std::string("G3 ") + cs.label + ": not graded, B3 failed for a run");
             }
