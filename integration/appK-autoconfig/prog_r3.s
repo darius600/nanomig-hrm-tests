@@ -4,15 +4,24 @@
 ; addendum): B1=$00200000, B2=B1+size=$00400000, both multiples of the
 ; board's size inside the standard 8 MB space.
 ;
-; Four independent points vary, each selected by a symbol an including
-; source sets before this file; prog_r3.s itself sets none of them:
-;   MUT_SWAP  -- R3'/R3n': configure at B2 instead of B1 (bases exchanged)
-;   MUT_R3C   -- R3c: step b writes register 48 directly (step c's write),
-;                skipping the 4A write, steps c and d; IMG1 read last
-;   MUT_R3U   -- R3u: skip step c (the 48 write) and step d; IMG2 read
-;                last after only steps a and b
-;   MUT_R3N   -- selects the R3n ending: after steps a-d, write/read at
-;                the *other* base instead of reading IMG2
+; Independent points vary, each selected by a symbol an including source
+; sets before this file; prog_r3.s itself sets none of them:
+;   MUT_SWAP    -- R3'/R3n': configure at B2 instead of B1 (bases exchanged)
+;   MUT_R3C     -- R3c: step b writes register 48 directly (step c's
+;                  write), skipping the 4A write, steps c and d; IMG1 read
+;                  last
+;   MUT_R3U     -- R3u: skip step c (the 48 write) and step d; IMG2 read
+;                  last after only steps a and b. Combined with MUT_R3N,
+;                  the board is left unconfigured and the run ends with
+;                  R3n's own write/readback at OTHER_BASE (or IOBASE)
+;                  instead.
+;   MUT_R3_NO48 -- P3-CONTENT's mutation: step c (the 48 write) is left
+;                  out, step d (the content check) still runs
+;   MUT_R3N     -- selects the R3n ending: after steps b-d (or after step
+;                  b alone, with MUT_R3U), write/read at the *other* base
+;                  instead of reading IMG2
+;   MUT_IOBASE  -- with MUT_R3N, targets $00A00000 (Figure K-1, p.386:
+;                  Zorro II I/O expansion space) instead of OTHER_BASE
 
         include "nanomig.i"
         include "common.i"
@@ -34,6 +43,12 @@ CONFIG_BASE equ  B1
 CONFIG_HI   equ  B1_HI
 CONFIG_LO   equ  B1_LO
 OTHER_BASE  equ  B2
+        endif
+
+        ifd     MUT_IOBASE
+NOTHER_TARGET equ $00A00000    ; Figure K-1 (p.386): Zorro II I/O expansion space
+        else
+NOTHER_TARGET equ OTHER_BASE
         endif
 
 P0       equ     $A55A
@@ -75,9 +90,17 @@ start:
         dbra    d3,.imgl1
 
         ifd     MUT_R3U
+        ifd     MUT_R3N
+        bra     r3n_last                ; unconfigured control: no step c, no step d
+        else
         bra     readimg2last            ; R3u: no step c, no step d
+        endif
+        else
+        ifd     MUT_R3_NO48
+        ; P3-CONTENT mutation: step c (the 48 write) left out, step d kept
         else
         move.b  #CONFIG_LO,AC_BASE+$48  ; step c: byte to 48 (configures)
+        endif
 
         move.w  #P0,CONFIG_BASE         ; step d: memory-board content check
         move.w  #P1V,CONFIG_BASE+2
@@ -112,9 +135,9 @@ readimg2last:
         DONE
 
 r3n_last:
-        move.w  #P2V,OTHER_BASE
+        move.w  #P2V,NOTHER_TARGET
         move.w  #$0000,SCRATCH
-        move.w  OTHER_BASE,R2V
+        move.w  NOTHER_TARGET,R2V
         DONE
 
         H_E_HANDLER

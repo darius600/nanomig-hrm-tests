@@ -30,8 +30,14 @@ C2       equ     $03AC
 V1       equ     $BBBB
 V2       equ     $CCCC
 
-MK1      equ     MK_NEXT
-MK2      equ     MK_NEXT+2
+CALDIM   equ     $CA10           ; power-LED calibration phase markers
+CALBRIGHT equ    $CA20           ; (section 5.1.5: L_dim and L_bright are
+                                  ; derived from the phases these bound)
+
+MK_CALDIM equ    MK_NEXT
+MK_CALBRIGHT equ MK_NEXT+2
+MK1      equ     MK_NEXT+4
+MK2      equ     MK_NEXT+6
 
         org     PROGRAM_ORG
 
@@ -49,9 +55,14 @@ start:
         move.w  #$0000,SPR0CTL+7*8(a1)
         move.w  #C1,COLOR00(a1)
 
-        ; power-LED calibration (p.351: bit1=1 not bright, bit1=0 bright)
+        ; power-LED calibration (p.351: bit1=1 not bright, bit1=0 bright).
+        ; Each phase is marked in chip RAM as it starts, so the test can
+        ; read L_dim and L_bright from the port trace bounded by the
+        ; markers instead of assuming a starting level.
+        move.w  #CALDIM,MK_CALDIM      ; entering the dim phase (ddra/pra set by ENV_SETUP)
         WAITVERTB
         move.b  #$00,CIAAPRA           ; /LED=0 (bright); OVL stays 0
+        move.w  #CALBRIGHT,MK_CALBRIGHT ; entering the bright phase
         WAITVERTB
 
         ; drive-motor calibration (p.340 prb bits; p.244 latch sequence)
