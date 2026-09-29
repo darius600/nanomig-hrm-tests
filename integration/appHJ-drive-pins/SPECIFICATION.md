@@ -27,11 +27,12 @@ Printed row: "1111 1111 1111 1111 1111 1111 1111 1111   Amiga standard 3.25($FFF
 - **The test cannot act as a drive.** It can drive the controller ports, the
   mouse, the keyboard, serial RxD and clock values. It cannot drive any line of
   the disk connector, so it cannot present a drive of known type. The harness
-  serves no disk image, and its default `floppy_config` (0, "no floppy drives",
-  `nanomig_harness.h`) serves no drive. A drive the system models once
-  `floppy_config` is set has a type that no page and no harness text states.
-  The claim needs no data from a disk surface; what blocks it is the missing
-  expected value.
+  serves no disk image: its default `floppy_config` (0, "one drive (DF0),
+  write-enabled, normal speed", `nanomig_harness.h`) already gives the system
+  drive 0, but no `sdc_*` activity, so no drive answers with any I.D.
+  sequence. The drive the harness's default `floppy_config` models has a type
+  that no page and no harness text states. The claim needs no data from a
+  disk surface; what blocks it is the missing expected value.
 - **The pages disagree on how the I.D. is formed.** Only the label of
   $FFFF FFFF is the same on both pages.
   - p. 371: "Convert the 32 values of RDY- into a two 16-bit word. The most
@@ -153,7 +154,7 @@ The drive-light record of section 6 needs drive 0 with its light, but no disk
 | P4 | Denise M1V is an input: right-port pins 1 and 3 drive JOY1DAT's vertical counter | opus:AHJ-208, sol:J-076 | 380 |
 | P5 | Paula POT0X (left port, pin 5) is bidirectional | opus:AHJ-243, sol:J-110 | 380 |
 | P6 | Paula POT0Y (left port, pin 9) is bidirectional | opus:AHJ-245, sol:J-112 | 380 |
-| P7 | Paula POT1X (right port, pin 5) is bidirectional | opus:AHJ-249, sol:J-116 | 380 |
+| P7 | Paula POT1X (right port, pin 5) is bidirectional -- **withdrawn** (5.1, 8.2): the input half cannot be set up at this boundary | opus:AHJ-249, sol:J-116 | 380 |
 | P8 | Paula POT1Y (right port, pin 9) is bidirectional | opus:AHJ-251, sol:J-118 | 380 |
 
 Section 6 records the drive light and grades nothing.
@@ -297,11 +298,10 @@ In this document "left" means left / port 1 / J12. The rules are:
   harness has no video-standard setting, and no proposition depends on one:
   every interval is counted in scan lines (section 3.3).
 - The drive-light record of section 6 needs drive 0. The harness's default
-  `floppy_config` is 0, "no floppy drives" (`nanomig_harness.h`). The record
-  sets it to a value that gives the system drive 0; that value is harness
-  setup, which the builder reads from the system top and states in the
-  package. No disk image is mounted: the `sdc_*` inputs stay idle as the
-  harness sets them.
+  `floppy_config` is 0, "one drive (DF0), write-enabled, normal speed"
+  (`nanomig_harness.h`), which already gives the system drive 0; the record
+  uses the harness's default `Config` unchanged. No disk image is mounted:
+  the `sdc_*` inputs stay idle as the harness sets them.
 
 ### 3.7 Verdicts
 
@@ -524,6 +524,11 @@ pin 9 of the left port, with OUTLY (bit 11) and DATLY (bit 10).
 
 **P7** (opus:AHJ-249, sol:J-116; p. 380, "35 POT1X Pot 1X I/O"): the same for
 pin 5 of the right port, with OUTRX (bit 13) and DATRX (bit 12).
+**Withdrawn** (8.2): the input half of this claim cannot be set up at this
+boundary. The right port's only input is `joystick0`; Table 8-1 (p. 228)
+gives a joystick nothing on pin 5 ("---"). The claim id is recorded, not
+graded; C1, C3, C4 and C8 (the output half) are measured without a claim
+id.
 
 **P8** (opus:AHJ-251, sol:J-118; p. 380, "36 POT1Y Pot 1Y I/O"): the same for
 pin 9 of the right port, with OUTRY (bit 15) and DATRY (bit 14).
@@ -778,36 +783,57 @@ the programs are in `hj_defs.i`.
 
 ### 8.1 Stimulus mapping (section 3.4, 5.1: assigned to the builder)
 
-Measured with a one-off probe, from the harness's own ports:
+Established by matching each harness input's observed bit pattern against
+what Table 8-1 (p. 228) and Figure 8-2 (p. 230) name for a connector pin,
+not by treating "some register moved" as sufficient on its own:
 
 - `joystick1` drives JOY0DAT (the left port, P1/P2); `joystick0` drives
-  JOY1DAT (the right port, P3/P4).
+  JOY1DAT (the right port, P3/P4). Confirmed against Figure 8-2's state
+  table (E1, section 4.4).
 - Within either port, bit 3 = up (pin 1), bit 2 = down (pin 2), bit 1 = left
   (pin 3), bit 0 = right (pin 4), each bit active high at this boundary
   (1 = pressed).
-- POTGOR bit 8 (POT0X/DATLX) follows `mouse_buttons` bit 2 (third/middle
-  button); bit 10 (POT0Y/DATLY) follows `mouse_buttons` bit 1 (right button)
-  (`joystick1` bit 5 presses it too; this build presses only the mouse
-  bit); bit 14 (POT1Y/DATRY) follows `joystick0` bit 5; bit 12 (POT1X/DATRX)
-  follows no harness input at all -- see 8.2.
+- `mouse_buttons` has no bit-to-button correspondence named anywhere at this
+  boundary (neither the port declaration nor `nanomig_harness.h`). POTGOR
+  bit 8 (POT0X/DATLX) follows `mouse_buttons` bit 2; bit 10 (POT0Y/DATLY)
+  follows `mouse_buttons` bit 1 (`joystick1` bit 5 also reaches it; this
+  build presses only the mouse bit). The two bits are matched to pins 5 and
+  9 because Table 8-1 gives the left connector's pins 5 and 9 the mouse's
+  middle and right buttons, and no other device on either port offers a
+  second independently switched pin-5/pin-9 pair. Bit 14 (POT1Y/DATRY)
+  follows `joystick0` bit 5.
+- POTGOR bit 12 (POT1X/DATRX) follows no harness input this package can
+  drive. This is not an unmatched bit: Table 8-1 gives a joystick nothing on
+  pin 5 ("---"), and the right port's only input at this boundary is
+  `joystick0`, a joystick-shaped port. No device the page puts on pin 5 (the
+  mouse's middle button, a proportional pair's right POT, an X-Y joystick's
+  POT X, a light pen) is offered at the right port. See 8.2.
 - The harness's default `floppy_config` (0) already selects drive 0
   (`nanomig_harness.h`'s own `Config` comment documents 0 as "one drive
   (DF0), write-enabled, normal speed"). Section 6 uses the harness's
   default `Config` unchanged.
 
-### 8.2 P7 (POT1X): no harness input reaches it
+### 8.2 P7 (POT1X): withdrawn -- no harness input reaches its input half
 
-No harness input moves POT1X's read-back at all: C2/C5/C6 read the same
-level as C1/C3/C8 regardless of any input this package can drive; the
-assertion is red on both cores through the clause C2 (and C5, C6) target.
-The MUTATION record below shows the same comparator, pointed at P5's live
-channel, going green.
+C2 and C6 read the same level as C1, C3, C4 and C8 regardless of any input
+this package can drive: the input half of the claim (a pressed button
+forcing the pin) cannot be set up. C5 is not part of this: it reads the
+level p.240 predicts (0), because the program's own OUTPUT write in C4 is
+still driving the pin low, not because any button was read.
+
+P7 is withdrawn to a RECORDED line (5.1): the right port's only input is
+`joystick0` (8.1), and Table 8-1 (p. 228) gives a joystick nothing on pin 5
+("---"). C1, C3, C4 and C8 (the output half, unaffected by the missing
+input) are measured without a claim id.
 
 ### 8.3 Measured results (`out_fx68k.txt`, `out_tg68k.txt`)
 
-Both cores: 19 passed, 1 failed, identically. FIXTURE, the two DONE checks,
-PJ1, PJ2, PJ3, PP1, PP2, PP3 and P1, P2, P3, P4, P5, P6, P8 pass; P7 fails
-(section 8.2). Section 6 fdd_led is recorded, not graded:
+Both cores: 19 passed, 0 failed, identically. FIXTURE (x3), the three DONE
+checks, PJ1, PJ2, PJ3, PP1, PP2, PP3 and P1, P2, P3, P4, P5, P6, P8 all
+pass. P7 is withdrawn to a RECORDED line (8.2), with its output steps (C1,
+C3, C4, C8) reported as a separate, id-less MEASURED note. The 11 declined
+claims of section 1 print as RECORDED lines. Section 6 fdd_led is recorded,
+not graded:
 
     RECORDED: section 6 [p.244]: fdd_led level just before the next marker,
     S0..S8 (motor/select sequence, drive 0): S0=off S1=off S2=off S3=off
@@ -820,33 +846,39 @@ fdd_led never moves over the whole sequence. Both cores read identically.
 ### 8.4 Mutations (both cores, identically; `NMH_MUTATE=<value>`, header
 comment of `test_appHJ_drive_pins.cpp`)
 
-Assertion mutations print a literal `FAIL: <label>` line through the named
-proposition's own comparator (the same one the normal run uses):
+Every mutation runs the target precondition's or proposition's own
+comparator unchanged; a mutation never inverts a verdict. P1-P8 are gated
+on their section's own preconditions (spec 3.7): when any of a section's
+preconditions fails, that section's propositions print as a
+`RECORDED: ... not checkable` line instead of PASS/FAIL, and are not
+counted in the totals below.
 
-| Mutation | Prints FAIL through | Other propositions/preconditions | Totals (both cores) |
-|----------|---------------------|-----------------------------------|----------------------|
-| P1-WRONGPORT | `P1 [p.380: ...]` | unchanged (green) | 14 passed, 2 failed (P1, P7) |
-| P2-WRONGPORT | `P2 [p.380: ...]` | unchanged | 14 passed, 2 failed (P2, P7) |
-| P3-WRONGPORT | `P3 [p.380: ...]` | unchanged | 14 passed, 2 failed (P3, P7) |
-| P4-WRONGPORT | `P4 [p.380: ...]` | unchanged | 14 passed, 2 failed (P4, P7) |
-| P5-WRONGPIN | `P5 [p.380: ...]` | unchanged | 14 passed, 2 failed (P5, P7) |
-| P6-WRONGPIN | `P6 [p.380: ...]` | unchanged | 14 passed, 2 failed (P6, P7) |
-| P8-WRONGPIN | `P8 [p.380: ...]` | unchanged | 14 passed, 2 failed (P8, P7) |
+Proposition (stimulus) mutations print a literal `FAIL: <label>` line
+through the named proposition's own comparator, nothing else affected:
 
-Precondition mutations print `PASS: <id> ... stimulus mutation: ... not met`
--- the precondition's own comparator, reused, correctly reporting the
-contrast (SPECIFICATION.md 4.5/5.5's own "Contrasting case" tables):
+| Mutation | Prints FAIL through | Totals (both cores) |
+|----------|---------------------|----------------------|
+| P1-WRONGPORT | `P1 [p.380: ...]` | 14 passed, 1 failed (P1) |
+| P2-WRONGPORT | `P2 [p.380: ...]` | 14 passed, 1 failed (P2) |
+| P3-WRONGPORT | `P3 [p.380: ...]` | 14 passed, 1 failed (P3) |
+| P4-WRONGPORT | `P4 [p.380: ...]` | 14 passed, 1 failed (P4) |
+| P5-WRONGPIN | `P5 [p.380: ...]` | 14 passed, 1 failed (P5) |
+| P6-WRONGPIN | `P6 [p.380: ...]` | 14 passed, 1 failed (P6) |
+| P8-WRONGPIN | `P8 [p.380: ...]` | 14 passed, 1 failed (P8) |
 
-| Mutation | Precondition reports not met | Side effect measured | Totals (both cores) |
-|----------|-------------------------------|------------------------|----------------------|
-| PJ1 | dropping phase 0 step 5's change is reported missing, not graded | P1 also FAILs: the dropped edge is one of P1's own phase-0 transitions | 14 passed, 2 failed (P1, P7) |
-| PJ2 | the shortened window holds < 3 graded samples | none | 15 passed, 1 failed (P7) |
-| PJ3 | the injected mouse count makes the baseline samples differ | P1 also FAILs: the pulse corrupts phase 0's own baseline reference (c0) | 14 passed, 2 failed (P1, P7) |
-| PP1 | omitting pin 5's C2 press is reported missing, not graded | P5 also FAILs: the dropped press is pin 5's own C2 | 14 passed, 2 failed (P5, P7) |
-| PP2 | POTGO bit 0 = 1 in pin 5's C1 marker | none | 15 passed, 1 failed (P7) |
-| PP3 | pin 5's C1 window (6 lines) holds < 3 graded samples | none | 15 passed, 1 failed (P7) |
+Precondition mutations print `FAIL: <id> ...` through the precondition's own
+comparator (the same label the normal run uses, PASS there), and gate their
+whole section's propositions to "not checkable":
 
-P7 fails on every row (section 8.2; not a mutation side effect, the
-baseline state). P7's own contrast is not a separate binary: its comparator,
-evaluated on P5's live channel from the same normal run, reads PASS (the
-`RECORDED: MUTATION P7` line, section 8.3).
+| Mutation | Prints FAIL through | Side effect measured | Totals (both cores) |
+|----------|---------------------|------------------------|----------------------|
+| PJ1 | `PJ1 [...]` | P1, P2, P3, P4 all become "not checkable" (section 4 gated) | 10 passed, 1 failed (PJ1) |
+| PJ2 | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
+| PJ3 | `PJ3 [...]` | PJ1 also FAILs: the injected mouse count is also the mouse-button activity PJ1's own idle clause forbids; P1, P2, P3, P4 all become "not checkable" | 9 passed, 2 failed (PJ1, PJ3) |
+| PP1 | `PP1 [...]` | P5, P6, P8 all become "not checkable" (section 5 gated) | 11 passed, 1 failed (PP1) |
+| PP2 | `PP2 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP2) |
+| PP3 | `PP3 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP3) |
+
+P7 is not part of any mutation replay above: its RECORDED withdrawal and
+id-less output-steps measurement print only in the normal run (8.3), gated
+the same way section 6's record is.
