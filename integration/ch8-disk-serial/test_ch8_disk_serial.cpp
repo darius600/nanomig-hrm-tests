@@ -22,7 +22,10 @@
 // MUTATION 1e/2e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write left out while still polling for its transfer -- POLL_TIMEOUT sets and flips both; the page's own contrast unavoidably also turns 1d/2d red (word 3 is never marked before word 2's own stop change, since word 2 was never sent) and the merged P2 line (P2(ii) shares the capture)
 // MUTATION 1a/2a-ANCHOR, 1b/2b-STANDARD, 4a-ANCHOR, 4b-STANDARD, 5a-ANCHOR checker red: comparator-level contrasts (no stimulus on the pages moves the refresh slots or the field-line count), printed only when NMH_MUTATE selects a replay (any value), since they need no binary swap of their own
 // MUTATION 4c stimulus red NMH_MUTATE=P4-4C: FAST=1 run writes ADKCON <- $0100 instead of $8100 (bit 15 clear clears the bit) -- the only P4 precondition already gradable before the buffer-address repair
-// MUTATION 4d NMH_MUTATE=P4-4D, 4e NMH_MUTATE=P4-4E, 4f NMH_MUTATE=P4-4F: now that the buffer address is repaired, these flip P4-MAIN/4d/4e/4f directly through grade_run's own checks
+// MUTATION 4d NMH_MUTATE=P4-4D, 4e NMH_MUTATE=P4-4E, 4f NMH_MUTATE=P4-4F: now that the buffer address is repaired, these flip 4d/4e/4f directly through grade_run's own checks
+// P4-MAIN (the T_cell-vs-band comparison) is a RECORDED decline (SPECIFICATION.md 1.4, P4): no page ties the
+//   Chip-memory read rate it measures to the bit-cell time, so it is not a graded proposition and carries no
+//   mutation of its own.
 // MUTATION 5b stimulus red NMH_MUTATE=P5-5B: the UARTBRK set step left out, so the two anchor levels read equal
 // MUTATION 5c stimulus red NMH_MUTATE=P5-5C: character 0 read and cleared only after s_2, so OVRUN sets
 // MUTATION 5d stimulus red NMH_MUTATE=P5-5D: the INTREQ clear left out, so the next poll sees RBF=1 at once
@@ -714,21 +717,10 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
                     std::to_string(t[64].value_or(0)) + " t128=" + std::to_string(t[128].value_or(0)) +
                     " t192=" + std::to_string(t[192].value_or(0)));
 
-        bool band_ok = has_window &&
-            (fast1 ? (tcell >= 1.5 && tcell < 2.5) : (tcell >= 3.5 && tcell < 4.5));
-        checks.expect(band_ok,
-            std::string(tag) + " [p265,p249] opus:8-adkcon.c33: ADKCON bit 8 = " + (fast1 ? "1" : "0") +
-            " gives a disk-write bit-cell time of " + (fast1 ? "1.5us <= T_cell < 2.5us" : "3.5us <= T_cell < 4.5us") +
-            " (measured " + std::to_string(tcell) + " us)");
-
-        if (!mv.empty()) {
-            // Contrast: the same run graded against the OTHER band must fail.
-            bool other_ok = has_window &&
-                (!fast1 ? (tcell >= 1.5 && tcell < 2.5) : (tcell >= 3.5 && tcell < 4.5));
-            checks.expect(!other_ok,
-                std::string("MUTATION P4-MAIN ") + tag + " stimulus red: this run graded against the "
-                "other FAST setting's band fails (T_cell " + std::to_string(tcell) + " us)");
-        }
+        checks.record(std::string(tag) +
+            " [p265,p249]: cannot be checked at this boundary -- the disk data clock is not "
+            "observable at nanomig.v's ports, and no page ties a Chip-memory read rate to it "
+            "(opus:8-adkcon.c33 declined, SPECIFICATION.md 1.4)");
 
         // 4a: R1 anchor.
         bool r1ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C);
