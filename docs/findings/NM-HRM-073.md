@@ -157,7 +157,7 @@ through Run 2. `P4-Run3-reorder` is red because Run 3-reorder starts at A
 where p. 25 gives C, by the same mechanism. `P4-Run3` is red because Run 3
 starts at A where p. 25 gives B; the clause it grades is a separate question
 (see below). `P4a` holds: the first stored DMACONR has bit 7 clear. `P4b`
-holds: no fetch in A, B or C before M1.
+holds: no fetch in A, B or C before M1. Both are graded on Run 1's capture.
 
 **No vertical blank lies between the strobe and the fetch.** `P4c`, the
 package's precondition (c) — no frame wrap and no record with V ≤ 25 between
@@ -167,7 +167,7 @@ capture, a measurement for this page and not a graded assertion, it holds
 there too. In every run the last record stored before MS reads line 64, no
 record is stored between MS and the first fetch, and the fetch follows MS by
 420 clk_sys (Runs 1 and 2, `P4-CTRL`) or 516 (Run 3 and its reorder) on
-fx68k, 428 or 524 on TG68K: 53 to 66 colour clocks of 8 clk_sys, in a PAL
+fx68k, 428 or 524 on TG68K: 52½ to 65½ colour clocks of 8 clk_sys, in a PAL
 line of 227. The strobe, DMA-on and the first fetch all lie on line 64 or at
 the turn to line 65, and the last vertical blank before them is the one that
 began this frame.
@@ -287,7 +287,7 @@ shows what a cleared latch gives. What it would change:
   B with COPJMP1 and COP2LC = A as a decoy, reads B on both cores, so A in Runs
   2, 3 and 3-reorder is not a comparator stuck on list A.
 - **Copper DMA was off, and nothing was fetched early.** `P4a` and `P4b` hold
-  on both cores.
+  on both cores, graded on Run 1's capture.
 - **No vertical blank lies between the strobe and the fetch.** `P4c` holds on
   both cores, graded on the captures of Runs 1, 2, 3 and 3-reorder: MS, the
   strobe, DMA-on and the first fetch follow each other within 66 colour clocks

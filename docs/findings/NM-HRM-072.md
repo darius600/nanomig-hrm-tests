@@ -50,8 +50,8 @@ SERDAT while another is still being shifted:
 > If you stop writing data into the output register ( SERDAT ), then this bit will become a 1 after both the word currently in the shift register and the word placed into SERDAT have been transmitted.
 
 Figure 8-11 on p. 258, *read from the drawing, not quoted*, draws the
-*"Starting Appearance of SERDAT and Shift Register"*: sixteen 0s in the
-register, labelled *"All zeros from last shift"*, and a separate cell to its
+*"Starting Appearance of SERDAT and Shift Register"*: fifteen 0s under the
+bit numbers 15 to 0, labelled *"All zeros from last shift"*, and a separate cell to its
 right labelled *"one bit"* holding a 1. The register is empty while the last 1
 is still in the bit-shifted-out position; the figure draws no step between that
 state and the next load.
@@ -239,9 +239,9 @@ change:
 ## What holds the finding up
 
 - **The comparator is exact where the page predicts exactly.** The single-word
-  captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and their
-  mean bit intervals are 8.000000 cycles per colour clock in `P2`'s clause
-  (ii); the within-word intervals of the four-word run are all N+1 colour
+  captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and on PAL
+  their mean bit intervals divided by N+1 are 8.000000 cycles, one colour
+  clock, in `P2`'s clause (ii); the within-word intervals of the four-word run are all N+1 colour
   clocks.
 - **The words are waiting.** `1d` and `2d`, green on both cores, show every
   word after the first written before the previous word's stop bit began.
