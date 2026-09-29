@@ -117,9 +117,11 @@
 //   _wprot (paula_floppy.v:664,969):
 //     assign disk_writable = floppy_wrprot ? 4'b0000 : 4'b1111;
 //     assign _wprot = &(_sel | disk_writable);
-//   Purely combinational: no flip-flop anywhere in its cone. The "set their
-//   write-protect flip-flops" half of the SAME pin-10/pin-11 reset note
-//   therefore has no flop to be set -- MEASURED (RED) in RESET-DUTY below.
+//   Purely combinational: no flip-flop anywhere in its cone. p.334 pin 10
+//   and p.370 also say a reset "sets" a write-protect flip-flop, but no
+//   page names a line that flip-flop drives or an event that clears it --
+//   RECORDED, not graded, in RESET-DUTY below; RESET-NO-WRITE there grades
+//   the one consequence pp.334 and 244 do fix for the reset instead.
 //   With a drive selected, _wprot reads protected iff floppy_wrprot=1;
 //   with NO drive selected (_sel=4'b1111), the reduction-AND collapses to 1
 //   regardless of disk_writable, so _wprot reads unprotected -- the
@@ -152,7 +154,9 @@
 //   several clk7_en ticks, so the "two consecutive writes with dsklen[15]
 //   set" dmaen requires -- paula_floppy.v:743 -- is satisfied within one
 //   call: the first tick's non-blocking dsklen[15]<=1 is visible to the
-//   SAME held write's later ticks).
+//   SAME held write's later ticks). Rig::arm_write_dma() is the same idiom
+//   with DSKLEN's write bit set, used by RESET-NO-WRITE below to read the
+//   module's dmal and fdd_led outputs directly.
 //
 // NOT GRADABLE ANYWHERE IN THIS PACKAGE (recorded via record(), never
 //   graded): the DB23 pin ordinal itself (no connector, no pin number,
@@ -170,35 +174,41 @@
 //   check, `mutating("ID")`, read from the MUTATE environment variable at
 //   startup -- one build serves the real run (MUTATE unset) and every
 //   mutation run (MUTATE=<id>, one id per assertion). Ids are the claim's
-//   own `classify.uid` for the 12 graded claims (this suite's convention)
-//   and a plain uppercase id for FIXTURE-LIVE, which carries no manual
-//   citation. Two of the six graded topics (P-READY-MOTOR-INVARIANT,
-//   RESET-DUTY) are RED at baseline (real findings); per this suite's rule
-//   against mutating an already-failing check with a no-op, each substitutes
-//   a DIFFERENT genuine stimulus change through the IDENTICAL comparator and
-//   the SAME label, flipping baseline RED to mutated GREEN. The remaining
-//   four graded topics and FIXTURE-LIVE are GREEN at baseline and flip to
+//   own `classify.uid` for the corpus-cited claims (this suite's
+//   convention) and a plain uppercase id for FIXTURE-LIVE and
+//   RESET-NO-WRITE, which carry no classify.uid of their own -- the second
+//   still cites p.334 and p.244, it is simply not a reader's reading of one
+//   corpus sentence, the same status DEVICE-LIMITS and CHANGE-SET-AT-
+//   POWERUP note for the RTL mechanisms they confirm. sol:E-disk.c26 and
+//   opus:E-extdisk-iface.c4 read RED at baseline: p.334 pin 1 and p.369
+//   predict RDY* deasserted for a drive whose motor is genuinely latched on
+//   with no disk installed, and paula_floppy reads it asserted instead. Per
+//   this suite's rule against mutating an already-failing check with a
+//   no-op, each substitutes a DIFFERENT genuine stimulus (leaving the drive
+//   deselected instead of latching the motor) through the IDENTICAL
+//   comparator and the SAME label, flipping baseline RED to mutated GREEN.
+//   The remaining twelve graded checks are GREEN at baseline and flip to
 //   RED by omitting the stimulus event the proposition requires.
 //
-// MUTATION RUN LOG (measured, WSL/Verilator 5.052): baseline (MUTATE unset)
-//   13 checks.expect() calls, 9 passed / 4 failed (the 4 failures are
-//   FIXTURE-LIVE's control PASS is not among them -- the 4 baseline FAILs
-//   are sol:E-disk.c26, opus:E-extdisk-iface.c4, sol:E-disk.c35,
-//   opus:E-extdisk-iface.c13, the two RED findings, each carrying two
-//   uids). Each of the 13 MUTATE=<id> runs (FIXTURE-LIVE, sol:E-disk.c26,
-//   opus:E-extdisk-iface.c4, sol:E-disk.c35, opus:E-extdisk-iface.c13,
-//   sol:E-disk.c36, opus:E-extdisk-iface.c14, sol:E-disk.c38,
-//   opus:E-extdisk-iface.c16, sol:E-disk.c39, opus:E-extdisk-iface.c17,
-//   sol:E-disk.c51, opus:E-extdisk-id.c16) was executed and confirmed, by
-//   diffing the full PASS/FAIL-prefixed output against baseline, to move
-//   EXACTLY the targeted label's own line (and no other) -- FIXTURE-LIVE
-//   PASS->FAIL (8 passed/5 failed); sol:E-disk.c26, opus:E-extdisk-iface.c4,
-//   sol:E-disk.c35, opus:E-extdisk-iface.c13 each FAIL->PASS individually
-//   (10 passed/3 failed per run); sol:E-disk.c36, opus:E-extdisk-iface.c14,
-//   sol:E-disk.c38, opus:E-extdisk-iface.c16, sol:E-disk.c39,
-//   opus:E-extdisk-iface.c17, sol:E-disk.c51, opus:E-extdisk-id.c16 each
-//   PASS->FAIL individually (8 passed/5 failed per run). All 13 runs then
-//   reverted (MUTATE unset) and reconfirmed back to 9/4.
+// MUTATION RUN LOG (measured, WSL/Verilator 5.052): baseline (MUTATE
+//   unset) 14 checks.expect() calls, 12 passed / 2 failed. The 2 baseline
+//   FAILs are sol:E-disk.c26 and opus:E-extdisk-iface.c4 (p.334 pin 1 RDY*
+//   -- see P-READY-MOTOR-INVARIANT above for what is measured and which
+//   page it rests on). Each of the 14 MUTATE=<id> runs (FIXTURE-LIVE,
+//   sol:E-disk.c26, opus:E-extdisk-iface.c4, sol:E-disk.c35,
+//   opus:E-extdisk-iface.c13, RESET-NO-WRITE, sol:E-disk.c36,
+//   opus:E-extdisk-iface.c14, sol:E-disk.c38, opus:E-extdisk-iface.c16,
+//   sol:E-disk.c39, opus:E-extdisk-iface.c17, sol:E-disk.c51,
+//   opus:E-extdisk-id.c16) was executed and confirmed, by diffing the full
+//   PASS/FAIL-prefixed output against baseline, to move EXACTLY the
+//   targeted label's own line (and no other) -- FIXTURE-LIVE, sol:E-disk.c35,
+//   opus:E-extdisk-iface.c13, RESET-NO-WRITE, sol:E-disk.c36,
+//   opus:E-extdisk-iface.c14, sol:E-disk.c38, opus:E-extdisk-iface.c16,
+//   sol:E-disk.c39, opus:E-extdisk-iface.c17, sol:E-disk.c51 and
+//   opus:E-extdisk-id.c16 each PASS->FAIL individually (11 passed/3 failed
+//   per run); sol:E-disk.c26 and opus:E-extdisk-iface.c4 each FAIL->PASS
+//   individually (13 passed/1 failed per run). All 14 runs then reverted
+//   (MUTATE unset) and reconfirmed back to 12/2.
 
 #include <cstdint>
 #include <cstdlib>
@@ -384,6 +394,17 @@ struct Rig {
         write_reg(0x024, 0x800A);  // DSKLEN: length 10 (0xA), bit14=0 (read), bit15=1 (dma enable)
         ticks(20);
     }
+
+    // Arm a disk WRITE DMA on whichever drive is currently selected and run
+    // long enough for the disk-dma state machine to leave idle -- the point
+    // at which the DMA request (dmal) and the drive light (fdd_led) both go
+    // live for a write, the same idiom as arm_dma_read() with the write bit
+    // set.
+    void arm_write_dma() {
+        d->enable = 1;
+        write_reg(0x024, 0xC00A);  // DSKLEN: length 10 (0xA), bit14=1 (write), bit15=1 (dma enable)
+        ticks(20);
+    }
 };
 
 int main(int argc, char** argv) {
@@ -423,62 +444,57 @@ int main(int argc, char** argv) {
     // (p.334 pin 1, RDY*, figure-verified: "If motor on, indicates disk
     // installed and up to speed. If motor not on, identification mode.").
     // THE OWNED CONDITION: graded here, NOT declined against
-    // hrm/ch8-drive-sense-lines' opus:8-cia.c7 (see file header). Both
-    // printed branches require _ready to distinguish the motor state;
-    // paula_floppy.v:688-694 has no _motor term at all, so toggling _motor
-    // (selection held fixed) must change nothing -- RED at baseline, the
-    // expected, previously-unmeasurable finding.
+    // hrm/ch8-drive-sense-lines' opus:8-cia.c7 (see file header). The motor
+    // latches only at a select edge (p.334 pin 8, p.369, p.244); each block
+    // below drives a genuine off-to-on transition of the select line
+    // through select_with_motor(), with no disk mounted, and reads _ready
+    // once the latch has taken. With no disk installed the printed
+    // motor-on branch ("disk installed and up to speed") does not apply,
+    // so p.334 and p.369 predict the line deasserted. Whatever paula_floppy
+    // reports here is the measurement.
     // ========================================================================
     {
         Rig r;
         bool mut = mutating("sol:E-disk.c26");
-        r.select(0);
-        r.d->_motor = 1;  // motor OFF
-        bool ready_state1 = r.ready();
-        bool ready_state2;
+        // no mount() call anywhere in this block: disk_present stays 0
+        // throughout.
         if (!mut) {
-            r.d->_motor = 0;  // motor ON -- the real stimulus p.334 says should matter
-            ready_state2 = r.ready();
+            r.select_with_motor(0, /*motor_on_level=*/true);  // a genuine
+                // off-to-on transition of the select line, the edge p.334
+                // pin 8 and p.369 require to latch the motor on
         } else {
             // MUTATION (rule against mutating an already-failing check):
             // substitute a genuine, independently-live stimulus change
-            // (deselecting the drive) for the motor toggle, through the
-            // IDENTICAL != comparator and the same label, proving the
-            // comparator itself is sensitive to a real difference.
+            // (leaving the drive deselected, so the motor is never
+            // latched) through the IDENTICAL !ready() comparator and the
+            // same label, proving the comparator is sensitive to a real
+            // difference.
             r.deselect_all();
-            ready_state2 = r.ready();
         }
-        checks.note("sol:E-disk.c26: drive0 selected, motor OFF -> ready=" + std::to_string(ready_state1) +
-                    "; then " + std::string(mut ? "deselected (mutated substitute)" : "motor ON, still selected") +
-                    " -> ready=" + std::to_string(ready_state2));
-        checks.expect(ready_state1 != ready_state2,
+        bool ready_state = r.ready();
+        checks.note("sol:E-disk.c26: drive0, no disk, " +
+                    std::string(mut ? "deselected (mutated substitute)" : "motor latched on at a genuine select edge") +
+                    " -> ready=" + std::to_string(ready_state));
+        checks.expect(!ready_state,
             "sol:E-disk.c26 (p.334, figure, pin 1 RDY*: 'If motor on, indicates disk installed and up to speed. "
-            "If motor not on, identification mode.'): with selection held fixed, _ready must read differently for "
-            "motor-on than for motor-off to realise either printed branch -- paula_floppy.v:688-694 derives "
-            "_ready from _sel[3:0] and the configured drive count alone (no _motor term anywhere in its cone; the "
-            "module's own comment there reads 'not implemented - _ready is active when _sel is active'), so "
-            "toggling only _motor changes nothing -- neither branch is realised. Re-opening "
-            "hrm/ch8-drive-sense-lines' declined P-READY (opus:8-cia.c7, whose stated reason -- p.244's silence on "
-            "the motor-off case -- p.334 ends) is the build stage's call and is not decided here; this is measured "
-            "and graded on its own terms");
+            "If motor not on, identification mode.'; p.334 pin 8 and p.369 on the select-edge motor latch): with "
+            "the motor genuinely latched on at a select edge and no disk in the drive, the printed motor-on "
+            "branch requires a disk installed and up to speed for RDY* to read asserted; with none installed the "
+            "page predicts it deasserted");
     }
     {
         Rig r;
         bool mut = mutating("opus:E-extdisk-iface.c4");
-        r.select(0);
-        r.d->_motor = 1;
-        bool ready_state1 = r.ready();
-        bool ready_state2;
         if (!mut) {
-            r.d->_motor = 0;
-            ready_state2 = r.ready();
+            r.select_with_motor(0, true);
         } else {
             r.deselect_all();
-            ready_state2 = r.ready();
         }
-        checks.note("opus:E-extdisk-iface.c4: twin of sol:E-disk.c26, same measurement -> ready1=" +
-                    std::to_string(ready_state1) + ", ready2=" + std::to_string(ready_state2));
-        checks.expect(ready_state1 != ready_state2,
+        bool ready_state = r.ready();
+        checks.note("opus:E-extdisk-iface.c4: twin of sol:E-disk.c26, same measurement -> " +
+                    std::string(mut ? "deselected (mutated substitute)" : "motor latched on at a genuine select edge") +
+                    " -> ready=" + std::to_string(ready_state));
+        checks.expect(!ready_state,
             "opus:E-extdisk-iface.c4 (p.334, figure, pin 1 RDY*: 'With the motor on it indicates a disk installed "
             "and up to speed; with the motor off it is identification mode.'): twin of sol:E-disk.c26 (same "
             "printed pin, independent reader) -- same measurement, graded independently under its own uid");
@@ -566,55 +582,136 @@ int main(int argc, char** argv) {
     // RESET-DUTY -- sol:E-disk.c35 / opus:E-extdisk-iface.c13 (p.334 pin 10
     // DRESB*, OC, figure-verified: "Amiga system reset. Drives should reset "
     // "their motor-on flip-flops and set their write-protect flip-flops.").
-    // NEW HERE (no accepted package grades a reset duty on the drive
-    // model). Compound proposition, two independently-measured halves:
-    // motor-on reset is real (GREEN); the write-protect "flip-flop" does
-    // not exist (_wprot is combinational, RED) -- the conjunction is RED
-    // overall.
+    // Split into two independently-measured halves. The motor half is
+    // measured directly (the latch read through index) and stays graded
+    // under these uids. p.334 pin 10 and p.370 also say a reset sets a
+    // write-protect flip-flop, but no page (334, 369, 370, 244) names a
+    // line that flip-flop drives or an event that clears it -- p.334 pin 14
+    // and p.369 tie WPRO* to the disk's own protection instead -- so that
+    // half is recorded below, not graded. RESET-NO-WRITE, further down,
+    // grades the one consequence pp.334 and 244 do fix for the reset: a
+    // drive does not write while it is held.
     // ========================================================================
     {
         Rig r;
         bool mut = mutating("sol:E-disk.c35");
         r.select_with_motor(0, /*motor_on_level=*/true);
         bool motor_on_before_reset = r.peek_index(0);
-        r.d->floppy_wrprot = mut ? 1 : 0;  // baseline: never request protect, so a "reset SETS it" claim is
-                                            // tested honestly; mutated: hold protect requested throughout
-        r.pulse_reset();
+        if (!mut) r.pulse_reset();
+        // MUTATION: omit the reset pulse -- the motor latch is never asked
+        // to clear, so the "before" and "after" readings are the same
+        // latched state.
         bool motor_on_after_reset = r.peek_index(0);
-        bool wprot_after_reset = r.wprot();  // drive0 still selected from select_with_motor(); reset doesn't
-                                              // touch _sel
         bool motor_half = motor_on_before_reset && !motor_on_after_reset;
+        bool wprot_after_reset = r.wprot();  // drive0 still selected; recorded below, not graded
         checks.note("sol:E-disk.c35: motor_on latched before reset=" + std::to_string(motor_on_before_reset) +
-                    ", after reset=" + std::to_string(motor_on_after_reset) + " (motor half " +
-                    std::string(motor_half ? "GREEN" : "RED") + "); _wprot after reset (floppy_wrprot=" +
-                    std::string(mut ? "1,mutated" : "0") + ")=" + std::to_string(wprot_after_reset) +
-                    " (write-protect half " + std::string(wprot_after_reset ? "GREEN" : "RED") + ")");
-        checks.expect(motor_half && wprot_after_reset,
+                    ", after " + std::string(mut ? "NO reset (mutated)" : "reset") + "=" +
+                    std::to_string(motor_on_after_reset) + "; _wprot after reset (floppy_wrprot=0, recorded, not "
+                    "graded)=" + std::to_string(wprot_after_reset));
+        checks.expect(motor_half,
             "sol:E-disk.c35 (p.334, figure, pin 10 DRESB*, OC: 'Amiga system reset. Drives should reset their "
-            "motor-on flip-flops and set their write-protect flip-flops.'): reset clears the latched motor-on "
-            "state (paula_floppy.v:625-658, 'if (reset) motor_on[n] <= 0;') -- real, measured GREEN -- but "
-            "_wprot (paula_floppy.v:664, '&(_sel|disk_writable)') is purely combinational with no flip-flop and "
-            "no reset term anywhere in its cone, so reset does not, and cannot, set a write-protect flop -- "
-            "measured RED with floppy_wrprot held at its non-protecting level across the reset pulse. The "
-            "compound requirement is RED overall on its write-protect half");
+            "motor-on flip-flops...'): the motor half of the reset duty -- a drive latched on before the reset "
+            "reads off once the reset is released");
+        checks.record(
+            "sol:E-disk.c35, write-protect half (p.334 pin 10 and p.370: '...and set their write-protect "
+            "flip-flops.'): no page (334, 369, 370, 244) names a line this flip-flop drives or an event that "
+            "clears it; p.334 pin 14 and p.369 tie WPRO* to a selected, write-protected disk instead. Recorded, "
+            "not graded -- _wprot reads " + std::to_string(wprot_after_reset) + " after this reset with a "
+            "writable disk (floppy_wrprot=0)");
     }
     {
         Rig r;
         bool mut = mutating("opus:E-extdisk-iface.c13");
         r.select_with_motor(0, true);
         bool motor_on_before_reset = r.peek_index(0);
-        r.d->floppy_wrprot = mut ? 1 : 0;
-        r.pulse_reset();
+        if (!mut) r.pulse_reset();
         bool motor_on_after_reset = r.peek_index(0);
-        bool wprot_after_reset = r.wprot();
         bool motor_half = motor_on_before_reset && !motor_on_after_reset;
+        bool wprot_after_reset = r.wprot();
         checks.note("opus:E-extdisk-iface.c13: twin of sol:E-disk.c35, same measurement -> motor half=" +
-                    std::string(motor_half ? "GREEN" : "RED") + ", wprot half=" +
-                    std::string(wprot_after_reset ? "GREEN" : "RED"));
-        checks.expect(motor_half && wprot_after_reset,
-            "opus:E-extdisk-iface.c13 (p.334, figure, pin 10 DRESB*, OC: 'Amiga system reset; drives should "
-            "reset their motor-on flip-flops and set their write-protect flip-flops.'): twin of sol:E-disk.c35 "
-            "(same printed pin, independent reader) -- same measurement, graded independently under its own uid");
+                    std::string(motor_half ? "GREEN" : "RED") + "; _wprot after reset (recorded, not graded)=" +
+                    std::to_string(wprot_after_reset));
+        checks.expect(motor_half,
+            "opus:E-extdisk-iface.c13 (p.334, figure, pin 10 DRESB*, OC): twin of sol:E-disk.c35 (same printed "
+            "pin, independent reader) -- same measurement, graded independently under its own uid");
+        checks.record(
+            "opus:E-extdisk-iface.c13, write-protect half: twin of sol:E-disk.c35's record -- same reasons, "
+            "recorded independently under its own uid");
+    }
+
+    // ========================================================================
+    // RESET-NO-WRITE -- package-internal, no classify.uid (same convention
+    // as FIXTURE-LIVE, which also carries no manual citation of its own).
+    // The one consequence of the reset that p.334 pin 10 and p.244 do fix --
+    // "Amiga system reset. Drives should reset their motor-on flip-flops..."
+    // and "All drive motors turn off after system reset." -- is that a
+    // drive does not write while the reset is held. Grades that
+    // consequence directly: with a disk write DMA armed on the selected
+    // drive just before the reset, the DMA request (dmal) and the drive
+    // light (fdd_led) read off on every one of the 16 reset clocks.
+    // ========================================================================
+    {
+        Rig r;
+        bool mut = mutating("RESET-NO-WRITE");
+        r.select_with_motor(0, true);
+        r.mount(0, 1000);
+        r.arm_write_dma();
+        bool dmal_before = r.d->dmal;
+        bool led_before = r.d->fdd_led;
+        bool both_off_throughout = true;
+        // MUTATION: no-reset -- `reset` is left at 0 for the same 16
+        // clocks instead of held at 1, so the armed write runs through
+        // them with nothing to stop it; the observation loop below still
+        // runs, so it still gets a chance to see dmal/fdd_led live.
+        if (!mut) r.d->reset = 1;
+        for (int i = 0; i < 16; i++) {
+            r.tick();
+            if (r.d->dmal || r.d->fdd_led) both_off_throughout = false;
+        }
+        if (!mut) r.d->reset = 0;
+        checks.note("RESET-NO-WRITE: dmal=" + std::to_string(dmal_before) + ", fdd_led=" +
+                    std::to_string(led_before) + " before " + std::string(mut ? "the omitted reset" : "reset") +
+                    "; both off on all 16 " + std::string(mut ? "unreset" : "reset") + " clocks=" +
+                    std::to_string(both_off_throughout));
+        checks.expect(dmal_before && led_before && both_off_throughout,
+            "RESET-NO-WRITE (p.334, pin 10 DRESB*: 'Amiga system reset. Drives should reset their motor-on "
+            "flip-flops...'; p.244: 'All drive motors turn off after system reset.'): a disk write DMA armed on "
+            "a selected drive, live just before the reset, then the reset held for 16 clocks -- the DMA request "
+            "and the drive light read off on every one of those clocks");
+    }
+
+    // -- drives 1, 2 and 3: the same reset duty, replayed on the connector's
+    //    own drives (p.334 describes the external connector; drive 0 is not
+    //    on it). Not graded under a new uid -- confirmation of the two
+    //    measurements above, each already graded on drive 0. A fresh Rig
+    //    per drive, per this file's own rule against reusing one across
+    //    trials.
+    for (int n = 1; n <= 3; n++) {
+        Rig r(3);  // floppy_drives=3, all four select lines live
+        r.select_with_motor(n, true);
+        bool motor_on_before = r.peek_index(n);
+        r.pulse_reset();
+        bool motor_on_after = r.peek_index(n);
+        checks.note("RESET-DUTY drive " + std::to_string(n) + ": motor_on before reset=" +
+                    std::to_string(motor_on_before) + ", after=" + std::to_string(motor_on_after));
+    }
+    for (int n = 1; n <= 3; n++) {
+        Rig r(3);
+        r.select_with_motor(n, true);
+        r.mount(n, 1000);
+        r.arm_write_dma();
+        bool dmal_before = r.d->dmal;
+        bool led_before = r.d->fdd_led;
+        bool both_off_throughout = true;
+        r.d->reset = 1;
+        for (int i = 0; i < 16; i++) {
+            r.tick();
+            if (r.d->dmal || r.d->fdd_led) both_off_throughout = false;
+        }
+        r.d->reset = 0;
+        checks.note("RESET-NO-WRITE drive " + std::to_string(n) + ": dmal=" + std::to_string(dmal_before) +
+                    ", fdd_led=" + std::to_string(led_before) + " before reset; both off on all 16 reset "
+                    "clocks=" + std::to_string(both_off_throughout));
     }
 
     // ========================================================================
@@ -901,11 +998,12 @@ int main(int argc, char** argv) {
 }
 
 // MUTATION FIXTURE-LIVE stimulus red: word 2 driven identical to word 1 instead of its complement, so the two readings are indistinguishable (MUTATE=FIXTURE-LIVE).
-// MUTATION sol:E-disk.c26 stimulus green: this assertion is RED at baseline (the reopened P-READY finding, _ready has no _motor term), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the motor toggle, through the identical != comparator and the same label, proving the comparator is sensitive to a real difference (MUTATE=sol:E-disk.c26).
+// MUTATION sol:E-disk.c26 stimulus green: this assertion is RED at baseline (p.334 pin 1 and p.369 predict RDY* deasserted for a motor genuinely latched on with no disk; paula_floppy reads it asserted), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (leaving the drive deselected instead of latching the motor) through the identical !ready() comparator and the same label, proving the comparator is sensitive to a real difference (MUTATE=sol:E-disk.c26).
 // MUTATION opus:E-extdisk-iface.c4 stimulus green: same substitute as sol:E-disk.c26, independent uid (MUTATE=opus:E-extdisk-iface.c4).
-// sol:E-disk.c33, opus:E-extdisk-iface.c11, sol:E-disk.c34, opus:E-extdisk-iface.c12, sol:E-disk.c45, opus:E-extdisk-iface.c23, sol:E-disk.c46, opus:E-extdisk-iface.c24, sol:E-disk.c40, opus:E-extdisk-iface.c18, sol:E-disk.c43, opus:E-extdisk-iface.c21, sol:E-disk.c44, opus:E-extdisk-iface.c22 -- all DECLINED via record(), not expect(); no mutation records (not graded through expect()).
-// MUTATION sol:E-disk.c35 stimulus green: this assertion is RED at baseline (the write-protect half, _wprot has no flip-flop), so per the rule against mutating an already-failing check, floppy_wrprot is held at its PROTECTING level throughout instead of its non-protecting level, so the write-protect half reads protected after reset for an uninteresting reason (the live input, not a reset-set flop) -- flips the compound check green through the identical wprot() comparator and the same label, confirming the comparator responds to real stimulus (MUTATE=sol:E-disk.c35).
-// MUTATION opus:E-extdisk-iface.c13 stimulus green: same substitute as sol:E-disk.c35, independent uid (MUTATE=opus:E-extdisk-iface.c13).
+// sol:E-disk.c33, opus:E-extdisk-iface.c11, sol:E-disk.c34, opus:E-extdisk-iface.c12, sol:E-disk.c45, opus:E-extdisk-iface.c23, sol:E-disk.c46, opus:E-extdisk-iface.c24, sol:E-disk.c40, opus:E-extdisk-iface.c18, sol:E-disk.c43, opus:E-extdisk-iface.c21, sol:E-disk.c44, opus:E-extdisk-iface.c22 -- all DECLINED via record(), not expect(); no mutation records (not graded through expect()). sol:E-disk.c35's and opus:E-extdisk-iface.c13's write-protect halves are RECORDED via record(), not graded through expect() either -- no mutation records for them.
+// MUTATION sol:E-disk.c35 stimulus red: only the motor half is graded here (the write-protect half is recorded, not graded, below it); the reset pulse is omitted entirely, so the latched-before/after comparison reads the same latched state twice (MUTATE=sol:E-disk.c35).
+// MUTATION opus:E-extdisk-iface.c13 stimulus red: same omission as sol:E-disk.c35, independent uid (MUTATE=opus:E-extdisk-iface.c13).
+// MUTATION RESET-NO-WRITE stimulus red: `reset` is left at 0 for the same 16 clocks instead of held at 1, so the write DMA armed just before them keeps dmal and fdd_led live through the observation loop instead of dropping them (MUTATE=RESET-NO-WRITE).
 // MUTATION sol:E-disk.c36 stimulus red: the reset pulse is skipped entirely, so the "set at power up" half is never exercised and the stable baseline simply persists unchanged (MUTATE=sol:E-disk.c36).
 // MUTATION opus:E-extdisk-iface.c14 stimulus red: same omission as sol:E-disk.c36, independent uid (MUTATE=opus:E-extdisk-iface.c14).
 // MUTATION sol:E-disk.c38 stimulus red: the second trial's `side` is held at the SAME level as the first instead of the opposite one, so the two sdc_sector captures cannot be told apart (MUTATE=sol:E-disk.c38).
