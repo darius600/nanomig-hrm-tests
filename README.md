@@ -1,7 +1,7 @@
 # NanoMig HRM Tests
 
 **Why this exists.** Minimig is already a mature core, and NanoMig is built on
-it. This repository tries to help improve it a small bit further: it reads the
+it. This repository tries to offer means to improve it a bit further: it reads the
 chips' original documentation statement by statement, tests the RTL against
 each one, and offers what it finds to the maintainers of NanoMig and of the
 Minimig lines it descends from, as questions rather than verdicts. The reading,
