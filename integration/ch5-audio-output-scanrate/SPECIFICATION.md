@@ -86,19 +86,22 @@ reads), so this id is not asserted there. It stays declined.
 **FAST disk data clock rate (p. 265): A-adkcon.b08, 5-appA-p265.c21.**
 "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)."
 
-- **Cannot be checked yet on the disk data itself.** The harness serves no
-  disk image, and the drive's data lines are not among the outputs a test
-  sees.
-- **What can still be checked:**
-  - at the Chip-memory port, the rate at which disk *write* DMA takes words
-    from memory (G1, G2 in P6, 3). The pages tie this rate to the bit-cell
-    time, and this id is asserted there.
+- **Cannot be checked at this boundary.** The page's quantity is the disk
+  data clock on Paula's write-data pin (p. 380: `38 DKWD* Disk write data
+  O`). The harness serves no disk image, and `nanomig.v` has no such pin;
+  its disk side is the SD-card sector interface.
+- **The Chip-memory read rate is a different quantity.** G1, G2 and G3 in
+  P6, 3, time the rate at which disk write DMA reads words at the
+  Chip-memory port. No page ties that rate to the bit-cell time -- it would
+  need an unprinted premise (that DSKDAT is the whole of the storage between
+  memory and the pin, or that Paula requests a word only when the previous
+  one has been sent; p. 194 lets a device leave its slots unused, and
+  pp. 380-381 name Paula's `DMAL`, "DMA request line", and no more). G1, G2
+  and G3 decline the claim for this reason; the durations they measure stay
+  printed as MEASURED lines.
   - through registers, the bit's position and state alone -- P5 runs that
     check too, but a register readback is a proxy for the rate the bit
     controls, not the rate itself, so this id is not asserted on P5.
-- **P6 is conditional.** It is gradable only if disk write DMA runs with no
-  disk image. Its precondition B3 decides this, and a failure there means
-  "not checkable yet", not red.
 - **Not graded:** the parenthesis "(fast for MFM, slow for MFM or GCR)". It
   is advice on use.
 
@@ -452,11 +455,12 @@ A failing precondition means "not graded", never green.
 1. **Proposition.** Setting or clearing bit 8 or bit 9 through ADKCON shows
    in the same bit of ADKCONR, bit 8 and bit 9 independently. p. 265.
    - No claim id of this package is established here: A-adkcon.b08 and
-     5-appA-p265.c21 (bit 8 is FAST) are established by G1/G2 in P6, which
-     grade the rate the bit controls; A-adkcon.b09 and 5-appA-p265.c20 (bit
-     9 is MSBSYNC) stay declined (1.2), since this package cannot drive a
-     disk read. A register readback is a proxy for either claim, not the
-     claim itself.
+     5-appA-p265.c21 (bit 8 is FAST) stay declined (1.2) -- G1/G2/G3 in P6
+     time the Chip-memory read rate, not the bit-cell time the claim states,
+     and no page ties the one to the other; A-adkcon.b09 and 5-appA-p265.c20
+     (bit 9 is MSBSYNC) stay declined (1.2) as well, since this package
+     cannot drive a disk read. A register readback is a proxy for either
+     claim, not the claim itself.
 2. **Stimulus.** Preamble (2.3). Then five steps, each an ADKCON write
    followed at once by an ADKCONR read that is stored in its own result slot
    R0-R4:
@@ -499,10 +503,12 @@ A failing precondition means "not graded", never green.
    word from memory per 16 bit cells of about 2 us. With FAST = 0, the bit
    cells are about 4 us, twice as long.
    - Claims: A-adkcon.b08, 5-appA-p265.c21 (p. 265). Wording on p. 249 (same
-     point, same values).
-   - This is the only part of the rate claim observable without a disk
-     surface. **It is gradable only if disk write DMA runs without a disk
-     image (precondition B3).**
+     point, same values). Both stay declined (1.2): no page ties the
+     Chip-memory read rate G1, G2 and G3 measure to the bit-cell time, so
+     they decline the comparison rather than grade it.
+   - The durations below are measurable only if disk write DMA runs without
+     a disk image (precondition B3); B3's failure means "not measured", not
+     red.
 2. **Stimulus.**
    - **Buffers.** Two buffers, A and B, of 544 words each, in Chip memory
      below $80000 at even addresses. Every word is $AAAA. p. 249 for FAST = 1:
@@ -552,28 +558,34 @@ A failing precondition means "not graded", never green.
        that must be presented to the disk controller will be twice as large
        as the unencoded data". p. 249: "two microseconds per bit cell ... Data
        must be valid raw MFM".
-     - The disk has "3 cycles for disk DMA" in every line (p. 194). At 2 us
-       per bit cell the controller needs about 2 words per line, which those
-       slots allow, so over a long interval the read rate equals the rate at
-       which bits are sent.
-4. **Expected values.** p. 265: "08 FAST Disk data clock rate control
-   1=fast(2us) 0=slow(4us)." p. 249: "Value of 1 selects two microseconds per
-   bit cell (usually MFM). ... 0 selects four microseconds per bit (usually
-   GCR)."
-   - **G1:** 1.5 us <= T_F < 2.5 us. The page prints the value to one
-     significant figure, and the test grades it at that precision.
-   - **G2:** 3.5 us <= T_S < 4.5 us, for the same reason.
-   - **G3:** |D_S - 2 x D_F| < 3 lines (3 x 228 color clocks).
-     - The page gives the two settings as 2 and 4 for one control bit. The
-       test reads this as a factor of two between them.
-     - Where the band comes from: a read occurs in the next disk slot after
-       the controller needs the word. That is less than one line later
-       (p. 194, disk slots in every line), so each duration is off by less
-       than one line. D_S - 2 x D_F is therefore off by less than 3 lines.
-       The band is the measurement's resolution, not a tolerance on the
-       page's value.
-   - **Quantifier.** Both settings, each over 512 consecutive words.
-5. **Preconditions.**
+     - **This gives the time of a word on the disk, not the rate it leaves
+       memory.** p. 194 lists "3 cycles for disk DMA" in every line, and lets
+       a device leave a slot unused ("If a device does not request one of
+       its allocated time slots, the slot is open for other uses"). That the
+       slots allow room for about 2 words a line at a 2 us cell bounds the
+       memory-read rate from below; it does not make the two equal, and no
+       page says when Paula requests a disk word from memory (pp. 380-381
+       name only `DMAL`, "DMA request line"). T_F and T_S below are measured
+       and printed (MEASURED); G1, G2 and G3 decline to grade them against
+       the bit-cell time for this reason.
+4. **G1, G2 and G3 are declined, not graded.** p. 265: "08 FAST Disk data
+   clock rate control 1=fast(2us) 0=slow(4us)." p. 249: "Value of 1 selects
+   two microseconds per bit cell (usually MFM). ... 0 selects four
+   microseconds per bit (usually GCR)." Both pages give the bit-cell time of
+   the disk data clock on Paula's write-data pin (p. 380), not a
+   Chip-memory read rate; `nanomig.v` has no such pin, only the SD-card
+   sector interface. G1, G2 and G3 measure the rate at which disk write DMA
+   reads words at the Chip-memory port and decline to grade it against the
+   bit-cell time, because no page ties the one to the other (1.2, and "16
+   bit cells per word" above).
+   - **G1, G2:** T_F and T_S are printed as MEASURED lines, not graded
+     against a band.
+   - **G3:** D_F and D_S are printed as MEASURED lines, not graded against a
+     factor of two.
+   - **Quantifier.** Both settings, each over 512 consecutive words, in
+     every configuration.
+5. **Preconditions.** Each grades a page sentence of its own, independent of
+   the Chip-memory-read-rate premise G1-G3 decline, and stays graded.
    - **B1:** the stored ADKCONR bit 8 equals the run's FAST setting.
    - **B2:** the stored DSKBYTR has bit 14 (DMAON) = 1 and bit 13
      (DISKWRITE) = 1 in each run. p. 248: "DMAON Indicates when DMA is
@@ -586,13 +598,9 @@ A failing precondition means "not graded", never green.
        record it as red.
    - **B4:** the F1 anchor holds.
 6. **Contrasting cases.**
-   - **G1:** run F with FAST = 0 (ADKCON = $0100). The page predicts about
-     4 us, so G1 goes red. B1 still holds, because it compares ADKCONR with
-     the run's own setting.
-   - **G2:** run S with FAST = 1 (ADKCON = $8100). The page predicts about
-     2 us, so G2 goes red. B1 still holds.
-   - **G3:** both runs with FAST = 1. The page predicts D_S about equal to
-     D_F, so G3 goes red. B1 still holds.
+   - **G1, G2, G3:** none. Each is a RECORDED decline, not a graded
+     comparison, so no stimulus can turn it red or green (1.2, and "16 bit
+     cells per word" above).
    - **B1:** in run F, write $0100 instead of $8100. Bit 15 = 0 clears
      instead of sets, bit 8 reads 0, and B1 goes red.
    - **B2:** in run F, write DMACON = $8010 instead of $8210 (DMAEN, bit 9,
@@ -642,9 +650,10 @@ A failing precondition means "not graded", never green.
   open whether the table's first word is output in the first pass after DMA
   starts. P1-P4 avoid the first pass (F2).
 - **Precision of the disk values.** The pages print the bit-cell times as
-  "2us"/"4us" and "two"/"four microseconds" with no further precision. P6
-  grades the absolute values only to one significant figure. The factor of
-  two between them is the sharper check.
+  "2us"/"4us" and "two"/"four microseconds" with no further precision. P6's
+  G1-G3 do not grade these values at any precision: no page ties the
+  measured Chip-memory read rate to the bit-cell time, so there is nothing
+  of the page's own to compare it against (1.2, 3).
 
 ## 5. What the build adds
 
@@ -688,17 +697,18 @@ otherwise.
   word on fx68k only (A1 for T3 red there, P4 not graded on fx68k; A1 for T3
   holds on TG68K, P4 graded there). For T2, t_2 is preceded by the last word
   on both cores (A1 for T2 holds, P3 graded on both cores).
-- **G1/G2/G3 (P6): a measured page disagreement.** ADKCON bit 8 (FAST) reads
-  back correctly (B1 holds on both runs, every configuration, both cores).
-  Measured D_F equals D_S exactly (310520 `clk_sys` cycles for 512 words,
-  both runs, every configuration, both cores), giving T_F = T_S ~= 1.336 us
-  (PAL): the measured Chip-memory read rate does not change with the FAST
-  bit. G1, G2 and G3 are kept as the graded, printed, red result this
-  produces on both cores. A separate, legal audio-rate capture (AUD0PER=124
-  then 248), run through the same two comparators G2 and G3 use, comes out
-  green on both cores (SPECIFICATION.md's claims are unaffected; this is a
-  build-side demonstration that the comparators themselves can pass, not a
-  proposition of its own).
+- **G1/G2/G3 (P6): declined, not a page disagreement.** ADKCON bit 8 (FAST)
+  reads back correctly (B1 holds on both runs, every configuration, both
+  cores). Measured D_F equals D_S exactly (310520 `clk_sys` cycles for 512
+  words, both runs, every configuration, both cores), giving T_F = T_S ~=
+  1.336 us (PAL): the measured Chip-memory read rate does not change with
+  the FAST bit. This is printed as a MEASURED line, not graded: G1, G2 and
+  G3 decline to compare it with the bit-cell time, because no page ties a
+  Chip-memory read rate to that time (1.2, 3). A separate, legal audio-rate
+  capture (AUD0PER=124 then 248), run through the same two comparator
+  formulas G2 and G3 used, comes out green on both cores (a build-side
+  demonstration that the comparator formulas themselves can pass, not a
+  proposition of its own; SPECIFICATION.md's claims are unaffected).
 - **Program placement.** The harness's own `PROGRAM_ORG` ($080400) and
   `RESULTS` ($0C0000) sit above $080000, outside the range 2.1 asks the
   DMA-referenced tables and buffers to stay under. Harmless for the stated
