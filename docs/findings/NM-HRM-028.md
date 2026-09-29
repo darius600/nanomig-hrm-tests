@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `paula.v`, `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L1) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L1) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) |
+| **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon) — `paula.v` alone, no CPU core: the modulator's own output. [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation) — programs on `nanomig.v` through the CPU, on fx68k and TG68K, graded at `audio_left` and `audio_right`: the next channel's volume and period, and the modulator's own output |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red: `ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS` in `hrm/ch5-audio-dmacon-adkcon` |
+| **Assertions** | 1 red in `hrm/ch5-audio-dmacon-adkcon`: `ADKCON-ATTACH-BITS-DO-NOT-SILENCE-CHANNELS`. 19 red in `integration/ch5-audio-attach-modulation`, the same lines on fx68k and TG68K (161 passed, 45 failed on each core): `P4 (c)`, both kinds of modulation at once; `P6 (a)` for each of the six attach bits `P6-0`, `P6-1`, `P6-2`, `P6-4`, `P6-5` and `P6-6`; `P8` for `S-AV`, `S-AP`, `S-BOTH`, `S-DAC3-V` and `S-DAC3-P`, the modulator's own output; the `P1/P8` joint line; `P10` for `S-AP` and `S-BOTH`, the request timing of an attached channel; and `P1 precondition [window]`, `P1 (a)`, `P2 (a)` and `P4 (a)`, which reach FAIL through an empty population, the next channel never changing. The package's other 26 reds are not this finding's |
 | **Verdict of the four** | **all four route a modulator's words into the next channel, and on the package's stimulus all four leave the modulators silent**; they split 2-2 on p. 150's rule that either attach bit disables the channel's output: WinUAE (`audio.cpp:2761-2769`) and Copperline (`paula.rs:2326-2328`) mute a modulator's output, while vAmiga and Denise only stop loading its output buffer under a volume attach, so a period-only modulator still plays its words |
 
 ---
@@ -155,9 +155,11 @@ The other half — a modulator's word reaching another channel's period or volum
 register — is not asserted in this package: no audio module has an attach port,
 so it could show only as a change in the next channel's output.
 [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation)
-grades that output through the CPU and is red on both cores, but its own
-preconditions `PC4` and `PC5` are red as well, so it does not hold this half
-up yet.
+grades that output on `nanomig.v`'s audio ports, with programs run through the
+CPU. Its reference captures (`PC4`) and its side assignment (`PC5`) are green on
+both cores, so the reds above are read on a basis that is shown to work. With an
+attach bit set, the next channel keeps the volume and period the program wrote
+to it, and the modulator's own output keeps playing its words.
 
 **This is an absent feature, of the same character as [NM-HRM-015](withdrawn/NM-HRM-015.md) and
 [NM-HRM-021](NM-HRM-021.md):** declared in a register, accepted by the decode, reaching nothing.

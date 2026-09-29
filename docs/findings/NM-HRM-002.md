@@ -71,10 +71,11 @@ passes them.
 
 The whole design measures the same side.
 [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation)
-runs a program through the CPU and reads `nanomig.v`'s `audio_left` and
-`audio_right` ports; its check `PC5 [p.137]` is red on both cores, channel 1's
-output reaching the right port and leaving the left one constant
-(`out_fx68k.txt` and `out_tg68k.txt`, lines 17-19).
+runs programs through the CPU and reads `nanomig.v`'s `audio_left` and
+`audio_right` ports. Its `PC5` lines grade only the pairing, 0 with 3 and 1
+with 2, on which pp. 137 and 326 agree, and are green; the side itself is a
+MEASURED line, `PC5 measured sides: ch0=0 ch1=1 ch2=1 ch3=0 (0=left,1=right)`,
+the same on fx68k and TG68K: channels 0 and 3 on `audio_left`, as p. 326 prints.
 
 ---
 
