@@ -594,3 +594,28 @@ That makes 216 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 3.
 - **Data fetch in SuperHires.** DDFSTRT and DDFSTOP values are given for Lores and Hires only (p.60). p.91 says bit H3 is "only respected in Hires Mode" and is silent on SuperHires. The test therefore derives every position from what the port fetched and the output showed (R0–R3), not from the fetch registers.
 - **Sprites.** The sprite key names Color 16, but p.103 says the first register of each group is never shown. The pages do not say how sprites 2–7, or attached sprites, are coloured in SuperHires, nor how a hires period made of one sprite and one playfield pixel is coloured (L3; P6 grades inner pixels only).
 - **HAM and dual playfield.** p.300 marks HAM "Incompatible" and DPF "Compatible" with SuperHires, but gives no encoding for either. Neither is used.
+
+---
+
+## 10. What the build added
+
+### 10.1 Programs and data
+
+`prog_main.s` implements section 4.5's seven steps. Every register write besides the CPU's own DMACON, COP1LC and its strobe is a Copper MOVE inside the per-frame tables (`bp_cop_f0_base.i` … `bp_cop_f10_base.i`), copied into place by the program from tables carried in its own image, as section 4.2 allows. `bp_data_pattern1.i`/`bp_data_pattern2.i` carry the 256-word R section and the 32512-word xorshift pattern of section 4.2; their first four words per plane were checked against the section's own four example words before use. `bp_data_sprite0.i` carries the 124-word sprite 0 structure of section 4.2 (built, not yet wired into a graded frame -- section 10.4). Each mutation is its own `prog_<id>.s`: an `equ` of one `MUT_<ID>` symbol followed by `include "prog_main.s"`. Every frame's own table is chosen by an `ifd`/`else` cascade on that symbol, so the same copy loop runs regardless of which table it copies.
+
+### 10.2 Reference frames, as measured
+
+- **R0.** w = 1, phi = 0: one video sample is one hires period on this build. Measured on F5's own pattern lines (a hires frame, full twelve bits compared, per section 5) and reused for every frame, per section 5's own rule that w and phi are frame-invariant.
+- **R1.** The harness's scan doubler shows two output lines per source line (`nmh_harness.h`'s own note). Of the two, the LAST one carries the source line's own fetched data; the first shows something else (checked directly: at a graded pixel, the first copy's colour does not follow the v[i] the port shows was fetched, the second copy's does, on every line checked). The test uses the last copy throughout.
+- **R2.** s is frame-specific and not small: F1's own s is 266. Window line 0 -- the line immediately after each frame's own Copper header -- shows only the border colour across its whole width on every frame checked (F1, F5), not the fetched bitplane data; window lines 1 upward show it correctly, checked directly against the four Colors' own letters (SuperHires) or against COLOR v[i] whole (hires/lores). Every population this specification calls "the top Q0 lines" is graded as window lines 1-23, not 0-23, in this build. F4's own Q0 tail (the frame plan gives no separate line count for its 32-band case, unlike F2/F3's 80-band "last 16 lines") is graded as the remainder of the frame after its bands and the V4c null band: lines 92-199.
+
+### 10.3 Measured verdicts, both cores agreeing throughout (see the report to the lead for the exact mutation table)
+
+- P1 (all twelve), P3 (both, and P7.1), P5.L's Hires half: PASS.
+- P4: the p-half bits (2,3,6,7,10,11) of COLOR00-03, 24 propositions: PASS. The q-half bits (0,1,4,5,8,9) of COLOR00-03 and the whole of COLOR04-0F, 168 propositions: NOT OBSERVABLE -- every graded pixel checked (1120 per bit) found a baseline match and showed no difference from it.
+- P5.L's SuperHires half: FAIL -- the same 168-bit population never changes a graded pixel.
+- P2 (R, G and B): FAIL -- at least one (Color, component, letters) group's graded pixels do not all show the same full four-bit value.
+
+### 10.4 What the specification lists that this pass did not build
+
+F7-F10 (the sprite-colour frames), and with them P5.U, P6.1, P6.2, and the sprite-dependent halves of P7.2 and P7.3, are not built in this pass: the sprite 0 structure and null sprite tables exist (section 10.1) but no frame points SPR0PT at them and no test observes a sprite run. C10, C11 and the V5c/V6a/V6b/V6c/V6d contrasts are consequently not built either.
