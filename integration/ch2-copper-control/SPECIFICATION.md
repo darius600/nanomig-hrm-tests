@@ -1373,33 +1373,48 @@ cores.
 ### 5.3 P4: the fixed stimulus, measured
 
 With the location registers and the strobe written only after a record
-shows V between $40 and $C0, and precondition (c) holding (no wrap, no
-V <= 25 record, between t(MS) and the first fetch): measured, on both
-cores, Run 1's first fetch after M1 is A's IR1, matching p.25 and p.30.
-Run 2's, Run 3's and Run 3-reorder's first fetch after M1 is also A's IR1
-on both cores, where p.25, p.26, p.30 and p.276 predict B, B and C
-respectively. The comparator contrast (COP1LC = B, COPJMP1) measures B's
-IR1 on both cores, the same as p.25 predicts, through the same comparator
-that Run 1 uses.
+shows V between $40 and $C0, and precondition (c) holding (the last record
+stored before t(MS) and the record following the first record stored after
+the first fetch lie in the same frame and both read V > 25): measured, on
+both cores, Run 1's first fetch after M1 is A's IR1, matching p.25 and
+p.30. Run 2's, Run 3's and Run 3-reorder's first fetch after M1 is also A's
+IR1 on both cores, where p.25, p.26, p.30 and p.276 predict B, B and C
+respectively. The comparator contrast COP1LC = B, COPJMP1 (`P4-CTRL`)
+measures B's IR1 on both cores, the same as p.25 predicts, through the same
+comparator that Run 1 uses; the comparator contrast COP1LC = C, COPJMP1
+(`P4-CTRL-C`) measures C's IR1 on both cores, through the same comparator.
 
 Claims `ch2-starting-the-copper-after-reset.c1.s2` (Run 1) and
 `ch2-starting-the-copper-after-reset.c2.s2` (Run 2) are graded together as
-one assertion (`P4`), which is red on both cores through Run 2's clause. Run
-2, Run 3 and Run 3-reorder are also graded on their own, as three separate
-assertions carrying no claim id (`P4-Run2`, `P4-Run3`, `P4-Run3-reorder`):
-`P4-Run2` restates `P4`'s own clause for Run 2 alone; `P4-Run3` and
-`P4-Run3-reorder` grade the narrower clause of p.25's "is loaded into the
-Copper program counter" against each run's own location-register value at
-the moment its strobe was written. All three are red on both cores, for the
-same reason as `P4`.
+one assertion (`P4`), which is red on both cores through Run 2's clause.
+Run 2 is also graded on its own, as `P4-Run2`, restating `P4`'s own clause
+for Run 2 alone: red on both cores, for the same reason as `P4`.
+
+`P4-Run3` and `P4-Run3-reorder` carry no claim id and grade the narrower
+clause of p.25's "is loaded into the Copper program counter" against each
+run's own location-register value at the moment its strobe was written.
+`P4-Run3`'s own clause (B against C) is reached only when the first fetch
+is B or C; measured, on both cores, the first fetch is A, so a precondition
+gates it and the line is RECORDED as not reached instead of graded.
+`P4-Run3-reorder` alone cannot isolate "the value at the strobe" (COP2LC
+holds C both at the strobe and at DMA-on), so it repeats `P4-Run2`'s clause
+with C; measured, on both cores, its first fetch is also A, so it is red,
+for the same reason as `P4-Run2`, not through its own labelled clause.
+`P4-Run3-PAIR` grades Run 3 and Run 3-reorder together, as the
+specification's own pair (P4 items 4 and 6); red on both cores for the same
+reason. Its own green demonstration, substituting `P4-CTRL`'s and
+`P4-CTRL-C`'s own captures for Run 3's and Run 3-reorder's, measures PASS
+on both cores: the same paired comparator reads true for a live B/C pair.
 
 ### 5.4 Mutations: measured per core
 
 Every mutation below was run once on each core (`NMH_MUTATE=<value>`) after
 the normal run, by re-running the built binary with the environment
 variable set. Each measured a FAIL on exactly its own precondition or
-assertion, on both cores, with every other check unchanged from the normal
-run (the two known-red P4 assertions, 5.3, aside):
+assertion, on both cores, with every other line unchanged from the normal
+run (the P4 lines already red or recorded on every normal run -- `P4`,
+`P4-Run2`, the `P4-Run3` precondition, `P4-Run3-reorder`, `P4-Run3-PAIR` --
+aside):
 
 | Mutation | Own check | fx68k | TG68K |
 |---|---|---|---|
@@ -1417,18 +1432,28 @@ run (the two known-red P4 assertions, 5.3, aside):
 | P4-A | P4a | FAIL | FAIL |
 | P4-B | P4b | FAIL | FAIL |
 | P4-C | P4c | FAIL | FAIL |
+| P4-RUN3-PAIR-A | P4-Run3-PAIR (green demonstration) | PASS | PASS |
 
 FIXTURE, P1-SWAP, P1OFF-SWAP, P2-SWAP and P2OFF-SWAP are not stimulus
 mutations: they swap in the other, already-built capture (or, for FIXTURE,
 a program storing $DEAD instead of $BEEF) in place of the one the
 assertion normally grades, so the assertion's own comparator is exercised
-against a live input the page predicts the opposite outcome for. The P4
-comparator contrast (prog_p4_ctrl_cop1b.bin, P4-CTRL in the normal run's
-own output) is not `NMH_MUTATE`-gated; it is this package's own
-contrasting case for the combined Run 1/Run 2 assertion and for the
-Run 2/Run 3/Run 3-reorder also-check (5.3), both of which are already red
-on this build: measured B's IR1 on both cores, matching p.25, showing the
-same comparator that reports Run 2's red is not vacuous.
+against a live input the page predicts the opposite outcome for.
+`P4-RUN3-PAIR-A` is the same style, on an already-red line: it swaps
+`P4-CTRL`'s and `P4-CTRL-C`'s own captures (COP1LC/COPJMP1, not
+COP2LC/COPJMP2) into Run 3's and Run 3-reorder's own slots, and measures
+PASS on both cores, showing the same paired comparator reads true for a
+live B/C pair.
+
+The P4 comparator contrasts (prog_p4_ctrl_cop1b.bin, `P4-CTRL`, and
+prog_p4_ctrl_cop1c.bin, `P4-CTRL-C`, both in the normal run's own output)
+are not `NMH_MUTATE`-gated; they are this package's own contrasting cases.
+`P4-CTRL` is `P4`'s and `P4-Run2`'s falsifiability demonstration and
+`P4-Run3`'s own green control (both expect B); `P4-CTRL-C` is
+`P4-Run3-reorder`'s and `P4-Run3-PAIR`'s own green control (expects C).
+Measured, on both cores: `P4-CTRL` reads B's IR1 and `P4-CTRL-C` reads C's
+IR1, matching p.25, showing the same comparator that reports these lines'
+reds is not vacuous.
 
 ### 5.5 P2c: both cores agree
 
@@ -1443,20 +1468,36 @@ BPL $010000-$017FFF, SPR $018000-$01FFFF, AUD0 $020000-$027FFF, AUD1
 $028000-$02FFFF, AUD2 $030000-$037FFF, AUD3 $038000-$03FFFF, DSK
 $040000-$047FFF, BLT $048000-$04FFFF, COP $050000-$057FFF.
 
-Refresh recognition (2.3): measured, on prog_p1.bin's own captured log
-(already part of P1), every RAM read where the `refresh` port reads
-asserted is at word address 0 -- the same signature 5.1 already measured
-for P1/P2/P4, now checked directly against the port instead of assumed.
-Since every one of P3's nine regions starts at $10000 or above, a
+Refresh recognition (2.3): measured, on prog_p1.bin's own captured log,
+every RAM read where the `refresh` port reads asserted is at word address
+0, and at least one such read exists -- the same signature 5.1 already
+measured for P1/P2/P4, checked directly against the port. Measured again,
+directly on prog_p3_run_base.bin's own captured log: at least one
+refresh-asserted read exists, and none of them falls inside any of P3's own
+nine regions. Since every one of those regions starts at $10000 or above, a
 word-address-0 read can never fall inside one; P3's own region-bounded
 checks therefore exclude word address 0 directly, exactly as P1/P2/P4
 already do, rather than sampling the refresh port cycle by cycle for every
 access.
 
-Disk DMA (precondition (a), section 4 item 12): measured, on both cores,
-disk DMA runs and completes with no floppy drive attached
-(`floppy_config` = 0): region DSK shows an access in Base, and DSKBYTR bit
-14 (DMAON) reads 1 in Base and 0 in the DSK case and in case M.
+Disk DMA (precondition (a), section 4 item 12): the harness's own
+`floppy_config` = 0 is one drive (DF0), write-enabled, with no disk image
+served (`nanomig_harness.h`); the program itself selects no drive. Measured,
+on both cores: disk DMA runs and completes even so -- region DSK shows an
+access in Base, within its own 100-word transfer starting at DSKPTH ($100
+above region DSK's own start), none in the DSK case or in case M; DSKBYTR
+bit 14 (DMAON) reads 1 in Base and 0 in the DSK case and in case M.
+
+Base coverage (P3 item 4's first sentence, `P3-BASE`): measured, on both
+cores, every region other than DSK has at least one access in Base --
+BPL, SPR, AUD0-AUD3, BLT and COP are all live there, not just left silent
+by every case run alike. Precondition (c)'s comparator (SPECIFICATION.md
+P3 stimulus: each channel's own pointer, $100 above its own region's
+start): measured, on both cores, in Base the lowest address accessed in
+each region equals that region's own start plus $100, for every region a
+channel touches. Every claim-bearing case line (`P3-BPL` ... `P3-COP`,
+`P3-M`) additionally requires its own region to have shown an access in
+Base, measured true on both cores for the nine that do.
 
 ### 5.7 P3 mutations: measured per core
 

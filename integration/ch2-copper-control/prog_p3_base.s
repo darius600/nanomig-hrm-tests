@@ -1,6 +1,6 @@
 ; prog_p3_base.s -- P3: DMACON controls every DMA channel (SPECIFICATION.md
-; P3). Included by the eleven case files and the three mutation files
-; below, each setting one symbol first (default = Base, P = $03FF).
+; P3). Included by the eleven case files and the four mutation files below,
+; each setting one symbol first (default = Base, P = $03FF).
 ;
 ;   (no symbol)   -- Base: DMACON = $83FF (every channel + DMAEN)
 ;   P3_OFF_BPL    -- Case BPL:  $82FF (bit 8 clear)
@@ -15,13 +15,22 @@
 ;   P3_CASE_M     -- Case M:    $81FF (bit 9, DMAEN, clear)
 ;   P3_MUT_A      -- precondition (a) mutation: the second DSKLEN=$C064
 ;                    write left out (Base pattern otherwise)
-;   P3_MUT_B      -- precondition (b) mutation: DMACON written without
-;                    SET/CLR ($03FF, Base pattern otherwise)
-;   P3_MUT_C      -- precondition (c) mutation: AUD0LC at AUD0's region
-;                    start + 256, not at the region's own start (Base
-;                    pattern otherwise)
+;   P3_MUT_B      -- precondition (b) mutation: DMACON = $83FE (SET/CLR set,
+;                    every channel and DMAEN on, AUD0EN off) graded against
+;                    P = $3FF, so DMACONR reads $3FE while every channel but
+;                    AUD0 keeps running (Base pattern otherwise)
+;   P3_MUT_C      -- precondition (c) mutation: SPR1PT moved to AUD0's
+;                    region start (AUD0LC stays at its own Base placement,
+;                    256 bytes above that same region start; Base pattern
+;                    otherwise)
 ;   P3_MUT_D      -- precondition (d) mutation: 2.4's own sparse-sampler
 ;                    contrast for B2/B3 (Base pattern otherwise)
+;
+; Every channel's own pointer or location register is written PTR_OFFSET
+; (256 bytes, $100) above its region's own start, not at the region's first
+; word (SPECIFICATION.md P3 stimulus): this leaves a band below the pointer,
+; still inside the region, for precondition (c) to catch another channel's
+; accesses landing there.
 
         include "nanomig.i"
         include "copctl.i"
@@ -38,6 +47,10 @@ AUD3_REGION     equ     $038000
 DSK_REGION      equ     $040000
 BLT_REGION      equ     $048000
 COP_REGION      equ     $050000
+
+; SPECIFICATION.md P3 stimulus: each channel's own pointer sits this far
+; above its region's own start.
+PTR_OFFSET      equ     $100
 
         org     PROGRAM_ORG
 
@@ -56,36 +69,34 @@ start:
         move.w  #0,BPL1MOD(a0)
 
         ; step 3: audio x = 0-3 (p.139, p.140, p.143).
-        ifd     P3_MUT_C
-        move.l  #AUD0_REGION+256,AUD0LCH(a0)
-        else
-        move.l  #AUD0_REGION,AUD0LCH(a0)
-        endif
+        move.l  #AUD0_REGION+PTR_OFFSET,AUD0LCH(a0)
         move.w  #16,AUD0LEN(a0)
         move.w  #447,AUD0PER(a0)
         move.w  #48,AUD0VOL(a0)
-        move.l  #AUD1_REGION,AUD1LCH(a0)
+        move.l  #AUD1_REGION+PTR_OFFSET,AUD1LCH(a0)
         move.w  #16,AUD1LEN(a0)
         move.w  #447,AUD1PER(a0)
         move.w  #48,AUD1VOL(a0)
-        move.l  #AUD2_REGION,AUD2LCH(a0)
+        move.l  #AUD2_REGION+PTR_OFFSET,AUD2LCH(a0)
         move.w  #16,AUD2LEN(a0)
         move.w  #447,AUD2PER(a0)
         move.w  #48,AUD2VOL(a0)
-        move.l  #AUD3_REGION,AUD3LCH(a0)
+        move.l  #AUD3_REGION+PTR_OFFSET,AUD3LCH(a0)
         move.w  #16,AUD3LEN(a0)
         move.w  #447,AUD3PER(a0)
         move.w  #48,AUD3VOL(a0)
 
-        ; step 4: Copper -- list `$FFFF,$FFFE` at COP_REGION; COP1LC, COPJMP1 (p.30).
-        move.l  #$FFFFFFFE,COP_REGION
-        move.l  #COP_REGION,COP1LCH(a0)
+        ; step 4: Copper -- list `$FFFF,$FFFE` at COP_REGION+PTR_OFFSET;
+        ; COP1LC, COPJMP1 (p.30).
+        move.l  #$FFFFFFFE,COP_REGION+PTR_OFFSET
+        move.l  #COP_REGION+PTR_OFFSET,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
 
         ; step 5: sprite data structures (p.110): sprite 0 -- control words,
         ; data words, end-of-data words; sprites 1-7 -- end-of-data words
-        ; only, all sharing one small structure.
-        lea     SPR_REGION,a1
+        ; only, all sharing one small structure. Placed PTR_OFFSET above
+        ; SPR_REGION's own start, same as every other channel's data here.
+        lea     SPR_REGION+PTR_OFFSET,a1
         move.w  #$5060,(a1)+
         move.w  #$5200,(a1)+
         move.w  #$0FF0,(a1)+
@@ -94,7 +105,7 @@ start:
         move.w  #$0000,(a1)+
         move.w  #$0000,(a1)+
         move.w  #$0000,(a1)+
-        move.l  #$00000000,SPR_REGION+$20
+        move.l  #$00000000,SPR_REGION+PTR_OFFSET+$20
 
         ; step 6: wait for vertical blank (p.219).
         move.w  #$0020,INTREQ(a0)
@@ -102,15 +113,22 @@ start:
 
         ; step 7: in that vertical blank, write BPL1PT and SPR0PT-SPR7PT
         ; (p.110).
-        move.l  #BPL_REGION,BPL1PTH(a0)
-        move.l  #SPR_REGION,SPR0PTH(a0)
-        move.l  #SPR_REGION+$20,SPR1PTH(a0)
-        move.l  #SPR_REGION+$20,SPR2PTH(a0)
-        move.l  #SPR_REGION+$20,SPR3PTH(a0)
-        move.l  #SPR_REGION+$20,SPR4PTH(a0)
-        move.l  #SPR_REGION+$20,SPR5PTH(a0)
-        move.l  #SPR_REGION+$20,SPR6PTH(a0)
-        move.l  #SPR_REGION+$20,SPR7PTH(a0)
+        move.l  #BPL_REGION+PTR_OFFSET,BPL1PTH(a0)
+        move.l  #SPR_REGION+PTR_OFFSET,SPR0PTH(a0)
+        ifd     P3_MUT_C
+        ; precondition (c) mutation: SPR1PT intrudes at AUD0's own region
+        ; start, below AUD0LC's own placement (AUD0_REGION+PTR_OFFSET) --
+        ; the specification's own contrast for (c).
+        move.l  #AUD0_REGION,SPR1PTH(a0)
+        else
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR1PTH(a0)
+        endif
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR2PTH(a0)
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR3PTH(a0)
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR4PTH(a0)
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR5PTH(a0)
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR6PTH(a0)
+        move.l  #SPR_REGION+PTR_OFFSET+$20,SPR7PTH(a0)
 
         lea     RECBUF,a6
         moveq   #0,d7                   ; running record count
@@ -150,7 +168,8 @@ start:
         move.w  #$81FF,DMACON(a0)
         else
         ifd     P3_MUT_B
-        move.w  #$03FF,DMACON(a0)       ; precondition (b) mutation: no SET/CLR
+        move.w  #$83FE,DMACON(a0)       ; precondition (b) mutation: graded
+                                         ; against P=$3FF, so DMACONR misses
         else
         move.w  #$83FF,DMACON(a0)       ; Base
         endif
@@ -169,7 +188,7 @@ start:
         move.w  #3,MARKBUF+4            ; MJ
 
         ; step 9: disk, in p.247's order.
-        move.l  #DSK_REGION,DSKPTH(a0)
+        move.l  #DSK_REGION+PTR_OFFSET,DSKPTH(a0)
         move.w  #$4000,DSKLEN(a0)
         move.w  #$C064,DSKLEN(a0)
         ifnd    P3_MUT_A
@@ -181,7 +200,7 @@ start:
         move.w  #$01FF,BLTCON0(a0)
         move.w  #$0000,BLTCON1(a0)
         move.w  #$0000,BLTDMOD(a0)
-        move.l  #BLT_REGION,BLTDPTH(a0)
+        move.l  #BLT_REGION+PTR_OFFSET,BLTDPTH(a0)
         move.w  #$1020,BLTSIZE(a0)      ; last
 
         ; step 11: DMACONR, then the sampler until the end of the first

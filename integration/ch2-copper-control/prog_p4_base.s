@@ -8,6 +8,8 @@
 ;   P4_RUN2+P4_RUN3+P4_RUN3_REORDER -- Run 3 with COP2LC=C moved before
 ;                           COPJMP2
 ;   P4_CTRL_COP1B        -- comparator contrast: COP1LC=B (not A), COPJMP1
+;   P4_CTRL_COP1C        -- comparator contrast: COP1LC=C (not A or B),
+;                           COPJMP1
 ;   P4_MUT_A             -- precondition (a) mutation: DMACON=$8080 written
 ;                           before the DMACONR read
 ;   P4_MUT_B             -- precondition (b) mutation: the whole Run 1
@@ -73,6 +75,15 @@ start:
         move.w  #9,MARKBUF+4             ; MS: precedes the first
                                           ; location-register write
 
+        ifd     P4_CTRL_COP1C
+        ; Comparator contrast: COP1LC = C (LIST3), COPJMP1 (p.25 predicts
+        ; the first fetch is C's, not A's or B's) -- the control for P4-Run3
+        ; and P4-Run3-reorder's own comparator (defect: no control showed it
+        ; reading C).
+        move.l  #LIST2,COP2LCH(a0)      ; decoy, never strobed
+        move.l  #LIST3,COP1LCH(a0)
+        move.w  #0,COPJMP1(a0)
+        else
         ifd     P4_CTRL_COP1B
         ; Comparator contrast: COP1LC = B (LIST2), COPJMP1 (p.25 predicts
         ; the first fetch is B's, not A's).
@@ -104,6 +115,7 @@ start:
         move.l  #LIST2,COP2LCH(a0)
         move.l  #LIST1,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
+        endif
         endif
         endif
 

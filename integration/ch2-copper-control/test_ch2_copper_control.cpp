@@ -8,14 +8,16 @@
 // exercised by a plain `make test`. The normal run prints only the
 // fixture, the preconditions and the assertions.
 //
-// The P4 comparator contrast (prog_p4_ctrl_cop1b.bin) is not gated by
-// NMH_MUTATE: like prog_p1_off.bin/prog_p2_off.bin, it is one of this
-// package's own contrasting cases and runs in every pass.
+// The P4 comparator contrasts (prog_p4_ctrl_cop1b.bin, prog_p4_ctrl_cop1c.bin)
+// are not gated by NMH_MUTATE: like prog_p1_off.bin/prog_p2_off.bin, they
+// are this package's own contrasting cases and run in every pass.
 //
-// Every mutation below measured a FAIL on exactly the one line it names,
-// on both cores, with every other line unchanged from the normal run (the
-// four already-red P4 lines -- P4, P4-Run2, P4-Run3, P4-Run3-reorder --
-// aside).
+// Every mutation below measured a FAIL on exactly the one line it names, on
+// both cores, with every other line unchanged from the normal run, with two
+// exceptions: the P4 lines already red or recorded on every normal run (P4,
+// P4-Run2, the P4-Run3 precondition, P4-Run3-reorder, P4-Run3-PAIR) stay
+// exactly as they are; and NMH_MUTATE=P3-A additionally turns P3-DSK from
+// PASS to RECORDED (its own entry below says so).
 //
 // MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: stored constant changed
 //   to $DEAD instead of $BEEF -- measured FAIL on "FIXTURE: ...", both cores
@@ -57,18 +59,73 @@
 // MUTATION P4c stimulus red NMH_MUTATE=P4-C: a frame wrap forced between M1
 //   and the DMACON write, in the run substituted for Run 1 -- measured FAIL
 //   on "P4c precondition: ...", both cores
+// MUTATION P4-Run3-PAIR comparator green NMH_MUTATE=P4-RUN3-PAIR-A: this
+//   line is already red on every normal run (Run 3 does not reach B);
+//   P4-CTRL's and P4-CTRL-C's own captures (COP1LC/COPJMP1, not
+//   COP2LC/COPJMP2) graded in place of Run 3's and Run 3-reorder's own --
+//   measured PASS on "P4-Run3-PAIR ...", both cores: the same paired
+//   comparator reads true for a live B/C pair
 // MUTATION P3a stimulus red NMH_MUTATE=P3-A: Base's second DSKLEN=$C064
 //   write left out, via prog_p3_mut_a.bin -- measured FAIL on "P3a
+//   precondition: ...", both cores. Exception to the blanket rule above:
+//   with region DSK silent in this run, precondition (a) fails, so the
+//   claim ch2-stopping-the-copper.c8/COP2-stopping-the-copper.c11 is not
+//   graded whole by the ten cases; P3-DSK becomes RECORDED as inconclusive
+//   and the other nine case lines (P3-BPL...P3-COP, P3-M) also become
+//   RECORDED with their ids withdrawn, each naming its own comparator's
+//   PASS or FAIL. P3-BASE is unaffected (its own claim excludes DSK).
+// MUTATION P3b stimulus red NMH_MUTATE=P3-B: Base's DMACON = $83FE (AUD0EN
+//   left clear) graded against P = $3FF, via prog_p3_mut_b.bin -- measured
+//   FAIL on "P3b precondition: ...", both cores, with every channel but
+//   AUD0 still running
+// MUTATION P3c stimulus red NMH_MUTATE=P3-C: SPR1PT moved to AUD0's region
+//   start (AUD0LC unchanged, at its own Base placement 256 bytes above that
+//   same start), via prog_p3_mut_c.bin -- measured FAIL on "P3c
 //   precondition: ...", both cores
-// MUTATION P3b stimulus red NMH_MUTATE=P3-B: Base's DMACON written without
-//   SET/CLR ($03FF), via prog_p3_mut_b.bin -- measured FAIL on "P3b
-//   precondition: ...", both cores
-// MUTATION P3c stimulus red NMH_MUTATE=P3-C: AUD0LC set to AUD0's region
-//   start + 256, not the region's own start, via prog_p3_mut_c.bin --
-//   measured FAIL on "P3c precondition: ...", both cores
 // MUTATION P3d stimulus red NMH_MUTATE=P3-D: Base's sampler replaced with
 //   2.4's own sparse contrast, via prog_p3_mut_d.bin -- measured FAIL on
 //   "P3d precondition: ...", both cores
+// MUTATION P3-BASE stimulus red NMH_MUTATE=P3-BASE-SWAP: Case M's own
+//   capture (DMAEN clear, no region has any access) graded in place of
+//   Base's -- measured FAIL on "P3-BASE ...", both cores
+// MUTATION P3-BPL stimulus red NMH_MUTATE=P3-BPL-SWAP: Base's own capture
+//   graded in place of Case BPL's -- measured FAIL on "P3-BPL ...", both
+//   cores
+// MUTATION P3-SPR stimulus red NMH_MUTATE=P3-SPR-SWAP: Base's own capture
+//   graded in place of Case SPR's -- measured FAIL on "P3-SPR ...", both
+//   cores
+// MUTATION P3-AUD0 stimulus red NMH_MUTATE=P3-AUD0-SWAP: Base's own capture
+//   graded in place of Case AUD0's -- measured FAIL on "P3-AUD0 ...", both
+//   cores
+// MUTATION P3-AUD1 stimulus red NMH_MUTATE=P3-AUD1-SWAP: Base's own capture
+//   graded in place of Case AUD1's -- measured FAIL on "P3-AUD1 ...", both
+//   cores
+// MUTATION P3-AUD2 stimulus red NMH_MUTATE=P3-AUD2-SWAP: Base's own capture
+//   graded in place of Case AUD2's -- measured FAIL on "P3-AUD2 ...", both
+//   cores
+// MUTATION P3-AUD3 stimulus red NMH_MUTATE=P3-AUD3-SWAP: Base's own capture
+//   graded in place of Case AUD3's -- measured FAIL on "P3-AUD3 ...", both
+//   cores
+// MUTATION P3-DSK stimulus red NMH_MUTATE=P3-DSK-SWAP: Base's own capture
+//   graded in place of the DSK case's -- measured FAIL on "P3-DSK ...",
+//   both cores
+// MUTATION P3-BLT stimulus red NMH_MUTATE=P3-BLT-SWAP: Base's own capture
+//   graded in place of Case BLT's -- measured FAIL on "P3-BLT ...", both
+//   cores
+// MUTATION P3-COP stimulus red NMH_MUTATE=P3-COP-SWAP: Base's own capture
+//   graded in place of Case COP's -- measured FAIL on "P3-COP ...", both
+//   cores
+// MUTATION P3-M stimulus red NMH_MUTATE=P3-M-SWAP: Base's own capture
+//   graded in place of Case M's -- measured FAIL on "P3-M ...", both cores
+// MUTATION P3-DSKBYTR stimulus red NMH_MUTATE=P3-DSKBYTR-SWAP: Base's own
+//   DSKBYTR value graded in place of the DSK case's and case M's own --
+//   measured FAIL on "P3-DSKBYTR ...", both cores
+// MUTATION P3-REFRESH comparator red NMH_MUTATE=P3-REFRESH-A: a synthetic
+//   region containing word address 0 added to the checked region list --
+//   measured FAIL on "P3-REFRESH ...", both cores. Comparator
+//   demonstration, not a stimulus mutation: refresh is always at word
+//   address 0, an invariant no captured program can violate, so this shows
+//   the same region-overlap comparator catches a genuine violation.
 //
 // P5, P7, P9, P11 and P12 are not built in this package: SPECIFICATION.md's
 // measured section lists them as not built.
@@ -366,20 +423,27 @@ std::optional<TaggedFetch> first_fetch_among(const std::vector<nmh::RamAccess>& 
     return best;
 }
 
-// P4 precondition (c): a wrap (V >= 256 to V <= 1, as in record_frames)
-// whose own store time lies strictly inside (lo, hi).
-bool wrap_between(const std::vector<Rec>& r, uint64_t lo, uint64_t hi) {
-    for (size_t i = 1; i < r.size(); ++i)
-        if (r[i - 1].V >= 256 && r[i].V <= 1 && r[i].t0 > lo && r[i].t0 < hi) return true;
-    return false;
-}
-
-// P4 precondition (c): a record showing vertical blanking (V <= 25, p.219)
-// whose own store time lies strictly inside (lo, hi).
-bool low_v_between(const std::vector<Rec>& r, uint64_t lo, uint64_t hi) {
-    for (const auto& rec : r)
-        if (rec.t0 > lo && rec.t0 < hi && rec.V <= 25) return true;
-    return false;
+// P4 precondition (c): the program samples nothing between t(MS) and the
+// first fetch (SPECIFICATION.md 5.3), so a check that only looks for a
+// wrap or a low-V record strictly inside that stretch holds by
+// construction, on every run, regardless of whether a vertical blank
+// actually fell there. Bound the stretch instead by the records around it
+// (2.4's own "line of a port event" construction, applied to t(MS) and the
+// first fetch separately): a = the last record stored before t(MS); b =
+// the record following the first record stored after the first fetch. No
+// wrap lies between a and b, and both read V > 25 (p.219: vertical
+// blanking ends at line 25 for PAL) -- so the stretch cannot have crossed
+// a vertical blank even though the program itself samples nothing inside
+// it.
+bool bracket_holds(const std::vector<Rec>& r, uint64_t t_ms, uint64_t t_fetch) {
+    auto a = last_record_before(r, t_ms);
+    auto c = first_record_after(r, t_fetch);
+    if (!a || !c) return false;
+    size_t b = *c + 1;
+    if (b >= r.size() || *a >= b) return false;
+    for (size_t i = *a + 1; i <= b; ++i)
+        if (r[i - 1].V >= 256 && r[i].V <= 1) return false; // a wrap lies between a and b
+    return r[*a].V > 25 && r[b].V > 25;
 }
 
 // P4: one run's capture plus its decoded records and its first fetch (of
@@ -408,8 +472,7 @@ P4Result run_p4(const std::string& bin, uint64_t budget) {
     r.fetch = first_fetch_among(r.cap.log, *r.t_m1, {{kList1, 'A'}, {kList2, 'B'}, {kList3, 'C'}});
     r.ok = r.fetch.has_value();
     if (r.ok && r.t_ms)
-        r.precond_c = !wrap_between(r.recs, *r.t_ms, r.fetch->cycle) &&
-                      !low_v_between(r.recs, *r.t_ms, r.fetch->cycle);
+        r.precond_c = bracket_holds(r.recs, *r.t_ms, r.fetch->cycle);
     return r;
 }
 
@@ -933,6 +996,7 @@ int main(int argc, char** argv) {
         auto run3 = run_p4(dir + "/prog_p4_run3.bin", kSamplerRunBudget);
         auto run3r = run_p4(dir + "/prog_p4_run3_reorder.bin", kSamplerRunBudget);
         auto ctrl = run_p4(dir + "/prog_p4_ctrl_cop1b.bin", kSamplerRunBudget);
+        auto ctrl_c = run_p4(dir + "/prog_p4_ctrl_cop1c.bin", kSamplerRunBudget);
 
         checks.expect(run1.ok, "P4 fixture: Run 1 (prog_p4_run1.bin) produced a decided first fetch after M1");
         checks.expect(run2.ok, "P4 fixture: Run 2 (prog_p4_run2.bin) produced a decided first fetch after M1");
@@ -942,6 +1006,9 @@ int main(int argc, char** argv) {
             "after M1");
         checks.expect(ctrl.ok,
             "P4 fixture: the comparator contrast (prog_p4_ctrl_cop1b.bin) produced a decided first "
+            "fetch after M1");
+        checks.expect(ctrl_c.ok,
+            "P4 fixture: the C comparator contrast (prog_p4_ctrl_cop1c.bin) produced a decided first "
             "fetch after M1");
 
         // ---- Main assertion: one case per register, p.30's "one of ...
@@ -957,38 +1024,86 @@ int main(int argc, char** argv) {
 
         // ---- The same rule, one assertion per run. None carries a claim id
         // of its own (SPECIFICATION.md section 1 lists only c1.s2 and c2.s2,
-        // both on P4). Split from a single combined check into three: Run 2
-        // grades the same clause P4 already grades (the strobe written
-        // while Copper DMA is off sets the start address), stated for Run 2
-        // alone; Run 3 and Run 3-reorder grade a narrower clause -- the
+        // both on P4): P4-Run2 states P4's own clause (the strobe written
+        // while Copper DMA is off sets the start address) for Run 2 alone;
+        // P4-Run3 and P4-Run3-reorder grade a narrower clause -- the
         // location register's own value at the moment the strobe is
         // written, p.25 "is loaded into the Copper program counter" -- since
         // each rewrites the strobed register afterwards, before or after
-        // the strobe.
+        // the strobe. Green control for P4-Run2 and P4-Run3 (both expect
+        // B): P4-CTRL below. Green control for P4-Run3-reorder (expects C):
+        // P4-CTRL-C below.
         checks.expect(run2.ok && run2.fetch->name == 'B',
             "P4-Run2 [p.25,p.26,p.30,p.276]: the strobe written while Copper DMA is off sets the "
             "start address -- COP1LC=A, COP2LC=B, COPJMP2: expect B");
 
-        checks.expect(run3.ok && run3.fetch->name == 'B',
-            "P4-Run3 [p.25]: the location register's value at the strobe (\"is loaded into the "
-            "Copper program counter\") decides the start address -- COP1LC=A, COP2LC=B, COPJMP2, "
-            "then COP2LC=C with no further strobe: COP2LC held B when COPJMP2 was written, expect "
-            "B, not C");
+        // ---- P4-Run3's own clause (B against C) is reached only when the
+        // first fetch is B or C: on this build the first fetch is A, the
+        // same clause P4-Run2 already reads red through, so the clause is
+        // not exercised. The same field this precondition reads
+        // (.fetch->name) is shown taking the live values B and C by
+        // P4-CTRL and P4-CTRL-C below, so the comparator is not vacuous.
+        bool run3_reached = run3.ok && (run3.fetch->name == 'B' || run3.fetch->name == 'C');
+        checks.expect(run3_reached,
+            "P4-Run3 precondition: the first fetch is B or C (the labelled clause, B against C, "
+            "is reached only then)");
+        if (run3_reached) {
+            checks.expect(run3.fetch->name == 'B',
+                "P4-Run3 [p.25]: the location register's value at the strobe (\"is loaded into the "
+                "Copper program counter\") decides the start address -- COP1LC=A, COP2LC=B, COPJMP2, "
+                "then COP2LC=C with no further strobe: COP2LC held B when COPJMP2 was written, expect "
+                "B, not C");
+        } else {
+            checks.record(
+                std::string("P4-Run3 [p.25]: not reached -- the first fetch is neither B nor C (it is ") +
+                (run3.ok ? std::string(1, run3.fetch->name) : std::string("undecided")) +
+                "), so the labelled clause (B against C) was not exercised this run");
+        }
 
+        // ---- P4-Run3-reorder alone cannot isolate "the value at the
+        // strobe": COP2LC holds C both at the strobe and at DMA-on, so its
+        // own comparator repeats P4-Run2's clause with C rather than
+        // contrasting an earlier value against a later one. Paired with
+        // P4-Run3 (which does hold an earlier value, B, at the strobe) as
+        // the specification's own pair (P4 items 4 and 6: "Run 2, Run 3 and
+        // Run 3-reorder are graded together against this rule"), the two
+        // runs together show the rule discriminating the two orderings.
+        // Comparator and expected value (C) unchanged; only this rationale
+        // and the P4-Run3-PAIR line below are new.
         checks.expect(run3r.ok && run3r.fetch->name == 'C',
-            "P4-Run3-reorder [p.25]: the location register's value at the strobe (\"is loaded into "
-            "the Copper program counter\") decides the start address -- COP1LC=A, COP2LC=B, then "
-            "COP2LC=C moved before COPJMP2: COP2LC held C when COPJMP2 was written, expect C");
+            "P4-Run3-reorder [p.25]: COP2LC holds C both at the strobe and at DMA-on, so this line "
+            "alone repeats P4-Run2's clause with C (see P4-Run3-PAIR for the ordering contrast with "
+            "P4-Run3) -- COP1LC=A, COP2LC=B, then COP2LC=C moved before COPJMP2: expect C");
 
-        // ---- Comparator contrast, always run (like the P1/P2 -OFF cases):
-        // COP1LC loaded with the OTHER list, then COPJMP1. Doubles as the
-        // falsifiability demonstration for the four assertions above (P4,
-        // P4-Run2, P4-Run3, P4-Run3-reorder): all measure a red on this
-        // build through Run 2's clause, so a different, live input through
-        // the very same comparator must still reach its own predicted
-        // address for the comparator to mean anything.
+        // ---- P4-Run3-PAIR: Run 3 and Run 3-reorder graded together, as
+        // the specification's own pair. Already red on this build (Run 3
+        // does not reach B); its own green demonstration substitutes
+        // P4-CTRL's and P4-CTRL-C's already-built captures (B and C
+        // through COP1LC/COPJMP1, not through the COP2LC/COPJMP2 path Run
+        // 3 and Run 3-reorder use) for Run 3's and Run 3-reorder's own,
+        // showing the same paired comparator reads true for a live B/C
+        // pair.
+        bool mut_pair = (mv == "P4-RUN3-PAIR-A");
+        bool pair_ok = mut_pair
+            ? (ctrl.ok && ctrl.fetch->name == 'B' && ctrl_c.ok && ctrl_c.fetch->name == 'C')
+            : (run3.ok && run3r.ok && run3.fetch->name == 'B' && run3r.fetch->name == 'C');
+        checks.expect(pair_ok,
+            "P4-Run3-PAIR [p.25]: Run 3 (COP2LC rewritten to C after the strobe: expect B) and Run "
+            "3-reorder (COP2LC=C moved before the strobe: expect C), graded together as the "
+            "specification's own pair");
+
+        // ---- Comparator contrasts, always run (like the P1/P2 -OFF
+        // cases): COP1LC loaded with another list, then COPJMP1 -- the
+        // COP1LC/COPJMP1 path, not the COP2LC/COPJMP2 path Run 2, Run 3 and
+        // Run 3-reorder use. P4-CTRL is P4's and P4-Run2's own
+        // falsifiability demonstration and P4-Run3's green control (both
+        // expect B). P4-CTRL-C is P4-Run3-reorder's and P4-Run3-PAIR's
+        // green control for C.
         checks.expect(ctrl.ok && ctrl.fetch->name == 'B',
             "P4-CTRL [p.25]: COP1LC=B (not A), COPJMP1 -- the first fetch after DMA-on is B's IR1");
+        checks.expect(ctrl_c.ok && ctrl_c.fetch->name == 'C',
+            "P4-CTRL-C [p.25]: COP1LC=C (not A or B), COPJMP1 -- the first fetch after DMA-on is "
+            "C's IR1");
 
         // ---- Precondition (a): the first stored DMACONR has bit 7 = 0
         bool mut_a = (mv == "P4-A");
@@ -1006,17 +1121,22 @@ int main(int argc, char** argv) {
                      !any_channel_read_in(b_case.cap.log, kList3, kList3 + 8, 0, *b_case.t_m1);
         checks.expect(pre_b, "P4b precondition: no Copper fetch in A, B or C's region before t(M1)");
 
-        // ---- Precondition (c): no frame wrap and no record with V <= 25
-        // lies between t(MS) and the first fetch (p.219: vertical blanking
-        // 0-25 for PAL), graded on every run's own capture -- Run 1, Run 2,
-        // Run 3 and Run 3-reorder each write the location registers and the
-        // strobe against their own beam record, so a vertical blank could
-        // in principle intervene in any one of them even where it does not
-        // in the others. The mutation substitutes prog_p4_mut_c.bin (built
-        // on Run 1's own sequence) for Run 1's capture; Run 2, Run 3 and
-        // Run 3-reorder are still graded on their own normal captures, so
-        // the aggregate still goes red through the one run the mutation
-        // changed.
+        // ---- Precondition (c): the program samples nothing between t(MS)
+        // and the first fetch, so a check that only looks for a wrap or a
+        // low-V record strictly inside that stretch would hold by
+        // construction on every run. Bound the stretch instead by the
+        // records around it (2.4): the last record stored before t(MS) and
+        // the record following the first record stored after the first
+        // fetch lie in the same frame (no wrap between them) and both read
+        // V > 25 (p.219), graded on every run's own capture -- Run 1, Run
+        // 2, Run 3 and Run 3-reorder each write the location registers and
+        // the strobe against their own beam record, so a vertical blank
+        // could in principle intervene in any one of them even where it
+        // does not in the others. The mutation substitutes
+        // prog_p4_mut_c.bin (built on Run 1's own sequence) for Run 1's
+        // capture; Run 2, Run 3 and Run 3-reorder are still graded on their
+        // own normal captures, so the aggregate still goes red through the
+        // one run the mutation changed.
         bool mut_c = (mv == "P4-C");
         P4Result c_case = mut_c ? run_p4(dir + "/prog_p4_mut_c.bin", kSamplerRunBudget) : run1;
         bool pre_c = c_case.ok && c_case.precond_c &&
@@ -1024,45 +1144,20 @@ int main(int argc, char** argv) {
                      run3.ok && run3.precond_c &&
                      run3r.ok && run3r.precond_c;
         checks.expect(pre_c,
-            "P4c precondition: no frame wrap and no record with V <= 25 lies between t(MS) and the "
-            "first fetch, in each of Run 1, Run 2, Run 3 and Run 3-reorder");
+            "P4c precondition: the last record stored before t(MS) and the record following the "
+            "first record stored after the first fetch lie in the same frame and both read V > 25, "
+            "in each of Run 1, Run 2, Run 3 and Run 3-reorder");
     }
 
     // ==== P3: DMACON controls every DMA channel [p.30, p.222, p.278] ====
     // ch2-stopping-the-copper.c8, COP2-stopping-the-copper.c11
     {
-        // ---- Apparatus check: the refresh port is never asserted anywhere
-        // but word address 0 (SPECIFICATION.md 2.3: "a refresh access is
-        // one made while the `refresh` output ... is asserted", the
-        // recognition P3 and P5-P12 use, unlike P1/P2/P4's own
-        // word-address-0 signature). Checked here, once, against
-        // prog_p1.bin's own captured log (already built, part of P1, with
-        // refresh already established there as "every refresh access reads
-        // word address 0 and no other"). The converse does not hold and is
-        // not asserted: a word-address-0 read can be something other than
-        // refresh (measured: one such read, elsewhere in this same log,
-        // where the refresh port reads clear) -- the port is the finer
-        // signal, which is exactly why P3 and P5-P12 use it instead of the
-        // address alone.
-        CaptureR rc = run_capture_refresh(dir + "/prog_p1.bin", kSamplerRunBudget, {});
-        bool refresh_ok = rc.loaded && rc.done.has_value();
-        bool any_read = false;
-        if (refresh_ok) {
-            for (const auto& a : rc.log) {
-                if (a.is_write) continue;
-                any_read = true;
-                if (rc.refresh_at(a.cycle) && a.word_addr != 0) { refresh_ok = false; break; }
-            }
-        }
-        checks.expect(refresh_ok && any_read,
-            "P3 apparatus: every RAM read where the refresh port (nanomig.v's `refresh` output) "
-            "reads asserted is at word address 0, checked on prog_p1.bin's own captured log [not "
-            "graded against the page -- apparatus check, no claim uid]");
-
         // ---- Region table (this package's own $10000-$57FFF map,
-        // SPECIFICATION.md P3 stimulus step 2): pointer_target is the
-        // address the program wrote into that region's own channel, which
-        // precondition (c) compares the lowest in-region access against.
+        // SPECIFICATION.md P3 stimulus step 2): kP3PtrOffset is how far
+        // above each region's own start the program writes that channel's
+        // own pointer or location register (SPECIFICATION.md P3 stimulus),
+        // which precondition (c) compares the lowest in-region access
+        // against.
         struct P3Region { const char* name; uint32_t lo, hi; };
         enum { R_BPL = 0, R_SPR, R_AUD0, R_AUD1, R_AUD2, R_AUD3, R_DSK, R_BLT, R_COP, R_N };
         const P3Region kP3Regions[R_N] = {
@@ -1072,6 +1167,72 @@ int main(int argc, char** argv) {
             {"DSK",  0x040000, 0x048000}, {"BLT",  0x048000, 0x050000},
             {"COP",  0x050000, 0x058000},
         };
+        constexpr uint32_t kP3PtrOffset = 0x100;
+
+        // ---- Apparatus check, part (i): the refresh port is never
+        // asserted anywhere but word address 0 (SPECIFICATION.md 2.3: "a
+        // refresh access is one made while the `refresh` output ... is
+        // asserted", the recognition P3 and P5-P12 use, unlike P1/P2/P4's
+        // own word-address-0 signature). Checked here against prog_p1.bin's
+        // own captured log (already built, part of P1), requiring at least
+        // one refresh-asserted read to exist -- otherwise the check would
+        // pass vacuously on a log with no such read at all. The converse is
+        // not asserted: a word-address-0 read can be something other than
+        // refresh (measured: one such read, elsewhere in this same log,
+        // where the refresh port reads clear) -- the port is the finer
+        // signal, which is exactly why P3 and P5-P12 use it instead of the
+        // address alone.
+        CaptureR rc1 = run_capture_refresh(dir + "/prog_p1.bin", kSamplerRunBudget, {});
+        bool refresh_ok = rc1.loaded && rc1.done.has_value();
+        bool any_read = false, any_refresh_read = false;
+        if (refresh_ok) {
+            for (const auto& a : rc1.log) {
+                if (a.is_write) continue;
+                any_read = true;
+                if (rc1.refresh_at(a.cycle)) {
+                    any_refresh_read = true;
+                    if (a.word_addr != 0) { refresh_ok = false; break; }
+                }
+            }
+        }
+        checks.expect(refresh_ok && any_read && any_refresh_read,
+            "P3 apparatus (i) [SPECIFICATION.md 2.3]: every RAM read where the refresh port "
+            "(nanomig.v's `refresh` output) reads asserted is at word address 0, and at least one "
+            "such read exists, checked on prog_p1.bin's own captured log [not graded against the "
+            "page -- apparatus check, no claim uid]");
+
+        // ---- Apparatus check, part (ii): the same recognition checked
+        // directly on a P3 capture, inside P3's own regions, rather than
+        // inferred from part (i)'s different addresses. At least one
+        // refresh-asserted read exists, and none of them falls inside any
+        // of the nine regions. Comparator demonstration
+        // (NMH_MUTATE=P3-REFRESH-A): refresh is always at word address 0,
+        // an invariant no captured program can violate, so no stimulus
+        // change can redden this check; a synthetic region containing word
+        // address 0 is added to the checked list instead, showing the same
+        // region-overlap comparator catches a genuine violation.
+        bool mut_refresh_a = (mv == "P3-REFRESH-A");
+        std::vector<std::pair<uint32_t, uint32_t>> refresh_regions;
+        for (int i = 0; i < R_N; ++i) refresh_regions.push_back({kP3Regions[i].lo, kP3Regions[i].hi});
+        if (mut_refresh_a) refresh_regions.push_back({0, 8});
+
+        CaptureR rc3 = run_capture_refresh(dir + "/prog_p3_run_base.bin", kSamplerRunBudget, {});
+        bool part2_ok = rc3.loaded && rc3.done.has_value();
+        bool part2_any_refresh_read = false, part2_none_in_region = true;
+        if (part2_ok) {
+            for (const auto& a : rc3.log) {
+                if (!rc3.refresh_at(a.cycle)) continue;
+                if (!a.is_write) part2_any_refresh_read = true;
+                uint32_t b = a.word_addr * 2;
+                for (const auto& rgn : refresh_regions)
+                    if (b >= rgn.first && b < rgn.second) part2_none_in_region = false;
+            }
+        }
+        checks.expect(part2_ok && part2_any_refresh_read && part2_none_in_region,
+            "P3-REFRESH (ii) [SPECIFICATION.md 2.3]: on prog_p3_run_base.bin's own captured log, at "
+            "least one RAM access where the refresh port reads asserted exists, and none of them "
+            "falls inside any of the nine regions [not graded against the page -- apparatus check, "
+            "no claim uid]");
 
         struct P3CaseResult {
             Capture cap;
@@ -1178,13 +1339,19 @@ int main(int argc, char** argv) {
 
         // ---- Precondition (c): in Base, the lowest address accessed in
         // each region is the address the program wrote into that region's
-        // own channel.
+        // own channel -- each channel's own pointer, kP3PtrOffset above its
+        // region's own start (SPECIFICATION.md P3 stimulus; for SPR, the
+        // lowest of SPR0PT-SPR7PT, which is also SPR0PT at that same
+        // offset). Compared against that fixed, program-controlled address,
+        // not the region's own start: a region's own start would leave
+        // nothing below the pointer for another channel's accesses to land
+        // in, so no such intrusion could ever be caught.
         bool mut_c = (mv == "P3-C");
         P3CaseResult c_case = mut_c ? run_p3_case("/prog_p3_mut_c.bin", kP3Budget) : case_results[0];
         bool pre_c = c_case.ok;
         for (int i = 0; i < R_N; ++i) {
             if (!c_case.region_lowest[i]) continue; // nothing accessed there: no violation to find
-            if (*c_case.region_lowest[i] != kP3Regions[i].lo) pre_c = false;
+            if (*c_case.region_lowest[i] != kP3Regions[i].lo + kP3PtrOffset) pre_c = false;
         }
         checks.expect(pre_c,
             "P3c precondition: in Base, the lowest address accessed in each region is the address "
@@ -1214,20 +1381,53 @@ int main(int argc, char** argv) {
             "P3d precondition: anchor checks B1 and B3 hold (lines $10-$FF) for the frame boundary, "
             "over every one of the eleven runs' own graded frame");
 
+        // ---- Base coverage: "Base: every region other than DSK has at
+        // least one access" (P3 item 4) -- the "enables" half of
+        // "controls". Without this, a channel that never ran in any run
+        // would leave every case line and P3-M green without ever being
+        // exercised. Own mutation (NMH_MUTATE=P3-BASE-SWAP): Case M's
+        // already-built capture (DMAEN clear, no region has any access)
+        // graded in Base's place.
+        bool mut_base_swap = (mv == "P3-BASE-SWAP");
+        const P3CaseResult& base_for_coverage = mut_base_swap ? case_results[10] : case_results[0];
+        bool base_cov_ok = base_for_coverage.ok;
+        for (int r = 0; r < R_N; ++r) {
+            if (r == R_DSK) continue;
+            if (!base_for_coverage.region_access[r]) base_cov_ok = false;
+        }
+        checks.expect(base_cov_ok,
+            "P3-BASE ch2-stopping-the-copper.c8,COP2-stopping-the-copper.c11 [p.30,p.222,p.278]: in "
+            "Base, every region other than DSK has at least one access from t(M2) to the end of "
+            "the first complete frame after M2");
+
         // ---- The claim-bearing cases: the nine channel cases and case M
         // (ch2-stopping-the-copper.c8, COP2-stopping-the-copper.c11 are
         // graded whole by these ten -- SPECIFICATION.md section 3, P3).
+        // Each case's own mutation (NMH_MUTATE=P3-<label>-SWAP) grades
+        // Base's own already-built capture in that case's own slot. When
+        // precondition (a) fails this run (region DSK showed no access in
+        // Base), the claim is not graded whole by these ten cases (DSK's
+        // own case is left out), so every other case's own ids are
+        // withdrawn to a record too, not just DSK's.
         for (int i = 1; i < kP3N; ++i) {
             const P3Case& kc = kP3Cases[i];
-            const P3CaseResult& cr = case_results[i];
+            std::string swap_key = std::string("P3-") + kc.label + "-SWAP";
+            const P3CaseResult& cr = (mv == swap_key) ? case_results[0] : case_results[i];
             std::string tag = std::string("ch2-stopping-the-copper.c8,COP2-stopping-the-copper.c11 "
                                            "[p.30,p.222,p.278]");
             if (kc.off_region == -2) {
                 bool all_off = cr.ok;
                 for (int r = 0; r < R_N; ++r) if (cr.region_access[r]) all_off = false;
-                checks.expect(all_off,
-                    std::string("P3-M ") + tag + ": with DMAEN (bit 9) clear, no region has an "
-                    "access from t(M2) to the end of the first complete frame after M2");
+                if (dsk_established) {
+                    checks.expect(all_off,
+                        std::string("P3-M ") + tag + ": with DMAEN (bit 9) clear, no region has an "
+                        "access from t(M2) to the end of the first complete frame after M2");
+                } else {
+                    checks.record(std::string("P3-M [ids withdrawn: ") + tag + "]: region DSK's own "
+                        "case is not graded this run (precondition (a) failed), so the claim is not "
+                        "graded whole by the ten cases; this case's own comparator read " +
+                        (all_off ? "PASS" : "FAIL"));
+                }
                 continue;
             }
             int idx = kc.off_region;
@@ -1237,7 +1437,8 @@ int main(int argc, char** argv) {
                     "and not graded");
                 continue;
             }
-            bool ok = cr.ok && !cr.region_access[idx];
+            bool ok = cr.ok && !cr.region_access[idx] &&
+                      case_results[0].ok && case_results[0].region_access[idx];
             for (int r = 0; r < R_N; ++r) {
                 if (r == idx) continue;
                 if (r == R_DSK && !dsk_established) continue; // left out per precondition (a)
@@ -1249,20 +1450,30 @@ int main(int argc, char** argv) {
             std::string pat = pat_buf;
             std::string label = std::string("P3-") + kc.label + " " + tag + ": with DMACON=" + pat +
                 " (region " + kc.label + "'s bit clear), region " + kc.label + " has no access "
-                "from t(M2) to the end of the first complete frame after M2, and every other "
-                "region that had one in Base still does";
-            checks.expect(ok, label);
+                "from t(M2) to the end of the first complete frame after M2, region " + kc.label +
+                " had one in Base, and every other region that had one in Base still does";
+            if (dsk_established) {
+                checks.expect(ok, label);
+            } else {
+                checks.record(std::string("P3-") + kc.label + " [ids withdrawn: " + tag + "]: "
+                    "region DSK's own case is not graded this run (precondition (a) failed), so "
+                    "the claim is not graded whole by the ten cases; this case's own comparator "
+                    "read " + (ok ? "PASS" : "FAIL"));
+            }
         }
 
         // ---- DSKBYTR bit 14 (DMAON, p.248): 1 in Base, 0 in the DSK case
-        // and in case M.
+        // and in case M. Own mutation (NMH_MUTATE=P3-DSKBYTR-SWAP): Base's
+        // own already-built DSKBYTR value graded in the DSK case's and
+        // case M's own slots.
         {
-            const P3CaseResult& dsk_cr = case_results[7]; // "DSK" is index 7 in kP3Cases
-            const P3CaseResult& m_cr = case_results[10];  // "M" is index 10
+            bool mut_dskbytr = (mv == "P3-DSKBYTR-SWAP");
+            const P3CaseResult& dsk_src = mut_dskbytr ? case_results[0] : case_results[7]; // "DSK" is index 7
+            const P3CaseResult& m_src = mut_dskbytr ? case_results[0] : case_results[10];  // "M" is index 10
             bool ok = case_results[0].ok && case_results[0].have_dskbytr &&
                       (case_results[0].dskbytr & 0x4000) != 0 &&
-                      dsk_cr.ok && dsk_cr.have_dskbytr && (dsk_cr.dskbytr & 0x4000) == 0 &&
-                      m_cr.ok && m_cr.have_dskbytr && (m_cr.dskbytr & 0x4000) == 0;
+                      dsk_src.ok && dsk_src.have_dskbytr && (dsk_src.dskbytr & 0x4000) == 0 &&
+                      m_src.ok && m_src.have_dskbytr && (m_src.dskbytr & 0x4000) == 0;
             checks.expect(ok,
                 "P3-DSKBYTR [p.248]: DSKBYTR bit 14 (DMAON) reads 1 in Base and 0 in the DSK case "
                 "and in case M");

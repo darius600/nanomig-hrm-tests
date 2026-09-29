@@ -77,8 +77,8 @@ SLOWDELAY       macro
 .sd\@:          dbra    d6,.sd\@
                 endm
 
-; ---- Additions for P3 and P5-P12 (built after P1/P2/P4; the lines above
-; are unchanged and still all P1/P2/P4 use). ---------------------------
+; ---- P3 and P5-P12's own additions (the lines above are still all
+; P1/P2/P4 use). --------------------------------------------------------
 
 ; CIA-A DDRA (SPECIFICATION.md 2.1, p.339): P3 and P5-P12's own overlay
 ; clear writes this before CIAAPRA, unlike CLEAR_OVL above, which P1/P2/P4
