@@ -7,9 +7,9 @@ never saw the implementation or any test. Page numbers are printed page
 numbers. Quotations were checked against the printed page where the claim
 depends on them (pp. 155, 156, 158, 164, 249, 265, 266, 279, 290, 310).
 
-The package has 16 claims. Six propositions are specified (P1-P6). Ten claims
-give no proposition. Five are used only in part. One (5-appA-p265.c42) is
-used in full.
+The package has 16 claims. Seven propositions are specified (P1-P6, plus
+P3B alongside P3). Ten claims give no proposition. Six are used only in
+part. None are used in full.
 
 ---
 
@@ -111,14 +111,28 @@ reads), so this id is not asserted there. It stays declined.
 - **Declined in full.** The magnitude, 3 mV at the output pins, is not
   observable: the test sees samples, not volts. Its quote's two's-complement
   words overlap 5-appA-p265.c42's own quote only so the citation is long
-  enough to anchor; P3 grades two's complement under 5-appA-p265.c42's own
-  id, not this one. P4 grades the implied uniform one-LSB step, but only as
-  a proxy (equal step size, not the literal 3 mV magnitude), so this id is
-  not asserted on P4 either.
+  enough to anchor; P3 and P3B grade two's complement from the page
+  directly, not under this id. P4 grades the implied uniform one-LSB step,
+  but only as a proxy (equal step size, not the literal 3 mV magnitude), so
+  this id is not asserted on P4 either.
 - The print reads "MV" (checked on the scan), which literally means
   megavolts. p. 140 supports millivolts: "For a typical output at volume 64,
   with maximum data values of -128 to 127, the voltage output is between +.4
   volts and -.4 volts" (128 x 3 mV = 0.384 V).
+
+**Audio byte output, D/A conversion and the output pins (p. 265):
+5-appA-p265.c42.**
+"It contains 2 bytes of data that are each 2's complement and are outputted
+sequentially (with digital-to-analog conversion) to the audio output pins."
+
+- **Withdrawn in full.** `nanomig.v`'s ports carry the digital sample bus
+  (`audio_left`/`audio_right`), not a D/A-converted analog level or a
+  physical output pin; the quote's "with digital-to-analog conversion ...
+  to the audio output pins" clause is not observable at this boundary, so
+  no assertion establishes the id's own full claim.
+- The narrower parts the quote also states -- both bytes output in order
+  (P1), the upper byte first (P2, from p. 164), each byte two's-complement
+  (P3, P3B) -- are graded directly from those pages, without this id.
 
 ---
 
@@ -131,7 +145,7 @@ configurations:
 
 | Proposition | Configurations |
 |---|---|
-| P1-P4 | ECS/PAL (default), OCS/PAL |
+| P1-P4, P3B | ECS/PAL (default), OCS/PAL |
 | P5 | ECS/PAL, OCS/PAL |
 | P6 | ECS/PAL, OCS/PAL, ECS/NTSC |
 
@@ -193,6 +207,11 @@ B (pp. 289-293) and Appendix A:
 - **Done marker.** The program's last action writes a done marker to a fixed
   Chip address. Every run, including every contrasting case, must show that
   write. Otherwise the run is broken, not graded.
+- **Fixture constant.** Every program also stores one known constant to its
+  own fixed slot, checked by the test before it relies on anything else
+  that program stores. Stored right before the done marker, not first,
+  so it cannot disturb the timing any earlier, DMA-dependent measurement
+  in the same program depends on.
 
 ### 2.4 Reference frames
 
@@ -255,15 +274,30 @@ actually used is measured and recorded per core (section 5, "what the
 build adds"). If the harness offers only a mono mix, use the mix: the other
 channels are silenced (2.3, and step 3 of the audio program).
 
+The port sample itself is read as a raw magnitude, bits 14-0
+(`nanomig_harness.h`'s `AudioSample` documents only "15 bits significant",
+not a sign or a scale): run detection below needs only exact equality,
+which does not depend on how the value is interpreted, and FIT(L, C)
+recovers a continuous, comparable sequence from these raw magnitudes by
+unwrapping (below), using only the domain size the harness contract
+states, never a chosen sign bit.
+
 **LEVELS(W): the list of held levels in window W.**
-1. Take the output samples whose time lies in W.
-2. Split them into runs of identical consecutive values, and note each run's
-   duration.
-3. Let m be the median run duration. Drop runs shorter than m/2. These are
-   transitions, not held levels.
-4. Merge neighbouring remaining runs with equal values. The values of the
-   merged runs, in time order, form the list.
-5. Drop the first and the last entry, which the window edges may cut.
+1. Take the output samples whose time lies in W, as the port's raw 15-bit
+   magnitude.
+2. Split them into runs of identical consecutive values, and note each
+   run's value and duration. Consecutive runs never share a value, by this
+   construction.
+3. Drop the chronological first and the last run, unconditionally: F2's
+   window boundaries (2.4) are the cycles of a DMA *read*, not of an
+   audio-output *transition*, so the run already in progress at each edge
+   is only ever partly inside the window. A5 (2.7) grades that exactly the
+   expected population of complete held levels remains.
+4. Unwrap the remaining runs' raw values into a continuous sequence: for
+   each step from one run's value to the next, add or subtract whole
+   multiples of 32768 (the raw magnitude's own domain) so that the step
+   taken is the smallest one available. The values of the result, in time
+   order, form the list L.
 
 **FIT(L, C): does the level list match a code sequence?**
 C is the sequence of byte codes the page predicts for one pass, in output
@@ -273,8 +307,11 @@ two's-complement value of byte C[j] (p. 265: "each 2's complement"; p. 138:
 
 1. For each rotation r = 0 ... K-1, fit L[i] ~ a + b * s_((i+r) mod K) by
    least squares over all i.
-2. L matches C when, for some r, every residual |L[i] - a - b * s| is at most
-   |b|/4 (a quarter LSB).
+2. L matches C when, for some r, every residual |L[i] - a - b * s| is at
+   most 1e-6 (an exact digital relation, to floating-point precision --
+   not a band the page gives: measured on this RTL, section 5, the best
+   rotation's own residual is exactly 0 wherever the level list is
+   genuinely the expected code sequence).
 3. b is the output change per LSB. Its sign is not graded: the page ties the
    LSB to a voltage, and the sign convention of the harness's samples is the
    harness's own.
@@ -320,14 +357,18 @@ in the buffer register will be repeated").
 | T1 | $0010, $2030, $4050, $6070 | C_up = 00 10 20 30 40 50 60 70 (upper byte first) | 8 | 8 |
 | T2 | $0000, $0101, $7F7F, $8080 | C2 = 00 01 7F 80 (equal bytes merge; s = 0, 1, 127, -128) | 4 | 8 |
 | T3 | 256 words; word k = b_k * $0101 with b_k = (k + $80) mod $100, i.e. $8080, $8181, ..., $FFFF, $0000, ..., $7F7F | C3 = 80 81 ... FF 00 ... 7F (s = -128 ... 127) | 256 | 2 |
+| T2S | $8001, $7F00 (distinct bytes: word 1 upper=$80 lower=$01, word 2 upper=$7F lower=$00) | C_sign = 80 01 7F 00 (upper byte first; s = -128, 1, 127, 0) | 4 | 8 |
 
 For T1 the lower-first order is C_low = 10 00 30 20 50 40 70 60.
 
 T2 and T3 use words whose two bytes are equal, so their results do not depend
 on byte order (P2). T1 contains only codes $00-$70, so its result does not
-depend on how signs are read (P3).
+depend on how signs are read (P3). T2S's own words have distinct upper and
+lower bytes, both sign extremes ($80, $7F) each appearing once in a fixed
+byte position, so P3B (section 3) can tell whether a byte position was
+dropped or swapped.
 
-### 2.7 Preconditions shared by P1-P4
+### 2.7 Preconditions shared by P1-P4 and P3B
 
 Each is asserted for the table under test before its proposition is graded.
 A failing precondition means "not graded", never green.
@@ -337,7 +378,17 @@ A failing precondition means "not graded", never green.
 | A1 | Audio DMA for the table ran, pass after pass | F2's anchor check holds, with at least N + 2 reads of the table's first word | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0) | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
 | A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples | P = 124 (p. 140's minimum), which fails A3 when the harness delivers fewer than about 114,000 samples per second. If the harness is faster, no legal period fails A3; the test states that this case does not apply |
-| A4 | The window holds enough levels, and one LSB is resolved | The list L from LEVELS(W_T) has at least 2K entries for T1 and T2, and at least K + 1 for T3; the fitted \|b\| is at least 4 steps of the harness's own sample resolution | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
+| A4 | The window holds enough levels, and one LSB is resolved | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3; the fitted \|b\| is at least 4 steps of the harness's own sample resolution | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
+| A5 | The window's held levels are the complete expected population, with nothing unexplained dropped or added | L's length equals N x K - 1 exactly (N passes, K codes, less the two runs the window's own edges cut, LEVELS step 3) | A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L is one entry short of N x K - 1 |
+
+An apparatus note on A5's own bound: N x K - 1, not the N x K - 2 a naive
+reading of "drop the first and last of N x K" would give. Measured, every
+table and every core (section 5): the window's own raw run count is N x K +
+1 -- one more than N x K -- with the two chronologically extreme runs the
+only ones any shorter than the rest, and every run in between exactly the
+same length. A5 grades the deterministic trim (drop the first and last,
+unconditionally) against this measured population, not an invented
+threshold.
 
 ---
 
@@ -346,7 +397,11 @@ A failing precondition means "not graded", never green.
 ### P1: Both bytes of every audio data word reach the output, one after the other
 
 1. **Proposition.** Every data word delivered to AUD0DAT is output as its two
-   bytes, one after the other. Claim: 5-appA-p265.c42 (p. 265).
+   bytes, one after the other, on the digital sample bus this package
+   observes. No claim id: 5-appA-p265.c42 (p. 265) bundles this with
+   digital-to-analog conversion and delivery to the physical output pins,
+   neither of which `nanomig.v`'s ports show; the id is withdrawn (1.2) and
+   this proposition grades only its narrower, page-derived part.
 2. **Stimulus.** The audio program (2.6) with table T1.
 3. **Observation.** The right-side audio output inside W_T1 (F2), read as
    L = LEVELS(W_T1).
@@ -359,10 +414,10 @@ A failing precondition means "not graded", never green.
      every word. The fit covers all 4 words in each of the 8 passes, 32 word
      loads, and fails if either byte is missing. Outputting only the upper
      bytes, for example, gives 00 20 40 60, which matches neither sequence.
-5. **Preconditions.** A1-A4 for T1.
+5. **Preconditions.** A1-A5 for T1.
 6. **Contrasting case.** Replace T1's last word $6070 by $7060. The page
    predicts output 00 10 20 30 40 50 70 60, which matches neither C_up nor
-   C_low. P1 goes red. A1-A4 still hold.
+   C_low. P1 goes red. A1-A5 still hold.
 7. **Reference frame.** F2 (pass boundaries at the reads of the table's first
    word, checked as stated there).
 
@@ -370,8 +425,9 @@ A failing precondition means "not graded", never green.
 
 1. **Proposition.** Of the two bytes of an AUD0DAT word, the upper byte
    (bits 15-8) is output first and the lower byte second.
-   - Claim: 5-appA-p265.c42 (p. 265, "outputted sequentially").
-   - The order comes from p. 164, a page that speaks to the same point; it is
+   - No claim id of this package (5-appA-p265.c42's "outputted sequentially"
+     does not itself give an order; P1 already withdraws the id, 1.2). The
+     order comes from p. 164, a page that speaks to the same point; it is
      not in this package's claims.
 2. **Stimulus.** As for P1 (table T1). The same run serves both propositions.
 3. **Observation.** As for P1. Upper and lower byte are identified from the
@@ -387,19 +443,23 @@ A failing precondition means "not graded", never green.
      next byte address".
    - Graded: FIT(L, C_up) matches. Quantifier: every word of every pass in
      W_T1.
-5. **Preconditions.** A1-A4 for T1, and P1 green. If P1 is red, P2 is not
+5. **Preconditions.** A1-A5 for T1, and P1 green. If P1 is red, P2 is not
    graded.
 6. **Contrasting case.** Swap the bytes of every word: $1000, $3020, $5040,
    $7060. The page predicts 10 00 30 20 50 40 70 60. C_up does not match,
-   so P2 goes red, while P1 stays green (C_low matches). A1-A4 still hold.
+   so P2 goes red, while P1 stays green (C_low matches). A1-A5 still hold.
 7. **Reference frame.** F2, as for P1.
 
 ### P3: Each byte is output as a two's-complement value
 
 1. **Proposition.** The output level of each byte follows the byte's
    two's-complement value, so $80 is the most negative and $7F the most
-   positive code. Claims: 5-appA-p265.c42 and A-audxdat.c5, whose quotes both
-   carry "2 bytes of data that are each 2's complement" (p. 265).
+   positive code, at four representative codes (0, 1, 127, -128) with equal
+   upper/lower bytes in every word. No claim id: 5-appA-p265.c42 bundles
+   digital-to-analog conversion and the output pins, which this package
+   cannot observe (1.2, P1); A-audxdat.c5 is declined in full (1.2). This
+   proposition, and P3B below, grade only the narrower two's-complement
+   relation the pages state.
 2. **Stimulus.** The audio program (2.6) with table T2.
 3. **Observation.** L = LEVELS(W_T2).
 4. **Expected relation.**
@@ -411,14 +471,42 @@ A failing precondition means "not graded", never green.
      (+1, +126, -255, +128). Under an unsigned or offset reading of the same
      bytes they would be proportional to (+1, +126, +1, -128). No rotation or
      scale turns one into the other.
-   - Quantifier: "each" means both bytes of every word. Every code in T2
-     occupies both byte positions.
-5. **Preconditions.** A1-A4 for T2.
+   - Quantifier: "each" means both bytes of every word, but T2's own words
+     hold the same code in both byte positions (2.6), so this alone cannot
+     tell a genuine two's-complement reading from one where a byte position
+     was dropped or swapped; P3B (below) grades that.
+5. **Preconditions.** A1-A5 for T2.
 6. **Contrasting case.** Flip bit 7 of every byte: $8080, $8181, $FFFF,
    $0000. The page predicts s = -128, -127, -1, 0, with steps proportional to
    (+1, +126, +1, -128). That is exactly the output an unsigned reading of T2
-   would give, and FIT(L, C2) fails, so P3 goes red. A1-A4 still hold.
+   would give, and FIT(L, C2) fails, so P3 goes red. A1-A5 still hold.
 7. **Reference frame.** F2.
+
+### P3B: Each byte is output as a two's-complement value, independent of byte position
+
+1. **Proposition.** $80 reads as the most negative code and $7F as the most
+   positive, whichever of the two byte positions carries them, so dropping
+   or swapping a byte position changes what is read. No claim id, for the
+   same reason as P3.
+2. **Stimulus.** Table T2S (2.6): two words, $8001 and $7F00, each with
+   distinct upper and lower bytes, run by its own program (`prog_t2s.s`)
+   independent of `prog_audio.s` and its own mutations.
+3. **Observation.** L = LEVELS(W_T2S).
+4. **Expected relation.**
+   - p. 265: "It contains 2 bytes of data that are each 2's complement".
+   - Graded: FIT(L, C_sign) matches, with C_sign = 80 01 7F 00 (upper byte
+     first, P2's own established order), s = -128, 1, 127, 0.
+   - Quantifier: "each" graded at both byte positions with distinct codes:
+     unlike T2 (P3), dropping or swapping a byte position here changes which
+     code is read from which position, so a match establishes the relation
+     holds at both positions, not only when they happen to agree.
+5. **Preconditions.** A1, A3, A4, A5 for T2S (2.7's own definitions, applied
+   to T2S; A2 does not apply, T2S's own program does not read ADKCONR).
+6. **Contrasting case.** Swap the bytes of both words: $0180, $007F. The
+   page predicts 01 80 00 7F (s = 1, -128, 0, 127); FIT(L, C_sign) fails
+   (no rotation of 80 01 7F 00 matches), so P3B goes red. A1, A3, A4, A5
+   still hold.
+7. **Reference frame.** F2, checked on T2S's own window.
 
 ### P4: Every one-LSB step moves the output by the same amount
 
@@ -438,15 +526,16 @@ A failing precondition means "not graded", never green.
    - p. 265: "(LSB = 3 MV)". A single value for one LSB means every step
      between adjacent codes has the same size.
    - Graded: FIT(L, C3) matches, with s = -128 ... 127. All 255 steps between
-     adjacent codes must equal b, to within a quarter LSB.
+     adjacent codes must equal b, exactly (an exact digital relation, 2.5).
    - Quantifier: every one of the 256 codes and every one of the 255 adjacent
-     steps, in both passes.
+     steps, in both passes; A5 (2.7) grades that L holds the complete
+     population (2 x 256 - 1 = 511 entries), nothing dropped.
    - Note: an unsigned reading of the bytes also matches this fit (rotated by
-     128). P4 grades the step size only; the sign reading is P3.
-5. **Preconditions.** A1-A4 for T3.
+     128). P4 grades the step size only; the sign reading is P3/P3B.
+5. **Preconditions.** A1-A5 for T3.
 6. **Contrasting case.** Replace the word for code +5 ($0505, k = 133) by
    $0707. The page predicts the codes ... 04 07 06 07 08 ..., steps of +3 and
-   -1 where +1 is required, and FIT(L, C3) fails, so P4 goes red. A1-A4 still
+   -1 where +1 is required, and FIT(L, C3) fails, so P4 goes red. A1-A5 still
    hold.
 7. **Reference frame.** F2.
 
@@ -648,7 +737,7 @@ A failing precondition means "not graded", never green.
   values: both give 2 us and 4 us.
 - **DMA start.** p. 164's "the first data word must be thrown away" leaves
   open whether the table's first word is output in the first pass after DMA
-  starts. P1-P4 avoid the first pass (F2).
+  starts. P1-P4 and P3B avoid the first pass (F2).
 - **Precision of the disk values.** The pages print the bit-cell times as
   "2us"/"4us" and "two"/"four microseconds" with no further precision. P6's
   G1-G3 do not grade these values at any precision: no page ties the
@@ -682,9 +771,16 @@ otherwise.
   the page's 227-228 window. 8 `clk_sys` cycles per color clock (`kCck`) is
   taken from the design, since `nanomig_harness.h` declares no such ratio;
   B4, measured in that same interval, guards it.
-- **Audio port sign.** `audio_left`/`audio_right` are read as signed 15-bit
-  values, not an unsigned magnitude. Measured: an unsigned reading breaks
-  every fit whose pass contains a code with bit 7 set (T2, T3).
+- **Audio port scale.** `nanomig_harness.h` documents only the width of
+  `audio_left`/`audio_right` ("15 bits significant"), not their sign or
+  scale. LEVELS(W) (2.5) reads the raw magnitude and recovers a continuous
+  sequence by an unwrap (add/subtract multiples of 32768, the raw domain,
+  choosing the smallest step at each point) rather than a chosen sign bit,
+  so FIT(L, C) does not depend on which raw bit, if any, is a sign bit.
+  Measured: this unwrap and a fixed 15-bit two's-complement reading (bit 14
+  as sign) agree exactly on this RTL, on every table and every core, since
+  no held level's raw magnitude ever approaches the domain's own wraparound
+  point.
 - **Audio output side.** Measured per core and per config: channel 0's own
   byte sequence appears on `audio_left`, with `audio_right` staying flat
   throughout. The pages disagree on which named jack that is (2.5); this
@@ -696,7 +792,16 @@ otherwise.
   are not graded there. For T3, t_2 is preceded by the table's next-to-last
   word on fx68k only (A1 for T3 red there, P4 not graded on fx68k; A1 for T3
   holds on TG68K, P4 graded there). For T2, t_2 is preceded by the last word
-  on both cores (A1 for T2 holds, P3 graded on both cores).
+  on both cores (A1 for T2 holds, P3 graded on both cores). For T2S (its own
+  program, `prog_t2s.s`, run from a clean boot independent of T1/T2/T3), t_2
+  is preceded by the last word on both cores (A1 for T2S holds, P3B graded
+  on both cores).
+- **A5's population, measured per table and per core (2.7).** Every held
+  run inside a graded window is either one of the two the window's own
+  edges cut (LEVELS step 3) or exactly the same duration as every other
+  run in that window; the raw run count before that trim is N x K + 1 on
+  every table and core where A1 holds, so the trimmed count is N x K - 1
+  exactly, matching A5.
 - **G1/G2/G3 (P6): declined, not a page disagreement.** ADKCON bit 8 (FAST)
   reads back correctly (B1 holds on both runs, every configuration, both
   cores). Measured D_F equals D_S exactly (310520 `clk_sys` cycles for 512
@@ -718,6 +823,19 @@ otherwise.
   configuration its own assertion or precondition is graded in (2.1); the
   F1/B4 contrasting case is ECS only, per 2.4, and the AUDRATE demonstration
   runs under ECS/PAL alone. The normal run never runs a mutant.
+- **FIXTURE.** Each program (`prog_audio.s`, `prog_t2s.s`, `prog_adkcon.s`,
+  `prog_diskrate.s`) stores its own known constant last, right before DONE,
+  checked by the test before anything else that program stores; the
+  Chip-memory port's first read of every DMA-referenced table and buffer is
+  checked against the content poked there. Measured, TG68K: every FIXTURE-
+  CONST and FIXTURE-DATA check passes on the normal run, and NMH_MUTATE=
+  FIXTURE (each program's own constant changed) turns every FIXTURE-CONST
+  line red, with every other line unaffected. Measured, fx68k: the normal
+  run's own FIXTURE-CONST and FIXTURE-DATA checks pass the same way;
+  NMH_MUTATE=FIXTURE's own capture of `prog_audio.bin`'s mutant does not
+  reach DONE within budget on fx68k (see the mutation table in the test
+  file's own header for this and every other audio mutation's per-core
+  result).
 - **F1/B4's own contrasting case, measured inside the P6 interval.**
   Rewriting VTOTAL, HTOTAL and BEAMCON0 (2.4) halves the refresh-group
   spacing measured there to 114.00 color clocks on both cores, both ECS
