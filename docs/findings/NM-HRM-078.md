@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option, the one MiSTer's line has already taken; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `cia_timera.v`, `cia_timerb.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L32) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L50) |
 | **Report to** | **NanoMig and minimig-dev/MinimigAGA-MiST-TC64.** MiSTer already selects each timer's count source from INMODE, so a fix exists to port — see *Where a fix already exists*. There is no automatic merge in either direction |
-| **Test** | [`hrm/appF-cia-timer-modes`](../../hrm/appF-cia-timer-modes) — two assertions, each on one timer module alone, with no CPU core: `CRA-INMODE`, claims `sol:F-cra.c8`, `opus:F-cra.c8` (p. 348), on the `cia_timera` fixture (`test_cia_timera.cpp:475-515`); `CRB-INMODE-ARITY`, claim `opus:F-crb.c6` (p. 349), on the `cia_timerb` fixture (`test_cia_timerb.cpp:469-519`). [`integration/appF-cia-system`](../../integration/appF-cia-system) specifies the same bits at the system boundary, P7.5 for CRA and P8.65 for CRB, and has built neither yet |
+| **Test** | [`hrm/appF-cia-timer-modes`](../../hrm/appF-cia-timer-modes) — two assertions, each on one timer module alone, with no CPU core: `CRA-INMODE`, claims `sol:F-cra.c8`, `opus:F-cra.c8` (p. 348), on the `cia_timera` fixture (`test_cia_timera.cpp:475-515`); `CRB-INMODE-ARITY-00-01`, claim `opus:F-crb.c6` (p. 349), on the `cia_timerb` fixture (`test_cia_timerb.cpp:476-518`). The same claim's codes `10` and `11` are `CRB-INMODE-ARITY-10-11`, a RECORDED line, declined (`test_cia_timerb.cpp:539-571`): the fixture has no CNT pin, and with CNT held high p. 349 itself predicts that modes 10 and 11 read alike. [`integration/appF-cia-system`](../../integration/appF-cia-system) grades the same bits at the system boundary, on fx68k and TG68K; its lines for CRA bit 5 and for CRB modes 01 and 11 are red on both cores and under validation, and this page does not count them yet |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 343, 348–351, 353; 8 — Interface Hardware, printed p. 251; Appendix G — Keyboard Interface, printed p. 357 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red: `CRA-INMODE` (`cia_timera`: 9 passed, 1 failed) and `CRB-INMODE-ARITY` (`cia_timerb`: 7 passed, 1 failed). In the same run `CRB-INMODE-CODE-00` and `CRB-INMODE-CODE-10`, green, show CRB bit 6 choosing between E-clock pulses and timer A's underflows on the same fixture |
+| **Assertions** | 2 red: `CRA-INMODE` (`cia_timera`: 9 passed, 1 failed) and `CRB-INMODE-ARITY-00-01` (`cia_timerb`: 7 passed, 1 failed); `CRB-INMODE-ARITY-10-11` is a RECORDED line, not graded. In the same run `CRB-INMODE-CODE-00` and `CRB-INMODE-CODE-10`, green, show CRB bit 6 choosing between E-clock pulses and timer A's underflows on the same fixture |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all stop a timer's E-clock count once its INMODE selects CNT, and count CNT's rising edges instead. vAmiga, Denise and Copperline drive CIA-A's CNT from the keyboard's KCLK and CIA-B's from PA1, and count CRB mode 11 only while CNT is high; WinUAE drives CIA-B's alone, from PA1, and counts mode 11 as mode 10 |
 
 ---
@@ -141,8 +141,9 @@ timer module alone and drives its ports directly; no CPU core is involved.
   With bit 5 set, p. 348 makes timer A count CNT transitions; the fixture has
   no CNT and so no transition, and by the page the count would stay at 5 with
   no underflow.
-- **`CRB-INMODE-ARITY`** (`test_cia_timerb.cpp:469-519`). For each of the four
-  codes, timer B is loaded with 255 and started, given 10 E-clock pulses,
+- **`CRB-INMODE-ARITY-00-01`** (`test_cia_timerb.cpp:476-518`) and
+  **`CRB-INMODE-ARITY-10-11`** (`test_cia_timerb.cpp:539-571`). For each of the
+  four codes, timer B is loaded with 255 and started, given 10 E-clock pulses,
   reloaded, and given 10 one-cycle pulses on `tmra_ovf`, timer A's underflow
   input. The decrements, as (E clock, underflows):
 
@@ -153,8 +154,11 @@ timer module alone and drives its ports directly; no CPU core is involved.
   | `10` | (0, 10) | (0, 10) |
   | `11` | (0, 10) | (0, 10) with CNT high, (0, 0) with CNT low |
 
-  The assertion requires codes `00` and `01` to differ and codes `10` and `11`
-  to differ. NanoMig's two pairs are identical, and it is red.
+  `CRB-INMODE-ARITY-00-01` requires codes `00` and `01` to differ. NanoMig's
+  two are identical, and it is red. `CRB-INMODE-ARITY-10-11` prints codes `10`
+  and `11`, identical too, on a RECORDED line and declines to grade them: the
+  fixture has no CNT pin to hold low, and with CNT high p. 349's mode 11 counts
+  what mode 10 counts.
 
 `CRB-INMODE-CODE-00` and `CRB-INMODE-CODE-10`, green on the same fixture in the
 same run, read (10, 0) and (0, 10): the fixture delivers both stimuli, and CRB
@@ -164,12 +168,16 @@ count through the same `count` line. The run ends `9 passed, 1 failed` for
 being the assertion above.
 
 At the system boundary,
-[`integration/appF-cia-system`](../../integration/appF-cia-system) specifies
-both bits and has built neither case. P7.5 is written to grade CRA bit 5 on
-CIA-A with one key code sent (8 counts) and on CIA-B with nothing driving CNT
-(no count), and P8.65 CRB's four modes, mode 11 on CIA-A with and without a
-key code. The package's current output grades P1, P2 and its environment
-checks only.
+[`integration/appF-cia-system`](../../integration/appF-cia-system) grades
+both bits on fx68k and on TG68K: CRA bit 5 on CIA-A with one key code sent
+(8 counts) and on CIA-B with nothing driving CNT (no count), and CRB's four
+modes, mode 11 on CIA-A with and without a key code. On both cores six of the
+lines that grade them are red: CRA bit 5 and its φ2 contrast, CRB mode 01 and
+its φ2 contrast, mode 10's spacing precondition, and mode 11 with a key sent;
+so are the four lines of the keyboard-idle precondition those cases share.
+Mode 10 and its contrast, mode 11 with no key sent, and the checks that the key
+code has arrived before the timer is stopped are green. Whether each red is
+this finding's is under validation; this page does not count them yet.
 
 ---
 
@@ -267,9 +275,10 @@ change:
 
 - a timer whose INMODE selects CNT would stop counting; `CRA-INMODE` asks for
   exactly that difference;
-- `CRB-INMODE-ARITY` would see its `10`/`11` difference only if its fixture
-  held the new CNT input low: with CNT high, p. 349's mode 11 counts what mode
-  10 counts;
+- codes `00` and `01` would differ, the difference `CRB-INMODE-ARITY-00-01`
+  asks for; codes `10` and `11`, which `CRB-INMODE-ARITY-10-11` declines, would
+  differ only on a fixture that held the new CNT input low: with CNT high,
+  p. 349's mode 11 counts what mode 10 counts;
 - CIA-A's timers would count KCLK only if the key path produced it. p. 357's
   eight pulses per code are the page's KCLK, and nothing in NanoMig makes them.
 
@@ -284,7 +293,7 @@ change:
 - **The code has no other reading.** Bit 5 is read nowhere in either timer
   module but the read-back mux, and no module above them has a CNT input.
 - **The fixture is live on both of timer B's sources.** `CRB-INMODE-CODE-00`
-  and `CRB-INMODE-CODE-10` are green on the stimuli `CRB-INMODE-ARITY` uses:
+  and `CRB-INMODE-CODE-10` are green on the stimuli `CRB-INMODE-ARITY-00-01` uses:
   CRB bit 6 is seen, and bit 5 is not.
 - **Every implementation read here implements the page**, the four independent
   ones and MiSTer's line alike.
@@ -294,12 +303,11 @@ change:
 - **Neither fixture has a CNT input**, so the tests show that bit 5 changes
   nothing, not what a CNT mode counts. For `CRA-INMODE` that is enough: with CNT
   at either level and not moving, p. 348's mode 1 counts nothing, and NanoMig
-  counts every E-clock pulse. For `CRB-INMODE-ARITY` it is enough on codes `00`
-  and `01`, where p. 349's mode 01 counts nothing and NanoMig counts 10. On codes
-  `10` and `11` it is not: with CNT held high, p. 349's mode 11 counts every
-  underflow mode 10 counts, as WinUAE does and as MiSTer does with its CNT tied
-  high, so that half of the assertion is red on NanoMig but would be red on an
-  implementation of the page whose CNT is high.
+  counts every E-clock pulse. For `CRB-INMODE-ARITY-00-01` it is enough too:
+  p. 349's mode 01 counts nothing and NanoMig counts 10. For codes `10` and `11`
+  it is not: with CNT held high, p. 349's mode 11 counts every underflow mode 10
+  counts, as WinUAE does and as MiSTer does with its CNT tied high, so
+  `CRB-INMODE-ARITY-10-11` records the comparison and does not grade it.
 - **In NanoMig nothing would drive CNT.** The difference a program can see is a
   timer that keeps counting E-clock pulses after it is set to count CNT, and a
   CRB mode 01 that counts them too; whether any Amiga software does that is not

@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted — NanoMig has the three lines from there unchanged, and a fix there must then be ported to NanoMig deliberately, as there is no automatic merge. TC64 compares four address bits, one more than the page — see *What the others say* |
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode) — `gary` compiled alone, with no CPU core: `CIA-DECODE-DONTCARE`, claims `sol:F-signals.c56`, `sol:F-signals.c63`, `opus:F-conn.c1`, `opus:F-conn.c6` (p. 353) |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 350, 351 and 353; Appendix D, printed pp. 314–316; Appendix K, printed pp. 385 and 388 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `CIA-DECODE-DONTCARE` red; the package reads 3 passed, 2 failed. The other red of the run, `CIA-AB-TWOBIT-RULE` (claims `sol:F-signals.c57`, `sol:F-signals.c58`, `opus:F-conn.c2`), is not part of this finding: p. 351 predicts what it measures — see *The second red* |
+| **Assertions** | `CIA-DECODE-DONTCARE` red; the package reads 4 passed, 1 failed. `CIA-AB-TWOBIT-RULE` (claims `sol:F-signals.c57`, `sol:F-signals.c58`, `opus:F-conn.c2`, p. 353), green in the same run, grades p. 353's two chip selects at $BFE001 and $BFD000 and, at $BFC100, where p. 353 is silent, p. 351's one select line per chip: both chips are selected there. It is not part of this finding — see *$BFC100 selects both chips* |
 | **Verdict of the four** | **3–1 for p. 353 on the machines it describes, and no named model decodes NanoMig's window**: WinUAE's models with neither Gayle nor Fat Gary, vAmiga and Denise select the CIAs anywhere in $A00000–$BFFFFF, as p. 353's three bits do; Copperline answers only in $BFD000–$BFDFFF and $BFE000–$BFEFFF, narrower than NanoMig, and so do WinUAE's Gayle and Fat Gary models. Only a WinUAE configuration with the AGA chipset and neither gate array has NanoMig's $BF0000–$BFFFFF. At $BFC100 WinUAE's models without Gayle or Fat Gary, vAmiga and Denise select both CIAs, as NanoMig does and p. 351 predicts |
 | **See also** | [NM-HRM-062](NM-HRM-062.md) — the same paragraph of p. 353 prints its two binary patterns interchanged |
 
@@ -137,12 +137,12 @@ same whichever core would drive it.
 
 | address | A23–A16 | A13, A12 | `sel_cia` | `sel_cia_a` | `sel_cia_b` | graded by |
 |---|---|---|---:|---:|---:|---|
-| $BFE001 | $BF | 1, 0 | **1** | 1 | 0 | `CIA-DECODE-DONTCARE`, baseline |
+| $BFE001 | $BF | 1, 0 | **1** | 1 | 0 | `CIA-DECODE-DONTCARE`, baseline; `CIA-AB-TWOBIT-RULE` |
 | **$A00000** | $A0 | 0, 0 | **0** | | | `CIA-DECODE-DONTCARE`, red |
 | **$BE0000** | $BE | 0, 0 | **0** | | | `CIA-DECODE-DONTCARE`, red |
 | $BFEFFF | $BF | 1, 0 | | 1 | | `CIA-DECODE-DONTCARE`, control: A11–A1 set |
-| $BFD000 | $BF | 0, 1 | | 0 | 1 | `CIA-AB-TWOBIT-RULE`, green half |
-| $BFC100 | $BF | 0, 0 | | **1** | **1** | `CIA-AB-TWOBIT-RULE`, red half — see below |
+| $BFD000 | $BF | 0, 1 | | 0 | 1 | `CIA-AB-TWOBIT-RULE` |
+| $BFC100 | $BF | 0, 0 | | **1** | **1** | `CIA-AB-TWOBIT-RULE`, as p. 351 predicts — see below |
 
 Both $A00000 and $BE0000 carry `101` in A23–A21; $BE0000 differs from $BF
 in A16 alone. Neither reaches a CIA. The control on the same signal holds:
@@ -152,15 +152,12 @@ are. (`gary.v` has no A0 at all: its address port is `[23:1]`.)
 
 ---
 
-## The second red: $BFC100 selects both chips, as p. 351 predicts
+## $BFC100 selects both chips, as p. 351 predicts
 
-`CIA-AB-TWOBIT-RULE` grades p. 353's second sentence. Its two positive halves
-are green: $BFE001 selects CIA-A and $BFD000 selects CIA-B. It is red on a half
-it infers, that at $BFC100 "NEITHER chip" should be selected "per the prose's
-own two-bit rule". The sentence does not say so. It gives a condition under
-which each chip is selected and is silent on A12 and A13 both low; reading it
-as the only condition tests a one-way statement as a two-way one, the shape
-[NM-HRM-029](withdrawn/NM-HRM-029.md) was withdrawn for.
+`CIA-AB-TWOBIT-RULE` grades p. 353's second sentence where it names a chip,
+$BFE001 selecting CIA-A and $BFD000 selecting CIA-B, and p. 351 at $BFC100,
+where both chips are selected. It is green. p. 353's sentence gives a condition
+under which each chip is selected and is silent on A12 and A13 both low.
 
 Where the manual does speak to that address, on p. 351, it predicts the
 measurement: one active-low line per chip, (A12\*) for CIA-A and (A13\*) for
@@ -169,7 +166,7 @@ for each chip, but they are the patterns [NM-HRM-062](NM-HRM-062.md) shows
 interchanged, and they too give "the following binary address" by which a chip
 "is selected", not the addresses at which it is not.
 
-So this red is not a finding: the page, read whole, predicts what
+So $BFC100 is not part of this finding: the page, read whole, predicts what
 [`gary.v#L191-L192`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L191-L192) does. The same fact is measured green, as a mechanism with no
 page cited, by `OVERLAP-BOTH-SELECTS-ACTIVE` in
 [`hrm/ch8-cia-disk-port-windows`](../../hrm/ch8-cia-disk-port-windows).
