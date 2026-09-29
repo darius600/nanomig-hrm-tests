@@ -302,7 +302,12 @@ bool check_A4(const RunResult& r, int64_t lo, int64_t hi) {
 // section 7, CP4: "For a contrasting run, 'the schedule' is its changed
 // schedule").
 bool check_CP4(const RunResult& r, std::string* detail) {
-    for (auto& e : r.applied) if (e.sched != e.applied) { if (detail) *detail = "delivery not cycle-exact"; return false; }
+    for (auto& e : r.applied) if (e.sched != e.applied) {
+        if (detail) *detail = "delivery not cycle-exact sched=" + std::to_string(e.sched) +
+            " applied=" + std::to_string(e.applied) + " j0=" + std::to_string(e.j0) +
+            " j1=" + std::to_string(e.j1) + " mb=" + std::to_string(e.mb);
+        return false;
+    }
     int64_t cck = std::max<int64_t>(1, r.model.colour_clock_len);
     uint8_t pj0 = 0, pj1 = 0, pmb = 0;
     bool have = false;
@@ -1244,18 +1249,37 @@ void schedB_K16(const BeamModel& m, int64_t B0, std::vector<Event>& ev, PortStat
     }
     for (const auto& p : phaseB18_other_pulses()) add_pulse_events(ev, m, B0, st, p.field_offset, p.line, p.H, p.port0, p.port1, p.bit);
 }
-// K10: pin 9 driven low in the windows the main run drives pin 5 (2-4ms both ports on pin 9 only).
+// K10: pin 9 driven low in the windows the main run drives pin 5 (2-4ms,
+// both ports, pin 9 only -- pin 5 is not driven there instead of pin 9).
+// The main schedule's own 8-10ms pin-9 window is kept unchanged
+// (SPECIFICATION.md section 8: "Keep the main D schedule plus one change"),
+// so only P13(port1) is exercised by this change; P13(pin9-control) sees
+// the same 8-10ms window it always does.
 void schedD_K10(const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st, bool ntsc) {
     int64_t t2 = M3 + us_to_cck(2000, ntsc) * m.colour_clock_len;
     int64_t t4 = M3 + us_to_cck(4000, ntsc) * m.colour_clock_len;
     ev.push_back({t2, [st]() { st->joy0 |= kBitFire2; st->joy1 |= kBitFire2; }});
     ev.push_back({t4, [st]() { st->joy0 &= (uint8_t)~kBitFire2; st->joy1 &= (uint8_t)~kBitFire2; }});
+    int64_t t8 = M3 + us_to_cck(8000, ntsc) * m.colour_clock_len;
+    int64_t t10 = M3 + us_to_cck(10000, ntsc) * m.colour_clock_len;
+    ev.push_back({t8, [st]() { st->joy0 |= kBitFire2; st->joy1 |= kBitFire2; }});
+    ev.push_back({t10, [st]() { st->joy0 &= (uint8_t)~kBitFire2; st->joy1 &= (uint8_t)~kBitFire2; }});
 }
-// K10b: port 1 pin 5 held low throughout phase D (0-12ms).
+// K10b: port 1 pin 5 held low throughout phase D (0-12ms, replacing the
+// main schedule's 2-4ms-only pin-5 window). The main schedule's own
+// 8-10ms pin-9 window is kept unchanged, for the same reason as K10.
 void schedD_K10b(const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st, bool ntsc) {
-    ev.push_back({M3, [st]() { st->mbtn |= kMouseMid; }});
+    // M3+1, not M3 itself: run_until_write's own return can already sit one
+    // clk_sys past the mark's write cycle, and an event scheduled at
+    // exactly that boundary can then apply a cycle late (CP4's own record
+    // catches it) depending on which side of it delivery starts from.
+    ev.push_back({M3 + 1, [st]() { st->mbtn |= kMouseMid; }});
     int64_t t12 = M3 + us_to_cck(12000, ntsc) * m.colour_clock_len;
     ev.push_back({t12, [st]() { st->mbtn &= (uint8_t)~kMouseMid; }});
+    int64_t t8 = M3 + us_to_cck(8000, ntsc) * m.colour_clock_len;
+    int64_t t10 = M3 + us_to_cck(10000, ntsc) * m.colour_clock_len;
+    ev.push_back({t8, [st]() { st->joy0 |= kBitFire2; st->joy1 |= kBitFire2; }});
+    ev.push_back({t10, [st]() { st->joy0 &= (uint8_t)~kBitFire2; st->joy1 &= (uint8_t)~kBitFire2; }});
 }
 
 // K13 (SPECIFICATION.md section 8): the phase-B buffer is shortened so
@@ -1310,7 +1334,17 @@ void run_K13(const std::string& dir, const std::string& label) {
     }
     checks.note(label + ": M2 " + std::string(m2seen ? "appeared while still injecting phase-B events "
         "(the rest were dropped)" : "had not appeared once every phase-B event was injected"));
-    auto m2cyc = h->run_until_write(kMark, kM2, kRunBudget);
+    // M2 may already be in the log (found by scanning it above), not still
+    // to come: run_until_write only ever finds a future write, so a write
+    // already seen is read back from the log itself, not waited for again
+    // (the mistake this runner replaces, SPECIFICATION.md section 8, K13).
+    std::optional<uint64_t> m2cyc;
+    if (m2seen) {
+        int64_t c = find_mark_cycle(h->ram_log(), kM2);
+        if (c >= 0) m2cyc = (uint64_t)c;
+    } else {
+        m2cyc = h->run_until_write(kMark, kM2, kRunBudget);
+    }
     checks.expect(m2cyc.has_value(), label + ": M2 written (phase B ended)");
     r.C0_idx = m2cyc && model.ok ? model.field_index_of((int64_t)*m2cyc) : 0;
     if (m2cyc) {
