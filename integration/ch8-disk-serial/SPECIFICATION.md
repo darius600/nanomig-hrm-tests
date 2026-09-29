@@ -7,7 +7,7 @@ Reference Manual*, 3rd edition, by an author who never saw the
 implementation or any test. Page numbers are printed page numbers.
 Quotations follow the printed page (the scan), which governs where the text
 layer differs. The package has five propositions, P1 to P5. Of the 34
-claims, 6 carry propositions and 28 do not (section 1).
+claims, 5 carry propositions and 29 do not (section 1).
 
 ---
 
@@ -33,6 +33,12 @@ claims, 6 carry propositions and 28 do not (section 1).
 |---|---|---|
 | `sol:8-serper.c4`, `sol:8-serper.c5` | 255 | These give the color clock as 279.36 ns (NTSC) and 281.94 ns (PAL). A test measures time only in system clock cycles, and no page ties the re-implementation's clock to nanoseconds. Selecting NTSC or PAL changes no count a test can take. These values are used only to convert: microseconds into color clocks in P4 (R3), and a bit time into a rate in P3. They are not graded. |
 | `opus:8-serper.c10` | printed 284 | The claim's `says` is only a constant, ".2794 microseconds", for no named machine. The claim records p.283, but the printed SERPER entry is on **p.284**: printed p.283 ends with SERDATR bit 00, and SERPER heads p.284. The constant cannot be observed for the same reason as `sol:8-serper.c4`/`c5` above (a test measures cycles, not nanoseconds), and on a PAL machine it disagrees with p.255's own color clock (P2), so it cannot stand in for either page's machine-specific value. |
+
+### 1.4 A claim whose printed quantity is not observable at this boundary
+
+| Claims | Page | Reason |
+|---|---|---|
+| `opus:8-adkcon.c33` | 265 | "08 FAST Disk data clock rate control 1=fast(2us) 0=slow(4us)" times the disk data clock on Paula's write-data pin (p.380: `38 DKWD* Disk write data O`). `nanomig.v` has no such pin; its disk side is the SD-card sector interface. P4 below times the rate at which disk write DMA reads words at the Chip-memory port instead. No page ties that rate to the bit-cell time -- it would need an unprinted premise (that DSKDAT is the whole of the storage between memory and the pin, or that Paula requests a word only when the previous one has been sent; p.194 lets a device leave a slot unused, "If a device does not request one of its allocated time slots, the slot is open for other uses", and pp.380-381 name only Paula's `DMAL`, "DMA request line"). P4's own rate comparison (P4-MAIN, the four `P4-*-FAST*` lines) is declined for this reason; preconditions 4a-4f, which each grade a different page sentence on their own, stay graded (see P4 below). |
 
 ---
 
@@ -278,7 +284,9 @@ The rate is reported, not graded:
 
 ### P4: ADKCON FAST sets the disk bit cell to 2 µs or 4 µs
 
-**Claim.** `opus:8-adkcon.c33` (p.265).
+**Claim.** `opus:8-adkcon.c33` (p.265) -- declined (1.4): P4 measures the
+Chip-memory read rate, not the bit-cell time the claim states, and no page
+ties the one to the other.
 
 **Page.**
 
@@ -288,14 +296,16 @@ The rate is reported, not graded:
 
 **Proposition.** ADKCON bit 8 = 1 makes a disk bit cell last 2 µs, and bit 8 = 0 makes it last 4 µs.
 
-So a disk write fetches one word from Chip memory every 32 µs or every 64 µs.
+This would put a disk write's Chip-memory fetch at one word every 32 µs or every 64 µs, if the
+Chip-memory read rate tracked the bit cell. No page says it does (1.4), so P4 below declines that
+comparison and reports the measured Chip-memory read rate instead.
 
-**Why the Chip port shows the bit cell, with no disk or drive attached.**
+**Why P4's rate comparison is declined, though the buffer needs no disk or drive.**
 
 - The data buffer holds one word. p.279, DSKDAT: "It contains two bytes of data that are either sent (written) to or received (read) from the disk. ... The DMA controller automatically transfers data to or from this register and RAM".
 - The words in memory are raw MFM, one cell per bit. p.250: "The raw MFM data that must be presented to the disk controller will be twice as large as the unencoded data".
-- So during a steady write, words leave memory at the rate at which cells are sent: one word per 16 cells.
-- No disk and no drive are needed. The only conditions p.248 lists for disk DMA are DSKLEN's DMAEN and DMACON's DSKEN and DMAEN ("All the various DMA bits must be true").
+- **Neither page says when the next word leaves memory.** "One word per 16 cells" would need DSKDAT to be the whole of the storage between memory and the write-data pin, or Paula to request a word only when the previous one has been sent -- neither is printed. p.194 lets a device leave a slot unused ("If a device does not request one of its allocated time slots, the slot is open for other uses"), and pp.380-381 name only Paula's `DMAL`, "DMA request line". So the Chip-memory read rate P4 observes is not shown to be the bit-cell rate; P4's comparison against the bands below is declined (1.4).
+- No disk and no drive are needed to observe the Chip-memory read rate itself. The only conditions p.248 lists for disk DMA are DSKLEN's DMAEN and DMACON's DSKEN and DMAEN ("All the various DMA bits must be true"), which is what preconditions 4c/4d test.
 
 **Stimulus.** There is one run for each combination of FAST value (1 or 0), standard (NTSC or PAL) and core.
 
@@ -325,18 +335,14 @@ So a disk write fetches one word from Chip memory every 32 µs or every 64 µs.
 
 The window runs from t_64 to t_192. This is the middle half of the transfer, away from its start and its end.
 
-**Expected.** The cell time is
+**Declined, not graded.** T_cell, the Chip-memory read rate, is measured and printed (MEASURED) on
+both cores, in every configuration, converted to microseconds with R3:
 
-T_cell = (t_192 − t_64) / (128 · 16 · C) color clocks,
+T_cell = (t_192 − t_64) / (128 · 16 · C) color clocks.
 
-converted to microseconds with R3.
-
-| FAST | Expected T_cell |
-|---|---|
-| 1 | 1.5 µs ≤ T_cell < 2.5 µs |
-| 0 | 3.5 µs ≤ T_cell < 4.5 µs |
-
-The pages give the two values to one significant figure only: "2us" and "4us" on p.265, and "two microseconds" and "four microseconds" on p.249. So the check grades at that precision. It does not assert an exact ratio of 2, because no page states one.
+p.265 and p.249 give the disk data clock's bit-cell time as "2us"/"4us" and "two"/"four
+microseconds", to one significant figure, with no further precision -- but that is a different
+quantity from T_cell (1.4), so P4-MAIN does not grade T_cell against either band.
 
 For orientation, not graded: 32 µs per word is 114.5 color clocks on NTSC and 113.5 on PAL.
 
@@ -361,7 +367,8 @@ For orientation, not graded: 32 µs per word is 114.5 color clocks on NTSC and 1
   - the longest line is 228 color clocks (p.23).
   - Contrast: in the FAST = 1 run, the program waits for about the time of 128 words and then writes ADKCON ← $0100. The page then predicts 4 µs cells for the second half, and 4f fails.
 
-**Contrasting case.** Grade the FAST = 0 run against the FAST = 1 band, and the FAST = 1 run against the FAST = 0 band. Both fail. The two runs differ only in step 3.
+**Contrasting case.** None for P4-MAIN: it is a RECORDED decline, not a graded comparison, so no
+stimulus can turn it red or green (1.4). Preconditions 4a-4f keep their own contrasts, below.
 
 **Reference frames.**
 
@@ -583,15 +590,15 @@ pairs that include N=371: |U371-U32396| = 0.000827 against a tolerance of
 0.888916 (graded on its own as a control). Not exercised by N=0 or N=32396
 alone, only by back-to-back transmission (W>1).
 
-**P4's own proposition, and preconditions 4d/4e/4f, are graded and red on
-every capture, both cores.** With the buffer address and the overlay-clear
-step both repaired, the DMA fetch of B+2i (DBUF=$020000) is observed on
-every capture: 4a, 4b, 4c, 4d and 4e all pass. T_cell measured 1.331189 us
+**P4-MAIN is declined; preconditions 4a-4f are graded and pass on every
+capture, both cores.** With the buffer address and the overlay-clear step
+both repaired, the DMA fetch of B+2i (DBUF=$020000) is observed on every
+capture: 4a, 4b, 4c, 4d, 4e and 4f all pass. T_cell measured 1.331189 us
 (NTSC) and 1.343483 us (PAL), identical for FAST=1 and FAST=0 and identical
-on both cores; both values lie below both of p.265/p.249's bands
-(1.5-2.5 us and 3.5-4.5 us), so P4-MAIN is red under either FAST setting's
-band, on every capture. 4f (steady state) passes: the fetch cadence does
-not drift.
+on both cores. p.265/p.249's bands (1.5-2.5 us and 3.5-4.5 us) time the disk
+data clock, a different quantity from T_cell (1.4); P4-MAIN declines the
+comparison for that reason rather than grading T_cell against either band.
+4f (steady state) passes: the fetch cadence does not drift.
 
 **P5: every character (0-7) reads back correctly on both runs, both
 cores.** RESULT bits 7-0 match byte_j for every j on run A and run B, bit 9
