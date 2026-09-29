@@ -1494,3 +1494,73 @@ writes only the PAL bit.
 (R5). Markers M1 and M2 for the timing of the write.
 
 **Open.** What the other BEAMCON0 bits do, and what "UHRES" names (2.4).
+
+---
+
+## 5. Build
+
+Built, with one assertion each: P4, P5, P6, P7, P8, P9, P10, P11. Every
+program clears the CIA-A overlay first (ddra=$03 at $BFE201, then pra=$00
+at $BFE001, 3.2) before any write below $80000, then fills its own Copper
+lists and sprite/blitter data structures there itself (3.2's anchor check).
+ZERO's content is not written explicitly: the harness's own Chip-RAM model
+starts every word at $0000 (`nanomig_harness.h`'s `NanomigHarness`
+constructor), which already matches the table's stated content, and no
+proposition built here reads a bitplane pixel (every run uses the plain
+colour set, black on black, 3.6).
+
+Five programs:
+
+- MANUAL (`prog_manual.s`): P4, P5. Mutations: P4-READ, P4-WRITE, P4-PRE1,
+  P4-PRE2, P5-PROP, P5-REF, P5-PRE1, P5-PRE2, FIXTURE-MANUAL.
+- AUTO / AUTO-ODD (`prog_auto.s`, `prog_autoodd.s`): P6, P7, P8. Mutations:
+  P6-PROP, P6-REF, P6-PRE1, P6-PRE2, P7-PROP, FIXTURE-AUTO, P8-PROP
+  (`prog_autoodd_c1.s`), P8-PRE2 (plain AUTO's own log checked against
+  AUTO-ODD's fixed expectation).
+- CPU-PTR (`prog_cpuptr.s`): P9. Mutations: P9-PROP, P9-PRE1, P9-PRE2,
+  P9-PRE3, FIXTURE-CPUPTR.
+- JUMP (`prog_jump.s`): P10. Mutations: P10-PROP, P10-PRE1, P10-PRE2,
+  P10-PRE3, FIXTURE-JUMP.
+- BLIT (`prog_blit.s`): P11. Mutations: P11-PROP, P11-PRE1, P11-PRE3,
+  FIXTURE-BLIT.
+
+P4/P5's precondition checks (markers precede/follow the display window)
+read a value the program stores at the moment of each marker: the current
+(V8:V7-0) from VPOSR/VHPOSR, the same technique 3.8 uses throughout for
+waiting on the beam from the CPU. This is a measurement, not a tuned
+constant: the precondition is graded against the page's own DIWSTRT/DIWSTOP
+lines ($2C, $F8), not against a value chosen to make the check pass.
+
+JUMP's harness run continues 700000 clk_sys cycles past the program's own
+DONE mark: field 6's own precondition (P10-PRE3) needs the Copper's WAIT
+for line $F0 to complete, which happens after the program itself has
+nothing left to do. The precondition check (P10-PRE3) is itself the guard:
+had the run stopped too early, that check would show the read missing and
+fail honestly, not pass by omission.
+
+**P10 -- measured, both cores (fx68k and TG68K identical).** In every one
+of the six fields, the first read in either Copper list after M_f is at
+$020004 (L1's own MOVE COLOR00, word offset 2), never at $020800 (L2). This
+holds for fields 2, 4 and 6 exactly as for fields 1, 3 and 5, although only
+2, 4 and 6 write COPJMP2. The precondition checks (P10-PRE1, P10-PRE2,
+P10-PRE3) all pass: the Copper list is read as expected, every marker
+appears, and every marker precedes the $20004 read -- so the write reached
+the design and the field boundaries are exactly where the proposition
+expects them. P10 is graded and red through its own clause alone.
+
+### Not built, by a scope decision
+
+- **P1, P2, P3** (`APPC-pos.c2 CH4-appC-position.c18 CH4-appC-position.c4`
+  for P1; P2 and P3 carry no claim id of their own). These need a video-edge
+  sweep across ten (P1, P2) or five (P3) sprite usages, with a per-usage
+  column measurement (e_A, e_B, d) repeated over every usage and cross-checked
+  against the SuperHires/Lores/OCS reference frame (R1-R4) built separately
+  from P4-P11's own. That apparatus was not built.
+- **P12, P13** (`APPC2-copcon.c2` for P12, `APPC2-copcon.c1` for P13). These
+  need a three-blit Copper list, including the ECS-only BLTCON0L, BLTSIZV
+  and BLTSIZH registers, run on both OCS and ECS, plus (for P13) four
+  COPCON values on both chip sets compared pairwise. That apparatus was not
+  built.
+- **P14** (`APPC2-BEAMCON0.uhres1`). This needs the harness's NTSC
+  configuration and an interlaced-frame scan-line count measured through R5
+  on both OCS and ECS. That apparatus was not built.
