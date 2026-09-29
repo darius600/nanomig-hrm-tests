@@ -34,6 +34,9 @@ validation has confirmed it against the page, and
 grades, and the harness checks and smoke test beside them, which are graded
 against no page.
 
+**If you have one evening,** [the shortlist](docs/findings.md#if-you-have-one-evening)
+names three findings to start with and what each takes.
+
 **The printed page is the oracle, never the RTL.** A red test in `hrm/`,
 `aa/` or a graded package of `integration/` marks a place where the RTL does
 something the page does not describe — in `integration/`, once a validation
@@ -129,8 +132,8 @@ Each finding page says what the printed page says, what NanoMig does and how
 that was measured, what four independent
 implementations (WinUAE, vAmiga, Denise, Copperline) and NanoMig's two Minimig
 ancestors do, and what is asked of the reader. A withdrawn page keeps only the
-reasoning that withdrew it, and a finding seen only in the RTL source may
-name fewer of the four. Keys are `NM-HRM-nnn` against
+reasoning that withdrew it. Where a page did not read one of the four, its row
+for that implementation says so. Keys are `NM-HRM-nnn` against
 the manual and `NM-AA-nnn` against the AA specification. Where a bit means
 something different under ECS and AGA, the finding says which chip set its
 fixture drives.

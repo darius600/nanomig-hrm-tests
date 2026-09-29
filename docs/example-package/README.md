@@ -27,17 +27,9 @@ What to look at, in order:
    fail measures nothing, and the mutation gate exists to catch one.
 4. **Driving every input.** A Verilated model starts undefined, not at zero.
 
-It is not in `hrm/`, so it is not in the suite and not in the 216.
-
-## The 252-versus-216 question, answered here because it comes up
-
-The repository-root `./run_all.sh` prints 252 PASS/FAIL/BUILD lines, not 216:
-216 for the `hrm/` packages, 33 for the `aa/` packages (a second tree, read
-by the same per-directory runner via `--in ../aa`), and 3 for the
-integration targets its own final section builds directly
-(`test_minimig_system`, `test_copper`, `apparatus-cpu-to-video`). All these
-numbers are right at once: 216 directories under `hrm/` is the suite this
-repository's docs mean by "the packages"; 252 is what the root script's own
-stdout adds up to once the `aa/` tree and the three integration targets are
-counted in. This example is a fourth thing again — it is not in any of
-those counts.
+It is not in `hrm/`, so it is not in the suite. The repository-root
+`./run_all.sh` prints one line for each package in `hrm/` and `aa/`, one for
+each check of the test harness and the smoke test in `integration/`, one per
+CPU core for each graded `integration/` package, and one `SPEC` line for each
+`integration/` package that has a specification and no test yet; this example
+is in none of them.

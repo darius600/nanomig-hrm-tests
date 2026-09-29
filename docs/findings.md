@@ -2,11 +2,13 @@
 
 **47 of the 69 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
-> **One page per finding now lives in [`findings/`](findings/).** Each opens
-> with the same three parts, in this order: what the HRM says, what NanoMig
-> does, what the other four say. Then come, where they apply and in this order,
-> a suggested change, what holds the finding up, and what is left for
-> specialists. What other Commodore documents say sits either after the other
+> **One page per finding lives in [`findings/`](findings/).** Each starts
+> with the same header table and says what the printed page says, what NanoMig
+> does and what the other four do. Most pages open with those three sections in
+> that order; the others put what their subject needs between them, such as the
+> measurement or why the finding is filed against the page. Then come, where
+> they apply, a suggested change, what holds the finding up, and what is left
+> for specialists. What other Commodore documents say sits either after the other
 > four or at the end. A withdrawn page keeps only the reasoning that withdrew
 > it. Every source is quoted and permalinked at a pinned revision.
 > Those pages are the maintained form and are written to be readable by someone

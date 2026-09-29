@@ -59,10 +59,10 @@ different units.
 
 | | |
 |---|---|
-| **WinUAE** | not compared |
+| **WinUAE** | not read for this finding |
 | **vAmiga** | **4 / 8 / 8** for `MOVE` / `SKIP` / satisfied `WAIT` — NanoMig's numbers. Each Copper state is scheduled two DMA cycles after the one before ([`Core/Components/Agnus/Copper/Copper.h:331`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.h#L331): `void schedule(EventID next, int delay = 2);`); a `MOVE` passes `COP_FETCH` and `COP_MOVE`, a `SKIP` `COP_FETCH`, `COP_WAIT_OR_SKIP`, `COP_SKIP1` and `COP_SKIP2`, and a satisfied `WAIT` `COP_FETCH`, `COP_WAIT_OR_SKIP`, `COP_WAIT1` and `COP_WAIT2` before the next fetch (`CopperEvents.cpp`) |
-| **Denise** | — |
-| **Copperline** | — |
+| **Denise** | not read for this finding |
+| **Copperline** | not read for this finding |
 | **MiSTer** | descendant — `rtl/agnus_copper.v:473-536` — identical to NanoMig's `WAITSKIP1`/`WAITSKIP2` states and their cycle counts |
 | **TC64** | descendant — `rtl/minimig/agnus_copper.v:473-536` — the same states, byte for byte. The only difference either line has from NanoMig in this file (blocking where NanoMig assigns non-blocking, lines 234-274) does not touch the WAIT/SKIP timing; the three numbers this finding measures come from code both lines share unchanged with NanoMig |
 

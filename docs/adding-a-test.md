@@ -47,13 +47,13 @@ it answers for, and — this one gets forgotten — **non-goals**: what a reader
 might expect to be covered here and is not, with the reason. Usually the reason
 is that the signal is not a port of the module under test.
 
-**The header of the test source is the package's record**, in every package.
-Markdown beside it is optional. About half the packages carry a
-`SPECIFICATION.md`, the specification their builder wrote from the claims
-before reading the RTL; a handful carry a `README.md`, and one carries its
-specification and mutation log as `SPEC.md` and `MUTATIONS.md`. None of these
-files is required, and whether a package has one says nothing about what kind
-of package it is.
+**In `hrm/` and `aa/`, the header of the test source is the package's
+record.** Markdown beside it is optional there: many of those packages carry a
+`SPECIFICATION.md`, the specification written from the claims before the RTL
+was read; a handful carry a `README.md`, and one carries its specification and
+mutation log as `SPEC.md` and `MUTATIONS.md`. **Every `integration/` package
+keeps its record in `SPECIFICATION.md`**, which the test source follows and
+cites; its header lists the mutations.
 
 **One assertion per proposition**, each naming its printed page. Never a
 collective *"all cases passed"*: when it goes red, nobody can tell which
@@ -127,8 +127,8 @@ change any other package's result.
 
 ## Where the claims come from
 
-All 216 packages in the suite came through the pipeline, and each cites a claim
-file in the sibling repository,
+Every package in `hrm/` and `aa/` came through the pipeline, and each cites a
+claim file in the sibling repository,
 [`hrm-testpipeline/work/`](https://github.com/darius600/hrm-testpipeline/tree/main/work).
 
 **You do not need one to add a test.** A package that cites its printed page and
