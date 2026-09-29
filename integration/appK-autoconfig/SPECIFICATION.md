@@ -7,10 +7,12 @@ This specification was written from the package's claims (`claims-spec-stage.jso
 | Claim | What is not used | Reason |
 |---|---|---|
 | opus:K-0164, sol:K-0155 (p.394) | The bus-line levels themselves: that /RST and /BUSRST are driven and /HLT is not. | No expansion-bus line is an output the test can see. No page identifies nanomig.v's `cpu_nrst_out` output with /RST, /BUSRST, /HLT or any other signal, so the specification gives it no meaning and grades nothing on it; a builder may record its level during RESET as a measurement at the ports, labelled as such. Both claims are graded whole by P7 (§5.3) through the consequences that other pages name: the system reset (P1's reset witness), no /HLT (the CPU continuing, P2), and /BUSRST (a PIC returning to the unconfigured state, P6). |
-| opus:K-0014, sol:K-0008 (p.384) | Everything. | Both claims state "Addressing jumpers were eliminated", a fact about how cards are built. This system has no jumper whose absence could be observed, so the claims are declined whole rather than graded in part. P3 grades the other half, "the card's address instead being assigned by software", and carries neither id. |
+| opus:K-0014, sol:K-0008 (p.384) | The addressing-jumpers-eliminated half: "Addressing jumpers were eliminated". | A fact about how cards are built; this system has no jumper whose absence could be observed. The other half of each claim, "the card's address instead being assigned by software", is graded by P3-NOTOTHER and P3-BASE (§5.2), which carry both ids. |
 | K-0840 (p.435) | Everything. | The table that holds the claim is headed "For Zorro III boards configured in the Zorro II space". Applying it to a Zorro II board is a derivation the page does not print, and the only expansion device the harness offers is Zorro II fast RAM (§5.2). P4 is therefore not specified. |
 | P3, P6, and the /BUSRST part of P7 | Everything, unless an AUTOCONFIG device is present. | The system under test is the chip set, a 680x0 CPU and Chip memory. The harness offers one expansion device, Zorro II fast RAM, through the `fastram_config` input, whose default 0 means "no Zorro II fast RAM offered" (`nanomig_harness.h`, `Config`). Every run of gate G, P3 and P6 sets `fastram_config` to a value that offers it (§5.2). P3 and P6 need a PIC that answers in the Zorro II configuration space $00E8xxxx. Gate G (§5.2) decides whether one does. If none does, P3 and P6 are reported "not checkable: no AUTOCONFIG device", never as passed, and P7's two ids are withdrawn whole to a record (§5.3). |
 | K-0838 (p.435) | Everything. | Not testable at this boundary. The table that holds the claim is headed "For Zorro III boards configured in the Zorro II space", so the claim needs a Zorro III PIC (type 10) and a CPU that drives A27-A24. The only expansion device the harness offers is "Zorro II fast RAM" (`Config.fastram_config`, `nanomig_harness.h`). nanomig.v's memory address ports are `ram_address[23:1]` and `fastram_addr[23:1]`, and the harness's `cpu_config` settings change the core's behaviour, not its bus (§2.1). A27-A24 do not exist on a 24-bit bus: the Zorro II bus "provides 24 bits of addressing information" (p.391). |
+
+Two claims from a neighbouring unit's claim set are added to this package: sol:K-0837 and opus:K-0869 (p.435, "the low order register takes bits 23-16"), graded by P3-NOTOTHER and P3-BASE (§5.2) alongside the software-assignment half of opus:K-0014 and sol:K-0008 above. hrm/appK-autoconfig-base-address declined both as `unreachable-observable` at `cpu_wrapper`; the base-address comparator the sentence describes is observable at this boundary, through where the board answers.
 
 No claim of this package needs data read from or written to a disk surface.
 
@@ -20,7 +22,7 @@ Propositions:
 |---|---|---|
 | P1 | RESET asserts the system reset (drive LED and power LED, graded separately as P1a and P1b) | nothing beyond the system |
 | P2 | RESET does not reset the CPU; the next instruction executes | nothing beyond the system |
-| P3 | A PIC's base address is the one software writes | a PIC (gate G) |
+| P3 | A PIC's base address is the one software writes; P3-NOTOTHER and P3-BASE carry sol:K-0837, opus:K-0869 and the software-assignment half of opus:K-0014, sol:K-0008 | a PIC (gate G) |
 | P4 | Register 4A's nybble supplies A19-A16: declined (§1, K-0840) | a Zorro III PIC in the Zorro II block, which this boundary does not offer |
 | P5 | Register 46's nybble supplies A27-A24: declined (§1, K-0838) | a Zorro III PIC and a 32-bit address bus, which this boundary does not offer |
 | P6 | RESET returns a configured PIC to the unconfigured state | a PIC, and Chip memory answering after RESET |
@@ -40,7 +42,7 @@ Propositions:
 - Marker M0: the first action of the program writes V0 to MK0. All results are CPU writes to chip words, which the test sees at the Chip-memory port with address and data.
 - CPU settings: every run of P1, P2 and P6 (R1, R6 and R6m, and their contrasts) is repeated for core A (68000), core B as 68000, core B as 68010 and core B as 68020, because p.394 speaks of "the 680x0 RESET instruction" and P7 grades that sentence whole. The harness's `cpu_config` selects the core's behaviour, not its bus: with `turbo_config` = 0 "every CPU access uses the slow chip bus" (`nanomig_harness.h`), the 16-bit RAM port, on every setting. PAL and ECS are the defaults, and no page makes these propositions depend on either.
 - Every program is assembled for the 68000, vasm's default, on every CPU setting. No stimulus needs a later instruction, and with `-m68010` or higher vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, which on the 68000 reads before it writes (the zero writes to BPLCON0, SPRxCTL, the scratch word, and a zero nybble or byte to a configuration register).
-- Floppy drive: the harness default `floppy_config` = 0 means "no floppy drives" (`nanomig_harness.h`, `Config`). Every run that performs P1 step c sets `floppy_config` to a value that connects drive 0. The builder picks it from the harness's documented `Config` values and states it in the package; it is harness setup, not an expected value. P1's drive-LED calibration shows at the port whether the drive latches the motor. No disk image is needed.
+- Floppy drive: the harness default `floppy_config` = 0 is documented as "one drive (DF0), write-enabled, normal speed" (`nanomig_harness.h`, `Config`). Every run that performs P1 step c uses this default; it is harness setup, not an expected value. P1's drive-LED calibration shows at the port whether the drive latches the motor. No disk image is needed.
 - Colour values: C1 = $0C30, C2 = $03AC, C_E = $0F0F. Bits 15-12 are zero ("Unused", p.46), the three values are pairwise different, and none is $000. The builder may choose others with these properties.
 
 ### 2.2 Unanswered-address rule
@@ -230,7 +232,11 @@ G does not separate a PIC from a data bus that floats to all ones, which also sa
 
 The PIC must still be unconfigured when the program starts. If the harness's start-up has already configured it, G fails, and the builder records that as the reason.
 
-Contrasting case for G (run R_G'): only if register 08 bit 6 is logical 0 ("can be shut up"). The program writes $00 to $00E8004C and then reads IMG, which is expected to differ from IMG0: "Anything written to 4C will cause a board that supports shut-up to completely disappear until the next reset" (p.436). Otherwise P3 serves as G's contrast.
+GATE-G (run R_G'): writes $00 to the shut-up address $00E8004C, then reads IMG as the last action (§2.2), on the same "differs from IMG0, or no answer" comparator P3-IMG2 uses. "Anything written to 4C will cause a board that supports shut-up to completely disappear until the next reset" (p.436).
+
+GATE-G's precondition, asserted before grading: register 08 bit 6 reads logical 0, "the board can be shut up" (p.433, §4). Where it does not hold, GATE-G is reported "not graded: register 08 bit 6 indicates the board cannot be shut up" rather than graded.
+
+GATE-G's green control, on the same comparator, with a live input proven to go green: P3-IMG2 (§5.2 P3, run R3), which differs from IMG0 after the configuring write to register 48 (p.435 fn.6, p.431).
 
 If G fails, P3 and P6 are "not checkable: no AUTOCONFIG device answers in $00E8xxxx", and P7's ids are withdrawn whole to a record (§5.3).
 
@@ -238,7 +244,7 @@ If G fails, P3 and P6 are "not checkable: no AUTOCONFIG device answers in $00E8x
 
 **1. Proposition.** An unconfigured Zorro II PIC takes the base address that software writes to its base-address register. After the final write it leaves the configuration space and answers at that address.
 
-p.384: "the card's address instead being assigned by software". P3 carries no claim id: opus:K-0014 and sol:K-0008 also state "Addressing jumpers were eliminated", which this system cannot show, and are declined whole (§1).
+p.384: "the card's address instead being assigned by software". P3 itself carries no claim id; its two sub-checks P3-NOTOTHER and P3-BASE (below) carry opus:K-0014 and sol:K-0008 (the software-assignment half; the "Addressing jumpers were eliminated" half of each is declined, §1) together with sol:K-0837 and opus:K-0869 (p.435, "the low order register takes bits 23-16").
 
 Supporting pages:
 
@@ -274,7 +280,7 @@ e. Last action (§2.2):
 - IMG2 ≠ IMG0, or "no answer": the PIC leaves $00E8xxxx (p.435 fn.6, p.431). If the next PIC in the chain has an identical image, IMG2 = IMG0 would be legitimate. The builder therefore states the number of AUTOCONFIG devices from the system configuration, and this value is expected when that number is one.
 - Memory board: R0 = P0 and R1 = P1, in both runs.
 - Memory board: before the store of R0, no CPU write with data P0 or P1 appears at a Chip-memory address of the Chip-memory port (§2.1). This excludes B1 aliasing Chip memory. A write of P0 or P1 at a Chip-memory-port address of $200000 or above is not in Chip memory; it is recorded with its address, not graded.
-- Memory board: R2 ≠ P2, or "no answer". The board does not also answer at the base it was not given.
+- P3-NOTOTHER, memory board, carrying opus:K-0014, sol:K-0008, sol:K-0837, opus:K-0869 [p391,p433-434]: R2 ≠ P2, or "no answer". "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435), read through the base-address comparator of p.433-434 ("110 2 megabytes" register 08 size field pairs the base with the board's size). The board does not also answer at the base it was not given.
 - Quantifier: "the card's address" is a statement about every card. The test covers the PIC or PICs present, with two bases (R3 and R3').
 
 **5. Preconditions.**
@@ -286,7 +292,8 @@ e. Last action (§2.2):
 
 **6. Contrasting cases.**
 
-- R3' and R3n': R3 and R3n with B1 and B2 exchanged. B2 = B1 + size (or B1 + $100000 for boards under 1 MB), with the whole board inside the space. The page predicts that the board answers at B2 and not at B1. Where no such B2 satisfies §4 (an 8 MB board, which can only sit at $00200000; a 4 MB board, whose only multiple of its size inside the space is $00400000), the contrast is unavailable; the board size and the missing second base are recorded, not graded.
+- P3-BASE (R3' and R3n'), carrying opus:K-0014, sol:K-0008, sol:K-0837, opus:K-0869 [p388,p433]: R3 and R3n with B1 and B2 exchanged. B2 = B1 + size (or B1 + $100000 for boards under 1 MB), with the whole board inside the space. The page predicts that the board answers at B2 and not at B1: "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435). Where no such B2 satisfies §4 (an 8 MB board, which can only sit at $00200000; a 4 MB board, whose only multiple of its size inside the space is $00400000), the contrast is unavailable; the board size and the missing second base are recorded, not graded.
+- Green controls for P3-NOTOTHER and P3-BASE, on the same "R2 ≠ P2, or no answer" comparator, with live inputs proven to go green: the board configured at B1, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, above the 8 MB memory space the board can occupy); and the board left unconfigured (steps c and d skipped, as R3u), read with R3n's own write/readback pair at $00400000. Both are recorded with their per-core result (§8.4).
 - For IMG1 = IMG0 (run R3c): step b writes step c's byte to $00E80048 in place of the 4A write, and IMG1 is read as the last action (§2.2). The page predicts IMG1 ≠ IMG0, or "no answer": "writing to register 48 actually configures the board" (p.436).
 - For IMG2 ≠ IMG0 (run R3u): R3 without the write to 48 of step c and without step d. The page predicts IMG2 = IMG0: until register 48 is written the board is not configured (p.436) and stays in configuration space.
 - For G: R_G'.
@@ -343,7 +350,7 @@ c. The RESET sequence of §2.3. Its tail is MOVE.W #V2,MK2, then the last action
 
 **6. Contrasting cases.**
 
-- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'.
+- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition (§5, "P1's reset witness: at least one LED change in [t_M1, t_C2]"): with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. P6's contrast is therefore carried by P7 part (iii) instead, whose precondition list (§5.3.5) excludes the reset witness.
 - For the reset-witness precondition: R1a.
 - For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented.
 
@@ -416,16 +423,15 @@ Claims opus:K-0164 and sol:K-0155, p.394: "an I/O-only reset, such as initiated 
 ### 8.1 Harness configuration
 
 Every run sets `fastram_config` = 1 (the harness documents only its
-default, 0, "no Zorro II fast RAM offered"; 1 is nanomig.v's own
-`fastram_config` port's next value, and register 00's size field reads
-back as 6, the p.433 "Unextended" Zorro II code for 2 MB) and
-`floppy_config` = $04 (the harness documents only its default, 0, "no
-floppy drives"; nanomig.v's own `floppy_config` port packs the drive
-count into bits 3-2, and 1 there connects one drive, drive 0). Every run
-of P1, P2 and P6 (R1, R6 and R6m, and their contrasts) is repeated at
-`cpu_config` = 0 on core A (fx68k) and at `cpu_config` = 0, 1 and 3 on
-core B (TG68K) -- nanomig.v's own `cpu_config` port's documented values
-("00 = 68000, 01 = 68010, 11 = 68020"). Gate G and P3 run once, at
+default, 0, "no Zorro II fast RAM offered"); Gate G's own read of
+register 00 is the measurement of what this setting produces (§8.3: type
+= Zorro II, size field = 6, the p.433 "Unextended" code for 2 MB).
+`floppy_config` is left at the harness's own documented default, 0, "one
+drive (DF0), write-enabled, normal speed" -- the propositions need only
+drive 0. Every run of P1, P2 and P6 (R1, R6 and R6m, and their contrasts)
+is repeated at `cpu_config` = 0 on core A (fx68k) and at `cpu_config` = 0,
+1 and 3 on core B (TG68K) -- the harness's own documented `cpu_config`
+values ("00 = 68000, 01 = 68010, 11 = 68020"). Gate G and P3 run once, at
 `cpu_config` = 0, on each core; they are not in P1/P2/P6's CPU-setting
 list (§2.1).
 
@@ -449,7 +455,11 @@ clearing it: a page-documented event, not an assumed cycle count.
 - Gate G and its contrast: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G').
 - P3: `prog_r3.s` (R3, and R3c/R3u/R3' select from it via an assembly
   symbol); `prog_r3_n.s` (R3n); `prog_r3_swap.s` (R3'); `prog_r3_swap_n.s`
-  (R3n'); `prog_r3_c48first.s` (R3c); `prog_r3_nocfg.s` (R3u).
+  (R3n'); `prog_r3_c48first.s` (R3c); `prog_r3_nocfg.s` (R3u);
+  `prog_r3_no48.s` (P3-CONTENT's mutation: the 48 write left out, step d
+  kept); `prog_r3_io.s` (green control: configured normally, read at
+  $00A00000); `prog_r3_unconf_n.s` (green control: left unconfigured,
+  read at $00400000 with R3n's own ending).
 - P6: `prog_r6.s` (R6, and R6a select from it); `prog_r6m.s` (R6m);
   `prog_r6a.s` (R6a); `prog_r6am.s` (R6am).
 
@@ -470,9 +480,21 @@ once at the start of every run, including gate G's and P3's.
   flag set, size field = 6 (2 MB, p.433's "Unextended" column); registers
   0C, 34, 38 and 3C read physical 1111 at both pair addresses, as p.432's
   own example and p.434-435 state for the reserved registers.
-- Register 08 bit 6 read: logical 0 ("can be shut up") on the PIC this
-  harness offers, confirmed both by G's own read and by R_G' proceeding
-  to grade a differing image rather than recording "cannot shut up".
+- The second-vsync window of section 2.2 ("no CPU access ... between the
+  access and the second vertical-sync leading edge after it") is checked
+  against the video trace's own vsync edges, not assumed from a fixed
+  cycle count: a run's completion marker (when one appears) trivially
+  satisfies it, and where none appears the run is confirmed to have
+  covered at least two vsync edges before concluding "no answer". The
+  cycle count a run is given remains a safety ceiling only, never the
+  oracle.
+- Power-LED calibration settle: the CIAAPRA write that switches the LED
+  and the MK_CALBRIGHT marker write that follows it are two separate
+  instructions; measured skew on this RTL is under 100 `clk_sys` cycles
+  (the port's own transition lands about 77 cycles before the marker's
+  write reaches the Chip-memory port). The 500-cycle tolerance the
+  calibration check allows around the marker absorbs this settle without
+  masking a real instability elsewhere in either phase.
 
 ### 8.4 Mutations
 
@@ -480,26 +502,39 @@ Every mutation below was run once on both cores (`NMH_MUTATE=<value>`)
 and compared against its record; results agreed between fx68k and TG68K
 in every case.
 
-| assertion | `NMH_MUTATE` | predicted | measured, both cores |
+| assertion(s) fed | `NMH_MUTATE` | predicted | measured, both cores |
 |---|---|---|---|
-| P7-PART-I | `P1A` | part (i) fails: no LED change | fails: no LED change observed |
-| P7-PART-II | `P2` | part (ii) fails: no C2 pixel | fails: no C2 pixel observed |
-| P1-DISPANCHOR | `P1-DISPANCHOR` | the same anchor comparator recognises F_ref under the mutation's own live colour (C1') | recognises it |
-| P1-NOEXCEPTION | `P1-NOEXCEPTION` | the same "no exception" comparator now reports one | reports one (a C_E pixel and the V_E marker both appear) |
-| P3-IMG1 | `P3-IMG1` | register 48 written in step b's place configures immediately: IMG1 != IMG0 | differs from IMG0 |
-| P3-IMG2 | `P3-IMG2` | steps c and d skipped: IMG2 = IMG0 (never configured) | equals IMG0 |
-| P3-CONTENT | `P3-CONTENT` | R0's own run substitutes R3u (steps c and d skipped): R0/R1 stay at their unwritten default | fails to match P0/P1V |
-| GATE-G | `GATE-G` | the shut-up write skipped: the same PIC answers identically twice | identical to IMG0 |
-| P6-CONTRAST, P7-PART-III | `P6` | RESET replaced by NOP: the board stays configured (a differing image from IMG0, and the memory board still answers with P0') | stays configured, still answers with P0' |
+| P1b, P7 part (i) | `P1A` | R1a (RESET replaced by NOP): the unchanged "power LED leaves bright" comparator goes red -- no LED change | P1b: FAIL (no LED change observed). P7: FAIL through part (i) |
+| P2, P7 part (ii) | `P2` | R1b (the A+2 MOVE replaced by NOP): the unchanged "C2 pixel appears" comparator goes red -- no C2 pixel | P2: FAIL (no C2 pixel observed). P7: FAIL through part (ii) |
+| P1-DISPANCHOR | `P1-DISPANCHOR` | COLOR00 preset to C1'=$0C3F; the expected colour stays C1: the unchanged anchor comparator goes red -- F_ref shows C1', not C1 | FAIL |
+| P1-NOEXCEPTION | `P1-NOEXCEPTION` | SR set to user mode before RESET, so RESET is a privilege violation: the unchanged "no exception" comparator goes red -- H_E runs | FAIL |
+| P3-IMG1 | `P3-IMG1` | register 48 written in step b's place configures immediately: IMG1 != IMG0 | FAIL (differs from IMG0) |
+| P3-IMG2 | `P3-IMG2` | steps c and d skipped: IMG2 = IMG0 (never configured) | FAIL (equals IMG0) |
+| P3-CONTENT | `P3-CONTENT` | step c (the register-48 write) left out, step d kept: R0/R1 read back at their unanswered default, not P0/P1V, with the population still present | FAIL (does not match P0/P1V) |
+| GATE-G | `GATE-G` | the shut-up write skipped (prog_rg.bin re-run in its place): the same PIC answers identically twice | FAIL (identical to IMG0) -- GATE-G is already red on the unmutated stimulus (below); this mutation shows the same red through the same comparator |
+| P7 part (iii) | `P6` | R6a/R6am (RESET replaced by NOP), fed to P7 part (iii) only (P6 itself keeps R6/R6m: section 5.2 P6, "6. Contrasting cases"): the board stays configured -- a differing image from IMG0, and the memory board still answers with P0' | P7: FAIL through part (iii). P6 itself: unaffected, still PASS |
 
-P3-BASE and P3-NOTOTHER carry no dedicated mutation (a scope decision:
-see the header comment of `test_appK_autoconfig.cpp`, at each check).
-Both measure red already, on the unmutated stimulus, on both cores: the
-memory board answers with what was written at the base it was not given,
-as well as at the base it was given. Reported to the lead, not worked
-around; the checks, and their red verdicts, are unchanged.
+Every run above also reprints GATE-G, P3-NOTOTHER and P3-BASE unchanged
+(FAIL, FAIL, FAIL): a mutation gated behind `NMH_MUTATE` only changes the
+one input it names, never the others.
 
-GATE-G also measures red already, on the unmutated stimulus, on both
-cores: after the shut-up write, the PIC's register image is unchanged
-from IMG0, although register 08 bit 6 reads "can be shut up". Reported
-to the lead, not worked around.
+P3-NOTOTHER and P3-BASE carry no dedicated mutation of their own: both
+are already red on the unmutated stimulus (below), so each gets two green
+controls instead, on the same "R2 != P2V, or no answer" comparator, run
+unconditionally (not gated behind `NMH_MUTATE`) as their own assertions:
+
+| control | comparator input | measured, both cores |
+|---|---|---|
+| board configured at $00200000, read at $00A00000 | Figure K-1 (p.386): Zorro II I/O expansion space, outside the 8 MB memory space the board can occupy | PASS (no answer) |
+| board left unconfigured, read at $00400000 | R3n's own write/readback pair, with steps c and d skipped | PASS (no answer) |
+
+GATE-G measures red on the unmutated stimulus, on both cores: after the
+shut-up write, the PIC's register image is unchanged from IMG0, although
+its own precondition holds (register 08 bit 6 reads logical 0, "the
+board can be shut up"). Its green control is P3-IMG2 (section 5.2 P3, run
+R3), on the same "differs from IMG0, or no answer" comparator, which
+passes.
+
+P3-NOTOTHER and P3-BASE measure red on the unmutated stimulus, on both
+cores: the memory board answers with what was written at the base it was
+not given, as well as at the base it was given.
