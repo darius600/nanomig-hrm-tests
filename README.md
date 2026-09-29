@@ -80,7 +80,7 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **17**, each run on both CPU cores: 6 green, 11 carrying a red; 17 more specified, not yet built |
-| assertions, `integration/` | **1124** on fx68k — 974 pass, **150 fail**; **1185** on TG68K — 1038 pass, **147 fail** |
+| assertions, `integration/` | **1111** on fx68k — 974 pass, **137 fail**; **1172** on TG68K — 1038 pass, **134 fail** |
 | registered findings | **74**, all open — 69 against the Hardware Reference Manual and 5 against the AA specification. **49 ask you to decide whether the RTL should change**; 65 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
