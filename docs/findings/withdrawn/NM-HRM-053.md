@@ -7,9 +7,9 @@
 | **Evidence** | none |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. Appendix C p. 310 gives the ECS Copper all of the chip registers once CDANG is set, and chapter 2, Appendix A and Appendix B's own `(E)` note send the reader to Appendix C for ECS; NanoMig does what p. 310 says. |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225) |
-| **Test** | [`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1` and `SERDATR-CDANG1` still fail, because they require the block p. 310 lifts; their `-CDANG0` twins and `CTRL-BLTCON0` green |
+| **Test** | [`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks) — `SERDAT-CDANG1`, `SERPER-CDANG1` and `SERDATR-CDANG1` are RECORDED, not graded: each names p. 310 as the governing text at ECS with CDANG set and points to [`hrm/ch2-copper-move-sweep`](../../../hrm/ch2-copper-move-sweep)'s `SWEEP ecs=1 cdang=1 vs Appendix C`, which grades that corner and is green; their `-CDANG0` twins and `CTRL-BLTCON0` green |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red of 8, with a control that separates the two printed marks |
+| **Assertions** | none red: 5 graded, all green (`5 passed, 0 failed`), among them a control that separates the two printed marks; the three `-CDANG1` corners recorded |
 | **Error class** | **a legend graded without the appendix that extends it** |
 | **Verdict of the four** | **unanimous with NanoMig and with p. 310**: WinUAE, vAmiga, Denise and Copperline all keep a Copper MOVE out of `$000`–`$03E` on OCS whatever CDANG holds, and let it reach every register when the Agnus is ECS and CDANG is set; Copperline asserts both halves in its own tests |
 
@@ -17,9 +17,9 @@
 
 ## Why it was withdrawn
 
-The three red assertions require a Copper MOVE to SERDATR (`$018`), SERDAT
-(`$030`) and SERPER (`$032`) to be blocked with `ecs` high and CDANG set. They
-grade Appendix B's `*` on those rows, p. 289, with the legend on p. 287,
+The finding reads Appendix B as requiring a Copper MOVE to SERDATR (`$018`),
+SERDAT (`$030`) and SERPER (`$032`) to be blocked with `ecs` high and CDANG
+set: the `*` on those rows, p. 289, with the legend on p. 287,
 *"Address not writable by the Copper"*, which names no chipset.
 
 **Appendix C extends that rule for ECS, in so many words.** p. 310 introduces
@@ -56,8 +56,9 @@ corner where they differ, ECS with CDANG set, is the one p. 310 introduces with
 `SWEEP ecs=1 cdang=1 vs Appendix C` expects every destination accepted, these
 three included, and passes; [`hrm/ch2-copper-move-range`](../../../hrm/ch2-copper-move-range)'s
 `T10` has the Copper write COPCON, `*02E` on p. 289, at ECS with CDANG set,
-from p. 310, and passes. No implementation passes both those assertions and the
-three reds here, and none that does what p. 310 says can pass the three reds.
+from p. 310, and passes. No implementation could pass both those assertions and
+a grading of the `*` at that corner, and none that does what p. 310 says could
+pass such a grading.
 
 ---
 
@@ -172,9 +173,9 @@ halts the Copper at
 
 [`hrm/ch8-appb-copper-access-marks`](../../../hrm/ch8-appb-copper-access-marks),
 `ecs` high: a Copper MOVE to SERDATR, SERDAT and SERPER is blocked with CDANG
-clear and admitted with CDANG set. `SERDAT-CDANG1`, `SERPER-CDANG1` and
-`SERDATR-CDANG1` are red, three of the package's `5 passed, 3 failed`; their
-`-CDANG0` twins are green.
+clear, and `SERDAT-CDANG0`, `SERPER-CDANG0` and `SERDATR-CDANG0` are green. With
+CDANG set the package records p. 310 as the governing text rather than
+grading the `*`, and reads `5 passed, 0 failed`.
 
 [`hrm/ch2-copper-move-sweep`](../../../hrm/ch2-copper-move-sweep), `92 passed, 1
 failed`: with `ecs` low, `APPBSTAR $0C SERDATR`, `APPBSTAR $18 SERDAT` and
@@ -188,16 +189,16 @@ accepted, green. The one red is `SWEEP ecs=1 cdang=0`, which is
 
 ## What the test measures
 
-The package grades Appendix B's `*` at `ecs` high only; its specification
-records that p. 310 is not among the pages its slice was assigned, and that
-it grades Appendix B *"on its own terms"*
+The package's specification names p. 310 as the governing text at that
+corner
 ([`SPECIFICATION.md`](../../../hrm/ch8-appb-copper-access-marks/SPECIFICATION.md),
-*Why this package is scoped to ECS*). The measurement itself is sound: the
-package grades a `~`-marked register on the same rig, and `CTRL-BLTCON0` finds
-BLTCON0 (`$040`) blocked with CDANG clear and admitted with it set, as its own
-legend says, so the fixture tells the two marks apart; `LIVENESS` shows the
-Copper writing DMACON at both CDANG states. The three reds measure the admission
-p. 310 prescribes.
+*Why this package is scoped to ECS*), and its three `-CDANG1` lines record it
+rather than grade the `*`. The fixture itself is sound: the package grades a
+`~`-marked register on the same rig, and `CTRL-BLTCON0` finds BLTCON0 (`$040`)
+blocked with CDANG clear and admitted with it set, as its own legend says, so
+the fixture tells the two marks apart; `LIVENESS` shows the Copper writing
+DMACON at both CDANG states. With `ecs` high and CDANG set the Copper reaches
+SERDATR, SERDAT and SERPER, which is the admission p. 310 prescribes.
 
 ---
 
