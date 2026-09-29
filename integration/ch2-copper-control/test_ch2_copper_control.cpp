@@ -69,10 +69,43 @@
 // MUTATION P3d stimulus red NMH_MUTATE=P3-D: Base's sampler replaced with
 //   2.4's own sparse contrast, via prog_p3_mut_d.bin -- measured FAIL on
 //   "P3d precondition: ...", both cores
+//
+// P5, P7, P9 and P11 are not built in this package: SPECIFICATION.md's
+// measured section lists them as not built.
+//
+// MUTATION P6a stimulus red NMH_MUTATE=P6-A: the C3 MOVE placed after the
+//   final WAIT, via prog_p6_mut_a.bin -- measured FAIL on "P6a
+//   precondition: ...", both cores
+// MUTATION P6b stimulus red NMH_MUTATE=P6-B: DMACON=$8200 (COPEN clear),
+//   via prog_p6_mut_b.bin -- measured FAIL on "P6b precondition: ...",
+//   both cores
+// MUTATION P6c stimulus NMH_MUTATE=P6-C: LACE set (BPLCON0 bit 2), via
+//   prog_p6_mut_c.bin -- measured PASS (not FAIL) on "P6c precondition:
+//   ...", both cores: this mutation did not redden the check it targets on
+//   this build. Reported as measured, not tuned to match the prediction.
+// MUTATION P8a stimulus red NMH_MUTATE=P8-A: INTENA=$C020 with a level-3
+//   handler that clears bit 5, via prog_p8_cop_mut_a.bin -- measured FAIL
+//   on "P8a precondition: ...", both cores
+// MUTATION P8b stimulus red NMH_MUTATE=P8-B: the VB case's clear skipped,
+//   via prog_p8_vb_mut_b.bin -- measured FAIL on "P8b precondition: ...",
+//   both cores
+// MUTATION P8c stimulus red NMH_MUTATE=P8-C: DMACON=$8200 (no COPEN) in
+//   the COP case, via prog_p8_cop_mut_c.bin -- measured FAIL on "P8c
+//   precondition: ...", both cores
+// MUTATION P10a stimulus red NMH_MUTATE=P10-A: the second WAIT changed from
+//   $5001 to $5A01, via prog_p10_mut_a.bin -- measured FAIL on "P10a
+//   precondition: ...", both cores
+// MUTATION P10b stimulus red NMH_MUTATE=P10-B: step 2 writes INTREQ=$8004,
+//   via prog_p10_mut_b.bin -- measured FAIL on "P10b precondition: ...",
+//   both cores
+// MUTATION P10c stimulus red NMH_MUTATE=P10-C: INTENA=$C004 with a level-1
+//   handler that clears bit 2, via prog_p10_mut_c.bin -- measured FAIL on
+//   "P10c precondition: ...", both cores
 
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <optional>
 #include <string>
 #include <unordered_map>
@@ -102,6 +135,7 @@ constexpr uint32_t kList2   = 0x001200;
 constexpr uint32_t kList3   = 0x001400;
 constexpr uint32_t kMarkBuf = 0x0C1000;
 constexpr uint32_t kRecBuf  = 0x0C4000;
+constexpr uint32_t kData1 = 0x002000; // copctl.i DATA1 (P8 BLIT case)
 
 constexpr uint64_t kSamplerRunBudget = 24'000'000; // a handful of PAL frames
 
@@ -136,6 +170,25 @@ Capture run_capture(const std::string& bin, uint64_t run_budget, const std::vect
     c.log = h.ram_log();
     for (uint32_t a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
     return c;
+}
+
+// ---- full run: keeps the harness alive so video() (P5, P6, P11) is
+// available too, unlike Capture/run_capture above (log()/peek only). -----
+struct FullRun {
+    std::unique_ptr<nmh::NanomigHarness> h;
+    bool loaded = false;
+    bool done = false;
+};
+
+FullRun run_full(const std::string& bin, uint64_t run_budget) {
+    FullRun r;
+    nmh::Config cfg;
+    r.h = std::make_unique<nmh::NanomigHarness>(cfg);
+    if (!r.h->load_program(bin)) return r;
+    r.loaded = true;
+    r.h->boot(kBootBudget);
+    r.done = r.h->run_until_write(kDoneAddr, kDoneValue, run_budget).has_value();
+    return r;
 }
 
 // ---- SPECIFICATION.md 2.3: channel-fetch classification ---------------
@@ -433,6 +486,116 @@ CaptureR run_capture_refresh(const std::string& bin, uint64_t run_budget,
     c.log = h.ram_log();
     for (uint32_t a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
     return c;
+}
+
+// ---- SPECIFICATION.md 2.8: restarts (P5, P6, P11) ----------------------
+//
+// A restart is the first Copper fetch after a fetch of the IR2 of a
+// list's final WAIT ($FFFF,$FFFE). end_ir2_bytes names every list's own
+// end-of-list IR2 byte address that can occur in this run.
+struct Restart { uint64_t t_final; uint64_t t_restart; uint32_t addr_byte; };
+
+std::vector<Restart> find_restarts(const std::vector<nmh::RamAccess>& log,
+                                    const std::vector<uint32_t>& end_ir2_bytes) {
+    std::vector<uint32_t> words;
+    for (uint32_t b : end_ir2_bytes) words.push_back(b / 2);
+    std::vector<Restart> out;
+    for (size_t i = 0; i < log.size(); ++i) {
+        const auto& a = log[i];
+        if (a.is_write || a.word_addr == 0) continue;
+        bool match = false;
+        for (uint32_t w : words) if (a.word_addr == w) match = true;
+        if (!match) continue;
+        for (size_t j = i + 1; j < log.size(); ++j) {
+            const auto& b = log[j];
+            if (b.is_write || b.word_addr == 0) continue;
+            out.push_back({a.cycle, b.cycle, b.word_addr * 2});
+            break;
+        }
+    }
+    return out;
+}
+
+// Count of channel reads at one exact word address within [lo,hi) -- P7's
+// per-line execution counts, P6's per-restart MOVE-order check.
+int count_channel_reads_at(const std::vector<nmh::RamAccess>& log, uint32_t word_addr,
+                            uint64_t lo, uint64_t hi) {
+    int n = 0;
+    for (const auto& a : log)
+        if (!a.is_write && a.word_addr == word_addr && a.cycle >= lo && a.cycle < hi) ++n;
+    return n;
+}
+
+// First channel read at one exact word address, strictly after after_t.
+std::optional<uint64_t> first_channel_read_at(const std::vector<nmh::RamAccess>& log, uint32_t word_addr,
+                                               uint64_t after_t) {
+    for (const auto& a : log)
+        if (!a.is_write && a.word_addr == word_addr && a.cycle > after_t) return a.cycle;
+    return std::nullopt;
+}
+
+// Count/first/last of writes of one exact value inside a byte region and
+// time window -- P12's blit-write tracking (region D1/D2 filled with
+// $FFFF), P8's BLIT case.
+struct WriteStats { int count = 0; std::optional<uint64_t> first, last; };
+WriteStats writes_of_value_in(const std::vector<nmh::RamAccess>& log, uint16_t value,
+                               uint32_t region_lo, uint32_t region_hi,
+                               uint64_t lo, uint64_t hi) {
+    WriteStats s;
+    for (const auto& a : log) {
+        if (!a.is_write || a.data != value) continue;
+        uint32_t b = a.word_addr * 2;
+        if (b < region_lo || b >= region_hi) continue;
+        if (a.cycle < lo || a.cycle >= hi) continue;
+        ++s.count;
+        if (!s.first) s.first = a.cycle;
+        s.last = a.cycle;
+    }
+    return s;
+}
+
+// ---- SPECIFICATION.md P8: one INTREQ bit polled across markers/events --
+//
+// A single pass over the poll records grades observation (i)-(iii) and
+// precondition (b) together: zero_before is (i), later_one is (ii),
+// after_first_one is (iii), first_after_mc_zero is precondition (b).
+struct P8Grade {
+    bool have_pre = false, first_after_mc_zero = false;
+    bool zero_before = true, later_one = false, after_first_one = true;
+};
+P8Grade grade_p8_bit(const std::vector<Rec>& recs, uint64_t t_mc, uint64_t t_event, int bit) {
+    P8Grade g;
+    bool seen_one = false;
+    std::optional<Rec> first_after_mc;
+    for (const auto& r : recs) {
+        if (r.t0 <= t_mc) continue;
+        if (!first_after_mc) first_after_mc = r;
+        bool bitval = ((r.intreqr >> bit) & 1) != 0;
+        if (r.t1 < t_event && bitval) g.zero_before = false;
+        if (r.t0 > t_event && bitval) g.later_one = true;
+        if (seen_one && !bitval) g.after_first_one = false;
+        if (bitval) seen_one = true;
+    }
+    g.have_pre = first_after_mc.has_value();
+    if (first_after_mc) g.first_after_mc_zero = ((first_after_mc->intreqr >> bit) & 1) == 0;
+    return g;
+}
+
+// ---- SPECIFICATION.md 2.5: reference frame V (P5, P6, P11) -------------
+//
+// Anchor V1: every one of the given video spans has the same sample count
+// and the same doubler row count (nmh::find_lines).
+bool anchor_V1(const std::vector<nmh::VideoSample>& video, const std::vector<nmh::Span>& spans) {
+    if (spans.size() < 2) return false;
+    std::vector<nmh::VideoSample> sub0(video.begin() + spans[0].begin, video.begin() + spans[0].end);
+    size_t n0 = sub0.size();
+    size_t rows0 = nmh::find_lines(sub0).size();
+    for (size_t i = 1; i < spans.size(); ++i) {
+        std::vector<nmh::VideoSample> sub(video.begin() + spans[i].begin, video.begin() + spans[i].end);
+        if (sub.size() != n0) return false;
+        if (nmh::find_lines(sub).size() != rows0) return false;
+    }
+    return true;
 }
 
 }  // namespace
@@ -1103,6 +1266,498 @@ int main(int argc, char** argv) {
             checks.expect(ok,
                 "P3-DSKBYTR [p.248]: DSKBYTR bit 14 (DMAON) reads 1 in Base and 0 in the DSK case "
                 "and in case M");
+        }
+    }
+
+    // ==== P10: INTREQ bit 15 decides whether bits written as 1 are set
+    // or cleared [p.35] ==== ch2-the-copper-and-the-680x0.c5,
+    // COP2-the-copper-and-the-680x0.c5,.c6,.c7
+    {
+        auto sample_idx_on_line = [](const std::vector<Rec>& recs, int line) -> std::optional<size_t> {
+            for (size_t i = 0; i < recs.size(); ++i) if (recs[i].V == line) return i;
+            return std::nullopt;
+        };
+        auto p10_load = [&](const std::string& bin) {
+            return run_capture(dir + bin, kSamplerRunBudget, {kResults + 4, kResults + 8, kResults + 10});
+        };
+        auto p10_decode = [&](const Capture& c) {
+            uint32_t count = (c.peeks.size() >= 3 && c.peeks[1] && c.peeks[2])
+                                  ? (uint32_t(*c.peeks[1]) << 16) | *c.peeks[2] : 0;
+            return decode_records(c.log, kRecBuf, count);
+        };
+        const int p10_lines[5] = {0x38, 0x48, 0x58, 0x68, 0x78};
+
+        Capture base = p10_load("/prog_p10_main.bin");
+        bool base_ok = base.loaded && base.done.has_value();
+        checks.expect(base_ok, "P10 fixture: prog_p10_main.bin reaches DONE");
+        std::vector<Rec> recs = base_ok ? p10_decode(base) : std::vector<Rec>{};
+
+        std::optional<size_t> idx[5];
+        bool have_all = base_ok;
+        for (int k = 0; k < 5; ++k) {
+            idx[k] = sample_idx_on_line(recs, p10_lines[k]);
+            if (!idx[k]) have_all = false;
+        }
+        checks.expect(have_all, "P10 fixture: all five sample lines ($38,$48,$58,$68,$78) have a record");
+
+        if (have_all) {
+            const int expected_b4[5] = {0, 1, 0, 0, 1};
+            const int expected_b2[5] = {0, 1, 1, 0, 0};
+            bool table_ok = true;
+            for (int k = 0; k < 5; ++k) {
+                int b4 = (recs[*idx[k]].intreqr >> 4) & 1;
+                int b2 = (recs[*idx[k]].intreqr >> 2) & 1;
+                if (b4 != expected_b4[k] || b2 != expected_b2[k]) table_ok = false;
+            }
+            checks.expect(table_ok,
+                "P10 ch2-the-copper-and-the-680x0.c5,COP2-the-copper-and-the-680x0.c5,"
+                "COP2-the-copper-and-the-680x0.c6,COP2-the-copper-and-the-680x0.c7 [p.35,p.218,p.280]: "
+                "(bit 4, bit 2) at lines $38/$48/$58/$68/$78 read (0,0),(1,1),(0,1),(0,0),(1,0)");
+
+            // ---- Main contrast: 2nd MOVE $0010->$8010, 3rd MOVE
+            // $0004->$8004 (one combined run). No claim id.
+            Capture main2 = p10_load("/prog_p10_main2.bin");
+            bool main2_ok = main2.loaded && main2.done.has_value();
+            if (main2_ok) {
+                auto recs2 = p10_decode(main2);
+                auto i58 = sample_idx_on_line(recs2, 0x58);
+                auto i68 = sample_idx_on_line(recs2, 0x68);
+                bool ok = i58 && i68 &&
+                          ((recs2[*i58].intreqr >> 4) & 1) == 1 && ((recs2[*i58].intreqr >> 2) & 1) == 1 &&
+                          ((recs2[*i68].intreqr >> 2) & 1) == 1;
+                checks.expect(ok,
+                    "P10-MAIN2 [p.35,p.218]: with the 2nd MOVE's data $0010->$8010, the $58 sample "
+                    "reads (1,1); with the 3rd MOVE's data $0004->$8004 as well, the $68 sample's "
+                    "bit 2 reads 1");
+            } else {
+                checks.expect(false, "P10-MAIN2 fixture: prog_p10_main2.bin reaches DONE");
+            }
+
+            // ---- Precondition (a): order -- MOVE k's IR2 fetch lies
+            // after the store of sample k-1 and before the store of the
+            // record just before sample k.
+            bool mut_a = (mv == "P10-A");
+            Capture cap_a;
+            const Capture& a_cap = mut_a ? (cap_a = p10_load("/prog_p10_mut_a.bin")) : base;
+            bool have_a = a_cap.loaded && a_cap.done.has_value();
+            std::vector<Rec> recs_a = have_a ? p10_decode(a_cap) : std::vector<Rec>{};
+            std::optional<size_t> idx_a[5];
+            if (have_a) for (int k = 0; k < 5; ++k) { idx_a[k] = sample_idx_on_line(recs_a, p10_lines[k]); if (!idx_a[k]) have_a = false; }
+            const uint32_t move_ir2_word[4] = {
+                kList1 / 2 + 3, kList1 / 2 + 7, kList1 / 2 + 11, kList1 / 2 + 15,
+            };
+            bool order_ok = have_a;
+            if (have_a) {
+                for (int k = 0; k < 4; ++k) {
+                    auto t_move = first_channel_read_at(a_cap.log, move_ir2_word[k], 0);
+                    if (!t_move) { order_ok = false; continue; }
+                    uint64_t lo = recs_a[*idx_a[k]].t1;
+                    uint64_t hi = recs_a[*idx_a[k + 1] - 1].t1;
+                    if (!(*t_move > lo && *t_move < hi)) order_ok = false;
+                }
+            }
+            checks.expect(order_ok,
+                "P10a precondition: each MOVE's IR2 fetch lies after the store of the previous "
+                "sample and before the store of the record just before the next sample");
+
+            // ---- Precondition (b): the $38 sample shows (0,0).
+            bool mut_b = (mv == "P10-B");
+            Capture cap_b;
+            const Capture& b_cap = mut_b ? (cap_b = p10_load("/prog_p10_mut_b.bin")) : base;
+            bool have_b = b_cap.loaded && b_cap.done.has_value();
+            std::optional<size_t> idx_b;
+            std::vector<Rec> recs_b = have_b ? p10_decode(b_cap) : std::vector<Rec>{};
+            if (have_b) { idx_b = sample_idx_on_line(recs_b, 0x38); have_b = idx_b.has_value(); }
+            bool pre_b = have_b && ((recs_b[*idx_b].intreqr & 0x14) == 0);
+            checks.expect(pre_b, "P10b precondition: the $38 sample shows bit 4 = 0 and bit 2 = 0");
+
+            // ---- Precondition (c): INTENAR bits 14-0 read 0 (read/stored
+            // after step 2), and the 68000 writes INTREQ nowhere after
+            // step 2 (true by construction of every program here).
+            bool mut_c = (mv == "P10-C");
+            Capture cap_c;
+            const Capture& c_cap = mut_c ? (cap_c = p10_load("/prog_p10_mut_c.bin")) : base;
+            bool pre_c = c_cap.loaded && c_cap.done.has_value() && !c_cap.peeks.empty() &&
+                         c_cap.peeks[0] && ((*c_cap.peeks[0]) & 0x7FFF) == 0;
+            checks.expect(pre_c, "P10c precondition: stored INTENAR bits 14-0 read 0");
+        }
+    }
+
+    // ==== P8: the 680x0 can poll INTREQ flags that various devices set
+    // [p.35] ==== ch2-the-copper-and-the-680x0.c2,
+    // COP2-the-copper-and-the-680x0.c2,.c3
+    {
+        constexpr uint32_t kP8CopMoveIr2 = kList1 / 2 + 3; // LIST1+6
+        auto p8_load = [&](const std::string& bin, const std::vector<uint32_t>& extra) {
+            std::vector<uint32_t> a = {kResults + 4, kResults + 8, kResults + 10};
+            for (auto e : extra) a.push_back(e);
+            return run_capture(dir + bin, kSamplerRunBudget, a);
+        };
+        auto p8_recs = [&](const Capture& c) {
+            uint32_t count = (c.peeks.size() >= 3 && c.peeks[1] && c.peeks[2])
+                                  ? (uint32_t(*c.peeks[1]) << 16) | *c.peeks[2] : 0;
+            return decode_records(c.log, kRecBuf, count);
+        };
+
+        // ---- COP case -------------------------------------------------
+        {
+            Capture base = p8_load("/prog_p8_cop.bin", {});
+            bool base_ok = base.loaded && base.done.has_value();
+            checks.expect(base_ok, "P8-COP fixture: prog_p8_cop.bin reaches DONE");
+            if (base_ok) {
+                auto recs = p8_recs(base);
+                auto t_mc = first_write_cycle(base.log, kMarkBuf + 6);
+                auto t_ev = first_channel_read_at(base.log, kP8CopMoveIr2, 0);
+                bool have = t_mc.has_value() && t_ev.has_value();
+                checks.expect(have, "P8-COP fixture: MC and the MOVE's IR2 fetch were both found");
+                if (have) {
+                    auto g = grade_p8_bit(recs, *t_mc, *t_ev, 4);
+                    checks.expect(g.zero_before && g.later_one && g.after_first_one,
+                        "P8-COP ch2-the-copper-and-the-680x0.c2,COP2-the-copper-and-the-680x0.c2,"
+                        "COP2-the-copper-and-the-680x0.c3 [p.35,p.280,p.219]: every poll record after "
+                        "MC and before the Copper's MOVE executes reads bit 4 = 0, a later record "
+                        "reads 1, and every record after the first 1 reads 1");
+                    checks.expect(g.have_pre && g.first_after_mc_zero,
+                        "P8-COPb precondition: the first poll record stored after MC reads bit 4 = 0");
+                }
+
+                // device contrast: MOVE replaced by COLOR00. Bit 4 stays 0.
+                Capture nomove = p8_load("/prog_p8_cop_nomove.bin", {});
+                bool nomove_ok = nomove.loaded && nomove.done.has_value();
+                if (nomove_ok) {
+                    auto recs_n = p8_recs(nomove);
+                    auto t_mc_n = first_write_cycle(nomove.log, kMarkBuf + 6);
+                    bool ok = t_mc_n.has_value();
+                    if (ok) for (const auto& r : recs_n) if (r.t0 > *t_mc_n && (r.intreqr & 0x10)) ok = false;
+                    checks.expect(ok, "P8-COP-DEV [p.35]: with the MOVE replaced by $0180,$0F00 "
+                                       "(COLOR00), bit 4 never reads 1 after MC");
+                } else {
+                    checks.expect(false, "P8-COP-DEV fixture: prog_p8_cop_nomove.bin reaches DONE");
+                }
+
+                // check (iii) contrast, always run.
+                Capture iii = p8_load("/prog_p8_cop_mut_iii.bin", {});
+                bool iii_ok = iii.loaded && iii.done.has_value();
+                if (iii_ok) {
+                    auto recs_i = p8_recs(iii);
+                    auto t_mc_i = first_write_cycle(iii.log, kMarkBuf + 6);
+                    auto t_ev_i = first_channel_read_at(iii.log, kP8CopMoveIr2, 0);
+                    bool ok = t_mc_i.has_value() && t_ev_i.has_value();
+                    if (ok) {
+                        auto g = grade_p8_bit(recs_i, *t_mc_i, *t_ev_i, 4);
+                        ok = !g.after_first_one; // (iii) must now fail
+                    }
+                    checks.expect(ok,
+                        "P8-COP-III [p.280]: once a poll record reads bit 4 = 1, the program clears "
+                        "it again with a write to INTREQ; a later record then reads 0, and check "
+                        "(iii) fails");
+                } else {
+                    checks.expect(false, "P8-COP-III fixture: prog_p8_cop_mut_iii.bin reaches DONE");
+                }
+
+                // precondition (a) mutation, NMH_MUTATE=P8-A.
+                bool mut_a = (mv == "P8-A");
+                Capture cap_a;
+                const Capture& a_cap = mut_a ? (cap_a = p8_load("/prog_p8_cop_mut_a.bin", {})) : base;
+                bool pre_a = a_cap.loaded && a_cap.done.has_value() && !a_cap.peeks.empty() &&
+                             a_cap.peeks[0] && ((*a_cap.peeks[0]) & 0x7FFF) == 0;
+                checks.expect(pre_a, "P8a precondition: stored INTENAR bits 14-0 read 0 (COP case)");
+
+                // precondition (c): the event (the Copper's MOVE IR2
+                // fetch) happens inside the window. Contrast for (c),
+                // NMH_MUTATE=P8-C: DMACON=$8200 (no COPEN) -- no IR2 fetch
+                // occurs, and this same check goes red.
+                bool mut_c = (mv == "P8-C");
+                Capture cap_c;
+                bool pre_c = t_ev.has_value();
+                if (mut_c) {
+                    cap_c = p8_load("/prog_p8_cop_mut_c.bin", {});
+                    pre_c = cap_c.loaded && cap_c.done.has_value() &&
+                            first_channel_read_at(cap_c.log, kP8CopMoveIr2, 0).has_value();
+                }
+                checks.expect(pre_c,
+                    "P8c precondition: the event (the Copper's MOVE IR2 fetch) happens inside the "
+                    "window (COP case)");
+            }
+        }
+
+        // ---- VB case ----------------------------------------------------
+        {
+            Capture base = p8_load("/prog_p8_vb.bin", {});
+            bool base_ok = base.loaded && base.done.has_value();
+            checks.expect(base_ok, "P8-VB fixture: prog_p8_vb.bin reaches DONE");
+            if (base_ok) {
+                auto recs = p8_recs(base);
+                auto frames = record_frames(recs);
+                auto t_mc = first_write_cycle(base.log, kMarkBuf + 6);
+                // event = the frame wrap (2.4): first V>=256 -> V<=1 decrease.
+                std::optional<uint64_t> t_ev;
+                std::optional<size_t> wrap_a_idx, wrap_b_idx;
+                for (size_t i = 1; i < recs.size(); ++i)
+                    if (recs[i - 1].V >= 256 && recs[i].V <= 1) { t_ev = recs[i].t0; wrap_a_idx = i - 1; wrap_b_idx = i; break; }
+                bool have = t_mc.has_value() && t_ev.has_value();
+                checks.expect(have, "P8-VB fixture: MC and a frame wrap were both found");
+                if (have) {
+                    auto g = grade_p8_bit(recs, *t_mc, *t_ev, 5);
+                    checks.expect(g.zero_before && g.later_one && g.after_first_one,
+                        "P8-VB ch2-the-copper-and-the-680x0.c2,COP2-the-copper-and-the-680x0.c2,"
+                        "COP2-the-copper-and-the-680x0.c3 [p.35,p.280,p.219]: every poll record after "
+                        "MC and before the frame wrap reads bit 5 = 0, a later record reads 1, and "
+                        "every record after the first 1 reads 1");
+                    checks.expect(g.have_pre && g.first_after_mc_zero,
+                        "P8-VBb precondition: the first poll record stored after MC reads bit 5 = 0");
+                    bool boundary_ok = recs[*wrap_a_idx].V == 0 || recs[*wrap_a_idx].V >= 300;
+                    boundary_ok = boundary_ok && (recs[*wrap_b_idx].V == 0 || recs[*wrap_b_idx].V == 1);
+                    checks.note(std::string("P8-VB wrap boundary records: V=") +
+                                std::to_string(recs[*wrap_a_idx].V) + " -> V=" + std::to_string(recs[*wrap_b_idx].V));
+                    checks.expect(boundary_ok,
+                        "P8-VB-BOUNDARY [p.219]: the frame wrap falls between a record on the last "
+                        "line of the old frame or line 0, and a record on line 0 or line 1");
+                }
+
+                // device contrast: poll only V=$40..$F0 of one frame. Bit
+                // 5 stays 0 (no VERTB event; this removes the event too).
+                Capture narrow = p8_load("/prog_p8_vb_narrow.bin", {});
+                bool narrow_ok = narrow.loaded && narrow.done.has_value();
+                if (narrow_ok) {
+                    auto recs_w = p8_recs(narrow);
+                    auto t_mc_w = first_write_cycle(narrow.log, kMarkBuf + 6);
+                    bool ok = t_mc_w.has_value();
+                    if (ok) for (const auto& r : recs_w) if (r.t0 > *t_mc_w && (r.intreqr & 0x20)) ok = false;
+                    checks.expect(ok, "P8-VB-DEV [p.219]: polling only from V=$40 to V=$F0, bit 5 "
+                                       "never reads 1");
+                } else {
+                    checks.expect(false, "P8-VB-DEV fixture: prog_p8_vb_narrow.bin reaches DONE");
+                }
+
+                // precondition (b) mutation, NMH_MUTATE=P8-B: skip the
+                // clear. Line 0 has passed since the prologue's own clear,
+                // so bit 5 already reads 1 at the first post-MC record.
+                bool mut_b = (mv == "P8-B");
+                Capture cap_b;
+                const Capture& b_cap = mut_b ? (cap_b = p8_load("/prog_p8_vb_mut_b.bin", {})) : base;
+                bool have_b = b_cap.loaded && b_cap.done.has_value();
+                bool pre_b = have_b;
+                if (have_b) {
+                    auto recs_b = p8_recs(b_cap);
+                    auto t_mc_b = first_write_cycle(b_cap.log, kMarkBuf + 6);
+                    pre_b = t_mc_b.has_value();
+                    if (pre_b) {
+                        auto g = grade_p8_bit(recs_b, *t_mc_b, *t_mc_b, 5);
+                        pre_b = g.have_pre && g.first_after_mc_zero;
+                    }
+                }
+                checks.expect(pre_b, "P8b precondition: the first poll record stored after MC reads "
+                                      "bit 5 = 0 (VB case)");
+            }
+        }
+
+        // ---- BLIT case ----------------------------------------------------
+        {
+            Capture base = p8_load("/prog_p8_blit.bin", {kResults + 12});
+            bool base_ok = base.loaded && base.done.has_value();
+            checks.expect(base_ok, "P8-BLIT fixture: prog_p8_blit.bin reaches DONE");
+            if (base_ok) {
+                auto recs = p8_recs(base);
+                auto t_mc = first_write_cycle(base.log, kMarkBuf + 6);
+                auto ws = t_mc ? writes_of_value_in(base.log, 0xFFFF, kData1, kData1 + 0x1000, *t_mc, UINT64_MAX)
+                                : WriteStats{};
+                bool have = t_mc.has_value() && ws.last.has_value();
+                checks.expect(have, "P8-BLIT fixture: MC and at least one write of $FFFF in region D "
+                                     "were both found");
+                if (have) {
+                    // event = the last write in region D (SPECIFICATION.md
+                    // P8 Observation).
+                    auto g = grade_p8_bit(recs, *t_mc, *ws.last, 6);
+                    checks.expect(g.zero_before && g.later_one && g.after_first_one,
+                        "P8-BLIT ch2-the-copper-and-the-680x0.c2,COP2-the-copper-and-the-680x0.c2,"
+                        "COP2-the-copper-and-the-680x0.c3 [p.35,p.280,p.220,p.187]: every poll record "
+                        "after MC and before the last write in region D reads bit 6 = 0, a later "
+                        "record reads 1, and every record after the first 1 reads 1");
+                    checks.expect(g.have_pre && g.first_after_mc_zero,
+                        "P8-BLITb precondition: the first poll record stored after MC reads bit 6 = 0");
+                    checks.expect(ws.count == 2048 && ws.first && *ws.first > *t_mc,
+                        "P8c precondition: 2048 writes of $FFFF appear in region D, the first after "
+                        "MC (BLIT case)");
+                }
+
+                // device contrast: omit BLTSIZE. Bit 6 stays 0.
+                Capture nosize = p8_load("/prog_p8_blit_nosize.bin", {});
+                bool nosize_ok = nosize.loaded && nosize.done.has_value();
+                if (nosize_ok) {
+                    auto recs_n = p8_recs(nosize);
+                    auto t_mc_n = first_write_cycle(nosize.log, kMarkBuf + 6);
+                    bool ok = t_mc_n.has_value();
+                    if (ok) for (const auto& r : recs_n) if (r.t0 > *t_mc_n && (r.intreqr & 0x40)) ok = false;
+                    checks.expect(ok, "P8-BLIT-DEV [p.35]: omitting the BLTSIZE write, bit 6 never "
+                                       "reads 1");
+                } else {
+                    checks.expect(false, "P8-BLIT-DEV fixture: prog_p8_blit_nosize.bin reaches DONE");
+                }
+            }
+        }
+    }
+
+    // ==== P6: beam coordinates run left to right and top to bottom on the
+    // screen [p.27] (no claim id) ====
+    {
+        auto is_color = [](const nmh::VideoSample& s, uint8_t r, uint8_t g, uint8_t b) {
+            return s.r == r && s.g == g && s.b == b;
+        };
+        constexpr uint32_t kP6EndIr2 = kList1 + 30; // LIST1+28/+30 = END (main shape)
+
+        // C0=$0F00 (r=F,g=0,b=0), C1=$00F0 (r=0,g=F,b=0), C2=$000F
+        // (r=0,g=0,b=F), C3=$0FF0 (r=F,g=F,b=0).
+        struct P6Result {
+            bool ok = false;
+            std::optional<size_t> r1, r3;      // row indices in the graded frame
+            std::optional<size_t> i0, i1, i2;  // leftmost sample index of C0/C1/C2 on row r1
+            bool all_four = false;
+            nmh::Span frame{0, 0};
+            std::vector<nmh::Span> lines;      // doubler rows inside the graded frame
+        };
+
+        // Runs `bin`, finds the second complete video frame after t(MJ),
+        // and measures everything P6's checks need from it.
+        auto analyze_p6 = [&](const std::string& bin) -> P6Result {
+            P6Result r;
+            FullRun run = run_full(dir + bin, kSamplerRunBudget);
+            if (!run.loaded || !run.done) return r;
+            const auto& log = run.h->ram_log();
+            const auto& video = run.h->video();
+            auto t_mj = first_write_cycle(log, kMarkBuf + 4);
+            if (!t_mj) return r;
+            auto vframes = nmh::find_frames(video);
+            std::optional<size_t> f1;
+            for (size_t i = 0; i < vframes.size(); ++i)
+                if (vframes[i].begin > *t_mj) { f1 = i; break; }
+            if (!f1 || *f1 + 1 >= vframes.size()) return r;
+            r.frame = vframes[*f1 + 1];
+            auto lines = nmh::find_lines(video);
+            for (auto& ln : lines)
+                if (ln.begin >= r.frame.begin && ln.end <= r.frame.end) r.lines.push_back(ln);
+
+            auto first_row_with = [&](uint8_t cr, uint8_t cg, uint8_t cb) -> std::optional<size_t> {
+                for (size_t i = 0; i < r.lines.size(); ++i)
+                    for (size_t j = r.lines[i].begin; j < r.lines[i].end; ++j)
+                        if (is_color(video[j], cr, cg, cb)) return i;
+                return std::nullopt;
+            };
+            r.r1 = first_row_with(0x0, 0xF, 0x0); // first row with C1
+            r.r3 = first_row_with(0xF, 0xF, 0x0); // first row with C3
+            if (r.r1) {
+                nmh::Span row = r.lines[*r.r1];
+                for (size_t j = row.begin; j < row.end; ++j) {
+                    if (!r.i0 && is_color(video[j], 0xF, 0x0, 0x0)) r.i0 = j;
+                    if (!r.i1 && is_color(video[j], 0x0, 0xF, 0x0)) r.i1 = j;
+                    if (!r.i2 && is_color(video[j], 0x0, 0x0, 0xF)) r.i2 = j;
+                }
+            }
+            bool c0 = false, c1 = false, c2 = false, c3 = false;
+            for (size_t j = r.frame.begin; j < r.frame.end; ++j) {
+                if (is_color(video[j], 0xF, 0x0, 0x0)) c0 = true;
+                if (is_color(video[j], 0x0, 0xF, 0x0)) c1 = true;
+                if (is_color(video[j], 0x0, 0x0, 0xF)) c2 = true;
+                if (is_color(video[j], 0xF, 0xF, 0x0)) c3 = true;
+            }
+            r.all_four = c0 && c1 && c2 && c3;
+            r.ok = true;
+            return r;
+        };
+
+        P6Result base = analyze_p6("/prog_p6_main.bin");
+        checks.expect(base.ok, "P6 fixture: prog_p6_main.bin reaches DONE and yields a second "
+                                "complete video frame after the enable");
+        if (base.ok) {
+            bool have_rows = base.r1.has_value() && base.r3.has_value();
+            checks.expect(have_rows, "P6 fixture: row r1 (first with C1) and row r3 (first with "
+                                      "C3) were both found");
+            if (have_rows) {
+                checks.expect(*base.r3 > *base.r1,
+                    "P6 [p.27]: row r3 (first row with C3) is below row r1 (first row with C1)");
+                bool order_ok = base.i0 && base.i1 && base.i2 && *base.i0 < *base.i1 && *base.i1 < *base.i2;
+                checks.expect(order_ok,
+                    "P6 [p.27]: on row r1, reading left to right, a C0 (red) run comes first, then "
+                    "the C1 (green) run, then a C2 (blue) run");
+            }
+
+            // ---- Contrast (i): WAIT2 $60A1 -> $60C1. The right end of
+            // the C1 run on row r1 (i.e. the start of C2, i2) moves to a
+            // larger column.
+            P6Result wc1 = analyze_p6("/prog_p6_wait2_c1.bin");
+            bool wc1_ok = wc1.ok && wc1.i2.has_value() && base.i2.has_value() && *wc1.i2 > *base.i2;
+            checks.expect(wc1_ok,
+                "P6-i [p.27]: with the second WAIT changed from $60A1 to $60C1, the C2 run's own "
+                "start on row r1 moves to a larger column than in the main run");
+
+            // ---- Contrast (ii): WAIT3 $A061 -> $B061. r3 increases.
+            P6Result wb0 = analyze_p6("/prog_p6_wait3_b0.bin");
+            bool wb0_ok = wb0.ok && wb0.r3.has_value() && base.r3.has_value() && *wb0.r3 > *base.r3;
+            checks.expect(wb0_ok,
+                "P6-ii [p.27]: with the third WAIT changed from $A061 to $B061, row r3 (first row "
+                "with C3) moves to a larger row index than in the main run");
+
+            // ---- Precondition (a): all four colours appear.
+            bool mut_a = (mv == "P6-A");
+            P6Result a_res = mut_a ? analyze_p6("/prog_p6_mut_a.bin") : base;
+            checks.expect(a_res.ok && a_res.all_four,
+                "P6a precondition: all four colours (C0-C3) appear in the graded frame");
+
+            // ---- Precondition (b): at least three restarts follow t(MJ),
+            // and between each two consecutive restarts each of the four
+            // MOVEs is executed exactly once, in list order.
+            bool mut_b = (mv == "P6-B");
+            Capture cap_b = run_capture(dir + (mut_b ? "/prog_p6_mut_b.bin" : "/prog_p6_main.bin"),
+                                         kSamplerRunBudget, {});
+            auto t_mj_b = first_write_cycle(cap_b.log, kMarkBuf + 4);
+            bool pre_b = cap_b.loaded && cap_b.done.has_value() && t_mj_b.has_value();
+            if (pre_b) {
+                auto restarts = find_restarts(cap_b.log, {kP6EndIr2});
+                std::vector<Restart> after;
+                for (auto& r : restarts) if (r.t_restart > *t_mj_b) after.push_back(r);
+                pre_b = after.size() >= 3;
+                const uint32_t move_ir2[4] = {
+                    kList1 / 2 + 1, kList1 / 2 + 5, kList1 / 2 + 9, kList1 / 2 + 13,
+                };
+                for (size_t i = 0; i + 1 < after.size() && pre_b; ++i) {
+                    uint64_t lo = after[i].t_restart, hi = after[i + 1].t_final;
+                    uint64_t last = lo;
+                    for (int k = 0; k < 4 && pre_b; ++k) {
+                        int n = count_channel_reads_at(cap_b.log, move_ir2[k], lo, hi);
+                        if (n != 1) pre_b = false;
+                        auto t = first_channel_read_at(cap_b.log, move_ir2[k], last);
+                        if (!t || *t >= hi) pre_b = false; else last = *t;
+                    }
+                }
+            }
+            checks.expect(pre_b,
+                "P6b precondition: at least three restarts follow t(MJ), and between each two "
+                "consecutive restarts each of the four MOVEs is executed exactly once, in list "
+                "order");
+
+            // ---- Precondition (c): V1. Compared only over frames after
+            // t(MJ): find_frames() include the leading, irregular-length
+            // partial span from simulation start to the first vsync edge
+            // (and several frames pass during boot(), before the CPU is
+            // released), so the comparison basis has to start after the
+            // run's own enable, the same anchor the main check already
+            // uses.
+            bool mut_c = (mv == "P6-C");
+            FullRun run_c = run_full(dir + (mut_c ? "/prog_p6_mut_c.bin" : "/prog_p6_main.bin"),
+                                      kSamplerRunBudget);
+            bool pre_c = run_c.loaded && run_c.done;
+            if (pre_c) {
+                auto t_mj_vc = first_write_cycle(run_c.h->ram_log(), kMarkBuf + 4);
+                auto vf = nmh::find_frames(run_c.h->video());
+                std::optional<size_t> vc0;
+                if (t_mj_vc) for (size_t i = 0; i < vf.size(); ++i) if (vf[i].begin > *t_mj_vc) { vc0 = i; break; }
+                pre_c = vc0 && *vc0 + 3 < vf.size();
+                if (pre_c) pre_c = anchor_V1(run_c.h->video(),
+                    {vf[*vc0], vf[*vc0 + 1], vf[*vc0 + 2], vf[*vc0 + 3]});
+            }
+            checks.expect(pre_c, "P6c precondition: V1 holds (every one of four video frames after "
+                                  "the enable has the same clk_sys sample count and the same doubler "
+                                  "row count)");
         }
     }
 

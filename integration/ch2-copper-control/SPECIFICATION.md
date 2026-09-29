@@ -1465,3 +1465,74 @@ assertions, 5.3, aside):
 | P3-B | P3b | FAIL | FAIL |
 | P3-C | P3c | FAIL | FAIL |
 | P3-D | P3d | FAIL | FAIL |
+
+### 5.8 P6: measured
+
+P6's own list O reuses the LIST1 address ($001000; a fresh harness instance
+per run, so no other proposition's use of that address is disturbed). The
+restart mechanism of 2.8 (a channel fetch after list O's own end-of-list
+IR2 fetch) was measured against the port for the first time by this
+proposition; precondition (b)'s per-restart MOVE-order check passed on
+both cores against that same mechanism.
+
+Mutations, run once on each core (`NMH_MUTATE=<value>`) after the normal
+run, by re-running the built binary with the environment variable set:
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P6-A | P6a | FAIL | FAIL |
+| P6-B | P6b | FAIL | FAIL |
+| P6-C | P6c | PASS | PASS |
+
+P6-C (LACE set, precondition (c)'s own contrast for V1) did not redden P6c
+on either core: the check stayed PASS under the mutation. Every other
+mutation in this table measured a FAIL on exactly its own precondition, on
+both cores, with every other line unchanged from the normal run (the four
+already-red P4 lines aside).
+
+### 5.9 P8: measured
+
+Three device cases (COP, VB, BLIT) share one grading function
+(`grade_p8_bit`) applied to each device's own bit, marker and event. The
+BLIT case reuses the DATA1 region ($002000) already established for P3's
+own BLT region grading; region D there measured 2048 writes of $FFFF in
+the graded window on both cores, matching precondition (c). The VB case's
+boundary check (the frame wrap falling between a record on the last line
+of the old frame or line 0, and a record on line 0 or line 1) measured
+true on both cores.
+
+Mutations, run once on each core (`NMH_MUTATE=<value>`):
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P8-A | P8a (COP case) | FAIL | FAIL |
+| P8-B | P8b (VB case) | FAIL | FAIL |
+| P8-C | P8c (COP case) | FAIL | FAIL |
+
+Each measured a FAIL on exactly its own precondition, on both cores, with
+every other line unchanged from the normal run (the four already-red P4
+lines aside).
+
+### 5.10 P10: measured
+
+List R reuses the LIST1 address ($001000). The five samples (lines $38,
+$48, $58, $68, $78) and the four MOVE executions were located from the
+same port-log mechanism P1-P8 already use; precondition (a)'s ordering
+check (each MOVE's IR2 fetch between the previous sample's store and the
+record just before the next sample) passed on both cores.
+
+Mutations, run once on each core (`NMH_MUTATE=<value>`):
+
+| Mutation | Own check | fx68k | TG68K |
+|---|---|---|---|
+| P10-A | P10a | FAIL | FAIL |
+| P10-B | P10b | FAIL | FAIL |
+| P10-C | P10c | FAIL | FAIL |
+
+Each measured a FAIL on exactly its own precondition, on both cores, with
+every other line unchanged from the normal run (the four already-red P4
+lines aside).
+
+### 5.11 Not built
+
+P5, P7, P9 and P11 are not built.
