@@ -789,3 +789,55 @@ of p.23. Every run is made on both CPU cores and graded per core.
    the images and program are unaffected.
 7. **Reference frame.** The colour nibbles of Table 3-3 (p.46), compared with the output's
    4-bit red, green and blue.
+
+---
+
+## 4. Build
+
+### Built: P1–P7
+
+P1–P7 (the memory-cycle-parity half of this specification) are built: `Makefile`,
+`test_ch2_dma_cycles.cpp`, 29 `.s` programs. Every named precondition (A1, K2a, K2b, K3, K4,
+K5, K6, T1, T2, T3) is its own graded line, not folded silently into its proposition. D9's own
+carve-out is exercised organically: C2b (read direction, no drive) shows 0 disk-block accesses
+in the observed frames of both cores, so its read direction is recorded declined rather than
+graded.
+
+Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
+
+| line | fx68k | tg68k |
+|---|---|---|
+| FIXTURE | PASS | PASS |
+| P1 | PASS | PASS |
+| K2a, K2b | PASS (K2b/D9 declines C2b) | PASS (K2b/D9 declines C2b) |
+| P2 | PASS | PASS |
+| P3, K3 | PASS | PASS |
+| P4, K4 | PASS | PASS |
+| P6 | **FAIL** (C5, C6, C7a, C7b; C0/C1a/C1b/C2a/C2b/C3/C4-1..6/C4-4w/S1/S2 PASS) | **FAIL** (same runs) |
+| A1 | PASS | PASS |
+| P5, K5 | PASS | PASS |
+| K6, T1, T2, T3 | PASS | PASS |
+| P7 | PASS (0 of 339 segment/frame pairs mismatch) | PASS (0 mismatches) |
+| summary | 17 passed, 1 failed | 17 passed, 1 failed |
+
+P6's own FAIL reproduced identically across four independent rebuilds, one with the object
+cache disabled; P7's result is likewise a rebuild with the object cache disabled, run three
+times over from the same binary with no difference.
+
+Every mutation of the header comment was run once on both cores from the built object
+directories (`NMH_MUTATE=<value>`) and went red through the clause it targets, or (K2a, K3, K4,
+K5) through the precondition it targets. F1 is a self-test, not an RTL run.
+
+### Not built, by a scope decision
+
+- **P8–P12** (sprite channel reuse, the video half of this specification's title): not
+  implemented. They need a video-measurement apparatus this package does not have: frame
+  boundaries from `vs`, an output-line-to-beam-line calibration (k_v) with its own self-test
+  (Q3), a sprite-pixel-width self-test (Q2), and per-frame sprite-image edge and colour
+  extraction from the captured video trace, none of which exists in this package yet. S1 and S2
+  (§2.9) are built and already graded for P4 (sprite DMA parity); the structure/colour
+  mutations `ZMut::EndAfterU1/ShortU2Height/SwapU2Line5` and `list_L_S1`'s `colours_variant`
+  are present but unused, ready for whoever builds P9–P12's own video apparatus.
+- **NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1** (§2.10), for P1 and P6:
+  not run. No new program is needed (only a different `Config` per run), so this is inexpensive
+  to add later; it was not exercised in this pass.
