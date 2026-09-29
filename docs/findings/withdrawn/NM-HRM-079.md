@@ -5,11 +5,11 @@
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
 | **Evidence** | none |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. p. 344 stops the TOD clock "whenever a write to the register occurs" and names no register; NanoMig stops it on a write to the MSB event register ($A) alone and restarts it on a write to the LSB event register ($8), as the 8520R4 does in the 6502.org dissection, where no strobe of register $9 reaches the count enable. The assertion also requires a lone write to $8 to leave the clock stopped, which p. 344's next sentence rules out under either reading of *the register*. |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. p. 344 stops the TOD clock "whenever a write to the register occurs" and names no register; NanoMig stops it on a write to the MSB event register ($A) alone and restarts it on a write to the LSB event register ($8), as the 8520R4 does in the 6502.org dissection, where no strobe of register $9 reaches the count enable. The withdrawn claim also requires a lone write to $8 to leave the clock stopped, which p. 344's next sentence rules out under either reading of *the register*. |
 | **Module** | `cia_timerd.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerd.v#L68-L80) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timerd.v#L81-L96) |
-| **Test** | [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm) — `TOD-WRITE-STOPS-CLOCK` (`test_ciaa.cpp:781-818`, claims `sol:F-tod.c10`, `opus:F-tod.c9`, p. 344) still fails, because it requires a write to each of $A, $9 and $8 to stop a running clock, where p. 344 names no register for the stop and starts the clock again after the write to $8; its $A sub-check reads the stop |
+| **Test** | [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm) — `TOD-WRITE-STOPS-CLOCK` (`test_ciaa.cpp:792-869`, claims `sol:F-tod.c10`, `opus:F-tod.c9`, p. 344) grades p. 344's two clauses on a clock started by a write to $8 and seen to count: a write to $A stops it, and a lone write to $8 leaves it counting. A write to $9 is measured and not graded, because p. 344 names no register for the stop; green |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 344, 349 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red; the package reads `43 passed, 1 failed`, its fixture-liveness check included. `TOD-WRITE-STOPS-CLOCK` writes $00 to one TOD register of a clock NanoMig's reset leaves running, gives one tick and requires the count not to move, for each of the three registers: the write to $A stopped the clock, the writes to $9 and $8 did not. In the same run `TOD-WRITE-STARTS-LSB-ONLY`, green, reads a write to $9 after one to $A leaving the clock stopped and the following write to $8 restarting it, and `TOD-WRITE-STARTS-ATOMIC-VALUE`, green, lands the sequence $A, $9, $8 on the value written with ticks between the writes |
+| **Assertions** | none red; the package reads `44 passed, 0 failed`, its fixture-liveness check included. `TOD-WRITE-STOPS-CLOCK`, green, starts three fresh fixtures, writes $000000 with $8 last and gives one tick, so each clock reads $000001, then writes $00 to one register and gives one more tick: after the write to $A the count stayed at $000001, after the lone write to $8 it counted on from $000000 to $000001, and after the write to $9, recorded and not graded, it counted on to $000002. In the same run `TOD-WRITE-STARTS-LSB-ONLY`, green, reads a write to $9 after one to $A leaving the clock stopped and the following write to $8 restarting it, and `TOD-WRITE-STARTS-ATOMIC-VALUE`, green, lands the sequence $A, $9, $8 on the value written with ticks between the writes |
 | **Error class** | **a silence read as a requirement** |
 | **Verdict of the four** | **unanimous with NanoMig**: WinUAE, vAmiga, Denise and Copperline all stop the TOD clock on a write to $A, restart it on a write to $8, and leave it running across a write to $9. vAmiga's and Copperline's comments state that rule; WinUAE and Denise, in their 6526 models, put the stop on the 6526's hours register, the top one of its four |
 
@@ -17,10 +17,11 @@
 
 ## Why it was withdrawn
 
-`TOD-WRITE-STOPS-CLOCK` writes $00 to one TOD register of a clock that
+The withdrawn claim is that a lone write to any one of $A, $9 and $8 stops a
+running clock. Its check writes $00 to one TOD register of a clock that
 NanoMig's reset leaves running, gives one tick and requires the count not to
 move, once each for $A, $9 and $8. NanoMig stops on the write to $A and counts
-on after the writes to $9 and $8, and the assertion is red on those two.
+on after the writes to $9 and $8.
 
 **p. 344 does not name the register whose write stops the clock.** *"TOD is
 automatically stopped whenever a write to the register occurs"* is singular,
@@ -47,14 +48,14 @@ register, the top of the 6526's four.
 sentence, *"The clock will not start again until after a write to the LSB event
 register"*, makes a write to $8 the one after which the clock counts, so under
 either reading of *the register* a lone write to $8 ends with the clock
-counting. The assertion requires it stopped.
+counting. The claim requires it stopped.
 
-**The running clock the assertion starts from is NanoMig's reset, not the
+**The running clock the claim's check starts from is NanoMig's reset, not the
 page's.** p. 354 resets *"all internal registers"* and says nothing of the TOD
 clock running or stopped. In the dissection RES clears the count-enable latch,
 so a chip wired as sheet 14b draws it holds TOD stopped from a reset until the
-first write to $8; there the $A and $9 sub-checks would read a count that never
-moved, whatever the write did.
+first write to $8; there the check's $A and $9 cases would read a count that
+never moved, whatever the write did.
 
 ---
 
@@ -63,9 +64,9 @@ moved, whatever the write did.
 - **A write to $A stops a running clock**, with CRB7 clear (p. 349): both
   readings of *the register* include it. The sub-check is green.
 - **A lone write to $8 leaves the clock counting**, by p. 344's next sentence,
-  under both readings.
+  under both readings. The sub-check is green.
 - **Nothing about a write to $9 on its own**: the page names no register for
-  the stop.
+  the stop. The package measures it and does not grade it.
 - **Not the clock's state after a reset**: p. 354 does not give it. A running
   clock is one started by a write to $8, the page's own start, and seen to
   count before the write under test.
@@ -79,7 +80,7 @@ moved, whatever the write did.
 > TOD consists of a 24-bit binary counter. Positive edge transitions on this pin cause the binary
 > counter to increment.
 
-and the paragraph the red grades, whole:
+and the paragraph the assertion grades, whole:
 
 > A specific sequence of events must be followed for proper setting and reading of TOD. TOD is
 > automatically stopped whenever a write to the register occurs. The clock will not start again until
@@ -175,20 +176,19 @@ read of $A with CRB7 clear freezes the output and a read of $8 releases it,
 
 [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm)
 builds `ciaa` alone and drives its register bus and its TOD pin.
-`TOD-WRITE-STOPS-CLOCK` starts three fresh fixtures with the clock running
-from $000000, as NanoMig's reset leaves it, writes $00 to one register in
-each, gives one tick and reads the count back:
+`TOD-WRITE-STOPS-CLOCK` starts three fresh fixtures, starts each clock by
+writing $000000 with $8 last, sees it count one tick, writes $00 to one
+register in each, gives one more tick and reads the count back:
 
-| write to a running clock, then one tick | p. 344, *the register* any of the three | p. 344, *the register* the MSB event register | NanoMig | 8520R4, as sheet 14b draws it | the assertion requires |
-|---|---|---|---|---|---|
-| $A, MSB event | stopped | stopped | stopped | stopped | stopped |
-| $9, event 8–15 | stopped | running | **running** | running | stopped |
-| $8, LSB event | running — the next sentence restarts it | running | running | running | **stopped** |
+| write to a running clock, then one tick | p. 344, *the register* any of the three | p. 344, *the register* the MSB event register | NanoMig | 8520R4, as sheet 14b draws it | the withdrawn claim requires | `TOD-WRITE-STOPS-CLOCK` grades |
+|---|---|---|---|---|---|---|
+| $A, MSB event | stopped | stopped | stopped | stopped | stopped | stopped |
+| $9, event 8–15 | stopped | running | **running** | running | stopped | not graded |
+| $8, LSB event | running — the next sentence restarts it | running | running | running | **stopped** | running |
 
-The $A row is the same comparator reading a stop, so the comparator is live.
-The red is the two rows below it, and of those only the $9 row departs from a
-reading of the page, the first one. The dissection's column is NanoMig's on
-all three rows.
+The assertion grades the $A and $8 rows and is green. Of the two rows the
+withdrawn claim adds, only the $9 row departs from a reading of the page, the
+first one. The dissection's column is NanoMig's on all three rows.
 
 **What the difference does.** A replay with the package's own harness and bus
 timing — a measurement for this page, not a graded assertion — writes to a
@@ -226,7 +226,7 @@ restart it?
 on a write to $8, and none lets a write to $9 stop it. vAmiga and Copperline
 say so in their comments. WinUAE and Denise keep a 6526 model beside the 8520
 one, and in both the stop sits on the 6526's top register, the hours register,
-where the 8520's is on $A. Both Minimig lines carry NanoMig's block, the
+where the 8520's is on $A. Both Minimig lines carry NanoMig's stop, the
 commented-out middle-byte term included.
 
 ---

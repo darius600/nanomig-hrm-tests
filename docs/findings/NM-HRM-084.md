@@ -194,7 +194,7 @@ NanoMig's `paula_audio` to its `agnus_audiodma` and a RAM model, primes the
 channel's pointer on another data set, then writes AUD0LC, AUD0LEN, AUD0VOL
 and AUD0PER in p. 145's order and enables channel 0. It logs every address
 `agnus_audiodma` fetches, and a pass runs from a fetch at offset 0 to the next
-one. The graders are `test_ch5_audio_dma_first_pass.cpp:383-410`. The run
+one. The graders are `test_ch5_audio_dma_first_pass.cpp:383-428`. The run
 ends `15 passed, 7 failed`:
 
 | AUDxLEN | pass 1 measured | the pages | passes 2 and 3 measured (`LATER-PASSES-LEN-<n>`) |
@@ -291,9 +291,11 @@ with line 358 changed the start-up reads `4 3 3`, the full sequence
   Which of those runs went through the start-up sequence is not traced here.
 - **Four places grade around the first pass and so do not see it.**
   [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation)'s
-  `stepping_ok()` (`test_ch5_audio_attach_modulation.cpp:345-363`), used by
-  `PC3` and by `P9` (a) and (b), grades from the first return to offset 0 on
-  and counts only fetches inside the set's own words.
+  `stepping_cycles()` (`test_ch5_audio_attach_modulation.cpp:356-373`), used by
+  `PC3` and by `P9` (a) and (b), grades each channel from its first restart on,
+  the first fetch at offset 0 after its first fetch, and leaves the first pass
+  to `hrm/ch5-audio-dma-first-pass`; `PC3` reads the channel's own 4 KB region
+  (`:391-395`), `P9` (a) and (b) only the set's own words.
   [`integration/ch2-copper-move`](../../integration/ch2-copper-move)'s `P7`
   leaves the first pass out by its own specification (section 3.6) and grades
   every block end after it.
