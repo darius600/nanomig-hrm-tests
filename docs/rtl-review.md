@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**46 findings ask for a review, in 28 modules.** They are listed by the
+**50 findings ask for a review, in 28 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -41,7 +41,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-024](findings/NM-HRM-024.md) | the audio DMA pointer takes five high bits in both chipsets | a test fails against the page |
 
-## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 5
+## [`src/minimig-aga/agnus_beamcounter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v) — 6
 
 | finding | subject | evidence |
 |---|---|---|
@@ -50,6 +50,7 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-010](findings/NM-HRM-010.md) | the NTSC line is 227 colour clocks every time, where the manual alternates 228 and 227 | a test fails against the page |
 | [NM-HRM-032](findings/NM-HRM-032.md) | BEAMCON0's three sync-polarity bits are decoded nowhere | a test fails against the page |
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a test fails against the page |
+| [NM-HRM-087](findings/NM-HRM-087.md) | with BPLCON0 bit 3 set, VPOSR and VHPOSR keep counting: neither a light-pen trigger nor the end of a field freezes them, where pp. 238 and 239 do both | a test fails against the page; the implementations split |
 
 ## [`src/minimig-aga/agnus_bitplanedma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v) — 2
 
@@ -115,11 +116,12 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-054](findings/NM-HRM-054.md) | the parallel port has a direction register and no data register | a test fails against the page |
 | [NM-HRM-074](findings/NM-HRM-074.md) | PBON and OUTMODE are stored and read back but reach no logic, so PB6 and PB7 never carry the timer output pp. 341, 342 and 348–350 put there | a test fails against the page; the implementations split |
 
-## [`src/minimig-aga/ciab.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v) — 1
+## [`src/minimig-aga/ciab.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-074](findings/NM-HRM-074.md) | PBON and OUTMODE are stored and read back but reach no logic, so PB6 and PB7 never carry the timer output pp. 341, 342 and 348–350 put there | a test fails against the page; the implementations split |
+| [NM-HRM-086](findings/NM-HRM-086.md) | CIA-B has no serial port: in output mode a byte written to its SDR never sets the ICR's SP bit, where pp. 339, 345 and 348 give both 8520s one | a test fails against the page |
 
 ## [`src/minimig-aga/cpu_cache_new.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_cache_new.v) — 1
 
@@ -127,11 +129,12 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 |---|---|---|
 | [NM-HRM-060](findings/NM-HRM-060.md) | the instruction cache monitors writes, and the manual says it does not | a test fails against the page |
 
-## [`src/minimig-aga/cpu_wrapper.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v) — 1
+## [`src/minimig-aga/cpu_wrapper.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-064](findings/NM-HRM-064.md) | the board advertises that it can be shut up, and register 4C has no handler | a test fails against the page |
+| [NM-HRM-085](findings/NM-HRM-085.md) | a configured Zorro II memory board answers across the whole 8 MB Zorro II space, not only at the base software wrote to it | a test fails against the page |
 
 ## [`src/minimig-aga/denise.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v) — 1
 
@@ -185,11 +188,12 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | a test fails against the page |
 | [NM-HRM-070](findings/NM-HRM-070.md) | disk write DMA takes a word in every disk slot whatever FAST says, where pp. 249 and 265 give bit cells of 2 µs and 4 µs | a test fails against the page |
 
-## [`src/minimig-aga/paula_audio_channel.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v) — 1
+## [`src/minimig-aga/paula_audio_channel.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-028](findings/NM-HRM-028.md) | ADKCON's audio attach bits are stored and reach nothing | a test fails against the page |
+| [NM-HRM-084](findings/NM-HRM-084.md) | the length counter also counts the first data word after audio DMA starts: the first pass is one word short of AUDxLEN, and at AUDxLEN = 3 runs two words past the data set | a test fails against the page |
 
 ## [`src/minimig-aga/paula_audio_mixer.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v) — 1
 

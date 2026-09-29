@@ -1,6 +1,6 @@
 # Findings
 
-**44 of the 66 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**48 of the 70 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding now lives in [`findings/`](findings/).** Each opens
 > with the same three parts, in this order: what the HRM says, what NanoMig
@@ -135,7 +135,7 @@ never disagree. Eight values occur:
 
 ### If you have one evening
 
-**If you have one evening: 44 of these 66 ask you to decide something.** The
+**If you have one evening: 48 of these 70 ask you to decide something.** The
 rest are answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
@@ -238,15 +238,30 @@ measured in chapter 4's sprite DMA package, the second beside the NTSC half of
 the same p. 304 sentence, which is NM-HRM-010's. Chapter 6 contributes
 NM-HRM-069, the first finding measured by an integration package — the whole
 design at `nanomig.v`'s own ports, run once with each CPU core — and red on
-both cores. Four more are measured by integration packages:
-- NM-HRM-070 by chapter 5's audio scan-rate package and chapter 8's disk and
-  serial package;
-- NM-HRM-071 by chapter 4's SuperHires sprite package;
-- NM-HRM-072 by the disk and serial package;
-- NM-HRM-073 by chapter 2's Copper control package.
+both cores. Seven more are measured by integration packages alone:
+- NM-HRM-070, from chapter 8, by chapter 5's audio scan-rate package and
+  chapter 8's disk and serial package;
+- NM-HRM-071, from chapter 4, by chapter 4's SuperHires sprite package;
+- NM-HRM-072, from chapter 8, by the disk and serial package;
+- NM-HRM-073, from chapter 2, by chapter 2's Copper control package;
+- NM-HRM-085, from Appendix K, by Appendix K's AUTOCONFIG package; the Zorro II
+  memory select it is about sits beside the responder in `cpu_wrapper.v` and is
+  inherited from MiSTer as well;
+- NM-HRM-086, from Appendix F, by Appendix F's CIA system package;
+- NM-HRM-087, from chapter 8, by chapter 8's light-pen package.
 
-Appendix F contributes NM-HRM-074, NM-HRM-075, NM-HRM-077 and NM-HRM-078, and
-Appendices E and H NM-HRM-080.
+Appendix F also contributes NM-HRM-074, NM-HRM-075, NM-HRM-077 and NM-HRM-078,
+and Appendices E and H NM-HRM-080. Chapter 5 contributes NM-HRM-084, measured by
+three of its unit packages: the first-pass, channel-register and channel-state
+packages.
+
+Seven findings that unit packages hold up show in integration packages too.
+Four are graded red there: NM-HRM-010 by chapter 2's interlace package,
+NM-HRM-038 by chapter 8's controller-port package, and NM-HRM-074 and
+NM-HRM-078 by the CIA system package. The CIA system package also reproduces
+NM-HRM-046 and NM-HRM-054, recorded and not graded, and chapter 5's audio
+scan-rate package meets NM-HRM-084's short first pass through a precondition.
+
 Chapter 8's first slice — the Controller Port Interface — contributes
 NM-HRM-037 to NM-HRM-040; its floppy slice NM-HRM-041 to NM-HRM-049 and its
 keyboard slice NM-HRM-050 to NM-HRM-052 and its serial slice NM-HRM-053 to

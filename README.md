@@ -20,7 +20,7 @@ on the finding pages as witnesses, never as the judge.
 
 | Oracle | Documents | Tests |
 |---|---|---|
-| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 216 packages; `integration/`, 3 graded packages |
+| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 3 graded packages |
 | Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages |
 
 **`integration/` runs whole systems** rather than one module: `nanomig.v`
@@ -97,7 +97,7 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 
 | | |
 |---|---:|
-| test packages, `hrm/` | **216** |
+| test packages, `hrm/` | **217** |
 | assertions, `hrm/` | **3651** — 3448 pass, **203 fail** |
 | packages, `hrm/` | 147 green, 69 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** |
@@ -105,7 +105,7 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **3**, each run on both CPU cores: 2 green, 1 carrying a red |
 | assertions, `integration/` | **63** on fx68k — 61 pass, **2 fail**; **62** on TG68K — 61 pass, **1 fail** |
-| registered findings | **71**, all open — 66 against the Hardware Reference Manual and 5 against the AA specification. **46 ask you to decide whether the RTL should change**; 62 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
+| registered findings | **75**, all open — 70 against the Hardware Reference Manual and 5 against the AA specification. **50 ask you to decide whether the RTL should change**; 66 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
@@ -170,7 +170,7 @@ never implied by a green.
 ## Layout
 
 ```
-hrm/            216 packages against the manual, each at one module's ports;
+hrm/            217 packages against the manual, each at one module's ports;
                 chN-… or appX-… names the unit of the manual that judges it
 aa/             33 packages against the AA specification
 integration/    3 packages against the manual at nanomig.v's ports, with a

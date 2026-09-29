@@ -2,16 +2,16 @@
 
 A reference for developers, not a narrative.
 
-**Sixty-six of these pages are filed against the Hardware Reference
+**Seventy of these pages are filed against the Hardware Reference
 Manual, 3rd edition (1991), and five against the AA specification (1991).** The AA group (NM-AA-001 to
 NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The thirteen
 withdrawn findings are kept apart, with their own list, in
 [`withdrawn/`](withdrawn/README.md). The header table is the same on all
-eighty-four.
+eighty-eight.
 
 **What every page has, in the same place: the header table.** These seven fields
-are on all 84 pages, and the first four answer *what am I being asked to do*
+are on all 88 pages, and the first four answer *what am I being asked to do*
 before any prose is read:
 
 | field | values |
@@ -29,16 +29,16 @@ page carries says something about it:
 
 | field | on | what its absence means |
 |---|---|---|
-| **Verdict of the four** | 79 of 84 | the other implementations were not consulted, or the finding is not about behaviour they share |
-| **Report to** | 70 of 84 | nothing is being asked of anyone upstream — usually a withdrawn finding |
-| **Assertions** | 69 of 84 | the finding has no graded assertions of its own; the `Test` row still names the package |
-| **See also** | 20 | no sibling finding bears on it |
+| **Verdict of the four** | 83 of 88 | the other implementations were not consulted, or the finding is not about behaviour they share |
+| **Report to** | 74 of 88 | nothing is being asked of anyone upstream — usually a withdrawn finding |
+| **Assertions** | 73 of 88 | the finding has no graded assertions of its own; the `Test` row still names the package |
+| **See also** | 23 | no sibling finding bears on it |
 | **Error class** | 11 | it is not one of the recurring shapes |
 | **Boundary** | 2 | no edge case was isolated |
 | **Provenance**, **Origin** | 1 each | one-offs, kept because the page needed them |
 
 A header table that is shorter than the one on the page before it is therefore
-not an incomplete page. Counted across all 84, the withdrawn ones included.
+not an incomplete page. Counted across all 88, the withdrawn ones included.
 
 **A title that ends in [RTL review]** marks a page whose header says three
 things: `open`, filed against `the RTL`, and a test that fails against the page. That page asks an
@@ -51,8 +51,8 @@ say something the header does not.
 HRM says* → *What NanoMig does* → *What the others say* → *Suggested change* →
 *What holds the finding up*, some adding *For the specialists*. A withdrawn
 finding instead explains the withdrawal, and a finding filed against the printed
-page has no suggested change to make. Measured over the 79 pages against the
-manual, the withdrawn ones included, there are 58 distinct sequences of `##`
+page has no suggested change to make. Measured over the 83 pages against the
+manual, the withdrawn ones included, there are 60 distinct sequences of `##`
 headings; the page is written for its own subject once the
 header has told you whether to read it at all.
 
