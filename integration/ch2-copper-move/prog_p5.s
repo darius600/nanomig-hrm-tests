@@ -20,8 +20,8 @@
 ;   P5_MUT_P5P3 -- P5-p3's own mutation: the ROM-overlay-clearing writes
 ;                   are omitted.
 ;   P5_C1       -- contrasting case C1: phase 3's two words are exchanged
-;                   (COP1LCL first, COP1LCH second), with a park at
-;                   $10000E instead of $0E9010.
+;                   (COP1LCH first, COP1LCL second: $9010 to COP1LCH, $000E
+;                   to COP1LCL), with a park at $10000E instead of $0E9010.
 ;   P5_C2       -- contrasting case C2: one extra step directly after the
 ;                   phase-1 step to $0C8000 -- MOVE.W #$4000,$DFF082 only,
 ;                   then a marker and COPJMP1.
@@ -29,6 +29,14 @@
 ;                   COPJMP1 instead of COPJMP2.
 ;   P5_NOCOPEN  -- G1's own baseline: DMACON started $8200 (no COPEN)
 ;                   instead of $8280.
+;   P5_MUT_HLO  -- P5-H-low's own mutation: one extra phase-1 step lands at
+;                   the decoy D where S_H1's own A18 entry ($04F000) is
+;                   graded, leaving every A19/A20 entry as the main run
+;                   prescribes.
+;   P5_MUT_HHI  -- P5-H-high's own mutation: one extra phase-1 step lands
+;                   at the decoy D where S_H1's own A19 entry ($08F000) is
+;                   graded, leaving every A16-A18 entry as the main run
+;                   prescribes.
 
         include "nanomig.i"
         include "ch2move.i"
@@ -137,6 +145,32 @@ start:
         else
         move.w  #39,d7
         bsr     phase1_steps
+        ifd     P5_MUT_HLO
+        ; P5-H-low's own mutation: one extra step, landing at the decoy D
+        ; instead of S_H1's own A18 entry ($04F000), which is what the C++
+        ; side grades this step against.
+        addq.w  #1,d3
+.waithlo: move.w VHPOSR(a0),d1
+        lsr.w   #8,d1
+        cmp.w   d3,d1
+        bne.s   .waithlo
+        move.l  #DECOY_D,COP1LCH(a0)
+        move.w  VHPOSR(a0),(a3)+
+        move.w  #0,COPJMP1(a0)
+        endif
+        ifd     P5_MUT_HHI
+        ; P5-H-high's own mutation: one extra step, landing at the decoy D
+        ; instead of S_H1's own A19 entry ($08F000), which is what the C++
+        ; side grades this step against.
+        addq.w  #1,d3
+.waithhi: move.w VHPOSR(a0),d1
+        lsr.w   #8,d1
+        cmp.w   d3,d1
+        bne.s   .waithhi
+        move.l  #DECOY_D,COP1LCH(a0)
+        move.w  VHPOSR(a0),(a3)+
+        move.w  #0,COPJMP1(a0)
+        endif
         endif
 
         ; ---- Phase 2 (COP2): COP1LC = D first, then one step per target -
@@ -159,12 +193,16 @@ start:
         ifd     P5_MUT_P5P1
         move.w  #8,d7                   ; first 9 targets
         bsr     phase2_steps
-        ; P5-p1's own mutation: wait for line 5 of the NEXT field (forces
-        ; a full-field wrap, since by now the beam is well past line 5).
-        move.w  #5,d3
-.waitp1: move.w  VHPOSR(a0),d1
+        ; P5-p1's own mutation: wait for line 5 of the NEXT field (V8=0 and
+        ; V=5, as the run's own start wait does -- checking VHPOSR's line
+        ; byte alone also matches line $105 of the SAME field, since V8
+        ; lives in VPOSR, not VHPOSR).
+.waitp1: move.w  VPOSR(a0),d0
+        and.w   #1,d0
+        bne.s   .waitp1
+        move.w  VHPOSR(a0),d1
         lsr.w   #8,d1
-        cmp.w   d3,d1
+        cmp.w   #5,d1
         bne.s   .waitp1
         move.l  (a2)+,COP2LCH(a0)
         move.w  VHPOSR(a0),(a3)+

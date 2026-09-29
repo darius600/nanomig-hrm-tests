@@ -53,20 +53,15 @@ MON_ITERS       equ     6642            ; about 3 fields (4500 + one field's own
 ; already-measured timing for this identical loop body (SPECIFICATION.md
 ; section 7: "13 to 15 fields" over 30000 iterations, i.e. about 2142
 ; iterations/field and 6.87/line on this harness) to land the write
-; inside the $64-$C8 window the specification names (the C++ side's own
-; P6-C1 guard checks the actual line from its own marker, independent of
-; this choice, and does not require any particular field index). Even
-; after the beam-sync wait above removes the boot-phase skew between
-; cores, fx68k and TG68K still cost a few clk_sys cycles apart per
-; iteration for this loop body's own CPU-internal instructions (dbra's
-; own decrement and branch, not a bus cycle, so not covered by I4's own
-; ratio): at the original 7456 this landed both cores too close to the
-; window's own floor, one core just outside it. SEG_A_ITERS is raised to
-; move the pair comfortably inside the window; SEG_B_ITERS is reduced by
-; the same amount so SEG_A+SEG_B's own total, and so the capture's
-; overall field count, is unchanged.
-SEG_A_ITERS     equ     8006            ; 3*2142 + ~$98*6.87, recentered post-sync (+550)
-SEG_B_ITERS     equ     7994            ; -550, keeps SEG_A+SEG_B's own total at 16000
+; inside the $64-$C8 window the specification names, once the beam-sync
+; wait above removes the skew CPU-only instructions before it would
+; otherwise carry in. The C++ side's own P6-C1 guard checks the write's
+; own marker against the actually captured line, independent of this
+; choice, and does not require any particular field index. SEG_B_ITERS
+; keeps SEG_A+SEG_B's own total, and so the capture's overall field
+; count, unchanged.
+SEG_A_ITERS     equ     8006            ; 3*2142 + ~$98*6.87
+SEG_B_ITERS     equ     7994            ; keeps SEG_A+SEG_B's own total at 16000
         else
 MON_ITERS       equ     11000           ; about 5 fields (P6.2)
         endif
@@ -144,15 +139,16 @@ start:
         ; COP1LC = L6b, bracketed by markers, between the two segments.
         lea     LOGBUF,a1
         ifd     P6_C1
-; SEG_A_ITERS is calibrated in loop iterations, and the loop body itself
-; costs the same clk_sys cycles per iteration on both cores (I4, 4.4: a
-; memory read each of its three words). But the CPU-only instructions
-; before this point (FRAME_INIT, the location-register writes, DMACON)
-; do not: measured, fx68k and TG68K reach this point a different number
-; of lines apart. Waiting here for the beam's own V to read 0 (the
-; start of a field, the same anchor on both cores since it comes from
-; the beam counter, not CPU cycles) removes that skew, so the
-; iteration count below lands at the same field-3 line on both cores.
+; Waiting here for the beam's own V to read 0 (the start of a field, the
+; same anchor on both cores since it comes from the beam counter, not CPU
+; cycles) removes the skew the CPU-only instructions before this point
+; would otherwise carry into SEG_A_ITERS below. VPOSR and VHPOSR are two
+; separate register reads, so a V8 change between them can produce a torn
+; exit (V8=1 already, but VHPOSR's own line byte still reads $00, the
+; wrap instant); accepted, not guarded against, and stated per core (the
+; C++ side's own P6-C1 notes) rather than fixed here, since a re-check
+; against this same asymmetric timing moved fx68k's own calibrated write
+; outside the $64-$C8 window on this harness.
 .syncv: move.w  VPOSR(a0),d0
         andi.w  #1,d0
         bne.s   .syncv

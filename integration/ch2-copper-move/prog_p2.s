@@ -24,6 +24,10 @@
 ;                    wrap.
 ;   P2_C1        -- P2's own contrasting case: $AAA8 is written instead of
 ;                    $AAAA, at the same point.
+;   P2_NOCOPEN   -- G1's own baseline for P2 (4.5: "a baseline run of the
+;                    same program"): DMACON started $8200 (no COPEN)
+;                    instead of $8280. The runtime write of WRITE_VAL still
+;                    happens, as in every other variant of this source.
 
         include "nanomig.i"
         include "ch2move.i"
@@ -74,7 +78,11 @@ start:
         move.l  #L_A,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
         move.w  VHPOSR(a0),MARK_M0.l     ; marker M0
+        ifd     P2_NOCOPEN
+        move.w  #$8200,DMACON(a0)        ; SET/CLR, DMAEN only (no COPEN)
+        else
         move.w  #$8280,DMACON(a0)        ; SET/CLR, DMAEN, COPEN
+        endif
         move.w  DMACONR(a0),DMACONR_SAVE.l
 
         ; ---- step 6: monitor loop (I2), segment 1 -----------------------
