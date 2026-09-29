@@ -70,7 +70,7 @@
 //   2.4's own sparse contrast, via prog_p3_mut_d.bin -- measured FAIL on
 //   "P3d precondition: ...", both cores
 //
-// P5, P7, P9 and P11 are not built in this package: SPECIFICATION.md's
+// P5, P7, P9, P11 and P12 are not built in this package: SPECIFICATION.md's
 // measured section lists them as not built.
 //
 // MUTATION P6a stimulus red NMH_MUTATE=P6-A: the C3 MOVE placed after the
