@@ -1,9 +1,9 @@
 // Test purpose: p.324's `PARALLEL PORT (J8)` table (Appendix E, read from
-//   `figures/p324.png` per this lot's build brief -- the NOTES column is
-//   displaced against NAME in the text layer on this page) and its
-//   surrounding prose, restricted to the D0-D7 data-bus rows and the "may
-//   also be used for input"/"eight-bit bidirectional bus" clauses -- at the
-//   `ciaa` module boundary, compiled alone.
+//   `figures/p324.png` -- the NOTES column is displaced against NAME in the
+//   text layer on this page) and its surrounding prose, restricted to the
+//   D0-D7 data-bus rows and the "may also be used for input"/"eight-bit
+//   bidirectional bus" clauses -- at the `ciaa` module boundary, compiled
+//   alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
 //   page 324 (figure and body text); p.319's Centronics pinout table read
@@ -27,72 +27,7 @@
 //   `work/2026-09-17_appDE_packages.jsonl` in the sibling repository
 //   (hrm-testpipeline). docs/legacy-names.md explains the vocabulary.
 //
-// RTL read for step 2: ciaa.v (388 lines) in full; cia_int.v, cia_timera.v,
-//   cia_timerb.v, cia_timerd.v (needed only for Verilator to elaborate the
-//   top module). Also read in full: hrm/ch8-parallel-port-direction's
-//   Makefile and test_ch8-parallel-port-direction.cpp (its Harness/
-//   write_reg/read_reg/tick bus-timing protocol and its
-//   bit_output_follows_direction() comparator -- reused below verbatim as
-//   verified RTL-interface plumbing, not as a source of this package's own
-//   assertions or expected values) -- that package's own header discloses
-//   the same ciaa.v line numbers this package independently re-confirms
-//   below, plus minimig.v:136 (a stale change-log comment) and minimig.v
-//   :607-651 (CIAA1/CIAB1 instantiation), read there and not re-read here.
-//   This package additionally read minimig.v:202-203,624 for the portb_in
-//   source (see below), a fact hrm/ch8-parallel-port-direction's own header
-//   does not carry.
-//
-// RTL facts established by that reading:
-//   - ciaa.v:97, `input [7:0] portb_in` -- eight raw external input pins,
-//     synchronisation-free (unlike porta_in, which IS latched through
-//     porta_in2 at :227-230; portb_in is read live, ciaa.v:293-294).
-//   - ciaa.v:114, `wire [7:0] portb_out;` -- declared, and appearing
-//     NOWHERE else in the file (confirmed by grep: one occurrence, the
-//     declaration itself). Not assigned, not read, not even exposed as a
-//     module output port (ciaa's own port list, :80-104, declares `output
-//     [3:0] porta_out` but no portb_out output at all) -- a dead wire in
-//     the fullest sense: it cannot reach outside this module even in
-//     principle.
-//   - ciaa.v:267 `//reg [7:0] regportb;` and :270-279 (its entire write
-//     block) are commented out. No register in this design ever catches a
-//     write to CIAAPRB, at any bit position.
-//   - ciaa.v:291-299 (pb_out, PRB/DDRB's shared read mux): a CIAAPRB read
-//     (`!wr && prb`, :293-294) returns `portb_in[7:0]` UNCONDITIONALLY --
-//     ddrportb does not appear in that branch at all. ddrportb itself is
-//     real (written :282-288, read back at its own address :295-296) but
-//     governs nothing about what a CIAAPRB read returns.
-//   - minimig.v:624, `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],
-//     _joy3[0],_joy3[1],_joy3[2],_joy3[3]})` -- ciaa's port B is wired as a
-//     four-bit-each joystick-3/joystick-4 adapter in this design, not to
-//     any parallel/Centronics connector. minimig.v is not compiled by this
-//     package and this fact plays no role in either assertion below (both
-//     grade ciaa's own boundary, where portb_in is this fixture's own
-//     free input); it is recorded because the build brief named it as
-//     established and not to be rediscovered, and because it explains WHY
-//     ciaa's port B behaves the way it does rather than just THAT it does.
-//   - hrm/ch8-parallel-port-direction's own PROP-1 (opus:8-par.c1,
-//     sol:8-par.c1, printed p.259 "the general-purpose parallel interface
-//     is bi-directional") already grades this same write-path absence at
-//     ciaa's boundary, at bit 0 of PRB/DDRB, and its own committed result
-//     is FAIL, with the finding stated in its own words as holding "at any
-//     bit position" -- i.e. one shared root cause (regportb's entire
-//     absence), not eight independent per-bit mechanisms that could read
-//     differently from each other.
-//   - ciaa.v:262, porta_out[3:0] = {~ddrporta[7:6]|regporta[3:2],
-//     ~ddrporta[1:0]|regporta[1:0]}, with regporta[3:0] <= {data_in[7:6],
-//     data_in[1:0]} on a PRA write (:238) -- a REAL, round-trip-through-
-//     the-same-register write/read path exists at PRA/DDRA bit positions 0
-//     and 1 (pa_out[1:0] = porta_out[1:0] on a PRA read, :254), already
-//     the shape hrm/ch8-parallel-port-direction's own CONTROL-PA0-OUTPUT
-//     control used at bit 0. Bits 2-5 of a PRA read return porta_in2
-//     (external input) regardless of direction; bits 6-7 drive real output
-//     pins (porta_out[3:2]) but that output is not visible through a PRA
-//     read (pa_out[7:2] = porta_in2[7:2] always) -- so only bits 0 and 1
-//     round-trip through the SAME register a write targeted, the two
-//     positions this package's PORTB-DIRECTION mutation below reuses.
-//
-// Claim disposition (worked out from classify.note, independently
-//   confirmed against the RTL above, not taken on faith):
+// Claim disposition:
 //   - sol:E-parallel.c66, opus:E-parallel-iface.c5 (p.324 prose, "This
 //     interface may also be used for input"/"may also be used for input or
 //     bidirectional data transfers"): the identical proposition p.259's
@@ -102,60 +37,52 @@
 //     iface.c10 (figure prose "D0-D7 comprise an eight-bit bidirectional
 //     bus"): each restates BOTH that its named line is one of eight
 //     independently-addressable positions (D0..D7 -- a WIDTH claim PROP-1
-//     never tested; PROP-1 checked only bit 0) AND that each line's own DIR
-//     column reads I/O (a DIRECTION claim). classify.note calls this "the
-//     width-and-per-bit-direction half" and instructs grading it, distinct
-//     from the plain-bidirectionality prose above. Graded here as TWO
-//     assertions (PORTB-WIDTH, PORTB-DIRECTION), both carrying all nine
-//     uids, because the two component claims (width; direction) measure
-//     independently and forcing them into one AND would hide which half is
-//     true. PORTB-WIDTH is TRUE (measured). PORTB-DIRECTION is FALSE at
-//     every one of the eight positions (measured), for the single shared
-//     reason PROP-1 already names, confirmed individually at bits 1-7,
-//     which PROP-1 itself never exercised.
+//     does not test) AND that each line's own DIR column reads I/O (a
+//     DIRECTION claim), distinct from the plain-bidirectionality prose
+//     above. Graded here as TWO assertions (PORTB-WIDTH, PORTB-DIRECTION),
+//     both carrying all nine uids, because the two component claims (width;
+//     direction) measure independently and forcing them into one AND would
+//     hide which half is true. PORTB-WIDTH is TRUE (measured).
+//     PORTB-DIRECTION is FALSE at every one of the eight positions
+//     (measured) -- the same eight-position sweep
+//     hrm/ch8-parallel-port-direction's PROP-1 grades against p.259, graded
+//     here against p.324's per-line DIR column.
 //   - PORTB-DIRECTION's fixture releases every PB line before the sweep
 //     (portb_in = 0xFF, the idle state p.354 gives a line nothing drives)
-//     instead of leaving them at the Harness default of 0 (a line held
-//     low from outside, a state no page decides for a driven output --
-//     see the withdrawn NM-HRM-083). Released, the false half is the
-//     written-0 clause, not the written-1 clause: at every position the
-//     write is unreachable (regportb absent, as above) so the read is
-//     always the released line, 1, matching a written 1 by coincidence
-//     and mismatching a written 0. This is the same missing write path,
-//     now measured on the one input state p.341 and p.354 together
-//     decide -- the finding is NM-HRM-054's, not a new one.
+//     instead of leaving them at the Harness default of 0, a line held low
+//     from outside -- a state no page decides for a driven output.
+//     PORTB-RELEASED-CONTROL shows the released lines read back as 1
+//     through the same registers. The finding is NM-HRM-054's.
 //
-// Every mutation below was actually built (WSL Verilator 5.052, `make
-// MUT=<NAME> test`, full `rm -rf obj_dir` rebuild via the Makefile's `test`
-// recipe) and the PASS/FAIL/pass-count lines quoted are what that run
-// printed, not predictions. All mutations were reverted afterwards; this
-// file builds at MUT unset (baseline).
+// Every mutation below is a `-D` variant, built and run with `make
+// MUT=<NAME> test` (a full rebuild via the Makefile's `test` recipe; WSL
+// Verilator 5.052); the PASS/FAIL counts quoted are what those runs print.
+// The file as committed builds at MUT unset (baseline).
 //
 // Baseline (no MUT): "3 passed, 1 failed" -- FIXTURE-LIVE PASS,
-//   PORTB-WIDTH PASS, PORTB-DIRECTION FAIL at all eight positions on the
-//   written-0 clause (expected and by design, see above -- CIAA's port B
-//   has no write path at any bit position), PORTB-RELEASED-CONTROL PASS.
+//   PORTB-WIDTH PASS, PORTB-DIRECTION FAIL at all eight positions,
+//   PORTB-RELEASED-CONTROL PASS.
 //
 // MUTATION FIXTURE-LIVE stimulus red: MUT_FIXLIVE repeats the first DDRB
 //   byte (0xA5) instead of a distinct second one -> FIXTURE-LIVE FAIL,
-//   "2 passed, 2 failed". Reverted.
+//   "2 passed, 2 failed".
 // MUTATION PORTB-WIDTH stimulus red: MUT_WIDTH_SAMEPATTERN presents the
 //   SAME portb_in byte (0x01) at every swept bit position instead of a
 //   distinct single-bit pattern per position -> PORTB-WIDTH FAIL,
 //   "2 passed, 2 failed" (all eight reads now equal, isolation cannot be
 //   shown). PORTB-DIRECTION is unaffected (still FAIL, for its own
-//   independent reason). Reverted.
+//   independent reason).
 // MUTATION PORTB-DIRECTION stimulus green: MUT_DIRECTION_TARGET_A
 //   retargets the whole eight-position sweep at RS_PRA/RS_DDRA, cycling
-//   bit%2 across the two positions (0, 1) that genuinely round-trip
-//   through a PRA read (see RTL facts above) instead of RS_PRB/RS_DDRB --
-//   a real substitution, reusing hrm/ch8-parallel-port-direction's own
-//   validated bit_output_follows_direction() unchanged -> PORTB-DIRECTION
-//   PASS, "4 passed, 0 failed". Substitution proof: the comparator is not
+//   bit%2 across the two positions (0, 1) at which a PRA read returns the
+//   written value, instead of RS_PRB/RS_DDRB -- a real substitution,
+//   reusing hrm/ch8-parallel-port-direction's own validated
+//   bit_output_follows_direction() unchanged -> PORTB-DIRECTION PASS,
+//   "4 passed, 0 failed". Substitution proof: the comparator is not
 //   hardwired false, it returns true for the register pair where the
 //   mechanism actually works, on the same fixture and protocol.
 //   PORTB-WIDTH and PORTB-RELEASED-CONTROL are unaffected (still PASS;
-//   neither reads PRA/DDRA). Reverted.
+//   neither reads PRA/DDRA).
 // MUTATION PORTB-RELEASED-CONTROL stimulus red: MUT_CONTROL_HELD_LOW holds
 //   the same PB lines low (portb_in = 0x00) instead of releasing them,
 //   while the check keeps grading against the fixed released-line
@@ -164,7 +91,7 @@
 //   expectation). Sensitivity proof: an un-released line reads back 0, so
 //   the control is not vacuously true regardless of whether the fixture
 //   actually released the lines. PORTB-DIRECTION is unaffected (its own
-//   sweep sets portb_in itself, still FAIL for its own reason). Reverted.
+//   sweep sets portb_in itself, still FAIL for its own reason).
 
 #include <cstdint>
 #include <cstdio>
@@ -212,11 +139,10 @@ std::string hex2(unsigned long v) {
     return std::string(buf);
 }
 
-// Bus-timing protocol for ciaa.v, reused verbatim from
+// Bus-timing protocol, reused verbatim from
 // hrm/ch8-parallel-port-direction's own Harness (this exact fixture, same
-// top module): regporta/ddrporta/ddrportb are posedge-clk, clk7_en-gated,
-// so a write needs one tick to latch; pa_out/pb_out/porta_out are
-// combinational and need only eval().
+// top module): a register write is clocked, so write_reg() holds it for one
+// tick; a read is combinational and needs only eval().
 class Harness {
 public:
     Harness() : dut(new Vciaa) {
@@ -385,8 +311,8 @@ bool portb_direction(Harness& h, std::string& detail) {
 // way PORTB-DIRECTION releases them (portb_in = 0xFF), a read of CIAAPRB
 // must return the released lines' 1 at every position. This shows the
 // released fixture and the read path both work on this basis, so
-// PORTB-DIRECTION's red is the write path's absence, not an unreleased or
-// broken fixture. MUT_CONTROL_HELD_LOW holds the same lines low instead
+// PORTB-DIRECTION's red is not an unreleased or broken fixture.
+// MUT_CONTROL_HELD_LOW holds the same lines low instead
 // (portb_in = 0x00), the opposite input p.354 predicts a 0 read for, as
 // the sensitivity proof.
 // ---------------------------------------------------------------------
@@ -437,14 +363,10 @@ int main(int argc, char** argv) {
             "reads I/O -- with its direction bit set to output, a value "
             "written to CIAAPRB at that bit position must be what a "
             "subsequent read of that register returns, both 0 and 1, at "
-            "every one of the eight named lines. False at all eight: "
-            "CIAAPRB's write path (regportb) is entirely commented out "
-            "(ciaa.v:267,:270-279), so a CIAAPRB read always echoes the "
-            "raw external portb_in pins (ciaa.v:293-294), never what was "
-            "written, at any bit position -- the same finding "
-            "hrm/ch8-parallel-port-direction's PROP-1 already reports at "
-            "bit 0 alone, confirmed here individually at bits 1-7 too, "
-            "which PROP-1 never exercised "
+            "every one of the eight named lines, with every PB line "
+            "released beforehand (p.354's idle level) -- the same "
+            "eight-position sweep hrm/ch8-parallel-port-direction's PROP-1 "
+            "grades against p.259 "
             "[p.324, PARALLEL PORT (J8), figure -- D0-D7 rows' DIR=I/O "
             "column] sol:E-parallel.c69 sol:E-parallel.c70 "
             "sol:E-parallel.c71 sol:E-parallel.c72 sol:E-parallel.c73 "
@@ -483,8 +405,7 @@ int main(int argc, char** argv) {
         "parallel interface is bi-directional' already states -- "
         "hrm/ch8-parallel-port-direction's PROP-1 (opus:8-par.c1, "
         "sol:8-par.c1) already grades this at this same ciaa boundary and "
-        "found it FAIL (regportb's write path is entirely commented out). "
-        "Not graded here as a duplicate.");
+        "found it FAIL. Not graded here as a duplicate.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
