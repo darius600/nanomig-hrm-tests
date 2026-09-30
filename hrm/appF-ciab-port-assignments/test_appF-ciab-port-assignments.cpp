@@ -113,24 +113,25 @@
 //   omits driving `flag` high (ICR stays armed but the pin is never
 //   actually driven) -> FAIL, ICR bit 4 read 0 both before and after.
 //   RUN: 6 passed, 4 failed. Reverted.
-// MUTATION PROP-FLAG-EDGE-POLARITY stimulus green: already red at baseline
-//   (see the header's RTL-facts block: cia_int.v's icr[4]<=icr[4]|flag is a
-//   level-sensitive OR with no edge detector, so step 3 stays SET while
-//   flag is held instead of clearing) -- a failing assertion cannot be made
-//   to fail harder. Substituted a guarded flag inside prop_flag_edge_polarity()
-//   itself (drop_flag_before_step2_read=true: the transition still happens,
-//   but flag returns to 0 before step 2's read instead of being held across
-//   it), graded through the SAME, unmodified return expression the real
-//   assertion uses -- including its bit-7 clause, which the withdrawn
-//   record's separate control_flag_low_before_read() function never checked
-//   -> the assertion's OWN return value comes back PASS (measured: bit 4 SET
-//   after the transition, then CLEAR after the hold, bit 7 CLEAR with it),
-//   proving the comparator is not vacuous. RUN: 7 passed, 3 failed (baseline
-//   unchanged; the control call is note()'d, not itself graded, so this
-//   substitution moves nothing in the pass/fail totals). A stimulus that
-//   omits the transition entirely also moves this assertion's OWN step-2
-//   clause to FAIL (step 2's clocked read then comes back 0x00 where the
-//   unmutated comparator expects SET), confirming that clause is live too.
+// MUTATION PROP-FLAG-EDGE-POLARITY stimulus green MUT_A10_GREEN_CONTROL:
+//   already red at baseline (see the header's RTL-facts block: cia_int.v's
+//   icr[4]<=icr[4]|flag is a level-sensitive OR with no edge detector, so
+//   step 3 stays SET while flag is held instead of clearing) -- a failing
+//   assertion cannot be made to fail harder. Substitutes a guarded flag on
+//   the GRADED call itself (drop_flag_before_step2_read=true, passed to
+//   prop_flag_edge_polarity() at the assertion's own call site, not only to
+//   a separate note()'d control): the transition still happens, but flag
+//   returns to 0 before step 2's read instead of being held across it,
+//   graded through the SAME, unmodified return expression the real
+//   assertion uses -- including its bit-7 clause. RUN: baseline 7 passed, 3
+//   failed; mutated 8 passed, 2 failed, exactly this assertion's own line
+//   PASS<-FAIL (PROP-CRA-PBON and PROP-CRA-OUTMODE unaffected). Reverted:
+//   7/3. A stimulus that omits the transition entirely (MUT_A10_FLAG_EDGE_POLARITY)
+//   also moves this assertion's OWN step-2 clause to FAIL (step 2's clocked
+//   read then comes back 0x00 where the unmutated comparator expects SET),
+//   confirming that clause is live too. The separate, ungraded control call
+//   below runs the identical guarded-flag technique unconditionally, as a
+//   note(), independent of either MUT_ flag.
 // MUTATION sol:F-ciab-map.c23 stimulus red: PROP-DDRA-POSITION's stimulus
 //   skips the DDRA=0xFF write (leaves DDRA=0, input mode) while still
 //   writing PRA=0xC0 then 0x00 -> FAIL, porta_out read pulled-high (0x3)
@@ -212,6 +213,9 @@
 #endif
 #ifndef MUT_A10_FLAG_EDGE_POLARITY
 #define MUT_A10_FLAG_EDGE_POLARITY 0
+#endif
+#ifndef MUT_A10_GREEN_CONTROL
+#define MUT_A10_GREEN_CONTROL 0
 #endif
 
 namespace {
@@ -725,7 +729,12 @@ int main(int argc, char** argv) {
 
     {
         Harness h;
-        const bool result = prop_flag_edge_polarity(h, MUT_A10_FLAG_EDGE_POLARITY);
+        // MUT_A10_GREEN_CONTROL guards the flag on THIS graded call itself
+        // (drop_flag_before_step2_read=true), rather than only in the
+        // separate, ungraded control call below -- so the substitution
+        // moves the assertion's OWN line, not just a note().
+        const bool result = prop_flag_edge_polarity(h, MUT_A10_FLAG_EDGE_POLARITY,
+                                                      /*drop_flag_before_step2_read=*/MUT_A10_GREEN_CONTROL);
         checks.expect(result,
             "PROP-FLAG-EDGE-POLARITY: a negative transition on FLAG sets the FLAG interrupt bit (p.341); "
             "in this fixture flag is DSKINDEX*'s active-high form, the pin itself active low (p.245, "
