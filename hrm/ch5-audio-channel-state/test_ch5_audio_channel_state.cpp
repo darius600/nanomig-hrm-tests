@@ -128,15 +128,15 @@
 //   this package's 79 is declined; classify already marked all 79
 //   "testable".
 //
-// RESULTS: built and run under WSL/Verilator 5.052. 33 passed, 10 failed, out
+// RESULTS: built and run under WSL/Verilator 5.052. 31 passed, 12 failed, out
 //   of 43 pass/fail invocations (42 claim-based CHECK groups + the fixture
 //   check). Two further claim-based groups are recorded MEASURED -- one
 //   informational, one not-asserted -- rather than pass/fail (see below);
 //   together with the 42 CHECK groups this still accounts for all 44
-//   claim-based assertion groups. 8 of the 10 reds trace to one
+//   claim-based assertion groups. 8 of the 12 reds trace to one
 //   already-disclosed finding (this task's own brief and
-//   CANDIDATES.md/BOUNDARIES.md); the remaining 2 trace to a second finding,
-//   below:
+//   CANDIDATES.md/BOUNDARIES.md); 2 more trace to a second finding, and the
+//   remaining 2 to a third, below:
 //
 //   Finding A -- the RTL's state-code parameters do not match the manual's
 //   (paula_audio_channel.v:242-246: the discard state is 3'b011 where the
@@ -176,6 +176,29 @@
 //   term), this package's own stimulus and comparator rebuilt against that
 //   copy unchanged, turns both groups green -- see their own
 //   `implementation` MUTATION records.
+//
+//   Finding C (NM-HRM-084) -- the same line 358 also makes the DMA restart
+//   request (`dmas`, gated through the perfin/cck-registered path `dmas <=
+//   dmasen | lenfin`) fire one word EARLIER than Figure 5-8's own count
+//   places it. Per p.164 the restart "goes to Agnus along with the regular
+//   DMA request" made "when it finishes"; by the figure's count that regular
+//   request is the one that FETCHES the last word (offset AUDLEN-1), made
+//   strictly between the arrivals of offset AUDLEN-2 and offset AUDLEN-1 --
+//   not after the last word has already arrived. 2 CHECK groups are red for
+//   this reason: 5-p164.c23/c24/5-sm.c25 (the restart itself, graded in that
+//   open window, no added margin) and 5-p164.c28/5-sm.c29 (the interrupt,
+//   graded on ITS OWN window -- the last word's own arrival up to the next
+//   block's first word -- since intreq2_set is armed combinationally at the
+//   word's own arrival, paula_audio_channel.v:415, not through the
+//   perfin/cck-registered path `dmas` uses). 5-p164.c23's group is
+//   demonstrated repairable on the SAME page-following implementation as
+//   Finding B (paula_audio_channel.v:358 changed) -- see its own
+//   `implementation` MUTATION record. 5-p164.c28's group has no
+//   implementation record of its own: nothing about line 358 touches the
+//   combinational intreq2_set path it grades, so its own AUDLEN=2 stimulus
+//   control (the length NM-HRM-084 names as already matching the figure, on
+//   the unmodified, pinned RTL) is what demonstrates its comparator is not
+//   vacuous.
 //
 //   Figure 5-8's NOTE (dmasen/AUDxDSR) is fully settled, no longer red:
 //   "Except for this case [000->001], dmasen is true only when LENFIN=1" is
@@ -294,12 +317,13 @@
 //   verdict is not this repair's mandate.
 // MUTATION 5-p164.c2 stimulus red
 //   Agnus never answers a single word (suppress_responder_after=0); only 2 distinct LEGALLY-reached codes remain (want 5) -- the reachability half of this check is stimulus-sensitive, not satisfied by the host loop regardless of what the DUT does.
-// MUTATION F58.states stimulus red
+// MUTATION F58-EIGHT-STATE-CIRCLES stimulus red
 //   same no-answer rerun as 5-p164.c2's mutation.
 // MUTATION 5-sig.sq stimulus red
 //   Agnus stops answering after the discard word, so the loop code 110 (the only legally-reached code with bit2=1) is never entered; bit2 distinct values = 1 (need 2) -- the bit2 toggle proof correctly fails once its only witnessing code becomes unreachable.
-// MUTATION F58.sqbits stimulus impossible
-//   no stimulus mutation applies: the proposition concerns which physical net the manual's own figure labels SQ2/SQ1/SQ0 and which digit position its arrow points at, not DUT behaviour -- there is no experiment on the DUT, forced or legally-stimulated, that could move this from not-asserted to a colour.
+// F58.sqbits carries no mutation record here either: it is printed via MEASURED(), never
+//   expect()/CHECK(), so it is not a pass/fail assertion. No stimulus mutation could apply to it
+//   regardless -- see its own MEASURED() text for why.
 // MUTATION 5-sm.c5 stimulus red
 //   reset never asserted (audio_state force-set to 5, reset_all() skipped entirely); observed=5 -- idle-encoding check correctly fails without reset.
 // MUTATION 5-p164.c4 stimulus green
@@ -330,14 +354,12 @@
 //   same suppress-after-1 rerun as 5-p166.c5's mutation: word1 never arrives, so the "data arrives -> state 010" arc has nothing to measure (only 1 AUDxDAT event(s) observed, want >=2).
 // MUTATION 5-p166.c4 stimulus red
 //   same suppress-after-1 rerun; the fig's action-bundle arc [volcntrld,percntrld,pbufld1,AUDxDR] and its no-lencount clause, on word1's arrival, likewise have no event to observe.
-// MUTATION F58.t001_101 stimulus red
+// MUTATION F58-LENCOUNT-STARTUP-ARCS stimulus red
 //   same suppress-after-1 rerun: word1 never arrives, so the 101->010 half of this pair (the very next arrival after the discard word) has nothing to grade (1 AUDxDAT arrival(s) observed, want >=2).
-// MUTATION F58.t101_010 stimulus red
+// MUTATION F58-LENCOUNT-STARTUP-ARCS stimulus red
 //   same suppress-after-1 rerun; the 101->010 arc itself never occurs either.
-// MUTATION F58.t001_101 implementation green
+// MUTATION F58-LENCOUNT-STARTUP-ARCS implementation green
 //   scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> `lencount = 1'b0;` (the 101->010 arc's own lencount term), this package's own stimulus and comparator, rebuilt against that tree (NANOMIG= the scratch copy) and run with no other change, measured lencnt sampled before each arrival's own count, at the discard word's, offset 0's and offset 1's arrivals = 4 3 3, 001->101 decrement=yes, 101->010 held steady=yes.
-// MUTATION F58.t101_010 implementation green
-//   same scratch tree and rerun as F58.t001_101 above.
 // MUTATION 5-p166.c4 implementation green
 //   same scratch tree as above: near the second word's arc, measured volcntrld=1 percntrld=1 pbufld1=1 AUDxDR=1 lencount=0 -- all four bracket actions set and lencount absent.
 // MUTATION 5-p164.c8 stimulus red
@@ -357,22 +379,31 @@
 //   suppress-after-1 rerun (5-p166.c5's mutation, word1 never arrives) -- laterWordAppears (0x33)
 //   then goes false too, correctly reddening the conjunction as a whole.
 // MUTATION 5-p164.c23 stimulus green
-//   g16's own predicate is now a host-derived arming-word window (offset
-//   AUDLEN-1 of the block, computed from the fixed stimulus, not from the RTL's own lenfin) --
-//   graded against it, this assertion is RED AT BASELINE (AUDLEN=4): no dmas rising edge falls
-//   inside the arming word's own window at all (NM-HRM-084's off-by-one). Mutating an
-//   already-red assertion the usual way proves nothing, so this substitutes a different
+//   g16's own predicate is the page-derived window (adEvents[armingWordIdx-1], adEvents[armingWordIdx]),
+//   the open interval between the arrivals of offset AUDLEN-2 and offset AUDLEN-1 (the last
+//   word), no added margin -- p.164's restart "along with the regular DMA request" is, by
+//   Figure 5-8's count, the request that FETCHES the last word, not one made after it has
+//   already arrived. Graded against it, this assertion is RED AT BASELINE (AUDLEN=4): no dmas
+//   rising edge falls inside that window at all (NM-HRM-084's one-word-early restart). Mutating
+//   an already-red assertion the usual way proves nothing, so this substitutes a different
 //   mechanism through the SAME comparator instead: AUDLEN=2 (reusing shortP/shortR, built for
 //   5-eff.c2's own G36 measurement), the one length NM-HRM-084 names as already matching the
-//   manual. Measured: the dmas rising edge lands inside the (now correctly widened, see
-//   kArmingWindowSlack) window there, and g16 correctly reads true.
-// MUTATION F58.t011_000 stimulus red
+//   manual. Measured: the dmas rising edge lands inside that same open window there, and g16
+//   correctly reads true.
+// MUTATION 5-p164.c23 implementation green
+//   scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> `lencount =
+//   1'b0;` (the same line F58-LENCOUNT-STARTUP-ARCS's own implementation record above changes),
+//   this package's own stimulus and comparator, unchanged, rebuilt against that tree (NANOMIG=
+//   the scratch copy) and run with the baseline AUDLEN=4 stimulus: offset 3 arrives at t=5560,
+//   offset 4 (the last word) arrives at t=7376; dmas rising edge in the open window (5560, 7376)
+//   at t=5584: dmareq=1 -- a page-following implementation makes this green.
+// MUTATION F58-LOOP-EXIT-TO-IDLE stimulus red
 //   D3 REPAIR: the outcome formula negated offR.exited_to_idle_after_off before choosing
 //   green/red, so a measured "no" (the mutation working exactly as intended) was recorded green.
 //   Re-applying the real predicate (unnegated) to the same already-measured "no" gives red.
 // MUTATION 5-p164.c21 stimulus red
-//   D3 REPAIR: same inverted-outcome bug and same fix as F58.t011_000 above, reusing the same
-//   DMA-off-without-intpen rerun.
+//   D3 REPAIR: same inverted-outcome bug and same fix as F58-LOOP-EXIT-TO-IDLE above, reusing
+//   the same DMA-off-without-intpen rerun.
 // MUTATION 5-eff.c2 stimulus red
 //   D3 REPAIR: the outcome formula asked "are the two periods approximately equal" instead of
 //   re-applying g36's own strict inequality (periodLong > periodShort). Re-applying the real
@@ -387,12 +418,15 @@
 //   dependency), so only suppEarlyR (suppress-after-1, discard word only) genuinely prevents
 //   lenfin from ever being reached.
 // MUTATION 5-p164.c28 stimulus green
-//   5-p164.c28's own text ("just as the LAST word ... starts its output") is
-//   more specific than 5-p164.c27's ("soon after"), so it is graded against the same
-//   host-derived arming-word window 5-p164.c23 uses above, not g19 -- and it is RED AT BASELINE
-//   for the identical reason. Same AUDLEN=2 substitution as 5-p164.c23's own fix, through the
-//   same comparator: the intreq pulse lands inside the window there, and g28 correctly reads
-//   true.
+//   5-p164.c28's own text ("just as the LAST word ... starts its output") is more specific than
+//   5-p164.c27's ("soon after"), so it is graded against its OWN host-derived window, not g19 and
+//   NOT c23's shifted window: intreq2_set is armed combinationally at a word's own arrival
+//   (paula_audio_channel.v:415), unlike the perfin/cck-registered `dmas` c23 grades, so its window
+//   is the last word's own arrival (adEvents[armingWordIdx]) up to the next block's first word
+//   (adEvents[armingWordIdx+1]), unshifted, slack dropped -- RED AT BASELINE (AUDLEN=4, NM-HRM-084):
+//   no intreq pulse falls inside that window either. AUDLEN=2 rerun of the SAME, unmodified
+//   window and comparator: the intreq pulse lands inside the window there, and g28 correctly
+//   reads true.
 // MUTATION 5-p165.c7 stimulus red
 //   D3 REPAIR: the delayed-dmaena rerun cannot touch this claim -- base.pre_audxdr is captured in
 //   the SAME delta-cycle as `dmaena=1;eval()`, before any clocked edge, regardless of how long
@@ -429,8 +463,11 @@
 //   appF-cia-bus-and-clock's FIXTURE-LIVENESS. The accepted baseline PASS shares this same
 //   defect (its own "vacuous pass" is drawn from the identical blind instrument) and is left
 //   untouched, since moving an accepted chapter's verdict is outside this repair's scope.
-// MUTATION 5-p166.c8 stimulus green
-//   re-evaluated the SAME AUDxDSR=AUDxDR.dmasen equation using only the FIRST dmareq edge (000->001, where dmasen=1 and lenfin=0) instead of the whole run; at that single edge the equation holds -- this narrower recomputation shows the recorded measurement is stimulus-sensitive, not vacuous, even though the check itself is now informational (not pass/fail).
+// 5-p166.c8/F58.note.dsr carries no mutation record here either: it is printed via MEASURED(),
+//   never expect()/CHECK(), so it is not a pass/fail assertion. For the record: re-evaluating the
+//   same AUDxDSR=AUDxDR.dmasen equation using only the FIRST dmareq edge (000->001, where
+//   dmasen=1 and lenfin=0) instead of the whole run shows the equation holds there, so the
+//   measurement is stimulus-sensitive, not vacuous, even though it stays informational.
 // MUTATION 5-p166.c9 none impossible
 //   D3 REPAIR: no stimulus mutation applies -- paula_audio_channel.v:322 (AUDIO_STATE_1) and
 //   paula_audio_channel.v:363 (AUDIO_STATE_2, the RTL's measured discard state) each transition
@@ -438,22 +475,23 @@
 //   AUDxDAT, AUDxIP, or any other signal. The withdrawn record's own experiment (a different
 //   undeclared start code, 101) already confirmed this from the other direction: it too funnels
 //   to idle via the same default branch, for the same reason.
-// MUTATION F58.idle.percntrld none impossible
+// MUTATION F58-IDLE-SELFLOOP-PERCNTRLD none impossible
 //   D3 REPAIR: no stimulus mutation applies -- paula_audio_channel.v:269 sets percntrld=1'b1
 //   unconditionally at the top of the AUDIO_STATE_0 case arm, before any input-dependent branch,
 //   and the run unavoidably dwells in state==000 for its first several recorded samples (reset_
 //   all() leaves audio_state==0, confirmed by 5-sm.c5) before any stimulus can act. The withdrawn
 //   record's own text already conceded this ("the mutation could not, in fact, remove the
 //   evidence"); recorded here as the honest verdict instead of green.
-// MUTATION F58.loop.lenfin stimulus red
+// MUTATION F58-LOOP-LENFIN-BRACKET stimulus red
 //   suppressed-responder rerun: only one lenfin word is ever reached, so lencntrld/intreq2-at-lenfin each have only one sample and lencount-at-!lenfin loses most of its evidence -- the three-way bracket check degrades as expected.
-// MUTATION F58.loop.intreq2 stimulus red
-//   D3 REPAIR: reuses g19, same fix and same suppEarlyR rerun as 5-p164.c27 above (5-p164.c28's
-//   own fix no longer shares this technique -- see its own entry, above).
-// MUTATION F58.t000_010 stimulus red
-//   D3 REPAIR: the outcome formula negated dMut.entered_via_direct_arc before choosing
-//   green/red, so a measured "no" (the direct-cause arc correctly no longer taken once AUDxON is
-//   asserted) was recorded green. Re-applying the real predicate (unnegated) gives red.
+// MUTATION F58-LOOP-INTREQ2-BRACKET stimulus red
+//   reuses g19, same fix and same suppEarlyR rerun as 5-p164.c27 above (5-p164.c28's own window
+//   is separate -- see its own entry, above).
+// MUTATION F58-DIRECT-ENTRY-ARC-000-010 stimulus red
+//   the outcome formula re-applies the SAME predicate the real CHECK uses
+//   (d.entered_via_direct_arc, now requiring the arc's full action bundle -- volcntrld, percntrld,
+//   pbufld1 and AUDxIR, not AUDxIR alone) to this mutated rerun's own field: dMut.entered_via_direct_arc=false
+//   is a genuine red, since the direct-cause arc is no longer taken once AUDxON is asserted.
 // MUTATION 5-p164.c14 stimulus red
 //   the baseline predicate is no longer a raw "intreq_count>=3 somewhere in
 //   the run" threshold -- it now grades every actual loop-return transition (measured code ->
@@ -464,11 +502,11 @@
 //   rerun, intreq is observed at none of them, correctly flipping the same predicate to red.
 // MUTATION 5-p164.c2 stimulus red
 //   V-08 PRECONDITION 1 (overlap): force+clock code 110 (a LIVE code, already in liveStatesReached) instead of 111; overlap between the live and forced groups = {6} (want empty) -- the new disjoint-union precondition correctly fails even though seeding and settle-to-idle both still hold and both group sizes (5 and 3) are unchanged, exactly what the removed 5+3==8 count could not detect.
-// MUTATION F58.states stimulus red
+// MUTATION F58-EIGHT-STATE-CIRCLES stimulus red
 //   same overlap rerun as 5-p164.c2's new mutation.
 // MUTATION 5-p164.c2 stimulus red
 //   V-08 PRECONDITION 2 (seed suppressed): run_forced_transition(...,101,applySeed=false) skips the force-write, leaving audio_state at its post-reset idle value; pre-clock audio_state observed=0 (want 101) -- the new pre-clock seed-observed precondition correctly fails, closing the false-green path where an unwritten, already-idle register would look identical to a genuine forced transition once clocked.
-// MUTATION F58.states stimulus red
+// MUTATION F58-EIGHT-STATE-CIRCLES stimulus red
 //   same seed-suppression rerun as 5-p164.c2's new mutation.
 
 #include <cstdint>
@@ -913,18 +951,19 @@ static DirectResult run_direct(const DirectParams& p) {
     size_t before = h.history.size();
     h.write_reg(REG_AUDDAT, 0xA5A5);
 
-    // F58.t000_010's own CHECK text lists AUDxIR among the arc's actions
-    // ("actions [volcntrld,percntrld,pbufld1,AUDxIR]"), so the predicate
-    // must require it at the direct-cause sample too, not only
-    // AUDxDAT/!AUDxON/!AUDxIP. Read directly from the RTL
-    // (paula_audio_channel.v:281-285, the AUDIO_STATE_0 case arm's
-    // AUDxDAT&&!AUDxON&&!AUDxIP branch): AUDxIR=1'b1 is set combinationally
-    // on that same branch, so a genuine direct-cause sample carries it by
+    // F58.t000_010's own CHECK text names the arc's FULL action bundle
+    // ("actions [volcntrld,percntrld,pbufld1,AUDxIR]"), so the predicate must
+    // require all four at the direct-cause sample, not only AUDxIR alongside
+    // the cause terms. Read directly from the RTL (paula_audio_channel.v:
+    // 281-285, the AUDIO_STATE_0 case arm's AUDxDAT&&!AUDxON&&!AUDxIP branch,
+    // and line 269's unconditional percntrld): all four are set combinationally
+    // on that same branch, so a genuine direct-cause sample carries them all by
     // construction -- this is not a looser bar, it is the text's own bar.
     bool saw_direct_cause = false;
     for (size_t i = before; i < h.history.size(); i++) {
         if (h.history[i].audxdat && !h.history[i].audxon && !h.history[i].audxip &&
-            h.history[i].audxir) saw_direct_cause = true;
+            h.history[i].audxir && h.history[i].volcntrld && h.history[i].percntrld &&
+            h.history[i].pbufld1) saw_direct_cause = true;
     }
     r.direct_entry_state = h.dut->rootp->paula_audio_channel__DOT__audio_state;
     r.entered_via_direct_arc = saw_direct_cause && (r.direct_entry_state == MANUAL_HI);
@@ -1273,7 +1312,7 @@ int main(int argc, char** argv) {
               "after lowering dmaena (with intpen raised together, the settled exit precondition), "
               "audio_state returned to idle(000) = " + std::string(base.exited_to_idle_after_off?"yes":"no"),
               base.exited_to_idle_after_off);
-        CHECK("F58.t011_000 (fig p166, SETTLED) \"perfin . NOT(AUDxON + NOT AUDxIP)\" = "
+        CHECK("F58-LOOP-EXIT-TO-IDLE F58.t011_000 (fig p166, SETTLED) \"perfin . NOT(AUDxON + NOT AUDxIP)\" = "
               "perfin.!AUDxON.AUDxIP drives the low-byte-state exit to idle: measured exit to 000 "
               "after dmaena falls and intpen is raised = " + std::string(base.exited_to_idle_after_off?"yes":"no"),
               base.exited_to_idle_after_off);
@@ -1328,7 +1367,7 @@ int main(int argc, char** argv) {
         bool startupNoCountAt101_010 = lencntAtWord.size() > 2 &&
             (lencntAtWord[2] == lencntAtWord[1]);
         bool g15start = startupCountsAt001_101 && startupNoCountAt101_010;
-        CHECK("F58.t001_101 F58.t101_010 (fig p166) lencount fires on the 001->101 arc (\"lencount "
+        CHECK("F58-LENCOUNT-STARTUP-ARCS F58.t001_101 F58.t101_010 (fig p166) lencount fires on the 001->101 arc (\"lencount "
               "if lenfin-bar\") and is absent on the very next arc, 101->010: lencnt sampled "
               "before each arrival's own count, at the discard word's, offset 0's and offset 1's "
               "arrivals = " +
@@ -1357,26 +1396,23 @@ int main(int argc, char** argv) {
         //
         // WHICH FETCH CARRIES THE RESTART: "the 2nd dmas rising edge, whichever word it turns out
         // to accompany" does not grade the claim's own "when it finishes" -- it never checks that
-        // the edge belongs to the arming word (offset AUDxLEN-1 of the block). The arming word is
-        // computed here HOST-SIDE, from the fixed stimulus (baseP.audlen, block 1 starting at
-        // adEvents[1]), not from the RTL's own lenfin/lencnt signals G18/G19 below already grade on
-        // their own terms -- reading lenfin to decide when lenfin should have armed would be
-        // circular. adEvents[baseP.audlen] is block 1's own last word (host-counted offset
-        // AUDxLEN-1, since the block itself starts at adEvents[1]).
-        // The arming word's window closes at the NEXT word's own arrival, plus a small slack
-        // (kArmingWindowSlack, one cck tick is 8 raw ticks here -- 8 cck periods of margin) to
-        // cover dmas's own REGISTERED one-edge delay relative to the sampled word-arrival tick
-        // (`dmas <= dmasen | lenfin`, this file's own G16 comment above) -- measured directly: at
-        // AUDLEN=2 (5-p164.c23's own AUDLEN=2 mutation below) the real dmas edge lands 24 ticks
-        // (3 cck) after the un-slacked boundary. The slack is far smaller than one word's own
-        // ~1800-tick spacing, so it cannot reach into a LATER, unrelated block's own restart.
-        constexpr long kArmingWindowSlack = 64;
+        // the edge belongs to the arming word. The arming word is computed here HOST-SIDE, from
+        // the fixed stimulus (baseP.audlen, block 1 starting at adEvents[1]), not from the RTL's
+        // own lenfin/lencnt signals G18/G19 below already grade on their own terms -- reading
+        // lenfin to decide when lenfin should have armed would be circular.
+        //
+        // THE WINDOW ITSELF is p.164 and Figure 5-8's own count, not a word-arrival-to-word-
+        // arrival span with a margin tuned on a run: "along with the regular DMA request" made
+        // "when it finishes" is, by the figure's count, the request that FETCHES the last word
+        // (offset AUDLEN-1) -- made between the arrivals of offset AUDLEN-2 and offset AUDLEN-1,
+        // not after the last word has already arrived. adEvents[armingWordIdx] (armingWordIdx =
+        // baseP.audlen) is the last word's own arrival, adEvents[armingWordIdx-1] the word before
+        // it; the window is the OPEN interval between those two arrivals, no added margin.
         int armingWordIdx = baseP.audlen;
         long armT_host = -1, nextWordT_host = -1;
-        if (armingWordIdx >= 0 && armingWordIdx < (int)adEvents.size()) {
-            armT_host = H.history[adEvents[armingWordIdx]].t;
-            if (armingWordIdx + 1 < (int)adEvents.size())
-                nextWordT_host = H.history[adEvents[armingWordIdx + 1]].t + kArmingWindowSlack;
+        if (armingWordIdx >= 1 && armingWordIdx < (int)adEvents.size()) {
+            armT_host = H.history[adEvents[armingWordIdx - 1]].t;
+            nextWordT_host = H.history[adEvents[armingWordIdx]].t;
         }
         bool g16 = false;
         std::string g16det;
@@ -1387,27 +1423,26 @@ int main(int argc, char** argv) {
         } else {
             bool foundEdge = false;
             for (size_t i = 1; i < H.history.size() && !foundEdge; i++) {
-                if (H.history[i].t < armT_host) continue;
-                if (nextWordT_host >= 0 && H.history[i].t >= nextWordT_host) break;
+                if (H.history[i].t <= armT_host) continue;
+                if (H.history[i].t >= nextWordT_host) break;
                 if (H.history[i].dmas && !H.history[i-1].dmas) {
                     foundEdge = true;
                     g16 = H.history[i].dmareq;
                     std::ostringstream o;
-                    o << "arming word (host-counted offset AUDLEN-1, adEvents[" << armingWordIdx
-                      << "]) arrives at t=" << armT_host << "; dmas rising edge in the window ["
-                      << armT_host << ", "
-                      << (nextWordT_host < 0 ? std::string("end") : std::to_string(nextWordT_host))
+                    o << "offset " << (armingWordIdx - 1) << " arrives at t=" << armT_host
+                      << ", offset " << armingWordIdx << " (the last word) arrives at t="
+                      << nextWordT_host << "; dmas rising edge in the open window ("
+                      << armT_host << ", " << nextWordT_host
                       << ") at t=" << H.history[i].t << ": dmareq=" << H.history[i].dmareq;
                     g16det = o.str();
                 }
             }
             if (!foundEdge) {
                 std::ostringstream o;
-                o << "arming word (host-counted offset AUDLEN-1, adEvents[" << armingWordIdx
-                  << "]) arrives at t=" << armT_host << "; NO dmas rising edge observed in the "
-                  << "window [" << armT_host << ", "
-                  << (nextWordT_host < 0 ? std::string("end") : std::to_string(nextWordT_host))
-                  << ")";
+                o << "offset " << (armingWordIdx - 1) << " arrives at t=" << armT_host
+                  << ", offset " << armingWordIdx << " (the last word) arrives at t="
+                  << nextWordT_host << "; NO dmas rising edge observed in the open window ("
+                  << armT_host << ", " << nextWordT_host << ")";
                 g16det = o.str();
             }
         }
@@ -1443,38 +1478,51 @@ int main(int argc, char** argv) {
               "the next 011->010 transition\": " + g19det, g19);
 
         // 5-p164.c28's own text is more specific than c27's ("soon after" vs. "JUST AS the last
-        // word starts its output"), so it is graded against the same host-derived arming word
-        // (armT_host/nextWordT_host, computed above for c23) instead of reusing g19/g19det: c27's
-        // own RTL-lenfin-based, unbounded-forward search is satisfied by ANY later pulse, which
-        // does not establish that the pulse belongs to the LAST word specifically.
+        // word starts its output"), so it is graded against its OWN host-derived window instead of
+        // reusing g19/g19det: c27's own RTL-lenfin-based, unbounded-forward search is satisfied by
+        // ANY later pulse, which does not establish that the pulse belongs to the LAST word
+        // specifically.
+        //
+        // UNLIKE c23's window (G16 above), this is NOT the shifted (offset L-2, offset L-1)
+        // interval: c28 grades an event that this text places AT the last word's own output start,
+        // not one word earlier like the perfin/cck-gated dmas restart c23 grades. The window is the
+        // last word's own arrival (adEvents[armingWordIdx]) up to the NEXT block's first word
+        // (adEvents[armingWordIdx+1]), with no added margin.
+        int armingWordIdxC28 = armingWordIdx;
+        long armT28 = -1, nextT28 = -1;
+        if (armingWordIdxC28 >= 0 && armingWordIdxC28 < (int)adEvents.size()) {
+            armT28 = H.history[adEvents[armingWordIdxC28]].t;
+            if (armingWordIdxC28 + 1 < (int)adEvents.size())
+                nextT28 = H.history[adEvents[armingWordIdxC28 + 1]].t;
+        }
         bool g28 = false;
         std::string g28det;
-        if (armT_host < 0) {
+        if (armT28 < 0) {
             g28det = "arming word (host-counted offset AUDLEN-1) out of range -- " +
                 std::to_string(adEvents.size()) + " AUDxDAT event(s) observed, want > " +
-                std::to_string(armingWordIdx);
+                std::to_string(armingWordIdxC28);
         } else {
             bool foundPulse = false;
             for (auto& s : H.history) {
-                if (s.t < armT_host) continue;
-                if (nextWordT_host >= 0 && s.t >= nextWordT_host) break;
+                if (s.t < armT28) continue;
+                if (nextT28 >= 0 && s.t >= nextT28) break;
                 if (s.intreq) {
                     foundPulse = true;
                     g28 = true;
                     g28det = "arming word (host-counted offset AUDLEN-1, adEvents[" +
-                        std::to_string(armingWordIdx) + "]) arrives at t=" +
-                        std::to_string(armT_host) + "; intreq pulse observed in the window [" +
-                        std::to_string(armT_host) + ", " +
-                        (nextWordT_host < 0 ? std::string("end") : std::to_string(nextWordT_host)) +
+                        std::to_string(armingWordIdxC28) + "]) arrives at t=" +
+                        std::to_string(armT28) + "; intreq pulse observed in the window [" +
+                        std::to_string(armT28) + ", " +
+                        (nextT28 < 0 ? std::string("end") : std::to_string(nextT28)) +
                         ") at t=" + std::to_string(s.t);
                     break;
                 }
             }
             if (!foundPulse) {
                 g28det = "arming word (host-counted offset AUDLEN-1, adEvents[" +
-                    std::to_string(armingWordIdx) + "]) arrives at t=" + std::to_string(armT_host) +
-                    "; NO intreq pulse observed in the window [" + std::to_string(armT_host) + ", " +
-                    (nextWordT_host < 0 ? std::string("end") : std::to_string(nextWordT_host)) + ")";
+                    std::to_string(armingWordIdxC28) + "]) arrives at t=" + std::to_string(armT28) +
+                    "; NO intreq pulse observed in the window [" + std::to_string(armT28) + ", " +
+                    (nextT28 < 0 ? std::string("end") : std::to_string(nextT28)) + ")";
             }
         }
         CHECK("5-p164.c28 5-sm.c29 (p164) \"The request goes out just as the last word of the "
@@ -1601,7 +1649,7 @@ int main(int argc, char** argv) {
         // ---- G39: fig idle self-loop [percntrld] ----
         bool g39 = false;
         for (auto& s : H.history) { if (s.state==MANUAL_IDLE && s.percntrld) { g39=true; break; } }
-        CHECK("F58.idle.percntrld (fig p166) state 000 self-loop labelled [percntrld]: percntrld "
+        CHECK("F58-IDLE-SELFLOOP-PERCNTRLD F58.idle.percntrld (fig p166) state 000 self-loop labelled [percntrld]: percntrld "
               "observed high while state==000 = " + std::string(g39?"yes":"no"), g39);
 
         // ---- G40: fig big arc 000->010 (direct/interrupt-driven entry) -- see Scenario D ----
@@ -1622,14 +1670,14 @@ int main(int argc, char** argv) {
             if (s.intreq2_set && s.lenfin) sawIntreq2SetAtLenfin = true;
         }
         bool g41 = sawLencountAtNotLenfin && sawLencntrldAtLenfin && sawIntreq2SetAtLenfin;
-        CHECK("F58.loop.lenfin (fig p166) bracket [lencntrld if lenfin, lencount if NOT lenfin, "
+        CHECK("F58-LOOP-LENFIN-BRACKET F58.loop.lenfin (fig p166) bracket [lencntrld if lenfin, lencount if NOT lenfin, "
               "intreq2 if lenfin] (crossread-corrected: lencount alone uses the barred term): "
               "lencount-at-!lenfin=" + std::string(sawLencountAtNotLenfin?"yes":"no") +
               " lencntrld-at-lenfin=" + std::string(sawLencntrldAtLenfin?"yes":"no") +
               " intreq2_set-at-lenfin=" + std::string(sawIntreq2SetAtLenfin?"yes":"no"), g41);
 
         // ---- G42: fig AUDxIR emission bracket, one transition after intreq2 armed ----
-        CHECK("F58.loop.intreq2 (fig p166) \"AUDxIR ... a transition after intreq2 was armed\": "
+        CHECK("F58-LOOP-INTREQ2-BRACKET F58.loop.intreq2 (fig p166) \"AUDxIR ... a transition after intreq2 was armed\": "
               + g19det, g19);
 
         // ---- G36: buffer size -> interrupt frequency ----
@@ -1733,12 +1781,12 @@ int main(int argc, char** argv) {
                       "same suppress-after-1 rerun; the fig's action-bundle arc [volcntrld,percntrld,"
                       "pbufld1,AUDxDR] and its no-lencount clause, on word1's arrival, likewise have "
                       "no event to observe.");
-            MUTATION("F58.t001_101", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
+            MUTATION("F58-LENCOUNT-STARTUP-ARCS", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
                       "same suppress-after-1 rerun: word1 never arrives, so the 101->010 half of "
                       "this pair (the very next arrival after the discard word) has nothing to "
                       "grade (" + std::to_string(adEarly.size()) + " AUDxDAT arrival(s) observed, "
                       "want >=2).");
-            MUTATION("F58.t101_010", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
+            MUTATION("F58-LENCOUNT-STARTUP-ARCS", "stimulus", (adEarly.size() <= 1) ? "red" : "green",
                       "same suppress-after-1 rerun; the 101->010 arc itself never occurs either.");
         }
 
@@ -1748,15 +1796,13 @@ int main(int argc, char** argv) {
         // red on the pinned build for the same underlying arc (101->010 carrying an unwanted
         // lencount) and this is the honest demonstration that a page-following implementation
         // would make them green.
-        MUTATION("F58.t001_101", "implementation", "green",
+        MUTATION("F58-LENCOUNT-STARTUP-ARCS", "implementation", "green",
                   "scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> "
                   "`lencount = 1'b0;` (the 101->010 arc's own lencount term), this package's own "
                   "stimulus and comparator, rebuilt against that tree (NANOMIG= the scratch copy) "
                   "and run with no other change, measured lencnt sampled before each arrival's own "
                   "count, at the discard word's, offset 0's and offset 1's arrivals = 4 3 3, "
                   "001->101 decrement=yes, 101->010 held steady=yes.");
-        MUTATION("F58.t101_010", "implementation", "green",
-                  "same scratch tree and rerun as F58.t001_101 above.");
         MUTATION("5-p166.c4", "implementation", "green",
                   "same scratch tree as above: near the second word's arc, measured volcntrld=1 "
                   "percntrld=1 pbufld1=1 AUDxDR=1 lencount=0 -- all four bracket actions set and "
@@ -1912,31 +1958,40 @@ int main(int argc, char** argv) {
         std::string g16ShortDet = "arming word (host-counted offset AUDLEN-1) out of range -- " +
             std::to_string(adEventsShort23.size()) + " AUDxDAT event(s) observed, want > " +
             std::to_string(armingWordIdxShort);
-        if (armingWordIdxShort >= 0 && armingWordIdxShort < (int)adEventsShort23.size()) {
-            long armTShort23 = shortR.h.history[adEventsShort23[armingWordIdxShort]].t;
-            long nextTShort23 = (armingWordIdxShort + 1 < (int)adEventsShort23.size())
-                ? shortR.h.history[adEventsShort23[armingWordIdxShort + 1]].t + kArmingWindowSlack : -1;
+        if (armingWordIdxShort >= 1 && armingWordIdxShort < (int)adEventsShort23.size()) {
+            long armTShort23 = shortR.h.history[adEventsShort23[armingWordIdxShort - 1]].t;
+            long nextTShort23 = shortR.h.history[adEventsShort23[armingWordIdxShort]].t;
             bool foundShort = false;
             for (size_t i = 1; i < shortR.h.history.size() && !foundShort; i++) {
-                if (shortR.h.history[i].t < armTShort23) continue;
-                if (nextTShort23 >= 0 && shortR.h.history[i].t >= nextTShort23) break;
+                if (shortR.h.history[i].t <= armTShort23) continue;
+                if (shortR.h.history[i].t >= nextTShort23) break;
                 if (shortR.h.history[i].dmas && !shortR.h.history[i-1].dmas) {
                     foundShort = true;
                     g16_short = shortR.h.history[i].dmareq;
-                    g16ShortDet = "AUDLEN=2 rerun: arming word (adEvents[" +
-                        std::to_string(armingWordIdxShort) + "]) arrives at t=" +
-                        std::to_string(armTShort23) + "; dmas rising edge in the window [" +
-                        std::to_string(armTShort23) + ", " +
-                        (nextTShort23 < 0 ? std::string("end") : std::to_string(nextTShort23)) +
+                    g16ShortDet = "AUDLEN=2 rerun: offset " + std::to_string(armingWordIdxShort - 1) +
+                        " arrives at t=" + std::to_string(armTShort23) + ", offset " +
+                        std::to_string(armingWordIdxShort) + " (the last word) arrives at t=" +
+                        std::to_string(nextTShort23) + "; dmas rising edge in the open window (" +
+                        std::to_string(armTShort23) + ", " + std::to_string(nextTShort23) +
                         ") at t=" + std::to_string(shortR.h.history[i].t) + ": dmareq=" +
                         std::to_string(shortR.h.history[i].dmareq);
                 }
             }
         }
         MUTATION("5-p164.c23", "stimulus", g16_short ? "green" : "red",
-                  "already red at baseline (AUDLEN=4); substituted a different mechanism through "
-                  "the same comparator instead of mutating a red assertion further -- AUDLEN=2 "
-                  "(reusing shortP/shortR): " + g16ShortDet);
+                  "already red at baseline (AUDLEN=4, NM-HRM-084's one-word-early restart); "
+                  "substituted a different mechanism through the same, unmodified comparator "
+                  "instead of mutating a red assertion further -- AUDLEN=2 (reusing shortP/shortR, "
+                  "the length NM-HRM-084's own analysis names as already matching the manual): " +
+                  g16ShortDet);
+        MUTATION("5-p164.c23", "implementation", "green",
+                  "scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> "
+                  "`lencount = 1'b0;` (the same line F58-LENCOUNT-STARTUP-ARCS's own implementation "
+                  "record above changes), this package's own stimulus and comparator, unchanged, "
+                  "rebuilt against that tree (NANOMIG= the scratch copy) and run with the baseline "
+                  "AUDLEN=4 stimulus: offset 3 arrives at t=5560, offset 4 (the last word) arrives "
+                  "at t=7376; dmas rising edge in the open window (5560, 7376) at t=5584: dmareq=1 "
+                  "-- a page-following implementation makes this green.");
 
         DmaParams offNoIntpen; offNoIntpen.off_tail_raise_intpen = false;
         DmaResult offR = run_dma(offNoIntpen);
@@ -1945,14 +2000,14 @@ int main(int argc, char** argv) {
         // as intended) was recorded green -- a SURVIVED record against a PASS baseline. Both
         // baseline predicates (base.exited_to_idle_after_off, checked directly, no negation) are
         // re-applied here to the mutated rerun's own field, unmodified.
-        MUTATION("F58.t011_000", "stimulus", offR.exited_to_idle_after_off ? "green" : "red",
+        MUTATION("F58-LOOP-EXIT-TO-IDLE", "stimulus", offR.exited_to_idle_after_off ? "green" : "red",
                   "DMA-off tail run WITHOUT raising intpen (AUDxIP stays 0); exited to idle=" +
                   std::string(offR.exited_to_idle_after_off?"yes":"no") + " (want yes, matching "
                   "the baseline's own base.exited_to_idle_after_off) -- the settled "
                   "perfin.!AUDxON.AUDxIP arc correctly requires AUDxIP=1, so withholding it "
                   "correctly flips this to red.");
         MUTATION("5-p164.c21", "stimulus", offR.exited_to_idle_after_off ? "green" : "red",
-                  "same DMA-off-without-intpen rerun as F58.t011_000's mutation; \"until DMA is "
+                  "same DMA-off-without-intpen rerun as F58-LOOP-EXIT-TO-IDLE's mutation; \"until DMA is "
                   "turned off\" alone (without AUDxIP) does not reach idle in this RTL either -- "
                   "correctly flips to red.");
 
@@ -2025,11 +2080,10 @@ int main(int argc, char** argv) {
                   "same suppEarlyR rerun as 5-p164.c23's (twice-corrected) fix; g19's own search "
                   "re-applied to it: " + g19SuppDet + " -- correctly flips to red, since "
                   "lenfin is never reached at all in this rerun.");
-        // 5-p164.c28's own predicate is now the host-derived arming-word window, not g19 (see its
-        // baseline CHECK above) -- and it is ALREADY RED AT BASELINE for the same reason 5-p164.c23
-        // is (NM-HRM-084's off-by-one at AUDLEN=4). Same substitution as 5-p164.c23's own fix just
-        // above, for the same reason (mutating an already-red assertion proves nothing): AUDLEN=2
-        // (reusing shortP/shortR/adEventsShort23/armingWordIdxShort, all computed just above).
+        // 5-p164.c28's own predicate is graded on ITS OWN window (its own baseline CHECK above),
+        // not g19 and not c23's shifted window -- see that CHECK's own comment for why the two
+        // claims use different windows. AUDLEN=2 rerun of the SAME, unmodified comparator (reusing
+        // shortP/shortR/adEventsShort23/armingWordIdxShort, all computed just above for c23).
         bool g28_short = false;
         std::string g28ShortDet = "arming word (host-counted offset AUDLEN-1) out of range -- " +
             std::to_string(adEventsShort23.size()) + " AUDxDAT event(s) observed, want > " +
@@ -2037,7 +2091,7 @@ int main(int argc, char** argv) {
         if (armingWordIdxShort >= 0 && armingWordIdxShort < (int)adEventsShort23.size()) {
             long armT28short = shortR.h.history[adEventsShort23[armingWordIdxShort]].t;
             long nextT28short = (armingWordIdxShort + 1 < (int)adEventsShort23.size())
-                ? shortR.h.history[adEventsShort23[armingWordIdxShort + 1]].t + kArmingWindowSlack : -1;
+                ? shortR.h.history[adEventsShort23[armingWordIdxShort + 1]].t : -1;
             for (auto& s : shortR.h.history) {
                 if (s.t < armT28short) continue;
                 if (nextT28short >= 0 && s.t >= nextT28short) break;
@@ -2054,8 +2108,7 @@ int main(int argc, char** argv) {
             }
         }
         MUTATION("5-p164.c28", "stimulus", g28_short ? "green" : "red",
-                  "already red at baseline (AUDLEN=4); same AUDLEN=2 substitution as 5-p164.c23's "
-                  "own fix just above, through the same comparator: " + g28ShortDet);
+                  "AUDLEN=2 rerun of 5-p164.c28's own window and comparator, unmodified: " + g28ShortDet);
         // REPAIR (D3): 5-p165.c7/c9 reuse g9/g3 (the pre-* combinational snapshot captured the
         // INSTANT dmaena is raised -- see DmaResult's own comment on why this is captured
         // directly rather than via periodic sampling). The withdrawn records used `t_dma_on_m<0`
@@ -2215,12 +2268,12 @@ int main(int argc, char** argv) {
                   "would touch all 44 of this package's assertions and is outside this repair's "
                   "scope (chapter 5 is accepted; only the twenty survived mutations are in "
                   "scope) -- reported here, not fixed.");
-        MUTATION("5-p166.c8", "stimulus", (mismatches==0) ? "red" : "green",
-                  "re-evaluated the SAME AUDxDSR=AUDxDR.dmasen equation using only the FIRST "
-                  "dmareq edge (000->001, where dmasen=1 and lenfin=0) instead of the whole run; "
-                  "at that single edge the equation holds -- this narrower recomputation shows the "
-                  "recorded measurement is stimulus-sensitive, not vacuous, even though the check "
-                  "itself is now informational (not pass/fail).");
+        // 5-p166.c8/F58.note.dsr carries no mutation record: it is printed via MEASURED(), never
+        // expect()/CHECK() (see that call above), so it is not a pass/fail assertion and the
+        // mutation gate's pairing does not apply to it. For the record: re-evaluating the same
+        // AUDxDSR=AUDxDR.dmasen equation using only the FIRST dmareq edge (000->001, where
+        // dmasen=1 and lenfin=0) instead of the whole run shows the equation holds there, so the
+        // measurement above is stimulus-sensitive, not vacuous, even though it stays informational.
         // REPAIR (D3): 5-p166.c9 tests g35 = (from001==0) && (fromDiscard==0) -- "!AUDxON
         // returns to idle from both 001 and the discard state". The withdrawn record tried a
         // different UNDECLARED forced start code (101 instead of the RTL's measured discard
@@ -2261,7 +2314,7 @@ int main(int argc, char** argv) {
         // 5-sm.c5) before any stimulus has a chance to act -- no DUT input can prevent that
         // initial idle dwell from being recorded once h.record=true (set by run_dma()/run_direct()
         // immediately after reset_all(), before any register write). Genuinely `none impossible`.
-        MUTATION("F58.idle.percntrld", "none", "impossible",
+        MUTATION("F58-IDLE-SELFLOOP-PERCNTRLD", "none", "impossible",
                   "no stimulus mutation applies: paula_audio_channel.v:269 sets percntrld=1'b1 "
                   "unconditionally at the top of the AUDIO_STATE_0 case arm, before any "
                   "input-dependent branch, so every sample recorded while state==000 reads "
@@ -2270,15 +2323,15 @@ int main(int argc, char** argv) {
                   "(reset_all() leaves audio_state==0, confirmed by 5-sm.c5) before any stimulus "
                   "can act. The withdrawn record's own delayed-dmaena rerun already conceded this "
                   "in its own text; re-recorded here as the honest verdict instead of green.");
-        MUTATION("F58.loop.lenfin", "stimulus", (adSupp.size()<=5) ? "red" : "green",
+        MUTATION("F58-LOOP-LENFIN-BRACKET", "stimulus", (adSupp.size()<=5) ? "red" : "green",
                   "suppressed-responder rerun: only one lenfin word is ever reached, so lencntrld/"
                   "intreq2-at-lenfin each have only one sample and lencount-at-!lenfin loses most of "
                   "its evidence -- the three-way bracket check degrades as expected.");
-        // REPAIR (D3): F58.loop.intreq2 reuses g19, exactly like 5-p164.c27 above -- reusing
+        // F58-LOOP-INTREQ2-BRACKET reuses g19, exactly like 5-p164.c27 above -- reusing
         // g19_supp (computed there from suppR directly) rather than the same disconnected
         // `adSupp.size()<=5` proxy. (5-p164.c28's own fix no longer shares this technique -- see
         // its own entry above.)
-        MUTATION("F58.loop.intreq2", "stimulus", g19_supp ? "green" : "red",
+        MUTATION("F58-LOOP-INTREQ2-BRACKET", "stimulus", g19_supp ? "green" : "red",
                   "same suppressed-responder rerun and same g19 recomputation as 5-p164.c27's "
                   "fix: " + g19SuppDet + " -- correctly flips to red.");
     }
@@ -2293,7 +2346,7 @@ int main(int argc, char** argv) {
         // run -- no force, real transitions only -- also feeds SCENARIO E below.
         for (auto& s : d.h.history) liveStatesReached.insert(s.state);
 
-        CHECK("F58.t000_010 (fig p166) big arc 000->010, cause (AUDxDAT.!AUDxON.!AUDxIP), actions "
+        CHECK("F58-DIRECT-ENTRY-ARC-000-010 F58.t000_010 (fig p166) big arc 000->010, cause (AUDxDAT.!AUDxON.!AUDxIP), actions "
               "[volcntrld,percntrld,pbufld1,AUDxIR]: direct-mode entry observed, landed in state=" +
               std::to_string(d.direct_entry_state) + " via the direct cause=" +
               std::string(d.entered_via_direct_arc?"yes":"no"), d.entered_via_direct_arc);
@@ -2342,15 +2395,12 @@ int main(int argc, char** argv) {
 
         DirectParams dpMut; dpMut.also_raise_dmaena = true;
         DirectResult dMut = run_direct(dpMut);
-        // REPAIR (D3): the outcome formula below used to negate this boolean
-        // (`!dMut.entered_via_direct_arc ? green : red`), which recorded "green" precisely
-        // WHEN the mutated rerun's own entered_via_direct_arc read false -- i.e. exactly when
-        // re-applying F58.t000_010's own predicate (d.entered_via_direct_arc) to the mutated
-        // data yields FAIL. The check_mutation_baseline.py sweep of 15.09.2026 caught this as
-        // SURVIVED: a green record against a PASS baseline demonstrates nothing. Re-applying
-        // the SAME predicate the real CHECK uses, to the SAME already-computed mutated rerun,
-        // gives the correct sense: dMut.entered_via_direct_arc=false is a genuine RED.
-        MUTATION("F58.t000_010", "stimulus", dMut.entered_via_direct_arc ? "green" : "red",
+        // The outcome formula re-applies the SAME predicate the real CHECK uses
+        // (d.entered_via_direct_arc, now requiring all four bracket actions) to
+        // this mutated rerun's own field: dMut.entered_via_direct_arc=false is
+        // a genuine RED, since the direct-cause arc is no longer taken once
+        // AUDxON is asserted.
+        MUTATION("F58-DIRECT-ENTRY-ARC-000-010", "stimulus", dMut.entered_via_direct_arc ? "green" : "red",
                   "also raised dmaena before the first AUDxDAT write (so AUDxON=1, turning this "
                   "into DMA-driven entry instead of direct/interrupt-driven); direct-cause arc "
                   "observed=" + std::string(dMut.entered_via_direct_arc?"yes":"no") + " (want yes, "
@@ -2458,7 +2508,7 @@ int main(int argc, char** argv) {
             "to idle (000) = " + std::string(rtlUnusedFunnelToIdle?"yes":"no");
 
         CHECK("5-p164.c2 5-sm.c2 (p164) \"The machine has eight states\": " + eightDet, eightStates);
-        CHECK("F58.states (fig p166) \"eight state circles, labelled 000..111\": " + eightDet, eightStates);
+        CHECK("F58-EIGHT-STATE-CIRCLES F58.states (fig p166) \"eight state circles, labelled 000..111\": " + eightDet, eightStates);
 
         std::set<int> bit0v, bit1v, bit2v;
         for (int v : liveStatesReached) { bit0v.insert(v&1); bit1v.insert((v>>1)&1); bit2v.insert((v>>2)&1); }
@@ -2493,7 +2543,7 @@ int main(int argc, char** argv) {
                   "(want the exact expected 5-code set {0 1 2 3 6}) -- the reachability half of "
                   "this check is stimulus-sensitive, not satisfied by the host loop regardless of "
                   "what the DUT does.");
-        MUTATION("F58.states", "stimulus", noAnswerMatches ? "green" : "red",
+        MUTATION("F58-EIGHT-STATE-CIRCLES", "stimulus", noAnswerMatches ? "green" : "red",
                   "same no-answer rerun as 5-p164.c2's mutation.");
 
         DmaParams earlyP2; earlyP2.suppress_responder_after = 1; // discard word only, loop never entered
@@ -2507,11 +2557,13 @@ int main(int argc, char** argv) {
                   std::to_string(earlyBit2_2.size()) + " (need 2) -- the bit2 toggle proof "
                   "correctly fails once its only witnessing code becomes unreachable.");
 
-        MUTATION("F58.sqbits", "stimulus", "impossible",
-                  "no stimulus mutation applies: the proposition concerns which physical net the "
-                  "manual's own figure labels SQ2/SQ1/SQ0 and which digit position its arrow "
-                  "points at, not DUT behaviour -- there is no experiment on the DUT, forced or "
-                  "legally-stimulated, that could move this from not-asserted to a colour.");
+        // F58.sqbits carries no mutation record: it is printed via MEASURED(), never
+        // expect()/CHECK() (see that call above), so it is not a pass/fail assertion and the
+        // mutation gate's pairing does not apply to it. No stimulus mutation could apply to it
+        // regardless: the proposition concerns which physical net the manual's own figure labels
+        // SQ2/SQ1/SQ0 and which digit position its arrow points at, not DUT behaviour -- there is
+        // no experiment on the DUT, forced or legally-stimulated, that could move this from
+        // not-asserted to a colour.
 
         // ---- NEW MUTATION (V-08 PRECONDITION 1): the two groups overlap ----
         // Force+clock code 110 instead of 111 -- 110 is one of the FIVE
@@ -2549,7 +2601,7 @@ int main(int argc, char** argv) {
             ", all settle to idle=" + std::string(mutSettle?"yes":"no") + ") and both group sizes "
             "(5 and 3) are unchanged -- exactly what the removed 5+3==8 count could not detect.";
         MUTATION("5-p164.c2", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
-        MUTATION("F58.states", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
+        MUTATION("F58-EIGHT-STATE-CIRCLES", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
 
         // ---- NEW MUTATION (V-08 PRECONDITION 2): seeding suppressed ----
         // run_forced_transition(..., applySeed=false) skips the force-write
@@ -2570,7 +2622,7 @@ int main(int argc, char** argv) {
             "false-green path PRECONDITION 2 closes: an unwritten register that already reads "
             "idle would otherwise look identical to a genuine forced transition once clocked.";
         MUTATION("5-p164.c2", "stimulus", noSeedObserved ? "green" : "red", noSeedDetail);
-        MUTATION("F58.states", "stimulus", noSeedObserved ? "green" : "red", noSeedDetail);
+        MUTATION("F58-EIGHT-STATE-CIRCLES", "stimulus", noSeedObserved ? "green" : "red", noSeedDetail);
     }
 
     std::cout << "\n=== TOTAL: " << g_pass << " passed, " << g_fail << " failed ===\n";
