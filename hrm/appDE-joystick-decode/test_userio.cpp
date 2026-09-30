@@ -426,17 +426,32 @@ int main(int argc, char** argv) {
         uint16_t p4_word = joy0dat_for(stim({BIT_RIGHT})); // pin 4 alone
         Decode p4_d = decode16(p4_word);
 
-        expect(p3_d.left == 1, "opus:8-tbl8-1.c8+sol:8-pin.c9");
+        expect(p3_d.left == 1,
+            "opus:8-tbl8-1.c8+sol:8-pin.c9 -- Table 8-1 (p.228), "
+            "Proportional Controller (Pair) column, pin 3 = \"Left button\"; "
+            "Figure 8-4 (p.234, \"Typical Paddle Wiring Diagram\") draws the "
+            "LEFT PADDLE's fire button on pin 3 too, and p.234's own prose "
+            "agrees (\"For the paddle controllers, the left and right "
+            "joystick direction lines serve as the fire buttons for the "
+            "left and right paddles.\"); pin 3 alone reads JOY0DAT bit 9 = 1 "
+            "(Table 8-3, p.232: bit 9 = left).");
 
         record(
             "opus:8-tbl8-1.c12+sol:8-pin.c13 -- Table 8-1 (p.228), "
             "Proportional Controller (Pair) column, pin 4 = \"Right button\" "
             "(p.332's own connector figure agrees: RBUT* on pin 4, \"See "
-            "Digital Joystick\"). NOT GRADED: Figure 8-4 (p.234, \"Typical "
-            "Paddle Wiring Diagram\"), read directly off figures/p234.png, "
-            "prints \"pin 3\" for the fire button under BOTH the LEFT "
-            "PADDLE and the RIGHT PADDLE diagrams -- not a text-layer "
-            "artifact, confirmed at the image. Table 8-1/p.332 and Figure "
+            "Digital Joystick\"). p.234's own prose, under the figure, sides "
+            "with Table 8-1: \"For the paddle controllers, the left and "
+            "right joystick direction lines serve as the fire buttons for "
+            "the left and right paddles.\" NOT GRADED: Figure 8-4 (p.234, "
+            "\"Typical Paddle Wiring Diagram\"), read directly off "
+            "figures/p234.png, prints \"pin 3\" for the fire button under "
+            "BOTH the LEFT PADDLE and the RIGHT PADDLE diagrams -- not a "
+            "text-layer artifact, confirmed at the image. The same figure's "
+            "RIGHT PADDLE diagram also repeats the LEFT paddle's pin 9 for "
+            "the pot, where Table 8-1 prints \"right POT\" on pin 5 -- a "
+            "second, independent point where Figure 8-4's right-paddle "
+            "wiring does not match Table 8-1. Table 8-1/p.332 and Figure "
             "8-4 disagree on which pin carries the right paddle's button; "
             "this package does not adjudicate which printed source is "
             "right, per the NM-HRM-062 precedent for a source that "
