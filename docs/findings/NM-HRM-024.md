@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_audiodma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L80-L82) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L80-L82) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer) |
+| **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer) — two fixtures: `agnus_audiodma` alone, which has no chipset input, and the Agnus top, `agnus`, whose `ecs` input the fixture drives to 0 and to 1 |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red: `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` in `hrm/ch5-audio-location-pointer` |
+| **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed: 9 passed, 1 failed on `agnus_audiodma` alone, 1 passed, 2 failed at the Agnus top). On `agnus_audiodma` alone, `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`, against p. 139's "high three bits": bit 3 of AUDxLCH alone gives word address `0x40000`, bit 4 alone `0x80000`. At the Agnus top with `ecs` at 0, `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`, against the same sentence, with the same two readings, and `LCH-ECS-PORT-CHANGES-WHAT-LOADS`, against p. 266's "(high 3 bits, 5 bits if ECS)": AUD0LCH = $001F with AUD0LCL = $FFFF gives `0xFFFFF` at `ecs` 0, where the page gives `0x3FFFF`, and `0xFFFFF` at `ecs` 1, as the page gives. In the same runs `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`, the same walking one read against the five-bit width, and `TOP-LEVEL-LIVENESS`, a known word through the Agnus top's register bus at `ecs` 1, are green |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
 
@@ -51,9 +51,23 @@ It latches five bits, unconditionally:
 **The module has no `ecs` port, no chipset input, and no mention of a chipset in
 its 157 lines.** There is nothing here to gate on, even in principle.
 
+**The Agnus top has an `ecs` input and does not pass it to the audio engine.**
+It is declared at
+[`agnus.v:97`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L97)
+and connected to the bitplane, sprite, Copper, blitter and beam-counter
+instances, as at
+[`agnus.v:369`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L369), `.ecs(ecs),`.
+The audio engine's instantiation,
+[`agnus.v:344-357`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L344-L357),
+has ten connections and no `ecs` among them.
+
 ### Measured
 
-A walking one through all five bits of `AUDxLCH`, on every one of the four
+The package reads AUDxLCH at two boundaries, one test source each, 10 passed
+and 3 failed between them.
+
+**`agnus_audiodma` alone** (`test_agnus_audiodma.cpp`, `9 passed, 1 failed`):
+a walking one through all five bits of `AUDxLCH`, on every one of the four
 channels:
 
 | written | `address_out` |
@@ -62,8 +76,28 @@ channels:
 | bit 4 alone | `0x80000` — not zero |
 | all five | word address `0xFFFFF` |
 
-Every bit lands at `address_out` bits 16–20. An OCS Agnus should ignore the top
-two.
+Every bit lands at `address_out` bits 16–20. `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`,
+the five-bit width, is green; `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`, which
+requires bits 3 and 4 to have no effect, is red. With no chipset input to
+select by, this fixture grades the three-bit reading as the only one.
+
+**The Agnus top** (`test_agnus_top_audio_ecs.cpp`, `1 passed, 2 failed`):
+AUD0LCH and AUD0LCL are written through the CPU register bus with `ecs` driven,
+and the pointer is read at `address_out` in channel 0's audio DMA slot.
+`TOP-LEVEL-LIVENESS`, AUD0LCH = $0015 and AUD0LCL = $2A2A at `ecs` 1, reads
+`0xA9515`, the word address written. With `ecs` at 0:
+
+| written | `address_out` | the pages at `ecs` 0 |
+|---|---|---|
+| bit 3 of AUD0LCH alone | `0x40000` | `0` |
+| bit 4 of AUD0LCH alone | `0x80000` | `0` |
+| AUD0LCH = $001F, AUD0LCL = $FFFF | `0xFFFFF` | `0x3FFFF` |
+
+At `ecs` 1 the last write reads `0xFFFFF`, as p. 266 gives.
+`LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`, the first two rows, and
+`LCH-ECS-PORT-CHANGES-WHAT-LOADS`, the third with its `ecs` 1 half, are red.
+An OCS Agnus should ignore the top two bits; this one takes them whatever
+`ecs` says.
 
 ---
 
@@ -166,6 +200,12 @@ per engine.
   have no effect on the address; its label names what it finds. The module has no
   chipset input to select the OCS alternative by, so the expectation is absolute
   rather than per chipset.
+- **At the Agnus top it is graded per chipset.** With `ecs` a port the fixture
+  drives, `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` requires the three-bit
+  reading at `ecs` 0, and `LCH-ECS-PORT-CHANGES-WHAT-LOADS` requires it there
+  and p. 266's five bits at `ecs` 1. The `ecs` 1 half reads what the page
+  gives, the `ecs` 0 half does not, and `TOP-LEVEL-LIVENESS` is green, so the
+  register bus and the audio DMA slot the reds read through are live.
 
 ---
 
