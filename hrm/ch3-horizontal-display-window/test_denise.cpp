@@ -261,57 +261,62 @@
 // the baseline again; the pass/fail totals quoted in an entry are those of
 // the run that recorded it. Every mutation is a STIMULUS change to this
 // file's own inputs or Harness call sites; no expected value or oracle
-// text is touched, and nanomig/ is never touched):
+// text is touched, and nanomig/ is never touched). Baseline: 13 passed, 0
+// failed (D-BRDNTRAN-HAS-NO-EFFECT is a record(), not an expect() -- it
+// carries no pass/fail state to add to this count). Every entry below was
+// replayed against the current package (MUTATE=<name> against the built
+// binary, per-mutation) to confirm the numbers quoted are what this package
+// measures now, not what an earlier revision measured before
+// D-BRDNTRAN-HAS-NO-EFFECT was repaired from an expect() to a record():
 //
 // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
-//   changed from 0xACE1 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
-//   FIXTURE-DATA-PATH-LIVE newly red (alongside the already-red
-//   D-BRDNTRAN-HAS-NO-EFFECT). Replayable as MUTATE=FIXTURE-DATA-PATH-LIVE.
-//   Reverted: 11/1.
+//   changed from 0xACE1 to 0x0000 -> FAIL ("12 passed, 1 failed"), only
+//   FIXTURE-DATA-PATH-LIVE newly red. Replayable as
+//   MUTATE=FIXTURE-DATA-PATH-LIVE. Reverted: 13/0.
 // MUTATION G2-WINDOW-DEFINES-VISIBLE-AREA stimulus red: the wide window's
 //   DIWSTOP changed from $50 to $40 (collapsing it to the narrow window's
-//   own width) -> FAIL ("10 passed, 2 failed"), only G2-WINDOW-DEFINES-
+//   own width) -> FAIL ("12 passed, 1 failed"), only G2-WINDOW-DEFINES-
 //   VISIBLE-AREA newly red. Replayable as MUTATE=G2-WINDOW-DEFINES-VISIBLE-
-//   AREA. Reverted: 11/1.
+//   AREA. Reverted: 13/0.
 // MUTATION G3-DEF-CORNERS stimulus red: the DIWSTRT-moved comparison's
-//   second measurement changed from $30 to $40 -> FAIL ("10 passed, 2
+//   second measurement changed from $30 to $40 -> FAIL ("12 passed, 1
 //   failed"), only G3-DEF-CORNERS newly red. Replayable as MUTATE=G3-DEF-
-//   CORNERS. Reverted: 11/1.
+//   CORNERS. Reverted: 13/0.
 // MUTATION G3-BITS-H7-H0 stimulus red: kStartSweepValues[3] (the bit-2
-//   isolation point) changed from $06 to $07 -> FAIL ("10 passed, 2
+//   isolation point) changed from $06 to $07 -> FAIL ("12 passed, 1
 //   failed"), only G3-BITS-H7-H0 newly red. Replayable as MUTATE=G3-BITS-
-//   H7-H0. Reverted: 11/1.
+//   H7-H0. Reverted: 13/0.
 // MUTATION G4-H8-FORCED-RANGE stimulus red: the offset probe's DIWSTOP
 //   changed from $20 to $21 (breaking the identical-raw-byte comparison)
-//   -> FAIL ("10 passed, 2 failed"), only G4-H8-FORCED-RANGE newly red.
-//   Replayable as MUTATE=G4-H8-FORCED-RANGE. Reverted: 11/1.
+//   -> FAIL ("12 passed, 1 failed"), only G4-H8-FORCED-RANGE newly red.
+//   Replayable as MUTATE=G4-H8-FORCED-RANGE. Reverted: 13/0.
 // MUTATION G5-DEFAULT-81-C1-320PX stimulus red: DIWSTOP changed from $C1
-//   to $C2 -> FAIL ("10 passed, 2 failed"), only G5-DEFAULT-81-C1-320PX
-//   newly red. Replayable as MUTATE=G5-DEFAULT-81-C1-320PX. Reverted: 11/1.
+//   to $C2 -> FAIL ("12 passed, 1 failed"), only G5-DEFAULT-81-C1-320PX
+//   newly red. Replayable as MUTATE=G5-DEFAULT-81-C1-320PX. Reverted: 13/0.
 // MUTATION G6-MODE-AND-RESOLUTION-INVARIANCE stimulus red: the HIRES
-//   measurement's DIWSTRT changed from $50 to $51 -> FAIL ("10 passed, 2
+//   measurement's DIWSTRT changed from $50 to $51 -> FAIL ("12 passed, 1
 //   failed"), only G6-MODE-AND-RESOLUTION-INVARIANCE newly red. Replayable
 //   as MUTATE=G6-MODE-AND-RESOLUTION-INVARIANCE. Reverted:
-//   11/1.
+//   13/0.
 // MUTATION G7-ECS-DIWHIGH-EXPANDS-RANGE stimulus red: the DIWHIGH
-//   override write changed from (1<<startH8) to 0x0000 -> FAIL ("10
-//   passed, 2 failed"), only G7-ECS-DIWHIGH-EXPANDS-RANGE newly red.
-//   Replayable as MUTATE=G7-ECS-DIWHIGH-EXPANDS-RANGE. Reverted: 11/1.
+//   override write changed from (1<<startH8) to 0x0000 -> FAIL ("12
+//   passed, 1 failed"), only G7-ECS-DIWHIGH-EXPANDS-RANGE newly red.
+//   Replayable as MUTATE=G7-ECS-DIWHIGH-EXPANDS-RANGE. Reverted: 13/0.
 // MUTATION G8-DIWHIGH-H8-BITS-OVERRIDE stimulus red: the start-only
 //   isolation write dropped its stop-H8 neutralising bit (from
-//   (1<<startH8)|(1<<stopH8) to (1<<startH8) alone) -> FAIL ("10 passed, 2
+//   (1<<startH8)|(1<<stopH8) to (1<<startH8) alone) -> FAIL ("12 passed, 1
 //   failed"), only G8-DIWHIGH-H8-BITS-OVERRIDE newly red. Replayable as
-//   MUTATE=G8-DIWHIGH-H8-BITS-OVERRIDE. Reverted: 11/1.
+//   MUTATE=G8-DIWHIGH-H8-BITS-OVERRIDE. Reverted: 13/0.
 // MUTATION G9-DIWHIGH-RESERVED-BITS-NO-EFFECT stimulus red: each
 //   reserved-bit iteration's write dropped the shared base_diwhigh H8
-//   bits, leaving only the reserved bit under test -> FAIL ("10 passed, 2
+//   bits, leaving only the reserved bit under test -> FAIL ("12 passed, 1
 //   failed"), only G9-DIWHIGH-RESERVED-BITS-NO-EFFECT newly red.
 //   Replayable as MUTATE=G9-DIWHIGH-RESERVED-BITS-NO-EFFECT. Reverted:
-//   11/1.
+//   13/0.
 // MUTATION G11-BRDRBLNK-WORKS stimulus red: the BRDRBLNK write changed
-//   from 0x0020 to 0x0000 -> FAIL ("10 passed, 2 failed"), only
+//   from 0x0020 to 0x0000 -> FAIL ("12 passed, 1 failed"), only
 //   G11-BRDRBLNK-WORKS newly red. Replayable as MUTATE=G11-BRDRBLNK-WORKS.
-//   Reverted: 11/1.
+//   Reverted: 13/0.
 // D-BRDNTRAN-HAS-NO-EFFECT carries no MUTATION entry: it is a record(),
 // declining its seven claim ids as absent (NM-HRM-015, withdrawn), not an
 // assertion -- there is no red/green state for a mutation to move it
@@ -325,10 +330,9 @@
 //   non-zero BPL1DAT sample (0xFFFF) is written at scan index 100, well
 //   inside the DIWSTRT=$30/DIWSTOP=$90 window, planting one real object
 //   where the assertion otherwise expects none for the whole scan -> FAIL
-//   ("11 passed, 2 failed"), only G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT
-//   newly red (alongside the already-red D-BRDNTRAN-HAS-NO-EFFECT).
-//   Replayable as MUTATE=G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT. Reverted:
-//   12/1.
+//   ("12 passed, 1 failed"), only G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT
+//   newly red. Replayable as MUTATE=G12-BACKGROUND-SHOWS-WHERE-NO-OBJECT.
+//   Reverted: 13/0.
 //
 // WHY FIVE IDS SIT ON G13: 3-colortable.c9, 3-ct.c05, 3-hscr.f07,
 // 3-colortable.c8 and 3-ct.c04 sit on
@@ -349,10 +353,9 @@
 // MUTATION G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 stimulus red: the second
 //   run's COLOR00 write changed from $00A to the same $0F0 the first run
 //   uses, so neither the border nor the background reading can differ
-//   between the two runs -> FAIL ("12 passed, 2 failed"), only
-//   G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 newly red (alongside the
-//   already-red D-BRDNTRAN-HAS-NO-EFFECT). Replayable as
-//   MUTATE=G13-BORDER-AND-BACKGROUND-TRACK-COLOR00. Reverted: 13/1.
+//   between the two runs -> FAIL ("12 passed, 1 failed"), only
+//   G13-BORDER-AND-BACKGROUND-TRACK-COLOR00 newly red. Replayable as
+//   MUTATE=G13-BORDER-AND-BACKGROUND-TRACK-COLOR00. Reverted: 13/0.
 
 #include <array>
 #include <cstdint>
