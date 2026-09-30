@@ -31,8 +31,8 @@
 // general, not COPEN.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. Every
-// assertion was mutated at the STIMULUS on 05.09.2026 and each mutation was
-// reverted immediately after observing red.
+// assertion is mutated at the STIMULUS, and each mutation is reverted
+// immediately after observing red.
 // MUTATION W1 stimulus red the WAIT target moved from line $20 to line $00, which the beam has already passed, so the WAIT never blocks and there is no off-the-bus stretch to observe
 // MUTATION W2 stimulus red the WAIT target moved to line $90, unreachable inside the cycle budget, so the Copper never wakes and never takes a memory cycle again
 // MUTATION W3 stimulus red a self-issued COPJMP1 strobe added to the list, so the Copper legitimately jumps back and its word offsets stop increasing
@@ -226,9 +226,9 @@ int main(int argc, char** argv) {
         //
         // The gap must also be a real one. Counting requests *between* two
         // adjacent ticks yields zero whether the Copper waited quietly or never
-        // waited at all, and the assertion cannot tell those apart: on
-        // 05.09.2026 a stimulus mutation that moved the WAIT to an
-        // already-passed line left this check green. The beam starts at line
+        // waited at all, and the assertion cannot tell those apart: a
+        // stimulus mutation that moves the WAIT to an already-passed line
+        // leaves this check green. The beam starts at line
         // $10 and the WAIT is for line $20, so a genuine block spans sixteen
         // lines; requiring more than one line's worth of cycles admits the real
         // wait and rejects the degenerate one, without pinning the exact
