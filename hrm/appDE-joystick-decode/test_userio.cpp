@@ -105,19 +105,11 @@
 //   instead of pin 3 for the "pin 3 alone" probe; JOY0DAT bit9 stayed 0,
 //   failing the Table-8-1-graded clause.
 //
-// ADDED (followups.md coverage gap: "p.332 LBUT*/RBUT* rows and Table 8-1's
-// Prop-Pair cells for pins 3/4 graded nowhere under their own claim ids"):
 // Table 8-1 (p.228), "Proportional Controller (Pair)" column, pins 3/4 --
-// opus:8-tbl8-1.c8/c12, sol:8-pin.c9/c13 (master inventory:
-// hrm-testpipeline/work/2026-09-14_ch8_s1_classified_all.jsonl). Both were
-// classified "not-asserted: absent" ("no readable register bit fed by the
-// port's pin-3/pin-4 line") -- wrong on this fixture's own evidence: pin 3
-// and pin 4 clearly feed JOY0DAT<9> and JOY0DAT<1>, already proven live by
-// sol:E-joystick.c8+opus:E-joystick.c9 and by the pin-3/pin-4 composition
-// assertions elsewhere in this file. Reversed the same direction this
-// file's own header note already reverses the pin-9 "Unused" call the
-// OTHER way (checking the actual evidence rather than trusting classify's
-// stated reason). PIN 3 (left button): uncontested, graded. PIN 4 (right
+// opus:8-tbl8-1.c8/c12, sol:8-pin.c9/c13. Pin 3 and pin 4 feed JOY0DAT<9>
+// and JOY0DAT<1>, proven live by sol:E-joystick.c8+opus:E-joystick.c9 and
+// by the pin-3/pin-4 composition assertions elsewhere in this file. PIN 3
+// (left button): uncontested, graded. PIN 4 (right
 // button): Table 8-1 and p.332's own connector figure both put it on pin 4,
 // but Figure 8-4 (p.234), read directly off figures/p234.png (not the text
 // layer), prints "pin 3" for the fire button under BOTH the LEFT PADDLE and
@@ -401,9 +393,8 @@ int main(int argc, char** argv) {
 
     // opus:8-tbl8-1.c8+sol:8-pin.c9 / opus:8-tbl8-1.c12+sol:8-pin.c13 --
     // Table 8-1 (p.228), "Proportional Controller (Pair)" column: pin 3 =
-    // "Left button", pin 4 = "Right button". Coverage gap (followups.md):
-    // both were classified not-asserted/absent and never assigned to a
-    // package. PIN 3 is uncontested (Figure 8-4, p.234, also draws the LEFT
+    // "Left button", pin 4 = "Right button".
+    // PIN 3 is uncontested (Figure 8-4, p.234, also draws the LEFT
     // paddle's fire button on pin 3) and is graded. PIN 4 is CONTESTED:
     // Table 8-1 and p.332 put the right paddle's button on pin 4, but
     // Figure 8-4 prints "pin 3" under the RIGHT PADDLE diagram too (verified
