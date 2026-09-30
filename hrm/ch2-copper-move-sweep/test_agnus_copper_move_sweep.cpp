@@ -135,13 +135,17 @@
 // mutation, run alone and reverted, moved the count to 91 passed, 2 failed
 // with exactly the one targeted line red, verified with `make -B test`.
 //
-// ADDED (followups.md "inverse control (004)"): five APPBTILDE-ECS1 rows,
-// the ecs=1 individual twin of the five named APPBTILDE ecs=0 rows
-// (BLTCON0L, BLTSIZV, BLTSIZH, SPRHDAT, DENISEID). New baseline: 97 passed,
-// 1 failed (the same pre-existing NM-HRM-004 aggregate red; all five new
-// rows are green).
+// APPBTILDE-ECS1-BLTCON0L, -BLTSIZV, -BLTSIZH, -SPRHDAT and -DENISEID: five
+// per-row assertions, the ecs=1 individual twin of the five named APPBTILDE
+// ecs=0 rows, each grading only "accepted with CDANG set" (see the comment
+// above them). Baseline: 97 passed, 1 failed (the pre-existing NM-HRM-004
+// SWEEP red; all five rows and their CDANG-clear records are green/printed).
 //
-// MUTATION APPBTILDE-ECS1 stimulus red the BLTCON0L row's tested address changed from 0x2D to 0xC0 (CONTROL_REG, always accepted at ecs=1 regardless of CDANG); the row read "accepted with CDANG clear" too, breaking the blocked-then-admitted pattern the assertion checks (96 passed, 2 failed, the pre-existing NM-HRM-004 SWEEP red unaffected); reverted (97 passed, 1 failed). The five APPBTILDE-ECS1 rows begin their label with the word APPBTILDE-ECS1, so the gate reads one id for the family; this record covers it.
+// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: ecs_cdang1 (the ecs=1 CDANG-set sweep every row and SWEEP ecs=1 cdang=1 read) computed as sweep_accepted_set(true, false) instead of sweep_accepted_set(true, true) -- $2D no longer appears in the accepted set; 91 passed, 7 failed (SWEEP ecs=1 cdang=1 and all five APPBTILDE-ECS1-* rows go red together, the pre-existing NM-HRM-004 SWEEP ecs=1 cdang=0 red unaffected); reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same run as APPBTILDE-ECS1-BLTCON0L (the shared ecs_cdang1 sweep) -- $2E no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same run as APPBTILDE-ECS1-BLTCON0L -- $2F no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same run as APPBTILDE-ECS1-BLTCON0L -- $3C no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same run as APPBTILDE-ECS1-BLTCON0L -- $3E no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
 
 #include <cstdint>
 #include <functional>
@@ -903,40 +907,76 @@ int main(int argc, char** argv) {
         "APPBTILDE $3F DSKSYNC ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
         "(Appendix B '~', p.290, byte $07E) [claims: B-copper-tilde.c26 B-dsksync.copper]");
 
-    // --- Per-row "~" marks, ECS-ONLY INVERSE CONTROL (followups.md "inverse
-    // control (004)"): the same five rows, individually, at ecs=1. The
-    // SWEEP-level "SWEEP ecs=1 cdang=0 vs Appendix C" check above already
-    // grades the WHOLE $20-$3F band against Appendix C's wider ECS reading
-    // and is red at baseline (NM-HRM-004: this RTL's ecs=1/cdang=0 range
-    // matches ecs=0/cdang=0 exactly, not Appendix C's "same as OCS CDANG=1"
-    // equivalence). That red is a claim about the AGGREGATE band. These five
-    // are a narrower, DIFFERENT claim, individually: does the per-register
-    // "~" mark's own OWN behaviour -- blocked with CDANG clear, admitted
-    // once CDANG is set (Appendix B, p.287's legend, chipset-general) --
-    // still hold at ecs=1, one register at a time? illegal = (DA8-1<=$3F &&
-    // !cdang) || (DA8-1<=$1F && !ecs) (agnus_copper.v, header disclosure
-    // above) predicts yes for every one of these five (each DA8-1 <= $3F,
-    // so ecs never enters their own term at cdang=0, and cdang=1 always
-    // clears the first term regardless of ecs) -- the inverse of the
-    // aggregate red: this control shows the per-register CDANG gate itself
-    // is not the broken part, only the wider ECS-admission Appendix C
-    // describes. Graded from the SWEEP ecs=1 accepted sets already computed
-    // above (ecs_cdang0, ecs_cdang1), same method as the ecs=0 rows above.
-    checks.expect(!ecs_cdang0.count(0x2D) && ecs_cdang1.count(0x2D),
-        "APPBTILDE-ECS1 $2D BLTCON0L ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
-        "(Appendix B '~', p.289, byte $05A; ecs=1 inverse control for NM-HRM-004) [claims: B-bltcon0l.copper B-copper-tilde.c14]");
-    checks.expect(!ecs_cdang0.count(0x2E) && ecs_cdang1.count(0x2E),
-        "APPBTILDE-ECS1 $2E BLTSIZV ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
-        "(Appendix B '~', p.289, byte $05C; ecs=1 inverse control for NM-HRM-004) [claims: B-bltsizv.copper B-copper-tilde.c15]");
-    checks.expect(!ecs_cdang0.count(0x2F) && ecs_cdang1.count(0x2F),
-        "APPBTILDE-ECS1 $2F BLTSIZH ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
-        "(Appendix B '~', p.289, byte $05E; ecs=1 inverse control for NM-HRM-004) [claims: B-bltsizh.copper B-copper-tilde.c16]");
-    checks.expect(!ecs_cdang0.count(0x3C) && ecs_cdang1.count(0x3C),
-        "APPBTILDE-ECS1 $3C SPRHDAT ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
-        "(Appendix B '~', p.290, byte $078; ecs=1 inverse control for NM-HRM-004) [claims: B-copper-tilde.c24 B-sprhdat.copper]");
-    checks.expect(!ecs_cdang0.count(0x3E) && ecs_cdang1.count(0x3E),
-        "APPBTILDE-ECS1 $3E DENISEID ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
-        "(Appendix B '~', p.290, byte $07C; ecs=1 inverse control for NM-HRM-004) [claims: B-copper-tilde.c25 B-deniseid.copper]");
+    // --- Per-row "~" marks, ECS-ONLY INVERSE CONTROL: the same five rows,
+    // individually, at ecs=1. The SWEEP-level "SWEEP ecs=1 cdang=0 vs
+    // Appendix C" check above already grades the WHOLE $20-$3F band against
+    // Appendix C's wider ECS reading and is red at baseline (NM-HRM-004:
+    // this RTL's ecs=1/cdang=0 range matches ecs=0/cdang=0 exactly, not
+    // Appendix C's "same as OCS CDANG=1" equivalence). That red is a claim
+    // about the AGGREGATE band. These five are a narrower, DIFFERENT claim,
+    // individually, and only the half the two pages agree on is graded:
+    // "accepted with CDANG set" (p.287's legend, "unless the \"copper "
+    // "danger bit\", COPCON is set true"; p.310/Appendix C, "if this bit is "
+    // "set, the Copper can access all of the Amiga chip registers"). The
+    // "CDANG clear" half is recorded below each row, not graded: Appendix
+    // B's '~' legend (p.287) reads it as blocked, and p.310 gives these five
+    // addresses (byte $05A-$07C) as inside the $DFF03E-$DFF07E range the ECS
+    // Copper can access with CDANG clear -- the two pages disagree, and per
+    // the NM-HRM-062 precedent a source that disagrees with itself is
+    // measured and recorded, not adjudicated here. Graded and measured from
+    // the SWEEP ecs=1 accepted sets already computed above (ecs_cdang0,
+    // ecs_cdang1), same method as the ecs=0 rows above. Each row carries its
+    // own leading id so the mutation-label gate reads it separately.
+    checks.expect(ecs_cdang1.count(0x2D),
+        "APPBTILDE-ECS1-BLTCON0L $2D BLTCON0L ecs=1: accepted on reg_address_out with CDANG set "
+        "(Appendix B '~', p.289, byte $05A) [claims: B-bltcon0l.copper B-copper-tilde.c14]");
+    checks.record(
+        "APPBTILDE-ECS1-BLTCON0L-CDANG-CLEAR $2D BLTCON0L ecs=1, CDANG clear: Appendix B's '~' "
+        "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
+        "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $05A as inside the "
+        "admitted range (\"If this bit is clear, the Copper can access the address range from "
+        "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2D) reads " +
+        std::string(ecs_cdang0.count(0x2D) ? "accepted" : "rejected") + ".");
+    checks.expect(ecs_cdang1.count(0x2E),
+        "APPBTILDE-ECS1-BLTSIZV $2E BLTSIZV ecs=1: accepted on reg_address_out with CDANG set "
+        "(Appendix B '~', p.289, byte $05C) [claims: B-bltsizv.copper B-copper-tilde.c15]");
+    checks.record(
+        "APPBTILDE-ECS1-BLTSIZV-CDANG-CLEAR $2E BLTSIZV ecs=1, CDANG clear: Appendix B's '~' "
+        "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
+        "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $05C as inside the "
+        "admitted range (\"If this bit is clear, the Copper can access the address range from "
+        "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2E) reads " +
+        std::string(ecs_cdang0.count(0x2E) ? "accepted" : "rejected") + ".");
+    checks.expect(ecs_cdang1.count(0x2F),
+        "APPBTILDE-ECS1-BLTSIZH $2F BLTSIZH ecs=1: accepted on reg_address_out with CDANG set "
+        "(Appendix B '~', p.289, byte $05E) [claims: B-bltsizh.copper B-copper-tilde.c16]");
+    checks.record(
+        "APPBTILDE-ECS1-BLTSIZH-CDANG-CLEAR $2F BLTSIZH ecs=1, CDANG clear: Appendix B's '~' "
+        "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
+        "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $05E as inside the "
+        "admitted range (\"If this bit is clear, the Copper can access the address range from "
+        "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2F) reads " +
+        std::string(ecs_cdang0.count(0x2F) ? "accepted" : "rejected") + ".");
+    checks.expect(ecs_cdang1.count(0x3C),
+        "APPBTILDE-ECS1-SPRHDAT $3C SPRHDAT ecs=1: accepted on reg_address_out with CDANG set "
+        "(Appendix B '~', p.290, byte $078) [claims: B-copper-tilde.c24 B-sprhdat.copper]");
+    checks.record(
+        "APPBTILDE-ECS1-SPRHDAT-CDANG-CLEAR $3C SPRHDAT ecs=1, CDANG clear: Appendix B's '~' "
+        "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
+        "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $078 as inside the "
+        "admitted range (\"If this bit is clear, the Copper can access the address range from "
+        "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($3C) reads " +
+        std::string(ecs_cdang0.count(0x3C) ? "accepted" : "rejected") + ".");
+    checks.expect(ecs_cdang1.count(0x3E),
+        "APPBTILDE-ECS1-DENISEID $3E DENISEID ecs=1: accepted on reg_address_out with CDANG set "
+        "(Appendix B '~', p.290, byte $07C) [claims: B-copper-tilde.c25 B-deniseid.copper]");
+    checks.record(
+        "APPBTILDE-ECS1-DENISEID-CDANG-CLEAR $3E DENISEID ecs=1, CDANG clear: Appendix B's '~' "
+        "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
+        "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $07C as inside the "
+        "admitted range (\"If this bit is clear, the Copper can access the address range from "
+        "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($3E) reads " +
+        std::string(ecs_cdang0.count(0x3E) ? "accepted" : "rejected") + ".");
 
     // --- Per-row no mark (pp.290-293): writable regardless of COPCON --
     // accepted on reg_address_out with CDANG clear AND with CDANG set.
