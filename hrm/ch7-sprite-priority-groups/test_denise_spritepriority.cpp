@@ -23,7 +23,7 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // ORDER OF WORK: SPECIFICATION.md in this directory (assertions, uids,
-// scope) was written and committed (c9ac428) from the claims file's own
+// scope) was written and committed from the claims file's own
 // quotations alone -- denise_spritepriority.v was not opened until after
 // that commit, per the build brief's gate. Everything below that depends on
 // a port name, bit width, or the internal grouping/priority-encoder
@@ -370,7 +370,7 @@ int main(int argc, char** argv) {
             "nsprite=0x01, 0x02 and 0x03 do NOT give identical sprsel "
             "everywhere swept -- disagrees with the claims file's own "
             "classify.evidence measurement for this fixture; this is a "
-            "finding about that measurement, reported to the lead.");
+            "finding about that measurement.");
     }
     checks.record(
         "The collision half of 'for playfield priority and collision "
@@ -391,7 +391,7 @@ int main(int argc, char** argv) {
 
 // RESULTS: built and run under WSL/Verilator 5.052 against the pinned
 // nanomig submodule, after this file's own header/assertions/expected
-// values were written following the committed SPECIFICATION.md (c9ac428).
+// values were written following the committed SPECIFICATION.md.
 // 9 passed, 0 failed. All 8 claim-bearing assertions plus the fixture-live
 // control hold at the denise_spritepriority boundary, as tested here. No
 // red findings. The MEASURED line reproduces, without disagreement, the
