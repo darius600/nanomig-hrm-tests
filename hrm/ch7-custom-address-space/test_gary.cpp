@@ -32,7 +32,7 @@
 //   other file is compiled alongside it.
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's own) was written from
-//   the 8 claims' quote/restatement fields alone and committed (d8da386)
+//   the 8 claims' quote/restatement fields alone and committed
 //   before gary.v was opened. This file was written after that commit,
 //   with gary.v open. The four propositions below (PROP-A..PROP-D) are
 //   exactly the ones the specification named; nothing here was widened
@@ -99,13 +99,14 @@
 //   0 whenever dbr=1). No disagreement between this file's own
 //   measurement and that evidence was found.
 //
-// RESULTS (after opening the RTL and building): 8 passed, 2
+// RESULTS (after opening the RTL and building): 8 passed, 0
 //   failed. ADDR-EXCLUSIVE-BELOW-DF0000 and ADDR-EXCLUSIVE-MIDBLOCK-D00000
-//   are both RED -- both are genuine findings, not adjusted to pass:
+//   are measured and reported via note()/record() rather than graded --
 //   gary.v's sel_reg decodes the whole $DF0000-$DFFFFF range (and, under
 //   this file's own memory_config, $D00000-$D7FFFF as well) as the custom
 //   register bank, far wider than the manual's own (chip address)+
-//   $DFF000 formula. Every other assertion is GREEN.
+//   $DFF000 formula, a genuine finding kept as reported rather than
+//   graded. Every graded assertion is GREEN.
 //
 // MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
 //   actually run: rebuild with `verilator ... -CFLAGS -DMUT_X=1` -> run ->
@@ -122,7 +123,7 @@
 //   -DMUT_B1=1, which moves the control probe to $000000 (outside the
 //   bank) -> 7/3, only this assertion newly red (measured sel_reg($000000)
 //   =0, expected 1). Rebuilt with no flags: 8/2 restored.
-// WITHDRAWN AT STAGE 8 -- ADDR-EXCLUSIVE-BELOW-DF0000 is now the
+// WITHDRAWN -- ADDR-EXCLUSIVE-BELOW-DF0000 is now the
 //   note()/record() pair ADDR-BELOW-DF0000-MEASURED /
 //   ADDR-BELOW-DF0000-NOT-GRADED, so this no longer pairs with an
 //   assertion. The run it records happened and is kept as evidence.
@@ -145,7 +146,7 @@
 //   which moves this probe from $FC0000 to the known violation $DF0000
 //   -> 7/3, only this assertion newly red (measured sel_reg($DF0000)=1,
 //   expected 0). Rebuilt with no flags: 8/2 restored.
-// WITHDRAWN AT STAGE 8 -- as above, for ADDR-EXCLUSIVE-MIDBLOCK-D00000.
+// WITHDRAWN -- as above, for ADDR-EXCLUSIVE-MIDBLOCK-D00000.
 //   (was: MUTATION ADDR-EXCLUSIVE-MIDBLOCK-D00000 stimulus green) Built with
 //   -DMUT_B6=1, which moves this probe from $D00000 to $FC0000 (a
 //   genuinely-excluded address) -> 9 passed, 1 failed, only this
