@@ -156,11 +156,11 @@
 // Edited in a private copy, not the committed file; each edit touches only
 // that one row's own `checks.expect(...)` line, not the shared ecs_cdang1
 // variable, so the SWEEP ecs=1 cdang=1 line is unaffected in every case.
-// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: $2D substituted from ocs_cdang0 (rejected there, per chapter 2's undisputed OCS Reading B) in place of ecs_cdang1, run alone: 96 passed, 2 failed, exactly this row newly red (SWEEP ecs=1 cdang=1 and the other four rows unaffected); reverted (97 passed, 1 failed). Holds on NanoMig and on the validator's p.310 copy.
-// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2E, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2F, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3C, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3E, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: $2D substituted from ocs_cdang0 (rejected there, per chapter 2's undisputed OCS Reading B) in place of ecs_cdang1, run alone. NanoMig: 96 passed, 2 failed, exactly this row newly red (SWEEP ecs=1 cdang=1 and the other four rows unaffected); reverted (97 passed, 1 failed). The validator's p.310 copy: baseline 98 passed, 0 failed; mutated 97 passed, 1 failed, exactly this row newly red; reverted (98 passed, 0 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2E, run alone. NanoMig: 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed). The p.310 copy: 97 passed, 1 failed, exactly this row newly red; reverted (98 passed, 0 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2F, run alone. NanoMig: 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed). The p.310 copy: 97 passed, 1 failed, exactly this row newly red; reverted (98 passed, 0 failed).
+// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3C, run alone. NanoMig: 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed). The p.310 copy: 97 passed, 1 failed, exactly this row newly red; reverted (98 passed, 0 failed).
+// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3E, run alone. NanoMig: 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed). The p.310 copy: 97 passed, 1 failed, exactly this row newly red; reverted (98 passed, 0 failed).
 
 #include <cstdint>
 #include <functional>
