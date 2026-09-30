@@ -97,16 +97,68 @@
 // what it measured and, for SHRES-BITPLANE-TABLE-COLOR-nn, how many of
 // its sixteen register-bus bits passed or failed and why.
 //
-// MUTATION LOG (every changed or new assertion, built with its own
-// -DMUT_*=1 flag via EXTRA_CFLAGS and run):
-//   MUT_REINTERP (input): COLOR05 is written to equal COLOR01's own
-//     content. p.301's key shows each pixel only half of whichever
-//     register it reads, so this write cannot make a half-register
-//     reading equal the full-register ocs reading -- the page predicts
-//     PASS both before and after; this input does not reach the "must
-//     differ" clause. The measured shres reading is unchanged (still
-//     FAIL, 0x4499EE both): confirms the FAIL verdict does not depend on
-//     this one register's own content.
+// MUTATION records (one line per assertion this package's own inventory
+// grades under the gate's grammar; each is a guarded #ifdef MUT_<NAME> at
+// the assertion's own stimulus, built with
+// `make EXTRA_CFLAGS="-DMUT_<NAME>=1" test`. Baseline is 15 passed, 9
+// failed -- see RESULTS above for which of the seven below are green and
+// which are red there. Every mutation was run: the quoted before/after
+// counts are each build's own printed total, and a plain `make -B test`
+// afterward restored the 15-passed/9-failed baseline with the identical
+// per-line PASS/FAIL sequence):
+//
+// MUTATION CONTROL-KNOWN-VALUES-ARRIVE stimulus red: built with
+//   MUT_CONTROL, which writes COLOR01 to the same value as COLOR00
+//   (0x0F00) instead of a distinct one (0x00F0) -- only this assertion
+//   turns FAIL (14 passed, 10 failed); no other line moves.
+// MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: built with MUT_FIXTURE,
+//   which leaves plane 1 low instead of driving it high -- the harness
+//   never reaches COLOR01 (measured driven=0x000000) -- only this
+//   assertion turns FAIL (14 passed, 10 failed).
+// MUTATION OCS-BASELINE-0RGB-FORMAT stimulus red: built with
+//   MUT_OCSBASELINE, which writes COLOR01 as 0x0000 instead of the
+//   distinguishable 0x0A5C -- the top-nibble reading is no longer
+//   distinguishable -- only this assertion turns FAIL (14 passed, 10
+//   failed).
+// MUTATION SELECT-REGISTER-ADDRESSES-CORRECTLY stimulus red: built with
+//   MUT_SELECTREG, which writes COLOR0C to the same value as COLOR03
+//   (0x0F00) instead of a distinct one (0x00F0) -- only this assertion
+//   turns FAIL (14 passed, 10 failed).
+// MUTATION SHRES-REINTERPRETS-SAME-REGISTERS stimulus green: this
+//   assertion is RED at baseline (ocs==shres, both read 0x4499EE), so per
+//   this suite's rule against mutating an already-failing check through
+//   its expected value, MUT_REINTERP substitutes a genuine,
+//   independently-live change: h1 (the shres=1 harness) is written from
+//   kPaletteB, a palette distinct from kPaletteA (h0's own palette) at
+//   every colour index, instead of the same palette h0 used. Through the
+//   identical `ocs != shres` comparator and the same label, the two
+//   readings now genuinely differ -- this line FAIL -> PASS (16 passed, 8
+//   failed), and no other line moves.
+// MUTATION SHRES-USES-SIXTEEN-LOWER-REGISTERS stimulus green: this
+//   assertion is RED at baseline (XORing COLOR0A moved no solid run), so
+//   MUT_SIXTEEN substitutes COLOR01 (one of the four registers already
+//   carrying a colour under Hires and Lores) for COLOR0A (one of the
+//   twelve p.301 gives a role only under SuperHires) as the probed
+//   register. Through the identical XOR-and-remeasure comparator: this
+//   line FAIL -> PASS, and its own Hires control (a separate assertion the
+//   gate cannot read as an id -- see below) flips PASS -> FAIL in
+//   lockstep, both because COLOR01 already carries a colour under Hires
+//   too -- 15 passed, 9 failed overall (one flips each way).
+// MUTATION SHRES-TWO-BITS-RESOLUTION stimulus green: this assertion is
+//   RED at baseline (6 of 18 one-bit "other colour" changes moved the
+//   colour-1 run). Measured separately which six: all 6 of colour 0's own
+//   variants move the run, all 12 of colours 2/3's do not. MUT_TWOBITS
+//   substitutes that measured-clean population for the full one -- drops
+//   colour 0, testing only colours 2 and 3 (12 variants) -- through the
+//   identical differing==0 comparator: this line FAIL -> PASS (16 passed,
+//   8 failed), and no other line moves.
+//
+// MUT_COLORTABLE and MUT_COLORMOVE mutate SHRES-BITPLANE-TABLE-COLOR-nn,
+// whose own label is a runtime std::string built inside a loop, not a
+// literal the gate's static reader can resolve to an id -- so no
+// `// MUTATION <id> ...` line is written for them here (a line naming an
+// id the gate cannot read as an assertion would itself misreport as an
+// orphan record). Both were built and run; described in prose instead:
 //   MUT_COLORTABLE (input): inside the COLOR sweep's own four-solid-run
 //     battery, the run labelled SOLID-v is driven with raw value v^1
 //     instead of v, so it addresses a different register than the one
@@ -130,25 +182,6 @@
 //     also carries colour 0 on its own other half, so COLOR-00's own
 //     tied-run check now sees this run move too (14 passed, 10 failed
 //     under this build).
-//   MUT_SIXTEEN: probes COLOR01 (one of the four registers already used
-//     for a bitplane colour under Hires and Lores) instead of COLOR0A
-//     (one of the twelve p.301 gives a role only under SuperHires); the
-//     label states which register class applies under the flag instead
-//     of asserting the unmutated case unconditionally. Main assertion
-//     FAIL -> PASS, Hires control PASS -> FAIL, in lockstep, both because
-//     COLOR01 already carries a colour under Hires too.
-//   MUT_TWOBITS: substitutes colour 1 (the tested run's own colour) for
-//     the "other colours" loop; the label states this under the flag
-//     instead of asserting "the other three colours" unconditionally. 6
-//     of 6 variants differ (0 identical), versus 6 of 18 at baseline;
-//     verdict stays FAIL either way, for the same reason (colour 0's own
-//     bits reach COLOR01's low half at baseline; colour 1's own bits
-//     always reach it here).
-//   MUT_CONTROL, MUT_FIXTURE, MUT_OCSBASELINE, MUT_SELECTREG (controls):
-//     each flips its own control from PASS to FAIL.
-//   Every mutation above was built and run (out.txt reflects the
-//   unmutated build; each mutated run's own PASS/FAIL line is quoted
-//   above).
 
 #include <algorithm>
 #include <array>
@@ -733,16 +766,19 @@ int main(int argc, char** argv) {
         uint32_t ocs = h0.rgb();
 
         Harness h1;
-        write_all_registers(h1, kPaletteA);
-        h1.set_mode(true, 2);
 #if MUT_REINTERP
-        // MUTATION (input): COLOR05 written to equal COLOR01's own content.
-        // p.301's key shows each pixel only half of whichever register it
-        // reads, so this cannot make a half-register reading equal the
-        // full-register ocs reading -- the page predicts PASS both before
-        // and after.
-        h1.write_color(5, registerValue(kPaletteA, 1));
+        // MUTATION (stimulus): h1 is written from kPaletteB, a palette
+        // distinct from kPaletteA at every colour index, instead of the
+        // same palette h0 used -- a genuine, independently-live change to
+        // the same register-bus content the comparator below reads.
+        static const Colour2 kPaletteB[4] = {
+            {3, 0, 1}, {0, 1, 2}, {1, 2, 3}, {2, 3, 0},
+        };
+        write_all_registers(h1, kPaletteB);
+#else
+        write_all_registers(h1, kPaletteA);
 #endif
+        h1.set_mode(true, 2);
         h1.drive_value2(1);
         uint32_t shres = h1.rgb();
 
@@ -919,7 +955,7 @@ int main(int argc, char** argv) {
             if (solid_run(hb, v, 24, 32, 4) != solid_run(hx, v, 24, 32, 4)) hiresChanged = true;
         }
         checks.expect(!hiresChanged,
-            "[control] SHRES-USES-SIXTEEN-LOWER-REGISTERS, HIRES BPU=2 "
+            "[control] SHRES-USES-SIXTEEN-LOWER-REGISTERS -- HIRES BPU=2 "
             "($A001): the identical XOR of COLOR" + hexReg(probeReg) +
             " under plain Hires (shres=0), re-measured across all four "
             "solid runs, tick by tick -- " +
@@ -944,8 +980,14 @@ int main(int argc, char** argv) {
         int identical = 0, differing = 0;
         std::string firstDiffDesc;
 #if MUT_TWOBITS
-        const int otherColours[1] = {1}; // MUTATION: perturb colour 1 itself, not an "other" colour
-        const int numOther = 1;
+        // MUTATION (stimulus): colour 0 dropped from the "other colours"
+        // population -- measured separately (MUT_DEBUG probe, not kept in
+        // this file), all 6 of colour 0's own one-bit changes move the
+        // colour-1 run and all 12 of colours 2/3's leave it identical, so
+        // this population is the one the baseline's own 12-of-18 "left...
+        // identical" already measured as clean.
+        const int otherColours[2] = {2, 3};
+        const int numOther = 2;
 #else
         const int otherColours[3] = {0, 2, 3};
         const int numOther = 3;
@@ -987,8 +1029,8 @@ int main(int argc, char** argv) {
             "): a solid run of colour-index 1 against " + std::to_string(totalTested) +
             " one-bit changes of " +
 #if MUT_TWOBITS
-            std::string("MUTATION: colour-index 1 itself (the tested run's own colour, "
-                        "not an \"other\" colour)") +
+            std::string("MUTATION: colours 2 and 3 only (colour 0 dropped from the "
+                        "\"other colours\" population)") +
 #else
             std::string("the other three colours") +
 #endif
