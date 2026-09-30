@@ -51,17 +51,18 @@
 // MUTATION harness-selfcheck stimulus red MUT_SELFCHECK: the POTGO arm
 //   gate for pot0x is held closed in G1's first measurement, so it never
 //   counts and x_tracks is false. Expected values untouched. RUN: baseline
-//   77 passed 13 failed; mutated 76 passed 14 failed, exactly one
+//   76 passed 13 failed; mutated 75 passed 14 failed, exactly one
 //   harness-selfcheck newly red, the thirteen baseline reds unchanged.
-//   Reverted: 77/13.
-//   A first attempt omitted the POTGO arm step instead and changed nothing;
-//   it was replaced, not recorded.
-// MUTATION opus:8-pot.c11 stimulus red MUT_G2: the arm step is built with
-//   POTGO=$0000 (bit 0 clear) instead of $0001, so the counters never
-//   start; the expected values (zeroed-by-POTGO, then a fixed +2 delta
-//   after a held warm-up) are unchanged. RUN: baseline 77 passed 13 failed;
-//   mutated 75 passed, 15 failed, exactly this pair newly red. Reverted:
-//   77/13.
+//   Reverted: 76/13.
+// MUTATION opus:8-pot.c11 stimulus red MUT_G2: the arm step (POTGO=$0001)
+//   is omitted entirely -- no POTGO write at all, not a bit-0-clear write,
+//   which would rest on the page-open bit-0-clear behaviour (see the file
+//   header) and move no line on a copy that zeroes on bit-0-clear anyway;
+//   the expected values (zeroed-by-POTGO, then a fixed +2 delta after a
+//   held warm-up) are unchanged. RUN: baseline 76 passed 13 failed;
+//   mutated 74 passed, 15 failed, exactly this pair newly red. Reverted:
+//   76/13. On u8 and u8z (which zero on any bit-0-clear POTGO write):
+//   mutated 82 passed, 7 failed on both, the same pair newly red.
 // MUTATION sol:8-pot.c12 stimulus red (same MUT_G2 as opus:8-pot.c11)
 // MUTATION opus:8-pot.c12 stimulus red MUT_G3 (this assertion's scope is
 //   what the claim says: pot0x/pot0y/pot1y, the counters with a pin, track
@@ -74,9 +75,9 @@
 //   & ...), so either alone can open it -- both are built held instead of
 //   released (right mouse button unpressed AND _joy2 pin 5, which
 //   _djoy1[5] tracks, left unasserted), so pot0y never reaches 7; the
-//   "==7" expected value is unchanged. RUN: baseline 77 passed 13 failed;
-//   mutated 75 passed, 15 failed, exactly this pair newly red. Reverted:
-//   77/13.
+//   "==7" expected value is unchanged. RUN: baseline 76 passed 13 failed;
+//   mutated 74 passed, 15 failed, exactly this pair newly red. Reverted:
+//   76/13.
 // MUTATION sol:8-pot.c13 stimulus red (same MUT_G3 as opus:8-pot.c12)
 // MUTATION opus:8-pot.c13 stimulus red MUT_G4 (this assertion's scope is
 //   what the claim says: each counter that does have a pin tracks it once
@@ -86,16 +87,20 @@
 //   connector table, different uids. GREEN, so it takes a stimulus
 //   mutation):
 //   the pot0x-only-moved step is built without releasing pot0x's pin, so it
-//   never moves; the "==4" expected value is unchanged. RUN: baseline 77
-//   passed 13 failed; mutated 75 passed, 15 failed, exactly this pair newly
-//   red. Reverted: 77/13.
+//   never moves; the "==4" expected value is unchanged. RUN: baseline 76
+//   passed 13 failed; mutated 74 passed, 15 failed, exactly this pair newly
+//   red. Reverted: 76/13.
 // MUTATION sol:8-pot.c14 stimulus red (same MUT_G4 as opus:8-pot.c13)
-// MUTATION opus:8-pot.c14 stimulus red MUT_G5G18: the reset-triggering POTGO
-//   write is built with bit 0 forced clear, so the counters are never
-//   zeroed; the "all zero after the bit-0 write" comparison is unchanged and
-//   now compares against values that never reset. RUN: baseline 77 passed
-//   13 failed; mutated 73 passed, 17 failed, exactly these four newly red.
-//   Reverted: 77/13.
+// MUTATION opus:8-pot.c14 stimulus red MUT_G5G18: the reset-triggering
+//   POTGO write (POTGO=$2001) is omitted entirely -- no POTGO write at
+//   all, not a bit-0-clear write, which would rest on the page-open
+//   bit-0-clear behaviour (see the file header) and move no line on a
+//   copy that zeroes on bit-0-clear anyway; the "all zero after the write"
+//   comparison is unchanged and now compares against values that were
+//   never written. RUN: baseline 76 passed 13 failed; mutated 72 passed,
+//   17 failed, exactly these four newly red. Reverted: 76/13. On u8 and
+//   u8z (which zero on any bit-0-clear POTGO write): mutated 80 passed, 9
+//   failed on both, the same four newly red.
 // MUTATION sol:8-pot.c15 stimulus red (same MUT_G5G18 as opus:8-pot.c14)
 // MUTATION opus:8-potreg.c5 stimulus red (same MUT_G5G18 as opus:8-pot.c14)
 // MUTATION sol:8-pot.c32 stimulus red (same MUT_G5G18 as opus:8-pot.c14)
@@ -108,9 +113,9 @@
 //   measurement: pot0x's own pin is held through strobes 1-8 and released
 //   before strobe 9, through the identical, unchanged
 //   matches_reset_interval()/==8 comparators. RUN (make MUT=G6HOLD test):
-//   baseline 77 passed, 13 failed; completed_reset_lines reads exactly 8,
-//   all four G6/G11 lines FAIL->PASS (81 passed, 9 failed -- the nine
-//   other, unrelated reds unaffected). Reverted: 77/13.
+//   baseline 76 passed, 13 failed; completed_reset_lines reads exactly 8,
+//   all four G6/G11 lines FAIL->PASS (80 passed, 9 failed -- the nine
+//   other, unrelated reds unaffected). Reverted: 76/13.
 // MUTATION sol:8-pot.c16 stimulus green MUT_G6HOLD (same substitute as
 //   opus:8-potchg.c1)
 // MUTATION opus:8-fig8-5.c1 stimulus green MUT_G6HOLD (same substitute as
@@ -122,8 +127,8 @@
 // MUTATION opus:8-potchg.c4 stimulus red MUT_G7G8: each of the ten single
 //   pulses in the cadence loop is built as two pot_cnt_en pulses instead of
 //   one, so consecutive reads differ by 2, not 1; the "delta==1 every time"
-//   comparison is unchanged. RUN: baseline 77 passed 13 failed; mutated 73
-//   passed, 17 failed, exactly these four newly red. Reverted: 77/13.
+//   comparison is unchanged. RUN: baseline 76 passed 13 failed; mutated 72
+//   passed, 17 failed, exactly these four newly red. Reverted: 76/13.
 // MUTATION sol:8-pot.c19 stimulus red (same MUT_G7G8 as opus:8-potchg.c4)
 // MUTATION opus:8-potchg.c5 stimulus red (same MUT_G7G8 as opus:8-potchg.c4)
 // MUTATION sol:8-pot.c20 stimulus red (same MUT_G7G8 as opus:8-potchg.c4)
@@ -137,36 +142,36 @@
 //   stimulus mutation, not an oracle substitute): the hold step is built
 //   skipping the gate-close call, so the counter keeps counting instead of
 //   holding; the "during == before" expected value is unchanged. RUN:
-//   baseline 77 passed 13 failed; mutated 75 passed, 15 failed, exactly
-//   this pair newly red. Reverted: 77/13.
+//   baseline 76 passed 13 failed; mutated 74 passed, 15 failed, exactly
+//   this pair newly red. Reverted: 76/13.
 // MUTATION sol:8-pot.c21 stimulus red (same MUT_G9 as opus:8-potchg.c6)
 // MUTATION opus:8-potchg.c8 stimulus red MUT_G10: the run to $ff is built one
 //   pulse short (254 instead of 255), so the wrap that should land on pulse
 //   256 is off by one and the fixed $ff/$00/$01 comparison sequence fails.
-//   RUN: baseline 77 passed 13 failed; mutated 74 passed, 16 failed,
-//   exactly these three newly red. Reverted: 77/13.
+//   RUN: baseline 76 passed 13 failed; mutated 73 passed, 16 failed,
+//   exactly these three newly red. Reverted: 76/13.
 // MUTATION sol:8-pot.c24 stimulus red (same MUT_G10 as opus:8-potchg.c8)
 // MUTATION opus:8-appa-pot.c10 stimulus red (same MUT_G10 as opus:8-potchg.c8)
 // MUTATION opus:8-fig8-5.c2 stimulus red MUT_G12: pot1x's release step is
 //   built using POTGO bits 11:10 (which gate pot0y) instead of 13:12 (which
 //   gate pot1x), so pot1x is never actually released and stays at 0 instead
 //   of reaching 6; the fixed "all four equal 6" comparison is unchanged.
-//   RUN: baseline 77 passed 13 failed; mutated 75 passed, 15 failed,
-//   exactly this pair newly red. Reverted: 77/13.
+//   RUN: baseline 76 passed 13 failed; mutated 74 passed, 15 failed,
+//   exactly this pair newly red. Reverted: 76/13.
 // MUTATION sol:8-fig8-5.c3 stimulus red (same MUT_G12 as opus:8-fig8-5.c2)
 // MUTATION opus:8-fig8-5.c4 stimulus red MUT_G13: the "early" run's hold
 //   point is built at tick 8 and the "late" run's at tick 3 (the two
 //   stimuli are swapped), so the later-crossing-is-larger comparison, left
-//   unchanged, now compares the wrong way round. RUN: baseline 77 passed 13
-//   failed; mutated 76 passed, 14 failed, exactly this one newly red.
-//   Reverted: 77/13.
+//   unchanged, now compares the wrong way round. RUN: baseline 76 passed 13
+//   failed; mutated 75 passed, 14 failed, exactly this one newly red.
+//   Reverted: 76/13.
 // MUTATION opus:8-potreg.c1 stimulus red MUT_G14G17: the port-identity check
 //   reads POT1DAT where it should read POT0DAT (and vice versa) for the
 //   mouse-only-movement half, so the fixed "mouse pins move only POT0DAT"
 //   comparison now sees the wrong register; the same substitution also
-//   misreads the byte-assignment half. RUN: baseline 77 passed 13 failed;
-//   mutated 67 passed, 23 failed, exactly these ten newly red. Reverted:
-//   77/13.
+//   misreads the byte-assignment half. RUN: baseline 76 passed 13 failed;
+//   mutated 66 passed, 23 failed, exactly these ten newly red. Reverted:
+//   76/13.
 // MUTATION sol:8-pot.c26 stimulus red (same MUT_G14G17 as opus:8-potreg.c1)
 // MUTATION sol:8-pot.c27 stimulus red (same MUT_G14G17 as opus:8-potreg.c1)
 // MUTATION opus:8-potreg.c2 stimulus red (same MUT_G14G17 as opus:8-potreg.c1)
@@ -179,8 +184,8 @@
 // MUTATION opus:8-appa-pot.c9 stimulus red MUT_G19G21: pot0y is driven to 5
 //   ticks but the fixed comparison still expects the pre-mutation value (4)
 //   for it, so the four-counters-independent equality fails. RUN: baseline
-//   77 passed 13 failed; mutated 72 passed, 18 failed, exactly these five
-//   newly red. Reverted: 77/13.
+//   76 passed 13 failed; mutated 71 passed, 18 failed, exactly these five
+//   newly red. Reverted: 76/13.
 // MUTATION sol:8-appa-pot.c11 stimulus red (same MUT_G19G21 as opus:8-appa-pot.c9)
 // MUTATION sol:8-appa-pot.c12 stimulus red (same MUT_G19G21 as opus:8-appa-pot.c9)
 // MUTATION opus:8-appa-pot.c11 stimulus red (same MUT_G19G21 as opus:8-appa-pot.c9)
@@ -188,9 +193,9 @@
 // MUTATION sol:8-appa-pot.c14 stimulus red MUT_G22: the left-connector
 //   release step is built skipping the mouse-button assertion, so POT0DAT
 //   never leaves $0000 and the fixed "== 6 after release" comparison
-//   fails. RUN: baseline 77 passed 13 failed; mutated 75 passed, 15
+//   fails. RUN: baseline 76 passed 13 failed; mutated 74 passed, 15
 //   failed, exactly this pair (this label and the G22 self-check) newly
-//   red. Reverted: 77/13.
+//   red. Reverted: 76/13.
 // MUTATION sol:8-appa-pot.c15 oracle green substitute: right_x_has_a_pin
 //   (the red half) is graded != 0; the substitute instead routes the left
 //   connector, within the same G22 run, through its own "== 6 after
@@ -204,8 +209,8 @@
 //   differs from the unchanged $4b/$b4 expectation table; this one line
 //   stands for all 32 individual-bit labels below plus the four sol
 //   byte-level labels, all graded from the same two register reads in
-//   group_G23(). RUN: baseline 77 passed 13 failed; mutated 41 passed, 49
-//   failed, exactly these thirty-six newly red. Reverted: 77/13.
+//   group_G23(). RUN: baseline 76 passed 13 failed; mutated 40 passed, 49
+//   failed, exactly these thirty-six newly red. Reverted: 76/13.
 // MUTATION opus:8-appa-pot.c15 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
 // MUTATION opus:8-appa-pot.c16 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
 // MUTATION opus:8-appa-pot.c17 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
@@ -254,7 +259,7 @@
 // the final count after a fixed run, not the pulse index of the first
 // nonzero read -- under their own leading ids so the mutation-label gate
 // can pair a record with each one.
-// MUTATION FINALCOUNT-FIG8-5-OPUS stimulus green: kTotalTicks = kK (no reset interval prepended) instead of 8+kK, through the real figure_all_four comparator (all four counters ==k). RUN (make MUT=FINALCOUNT test): baseline 77 passed, 13 failed; all four counters read exactly 10, all four FINALCOUNT-* lines turn green (81 passed, 9 failed -- the nine other, unrelated reds unaffected). Reverted: 77/13.
+// MUTATION FINALCOUNT-FIG8-5-OPUS stimulus green: kTotalTicks = kK (no reset interval prepended) instead of 8+kK, through the real figure_all_four comparator (all four counters ==k). RUN (make MUT=FINALCOUNT test): baseline 76 passed, 13 failed; all four counters read exactly 10, all four FINALCOUNT-* lines turn green (80 passed, 9 failed -- the nine other, unrelated reds unaffected). Reverted: 76/13.
 // MUTATION FINALCOUNT-FIG8-5-SOL stimulus green: same run as FINALCOUNT-FIG8-5-OPUS (the shared kTotalTicks substitution).
 // MUTATION FINALCOUNT-BODY-OPUS stimulus green: same run as FINALCOUNT-FIG8-5-OPUS, through the real body_all_four comparator (all four counters ==k or ==k+1; measured exactly k).
 // MUTATION FINALCOUNT-BODY-SOL stimulus green: same run as FINALCOUNT-FIG8-5-OPUS.
@@ -416,10 +421,9 @@ static void group_G1() {
     // MUT_SELFCHECK holds pot0x PRESSED instead of releasing it, so its gate
     // never opens, the counter stays at 0 and x_tracks is false. Expected
     // values untouched: this changes what the module is asked to do.
-    //
-    // A first attempt omitted the arm_potgo() call here instead and changed
-    // NOTHING -- the counter runs without it. A mutation that does not move
-    // the result is worse than none, so it was replaced rather than recorded.
+    // Omitting the arm_potgo() call instead changes nothing (the counter
+    // runs without it), so a mutation that must move the result holds the
+    // pin instead.
 #ifdef MUT_SELFCHECK
     // MUTATED: hold pot0x pressed -- its gate never opens
 #else
@@ -463,9 +467,11 @@ static void group_G1() {
 
     note("port 1 (POT0DAT), held " + std::to_string(kWarmup) + " ticks past "
          "either printed interval, then release-then-run-6/9: X-only -> $" +
-         hex4(r1) + "; Y-only -> $" + hex4(r2) + " -- two independently-"
-         "movable counters, each graded for exactly the ticks run after "
-         "release, not against the raw tick total. "
+         hex4(r1) + "; Y-only -> $" + hex4(r2) + " -- " +
+         std::string(x_tracks && y_tracks ? "two independently-movable "
+         "counters, each graded for exactly the ticks run after release, "
+         "not against the raw tick total." : "not both independently "
+         "movable to their exact target.") + " "
          "port 2 (POT1DAT), same warm-up, release-then-run-11: joystick-port "
          "pin release -> $" + hex4(r3) + " (Y moved); every controller pin "
          "this module reads, asserted -> $" + hex4(r4) + " -- the low byte "
@@ -496,8 +502,14 @@ static void group_G2() {
               // zero". This free-run has no POTGO write at all, so p.235's
               // interval (which the page ties to a POTGO write) does not
               // bear on it.
+    uint16_t before_write = pot0dat(); // must be nonzero, or the read right
+                                        // after the write below is 0 either
+                                        // way and proves nothing about POTGO
+    bool before_write_nonzero = (before_write != 0);
 #ifdef MUT_G2
-    arm_potgo(0x0000); // MUTATED: bit 0 clear -- must not re-zero
+    // MUTATED: no POTGO write at all -- not a bit-0-clear write, which
+    // rests on the page-open bit-0-clear behaviour (see the file header);
+    // omitting the write entirely does not.
 #else
     arm_potgo(0x0001);
 #endif
@@ -518,7 +530,7 @@ static void group_G2() {
     pulse(2);
     uint16_t after_more = pot0dat();
     bool counting_continued = (after_more == (uint16_t)(before + 2));
-    bool starts_on_potgo = zeroed_by_potgo && before_nonzero &&
+    bool starts_on_potgo = before_write_nonzero && zeroed_by_potgo && before_nonzero &&
                             other_write_no_restart && counting_continued;
 
     // Bit-0-clear half, MEASURED only: p.236's "All counts are reset to
@@ -529,8 +541,9 @@ static void group_G2() {
     full_reset();
     set_mouse(0, 0, 1);
     arm_potgo(0x0001);
-    pulse(kWarmup); // held warm-up past either printed interval, so before2
-                     // is genuinely counting, not stuck at 0 by the interval
+    pulse(kWarmup); // pot0x released throughout, run past either printed
+                     // interval, so before2 is genuinely counting, not
+                     // stuck at 0 by the interval
     uint16_t before2 = pot0dat();
     bool before2_nonzero = (before2 != 0);
     write_potgo_once(0x00F0); // POTGO write, bit 0 clear
@@ -539,16 +552,19 @@ static void group_G2() {
     uint16_t after2 = pot0dat();
     bool bit0_clear_no_restart = (after2 == before2);
 
-    note("Right after the POTGO write with bit 0 set: POT0DAT $" +
-         hex4(right_after_write) + " (was free-running nonzero, from 9 pulses "
-         "with no POTGO write at all). After a further " + std::to_string(kWarmup) +
+    note("Before the POTGO write, after 9 free-running pulses with no POTGO "
+         "write at all: POT0DAT $" + hex4(before_write) + " (" +
+         std::string(before_write_nonzero ? "nonzero, so the write below is "
+                     "not vacuous" : "zero -- the write below cannot be read") +
+         "). Right after the POTGO write with bit 0 set: POT0DAT $" +
+         hex4(right_after_write) + ". After a further " + std::to_string(kWarmup) +
          "-tick warm-up: $" + hex4(before) + "; a write to a different "
          "register mid-run left POT0DAT at $" + hex4(after_other) +
          " (was $" + hex4(before) + "), and counting continued afterwards "
          "(-> $" + hex4(after_more) + ", " +
          std::string(counting_continued ? "exactly two more" :
                      "not exactly two more") + "). NOT GRADED (no page states "
-         "a bit-0-clear condition): held " + std::to_string(kWarmup) +
+         "a bit-0-clear condition): pot0x released, run " + std::to_string(kWarmup) +
          " ticks past either printed interval -> $" + hex4(before2) + " (" +
          std::string(before2_nonzero ? "nonzero, so the next line is not "
                      "vacuous" : "zero -- the next line cannot be read") +
@@ -733,7 +749,9 @@ static void group_G5_G18() {
     bool nonzero_before = (before0 != 0) && (before1 != 0);
 
 #ifdef MUT_G5G18
-    arm_potgo(0x0000 | 0x0000); // MUTATED: bit 0 clear -- must not zero
+    // MUTATED: no POTGO write at all -- not a bit-0-clear write, which
+    // rests on the page-open bit-0-clear behaviour (see the file header);
+    // omitting the write entirely does not.
 #else
     arm_potgo(0x2001); // keep pot1x's release bits, add bit 0
 #endif
@@ -1061,10 +1079,11 @@ static void group_G9() {
          "). Not graded against this claim (no POTGO reversal case in the page): "
          "released again for 4 more ticks with no intervening POTGO write -> "
          "$" + hex4(after_resume_attempt) + " -- it " +
-         std::string(resumed_without_potgo ? "moved" : "stayed put") +
-         ". This design resumes counting as soon as the gate reopens, POTGO "
-         "or not; an RC charge cannot fall back below the preset on its own, "
-         "so the manual's 'held until the next POTGO' never has to specify "
+         std::string(resumed_without_potgo ?
+         "moved: this design resumes counting as soon as the gate reopens, "
+         "POTGO or not." : "stayed put on this build.") +
+         " An RC charge cannot fall back below the preset on its own, so "
+         "the manual's 'held until the next POTGO' never has to specify "
          "that case, and this claim is not graded against it.");
 
     bool manual_claim = truly_holds_while_held;
@@ -1316,37 +1335,44 @@ static void group_G19_G21() {
                      // (3/4/9/13) would collide once shifted by an uncertain
                      // 7-or-8-line interval if graded per-phase instead
     set_mouse(0, 0, 1); settle(3); pulse(3);      // pot0x = 3
-    uint8_t v_x0 = (uint8_t)(pot0dat() & 0xFF);   // read before any further
-                                                   // POTGO write can touch it
     set_mouse(0, 0, 0); settle(2);
 #ifdef MUT_G19G21
     set_mouse(0, 1, 0); settle(3); pulse(5);      // MUTATED: still 5, but expectation below is unchanged (4)
 #else
     set_mouse(0, 1, 0); settle(3); pulse(4);      // pot0y = 4
 #endif
-    uint8_t v_y0 = (uint8_t)((pot0dat() >> 8) & 0xFF);
     set_mouse(0, 0, 0); settle(2);
     set_joy1_pin5(1); settle(3); pulse(9);        // pot1y = 9
-    uint8_t v_y1 = (uint8_t)((pot1dat() >> 8) & 0xFF);
     set_joy1_pin5(0); settle(2);
+    // Joint read of both registers here, before any POTGO write touches
+    // pot1x: p.282's own claim is that these addresses each read a PAIR
+    // ("These addresses each read a pair of 8-bit pot counters"), so
+    // pot0x/pot0y and pot1y are graded through the same joint register
+    // reads the page describes, not through four independent byte reads --
+    // a joint read catches, for example, a design where pot0x keeps
+    // counting while pot0y's own gate is open (see u8c in the file header).
+    uint16_t p0 = pot0dat();          // pot0y=4 (high byte), pot0x=3 (low byte)
+    uint16_t p1_before_x = pot1dat(); // pot1y=9 (high byte), pot1x=0 (low byte, not yet touched)
     // pot1x is released through a POTGO write of its own (set_potgo_bits
-    // always clears bit 0); read it immediately after its own count,
-    // before the trailing close below -- that close is itself a further
-    // bit-0-clear POTGO write with no page-defined effect on the counters
-    // (see the file header's open point), so this grade does not depend on
-    // it either way.
+    // always clears bit 0); read it on its own, immediately after its own
+    // count, before the trailing close below -- that close is itself a
+    // further bit-0-clear POTGO write with no page-defined effect on the
+    // counters (see the file header's open point), so this grade does not
+    // depend on it either way. This is the one counter that cannot join
+    // the read above without resting on that open point.
     set_potgo_bits(0x2000); settle(2); pulse(13); // pot1x = 13 ($0d)
     uint8_t v_x1 = (uint8_t)(pot1dat() & 0xFF);
     set_potgo_bits(0x0000); settle(2);
 
-    uint16_t p0 = (uint16_t)((v_y0 << 8) | v_x0);
-    uint16_t p1 = (uint16_t)((v_y1 << 8) | v_x1);
-    bool four_independent = (p0 == 0x0403) && (p1 == 0x090D);
-    note("Four counters driven to four different values independently, "
-         "each read immediately after its own count: POT0DAT=$" + hex4(p0) +
-         " (pot0y=" + std::to_string(v_y0) + ",pot0x=" + std::to_string(v_x0) +
-         "), POT1DAT=$" + hex4(p1) + " (pot1y=" + std::to_string(v_y1) +
-         ",pot1x=" + std::to_string(v_x1) + ") -- " +
+    uint16_t p1 = (uint16_t)((p1_before_x & 0xFF00) | v_x1);
+    bool four_independent = (p0 == 0x0403) && (p1_before_x == 0x0900) && (v_x1 == 0x0D);
+    note("Four counters driven to four different values independently: "
+         "joint POT0DAT=$" + hex4(p0) + " (pot0y=" + std::to_string(p0 >> 8) +
+         ",pot0x=" + std::to_string(p0 & 0xFF) + "), joint POT1DAT=$" +
+         hex4(p1_before_x) + " before pot1x is touched (pot1y=" +
+         std::to_string(p1_before_x >> 8) + ",pot1x=" +
+         std::to_string(p1_before_x & 0xFF) + "), pot1x's own read after "
+         "its count=" + std::to_string(v_x1) + " -- " +
          std::string(four_independent ? "four separately-addressable "
          "counters, each register reading a pair." : "not the four target "
          "values (pot0y=4,pot0x=3,pot1y=9,pot1x=13)."));
