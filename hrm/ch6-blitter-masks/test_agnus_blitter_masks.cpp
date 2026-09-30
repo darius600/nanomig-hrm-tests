@@ -48,9 +48,9 @@
 // risks an invalid octant/sign combination that never reaches a D-store at
 // all (a silently vacuous "pass") or duplicating PKG-BLT-LINE's own
 // construction work for a single claim. Deferred to PKG-BLT-LINE, not
-// silently dropped - the same discipline the PKG-BLT-SHIFT builder used
-// when it declined shift-on-load ("the module has no clock and no
-// register... whatever the brief says"), applied in the other direction: the
+// silently dropped - the same discipline PKG-BLT-SHIFT applies
+// when it declines shift-on-load (the module has no clock and no
+// register to exercise it with), applied in the other direction: the
 // module here DOES have everything needed, but exercising it correctly is a
 // different package's proportionate job.
 //
@@ -167,8 +167,7 @@
 //     MASK-BIT-EXCLUDED-FROM-LOGIC above, reasserted at random over ~1000
 //     cases rather than one worked value each)
 //
-// ADDED FOR FPGA-090 (build register 2026-09-08, "Still to do when the last
-// two packages land" item 3; commit dc85384's note on what the deletion of
+// ADDED FOR FPGA-090 (the build register's note on what deleting
 // hrm/agnus_blitter_mask would genuinely lose): MASK-MUX-RANDOM-SWEEP below
 // keeps that package's randomised-sweep TECHNIQUE, not its harness - it
 // compiles and drives the real agnus_blitter (this file's existing Harness,
