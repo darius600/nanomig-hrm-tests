@@ -128,13 +128,12 @@
 //   note()/record() pair ADDR-BELOW-DF0000-MEASURED /
 //   ADDR-BELOW-DF0000-NOT-GRADED, so this no longer pairs with an
 //   assertion. The run it records happened and is kept as evidence.
-//   (was: MUTATION ADDR-EXCLUSIVE-BELOW-DF0000 stimulus green) Built with
+//   PROBE CHECK for ADDR-BELOW-DF0000-MEASURED (not graded): built with
 //   -DMUT_B2=1, which moves this probe from $DF0000 to $E00000 (a
-//   genuinely-excluded address) -> 8 passed, 0 failed, unchanged from
-//   baseline: no PASS/FAIL line pairs with this probe any longer, but the
-//   MEASURED line for ADDR-BELOW-DF0000-MEASURED now reads
-//   sel_reg($E00000)=0, matching the manual, in place of the baseline's
-//   sel_reg($DF0000)=1. Rebuilt with no flags: 8 passed, 0 failed
+//   genuinely-excluded address), the MEASURED line reads sel_reg($E00000)=0,
+//   matching the manual, in place of the baseline's sel_reg($DF0000)=1; the
+//   PASS/FAIL totals stay 8 passed, 0 failed, since no assertion pairs with
+//   this probe any longer. Rebuilt with no flags: 8 passed, 0 failed
 //   restored.
 // MUTATION ADDR-EXCLUSIVE-ABOVE-E00000 stimulus red: built with
 //   -DMUT_B3=1, which moves this probe from $E00000 to the known
@@ -152,13 +151,12 @@
 //   sel_reg($DF0000)=1, expected 0). Rebuilt with no flags: 8 passed, 0
 //   failed restored.
 // WITHDRAWN -- as above, for ADDR-EXCLUSIVE-MIDBLOCK-D00000.
-//   (was: MUTATION ADDR-EXCLUSIVE-MIDBLOCK-D00000 stimulus green) Built with
+//   PROBE CHECK for ADDR-MIDBLOCK-D00000-MEASURED (not graded): built with
 //   -DMUT_B6=1, which moves this probe from $D00000 to $FC0000 (a
-//   genuinely-excluded address) -> 8 passed, 0 failed, unchanged from
-//   baseline: no PASS/FAIL line pairs with this probe any longer, but the
-//   MEASURED line for ADDR-MIDBLOCK-D00000-MEASURED now reads
-//   sel_reg($FC0000)=0, matching the manual, in place of the baseline's
-//   sel_reg($D00000)=1. Rebuilt with no flags: 8 passed, 0 failed
+//   genuinely-excluded address), the MEASURED line reads sel_reg($FC0000)=0,
+//   matching the manual, in place of the baseline's sel_reg($D00000)=1; the
+//   PASS/FAIL totals stay 8 passed, 0 failed, since no assertion pairs with
+//   this probe any longer. Rebuilt with no flags: 8 passed, 0 failed
 //   restored.
 // MUTATION DMA-CHIP-MEMORY-ONLY-SWEEP stimulus red: built with
 //   -DMUT_C1=1, which drives the top sample point as a genuine CPU
