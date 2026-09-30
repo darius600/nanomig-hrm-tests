@@ -373,9 +373,10 @@
 //   COP1LCH/COP1LCL/COPJMP1, agnus_copper.v:78-88) at the SAME `agnus`
 //   boundary this package uses. Sprite and bitplane setup values (SPR0PTH/
 //   PTL/POS/CTL; DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP/BPLCON0/FMODE) are the
-//   same register values hrm/agnus_spritedma's and hrm/agnus_bitplanedma's
-//   own RTL_REGRESSION packages already show produce real reqdma/dma
-//   activity in these same submodules when driven directly - reused here
+//   same register values the removed hrm/agnus_spritedma and
+//   hrm/agnus_bitplanedma RTL_REGRESSION packages (docs/legacy-names.md)
+//   once showed produced real reqdma/dma activity in these same submodules
+//   when driven directly - reused here
 //   as known-good stimulus, re-applied through the `agnus` top-level
 //   register bus instead of each submodule's own ports, and re-verified
 //   against the real consumption signals (`dbr`/`dbwe`), not assumed to
@@ -774,8 +775,9 @@ void start_copper(Harness& h, uint16_t list_addr_words) {
 }
 
 void start_sprite0(Harness& h) {
-    // Mirrors hrm/agnus_spritedma's own known-good setup: pointer, then
-    // VSTART=0x20(32)/VSTOP=0x22(34) via SPR0POS/SPR0CTL.
+    // Mirrors the removed hrm/agnus_spritedma package's known-good setup
+    // (docs/legacy-names.md): pointer, then VSTART=0x20(32)/VSTOP=0x22(34)
+    // via SPR0POS/SPR0CTL.
     h.write_reg(SPR0PTH_ADDR, 0x0000);
     h.write_reg(SPR0PTL_ADDR, 0x2000);
     h.write_reg(SPR0POS_ADDR, 0x2000);
@@ -783,8 +785,9 @@ void start_sprite0(Harness& h) {
 }
 
 void start_bitplane(Harness& h) {
-    // Mirrors hrm/agnus_bitplanedma's own known-good "lowres, 1 bitplane"
-    // setup (DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP/BPLCON0/FMODE).
+    // Mirrors the removed hrm/agnus_bitplanedma package's known-good
+    // "lowres, 1 bitplane" setup (docs/legacy-names.md; DIWSTRT/DIWSTOP/
+    // DDFSTRT/DDFSTOP/BPLCON0/FMODE).
     h.write_reg(DIWSTRT_ADDR, 0x2C81);
     h.write_reg(DIWSTOP_ADDR, 0x2CC1);
     h.write_reg(DDFSTRT_ADDR, 0x0038);
