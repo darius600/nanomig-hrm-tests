@@ -1228,18 +1228,23 @@ static void group_G22() {
 #else
     set_mouse(1, 1, 1);
 #endif
-    settle(3); pulse(6);
+    settle(3);
+    pulse(kResetInterval); // the held phase above already spent 6 pulse-strobes
+                            // toward the interval; kResetInterval more brings
+                            // the total to 6+8=14, netting 6 (or 7) counted
+                            // once the interval (7 or 8) has elapsed
     uint16_t released_left = pot0dat();
-    bool left_both_have_a_pin = (released_left == 0x0606);
+    bool left_both_have_a_pin = matches_page_count(released_left >> 8, 6) &&
+                                 matches_page_count(released_left & 0xFF, 6);
     bool left_ok = left_holds_when_no_signal && left_both_have_a_pin;
 
     full_reset();
     arm_potgo(0x0001);
     dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
-    settle(3); pulse(6);
+    settle(3); pulse(kResetInterval + 6);
     uint16_t right_everything = pot1dat();
-    bool right_y_has_a_pin = ((right_everything >> 8) == 6);
-    bool right_x_has_a_pin = ((right_everything & 0xFF) != 0);
+    bool right_y_has_a_pin = matches_page_count(right_everything >> 8, 6);
+    bool right_x_has_a_pin = ((right_everything & 0xFF) != 0); // structurally always false -- pot1x has no pin, see file header note
     bool right_both_have_a_pin = right_y_has_a_pin && right_x_has_a_pin;
 
     note("Left connector (mouse): held -> $" + hex4(held_left) +
@@ -1304,8 +1309,15 @@ static void group_G23() {
 
     // POT1DAT ("RIGHT"): pot1x has no external pin (see file header note),
     // so it is set via POTGO's own output-enable bits, same as G5/G18.
+    // kResetInterval is spent up front, with pot1x still held (the default
+    // out of full_reset()), so the interval is exhausted before X_TARGET's
+    // own pulse count begins -- a bit-level table cannot be graded k-or-k+1
+    // per bit (75 and 76 do not differ by a single bit), so this claim is
+    // tested against the exact target, past the interval, rather than by
+    // widening the comparator.
     full_reset();
     arm_potgo(0x0001);
+    pulse(kResetInterval);
     set_potgo_bits(0x2000); settle(2);
     pulse(X_TARGET);
     set_potgo_bits(0x0000); settle(2); // hold pot1x again
@@ -1318,9 +1330,11 @@ static void group_G23() {
     expect((right_reg & 0xFF) == 0x4B, "sol:8-appa-pot.c17");
 
     // POT0DAT ("LEFT"): both counters have real external pins (mouse
-    // buttons).
+    // buttons). Same kResetInterval warm-up, pot0x still held, before
+    // X_TARGET's own pulse count begins.
     full_reset();
     arm_potgo(0x0001);
+    pulse(kResetInterval);
     set_mouse(0, 0, 1); settle(3);
     pulse(X_TARGET);
     set_mouse(0, 0, 0); settle(2);
