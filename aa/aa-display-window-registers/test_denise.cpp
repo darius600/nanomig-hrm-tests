@@ -45,12 +45,11 @@
 //
 //   ONE DIWHIGH WRITE CARRIES BOTH NINTH BITS, data_in[5] for the start and
 //   data_in[13] for the stop, and a write that sets only one of them moves
-//   the OTHER to zero. The first version of assertion 4 wrote bit 5 alone and
-//   measured a line lit from position 0: hdiwstop[8] had gone to 0, putting
-//   the stop at 192 and the start at 320, so the window opened near the end
-//   of one line and was still open at the beginning of the next. That is the
-//   register behaving as the page describes it, and the fixture reading it
-//   wrongly.
+//   the OTHER to zero. Writing bit 5 alone would
+//   measure a line lit from position 0: hdiwstop[8] would go to 0, putting
+//   the stop at 192 and the start at 320, so the window would open near the
+//   end of one line and stay open at the beginning of the next -- the
+//   register behaving as the page describes it, not a fixture misreading it.
 //
 // THE CHIP-SET CONDITION ON DIWHIGH CANNOT BE SHOWN HERE EITHER. The write
 //   is gated on `ecs`, and so is the border blanking this package sees the
@@ -149,8 +148,8 @@ public:
     // A SETTLING LINE RUNS FIRST AND IT IS NOT OPTIONAL. `window` is a latch:
     // set when hpos reaches hdiwstrt, cleared when it reaches hdiwstop, and
     // untouched by strhor. Measured straight after the register writes it is
-    // still whatever the previous activity left it, and the first version of
-    // this fixture read a line lit from position 0 for every start value.
+    // still whatever the previous activity left it, and reading it that way
+    // would show a line lit from position 0 for every start value.
     std::vector<bool> line(int pixels = 520) {
         for (int settle = 0; settle < 2; ++settle) {
             dut->strhor = 1;
