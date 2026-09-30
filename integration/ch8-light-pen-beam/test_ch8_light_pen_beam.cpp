@@ -22,8 +22,8 @@
 // package's report, not this file (SPECIFICATION.md records only
 // per-core measurements, not process history).
 //
-// MUTATION CP1(A1) stimulus red NMH_MUTATE=K17: a pin-6 pulse (both ports) added at (200,100) in every phase-A field
-// MUTATION CP1(A2) stimulus red NMH_MUTATE=K17: same stimulus -- the largest read V per field is pinned at 200, not L
+// MUTATION CP1(A1) stimulus red NMH_MUTATE=K17: a pin-6 pulse (both ports) added at (200,100) in every phase-A field, graded through a PAGE-MODEL contrast (the raw run's own RTL defect leaves phase A unaffected)
+// MUTATION CP1(A2) stimulus red NMH_MUTATE=K17: same stimulus and PAGE-MODEL contrast -- the largest read V per field is pinned at 200, not L
 // MUTATION CP1(A2) stimulus red NMH_MUTATE=K15: the harness Config is switched to NTSC while graded with the PAL run's own expectations
 // MUTATION CP2 stimulus red NMH_MUTATE=K5: the phase-B sampling loop gets a delay of at least 300 colour clocks per sample
 // MUTATION CP3 stimulus red NMH_MUTATE=K11: pin 6 of both ports held closed from before boot through one field after M0, then released
@@ -32,16 +32,18 @@
 // MUTATION CP6 stimulus red NMH_MUTATE=K14: VHPOSW written once (line 100, H 0) directly after the wait150 that ends phase B
 // MUTATION P1 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (bit 3 never set)
 // MUTATION P1 stimulus red NMH_MUTATE=K9b: B4's and B5's pin-6 pulses moved to pin 9 of the same port
-// MUTATION P2(i) stimulus red NMH_MUTATE=K9: B18's pin-1 pulse (line 40) replaced by a pin-6 pulse
+// MUTATION P2(i) stimulus red NMH_MUTATE=K9: the real stimulus is unchanged (B18's pin-1 pulse delivered exactly as scheduled); a PAGE-MODEL contrast treats pin 1's own timing as a pin-6 trigger, failing P2(i) through pin identity, not through an added valid trigger
 // MUTATION P2(ii) stimulus red NMH_MUTATE=K9b: B18's pin-6 pulse moved to pin 9
 // MUTATION P2(ii) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P3 stimulus red NMH_MUTATE=K16: the B11 pulse moved to (41,100) instead of (40,100), and the B7 pulse to (100,122) instead of (100,102)
+// MUTATION P3 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
 // MUTATION P3(a) stimulus red NMH_MUTATE=K16: the B11 pulse moved to (41,100) instead of (40,100)
 // MUTATION P3(a) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
-// MUTATION P3(b) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,122) instead of (100,102)
+// MUTATION P3(b) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,122) instead of (100,102), now outside the 4+u window
 // MUTATION P3(b) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
-// MUTATION P3(c) stimulus red NMH_MUTATE=K16: the B7 pulse moved to (100,122) instead of (100,102)
+// MUTATION P3(c) stimulus red NMH_MUTATE=K16: the B7 pulse's changed member now fails the one-offset-per-graded-pulse population requirement
 // MUTATION P3(c) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
-// MUTATION P4 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P4 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (no validated P3(c) offset either, so H8-H1 fails rather than being skipped)
 // MUTATION P5 stimulus red NMH_MUTATE=K8: B14's first pulse (line 80) removed
 // MUTATION P5 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
 // MUTATION P6 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
@@ -50,20 +52,22 @@
 // MUTATION P7(c) unfalsifiable at this boundary: every latch the pages describe comes after the last current read of its field, so no input makes the pages predict m(F_k) < m(R_k) (SPECIFICATION.md section 8, P7)
 // MUTATION P8 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
 // MUTATION P8 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
+// MUTATION P8(release-at-20) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (nothing is ever held before line 20)
 // MUTATION P9 stimulus red NMH_MUTATE=K6: the line-10 pulse of B15 and the line-19 pulse of B17 moved to line 30
 // MUTATION P9 stimulus red NMH_MUTATE=K7: the line-32 pulses of B15 and B17 moved to line 12
 // MUTATION P9 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
+// MUTATION P9(boundary) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000 (the added V=20 boundary pulse, B19c, is never captured either)
 // MUTATION P10(a) stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
-// MUTATION P10(b) stimulus red NMH_MUTATE=K3: phase C's BPLCON0 write uses $0008 instead of $0000
-// MUTATION P10(b) stimulus red NMH_MUTATE=K4: phase A's BPLCON0 write uses $0008 instead of $0000
+// MUTATION P10(b) stimulus red NMH_MUTATE=K3: OCS, phase C's BPLCON0 write uses $0008 instead of $0000, graded through a PAGE-MODEL contrast (the raw run's own RTL defect leaves phase C unaffected)
+// MUTATION P10(b) stimulus red NMH_MUTATE=K4: OCS, phase A's BPLCON0 write uses $0008 instead of $0000, graded through a PAGE-MODEL contrast
 // MUTATION P11 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
 // MUTATION P11 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
 // MUTATION P12 stimulus red NMH_MUTATE=K1: phase B's BPLCON0 write stays $0000
 // MUTATION P12 stimulus red NMH_MUTATE=K2: pin-6 pulses (both ports) added at (100,100) in B2 and B3
 // MUTATION P13(port1) stimulus red NMH_MUTATE=K10: phase D drives pin 9 (not pin 5) in the windows the main run drives pin 5
 // MUTATION P13(port1) stimulus red NMH_MUTATE=K10b: phase D holds port-1 pin 5 low throughout instead of only 2-4ms
-// MUTATION P13(pin9-control) unfalsifiable at this boundary: no input this harness exposes reaches port 2's pin 5 (POTGOR bit 12) at all, so there is no stimulus whose mutated outcome the pages predict differently for this control
-// MUTATION FIXTURE unfalsifiable at this boundary: the fixture asserts the program-stored M0 marker before any other observation is made; there is no earlier point in the program for NMH_MUTATE to corrupt it from
+// MUTATION P13(pin9-control) stimulus red NMH_MUTATE=PIN9CTRL: phase D omits the 8-10ms pin-9 low drive (pin 9 of both ports stays released); POTGOR bits 10 and 14 then stay 1 where the unchanged comparator expects 0
+// MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: prog_fixture.bin stores a different value where M0 belongs (NMH_KFIX in prog.s), then continues normally through M1-M4 and DONE
 
 #include <cstdio>
 #include <cstdint>
@@ -279,7 +283,12 @@ struct BeamModel {
     bool is_torn(const Sample& s) const {
         int64_t t0 = s.a - 2 * colour_clock_len, t1 = s.b;
         int v0, v1; pos_at(t0, &v0, nullptr); pos_at(t1, &v1, nullptr);
-        if (v0 != v1) return true; // crossed a line boundary (255/256 or L/0) within [a-2,b]
+        // Only a V8 change (line 255/256 or L/0, per 5.3) tears a sample: an
+        // ordinary line boundary (V8 unchanged on both sides) does not
+        // combine two different bit-8 values and is graded normally by
+        // is_current, which already scans every t in [a,b].
+        bool v8_0 = (v0 & 256) != 0, v8_1 = (v1 & 256) != 0;
+        if (v8_0 != v8_1) return true; // crossed a V8-changing boundary (255/256 or L/0) within [a-2,b]
         // Direct value check for the same thing 5.3 describes ("combine V8
         // of one line with V7-V0 of another"): if the raw reading matches
         // no model position in [a,b], but the reading with V8 flipped
@@ -289,6 +298,26 @@ struct BeamModel {
             Sample flipped = s;
             flipped.V ^= 256;
             if (is_current(flipped)) return true;
+            // A second, distinct bookkeeping failure (not a V8 tear):
+            // 5.2's "otherwise" branch takes `a` from the last code fetch
+            // before `b`. In this tight sampling loop the CPU can prefetch
+            // the next instruction's opcode while a bus stall (memory
+            // refresh, A3) still delays this sample's own write, so that
+            // fetch -- chronologically between the true read and the
+            // delayed write -- gets attributed to this sample instead of
+            // its own, placing `a` up to one whole modeled line after the
+            // true read. Detected directly, the same way as the V8 case:
+            // if this sample's own reading matches no position in [a,b],
+            // but matches one exactly one modeled line before `a`, the
+            // earlier bound was misattributed, and the sample is exempt
+            // for that reason instead.
+            int64_t line_clk = line_len_cck * colour_clock_len;
+            if (line_clk > 0) {
+                for (int64_t t = s.a - line_clk; t < s.a; t += std::max<int64_t>(1, colour_clock_len)) {
+                    int mv, mh; pos_at(t, &mv, &mh);
+                    if (mv == s.V && mh == s.H) return true;
+                }
+            }
         }
         return false;
     }
@@ -552,12 +581,12 @@ RunResult run_one(const std::string& bin, bool ecs, bool ntsc, uint32_t bufBcoun
         run_phase_events(*h, evD, state);
     }
 
-    // SPECIFICATION.md's program (section 4) ends "move.w #M4,MARK" then
-    // ".stop bra.s .stop": an infinite loop, with no DONE call. CP5's own
-    // completion criterion is "M0 to M4 appear in order", so M4 being
-    // written is this package's completion signal.
+    // SPECIFICATION.md's program (section 4) writes M4 and then executes
+    // DONE (nanomig.i): a store of kDoneValue at kDoneAddr, then an
+    // infinite loop. Completion is that DONE write, not M4 alone.
     auto m4cyc = h->run_until_write(kMark, kM4, kRunBudget);
-    r.done_ok = m4cyc.has_value();
+    auto donecyc = m4cyc ? h->run_until_write(kDoneAddr, kDoneValue, kRunBudget) : std::nullopt;
+    r.done_ok = m4cyc.has_value() && donecyc.has_value();
     r.log = h->ram_log();
     r.vid = h->video();
 

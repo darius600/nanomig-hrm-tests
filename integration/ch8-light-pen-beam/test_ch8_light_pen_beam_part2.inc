@@ -88,6 +88,21 @@ std::vector<PulseDef> phaseB_pin6_pulses(bool ntsc) {
         {17, 32, 100, true,  true,  kBitFire, true,  "B17b"},
         {18,160, 100, true,  true,  kBitFire, true,  "B18"},
         {19, ntsc ? 261 : 280, 100, true, true, kBitFire, false, "B19"},
+        // Boundary pulse at V=20 (P9's re-arming instant), placed early in
+        // field B19, well before B19's own observation-only pulse (line
+        // 261/280) and before Vrun, so it does not fall inside any RUN(j)
+        // window P7/P8 already check for currency (those all key off field
+        // 20 or 21, never 19's own run region). Not field B21: that field's
+        // own run region is P8's "field after B20" currency check (p8's
+        // no-trigger source set), and any pulse there would make it look
+        // latched instead of current, unrelated to this boundary's own
+        // clause. Not B15/B17: a second, later trigger in the SAME field
+        // would make apply_page_model's field-latch reasoning (P5: a second
+        // trigger while still frozen does not change the held value, so a
+        // field's first post-blanking onset always wins) mask that field's
+        // own later pulse's capture in the synthetic PAGE-MODEL control,
+        // unlike the raw run this boundary pulse is actually graded against.
+        {19, 20, 150, true, true, kBitFire, false, "B19c"},
     };
 }
 // B18's other-pin pulses (not pin 6): pins 1,2,3,4,5,9 both ports at
@@ -242,6 +257,17 @@ bool check_A2(const std::vector<Sample>& A, const BeamModel& m, bool ntsc) {
 }
 bool check_A2(const RunResult& r, int Vrun, bool ntsc) { (void)Vrun; return check_A2(r.A, r.model, ntsc); }
 
+// A "complete field": one whose whole span [field_start(f), field_start(f+1))
+// lies inside [lo,hi). A3 and A4 both grade only complete fields -- a field
+// only partly inside the window cannot show its own full line population or
+// know whether it holds exactly one vsync onset.
+void complete_field_range(const BeamModel& m, int64_t lo, int64_t hi, int64_t* f0, int64_t* f1) {
+    *f0 = m.field_index_of(lo);
+    if (m.field_start(*f0) < lo) ++*f0;
+    *f1 = m.field_index_of(hi);
+    if (m.field_start(*f1) + m.field_len_clksys > hi) --*f1;
+}
+
 // A3 (SPECIFICATION.md 5.4): "one group of four refresh accesses at the
 // Chip-memory port, at the same model H in every model line." Every
 // non-code, non-write access at the Chip-memory port in phases A-C is a
@@ -249,22 +275,37 @@ bool check_A2(const RunResult& r, int Vrun, bool ntsc) { (void)Vrun; return chec
 // go through the custom-register bus, not the Chip-memory port, and its
 // only other Chip-memory reads are its own code fetches (excluded by
 // kCodeLo/kCodeHi) and the two stack reads of `rts` (excluded by their
-// known address, PROGRAM_STACK). No percentage tolerance: the same set
-// of H positions must recur on every model line of the window, exactly.
+// known address, PROGRAM_STACK). No percentage tolerance, and no partial
+// population: every complete field in the window must show every one of
+// its L+1 lines with the same H-set, not merely "at least 8 lines seen"
+// (which can be satisfied while whole lines, and whole fields, are
+// missing from the count). Keyed by (field, line), not by line alone, so
+// two different fields never merge into one line's population.
 constexpr uint32_t kStackWordLo = (0x0FFF00 - 64) / 2, kStackWordHi = (0x0FFF00 + 8) / 2;
 bool check_A3(const RunResult& r, int64_t lo, int64_t hi) {
-    std::map<int64_t, std::set<int64_t>> byLine; // model line -> set of refresh H positions
+    std::map<std::pair<int64_t,int64_t>, std::set<int64_t>> byLine; // (field,line) -> refresh H set
     for (const auto& a : r.log) {
         if (a.is_write) continue;
         if ((int64_t)a.cycle < lo || (int64_t)a.cycle >= hi) continue;
         if (a.word_addr >= kCodeLo/2 && a.word_addr < kCodeHi/2) continue;
         if (a.word_addr >= kStackWordLo && a.word_addr < kStackWordHi) continue;
         int mv, mh; r.model.pos_at((int64_t)a.cycle, &mv, &mh);
-        byLine[mv].insert(mh);
+        int64_t f = r.model.field_index_of((int64_t)a.cycle);
+        byLine[{f, (int64_t)mv}].insert(mh);
     }
-    if (byLine.size() < 8) return false; // too few lines covered to say anything
-    std::set<int64_t> fixedSet = byLine.begin()->second;
-    for (auto& kv : byLine) if (kv.second != fixedSet) return false;
+    int64_t f0, f1;
+    complete_field_range(r.model, lo, hi, &f0, &f1);
+    if (f0 > f1) return false; // no complete field in the window
+    std::set<int64_t> fixedSet;
+    bool first = true;
+    for (int64_t f = f0; f <= f1; ++f) {
+        for (int line = 0; line <= r.model.L; ++line) {
+            auto it = byLine.find({f, (int64_t)line});
+            if (it == byLine.end()) return false; // a line of a complete field has no refresh access at all
+            if (first) { fixedSet = it->second; first = false; }
+            else if (it->second != fixedSet) return false;
+        }
+    }
     return !fixedSet.empty();
 }
 
@@ -276,20 +317,33 @@ bool check_A3(const RunResult& r, int64_t lo, int64_t hi) {
 // reads; only field_len_clksys, used only to pick line length, comes
 // from vsync). Comparing onset positions across fields is therefore not
 // circular: it cross-checks the counter-fitted position mapping against
-// an independently-timed signal.
+// an independently-timed signal. Every complete field must contain
+// EXACTLY one onset (not zero, not more than one): a window with no
+// complete field at all is not graded (there is nothing to require one
+// onset of), but a complete field with zero onsets, or with more than
+// one, is a genuine violation, not a vacuous pass.
 bool check_A4(const RunResult& r, int64_t lo, int64_t hi) {
     auto spans = nmh::find_frames(r.vid);
+    int64_t f0, f1;
+    complete_field_range(r.model, lo, hi, &f0, &f1);
+    if (f0 > f1) return false; // no complete field in the window
+    std::map<int64_t, int> countByField;
     std::optional<std::pair<int,int>> fixedPos;
-    int n = 0;
     for (size_t i = 0; i < spans.size(); ++i) {
         int64_t onset = (int64_t)spans[i].begin; // video sample index == clk_sys cycle (1:1)
         if (onset < lo || onset >= hi) continue;
+        int64_t f = r.model.field_index_of(onset);
+        if (f < f0 || f > f1) continue;
+        ++countByField[f];
         int mv, mh; r.model.pos_at(onset, &mv, &mh);
         if (!fixedPos) fixedPos = {mv, mh};
         else if (fixedPos->first != mv || fixedPos->second != mh) return false;
-        ++n;
     }
-    return true; // n==0: window too short to contain an onset; not contradicted
+    for (int64_t f = f0; f <= f1; ++f) {
+        auto it = countByField.find(f);
+        if (it == countByField.end() || it->second != 1) return false;
+    }
+    return true;
 }
 
 // CP4 (SPECIFICATION.md section 7): every applied input change landed on
@@ -442,8 +496,9 @@ Preconds grade_preconditions(const RunResult& r, bool ntsc, const std::string& c
         r.model.pos_at(r.m2cyc, &lv2, nullptr);
         bplconAtLine150 = (lv1 == 150 || lv1 == 151) && (lv2 == 150 || lv2 == 151);
     }
-    pc.cp5 = m_order && covA && covB && covC && covD && bplconAtLine150;
-    checks.expect(pc.cp5, "CP5 " + cfgLabel + ": the program ran as specified -- M0..M4 appear in order; "
+    pc.cp5 = m_order && r.done_ok && covA && covB && covC && covD && bplconAtLine150;
+    checks.expect(pc.cp5, "CP5 " + cfgLabel + ": the program ran as specified -- M0..M4 appear in order and "
+        "DONE is reached; "
         "the BPLCON0 writes fall at model line 150 (measured M1 line=" +
         (m_order ? std::to_string([&]{int v;r.model.pos_at(r.m1cyc,&v,nullptr);return v;}()) : std::string("n/a")) +
         ", M2 line=" + (m_order ? std::to_string([&]{int v;r.model.pos_at(r.m2cyc,&v,nullptr);return v;}()) : std::string("n/a")) +
@@ -494,8 +549,8 @@ static const PropIds kPropIdsLatch[] = {
     {"P5",  "p239",      "opus:8-lpen.c36 sol:8-pen.c36"},
     {"P6",  "p239",      "opus:8-lpen.c38 sol:8-pen.c38"},
     {"P7",  "p239",      "opus:8-lpen.c37 sol:8-pen.c37"},
-    {"P8",  "p239",      "opus:8-lpen.c39"},
-    {"P9",  "p238",      "(none)"},
+    {"P8",  "p239",      "opus:8-lpen.c39 sol:8-pen.c39"},
+    {"P9",  "p238",      "opus:8-lpen.c12 sol:8-pen.c12"},
     {"P10", "p239,p229", "opus:8-lpen.c35 sol:8-pen.c35 opus:8-regs.c16 sol:8-reg.c18 (P10(a) only; P10(b) is the control, no ids)"},
     {"P11", "p239",      "opus:8-lpen.c43 sol:8-pen.c41 opus:8-lpen.c47 sol:8-pen.c44 opus:8-lpen.c48 sol:8-pen.c45 sol:8-pen.c46"},
     {"P12", "p239",      "opus:8-lpen.c52"},
@@ -564,23 +619,36 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
         std::string(b4_captured ? "yes" : "no") + ", port2(B5) captured=" + std::string(b5_captured ? "yes" : "no"));
 
     // ---- P2 ----
+    // Port-2 pin 5 (POTGOR bit 12): no input this harness exposes reaches
+    // it (SPECIFICATION.md section 3, "Port mapping"), so RUN(B18) grades
+    // "the other signal pins" only over the driven population -- pins
+    // 1-4 and 9 on both ports, pin 5 on port 1 -- not the full "both
+    // ports" population the label names. The undriven half is recorded
+    // below, carrying the same ids, rather than folded silently into a
+    // PASS/FAIL that cannot see it.
     auto runB18 = window_RUN(r.B, r.model, r.B0_idx + 18, Vrun, timing["B18"].t_on);
     bool p2i = all_current(runB18, r.model);
     auto postB18 = window_POST(r.B, r.model, timing["B18"].t_off, r.B0_idx + 19);
     bool p2ii = all_equal_raw(postB18) && none_current(postB18, r.model);
     bool p2 = p2i && p2ii;
     gate(p2, "P2 " + cfgLabel + " p238,p228 opus:8-lpen.c16 sol:8-pen.c17 opus:8-tbl8-1.c20 "
-        "sol:8-pin.c22: pin 6 is the beam-trigger line and the other signal pins are not (RUN(B18) up to the "
-        "pin-6 pulse stays current, and the pin-6 pulse itself is captured)");
-    checks.record("P2: B18's schedule (section 6) also pulses pin 5, port 2, at line 120. No input this "
-        "harness exposes reaches port 2's pin 5 (SPECIFICATION.md section 3, \"Port mapping\"), so only "
-        "port 1's pin-5 pulse is driven; port 2's pin 5 is not exercised as one of \"all six other signal "
-        "pins, both ports\" and is not graded here.");
+        "sol:8-pin.c22: pin 6 is the beam-trigger line and the driven population of the other signal pins is "
+        "not ((i) RUN(B18) up to the pin-6 pulse stays current, (ii) the pin-6 pulse itself is captured)");
+    gate(p2i, "P2(i) " + cfgLabel + " p238,p228: none of the driven other-pin pulses in RUN(B18) is captured "
+        "(component of the combined P2 assertion; no independently-sufficient id)");
+    gate(p2ii, "P2(ii) " + cfgLabel + " p238,p228: the pin-6 pulse in B18 is captured (component of the "
+        "combined P2 assertion; no independently-sufficient id)");
+    checks.record("P2 " + cfgLabel + " p238,p228 opus:8-lpen.c16 sol:8-pen.c17 opus:8-tbl8-1.c20 "
+        "sol:8-pin.c22 (port-2 pin 5): not established -- B18's schedule (section 6) also pulses pin 5, port "
+        "2, at line 120, but no input this harness exposes reaches port 2's pin 5 (SPECIFICATION.md section "
+        "3, \"Port mapping\"); only port 1's pin-5 pulse is driven, so this one of the twelve pin/port "
+        "combinations the label's \"both ports\" reading names is not exercised.");
 
     // ---- P3 ----
     bool p3a = true, p3b = true;
     std::vector<int64_t> offsets;
     int graded_n = 0;
+    int64_t u_cck = r.model.u_cck;
     for (const auto& p : pulses) {
         if (!p.graded) continue;
         if ((p.tag == "B4" && !b4_captured) || (p.tag == "B5" && !b5_captured)) continue;
@@ -591,28 +659,41 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
         int V = post[0].V, H = post[0].H;
         if (V != p.line) p3a = false;
         int href; r.model.pos_at(t.t_on, nullptr, &href); // H_ref at t_on within this line
+        // (b) H(P) must lie within beam([t_on,t_off]): the window is the
+        // pulse's own 4-colour-clock duration plus the model uncertainty u
+        // (SPECIFICATION.md 5.2, 9 P3), starting at t_on -- not a tolerance
+        // granted to the implementation. A stable capture at an H outside
+        // this window is graded red here even if (c)'s offsets still agree.
+        if (H < href || H > href + 4 + u_cck) p3b = false;
         offsets.push_back((int64_t)H - href);
     }
-    bool p3c = false;
-    if (!offsets.empty()) {
-        p3c = true;
-        for (auto o : offsets) if (o != offsets[0]) p3c = false;
-    }
-    // P3 id split (SPECIFICATION.md section 9, P3): sol:8-pen.c19 says
-    // "The captured beam position contains the horizontal beam value at
-    // the instant" -- H-specific, so it sits on (b) (the H window) and
-    // (c) (H's exactness). sol:8-pen.c20 says "...the vertical beam value
-    // at the instant" -- V-specific, so it sits on (a). opus:8-lpen.c17
-    // ("captures and saves the current contents of VPOSR"), opus:8-lpen.c18
-    // and sol:8-pen.c18 ("captures the current VPOSR contents" /
-    // "the exact horizontal and vertical value ... at the instant") name
-    // neither axis alone, so they sit on the conjunction (a)+(b)+(c).
-    gate(p3a, "P3(a) " + cfgLabel + " p238 opus:8-lpen.c17 opus:8-lpen.c18 sol:8-pen.c18 "
-        "sol:8-pen.c20: every graded pulse's captured V equals the model line at its onset");
-    gate(p3b, "P3(b) " + cfgLabel + " p238 opus:8-lpen.c17 opus:8-lpen.c18 sol:8-pen.c18 sol:8-pen.c19: "
-        "every graded pulse's captured H lies within beam([t_on,t_off])");
-    gate(p3c, "P3(c) " + cfgLabel + " p238,p239 opus:8-lpen.c17 opus:8-lpen.c18 sol:8-pen.c18 sol:8-pen.c19: "
-        "the offset d(p)=H(P)-H_ref(t_on) is the same for every graded pulse (exactness)");
+    // (c) Exactness requires one valid offset for EVERY graded pulse: a
+    // pulse (a)/(b) already dropped for an empty or varying POST must not
+    // silently shrink the population (c) compares against (SPECIFICATION.md
+    // section 9, P3(c)) -- offsets.size() short of graded_n is itself a
+    // failure, not merely "no offsets recorded".
+    bool p3c = !offsets.empty() && offsets.size() == (size_t)graded_n;
+    if (p3c) for (auto o : offsets) if (o != offsets[0]) p3c = false;
+    bool p3 = p3a && p3b && p3c;
+    // P3 id placement (SPECIFICATION.md section 9, P3): opus:8-lpen.c17,
+    // opus:8-lpen.c18 and sol:8-pen.c18 name neither axis alone and need
+    // (a), (b) and (c) together; sol:8-pen.c19 ("the horizontal beam value
+    // at the instant") needs (b) and (c) together. All four sit on one
+    // combined P3 assertion, not on the separate component lines below.
+    // sol:8-pen.c20 ("the vertical beam value at the instant") is
+    // V-specific and independently sufficient from (a) alone, so it stays
+    // on that component line; (b) and (c) have no id that either
+    // establishes alone.
+    gate(p3, "P3 " + cfgLabel + " p238 opus:8-lpen.c17 opus:8-lpen.c18 sol:8-pen.c18 sol:8-pen.c19: a "
+        "trigger captures the beam position exactly at its instant ((a) V equals the model line, (b) H lies "
+        "within beam([t_on,t_off]), (c) the offset is the same for every graded pulse)");
+    gate(p3a, "P3(a) " + cfgLabel + " p238 sol:8-pen.c20: every graded pulse's captured V equals the model "
+        "line at its onset");
+    gate(p3b, "P3(b) " + cfgLabel + " p238: every graded pulse's captured H lies within beam([t_on,t_off]) "
+        "(component of the combined P3 assertion; no independently-sufficient id)");
+    gate(p3c, "P3(c) " + cfgLabel + " p238,p239: the offset d(p)=H(P)-H_ref(t_on) is the same for every "
+        "graded pulse, with one valid offset required for each (component of the combined P3 assertion; no "
+        "independently-sufficient id)");
     checks.note(cfgLabel + " P3: graded population size=" + std::to_string(graded_n));
 
     // ---- P4 ----
@@ -636,7 +717,11 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
             int v8 = (s.raw32 >> 16) & 1;
             int hi = (s.raw32 >> 8) & 0xFF;
             int lo8 = s.raw32 & 0xFF;
-            bool loOk = haveOffset ? (lo8 == ((href + offset0) & 0xFF)) : true;
+            // Absence of a validated P3(c) offset fails H8-H1's own check
+            // rather than skipping it: H is part of the p.238 register
+            // layout and the P4 label, so it must be graded (or fail)
+            // whenever no offset can validate it, never silently pass.
+            bool loOk = haveOffset && (lo8 == ((href + offset0) & 0xFF));
             if (v8 != c.wantV8 || hi != c.wantHi || !loOk) { p4 = false; break; }
         }
     }
@@ -652,6 +737,13 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     std::string p5lof;
     for (const auto& p : pulses) {
         if (!p.graded) continue;
+        // p.229 leaves which controller port carries the pen to the model
+        // (SPECIFICATION.md section 3, "Port mapping"; P1's own point 4).
+        // B4 and B5 are single-port pulses: grade the one P1 found latching
+        // on at least one port, not both unconditionally -- a conforming
+        // implementation with only its selected port active could
+        // otherwise fail this on the port it never uses.
+        if ((p.tag == "B4" && !b4_captured) || (p.tag == "B5" && !b5_captured)) continue;
         const auto& t = timing[p.tag];
         auto post = window_POST(r.B, r.model, t.t_off, t.field_idx + 1);
         if (!all_equal_raw(post)) {
@@ -663,6 +755,9 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     }
     gate(p5, "P5 " + cfgLabel + " p239 opus:8-lpen.c36 sol:8-pen.c36: after a trigger VPOSR is frozen "
         "until the release (every sample of POST(p) is equal, for every graded pulse)");
+    checks.record("P5: which single-port pulse (B4 port1 or B5 port2) is graded follows P1's own measured "
+        "capture -- port1(B4) graded=" + std::string(b4_captured ? "yes" : "no") + ", port2(B5) graded=" +
+        std::string(b5_captured ? "yes" : "no"));
     if (!p5lof.empty()) checks.note(cfgLabel + " P5: differences confined to VPOSR bit 15 (LOF, 10.8) in "
         "POST windows of pulses " + p5lof);
 
@@ -681,6 +776,9 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     };
     for (const auto& p : pulses) {
         if (!p.graded) continue;
+        // Same single-port rule as P5 (SPECIFICATION.md section 3, "Port
+        // mapping"; P1's point 4): grade B4/B5 only for the port P1 found.
+        if ((p.tag == "B4" && !b4_captured) || (p.tag == "B5" && !b5_captured)) continue;
         const auto& t = timing[p.tag];
         int64_t lo = t.t_off + line_len_clk(r.model);
         auto post = filter_by_a(r.B, lo, r.model.field_start(t.field_idx + 1) + 20 * line_len_clk(r.model));
@@ -692,36 +790,62 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     }
     gate(p6, "P6 " + cfgLabel + " p239 opus:8-lpen.c38 sol:8-pen.c38: while latched, VPOSR never "
         "shows the current beam position (no sample in the latched windows is current)");
+    checks.record("P6: which single-port pulse (B4 port1 or B5 port2) is graded follows P1's own measured "
+        "capture -- port1(B4) graded=" + std::string(b4_captured ? "yes" : "no") + ", port2(B5) graded=" +
+        std::string(b5_captured ? "yes" : "no"));
     if (!p6lof.empty()) checks.note(cfgLabel + " P6: differences confined to VPOSR bit 15 (LOF, 10.8) in "
         "windows " + p6lof);
 
     // ---- P7 ----
     bool p7a = true, p7b = true, p7c = true;
-    int p7cN = 0; // P7(c)'s graded population; "not graded" when it stays 0
+    int p7cN = 0;        // P7(c)'s graded population: RUN(k) and VB(k+1) both
+                         // non-empty AND VB(k+1) is one consistent value.
+    int p7cSkipped = 0;  // same population, but VB(k+1) was not one consistent
+                         // value (P7(b) already failed there), so m(F_k) has
+                         // no single value to compare against m(R_k).
     for (int k : notrig_fields) {
         int64_t fk = r.B0_idx + k;
         auto run = window_RUN(r.B, r.model, fk, Vrun);
         if (!all_current(run, r.model)) p7a = false;
         auto vb = window_VB(r.B, r.model, fk + 1);
-        if (vb.empty() || !all_equal_raw(vb)) { p7b = false; continue; }
-        int Fk_V = vb[0].V;
-        if (Fk_V != r.model.L) p7b = false;
-        if (!run.empty()) {
-            ++p7cN;
-            int m_last = 256 * run.back().V + run.back().H;
-            int m_Fk = 256 * vb[0].V + vb[0].H;
-            if (m_Fk < m_last) p7c = false;
+        bool vbOk = !vb.empty() && all_equal_raw(vb);
+        if (!vbOk) {
+            p7b = false;
+        } else {
+            int Fk_V = vb[0].V;
+            if (Fk_V != r.model.L) p7b = false;
+        }
+        // The population for (c) is "RUN(k) and VB(k+1) both non-empty for a
+        // no-trigger field k" (SPECIFICATION.md section 9, P7): whether that
+        // population is non-empty does not depend on whether (b) itself
+        // passed, only on whether there are samples to compare at all.
+        if (!run.empty() && !vb.empty()) {
+            if (vbOk) {
+                ++p7cN;
+                int m_last = 256 * run.back().V + run.back().H;
+                int m_Fk = 256 * vb[0].V + vb[0].H;
+                if (m_Fk < m_last) p7c = false;
+            } else {
+                ++p7cSkipped;
+            }
         }
     }
     bool p7 = p7a && p7b;
     gate(p7, "P7 " + cfgLabel + " p239 opus:8-lpen.c37 sol:8-pen.c37: without a trigger, the beam "
         "counters latch at the end of the field ((a) RUN(k) stays current, (b) VB(k+1) is one position at line L)");
-    if (p7cN == 0) {
+    if (p7cN == 0 && p7cSkipped == 0) {
         checks.record("P7(c) " + cfgLabel + " p239: not graded -- the population (RUN(k) and VB(k+1) both "
             "non-empty, for a no-trigger field k) is empty this run");
+    } else if (p7cN == 0) {
+        checks.record("P7(c) " + cfgLabel + " p239: not evaluated because P7(b) failed for every field with "
+            "a population (" + std::to_string(p7cSkipped) + " of " + std::to_string(notrig_fields.size()) +
+            "): VB(k+1) is not one consistent value there, so m(F_k) has no single value to compare against "
+            "m(R_k)");
     } else {
         gate(p7c, "P7(c) " + cfgLabel + " p239: m(F_k) >= m(R_k) for every graded no-trigger field "
-            "(unfalsifiable by stimulus at this boundary per SPECIFICATION.md)");
+            "(unfalsifiable by stimulus at this boundary per SPECIFICATION.md)" +
+            (p7cSkipped ? (" -- " + std::to_string(p7cSkipped) + " field(s) not evaluated because P7(b) "
+                "failed for them") : std::string()));
     }
 
     // ---- P8 ----
@@ -731,53 +855,115 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     // no-trigger field end (already fully established by P7's own F_k).
     // (b) RUN(j) runs from Vrun to the first graded pin-6 pulse of j, or
     // to L_j-1 if there is none (SPECIFICATION.md section 9, P8).
-    bool p8a = true, p8b = true;
-    std::vector<std::string> capture_tags = {"B4","B5","B6","B7","B8","B9","B10","B11","B12","B13","B14a","B15b","B17b","B18"};
+    // (c, sol:8-pen.c39) the held value stays held through line 19 and the
+    // live counter is visible by the stated line-20 release -- p.239's own
+    // "vertical position 20" is standard-independent (the pages that
+    // disagree, 10.1, describe general video/display blanking, not this
+    // light-pen-specific internal latch), so this is graded the same way in
+    // PAL and NTSC.
+    bool p8a = true, p8b = true, p8c = true;
+    // B19's own pulse (line 261/280) is not one of 5.5's "graded pin-6
+    // pulses" (its field is outside B4-B18), but it still physically
+    // triggers, so its own latched window (VB(B20)) is one of P8's sources
+    // too (SPECIFICATION.md section 9, P8: "Every latched window ending in
+    // fields B2 to B21, from captures as well as from no-trigger field
+    // ends").
+    std::vector<std::string> capture_tags = {"B4","B5","B6","B7","B8","B9","B10","B11","B12","B13","B14a","B15b","B17b","B18","B19"};
+    // P8's own no-trigger source set additionally includes B16 (P7 leaves
+    // its end out only because VB(B17) also holds the line-19 pulse P9
+    // grades, so a P7 red there could come through P9's clause instead --
+    // that reason does not apply to P8, a different proposition).
+    const std::vector<int> p8_notrig_fields = {1, 2, 3, 16, 20};
     std::string reported;
     // The cutoff is "the first graded pin-6 pulse of j, or L_j-1 if there is
-    // none" (SPECIFICATION.md section 9, P8). A pulse still in vertical
-    // blanking (line < Vrun) cannot end RUN: it lands before RUN starts and
-    // (P5) cannot overwrite a freeze already in place. B19's own pulse is
-    // not one of 5.5's "graded pin-6 pulses" (its field is outside B4-B18),
-    // but at line 261/280 it is a real, run-region trigger all the same,
-    // so it still ends RUN(19) exactly as a graded one would.
+    // none" (SPECIFICATION.md section 9, P8), widened to any pulse from
+    // line 20 on (not just line >= Vrun, and not just 5.5's narrow "graded"
+    // population): a pulse still fully inside vertical blanking (line < 20)
+    // cannot end RUN, since it lands before the release and (P5) cannot
+    // overwrite a freeze already in place, but ANY pulse from the release
+    // line on -- B19's own observation-only pulse, or B19c's boundary
+    // pulse -- is a real trigger that ends the field's unlatched span the
+    // same way a graded one would, even though it sits before Vrun itself.
+    // Where such an early pulse preempts the whole RUN(j) window (cutoff at
+    // or before Vrun), the window comes back empty; that is a structural
+    // consequence of the preemption, not missing data, so it is graded as
+    // satisfied below rather than through all_current's own empty-is-false
+    // default (reserved for a window that should have samples and does not).
     auto first_graded_pulse_cutoff = [&](int64_t j) -> std::optional<int64_t> {
         std::optional<int64_t> cutoff;
         for (const auto& p2 : pulses) {
-            if (p2.line < Vrun) continue;
+            if (p2.line < 20) continue;
             if ((p2.tag == "B4" && !b4_captured) || (p2.tag == "B5" && !b5_captured)) continue;
             const auto& t2 = timing[p2.tag];
             if (t2.field_idx == j && (!cutoff || t2.t_on < *cutoff)) cutoff = t2.t_on;
         }
         return cutoff;
     };
+    // The actual held-to-current transition for field j: scans VB(j) (lines
+    // 0-19) then lines 20 to L-1 in order, returning the first sample that
+    // matches the live beam -- not merely vb[0] (which is simply the first
+    // sample of the blanking window, almost always still held).
+    auto find_transition = [&](int64_t j) -> std::optional<std::pair<int,int>> {
+        for (const auto& s : window_VB(r.B, r.model, j))
+            if (!r.model.is_torn(s) && r.model.is_current(s)) return std::make_pair(s.V, s.H);
+        int64_t lo = r.model.field_start(j) + 20 * line_len_clk(r.model);
+        int64_t hi = r.model.field_start(j) + (int64_t)r.model.L * line_len_clk(r.model);
+        for (const auto& s : filter_by_a(r.B, lo, hi))
+            if (!r.model.is_torn(s) && r.model.is_current(s)) return std::make_pair(s.V, s.H);
+        return std::nullopt;
+    };
+    auto line20_samples = [&](int64_t j) {
+        int64_t lo = r.model.field_start(j) + 20 * line_len_clk(r.model);
+        int64_t hi = r.model.field_start(j) + 21 * line_len_clk(r.model);
+        return filter_by_a(r.B, lo, hi);
+    };
+    auto grade_release_at_20 = [&](int64_t j, const std::vector<Sample>& vb) {
+        if (!vb.empty() && !none_current(vb, r.model)) p8c = false; // held value must not be the live beam
+        auto l20 = line20_samples(j);
+        if (!l20.empty() && !all_current(l20, r.model)) p8c = false; // released by line 20, not later
+    };
     for (const auto& tag : capture_tags) {
         auto it = timing.find(tag);
         if (it == timing.end()) continue;
-        if ((tag == "B4" && !b4_captured) || (tag == "B5" && !b5_captured)) continue;
+        bool wasCaptured = true;
+        if (tag == "B4") wasCaptured = b4_captured;
+        if (tag == "B5") wasCaptured = b5_captured;
         int64_t j = it->second.field_idx + 1;
         auto vb = window_VB(r.B, r.model, j);
+        // (a)'s consistency half is required unconditionally -- "the ends of
+        // B4 and B5 are latched either way" (SPECIFICATION.md section 9, P8):
+        // whichever port did not capture still sees no trigger that field,
+        // so P7's own field-end latch applies to it instead.
         if (!vb.empty()) {
             if (!all_equal_raw(vb)) p8a = false;
-            auto post = window_POST(r.B, r.model, it->second.t_off, j);
-            if (!post.empty() && vb[0].raw32 != post[0].raw32) p8a = false;
+            if (wasCaptured) {
+                auto post = window_POST(r.B, r.model, it->second.t_off, j);
+                if (!post.empty() && vb[0].raw32 != post[0].raw32) p8a = false;
+            }
         }
         auto run = window_RUN(r.B, r.model, j, Vrun, first_graded_pulse_cutoff(j));
-        if (!all_current(run, r.model)) p8b = false;
-        if (!vb.empty()) reported += tag + ":L" + std::to_string(vb[0].V) + "H" + std::to_string(vb[0].H) + " ";
+        if (!run.empty() && !all_current(run, r.model)) p8b = false;
+        grade_release_at_20(j, vb);
+        auto tr = find_transition(j);
+        reported += tag + ":" + (tr ? ("L" + std::to_string(tr->first) + "H" + std::to_string(tr->second)) : "none") + " ";
     }
-    for (int k : notrig_fields) {
+    for (int k : p8_notrig_fields) {
         int64_t j = r.B0_idx + k + 1;
         auto vb = window_VB(r.B, r.model, j);
         if (!vb.empty() && !all_equal_raw(vb)) p8a = false;
         auto run = window_RUN(r.B, r.model, j, Vrun, first_graded_pulse_cutoff(j));
-        if (!all_current(run, r.model)) p8b = false;
+        if (!run.empty() && !all_current(run, r.model)) p8b = false;
+        grade_release_at_20(j, vb);
     }
     bool p8 = p8a && p8b;
     gate(p8, "P8 " + cfgLabel + " p239 opus:8-lpen.c39: every latch holds until the end of internal "
         "vertical blanking and no longer ((a) VB(j) is one value equal to the value the source latch froze, "
         "(b) RUN(j) up to j's first graded pin-6 pulse is current)");
-    checks.note(cfgLabel + " P8 measured first-current line/H per window: " + reported);
+    gate(p8c, "P8(release-at-20) " + cfgLabel + " p239 sol:8-pen.c39: the held value is still visible before "
+        "line 20 and the live counter is visible from the stated line-20 release, in every latched window "
+        "(unlike opus:8-lpen.c39, which grades only the bounded end-of-blanking span, this restores the "
+        "page's own line number)");
+    checks.note(cfgLabel + " P8 measured first-CURRENT (live) line/H per window: " + reported);
 
     // ---- P9 ----
     auto runB15 = window_RUN(r.B, r.model, r.B0_idx + 15, Vrun, timing["B15b"].t_on);
@@ -799,6 +985,24 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     gate(p9, "P9 " + cfgLabel + " p238: the capture circuitry re-arms by itself as vertical blank "
         "ends ((a) no hold-over past the release, (b) a pulse after blank is captured, (c) re-arming repeats "
         "every field)");
+
+    // (d, opus:8-lpen.c12/sol:8-pen.c12) the boundary itself: B19's early
+    // pulse (B19c) sits exactly at the stated release line (vertical
+    // position 20, the same line P8's restored release-at-20 check
+    // grades), well before Vrun and before B19's own observation-only
+    // pulse. Grading whether THIS pulse is captured -- the first eligible
+    // position -- observes the re-arming instant directly, rather than
+    // declining both ids for want of a probe there. The window runs to
+    // line 200 of the same field, safely before B19's own pulse (line
+    // 261 NTSC / 280 PAL) and well inside phase B's dense, fully-covered
+    // early fields.
+    const auto& tB19c = timing["B19c"];
+    int64_t b19c_hi = r.model.field_start(tB19c.field_idx) + 200 * line_len_clk(r.model);
+    auto postB19c = filter_by_a(r.B, tB19c.t_off, b19c_hi);
+    bool p9boundary = !postB19c.empty() && all_equal_raw(postB19c) && none_current(postB19c, r.model);
+    gate(p9boundary, "P9(boundary) " + cfgLabel + " p238 opus:8-lpen.c12 sol:8-pen.c12: a pulse exactly at "
+        "the stated release line (vertical position 20) is captured, the first eligible position once P8 "
+        "establishes V=20 as the release line");
 
     // ---- P10 ----
     bool p10a = p3a && p3b && p7b;
@@ -835,9 +1039,12 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
     int64_t threshold = 0x10500;
     auto excluded_fields = std::set<int64_t>{r.B0_idx, r.B0_idx + 4, r.B0_idx + 5, r.B0_idx + 19};
     auto vb_excluded_fields = std::set<int64_t>{r.B0_idx + 1, r.B0_idx + 5, r.B0_idx + 6, r.B0_idx + 20};
+    // "A pulse" (SPECIFICATION.md section 9, P11 point 3) is any scheduled
+    // trigger, not only a P3-graded one: an ungraded pulse (B4/B5 before
+    // P1 decides them, B19's observation-only pulse, the P9 boundary pulse
+    // B19c) still perturbs VPOSR and must be excluded the same way.
     auto overlaps_pulse = [&](const Sample& s) {
         for (const auto& p : pulses) {
-            if (!p.graded) continue;
             const auto& t = timing[p.tag];
             if (s.a <= t.t_off && s.b >= t.t_on) return true;
         }
@@ -977,7 +1184,13 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
         [&]{ auto g = graded_slice(t8000, t10000); return DWin{g.first, g.second, false, "8-10ms"}; }(),
         [&]{ auto g = graded_slice(t10000, t12000); return DWin{g.first, g.second, false, "10-12ms"}; }(),
     };
-    bool p13_bit8 = true, p13_bit12 = true;
+    // Port 1 (bit 8) and port 2 (bit 12) are tracked as two separate
+    // booleans, never ANDed under one "port1" label: port 2's pin 5 is
+    // never driven low by any input this harness exposes (SPECIFICATION.md
+    // section 3), so bit 12 only ever measures its idle (always-1) half --
+    // folding that trivial measurement into a label named "port1" would
+    // misattribute it, exactly the defect this split repairs.
+    bool p13_bit8 = true, p13_bit12_idle = true;
     for (const auto& w : dwins) {
         for (const auto& s : r.D) {
             if (s.a < w.lo || s.a >= w.hi) continue;
@@ -987,7 +1200,7 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
             bool want0 = w.bit8_expect0;
             if (want0 && bit8 != 0) p13_bit8 = false;
             if (!want0 && bit8 != 1) p13_bit8 = false;
-            if (bit12 != 1) p13_bit12 = false; // idle half: bit 12 is never driven, so always 1 here
+            if (bit12 != 1) p13_bit12_idle = false; // idle half: bit 12 is never driven, so always 1 here
         }
     }
     bool p13_pin9 = true;
@@ -998,17 +1211,26 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
           int bit10 = (s.raw16 >> 10) & 1, bit14 = (s.raw16 >> 14) & 1;
           if (bit10 != 0 || bit14 != 0) p13_pin9 = false;
       } }
-    checks.expect(p13_bit8 && p13_bit12, "P13(port1) " + cfgLabel + " p238 opus:8-lpen.c10 opus:8-lpen.c11 "
+    checks.expect(p13_bit8, "P13(port1) " + cfgLabel + " p238 opus:8-lpen.c10 opus:8-lpen.c11 "
         "sol:8-pen.c10 sol:8-pen.c11: the pen-pressed switch on pin 5 reads like the middle mouse button "
-        "(POTGOR bit 8 is 0 while port-1 pin 5 is driven low, 1 in every other graded window; bit 12 stays "
-        "1 throughout, its idle half, since no input this harness exposes drives it low)");
+        "(POTGOR bit 8 is 0 while port-1 pin 5 is driven low, 1 in every other graded window)");
     checks.expect(p13_pin9, "P13(pin9-control) " + cfgLabel + ": POTGOR bits 10 and 14 (pin 9, the right "
         "mouse button pot line) read 0 while pin 9 of both ports is driven low (p.240, p.241's button-read "
         "convention), confirming they track pin 9 and not pin 5's bit 8/12");
-    checks.record("P13(port2): SPECIFICATION.md schedules port-2 pin 5 low for 5-7ms and grades POTGOR bit "
-        "12 there. No input this harness exposes (joystick0/1, mouse_buttons) reaches that pot line (measured: "
-        "driving every one leaves POTGOR bit 12 unchanged, SPECIFICATION.md section 3); the low-driven half of "
-        "that window is not exercised and is not graded. Its idle half is graded above with every other window.");
+    // Port-2 pin 5 (bit 12): expose/drive it is not possible through this
+    // harness (measured, SPECIFICATION.md section 3), so the proposition's
+    // ids are withdrawn from this half rather than claimed via bit 12's
+    // trivial idle reading. p.238's "regardless of the port used" does not
+    // by itself establish the active-low case for a port this harness
+    // cannot drive.
+    checks.note(cfgLabel + " P13(port2): bit 12 measured 1 (idle) in every graded window -- " +
+        std::string(p13_bit12_idle ? "consistent with never being driven" : "INCONSISTENT: bit 12 was not "
+        "1 in some window despite never being driven low"));
+    checks.record("P13 " + cfgLabel + " p238 opus:8-lpen.c10 opus:8-lpen.c11 sol:8-pen.c10 sol:8-pen.c11 "
+        "(port-2 pin 5): not established -- SPECIFICATION.md schedules port-2 pin 5 low for 5-7ms and grades "
+        "POTGOR bit 12 there, but no input this harness exposes (joystick0/1, mouse_buttons) reaches that "
+        "pot line (measured: driving every one leaves POTGOR bit 12 unchanged, SPECIFICATION.md section 3); "
+        "the active-low half of that window is not exercised, so these ids are not established for port 2.");
     }
 }
 
@@ -1027,12 +1249,17 @@ void grade_P1_P13(const RunResult& r, bool ntsc, bool ecs, const std::string& cf
 // field (p.239: "the value in VPOSR is frozen ... released at the end of
 // internal vertical blanking (vertical position 20)").
 // ---------------------------------------------------------------------
-std::vector<Sample> apply_page_model(const std::vector<Sample>& B, const BeamModel& m, int64_t B0_idx,
-                                      bool latchEnabled, const std::vector<PulseDef>& pin6defs) {
+// Core transform, keyed only by trigger onset cycles: used both for phase B
+// (via apply_page_model below, whose pin6defs convert to onsets through
+// pulse_timing) and directly for phase A/C contrasts (K3, K4, K17), whose
+// onsets come from a different source (a fixed C1 pulse, no pulses at all,
+// or live vs-derived cycles respectively) but latch under the exact same
+// rule: capture from line 20 on, freeze until line 20 of the next field,
+// field-end latch with no trigger.
+std::vector<Sample> apply_page_model_onsets(const std::vector<Sample>& B, const BeamModel& m, int64_t B0_idx,
+                                             bool latchEnabled, std::vector<int64_t> onsets) {
     std::vector<Sample> out = B;
     if (!latchEnabled) return out; // p.239: the freeze only happens once the light pen input is enabled
-    std::vector<int64_t> onsets;
-    for (const auto& p : pin6defs) onsets.push_back(pulse_timing(m, B0_idx, p).t_on);
     std::sort(onsets.begin(), onsets.end());
     int64_t L2 = line_len_clk(m);
     auto latch_of_field = [&](int64_t f, int* V, int* H) {
@@ -1068,6 +1295,13 @@ std::vector<Sample> apply_page_model(const std::vector<Sample>& B, const BeamMod
     return out;
 }
 
+std::vector<Sample> apply_page_model(const std::vector<Sample>& B, const BeamModel& m, int64_t B0_idx,
+                                      bool latchEnabled, const std::vector<PulseDef>& pin6defs) {
+    std::vector<int64_t> onsets;
+    for (const auto& p : pin6defs) onsets.push_back(pulse_timing(m, B0_idx, p).t_on);
+    return apply_page_model_onsets(B, m, B0_idx, latchEnabled, onsets);
+}
+
 void grade_page_model(const RunResult& r, bool ntsc, const std::string& cfgLabel, const Preconds& pc,
                        bool latchEnabled = true, const std::vector<PulseDef>* pin6defsOverride = nullptr) {
     if (!r.model.ok) return;
@@ -1100,7 +1334,7 @@ void run_config(const std::string& dir, bool ecs, bool ntsc, const std::string& 
     }
     checks.expect(r.m0cyc >= 0, "FIXTURE " + label + ": the phase marker M0 (a known constant) was stored "
         "before phase A sampling began");
-    checks.expect(r.done_ok, "FIXTURE " + label + ": the program completed (M0 to M4 written in order, ending in the infinite .stop loop)");
+    checks.expect(r.done_ok, "FIXTURE " + label + ": the program completed (M0 to M4 written in order, DONE reached)");
     if (!r.model.ok || !r.done_ok) {
         checks.record(label + ": the beam model could not be fit from phase A, or the program did not "
             "finish -- CP1-CP6 and P1-P13 are not evaluated for this configuration");
@@ -1134,12 +1368,12 @@ void record_declined_ids() {
     checks.record("opus:8-intro.c2 p227: declined -- reads \"two ... control ports\" as each port accepting "
         "a light pen, which p238 contradicts for every model it names; P1 grades \"at least one port\" and "
         "reports which.");
-    checks.record("sol:8-pen.c39 p239: declined -- fixes the release at \"vertical position 20\", where "
-        "p219 and p79 place the end of vertical blanking differently by standard; P8 grades the release "
-        "within the span every page allows and reports the line where it happens.");
-    checks.record("opus:8-lpen.c12 p238, sol:8-pen.c12 p238: declined -- step 1's \"just as the system "
-        "exits vertical blank\" is graded only as far as all pages agree (P9); the exact instant it "
-        "describes, at line resolution across lines 20-31, is not graded by any check.");
+    // sol:8-pen.c39 and opus:8-lpen.c12/sol:8-pen.c12 are graded, not
+    // declined: p.239 alone speaks of the light-pen-specific internal
+    // latch and does not restrict "vertical position 20" to one standard
+    // (unlike p.219/p.79's general video/display blanking), so P8(c)
+    // grades the release at exactly line 20 and P9(d) grades a pulse
+    // there directly, restoring all four ids (SPECIFICATION.md section 1).
 }
 
 void run_main(const std::string& dir) {
@@ -1169,7 +1403,7 @@ RunResult run_and_grade(const std::string& dir, const std::string& bin, bool ecs
                     const std::vector<PulseDef>* pin6defs = nullptr) {
     RunResult r = run_one(dir + "/" + bin, ecs, ntsc, bufBcount, schedB, schedC, schedD);
     checks.expect(r.loaded && r.released, label + ": program loaded and CPU released from reset");
-    checks.expect(r.done_ok, label + ": the program completed (M0 to M4 written in order, ending in the infinite .stop loop)");
+    checks.expect(r.done_ok, label + ": the program completed (M0 to M4 written in order, DONE reached)");
     if (!r.model.ok || !r.done_ok) {
         checks.record(label + ": the beam model could not be fit, or the program did not finish -- no "
             "further grading for this run");
@@ -1215,14 +1449,6 @@ void schedB_K8(const BeamModel& m, int64_t B0, std::vector<Event>& ev, PortState
         add_pulse_events(ev, m, B0, st, p.field_offset, p.line, p.H, p.port0, p.port1, p.bit);
     }
     for (const auto& p : phaseB18_other_pulses()) add_pulse_events(ev, m, B0, st, p.field_offset, p.line, p.H, p.port0, p.port1, p.bit);
-}
-// K9: in B18, the pin-1 pulse at line 40 is replaced by a pin-6 pulse.
-void schedB_K9(const BeamModel& m, int64_t B0, std::vector<Event>& ev, PortState* st) {
-    for (const auto& p : phaseB_pin6_pulses(false)) add_pulse_events(ev, m, B0, st, p.field_offset, p.line, p.H, p.port0, p.port1, p.bit);
-    for (const auto& p : phaseB18_other_pulses()) {
-        if (p.tag == "B18-pin1") add_pulse_events(ev, m, B0, st, p.field_offset, p.line, p.H, p.port0, p.port1, kBitFire);
-        else add_pulse_events(ev, m, B0, st, p.field_offset, p.line, p.H, p.port0, p.port1, p.bit);
-    }
 }
 // K9b: B4/B5/B18's pin-6 pulses moved to pin 9 (same positions).
 void schedB_K9b(const BeamModel& m, int64_t B0, std::vector<Event>& ev, PortState* st) {
@@ -1281,18 +1507,29 @@ void schedD_K10b(const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortSta
     ev.push_back({t8, [st]() { st->joy0 |= kBitFire2; st->joy1 |= kBitFire2; }});
     ev.push_back({t10, [st]() { st->joy0 &= (uint8_t)~kBitFire2; st->joy1 &= (uint8_t)~kBitFire2; }});
 }
+// PIN9CTRL: the main schedule's D phase, but WITHOUT the 8-10ms pin-9 low
+// window (pin 9 of both ports stays released/high throughout). p.240's
+// Table 8-4 and p.241's button-read convention predict POTGOR bits 10 and
+// 14 then stay 1 in that window, contradicting the unchanged P13(pin9-
+// control) comparator (which expects both 0 there).
+void schedD_PIN9CTRL(const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st, bool ntsc) {
+    int64_t t2 = M3 + us_to_cck(2000, ntsc) * m.colour_clock_len;
+    int64_t t4 = M3 + us_to_cck(4000, ntsc) * m.colour_clock_len;
+    ev.push_back({t2, [st]() { st->mbtn |= kMouseMid; }});
+    ev.push_back({t4, [st]() { st->mbtn &= (uint8_t)~kMouseMid; }});
+    // pin 9 of both ports: no events at all -- stays released (high)
+}
 
 // K13 (SPECIFICATION.md section 8): the phase-B buffer is shortened so
-// phase B ends within field B19. Because the sample rate differs by core
-// (SPECIFICATION.md/the validator's own measurement: fx68k ends in B19,
-// TG68K in B17, at the same 60000-sample buffer size), the buffer's own
-// fixed size still decides where the CPU actually stops -- what this
-// runner fixes is that the driver's phase-B event schedule spans further
-// than that (out past B19, toward the un-shortened main schedule's
-// B21), so it must stop injecting once M2 actually appears, not run the
-// full precomputed list and search for M2 afterwards (which would have
-// already passed by then). It steps in bounded chunks, scanning the
-// growing log for M2, and drops every event after M2 is seen.
+// phase B ends within field B19. The sample rate differs by core at the
+// same 60000-sample buffer size (measured: fx68k ends in B19, TG68K in
+// B17), so the buffer's own fixed size decides where the CPU actually
+// stops, while the driver's phase-B event schedule spans further than
+// that (out past B19, toward the un-shortened main schedule's B21). This
+// runner therefore stops injecting once M2 actually appears, rather than
+// running the full precomputed event list and searching for M2
+// afterwards. It steps in bounded chunks, scanning the growing log for
+// M2, and drops every event after M2 is seen.
 void run_K13(const std::string& dir, const std::string& label) {
     nmh::Config cfg = make_config(true, false);
     auto h = std::make_unique<nmh::NanomigHarness>(cfg);
@@ -1336,8 +1573,7 @@ void run_K13(const std::string& dir, const std::string& label) {
         "(the rest were dropped)" : "had not appeared once every phase-B event was injected"));
     // M2 may already be in the log (found by scanning it above), not still
     // to come: run_until_write only ever finds a future write, so a write
-    // already seen is read back from the log itself, not waited for again
-    // (the mistake this runner replaces, SPECIFICATION.md section 8, K13).
+    // already seen is read back from the log itself, not waited for again.
     std::optional<uint64_t> m2cyc;
     if (m2seen) {
         int64_t c = find_mark_cycle(h->ram_log(), kM2);
@@ -1360,8 +1596,10 @@ void run_K13(const std::string& dir, const std::string& label) {
         run_phase_events(*h, evD, state);
     }
     auto m4cyc = h->run_until_write(kMark, kM4, kRunBudget);
-    r.done_ok = m4cyc.has_value();
-    checks.expect(r.done_ok, label + ": the program completed (M0 to M4 found, in order, in the full log)");
+    auto donecyc = m4cyc ? h->run_until_write(kDoneAddr, kDoneValue, kRunBudget) : std::nullopt;
+    r.done_ok = m4cyc.has_value() && donecyc.has_value();
+    checks.expect(r.done_ok, label + ": the program completed (M0 to M4 found, in order, in the full log, "
+        "and DONE reached)");
     r.log = h->ram_log();
     r.vid = h->video();
     auto coderd2 = code_read_cycles(r.log);
@@ -1380,8 +1618,10 @@ void run_K13(const std::string& dir, const std::string& label) {
     r.applied = g_applied;
     if (!r.done_ok) return;
     Preconds pc = grade_preconditions(r, false, label);
-    checks.expect(!pc.cp5, "K13 MUTATION stimulus red NMH_MUTATE=K13: CP5 is red -- the shortened buffer "
-        "ends phase B before its required coverage (line 40 of field B21)");
+    // The unchanged CP5 comparator above (grade_preconditions's own "CP5 ..."
+    // line) already prints the red this mutation targets -- coverage is
+    // missing because the shortened buffer ends phase B before line 40 of
+    // field B21; no separate meta-assertion is needed to say so.
     grade_P1_P13(r, false, true, label, pc);
 }
 
@@ -1391,11 +1631,53 @@ void run_mutation(const std::string& dir, const std::string& label) {
             [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); },
             "K1/OCS/PAL", /*withPageModel=*/true, /*latchEnabled=*/false);
     } else if (label == "K3") {
-        run_and_grade(dir, "prog_k3.bin", true, false, kBufBcount, schedB_main, schedC_main,
-            [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); }, "K3/ECS/PAL");
+        // OCS, not ECS (SPECIFICATION.md section 8): ECS leaves LPENDIS's
+        // reset value unstated (p.305), so an ECS run cannot show P10(b)'s
+        // own "all current" comparator turning red for a reason the pages
+        // actually predict. OCS has no such gap. The raw run's own RTL
+        // never latches at all (the package's central defect), so it
+        // cannot show the C1/C2 latch either; a page-model contrast,
+        // synthesizing what a conforming implementation's phase-C samples
+        // would look like under this run's own BPLCON0=$0008-throughout
+        // schedule, is graded against the SAME unchanged P10(b) comparator.
+        RunResult r = run_and_grade(dir, "prog_k3.bin", false, false, kBufBcount, schedB_main, schedC_main,
+            [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); }, "K3/OCS/PAL");
+        if (r.model.ok) {
+            int Vrun = 29;
+            std::vector<PulseDef> c1pulse = {{1, 100, 100, true, true, kBitFire, true, "C1"}};
+            auto Csynth = apply_page_model(r.C, r.model, r.C0_idx, /*latchEnabled=*/true, c1pulse);
+            auto runC1 = window_RUN(Csynth, r.model, r.C0_idx + 1, Vrun);
+            bool p10b_C1 = all_current(runC1, r.model);
+            auto fullC2 = filter_by_a(Csynth, r.model.field_start(r.C0_idx + 2), r.model.field_start(r.C0_idx + 3));
+            bool p10b_C2 = all_current(fullC2, r.model);
+            checks.expect(p10b_C1 && p10b_C2, "P10(b) K3/PAGE-MODEL/OCS/PAL: with bit 3 clear, every sample "
+                "of the phase-C windows is current (measured against a conforming implementation's "
+                "synthesized phase-C samples under this mutation's BPLCON0=$0008-throughout schedule: the C1 "
+                "pulse would be captured and the C1/C2 field ends would latch)");
+        }
     } else if (label == "K4") {
-        run_and_grade(dir, "prog_k4.bin", true, false, kBufBcount, schedB_main, schedC_main,
-            [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); }, "K4/ECS/PAL");
+        // OCS, not ECS, for the same reason as K3. Phase A never receives
+        // a pulse, so a conforming implementation's synthesized samples
+        // show every phase-A field end latching (p.239) under
+        // BPLCON0=$0008 throughout -- the opposite of P10(b)'s "all
+        // current" comparator, unchanged, applied to the synthetic data.
+        RunResult r = run_and_grade(dir, "prog_k4.bin", false, false, kBufBcount, schedB_main, schedC_main,
+            [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); }, "K4/OCS/PAL");
+        if (r.model.ok && !r.A.empty()) {
+            int64_t startField = r.model.field_index_of(r.A.front().a);
+            int64_t endField = r.model.field_index_of(r.A.back().a);
+            std::vector<int64_t> noOnsets;
+            auto Asynth = apply_page_model_onsets(r.A, r.model, startField, /*latchEnabled=*/true, noOnsets);
+            bool p10b_A = true;
+            for (int64_t f = startField + 1; f < endField; ++f) {
+                auto vb = window_VB(Asynth, r.model, f);
+                if (!vb.empty() && !all_current(vb, r.model)) p10b_A = false;
+            }
+            checks.expect(p10b_A, "P10(b) K4/PAGE-MODEL/OCS/PAL: with bit 3 clear, every sample of the "
+                "phase-A windows is current (measured against a conforming implementation's synthesized "
+                "phase-A samples under this mutation's BPLCON0=$0008-throughout, no-pulse schedule: every "
+                "field end would latch instead, p.239)");
+        }
     } else if (label == "K5") {
         run_and_grade(dir, "prog_k5.bin", true, false, kBufBcountK5, schedB_main, schedC_main,
             [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); }, "K5/ECS/PAL");
@@ -1425,8 +1707,17 @@ void run_mutation(const std::string& dir, const std::string& label) {
             [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); },
             "K8/OCS/PAL", true, true, &defs);
     } else if (label == "K9") {
+        // The real stimulus is the UNCHANGED main schedule: B18's pin-1
+        // pulse (line 40) is delivered exactly as SPECIFICATION.md section
+        // 6 states it, not replaced by an actual pin-6 pulse (that would
+        // make P2(i) red through a genuinely added valid trigger, not
+        // through pin identity). Only the PAGE-MODEL layer's pin6defs
+        // (pin6_defs_K9) add a synthetic onset at pin 1's own timing,
+        // testing what P2(i) would show if pin 1 were (mis-)wired to the
+        // trigger circuit -- a mutant of pin identity, against the
+        // unchanged P2(i) comparator.
         auto defs = pin6_defs_K9(false);
-        run_and_grade(dir, "prog.bin", false, false, kBufBcount, schedB_K9, schedC_main,
+        run_and_grade(dir, "prog.bin", false, false, kBufBcount, schedB_main, schedC_main,
             [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); },
             "K9/OCS/PAL", true, true, &defs);
     } else if (label == "K9b") {
@@ -1453,20 +1744,25 @@ void run_mutation(const std::string& dir, const std::string& label) {
         // fitted model, at the SPECIFICATION.md section 6 line/H each
         // tag names.
         if (r.model.ok) {
+            // The comparator itself, not an inverted meta-check: this is
+            // CP4's own truth ("every input change landed on its scheduled
+            // cycle exactly") measured against the SPECIFICATION.md section
+            // 6 schedule instead of K12's own shifted one, fed straight into
+            // expect() so a mismatch prints as an ordinary "FAIL: CP4 ...".
             auto mainDefs = phaseB_pin6_pulses(false);
-            bool allMismatch = true; int64_t worstDiff = 0; std::string worstTag;
+            bool cp4_vs_spec = true; int64_t worstDiff = 0; std::string worstTag;
             for (const auto& p : mainDefs) {
                 PulseDef shifted = p; shifted.line = p.line + 1;
                 auto delivered = pulse_timing(r.model, r.B0_idx, shifted);
                 auto canonical = pulse_timing(r.model, r.B0_idx, p);
-                if (delivered.t_on == canonical.t_on) allMismatch = false;
+                if (delivered.t_on != canonical.t_on) cp4_vs_spec = false;
                 int64_t diff = std::llabs(delivered.t_on - canonical.t_on);
                 if (diff > worstDiff) { worstDiff = diff; worstTag = p.tag; }
             }
-            checks.expect(allMismatch, "K12 MUTATION stimulus red NMH_MUTATE=K12: CP4 is red against the "
-                "unmutated SPECIFICATION.md section 6 schedule -- every pulse lands one line (" +
-                std::to_string(line_len_clk(r.model)) + " clk_sys) away from its named position (worst: " +
-                worstTag + ", " + std::to_string(worstDiff) + " clk_sys)");
+            checks.expect(cp4_vs_spec, "CP4 K12/ECS/PAL(vs SPECIFICATION.md section 6): every input change "
+                "landed on the SPECIFICATION.md schedule's own cycle, not just on this run's shifted one "
+                "(worst mismatch: " + worstTag + ", " + std::to_string(worstDiff) + " clk_sys, one line = " +
+                std::to_string(line_len_clk(r.model)) + " clk_sys)");
         }
     } else if (label == "K16") {
         auto defs = pin6_defs_K16(false);
@@ -1485,10 +1781,14 @@ void run_mutation(const std::string& dir, const std::string& label) {
             [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, true); });
         checks.expect(r.loaded && r.released && r.done_ok, "K15/ECS/PAL(as-NTSC): program ran to completion");
         if (r.model.ok) {
+            // The ordinary CP1(A2) assertion itself, fed the PAL expectation
+            // (not an inverted meta-check): check_A2's own truth value goes
+            // straight into expect(), so a mismatch prints as an ordinary
+            // "FAIL: CP1(A2) ...".
             bool a2_as_pal = check_A2(r, 29, /*ntsc grading=*/false);
-            checks.expect(!a2_as_pal, "K15 MUTATION stimulus red NMH_MUTATE=K15: the standard is switched to "
-                "NTSC while graded as PAL -- CP1(A2) is red (measured field length " +
-                std::to_string(r.model.L + 1) + " lines, PAL expects 312 or 313)");
+            checks.expect(a2_as_pal, "CP1(A2) K15/ECS/PAL(as-NTSC): field length is 312 or 313 lines as PAL "
+                "requires (measured " + std::to_string(r.model.L + 1) + " lines, from a run whose Config and "
+                "input schedule were switched to NTSC)");
         }
     } else if (label == "K17") {
         // K4 (initial BPLCON0=$0008) plus a pin-6 pulse (both ports) at
@@ -1513,6 +1813,7 @@ void run_mutation(const std::string& dir, const std::string& label) {
             checks.note("K17/ECS/PAL: measured colour_clock_len=" + std::to_string(cck) +
                 " line_len_clksys=" + std::to_string(lineLenClksys));
             std::vector<Event> ev;
+            std::vector<int64_t> onsetCycles;
             PortState st;
             uint64_t budget = 8'000'000;
             size_t lastVid = 0;
@@ -1526,6 +1827,7 @@ void run_mutation(const std::string& dir, const std::string& label) {
                     if (vs && !prevvs) {
                         ++fieldsSeen;
                         int64_t onset = (int64_t)i + pulseOffsetClksys;
+                        onsetCycles.push_back(onset);
                         ev.push_back({onset, [&st]() { st.joy0 |= kBitFire; st.joy1 |= kBitFire; }});
                         ev.push_back({onset + 4 * cck, [&st]() { st.joy0 &= (uint8_t)~kBitFire; st.joy1 &= (uint8_t)~kBitFire; }});
                     }
@@ -1536,16 +1838,69 @@ void run_mutation(const std::string& dir, const std::string& label) {
             run_phase_events(*h, ev, st);
             auto m1cyc = h->run_until_write(kMark, kM1, kRunBudget);
             checks.expect(m1cyc.has_value(), "K17/ECS/PAL: phase A completed with the added pulses");
+            BeamModel m;
             if (m1cyc) {
                 auto coderd = code_read_cycles(h->ram_log());
                 auto A = extract_long_samples(h->ram_log(), coderd, kBufA, kBufA + 4 * kBufAcount);
-                BeamModel m = fit_model(A, h->ram_log(), h->video(), false);
+                m = fit_model(A, h->ram_log(), h->video(), false);
                 bool a1 = m.ok && check_A1(A, m, 29);
                 bool a2 = m.ok && check_A2(A, m, false);
-                checks.expect(m.ok && a1 && a2, "K17 MUTATION NMH_MUTATE=K17: CP1 (A1, A2) measured with the "
-                    "added line-200 pulses");
-                if (m.ok) checks.note("K17 MUTATION measured: L=" + std::to_string(m.L) + " (the page predicts "
-                    "the largest read V per field would be 200, not L, once each pulse freezes VPOSR)");
+                checks.note("K17/ECS/PAL: raw run measured CP1 A1=" + std::to_string(a1) + " A2=" +
+                    std::to_string(a2) + ", L=" + (m.ok ? std::to_string(m.L) : std::string("n/a")) +
+                    " -- the RTL's own defect (no light-pen latch at all) leaves phase A running normally "
+                    "despite the added pulses; a page-model contrast below tests what the page predicts for a "
+                    "conforming implementation instead");
+                // PAGE-MODEL contrast (use OCS or the same live-sample page
+                // model, SPECIFICATION.md section 8, K17): each field's
+                // pulse freezes VPOSR at (200,100) until the next field's
+                // line-20 release, so a conforming implementation's own
+                // largest read V per field is pinned at 200, not L. Both
+                // CP1(A1) and CP1(A2) are fed the ordinary comparator
+                // directly, not an inverted meta-check.
+                if (m.ok && !A.empty()) {
+                    int64_t startField = m.field_index_of(A.front().a);
+                    auto Asynth = apply_page_model_onsets(A, m, startField, /*latchEnabled=*/true, onsetCycles);
+                    BeamModel m2 = fit_model(Asynth, h->ram_log(), h->video(), false);
+                    bool a1s = m2.ok && check_A1(Asynth, m2, 29);
+                    bool a2s = m2.ok && check_A2(Asynth, m2, false);
+                    checks.expect(a1s, "CP1(A1) K17/PAGE-MODEL/ECS/PAL: every non-torn phase-A sample in the "
+                        "fitted lines is current (measured against a conforming implementation's synthesized "
+                        "phase-A samples, each field's added pulse freezing VPOSR at (200,100) until the next "
+                        "field's line-20 release)");
+                    checks.expect(a2s, "CP1(A2) K17/PAGE-MODEL/ECS/PAL: field length is 312 or 313 lines as "
+                        "PAL requires (measured L=" + (m2.ok ? std::to_string(m2.L) : std::string("n/a")) +
+                        " against the synthesized samples, where the page predicts the largest read V pinned "
+                        "at 200, not 312/313)");
+                }
+            }
+            // The mutated program still finishes (SPECIFICATION.md section
+            // 8, K17): continue through the unchanged phases B-D with the
+            // standard schedule, fit from this run's own (real, unfrozen)
+            // model, and require DONE.
+            if (m1cyc && m.ok) {
+                int64_t B0_idx = m.field_index_of((int64_t)*m1cyc);
+                PortState st2;
+                std::vector<Event> evB;
+                schedB_main(m, B0_idx, evB, &st2);
+                run_phase_events(*h, evB, st2);
+                auto m2cyc = h->run_until_write(kMark, kM2, kRunBudget);
+                if (m2cyc) {
+                    int64_t C0_idx = m.field_index_of((int64_t)*m2cyc);
+                    std::vector<Event> evC;
+                    schedC_main(m, C0_idx, evC, &st2);
+                    run_phase_events(*h, evC, st2);
+                }
+                auto m3cyc = h->run_until_write(kMark, kM3, kRunBudget);
+                if (m3cyc) {
+                    std::vector<Event> evD;
+                    schedD_main(m, (int64_t)*m3cyc, evD, &st2, false);
+                    run_phase_events(*h, evD, st2);
+                }
+                auto m4cyc = h->run_until_write(kMark, kM4, kRunBudget);
+                auto donecyc = m4cyc ? h->run_until_write(kDoneAddr, kDoneValue, kRunBudget) : std::nullopt;
+                checks.expect(m2cyc.has_value() && m4cyc.has_value() && donecyc.has_value(),
+                    "K17/ECS/PAL: the program still finishes (M2-M4 written in order, DONE reached) despite "
+                    "the added phase-A pulses");
             }
         }
     } else if (label == "K11") {
@@ -1614,7 +1969,8 @@ void run_mutation(const std::string& dir, const std::string& label) {
                             run_phase_events(*h, evD, state);
                         }
                         auto m4cyc = h->run_until_write(kMark, kM4, kRunBudget);
-                        r.done_ok = m4cyc.has_value();
+                        auto donecyc = m4cyc ? h->run_until_write(kDoneAddr, kDoneValue, kRunBudget) : std::nullopt;
+                        r.done_ok = m4cyc.has_value() && donecyc.has_value();
                     }
                     r.log = h->ram_log();
                     r.vid = h->video();
@@ -1632,16 +1988,41 @@ void run_mutation(const std::string& dir, const std::string& label) {
                     r.m3cyc = r.M3cyc;
                     r.m4cyc = r.done_ok ? find_mark_cycle(r.log, kM4) : -1;
                     r.applied = g_applied;
-                    checks.expect(r.done_ok, "K11/ECS/PAL: the program completed (M0 to M4 written in order)");
+                    checks.expect(r.done_ok, "K11/ECS/PAL: the program completed (M0 to M4 written in order, "
+                        "DONE reached)");
                     if (model.ok && r.done_ok) {
-                        Preconds pc = grade_preconditions(r, false, "K11/ECS/PAL");
-                        checks.expect(!pc.cp3, "K11 MUTATION stimulus red NMH_MUTATE=K11: CP3 is red (pin 6 "
-                            "of both ports held closed from before boot through one field after M0, then "
-                            "released; graded with the main run's own comparator)");
+                        // The unchanged CP3 comparator below (grade_preconditions's own "CP3 ..." line)
+                        // already prints the red this mutation targets: pin 6 of both ports held closed
+                        // from before boot through one field after M0, then released.
+                        grade_preconditions(r, false, "K11/ECS/PAL");
                     }
                 }
             }
         }
+    } else if (label == "PIN9CTRL") {
+        // P13(pin9-control): omit the 8-10ms pin-9 low drive. The
+        // comparator is unchanged (P13's own p13_pin9 check, graded
+        // through the normal grade_P1_P13 path below); this run simply
+        // never presents that stimulus, so bits 10/14 should read 1
+        // instead of the 0 the comparator expects.
+        run_and_grade(dir, "prog.bin", true, false, kBufBcount, schedB_main, schedC_main,
+            [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_PIN9CTRL(m, M3, ev, st, false); },
+            "PIN9CTRL/ECS/PAL");
+    } else if (label == "FIXTURE") {
+        // The M0 fixture check is red without crashing: prog_fixture.bin
+        // stores a different value where M0 belongs, then continues
+        // normally through M1-M4 and DONE (prog.s's NMH_KFIX variant).
+        RunResult r = run_one(dir + "/prog_fixture.bin", false, false, kBufBcount, schedB_main, schedC_main,
+            [](const BeamModel& m, int64_t M3, std::vector<Event>& ev, PortState* st){ schedD_main(m, M3, ev, st, false); });
+        checks.expect(r.loaded && r.released, "FIXTURE-MUTANT/OCS/PAL: program loaded and CPU released from reset");
+        // The unchanged FIXTURE comparator itself (the same one run_config
+        // uses for the main run), not an inverted meta-check: fed the
+        // mutant's own m0cyc, it prints an ordinary "FAIL: FIXTURE ..."
+        // since the program never stores the known M0 constant at MARK.
+        checks.expect(r.m0cyc >= 0, "FIXTURE-MUTANT/OCS/PAL: the phase marker M0 (a known constant) was "
+            "stored before phase A sampling began (measured m0cyc=" + std::to_string(r.m0cyc) + ")");
+        checks.expect(r.done_ok, "FIXTURE-MUTANT/OCS/PAL: the program completed (M1-M4 written in order, "
+            "DONE reached) with M0 corrupted");
     } else {
         checks.record("NMH_MUTATE=" + label + " names no mutation of this package");
     }
