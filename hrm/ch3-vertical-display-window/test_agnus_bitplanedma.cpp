@@ -213,10 +213,8 @@
 //     to the display windows described above."
 //   Tested by VERTICAL-BITPLANE-DMA-TIMING-MATCHES-DISPLAY-WINDOW.
 //
-// -- LATE ADDITION, routed 14.09.2026 from chapter 7's lot (not part of this
-//    package's original 63, and not from this package's own claims.jsonl --
-//    see AUFTRAG-ch3-vertical-display-window.md, a correction to an earlier
-//    sheet that misread the routing field's parenthesis as a destination) --
+// -- routed from chapter 7's lot, not from this package's own claims.jsonl
+//    (see AUFTRAG-ch3-vertical-display-window.md) --
 //    p.219, two readers' versions of one sentence immediately following the
 //    vertical-blanking-range claims already graded by
 //    hrm/ch7-vertb-vertical-blank-timing/ (built on agnus_beamcounter, a
@@ -523,12 +521,11 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "NOTE: " << msg << "\n"; }
-    // Added 14.09.2026 to receive the routed p.219 DIWSTRT-vs-blanking claims
-    // below (AUFTRAG-ch3-vertical-display-window.md): declines a claim, or
-    // half of one, with a stated reason instead of dropping it silently.
-    // Prints, counts nothing (neither passed nor failed) -- same signature
-    // and behaviour already used this way in ~30 other packages in this
-    // suite (e.g. hrm/ch7-vertb-vertical-blank-timing/test_agnus_beamcounter.cpp).
+    // Declines a claim, or half of one, with a stated reason instead of
+    // dropping it silently. Prints, counts nothing (neither passed nor
+    // failed) -- same signature and behaviour already used this way in ~30
+    // other packages in this suite (e.g.
+    // hrm/ch7-vertb-vertical-blank-timing/test_agnus_beamcounter.cpp).
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
@@ -730,7 +727,7 @@ int main(int argc, char** argv) {
     }
 
     // ---- sol:7-interrupts.c39 / opus:7-int.c36 (p.219, two readers' versions
-    // ---- of one sentence, routed here 14.09.2026 -- see
+    // ---- of one sentence, routed here -- see
     // ---- AUFTRAG-ch3-vertical-display-window.md): "After the minimum
     // ---- vertical blanking range, you can control where the display
     // ---- actually starts by using the DIWSTRT (display window start)
@@ -1006,16 +1003,16 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (11.09.2026). Every entry below was actually applied by this
-// agent - edited into this file, rebuilt under WSL/Verilator (`make clean
-// test`, clean forced each time after a same-second Edit+build pair was
-// once seen to leave make's mtime check thinking nothing had changed), run,
-// the PASS/FAIL line for the named assertion read from real output (quoted
-// verbatim below, not predicted), then reverted and rebuilt clean before the
-// next entry. A final clean build after the last revert reproduced this
-// package's true baseline exactly: "14 passed, 0 failed", and `git diff`
-// against the committed file came back with no content differences,
-// confirming every edit below was fully reverted.
+// MUTATION LOG. Every entry below is actually edited into this file,
+// rebuilt under WSL/Verilator (`make clean test` -- clean forced each
+// time, since a same-second Edit+build pair can leave make's mtime check
+// thinking nothing had changed), run, the PASS/FAIL line for the named
+// assertion read from real output (quoted verbatim below, not
+// predicted), then reverted and rebuilt clean before the next entry. A
+// final clean build after the last revert reproduces this package's true
+// baseline exactly: "14 passed, 0 failed", and `git diff` against the
+// committed file comes back with no content differences, confirming
+// every edit below is fully reverted.
 //
 // Every mutation is a STIMULUS change - what the module is asked to do - not
 // an ORACLE change; no expected value or comparison inside any checks.expect()
