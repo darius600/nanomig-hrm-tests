@@ -34,9 +34,9 @@
 //   docs/legacy-names.md explains the vocabulary.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. Each
-// assertion was mutated at the STIMULUS on 05.09.2026 - the scenario changed,
-// the expected value never - and each mutation was reverted immediately after
-// observing red. Where an ID carries several assertions, the mutation turned
+// assertion is mutated at the STIMULUS - the scenario changes, the expected
+// value never - and each mutation is reverted immediately after observing
+// red. Where an ID carries several assertions, the mutation turned
 // exactly the ones it aimed at red; the others staying green is the evidence
 // that the mutation was specific.
 // MUTATION T1 stimulus red the strobe changed from COPJMP1 to COPJMP2, whose location register was never programmed, so the COP1LC list is never entered

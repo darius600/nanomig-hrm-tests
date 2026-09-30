@@ -8,8 +8,8 @@
 //   this package started from (docs/legacy-names.md), not claim ids.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. All five
-// T5 assertions were mutated at the STIMULUS on 05.09.2026, each reverted
-// immediately after observing red. Each mutation turned exactly the assertion
+// T5 assertions are mutated at the STIMULUS, each reverted immediately after
+// observing red. Each mutation turned exactly the assertion
 // it aimed at red and left the other four green - which is what makes them
 // five independent checks rather than one restated.
 // MUTATION T5 stimulus red DMAEN set alongside COPEN in the COPEN-only case, so the Copper legitimately runs and the silence the assertion requires is gone
