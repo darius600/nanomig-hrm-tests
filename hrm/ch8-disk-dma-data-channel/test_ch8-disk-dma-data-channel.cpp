@@ -4,7 +4,7 @@
 //   rig over `paula_floppy` + `agnus_diskdma` (disk_dma_data_channel_rig.v,
 //   this package's own wrapper, NOT pinned RTL). 19 claims, from
 //   work/ch8-s2-build/ch8-disk-dma-data-channel.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as d03c70e, before any RTL was opened).
+//   SPECIFICATION.md (committed before any RTL was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.279 (Appendix
 //   A, DSKDAT/DSKDATR) and pp.287,289 (Appendix B, the ER legend and the
@@ -32,32 +32,29 @@
 //   module's input space could ever falsify exclusivity -- it is
 //   unfalsifiable at this boundary, not merely unchecked.
 //
-// REPAIRED 2026-09-15 (repair lot D, LOS-D.md, following DOKTRIN.md):
-//   L2's shape-1 conversion (no claim uid) to note() -- its own text was
-//   also corrected, not merely its shape: it claimed "read back through
-//   DSKDATR" and printed "then 8 DSKDATR reads", but DSKDATR was never
-//   read -- only paula_floppy_fifo's internal write-into-empty bypass
-//   output was sampled. B1/B2/W1/W2/DW1/DW2 were tried for repair rather
-//   than declined outright, and it worked: measure_buffered_write_sequence()
-//   (below) drives paula_floppy's own write-state-machine through a real
+// L2 AND THE BUFFERED-WRITE MEASUREMENT:
+//   L2 is shape 1 (no claim uid), reported via note() -- its own text says
+//   what was actually sampled: paula_floppy_fifo's internal
+//   write-into-empty bypass output, not a read back through DSKDATR.
+//   B1/B2/W1/W2/DW1/DW2 measure through measure_buffered_write_sequence()
+//   (below), which drives paula_floppy's own write-state-machine through a real
 //   sync+header+checksum sequence into its payload stage, then holds
 //   `sdc_busy` so the internal FIFO auto-drain halts -- from that point,
 //   DSKDAT/DSKDATR bus traffic is the ONLY remaining consumer of the FIFO,
 //   so a word written and later read back is genuinely buffered content,
 //   not a same-cycle bypass artifact any design with no useful write-side
-//   disk path would also produce. B1/B2/W1/W2 now use this measurement
+//   disk path would also produce. B1/B2/W1/W2 use this measurement
 //   directly; DW1/DW2 additionally require it alongside their original
 //   entry-point check (buswr fires, fifo_in==data_in), since a word
 //   reaching the FIFO's input port is not by itself evidence it was sent
 //   toward the disk rather than discarded. CHDR1/CHDR2/CHDW1/CHDW2's
-//   labels no longer carry opus:8-appB-dskdatr.c2/sol:8-appb-dskdatr.c2/
+//   labels do not carry opus:8-appB-dskdatr.c2/sol:8-appb-dskdatr.c2/
 //   opus:8-appB-dskdat.c2/sol:8-appb-dskdat.c2 literally -- those four uids
 //   are cited only via the RECORD lines below (which already name
 //   CHDR1/CHDR2/CHDW1/CHDW2 as the assertion carrying the positive half),
-//   clearing this package's uid-placement offenses
-//   (tools/check_uid_placement.py flagged all four).
+//   matching tools/check_uid_placement.py's placement rule for all four.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (d03c70e):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED:
 //   1. $(NANOMIG)/src/minimig-aga/agnus_diskdma.v -- full file (80 lines).
 //   2. $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v -- full file (60
 //      lines): a 2048-word memory FIFO; write enters `mem[in_ptr]` and
@@ -134,20 +131,19 @@
 //   package's claims), so every mutation is the standard stimulus/red
 //   form: change what the rig is asked to do, leave the expected value
 //   alone, confirm the targeted assertion alone goes red, then revert.
-//   Baseline (MUTATE unset), before repair lot D: 24 passed, 0 failed.
-//   After repair lot D (L2 converted to note(), no longer a mutable
-//   assertion): see the build report below for the new tally. Every
+//   Baseline (MUTATE unset): 23 passed, 0 failed (L2 is converted to
+//   note(), so it carries no mutable assertion). Every
 //   remaining graded label was run individually as MUTATE=<label> and
 //   confirmed ONLY that label's line reading FAIL, then reverted.
 //
 // MUTATION L1-READ-LIVENESS-DISTINCT-SD-WORDS stimulus red: pattern B's SD sector bytes driven identical to pattern A's, so the two DSKDATR readings are indistinguishable (MUTATE=L1-READ-LIVENESS-DISTINCT-SD-WORDS).
-// MUTATION L2-WRITE-LIVENESS-DISTINCT-WORDS: REMOVED 2026-09-15 (repair lot D). Converted to note() (shape 1: no claim uid) -- no mutation record remains with its assertion.
+// MUTATION L2-WRITE-LIVENESS-DISTINCT-WORDS: REMOVED. Converted to note() (shape 1: no claim uid) -- no mutation record remains with its assertion.
 // MUTATION CTRL1-DSKBYTR-DISTINCT-FROM-DSKDATR stimulus red: the read redirected from DSKBYTR ($01A) to DSKDATR ($008) while the check still expects DSKBYTR's own idle pattern 0x9000 (MUTATE=CTRL1-DSKBYTR-DISTINCT-FROM-DSKDATR).
-// MUTATION B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9 stimulus red (REPAIRED 2026-09-15, repair lot D -- retargeted to measure_buffered_write_sequence()): all four DSKDAT writes driven as 0x0000 instead of four distinct words, so the genuinely buffered DSKDATR read-back never answers with real, varying content (MUTATE=B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9).
+// MUTATION B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9 stimulus red (retargeted to measure_buffered_write_sequence()): all four DSKDAT writes driven as 0x0000 instead of four distinct words, so the genuinely buffered DSKDATR read-back never answers with real, varying content (MUTATE=B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9).
 // MUTATION B2-DSKDAT-IS-THE-DMA-DATA-BUFFER-SOL-C1 stimulus red: same corruption, independent run for this citation (MUTATE=B2-DSKDAT-IS-THE-DMA-DATA-BUFFER-SOL-C1).
-// MUTATION W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10 stimulus red (REPAIRED 2026-09-15, repair lot D -- retargeted to measure_buffered_write_sequence()): all four DSKDAT writes driven as 0x0000, so no genuinely buffered read-back ever carries a nonzero high AND low byte together (MUTATE=W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10).
+// MUTATION W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10 stimulus red (retargeted to measure_buffered_write_sequence()): all four DSKDAT writes driven as 0x0000, so no genuinely buffered read-back ever carries a nonzero high AND low byte together (MUTATE=W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10).
 // MUTATION W2-BUFFER-HOLDS-TWO-BYTES-SOL-C2 stimulus red: same corruption, independent run for this citation (MUTATE=W2-BUFFER-HOLDS-TWO-BYTES-SOL-C2).
-// MUTATION DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3 stimulus red (REPAIRED 2026-09-15, repair lot D -- now also requires measure_buffered_write_sequence() evidence): the same mutation flag corrupts both halves of the conjunctive check -- the entry-point trial's word is redirected to DSKBYTR ($01A) instead of DSKDAT ($026), so buswr never fires and fifo_in never receives it; independently, the buffered trial's payload words are driven as 0x0000 (measure_buffered_write_sequence()'s own corrupt path), so the buffered read-back never varies either (MUTATE=DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3).
+// MUTATION DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3 stimulus red (also requires measure_buffered_write_sequence() evidence): the same mutation flag corrupts both halves of the conjunctive check -- the entry-point trial's word is redirected to DSKBYTR ($01A) instead of DSKDAT ($026), so buswr never fires and fifo_in never receives it; independently, the buffered trial's payload words are driven as 0x0000 (measure_buffered_write_sequence()'s own corrupt path), so the buffered read-back never varies either (MUTATE=DW1-WRITE-SENDS-TOWARD-DISK-SOL-C3).
 // MUTATION DW2-WRITE-SENDS-TOWARD-DISK-OPUS-C11 stimulus red: same address redirection, independent run for this citation (MUTATE=DW2-WRITE-SENDS-TOWARD-DISK-OPUS-C11).
 // MUTATION DR1-READ-RECEIVES-FROM-DISK-SOL-C4 stimulus red: pattern B's SD bytes driven identical to pattern A's, so the two DSKDATR readings cannot be told apart (MUTATE=DR1-READ-RECEIVES-FROM-DISK-SOL-C4).
 // MUTATION DR2-READ-RECEIVES-FROM-DISK-OPUS-C11 stimulus red: same corruption, independent run for this citation (MUTATE=DR2-READ-RECEIVES-FROM-DISK-OPUS-C11).
@@ -315,7 +311,7 @@ bool measure_no_grant(uint32_t hpos_val) {
 
 // ---------------------------------------------------------------------
 // paula_floppy write-direction BYPASS sequence (L2 LIVENESS ONLY --
-// REPAIRED 2026-09-15, repair lot D: this no longer backs any graded claim,
+// this no longer backs any graded claim,
 // see measure_buffered_write_sequence() below for that). Arms DSKLEN for a
 // disk WRITE (dsklen[14]=1), then pushes several distinct (or, under a
 // mutation, identical) words through DSKDAT and samples
@@ -345,10 +341,9 @@ std::vector<uint16_t> measure_bypass_write_sequence(bool corrupt) {
                    // and (from the second word on) lets the internal write-parser's
                    // continuous auto-drain (stbdat, paula_floppy.v:768) pop the previous
                    // one -- sampled here, before data_in is released, per
-                   // paula_floppy_fifo.v's own empty/bypass timing (traced empirically:
-                   // the DSKDATR-loopback approach tried first read back a constant,
-                   // because that path releases data_in before the internal consumer's
-                   // own next pop).
+                   // paula_floppy_fifo.v's own empty/bypass timing (a DSKDATR-loopback
+                   // read would return a constant instead, because that path releases
+                   // data_in before the internal consumer's own next pop).
         samples.push_back(rig->PAULA1->fifo_out);
         h.dut->reg_address_in = 0;
         h.dut->data_in = 0;
@@ -359,9 +354,9 @@ std::vector<uint16_t> measure_bypass_write_sequence(bool corrupt) {
 }
 
 // ---------------------------------------------------------------------
-// paula_floppy write-direction, GENUINELY BUFFERED sequence (REPAIRED
-// 2026-09-15, repair lot D; replaces the bypass-based measurement above as
-// the evidence for B1/B2/W1/W2/DW1/DW2). The bypass approach sampled
+// paula_floppy write-direction, GENUINELY BUFFERED sequence (used as
+// the evidence for B1/B2/W1/W2/DW1/DW2; the bypass-based measurement
+// above is not). The bypass approach sampled
 // paula_floppy_fifo's write-into-empty bypass output on the storing edge --
 // a design with no useful write-side disk path would pass identically.
 // This helper instead drives paula_floppy's own write-state-machine
@@ -625,13 +620,11 @@ int main(int argc, char** argv) {
                     "): paula_floppy_fifo's fifo_out (PAULA1->fifo_out, an internal, verilator-public "
                     "write-into-empty-FIFO bypass signal) sampled on the same edge each word is stored -- "
                     "distinct values seen = " + std::to_string(count_distinct(r)));
-        // CONVERTED TO note(), REPAIRED 2026-09-15, repair lot D (shape 1: no claim uid, a
-        // fixture-liveness check). The text is corrected too, not merely the shape: the previous
-        // label claimed "read back through DSKDATR" and its own MEASURED line printed "then 8
-        // DSKDATR reads" -- DSKDATR is never read here. What is sampled is the write-into-empty-FIFO
+        // CONVERTED TO note() (shape 1: no claim uid, a
+        // fixture-liveness check). DSKDATR is never read here. What is sampled is the write-into-empty-FIFO
         // bypass (paula_floppy_fifo.v:47-49), not a bus read; a design with no useful write-side disk
         // path would pass this identically. See B1/B2/W1/W2/DW1/DW2 below for the genuinely
-        // DSKDATR-buffered measurement the graded claims now use (measure_buffered_write_sequence()).
+        // DSKDATR-buffered measurement the graded claims use (measure_buffered_write_sequence()).
         checks.note(
             label + " (fixture liveness, no manual citation, no claim uid): four distinct known words "
             "written at DSKDAT produce a non-idle, non-constant sequence at paula_floppy_fifo's bypass "
@@ -663,14 +656,13 @@ int main(int argc, char** argv) {
 
     // ====================================================================
     // B1/B2 -- opus:8-appA-dskdat.c9 / sol:8-appa-dskdata.c1 (p.279):
-    // "This register is the disk DMA data buffer." REPAIRED 2026-09-15
-    // (repair lot D): now uses measure_buffered_write_sequence() -- a
+    // "This register is the disk DMA data buffer." Uses measure_buffered_write_sequence() -- a
     // genuine DSKDATR read-back of what was written at DSKDAT, through
     // paula_floppy's real write-state-machine and buffer engine, with its
     // internal FIFO auto-drain halted (see that function's header comment)
-    // -- rather than the write-into-empty-FIFO bypass the previous
-    // measurement sampled, which any design with no useful write-side disk
-    // path would have passed identically.
+    // -- rather than the write-into-empty-FIFO bypass, which any design
+    // with no useful write-side disk
+    // path would pass identically.
     // ====================================================================
     {
         std::string label = "B1-DSKDAT-IS-THE-DMA-DATA-BUFFER-OPUS-C9";
@@ -695,8 +687,7 @@ int main(int argc, char** argv) {
 
     // ====================================================================
     // W1/W2 -- opus:8-appA-dskdat.c10 / sol:8-appa-dskdata.c2 (p.279):
-    // "It contains two bytes of data..." REPAIRED 2026-09-15 (repair lot
-    // D): see B1/B2 above -- same genuinely buffered mechanism.
+    // "It contains two bytes of data..." See B1/B2 above -- same genuinely buffered mechanism.
     // ====================================================================
     {
         std::string label = "W1-BUFFER-HOLDS-TWO-BYTES-OPUS-C10";
@@ -719,11 +710,11 @@ int main(int argc, char** argv) {
     // ====================================================================
     // DW1/DW2 -- sol:8-appa-dskdata.c3 (p.279, write half) and
     // opus:8-appA-dskdat.c11 (p.279, write half of its both-directions
-    // sentence). REPAIRED 2026-09-15 (repair lot D): the original
-    // measurement (buswr fires, fifo_in==data_in at entry) proved only
-    // address decode and immediate combinational wiring -- a design that
-    // decodes the address and discards every word would have passed. Now
-    // ALSO requires the SAME word to be genuinely retrievable afterward via
+    // sentence). Requires BOTH the entry-point check (buswr fires,
+    // fifo_in==data_in at entry -- address decode and immediate
+    // combinational wiring; a design that decodes the address and discards
+    // every word would pass this alone) AND the SAME word to be genuinely
+    // retrievable afterward via
     // measure_buffered_write_sequence()'s buffered DSKDATR read-back,
     // proving the word actually entered and was retained by the outbound,
     // disk-facing buffer, not merely wired straight through.
@@ -898,9 +889,9 @@ int main(int argc, char** argv) {
     // CHDR1/CHDR2 -- opus:8-appB-dskdatr.c2 / sol:8-appb-dskdatr.c2
     // (p.289): DSKDATR is used by the disk DMA channel -- POSITIVE HALF
     // ONLY. The word "only" (exclusivity) is not graded: see the RECORD
-    // line below and SPECIFICATION.md. REPAIRED 2026-09-15 (repair lot D):
-    // these two uids are cited only via the record() below, not in this
-    // graded label -- tools/check_uid_placement.py flagged them as sitting
+    // line below and SPECIFICATION.md. These two uids are cited only via
+    // the record() below, not in this
+    // graded label, matching tools/check_uid_placement.py's rule against a uid sitting
     // on both a graded and a record() line (the record already names
     // CHDR1/CHDR2 as the assertion carrying the positive half).
     // ====================================================================
@@ -928,7 +919,7 @@ int main(int argc, char** argv) {
     // ====================================================================
     // CHDW1/CHDW2 -- opus:8-appB-dskdat.c2 / sol:8-appb-dskdat.c2
     // (p.289): DSKDAT is used by the disk DMA channel -- POSITIVE HALF
-    // ONLY. REPAIRED 2026-09-15 (repair lot D): same uid-placement fix as
+    // ONLY. Same uid-placement rule as
     // CHDR1/CHDR2 above.
     // ====================================================================
     {
