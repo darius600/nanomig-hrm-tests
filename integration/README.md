@@ -25,19 +25,35 @@ package and core.
 | `ch1-cpu-system` | the 68000 in the whole system (chapter 1) |
 | `ch2-copper-move` | the Copper MOVE, the Copper location registers and the restart of pointers from them |
 | `ch2-copper-control` | Copper DMA on and off, the start after reset, the restart from COP1LC, the Copper interrupt, the masked WAIT and the blitter-finished wait |
+| `ch2-copper-beam` | the beam positions the Copper sees and the line and field geometry (pp. 22-24, 34) |
+| `ch2-dma-cycles` | which memory cycles each DMA channel uses, the Copper's odd cycles among them (p. 20, Figure 6-9) |
 | `ch2-interlace-fields` | interlaced fields (pp. 24, 27, 34) |
+| `ch3-playfield-system` | the playfield system bits COLOR_ON, LPEN and VBSTRT (pp. 79, 89, 229, 239, 271, 304-305) |
+| `ch4-shres-bitplane` | the SuperHires bitplane colours (p. 301) |
 | `ch4-shres-sprite-a`, `ch4-shres-sprite-b` | the SuperHires sprite colours (p. 302) |
+| `ch4-sprite-registers` | the sprite registers, manual and automatic sprite DMA, and the register-summary strobe (pp. 25-26, 104-110, 287) |
 | `ch5-audio-attach-modulation` | one audio channel modulating another through ADKCON's attach bits |
 | `ch5-audio-output-scanrate` | audio byte output, ADKCON's disk-rate bits, AUDxPER and the scan rate |
+| `ch5-audio-registers-dma` | the audio location registers, DMA control and the Copper danger bit |
 | `ch6-blitter-line-fill` | line mode and area fill (pp. 180-192, 200, 268) |
 | `ch6-blitter-geometry` | the blitter's addressing and masking: masks, modulos, shifts, pointer order, minterms (pp. 169-183, 200) |
 | `ch6-blitter-cpu-sharing` | how the blitter and the 68000 share the chip bus, and the done flag (pp. 169-198) |
+| `ch7-system-control` | the light-pen read at the beam-position address and LPENDIS (pp. 216, 239) |
 | `ch8-controller-ports` | the controller ports (chapter 8 and appendix A) |
 | `ch8-disk-serial` | serial-port timing, nine-bit receive and the disk bit-cell rate |
 | `ch8-ecs-sync-registers` | the ECS registers HTOTAL, HSSTRT and HSSTOP |
 | `ch8-light-pen-beam` | the light-pen latch and the beam position (pp. 227-229, 238-239) |
+| `appDE-ports-disk` | the pen-pressed button on the game port (appendix E, p. 327) |
 | `appF-cia-system` | the two 8520 CIAs as the system wires them (appendix F) |
+| `appHJ-drive-pins` | the external disk interface and the custom chips' pin directions (appendices H and J) |
 | `appK-autoconfig` | the RESET instruction and AUTOCONFIG base-address assignment (appendix K) |
+
+Graded against the AA specification: `aa-integ-s1`, BPLCON1's horizontal
+scroll fields (AA pp. 16-17).
+
+Several packages are built in part. Their `SPECIFICATION.md` names what is
+not built, by a scope decision, and what building it would take; `run_all.sh`
+grades only what is built.
 
 Each package's `SPECIFICATION.md` was written from the manual's claims alone,
 by an author who never saw the RTL or a test, and was committed before any
@@ -57,11 +73,7 @@ nothing was left.
 These hold a `SPECIFICATION.md` and no test; `run_all.sh` prints one `SPEC`
 line for each.
 
-- against the manual: `appDE-ports-disk`, `appHJ-drive-pins`,
-  `ch2-copper-beam`, `ch2-dma-cycles`, `ch3-playfield-system`,
-  `ch4-shres-bitplane`, `ch4-sprite-registers`, `ch5-audio-registers-dma`,
-  `ch7-system-control`;
-- against the AA specification: `aa-integ-s1` to `aa-integ-s7` and
+- against the AA specification: `aa-integ-s2` to `aa-integ-s7` and
   `aa-integ-s7-rest`.
 
 ## Not graded against a page
