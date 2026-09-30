@@ -3,7 +3,7 @@
 //   counter rollover.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 22-23, 27, 30, 31, 32 and 33; frozen specification 2e6a42a.
+//   pp. 22-23, 27, 30, 31, 32 and 33; a frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-04, COP-08
 // Non-goals: Bus contention (needs the Agnus top level), exact release cycle
 //   counts, NTSC long/short line alternation, and interrupt generation are
@@ -16,12 +16,11 @@
 //   `FPGA-nnn` is a task number in the private workspace where this work was
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
-//   A `frozen specification` named above was the suite's first oracle, a note
-//   written from the Verilog before the pipeline existed; docs/legacy-names.md
-//   describes it.
+//   A `frozen specification` named above is a note written from the
+//   Verilog, predating the claim pipeline; docs/legacy-names.md describes
+//   it.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // PROPOSITIONS FOR THIS PACKAGE'S EXTENDED CLAIM SET (quote, restatement
 // and page only):
