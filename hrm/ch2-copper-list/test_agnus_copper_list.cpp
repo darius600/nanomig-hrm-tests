@@ -3,7 +3,7 @@
 //   list pointers.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 20, 21, 22, 26-27, 30, 31, 32 and 36; frozen specification d9cad33.
+//   pp. 20, 21, 22, 26-27, 30, 31, 32 and 36; a frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-02, COP-06
 // Non-goals: Reserved encodings are marked "X = don't care" on p.36, so no
 //   conformance claim about them is possible. Instruction cycle counts
@@ -15,12 +15,11 @@
 //   this chapter's reading. They carry no reader prefix, and they resolve in
 //   the claim files that hrm-testpipeline/acceptance/ch2.json lists under
 //   `inventories`.
-//   A `frozen specification` named above was the suite's first oracle, a note
-//   written from the Verilog before the pipeline existed; docs/legacy-names.md
-//   describes it.
+//   A `frozen specification` named above is a note written from the
+//   Verilog, predating the claim pipeline; docs/legacy-names.md describes
+//   it.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 // Specification additions: one claim id new to this file, from the
 //   inventory's quotation and restatement alone.
 //   ch2-appa-copins.c108 (p.274, Appendix A COPINS table, BIT# 00 row):
