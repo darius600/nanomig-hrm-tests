@@ -622,7 +622,7 @@ int main() {
     return failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18, TG68K build):
+// RESULTS (TG68K build):
 //
 //   baseline `make test` -> 17 passed, 0 failed (16 graded assertions + the
 //   fixture-liveness apparatus check). SWEEP raw nibbles: $E70000=0x5
