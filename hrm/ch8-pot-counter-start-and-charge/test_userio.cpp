@@ -568,39 +568,47 @@ static void group_G4() {
     set_mouse(0, 0, 1);
 #endif
     settle(3);
-    pulse(4);
-    bool only_pot0x_moved = (pot0dat() == 0x0004) && (pot1dat() == 0x0000);
+    pulse(kResetInterval + 4);
+    uint16_t r_x0 = pot0dat();
+    bool only_pot0x_moved = matches_page_count(r_x0 & 0xFF, 4) &&
+                             ((r_x0 >> 8) == 0) && (pot1dat() == 0x0000);
 
     full_reset();
     arm_potgo(0x0001);
     set_mouse(0, 1, 0);
     settle(3);
-    pulse(4);
-    bool only_pot0y_moved = (pot0dat() == 0x0400) && (pot1dat() == 0x0000);
+    pulse(kResetInterval + 4);
+    uint16_t r_y0 = pot0dat();
+    bool only_pot0y_moved = matches_page_count(r_y0 >> 8, 4) &&
+                             ((r_y0 & 0xFF) == 0) && (pot1dat() == 0x0000);
 
     full_reset();
     arm_potgo(0x0001);
     set_joy1_pin5(1);
     settle(3);
-    pulse(4);
-    bool only_pot1y_moved = (pot0dat() == 0x0000) && (pot1dat() == 0x0400);
+    pulse(kResetInterval + 4);
+    uint16_t r_y1 = pot1dat();
+    bool only_pot1y_moved = (pot0dat() == 0x0000) &&
+                             matches_page_count(r_y1 >> 8, 4) && ((r_y1 & 0xFF) == 0);
 
     full_reset();
     arm_potgo(0x0001);
     set_mouse(1, 1, 1);
     dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
     settle(3);
-    pulse(4);
+    pulse(kResetInterval + 4);
     uint16_t everything_p1 = pot1dat();
     bool pot1x_has_a_pin = ((everything_p1 & 0x00FF) != 0); // NOT graded here -- see the file header note
 
-    note("Isolated-release measurements (all four counters, 4 ticks each): "
+    note("Isolated-release measurements (all four counters, release-then-run-" +
+         std::to_string(kResetInterval + 4) + "-ticks-unbroken (8+4) each): "
          "pot0x-only moved pot0x; pot0y-only moved pot0y; pot1y-only moved "
-         "pot1y -- each counter that has a pin tracks it, which is this "
-         "claim's content. Every controller pin asserted left POT1DAT's low "
-         "byte at $" + hex4(everything_p1 & 0xFF) + " (pot1x did not move; "
-         "it has no external pin at all in this design, not required by "
-         "this claim -- see the file header note).");
+         "pot1y -- each counter that has a pin tracks it, graded against the "
+         "page's reset interval (4 or 5), which is this claim's content. "
+         "Every controller pin asserted left POT1DAT's low byte at $" +
+         hex4(everything_p1 & 0xFF) + " (pot1x did not move; it has no "
+         "external pin at all in this design, not required by this claim "
+         "-- see the file header note).");
 
     bool ok = nothing_moves_when_held && only_pot0x_moved && only_pot0y_moved &&
               only_pot1y_moved;
@@ -873,6 +881,9 @@ static void group_G7_G8() {
     arm_potgo(0x0001);
     set_mouse(0, 0, 1);
     settle(3);
+    pulse(kResetInterval); // past the interval first: this claim is about the
+                            // per-tick rate ONCE counting, not about when
+                            // counting starts (G6_G11/FINALCOUNT's claim)
     uint16_t prev = pot0dat();
     bool always_exactly_one = true;
     for (int i = 1; i <= 10; i++) {
@@ -912,7 +923,8 @@ static void group_G9() {
     arm_potgo(0x0001);
     set_mouse(0, 0, 1);
     settle(3);
-    pulse(6);
+    pulse(kResetInterval + 6); // past the interval, so before_hold is genuinely
+                               // counting, not trivially stuck at 0
     uint16_t before_hold = pot0dat();
 #ifdef MUT_G9
     // MUTATED: skip closing the gate -- the counter keeps counting instead
@@ -936,7 +948,8 @@ static void group_G9() {
     uint16_t after_resume_attempt = pot0dat();
     bool resumed_without_potgo = ((after_resume_attempt & 0xFF) != (during_hold & 0xFF));
 
-    note("pot0x: released 6 ticks -> $" + hex4(before_hold) + "; held 5 more "
+    note("pot0x: released, run " + std::to_string(kResetInterval + 6) +
+         " ticks (past the interval) -> $" + hex4(before_hold) + "; held 5 more "
          "ticks -> $" + hex4(during_hold) + " (" +
          std::string(truly_holds_while_held ? "unchanged, matches the manual"
                                              : "changed -- diverges from the manual") +
