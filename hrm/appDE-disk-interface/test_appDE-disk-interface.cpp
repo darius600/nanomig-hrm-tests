@@ -65,33 +65,39 @@
 //   startup -- one build serves the real run (MUTATE unset) and every
 //   mutation run (MUTATE=<id>, one id per assertion). Ids are the claim's
 //   own `classify.uid` for the corpus-cited claims (this suite's
-//   convention) and a plain uppercase id for FIXTURE-LIVE and
-//   RESET-NO-WRITE, which carry no classify.uid of their own -- the second
-//   still cites p.334 and p.244, it is simply not a reader's reading of one
-//   corpus sentence. sol:E-disk.c26 and opus:E-extdisk-iface.c4 read RED at
-//   baseline: p.334 pin 1 and p.369 predict RDY* deasserted for a drive
-//   whose motor is genuinely latched on with no disk installed, and
-//   paula_floppy reads it asserted instead. Per this suite's rule against
-//   mutating an already-failing check with a no-op, each substitutes a
-//   DIFFERENT genuine stimulus (leaving the drive deselected instead of
-//   latching the motor) through the IDENTICAL comparator and the SAME
-//   label, flipping baseline RED to mutated GREEN. The remaining twelve
-//   graded checks are GREEN at baseline and flip to RED by omitting the
-//   stimulus event the proposition requires.
+//   convention) and a plain uppercase id for FIXTURE-LIVE, RESET-NO-WRITE,
+//   FIXTURE-LIVE-DRIVE1 and P-READY-MOTOR-INVARIANT-DRIVE1, which carry no
+//   classify.uid of their own -- each still cites its page, it is simply
+//   not a reader's reading of one corpus sentence. sol:E-disk.c26 and
+//   opus:E-extdisk-iface.c4 read RED at baseline: p.334 pin 1 and p.369
+//   predict RDY* deasserted for a drive whose motor is genuinely latched on
+//   with no disk installed, and paula_floppy reads it asserted instead.
+//   P-READY-MOTOR-INVARIANT-DRIVE1 corroborates the same defect on drive 1
+//   (NM-HRM-080's own "What weakens it" -- the graded reds ran on drive 0
+//   only) and is RED at baseline for the identical reason. Per this suite's
+//   rule against mutating an already-failing check with a no-op, each of
+//   these three substitutes a DIFFERENT genuine stimulus (leaving the drive
+//   deselected instead of latching the motor) through the IDENTICAL
+//   comparator and the SAME label, flipping baseline RED to mutated GREEN.
+//   The remaining thirteen graded checks are GREEN at baseline and flip to
+//   RED by omitting the stimulus event the proposition requires.
 //
-// MUTATION RUN LOG (WSL/Verilator 5.052): baseline (MUTATE unset) 14
-//   checks.expect() calls, 12 passed / 2 failed. The 2 baseline FAILs are
-//   sol:E-disk.c26 and opus:E-extdisk-iface.c4 (p.334 pin 1 RDY* -- see
-//   P-READY-MOTOR-INVARIANT below for what is measured and which page it
-//   rests on). Each of the 14 MUTATE=<id> runs, diffed line by line against
-//   the baseline's PASS/FAIL output, moves EXACTLY the targeted label's own
-//   line and no other: FIXTURE-LIVE, sol:E-disk.c35,
-//   opus:E-extdisk-iface.c13, RESET-NO-WRITE, sol:E-disk.c36,
-//   opus:E-extdisk-iface.c14, sol:E-disk.c38, opus:E-extdisk-iface.c16,
-//   sol:E-disk.c39, opus:E-extdisk-iface.c17, sol:E-disk.c51 and
-//   opus:E-extdisk-id.c16 each PASS->FAIL (11 passed / 3 failed per run);
-//   sol:E-disk.c26 and opus:E-extdisk-iface.c4 each FAIL->PASS (13 passed /
-//   1 failed per run).
+// MUTATION RUN LOG (WSL/Verilator 5.052): baseline (MUTATE unset) 16
+//   checks.expect() calls, 13 passed / 3 failed. The 3 baseline FAILs are
+//   sol:E-disk.c26, opus:E-extdisk-iface.c4 (p.334 pin 1 RDY*, drive 0 --
+//   see P-READY-MOTOR-INVARIANT below for what is measured and which page
+//   it rests on) and P-READY-MOTOR-INVARIANT-DRIVE1 (the same measurement
+//   on drive 1). Each of the 13 MUTATE=<id> runs targeting a baseline-GREEN
+//   assertion, diffed line by line against the baseline's PASS/FAIL output,
+//   moves EXACTLY the targeted label's own line and no other: FIXTURE-LIVE,
+//   FIXTURE-LIVE-DRIVE1, sol:E-disk.c35, opus:E-extdisk-iface.c13,
+//   RESET-NO-WRITE, sol:E-disk.c36, opus:E-extdisk-iface.c14,
+//   sol:E-disk.c38, opus:E-extdisk-iface.c16, sol:E-disk.c39,
+//   opus:E-extdisk-iface.c17, sol:E-disk.c51 and opus:E-extdisk-id.c16 each
+//   PASS->FAIL (12 passed / 4 failed per run); sol:E-disk.c26,
+//   opus:E-extdisk-iface.c4 and P-READY-MOTOR-INVARIANT-DRIVE1 each
+//   FAIL->PASS (14 passed / 2 failed per run), the other two baseline-RED
+//   lines unaffected in every case.
 
 #include <cstdint>
 #include <cstdlib>
@@ -376,6 +382,68 @@ int main(int argc, char** argv) {
             "opus:E-extdisk-iface.c4 (p.334, figure, pin 1 RDY*: 'With the motor on it indicates a disk installed "
             "and up to speed; with the motor off it is identification mode.'): twin of sol:E-disk.c26 (same "
             "printed pin, independent reader) -- same measurement, graded independently under its own uid");
+    }
+
+    // ========================================================================
+    // FIXTURE-LIVE-DRIVE1 -- no claim id, no manual page: P-READY-MOTOR-
+    // INVARIANT-DRIVE1 below reads drive 1, whose _ready term only responds
+    // to selection once floppy_drives configures an extra drive present
+    // (the drive-count input, sampled at reset). Measured the same way
+    // FIXTURE-LIVE above measured drive 0: before trusting a read on drive
+    // 1, show selecting and deselecting it changes _ready at all.
+    // ========================================================================
+    {
+        Rig r(1);  // floppy_drives=1: one extra drive configured, drive 1 present
+        bool mut = mutating("FIXTURE-LIVE-DRIVE1");
+        r.deselect_all();
+        bool ready_deselected = r.ready();
+        // MUTATION: never actually select drive 1 -- the "asserts once
+        // selected" half is never exercised.
+        if (!mut) r.select(1);
+        bool ready_selected = r.ready();
+        checks.note("FIXTURE-LIVE-DRIVE1: deselected -> _ready asserted=" + std::to_string(ready_deselected) +
+                    ", " + std::string(mut ? "still deselected (mutated)" : "drive 1 selected") +
+                    " -> _ready asserted=" + std::to_string(ready_selected));
+        checks.expect(!ready_deselected && ready_selected,
+            "FIXTURE-LIVE-DRIVE1: with floppy_drives configuring drive 1 present, deselecting every drive "
+            "deasserts _ready and selecting drive 1 asserts it -- drive 1's sense-line read path is live "
+            "before P-READY-MOTOR-INVARIANT-DRIVE1 below is trusted");
+    }
+
+    // ========================================================================
+    // P-READY-MOTOR-INVARIANT-DRIVE1 -- no classify.uid of its own (same
+    // convention as FIXTURE-LIVE and RESET-NO-WRITE above): corroborates
+    // sol:E-disk.c26 / opus:E-extdisk-iface.c4 (p.334 pin 1, RDY*) on drive
+    // 1, per the followup NM-HRM-080 names -- pp.334/368-370 describe
+    // drives beyond drive 0, and P-READY-MOTOR-INVARIANT above only
+    // exercises drive 0. Same setup: motor latched on at a genuine select
+    // edge, no disk mounted; p.334's motor-on branch then predicts RDY*
+    // deasserted. floppy_drives=1 (sampled at reset) is what makes drive 1
+    // exist for this fixture; FIXTURE-LIVE-DRIVE1 above shows it does.
+    // ========================================================================
+    {
+        Rig r(1);  // floppy_drives=1: drive 1 present, see FIXTURE-LIVE-DRIVE1
+        bool mut = mutating("P-READY-MOTOR-INVARIANT-DRIVE1");
+        if (!mut) {
+            r.select_with_motor(1, /*motor_on_level=*/true);
+        } else {
+            // MUTATION (rule against mutating an already-failing check):
+            // substitute a genuine, independently-live stimulus change
+            // (leaving drive 1 deselected, so the motor is never latched)
+            // through the IDENTICAL !ready() comparator and the same
+            // label.
+            r.deselect_all();
+        }
+        bool ready_state = r.ready();
+        checks.note("P-READY-MOTOR-INVARIANT-DRIVE1: drive1, no disk, " +
+                    std::string(mut ? "deselected (mutated substitute)" : "motor latched on at a genuine select edge") +
+                    " -> ready=" + std::to_string(ready_state));
+        checks.expect(!ready_state,
+            "P-READY-MOTOR-INVARIANT-DRIVE1 (p.334, figure, pin 1 RDY*, corroborating sol:E-disk.c26 / "
+            "opus:E-extdisk-iface.c4 on drive 1): with drive 1 configured present, the motor genuinely latched "
+            "on at a select edge and no disk in the drive, the printed motor-on branch requires a disk "
+            "installed and up to speed for RDY* to read asserted; with none installed the page predicts it "
+            "deasserted on drive 1 as on drive 0");
     }
 
     // ========================================================================
@@ -871,6 +939,8 @@ int main(int argc, char** argv) {
 // MUTATION FIXTURE-LIVE stimulus red: word 2 driven identical to word 1 instead of its complement, so the two readings are indistinguishable (MUTATE=FIXTURE-LIVE).
 // MUTATION sol:E-disk.c26 stimulus green: this assertion is RED at baseline (p.334 pin 1 and p.369 predict RDY* deasserted for a motor genuinely latched on with no disk; paula_floppy reads it asserted), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (leaving the drive deselected instead of latching the motor) through the identical !ready() comparator and the same label, proving the comparator is sensitive to a real difference (MUTATE=sol:E-disk.c26).
 // MUTATION opus:E-extdisk-iface.c4 stimulus green: same substitute as sol:E-disk.c26, independent uid (MUTATE=opus:E-extdisk-iface.c4).
+// MUTATION FIXTURE-LIVE-DRIVE1 stimulus red: drive 1 is never actually selected, so the "asserts once selected" half is never exercised on drive 1 (MUTATE=FIXTURE-LIVE-DRIVE1).
+// MUTATION P-READY-MOTOR-INVARIANT-DRIVE1 stimulus green: this assertion is RED at baseline (p.334 pin 1 predicts RDY* deasserted for drive 1's motor genuinely latched on with no disk; paula_floppy reads it asserted, same defect as sol:E-disk.c26/opus:E-extdisk-iface.c4 on drive 0), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (leaving drive 1 deselected instead of latching the motor) through the identical !ready() comparator and the same label (MUTATE=P-READY-MOTOR-INVARIANT-DRIVE1).
 // sol:E-disk.c33, opus:E-extdisk-iface.c11, sol:E-disk.c34, opus:E-extdisk-iface.c12, sol:E-disk.c45, opus:E-extdisk-iface.c23, sol:E-disk.c46, opus:E-extdisk-iface.c24, sol:E-disk.c40, opus:E-extdisk-iface.c18, sol:E-disk.c43, opus:E-extdisk-iface.c21, sol:E-disk.c44, opus:E-extdisk-iface.c22 -- all DECLINED via record(), not expect(); no mutation records (not graded through expect()). sol:E-disk.c35's and opus:E-extdisk-iface.c13's write-protect halves are RECORDED via record(), not graded through expect() either -- no mutation records for them.
 // MUTATION sol:E-disk.c35 stimulus red: only the motor half is graded here (the write-protect half is recorded, not graded, below it); the reset pulse is omitted entirely, so the latched-before/after comparison reads the same latched state twice (MUTATE=sol:E-disk.c35).
 // MUTATION opus:E-extdisk-iface.c13 stimulus red: same omission as sol:E-disk.c35, independent uid (MUTATE=opus:E-extdisk-iface.c13).
