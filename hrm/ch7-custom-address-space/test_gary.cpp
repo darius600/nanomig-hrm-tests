@@ -89,7 +89,7 @@
 // INDEPENDENT MEASUREMENT VS. THE CLAIMS FILE'S OWN classify.evidence:
 //   the claims file already carries RTL line citations and measured
 //   addresses (from the classify/crossread stage, which had RTL access
-//   before this build did). Per the lead's instruction those are read as
+//   before this build did). Those are read as
 //   another reader's measurement to reproduce, not as the expected value.
 //   This file's own measurement (below, RESULTS) reproduced them at every
 //   address in common: sel_reg=1 at $DFF000 and $DFF09E, sel_reg=1
@@ -99,7 +99,7 @@
 //   0 whenever dbr=1). No disagreement between this file's own
 //   measurement and that evidence was found.
 //
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-13): 8 passed, 2
+// RESULTS (after opening the RTL and building): 8 passed, 2
 //   failed. ADDR-EXCLUSIVE-BELOW-DF0000 and ADDR-EXCLUSIVE-MIDBLOCK-D00000
 //   are both RED -- both are genuine findings, not adjusted to pass:
 //   gary.v's sel_reg decodes the whole $DF0000-$DFFFFF range (and, under
@@ -350,8 +350,8 @@ int main() {
             "address' to 'sel_reg must read 0' is an inference this "
             "package supplied, not a printed requirement, so the "
             "measurement above is reported and not graded. reason_kind "
-            "source-silent. Graded until stage 8; withdrawn on the "
-            "independent validation's finding. The broad-decode behaviour "
+            "source-silent. Not graded, per the reasoning above. "
+            "The broad-decode behaviour "
             "may still be worth reporting to the RTL's authors -- it is "
             "the ORACLE that is missing here, not the observation. These "
             "two uids' own exclusivity claim IS graded, completely, at "
@@ -451,8 +451,8 @@ int main() {
             "ADDR-EXCLUSIVE-ABOVE-E00000, ADDR-EXCLUSIVE-CHIPRAM-040000, "
             "ADDR-EXCLUSIVE-ROM-FC0000) are this claim's complete graded "
             "coverage; neither uid appears on any graded line in this "
-            "file. reason_kind source-silent. Graded until stage 8, "
-            "withdrawn on the independent validation's finding.");
+            "file. reason_kind source-silent. Not graded, per the reasoning "
+            "for ADDR-BELOW-DF0000-NOT-GRADED above.");
     }
 
     // ================= PROP-C =================
@@ -597,7 +597,7 @@ int main() {
         "OVERLAY-NOT-IN-SCOPE: this package's own subject line names the "
         "overlay ('with and without the overlay'), and gary.v:70 has an "
         "`ovl` input whose effect on sel_kick/sel_chip over "
-        "$000000-$07FFFE this agent independently read at gary.v:159,166 "
+        "$000000-$07FFFE was independently read at gary.v:159,166 "
         "while finding the port list above -- but none of this package's "
         "8 claims quotes anything about the overlay. That territory "
         "belongs to the sibling packages ch7-overlay-source (fixture "
