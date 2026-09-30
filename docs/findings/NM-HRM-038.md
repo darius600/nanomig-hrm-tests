@@ -10,8 +10,8 @@
 | **Report to** | **Minimig-AGA and NanoMig.** All four implementations keep the reset interval out of the final count; this one counts through it |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge) reads the counters; [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports) reads POTGOR at the system boundary: `C0-Fc` to `C4-Fc`, claims `opus:8-dio.c21`, `sol:8-dio.c19` (p. 240), graded on their own in each of PAL+ECS, NTSC+ECS, PAL+OCS and NTSC+OCS on both CPU cores, red in all four on fx68k and on TG68K |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 4 red in the counter package — two from the body text, `opus:8-potchg.c1` and `sol:8-pot.c16`, two from Figure 8-5, `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2`; 20 red per core at the system boundary, `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`), with the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) green in each on the same measurement basis; the `VGREEN` record turns `C3-Fc` green through the same comparator |
-| **Verdict of the four** | **2–2 on the counter read, 3–1 on the POTGOR discharge, unanimous on the final count.** Denise and Copperline hold the counters at zero through the reset interval, so a read inside it returns 0, as the counter package's assertions require; WinUAE and vAmiga run the counters through the interval and restart them from zero at its end, so they too read non-zero after one line. On POTGOR, WinUAE, vAmiga and Denise discharge an input line through the interval, so a line nothing pulls up reads 0 there, as the integration package's assertions require; Copperline's POTGOR read has no discharge and returns 1 on a released line, as NanoMig's does. vAmiga's joystick, its mouse at the default setting, and Denise's joypad and mouse pull a released button's line high in every read, so with one attached those two read 1 as well. All four keep the interval out of the final count, which NanoMig includes, and all four put PAL at eight lines; on NTSC WinUAE and vAmiga use a flat 8, Denise and Copperline 7 |
+| **Assertions** | 8 red in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other five are [NM-HRM-037](NM-HRM-037.md)'s): on the first increment `opus:8-potchg.c1` and `sol:8-pot.c16` (p.235 body text) and `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5), and on the final count `FINALCOUNT-BODY-OPUS`, `FINALCOUNT-BODY-SOL`, `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`; 20 red per core at the system boundary, `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`), with the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) green in each on the same measurement basis; the `VGREEN` record turns `C3-Fc` green through the same comparator |
+| **Verdict of the four** | **2–2 on the counter read, 3–1 on the POTGOR discharge, unanimous on the final count.** Denise and Copperline hold the counters at zero through the reset interval, so a read inside it returns 0, as the counter package's first-increment assertions require; WinUAE and vAmiga run the counters through the interval and restart them from zero at its end, so they too read non-zero after one line. On POTGOR, WinUAE, vAmiga and Denise discharge an input line through the interval, so a line nothing pulls up reads 0 there, as the integration package's assertions require; Copperline's POTGOR read has no discharge and returns 1 on a released line, as NanoMig's does. vAmiga's joystick, its mouse at the default setting, and Denise's joypad and mouse pull a released button's line high in every read, so with one attached those two read 1 as well. All four keep the interval out of the final count, which NanoMig includes, and all four put PAL at eight lines; on NTSC WinUAE and vAmiga use a flat 8, Denise and Copperline 7 |
 
 ---
 
@@ -38,15 +38,21 @@ counters, and the very next `pot_cnt_en` tick increments them.
 
 ### Measured
 
-| | completed reset lines before the first increment |
-|---|---|
-| p.235 body | 7 or 8 |
-| Figure 8-5 | 8 |
-| **NanoMig** | **0** |
+[`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge)
+releases pot0x at the POTGO start and counts the lines before its first
+increment (`test_userio.cpp:809-864`), and runs all four counters 8 + 10 lines
+unbroken (`:888-1001`):
 
-The first increment arrives on pulse 1, which is zero completed lines. The
-counter package's control drives the same counter to a known count, 7, and routes it
-through the identical comparator, which accepts it.
+| | lines before the first increment | final count after 8 + 10 lines |
+|---|---|---|
+| p.235 body | 7 or 8 | 10 or 11 |
+| Figure 8-5 | 8 | 10 |
+| **NanoMig** | **0** | **18**, all four counters |
+
+The package grades every other clause after a warm-up longer than either
+interval, so only these eight depend on when counting starts. On a private
+copy of `userio.v` with an eight-line reset interval all eight turn green and
+nothing else moves.
 
 **At the system boundary, POTGOR shows the same missing interval.**
 [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports)
@@ -104,23 +110,16 @@ reaches only the counters.
 counter at zero through it.** Denise and Copperline leave POTxDAT at zero until
 the interval ends, as p.235 and p.236 read together predict. WinUAE and vAmiga
 count the interval's lines in the same counter and restart it from zero at its
-end, so a read inside the interval is non-zero in both — after one line, as
-in NanoMig. The counter package's four red assertions take the first non-zero read, so
-they would be red on WinUAE and vAmiga as well; what separates NanoMig from all
-four is the final count, which in NanoMig includes the interval's lines.
+end, so a read inside the interval is non-zero in both, as in NanoMig: the
+package's four first-increment reds would be red on them too. The four
+final-count reds are what separates NanoMig from all four.
 
-The page's unresolved "seven **or** eight" is read by two of four independent
-implementations as a **video-standard distinction**, with PAL landing on exactly
-the 8 that Figure 8-5 draws. The other two use a flat 8. None of the four
-independent implementations uses zero — though both maintained Minimig lines
-do: MiSTer and TC64 inherit NanoMig's absent hold unchanged, so as descendants
-they say nothing about the manual and everything about where the fix has not
-yet travelled.
+Two of the four read the page's "seven **or** eight" as 8 on PAL and 7 on NTSC;
+the other two use a flat 8. None uses zero; MiSTer and TC64, descendants, carry
+NanoMig's missing hold unchanged.
 
-**On POTGOR the four split differently.** The integration package reads
-POTGOR's input bits six lines after START (*Measured*, above), where the dump
-of p.240 predicts 0. WinUAE, vAmiga and Denise discharge an input line inside
-the interval; Copperline, like NanoMig, reads it as it read before START.
+**On POTGOR the four split differently**, six lines after START, where the dump
+of p.240 predicts 0:
 
 | | | POTGOR input bit after START |
 |---|---|---|
@@ -131,11 +130,6 @@ the interval; Copperline, like NanoMig, reads it as it read before START.
 | **MiSTer** | [`rtl/userio.v:177-197`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L177-L197) | descendant — NanoMig's `potcap`, read at [`:319-324`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L319-L324); START (`potreg[0]`, [`:151`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L151)) reaches only the counters |
 | **TC64** | [`rtl/minimig/userio.v:210-234`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L210-L234) | descendant — `potcap` from button and output-enable terms, with more button terms than NanoMig's and no START term either, read at [`:466-471`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L466-L471); START (`potreg[0]`, [`:189`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/userio.v#L189)) reaches only the counters |
 
-The discharge is three of four in the chip. With a controller attached, vAmiga
-and Denise read 1 as NanoMig does, because their joystick and mouse models
-(vAmiga's mouse by default) pull a released button's line high in every read;
-WinUAE still reads 0.
-
 ## Suggested change
 
 Model the reset interval after a POTGO start once, for both halves the page
@@ -143,15 +137,12 @@ describes. For eight scan lines on PAL, hold the four pot counters at zero, as
 Denise and Copperline do, and read POTGOR's bit as 0 for every pot line that is
 an input, whose capacitor START dumps (p.240 Table 8-4) while the read circuitry
 stays in its reset state (p.235), as WinUAE does, and vAmiga and Denise do with
-nothing attached to the port. That satisfies the counter package's first-read
-assertions, `C0-Fc` to `C4-Fc` in the controller-ports package, and the final
-count all four agree on.
-Holding the counters alone leaves `C0-Fc` to `C4-Fc` red: POTGOR's input bits
-come from `potcap`, which START does not reach. Two of four implementations use
-seven lines on NTSC and two use eight; that difference is a hardware question
-this project cannot settle, and whoever implements it should decide it
-deliberately rather than inheriting whichever number is convenient. Whether and
-how the RTL changes is for an Amiga specialist to decide.
+nothing attached to the port. That satisfies the counter package's eight reds,
+first increment and final count alike, and `C0-Fc` to `C4-Fc` in the
+controller-ports package; holding the counters alone leaves the latter red,
+because START does not reach `potcap`. Whether NTSC takes seven lines or eight
+is a hardware question this project cannot settle. Whether and how the RTL
+changes is for an Amiga specialist to decide.
 
 ## What holds the finding up
 
@@ -160,10 +151,10 @@ how the RTL changes is for an Amiga specialist to decide.
 - The figure independently draws the same interval.
 - All four implementations keep the reset interval out of the final count, and
   all four agree on PAL. Two of them, Denise and Copperline, also hold the
-  counter at zero through the interval, which is what the counter package's red
-  assertions measure; WinUAE and vAmiga do not.
+  counter at zero through the interval, which is what the counter package's
+  first-increment reds measure; WinUAE and vAmiga do not.
 - The deviation is not an off-by-one against an unclear boundary: it is zero
-  against seven or eight.
+  lines against seven or eight, and a final count of 18 against 10 or 11.
 
 ---
 
