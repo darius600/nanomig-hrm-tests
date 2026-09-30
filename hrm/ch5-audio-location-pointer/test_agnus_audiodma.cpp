@@ -785,20 +785,23 @@ int main(int argc, char** argv) {
         const bool new_location_needs_a_restart = (p5 == v1);
         const bool repeat_needs_no_rewrite = (p6 == v1);
 
-        char buf[2048];
-        std::snprintf(buf, sizeof(buf),
+        checks.expect(restart_loads_location && advance_increments &&
+                          rewrite_does_not_disturb_active_transfer &&
+                          new_location_needs_a_restart && repeat_needs_no_rewrite,
             "LOCATION-REGISTER-VS-WORKING-POINTER (pp.137,139,144,147,148,153,"
             "164,165, appendix B p.288: the location registers are read once, "
             "at start/restart, into a working pointer Agnus advances on its "
             "own; they need not be rewritten to repeat a waveform, are safe "
             "to rewrite mid-transfer without disturbing it, and the working "
             "pointer reloads from them again whenever a restart is granted): "
-            "measured v0=0x%05X loaded on restart (p0=0x%05X), two advances "
-            "step it by 1 each (p1=0x%05X,p2=0x%05X), rewriting to v1=0x%05X "
-            "mid-sequence leaves the running pointer alone "
-            "(p3=0x%05X==p2, next advance p4=0x%05X==v0+3), and only a "
-            "RESTART adopts v1 (p5=0x%05X), reproducibly, with no further "
-            "rewrite (p6=0x%05X==p5). "
+            "measured v0=0x" + hex5(v0) + " loaded on restart (p0=0x" + hex5(p0) +
+            "), two advances step it by 1 each (p1=0x" + hex5(p1) + ",p2=0x" +
+            hex5(p2) + "), rewriting to v1=0x" + hex5(v1) +
+            " mid-sequence leaves the running pointer alone "
+            "(p3=0x" + hex5(p3_before_grant) + "==p2, next advance p4=0x" +
+            hex5(p4) + "==v0+3), and only a "
+            "RESTART adopts v1 (p5=0x" + hex5(p5) + "), reproducibly, with no further "
+            "rewrite (p6=0x" + hex5(p6) + "==p5). "
             "[claims: 5-p137.c4, 5-p139.c5, 5-p139.c6, 5-p139.c7, 5-p144.c4, "
             "5-p147.c1, 5-p147.c3, 5-p147.c5, 5-p147.c7, 5-p147.c8, "
             "5-p148.c2, 5-p148.c3, 5-hw.c8, 5-loc.c5, 5-loc.c6, 5-loc.c7, "
@@ -806,12 +809,7 @@ int main(int argc, char** argv) {
             "5-join.c8, 5-p153.c4, 5-eff.c1, 5-p164.c25, 5-p165.c8, "
             "5-sm.c26, 5-sig.audxdsr, 5-appA-p266.c12, 5-appA-p266.c13, "
             "A-audxlc.c2, B-lclch.c1, B-lclch.c2, B-ptlpth.c1, "
-            "5-appB-p288.c2]",
-            v0, p0, p1, p2, v1, p3_before_grant, p4, p5, p6);
-        checks.expect(restart_loads_location && advance_increments &&
-                          rewrite_does_not_disturb_active_transfer &&
-                          new_location_needs_a_restart && repeat_needs_no_rewrite,
-            buf);
+            "5-appB-p288.c2]");
     }
 
     // ---------------- 4. LCL-LOW-15-BITS ----------------
@@ -1032,22 +1030,20 @@ int main(int argc, char** argv) {
                 all_four_channels_identical = false;
             }
         }
-        char buf[2048];
-        std::snprintf(buf, sizeof(buf),
+        checks.expect(all_four_channels_identical,
             "LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS (appendix A p.266 \"(high 3 "
             "bits, 5 bits if ECS)\"; appendix B p.290's ECS-marked row; "
             "appendix C p.298/309 \"high 5 bits was 3 bits\" and \"gain two "
             "address bits\"): a walking-one through all five bits of AUDxLCH "
             "lands at address_out bits 16-20 for every one of the four "
-            "channels (measured %d/5 survivors on channel 0, identical on "
+            "channels (measured " + std::to_string(ch0_ecs_survivors) +
+            "/5 survivors on channel 0, identical on "
             "1-3), and the all-ones case gives word address 0xFFFFF (byte "
             "0x1FFFFE) on every channel - matching CANDIDATES.md's own "
             "number exactly. "
             "[claims: 5-appA-p266.c6, 5-appB-p290.c149, 5-appC-p298.c6, "
             "5-appC-p309.c1, 5-appC-p309.c2, 5-appC-p309.c6, A-audxlch.w1, "
-            "C-map.lch.width, C-prose.c1, C-prose.lch, B-aud0lch.width]",
-            ch0_ecs_survivors);
-        checks.expect(all_four_channels_identical, buf);
+            "C-map.lch.width, C-prose.c1, C-prose.lch, B-aud0lch.width]");
     }
 
     // ---------------- 9. LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD ----------------
@@ -1068,8 +1064,7 @@ int main(int argc, char** argv) {
         const bool bit4_had_no_effect = (p_bit4 == 0);
         const bool ocs_reading_holds = bit3_had_no_effect && bit4_had_no_effect;
 
-        char buf[2048];
-        std::snprintf(buf, sizeof(buf),
+        checks.expect(ocs_reading_holds,
             "LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD *** REQUIRED RED *** "
             "(chapter 5 pp.139/145, unqualified, \"contain the high three "
             "bits\"; appendix A p.266's non-ECS half; appendix B p.290's "
@@ -1078,15 +1073,18 @@ int main(int argc, char** argv) {
             "naming the pre-ECS value explicitly): a genuine OCS reading "
             "would give AUDxLCH's two \"ECS-only\" bit positions (bits 3 and "
             "4) NO effect on the fetch address. MEASURED: bit 3 alone gives "
-            "word address 0x%X (byte 0x%X), bit 4 alone gives 0x%X (byte "
-            "0x%X) - NEITHER is zero, so BOTH bits land. agnus_audiodma.v "
+            "word address 0x" + hex5(p_bit3) + " (byte 0x" + hex5(p_bit3 * 2) +
+            "), bit 4 alone gives 0x" + hex5(p_bit4) + " (byte "
+            "0x" + hex5(p_bit4 * 2) + ") - NEITHER is zero, so BOTH bits land. "
+            "agnus_audiodma.v "
             "has no ecs or chipset port anywhere in its 157 lines (confirmed "
             "again by this reading), so the OCS alternative these ids state "
             "cannot be selected for at all - the module implements the "
             "five-bit ECS form UNCONDITIONALLY, exactly as CANDIDATES.md's "
             "prior, independent double-measurement already found. This uses "
             "the IDENTICAL walking-one methodology as "
-            "LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS above (which PASSES, %d/5 "
+            "LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS above (which PASSES, " +
+            std::to_string(ch0_ecs_survivors) + "/5 "
             "survivors), which is this assertion's control: a red here "
             "reflects the OCS claim failing to hold, not a broken fixture. "
             "Expected, correct outcome: FAIL. This assertion is NM-HRM-024. "
@@ -1099,9 +1097,7 @@ int main(int argc, char** argv) {
             "5-appB-p290.c127, 5-appB-p290.c148, B-aud1lch.width, "
             "B-aud2lch.width, B-aud3lch.width, A-audxlc.c1, 5-appC-p298.c6, "
             "5-appC-p309.c6, A-audxlch.w1, C-map.lch.width, "
-            "B-aud0lch.width]",
-            p_bit3, p_bit3 * 2, p_bit4, p_bit4 * 2, ch0_ecs_survivors);
-        checks.expect(ocs_reading_holds, buf);
+            "B-aud0lch.width]");
     }
 
     // =========================================================================
