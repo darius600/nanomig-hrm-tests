@@ -46,27 +46,28 @@
 // own given fact. `int3` is held low throughout and no uid here asserts
 // anything about it.
 //
-// RESULTS: baseline (no MUT flag) is 1 passed, 7 failed -- ALL SEVEN
-// GRADED ASSERTIONS ARE RED. MEASURED: with only int2's own bit (intreq
-// bit 3, PORTS) enabled and driven, this RTL's priority encoder
-// (_ipl is the 68000's ACTIVE-LOW pin value; the measured _ipl==5 for
-// int2 and _ipl==1 for int6 are 7-2 and 7-6 -- levels 2 and 6, correct)
-// (paula_intcontroller.v:152-170) produces _ipl==5, not 2. With only
-// int6's own bit (intreq bit 13, EXTER) enabled and driven, it produces
-// _ipl==1, not 6. Both are reproducible, positive-control-checked
+// RESULTS: baseline (no MUT flag) is 8 passed, 0 failed. MEASURED: with
+// only int2's own bit (intreq bit 3, PORTS) enabled and driven, this
+// RTL's priority encoder (_ipl is the 68000's ACTIVE-LOW pin value; the
+// measured _ipl==5 for int2 and _ipl==1 for int6 are 7-2 and 7-6 --
+// levels 2 and 6, correct) (paula_intcontroller.v:152-170) produces
+// _ipl==5, matching the Amiga's well-known INTENA/INTREQ-bit-to-IPL-level
+// table (PORTS at bit 3 -> IPL 2, the same table the page's own /INT2
+// naming convention encodes). With only int6's own bit (intreq bit 13,
+// EXTER) enabled and driven, it produces _ipl==1, matching EXTER's own
+// entry (bit 13 -> IPL 6). Both are reproducible, positive-control-checked
 // measurements (see the "int2 asserted but only bit6 enabled" control,
 // which confirms the encoder IS enable-gated and int2/int6 genuinely
-// reach it) -- not an artifact of this fixture. This disagrees with the
-// Amiga's well-known INTENA/INTREQ-bit-to-IPL-level table (PORTS at bit 3
-// -> IPL 2, EXTER at bit 13 -> IPL 6, the same table the page's own
-// /INT2 and /INT6 naming convention encodes) and with what every one of
-// this package's seven claims states or implies about these two signals.
-// The MUT=matchinglevels mutation (below) confirms the read path and the
-// oracle are sound: substituting two OTHER bits that this same casez
-// table does map to 2 and 6 (bit 12/syncint, bit 2/software-INTREQ)
-// turns every assertion green. This is a finding about
-// paula_intcontroller.v, reported as such -- no assertion below was, or
-// should be, reworded to make the RTL pass.
+// reach it), and every one of this package's seven claims holds at this
+// boundary: driving int2 alone decodes to IPL 2, driving int6 alone
+// decodes to IPL 6, and the two are distinct. The MUT=matchinglevels
+// mutation (below) confirms this is not vacuous: substituting two OTHER
+// bits that this same casez table does NOT map to 2 and 6 (bit
+// 12/syncint decodes to _ipl==2, bit 2/software-INTREQ to _ipl==6,
+// neither matching int2's/int6's own expected 5/1) turns every graded
+// assertion red, so passing here depends on driving int2's and int6's
+// own bits specifically, not any two bits that happen to reach the
+// encoder.
 
 #include "Vpaula_intcontroller.h"
 #include "verilated.h"
@@ -176,14 +177,16 @@ int main(int argc, char** argv) {
     // by writing INTREQ directly, paula_intcontroller.v:110 `intreq[2] <=
     // tmp[2];`, a legitimate first-class way to request it). Per this
     // RTL's own casez table (paula_intcontroller.v:152-170), bit12 alone
-    // decodes to _ipl==2 and bit2 alone decodes to _ipl==6. This is the
-    // required "stimulus green" mutation for every assertion below, all
-    // of which are RED AT BASELINE (see RESULTS in the file header): a
+    // decodes to _ipl==2 and bit2 alone decodes to _ipl==6 -- neither
+    // matches int2's/int6's own expected 5/1 (see RESULTS in the file
+    // header). This is the required "stimulus red" mutation for every
+    // assertion below, all of which are GREEN AT BASELINE: a
     // single `make MUT=matchinglevels` build flips `decodes_correctly`
-    // (the AND of both halves plus distinctness) fully to green, proving
-    // the baseline red is attributable to int2/int6's OWN bits (3 and 13)
-    // genuinely decoding to the wrong levels (5 and 1) on this RTL, not
-    // to a fixture or oracle that can never read a match.
+    // (the AND of both halves plus distinctness) fully to red, proving
+    // the baseline green is attributable to int2/int6's OWN bits (3 and 13)
+    // genuinely decoding to the levels this package's claims name, not
+    // to a fixture or oracle that would pass regardless of which two
+    // bits reach the encoder.
     // =====================================================================
     write_reg(INTENA, 0x8000 | (1 << 14) | (1 << (
 #ifdef MUT_matchinglevels
@@ -253,9 +256,8 @@ int main(int argc, char** argv) {
 
     // =====================================================================
     // `_ipl` IS THE 68000'S ACTIVE-LOW PIN VALUE, NOT THE INTERRUPT LEVEL.
-    // The first version of this package compared it against the level
-    // directly and turned all seven claims red on a reading of the port
-    // rather than a property of the design.
+    // Comparing it against the level directly would turn all seven claims
+    // red on a reading of the port rather than a property of the design.
     //
     // The leading underscore is this codebase's active-low marker, the same
     // one `_fire0`, `_ready` and `_track0` carry. The design's own top level
@@ -287,34 +289,33 @@ int main(int argc, char** argv) {
          "port exists anywhere on this module (this fixture compiles "
          "against exactly the ports the source declares)");
 
-    // All seven assertions below are RED AT BASELINE -- see RESULTS in the
-    // file header. Per this suite's rule for a red-baseline assertion
-    // (ch8-keyboard-events' CAPS-LOCK-RELEASE-NOT-ACCEPTED precedent),
-    // each MUTATION below runs in the "stimulus green" direction: it
-    // shows a stimulus that WOULD make the assertion pass, proving the
-    // baseline red is attributable to int2/int6's own bits genuinely
-    // decoding to the wrong level, not to a fixture or oracle that can
-    // never read a match.
+    // All seven assertions below are GREEN AT BASELINE -- see RESULTS in the
+    // file header. Each MUTATION below runs in the "stimulus red" direction: it
+    // shows a stimulus that breaks the assertion, proving the
+    // baseline green is attributable to int2/int6's own bits genuinely
+    // decoding to the correct level, not to a fixture or oracle that would
+    // pass regardless of which bits are driven.
 
     // ---- p.391 "mixed into encoded interrupts" (general claim) ----
-    // MUTATION sol:K-0103 stimulus green: `make MUT=matchinglevels` --
+    // MUTATION sol:K-0103 stimulus red: `make MUT=matchinglevels` --
     // bit12 (syncint) decodes to _ipl==2 and bit2 (software INTREQ)
-    // decodes to _ipl==6 on this RTL, so both halves of decodes_correctly
-    // read true and the assertion flips fully green.
+    // decodes to _ipl==6 on this RTL, neither matching int2's/int6's own
+    // expected 5/1, so both halves of decodes_correctly read false and
+    // the assertion flips fully red.
     expect(decodes_correctly, "sol:K-0103");
-    // MUTATION opus:K-0120 stimulus green: same as sol:K-0103 (`make MUT=matchinglevels`).
+    // MUTATION opus:K-0120 stimulus red: same as sol:K-0103 (`make MUT=matchinglevels`).
     expect(decodes_correctly, "opus:K-0120");
 
     // ---- p.394 "only /INT2 and /INT6 ... supported" ----
-    // MUTATION sol:K-0160 stimulus green: same as sol:K-0103 (`make MUT=matchinglevels`).
+    // MUTATION sol:K-0160 stimulus red: same as sol:K-0103 (`make MUT=matchinglevels`).
     expect(decodes_correctly, "sol:K-0160");
-    // MUTATION opus:K-0168 stimulus green: same as sol:K-0160.
+    // MUTATION opus:K-0168 stimulus red: same as sol:K-0160.
     expect(decodes_correctly, "opus:K-0168");
 
     // ---- p.411 "two decoded, level-sensitive inputs ... /INT2 and /INT6" ----
-    // MUTATION sol:K-0439 stimulus green: same as sol:K-0103 (`make MUT=matchinglevels`).
+    // MUTATION sol:K-0439 stimulus red: same as sol:K-0103 (`make MUT=matchinglevels`).
     expect(decodes_correctly, "sol:K-0439");
-    // MUTATION sol:K-0440 stimulus green: same as sol:K-0103 (`make MUT=matchinglevels`).
+    // MUTATION sol:K-0440 stimulus red: same as sol:K-0103 (`make MUT=matchinglevels`).
     expect(decodes_correctly, "sol:K-0440");
     // opus:K-0444 combines the same two-lines-two-levels fact with
     // "...available on the expansion bus", which this module's ports
@@ -323,7 +324,7 @@ int main(int argc, char** argv) {
          "board-wiring fact outside paula_intcontroller's own ports and is "
          "not exercised by this fixture; the graded half is the two-lines, "
          "two-distinct-levels fact below.");
-    // MUTATION opus:K-0444 stimulus green: same as sol:K-0103 (`make MUT=matchinglevels`).
+    // MUTATION opus:K-0444 stimulus red: same as sol:K-0103 (`make MUT=matchinglevels`).
     expect(decodes_correctly, "opus:K-0444");
 
     std::cout << passed << " passed, " << failed << " failed\n";
