@@ -27,8 +27,7 @@
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 // Specification additions: three claim ids new to this file, from the
 //   inventory's quotation and restatement alone.
 //   ch2-location-registers.c3 (p.25, register list): "COP1LCL Low 16 bits of
