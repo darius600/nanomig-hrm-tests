@@ -30,7 +30,7 @@
 //   pointer banks l.217-242, pointer arithmetic l.484-493, address_out[20:1]
 //   port l.46 - there is no address bit 0.
 //
-// ALREADY MEASURED on this fixture (d_bpldma, 10.09.2026 - not repeated
+// ALREADY MEASURED on this fixture (d_bpldma - not repeated
 // here): NTSC 320x200 lores, one bitplane, DDFSTRT=$38/DDFSTOP=$D0/BPU=1
 // gives exactly 8,000 fetched bytes total, addresses $0..$1F3E contiguous
 // with step 2. BPL1MOD 0/40/80 gives a line-to-line address step of
@@ -647,20 +647,18 @@
 //     only a genuinely 15-bit-stored field reproduces - see IMPLEMENTATION
 //     NOTES below.
 //
-// No RTL has been opened yet to write this comment block. Every port name,
-// register offset and bit-slice fact above (BPLPTBASE_REG, pointer banks,
-// pointer arithmetic, address_out[20:1]) comes from this package's own build
-// brief (PACKAGE.md), and every numeric fetch-count/address/line-count fact
+// The BOUNDARY text above comes from this package's own build
+// brief (PACKAGE.md), not from opening agnus_bitplanedma.v. Every numeric
+// fetch-count/address/line-count fact
 // comes from the ALREADY MEASURED section above, itself handed to this
 // package rather than re-derived. The fixture, Harness helpers and assertion
-// bodies are added in the next commit, after agnus_bitplanedma.v is read for
-// the first time.
+// bodies below were added only after agnus_bitplanedma.v was read in full.
 
 // ============================================================================
-// IMPLEMENTATION NOTES (added in this commit, after agnus_bitplanedma.v was
-// read in full for the first time - the specification comment above this
-// point was committed on its own first, per the chapter's spec-before-RTL
-// gate; see this package's own git history for the spec-only commit).
+// IMPLEMENTATION NOTES, written after agnus_bitplanedma.v was
+// read in full - the specification comment above this
+// point was written before agnus_bitplanedma.v was opened, per the
+// chapter's spec-before-RTL gate.
 //
 // PORTS (agnus_bitplanedma.v:29-47): clk, clk7_en, reset, harddis, aga, ecs,
 // a1k, sof, dmaena, vpos[10:0], hpos[8:0] are inputs; hde, dma, address_out
@@ -1936,8 +1934,8 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (11.09.2026). Every entry below was actually applied by this
-// agent, rebuilt and run under WSL/Verilator (`make`), confirmed red, then
+// MUTATION LOG. Every entry below was actually applied,
+// rebuilt and run under WSL/Verilator (`make`), confirmed red, then
 // reverted and rebuilt clean (14/14 green again) - not predicted. Each
 // mutation changes what the harness ASKS the module to do (the stimulus)
 // while leaving every assertion's own expected-value logic untouched, per
