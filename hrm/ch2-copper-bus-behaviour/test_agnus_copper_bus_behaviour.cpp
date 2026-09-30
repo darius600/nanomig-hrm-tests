@@ -40,14 +40,12 @@
 // MUTATION W4 stimulus red the second MOVE retargeted to COLOR00, so one register is written twice and another not at all
 // MUTATION W5 stimulus red the withholding window shortened to zero cycles, so there is no stretch in which the Copper could be seen still asking
 //
-// W1 FAILED its first mutation, and the assertion was strengthened rather than
-// the mutation abandoned. It counted requests *between* the WAIT's second word
-// and the next fetch, which is vacuously zero when those two ticks are
-// adjacent - so a WAIT that never blocked at all passed it just as a properly
-// blocked one did. It could not tell "waited quietly" from "never waited". The
-// check now also requires the gap to exceed one scan line; see the comment at
-// the assertion. This is the second assertion in this suite found to hold for
-// the wrong reason (after SM4's), and both were found the same way.
+// W1's own check requires the gap between the WAIT's second word and the
+// next fetch to exceed one scan line: counting requests only in that
+// literal window is vacuously zero when those two ticks are
+// adjacent - so a WAIT that never blocked at all would pass it just as a properly
+// blocked one does. Requests alone could not tell "waited quietly" from "never waited". See the comment at
+// the assertion.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
 // inspected during FPGA-063 and FPGA-065 before this specification was written.
