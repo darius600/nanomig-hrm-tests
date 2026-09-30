@@ -255,21 +255,21 @@ the same module alone, with AUDxLEN = 4, answers each request with a word, and
 reads the counter and the arc's actions inside the module and the restart and
 interrupt requests at its outputs:
 
-- `F58-LENCOUNT-STARTUP-ARCS` (`test_ch5_audio_channel_state.cpp:1361-1379`)
+- `F58-LENCOUNT-STARTUP-ARCS` (`test_ch5_audio_channel_state.cpp:1346-1364`)
   samples `lencnt` as each of the first three words arrives, before that
   word's own count: the thrown-away word, offset 0 and offset 1. It requires
   one step down across the thrown-away word, the 001 → 101 arc, and none
   across offset 0, the 101 → 010 arc. NanoMig reads `4 3 2`: the counter
   moves on 101 → 010.
-- `5-p166.c4 F58.t101_010` (`:1196-1221`) samples the actions on the 101 → 010
+- `5-p166.c4 F58.t101_010` (`:1181-1206`) samples the actions on the 101 → 010
   arc and requires the figure's four, `volcntrld`, `percntrld`, `pbufld1` and
   `AUDxDR`, with no `lencount`. NanoMig reads all four set and `lencount=1`.
-- `5-p164.c23 5-p164.c24 5-sm.c25` (`:1411-1450`) grades p. 164's restart
+- `5-p164.c23 5-p164.c24 5-sm.c25` (`:1396-1435`) grades p. 164's restart
   request, a rising edge on `dmas` with `dmareq` set, in the open interval
   between the arrivals of offset 2 and offset 3, the last word (t = 5560 and
   t = 7376): by the figure's count the request that fetches the last word goes
   out there, with the counter at one. NanoMig sends none in that interval.
-- `5-p164.c28 5-sm.c29` (`:1491-1529`) grades p. 164's "The request goes out
+- `5-p164.c28 5-sm.c29` (`:1476-1514`) grades p. 164's "The request goes out
   just as the last word of the waveform starts its output": a pulse on
   `intreq` from offset 3's arrival up to the next pass's first word
   (t = 7376 to 9192). NanoMig raises none there.
