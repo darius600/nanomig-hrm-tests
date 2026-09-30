@@ -879,9 +879,9 @@ int main(int argc, char** argv) {
             "it. Fixture check, no claim id, no page.");
         // MUTATION C1 stimulus red: built with -DMUT_C1=1, which arms the "live" trace
         // with kDisarmed instead of run S1 (identical to the baseline it is diffed
-        // against) -> measured "6 passed, 14 failed, 2 declined", C1 the only verdict
+        // against) -> measured "3 passed, 16 failed, 2 declined", C1 the only verdict
         // that moved (PASS -> FAIL; diff against baseline became empty). Reverted (no
-        // flags): "7 passed, 13 failed, 2 declined", baseline restored.
+        // flags): "4 passed, 15 failed, 2 declined", baseline restored.
     }
 
     // ==================== C2 [control] FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 ====================
@@ -911,9 +911,9 @@ int main(int argc, char** argv) {
         // MUTATION C2 stimulus red: built with -DMUT_C2=1, which re-arms the "live" trace
         // at value 1 (run S1) instead of value 0, and moves the overridden register from
         // COLOR16/$10 to COLOR17/$11 (the register value 1 actually reaches) -> measured
-        // "6 passed, 14 failed, 2 declined", C2 the only verdict that moved (PASS -> FAIL;
+        // "3 passed, 16 failed, 2 declined", C2 the only verdict that moved (PASS -> FAIL;
         // value 1 is not transparent, so the trace differs from the value-0 baseline).
-        // Reverted (no flags): "7 passed, 13 failed, 2 declined", baseline restored.
+        // Reverted (no flags): "4 passed, 15 failed, 2 declined", baseline restored.
     }
 
     // ==================== C3 [control] FIXTURE-TABLE-AS-0RGB ====================
@@ -957,10 +957,10 @@ int main(int argc, char** argv) {
             "plumbing).");
         // MUTATION C3 stimulus red: built with -DMUT_C3=1, which writes COLOR17 with
         // s0words[1]^0x0001 instead of s0words[1] itself, while `want` (the comparison
-        // target) still computes from the unchanged s0words[1] -> measured "6
-        // passed, 14 failed, 2 declined", C3 the only verdict that moved (PASS -> FAIL; the
+        // target) still computes from the unchanged s0words[1] -> measured "3
+        // passed, 16 failed, 2 declined", C3 the only verdict that moved (PASS -> FAIL; the
         // displayed word reflects what was actually written, not the stale
-        // expectation). Reverted (no flags): "7 passed, 13 failed, 2 declined",
+        // expectation). Reverted (no flags): "4 passed, 15 failed, 2 declined",
         // baseline restored.
     }
 
@@ -1016,15 +1016,17 @@ int main(int argc, char** argv) {
         // MUTATION P1 stimulus red: built with -DMUT_P1=1, which writes palette S1's own
         // registers instead of S0's for palette S0 colour 18's own run (the register
         // write itself, not the comparison), while the expectation stays S0's colour 18
-        // triple -> measured "6 passed, 14 failed, 2 declined", P1 the only verdict
+        // triple. The run this reads through is colour 18's own diagonal register
+        // ($1A, via sprite 4), not $11/$12/$13 -- see P1's own entry above for why.
+        // Measured "3 passed, 16 failed, 2 declined", P1 the only verdict
         // that moved (PASS -> FAIL; the displayed triple is S1's, no longer matching
-        // the S0 expectation). Reverted (no flags): "7 passed, 13 failed, 2 declined",
+        // the S0 expectation). Reverted (no flags): "4 passed, 15 failed, 2 declined",
         // baseline restored.
     }
 
     // ==================== P2 TWO-BITS-54-TRACES-IDENTICAL ====================
     {
-        int changed = 0, total = 0;
+        int changed = 0, changed_k0 = 0, total = 0;
         for (int c = 1; c <= 3; ++c) {
 #if MUT_P2
             // MUTATION: the trace observed is colour c's own diagonal register
@@ -1057,7 +1059,10 @@ int main(int argc, char** argv) {
                         auto t = runTraceRegs(mut, kRuns[c - 1], /*shres=*/true, kStart, kCount);
 #endif
                         ++total;
-                        if (t != base) ++changed;
+                        if (t != base) {
+                            ++changed;
+                            if (k == 0) ++changed_k0;
+                        }
                     }
                 }
             }
@@ -1093,12 +1098,12 @@ int main(int argc, char** argv) {
         // changed there), which is why the overlap is a property of register
         // $10+c specifically, not of this file's comparator.
         checks.note("P2 TWO-BITS-54-TRACES-IDENTICAL: " + std::to_string(changed) + " of " +
-                     std::to_string(total) + " traces changed -- not graded: every changed "
-                     "trace is a k==0/colour-16 combo, where colour 16's own slot-B position "
-                     "structurally overlaps register $10+c in page 302's own table layout "
-                     "(the REG-0x11-13 rows measure that overlap directly), so this 54-trace "
-                     "aggregate cannot pass on a page-conforming implementation either; reads "
-                     "18/54 red on NanoMig and on the validator's p.302 copy alike.");
+                     std::to_string(total) + " traces changed, " + std::to_string(changed_k0) +
+                     " of them a k==0/colour-16 combo -- not graded: colour 16's own slot-B "
+                     "position structurally overlaps register $10+c in page 302's own table "
+                     "layout (the REG-0x11-13 rows measure that overlap directly), so this "
+                     "54-trace aggregate cannot pass on a page-conforming implementation "
+                     "either.");
     }
 
     // ==================== DOT-BITS ====================
