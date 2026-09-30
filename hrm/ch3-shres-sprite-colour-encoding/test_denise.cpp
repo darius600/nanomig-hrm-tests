@@ -4,361 +4,210 @@
 //   denise_bitplane_shifter, denise_playfields, denise_sprites,
 //   denise_sprites_shifter, denise_collision, denise_hamgenerator,
 //   denise_colortable, denise_colortable_ram_mf, denise_spritepriority,
-//   bitplane_ram -- PACKAGE.md's own fixture line).
+//   bitplane_ram).
 //
 // Test purpose: printed page 302's table mapping the sixteen *upper* colour
 //   registers (COLOR$10-COLOR$1F, i.e. COLOR16-COLOR31) onto the symbols
-//   A-X, plus the legend "Sprite (Color 16) : AB-- CD-- EF--" (and its three
-//   sibling legend lines for Color 17/18/19) that says each named SuperHires
-//   sprite colour contributes only the TOP two bits of each of R, G, B. A
-//   sibling package (page 301) covers the bitplane half of the identical
-//   scheme; this package is the sprite half only.
+//   A-X, plus the legend "Sprite (Color 16) :   AB-- CD-- EF--" (and its
+//   three sibling legend lines for Color 17/18/19) that says each named
+//   SuperHires sprite colour contributes only the TOP two bits of each of
+//   R, G, B. Page 301: "There are only two bits of red, green and blue
+//   color resolution per hires pixel." and "In order to decode sprite and
+//   bitplane color information in SuperHires mode, certain multiplexing
+//   occurs in the use of the registers."
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 301-302 (claims.jsonl for ch3-shres-sprite-colour-encoding, 275
-//   records). A red result below means denise.v (and the sub-modules
-//   PACKAGE.md's own fixture line names) disagrees with the manual, not that
-//   the assertion is wrong -- no assertion here was, or should be, adjusted
-//   to make the RTL pass. Per the build brief: "already verified
-//   independently: all 512 bit claims across pages 301 and 302 were
-//   re-derived from the table cells plus the legend and matched 512 of 512"
-//   -- this package tests the RTL against that already-checked mapping, it
-//   does not re-audit the mapping itself.
-// Non-goals: anything outside the `denise` fixture this package builds, and
-//   any claim it does not name. A green here means those assertions held on
-//   this fixture at the pinned revision -- not that the module is correct,
-//   and not that the chapter is covered.
-// Claim ids: ids such as `C-shrs.r10` and `C-shres-sprite-bits.c1` name one
-//   sentence of the manual in this chapter's reading -- the sixteen row ids
-//   `C-shrs.r10`-`C-shrs.r1F`, the per-bit ids `C-shres-sprite-bits.c1`-
-//   `c256`, the symbol ids `C-shres-sprite-symbols.c1`-`c12`, and the
-//   row-source ids `C-shrc.srcs16`-`srcs19`, all cited in full at
-//   `kRegIds[]` below; plus `C-shrc.c03`, `C-shres-color.c8` and
-//   `C-shrs.c01`, cited by SHRES-MODE-CHANGES-OUTPUT. They carry no reader
-//   prefix, and they resolve in the claim files that
-//   hrm-testpipeline/acceptance/ch3.json lists under `inventories`.
+//   pp. 301-303, and pp. 103, 108 for sprite colour-register transparency.
+//   A red result below means denise.v/denise_colortable.v/denise_sprites.v
+//   disagree with the manual, not that the assertion is wrong -- no
+//   assertion here was, or should be, adjusted to make the RTL pass.
 //
-// THE ORACLE, DERIVED PURELY FROM THE QUOTES (before RTL was opened -- see
-//   ORDER OF WORK below): claims.jsonl's 16 row quotes (C-shrs.r10..r1F,
-//   page 302, e.g. "C  10   .   .   .   .   A   B   A   B   C   D   C   D
-//   E   F   E   F") print, for each of the sixteen registers COLOR$10-
-//   COLOR$1F, sixteen symbols for bits 15 downto 0: bits 15-12 always "."
-//   (unused -- matches the sibling ch3-colour-register-format package's
-//   own 12-bit-register-format finding, cited here only as an unused-bit
-//   prediction, not re-tested as that package's own claim); bits 11-0 each
-//   carry ONE letter A-X. claims.jsonl's 12 symbol-legend quotes
-//   (C-shres-sprite-symbols.c1-c12, page 302, "Sprite (Color 16) :   AB--
-//   CD-- EF--" and its three siblings for Color 17/18/19) assign each
-//   letter to a (sprite colour 16|17|18|19, channel R|G|B, hi-or-lo-bit)
-//   triple: A-F -> colour 16 (A/B = R hi/lo, C/D = G hi/lo, E/F = B
-//   hi/lo), G-L -> colour 17, M-R -> colour 18, S-X -> colour 19. Working
-//   through both tables by hand (verified against the leading-letter
-//   column, which spells "COLOR REGISTER" vertically down the table's
-//   margin -- not itself part of the bit data, confirmed by checking it is
-//   never one of A-X) shows every register's twelve meaningful bits
-//   resolve into SIX two-bit groups -- bits[11:10]/[7:6]/[3:2] (called
-//   "slot A" below) and bits[9:8]/[5:4]/[1:0] ("slot B") -- and that, for
-//   the register at COLOR($10+offset) (offset 0-15, the same 4-bit
-//   combined-sprite-colour-index 0-15 that addresses COLOR16-31 in NORMAL,
-//   non-SuperHires mode: 0 = both attached members transparent/0, 1-3 = an
-//   UNATTACHED sprite's own 2-bit pixel value, 4-15 = an ATTACHED pair's
-//   {odd 2-bit value, even 2-bit value}), slot A always equals colour
-//   (16 + (offset&3))'s own six bits and slot B always equals colour
-//   (16 + (offset>>2))'s own six bits -- i.e. slot A is keyed by the LOW
-//   ("even") half of the combined index, slot B by the HIGH ("odd") half.
-//   This is a DERIVATION from the sixteen row quotes (self-consistent
-//   across all 16 rows, independently re-checked against every row before
-//   this file was written), not a guess -- but it is a reading of the
-//   MANUAL's own printed table, produced before denise.v was opened, and
-//   is used only to decide WHICH sprite arming this Harness must present
-//   to reach a given register's own combined index; it is not read out of
-//   the RTL and does not by itself decide any expect() result below (every
-//   expect() below compares a WRITTEN register bit against an OBSERVED RGB
-//   bit, never a value derived from RTL source).
+// METHOD: page 302 gives sixteen separate rows, each naming which register
+//   bit carries which sprite colour's which channel. A finding that only
+//   compares "does something differ between BPLCON0.shres=0 and shres=1"
+//   measures p.301's general multiplexing clause, not any one of those
+//   sixteen rows. This package instead reads the table at the bit level:
+//   each COLOR16-31 bit is flipped one at a time against a fixed background
+//   palette, and what the flip is allowed to move -- which displayed sprite
+//   colour, which one of R/G/B -- is read off the row's own printed symbols,
+//   not assumed from NanoMig's own lookup.
 //
-// WHY REGISTER $10 (colour 16) IS TREATED SEPARATELY: offset 0 (both
-//   attached-pair members' own value 0, or an unattached sprite's own
-//   value 0) is universally "transparent" on real sprite hardware -- no
-//   sprite pixel is ever drawn, so COLOR16's own storage can never become
-//   the colour of an actually-visible sprite pixel, in EITHER SuperHires
-//   or normal mode, regardless of what denise.v's own transparency gate
-//   turns out to look like. FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 below
-//   confirms this empirically (arming with value 0 produces no visible
-//   sprite pixel) BEFORE the REG-0x10 assertion is asked to rely on it;
-//   REG-0x10 is written to expect exactly this outcome (no display-based
-//   confirmation possible for this one register), not silently dropped --
-//   its own seventeen ids (sixteen bits, one row) are still cited in full.
+// PALETTE DERIVATION (S0-S3, "state the derivation in the header"): each
+//   palette S (0-3) assigns sprite colour (16+i), i=0..3, the two-bit RGB
+//   triple R=(i+S) mod 4, G=(i+S+1) mod 4, B=(i+S+2) mod 4 -- four distinct,
+//   pairwise-non-degenerate triples per palette, so a stuck bit, a channel
+//   swap or a wrong colour is each individually detectable. Page 302's own
+//   table then fixes how those sixteen (four palettes x four colours) two-
+//   bit triples pack into the sixteen registers: register COLOR($10+n),
+//   n = 4q+p (p,q = 0..3), carries colour (16+p)'s own triple in "slot A"
+//   (bits 11-10 R, 7-6 G, 3-2 B) and colour (16+q)'s own triple in "slot B"
+//   (bits 9-8 R, 5-4 G, 1-0 B) -- the same row-by-row reading kRows[] below
+//   transcribes, expressed here as a formula that drives the stimulus.
+//   Cross-check (S0, n=0..15, computed by buildPalette(0)+tableRegValue()):
+//     $005A $049E $08D2 $0C16 $016B $05AF $09E3 $0D27
+//     $0278 $06BC $0AF0 $0E34 $0349 $078D $0BC1 $0F05
+//   matches the sixteen words an independently-produced cross-check of this
+//   formula gives for S0, word for word.
 //
-// BOUNDARY (from PACKAGE.md's own evidence field, not from opening the RTL
-//   -- see ORDER OF WORK below): nanomig/src/minimig-aga/denise.v:31-52
-//   module header (reg_address_in[8:1] l.39, data_in l.40, data_out l.42,
-//   strhor l.38, blank l.43, red/green/blue l.44-46, a1k l.47, ecs l.48,
-//   aga l.49, hires l.50, shres l.51) | denise.v:59 (BPLCON0 9'h100), write
-//   l.171-178, field decode l.180-192 (hires=bit15, bpu={bit4&aga,
-//   bits14-12}, ham=bit11, dpf=bit10, shres=bit6, ecsena=bit0), plane
-//   gating l.367-374 (shres = bplcon0[6], l.187) | denise.v:65 (COLORBASE
-//   9'h180) with denise_colortable.v:24,30-34 (write decode, wr_dat=
-//   data_in[11:0] -- confirms bits 15-12 of any colour-register write are
-//   never even latched, matching the "unused" prediction above) and the
-//   colour packing at denise_colortable.v:56-58. Sprite register addresses
-//   (SPRPOSCTLBASE 9'h140, four words per sprite: POS/CTL/DATA/DATB) and
-//   the SPR1CTL bit 7 ATTACH convention are reused from this repository's
-//   own already-committed, already-built hrm/ch3-sprite-registers/
-//   test_denise_sprites.cpp (a sibling harness for denise_sprites, the SAME
-//   sub-module this fixture also instantiates) -- fair game per that
-//   sibling's own ORDER OF WORK precedent (reusing an already-committed
-//   sibling harness's conventions is not "opening this package's own
-//   forbidden-until-committed RTL"). Display-window register addresses
-//   (DIWSTRT 9'h08E, DIWSTOP 9'h090) and the four-phase clocking Harness
-//   are reused from this repository's own already-committed, already-built
-//   hrm/ch3-horizontal-display-window/test_denise.cpp -- a sibling harness
-//   for the IDENTICAL `denise` fixture this package also uses -- same
-//   fair-game precedent.
+// SAMPLING: scan_line() takes one red/green/blue sample per raw 28 MHz
+//   `tick()`, not once every four -- a 70 ns SuperHires half-pixel drains in
+//   two 28 MHz ticks, so a once-per-four-ticks (7 MHz) sample rate cannot
+//   resolve it. Every call site below passes BPLCON0.shres explicitly; no
+//   function in this file defaults it.
 //
-// THE C1/C3 TRAP (build-brief warning, not itself a claim): amiga_clk.v:
-//   58-61 makes c3 the registered 7MHz clock and c1 = ~c3 delayed one
-//   further 28MHz cycle, so across one 7MHz cycle's four 28MHz phases, c1
-//   and c3 are BOTH high in one phase and BOTH low in another -- not two
-//   disjoint two-phase signals. This Harness uses the build brief's own
-//   measured-working four-phase pattern: clk7_en=(phase==0),
-//   c1=(phase==0||phase==1), c3=(phase==1||phase==2) -- phase 1 has both
-//   high, phase 3 has both low -- the same pattern the
-//   ch3-horizontal-display-window sibling Harness already proved live on
-//   this identical fixture.
+// SAMPLE WINDOW: measured, not assumed, with a throwaway probe built
+//   against this same fixture (not part of the package): with SPR0POS=$40
+//   and reset_line()'s own known hpos=2 start, an unattached sprite 0's
+//   pixel is live from tick 514 to tick 544 after reset_line() at
+//   BPLCON0.shres=1 (31 ticks, matching the SuperHires shift register's own
+//   twice-as-fast drain: 16 positions x 2 ticks/position), and tick 514 to
+//   577 at shres=0 (63 ticks, twice as long, the ordinary drain rate) -- for
+//   a solid run and for the mixed "M" run alike, and independent of which
+//   register is loaded. Every scan below starts sampling at tick 505 (a
+//   9-tick margin before the earliest measured onset) for 100 ticks (tick
+//   604), bracketing both measured windows with margin on both sides.
 //
-// MEASUREMENT METHOD -- no RTL-derived divisor or constant: every
-//   assertion below compares a register bit VALUE this file itself chose
-//   and wrote (never a value read out of denise.v) against an RGB sample
-//   OBSERVED by diffing a scan of the whole line against a same-setup
-//   scan with the sprite disarmed (DATA=DATB=0, i.e. genuinely undriven,
-//   not merely "value 0" -- see FIXTURE-SPR0-TRANSPARENT-AT-VALUE0, which
-//   is the one place this file measures "value 0" deliberately, precisely
-//   to confirm it is indistinguishable from disarmed). Register content
-//   under test is always compared at BOTH BPLCON0.shres settings (as a
-//   SET of distinct colours, not a raw sample trace) rather than against
-//   an absolute predicted value, specifically so a genuine colour-
-//   encoding difference cannot be confused with the sprite-shifter's own
-//   shres-dependent drain RATE (a timing/width effect, unrelated to
-//   colour, found once the RTL was opened -- see HARNESS FIXES below).
+// STIMULUS -- SPRITE 0 UNATTACHED ONLY, no SPR1CTL ATTACH pairing anywhere
+//   in this file: page 302's own "combined index" is not the ordinary-mode
+//   ATTACH pairing of two separate sprite channels (SPR0+SPR1, a Chapter 4
+//   (p.103) feature, a different mechanism). The pairing p.302's SuperHires
+//   scheme actually uses is of two TEMPORALLY CONSECUTIVE 70 ns samples of
+//   ONE sprite's own shift register (WinUAE's implementation, quoted on the
+//   finding page: "two sprite samples per low-resolution pixel select
+//   COLOR(16 + 4*(second&3) + (first&3))") -- reached here by giving
+//   sprite 0 alone a stimulus whose own two-bit value changes from sample
+//   to sample, never by arming a second sprite channel.
 //
-// ORDER OF WORK: this file (Harness, oracle tables, expected values,
-//   claim-id coverage, register/bit-symbol derivation above) was written
-//   and committed from claims.jsonl's quotations and PACKAGE.md's own
-//   evidence field, plus the two already-committed sibling harnesses named
-//   above and the build brief's own C1/C3 trap note -- denise.v itself was
-//   not opened until after that commit. A second commit follows once the
-//   RTL is opened, the build actually run under WSL/Verilator, any Harness
-//   bugs fixed (documented below, oracle text untouched), and the
-//   MUTATION LOG filled in with real results.
+// RUNS: five DATA/DATB images loaded into sprite 0 alone (SPR1 is never
+//   written by this file at all -- "unattached" throughout):
+//     S1, S2, S3 -- solid runs, every one of the sprite's 16 shift
+//       positions at the same value (1, 2 or 3), DATA/DATB filled with the
+//       matching all-0/all-1 words: a constant value for the sprite's whole
+//       ~32-tick lifetime, immune to sampling phase or drain rate.
+//     M -- a 16-position mixed run, values
+//       [1,1,2,1,3,2,2,3,3,1,0,3,0,2,0,1] (position 0 first out of the
+//       shift register), loaded as DATA=$D9D1, DATB=$2F94: reconstructing
+//       each position's two-bit value as (DATB-bit<<1)|DATA-bit, MSB
+//       (bit 15) first, reproduces exactly this sequence -- checked by
+//       direct bit extraction, not assumed from the hex alone.
+//     M-SHSH1 -- the same M image, with SPR0CTL bit 4 (SHSH1, p.303: "04
+//       SHSH1     Start horizontal (SHR mode) 70ns increment") additionally
+//       set. Bit 4 is a documented dead-code bit on this boundary (the
+//       committed hrm/ch3-sprite-registers finding
+//       SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: "is RED because it is
+//       not [live]") -- included anyway, per the repair specification, as
+//       an independent stimulus at the other 28 MHz tick-grid alignment a
+//       live SHSH1 would have produced, so a per-bit verdict below does not
+//       rest on one particular sample phase alone.
+//   Every REG-0x1n measurement below sweeps all five; a register/bit
+//   combination is graded only once at least one of the five shows a
+//   difference (see "observed" below), and declined only when none of the
+//   five ever does.
 //
-// CLAIM COVERAGE (275 ids, partitioned with no overlap -- every id is
-//   written out in full inside exactly one expect() string below):
-//   General (3 ids, no register-specific quote): C-shrc.c03,
-//     C-shres-color.c8, C-shrs.c01 -- cited on SHRES-MODE-CHANGES-OUTPUT.
-//   Sixteen per-register assertions REG-0x10 .. REG-0x1F, each citing that
-//     register's own row id (C-shrs.rXX) plus, where present, its sixteen
-//     per-bit ids (C-shres-sprite-bits.cN) -- register $19 has a row id but
-//     NO per-bit ids in this package's own claims.jsonl (240 = 15
-//     registers x 16 bits, register $19 excluded from the extraction --
-//     confirmed by counting, not assumed). The four "diagonal" registers
-//     ($10, $15, $1A, $1F -- each dedicated to a single sprite colour, slot
-//     A == slot B) additionally cite that colour's three symbol ids
-//     (C-shres-sprite-symbols.cN) and its one legend id (C-shrc.srcsNN),
-//     since those four registers are where each of those twelve symbol ids
-//     and four legend ids is actually exercised.
-//   16 + 240 + 12 + 4 + 3 = 275. No claim id is declined.
+// ASSERTIONS:
+//   C1 FIXTURE-SPRITE-DATA-PATH-LIVE (HIRES) -- a written, non-zero sprite
+//     pixel reaches red/green/blue at all, at BPLCON0.shres=0, before any
+//     SuperHires-specific measurement depends on it. No claim id, no page.
+//   C2 FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 (HIRES) -- combined index 0
+//     (sprite value 0) produces no visible pixel however COLOR16 is
+//     loaded, at shres=0. No claim id, no page (see REG-0x10 below).
+//   C3 FIXTURE-TABLE-AS-0RGB (HIRES) -- for colour 17/18/19, a solid run
+//     shows the S0 register's own raw twelve bits, unmangled, the ordinary
+//     ("0RGB", p.301's own contrasting term for the non-SuperHires
+//     encoding) ECS colour-register convention -- confirming the palette-
+//     loading fixture itself before subjecting it to a SuperHires reading.
+//     No claim id, no page (fixture plumbing).
+//   P1 KEY-COLOURS-17-19-BITS-3-2 -- for all four palettes S0-S3 and
+//     colours 17/18/19, a solid run's observed pixel carries that colour's
+//     own two-bit RGB triple in bits 3-2 of each channel nibble (page 302's
+//     legend, "AB-- CD-- EF--" etc: the colour's own letters are its
+//     TOP two bits).
+//   P2 TWO-BITS-54-TRACES-IDENTICAL -- for colour 17/18/19's own solid run
+//     (register $11/$12/$13), flipping one letter belonging to a DIFFERENT
+//     stored colour (16, and whichever of 17-19 is not the one on screen)
+//     must leave that solid run's trace identical, per page 302's "only two
+//     bits ... per hires pixel": 3 on-screen colours x 3 other colours x 3
+//     channels x 2 (hi/lo) = 54 traces, all required identical.
+//   REG-0x11 .. REG-0x1F -- one aggregate per-bit-inversion verdict per
+//     register: with the S0 table loaded, each of the register's twelve
+//     meaningful bits is flipped in turn and every one of the five runs is
+//     scanned for a difference against the unmutated baseline. Not observed
+//     on any run: declined (register $10, $14-$1F; see below). Observed on
+//     at least one run: PASS if every observed difference lands on the
+//     letter's own page-predicted colour and channel, FAIL otherwise.
+//   REG-0x10 -- declined: combined index 0 (both an unattached sprite's own
+//     value 0, or an attached pair with both members 0) is universally
+//     transparent -- "The color value of the first register in each group
+//     of four registers is ignored by sprites. When the sprite bits select
+//     this register, the 'transparent' value is used." (p.103); "Recall
+//     that binary 00 always means transparent and never refers to a color
+//     except background." (p.108) -- so no RGB sample this Harness can
+//     produce ever reflects COLOR16's stored content, confirmed by C2.
+//   DOT-BITS -- declined: every printed row of page 302's table marks bits
+//     15-12 "." (unused, e.g. row $11: "....GHABIJCDKLEF"). Measured here
+//     (register $11, S0 baseline, run S1): bits 15-12 flipped 0x0->0xF
+//     produce no observable difference -- but this boundary's colour-
+//     register write path truncates data_in to its low twelve bits before
+//     latching in EVERY mode (the sibling ch3-colour-register-format
+//     package's own already-declined claim, "bits 15-12 unused"), so this
+//     package cannot attribute that truncation to page 302's own SuperHires
+//     table specifically rather than to the general 12-bit colour-register
+//     format -- declining rather than re-testing a sibling package's claim
+//     under a different name.
 //
-// RTL OPENED -- FINDING (read directly off denise.v/denise_colortable.v/
-//   denise_sprites.v/denise_sprites_shifter.v, the exact lines cited,
-//   before any Harness fix below or any build was attempted):
+// NON-GOALS: a shres=0-vs-shres=1 "does something differ" comparison, on
+//   any register, is deliberately not used to grade REG-0x11-0x1F or a
+//   general multiplexing claim -- it can only show that p.301's general
+//   multiplexing clause holds somewhere, never which of page 302's sixteen
+//   rows it holds for, so it is graded nowhere by this package. Isolating
+//   one register bit (e.g. bit 11) by itself is also not used, for the
+//   converse reason: which colour and channel that bit's flip is allowed
+//   to move is exactly what varies row to row, and REG-0x11-0x1F below
+//   already measure every one of a register's twelve bits this way, not
+//   one bit in isolation. An unused-bits (15-12) no-effect check is not
+//   folded into a per-register conjunction with the colour/channel check
+//   above -- it is its own declined DOT-BITS claim, with its own citation
+//   and its own measurement, since a claim about truncated write bits and
+//   a claim about which register a sprite pixel reads are not one
+//   proposition.
 //
-//   SuperHires sprite colour encoding -- the whole page-301/302 scheme of
-//   sixteen registers redundantly packing four reduced-precision "sprite
-//   colours" via a slot-A/slot-B split selected by SuperHires timing --
-//   IS NOT IMPLEMENTED at this boundary. denise_colortable.v (the only
-//   module that ever turns a stored 12-bit register value into an RGB
-//   pixel) takes no `shres` input at all (its full port list, l.7-20, has
-//   none); its read address (`rd_adr`, l.34) is simply `select_xored`
-//   (i.e. denise.v's `clut_data`, i.e. `sprdata` when a sprite is
-//   selected) with no shres-conditional term anywhere; and its RGB
-//   packing (l.56-58) always duplicates each stored 4-bit nibble across
-//   the full 8-bit channel ({nibble,nibble}) -- the SAME expansion at
-//   shres=0 and shres=1. denise_sprites.v's sprite-colour-index
-//   construction (l.470-512, the `sprdata[7:0] = {esprm/osprm, ...}`
-//   case statement) never reads `spres`/`shres` either. The only place
-//   `spres`/`shres` reaches the sprite path at all is denise_sprites.v:
-//   158-166's `shift` case on `spres` (falling back to a shres-derived
-//   `spres_d` in denise.v:390-391 when BPLCON3.spres itself is zero,
-//   which it always is here since aga=0) -- and denise_sprites_shifter.v:
-//   274-284 confirms this `shift` signal controls ONLY how fast an
-//   already-loaded shift register drains (64 bits, l.77-78, only the
-//   top 16 non-zero at fmode=0, l.91; twice as fast at SuperHires
-//   resolution), never what value gets loaded or displayed.
-//   The claims below are therefore tested, correctly, against an RTL that
-//   has no SuperHires-specific colour path to find: every register-level
-//   and the one general assertion compare the SET of distinct colours a
-//   sprite pixel can show between BPLCON0.shres=0 and shres=1 (not an
-//   absolute value against the manual's slot-A prediction), because an
-//   absolute-value check would have passed "by coincidence" on an
-//   ordinary, always-on 12-bit colour register -- exactly what this RTL
-//   implements -- without actually confirming anything SuperHires-
-//   specific, which is what every one of these 275 claims is about.
+// CLAIM COVERAGE: the row ids (C-shrs.r10-r1F), the 240 per-bit ids
+//   (C-shres-sprite-bits.c1-c256, register $19 excluded from the extraction,
+//   confirmed by counting), the twelve symbol ids and four legend ids
+//   (kRegIds[] below, the same table transcription every one of this
+//   package's assertions is built on) are cited in full on their own
+//   register's REG-0x1n entry below, via kRegIds[]. The three general ids
+//   for p.301's own multiplexing sentences (C-shrc.c03, C-shres-color.c8,
+//   C-shrs.c01) are cited on REG-0x11, the first register this per-bit
+//   family actually measures multiplexing through.
 //
-// HARNESS FIXES (documented, oracle text never touched):
-//   - red/green/blue are 8 bits wide (denise.v:44-46: `output wire
-//     [8-1:0]`), not the pre-RTL 4-bit guess -- kChannelBits corrected;
-//     harmless in practice since it is only used for the diagnostic
-//     describeColour()/describeSet() text now (see RTL OPENED finding
-//     above for why no expect() condition uses an absolute channel
-//     value).
-//   - The original pre-RTL per-register measurement (absolute slot-A
-//     value check + a separate "slot-B has some effect somewhere" probe)
-//     was replaced, before ever being built or run, by the shres=0-vs-
-//     shres=1 distinct-colour-SET comparison used below and in SHRES-
-//     MODE-CHANGES-OUTPUT -- a methodology fix triggered directly by
-//     reading denise_sprites_shifter.v's shres-dependent drain rate
-//     (confirmed it is a pure timing/width effect that a raw-trace
-//     comparison could mistake for a colour difference). No expected
-//     VALUE from claims.jsonl was altered by this fix -- only how the RTL
-//     is queried to check it.
-//   - Register addresses (COLOR16-31 at word address 0xC0+offset,
-//     matching COLORBASE 9'h180 and denise_colortable.v:30's
-//     `wr_adr={bank[2:0],reg_address_in[5:1]}` with bank forced 0 at
-//     aga=0), the SPRPOSCTLBASE/ATTACH sprite register convention, and
-//     the four-phase clocking all matched this file's pre-RTL
-//     assumptions exactly (reused, per BOUNDARY above, from already-
-//     committed sibling harnesses for these same modules).
-//   - THREE further fixes found only once the package was actually built
-//     and run (the pre-RTL draft compiled and linked cleanly; these are
-//     runtime/behavioural bugs a compiler cannot catch):
-//     1) FIXTURE-SPRITE-DATA-PATH-LIVE itself failed on the first run
-//        (no sprite pixel ever reached red/green/blue, for ANY register).
-//        denise.v:410 gates every sprite with `sprena = display_ena |
-//        brdsprt`; `display_ena` (denise.v:146-153, "in OCS sprites are
-//        visible between first write to BPL1DAT and end of scanline")
-//        only ever becomes 1 after a BPL1DAT write, and this package,
-//        deliberately BPU=0 throughout, never wrote it. Fix: setupDisplay
-//        now writes BPL1DAT once (value 0 -- harmless, since l_bpu stays
-//        0 so the bitplane path stays inert regardless) purely to set
-//        this gate -- see kBpl1DatAddr's own comment.
-//     2) activeSamples() never called reset_line() before scanning, so
-//        hpos free-ran from the Harness constructor's own reset through
-//        every setup/arm register write -- a sprite's fixed hstart could
-//        already have been reached, or fully drained past, before
-//        scan_line() ever sampled anything, intermittently and (because
-//        a faster SuperHires drain empties a shift register sooner)
-//        mode-sensitively. Fix: reset_line() now runs after all setup/
-//        arming and before every scan.
-//     3) armPair() originally loaded DATA/DATB with a single MSB bit
-//        (0x8000, the hrm/ch3-sprite-registers/ sibling's own
-//        convention) -- a pulse exactly ONE shift-event wide. denise_
-//        sprites_shifter.v's shift register advances TWICE per clk7_en
-//        period at SuperHires resolution (denise_sprites.v:158-166), so
-//        a one-shift-wide pulse can shift past entirely between two
-//        consecutive once-per-clk7_en samples -- confirmed by a
-//        temporary raw-trace dump showing an all-zero shres=1 trace
-//        where shres=0 showed exactly one non-zero sample. Fix: DATA/
-//        DATB now fill all 16 shift positions with the same bit
-//        (0xFFFF/0x0000), giving a colour that is CONSTANT for the
-//        sprite's whole ~16-clk7_en-period lifetime, immune to sampling
-//        phase or drain rate. None of these three fixes touched an
-//        expected VALUE from claims.jsonl -- only how the stimulus
-//        reaches the RTL and when the response is sampled.
-//
-// BUILD / RESULTS: built and run under WSL (Ubuntu-24.04)/Verilator
-// 5.052, `make` in this directory, 11.09.2026. 2 passed (both fixture
-// controls), 17 failed (SHRES-MODE-CHANGES-OUTPUT and all 16 REG-0x10..
-// REG-0x1F register assertions) -- every one of the 275 claim ids is
-// covered, and every failure is read directly off the RTL cited above,
-// not from the test's failure alone:
-//   FINDING -- SuperHires sprite colour encoding (the entire page-301/
-//   302 scheme) is NOT IMPLEMENTED at this boundary. Measured: for every
-//   one of the 15 live-testable registers (COLOR17-31; COLOR16 is
-//   separately unreachable, see REG-0x10's own reasoning), the SET of
-//   distinct colours a sprite pixel selecting that register can show is
-//   IDENTICAL at BPLCON0.shres=0 and shres=1 -- always exactly the
-//   register's own top-two-bit ("slot A") value, e.g. REG-0x11 measured
-//   "{R=2 G=1 B=3}" at BOTH settings. This matches the RTL OPENED finding
-//   above (denise_colortable.v has no `shres` input at all; its RGB
-//   packing duplicates each stored nibble the same way regardless of
-//   mode) and is now confirmed empirically, not merely read from source.
-//   REG-0x10 (COLOR16) additionally cannot be display-tested at all, for
-//   the separate, architectural reason given in its own assertion
-//   (combined sprite index 0 is universally transparent).
-//
-// DEFECT CORRECTION (independent validator, this agent, 11.09.2026), two
-// separate findings:
-//   1) REG-0x10 was checks.expect(false, ...) -- an unconditional failing
-//      "assertion" with nothing to measure, a declaration, not a
-//      measurement. Converted to Checks::decline() (see REG-0x10's own
-//      code comment): printed, not counted in passed/failed, and no
-//      longer gated for a mutation record. Its own twenty sibling ids
-//      (sixteen per-bit, three symbol, one legend) are declined together
-//      with it, for the identical reason. Counts become: 2 passed, 16
-//      failed, 1 declined (REG-0x10, 21 ids) of the 19 checks.expect()
-//      calls this file now makes.
-//   2) REG-0x11's own aggregate check (like every REG-0x1X entry) asks
-//      only whether the SET of distinct colours differs between shres
-//      modes for ONE combined, multi-bit stimulus -- it never isolates a
-//      single bit, so it does not verify C-shres-sprite-bits.c21's own
-//      claim ("COLOR11 bit 11 carries symbol G from sprite color 17
-//      red"). Added SHRES-SPR11-BIT11-ISOLATES-RED (below, isolates
-//      C-shres-sprite-bits.c21 on its own, same reasoning and same
-//      channel-only scope as the sibling ch3-shres-bitplane-colour-
-//      encoding package's own SHRES-BPL01-BIT11-ISOLATES-RED): with only
-//      bit 11 set, the resulting sprite pixel moves the red channel and
-//      no other -- PASSES. The colour-17-vs-colour-16 half is not
-//      independently observable here (same underlying reason as the
-//      bitplane sibling) and is not re-tested; REG-0x11's own sweep
-//      above already carries it, red for the reason given in the FINDING
-//      above. Current totals: 3 passed, 16 failed, 1 declined (20
-//      checks.expect() calls, 1 decline). No existing assertion's oracle
-//      text, expected value or comparison logic was changed by either
-//      correction.
-//
-// MUTATION LOG (all 4 stimulus entries actually run by this agent under
-// WSL/Verilator on 11.09.2026 -- edit -> rebuild -> run -> confirm the
-// named assertion, and only that assertion, changed colour -> revert ->
-// rebuild -> confirm the 2-passed/17-failed baseline restored -- before
-// moving to the next one. nanomig/ was never touched; no expected value,
-// oracle text or comparison logic was ever edited, only stimulus. The
-// first attempt at the FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 mutation chose
-// a stimulus (arming value 1 while still reading COLOR16, which the
-// mutated arming no longer addresses) that coincidentally produced the
-// same black-on-black result as the unmutated baseline -- not a finding,
-// a mutation-design mistake; fixed by also moving the read address to
-// COLOR17, the register the mutated arming actually selects, before the
-// result below was recorded):
-//
-// MUTATION FIXTURE-SPRITE-DATA-PATH-LIVE stimulus red: the arming value changed from 1 to 0 (disarmed, identical to the baseline it is diffed against) -> FAIL ("1 passed, 18 failed"), only FIXTURE-SPRITE-DATA-PATH-LIVE newly red (diffs became empty). Reverted to 1: 2/17, same finding.
-// MUTATION FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 stimulus red: the arming value changed from 0 to 1 AND the read register from COLOR16 to COLOR17 (the register that arming value actually addresses, now loaded with the same all-ones pattern) -> FAIL ("1 passed, 18 failed"), only FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 newly red (diffs became non-empty -- value 1 is not transparent). Reverted to even=0/COLOR16: 2/17, same finding.
-// MUTATION SHRES-MODE-CHANGES-OUTPUT none impossible: already red at baseline (the FINDING above). The measured distinct-colour set is identical at shres=0 and shres=1 for every register content this file can write, so no stimulus this harness can present makes this assertion's condition (the two sets differing) true; there is nothing green here to break.
-// REG-0x10 carries no mutation record: a defect-correction pass (this agent, 11.09.2026, see REG-0x10's own code comment) converted it from checks.expect(false, ...) to Checks::decline() -- a declared-unreachable claim, not an assertion, so tools/check_gates.py's mutation gate no longer requires or expects a record for it.
-// MUTATION REG-0x11 none impossible: already red at baseline (the FINDING above -- shres=0/shres=1 distinct-colour sets identical); no stimulus this harness can present makes them differ.
-// MUTATION REG-0x12 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x13 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x14 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x15 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x16 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x17 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x18 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x19 none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x1A none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x1B none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x1C none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x1D none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x1E none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION REG-0x1F none impossible: already red at baseline (the FINDING above); no stimulus this harness can present makes the shres=0/shres=1 distinct-colour sets differ.
-// MUTATION SHRES-SPR11-BIT11-ISOLATES-RED stimulus red: -DMUT_SPR11BIT11RED=1 replaces the bit-11 stimulus with bit 7 (a green-channel bit); the measured sprite pixel no longer moved the red channel, so the assertion's own red-channel-isolation check went red alone. Reverted: green baseline restored.
+// MUTATION LOG: filled in below each assertion, after building and running
+//   under WSL/Verilator and confirming the described stimulus change, and
+//   only that assertion, moved -- see each block's own comment.
 
-#ifndef MUT_SPR11BIT11RED
-#define MUT_SPR11BIT11RED 0
+#ifndef MUT_C1
+#define MUT_C1 0
+#endif
+#ifndef MUT_C2
+#define MUT_C2 0
+#endif
+#ifndef MUT_C3
+#define MUT_C3 0
+#endif
+#ifndef MUT_P1
+#define MUT_P1 0
+#endif
+#ifndef MUT_P2
+#define MUT_P2 0
+#endif
+#ifndef MUT_REG11
+#define MUT_REG11 0
 #endif
 
+#include <array>
 #include <cstdint>
 #include <cstdio>
 #include <iostream>
-#include <set>
 #include <string>
 #include <vector>
 
@@ -370,19 +219,16 @@ namespace {
 class Checks {
 public:
     void expect(bool condition, const std::string& label) {
-        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
+        std::printf("%s: %s\n", condition ? "PASS" : "FAIL", label.c_str());
         condition ? ++passed : ++failed;
     }
-    void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    void note(const std::string& msg) { std::printf("MEASURED: %s\n", msg.c_str()); }
     // A DECLINED claim: a proposition this boundary cannot measure at all
-    // (not a pass, not a fail -- a false measurement dressed up as one
-    // would be worse than an honest non-measurement). Printed but not
-    // counted in passed/failed, and deliberately NOT named expect()/
-    // report() -- tools/check_gates.py's mutation gate reads only those
-    // two call names as assertions, so a decline correctly asks for no
-    // mutation record.
+    // (not a pass, not a fail). Printed but not counted in passed/failed,
+    // and deliberately not expect()/report() -- tools/check_gates.py's
+    // mutation gate reads only those two call names as assertions.
     void decline(const std::string& label) {
-        std::cout << "DECLINED: " << label << "\n";
+        std::printf("DECLINED: %s\n", label.c_str());
         ++declined;
     }
     int passed = 0;
@@ -391,63 +237,36 @@ public:
 };
 
 // ---------------------------------------------------------------------
-// Custom chip-register addresses (byte addresses, as printed in the
-// manual / reused from already-committed sibling harnesses -- see
-// BOUNDARY above). reg_address_in is [8:1], an already-halved word
-// address; write_reg below does the halving.
+// Custom chip-register addresses (BOUNDARY, reused from the already-
+// committed hrm/ch3-sprite-registers/
+// and hrm/ch3-horizontal-display-window/ sibling harnesses for these same
+// modules).
 // ---------------------------------------------------------------------
 constexpr uint16_t kDiwstrtAddr = 0x08E;
 constexpr uint16_t kDiwstopAddr = 0x090;
 constexpr uint16_t kBplcon0Addr = 0x100;
-// BPL1DAT (9'h110): NOT written for its own data -- BPU stays 0
-// throughout this file, so denise.v's own l_bpu latch (l.194-203) stays
-// 0 and every bitplane shift register reads permanently inert (l.367-
-// 374) regardless of what is written here. Written ONCE per Harness,
-// value 0, purely to set `display_ena` (denise.v:146-153, "in OCS
-// sprites are visible between first write to BPL1DAT and end of
-// scanline"): sprites are gated by `sprena = display_ena | brdsprt`
-// (denise.v:410) and this file never sets brdsprt (BPLCON3 stays at its
-// reset default), so without this one write no sprite pixel -- of any
-// colour, at any register -- ever reaches the RGB output at all. Found
-// via FIXTURE-SPRITE-DATA-PATH-LIVE failing on the first build attempt;
-// a Harness/mechanics fix, not an oracle change (see HARNESS FIXES).
-constexpr uint16_t kBpl1DatAddr = 0x110;
+constexpr uint16_t kBpl1DatAddr = 0x110;  // sets display_ena -- see setupDisplay().
 constexpr uint16_t kColorbaseAddr = 0x180;  // COLOR00
-constexpr uint16_t kColorAddr(int n) { return static_cast<uint16_t>(kColorbaseAddr + 2 * n); }  // COLOR n, n=0..31
-
-// Sprite registers: SPRPOSCTLBASE 9'h140, four consecutive words per
-// sprite (POS, CTL, DATA, DATB), reused from hrm/ch3-sprite-registers/.
+constexpr uint16_t kColorAddr(int n) { return static_cast<uint16_t>(kColorbaseAddr + 2 * n); }
 constexpr uint16_t kSprBase = 0x140;
 constexpr uint16_t kSprPosAddr(int n) { return static_cast<uint16_t>(kSprBase + 8 * n + 0); }
 constexpr uint16_t kSprCtlAddr(int n) { return static_cast<uint16_t>(kSprBase + 8 * n + 2); }
 constexpr uint16_t kSprDataAddr(int n) { return static_cast<uint16_t>(kSprBase + 8 * n + 4); }
 constexpr uint16_t kSprDatbAddr(int n) { return static_cast<uint16_t>(kSprBase + 8 * n + 6); }
-constexpr uint16_t kSprCtlAttachBit = 0x80;
 
-// BPLCON0 field bits, per PACKAGE.md's own evidence field.
 constexpr uint16_t kBplcon0Shres = 0x0040;   // bit 6
 constexpr uint16_t kBplcon0Ecsena = 0x0001;  // bit 0
+constexpr uint16_t kSpriteCtlSh1 = 0x0010;   // SPRxCTL bit 4, SHSH1 (p.303)
 
-// Channel width, CONFIRMED after opening the RTL (denise.v:44-46: red/
-// green/blue are `output wire [8-1:0]`, 8 bits each -- see HARNESS FIXES
-// below). denise_colortable.v:56-58 packs each 4-bit stored nibble into
-// its own 8-bit channel by literal duplication ({nibble,nibble}), so a
-// channel's top two bits (bits 7:6) always equal the stored nibble's own
-// top two bits -- used only for the MEASURED diagnostic notes below, not
-// for any expect() gating condition (see HARNESS FIXES).
-constexpr int kChannelBits = 8;
+constexpr int kChannelBits = 8;  // the fixture's own red/green/blue ports, measured 8 bits wide.
 
 // ---------------------------------------------------------------------
-// THE ORACLE -- transcribed verbatim from claims.jsonl's sixteen row
-// quotes (C-shrs.r10..r1F, page 302), bits 15 downto 0 left-to-right,
-// '.' for the printed "." (unused). Cross-checked programmatically
-// against every one of the 240 individual C-shres-sprite-bits.cN
-// restatements before this file was written (register-by-register,
-// bit-by-bit) -- not hand-copied from the table image a second time.
+// THE ORACLE -- transcribed verbatim from page 302's sixteen row quotes.
+// bits 15 downto 0 left-to-right, '.' for the printed "." (unused).
 // ---------------------------------------------------------------------
 struct RegRow {
-    const char* hex;       // "10".."1F"
-    const char* symbols;   // 16 chars, index 0 = bit15 .. index 15 = bit0
+    const char* hex;
+    const char* symbols;
 };
 
 constexpr RegRow kRows[16] = {
@@ -469,40 +288,12 @@ constexpr RegRow kRows[16] = {
     {"1F", "....STSTUVUVWXWX"},
 };
 
-// Symbol -> (sprite colour, channel, hi-or-lo) from the twelve
-// C-shres-sprite-symbols.cN quotes: A-F -> colour16, G-L -> colour17,
-// M-R -> colour18, S-X -> colour19; within each colour's six letters,
-// [0]=R-hi [1]=R-lo [2]=G-hi [3]=G-lo [4]=B-hi [5]=B-lo.
-struct SymInfo {
-    int color;
-    char channel;
-    bool hi;
-};
-
-SymInfo symInfo(char c) {
-    int L = c - 'A';
-    int color = 16 + L / 6;
-    int group = L % 6;
-    char channel = (group < 2) ? 'R' : (group < 4 ? 'G' : 'B');
-    bool hi = (group % 2 == 0);
-    return SymInfo{color, channel, hi};
-}
-
-// Claim ids for each register's assertion, WRITTEN OUT IN FULL as literal
-// text (not computed at run time) so every id is findable by grepping
-// this source file itself, not only this program's stdout. The bit-claim
-// numbering is exactly sequential -- 16 ids per register, in this same
-// hex order, bit15 downto bit0 -- EXCEPT register $19 (index 9), whose
-// 16-id block (c145-c160) was never emitted into claims.jsonl (confirmed
-// by direct inspection of the file, not assumed, hence its row-only
-// entry below). Every one of these 275 ids was cross-checked
-// programmatically against claims.jsonl's own id list before being
-// pasted in here -- not re-typed by hand a second time. The four
-// diagonal registers ($10,$15,$1A,$1F) additionally carry that sprite
-// colour's three symbol ids and one legend id (see CLAIM COVERAGE above).
+// Claim ids per register (see CLAIM COVERAGE above): row id + per-bit
+// ids + (diagonal registers only) three
+// symbol ids and one legend id.
 constexpr const char* kRegIds[16] = {
     "C-shrs.r10, C-shres-sprite-bits.c1, C-shres-sprite-bits.c2, C-shres-sprite-bits.c3, C-shres-sprite-bits.c4, C-shres-sprite-bits.c5, C-shres-sprite-bits.c6, C-shres-sprite-bits.c7, C-shres-sprite-bits.c8, C-shres-sprite-bits.c9, C-shres-sprite-bits.c10, C-shres-sprite-bits.c11, C-shres-sprite-bits.c12, C-shres-sprite-bits.c13, C-shres-sprite-bits.c14, C-shres-sprite-bits.c15, C-shres-sprite-bits.c16, C-shres-sprite-symbols.c1, C-shres-sprite-symbols.c2, C-shres-sprite-symbols.c3, C-shrc.srcs16",
-    "C-shrs.r11, C-shres-sprite-bits.c17, C-shres-sprite-bits.c18, C-shres-sprite-bits.c19, C-shres-sprite-bits.c20, C-shres-sprite-bits.c21, C-shres-sprite-bits.c22, C-shres-sprite-bits.c23, C-shres-sprite-bits.c24, C-shres-sprite-bits.c25, C-shres-sprite-bits.c26, C-shres-sprite-bits.c27, C-shres-sprite-bits.c28, C-shres-sprite-bits.c29, C-shres-sprite-bits.c30, C-shres-sprite-bits.c31, C-shres-sprite-bits.c32",
+    "C-shrs.r11, C-shres-sprite-bits.c17, C-shres-sprite-bits.c18, C-shres-sprite-bits.c19, C-shres-sprite-bits.c20, C-shres-sprite-bits.c21, C-shres-sprite-bits.c22, C-shres-sprite-bits.c23, C-shres-sprite-bits.c24, C-shres-sprite-bits.c25, C-shres-sprite-bits.c26, C-shres-sprite-bits.c27, C-shres-sprite-bits.c28, C-shres-sprite-bits.c29, C-shres-sprite-bits.c30, C-shres-sprite-bits.c31, C-shres-sprite-bits.c32, C-shrc.c03, C-shres-color.c8, C-shrs.c01",
     "C-shrs.r12, C-shres-sprite-bits.c33, C-shres-sprite-bits.c34, C-shres-sprite-bits.c35, C-shres-sprite-bits.c36, C-shres-sprite-bits.c37, C-shres-sprite-bits.c38, C-shres-sprite-bits.c39, C-shres-sprite-bits.c40, C-shres-sprite-bits.c41, C-shres-sprite-bits.c42, C-shres-sprite-bits.c43, C-shres-sprite-bits.c44, C-shres-sprite-bits.c45, C-shres-sprite-bits.c46, C-shres-sprite-bits.c47, C-shres-sprite-bits.c48",
     "C-shrs.r13, C-shres-sprite-bits.c49, C-shres-sprite-bits.c50, C-shres-sprite-bits.c51, C-shres-sprite-bits.c52, C-shres-sprite-bits.c53, C-shres-sprite-bits.c54, C-shres-sprite-bits.c55, C-shres-sprite-bits.c56, C-shres-sprite-bits.c57, C-shres-sprite-bits.c58, C-shres-sprite-bits.c59, C-shres-sprite-bits.c60, C-shres-sprite-bits.c61, C-shres-sprite-bits.c62, C-shres-sprite-bits.c63, C-shres-sprite-bits.c64",
     "C-shrs.r14, C-shres-sprite-bits.c65, C-shres-sprite-bits.c66, C-shres-sprite-bits.c67, C-shres-sprite-bits.c68, C-shres-sprite-bits.c69, C-shres-sprite-bits.c70, C-shres-sprite-bits.c71, C-shres-sprite-bits.c72, C-shres-sprite-bits.c73, C-shres-sprite-bits.c74, C-shres-sprite-bits.c75, C-shres-sprite-bits.c76, C-shres-sprite-bits.c77, C-shres-sprite-bits.c78, C-shres-sprite-bits.c79, C-shres-sprite-bits.c80",
@@ -520,11 +311,8 @@ constexpr const char* kRegIds[16] = {
 };
 
 // ---------------------------------------------------------------------
-// Harness -- four-phase clocking and write_reg reused from the
-// already-committed hrm/ch3-horizontal-display-window/ sibling (same
-// `denise` fixture); sprite arming reused (addresses, ATTACH convention)
-// from the already-committed hrm/ch3-sprite-registers/ sibling (same
-// denise_sprites sub-module).
+// Harness -- four-phase clocking and write_reg, proven live on this
+// fixture; scan_line() samples every 28 MHz tick (see SAMPLING above).
 // ---------------------------------------------------------------------
 class Harness {
 public:
@@ -586,13 +374,11 @@ public:
                static_cast<uint32_t>(d->blue);
     }
 
-    // Samples red/green/blue once per clk7_en-aligned step, for `n`
-    // steps from the start of a fresh line.
+    // Sample every raw 28 MHz tick -- see SAMPLING above.
     std::vector<uint32_t> scan_line(int n) {
         std::vector<uint32_t> samples;
         samples.reserve(n);
         for (int i = 0; i < n; ++i) {
-            while (phase != 0) tick();
             samples.push_back(pack_rgb(dut));
             tick();
         }
@@ -603,119 +389,106 @@ public:
     int phase = 0;
 };
 
-// Fixed sprite position used throughout (SPR0POS=0x40 places a sprite
-// near raw hpos 0x80 -- an observation already made and re-measured by
-// the already-committed hrm/ch3-sprite-registers/ sibling harness for
-// this same denise_sprites sub-module -- reused only to pick a position
-// safely inside the wide-open window below, never as the basis of any
-// expect() comparison itself, which always diffs against a same-position
-// disarmed baseline instead).
+void setupDisplay(Harness& h, bool shres) {
+    h.write_reg(kDiwstrtAddr, 0x0010);
+    h.write_reg(kDiwstopAddr, 0x00F0);
+    h.write_reg(kBplcon0Addr, static_cast<uint16_t>((shres ? kBplcon0Shres : 0) | kBplcon0Ecsena));
+    h.write_reg(kBpl1DatAddr, 0x0000);  // sets display_ena -- without it no sprite pixel, of any colour, ever reaches the RGB output.
+}
+
+// ---------------------------------------------------------------------
+// Palette: colour (16+i)'s own two-bit (R,G,B) triple, i=0..3 -- see
+// PALETTE DERIVATION above.
+// ---------------------------------------------------------------------
+struct Palette {
+    int rgb[4][3];  // [i][0]=R [1]=G [2]=B, each 0-3
+};
+
+Palette buildPalette(int s) {
+    Palette pal;
+    for (int i = 0; i < 4; ++i) {
+        pal.rgb[i][0] = (i + s) % 4;
+        pal.rgb[i][1] = (i + s + 1) % 4;
+        pal.rgb[i][2] = (i + s + 2) % 4;
+    }
+    return pal;
+}
+
+// Register COLOR($10+n) word from `pal`, per page 302's table (see
+// PALETTE DERIVATION above): n = 4q+p, slot A = colour(16+p), slot B =
+// colour(16+q).
+uint16_t tableRegValue(const Palette& pal, int n) {
+    int p = n & 3, q = n >> 2;
+    uint16_t w = 0;
+    w = static_cast<uint16_t>(w | (pal.rgb[p][0] & 3) << 10);  // R slot A
+    w = static_cast<uint16_t>(w | (pal.rgb[q][0] & 3) << 8);   // R slot B
+    w = static_cast<uint16_t>(w | (pal.rgb[p][1] & 3) << 6);   // G slot A
+    w = static_cast<uint16_t>(w | (pal.rgb[q][1] & 3) << 4);   // G slot B
+    w = static_cast<uint16_t>(w | (pal.rgb[p][2] & 3) << 2);   // B slot A
+    w = static_cast<uint16_t>(w | (pal.rgb[q][2] & 3) << 0);   // B slot B
+    return w;
+}
+
+std::array<uint16_t, 16> wordsFor(const Palette& pal) {
+    std::array<uint16_t, 16> w{};
+    for (int n = 0; n < 16; ++n) w[static_cast<size_t>(n)] = tableRegValue(pal, n);
+    return w;
+}
+
+// One of the five stimuli sprite 0 alone is armed with -- see RUNS above.
+struct Run {
+    const char* name;
+    uint16_t data;
+    uint16_t datb;
+    uint16_t ctl;
+};
+
+constexpr Run kRuns[5] = {
+    {"S1", 0xFFFF, 0x0000, 0x0000},
+    {"S2", 0x0000, 0xFFFF, 0x0000},
+    {"S3", 0xFFFF, 0xFFFF, 0x0000},
+    {"M", 0xD9D1, 0x2F94, 0x0000},
+    {"M-SHSH1", 0xD9D1, 0x2F94, kSpriteCtlSh1},
+};
+constexpr Run kDisarmed = {"disarmed", 0x0000, 0x0000, 0x0000};
+
+using Trace = std::vector<uint32_t>;
+
 constexpr uint16_t kSpritePosByte = 0x40;
-constexpr uint16_t kSpriteCtlSh0 = 0x00;
-constexpr int kScanSamples = 240;
-constexpr uint16_t kDiwstrtWide = 0x10;
-constexpr uint16_t kDiwstopWide = 0xF0;
+constexpr int kStart = 505;  // measured margin before the earliest onset (514) -- see SAMPLE WINDOW.
+constexpr int kCount = 100;  // through tick 604, past the widest measured window (577) -- see SAMPLE WINDOW.
 
-// Programs a wide-open display window, ECS BPLCON0 (SHRES per `shres`),
-// and no bitplanes (BPU=0 -- background is COLOR00 wherever no sprite
-// draws).
-void setupDisplay(Harness& h, bool shres = true) {
-    h.write_reg(kDiwstrtAddr, kDiwstrtWide);
-    h.write_reg(kDiwstopAddr, kDiwstopWide);
-    h.write_reg(kBplcon0Addr, (shres ? kBplcon0Shres : 0) | kBplcon0Ecsena);
-    h.write_reg(kBpl1DatAddr, 0x0000);  // sets display_ena -- see kBpl1DatAddr's own comment.
-}
-
-// Arms sprite pair (SPR0=even/low, SPR1=odd/high) at the fixed position,
-// each with its own 2-bit pixel value (0-3), attach set on SPR1 only when
-// useOdd is true (the "unattached single sprite" case never touches
-// SPR1 at all -- SPR1 stays disarmed, its own value irrelevant). DATA/
-// DATB are filled with the SAME bit (0xFFFF or 0x0000) across all 16
-// shift positions -- not just the MSB -- so the sprite shows a CONSTANT
-// pixel value for its entire ~16-clk7_en-period lifetime. A second-build
-// fix (see HARNESS FIXES): a single-MSB-bit pulse (0x8000) is only ONE
-// shift-event wide, and denise_sprites_shifter.v's shift register
-// advances TWICE per clk7_en period at SuperHires resolution
-// (denise_sprites.v:158-166) -- a single shift-event-wide pulse can
-// shift past entirely between two consecutive once-per-clk7_en samples,
-// which is exactly what happened (an all-zero trace at shres=1,
-// discovered via a temporary raw-trace dump, not assumed).
-void armPair(Harness& h, int evenVal, int oddVal, bool useOdd) {
-    uint16_t evenData = (evenVal & 1) ? 0xFFFF : 0x0000;
-    uint16_t evenDatb = (evenVal & 2) ? 0xFFFF : 0x0000;
+// Fresh DUT, palette `regWords` loaded across COLOR16-31, sprite 0 alone
+// armed per `run`, sampled every tick from `start` for `count` ticks after
+// reset_line(). Every measurement in this file goes through this one path
+// -- see MEASUREMENT/SAMPLING above.
+Trace runTraceRegs(const std::array<uint16_t, 16>& regWords, const Run& run, bool shres,
+                    int start, int count) {
+    Harness h;
+    setupDisplay(h, shres);
+    for (int n = 0; n < 16; ++n) h.write_reg(kColorAddr(16 + n), regWords[static_cast<size_t>(n)]);
     h.write_reg(kSprPosAddr(0), kSpritePosByte);
-    h.write_reg(kSprCtlAddr(0), kSpriteCtlSh0);
-    h.write_reg(kSprDatbAddr(0), evenDatb);
-    h.write_reg(kSprDataAddr(0), evenData);
-    if (useOdd) {
-        uint16_t oddData = (oddVal & 1) ? 0xFFFF : 0x0000;
-        uint16_t oddDatb = (oddVal & 2) ? 0xFFFF : 0x0000;
-        h.write_reg(kSprPosAddr(1), kSpritePosByte);
-        h.write_reg(kSprCtlAddr(1), kSpriteCtlSh0 | kSprCtlAttachBit);
-        h.write_reg(kSprDatbAddr(1), oddDatb);
-        h.write_reg(kSprDataAddr(1), oddData);
-    }
+    h.write_reg(kSprCtlAddr(0), run.ctl);
+    h.write_reg(kSprDatbAddr(0), run.datb);
+    h.write_reg(kSprDataAddr(0), run.data);
+    h.reset_line();
+    for (int i = 0; i < start; ++i) h.tick();
+    return h.scan_line(count);
 }
 
-// The set of samples that differ from a same-setup, same-position,
-// disarmed-sprite baseline (DATA=DATB=0 for both SPR0 and SPR1) -- i.e.
-// exactly the samples this sprite's own pixel(s) drove. `shres` selects
-// BPLCON0.shres for BOTH the live and the baseline scan (so a pure
-// SuperHires drain-RATE difference -- denise_sprites.v:158-166's `shift`
-// case on spres/spres_d, confirmed after opening the RTL to affect only
-// how fast an already-loaded shift register drains, never the loaded
-// VALUE itself -- cannot by itself make this function return a
-// differently-SIZED diff list; see distinctValues() below for the
-// colour-only comparison that does not depend on how many samples were
-// active). Calls reset_line() AFTER all setup/arming and BEFORE
-// scanning (a second-build fix -- see HARNESS FIXES): without it, hpos
-// free-runs from the Harness constructor's own reset, so the sprite's
-// FIXED hstart could already have been reached, or even fully drained
-// past, during the setup/arming writes themselves, before scan_line
-// ever samples anything -- intermittently and mode-sensitively (a
-// faster SuperHires drain empties a shift register that started
-// draining mid-setup sooner), not because of any actual colour
-// difference. reset_line() gives every measurement the same known
-// hpos=2 starting point regardless of setup length or shres.
-std::vector<uint32_t> activeSamples(uint16_t regAddr, uint16_t regValue,
-                                     int evenVal, int oddVal, bool useOdd,
-                                     bool shres = true) {
-    Harness base;
-    setupDisplay(base, shres);
-    base.write_reg(regAddr, regValue);
-    armPair(base, 0, 0, useOdd);  // disarmed: both members value 0
-    base.reset_line();  // known hpos=2 start -- see this function's own comment above.
-    auto baseline = base.scan_line(kScanSamples);
-
-    Harness live;
-    setupDisplay(live, shres);
-    live.write_reg(regAddr, regValue);
-    armPair(live, evenVal, oddVal, useOdd);
-    live.reset_line();
-    auto trace = live.scan_line(kScanSamples);
-
-    std::vector<uint32_t> diffs;
-    for (size_t i = 0; i < trace.size() && i < baseline.size(); ++i) {
-        if (trace[i] != baseline[i]) diffs.push_back(trace[i]);
-    }
-    return diffs;
+Trace runTrace(const Palette& pal, const Run& run, bool shres, int start, int count) {
+    return runTraceRegs(wordsFor(pal), run, shres, start, count);
 }
 
-// The set of DISTINCT colour values among `samples`, sorted -- comparing
-// two of these (one per BPLCON0.shres setting) isolates a genuine colour-
-// encoding difference from a mere width/duration difference (which would
-// change how many samples are active, and at which sample indices, but
-// not which distinct colours appear).
-std::vector<uint32_t> distinctValues(const std::vector<uint32_t>& samples) {
-    std::set<uint32_t> s(samples.begin(), samples.end());
-    return std::vector<uint32_t>(s.begin(), s.end());
+// Register `overrideReg` (16-31) forced to `overrideVal`, the rest of
+// `pal`'s own table otherwise.
+Trace runTraceOverride(const Palette& pal, int overrideReg, uint16_t overrideVal, const Run& run,
+                        bool shres, int start, int count) {
+    auto words = wordsFor(pal);
+    words[static_cast<size_t>(overrideReg - 16)] = overrideVal;
+    return runTraceRegs(words, run, shres, start, count);
 }
 
-// Extracts channel `ch` ('R','G','B') top-2-bit value (0-3) from a
-// packed RGB sample, per kChannelBits. Diagnostic use only (MEASURED
-// notes below) -- no expect() condition depends on this decomposition,
-// since it cannot by itself tell "SuperHires-specific" apart from
-// "ordinary colour register, ordinary nibble-to-byte duplication".
 int top2(uint32_t rgb, char ch) {
     uint32_t v;
     if (ch == 'R') v = (rgb >> 16) & ((1u << kChannelBits) - 1);
@@ -724,51 +497,101 @@ int top2(uint32_t rgb, char ch) {
     return static_cast<int>(v >> (kChannelBits - 2)) & 0x3;
 }
 
-// Diagnostic-only rendering of a colour or a colour SET, e.g. for a
-// MEASURED note explaining exactly what this file observed.
-std::string describeColour(uint32_t rgb) {
-    return "R=" + std::to_string(top2(rgb, 'R')) +
-           " G=" + std::to_string(top2(rgb, 'G')) +
-           " B=" + std::to_string(top2(rgb, 'B')) +
-           " (raw 0x" + [&] {
-               char buf[8];
-               std::snprintf(buf, sizeof(buf), "%06X", rgb);
-               return std::string(buf);
-           }() + ")";
-}
-std::string describeSet(const std::vector<uint32_t>& colours) {
-    if (colours.empty()) return "{}";
-    std::string s = "{";
-    for (size_t i = 0; i < colours.size(); ++i) {
-        if (i) s += ", ";
-        s += describeColour(colours[i]);
+// Which of colour 17/18/19 (per `pal`) the sample's own top two bits per
+// channel match, or -1 if none. Used to identify WHICH register a sample
+// is actually reading, independent of any assumption about NanoMig's own
+// addressing.
+int colourOf(uint32_t rgb, const Palette& pal) {
+    for (int c = 1; c <= 3; ++c) {
+        if (top2(rgb, 'R') == pal.rgb[c][0] && top2(rgb, 'G') == pal.rgb[c][1] &&
+            top2(rgb, 'B') == pal.rgb[c][2]) {
+            return 16 + c;
+        }
     }
-    s += "}";
-    return s;
+    return -1;
 }
 
-// Builds a 12-bit COLOR-register write value from six independently
-// chosen 2-bit fields (slot A hi/lo for R/G/B at bits 11:10/7:6/3:2, slot
-// B hi/lo at bits 9:8/5:4/1:0), with the four unused bits 15-12 set from
-// `unused4`.
-uint16_t buildRegValue(int rAhi, int rAlo, int gAhi, int gAlo, int bAhi, int bAlo,
-                        int rBhi, int rBlo, int gBhi, int gBlo, int bBhi, int bBlo,
-                        int unused4) {
-    uint16_t v = 0;
-    v |= static_cast<uint16_t>((unused4 & 0xF) << 12);
-    v |= static_cast<uint16_t>((rAhi & 1) << 11);
-    v |= static_cast<uint16_t>((rAlo & 1) << 10);
-    v |= static_cast<uint16_t>((rBhi & 1) << 9);
-    v |= static_cast<uint16_t>((rBlo & 1) << 8);
-    v |= static_cast<uint16_t>((gAhi & 1) << 7);
-    v |= static_cast<uint16_t>((gAlo & 1) << 6);
-    v |= static_cast<uint16_t>((gBhi & 1) << 5);
-    v |= static_cast<uint16_t>((gBlo & 1) << 4);
-    v |= static_cast<uint16_t>((bAhi & 1) << 3);
-    v |= static_cast<uint16_t>((bAlo & 1) << 2);
-    v |= static_cast<uint16_t>((bBhi & 1) << 1);
-    v |= static_cast<uint16_t>((bBlo & 1) << 0);
+// Full 8-bit channels that differ between two samples (0=R,1=G,2=B).
+std::vector<int> diffComponents(uint32_t a, uint32_t b) {
+    std::vector<int> out;
+    for (int j = 0; j < 3; ++j) {
+        uint32_t sh = static_cast<uint32_t>(16 - 8 * j);
+        if (((a >> sh) & 0xFF) != ((b >> sh) & 0xFF)) out.push_back(j);
+    }
+    return out;
+}
+
+std::string describeColour(uint32_t rgb) {
+    char buf[48];
+    std::snprintf(buf, sizeof(buf), "R=%d G=%d B=%d (raw 0x%06X)", top2(rgb, 'R'), top2(rgb, 'G'),
+                  top2(rgb, 'B'), rgb);
+    return std::string(buf);
+}
+
+// ---------------------------------------------------------------------
+// Per-register per-bit-inversion measurement -- see ASSERTIONS (REG-0x1n)
+// above. `baseline[r]` is run r's trace under the unmutated S0 table,
+// computed once and shared across every register (S0 never changes).
+// ---------------------------------------------------------------------
+struct RegVerdict {
+    bool observed = false;
+    bool allGood = true;
+    int badBit = -1;
+    const char* badRun = "";
+    int badTick = -1;
+    int sawColour = -1;
+    int expectColour = -1;
+    std::vector<int> badComps;
+};
+
+RegVerdict measureRegister(const std::array<uint16_t, 16>& s0words, const Palette& s0,
+                            const Trace baseline[5], int n, bool forceGood = false) {
+    RegVerdict v;
+    int p = n & 3, q = n >> 2;
+    for (int bit = 0; bit < 12; ++bit) {
+        bool slotB = (bit == 9 || bit == 8 || bit == 5 || bit == 4 || bit == 1 || bit == 0);
+        int k = slotB ? q : p;
+        int comp = (bit >= 8) ? 0 : (bit >= 4 ? 1 : 2);  // 0=R,1=G,2=B
+        auto mut = s0words;
+        mut[static_cast<size_t>(n)] = static_cast<uint16_t>(mut[static_cast<size_t>(n)] ^ (1u << bit));
+        for (int ri = 0; ri < 5; ++ri) {
+            Trace t = runTraceRegs(mut, kRuns[ri], /*shres=*/true, kStart, kCount);
+            const Trace& b = baseline[static_cast<size_t>(ri)];
+            for (size_t i = 0; i < t.size() && i < b.size(); ++i) {
+                if (t[i] == b[i]) continue;
+                v.observed = true;
+                int saw = colourOf(b[i], s0);
+                auto comps = diffComponents(b[i], t[i]);
+                bool good = forceGood || ((saw == 16 + k) && comps.size() == 1 &&
+                            comps[0] == comp);
+                if (!good && v.allGood) {
+                    v.allGood = false;
+                    v.badBit = bit;
+                    v.badRun = kRuns[ri].name;
+                    v.badTick = static_cast<int>(i);
+                    v.sawColour = saw;
+                    v.expectColour = 16 + k;
+                    v.badComps = comps;
+                }
+            }
+        }
+    }
     return v;
+}
+
+std::string regVerdictDetail(const RegVerdict& v) {
+    if (!v.observed) return "no run ever showed a difference (declined).";
+    if (v.allGood) return "every observed difference matched its bit's own predicted colour and channel.";
+    char buf[256];
+    std::string comps;
+    for (size_t i = 0; i < v.badComps.size(); ++i) {
+        comps += "RGB"[v.badComps[i]];
+    }
+    std::snprintf(buf, sizeof(buf),
+                  "bit %d, run %s, tick %d: observed colour %d, page-predicted colour %d, "
+                  "component(s) moved: %s.",
+                  v.badBit, v.badRun, v.badTick, v.sawColour, v.expectColour, comps.c_str());
+    return std::string(buf);
 }
 
 }  // namespace
@@ -777,274 +600,312 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks checks;
 
-    // ==================== control: FIXTURE-SPRITE-DATA-PATH-LIVE ====================
+    const Palette S0 = buildPalette(0);
+    const auto s0words = wordsFor(S0);
+
+    // ==================== C1 [control] FIXTURE-SPRITE-DATA-PATH-LIVE ====================
     {
-        // Sprite colour 17 (unattached SPR0 value=1), register $11
-        // (offset 1), a saturated distinguishing pattern -- proves a
-        // written, non-zero, non-constant sprite pixel actually reaches
-        // the RGB output via this Harness's write_reg/armPair/scan_line
-        // path before ANY claim-based assertion below depends on it.
-        uint16_t regv = buildRegValue(/*R*/ 1, 0, /*G*/ 0, 1, /*B*/ 1, 1,
-                                       /*slotB*/ 1, 1, 0, 0, 0, 1, /*unused*/ 0xA);
-        auto diffs = activeSamples(kColorAddr(17), regv, /*even=*/1, /*odd=*/0, /*useOdd=*/false);
-        checks.expect(!diffs.empty(),
-            "[control] FIXTURE-SPRITE-DATA-PATH-LIVE: arming an unattached "
-            "sprite 0 with its own pixel value 1 (combined index 1, register "
-            "COLOR17/$11) against a same-setup disarmed baseline produces at "
-            "least one differing RGB sample -- proving this Harness's "
-            "write_reg -> armPair -> scan_line -> diff-against-baseline "
-            "measurement path is actually live before any claim-based "
-            "assertion below depends on it. Fixture check, no claim id, no "
-            "page.");
-    }
-    // ==================== control: FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 ====================
-    {
-        uint16_t regv = buildRegValue(1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0xF);
-        auto diffs = activeSamples(kColorAddr(16), regv, /*even=*/0, /*odd=*/0, /*useOdd=*/false);
-        checks.expect(diffs.empty(),
-            "[control] FIXTURE-SPR0-TRANSPARENT-AT-VALUE0: an unattached "
-            "sprite armed with its own pixel value 0 (combined index 0, "
-            "register COLOR16/$10) produces NO differing sample versus the "
-            "disarmed baseline, even though COLOR16 itself is loaded with an "
-            "all-ones pattern -- confirming combined sprite index 0 is "
-            "universally transparent on this boundary, independent of "
-            "SuperHires mode or of what COLOR16 stores. This is why REG-0x10 "
-            "below cannot be confirmed via live display. Fixture check, no "
-            "claim id, no page.");
-    }
-
-    // ==================== SHRES-MODE-CHANGES-OUTPUT (general) ====================
-    {
-        // Register COLOR17/$11 (offset 1, unattached sprite value=1),
-        // written so its top-two-bit ('slot A') R field (bits 11:10 = 2)
-        // and its bottom-two-bit ('slot B') R field (bits 9:8 = 1) differ.
-        // If SuperHires colour multiplexing -- the p.301/p.302 scheme --
-        // occurs at all, the DISTINCT colour values a sprite pixel
-        // selecting this register can show must differ between
-        // BPLCON0.shres=0 and BPLCON0.shres=1. Compared as a SET of
-        // distinct colours (distinctValues), not as a raw sample-by-
-        // sample trace, specifically so that denise_sprites.v:158-166's
-        // OWN shres/spres-dependent shift RATE (confirmed after opening
-        // the RTL: SuperHires drains an already-loaded sprite shift
-        // register twice as fast, changing how WIDE the sprite is on
-        // screen, not what colour it is) cannot by itself make this
-        // comparison read "differs" for a reason that has nothing to do
-        // with colour.
-        uint16_t regv = buildRegValue(/*rA*/ 1, 0, /*gA*/ 0, 0, /*bA*/ 0, 0,
-                                       /*rB*/ 0, 1, /*gB*/ 0, 0, /*bB*/ 0, 0, 0);
-        auto set0 = distinctValues(activeSamples(kColorAddr(17), regv, 1, 0, false, /*shres=*/false));
-        auto set1 = distinctValues(activeSamples(kColorAddr(17), regv, 1, 0, false, /*shres=*/true));
-
-        bool differs = (set0 != set1);
-        checks.expect(differs,
-            "SHRES-MODE-CHANGES-OUTPUT: with register COLOR17/$11 loaded so "
-            "its top-two-bit ('slot A') R field (bits 11:10, printed '10') "
-            "differs from its bottom-two-bit ('slot B') R field (bits 9:8, "
-            "printed '01'), the SET of distinct colours a sprite pixel "
-            "selecting this register can show (measured across the whole "
-            "scanned line, at BOTH BPLCON0.shres settings, so a pure width/"
-            "timing difference cannot be mistaken for a colour difference) "
-            "differs between BPLCON0.shres=0 and BPLCON0.shres=1 -- "
-            "confirming that SuperHires mode actually changes how sprite "
-            "colour data is read out of these registers, not merely that "
-            "the registers exist: 'In order to decode sprite and bitplane "
-            "color information in SuperHires mode, certain multiplexing "
-            "occurs in the use of the registers.' (p.301). 'SuperHires "
-            "sprites are encoded in the upper sixteen color registers "
-            "using a similar scheme:' (p.302, quoted twice by two "
-            "independent readers). C-shrc.c03, C-shres-color.c8, "
-            "C-shrs.c01 .");
-        checks.note("SHRES-MODE-CHANGES-OUTPUT: shres=0 distinct colours " +
-                     describeSet(set0) + "; shres=1 distinct colours " + describeSet(set1) + ".");
-    }
-
-    // ==================== REG-0x10 .. REG-0x1F ====================
-    for (int idx = 0; idx < 16; ++idx) {
-        const RegRow& row = kRows[idx];
-        int offset = idx;  // COLOR($10+offset)
-        int evenTarget = offset & 3;
-        int oddTarget = (offset >> 2) & 3;
-        bool useOdd = offset >= 4;
-        // Diagonal registers ($10,$15,$1A,$1F): offset&3 == offset>>2,
-        // i.e. slot A and slot B are the SAME logical (colour,channel,
-        // hi/lo) -- the register is dedicated to one sprite colour. (The
-        // extra symbol/legend ids this implies are already baked into
-        // kRegIds[idx] above, not recomputed here.)
-
-        // row.symbols[4],[5] = R slot-A hi,lo (bits 11,10); [6],[7] = R
-        // slot-B hi,lo (bits 9,8); [8],[9] = G slot-A (bits 7,6); [10],
-        // [11] = G slot-B (bits 5,4); [12],[13] = B slot-A (bits 3,2);
-        // [14],[15] = B slot-B (bits 1,0) -- per kRows' own comment above.
-        // The claim ids for this register are the literal kRegIds[idx]
-        // string below; the actual written/measured VALUES are chosen
-        // independently (rA/gA/bA, rB/gB/bB below), not derived from the
-        // row's own letters.
-        (void)row.symbols;
-
-        // Chosen slot-A test value: R=2(10b) G=1(01b) B=3(11b) -- three
-        // distinct 2-bit values, one per channel, so a stuck bit or a
-        // channel swap is individually detectable. Slot B gets the
-        // bitwise complement (R=1,G=2,B=0) so if it ever leaked into the
-        // observed output it would read as a DIFFERENT, wrong value, not
-        // an accidental match.
-        int rA = 2, gA = 1, bA = 3;
-        int rB = 1, gB = 2, bB = 0;
-        auto hi = [](int v) { return (v >> 1) & 1; };
-        auto lo = [](int v) { return v & 1; };
-
-        uint16_t regAddr = kColorAddr(16 + offset);
-
-        if (offset == 0) {
-            // REG-0x10 (colour 16): cannot be confirmed via live sprite
-            // display -- see FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 above and
-            // the header note "WHY REGISTER $10 IS TREATED SEPARATELY".
-            //
-            // DEFECT CORRECTION (independent validator, this agent,
-            // 11.09.2026): this was previously checks.expect(false, ...) --
-            // an unconditional failing "assertion" with nothing to measure,
-            // i.e. a declaration dressed up as a measurement. Converted to
-            // a genuine declined claim (Checks::decline, printed but not
-            // counted in passed/failed, and not gated for a mutation
-            // record, since it asserts nothing that could be mutated). The
-            // other twenty ids on this same register (the sixteen per-bit
-            // ids, its own three symbol ids and its one legend id) belong
-            // with the row id for the identical reason -- every one of
-            // them is a fact ABOUT this same universally-unreachable
-            // register's stored content, not a claim this Harness can
-            // separately measure or fail to measure -- so all twenty-one
-            // are declined together here, ids still cited in full.
-            std::string ids = kRegIds[idx];
-            checks.decline(
-                "REG-0x10: register COLOR16/$10's sixteen bit positions "
-                "(this row: \"C  10   .   .   .   .   A   B   A   B   C   D "
-                "  C   D   E   F   E   F\", p.302) can never be confirmed "
-                "via this boundary's live sprite display, because combined "
-                "sprite index 0 -- the ONLY index that ever addresses this "
-                "register -- is universally transparent on real sprite "
-                "hardware (both an unattached sprite's own value 0 and an "
-                "attached pair with both members 0 mean 'no sprite pixel', "
-                "confirmed empirically by FIXTURE-SPR0-TRANSPARENT-AT-"
-                "VALUE0 above): no RGB sample this Harness can produce ever "
-                "reflects this register's stored content. This is an "
-                "architectural property of the sprite/transparency path, "
-                "not a per-bit finding about any ONE of these ids -- "
-                "declined rather than silently dropped or asserted false "
-                "with nothing measured. " + ids + " .");
-        } else {
-            // Distinguishing content: slot A (bits 11:10/7:6/3:2) =
-            // R2,G1,B3; slot B (bits 9:8/5:4/1:0) = the complement,
-            // R1,G2,B0 -- this row's own printed pattern determines WHICH
-            // of slot A/slot B (or, per HARNESS FIXES below, neither,
-            // since no shres-dependent split exists in this RTL at all)
-            // is what the RGB output actually reflects.
-            uint16_t regv = buildRegValue(hi(rA), lo(rA), hi(gA), lo(gA), hi(bA), lo(bA),
-                                           hi(rB), lo(rB), hi(gB), lo(gB), hi(bB), lo(bB),
-                                           /*unused4=*/0x0);
-
-            // Unused-bits (15-12) no-effect check: same register content
-            // otherwise, unused nibble flipped from 0x0 to 0xF, measured
-            // at shres=1 (this package's own claimed mode) -- mode-
-            // independent by construction (denise_colortable.v:32,
-            // confirmed after opening the RTL: wr_dat=data_in[11:0]
-            // truncates bits 15-12 before they are ever latched,
-            // regardless of shres).
-            uint16_t regvUnused = buildRegValue(hi(rA), lo(rA), hi(gA), lo(gA), hi(bA), lo(bA),
-                                                 hi(rB), lo(rB), hi(gB), lo(gB), hi(bB), lo(bB),
-                                                 /*unused4=*/0xF);
-            auto diffs = activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd, /*shres=*/true);
-            auto diffsUnused = activeSamples(regAddr, regvUnused, evenTarget, oddTarget, useOdd, /*shres=*/true);
-            bool unusedNoEffect = (diffs == diffsUnused);
-
-            // THE DECISIVE check, same methodology as SHRES-MODE-CHANGES-
-            // OUTPUT above and for the same reason (isolating a genuine
-            // colour-encoding difference from denise_sprites.v's own
-            // shres/spres-dependent shift RATE, confirmed after opening
-            // the RTL to affect only sprite WIDTH on screen, never the
-            // loaded pixel VALUE -- see HARNESS FIXES): the SET of
-            // distinct colours this register's own combined index can
-            // show must differ between BPLCON0.shres=0 and shres=1 if
-            // this row's printed slot-A/slot-B split is actually being
-            // read out as the manual describes.
-            auto set0 = distinctValues(activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd, /*shres=*/false));
-            auto set1 = distinctValues(activeSamples(regAddr, regv, evenTarget, oddTarget, useOdd, /*shres=*/true));
-            bool shresChangesColour = (set0 != set1);
-
-            std::string ids = kRegIds[idx];
-
-            checks.expect(unusedNoEffect && shresChangesColour,
-                std::string("REG-0x") + row.hex +
-                ": with register COLOR" + std::to_string(16 + offset) + "/$" + row.hex +
-                " loaded so its top-two-bit ('slot A') fields (bits 11:10 R "
-                "/ 7:6 G / 3:2 B, this row's own printed pattern, p.302) "
-                "read R=2 G=1 B=3 and its bottom-two-bit ('slot B') fields "
-                "(bits 9:8/5:4/1:0, this row's OTHER printed symbols) read "
-                "R=1 G=2 B=0, and the sprite arming that this register's "
-                "own combined index (" + std::to_string(offset) +
-                ") naturally reaches " +
-                (useOdd ? "(an ATTACHED pair, SPR0 own value " + std::to_string(evenTarget) +
-                          ", SPR1 own value " + std::to_string(oddTarget) + ")"
-                        : "(an UNATTACHED sprite, own value " + std::to_string(evenTarget) + ")") +
-                ": flipping this SAME register's unused bits 15-12 from "
-                "0x0 to 0xF changes none of the RGB samples this sprite "
-                "pixel drives (matching 'bit 15/14/13/12 is unused' for "
-                "this row); AND, measured at BOTH BPLCON0.shres settings "
-                "to isolate colour from the SuperHires drain-rate/width "
-                "effect, the SET of distinct colours this sprite pixel "
-                "can show differs between shres=0 and shres=1 -- i.e. "
-                "this register's slot-A/slot-B split from this row's own "
-                "printed symbols is actually read out as SuperHires-mode-"
-                "specific data, not as an ordinary always-on colour "
-                "value. " + ids + " .");
-            checks.note(std::string("REG-0x") + row.hex + ": shres=0 distinct colours " +
-                        describeSet(set0) + "; shres=1 distinct colours " + describeSet(set1) + ".");
-        }
-    }
-
-    // ==================== SHRES-SPR11-BIT11-ISOLATES-RED ====================
-    {
-        // Isolates C-shres-sprite-bits.c21 ("COLOR11 bit 11 carries symbol
-        // G from sprite color 17 red") from REG-0x11's own aggregate check
-        // above: an independent validator found that check only asks
-        // whether the WHOLE set of distinct colours a sprite pixel can
-        // show differs between shres=0 and shres=1 for ONE combined,
-        // multi-bit stimulus -- it never isolates bit 11 alone, nor
-        // confirms the reading lands in the RED channel specifically. This
-        // writes COLOR11/$11 (= COLOR17 decimal) with ONLY bit 11 set (all
-        // fifteen other bits 0) and measures the resulting sprite pixel's
-        // own RED channel against a same-setup, same-position baseline
-        // with COLOR11=0 -- the position-to-channel half of the claim, the
-        // part this boundary can observe. The colour-17-distinct-from-
-        // colour-16 half has no independent circuit to observe at all
-        // (same reason as the sibling ch3-shres-bitplane-colour-encoding
-        // package's own SHRES-BPL01-BIT11-ISOLATES-RED: denise_colortable.v
-        // reads a register's R nibble as ONE undifferentiated 4-bit value,
-        // shres or not) -- not re-tested here; REG-0x11's own sweep above
-        // already carries it, and stays red for exactly that reason.
-#if MUT_SPR11BIT11RED
-        uint16_t bitOnly = 0x0080;  // MUTATION: bit 7 (green) instead of bit 11 (red)
+        auto base = runTrace(S0, kDisarmed, /*shres=*/false, kStart, kCount);
+#if MUT_C1
+        auto live = runTrace(S0, kDisarmed, /*shres=*/false, kStart, kCount);  // MUTATION: disarmed instead of S1
 #else
-        uint16_t bitOnly = 0x0800;  // COLOR11/$11 bit 11 alone
+        auto live = runTrace(S0, kRuns[0], /*shres=*/false, kStart, kCount);
 #endif
-        auto diffs = activeSamples(kColorAddr(17), bitOnly, /*even=*/1, /*odd=*/0,
-                                    /*useOdd=*/false, /*shres=*/true);
-        bool moved = false, onlyRed = true;
-        for (uint32_t s : diffs) {
-            if (top2(s, 'R') != 0) moved = true;
-            if (top2(s, 'G') != 0 || top2(s, 'B') != 0) onlyRed = false;
+        bool any = false;
+        for (size_t i = 0; i < live.size(); ++i) if (live[i] != base[i]) { any = true; break; }
+        checks.expect(any,
+            "C1 [control] FIXTURE-SPRITE-DATA-PATH-LIVE (HIRES): arming unattached sprite 0 "
+            "with its own pixel value 1 (run S1) against a same-setup disarmed baseline, at "
+            "BPLCON0.shres=0, produces at least one differing RGB sample in the measured "
+            "window -- proving this Harness's write_reg -> arm -> scan_line -> diff-against-"
+            "baseline path is live before any SuperHires-specific assertion below depends on "
+            "it. Fixture check, no claim id, no page.");
+        // MUTATION C1 stimulus red: built with -DMUT_C1=1, which arms the "live" trace
+        // with kDisarmed instead of run S1 (identical to the baseline it is diffed
+        // against) -> measured "3 passed, 5 failed, 14 declined", C1 the only verdict
+        // that moved (PASS -> FAIL; diff against baseline became empty). Reverted (no
+        // flags): "4 passed, 4 failed, 14 declined", baseline restored.
+    }
+
+    // ==================== C2 [control] FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 ====================
+    {
+        auto base = runTrace(S0, kDisarmed, /*shres=*/false, kStart, kCount);
+        // live re-arms sprite 0 at value 0 explicitly (kDisarmed's own data/datb are
+        // both zero, which IS combined index 0 -- the disarmed run doubles as the
+        // value-0 arming here), with COLOR16 loaded all-ones, so a leak would be
+        // visible against the all-zero baseline.
+#if MUT_C2
+        auto live = runTraceOverride(S0, 17, 0x0FFF, kRuns[0], /*shres=*/false, kStart, kCount);  // MUTATION: value 1, register 17
+#else
+        auto live = runTraceOverride(S0, 16, 0x0FFF, kDisarmed, /*shres=*/false, kStart, kCount);
+#endif
+        bool same = (live == base);
+        checks.expect(same,
+            "C2 [control] FIXTURE-SPR0-TRANSPARENT-AT-VALUE0 (HIRES): an unattached sprite "
+            "armed with its own pixel value 0 (combined index 0, register COLOR16/$10) "
+            "produces NO differing sample versus the disarmed baseline, at BPLCON0.shres=0, "
+            "even though COLOR16 itself is loaded with an all-ones pattern ($0FFF) -- "
+            "confirming combined index 0 is universally transparent on this boundary: 'The "
+            "color value of the first register in each group of four registers is ignored by "
+            "sprites. When the sprite bits select this register, the \"transparent\" value is "
+            "used.' (p.103); 'Recall that binary 00 always means transparent and never refers "
+            "to a color except background.' (p.108). This is why REG-0x10 below is declined "
+            "rather than measured.");
+        // MUTATION C2 stimulus red: built with -DMUT_C2=1, which re-arms the "live" trace
+        // at value 1 (run S1) instead of value 0, and moves the overridden register from
+        // COLOR16/$10 to COLOR17/$11 (the register value 1 actually reaches) -> measured
+        // "3 passed, 5 failed, 14 declined", C2 the only verdict that moved (PASS -> FAIL;
+        // value 1 is not transparent, so the trace differs from the value-0 baseline).
+        // Reverted (no flags): "4 passed, 4 failed, 14 declined", baseline restored.
+    }
+
+    // ==================== C3 [control] FIXTURE-TABLE-AS-0RGB ====================
+    {
+        bool ok = true;
+        for (int c = 1; c <= 3; ++c) {
+            auto base = runTrace(S0, kDisarmed, /*shres=*/false, kStart, kCount);
+            auto live = runTrace(S0, kRuns[c - 1], /*shres=*/false, kStart, kCount);
+            uint32_t want = ((s0words[static_cast<size_t>(c)] >> 8 & 0xF) * 0x11u) << 16 |
+                             ((s0words[static_cast<size_t>(c)] >> 4 & 0xF) * 0x11u) << 8 |
+                             ((s0words[static_cast<size_t>(c)] & 0xF) * 0x11u);
+#if MUT_C3
+            if (c == 1) want ^= 0x000001u;  // MUTATION: corrupt colour 17's expected word only
+#endif
+            bool any = false, allWant = true;
+            for (size_t i = 0; i < live.size(); ++i) {
+                if (live[i] != base[i]) {
+                    any = true;
+                    if (live[i] != want) allWant = false;
+                }
+            }
+            ok = ok && any && allWant;
         }
-        checks.expect(moved && onlyRed,
-            "SHRES-SPR11-BIT11-ISOLATES-RED (p.302, C-shres-sprite-bits.c21): "
-            "with every other bit of COLOR11/$11 held at 0, bit 11 alone, "
-            "read via an unattached sprite selecting combined index 1 "
-            "(register COLOR17), moves the sprite pixel's RED channel and "
-            "leaves green/blue at 0 -- 'O  11   .   .   .   .   G   H   A   "
-            "B   I   J   C   D   K   L   E   F' (p.302) names bit 11 as "
-            "symbol G, sprite colour 17's own red. Confirms the position-"
-            "to-channel half of the claim; the colour-17-distinct-from-"
-            "colour-16 half is not re-tested here (see this block's own "
-            "comment above) -- REG-0x11's own sweep carries it, red for "
-            "the same underlying reason.");
-        checks.note("SHRES-SPR11-BIT11-ISOLATES-RED: bit-11-only diffs " + describeSet(diffs) + ".");
+        checks.expect(ok,
+            "C3 [control] FIXTURE-TABLE-AS-0RGB (HIRES): for colour 17, 18 and 19, a solid "
+            "run at BPLCON0.shres=0 shows register COLOR($10+colour-16)'s own S0 word "
+            "unmangled -- each nibble duplicated into its own 8-bit channel, the ordinary "
+            "ECS colour-register convention p.301 contrasts SuperHires against ('Instead of "
+            "4 bits of red, green, and blue for bitplane registers 0-3 stored as 0xORGB in "
+            "four color registers, SuperHires ... colors are specially encoded') -- "
+            "confirming this file's own palette-loading path is unmangled before it is read "
+            "under a SuperHires-specific interpretation below. No claim id (fixture "
+            "plumbing).");
+        // MUTATION C3 stimulus red: built with -DMUT_C3=1, which corrupts colour 17's
+        // own expected word (`want`) by one low bit before the comparison (the register
+        // write itself left unchanged) -> measured "3 passed, 5 failed, 14 declined", C3
+        // the only verdict that moved (PASS -> FAIL; the observed word no longer equals
+        // the corrupted expectation). Reverted (no flags): "4 passed, 4 failed, 14
+        // declined", baseline restored.
+    }
+
+    // ==================== P1 KEY-COLOURS-17-19-BITS-3-2 ====================
+    {
+        bool ok = true;
+        for (int s = 0; s < 4; ++s) {
+            Palette pal = buildPalette(s);
+            for (int c = 1; c <= 3; ++c) {
+                auto base = runTrace(pal, kDisarmed, /*shres=*/true, kStart, kCount);
+                auto live = runTrace(pal, kRuns[c - 1], /*shres=*/true, kStart, kCount);
+                bool any = false, allMatch = true;
+                for (size_t i = 0; i < live.size(); ++i) {
+                    if (live[i] == base[i]) continue;
+                    any = true;
+#if MUT_P1
+                    int wantG = (s == 0 && c == 2) ? (pal.rgb[c][1] + 1) % 4 : pal.rgb[c][1];  // MUTATION: corrupt S0 colour 18's expected G
+#else
+                    int wantG = pal.rgb[c][1];
+#endif
+                    if (top2(live[i], 'R') != pal.rgb[c][0] || top2(live[i], 'G') != wantG ||
+                        top2(live[i], 'B') != pal.rgb[c][2]) {
+                        allMatch = false;
+                    }
+                }
+                ok = ok && any && allMatch;
+            }
+        }
+        checks.expect(ok,
+            "P1 KEY-COLOURS-17-19-BITS-3-2: for palettes S0-S3 and colours 17/18/19, a solid "
+            "run at BPLCON0.shres=1 shows that colour's own two-bit RGB triple in bits 3-2 of "
+            "each channel nibble -- page 302's legend, 'Sprite (Color 17) :   GH-- IJ-- KL--' "
+            "and its siblings for colour 16/18/19: each colour's own letters are its TOP two "
+            "bits of R, G and B. C-shres-sprite-symbols.c4-c12 (colour 17/18/19's own six "
+            "letters each).");
+        // MUTATION P1 stimulus red: built with -DMUT_P1=1, which corrupts only the
+        // comparison target for palette S0 colour 18's own G component (+1 mod 4; the
+        // register write itself is left at pal's real value) -> measured "3 passed, 5
+        // failed, 14 declined", P1 the only verdict that moved (PASS -> FAIL; the
+        // observed G no longer equals the corrupted expectation). Reverted (no flags):
+        // "4 passed, 4 failed, 14 declined", baseline restored.
+    }
+
+    // ==================== P2 TWO-BITS-54-TRACES-IDENTICAL ====================
+    {
+        int changed = 0, total = 0;
+        for (int c = 1; c <= 3; ++c) {
+            auto base = runTrace(S0, kRuns[c - 1], /*shres=*/true, kStart, kCount);
+            for (int k = 0; k < 4; ++k) {
+                if (k == c) continue;
+#if MUT_P2
+                // MUTATION: skip colour 16 (k==0) entirely -- the one colour whose
+                // slot-B position always overlaps register $10+c for c=1,2,3 (the
+                // FINDING this assertion is red for). With it excluded, only the
+                // genuinely non-interfering k=1,2,3 combos remain.
+                if (k == 0) continue;
+#endif
+                for (int ch = 0; ch < 3; ++ch) {
+                    static constexpr int kHiA[3] = {11, 7, 3};
+                    static constexpr int kHiB[3] = {9, 5, 1};
+                    for (int hi = 0; hi < 2; ++hi) {
+                        int bitA = kHiA[ch] - (hi ? 0 : 1);
+                        int bitB = kHiB[ch] - (hi ? 0 : 1);
+                        auto mut = s0words;
+                        for (int n = 0; n < 16; ++n) {
+                            int p = n & 3, q = n >> 2;
+                            if (p == k) mut[static_cast<size_t>(n)] =
+                                static_cast<uint16_t>(mut[static_cast<size_t>(n)] ^ (1u << bitA));
+                            if (q == k) mut[static_cast<size_t>(n)] =
+                                static_cast<uint16_t>(mut[static_cast<size_t>(n)] ^ (1u << bitB));
+                        }
+                        auto t = runTraceRegs(mut, kRuns[c - 1], /*shres=*/true, kStart, kCount);
+                        ++total;
+                        if (t != base) ++changed;
+                    }
+                }
+            }
+        }
+        checks.expect(changed == 0,
+            "P2 TWO-BITS-54-TRACES-IDENTICAL: with the S0 table loaded, colour c's (17, 18 "
+            "or 19) own solid run must show an identical trace whether or not a bit "
+            "belonging to a DIFFERENT stored colour (16, and whichever of 17-19 is not c) "
+            "is flipped everywhere page 302's table places that colour's letters -- 'There "
+            "are only two bits of red, green and blue color resolution per hires pixel.' "
+            "(p.301). 3 on-screen colours x 3 other colours x 3 channels x 2 (hi/lo) = 54 "
+            "traces checked, all required identical. C-shres-color.c8.");
+        checks.note("P2 TWO-BITS-54-TRACES-IDENTICAL: " + std::to_string(changed) + " of " +
+                     std::to_string(total) + " traces changed.");
+        // MUTATION P2 stimulus green: baseline is already red -- 18 of 54 traces change,
+        // every one of them a k==0 (colour 16) combo, because colour 16's own slot-B
+        // position always overlaps register $10+c for c=1,2,3 (the FINDING REG-0x11-13
+        // measure directly). Built with -DMUT_P2=1, which skips k==0 entirely, leaving
+        // only the 36 combos among colours 1,2,3 relative to c that page 301's "only two
+        // bits" clause predicts stay identical regardless -> measured "5 passed, 3
+        // failed, 14 declined" ("MEASURED: ... 0 of 36 traces changed"), P2 the only
+        // verdict that moved (FAIL -> PASS) -- proving the comparator responds to a real
+        // code change and that the 18-of-54 red is entirely colour 16's own interference.
+        // Reverted (no flags): "4 passed, 4 failed, 14 declined", baseline restored.
+    }
+
+    // ==================== DOT-BITS ====================
+    {
+        auto base = runTrace(S0, kRuns[0], /*shres=*/true, kStart, kCount);
+        auto live = runTraceOverride(S0, 17, static_cast<uint16_t>(s0words[1] | 0xF000), kRuns[0],
+                                      /*shres=*/true, kStart, kCount);
+        bool same = (live == base);
+        checks.note("DOT-BITS: register $11 bits 15-12 flipped 0x0->0xF, run S1: trace " +
+                     std::string(same ? "identical" : "differs") + " to the unmutated baseline.");
+        checks.decline(
+            "DOT-BITS: every printed row of page 302's table marks bits 15-12 '.' (unused), "
+            "e.g. row $11: '....GHABIJCDKLEF'. Measured above: flipping them produces no "
+            "observable difference here -- but this boundary's colour-register write path "
+            "truncates data_in to its low twelve bits before latching in EVERY mode, not "
+            "only SuperHires (the sibling ch3-colour-register-format package's own already-"
+            "declined 'bits 15-12 unused' claim), so this package cannot attribute that "
+            "truncation to page 302's own table specifically rather than to the general "
+            "12-bit colour-register format -- declining rather than re-testing a sibling "
+            "package's claim under a different name.");
+    }
+
+    // ==================== REG-0x10 ====================
+    checks.decline(
+        "REG-0x10: register COLOR16/$10's sixteen bit positions (row: 'C  10   .   .   .   "
+        ".   A   B   A   B   C   D   C   D   E   F   E   F', p.302) can never be confirmed "
+        "via this boundary's live sprite display, because combined index 0 -- the only "
+        "index that ever addresses this register from an unattached sprite -- is "
+        "universally transparent on real sprite hardware (p.103, p.108), confirmed "
+        "empirically by C2 above: no RGB sample this Harness can produce ever reflects this "
+        "register's stored content. Architectural property of the transparency path, not a "
+        "per-bit finding -- declined rather than silently dropped or asserted false with "
+        "nothing measured. " + std::string(kRegIds[0]) + " .");
+
+    // ==================== REG-0x11 .. REG-0x1F ====================
+    Trace baseline[5];
+    for (int ri = 0; ri < 5; ++ri) baseline[ri] = runTraceRegs(s0words, kRuns[ri], /*shres=*/true, kStart, kCount);
+
+    {
+#if MUT_REG11
+        RegVerdict v = measureRegister(s0words, S0, baseline, 1, /*forceGood=*/true);  // MUTATION
+#else
+        RegVerdict v = measureRegister(s0words, S0, baseline, 1);
+#endif
+        checks.expect(v.observed && v.allGood,
+            "REG-0x11: row $11 ('....GHABIJCDKLEF', p.302) -- with the S0 table loaded, "
+            "every one of register COLOR17/$11's twelve meaningful bits is flipped in turn "
+            "and all five runs (S1, S2, S3, M, M-SHSH1) are scanned at BPLCON0.shres=1 for a "
+            "difference against the unmutated baseline; a difference must land on the bit's "
+            "own page-predicted colour (16 for the register's slot-B bits 9-8/5-4/1-0, 17 "
+            "for its slot-A bits 11-10/7-6/3-2) and channel alone. Also carries page 301's "
+            "general multiplexing statements this per-bit family as a whole tests: 'In order "
+            "to decode sprite and bitplane color information in SuperHires mode, certain "
+            "multiplexing occurs in the use of the registers.' " + regVerdictDetail(v) + " " +
+            std::string(kRegIds[1]) + " .");
+        checks.note("REG-0x11: " + regVerdictDetail(v));
+        // MUTATION REG-0x11 stimulus green: built with -DMUT_REG11=1, which forces
+        // measureRegister()'s own `good` comparison true regardless of `saw`/
+        // `expectColour`/`comps` -> measured "5 passed, 3 failed, 14 declined",
+        // REG-0x11 the only verdict that moved (FAIL -> PASS) -- proving the comparator
+        // is not vacuously satisfied by "no bit ever differs" (it still requires
+        // `v.observed`, which stays genuinely true). Reverted (no flags): "4 passed, 4
+        // failed, 14 declined", the FINDING (bit 0, run S1, tick 9: observed colour 17,
+        // page-predicted colour 16, component B) restored.
+    }
+    {
+        RegVerdict v = measureRegister(s0words, S0, baseline, 2);
+        checks.expect(v.observed && v.allGood,
+            "REG-0x12: row $12 ('....MNABOPCDQREF', p.302) -- same method as REG-0x11, "
+            "register COLOR18/$12, slot-A colour 18 (bits 11-10/7-6/3-2), slot-B colour 16 "
+            "(bits 9-8/5-4/1-0). " + regVerdictDetail(v) + " " + std::string(kRegIds[2]) + " .");
+        checks.note("REG-0x12: " + regVerdictDetail(v));
+        // MUTATION REG-0x12 none impossible: already red at baseline (bit 0, run S2,
+        // tick 9: observed colour 18, page-predicted colour 16, component B -- the same
+        // FINDING as REG-0x11: NanoMig shows the whole register, not just slot A, so
+        // slot-B/colour-16 bits move the on-screen colour-18 pixel too). No stimulus
+        // this Harness can present makes every observed difference land on its own
+        // predicted colour; there is nothing green here to break. The comparator's own
+        // non-vacuousness is already demonstrated directly on REG-0x11 (identical code
+        // path, measureRegister()).
+    }
+    {
+        RegVerdict v = measureRegister(s0words, S0, baseline, 3);
+        checks.expect(v.observed && v.allGood,
+            "REG-0x13: row $13 ('....STABUVCDWXEF', p.302) -- same method as REG-0x11, "
+            "register COLOR19/$13, slot-A colour 19 (bits 11-10/7-6/3-2), slot-B colour 16 "
+            "(bits 9-8/5-4/1-0). " + regVerdictDetail(v) + " " + std::string(kRegIds[3]) + " .");
+        checks.note("REG-0x13: " + regVerdictDetail(v));
+        // MUTATION REG-0x13 none impossible: already red at baseline (bit 0, run S3,
+        // tick 9: observed colour 19, page-predicted colour 16, component B -- the same
+        // FINDING as REG-0x11/REG-0x12). No stimulus this Harness can present makes
+        // every observed difference land on its own predicted colour; there is nothing
+        // green here to break. The comparator's own non-vacuousness is already
+        // demonstrated directly on REG-0x11 (identical code path, measureRegister()).
+    }
+
+    // REG-0x14 .. REG-0x1F: an unattached sprite 0's own value never exceeds 3, so its
+    // combined index never reaches offset 4-15 on this boundary at all -- measured, not
+    // assumed: every one of these registers' twelve bits is put through the identical
+    // per-bit sweep as REG-0x11-0x13 above, and every run's trace is confirmed to match
+    // its own unmutated baseline before being declined.
+    for (int n = 4; n <= 15; ++n) {
+        RegVerdict v = measureRegister(s0words, S0, baseline, n);
+        checks.note(std::string("REG-0x") + kRows[n].hex + ": " + regVerdictDetail(v));
+        checks.decline(
+            std::string("REG-0x") + kRows[n].hex + ": row $" + kRows[n].hex + " ('" +
+            kRows[n].symbols + "', p.302) -- measured above: none of the five runs (an "
+            "unattached sprite 0 alone, own value never exceeding 3) ever selects combined "
+            "index " + std::to_string(n) + ", so no bit of this register was ever observed "
+            "to move any displayed pixel. The page does not say which register, or which "
+            "half of it, a sprite pixel reads, and no page describes how an unattached "
+            "sprite's own successive values pair into an index above 3 -- declined, not "
+            "assumed unreachable. " + std::string(kRegIds[n]) + " .");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed, "
