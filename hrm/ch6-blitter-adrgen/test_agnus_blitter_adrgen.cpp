@@ -65,8 +65,8 @@
 // 6-appa-registers.c109 (p.270, "BLTxPTL    052      W       A     Blitter
 // pointer to x (low 15 bits)") and ch6-appa-bltxpt.c5 (p.270, the same
 // register-table row, restated as "BLTxPTL holds the low 15 bits of the
-// blitter pointer") were routed to this package in the 2026-09-25 unit
-// backlog: BLTxPTL, the low word of a channel's pointer register, is a
+// blitter pointer") are routed to this package:
+// BLTxPTL, the low word of a channel's pointer register, is a
 // 15-bit field, not a 16-bit one - the register table's parenthetical beside
 // BLTxPTL's own entry, the same table whose BLTxPTH row carries the "(high 5
 // bits)"/"(high 3 bits)" wording ECS-FIVE-BIT-PTH already measures for the
@@ -80,9 +80,9 @@
 // already touch this register but only at two arbitrary bit positions plus
 // bit 0, and only on channel A; PTR-FIFTEEN-BIT-PTL is the dedicated,
 // exhaustive-width check, the same rigor ECS-FIVE-BIT-PTH already applies to
-// BLTxPTH's high word, run through CHA, CHB, CHC and CHD in turn (repaired
-// from an earlier form that checked channel A alone, one register of four,
-// though the claim's own text names all four).
+// BLTxPTH's high word, run through all four channels -- CHA, CHB, CHC and
+// CHD -- matching the claim's own text, which names all four, not channel A
+// alone.
 //
 // CLAIM COVERAGE, for claims of the 92 with no assertion of their own:
 //   6-dma-channels.c56 (p.172, "16-bit modulo register called BLTxMOD") is a
@@ -183,8 +183,8 @@
 // MUTATION PTR-FIFTEEN-BIT-PTL stimulus red: the first BLTAPTL stimulus,
 //   0xFFFE (all fifteen bits set), changed to 0x0000 (all fifteen bits
 //   clear) -> PTR-FIFTEEN-BIT-PTL FAIL, got 0x0000 instead of the expected
-//   0x7FFF; every other assertion PASS. Re-run after the repair extended
-//   the same assertion to BLTBPTL/BLTCPTL/BLTDPTL: identical
+//   0x7FFF; every other assertion PASS. Re-run after the assertion was
+//   extended to BLTBPTL/BLTCPTL/BLTDPTL: identical
 //   result, same single FAIL, same channel-A got/expected values.
 
 #include <cstdint>
