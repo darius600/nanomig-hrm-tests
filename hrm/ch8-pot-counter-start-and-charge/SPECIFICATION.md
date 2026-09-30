@@ -185,10 +185,9 @@ already in the claims file; it is not reopened here.
 - Assert: identical measurement basis to G6 (same reset-interval count), graded against the
   figure's precise "eight" rather than the body text's "seven or eight" — a tighter form of
   the same claim, not a fourth conflicting source.
-- **Repaired 2026-09-15**: the built package originally shared G6's exact 7-or-8 predicate
-  with this pair too, so it wrongly accepted 7 where the figure specifically says eight.
-  Now graded against exactly `completed_reset_lines == 8` (see G6's repair note for the same
-  off-by-one fix to the underlying quantity).
+- Graded against exactly `completed_reset_lines == 8`, not G6's 7-or-8 predicate: that looser
+  form would wrongly accept 7, where the figure specifically says eight. See G6's own repair
+  note for the same off-by-one fix to the underlying quantity.
 
 ## G12 — Figure 8-5: every counter stops at the same threshold (p.235, figure)
 - `opus:8-fig8-5.c2`, `sol:8-fig8-5.c3`
