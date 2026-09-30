@@ -12,7 +12,7 @@
 | **Chapter** | 6 — Blitter, printed p. 172; Appendix A, printed p. 270; Appendix C, printed p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red, on one measurement: `BLTXPTH-WIDTH-REGARDLESS-OF-ECS` expects the two chipsets to differ, `BLTXPTH-3-BIT-OCS-5-BIT-ECS-RANGE` expects the direction as well — three bits at `ecs = 0`, five at `ecs = 1`. `BLTCON0L-GATED-BY-ECS`, the same write-and-compare against a register the RTL does gate, is green in the same run |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision |
-| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-024](NM-HRM-024.md) (audio) — the same decision in two other engines |
+| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-024](NM-HRM-024.md) (audio) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
 
 ---
 

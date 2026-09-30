@@ -7,12 +7,12 @@
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, and **only together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md)** — see *Suggested change* |
+| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, and **only together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and [NM-HRM-088](NM-HRM-088.md)** — see *Suggested change* |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper) — assertions `P4` and `P5` |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 2 red. Two greens on the same page's other half (`P2`, `P3`) pass in the same run |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1621-1623`) mask the address the DMA drives, by Agnus revision. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Here Copperline's has a test naming DSKPT explicitly |
-| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) — **this is the fourth sighting of the same cause.** And [NM-HRM-014](NM-HRM-014.md), on the manual's own inconsistency about this extension |
+| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) — **this is the fourth sighting of the same cause**, and [NM-HRM-088](NM-HRM-088.md) (bitplane) the fifth. And [NM-HRM-014](NM-HRM-014.md), on the manual's own inconsistency about this extension |
 
 ---
 
@@ -21,7 +21,8 @@
 [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md) establish that the Copper, blitter
 and audio pointers each latch five high bits with no chipset condition. **Their
 reasoning is not repeated here.** What this entry adds is that the disk DMA
-pointer is the fourth instance of the identical construction, and that the count
+pointer is the fourth instance of the identical construction ([NM-HRM-088](NM-HRM-088.md)
+is the fifth, the bitplane pointer at OCS), and that the count
 of affected engines is in fact larger than four.
 
 Every DMA pointer in this Agnus takes its high bits from `data_in[4:0]`,
@@ -157,8 +158,8 @@ already set out the two coherent actions; this finding adds only that the count
 is six pointer sites in six engines, two of which have no chipset input at all:
 
 1. **Model it once, centrally**, the way Copperline does — a mask derived from the
-   Agnus revision and applied to every assembled DMA pointer. That closes four
-   findings with one change. In this RTL it means routing `ecs` into
+   Agnus revision and applied to every assembled DMA pointer. That closes five
+   findings with one change, NM-HRM-088's bitplane pointer included. In this RTL it means routing `ecs` into
    `agnus_diskdma` and `agnus_audiodma`, which today have no such port, or
    masking `address_dsk`/`address_aud` where `agnus.v` already has `ecs` in scope.
 2. **Declare the core ECS-and-later**, making the manual's OCS pointer sentences
@@ -194,8 +195,8 @@ one identically, and for the same reason: it is the same question.
   the DMA drives.
 - **[NM-HRM-014](NM-HRM-014.md) records that the manual applies its own ECS pointer extension
   inconsistently.** If the manual is not self-consistent about how widely the
-  extension reaches, then four findings each quoting one of its sentences are
-  four views of one unsettled question.
+  extension reaches, then the findings each quoting one of its sentences are
+  views of one unsettled question.
 
 ## For the specialists
 

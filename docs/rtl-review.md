@@ -13,7 +13,7 @@ findings, each with what it takes to settle -- a page to re-read, or one
 short change and one package run. This list is sorted by module, not by
 effort.
 
-**49 findings ask for a review, in 28 modules.** They are listed by the
+**50 findings ask for a review, in 28 modules.** They are listed by the
 module they are about, so a reader who knows one part of the chip set can
 start with their own; a finding about two modules is under both. The
 others ask for no RTL review:
@@ -52,12 +52,13 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | [NM-HRM-033](findings/NM-HRM-033.md) | LOLDIS does not disable the long-line toggle on its own | a test fails against the page |
 | [NM-HRM-087](findings/NM-HRM-087.md) | with BPLCON0 bit 3 set, VPOSR and VHPOSR keep counting: neither a light-pen trigger nor the end of a field freezes them, where pp. 238 and 239 do both | a test fails against the page; the implementations split |
 
-## [`src/minimig-aga/agnus_bitplanedma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v) — 2
+## [`src/minimig-aga/agnus_bitplanedma.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v) — 3
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-007](findings/NM-HRM-007.md) | the hires fetch width cannot reach the manual's maximum of 49 words | a test fails against the page |
 | [NM-HRM-066](findings/NM-HRM-066.md) | DDFSTRT = $0030 disables sprite 7 only when enough bitplanes are fetched | a test fails against the page; the implementations split |
+| [NM-HRM-088](findings/NM-HRM-088.md) | BPLxPTH carries five high bits on OCS, where pp. 272 and 291 give it three | a test fails against the page |
 
 ## [`src/minimig-aga/agnus_blitter.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v) — 3
 

@@ -1,6 +1,6 @@
 # Findings
 
-**47 of the 69 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
+**48 of the 70 HRM findings ask you to decide whether the RTL should change.** Their titles end in **[RTL review]**, and [`rtl-review.md`](rtl-review.md) lists them, with the AA register's, by the module they are about. **The table is below the explanation — jump to [The register](#the-register).** The AA specification has a register of its own: [The AA register](#the-aa-register).
 
 > **One page per finding lives in [`findings/`](findings/).** Each starts
 > with the same header table and says what the printed page says, what NanoMig
@@ -138,7 +138,7 @@ never disagree. Eight values occur:
 
 ### If you have one evening
 
-**If you have one evening: 47 of these 69 ask you to decide something.** The
+**If you have one evening: 48 of these 70 ask you to decide something.** The
 rest are answered, or observations kept for context. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
@@ -227,6 +227,7 @@ A2000 and B2000 schematics all side with p. 326 against p. 137.
 | [NM-HRM-085](findings/NM-HRM-085.md) | a configured Zorro II memory board answers across the whole 8 MB Zorro II space, not only at the base software wrote to it | open · RTL · **red** | `integration/appK-autoconfig` · `P3-NOTOTHER`, `P3-BASE` (`sol:K-0837`, `opus:K-0869`, `opus:K-0014`, `sol:K-0008`) on fx68k and TG68K; their two green controls on the same comparator, `P3-NOTOTHER/P3-BASE control`, green on both | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline take the base from the byte written to register 48 and map a Zorro II memory board from that base, for its own size and nowhere else; MiSTer and TC64, descendants, select $200000–$9FFFFF once the board is configured, whatever was written, as NanoMig does |
 | [NM-HRM-086](findings/NM-HRM-086.md) | CIA-B has no serial port: in output mode a byte written to its SDR never sets the ICR's SP bit, where pp. 339, 345 and 348 give both 8520s one | open · RTL · **red** | `integration/appF-cia-system` · `P7.6-CIAB` on fx68k and TG68K; its green control `P7.6-CIAB-GREENCTL` (`NMH_MUTATE=P76CIAB-GREENCTL`) runs the same program on CIA-A and is green on both | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline run one CIA model for both chips, and on CIA-B shift a byte written to SDR in output mode out on timer A's underflows and set ICR bit 3 when it is out; WinUAE, vAmiga and Denise take two underflows a bit, as p. 345 does, Copperline one. MiSTer and TC64, descendants, tie CIA-B's serial interrupt to 0 as NanoMig does |
 | [NM-HRM-087](findings/NM-HRM-087.md) | with BPLCON0 bit 3 set, VPOSR and VHPOSR keep counting: neither a light-pen trigger nor the end of a field freezes them, where pp. 238 and 239 do both | open · RTL · **red**, contested | `integration/ch8-light-pen-beam` · `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P10(a)`, `P11`, `P12` in OCS/PAL and OCS/NTSC on fx68k and TG68K; recorded, not graded, in ECS/PAL and ECS/NTSC | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field; vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY; none of the four takes the trigger from a joystick's fire line. MiSTer and TC64, descendants, read the running counter as NanoMig does |
+| [NM-HRM-088](findings/NM-HRM-088.md) | BPLxPTH carries five high bits on OCS, where pp. 272 and 291 give it three | open · RTL · **red** | `hrm/ch3-bitplane-pointers-and-modulo` · `BPLXPTH-OCS-HIGH-THREE-BITS`; its control `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL`, green | **three of the four narrow by chipset, as for NM-HRM-003, NM-HRM-022, NM-HRM-024 and NM-HRM-043**: Copperline masks the stored bitplane pointer by Agnus revision and names it in a test; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the bitplane fetch drives; Denise masks to the installed chip RAM only. MiSTer and TC64, descendants, carry NanoMig's five bits |
 
 Chapter 1 contributes NM-HRM-060 and NM-HRM-061, and Appendix F NM-HRM-062
 and NM-HRM-063. Appendix K contributes NM-HRM-064 and NM-HRM-065, both from
@@ -249,6 +250,10 @@ both cores. Six more are measured by integration packages alone:
   inherited from MiSTer as well;
 - NM-HRM-086, from Appendix F, by Appendix F's CIA system package;
 - NM-HRM-087, from chapter 8, by chapter 8's light-pen package.
+
+Chapter 3 contributes NM-HRM-088 as well, measured in chapter 3's bitplane
+pointer package: the bitplane pointer's OCS width, the fifth engine with the
+cause NM-HRM-003, NM-HRM-022, NM-HRM-024 and NM-HRM-043 record.
 
 Appendix F also contributes NM-HRM-074, NM-HRM-075, NM-HRM-077 and NM-HRM-078,
 and Appendices E and H NM-HRM-080. Chapter 5 contributes NM-HRM-084, measured by

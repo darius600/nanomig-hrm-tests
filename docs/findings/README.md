@@ -2,16 +2,16 @@
 
 A reference for developers, not a narrative.
 
-**Sixty-nine of these pages are filed against the Hardware Reference
+**Seventy of these pages are filed against the Hardware Reference
 Manual, 3rd edition (1991), and five against the AA specification (1991).** The AA group (NM-AA-001 to
 NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The fourteen
 withdrawn findings are kept apart, with their own list, in
 [`withdrawn/`](withdrawn/README.md). The header table is the same on all
-eighty-eight.
+eighty-nine.
 
 **What every page has, in the same place: the header table.** These seven fields
-are on all 88 pages, and the first four answer *what am I being asked to do*
+are on all 89 pages, and the first four answer *what am I being asked to do*
 before any prose is read:
 
 | field | values |
@@ -33,15 +33,15 @@ include pages without one of the three:
 
 | field | on | what it holds, or what its absence means |
 |---|---|---|
-| **Verdict of the four** | 82 of 88 | what the four independent implementations do; absent only on withdrawn pages |
-| **Report to** | 74 of 88 | who can act on the finding, or *nobody*; absent only on withdrawn pages |
-| **Assertions** | 78 of 88 | the red assertions by name with the package's count, or *none* and what the package records instead; absent only on withdrawn pages |
-| **See also** | 23 | optional: no sibling finding bears on it |
+| **Verdict of the four** | 83 of 89 | what the four independent implementations do; absent only on withdrawn pages |
+| **Report to** | 75 of 88 | who can act on the finding, or *nobody*; absent only on withdrawn pages |
+| **Assertions** | 79 of 88 | the red assertions by name with the package's count, or *none* and what the package records instead; absent only on withdrawn pages |
+| **See also** | 24 | optional: no sibling finding bears on it |
 | **Error class** | 12 | withdrawn pages only: it is not one of the recurring shapes |
 | **Boundary** | 2 | optional: no edge case was isolated |
 | **Provenance**, **Origin** | 1 each | optional one-offs, kept because the page needed them |
 
-Counted across all 88, the withdrawn ones included.
+Counted across all 89, the withdrawn ones included.
 
 **A title that ends in [RTL review]** marks a page whose header says three
 things: `open`, filed against `the RTL`, and a test that fails against the page. That page asks an

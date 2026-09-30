@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | none |
-| **What is asked of a reader** | No RTL change follows from this. Appendix C p. 309 lists the pointer registers that gain two high bits under ECS and leaves out BPLxPTH and SPRxPTH, and Appendices A and B print both "(high 3 bits)" without the `(E)` mark; chapter 1 gives the ECS Agnus one or two megabytes of Chip memory and puts bitplanes and sprite lists anywhere in it. NanoMig's five high bits follow chapter 1, and all four implementations give these two pointers the reach they give every other DMA pointer. The question is whether Appendix C's list is complete. At OCS every page gives the bitplane pointer three high bits; NanoMig's five there are the construction [NM-HRM-043](NM-HRM-043.md) records, and no assertion grades them. |
+| **What is asked of a reader** | No RTL change follows from this. Appendix C p. 309 lists the pointer registers that gain two high bits under ECS and leaves out BPLxPTH and SPRxPTH, and Appendices A and B print both "(high 3 bits)" without the `(E)` mark; chapter 1 gives the ECS Agnus one or two megabytes of Chip memory and puts bitplanes and sprite lists anywhere in it. NanoMig's five high bits follow chapter 1, and all four implementations give these two pointers the reach they give every other DMA pointer. The question is whether Appendix C's list is complete. At OCS every page gives the bitplane pointer three high bits; NanoMig's five there are the construction [NM-HRM-043](NM-HRM-043.md) records, graded red for the bitplane pointer as [NM-HRM-088](NM-HRM-088.md). |
 | **Module** | — |
 | **Report to** | **nobody.** There is no repository that can fix a disagreement between printed pages |
 | **Test** | [`hrm/ch3-register-map-agnus`](../../hrm/ch3-register-map-agnus) — recorded as a `note()`, not an assertion |
@@ -162,8 +162,9 @@ passing, since `POINTER-PAIR-IS-ONE-ADDRESS` fetches bit 20 at `ecs` = 1, so an
 assertion of three high bits at `ecs` = 1 would contradict it, and no
 implementation could make both green.
 
-**The OCS half can, for the bitplane pointer, and nothing grades it.** At
-`ecs` = 0 every page gives its high word three bits, and NanoMig keeps five.
+**The OCS half can, for the bitplane pointer, and it is graded.** At
+`ecs` = 0 every page gives its high word three bits, and NanoMig keeps five:
+`BPLXPTH-OCS-HIGH-THREE-BITS` is red, and [NM-HRM-088](NM-HRM-088.md) files it.
 That is the cause [NM-HRM-043](NM-HRM-043.md) records, not this entry's
 question. The sprite pointer's OCS width is not settled the same way: p. 127's
 "32-bit word address" stands against the three bits of pp. 110, 285 and 291.

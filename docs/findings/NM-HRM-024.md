@@ -12,7 +12,7 @@
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 1 red: `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` in `hrm/ch5-audio-location-pointer` |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision |
-| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-022](NM-HRM-022.md) (blitter) — the same decision in two other engines |
+| **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
 
 ---
 
