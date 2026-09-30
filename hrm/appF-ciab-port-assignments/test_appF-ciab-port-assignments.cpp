@@ -117,17 +117,20 @@
 //   (see the header's RTL-facts block: cia_int.v's icr[4]<=icr[4]|flag is a
 //   level-sensitive OR with no edge detector, so step 3 stays SET while
 //   flag is held instead of clearing) -- a failing assertion cannot be made
-//   to fail harder. Substituted the paired CONTROL below (same
-//   read_icr_clocked() channel and timing, same bit4-SET-after-transition /
-//   bit4-CLEAR-after-hold comparator shape, flag returned to 0 before the
-//   first read instead of held across it) -> PASS (measured: bit 4 read SET
-//   after the transition, then CLEAR after the hold), proving the
-//   comparator is not vacuous. RUN: 7 passed, 3 failed (baseline unchanged;
-//   the control is not itself graded, so this substitution moves nothing in
-//   the pass/fail totals). A stimulus that omits the transition entirely
-//   also moves this assertion's OWN step-2 clause to FAIL (step 2's clocked
-//   read then comes back 0x00 where the unmutated comparator expects SET),
-//   confirming that clause is live too.
+//   to fail harder. Substituted a guarded flag inside prop_flag_edge_polarity()
+//   itself (drop_flag_before_step2_read=true: the transition still happens,
+//   but flag returns to 0 before step 2's read instead of being held across
+//   it), graded through the SAME, unmodified return expression the real
+//   assertion uses -- including its bit-7 clause, which the withdrawn
+//   record's separate control_flag_low_before_read() function never checked
+//   -> the assertion's OWN return value comes back PASS (measured: bit 4 SET
+//   after the transition, then CLEAR after the hold, bit 7 CLEAR with it),
+//   proving the comparator is not vacuous. RUN: 7 passed, 3 failed (baseline
+//   unchanged; the control call is note()'d, not itself graded, so this
+//   substitution moves nothing in the pass/fail totals). A stimulus that
+//   omits the transition entirely also moves this assertion's OWN step-2
+//   clause to FAIL (step 2's clocked read then comes back 0x00 where the
+//   unmutated comparator expects SET), confirming that clause is live too.
 // MUTATION sol:F-ciab-map.c23 stimulus red: PROP-DDRA-POSITION's stimulus
 //   skips the DDRA=0xFF write (leaves DDRA=0, input mode) while still
 //   writing PRA=0xC0 then 0x00 -> FAIL, porta_out read pulled-high (0x3)
@@ -467,52 +470,38 @@ bool prop_flag_exists(Harness& h, bool omit_drive_bug) {
 // SET) must go RED -- proving that clause actually requires a real
 // negative transition to pass, not merely a read of whatever ICR already
 // holds.
+//
+// `drop_flag_before_step2_read`, when true, is the GREEN CONTROL, run
+// through this SAME, otherwise-unchanged function: the transition still
+// happens (flag 0->1), but flag is returned to 0 -- a guarded flag,
+// cleared right here -- before step 2's clocked read, so nothing is held
+// across it. With flag back at 0, a level-sensitive read and an
+// edge-sensitive read agree: bit 4 must read SET after the transition,
+// then CLEAR after the hold, and bit 7 with it, regardless of
+// implementation. This isolates step 3 of the graded assertion: a set bit
+// surviving THAT read is specifically the held level surviving the read,
+// and nothing else. Graded through the identical return expression the
+// real assertion uses, including its bit-7 clause -- not a separate
+// function with its own, narrower comparator.
 // ---------------------------------------------------------------------
-bool prop_flag_edge_polarity(Harness& h, bool omit_transition_bug) {
+bool prop_flag_edge_polarity(Harness& h, bool omit_transition_bug,
+                              bool drop_flag_before_step2_read = false) {
     h.set_flag(false);
     h.write_reg(RS_ICR, 0x90);  // set-mode (bit7=1), mask bit 4 (FLG); icr[4] is 0 post-reset.
 
     if (!omit_transition_bug) h.set_flag(true);  // the negative transition: 0->1 on flag = INDEX* active.
     for (int i = 0; i < 3; ++i) h.tick();
+    if (drop_flag_before_step2_read) h.set_flag(false);  // guarded flag: returned to 0 before this read.
     const uint8_t r_step2 = h.read_icr_clocked();
     const bool bit4_set_after_transition = (r_step2 & 0x10) == 0x10;
 
-    for (int i = 0; i < 5; ++i) h.tick();  // flag held; no further transition.
+    for (int i = 0; i < 5; ++i) h.tick();  // flag held (or already low); no further transition.
     const uint8_t r_step3 = h.read_icr_clocked();
     const bool bit4_clear_after_hold = (r_step3 & 0x10) == 0x00;
     const bool bit7_clear_after_hold = (r_step3 & 0x80) == 0x00;
 
     h.set_flag(false);
     return bit4_set_after_transition && bit4_clear_after_hold && bit7_clear_after_hold;
-}
-
-// ---------------------------------------------------------------------
-// Control for PROP-FLAG-EDGE-POLARITY, same channel and timing: the
-// identical three steps, but `flag` is returned to 0 before the first
-// clocked read, so nothing is held across it. Bit 4 must read SET after
-// the transition, then CLEAR after the hold, regardless of implementation
-// -- with `flag` back at 0, a level-sensitive read and an edge-sensitive
-// read agree. This isolates step 3 of the graded assertion above: a set
-// bit surviving that read is specifically the held level surviving the
-// read, and nothing else. Not itself a distinct page claim -- note()'d,
-// not graded, no uid, unmutated (matching FIXTURE-LIVE's own convention
-// above).
-// ---------------------------------------------------------------------
-bool control_flag_low_before_read(Harness& h) {
-    h.set_flag(false);
-    h.write_reg(RS_ICR, 0x90);
-
-    h.set_flag(true);
-    for (int i = 0; i < 3; ++i) h.tick();
-    h.set_flag(false);  // returned to 0 before the first read.
-    const uint8_t r_set = h.read_icr_clocked();
-    const bool bit4_set = (r_set & 0x10) == 0x10;
-
-    for (int i = 0; i < 5; ++i) h.tick();
-    const uint8_t r_clear = h.read_icr_clocked();
-    const bool bit4_clear = (r_clear & 0x10) == 0x00;
-
-    return bit4_set && bit4_clear;
 }
 
 // ---------------------------------------------------------------------
@@ -749,10 +738,12 @@ int main(int argc, char** argv) {
             "See the paired control below, same channel and timing, flag returned to 0 before the first "
             "read [p.341, p.346, p.245, p.334, p.379] sol:F-handshake.c7 opus:F-handshake.c6");
         Harness hc;
-        const bool ctrl = control_flag_low_before_read(hc);
-        checks.note(std::string("CONTROL (PROP-FLAG-EDGE-POLARITY, same channel and timing): the "
-            "identical three steps, but flag is returned to 0 before the first read -- bit 4 read SET "
-            "after the transition, then CLEAR after the hold -- ") + (ctrl ? "PASS" : "FAIL") +
+        const bool ctrl = prop_flag_edge_polarity(hc, /*omit_transition_bug=*/false,
+                                                   /*drop_flag_before_step2_read=*/true);
+        checks.note(std::string("CONTROL (PROP-FLAG-EDGE-POLARITY, same channel and timing, same "
+            "return expression -- including the bit-7 clause, unlike the withdrawn control function "
+            "this replaces): the identical three steps, but flag is returned to 0 before the first "
+            "read -- ") + (ctrl ? "PASS" : "FAIL") +
             " -- proving the read genuinely clears ICR on this fixture when nothing holds flag across "
             "it, so a set bit surviving the graded assertion's step 3 is the held level and nothing "
             "else; not itself a distinct page claim, not graded, no uid [no page -- infrastructure "
