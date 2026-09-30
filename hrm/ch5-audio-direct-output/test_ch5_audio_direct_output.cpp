@@ -451,10 +451,10 @@ static TimelineResult run_timeline(const TimelineParams& p) {
         // write itself is issued, but this harness only records a Sample on
         // a cck-tagged tick() call, and the pulse's own cck-tagged sample
         // can land a few raw ticks AFTER write_reg() has already returned.
-        // Searching immediately (the first version of this file did) finds
-        // nothing and silently reports have_word1=false even though entry
-        // demonstrably happens (confirmed by dumping the raw trace: t=80
-        // audxdat=1/audxir=1 in state 0, t=88 state=2 sample=0xa5).
+        // Searching immediately would find nothing and silently report
+        // have_word1=false even though entry demonstrably happens
+        // (confirmed by dumping the raw trace: t=80 audxdat=1/audxir=1 in
+        // state 0, t=88 state=2 sample=0xa5).
         for (int i = 0; i < 16; i++) h.tick();
         size_t idx = idxAtOrAfter(h, before, isAudxdat);
         if (idx != (size_t)-1) { r.have_word1 = true; r.word1_pulse_idx = idx; }
