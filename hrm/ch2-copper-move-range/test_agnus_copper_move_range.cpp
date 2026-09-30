@@ -102,7 +102,7 @@
 // MUTATION T14 stimulus red: changed the third probe's target register from COPCON to COPCON_NEIGHBOR_LOW (same value 0x0002, same BLTCON0 target) -> FAIL as expected (the "positive" case no longer touches the real COPCON address).
 // MUTATION T15 stimulus red: changed install_wait_then_move's v_target from 5 to 200, unreachable within the run window -> FAIL as expected (the WAIT never completes, so neither MOVE fires).
 // MUTATION T15 stimulus red: changed the second MOVE's target from DDFSTOP to DDFSTRT (duplicate register, same data) -> FAIL as expected (DDFSTOP itself never receives a write, so saw_move(DDFSTOP, 0x00D0) is false).
-// MUTATION T16 stimulus green: flipped cdang argument false->true on both move_reaches() calls (still ecs=1) -> PASS as expected (ECS+CDANG=1 opens $000-$1FE, per T10); confirms the harness registers writes at $03E and $07E when the RTL genuinely allows them, so T16's baseline FAIL is a real gap, not a broken fixture.
+// MUTATION T16 stimulus green: flipped cdang argument false->true on the DSKSYNC move_reaches() call (still ecs=1) -> PASS as expected (ECS+CDANG=1 opens $000-$1FE, per T10); confirms the harness registers a write at $07E when the RTL genuinely allows it, so T16's baseline FAIL is a real gap, not a broken fixture.
 
 #include <cstdint>
 #include <functional>
@@ -534,12 +534,32 @@ int main(int argc, char** argv) {
     // T16 - Appendix C p.310, ch2-appc-ecs.c21: "If this bit is clear, the
     // Copper can access the address range from $DFF03E through $DFF07E" -
     // the claim is the whole range, not the single $040 constant T9 above
-    // probes. This probes both of the range's own printed ends directly.
-    // T16 is expected RED for the same reason as T9 (NM-HRM-004): the RTL's
-    // ECS/CDANG=0 gate opens only at $080 and above, so neither end of the
-    // claimed range is reached.
-    checks.expect(move_reaches(true, false, RANGE_FLOOR_03E) && move_reaches(true, false, DSKSYNC),
-                  "T16 ECS CDANG=0: MOVE reaches both range ends, $03E and $07E (Appendix C "
+    // probes. This probes the range's high end directly. T16 is expected
+    // RED for the same reason as T9 (NM-HRM-004): the RTL's ECS/CDANG=0
+    // gate opens only at $080 and above, so the claimed range's own end is
+    // not reached.
+    //
+    // $03E, an open point: p.310's own sentence reads two ways at exactly
+    // this address -- the literal "$DFF03E through $DFF07E" admits it, and
+    // "the same range as when the danger bit is set in the standard chip
+    // set" (Reading B's own floor, $040) does not. T16 therefore grades
+    // only the range's high end, $07E, which both readings agree on; $03E
+    // is recorded below instead, with both readings and what this build
+    // measures there.
+    {
+        const bool reaches_03e = move_reaches(true, false, RANGE_FLOOR_03E);
+        checks.record(
+            "T16-03E ECS CDANG=0, byte $03E: p.310's own sentence reads two ways here -- "
+            "the literal \"$DFF03E through $DFF07E\" admits it; \"the same range as when "
+            "the danger bit is set in the standard chip set\" (Reading B's own floor, "
+            "$040) does not. MEASURED: MOVE " +
+            std::string(reaches_03e ? "reaches" : "does not reach") +
+            " $03E on this build. Not graded either way here (half graded: "
+            "ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13, graded below "
+            "for the range's $07E half).");
+    }
+    checks.expect(move_reaches(true, false, DSKSYNC),
+                  "T16 ECS CDANG=0: MOVE reaches the range's high end, $07E (Appendix C "
                   "p.310) [NM-HRM-004, expected red] "
                   "[claims: ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13]");
 
@@ -607,9 +627,10 @@ int main(int argc, char** argv) {
         "bundled. T3-T7 above probe BLTCON0 ($040) and DSKSYNC ($07E) and COPCON "
         "($02E) under OCS+CDANG=1, but never probe $03E itself under OCS - so a RTL "
         "that actually gates the OCS+CDANG=1 range at $040, not $03E, would pass "
-        "every assertion here unchanged. T16 now probes $03E, but only in ECS mode "
-        "(ch2-appc-ecs.c21 and its sol twins COP2-copcon-ecs.c12/.c13, which T16 now "
-        "grades) - the OCS+CDANG=1 floor stays untested. See agnus_copper_move_sweep, "
+        "every assertion here unchanged. T16 now measures $03E, but only in ECS mode "
+        "and only as a record (ch2-appc-ecs.c21 and its sol twins "
+        "COP2-copcon-ecs.c12/.c13 read two ways at that address, see T16-03E above) "
+        "- the OCS+CDANG=1 floor stays untested. See agnus_copper_move_sweep, "
         "which uses the same $040 floor under the name \"Reading B\" rather than "
         "$03E, and whose own ecs=0/cdang=1 sweep has the identical gap. "
         "ch2-appb-table.c1 (the Appendix B \"*\" legend, $000-$03E never writable) "
