@@ -73,25 +73,26 @@
 //   VSTOP-VSTART, the 9-bit split) follows from claims.jsonl's quotations
 //   alone, not from the RTL.
 //
-//   AFTER the spec above was committed, agnus_spritedma.v was opened to
-//   build this package (WSL/Verilator), which surfaced two harness bugs --
-//   fixed here, with no assertion's expected value touched:
-//   (1) the sibling-reused port set was complete and every port name
-//   compiled clean on the first try, but this file's first draft presented
+//   The spec above was committed before agnus_spritedma.v was opened;
+//   agnus_spritedma.v was then opened to build this package
+//   (WSL/Verilator). No assertion's expected value depends on either of
+//   the following two RTL properties, but this file's own harness code
+//   accounts for both of them:
+//   (1) the sibling-reused port set is complete, but presenting
 //   a granted cycle's word only on data_in, leaving reg_address_in at its
-//   idle value -- so nothing ever actually landed in a register (every
-//   assertion but the pure-ordering A1 read back empty). The RTL's
+//   idle value, leaves nothing actually landed in a register (every
+//   assertion but the pure-ordering A1 would read back empty). The RTL's
 //   SPRxPOS/SPRxCTL write path (agnus_spritedma.v:205,220) is gated on
 //   reg_address_in matching, not on ackdma -- a real shared CPU/DMA
 //   register-write bus, exactly the shape hrm/ch3-sprite-registers/ already
-//   documented for denise_sprites' own register writes. Fixed by mirroring
+//   documented for denise_sprites' own register writes. This file mirrors
 //   the granted reg_address_out back onto reg_address_in alongside data_in
 //   (Harness::run()'s own comment). (2) that same read (agnus_spritedma.v:
-//   286-296) showed reqdma is raised by "vblend || (sprvstop && ~vbl)", not
+//   286-296) shows reqdma is raised by "vblend || (sprvstop && ~vbl)", not
 //   vblend alone, and that the module multiplexes all eight sprite channels
 //   internally (register blocks SPR0.. through SPR7.., each requesting its
-//   own control pair) -- see A7's own comment and the Dc CORRECTION above
-//   for what that changed.
+//   own control pair) -- see A7's own comment and the Dc note above
+//   for what that means.
 //
 // MEASUREMENT BASIS: each assertion below builds a fresh Harness (fresh
 //   DUT, fresh reset) and sweeps vpos over a line range and hpos over
@@ -195,10 +196,10 @@
 //     CH4-p114.c3, CH4-p114.c4, CH4-p127.c4, CH4-p127.c6, CH4-p97.c3,
 //     CH4-ptr.c3, CH4-ptr.c4, CH4-ptrs.c1, CH4-ptrs.c10, CH4-ptrs.c11,
 //     CH4-ptrs.c5, CH4-ptrs.c6, CH4-ptrs.c7, CH4-ptrs.c8, CH4-ptrs.c9,
-//     CH4-regs.c1, CH4-regs.c3 -- declined when this spec was written and
-//     committed (a single-instance fixture, which is all a pre-RTL reading
-//     of the claims gave any reason to expect, cannot observe "eight
-//     channels exist"). CORRECTION, after the RTL was opened per ORDER OF
+//     CH4-regs.c1, CH4-regs.c3 -- declined at the spec stage (a
+//     single-instance fixture, which is all a pre-RTL reading
+//     of the claims gives any reason to expect, cannot observe "eight
+//     channels exist"). NOTE, per ORDER OF
 //     WORK: agnus_spritedma is in fact not single-channel -- it multiplexes
 //     all eight sprite channels internally, at register blocks SPR0.. (word
 //     addresses 0xA0-0xA3) through SPR7.. (0xBC-0xBF), each independently
@@ -206,17 +207,16 @@
 //     shows exactly this: 16 grants on the first active line, eight
 //     POS-then-CTL pairs). That makes CH4-more.c6/CH4-p114.c3 ("all eight
 //     sprite pointers must be initialised") and the SPR0..SPR7 naming
-//     convention structurally observable after all. No new assertion was
+//     convention structurally observable after all. No new assertion is
 //     added for them here -- per the build brief's own gate, a claim's
 //     testability is judged when the spec is written, and re-opening the
 //     claim list after reading the RTL to add a newly-possible assertion is
 //     exactly the RTL-shapes-the-spec ordering that gate forbids. Recorded
 //     here, not acted on; the 23 ids remain uncited. "The other seven
 //     register sets are the same except for the name" (CH4-p127.c6,
-//     CH4-regs.c3) is not covered by this correction -- this package never
+//     CH4-regs.c3) is not covered by this note -- this package never
 //     compared channel 1-7's own behaviour against channel 0's, so that
-//     specific claim is still genuinely undecided by this file, correction
-//     or not.
+//     specific claim is still genuinely undecided by this file.
 //   Dw SPRITE-PIXEL-WIDTH-AND-UNLIMITED-HEIGHT (4 ids) -- CH4-forming.c2,
 //     CH4-intro.c8, CH4-p97.c5, CH4-p98.c2 -- pixel width is Denise's
 //     domain, not this DMA channel's; "unlimited" is not falsifiable by any
@@ -253,28 +253,28 @@
 //   VSTOP-reset-value coincidence) -- not a fresh RTL read for these ids.
 //
 //   B1  EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED (3 ids) --
-//     CH4-p97.c3, CH4-p127.c4, CH4-regs.c1. Previously declined in Dc as
+//     CH4-p97.c3, CH4-p127.c4, CH4-regs.c1. Declined in Dc as
 //     unobservable from a (wrongly assumed) single-channel fixture; Dc's own
-//     CORRECTION already found the fixture is not single-channel. Tests:
+//     note already found the fixture is not single-channel. Tests:
 //     given its own pointer (SPRxPTH/SPRxPTL) and the same fed VSTART/VSTOP,
 //     each of the eight channels fetches POS, CTL, DATA and DATB into its
 //     own four registers -- thirty-two distinct addresses total -- and each
 //     channel's own first control-pair fetch reads back its own,
 //     independently written pointer, rather than the two addresses and one
-//     shared pointer a single-channel design would produce. CH4-intro.c6,
-//     previously carried here too, is withdrawn to record below (Dn): its
+//     shared pointer a single-channel design would produce. CH4-intro.c6
+//     is withdrawn to record below (Dn) rather than counted here: its
 //     restatement bundles "sprites are produced on-screen by them", which
 //     nothing at this module boundary can observe.
 //   B2  OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE (2 ids) --
-//     CH4-p127.c6, CH4-regs.c3. Previously declined in Dc, whose own
-//     CORRECTION named this specific claim "still genuinely undecided."
+//     CH4-p127.c6, CH4-regs.c3. Declined in Dc, whose own
+//     note names this specific claim "still genuinely undecided."
 //     Tests: channels 1 through 7, each fed its own distinct VSTART/VSTOP at
 //     its own register block, all reproduce the same structural fetch
 //     pattern already proven for channel 0 elsewhere in this file
 //     (POS-then-CTL first, height = VSTOP-VSTART) -- all seven, not one.
 //   B3  HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE (4 ids) --
-//     CH4-forming.c2, CH4-intro.c8, CH4-p97.c5, CH4-p98.c2. Previously
-//     declined in Dw as "not falsifiable by any finite sweep" -- true of
+//     CH4-forming.c2, CH4-intro.c8, CH4-p97.c5, CH4-p98.c2.
+//     Declined in Dw as "not falsifiable by any finite sweep" -- true of
 //     literal infinity, but read as the falsifiable engineering claim that
 //     no separate, smaller height cap exists distinct from the VSTOP-VSTART
 //     arithmetic A2 already establishes for a 4-line sprite, it is
@@ -291,9 +291,9 @@
 //     boundary -- see Non-goals, Dx). Withdrawn whole per the bundled-clause
 //     rule rather than kept on B1 with the on-screen half uncovered.
 //   Di  POINTER-INITIALISATION-IS-PROGRAMMER-OBLIGATION-NOT-RTL-BEHAVIOUR
-//     (2 ids) -- CH4-more.c6, CH4-p114.c3. Previously declined in Dc, whose
-//     own CORRECTION flagged these as "structurally observable after all."
-//     Re-examined and declined again, for a DIFFERENT and narrower reason:
+//     (2 ids) -- CH4-more.c6, CH4-p114.c3. Declined in Dc, whose
+//     own note flags these as "structurally observable after all."
+//     Declined here for a DIFFERENT and narrower reason:
 //     each claim's text has two halves -- "each of the eight channels uses
 //     its own pointer" (structurally observable, and already covered
 //     without qualification by B1's own citations above) and "[therefore
@@ -307,9 +307,9 @@
 //     stay off every graded line.
 //   Dm2 RAM-WORD-WIDTH-AND-ADDRESS-DIRECTION, REAFFIRMED (8 ids) --
 //     CH4-build.c1, CH4-build.c2, CH4-p104.c1, CH4-tab41.c1, CH4-fig4-7.c4,
-//     CH4-fig47.f2, CH4-fig4-10.c1, CH4-fig410.f1. Also re-classified
-//     testable and re-examined; the original Dm/Dp reasoning is reaffirmed
-//     for these specific ids, not merely repeated: "16-bit word" is a fact
+//     CH4-fig47.f2, CH4-fig4-10.c1, CH4-fig410.f1. The original Dm/Dp
+//     reasoning applies to these specific ids too, not merely repeated:
+//     "16-bit word" is a fact
 //     about what a programmer writes into RAM, not a behaviour of this
 //     address-sequencing module -- the one port that could speak to bus
 //     width, data_in, is fed by this file's own C++ harness as a 16-bit
@@ -337,9 +337,8 @@
 //   pass -- see ORDER OF WORK above, which binds this addendum exactly as
 //   it bound the original file.
 //
-//   CORRECTION, after ch4-sprite-dma-sequence.jsonl and agnus_spritedma.v
-//   were reopened per ORDER OF WORK: the RTL has a THIRD output port this
-//   package's earlier passes never wired up -- address_out [20:1] (line
+//   NOTE, per ORDER OF WORK: the RTL has a THIRD output port --
+//   address_out [20:1] (line
 //   101), the sprite pointer's own word address, continuously assigned from
 //   the per-channel sprpth/sprptl register banks (lines 188, 200) and
 //   advanced by exactly one word after every granted cycle (newptr, line
@@ -350,53 +349,54 @@
 //   INCREASING-16BIT-WORDS) -- not a fresh proposition invented after
 //   reading the RTL, but the same "contiguous, 16-bit, increasing-address"
 //   reading Dm2's own text above already gave these ids, now testable with
-//   the port found. Separately, B1's own first draft swept only line 0 and
-//   its MUT_B1 (withholding vblend) stayed at 16/16 -- a harness bug, not a
-//   finding: at vpos==0 every channel's reset-value VSTOP (0) coincidentally
+//   the port found. Separately: B1 sweeps line 5, not line 0, because at
+//   vpos==0 every channel's reset-value VSTOP (0) coincidentally
 //   equals vpos, so sprvstop alone (line 286) already drives all sixteen
-//   grants, exactly the coincidence A1's own comment already named. Fixed
-//   by sweeping line 5 instead, matching A1's own choice for the same
-//   reason -- a harness fix, not a change to B1's own expected value (still
+//   grants, exactly the coincidence A1's own comment already names --
+//   sweeping line 0 would leave MUT_B1 (withholding vblend) at 16/16, no
+//   finding. Sweeping line 5 matches A1's own choice for the same
+//   reason and does not change B1's own expected value (still
 //   16 grants, 16 distinct addresses).
 //
-//   Grand total after this correction: Dm2's 8 ids move from declined to
-//   asserted, so 188 + 4(B1) + 2(B2) + 4(B3) + 8(B4) = 206 asserted or
+//   Running total: Dm2's 8 ids count as asserted (moved from declined),
+//   so 188 + 4(B1) + 2(B2) + 4(B3) + 8(B4) = 206 asserted or
 //   measured-and-reported; 44 - 10(B1/B2/B3's own ids) - 8(B4's) = 26
 //   declined (Dc 15, Dw 0, Dm 2, Dp 5, Dx 2, Di 2). 206 + 26 = 232, still
 //   the original total.
 //
-//   CORRECTION (independent validation pass): B1, B2, B3 and B4 above each
-//   graded less of their claim than its text states. B1's claim is "eight
-//   COMPLETE sets of registers"; the first version measured only the
-//   control-pair addresses (POS/CTL), never a pointer or DATA/DATB, so a
-//   design with eight POS/CTL pairs sharing one pointer or one DATA/DATB
-//   pair would have passed it. It now gives each of the eight channels its
+//   NOTE: B1, B2, B3 and B4 above must each measure the full claim
+//   their text states, not less of it. B1's claim is "eight
+//   COMPLETE sets of registers"; measuring only the
+//   control-pair addresses (POS/CTL), never a pointer or DATA/DATB, would
+//   let a design with eight POS/CTL pairs sharing one pointer or one
+//   DATA/DATB pair pass it. B1 instead gives each of the eight channels its
 //   own pointer before the sweep and shows each one fetches POS, CTL, DATA
 //   and DATB into its own four registers, reading its own written pointer
 //   at the first one. CH4-intro.c6 -- whose restatement bundles an
 //   on-screen observation this module cannot make -- is withdrawn from B1
-//   to Dn above rather than riding along on the strengthened assertion.
-//   B2's claim covers channels 1 through 7 ("all of the others"); the first
-//   version measured channel 1 alone, one case of a universal claim. It now
+//   to Dn above rather than riding along on this assertion.
+//   B2's claim covers channels 1 through 7 ("all of the others"); measuring
+//   channel 1 alone would cover one case of a universal claim. B2 instead
 //   loops over all seven. B3's claim is that height has no cap distinct
-//   from VSTOP-VSTART; the first version fed a 100-line height, which
-//   cannot tell "no cap" apart from "capped at 128 or 255". It now feeds a
-//   300-line height (VSTART=150, VSTOP=450, spanning line 208) and a second
-//   usage whose fed VSTOP (511) is never reached before vbl, showing vbl --
+//   from VSTOP-VSTART; feeding a 100-line height
+//   cannot tell "no cap" apart from "capped at 128 or 255". B3 instead
+//   feeds a 300-line height (VSTART=150, VSTOP=450, spanning line 208) and
+//   a second usage whose fed VSTOP (511) is never reached before vbl,
+//   showing vbl --
 //   not some fixed cap -- is what ends the fetch. Case 1 grades channel 0's
 //   own POS/CTL/DATA/DATB grants only, the same per-channel filter B2 and
 //   B4 use, since the claim is about channel 0's own height rather than
 //   about grant counts across all eight channels (also noted at the
 //   assertion itself). B4's claim is that the fetched address is "16-bit
-//   words" and "contiguous"; "+1 per grant" was read off address_out's own bit width
-//   and never checked against a value this file actually wrote, so the
-//   unit was never calibrated. It now also checks that channel 0's very
+//   words" and "contiguous"; reading "+1 per grant" off address_out's own
+//   bit width without checking it against a value this file actually wrote
+//   would leave the unit uncalibrated. B4 also checks that channel 0's very
 //   first grant reads back the pointer this file's own Harness constructor
 //   wrote (SPR0PTH:SPR0PTL=$0:$2000 -> word address 0x1000).
 //
-//   Grand total after this correction: unchanged from the previous
-//   checkpoint at 206 asserted, 26 declined -- CH4-intro.c6 moves from B1
-//   to Dn (both counted bucket categories, not a change in what is asserted
+//   Running total: unchanged at
+//   206 asserted, 26 declined -- CH4-intro.c6 counts under Dn rather than
+//   B1 (both counted bucket categories, not a change in what is asserted
 //   vs declined: B1 3, Dn 1, sum still 4 where the addendum's B1 counted 4).
 //
 // CONTROL CASE: FIXTURE-LIVE-DATA-PATH (no page, no claim id, labelled
@@ -514,7 +514,7 @@ struct Grant {
     uint16_t data_sent;
     // address_out at the moment this grant was sampled -- added for this
     // addendum's B4 (see CLAIM COVERAGE ADDENDUM / its
-    // CORRECTION below); every pre-existing call site that builds a Grant
+    // note below); every pre-existing call site that builds a Grant
     // with only four fields still compiles (this field defaults to 0) and
     // no pre-existing assertion reads it, so this is purely additive.
     int addr = 0;
@@ -1141,19 +1141,19 @@ int main(int argc, char** argv) {
     }
 
     // ==== ADDENDUM: B1-B4, Dn, Di -- see the CLAIM COVERAGE ADDENDUM and  ====
-    // ==== its CORRECTIONS in the header comment.                         ====
+    // ==== its notes in the header comment.                                ====
 
     // ---- B1: EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED ----
     {
         // Starts at line 5, not line 0 -- same reason A1 does (see A1's own comment): at vpos==0,
         // every channel's VSTOP register (reset value 0) coincidentally equals vpos, so sprvstop
         // alone (agnus_spritedma.v:286, "vblend || (sprvstop && ~vbl)") already drives all sixteen
-        // grants independent of vblend, which silently defeats MUT_B1 below (confirmed: the first
-        // version of this assertion, swept over line 0, stayed 16/16 even with vblend withheld).
+        // grants independent of vblend, which would silently defeat MUT_B1 below (confirmed:
+        // sweeping line 0 instead stays 16/16 even with vblend withheld).
         //
         // The claim is "eight COMPLETE sets of registers", not just eight control-pair addresses --
-        // a design with eight POS/CTL pairs sharing one pointer or one DATA/DATB pair would have
-        // passed the first draft of this assertion. This version gives each of the eight channels
+        // a design with eight POS/CTL pairs sharing one pointer or one DATA/DATB pair would
+        // pass an assertion that measured only the control-pair addresses. This assertion gives each of the eight channels
         // its own pointer (SPRxPTH/SPRxPTL) before the sweep, then shows each one fetches POS, CTL,
         // DATA and DATB into its own four registers, reading its own written pointer at the first
         // one -- eight complete, independently-addressed register sets, each from its own pointer.
@@ -1268,8 +1268,8 @@ int main(int argc, char** argv) {
     // ---- B2: OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE ----
     {
         // The claim is "ALL of the others are the same" (sets 1 through 7), not just one of them --
-        // the first draft of this assertion measured channel 1 only, one case of a universal claim.
-        // This version loops over every one of channels 1-7, each at its own register block
+        // measuring channel 1 only would cover one case of a universal claim.
+        // This assertion loops over every one of channels 1-7, each at its own register block
         // (sprPOS/sprCTL/sprDATA/sprDATB(x) -- agnus_spritedma.v:171-172,290-300, the same
         // reg_address_out formula channel 1's own block was already derived from).
         Harness h;
@@ -1347,8 +1347,8 @@ int main(int argc, char** argv) {
 
     // ---- B3: HEIGHT-NOT-INDEPENDENTLY-CAPPED-BELOW-9BIT-RANGE ----
     {
-        // Case 1: a height (300) well past a 128- or 255-line cap -- a 100-line sweep (the first
-        // draft of this assertion) cannot tell "no cap" apart from "capped somewhere above 100".
+        // Case 1: a height (300) well past a 128- or 255-line cap -- a 100-line sweep
+        // cannot tell "no cap" apart from "capped somewhere above 100".
         // VSTART=150, VSTOP=450 (height 300) spans line 208, so this case covers that line rather
         // than routing around it. Grading is scoped to channel 0's own POS/CTL/DATA/DATB grants
         // (log1, filtered from log1all), the same per-channel filter B2 above and B4 below already
@@ -1557,9 +1557,8 @@ int main(int argc, char** argv) {
 // RESULTS: baseline (make, no MUTFLAGS) is 12 passed, 0 failed -- every
 // claim-based and control expect() below is GREEN against agnus_spritedma.v
 // as built today. No finding is on record for this package; the two
-// deviations from this file's first draft (see ORDER OF WORK above) were
-// both this harness's own bugs, fixed before any result was read as a
-// finding, not RTL disagreements. Each `make MUTFLAGS=-DMUT_<id>=1` run
+// RTL properties named in ORDER OF WORK above shape this harness's own
+// code, not any RTL disagreement. Each `make MUTFLAGS=-DMUT_<id>=1` run
 // below was built and run in isolation, confirmed to flip ONLY its own
 // named assertion red (all 11 others staying exactly at the green
 // baseline), then rebuilt with no MUTFLAGS to confirm the 12/0 baseline
@@ -1628,7 +1627,7 @@ int main(int argc, char** argv) {
 //   state for a mutation to move.
 //
 // RESULTS ADDENDUM: with B1-B4 added per the
-// CLAIM COVERAGE ADDENDUM and its CORRECTIONS above, baseline (make -B test,
+// CLAIM COVERAGE ADDENDUM and its notes above, baseline (make -B test,
 // no MUTFLAGS) is 16 passed, 0 failed. The original 12 PASS lines are
 // byte-for-byte unchanged from the pre-addendum run (diffed directly, not
 // eyeballed), and B1-B4 are all green. Each `make -B MUTFLAGS=-DMUT_B<n>=1
@@ -1643,10 +1642,10 @@ int main(int argc, char** argv) {
 //   swept at line 5 -> FAIL ("15 passed, 1 failed"), only
 //   B1-EIGHT-CHANNELS-EXIST-AND-ARE-INDEPENDENTLY-ADDRESSED newly red
 //   (measured "[-1,-1,-1,-1,-1,-1,-1,-1]; 0 distinct registers touched in
-//   total" instead of eight own-pointer addresses and thirty-two). First
-//   version of this block swept line 0 instead and stayed green under this
-//   same mutation -- see the CORRECTION above for why, and that the fix is
-//   the sweep line, not the expected value. Reverted: 16/0.
+//   total" instead of eight own-pointer addresses and thirty-two). Sweeping
+//   line 0 instead would stay green under this
+//   same mutation -- see the note above for why; the sweep line is what
+//   distinguishes it, not the expected value. Reverted: 16/0.
 // MUTATION B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE stimulus red: channel 1's fed VSTOP changed from 23 to 24 ->
 //   FAIL ("15 passed, 1 failed"), only
 //   B2-OTHER-CHANNELS-MIRROR-CHANNEL-0S-FETCH-STRUCTURE newly red (measured
