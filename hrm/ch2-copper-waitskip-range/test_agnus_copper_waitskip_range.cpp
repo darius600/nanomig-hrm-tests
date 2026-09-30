@@ -216,7 +216,7 @@ public:
     }
 
     // The horizontal counterpart, for the HP-field walk. The event already
-    // carried hpos; nothing read it until 06.09.2026.
+    // carries hpos.
     int first_move_hpos(uint16_t reg) const {
         for (const auto& e : moves) if (e.reg == reg) return static_cast<int>(e.hpos);
         return -1;
@@ -369,8 +369,8 @@ int main(int argc, char** argv) {
     // only the horizontal half holds it. W4b asserts that horizontal half: on a
     // 454-count line the HP comparison field cannot reach the sentinel's $7F.
     //
-    // Same shape as a defect found in W1 on 06.09.2026, where a check counted
-    // bus requests between two adjacent ticks and was vacuously true.
+    // Same shape as a defect found in W1, where a check counted bus requests
+    // between two adjacent ticks and was vacuously true.
     {
         CopperHarness h;
         h.seek_beam(0xF0);
@@ -686,10 +686,8 @@ int main(int argc, char** argv) {
     // MUTATION EV stimulus red the walked bit shifted one position down before encoding, so every WAIT asks for half the line it is checked against - one shift breaks all eight at once, which is why the family carries one record
     // ---------------- EV0-EV7: the VP field's bit mapping ----------------
     //
-    // Added 06.09.2026, FPGA-086, package PKG-APPX-WAITSKIP-DECODE, from
-    // appendix A's COPINS table on printed page 274. The table states the
-    // mapping row by row: IR1 bit 15 is VP7, bit 14 is VP6, down to bit 8 as
-    // VP0.
+    // Appendix A's COPINS table on printed page 274 states the mapping row
+    // by row: IR1 bit 15 is VP7, bit 14 is VP6, down to bit 8 as VP0.
     //
     // WHY THIS WAS MISSING. Every Copper test in this suite builds its WAITs
     // with `ir1_pos(vp, hp)`, which encodes that mapping in one line of C++
@@ -698,8 +696,7 @@ int main(int argc, char** argv) {
     // agnus_copper_skip and agnus_copper_list -- and an assumption that wrong
     // would make all of them build the wrong instruction, some of them still
     // passing. The chapter states the field but not the bit positions; only the
-    // appendix table gives them, and the appendix was not in the corpus until
-    // 05.09.2026.
+    // appendix table gives them.
     //
     // The measurement is a walking one over the vertical comparison field: for
     // each bit, a WAIT whose VP has only that bit set must release exactly when
