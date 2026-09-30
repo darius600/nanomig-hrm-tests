@@ -2,7 +2,7 @@
 //   form occupies, and that the Copper takes only every other memory cycle.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, print
-//   pages 19, 20, 23 and 194; frozen specification 7177fce.
+//   pages 19, 20, 23 and 194; a frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-01, COP-02
 // Non-goals: Granted accesses per instruction (hrm/ch2-copper-cycles
 //   covers those). Contended timing when a higher-priority channel takes
@@ -14,12 +14,11 @@
 //   `COP2-copins-timing.c1` name one sentence of the manual in this chapter's
 //   reading. They carry no reader prefix, and they resolve in the claim files
 //   that hrm-testpipeline/acceptance/ch2.json lists under `inventories`.
-//   A `frozen specification` named above was the suite's first oracle, a note
-//   written from the Verilog before the pipeline existed; docs/legacy-names.md
-//   describes it.
+//   A `frozen specification` named above is a note written from the
+//   Verilog, predating the claim pipeline; docs/legacy-names.md describes
+//   it.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // Specification additions: three further propositions from the manual, at
 //   this package's boundary.
