@@ -179,8 +179,8 @@ public:
     // with no clock edge at all, so it observes whatever the module's
     // internal registers currently hold, with no clk7_en-alignment
     // guarantee. Used only where the proposition under test is explicitly
-    // about propagation delay / bus-alignment (A9, A13), never as a
-    // stand-in for a real bus cycle elsewhere.
+    // about propagation delay / bus-alignment (A13), never as a stand-in
+    // for a real bus cycle elsewhere.
     uint16_t peek(int addr_word) {
         dut->rga_i = addr_word;
         dut->eval();
