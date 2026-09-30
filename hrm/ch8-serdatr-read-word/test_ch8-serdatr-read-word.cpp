@@ -32,7 +32,7 @@
 // brief's order of work.
 //
 // BOUNDARY: nanomig/src/minimig-aga/paula_uart.v module header, read
-//   directly by this agent AFTER SPECIFICATION.md was committed -- ports
+//   directly AFTER SPECIFICATION.md was committed -- ports
 //   clk, clk7_en, reset, rga_i[8:1], data_i[16-1:0], data_o[16-1:0],
 //   uartbrk, rbfmirror, txint, rxint, txd, rxd.
 //
@@ -523,11 +523,11 @@ int main(int argc, char** argv) {
     // ================= A9: TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY =================
     // (p.257 sol:8-serdatr.c25, sol:8-serdatr.c27, sol:8-serdatr.c31; p.258,
     //  no claim uid in this package's inventory)
-    // NM-HRM-056 withdrew this assertion's earlier form, which wrote one
-    // word from idle and required the very next read to find TBE clear --
-    // no page asks for that; p.258 has that word reach the shift register
+    // Writing one word from idle and requiring the very next read to find
+    // TBE clear would not hold (NM-HRM-056): no page asks for that;
+    // p.258 has that word reach the shift register
     // at the start of the operation, immediately. The case p.257's TSRE
-    // row actually describes, and this assertion now measures: a second
+    // row actually describes, and this assertion measures: a second
     // word placed into SERDAT while the shift register is still busy with
     // the first waits there, and TBE reads 0 for as long as it waits.
     {
@@ -973,7 +973,7 @@ int main(int argc, char** argv) {
     //   starts, so the very first read already finds TBE back at 1
     //   (reads_while_clear=0, baseline measured 219) -> only this
     //   assertion newly red (12 passed, 2 failed -> 11 passed, 3 failed;
-    //   the other 2 failures, unrelated to this repair, are unchanged).
+    //   the other 2 failures, unrelated to this one, are unchanged).
     //   Reverted; baseline (12 passed, 2 failed) confirmed restored.
     // MUTATION TSRE-BIT12-TRACKS-COMPLETE-TRANSMISSION stimulus red: wait
     //   only 3 bit-times instead of a full frame -> after_frame's bit 12

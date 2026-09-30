@@ -367,12 +367,12 @@ distinctly before any content-specific assertion below is graded.
   a previous word waits in SERDAT, and TBE reads 0 on every read until that
   previous word's frame ends, then 1 (with TSRE still 0, since the new word
   has itself now moved into the shift register and is shifting).
-- **NM-HRM-056 withdrew this assertion's earlier form**, which wrote one
-  word from idle and required the very next read to find TBE clear — no
-  page asks for that: p.258 has that word reach the shift register at the
+- **Writing one word from idle and requiring the very next read to find
+  TBE clear would not hold** (NM-HRM-056): no page asks for that, and
+  p.258 has that word reach the shift register at the
   start of the operation, immediately, so no bus read timed by this
-  package's own clk7_en-synchronised protocol can catch it. This repaired
-  form measures the case p.257's TSRE row actually describes instead.
+  package's own clk7_en-synchronised protocol can catch it. This
+  measures the case p.257's TSRE row actually describes instead.
   Expected: **PASS**, confirmed by direct measurement (`reads_while_clear`
   = 219 against a threshold of 20; the `// MUTATION` that removes the
   second write measures `reads_while_clear` = 0 and goes red).
