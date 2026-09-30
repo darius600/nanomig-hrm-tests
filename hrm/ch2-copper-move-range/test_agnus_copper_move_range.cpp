@@ -554,14 +554,16 @@ int main(int argc, char** argv) {
             "the danger bit is set in the standard chip set\" (Reading B's own floor, "
             "$040) does not. MEASURED: MOVE " +
             std::string(reaches_03e ? "reaches" : "does not reach") +
-            " $03E on this build. Not graded either way here (half graded: "
-            "ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13, graded below "
+            " $03E on this build. Not graded either way here. COP2-copcon-ecs.c12 "
+            "(\"the lowest address in the Copper-accessible range is $DFF03E\") "
+            "is about exactly this disputed address and is not graded anywhere "
+            "(half graded: ch2-appc-ecs.c21, COP2-copcon-ecs.c13, graded below "
             "for the range's $07E half).");
     }
     checks.expect(move_reaches(true, false, DSKSYNC),
                   "T16 ECS CDANG=0: MOVE reaches the range's high end, $07E (Appendix C "
                   "p.310) [NM-HRM-004, expected red] "
-                  "[claims: ch2-appc-ecs.c21, COP2-copcon-ecs.c12, COP2-copcon-ecs.c13]");
+                  "[claims: ch2-appc-ecs.c21, COP2-copcon-ecs.c13]");
 
     // The following eight claims each restate one side or the other of the
     // page-21-versus-page-26 protected-
