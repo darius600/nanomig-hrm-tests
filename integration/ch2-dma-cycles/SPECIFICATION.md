@@ -809,17 +809,20 @@ of p.23. Every run is made on both CPU cores and graded per core.
 ### Built: P1–P7
 
 P1–P7 (the memory-cycle-parity half of this specification) are built: `Makefile`,
-`test_ch2_dma_cycles.cpp`, 29 `.s` programs. Every named precondition (A1, K2a, K2b, K3, K4,
-K5, K6, T1, T2, T3) is its own graded line, not folded silently into its proposition. D9's own
-carve-out is exercised organically: C2b (read direction, no drive) shows 0 disk-block accesses
-in the observed frames of both cores, so its read direction is recorded declined rather than
-graded.
+`test_ch2_dma_cycles.cpp`, 35 `.s` programs. Every named precondition (A1, K2a, K2b, K3, K4,
+K5, K6, T1, T2, T3) is its own graded line, not folded silently into its proposition. F1, F2 and
+F3 (§2.1, §2.3) are their own graded lines too, printed per run before P1, for every
+configuration §2.9 and §2.10 name (C0, C1a, C1b, C2a, C2b, C3, C4-1..6, C4-4w, C5, C6, C7a, C7b,
+S1, S2 in PAL/ECS; C0, C6 and S1 also in NTSC/ECS, PAL/OCS and NTSC/OCS). D9's own carve-out is
+exercised organically: C2b (read direction, no drive) shows 0 disk-block accesses in the
+observed frames of both cores, so its read direction is recorded declined rather than graded.
 
 Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 
 | line | fx68k | tg68k |
 |---|---|---|
-| FIXTURE | PASS | PASS |
+| F1, F2, F3 (every run and mode) | PASS | PASS |
+| FIXTURE (x2) | PASS | PASS |
 | P1 | PASS | PASS |
 | K2a, K2b | PASS (K2b/D9 declines C2b) | PASS (K2b/D9 declines C2b) |
 | P2 | PASS | PASS |
@@ -830,11 +833,16 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | P5, K5 | PASS | PASS |
 | K6, T1, T2, T3 | PASS | PASS |
 | P7 | PASS (0 of 339 segment/frame pairs mismatch) | PASS (0 mismatches) |
-| summary | 17 passed, 1 failed | 17 passed, 1 failed |
+| summary | 102 passed, 1 failed | 102 passed, 1 failed |
 
 Every mutation of the header comment was run once on both cores from the built object
 directories (`NMH_MUTATE=<value>`) and went red through the clause it targets, or (K2a, K3, K4,
-K5) through the precondition it targets. F1 is a self-test, not an RTL run.
+K5) through the precondition it targets, or (P6) showed the green control through the same
+comparator instead, P6 being already red at baseline. F1 and F2 are each verified by a
+self-test, not an RTL run.
+
+The NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1 (§2.10) are graded for P1 and
+P6, through the same `Config` the harness already exposes; no new program was needed.
 
 ### Not built, by a scope decision
 
@@ -847,5 +855,6 @@ K5) through the precondition it targets. F1 is a self-test, not an RTL run.
   mutations `ZMut::EndAfterU1/ShortU2Height/SwapU2Line5` and `list_L_S1`'s `colours_variant`
   are present but unused, available to whichever future package builds P9–P12's own video
   apparatus.
-- **NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1** (§2.10), for P1 and P6:
-  not run. No new program is needed, only a different `Config` per run.
+- **The blitter DMA channel** (`COP2-about-the-copper.c34`–`c36`): not built. §0 already
+  withdraws these three ids: their own sentence names a use (animation, line drawing, polygon
+  filling), not a machine function this package's claims give an observable for.
