@@ -95,9 +95,13 @@
 //   not sufficient for any of them:
 //     - 5-rate.c1 ("the sampling period is limited by the number of DMA
 //       cycles allocated to an audio channel") states a bound on elapsed
-//       time; this fixture never measures elapsed time across repeated
-//       grants. NOT COVERED BY THIS PACKAGE - needs a cycle-accurate,
-//       multi-line/multi-sample timing fixture.
+//       time; this single-module fixture never measures elapsed time
+//       across repeated grants, because hpos is a port the harness sets
+//       directly here rather than something that advances on its own.
+//       NOW GRADED, at this package's OTHER fixture,
+//       test_agnus_top_audio_ecs.cpp's DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE:
+//       the full Agnus top's own free-running beam counter gives that
+//       fixture a real elapsed-time axis this one does not have.
 //     - 5-appA-p263.c11 ("Paula, Agnus, and Denise ... transferring data
 //       among themselves") states an actual cross-chip data transfer; this
 //       fixture only shows the address on reg_address_out; no data crosses
@@ -180,8 +184,15 @@
 // assertion 1's own text below and are deliberately absent from every
 // assertion string in this file. COVERAGE NOTE 2 above withdraws
 // three more ids from assertion 1 and eighteen ids from assertion 6, for the
-// same necessary-but-not-sufficient reason; 143 ids remain asserted here
-// and 33 are reported not covered by this package.
+// same necessary-but-not-sufficient reason; 143 ids remain asserted here.
+// Of the 33 withdrawn, 31 are now RECORDED below with their reason
+// (reader/id pairs: this file's own ids differ from the withdrawn-ids
+// count above only in prefix duplication, not in count), one -
+// 5-rate.c1 - is GRADED at this package's other fixture (see
+// test_agnus_top_audio_ecs.cpp's DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE), and
+// one - 5-appA-p263.c11 - stays not covered by this package: it needs the
+// same integrated Agnus-Paula(-Denise) data path the RECORDED group below
+// names, and is outside the claim set this file's own build task closed.
 // ============================================================================
 //
 // 0. TEST-DATA-DELIVERY (fixture check, no claim id, no manual page).
@@ -673,18 +684,22 @@ int main(int argc, char** argv) {
             "range a channel is granted only once. NOT ESTABLISHED HERE: "
             "that the channel's DAC is DMA-driven, that the slot's word "
             "supplies two samples, that memory data is automatically "
-            "retrieved into AUDxDAT, that the sampling period is bounded by "
-            "this allocation across elapsed time, that Paula, "
+            "retrieved into AUDxDAT, that Paula, "
             "Agnus and Denise actually transfer data to each other over "
             "this address, or that output occurs on the "
             "addressed channel (an output-occurrence clause) "
             "- this fixture is agnus_audiodma.v alone, with no RAM input, "
-            "no delivered word, no observed sample byte, no DAC boundary "
-            "and no elapsed-period or cross-chip measurement; those "
-            "propositions need an integrated Agnus-to-Paula(-Denise) data "
-            "path, an elapsed-time measurement, and a DAC/output boundary, "
-            "and are reported NOT COVERED BY THIS PACKAGE (see this file's "
-            "header for the ids and the fixture each needs). "
+            "no delivered word, no observed sample byte, and no DAC "
+            "boundary; those propositions need an integrated "
+            "Agnus-to-Paula(-Denise) data path and a DAC/output boundary, "
+            "and are RECORDED below rather than asserted here. The "
+            "sampling-period bound is the one COVERAGE NOTE 2 proposition "
+            "NOT declined below: this fixture's own single hpos sweep "
+            "cannot establish it (no elapsed-time axis - hpos is a port "
+            "the harness sets, not something that advances on its own), "
+            "but this package's OTHER fixture can and does - see "
+            "test_agnus_top_audio_ecs.cpp's DMA-SLOT-PERIOD-BOUNDS-"
+            "SAMPLE-RATE. "
             "[claims: 5-p141.c1, 5-rate.c2, 5-loc.c4]");
     }
 
@@ -959,8 +974,8 @@ int main(int argc, char** argv) {
             "memory decoder (gary.v), outside this module, and is not "
             "measured here, so the legend id and every plus-marked "
             "register-pair id that carries it (both duplicate-reader "
-            "spellings) are NOT COVERED BY THIS PACKAGE - needs gary.v; "
-            "only the appendix A p.263 even-address wording, which has no "
+            "spellings) are RECORDED below, not asserted here - needs "
+            "gary.v; only the appendix A p.263 even-address wording, which has no "
             "chip-memory clause, is measured. NO CLAIM ID IS CREDITED HERE: "
             "the two appendix-A ids that state this even-address rule "
             "quantify over EVERY pointer-type register, and this predicate "
@@ -1098,6 +1113,87 @@ int main(int argc, char** argv) {
             "5-appC-p309.c6, A-audxlch.w1, C-map.lch.width, "
             "B-aud0lch.width]");
     }
+
+    // =========================================================================
+    // THIS CHAPTER'S OWN 31 CLAIMS DECLINED HERE -- every id COVERAGE NOTE
+    // and COVERAGE NOTE 2/3 above named in prose (assertions 1 and 6), now
+    // also printed at runtime so the coverage ledger, which reads graded
+    // and RECORDED output rather than source comments, can see them. No
+    // predicate, stimulus or expected value above is touched by this
+    // block; every reason restates what assertions 1 and 6 already say.
+    // =========================================================================
+    checks.record(
+        "DECLINED at this boundary (outside-uut): p.137 \"Each audio "
+        "channel includes an eight-bit digital-to-analog converter driven "
+        "by a direct memory access (DMA) channel.\" This module drives the "
+        "DMA ADDRESS (reg_address_out/address_out) toward AUDxDAT; the DAC "
+        "itself -- whatever turns a fetched word into an analog channel -- "
+        "is paula_audio_channel.v, never instantiated in either of this "
+        "package's two fixtures (agnus_audiodma.v alone; the full Agnus "
+        "top, agnus.v, which does not include Paula). Needs an integrated "
+        "Agnus-to-Paula data path with a real DAC/output boundary. "
+        "[claims: sol:5-p137.c2 opus:5-hw.c6]");
+    checks.record(
+        "DECLINED at this boundary (outside-uut): p.137 \"The audio DMA "
+        "can retrieve two data samples during each horizontal video scan "
+        "line\"; p.141 \"An audio channel can retrieve two data samples "
+        "during each horizontal scan line.\" This module supplies the "
+        "fetched WORD at address_out; splitting that word into two samples "
+        "and delivering them is paula_audio_channel.v's own byte-pointer/"
+        "output logic, outside both of this package's fixtures. Needs an "
+        "integrated Agnus-to-Paula data path with a real RAM/data source. "
+        "[claims: sol:5-p137.c3 sol:5-p141.c2 opus:5-hw.c7 opus:5-rate.c3]");
+    checks.record(
+        "DECLINED at this boundary (outside-uut): p.137 \"When you use "
+        "automatic sound generation, the system retrieves data "
+        "automatically by direct memory access\"; p.148 \"Start "
+        "retrieving audio data each allocated DMA time slot\"; appendix A "
+        "p.265 \"The DMA controller automatically transfers data to this "
+        "register [AUDxDAT] from RAM.\" These state that memory data is "
+        "automatically transferred INTO AUDxDAT. This module drives only "
+        "the fetch ADDRESS (reg_address_out names AUDxDAT's own address, "
+        "address_out carries the word address in memory); it has no RAM "
+        "input and never writes AUDxDAT's own storage -- that latch, and "
+        "the actual data transfer into it, is paula_audio_channel.v, "
+        "outside both of this package's fixtures. Needs an integrated "
+        "Agnus-to-Paula data path with a real RAM/data source. [claims: "
+        "sol:5-p137.c6 opus:5-hw.c10 sol:5-p148.c5 opus:5-join.c10 "
+        "sol:5-appA-p265.c44 opus:A-audxdat.c6]");
+    checks.record(
+        "DECLINED at this boundary (outside-uut) (half graded: 5-loc.c4): "
+        "p.139 \"The 'x' in the "
+        "register names stands for the number of the audio channel where "
+        "the output will occur. The channels are numbered 0, 1, 2, and "
+        "3.\" Withdrawn whole from SLOT-PER-CHANNEL-PER-LINE (commit "
+        "9a718fb) because that assertion's own predicate does not "
+        "establish the sentence's output-occurrence clause -- the "
+        "numbering clause of the SAME sentence is a separate id, graded on "
+        "assertion 1 above. This fixture, and the full "
+        "Agnus top, observe no sample, no DAC, no output pin; that "
+        "boundary is paula_audio_channel.v, outside this package's two "
+        "fixtures. [claims: sol:5-p139.c4]");
+    checks.record(
+        "DECLINED at this boundary (outside-uut): appendix B p.287 legend "
+        "\"+     Address register pair. Must be an even address pointing "
+        "to chip memory.\" Withdrawn from POINTER-LSB-ALWAYS-ZERO (commit "
+        "9a718fb, COVERAGE NOTE above) -- that assertion's own predicate "
+        "(agnus_audiodma.v:89, data_in bit 0 never sampled) measures only "
+        "the EVEN-ADDRESS half of this legend; the \"... pointing to CHIP "
+        "memory\" half needs the memory decoder, gary.v, never "
+        "instantiated in either of this package's fixtures. [claims: "
+        "sol:5-appB-p287.c4 opus:B-legend.plus]");
+    checks.record(
+        "DECLINED at this boundary (outside-uut): the same reason as the "
+        "legend record just above, once per register -- appendix B p.290's "
+        "AUD0LCH/AUD0LCL/AUD1LCH/AUD1LCL/AUD2LCH/AUD2LCL/AUD3LCH/AUD3LCL "
+        "rows each carry the identical '+' mark and its identical "
+        "chip-memory clause, which needs gary.v, never instantiated in "
+        "either of this package's fixtures. [claims: sol:5-appB-p290.c25 "
+        "opus:B-aud0lch.mark sol:5-appB-p290.c32 opus:B-aud0lcl.mark "
+        "sol:5-appB-p290.c60 opus:B-aud1lch.mark sol:5-appB-p290.c67 "
+        "opus:B-aud1lcl.mark sol:5-appB-p290.c95 opus:B-aud2lch.mark "
+        "sol:5-appB-p290.c102 opus:B-aud2lcl.mark sol:5-appB-p290.c130 "
+        "opus:B-aud3lch.mark sol:5-appB-p290.c137 opus:B-aud3lcl.mark]");
 
     // =========================================================================
     // CHAPTER 7 -- 2 claims declined here, agreeing with the reasoning

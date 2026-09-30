@@ -61,6 +61,7 @@
 #include <cstdio>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include <verilated.h>
 #include "Vagnus.h"
@@ -197,6 +198,45 @@ public:
         dut->audio_dmas = 0;
         aud_capture_valid = false;
         return result;
+    }
+
+    // Measures the harness cycle() index of each of the first `count`
+    // channel-0 grants, with audio_dmal[0] held continuously high throughout
+    // -- the real chip's "channel wants a word every opportunity" stimulus --
+    // and audio_dmas left low (plain ADVANCE requests, so no location-bank
+    // reload perturbs the timing). At this boundary hpos is NOT a port the
+    // caller sets (unlike test_agnus_audiodma.cpp's narrower fixture): it is
+    // agnus_beamcounter's own free-running counter, advancing on `cck` as
+    // harness cycle() calls elapse, so consecutive grants here measure a
+    // REAL elapsed-time interval, not a single hpos sweep.
+    //
+    // withhold_after/withhold_len are the STIMULUS-MUTATION knobs this
+    // assertion's own MUTATION record exercises: when withhold_after >= 0,
+    // audio_dmal[0] is pulled low for withhold_len cycles starting the
+    // instant after the (withhold_after)'th captured grant (0-based) --
+    // simulating a channel that did not want a word that one opportunity --
+    // and left high otherwise. -1 (the default) never withholds.
+    std::vector<int> grant_cycle_indices(int count, int withhold_after = -1,
+                                          int withhold_len = 500, int max_cycles = 200000) {
+        dut->audio_dmal = 0x1;
+        dut->audio_dmas = 0x0;
+        std::vector<int> idx;
+        int withhold_until = -1;
+        for (int i = 0; i < max_cycles && (int)idx.size() < count; ++i) {
+            const bool withheld = (withhold_until >= 0 && i < withhold_until);
+            dut->audio_dmal = withheld ? 0x0 : 0x1;
+            cycle(false, 0, 0);
+            if (aud_capture_valid) {
+                idx.push_back(i);
+                if (withhold_after >= 0 && static_cast<int>(idx.size()) - 1 == withhold_after &&
+                    withhold_until < 0) {
+                    withhold_until = i + 1 + withhold_len;
+                }
+            }
+        }
+        dut->audio_dmal = 0;
+        aud_capture_valid = false;
+        return idx;
     }
 
 private:
@@ -361,6 +401,39 @@ int main(int argc, char** argv) {
             "5-appA-p266.c11, A-audxlc.c1");
     }
 
+    // -------------- 3. DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE --------------
+    {
+        AgnusTopHarness h;
+        auto idx = h.grant_cycle_indices(5);
+        const bool five_grants_seen = idx.size() == 5;
+        int gap[4] = {0, 0, 0, 0};
+        bool all_equal = five_grants_seen;
+        if (five_grants_seen) {
+            for (int i = 0; i < 4; ++i) gap[i] = idx[i + 1] - idx[i];
+            for (int i = 1; i < 4; ++i) {
+                if (gap[i] != gap[0]) all_equal = false;
+            }
+        }
+        checks.expect(five_grants_seen && all_equal && gap[0] > 0,
+            "DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE (p.141 \"The  sampling "
+            "period  is limited by the number of DMA cycles allocated to "
+            "an audio channel\"): with channel 0's own request "
+            "(audio_dmal[0]) held continuously high -- the real chip's "
+            "\"wants a word every opportunity\" stimulus -- at the full "
+            "Agnus top, where agnus_beamcounter's own free-running counter "
+            "genuinely advances hpos as harness cycles elapse (unlike "
+            "test_agnus_audiodma.cpp's narrower fixture, where hpos is a "
+            "port the harness sets directly and no elapsed-time exists at "
+            "all), five consecutive grants land at a FIXED, repeating "
+            "interval: gaps " + std::to_string(gap[0]) + "," + std::to_string(gap[1]) +
+            "," + std::to_string(gap[2]) + "," + std::to_string(gap[3]) +
+            " harness cycles, all equal. However often the channel asks, it "
+            "cannot receive a fetched word faster than this fixed "
+            "recurrence -- the DMA cycle allocation is what bounds the "
+            "achievable sampling period, exactly as the page states. "
+            "[claims: 5-rate.c1]");
+    }
+
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
 }
@@ -372,14 +445,18 @@ int main(int argc, char** argv) {
 // reverting, and rebuilding clean again to confirm the baseline returned --
 // the same technique test_agnus_audiodma.cpp's own MUTATION section
 // documents, reused here rather than an env-var/#ifdef scheme, since this
-// file has no other mutation infrastructure to share it with. Baseline: 1
-// passed, 2 failed (assertion 0 passes; assertions 1 and 2 are RED, matching
-// test_agnus_audiodma.cpp's own required-red assertion 9 measured at this
-// second boundary).
+// file has no other mutation infrastructure to share it with. Baseline: 2
+// passed, 2 failed (assertion 0 and assertion 3 pass; assertions 1 and 2 are
+// RED, matching test_agnus_audiodma.cpp's own required-red assertion 9
+// measured at this second boundary).
 //
 // Each mutation below was actually built (a scratch --Mdir, never obj_dir)
-// and run before being reverted; the baseline quoted for each (1 passed, 2
-// failed) is what a clean rebuild of the committed file prints.
+// and run before being reverted; the baseline quoted for each (2 passed, 2
+// failed) is what a clean rebuild of the committed file prints. The first
+// three records were originally run before assertion 3 (DMA-SLOT-PERIOD-
+// BOUNDS-SAMPLE-RATE) existed; each was RE-RUN after assertion 3 was added,
+// against the CURRENT four-assertion file, to confirm the totals below --
+// not carried over by arithmetic.
 //
 // MUTATION TOP-LEVEL-LIVENESS stimulus red: run at ecs=1 (the
 //   baseline), kHighStim changed from 0x0015 to 0x0014 (kLowStim and
@@ -387,8 +464,8 @@ int main(int argc, char** argv) {
 //   unchanged expected 0xA9515 (the written high half's own bit 0, which
 //   DOES land at address_out per test_agnus_audiodma.cpp's own
 //   WORD-ALIGNED-FETCH-AND-LC-PAIR, no longer assembles to the expected
-//   constant); 0 passed, 3 failed. Reverted, clean rebuild reproduced 1
-//   passed/2 failed.
+//   constant); 1 passed, 3 failed (assertion 3 unaffected, still PASS).
+//   Reverted, clean rebuild reproduced 2 passed/2 failed.
 //   (Changing kLowStim's own bit 0, 0x2A2A -> 0x2A2B, would measure NO change
 //   at all -- agnus_audiodma.v:89 reads only
 //   data_in[15:1], so that bit is structurally never sampled, exactly the
@@ -400,21 +477,36 @@ int main(int argc, char** argv) {
 //   stimulus changed from 0x001F to 0x0007 (h0 still driven at ecs=false,
 //   h1 unchanged at ecs=true with 0x001F) -> measured r_ocs=0x3FFFF,
 //   r_ecs=0xFFFFF, matching the page's own two values exactly for the
-//   `r_ocs==0x3FFFF && r_ecs==0xFFFFF` comparator -> PASS; 2 passed, 1
-//   failed. This is the SAME comparator the baseline grades, unmodified,
+//   `r_ocs==0x3FFFF && r_ecs==0xFFFFF` comparator -> PASS; 3 passed, 1
+//   failed (assertion 3 unaffected, still PASS). This is the SAME
+//   comparator the baseline grades, unmodified,
 //   fed a stimulus this RTL (ecs unconnected to the audio engine) happens
 //   to compute both target constants from: not evidence the RTL honours
 //   ecs, only that the comparator is not a stuck fixture that always
 //   reports "unequal to the page" regardless of what is fed to it.
-//   Reverted, clean rebuild reproduced 1 passed/2 failed.
+//   Reverted, clean rebuild reproduced 2 passed/2 failed.
 // MUTATION LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS stimulus green: the
 //   probed bit positions changed from 3 and 4 (the genuinely ECS-only bits
 //   agnus_audiodma.v:82 samples as part of data_in[4:0]) to 5 and 6, bits
 //   outside that 5-bit field entirely -- same diagnostic
 //   test_agnus_audiodma.cpp's own assertion-9 mutation already ran at the
 //   narrower boundary. MEASURED: both probes now read back as word address
-//   0x0, ocs_reading_holds flips to true -> PASS; 2 passed, 1 failed,
-//   confirming the original bit choice (3 and 4) was load-bearing and this
+//   0x0, ocs_reading_holds flips to true -> PASS; 3 passed, 1 failed
+//   (assertion 3 unaffected, still PASS), confirming the original bit
+//   choice (3 and 4) was load-bearing and this
 //   assertion's red genuinely depends on probing bits inside the field an
-//   OCS reading would exclude. Reverted, clean rebuild reproduced 1
+//   OCS reading would exclude. Reverted, clean rebuild reproduced 2
 //   passed/2 failed.
+// MUTATION DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE stimulus red: the capture
+//   call changed from grant_cycle_indices(5) to
+//   grant_cycle_indices(5, /*withhold_after=*/0, /*withhold_len=*/500) --
+//   audio_dmal[0] pulled low for 500 harness cycles starting the instant
+//   after the FIRST captured grant, simulating a channel that did not want
+//   a word that one opportunity. MEASURED: gaps 908,454,454,454 (the
+//   skipped opportunity pushes the second captured grant a full baseline
+//   period, 454 cycles, further out; the later gaps are unaffected), so
+//   gap[1] != gap[0] and all_equal flips false -> FAIL; 1 passed, 3 failed.
+//   Reverted, clean rebuild reproduced 2 passed/2 failed with gaps
+//   454,454,454,454 unchanged -- confirming the all-equal comparator is
+//   sensitive to a withheld request and not a fixture that reports
+//   "periodic" regardless of what is fed to it.
