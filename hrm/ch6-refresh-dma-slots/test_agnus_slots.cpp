@@ -53,14 +53,12 @@
 // in full, on REFRESH-FOUR-CYCLES-PER-LINE below - there is no second,
 // distinct proposition in this package to split them across.
 //
-// PROVENANCE / SPEC-BEFORE-RTL GATE - RECORDED, NOT HIDDEN (carried over from
-// the previous commit, c022920, "PKG-AGNUS-SLOTS: specification from
-// inventory quotations" - see hrm/ch6-refresh-dma-slots's own history): this
-// package's build brief (FPGA-090 Prompt 7, section D) itself quotes agnus.v
-// line numbers as background handed to the building agent, and explicitly
+// PROVENANCE / SPEC-BEFORE-RTL GATE - RECORDED, NOT HIDDEN: this
+// package's build task itself quotes agnus.v
+// line numbers as background, and explicitly
 // instructs reading agnus.v "before you write the counting loop." Before
-// drafting even the first (spec-only) commit, the building agent had already
-// read agnus.v, agnus_refresh.v, agnus_diskdma.v and agnus_beamcounter.v in
+// drafting even the first (spec-only) commit, agnus.v, agnus_refresh.v, agnus_diskdma.v and agnus_beamcounter.v were already
+// read in
 // full - to locate the agnus_top_dmacon Makefile named as the starting point,
 // and to work out whether a precondition/control was even needed. That
 // reading happened before the spec was drafted, not after this test was
@@ -113,7 +111,7 @@
 // package.
 //
 // MUTATION LOG (every entry below was actually applied - edit, rebuild under
-// WSL/Verilator, run, revert, rebuild clean - by this agent on 09.09.2026;
+// WSL/Verilator, run, revert, rebuild clean;
 // the PASS/FAIL counts quoted are what `make test` printed that run, not
 // predictions):
 //
@@ -123,9 +121,9 @@
 //     longer equals l3.length_ticks (~201). Reverted: all green again. The
 //     attempt that came first and did not work is kept immediately below,
 //     because it is the better evidence of what this assertion can and cannot
-//     see. (Header added 11.09.2026: the record opened "MUTATION <id>, FIRST
-//     ATTEMPT" and the gate reads a header of the form "MUTATION <id> stimulus
-//     red:", so a record that was here read as no record at all.)
+//     see. (The gate reads a header of the form "MUTATION <id> stimulus
+//     red:" on one physical line; a record whose id and "stimulus red"
+//     tokens sit on separate lines reads as no record at all.)
 //   MUTATION SOL-MARKS-A-STABLE-LINE-LENGTH, FIRST ATTEMPT (recorded, not
 //     hidden, per the standing rule against reporting a result not actually
 //     produced): `set_ntsc(true)` inserted between capturing l2 and l3 ->
@@ -157,14 +155,6 @@
 //     FAIL, refresh_count reads 4, not the expected 0 (without floppy_speed,
 //     disk's slot-table entries for these four hpos values are never live, so
 //     disk_dmal alone cannot take the cycles). Reverted: all green again.
-//     Re-verified 10.09.2026 by this agent (FPGA-090 gate repair): edit,
-//     rebuild under WSL/Verilator, run, revert, rebuild clean -> confirmed
-//     FAIL with refresh_count=4 (printed via a temporary debug line, removed
-//     before revert), then confirmed 4 passed, 0 failed on the clean rebuild.
-//     Prior record was accurate but unparseable by tools/check_gates.py: the
-//     assertion id and the `stimulus red` tokens sat on two separate `//`
-//     lines, and MUTATION_RE requires them on one physical line. Reformatted
-//     only; the mutation itself was independently re-run, not just reworded.
 //
 // Every mutation is a STIMULUS change to this file's own Harness calls -
 // expected values and oracle text were never touched, and nanomig/ was never
@@ -383,7 +373,7 @@ int main(int argc, char** argv) {
     {
         // Same disk_dmal=1 as the precondition above, but floppy_speed=1 - the
         // NanoMig-specific "higher transfer speed" option that reassigns the
-        // refresh slots to disk. This is the control the build brief
+        // refresh slots to disk. This is the control this suite
         // requires: the IDENTICAL sol-to-sol counting method used by
         // REFRESH-FOUR-CYCLES-PER-LINE, on a configuration whose outcome (0,
         // not 4) is predicted from the RTL's own documented priority
