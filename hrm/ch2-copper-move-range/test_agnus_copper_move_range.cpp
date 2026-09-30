@@ -2,8 +2,8 @@
 //   in OCS and ECS, against the HRM register-protection rules.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 21 and 25, Appendix B register list, and Appendix C p. 310; frozen
-//   specification 19b2eb2.
+//   pp. 21 and 25, Appendix B register list, and Appendix C p. 310; a
+//   frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-03
 // Non-goals: What the Copper does after a rejected MOVE is not asserted -
 //   the HRM does not define it. IR1 bits 15-9 non-zero, an exhaustive
@@ -14,8 +14,7 @@
 //   claim files that hrm-testpipeline/acceptance/ch2.json lists under
 //   `inventories`.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // Source conflict, resolved in the specification and repeated here so the code
 // is readable on its own: print page 21 states the writable ranges as
