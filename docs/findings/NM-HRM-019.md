@@ -116,10 +116,10 @@ line 391 of `denise.v` supplies when SHRES is set. On a fresh DUT each time it
 arms sprite 0 at SPR0POS `$40` with SPR0DATB `$0000` and SPR0DATA `$8000`,
 writes SPR0CTL `$00`, `$01` (SH0 alone) or `$10` (SHSH1 alone), and samples
 `sprdata` on every 28 MHz clock, 35 ns apart, keeping the first sample at which
-it is non-zero (`test_denise_sprites.cpp:671-689`). The assertion reads p. 303's
+it is non-zero (`test_denise_sprites.cpp:558-576`). The assertion reads p. 303's
 two rows together, "70ns increment" and "140 ns increment": SHSH1 alone must
 move that sample later by half as many samples as SH0 alone does
-(`test_denise_sprites.cpp:1079-1126`):
+(`test_denise_sprites.cpp:963-1025`):
 
 ```cpp
 bool relation = sh0_delta != 0 && sh0_delta % 2 == 0
@@ -149,7 +149,7 @@ sprite first lights.
 Outside SuperHires the package asserts nothing about bit 4, since p. 303 gives
 it no position there and Hires nothing at all. It records that bit 4 alone
 leaves the Lores trace, sampled once per 140 ns step, identical
-(`test_denise_sprites.cpp:1128-1148`).
+(`test_denise_sprites.cpp:1034-1047`).
 
 [`integration/ch4-sprite-registers`](../../integration/ch4-sprite-registers)
 specifies the same measurement at the video output: P1 sweeps the start in 70
