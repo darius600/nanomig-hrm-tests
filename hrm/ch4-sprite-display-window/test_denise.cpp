@@ -158,8 +158,7 @@
 //   BLACK (0x000000, the border) or, for the [fixture] check only, the
 //   0xACE1 pattern's own alternation of the two.
 //
-// RESULTS: built and run under WSL/Verilator 5.052 on 12.09.2026. Baseline
-//   (after both harness fixes above): 8 passed, 0 failed -- the fixture
+// RESULTS (after both harness fixes above): 8 passed, 0 failed -- the fixture
 //   check plus all 7 asserted claims are GREEN. denise.v's sprite/
 //   display-window behaviour matches every one of this package's 7
 //   testable claims: a sprite entirely inside a display window shows in
@@ -172,11 +171,10 @@
 //   mechanism-only). 2 claims declined (see DECLINED above), not counted
 //   in the 8.
 //
-// MUTATION LOG: all 8 entries below were run under WSL/Verilator on
-//   12.09.2026 against the 8-passed/0-failed baseline -- edit -> rebuild
-//   -> run -> confirm the named check, and only that check, went red ->
-//   revert -> rebuild -> confirm the 8/0 baseline restored -- before
-//   moving to the next one. nanomig/ was never touched; no expected
+// MUTATION LOG: all 8 entries below were run against the 8-passed/0-failed
+//   baseline -- edit -> rebuild -> run -> confirm the named check, and
+//   only that check, went red -> revert -> rebuild -> confirm the 8/0
+//   baseline restored -- before moving to the next one. nanomig/ was never touched; no expected
 //   value, quotation, or comparison threshold was ever edited, only
 //   stimulus (a pos_byte or an image word).
 //
