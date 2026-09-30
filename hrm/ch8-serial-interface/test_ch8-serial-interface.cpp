@@ -132,7 +132,7 @@
 // MUTATION opus:8-serial.c104 stimulus red the actual h.read_reg(ADDR_SERDAT) bus read is skipped entirely; readback hardcoded to 0x0177 (the written value) instead MUT_37
 // MUTATION opus:8-serial.c105 oracle red same_rate compares cb_rx == 9 instead of == 10, the wrong expected frame length MUT_38
 // MUTATION opus:8-serial.c106 oracle red begins_promptly hardcoded false, ignoring the measured beats_to_start value MUT_39
-// MUTATION opus:8-serial.c108 stimulus red a wait_beats(h, cb*6) delay is inserted before the second SERDAT write, issuing it well past TBE's own signal MUT_40
+// MUTATION opus:8-serial.c108 stimulus red the second word is written immediately (as soon as TBE reads 1, same timing as baseline) but as 0x0066 instead of 0x0266 -- its highest set bit is 6, so pp.258-259's own rule shifts 7 data bits (8 cells) instead of 10, giving 18 combined cells, not 21, with every beat still inside the counted window MUT_40
 // MUTATION opus:8-serial.c110 stimulus red t transmitted with SERDAT=0x00AA (MSB-heavy) instead of 0x0155, checked against the unchanged LSB-first oracle MUT_41
 // MUTATION opus:8-serial.c112 oracle red expected_cells hardcoded to 4 instead of 11, expecting the shift to stop early at the first 1-bit MUT_42
 // MUTATION opus:8-serial.c133 oracle red expected_t2_cells hardcoded to 7 instead of 10 MUT_43
@@ -1923,19 +1923,28 @@ int main(int argc, char** argv) {
       }
       h.dut->rga_i = 0;
 #if MUT_40
-      // second write delayed well past TBE's own signal, not issued "as soon as"
-      wait_beats(h, cb * 6);
-#endif
+      // second word the page grades DIFFERENTLY, written immediately (as
+      // soon as TBE reads 1, same as the baseline) so every beat stays
+      // inside the counted window: 0x0066's highest set bit is bit 6, so
+      // by pp.258-259's "shifting continues until all 1 bits have been
+      // shifted out" it shifts 7 data bits, 8 cells (1 start + 7 data) --
+      // combined with word 1's 10, 18 cells, not the baseline's 21. A
+      // delay inserted here instead (an earlier version of this mutation)
+      // spent its own beats inside wait_beats(), OUTSIDE this window's own
+      // counting loops -- red for an uncounted-beats artefact, not because
+      // the page grades the stimulus differently.
+      h.write_reg(ADDR_SERDAT, 0x0066);
+#else
       h.write_reg(ADDR_SERDAT, 0x0266);
+#endif
       // Continue the SAME window through to the frame's single completion
       // (TSRE does not rise between the two words -- C3 establishes that
-      // it only sets once every pending word is done, unless MUT_40's
-      // delay lets word 1 finish alone first). Content is not decoded
-      // bit-by-bit here -- the state machine's own extra idle-to-shift
-      // bounce between the two words (traced in paula_uart.v's
-      // TX_IDLE/TX_SHIFT cases) does not divide evenly into fixed-length
-      // cell slots, so timing, not a rigid per-cell sample grid, is what
-      // this measures.
+      // it only sets once every pending word is done). Content is not
+      // decoded bit-by-bit here -- the state machine's own extra
+      // idle-to-shift bounce between the two words (traced in
+      // paula_uart.v's TX_IDLE/TX_SHIFT cases) does not divide evenly into
+      // fixed-length cell slots, so timing, not a rigid per-cell sample
+      // grid, is what this measures.
       h.dut->rga_i = (ADDR_SERDATR >> 1) & 0xFF;
       for (int guard = 0; guard < cb * 4 * 30 + 1000 && !completed; ++guard) {
         h.tick();
@@ -1950,17 +1959,24 @@ int main(int argc, char** argv) {
       }
       h.dut->rga_i = 0;
       const int cells = (beats + cb / 2) / cb;
-#if MUT_40
-      // (the delayed-second-write variant above already makes this red by
-      // letting word 1 alone complete, at 10 cells, before word 2 lands)
-#endif
       checks.expect(beats_to_tbe >= 0 && completed && cells == 21,
           "opus:8-serial.c108 opus:8-serial.c109 D4: SERDAT can accept "
           "new data once the transfer to the shift register completes, "
           "and the TBE interrupt signals this fact -- a second word "
           "written as soon as TBE reads 1 is accepted and transmitted "
           "after the first word finishes: the combined frame measures "
-          "exactly 21 cells (10 + 11), not 10 or 11 alone [p.258 \"When "
+          "exactly 21 cells (10 + 11), not 10 or 11 alone. 21 is derived, "
+          "not read off one sentence: each word is one start bit (p.259 "
+          "\"One start bit is automatically generated before the first "
+          "data bit (bit 0) is sent.\") plus data bits shifted out one per "
+          "interval until every 1 bit has gone (p.258 \"Data will be moved "
+          "out of the shift register, one bit during each time interval "
+          "... The shifting continues until all 1 bits have been shifted "
+          "out.\") -- 0x0155's highest set bit is bit 8, so 1+9=10 cells; "
+          "0x0266's is bit 9, so 1+10=11 cells -- and the frame's end "
+          "instant is TSRE (p.257 \"...the output shift register has "
+          "completed its task, all data has been transmitted...\"), which "
+          "fires once, after both words, not between them [p.258 \"When "
           "the transfer to the serial shift register has been completed, "
           "SERDAT can accept new data; the TBE interrupt signals this "
           "fact.\"]");
