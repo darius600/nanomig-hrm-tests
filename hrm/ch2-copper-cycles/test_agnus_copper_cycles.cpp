@@ -3,7 +3,7 @@
 //   form consumes.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Appendix A
-//   (COPINS $08C) and printed p. 20; frozen specification 326802b.
+//   (COPINS $08C) and printed p. 20; a frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-02
 // Non-goals: The "four" and "six memory cycle times" figures and the
 //   odd-slot parity on p.20 are arbitration properties of the surrounding
@@ -16,12 +16,11 @@
 //   `FPGA-nnn` is a task number in the private workspace where this work was
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
-//   A `frozen specification` named above was the suite's first oracle, a note
-//   written from the Verilog before the pipeline existed; docs/legacy-names.md
-//   describes it.
+//   A `frozen specification` named above is a note written from the
+//   Verilog, predating the claim pipeline; docs/legacy-names.md describes
+//   it.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 // Specification additions: one claim id new to this file, from the
 //   inventory's quotation and restatement alone.
 //   ch2-about-the-copper.c3 (p.19, "About the Copper" introduction):
