@@ -54,16 +54,16 @@ WinUAE `ccc407e9` — so this report and that one compare like with like.
 
 *The strongest case for looking at the RTL.*
 
-### A1 — Super-hires does not reinterpret the colour registers (25 assertions)
+### A1 — Super-hires does not reinterpret the colour registers (24 assertions)
 
 | | |
 |---|---|
 | Manual | pp.297, 301, 302: in SHRES the same COLORxx registers are reinterpreted — two bits of resolution per component, bitplanes in the lower sixteen registers (p.301), sprites in the upper sixteen (p.302) |
 | NanoMig | plain reading in every mode: `0x0C39` comes out R=$C, G=$3, B=$9 |
-| Tests | `ch3-shres-bitplane-colour-encoding` (9), `ch3-shres-sprite-colour-encoding` (16) |
+| Tests | `ch3-shres-bitplane-colour-encoding` (9), `ch3-shres-sprite-colour-encoding` (15) |
 
 All nine of the bitplane package's reds carry NM-HRM-017, and the sprite
-package's sixteen are one measurement, of p.301's multiplexing clause
+package's fifteen each grade one row of p.302's table
 ([`NM-HRM-017`](../findings/NM-HRM-017.md),
 [`NM-HRM-016`](../findings/NM-HRM-016.md)).
 
@@ -425,7 +425,7 @@ grouping is the one the finding pages support, which moves three sections.
 
 | | sections | findings | assertions |
 |---|---|---:|---:|
-| **A** — both emulators with the manual, against NanoMig | A1, A2, B2, C2 | 4 | 29 |
+| **A** — both emulators with the manual, against NanoMig | A1, A2, B2, C2 | 4 | 28 |
 | **B** — both emulators with NanoMig, against the manual | B1, B4, B5, B6 | 4 | 8 |
 | **C** — the emulators disagree with each other | C1 | 1 | 1 |
 | withdrawn | B3 | 1 | 0 |

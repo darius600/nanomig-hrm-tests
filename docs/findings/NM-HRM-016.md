@@ -5,12 +5,12 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. The package's sixteen reds are one measurement, of p. 301's multiplexing clause: NanoMig shows a sprite pixel alike in both modes. None measures a row of the table, and one green and one control rest on NanoMig's lookup (*What the test measures*). The two bits per component the page gives are measured at the system boundary and graded nowhere. |
+| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. Each of the package's fifteen reds grades one row of p. 302's table at its bits' own places, and a private copy of the RTL that shows COLOR16–COLOR31 as the table prints them turns all fifteen green (*What the test measures*). |
 | **Module** | `denise_colortable.v`, `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_colortable.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch3-shres-sprite-colour-encoding`](../../hrm/ch3-shres-sprite-colour-encoding) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 16 red: `SHRES-MODE-CHANGES-OUTPUT`; `REG-0x11`, `REG-0x12`, `REG-0x13`; `REG-0x14`, `REG-0x15`, `REG-0x16`, `REG-0x17`, `REG-0x18`, `REG-0x19`, `REG-0x1A`, `REG-0x1B`, `REG-0x1C`, `REG-0x1D`, `REG-0x1E`, `REG-0x1F`. `REG-0x10` is declined (`3 passed, 16 failed, 1 declined`; *What the test measures*) |
+| **Assertions** | 15 red, one per row of p. 302's table: `REG-0x11`, `REG-0x12`, `REG-0x13`, `REG-0x14`, `REG-0x15`, `REG-0x16`, `REG-0x17`, `REG-0x18`, `REG-0x19`, `REG-0x1A`, `REG-0x1B`, `REG-0x1C`, `REG-0x1D`, `REG-0x1E`, `REG-0x1F` (`4 passed, 15 failed, 2 declined`). `REG-0x10` and `DOT-BITS` are declined, `P1` and three Hires controls are green, and `P2` is printed, not graded (*What the test measures*) |
 | **Verdict of the four** | **one of four** reads `$10`–`$1F` as the page describes (WinUAE, ECS Denise only); vAmiga pair-encodes only the lower sixteen registers; Denise and Copperline do not pair-encode; outside the emulators, the 8373R4 dissection indexes the upper sixteen registers by two sprite pixels and shows two bits per component, as WinUAE does — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-017](NM-HRM-017.md), the bitplane half of the same mechanism |
 
@@ -121,44 +121,45 @@ for the same letters and for the absence of Colour 16's letters from bits 3–2
 Colour 16's, decide each component of NanoMig's SuperHires sprite pixel, where
 p. 301 gives it two.
 
-The unit package writes one register at a time and compares the set of
-distinct colours a sprite pixel shows at `shres = 0` and at `shres = 1`, a
-comparison that is blind to the SuperHires drain rate. Every register it reads
-returns the identical set:
+The unit package flips one register bit at a time and reads which colour and
+channel moves, and where. In NanoMig bit 0 of COLOR17, Colour 16's blue letter
+`F`, moves Colour 17's blue; bit 0 of COLOR21, Colour 17's `L`, moves Colour
+17's blue, but not in the top two bits where the key puts `L`:
 
 ```
-MEASURED: REG-0x11: shres=0 distinct colours {R=2 G=1 B=3 (raw 0x9966CC)};
-                    shres=1 distinct colours {R=2 G=1 B=3 (raw 0x9966CC)}.
+MEASURED: REG-0x11: bit 0, run S1, tick 9: observed colour 17, page-predicted colour 16, component(s) moved: B.
+MEASURED: REG-0x15: bit 0, run S1-SPR2, tick 9: observed colour 17, page-predicted colour 17, component(s) moved: B.
 ```
 
 ---
 
 ## What the test measures
 
-The package's assertions (`3 passed, 16 failed, 1 declined`), set against an
-implementation of p. 302. The *pair lookup* is WinUAE's (*What the others
-say*): two sprite samples per low-resolution pixel select
-COLOR(16 + 4·(*second* & 3) + (*first* & 3)), so the inside of a solid run of
-value *v* reads COLOR(16 + 5*v*), and only a pair with a transparent half reads
-COLOR17–COLOR19. For an attached pair WinUAE keeps only the even sprite's two
-bits of the colour index
-([`drawing.cpp:4568-4575`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/drawing.cpp#L4568-L4575)).
-Its column is derived from WinUAE's code applied to the package's stimuli, not
-run.
+[`hrm/ch3-shres-sprite-colour-encoding`](../../hrm/ch3-shres-sprite-colour-encoding)
+loads COLOR16–COLOR31 as p. 302's table packs four fixed palettes, sets
+SuperHires, and flips each register's twelve colour bits in turn, sampling the
+output on every 28 MHz clock. A flip must move the colour and channel its row
+prints, in that channel's top two bits (p. 301: "There are only two bits of
+red, green and blue color resolution per hires pixel"). No page says which
+register a sprite pixel reads, so the registers are reached as read paths only:
+sprite 0 for COLOR17–COLOR19, sprites 2, 4 and 6 for the rest of each group
+(p. 103, Figure 4-6), and an attached pair for COLOR20, COLOR24 and COLOR28.
 
-| assertion (`test_denise.cpp`) | NanoMig | pair lookup | what it shows |
+| assertion (`test_denise.cpp`) | NanoMig | p. 302 copy | what it grades |
 |---|---|---|---|
-| `SHRES-MODE-CHANGES-OUTPUT` (`:839`) | red | green: a solid value-01 run reads COLOR21, which the test leaves at the value it leaves COLOR00, so no sample differs from the sprite-less trace | the clause it cites, p. 301's multiplexing, and only that: NanoMig's SuperHires sprite pixel equals its lores one. Its stimulus writes COLOR17 alone, which is not an encoding the table gives, so the page predicts no colour for it; vAmiga's lower-sixteen reading, which p. 302 excludes, and a display that drew no sprite pass it the same way |
-| `REG-0x11` to `-0x13` (`:974`) | red | green, the same way: the runs read COLOR21, COLOR26 and COLOR31 | the same measurement again, not their rows: the register each names is read at most at the run's edge, which the page does not describe |
-| `REG-0x14` to `-0x1F` (`:974`) | red | green: the attached pair reads COLOR16, COLOR21, COLOR26 or COLOR31, which is the named register for `-0x15`, `-0x1A` and `-0x1F` only | attached sprites, which no page describes in SuperHires; nine of the twelve do not read their row |
-| `REG-0x10` (`:917`) | declined | declined | row `$10` holds only Colour 16's letters, and no sprite-0 pixel shows Colour 16 (p. 103, p. 108) |
-| `SHRES-SPR11-BIT11-ISOLATES-RED` (`:1035`) | green | red, or green only where the harness's one sample in four lands on an edge pair that reads COLOR17: bit 11 of COLOR17 reaches no pixel inside a solid value-01 run | NanoMig's lookup |
-| `[control] FIXTURE-SPRITE-DATA-PATH-LIVE` (`:790`) | green | as the row above: it runs at `shres = 1` (`:682`) with COLOR17 alone written | a control that depends on the mode under test |
-| `[control] FIXTURE-SPR0-TRANSPARENT-AT-VALUE0` (`:804`) | green | green | value 00 is transparent in both modes |
+| `REG-0x11` to `-0x13` (`:1176-1207`), `REG-0x14` to `-0x1F` (`:1215-1252`) | red | green | one row of the table each, at its bits' own places |
+| `P1` (`:967-1025`) | green | green | colours 17 to 19 each show their own two-bit triple in the top two bits, read through COLOR21, COLOR26 and COLOR31, which hold that colour in both halves |
+| `C1`, `C2`, `C3` (`:863-965`) | green | `C3` red | Hires controls: the sprite path is live, value 00 is transparent, a register reads as 0RGB outside SuperHires |
+| `REG-0x10` (`:1158-1169`) | declined | declined | row `$10` holds only Colour 16, which no sprite pixel shows (p. 103, p. 108) |
+| `DOT-BITS` (`:1109-1156`) | declined | declined | bits 15–12, the table's `.`, are dropped by every colour-register write, not by the table |
+| `P2` (`:1027-1107`) | printed | printed | 18 of 54 traces change, each on a Colour 16 letter; not graded, since the copy reads the same |
 
-The harness samples once per 7 MHz clock (`:591-600`), one SuperHires pixel in
-four. Each `REG` assertion also requires that bits 15–12 have no effect, for
-which the table's `.` gives no value.
+**The implementation control.** A private copy of `denise_colortable.v`,
+outside the repository, shows a COLOR16–COLOR31 read as p. 302 prints it:
+alternate 28 MHz samples carry the register's upper and lower bit pairs, each
+in the channel's top two bits. On it the package reads `18 passed, 1 failed,
+2 declined`: the fifteen rows turn green, and `C3` goes red because the copy
+shows those registers that way outside SuperHires too.
 
 ---
 
@@ -200,7 +201,7 @@ and none decides this finding. What they are and how they were read is in
   <!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
   <!-- drawing: denise-8373r4-dissection/sheet_079.txt -->
 
-  A SuperHires sprite reads COLOR(16 + 4 × second + first) for each pair of its pixels and shows each pixel's two bits per component from one half of that register: the arrangement of p. 302's table, and the pair lookup of WinUAE that *What the test measures* sets against NanoMig. A solid run of value 01 reads COLOR21, whose row the table fills with Colour 17 alone. As drawn, sprites 4 to 7 have no channel of their own in SuperHires. The PLA and the read decoder are read from their drawn crosspoints, not from a netlist; the output stage is traced in the netlist for red, the one component drawn in full, and green and blue draw only their bit 0. The dissection is a work in progress, and of one revision.
+  A SuperHires sprite reads COLOR(16 + 4 × second + first) for each pair of its pixels and shows each pixel's two bits per component from one half of that register: the arrangement of p. 302's table, and WinUAE's pair lookup (*What the others say*). A solid run of value 01 reads COLOR21, whose row the table fills with Colour 17 alone. As drawn, sprites 4 to 7 have no channel of their own in SuperHires. The PLA and the read decoder are read from their drawn crosspoints, not from a netlist; the output stage is traced in the netlist for red, the one component drawn in full, and green and blue draw only their bit 0. The dissection is a work in progress, and of one revision.
 
 Silent on this point: Commodore, *Denise* specification, part 252126-01 (ECS), 1988; US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989; US patent 5,103,499, Commodore-Amiga, filed 1989 as a division of the 1986 application, granted 1992.
 
