@@ -1280,13 +1280,13 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (11.09.2026). Every entry below was actually built under
-// WSL/Verilator (`make clean && make MUT=<name> test`), the changed
-// PASS/FAIL line read from real stdout (quoted in the entries below), then
-// reverted to a plain `make clean && make test` and reconfirmed back at
-// this package's true baseline: 17 passed, 1 failed (MAX-WORDS-49-HIRES,
-// unchanged) - not predicted. Every mutation is a STIMULUS change; no
-// checks.expect() call's own expected-value logic was ever touched.
+// MUTATION LOG. Every entry below is actually built under WSL/Verilator
+// (`make clean && make MUT=<name> test`), the changed PASS/FAIL line read
+// from real stdout (quoted in the entries below), then reverted to a
+// plain `make clean && make test` and reconfirmed back at this package's
+// true baseline: 17 passed, 1 failed (MAX-WORDS-49-HIRES, unchanged) -
+// not predicted. Every mutation is a STIMULUS change; no checks.expect()
+// call's own expected-value logic is ever touched.
 //
 // Baseline before and after every mutation below: 17 passed, 1 failed.
 // Applying any ONE mutation flag moved the count to 16 passed, 2 failed -
@@ -1299,9 +1299,8 @@ int main(int argc, char** argv) {
 // beyond-both-hardware-limits stimulus, $00/$FE past $18/$D8) this
 // assertion is a genuine finding: the RTL fetches 50 words, one more than
 // Table 3-14's stated 49-word maximum (p.80), against the count<=49
-// oracle NM-HRM-007 corrected it to on 24.09.2026 (previously count==49,
-// a stricter reading than the sentence states - it fixes 49 as a MAXIMUM,
-// not an exact count at every stimulus). The mutation substitutes a
+// oracle NM-HRM-007 states -- 49 is a maximum, not an exact count at
+// every stimulus. The mutation substitutes a
 // genuine, independently-live stimulus - the standard hires window
 // ($003C/$00D4, 40 words) for the hardware-limit probe - through the
 // IDENTICAL <=49 comparator: 40<=49 holds, so the assertion passes. That
