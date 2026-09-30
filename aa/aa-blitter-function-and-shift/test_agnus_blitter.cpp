@@ -54,12 +54,12 @@
 //   setting the field to k produces the same word as pre-shifting the source
 //   itself by k places, in whichever direction the shifter runs.
 //
-//   AND THEY SWEEP ALL EIGHT LINES RATHER THAN PICKING ONE. The first version
-//   picked LF = $5A because it looked arbitrary. It is not: $5A selects a
-//   function of A and C alone, so the B half of the same test compared two
-//   identical words four times and called it a pass. Without the truth table
+//   AND THEY SWEEP ALL EIGHT LINES RATHER THAN PICKING ONE. Picking LF = $5A
+//   because it looks arbitrary is not safe: $5A selects a
+//   function of A and C alone, so the B half of the same test would compare two
+//   identical words four times and call it a pass. Without the truth table
 //   -- which this document does not print -- no constant can be KNOWN to
-//   depend on the source under test. Both assertions now run every single
+//   depend on the source under test. Both assertions run every single
 //   line, count the line/shift pairs where moving the source does not move
 //   the output, skip those as proving nothing, and require the equivalence of
 //   all the rest. Measured: 24 of 32 pairs are live for A, 32 of 32 for B.
@@ -196,8 +196,8 @@ static int blit(uint16_t lf, uint16_t con0_high, uint16_t con1 = 0,
     // THE CONTROL REGISTERS GO FIRST AND THE ORDER IS NOT COSMETIC. The B
     // channel is shifted into its holding register only when BLTBDAT is
     // written (agnus_blitter.v:411-412), so a BSH written afterwards never
-    // reaches the word. The first version of this fixture wrote the data
-    // first and measured a shift field that did nothing -- which is what
+    // reaches the word. Writing the data
+    // first would measure a shift field that did nothing -- which is what
     // programming the blitter control-first avoids on real hardware too.
     h.write(A_BLTCON0, con0_high | lf);
     h.write(A_BLTCON1, con1);
@@ -273,8 +273,8 @@ int main(int argc, char** argv) {
         // equals the unshifted one while the pre-shift it is compared
         // against does not.
         //
-        // EVERY LINE IS TRIED RATHER THAN A CHOSEN ONE. The first version of
-        // this assertion picked LF = $5A "arbitrarily" and it graded B as
+        // EVERY LINE IS TRIED RATHER THAN A CHOSEN ONE. Picking LF = $5A
+        // "arbitrarily" would grade B as
         // vacuous, because $5A happens to select a function of A and C alone.
         // A constant picked without the truth table -- which this document
         // does not print -- cannot be known to depend on the source under
