@@ -16,8 +16,8 @@ the 8520 (ciab) FLAG pin and the shared `int6` line.
 
 No RTL file has been opened for the purpose of drafting this document. Every
 RTL fact used below — port names, expressions, line numbers, and the two
-measurements quoted as already taken — was handed to the builder before step
-1 began, in the build brief and in the claims file's own `classify.evidence`
+measurements quoted as already taken — was handed over before step
+1 began, in the build task and in the claims file's own `classify.evidence`
 fields (both required reading per the build task). The line at the end of
 this document discloses exactly what that is and is not.
 
@@ -161,7 +161,7 @@ boundary.
 
 ## On fixture liveness, the control case, and mutation
 
-Per the build brief, in the fixed order: fixture liveness precedes any
+Per this suite's rules, in the fixed order: fixture liveness precedes any
 data-dependent grading; at least one control case is on the same
 measurement basis as the graded claims; every graded line (liveness and
 control included) carries a stimulus mutation recorded in the source in the
@@ -178,8 +178,7 @@ fixed `// MUTATION <label> <oracle|stimulus|none> <red|green|impossible>
   simplest possible distinct inputs, ahead of PROP-LEVEL6's own grading.
   The exact stimulus that makes `paula_floppy` pulse `index` (its port
   names for drive select / motor state, and the timing of its internal
-  rotation counter) is step-2 material, fixed once the RTL is read, per the
-  build brief's order of work.
+  rotation counter) is step-2 material, fixed once the RTL is read.
 - **Control.** PROP-NOT-OWN-BIT's own comparator — an unmasked non-FLG
   `ciab` interrupt source reaching `paula_intcontroller` via join 2 alone,
   without any `flag` pulse — is the package's control case: it is expected
@@ -207,12 +206,12 @@ testable` and are each cited on at least one graded `expect()` line above.
 ## Rig hazards carried into the build, already paid for once elsewhere in this slice
 
 - **`dsktrack` has no reset term** (`paula_floppy.v:671-680`, per the build
-  brief). Not directly exercised by this package's own claims, but since
+  task). Not directly exercised by this package's own claims, but since
   the fixture instantiates a live `paula_floppy`, a fresh Verilated model
-  will be allocated per trial regardless, as the build brief requires for
+  will be allocated per trial regardless, as this suite requires for
   every package touching this module.
 - **`paula_floppy_ebr.v` declares a second `module paula_floppy`.** Left out
-  of the build entirely, per the build brief and the finding-candidates
+  of the build entirely, per the build task and the finding-candidates
   file's "one more rig hazard" note — not worked around with `-Wno-fatal`.
 
 ## Disclosure — what was already known before this file was drafted
@@ -238,19 +237,20 @@ rather than counted down in real simulated time — is explicitly left as
 step-2 material throughout this document, to be resolved only after this
 file is committed.
 
-## Repair addendum (Lot F, 2026-09-15)
+## PROP-NOT-OWN-BIT/CONTROL's second condition
 
 PROP-NOT-OWN-BIT/CONTROL (`opus:8-dskint.c9`, the negative half — "not
-through an INTREQ bit of its own") was underdetermined: driving Timer A
+through an INTREQ bit of its own") requires two conditions. Driving Timer A
 (a different, non-FLG source) to the same bit13/level6 outcome shows bit
 13 is shared, but does not rule out an ADDITIONAL, coexisting
-index-specific INTREQ bit — both could exist and the check would still
-pass, since it never looked at what a real index pulse does to the rest
-of INTREQR. Repaired by adding a second, always-run, falsifiable
-condition alongside the Timer A one: a real index pulse must change
+index-specific INTREQ bit — both could exist and a check limited to the
+Timer A half alone would still
+pass, since that half never looks at what a real index pulse does to the rest
+of INTREQR. So a second, always-run, falsifiable
+condition runs alongside the Timer A one: a real index pulse must change
 EXACTLY bit 13 of INTREQR (full-word before/after comparison) and no
 other bit — a hypothesis where index also drives some other bit would
-break this condition, which the Timer A half alone could not do. Both
-conditions must hold. Re-measured: still 4 passed, 0 failed;
-`MUTATE=opus:8-dskint.c9` re-run and confirmed still exactly 3 passed / 1
+break this condition, which the Timer A half alone cannot do. Both
+conditions must hold. Baseline: 4 passed, 0 failed;
+`MUTATE=opus:8-dskint.c9` gives exactly 3 passed / 1
 failed, only this label affected.

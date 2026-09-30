@@ -138,19 +138,19 @@
 //   MUTATE run was left applied afterward; the binary described here is
 //   the reverted, baseline (MUTATE-unset) build.
 //
-// REPAIR / Lot F (independent validation, 2026-09-15): opus:8-dskint.c9's
-//   PROP-NOT-OWN-BIT/CONTROL grew a second, always-run condition -- a real
+// PROP-NOT-OWN-BIT/CONTROL'S SECOND CONDITION: opus:8-dskint.c9's
+//   PROP-NOT-OWN-BIT/CONTROL requires a second, always-run condition -- a real
 //   index pulse must change EXACTLY bit 13 of INTREQR, no other bit -- a
 //   falsifiable check for "index has no additional INTREQ bit of its own"
-//   that the original Timer A half alone could not provide (it showed bit
+//   that the Timer A half alone cannot provide on its own (it shows bit
 //   13 is shared, not that nothing else moves when index itself pulses).
-//   Re-measured baseline (MUTATE unset): still 4 passed, 0 failed;
-//   real-index changed_bits=0x2000 (exactly bit 13). MUTATE=opus:8-dskint.c9
-//   re-run after this change: still exactly 3 passed / 1 failed, only this
+//   Baseline (MUTATE unset): 4 passed, 0 failed;
+//   real-index changed_bits=0x2000 (exactly bit 13). MUTATE=opus:8-dskint.c9:
+//   exactly 3 passed / 1 failed, only this
 //   label flipped (Timer A's own half still drives the FAIL, since the ICR
-//   mask redirection leaves level=0; the new second condition is unaffected
+//   mask redirection leaves level=0; the second condition is unaffected
 //   by this particular mutation and stays true on its own). No other label
-//   moved.
+//   moves.
 
 #include <cstdint>
 #include <cstdio>
@@ -207,7 +207,7 @@ uint16_t A(int byte_addr) { return (uint16_t)(byte_addr >> 1); }
 const uint16_t INTENA  = A(0x09a);
 const uint16_t INTREQR = A(0x01e);
 
-// RIG HAZARD (SPECIFICATION.md, build brief): `dsktrack` has no reset term
+// RIG HAZARD (SPECIFICATION.md, build task): `dsktrack` has no reset term
 // (paula_floppy.v:671-680); `rpm_pulse_cnt` (paula_floppy.v:563-573) is the
 // SAME shape -- also no reset term. A reused Verilated paula_floppy would
 // carry stale head position AND stale rotation phase into the next trial.
@@ -389,7 +389,7 @@ int main(int argc, char** argv) {
         "have no observable at this or any boundary in this design.");
 
     // ========================================================================
-    // A0 -- FIXTURE LIVENESS. No claim id, no manual page: the build brief's
+    // A0 -- FIXTURE LIVENESS. No claim id, no manual page: this suite's
     // own requirement that the fixture prove it can deliver a known,
     // distinct word before any read-based assertion is trusted. Two
     // distinct conditions at paula_floppy's boundary (never pulse `index`,
@@ -498,18 +498,18 @@ int main(int argc, char** argv) {
     // PROP-NOT-OWN-BIT / CONTROL -- opus:8-dskint.c9 (p.250, negative half:
     // "...not through an INTREQ bit of its own").
     //
-    // REPAIRED (independent validation, 2026-09-15, Lot F): the withdrawn
-    // form drove ONLY Timer A (a DIFFERENT, non-FLG source) to a real
-    // underflow and showed IT ALSO reaches bit13/level6 -- proof that bit
-    // 13 is genuinely SHARED, but not, by itself, proof that INDEX has NO
+    // A Timer A half alone -- driving ONLY Timer A (a DIFFERENT, non-FLG
+    // source) to a real
+    // underflow and showing IT ALSO reaches bit13/level6 -- proves that bit
+    // 13 is genuinely SHARED, but is not, by itself, proof that INDEX has NO
     // additional bit of its own: a coexisting index-specific INTREQ bit
-    // could exist alongside the shared one and this check would still
+    // could exist alongside the shared one and such a check would still
     // pass, since it never looks at what a real index pulse itself does to
     // the REST of INTREQR. The port-list argument in the prose ("no port
-    // named for the disk index") was correct but was not, by itself, a
-    // falsifiable condition the code checked.
+    // named for the disk index") is correct but is not, by itself, a
+    // falsifiable condition code can check.
     //
-    // Repaired to add a second, direct condition: pulse a REAL index (the
+    // So this check adds a second, direct condition: pulse a REAL index (the
     // same mechanism PROP-LEVEL6 uses) and read the WHOLE INTREQR word
     // before and after. If index had an additional, dedicated bit anywhere
     // in paula_intcontroller's own latch array, that bit would move too,
