@@ -818,6 +818,40 @@ int main(int argc, char** argv) {
             ".");
     }
 
+    // ---- Da: declined, not asserted -- record() only, ids off every graded line ----
+    c.record(
+        "CH4-cdw.c9 CH4-fig4-7.c3 CH4-fig47.f4 CH4-p108.c2 CH4-tab41.c10 "
+        "declined (MEMORY-ORDER-SHARES-A3s-OWN-SOURCE-CONFLICT): each "
+        "names which of the two color-descriptor words sits at the LOWER "
+        "address / comes FIRST in the sprite data structure -- Table 4-1's "
+        "N+2/N+3 row pair (CH4-tab41.c10, whose own crossread flags that "
+        "the 'low word precedes' conclusion depends on the unquoted N+2 "
+        "row), Figure 4-7's low-word-above-high-word arrangement "
+        "(CH4-fig4-7.c3, CH4-fig47.f4), and page 108's own restatement of "
+        "the same figure (CH4-cdw.c9, CH4-p108.c2). This is the SAME "
+        "ordering question A3-order above already measures and declines "
+        "to grade, for the reason printed there: page 126 states the "
+        "fetch order as SPRxDATA-then-SPRxDATB, a separate on-record page "
+        "123 register-write convention states the opposite, and pages "
+        "107/121 separately dispute which word is the more-significant "
+        "colour half -- three sources, none picked. A3-order's own "
+        "measurement (DATA-then-DATB, at increasing addresses per B4) "
+        "answers what THIS RTL does; it does not settle which manual page "
+        "these five ids are entitled to be graded against, so they are "
+        "recorded alongside it rather than added to its label -- A3-order "
+        "names a narrower id set (CH4-det.c23, CH4-det.c24, CH4-p126.c18, "
+        "CH4-p126.c19, 'the p126 side' only) and adding these five to it "
+        "would credit a page it explicitly declined to pick. The "
+        "colour-SIGNIFICANCE half some of these restatements imply (which "
+        "word is the more- or less-significant digit, not just which "
+        "comes first in memory) is a separate fixture and a separate "
+        "package: hrm/ch4-sprite-colour-registers/ grades that at "
+        "denise_sprites, on HIGH-AND-LOW-ORDER-WORDS-BOTH-CONTRIBUTE-TO-"
+        "THE-CODE, citing CH4-cdw.c1/c2/c4/c5/c6 and CH4-p107.c13 among "
+        "others -- a different id set again, not these five. No package "
+        "under hrm/ or integration/ cites any of these five ids (checked "
+        "by search, not assumed).");
+
     // ---- A4a: END-OF-DATA-PAIR-DECODED-AS-NEXT-CONTROL-PAIR ----
     {
         Harness h;
@@ -1487,6 +1521,34 @@ int main(int argc, char** argv) {
         "rejects an uninitialized pointer, or distinguishes a real from a null one -- both are just "
         "numbers to the pointer arithmetic. Per the bundled-clause rule this id stays off B1 rather "
         "than riding along with a caveat.");
+
+    // ---- Dx: declined, not asserted -- record() only, ids off every graded line ----
+    c.record(
+        "CH4-det.c34 CH4-p127.c3 CH4-more.c7 CH4-p114.c4 declined "
+        "(PIXEL-OUTPUT-OUT-OF-BOUNDARY): \"this same pattern will be "
+        "produced as pixels automatically under DMA control one line at a "
+        "time\" (CH4-det.c34/CH4-p127.c3, p.127) and \"an uninitialized "
+        "sprite could cause spurious sprite video to appear\" "
+        "(CH4-more.c7/CH4-p114.c4, p.114) both end in a claim about "
+        "PIXELS or VIDEO actually appearing on screen -- something "
+        "agnus_spritedma has no port for at all (see Non-goals, Dx). The "
+        "fetch-mechanics half of the same two sentences ('the pattern is "
+        "produced under DMA control', 'each channel uses its own "
+        "independent pointer') is exactly what B1 and A1-A9 above "
+        "establish -- CH4-more.c6/CH4-p114.c3's own record above declines "
+        "the initialisation-obligation half of the same pair on that "
+        "basis. What this module can show (a channel fetches from "
+        "wherever its pointer says, initialized or not) does not by "
+        "itself establish that the fetched bytes are ever rendered as "
+        "pixels or as 'spurious video': that step belongs to "
+        "denise_sprites, a different fixture this package does not "
+        "build. Per the bundled-clause rule all four ids are withdrawn "
+        "whole rather than riding along on B1/A1-A9 with the video half "
+        "uncovered. No package under hrm/ or integration/ cites any of "
+        "these four ids (checked by search, not assumed) -- "
+        "integration/ch4-sprite-registers grades sprite pixel colour "
+        "output from CPU/DMA register loads under its own P4-P6 "
+        "propositions and its own claim ids, not these.");
 
     std::cout << "\n" << c.passed << " passed, " << c.failed << " failed.\n";
     return c.failed > 0 ? 1 : 0;
