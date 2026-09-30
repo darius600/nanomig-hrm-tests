@@ -13,11 +13,15 @@
 // are this package's own contrasting cases and run in every pass.
 //
 // Every mutation below measured a FAIL on exactly the one line it names, on
-// both cores, with every other line unchanged from the normal run, with two
-// exceptions: the P4 lines already red or recorded on every normal run (P4,
-// P4-Run2, the P4-Run3 precondition, P4-Run3-reorder, P4-Run3-PAIR) stay
-// exactly as they are; and NMH_MUTATE=P3-A additionally turns P3-DSK from
-// PASS to RECORDED (its own entry below says so).
+// both cores, with every other line unchanged from the normal run (summary
+// 95 passed, 6 failed, against the normal run's 96 passed, 5 failed), with
+// three exceptions: the P4 lines already red or recorded on every normal
+// run (P4, P4-Run2, the P4-Run3 precondition, P4-Run3-reorder,
+// P4-Run3-PAIR) stay exactly as they are; NMH_MUTATE=P4-RUN3-PAIR-A instead
+// measures a PASS on the line it names, a green demonstration on an
+// already-red line (summary 97 passed, 4 failed); and NMH_MUTATE=P3-A
+// additionally turns nine other case lines from PASS to RECORDED, not just
+// its own P3a (summary 85 passed, 6 failed -- its own entry below says so).
 //
 // MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: stored constant changed
 //   to $DEAD instead of $BEEF -- measured FAIL on "FIXTURE: ...", both cores
@@ -71,9 +75,14 @@
 //   with region DSK silent in this run, precondition (a) fails, so the
 //   claim ch2-stopping-the-copper.c8/COP2-stopping-the-copper.c11 is not
 //   graded whole by the ten cases; P3-DSK becomes RECORDED as inconclusive
-//   and the other nine case lines (P3-BPL...P3-COP, P3-M) also become
-//   RECORDED with their ids withdrawn, each naming its own comparator's
-//   PASS or FAIL. P3-BASE is unaffected (its own claim excludes DSK).
+//   and the other nine case lines (P3-BPL, P3-SPR, P3-AUD0, P3-AUD1,
+//   P3-AUD2, P3-AUD3, P3-BLT, P3-COP, P3-M) also become RECORDED with
+//   their ids withdrawn, each naming its own comparator's own reading --
+//   measured PASS on all nine, both cores (the mutation touches only
+//   Base's own DSK access, not the nine channels' own case runs).
+//   P3-BASE is unaffected (its own claim excludes DSK). Summary: 85 passed,
+//   6 failed on both cores (ten lines leave the PASS/FAIL tally, P3a itself
+//   turns FAIL).
 // MUTATION P3b stimulus red NMH_MUTATE=P3-B: Base's DMACON = $83FE (AUD0EN
 //   left clear) graded against P = $3FF, via prog_p3_mut_b.bin -- measured
 //   FAIL on "P3b precondition: ...", both cores, with every channel but
