@@ -132,23 +132,28 @@
 //   claim uids (one opus, one sol) are cited together in a `[claims: ...]`
 //   suffix at the end of the label -- both count as ASSERTED by the graded
 //   line. Every proposition below is GREEN at baseline except
-//   RDY-DISK-PRESENCE, which is RED (NM-HRM-080); its mutation substitutes
-//   a different, independently-live stimulus (deselection, proven live by
-//   FIXTURE-LIVE below) through the IDENTICAL comparator and the SAME
-//   label, per this suite's rule against mutating an already-failing check
-//   with a no-op.
+//   RDY-DISK-PRESENCE and RDY-DISK-PRESENCE-DRIVE1, both RED (NM-HRM-080,
+//   drive 0 and drive 1); each one's mutation substitutes a different,
+//   independently-live stimulus (deselection, proven live by FIXTURE-LIVE
+//   and FIXTURE-LIVE-DRIVE1 respectively) through the IDENTICAL comparator
+//   and the SAME label, per this suite's rule against mutating an
+//   already-failing check with a no-op.
 //
-// MUTATION RUN LOG (WSL/Verilator 5.052): baseline (MUTATE unset) 8
-//   checks.expect() calls, 7 passed / 1 failed -- the 1 failure is
-//   RDY-DISK-PRESENCE. Each of MUTATE=FIXTURE-LIVE, INDEX-SEL-MOTOR-GATE,
+// MUTATION RUN LOG (WSL/Verilator 5.052): baseline (MUTATE unset) 10
+//   checks.expect() calls, 8 passed / 2 failed -- the 2 failures are
+//   RDY-DISK-PRESENCE and RDY-DISK-PRESENCE-DRIVE1. Each of
+//   MUTATE=FIXTURE-LIVE, FIXTURE-LIVE-DRIVE1, INDEX-SEL-MOTOR-GATE,
 //   WRITE-DATA-SELECT-GATE, CHANGE-CLEAR-NEEDS-SELECT,
 //   CHANGE-NO-CLEAR-NO-DISK, MTRXD-FOUR-INDEPENDENT-LATCHES-P369 and
 //   MTRXD-FOUR-INDEPENDENT-LATCHES-P370, diffed line by line against the
 //   baseline's PASS/FAIL output, moves EXACTLY the targeted label's own
-//   line (and no other) from PASS to FAIL (6 passed / 2 failed per run,
-//   RDY-DISK-PRESENCE's baseline failure unaffected).
-//   MUTATE=RDY-DISK-PRESENCE moves exactly that line from FAIL to PASS (8
-//   passed / 0 failed), nothing else moving.
+//   line (and no other) from PASS to FAIL (7 passed / 3 failed per run,
+//   the RDY-DISK-PRESENCE pair's baseline failures unaffected).
+//   MUTATE=RDY-DISK-PRESENCE moves exactly that line from FAIL to PASS (9
+//   passed / 1 failed, RDY-DISK-PRESENCE-DRIVE1 unaffected); MUTATE=
+//   RDY-DISK-PRESENCE-DRIVE1 moves exactly that line from FAIL to PASS (9
+//   passed / 1 failed, RDY-DISK-PRESENCE unaffected). Nothing else moves in
+//   either run.
 
 #include <cstdint>
 #include <cstdlib>
@@ -408,8 +413,7 @@ int main(int argc, char** argv) {
     {
         Rig r;
         bool mut = mutating("RDY-DISK-PRESENCE");
-        r.select(0);
-        r.d->_motor = 0;  // motor ON throughout, per the cited branch
+        r.select_with_motor(0, /*motor_on_level=*/true);  // motor latched ON at a genuine select edge, p.369's order
         r.unmount(0);     // disk absent
         bool ready_absent = r.ready();
         bool ready_present;
@@ -439,6 +443,73 @@ int main(int argc, char** argv) {
             "declined for the motor's OWN off-state being undefined: here selection and motor are both fixed "
             "and only disk presence varies, which no accepted assertion moves against "
             "_ready [claims: opus:AHJ-060, sol:H-036]");
+    }
+
+    // ========================================================================
+    // FIXTURE-LIVE-DRIVE1 -- no claim id, no manual page: RDY-DISK-PRESENCE-
+    // DRIVE1 below reads drive 1, whose _ready term only responds to
+    // selection once floppy_drives configures an extra drive present (the
+    // drive-count input, sampled at reset). Measured the same way
+    // FIXTURE-LIVE measured drive 0 above: before trusting a read on drive
+    // 1, show selecting and deselecting it changes _ready at all.
+    // ========================================================================
+    {
+        Rig r(1);  // floppy_drives=1: one extra drive configured, drive 1 present
+        bool mut = mutating("FIXTURE-LIVE-DRIVE1");
+        r.deselect_all();
+        bool ready_deselected = r.ready();
+        // MUTATION: never actually select drive 1 -- the "asserts once
+        // selected" half is never exercised.
+        if (!mut) r.select(1);
+        bool ready_selected = r.ready();
+        checks.note("FIXTURE-LIVE-DRIVE1: deselected -> _ready asserted=" + std::to_string(ready_deselected) +
+                    ", " + std::string(mut ? "still deselected (mutated)" : "drive 1 selected") +
+                    " -> _ready asserted=" + std::to_string(ready_selected));
+        checks.expect(!ready_deselected && ready_selected,
+            "FIXTURE-LIVE-DRIVE1: with floppy_drives configuring drive 1 present, deselecting every drive "
+            "deasserts _ready and selecting drive 1 asserts it -- drive 1's sense-line read path is live "
+            "before RDY-DISK-PRESENCE-DRIVE1 below is trusted");
+    }
+
+    // ========================================================================
+    // RDY-DISK-PRESENCE-DRIVE1 -- p.368 RDY-, same sentence as
+    // RDY-DISK-PRESENCE above, corroborated on drive 1: pp.334/368-370
+    // describe drives beyond drive 0 (the external drives 1-3), and
+    // RDY-DISK-PRESENCE alone only exercises drive 0 -- the followup this
+    // package answers asks for the same grading on drive 1. floppy_drives=1
+    // (sampled at reset, see the Rig constructor) is what makes drive 1
+    // exist for this fixture; FIXTURE-LIVE-DRIVE1 above shows it does.
+    // [claims: opus:AHJ-060, sol:H-036]
+    // ========================================================================
+    {
+        Rig r(1);  // floppy_drives=1: drive 1 present, see FIXTURE-LIVE-DRIVE1
+        bool mut = mutating("RDY-DISK-PRESENCE-DRIVE1");
+        r.select_with_motor(1, /*motor_on_level=*/true);
+        r.unmount(1);     // disk absent
+        bool ready_absent = r.ready();
+        bool ready_present;
+        if (!mut) {
+            r.mount(1, 1000);  // disk present -- the real stimulus p.368 says should matter
+            ready_present = r.ready();
+        } else {
+            // MUTATION (rule against mutating an already-failing check):
+            // substitute a genuine, independently-live stimulus change
+            // (deselecting the drive, proven live by FIXTURE-LIVE-DRIVE1
+            // above) for the disk-presence toggle, through the IDENTICAL !=
+            // comparator and the same label.
+            r.deselect_all();
+            ready_present = r.ready();
+        }
+        checks.note("RDY-DISK-PRESENCE-DRIVE1: drive1 selected, motor ON, disk absent -> ready=" +
+                    std::to_string(ready_absent) + "; then " +
+                    std::string(mut ? "deselected (mutated substitute)" : "disk mounted, still selected") +
+                    " -> ready=" + std::to_string(ready_present));
+        checks.expect(ready_absent != ready_present,
+            "RDY-DISK-PRESENCE-DRIVE1 (p.368, RDY-: 'When a disk drive's motor is on, this line indicates the "
+            "selected disk is installed and rotating at speed.'): with drive 1 configured present, selection "
+            "and motor both held fixed (motor ON, drive 1 selected throughout), _ready must read differently "
+            "for disk-absent than for disk-present to realise the printed claim on a drive other than drive 0 "
+            "[claims: opus:AHJ-060, sol:H-036]");
     }
 
     // ========================================================================
@@ -713,6 +784,8 @@ int main(int argc, char** argv) {
 
 // MUTATION FIXTURE-LIVE stimulus red: the drive is never actually selected, so the "asserts once selected" half is never exercised (MUTATE=FIXTURE-LIVE).
 // MUTATION RDY-DISK-PRESENCE stimulus green: this assertion is RED at baseline (_ready reads the same with and without a disk installed), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label (MUTATE=RDY-DISK-PRESENCE).
+// MUTATION FIXTURE-LIVE-DRIVE1 stimulus red: drive 1 is never actually selected, so the "asserts once selected" half is never exercised on drive 1 (MUTATE=FIXTURE-LIVE-DRIVE1).
+// MUTATION RDY-DISK-PRESENCE-DRIVE1 stimulus green: this assertion is RED at baseline (_ready reads the same on drive 1 with and without a disk installed, same defect as RDY-DISK-PRESENCE), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label (MUTATE=RDY-DISK-PRESENCE-DRIVE1).
 // MUTATION INDEX-SEL-MOTOR-GATE stimulus red: the deselection step is skipped, so the drive stays selected and the "selected drive" condition is never exercised (MUTATE=INDEX-SEL-MOTOR-GATE).
 // MUTATION WRITE-DATA-SELECT-GATE stimulus red: the second trial selects the SAME drive as the first instead of a different one, so "selecting a different drive must move the request with it" is never exercised (MUTATE=WRITE-DATA-SELECT-GATE).
 // MUTATION CHANGE-CLEAR-NEEDS-SELECT stimulus red: the drive is selected BEFORE the "deselected step" attempt, defeating the very condition under test (MUTATE=CHANGE-CLEAR-NEEDS-SELECT).
