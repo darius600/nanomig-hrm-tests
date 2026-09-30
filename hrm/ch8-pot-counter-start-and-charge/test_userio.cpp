@@ -204,28 +204,22 @@
 // MUTATION sol:8-appa-pot.c18 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
 // MUTATION sol:8-appa-pot.c19 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
 //
-// ADDED (followups.md "(038, optional): final-count assertion"): group_FINALCOUNT,
-// the final-count form of G6/G11 -- NM-HRM-038's own text: "what separates
-// NanoMig from all four [reference implementations] is the final count,
-// which in NanoMig includes the interval's lines," since two of the four
-// (WinUAE, vAmiga) also read non-zero after one line, same as NanoMig, so
-// G6/G11's first-nonzero-read measurement alone does not separate them.
-// Baseline 77 passed, 9 failed; after this addition, 78 passed, 13 failed --
-// four new reds under the ALREADY-red ids opus:8-fig8-5.c1, sol:8-fig8-5.c2,
-// opus:8-potchg.c1, sol:8-pot.c16 (second, independent graded line per id,
-// same as G6/G11's own first line for these same ids), one new PASS
-// (harness-selfcheck, not part of the id/mutation-pairing system, matching
-// the file's own established convention for these self-check lines).
-// MUTATION opus:8-fig8-5.c1 oracle green substitute (second, independent
-//   substitute alongside G6/G11's own -- see harness-selfcheck: FINALCOUNT
-//   comparator is live below): pot0x, DUT-measured after exactly k=10
-//   released ticks with NO interval prepended (arm, release, pulse 10 only),
-//   routed through the identical ==10 comparator used by the red final-count
-//   assertions above, reads 10 and passes -- confirming that comparator is
-//   not vacuously false.
-// MUTATION sol:8-fig8-5.c2 oracle green (same substitute as opus:8-fig8-5.c1 above)
-// MUTATION opus:8-potchg.c1 oracle green (same substitute as opus:8-fig8-5.c1 above)
-// MUTATION sol:8-pot.c16 oracle green (same substitute as opus:8-fig8-5.c1 above)
+// group_FINALCOUNT grades the final-count form of G6/G11 -- NM-HRM-038's own
+// text: "what separates NanoMig from all four [reference implementations]
+// is the final count, which in NanoMig includes the interval's lines,"
+// since two of the four (WinUAE, vAmiga) also read non-zero after one line,
+// same as NanoMig, so G6/G11's first-nonzero-read measurement alone does
+// not separate them. Its four assertions (FINALCOUNT-FIG8-5-OPUS,
+// FINALCOUNT-FIG8-5-SOL, FINALCOUNT-BODY-OPUS, FINALCOUNT-BODY-SOL) grade
+// the SAME four claim ids G6/G11 grades (opus:8-fig8-5.c1, sol:8-fig8-5.c2,
+// opus:8-potchg.c1, sol:8-pot.c16) from a second, independent measurement --
+// the final count after a fixed run, not the pulse index of the first
+// nonzero read -- under their own leading ids so the mutation-label gate
+// can pair a record with each one.
+// MUTATION FINALCOUNT-FIG8-5-OPUS stimulus green: kTotalTicks = kK (no reset interval prepended) instead of 8+kK, through the real figure_all_four comparator (all four counters ==k). Replayed (make MUT=FINALCOUNT test): all four counters read exactly 10, all four FINALCOUNT-* lines turn green (81 passed, 9 failed -- the nine other, pre-existing reds unaffected); reverted (77 passed, 13 failed).
+// MUTATION FINALCOUNT-FIG8-5-SOL stimulus green: same run as FINALCOUNT-FIG8-5-OPUS (the shared kTotalTicks substitution).
+// MUTATION FINALCOUNT-BODY-OPUS stimulus green: same run as FINALCOUNT-FIG8-5-OPUS, through the real body_all_four comparator (all four counters ==k or ==k+1; measured exactly k).
+// MUTATION FINALCOUNT-BODY-SOL stimulus green: same run as FINALCOUNT-FIG8-5-OPUS.
 
 #include "Vuserio.h"
 #include "verilated.h"
@@ -708,8 +702,7 @@ static void group_G6_G11() {
 }
 
 //--------------------------------------------------------------------------
-// FINALCOUNT -- p.235/Figure 8-5, the final-count form of G6/G11 (followups.md
-// "(038, optional): final-count assertion"). G6/G11 above measure the pulse
+// FINALCOUNT -- p.235/Figure 8-5, the final-count form of G6/G11. G6/G11 above measure the pulse
 // index of the FIRST nonzero read, and NM-HRM-038's own text says why that
 // measurement alone under-states the finding: two of the four reference
 // implementations (WinUAE, vAmiga) also read non-zero after one line -- their
@@ -732,7 +725,11 @@ static void group_G6_G11() {
 //--------------------------------------------------------------------------
 static void group_FINALCOUNT() {
     constexpr int kK = 10;
+#ifdef MUT_FINALCOUNT
+    constexpr int kTotalTicks = kK;      // guarded mutation: no interval prepended
+#else
     constexpr int kTotalTicks = 8 + kK;  // Figure 8-5's precise interval + k
+#endif
 
     full_reset();
     arm_potgo(0x0001);
@@ -762,22 +759,9 @@ static void group_FINALCOUNT() {
     pulse(kTotalTicks);
     int final_x1 = pot1dat() & 0xFF;
 
-    note("FINAL COUNT after release-then-run-" + std::to_string(kTotalTicks) +
-         "-ticks-unbroken (8+" + std::to_string(kK) + "), no hold in between: "
-         "pot0x=" + std::to_string(final_x0) + " pot0y=" + std::to_string(final_y0) +
-         " pot1y=" + std::to_string(final_y1) + " pot1x=" + std::to_string(final_x1) +
-         " -- the page's reset interval (seven-or-eight lines, body text;"
-         " exactly eight, Figure 8-5) predicts a final count of " +
-         std::to_string(kK) + " or " + std::to_string(kK + 1) +
-         "; this RTL has no reset-hold construct at all (G6/G11's own finding), "
-         "so every counter's final count is the raw tick total, " +
-         std::to_string(kTotalTicks) + ".");
-
     // Figure 8-5's precise reading: final count == k exactly.
     bool figure_all_four = (final_x0 == kK) && (final_y0 == kK) &&
                             (final_y1 == kK) && (final_x1 == kK);
-    expect(figure_all_four, "opus:8-fig8-5.c1");
-    expect(figure_all_four, "sol:8-fig8-5.c2");
 
     // Body text's looser reading: final count == k or k+1 (seven- or
     // eight-line interval).
@@ -786,27 +770,72 @@ static void group_FINALCOUNT() {
         (final_y0 == kK || final_y0 == kK + 1) &&
         (final_y1 == kK || final_y1 == kK + 1) &&
         (final_x1 == kK || final_x1 == kK + 1);
-    expect(body_all_four, "opus:8-potchg.c1");
-    expect(body_all_four, "sol:8-pot.c16");
 
-    // Substitution proof for these already-red assertions (per G6/G11's own
-    // precedent): pot0x DUT-measured at exactly k ticks with NO interval
-    // prepended (arm, release, pulse k only -- not 8+k), routed through the
-    // identical ==k comparator, confirming it is not vacuously false.
-    full_reset();
-    arm_potgo(0x0001);
-    set_mouse(0, 0, 1);
-    settle(3);
-    pulse(kK);
-    int short_run = pot0dat() & 0xFF;
-    bool comparator_live = (short_run == kK);
-    note("Substitute for the already-red final-count comparators: pot0x, "
-         "DUT-measured after exactly " + std::to_string(kK) +
-         " released ticks with NO interval prepended, reads " +
-         std::to_string(short_run) + " and is routed through the identical "
-         "==" + std::to_string(kK) + " comparator used above, confirming "
-         "that comparator is not vacuously false.");
-    expect(comparator_live, "harness-selfcheck: FINALCOUNT comparator is live (DUT pot0x measured at k with no interval)");
+    // The MEASURED conclusion is computed from what was actually read, not
+    // printed as fixed text: it must describe a page-conforming DUT (where
+    // figure_all_four or body_all_four holds) the same way it describes
+    // NanoMig (where neither does, at baseline).
+    std::string conclusion;
+    if (final_x0 == kTotalTicks && final_y0 == kTotalTicks &&
+        final_y1 == kTotalTicks && final_x1 == kTotalTicks) {
+        conclusion = "no counter's final count reflects any reset interval "
+                     "at all -- every one is the raw tick total, " +
+                     std::to_string(kTotalTicks) + ".";
+    } else if (figure_all_four) {
+        conclusion = "every counter's final count matches Figure 8-5's "
+                     "exact reading, k=" + std::to_string(kK) + ".";
+    } else if (body_all_four) {
+        conclusion = "every counter's final count matches the body text's "
+                     "k-or-k+1 reading.";
+    } else {
+        conclusion = "the four counters do not all agree with each other "
+                     "or with either printed reading.";
+    }
+    note("FINAL COUNT after release-then-run-" + std::to_string(kTotalTicks) +
+         "-ticks-unbroken (8+" + std::to_string(kK) + "), no hold in between: "
+         "pot0x=" + std::to_string(final_x0) + " pot0y=" + std::to_string(final_y0) +
+         " pot1y=" + std::to_string(final_y1) + " pot1x=" + std::to_string(final_x1) +
+         " -- the page's reset interval (seven-or-eight lines, body text;"
+         " exactly eight, Figure 8-5) predicts a final count of " +
+         std::to_string(kK) + " or " + std::to_string(kK + 1) + "; " + conclusion);
+
+    // Each of the four assertions below carries its own leading id, distinct
+    // from G6/G11's bare claim-id labels for these same four ids (G6/G11
+    // grades the pulse index of the first nonzero read; this grades the
+    // final count after a fixed total run -- two different measurements of
+    // the same claims), so the mutation-label gate can pair a record with
+    // each one; the original claim id stays in full in each label for
+    // per-claim coverage counting.
+    expect(figure_all_four,
+        "FINALCOUNT-FIG8-5-OPUS opus:8-fig8-5.c1 (Figure 8-5, p.235, "
+        "NM-HRM-038: \"starts eight horizontal lines after POTGO is "
+        "written\"): 8+k lines after POTGO with no pause, all four "
+        "counters read exactly k=" + std::to_string(kK) + " -- measured "
+        "pot0x=" + std::to_string(final_x0) + " pot0y=" + std::to_string(final_y0) +
+        " pot1y=" + std::to_string(final_y1) + " pot1x=" + std::to_string(final_x1) + ".");
+    expect(figure_all_four,
+        "FINALCOUNT-FIG8-5-SOL sol:8-fig8-5.c2 (Figure 8-5, p.235, "
+        "NM-HRM-038: \"starts eight horizontal lines after POTGO is "
+        "written\"): 8+k lines after POTGO with no pause, all four "
+        "counters read exactly k=" + std::to_string(kK) + " -- measured "
+        "pot0x=" + std::to_string(final_x0) + " pot0y=" + std::to_string(final_y0) +
+        " pot1y=" + std::to_string(final_y1) + " pot1x=" + std::to_string(final_x1) + ".");
+    expect(body_all_four,
+        "FINALCOUNT-BODY-OPUS opus:8-potchg.c1 (p.235 body text, "
+        "NM-HRM-038: \"stays in a reset state for the first seven or "
+        "eight horizontal video scan lines\"): 8+k lines after POTGO "
+        "with no pause, all four counters read k=" + std::to_string(kK) +
+        " or k+1=" + std::to_string(kK + 1) + " -- measured "
+        "pot0x=" + std::to_string(final_x0) + " pot0y=" + std::to_string(final_y0) +
+        " pot1y=" + std::to_string(final_y1) + " pot1x=" + std::to_string(final_x1) + ".");
+    expect(body_all_four,
+        "FINALCOUNT-BODY-SOL sol:8-pot.c16 (p.235 body text, NM-HRM-038: "
+        "\"stays in a reset state for the first seven or eight horizontal "
+        "video scan lines\"): 8+k lines after POTGO with no pause, all "
+        "four counters read k=" + std::to_string(kK) + " or k+1=" +
+        std::to_string(kK + 1) + " -- measured pot0x=" + std::to_string(final_x0) +
+        " pot0y=" + std::to_string(final_y0) + " pot1y=" + std::to_string(final_y1) +
+        " pot1x=" + std::to_string(final_x1) + ".");
 }
 
 //--------------------------------------------------------------------------
@@ -1248,18 +1277,29 @@ int main(int argc, char** argv) {
 
     // Fixture liveness proof: the harness can deliver a specific, chosen,
     // non-constant word through this data path before any claim is graded.
+    // The window is deliberately wider than either printed reading of the
+    // reset interval (seven-or-eight lines, body text; eight, Figure 8-5)
+    // so this gate does not itself assume which one holds, or whether any
+    // interval holds at all -- that range is exactly what group_G6_G11 and
+    // group_FINALCOUNT below grade, and this gate must not prejudge it.
+    constexpr int kLivenessWindow = 15;  // > widest printed interval (8), with margin
     full_reset();
     arm_potgo(0x0001);
-    set_mouse(0, 0, 1);
+    set_mouse(0, 0, 1);  // release pot0x only
     settle(3);
-    pulse(3);
+    pulse(kLivenessWindow);
     uint16_t live0 = pot0dat();
     uint16_t live1 = pot1dat();
-    bool alive = (live0 == 0x0003) && (live1 == 0x0000);
-    note("Fixture liveness: releasing pot0x and pulsing 3 times reads "
-         "POT0DAT=$" + hex4(live0) + ", POT1DAT=$" + hex4(live1) +
-         " -- a specific, chosen, non-zero, non-constant word, delivered "
-         "before any claim below is graded.");
+    bool pot0x_counted = (live0 & 0x00FF) != 0;
+    bool others_untouched = ((live0 & 0xFF00) == 0) && (live1 == 0x0000);
+    bool alive = pot0x_counted && others_untouched;
+    note("Fixture liveness: releasing pot0x only and pulsing " +
+         std::to_string(kLivenessWindow) + " times (longer than either "
+         "printed reset interval) reads POT0DAT=$" + hex4(live0) +
+         ", POT1DAT=$" + hex4(live1) + " -- the touched counter (pot0x) "
+         "counted something and the three untouched counters read exactly "
+         "zero: a distinguishing, non-constant word, delivered before any "
+         "claim below is graded, without assuming when counting starts.");
     if (!alive) {
         std::cerr << "FATAL: fixture cannot deliver a known word; aborting "
                      "before grading any claim.\n";
