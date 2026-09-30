@@ -277,6 +277,13 @@ and none decides this finding. What they are and how they were read is in
 
   INMODE selects the count source: timer A counts every φ2 cycle or each rising edge of CNT, and CRB6 and CRB5 give timer B the four modes p. 349 prints, mode 11 counting timer A's underflows only while CNT is high. The dissection is of one revision.
 
+- **Commodore, 6526 CIA specification, 1981**, PDF page 8 — agrees with the manual:
+
+  > "5.6 INMODE Bits CRB5 and CRB6 select one of four input modes for TIMER B as:"
+  <!-- corpus: cia-6526-spec/p008.txt -->
+
+  The same page gives CRA bit 5, INMODE, as the manual does (1 = timer A counts positive CNT transitions, 0 = it counts phi2 pulses), and CRB bits 6 and 5 the four modes p. 349 prints: phi2 pulses, positive CNT transitions, timer A underflow pulses, and timer A underflow pulses while CNT is high. The OCR reads phi2 as @2. It is a 6526 document and does not itself speak for the 8520.
+
 ---
 
 ## Where a fix already exists
