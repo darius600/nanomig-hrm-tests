@@ -10,8 +10,8 @@
 //   holds, how it moves, and what changes it between lines.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 42, 52, 53, 54, 60, 61, 62, 63, 64, 72, 73, 74, 75, 76, 80, 81,
-//   82, 84, 85, 91, 270, 272, 277, 287, 288, 291.
+//   pages 5, 42, 52, 53, 54, 60, 61, 62, 63, 64, 72, 73, 74, 75, 76, 80, 81,
+//   82, 84, 85, 91, 270, 272, 277, 287, 288, 291, 309.
 // Non-goals: which 9-bit bus address selects which register (that is
 //   ch3-register-map-agnus's own address-decode-selectivity boundary, not
 //   repeated here); DDFSTRT/DDFSTOP fetch-window word counts and the
@@ -47,9 +47,14 @@
 // package treats the exact bit count as UNSETTLED and does not pick a side:
 // every claim below that names a specific width (3 bits / 15 bits / 18 bits
 // / 19 bits / 20 bits) is recorded as a MEASUREMENT, never asserted
-// PASS/FAIL. What every printed source agrees on - that BPLxPTH and BPLxPTL
+// PASS/FAIL, with one exception: whether BPL1PTH's OCS "(high 3 bits)"
+// figure (A-bplptr.c3, p272; B-subject.c29, p291) holds as a MASK on the
+// fetched address at ecs=0 is asserted below, in
+// BPLXPTH-OCS-HIGH-THREE-BITS and its control (A-bplptr.c3, A-bplxpth.fn,
+// B-subject.c29) - see G6 below for what that assertion does and does not
+// settle. What every printed source agrees on - that BPLxPTH and BPLxPTL
 // together form ONE pointer, that the pointer must be even, and that it
-// addresses chip memory - is exactly what IS asserted.
+// addresses chip memory - is exactly what IS asserted otherwise.
 //
 // CLAIMS (verbatim quote + restatement from
 // the classify records for `ch3-bitplane-pointers-and-modulo` -- a build-time
@@ -1248,7 +1253,7 @@ int main(int argc, char** argv) {
     // whether or not the field is masked to 3 bits, since none of its set
     // bits sit above bit 2. This is the measurement basis the suspect case
     // below is read against.
-    uint32_t bplxpth_control_addr = 0;
+    uint32_t bplxpth_control_addr = 0;   // BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL's own reading, used again below
     {
         Harness hc;
         hc.setup_standard(/*ecs_on=*/false);
@@ -1270,10 +1275,11 @@ int main(int argc, char** argv) {
             std::string(ctrl_hex) + ", the measurement basis "
             "BPLXPTH-OCS-HIGH-THREE-BITS is read against: an in-range write "
             "reads back exactly 0x070000 either interpretation of the field "
-            "width agrees on. A-bplptr.c3, B-subject.c29.");
+            "width agrees on.");
     }
 
     // ---------------- BPLXPTH-OCS-HIGH-THREE-BITS (p.272, p.291, p.5) ----------------
+    uint32_t bplxpth_over_range_addr = 0;   // ecs=0 over-range reading, compared again in the ECS twin below
     {
         Harness h;
         h.setup_standard(/*ecs_on=*/false);
@@ -1283,17 +1289,17 @@ int main(int argc, char** argv) {
         prime_to_line(h, 0x4F);
         h.write_reg(BPLPT_BASE, 0x001F);        // BPL1PTH, over the claimed 3-bit range
         h.write_reg(BPLPT_BASE + 2, 0x0000);     // BPL1PTL
-        uint32_t over_range_addr = first_fetch_addr_for_plane(run_single_line(h, 0x50), 0x88);
+        bplxpth_over_range_addr = first_fetch_addr_for_plane(run_single_line(h, 0x50), 0x88);
 
         char over_hex[10];
-        snprintf(over_hex, sizeof over_hex, "%06x", over_range_addr);
+        snprintf(over_hex, sizeof over_hex, "%06x", bplxpth_over_range_addr);
         char ctrl_hex2[10];
         snprintf(ctrl_hex2, sizeof ctrl_hex2, "%06x", bplxpth_control_addr);
         checks.expect(
-            over_range_addr == 0x070000,
+            bplxpth_over_range_addr == 0x070000,
             "BPLXPTH-OCS-HIGH-THREE-BITS: at ecs=0 (OCS), BPL1PTH=$001F "
-            "(all five raw bits the write-decode captures, three of them "
-            "above the claimed field), BPL1PTL=$0000 - 'BPLxPTH 0E0 W A "
+            "(bits 3 and 4 set, above the three-bit field), BPL1PTL=$0000 - "
+            "'BPLxPTH 0E0 W A "
             "Bitplane x pointer (high 3 bits)' (A-bplptr.c3, p272) and "
             "'BPL1PTH + 0E0 W A Bitplane 1 pointer (high 3 bits)' "
             "(B-subject.c29, p291), against p.5's 512K OCS chip-memory "
@@ -1331,18 +1337,25 @@ int main(int argc, char** argv) {
 
         char ecs_hex[10];
         snprintf(ecs_hex, sizeof ecs_hex, "%06x", ecs_addr);
+        char ocs_hex[10];
+        snprintf(ocs_hex, sizeof ocs_hex, "%06x", bplxpth_over_range_addr);
+        bool ecs_reads_same_as_ocs = (ecs_addr == bplxpth_over_range_addr);
         checks.note(
             "BPLXPTH-ECS-HIGH-BITS-TWIN: the identical BPL1PTH=$001F/"
-            "BPL1PTL=$0000 write, at ecs=1, reads a first fetch of 0x" +
-            std::string(ecs_hex) + " - measured, not graded. p.309 widens "
-            "DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH to 'high 5 bits, "
-            "was 3 bits' under ECS and does not list BPLxPTH among them; "
-            "pp.5-6 give ECS Chip RAM as up to 1 MB (2 MB in the A3000) "
-            "against OCS's 512K. This module's `ecs` input does not reach "
-            "the pointer bank or the address-compose path at all, so this "
-            "RTL's own field width does not change between ecs=0 and ecs=1 "
-            "either way; the printed silence about BPLxPTH on p.309 settles "
-            "nothing by itself.");
+            "BPL1PTL=$0000 write reads a first fetch of 0x" +
+            std::string(ecs_hex) + " at ecs=1, against 0x" +
+            std::string(ocs_hex) + " at ecs=0 - measured, not graded. p.309 "
+            "widens DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH to 'high 5 "
+            "bits, was 3 bits' under ECS and does not list BPLxPTH among "
+            "them; pp.5-6 give ECS Chip RAM as up to 1 MB (2 MB in the "
+            "A3000) against OCS's 512K. " +
+            (ecs_reads_same_as_ocs
+                 ? std::string("The two reads are equal: this RTL's own "
+                       "field width does not change between ecs=0 and "
+                       "ecs=1 here; the printed silence about BPLxPTH on "
+                       "p.309 settles nothing by itself.")
+                 : std::string("The two reads differ: this RTL's own field "
+                       "width DOES change between ecs=0 and ecs=1 here.")));
     }
 
     // ---------------- MODULO-ZERO-CONTIGUOUS-LINES (p.53, 60, 61, 64) ----------------
@@ -1947,13 +1960,12 @@ int main(int argc, char** argv) {
 // MUTATION INTERLACED-FIELD-PAIR-PAL-512-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
 // MUTATION BPLEN-DMA-GATES-POINTER-ADVANCE stimulus red: the "off" harness's dmaena changed from 0 to 1; it produced 20 fetches, not the expected 0.
 //
-// ADDED (BPLXPTH-OCS-HIGH-THREE-BITS and its control, followups.md entry
-// "(014): add BPLXPTH-OCS-HIGH-THREE-BITS"). New baseline after this
-// addition: 19 passed, 1 failed - the one failure is
-// BPLXPTH-OCS-HIGH-THREE-BITS itself, NM-HRM-014's first graded evidence
-// (measured 0x1f0000, not the manual's 0x070000). Both mutations below were
-// actually applied, rebuilt and run under WSL/Verilator, confirmed, then
-// reverted and rebuilt clean (back to 19 passed, 1 failed).
+// BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL and BPLXPTH-OCS-HIGH-THREE-BITS grade
+// whether BPL1PTH's OCS "(high 3 bits)" figure (A-bplptr.c3, p272;
+// A-bplxpth.fn and B-subject.c29, p291) holds as a mask on the fetched
+// address at ecs=0 (see G6 above for the scope of that question). The
+// control is a PASS; BPLXPTH-OCS-HIGH-THREE-BITS is a FAIL, measured
+// 0x1f0000 against the manual's 0x070000.
 //
 // MUTATION BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL stimulus red: the control write changed from BPL1PTH=$0007 to $0009 (one bit above the claimed 3-bit range); the first fetch became 0x090000, not the expected 0x070000.
 // MUTATION BPLXPTH-OCS-HIGH-THREE-BITS stimulus green: this assertion is already red at baseline (over-range write, measured 0x1f0000 against expected 0x070000) and a stimulus mutation cannot push an already-red assertion further red per the build brief's own rule; substituting a DIFFERENT, live input through the SAME address==0x070000 comparator - BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL's in-range write (BPL1PTH=$0007) - reads PASS at baseline, showing the comparator is not vacuous.
