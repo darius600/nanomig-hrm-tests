@@ -10,7 +10,7 @@
 // Non-goals: the five agnus_audiodma / agnus_diskdma claims that packages.md
 //   discards with `covered_by` pointing at this package's bit-position
 //   assertions (Paula, not `dmacon`, gates those requests per
-//   agnus.v:326-357 per the build brief - not reopened here). Also not this
+//   agnus.v:326-357 - not reopened here). Also not this
 //   package's job: anything about audio or disk DMA *behaviour* beyond their
 //   DMACON bit name/position (bits 0-4), which IS in scope as part of
 //   "read-back of bits 0-12".
@@ -206,7 +206,7 @@
 // this list was written).
 //
 // PLANNED ASSERTIONS (names, cited-id groups and intent only; no RTL line
-// numbers, no exact register-bit-width facts beyond what the build brief's
+// numbers, no exact register-bit-width facts beyond what the build task's
 // own section D handed over - `aen`/`rd`/`hwr`/`lwr`/`address_in`/`data_in`
 // in, `data_out` out, `dbr`/`dbwe`/`address_out` for cycle-taking, `bls` for
 // BLTPRI - no fixture code below this comment block. Those are added in the
@@ -251,9 +251,9 @@
 //      DMAF_BLTDONE alternate-name group (3 ids).
 //
 //  Consumption group (observable via dbr/dbwe/address_out; each holds DMAEN
-//  set throughout per the build brief's own gating fact for these bits, and
-//  each assertion's "bit set" measurement is simultaneously the control the
-//  build brief requires for that same assertion's "bit clear" measurement -
+//  set throughout per the gating fact for these bits, and
+//  each assertion's "bit set" measurement is simultaneously the control
+//  needed for that same assertion's "bit clear" measurement -
 //  same fixture, same window, both states run and compared):
 //   20. SPREN-GATES-SPRITE-DMA (bit 5).
 //   21. BLTEN-GATES-BLITTER-DMA (bit 6).
@@ -288,20 +288,19 @@
 // No RTL has been opened yet to write this comment block: the port names
 // (`aen`, `rd`, `hwr`, `lwr`, `address_in`, `data_in`, `data_out`, `dbr`,
 // `dbwe`, `address_out`, `bls`) and the six consumed-bit numbers come from
-// the build brief's own section B/D and from classify.evidence's prose
-// (both handed to the building agent as part of this task's inventory, not
-// discovered by this agent opening agnus.v). Exact address-decode widths,
+// the build task's own section B/D and from classify.evidence's prose
+// (both part of this task's inventory, not
+// discovered by opening agnus.v). Exact address-decode widths,
 // per-engine "wants a cycle" preconditions, and the BLTPRI bus-share
 // threshold are RTL questions and are answered in the next commit, after
 // agnus.v and its submodules are read.
 
 // ============================================================================
-// IMPLEMENTATION NOTES (added in this commit, after agnus.v and its
+// IMPLEMENTATION NOTES (added after agnus.v and its
 // submodules agnus_blitter.v, agnus_copper.v, agnus_spritedma.v,
 // agnus_bitplanedma.v, agnus_diskdma.v and agnus_audiodma.v were read in
 // full for the first time - the specification comment above this point was
-// committed on its own first, per the chapter's spec-before-RTL gate; see
-// this package's own git history, commit 5a6da13).
+// committed on its own first, per the chapter's spec-before-RTL gate).
 //
 // REGISTER MECHANICS (agnus.v:271-302):
 //   `dmacon` is a 13-bit register (`reg [12:0] dmacon;`, agnus.v:271) - bits
@@ -408,7 +407,7 @@
 // MUTATION LOG: see the bottom of this file, after main(). Recorded there
 // (not here) so it can quote this file's own assertion labels; every entry
 // was actually run - edited, rebuilt under WSL/Verilator, executed, reverted,
-// rebuilt clean - by this agent, not predicted.
+// rebuilt clean - not predicted.
 // ============================================================================
 
 // SPECIFICATION ADDENDUM: 25 records -- quotation, restatement and page
@@ -849,8 +848,8 @@ std::vector<SpriteFetch> collect_sprite_fetches_over_lines(Harness& h, int n_lin
 // bitplane count, and agnus_bitplanedma.v's own `bpu` field (BPLCON0[14:12],
 // read directly for 1/2/4/6 - the non-AGA "all-ones means 4" alias never
 // triggers for these values) changes how many of each 8-CCK fetch sequence's
-// 8 slots bitplane DMA actually occupies (`plane[4:0] < bpu`), so the repair
-// pass measures explicitly at 2, 4 and 6 bitplanes as well - see the
+// 8 slots bitplane DMA actually occupies (`plane[4:0] < bpu`), so this file
+// measures explicitly at 2, 4 and 6 bitplanes as well - see the
 // DDFSTRT-0030-SPRITE-7-* assertions below.
 std::vector<int> measure_sprite_data_fetch(uint16_t ddfstrt, uint16_t bplcon0 = 0x1200) {
     Harness h;
@@ -1680,8 +1679,8 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (updated 10.09.2026, FPGA-090 gate repair, two passes). Every
-// entry below was actually applied by this agent - edited into this file,
+// MUTATION LOG (two passes). Every
+// entry below was actually applied - edited into this file,
 // rebuilt under WSL/Verilator (`make test`), run, the PASS/FAIL line for the
 // named assertion read from real output (quoted verbatim below, not
 // predicted), then reverted and rebuilt clean before the next entry. Every
@@ -1710,18 +1709,16 @@ int main(int argc, char** argv) {
 //     inside the string broke that search before it reached this call's
 //     real closing ");", so the call was never parsed and this id was never
 //     read.
-// Neither omission was this agent's choice of what to cover; both were
-// upstream parser behaviour in tools/check_gates.py, reported to the
-// pipeline lead rather than worked around locally. The lead fixed the second
-// cause gate-wide on 10.09.2026 (EXPECT_CALL_RE widened to let a complete
+// Neither omission reflects a choice of what to cover; both are
+// upstream parser behaviour in tools/check_gates.py. The second
+// cause is fixed gate-wide (EXPECT_CALL_RE widened to let a complete
 // quoted string carry its own semicolons; LEADING_ID_RE widened to allow
 // hyphens and ids over 16 characters) - DMACON-WRITE-DECODED-AT-096 is
 // readable as of that fix and entry 11 below covers it, run after the fix
 // landed. The first cause (WALKING-BIT-* ids composed at runtime) is
 // deliberately NOT fixed: the gate has a separate "composed ids" path for
 // exactly this shape and reports it as a note, not a violation - rewriting
-// working assertions to satisfy a parser would be the wrong trade, per the
-// lead's own instruction. The 11 ids covered below are the complete set the
+// working assertions to satisfy a parser would be the wrong trade. The 11 ids covered below are the complete set the
 // gate has named as missing for this package across both passes.
 //
 // 1. DMACONR-READ-DECODED-AT-002: both read_reg calls' target address
@@ -1797,7 +1794,7 @@ int main(int argc, char** argv) {
 //     to writes_share, so the writes_hog==W*H completion requirement
 //     failed). Reverted; rebuilt clean (25 passed, 0 failed).
 //
-// 11. DMACON-WRITE-DECODED-AT-096 (added in pass 2, after the lead's
+// 11. DMACON-WRITE-DECODED-AT-096 (added in pass 2, after the
 //     EXPECT_CALL_RE/LEADING_ID_RE fix made this id readable): the write's
 //     target address changed from DMACON_ADDR (0x096) to 0x098, a nearby
 //     but non-decoded address (agnus.v's write decode is
@@ -1903,7 +1900,7 @@ int main(int argc, char** argv) {
 // MUTATION BPLEN-GATES-BITPLANE-DMA stimulus red: BPLEN dropped from the enabled run's setup write; cycles_en fell to 0, equal to the disabled control.
 // MUTATION DMAEN-MASTER-GATES-ALL-DMA-BELOW stimulus red: DMAEN dropped from the enabled run's setup write (SPREN/BLTEN/COPEN/BPLEN left set); cycles_en fell to 0.
 // MUTATION BLTPRI-BUS-SHARE-UNDER-CONTENTION stimulus red: BLTPRI dropped from the hog run's setup write; writes_hog fell to 0, equal to the share run.
-// MUTATION WRITE-ADDRESS-MUST-MATCH-DMACON stimulus red: the decoy write's address changed from BLTAFWM_ADDR back to DMACON_ADDR, same data pattern (SET_CLR | DMAEN) -> 24 passed, 1 failed, only this assertion moves: the write now lands and DMACONR reads back non-zero, so `after == 0x0000` fails. Reverted: 25 passed, 0 failed. Added 11.09.2026; the assertion had no record because the gate could not read an id out of its "[...]" prefix and never reported it missing.
+// MUTATION WRITE-ADDRESS-MUST-MATCH-DMACON stimulus red: the decoy write's address changed from BLTAFWM_ADDR back to DMACON_ADDR, same data pattern (SET_CLR | DMAEN) -> 24 passed, 1 failed, only this assertion moves: the write now lands and DMACONR reads back non-zero, so `after == 0x0000` fails. Reverted: 25 passed, 0 failed. The assertion had no record because the gate could not read an id out of its "[...]" prefix and never reported it missing.
 // MUTATION DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES none green: already red at baseline (the sweep's own $0030 row is the finding). Substituted a live point (sweep's $0030 entry -> $0018, known reduced) through the SAME conjunction -> 31 passed, 2 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
 // MUTATION DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE none green: already red at baseline (the FINDING itself - sprite 7 is measured unaffected at the manual's own $0030, one bitplane). Substituted a different, live mechanism through the SAME comparator (measure_sprite_data_fetch(0x0018)[2] in place of at_30[7]) - channel 2 IS reduced at $0018, proven by the sweep assertion above, and the substitution went green, showing the comparator is not vacuous. Reverted to the real channel 7 / $0030 comparison, which stays red.
 // MUTATION DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES stimulus red: the 2-bitplane at30_2 measurement's DDFSTRT argument changed from $0030 back to $0038 (baseline, unmoved); sprite 7 read 172/172 (unaffected) instead of 90/172 -> 29 passed, 4 failed, only this assertion moves. Reverted: 30 passed, 3 failed.
@@ -1916,11 +1913,11 @@ int main(int argc, char** argv) {
 // Not machine-recorded, and not required by the gate (see SCOPE above):
 // DMACON-WRITE-DECODED-AT-096's own control, "[control] WRITE-ADDRESS-MUST-
 // MATCH-DMACON" (its label starts with "[control]", not an uppercase
-// letter, so LEADING_ID_RE still does not match it even after the 10.09.2026
+// letter, so LEADING_ID_RE still does not match it even after the
 // widening), and the 13 WALKING-BIT-* assertions (composed ids, the gate's
-// own "note, not violation" path - left unmutated deliberately, per the
-// lead's instruction not to rewrite working assertions to satisfy a
-// parser). Left unmutated; a prior log's unrelated claims about these are
+// own "note, not violation" path - left unmutated deliberately: rewriting
+// working assertions to satisfy a
+// parser would be the wrong trade). Left unmutated; a prior log's unrelated claims about these are
 // superseded, not repeated.
 // ============================================================================
 
