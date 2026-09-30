@@ -464,6 +464,15 @@ namespace {
 
 constexpr uint16_t to_reg(uint16_t byte_address) { return static_cast<uint16_t>(byte_address >> 1); }
 
+// A measured number formatted into a variable BEFORE the expect() call, so
+// the label stays string literals and simple concatenation -- the call site
+// carries a literal id the gate can read, not an opaque `buf` variable.
+std::string hex5(uint32_t v) {
+    char b[8];
+    std::snprintf(b, sizeof(b), "%05X", v);
+    return std::string(b);
+}
+
 constexpr uint16_t AUD0LCH = to_reg(0x0A0);
 constexpr uint16_t AUD0LCL = to_reg(0x0A2);
 constexpr uint16_t AUD1LCH = to_reg(0x0B0);
@@ -608,17 +617,16 @@ int main(int argc, char** argv) {
         }
         bool distinct = (got[0] != got[1]) && (got[0] != got[2]) && (got[0] != got[3]) &&
                          (got[1] != got[2]) && (got[1] != got[3]) && (got[2] != got[3]);
-        char buf[2048];
-        std::snprintf(buf, sizeof(buf),
+        checks.expect(order_ok && distinct,
             "[fixture check] TEST-DATA-DELIVERY: four distinct words "
-            "(0x%05X,0x%05X,0x%05X,0x%05X) written one per channel arrive, "
+            "(0x" + hex5(want[0]) + ",0x" + hex5(want[1]) + ",0x" + hex5(want[2]) +
+            ",0x" + hex5(want[3]) + ") written one per channel arrive, "
             "correctly split into LCH/LCL and reassembled, at address_out on "
             "that channel's OWN grant cycle, in order - got "
-            "(0x%05X,0x%05X,0x%05X,0x%05X). Proves the fixture's data path is "
+            "(0x" + hex5(got[0]) + ",0x" + hex5(got[1]) + ",0x" + hex5(got[2]) +
+            ",0x" + hex5(got[3]) + "). Proves the fixture's data path is "
             "not stuck, aliased across channels, or silently dead before any "
-            "data-dependent assertion below is trusted.",
-            want[0], want[1], want[2], want[3], got[0], got[1], got[2], got[3]);
-        checks.expect(order_ok && distinct, buf);
+            "data-dependent assertion below is trusted.");
     }
 
     // ---------------- 1. SLOT-PER-CHANNEL-PER-LINE ----------------

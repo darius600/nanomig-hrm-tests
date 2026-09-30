@@ -69,6 +69,20 @@ namespace {
 
 constexpr uint16_t to_reg(uint16_t byte_addr) { return static_cast<uint16_t>(byte_addr >> 1); }
 
+// A measured number formatted into a variable BEFORE the expect() call, so
+// the label stays string literals and simple concatenation -- the call site
+// carries a literal id the gate can read, not an opaque `buf` variable.
+std::string hex5(uint32_t v) {
+    char b[8];
+    std::snprintf(b, sizeof(b), "%05X", v);
+    return std::string(b);
+}
+std::string hex1(uint32_t v) {
+    char b[8];
+    std::snprintf(b, sizeof(b), "%X", v);
+    return std::string(b);
+}
+
 constexpr uint16_t AUD0LCH = to_reg(0x0A0);
 constexpr uint16_t AUD0LCL = to_reg(0x0A2);
 constexpr uint16_t AUD0DAT = to_reg(0x0AA);
@@ -250,7 +264,14 @@ int main(int argc, char** argv) {
     // ---------------- 0. TOP-LEVEL-LIVENESS (fixture check) ----------------
     {
         AgnusTopHarness h;
-        h.set_ecs(false);
+        // Run at a real ecs=1, not ecs=0: the expected constant below is the
+        // 5-bit assembly (p.266 "5 bits if ECS"), and at ecs=0 a genuine OCS
+        // reading would give only 3 bits -- 0x29515, not 0xA9515 -- which
+        // would put this fixture-liveness control in direct conflict with
+        // assertion 2's own OCS-holds-only-three-bits claim (no implementation
+        // could satisfy both at ecs=0). At ecs=1 the 5-bit reading is what
+        // the page itself requires, so the two claims no longer collide.
+        h.set_ecs(true);
         // Same stimulus/expected pair hrm/ch8-disk-pointer-ecs-and-copper's
         // own LIVENESS check uses for DSKPTH/DSKPTL (0x0015 written to the
         // high-bits register, 0x2A2A to the low-bits register), reused
@@ -263,17 +284,15 @@ int main(int argc, char** argv) {
         h.write_reg(AUD0LCL, kLowStim);
         const uint32_t got = h.read_pointer_via_audioslot(/*restart=*/true);
         constexpr uint32_t kExpected = 0xA9515u;
-        char buf[512];
-        std::snprintf(buf, sizeof(buf),
-            "TOP-LEVEL-LIVENESS [fixture check, no claim id, no manual "
-            "page]: a known word (AUD0LCH=0x0015, "
-            "AUD0LCL=0x2A2A) written through the real CPU register bus at "
-            "the full Agnus top arrives, correctly assembled, at "
-            "address_out on channel 0's own audio-DMA slot -- measured "
-            "0x%05X, expected 0x%05X -- proving this second fixture's data "
-            "path is alive before either claim below is trusted.",
-            got, kExpected);
-        checks.expect(got == kExpected, buf);
+        checks.expect(got == kExpected,
+            "TOP-LEVEL-LIVENESS [fixture check, no claim id, no manual page]: "
+            "a known word (AUD0LCH=0x0015, AUD0LCL=0x2A2A) written through "
+            "the real CPU register bus at the full Agnus top, at a real "
+            "ecs=1, arrives, correctly assembled, at address_out on channel "
+            "0's own audio-DMA slot -- measured 0x" + hex5(got) +
+            ", expected 0x" + hex5(kExpected) + " -- proving this second "
+            "fixture's data path is alive before either claim below is "
+            "trusted.");
     }
 
     // ---------------- 1. LCH-ECS-PORT-CHANGES-WHAT-LOADS ----------------
@@ -290,26 +309,25 @@ int main(int argc, char** argv) {
         h1.write_reg(AUD0LCL, 0xFFFF);
         const uint32_t r_ecs = h1.read_pointer_via_audioslot(true);
 
-        char buf[1024];
-        std::snprintf(buf, sizeof(buf),
+        // p.266 gives BOTH values for this exact write, not merely "the two
+        // differ": 0x3FFFF at a genuine OCS reading (high 3 bits only) and
+        // 0xFFFFF at a genuine ECS reading (high 5 bits) of AUD0LCH=0x001F,
+        // AUD0LCL=0xFFFF. A bare inequality does not establish that either
+        // side lands on the page's own value -- two implementations could
+        // differ from each other while both disagreeing with the page.
+        const bool matches_page = (r_ocs == 0x3FFFFu) && (r_ecs == 0xFFFFFu);
+        checks.expect(matches_page,
             "LCH-ECS-PORT-CHANGES-WHAT-LOADS (appendix A p.266 \"(high 3 "
             "bits, 5 bits if ECS)\"; appendix C p.298/309 \"high 5 bits was "
             "3 bits\"): the SAME AUD0LCH/AUD0LCL write (all five high bits "
             "and all fifteen low bits set), presented once at a real ecs=0 "
             "and once at a real ecs=1 driven at THIS boundary -- the full "
             "Agnus top, where ecs is an actual, drivable port, unlike "
-            "agnus_audiodma.v alone -- measured word address 0x%05X at "
-            "ecs=0 and 0x%05X at ecs=1. [same claims as "
-            "test_agnus_audiodma.cpp's LCH-OCS-THREE-BIT-READING-DOES-NOT-"
-            "HOLD, measured a second time at a boundary with a real ecs "
-            "port: 5-p139.c1, 5-sum.c1, 5-loc.c1, 5-appA-p266.c5, "
-            "5-appA-p266.c11, 5-appB-p290.c57, 5-appB-p290.c92, "
-            "5-appB-p290.c127, 5-appB-p290.c148, B-aud1lch.width, "
-            "B-aud2lch.width, B-aud3lch.width, A-audxlc.c1, 5-appC-p298.c6, "
-            "5-appC-p309.c6, A-audxlch.w1, C-map.lch.width, "
-            "B-aud0lch.width]",
-            r_ocs, r_ecs);
-        checks.expect(r_ocs != r_ecs, buf);
+            "agnus_audiodma.v alone -- measured word address 0x" + hex5(r_ocs) +
+            " at ecs=0 (page wants 0x3FFFF) and 0x" + hex5(r_ecs) +
+            " at ecs=1 (page wants 0xFFFFF). 5-appA-p266.c5, A-audxlch.w1, "
+            "5-appB-p290.c148, B-aud0lch.width, 5-appC-p298.c6, "
+            "C-map.lch.width, 5-appC-p309.c6");
     }
 
     // -------------- 2. LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS --------------
@@ -327,21 +345,20 @@ int main(int argc, char** argv) {
         const uint32_t p_bit4 = h.read_pointer_via_audioslot(true);
         const bool ocs_reading_holds = (p_bit3 == 0) && (p_bit4 == 0);
 
-        char buf[1024];
-        std::snprintf(buf, sizeof(buf),
+        checks.expect(ocs_reading_holds,
             "LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS (chapter 5 pp.139/145, "
             "unqualified, \"contain the high three bits\"; appendix A "
             "p.266's non-ECS half; appendix C's \"was 3 bits\"): with a "
             "real ecs=0 driven at the full Agnus top, a genuine OCS reading "
             "would give AUDxLCH's two \"ECS-only\" bit positions (bits 3 "
             "and 4) no effect on the fetch address. MEASURED: bit 3 alone "
-            "gives word address 0x%X, bit 4 alone gives 0x%X -- same "
-            "claims as test_agnus_audiodma.cpp's assertion 9 (see that "
-            "assertion's own text for the full id list), measured a second "
-            "time with a real ecs=0 port driven rather than no port at "
-            "all.",
-            p_bit3, p_bit4);
-        checks.expect(ocs_reading_holds, buf);
+            "gives word address 0x" + hex1(p_bit3) + ", bit 4 alone gives 0x" +
+            hex1(p_bit4) + " -- same claims as test_agnus_audiodma.cpp's "
+            "assertion 9, measured a second time with a real ecs=0 port "
+            "driven rather than no port at all: 5-p139.c1, 5-sum.c1, "
+            "5-loc.c1, 5-appB-p290.c57, 5-appB-p290.c92, 5-appB-p290.c127, "
+            "B-aud1lch.width, B-aud2lch.width, B-aud3lch.width, "
+            "5-appA-p266.c11, A-audxlc.c1");
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
@@ -364,13 +381,14 @@ int main(int argc, char** argv) {
 // and run before being reverted; the baseline quoted for each (1 passed, 2
 // failed) is what a clean rebuild of the committed file prints.
 //
-// MUTATION TOP-LEVEL-LIVENESS stimulus red: kHighStim changed from 0x0015 to
-//   0x0014 (kLowStim and kExpected left untouched) -> FAIL, measured
-//   0xA1515 against the unchanged expected 0xA9515 (the written high half's
-//   own bit 0, which DOES land at address_out per
-//   test_agnus_audiodma.cpp's own WORD-ALIGNED-FETCH-AND-LC-PAIR, no longer
-//   assembles to the expected constant); 0 passed, 3 failed. Reverted,
-//   clean rebuild reproduced 1 passed/2 failed.
+// MUTATION TOP-LEVEL-LIVENESS stimulus red: run at ecs=1 (the repaired
+//   baseline), kHighStim changed from 0x0015 to 0x0014 (kLowStim and
+//   kExpected left untouched) -> FAIL, measured 0xA1515 against the
+//   unchanged expected 0xA9515 (the written high half's own bit 0, which
+//   DOES land at address_out per test_agnus_audiodma.cpp's own
+//   WORD-ALIGNED-FETCH-AND-LC-PAIR, no longer assembles to the expected
+//   constant); 0 passed, 3 failed. Reverted, clean rebuild reproduced 1
+//   passed/2 failed.
 //   (A first attempt changed kLowStim's own bit 0, 0x2A2A -> 0x2A2B, and
 //   measured NO change at all -- agnus_audiodma.v:89 reads only
 //   data_in[15:1], so that bit is structurally never sampled, exactly the
@@ -378,14 +396,17 @@ int main(int argc, char** argv) {
 //   measures. Diagnosed rather than reported as a false pass: the mutation
 //   probed a bit this module never stores, not a broken comparator. The
 //   kHighStim mutation above replaces it.)
-// MUTATION LCH-ECS-PORT-CHANGES-WHAT-LOADS stimulus green: h1's own AUD0LCH
-//   stimulus changed from 0x001F to 0x0007 (h1 still driven at ecs=true,
-//   h0 unchanged at ecs=false with 0x001F) -> measured r_ocs=0xFFFFF,
-//   r_ecs=0x3FFFF -- differ for an unrelated reason (different data, not
-//   the ecs port), and `r_ocs != r_ecs` reads true -> PASS, confirming the
-//   comparator is not a stuck fixture that always reports "equal"
-//   regardless of what is fed to it; 2 passed, 1 failed. Reverted, clean
-//   rebuild reproduced 1 passed/2 failed.
+// MUTATION LCH-ECS-PORT-CHANGES-WHAT-LOADS stimulus green: h0's own AUD0LCH
+//   stimulus changed from 0x001F to 0x0007 (h0 still driven at ecs=false,
+//   h1 unchanged at ecs=true with 0x001F) -> measured r_ocs=0x3FFFF,
+//   r_ecs=0xFFFFF, matching the page's own two values exactly for the
+//   `r_ocs==0x3FFFF && r_ecs==0xFFFFF` comparator -> PASS; 2 passed, 1
+//   failed. This is the SAME comparator the baseline grades, unmodified,
+//   fed a stimulus this RTL (ecs unconnected to the audio engine) happens
+//   to compute both target constants from: not evidence the RTL honours
+//   ecs, only that the comparator is not a stuck fixture that always
+//   reports "unequal to the page" regardless of what is fed to it.
+//   Reverted, clean rebuild reproduced 1 passed/2 failed.
 // MUTATION LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS stimulus green: the
 //   probed bit positions changed from 3 and 4 (the genuinely ECS-only bits
 //   agnus_audiodma.v:82 samples as part of data_in[4:0]) to 5 and 6, bits
