@@ -28,8 +28,8 @@
 //   clk, reset, clk7_en, reg_address_in[8:1], data_in[15:0],
 //   data_out[15:0], pot_cnt_en, _fire0, _fire1, _fire0_dat, _fire1_dat,
 //   _joy1[15:0], _joy2[15:0], joy_ana1[15:0], joy_ana2[15:0], mouse_btn[2:0],
-//   kms_level, kbd_mouse_type[1:0], kbd_mouse_data[7:0]. Read directly by
-//   this agent AFTER SPECIFICATION.md was committed (commit 7458312) -- no
+//   kms_level, kbd_mouse_type[1:0], kbd_mouse_data[7:0]. Read directly
+//   AFTER SPECIFICATION.md was committed -- no
 //   port name, register address or RTL line appears anywhere in that file.
 //
 // METHODOLOGY, established by direct measurement on this fixture (a scratch
@@ -122,7 +122,7 @@
 //   pair. Nothing in this package came back red, so no PASS/RED pairing was
 //   needed the way some chapter-7 packages required.
 //
-// MUTATION LOG (every entry below was actually run by this agent under WSL/
+// MUTATION LOG (every entry below was actually run under WSL/
 //   Verilator: `make clean && make MUT=<NAME>` -> run -> confirm the named
 //   assertion, and only that one, newly red against the 18-passed/0-failed
 //   baseline -> `make clean && make` -> confirm the baseline exactly
