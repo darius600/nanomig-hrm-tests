@@ -29,8 +29,21 @@
 //   sixteen rows. This package instead reads the table at the bit level:
 //   each COLOR16-31 bit is flipped one at a time against a fixed background
 //   palette, and what the flip is allowed to move -- which displayed sprite
-//   colour, which one of R/G/B -- is read off the row's own printed symbols,
-//   not assumed from NanoMig's own lookup.
+//   colour, which one of R/G/B, and at that channel's own TOP TWO BITS
+//   (p.301: "There are only two bits of red, green and blue color
+//   resolution per hires pixel"; p.302: "the loss of lower bits of
+//   precision in specifying SuperHires colors") -- is read off the row's
+//   own printed symbols, not assumed from NanoMig's own lookup. A flip that
+//   moves only the channel's full-precision byte without ever moving that
+//   two-bit reading (the symptom of an implementation that shows the raw
+//   register value unmangled instead of the SuperHires encoding -- the
+//   ordinary nibble-duplicated convention C3 below confirms this harness's
+//   own write path against) is not graded as landing at the row's own
+//   printed place. This applies identically on every row, including the
+//   four diagonal ones ($10/$15/$1A/$1F, p==q): a letter there names the
+//   SAME colour at both its own legend place and the other slot's, and a
+//   flip that reaches only the full byte at either place, never moving the
+//   two-bit reading, is exactly as ungraded as on any other row.
 //
 // PALETTE DERIVATION (S0-S3, "state the derivation in the header"): each
 //   palette S (0-3) assigns sprite colour (16+i), i=0..3, the two-bit RGB
@@ -85,10 +98,17 @@
 //        ($11-$13) -- this package's primary stimulus (C1-C3, P1, P2, and
 //        REG-0x11--0x13's own baseline; SPR1 is never written for these).
 //     -- an unattached sprite 2, 4 or 6 alone, own value 1-3, reaches
-//        COLOR21-23, 25-27 and 29-31 ($15-$17, $19-$1B, $1D-$1F) -- p.103
-//        Figure 4-6: "21 Color 1 / 22 Color 2 / 23 Color 3" for sprites 2
-//        and 3 (24-27 for sprites 4-5, 28-31 for sprites 6-7).
-//     -- an attached SPR0+SPR1 pair (SPR1CTL's own ATTACH bit, p.101),
+//        COLOR21-23, 25-27 and 29-31 ($15-$17, $19-$1B, $1D-$1F) -- p.102:
+//        "The eight sprites use system color registers 16 - 31 ... each
+//        pair uses four of the color registers as shown in Figure 4-6,"
+//        printed on p.103 as four groups (registers 16, 20, 24, 28) with
+//        codes 00, 01, 10, 11 and "unused" at each group's own first
+//        register.
+//     -- an attached SPR0+SPR1 pair (SPR1CTL's own ATTACH bit: p.120, "Set
+//        a bit called ATTACH in the second sprite control word"; p.122,
+//        "the ATTACH bit, bit 7 in sprite control word 2, is set to 1 in
+//        the data structure for the odd-numbered sprite"; Table 4-5:
+//        0100 -> 20, 1000 -> 24, 1100 -> 28),
 //        sprite 0 held at value 0 and sprite 1 at value 1, 2 or 3, reaches
 //        each group's own first register, COLOR20/24/28 ($14/$18/$1C) --
 //        the one register no unattached sprite's own value (1-3 only; 0 is
@@ -135,22 +155,36 @@
 //   records for REG-0x11--0x13 and P2 -- see each block's own comment.
 //
 // CLAIM COVERAGE: the row ids (C-shrs.r10-r1F) and the per-bit ids
-//   (C-shres-sprite-bits.c1-c256, register $19 excluded from the
-//   extraction, confirmed by counting) are cited on their own register's
+//   (C-shres-sprite-bits.c1-c256) are cited on their own register's
 //   REG-0x1n entry below, via kRegIds[] -- except each register's own four
 //   bits-15-12 ids (the printed '.', unused): measureRegister() flips bits
 //   0-11 only, so those ids are cited on DOT-BITS instead, the claim they
-//   actually measure (fifty-six ids: $11-$18 and $1A-$1F, four each; $19
-//   has none). The twelve symbol ids: colour 16's own three stay on
-//   REG-0x10's decline (with C-shrc.srcs16); colour 17/18/19's nine
+//   actually measure (fifty-six ids: $11-$18 and $1A-$1F, four each).
+//   Register $19's own twelve bits-0-11 ids (C-shres-sprite-bits.c149-c160)
+//   are cited on REG-0x19 like every other register's, even though the
+//   inventory carries them with no assigned package -- that is a gap in
+//   the classification, not a reason to leave what this register actually
+//   measures uncited. Register $10's own sixteen ids (c1-c16, all of them,
+//   bits 15-0) stay together on REG-0x10's decline: the whole register,
+//   not only its top twelve bits, is unmeasurable through this boundary.
+//   The twelve symbol ids: colour 17/18/19's nine
 //   (C-shres-sprite-symbols.c4-c12) are cited in full on P1, the assertion
 //   that actually grades them, not compressed and not also printed on a
-//   decline. The three legend ids for colour 17/18/19 (C-shrc.srcs17-19,
-//   "contributes only the top two bits") are cited on P2, which grades
-//   exactly that clause. The three general ids for p.301's own
-//   multiplexing sentence and p.302's "similar scheme" sentence (C-shrc.c03,
-//   C-shres-color.c8, C-shrs.c01) are cited on REG-0x11, the first register
-//   this per-bit family actually measures multiplexing through.
+//   decline. Colour 16's own three (c1-c3) and its own legend id
+//   (C-shrc.srcs16) are cited on REG-0x11 instead of REG-0x10's decline:
+//   REG-0x10's own reason covers only register $10 itself, and colour 16's
+//   letters ARE graded elsewhere -- REG-0x11/12/13's own slot-B bits and
+//   REG-0x14/18/1C's own slot-A bits -- so REG-0x11, the first of those,
+//   carries the ids. Colour 17/18/19's own legend ids (C-shrc.srcs17-19,
+//   "contributes only the top two bits") are cited on REG-0x15/1A/1F
+//   respectively, each colour's own diagonal register, where every one of
+//   the twelve measured bits is that colour's own letters -- not on P2,
+//   which flips only OTHER colours' letters and so never sees a named
+//   colour's own letters below its own top two bits. The three general ids
+//   for p.301's own multiplexing sentence and p.302's "similar scheme"
+//   sentence (C-shrc.c03, C-shres-color.c8, C-shrs.c01) are cited on
+//   REG-0x11, the first register this per-bit family actually measures
+//   multiplexing through.
 //
 // ASSERTIONS:
 //   C1 FIXTURE-SPRITE-DATA-PATH-LIVE (HIRES) -- a written, non-zero sprite
@@ -246,14 +280,14 @@
 #ifndef MUT_P2
 #define MUT_P2 0
 #endif
-#ifndef MUT_REG11
-#define MUT_REG11 0
+#ifndef MUT_REG15
+#define MUT_REG15 0
 #endif
-#ifndef MUT_REG12
-#define MUT_REG12 0
+#ifndef MUT_REG1A
+#define MUT_REG1A 0
 #endif
-#ifndef MUT_REG13
-#define MUT_REG13 0
+#ifndef MUT_REG1F
+#define MUT_REG1F 0
 #endif
 
 #include <array>
@@ -309,7 +343,7 @@ constexpr uint16_t kSprDatbAddr(int n) { return static_cast<uint16_t>(kSprBase +
 constexpr uint16_t kBplcon0Shres = 0x0040;   // bit 6
 constexpr uint16_t kBplcon0Ecsena = 0x0001;  // bit 0
 constexpr uint16_t kSpriteCtlSh1 = 0x0010;   // SPRxCTL bit 4, SHSH1 (p.303)
-constexpr uint16_t kSpriteCtlAttach = 0x0080;  // SPR(odd)CTL bit 7, ATTACH (p.101)
+constexpr uint16_t kSpriteCtlAttach = 0x0080;  // SPR(odd)CTL bit 7, ATTACH (p.120, p.122)
 
 constexpr int kChannelBits = 8;  // the fixture's own red/green/blue ports, measured 8 bits wide.
 
@@ -345,22 +379,22 @@ constexpr RegRow kRows[16] = {
 // for bits 11-0 only (bits 15-12's own ids are cited on DOT-BITS instead)
 // + (diagonal registers only) three symbol ids and one legend id.
 constexpr const char* kRegIds[16] = {
-    "C-shrs.r10, C-shres-sprite-bits.c1, C-shres-sprite-bits.c2, C-shres-sprite-bits.c3, C-shres-sprite-bits.c4, C-shres-sprite-bits.c5, C-shres-sprite-bits.c6, C-shres-sprite-bits.c7, C-shres-sprite-bits.c8, C-shres-sprite-bits.c9, C-shres-sprite-bits.c10, C-shres-sprite-bits.c11, C-shres-sprite-bits.c12, C-shres-sprite-bits.c13, C-shres-sprite-bits.c14, C-shres-sprite-bits.c15, C-shres-sprite-bits.c16, C-shres-sprite-symbols.c1, C-shres-sprite-symbols.c2, C-shres-sprite-symbols.c3, C-shrc.srcs16",
-    "C-shrs.r11, C-shres-sprite-bits.c21, C-shres-sprite-bits.c22, C-shres-sprite-bits.c23, C-shres-sprite-bits.c24, C-shres-sprite-bits.c25, C-shres-sprite-bits.c26, C-shres-sprite-bits.c27, C-shres-sprite-bits.c28, C-shres-sprite-bits.c29, C-shres-sprite-bits.c30, C-shres-sprite-bits.c31, C-shres-sprite-bits.c32, C-shrc.c03, C-shres-color.c8, C-shrs.c01",
+    "C-shrs.r10, C-shres-sprite-bits.c1, C-shres-sprite-bits.c2, C-shres-sprite-bits.c3, C-shres-sprite-bits.c4, C-shres-sprite-bits.c5, C-shres-sprite-bits.c6, C-shres-sprite-bits.c7, C-shres-sprite-bits.c8, C-shres-sprite-bits.c9, C-shres-sprite-bits.c10, C-shres-sprite-bits.c11, C-shres-sprite-bits.c12, C-shres-sprite-bits.c13, C-shres-sprite-bits.c14, C-shres-sprite-bits.c15, C-shres-sprite-bits.c16",
+    "C-shrs.r11, C-shres-sprite-bits.c21, C-shres-sprite-bits.c22, C-shres-sprite-bits.c23, C-shres-sprite-bits.c24, C-shres-sprite-bits.c25, C-shres-sprite-bits.c26, C-shres-sprite-bits.c27, C-shres-sprite-bits.c28, C-shres-sprite-bits.c29, C-shres-sprite-bits.c30, C-shres-sprite-bits.c31, C-shres-sprite-bits.c32, C-shrc.c03, C-shres-color.c8, C-shrs.c01, C-shrc.srcs16, C-shres-sprite-symbols.c1, C-shres-sprite-symbols.c2, C-shres-sprite-symbols.c3",
     "C-shrs.r12, C-shres-sprite-bits.c37, C-shres-sprite-bits.c38, C-shres-sprite-bits.c39, C-shres-sprite-bits.c40, C-shres-sprite-bits.c41, C-shres-sprite-bits.c42, C-shres-sprite-bits.c43, C-shres-sprite-bits.c44, C-shres-sprite-bits.c45, C-shres-sprite-bits.c46, C-shres-sprite-bits.c47, C-shres-sprite-bits.c48",
     "C-shrs.r13, C-shres-sprite-bits.c53, C-shres-sprite-bits.c54, C-shres-sprite-bits.c55, C-shres-sprite-bits.c56, C-shres-sprite-bits.c57, C-shres-sprite-bits.c58, C-shres-sprite-bits.c59, C-shres-sprite-bits.c60, C-shres-sprite-bits.c61, C-shres-sprite-bits.c62, C-shres-sprite-bits.c63, C-shres-sprite-bits.c64",
     "C-shrs.r14, C-shres-sprite-bits.c69, C-shres-sprite-bits.c70, C-shres-sprite-bits.c71, C-shres-sprite-bits.c72, C-shres-sprite-bits.c73, C-shres-sprite-bits.c74, C-shres-sprite-bits.c75, C-shres-sprite-bits.c76, C-shres-sprite-bits.c77, C-shres-sprite-bits.c78, C-shres-sprite-bits.c79, C-shres-sprite-bits.c80",
-    "C-shrs.r15, C-shres-sprite-bits.c85, C-shres-sprite-bits.c86, C-shres-sprite-bits.c87, C-shres-sprite-bits.c88, C-shres-sprite-bits.c89, C-shres-sprite-bits.c90, C-shres-sprite-bits.c91, C-shres-sprite-bits.c92, C-shres-sprite-bits.c93, C-shres-sprite-bits.c94, C-shres-sprite-bits.c95, C-shres-sprite-bits.c96",
+    "C-shrs.r15, C-shres-sprite-bits.c85, C-shres-sprite-bits.c86, C-shres-sprite-bits.c87, C-shres-sprite-bits.c88, C-shres-sprite-bits.c89, C-shres-sprite-bits.c90, C-shres-sprite-bits.c91, C-shres-sprite-bits.c92, C-shres-sprite-bits.c93, C-shres-sprite-bits.c94, C-shres-sprite-bits.c95, C-shres-sprite-bits.c96, C-shrc.srcs17",
     "C-shrs.r16, C-shres-sprite-bits.c101, C-shres-sprite-bits.c102, C-shres-sprite-bits.c103, C-shres-sprite-bits.c104, C-shres-sprite-bits.c105, C-shres-sprite-bits.c106, C-shres-sprite-bits.c107, C-shres-sprite-bits.c108, C-shres-sprite-bits.c109, C-shres-sprite-bits.c110, C-shres-sprite-bits.c111, C-shres-sprite-bits.c112",
     "C-shrs.r17, C-shres-sprite-bits.c117, C-shres-sprite-bits.c118, C-shres-sprite-bits.c119, C-shres-sprite-bits.c120, C-shres-sprite-bits.c121, C-shres-sprite-bits.c122, C-shres-sprite-bits.c123, C-shres-sprite-bits.c124, C-shres-sprite-bits.c125, C-shres-sprite-bits.c126, C-shres-sprite-bits.c127, C-shres-sprite-bits.c128",
     "C-shrs.r18, C-shres-sprite-bits.c133, C-shres-sprite-bits.c134, C-shres-sprite-bits.c135, C-shres-sprite-bits.c136, C-shres-sprite-bits.c137, C-shres-sprite-bits.c138, C-shres-sprite-bits.c139, C-shres-sprite-bits.c140, C-shres-sprite-bits.c141, C-shres-sprite-bits.c142, C-shres-sprite-bits.c143, C-shres-sprite-bits.c144",
-    "C-shrs.r19",
-    "C-shrs.r1A, C-shres-sprite-bits.c165, C-shres-sprite-bits.c166, C-shres-sprite-bits.c167, C-shres-sprite-bits.c168, C-shres-sprite-bits.c169, C-shres-sprite-bits.c170, C-shres-sprite-bits.c171, C-shres-sprite-bits.c172, C-shres-sprite-bits.c173, C-shres-sprite-bits.c174, C-shres-sprite-bits.c175, C-shres-sprite-bits.c176",
+    "C-shrs.r19, C-shres-sprite-bits.c149, C-shres-sprite-bits.c150, C-shres-sprite-bits.c151, C-shres-sprite-bits.c152, C-shres-sprite-bits.c153, C-shres-sprite-bits.c154, C-shres-sprite-bits.c155, C-shres-sprite-bits.c156, C-shres-sprite-bits.c157, C-shres-sprite-bits.c158, C-shres-sprite-bits.c159, C-shres-sprite-bits.c160",
+    "C-shrs.r1A, C-shres-sprite-bits.c165, C-shres-sprite-bits.c166, C-shres-sprite-bits.c167, C-shres-sprite-bits.c168, C-shres-sprite-bits.c169, C-shres-sprite-bits.c170, C-shres-sprite-bits.c171, C-shres-sprite-bits.c172, C-shres-sprite-bits.c173, C-shres-sprite-bits.c174, C-shres-sprite-bits.c175, C-shres-sprite-bits.c176, C-shrc.srcs18",
     "C-shrs.r1B, C-shres-sprite-bits.c181, C-shres-sprite-bits.c182, C-shres-sprite-bits.c183, C-shres-sprite-bits.c184, C-shres-sprite-bits.c185, C-shres-sprite-bits.c186, C-shres-sprite-bits.c187, C-shres-sprite-bits.c188, C-shres-sprite-bits.c189, C-shres-sprite-bits.c190, C-shres-sprite-bits.c191, C-shres-sprite-bits.c192",
     "C-shrs.r1C, C-shres-sprite-bits.c197, C-shres-sprite-bits.c198, C-shres-sprite-bits.c199, C-shres-sprite-bits.c200, C-shres-sprite-bits.c201, C-shres-sprite-bits.c202, C-shres-sprite-bits.c203, C-shres-sprite-bits.c204, C-shres-sprite-bits.c205, C-shres-sprite-bits.c206, C-shres-sprite-bits.c207, C-shres-sprite-bits.c208",
     "C-shrs.r1D, C-shres-sprite-bits.c213, C-shres-sprite-bits.c214, C-shres-sprite-bits.c215, C-shres-sprite-bits.c216, C-shres-sprite-bits.c217, C-shres-sprite-bits.c218, C-shres-sprite-bits.c219, C-shres-sprite-bits.c220, C-shres-sprite-bits.c221, C-shres-sprite-bits.c222, C-shres-sprite-bits.c223, C-shres-sprite-bits.c224",
     "C-shrs.r1E, C-shres-sprite-bits.c229, C-shres-sprite-bits.c230, C-shres-sprite-bits.c231, C-shres-sprite-bits.c232, C-shres-sprite-bits.c233, C-shres-sprite-bits.c234, C-shres-sprite-bits.c235, C-shres-sprite-bits.c236, C-shres-sprite-bits.c237, C-shres-sprite-bits.c238, C-shres-sprite-bits.c239, C-shres-sprite-bits.c240",
-    "C-shrs.r1F, C-shres-sprite-bits.c245, C-shres-sprite-bits.c246, C-shres-sprite-bits.c247, C-shres-sprite-bits.c248, C-shres-sprite-bits.c249, C-shres-sprite-bits.c250, C-shres-sprite-bits.c251, C-shres-sprite-bits.c252, C-shres-sprite-bits.c253, C-shres-sprite-bits.c254, C-shres-sprite-bits.c255, C-shres-sprite-bits.c256",
+    "C-shrs.r1F, C-shres-sprite-bits.c245, C-shres-sprite-bits.c246, C-shres-sprite-bits.c247, C-shres-sprite-bits.c248, C-shres-sprite-bits.c249, C-shres-sprite-bits.c250, C-shres-sprite-bits.c251, C-shres-sprite-bits.c252, C-shres-sprite-bits.c253, C-shres-sprite-bits.c254, C-shres-sprite-bits.c255, C-shres-sprite-bits.c256, C-shrc.srcs19",
 };
 
 // ---------------------------------------------------------------------
@@ -511,10 +545,12 @@ constexpr Run kRuns[5] = {
 constexpr Run kDisarmed = {"disarmed", 0, 0x0000, 0x0000, 0x0000};
 
 // Unattached sprite 2, 4 and 6's own solid runs (values 1-3), same
-// construction as S1/S2/S3 -- p.103 Figure 4-6: "21 Color 1 / 22 Color 2 /
-// 23 Color 3" for sprites 2 and 3 (24-27 for sprites 4-5, 28-31 for sprites
-// 6-7), reaching COLOR21-23/25-27/29-31 ($15-$17/$19-$1B/$1D-$1F) the same
-// way sprite 0 reaches COLOR17-19 -- see STIMULUS and REG-0x14..0x1F below.
+// construction as S1/S2/S3 -- p.102: "The eight sprites use system color
+// registers 16 - 31 ... each pair uses four of the color registers as
+// shown in Figure 4-6" (printed on p.103 as four groups, 16/20/24/28,
+// codes 00/01/10/11, "unused" at each group's own first register),
+// reaching COLOR21-23/25-27/29-31 ($15-$17/$19-$1B/$1D-$1F) the same way
+// sprite 0 reaches COLOR17-19 -- see STIMULUS and REG-0x14..0x1F below.
 constexpr Run kRunsSpr2[3] = {
     {"S1-SPR2", 2, 0xFFFF, 0x0000, 0x0000},
     {"S2-SPR2", 2, 0x0000, 0xFFFF, 0x0000},
@@ -592,7 +628,7 @@ void solidWords(int v, uint16_t& data, uint16_t& datb) {
 }
 
 // Sprite 0 held at v0, sprite 1 held at v1, sprite 1's own SPR1CTL ATTACH
-// bit (p.101) set -- the ordinary-mode 4-bit combined index 4*v1+v0 this
+// bit (p.120, p.122) set -- the ordinary-mode 4-bit combined index 4*v1+v0 this
 // produces is not p.302's own SuperHires pairing (see STIMULUS); it is used
 // here only to reach the three registers ($14, $18, $1C) no unattached
 // sprite's own value (1-3) ever selects, through the same POS byte and
@@ -641,6 +677,10 @@ int colourOf(uint32_t rgb, const Palette& pal) {
     }
     return -1;
 }
+
+// Channel index (0=R,1=G,2=B), as top2()'s own char argument -- shared by
+// diffComponents() below and measureRegister()'s own legend-place check.
+constexpr char kCompChannel[3] = {'R', 'G', 'B'};
 
 // Full 8-bit channels that differ between two samples (0=R,1=G,2=B).
 std::vector<int> diffComponents(uint32_t a, uint32_t b) {
@@ -734,7 +774,20 @@ RegVerdict measureRegister(const std::array<uint16_t, 16>& s0words, const Palett
                 v.observed = true;
                 int saw = colourOf(b[i], s0);
                 auto comps = diffComponents(b[i], t[i]);
-                bool good = (saw == 16 + k) && comps.size() == 1 && comps[0] == comp;
+                // LEGEND-PLACE CHECK (see METHOD above): comps.size()==1 alone only
+                // says the full-precision byte moved somewhere in one channel: an
+                // implementation that shows the raw register value unmangled (the
+                // ordinary nibble-duplicated ECS convention) can move that byte
+                // (e.g. 0x55 -> 0x77) while its own top two bits -- the place p.302
+                // draws the letter, and the only two bits p.301 says carry
+                // SuperHires colour resolution at all -- stay unchanged. Requiring
+                // top2() to differ on both sides catches exactly that case, on
+                // every row alike, diagonal ($10/$15/$1A/$1F, p==q) included: there
+                // a letter names the same colour at both its own legend place and
+                // the other slot's, and only a move at the flipped bit's OWN place
+                // counts.
+                bool good = (saw == 16 + k) && comps.size() == 1 && comps[0] == comp &&
+                            top2(b[i], kCompChannel[comp]) != top2(t[i], kCompChannel[comp]);
                 if (!good && v.allGood) {
                     v.allGood = false;
                     v.badBit = bit;
@@ -773,6 +826,11 @@ int main(int argc, char** argv) {
 
     const Palette S0 = buildPalette(0);
     const auto s0words = wordsFor(S0);
+    // S1's own words, used only by the diagonal rows' own stimulus-red
+    // MUTATION (MUT_REG15/1A/1F below): WRITE S1's palette while every
+    // comparison (colourOf(), baseline[]) still grades against S0 -- the
+    // move MUT_P1 uses.
+    const auto s1words = wordsFor(buildPalette(1));
 
     // ==================== C1 [control] FIXTURE-SPRITE-DATA-PATH-LIVE ====================
     {
@@ -973,8 +1031,12 @@ int main(int argc, char** argv) {
             "is flipped everywhere page 302's table places that colour's letters -- 'There "
             "are only two bits of red, green and blue color resolution per hires pixel.' "
             "(p.301). 3 on-screen colours x 3 other colours x 3 channels x 2 (hi/lo) = 54 "
-            "traces checked, all required identical. C-shrc.srcs17, C-shrc.srcs18, "
-            "C-shrc.srcs19.");
+            "traces checked, all required identical. No claim id of its own: this exact "
+            "sentence is the sibling ch3-shres-bitplane-colour-encoding package's own claim "
+            "(C-shrc.c02); P2 flips only OTHER colours' letters, so it never sees a named "
+            "colour's own letters below its own top two bits and cannot carry that colour's "
+            "own legend id (C-shrc.srcs16-19, cited instead on the bit-position rows that do "
+            "see them: REG-0x11 and REG-0x15/1A/1F).");
         checks.note("P2 TWO-BITS-54-TRACES-IDENTICAL: " + std::to_string(changed) + " of " +
                      std::to_string(total) + " traces changed.");
         // MUTATION P2 stimulus green: baseline is already red -- 18 of 54 traces change,
@@ -1009,12 +1071,31 @@ int main(int argc, char** argv) {
             "12-bit colour-register format -- declining rather than re-testing a sibling "
             "package's claim under a different name. Also carries every register's own "
             "printed bits-15-12 ids, moved here because measureRegister() flips bits 0-11 "
-            "only, never 15-12: C-shres-sprite-bits.c17, c18, c19, c20 (register $11), c33, "
-            "c34, c35, c36 ($12), c49, c50, c51, c52 ($13), c65, c66, c67, c68 ($14), c81, "
-            "c82, c83, c84 ($15), c97, c98, c99, c100 ($16), c113, c114, c115, c116 ($17), "
-            "c129, c130, c131, c132 ($18), c161, c162, c163, c164 ($1A), c177, c178, c179, "
-            "c180 ($1B), c193, c194, c195, c196 ($1C), c209, c210, c211, c212 ($1D), c225, "
-            "c226, c227, c228 ($1E), c241, c242, c243, c244 ($1F).");
+            "only, never 15-12, each written in full so the ledger reads every one: "
+            "C-shres-sprite-bits.c17, C-shres-sprite-bits.c18, C-shres-sprite-bits.c19, "
+            "C-shres-sprite-bits.c20 (register $11), C-shres-sprite-bits.c33, "
+            "C-shres-sprite-bits.c34, C-shres-sprite-bits.c35, C-shres-sprite-bits.c36 "
+            "($12), C-shres-sprite-bits.c49, C-shres-sprite-bits.c50, "
+            "C-shres-sprite-bits.c51, C-shres-sprite-bits.c52 ($13), "
+            "C-shres-sprite-bits.c65, C-shres-sprite-bits.c66, C-shres-sprite-bits.c67, "
+            "C-shres-sprite-bits.c68 ($14), C-shres-sprite-bits.c81, "
+            "C-shres-sprite-bits.c82, C-shres-sprite-bits.c83, C-shres-sprite-bits.c84 "
+            "($15), C-shres-sprite-bits.c97, C-shres-sprite-bits.c98, "
+            "C-shres-sprite-bits.c99, C-shres-sprite-bits.c100 ($16), "
+            "C-shres-sprite-bits.c113, C-shres-sprite-bits.c114, C-shres-sprite-bits.c115, "
+            "C-shres-sprite-bits.c116 ($17), C-shres-sprite-bits.c129, "
+            "C-shres-sprite-bits.c130, C-shres-sprite-bits.c131, C-shres-sprite-bits.c132 "
+            "($18), C-shres-sprite-bits.c161, C-shres-sprite-bits.c162, "
+            "C-shres-sprite-bits.c163, C-shres-sprite-bits.c164 ($1A), "
+            "C-shres-sprite-bits.c177, C-shres-sprite-bits.c178, C-shres-sprite-bits.c179, "
+            "C-shres-sprite-bits.c180 ($1B), C-shres-sprite-bits.c193, "
+            "C-shres-sprite-bits.c194, C-shres-sprite-bits.c195, C-shres-sprite-bits.c196 "
+            "($1C), C-shres-sprite-bits.c209, C-shres-sprite-bits.c210, "
+            "C-shres-sprite-bits.c211, C-shres-sprite-bits.c212 ($1D), "
+            "C-shres-sprite-bits.c225, C-shres-sprite-bits.c226, C-shres-sprite-bits.c227, "
+            "C-shres-sprite-bits.c228 ($1E), C-shres-sprite-bits.c241, "
+            "C-shres-sprite-bits.c242, C-shres-sprite-bits.c243, C-shres-sprite-bits.c244 "
+            "($1F).");
     }
 
     // ==================== REG-0x10 ====================
@@ -1036,77 +1117,36 @@ int main(int argc, char** argv) {
         baseline[ri] = traceForObservation(s0words, kObservations[ri], /*shres=*/true, kStart, kCount);
 
     {
-#if MUT_REG11
-        // MUTATION: register $15 (row '....GHGHIJIJKLKL', colour 17's own diagonal --
-        // both slots carry colour 17's own letters, reached by unattached sprite 2,
-        // p.103 Figure 4-6) instead of $11 -- a stimulus change; measureRegister()'s
-        // own predicate (comparator) is untouched.
-        RegVerdict v = measureRegister(s0words, S0, baseline, kDiagReg[1]);
-#else
         RegVerdict v = measureRegister(s0words, S0, baseline, 1);
-#endif
         checks.expect(v.observed && v.allGood,
             "REG-0x11: row $11 ('....GHABIJCDKLEF', p.302) -- with the S0 table loaded, "
             "every one of register COLOR17/$11's twelve meaningful bits is flipped in turn "
             "and all seventeen observation channels (kObservations[]) are scanned at "
             "BPLCON0.shres=1 for a difference against the unmutated baseline; a difference "
-            "must land on the bit's own page-predicted colour (16 for the register's slot-B "
-            "bits 9-8/5-4/1-0, 17 for its slot-A bits 11-10/7-6/3-2) and channel alone. Also "
+            "must land, at the bit's own legend place (its channel's own top two bits), on "
+            "the bit's own page-predicted colour (16 for the register's slot-B bits "
+            "9-8/5-4/1-0, 17 for its slot-A bits 11-10/7-6/3-2) and channel alone. Also "
             "carries page 301's general multiplexing statements this per-bit family as a "
             "whole tests: 'In order to decode sprite and bitplane color information in "
             "SuperHires mode, certain multiplexing occurs in the use of the registers.' " +
             regVerdictDetail(v) + " " + std::string(kRegIds[1]) + " .");
         checks.note("REG-0x11: " + regVerdictDetail(v));
-        // MUTATION REG-0x11 stimulus green: built with -DMUT_REG11=1, which measures
-        // register $15 instead of $11 (same measureRegister(), same predicate) ->
-        // measured "8 passed, 12 failed, 2 declined", REG-0x11 the only verdict that
-        // moved (FAIL -> PASS) -- a register where slot A and slot B are the same
-        // colour goes green under the unchanged comparator, proving it is not
-        // vacuously red. Reverted (no flags): "7 passed, 13 failed, 2 declined", the
-        // FINDING (bit 0, run S1, tick 9: observed colour 17, page-predicted colour
-        // 16, component B) restored.
     }
     {
-#if MUT_REG12
-        // MUTATION: register $1A (row '....MNMNOPOPQRQR', colour 18's own diagonal,
-        // reached by unattached sprite 4) instead of $12 -- a stimulus change.
-        RegVerdict v = measureRegister(s0words, S0, baseline, kDiagReg[2]);
-#else
         RegVerdict v = measureRegister(s0words, S0, baseline, 2);
-#endif
         checks.expect(v.observed && v.allGood,
             "REG-0x12: row $12 ('....MNABOPCDQREF', p.302) -- same method as REG-0x11, "
             "register COLOR18/$12, slot-A colour 18 (bits 11-10/7-6/3-2), slot-B colour 16 "
             "(bits 9-8/5-4/1-0). " + regVerdictDetail(v) + " " + std::string(kRegIds[2]) + " .");
         checks.note("REG-0x12: " + regVerdictDetail(v));
-        // MUTATION REG-0x12 stimulus green: built with -DMUT_REG12=1, which measures
-        // register $1A instead of $12, through the identical per-bit predicate ->
-        // measured "8 passed, 12 failed, 2 declined", REG-0x12 the only verdict that
-        // moved (FAIL -> PASS). Reverted (no flags): "7 passed, 13 failed, 2
-        // declined", the FINDING (bit 0, run S2, tick 9: observed colour 18,
-        // page-predicted colour 16, component B -- the same finding as REG-0x11)
-        // restored.
     }
     {
-#if MUT_REG13
-        // MUTATION: register $1F (row '....STSTUVUVWXWX', colour 19's own diagonal,
-        // reached by unattached sprite 6) instead of $13 -- a stimulus change.
-        RegVerdict v = measureRegister(s0words, S0, baseline, kDiagReg[3]);
-#else
         RegVerdict v = measureRegister(s0words, S0, baseline, 3);
-#endif
         checks.expect(v.observed && v.allGood,
             "REG-0x13: row $13 ('....STABUVCDWXEF', p.302) -- same method as REG-0x11, "
             "register COLOR19/$13, slot-A colour 19 (bits 11-10/7-6/3-2), slot-B colour 16 "
             "(bits 9-8/5-4/1-0). " + regVerdictDetail(v) + " " + std::string(kRegIds[3]) + " .");
         checks.note("REG-0x13: " + regVerdictDetail(v));
-        // MUTATION REG-0x13 stimulus green: built with -DMUT_REG13=1, which measures
-        // register $1F instead of $13, through the identical per-bit predicate ->
-        // measured "8 passed, 12 failed, 2 declined", REG-0x13 the only verdict that
-        // moved (FAIL -> PASS). Reverted (no flags): "7 passed, 13 failed, 2
-        // declined", the FINDING (bit 0, run S3, tick 9: observed colour 19,
-        // page-predicted colour 16, component B -- the same finding as REG-0x11/
-        // REG-0x12) restored.
     }
 
     // REG-0x14 .. REG-0x1F: reached through an unattached sprite 2, 4 or 6, or an
@@ -1116,16 +1156,31 @@ int main(int argc, char** argv) {
     // REG-0x11-0x13 above, scanning all seventeen channels in kObservations[], and
     // graded -- not declined -- wherever at least one channel shows a difference.
     for (int n = 4; n <= 15; ++n) {
-        RegVerdict v = measureRegister(s0words, S0, baseline, n);
+        // Diagonal rows only ($15=5, $1A=10, $1F=15): the stimulus-red MUTATION
+        // (MUT_REG15/1A/1F) writes S1's own words instead of S0's while every
+        // comparison stays keyed to the S0 baseline -- the move MUT_P1 uses. Off
+        // by default (base == s0words, identical to every other register here).
+        std::array<uint16_t, 16> base = s0words;
+#if MUT_REG15
+        if (n == 5) base = s1words;
+#endif
+#if MUT_REG1A
+        if (n == 10) base = s1words;
+#endif
+#if MUT_REG1F
+        if (n == 15) base = s1words;
+#endif
+        RegVerdict v = measureRegister(base, S0, baseline, n);
         checks.note(std::string("REG-0x") + kRows[n].hex + ": " + regVerdictDetail(v));
         if (v.observed) {
             checks.expect(v.allGood,
                 std::string("REG-0x") + kRows[n].hex + ": row $" + kRows[n].hex + " ('" +
                 kRows[n].symbols + "', p.302) -- same method as REG-0x11, reached through an "
-                "unattached sprite 2, 4 or 6 (p.103 Figure 4-6: colour registers 21-23, "
-                "25-27, 29-31 for sprite pairs 2/3, 4/5, 6/7) or an attached SPR0+SPR1 pair "
-                "(the only stimulus that reaches this group's own first register, p.101's "
-                "ATTACH bit) -- both used only as read paths into COLOR16-31, graded by the "
+                "unattached sprite 2, 4 or 6 (p.102, Figure 4-6 on p.103: colour registers "
+                "21-23, 25-27, 29-31 for sprite pairs 2/3, 4/5, 6/7) or an attached SPR0+SPR1 "
+                "pair (the only stimulus that reaches this group's own first register, the "
+                "ATTACH bit of pp.120 and 122, Table 4-5: 0100 -> 20, 1000 -> 24, "
+                "1100 -> 28) -- both used only as read paths into COLOR16-31, graded by the "
                 "identical per-bit predicate (see STIMULUS, NON-GOALS). " +
                 regVerdictDetail(v) + " " + std::string(kRegIds[n]) + " .");
         } else {
@@ -1138,61 +1193,94 @@ int main(int argc, char** argv) {
                 std::string(kRegIds[n]) + " .");
         }
     }
-    // MUTATION records for REG-0x14..REG-0x1F: none of the twelve can be flipped
-    // by any stimulus this package presents -- each row's own p/q (n&3, n>>2)
-    // decide green or red unconditionally, independent of which sprite or palette
-    // reaches it, so there is nothing a substituted stimulus could break or fix
-    // that measureRegister()'s own comparator does not already decide by row
-    // structure. The comparator's own non-vacuousness (it can produce both a
-    // clean PASS and a genuine FAIL through the identical code path) is
-    // demonstrated directly on REG-0x11 above (MUTATION REG-0x11, REG-0x12,
-    // REG-0x13): those three green-stimulus records exercise this same
-    // measureRegister() on a diagonal register (kDiagReg) and turn FAIL->PASS.
+    // MUTATION records for REG-0x11..REG-0x1F, all fifteen rows: every one is
+    // RED on NanoMig under the legend-place comparator above (measured: 4
+    // passed, 16 failed, 2 declined, all fifteen REG-0x1n rows among the
+    // sixteen red), diagonal rows ($15/$1A/$1F, p==q) included -- a letter
+    // there names the same colour at both its own legend place and the other
+    // slot's, and the comparator does not special-case p==q (see METHOD). No
+    // STIMULUS this package can present reaches green on any of the fifteen:
+    // every read path this file has (sprite 0/2/4/6 unattached, or the
+    // attached pair) still runs through this same boundary's own colour
+    // table, and that is what is wrong, not which stimulus reaches it. The
+    // demonstration that the comparator is not vacuously red instead --
+    // "implementation green" -- is an edit-and-revert in a private, scratch-
+    // only copy of denise_colortable.v (never in the repository or the
+    // nanomig/ submodule): COLOR16-31 (select_xored[4]) shown as p.302
+    // prints it, alternate 28 MHz samples reading slot A then slot B, each
+    // in its own channel's top two bits, low six bits zero, under which
+    // this file's own comparator, byte for byte unchanged, PASSES all
+    // fifteen rows. Measured on that copy: 17 passed, 3 failed (C3, P1, P2 --
+    // both controls that assume the ordinary nibble-duplicated ECS reading
+    // C3 itself confirms, and P2's own read path, now see the alternation
+    // instead), 2 declined (REG-0x10, DOT-BITS, unaffected -- neither reads
+    // register content). All fifteen REG-0x1n rows PASS on that copy alone:
     //
-    // MUTATION REG-0x15 none impossible: row $15 (n=5, p=q=1, colour 17's own
-    // letters in both slots, kRows) is diagonal -- for any palette this package
-    // can load, a bit's expectColour (16+k, k=p=q) always equals what colourOf()
-    // reads off the baseline, because slot A and slot B store the same colour.
-    // Green at baseline; no stimulus turns it red.
-    // MUTATION REG-0x1A none impossible: row $1A (n=10, p=q=2, colour 18's own
-    // letters in both slots) is diagonal, same reason as REG-0x15. Green at
-    // baseline; no stimulus turns it red.
-    // MUTATION REG-0x1F none impossible: row $1F (n=15, p=q=3, colour 19's own
-    // letters in both slots) is diagonal, same reason as REG-0x15. Green at
-    // baseline; no stimulus turns it red.
-    // MUTATION REG-0x14 none impossible: row $14 (n=4, p=0, q=1) is not diagonal;
-    // already red at baseline (bit 0, run ATTACH-V1, tick 9: observed colour 16,
-    // page-predicted colour 17, component B). No stimulus makes every observed
-    // difference land on its own predicted colour; there is nothing green here to
-    // break.
-    // MUTATION REG-0x16 none impossible: row $16 (n=6, p=2, q=1) is not diagonal;
-    // already red at baseline (bit 0, run S2-SPR2, tick 9: observed colour 18,
-    // page-predicted colour 17, component B). Nothing green here to break.
-    // MUTATION REG-0x17 none impossible: row $17 (n=7, p=3, q=1) is not diagonal;
-    // already red at baseline (bit 0, run S3-SPR2, tick 9: observed colour 19,
-    // page-predicted colour 17, component B). Nothing green here to break.
-    // MUTATION REG-0x18 none impossible: row $18 (n=8, p=0, q=2) is not diagonal;
-    // already red at baseline (bit 0, run ATTACH-V2, tick 9: observed colour 16,
-    // page-predicted colour 18, component B). Nothing green here to break.
-    // MUTATION REG-0x19 none impossible: row $19 (n=9, p=1, q=2) is not diagonal;
-    // already red at baseline (bit 0, run S1-SPR4, tick 9: observed colour 17,
-    // page-predicted colour 18, component B). Nothing green here to break.
-    // MUTATION REG-0x1B none impossible: row $1B (n=11, p=3, q=2) is not
-    // diagonal; already red at baseline (bit 0, run S3-SPR4, tick 9: observed
-    // colour 19, page-predicted colour 18, component B). Nothing green here to
-    // break.
-    // MUTATION REG-0x1C none impossible: row $1C (n=12, p=0, q=3) is not
-    // diagonal; already red at baseline (bit 0, run ATTACH-V3, tick 9: observed
-    // colour 16, page-predicted colour 19, component B). Nothing green here to
-    // break.
-    // MUTATION REG-0x1D none impossible: row $1D (n=13, p=1, q=3) is not
-    // diagonal; already red at baseline (bit 0, run S1-SPR6, tick 9: observed
-    // colour 17, page-predicted colour 19, component B). Nothing green here to
-    // break.
-    // MUTATION REG-0x1E none impossible: row $1E (n=14, p=2, q=3) is not
-    // diagonal; already red at baseline (bit 0, run S2-SPR6, tick 9: observed
-    // colour 18, page-predicted colour 19, component B). Nothing green here to
-    // break.
+    // MUTATION REG-0x11 implementation green: PASS on the p.302 copy above; RED
+    // on NanoMig, unchanged (bit 0, run S1, tick 9: observed colour 17,
+    // page-predicted colour 16, component B).
+    // MUTATION REG-0x12 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S2, tick 9: observed colour 18,
+    // page-predicted colour 16, component B).
+    // MUTATION REG-0x13 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S3, tick 9: observed colour 19,
+    // page-predicted colour 16, component B).
+    // MUTATION REG-0x14 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run ATTACH-V1, tick 9: observed colour 16,
+    // page-predicted colour 17, component B).
+    // MUTATION REG-0x16 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S2-SPR2, tick 9: observed colour 18,
+    // page-predicted colour 17, component B).
+    // MUTATION REG-0x17 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S3-SPR2, tick 9: observed colour 19,
+    // page-predicted colour 17, component B).
+    // MUTATION REG-0x18 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run ATTACH-V2, tick 9: observed colour 16,
+    // page-predicted colour 18, component B).
+    // MUTATION REG-0x19 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S1-SPR4, tick 9: observed colour 17,
+    // page-predicted colour 18, component B).
+    // MUTATION REG-0x1B implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S3-SPR4, tick 9: observed colour 19,
+    // page-predicted colour 18, component B).
+    // MUTATION REG-0x1C implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run ATTACH-V3, tick 9: observed colour 16,
+    // page-predicted colour 19, component B).
+    // MUTATION REG-0x1D implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S1-SPR6, tick 9: observed colour 17,
+    // page-predicted colour 19, component B).
+    // MUTATION REG-0x1E implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S2-SPR6, tick 9: observed colour 18,
+    // page-predicted colour 19, component B).
+    //
+    // Diagonal rows ($15/$1A/$1F): the SAME legend-place comparator applies
+    // here without exception (see METHOD) -- each is RED on NanoMig (bit 0,
+    // colour == page-predicted colour, component B: the flip moves the full
+    // byte without ever moving its own top two bits). Each also carries its
+    // own STIMULUS mutation, built with -DMUT_REG15/1A/1F=1, which writes
+    // palette S1's own words for that one register while every comparison
+    // (colourOf(), baseline[]) stays keyed to the S0 baseline -- the move
+    // MUT_P1 uses. Run: verdict stays RED (nothing to move -- already red),
+    // through a different first bad occurrence each time (the mismatched
+    // palette reaches an earlier, unrelated observation channel first):
+    // MUTATION REG-0x15 implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S1-SPR2, tick 9: observed colour 17,
+    // page-predicted colour 17, component B).
+    // MUTATION REG-0x15 stimulus red: -DMUT_REG15=1 -> measured "4 passed, 16
+    // failed, 2 declined", REG-0x15 stays RED (bit 0, run S1, tick 9:
+    // observed colour 17, page-predicted colour 17, component(s) moved: RGB).
+    // MUTATION REG-0x1A implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S2-SPR4, tick 9: observed colour 18,
+    // page-predicted colour 18, component B).
+    // MUTATION REG-0x1A stimulus red: -DMUT_REG1A=1 -> measured "4 passed, 16
+    // failed, 2 declined", REG-0x1A stays RED (bit 0, run S1, tick 9:
+    // observed colour 17, page-predicted colour 18, component(s) moved: RGB).
+    // MUTATION REG-0x1F implementation green: PASS on the p.302 copy; RED on
+    // NanoMig, unchanged (bit 0, run S3-SPR6, tick 9: observed colour 19,
+    // page-predicted colour 19, component B).
+    // MUTATION REG-0x1F stimulus red: -DMUT_REG1F=1 -> measured "4 passed, 16
+    // failed, 2 declined", REG-0x1F stays RED (bit 0, run S1, tick 9:
+    // observed colour 17, page-predicted colour 19, component(s) moved: RGB).
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed, "
               << checks.declined << " declined\n";
