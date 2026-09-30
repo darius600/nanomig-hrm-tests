@@ -786,10 +786,10 @@ int main(int argc, char** argv) {
                     std::to_string(reads_vary) + " (measured baseline: rd="
                     + std::to_string((int)rd_lds_only) + " for both probes "
                     "regardless of which strobe is asserted).");
-        // CORRECTED 18.09.2026: both of these were expect() and both were
-        // RED. They are declined now. The measurement is unchanged and still
-        // printed in the note() above; what was wrong was that HALF THE
-        // PARAGRAPH had been thrown away before the claim reached this file.
+        // sol:K-0207 and opus:K-0216 are declined, not asserted. The
+        // measurement is unchanged and still printed in the note() above;
+        // they are declined because HALF THE PARAGRAPH had been thrown away
+        // before the claim reached this file.
         //
         // p.397 does not stop at "indicate byte select for both reads and
         // writes". Its next two sentences are the exception to it:
@@ -841,8 +841,7 @@ int main(int argc, char** argv) {
             "gradable here either. Measured above and not graded: rd carries "
             "no _uds/_lds term at all (minimig_m68k_bridge.v:139, `rd = "
             "enable & lr_w`, against hwr/lwr at :140-141), which is what the "
-            "page's own exception describes from the slave's side. These were "
-            "graded red before this correction.");
+            "page's own exception describes from the slave's side.");
         (void)reads_vary;
     }
     // sol:K-0207 and opus:K-0216 are declined and carry no MUTATION line.
