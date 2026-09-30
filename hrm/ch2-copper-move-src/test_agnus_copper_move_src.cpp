@@ -64,8 +64,8 @@
 //   failed).
 //
 //   Those three are ORACLE mutations: they change the expected value and so
-//   show only that the comparison can go false. On 05.09.2026 each assertion
-//   was mutated again at the STIMULUS - the scenario moved, the expected value
+//   show only that the comparison can go false. Each assertion is also
+//   mutated at the STIMULUS - the scenario moves, the expected value
 //   untouched - which is what asks whether the assertion binds to the
 //   behaviour it names. Machine-readable records for tools/check_gates.py
 //   --tests:
