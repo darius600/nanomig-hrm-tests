@@ -21,7 +21,7 @@ others ask for no RTL review:
 | findings | why no RTL review |
 |---|---|
 | 23 | filed against the printed page or the classification: no RTL change follows |
-| 2 | filed against the RTL, but seen in the RTL source with no test yet: it needs a test before it asks anything |
+| 2 | filed against the RTL, but seen in the RTL source and not red at any pin: no test yet, or measured only inside the module |
 
 The marks and this list are derived from each page's header table by
 `hrm-testpipeline/tools/write_rtl_review.py`, which lives in the separate

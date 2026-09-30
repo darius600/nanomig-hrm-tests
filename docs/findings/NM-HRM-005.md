@@ -11,7 +11,7 @@
 | **Test** | [`hrm/ch2-copper-cycle-times`](../../hrm/ch2-copper-cycle-times), [`hrm/ch2-copper-cycles`](../../hrm/ch2-copper-cycles) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | 8 red: `P3` and `P4` (`SKIP`), `P5` (satisfied `WAIT`), `P6` (`WAIT` − `MOVE`), `AC5` and `AC6` (`SKIP`, p. 275) in `hrm/ch2-copper-cycle-times`; `C5` (satisfied `WAIT`) and `C6` (`WAIT` − `MOVE`) in `hrm/ch2-copper-cycles`. `AC6` is expository, not independent (*What holds the finding up*) |
-| **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Copperline names Minimig and vAmiga as its model for these cycles |
+| **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline, read from their source code and not run, all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Copperline names Minimig and vAmiga as its model for these cycles |
 
 ---
 
