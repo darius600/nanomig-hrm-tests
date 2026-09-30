@@ -27,14 +27,13 @@
 // Test class: HRM_CONFORMANCE (SM0 included as a control: it re-measures an
 //   already-uncontested fact - a subsequent externally-issued strobe reading
 //   back a self-written location register - on the same apparatus as the
-//   others. Two limits on how far that carries, both established in
-//   independent validation on 05.09.2026: - SM0 exercises the loopback for
-//   *location register* writes only. A rig fault specific to the *strobe*
-//   path leaves it green. - A red SM0 does NOT mean "the harness is broken
-//   rather than NanoMig". It also goes red if a self-issued MOVE to COP2LCL
-//   never reaches the register - a module fault. SM0 narrows where to look;
-//   it does not decide between rig and module, and an earlier revision of
-//   this header claimed that it did.)
+//   others. Two limits on how far that carries: - SM0 exercises the
+//   loopback for *location register* writes only. A rig fault specific to
+//   the *strobe* path leaves it green. - A red SM0 does NOT mean "the
+//   harness is broken rather than NanoMig". It also goes red if a
+//   self-issued MOVE to COP2LCL never reaches the register - a module
+//   fault. SM0 narrows where to look; it does not decide between rig and
+//   module.)
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, Chapter 2,
 //   print pages 26, 32 and 33. Frozen specification:
 //   fpga-lab/work/2026-09-05_fpga-077_copper-selfmod_testspecification.md
@@ -256,7 +255,7 @@ constexpr uint32_t ALT = 0x00002200;
 // A fourth, deliberately above word address $8000 so that loc_hi() is NON-zero.
 // SRC/DST/ALT all sit low enough that their high halves are 0, which means a
 // COP1LCH/COP2LCH that did nothing at all would still pass every scenario built
-// on them. Independent validation, 05.09.2026.
+// on them.
 constexpr uint32_t FAR = 0x00018000;
 
 }  // namespace
@@ -394,11 +393,9 @@ int main(int argc, char** argv) {
     // (p.33), which the same page's listing comments "Force a jump to
     // COP2LC."
     //
-    // The pointers must differ, and an earlier revision of this test got that
-    // wrong: it set COP2LC to SRC, where COP1LC already pointed, so the
-    // assertion could not tell "COPJMP2 loaded COP2LC" from "COPJMP2 loaded
-    // COP1LC" - precisely the claim it carries. Found in independent
-    // validation, 05.09.2026. Now COP1LC = SRC and COP2LC = DST, and the
+    // The pointers must differ: with COP2LC equal to COP1LC the assertion
+    // could not tell "COPJMP2 loaded COP2LC" from "COPJMP2 loaded COP1LC" -
+    // precisely the claim it carries. COP1LC = SRC and COP2LC = DST, and the
     // looping marker lives only on the DST list: if the strobe took COP1LC,
     // control would loop at SRC and MARK_SM4_LOOP would never be granted.
     // Covers: COP2-loopex.c20, COP2-a-copper-loop-example.c19
@@ -459,8 +456,7 @@ int main(int argc, char** argv) {
 
     // ------------------------------------------------------------------
     // SM6 - the same as SM5 but through COP1LC, and to an address whose HIGH
-    // half is non-zero. Two blind spots at once, both found in independent
-    // validation on 05.09.2026:
+    // half is non-zero. Two blind spots at once:
     //   - every scenario above self-writes COP2LC only, while the file header
     //     claims the Copper writes "its own control registers
     //     (COP1LC/COP2LC/COPJMP1/COPJMP2)". COP1LC was never self-written.
