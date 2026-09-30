@@ -123,7 +123,7 @@ In the ch8 package `CONTROL-PA0-OUTPUT` points the identical comparator at
 CIAAPRA/CIAADDRA bit 0 and passes in the same run
 (`test_ch8-parallel-port-direction.cpp:317-328`). Beside the graded lines that
 package records the direction-independence above
-(`test_ch8-parallel-port-direction.cpp:345-368`): with `portb_in` held at
+(`test_ch8-parallel-port-direction.cpp:345-373`): with `portb_in` held at
 `0x3C`, CIAAPRB reads `0x3C` under `CIAADDRB=0x00` and `CIAADDRB=0xFF` alike.
 
 **At the system's ports, on both CPU cores, CIA-A's PRB reads $FF whatever is
