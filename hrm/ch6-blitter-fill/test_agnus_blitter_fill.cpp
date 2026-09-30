@@ -57,13 +57,12 @@
 //     own, unlike the four HRM examples kept above - they added coverage the
 //     exhaustive sweep does not already have zero of, which is none.
 //
-// THE OVERTURNED CLAIM. 6-blitter-block-diagram.c9 (p.199, figure 6-13) was
-// initially discarded and then overturned by the attack stage (Prompt 5,
-// 08.09.2026): the figure labels the fill carry as going to two places, "to
+// THIS CLAIM. 6-blitter-block-diagram.c9 (p.199, figure 6-13): the figure
+// labels the fill carry as going to two places, "to
 // next block" (the next bit's XOR, entirely inside this module -
 // agnus_blitter_fill.v:24-26) and "to next word" (`fco`, agnus_blitter_fill.v
-// line 29, an output port of this module). A throwaway Verilator harness built
-// during the attack stage reproduced the manual's own p.184/185 worked
+// line 29, an output port of this module). A throwaway Verilator harness
+// reproduced the manual's own p.184/185 worked
 // example bit-for-bit: input 0010010000011000, inclusive fill ->
 // 0011110000011000 (exact match), exclusive fill -> 0001110000001000 (exact
 // match), and separately confirmed the bit-to-bit ripple (in=0, out=0; only
@@ -116,7 +115,7 @@
 //     violate this precondition too (e.g. all bits set), so nothing about
 //     this module's own behaviour depends on it holding.
 //
-// SPECIFICATION ADDITION, 2026-09-25_unit-backlog. One new proposition
+// SPECIFICATION ADDITION. One new proposition
 // routed to this package, added from the routed claim's quotation and
 // restatement alone -- the classification's evidence and the RTL were not
 // open when this paragraph was written:
