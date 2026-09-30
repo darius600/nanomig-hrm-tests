@@ -22,9 +22,6 @@ the printed page.
 | sol:8-pen.c40 | 239 | Same sentence, same reason. |
 | opus:8-lpen.c34 | 239 | Only names bit 3 "LPEN", and a name cannot be observed. Also, the quoted "(LPEN)" is not on the printed page 239, which reads "To enable the light pen input, write a 1 into bit 3 of BPLCON0." The name is printed on p.89 ("Bit 3 - LPEN (light pen enable)") and p.271 ("LPEN =Light pen enable"). |
 | opus:8-intro.c2 | 227 | Its `says` reads "Two multiple purpose mouse/joystick/light pen control ports" as *each* port serving a light pen. p.238 ties the light pen to one port per model ("On the A1000, the light pen must be connected to port 1. [...] On the A500, A2000 and A3000 the default is port 2. An internal jumper can select port 1."), and the system under test is none of those models. P1 grades that at least one port captures and reports which; "each" is not graded, so the id is not claimed (10.4). |
-| sol:8-pen.c39 | 239 | Its `says` places the release "at vertical position 20". The pages place the end of vertical blanking differently: p.239 "(vertical position 20)"; p.219 "The range starts at line 0 and ends at line 20 for NTSC or line 25 for PAL"; p.79 "Vertical Blank Stop $15 (21)" (NTSC) and "$1D (29)" (PAL). P8 grades the release only within the span all pages allow (latched through line 19, running from line 21 in NTSC and 29 in PAL) and reports the line where it happens, so line 20 is not graded (10.1). The release at the end of internal vertical blanking, without a line number, is graded in P8 through opus:8-lpen.c39. |
-| opus:8-lpen.c12 | 238 | p.238 step 1: "Just as the system exits vertical blank, the capture circuitry for the light pen is automatically enabled." "Just as" places the enabling at the exit of vertical blank, neither before nor after it, and part of that stays ungraded. Not before: every vertical blank of phase B is already latched, by a capture or by the end of the field before (p.239), and that latch is released at the end of blanking anyway, so a capture inside blanking that does not overwrite the frozen value leaves nothing at the ports. P9 (a) grades only that no pulse inside blanking is held over the release, and P5 (line 10) and P8 (a) (line 19) grade only that such a pulse does not overwrite the frozen value. Not after: the pages end vertical blanking at line 20, 21, 25 or 29 (10.1), and lines 20 to 31 are not probed. The three checks together do not grade the whole sentence, so the id is declined whole. P9 grades the observable part without it. |
-| sol:8-pen.c12 | 238 | Same sentence, same reason. |
 
 ## 2. Propositions and the claims they rest on
 
@@ -37,8 +34,8 @@ the printed page.
 | P5 After a trigger, VPOSR is frozen until the release | opus:8-lpen.c36, sol:8-pen.c36 | 239 |
 | P6 While latched, VPOSR never shows the current beam position | opus:8-lpen.c38, sol:8-pen.c38 | 239 |
 | P7 Without a trigger, the counters latch at the end of the field | opus:8-lpen.c37, sol:8-pen.c37 | 239 |
-| P8 The freeze is released at the end of internal vertical blanking | opus:8-lpen.c39 | 239 |
-| P9 The capture circuitry re-arms by itself as vertical blank ends | none (opus:8-lpen.c12 and sol:8-pen.c12 are declined, §1) | 238 |
+| P8 The freeze is released at the end of internal vertical blanking | opus:8-lpen.c39, sol:8-pen.c39 | 239 |
+| P9 The capture circuitry re-arms by itself as vertical blank ends | opus:8-lpen.c12, sol:8-pen.c12 | 238 |
 | P10 Bit 3 of BPLCON0 enables the light pen input and latch | opus:8-lpen.c35, sol:8-pen.c35, opus:8-regs.c16, sol:8-reg.c18 | 239, 229 |
 | P11 The two-read detection method gives the right answer | opus:8-lpen.c43, sol:8-pen.c41, opus:8-lpen.c47, sol:8-pen.c44, opus:8-lpen.c48, sol:8-pen.c45, sol:8-pen.c46 | 239 |
 | P12 The single read during vertical blanking gives the right answer | opus:8-lpen.c52 | 239 |
@@ -57,9 +54,12 @@ P11, and P12 grades the same sentence in the second method.
   latch (P1 to P9, P10 (a), P11, P12: K1, K2, K6, K7, K8, K9, K9b, K16) is
   made in OCS/PAL, not ECS/PAL: in ECS an implementation may go unlatched by
   LPENDIS's unstated reset value (below), and §8's own runs must be able to
-  turn a graded check red, which the ECS exception exists to avoid. Every
-  other contrasting run (targeting a precondition, or P10 (b), or P13, none
-  of which the ECS exception covers) stays in ECS/PAL, its original chipset.
+  turn a graded check red, which the ECS exception exists to avoid. K3 and
+  K4 target P10 (b) but are made in OCS/PAL for the same reason: their own
+  page-model contrast (below) needs an unambiguous bit-3 latch to synthesize
+  against, which ECS's unstated LPENDIS reset value does not give. Every
+  other contrasting run (targeting a precondition, or P13, neither of which
+  the ECS exception covers) stays in ECS/PAL, its original chipset.
 - **Page model (§8).** Because a run may show no latch at all in OCS as well
   as in ECS, a contrasting run cannot by itself show a graded check going
   from green to red: there may be no green to start from. Each main run, and
@@ -71,7 +71,12 @@ P11, and P12 grades the same sentence in the second method.
   value (p.238 step 4); with no trigger, the counters latch at the field end
   (p.239); the freeze holds until line 20 of the next field (p.239). This
   print is the green control the main runs are held to, and the red each
-  contrasting run's own clause must reach.
+  contrasting run's own clause must reach. K3, K4 and K17 target a phase-A
+  or phase-C proposition instead, so each carries its own analogous
+  page-model contrast (§8), built the same way from that run's own measured
+  phase-A or phase-C samples and the same latch rule, and graded with the
+  same unchanged comparator (P10 (b) or CP1) rather than the phase-B P1-P13
+  grader.
 - **Standard.** PAL or NTSC is a configuration of the machine, not of the
   program: p.295, "the chips from the US factory are configured for NTSC mode.
   In order to use them on a PAL system, you may have to reset the motherboard
@@ -166,7 +171,7 @@ set").
         cmpa.l  a1,a0
         bne.s   .d
         move.w  #M4,MARK
-.stop   bra.s   .stop
+        DONE                            ; stores DONE_VALUE at DONE_ADDR, then hangs (nanomig.i)
 
 wait150 move.l  $dff004,d0              ; wait until a read shows vertical position 150
         lsr.l   #8,d0
@@ -284,7 +289,21 @@ line 255 to 256 and at L to 0. Samples whose [a - 2, b] (in colour clocks)
 contains such a change are exempt from every check. The same combination is
 also checked directly by value: a sample that matches no model position in
 [a, b], but whose reading matches one with V8 flipped, straddled that V8
-change regardless of where the [a - 2, b] margin places it.
+change regardless of where the [a - 2, b] margin places it. Only a V8 change
+tears a sample this way: an ordinary line boundary (V8 unchanged) does not
+combine two different bit-8 values, and is graded normally.
+
+A second, distinct bookkeeping failure exempts a sample the same way, for a
+different reason: 5.2's "otherwise" branch takes `a` from the last code fetch
+before `b`. In this package's tight sampling loop the CPU can prefetch the
+next instruction's opcode while a bus stall (memory refresh, A3) still delays
+this sample's own write, so that fetch -- chronologically between the true
+read and the delayed write -- gets attributed to this sample instead of its
+own, placing `a` up to one whole modeled line after the true read. Detected
+directly, the same way as the V8 case: if a sample's own reading matches no
+position in [a, b] nor with V8 flipped, but matches a position exactly one
+modeled line before `a`, the earlier bound was misattributed, and the sample
+is exempt for that reason instead.
 
 ### 5.4 Anchors
 
@@ -318,14 +337,20 @@ change regardless of where the [a - 2, b] margin places it.
 
   **Measured u, per core** (fitted phase-A samples, all four configurations):
   fx68k 7 colour clocks; TG68K 7 colour clocks.
-- **A3 (refresh).** In every model line of phases A, B and C there is one group
-  of four refresh accesses at the Chip-memory port, at the same model H in
-  every line. p.194 lists "4 cycles for memory refresh" per line, and
-  Figure 6-9 on p.195 draws the refresh slots at a fixed place at the start of
-  every line. The figure says of itself that it "has been 'adjusted'", so
-  only the constancy is used, not its clock numbers.
-- **A4 (video).** In phases A, B and C, one vertical-sync pulse begins in each
-  model field, at the same model position in every field.
+- **A3 (refresh).** In every model line of every complete field of phases A,
+  B and C -- one whose whole span lies inside the graded window -- there is
+  one group of four refresh accesses at the Chip-memory port, at the same
+  model H in every line of every one of those fields, with the complete
+  line population present (not merely a sample of lines). Fields and lines
+  are keyed together (field, line), so the same line number in two
+  different fields is never merged into one population. p.194 lists "4
+  cycles for memory refresh" per line, and Figure 6-9 on p.195 draws the
+  refresh slots at a fixed place at the start of every line. The figure
+  says of itself that it "has been 'adjusted'", so only the constancy is
+  used, not its clock numbers.
+- **A4 (video).** In every complete model field of phases A, B and C, one
+  vertical-sync pulse begins -- exactly one, not zero and not more than
+  one -- at the same model position in every field.
 
 A1 and A2 anchor the numbering. The page's "vertical position 20" and
 "V = 261" are values of this counter. A3 and A4 show, independently of VPOSR,
@@ -406,7 +431,7 @@ phase. "Both" means the same pin on port 1 and port 2 at the same time.
 | B16 | 1 | none |
 | B17 | 1 | pin 6 both at (19, 100), then pin 6 both at (32, 100) |
 | B18 | 1 | pins 1, 2, 3, 4, 5, 9 both, at lines 40, 60, 80, 100, 120, 140 respectively (H = 100); then pin 6 both at (160, 100) |
-| B19 | 1 | pin 6 both at (280, 100) in PAL, (261, 100) in NTSC. **Observation only**: recorded and reported, not graded (10.2) |
+| B19 | 1 | pin 6 both at (20, 150), then pin 6 both at (280, 100) in PAL, (261, 100) in NTSC. The (280/261, 100) pulse is **observation only**: recorded and reported, not graded (10.2) |
 | B20, B21, until C0 | 1 | none |
 | C0 | 0 from line 150 | none (not graded) |
 | C1 | 0 | pin 6 both at (100, 100) |
@@ -425,7 +450,7 @@ evaluated, not as green.
 | CP2 | Sampling is dense. In phases A to C, consecutive read instants are at most 56 colour clocks apart (a quarter line), and every line of every graded window holds at least two samples. In phase D, consecutive POTGOR samples are at most 50 microseconds apart (5.7). | K5 |
 | CP3 | No trigger is presented outside the schedule: pin 6 of both ports stays at the level of an open switch except during the scheduled pin-6 pulses. (a) The CIAAPRA read of §4, made in phase A, has bits 6 and 7 = 1. p.229: "CIAAPRA ($BFE001) Input and output for pin 6 (port 1 and 2 fire buttons)"; p.232: "Port 1 uses bit 6 and port 2 uses bit 7. A logic state of 1 means "switch open."" (b) By the harness's own record, pin 6 of both ports was at that same level throughout phases A to C, except during the scheduled pin-6 pulses. The pin is read through the CIA, not through the light-pen latch, so CP3 does not rest on any clause that P1 to P12 grade. | K11 |
 | CP4 | Inputs are delivered as scheduled. Each input change in the schedule of the run being made took place, by the harness's own record, at its scheduled model line and H (exactly, at the fixed grid phase), and each pulse lasted 4 colour clocks. No other input changed in phases A to D. For a contrasting run whose own target is a different clause, "the schedule" is its changed schedule, so CP4 stays a satisfied precondition for that clause. K12's own target is CP4 itself, so its placement is instead compared with the unmutated §6 schedule: grading it against its own (already shifted) schedule could never show a placement error. | K12 |
-| CP5 | The program ran as specified. M0 to M4 appear in order. The BPLCON0 writes fall between the last read of `wait150` and M1 or M2, at line 150. Coverage: phase A at least two model periods, phase B up to line 40 of B21, phase C up to line 40 of C3, phase D at least 12 ms after M3. A proposition depends only on the part of CP5 for the phases it observes: P1 to P9, P10 (a), P11 and P12 on M0, M1, the phase-B write and the coverage of phases A and B; P10 (b) on M0, M2, the phase-C write and the coverage of phases A and C; P13 on M3, M4 and the coverage of phase D. The `wait150` that ends phase B reads VPOSR with bit 3 set, so it returns only after a release (P8). If it never returns, the phase-B propositions are graded on the stored phase-B samples, P10 (b) is graded on phase A only, and P13 is not evaluated. | K13 |
+| CP5 | The program ran as specified. M0 to M4 appear in order, and the program reaches DONE (the marker macro's own store of `DONE_VALUE` at `DONE_ADDR`, section 4). The BPLCON0 writes fall between the last read of `wait150` and M1 or M2, at line 150. Coverage: phase A at least two model periods, phase B up to line 40 of B21, phase C up to line 40 of C3, phase D at least 12 ms after M3. A proposition depends only on the part of CP5 for the phases it observes: P1 to P9, P10 (a), P11 and P12 on M0, M1, the phase-B write and the coverage of phases A and B; P10 (b) on M0, M2, the phase-C write and the coverage of phases A and C; P13 on M3, M4 and the coverage of phase D. The `wait150` that ends phase B reads VPOSR with bit 3 set, so it returns only after a release (P8). If it never returns, the phase-B propositions are graded on the stored phase-B samples, P10 (b) is graded on phase A only, and P13 is not evaluated. | K13 |
 | CP6 | The beam keeps its timing in phases B and C: A3 and A4 hold there. | K14 |
 
 ## 8. Contrasting runs
@@ -442,13 +467,13 @@ the run's result where the raw run cannot turn red on its own.
 |---|---|---|---|
 | K1 | Phase B writes BPLCON0 = $0000 instead of $0008. | No light pen input and no latch in phase B. p.239: "To enable the light pen input, write a 1 into bit 3 of BPLCON0". p.229: "Bit 3 enables the light pen latch". | P1, P2 (ii), P3, P4, P5, P6, P7 (b), P8 (a), P9 (b)(c), P10 (a), P11, P12 |
 | K2 | A pin-6 pulse (both ports) at (100, 100) is added in B2 and in B3. | Captures in B2 and B3, with VB(B3) and VB(B4) holding those positions (p.238 step 4, p.239). | P7 (a)(b), P8 (b), P11, P12 |
-| K3 | Phase C writes BPLCON0 = $0008 instead of $0000. | The C1 pulse is captured and the C1 and C2 field ends latch. | P10 (b) |
-| K4 | Phase A writes BPLCON0 = $0008 instead of $0000. | Phase-A field ends latch (p.239: "If no trigger is seen, the counters latch at the end of the display field"), so lines 0 to 19 of the phase-A fields hold the latched value. The latch is released at the end of vertical blanking, before line Vrun (p.239, 10.1), so the fitted lines still run and CP1 holds. | P10 (b) (phase A) |
+| K3 | OCS, not ECS (the ECS exception does not cover P10 (b), but ECS leaves LPENDIS's reset value unstated, p.305, so it cannot show this comparator turning red for a page-predicted reason; OCS has no such gap). Phase C writes BPLCON0 = $0008 instead of $0000. | The C1 pulse is captured and the C1 and C2 field ends latch. Because the raw run's own RTL defect leaves phase C unaffected by this change, the red is graded through a page-model contrast: this run's own phase-C samples, latched by the page's rule under BPLCON0 = $0008 throughout phase C, against the unchanged P10 (b) comparator. | P10 (b) |
+| K4 | OCS, not ECS, for the same reason as K3. Phase A writes BPLCON0 = $0008 instead of $0000. | Phase-A field ends latch (p.239: "If no trigger is seen, the counters latch at the end of the display field"), so lines 0 to 19 of the phase-A fields hold the latched value. The latch is released at the end of vertical blanking, before line Vrun (p.239, 10.1), so the fitted lines still run and CP1 holds. Graded through the same page-model contrast as K3, applied to phase A with no pulses. | P10 (b) (phase A) |
 | K5 | The phase-B loop gets a delay of at least 300 colour clocks per sample. | Samples more than a line apart. | CP2 |
 | K6 | The line-10 pulse of B15 and the line-19 pulse of B17 are moved to line 30 (H = 100). | Line 30 is after vertical blank on every page, so these pulses are captured (p.238 step 1). | P9 (a)(b) |
 | K7 | The line-32 pulses of B15 and B17 are moved to line 12. | Inside vertical blank, so they are not captured. | P9 (b) |
 | K8 | The first pulse of B14 (line 80) is removed. | The capture happens at (150, 100) instead. | P5 |
-| K9 | In B18, the pin-1 pulse at line 40 is replaced by a pin-6 pulse. | Capture at (40, 100). | P2 (i) |
+| K9 | The real stimulus is unchanged (B18's pin-1 pulse at line 40 is delivered exactly as scheduled); a page-model contrast treats pin 1's own onset as a pin-6 trigger. | Capture at (40, 100) if pin 1 were (mis-)wired to the trigger circuit. | P2 (i) |
 | K9b | The pin-6 pulses of B4 (port 1), B5 (port 2) and B18 (both ports) are moved to pin 9 of the same ports, at the same positions. | No capture in B4, B5 or B18: the trigger line is pin 6 (p.238: "the "Beam Trigger" line (pin 6)"), and Table 8-1 (p.228) gives pin 9 of the light pen "button 2**". | P1, P2 (ii) |
 | K10 | In phase D, pin 9 is driven low in the windows where the main run drives pin 5 low. | Bits 8 and 12 of POTGOR stay 1 (p.240, Table 8-4: pin 9 is bits 10 and 14). | P13 |
 | K10b | In phase D, port 1 pin 5 is held low throughout. | Bit 8 reads 0 in every window. | P13 |
@@ -457,7 +482,7 @@ the run's result where the raw run cannot turn red on its own.
 | K13 | The phase-B buffer is shortened so that phase B ends in B19. | Coverage missing. | CP5 |
 | K14 | Directly after the `wait150` that ends phase B (line 150, after every graded phase-B window), the program writes VHPOSW = $6400 once (line 100, H 0). p.285: "Write vertical and horizontal position of beam or lightpen"; Appendix B p.289: "Write vert and horiz position of beam". | The counter jumps back 50 lines and to H 0. The refresh group, drawn at a fixed place in the line (p.195), and the field boundary no longer sit where the model puts them in phase C. | CP6 (A3 or A4) |
 | K15 | The standard of the ECS/PAL run is switched: its harness `Config` selects NTSC, and its input schedule is the NTSC one (B19 at (261, 100)). | Fields of 262 or 263 lines, where the ECS/PAL run's A2 expects 312 or 313 (p.24, p.40). | CP1 (A2) |
-| K16 | The B7 pulse is placed at (100, 122) instead of (100, 102), and the B11 pulse at (41, 100) instead of (40, 100). P3 is graded with the main schedule's onsets. | Captures at (100, 122) and (41, 100): the value of the counter "at the instant the beam passed the light pen" (p.238). | P3 (a) for B11; P3 (b) and (c) for B7 |
+| K16 | The B7 pulse is placed at (100, 122) instead of (100, 102), and the B11 pulse at (41, 100) instead of (40, 100). P3 is graded with the main schedule's onsets. | Captures at (100, 122) and (41, 100): the value of the counter "at the instant the beam passed the light pen" (p.238). | P3 (a) for B11; P3 (b) for B7 (now outside the 4+u window); P3 (c) for B7 (the changed member now fails the one-offset-per-graded-pulse population requirement); the combined P3 assertion through all three |
 | K17 | As K4, and a pin-6 pulse (both ports) at (200, 100) is added in every phase-A field. | Each pulse is captured and VPOSR stays frozen until the end of vertical blanking (p.238 step 4, p.239), so the phase-A samples of lines 200 to L - 1 are not current and the largest V read in each field is 200, not L. Line 200 comes after the line 150 that `wait150` waits for, so the program still finishes. | CP1 (A1 or A2) |
 
 ---
@@ -512,17 +537,28 @@ the run's result where the raw run cannot turn red on its own.
      pulse on the "Beam Trigger" line (pin 6)." Table 8-1 (p.228), Light pen
      column: pin 6 "beam trigger"; pins 1-4 "---"; pin 5 "pen pressed to
      screen"; pin 9 "button 2**".
-   - (i) Every sample of RUN(B18) is current: none of the six other pulses is
-     captured. If one were, the line of the latched value would name the pin.
+   - (i) Every sample of RUN(B18) is current: none of the driven other-pin
+     pulses is captured. If one were, the line of the latched value would
+     name the pin.
    - (ii) The pin-6 pulse is captured (P3 (a) and (b)).
+   - The combined P2 assertion is (i) and (ii) together, carrying the four
+     claim ids; (i) and (ii) are also graded on their own component lines,
+     neither of which is independently sufficient for an id.
    - Quantifier. "The Beam Trigger line (pin 6)" makes pin 6 the only trigger,
      so all six other signal pins are driven. Pins 7 (+5V) and 8 (ground)
-     cannot be driven.
-5. **Preconditions.** CP1 to CP6. By CP4, the six pulses were delivered on
-   both ports at their lines.
-6. **Contrasting case.** K9 predicts a capture at line 40, so (i) is red. K9b
-   moves the line-160 pulse to pin 9 and predicts no capture, so (ii) is red
-   through the pin. K1 predicts no capture, so (ii) is red too.
+     cannot be driven. Port-2 pin 5 (POTGOR bit 12) is not one of the pins
+     this harness can drive (section 3, "Port mapping"): (i) is graded over
+     the driven population only (pins 1-4 and 9 on both ports, pin 5 on
+     port 1), and port-2 pin 5 is recorded separately, carrying the same
+     ids, as not established.
+5. **Preconditions.** CP1 to CP6. By CP4, the driven pulses were delivered on
+   both ports (pin 5 on port 1 only) at their lines.
+6. **Contrasting case.** K9 preserves the real pin-1 delivery and grades a
+   page-model contrast that treats pin 1's own timing as a pin-6 trigger,
+   failing (i) through pin identity rather than through an added valid
+   trigger. K9b moves the line-160 pulse to pin 9 and predicts no capture,
+   so (ii) is red through the pin. K1 predicts no capture, so (ii) is red
+   too.
 7. **Reference frame.** 5.3 to 5.6.
 
 ### P3 — A trigger captures the beam position exactly at its instant
@@ -531,9 +567,13 @@ the run's result where the raw run cannot turn red on its own.
    line captures the beam counter's vertical and horizontal value at the
    instant of the pulse, exactly.
    Claims: opus:8-lpen.c17, opus:8-lpen.c18, sol:8-pen.c18 (general: neither
-   names an axis) on (a), (b) and (c); sol:8-pen.c19 ("the horizontal beam
-   value at the instant", axis-specific) on (b) and (c); sol:8-pen.c20 ("the
-   vertical beam value at the instant", axis-specific) on (a) (p.238).
+   names an axis) need (a), (b) and (c) together; sol:8-pen.c19 ("the
+   horizontal beam value at the instant", axis-specific) needs (b) and (c)
+   together. These four ids therefore sit on one combined P3 assertion
+   ((a) and (b) and (c)), not on the separate component lines below.
+   sol:8-pen.c20 ("the vertical beam value at the instant", axis-specific)
+   is independently sufficient from (a) alone and stays on that component
+   line; (b) and (c) have no id that either establishes alone (p.238).
 2. **Stimulus.** Every graded pin-6 pulse (5.5):
    - the capturing one of B4 and B5;
    - B6 to B13;
@@ -563,7 +603,11 @@ the run's result where the raw run cannot turn red on its own.
      exactly k, to the register's stated resolution (p.239: "Horizontal 2 low
      resolution pixels", which is one H unit). The model's constant reference
      error cancels in (c).
-   - Quantifier: every graded pulse.
+   - Quantifier: every graded pulse contributes one valid offset. A pulse
+     whose POST is empty or not constant (so (a) and (b) already fail it)
+     does not merely drop out of the offset population silently: the
+     population falling short of the graded count is itself part of (c)'s
+     failure, not something (c) can pass around.
 5. **Preconditions.** CP1 to CP6. By CP4, the H sweep and the lines were placed
    as scheduled.
 6. **Contrasting case.**
@@ -600,7 +644,10 @@ the run's result where the raw run cannot turn red on its own.
      (258 = $102), $28, $C8 and $64 for lines 40, 200 and 100.
    - VHPOSR bits 7-0 are H(P) of P3, graded here against H_ref(t_on) plus
      P3(c)'s own offset (the same exactness the H window of P3(b) uses), not
-     just against the sample's own repeated value.
+     just against the sample's own repeated value. Where P3(c) has no
+     validated offset, this half of the check fails rather than passing
+     unconditionally: H8-H1 is part of the p.238 register layout and the P4
+     label, and its absence from grading is never itself a pass.
    - VPOSR bits 15-1 are not graded as values. p.238: "Chip ID code. Do not
      depend on value!"; p.216 calls bits 14-1 "Unused".
 5. **Preconditions.** CP1 to CP6. By CP4, captures were scheduled at V8 = 1
@@ -632,6 +679,10 @@ the run's result where the raw run cannot turn red on its own.
      change it. The field end between k and k+1 does not change it either:
      p.239 latches at the field end only "If no trigger is seen".
    - Quantifier: every sample of every window, at least 13 windows per run.
+     p.229 leaves which controller port carries the pen to the model (§3,
+     "Port mapping"): B4 and B5 are single-port pulses, and only the one P1
+     found capturing on at least one port is graded here, reported
+     alongside; both are still graded for every other case.
    - The comparison is of the whole value because the page says "the value in
      VPOSR is frozen". If two values differ only in VPOSR bit 15 (LOF), the
      report says so (10.8).
@@ -667,7 +718,8 @@ the run's result where the raw run cannot turn red on its own.
      while the VPOSR register is latched."
    - No sample in these windows is current (5.3), and all samples of one
      window have the same position.
-   - Quantifier ("impossible"): every sample of every window.
+   - Quantifier ("impossible"): every sample of every window. As in P5, B4
+     and B5 are graded only for the port P1 found capturing.
 5. **Preconditions.** CP1 to CP6.
 6. **Contrasting case.** K1: the page predicts no latch, so the samples are
    current and the check is red.
@@ -697,7 +749,12 @@ the run's result where the raw run cannot turn red on its own.
    - (b) Every sample of VB(k+1) has one position F_k, and V(F_k) = L_k, the
      last line of field k.
    - (c) m(F_k) is at least m(R_k), where R_k is the last current sample of
-     field k.
+     field k. (c)'s population is "RUN(k) and VB(k+1) both non-empty for a
+     no-trigger field k", counted whether or not (b) itself held for that
+     field: a field where VB(k+1) is not one consistent value has a
+     population but no single F_k to compare, so it is reported as not
+     evaluated (because (b) failed), never folded into an empty-population
+     record that is not true.
    - The page gives no H for "the end of the display field". The samples of
      line L_k are not graded, and H(F_k) is graded only through (c).
    - How F_k compares with $10500 is graded in P11 and P12.
@@ -718,35 +775,55 @@ the run's result where the raw run cannot turn red on its own.
 
 1. **Proposition.** Every latch holds until the end of internal vertical
    blanking and no longer. After that, VPOSR shows the current position again.
-   Claim: opus:8-lpen.c39 (p.239). sol:8-pen.c39, which fixes the release at
-   vertical position 20, is declined (§1).
+   Claims: opus:8-lpen.c39, sol:8-pen.c39 (p.239). sol:8-pen.c39 fixes the
+   release at "vertical position 20"; p.239 alone speaks of the light-pen
+   latch and calls its blanking "internal" without restricting "20" to one
+   standard, unlike p.219/p.79's general video/display blanking (10.1), so
+   it is graded through (c) below rather than declined.
 2. **Stimulus.** Phase B. Every latched window ending in fields B2 to B21, from
-   captures as well as from no-trigger field ends. Whichever port P1 finds, the
-   ends of B4 and B5 are latched either way.
-3. **Observation.** For each such field j = k+1:
+   captures as well as from no-trigger field ends, and B16's field end (whose
+   own latch P7 leaves out only because VB(B17) also holds the line-19 pulse
+   P9 grades). Whichever port P1 finds, the ends of B4 and B5 are latched
+   either way -- and are graded either way too: the port P1 did not find
+   still sees no successful trigger that field, so P7's own field-end latch
+   applies to it instead, and (a)'s internal-consistency half (VB(j) is one
+   value) is required regardless of which mechanism latched it.
+3. **Observation.** For each such field j = k+1 (including j = 20, following
+   B19's own capture):
    - VB(j);
-   - RUN(j), from Vrun to the first pin-6 pulse of j at a run-region line
-     (line >= Vrun), or to L_j - 1 if there is none. j = 19 (after B18's
-     capture) has none among 5.5's graded pin-6 pulses (B19's own field is
-     outside B4-B18), but B19's pulse (line 261/280) still physically
-     triggers like a graded one, so it still ends RUN(19).
+   - RUN(j), from Vrun to the first pin-6 pulse of j from the release line on
+     (line >= 20, not just 5.5's narrower "graded" population of line >= 32
+     pulses in fields B4-B18), or to L_j - 1 if there is none. j = 19 (after
+     B18's capture) has two such pulses: B19c (line 20, the P9 boundary
+     pulse) and B19's own observation-only one (line 261/280); B19c is
+     earlier and ends RUN(19) first. Where such an early pulse preempts the
+     whole window (its onset at or before Vrun), RUN(j) is empty and (b) is
+     satisfied vacuously: the field has no unlatched span left to grade, not
+     missing data.
+   - (c) the samples of model line 20 of field j.
 4. **Expected.**
    - The page. p.239: "This freeze is released at the end of internal vertical
      blanking (vertical position 20)."
-   - (a) Every sample of VB(j), lines 0 to 19, has one and the same value: the
-     value latched by the capture in field k (P5) or at the end of field k
-     (P7). For VB(B5), VB(B6) and VB(B20) it may be either kind, depending on
-     P1's port or on the observation-only field B19.
+   - (a) Every sample of VB(j), lines 0 to 19, has one and the same value.
+     Where the value is also known (a capture's own POST(p), P5), it equals
+     that value too; for VB(B5), VB(B6) and VB(B20) it may be either kind,
+     depending on P1's port or on the observation-only field B19.
    - (b) Every sample of RUN(j) is current.
-   - Not graded: NTSC line 20 and PAL lines 20 to 28. p.219 ends vertical
-     blanking at line 25 in PAL, and p.79 stops it at $15 (21) in NTSC and
-     $1D (29) in PAL (10.1).
-   - Reported for each window: the model line and H of the first current
-     sample. p.239 predicts line 20.
-   - Quantifier: every window, at least 19 per run.
+   - (c, sol:8-pen.c39) The held value is still visible before line 20 (no
+     sample of VB(j) is current) and the live counter is visible from the
+     stated line-20 release (every sample of line 20 of field j is current).
+     p.239's "vertical position 20" is graded here at line resolution,
+     independent of standard, unlike (b)'s Vrun-based span.
+   - Not graded by (a)/(b): NTSC line 20 and PAL lines 20 to 28. p.219 ends
+     vertical blanking at line 25 in PAL, and p.79 stops it at $15 (21) in
+     NTSC and $1D (29) in PAL (10.1).
+   - Reported for each window: the model line and H of the first sample that
+     matches the live beam (not merely the first sample of the window).
+     p.239 predicts line 20.
+   - Quantifier: every window, at least 20 per run (including B19's own).
 5. **Preconditions.** CP1 to CP6.
-6. **Contrasting case.** K1: no latch, so (a) is red. K2: RUN(B2) and RUN(B3)
-   are latched from line 100 on, so (b) is red.
+6. **Contrasting case.** K1: no latch, so (a) and (c) are red. K2: RUN(B2) and
+   RUN(B3) are latched from line 100 on, so (b) is red.
 7. **Reference frame.** 5.3 to 5.5; Vrun from 10.1.
 
 ### P9 — The capture circuitry re-arms by itself as vertical blank ends
@@ -755,17 +832,29 @@ the run's result where the raw run cannot turn red on its own.
    enabled again without any action by the program. A pulse after that point
    is captured, and a pulse inside vertical blank is not held over the
    release.
-   Claims: none. opus:8-lpen.c12 and sol:8-pen.c12, which state p.238 step 1,
-   are declined (§1): its "Just as" is not graded whole.
+   Claims: opus:8-lpen.c12, sol:8-pen.c12 (p.238 step 1). Once P8's restored
+   release-at-20 check establishes V=20 as the release line (c above), the
+   boundary itself becomes observable at (d) below, so these ids are no
+   longer declined whole.
 2. **Stimulus.**
    - B15: pin-6 pulses at (10, 100) and (32, 100), after B14's capture.
    - B17: pin-6 pulses at (19, 100) and (32, 100), after the no-trigger field
      B16.
+   - B19: an early pin-6 pulse at (20, 150), sitting exactly at the stated
+     release line, well before Vrun and before B19's own observation-only
+     pulse. Not B21 (whose own run region is one of P8's no-trigger
+     currency checks) and not a second pulse in B15/B17 (where a later
+     pulse in the same field would make apply_page_model's field-latch
+     reasoning -- P5's "a second trigger while still frozen does not
+     change the held value" -- mask that field's own later pulse's capture
+     in the synthetic PAGE-MODEL control).
    - The phase-B loop writes no register (§4).
 3. **Observation.**
    - RUN(B15) and RUN(B17), from Vrun up to the line-32 pulse;
    - POST of the two line-32 pulses;
-   - the POST of every graded capture of B6 to B18.
+   - the POST of every graded capture of B6 to B18;
+   - (d) the samples from the line-20 pulse's own release to line 200 of the
+     same field (B19), safely before B19's own observation-only pulse.
 4. **Expected.**
    - The page. p.238: "Just as the system exits vertical blank, the capture
      circuitry for the light pen is automatically enabled."
@@ -782,10 +871,14 @@ the run's result where the raw run cannot turn red on its own.
    - (c) The re-arming repeats in every field. Every graded pin-6 pulse of B6
      to B18 is captured, although the program wrote nothing after the phase-B
      enable.
-   - "Just as" is graded only as far as all pages agree. Lines 10 and 19 are
-     inside vertical blank on every page, and line 32 is after it on every
-     page (10.1). Lines 20 to 31 are not probed. This, and the limit of (a),
-     are why the p.238 claims are declined.
+   - (d, opus:8-lpen.c12, sol:8-pen.c12) A pulse exactly at the stated release
+     line is captured -- the first eligible position, once P8 establishes
+     V=20 as the release line. The window is one held value from that
+     pulse's own release to line 200 of the same field.
+   - "Just as" is graded, through (d), at the one line the pages agree on for
+     the light-pen-specific latch (p.239's own "vertical position 20", not
+     tied to a standard, 10.1); lines 10 and 19 remain inside vertical blank
+     on every page, and line 32 remains after it on every page.
 5. **Preconditions.** CP1 to CP6. The builder asserts from the program listing
    that the phase-B loop contains no write to a custom register.
 6. **Contrasting case.**
@@ -794,7 +887,7 @@ the run's result where the raw run cannot turn red on its own.
      red.
    - K7: the page predicts no capture at line 12. POST shows current samples,
      so (b) is red.
-   - K1: the page predicts no capture in phase B, so (c) is red.
+   - K1: the page predicts no capture in phase B, so (c) and (d) are red.
 7. **Reference frame.** 5.3 to 5.6; Vrun from 10.1.
 
 ### P10 — Bit 3 of BPLCON0 enables the light pen input and latch
@@ -972,18 +1065,28 @@ the run's result where the raw run cannot turn red on its own.
        OUT... and DAT... to 1). Reading POTINP will produce a 0 if the button
        is pressed, a 1 if it is not."
    - Bit 8 is 0 in every sample of the window in which port 1 pin 5 is low,
-     and 1 in every sample of every other graded window.
-   - Bit 12 behaves the same way for port 2 pin 5.
-   - In the pin-9 window, both bits stay 1.
+     and 1 in every sample of every other graded window. This half, alone,
+     carries the four claim ids: port 1 pin 5 is driven both low and idle, so
+     both halves of the proposition are established for it (P13(port1)).
+   - Bit 12: no input this harness exposes reaches port 2 pin 5 (§3), so its
+     active-low half is never exercised; only its idle-high half is measured
+     (always 1 in every graded window). The ids are not claimed through this
+     half: p.238's "regardless of the port used" does not by itself
+     establish the active-low case for a port this harness cannot drive.
+   - In the pin-9 window, both bits stay 1 (P13(pin9-control), no id: a
+     control confirming bits 10/14, not 8/12, track pin 9).
    - Other bits are not graded: bits 10 and 14 are the right button, and
      bits 7-1 are the "chip revision identification number".
-   - Both ports are graded because p.238 makes the pen's port model-dependent
-     and adds "Regardless of the port used, the light pen design is the same."
+   - Both ports would be graded, per p.238's "Regardless of the port used,
+     the light pen design is the same", if both were drivable; only port 1
+     is (§3, "Port mapping").
 5. **Preconditions.** CP5 (POTGO written before M3, phase D coverage), CP2
    (phase D sample spacing), CP4 (level changes delivered as scheduled).
-6. **Contrasting case.** K10: pin 9 instead of pin 5, so the page predicts bits
-   8 and 12 stay 1, and the check is red. K10b: pin 5 held low throughout, so
-   bit 8 is 0 where 1 is expected, and the check is red.
+6. **Contrasting case.** K10: pin 9 instead of pin 5, so the page predicts bit
+   8 stays 1, and the check is red. K10b: pin 5 held low throughout, so
+   bit 8 is 0 where 1 is expected, and the check is red. PIN9CTRL: the 8-10ms
+   pin-9 low drive is omitted, so the page predicts bits 10 and 14 stay 1
+   where P13(pin9-control) expects 0.
 7. **Reference frame.** Time from M3 at the Chip-memory port, in microseconds
    as 5.7 counts them; the input record of the harness.
 
@@ -1002,8 +1105,11 @@ the run's result where the raw run cannot turn red on its own.
    - All pages agree only that lines 0 to 19 are blanked and that blanking is
      over by line 21 (NTSC) or 29 (PAL). P5, P6 and P8 grade the latch through
      line 19. P8 and P9 grade the running counter or re-arming from Vrun = 21
-     or 29 and report the line where it actually happens. sol:8-pen.c39,
-     whose `says` fixes the release at line 20, is therefore declined (§1).
+     or 29 and report the line where it actually happens. sol:8-pen.c39, whose
+     `says` fixes the release at line 20, is graded through P8(c) and P9(d):
+     since p.239 alone (not p.219 or p.79) speaks of this light-pen-specific
+     internal latch, and does not restrict "20" to one standard, the release
+     is graded at line 20 in both PAL and NTSC, independent of Vrun.
 2. **The threshold $10500 (V=261) against captures at or below line 261.**
    - p.239 step 4 answers "not triggered" for any value above $10500.
    - p.238 step 4 says the captured value is the pen's exact position. That
