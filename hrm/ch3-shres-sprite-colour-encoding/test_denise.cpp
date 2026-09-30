@@ -1021,32 +1021,37 @@ int main(int argc, char** argv) {
                 }
             }
         }
-        checks.expect(changed == 0,
-            "P2 TWO-BITS-54-TRACES-IDENTICAL: with the S0 table loaded, colour c's (17, 18 "
-            "or 19) own solid run must show an identical trace whether or not a bit "
-            "belonging to a DIFFERENT stored colour (16, and whichever of 17-19 is not c) "
-            "is flipped everywhere page 302's table places that colour's letters -- 'There "
-            "are only two bits of red, green and blue color resolution per hires pixel.' "
-            "(p.301). 3 on-screen colours x 3 other colours x 3 channels x 2 (hi/lo) = 54 "
-            "traces checked, all required identical. No claim id of its own: this exact "
-            "sentence is the sibling ch3-shres-bitplane-colour-encoding package's own claim "
-            "(C-shrc.c02); P2 flips only OTHER colours' letters, so it never sees a named "
-            "colour's own letters below its own top two bits and cannot carry that colour's "
-            "own legend id (C-shrc.srcs16-19, cited instead on the bit-position rows that do "
-            "see them: REG-0x11 and REG-0x15/1A/1F).");
+        // NOT GRADED (MEASURED only): with the S0 table loaded, colour c's (17,
+        // 18 or 19) own solid run would need an identical trace whether or not
+        // a bit belonging to a DIFFERENT stored colour (16, and whichever of
+        // 17-19 is not c) is flipped everywhere page 302's table places that
+        // colour's letters -- 'There are only two bits of red, green and blue
+        // color resolution per hires pixel.' (p.301). 3 on-screen colours x 3
+        // other colours x 3 channels x 2 (hi/lo) = 54 traces checked. This
+        // reads red on NanoMig (18 of 54 traces move, every one a k==0/colour-16
+        // combo) AND on a private copy that implements page 302's own
+        // COLOR16-31 diagonal table literally (measured above: "17 passed, 3
+        // failed (C3, P1, P2 ...)", P2 among the three) -- colour 16's own
+        // slot-B position structurally overlaps register $10+c for c=1,2,3 in
+        // that table layout itself (the FINDING REG-0x11-13 rows measure
+        // directly), so this 54-trace aggregate cannot pass on a
+        // page-conforming implementation either; it is not a falsifiable
+        // clause of this claim, and grading it PASS/FAIL would misreport a
+        // property of the table layout as an RTL deviation. p.301's two-bit
+        // sentence is graded instead by the per-row bit-position checks below
+        // (REG-0x11 and REG-0x15/1A/1F), which do see each colour's own top
+        // two bits. No claim id of its own: this exact sentence is the sibling
+        // ch3-shres-bitplane-colour-encoding package's own claim (C-shrc.c02).
+        //
+        // A colour's own DIAGONAL register ($15/$1A/$1F, reached by unattached
+        // sprite 2/4/6) does not show the same overlap: its slot A and slot B
+        // are always the SAME stored colour (p==q), so no OTHER colour's bit
+        // position ever falls inside it, for any k -- observed by rerunning
+        // this same loop through kDiagRun instead of kRuns (0 of 54 traces
+        // changed there), which is why the overlap is a property of register
+        // $10+c specifically, not of this file's comparator.
         checks.note("P2 TWO-BITS-54-TRACES-IDENTICAL: " + std::to_string(changed) + " of " +
                      std::to_string(total) + " traces changed.");
-        // MUTATION P2 stimulus green: baseline is already red -- 18 of 54 traces change,
-        // every one of them a k==0 (colour 16) combo, because colour 16's own slot-B
-        // position always overlaps register $10+c for c=1,2,3 (the FINDING REG-0x11-13
-        // measure directly). Built with -DMUT_P2=1, which observes colour c's own
-        // diagonal register ($15/$1A/$1F, reached by unattached sprite 2/4/6) instead
-        // of $11/$12/$13, with every k from 0 still included (no filter) -> measured
-        // "8 passed, 12 failed, 2 declined" ("MEASURED: ... 0 of 54 traces changed"),
-        // P2 the only verdict that moved (FAIL -> PASS) -- a diagonal register's own
-        // slot A and slot B are always the SAME stored colour (p==q), so no OTHER
-        // colour's bit position ever falls inside it, for any k. Reverted (no flags):
-        // "7 passed, 13 failed, 2 declined", baseline restored.
     }
 
     // ==================== DOT-BITS ====================
