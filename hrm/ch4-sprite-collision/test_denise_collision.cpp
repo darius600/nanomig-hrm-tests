@@ -41,8 +41,8 @@
 //   CH4-coll.c2, CH4-coll.c3, CH4-p113.c5, CH4-p113.c6.
 //
 // BOUNDARY: denise_collision.v, reached at
-//   $(NANOMIG)/src/minimig-aga/denise_collision.v. NOT opened by this
-//   agent for this commit.
+//   $(NANOMIG)/src/minimig-aga/denise_collision.v. Not opened directly
+//   to obtain the register interface below (see ORDER OF WORK).
 //
 // ORDER OF WORK: this file -- every assertion, its expected value, the
 //   claim ids it cites, and the stimulus each measurement uses -- was
@@ -63,7 +63,7 @@
 //   or drives no register at all), and a harness-hygiene drain-read
 //   needed because clxdat
 //   carries no reset branch of its own). denise_collision.v itself was
-//   not opened by this agent to obtain any of this -- reusing an
+//   not opened to obtain any of this -- reusing an
 //   already-committed sibling harness's disclosed interface is the
 //   precedent hrm/ch4-attached-sprites/ already relies on for this same
 //   gate, and is followed the same way here.
@@ -94,9 +94,9 @@
 //   "playfield-1 collision depends on playfield 2" (red), scoped to
 //   single-playfield mode (dblpf held at its power-up default, 0,
 //   throughout that package's own 98 assertions -- see its own
-//   Non-goals). Per this package's own build task instruction (not
-//   discovered by this agent, and not by opening denise_collision.v):
-//   that finding is not this package's to restate as new.
+//   Non-goals). Per this package's own build task instruction (not by
+//   opening denise_collision.v): that finding is not this package's to
+//   restate as new.
 //   SPRITE-TO-PLAYFIELD-COLLISION-EITHER below is therefore measured in
 //   DUAL-playfield mode (dblpf=1) -- the mode chapter 4's own "either of
 //   the two playfields" phrase most naturally describes (two
@@ -159,8 +159,7 @@
 //   something that happens on screen.
 //
 // DECLINED CLAIMS (CH4-p113.c5, CH4-p113.c6): both were already flagged
-//   defective by this package's own cross-read step before this agent
-//   ever saw them -- classify.crossread.verdict "defect",
+//   defective by this package's own cross-read step -- classify.crossread.verdict "defect",
 //   defect ["restatement_exceeds_quote"] -- because each restatement
 //   ("collision hardware can detect overlap between sprites" / "...
 //   between a sprite and either playfield") rests on the quoted sentence
@@ -201,9 +200,7 @@
 //   of the harness. Two distinct, known sprite-pair stimuli must produce
 //   two distinct, correctly-positioned CLXDAT readings.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
-//   specification commit -- denise_collision.v was opened only once,
-//   for this build, not before): 4 passed, 0 failed. All three graded
+// RESULTS (after opening the RTL and building): 4 passed, 0 failed. All three graded
 //   propositions -- SPRITE-TO-SPRITE-COLLISION-OCCURS, SPRITE-TO-
 //   PLAYFIELD-COLLISION-EITHER, COLLISION-DETECTABLE-VIA-REGISTER-READ
 //   -- and the FIXTURE-LIVE-DATA-PATH control are all GREEN: what
@@ -439,8 +436,8 @@ int main(int argc, char** argv) {
     // --------- SPRITE-OVERLAP-DETECT-DECLINED [declined] ---------
     checks.record(
         "SPRITE-OVERLAP-DETECT-DECLINED [declined]: this package's own "
-        "crossread step already flagged CH4-p113.c5 defective before this "
-        "agent saw it (verdict 'defect', restatement_exceeds_quote) -- "
+        "crossread step already flagged CH4-p113.c5 defective "
+        "(verdict 'defect', restatement_exceeds_quote) -- "
         "its restatement 'Collision hardware can detect overlap between "
         "sprites' rests on the quote 'As sprites move about on the "
         "screen, they can collide with each other or with either of the "
@@ -457,8 +454,8 @@ int main(int argc, char** argv) {
     checks.record(
         "PLAYFIELD-OVERLAP-DETECT-DECLINED [declined]: as "
         "SPRITE-OVERLAP-DETECT-DECLINED above -- this package's own "
-        "crossread step already flagged CH4-p113.c6 defective before "
-        "this agent saw it (verdict 'defect', restatement_exceeds_quote) "
+        "crossread step already flagged CH4-p113.c6 defective "
+        "(verdict 'defect', restatement_exceeds_quote) "
         "-- its restatement 'Collision hardware can detect overlap "
         "between a sprite and either playfield' rests on the same "
         "'sprites can collide' quote, not the (unquoted, Chapter-7-"
