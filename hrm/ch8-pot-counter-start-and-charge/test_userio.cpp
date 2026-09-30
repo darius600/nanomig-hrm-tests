@@ -203,6 +203,29 @@
 // MUTATION sol:8-appa-pot.c17 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
 // MUTATION sol:8-appa-pot.c18 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
 // MUTATION sol:8-appa-pot.c19 stimulus red (same MUT_G23 as opus:8-appa-pot.c14)
+//
+// ADDED (followups.md "(038, optional): final-count assertion"): group_FINALCOUNT,
+// the final-count form of G6/G11 -- NM-HRM-038's own text: "what separates
+// NanoMig from all four [reference implementations] is the final count,
+// which in NanoMig includes the interval's lines," since two of the four
+// (WinUAE, vAmiga) also read non-zero after one line, same as NanoMig, so
+// G6/G11's first-nonzero-read measurement alone does not separate them.
+// Baseline 77 passed, 9 failed; after this addition, 78 passed, 13 failed --
+// four new reds under the ALREADY-red ids opus:8-fig8-5.c1, sol:8-fig8-5.c2,
+// opus:8-potchg.c1, sol:8-pot.c16 (second, independent graded line per id,
+// same as G6/G11's own first line for these same ids), one new PASS
+// (harness-selfcheck, not part of the id/mutation-pairing system, matching
+// the file's own established convention for these self-check lines).
+// MUTATION opus:8-fig8-5.c1 oracle green substitute (second, independent
+//   substitute alongside G6/G11's own -- see harness-selfcheck: FINALCOUNT
+//   comparator is live below): pot0x, DUT-measured after exactly k=10
+//   released ticks with NO interval prepended (arm, release, pulse 10 only),
+//   routed through the identical ==10 comparator used by the red final-count
+//   assertions above, reads 10 and passes -- confirming that comparator is
+//   not vacuously false.
+// MUTATION sol:8-fig8-5.c2 oracle green (same substitute as opus:8-fig8-5.c1 above)
+// MUTATION opus:8-potchg.c1 oracle green (same substitute as opus:8-fig8-5.c1 above)
+// MUTATION sol:8-pot.c16 oracle green (same substitute as opus:8-fig8-5.c1 above)
 
 #include "Vuserio.h"
 #include "verilated.h"
@@ -685,6 +708,108 @@ static void group_G6_G11() {
 }
 
 //--------------------------------------------------------------------------
+// FINALCOUNT -- p.235/Figure 8-5, the final-count form of G6/G11 (followups.md
+// "(038, optional): final-count assertion"). G6/G11 above measure the pulse
+// index of the FIRST nonzero read, and NM-HRM-038's own text says why that
+// measurement alone under-states the finding: two of the four reference
+// implementations (WinUAE, vAmiga) also read non-zero after one line -- their
+// internal delay counter runs DURING the interval and is restarted from zero
+// at its end, so "first read is nonzero" does not by itself separate NanoMig
+// from a page-following design. "What separates NanoMig from all four is the
+// final count, which in NanoMig includes the interval's lines." This grades
+// exactly that: release, run for a fixed total of (interval + k) ticks with
+// no pause, and compare the FINAL count against k, not against zero-or-not.
+// k=10 (this file's own established cadence granularity -- see G7/G8, G12,
+// G13's ten-tick runs), against the page's PAL interval (Figure 8-5's precise
+// eight, and the body text's seven-or-eight) -- neither reading is close to
+// overflowing the 8-bit counter G10 already measures, so k's size is not
+// itself in question.
+//
+// Measurement basis for all four counters, using the same per-counter
+// release technique as G12 (which already establishes "the same count/hold
+// rule for all four" at a shorter span): pot0x/pot0y via set_mouse, pot1y via
+// set_joy1_pin5, pot1x via set_potgo_bits(0x2000) (bits 13:12, per G12).
+//--------------------------------------------------------------------------
+static void group_FINALCOUNT() {
+    constexpr int kK = 10;
+    constexpr int kTotalTicks = 8 + kK;  // Figure 8-5's precise interval + k
+
+    full_reset();
+    arm_potgo(0x0001);
+    set_mouse(0, 0, 1);  // release pot0x
+    settle(3);
+    pulse(kTotalTicks);
+    int final_x0 = pot0dat() & 0xFF;
+
+    full_reset();
+    arm_potgo(0x0001);
+    set_mouse(0, 1, 0);  // release pot0y
+    settle(3);
+    pulse(kTotalTicks);
+    int final_y0 = (pot0dat() >> 8) & 0xFF;
+
+    full_reset();
+    arm_potgo(0x0001);
+    set_joy1_pin5(1);  // release pot1y
+    settle(3);
+    pulse(kTotalTicks);
+    int final_y1 = (pot1dat() >> 8) & 0xFF;
+
+    full_reset();
+    arm_potgo(0x0001);
+    set_potgo_bits(0x2000);  // release pot1x (bits 13:12, per G12)
+    settle(2);
+    pulse(kTotalTicks);
+    int final_x1 = pot1dat() & 0xFF;
+
+    note("FINAL COUNT after release-then-run-" + std::to_string(kTotalTicks) +
+         "-ticks-unbroken (8+" + std::to_string(kK) + "), no hold in between: "
+         "pot0x=" + std::to_string(final_x0) + " pot0y=" + std::to_string(final_y0) +
+         " pot1y=" + std::to_string(final_y1) + " pot1x=" + std::to_string(final_x1) +
+         " -- the page's reset interval (seven-or-eight lines, body text;"
+         " exactly eight, Figure 8-5) predicts a final count of " +
+         std::to_string(kK) + " or " + std::to_string(kK + 1) +
+         "; this RTL has no reset-hold construct at all (G6/G11's own finding), "
+         "so every counter's final count is the raw tick total, " +
+         std::to_string(kTotalTicks) + ".");
+
+    // Figure 8-5's precise reading: final count == k exactly.
+    bool figure_all_four = (final_x0 == kK) && (final_y0 == kK) &&
+                            (final_y1 == kK) && (final_x1 == kK);
+    expect(figure_all_four, "opus:8-fig8-5.c1");
+    expect(figure_all_four, "sol:8-fig8-5.c2");
+
+    // Body text's looser reading: final count == k or k+1 (seven- or
+    // eight-line interval).
+    bool body_all_four =
+        (final_x0 == kK || final_x0 == kK + 1) &&
+        (final_y0 == kK || final_y0 == kK + 1) &&
+        (final_y1 == kK || final_y1 == kK + 1) &&
+        (final_x1 == kK || final_x1 == kK + 1);
+    expect(body_all_four, "opus:8-potchg.c1");
+    expect(body_all_four, "sol:8-pot.c16");
+
+    // Substitution proof for these already-red assertions (per G6/G11's own
+    // precedent): pot0x DUT-measured at exactly k ticks with NO interval
+    // prepended (arm, release, pulse k only -- not 8+k), routed through the
+    // identical ==k comparator, confirming it is not vacuously false.
+    full_reset();
+    arm_potgo(0x0001);
+    set_mouse(0, 0, 1);
+    settle(3);
+    pulse(kK);
+    int short_run = pot0dat() & 0xFF;
+    bool comparator_live = (short_run == kK);
+    note("Substitute for the already-red final-count comparators: pot0x, "
+         "DUT-measured after exactly " + std::to_string(kK) +
+         " released ticks with NO interval prepended, reads " +
+         std::to_string(short_run) + " and is routed through the identical "
+         "==" + std::to_string(kK) + " comparator used above, confirming "
+         "that comparator is not vacuously false.");
+    expect(comparator_live, "harness-selfcheck: FINALCOUNT comparator is live (DUT pot0x measured at k with no interval)");
+}
+
+//--------------------------------------------------------------------------
 // G7/G8 -- p.235: once counting, the circuit compares once per scan line
 // (never zero, never two increments per tick), and increments while below
 // the preset.
@@ -1147,6 +1272,7 @@ int main(int argc, char** argv) {
     group_G4();
     group_G5_G18();
     group_G6_G11();
+    group_FINALCOUNT();
     group_G7_G8();
     group_G9();
     group_G10_G20();
