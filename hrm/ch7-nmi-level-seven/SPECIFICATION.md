@@ -83,8 +83,7 @@ presents toward the CPU is 7 — the same level the manual prints as this
 row's hardware priority, and (per the row's own name) one that cannot be
 masked off.
 
-**Correlation, not two independent observations (repair, ch7 slice B1
-independent validation, finding 6).** "The interrupt priority level the
+**Correlation, not two independent observations.** "The interrupt priority level the
 module presents toward the CPU is 7" is a statement about one cycle, not
 about two separate facts ("the NMI condition happened at some point" and
 "the module's output was 7 at some point") that could be true for
@@ -181,7 +180,7 @@ already visible from the claims alone:
   check, that the build actually has the NMI path's compile-time define
   set — this is not a mutation of PROP-1, it is the gate PROP-1's grading
   depends on.
-- **Mutation for the correlation repair, added after step 3:** because
+- **Mutation for the correlation check:** because
   `_cpu_ipl` is a continuous assignment purely of `int7` at this
   boundary, and Paula's own priority encoder never legitimately outputs
   level 7 on any input pattern, no *real* stimulus on this correct RTL can

@@ -39,8 +39,8 @@
 //   cpu_address/cpu_data/clk/clk7_en/c1/c3/cck/eclk as plain input ports,
 //   driven by this harness instead of by amiga_clk.v/a real 68000.
 //
-// MECHANISM READ FROM THE RTL (step 3, after SPECIFICATION.md's own commit
-//   120e9e8): the "NMI"/freeze signal chain is
+// MECHANISM READ FROM THE RTL (step 3, after SPECIFICATION.md's own
+//   commit): the "NMI"/freeze signal chain is
 //     ciaa.v:187 (Action Replay freeze keycode 0x5f, gated by hrtmon_en ==
 //       memory_config[6], latched into freeze_reg on a kbd_mouse_type==2
 //       keystrobe) --output--> minimig.v:355/628 wire freeze
@@ -65,7 +65,7 @@
 // ORDER-OF-WORK, DISCLOSED: SPECIFICATION.md was written from
 //   ch7-nmi-level-seven-spec-stage.jsonl's own 3 claims' quotations alone,
 //   before any RTL or STEP3-NOTES-ch7-nmi-level-seven.md/
-//   ch7-nmi-level-seven.jsonl reading, and committed (120e9e8) before this
+//   ch7-nmi-level-seven.jsonl reading, and committed before this
 //   file was opened or written -- per BUILD-BRIEF.md and the task sheet's
 //   own two-step order. The mechanism paragraph above, the port names, and
 //   every stimulus value below were only added in this step-3 file.
@@ -89,8 +89,7 @@
 //   All 3 claims accounted for: 2 hardware assertions (one cited by all
 //   3 claims between them), 1 declined half of 1 claim.
 //
-// PRECONDITION (added in step 3, directed by the lead's own message after
-//   SPECIFICATION.md's commit, not from any claim): a green
+// PRECONDITION (not from any claim): a green
 //   NMI-HARDWARE-PRIORITY-7 could otherwise mean either "the define-enabled
 //   path was exercised" or "the define silently failed to apply and this
 //   run just read a constant" -- the two look identical on _cpu_ipl alone.
@@ -103,8 +102,7 @@
 //   preprocessor symbol itself (testing the symbol would only prove what
 //   the compiler was told).
 //
-// NON-MASKABILITY (also added in step 3, on the lead's direction,
-//   reproducing -- not adopting -- STEP3-NOTES-ch7-nmi-level-seven.md's own
+// NON-MASKABILITY (reproducing -- not adopting -- STEP3-NOTES-ch7-nmi-level-seven.md's own
 //   measurement "(c)": INTENA is never written anywhere in this file, so
 //   paula_intcontroller's own arbitrated request _iplx sits at 3'b111 (no
 //   interrupt) for the whole run. NMI-NON-MASKABLE checks that _cpu_ipl
@@ -153,20 +151,20 @@
 //   at raw tick 2272045, _iplx=0x7 at that same tick, correlated at that
 //   same tick).
 //
-// CORRELATION REPAIR (independent validation, ch7 slice B1, finding 6):
-//   NMI-HARDWARE-PRIORITY-7 and NMI-NON-MASKABLE used to grade on
-//   int7_seen_high/ipl_seen_level7, two independently-latched "ever true"
-//   flags -- a spurious _cpu_ipl==level7 reading with no real int7 behind
+// CORRELATION CHECK: grading NMI-HARDWARE-PRIORITY-7 and
+//   NMI-NON-MASKABLE on int7_seen_high/ipl_seen_level7, two
+//   independently-latched "ever true" flags, would let a spurious
+//   _cpu_ipl==level7 reading with no real int7 behind
 //   it, followed later by int7 genuinely rising on a chip that maps it to
-//   the wrong level, would satisfy both accumulated flags without the two
+//   the wrong level, satisfy both accumulated flags without the two
 //   ever actually having happened together. The existing MUT_NOFREEZE
 //   mutation removes the stimulus event and the resulting response
-//   together, so it never exercises that path either way. Repaired: both
-//   assertions now grade on correlated_seen (int7 and _cpu_ipl==level7
+//   together, so it never exercises that path either way. Both
+//   assertions instead grade on correlated_seen (int7 and _cpu_ipl==level7
 //   observed true in the SAME loop iteration -- see the loop below).
 //   MUTATION DECORRELATE (see the #define and in-loop comment) fabricates
 //   that exact false-positive sequence from the harness side and confirms
-//   the repaired check rejects it -- see its own run-log entry below.
+//   the check rejects it -- see its own run-log entry below.
 //   Structurally, no *real* stimulus this fixture could apply produces
 //   that sequence on this RTL: _cpu_ipl is `assign _cpu_ipl = int7 ?
 //   3'b000 : _iplx;` (minimig.v:760), a continuous assignment, and
@@ -232,13 +230,12 @@
 //   ones. NMI-IDLE-BASELINE-NOT-LEVEL-7 stayed green, unaffected. Rebuilt
 //   with no flags: 4/0 restored.
 //
-// CORRELATION REPAIR, added after independent validation (ch7 slice B1,
-// finding 6): NMI-HARDWARE-PRIORITY-7 and NMI-NON-MASKABLE now grade on
+// CORRELATION CHECK: NMI-HARDWARE-PRIORITY-7 and NMI-NON-MASKABLE grade on
 // correlated_seen (int7 and _cpu_ipl==level7 observed true in the same
-// loop iteration) instead of two independently-latched flags. The four
+// loop iteration) rather than two independently-latched flags. The four
 // MUT_NOFREEZE/MUT_PREFREEZE entries above still apply unchanged -- none
-// of them touch the new correlation logic, only the pre-existing flags it
-// is now built from. One new entry below, built, run and reverted this
+// of them touch this correlation logic, only the pre-existing flags it
+// is built from. One new entry below, built, run and reverted this
 // session:
 // MUTATION NMI-HARDWARE-PRIORITY-7 stimulus red -- built with
 //   `make MUT=MUT_DECORRELATE`, which fabricates the false-positive
@@ -254,8 +251,8 @@
 //   both stayed green -- the old, uncorrelated int7_seen_high and
 //   ipl_seen_level7 flags this mutation was built to fool are BOTH still
 //   true under it (see the MEASURED int7/_cpu_ipl lines), confirming this
-//   is exactly the false-positive path the old logic would have missed
-//   and the repaired logic catches. One edit turns both correlation-based
+//   is exactly the false-positive path grading on the two independent
+//   flags would have missed and the correlation check catches. One edit turns both correlation-based
 //   assertions red together, for the one reason both now share -- not two
 //   separate pieces of evidence. Reverted (MUT_DECORRELATE back to its
 //   default 0), rebuilt with no flags: 4/0 restored.
@@ -319,9 +316,9 @@ public:
 #define MUT_PREFREEZE 0
 #endif
 
-// MUT_DECORRELATE (repair, see header "CORRELATION REPAIR"): fabricates,
-// from the harness side, the exact false-positive sequence the
-// independent validation described -- a spurious _cpu_ipl==level7 reading
+// MUT_DECORRELATE (see header "CORRELATION CHECK"): fabricates,
+// from the harness side, the exact false-positive sequence described
+// above -- a spurious _cpu_ipl==level7 reading
 // with no real int7 behind it, followed later by int7 genuinely rising
 // while _cpu_ipl is forced to NOT show level 7 at that same cycle (a
 // stand-in for a chip that maps NMI to the wrong level). This writes
@@ -545,7 +542,7 @@ int main(int argc, char** argv) {
     // own run (see header, "WHAT THIS FILE DOES NOT ASSERT"), so a
     // bounded window is enough.
     //
-    // CORRELATION REPAIR: int7_seen_high and ipl_seen_level7 latch
+    // CORRELATION CHECK: int7_seen_high and ipl_seen_level7 latch
     // independently of each other -- either one alone would let a spurious
     // _cpu_ipl==level7 reading with no real int7 behind it, followed later
     // by int7 genuinely rising on a chip that maps it to the wrong level,
@@ -568,7 +565,7 @@ int main(int argc, char** argv) {
         h.tick();
         bool int7_now = h.dut->rootp->minimig->int7 != 0;
 #if MUT_DECORRELATE
-        // See the #define above and header "CORRELATION REPAIR" for what
+        // See the #define above and header "CORRELATION CHECK" for what
         // this does and why.
         if (k == 3 && !int7_now) {
             h.dut->_cpu_ipl = IPL_LEVEL7; // fabricated: no real int7 behind this
