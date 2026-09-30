@@ -29,8 +29,7 @@
 //   hrm-testpipeline/acceptance/ch6.json lists under `inventories`.
 //
 // NO PRIOR ART IS SUPERSEDED. docs/evidence/blitter-prior-art.md was read in full
-// before writing this file, per the build brief's explicit instruction to
-// say so rather than assume it. Its "eight blitter tests" table lists
+// before writing this file. Its "eight blitter tests" table lists
 // barrelshifter, fill, minterm, modulo, ptr, line_octant, mask and zero -
 // none of the eight writes multiple USE codes to compare bus-cycle
 // sequences, none asserts a single fact about table 6-2, the two-cycle
@@ -43,32 +42,19 @@
 // fill-logic claims, and are asserted below as AREA-FILL-CONCURRENT-WITH-
 // COPY-IN-D-PATH.
 //
-// A FIXTURE DEFECT FOUND AND FIXED DURING THIS BUILD, RECORDED HERE SO
-// NOBODY RE-DERIVES IT: the first version of this file held `clkena`
-// constantly high (copied from hrm/ch6-blitter-status, where it is
-// harmless because that package measures no durations). Every one of the
-// eight tick-count speed assertions below then measured EXACTLY HALF of
-// what p.193 states - minimum 2 not 4, maximum 4 not 8, A+D=2 not 4,
-// B+D=3 not 6, B+C+D=4 not 8, B adds 1 not 2, C+D together adds 1 not 2,
-// line mode 4 not 8 ticks/pixel - a clean, uniform, reproducible factor of
-// two across eight independently measured combinations, which is the
-// signature of a wrong timebase, not of eight separate defects. Confirmed
-// against the actual machine this module is instantiated into:
-// `agnus.v:437` wires the blitter's `clkena` port to `cck`
+// THIS FIXTURE'S clkena TIMEBASE, RECORDED HERE SO NOBODY RE-DERIVES IT:
+// agnus.v:437 wires the blitter's `clkena` port to `cck`
 // (`agnus_blitter bl1 ( ... .clkena(cck), ... )`), and `amiga_clk.v:19-38`
 // shows `cck` is a true divide-by-two of the `clk7_en` rate (`cck <= ~cck`
 // fires exactly once per clk7_en pulse, unconditionally). Since
 // `agnus_blitter.v:605`'s `assign enable = enadma & clkena` gates every
-// genuine FSM advance, holding clkena constantly high (instead of on
-// alternate clk7_en-qualified ticks, the way `agnus.v` actually drives it)
-// let the FSM advance on every tick instead of every other one - exactly
-// the observed 2x. Fixed in Harness::cycle(): `clkena_phase` toggles once
+// genuine FSM advance, Harness::cycle()'s `clkena_phase` toggles once
 // per cycle() call, matching cck's own toggle-once-per-tick behaviour (see
-// the member's own comment). Re-measured with the corrected timebase, all
-// eight combinations land EXACTLY on the manual's stated numbers (minimum
-// 4, maximum 8, A+D=4, B+D=6, B+C+D=8, B adds 2, C+D together adds 2, line
-// mode 8 ticks/pixel) - the earlier reading was a fixture defect, not an
-// RTL defect, and all eight tick-count assertions are green. A DURATION
+// the member's own comment), so the FSM advances on every other tick, the
+// way `agnus.v` actually drives it, not every tick. With this timebase all
+// eight tick-count speed assertions below land EXACTLY on the manual's
+// stated numbers (minimum 4, maximum 8, A+D=4, B+D=6, B+C+D=8, B adds 2,
+// C+D together adds 2, line mode 8 ticks/pixel). A DURATION
 // MEASURED AT THIS BOUNDARY IS THEREFORE ONLY MEANINGFUL WITH `clkena`
 // DRIVEN THE WAY `agnus.v` DRIVES IT (alternating, never held high) - the
 // next package that measures a cycle count through this harness inherits
@@ -95,7 +81,7 @@
 // FIXTURE. Started from the working harness in hrm/ch6-blitter-status/
 // (the only agnus_blitter fixture in the tree proven to deliver data
 // correctly) - TEST-DATA-DELIVERY below reproduces its TEST-DATA-DELIVERY
-// assertion first, before anything data-dependent, per the build brief.
+// assertion first, before anything data-dependent.
 // Harness::cycle's DMA-grant handshake (the settling eval() before the
 // clock edge, capturing we/data_out AT the grant rather than polling
 // afterwards, and sampling int3 before the tick's own clock edge) is the
@@ -176,19 +162,15 @@
 // MUTATION FUNCTION-GENERATOR-COMBINES-THREE-SOURCES-PER-POINT stimulus red:
 //   word1's B value changed from 0x0000 to 0x0001 (expected constant left
 //   untouched) -> FAIL, that word's computed XOR no longer matches.
-// MUTATION MASK-BEFORE-SHIFT stimulus green: first attempt, BLTAFWM
-//   changed from 0x0F0F to 0x0FFF (BLTALWM left at 0x0F0F) -> PASS, a
-//   miss - matching the pattern the build brief warns about (four
-//   earlier packages in this chapter each found one this way). Cause:
-//   for a single-word blit the effective mask is BLTAFWM & BLTALWM
-//   (agnus_blitter.v:312-313), and 0x0FFF is a strict superset of
-//   0x0F0F, so ANDing with the unchanged BLTALWM produced the SAME
-//   effective mask (0x0F0F) - the mutation never reached the DUT as a
-//   different stimulus at all.
-// MUTATION MASK-BEFORE-SHIFT stimulus red: replacement, BLTAFWM changed
-//   from 0x0F0F to 0x00FF instead (BLTALWM left at 0x0F0F, effective
+// MUTATION MASK-BEFORE-SHIFT stimulus red: BLTAFWM changed
+//   from 0x0F0F to 0x00FF (BLTALWM left at 0x0F0F, effective
 //   mask becomes 0x000F, genuinely different) -> FAIL, the shifted
-//   result is no longer 0x00F0.
+//   result is no longer 0x00F0. (BLTAFWM=0x0FFF alone would NOT
+//   discriminate: for a single-word blit the effective mask is
+//   BLTAFWM & BLTALWM (agnus_blitter.v:312-313), and 0x0FFF is a strict
+//   superset of 0x0F0F, so ANDing it with the unchanged BLTALWM produces
+//   the SAME effective mask, 0x0F0F - not a stimulus this assertion's
+//   own computation is sensitive to.)
 // MUTATION SHIFT-BEFORE-COMBINE stimulus red: the ash nibble in BLTCON0
 //   changed from 4 to 5 (A value and LF left untouched) -> FAIL, the
 //   shifted result no longer matches 0x0FF0.
@@ -220,16 +202,13 @@
 //   compared USE codes changed to two that cost the same (0x1 and 0x9,
 //   both baseline) -> FAIL, the "the two measured costs differ" check now
 //   sees equal costs.
-// MUTATION CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED stimulus red: an
-//   earlier design of this assertion used channel A instead of B and
-//   SURVIVED every stimulus tried (not run against current code, so not
-//   logged as its own attempt) - A is unconditionally free whether
-//   enabled or not (A-REGISTER-ALWAYS-FREE), so no stimulus confined to
-//   A can ever change a cost measurement in this RTL, and the assertion
-//   was structurally immune to mutation by construction. Rebuilt around
-//   channel B instead (which genuinely costs +2 ticks when enabled, with
-//   clkena driven correctly - see the header's fixture-defect note).
-//   This mutation, run against the current code: USEB added to the use
+// MUTATION CONSTANT-CHANNEL-DOESNT-COUNT-AGAINST-SPEED stimulus red: this
+//   assertion is built around channel B (not channel A: A is
+//   unconditionally free whether enabled or not (A-REGISTER-ALWAYS-FREE),
+//   so no stimulus confined to A could ever change a cost measurement in
+//   this RTL; B genuinely costs +2 ticks when enabled, with clkena driven
+//   correctly - see the header's fixture-defect note). This mutation:
+//   USEB added to the use
 //   code in the "constant" measurement only (cost_no_b_reference left
 //   untouched), genuinely enabling B instead of merely referencing its
 //   held value -> FAIL, cost_constant_b becomes 6 (4 baseline + B's +2),
@@ -349,14 +328,13 @@
 // things - the fixture already sweeps all sixteen codes in one measured
 // pass and the manual states all sixteen as one table.
 //
-// EXTENSION 2026-09-25 (unit-backlog build). Six claims the router assigned
+// EXTENSION. Six claims the router assigned
 // here from PKG-BLT-FILL and PKG-BLT-MINTERM (2026-09-25_unit-backlog/build/
 // ch6-blitter-cycles-spec-stage.jsonl) as pipeline-STRUCTURE facts about
 // Figure 6-13, not fill/minterm truth-table facts - the same redirection
 // rule already used above for AREA-FILL-CONCURRENT-WITH-COPY-IN-D-PATH.
 // Written from the spec-stage quotations alone, before the full claims file
-// (classification evidence) or the RTL was opened again this round, per the
-// build brief's order of work.
+// (classification evidence) or the RTL was opened again this round.
 //
 //   P1 (ch6-blockdiag.c8, p.198; ch6-fig613.f20, p.199 figure): the fill
 //   operation's input is the data generated by the minterm combinations -
@@ -394,7 +372,7 @@
 // Each of P1-P4 is graded by its own new assertion below, added only after
 // this specification addition was committed and the full claims file
 // (ch6-blitter-cycles.jsonl, with classify.evidence and routing.how) and
-// the RTL were opened per step 2 of the build brief. Nothing above this
+// the RTL were opened. Nothing above this
 // point in the header, and no existing assertion, changed for this
 // extension.
 
@@ -552,9 +530,7 @@ private:
     // enable - amiga_clk.v:19-38 shows cck is a true divide-by-2 of the
     // clk7_en rate (`cck <= ~cck` fires exactly once per clk7_en pulse).
     // agnus_blitter.v:605's `enable = enadma & clkena` gates every genuine
-    // FSM advance, so a harness that holds clkena constantly high (as this
-    // file's first version did, inherited from agnus_blitter_status, where
-    // it is harmless because that package measures no durations) makes the
+    // FSM advance, so a harness that holds clkena constantly high makes the
     // FSM advance on EVERY clk7_en-qualified tick instead of every other
     // one - exactly a 2x-fast timebase relative to the design this module
     // is instantiated into. Toggled once per cycle() call, matching cck's
@@ -1565,7 +1541,7 @@ int main(int argc, char** argv) {
         // The claim ch6-speed.c8 was overturned from a discard specifically
         // because "ticks" here is the manual's own dimensionless n (clocks
         // per blitter cycle), not a real-time value - it is asserted here
-        // as a COUNT, explicitly, per the build brief's instruction.
+        // as a COUNT, explicitly.
         int cost_d_alone = per_word_ticks(USED);
         int cost_c_and_d = per_word_ticks(USEC | USED);
         int measured_marginal = cost_c_and_d - cost_d_alone;
