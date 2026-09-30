@@ -3,9 +3,11 @@
 // Test purpose: chapter 5's claims about the per-channel REGISTER WRITES
 //   into AUDxLEN, AUDxPER, AUDxVOL and AUDxDAT -- their widths, their
 //   read-back and their effect -- measured at paula_audio_channel, the same
-//   fixture hrm/paula_audio_channel/ already builds and runs as an
-//   RTL_REGRESSION against a frozen spec. This package stands BESIDE that
-//   one, reads the same file, and does not delete, weaken or touch it. Three
+//   module hrm/paula_audio_channel/ built and ran an RTL_REGRESSION against
+//   a frozen spec for, before that package was removed, its propositions
+//   carried forward into this package and its siblings (docs/legacy-names.md).
+//   This package reads the same paula_audio_channel.v file and does not
+//   delete, weaken or touch it. Three
 //   sibling packages take this module's other subjects:
 //   ch5-audio-channel-state (the state machine, Figure 5-8),
 //   ch5-audio-period-and-length (period/length TIMING measurements) and
@@ -37,8 +39,9 @@
 //   plus facts already disclosed pre-spec in this task's own BOUNDARIES.md
 //   and CANDIDATES.md (port names/widths, the volume 6-vs-7-bit and
 //   interrupt-moment conflict analyses, the two silence traps) and in the
-//   already-committed, already-built sibling hrm/paula_audio_channel/
-//   test_paula_audio_channel.cpp (the register-address convention, the
+//   since-removed sibling hrm/paula_audio_channel/test_paula_audio_channel.cpp
+//   (docs/legacy-names.md), already committed and built at the time (the
+//   register-address convention, the
 //   clk7_en/cck/strhor clocking pattern, and proof that this clocking/
 //   DMA-answering pattern drives real dmareq/sample/intreq activity on this
 //   module: that sibling's own run produces sample sequence 0x12 then 0x34
