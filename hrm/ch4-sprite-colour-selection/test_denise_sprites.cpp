@@ -77,7 +77,7 @@
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, register word-address map,
 //   four-phase 7MHz clocking, and the DATB-then-DATA arm-on-write
-//   convention are NOT read from those two files by this agent for
+//   convention are NOT read from those two files for
 //   this package -- they are reused verbatim from THREE already-
 //   committed sibling packages built against this exact fixture:
 //   hrm/denise_sprites/test_denise_sprites.cpp (the original FPGA-030
@@ -101,8 +101,7 @@
 //   written and committed from claims.jsonl's own quotations and the
 //   three already-committed sibling harnesses' disclosed interface
 //   ONLY. denise_sprites.v and denise_sprites_shifter.v themselves
-//   were not opened by this agent until after that commit, per the
-//   build brief's explicit gate. In particular, this file does NOT use
+//   were not opened until after that commit. In particular, this file does NOT use
 //   its own claims.jsonl records' "classify.evidence" fields (several
 //   of which cite RTL line numbers and RTL-derived facts, e.g. a reset
 //   value for esprm/osprm) -- only the "extract.quote" / "restatement"
@@ -145,10 +144,9 @@
 //   -- swept across hpos 0..511 from a fresh reset each time), proving
 //   THIS package's own build of the harness delivers distinct fetched
 //   values, in order, at the cycle each was fetched on, before any
-//   claim-based assertion below depends on it (the build brief's own
-//   chapter-6 warning: a harness whose data path is silently dead
-//   reports every data-dependent assertion as a finding about the
-//   design instead of about the harness). A passing build of a sibling
+//   claim-based assertion below depends on it (a harness whose data
+//   path is silently dead reports every data-dependent assertion as a
+//   finding about the design instead of about the harness). A passing build of a sibling
 //   package on the same fixture does not substitute for this package's
 //   own binary proving its own data path live.
 //
@@ -244,9 +242,7 @@
 //   half, measured the same way, is right there in the same
 //   expect().
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
-//   specification commit -- denise_sprites.v and denise_sprites_
-//   shifter.v were opened only once, for this build, not before): 4
+// RESULTS (after opening the RTL and building): 4
 //   passed, 0 failed. All four graded assertions are GREEN: FIXTURE-
 //   LIVE-DATA-PATH (MSB hpos=130, mid hpos=138, LSB hpos=145 --
 //   distinct and monotonic), CODE-00-SELECTS-TRANSPARENT-UNATTACHED-
