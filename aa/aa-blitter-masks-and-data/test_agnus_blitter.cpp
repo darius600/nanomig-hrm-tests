@@ -39,8 +39,8 @@
 //
 // THE DUMMY-ADDRESS HALF OF BLTDDAT IS DECLINED, AND THE REASON IS MEASURED.
 //   The page says `This is a dummy address and cannot be read by the micro.`
-//   A first version asserted that by writing $000 and reading it back -- and
-//   the assertion survived its own mutation, because agnus_blitter answers NO
+//   Asserting that by writing $000 and reading it back would survive its
+//   own mutation, because agnus_blitter answers NO
 //   read at any address: `data_out` carries the blit result, not a register
 //   file. $000 is not distinguishable from $044 here, so the claim is recorded
 //   rather than graded. What assertion 5 grades instead is the other half of
@@ -416,8 +416,8 @@ int main(int argc, char** argv) {
              "the processor. MEASURED: agnus_blitter answers no read at ANY "
              "address -- data_out carries the blit result, not a register file "
              "-- so $000 not being readable is not distinguishable from $044 not "
-             "being readable. A first version of this package asserted it and "
-             "the assertion survived its own mutation [claims: "
+             "being readable. Asserting it would survive its own mutation for "
+             "the same reason [claims: "
              "opus:AA-bltddat.c7 sol:AA-bltddat.c6]");
     c.record(
              "DECLINED at this boundary: the sentences about a source register "
