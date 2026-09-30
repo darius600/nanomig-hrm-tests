@@ -123,7 +123,7 @@ what the fixture is *asked to do*, leave the expected value alone, confirm
 the assertion goes red, then revert. `record()` declines are not assertions
 and get no mutation entry. Exact mutation mechanics are named in Step 2.
 
-## REPAIR (15.09.2026) — correcting an asymmetric rule assumed above
+## Symmetric rule for presence and absence
 
 The "Test approach" section above committed, before the RTL was opened, to a
 two-branch rule: grade a *present* decode with `expect()`, decline an
@@ -131,8 +131,7 @@ two-branch rule: grade a *present* decode with `expect()`, decline an
 in this package — JOY0DAT/JOY1DAT/JOYTEST are decoded nowhere in `denise`'s
 own hierarchy, confirmed independently in Step 2 — so this package's own
 dispositions (all three declined) were never wrong. But the *rule itself*,
-as stated above, was asymmetric, and independent validation
-(`2026-09-14_ch8_s1_sol_validation_A.md`, defect 8) found that sibling
+as stated above, was asymmetric: sibling
 package `ch8-appb-chip-column-paula` did hit the present branch and, under
 the identical rule, graded three of its own rows `expect()`-green on
 structural presence alone while declining the rest on structural absence —
@@ -155,12 +154,11 @@ chip answers there — the same non-evidentiary status this package already
 gave (correctly in disposition, though not yet stated as a general rule) to
 absence.
 
-The corrected rule, applied identically to both packages: presence and
+The rule, applied identically to both packages: presence and
 absence inside this clone's module hierarchy are the same kind of structural
 fact, and both are DECLINED with `record()`. The two-branch rule in "Test
 approach" above is superseded by this single rule; its first branch (grade
-presence with `expect()`) is not entered by either package after this
-repair. See `test_denise.cpp`'s file-header REPAIR note for the
-disposition-level detail, and `ch8-appb-chip-column-paula`'s own REPAIR
-(same date) for where the superseded branch actually fired and was walked
+presence with `expect()`) is not entered by either package. See `test_denise.cpp`'s file-header note for the
+disposition-level detail, and `ch8-appb-chip-column-paula`'s own note
+for where the superseded branch actually fired and was walked
 back.

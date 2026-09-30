@@ -82,17 +82,16 @@
 //   not graded as a manual-vs-RTL disagreement, nor as evidence against the
 //   manual's letter.
 //
-//   REPAIR 15.09.2026 -- sibling package ch8-appb-chip-column-paula
-//   previously treated this exact kind of absence-from-own-hierarchy as
-//   non-probative (declined) while treating presence-in-own-hierarchy for
+//   THIS PACKAGE'S RULE, AND ITS SYMMETRY WITH ch8-appb-chip-column-paula --
+//   sibling package ch8-appb-chip-column-paula once treated this exact kind
+//   of absence-from-own-hierarchy as non-probative (declined) while
+//   treating presence-in-own-hierarchy for
 //   its own SERDATR/SERDAT/SERPER rows as sufficient proof of ownership
 //   (asserted green) -- an asymmetric use of the identical structural
-//   evidence, flagged by independent validation
-//   (2026-09-14_ch8_s1_sol_validation_A.md, defect 8). This package's
-//   reasoning was already symmetric (it only ever encountered the absence
-//   case, and already declined rather than asserted-red on it), so its
-//   dispositions are unchanged by that repair; paula's file was brought into
-//   line with the same rule this package already applied, argued directly
+//   evidence (see 2026-09-14_ch8_s1_sol_validation_A.md, defect 8). This
+//   package's
+//   reasoning is symmetric (it only ever encounters the absence
+//   case, and declines rather than asserts-red on it); paula's file now follows the same rule this package already applied, argued directly
 //   from the p.287 legend quoted above rather than from either package's
 //   prior reasoning.
 //
@@ -117,9 +116,9 @@
 //   call's own expected-value code untouched. Both were run with their own
 //   id, confirmed red, then reverted (MUTATE unset) and confirmed green
 //   again; results are logged next to each assertion and summarised in the
-//   build report. Baseline with MUTATE unset: 2 passed, 0 failed (unchanged
-//   by the 15.09.2026 REPAIR above -- this package's dispositions did not
-//   change, only its stated reasoning).
+//   build report. Baseline with MUTATE unset: 2 passed, 0 failed (this
+//   package's dispositions are unchanged by the rule note above -- only
+//   its stated reasoning is).
 //
 // MUTATION A0-LIVENESS-BPLCON0-HIRES stimulus red: the written word's bit 15 is cleared (0x0000 instead of 0x8000), so hires never goes high (MUTATE=A0_1)
 // MUTATION A0-LIVENESS-BPLCON0-SHRES stimulus red: the second word replays the first (0x8000) instead of a different one (0x0040), so shres never goes high and the observation does not change from the first (MUTATE=A0_2)
@@ -277,7 +276,7 @@ int main(int argc, char** argv) {
             "chip answers at an address; this fixture never receives userio.v's decode logic and so can return neither "
             "a yes nor a no about it. userio.v is the module that would decide this claim -- p.287's legend names a "
             "chip, not a module, so this absence is not read as disproof, the symmetric counterpart of "
-            "ch8-appb-chip-column-paula's own presence-based rows being declined the same way after its REPAIR.");
+            "ch8-appb-chip-column-paula's own presence-based rows being declined the same way.");
     }
     do_reset();
     {
