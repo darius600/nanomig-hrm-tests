@@ -812,3 +812,113 @@ line late would together pass item 1 and item 2; P5-b excludes that.
   data can be displayed" is used.
 - **VARVBEN's "disable hard window stop"** is not explained on any page; P5's
   display window is chosen so that its end does not depend on it.
+
+---
+
+## Build notes
+
+### Programs
+
+`Makefile` (`TEST_CPP`/`PROGS`), `test_ch3_playfield_system.cpp`, `playfield.i`, and
+the `.s` programs the Makefile lists: `prog_lpen_core.s` and its family of
+one-line shims for P3/P4 (base and mutation variants), `prog_playfield_core.s`
+and its shims for P1/P2 (base and mutation variants), `prog_p5_core.s` and its
+shims for P5 (base and mutation variants).
+
+### Not built, by a scope decision
+
+- **P1 configurations C (4 planes, high resolution, 16-colour palette) and E
+  (bit 9 changed mid-line by the Copper)** are not built. Configuration B (1
+  plane, low resolution) is built and graded for every proposition and
+  precondition P1 states. The Copper-list encoder for C (`build_cop_C`) and
+  for E (`build_cop_E`), and the 4-plane bitplane-data generator
+  (`bitplane_c`), are already written but unused by any run. Building C needs
+  wiring config 'C' into the P1 loop, and P1-c's read-count check extended to
+  four planes; building E needs the 211-line WAIT-anchored mid-line trace and
+  its own contrasting cases.
+- **P2's main proposition** (items 1-3: at least three complete blocks of
+  exactly H lines, the bit-for-bit picture against `w(j, floor(i/16))` over
+  every data line, and the two C0 border samples) is not graded; only its
+  fixture and its two preconditions, P2-a and P2-b, are. Building it needs a
+  per-pixel comparator over every data line of at least three complete
+  blocks, the block/line count, and P2's own main-check and "item 1 as a
+  count" contrasts.
+
+### A tuned value, disclosed
+
+`kFieldSlack` (the field-length check's tolerance) adds a fixed 300
+`clk_sys`-cycle margin on top of the page's own one-line (227 cc) bound, for
+the period of the VERTB-polling loop the P3/P4/P5 programs use: a CPU read of
+a custom register (INTREQR here) never reaches the Chip-memory port, only the
+chip-RAM store that follows it does, so the loop's own period cannot be
+measured the way every other quantity in this package is. The margin is
+tuned on this RTL. Guard: every run of P3-b prints, for every system
+configuration, the field-length deltas it actually measured
+(`P3-b S<n> diagnostic`, `MEASURED` lines) and, where the counted reads are
+not strictly increasing, the first violating pair with its cycles and values
+(`first_violation`), so the margin's effect on the graded outcome stays
+auditable rather than hidden inside a pass.
+
+### P3-b: a measured pattern
+
+Every S1-S4 run's P3-b diagnostic shows the same shape at its first
+violation: a pair where V is unchanged and H drops from a value near the end
+of a line (207-213) to a value near its start (0-1), immediately followed (on
+the very next counted read) by V incremented by one. One or more such pairs
+occur inside the window in every one of the eight L0 bursts measured (S1-S4,
+detections 2-5), never a decrease of any other shape.
+
+### Measured, per core
+
+| Check | Page(s) | fx68k | TG68K |
+|---|---|---|---|
+| P3 main (LPEN=1: every counted read in a window is the same 17-bit value), S1-S4 | p271,p89,p229,p239 | FAIL (4/4) | FAIL (4/4) |
+| P3-a (>=100 reads/window, spread), S1-S4 | (spec) | PASS (4/4) | PASS (4/4) |
+| P3-b (L0 strictly increasing, V in 1-19; field length), S1-S4 | p216,p239 | FAIL (4/4) | FAIL (4/4) |
+| P3-c (BEAMCON0 LPENDIS=0, bit5, field length), S1,S2 (ECS) | p305,p304 | PASS (2/2) | PASS (2/2) |
+| P3-d (BPLCON0 written once, no Copper write), S1-S4 | (spec) | PASS (4/4) | PASS (4/4) |
+| P4 main (power-up: strictly increasing, V in 1-19), S1-S4 | p271 | FAIL (4/4) | FAIL (4/4) |
+| P4-a (>=100 reads/window, spread), S1-S4 | (spec) | PASS (4/4) | PASS (4/4) |
+| P4-b(program) (no write to $DFF100), S1-S4 | (spec) | PASS (4/4) | PASS (4/4) |
+| P4-b(copper) (no Copper write to $100), S1-S4 | (spec) | PASS (4/4) | PASS (4/4) |
+| P4-c (field length), S1,S2 (ECS) | (spec) | PASS (2/2) | PASS (2/2) |
+| P1 fixture/P1-a/P1-b/P1-c/P1-d/P1-e, configs A,B x S1-S4 | p59,p60,p61,p62 | PASS (48/48) | PASS (48/48) |
+| P1 main (bit 9 has no effect on RGB), configs A,B x S1-S4 | p63,p64 | PASS (8/8) | PASS (8/8) |
+| P2 fixture/P2-a/P2-b, config B x S1-S4 | p61,p62 | PASS (12/12) | PASS (12/12) |
+| P5 fixture/P5-a/P5-b/P5-c, V1,V2 x S1,S2 | (spec) | PASS (16/16) | PASS (16/16) |
+| P5 main (VBSTRT sets the blanking line), V1,V2 x S1,S2 | p293,p304,p305,p79 | FAIL (4/4) | FAIL (4/4) |
+
+112 passed, 16 failed, identical on both cores.
+
+### Mutations, per core
+
+Every mutation is run from `obj_dir_fx68k`/`obj_dir_tg68k` directly (fx68k
+needs its own microcode there), with `NMH_MUTATE` set; none runs during a
+plain `make test`.
+
+| `NMH_MUTATE` | Targets | fx68k | TG68K |
+|---|---|---|---|
+| `P3D` | P3-d | FAIL | FAIL |
+| `P3A` | P3-a | FAIL | FAIL |
+| `P3B` | P3-b | FAIL | FAIL |
+| `P3C_LPENDIS` | P3-c | FAIL | FAIL |
+| `P3C_WRONGSTD` | P3-c | FAIL | FAIL |
+| `P4MAIN` | P4 main | FAIL | FAIL |
+| `P4B_PROG` | P4-b(program) | FAIL | FAIL |
+| `P4B_COP` | P4-b(copper) | FAIL | FAIL |
+| `P4A` | P4-a | FAIL | FAIL |
+| `P4C` | P4-c | FAIL | FAIL |
+| `P1MAIN` | P1 main | FAIL | FAIL |
+| `P1A` | P1-a | FAIL | FAIL |
+| `P1C` | P1-c | FAIL | FAIL |
+| `P1D` | P1-d | FAIL | FAIL |
+| `P1E` | P1-e | FAIL | FAIL |
+| `P2B` | P2-b | FAIL | FAIL |
+| `P5MAIN` | P5 main | FAIL | FAIL |
+| `P5A` | P5-a | FAIL | FAIL |
+| `P5B` | P5-b | FAIL | FAIL |
+| `P5C` | P5-c | FAIL | FAIL |
+
+Every mutation was verified to print FAIL through the clause it targets, on
+both cores, with the rest of that run's fixture and preconditions still
+holding.
