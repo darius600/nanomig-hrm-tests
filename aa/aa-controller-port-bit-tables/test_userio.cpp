@@ -35,9 +35,9 @@
 //     JOY0DAT   Y7 Y6 Y5 Y4 Y3 Y2 xx xx  X7 X6 X5 X4 X3 X2 xx xx
 //
 //   and this RTL masks exactly those four. MEASURED: all ones written through
-//   JOYTEST come back as $FCFC. The first version of assertion 4 asserted the
+//   JOYTEST come back as $FCFC. Asserting the
 //   opposite -- that the marks described what a joystick drives rather than
-//   what the register keeps -- and went red against a register that was
+//   what the register keeps -- would go red against a register that is
 //   following the document. The first three assertions use $5C3C for the same
 //   reason: a word whose masked bits are already clear survives the round
 //   trip, and $5A3C does not.
