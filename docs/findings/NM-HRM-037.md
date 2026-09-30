@@ -10,7 +10,7 @@
 | **Report to** | **Minimig-AGA and NanoMig.** No independent implementation does this |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge), [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io), [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map), [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout) |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 14 red across four packages: `opus:8-pot.c1`, `sol:8-pot.c1`, `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12` and `opus:8-appa-pot.c13` in `hrm/ch8-pot-counter-start-and-charge`, whose other four reds are [NM-HRM-038](NM-HRM-038.md)'s; `opus:8-dio.c32`, `opus:8-dio.c33`, `sol:8-dio.c30` and `sol:8-dio.c31` in `hrm/ch8-pot-pins-as-digital-io`; `opus:8-tbl8-1.c15`, `sol:8-pin.c17`, `opus:8-tbl8-1.c16` and `sol:8-pin.c18` in `hrm/ch8-controller-pin-function-map`; `PROP-4` in `hrm/ch8-potgo-register-bit-layout`. Controls pass on the same measurement basis in each |
+| **Assertions** | 14 red across four packages: `opus:8-pot.c1`, `sol:8-pot.c1`, `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12` and `opus:8-appa-pot.c13` in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other eight reds are [NM-HRM-038](NM-HRM-038.md)'s); `opus:8-dio.c32`, `opus:8-dio.c33`, `sol:8-dio.c30` and `sol:8-dio.c31` in `hrm/ch8-pot-pins-as-digital-io`; `opus:8-tbl8-1.c15`, `sol:8-pin.c17`, `opus:8-tbl8-1.c16` and `sol:8-pin.c18` in `hrm/ch8-controller-pin-function-map`; `PROP-4` in `hrm/ch8-potgo-register-bit-layout`. Controls pass on the same measurement basis in each |
 | **Verdict of the four** | **none reproduces it** — all four give the right-hand X counter the same external treatment as the other three |
 
 ---
@@ -55,13 +55,21 @@ not sense.**
 
 ### Measured
 
-| | POT1DAT low byte (right X) |
-|---|---|
-| every input the fixture has, driven to its most active combination | `0x00 → 0x00` |
-| port 1's equivalent channel, same comparator, same run | `0x00 → 0x14 → 0x14` |
+[`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge)
+releases a counter's inputs after a warm-up longer than either printed reset
+interval and counts the lines that follow:
 
-The port-1 control is what makes this survive the units-error objection: the
-same measurement basis moves on the live channel and not on the dead one.
+| lines counted after release | reads | the pages |
+|---|---|---|
+| port 1, X alone, then Y alone, 6 and 9 | `$0006`, `$0900` | the same |
+| port 2, every input the module reads asserted, 11 | `$0b00`: Y counts, X stays 0 | both count |
+| right connector, every joystick input asserted, 6 | `$0600` | `$0606`, as the left connector reads |
+
+`opus:8-pot.c1` and `sol:8-pot.c1` (`test_userio.cpp:417-488`) and
+`sol:8-appa-pot.c15`, `opus:8-appa-pot.c12` and `opus:8-appa-pot.c13`
+(`:1396-1446`) are red; port 1 and the left connector pass in the same runs. On
+a private copy of `userio.v` that ANDs `potcap[2]` with a port-2 input,
+`_djoy2[6]`, all five turn green and nothing else moves.
 
 ## What the others say
 
@@ -81,12 +89,6 @@ builds a second mouse's middle button, a live external term, and in its
 Chameleon builds a constant `1`, the same missing gate as NanoMig's and
 MiSTer's. MiSTer has no external term on this pin in any build.
 
-Two unrelated defects were found while reading and belong to those projects
-rather than to this finding: vAmiga accumulates all four pot charge deltas into
-`chargeX0` ([`PaulaEvents.cpp:110-113`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/PaulaEvents.cpp#L110-L113)),
-and `ControlPort::chargeDX`/`chargeDY` are never assigned anywhere in that
-repository.
-
 ## Suggested change
 
 Give `potcap[2]` the external term its three siblings have. The shape is
@@ -104,7 +106,8 @@ who knows the wiring.
 
 - Four printed pages, none of them ambiguous, and one of them a table whose
   whole purpose is the pin-to-function map.
-- A control on the same comparator, in the same run, on the port that works.
+- The same measurement moves port 1's counters and port 2's Y, and a copy of
+  the RTL with one input on `potcap[2]` turns the five reds green.
 - No implementation of four agrees with the RTL.
 - The gap is visible in the source without running anything: `potcap[2]`'s
   right-hand side contains nothing from a controller port, only the POTGO
