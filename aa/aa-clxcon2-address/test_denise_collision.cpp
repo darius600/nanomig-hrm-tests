@@ -118,8 +118,7 @@ public:
         // only works if the stimulus is removed FIRST: with bpldata still
         // driven, the two settling cycles after the clear re-latch the very
         // collision that was just cleared, and every later measurement reads
-        // the first one's result. Measured 21.09.2026 -- it made a correct RTL
-        // look as though a write to $10E did nothing.
+        // the first one's result.
         step();
         dut->reg_address_in = 0;
         dut->bpldata = 0;
@@ -139,12 +138,10 @@ int main(int argc, char** argv) {
     // red, and no guard touches the comparison itself -- each swaps the
     // ADDRESS WRITTEN, which is the proposition under test in all cases.
     //
-    // Measured 21.09.2026: the first version of this file guarded only the
-    // first assertion, and `make mutate` came back "2 passed, 1 failed". A
-    // mutation run that leaves assertions green is not a weaker gate, it is a
-    // gate that has already failed -- those two were not shown capable of
-    // going red at all. One guard per assertion, and each id in `make mutate`
-    // must report exactly its own assertion red.
+    // A mutation run that leaves assertions green is not a weaker gate, it is
+    // a gate that has already failed -- an unguarded assertion is not shown
+    // capable of going red at all. One guard per assertion, and each id in
+    // `make mutate` must report exactly its own assertion red.
     if (g_mutate)
         std::cout << "MUTATE=" << g_mutate
                    << ": exactly the named assertion below must go red\n";
