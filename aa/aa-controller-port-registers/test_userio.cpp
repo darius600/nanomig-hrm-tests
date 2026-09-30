@@ -29,18 +29,17 @@
 //   so a write at one address is graded by a read at another, and an address
 //   that decoded nothing would leave the read unchanged.
 //
-// AND THE LIST SAYS WHAT JOYTEST DOES, which the first version of this package
-//   did not read: `Write to all 4 Joystick-mouse counters at once.` Assertion
-//   3 asserted the opposite -- that a load into port 1 leaves port 2 alone --
-//   and went red against an RTL that was following the document. It grades the
-//   function column now, and the document was the thing that corrected it.
+// AND THE LIST SAYS WHAT JOYTEST DOES: `Write to all 4 Joystick-mouse
+//   counters at once.` Asserting the opposite -- that a load into port 1
+//   leaves port 2 alone -- would go red against an RTL that is following
+//   the document. Assertion 3 grades the function column instead.
 //
 // WHICH LEAVES JOY1DAT'S OWN ADDRESS UNGRADED HERE, and the lot says so rather
 //   than the package pretending otherwise. After JOYTEST both ports carry the
 //   same word BY DESIGN, so the only stimulus that separates $00A from $00C is
 //   motion on one port's quadrature pair -- and the quadrature decoding is this
-//   package's first non-goal. An attempt to use it as stimulus without grading
-//   it produced a change on the wrong port, which was the idle state settling
+//   package's first non-goal. Using it as stimulus without grading
+//   it would produce a change on the wrong port, from the idle state settling
 //   rather than motion. The lot records the claim as insufficient at this
 //   boundary and names the fixture that would reach it.
 //
