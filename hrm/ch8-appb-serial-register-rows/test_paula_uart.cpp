@@ -22,8 +22,8 @@
 //   write are told apart only by which of data_o / internal state responds
 //   -- this package's own Boundary caveat (SPECIFICATION.md), applied
 //   below to every direction proposition.
-//   paula_uart.v was read directly by this agent only AFTER
-//   SPECIFICATION.md was committed (commit e004adc); the sibling package
+//   paula_uart.v was read directly only AFTER
+//   SPECIFICATION.md was committed; the sibling package
 //   hrm/ch8-uart-frame-and-status's Makefile was read earlier, before the spec, only to
 //   see how this fixture is *built* (verilator invocation), per this
 //   package's own task -- not for its port list or its assertions, which
