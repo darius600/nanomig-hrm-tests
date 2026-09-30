@@ -1105,7 +1105,7 @@ static void group_G14_G17() {
     arm_potgo(0x0001);
     set_mouse(1, 1, 1);
     settle(3);
-    pulse(5);
+    pulse(kResetInterval + 5); // past the interval, so a moved counter reads nonzero, not stuck at 0
 #ifdef MUT_G14G17
     uint16_t p0 = pot1dat(), p1 = pot0dat(); // MUTATED: registers swapped
 #else
@@ -1117,7 +1117,7 @@ static void group_G14_G17() {
     arm_potgo(0x0001);
     set_joy1_pin5(1);
     settle(3);
-    pulse(5);
+    pulse(kResetInterval + 5);
     uint16_t p0b = pot0dat(), p1b = pot1dat();
     bool port2_pin_only_moves_pot1dat = (p0b == 0x0000) && (p1b != 0x0000);
 
@@ -1139,30 +1139,32 @@ static void group_G14_G17() {
     arm_potgo(0x0001);
     set_mouse(0, 0, 1);
     settle(3);
-    pulse(9);
+    pulse(kResetInterval + 9);
 #ifdef MUT_G14G17
     uint16_t xonly = pot1dat(); // MUTATED: wrong register read
 #else
     uint16_t xonly = pot0dat();
 #endif
-    bool x_is_low_byte = ((xonly & 0xFF) == 9) && ((xonly >> 8) == 0);
+    bool x_is_low_byte = matches_page_count(xonly & 0xFF, 9) && ((xonly >> 8) == 0);
 
     full_reset();
     arm_potgo(0x0001);
     set_mouse(0, 1, 0);
     settle(3);
-    pulse(9);
+    pulse(kResetInterval + 9);
 #ifdef MUT_G14G17
     uint16_t yonly = pot1dat(); // MUTATED: wrong register read
 #else
     uint16_t yonly = pot0dat();
 #endif
-    bool y_is_high_byte = ((yonly >> 8) == 9) && ((yonly & 0xFF) == 0);
+    bool y_is_high_byte = matches_page_count(yonly >> 8, 9) && ((yonly & 0xFF) == 0);
 
     bool byte_assignment_ok = x_is_low_byte && y_is_high_byte;
-    note("POT0DAT with only the X counter released: $" + hex4(xonly) +
-         "; with only Y released: $" + hex4(yonly) +
-         " -- Y occupies bits 15-8, X occupies bits 7-0.");
+    note("POT0DAT with only the X counter released, release-then-run-" +
+         std::to_string(kResetInterval + 9) + "-ticks-unbroken (8+9): $" +
+         hex4(xonly) + "; with only Y released: $" + hex4(yonly) +
+         " -- Y occupies bits 15-8, X occupies bits 7-0, graded against the "
+         "page's reset interval (9 or 10), not the raw tick total.");
     expect(byte_assignment_ok, "opus:8-potreg.c3");
     expect(byte_assignment_ok, "sol:8-pot.c30");
     expect(byte_assignment_ok, "opus:8-potreg.c4");
@@ -1176,6 +1178,14 @@ static void group_G14_G17() {
 static void group_G19_G21() {
     full_reset();
     arm_potgo(0x0001);
+    pulse(kResetInterval); // past the interval first, with every pin still
+                            // held (default from full_reset()): this claim
+                            // is about four independently-addressable
+                            // counters reaching four DISTINCT values, not
+                            // about when counting starts, and the four
+                            // target values below (3/4/9/13) would collide
+                            // once shifted by an uncertain 7-or-8-line
+                            // interval if graded per-phase instead
     set_mouse(0, 0, 1); settle(3); pulse(3);      // pot0x = 3
     set_mouse(0, 0, 0); settle(2);
 #ifdef MUT_G19G21
