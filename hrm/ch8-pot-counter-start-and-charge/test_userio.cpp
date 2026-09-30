@@ -976,6 +976,12 @@ static void group_G10_G20() {
     arm_potgo(0x0001);
     set_mouse(0, 0, 1);
     settle(3);
+    pulse(kResetInterval); // past the interval first: the wrap claim (8-bit
+                            // width, no flag/stop) is a MODULAR property,
+                            // independent of when counting starts, so it is
+                            // graded relative to this baseline rather than
+                            // against an absolute tick-derived byte value
+    uint8_t base = (uint8_t)(pot0dat() & 0xFF);
 #ifdef MUT_G10
     pulse(254); // MUTATED: one pulse short
 #else
@@ -986,10 +992,14 @@ static void group_G10_G20() {
     uint16_t at256 = pot0dat();
     pulse(1);
     uint16_t at257 = pot0dat();
-    bool wraps = ((at255 & 0xFF) == 0xFF) && ((at256 & 0xFF) == 0x00) && ((at257 & 0xFF) == 0x01);
-    note("pot0x after 255/256/257 released ticks: $" + hex4(at255) + " / $" +
-         hex4(at256) + " / $" + hex4(at257) +
-         " -- an 8-bit counter that wraps with no flag and no stop.");
+    uint8_t d255 = (uint8_t)((at255 & 0xFF) - base);
+    uint8_t d256 = (uint8_t)((at256 & 0xFF) - base);
+    uint8_t d257 = (uint8_t)((at257 & 0xFF) - base);
+    bool wraps = (d255 == 0xFF) && (d256 == 0x00) && (d257 == 0x01);
+    note("pot0x, past the interval (base=$" + hex4(base) + "), then +255/+256/"
+         "+257 more released ticks: delta $" + hex4(d255) + " / $" + hex4(d256) +
+         " / $" + hex4(d257) + " from base -- an 8-bit counter that wraps "
+         "with no flag and no stop, regardless of the interval's own length.");
     expect(wraps, "opus:8-potchg.c8");
     expect(wraps, "sol:8-pot.c24");
     expect(wraps, "opus:8-appa-pot.c10");
@@ -1003,21 +1013,21 @@ static void group_G12() {
     full_reset();
     arm_potgo(0x0001);
     set_mouse(0, 0, 1);
-    settle(3); pulse(6);
+    settle(3); pulse(kResetInterval + 6);
     set_mouse(0, 0, 0); settle(2);
     uint16_t v_x0 = pot0dat() & 0xFF;
 
     full_reset();
     arm_potgo(0x0001);
     set_mouse(0, 1, 0);
-    settle(3); pulse(6);
+    settle(3); pulse(kResetInterval + 6);
     set_mouse(0, 0, 0); settle(2);
     uint16_t v_y0 = (pot0dat() >> 8) & 0xFF;
 
     full_reset();
     arm_potgo(0x0001);
     set_joy1_pin5(1);
-    settle(3); pulse(6);
+    settle(3); pulse(kResetInterval + 6);
     set_joy1_pin5(0); settle(2);
     uint16_t v_y1 = (pot1dat() >> 8) & 0xFF;
 
@@ -1028,15 +1038,18 @@ static void group_G12() {
 #else
     set_potgo_bits(0x2000); // bits 13:12 = 1,0 -> releases pot1x
 #endif
-    settle(2); pulse(6);
+    settle(2); pulse(kResetInterval + 6);
     set_potgo_bits(0x0000); settle(2);
     uint16_t v_x1 = pot1dat() & 0xFF;
 
-    bool all_equal = (v_x0 == 6) && (v_y0 == 6) && (v_y1 == 6) && (v_x1 == 6);
-    note("All four counters, released for 6 ticks then held by their own "
-         "gate: pot0x=" + std::to_string(v_x0) + " pot0y=" + std::to_string(v_y0) +
+    bool all_equal = matches_page_count(v_x0, 6) && matches_page_count(v_y0, 6) &&
+                      matches_page_count(v_y1, 6) && matches_page_count(v_x1, 6);
+    note("All four counters, release-then-run-" + std::to_string(kResetInterval + 6) +
+         "-ticks-unbroken (8+6) then held by their own gate: pot0x=" +
+         std::to_string(v_x0) + " pot0y=" + std::to_string(v_y0) +
          " pot1y=" + std::to_string(v_y1) + " pot1x=" + std::to_string(v_x1) +
-         " -- the same count/hold rule for all four.");
+         " -- the same count/hold rule for all four, graded against the "
+         "page's reset interval (6 or 7), not the raw tick total.");
     expect(all_equal, "opus:8-fig8-5.c2");
     expect(all_equal, "sol:8-fig8-5.c3");
 }
@@ -1051,9 +1064,9 @@ static void group_G13() {
     set_mouse(0, 0, 1);
     settle(3);
 #ifdef MUT_G13
-    pulse(8); set_mouse(0, 0, 0); settle(2); pulse(2); // MUTATED: swapped with the "late" run below
+    pulse(kResetInterval + 8); set_mouse(0, 0, 0); settle(2); pulse(2); // MUTATED: swapped with the "late" run below
 #else
-    pulse(3); set_mouse(0, 0, 0); settle(2); pulse(7);
+    pulse(kResetInterval + 3); set_mouse(0, 0, 0); settle(2); pulse(7);
 #endif
     uint16_t early_cross = pot0dat() & 0xFF;
 
@@ -1062,17 +1075,24 @@ static void group_G13() {
     set_mouse(0, 0, 1);
     settle(3);
 #ifdef MUT_G13
-    pulse(3); set_mouse(0, 0, 0); settle(2); pulse(7);
+    pulse(kResetInterval + 3); set_mouse(0, 0, 0); settle(2); pulse(7);
 #else
-    pulse(8); set_mouse(0, 0, 0); settle(2); pulse(2);
+    pulse(kResetInterval + 8); set_mouse(0, 0, 0); settle(2); pulse(2);
 #endif
     uint16_t late_cross = pot0dat() & 0xFF;
 
+    // Both crossing points are shifted past the interval by the same
+    // kResetInterval offset, so the two spans stay equal to each other
+    // (kResetInterval+10 ticks each) and the relative comparison below is
+    // unaffected by the interval's existence or its exact length -- unlike
+    // G6_G11/FINALCOUNT, this claim is not about the interval itself.
     bool later_is_larger = (late_cross > early_cross);
-    note("Over an equal ten-tick span, a counter crossing (gate closing) at "
-         "tick 3 ends at " + std::to_string(early_cross) +
-         "; one crossing at tick 8 ends at " + std::to_string(late_cross) +
-         " -- later crossing, larger count.");
+    note("Over an equal (" + std::to_string(kResetInterval + 10) +
+         "-tick) span past the interval, a counter crossing (gate closing) "
+         "at tick " + std::to_string(kResetInterval + 3) + " ends at " +
+         std::to_string(early_cross) + "; one crossing at tick " +
+         std::to_string(kResetInterval + 8) + " ends at " +
+         std::to_string(late_cross) + " -- later crossing, larger count.");
     expect(later_is_larger, "opus:8-fig8-5.c4");
 }
 
