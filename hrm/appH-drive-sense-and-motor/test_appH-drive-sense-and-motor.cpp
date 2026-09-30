@@ -414,6 +414,13 @@ int main(int argc, char** argv) {
         Rig r;
         bool mut = mutating("RDY-DISK-PRESENCE");
         r.select_with_motor(0, /*motor_on_level=*/true);  // motor latched ON at a genuine select edge, p.369's order
+        // The page's own sentence starts with the motor condition ("When a
+        // disk drive's motor is on ..."); select_with_motor()'s comment
+        // above asserted the latch took, but nothing here MEASURED it.
+        // Read it back the same way MTRXD-FOUR-INDEPENDENT-LATCHES-P369/P370
+        // do (through `index`, no clock edge), right after the select, and
+        // require it before trusting anything _ready does below.
+        bool motor_latched_on = r.read_index_now();
         r.unmount(0);     // disk absent
         bool ready_absent = r.ready();
         bool ready_present;
@@ -429,20 +436,23 @@ int main(int argc, char** argv) {
             r.deselect_all();
             ready_present = r.ready();
         }
-        checks.note("RDY-DISK-PRESENCE: drive0 selected, motor ON, disk absent -> ready=" +
+        checks.note("RDY-DISK-PRESENCE: drive0 selected, motor latch=" +
+                    std::to_string(motor_latched_on) + ", disk absent -> ready=" +
                     std::to_string(ready_absent) + "; then " +
                     std::string(mut ? "deselected (mutated substitute)" : "disk mounted, still selected") +
                     " -> ready=" + std::to_string(ready_present));
-        checks.expect(ready_absent != ready_present,
+        checks.expect(motor_latched_on && (ready_absent != ready_present),
             "RDY-DISK-PRESENCE (p.368, RDY-: 'When a disk drive's motor is on, this line indicates the "
-            "selected disk is installed and rotating at speed.'): with selection and motor both held fixed "
-            "(motor ON, drive selected throughout), _ready must read differently for disk-absent than for "
-            "disk-present to realise the printed claim -- with the motor on, p.368 has the line indicate "
-            "whether a disk is installed, so removing or installing one must change it. This is a THIRD axis, "
-            "distinct from hrm/appDE-disk-interface's no-disk reading of p.334 and from the page-244 claim "
-            "declined for the motor's OWN off-state being undefined: here selection and motor are both fixed "
-            "and only disk presence varies, which no accepted assertion moves against "
-            "_ready [claims: opus:AHJ-060, sol:H-036]");
+            "selected disk is installed and rotating at speed.'): the page's own precondition, measured -- "
+            "the motor latch read back through `index` right after select_with_motor() -- must itself be "
+            "on before this can mean anything; with selection and motor both held fixed (motor ON, drive "
+            "selected throughout), _ready must then read differently for disk-absent than for disk-present "
+            "to realise the printed claim -- with the motor on, p.368 has the line indicate whether a disk "
+            "is installed, so removing or installing one must change it. This is a THIRD axis, distinct from "
+            "hrm/appDE-disk-interface's no-disk reading of p.334 and from the page-244 claim declined for the "
+            "motor's OWN off-state being undefined: here selection and motor are both fixed and only disk "
+            "presence varies, which no accepted assertion moves against _ready [claims: opus:AHJ-060, "
+            "sol:H-036]");
     }
 
     // ========================================================================
@@ -485,6 +495,8 @@ int main(int argc, char** argv) {
         Rig r(1);  // floppy_drives=1: drive 1 present, see FIXTURE-LIVE-DRIVE1
         bool mut = mutating("RDY-DISK-PRESENCE-DRIVE1");
         r.select_with_motor(1, /*motor_on_level=*/true);
+        // Same precondition as RDY-DISK-PRESENCE above, read on drive 1.
+        bool motor_latched_on = r.read_index_now();
         r.unmount(1);     // disk absent
         bool ready_absent = r.ready();
         bool ready_present;
@@ -500,16 +512,19 @@ int main(int argc, char** argv) {
             r.deselect_all();
             ready_present = r.ready();
         }
-        checks.note("RDY-DISK-PRESENCE-DRIVE1: drive1 selected, motor ON, disk absent -> ready=" +
+        checks.note("RDY-DISK-PRESENCE-DRIVE1: drive1 selected, motor latch=" +
+                    std::to_string(motor_latched_on) + ", disk absent -> ready=" +
                     std::to_string(ready_absent) + "; then " +
                     std::string(mut ? "deselected (mutated substitute)" : "disk mounted, still selected") +
                     " -> ready=" + std::to_string(ready_present));
-        checks.expect(ready_absent != ready_present,
+        checks.expect(motor_latched_on && (ready_absent != ready_present),
             "RDY-DISK-PRESENCE-DRIVE1 (p.368, RDY-: 'When a disk drive's motor is on, this line indicates the "
-            "selected disk is installed and rotating at speed.'): with drive 1 configured present, selection "
-            "and motor both held fixed (motor ON, drive 1 selected throughout), _ready must read differently "
-            "for disk-absent than for disk-present to realise the printed claim on a drive other than drive 0 "
-            "[claims: opus:AHJ-060, sol:H-036]");
+            "selected disk is installed and rotating at speed.'): the page's own precondition, measured -- the "
+            "motor latch read back through `index` right after select_with_motor() -- must itself be on before "
+            "this can mean anything; with drive 1 configured present, selection and motor both held fixed "
+            "(motor ON, drive 1 selected throughout), _ready must then read differently for disk-absent than "
+            "for disk-present to realise the printed claim on a drive other than drive 0 [claims: "
+            "opus:AHJ-060, sol:H-036]");
     }
 
     // ========================================================================
@@ -783,9 +798,9 @@ int main(int argc, char** argv) {
 }
 
 // MUTATION FIXTURE-LIVE stimulus red: the drive is never actually selected, so the "asserts once selected" half is never exercised (MUTATE=FIXTURE-LIVE).
-// MUTATION RDY-DISK-PRESENCE stimulus green: this assertion is RED at baseline (_ready reads the same with and without a disk installed), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label (MUTATE=RDY-DISK-PRESENCE).
+// MUTATION RDY-DISK-PRESENCE stimulus green: this assertion is RED at baseline (_ready reads the same with and without a disk installed), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label -- the motor-latch precondition is read the same way and reads on (motor_latched_on=1) in both the baseline and this mutated run (MUTATE=RDY-DISK-PRESENCE).
 // MUTATION FIXTURE-LIVE-DRIVE1 stimulus red: drive 1 is never actually selected, so the "asserts once selected" half is never exercised on drive 1 (MUTATE=FIXTURE-LIVE-DRIVE1).
-// MUTATION RDY-DISK-PRESENCE-DRIVE1 stimulus green: this assertion is RED at baseline (_ready reads the same on drive 1 with and without a disk installed, same defect as RDY-DISK-PRESENCE), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label (MUTATE=RDY-DISK-PRESENCE-DRIVE1).
+// MUTATION RDY-DISK-PRESENCE-DRIVE1 stimulus green: this assertion is RED at baseline (_ready reads the same on drive 1 with and without a disk installed, same defect as RDY-DISK-PRESENCE), so per the rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (deselecting the drive) for the disk-presence toggle, through the identical != comparator and the same label -- the motor-latch precondition is read the same way and reads on (motor_latched_on=1) in both the baseline and this mutated run (MUTATE=RDY-DISK-PRESENCE-DRIVE1).
 // MUTATION INDEX-SEL-MOTOR-GATE stimulus red: the deselection step is skipped, so the drive stays selected and the "selected drive" condition is never exercised (MUTATE=INDEX-SEL-MOTOR-GATE).
 // MUTATION WRITE-DATA-SELECT-GATE stimulus red: the second trial selects the SAME drive as the first instead of a different one, so "selecting a different drive must move the request with it" is never exercised (MUTATE=WRITE-DATA-SELECT-GATE).
 // MUTATION CHANGE-CLEAR-NEEDS-SELECT stimulus red: the drive is selected BEFORE the "deselected step" attempt, defeating the very condition under test (MUTATE=CHANGE-CLEAR-NEEDS-SELECT).
