@@ -115,7 +115,7 @@ dut->porta_in = 0x3F;
 ```
 
 `0x3F` is every line high in the six-bit packing Verilator gives `porta_in[7:2]`
-(`test_ch8-ciaapra-disk-sense-bits.cpp:240-247`): the idle state p.354
+(`test_ch8-ciaapra-disk-sense-bits.cpp:258-265`): the idle state p.354
 describes, both fire buttons open and no drive-status line asserted.
 
 - **stimulus**, for each position n, PA0–PA7: DDRA = 0 with PRA = 0, the
@@ -139,12 +139,11 @@ line is held low anywhere in the package, so the written 1 over a line held
 low, the case no page decides, is not presented.
 
 [`hrm/ch8-ciaapra-disk-sense-bits`](../../hrm/ch8-ciaapra-disk-sense-bits)'s
-PROP-INPUT grades that held-low case for PA2–PA5: it drives one position's line
-low (`test_ch8-ciaapra-disk-sense-bits.cpp:295`), sets that position's
-direction bit and writes 1 (`:308-309`), and expects 0 (`:311`); it is green,
-`1 passed, 0 failed`. The two packages grade no common state: an implementation
-in which a line held low wins over an output driving 1, and the output wins
-otherwise, passes both.
+PROP-INPUT holds one line of PA2–PA5 low
+(`test_ch8-ciaapra-disk-sense-bits.cpp:315`), writes 1 there with that
+position's direction bit clear (`:331-332`) and expects 0 (`:335`); it is
+green, `1 passed, 0 failed`. Neither package presents a written 1 over a line
+held low with the direction bit set.
 
 ## What the others say
 
@@ -239,14 +238,14 @@ The change leaves one choice, and only a line held low separates its two forms:
   at every position; at PA1 and PA0, which have no line into `ciaa`, that term
   alone, as now (`ciaa.v:262`). A line held low then reads 0 whatever was
   written. This is the read WinUAE's changelog gives the DIP 8520 and WinUAE's
-  default gives PA7/PA6, and the read path the 8520R4 draws for PA0; it keeps
-  `hrm/ch8-ciaapra-disk-sense-bits`'s PROP-INPUT green.
+  default gives PA7/PA6, and the read path the 8520R4 draws for PA0.
 - **the written value**: the output register at every output bit, the way Denise
-  does in one line; what WinUAE and vAmiga model for the 391078-01. It turns
-  PROP-INPUT red, which sets a position's direction bit and writes 1 over a line
-  held low and expects 0 (`test_ch8-ciaapra-disk-sense-bits.cpp:308-311`).
+  does in one line; what WinUAE and vAmiga model for the 391078-01.
 
-This package passes either. Which part a core should follow over a line held
+This package passes either, and so does PROP-INPUT, which writes 1 over a line
+held low only with the direction bit clear
+(`test_ch8-ciaapra-disk-sense-bits.cpp:331-335`), where both forms read the
+line. Which part a core should follow over a line held
 low is the question for Amiga specialists, and no page on this finding answers
 it.
 
@@ -276,9 +275,9 @@ does is a question for the same specialists.
   closed fire button or an asserting drive holds a line low, no page predicts
   the read (*What the HRM says*), and the four split again there.
 - p.241, p.244 and p.339 describe PA2–PA5 as the disk subsystem's inputs and
-  DDRA as set to 0x03. None says a direction bit cannot make them outputs, but
-  `hrm/ch8-ciaapra-disk-sense-bits` reads p.244 that way; it grades that
-  reading only over a line held low, a case p.341 does not decide.
+  DDRA as set to 0x03. None says a direction bit cannot make them outputs, and
+  `hrm/ch8-ciaapra-disk-sense-bits` grades them as inputs only with their
+  direction bits clear.
 - Only one implementation of four does what the page says by default whatever is
   attached; vAmiga does only while no mouse is attached.
 - Two of the four switch the read on a part number, vAmiga's switch modelled on
