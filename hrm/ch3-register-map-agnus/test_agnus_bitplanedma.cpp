@@ -889,7 +889,7 @@ int main(int argc, char** argv) {
         "boundary'): not asserted -- this claim quantifies over EVERY pointer-type register in the machine (bitplane, "
         "audio, sprite, disk, copper, blitter); this package's own 12 pointer-address assertions above (BPL1PTH-ADDRESS-"
         "0E0 through BPL6PTL-ADDRESS-0F6) demonstrate only the bitplane pointer family -- same ground as "
-        "hrm/ch5-audio-location-pointer's COVERAGE REPAIR 3: a universal claim is not established by a single family's "
+        "hrm/ch5-audio-location-pointer's COVERAGE NOTE 3: a universal claim is not established by a single family's "
         "witness, however structural the mechanism looks. Needs either a predicate over every pointer family (a "
         "top-level fixture spanning all of them) or a narrower split id scoped to the bitplane pointers this package "
         "actually tests.");

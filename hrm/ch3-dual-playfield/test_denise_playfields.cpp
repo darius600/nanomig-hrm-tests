@@ -807,7 +807,7 @@ int main(int argc, char** argv) {
         "claim's own qualifying clause (unblocked by sprite group "
         "SP01/SP23) needs a sprite input this module does not have (same "
         "gap as the two records just above). This suite's own precedent "
-        "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a "
+        "(hrm/ch5-audio-location-pointer, COVERAGE NOTE 2) is that a "
         "multi-clause claim is not partially kept on the one clause that "
         "happens to be established, so this id is declined as a whole "
         "rather than added to PF2PRI-PRIORITY's citation list.");
@@ -842,7 +842,7 @@ int main(int argc, char** argv) {
         "but the claim's own third case (a sprite behind a transparent "
         "playfield) needs a sprite input this module does not have, same "
         "gap as sol:3-dual-color.c24 just above. This suite's own "
-        "precedent (hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is "
+        "precedent (hrm/ch5-audio-location-pointer, COVERAGE NOTE 2) is "
         "that a multi-clause claim is not partially kept on the clauses "
         "that happen to be established, so this id is declined as a "
         "whole rather than kept on TRANSPARENCY-FALLTHROUGH's citation "

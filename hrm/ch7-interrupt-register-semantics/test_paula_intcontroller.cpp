@@ -764,7 +764,7 @@ int main(int argc, char** argv) {
     // sentence. Per this suite's convention that a multi-clause id is not
     // partially kept on a citation that only covers part of it (the same
     // shape as hrm/ch3-register-map-denise's opus:7-appB.c34 and
-    // hrm/ch5-audio-location-pointer's COVERAGE REPAIR 2), each bundled id
+    // hrm/ch5-audio-location-pointer's COVERAGE NOTE 2), each bundled id
     // below is declined, not weakened onto one of its own clauses' lines.
     // ========================================================================
     checks.record(

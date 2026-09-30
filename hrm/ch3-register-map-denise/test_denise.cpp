@@ -1084,7 +1084,7 @@ int main(int argc, char** argv) {
         "single claim -- the write-only clause and the address clause are both established here (BPLCON2-WO, "
         "BPLCON2-ADDR above); function is excluded by this file's own Non-goals paragraph (see "
         "sol:7-appB-bplcon2.c4 above) and chip is declined in the sol:7-appB-bplcon2.c3 record just above. This "
-        "suite's precedent (hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id is not "
+        "suite's precedent (hrm/ch5-audio-location-pointer, COVERAGE NOTE 2) is that a multi-clause id is not "
         "partially kept on the clauses that happen to be established, so this bundled id is declined as a whole, "
         "not weakened onto BPLCON2-WO's or BPLCON2-ADDR's citation list.");
     checks.record(
@@ -1140,7 +1140,7 @@ int main(int argc, char** argv) {
         "write-only measurement -- BPLCON0-WO's own text already limits itself to 'the Denise-visible half', "
         "BPLCON1's chip clause is declined at opus:7-appA-bplcon2.c3 above, and BPLCON2/BPLCON3's are declined at "
         "sol:7-appA-bplcon2.c3 and sol:7-appB-bplcon2.c3 above. This suite's own precedent "
-        "(hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id bundling several registers "
+        "(hrm/ch5-audio-location-pointer, COVERAGE NOTE 2) is that a multi-clause id bundling several registers "
         "and several properties is not partially kept on the clauses that happen to be established, so this bundled "
         "id is declined as a whole, matching this file's own opus:7-appB.c34 record above.");
 
@@ -1190,7 +1190,7 @@ int main(int argc, char** argv) {
         "7-appC-map-bplcon2.c1-c5, of which only .c3 and .c4 were routed to this package). Declined as a whole, "
         "matching this file's own bundling precedent for the identical p.291 bundle (opus:7-appB.c34 above): its "
         "chip clause names a physical chip for the same reason sol:7-appC-map-bplcon2.c4 is declined just above, "
-        "and this suite's precedent (hrm/ch5-audio-location-pointer, COVERAGE REPAIR 2) is that a multi-clause id "
+        "and this suite's precedent (hrm/ch5-audio-location-pointer, COVERAGE NOTE 2) is that a multi-clause id "
         "is not partially kept on the clauses that happen to be established. Of sol's five-way split, only c3 "
         "(direction) is graded in this package, on BPLCON2-WO above; c4 (chip) is declined just above. c1 "
         "(address), c2 ('chg') and c5 (function) were routed to hrm/ch7-bplcon2-live-bits-and-ecs, not to this "
