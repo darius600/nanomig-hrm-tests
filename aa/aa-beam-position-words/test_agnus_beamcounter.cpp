@@ -182,9 +182,8 @@ int main(int argc, char** argv) {
         // not match.
         h.write(A_VPOSW, 0x0000);
         // hpos is put MID-LINE, not at zero: a horizontal counter of zero is
-        // the end-of-line condition, and the first version of this assertion
-        // wrote it there and watched the line number step from 0xAA to 0xAB
-        // while it measured.
+        // the end-of-line condition, and writing it there would let the line
+        // number step from 0xAA to 0xAB while measuring.
         h.write(A_VHPOSW, (uint16_t)((m_vpos2 << 8) | 0x20));
         const uint16_t before = h.read(A_VHPOSR);
         for (int i = 0; i < 6; ++i) h.cck_tick();
