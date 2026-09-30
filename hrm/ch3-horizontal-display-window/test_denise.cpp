@@ -266,8 +266,7 @@
 // carries no pass/fail state to add to this count). Every entry below was
 // replayed against the current package (MUTATE=<name> against the built
 // binary, per-mutation) to confirm the numbers quoted are what this package
-// measures now, not what an earlier revision measured before
-// D-BRDNTRAN-HAS-NO-EFFECT was repaired from an expect() to a record():
+// measures now:
 //
 // MUTATION FIXTURE-DATA-PATH-LIVE stimulus red: the BPL1DAT trigger write
 //   changed from 0xACE1 to 0x0000 -> FAIL ("12 passed, 1 failed"), only
