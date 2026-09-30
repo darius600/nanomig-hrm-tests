@@ -113,15 +113,21 @@
 //   omits driving `flag` high (ICR stays armed but the pin is never
 //   actually driven) -> FAIL, ICR bit 4 read 0 both before and after.
 //   RUN: 6 passed, 4 failed. Reverted.
-// MUTATION sol:F-handshake.c7 opus:F-handshake.c6 stimulus red:
-//   PROP-FLAG-EDGE-POLARITY's stimulus omits driving `flag` high at all
-//   before step 2's clocked read (no transition anywhere in the stimulus)
-//   -> FAIL, step 2's clocked read comes back 0x00 (bit 4 clear) where the
-//   unmutated comparator still expects it SET -- proving that clause
-//   requires a real negative transition to pass, not merely a read of
-//   whatever ICR already holds. RUN: 7 passed, 3 failed (same totals as
-//   baseline: the assertion is still the same one FAIL, now through the
-//   step-2 clause instead of step-3's). Reverted.
+// MUTATION PROP-FLAG-EDGE-POLARITY stimulus green: already red at baseline
+//   (see the header's RTL-facts block: cia_int.v's icr[4]<=icr[4]|flag is a
+//   level-sensitive OR with no edge detector, so step 3 stays SET while
+//   flag is held instead of clearing) -- a failing assertion cannot be made
+//   to fail harder. Substituted the paired CONTROL below (same
+//   read_icr_clocked() channel and timing, same bit4-SET-after-transition /
+//   bit4-CLEAR-after-hold comparator shape, flag returned to 0 before the
+//   first read instead of held across it) -> PASS (measured: bit 4 read SET
+//   after the transition, then CLEAR after the hold), proving the
+//   comparator is not vacuous. RUN: 7 passed, 3 failed (baseline unchanged;
+//   the control is not itself graded, so this substitution moves nothing in
+//   the pass/fail totals). A stimulus that omits the transition entirely
+//   also moves this assertion's OWN step-2 clause to FAIL (step 2's clocked
+//   read then comes back 0x00 where the unmutated comparator expects SET),
+//   confirming that clause is live too.
 // MUTATION sol:F-ciab-map.c23 stimulus red: PROP-DDRA-POSITION's stimulus
 //   skips the DDRA=0xFF write (leaves DDRA=0, input mode) while still
 //   writing PRA=0xC0 then 0x00 -> FAIL, porta_out read pulled-high (0x3)
