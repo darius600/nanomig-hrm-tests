@@ -622,10 +622,10 @@ int main(int argc, char** argv) {
             "if channels 1 and 2 land on ldatasum) - 'Channels 1 and 2 are "
             "connected to the left-side stereo output jack' (p.137). "
             "Measured on ldatasum (multiply-then-sum path). A red result "
-            "here reproduces NM-HRM-002 (already registered against the "
-            "sibling package hrm/ch5-audio-stereo-routing/, not a new finding): "
-            "paula_audio_mixer.v:77 sums channels 1 and 2 into rdatasum, "
-            "not ldatasum. 5-p137.c7, 5-chan.c2.");
+            "here reproduces NM-HRM-002, red against p.137, the same finding "
+            "hrm/ch5-audio-stereo-routing/ also grades: paula_audio_mixer.v:77 "
+            "sums channels 1 and 2 into rdatasum, not ldatasum. 5-p137.c7, "
+            "5-chan.c2.");
     }
 
     // =====================================================================
@@ -646,10 +646,10 @@ int main(int argc, char** argv) {
             "64=17+47 if channels 0 and 3 land on rdatasum) - 'Channels 0 "
             "and 3 are connected to the right-side output jack' (p.137). "
             "Measured on rdatasum (multiply-then-sum path). A red result "
-            "here reproduces NM-HRM-002 (already registered against the "
-            "sibling package hrm/ch5-audio-stereo-routing/, not a new finding): "
-            "paula_audio_mixer.v:76 sums channels 0 and 3 into ldatasum, "
-            "not rdatasum. 5-p137.c8, 5-chan.c3.");
+            "here reproduces NM-HRM-002, red against p.137, the same finding "
+            "hrm/ch5-audio-stereo-routing/ also grades: paula_audio_mixer.v:76 "
+            "sums channels 0 and 3 into ldatasum, not rdatasum. 5-p137.c8, "
+            "5-chan.c3.");
     }
 
     // =====================================================================
