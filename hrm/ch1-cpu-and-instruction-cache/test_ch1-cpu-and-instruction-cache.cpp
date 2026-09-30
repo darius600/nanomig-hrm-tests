@@ -482,8 +482,7 @@ int main() {
     return checks.failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-16): 3 passed, 1
-//   failed. CACHE-WRITE-VISIBILITY is RED -- a genuine finding, not
+// RESULTS: 3 passed, 1 failed. CACHE-WRITE-VISIBILITY is RED -- a genuine finding, not
 //   adjusted to pass: this design's cpu_cache_new updates a matching
 //   cached instruction line on an ordinary CPU write (cpu_cache_new.v:
 //   298-309, CPU_SM_WRITE sets cpu_sm_iram0_we/iram1_we from
@@ -505,7 +504,7 @@ int main() {
 //   cycles of margin before any run here was reported. Not left as a
 //   discovered-then-hidden defect in this file's own measurement.
 //
-// MUTATION LOG (WSL/Verilator 5.052, 2026-09-16; each entry actually run:
+// MUTATION LOG (each entry actually run:
 //   rebuild with `make MUT=X test` -> read the PASS/FAIL lines -> confirm
 //   only the named assertion changed colour relative to the 3-passed/
 //   1-failed baseline -> rebuild with no MUT -> confirm the baseline was
