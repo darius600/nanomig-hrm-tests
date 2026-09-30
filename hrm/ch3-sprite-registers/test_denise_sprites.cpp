@@ -267,7 +267,7 @@
 // MUTATION SH0-IS-HALF-OF-POS-BYTE-STEP stimulus red: the "hi" measurement's SPR0CTL value changed from 0x01 (SH0) to 0x02 (bit 1, a bit this RTL never stores anywhere) -> FAIL ("4 passed, 3 failed"), only SH0-IS-HALF-OF-POS-BYTE-STEP newly red (measured delta became 0, not the asserted 1). Reverted to 0x01: 5/2, same two findings.
 // MUTATION SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING stimulus red: the attached-case SPR1CTL write changed from 0x80 (ATTACH set) to 0x00, so sprite 1 is armed but never actually attached -> FAIL ("4 passed, 3 failed"), only SPRXPOS-SPRXCTL-JOINTLY-LOAD-BEARING newly red (the attached measurement returned colour 1, the same as the unattached one, instead of 13). Reverted to 0x80: 5/2, same two findings.
 // MUTATION SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT stimulus red: built with -DMUT_BIT0=1, which withholds the SH0 stimulus in this assertion's own independent hi0 measurement (SPR0CTL held at 0x00 instead of 0x01, spres=0) -> FAIL ("5 passed, 2 failed"), only SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT newly red (sh0_delta0 became 0, not the asserted 1); SH0-IS-HALF-OF-POS-BYTE-STEP, which shares this block's earlier delta[]/superhires_spres loop but not this flag, stayed green, confirming the isolation held. Rebuilt with no flags: 6/1, the one finding unchanged.
-// MUTATION SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE oracle flip green: built with -DMUT_BIT4_ORACLE=1, which changes only the expected relation to shsh1_delta == 0 (the sh0_delta/shsh1_delta measurement is unchanged) -> PASS ("11 passed, 0 failed"), only SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE newly green, still reading sh0_delta=4, shsh1_delta=0 -- the same two numbers as the unmutated run, now satisfying the mutated relation instead of the page's own one. Confirms the comparator and the 28 MHz measurement are live, and that the unmutated run's red comes from the relation stated in the assertion's own label, not from a stuck or unreachable measurement. Rebuilt with no flags: 10/1, the one finding unchanged.
+// MUTATION SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE stimulus green: already red at baseline (bit 4 is dead code, the FINDING above) -- a failing assertion cannot be made to fail harder, so built with -DMUT_BIT4_GREEN_CONTROL=1, which leaves the relation (armed && sh0_delta!=0 && sh0_delta%2==0 && shsh1_delta==sh0_delta/2) unchanged and instead substitutes, for its numerator/denominator roles, two DIFFERENT stimuli already proven live elsewhere in this file: SPR0POS 0x40->0x41 (2 raw units, proven live at SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2) in place of the dead SHSH1 numerator, SPR0CTL bit 0 (SH0, proven live at SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT) in place of the dead SHSH1 denominator input -> PASS ("11 passed, 0 failed"), only SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE newly green, now reading sh0_delta=8 shsh1_delta=4 samples through the unmutated relation -- proving the comparator is not vacuous. Rebuilt with no flags: 10/1, the one finding unchanged.
 // MUTATION SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED: no record -- this claim is declined (checks.note only, no checks.expect), so there is no red/green state for a mutation to move.
 // MUTATION SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES stimulus red (run under WSL/Verilator against a 7-passed/1-failed baseline): built with -DMUT_BIT3=1, which substitutes bit 0 (SH0, already proven live above) for bit 3 in this assertion's own per-spres toggle, so the "identical trace" comparator has a live bit to catch -> FAIL ("6 passed, 2 failed"), only SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES newly red (the off/on traces differed at every spres once bit 0 was the one toggled); every other line, including SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE (already red, unrelated), was unchanged. Rebuilt with `make -B test` (no flags): 7/1, the one finding unchanged.
 // MUTATION APPC-pos.c10, APPC2-SPRxCTL.conf2: no record -- both are recorded, not asserted (checks.record only, no checks.expect carrying either id), so there is no red/green state of their own for a mutation to move; the assertion they are recorded beside, SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE, already carries its own mutation record above (none, impossible -- already red at baseline).
@@ -394,13 +394,17 @@
 #define MUT_SH0HALF 0
 #endif
 
-// MUT_BIT4_ORACLE: replay for SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE's
-// own mutation record below (-DMUT_BIT4_ORACLE=1). Changes only the
-// expected relation between the two measured deltas, to shsh1_delta ==
-// 0 instead of shsh1_delta == sh0_delta/2 -- the measurement itself is
-// unchanged.
-#ifndef MUT_BIT4_ORACLE
-#define MUT_BIT4_ORACLE 0
+// MUT_BIT4_GREEN_CONTROL: replay for SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-
+// LIVE's own mutation record below (-DMUT_BIT4_GREEN_CONTROL=1). This
+// assertion is already red at baseline (bit 4 is dead code), so it cannot
+// be made to fail harder; this flag substitutes, for the numerator and
+// denominator roles of the SAME unchanged relation, two DIFFERENT stimuli
+// already proven live elsewhere in this file: SPR0POS 0x40->0x41 (2 raw
+// units, SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2) in place of the dead SHSH1
+// numerator, and SPR0CTL bit 0 (SH0, SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT)
+// in place of the dead SHSH1 denominator input.
+#ifndef MUT_BIT4_GREEN_CONTROL
+#define MUT_BIT4_GREEN_CONTROL 0
 #endif
 
 namespace {
@@ -541,16 +545,19 @@ Meas measure(uint8_t pos_byte, uint8_t ctl_byte, uint8_t spres, uint8_t aga) {
     return m;
 }
 
-// Arms sprite 0 exactly as measure() above (SPR0POS=$40, SPR0DATB=$0000,
-// SPR0DATA=$8000) at spres=SPRES_SUPERHIRES, aga=0, on a fresh DUT, then
-// writes SPR0CTL=ctl_byte and samples `sprdata` on every 28 MHz clock
-// (tick_phase(), 35 ns apart), not once per 140 ns hpos step as
-// measure() above does. Returns the 28 MHz sample index (0-based, 35 ns
-// apart) at which sprdata first goes non-zero across the full hpos
-// 0..511 sweep, or -1 if it never does.
-int measure_superhires_start(uint8_t ctl_byte) {
+// Arms sprite 0 exactly as measure() above (SPR0POS=pos_byte, default
+// $40, SPR0DATB=$0000, SPR0DATA=$8000) at spres=SPRES_SUPERHIRES, aga=0,
+// on a fresh DUT, then writes SPR0CTL=ctl_byte and samples `sprdata` on
+// every 28 MHz clock (tick_phase(), 35 ns apart), not once per 140 ns
+// hpos step as measure() above does. Returns the 28 MHz sample index
+// (0-based, 35 ns apart) at which sprdata first goes non-zero across the
+// full hpos 0..511 sweep, or -1 if it never does. pos_byte's default
+// keeps every existing call site (which passes ctl_byte alone)
+// unchanged; SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE's own green-control
+// mutation is the only caller that overrides it.
+int measure_superhires_start(uint8_t ctl_byte, uint8_t pos_byte = 0x40) {
     Harness h(/*aga=*/0, SPRES_SUPERHIRES);
-    h.write_reg(SPR0POS, 0x40);
+    h.write_reg(SPR0POS, pos_byte);
     h.write_reg(SPR0CTL, ctl_byte);
     h.write_reg(SPR0DATB, 0x0000);
     h.write_reg(SPR0DATA, 0x8000);  // arms sprite 0.
@@ -955,24 +962,39 @@ int main(int argc, char** argv) {
     // alone a 70 ns increment -- half as many 35 ns samples.
     {
         int base = measure_superhires_start(0x00);
+#if MUT_BIT4_GREEN_CONTROL
+        // MUTATION: already red at baseline (bit 4 is dead code), so the
+        // relation below is left unchanged and fed two DIFFERENT, already
+        // live stimuli instead -- SPR0POS 0x40->0x41 (proven live at
+        // SPRXPOS-BYTE-IS-SH8-SH1-STEP-OF-2) for the numerator role, SH0
+        // (proven live at SPRXCTL-BIT0-SH0-IS-140NS-LOW-BIT) for the
+        // denominator role.
+        int sh0 = measure_superhires_start(0x00, 0x41);
+        int shsh1 = measure_superhires_start(0x01);
+#else
         int sh0 = measure_superhires_start(0x01);
         int shsh1 = measure_superhires_start(0x10);
+#endif
         bool armed = base != -1 && sh0 != -1 && shsh1 != -1;
         int sh0_delta = armed ? (sh0 - base) : -1000;
         int shsh1_delta = armed ? (shsh1 - base) : -1000;
         checks.note("SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at "
             "spres=0b10 (SuperHires), 28 MHz (35 ns) sample deltas from "
-            "the ctl=0x00 baseline -- SH0 alone (ctl=0x01): " +
-            std::to_string(sh0_delta) + ", SHSH1 alone (ctl=0x10): " +
-            std::to_string(shsh1_delta) + " (p.303 predicts 4 and 2).");
-#if MUT_BIT4_ORACLE
-        // MUTATION: expected relation changed to shsh1_delta == 0
-        // (an oracle flip -- the two measurements above are unchanged).
-        bool relation = shsh1_delta == 0;
+            "the ctl=0x00 baseline -- " +
+#if MUT_BIT4_GREEN_CONTROL
+            std::string("[MUT_BIT4_GREEN_CONTROL] SPR0POS 0x41 (numerator role): ") +
 #else
+            std::string("SH0 alone (ctl=0x01): ") +
+#endif
+            std::to_string(sh0_delta) +
+#if MUT_BIT4_GREEN_CONTROL
+            std::string(", SH0 alone (ctl=0x01, denominator role): ") +
+#else
+            std::string(", SHSH1 alone (ctl=0x10): ") +
+#endif
+            std::to_string(shsh1_delta) + " (p.303 predicts 4 and 2).");
         bool relation = sh0_delta != 0 && sh0_delta % 2 == 0
                       && shsh1_delta == sh0_delta / 2;
-#endif
         checks.expect(armed && relation,
             "SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at spres=0b10 "
             "(SuperHires), with sprdata sampled on every 28 MHz clock "
