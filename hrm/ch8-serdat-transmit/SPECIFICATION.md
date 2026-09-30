@@ -36,9 +36,8 @@ Slice s3's standing qualifier — that a red is carved out as NanoMig-specific
 because the layer under test has no upstream analogue — **does not apply to
 this package and is deliberately not repeated here**.
 
-**Two fixture hazards apply to every stimulus below**, both already measured
-by the classify stage and named in the build brief and package list, repeated
-here because they shape how every `expect()` in step 2 must be written:
+**Two fixture hazards apply to every stimulus below**, repeated here because
+they shape how every `expect()` in step 2 must be written:
 
 1. **`paula_uart` has no read/write strobe and no chip select.** Presenting
    an address on `rga_i` alongside `data_i` writes it, unconditionally.
