@@ -37,8 +37,8 @@
 //   read-back has to happen while selected even when the step itself does
 //   not) (MUTATE=SEL-GATING: SEL-GATING FAIL -- dsktrack was never actually
 //   incremented; 3 passed, 2 failed).
-// PULSE-WIDTH-FLOOR -- DECLINED via record(), not expect(), Lot F
-//   (2026-09-15): no mutation record (not graded through expect()). The
+// PULSE-WIDTH-FLOOR -- DECLINED via record(), not expect():
+//   no mutation record (not graded through expect()). The
 //   page's "1 us min." is an absolute interval this fixture cannot present;
 //   see the record() call in main() for the reason.
 // MUTATION TRACK00-POLARITY stimulus red: the outward step that is supposed
@@ -46,7 +46,7 @@
 //   FAIL -- the trial never leaves track 0, so the "TRACK00 deasserts once
 //   off track 0" half of the assertion is checked against a state that
 //   never occurred; 3 passed, 2 failed).
-// STEP-POLARITY -- DECLINED via record(), not expect(), Lot F (2026-09-15):
+// STEP-POLARITY -- DECLINED via record(), not expect():
 //   no mutation record (not graded through expect()). The figure shows the
 //   pulse's polarity, not that motion may occur only on the release edge;
 //   see the record() call in main() for the reason.
@@ -378,8 +378,7 @@ int main(int argc, char** argv) {
     }
 
     // -----------------------------------------------------------------
-    // A6 STEP-POLARITY -- DECLINED (independent validation, 2026-09-15,
-    // Lot F). p.243 depicts STEP as an active-low pulse; it never says
+    // A6 STEP-POLARITY -- DECLINED. p.243 depicts STEP as an active-low pulse; it never says
     // motion may occur ONLY on the release (rising) edge -- that is an
     // internal sampling-edge choice this RTL happens to make, not a
     // printed requirement. Grading "unchanged while low, changed on the
@@ -419,8 +418,7 @@ int main(int argc, char** argv) {
     }
 
     // -----------------------------------------------------------------
-    // A4 PULSE-WIDTH-FLOOR -- DECLINED (independent validation,
-    // 2026-09-15, Lot F). Figure 8-7 (write timing) and the read-timing
+    // A4 PULSE-WIDTH-FLOOR -- DECLINED. Figure 8-7 (write timing) and the read-timing
     // diagram print the STEP pulse-width floor in MICROSECONDS ("1 us
     // min."), an ABSOLUTE time unit. This fixture ties no constant or
     // counter to a real-time unit anywhere reachable from it -- exactly

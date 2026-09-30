@@ -8,7 +8,7 @@ Port names and line numbers appearing below (`_step`, `direc`, `_sel`,
 `_track0`, `clk7_en`, `step_ena_cnt`, `paula_floppy.v:594-603`, etc.) are not
 something I read from the RTL myself at this stage — they are already
 disclosed, as part of my claims file's own `classify.evidence` fields and the
-build brief handed to me, by the classification work done before this build
+build task handed to me, by the classification work done before this build
 started. I am repeating that disclosure here, not independently verifying it;
 verification happens in the next step, after this file is committed.
 
@@ -211,7 +211,7 @@ is expected to fail.
 
 ### A8 — FIXTURE-LIVE (GREEN, expected — fixture-liveness proof)
 
-Not tied to a manual claim. Required by the build brief before anything else
+Not tied to a manual claim. Required by this suite's rules before anything else
 here is trusted: the rig must be shown to deliver a known, *distinct* word
 before it reads one. Two distinct `_step`/`direc` stimulus sequences must
 produce two distinct, correct `_track0` read-backs — proof the stimulus-to-
@@ -274,7 +274,7 @@ this suite uses, and write the Verilator test harness. All of that reading —
 and anything else opened beyond what is named above — will be disclosed in
 the next commit.
 
-## Repair addendum (Lot F, 2026-09-15)
+## Two declined assertions
 
 Two assertions declined, not graded:
 
