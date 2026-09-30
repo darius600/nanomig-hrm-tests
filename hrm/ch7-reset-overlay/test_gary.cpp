@@ -33,7 +33,7 @@
 //   is compiled alongside it.
 //
 // ORDER OF WORK: SPECIFICATION.md (this package's own) was written from the
-//   9 claims' quote/restatement fields alone and committed (16dfacc) before
+//   9 claims' quote/restatement fields alone and committed before
 //   gary.v was opened. This file was written after that commit, with gary.v
 //   open. PROP-A..PROP-E below are exactly the five propositions the
 //   specification named; nothing here was widened or narrowed once the RTL
@@ -42,8 +42,8 @@
 // ON THE STEP-3 NOTE'S OWN MEASUREMENT: STEP3-NOTES-ch7-reset-overlay.md
 //   flagged that "all memory ... disappear[s]" does not hold in this RTL,
 //   because sel_chip[1..3] carry no `ovl` term (only sel_chip[0] does) --
-//   reading $080000 while the overlay is active still selects chip RAM. Per
-//   the lead's instruction that note is reproduced independently below
+//   reading $080000 while the overlay is active still selects chip RAM.
+//   That note is reproduced independently below
 //   (RESET-ALL-MEMORY-DISAPPEARS-SWEEP), not adopted as this file's expected
 //   value; this build's own measurement is what the RESULTS section reports.
 //
