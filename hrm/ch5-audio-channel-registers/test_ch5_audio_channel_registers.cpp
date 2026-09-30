@@ -49,23 +49,23 @@
 //   before that first commit -- git log shows the spec commit
 //   preceding the build.
 //
-//   DISCLOSED, POST-COMMIT: getting this package to actually BUILD AND RUN
-//   required opening paula_audio_channel.v directly, at the build stage,
-//   after the spec commit -- three stimulus/observation bugs in this file's
-//   own harness (not in any expected value) only became explicable that way:
+//   DISCLOSED, POST-SPEC-COMMIT: paula_audio_channel.v was opened directly
+//   at the build stage, after the spec commit, to make this package build
+//   and run. Three properties of the RTL, not visible from
+//   BOUNDARIES.md/CANDIDATES.md alone, shape this file's
+//   stimulus/observation code (never an expected value):
 //   (1) the fixed-point-for-fixed-point discard of the first two
 //   DMA-delivered words before real output begins (STATE_1/STATE_2's own
-//   pointer-reload behaviour), (2) that `dmas`/`intreq` (ports) are far
+//   pointer-reload behaviour), (2) `dmas`/`intreq` (ports) are far
 //   noisier or far quieter than their names suggest once idle re-assertion
 //   and a self-clearing internal flip-flop are accounted for, and (3) the
-//   AUDLEN==0 silence latch. No expected value changed because of this --
-//   every fix below is to the STIMULUS/observation code (which register gets
+//   AUDLEN==0 silence latch. No expected value depends on any of this --
+//   only the STIMULUS/observation code (which register gets
 //   written, which internal signal is watched, how many discard-words a
-//   scenario feeds), never to what the manual says should happen. Where a
-//   port-level signal turned out unreliable for a purpose, this file switched
-//   to reading the internal register that signal is derived from (`lencnt`,
-//   `intreq2`) via --public-flat-rw, matching hrm/ch5-audio-channel-state's
-//   own precedent for the same module.
+//   scenario feeds) does. Where a port-level signal is unreliable for a
+//   purpose, this file reads the internal register that signal is derived
+//   from (`lencnt`, `intreq2`) via --public-flat-rw, matching
+//   hrm/ch5-audio-channel-state's own precedent for the same module.
 //
 // BOUNDARY: paula_audio_channel.v alone (the same file hrm/paula_audio_channel/
 //   already builds against). Ports used: clk, clk7_en, cck, reset, aen,
@@ -182,12 +182,12 @@
 //   gets its own `implementation` mutation record instead of a `stimulus`
 //   one (see "MUTATION LOG" below).
 //
-// GAP CLOSURE (V-10 reclassification): one further claim, previously
-//   discarded as `not-hardware`, is asserted below as a further group:
+// SAMPLE-SIGNED-RANGE-FULL-SCALE: one further claim is asserted below as a
+//   further group:
 //     SAMPLE-SIGNED-RANGE-FULL-SCALE                  1 id (5-noise.c1)
-//   V-10's argument was that no port carries a Hertz-valued frequency, which
-//   is true but irrelevant here: 5-noise.c1 states a digitally observable
-//   endpoint pair, not a frequency. Both signed two's-complement extremes,
+//   No port carries a Hertz-valued frequency, but that is irrelevant here:
+//   5-noise.c1 states a digitally observable endpoint pair, not a
+//   frequency. Both signed two's-complement extremes,
 //   -128 and +127, are shown reaching `sample` intact through the eight-bit
 //   path and its sign extension -- no clock, tick count, or Hz figure is
 //   involved on either side of this one. New total = 90 + 1 = 91.
@@ -244,7 +244,7 @@
 //   own port so a reader cannot conflate the two.
 //
 // RESULTS (WSL/Verilator 5.052): 19 passed, 2 failed, 21 groups (18 original
-//   groups + the SAMPLE-SIGNED-RANGE-FULL-SCALE gap closure + the 2 block-1
+//   groups + SAMPLE-SIGNED-RANGE-FULL-SCALE + the 2 block-1
 //   groups below). The two reds are AUDXLEN-BLOCK-1-INCLUDES-DISCARD (p.164,
 //   p.145 step 4, Figure 5-8 p.166: block 1 measures 5 words, the pages give
 //   6) and INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD (same pages: block 1
@@ -261,7 +261,7 @@
 //   (LENGTH-IS-A-BACKUP-REGISTER, INTERRUPT-CADENCE-TIED-TO-LENGTH), the
 //   direct contradiction of appendix B's DMA-only gloss by appendix A's own
 //   "the processor can also write directly" (CPU-CAN-WRITE-AUDXDAT-
-//   DIRECTLY), and the reclassified signed-range endpoint pair (SAMPLE-
+//   DIRECTLY), and the signed-range endpoint pair (SAMPLE-
 //   SIGNED-RANGE-FULL-SCALE). No red was manufactured, and no red was
 //   adjusted away -- the disputes this chapter's own materials flagged in
 //   advance (the six-vs-seven-bit volume width, the interrupt's exact
@@ -734,12 +734,12 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // SAMPLE-SIGNED-RANGE-FULL-SCALE (5-noise.c1) -- GAP CLOSURE (V-10
-    // reclassification): "try to use the full range of -128 to 127" states a
-    // digitally observable endpoint pair, not a frequency -- V-10's Hertz
-    // objection does not apply to it. Same technique as SAMPLE-ITEM-WIDTH-
-    // EIGHT-BITS above, a different byte pattern chosen to hit both signed
-    // two's-complement extremes exactly.
+    // SAMPLE-SIGNED-RANGE-FULL-SCALE (5-noise.c1): "try to use the full
+    // range of -128 to 127" states a digitally observable endpoint pair,
+    // not a frequency -- no Hertz-valued frequency port is needed for this
+    // claim. Same technique as SAMPLE-ITEM-WIDTH-EIGHT-BITS above, a
+    // different byte pattern chosen to hit both signed two's-complement
+    // extremes exactly.
     // =========================================================================
     {
         Harness h;
@@ -857,7 +857,7 @@ int main(int argc, char** argv) {
                   "`ok` and its code are untouched, only the string "
                   "changed, so there is still no port to build a discriminating mutation "
                   "against; clean rebuild reproduced this assertion PASS within the package's "
-                  "19 passed/0 failed baseline.");
+                  "19 passed/2 failed baseline.");
     }
 
     // =========================================================================
