@@ -30,11 +30,12 @@
 //   2. $(NANOMIG)/src/minimig-aga/paula_floppy_fifo.v -- full file, to
 //      confirm it instantiates nothing else and the two-file build closes
 //      (it does; the only sub-instance in paula_floppy.v is this fifo).
-//   3. hrm/paula_floppy/test_paula_floppy.cpp and its Makefile -- an
-//      existing RTL_REGRESSION package against the same module (its own
-//      header disclaims HRM-conformance status), read only for the
-//      clk/clk7_en clocking convention, default port-init values and the
-//      DSKLEN double-write idiom -- not for any conformance fact.
+//   3. hrm/paula_floppy/test_paula_floppy.cpp and its Makefile -- a
+//      pre-pipeline RTL_REGRESSION package against the same module, since
+//      removed (docs/legacy-names.md; its own header disclaimed
+//      HRM-conformance status), read only for the clk/clk7_en clocking
+//      convention, default port-init values and the DSKLEN double-write
+//      idiom -- not for any conformance fact.
 //   4. hrm/ch8-ciaapra-address-window/test_ch8-ciaapra-address-window.cpp --
 //      full file, for this suite's Checks/mutating()/MUTATION-comment
 //      boilerplate shape.
