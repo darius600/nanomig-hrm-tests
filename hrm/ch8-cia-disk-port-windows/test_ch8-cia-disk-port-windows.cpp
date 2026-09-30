@@ -394,8 +394,11 @@ int main(int argc, char** argv) {
     // OVERLAP-BOTH-SELECTS-ACTIVE -- the central mechanism fact this
     // package exists to make checkable: gary.v:191-192's decode is not a
     // full compare, so an address exists where sel_cia_a and sel_cia_b are
-    // BOTH asserted. No page claims or denies this; it is what makes every
-    // address claim on these pages a window, not a point.
+    // BOTH asserted. p.351 addresses each chip by one bit alone -- CIA-A by
+    // A12*, CIA-B by A13* -- not a compound two-bit decode (NM-HRM-075);
+    // read that way it does not exclude the two single-bit conditions
+    // holding at the same address, which is what makes every address claim
+    // on these pages a window, not a point.
     // ========================================================================
     do_reset();
     {
