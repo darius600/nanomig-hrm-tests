@@ -5,7 +5,7 @@
 // Test class: RTL_REGRESSION (R1 is a secondary HRM_CONFORMANCE check)
 // Primary oracle: NanoMig interface contract. The HRM (3rd edition, print
 //   pages 21 and 26) states only that the write does not occur; it does not
-//   define what the Copper does next. Frozen specification 8ad61bd.
+//   define what the Copper does next. Frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-03
 // Non-goals: The register-range boundaries themselves (FPGA-056, red as
 //   NM-HRM-004). ECS and CDANG=1 rejection variants. Whether halting is
@@ -21,8 +21,7 @@
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // Disclosure required by docs/model-collaboration-guide.md: the RTL was
 // inspected during FPGA-063 and FPGA-065 before this specification was written.
