@@ -432,12 +432,11 @@ int main(int argc, char** argv) {
     // at either chipset, and the 32 byte addresses $040-$07E are falsely
     // rejected. Making this assertion pass would delete the finding.
     //
-    // Challenged 11.09.2026 by the chapter-2 appendix classification, which
-    // preferred appendix B's marker legend to appendix C. Appendix B p.288 sends
-    // the reader the other way: registers marked "(E)" in the chip column "have
-    // been changed in the Enhanced Chip Set", and for what changed it points at
-    // appendix C. COPCON is one of them ($02E, chip column A(E)). Neither that
-    // legend nor the chapter body on p.26 mentions ECS at all, so neither can
+    // Appendix B p.288's marker legend sends the reader the other way:
+    // registers marked "(E)" in the chip column "have been changed in the
+    // Enhanced Chip Set", and for what changed it points at appendix C.
+    // COPCON is one of them ($02E, chip column A(E)). Neither that legend
+    // nor the chapter body on p.26 mentions ECS at all, so neither can
     // govern the ECS case. Oracle unchanged.
     checks.expect(move_reaches(true, false, BLTCON0), "T9 ECS CDANG=0: MOVE to BLTCON0 ($040) is written (Appendix C p.310) [NM-HRM-004, expected red]");
     checks.expect(move_reaches(true, true, COPCON),
