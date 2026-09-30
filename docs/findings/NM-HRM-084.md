@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option, a one-line change; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L358) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L358) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**. NanoMig has `paula_audio_channel.v` from there unchanged and TC64 carries the same line, so there is no fix to port; WinUAE, vAmiga, Denise and Copperline all fetch AUDxLEN words on the first pass — see *What the others say* |
-| **Test** | [`hrm/ch5-audio-dma-first-pass`](../../hrm/ch5-audio-dma-first-pass) — the package's own wrapper around `paula_audio` and `agnus_audiodma`, graded at `agnus_audiodma`'s address port, no CPU core: `FIRST-PASS-LEN-<n>`, claims `5-sum.c3`, `5-p139.c9`, `5-len.c1` (pp. 139, 145); `NO-FETCH-BEYOND-DATA-SET-LEN-3`, claims `5-p139.c7`, `5-loc.c7`, `5-p164.c23`, `5-p164.c25`, `5-sm.c26`, `5-p164.c26`, `5-sm.c27`, `5-p147.c8`, `5-p147.c9`, `5-join.c6` (pp. 139, 147, 164). [`hrm/ch5-audio-channel-registers`](../../hrm/ch5-audio-channel-registers) — `paula_audio_channel` alone: `AUDXLEN-BLOCK-1-INCLUDES-DISCARD` and `INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD` (pp. 145, 164, Figure 5-8; no claim id). [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) — `paula_audio_channel` alone, reading its internal signals through `--public-flat-rw`: `F58.t001_101 F58.t101_010`, claims `F58.t001_101`, `F58.t101_010`, and `5-p166.c4 F58.t101_010`, claims `5-p166.c4`, `F58.t101_010` (Figure 5-8, p. 166). [`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) shows the same short first pass through its precondition `A1` — see *Where else the suite meets it* |
+| **Test** | [`hrm/ch5-audio-dma-first-pass`](../../hrm/ch5-audio-dma-first-pass) — the package's own wrapper around `paula_audio` and `agnus_audiodma`, graded at `agnus_audiodma`'s address port, no CPU core: `FIRST-PASS-LEN-<n>`, claims `5-sum.c3`, `5-p139.c9`, `5-len.c1` (pp. 139, 145); `NO-FETCH-BEYOND-DATA-SET-LEN-3`, claims `5-p139.c7`, `5-loc.c7`, `5-p164.c23`, `5-p164.c25`, `5-sm.c26`, `5-p164.c26`, `5-sm.c27`, `5-p147.c8`, `5-p147.c9`, `5-join.c6` (pp. 139, 147, 164). [`hrm/ch5-audio-channel-registers`](../../hrm/ch5-audio-channel-registers) — `paula_audio_channel` alone: `AUDXLEN-BLOCK-1-INCLUDES-DISCARD` and `INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD` (pp. 145, 164, Figure 5-8; no claim id). [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) — `paula_audio_channel` alone: `F58-LENCOUNT-STARTUP-ARCS`, claims `F58.t001_101`, `F58.t101_010`, and `5-p166.c4 F58.t101_010`, claims `5-p166.c4`, `F58.t101_010` (Figure 5-8, p. 166), reading internal signals through `--public-flat-rw`; `5-p164.c23 5-p164.c24 5-sm.c25`, claims `5-p164.c23`, `5-p164.c24`, `5-sm.c25`, and `5-p164.c28 5-sm.c29`, claims `5-p164.c28`, `5-sm.c29` (p. 164), reading the module's `dmas`, `dmareq` and `intreq` outputs. [`integration/ch5-audio-output-scanrate`](../../integration/ch5-audio-output-scanrate) shows the same short first pass through its precondition `A1` — see *Where else the suite meets it* |
 | **Chapter** | 5 — Audio, printed pp. 139, 145–147, 164–166 (Figure 5-8); Appendix A, printed pp. 265–266; Appendix B, printed p. 288 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 7 red in `hrm/ch5-audio-dma-first-pass` (15 passed, 7 failed): `FIRST-PASS-LEN-3` (pass 1 measured offsets 0–4), `FIRST-PASS-LEN-4`, `FIRST-PASS-LEN-5`, `FIRST-PASS-LEN-7`, `FIRST-PASS-LEN-8`, `FIRST-PASS-LEN-16` (each one word short), `NO-FETCH-BEYOND-DATA-SET-LEN-3` (offsets 3 and 4 of a three-word set). 2 red in `hrm/ch5-audio-channel-registers` (19 passed, 2 failed): `AUDXLEN-BLOCK-1-INCLUDES-DISCARD` (5 words from DMA start to the first length-counter reload, where 6 is expected) and `INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD` (4 words to the first `intreq2` rise, where 5 is expected), both reading their boundary inside the module. 2 red in `hrm/ch5-audio-channel-state` (33 passed, 10 failed; the other eight are [NM-HRM-026](NM-HRM-026.md)'s state codes), both inside the module: `F58.t001_101 F58.t101_010` (`lencnt` 4, 3, 2 at the load, the thrown-away word and offset 0, where the figure gives 4, 3, 3) and `5-p166.c4 F58.t101_010` (`lencount` = 1 on the 101 → 010 arc, whose bracket prints none). In the same runs `FIRST-PASS-LEN-2`, all seven `LATER-PASSES-LEN-<n>`, the between-reloads `AUDXLEN-SETS-WORDS-PER-BLOCK` and `INTERRUPT-CADENCE-TIED-TO-LENGTH`, and the main-loop `5-p164.c22 5-sm.c24 5-p165.c14` are green |
+| **Assertions** | 7 red in `hrm/ch5-audio-dma-first-pass` (15 passed, 7 failed): `FIRST-PASS-LEN-3` (pass 1 measured offsets 0–4), `FIRST-PASS-LEN-4`, `FIRST-PASS-LEN-5`, `FIRST-PASS-LEN-7`, `FIRST-PASS-LEN-8`, `FIRST-PASS-LEN-16` (each one word short), `NO-FETCH-BEYOND-DATA-SET-LEN-3` (offsets 3 and 4 of a three-word set). 2 red in `hrm/ch5-audio-channel-registers` (19 passed, 2 failed): `AUDXLEN-BLOCK-1-INCLUDES-DISCARD` (5 words from DMA start to the first length-counter reload, where 6 is expected) and `INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD` (4 words to the first `intreq2` rise, where 5 is expected), both reading their boundary inside the module. 4 red in `hrm/ch5-audio-channel-state` (31 passed, 12 failed; the other eight are [NM-HRM-026](NM-HRM-026.md)'s state codes): inside the module, `F58-LENCOUNT-STARTUP-ARCS` (`lencnt` 4, 3, 2 as the thrown-away word, offset 0 and offset 1 arrive, where the figure gives 4, 3, 3) and `5-p166.c4 F58.t101_010` (`lencount` = 1 on the 101 → 010 arc, whose bracket prints none); at the module's outputs, with AUDxLEN = 4, `5-p164.c23 5-p164.c24 5-sm.c25` (no restart request between the arrivals of offsets 2 and 3, where the figure's count sends it with the request for the last word) and `5-p164.c28 5-sm.c29` (no interrupt request from offset 3's arrival to the next pass's first word). In the same runs `FIRST-PASS-LEN-2`, all seven `LATER-PASSES-LEN-<n>`, the between-reloads `AUDXLEN-SETS-WORDS-PER-BLOCK` and `INTERRUPT-CADENCE-TIED-TO-LENGTH`, and the main-loop `5-p164.c22 5-sm.c24 5-p165.c14` are green |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all count the thrown-away start-up word and not the word that takes the channel from 101 to 010, as Figure 5-8's brackets do, so their first pass is AUDxLEN words like every later one and never runs past the data set |
 | **See also** | [NM-HRM-026](NM-HRM-026.md) — the same state machine's codes: NanoMig's `3'b011` is the figure's 101 |
 
@@ -54,7 +54,7 @@ words, with `MOVE.W #4,AUD0LEN(a0) ;Set length in words`.
 
 **Printed p. 164** walks through the start-up:
 
-> In DMA-driven operation, transition to the 001 state occurs and DMA requests are sent to Agnus as soon as DMA is turned on. Because of pipelining in Agnus, the first data word must be thrown away. State 101 is entered as soon as this word arrives; a request for the next data word has already gone out. When the data arrives, state 010 is entered and the main loop continues until the DMA is turned off. The length counter counts down once with each word that comes in. When it finishes, a DMA restart request goes to Agnus along with the regular DMA request. This tells Agnus to reset the pointer to the beginning of the table of data. Also, the length counter is reloaded and an interrupt request goes out soon after the length counter finishes (counts to one).
+> In DMA-driven operation, transition to the 001 state occurs and DMA requests are sent to Agnus as soon as DMA is turned on. Because of pipelining in Agnus, the first data word must be thrown away. State 101 is entered as soon as this word arrives; a request for the next data word has already gone out. When the data arrives, state 010 is entered and the main loop continues until the DMA is turned off. The length counter counts down once with each word that comes in. When it finishes, a DMA restart request goes to Agnus along with the regular DMA request. This tells Agnus to reset the pointer to the beginning of the table of data. Also, the length counter is reloaded and an interrupt request goes out soon after the length counter finishes (counts to one). The request goes out just as the last word of the waveform starts its output.
 
 and opens its section with *"For an explanation of the various states, refer
 to Figure 5-8."* **Printed p. 165** names the signals:
@@ -238,10 +238,10 @@ reads the block boundary on the internal `lencnt` and `intreq2` through
 `--public-flat-rw` and counts the words answered at the ports:
 
 - `AUDXLEN-BLOCK-1-INCLUDES-DISCARD`
-  (`test_ch5_audio_channel_registers.cpp:974-981`), AUDxLEN = 5: from DMA
+  (`test_ch5_audio_channel_registers.cpp:977-984`), AUDxLEN = 5: from DMA
   start to the first reload the pages give the thrown-away word and five data
   words, 6; NanoMig counts 5.
-- `INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD` (`:1211-1218`), AUDxLEN = 4:
+- `INTERRUPT-CADENCE-BLOCK-1-INCLUDES-DISCARD` (`:1214-1221`), AUDxLEN = 4:
   from DMA start to the first `intreq2` rise the figure gives 5, the rise
   coming with block 1's last data word; NanoMig counts 4.
 
@@ -251,24 +251,38 @@ green at 5 and 4. On the copy with line 358 changed the two block-1 spans
 measure 6 and 5 and the package reads `21 passed, 0 failed`.
 
 [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) drives
-the same module alone, with AUDxLEN = 4, and reads the counter and the arc's
-actions directly:
+the same module alone, with AUDxLEN = 4, answers each request with a word, and
+reads the counter and the arc's actions inside the module and the restart and
+interrupt requests at its outputs:
 
-- `F58.t001_101 F58.t101_010` (`test_ch5_audio_channel_state.cpp:1305-1318`)
-  samples `lencnt` at the enable's load, at the thrown-away word's arrival and
-  at offset 0's, and requires one step down on the first arc and none on the
-  second. NanoMig reads `4 3 2`: the counter moves on 101 → 010.
-- `5-p166.c4 F58.t101_010` (`:1136-1161`) samples the actions on the 101 → 010
+- `F58-LENCOUNT-STARTUP-ARCS` (`test_ch5_audio_channel_state.cpp:1361-1379`)
+  samples `lencnt` as each of the first three words arrives, before that
+  word's own count: the thrown-away word, offset 0 and offset 1. It requires
+  one step down across the thrown-away word, the 001 → 101 arc, and none
+  across offset 0, the 101 → 010 arc. NanoMig reads `4 3 2`: the counter
+  moves on 101 → 010.
+- `5-p166.c4 F58.t101_010` (`:1196-1221`) samples the actions on the 101 → 010
   arc and requires the figure's four, `volcntrld`, `percntrld`, `pbufld1` and
   `AUDxDR`, with no `lencount`. NanoMig reads all four set and `lencount=1`.
+- `5-p164.c23 5-p164.c24 5-sm.c25` (`:1411-1450`) grades p. 164's restart
+  request, a rising edge on `dmas` with `dmareq` set, in the open interval
+  between the arrivals of offset 2 and offset 3, the last word (t = 5560 and
+  t = 7376): by the figure's count the request that fetches the last word goes
+  out there, with the counter at one. NanoMig sends none in that interval.
+- `5-p164.c28 5-sm.c29` (`:1491-1529`) grades p. 164's "The request goes out
+  just as the last word of the waveform starts its output": a pulse on
+  `intreq` from offset 3's arrival up to the next pass's first word
+  (t = 7376 to 9192). NanoMig raises none there.
 
-The run ends `33 passed, 10 failed`; the other eight reds read the state
+The run ends `31 passed, 12 failed`; the other eight reds read the state
 register's codes and are [NM-HRM-026](NM-HRM-026.md)'s. The main-loop
 `5-p164.c22 5-sm.c24 5-p165.c14`, which grades each arriving word from the
 third on, is green; its full sequence reads `4 3 2 1 4 3 2 1 4`. On the copy
 with line 358 changed the start-up reads `4 3 3`, the full sequence
-`4 3 3 2 1 4 3 2 1`, the arc `lencount=0`, and the package reads
-`35 passed, 8 failed`: the two reds above turn green and nothing else moves.
+`4 3 3 2 1 4 3 2 1`, the arc `lencount=0`, the restart edge comes at
+t = 5584 with `dmareq` set and the interrupt pulse at t = 7432, and the
+package reads `35 passed, 8 failed`: the four reds above turn green and
+nothing else moves.
 
 ---
 
@@ -291,11 +305,11 @@ with line 358 changed the start-up reads `4 3 3`, the full sequence
   Which of those runs went through the start-up sequence is not traced here.
 - **Four places grade around the first pass and so do not see it.**
   [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation)'s
-  `stepping_cycles()` (`test_ch5_audio_attach_modulation.cpp:356-373`), used by
+  `stepping_cycles()` (`test_ch5_audio_attach_modulation.cpp:362-379`), used by
   `PC3` and by `P9` (a) and (b), grades each channel from its first restart on,
   the first fetch at offset 0 after its first fetch, and leaves the first pass
   to `hrm/ch5-audio-dma-first-pass`; `PC3` reads the channel's own 4 KB region
-  (`:391-395`), `P9` (a) and (b) only the set's own words.
+  (`:407-411`), `P9` (a) and (b) only the set's own words.
   [`integration/ch2-copper-move`](../../integration/ch2-copper-move)'s `P7`
   leaves the first pass out by its own specification (section 3.6) and grades
   every block end after it.
@@ -304,7 +318,7 @@ with line 358 changed the start-up reads `4 3 3`, the full sequence
   which a short first pass does not change.
   [`hrm/ch5-audio-period-and-length`](../../hrm/ch5-audio-period-and-length)'s
   `G_LEN_VALUE` grades the last two completed intervals, and its comment
-  (`test_ch5_audio_period_and_length.cpp:1070-1072`) calls the first interval
+  (`test_ch5_audio_period_and_length.cpp:1071-1075`) calls the first interval
   one word short.
 
 ---
@@ -380,7 +394,9 @@ What it changes, measured on a copy of the RTL with only this line changed:
   after the enable instead of 5, and with AUDxLEN = 4 the first `intreq2` 5
   words after instead of 4;
 - the counter holds on the 101 → 010 arc, `lencnt` reading `4 3 3` over the
-  start-up: `hrm/ch5-audio-channel-state` goes from `33 passed, 10 failed` to
+  start-up, and with AUDxLEN = 4 the restart request goes out between the
+  arrivals of offsets 2 and 3 and the interrupt request with offset 3's:
+  `hrm/ch5-audio-channel-state` goes from `31 passed, 12 failed` to
   `35 passed, 8 failed`, the eight left being
   [NM-HRM-026](NM-HRM-026.md)'s state codes, which this line does not touch;
 - the requests at the enable, the thrown-away word and every later pass are
@@ -401,7 +417,7 @@ What it changes, measured on a copy of the RTL with only this line changed:
   seven lengths and `FIRST-PASS-LEN-2` is green, so the grader, the stimulus
   and the pass boundaries work where NanoMig follows the pages.
 - **One line decides it**, and changing it to the figure's bracket turns all
-  eleven reds green with no green going red in any of the three packages.
+  thirteen reds green with no green going red in any of the three packages.
 - **At AUDxLEN = 3 no reading of the pages permits the overread**: p. 139,
   p. 147, p. 164, p. 288 and the figure's NOTE all tie the return to the start
   to the end of the count or of the data.
@@ -415,11 +431,12 @@ What it changes, measured on a copy of the RTL with only this line changed:
   main loop, defers to Figure 5-8, and leaves the four positive statements of
   the count failing on the first pass — see *Where NanoMig's count comes
   from*.
-- **The start-up count is graded inside the module only.** The four reds in
-  `hrm/ch5-audio-channel-registers` and `hrm/ch5-audio-channel-state` read
-  `lencnt`, `intreq2` and the arc's action signals through
-  `--public-flat-rw`; at the pins the finding rests on
-  `hrm/ch5-audio-dma-first-pass`'s fetch addresses.
+- **The start-up count is graded inside the module only.** Four of the six
+  reds in `hrm/ch5-audio-channel-registers` and `hrm/ch5-audio-channel-state`
+  read `lencnt`, `intreq2` and the arc's action signals through
+  `--public-flat-rw`; the other two read when the restart and interrupt
+  requests leave `paula_audio_channel`, and at the Agnus address port the
+  finding rests on `hrm/ch5-audio-dma-first-pass`'s fetch addresses.
 - **The four implementations were read and followed by hand**, not run, and
   nothing here was measured on an Amiga.
 

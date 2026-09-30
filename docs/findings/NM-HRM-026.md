@@ -5,12 +5,12 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | seen in the RTL source and measured inside the module; no assertion at the ports fails |
-| **What is asked of a reader** | Nothing. This entry's eight red assertions read the internal state register `audio_state` through Verilator's `--public-flat-rw`; the assertions at the module's ports pass, so no pin shows the difference. The entry is a note for whoever reads Figure 5-8 as a specification of the state encoding. |
+| **What is asked of a reader** | Nothing. This entry's eight red assertions read the internal state register `audio_state` through Verilator's `--public-flat-rw`; the package's two reds at the module's ports are [NM-HRM-084](NM-HRM-084.md)'s length count and pass on a copy of the RTL that changes that count and keeps these codes, so no pin shows the difference. The entry is a note for whoever reads Figure 5-8 as a specification of the state encoding. |
 | **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L242-L246) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L242-L246) |
 | **Report to** | **nowhere, as it stands** — see *Suggested change* |
 | **Test** | [`hrm/ch5-audio-channel-state`](../../hrm/ch5-audio-channel-state) |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 8 red, all reading `audio_state` inside the module: `5-p164.c4`, `5-p166.c1`, `5-p164.c18`, `5-p164.c9`, `5-p164.c10`, `5-p166.c6`, `5-sm.c8`, `5-p166.c3` (33 passed, 10 failed; the other two reds, `F58.t001_101 F58.t101_010` and `5-p166.c4 F58.t101_010`, grade the length count on the 101 → 010 arc and are [NM-HRM-084](NM-HRM-084.md)'s) |
+| **Assertions** | 8 red, all reading `audio_state` inside the module: `5-p164.c4`, `5-p166.c1`, `5-p164.c18`, `5-p164.c9`, `5-p164.c10`, `5-p166.c6`, `5-sm.c8`, `5-p166.c3` (31 passed, 12 failed; the other four reds are [NM-HRM-084](NM-HRM-084.md)'s: `F58-LENCOUNT-STARTUP-ARCS` and `5-p166.c4 F58.t101_010` grade the length count on the 101 → 010 arc inside the module, `5-p164.c23 5-p164.c24 5-sm.c25` and `5-p164.c28 5-sm.c29` when the first pass's restart and interrupt requests leave it) |
 | **Verdict of the four** | **all four use the figure's own numbering**, `101` included |
 | **Boundary** | **inside the module.** This entry's eight red assertions read `audio_state` through `--public-flat-rw` and do not exist at the pins |
 | **See also** | [NM-HRM-084](NM-HRM-084.md) — the same state machine's 101 → 010 arc, where NanoMig counts the length down and the figure prints no lencount: a difference in behaviour, seen at the pins, which a renumbering of the states leaves as it is |
@@ -23,9 +23,10 @@
 assertions read `audio_state` directly; without Verilator's `--public-flat-rw`
 they would not compile. Re-pointed at the RTL's own state codes they **pass**, and
 the package's assertions at the ports, on `sample`, `dmareq`, `dmas` and
-`intreq`, are green. One departure at a port, `dmas` computed one register
-stage later than the NOTE's `AUDxDSR=AUDxDR·dmasen`, is recorded there, not
-graded.
+`intreq`, are green but for two, on when the first pass's restart and interrupt
+requests go out, which are the length count below. One departure at a port,
+`dmas` computed one register stage later than the NOTE's
+`AUDxDSR=AUDxDR·dmasen`, is recorded there, not graded.
 
 **The actions on the arcs are a different question, and on the 101 → 010 arc
 NanoMig's depart from the figure's.** In the state NanoMig codes `3'b011`, the
@@ -37,13 +38,14 @@ where the figure's bracket on that arc, read from the drawing, is
 count reaches the pins: after a DMA start the first pass is one word short of
 AUDxLEN from 4 up, and at AUDxLEN = 3 runs past the data set. That is
 [NM-HRM-084](NM-HRM-084.md), and a renumbering of the states does not touch it.
-This package's assertions at the ports do not see it: none grades at which word
-of the first pass the restart on `dmas` or the interrupt on `intreq` comes
-(`test_ch5_audio_channel_state.cpp:1335-1351`, `:1365-1381`), and on a copy of
-the RTL with line 358 changed to `lencount = 1'b0;`, where the interrupt is
-armed one word later, they are green as well. Its two
-assertions that grade the arc's count read the length counter and the arc's
-action signals inside the module, are red, and are NM-HRM-084's.
+This package's assertions at the ports see it too: with AUDxLEN = 4, no restart
+on `dmas` comes between the arrivals of offsets 2 and 3, and no interrupt on
+`intreq` from offset 3's arrival to the next pass's first word
+(`test_ch5_audio_channel_state.cpp:1411-1450`, `:1491-1529`). Both are red, and
+on a copy of the RTL with line 358 changed to `lencount = 1'b0;`, the state
+codes left as they are, both are green. Its two assertions that grade the
+arc's count read the length counter and the arc's action signals inside the
+module and are red as well. All four are NM-HRM-084's.
 
 A behavioural implementation is free to re-encode an internal state machine
 unless state-identical reconstruction is an explicit requirement, and this
@@ -154,10 +156,11 @@ the 101 → 010 arc is behaviour, not encoding, and its change is
 - **The eight reds fail on the bit pattern alone.** Re-pointed at the RTL's
   own codes each holds: the actions, timing and ordering they grade besides
   the code are what NanoMig does, and that distinction *is* the finding. The
-  package's two other reds, on the length count of the 101 → 010 arc, are
-  behaviour and are [NM-HRM-084](NM-HRM-084.md)'s. On a copy of the RTL with
-  line 358 changed to the figure's bracket the package reads
-  `35 passed, 8 failed`: those two turn green and these eight stay red.
+  package's four other reds, on the length count of the 101 → 010 arc and on
+  when the first pass's restart and interrupt requests go out, are behaviour
+  and are [NM-HRM-084](NM-HRM-084.md)'s. On a copy of the RTL with line 358
+  changed to the figure's bracket the package reads `35 passed, 8 failed`:
+  those four turn green and these eight stay red.
 - The package's reachability proof is not a tautology. Reachable states are
   proven by legal stimulus; the unused codes `100`, `101`, `111` are force-seeded
   and clocked through the real next-state logic; the two sets are asserted
