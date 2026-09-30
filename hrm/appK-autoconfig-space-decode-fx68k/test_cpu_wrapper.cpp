@@ -652,15 +652,14 @@ int main() {
 //   `make MUT=NORESET test` -> 12 passed, 5 failed -- turns red exactly,
 //   and only, the 4 RESET-group assertions (sol:K-0153, opus:K-0162,
 //   sol:K-0432, opus:K-0438) plus the liveness check (rr.ok correctly goes
-//   false when phase 2 times out). This mutation exposed a real bug during
-//   development: the first version of the RESET-group booleans compared
-//   rr.post_reset_nibble against SENTINEL without also requiring rr.ok, so
-//   the uncaptured-value default (uint8_t 0xFF) satisfied "!= SENTINEL"
-//   trivially and all 4 RESET assertions stayed falsely green (only
-//   liveness caught the mutation, 16 passed / 1 failed). Fixed by requiring
-//   rr.ok in post_config_silenced and post_reset_responds both -- re-run
-//   confirmed above. Kept here as the record of a mutation catching a bug
-//   in the harness itself, not just in the RTL.
+//   false when phase 2 times out). Comparing rr.post_reset_nibble against
+//   SENTINEL without also requiring rr.ok would let the uncaptured-value
+//   default (uint8_t 0xFF) satisfy "!= SENTINEL" trivially, leaving all 4
+//   RESET assertions falsely green under this mutation (only liveness would
+//   catch it: 16 passed / 1 failed); requiring rr.ok in
+//   post_config_silenced and post_reset_responds both closes that gap,
+//   confirmed above. This mutation therefore exercises the harness's own
+//   correctness, not only the RTL's.
 //
 //   Rebuilt with no MUT afterward: 17 passed / 0 failed baseline restored
 //   exactly.
