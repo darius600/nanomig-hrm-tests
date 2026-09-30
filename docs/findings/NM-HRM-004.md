@@ -10,7 +10,7 @@
 | **Report to** | **the manual, not the implementation.** NanoMig, both Minimig lines, all four implementations and Commodore's AA specification block the range with CDANG clear |
 | **Test** | [`hrm/ch2-copper-move-range`](../../hrm/ch2-copper-move-range), [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep) |
 | **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red: `T9` (`$040`) and `T16` (both ends Appendix C prints, `$03E` and `$07E`, claim `ch2-appc-ecs.c21`) in `hrm/ch2-copper-move-range`, and `SWEEP`, the `ecs=1 cdang=0` sweep, in `hrm/ch2-copper-move-sweep` |
+| **Assertions** | 3 red: `T9` (`$040`) and `T16` (`$07E`, claim `ch2-appc-ecs.c21`) in `hrm/ch2-copper-move-range`, and `SWEEP`, the `ecs=1 cdang=0` sweep, in `hrm/ch2-copper-move-sweep` |
 | **Verdict of the four** | **unanimous with NanoMig and with Appendix B**: WinUAE, vAmiga, Denise and Copperline all block a Copper MOVE below `$080` while CDANG is clear, whatever the chipset; none cites Appendix C, and Copperline asserts `$040` and `$07E` blocked on its ECS Agnus in a test |
 
 ---
@@ -108,10 +108,11 @@ It rejects that range. With `CDANG` clear the accepted set is `$080`–`$1FE` at
 | falsely rejected | 32 addresses, `$040`–`$07E` |
 | falsely accepted | none |
 
-Two single-address probes and an exhaustive sweep agree. `T9` moves to `$040`,
-`T16` to both ends Appendix C prints, `$03E` and `$07E`, and none of the three
-addresses is written. The table is the sweep's, whose expected set starts at
-`$040`; `$03E` is the one address the appendix names that only `T16` probes.
+Two single-address probes and an exhaustive sweep agree. `T9` moves to `$040`
+and `T16` to `$07E`, and neither is written; the table is the sweep's. `T16`
+grades the range's `$07E` end and records `$03E`, where p. 310 reads two ways
+(its literal range admits it, "the same range as when the danger bit is set"
+does not), with both readings, as the sweep does; NanoMig does not write it.
 
 *Addresses here are the manual's byte addresses. A Copper instruction encodes
 DA8-1, so the module's register ports carry them halved and the sweep prints them
