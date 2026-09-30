@@ -49,8 +49,8 @@
 //   hrm/ch3-register-map-denise/test_denise.cpp -- an already-committed
 //   package building this SAME `denise` fixture, whose own header states
 //   its port list was itself "PACKAGE.md's own evidence", i.e. handed to
-//   that building agent the same way this package's claims hand ports to
-//   this one -- NOT discovered by this agent opening denise.v):
+//   it the same way this package's claims hand ports to
+//   this one -- NOT discovered by opening denise.v):
 //   in  - clk, clk7_en, c1, c3, cck, reset, strhor, reg_address_in[8:1],
 //         data_in[15:0], chip48, blank, a1k, ecs, aga
 //   out - data_out[15:0] (denise.v:97 sources it from
@@ -213,9 +213,9 @@
 // the reg_address_in word-address convention, and DENISEID/CLXDAT's
 // addresses and read behaviour come from this package's own claims'
 // classify.evidence fields and from hrm/ch3-register-map-denise's
-// already-committed file (both handed to or available to the building
-// agent as inventory, not discovered by this agent opening denise.v). The
-// register addresses used below ($A0-$BF) are this agent's own arithmetic
+// already-committed file (both available as inventory, not discovered by
+// opening denise.v). The
+// register addresses used below ($A0-$BF) are arithmetic
 // on this package's own claims' quoted byte addresses, checked against all
 // 72 of them above. Exact confirmation that the write_reg/read_reg pattern
 // copied from hrm/ch3-register-map-denise applies unchanged to this
@@ -521,8 +521,8 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (12.09.2026). Every entry below was actually applied by this
-// agent -- edited into this file via -DMUT_*=1, rebuilt under
+// MUTATION LOG. Every entry below was actually applied --
+// edited into this file via -DMUT_*=1, rebuilt under
 // WSL/Verilator (`make test`), run, the PASS/FAIL line read from real
 // output (quoted verbatim below, not predicted), then reverted (flag back
 // to 0) and rebuilt clean before the next entry. Baseline before this
