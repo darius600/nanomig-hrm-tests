@@ -603,7 +603,7 @@ int main(int argc, char** argv) {
     // WAIT condition: with BFD=0 and the blitter busy the condition is not
     // satisfied, so nothing is skipped and the following MOVE runs.
     //
-    // This case was found on 07.09.2026 by measuring the pre-pipeline test
+    // This case was found by measuring the pre-pipeline test
     // agnus_copper_skip against this file rather than assuming it superseded.
     // Every one of its other cases was already covered here and covered more
     // strictly - this one was not covered at all. Five of six is what an
