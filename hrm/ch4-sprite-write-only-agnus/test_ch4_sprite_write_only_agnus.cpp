@@ -59,13 +59,13 @@
 //   fact about what reaches the CPU-visible data bus, and agnus_spritedma
 //   alone has no such bus to observe - only the top-level module carries
 //   the mux that (per this evidence) never includes a sprite-pointer term.
-//   This matches the build brief's own instruction: hrm/ch7-dmacon-register-bits
-//   and hrm/ch4-sprite-dma-control (committed tonight, read in full before
+//   hrm/ch7-dmacon-register-bits
+//   and hrm/ch4-sprite-dma-control (read in full before
 //   writing this file) both already build exactly this fixture in this
 //   same rtl/ tree.
 //
-// HOW TO MEASURE IT (read from hrm/ch4-sprite-dma-control, built tonight,
-//   before writing this file, per the build brief's own instruction): a
+// HOW TO MEASURE IT (read from hrm/ch4-sprite-dma-control,
+//   before writing this file): a
 //   read that returns something other than the pattern just written proves
 //   nothing on its own - it could equally be a harness whose read path
 //   never samples anything live. That package's own DMACON-IS-WRITE-ONLY-
@@ -191,8 +191,8 @@
 // arbitrated by `dbr`, an unselected address reading back 0 through an
 // OR-mux) come from this package's own claims' classify.evidence fields
 // and from hrm/ch4-sprite-dma-control's and hrm/ch7-dmacon-register-bits's
-// already-committed files (both handed to or available to the building
-// agent as inventory, not discovered by this agent opening agnus.v). The
+// already-committed files (both available as inventory, not discovered by
+// opening agnus.v). The
 // sixteen register addresses come directly from each claim's own quoted
 // text, not from the RTL. Exact confirmation that the write_reg/read_reg
 // retry shape still applies unchanged against this fixture, and the
@@ -400,8 +400,8 @@ int main(int argc, char** argv) {
 
     // ---------------- FIXTURE-DELIVERS-KNOWN-WORD-VIA-DMACONR ----------------
     // This package's own control case, expected to PASS, run fresh on this
-    // package's own Harness instance - the fixture-integrity proof the
-    // build brief requires, not inherited from a copied file. Three
+    // package's own Harness instance - the fixture-integrity proof this
+    // suite requires, not inherited from a copied file. Three
     // different DMACON patterns are written in sequence and DMACONR is
     // sampled after EACH one, confirming each arrives distinct and in the
     // order it was written. DMACON/DMACONR are not this package's own
@@ -796,8 +796,8 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (12.09.2026). Every entry below was actually applied by this
-// agent - edited into this file, rebuilt under WSL/Verilator (`make test`),
+// MUTATION LOG. Every entry below was actually applied -
+// edited into this file, rebuilt under WSL/Verilator (`make test`),
 // run, the PASS/FAIL line read from real output (quoted verbatim below, not
 // predicted), then reverted and rebuilt clean before the next entry.
 // Baseline before this log's first mutation and final clean run after the
