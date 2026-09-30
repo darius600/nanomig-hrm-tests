@@ -28,24 +28,12 @@
 //   from a different package's inventory (ch4-sprite-shifter-and-
 //   arming.jsonl). Recorded here rather than assumed.
 //
-// A NOTE ON HOW THIS FILE WAS BUILT, IN THE INTEREST OF NOT PAPERING OVER
-//   IT: before this package's own claim-grouping pass began, one `head -c
-//   2000` preview of the raw 303-record .jsonl (taken to learn the file's
-//   JSON schema, before any per-record reading) printed the FIRST record's
-//   `classify.evidence` field along with the fields this package actually
-//   uses. That field is pipeline-internal, RTL-derived text this package's
-//   own build brief says must not shape the specification; it is not
-//   quoted or relied on anywhere below. It named denise_sprites.v's
-//   sprdata output "the colour-table index" and mentioned hex values
-//   $10-$1f for the four sprite pairs. Concretely, what this might have
-//   biased is exactly the question this file spent the most design effort
-//   avoiding: whether sprdata's raw numeric value equals the absolute
-//   system colour-register number (16-31). Every assertion below was
-//   deliberately written to NOT depend on that question -- see MEASUREMENT
-//   PHILOSOPHY below -- so that even a fully contaminated belief about
-//   sprdata's encoding could not have entered an expected value. Where the
-//   two are in tension the manual quotations were followed. Reported
-//   rather than concealed.
+// `classify.evidence` is pipeline-internal, RTL-derived text this
+//   package's own build brief says must not shape the specification; it is
+//   not quoted or relied on anywhere below. No assertion in this file
+//   depends on whether denise_sprites.v's sprdata output encodes the
+//   absolute system colour-register number (16-31) or some other RTL
+//   representation -- see MEASUREMENT PHILOSOPHY below for why and how.
 //
 // Non-goals: sprite-to-sprite and sprite-to-playfield VIDEO PRIORITY (which
 //   sprite is drawn in front when several overlap) is not tested --
