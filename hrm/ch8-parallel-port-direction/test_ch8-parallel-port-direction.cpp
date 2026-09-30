@@ -354,17 +354,22 @@ int main(int argc, char** argv) {
         const uint8_t read_as_input = h.read_reg(RS_PRB);
         h.write_reg(RS_DDRB, 0xFF);  // direction: all output; PRB not rewritten
         const uint8_t read_as_output = h.read_reg(RS_PRB);
+        const bool identical = (read_as_input == read_as_output);
         char hexbuf[128];
         std::snprintf(hexbuf, sizeof(hexbuf), "0x%02X with CIAADDRB=0x00 (all "
             "input) and 0x%02X with CIAADDRB=0xFF (all output)",
             read_as_input, read_as_output);
         checks.note(
             std::string("Direction-independence: with portb_in fixed at ") +
-            "0x3C, CIAAPRB reads " + hexbuf + ", same prior CIAAPRB write -- "
-            "identical either way. CIAADDRB reads back faithfully at its "
-            "own address but has no measured effect on what a CIAAPRB read "
-            "returns, contrary to p.341's rule that a set DDR bit makes "
-            "the corresponding PR bit an output.");
+            "0x3C, CIAAPRB reads " + hexbuf + ", same prior CIAAPRB write -- " +
+            (identical
+                ? "identical either way. CIAADDRB reads back faithfully at "
+                  "its own address but has no measured effect on what a "
+                  "CIAAPRB read returns, contrary to p.341's rule that a set "
+                  "DDR bit makes the corresponding PR bit an output."
+                : "NOT identical -- CIAADDRB does change what a CIAAPRB read "
+                  "returns here, as p.341's rule that a set DDR bit makes the "
+                  "corresponding PR bit an output would predict."));
     }
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
