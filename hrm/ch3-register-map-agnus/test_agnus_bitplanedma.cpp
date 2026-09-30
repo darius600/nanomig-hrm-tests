@@ -915,9 +915,9 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (11.09.2026). Every entry below was actually applied by this
-// agent, rebuilt and run under WSL/Verilator (`make test`), confirmed red,
-// then reverted and rebuilt clean (17/17 green again) -- not predicted. Each
+// MUTATION LOG. Every entry below is actually applied, rebuilt and run
+// under WSL/Verilator (`make test`), confirmed red, then reverted and
+// rebuilt clean (17/17 green again) -- not predicted. Each
 // mutation changes what the harness ASKS the module to do (which address
 // receives the "correct"/"wrong" write) while leaving every assertion's own
 // expected-value logic untouched, per the build brief's rule that flipping
