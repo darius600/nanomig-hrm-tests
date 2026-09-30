@@ -11,6 +11,8 @@
 ;          VHPOSW ($02C) = $6400, before the phase-C BPLCON0 write.
 ; NMH_K5: the phase-B loop gets a delay of at least 300 colour clocks per
 ;         sample (CP2's own mutation), and BUFB is shortened to match.
+; NMH_KFIX: the M0 marker write stores a different value (the FIXTURE
+;           mutation), while M1-M4 and DONE are unaffected.
         include "nanomig.i"
 
 M0      equ     $A000
@@ -46,7 +48,11 @@ start:
         else
         move.w  #$0000,$100(a6)         ; BPLCON0: BPU=0, HIRES=0, LACE=0 (non-interlaced), ERSY=0, LPEN=0
         endif
+        ifd     NMH_KFIX
+        move.w  #$BEEF,MARK             ; FIXTURE mutation: a different value where M0 belongs
+        else
         move.w  #M0,MARK
+        endif
         move.b  $bfe001,FIRE            ; CIAAPRA, read only: bit 6 port 1 and bit 7 port 2 pin 6,
                                         ;   1 = "switch open" (p.229, p.232); for CP3
 ; ---- phase A: beam counter, light pen off
@@ -98,7 +104,7 @@ start:
         cmpa.l  a1,a0
         bne.s   .d
         move.w  #M4,MARK
-.stop   bra.s   .stop
+        DONE                            ; stores DONE_VALUE at DONE_ADDR, then hangs (nanomig.i)
 
 wait150 move.l  $dff004,d0              ; wait until a read shows vertical position 150
         lsr.l   #8,d0
