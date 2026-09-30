@@ -98,10 +98,12 @@
 //       time; this single-module fixture never measures elapsed time
 //       across repeated grants, because hpos is a port the harness sets
 //       directly here rather than something that advances on its own.
-//       NOW GRADED, at this package's OTHER fixture,
-//       test_agnus_top_audio_ecs.cpp's DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE:
-//       the full Agnus top's own free-running beam counter gives that
-//       fixture a real elapsed-time axis this one does not have.
+//       RECORDED below (insufficient): a repeated-grant measurement at
+//       the other fixture, test_agnus_top_audio_ecs.cpp, was tried and
+//       withdrawn - equal gaps between grants show only periodicity, not
+//       that the allocation is what bounds the rate, and a design
+//       granting the channel several times per line at an evenly-spaced
+//       interval would pass the same comparator.
 //     - 5-appA-p263.c11 ("Paula, Agnus, and Denise ... transferring data
 //       among themselves") states an actual cross-chip data transfer; this
 //       fixture only shows the address on reg_address_out; no data crosses
@@ -185,12 +187,10 @@
 // assertion string in this file. COVERAGE NOTE 2 above withdraws
 // three more ids from assertion 1 and eighteen ids from assertion 6, for the
 // same necessary-but-not-sufficient reason; 143 ids remain asserted here.
-// Of the 33 withdrawn, 31 are now RECORDED below with their reason
+// Of the 33 withdrawn, 32 are now RECORDED below with their reason
 // (reader/id pairs: this file's own ids differ from the withdrawn-ids
-// count above only in prefix duplication, not in count), one -
-// 5-rate.c1 - is GRADED at this package's other fixture (see
-// test_agnus_top_audio_ecs.cpp's DMA-SLOT-PERIOD-BOUNDS-SAMPLE-RATE), and
-// one - 5-appA-p263.c11 - stays not covered by this package: it needs the
+// count above only in prefix duplication, not in count); one -
+// 5-appA-p263.c11 - stays not covered by this package: it needs the
 // same integrated Agnus-Paula(-Denise) data path the RECORDED group below
 // names, and is outside the claim set this file's own build task closed.
 // ============================================================================
@@ -235,17 +235,19 @@
 //        5-hw.c10, 5-p148.c5, 5-join.c10, 5-appA-p265.c44, A-audxdat.c6.
 //
 //    COVERAGE NOTE 2: three more
-//    ids withdrawn, same necessary-but-not-sufficient reason. NOT COVERED
-//    BY THIS PACKAGE:
-//      - 5-rate.c1 (sampling-period bound) needs an elapsed-time
-//        measurement fixture.
+//    ids withdrawn, same necessary-but-not-sufficient reason.
+//      - 5-rate.c1 (sampling-period bound) needs a witness that can tell
+//        one grant per line apart from several, evenly-spaced grants per
+//        line - an equal-gap measurement alone cannot. RECORDED below
+//        (insufficient).
 //      - 5-appA-p263.c11 (Paula/Agnus/Denise transfer data among
 //        themselves) needs an integrated Agnus-Paula(-Denise) data-path
-//        fixture with a real RAM/data source.
+//        fixture with a real RAM/data source. NOT COVERED BY THIS PACKAGE.
 //      - 5-p139.c4 (channel numbering AND output-occurrence, one sentence)
 //        needs a DAC/output-pin boundary for its output-occurrence clause;
 //        withdrawn whole, not split, because the id names the whole
 //        sentence. Its numbering clause stays covered via 5-loc.c4.
+//        RECORDED below (outside-uut).
 //    See COVERAGE NOTE 2 in the file header above for the full text.
 //
 // 2. WORD-ALIGNED-FETCH-AND-LC-PAIR (6 claim ids).
@@ -684,22 +686,18 @@ int main(int argc, char** argv) {
             "range a channel is granted only once. NOT ESTABLISHED HERE: "
             "that the channel's DAC is DMA-driven, that the slot's word "
             "supplies two samples, that memory data is automatically "
-            "retrieved into AUDxDAT, that Paula, "
+            "retrieved into AUDxDAT, that the sampling period is bounded by "
+            "this allocation across elapsed time, that Paula, "
             "Agnus and Denise actually transfer data to each other over "
             "this address, or that output occurs on the "
             "addressed channel (an output-occurrence clause) "
             "- this fixture is agnus_audiodma.v alone, with no RAM input, "
-            "no delivered word, no observed sample byte, and no DAC "
-            "boundary; those propositions need an integrated "
-            "Agnus-to-Paula(-Denise) data path and a DAC/output boundary, "
-            "and are RECORDED below rather than asserted here. The "
-            "sampling-period bound is the one COVERAGE NOTE 2 proposition "
-            "NOT declined below: this fixture's own single hpos sweep "
-            "cannot establish it (no elapsed-time axis - hpos is a port "
-            "the harness sets, not something that advances on its own), "
-            "but this package's OTHER fixture can and does - see "
-            "test_agnus_top_audio_ecs.cpp's DMA-SLOT-PERIOD-BOUNDS-"
-            "SAMPLE-RATE. "
+            "no delivered word, no observed sample byte, no DAC boundary "
+            "and no elapsed-period or cross-chip measurement; those "
+            "propositions need an integrated Agnus-to-Paula(-Denise) data "
+            "path, a witness that can tell one slot per line apart from "
+            "several, and a DAC/output boundary, and are RECORDED below "
+            "rather than asserted here. "
             "[claims: 5-p141.c1, 5-rate.c2, 5-loc.c4]");
     }
 
@@ -1159,6 +1157,30 @@ int main(int argc, char** argv) {
         "Agnus-to-Paula data path with a real RAM/data source. [claims: "
         "sol:5-p137.c6 opus:5-hw.c10 sol:5-p148.c5 opus:5-join.c10 "
         "sol:5-appA-p265.c44 opus:A-audxdat.c6]");
+    checks.record(
+        "DECLINED at this boundary (insufficient): p.141 \"The  sampling "
+        "period  is limited by the number of DMA cycles allocated to an "
+        "audio channel.\" The per-line allocation itself IS established, "
+        "on assertion 1 (SLOT-PER-CHANNEL-PER-LINE) under its own ids: "
+        "each channel gets exactly one qualifying hpos value per sweep of "
+        "the full 0-511 range. What this record declines is the "
+        "further step from that allocation to a BOUND on the achievable "
+        "sampling period. A repeated-grant measurement was tried at this "
+        "package's other fixture (test_agnus_top_audio_ecs.cpp, where the "
+        "full Agnus top's own free-running beam counter gives elapsed "
+        "time to measure against) and withdrawn: an equal-gap comparator "
+        "over consecutive channel-0 grants shows only that grants recur "
+        "periodically, not that the allocation is what bounds the rate. "
+        "A design granting the channel several times per line at a fixed, "
+        "evenly-spaced interval (16 cycles apart, sixteen times a line) "
+        "would print the identical gaps, identically equal, and pass the "
+        "same comparator - the witness cannot tell \"once per line\" "
+        "apart from \"several times per line, evenly spaced\", so it does "
+        "not establish the bound the page states. Would need a witness "
+        "that a different-rate design would fail: a count of grants per "
+        "beam-counter line reload, or a direct comparison against a "
+        "second, independently-driven channel known to run at a "
+        "different rate. [claims: opus:5-rate.c1]");
     checks.record(
         "DECLINED at this boundary (outside-uut) (half graded: 5-loc.c4): "
         "p.139 \"The 'x' in the "
