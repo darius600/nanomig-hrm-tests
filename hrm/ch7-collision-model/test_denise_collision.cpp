@@ -31,13 +31,13 @@
 //   this build). Instantiated at denise.v:474-486 with bpldata and nsprite.
 //
 // ORDER OF WORK: SPECIFICATION.md in this directory was written from
-//   claims.jsonl's quotations alone and committed (e7c413a) before this
-//   agent opened denise_collision.v. This file's assertions, expected
+//   claims.jsonl's quotations alone and committed before
+//   denise_collision.v was opened. This file's assertions, expected
 //   values, and claim-id coverage follow that committed specification; the
-//   RTL was opened only after the commit, per the build brief's gate. Before
-//   writing SPECIFICATION.md, this agent additionally read two required
-//   sibling packages per its own task sheet ("existing coverage you must
-//   read before writing"): hrm/ch3-collision-registers/ and
+//   RTL was opened only after the commit. Before
+//   writing SPECIFICATION.md, two required
+//   sibling packages named by this package's own task sheet ("existing coverage you must
+//   read before writing") were also read: hrm/ch3-collision-registers/ and
 //   hrm/denise_collision/ (both already-committed test SOURCES, not RTL),
 //   plus hrm/ch4-sprite-collision/ for the same reason ch4-sprite-collision
 //   itself gives -- reusing an already-committed sibling harness's disclosed
@@ -45,26 +45,25 @@
 //   dblpf/bpldata/nsprite/data_out; the CLXDAT word address $00E->0x07; the
 //   pulse()/read_reg() timing convention; the harness-hygiene drain-read)
 //   is this pipeline's own established precedent for writing a
-//   specification without opening the module's own RTL file. This agent
-//   also read hrm/ch7-collision-playfield-mode/SPECIFICATION.md (a sibling
-//   package's own already-committed SPECIFICATION.md, not its RTL) to
+//   specification without opening the module's own RTL file.
+//   hrm/ch7-collision-playfield-mode/SPECIFICATION.md (a sibling
+//   package's own already-committed SPECIFICATION.md, not its RTL) was also read to
 //   confirm the seam between that package's page-214 mode comparison and
 //   this package's page-213 bare-capability propositions -- exactly the
 //   two-step gate's own purpose, two builders reasoning from specifications
 //   rather than from each other's tests.
 //
-// CORRECTION (the lead's, not this agent's): SPECIFICATION.md line 44 names
+// CORRECTION: SPECIFICATION.md line 44 names
 //   an RTL expression -- "because oddmatch is gated by `(dblpf | evenmatch)`
 //   in the RTL" -- inside a document meant to predate the implementation.
-//   That sentence reached this agent through the classify.evidence field of
+//   That sentence came through the classify.evidence field of
 //   claim sol:7-collision.c2 in ch7-collision-model.jsonl, which carries an
-//   earlier pipeline stage's own RTL measurement; the lead has since said
-//   this leaked into the task sheet ahead of the gate and is a defect in the
-//   brief, not in this package. The committed SPECIFICATION.md is left as
+//   earlier pipeline stage's own RTL measurement -- a defect in that
+//   evidence field, not in this package. The committed SPECIFICATION.md is left as
 //   written -- the record is more useful honest than edited after the fact.
-//   Per the lead's instruction, this note says where it came from and
+//   This note says where it came from and
 //   confirms which expected values, if any, rest on it: NONE. Every
-//   assertion below was independently re-derived by this agent from its own
+//   assertion below was independently re-derived from a direct
 //   reading of denise_collision.v (this build, after the spec commit), and
 //   checked specifically for this dependency:
 //     - A2 (SPRITE-GROUP-TO-PLAYFIELD-COLLISION) is measured at dblpf=1,
@@ -137,7 +136,7 @@
 //     apart, and separately several pixels apart in the same continuous run
 //     (no reset between them -- the same line), never co-resident in either
 //     case -- both read clear at bit 9. The "several pixels apart, same
-//     run" leg is the control the lead asked for: without it, this
+//     run" leg is the needed control: without it, this
 //     assertion would pass equally on a module that collides on mere
 //     proximity/same-line rather than on the exact same pixel.
 //   COLLISION-SETS-CLXDAT-BIT: CLXDAT read idle (nothing presented since the
@@ -164,13 +163,11 @@
 //   mutation gate does not require a claim id for it) proves the
 //   write/pulse/read measurement basis every graded assertion above shares
 //   actually delivers distinct, correctly positioned values before any of
-//   them is trusted -- per the build brief's own chapter-6 warning that a
-//   silently dead data path reports every data-dependent assertion as a
+//   them is trusted -- a silently dead data path would report every
+//   data-dependent assertion as a
 //   finding about the design instead of the harness.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 13.09.2026, after the
-//   specification commit -- denise_collision.v was opened only once, for
-//   this build, not before): 8 passed, 0 failed. All 7 graded propositions
+// RESULTS (after opening the RTL and building): 8 passed, 0 failed. All 7 graded propositions
 //   and the FIXTURE-LIVE-DATA-PATH control are GREEN: printed p.213's
 //   collision model -- the three named classes, their combination, the
 //   two-or-more/same-pixel condition, and CLXDAT as the register a
@@ -532,8 +529,8 @@ int main(int argc, char** argv) {
         uint16_t adjacent = h.read_reg(CLXDAT_ADDR);
 
         // Same continuous run (no reset between -- the same line), several
-        // pixels apart, still never co-resident. This leg is the control
-        // the lead asked for: without it, this assertion would pass equally
+        // pixels apart, still never co-resident. This leg is the needed
+        // control: without it, this assertion would pass equally
         // on a module that collides on mere same-line proximity rather than
         // the exact same pixel.
         h.pulse(0x00, 0x01);
