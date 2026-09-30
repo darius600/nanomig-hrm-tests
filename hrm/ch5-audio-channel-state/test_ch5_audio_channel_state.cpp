@@ -394,8 +394,8 @@
 //   scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> `lencount =
 //   1'b0;` (the same line F58-LENCOUNT-STARTUP-ARCS's own implementation record above changes),
 //   this package's own stimulus and comparator, unchanged, rebuilt against that tree (NANOMIG=
-//   the scratch copy) and run with the baseline AUDLEN=4 stimulus: offset 3 arrives at t=5560,
-//   offset 4 (the last word) arrives at t=7376; dmas rising edge in the open window (5560, 7376)
+//   the scratch copy) and run with the baseline AUDLEN=4 stimulus: offset 2 arrives at t=5560,
+//   offset 3 (the last word) arrives at t=7376; dmas rising edge in the open window (5560, 7376)
 //   at t=5584: dmareq=1 -- a page-following implementation makes this green.
 // MUTATION F58-LOOP-EXIT-TO-IDLE stimulus red
 //   D3 REPAIR: the outcome formula negated offR.exited_to_idle_after_off before choosing
@@ -1429,8 +1429,8 @@ int main(int argc, char** argv) {
                     foundEdge = true;
                     g16 = H.history[i].dmareq;
                     std::ostringstream o;
-                    o << "offset " << (armingWordIdx - 1) << " arrives at t=" << armT_host
-                      << ", offset " << armingWordIdx << " (the last word) arrives at t="
+                    o << "offset " << (armingWordIdx - 2) << " arrives at t=" << armT_host
+                      << ", offset " << (armingWordIdx - 1) << " (the last word) arrives at t="
                       << nextWordT_host << "; dmas rising edge in the open window ("
                       << armT_host << ", " << nextWordT_host
                       << ") at t=" << H.history[i].t << ": dmareq=" << H.history[i].dmareq;
@@ -1439,8 +1439,8 @@ int main(int argc, char** argv) {
             }
             if (!foundEdge) {
                 std::ostringstream o;
-                o << "offset " << (armingWordIdx - 1) << " arrives at t=" << armT_host
-                  << ", offset " << armingWordIdx << " (the last word) arrives at t="
+                o << "offset " << (armingWordIdx - 2) << " arrives at t=" << armT_host
+                  << ", offset " << (armingWordIdx - 1) << " (the last word) arrives at t="
                   << nextWordT_host << "; NO dmas rising edge observed in the open window ("
                   << armT_host << ", " << nextWordT_host << ")";
                 g16det = o.str();
@@ -1968,9 +1968,9 @@ int main(int argc, char** argv) {
                 if (shortR.h.history[i].dmas && !shortR.h.history[i-1].dmas) {
                     foundShort = true;
                     g16_short = shortR.h.history[i].dmareq;
-                    g16ShortDet = "AUDLEN=2 rerun: offset " + std::to_string(armingWordIdxShort - 1) +
+                    g16ShortDet = "AUDLEN=2 rerun: offset " + std::to_string(armingWordIdxShort - 2) +
                         " arrives at t=" + std::to_string(armTShort23) + ", offset " +
-                        std::to_string(armingWordIdxShort) + " (the last word) arrives at t=" +
+                        std::to_string(armingWordIdxShort - 1) + " (the last word) arrives at t=" +
                         std::to_string(nextTShort23) + "; dmas rising edge in the open window (" +
                         std::to_string(armTShort23) + ", " + std::to_string(nextTShort23) +
                         ") at t=" + std::to_string(shortR.h.history[i].t) + ": dmareq=" +
@@ -1989,7 +1989,7 @@ int main(int argc, char** argv) {
                   "`lencount = 1'b0;` (the same line F58-LENCOUNT-STARTUP-ARCS's own implementation "
                   "record above changes), this package's own stimulus and comparator, unchanged, "
                   "rebuilt against that tree (NANOMIG= the scratch copy) and run with the baseline "
-                  "AUDLEN=4 stimulus: offset 3 arrives at t=5560, offset 4 (the last word) arrives "
+                  "AUDLEN=4 stimulus: offset 2 arrives at t=5560, offset 3 (the last word) arrives "
                   "at t=7376; dmas rising edge in the open window (5560, 7376) at t=5584: dmareq=1 "
                   "-- a page-following implementation makes this green.");
 
