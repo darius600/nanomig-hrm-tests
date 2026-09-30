@@ -159,7 +159,7 @@ written, per this package's own task instructions.
 None of the 24 claims' restatements touch the CHIP column (no claim reads
 "SERDATR/SERDAT/SERPER/ADKCONR is in the Paula chip"). That column, for
 these same four rows (among others), is `hrm/ch8-appb-chip-column-paula`'s
-own subject, and that package's REPAIR (15.09.2026) declined all of its
+own subject, and that package declines all of its
 CHIP-column claims with `record()`, reasoning that this clone's module
 partition (`paula`/`userio`/`denise`) is not shown anywhere to track the
 original silicon chip boundaries the p.287 legend actually names. Nothing
@@ -335,7 +335,7 @@ quote, same content — "is named UARTBRK" / "is located at bit 11").
 `sol:8-adkcon.c23` is documented in the claims file itself as a **restored
 exact duplicate** of `opus:8-adkcon.c25` — same restatement text, same
 page, same quote — dropped once by `build_union.py` as an exact duplicate
-and restored 2026-09-16 because a dropped uid has no home. Its own
+and restored because a dropped uid has no home. Its own
 classify note says its classification is "the one measured for
 opus:8-adkcon.c25 ... carried across unchanged." All three therefore belong
 on the same line. **Testable form:** ADKCON bit 11 is the bit this
@@ -450,8 +450,8 @@ claims are already graded elsewhere" above.
 
 ## What this specification deliberately does not contain
 
-Port names, signal names and concrete stimulus/expected values, per the
-build brief's order of work — added only once this file is committed and
+Port names, signal names and concrete stimulus/expected values —
+added only once this file is committed and
 the RTL is read for step 2/3. No chip-ownership (CHIP=Paula) proposition
 and no proposition about the leading `*` mark are invented to fill a gap;
 both are reported above as genuinely out of scope for this claims file, not
