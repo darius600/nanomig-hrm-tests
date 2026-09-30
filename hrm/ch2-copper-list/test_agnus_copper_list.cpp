@@ -29,9 +29,9 @@
 //   bit 0 is always 1.
 //
 // Machine-readable mutation records for tools/check_gates.py --tests. All eight
-// assertions were mutated at the STIMULUS on 05.09.2026 - the scenario changed,
-// never the expected value - and each was reverted immediately after observing
-// red. Where an ID carries two assertions, only the one named by the mutation
+// assertions are mutated at the STIMULUS - the scenario changes, never the
+// expected value - and each is reverted immediately after observing red.
+// Where an ID carries two assertions, only the one named by the mutation
 // went red; that is the point of the mutation and not a partial result.
 // MUTATION L1 stimulus red the last two MOVEs swapped in the list, so all three still run but not in the order the assertion names
 // MUTATION L2 stimulus red the WAIT target moved from line $40 to line $10, which the beam has already passed, so the following MOVE runs immediately instead of waiting
