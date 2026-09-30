@@ -31,7 +31,7 @@
 // BOUNDARY: denise_sprites.v / denise_sprites_shifter.v, reached at
 //   $(NANOMIG)/src/minimig-aga/. Port list, register word-address map,
 //   four-phase 7MHz clocking, and the DATB-then-DATA arm-on-write
-//   convention are NOT read from those two files by this agent for
+//   convention are NOT read from those two files for
 //   this package -- they are reused verbatim from two SIBLING packages
 //   already committed and already built against this exact fixture:
 //   hrm/denise_sprites/test_denise_sprites.cpp (the original FPGA-030
@@ -49,7 +49,7 @@
 //   package's own 4, plus the 5 the build task named directly, see
 //   CLAIM SOURCE, at the foot of this header) and the two already-committed sibling
 //   harnesses' disclosed interface ONLY. denise_sprites.v and
-//   denise_sprites_shifter.v themselves were not opened by this agent
+//   denise_sprites_shifter.v themselves were not opened
 //   until after that commit, per the build brief's explicit gate. The
 //   register word-address convention (SPR0POS=0xA0 .. SPR1DATB=0xA7),
 //   the clk7_en/c1/c3 four-phase clocking, and the arm-on-write
