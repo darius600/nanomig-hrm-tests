@@ -134,6 +134,14 @@
 // NM-HRM-004 divergence, unaffected by these ecs=0-only additions); each
 // mutation, run alone and reverted, moved the count to 91 passed, 2 failed
 // with exactly the one targeted line red, verified with `make -B test`.
+//
+// ADDED (followups.md "inverse control (004)"): five APPBTILDE-ECS1 rows,
+// the ecs=1 individual twin of the five named APPBTILDE ecs=0 rows
+// (BLTCON0L, BLTSIZV, BLTSIZH, SPRHDAT, DENISEID). New baseline: 97 passed,
+// 1 failed (the same pre-existing NM-HRM-004 aggregate red; all five new
+// rows are green).
+//
+// MUTATION APPBTILDE-ECS1 stimulus red the BLTCON0L row's tested address changed from 0x2D to 0xC0 (CONTROL_REG, always accepted at ecs=1 regardless of CDANG); the row read "accepted with CDANG clear" too, breaking the blocked-then-admitted pattern the assertion checks (96 passed, 2 failed, the pre-existing NM-HRM-004 SWEEP red unaffected); reverted (97 passed, 1 failed). The five APPBTILDE-ECS1 rows begin their label with the word APPBTILDE-ECS1, so the gate reads one id for the family; this record covers it.
 
 #include <cstdint>
 #include <functional>
@@ -894,6 +902,41 @@ int main(int argc, char** argv) {
     checks.expect(!ocs_cdang0.count(0x3F) && ocs_cdang1.count(0x3F),
         "APPBTILDE $3F DSKSYNC ecs=0: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
         "(Appendix B '~', p.290, byte $07E) [claims: B-copper-tilde.c26 B-dsksync.copper]");
+
+    // --- Per-row "~" marks, ECS-ONLY INVERSE CONTROL (followups.md "inverse
+    // control (004)"): the same five rows, individually, at ecs=1. The
+    // SWEEP-level "SWEEP ecs=1 cdang=0 vs Appendix C" check above already
+    // grades the WHOLE $20-$3F band against Appendix C's wider ECS reading
+    // and is red at baseline (NM-HRM-004: this RTL's ecs=1/cdang=0 range
+    // matches ecs=0/cdang=0 exactly, not Appendix C's "same as OCS CDANG=1"
+    // equivalence). That red is a claim about the AGGREGATE band. These five
+    // are a narrower, DIFFERENT claim, individually: does the per-register
+    // "~" mark's own OWN behaviour -- blocked with CDANG clear, admitted
+    // once CDANG is set (Appendix B, p.287's legend, chipset-general) --
+    // still hold at ecs=1, one register at a time? illegal = (DA8-1<=$3F &&
+    // !cdang) || (DA8-1<=$1F && !ecs) (agnus_copper.v, header disclosure
+    // above) predicts yes for every one of these five (each DA8-1 <= $3F,
+    // so ecs never enters their own term at cdang=0, and cdang=1 always
+    // clears the first term regardless of ecs) -- the inverse of the
+    // aggregate red: this control shows the per-register CDANG gate itself
+    // is not the broken part, only the wider ECS-admission Appendix C
+    // describes. Graded from the SWEEP ecs=1 accepted sets already computed
+    // above (ecs_cdang0, ecs_cdang1), same method as the ecs=0 rows above.
+    checks.expect(!ecs_cdang0.count(0x2D) && ecs_cdang1.count(0x2D),
+        "APPBTILDE-ECS1 $2D BLTCON0L ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $05A; ecs=1 inverse control for NM-HRM-004) [claims: B-bltcon0l.copper B-copper-tilde.c14]");
+    checks.expect(!ecs_cdang0.count(0x2E) && ecs_cdang1.count(0x2E),
+        "APPBTILDE-ECS1 $2E BLTSIZV ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $05C; ecs=1 inverse control for NM-HRM-004) [claims: B-bltsizv.copper B-copper-tilde.c15]");
+    checks.expect(!ecs_cdang0.count(0x2F) && ecs_cdang1.count(0x2F),
+        "APPBTILDE-ECS1 $2F BLTSIZH ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.289, byte $05E; ecs=1 inverse control for NM-HRM-004) [claims: B-bltsizh.copper B-copper-tilde.c16]");
+    checks.expect(!ecs_cdang0.count(0x3C) && ecs_cdang1.count(0x3C),
+        "APPBTILDE-ECS1 $3C SPRHDAT ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $078; ecs=1 inverse control for NM-HRM-004) [claims: B-copper-tilde.c24 B-sprhdat.copper]");
+    checks.expect(!ecs_cdang0.count(0x3E) && ecs_cdang1.count(0x3E),
+        "APPBTILDE-ECS1 $3E DENISEID ecs=1: rejected on reg_address_out with CDANG clear, accepted with CDANG set "
+        "(Appendix B '~', p.290, byte $07C; ecs=1 inverse control for NM-HRM-004) [claims: B-copper-tilde.c25 B-deniseid.copper]");
 
     // --- Per-row no mark (pp.290-293): writable regardless of COPCON --
     // accepted on reg_address_out with CDANG clear AND with CDANG set.
