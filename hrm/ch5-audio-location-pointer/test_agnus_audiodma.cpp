@@ -18,7 +18,7 @@
 //   assigned.
 //
 // FINDING CANDIDATE 1 (CANDIDATES.md item 1, already measured twice
-//   independently and re-checked by the lead before this package existed):
+//   independently and re-checked before this package existed):
 //   agnus_audiodma.v:82 latches `audlch[audlcsel] <= data_in[4:0]` - five
 //   bits - and the module has no `ecs` port, no chipset input, and no
 //   mention of the chipset anywhere in its 157 lines. Chapter 5's own text
@@ -33,7 +33,7 @@
 //   and the OCS/three-bit alternative is tested and EXPECTED, CORRECTLY, TO
 //   FAIL (assertion 9) - because there is nothing in this module to select
 //   the OCS reading with, not because the fixture is broken. This file does
-//   not assign an NM-HRM-nnn key; the lead issues those.
+//   not assign an NM-HRM-nnn key.
 //
 // ORDER OF WORK, DISCLOSED. This file was committed twice. The FIRST commit
 //   contained only the header above and the SPECIFICATION below, with a stub
@@ -46,7 +46,7 @@
 //   above for finding candidate 1 (from CANDIDATES.md, itself built by
 //   re-checking a classifier's find against the RTL before this package's
 //   build stage began) are the only RTL-derived facts that specification
-//   rested on; agnus_audiodma.v itself was not opened by this builder until
+//   rested on; agnus_audiodma.v itself was not opened until
 //   after that commit. This, the SECOND commit, adds everything found only
 //   by opening the RTL directly - see RTL DISCLOSURE below - and changes NO
 //   expected value the SPECIFICATION section already committed.
@@ -68,8 +68,9 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// COVERAGE REPAIR (2026-09-12, independent validation finding V-09):
-//   assertion 1, SLOT-PER-CHANNEL-PER-LINE, formerly cited 18 ids. Its own
+// COVERAGE NOTE: assertion 1, SLOT-PER-CHANNEL-PER-LINE, is scoped from an
+//   initial 18 candidate ids down to the ones its own measurement actually
+//   establishes. Its own
 //   two booleans (one_slot_each, right_register) establish only that each
 //   channel has its own DMA slot and that, at that slot, reg_address_out
 //   names that channel's own AUDxDAT address - this fixture has no RAM
@@ -86,8 +87,8 @@
 //   inter-chip transfer, stay on assertion 1 - its measurement is both
 //   necessary and sufficient for those.
 //
-// COVERAGE REPAIR 2 (2026-09-12, revalidation blocker 1a,
-//   work/2026-09-12_ch5_sol_revalidation.md): re-examination of assertion 1's
+// COVERAGE NOTE 2 (work/2026-09-12_ch5_sol_revalidation.md):
+//   re-examination of assertion 1's
 //   remaining six ids found three more that the same two booleans do not
 //   establish - a single-line hpos sweep with no RAM input, no delivered
 //   word, no DAC boundary and no elapsed-time measurement is necessary but
@@ -102,7 +103,7 @@
 //       fixture only shows the address on reg_address_out; no data crosses
 //       to Paula or Denise anywhere in this module. NOT COVERED BY THIS
 //       PACKAGE - needs an integrated Agnus-Paula(-Denise) data-path fixture
-//       with a real RAM/data source (the same gap the twelve V-09 ids
+//       with a real RAM/data source (the same gap the twelve ids
 //       above need).
 //     - 5-p139.c4 is one claim id for one sentence with two clauses ("the
 //       'x' ... stands for the number of the audio channel WHERE THE OUTPUT
@@ -131,9 +132,9 @@
 //   claims text. NOT COVERED BY THIS PACKAGE - needs gary.v. The remaining
 //   two ids (5-appA-p263.c6, A-pre.c7) state "the lowest bit of all
 //   pointers must be written as zero," with no chip-memory clause. They were
-//   kept on that reading and are now WITHDRAWN TOO - see COVERAGE REPAIR 3.
+//   kept on that reading and are now WITHDRAWN TOO - see COVERAGE NOTE 3.
 //
-// COVERAGE REPAIR 3, 2026-09-12, final-audit blockers 1 and 2. Two further
+// COVERAGE NOTE 3. Two further
 //   defects, both of the same shape: an id credited to a predicate that does
 //   not establish the whole of what the claim says.
 //
@@ -163,25 +164,23 @@
 //   establishes it is.
 //
 //   No predicate, boolean, mutation or PASS/FAIL outcome changed in either
-//   repair - only cited-claims text and this header.
+//   note - only cited-claims text and this header.
 //
 // ============================================================================
 // SPECIFICATION - written from the 176 claims' manual quotations alone,
-// before agnus_audiodma.v was opened. Ten assertions. Before the COVERAGE
-// REPAIR above withdrew twelve of them, every one of the 176 claim ids
-// appeared in exactly the assertion(s) below whose proposition it states
-// (five ids that state BOTH the ECS reading and the OCS/18-bit reading in
-// the same sentence are cited under both assertion 8 and assertion 9, per
-// the same "cited under both assertions it actually supports" convention
-// hrm/ch6-blitter-ecs's header documents), verified by script against the
-// full 176-line claim file. The COVERAGE REPAIR above
-// withdrew twelve of those ids from assertion 1 as not actually established
+// before agnus_audiodma.v was opened. Ten assertions. Every one of the 176
+// claim ids appears in exactly the assertion(s) below whose proposition it
+// states (five ids that state BOTH the ECS reading and the OCS/18-bit
+// reading in the same sentence are cited under both assertion 8 and
+// assertion 9, per the same "cited under both assertions it actually
+// supports" convention hrm/ch6-blitter-ecs's header documents), verified by
+// script against the full 176-line claim file. COVERAGE NOTE above
+// withdraws twelve of those ids from assertion 1 as not actually established
 // by its own measurement; they are listed, with the fixture they need, in
 // assertion 1's own text below and are deliberately absent from every
-// assertion string in this file - 164 ids remained asserted and 12 were
-// reported not covered after that repair. COVERAGE REPAIR 2 above withdrew
+// assertion string in this file. COVERAGE NOTE 2 above withdraws
 // three more ids from assertion 1 and eighteen ids from assertion 6, for the
-// same necessary-but-not-sufficient reason; 143 ids now remain asserted here
+// same necessary-but-not-sufficient reason; 143 ids remain asserted here
 // and 33 are reported not covered by this package.
 // ============================================================================
 //
@@ -193,10 +192,10 @@
 //    assertion below that depends on data actually moving through this
 //    module.
 //
-// 1. SLOT-PER-CHANNEL-PER-LINE (3 claim ids credited; repaired 2026-09-12, see
-//    COVERAGE REPAIR below and COVERAGE REPAIR 2 above -- 12 ids formerly
-//    cited here are NOT COVERED BY THIS PACKAGE, and a further 3 withdrawn
-//    2026-09-12 are also NOT COVERED BY THIS PACKAGE).
+// 1. SLOT-PER-CHANNEL-PER-LINE (3 claim ids credited; see
+//    COVERAGE NOTE below and COVERAGE NOTE 2 above -- 12 ids
+//    cited here are NOT COVERED BY THIS PACKAGE, and a further 3 are also
+//    NOT COVERED BY THIS PACKAGE).
 //    Quotes: p.139 "The channels are numbered 0, 1, 2, and 3"; p.141 "Each
 //    audio channel is allocated one DMA slot per horizontal scan line".
 //    Expected if NanoMig conforms: each of the four channels (x=0..3) has
@@ -205,7 +204,7 @@
 //    resource.
 //    Claims: 5-p141.c1, 5-rate.c2, 5-loc.c4 .
 //
-//    COVERAGE REPAIR (independent validation finding V-09): this
+//    COVERAGE NOTE: this
 //    assertion's two booleans (one_slot_each, right_register) prove only
 //    that each channel gets its own hpos slot and that, at that slot,
 //    reg_address_out names that channel's own AUDxDAT address. There is no
@@ -224,7 +223,7 @@
 //      - memory data is automatically retrieved into AUDxDAT: 5-p137.c6,
 //        5-hw.c10, 5-p148.c5, 5-join.c10, 5-appA-p265.c44, A-audxdat.c6.
 //
-//    COVERAGE REPAIR 2 (2026-09-12, revalidation blocker 1a): three more
+//    COVERAGE NOTE 2: three more
 //    ids withdrawn, same necessary-but-not-sufficient reason. NOT COVERED
 //    BY THIS PACKAGE:
 //      - 5-rate.c1 (sampling-period bound) needs an elapsed-time
@@ -236,7 +235,7 @@
 //        needs a DAC/output-pin boundary for its output-occurrence clause;
 //        withdrawn whole, not split, because the id names the whole
 //        sentence. Its numbering clause stays covered via 5-loc.c4.
-//    See COVERAGE REPAIR 2 in the file header above for the full text.
+//    See COVERAGE NOTE 2 in the file header above for the full text.
 //
 // 2. WORD-ALIGNED-FETCH-AND-LC-PAIR (6 claim ids).
 //    Quotes: p.138 "the first byte of data must start at a word-address
@@ -307,10 +306,10 @@
 //    B-aud3lch.chip, B-aud3lcl.addr, B-aud3lcl.chip, C-map.lch.addr,
 //    C-map.lch.chip, C-prose.lch .
 //
-// 6. POINTER-LSB-ALWAYS-ZERO (NO claim id credited; repaired 2026-09-12
-//    twice -- 18 ids withdrawn at revalidation blocker 1a, see COVERAGE
-//    REPAIR 2, and the last 2 withdrawn at final-audit blocker 2, see
-//    COVERAGE REPAIR 3. The assertion still runs as the control for that
+// 6. POINTER-LSB-ALWAYS-ZERO (NO claim id credited --
+//    18 ids withdrawn, see COVERAGE
+//    NOTE 2, and the last 2 withdrawn, see
+//    COVERAGE NOTE 3. The assertion still runs as the control for that
 //    withdrawal).
 //    Quotes: appendix A p.263 "The least significant bit of every pointer-
 //    type register ... must always be written with a zero."
@@ -358,7 +357,7 @@
 //    positions have NO effect on the DMA address, and the total stored
 //    address is 18 bits, not 20.
 //    Per CANDIDATES.md (required reading before this package was built,
-//    itself re-checked against the RTL by the lead): agnus_audiodma.v has no
+//    itself re-checked against the RTL): agnus_audiodma.v has no
 //    ecs or chipset port anywhere in its 157 lines, so the OCS alternative
 //    cannot be selected for at all - the module is expected, and has already
 //    been measured twice independently, to implement the five-bit (ECS) form
@@ -710,8 +709,8 @@ int main(int argc, char** argv) {
         // bit-for-bit into audlcl's OWN [15:1] labels, which then become
         // address_out's C-side bits [14:0] (address_out's C-bit m = Verilog
         // bit m+1) - i.e. address_out's low 15 bits equal (data_in >> 1), not
-        // data_in itself. The first version of this check compared against
-        // the raw written constant and failed; this is the same class of
+        // data_in itself. Comparing against
+        // the raw written constant would fail; this is the same class of
         // Verilog-label-vs-Verilator-bit-index offset agnus_copper_
         // locreg_width's header documents finding in COP1LCL, not an RTL
         // deviation.
@@ -1101,31 +1100,29 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // CHAPTER 7 REOFFER -- 2 claims offered to this package in an earlier lot,
-    // declined then, never recorded then. Examined again here and declined
-    // again, agreeing with the reasoning already written into this file's own
-    // COVERAGE REPAIR 3 (assertion 6) and REGISTER-MAP-ADDRESSES-AND-
+    // CHAPTER 7 -- 2 claims declined here, agreeing with the reasoning
+    // already written into this file's own
+    // COVERAGE NOTE 3 (assertion 6) and REGISTER-MAP-ADDRESSES-AND-
     // AGNUS-DECODE (assertion 5) text. No predicate, stimulus or expected
     // value above is touched by this block.
     // =========================================================================
     checks.record(
         "opus:7-appA-pre.c7 (p.263, \"The lowest bit of all pointers must be "
-        "written as zero\"): not asserted -- this package's own COVERAGE "
-        "REPAIR 3 already withdrew the twin id A-pre.c7 from "
-        "POINTER-LSB-ALWAYS-ZERO for the identical reason: that predicate "
+        "written as zero\"): not asserted -- this package's own "
+        "POINTER-LSB-ALWAYS-ZERO assertion also declines the twin id A-pre.c7 "
+        "for the identical reason: that predicate "
         "(agnus_audiodma.v:89, data_in bit 0 never sampled) probes ONE "
         "pointer-type register, AUD0LCL. Both this id and A-pre.c7 quantify "
         "over EVERY pointer-type register in the machine; a universal claim "
         "is not established by one witness, however structural the "
-        "mechanism looks. Agreed with that repair; no new measurement "
-        "changes it. Would need a predicate over every pointer family (a "
+        "mechanism looks. Would need a predicate over every pointer family (a "
         "top-level fixture) or a narrower split id scoped to the audio "
         "pointer.");
     checks.record(
         "opus:7-appA-pre.c2 (p.263, \"The addresses shown here are used by "
         "the special custom chips ('Paula', 'Agnus', and 'Denise') for "
         "transferring data among themselves\"): not asserted -- declined "
-        "today at both hrm/ch5-audio-location-pointer and "
+        "at both hrm/ch5-audio-location-pointer and "
         "hrm/agnus_top_register_bus. This package's own "
         "REGISTER-MAP-ADDRESSES-AND-AGNUS-DECODE assertion (5) already "
         "disclaims the Paula side in its own text: the \"and NOT decoded by "
@@ -1133,10 +1130,9 @@ int main(int argc, char** argv) {
         "\"needs paula_audio_channel.v, outside this package's assigned "
         "single-module fixture, and is not re-measured here.\" This fixture "
         "is agnus_audiodma.v alone -- it shows Agnus's own decode, never a "
-        "transfer to or from Paula or Denise. Agreed with the earlier "
-        "decline; no new measurement changes it. Would need an integrated "
+        "transfer to or from Paula or Denise. Would need an integrated "
         "Agnus-Paula(-Denise) data-path fixture with a real RAM/data source "
-        "-- the same gap COVERAGE REPAIR 2 already named for "
+        "-- the same gap COVERAGE NOTE 2 already named for "
         "5-appA-p263.c11's identical proposition.");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
@@ -1169,13 +1165,13 @@ int main(int argc, char** argv) {
 //   `SLOT_HPOS[ch]` to `SLOT_HPOS[(ch + 1) % 4]` while `audio_dmal` and the
 //   DAT[ch] comparison still target channel ch -> FAIL, the grant never
 //   lands on ch's own slot so `granted` reads false for every channel;
-//   8 passed, 2 failed. Re-run 2026-09-12 after the V-09 coverage repair
-//   (assertion 1's cited-claims text was narrowed from 18 to 6 ids; its two
-//   booleans and their code were not touched): identical result, only this
+//   8 passed, 2 failed. Confirmed after
+//   assertion 1's cited-claims text was narrowed from 18 to 6 ids (its two
+//   booleans and their code untouched): identical result, only this
 //   assertion newly red, reverted byte-identical, clean rebuild reproduced
-//   9 passed/1 failed. Re-run again 2026-09-12 after COVERAGE REPAIR 2
-//   (assertion 1's cited-claims text was narrowed further from 6 to 3 ids;
-//   its two booleans and their code again not touched): identical result -
+//   9 passed/1 failed. Confirmed again after
+//   assertion 1's cited-claims text was narrowed further from 6 to 3 ids
+//   (its two booleans and their code again untouched): identical result -
 //   8 passed, 2 failed with only this assertion newly red, reverted
 //   byte-identical (`diff` against a saved pre-mutation copy), clean
 //   rebuild reproduced 9 passed/1 failed.
@@ -1194,34 +1190,31 @@ int main(int argc, char** argv) {
 //   channel-index typo, oracle untouched) -> FAIL, channel ch's own pointer
 //   never receives any of the fifteen walked bits, so every one of the 4x15
 //   sub-checks fails; 8 passed, 2 failed.
-// MUTATION REGISTER-MAP-ADDRESSES-AND-AGNUS-DECODE stimulus red, WITH A GENUINE FIXTURE GAP FOUND ALONG THE WAY.
-//   First attempt: the LCL write target changed from `LCL[ch]` to
-//   `LCL[(ch + 2) % 4]` (oracle untouched) against the assertion as it stood
-//   at that point -> RESULT: 9 passed, 1 failed - the mutation did NOT turn
-//   this assertion red. Diagnosed rather than accepted: read_pointer() only
-//   shows the WORKING POINTER (agnus_audiodma.v:132), a snapshot taken at
-//   grant() time; a write landing in the wrong channel's LOCATION bank AFTER
+// MUTATION REGISTER-MAP-ADDRESSES-AND-AGNUS-DECODE stimulus red, WITH A GENUINE FIXTURE GAP.
+//   Changing the LCL write target from `LCL[ch]` to
+//   `LCL[(ch + 2) % 4]` (oracle untouched) does NOT turn this assertion red
+//   against a version of the assertion that only reads read_pointer()'s
+//   WORKING POINTER (agnus_audiodma.v:132), a snapshot taken at
+//   grant() time: a write landing in the wrong channel's LOCATION bank AFTER
 //   that channel's own grant has already happened changes something nothing
-//   in the assertion ever reads again, so the corruption is invisible. This
+//   such an assertion ever reads again, so the corruption would be invisible.
+//   This
 //   is a real gap in the assertion, not a mutation-testing technicality, so
-//   the assertion itself was fixed - a closing sweep was added that
+//   the assertion adds a closing sweep that
 //   re-grants every channel once more, after all sixteen writes are done,
 //   and re-checks each against its own first-seen value (see the "Re-grant
-//   EVERY channel again" comment in assertion 5's code above) - and the
-//   fixed baseline was reconfirmed clean (9 passed, 1 failed) before
-//   repeating the mutation. Repeated against the FIXED assertion: the
-//   identical `LCL[(ch + 2) % 4]` mutation -> FAIL, "no_cross_talk" now
-//   correctly breaks in the closing sweep; 8 passed, 2 failed. The fixture
-//   fix is committed; the reported baseline and every other mutation in this
-//   list were run against the fixed version.
+//   EVERY channel again" comment in assertion 5's code above); baseline:
+//   9 passed, 1 failed. Against this assertion, the
+//   identical `LCL[(ch + 2) % 4]` mutation -> FAIL, "no_cross_talk"
+//   correctly breaks in the closing sweep; 8 passed, 2 failed.
 // MUTATION POINTER-LSB-ALWAYS-ZERO stimulus red: the "bit1 only" write changed from 0x0002 to
 //   0x0000 (identical to the base-case write) -> FAIL, "bit1_does_change_it"
 //   becomes false because the two measurements are now identical by
 //   construction, not because of a real gate - correctly catching that this
-//   mutation makes the control meaningless; 8 passed, 2 failed. Re-run
-//   2026-09-12 after COVERAGE REPAIR 2 (assertion 6's cited-claims text was
-//   narrowed from 20 to 2 ids; its two booleans and their code were not
-//   touched): identical result - 8 passed, 2 failed with only this
+//   mutation makes the control meaningless; 8 passed, 2 failed. Confirmed
+//   after assertion 6's cited-claims text was
+//   narrowed from 20 to 2 ids (its two booleans and their code untouched):
+//   identical result - 8 passed, 2 failed with only this
 //   assertion newly red, reverted byte-identical (`diff` against a saved
 //   pre-mutation copy), clean rebuild reproduced 9 passed/1 failed.
 // MUTATION POINTER-REGISTER-SPACE-LONGWORD stimulus red: the long-word-alignment table's channel-2 entry

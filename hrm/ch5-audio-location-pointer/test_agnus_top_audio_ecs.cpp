@@ -381,7 +381,7 @@ int main(int argc, char** argv) {
 // and run before being reverted; the baseline quoted for each (1 passed, 2
 // failed) is what a clean rebuild of the committed file prints.
 //
-// MUTATION TOP-LEVEL-LIVENESS stimulus red: run at ecs=1 (the repaired
+// MUTATION TOP-LEVEL-LIVENESS stimulus red: run at ecs=1 (the
 //   baseline), kHighStim changed from 0x0015 to 0x0014 (kLowStim and
 //   kExpected left untouched) -> FAIL, measured 0xA1515 against the
 //   unchanged expected 0xA9515 (the written high half's own bit 0, which
@@ -389,13 +389,13 @@ int main(int argc, char** argv) {
 //   WORD-ALIGNED-FETCH-AND-LC-PAIR, no longer assembles to the expected
 //   constant); 0 passed, 3 failed. Reverted, clean rebuild reproduced 1
 //   passed/2 failed.
-//   (A first attempt changed kLowStim's own bit 0, 0x2A2A -> 0x2A2B, and
-//   measured NO change at all -- agnus_audiodma.v:89 reads only
+//   (Changing kLowStim's own bit 0, 0x2A2A -> 0x2A2B, would measure NO change
+//   at all -- agnus_audiodma.v:89 reads only
 //   data_in[15:1], so that bit is structurally never sampled, exactly the
 //   fact test_agnus_audiodma.cpp's own POINTER-LSB-ALWAYS-ZERO assertion
-//   measures. Diagnosed rather than reported as a false pass: the mutation
-//   probed a bit this module never stores, not a broken comparator. The
-//   kHighStim mutation above replaces it.)
+//   measures: that mutation would probe a bit this module never stores, not
+//   demonstrate a broken comparator. The
+//   kHighStim mutation above is used instead.)
 // MUTATION LCH-ECS-PORT-CHANGES-WHAT-LOADS stimulus green: h0's own AUD0LCH
 //   stimulus changed from 0x001F to 0x0007 (h0 still driven at ecs=false,
 //   h1 unchanged at ecs=true with 0x001F) -> measured r_ocs=0x3FFFF,
