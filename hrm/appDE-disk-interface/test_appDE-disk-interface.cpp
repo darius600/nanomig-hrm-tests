@@ -424,8 +424,20 @@ int main(int argc, char** argv) {
     {
         Rig r(1);  // floppy_drives=1: drive 1 present, see FIXTURE-LIVE-DRIVE1
         bool mut = mutating("P-READY-MOTOR-INVARIANT-DRIVE1");
+        // Read back right after select_with_motor(), RESET-DUTY's own
+        // technique (peek_index(n), no clock edge) -- the page's own
+        // sentence starts with the motor condition, and until now nothing
+        // in this block MEASURED the latch; "motor latched on at a genuine
+        // select edge" was literal text. Defaults to true (not applicable)
+        // in the mutated branch below, which deliberately never latches the
+        // motor at all -- that branch tests a different axis (the !ready()
+        // comparator's own sensitivity to a real stimulus change), not this
+        // precondition, and RESET-DUTY drive 1's own note (elsewhere in
+        // this same run) already measures the latch taking on drive 1.
+        bool motor_latched_on = true;
         if (!mut) {
             r.select_with_motor(1, /*motor_on_level=*/true);
+            motor_latched_on = r.peek_index(1);
         } else {
             // MUTATION (rule against mutating an already-failing check):
             // substitute a genuine, independently-live stimulus change
@@ -436,14 +448,18 @@ int main(int argc, char** argv) {
         }
         bool ready_state = r.ready();
         checks.note("P-READY-MOTOR-INVARIANT-DRIVE1: drive1, no disk, " +
-                    std::string(mut ? "deselected (mutated substitute)" : "motor latched on at a genuine select edge") +
+                    std::string(mut ? "deselected (mutated substitute)"
+                                    : ("motor latched on at a genuine select edge, motor latch=" +
+                                       std::to_string(motor_latched_on))) +
                     " -> ready=" + std::to_string(ready_state));
-        checks.expect(!ready_state,
+        checks.expect(motor_latched_on && !ready_state,
             "P-READY-MOTOR-INVARIANT-DRIVE1 (p.334, figure, pin 1 RDY*, corroborating sol:E-disk.c26 / "
-            "opus:E-extdisk-iface.c4 on drive 1): with drive 1 configured present, the motor genuinely latched "
-            "on at a select edge and no disk in the drive, the printed motor-on branch requires a disk "
-            "installed and up to speed for RDY* to read asserted; with none installed the page predicts it "
-            "deasserted on drive 1 as on drive 0");
+            "opus:E-extdisk-iface.c4 on drive 1): the page's own precondition, measured -- the motor latch "
+            "read back through peek_index(1) right after select_with_motor() -- must itself be on before this "
+            "can mean anything; with drive 1 configured present, the motor genuinely latched on at a select "
+            "edge and no disk in the drive, the printed motor-on branch then requires a disk installed and up "
+            "to speed for RDY* to read asserted; with none installed the page predicts it deasserted on drive "
+            "1 as on drive 0");
     }
 
     // ========================================================================
@@ -940,7 +956,7 @@ int main(int argc, char** argv) {
 // MUTATION sol:E-disk.c26 stimulus green: this assertion is RED at baseline (p.334 pin 1 and p.369 predict RDY* deasserted for a motor genuinely latched on with no disk; paula_floppy reads it asserted), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (leaving the drive deselected instead of latching the motor) through the identical !ready() comparator and the same label, proving the comparator is sensitive to a real difference (MUTATE=sol:E-disk.c26).
 // MUTATION opus:E-extdisk-iface.c4 stimulus green: same substitute as sol:E-disk.c26, independent uid (MUTATE=opus:E-extdisk-iface.c4).
 // MUTATION FIXTURE-LIVE-DRIVE1 stimulus red: drive 1 is never actually selected, so the "asserts once selected" half is never exercised on drive 1 (MUTATE=FIXTURE-LIVE-DRIVE1).
-// MUTATION P-READY-MOTOR-INVARIANT-DRIVE1 stimulus green: this assertion is RED at baseline (p.334 pin 1 predicts RDY* deasserted for drive 1's motor genuinely latched on with no disk; paula_floppy reads it asserted, same defect as sol:E-disk.c26/opus:E-extdisk-iface.c4 on drive 0), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (leaving drive 1 deselected instead of latching the motor) through the identical !ready() comparator and the same label (MUTATE=P-READY-MOTOR-INVARIANT-DRIVE1).
+// MUTATION P-READY-MOTOR-INVARIANT-DRIVE1 stimulus green: this assertion is RED at baseline (motor latch measured on, p.334 pin 1 predicts RDY* deasserted for drive 1's motor genuinely latched on with no disk; paula_floppy reads it asserted, same defect as sol:E-disk.c26/opus:E-extdisk-iface.c4 on drive 0), so per this suite's rule against mutating an already-failing check, the stimulus substitutes a genuine, independently-live change (leaving drive 1 deselected instead of latching the motor) through the identical !ready() comparator and the same label -- the motor-latch precondition defaults to true (not applicable) on this branch, since it deliberately never latches the motor at all and tests a different axis (14 passed, 2 failed, MUTATE=P-READY-MOTOR-INVARIANT-DRIVE1).
 // sol:E-disk.c33, opus:E-extdisk-iface.c11, sol:E-disk.c34, opus:E-extdisk-iface.c12, sol:E-disk.c45, opus:E-extdisk-iface.c23, sol:E-disk.c46, opus:E-extdisk-iface.c24, sol:E-disk.c40, opus:E-extdisk-iface.c18, sol:E-disk.c43, opus:E-extdisk-iface.c21, sol:E-disk.c44, opus:E-extdisk-iface.c22 -- all DECLINED via record(), not expect(); no mutation records (not graded through expect()). sol:E-disk.c35's and opus:E-extdisk-iface.c13's write-protect halves are RECORDED via record(), not graded through expect() either -- no mutation records for them.
 // MUTATION sol:E-disk.c35 stimulus red: only the motor half is graded here (the write-protect half is recorded, not graded, below it); the reset pulse is omitted entirely, so the latched-before/after comparison reads the same latched state twice (MUTATE=sol:E-disk.c35).
 // MUTATION opus:E-extdisk-iface.c13 stimulus red: same omission as sol:E-disk.c35, independent uid (MUTATE=opus:E-extdisk-iface.c13).
