@@ -902,9 +902,8 @@ int main(int argc, char** argv) {
   std::printf("%d passed, %d failed.\n", g_pass, g_fail);
 
   delete dut;
-  // A red assertion must reach the suite runner. Until 11.09.2026 this returned
-  // 0 unconditionally, so run_all.sh reported this package green while it was
-  // printing "225/227 PASS, 2 FAIL" -- the two SPRHWRM reds (F13) were invisible
-  // outside this directory.
+  // A red assertion must reach the suite runner: run_all.sh classifies this
+  // package by its exit code, so any failing assertion has to fail the
+  // process too, not just print red in this directory's own output.
   return g_fail ? 1 : 0;
 }
