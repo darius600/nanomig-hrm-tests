@@ -45,8 +45,8 @@
 //   clk7_en/cck/strhor clocking pattern, and proof that this clocking/
 //   DMA-answering pattern drives real dmareq/sample/intreq activity on this
 //   module: that sibling's own run produces sample sequence 0x12 then 0x34
-//   from one 0x1234 DMA word). paula_audio_channel.v itself was NOT opened by
-//   this agent before that first commit -- git log shows the spec commit
+//   from one 0x1234 DMA word). paula_audio_channel.v itself was NOT opened
+//   before that first commit -- git log shows the spec commit
 //   preceding the build.
 //
 //   DISCLOSED, POST-COMMIT: getting this package to actually BUILD AND RUN
@@ -814,8 +814,8 @@ int main(int argc, char** argv) {
 
     // =========================================================================
     // SAMPLE-BYTES-HIGH-BYTE-FIRST-SEQUENTIAL
-    // (5-p138.c4, 5-data.c4, 5-appA-p265.c41; A-audxdat.c4 withdrawn 2026-09-12,
-    // revalidation blocker 1b -- see "CLAIM COVERAGE" and "WHAT IS RECORDED, NOT
+    // (5-p138.c4, 5-data.c4, 5-appA-p265.c41; A-audxdat.c4 withdrawn --
+    // see "CLAIM COVERAGE" and "WHAT IS RECORDED, NOT
     // ASSERTED" in the file header)
     // =========================================================================
     {
@@ -852,9 +852,9 @@ int main(int argc, char** argv) {
                   "package's own Makefile builds against) -- no AUDxDAT value or register-write "
                   "order can make the low byte appear first or make both bytes appear at the "
                   "same tick. The WORD-CONTAINS-TWO-SAMPLES control above, same measurement "
-                  "basis, is what proves this is not vacuously green. Re-checked 2026-09-12 "
-                  "after withdrawing A-audxdat.c4 from this CHECK's cited-claims text "
-                  "(revalidation blocker 1b): `ok` and its code are untouched, only the string "
+                  "basis, is what proves this is not vacuously green. Re-checked "
+                  "after withdrawing A-audxdat.c4 from this CHECK's cited-claims text: "
+                  "`ok` and its code are untouched, only the string "
                   "changed, so there is still no port to build a discriminating mutation "
                   "against; clean rebuild reproduced this assertion PASS within the package's "
                   "19 passed/0 failed baseline.");
