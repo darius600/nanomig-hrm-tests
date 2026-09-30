@@ -95,15 +95,22 @@
 //   paths are used, each confirmed by direct measurement against this
 //   fixture, none assumed from any emulator's own implementation:
 //     -- an unattached sprite 0 alone, own value 1-3, reaches COLOR17-19
-//        ($11-$13) -- this package's primary stimulus (C1-C3, P1, P2, and
+//        ($11-$13) -- this package's primary stimulus (C1-C3, and
 //        REG-0x11--0x13's own baseline; SPR1 is never written for these).
+//        P2 runs on the same stimulus but is measured, not graded (see P2's
+//        own entry below).
 //     -- an unattached sprite 2, 4 or 6 alone, own value 1-3, reaches
 //        COLOR21-23, 25-27 and 29-31 ($15-$17, $19-$1B, $1D-$1F) -- p.102:
 //        "The eight sprites use system color registers 16 - 31 ... each
 //        pair uses four of the color registers as shown in Figure 4-6,"
 //        printed on p.103 as four groups (registers 16, 20, 24, 28) with
 //        codes 00, 01, 10, 11 and "unused" at each group's own first
-//        register.
+//        register. P1 reads colour 17/18/19 through THIS path's own
+//        diagonal registers ($15/$1A/$1F: p==q in the n=4q+p layout, so
+//        both slots hold the SAME colour) rather than through $11/$12/$13,
+//        because $11/$12/$13's slot B is colour 16's -- a register/slot
+//        selection no page fixes (see the open point above P1's own
+//        entry) -- and the diagonal registers carry no such overlap.
 //     -- an attached SPR0+SPR1 pair (SPR1CTL's own ATTACH bit: p.120, "Set
 //        a bit called ATTACH in the second sprite control word"; p.122,
 //        "the ATTACH bit, bit 7 in sprite control word 2, is set to 1 in
@@ -124,7 +131,10 @@
 //   tried -- only when none of the seventeen ever does.
 //
 // RUNS: five DATA/DATB images loaded into sprite 0 alone for this package's
-//   primary grading (C1-C3, P1, P2, and REG-0x11--0x13's own baseline):
+//   primary grading (C1-C3, and REG-0x11--0x13's own baseline; P2 is
+//   measured on the same images, not graded). P1 uses the same three
+//   solid-run images (S1/S2/S3 values), loaded into sprite 2, 4 or 6
+//   instead of sprite 0 -- see STIMULUS above for why:
 //     S1, S2, S3 -- solid runs, every one of the sprite's 16 shift
 //       positions at the same value (1, 2 or 3), DATA/DATB filled with the
 //       matching all-0/all-1 words: a constant value for the sprite's whole
@@ -151,8 +161,10 @@
 //   held at value 0, sprite 1 at value 1, 2 or 3) -- see STIMULUS for why
 //   each reaches what it reaches. kObservations[] below lists all
 //   seventeen. Some of these same read paths (a diagonal register reached
-//   through a different sprite) also supply the green-stimulus MUTATION
-//   records for REG-0x11--0x13 and P2 -- see each block's own comment.
+//   through a different sprite) also supply the green-stimulus for
+//   REG-0x11--0x13's own MUTATION records, and for P2's diagnostic MUT_P2
+//   switch (P2 is measured, not graded, so it carries no MUTATION record
+//   of its own) -- see each block's own comment.
 //
 // CLAIM COVERAGE: the row ids (C-shrs.r10-r1F) and the per-bit ids
 //   (C-shres-sprite-bits.c1-c256) are cited on their own register's
@@ -203,13 +215,31 @@
 //     colours 17/18/19, a solid run's observed pixel carries that colour's
 //     own two-bit RGB triple in bits 3-2 of each channel nibble (page 302's
 //     legend, "AB-- CD-- EF--" etc: the colour's own letters are its
-//     TOP two bits).
-//   P2 TWO-BITS-54-TRACES-IDENTICAL -- for colour 17/18/19's own solid run
+//     TOP two bits). Open point resolved: read through colour c's own
+//     DIAGONAL register ($15/$1A/$1F, via sprite 2/4/6) rather than
+//     $11/$12/$13 (sprite 0) -- $11/$12/$13's slot B is colour 16's, so a
+//     read through them depends on which register/slot a sprite pixel
+//     selects, a choice this package's own STIMULUS text says no page
+//     fixes; the diagonal registers carry the same colour in both slots,
+//     so this grades page 302's own two-bit-triple clause independently of
+//     that selection. PASSES on the validator's p.302 copy (which shows
+//     COLOR16-31 as page 302 prints them, alternating slot A/B every 28
+//     MHz tick) as well as on NanoMig -- measured both ways below.
+//   P2 TWO-BITS-54-TRACES-IDENTICAL -- NOT GRADED, printed as a MEASURED
+//     note, not through expect(): for colour 17/18/19's own solid run
 //     (register $11/$12/$13), flipping one letter belonging to a DIFFERENT
 //     stored colour (16, and whichever of 17-19 is not the one on screen)
-//     must leave that solid run's trace identical, per page 302's "only two
-//     bits ... per hires pixel": 3 on-screen colours x 3 other colours x 3
-//     channels x 2 (hi/lo) = 54 traces, all required identical.
+//     would need to leave that solid run's trace identical, per page 302's
+//     "only two bits ... per hires pixel", but colour 16's own slot-B
+//     position structurally overlaps register $10+c in the table's own
+//     layout (see the block's own comment) -- so this aggregate cannot
+//     pass on a page-conforming implementation either, and grading it
+//     PASS/FAIL would misreport a property of the table layout as an RTL
+//     deviation. p.301's two-bit sentence is graded instead by REG-0x11 and
+//     REG-0x15/1A/1F below. 3 on-screen colours x 3 other colours x 3
+//     channels x 2 (hi/lo) = 54 traces, measured and printed. No claim id
+//     of its own: this exact sentence is the sibling
+//     ch3-shres-bitplane-colour-encoding package's own claim (C-shrc.c02).
 //   REG-0x11 .. REG-0x1F -- one aggregate per-bit-inversion verdict per
 //     register: with the S0 table loaded, each of the register's twelve
 //     meaningful bits is flipped in turn and every one of the seventeen
@@ -568,8 +598,9 @@ constexpr Run kRunsSpr6[3] = {
 };
 
 // A single register-n's own diagonal read path (p==q, colour (16+n)'s own
-// letters in both slots -- see kRows), used by P2's own MUTATION (the
-// diagonal register's trace in place of $11/$12/$13's): index 1 ->
+// letters in both slots -- see kRows), used by P2's own diagnostic MUT_P2
+// switch (the diagonal register's trace in place of $11/$12/$13's; P2 is
+// measured, not graded, so this is not a MUTATION record): index 1 ->
 // $15/sprite 2 (colour 17), index 2 -> $1A/sprite 4 (colour 18), index 3 ->
 // $1F/sprite 6 (colour 19). Index 0 is unused (P2's loop runs c from 1).
 constexpr Run kDiagRun[4] = {
@@ -936,20 +967,30 @@ int main(int argc, char** argv) {
     // ==================== P1 KEY-COLOURS-17-19-BITS-3-2 ====================
     {
         bool ok = true;
+        // Reads through colour c's own DIAGONAL register ($15/$1A/$1F, p==q
+        // in the n=4q+p layout), not $11/$12/$13: the diagonal register
+        // carries colour c's triple in BOTH slots, so it is immune to the
+        // register/slot selection page 302 does not fix (see STIMULUS) --
+        // unlike $11/$12/$13, reached by sprite 0, whose slot B is colour
+        // 16's. Verified both ways: PASSES on NanoMig and on the
+        // validator's p.302 copy (18 passed, 1 failed [C3], 2 declined,
+        // where the off-diagonal reading fails P1 there too).
+        static constexpr const Run* kDiag[4] = {nullptr, &kRunsSpr2[0], &kRunsSpr4[1], &kRunsSpr6[2]};
         for (int s = 0; s < 4; ++s) {
             Palette pal = buildPalette(s);
             for (int c = 1; c <= 3; ++c) {
                 auto base = runTrace(pal, kDisarmed, /*shres=*/true, kStart, kCount);
+                const Run& diagRun = *kDiag[c];
 #if MUT_P1
                 // MUTATION: for S0 colour 18, the registers WRITTEN are palette S1's
                 // own (a stimulus change) instead of S0's; the expectation below
                 // (`pal`, checked against pal.rgb[c]) stays S0's own colour 18 triple.
                 auto live = (s == 0 && c == 2)
-                    ? runTraceRegs(wordsFor(buildPalette((s + 1) % 4)), kRuns[c - 1],
+                    ? runTraceRegs(wordsFor(buildPalette((s + 1) % 4)), diagRun,
                                     /*shres=*/true, kStart, kCount)
-                    : runTrace(pal, kRuns[c - 1], /*shres=*/true, kStart, kCount);
+                    : runTrace(pal, diagRun, /*shres=*/true, kStart, kCount);
 #else
-                auto live = runTrace(pal, kRuns[c - 1], /*shres=*/true, kStart, kCount);
+                auto live = runTrace(pal, diagRun, /*shres=*/true, kStart, kCount);
 #endif
                 bool any = false, allMatch = true;
                 for (size_t i = 0; i < live.size(); ++i) {
@@ -1030,9 +1071,10 @@ int main(int argc, char** argv) {
         // other colours x 3 channels x 2 (hi/lo) = 54 traces checked. This
         // reads red on NanoMig (18 of 54 traces move, every one a k==0/colour-16
         // combo) AND on a private copy that implements page 302's own
-        // COLOR16-31 diagonal table literally (measured above: "17 passed, 3
-        // failed (C3, P1, P2 ...)", P2 among the three) -- colour 16's own
-        // slot-B position structurally overlaps register $10+c for c=1,2,3 in
+        // COLOR16-31 diagonal table literally (also 18 of 54, same combos;
+        // measured above: "18 passed, 1 failed, 2 declined", P2 not graded
+        // either way) -- colour 16's own slot-B position structurally
+        // overlaps register $10+c for c=1,2,3 in
         // that table layout itself (the FINDING REG-0x11-13 rows measure
         // directly), so this 54-trace aggregate cannot pass on a
         // page-conforming implementation either; it is not a falsifiable
@@ -1051,7 +1093,12 @@ int main(int argc, char** argv) {
         // changed there), which is why the overlap is a property of register
         // $10+c specifically, not of this file's comparator.
         checks.note("P2 TWO-BITS-54-TRACES-IDENTICAL: " + std::to_string(changed) + " of " +
-                     std::to_string(total) + " traces changed.");
+                     std::to_string(total) + " traces changed -- not graded: every changed "
+                     "trace is a k==0/colour-16 combo, where colour 16's own slot-B position "
+                     "structurally overlaps register $10+c in page 302's own table layout "
+                     "(the REG-0x11-13 rows measure that overlap directly), so this 54-trace "
+                     "aggregate cannot pass on a page-conforming implementation either; reads "
+                     "18/54 red on NanoMig and on the validator's p.302 copy alike.");
     }
 
     // ==================== DOT-BITS ====================
@@ -1197,8 +1244,8 @@ int main(int argc, char** argv) {
     }
     // MUTATION records for REG-0x11..REG-0x1F, all fifteen rows: every one is
     // RED on NanoMig under the legend-place comparator above (measured: 4
-    // passed, 16 failed, 2 declined, all fifteen REG-0x1n rows among the
-    // sixteen red), diagonal rows ($15/$1A/$1F, p==q) included -- a letter
+    // passed, 15 failed, 2 declined, all fifteen REG-0x1n rows among the
+    // fifteen red), diagonal rows ($15/$1A/$1F, p==q) included -- a letter
     // there names the same colour at both its own legend place and the other
     // slot's, and the comparator does not special-case p==q (see METHOD). No
     // STIMULUS this package can present reaches green on any of the fifteen:
@@ -1212,11 +1259,16 @@ int main(int argc, char** argv) {
     // prints it, alternate 28 MHz samples reading slot A then slot B, each
     // in its own channel's top two bits, low six bits zero, under which
     // this file's own comparator, byte for byte unchanged, PASSES all
-    // fifteen rows. Measured on that copy: 17 passed, 3 failed (C3, P1, P2 --
-    // both controls that assume the ordinary nibble-duplicated ECS reading
-    // C3 itself confirms, and P2's own read path, now see the alternation
-    // instead), 2 declined (REG-0x10, DOT-BITS, unaffected -- neither reads
-    // register content). All fifteen REG-0x1n rows PASS on that copy alone:
+    // fifteen rows. Measured on that copy: 18 passed, 1 failed (C3, the
+    // control that assumes the ordinary nibble-duplicated ECS reading --
+    // now sees the alternation instead), 2 declined (REG-0x10, DOT-BITS,
+    // unaffected -- neither reads register content). P1 PASSES here too,
+    // reading through colour c's own diagonal register (see P1's own
+    // entry above) -- the same alternation that fails C3 does not touch a
+    // register whose slot A and slot B already agree. P2 is not graded
+    // (see its own entry above), so it neither passes nor fails here; its
+    // own MUT_P2 diagonal read path also sees no alternation-induced
+    // change. All fifteen REG-0x1n rows PASS on that copy alone:
     //
     // MUTATION REG-0x11 implementation green: PASS on the p.302 copy above; RED
     // on NanoMig, unchanged (bit 0, run S1, tick 9: observed colour 17,
@@ -1268,19 +1320,19 @@ int main(int argc, char** argv) {
     // MUTATION REG-0x15 implementation green: PASS on the p.302 copy; RED on
     // NanoMig, unchanged (bit 0, run S1-SPR2, tick 9: observed colour 17,
     // page-predicted colour 17, component B).
-    // MUTATION REG-0x15 stimulus red: -DMUT_REG15=1 -> measured "4 passed, 16
+    // MUTATION REG-0x15 stimulus red: -DMUT_REG15=1 -> measured "4 passed, 15
     // failed, 2 declined", REG-0x15 stays RED (bit 0, run S1, tick 9:
     // observed colour 17, page-predicted colour 17, component(s) moved: RGB).
     // MUTATION REG-0x1A implementation green: PASS on the p.302 copy; RED on
     // NanoMig, unchanged (bit 0, run S2-SPR4, tick 9: observed colour 18,
     // page-predicted colour 18, component B).
-    // MUTATION REG-0x1A stimulus red: -DMUT_REG1A=1 -> measured "4 passed, 16
+    // MUTATION REG-0x1A stimulus red: -DMUT_REG1A=1 -> measured "4 passed, 15
     // failed, 2 declined", REG-0x1A stays RED (bit 0, run S1, tick 9:
     // observed colour 17, page-predicted colour 18, component(s) moved: RGB).
     // MUTATION REG-0x1F implementation green: PASS on the p.302 copy; RED on
     // NanoMig, unchanged (bit 0, run S3-SPR6, tick 9: observed colour 19,
     // page-predicted colour 19, component B).
-    // MUTATION REG-0x1F stimulus red: -DMUT_REG1F=1 -> measured "4 passed, 16
+    // MUTATION REG-0x1F stimulus red: -DMUT_REG1F=1 -> measured "4 passed, 15
     // failed, 2 declined", REG-0x1F stays RED (bit 0, run S1, tick 9:
     // observed colour 17, page-predicted colour 19, component(s) moved: RGB).
 
