@@ -54,15 +54,16 @@
 //   76 passed 13 failed; mutated 75 passed 14 failed, exactly one
 //   harness-selfcheck newly red, the thirteen baseline reds unchanged.
 //   Reverted: 76/13.
-// MUTATION opus:8-pot.c11 stimulus red MUT_G2: the arm step (POTGO=$0001)
-//   is omitted entirely -- no POTGO write at all, not a bit-0-clear write,
-//   which would rest on the page-open bit-0-clear behaviour (see the file
-//   header) and move no line on a copy that zeroes on bit-0-clear anyway;
-//   the expected values (zeroed-by-POTGO, then a fixed +2 delta after a
-//   held warm-up) are unchanged. RUN: baseline 76 passed 13 failed;
-//   mutated 74 passed, 15 failed, exactly this pair newly red. Reverted:
-//   76/13. On u8 and u8z (which zero on any bit-0-clear POTGO write):
-//   mutated 82 passed, 7 failed on both, the same pair newly red.
+// MUTATION opus:8-pot.c11 stimulus red MUT_G2: the SECOND POTGO write
+//   (POTGO=$0001, the one this clause grades for zeroing) is omitted
+//   entirely -- not a bit-0-clear write, which would rest on the page-open
+//   bit-0-clear behaviour (see the file header) and move no line on a copy
+//   that zeroes on bit-0-clear anyway; the FIRST POTGO write (the genuine
+//   start that establishes before_write) is untouched. RUN: baseline 76
+//   passed 13 failed; mutated 74 passed, 15 failed, exactly this pair
+//   newly red. Reverted: 76/13. On u8, u8z, u8p and u8n (all four green at
+//   baseline, 84 passed/5 failed): mutated 82 passed, 7 failed on each,
+//   the same pair newly red.
 // MUTATION sol:8-pot.c12 stimulus red (same MUT_G2 as opus:8-pot.c11)
 // MUTATION opus:8-pot.c12 stimulus red MUT_G3 (this assertion's scope is
 //   what the claim says: pot0x/pot0y/pot1y, the counters with a pin, track
@@ -492,28 +493,28 @@ static void group_G1() {
 //--------------------------------------------------------------------------
 static void group_G2() {
     full_reset();
-    set_mouse(0, 0, 1);
+    arm_potgo(0x0001); // a genuine POTGO start -- legitimate on every
+                        // page-conforming implementation, including one
+                        // that holds every counter in reset until the
+                        // first POTGO start (see u8n in the file header);
+                        // establishes a baseline the write below can then
+                        // zero, without resting on counting ever happening
+                        // before any POTGO write at all
+    set_mouse(0, 0, 1); // release pot0x
     settle(3);
-    pulse(9); // let the counter free-run to a nonzero value with no POTGO
-              // write at all yet, so the immediate post-write read below can
-              // only be 0 if the POTGO write itself re-zeroes it -- reset()
-              // alone already zeroes fresh counters, so that path can't be
-              // used to tell "POTGO started it" apart from "it was already
-              // zero". This free-run has no POTGO write at all, so p.235's
-              // interval (which the page ties to a POTGO write) does not
-              // bear on it.
+    pulse(kWarmup); // run past either printed interval, so before_write is
+                     // genuinely counting, not stuck at 0 by the interval
     uint16_t before_write = pot0dat(); // must be nonzero, or the read right
                                         // after the write below is 0 either
                                         // way and proves nothing about POTGO
     bool before_write_nonzero = (before_write != 0);
 #ifdef MUT_G2
-    // MUTATED: no POTGO write at all -- not a bit-0-clear write, which
-    // rests on the page-open bit-0-clear behaviour (see the file header);
-    // omitting the write entirely does not.
+    // MUTATED: no second POTGO write at all -- the counter is never asked
+    // to restart, so it must not read 0 right after
 #else
-    arm_potgo(0x0001);
+    arm_potgo(0x0001); // the POTGO write this clause grades: must zero pot0x
 #endif
-    uint16_t right_after_write = pot0dat(); // must read 0 (was 9) if POTGO restarted it
+    uint16_t right_after_write = pot0dat(); // must read 0 (was nonzero) if POTGO restarted it
     bool zeroed_by_potgo = (right_after_write == 0x0000);
     pulse(kWarmup); // run past either printed interval before taking a
                      // "genuinely counting" baseline -- this clause is about
@@ -521,6 +522,10 @@ static void group_G2() {
                      // counting starts, so it does not grade the interval
     uint16_t before = pot0dat();
     bool before_nonzero = (before != 0);
+
+    // POTINP half, MEASURED only: no page says an access to another
+    // register leaves the counters alone. This half is therefore not part
+    // of the graded `ok` below.
     dut->reg_address_in = A_POTINP; dut->data_in = 0xFFFF; // access a *different* register
     tick();
     idle_bus();
@@ -530,8 +535,7 @@ static void group_G2() {
     pulse(2);
     uint16_t after_more = pot0dat();
     bool counting_continued = (after_more == (uint16_t)(before + 2));
-    bool starts_on_potgo = before_write_nonzero && zeroed_by_potgo && before_nonzero &&
-                            other_write_no_restart && counting_continued;
+    bool starts_on_potgo = before_write_nonzero && zeroed_by_potgo && before_nonzero;
 
     // Bit-0-clear half, MEASURED only: p.236's "All counts are reset to
     // zero when POTGO is written with bit zero high" is one-way, and
@@ -552,18 +556,20 @@ static void group_G2() {
     uint16_t after2 = pot0dat();
     bool bit0_clear_no_restart = (after2 == before2);
 
-    note("Before the POTGO write, after 9 free-running pulses with no POTGO "
-         "write at all: POT0DAT $" + hex4(before_write) + " (" +
+    note("After a genuine POTGO start and a " + std::to_string(kWarmup) +
+         "-tick released warm-up, before the second POTGO write: POT0DAT $" +
+         hex4(before_write) + " (" +
          std::string(before_write_nonzero ? "nonzero, so the write below is "
                      "not vacuous" : "zero -- the write below cannot be read") +
-         "). Right after the POTGO write with bit 0 set: POT0DAT $" +
+         "). Right after that second POTGO write, with bit 0 set: POT0DAT $" +
          hex4(right_after_write) + ". After a further " + std::to_string(kWarmup) +
-         "-tick warm-up: $" + hex4(before) + "; a write to a different "
-         "register mid-run left POT0DAT at $" + hex4(after_other) +
-         " (was $" + hex4(before) + "), and counting continued afterwards "
-         "(-> $" + hex4(after_more) + ", " +
-         std::string(counting_continued ? "exactly two more" :
-                     "not exactly two more") + "). NOT GRADED (no page states "
+         "-tick warm-up: $" + hex4(before) + ". NOT GRADED (no page states an "
+         "access to another register leaves the counters alone): a write to "
+         "a different register (POTINP) mid-run left POT0DAT at $" +
+         hex4(after_other) + " (was $" + hex4(before) + "), and counting " +
+         std::string(counting_continued ? "continued afterwards, exactly two "
+                     "more" : "did not continue by exactly two more") +
+         " (-> $" + hex4(after_more) + "). NOT GRADED (no page states "
          "a bit-0-clear condition): pot0x released, run " + std::to_string(kWarmup) +
          " ticks past either printed interval -> $" + hex4(before2) + " (" +
          std::string(before2_nonzero ? "nonzero, so the next line is not "
