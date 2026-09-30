@@ -1,7 +1,7 @@
 // Test purpose: fixture: userio.v, compiled alone.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pages 228, 232, 233, 281, 328, 329, 332
+//   pages 228, 232, 233, 234, 281, 328, 329, 332
 // Non-goals: anything outside the `userio` fixture this package builds, and
 //   any claim it does not cite. A green here means those assertions
 //   held on this fixture at the pinned revision -- not that the module is
@@ -101,6 +101,35 @@
 // MUTATION opus:E-joystick.c16 stimulus red pressed the right pin together
 //   with pin 5/bit 5, so the decode DID move; the idle-vs-pressed comparison
 //   this assertion rests on was no longer equal.
+// MUTATION opus:8-tbl8-1.c8+sol:8-pin.c9 stimulus red MUT_N: pressed pin 4
+//   instead of pin 3 for the "pin 3 alone" probe; JOY0DAT bit9 stayed 0,
+//   failing the Table-8-1-graded clause.
+//
+// ADDED (followups.md coverage gap: "p.332 LBUT*/RBUT* rows and Table 8-1's
+// Prop-Pair cells for pins 3/4 graded nowhere under their own claim ids"):
+// Table 8-1 (p.228), "Proportional Controller (Pair)" column, pins 3/4 --
+// opus:8-tbl8-1.c8/c12, sol:8-pin.c9/c13 (master inventory:
+// hrm-testpipeline/work/2026-09-14_ch8_s1_classified_all.jsonl). Both were
+// classified "not-asserted: absent" ("no readable register bit fed by the
+// port's pin-3/pin-4 line") -- wrong on this fixture's own evidence: pin 3
+// and pin 4 clearly feed JOY0DAT<9> and JOY0DAT<1>, already proven live by
+// sol:E-joystick.c8+opus:E-joystick.c9 and by the pin-3/pin-4 composition
+// assertions elsewhere in this file. Reversed the same direction this
+// file's own header note already reverses the pin-9 "Unused" call the
+// OTHER way (checking the actual evidence rather than trusting classify's
+// stated reason). PIN 3 (left button): uncontested, graded. PIN 4 (right
+// button): Table 8-1 and p.332's own connector figure both put it on pin 4,
+// but Figure 8-4 (p.234), read directly off figures/p234.png (not the text
+// layer), prints "pin 3" for the fire button under BOTH the LEFT PADDLE and
+// the RIGHT PADDLE diagrams -- a genuine printed self-contradiction, not an
+// extraction artifact. Recorded, not graded, both readings and what was
+// measured, per the NM-HRM-062 precedent for a source that disagrees with
+// itself.
+// p.332's own LBUT*/RBUT* rows (sol:E-pot.c18/c19, opus:E-pot.c21/c22) stay
+// with hrm/appDE-pot-counters G7's existing decline (p.332's own NOTES
+// column reads "See Digital Joystick", a page-stated cross-reference, which
+// is why declining there as the same fact under the joystick device name is
+// sound) -- that package is out of this lot's scope and not touched here.
 
 #include "Vuserio.h"
 #include "verilated.h"
@@ -368,6 +397,67 @@ int main(int argc, char** argv) {
                right_d.right == 1 && right_d.back == 0 &&
                left_btn == idle_btn && right_btn == idle_btn,
                "sol:E-joystick.c8+opus:E-joystick.c9");
+    }
+
+    // opus:8-tbl8-1.c8+sol:8-pin.c9 / opus:8-tbl8-1.c12+sol:8-pin.c13 --
+    // Table 8-1 (p.228), "Proportional Controller (Pair)" column: pin 3 =
+    // "Left button", pin 4 = "Right button". Coverage gap (followups.md):
+    // both were classified not-asserted/absent and never assigned to a
+    // package. PIN 3 is uncontested (Figure 8-4, p.234, also draws the LEFT
+    // paddle's fire button on pin 3) and is graded. PIN 4 is CONTESTED:
+    // Table 8-1 and p.332 put the right paddle's button on pin 4, but
+    // Figure 8-4 prints "pin 3" under the RIGHT PADDLE diagram too (verified
+    // against figures/p234.png directly, not the text layer) -- grading
+    // either side would pick a winner this suite has no ground to pick, so
+    // it is recorded, both readings and what was measured, per the
+    // NM-HRM-062 precedent.
+    {
+        drive_idle_and_reset();
+        top->mouse_btn = 0;
+        enable_joy1_mode();
+
+#ifdef MUT_N
+        uint16_t p3_word = joy0dat_for(stim({BIT_RIGHT})); // mutated: wrong pin
+#else
+        uint16_t p3_word = joy0dat_for(stim({BIT_LEFT}));  // pin 3 alone
+#endif
+        Decode p3_d = decode16(p3_word);
+
+        uint16_t p4_word = joy0dat_for(stim({BIT_RIGHT})); // pin 4 alone
+        Decode p4_d = decode16(p4_word);
+
+        expect(p3_d.left == 1, "opus:8-tbl8-1.c8+sol:8-pin.c9");
+
+        record(
+            "opus:8-tbl8-1.c12+sol:8-pin.c13 -- Table 8-1 (p.228), "
+            "Proportional Controller (Pair) column, pin 4 = \"Right button\" "
+            "(p.332's own connector figure agrees: RBUT* on pin 4, \"See "
+            "Digital Joystick\"). NOT GRADED: Figure 8-4 (p.234, \"Typical "
+            "Paddle Wiring Diagram\"), read directly off figures/p234.png, "
+            "prints \"pin 3\" for the fire button under BOTH the LEFT "
+            "PADDLE and the RIGHT PADDLE diagrams -- not a text-layer "
+            "artifact, confirmed at the image. Table 8-1/p.332 and Figure "
+            "8-4 disagree on which pin carries the right paddle's button; "
+            "this package does not adjudicate which printed source is "
+            "right, per the NM-HRM-062 precedent for a source that "
+            "contradicts itself. MEASURED, both readings: pin 3 alone -> "
+            "JOY0DAT bit9=" + std::to_string(p3_d.left) + "; pin 4 alone -> "
+            "JOY0DAT bit1=" + std::to_string(p4_d.right) + " -- both pins "
+            "are independently live and distinct, so a future reader "
+            "adjudicating the print can rely on this measurement without "
+            "re-deriving it. Already catalogued, not freshly found: "
+            "integration/ch8-controller-ports/SPECIFICATION.md, "
+            "\"Disagreements between pages\" / P4, reaches the same "
+            "Figure-8-4-versus-Table-8-1 disagreement over the same two "
+            "claim ids from its own system-level boundary and grades them "
+            "only in the narrower agreed form (a closed switch on pin 4 "
+            "reads at X1 -- p.281, p.232 Table 8-3 and Figure 8-3 agree on "
+            "that much). This package, built only at userio.v with no "
+            "system-level corroboration to narrow the claim the same way, "
+            "takes the more conservative reading and records rather than "
+            "narrows -- a difference in how cautious each boundary can "
+            "afford to be, not a contradiction: neither package asserts "
+            "\"pin 4 is the right paddle's own button\" as such.");
     }
 
     // sol:E-joystick.c9+opus:E-joystick.c10 -- "The JOY[0/1]DAT registers are
