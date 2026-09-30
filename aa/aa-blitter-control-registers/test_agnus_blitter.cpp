@@ -101,9 +101,9 @@ constexpr uint16_t CON0_D_TAKES_A = 0x0100 | 0x00F0;
 // WHY NOT ONE WORD. The D channel asks for its cycle on `used & pipeline_full`
 // (:735) and the pipeline is not full until an A cycle has been through it, so
 // a one-word blit starts, runs four cycles and finishes having written
-// nothing. The first version of this package used one word and read -1 from
-// every assertion that watched the D channel -- which looked like a dead
-// decoder and was a dead fixture.
+// nothing. Using one word would read -1 from
+// every assertion that watched the D channel -- which would look like a
+// dead decoder and would be a dead fixture.
 constexpr uint16_t SIZE_FOUR_WORDS = (1u << 6) | 4u;
 
 class Harness {
