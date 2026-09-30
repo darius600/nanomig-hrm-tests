@@ -6,7 +6,7 @@ Written from the quotations in `ch8-dmaon-enable-composition.jsonl` alone (the
 (`paula.v`, `paula_floppy.v`, or any other file under `nanomig/`) has been
 opened by me yet. This document is committed before any of that happens.
 
-Fixture assigned by the build brief: `paula`. `paula` instantiates
+Fixture assigned by the build task: `paula`. `paula` instantiates
 `paula_floppy`, so both DSKBYTR (which the disk-side registers live behind)
 and DMACON (Chapter 7's register, decoded one level up from
 `paula_floppy`) are reachable from this single boundary — no other fixture
@@ -20,7 +20,7 @@ assertions.
 
 ## What this package is for
 
-Per the build brief and the finding candidate this package's claims were
+Per the build task and the finding candidate this package's claims were
 routed from (C11 in
 `work/2026-09-15_ch8_s2_finding_candidates.md`): DSKBYTR bit 14, DMAON,
 reports whether disk DMA is actually running. Two pages of the manual
@@ -51,7 +51,7 @@ the kind of assertion that hides this.
 
 ### A0 — FIXTURE_LIVENESS (no manual citation)
 
-Not a page claim. Per the build brief: "The fixture proves it can deliver a
+Not a page claim. Per the build task: "The fixture proves it can deliver a
 known word before anything reads one." Before any DMAON-based assertion is
 trusted, drive a distinct, known register value through this fixture's
 data-out path (a plain, always-decoded register such as DSKBYTR itself, read
@@ -204,12 +204,12 @@ into the five propositions above (A1 through A5), each citing every uid
 that quotes it. No claim needs a wider boundary than `paula` provides
 (unlike the classifier's `observable_detail` notes for several of these
 same claims against the narrower `paula_floppy` boundary — `paula` is
-exactly the boundary that removes that obstacle, per the build brief's own
+exactly the boundary that removes that obstacle, per the build task's own
 fixture assignment) and none is a DSKDATR/DSKDAT "only" row carrying the
-attack-stage `note` constraint the build brief warns about (checked: no
+attack-stage `note` constraint the build task warns about (checked: no
 claim in this package's `.jsonl` carries a `note` field at all).
 
-## Rig hazards named by the build brief (restated here, not yet acted on)
+## Rig hazards named by the build task (restated here, not yet acted on)
 
 - `dsktrack` is reported to have no reset term in `paula_floppy.v`, so a
   reused Verilated model would carry head position between trials. This
@@ -226,7 +226,7 @@ claim in this package's `.jsonl` carries a `note` field at all).
   This package's own assertions grade DMACON's terms (DSKEN, DMAEN) against
   DSKBYTR's DMAON bit; wherever DSKLEN's own DMAEN needs to be set to
   produce a true reading, the double-write will be performed, per this
-  already-disclosed fact (from the build brief text, not yet independently
+  already-disclosed fact (from the build task text, not yet independently
   read from `paula_floppy.v` by me).
 - `agnus_diskdma` reportedly has no `ecs` port. Not relevant to this
   package: `agnus_diskdma` is not part of the `paula` fixture.
@@ -242,9 +242,9 @@ term held high or low) while leaving the expected value untouched, and
 confirm the assertion reddens, then revert.
 
 A2 (`DMAON_P278_TWO_TERM_COMPOSITION`) is expected, from this package's own
-claims file and the build brief's advance measurement, to be **red at
+claims file and the build task's advance measurement, to be **red at
 baseline** against the RTL (DMACON's DSKEN term, which p.278's two-term
-reading treats as irrelevant, is in fact required). Per the build brief, a
+reading treats as irrelevant, is in fact required). Per the build task, a
 stimulus mutation on an already-red assertion proves nothing (it cannot
 fail harder); for A2, the substitute rule applies instead — a different
 mechanism proven live elsewhere in the same run (A1's own live three-term
@@ -268,10 +268,10 @@ committed, and `hrm/ch5-audio-dmacon-adkcon`, which already compiles
 `paula.v`) for this suite's established harness/mutation boilerplate. All
 of that reading will be disclosed in the next commit.
 
-## Repair addendum (Lot F, 2026-09-15)
+## A0's disposition
 
-A0 (fixture liveness) withdrawn to `note()` — it carries no claim uid, so
-it was never conformance evidence; grading it through `expect()` cost no
-coverage to remove. A1-A5 and A2-SUBSTITUTE are unchanged; A2 stays the
+A0 (fixture liveness) is withdrawn to `note()` — it carries no claim uid, so
+it is never conformance evidence; grading it through `expect()` costs no
+coverage to remove. A1-A5 and A2-SUBSTITUTE are otherwise unchanged; A2 stays the
 package's one genuine red (p.278's incomplete two-term reading, finding
-candidate C11). Post-repair tally: 5 passed, 1 failed.
+candidate C11). Tally: 5 passed, 1 failed.

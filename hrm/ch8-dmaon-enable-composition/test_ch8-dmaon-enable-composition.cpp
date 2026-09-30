@@ -33,7 +33,7 @@
 //   instantiates paula_uart, paula_intcontroller, paula_floppy and
 //   paula_audio directly, so all seven of its own submodule files are
 //   compiled alongside it (see this package's own Makefile). `paula` is
-//   this package's assigned fixture per the build brief specifically
+//   this package's assigned fixture specifically
 //   because it is the one boundary where DMACON's two disk-relevant bits
 //   (DSKEN, DMAEN) and DSKLEN/DSKBYTR are all simultaneously drivable and
 //   readable -- paula_floppy alone only exposes a single collapsed
@@ -129,7 +129,7 @@
 //   distinct, individually-predicted DSKBYTR readings (0x9000, then
 //   0xB000) before any DMAON-based assertion below is trusted.
 //
-// RIG HAZARDS (build brief and finding-candidates document, restated,
+// RIG HAZARDS (build task and finding-candidates document, restated,
 //   acted on): `dsktrack` has no reset term in paula_floppy.v -- this
 //   package never drives `_step` (held permanently inactive, matching
 //   hrm/ch8-dsklen-dma-arming's own convention: active-low, held at 1, no
@@ -150,10 +150,10 @@
 //   `g_mutate`) -- never a string literal inside the `expect()` call's own
 //   condition argument itself, which would hand the gate's first-string-
 //   literal id-reader the wrong text and orphan the real label (named as a
-//   hazard hit by two sibling builders today). One build serves both the
+//   hazard hit by two sibling builders). One build serves both the
 //   real run (MUTATE unset) and every mutation run (MUTATE=<id>, one id
-//   per assertion). Baseline with MUTATE unset (re-measured 2026-09-15, Lot
-//   F, after A0 was withdrawn to note() -- see its own comment below): 5
+//   per assertion). Baseline with MUTATE unset (A0 is withdrawn to note() --
+//   see its own comment below): 5
 //   passed, 1 failed (A2 is the one expected failure -- the p.278 two-term
 //   reading, graded literally, does not hold; see A2's own header comment
 //   and SPECIFICATION.md). Actual run counts and per-mutation results are
@@ -163,7 +163,7 @@
 //   finding-candidates document's C11 both name this in advance: DMACON's
 //   DSKEN bit is required in addition to the two terms p.278 prints, so
 //   the two-term reading, graded as printed, is false against NanoMig).
-//   Per the build brief, a stimulus mutation on an already-red assertion
+//   Per this suite's rules, a stimulus mutation on an already-red assertion
 //   proves nothing; the substitute rule applies instead --
 //   A2-SUBSTITUTE-TWO-TERM-COMPARATOR-LIVE is its own, separate,
 //   GREEN-at-baseline assertion that applies the SAME two-term-AND-
@@ -174,7 +174,7 @@
 //   its own ordinary stimulus mutation (MUTATE=A2S), since it is green at
 //   baseline, unlike A2.
 //
-// A0-LIVENESS-PAULA-DSKLEN-WRITE-TO-DSKBYTR-READBACK -- no claim uid; withdrawn to note() (Lot F, 2026-09-15). No mutation record (not graded through expect()).
+// A0-LIVENESS-PAULA-DSKLEN-WRITE-TO-DSKBYTR-READBACK -- no claim uid; withdrawn to note(). No mutation record (not graded through expect()).
 // MUTATION A1-DMAON_P248_THREE_TERM_COMPOSITION stimulus red: the "all three true" row's own DSKLEN arming is skipped (single write only, not double) even though the row's own predicted value stays true, so the measured/predicted truth table stops matching on that one row (MUTATE=A1).
 // MUTATION A2-DMAON_P278_TWO_TERM_COMPOSITION none impossible: already red at baseline -- NanoMig requires DMACON's DSKEN bit in addition to the two terms p.278 names, so the two-term reading, graded as printed (DSKEN irrelevant), does not hold. A stimulus mutation cannot fail an assertion that already fails, so none is recorded for this label; the comparator that grades it is instead proven live via the substitute A2-SUBSTITUTE-TWO-TERM-COMPARATOR-LIVE below.
 // MUTATION A2-SUBSTITUTE-TWO-TERM-COMPARATOR-LIVE stimulus red: with DSKLEN.DMAEN and the pinned master DMAEN both held true, the DSKEN=false row's own stimulus is overridden to also set DSKEN true, while the check still expects that row's DMAON to read 0 (MUTATE=A2S).
@@ -238,7 +238,7 @@ public:
     int passed = 0, failed = 0;
 };
 
-// A fresh Verilated model per trial, per the build brief's rig hazard
+// A fresh Verilated model per trial, per the rig hazard
 // (dsktrack has no reset term anywhere in paula_floppy.v). Every assertion
 // block below constructs its own Rig, even though this package never
 // drives `_step` and dsktrack is therefore not expected to move -- the
@@ -379,7 +379,7 @@ int main(int argc, char** argv) {
     // left low both times) must arrive at two distinct, individually-
     // predicted DSKBYTR readings.
     //
-    // WITHDRAWN TO note() (independent validation, 2026-09-15, Lot F): this
+    // WITHDRAWN TO note(): this
     // assertion carries no claim uid -- it was never conformance evidence,
     // only a fixture control, so grading it through expect() cost no
     // coverage to remove. Its mutation record is removed with it.
@@ -501,7 +501,7 @@ int main(int argc, char** argv) {
 
     // ========================================================================
     // A2-SUBSTITUTE-TWO-TERM-COMPARATOR-LIVE -- mutation-demonstration only,
-    // no manual citation, no claim uid. Substitute rule (build brief): a
+    // no manual citation, no claim uid. Substitute rule: a
     // stimulus mutation on an already-red assertion (A2) proves nothing. Put
     // the SAME two-term-AND-predicts-output comparator SHAPE through a
     // DIFFERENT pair that DOES fully determine DMAON -- DSKLEN.DMAEN and
