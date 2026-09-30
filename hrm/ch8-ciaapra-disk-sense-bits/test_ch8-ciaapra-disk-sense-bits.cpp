@@ -120,13 +120,19 @@
 //   PA7 was actually driven low; 0 passed, 1 failed). (PROP-INPUT is the
 //   only assertion below still graded via expect(); its mutation record is
 //   therefore the only one kept.)
-// MUTATION opus:8-cia.c2-immune-write stimulus red: bit_is_pure_input's own-
-//   write clause holds a position's line low, leaves that position's own
-//   direction bit clear and writes its own PRA bit HIGH anyway, expecting a
-//   read still LOW (p.341: a clear DDR bit defines an input, and a PR read
-//   returns the actual pin regardless of any write). At PA3, this mutation
-//   releases every porta_in line -- PA3's included -- immediately before
-//   that read, leaving the fixed expectation (PA3 reads LOW) untouched, so a
+// MUTATION opus:8-cia.c2 stimulus red: a second, independent mutation of the
+//   SAME assertion (PROP-INPUT, leading id opus:8-cia.c2, exactly as the
+//   record above). The mutating() argument below is a run-time SCENARIO
+//   name, not the assertion's own id -- it has to stay distinct from the
+//   record above's so MUTATE can select between the two scenarios, but the
+//   record itself names what the gate reads off expect()'s own label.
+//   This scenario exercises bit_is_pure_input's own-write clause: holds a
+//   position's line low, leaves that position's own direction bit clear
+//   and writes its own PRA bit HIGH anyway, expecting a read still LOW
+//   (p.341: a clear DDR bit defines an input, and a PR read returns the
+//   actual pin regardless of any write). At PA3, this mutation releases
+//   every porta_in line -- PA3's included -- immediately before that read,
+//   leaving the fixed expectation (PA3 reads LOW) untouched, so a
 //   comparator that actually reads the pin must go red; guarded by
 //   mutating("opus:8-cia.c2-immune-write") and read once from MUTATE at
 //   startup (MUTATE=opus:8-cia.c2-immune-write: opus:8-cia.c2 sol:8-cia.c1
