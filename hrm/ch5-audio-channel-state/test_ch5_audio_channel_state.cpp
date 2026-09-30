@@ -18,7 +18,7 @@
 //   RTL pass. Several reds are EXPECTED and were flagged as such before this
 //   file was built: the RTL's own state parameters
 //   (paula_audio_channel.v:242-246, disclosed in this task's own
-//   brief/CANDIDATES.md before this agent opened the file) do not use the
+//   brief/CANDIDATES.md before the file was opened) do not use the
 //   manual's bit patterns (the RTL's discard state is measured at 3'b011,
 //   where the manual names it 101; the RTL's steady low-byte state is
 //   measured at 3'b110, where the manual names it 011) -- an 80000-tick
@@ -29,8 +29,7 @@
 //   specific state-code disagreement is registered as a source observation
 //   (NM-HRM-026), not a conformance failure -- the affected assertions may
 //   still be red (they genuinely measure the encoding), but each says so in
-//   its own text. A separate, since-withdrawn finding key for this package's
-//   dmasen NOTE assertion is NOT current; do not cite it as live -- see the
+//   its own text. See the
 //   dmasen assertion's own text below for the settled reading.
 // Non-goals: anything outside the `paula_audio_channel` fixture this package
 //   builds, and any claim it does not cite. A green here means those
@@ -44,7 +43,7 @@
 //
 // ORDER OF WORK: this file's assertions, expected values, and claim-id
 //   coverage were written and committed from claims.jsonl's quotations
-//   alone. paula_audio_channel.v was not opened by this agent before that
+//   alone. paula_audio_channel.v was not opened before that
 //   commit. Ports (clk, clk7_en, cck, reset, aen, dmaena, reg_address_in[3:1],
 //   data[15:0], intpen, strhor, sample[7:0], sample_okk[7:0], intreq, dmareq,
 //   dmas, volume[6:0]), the register-address convention (reg_address_in =
@@ -64,7 +63,7 @@
 //   lencntrld, lencount, lenfin, lencnt, percntrld, perfin, percnt, penhi,
 //   pbufld1, volcntrld) are the identifiers this task's own brief and
 //   CANDIDATES.md/BOUNDARIES.md already cited by exact line number for this
-//   package's claims -- given to this agent as task input, not discovered by
+//   package's claims -- given as task input, not discovered by
 //   opening the file directly.
 //
 // BOUNDARY: this chapter's module has two silence traps, both guarded
@@ -205,12 +204,11 @@
 //   the one-way implication dmasen -> lenfin, not an existence/biconditional
 //   search. 5-p166.c7/F58.note.dmasen tests exactly that implication for
 //   every sample outside the exception, and it holds VACUOUSLY -- a correct
-//   pass, stated as such in the assertion's own text (an earlier
-//   existence-search form of this same assertion was a false red under a
-//   now-withdrawn finding key; that key is not cited here as live).
+//   pass, stated as such in the assertion's own text (a
+//   different, existence-search form of this same assertion would be a false
+//   red here).
 //
-//   WHY IT IS VACUOUS IS A PROPERTY OF THE SAMPLING POINT, NOT OF THE RUN,
-//   and this paragraph said otherwise until 18.09.2026 (OPEN-ISSUES O97). It
+//   WHY IT IS VACUOUS IS A PROPERTY OF THE SAMPLING POINT, NOT OF THE RUN. It
 //   is true that dmasen is driven high only in the idle-state DMA-start
 //   branch (paula_audio_channel.v:276), but that is not the reason: the
 //   periodic Sample.dmasen field (:470, filled at :528) can never read 1 for
@@ -249,11 +247,10 @@
 //   into audio_state and reads the SAME register back without an
 //   intervening clock/legal transition.
 //
-//   V-08 REPAIR (2026-09-12, second pass): a re-validation found the first
-//   repair's "eight states" predicate genuine but incomplete -- it counted
-//   liveStatesReached.size()==5 plus a hardcoded "+3==8", which never proved
-//   a UNION and never proved a forced seed took effect. 5-p164.c2/5-sm.c2
-//   and F58.states now require BOTH of two preconditions, each asserted (not
+//   EIGHT-STATES COMPLETENESS: counting liveStatesReached.size()==5 plus a
+//   hardcoded "+3==8" would be genuine but incomplete -- it would never prove
+//   a UNION and never prove a forced seed took effect. 5-p164.c2/5-sm.c2
+//   and F58.states instead require BOTH of two preconditions, each asserted (not
 //   assumed) in Scenario E:
 //     PRECONDITION 1 (exact, disjoint union): liveStatesReached must equal
 //     the expected five-code set {000,001,010,011,110} EXACTLY (not just
@@ -274,7 +271,7 @@
 //   Both preconditions measured TRUE on this RTL (liveStatesReached == the
 //   expected set, forced/live groups disjoint, union == all eight codes, all
 //   three seeds observed pre-clock, all three settle to idle) -- 5-p164.c2/
-//   5-sm.c2, F58.states and 5-sig.sq all stay green, now on sound grounds.
+//   5-sm.c2, F58.states and 5-sig.sq all stay green.
 //   F58.sqbits is recorded MEASURED (not-asserted): the RTL declares
 //   audio_state as a single opaque `reg [2:0]`, not three separately named
 //   sq2/sq1/sq0 nets, so which bit the figure draws "leftmost" is a
@@ -289,32 +286,23 @@
 //   MUTATION METHOD above for why independent, fresh-reset reruns were used
 //   instead of an edit/rebuild/revert cycle). Each detail line names exactly
 //   what was changed. The last four entries (two ids x two new experiments)
-//   are the V-08 repair's new mutations, appended in the order Scenario E
-//   actually runs them.
+//   are the eight-states completeness check's new mutations, appended in
+//   the order Scenario E actually runs them.
 //
-// D3 REPAIR (2026-09-17): this comment block is a source-readable mirror of
+// MUTATION-RECORD ACCURACY: this comment block is a source-readable mirror of
 //   what main() prints at runtime -- check_mutation_baseline.py reads BOTH
 //   (see that tool's own docstring on packages that "build the record at
 //   runtime and print it"), so the two MUST agree or a stale comment record
-//   sits alongside the corrected runtime one and is graded as a second,
-//   independent (and wrong) result for the same id. 18 entries below were
-//   exactly that: recorded green (or, for 5-p165.c15, hard-coded "green"
-//   with no condition at all) against a baseline that PASSES, which
-//   check_mutation_baseline.py's 15.09.2026 sweep correctly reported as
-//   SURVIVED -- satisfying the mutation gate while demonstrating nothing.
-//   Repaired below to match the corrected runtime code exactly: 15 are now
-//   genuine reds (some by fixing an inverted outcome formula that had
-//   already computed the right data and recorded the wrong sense of it;
-//   others by replacing a mutation that measurably could not discriminate
-//   the assertion with one that does, confirmed by an actual WSL/Verilator
-//   build+run, not reasoned from the RTL alone); 3 are `none impossible`,
-//   two of them (5-p166.c9, F58.idle.percntrld) citing the specific
-//   unconditional RTL lines that make no stimulus possible, and one
-//   (5-p166.c7) reporting a genuine defect found in this check's own
-//   periodic-sampling control while repairing it -- see that entry's own
-//   detail for the argument; the check's own PASS baseline shares the same
-//   defect and was left untouched, since moving an accepted chapter's
-//   verdict is not this repair's mandate.
+//   sits alongside the runtime one and is graded as a second,
+//   independent (and wrong) result for the same id. Below, 15 entries are
+//   genuine reds (each discriminates a real defect the mutation
+//   introduces); 3 are `none impossible` (5-p166.c9, F58.idle.percntrld,
+//   and 5-p166.c7), each citing why no stimulus mutation can apply -- see
+//   each entry's own detail. 5-p166.c7's own detail also reports a defect
+//   in this check's own periodic-sampling control, of the same shape
+//   Appendix F found in appF-cia-bus-and-clock's FIXTURE-LIVENESS; the
+//   check's own PASS baseline shares that defect and is left untouched,
+//   since moving an accepted chapter's verdict is out of scope here.
 // MUTATION 5-p164.c2 stimulus red
 //   Agnus never answers a single word (suppress_responder_after=0); only 2 distinct LEGALLY-reached codes remain (want 5) -- the reachability half of this check is stimulus-sensitive, not satisfied by the host loop regardless of what the DUT does.
 // MUTATION F58-EIGHT-STATE-CIRCLES stimulus red
@@ -365,8 +353,7 @@
 // MUTATION 5-p164.c8 stimulus red
 //   word1 sent byte-swapped (0x4433 instead of 0x3344); sample observed in state 010 after the swapped word = 0x44 (baseline compared against 0x33) -- flips as expected.
 // MUTATION FIXTURE-KNOWN-WORD-IN-ORDER stimulus red
-//   D3 REPAIR: was recorded as id "[fixture]" (not the assertion's own leading id -- see O31's
-//   note on why that makes it invisible to the gate) and green. A within-word byte swap cannot
+//   A within-word byte swap cannot
 //   discriminate this check: each word's steady-loop states alternate hi/lo dozens of times, so
 //   transposing one pair is masked by the many later repeats. Real lever: word1 (0x3344) and
 //   word8 (0x0123) swapped as WHOLE WORDS instead -- the fixed, originally-ordered expectedSeq is
@@ -374,7 +361,7 @@
 // MUTATION 5-p164.c9 oracle green
 //   re-pointed the SAME "lower byte output" measurement at the RTL's own measured steady low-byte code (6) instead of the manual's 011; 0x44 (word1's lower byte) observed there = yes -- confirms the comparator is not backwards.
 // MUTATION 5-p164.c17 stimulus red
-//   D3 REPAIR: the discarded-word byte swap only varies the invariant half of this conjunction
+//   The discarded-word byte swap only varies the invariant half of this conjunction
 //   (discard never leaks regardless of content, by construction). Real lever: reuse the
 //   suppress-after-1 rerun (5-p166.c5's mutation, word1 never arrives) -- laterWordAppears (0x33)
 //   then goes false too, correctly reddening the conjunction as a whole.
@@ -398,21 +385,21 @@
 //   offset 3 (the last word) arrives at t=7376; dmas rising edge in the open window (5560, 7376)
 //   at t=5584: dmareq=1 -- a page-following implementation makes this green.
 // MUTATION F58-LOOP-EXIT-TO-IDLE stimulus red
-//   D3 REPAIR: the outcome formula negated offR.exited_to_idle_after_off before choosing
-//   green/red, so a measured "no" (the mutation working exactly as intended) was recorded green.
-//   Re-applying the real predicate (unnegated) to the same already-measured "no" gives red.
+//   Negating offR.exited_to_idle_after_off before choosing
+//   green/red would record a measured "no" (the mutation working exactly as intended) as green.
+//   The real predicate, unnegated, applied to that same measured "no" gives red.
 // MUTATION 5-p164.c21 stimulus red
-//   D3 REPAIR: same inverted-outcome bug and same fix as F58-LOOP-EXIT-TO-IDLE above, reusing
-//   the same DMA-off-without-intpen rerun.
+//   Same unnegated predicate and
+//   same DMA-off-without-intpen rerun as F58-LOOP-EXIT-TO-IDLE above.
 // MUTATION 5-eff.c2 stimulus red
-//   D3 REPAIR: the outcome formula asked "are the two periods approximately equal" instead of
-//   re-applying g36's own strict inequality (periodLong > periodShort). Re-applying the real
-//   comparison to the already-measured equal periods (3672.0 vs 3672.0) gives red.
+//   Asking "are the two periods approximately equal" instead
+//   of re-applying g36's own strict inequality (periodLong > periodShort) would miss this. The real
+//   comparison, applied to the already-measured equal periods (3672.0 vs 3672.0), gives red.
 // MUTATION 5-p164.c26 stimulus red
-//   suppressed responder after 4 words (same rerun as 5-p164.c23's ORIGINAL, since-corrected mutation attempt): lencnt sequence = 4 3 2 1 -- only one block ever completes, so no post-reload rise back to AUDLEN is observed, confirming the reload-timing check correctly has nothing to confirm past block 1.
+//   suppressed responder after 4 words (the same rerun 5-p164.c23's own mutation also uses): lencnt sequence = 4 3 2 1 -- only one block ever completes, so no post-reload rise back to AUDLEN is observed, confirming the reload-timing check correctly has nothing to confirm past block 1.
 // MUTATION 5-p164.c27 stimulus red
-//   D3 REPAIR, same two wrong attempts as 5-p164.c23 (suppress-after-4, then -after-3, both
-//   still reach lenfin -- see that entry's own detail) before landing on the real lever:
+//   Suppress-after-4, then suppress-after-3, would both
+//   still reach lenfin (see 5-p164.c23's own detail) and not discriminate this check. The real lever:
 //   AUDxIR/intreq keeps pulsing every perfin-driven loop transition once lenfin has armed at all,
 //   regardless of whether the responder keeps answering (paula_audio_channel.v:421 has no AUDxDAT
 //   dependency), so only suppEarlyR (suppress-after-1, discard word only) genuinely prevents
@@ -428,7 +415,7 @@
 //   window and comparator: the intreq pulse lands inside the window there, and g28 correctly
 //   reads true.
 // MUTATION 5-p165.c7 stimulus red
-//   D3 REPAIR: the delayed-dmaena rerun cannot touch this claim -- base.pre_audxdr is captured in
+//   The delayed-dmaena rerun cannot touch this claim -- base.pre_audxdr is captured in
 //   the SAME delta-cycle as `dmaena=1;eval()`, before any clocked edge, regardless of how long
 //   the prior delay was (paula_audio_channel.v:129 `assign AUDxON=dmaena` is a pure wire). Real
 //   lever: raise dmaena from a DIFFERENT, legally-reached state (direct-mode entry, AUDIO_STATE_3
@@ -439,10 +426,10 @@
 //   same alternate-entry-state rerun as 5-p165.c7 above; AUDIO_STATE_3's case arm
 //   (paula_audio_channel.v:389) sets dmasen=1'b0 unconditionally too, so dmasen reads 0.
 // MUTATION 5-p165.c13 stimulus red
-//   D3 REPAIR: reuses g17, the same measurement 5-p164.c26 above already tests correctly;
-//   the withdrawn record used a disconnected proxy instead of that same recomputation.
+//   Reuses g17, the same measurement 5-p164.c26 above already tests correctly;
+//   a disconnected proxy would not recompute that same measurement.
 // MUTATION 5-p165.c15 stimulus red
-//   D3 REPAIR: was hard-coded "green" with no condition computed at all, though the detail text
+//   A hard-coded "green" with no condition computed would test nothing, though the detail text
 //   already described the intended experiment. Implemented for real: suppress_responder_after=0
 //   (Agnus answers nothing, not even the discard word) -- lencnt is never touched away from reset
 //   and lenfin never reads true anywhere in the rerun.
@@ -451,37 +438,36 @@
 // MUTATION 5-p166.c6 stimulus red
 //   suppressed-responder rerun truncates the run before a second block's steady-loop dwell is reached in the same way; self-loop evidence in this rerun is confined to block 1 only.
 // MUTATION 5-p166.c7 none impossible
-//   D3 REPAIR: no stimulus mutation applies via this check's own measurement technique --
+//   No stimulus mutation applies via this check's own measurement technique --
 //   periodic sampling of `dmasen` can never read 1 for ANY stimulus, since dmasen only holds
 //   while audio_state==000 and by the time a cck-qualified sample is recorded, that SAME edge has
 //   already advanced audio_state away from 000 (the reason DmaResult's own pre_dmasen field needs
 //   a direct, non-periodic capture). Confirmed empirically: even the excepted window, where
 //   base.pre_dmasen independently proves dmasen WAS 1, reads 0 samples in the periodic trace. The
-//   withdrawn record's own forced-second-entry experiment (kept in main(), below) is a genuine
+//   forced-second-entry experiment (kept in main(), below) is a genuine
 //   real stimulus; it is this check's own instrument that cannot see it -- a defect in the
-//   check's own control found while repairing it, the same shape Appendix F found in
+//   check's own control, the same shape Appendix F found in
 //   appF-cia-bus-and-clock's FIXTURE-LIVENESS. The accepted baseline PASS shares this same
 //   defect (its own "vacuous pass" is drawn from the identical blind instrument) and is left
-//   untouched, since moving an accepted chapter's verdict is outside this repair's scope.
+//   untouched, since moving an accepted chapter's verdict is out of scope here.
 // 5-p166.c8/F58.note.dsr carries no mutation record here either: it is printed via MEASURED(),
 //   never expect()/CHECK(), so it is not a pass/fail assertion. For the record: re-evaluating the
 //   same AUDxDSR=AUDxDR.dmasen equation using only the FIRST dmareq edge (000->001, where
 //   dmasen=1 and lenfin=0) instead of the whole run shows the equation holds there, so the
 //   measurement is stimulus-sensitive, not vacuous, even though it stays informational.
 // MUTATION 5-p166.c9 none impossible
-//   D3 REPAIR: no stimulus mutation applies -- paula_audio_channel.v:322 (AUDIO_STATE_1) and
+//   No stimulus mutation applies -- paula_audio_channel.v:322 (AUDIO_STATE_1) and
 //   paula_audio_channel.v:363 (AUDIO_STATE_2, the RTL's measured discard state) each transition
 //   to AUDIO_STATE_0 on the unconditional term `else if (!AUDxON)`, with no dependency on
-//   AUDxDAT, AUDxIP, or any other signal. The withdrawn record's own experiment (a different
-//   undeclared start code, 101) already confirmed this from the other direction: it too funnels
+//   AUDxDAT, AUDxIP, or any other signal. A different, undeclared start code (101) confirms this
+//   from the other direction too: it also funnels
 //   to idle via the same default branch, for the same reason.
 // MUTATION F58-IDLE-SELFLOOP-PERCNTRLD none impossible
-//   D3 REPAIR: no stimulus mutation applies -- paula_audio_channel.v:269 sets percntrld=1'b1
+//   No stimulus mutation applies -- paula_audio_channel.v:269 sets percntrld=1'b1
 //   unconditionally at the top of the AUDIO_STATE_0 case arm, before any input-dependent branch,
 //   and the run unavoidably dwells in state==000 for its first several recorded samples (reset_
-//   all() leaves audio_state==0, confirmed by 5-sm.c5) before any stimulus can act. The withdrawn
-//   record's own text already conceded this ("the mutation could not, in fact, remove the
-//   evidence"); recorded here as the honest verdict instead of green.
+//   all() leaves audio_state==0, confirmed by 5-sm.c5) before any stimulus can act -- the mutation
+//   cannot, in fact, remove the evidence; recorded here as the honest verdict instead of green.
 // MUTATION F58-LOOP-LENFIN-BRACKET stimulus red
 //   suppressed-responder rerun: only one lenfin word is ever reached, so lencntrld/intreq2-at-lenfin each have only one sample and lencount-at-!lenfin loses most of its evidence -- the three-way bracket check degrades as expected.
 // MUTATION F58-LOOP-INTREQ2-BRACKET stimulus red
@@ -501,13 +487,13 @@
 //   to the block-end-only case once AUDxON=1: of 62 loop-return transitions in the mutated
 //   rerun, intreq is observed at none of them, correctly flipping the same predicate to red.
 // MUTATION 5-p164.c2 stimulus red
-//   V-08 PRECONDITION 1 (overlap): force+clock code 110 (a LIVE code, already in liveStatesReached) instead of 111; overlap between the live and forced groups = {6} (want empty) -- the new disjoint-union precondition correctly fails even though seeding and settle-to-idle both still hold and both group sizes (5 and 3) are unchanged, exactly what the removed 5+3==8 count could not detect.
+//   EIGHT-STATES COMPLETENESS PRECONDITION 1 (overlap): force+clock code 110 (a LIVE code, already in liveStatesReached) instead of 111; overlap between the live and forced groups = {6} (want empty) -- the disjoint-union precondition correctly fails even though seeding and settle-to-idle both still hold and both group sizes (5 and 3) are unchanged, exactly what a bare 5+3==8 count could not detect.
 // MUTATION F58-EIGHT-STATE-CIRCLES stimulus red
-//   same overlap rerun as 5-p164.c2's new mutation.
+//   same overlap rerun as 5-p164.c2's mutation.
 // MUTATION 5-p164.c2 stimulus red
-//   V-08 PRECONDITION 2 (seed suppressed): run_forced_transition(...,101,applySeed=false) skips the force-write, leaving audio_state at its post-reset idle value; pre-clock audio_state observed=0 (want 101) -- the new pre-clock seed-observed precondition correctly fails, closing the false-green path where an unwritten, already-idle register would look identical to a genuine forced transition once clocked.
+//   EIGHT-STATES COMPLETENESS PRECONDITION 2 (seed suppressed): run_forced_transition(...,101,applySeed=false) skips the force-write, leaving audio_state at its post-reset idle value; pre-clock audio_state observed=0 (want 101) -- the pre-clock seed-observed precondition correctly fails, closing the false-green path where an unwritten, already-idle register would look identical to a genuine forced transition once clocked.
 // MUTATION F58-EIGHT-STATE-CIRCLES stimulus red
-//   same seed-suppression rerun as 5-p164.c2's new mutation.
+//   same seed-suppression rerun as 5-p164.c2's mutation.
 
 #include <cstdint>
 #include <cmath>
@@ -678,8 +664,7 @@ struct Harness {
     void write_reg(int addr, uint16_t data) {
         // Held until EXACTLY one cck-qualified posedge has consumed the write, then released on
         // the very next tick -- not a fixed tick count, and not "count cck occurrences after
-        // calling tick()". Three earlier attempts at this same fix are recorded in this file's
-        // git history because each was independently measured wrong, and the reason matters for
+        // calling tick()". Three other approaches each measure wrong, and the reason matters for
         // whoever touches this next:
         //   (a) a short fixed hold (4 ticks) can, depending on clk7_en/cck phase, release aen
         //       before any cck-qualified edge ever sees AUDxDAT=1, silently dropping the write
@@ -687,14 +672,14 @@ struct Harness {
         //   (b) a longer fixed hold (12 ticks) can instead span TWO cck-qualified edges, so one
         //       logical write gets consumed twice (measured: lencnt read "4 2 4 2..." instead of
         //       "4 3 2 1...").
-        //   (c) checking dut->cck AFTER calling tick() -- as this function itself first did --
+        //   (c) checking dut->cck AFTER calling tick()
         //       reports the flag for the NEXT posedge, not the one the call just used (tick()'s
         //       own bookkeeping updates clk7_en/cck only at the very end of each call, for the
         //       following call to consume) -- so a hold that was "already" cck-aligned before the
         //       loop even started gets missed by this check, the loop keeps waiting, and BOTH that
         //       already-consumed edge and the next real one land while aen is still held: measured
-        //       directly via a per-tick rootp trace, one physical AUDDAT write rippled through
-        //       audio_state 001->011->010 (two transitions) before this was caught.
+        //       directly via a per-tick rootp trace, one physical AUDDAT write ripples through
+        //       audio_state 001->011->010 (two transitions) instead of one.
         // The fix: read dut->cck BEFORE calling tick() -- that is what tells you whether the
         // UPCOMING posedge (inside the tick() you are about to call) will be cck-qualified, since
         // tick() only ever updates clk7_en/cck for its own successor.
@@ -713,7 +698,7 @@ struct Harness {
 // ---------------------------------------------------------------------------
 // Generic trace-search helpers (used instead of hard-coded event indices, so
 // nothing here assumes a mental model of the RTL's exact per-word cadence
-// that this agent has not yet verified by opening the file).
+// that has not been verified directly).
 // ---------------------------------------------------------------------------
 static std::vector<size_t> audxdatEvents(Harness& h) {
     // The LAST recorded sample of each contiguous AUDxDAT==1 run, not the first. AUDxDAT
@@ -779,7 +764,7 @@ static bool byteEverAppears(Harness& h, uint8_t v, long afterTick, long beforeTi
 // reading anything back -- a statement about the machine's own transition
 // function, not a readback of what the host just wrote.
 //
-// V-08 repair, PRECONDITION 2: "settled to idle" alone cannot distinguish a
+// EIGHT-STATES COMPLETENESS, PRECONDITION 2: "settled to idle" alone cannot distinguish a
 // genuine forced transition from a seed that was never applied to an
 // already-idle register. preState below is read back right after the forced
 // write + eval() and BEFORE the first clock edge, so a caller can assert the
@@ -983,8 +968,8 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     std::cout << "=== ch5-audio-channel-state: paula_audio_channel vs HRM pp.153,164-166 ===\n";
 
-    // Cross-scenario bookkeeping for the honest, post-repair "eight states"
-    // measurements in SCENARIO E below (V-08): audio_state codes actually
+    // Cross-scenario bookkeeping for the "eight states"
+    // measurements in SCENARIO E below (EIGHT-STATES COMPLETENESS): audio_state codes actually
     // visited under LEGAL stimulus/transitions in Scenario C (DMA-driven run)
     // and Scenario D (direct/interrupt-driven run), plus Scenario B's
     // force-and-CLOCK result (run_forced_transition, not a bare readback) for
@@ -992,20 +977,20 @@ int main(int argc, char** argv) {
     // below; consumed only after all three have actually run.
     std::set<int> liveStatesReached;
     bool rtlUnusedFunnelToIdle = false;
-    bool forcedSeedsObserved = false; // V-08 PRECONDITION 2: each forced code (100,101,111)
+    bool forcedSeedsObserved = false; // EIGHT-STATES COMPLETENESS PRECONDITION 2: each forced code (100,101,111)
                                        // actually read back as itself BEFORE its clock edge
 
     // =========================================================================
     // SCENARIO A -- state register width / post-reset encoding
     // =========================================================================
     {
-        // NOTE (V-08 repair): the former "eight states" / "sq2,1,0" / "eight state
-        // circles" / "sqbits" checks that used to live here forced integers straight
-        // into audio_state and read the SAME register back with no clock in between --
-        // a tautology about the host loop, not the DUT. They are rebuilt honestly in
-        // SCENARIO E below, once Scenarios B/C/D have actually produced legal
+        // NOTE: forcing integers straight
+        // into audio_state and reading the SAME register back with no clock in between
+        // would be a tautology about the host loop, not the DUT. The "eight states" /
+        // "sq2,1,0" / "eight state circles" / "sqbits" checks are built honestly in
+        // SCENARIO E below instead, once Scenarios B/C/D have actually produced legal
         // transitions and a force+clock next-state observation to measure. Only the
-        // one check below that always was a real, clocked observation stays here.
+        // one check below, a real, clocked observation, stays here.
         Harness h2; h2.reset_all();
         int post_reset_state = h2.dut->rootp->paula_audio_channel__DOT__audio_state;
         CHECK("5-sm.c5 (p164) \"the idle state is encoded 000\": audio_state==0 immediately after "
@@ -1047,7 +1032,7 @@ int main(int argc, char** argv) {
 
         auto r101 = run_forced_transition(h, 0b101);
         int n101 = r101.postState;
-        // V-08 repair, PRECONDITION 2: each forced code must be OBSERVED in audio_state
+        // EIGHT-STATES COMPLETENESS, PRECONDITION 2: each forced code must be OBSERVED in audio_state
         // BEFORE its qualifying clock edge -- otherwise "settled to idle" cannot tell a
         // genuine forced transition from a seed that was never applied to an
         // already-idle register. Checked here for the RTL's own measured unused set
@@ -1385,7 +1370,7 @@ int main(int argc, char** argv) {
         // lenfin` on `AUDxDR && cck`), and perfin cycles every AUDPER cck regardless of word
         // arrivals -- so the restart can fire, and dmareq/dmas can already have been cleared again
         // by strhor, well BEFORE the next word's own arrival. Correlating through "the word where
-        // lenfin first appears, then the following transition" (this check's first version) could
+        // lenfin first appears, then the following transition" could
         // land on a LATER, unrelated loop transition after the real restart had already come and
         // gone -- measured directly via a per-sample trace: dmas was already 1 several samples
         // before the word-based anchor tick, and back to 0 by the transition that anchor pointed
@@ -1563,12 +1548,12 @@ int main(int argc, char** argv) {
               "--public-flat-rw -- an internal encoding, not a port -- so this destination-code "
               "mismatch is a source observation, NM-HRM-026, not a conformance failure)", g11);
 
-        // ---- G33: fig NOTE exception clause -- REPAIRED (V-06/withdrawn NM-HRM-029) ----
-        // The withdrawn version searched for at least one LATER sample with dmasen && lenfin and
-        // went red when none was found -- but "Except for this case, dmasen is true only when
+        // ---- G33: fig NOTE exception clause ----
+        // Searching for at least one LATER sample with dmasen && lenfin and
+        // going red when none is found would be wrong -- "Except for this case, dmasen is true only when
         // LENFIN=1" is the one-way implication dmasen -> lenfin, not an existence/biconditional
         // claim. Absence of later dmasen pulses SATISFIES "only when"; it does not violate it.
-        // Rewritten to test the actual implication: for every sample outside the 000->001
+        // This tests the actual implication instead: for every sample outside the 000->001
         // exception, dmasen==1 must imply lenfin==1. If dmasen never recurs there, the
         // implication holds vacuously -- a correct pass, stated as such below rather than hidden.
         long dmasenExceptEndT = (t_dma_on>=0 ? H.transitions[t_dma_on].t : 0);
@@ -1597,7 +1582,7 @@ int main(int argc, char** argv) {
               "outside the 000->001 exception (not an existence/biconditional search): " +
               dmasenNoteDet, dmasen_implies_lenfin);
 
-        // ---- G34: fig NOTE AND equation AUDxDSR(=dmas)=AUDxDR.dmasen -- INFORMATIONAL (V-06) ----
+        // ---- G34: fig NOTE AND equation AUDxDSR(=dmas)=AUDxDR.dmasen -- INFORMATIONAL ----
         // dmas is a LATCHED register (paula_audio_channel.v:220 `dmas <= dmasen | lenfin` on
         // `AUDxDR && cck`) that stays at its set value for many samples until strhor next clears
         // it, while AUDxDR/dmasen are transient, combinational values valid only at the instant of
@@ -1605,7 +1590,7 @@ int main(int argc, char** argv) {
         // (while dmas is still latched high but audxdr/dmasen have long since gone back to 0)
         // produces spurious mismatches with no bearing on the equation itself. Restricted to
         // dmas's own RISING EDGES, checking the combinational values one sample before each edge
-        // (the same pre/post distinction G3's fix already established).
+        // (the same pre/post distinction G3's own check already uses).
         // NOT asserted pass/fail: the equation compares the public `dmas` port (AUDxDSR) against
         // TWO --public-flat-rw INTERNAL signals (AUDxDR, dmasen), neither a port. Under a
         // behavioural contract that is not a conformance failure -- the RTL computes the same
@@ -1823,7 +1808,7 @@ int main(int argc, char** argv) {
             bool fixtureLiveSwap = isSubsequence(expectedSeq, actualSeqSwap);
             // DIAGNOSTIC ONLY, not the mutation record below: this within-word byte swap does
             // NOT redden FIXTURE-KNOWN-WORD-IN-ORDER (measured: fixtureLiveSwap stays true).
-            // Root cause found while repairing the D3 survivor: each word's steady-loop states
+            // Each word's steady-loop states
             // (010/actualLoopCode) alternate hi/lo dozens of times before the next word lands
             // (loopAlternations, computed above, reaches the hundreds) -- the observed trace for
             // ONE word therefore looks like "33 44 33 44 33 44 ... 33 44", not a single "33 44"
@@ -1834,7 +1819,7 @@ int main(int argc, char** argv) {
             // reorder instead. See the real mutation just below.
         }
 
-        // REPAIR (D3): FIXTURE-KNOWN-WORD-IN-ORDER survived because its only mutation (the
+        // FIXTURE-KNOWN-WORD-IN-ORDER's only mutation (the
         // within-word byte swap above, shared with 5-p164.c8) is structurally incapable of
         // reddening it -- see the diagnostic just above. The real lever is a WHOLE-WORD reorder:
         // swap the vector POSITIONS of two counted words (not their internal bytes) so Agnus
@@ -1888,8 +1873,8 @@ int main(int argc, char** argv) {
         // leaks" half) by varying WHICH bytes are discarded -- but the RTL's discard branch
         // (AUDIO_STATE_1's else-if(!AUDxON)/else path) never outputs `sample` at all regardless
         // of content, so that half is a structural invariant no content change can break; the
-        // swap always reads leak11=no leak22=no and was recorded green against a PASS baseline
-        // (SURVIVED). g10 is a CONJUNCTION though (!firstWordLeaksBeforeWord1 && laterWordAppears)
+        // swap always reads leak11=no leak22=no, which stays green against the PASS baseline.
+        // g10 is a CONJUNCTION though (!firstWordLeaksBeforeWord1 && laterWordAppears)
         // -- the second half IS stimulus-sensitive: reuse suppEarlyR (suppress_responder_after=1,
         // already built above for 5-p166.c5/5-p164.c20/5-p166.c4), where word1 never arrives at
         // all, so laterWordAppears (0x33 ever appears) must go false, correctly reddening the
@@ -1914,11 +1899,10 @@ int main(int argc, char** argv) {
         DmaParams suppP; suppP.suppress_responder_after = 4; // stop answering after block 1
         DmaResult suppR = run_dma(suppP);
         auto adSupp = audxdatEvents(suppR.h);
-        // REPAIR (D3), FIRST ATTEMPT, MEASURED WRONG: suppress_responder_after=4 was first tried
-        // here on the assumption that block 1 (AUDLEN=4) needs 4 counted words and only 3 arrive
-        // before suppression. Built and run: it does NOT redden g16 -- measured
-        // dmasEdgesSeenSupp==2 (the restart edge DOES occur). The reason, read directly from this
-        // file's own earlier documentation (see the "length counter" comment above lencntAtWord):
+        // Suppressing after 4 responses (on the assumption that block 1, AUDLEN=4, needs 4
+        // counted words and only 3 arrive before suppression) does NOT redden g16 -- measured
+        // dmasEdgesSeenSupp==2 (the restart edge DOES occur). The reason (see the "length counter"
+        // comment above lencntAtWord):
         // the discard word ALSO decrements lencnt (paula_audio_channel.v:317, unconditional on
         // AUDxDAT in AUDIO_STATE_1), so lenfin is already reached after only 3 counted words
         // (discard=4, word1=3, word2=2, word3=1 -- confirmed by this same suppR's own lencnt
@@ -1926,11 +1910,11 @@ int main(int argc, char** argv) {
         // fires the moment lenfin goes true regardless of whether the RESPONDER keeps answering.
         // suppP/suppR are still used below (5-p164.c26 depends on them, correctly, unmodified).
         //
-        // SECOND ATTEMPT, ALSO MEASURED WRONG: suppress-after-3 (discard + 2 counted words) was
-        // tried next, reasoning "one fewer response should keep lencnt above 1". Built and run:
-        // STILL measured dmasEdgesSeenSupp==2. Read the RTL more carefully: lencnt's own
-        // registered decrement (paula_audio_channel.v:171-172, `lencount && cck`) lands ONE EDGE
-        // EARLIER than the SAMPLED value shows (lencntAtWord's own one-event lag, documented at
+        // Suppressing after 3 responses (discard + 2 counted words, reasoning "one fewer response
+        // should keep lencnt above 1") also does not redden g16: dmasEdgesSeenSupp==2 still.
+        // lencnt's own registered decrement (paula_audio_channel.v:171-172, `lencount && cck`) lands
+        // ONE EDGE EARLIER than the SAMPLED value shows (lencntAtWord's own one-event lag,
+        // documented at
         // this file's own comment above `lencntAtWord`) -- word2's own arrival (the SECOND
         // counted word, adSupp index 2) is what actually drives lencnt from 2 to 1, and lenfin
         // (and therefore the restart pulse on `dmas`) becomes true at that SAME edge. Suppressing
@@ -1939,13 +1923,12 @@ int main(int argc, char** argv) {
         // The real lever: reuse suppEarlyR (suppress-after-1, already built above for
         // 5-p166.c5/5-p164.c20/5-p166.c4/5-p164.c17's own fix) -- only the discard word is ever
         // answered, so lencnt decrements exactly once (4->3) and never approaches 1 at all.
-        // REPAIR: g16's own predicate is now the host-derived arming-word window (armT_host/
+        // g16's own predicate is the host-derived arming-word window (armT_host/
         // nextWordT_host computed above, at G16), not a raw "2nd dmas edge" count -- and under
-        // that new predicate 5-p164.c23 is ALREADY RED AT BASELINE (AUDLEN=4): the arming word's
+        // that predicate 5-p164.c23 is ALREADY RED AT BASELINE (AUDLEN=4): the arming word's
         // own window carries no dmas edge at all (NM-HRM-084's off-by-one). A stimulus mutation
-        // cannot demonstrate anything more by making an already-red assertion "redder" (this
-        // file's own D3 REPAIR campaign, elsewhere in this header, is the record of finding this
-        // exact mistake before). Substituted instead, per that same rule: a DIFFERENT mechanism
+        // cannot demonstrate anything more by making an already-red assertion "redder", so this
+        // substitutes instead, per that same rule: a DIFFERENT mechanism
         // through the SAME, unmodified comparator, proven live elsewhere in this run -- AUDLEN=2
         // (reusing shortP/shortR above, built for 5-eff.c2's own G36 measurement), the one length
         // NM-HRM-084's own analysis names as already matching the manual exactly ("At AUDxLEN=2
@@ -1995,11 +1978,11 @@ int main(int argc, char** argv) {
 
         DmaParams offNoIntpen; offNoIntpen.off_tail_raise_intpen = false;
         DmaResult offR = run_dma(offNoIntpen);
-        // REPAIR (D3): both records below used to negate offR.exited_to_idle_after_off before
-        // the green/red choice, so a measured "no" (the mutation DID prevent the exit, exactly
-        // as intended) was recorded green -- a SURVIVED record against a PASS baseline. Both
+        // Negating offR.exited_to_idle_after_off before
+        // the green/red choice would record a measured "no" (the mutation DID prevent the exit, exactly
+        // as intended) as green. Both
         // baseline predicates (base.exited_to_idle_after_off, checked directly, no negation) are
-        // re-applied here to the mutated rerun's own field, unmodified.
+        // applied here to the mutated rerun's own field, unmodified.
         MUTATION("F58-LOOP-EXIT-TO-IDLE", "stimulus", offR.exited_to_idle_after_off ? "green" : "red",
                   "DMA-off tail run WITHOUT raising intpen (AUDxIP stays 0); exited to idle=" +
                   std::string(offR.exited_to_idle_after_off?"yes":"no") + " (want yes, matching "
@@ -2018,10 +2001,10 @@ int main(int argc, char** argv) {
         std::vector<long> intreqEqual;
         for (auto& s: equalR.h.history) if (s.intreq) intreqEqual.push_back(s.t);
         double periodEqual = intreqEqual.size()>=2 ? double(intreqEqual[1]-intreqEqual[0]) : -1;
-        // REPAIR (D3): the real predicate g36 uses is `periodLong > periodShort` (strict).
-        // The withdrawn formula instead asked "are periodEqual and periodShort approximately
-        // equal", a DIFFERENT boolean that happened to be true here for the wrong reason and
-        // was recorded green against a PASS baseline (SURVIVED). Re-applying g36's own strict
+        // The real predicate g36 uses is `periodLong > periodShort` (strict).
+        // Asking "are periodEqual and periodShort approximately
+        // equal" instead is a DIFFERENT boolean that happens to be true here for the wrong reason.
+        // Applying g36's own strict
         // inequality to the mutated pair (periodEqual vs periodShort, both AUDLEN=2) is the
         // real test: with equal buffer sizes the "larger buffer -> longer period" comparison
         // must no longer hold.
@@ -2048,21 +2031,21 @@ int main(int argc, char** argv) {
                       "no post-reload rise back to AUDLEN is observed, confirming the reload-timing "
                       "check correctly has nothing to confirm past block 1.");
         }
-        // REPAIR (D3): 5-p164.c27/c28/F58.loop.intreq2 all reuse g19 (see G18/G19 above --
+        // 5-p164.c27/c28/F58.loop.intreq2 all reuse g19 (see G18/G19 above --
         // lenfinWordIdx search then an intreq pulse afterward, searched with NO time bound over
-        // the rest of the run). The withdrawn records used the same `adSupp.size()<=5` proxy as
-        // 5-p164.c23's own withdrawn attempt. MEASURED WRONG the same way when first tried with
-        // suppR (suppress-after-4): lenfin IS reached there (see 5-p164.c23's own fix above), and
+        // the rest of the run). Using the same `adSupp.size()<=5` proxy as
+        // 5-p164.c23's own would measure wrong the same way: with
+        // suppR (suppress-after-4), lenfin IS reached there (see 5-p164.c23's own detail above), and
         // once lenfin arms, AUDxIR/intreq keeps pulsing every perfin-driven loop transition
         // regardless of whether the RESPONDER keeps answering (AUDIO_STATE_4's branch, "if(perfin
         // && (AUDxON||!AUDxIP))", paula_audio_channel.v:421, has no AUDxDAT dependency) -- so
         // g19's own unbounded forward search always finds a later intreq pulse once lenfin has
-        // armed at all, suppressed responder or not. A second attempt (suppress-after-3) measured
-        // wrong too, for the same reason 5-p164.c23's own second attempt did (see that fix's own
-        // comment above: lencnt's registered decrement lands one edge earlier than the sampled
+        // armed at all, suppressed responder or not. Suppress-after-3 would measure
+        // wrong too, for the same reason 5-p164.c23's own detail gives (lencnt's registered
+        // decrement lands one edge earlier than the sampled
         // sequence suggests, so word2's own arrival already trips lenfin even at suppress-after-3).
-        // Reusing suppEarlyR (suppress-after-1, discard word only -- the same real lever that
-        // finally worked for 5-p164.c23) gives the same real lever here: lenfinWordIdxSupp stays -1.
+        // Reusing suppEarlyR (suppress-after-1, discard word only -- the same real lever
+        // 5-p164.c23 uses) gives the same real lever here: lenfinWordIdxSupp stays -1.
         auto adEarlyG19 = audxdatEvents(suppEarlyR.h);
         int lenfinWordIdxSupp = -1;
         for (size_t i = 0; i < adEarlyG19.size(); i++)
@@ -2077,7 +2060,7 @@ int main(int argc, char** argv) {
                "observed afterward=" + std::string(g19_supp?"yes":"no"))
             : "no lenfin-armed interrupt observed (lenfin never reached in this rerun)";
         MUTATION("5-p164.c27", "stimulus", g19_supp ? "green" : "red",
-                  "same suppEarlyR rerun as 5-p164.c23's (twice-corrected) fix; g19's own search "
+                  "same suppEarlyR rerun 5-p164.c23 also uses; g19's own search "
                   "re-applied to it: " + g19SuppDet + " -- correctly flips to red, since "
                   "lenfin is never reached at all in this rerun.");
         // 5-p164.c28's own predicate is graded on ITS OWN window (its own baseline CHECK above),
@@ -2109,11 +2092,11 @@ int main(int argc, char** argv) {
         }
         MUTATION("5-p164.c28", "stimulus", g28_short ? "green" : "red",
                   "AUDLEN=2 rerun of 5-p164.c28's own window and comparator, unmodified: " + g28ShortDet);
-        // REPAIR (D3): 5-p165.c7/c9 reuse g9/g3 (the pre-* combinational snapshot captured the
+        // 5-p165.c7/c9 reuse g9/g3 (the pre-* combinational snapshot captured the
         // INSTANT dmaena is raised -- see DmaResult's own comment on why this is captured
-        // directly rather than via periodic sampling). The withdrawn records used `t_dma_on_m<0`
+        // directly rather than via periodic sampling). Using `t_dma_on_m<0`
         // (the DELAYED-dmaena rerun, built for 5-p164.c6/c15/c16/c19's genuinely different claim
-        // -- "no transition observed at all") as a proxy. That proxy does not touch what g9/g3
+        // -- "no transition observed at all") as a proxy would not touch what g9/g3
         // measure: base.pre_audxdr/pre_dmasen are captured via `h.dut->dmaena=1; h.dut->eval();`
         // BEFORE any clocked edge, in the SAME delta-cycle, regardless of how long the delay
         // before that assignment was -- so delaying dmaena's assertion can never change the
@@ -2121,7 +2104,7 @@ int main(int argc, char** argv) {
         // (paula_audio_channel.v:129 `assign AUDxON = dmaena;`, a pure wire with no other
         // dependency, and :271-280's AUDIO_STATE_0 branch, which sets AUDxDR/dmasen/lencntrld
         // unconditionally whenever AUDxON&&state==000, with no AUDxDAT/AUDxIP gating at all) --
-        // this was recorded green against a PASS baseline and would have stayed green under ANY
+        // that proxy would stay green under ANY
         // dma_on_delay_ticks value, which is exactly "a mutation that changes something the
         // assertion does not depend on".
         //
@@ -2157,29 +2140,28 @@ int main(int argc, char** argv) {
                       " -- AUDxDR's per-word-request proof correctly flips to red once dmaena is "
                       "no longer raised from idle.");
             MUTATION("5-p165.c9", "stimulus", dmasenAlt ? "green" : "red",
-                      "same alternate-entry-state rerun as 5-p165.c7's fix; " + altDet +
+                      "same alternate-entry-state rerun 5-p165.c7 also uses; " + altDet +
                       " -- dmasen's 000->001 proof correctly flips to red once dmaena is raised "
                       "from a state whose own case arm (AUDIO_STATE_3, paula_audio_channel.v:389) "
                       "sets dmasen=1'b0 unconditionally.");
         }
-        // REPAIR (D3): 5-p165.c13 reuses g17 (the SAME reload-after-finish measurement
-        // 5-p164.c26 already tests, both merged from the identical p164/p165 prose). The
-        // withdrawn record used the `adSupp.size()<=5` proxy again; `suppReloadObserved`
-        // (declared above for 5-p164.c26's own already-correct record) is the real, already-
-        // validated recomputation of g17 on this exact suppR rerun -- reused here, not
+        // 5-p165.c13 reuses g17 (the SAME reload-after-finish measurement
+        // 5-p164.c26 already tests, both merged from the identical p164/p165 prose).
+        // `suppReloadObserved`
+        // (declared above for 5-p164.c26's own record) is the real
+        // recomputation of g17 on this exact suppR rerun -- reused here, not
         // redeclared, so both ids are backed by the identical measurement.
         {
             std::ostringstream lseqSupp13; for (int v : lencntAtWordSupp) lseqSupp13 << v << " ";
             MUTATION("5-p165.c13", "stimulus", suppReloadObserved ? "green" : "red",
-                      "same suppressed-responder rerun as 5-p164.c26's own (already-correct) "
+                      "same suppressed-responder rerun as 5-p164.c26's own "
                       "mutation, reusing its recomputation: lencnt sequence = " + lseqSupp13.str() +
                       "-- only one block ever completes, so no post-reload rise back to AUDLEN is "
                       "observed, correctly flipping to red.");
         }
-        // REPAIR (D3): 5-p165.c15 was recorded as a hard-coded "green" with no condition at all
+        // A hard-coded "green" with no condition at all would test nothing
         // -- the detail text already described the intended experiment ("suppressing the
-        // responder before any lenfin pulse... removes the only evidence") but the code never
-        // implemented it. Implemented here for real: suppress_responder_after=0 means Agnus
+        // responder before any lenfin pulse... removes the only evidence"). Implemented here: suppress_responder_after=0 means Agnus
         // answers NOTHING, not even the discard word, so lencnt is never touched away from its
         // reset value and lenfin never reads true at lencnt==1 anywhere in the rerun.
         {
@@ -2200,14 +2182,14 @@ int main(int argc, char** argv) {
                   "suppressed-responder rerun truncates the run before a second block's steady-loop "
                   "dwell is reached in the same way; self-loop evidence in this rerun is confined to "
                   "block 1 only.");
-        // REPAIR (D3): 5-p166.c7's rewritten implication check (dmasen -> lenfin) passes
+        // 5-p166.c7's implication check (dmasen -> lenfin) passes
         // vacuously at baseline (dmasenSamplesOutsideException==0, per this file's own header
-        // note). The withdrawn record's own experiment -- force a SECOND, non-excepted idle->001
-        // entry (toggle dmaena off then on again) -- is kept below and was genuinely re-run, but
+        // note). The experiment below -- forcing a SECOND, non-excepted idle->001
+        // entry (toggle dmaena off then on again) -- is a genuine real stimulus, but
         // it measures ZERO dmasen=1 samples EVEN IN THE FIRST (excepted) window, where dmasen is
         // independently known to be 1 (base.pre_dmasen, captured directly, is true there). That
         // is not "the second entry never happened" -- it is a DEFECT IN THIS CHECK'S OWN CONTROL,
-        // found while repairing it, of the same shape Appendix F found in
+        // of the same shape Appendix F found in
         // appF-cia-bus-and-clock's FIXTURE-LIVENESS (counting samples that cannot distinguish the
         // real event from its absence).
         //
@@ -2259,14 +2241,14 @@ int main(int argc, char** argv) {
                   "WAS 1. The forced-second-entry experiment (dmaena toggled off then on again, "
                   "kept above) was genuinely re-run and is a legitimate real stimulus -- it simply "
                   "cannot be observed by this check's own instrument. This is a defect in the "
-                  "check's own control, found while repairing it, of the same shape Appendix F "
+                  "check's own control, of the same shape Appendix F "
                   "found in appF-cia-bus-and-clock's FIXTURE-LIVENESS; also worth noting: the "
                   "accepted BASELINE verdict for this assertion (dmasenSamplesOutsideException==0, "
-                  "a correct pass \"vacuously\") is drawing the same vacuous zero from the same "
+                  "a correct pass \"vacuously\") draws the same vacuous zero from the same "
                   "structurally-blind instrument, not from a genuine absence of the excepted "
                   "dmasen pulse recurring. Restructuring Harness::tick()'s own sampling order "
-                  "would touch all 44 of this package's assertions and is outside this repair's "
-                  "scope (chapter 5 is accepted; only the twenty survived mutations are in "
+                  "would touch all 44 of this package's assertions and is out of scope here "
+                  "(chapter 5 is accepted; only the twenty survived mutations are in "
                   "scope) -- reported here, not fixed.");
         // 5-p166.c8/F58.note.dsr carries no mutation record: it is printed via MEASURED(), never
         // expect()/CHECK() (see that call above), so it is not a pass/fail assertion and the
@@ -2274,12 +2256,11 @@ int main(int argc, char** argv) {
         // AUDxDSR=AUDxDR.dmasen equation using only the FIRST dmareq edge (000->001, where
         // dmasen=1 and lenfin=0) instead of the whole run shows the equation holds there, so the
         // measurement above is stimulus-sensitive, not vacuous, even though it stays informational.
-        // REPAIR (D3): 5-p166.c9 tests g35 = (from001==0) && (fromDiscard==0) -- "!AUDxON
-        // returns to idle from both 001 and the discard state". The withdrawn record tried a
+        // 5-p166.c9 tests g35 = (from001==0) && (fromDiscard==0) -- "!AUDxON
+        // returns to idle from both 001 and the discard state". A
         // different UNDECLARED forced start code (101 instead of the RTL's measured discard
-        // code, 3) and found it ALSO funnels to idle (falls through the same case `default`),
-        // so the record stayed green against a PASS baseline (SURVIVED) -- an honestly-reported
-        // non-result, but still not a demonstration, and not a repair either.
+        // code, 3) also funnels to idle (falls through the same case `default`) --
+        // a non-result, not a demonstration.
         //
         // Read directly from the RTL: AUDIO_STATE_1 (paula_audio_channel.v:303-342, "audio DMA
         // has been enabled") and AUDIO_STATE_2 (:344-383, discardTo's own measured code) each
@@ -2289,8 +2270,7 @@ int main(int argc, char** argv) {
         // construction. There is no stimulus input left to vary: any value of AUDxDAT/AUDxIP/
         // anything else reaches the identical branch as long as !AUDxON holds, and audio_state
         // itself is not a stimulus (forcing a THIRD state, declared or not, tests a DIFFERENT
-        // claim, not this one -- exactly what the withdrawn attempt already discovered the hard
-        // way). Genuinely `none impossible`.
+        // claim, not this one). Genuinely `none impossible`.
         MUTATION("5-p166.c9", "none", "impossible",
                   "no stimulus mutation applies: paula_audio_channel.v:322 (AUDIO_STATE_1) and "
                   "paula_audio_channel.v:363 (AUDIO_STATE_2, the RTL's measured discard state) "
@@ -2300,11 +2280,9 @@ int main(int argc, char** argv) {
                   "lowered from either state. The one experiment already tried (a different "
                   "undeclared start code, 101) confirmed this from the other direction: it too "
                   "funnels to idle via the same default branch, for the same reason.");
-        // REPAIR (D3): F58.idle.percntrld tests g39 = (percntrld observed high while state==000).
-        // The withdrawn record used the same delayed-dmaena proxy as several ids above and its
-        // OWN text already conceded the result: "the mutation could not, in fact, remove the
-        // evidence" -- an honest admission of failure, recorded as green (SURVIVED) instead of
-        // `none impossible`. Read directly from the RTL: paula_audio_channel.v:269 sets
+        // F58.idle.percntrld tests g39 = (percntrld observed high while state==000).
+        // The same delayed-dmaena proxy several ids above use would not, in fact, remove the
+        // evidence -- this is `none impossible`, not stimulus-graded. Read directly from the RTL: paula_audio_channel.v:269 sets
         // `percntrld = 1'b1;` UNCONDITIONALLY at the very top of the AUDIO_STATE_0 case arm,
         // before ANY input-dependent branch (the AUDxON / AUDxDAT&&!AUDxON&&!AUDxIP branches
         // only decide audio_next and the OTHER control outputs -- percntrld is already latched
@@ -2321,19 +2299,19 @@ int main(int argc, char** argv) {
                   "percntrld=1 regardless of AUDxON/AUDxDAT/AUDxIP or any other input -- and the "
                   "run unavoidably dwells in state==000 for its first several recorded samples "
                   "(reset_all() leaves audio_state==0, confirmed by 5-sm.c5) before any stimulus "
-                  "can act. The withdrawn record's own delayed-dmaena rerun already conceded this "
-                  "in its own text; re-recorded here as the honest verdict instead of green.");
+                  "can act -- there is no DUT input that could prevent this initial idle dwell "
+                  "from being recorded.");
         MUTATION("F58-LOOP-LENFIN-BRACKET", "stimulus", (adSupp.size()<=5) ? "red" : "green",
                   "suppressed-responder rerun: only one lenfin word is ever reached, so lencntrld/"
                   "intreq2-at-lenfin each have only one sample and lencount-at-!lenfin loses most of "
                   "its evidence -- the three-way bracket check degrades as expected.");
         // F58-LOOP-INTREQ2-BRACKET reuses g19, exactly like 5-p164.c27 above -- reusing
-        // g19_supp (computed there from suppR directly) rather than the same disconnected
-        // `adSupp.size()<=5` proxy. (5-p164.c28's own fix no longer shares this technique -- see
+        // g19_supp (computed there from suppR directly) rather than a disconnected
+        // `adSupp.size()<=5` proxy. (5-p164.c28's own entry does not share this technique -- see
         // its own entry above.)
         MUTATION("F58-LOOP-INTREQ2-BRACKET", "stimulus", g19_supp ? "green" : "red",
-                  "same suppressed-responder rerun and same g19 recomputation as 5-p164.c27's "
-                  "fix: " + g19SuppDet + " -- correctly flips to red.");
+                  "same suppressed-responder rerun and same g19 recomputation 5-p164.c27 also "
+                  "uses: " + g19SuppDet + " -- correctly flips to red.");
     }
 
     // =========================================================================
@@ -2435,14 +2413,14 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // SCENARIO E -- honest "eight states" measurements (V-08 repair)
+    // SCENARIO E -- "eight states" measurements (EIGHT-STATES COMPLETENESS)
     // =========================================================================
-    // The four propositions below used to be established by run_encoding(): force-write each
-    // of 0..7 straight into the Verilated audio_state register, eval(), read the SAME register
-    // back -- no clock transition in between. That proves the generated storage accepts eight
+    // Force-writing each
+    // of 0..7 straight into the Verilated audio_state register, eval(), and reading the SAME register
+    // back -- no clock transition in between -- would only prove the generated storage accepts eight
     // 3-bit patterns; it says nothing about the implemented machine having eight reachable
-    // states. Rebuilt here using only the two legitimate forms, and each assertion below states
-    // which one it used:
+    // states. The four propositions below are established using only the two legitimate forms,
+    // and each assertion below states which one it used:
     //   (a) LEGAL STIMULUS: liveStatesReached is the union of every audio_state value actually
     //       visited during Scenario C's DMA-driven run and Scenario D's direct-mode run above --
     //       real transitions under real stimulus, no force anywhere.
@@ -2454,14 +2432,14 @@ int main(int argc, char** argv) {
     //       function, not a readback of what the host just forced.
     {
         // -----------------------------------------------------------------
-        // V-08 repair, PRECONDITION 1: prove the actual SET union, not a
+        // EIGHT-STATES COMPLETENESS, PRECONDITION 1: prove the actual SET union, not a
         // count. liveStatesReached (Scenario C's DMA run + Scenario D's
         // direct run, both legal stimulus, no force) must equal EXACTLY the
         // RTL's own measured five-code live set -- not merely have
         // cardinality 5 -- the RTL's own measured unused set {100,101,111}
         // must be DISJOINT from it, and the union of both groups must be
-        // EXACTLY the eight 3-bit codes 0..7. The old "size()==5 &&
-        // size()+3==8" never checked any of this: a repeated live code, or a
+        // EXACTLY the eight 3-bit codes 0..7. A bare "size()==5 &&
+        // size()+3==8" count would not check any of this: a repeated live code, or a
         // live/forced coincidence, would still reach a count of eight.
         // -----------------------------------------------------------------
         std::set<int> expectedLiveSet = {0b000, 0b001, 0b010, 0b011, 0b110};
@@ -2484,7 +2462,7 @@ int main(int argc, char** argv) {
 
         bool exactDisjointUnion = liveSetIsExpected && groupsDisjoint && unionIsAllEight;
 
-        // V-08 repair, PRECONDITION 2 (forcedSeedsObserved, established in
+        // EIGHT-STATES COMPLETENESS, PRECONDITION 2 (forcedSeedsObserved, established in
         // SCENARIO B): each of the three forced codes was actually read back
         // AS ITSELF in audio_state BEFORE its qualifying clock edge --
         // otherwise rtlUnusedFunnelToIdle's "all settle to idle" cannot
@@ -2565,7 +2543,7 @@ int main(int argc, char** argv) {
         // no experiment on the DUT, forced or legally-stimulated, that could move this from
         // not-asserted to a colour.
 
-        // ---- NEW MUTATION (V-08 PRECONDITION 1): the two groups overlap ----
+        // ---- MUTATION (EIGHT-STATES COMPLETENESS PRECONDITION 1): the two groups overlap ----
         // Force+clock code 110 instead of 111 -- 110 is one of the FIVE
         // legally-live codes (already a member of liveStatesReached), not one
         // of the RTL's own three disjoint unused codes. This is a genuine
@@ -2603,7 +2581,7 @@ int main(int argc, char** argv) {
         MUTATION("5-p164.c2", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
         MUTATION("F58-EIGHT-STATE-CIRCLES", "stimulus", mutEightStates ? "green" : "red", overlapDetail);
 
-        // ---- NEW MUTATION (V-08 PRECONDITION 2): seeding suppressed ----
+        // ---- MUTATION (EIGHT-STATES COMPLETENESS PRECONDITION 2): seeding suppressed ----
         // run_forced_transition(..., applySeed=false) skips the force-write
         // entirely, leaving audio_state at reset_all()'s post-reset value
         // (idle, 000) instead of the requested seed 101. This is exactly the
