@@ -15,8 +15,8 @@
 //   register rows).
 // Non-goals: address (see above), bit-field layouts, counting/blanking/ sync
 //   VALUES, and the Copper "*"/"~" write-protection mark. The last of these
-//   was flagged as a possible gap in SPECIFICATION.md and confirmed by the
-//   lead: it is hrm/ch7-appb-copper-write-protection's subject (its own
+//   was flagged as a possible gap in SPECIFICATION.md and confirmed:
+//   it is hrm/ch7-appb-copper-write-protection's subject (its own
 //   PROP-2/3/7/8 already assert VPOSR/VHPOSR/VPOSW/VHPOSW's "*" mark from
 //   the same printed rows this file quotes) -- nothing is asserted about it
 //   here.
@@ -37,7 +37,7 @@
 //   public in that already-built sibling's own file, so reading it to reuse
 //   the mechanics is not "opening the RTL" a second time (same precedent
 //   that file itself cites). agnus_beamcounter.v was read directly by this
-//   package only AFTER SPECIFICATION.md was committed (commit bcb43e1).
+//   package only AFTER SPECIFICATION.md was committed.
 //
 // METHODOLOGY:
 //
@@ -52,7 +52,7 @@
 //   depends on that non-existence.
 //
 // (2) WRITE-ONLY, direction (VPOSW $02A, VHPOSW $02C, BEAMCON0 $1DC): per
-//   the lead's note on the committed spec, "write-only" is falsifiable in
+//   the committed spec, "write-only" is falsifiable in
 //   one direction only -- a read returning the written/live content REFUTES
 //   it (definite), but a read returning a constant like 0 does not CONFIRM
 //   it (a written-but-unread register and an undecoded address both read
@@ -128,7 +128,7 @@
 //   the write-then-read pipe is alive on this package's own independently
 //   built obj_dir before anything else relies on it.
 //
-// INDEPENDENCE, per the lead's question ("how many propositions are
+// INDEPENDENCE ("how many propositions are
 //   independent and how many are one proposition observed several times"),
 //   reproducing the step-3 notes' own finding about the Copper "*"/"~" mark
 //   (agnus_copper.v:225 -- read directly, not adopted from the notes:
@@ -174,14 +174,14 @@
 //   one module-boundary structural fact reused 5x, plus VPOSW's and
 //   VHPOSW's own write blocks) -- reported here rather than left implicit.
 //
-// PER-ASSERTION MUTATION RECORDS (every entry below was actually run by this agent under
+// PER-ASSERTION MUTATION RECORDS (every entry below was actually run under
 //   WSL/Verilator: edit -> rebuild -> run -> confirm the named assertion(s)
 //   flip -> revert -> rebuild -> confirm the full suite back to its
 //   committed baseline -- before moving to the next
 //   one. No oracle text or expected-value literal was ever touched;
 //   nanomig/ was never touched. Baseline when this log was written: 15
 //   passed, 2 failed -- the two reds being VPOSW-DIRECTION-WRITE-ONLY and
-//   VHPOSW-DIRECTION-WRITE-ONLY, both WITHDRAWN at stage 8 because p.263
+//   VHPOSW-DIRECTION-WRITE-ONLY, both WITHDRAWN because p.263
 //   leaves the result of reading a write-only register unspecified. The
 //   baseline is now 15 passed, 0 failed, and the '-> 14/3' and '-> 16/1'
 //   counts in the entries below are what those runs produced AT THE TIME,
@@ -216,7 +216,7 @@
 //   targets changed from A_VHPOSR to A_VPOSR (the marked register) ->
 //   14/3; only VHPOSR-NO-ECS-DEPENDENCE newly red (0x2002 vs 0x0002, now
 //   DOES differ by ecs). Reverted: 15/2.
-// WITHDRAWN AT STAGE 8 -- this was a mutation record for the graded
+// WITHDRAWN -- this was a mutation record for the graded
 //   assertion VPOSW-DIRECTION-WRITE-ONLY, which is now the note()/record()
 //   pair VPOSW-READBACK-MEASURED / VPOSW-READBACK-NOT-GRADED. The run it
 //   describes was real and is kept as evidence that the READ TARGET, not
@@ -241,7 +241,7 @@
 //   written value changed from 0x8005 to 0x8006 -> 14/3; only
 //   VPOSW-NO-ECS-DEPENDENCE newly red (masked readback now 0x8005 vs
 //   0x8006). Reverted: 15/2.
-// WITHDRAWN AT STAGE 8 -- as above, for VHPOSW-DIRECTION-WRITE-ONLY, now
+// WITHDRAWN -- as above, for VHPOSW-DIRECTION-WRITE-ONLY, now
 //   VHPOSW-READBACK-MEASURED / VHPOSW-READBACK-NOT-GRADED.
 //   (was: MUTATION VHPOSW-DIRECTION-WRITE-ONLY stimulus green) Symmetric to
 //   VPOSW-DIRECTION-WRITE-ONLY above -- this assertion is also RED at
@@ -585,11 +585,9 @@ int main(int argc, char** argv) {
             "read dangerous and UNSPECIFIED. The manual nowhere says it "
             "returns zero, nor that it cannot return the live value, so "
             "there is no oracle here and the measurement above is reported "
-            "rather than graded. reason_kind source-silent. This assertion "
-            "was graded until stage 8; withdrawn on the independent "
-            "validation's finding, which also corrects the chapter "
-            "narrative: Appendix B's `*` means NOT WRITABLE BY THE COPPER "
-            "(p.287), not write-only -- this package's own citation of `W` "
+            "rather than graded. reason_kind source-silent. Appendix B's "
+            "`*` means NOT WRITABLE BY THE COPPER (p.287), not write-only "
+            "-- this package's own citation of `W` "
             "was right, only the inference from it was not.");
 
         Harness h_c3_base(/*ecs=*/true, /*ntsc=*/false);
@@ -667,8 +665,7 @@ int main(int argc, char** argv) {
             " *02C   W     A          Write vert and horiz position of beam' "
             "(p.289) fixes the direction; p.263-264 leaves the result of "
             "reading a write-only register unspecified. reason_kind "
-            "source-silent. Graded until stage 8, withdrawn on the "
-            "independent validation's finding.");
+            "source-silent.");
 
         Harness h_c4_base(/*ecs=*/true, /*ntsc=*/false);
         uint16_t c4_base = h_c4_base.read(A_VHPOSR);

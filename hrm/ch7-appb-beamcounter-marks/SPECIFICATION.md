@@ -327,5 +327,5 @@ in this 24-record staged file makes a restatement about that mark, for any
 of the five registers, so none of it is turned into a proposition. This
 package's own task sheet describes its subject, in part, as covering
 "Copper-write marks" — that phrase is not met by any claim actually present
-in `ch7-appb-beamcounter-marks-spec-stage.jsonl`; it is reported to the lead
+in `ch7-appb-beamcounter-marks-spec-stage.jsonl`; it is reported
 as a gap rather than filled in by inventing a claim for it.
