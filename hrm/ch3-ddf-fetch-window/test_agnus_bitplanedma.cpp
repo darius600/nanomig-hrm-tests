@@ -2164,6 +2164,33 @@ int main(int argc, char** argv) {
         "3-fetch.c8 (the sol twin of the same 4.5-color-clock sentence) "
         "is declined with them; no assertion here tests the 4.5 figure. "
         "3-ddf.c09, 3-ddf.c10, 3-fetch.c8.");
+    checks.record(
+        "opus:3-res.c14, sol:3-resolution.c7 are DECLINED, not graded. "
+        "\"Note that in high resolution mode, you can have up to four "
+        "bitplanes in the playfield and, therefore, up to 16 colors.\" "
+        "(p.49) is two propositions glued by 'therefore': the bitplane "
+        "ceiling (graded above on HIRES-BPU-CEILING-MAX-4-PLANES, which "
+        "already quotes this same sentence and cites 3-res.c13/"
+        "3-resolution.c6 for the four-bitplane half) and a colour-count "
+        "consequence agnus_bitplanedma cannot show either way: this "
+        "module's ports carry fetched data words, not resolved pixel "
+        "colours, so nothing here can confirm that four bitplanes'-worth "
+        "of fetched bits actually combine into sixteen distinguishable "
+        "colour-register indices - that combination is denise_sprites'/"
+        "denise's palette-index logic, a different fixture. The general "
+        "N-bitplanes-to-color-count mapping IS graded elsewhere, at that "
+        "boundary, under different ids from a different printed page: "
+        "hrm/ch3-bplcon0-display-modes/ asserts '3-basic-color.c4' and "
+        "'3-t1.c04' (p.45, \"Four bitplanes provide 9-16 colors\" / Table "
+        "3-1's \"9 to 16 colours require 4 bitplanes\") at the denise "
+        "boundary - but that package's own graded lines do not, and per "
+        "the bundled-clause rule should not, cite 3-res.c14/"
+        "3-resolution.c7, which are a different id pair naming a "
+        "different printed sentence (p.49's hires-specific ceiling, not "
+        "p.45's general mapping). No unit package combines the hires "
+        "bitplane ceiling and the bitplane-to-colour-index mapping in one "
+        "fixture, and no package under hrm/ or integration/ cites these "
+        "two ids (checked by search, not assumed).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
