@@ -49,7 +49,7 @@
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
 //
-// SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant (deleted 10.09.2026; see
+// SUPERSESSION. Supersedes hrm/agnus_blitter_line_octant (deleted; see
 // docs/evidence/blitter-prior-art.md), per the build
 // register. That package has TWO defects (docs/evidence/blitter-prior-art.md):
 //
@@ -133,8 +133,8 @@
 // (the only agnus_blitter fixture in the tree proven to deliver data
 // correctly) and adapted for line mode: TEST-DATA-DELIVERY-LINE below
 // reproduces that package's data-delivery proof through BLT_L1-L4 instead of
-// BLT_A-D, and is asserted first, before anything data-dependent, per the
-// build brief. Harness::cycle's DMA-grant handshake (the settling eval()
+// BLT_A-D, and is asserted first, before anything data-dependent.
+// Harness::cycle's DMA-grant handshake (the settling eval()
 // before the clock edge) is the same mechanism as agnus_blitter_status,
 // agnus_blitter_masks and agnus_blitter_shift_chain, all read before writing
 // this file. Every timing trap documented in agnus_blitter_status's header
