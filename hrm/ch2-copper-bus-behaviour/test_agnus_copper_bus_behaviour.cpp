@@ -5,7 +5,7 @@
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, print
 //   pages 19 and 22 for W1/W2; NanoMig interface contract for W3-W5, because
 //   print page 30 never states where the Copper resumes after DMA returns.
-//   Frozen specification 3225eab.
+//   Frozen specification (docs/legacy-names.md).
 // Requirement IDs: COP-04, COP-07, COP-08
 // Non-goals: Which channel wins a contested slot (decided outside this
 //   module). COPEN and real DMACON gating (FPGA-055). The exact blanking
@@ -21,8 +21,7 @@
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 //
 // Boundary limit, stated so no reader over-reads the result: at this module,
 // "Copper DMA disabled via COPEN" and "the slot was taken by a higher-priority
