@@ -50,9 +50,8 @@
 // PASS/FAIL, with one exception: whether BPL1PTH's OCS "(high 3 bits)"
 // figure (A-bplptr.c3, p272; B-subject.c29, p291) holds as a MASK on the
 // fetched address at ecs=0 is asserted below, in
-// BPLXPTH-OCS-HIGH-THREE-BITS and its control (A-bplptr.c3, A-bplxpth.fn,
-// B-subject.c29) - see G6 below for what that assertion does and does not
-// settle. What every printed source agrees on - that BPLxPTH and BPLxPTL
+// BPLXPTH-OCS-HIGH-THREE-BITS, read against its control - see G6 below for
+// what that assertion does and does not settle. What every printed source agrees on - that BPLxPTH and BPLxPTL
 // together form ONE pointer, that the pointer must be even, and that it
 // addresses chip memory - is exactly what IS asserted otherwise.
 //
@@ -1239,11 +1238,17 @@ int main(int argc, char** argv) {
         "3 bits, not 19-bit total, not 18-bit total, but 5+15=20 "
         "significant bits (an AGA-era extension beyond the OCS/ECS 1 MB "
         "addressing the printed appendices describe). No PASS/FAIL is "
-        "attached to any of these widths; only the undisputed sub-claims "
-        "(one pointer, always even, addresses chip memory) are asserted, "
-        "in POINTER-PAIR-IS-ONE-ADDRESS and POINTER-ALWAYS-EVEN above. "
-        "A-bplptr.c3, A-bplptr.c6, A-bplxpth.fn, A-bplxptl.fn, "
-        "B-subject.c29, B-subject.c36, B-subject.c43, B-subject.c50, "
+        "attached to the STORAGE width itself for any of these ids; the "
+        "undisputed sub-claims (one pointer, always even, addresses chip "
+        "memory) are asserted, in POINTER-PAIR-IS-ONE-ADDRESS and "
+        "POINTER-ALWAYS-EVEN above, and BPL1PTH's own OCS 'high 3 bits' "
+        "reading is separately asserted below, as a MASK on the fetched "
+        "address (not the storage width), in BPLXPTH-OCS-HIGH-THREE-BITS "
+        "(A-bplptr.c3, A-bplxpth.fn, B-subject.c29) - see that assertion's "
+        "own scope note for what it does and does not settle. Recorded "
+        "here, width unresolved either way: "
+        "A-bplptr.c6, A-bplxptl.fn, "
+        "B-subject.c36, B-subject.c43, B-subject.c50, "
         "B-subject.c57, B-subject.c64, B-subject.c71, B-subject.c78, "
         "B-subject.c85, B-subject.c92, B-subject.c99, B-subject.c106.");
 
@@ -1968,6 +1973,6 @@ int main(int argc, char** argv) {
 // 0x1f0000 against the manual's 0x070000.
 //
 // MUTATION BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL stimulus red: the control write changed from BPL1PTH=$0007 to $0009 (one bit above the claimed 3-bit range); the first fetch became 0x090000, not the expected 0x070000.
-// MUTATION BPLXPTH-OCS-HIGH-THREE-BITS stimulus green: this assertion is already red at baseline (over-range write, measured 0x1f0000 against expected 0x070000) and a stimulus mutation cannot push an already-red assertion further red per the build brief's own rule; substituting a DIFFERENT, live input through the SAME address==0x070000 comparator - BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL's in-range write (BPL1PTH=$0007) - reads PASS at baseline, showing the comparator is not vacuous.
+// MUTATION BPLXPTH-OCS-HIGH-THREE-BITS stimulus green: this assertion is already red at baseline (over-range write, measured 0x1f0000 against expected 0x070000) and a stimulus mutation cannot push an already-red assertion further red; substituting a DIFFERENT, live input through the SAME address==0x070000 comparator - BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL's in-range write (BPL1PTH=$0007) - reads PASS at baseline, showing the comparator is not vacuous.
 // ============================================================================
 
