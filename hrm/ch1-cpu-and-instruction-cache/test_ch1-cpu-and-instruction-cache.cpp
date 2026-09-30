@@ -495,14 +495,11 @@ int main() {
 //   assertion is GREEN, including a positive, working CACR-clear result
 //   (the manual's own $0008 bit does exactly what page 13 says).
 //
-// A first version of this file's Harness used 150 post-reset settle
-//   cycles, guessed from a miscounted 64-iteration re-init sweep. Every
-//   first access after construction silently timed out (ack_cycles=-1),
-//   which would have shown up as spurious universal failures unrelated to
-//   any claim. Rereading cpu_cache_new.v:481-491 found the real count --
-//   256 iterations (sdr_sm_adr/4 counts 0..255, not 0..63) -- fixed to 320
-//   cycles of margin before any run here was reported. Not left as a
-//   discovered-then-hidden defect in this file's own measurement.
+// The Harness's post-reset settle margin is 320 cycles:
+//   cpu_cache_new.v:481-491's own re-init sweep runs sdr_sm_adr/4 = 256
+//   iterations (0..255), and 320 cycles gives clean margin above that count
+//   so no first access after construction times out (ack_cycles=-1)
+//   before any claim here is measured.
 //
 // MUTATION LOG (each entry actually run:
 //   rebuild with `make MUT=X test` -> read the PASS/FAIL lines -> confirm
