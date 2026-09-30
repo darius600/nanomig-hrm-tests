@@ -2,13 +2,13 @@
 
 Written from the seven claims in
 `hrm-testpipeline/work/ch8-s2-build/ch8-cia-disk-port-windows.jsonl`, the
-build brief (`work/2026-09-15_ch8_s2_build_brief.md`) and the finding
+build task (`work/2026-09-15_ch8_s2_build_brief.md`) and the finding
 candidates file (`work/2026-09-15_ch8_s2_finding_candidates.md`, candidate
 C12), alone. **No RTL file — `gary.v`, `ciaa.v`, `ciab.v`, `cia_int.v`,
 `cia_timera.v`, `cia_timerb.v`, `cia_timerd.v` or `minimig.v` — has been
 opened for the purpose of drafting this document.** Every RTL line cited
 below is a *disclosed* citation: it was handed to this package already, by
-the claims file's own `classify.evidence` fields or by the build brief's own
+the claims file's own `classify.evidence` fields or by the build task's own
 quoted text, and is used here on that basis, not on independent verification.
 That verification is exactly what step 2 (opening the RTL, writing the rig
 and the test) is for, and is disclosed there.
@@ -18,7 +18,7 @@ Fixture: a **rig over three pinned modules** — `gary` + `ciaa` + `ciab` —
 with the CIA submodules `cia_int.v`, `cia_timera.v`, `cia_timerb.v`,
 `cia_timerd.v` compiled alongside `ciaa`/`ciab`, the way
 `hrm/ch8-ciaa-port-direction/Makefile` lists them for `ciaa` alone (read for
-the *build pattern only*, per the build brief's explicit instruction — its
+the *build pattern only*, per the build task's explicit instruction — its
 Makefile is a mechanical list of source files, not a manual-page oracle, and
 citing it for that shape is not citing it as an oracle for any assertion
 below).
@@ -36,7 +36,7 @@ make every assertion vacuous with respect to what is actually being claimed,
 exactly as `ch8-ciaapra-address-window`'s own specification already argued
 for the $BFE001 case. That decode is `gary`'s: the claims' own evidence cites
 `gary.v:51` (`cpu_address_in`) and `gary.v:190-192` (`sel_cia` /
-`sel_cia_a` / `sel_cia_b`), and the build brief quotes the two decode lines
+`sel_cia_a` / `sel_cia_b`), and the build task quotes the two decode lines
 directly:
 
     sel_cia_a = sel_cia & ~cpu_address_in[12]
@@ -129,7 +129,7 @@ checkable without the CIAs" — i.e. the classifier's own view is that the
 *exhaustive* count is more directly checkable at a boundary this package
 does not include). Grading exclusivity from a boundary that cannot see
 `ciaa`'s Port B or `ciab`'s Port A used for anything *else* would be the same
-overreach the build brief calls out for the DSKDATR "only" claims: the
+overreach the build task calls out for the DSKDATR "only" claims: the
 register/port boundary carries no completeness guarantee by itself. This
 package grades the existence-and-distinctness half; the exclusivity half is
 left unasserted, named here rather than silently folded into a pass.
@@ -186,7 +186,7 @@ register whose bit 4 is `flag`'s latch (disclosed evidence:
 Per precedent (`ch8-ciaapra-address-window`'s A0/PRE/PRE-NEG/CTRL, none of
 which carry a page citation), several facts underlie every cited assertion
 above without themselves being a page claim. Each still gets its own
-`expect()` and its own mutation record — the build brief is explicit that
+`expect()` and its own mutation record — the build task is explicit that
 "per assertion" includes the fixture-liveness proof and the control case.
 
 - **LIVE-CIAA-PORTA-DISTINCT** — two distinct, known words driven onto
@@ -250,7 +250,7 @@ is driven into the rig (the address, for the window/two-ports/overlap
 assertions; the driven word, for the liveness/control assertions), leave the
 expected value alone, confirm the targeted assertion alone goes red, revert.
 Concrete stimulus values (exact hex addresses, exact bytes) are step-2
-material, fixed once the RTL is open, per the build brief's order of work —
+material, fixed once the RTL is open, per the build task's order of work —
 the shape of each mutation is already fixed by the proposition it tests:
 
 - TWOPORTS-\*: redirect the read address away from the chip/port being

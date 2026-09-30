@@ -41,10 +41,10 @@
 //   is what CIABPRB-ALIAS-*, DSKINDEX-ALIAS-* and OVERLAP-BOTH-SELECTS-ACTIVE
 //   below make checkable rather than merely cited.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (9d3366c):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED:
 //   1. hrm/ch8-ciaa-port-direction/Makefile -- build pattern (ciaa/ciab need
 //      cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v to elaborate),
-//      named in the build brief.
+//      named in the build task.
 //   2. $(NANOMIG)/src/minimig-aga/gary.v -- full file.
 //   3. $(NANOMIG)/src/minimig-aga/ciab.v -- full file.
 //   4. $(NANOMIG)/src/minimig-aga/ciaa.v -- full file.
@@ -270,7 +270,7 @@ int main(int argc, char** argv) {
     // (gary's sel_cia_a into ciaa's aen/rs), at an address distinct from
     // $BFE001 (see header). No claim id, no manual page.
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // WITHDRAWN to note(): carries no
     // claim uid -- apparatus, never conformance evidence -- so demoting it
     // costs no coverage. No longer mutated (MUTATE=LIVE-CIAA-PORTA-DISTINCT
     // removed with it): a note() is not graded, so there is nothing left
@@ -305,7 +305,7 @@ int main(int argc, char** argv) {
     // LIVE-CIAB-PORTB-DISTINCT -- same proof for ciab's PRB write/read-back
     // path (through gary's sel_cia_b), at the literal CIABPRB address.
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // WITHDRAWN to note(): carries no
     // claim uid -- apparatus, never conformance evidence -- so demoting it
     // costs no coverage. No longer mutated (MUTATE=LIVE-CIAB-PORTB-DISTINCT
     // removed with it): a note() is not graded, so there is nothing left
@@ -422,7 +422,7 @@ int main(int argc, char** argv) {
     // (DDRB, 4'h3, vs. PRB, 4'h1) reads back a distinct, independently-
     // written byte. Satisfies "at least one control case expected to PASS."
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // WITHDRAWN to note(): carries no
     // claim uid -- control case, no manual citation -- so demoting it costs
     // no coverage. No longer mutated
     // (MUTATE=CTRL-DISTINCT-REGISTER-SAME-CHIP removed with it): a note()
@@ -453,7 +453,7 @@ int main(int argc, char** argv) {
     // carries a disk signal anywhere else in the design (see
     // SPECIFICATION.md's PROP-TWO-PORTS boundary note).
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): the
+    // WITHDRAWN to record(): the
     // stimulus on both sides (ciaa_porta_in = 0b100110, PRB <= 0xC3) is a
     // generic hand-picked bit pattern, not a real disk signal -- this
     // proves gary+ciaa+ciab present two distinct, mutually-exclusively-
@@ -595,7 +595,7 @@ int main(int argc, char** argv) {
     // `flag`, read back through the literal address $BFDD00, sets bit 4
     // (and bit 7, IR) of the returned byte.
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): this
+    // WITHDRAWN to record(): this
     // block pulses ciab's `flag` INPUT PIN directly (dut->ciab_flag = 1) --
     // it proves the CIA ICR bit and the $BFDD00 address, but not p.245's
     // binding from the disk `index` signal to that pin (minimig.v:526+:647,
@@ -632,7 +632,7 @@ int main(int argc, char** argv) {
     // address inside the same window (differing from $BFDD00 in bits
     // 15/14) answers identically -- the window claim for this register.
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): same
+    // WITHDRAWN to record(): same
     // fault as DSKINDEX-LITERAL-OPUS-CIA-C57 above -- `flag` is pulsed
     // directly, never through paula_floppy's real `index` output, so the
     // page's index-to-FLAG-pin binding is not established here either.
