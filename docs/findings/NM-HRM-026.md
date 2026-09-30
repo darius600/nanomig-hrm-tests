@@ -41,7 +41,7 @@ AUDxLEN from 4 up, and at AUDxLEN = 3 runs past the data set. That is
 This package's assertions at the ports see it too: with AUDxLEN = 4, no restart
 on `dmas` comes between the arrivals of offsets 2 and 3, and no interrupt on
 `intreq` from offset 3's arrival to the next pass's first word
-(`test_ch5_audio_channel_state.cpp:1411-1450`, `:1491-1529`). Both are red, and
+(`test_ch5_audio_channel_state.cpp:1396-1435`, `:1476-1514`). Both are red, and
 on a copy of the RTL with line 358 changed to `lencount = 1'b0;`, the state
 codes left as they are, both are green. Its two assertions that grade the
 arc's count read the length counter and the arc's action signals inside the
