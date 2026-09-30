@@ -139,7 +139,7 @@
 //   PROP-INPUT FAIL -- PA3 read back HIGH once its own line was released;
 //   0 passed, 1 failed).
 //
-// REPAIR NOTE (2026-09-15): independent validation of this package's two
+// DISPOSITION NOTE, for this package's two
 //   other checks. FIXTURE-LIVE (no uid) is a liveness measurement only --
 //   converted expect() -> note(), per this suite's rule that a no-uid check
 //   is never graded; its former MUTATION FIXTURE-LIVE record is removed

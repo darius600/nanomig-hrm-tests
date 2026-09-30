@@ -121,7 +121,7 @@ instantiation is needed for either half.
 
 ## On a control case, fixture liveness and mutation
 
-Per the build brief: a fixture-liveness proof precedes any data-dependent
+Per this suite's rules: a fixture-liveness proof precedes any data-dependent
 grading; at least one control case is expected to PASS on the same
 measurement basis; each assertion (fixture-liveness and control included)
 carries a recorded stimulus mutation, in the source, in the fixed
@@ -143,8 +143,7 @@ changed>` form.
   fixed expectation names to its opposite, leave that expectation alone,
   confirm the assertion goes RED, then revert — not a red-baseline
   substitution proof. Concrete pin names and bit indices are step-2
-  material, fixed once the RTL is opened, per the build brief's order of
-  work; the shape of the mutation is already visible from the claim.
+  material, fixed once the RTL is opened; the shape of the mutation is already visible from the claim.
 - **Mutation, control.** The identical bug shape, applied to the control's
   own single position instead of within the four-way sweep.
 
@@ -200,8 +199,8 @@ facts that are properly RTL-derived — that `ciaa` is a transparent,
 non-latching buffer for bits 7:2, that its ports carry no drive-signal names,
 that the name binding is at `minimig.v:622`, and that the CIA address decode
 is not a full compare. None of that was discovered by this document; it was
-handed to the builder before step 1 began, in the build brief and
-finding-candidates file the task named as required reading, and it shapes
+handed over before step 1 began, in material the build task named as
+required reading (including a finding-candidates file), and it shapes
 only which claims are in scope, not any expected value graded above (every
 expected value above — that a position tracks its pin, that no write moves
 it — restates the claims' own "input bits" wording, not a number read off
