@@ -18,7 +18,7 @@ package's own purposes. Concrete port names, stimulus values, and the
 `:540-599`, `cpu_cache_new.v:31-32`, `:46-48`, `:222`, `:227`, `:292`,
 `:497`, and the CACR-export path `cpu_wrapper.v:96/257` /
 `nanomig.v:312/422`) — this build's task sheet
-repeats several of them directly. That information reached this agent before
+repeats several of them directly. That information was available before
 this file was written; the "write the spec blind, then open the RTL" order is
 therefore not literally intact, and this is reported rather than presented as
 if it held. What this file does keep is the substantive discipline the order
@@ -254,9 +254,9 @@ read — not here.
 
 Port names, signal names, register field names, and concrete stimulus values
 are absent by design (with the one disclosed exception in the "Disclosure"
-paragraph above: this agent already possessed several `file:line` citations
-before writing this file, but did not transcribe any port/signal name from
-them into the propositions above). PROP-1 through PROP-8 are the eight
+paragraph above: several `file:line` citations already existed before this
+file was written, but no port/signal name from them was transcribed into
+the propositions above). PROP-1 through PROP-8 are the eight
 propositions that become this package's `expect()` assertions (or reasoned
 `record()` declines), each with its own control case and stimulus mutation,
 once `cpu_wrapper.v` is opened next.
