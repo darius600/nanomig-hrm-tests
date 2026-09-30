@@ -28,9 +28,8 @@
 //   from a different package's inventory (ch4-sprite-shifter-and-
 //   arming.jsonl). Recorded here rather than assumed.
 //
-// `classify.evidence` is pipeline-internal, RTL-derived text this
-//   package's own build brief says must not shape the specification; it is
-//   not quoted or relied on anywhere below. No assertion in this file
+// `classify.evidence` is pipeline-internal, RTL-derived text that must not
+//   shape the specification; it is not quoted or relied on anywhere below. No assertion in this file
 //   depends on whether denise_sprites.v's sprdata output encodes the
 //   absolute system colour-register number (16-31) or some other RTL
 //   representation -- see MEASUREMENT PHILOSOPHY below for why and how.
@@ -38,7 +37,7 @@
 // Non-goals: sprite-to-sprite and sprite-to-playfield VIDEO PRIORITY (which
 //   sprite is drawn in front when several overlap) is not tested --
 //   denise_sprites' disclosed port list (reused from the sibling packages
-//   below, not read from the RTL by this agent for this package) carries no
+//   below, not read from the RTL for this package) carries no
 //   priority-resolution or collision output, only sprdata; testing priority
 //   would need a wider module boundary (denise_spritepriority /
 //   denise_collision) than the one assigned here. Sprite SIZE, PIXEL
@@ -63,7 +62,7 @@
 //   already-committed wording), the four-phase 7MHz clocking, the
 //   DATB-then-DATA arm-on-write convention, and the SPR1CTL bit 7 (ATTACH)
 //   mechanism are NOT read from denise_sprites.v/denise_sprites_shifter.v
-//   by this agent for this package -- they are reused verbatim from THREE
+//   for this package -- they are reused verbatim from THREE
 //   already-committed sibling packages built against this exact fixture:
 //   hrm/denise_sprites/test_denise_sprites.cpp, hrm/ch3-sprite-registers/
 //   test_denise_sprites.cpp (whose own header discloses the "+4 words per
@@ -73,8 +72,7 @@
 //   shape this file's own attached-pair helper reuses). This is the same
 //   precedent hrm/ch4-attached-sprites/ itself relied on and documented.
 //   denise_sprites.v and denise_sprites_shifter.v themselves were not
-//   opened by this agent until after the specification below was
-//   committed.
+//   opened until after the specification below was committed.
 //
 // ORDER OF WORK: every assertion below -- its expected relationship, the
 //   claim ids it cites, and the stimulus each measurement uses -- was
@@ -90,8 +88,8 @@
 //   local code, or something else is an RTL representation choice the
 //   manual does not make and this package must not guess at as an
 //   expected VALUE (that would be exactly the "expected value starts life
-//   as a fact about the implementation" failure this suite's build brief
-//   warns against). So every assertion below is written as a RELATIONSHIP
+//   as a fact about the implementation" failure this suite's rules warn
+//   against). So every assertion below is written as a RELATIONSHIP
 //   the manual DOES state unambiguously -- zero vs non-zero (transparent
 //   vs visible), equal vs distinct (this code vs that code, this pair vs
 //   that pair), and ordered vs not (Figure 4-6's own stated "code counts
@@ -143,9 +141,7 @@
 //   claim-based assertion depends on it (reused, same shape, from
 //   hrm/ch4-attached-sprites/'s own control of the same name).
 //
-// RESULTS (WSL/Verilator 5.052, built and run 12.09.2026, AFTER the
-//   specification commit -- denise_sprites.v and denise_sprites_shifter.v
-//   were opened only once, for this build, not before): 8 passed, 0
+// RESULTS (after opening the RTL and building): 8 passed, 0
 //   failed. All 8 assertions (the control and all 7 propositions) are
 //   GREEN -- on every relationship tested (transparent-vs-visible,
 //   code ordering, pair distinctness, word significance, attached-pair
