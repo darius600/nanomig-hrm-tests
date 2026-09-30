@@ -605,7 +605,7 @@ int main() {
     return failed == 0 ? 0 : 1;
 }
 
-// RESULTS (WSL, Verilator 5.052, built and run 2026-09-18, TG68K build): baseline
+// RESULTS (TG68K build): baseline
 //   `make test` -> 43 passed, 0 failed (42 graded assertions + the
 //   fixture-liveness apparatus check). Every graded claim's observed raw
 //   nibble matched the value hand-derived from the RTL's own case-statement
