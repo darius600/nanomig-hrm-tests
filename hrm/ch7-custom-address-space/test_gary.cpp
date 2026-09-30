@@ -108,69 +108,81 @@
 //   $DFF000 formula, a genuine finding kept as reported rather than
 //   graded. Every graded assertion is GREEN.
 //
-// MUTATION LOG (WSL/Verilator, same session as RESULTS above; each entry
+// MUTATION LOG (WSL/Verilator; each entry
 //   actually run: rebuild with `verilator ... -CFLAGS -DMUT_X=1` -> run ->
 //   read the PASS/FAIL lines -> confirm only the named assertion changed
-//   colour relative to the 8-passed/2-failed baseline -> rebuild with no
+//   colour relative to the 8-passed/0-failed baseline -> rebuild with no
 //   flags -> confirm the baseline was restored):
 //
 // MUTATION ADDR-FORMULA-SELECTS-CUSTOM-BANK stimulus red: built with
 //   -DMUT_ADDRFORMULA=1, which adds the worked example's own offset ($09E)
-//   to $000000 instead of $DFF000 -> 7 passed, 3 failed, only this
+//   to $000000 instead of $DFF000 -> 7 passed, 1 failed, only this
 //   assertion newly red (measured sel_reg($DFF000)=1 sel_reg($00009E)=0).
-//   Rebuilt with no flags: 8/2 restored.
+//   Rebuilt with no flags: 8 passed, 0 failed restored.
 // MUTATION ADDR-EXCLUSIVE-CONTROL-DFF000 stimulus red: built with
 //   -DMUT_B1=1, which moves the control probe to $000000 (outside the
-//   bank) -> 7/3, only this assertion newly red (measured sel_reg($000000)
-//   =0, expected 1). Rebuilt with no flags: 8/2 restored.
+//   bank) -> 7 passed, 1 failed, only this assertion newly red (measured
+//   sel_reg($000000)=0, expected 1). Rebuilt with no flags: 8 passed, 0
+//   failed restored.
 // WITHDRAWN -- ADDR-EXCLUSIVE-BELOW-DF0000 is now the
 //   note()/record() pair ADDR-BELOW-DF0000-MEASURED /
 //   ADDR-BELOW-DF0000-NOT-GRADED, so this no longer pairs with an
 //   assertion. The run it records happened and is kept as evidence.
 //   (was: MUTATION ADDR-EXCLUSIVE-BELOW-DF0000 stimulus green) Built with
 //   -DMUT_B2=1, which moves this probe from $DF0000 to $E00000 (a
-//   genuinely-excluded address) -> 9 passed, 1 failed, only this
-//   assertion newly green (measured sel_reg($E00000)=0, matching the
-//   manual) -- proving the red baseline result is a live reading of this
-//   specific address, not a stuck value. Rebuilt with no flags: 8/2
+//   genuinely-excluded address) -> 8 passed, 0 failed, unchanged from
+//   baseline: no PASS/FAIL line pairs with this probe any longer, but the
+//   MEASURED line for ADDR-BELOW-DF0000-MEASURED now reads
+//   sel_reg($E00000)=0, matching the manual, in place of the baseline's
+//   sel_reg($DF0000)=1. Rebuilt with no flags: 8 passed, 0 failed
 //   restored.
 // MUTATION ADDR-EXCLUSIVE-ABOVE-E00000 stimulus red: built with
 //   -DMUT_B3=1, which moves this probe from $E00000 to the known
-//   violation $DF0000 -> 7/3, only this assertion newly red (measured
-//   sel_reg($DF0000)=1, expected 0). Rebuilt with no flags: 8/2 restored.
+//   violation $DF0000 -> 7 passed, 1 failed, only this assertion newly red
+//   (measured sel_reg($DF0000)=1, expected 0). Rebuilt with no flags: 8
+//   passed, 0 failed restored.
 // MUTATION ADDR-EXCLUSIVE-CHIPRAM-040000 stimulus red: built with
 //   -DMUT_B4=1, which moves this probe from $040000 to the known
-//   violation $D00000 -> 7/3, only this assertion newly red (measured
-//   sel_reg($D00000)=1, expected 0). Rebuilt with no flags: 8/2 restored.
+//   violation $D00000 -> 7 passed, 1 failed, only this assertion newly red
+//   (measured sel_reg($D00000)=1, expected 0). Rebuilt with no flags: 8
+//   passed, 0 failed restored.
 // MUTATION ADDR-EXCLUSIVE-ROM-FC0000 stimulus red: built with -DMUT_B5=1,
 //   which moves this probe from $FC0000 to the known violation $DF0000
-//   -> 7/3, only this assertion newly red (measured sel_reg($DF0000)=1,
-//   expected 0). Rebuilt with no flags: 8/2 restored.
+//   -> 7 passed, 1 failed, only this assertion newly red (measured
+//   sel_reg($DF0000)=1, expected 0). Rebuilt with no flags: 8 passed, 0
+//   failed restored.
 // WITHDRAWN -- as above, for ADDR-EXCLUSIVE-MIDBLOCK-D00000.
 //   (was: MUTATION ADDR-EXCLUSIVE-MIDBLOCK-D00000 stimulus green) Built with
 //   -DMUT_B6=1, which moves this probe from $D00000 to $FC0000 (a
-//   genuinely-excluded address) -> 9 passed, 1 failed, only this
-//   assertion newly green (measured sel_reg($FC0000)=0, matching the
-//   manual). Rebuilt with no flags: 8/2 restored.
+//   genuinely-excluded address) -> 8 passed, 0 failed, unchanged from
+//   baseline: no PASS/FAIL line pairs with this probe any longer, but the
+//   MEASURED line for ADDR-MIDBLOCK-D00000-MEASURED now reads
+//   sel_reg($FC0000)=0, matching the manual, in place of the baseline's
+//   sel_reg($D00000)=1. Rebuilt with no flags: 8 passed, 0 failed
+//   restored.
 // MUTATION DMA-CHIP-MEMORY-ONLY-SWEEP stimulus red: built with
 //   -DMUT_C1=1, which drives the top sample point as a genuine CPU
-//   (non-DMA) kickstart access instead of an Agnus DMA fetch -> 7/3, only
-//   this assertion newly red (measured sel_kick=1 at that sample point).
-//   Rebuilt with no flags: 8/2 restored.
+//   (non-DMA) kickstart access instead of an Agnus DMA fetch -> 7 passed,
+//   1 failed, only this assertion newly red (measured sel_kick=1 at that
+//   sample point). Rebuilt with no flags: 8 passed, 0 failed restored.
 // MUTATION DMA-CHIP-MEMORY-ONLY-CONTROL-SELKICK-LIVE stimulus red: built
 //   with -DMUT_CCONTROL=1, which probes $000000 instead of the kickstart
-//   range -> 7/3, only this assertion newly red (measured
+//   range -> 7 passed, 1 failed, only this assertion newly red (measured
 //   sel_kick($000000)=0, expected 1) -- confirming the control is not
-//   vacuously true regardless of address. Rebuilt with no flags: 8/2
-//   restored.
+//   vacuously true regardless of address. Rebuilt with no flags: 8
+//   passed, 0 failed restored.
 // MUTATION PTR-PAIR-CHIP-MEMORY-HALF stimulus red: built with -DMUT_D1=1,
 //   which drives the top sample point as a genuine CPU (non-DMA)
-//   kickstart access instead of a DMA pointer fetch -> 7/3, only this
-//   assertion newly red (measured sel_kick=1 at that sample point).
-//   Rebuilt with no flags: 8/2 restored.
+//   kickstart access instead of a DMA pointer fetch -> 7 passed, 1 failed,
+//   only this assertion newly red (measured sel_kick=1 at that sample
+//   point). Rebuilt with no flags: 8 passed, 0 failed restored.
 //
-// Ten assertions, ten independent mutations, each changing exactly one
-// assertion's colour and none other; every one reverted cleanly.
+// Eight assertions, eight mutations that each flip exactly one
+// assertion's colour and none other, every one reverted cleanly. Two
+// further guarded builds (MUT_B2, MUT_B6, both WITHDRAWN above) no longer
+// pair with a graded assertion and change no PASS/FAIL colour -- the
+// probe they move still runs, and its result still prints, in the
+// MEASURED line named above.
 
 #include <cstdint>
 #include <cstdio>
