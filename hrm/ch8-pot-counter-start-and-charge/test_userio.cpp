@@ -337,6 +337,25 @@ static void set_joy2_pin5(int asserted) {
     if (asserted) dut->_joy2 &= (uint16_t)~(1 << 5); else dut->_joy2 |= (1 << 5);
 }
 
+// p.235's reset interval, prepended below wherever a group releases a pin
+// at POTGO time and pulses a fixed total tick count expecting the counter
+// to read a specific value. Only group_G6_G11 and group_FINALCOUNT grade
+// the interval's own length; every other group's claim is about something
+// else (existence, rate, wrap, register identity, ...), but its own
+// numbers still have to be read against a page-conforming counter, not
+// against a raw tick total that silently assumes no interval at all --
+// exactly the "about 40 greens assume counting starts on the first line"
+// gap validation measured outside G6_G11/FINALCOUNT. kResetInterval is
+// Figure 8-5's exact reading (8); matches_page_count() below accepts the
+// body text's other allowed interval (7 lines, one shorter, leaving one
+// extra counted line) as well, the same k-or-k+1 shape group_FINALCOUNT
+// already uses for the body-text pair.
+constexpr int kResetInterval = 8;
+
+static bool matches_page_count(int measured, int n) {
+    return measured == n || measured == n + 1;
+}
+
 //--------------------------------------------------------------------------
 // G1 -- p.234: each controller port handles two proportional inputs.
 //--------------------------------------------------------------------------
@@ -356,43 +375,45 @@ static void group_G1() {
     set_mouse(0, 0, 1); // release pot0x only (mouse button 3)
 #endif
     settle(3);
-    pulse(6);
+    pulse(kResetInterval + 6);
     uint16_t r1 = pot0dat();
-    bool x_tracks = ((r1 & 0x00FF) == 6) && ((r1 >> 8) == 0);
+    bool x_tracks = matches_page_count(r1 & 0x00FF, 6) && ((r1 >> 8) == 0);
 
     full_reset();
     arm_potgo(0x0001);
     set_mouse(0, 1, 0); // release pot0y only (mouse button 2/right)
     settle(3);
-    pulse(9);
+    pulse(kResetInterval + 9);
     uint16_t r2 = pot0dat();
-    bool y_tracks = ((r2 >> 8) == 9) && ((r2 & 0x00FF) == 0);
+    bool y_tracks = matches_page_count(r2 >> 8, 9) && ((r2 & 0x00FF) == 0);
 
     full_reset();
     arm_potgo(0x0001);
     set_joy1_pin5(1); // release pot1y (via the swapped _djoy2<=_joy1 path)
     settle(3);
-    pulse(11);
+    pulse(kResetInterval + 11);
     uint16_t r3 = pot1dat();
-    bool port2_y_tracks = ((r3 >> 8) == 11) && ((r3 & 0x00FF) == 0);
+    bool port2_y_tracks = matches_page_count(r3 >> 8, 11) && ((r3 & 0x00FF) == 0);
 
     full_reset();
     arm_potgo(0x0001);
     set_mouse(1, 1, 1);
     dut->_joy1 = 0x0000; dut->_joy2 = 0x0000; // assert every pin this module reads
     settle(3);
-    pulse(11);
+    pulse(kResetInterval + 11); // aligned with port2_y_tracks's run length above
     uint16_t r4 = pot1dat();
-    bool port2_x_moved = ((r4 & 0x00FF) != 0);
+    bool port2_x_moved = ((r4 & 0x00FF) != 0); // nonzero, not a specific count -- interval-robust as is
 
-    note("port 1 (POT0DAT): X-only release/6 ticks -> $" + hex4(r1) +
-         "; Y-only release/9 ticks -> $" + hex4(r2) +
-         " -- two independently-movable counters. "
-         "port 2 (POT1DAT): joystick-port pin release/11 ticks -> $" + hex4(r3) +
-         " (Y moved); every controller pin this module reads, asserted, for "
-         "11 ticks -> $" + hex4(r4) + " -- the low byte (X) never moved. "
-         "Port 2 carries only one externally-driven proportional counter in "
-         "this design, not two.");
+    note("port 1 (POT0DAT), release-then-run-" + std::to_string(kResetInterval + 6) +
+         "/" + std::to_string(kResetInterval + 9) + "-ticks-unbroken (8+6/8+9): "
+         "X-only -> $" + hex4(r1) + "; Y-only -> $" + hex4(r2) +
+         " -- two independently-movable counters, each graded against the "
+         "page's reset interval (6 or 7; 9 or 10), not the raw tick total. "
+         "port 2 (POT1DAT), release-then-run-" + std::to_string(kResetInterval + 11) +
+         " (8+11): joystick-port pin release -> $" + hex4(r3) +
+         " (Y moved); every controller pin this module reads, asserted -> $" +
+         hex4(r4) + " -- the low byte (X) never moved. Port 2 carries only "
+         "one externally-driven proportional counter in this design, not two.");
 
     bool ok = x_tracks && y_tracks && port2_y_tracks && port2_x_moved;
     expect(ok, "opus:8-pot.c1");
@@ -413,20 +434,22 @@ static void group_G2() {
               // write at all yet, so the next step can only reach 5 if the
               // POTGO write itself re-zeroes it -- reset() alone already
               // zeroes fresh counters, so that path can't be used to tell
-              // "POTGO started it" apart from "it was already zero".
+              // "POTGO started it" apart from "it was already zero". This
+              // free-run has no POTGO write at all, so p.235's interval
+              // (which the page ties to a POTGO write) does not bear on it.
 #ifdef MUT_G2
     arm_potgo(0x0000); // MUTATED: bit 0 clear -- must not re-zero
 #else
     arm_potgo(0x0001);
 #endif
-    pulse(5);
+    pulse(kResetInterval + 5);
     uint16_t a = pot0dat();
-    bool starts_on_potgo = (a & 0x00FF) == 5;
+    bool starts_on_potgo = matches_page_count(a & 0x00FF, 5);
 
     full_reset();
     set_mouse(0, 0, 1);
     arm_potgo(0x0001);
-    pulse(3);
+    pulse(kResetInterval + 3); // past the interval, so "before" is genuinely counting, not stuck at 0
     uint16_t before = pot0dat();
     dut->reg_address_in = A_POTINP; dut->data_in = 0xFFFF; // access a *different* register
     tick();
@@ -436,12 +459,12 @@ static void group_G2() {
     bool other_write_no_restart = (after_other == before);
     pulse(2);
     uint16_t after_more = pot0dat();
-    bool counting_continued = (after_more & 0x00FF) == 5;
+    bool counting_continued = matches_page_count(after_more & 0x00FF, 5);
 
     full_reset();
     set_mouse(0, 0, 1);
     arm_potgo(0x0001);
-    pulse(4);
+    pulse(kResetInterval + 4); // past the interval, so "before2" is genuinely counting, not stuck at 0
     uint16_t before2 = pot0dat();
     write_potgo_once(0x00F0); // POTGO write, bit 0 clear
     tick();
@@ -449,8 +472,9 @@ static void group_G2() {
     uint16_t after2 = pot0dat();
     bool bit0_clear_no_restart = (after2 == before2);
 
-    note("POTGO write with bit 0 set, 5 ticks later -> $" + hex4(a) +
-         "; a write to a different register mid-run left POT0DAT at $" +
+    note("POTGO write with bit 0 set, release-then-run-" + std::to_string(kResetInterval + 5) +
+         "-ticks-unbroken (8+5) -> $" + hex4(a) + " (page-conforming range: 5 or 6); "
+         "a write to a different register mid-run left POT0DAT at $" +
          hex4(after_other) + " (was $" + hex4(before) +
          "), and counting continued afterwards (-> $" + hex4(after_more) +
          "); a POTGO write with bit 0 clear left it at $" + hex4(after2) +
@@ -491,21 +515,22 @@ static void group_G3() {
     dut->_joy1 = 0x0000; dut->_joy2 = 0x0000;
 #endif
     settle(3);
-    pulse(7);
+    pulse(kResetInterval + 7);
     uint16_t p0_1 = pot0dat(), p1_1 = pot1dat();
 
-    bool pot0x_tracks = (p0_1 & 0xFF) == 7;
-    bool pot0y_tracks = (p0_1 >> 8) == 7;
-    bool pot1y_tracks = (p1_1 >> 8) == 7;
-    bool pot1x_tracks = (p1_1 & 0xFF) == 7; // NOT graded here -- see the file header note
+    bool pot0x_tracks = matches_page_count(p0_1 & 0xFF, 7);
+    bool pot0y_tracks = matches_page_count(p0_1 >> 8, 7);
+    bool pot1y_tracks = matches_page_count(p1_1 >> 8, 7);
+    bool pot1x_tracks = matches_page_count(p1_1 & 0xFF, 7); // NOT graded here -- see the file header note
 
-    note("POTGO=$0001, every controller pin released, after 7 ticks: "
+    note("POTGO=$0001, every controller pin released, release-then-run-" +
+         std::to_string(kResetInterval + 7) + "-ticks-unbroken (8+7): "
          "POT0DAT $" + hex4(p0_1) + ", POT1DAT $" + hex4(p1_1) +
          ". pot0x/pot0y/pot1y each track their own pin, which is this "
-         "claim's content. pot1x " + std::string(pot1x_tracks ? "also reached 7 (not required here)."
-         : "does not reach 7 (it has no external pin at all in this design "
-           "-- not required by this claim; the pin-topology claims are "
-           "graded separately, G1 and G22).") );
+         "claim's content. pot1x " + std::string(pot1x_tracks ? "also matched the page range (not required here)."
+         : "does not match the page range (it has no external pin at all in "
+           "this design -- not required by this claim; the pin-topology "
+           "claims are graded separately, G1 and G22).") );
 
     bool ok = pot0x_tracks && pot0y_tracks && pot1y_tracks;
     expect(ok, "opus:8-pot.c12");
