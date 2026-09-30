@@ -12,9 +12,9 @@ decode** — not the register contents, which the sibling package
 The task brief for this package names the sibling package
 (`hrm/appK-autoconfig-register-map`) as the place the CPU-core boundary problem
 was already solved, and instructs this package to inherit that solution rather
-than rediscover it. That means this agent already possessed RTL and boundary
-knowledge (which core elaborates, which port is active-low, which ports are
-observable) before writing a single proposition below — the same break from
+than rediscover it. That means RTL and boundary knowledge (which core
+elaborates, which port is active-low, which ports are observable) already
+existed before a single proposition below was written — the same break from
 "write the spec blind, then open the RTL" that both `ch1-cpu-and-instruction-
 cache` and `hrm/appK-autoconfig-register-map` already disclosed for the same
 underlying reason. Re-confirmed directly against this checkout rather than
