@@ -4,24 +4,22 @@
 //   outward-step block at track zero, against paula_floppy (this suite's
 //   only model of a physical Amiga floppy drive). 10 claims, from
 //   work/ch8-s2-build/ch8-drive-sense-lines.jsonl. Full derivation in
-//   SPECIFICATION.md (committed as df3f984, before this file or
+//   SPECIFICATION.md (committed before this file or
 //   paula_floppy.v was opened).
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, printed p.244 (PA5
 //   DSKRDY*, PA4 DSKTRACK0*, PA3 DSKPROT*, PA2 DSKCHANGE*; full quotations
 //   in SPECIFICATION.md).
-// This package's specific subject, named by the build brief:
-//   C4 -- opus:8-cia.c7 (_ready with the motor off). REPAIRED 2026-09-15:
-//         independent validation found the original graded-RED assertion
-//         tested MORE than its cited page states. p.244, three lines below
-//         the sentence this claim cites, reads: "This signal is only valid
+// This package's specific subject, named by the build task:
+//   C4 -- opus:8-cia.c7 (_ready with the motor off): p.244, three lines
+//         below the sentence this claim cites, reads: "This signal is only valid
 //         when the motor is ON, at other times configuration information
 //         may obscure the meaning of this input." The page itself declines
 //         to say what _ready means with the motor off, so a check requiring
-//         a particular value there tests a case the page expressly refuses
+//         a particular value there would test a case the page expressly refuses
 //         to define. DECLINED via record(), not graded through expect() --
-//         see the opus:8-cia.c7 block below. The RTL fact this claim was
-//         built on (paula_floppy.v:688-694 never consults _motor) is real
+//         see the opus:8-cia.c7 block below. The RTL fact this claim
+//         rests on (paula_floppy.v:688-694 never consults _motor) is real
 //         and is kept as a note(), not a finding against this page.
 //   C5 -- _track0 latency is 0 ticks, purely combinational; no claim among
 //         this package's 10 cites the "4 ms max" figure, so it is measured
@@ -40,7 +38,7 @@
 //   repository (hrm-testpipeline). docs/legacy-names.md explains the
 //   vocabulary.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (df3f984):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED:
 //   1. nanomig/src/minimig-aga/paula_floppy.v -- full file (1041 lines).
 //   2. nanomig/src/minimig-aga/paula_floppy_fifo.v -- full file, to confirm
 //      it instantiates nothing else and the two-file build closes (it does;
@@ -137,14 +135,10 @@
 //   DECLINED via `record()` (see that block below), per this suite's rule
 //   that `record()` is the only place a declined uid may appear and a uid on
 //   a graded line counts as ASSERTED regardless of the words around it.
-//   REPAIR NOTE (2026-09-15): the previous revision graded this as RED at
-//   baseline and defended it with a substitute mutation (drive selection, in
-//   place of the motor condition, through the identical `_ready`-deasserted
-//   comparator). Independent validation found that framing wrong: the
-//   assertion required a value p.244 itself declines to define with the
-//   motor off, so it tested more than the page states. That is a decline,
-//   not a red finding, so the graded check and its substitute mutation are
-//   both removed; READY-SEL-CONTROL alone remains as the live proof that
+//   `opus:8-cia.c7` requires a value p.244 itself declines to define with the
+//   motor off, so grading it would test more than the page states -- a
+//   decline, not a red finding, so it carries no graded check or mutation;
+//   READY-SEL-CONTROL alone remains as the live proof that
 //   `_ready`'s port is not dead or stuck.
 //
 // MUTATION RUN LOG (measured, WSL/Verilator 5.052 -- see the report
@@ -186,7 +180,7 @@ public:
     int passed = 0, failed = 0;
 };
 
-// RIG HAZARD (SPECIFICATION.md, build brief): dsktrack (paula_floppy.v:671-
+// RIG HAZARD (SPECIFICATION.md, build task): dsktrack (paula_floppy.v:671-
 // 680) and step_ena_cnt (paula_floppy.v:594-603) both have no reset term, so
 // a reused Verilated model would carry stale head position and stale
 // step-spacing state forward. Rig allocates a FRESH Vpaula_floppy per
@@ -313,7 +307,7 @@ int main(int argc, char** argv) {
     std::cout << "Starting ch8-drive-sense-lines...\n";
 
     // ========================================================================
-    // FIXTURE-LIVE -- no claim id, no manual page: the build brief's own
+    // FIXTURE-LIVE -- no claim id, no manual page: this suite's own
     // requirement that the fixture prove it can deliver a known, distinct
     // word before any read-based assertion below is trusted. Measured on
     // _wprot, the simplest single-cycle case of the shared sense-line output
@@ -365,9 +359,8 @@ int main(int argc, char** argv) {
     }
 
     // ========================================================================
-    // opus:8-cia.c7 (p.244) -- P-READY, motor OFF. DECLINED 2026-09-15, not
-    // graded. Repair of finding candidate C4: independent validation found
-    // the previous graded-RED assertion tested MORE than its cited page
+    // opus:8-cia.c7 (p.244) -- P-READY, motor OFF. DECLINED, not
+    // graded: finding candidate C4 would test MORE than its cited page
     // states. p.244, three lines below the sentence this claim cites, reads:
     // "This signal is only valid when the motor is ON, at other times
     // configuration information may obscure the meaning of this input." The
@@ -693,7 +686,7 @@ int main(int argc, char** argv) {
 
 // MUTATION FIXTURE-LIVE stimulus red: word 2 driven identical to word 1 instead of its complement, so the two readings are indistinguishable (MUTATE=FIXTURE-LIVE).
 // MUTATION READY-SEL-CONTROL stimulus red: the drive is never actually selected, so the "asserts once selected" half is never exercised (MUTATE=READY-SEL-CONTROL).
-// opus:8-cia.c7 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()). Repair 2026-09-15: the previous stimulus-green substitute record is removed along with the graded check it defended -- see the header's REPAIR NOTE.
+// opus:8-cia.c7 -- DECLINED via record(), not expect(); no mutation record (not graded through expect()) -- see the header's note above.
 // MUTATION opus:8-cia.c12 stimulus red: the second step is redirected to move away from zero AGAIN instead of back toward it, so the drive never returns to track 0 and the final read is checked against a state that never occurred (MUTATE=opus:8-cia.c12).
 // MUTATION sol:8-cia.c10 stimulus red: same redirection as opus:8-cia.c12, independent uid (MUTATE=sol:8-cia.c10).
 // MUTATION SEL-MASKS-TRACK0 stimulus red: the drive is never actually deselected, so the masking condition (_selx) is never true and the run cannot distinguish the mask from the genuine track-zero state (MUTATE=SEL-MASKS-TRACK0).

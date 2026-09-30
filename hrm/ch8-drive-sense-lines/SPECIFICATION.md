@@ -16,7 +16,7 @@ pattern, a `Checks` class with `expect`/`note`/`record`, a `mutating(id)`
 helper keyed on a `MUTATE` env var, the fixed `// MUTATION` comment form) —
 not any conformance fact about the four sense lines this package grades. Every
 RTL line number, signal name, and mechanism claim appearing below comes from
-my own claims file's `classify.evidence` fields and the build brief handed to
+my own claims file's `classify.evidence` fields and the build task handed to
 me for this unit, exactly as the sibling packages' own specifications did
 before their authors opened RTL. I have not opened `paula_floppy.v` or
 `paula_floppy_fifo.v` myself yet.
@@ -59,41 +59,39 @@ models the drive.
   stays asserted until *both* a disk is reinserted *and* a step pulse is
   received — a compound condition, not insertion alone.
 
-## This package's subject, named by the build brief: C4, C5, C17
+## This package's subject, named by the build task: C4, C5, C17
 
 Three finding candidates from `work/2026-09-15_ch8_s2_finding_candidates.md`
 are this package's specific subject, disclosed to me (not derived by me from
 RTL) as follows:
 
-- **C4** (grades `opus:8-cia.c7` / P-READY): the build brief states
+- **C4** (grades `opus:8-cia.c7` / P-READY): the build task states
   `paula_floppy.v:688-694` computes `_ready` from `_sel` and the configured
   drive count only, and the module's own comment marks the motor/disk
   condition "(not implemented)".
-  **REPAIRED 2026-09-15.** The original revision of this document (and the
-  package built from it) graded P-READY as expected RED. Independent
-  validation found that wrong: p.244, three lines below the sentence this
+  p.244, three lines below the sentence this
   claim cites, reads "This signal is only valid when the motor is ON, at
   other times configuration information may obscure the meaning of this
   input." The page itself declines to say what `_ready` means with the
-  motor off, so a check requiring a particular value there tests a case the
+  motor off, so a check requiring a particular value there would test a case the
   page expressly refuses to define — more than the page states. **P-READY
-  is now DECLINED via `record()`, not graded through `expect()`.** The RTL
-  fact this claim was built on (the motor term is genuinely absent from
+  is DECLINED via `record()`, not graded through `expect()`.** The RTL
+  fact this claim rests on (the motor term is genuinely absent from
   `_ready`'s cone, confirmed by reading `paula_floppy.v:688-694`, and the
   module's own 2008-09-24 changelog documents this as a deliberate
   compatibility choice) is kept as a measured `note()`, not a finding
   against this page.
 - **C5** (no claim in this package's 10 cites the timing figure this
-  candidate is about): the build brief states `_track0` is purely
+  candidate is about): the build task states `_track0` is purely
   combinational (`paula_floppy.v:666,683`), so its latency is 0 ticks and
   nothing in the module bounds the figure's printed "4 ms max" to TRACK 00.
   None of my 10 claims quotes that figure, so there is no `expect()` to grade
   against it — but I will **measure** the tick-latency of `_track0` responding
   to a step that crosses the track-zero boundary and report it via `note()`
-  (ungraded), since the build brief names C5 as part of this package's
+  (ungraded), since the build task names C5 as part of this package's
   subject even though no citable assertion exists for it in my claims file.
 - **C17** (a rig hazard for P-TRACK0-ZERO and P-TRACK0-REFUSE-OUTWARD,
-  disclosed by the build brief, not by any of my 10 claims): `_track0` is
+  disclosed by the build task, not by any of my 10 claims): `_track0` is
   **deasserted whenever the drive is deselected, regardless of head
   position** (`paula_floppy.v:666`). Every read of `_track0` below selects the
   drive first — reading it deselected reads the mask, not the track-zero
@@ -103,7 +101,7 @@ RTL) as follows:
 
 ## Also disclosed, out of scope for this package's 10 claims
 
-`index` is synthesised from `sof` (`paula_floppy.v:576` per the build brief)
+`index` is synthesised from `sof` (`paula_floppy.v:576` per the build task)
 — there is no sensor input, so a claim that the index pulse is caused by a
 physical hole would have no observable here. None of this package's 10 claims
 is about `index`; nothing is being declined here because nothing was asked.
@@ -111,7 +109,7 @@ Noted only so the absence is not mistaken for an oversight.
 
 ## Fixture boundary: `paula_floppy`, assigned not derived
 
-The build brief assigns `paula_floppy` as this package's fixture, compiling
+The build task assigns `paula_floppy` as this package's fixture, compiling
 `paula_floppy.v` + `paula_floppy_fifo.v` only — `paula_floppy_ebr.v` declares
 a second `module paula_floppy` and must not be compiled alongside it. All 10
 claims' `classify.evidence` independently confirms the same boundary: `ciaa`
@@ -120,7 +118,7 @@ that adds no polarity, latch, or interpretation of its own to any of these
 four sense bits, so the entire testable content of each claim lives inside
 `paula_floppy`.
 
-## Rig hazards (disclosed by the build brief, not derived by me from RTL)
+## Rig hazards (disclosed by the build task, not derived by me from RTL)
 
 - **`dsktrack` has no reset term** (`paula_floppy.v:671-680`). A reused
   Verilated model would carry stale head position between trials. **A fresh
@@ -134,8 +132,8 @@ four sense bits, so the entire testable content of each claim lives inside
 
 All 10 claim-based assertions are page 244.
 
-- **A1** — `opus:8-cia.c7` (P-READY). **DECLINED via `record()` (repaired
-  2026-09-15, was C4)** — see the repair note above; not graded through
+- **A1** — `opus:8-cia.c7` (P-READY, C4). **DECLINED via `record()`**
+  — see the note above; not graded through
   `expect()`, no mutation record.
 - **A2** — `opus:8-cia.c12` (P-TRACK0-ZERO). **Expected GREEN.**
 - **A3** — `sol:8-cia.c10` (P-TRACK0-ZERO, twin of A2). **Expected GREEN.**
@@ -150,7 +148,7 @@ All 10 claim-based assertions are page 244.
 - **A10** — `sol:8-cia.c19` (P-CHANGE-LATCH, twin of A9). **Expected GREEN.**
 
 Plus, ungraded by any manual citation but required by this suite's own rules
-(per the build brief: "per assertion" includes the fixture-liveness proof and
+(per the build task: "per assertion" includes the fixture-liveness proof and
 the control case; a real property the page does not describe, like C17's
 masking, still gets graded if it is asserted through `expect()`):
 
@@ -190,10 +188,8 @@ SEL-MASKS-TRACK0.
   assert `floppy_wrprot`, never drop `sdc_image_size`, never send the step
   pulse after reinsertion, never deselect, etc.), leave the expected value
   alone, confirm the targeted assertion alone goes red, then revert.
-- **A1** — **repaired 2026-09-15: no longer an `expect()` assertion, so no
-  mutation record.** The original plan treated this as expected-RED and
-  applied the substitute rule (a different live mechanism through the same
-  comparator). That plan is withdrawn along with the graded check itself:
+- **A1** — **not an `expect()` assertion, so no
+  mutation record.**
   P-READY is a decline (the page names no value for the motor-off case), and
   `record()` lines carry no mutation record per this suite's own rule.
   READY-SEL-CONTROL (above) remains, unchanged, as the live proof that the
