@@ -391,8 +391,8 @@ int main(int argc, char** argv) {
                       "page 25 contradicts itself on it: the register table says "
                       "\"Low 16 bits\", the prose eleven lines on says \"low 15 bits\" of "
                       "the same register. agnus_copper_locreg_width states that in its "
-                      "header and labels its own width measurements accordingly; this "
-                      "assertion did not, until 11.09.2026. It pins the implementation, "
+                      "header and labels its own width measurements accordingly; so "
+                      "does this assertion. It pins the implementation, "
                       "not the manual, and carries no claim for that reason");
 
         const uint32_t ocs_fetch = observe_first_fetch(false, high, low_even);
