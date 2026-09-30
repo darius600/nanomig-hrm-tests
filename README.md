@@ -1,14 +1,13 @@
 # NanoMig HRM Tests
 
-**Why this exists.** Minimig is already a mature core, and NanoMig is built on
-it. This repository tries to offer means to improve it a bit further: it reads
-the chips' original documentation statement by statement, tests the RTL against
-the statements a test can observe, and offers what it finds to the maintainers
-of NanoMig and of the Minimig lines it descends from, as questions rather than
-verdicts. The reading, the tests and the finding pages were produced by AI
-models (Anthropic's Claude and OpenAI's Codex) under human direction. As in any
-review, whoever does it, a finding can be mistaken, so every finding page names
-its sources for the reader to check.
+**Why this exists.** Minimig is a mature core, and NanoMig is built on it.
+This repository tries to enable a further step: it reads the chips' original
+documentation statement by statement, tests the RTL against the statements a
+test can observe, and offers what it finds to the maintainers of NanoMig and
+of the Minimig lines it descends from. The reading, the tests and the finding
+pages were produced by AI models (Anthropic's Claude and OpenAI's Codex) under
+human direction. As in any review, whoever does it, a finding can be mistaken.
+Every finding page names its sources for the reader to check.
 
 **The only oracle is printed literature:** two documents Commodore wrote
 about the chips. Each test directory, a *package*, grades its assertions
