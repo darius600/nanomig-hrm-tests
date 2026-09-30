@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer) — two fixtures: `agnus_audiodma` alone, which has no chipset input, and the Agnus top, `agnus`, whose `ecs` input the fixture drives to 0 and to 1 |
 | **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed: 9 passed, 1 failed on `agnus_audiodma` alone, 1 passed, 2 failed at the Agnus top). On `agnus_audiodma` alone, `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`, against p. 139's "high three bits": bit 3 of AUDxLCH alone gives word address `0x40000`, bit 4 alone `0x80000`. At the Agnus top with `ecs` at 0, `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`, against the same sentence, with the same two readings, and `LCH-ECS-PORT-CHANGES-WHAT-LOADS`, against p. 266's "(high 3 bits, 5 bits if ECS)": AUD0LCH = $001F with AUD0LCL = $FFFF gives `0xFFFFF` at `ecs` 0, where the page gives `0x3FFFF`, and `0xFFFFF` at `ecs` 1, as the page gives. In the same runs `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`, the same walking one read against the five-bit width, and `TOP-LEVEL-LIVENESS`, a known word through the Agnus top's register bus at `ecs` 1, are green |
+| **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed): `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` on `agnus_audiodma` alone, and at the Agnus top with `ecs` at 0 `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` and `LCH-ECS-PORT-CHANGES-WHAT-LOADS`. Bits 3 and 4 of AUDxLCH reach the address, where p. 139 gives three bits and p. 266 three without ECS. The five-bit width and both fixtures' liveness checks are green |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
 
@@ -63,8 +63,7 @@ has ten connections and no `ecs` among them.
 
 ### Measured
 
-The package reads AUDxLCH at two boundaries, one test source each, 10 passed
-and 3 failed between them.
+The package reads AUDxLCH at two boundaries, one test source each.
 
 **`agnus_audiodma` alone** (`test_agnus_audiodma.cpp`, `9 passed, 1 failed`):
 a walking one through all five bits of `AUDxLCH`, on every one of the four
