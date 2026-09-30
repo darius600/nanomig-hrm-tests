@@ -111,6 +111,65 @@
 //   what turns a nonzero readback into an actual finding rather than a
 //   units-error.
 //
+// MUTATION records (all 11 graded assertions are PASS at baseline; each is
+//   guarded by its own #ifdef MUT_<NAME> at the assertion's own stimulus,
+//   built with `make MUT=<NAME> test`). Every entry below was run: `make
+//   clean && make MUT=<NAME> test` gave 10 passed/1 failed with only the
+//   named assertion's line changing colour, and `make clean && make test`
+//   afterward restored the 11-passed/0-failed baseline.
+//
+// MUTATION BEAM-COUNTER-DELIVERS-KNOWN-VALUE stimulus red: built with
+//   MUT=BEAM_COUNTER_DELIVERS_KNOWN_VALUE, which zeroes the hpos[8:1]
+//   stimulus (0xCD -> 0x00) while the expected value stays the fixed 0xCD --
+//   only this assertion turns FAIL (measured VHPOSR=0xab00, low byte 0x00
+//   against expected 0xCD).
+// MUTATION FOUR-ADDRESSES-EXACT stimulus red: built with
+//   MUT=FOUR_ADDRESSES_EXACT, which reads BEAMCON0 ($1DC) in place of
+//   VHPOSW ($02C) as the fourth "answers with beam-position content"
+//   target -- only this assertion turns FAIL.
+// MUTATION NO-SEPARATE-LIGHT-PEN-REGISTER stimulus red: built with
+//   MUT=NO_SEPARATE_LIGHT_PEN_REGISTER, which forces vpos/hpos/long_frame
+//   all to zero before the 256-address sweep, so all four beam-counter
+//   addresses also read 0 and the "answers with content" set becomes empty
+//   (measured "none") -- only this assertion turns FAIL.
+// MUTATION VPOSR-IS-READ-ONLY stimulus red: built with
+//   MUT=VPOSR_IS_READ_ONLY, which redirects the foreign write from $02A
+//   (VPOSW) to $004 (VPOSR itself) -- the write reaches VPOSR's own storage
+//   and the readback moves (before=0x0002 after=0x8005) -- only this
+//   assertion turns FAIL.
+// MUTATION VHPOSR-IS-READ-ONLY stimulus red: built with
+//   MUT=VHPOSR_IS_READ_ONLY, the same substitution at $006 (VHPOSR) in
+//   place of $02C (VHPOSW) -- before=0x0011 after=0xabcd -- only this
+//   assertion turns FAIL.
+// MUTATION VPOSW-BIT-LAYOUT-MATCHES-VPOSR stimulus red: built with
+//   MUT=VPOSW_BIT_LAYOUT_MATCHES_VPOSR, which drops the long_frame bit
+//   from the VPOSW write (0x8005 -> 0x0005) -- VPOSR reads back bit 15 as
+//   0 instead of 1 (measured 0x0005) -- only this assertion turns FAIL.
+// MUTATION VHPOSW-BIT-LAYOUT-MATCHES-VHPOSR stimulus red: built with
+//   MUT=VHPOSW_BIT_LAYOUT_MATCHES_VHPOSR, which drops the low byte
+//   (hpos[8:1]=0xCD) from the VHPOSW write (0xABCD -> 0xAB00) -- VHPOSR
+//   reads back bits 7:0 as 0 instead of 0xCD (measured 0xab00) -- only
+//   this assertion turns FAIL.
+// MUTATION VHPOSR-BITS-15-8-ARE-V7-V0 stimulus red: built with
+//   MUT=VHPOSR_BITS_15_8_ARE_V7_V0, which forces vpos[7:0] to 0x5A (equal
+//   to the hpos stimulus) instead of the distinct 0x37 -- bits 15:8 no
+//   longer read the fixed expected value 0x37 (measured 0x5a5a) -- only
+//   this assertion turns FAIL.
+// MUTATION VHPOSR-BITS-7-0-ARE-H8-H1 stimulus red: built with
+//   MUT=VHPOSR_BITS_7_0_ARE_H8_H1, which forces hpos[8:1] to 0x37 (equal
+//   to the vpos stimulus) instead of the distinct 0x5A -- bits 7:0 no
+//   longer read the fixed expected value 0x5A (measured 0x3737) -- only
+//   this assertion turns FAIL.
+// MUTATION VHPOSW-WRITE-FORCES-BOTH-COUNTERS stimulus red: built with
+//   MUT=VHPOSW_WRITE_FORCES_BOTH_COUNTERS, which leaves the vpos[7:0] byte
+//   of the VHPOSW write at the baseline value (0x9933 -> 0x0033) --
+//   vpos_low no longer moves (before=0x0000 after=0x0000) -- only this
+//   assertion turns FAIL.
+// MUTATION MSW-IS-VPOSR-VPOSW stimulus red: built with
+//   MUT=MSW_IS_VPOSR_VPOSW, which reverses both address comparisons
+//   (tests 0x006<0x004 and 0x02C<0x02A instead) -- only this assertion
+//   turns FAIL.
+//
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
@@ -267,9 +326,8 @@ int main(int argc, char** argv) {
         bool vposr_ok = ((vposr >> 15) & 1) == 1 && (vposr & 0x7) == 0x5;
         // Fixed expected value (0xCD), NOT stim_hpos8_1 -- comparing against
         // the stimulus variable itself would let the oracle silently track
-        // the mutation, proving nothing (caught by running this very
-        // mutation: the first draft compared against stim_hpos8_1 here and
-        // stayed green under MUT_BEAM_COUNTER_DELIVERS_KNOWN_VALUE).
+        // the mutation, proving nothing. See BEAM-COUNTER-DELIVERS-KNOWN-VALUE
+        // stimulus red in the file header for the run that confirms this.
         bool vhposr_ok = ((vhposr >> 8) & 0xFF) == 0xAB && (vhposr & 0xFF) == 0xCD;
         checks.expect(
             vposr_ok && vhposr_ok,
