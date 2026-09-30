@@ -163,10 +163,9 @@
 //   sibling assertion passing on the same basis rules out a units-
 //   error in the harness itself.
 //
-// RESULTS (WSL/Verilator 5.052, built and run 11.09.2026, AFTER the
-//   specification commit -- denise_sprites.v and denise_sprites_
-//   shifter.v were opened only once, for this build, not before):
-//   3 passed, 1 failed. FIXTURE-LIVE-DATA-PATH, ATTACH-BIT-ODD-SPRITE-
+// RESULTS (denise_sprites.v and denise_sprites_shifter.v were opened only
+//   once, for this build, after the specification was committed -- not
+//   before): 3 passed, 1 failed. FIXTURE-LIVE-DATA-PATH, ATTACH-BIT-ODD-SPRITE-
 //   ENABLES-ATTACHMENT, and CODE-0000-YIELDS-TRANSPARENT-PIXEL are all
 //   GREEN. ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE is RED -- the
 //   candidate finding is CONFIRMED, exactly as classified, not
@@ -199,9 +198,7 @@
 // MUTATION TABLE45-ROW0-REGISTER-NUMBER-CONFLICT: no record -- this claim is declined (checks.record() only, no checks.expect()), so there is no red/green state for a mutation to move.
 //
 // Where these claims came from -- read after the four fields above, not
-// before them. Moved here 20.09.2026: a persona review found the reader's
-// own questions answered on either side of seventeen lines about which
-// agent measured what.
+// before them.
 // CLAIM SOURCE: this package's own assigned claims
 //   file is hrm-testpipeline/work/ch4_packages/
 //   ch4-regression-attached-row-0000.jsonl (4 records: CH4-p122.c1,
