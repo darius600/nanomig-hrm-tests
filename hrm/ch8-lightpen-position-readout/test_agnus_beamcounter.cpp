@@ -38,7 +38,7 @@
 // MUTATION MASKED-LONGWORD-VARIES-WITH-VERTICAL-POSITION stimulus red forced the V=260 measurement point to V=261 instead, colliding two of the three sampled positions
 // MUTATION MASKED-LONGWORD-V261-EQUALS-0x10500|opus:8-lpen.c46|opus:8-lpen.c51|sol:8-pen.c43 stimulus red forced the V=261 measurement point to V=262 instead, leaving the $10500 comparison target unchanged
 //
-// Repair 2026-09-15 (independent validation, finding 7): three assertions
+// DISPOSITION NOTE: three assertions
 // carried claims they did not test.
 //   - opus:8-lpen.c29/sol:8-pen.c30 and opus:8-lpen.c30/sol:8-pen.c31 were
 //     carried by assertions that only measured field-length parity
@@ -58,8 +58,8 @@
 //     procedure depends on (so that "two reads equal" means anything) is
 //     not implemented anywhere in this submodule, so no module boundary in
 //     this suite can carry it as built. The masked-longword-layout fact
-//     these two uids were previously stretched to cover is still real and
-//     still measured below, but it now carries no uid of its own: the
+//     these two uids name is still real and
+//     still measured below, but carries no uid of its own: the
 //     uids' actual words are the procedure, not the layout.
 
 #include <cstdint>

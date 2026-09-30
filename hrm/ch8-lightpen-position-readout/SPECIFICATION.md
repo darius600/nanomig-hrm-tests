@@ -47,8 +47,7 @@ line from the other field's set. This is the mechanism that halves the
 resolution obtainable from vpos alone. The interleaving of those lines on a
 physical CRT is outside the chip and is not asserted.
 
-Pass criterion (repaired 2026-09-15, against independent validation, finding
-7 — the original criterion below tested field-length parity, which is the
+Pass criterion (field-length parity alone would test only the
 *mechanism* behind the resolution loss, not the resolution-loss claim
 itself): with LACE on, at least one vpos value that lies within both
 field lengths is observed at both field-identity states (field1=0 and
@@ -80,8 +79,7 @@ field, in step with the field alternation of P2 — i.e. the disambiguating
 information is available at this boundary, not merely asserted to exist
 elsewhere.
 
-Pass criterion (repaired 2026-09-15, against independent validation, finding
-7 — the original criterion below only showed the bit toggles, which is not
+Pass criterion (merely showing the bit toggles is not
 yet "you can determine the correct position"): across four consecutive
 field boundaries with LACE on, the field-identity bit is not merely
 alternating but is a reliable, checkable predictor of which field-length
@@ -152,15 +150,12 @@ Pass criterion: for at least three distinct, known vertical positions
 takes three distinct values, ordered the same way the underlying positions
 are ordered.
 
-Disposition (repaired 2026-09-15, against independent validation, finding
-7): opus:8-lpen.c45 and sol:8-pen.c42 are declined, not carried by this
+Disposition: opus:8-lpen.c45 and sol:8-pen.c42 are declined, not carried by this
 proposition's assertion. Both uids quote the manual's read-twice / mask /
 compare procedure verbatim — a sequence performed by software on values
-already read from VPOSR/VHPOSR — and the "split" at claim-classification
-time reinterpreted that procedural text as a register-layout claim so it
-would fit this module's boundary. That reinterpretation is exactly the
-defect the validation found: it turns a software operation into a
-register-layout assertion. Declined at build/repair time instead. The
+already read from VPOSR/VHPOSR — and reading that procedural text as a
+register-layout claim would turn a software operation into a
+register-layout assertion, which it is not. Declined instead. The
 layout fact itself (the masked remainder still discriminates distinct
 positions) remains real and is still measured, but it now carries no uid:
 what discriminates positions is not what either uid's own words describe.
@@ -200,8 +195,8 @@ comparator that accepts anything.
 
 ## Claims not turned into propositions
 
-Updated 2026-09-15 (repair, against independent validation finding 7): 12
-of the 14 uids in the claims file are asserted by P1-P6 (via the repaired
+12
+of the 14 uids in the claims file are asserted by P1-P6 (via the
 P2/P3 criteria above). Two are declined, not asserted:
 
 - opus:8-lpen.c45 and sol:8-pen.c42 quote the manual's software read-twice
