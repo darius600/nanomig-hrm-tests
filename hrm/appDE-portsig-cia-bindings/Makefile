@@ -10,8 +10,9 @@ SRC_DIR = $(NANOMIG)/src/minimig-aga
 # TOP_MODULE=minimig boundary -- this package's own claims (p.330, p.334,
 # p.337) all need either the CIA-A/CIA-B port-bit join (only visible at
 # minimig.v) or Gary's overlay decode reached through a real CPU bus cycle
-# (also only visible at minimig.v, per the build brief's trap note about
-# hand-built address bit patterns vs minimig's own [23:1] cpu_address port).
+# (also only visible at minimig.v, driven through its own [23:1]
+# cpu_address port rather than a hand-built address bit pattern, which is
+# easy to misalign).
 # Does NOT instantiate ide.v/gayle.v (only compiled in `ifndef DISABLE_IDE,
 # which we do not define) nor cpu_wrapper.v/cpu_cache_new.v/amiga_clk.v (an
 # actual CPU core and the on-FPGA clock generator, both one level above
