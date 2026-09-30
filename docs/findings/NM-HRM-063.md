@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change; the decision belongs to Amiga and RTL specialists, not to this repository. The test holds `flag` at 1 across an ICR read, and the read leaves the bit set. In NanoMig `flag` is a one-cycle pulse, so the difference shows only for a driver that holds FLAG. |
 | **Module** | `src/minimig-aga/cia_int.v:57` |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and **minimig-dev/MinimigAGA-MiST-TC64**, once Amiga specialists confirm it matters in practice — both lines carry the same statement; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) · `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:465-481`) — **red**, at its second clocked ICR read, made while `flag` is still held at 1; its control (`test_appF-ciab-port-assignments.cpp:495-510`) passes |
+| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) · `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-509`) — **red**, at its second clocked ICR read, made while `flag` is still held at 1; its control (`test_appF-ciab-port-assignments.cpp:749-759`) passes |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.341 |
-| **Assertions** | 1 red: `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:465-481`) reads ICR `0x90` after the transition and `0x90` again after five more ticks with `flag` held, where p.346 clears bit 4 and IR at the first read and p.341 gives nothing that sets them again. Its control, `flag` returned to 0 before the first read (`test_appF-ciab-port-assignments.cpp:495-510`), is reported rather than graded and passes: `0x90`, then `0x00` |
+| **Assertions** | 1 red: `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-509`) reads ICR `0x90` after the transition and `0x90` again after five more ticks with `flag` held, where p.346 clears bit 4 and IR at the first read and p.341 gives nothing that sets them again. Its control, `flag` returned to 0 before the first read (`test_appF-ciab-port-assignments.cpp:749-759`), is reported rather than graded and passes: `0x90`, then `0x00` |
 | **Verdict of the four** | **unanimous, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all set the bit once per index pulse, on a transition — vAmiga and Copperline name it the pin's falling edge, the transition at which NanoMig's `flag` rises — and none of them from a held level |
 
 ---
@@ -87,9 +87,9 @@ full.
 
 ## What the test measures
 
-`PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:465-481`) runs
+`PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-509`) runs
 on the `ciab` fixture (`TOP := ciab` in the package's `Makefile`) and reads ICR
-only through `read_icr_clocked()` (`test_appF-ciab-port-assignments.cpp:307-322`),
+only through `read_icr_clocked()` (`test_appF-ciab-port-assignments.cpp:320-335`),
 the way a CPU read cycle makes it: `aen=1`, `rd=1`, `wr=0`, `rs=4'hD` held,
 `data_out` sampled, then one rising `clk` edge with `clk7_en=1`.
 
@@ -111,7 +111,7 @@ again at the read (`cia_int.v:49`) and on every cycle after it
 (`cia_int.v:57`); an edge detector does not. Step 2 fixes the polarity: an
 implementation that sets the bit when `flag` falls reads it clear there.
 
-The control (`test_appF-ciab-port-assignments.cpp:495-510`) runs the same steps
+The control (`test_appF-ciab-port-assignments.cpp:749-759`) runs the same steps
 with `flag` returned to 0 before the first read. It passes: the first read
 returns `0x90`, the second `0x00`. The clocked read clears ICR on this fixture,
 so a set bit at step 3 is the held level and nothing else. The control is
@@ -123,10 +123,10 @@ transition.
 Copperline's own test asserts step 3 at its CIA: a second `assert_flag()` with
 no `release_flag()` between leaves ICR reading 0 (`cia.rs:1496-1499`).
 
-`PROP-FLAG-EXISTS` (`test_appF-ciab-port-assignments.cpp:416-428`) drives the
+`PROP-FLAG-EXISTS` (`test_appF-ciab-port-assignments.cpp:429-441`) drives the
 same 0→1, holds it two ticks, requires bit 4 **set**, and passes, as step 2
 does. It reads ICR through `read_reg`
-(`test_appF-ciab-port-assignments.cpp:283-294`), which raises `aen` and `rd`,
+(`test_appF-ciab-port-assignments.cpp:296-307`), which raises `aen` and `rd`,
 evaluates, and lowers them again without a clock edge, so none of its reads
 runs the branch a read takes and it cannot reach the case where edge and level
 differ.
