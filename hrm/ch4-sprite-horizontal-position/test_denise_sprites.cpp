@@ -193,6 +193,7 @@ public:
         condition ? ++passed : ++failed;
     }
     void note(const std::string& msg) { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0;
     int failed = 0;
 };
@@ -781,6 +782,49 @@ int main(int argc, char** argv) {
         "APPB2-SPR7DATB.addr, APPB2-SPR7DATB.chip, APPB2-SPR7DATB.desc, "
         "CH4-APPB-SPR7DATB.address, CH4-APPB-SPR7DATB.chip, "
         "CH4-APPB-SPR7DATB.description .");
+
+    // ---- declined, not asserted -- record() only, ids off every graded line ----
+    checks.record(
+        "CH4-fig4-9.c1 CH4-fig49.f1 CH4-p107.c1 CH4-p124.c11 CH4-p127.c10 "
+        "CH4-pos.c3 CH4-pos.c7 CH4-pos.c8 CH4-p98.c8 APPC-pos.c4 "
+        "CH4-appC-position.c12 declined (SPRXPOS-BOTH-AXES-SPAN-TWO-"
+        "FIXTURES): each names SPRxPOS (or SPRxPOS/SPRxCTL together) as "
+        "the register that holds BOTH the sprite's vertical AND "
+        "horizontal start position in one 16-bit word/pair -- 'This word "
+        "(SPRxPOS) contains the vertical (VSTART) and horizontal (HSTART) "
+        "starting position' (CH4-p107.c1, p.107); 'contain the horizontal "
+        "position value (X value) and vertical position value (Y value)' "
+        "(CH4-p124.c11, p.124); 'the word written into this register "
+        "controls the position...at which the upper left-hand "
+        "corner...is placed' (CH4-p127.c10/CH4-pos.c7/CH4-pos.c8, p.127); "
+        "'you define a sprite's location by specifying the coordinates of "
+        "its upper left-hand pixel' (CH4-pos.c3/CH4-p98.c8, p.98); "
+        "Figure 4-9's own callout, 'placed at any desired spot, "
+        "horizontally or vertically' (CH4-fig4-9.c1/CH4-fig49.f1, p.116); "
+        "and, from Appendix C, 'SPRxPOS and SPRxCTL work together as "
+        "position, size and sprite feature control registers' "
+        "(APPC-pos.c4, p.303) and 'Sprite x vertical-horiz start position "
+        "data' (CH4-appC-position.c12, p.303). denise_sprites (this "
+        "fixture) and denise_sprites_shifter decode only the HORIZONTAL "
+        "half of SPRxPOS -- data_in[7:0] as hstart[8:1] "
+        "(denise_sprites_shifter.v:131-135) -- graded above on "
+        "SPRXPOS-BITS-7-0-ARE-SH8-SH1-STEP-OF-2; agnus_spritedma keeps "
+        "only data_in[15:8] as VSTART and discards SPRxPOS[6:0] entirely "
+        "(agnus_spritedma.v:205-215), graded in the sibling package "
+        "hrm/ch4-sprite-vertical-position/ on its own "
+        "SPRXPOS-BYTE-IS-SV70-VSTART. Neither fixture sees both halves of "
+        "the SAME write, so neither can establish that ONE register "
+        "carries BOTH coordinates -- only that this fixture's own half is "
+        "HSTART and the sibling fixture's own half is VSTART, which is "
+        "not the same claim. Per the bundled-clause rule these eleven ids "
+        "stay off both assertions rather than riding along with half "
+        "their own proposition uncovered. The 'feature' component of the "
+        "same Appendix A/C sentence family (not position/size) IS graded "
+        "at this boundary already, on SPRXCTL-BIT7-ATT-ODD-SPRITES-"
+        "ATTACH, citing CH4-appA-sprite.c11 -- a different id, from "
+        "Appendix A p.284, not these two. No package under hrm/ or "
+        "integration/ cites any of these eleven ids (checked by search, "
+        "not assumed).");
 
     std::cout << "\n" << checks.passed << " passed, " << checks.failed << " failed\n";
     return checks.failed == 0 ? 0 : 1;
