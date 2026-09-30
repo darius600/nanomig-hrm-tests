@@ -147,9 +147,9 @@ Bits 3 and 4 of the write land on address bits 19 and 20, and the two chipset
 settings read alike. The package's run ends `19 passed, 1 failed`; the one
 failure is `BPLXPTH-OCS-HIGH-THREE-BITS`.
 
-The control is `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL` (`test_agnus_bitplanedma.cpp:1250-1279`),
-the red is `BPLXPTH-OCS-HIGH-THREE-BITS` (`:1281-1312`),
-and the recorded twin is `BPLXPTH-ECS-HIGH-BITS-TWIN` (`:1314-1359`).
+The control is `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL` (`test_agnus_bitplanedma.cpp:1253-1282`),
+the red is `BPLXPTH-OCS-HIGH-THREE-BITS` (`:1284-1315`),
+and the recorded twin is `BPLXPTH-ECS-HIGH-BITS-TWIN` (`:1317-1362`).
 
 **The red is the width and nothing else.** With the one line above changed so that
 the high field keeps three bits at `ecs` = 0,
