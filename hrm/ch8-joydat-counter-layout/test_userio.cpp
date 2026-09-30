@@ -20,29 +20,27 @@
 // live module. 4 further claims (the port-1/port-2 label dispute) are
 // declined via record() in main() and never appear on a graded line.
 //
-// REPAIR (2026-09-15): an independent validation (hrm-testpipeline/work/
-// 2026-09-15_ch8_s1_sol_validation_B.md, finding 5) found that 44 of these
-// 52 assertions tested the wrong mechanism. p.230 says live mouse/
+// MEASUREMENT MECHANISM: p.230 says live mouse/
 // trackball VERTICAL counts occupy bits 15-8 and HORIZONTAL counts bits
 // 7-0; p.281 says four separate counters exist, each clocked by two
-// controller pins. The prior version of this file seeded arbitrary values
-// into the registers through JOYTEST and derived the low two bits with a
-// formula copied out of the RTL (solve_pins()) -- so the byte-assignment,
-// one-hot-bit-table and four-counter checks were measurements of the
-// JOYTEST load-and-readback path, not of mouse motion. An implementation
-// that swapped which byte vertical/horizontal motion updates would have
-// kept every one of them green.
+// controller pins. 44 of these 52 assertions grade this by driving the
+// controller pins through genuine quadrature
+// transitions and counting them (helpers quad_step /
+// zero_baseline / walk_axis below) -- not by seeding arbitrary values
+// into the registers through JOYTEST and deriving the low two bits with a
+// formula copied out of the RTL (solve_pins()), which would measure the
+// JOYTEST load-and-readback path, not mouse motion: an implementation
+// that swapped which byte vertical/horizontal motion updates would still
+// pass that kind of check.
 //
-// This version drives the controller pins through genuine quadrature
-// transitions and counts them for those 44 assertions (helpers quad_step /
-// zero_baseline / walk_axis below). The other 8 graded assertions --
+// The other 8 graded assertions --
 // opus:8-joydat.c1 (control case), opus:8-joydat.c4 / sol:8-mouse.c15 /
 // sol:8-mouse.c16 (16-bit width), and opus:8-appa-joy.c9 / .c10 /
 // sol:8-appa-joy.c11 / .c12 (8-bit-counter-pair width) -- are NOT about
 // mouse-motion semantics (they are about register readability and field
-// width, which JOYTEST-seeded values test validly regardless of mechanism)
-// and the validation did not flag them; they, and the 4 p.230/p.233
-// port-number declines, are unchanged from the prior version and still use
+// width, which JOYTEST-seeded values test validly regardless of mechanism);
+// they, and the 4 p.230/p.233
+// port-number declines, use
 // drive_register()/solve_pins()/set_quad_static() below.
 //
 // TECHNIQUE, read from hrm/ch8-mouse-quadrature-decode/test_userio.cpp
@@ -108,15 +106,15 @@
 // rebuilds), and every one flipped exactly its own PASS to FAIL -- diffed
 // against the unmutated baseline output, no other assertion moved, and the
 // binary's own exit code (checked directly on the invocation that ran it,
-// per the build brief -- never via a later `echo $?`) was 1 in every case.
+// per this suite's rules -- never via a later `echo $?`) was 1 in every case.
 // Baseline: 52 passed, 0 failed. Every mutated build below: 51 passed, 1
 // failed, exit code 1 -- reverted to baseline (52/0, exit 0) before the
-// next mutation. See the repair's report for the full per-uid tally.
+// next mutation. See the build report for the full per-uid tally.
 // MUTATION opus:8-joydat.c1 stimulus red stimulus never driven: JOY0DAT/JOY1DAT left at their measured idle 0x0202 instead of writing the two distinct markers 0x1357/0x2468
 // MUTATION opus:8-joydat.c4 stimulus red bit0 dropped from the shared 0x8001 stimulus (0x8000 written instead) to both registers
 // MUTATION sol:8-mouse.c15 stimulus red bit0 dropped from the 0x8001 stimulus (0x8000 written instead) to JOY0DAT
 // MUTATION sol:8-mouse.c16 stimulus red bit0 dropped from the 0x8001 stimulus (0x8000 written instead) to JOY1DAT
-// MUTATION opus:8-joydat.c5 stimulus red vertical claim driven on the HORIZONTAL axis instead (the byte-swap defect the validation named) -- the high byte this claim requires stays at its zero baseline
+// MUTATION opus:8-joydat.c5 stimulus red vertical claim driven on the HORIZONTAL axis instead (a byte-swap defect this measurement is built to catch) -- the high byte this claim requires stays at its zero baseline
 // MUTATION sol:8-mouse.c17 stimulus red same axis swap as opus:8-joydat.c5 (the twin claim)
 // MUTATION opus:8-joydat.c6 stimulus red horizontal claim driven on the VERTICAL axis instead -- the low byte this claim requires stays at its zero baseline
 // MUTATION sol:8-mouse.c18 stimulus red same axis swap as opus:8-joydat.c6 (the twin claim)
@@ -173,7 +171,7 @@
 #include <string>
 
 // ---------------------------------------------------------------------------
-// Harness contract (fixed by the build brief): expect() grades, note()
+// Harness contract: expect() grades, note()
 // prints a measurement graded by nothing, record() declines a claim.
 // ---------------------------------------------------------------------------
 
@@ -435,8 +433,8 @@ static void set_quad_static(bool reg_is_joy0, int code98, int code10) {
 // slices of test_data pass straight through, userio.v:260,273,342-343),
 // bits [9:8] and [1:0] land via the two static pin pairs. Used only by
 // the retained JOYTEST-seeded checks (control case, width, 8-bit-pair) --
-// NOT by the new motion-based checks, which is exactly the repair: this
-// helper's low-two-bit formula was copied out of the RTL, so it cannot
+// NOT by the motion-based checks below: this
+// helper's low-two-bit formula is copied out of the RTL, so it cannot
 // falsify anything the RTL does about which byte is which axis.
 static void drive_register(bool reg_is_joy0, uint16_t value) {
     write_joytest(value);
@@ -448,7 +446,7 @@ static void drive_register(bool reg_is_joy0, uint16_t value) {
 static uint16_t addr_of(bool reg_is_joy0) { return reg_is_joy0 ? JOY0DAT_ADDR : JOY1DAT_ADDR; }
 
 // ---------------------------------------------------------------------------
-// Quadrature-motion primitives -- the repair. axis 0 = horizontal/X:
+// Quadrature-motion primitives. axis 0 = horizontal/X:
 // main=bit2 ("H"), quad=bit0 ("HQ"); axis 1 = vertical/Y: main=bit3 ("V"),
 // quad=bit1 ("VQ") of whichever of _joy1/_joy2 feeds the register under
 // test (userio.v:234-252 port 1, :261-279 port 2). Technique read from
@@ -513,8 +511,8 @@ static void walk_axis(bool reg_is_joy0, int axis, bool up, int n) {
 // Checks -- one function per family of assertions, called once per uid.
 // ---------------------------------------------------------------------------
 
-// opus:8-joydat.c1 -- control case / fixture liveness. Unchanged by the
-// repair: register readability/liveness does not depend on which
+// opus:8-joydat.c1 -- control case / fixture liveness. Uses
+// drive_register(): register readability/liveness does not depend on which
 // mechanism loads the registers.
 static void check_control_case(const char* uid) {
     reset_dut();
@@ -533,8 +531,8 @@ static void check_control_case(const char* uid) {
     expect(ok, uid);
 }
 
-// opus:8-joydat.c4 -- both registers 16 bits wide (collective). Unchanged
-// by the repair: width is not a mouse-motion claim.
+// opus:8-joydat.c4 -- both registers 16 bits wide (collective). Uses
+// drive_register(): width is not a mouse-motion claim.
 static void check_width_both(const char* uid) {
     reset_dut();
     ensure_joy1enable();
@@ -559,14 +557,13 @@ static void check_width_one(bool reg_is_joy0, const char* uid) {
 }
 
 // opus:8-joydat.c5/c6, sol:8-mouse.c17/c18 -- vertical/horizontal byte
-// assignment, both registers. REPAIRED: previously seeded a nonzero byte
-// through JOYTEST and read it back at the claimed position -- which only
-// tests that a loaded byte lands where it was loaded, not that VERTICAL
-// controller-pin motion is what lands in bits 15-8 and HORIZONTAL motion
-// in bits 7-0. Now drives real quadrature transitions on the claimed
-// axis's own pins (vertical=Y pins, horizontal=X pins) from a zeroed
-// baseline and checks the resulting byte -- and only that byte -- carries
-// the step count.
+// assignment, both registers. Drives real quadrature transitions on the
+// claimed axis's own pins (vertical=Y pins, horizontal=X pins) from a
+// zeroed baseline and checks the resulting byte -- and only that byte --
+// carries the step count: seeding a nonzero byte through JOYTEST and
+// reading it back at the claimed position would only test that a loaded
+// byte lands where it was loaded, not that VERTICAL controller-pin motion
+// is what lands in bits 15-8 and HORIZONTAL motion in bits 7-0.
 static void check_byte_assignment(bool checking_vertical, const char* uid) {
     const int STEPS = 53;
     bool ok = true;
@@ -576,7 +573,7 @@ static void check_byte_assignment(bool checking_vertical, const char* uid) {
         reset_dut();
         zero_baseline(reg_is_joy0);
         int axis = checking_vertical ? 1 : 0; // 1=vertical/Y, 0=horizontal/X
-        if (mutated(uid)) axis = 1 - axis; // drive the OTHER axis -- the swapped-byte defect the validation named
+        if (mutated(uid)) axis = 1 - axis; // drive the OTHER axis -- the swapped-byte defect this measurement is built to catch
         walk_axis(reg_is_joy0, axis, /*up=*/true, STEPS);
         uint16_t v = read_reg(addr_of(reg_is_joy0));
         uint8_t hi = (uint8_t)(v >> 8), lo = (uint8_t)(v & 0xFF);
@@ -590,8 +587,8 @@ static void check_byte_assignment(bool checking_vertical, const char* uid) {
 }
 
 // opus:8-appa-joy.c9/c10, sol:8-appa-joy.c11/c12 -- 8-bit-wide counter
-// pair. scope: 0=both registers, 1=JOY0DAT only, 2=JOY1DAT only. Unchanged
-// by the repair: field width/overflow is not a mouse-motion claim.
+// pair. scope: 0=both registers, 1=JOY0DAT only, 2=JOY1DAT only. Uses
+// drive_register(): field width/overflow is not a mouse-motion claim.
 static void check_8bit_pair(int scope, const char* uid) {
     reset_dut();
     ensure_joy1enable();
@@ -610,11 +607,11 @@ static void check_8bit_pair(int scope, const char* uid) {
 }
 
 // opus:8-appa-joy.c13, sol:8-appa-joy.c15 -- four counters total.
-// REPAIRED: previously loaded four distinct JOYTEST-seeded bytes and
-// checked they read back distinct -- never drove a controller pin. Now
-// zeroes all four counters and drives four distinct, known quadrature
+// Zeroes all four counters and drives four distinct, known quadrature
 // step counts, one per axis per register, checking each byte reads back
-// its own count and none has leaked into another.
+// its own count and none has leaked into another (loading four distinct
+// JOYTEST-seeded bytes and checking they read back distinct would never
+// drive a controller pin).
 static void check_four_counters(const char* uid) {
     reset_dut();
     zero_baseline(true);
@@ -639,9 +636,7 @@ static void check_four_counters(const char* uid) {
 }
 
 // opus:8-appa-joy.c14, sol:8-appa-joy.c16 -- each counter clocked by two
-// controller pins. REPAIRED: previously toggled real pins but only for
-// ONE of the four counters (JOY1DAT's low byte); the other three counters
-// this claim covers were never touched. Now checks all four: for each of
+// controller pins. Checks all four counters this claim covers: for each of
 // JOY0DAT.X, JOY0DAT.Y, JOY1DAT.X, JOY1DAT.Y, driving only the main pin
 // (holding quad fixed) moves the counter, and then driving only the quad
 // pin (holding main at its new level) moves it again -- two independent
@@ -723,12 +718,12 @@ static const BitClaim JOY1_BITS[16] = {
     {  0, 'X', 0, "opus:8-appa-joy.c50" },
 };
 
-// Per-bit p.281 table claims (opus:8-appa-joy.c19..c50). REPAIRED:
-// previously JOYTEST-loaded a one-hot 16-bit word directly and read it
-// back -- proves only that the load-and-readback path preserves a bit
-// position, not that counter bit k (Y_k or X_k) is what that register bit
-// reflects. Now zeroes the target counter and drives exactly 2^(bit
-// within its own byte) quadrature UP steps from that zero: since the
+// Per-bit p.281 table claims (opus:8-appa-joy.c19..c50). Zeroes the
+// target counter and drives exactly 2^(bit
+// within its own byte) quadrature UP steps from that zero (JOYTEST-loading
+// a one-hot 16-bit word directly and reading it back would prove only that
+// the load-and-readback path preserves a bit position, not that counter
+// bit k (Y_k or X_k) is what that register bit reflects): since the
 // counter is a plain binary up-counter (dmouse0dat[7:0] <= ...+1'd1,
 // userio.v:235 et al.) and its own bit `idx` was 0 in the zero baseline,
 // adding 2^idx sets bit `idx` alone with no carry into or out of it --
@@ -750,7 +745,7 @@ static void check_one_hot_bit(bool reg_is_joy0, const BitClaim& c) {
 }
 
 // sol:8-appa-joy.c21..c24 -- byte-range restatements of the same table.
-// REPAIRED: previously JOYTEST-loaded the marker byte directly. Now drives
+// Drives
 // the marker's own value as a quadrature UP step count from a zero
 // baseline on the claimed axis, so the byte is reached by counting real
 // transitions on the axis the claim names, not by a register write.

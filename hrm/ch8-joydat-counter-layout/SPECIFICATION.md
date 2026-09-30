@@ -16,7 +16,7 @@ scope to be settled, it is declined below rather than asserted here.
 Every assertion below is written from its quotation alone. No port, signal,
 or register-offset name has been taken from the RTL — only the register
 names `JOY0DAT`, `JOY1DAT`, `JOYTEST` (the last named only in the "already
-cost" carry-forward measurement quoted in the build brief, not from any
+cost" carry-forward measurement quoted in the build task, not from any
 manual quotation in this package's claims, and used only as informal
 narration here, never as an asserted proposition) appear, because the
 manual itself uses them as its register names on the pages assigned.
