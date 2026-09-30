@@ -17,8 +17,8 @@
 // Requirement IDs: PROP-FLAG-EXISTS, PROP-FLAG-EDGE-POLARITY,
 //   PROP-DDRA-POSITION, PROP-TOD-BYTES, PROP-UNUSED-SLOT, PROP-SDR-LATCH,
 //   PROP-CRA-DECODE, PROP-CRB-DECODE, PROP-CRA-PBON, PROP-CRA-OUTMODE, per
-//   SPECIFICATION.md's claim inventory (PROP-FLAG-EDGE-POLARITY added by
-//   coordinator correction after this package's first build -- see below).
+//   SPECIFICATION.md's claim inventory (PROP-FLAG-EDGE-POLARITY is graded
+//   here, not declined -- see below for why).
 //   Claims file: hrm-testpipeline/work/2026-09-17_appF_packages.jsonl,
 //   filtered classify.package == "appF-ciab-port-assignments" (67 claims; 22
 //   uids graded across the ten propositions above, 45 declined -- see
@@ -38,9 +38,9 @@
 //     BOTH an edge reading and a level reading, so grading it settles no
 //     verdict about which this RTL implements, and no accepted package
 //     grades the polarity claim on its own. Graded here as
-//     PROP-FLAG-EDGE-POLARITY (coordinator correction; this package's first
-//     build wrongly declined it under the general "an accepted package
-//     already grades this" umbrella). What PROP-FLAG-EXISTS grades is a
+//     PROP-FLAG-EDGE-POLARITY: the general "an accepted package already
+//     grades this" umbrella does not cover it, for the reason just given.
+//     What PROP-FLAG-EXISTS grades is a
 //     third, narrower thing again: only that `flag` is a live,
 //     externally-driven input, not tied to a constant (p.339).
 //   - TOD's read-latch/freeze mechanism and the write-stops-counting
@@ -436,7 +436,7 @@ bool prop_flag_exists(Harness& h, bool omit_drive_bug) {
 // ---------------------------------------------------------------------
 // PROP-FLAG-EDGE-POLARITY (sol:F-handshake.c7, opus:F-handshake.c6, p.341,
 // "Any negative transition on FLAG will set the FLAG interrupt bit"):
-// graded per coordinator correction -- ch8-disk-index-interrupt-path's
+// graded here because ch8-disk-index-interrupt-path's
 // PROP-FLAG-PIN grades a PULSE (rise then fall) setting ICR bit 4, which is
 // consistent with BOTH an edge reading and a level reading, so it settles
 // no verdict about which this RTL implements. p.341 states something

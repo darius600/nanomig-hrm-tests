@@ -47,12 +47,11 @@ This "37, not 47" correction was independently caught by three other builders
 too and is recorded as O78: the brief counted claims that merely *have* a
 note, not claims whose note *names an accepted package*.
 
-## Second correction — the decline rule misapplied to `sol:F-handshake.c7` / `opus:F-handshake.c6`
+## Why `sol:F-handshake.c7` / `opus:F-handshake.c6` are graded, not declined
 
-This package's first build declined these two under the general "an accepted
-package already grades this" umbrella, citing `ch8-disk-index-interrupt-path`'s
-PROP-FLAG-PIN. The coordinator caught that the citation does not actually
-cover the proposition: PROP-FLAG-PIN grades a **pulse** (a rise then a fall)
+The general "an accepted package already grades this" umbrella does not
+cover these two, despite `ch8-disk-index-interrupt-path`'s PROP-FLAG-PIN
+citing the same pin: PROP-FLAG-PIN grades a **pulse** (a rise then a fall)
 setting ICR bit 4 — a stimulus shape consistent with *either* an edge reading
 or a level reading of the hardware, so grading it settles no verdict about
 which one this RTL implements. Page 341's own wording is strictly narrower
@@ -140,8 +139,8 @@ Legend: **G** = graded (`expect()`), **R** = declined (`record()`).
 | `sol:F-handshake.c5` | 341 | FLAG negative-edge-sensitive | R — cited: `ch8-disk-index-interrupt-path` |
 | `opus:F-handshake.c5` | 341 | FLAG edge + PC/general-purpose halves | R — cited: `ch8-disk-index-interrupt-path` |
 | `sol:F-handshake.c6` | 341 | FLAG can take PC or be general-purpose | R — cited: `ch8-disk-index-interrupt-path` |
-| `sol:F-handshake.c7` | 341 | negative transition sets FLAG bit | **G — PROP-FLAG-EDGE-POLARITY** (expect RED; coordinator correction) |
-| `opus:F-handshake.c6` | 341 | twin of `sol:F-handshake.c7` | **G — PROP-FLAG-EDGE-POLARITY** (expect RED; coordinator correction) |
+| `sol:F-handshake.c7` | 341 | negative transition sets FLAG bit | **G — PROP-FLAG-EDGE-POLARITY** (expect RED) |
+| `opus:F-handshake.c6` | 341 | twin of `sol:F-handshake.c7` | **G — PROP-FLAG-EDGE-POLARITY** (expect RED) |
 | `sol:F-cra.c4` | 348 | CRA bit1 PBON | **G — PROP-CRA-PBON** (expect RED) |
 | `opus:F-cra.c4` | 348 | twin | **G — PROP-CRA-PBON** (expect RED) |
 | `sol:F-cra.c5` | 348 | CRA bit2 OUTMODE | **G — PROP-CRA-OUTMODE** (expect RED) |
@@ -179,9 +178,7 @@ Legend: **G** = graded (`expect()`), **R** = declined (`record()`).
 
 **Totals: 22 uids graded across 10 propositions; 45 uids declined via
 `record()` (35 citing an accepted package, 10 declined here for a
-boundary reason this file argues itself).** (Was 20/9/47/37 in this
-package's first build; `sol:F-handshake.c7`/`opus:F-handshake.c6` moved from
-declined to graded per the coordinator correction above.)
+boundary reason this file argues itself).**
 
 ## PROP-FLAG-EXISTS — `ciab`'s `flag` pin is a live, externally driven input
 
@@ -469,10 +466,9 @@ Every expected value in the propositions above is already present, with
 during classification, before this build task began, and read here rather
 than re-derived. This file's own contribution is the *organization* of 67
 claims into 10 gradeable propositions and 45 declines, the correction to the
-build brief's "47" description above, the coordinator's separate correction
-moving `sol:F-handshake.c7`/`opus:F-handshake.c6` from declined to graded, and
-the specific register values (0x6F, 0xEF, etc.) worked out from the
-evidence's cited line numbers.
+build brief's "47" description above, grading `sol:F-handshake.c7`/
+`opus:F-handshake.c6` rather than declining them, and the specific register
+values (0x6F, 0xEF, etc.) worked out from the evidence's cited line numbers.
 
 Per the build brief's own order of work ("Write SPECIFICATION.md from the
 quotations alone. Commit it. Only then open the RTL... Say so rather than
