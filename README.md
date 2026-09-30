@@ -73,13 +73,13 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | | |
 |---|---:|
 | test packages, `hrm/` | **217** |
-| assertions, `hrm/` | **3670** — 3482 pass, **188 fail** |
-| packages, `hrm/` | 155 green, 62 carrying at least one red, **0 build errors** |
+| assertions, `hrm/` | **3688** — 3490 pass, **198 fail** |
+| packages, `hrm/` | 154 green, 63 carrying at least one red, **0 build errors** |
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **27**, each run on both CPU cores: 8 green, 19 carrying a red; 26 against the manual, 1 against the AA specification; 7 more specified, not yet built |
-| assertions, `integration/` | **1710** on fx68k — 1521 pass, **189 fail**; **1843** on TG68K — 1642 pass, **201 fail** |
+| assertions, `integration/` | **1740** on fx68k — 1543 pass, **197 fail**; **1873** on TG68K — 1664 pass, **209 fail** |
 | registered findings | **75**, all open — 70 against the Hardware Reference Manual and 5 against the AA specification. **50 ask you to decide whether the RTL should change**; 66 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
@@ -100,7 +100,7 @@ it reaches.
 
 **All 250 packages report both a verdict and an assertion count** in `hrm/` and
 `aa/`, and each graded `integration/` package does on both cores.
-`./run_all.sh` prints `tests: 155 passed, 62 failed, 0 build errors` for `hrm/`
+`./run_all.sh` prints `tests: 154 passed, 63 failed, 0 build errors` for `hrm/`
 and `tests: 29 passed, 4 failed, 0 build errors` for `aa/`, and one
 line per core for each of the 27 graded `integration/` packages; the table comes
 from such a run. `check_published_counts.py --runlog`, in the separate
