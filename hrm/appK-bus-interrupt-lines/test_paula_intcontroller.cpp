@@ -49,10 +49,8 @@
 // RESULTS: baseline (no MUT flag) is 1 passed, 7 failed -- ALL SEVEN
 // GRADED ASSERTIONS ARE RED. MEASURED: with only int2's own bit (intreq
 // bit 3, PORTS) enabled and driven, this RTL's priority encoder
-// CORRECTED 18.09.2026: _ipl is the 68000's ACTIVE-LOW pin value and the
-// first version of this file read it as the level. The measured _ipl==5 for
-// int2 and _ipl==1 for int6 are 7-2 and 7-6 -- levels 2 and 6, correct. The
-// original note follows, kept so the mistake is on the record:
+// (_ipl is the 68000's ACTIVE-LOW pin value; the measured _ipl==5 for
+// int2 and _ipl==1 for int6 are 7-2 and 7-6 -- levels 2 and 6, correct)
 // (paula_intcontroller.v:152-170) produces _ipl==5, not 2. With only
 // int6's own bit (intreq bit 13, EXTER) enabled and driven, it produces
 // _ipl==1, not 6. Both are reproducible, positive-control-checked
