@@ -1503,9 +1503,12 @@ Base, measured true on both cores for the nine that do.
 
 Every mutation below was run once on each core (`NMH_MUTATE=<value>`) by
 re-running the built binary with the environment variable set. Each
-measured a FAIL on exactly its own precondition, on both cores, with every
-other check unchanged from the normal run (the four known-red P4
-assertions, 5.3, aside):
+measured a FAIL on exactly its own precondition or assertion, on both
+cores, with every other line unchanged from the normal run (the P4 lines
+already red or recorded on every normal run -- `P4`, `P4-Run2`,
+`P4-Run3-reorder`, `P4-Run3-PAIR` FAIL and the `P4-Run3` precondition FAIL
+with `P4-Run3` itself RECORDED -- aside), with one exception described
+after the table (`P3-A`):
 
 | Mutation | Own check | fx68k | TG68K |
 |---|---|---|---|
@@ -1513,6 +1516,41 @@ assertions, 5.3, aside):
 | P3-B | P3b | FAIL | FAIL |
 | P3-C | P3c | FAIL | FAIL |
 | P3-D | P3d | FAIL | FAIL |
+| P3-BASE-SWAP | P3-BASE | FAIL | FAIL |
+| P3-BPL-SWAP | P3-BPL | FAIL | FAIL |
+| P3-SPR-SWAP | P3-SPR | FAIL | FAIL |
+| P3-AUD0-SWAP | P3-AUD0 | FAIL | FAIL |
+| P3-AUD1-SWAP | P3-AUD1 | FAIL | FAIL |
+| P3-AUD2-SWAP | P3-AUD2 | FAIL | FAIL |
+| P3-AUD3-SWAP | P3-AUD3 | FAIL | FAIL |
+| P3-DSK-SWAP | P3-DSK | FAIL | FAIL |
+| P3-BLT-SWAP | P3-BLT | FAIL | FAIL |
+| P3-COP-SWAP | P3-COP | FAIL | FAIL |
+| P3-M-SWAP | P3-M | FAIL | FAIL |
+| P3-DSKBYTR-SWAP | P3-DSKBYTR | FAIL | FAIL |
+| P3-REFRESH-A | P3-REFRESH (ii) | FAIL | FAIL |
+
+`P3-BASE-SWAP` through `P3-M-SWAP` and `P3-DSKBYTR-SWAP` swap Base's own
+already-built capture (or, for `P3-DSKBYTR-SWAP`, Base's own DSKBYTR value)
+into the named line's own slot; `P3-REFRESH-A` adds a synthetic region
+containing word address 0 to `P3-REFRESH`'s own checked region list
+(a comparator demonstration, not a stimulus change: refresh's own
+word-address-0 signature is an RTL invariant no captured program can
+violate).
+
+The one exception is `P3-A`: measured, on both cores, with region DSK
+silent in Base, precondition (a) fails, and the claim
+`ch2-stopping-the-copper.c8`/`COP2-stopping-the-copper.c11` is then not
+graded whole by the ten cases. `P3-DSK` reads RECORDED as inconclusive, as
+it always does when (a) fails, and the other nine case lines (`P3-BPL`,
+`P3-SPR`, `P3-AUD0`, `P3-AUD1`, `P3-AUD2`, `P3-AUD3`, `P3-BLT`, `P3-COP`,
+`P3-M`) also turn RECORDED, their ids withdrawn, each naming its own
+comparator's live PASS (measured PASS on all nine, both cores: the mutation
+touches only Base's own DSK access, not the nine channels' own case runs).
+`P3-BASE` is unaffected (its own claim excludes DSK). The summary line
+changes from 96 passed, 5 failed to 85 passed, 6 failed on both cores: ten
+lines leave the tally (converted from a graded PASS to a RECORDED line) and
+`P3a` itself turns FAIL.
 
 ### 5.8 P6: measured
 
