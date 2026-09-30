@@ -118,7 +118,7 @@
 //     (data_in[15]) dmacon |= data_in[12:0]; else dmacon &= ~data_in[12:0],
 //     which is exactly set/clear with zero bits unchanged, and it is
 //     visible through DMACONR at $002 (:281)." No "Existing assertion" tag
-//     in these four - but this agent's own reading of
+//     in these four - but reading
 //     hrm/ch7-dmacon-register-bits's WALKING-BIT-* loop (SET from zero, then CLR
 //     from an all-13-bits-set baseline, for every bit 0-12) and its
 //     SETCLR-MULTIBIT-DIRECTION assertion (an explicit SET-then-partial-CLR
@@ -1141,14 +1141,10 @@ int main(int argc, char** argv) {
     // of SPRxPOS/SPRxCTL" each field, and this harness supplies no chip-RAM
     // model, so a vblend fetch with SPREN set would silently overwrite the
     // VSTART/VSTOP this run is about to write with data_in's idle value (0)
-    // - caught empirically: the first version of this assertion armed the
-    // sprites and set SPREN before vblend, and measured 16 POS/CTL events
-    // (the vblend refetch itself) but zero DATA/DATB events in either run,
-    // because that refetch had already zeroed every VSTART/VSTOP. Arming
-    // AFTER vblend, with SPREN still clear until the arm is done, means the
-    // CPU-written VSTART/VSTOP are the last word in sprpos/sprctl - the
-    // next automatic refetch is a full field away, well outside this
-    // assertion's own window.
+    // - so sprites are armed AFTER vblend, with SPREN still clear until the
+    // arm is done: this means the CPU-written VSTART/VSTOP are the last
+    // word in sprpos/sprctl - the next automatic refetch is a full field
+    // away, well outside this assertion's own window.
     {
         int wide_per_sprite[8] = {0};
         // 35 lines: the same budget SPREN-GATES-EVERY-SPRITE-CHANNEL's own
@@ -1438,8 +1434,8 @@ int main(int argc, char** argv) {
 }
 
 // ============================================================================
-// MUTATION LOG (11-12.09.2026). Every entry below was actually applied by
-// this agent - edited into this file, rebuilt under WSL/Verilator
+// MUTATION LOG. Every entry below was actually applied -
+// edited into this file, rebuilt under WSL/Verilator
 // (`make test`), run, the PASS/FAIL line read from real output (quoted
 // verbatim below, not predicted), then reverted and rebuilt clean before the
 // next entry. Baseline before this log's first mutation and final clean run
@@ -1525,8 +1521,7 @@ int main(int argc, char** argv) {
 //    control-basis change).
 //
 // 2. SPREN-PLACES-EVERY-CHANNEL-IN-AUTOMATIC-MODE: feed_real_words's body
-//    was emptied (data_in never fed on any grant, matching the pre-repair
-//    state). Result: "6 passed, 2 failed" - SPREN-PLACES-EVERY-CHANNEL-IN-
+//    was emptied (data_in never fed on any grant). Result: "6 passed, 2 failed" - SPREN-PLACES-EVERY-CHANNEL-IN-
 //    AUTOMATIC-MODE went red (field 1 and field 2 both read 0 events/
 //    channel for every one of the eight channels, not >=1 in each).
 //    Reverted; rebuilt clean (7 passed, 1 failed).
