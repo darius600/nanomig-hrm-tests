@@ -21,7 +21,7 @@ step 1. None of that material is used below -- every proposition is phrased
 in the manual's own vocabulary (register bit numbers, the mnemonics printed
 on pages 219-221, and 68000 interrupt levels), never in the RTL's. This
 did not amount to a HALT: a testable specification does not need the port
-names to say "bit 3" or "PORTS." It is flagged in the message to the lead
+names to say "bit 3" or "PORTS." It is flagged here
 so the leak itself can be looked at.
 
 ## Chipset scope

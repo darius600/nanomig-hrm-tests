@@ -50,7 +50,7 @@
 // no claim ids) was replaced by this package and has since been removed
 // (docs/legacy-names.md). It was read before writing this file, and passed
 // its own 9 checks at the time (verified by running it then). The coverage
-// comparison was in this package's report to the lead, not repeated here.
+// comparison is not repeated here.
 
 #include <iostream>
 #include <string>
