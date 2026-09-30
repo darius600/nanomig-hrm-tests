@@ -29,7 +29,7 @@ than presented as if it held, exactly as `ch1-cpu-and-instruction-cache`'s own
 The claims file's own `classify.evidence` field also already carries
 `file:line` RTL citations on every one of the 47 claims (added by the
 classifier before this build started), which is the second, independent
-reason this agent already possessed RTL knowledge before writing propositions
+reason RTL knowledge already existed before propositions were written
 — again the same situation `ch1-cpu-and-instruction-cache` disclosed. What
 follows keeps the substantive discipline the order protects: expected values
 below are cross-checked against the RTL's own text (case-statement literals

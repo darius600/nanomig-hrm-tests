@@ -626,18 +626,14 @@ int main() {
 //   assignments exist" argument predicts. Rebuilt with no MUT afterward:
 //   43 passed / 0 failed baseline restored exactly.
 //
-// A note on how this fixture was found to work at all: the first two
-// attempts at the underlying spike hung completely (cpustate stuck at
-// 2'b01 "no memaccess", cpu_clkena stuck low, chip_addr never leaving
-// $000000, for tens of thousands of cycles). Root cause, found by direct
-// measurement rather than by reasoning about the 35,000-line generated
-// TG68KdotC_Kernel.v in the abstract: `reset` on this module is
-// active-LOW (`always @(posedge clk, negedge reset)`, `if (~reset |
-// ~reset_out)` throughout) despite its plain name -- wired `.nreset(reset)`
-// direct to the TG68K instance (:424), and `.extReset(~reset)` /
-// `.pwrUp(~reset)` to the fx68k instance (:482-483) -- the first two
-// attempts drove it the conventional active-high way, which holds the
-// design permanently in reset once
-// "released". Fixed in this file's Harness constructor (`top->reset = 0`
-// during the hold, `= 1` to release) and confirmed working by the
-// end-to-end round trip these 42 assertions depend on.
+// `reset` on this module is active-LOW (`always @(posedge clk, negedge
+// reset)`, `if (~reset | ~reset_out)` throughout) despite its plain name --
+// wired `.nreset(reset)` direct to the TG68K instance (:424), and
+// `.extReset(~reset)` / `.pwrUp(~reset)` to the fx68k instance (:482-483).
+// Driving it the conventional active-high way holds the design permanently
+// in reset once "released" (cpustate stuck at 2'b01 "no memaccess",
+// cpu_clkena stuck low, chip_addr never leaving $000000, for tens of
+// thousands of cycles). This file's Harness constructor drives it
+// active-low (`top->reset = 0` during the hold, `= 1` to release),
+// confirmed working by the end-to-end round trip these 42 assertions
+// depend on.
