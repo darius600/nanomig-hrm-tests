@@ -726,6 +726,33 @@ int main(int argc, char** argv) {
             "not sprite 0 alone -- CH4-det.c10");
     }
 
+    // ---- declined, not asserted -- record() only, ids off every graded line ----
+    c.record(
+        "CH4-p127.c5 CH4-regs.c2 declined (FIVE-REGISTER-SET-SPANS-BOTH-"
+        "FIXTURES): \"Each set consists of five registers\" (p.127, "
+        "restated again as the section header at p.127/p.105) names the "
+        "WHOLE per-sprite register set -- the pointer pair SPRxPTH/SPRxPTL "
+        "counted as one logical register (this package's own "
+        "SPRXPTH-HIGH-SPRXPTL-LOW-PER-CHANNEL and "
+        "SPRITE-POINTER-PAIR-PER-CHANNEL-DISTINCT above establish that "
+        "half, at this agnus_spritedma boundary), plus SPRxPOS, SPRxCTL, "
+        "SPRxDATA and SPRxDATB -- four more roles this package does not "
+        "build a fixture for: SPRxPOS/SPRxCTL's DMA-write half is "
+        "hrm/ch4-sprite-vertical-position/ (agnus_spritedma, a SEPARATE "
+        "Verilator build from this package's own, per the one-fixture-"
+        "per-package rule), and SPRxPOS/SPRxCTL/SPRxDATA/SPRxDATB's "
+        "denise-decode half is hrm/ch4-sprite-horizontal-position/ and "
+        "hrm/ch4-sprite-colour-registers/ (denise_sprites). No single "
+        "package's fixture instantiates all six physical addresses this "
+        "sentence counts as five roles, so no package can grade 'five' as "
+        "a total against a live count -- each package can only show its "
+        "own slice is present, never that the whole set is exactly five "
+        "and no more. Recorded here, the package that owns the pointer "
+        "half of the set, rather than on any one sibling package's own "
+        "assertion, which would credit that package with a count it "
+        "cannot itself observe. No package under hrm/ or integration/ "
+        "cites either id (checked by search, not assumed).");
+
     std::cout << "\n" << c.passed << " passed, " << c.failed << " failed\n";
     return c.failed == 0 ? 0 : 1;
 }
