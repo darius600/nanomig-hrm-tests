@@ -39,10 +39,10 @@
 //   ciaa+gary rig reaches the literal value $BFE001; no wider boundary was
 //   needed, and none was added.
 //
-// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED (bd0970f):
+// RTL READ, IN ORDER, ALL AFTER SPECIFICATION.md WAS COMMITTED:
 //   1. hrm/ch8-ciaa-port-direction/Makefile -- build pattern (ciaa.v needs
 //      cia_int.v, cia_timera.v, cia_timerb.v, cia_timerd.v to elaborate),
-//      named in the build brief.
+//      named in the build task.
 //   2. $(NANOMIG)/src/minimig-aga/gary.v -- full file.
 //   3. $(NANOMIG)/src/minimig-aga/ciaa.v -- full file.
 //   4. $(NANOMIG)/src/minimig-aga/minimig.v -- lines 600-710 and 760-830
@@ -81,7 +81,7 @@
 //   ciaa.v:136's rs==4'h0 (PRA); 0x5FF100's bits [11:8]=2 match ciaa.v:138's
 //   rs==4'h2 (DDRA).
 //
-// UIDS NAMED BUT NOT IN THIS CLAIMS FILE: the build brief names
+// UIDS NAMED BUT NOT IN THIS CLAIMS FILE: the build task names
 //   opus:8-dio.c43 ("CIAADDRA is at $BFE201"), opus:8-dio.c45 ("CIAAPRA
 //   ($BFE001) is the data read register") and the address half of
 //   sol:8-dio.c42 as address claims two sibling builders declined to this
@@ -227,13 +227,13 @@ int main(int argc, char** argv) {
     };
 
     // ========================================================================
-    // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: the
-    // build brief's own requirement that the fixture prove it can deliver a
+    // A0 -- FIXTURE DATA-PATH LIVENESS. No claim id, no manual page: this
+    // suite's own requirement that the fixture prove it can deliver a
     // known, distinct word before any read-based assertion is trusted --
     // through THIS rig's own address-driven read (gary's decode into
     // ciaa's aen/rs), not a hand-set rs.
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // WITHDRAWN to note(): carries no
     // claim uid -- apparatus, never conformance evidence -- so demoting it
     // costs no coverage. No longer mutated (MUTATE=A0 removed with it): a
     // note() is not graded, so there is nothing left for a mutation to flip.
@@ -309,7 +309,7 @@ int main(int argc, char** argv) {
     // separate from PRA's. Satisfies "at least one control case expected
     // to PASS on the same measurement basis."
     //
-    // WITHDRAWN to note() (independent validation, 2026-09-15): carries no
+    // WITHDRAWN to note(): carries no
     // claim uid -- control case, no manual citation -- so demoting it costs
     // no coverage. No longer mutated (MUTATE=CTRL removed with it): a
     // note() is not graded, so there is nothing left for a mutation to
@@ -339,7 +339,7 @@ int main(int argc, char** argv) {
     // ciaa's PRA register. Data-content diversity was already proven by
     // A0; these four reuse one recognizable word and focus on the address.
     //
-    // WITHDRAWN to record() (independent validation, 2026-09-15): all four
+    // WITHDRAWN to record(): all four
     // compare against a value the test itself just drove on porta_in, and
     // -- the deciding fault -- they run on ciaapra_address_rig.v, whose own
     // header says plainly it is "this package's own fixture wrapper -- NOT
@@ -373,14 +373,13 @@ int main(int argc, char** argv) {
     // quote "CIAAPRA ($BFE001) four input bits for disk sensing") and
     // opus:8-cia.c3 (p.244, quote "Bits labeled PA are input bits in
     // CIAAPRA ($BFE001)") name the identical $BFE001-selects-PRA fact from
-    // two further citing passages. Both were on A1-A4's citation list
-    // before this WITHDRAWN rewrite (visible in work/ch8-s2-runs/ch8-
+    // two further citing passages. Both are on A1-A4's citation list
+    // (visible in work/ch8-s2-runs/ch8-
     // ciaapra-address-window.txt, e.g. "PASS: A1-... [claims: opus:8-
-    // dsk.c20, opus:8-cia.c3]") and were lost when the four PASS lines
-    // became record() calls (independent review, 2026-09-15) -- restored
+    // dsk.c20, opus:8-cia.c3]") and are restored
     // below on all four record() lines, same withdrawal reasoning, since
-    // the fact and the boundary fault are identical for both. Checked at
-    // that same review: opus:8-dsk.c20 appears nowhere else under hrm/;
+    // the fact and the boundary fault are identical for both. Confirmed:
+    // opus:8-dsk.c20 appears nowhere else under hrm/;
     // opus:8-cia.c3 is graded nowhere else either -- the only other
     // "cia.c3" hits under hrm/ belong to the unrelated sol:8-cia.c3
     // (ch8-ciabprb-disk-control-bits, a different reader's different claim
