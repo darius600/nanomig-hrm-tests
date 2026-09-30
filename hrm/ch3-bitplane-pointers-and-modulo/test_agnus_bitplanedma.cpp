@@ -154,6 +154,19 @@
 //     "(high 3 bits)"/"(low 15 bits)" field width. All twelve carry the same
 //     CONFLICT note as A-bplxpth.fn/A-bplxptl.fn above (twelve ids: six
 //     planes x {PTH,PTL}).
+//   ONE narrower question inside this same dispute IS gradable and is no
+//   longer measurement-only: at ecs=0 (OCS), does BPL1PTH's "(high 3 bits)"
+//   figure (A-bplptr.c3, p272; B-subject.c29, p291 - BPL1PTH's own row) hold
+//   as a MASK on what the module fetches, given p.5's 512K OCS chip-memory
+//   ceiling (three high address bits are exactly what 512K needs beyond the
+//   low 15)? BPLXPTH-OCS-HIGH-THREE-BITS below asks exactly that, with its
+//   own in-range control - it does not resolve the 3-vs-5-bit STORAGE
+//   question (still recorded only, immediately below), only whether writing
+//   beyond bit 2 of BPL1PTH changes the fetched address at ecs=0. An ecs=1
+//   twin is recorded, not graded, against p.309 (which widens five OTHER
+//   pointers to "high 5 bits, was 3 bits" under ECS and does not name
+//   BPLxPTH among them) and pp.5-6 (OCS 512K vs ECS up to 1 MB/2 MB) - p.309's
+//   silence about BPLxPTH is not itself a claim either way.
 //   The remaining B-subject.c* ids for these same twelve rows (c30/31, c37/
 //   38, c44/45, c51/52, c58/59, c65/66, c72/73, c79/80, c86/87, c93/94, c100/
 //   101, c107/108 - "is one half of an address-register pair" / "must hold
@@ -1229,6 +1242,109 @@ int main(int argc, char** argv) {
         "B-subject.c57, B-subject.c64, B-subject.c71, B-subject.c78, "
         "B-subject.c85, B-subject.c92, B-subject.c99, B-subject.c106.");
 
+    // ---------------- BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL (p.272, p.291, p.5) ----------------
+    // The in-range control FIRST: BPL1PTH written $0007 (already inside the
+    // 3-bit range the OCS reading claims) must give the SAME fetched address
+    // whether or not the field is masked to 3 bits, since none of its set
+    // bits sit above bit 2. This is the measurement basis the suspect case
+    // below is read against.
+    uint32_t bplxpth_control_addr = 0;
+    {
+        Harness hc;
+        hc.setup_standard(/*ecs_on=*/false);
+        hc.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        hc.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        hc.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        prime_to_line(hc, 0x4F);
+        hc.write_reg(BPLPT_BASE, 0x0007);       // BPL1PTH, in-range
+        hc.write_reg(BPLPT_BASE + 2, 0x0000);   // BPL1PTL
+        bplxpth_control_addr = first_fetch_addr_for_plane(run_single_line(hc, 0x50), 0x88);
+
+        char ctrl_hex[10];
+        snprintf(ctrl_hex, sizeof ctrl_hex, "%06x", bplxpth_control_addr);
+        checks.expect(
+            bplxpth_control_addr == 0x070000,
+            "BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL: at ecs=0, BPL1PTH=$0007 "
+            "(already inside the 3-bit range, no bit above bit 2 set), "
+            "BPL1PTL=$0000 - the first fetch reads 0x" +
+            std::string(ctrl_hex) + ", the measurement basis "
+            "BPLXPTH-OCS-HIGH-THREE-BITS is read against: an in-range write "
+            "reads back exactly 0x070000 either interpretation of the field "
+            "width agrees on. A-bplptr.c3, B-subject.c29.");
+    }
+
+    // ---------------- BPLXPTH-OCS-HIGH-THREE-BITS (p.272, p.291, p.5) ----------------
+    {
+        Harness h;
+        h.setup_standard(/*ecs_on=*/false);
+        h.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        h.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        h.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        prime_to_line(h, 0x4F);
+        h.write_reg(BPLPT_BASE, 0x001F);        // BPL1PTH, over the claimed 3-bit range
+        h.write_reg(BPLPT_BASE + 2, 0x0000);     // BPL1PTL
+        uint32_t over_range_addr = first_fetch_addr_for_plane(run_single_line(h, 0x50), 0x88);
+
+        char over_hex[10];
+        snprintf(over_hex, sizeof over_hex, "%06x", over_range_addr);
+        char ctrl_hex2[10];
+        snprintf(ctrl_hex2, sizeof ctrl_hex2, "%06x", bplxpth_control_addr);
+        checks.expect(
+            over_range_addr == 0x070000,
+            "BPLXPTH-OCS-HIGH-THREE-BITS: at ecs=0 (OCS), BPL1PTH=$001F "
+            "(all five raw bits the write-decode captures, three of them "
+            "above the claimed field), BPL1PTL=$0000 - 'BPLxPTH 0E0 W A "
+            "Bitplane x pointer (high 3 bits)' (A-bplptr.c3, p272) and "
+            "'BPL1PTH + 0E0 W A Bitplane 1 pointer (high 3 bits)' "
+            "(B-subject.c29, p291), against p.5's 512K OCS chip-memory "
+            "ceiling (three high bits beyond the 15 low ones address "
+            "exactly 512K), predict a first fetch of 0x070000 - the SAME "
+            "address BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL's in-range write "
+            "reads (0x" + std::string(ctrl_hex2) + "). "
+            "Measured: 0x" + std::string(over_hex) + ". "
+            "A-bplptr.c3, A-bplxpth.fn, B-subject.c29.");
+    }
+
+    // ---------------- BPLXPTH-ECS-HIGH-BITS-TWIN [measurement only, no PASS/FAIL] (p.309 against pp.5-6) ----------------
+    // The ecs=1 twin of the assertion above, recorded rather than graded:
+    // this module's `ecs` input (agnus_bitplanedma.v:35) governs only the
+    // DIWHIGH/shres/DDFSTRT-DDFSTOP-soft-start-stop timing (confirmed by
+    // grep - no `ecs` term anywhere near the pointer bank at l.217-242 or
+    // the address-compose at l.46, 666-667), so the SAME over-range write is
+    // expected to read the SAME address at ecs=1 - measured, not assumed.
+    // p.309 widens DSKPTH/BLTxPTH/COP1LCH/COP2LCH/AUDxLCH to "high 5 bits,
+    // was 3 bits" under ECS and does not name BPLxPTH among the widened
+    // registers; pp.5-6 give ECS Chip RAM as up to 1 MB (2 MB in the A3000)
+    // against OCS's flat 512K. Silence on p.309 is not itself a claim either
+    // way (per this package's own G6 rule) - it is recorded as what the page
+    // does and does not say, nothing more.
+    {
+        Harness he;
+        he.setup_standard(/*ecs_on=*/true);
+        he.write_reg(DDFSTRT_ADDR, DDFSTRT_LORES_STD);
+        he.write_reg(DDFSTOP_ADDR, DDFSTOP_LORES_STD);
+        he.write_reg(BPLCON0_ADDR, bplcon0_word(false, 1));
+        prime_to_line(he, 0x4F);
+        he.write_reg(BPLPT_BASE, 0x001F);
+        he.write_reg(BPLPT_BASE + 2, 0x0000);
+        uint32_t ecs_addr = first_fetch_addr_for_plane(run_single_line(he, 0x50), 0x88);
+
+        char ecs_hex[10];
+        snprintf(ecs_hex, sizeof ecs_hex, "%06x", ecs_addr);
+        checks.note(
+            "BPLXPTH-ECS-HIGH-BITS-TWIN: the identical BPL1PTH=$001F/"
+            "BPL1PTL=$0000 write, at ecs=1, reads a first fetch of 0x" +
+            std::string(ecs_hex) + " - measured, not graded. p.309 widens "
+            "DSKPTH, BLTxPTH, COP1LCH, COP2LCH and AUDxLCH to 'high 5 bits, "
+            "was 3 bits' under ECS and does not list BPLxPTH among them; "
+            "pp.5-6 give ECS Chip RAM as up to 1 MB (2 MB in the A3000) "
+            "against OCS's 512K. This module's `ecs` input does not reach "
+            "the pointer bank or the address-compose path at all, so this "
+            "RTL's own field width does not change between ecs=0 and ecs=1 "
+            "either way; the printed silence about BPLxPTH on p.309 settles "
+            "nothing by itself.");
+    }
+
     // ---------------- MODULO-ZERO-CONTIGUOUS-LINES (p.53, 60, 61, 64) ----------------
     {
         Harness h;
@@ -1830,5 +1946,16 @@ int main(int argc, char** argv) {
 // MUTATION INTERLACED-FIELD-PAIR-NTSC-400-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
 // MUTATION INTERLACED-FIELD-PAIR-PAL-512-LINES stimulus red: the even field's pointer changed from START+40 to START+80; every field-B line landed 80 bytes past its field-A counterpart, not the expected 40, offsets_ok failed.
 // MUTATION BPLEN-DMA-GATES-POINTER-ADVANCE stimulus red: the "off" harness's dmaena changed from 0 to 1; it produced 20 fetches, not the expected 0.
+//
+// ADDED (BPLXPTH-OCS-HIGH-THREE-BITS and its control, followups.md entry
+// "(014): add BPLXPTH-OCS-HIGH-THREE-BITS"). New baseline after this
+// addition: 19 passed, 1 failed - the one failure is
+// BPLXPTH-OCS-HIGH-THREE-BITS itself, NM-HRM-014's first graded evidence
+// (measured 0x1f0000, not the manual's 0x070000). Both mutations below were
+// actually applied, rebuilt and run under WSL/Verilator, confirmed, then
+// reverted and rebuilt clean (back to 19 passed, 1 failed).
+//
+// MUTATION BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL stimulus red: the control write changed from BPL1PTH=$0007 to $0009 (one bit above the claimed 3-bit range); the first fetch became 0x090000, not the expected 0x070000.
+// MUTATION BPLXPTH-OCS-HIGH-THREE-BITS stimulus green: this assertion is already red at baseline (over-range write, measured 0x1f0000 against expected 0x070000) and a stimulus mutation cannot push an already-red assertion further red per the build brief's own rule; substituting a DIFFERENT, live input through the SAME address==0x070000 comparator - BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL's in-range write (BPL1PTH=$0007) - reads PASS at baseline, showing the comparator is not vacuous.
 // ============================================================================
 
