@@ -167,13 +167,14 @@
 //
 // ============================================================================
 // SPECIFICATION - written from the 176 claims' manual quotations alone,
-// before agnus_audiodma.v was opened. Ten assertions. Originally, every one
-// of the 176 claim ids appeared in exactly the assertion(s) below whose
-// proposition it stated (five ids that state BOTH the ECS reading and the
-// OCS/18-bit reading in the same sentence are cited under both assertion 8
-// and assertion 9, per the same "cited under both assertions it actually
+// before agnus_audiodma.v was opened. Ten assertions. Every one of the 176
+// claim ids appears in exactly the assertion(s) below whose proposition it
+// states (five ids that state BOTH the ECS reading and the OCS/18-bit
+// reading in the same sentence are cited under both assertion 8 and
+// assertion 9, per the same "cited under both assertions it actually
 // supports" convention hrm/ch6-blitter-ecs's header documents), verified by
-// script against the full 176-line claim file. The COVERAGE REPAIR above
+// script against the full 176-line claim file, before the withdrawals
+// below. The COVERAGE REPAIR above
 // withdrew twelve of those ids from assertion 1 as not actually established
 // by its own measurement; they are listed, with the fixture they need, in
 // assertion 1's own text below and are deliberately absent from every
