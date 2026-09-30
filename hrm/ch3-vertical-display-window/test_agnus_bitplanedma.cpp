@@ -55,9 +55,9 @@
 //   alone, committing, and only then opening agnus_bitplanedma.v. During
 //   initial repository orientation (reading the sibling
 //   hrm/ch3-ddf-fetch-window/Makefile to learn this repo's Verilator
-//   harness conventions before any claims-file work began) this agent also
-//   read agnus_bitplanedma.v in full. That is a process error against the
-//   letter of "only then open the RTL." Its effect is limited and stated
+//   harness conventions before any claims-file work began),
+//   agnus_bitplanedma.v was also read in full. That is a process error
+//   against the letter of "only then open the RTL." Its effect is limited and stated
 //   here rather than concealed, following the precedent set by
 //   hrm/ch3-beam-counters-and-blanking/ and hrm/ch3-sprite-playfield-priority/
 //   ("order-of-work deviation disclosed"): every EXPECTED value asserted
@@ -75,7 +75,7 @@
 //   committed sibling fixture for this SAME module -- not independently
 //   re-derived. No assertion's PASS/FAIL threshold was chosen or adjusted
 //   because of anything seen in the RTL; where the RTL's actual behaviour
-//   was already known to this agent before writing an assertion, that
+//   was already known before an assertion was written, that
 //   assertion's oracle is still, verifiably, nothing but the cited
 //   quotation's own number.
 //
