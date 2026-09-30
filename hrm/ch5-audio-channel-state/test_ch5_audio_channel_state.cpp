@@ -357,7 +357,7 @@
 //   suppress-after-1 rerun (5-p166.c5's mutation, word1 never arrives) -- laterWordAppears (0x33)
 //   then goes false too, correctly reddening the conjunction as a whole.
 // MUTATION 5-p164.c23 stimulus green
-//   BRIEF-CH5 REPAIR: g16's own predicate is now a host-derived arming-word window (offset
+//   g16's own predicate is now a host-derived arming-word window (offset
 //   AUDLEN-1 of the block, computed from the fixed stimulus, not from the RTL's own lenfin) --
 //   graded against it, this assertion is RED AT BASELINE (AUDLEN=4): no dmas rising edge falls
 //   inside the arming word's own window at all (NM-HRM-084's off-by-one). Mutating an
@@ -387,7 +387,7 @@
 //   dependency), so only suppEarlyR (suppress-after-1, discard word only) genuinely prevents
 //   lenfin from ever being reached.
 // MUTATION 5-p164.c28 stimulus green
-//   BRIEF-CH5 REPAIR: 5-p164.c28's own text ("just as the LAST word ... starts its output") is
+//   5-p164.c28's own text ("just as the LAST word ... starts its output") is
 //   more specific than 5-p164.c27's ("soon after"), so it is graded against the same
 //   host-derived arming-word window 5-p164.c23 uses above, not g19 -- and it is RED AT BASELINE
 //   for the identical reason. Same AUDLEN=2 substitution as 5-p164.c23's own fix, through the
@@ -455,7 +455,7 @@
 //   green/red, so a measured "no" (the direct-cause arc correctly no longer taken once AUDxON is
 //   asserted) was recorded green. Re-applying the real predicate (unnegated) gives red.
 // MUTATION 5-p164.c14 stimulus red
-//   BRIEF-CH5 REPAIR: the baseline predicate is no longer a raw "intreq_count>=3 somewhere in
+//   the baseline predicate is no longer a raw "intreq_count>=3 somewhere in
 //   the run" threshold -- it now grades every actual loop-return transition (measured code ->
 //   MANUAL_HI) for intreq, and at baseline reads GREEN, 62/62 (a genuine, page-derived pass,
 //   not the loose threshold's accidental one). Also raising dmaena before the first AUDxDAT
