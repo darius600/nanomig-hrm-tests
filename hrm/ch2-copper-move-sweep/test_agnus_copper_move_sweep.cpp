@@ -141,11 +141,24 @@
 // above them). Baseline: 97 passed, 1 failed (the pre-existing NM-HRM-004
 // SWEEP red; all five rows and their CDANG-clear records are green/printed).
 //
-// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: ecs_cdang1 (the ecs=1 CDANG-set sweep every row and SWEEP ecs=1 cdang=1 read) computed as sweep_accepted_set(true, false) instead of sweep_accepted_set(true, true) -- $2D no longer appears in the accepted set; 91 passed, 7 failed (SWEEP ecs=1 cdang=1 and all five APPBTILDE-ECS1-* rows go red together, the pre-existing NM-HRM-004 SWEEP ecs=1 cdang=0 red unaffected); reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same run as APPBTILDE-ECS1-BLTCON0L (the shared ecs_cdang1 sweep) -- $2E no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same run as APPBTILDE-ECS1-BLTCON0L -- $2F no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same run as APPBTILDE-ECS1-BLTCON0L -- $3C no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same run as APPBTILDE-ECS1-BLTCON0L -- $3E no longer appears in the accepted set; 91 passed, 7 failed; reverted (97 passed, 1 failed).
+// Each row's mutation substitutes ocs_cdang0 (ecs=0, CDANG clear) for
+// ecs_cdang1 in that ONE row's own comparator -- a real DUT sweep, already
+// computed above, for a stimulus the pages predict "not admitted" WITHOUT
+// resting on the disputed ECS+CDANG-clear half: chapter 2's own Reading B
+// (undisputed; no appendix contradicts it) puts every one of these five
+// bytes inside the $040-$1FE CDANG-gated range, so at ecs=0 with CDANG
+// clear they are rejected on both readings. (The earlier form of this
+// mutation instead substituted ecs=1,cdang=0 -- the very half Appendix B
+// and p.310 disagree about -- so its "not admitted" reading rested on the
+// same dispute the record below exists to avoid adjudicating; replaced.)
+// Edited in a private copy, not the committed file; each edit touches only
+// that one row's own `checks.expect(...)` line, not the shared ecs_cdang1
+// variable, so the SWEEP ecs=1 cdang=1 line is unaffected in every case.
+// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: $2D substituted from ocs_cdang0 (rejected there, per chapter 2's undisputed OCS Reading B) in place of ecs_cdang1; 92 passed, 6 failed, exactly this row newly red (SWEEP ecs=1 cdang=1 and the other four rows unaffected); reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2E; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2F; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3C; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3E; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
 
 #include <cstdint>
 #include <functional>
@@ -915,68 +928,107 @@ int main(int argc, char** argv) {
     // Appendix C's "same as OCS CDANG=1" equivalence). That red is a claim
     // about the AGGREGATE band. These five are a narrower, DIFFERENT claim,
     // individually, and only the half the two pages agree on is graded:
-    // "accepted with CDANG set" (p.287's legend, "unless the \"copper "
-    // "danger bit\", COPCON is set true"; p.310/Appendix C, "if this bit is "
-    // "set, the Copper can access all of the Amiga chip registers"). The
-    // "CDANG clear" half is recorded below each row, not graded: Appendix
-    // B's '~' legend (p.287) reads it as blocked, and p.310 gives these five
-    // addresses (byte $05A-$07C) as inside the $DFF03E-$DFF07E range the ECS
-    // Copper can access with CDANG clear -- the two pages disagree, and per
-    // the NM-HRM-062 precedent a source that disagrees with itself is
-    // measured and recorded, not adjudicated here. Graded and measured from
-    // the SWEEP ecs=1 accepted sets already computed above (ecs_cdang0,
-    // ecs_cdang1), same method as the ecs=0 rows above. Each row carries its
-    // own leading id so the mutation-label gate reads it separately.
+    // "accepted with CDANG set" -- p.310/Appendix C's own sentence ("if this
+    // bit is set, the Copper can access all of the Amiga chip registers"),
+    // the SAME reading the SWEEP ecs=1 cdang=1 check above grades for the
+    // whole band, here applied to one named register per row. Each row's
+    // register identity comes from Appendix B's own table (byte address ->
+    // register name); the CDANG-set admission itself comes from p.310, not
+    // from Appendix B's '~' legend, which is a DIFFERENT, disputed claim
+    // (below). The "CDANG clear" half is recorded below each row, not
+    // graded: Appendix B's '~' legend (p.287) reads it as blocked
+    // ("Address not writable by the Copper unless the \"copper danger "
+    // "bit\", COPCON is set true"), and p.310 gives these five addresses
+    // (byte $05A-$07C) as inside the $DFF03E-$DFF07E range the ECS Copper
+    // can access with CDANG clear -- the two pages disagree, and per the
+    // NM-HRM-062 precedent a source that disagrees with itself is measured
+    // and recorded, not adjudicated here; Appendix B's own '~' id for each
+    // row is cited on ITS record, not on the graded line, since the '~'
+    // legend is what states the DISPUTED half, not the graded one. Graded
+    // and measured from the SWEEP ecs=1 accepted sets already computed
+    // above (ecs_cdang0, ecs_cdang1), same method as the ecs=0 rows above.
+    // Each row carries its own leading id so the mutation-label gate reads
+    // it separately.
     checks.expect(ecs_cdang1.count(0x2D),
         "APPBTILDE-ECS1-BLTCON0L $2D BLTCON0L ecs=1: accepted on reg_address_out with CDANG set "
-        "(Appendix B '~', p.289, byte $05A) [claims: B-bltcon0l.copper B-copper-tilde.c14]");
+        "(register identity: Appendix B, p.289, byte $05A; admission: p.310, \"if this bit is "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: B-bltcon0l.copper, "
+        "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-BLTCON0L-CDANG-CLEAR $2D BLTCON0L ecs=1, CDANG clear: Appendix B's '~' "
         "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
         "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $05A as inside the "
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2D) reads " +
-        std::string(ecs_cdang0.count(0x2D) ? "accepted" : "rejected") + ".");
+        std::string(ecs_cdang0.count(0x2D) ? "accepted" : "rejected") +
+        ". The '~' legend's own claim (graded: B-copper-tilde.c14) is already "
+        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        "half is a different axis (whether p.310's ECS-specific extension "
+        "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x2E),
         "APPBTILDE-ECS1-BLTSIZV $2E BLTSIZV ecs=1: accepted on reg_address_out with CDANG set "
-        "(Appendix B '~', p.289, byte $05C) [claims: B-bltsizv.copper B-copper-tilde.c15]");
+        "(register identity: Appendix B, p.289, byte $05C; admission: p.310, \"if this bit is "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: B-bltsizv.copper, "
+        "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-BLTSIZV-CDANG-CLEAR $2E BLTSIZV ecs=1, CDANG clear: Appendix B's '~' "
         "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
         "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $05C as inside the "
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2E) reads " +
-        std::string(ecs_cdang0.count(0x2E) ? "accepted" : "rejected") + ".");
+        std::string(ecs_cdang0.count(0x2E) ? "accepted" : "rejected") +
+        ". The '~' legend's own claim (graded: B-copper-tilde.c15) is already "
+        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        "half is a different axis (whether p.310's ECS-specific extension "
+        "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x2F),
         "APPBTILDE-ECS1-BLTSIZH $2F BLTSIZH ecs=1: accepted on reg_address_out with CDANG set "
-        "(Appendix B '~', p.289, byte $05E) [claims: B-bltsizh.copper B-copper-tilde.c16]");
+        "(register identity: Appendix B, p.289, byte $05E; admission: p.310, \"if this bit is "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: B-bltsizh.copper, "
+        "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-BLTSIZH-CDANG-CLEAR $2F BLTSIZH ecs=1, CDANG clear: Appendix B's '~' "
         "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
         "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $05E as inside the "
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2F) reads " +
-        std::string(ecs_cdang0.count(0x2F) ? "accepted" : "rejected") + ".");
+        std::string(ecs_cdang0.count(0x2F) ? "accepted" : "rejected") +
+        ". The '~' legend's own claim (graded: B-copper-tilde.c16) is already "
+        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        "half is a different axis (whether p.310's ECS-specific extension "
+        "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x3C),
         "APPBTILDE-ECS1-SPRHDAT $3C SPRHDAT ecs=1: accepted on reg_address_out with CDANG set "
-        "(Appendix B '~', p.290, byte $078) [claims: B-copper-tilde.c24 B-sprhdat.copper]");
+        "(register identity: Appendix B, p.290, byte $078; admission: p.310, \"if this bit is "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: B-sprhdat.copper, "
+        "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-SPRHDAT-CDANG-CLEAR $3C SPRHDAT ecs=1, CDANG clear: Appendix B's '~' "
         "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
         "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $078 as inside the "
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($3C) reads " +
-        std::string(ecs_cdang0.count(0x3C) ? "accepted" : "rejected") + ".");
+        std::string(ecs_cdang0.count(0x3C) ? "accepted" : "rejected") +
+        ". The '~' legend's own claim (graded: B-copper-tilde.c24) is already "
+        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        "half is a different axis (whether p.310's ECS-specific extension "
+        "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x3E),
         "APPBTILDE-ECS1-DENISEID $3E DENISEID ecs=1: accepted on reg_address_out with CDANG set "
-        "(Appendix B '~', p.290, byte $07C) [claims: B-copper-tilde.c25 B-deniseid.copper]");
+        "(register identity: Appendix B, p.290, byte $07C; admission: p.310, \"if this bit is "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: B-deniseid.copper, "
+        "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-DENISEID-CDANG-CLEAR $3E DENISEID ecs=1, CDANG clear: Appendix B's '~' "
         "legend (p.287) reads this as blocked (\"Address not writable by the Copper unless the "
         "\"copper danger bit\", COPCON is set true.\"); p.310 gives byte $07C as inside the "
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($3E) reads " +
-        std::string(ecs_cdang0.count(0x3E) ? "accepted" : "rejected") + ".");
+        std::string(ecs_cdang0.count(0x3E) ? "accepted" : "rejected") +
+        ". The '~' legend's own claim (graded: B-copper-tilde.c25) is already "
+        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        "half is a different axis (whether p.310's ECS-specific extension "
+        "changes the reading) the legend text itself does not address.");
 
     // --- Per-row no mark (pp.290-293): writable regardless of COPCON --
     // accepted on reg_address_out with CDANG clear AND with CDANG set.
