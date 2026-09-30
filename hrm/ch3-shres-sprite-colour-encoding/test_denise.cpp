@@ -568,19 +568,16 @@ constexpr Run kRunsSpr6[3] = {
 };
 
 // A single register-n's own diagonal read path (p==q, colour (16+n)'s own
-// letters in both slots -- see kRows), used both by REG-0x11--0x13's own
-// green-stimulus MUTATION (measureRegister() on the diagonal register
-// instead) and by P2's own MUTATION (the same diagonal register's trace in
-// place of $11/$12/$13's): index 1 -> $15/sprite 2 (colour 17), index 2 ->
-// $1A/sprite 4 (colour 18), index 3 -> $1F/sprite 6 (colour 19). Index 0 is
-// unused (P2/REG-0x1n loop c/n from 1).
+// letters in both slots -- see kRows), used by P2's own MUTATION (the
+// diagonal register's trace in place of $11/$12/$13's): index 1 ->
+// $15/sprite 2 (colour 17), index 2 -> $1A/sprite 4 (colour 18), index 3 ->
+// $1F/sprite 6 (colour 19). Index 0 is unused (P2's loop runs c from 1).
 constexpr Run kDiagRun[4] = {
     {"unused", 0, 0x0000, 0x0000, 0x0000},
     {"DIAG-SPR2", 2, 0xFFFF, 0x0000, 0x0000},  // value 1 -> COLOR21/$15
     {"DIAG-SPR4", 4, 0x0000, 0xFFFF, 0x0000},  // value 2 -> COLOR26/$1A
     {"DIAG-SPR6", 6, 0xFFFF, 0xFFFF, 0x0000},  // value 3 -> COLOR31/$1F
 };
-constexpr int kDiagReg[4] = {0, 5, 10, 15};  // register n (=reg-0x10) each kDiagRun reaches.
 
 using Trace = std::vector<uint32_t>;
 
