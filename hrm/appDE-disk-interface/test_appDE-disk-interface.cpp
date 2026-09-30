@@ -76,9 +76,12 @@
 //   (NM-HRM-080's own "What weakens it" -- the graded reds ran on drive 0
 //   only) and is RED at baseline for the identical reason. Per this suite's
 //   rule against mutating an already-failing check with a no-op, each of
-//   these three substitutes a DIFFERENT genuine stimulus (leaving the drive
-//   deselected instead of latching the motor) through the IDENTICAL
-//   comparator and the SAME label, flipping baseline RED to mutated GREEN.
+//   these three substitutes a DIFFERENT genuine stimulus (deselecting the
+//   drive after the motor has been genuinely latched, rather than leaving
+//   it latched) through the IDENTICAL comparator and the SAME label,
+//   flipping baseline RED to mutated GREEN. The motor-latch precondition is
+//   measured through peek_index() in every branch of every one of these
+//   three, not assumed constant.
 //   The remaining thirteen graded checks are GREEN at baseline and flip to
 //   RED by omitting the stimulus event the proposition requires.
 //
@@ -342,26 +345,35 @@ int main(int argc, char** argv) {
         bool mut = mutating("sol:E-disk.c26");
         // no mount() call anywhere in this block: no disk is installed
         // throughout.
+        bool motor_latched_on;
         if (!mut) {
             r.select_with_motor(0, /*motor_on_level=*/true);  // a genuine
                 // off-to-on transition of the select line, the edge p.334
                 // pin 8 and p.369 require to latch the motor on
+            motor_latched_on = r.peek_index(0);
         } else {
             // MUTATION (rule against mutating an already-failing check):
             // substitute a genuine, independently-live stimulus change
-            // (leaving the drive deselected, so the motor is never
+            // (deselecting the drive after the motor was genuinely
             // latched) through the IDENTICAL !ready() comparator and the
             // same label, proving the comparator is sensitive to a real
-            // difference.
+            // difference. The precondition term is measured here too, not
+            // assumed: latch it for real, read it back, then deselect.
+            r.select_with_motor(0, /*motor_on_level=*/true);
+            motor_latched_on = r.peek_index(0);
             r.deselect_all();
         }
         bool ready_state = r.ready();
         checks.note("sol:E-disk.c26: drive0, no disk, " +
-                    std::string(mut ? "deselected (mutated substitute)" : "motor latched on at a genuine select edge") +
+                    std::string(mut ? "motor latched on then deselected (mutated substitute), motor latch="
+                                     : "motor latched on at a genuine select edge, motor latch=") +
+                    std::to_string(motor_latched_on) +
                     " -> ready=" + std::to_string(ready_state));
-        checks.expect(!ready_state,
+        checks.expect(motor_latched_on && !ready_state,
             "sol:E-disk.c26 (p.334, figure, pin 1 RDY*: 'If motor on, indicates disk installed and up to speed. "
-            "If motor not on, identification mode.'; p.334 pin 8 and p.369 on the select-edge motor latch): with "
+            "If motor not on, identification mode.'; p.334 pin 8 and p.369 on the select-edge motor latch): the "
+            "page's own precondition, measured -- the motor latch read back through peek_index(0) right after "
+            "select_with_motor() -- must itself be on before this can mean anything; with "
             "the motor genuinely latched on at a select edge and no disk in the drive, the printed motor-on "
             "branch requires a disk installed and up to speed for RDY* to read asserted; with none installed the "
             "page predicts it deasserted");
@@ -369,19 +381,26 @@ int main(int argc, char** argv) {
     {
         Rig r;
         bool mut = mutating("opus:E-extdisk-iface.c4");
+        bool motor_latched_on;
         if (!mut) {
             r.select_with_motor(0, true);
+            motor_latched_on = r.peek_index(0);
         } else {
+            r.select_with_motor(0, true);
+            motor_latched_on = r.peek_index(0);
             r.deselect_all();
         }
         bool ready_state = r.ready();
         checks.note("opus:E-extdisk-iface.c4: twin of sol:E-disk.c26, same measurement -> " +
-                    std::string(mut ? "deselected (mutated substitute)" : "motor latched on at a genuine select edge") +
+                    std::string(mut ? "motor latched on then deselected (mutated substitute), motor latch="
+                                     : "motor latched on at a genuine select edge, motor latch=") +
+                    std::to_string(motor_latched_on) +
                     " -> ready=" + std::to_string(ready_state));
-        checks.expect(!ready_state,
+        checks.expect(motor_latched_on && !ready_state,
             "opus:E-extdisk-iface.c4 (p.334, figure, pin 1 RDY*: 'With the motor on it indicates a disk installed "
             "and up to speed; with the motor off it is identification mode.'): twin of sol:E-disk.c26 (same "
-            "printed pin, independent reader) -- same measurement, graded independently under its own uid");
+            "printed pin, independent reader) -- same measurement, graded independently under its own uid, with "
+            "the motor latch read back through peek_index(0) as its own precondition term");
     }
 
     // ========================================================================
@@ -426,31 +445,30 @@ int main(int argc, char** argv) {
         bool mut = mutating("P-READY-MOTOR-INVARIANT-DRIVE1");
         // Read back right after select_with_motor(), RESET-DUTY's own
         // technique (peek_index(n), no clock edge) -- the page's own
-        // sentence starts with the motor condition, and until now nothing
-        // in this block MEASURED the latch; "motor latched on at a genuine
-        // select edge" was literal text. Defaults to true (not applicable)
-        // in the mutated branch below, which deliberately never latches the
-        // motor at all -- that branch tests a different axis (the !ready()
-        // comparator's own sensitivity to a real stimulus change), not this
-        // precondition, and RESET-DUTY drive 1's own note (elsewhere in
-        // this same run) already measures the latch taking on drive 1.
-        bool motor_latched_on = true;
+        // sentence starts with the motor condition, and this block
+        // MEASURES the latch in every branch, not just states it as
+        // literal text.
+        bool motor_latched_on;
         if (!mut) {
             r.select_with_motor(1, /*motor_on_level=*/true);
             motor_latched_on = r.peek_index(1);
         } else {
             // MUTATION (rule against mutating an already-failing check):
             // substitute a genuine, independently-live stimulus change
-            // (leaving drive 1 deselected, so the motor is never latched)
+            // (deselecting drive 1 after the motor was genuinely latched)
             // through the IDENTICAL !ready() comparator and the same
-            // label.
+            // label. The precondition term is measured here too, not
+            // passed in as a constant: latch it for real, read it back,
+            // then deselect.
+            r.select_with_motor(1, /*motor_on_level=*/true);
+            motor_latched_on = r.peek_index(1);
             r.deselect_all();
         }
         bool ready_state = r.ready();
         checks.note("P-READY-MOTOR-INVARIANT-DRIVE1: drive1, no disk, " +
-                    std::string(mut ? "deselected (mutated substitute)"
-                                    : ("motor latched on at a genuine select edge, motor latch=" +
-                                       std::to_string(motor_latched_on))) +
+                    std::string(mut ? "motor latched on then deselected (mutated substitute), motor latch="
+                                     : "motor latched on at a genuine select edge, motor latch=") +
+                    std::to_string(motor_latched_on) +
                     " -> ready=" + std::to_string(ready_state));
         checks.expect(motor_latched_on && !ready_state,
             "P-READY-MOTOR-INVARIANT-DRIVE1 (p.334, figure, pin 1 RDY*, corroborating sol:E-disk.c26 / "
