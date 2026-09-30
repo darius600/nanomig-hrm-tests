@@ -28,13 +28,12 @@
 // $F00000-$FFFFFF: the printed lower boundary and the RTL's own lower
 // boundary differ by half the band).
 //
-// CORRECTED 18.09.2026: THAT DIFFERENCE WAS GRADED AND IT WAS RED. It is
-// declined now, and the reason is at the record() call below. In short:
-// Figure K-1 allocates address space and this assertion required occupancy,
-// which is more than the figure says -- and a real A2000, the machine the
-// manual documents, does not decode ROM at $F00000 either. Its Kickstart is
-// 512K at $F80000-$FFFFFF, exactly where gary puts it. The measurement is
-// unchanged and still printed.
+// opus:K-0056 is declined, not asserted -- the reason is at the record()
+// call below. In short: Figure K-1 allocates address space and this claim
+// would require occupancy, which is more than the figure says -- and a
+// real A2000, the machine the manual documents, does not decode ROM at
+// $F00000 either. Its Kickstart is 512K at $F80000-$FFFFFF, exactly where
+// gary puts it. The measurement is unchanged and still printed.
 //
 // BOUNDARY. The Zorro II expansion-RAM band the same figure prints
 // ($200000-$9FFFFF) is decoded by cpu_wrapper.v's `sel_z2ram`, a different
@@ -192,9 +191,8 @@ int main(int argc, char** argv) {
     note("gary's own window, first address ($F80000): sel_kick=" +
          std::to_string((int)top->sel_kick));
 
-    // CORRECTED 18.09.2026: this was `expect(rom_at_claimed_base,
-    // "opus:K-0056")` and it was red. It is declined now. The measurement is
-    // unchanged and still printed above; the predicate was wrong.
+    // opus:K-0056 is declined, not asserted: the measurement is unchanged
+    // and still printed above.
     record("opus:K-0056 -- declined: Figure K-1 ALLOCATES address space, it does not "
            "state occupancy. The figure's job is to tell an expansion designer which "
            "ranges are not theirs to use, and labelling $00F00000-$01000000 'Motherboard "
