@@ -50,9 +50,9 @@
 //   9h094), write decode l.247-259 (ddfstrt[8:2] <= data_in[7:1]), position
 //   compare l.336-354, hard limits $18/$D8 l.356-374, ddfena l.407-414.
 //   These line numbers and register names come from claims.jsonl's own
-//   evidence field and this package's PACKAGE.md, handed to this agent
-//   before agnus_bitplanedma.v was opened for this package -- reused here,
-//   not independently re-derived. This module's own top-level Verilator
+//   evidence field and this package's PACKAGE.md, already available before
+//   agnus_bitplanedma.v was opened for this package -- reused here, not
+//   independently re-derived. This module's own top-level Verilator
 //   Harness (tick/write_reg/write_ptr/run_to_line/run_single_line/
 //   prime_to_line) is reused verbatim from
 //   hrm/ch3-ddf-fetch-window/test_agnus_bitplanedma.cpp -- an
@@ -217,22 +217,21 @@
 //   through the write-then-fetch path before any address-decode assertion
 //   below is trusted to mean anything.
 //
-// MUTATION LOG: recorded after agnus_bitplanedma.v is actually opened and
-//   `make test` has actually been run under WSL/Verilator (left empty in
-//   this spec-only commit, filled in the follow-up commit, per the build
-//   brief's order of work and the precedent in
-//   hrm/ch3-register-map-agnus-beamcounter/'s own spec-only commit).
+// MUTATION LOG: recorded after agnus_bitplanedma.v was opened and
+//   `make test` was run under WSL/Verilator, per the build brief's order
+//   of work and the precedent in
+//   hrm/ch3-register-map-agnus-beamcounter/'s own spec-before-RTL package.
 //
-// No RTL has been opened yet to write this comment block beyond the
-// BOUNDARY text handed to this agent in PACKAGE.md/claims.jsonl. The
-// Harness, helper functions and assertion bodies are added in the next
-// commit, after agnus_bitplanedma.v is read in full for this package.
+// The BOUNDARY text above came from PACKAGE.md/claims.jsonl, not from
+// opening agnus_bitplanedma.v; the Harness, helper functions and assertion
+// bodies below were added only after agnus_bitplanedma.v was read in full
+// for this package.
 
 // ============================================================================
-// IMPLEMENTATION NOTES (added in this commit, after agnus_bitplanedma.v was
-// read in full for this package -- the specification comment above this
-// point was committed on its own first, per the chapter's spec-before-RTL
-// gate; see this package's own git history, commit 00285c4).
+// IMPLEMENTATION NOTES, written after agnus_bitplanedma.v was read in full
+// for this package -- the specification comment above this point was
+// written before agnus_bitplanedma.v was opened, per the chapter's
+// spec-before-RTL discipline.
 //
 // PORTS (agnus_bitplanedma.v:29-47) confirm BOUNDARY: clk, clk7_en, reset,
 // harddis, aga, ecs, a1k, sof, dmaena, vpos[10:0], hpos[8:0] are inputs;
@@ -881,11 +880,9 @@ int main(int argc, char** argv) {
     }
 
     // =========================================================================
-    // APPENDIX B/A REOFFER -- 2 claims declined here, in the ledger's own
-    // vocabulary, having been offered at ch3-register-map-agnus in error (per
-    // this file's own reasoning below) and correctly declined there in an
-    // earlier pass; now reasoned about on record rather than left unprinted.
-    // No predicate, stimulus or expected value above is touched.
+    // APPENDIX B/A -- 2 claims declined here, in the ledger's own
+    // vocabulary, reasoned about on record rather than left unprinted. No
+    // predicate, stimulus or expected value above is touched.
     // =========================================================================
     checks.record(
         "opus:7-appA-pre.c6 (p.263, 'All of the pointer type registers are organized as 32 bits on a long word "
