@@ -32,8 +32,7 @@
 //   planned; it resolves nowhere public, and docs/legacy-names.md gives the
 //   finding keys that replaced the ones that were findings.
 //   The `COP-nn` Requirement IDs, COP-01 to COP-09, number the requirements of
-//   the frozen specification the suite's first version was written against
-//   (docs/legacy-names.md); no claim file carries them.
+//   a frozen specification (docs/legacy-names.md); no claim file carries them.
 // Disclosure: agnus_copper.v was read beyond the port list (the copper
 //   state machine and reg_address_out/address_out select logic, roughly
 //   lines 192-220 and 384-467) to confirm that the granted MOVE cycle
