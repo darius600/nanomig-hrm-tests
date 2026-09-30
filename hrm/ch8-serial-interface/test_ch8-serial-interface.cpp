@@ -1896,10 +1896,30 @@ int main(int argc, char** argv) {
       const int cb = measure_cell_beats(h, 10);
       h.write_reg(ADDR_SERDAT, 0x0155);
       h.dut->rga_i = (ADDR_SERDATR >> 1) & 0xFF;
+      // The combined frame's window opens at the first 1->0 TxD edge after
+      // THIS, the first, write -- word 1's own start bit, which D3 above
+      // measures lands within one bit-cell of the write, well before TBE
+      // itself fires. Opening it only after the SECOND write below (as
+      // this block used to) finds the first 1->0 edge somewhere inside
+      // word 1's own data bits instead, understating the combined frame by
+      // however many cells that edge is already into word 1. So the same
+      // edge-tracking state (last_txd/started/beats) starts here and
+      // carries straight through the TBE-polling loop and the second
+      // write into the completion loop below -- one continuous window.
+      int last_txd = h.dut->txd;
+      bool started = false;
+      int beats = 0;
+      bool completed = false;
       int beats_to_tbe = -1;
       for (int c = 0; c < cb * 2 && beats_to_tbe < 0; ) {
         h.tick();
-        if (h.dut->clk7_en) { ++c; if ((h.dut->data_o & BIT_TBE) != 0) beats_to_tbe = c - 1; }
+        if (!h.dut->clk7_en) continue;
+        ++c;
+        int cur = h.dut->txd;
+        if (!started && last_txd == 1 && cur == 0) { started = true; beats = 0; }
+        if (started) ++beats;
+        last_txd = cur;
+        if ((h.dut->data_o & BIT_TBE) != 0) beats_to_tbe = c - 1;
       }
       h.dut->rga_i = 0;
 #if MUT_40
@@ -1907,22 +1927,16 @@ int main(int argc, char** argv) {
       wait_beats(h, cb * 6);
 #endif
       h.write_reg(ADDR_SERDAT, 0x0266);
-      // Watch the combined frame through to its single completion, timed
-      // in raw clk7_en beats from word 1's start bit to the one eventual
-      // TSRE (TSRE does not rise between the two words -- C3 establishes
-      // that it only sets once every pending word is done). Graded by
-      // total elapsed time: word 1 alone is 10 cells, word 2 alone is 11;
-      // only both together, back to back, land near 21 cells' worth of
-      // beats. Content is not decoded bit-by-bit here -- the state
-      // machine's own extra idle-to-shift bounce between the two words
-      // (traced in paula_uart.v's TX_IDLE/TX_SHIFT cases) does not divide
-      // evenly into fixed-length cell slots, so timing, not a rigid
-      // per-cell sample grid, is what this measures.
+      // Continue the SAME window through to the frame's single completion
+      // (TSRE does not rise between the two words -- C3 establishes that
+      // it only sets once every pending word is done, unless MUT_40's
+      // delay lets word 1 finish alone first). Content is not decoded
+      // bit-by-bit here -- the state machine's own extra idle-to-shift
+      // bounce between the two words (traced in paula_uart.v's
+      // TX_IDLE/TX_SHIFT cases) does not divide evenly into fixed-length
+      // cell slots, so timing, not a rigid per-cell sample grid, is what
+      // this measures.
       h.dut->rga_i = (ADDR_SERDATR >> 1) & 0xFF;
-      int last_txd = h.dut->txd;
-      bool started = false;
-      bool completed = false;
-      int beats = 0;
       for (int guard = 0; guard < cb * 4 * 30 + 1000 && !completed; ++guard) {
         h.tick();
         if (!h.dut->clk7_en) continue;
@@ -1940,13 +1954,13 @@ int main(int argc, char** argv) {
       // (the delayed-second-write variant above already makes this red by
       // letting word 1 alone complete, at 10 cells, before word 2 lands)
 #endif
-      checks.expect(beats_to_tbe >= 0 && completed && cells >= 19 && cells <= 23,
+      checks.expect(beats_to_tbe >= 0 && completed && cells == 21,
           "opus:8-serial.c108 opus:8-serial.c109 D4: SERDAT can accept "
           "new data once the transfer to the shift register completes, "
           "and the TBE interrupt signals this fact -- a second word "
           "written as soon as TBE reads 1 is accepted and transmitted "
           "after the first word finishes: the combined frame measures "
-          "close to 21 cells (10 + 11), not 10 or 11 alone [p.258 \"When "
+          "exactly 21 cells (10 + 11), not 10 or 11 alone [p.258 \"When "
           "the transfer to the serial shift register has been completed, "
           "SERDAT can accept new data; the TBE interrupt signals this "
           "fact.\"]");
