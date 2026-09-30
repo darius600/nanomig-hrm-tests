@@ -47,10 +47,10 @@
 // run explicitly below; none is inferred from another's result.
 //
 // Existing coverage: hrm/paula_intcontroller (pre-pipeline, 9 result lines,
-// no claim ids) is proposed for replacement by this package. Read before
-// writing this file. Currently passes its own 9 checks (verified by
-// running it). Coverage comparison is in this package's report to the lead,
-// not repeated here.
+// no claim ids) was replaced by this package and has since been removed
+// (docs/legacy-names.md). It was read before writing this file, and passed
+// its own 9 checks at the time (verified by running it then). The coverage
+// comparison was in this package's report to the lead, not repeated here.
 
 #include <iostream>
 #include <string>
