@@ -145,20 +145,22 @@
 // ecs_cdang1 in that ONE row's own comparator -- a real DUT sweep, already
 // computed above, for a stimulus the pages predict "not admitted" WITHOUT
 // resting on the disputed ECS+CDANG-clear half: chapter 2's own Reading B
-// (undisputed; no appendix contradicts it) puts every one of these five
-// bytes inside the $040-$1FE CDANG-gated range, so at ecs=0 with CDANG
-// clear they are rejected on both readings. (The earlier form of this
+// (undisputed among the appendices -- the header records p.21 against
+// p.26 as its own, separate unresolved floor reading, see the open points)
+// puts every one of these five bytes inside the $040-$07E CDANG-gated
+// range, so at ecs=0 with CDANG clear they are rejected on both readings;
+// p.310 does not apply at OCS. (The earlier form of this
 // mutation instead substituted ecs=1,cdang=0 -- the very half Appendix B
 // and p.310 disagree about -- so its "not admitted" reading rested on the
 // same dispute the record below exists to avoid adjudicating; replaced.)
 // Edited in a private copy, not the committed file; each edit touches only
 // that one row's own `checks.expect(...)` line, not the shared ecs_cdang1
 // variable, so the SWEEP ecs=1 cdang=1 line is unaffected in every case.
-// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: $2D substituted from ocs_cdang0 (rejected there, per chapter 2's undisputed OCS Reading B) in place of ecs_cdang1; 92 passed, 6 failed, exactly this row newly red (SWEEP ecs=1 cdang=1 and the other four rows unaffected); reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2E; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2F; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3C; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
-// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3E; 92 passed, 6 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTCON0L stimulus red: $2D substituted from ocs_cdang0 (rejected there, per chapter 2's undisputed OCS Reading B) in place of ecs_cdang1, run alone: 96 passed, 2 failed, exactly this row newly red (SWEEP ecs=1 cdang=1 and the other four rows unaffected); reverted (97 passed, 1 failed). Holds on NanoMig and on the validator's p.310 copy.
+// MUTATION APPBTILDE-ECS1-BLTSIZV stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2E, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-BLTSIZH stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $2F, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-SPRHDAT stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3C, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
+// MUTATION APPBTILDE-ECS1-DENISEID stimulus red: same technique as APPBTILDE-ECS1-BLTCON0L, $3E, run alone; 96 passed, 2 failed, exactly this row newly red; reverted (97 passed, 1 failed).
 
 #include <cstdint>
 #include <functional>
@@ -557,9 +559,30 @@ int main(int argc, char** argv) {
     const std::set<int> expected_ecs_cdang1 = expected_set(0x00);   // "all of the chip registers"
     const std::set<int>& expected_ecs_cdang0 = expected_cdang1;     // "the same range as OCS with CDANG set"
 
-    expect_set_equals(checks, ecs_cdang0, expected_ecs_cdang0,
+    // $03E, an open point. p.310 prints "the Copper can access the address
+    // range from $DFF03E through $DFF07E, the same range as when the danger
+    // bit is set in the standard chip set" -- and the standard chip set's
+    // (OCS, CDANG=1) range begins at byte $040, per Reading B. The sentence
+    // reads two ways at exactly one address, DA8-1 $1F (byte $03E): the
+    // literal "$DFF03E through" admits it, and "the same range as ... CDANG
+    // set" (which starts at $040) does not. The SWEEP line below grades
+    // neither reading at DA8-1 $1F; both readings, and what this build
+    // measures there, are recorded instead.
+    std::set<int> ecs_cdang0_no03e = ecs_cdang0;
+    std::set<int> expected_ecs_cdang0_no03e = expected_ecs_cdang0;
+    ecs_cdang0_no03e.erase(0x1F);
+    expected_ecs_cdang0_no03e.erase(0x1F);
+    checks.record(
+        "SWEEP-03E byte $03E (DA8-1 $1F), ecs=1 cdang=0: p.310's own sentence reads two ways here -- "
+        "the literal \"$DFF03E through $DFF07E\" admits it, \"the same range as when the danger bit "
+        "is set in the standard chip set\" (Reading B's CDANG=1 threshold, byte $040 up) does not. "
+        "MEASURED: ecs_cdang0.count($1f) reads " +
+        std::string(ecs_cdang0.count(0x1F) ? "accepted" : "rejected") +
+        " on this build. Not graded either way by the SWEEP line below.");
+    expect_set_equals(checks, ecs_cdang0_no03e, expected_ecs_cdang0_no03e,
                        "SWEEP ecs=1 cdang=0 vs Appendix C (HRM_CONFORMANCE; the appendix gives the ECS "
-                       "CDANG=0 range as equal to the OCS CDANG=1 range). Expected to be RED: this is "
+                       "CDANG=0 range as equal to the OCS CDANG=1 range; byte $03E excluded, see the "
+                       "record above). Expected to be RED: this is "
                        "the deviation already tracked as NM-HRM-004 "
                        "[claims: COP2-copcon-ecs.c14, ch2-appc-ecs.c22]");
     expect_set_equals(checks, ecs_cdang1, expected_ecs_cdang1,
@@ -952,7 +975,7 @@ int main(int argc, char** argv) {
     checks.expect(ecs_cdang1.count(0x2D),
         "APPBTILDE-ECS1-BLTCON0L $2D BLTCON0L ecs=1: accepted on reg_address_out with CDANG set "
         "(register identity: Appendix B, p.289, byte $05A; admission: p.310, \"if this bit is "
-        "set, the Copper can access all of the Amiga chip registers\") [claims: B-bltcon0l.copper, "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: "
         "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-BLTCON0L-CDANG-CLEAR $2D BLTCON0L ecs=1, CDANG clear: Appendix B's '~' "
@@ -961,14 +984,15 @@ int main(int argc, char** argv) {
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2D) reads " +
         std::string(ecs_cdang0.count(0x2D) ? "accepted" : "rejected") +
-        ". The '~' legend's own claim (graded: B-copper-tilde.c14) is already "
-        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        ". The '~' legend's own claim (half graded: B-copper-tilde.c14, "
+        "B-bltcon0l.copper) is already graded above, at this same address's "
+        "ecs=0 row -- this ecs=1 "
         "half is a different axis (whether p.310's ECS-specific extension "
         "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x2E),
         "APPBTILDE-ECS1-BLTSIZV $2E BLTSIZV ecs=1: accepted on reg_address_out with CDANG set "
         "(register identity: Appendix B, p.289, byte $05C; admission: p.310, \"if this bit is "
-        "set, the Copper can access all of the Amiga chip registers\") [claims: B-bltsizv.copper, "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: "
         "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-BLTSIZV-CDANG-CLEAR $2E BLTSIZV ecs=1, CDANG clear: Appendix B's '~' "
@@ -977,14 +1001,15 @@ int main(int argc, char** argv) {
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2E) reads " +
         std::string(ecs_cdang0.count(0x2E) ? "accepted" : "rejected") +
-        ". The '~' legend's own claim (graded: B-copper-tilde.c15) is already "
-        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        ". The '~' legend's own claim (half graded: B-copper-tilde.c15, "
+        "B-bltsizv.copper) is already graded above, at this same address's "
+        "ecs=0 row -- this ecs=1 "
         "half is a different axis (whether p.310's ECS-specific extension "
         "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x2F),
         "APPBTILDE-ECS1-BLTSIZH $2F BLTSIZH ecs=1: accepted on reg_address_out with CDANG set "
         "(register identity: Appendix B, p.289, byte $05E; admission: p.310, \"if this bit is "
-        "set, the Copper can access all of the Amiga chip registers\") [claims: B-bltsizh.copper, "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: "
         "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-BLTSIZH-CDANG-CLEAR $2F BLTSIZH ecs=1, CDANG clear: Appendix B's '~' "
@@ -993,14 +1018,15 @@ int main(int argc, char** argv) {
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($2F) reads " +
         std::string(ecs_cdang0.count(0x2F) ? "accepted" : "rejected") +
-        ". The '~' legend's own claim (graded: B-copper-tilde.c16) is already "
-        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        ". The '~' legend's own claim (half graded: B-copper-tilde.c16, "
+        "B-bltsizh.copper) is already graded above, at this same address's "
+        "ecs=0 row -- this ecs=1 "
         "half is a different axis (whether p.310's ECS-specific extension "
         "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x3C),
         "APPBTILDE-ECS1-SPRHDAT $3C SPRHDAT ecs=1: accepted on reg_address_out with CDANG set "
         "(register identity: Appendix B, p.290, byte $078; admission: p.310, \"if this bit is "
-        "set, the Copper can access all of the Amiga chip registers\") [claims: B-sprhdat.copper, "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: "
         "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-SPRHDAT-CDANG-CLEAR $3C SPRHDAT ecs=1, CDANG clear: Appendix B's '~' "
@@ -1009,14 +1035,15 @@ int main(int argc, char** argv) {
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($3C) reads " +
         std::string(ecs_cdang0.count(0x3C) ? "accepted" : "rejected") +
-        ". The '~' legend's own claim (graded: B-copper-tilde.c24) is already "
-        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        ". The '~' legend's own claim (half graded: B-copper-tilde.c24, "
+        "B-sprhdat.copper) is already graded above, at this same address's "
+        "ecs=0 row -- this ecs=1 "
         "half is a different axis (whether p.310's ECS-specific extension "
         "changes the reading) the legend text itself does not address.");
     checks.expect(ecs_cdang1.count(0x3E),
         "APPBTILDE-ECS1-DENISEID $3E DENISEID ecs=1: accepted on reg_address_out with CDANG set "
         "(register identity: Appendix B, p.290, byte $07C; admission: p.310, \"if this bit is "
-        "set, the Copper can access all of the Amiga chip registers\") [claims: B-deniseid.copper, "
+        "set, the Copper can access all of the Amiga chip registers\") [claims: "
         "COP2-copcon-ecs.c11, ch2-appc-ecs.c20]");
     checks.record(
         "APPBTILDE-ECS1-DENISEID-CDANG-CLEAR $3E DENISEID ecs=1, CDANG clear: Appendix B's '~' "
@@ -1025,8 +1052,9 @@ int main(int argc, char** argv) {
         "admitted range (\"If this bit is clear, the Copper can access the address range from "
         "$DFF03E through $DFF07E.\"). MEASURED: ecs_cdang0.count($3E) reads " +
         std::string(ecs_cdang0.count(0x3E) ? "accepted" : "rejected") +
-        ". The '~' legend's own claim (graded: B-copper-tilde.c25) is already "
-        "wholly graded above, at this same address's ecs=0 row -- this ecs=1 "
+        ". The '~' legend's own claim (half graded: B-copper-tilde.c25, "
+        "B-deniseid.copper) is already graded above, at this same address's "
+        "ecs=0 row -- this ecs=1 "
         "half is a different axis (whether p.310's ECS-specific extension "
         "changes the reading) the legend text itself does not address.");
 
