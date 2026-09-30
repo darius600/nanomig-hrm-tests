@@ -42,9 +42,9 @@
 //   `address decodes && clk7_en && !rdram` (denise_colortable.v:31), and
 //   nothing about it asks whether the bus is writing -- so holding a colour
 //   address while the readback bit is low stores whatever data_in happens to
-//   carry. This package's first version read the closed case first and
-//   overwrote the colour with zero before the open case could see it, which
-//   read as a readback path that never opened. Every assertion here reads the
+//   carry. Reading the closed case first would
+//   overwrite the colour with zero before the open case could see it, which
+//   would read as a readback path that never opened. Every assertion here reads the
 //   open case first.
 //
 // HOW A COLOUR IS READ BACK. The table is written when the address decodes and
