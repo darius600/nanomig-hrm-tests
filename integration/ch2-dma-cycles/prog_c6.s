@@ -1,16 +1,19 @@
 ; prog_c6.s -- configuration C6 (SPECIFICATION.md 2.9): C1a + C2a + C3 +
-; C4-4 together. List L5 (poked by the C++ test); DMACON bits
-; AUD0EN-AUD3EN | DSKEN | SPREN | BPLEN.
+; C4-4 together. List L5, built by S1; DMACON bits AUD0EN-AUD3EN | DSKEN |
+; SPREN | BPLEN.
 
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0,-1
+        BUILD_L5B COP_SECOND
+        bsr     build_structs_c3
         ; ---- C1a: audio, period 124 ----
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
         move.w  #(CH_AUD0)&$FFFF,AUD0LCL(a0)
@@ -75,3 +78,10 @@ start:
         S5_ARM_INT
         S6_WAIT_DISK $DF40
         S7_FINISH_DISK
+        VBLANK_HANDLER
+
+c6_spr_tab:     dc.l    CH_SPR0,CH_SPR0+$0400,CH_SPR0+$0800,CH_SPR0+$0C00
+                dc.l    CH_SPR0+$1000,CH_SPR0+$1400,CH_SPR0+$1800,CH_SPR0+$1C00
+c6_bpl_tab:     dc.l    CH_BPL1,CH_BPL2,CH_BPL3,CH_BPL4,0,0
+
+        include "ch2build_code.i"

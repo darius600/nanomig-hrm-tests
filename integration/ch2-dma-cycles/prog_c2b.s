@@ -5,12 +5,13 @@
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_END COP_MAIN
         move.w  #$9100,ADKCON(a0)
         move.w  #(CH_DISK)>>16,DSKPTH(a0)
         move.w  #(CH_DISK)&$FFFF,DSKPTL(a0)
@@ -19,3 +20,6 @@ start:
         S5_ARM_INT
         S6_WAIT_DISK $9F40                     ; DMAEN|8000, no WRITE bit (read)
         S7_FINISH_DISK
+        VBLANK_HANDLER
+
+        include "ch2build_code.i"

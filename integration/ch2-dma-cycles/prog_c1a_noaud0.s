@@ -4,12 +4,13 @@
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_END COP_MAIN
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
         move.w  #(CH_AUD0)&$FFFF,AUD0LCL(a0)
         move.w  #16,AUD0LEN(a0)
@@ -35,3 +36,6 @@ start:
         S5_ARM_INT
         S6_WAIT
         S7_FINISH
+        VBLANK_HANDLER
+
+        include "ch2build_code.i"

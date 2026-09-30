@@ -6,12 +6,34 @@
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        ; L_S1 at COP_MAIN (2.8): V_spr[Z,null x7]; V_bpl(1)[CH_BPL1];
+        ; COLOR17/18/19; END.
+        move.l  #COP_MAIN,a1
+        lea     s1_spr_tab,a5
+        bsr     build_Vspr8
+        lea     s1_bpl_tab,a6
+        moveq   #1,d4
+        bsr     build_Vbpln
+        move.w  #COLOR17,(a1)+
+        move.w  #$0F00,(a1)+
+        move.w  #COLOR18,(a1)+
+        move.w  #$00F0,(a1)+
+        move.w  #COLOR19,(a1)+
+        move.w  #$000F,(a1)+
+        move.w  #$FFFF,(a1)+
+        move.w  #$FFFE,(a1)+
+        ; structure Z (2.9) at CH_SPR0.
+        CPY_TABLE CH_SPR0,structz_tbl,structz_tbl_end
+        ; null block at CH_SPR_NULL.
+        move.l  #CH_SPR_NULL,a1
+        move.w  #$0000,(a1)+
+        move.w  #$0000,(a1)+
         move.w  #0,COLOR00(a0)
         move.w  #$1200,BPLCON0(a0)
         move.w  #0,BPL1MOD(a0)
@@ -42,3 +64,35 @@ start:
         S5_ARM_INT
         S6_WAIT
         S7_FINISH
+        VBLANK_HANDLER
+
+s1_spr_tab:     dc.l    CH_SPR0,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
+                dc.l    CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL,CH_SPR_NULL
+s1_bpl_tab:     dc.l    CH_BPL1
+
+; structure Z (SPECIFICATION.md 2.9): four uses, U1 height 8, U2 height 16,
+; U3 height 4, U4 height 12; each use's first data line is $FFFF,$0000.
+structz_tbl:    dc.w    $4050,$4800
+                dc.w    $FFFF,$0000
+                rept    7
+                dc.w    $F0F0,$FF00
+                endr
+                dc.w    $5064,$6000
+                dc.w    $FFFF,$0000
+                rept    15
+                dc.w    $0F0F,$00FF
+                endr
+                dc.w    $6848,$6C00
+                dc.w    $FFFF,$0000
+                rept    3
+                dc.w    $CCCC,$F0F0
+                endr
+                dc.w    $7878,$8400
+                dc.w    $FFFF,$0000
+                rept    11
+                dc.w    $AAAA,$CCCC
+                endr
+                dc.w    $0000,$0000
+structz_tbl_end:
+
+        include "ch2build_code.i"

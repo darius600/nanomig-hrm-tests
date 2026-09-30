@@ -1,16 +1,17 @@
 ; prog_c1a.s -- configuration C1a (SPECIFICATION.md 2.9): four audio
-; channels, period 124 (p.140). List L0 (END only, poked by the C++ test);
-; DMACON bits AUD0EN-AUD3EN.
+; channels, period 124 (p.140). List L0 (END only, built by S1); DMACON
+; bits AUD0EN-AUD3EN.
 
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_END COP_MAIN
         ; S2 -- p.137 steps 3-6, per channel, period 124 (p.140)
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
         move.w  #(CH_AUD0)&$FFFF,AUD0LCL(a0)
@@ -37,3 +38,6 @@ start:
         S5_ARM_INT
         S6_WAIT
         S7_FINISH
+        VBLANK_HANDLER
+
+        include "ch2build_code.i"

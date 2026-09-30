@@ -3,12 +3,13 @@
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_L4 COP_MAIN,c4_bpl_tab,3
         move.w  #$3200,BPLCON0(a0)     ; (3<<12)|$0200
         move.w  #0,BPLCON1(a0)
         move.w  #0,BPL1MOD(a0)
@@ -28,3 +29,8 @@ start:
         S5_ARM_INT
         S6_WAIT
         S7_FINISH
+        VBLANK_HANDLER
+
+c4_bpl_tab:     dc.l    CH_BPL1,CH_BPL2,CH_BPL3
+
+        include "ch2build_code.i"

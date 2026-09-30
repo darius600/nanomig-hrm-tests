@@ -1,16 +1,16 @@
 ; prog_c4_1.s -- configuration C4-1 (SPECIFICATION.md 2.9): one low-res
-; bitplane. List L4(1) (V_bpl(1); END, poked by the C++ test); DMACON bit
-; BPLEN.
+; bitplane. List L4(1) (V_bpl(1); END, built by S1); DMACON bit BPLEN.
 
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_L4 COP_MAIN,c4_bpl_tab,1
         move.w  #$1200,BPLCON0(a0)     ; (1<<12)|$0200
         move.w  #0,BPLCON1(a0)
         move.w  #0,BPL1MOD(a0)
@@ -26,3 +26,8 @@ start:
         S5_ARM_INT
         S6_WAIT
         S7_FINISH
+        VBLANK_HANDLER
+
+c4_bpl_tab:     dc.l    CH_BPL1
+
+        include "ch2build_code.i"

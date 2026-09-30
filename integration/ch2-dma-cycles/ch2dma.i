@@ -2,15 +2,12 @@
 ;
 ; Extends nanomig.i (which this file does not duplicate) with the custom
 ; registers nanomig.i does not define, from the Hardware Reference Manual's
-; Appendix B, Register Summary Address Order, and with the fixed physical
-; chip-address layout this package's C++ test preloads before boot() and
-; every program's S2/S3 register writes point at. The addresses below are
-; below $080000 (Agnus's own chip address decode, gary.v: sel_chip[0] on
-; the dbr/DMA side has no ovl term, so DMA reaches this range unconditionally;
-; a CPU-driven write to the same range is blocked while ovl==1, gary.v:159,
-; which is why every DMA-target block is prepared by the C++ harness's
-; poke_word/poke_long before boot(), never by a CPU MOVE in these programs).
-; They must match the constants of the same name in test_ch2_dma_cycles.cpp.
+; Appendix B, Register Summary Address Order, and with the fixed chip-
+; address layout every program's own S1 step builds (ch2build_macros.i/
+; ch2build_code.i) and every program's S2/S3 register writes point at. The
+; addresses below are below $080000, reachable to a CPU write only once
+; the boot overlay is released (ch2_skel.i's CLEAR_OVL, run by S0). They
+; must match the constants of the same name in test_ch2_dma_cycles.cpp.
 
 ; ---- custom registers not already in nanomig.i -----------------------
 

@@ -1,16 +1,22 @@
 ; prog_c6_stopself.s -- T2's own contrast (SPECIFICATION.md P7.6): C6 with
 ; `STOP #$2000` replaced by a loop that branches to itself, so the CPU
-; fetches in every line.
+; fetches in every line. The disk start sequence (p.247 steps 2-4) still
+; runs, at FRAME_CTR==2, inside the self-branch loop (S6_LOOP_DISK):
+; without it disk DMA never starts, so T3 and K2a would fail for a reason
+; other than the CPU's own bus contention this contrast targets.
 
         include "nanomig.i"
         include "ch2dma.i"
         include "ch2_skel.i"
+        include "ch2build_macros.i"
 
         org     PROGRAM_ORG
-        PROG_HEADER
 
 start:
         S0_QUIESCE
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0,-1
+        BUILD_L5B COP_SECOND
+        bsr     build_structs_c3
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
         move.w  #(CH_AUD0)&$FFFF,AUD0LCL(a0)
         move.w  #16,AUD0LEN(a0)
@@ -69,12 +75,12 @@ start:
         S3_COPPER COP_MAIN
         S4_DMAEN  AUD0123EN|DSKEN|SPREN|BPLEN
         S5_ARM_INT
-        move.w  #$2000,sr      ; unmask interrupts (STOP #$2000 does this every
-                                ; iteration of the normal S6_WAIT loop; this
-                                ; replacement never stops, so it must do it once
-                                ; itself or VERTB never fires and FRAME_CTR never
-                                ; reaches 7)
-selfloop:
-        cmp.w   #7,FRAME_CTR
-        bne.s   selfloop
-        S7_FINISH
+        S6_LOOP_DISK $DF40
+        S7_FINISH_DISK
+        VBLANK_HANDLER
+
+c6_spr_tab:     dc.l    CH_SPR0,CH_SPR0+$0400,CH_SPR0+$0800,CH_SPR0+$0C00
+                dc.l    CH_SPR0+$1000,CH_SPR0+$1400,CH_SPR0+$1800,CH_SPR0+$1C00
+c6_bpl_tab:     dc.l    CH_BPL1,CH_BPL2,CH_BPL3,CH_BPL4,0,0
+
+        include "ch2build_code.i"

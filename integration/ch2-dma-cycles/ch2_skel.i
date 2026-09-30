@@ -1,45 +1,35 @@
 ; ch2_skel.i -- the S0-S7 program skeleton of SPECIFICATION.md section 2.6,
 ; factored into macros so every configuration's own prog_*.s only supplies
-; what differs: S1/S2's register writes and S4's DMACON bits. The Copper
-; list and every audio/disk/sprite/bitplane block's CONTENT is preloaded
-; by the C++ test through poke_word/poke_long before boot() -- gary.v's
-; DMA-side address decode (the `dbr` branch) carries no ovl term, so Agnus
-; reaches chip block 0 ($000000-$07FFFF) regardless of the overlay, but a
-; CPU write to the same range is blocked while ovl==1 (gary.v:159), and
-; this package never clears the overlay (CIA-A is not touched anywhere in
-; this package). A program only ever writes a block's ADDRESS into a
-; pointer register, which is an ordinary custom-register write, unaffected
-; by ovl either way.
+; what differs: S1's own chip-memory build calls (ch2build.i), S2's
+; register writes, and S4's DMACON bits. Every block S1 writes sits below
+; logical $080000 (ch2dma.i) and is reachable to a CPU write only once the
+; boot overlay is released, which S0 now does.
 
-; PROG_HEADER must be the very first thing after `org PROGRAM_ORG`: a
-; fixed-size `bra.s` ahead of the level-3 (VERTB) autovector handler, so
-; the handler always starts at PROGRAM_ORG+2 -- the address
-; test_ch2_dma_cycles.cpp's kHandlerAddr hardcodes and pokes into the
-; level-3 autovector slot ($6C) in the kickstart shadow
-; (nanomig_harness.h's kKickShadowWordBase) before boot(), exactly where
-; the harness itself writes the two reset vectors. The handler clears
-; VERTB and counts the field; it does not touch a0 permanently across STOP
-; (see S6_WAIT/S6_WAIT_DISK: the wait loop's own a0 is reloaded with
-; CUSTOM right after every stop, not assumed to survive it).
-; A local (dot-prefixed) label is scoped to the nearest PRECEDING global
-; label in vasm; since this macro's own reference to its skip-target
-; comes before any global label at all, and its definition comes after
-; the global label `vblank_handler:`, a local label would name two
-; different symbols and fail to resolve -- so the skip-target is a plain
-; global label instead (ph_header_main\@, unique per invocation though
-; this macro is only ever invoked once per program).
-PROG_HEADER     macro
-                bra.s   ph_header_main\@
-vblank_handler:
-                addq.w  #1,FRAME_CTR
-                lea     CUSTOM,a0
-                move.w  #INT_VERTB,INTREQ(a0)
-                rte
-ph_header_main\@:
+; CIA-A: PRA bit 0 is OVL (p.223: "The OVL bit in one of the 8520 Chips
+; disables the overlay"; Appendix F p.339: pra at $BFE001, ddra at $BFE201,
+; "1-output (set to 0x03)"). Every block this package writes below $080000
+; is unreachable to a CPU write while the overlay covers it.
+CIAAPRA         equ     $BFE001
+CIAADDRA        equ     $BFE201
+
+CLEAR_OVL       macro
+                move.b  #$03,CIAADDRA
+                move.b  #0,CIAAPRA
                 endm
 
-; S0 -- quiesce. Leaves a0 = CUSTOM for the caller's own S1/S2 code.
+; Writes the level-3 (VERTB) autovector, address $6C, by an ordinary CPU
+; write -- only reachable once CLEAR_OVL has run. vblank_handler is a
+; forward reference to the VBLANK_HANDLER macro's own label (every program
+; invokes that macro once, after its own S7 finish).
+INSTALL_VECT    macro
+                move.l  #vblank_handler,$6C.w
+                endm
+
+; S0 -- quiesce, and release the boot overlay: every block S1 writes (and
+; the level-3 vector S0 installs here) sits below $080000. Leaves a0 =
+; CUSTOM for the caller's own S1/S2 code.
 S0_QUIESCE      macro
+                CLEAR_OVL
                 lea     CUSTOM,a0
                 move.w  #$7FFF,DMACON(a0)
                 move.w  #$7FFF,INTENA(a0)
@@ -47,15 +37,16 @@ S0_QUIESCE      macro
                 move.w  #$7FFF,ADKCON(a0)
                 clr.w   FRAME_CTR
                 clr.b   DISK_FLAG
+                INSTALL_VECT
                 endm
 
-; S3 -- install the Copper list. \1 = list byte address. Caller must
-; reload a0 = CUSTOM first (S1/S2 code may have used a0 for something
-; else; every macro here re-states that requirement rather than assuming
-; it).
+; S3 -- install the Copper list. \1 = list byte address, written as one
+; long word (p.25: "you write the 18-bit address by moving one long word
+; to the register whose name ends in H" -- COP1LCH/COP1LCL are adjacent).
+; Caller must reload a0 = CUSTOM first (S1/S2 code may have used a0 for
+; something else).
 S3_COPPER       macro
-                move.w  #(\1)>>16,COP1LCH(a0)
-                move.w  #(\1)&$FFFF,COP1LCL(a0)
+                move.l  #(\1),COP1LCH(a0)
                 move.w  #0,COPJMP1(a0)
                 endm
 
@@ -66,7 +57,7 @@ S4_DMAEN        macro
                 endm
 
 ; S5 -- arm the VERTB interrupt. a0 = CUSTOM. The vector itself is written
-; by the C++ test before boot(), not by this program (see PROG_HEADER).
+; by S0_QUIESCE (INSTALL_VECT), once the overlay is clear.
 S5_ARM_INT      macro
                 move.w  #INT_SET|INT_INTEN|INT_VERTB,INTENA(a0)
                 endm
@@ -98,17 +89,62 @@ S6_WAIT_DISK    macro
                 bne.s   .w6\@
                 endm
 
-; S7 -- finish, no disk. a0 = CUSTOM (S6 leaves it so).
+; S6 -- as S6_WAIT_DISK, but the CPU never stops: it branches to itself
+; instead (T2's own contrast, SPECIFICATION.md P7.6). \1 = the run's
+; DSKLEN value. Interrupts must be unmasked explicitly once, since STOP
+; #$2000's own unmasking never runs here.
+S6_LOOP_DISK    macro
+                lea     CUSTOM,a0
+                move.w  #$2000,sr
+.w6\@           cmp.w   #2,FRAME_CTR
+                bne.s   .w6skip\@
+                tst.b   DISK_FLAG
+                bne.s   .w6skip\@
+                move.w  #$4000,DSKLEN(a0)
+                move.w  #\1,DSKLEN(a0)
+                move.w  #\1,DSKLEN(a0)
+                move.w  DSKBYTR(a0),d0
+                move.w  d0,RES_DSKBYTR
+                move.b  #1,DISK_FLAG
+.w6skip\@       cmp.w   #7,FRAME_CTR
+                bne.s   .w6\@
+                endm
+
+; S6 -- C1's own contrast (SPECIFICATION.md 2.6): the wait loop's exit
+; condition is removed, so FRAME_CTR never gates an exit and DONE is never
+; reached within the run's cycle budget -- the completion word is missing.
+S6_WAIT_NOEXIT  macro
+                lea     CUSTOM,a0
+.w6\@           stop    #$2000
+                bra.s   .w6\@
+                endm
+
+; S7 -- finish, no disk. DMACON first, then INTENA (2.6's own order). a0 =
+; CUSTOM (S6 leaves it so).
 S7_FINISH       macro
                 move.w  #$7FFF,DMACON(a0)
                 move.w  #$7FFF,INTENA(a0)
                 DONE
                 endm
 
-; S7 -- finish, disk runs (p.247 step 5: DSKLEN<-$4000 first).
+; S7 -- finish, disk runs. DMACON first, then DSKLEN <- $4000 (p.247 step
+; 5), then INTENA -- SPECIFICATION.md 2.6's own order.
 S7_FINISH_DISK  macro
-                move.w  #$4000,DSKLEN(a0)
                 move.w  #$7FFF,DMACON(a0)
+                move.w  #$4000,DSKLEN(a0)
                 move.w  #$7FFF,INTENA(a0)
                 DONE
+                endm
+
+; The level-3 handler. Every program invokes this macro exactly once, after
+; its own S7 finish (DONE never falls through, so the handler's own code
+; never executes as mainline instructions -- see nanomig.i's DONE). It
+; clobbers a0 unconditionally; every S6 loop above reloads a0 = CUSTOM
+; right after every stop/branch, never assuming it survives an interrupt.
+VBLANK_HANDLER  macro
+vblank_handler:
+                addq.w  #1,FRAME_CTR
+                lea     CUSTOM,a0
+                move.w  #INT_VERTB,INTREQ(a0)
+                rte
                 endm
