@@ -12,8 +12,8 @@ SRC_DIR = $(NANOMIG)/src/minimig-aga
 # all -- minimig.v takes cpu_address/cpu_data/... and clk/clk7_en/c1/c3/cck/
 # eclk as plain input ports, driven by the test harness instead). All other
 # minimig-aga sources are pulled in via wildcard so nothing is missed. Copied
-# from hrm/ch7-overlay-source/Makefile per the build brief; ENABLE_CART is
-# deliberately NOT defined (that is chapter 7's subject, not this package's).
+# from hrm/ch7-overlay-source/Makefile; ENABLE_CART is deliberately NOT
+# defined (that is chapter 7's subject, not this package's).
 EXCLUDE_SOURCES = $(SRC_DIR)/ide.v $(SRC_DIR)/gayle.v $(SRC_DIR)/cpu_wrapper.v $(SRC_DIR)/cpu_cache_new.v $(SRC_DIR)/amiga_clk.v
 VERILOG_SOURCES = $(filter-out $(EXCLUDE_SOURCES),$(wildcard $(SRC_DIR)/*.v))
 
