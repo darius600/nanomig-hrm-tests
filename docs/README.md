@@ -12,7 +12,6 @@ three rows below answer that.
 | [`findings.md`](findings.md) | **The register.** The register tables of all **75** open findings — key, subject, status, package, verdict of the four. 70 are against the Hardware Reference Manual; the 5 against the AA specification sit in a section of their own, so neither count has to be read twice. |
 | [`findings/`](findings/) | One page per finding, readable without anything outside this repository: what the printed page says, what NanoMig does and how it was measured, what the other implementations do, and what is asked of you. [`findings/README.md`](findings/README.md) says how a page is built and why NanoMig's two Minimig ancestors are listed but not counted as witnesses. Withdrawn findings are kept apart, with their own list, in [`findings/withdrawn/`](findings/withdrawn/). |
 | [`rtl-review.md`](rtl-review.md) | Every finding that asks an Amiga specialist to review the RTL, grouped by the module it is about, so a reader who knows one part of the chip set can start with their own. |
-| [`adding-a-test.md`](adding-a-test.md) | **Binding for contributors**: what a finished package has and what a reviewer checks. [`example-package/`](example-package/) is the shortest package that is still a real one. |
 
 ## Look things up
 
@@ -49,7 +48,7 @@ None of them is needed before reading a finding or running the suite.
 | `docs/findings/withdrawn/` | Withdrawn findings and their own list. Nothing in it asks for action. |
 | `hrm/<package>/`, `aa/<package>/`, `integration/<package>/` | A package's own `SPECIFICATION.md` or `README.md`: read it for that package only. |
 | [`aa/README.md`](../aa/README.md), [`integration/README.md`](../integration/README.md) | What those two trees hold and how to run one of their packages. |
-| [`example-package/`](example-package/) | The smallest real package, for [`adding-a-test.md`](adding-a-test.md). |
+| [`example-package/`](example-package/) | The smallest real package: the shape of one in about a hundred lines. |
 
 ## Elsewhere
 

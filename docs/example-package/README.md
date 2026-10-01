@@ -8,9 +8,11 @@ make test      # PASS: DDRA is 0x00 after reset, so port A is all inputs
 make mutate    # FAIL: the same line -- proving the assertion can go red
 ```
 
-Why it exists: [`adding-a-test.md`](../adding-a-test.md) used to send a first-time
-reader to a worked example some two thousand lines long. That file is still the reference for
-every rule; this one is the shape, in about a hundred lines.
+Why it exists: the complete worked example,
+[`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking), runs to
+some two thousand lines; this one is the shape, in about a hundred lines. The rules every
+package follows are the pipeline's build rules,
+[`docs/playbook/build.md`](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/build.md).
 
 What to look at, in order:
 

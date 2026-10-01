@@ -112,7 +112,6 @@ from such a run. `check_published_counts.py --runlog`, in the separate
 | pick one finding to settle in an evening | [the shortlist](docs/findings.md#if-you-have-one-evening) in the register |
 | see what may be wrong in the RTL, module by module | [`docs/rtl-review.md`](docs/rtl-review.md) |
 | look up a finding | [`docs/findings.md`](docs/findings.md), the register, then its page in [`docs/findings/`](docs/findings/) |
-| add a test | [`docs/adding-a-test.md`](docs/adding-a-test.md) |
 | find anything else | [`docs/README.md`](docs/README.md), the map |
 | see how the tests are made | the [`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline) repository |
 
