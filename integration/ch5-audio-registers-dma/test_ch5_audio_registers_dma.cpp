@@ -60,15 +60,22 @@
 // MUTATION P6-G3 stimulus red one extra CPU write into S0 (the block under test), past its own content, via NMH_MUTATE=G3
 // MUTATION P6-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
 // MUTATION P6-G5 stimulus red BPLEN also set before the window, via NMH_MUTATE=G5
-// MUTATION P7 stimulus green BLTPRI cleared (share mode) -- the >=1-access branch of the same comparator, live and proven, via NMH_MUTATE=C1
-// MUTATION P7-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P7-G2 stimulus red BLTEN left out of the enabling write, via NMH_MUTATE=G2
-// MUTATION P7-G3 stimulus red the blit shrunk to one word (height=1,width=1), via NMH_MUTATE=G3
-// MUTATION P7-G(CPU still wanted the bus) stimulus red the loop runs once then executes STOP, via NMH_MUTATE=GSTOP
-// MUTATION P8 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=C1
+// MUTATION P7-ON stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator, via NMH_MUTATE=C1
+// MUTATION P7 stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P7-ON stimulus green the CPU executes STOP straight after the BLTSIZE write: the unchanged zero-access comparator on an input proven to make no CPU access, via NMH_MUTATE=LIVE
+// MUTATION P7-OFF stimulus red BLTPRI set: the main program through the unchanged at-least-one comparator, via NMH_MUTATE=INV
+// MUTATION P7 stimulus red BLTPRI set: the main program through the unchanged at-least-one comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P7-OFF stimulus red the CPU executes STOP straight after the BLTSIZE write: that program through the unchanged at-least-one comparator, via NMH_MUTATE=LIVE
+// MUTATION P7 stimulus red the STOP-straight-after-BLTSIZE program through both unchanged comparators of the aggregate line, via NMH_MUTATE=LIVE
+// MUTATION P7-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
+// MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set, via NMH_MUTATE=G2
+// MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3
+// MUTATION P7-G(CPU still wanted the bus) stimulus red the CPU executes STOP straight after the BLTSIZE write, so no CPU write follows T_last, via NMH_MUTATE=GSTOP
+// MUTATION P8 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts: that program through the unchanged comparator at the main run's graded reads, via NMH_MUTATE=C1
 // MUTATION P8-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
 // MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI
-// MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts (P8's own C1 contrast), via NMH_MUTATE=C1
+// MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=C1
+// MUTATION P8-G4 stimulus red a delay between the BLTSIZE write and the first poll read, so the blit has ended before any read, via NMH_MUTATE=G4
 // MUTATION P9-MAIN stimulus red BLTCON0 exchanged between blits 1 and 2 and the source exchanged between blits 4 and 5: the exchanged program through the unchanged main table, via NMH_MUTATE=C1
 // MUTATION P9 stimulus red the exchanged program through the unchanged main table of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P9-SWAP stimulus red the main program through the unchanged exchanged table, via NMH_MUTATE=INV
@@ -899,6 +906,13 @@ namespace p7 {
 
 const char kClaims[] = "p.278 5-appA-p278.c15, A-dmacon.b10";
 
+constexpr uint16_t kC = 0x0091, kEnd = 0x00FF;
+
+// The blitter's A, B and C source blocks (ch5.i SRCA, SRCB, SRCC). The CPU
+// never reads there, so a read in the range is a blitter fetch.
+constexpr uint32_t kSrcLo = 0x0A0000;
+constexpr uint32_t kSrcHi = 0x0A6000;
+
 // "CPU accesses" per section 2.4: the program image (instruction fetches)
 // and G (the loop's own counter writes). R/MK/stack are not touched
 // during the interval this proposition measures.
@@ -908,67 +922,126 @@ size_t cpu_accesses_in(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint
     return n;
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    bool bltpri_on = (mv != "C1");
-    std::string bin = dir + "/prog_p7.bin";
-    if (mv == "C1") bin = dir + "/prog_p7_c1.bin";
-    Capture cap = run_capture(bin, run_budget);
+// The blit's interval and the CPU's accesses inside it. T_first and T_last
+// are the times of the first and last blitter source read.
+struct Blit {
+    bool ran = false;          // at least 2 source reads, so T_first < T_last
+    uint64_t t_first = 0, t_last = 0;
+    size_t cpu_n = 0;          // CPU accesses in (T_first, T_last)
+};
 
-    auto q_writes = writes_in_range(cap.log, kQ, kQ + 0x2000, 0, UINT64_MAX);
-    std::vector<uint64_t> q_write_cycles;
+Blit measure(const Capture& cap) {
+    Blit b;
+    uint32_t lo = word_addr(kSrcLo), hi = word_addr(kSrcHi);
+    size_t n = 0;
+    uint64_t tf = UINT64_MAX, tl = 0;
     for (const auto& a : cap.log)
-        if (a.is_write && a.word_addr >= word_addr(kQ) && a.word_addr < word_addr(kQ + 0x2000)) q_write_cycles.push_back(a.cycle);
-
-    bool ok = cap.loaded && q_write_cycles.size() >= 2;
-    if (ok) {
-        uint64_t t_first = q_write_cycles.front(), t_last = q_write_cycles.back();
-        for (auto c : q_write_cycles) { t_first = std::min(t_first, c); t_last = std::max(t_last, c); }
-        size_t cpu_n = (t_last > t_first + 1) ? cpu_accesses_in(cap.log, t_first + 1, t_last - 1) : 0;
-        if (bltpri_on) ok = (cpu_n == 0);
-        else ok = (cpu_n >= 1);
-        checks.note("P7: T_first=" + num((long long)t_first) + " T_last=" + num((long long)t_last) +
-                    " CPU accesses in between=" + num((long long)cpu_n));
+        if (!a.is_write && a.word_addr >= lo && a.word_addr < hi) {
+            ++n;
+            tf = std::min(tf, a.cycle);
+            tl = std::max(tl, a.cycle);
+        }
+    b.ran = cap.loaded && n >= 2;
+    if (b.ran) {
+        b.t_first = tf;
+        b.t_last = tl;
+        b.cpu_n = (tl > tf + 1) ? cpu_accesses_in(cap.log, tf + 1, tl - 1) : 0;
     }
-    checks.expect(ok, std::string("P7 [") + kClaims +
+    return b;
+}
+
+std::string describe(const char* name, const Blit& b) {
+    if (!b.ran) return std::string("P7 ") + name + ": no blit";
+    return std::string("P7 ") + name + ": T_first=" + num((long long)b.t_first) + " T_last=" +
+           num((long long)b.t_last) + " CPU accesses in between=" + num((long long)b.cpu_n);
+}
+
+// The CPU still wanted the bus when the blit ended: at least one CPU write
+// into G falls after T_last, with fewer than 2048 recorded before it.
+bool cpu_still_wanted(const Capture& cap) {
+    Blit b = measure(cap);
+    if (!b.ran) return false;
+    size_t after = 0, before = 0;
+    for (const auto& a : cap.log)
+        if (a.is_write && a.word_addr >= word_addr(kLog) && a.word_addr < word_addr(kLog + 0x2000)) {
+            if (a.cycle > b.t_last) ++after; else ++before;
+        }
+    return after >= 1 && before < 2048;
+}
+
+void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
+    Capture cap_main = run_capture(dir + "/prog_p7.bin", run_budget);
+    Capture cap_c1 = run_capture(dir + "/prog_p7_c1.bin", run_budget);
+    Capture cap_live;
+    if (mv == "LIVE") cap_live = run_capture(dir + "/prog_p7_live.bin", run_budget);
+
+    Blit m_main = measure(cap_main);
+    Blit m_c1 = measure(cap_c1);
+    checks.note(describe("BLTPRI set", m_main));
+    checks.note(describe("BLTPRI clear", m_c1));
+
+    // The graded halves. C1 puts the BLTPRI-clear program through the
+    // on-comparator; LIVE puts a program whose CPU stops straight after
+    // BLTSIZE through both comparators; INV puts the main program through the
+    // off-comparator. Neither comparator changes.
+    const Capture& in_on = (mv == "C1") ? cap_c1 : (mv == "LIVE") ? cap_live : cap_main;
+    const Capture& in_off = (mv == "INV") ? cap_main : (mv == "LIVE") ? cap_live : cap_c1;
+    Blit b_on = measure(in_on);
+    Blit b_off = measure(in_off);
+    bool on_ok = b_on.ran && b_on.cpu_n == 0;
+    bool off_ok = b_off.ran && b_off.cpu_n >= 1;
+
+    checks.expect(on_ok,
+        "P7-ON [p.278, p.222, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and last "
+        "blitter source read of a blit that uses A, B and C and not D (USE code E, p.188: A0 B0 C0 A1 B1 C1 A2 B2 C2)");
+    checks.expect(off_ok,
+        "P7-OFF [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit");
+    checks.expect(on_ok && off_ok,
+        std::string("P7 [") + kClaims +
         "]: with BLTPRI set, zero CPU accesses in (T_first,T_last); with BLTPRI clear, at least one (p.198)");
 
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p7_g1.bin", run_budget) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value(), "P7-G1: the program finished");
-
-    Capture cap_g2 = (mv == "G2") ? run_capture(dir + "/prog_p7_g2.bin", run_budget) : cap;
-    auto r_g2 = stored_at(cap_g2.log, kR, 1);
-    bool g2_ok = cap_g2.loaded && r_g2.size() == 1;
-    if (g2_ok) {
-        uint16_t v = r_g2[0];
-        bool want10 = bltpri_on;
-        g2_ok = (v & 0x0200) && (bool(v & 0x0040) == true) && (bool(v & 0x0400) == want10) &&
-                ((v & 0x01FF & ~0x0040) == 0);
+    // ---- preconditions, each over the run with BLTPRI set and the run with it clear ----
+    auto pick = [&](const char* sel, const char* file, Capture& store) -> const Capture& {
+        if (mv == sel) { store = run_capture(dir + "/" + file, run_budget); return store; }
+        return cap_main;
+    };
+    {
+        Capture store; const Capture& c = pick("G1", "prog_p7_g1.bin", store);
+        bool ok = c.loaded && c.done.has_value() && marker(c.log, kC).has_value() && marker(c.log, kEnd).has_value() &&
+                  cap_c1.loaded && cap_c1.done.has_value() && marker(cap_c1.log, kEnd).has_value();
+        checks.expect(ok, "P7-G1: the program finished -- END was written");
     }
-    checks.expect(g2_ok, "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching this "
-                         "run's own enabling write, and no other bit among 8-0");
-
-    Capture cap_g3 = (mv == "G3") ? run_capture(dir + "/prog_p7_g3.bin", run_budget) : cap;
-    size_t g3_qwrites = 0;
-    for (const auto& a : cap_g3.log)
-        if (a.is_write && a.word_addr >= word_addr(kQ) && a.word_addr < word_addr(kQ + 0x2000)) ++g3_qwrites;
-    checks.expect(cap_g3.loaded && g3_qwrites >= 2, "P7-G3: the blit ran -- at least 2 writes in the Q range");
-
-    Capture cap_gs = (mv == "GSTOP") ? run_capture(dir + "/prog_p7_gstop.bin", run_budget) : cap;
-    std::vector<uint64_t> gs_q;
-    for (const auto& a : cap_gs.log)
-        if (a.is_write && a.word_addr >= word_addr(kQ) && a.word_addr < word_addr(kQ + 0x2000)) gs_q.push_back(a.cycle);
-    bool gstop_ok = cap_gs.loaded && !gs_q.empty();
-    if (gstop_ok) {
-        uint64_t t_last_gs = *std::max_element(gs_q.begin(), gs_q.end());
-        size_t after = 0, before = 0;
-        for (const auto& a : cap_gs.log)
-            if (a.is_write && a.word_addr >= word_addr(kLog) && a.word_addr < word_addr(kLog + 0x2000)) {
-                if (a.cycle > t_last_gs) ++after; else ++before;
-            }
-        gstop_ok = (after >= 1) && (before < 2048);
+    {
+        Capture store; const Capture& c = pick("G2", "prog_p7_g2.bin", store);
+        auto r_on = stored_at(c.log, kR, 1);
+        auto r_off = stored_at(cap_c1.log, kR, 1);
+        bool ok = c.loaded && r_on.size() == 1 && cap_c1.loaded && r_off.size() == 1;
+        if (ok) {
+            uint16_t v = r_on[0], w = r_off[0];
+            ok = (v & 0x0200) && (v & 0x0040) && (v & 0x0400) && ((v & 0x01FF & ~0x0040) == 0) &&
+                 (w & 0x0200) && (w & 0x0040) && !(w & 0x0400) && ((w & 0x01FF & ~0x0040) == 0);
+        }
+        checks.expect(ok, "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching the "
+                          "run's own enabling write (set in the main run, clear in the contrast run), and no "
+                          "other bit among 8-0");
     }
-    checks.expect(gstop_ok, "P7-G(CPU still wanted the bus): at least one CPU write into G falls after "
-                            "T_last, with fewer than 2048 recorded before it");
+    {
+        Capture store; const Capture& c = pick("G3", "prog_p7_g3.bin", store);
+        checks.expect(measure(c).ran && m_c1.ran,
+                      "P7-G3: the blit ran -- at least 2 source reads, so T_first < T_last");
+    }
+    {
+        Capture store; const Capture& c = pick("GSTOP", "prog_p7_live.bin", store);
+        checks.expect(cpu_still_wanted(c) && cpu_still_wanted(cap_c1),
+                      "P7-G(CPU still wanted the bus): at least one CPU write into G falls after T_last, with "
+                      "fewer than 2048 recorded before it");
+    }
+
+    checks.record(
+        "P7: with a blit whose Table 6-2 sequence leaves a cycle without a blitter access (D only: 'D0 - D1 - D2', "
+        "p.188), the pages do not say whether BLTPRI withholds that unused cycle from the CPU. p.198 says the "
+        "blitter 'will keep the bus for every available Chip memory cycle'; p.194 says 'If a device does not "
+        "request one of its allocated time slots, the slot is open for other uses'. Such a blit is not graded.");
 }
 
 }  // namespace p7
@@ -983,96 +1056,143 @@ namespace p8 {
 const char kClaims[] =
     "p.278 5-appA-p278.c13, A-dmacon.b14; p.278 5-appA-p278.c10, 5-appA-p278.c8; p.289 5-appB-p289.c4";
 
-void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    std::string bin = dir + "/prog_p8.bin";
-    if (mv == "C1") bin = dir + "/prog_p8_c1.bin";
-    else if (mv == "GBLTPRI") bin = dir + "/prog_p8_gbltpri.bin";
-    Capture cap = run_capture(bin, run_budget);
+// G is $4000 bytes (SPECIFICATION.md 2.3); R lies above it.
+constexpr uint32_t kLogEnd = kLog + 0x4000;
 
-    auto g_all = writes_seq(cap.log, kLog, kLog + 0x4200);
-    std::vector<uint64_t> q_cycles;
-    for (const auto& a : cap.log)
-        if (a.is_write && a.word_addr >= word_addr(kQ) && a.word_addr < word_addr(kQ + 0x2000))
-            q_cycles.push_back(a.cycle);
-
-    bool have_idle = g_all.size() >= 4;
-    bool idle_ok = have_idle;
-    for (int i = 0; i < 4 && idle_ok; ++i) if (g_all[i].data & 0x4000) idle_ok = false;
-
-    std::vector<uint64_t> restC; std::vector<uint16_t> restV;
-    for (size_t i = 4; i < g_all.size(); ++i) { restC.push_back(g_all[i].cycle); restV.push_back(g_all[i].data); }
-    size_t total_rest = restC.size();
-    bool struct_ok = total_rest >= 9;  // at least 1 poll read + 8 extra
-    size_t N = struct_ok ? total_rest - 8 : 0;
-
+// The logged DMACONR reads of a run, in order: 4 idle reads, then the poll
+// (read 1 first), then the 8 extra reads; and the blit's last destination
+// write.
+struct Poll {
+    bool loaded = false;
+    std::vector<uint64_t> c;
+    std::vector<uint16_t> v;
     std::optional<uint64_t> t_last;
-    if (!q_cycles.empty()) t_last = *std::max_element(q_cycles.begin(), q_cycles.end());
-    bool blit_ran = t_last.has_value() && q_cycles.size() >= 2;
+    size_t n_q = 0;
+    size_t n_poll() const { return c.size() >= 12 ? c.size() - 12 : 0; }
+};
 
-    size_t b_nonvacuous = 0;
-    bool b_ok = true;
-    if (struct_ok && blit_ran) {
-        for (size_t i = 1; i < N; ++i) {  // 0-based i=1 == 1-based poll index 2
-            if (restC[i] < *t_last) {
-                ++b_nonvacuous;
-                if (!(restV[i] & 0x4000)) b_ok = false;
-            }
+Poll parse(const Capture& cap) {
+    Poll p;
+    p.loaded = cap.loaded;
+    for (const auto& w : writes_seq(cap.log, kLog, kLogEnd)) { p.c.push_back(w.cycle); p.v.push_back(w.data); }
+    uint64_t tl = 0;
+    for (const auto& a : cap.log)
+        if (a.is_write && a.word_addr >= word_addr(kQ) && a.word_addr < word_addr(kQ + 0x2000)) {
+            ++p.n_q;
+            tl = std::max(tl, a.cycle);
         }
-    } else {
-        b_ok = false;
+    if (p.n_q > 0) p.t_last = tl;
+    return p;
+}
+
+bool blit_ran(const Poll& p) { return p.t_last.has_value() && p.n_q >= 2; }
+
+// (a): the 4 idle reads show bit 14 = 0.
+bool idle_ok(const Poll& p) {
+    if (p.c.size() < 4) return false;
+    for (int i = 0; i < 4; ++i) if (p.v[i] & 0x4000) return false;
+    return true;
+}
+
+// At least 1 poll read and the 8 extra reads were stored.
+bool struct_ok(const Poll& p) { return p.c.size() >= 4 + 9; }
+
+// The poll reads (0-based k; 1-based read number k+1) that (b) grades: read
+// numbers 2 and up whose store lies before T_last.
+std::vector<size_t> graded_set(const Poll& p) {
+    std::vector<size_t> g;
+    if (!struct_ok(p) || !blit_ran(p)) return g;
+    for (size_t k = 1; k < p.n_poll(); ++k)
+        if (p.c[4 + k] < *p.t_last) g.push_back(k);
+    return g;
+}
+
+// (b): every graded read that the run holds shows bit 14 = 1; at least one
+// graded read is held.
+bool b_ok(const Poll& p, const std::vector<size_t>& graded, size_t* held = nullptr) {
+    size_t present = 0;
+    bool ok = struct_ok(p);
+    for (size_t k : graded) {
+        if (k >= p.n_poll()) continue;
+        ++present;
+        if (!(p.v[4 + k] & 0x4000)) ok = false;
     }
+    if (held) *held = present;
+    return ok && present >= 1;
+}
 
-    bool c_ok = false;
-    if (struct_ok) {
-        long first_zero = -1;
-        for (size_t i = 1; i < N; ++i) if (!(restV[i] & 0x4000)) { first_zero = (long)i; break; }
-        bool ended_by_zero = (N < 8192) && first_zero >= 0;
-        bool tail_all_zero = true;
-        if (ended_by_zero)
-            for (size_t i = (size_t)first_zero; i < total_rest; ++i)
-                if (restV[i] & 0x4000) { tail_all_zero = false; break; }
-        c_ok = ended_by_zero && tail_all_zero;
-    }
+// (c): the poll ends on a 0 before the 8192-read cap, and every read from
+// that first 0 on is also 0.
+bool c_ok(const Poll& p) {
+    if (!struct_ok(p)) return false;
+    size_t n = p.n_poll();
+    long first_zero = -1;
+    for (size_t k = 1; k < n; ++k) if (!(p.v[4 + k] & 0x4000)) { first_zero = (long)k; break; }
+    if (!(n < 8192 && first_zero >= 0)) return false;
+    for (size_t k = (size_t)first_zero; k < p.c.size() - 4; ++k)
+        if (p.v[4 + k] & 0x4000) return false;
+    return true;
+}
 
-    checks.note("P8: N(poll)=" + num((long long)N) + " total_rest=" + num((long long)total_rest) +
-                " t_last=" + (t_last ? num((long long)*t_last) : std::string("(none)")) +
-                " b_nonvacuous=" + num((long long)b_nonvacuous));
+void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
+    Capture cap_main = run_capture(dir + "/prog_p8.bin", run_budget);
+    Poll pm = parse(cap_main);
+    std::vector<size_t> graded = graded_set(pm);
 
-    bool ok = cap.loaded && idle_ok && struct_ok && blit_ran && b_ok && c_ok;
+    // C1 puts the program without a blit through the unchanged comparator,
+    // graded at the indices of the main run's graded reads.
+    Capture cap_c1;
+    if (mv == "C1") cap_c1 = run_capture(dir + "/prog_p8_c1.bin", run_budget);
+    const Capture& cap_in = (mv == "C1") ? cap_c1 : cap_main;
+    Poll pi = parse(cap_in);
+
+    checks.note("P8: N(poll)=" + num((long long)pm.n_poll()) + " total_rest=" +
+                num((long long)(pm.c.size() >= 4 ? pm.c.size() - 4 : 0)) +
+                " t_last=" + (pm.t_last ? num((long long)*pm.t_last) : std::string("(none)")) +
+                " b_nonvacuous=" + num((long long)graded.size()));
+
+    size_t held = 0;
+    bool b_this = b_ok(pi, graded, &held);
+    checks.note(std::string("P8 clauses of the graded run: idle=") + (idle_ok(pi) ? "ok" : "FAILED") +
+                " (b)=" + (b_this ? "ok" : "FAILED") + " over " + num((long long)held) + " graded reads held" +
+                " (c)=" + (c_ok(pi) ? "ok" : "FAILED"));
+    bool ok = cap_in.loaded && idle_ok(pi) && struct_ok(pi) && b_this && c_ok(pi);
     checks.expect(ok, std::string("P8 [") + kClaims +
         "]: the 4 idle reads show bit14=0; every poll read i>=2 with T_w(i) < T_last shows bit14=1; the poll "
         "ends on a 0 before the 8192-read cap, and every read after that (including the 8 extra) is also 0");
 
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p8_g1.bin", run_budget) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value(), "P8-G1: the program finished");
-
-    auto r8 = stored_at(cap.log, kR, 1);
-    bool g2_ok = cap.loaded && r8.size() == 1;
-    if (g2_ok) { uint16_t v = r8[0]; g2_ok = (v & 0x0200) && (v & 0x0040) && !(v & 0x0400) && ((v & 0x01FF & ~0x0040) == 0); }
-    checks.expect(g2_ok, "P8-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI clear, and no "
-                         "other bit among 8-0");
-
-    checks.expect(blit_ran, "P8-G3: the blit ran -- T_last is defined (at least 2 writes in the Q range)");
-
-    Capture cap_gp = (mv == "GBLTPRI") ? run_capture(dir + "/prog_p8_gbltpri.bin", run_budget) : cap;
-    bool gp_ok;
+    auto pick = [&](const char* sel, const char* file, Capture& store) -> const Capture& {
+        if (mv == sel) { store = run_capture(dir + "/" + file, run_budget); return store; }
+        return cap_main;
+    };
     {
-        auto g_all2 = writes_seq(cap_gp.log, kLog, kLog + 0x4200);
-        std::vector<uint64_t> qc2;
-        for (const auto& a : cap_gp.log)
-            if (a.is_write && a.word_addr >= word_addr(kQ) && a.word_addr < word_addr(kQ + 0x2000))
-                qc2.push_back(a.cycle);
-        std::optional<uint64_t> tl2;
-        if (!qc2.empty()) tl2 = *std::max_element(qc2.begin(), qc2.end());
-        size_t cnt = 0;
-        if (tl2.has_value() && g_all2.size() > 4) {
-            std::vector<uint64_t> rc2;
-            for (size_t i = 4; i < g_all2.size(); ++i) rc2.push_back(g_all2[i].cycle);
-            for (size_t i = 1; i + 8 < rc2.size(); ++i) if (rc2[i] < *tl2) ++cnt;
-        }
-        gp_ok = cnt >= 2;
+        Capture store; const Capture& c = pick("G1", "prog_p8_g1.bin", store);
+        checks.expect(c.loaded && c.done.has_value(), "P8-G1: the program finished");
     }
-    checks.expect(gp_ok, "P8-G4: at least 2 poll reads with i >= 2 have T_w(i) < T_last, so (b) is not vacuous");
+    {
+        Capture store; const Capture& c = pick("GBLTPRI", "prog_p8_gbltpri.bin", store);
+        auto r8 = stored_at(c.log, kR, 1);
+        bool ok2 = c.loaded && r8.size() == 1;
+        if (ok2) { uint16_t v = r8[0]; ok2 = (v & 0x0200) && (v & 0x0040) && !(v & 0x0400) && ((v & 0x01FF & ~0x0040) == 0); }
+        checks.expect(ok2, "P8-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI clear, and no "
+                           "other bit among 8-0");
+    }
+    {
+        const Capture& c = (mv == "C1") ? cap_c1 : cap_main;
+        checks.expect(blit_ran(parse(c)), "P8-G3: the blit ran -- T_last is defined (at least 2 writes in the Q range)");
+    }
+    {
+        // G4: at least 2 poll reads with i >= 2 fall before T_last, so (b) is not vacuous.
+        Capture store; const Capture& c = pick("G4", "prog_p8_g4.bin", store);
+        checks.expect(graded_set(parse(c)).size() >= 2,
+                      "P8-G4: at least 2 poll reads with i >= 2 have T_w(i) < T_last, so (b) is not vacuous");
+    }
+
+    checks.record(
+        "P8: the 'only' of 'read only' is not graded. p.278 gives bit 15, 'bits written with a 1 get set or "
+        "cleared', and calls bit 14 '(read only)', and no page says what a DMACON write with bit 14 set does; "
+        "every DMACON write here keeps bit 14 clear "
+        "(half graded: 5-appA-p278.c13, A-dmacon.b14)");
 }
 
 }  // namespace p8

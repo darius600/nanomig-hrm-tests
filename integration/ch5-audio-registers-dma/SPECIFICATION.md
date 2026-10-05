@@ -60,9 +60,11 @@ differs from the scan, the scan is quoted and the difference is named.
 
 ### 2.3 Memory map
 
-All addresses are byte addresses. They are even and below `$80000`, so a
-3-bit high location word (OCS, p.139 "high three bits") reaches them as well
-as a 5-bit one (ECS, p.266, p.298, p.309).
+All addresses are byte addresses. They are even. Except SA, SB and SC they lie
+below `$80000`, so a 3-bit high location word (OCS, p.139 "high three bits")
+reaches them as well as a 5-bit one (ECS, p.266, p.298, p.309). SA, SB and SC
+are blitter source pointers used under the default ECS configuration only, where
+a blitter pointer keeps its high 5 bits (p.309).
 
 | Name | Address | Content |
 |---|---|---|
@@ -81,8 +83,10 @@ as a 5-bit one (ECS, p.266, p.298, p.309).
 | G | `$78000` | CPU log area, `$4000` bytes |
 | R | `$7C000` | stored results (register values read by the program) |
 | MK | `$7D000` | marker word |
+| SA, SB, SC | `$A0000`, `$A2000`, `$A4000` | P7's blitter sources A, B and C, 4096 words each, all zero |
 
-The program image and its stack lie in Chip memory outside `$60000-$7FFFF`.
+The program image and its stack lie in Chip memory outside `$60000-$7FFFF`
+and outside SA-SC.
 Every audio, sprite, bitplane, Copper and blitter-source area above is a
 **DMA block**.
 
@@ -561,12 +565,37 @@ Chip-memory access. With BLTPRI clear, it makes some.
   consecutive memory cycles, the blitter will release the bus for one cycle."
 - The printed p.198 gives no bit number. DMAF_BLITHOG, "the "blitter-nasty"
   bit", is tied to bit 10 by the name on p.278 and p.222.
+- p.188, Table 6-2 ("Typical Blitter Cycle Sequence"), gives the cycle
+  sequence of each USE code. USE code E (channels A, B and C, no D) is
+  `A0 B0 C0 A1 B1 C1 A2 B2 C2`: every cycle of it is a blitter access. USE
+  code 1 (D only) is `D0 - D1 - D2`: a cycle without a blitter access lies
+  between every two destination writes. p.189: "This Table is only meant to be
+  an illustration of the typical order of blitter cycles on the bus."
+- p.194, on the devices with a higher priority than the 68000: "If a device
+  does not request one of its allocated time slots, the slot is open for other
+  uses."
+
+**The blit used.** P7 uses USE code E, so that no cycle between its first and
+last source read is one the blitter does not use. A blit whose sequence has a
+cycle without a blitter access (D only, for example) is not graded. p.198 says
+the blitter "will keep the bus for every available Chip memory cycle", and
+p.194 says an unrequested slot "is open for other uses"; the pages do not say
+whether BLTPRI withholds from the 68000 a cycle the blitter does not request.
 
 **Stimulus.** Default configuration.
 
-1. `DMACON = $07FF`. Set up the blitter as in P5 step 2, with BLTDPT = Q.
+1. `DMACON = $07FF`. Set up the blitter:
+   - `BLTCON0 ($040) = $0EFF`: USEA, USEB and USEC set and USED clear (bits
+     11-8, p.267), LF = `$FF`;
+   - `BLTCON1 ($042) = 0`: area mode;
+   - `BLTAFWM ($044) = BLTALWM ($046) = $FFFF`;
+   - `BLTAMOD ($064)`, `BLTBMOD ($062)`, `BLTCMOD ($060)` and
+     `BLTDMOD ($066)` = 0;
+   - `MOVE.L #SA,$DFF050`, `MOVE.L #SB,$DFF04C` and `MOVE.L #SC,$DFF048`:
+     three blocks of 4096 words, zero-filled (section 2.3).
 2. `DMACON = $8640` (SET, BLTPRI, DMAEN, BLTEN). Read DMACONR into R.
-3. Write marker `O`. `BLTSIZE = $2020`: height 128, width 32, 4096 words.
+3. Write marker `O`. `BLTSIZE = $2020`: height 128, width 32, 4096 words per
+   channel.
 4. Straight after, the CPU runs this loop from Chip memory, with D2 = 2047
    and A4 = G:
 
@@ -580,33 +609,40 @@ Chip-memory access. With BLTPRI clear, it makes some.
    `BRA.S *` and never executes `STOP`.
 
 **Observation.**
-- T_first and T_last are the times of the first and last port write in
-  [Q, Q + `$2000`). The interval (T_first, T_last) is "while blitter DMA is
-  running".
+- T_first and T_last are the times of the first and last port read in
+  [SA, SC + `$2000`), the blitter's A, B and C fetches (the 68000 never reads
+  there). The interval (T_first, T_last) is "while blitter DMA is running".
 - The test counts the CPU accesses (section 2.4) whose time lies inside that
   interval.
 
 **Expected.** Zero CPU accesses in (T_first, T_last). "Any" is graded over
-every cycle of the interval.
+every cycle of the interval. This is graded as P7-ON.
 
 **Preconditions.**
 - G1.
 - The stored value shows bits 10, 9 and 6 set and no other bit among 8-0.
-- The blit ran: at least 2 writes in the Q range, so T_first < T_last.
+- The blit ran: at least 2 source reads, so T_first < T_last.
 - The CPU still wanted the bus when the blit ended: at least one CPU write
   into G falls after T_last, with a loop count below 2048.
 
 **Contrasting cases.**
 - `DMACON = $8240` in step 2, so BLTPRI is clear. Expected: at least one CPU
   access in (T_first, T_last), by p.198. All preconditions still hold, with
-  bit 10 clear in the stored value.
-- For the "CPU still wanted the bus" precondition: let the loop run once
-  (D2 = 0) and then execute `STOP #$2700`. No log write follows T_last, and
-  the precondition goes red.
+  bit 10 clear in the stored value. This run is graded in the normal run as
+  P7-OFF.
+- For the comparators of P7-ON and P7-OFF: the CPU executes `STOP #$2700`
+  straight after the BLTSIZE write. It makes no access while the blit runs, so
+  the unchanged zero-access comparator of P7-ON holds on it and the unchanged
+  at-least-one comparator of P7-OFF goes red.
+- For the "blit ran" precondition: replace the BLTSIZE write by a write to
+  COLOR00 (`$180`). No blit starts and the precondition goes red.
+- For the "CPU still wanted the bus" precondition: the same program that
+  executes `STOP #$2700` straight after the BLTSIZE write. No log write follows
+  T_last, and the precondition goes red.
 
 **Reference frame.** The blit interval is anchored on the first and last
-destination write at the port. The test checks the anchor by requiring at
-least two such writes.
+source read at the port. The test checks the anchor by requiring at least two
+such reads.
 
 **Not graded.**
 - The /BLS pin: it is inside the chips.
@@ -614,6 +650,8 @@ least two such writes.
 - How many cycles the CPU gets with BLTPRI clear. p.198 gives the release
   rule but not the 68000's request pattern, so the contrasting case grades
   only "at least one".
+- A blit whose Table 6-2 sequence leaves a cycle without a blitter access (see
+  "The blit used").
 
 ### P8: BBUSY (bit 14) reads 1 while a blit is in progress and 0 when no blit is in progress
 
@@ -641,7 +679,7 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
 
 **Stimulus.** Default configuration.
 
-1. `DMACON = $07FF`. Set up the blitter as in P7.
+1. `DMACON = $07FF`. Set up the blitter as in P5 step 2, with BLTDPT = Q.
 2. `DMACON = $8240`. BLTPRI stays clear, so the CPU gets cycles during the
    blit (p.198).
 3. Four idle reads: `MOVE.W $DFF002,(A4)+` with A4 = G.
@@ -655,7 +693,9 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
 - Each logged read i gives a value v_i and the time T_w(i) of its store at
   the port. The read itself lies between T_w(i-1) and T_w(i).
 - T_last is the time of the last write in [Q, Q + `$2000`).
-- Reads after BLTSIZE are numbered 1, 2, and so on.
+- Reads after BLTSIZE are numbered 1, 2, and so on. The logged reads are
+  collected from G alone, [G, G + `$4000`), so that R's stored word is not
+  among them.
 
 **Expected.**
 - (a) The 4 idle reads show bit 14 = 0: no blit is in progress.
@@ -684,14 +724,19 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
 - Replace the BLTSIZE write of step 4 by the same `MOVE.W` to COLOR00
   (`$180`). No blit starts, so the reads at the indices graded 1 in the main
   run are predicted 0 (p.186 sets the flag only while a blit is in progress)
-  and (b) goes red. The program still finishes, because the poll stops at
-  read 2, and G1 and the DMACONR precondition still hold.
-- For the "at least 2 reads inside the blit" precondition: set BLTPRI in
-  step 2. The CPU is then held off during the blit (P7), no read i ≥ 2 falls
-  before T_last, and the precondition goes red.
+  and (b) goes red. (b) is graded on this run at the indices that the main run
+  grades and this run holds. The program still finishes, because the poll
+  stops at read 2, and G1 and the DMACONR precondition still hold.
+- For the "at least 2 reads inside the blit" precondition: delay the first poll
+  read until the blit has ended, with a delay loop between the BLTSIZE write
+  and the poll. No read i ≥ 2 falls before T_last, and the precondition goes
+  red. The blit still runs, so T_last is defined.
+- For the "BLTPRI clear" part of the DMACONR precondition: set BLTPRI in
+  step 2. The stored value shows bit 10 and the precondition goes red.
 
 **Reference frame.**
-- The blit interval is anchored on the port's destination writes, as in P7.
+- The blit interval is anchored on the port's destination writes: P8's blit
+  writes D.
 - Each read's time is bracketed by the port times of two consecutive log
   stores.
 

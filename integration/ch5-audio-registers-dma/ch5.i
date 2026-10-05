@@ -99,6 +99,13 @@ B3              equ     $73800
 QQ              equ     $74000          ; Q
 QQ2             equ     $75000          ; Q2
 
+; P7's blitter sources, three blocks of $2000 bytes (4096 words each,
+; SPECIFICATION.md P7), above the overlay window and clear of the program,
+; its stack and RESULTS.
+SRCA            equ     $A0000
+SRCB            equ     $A2000
+SRCC            equ     $A4000
+
 ; ---- CPU bookkeeping (SPECIFICATION.md section 2.3) --------------------
 GLOG            equ     $78000          ; G
 RSTORE          equ     $7C000          ; R
