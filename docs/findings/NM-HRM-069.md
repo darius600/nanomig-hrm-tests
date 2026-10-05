@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig has the acknowledge and the counter from there and TC64 carries the same two, so there is no fix to port; no implementation read here holds the 68000 to one parity either — see *What the others say* |
-| **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing) — two assertions, run on both CPU cores: `A8`, claims `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30` (pp. 194, 196), red on fx68k; `PARITY`, claims `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60` (p. 196), red on fx68k and on TG68K |
+| **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing) — `PARITY`, claims `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60` (p. 196), run on both CPU cores and red on fx68k and on TG68K; it carries the finding. `A8`, claims `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30` (pp. 194, 196), is red on fx68k only and is not counted among the reds that carry it: its predicate does not identify an instruction that missed an allocated cycle, see *Measured* |
 | **Chapter** | 6 — Blitter, printed pp. 194–198; 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red on fx68k (`A8`, `PARITY`; 24 passed, 2 failed), 1 red on TG68K (`PARITY`, through its share-mode half alone; 24 passed, 1 failed). In the same run `PARITY-REF`, green on both cores, anchors the slot numbering to Figure 6-9, and `SYSDMA-C29`, green on fx68k, shows the step that takes an odd slot without DMA waiting for the next even one where bitplane DMA holds the odd slots |
+| **Assertions** | `PARITY` is red on both cores and carries the finding: on fx68k through both of its halves (24 passed, 2 failed in the run), on TG68K through its share-mode half alone (24 passed, 1 failed). `A8` is the second red on fx68k and is not counted: it counts consecutive CPU accesses an odd number of slots apart, and nothing in it shows that either access followed a missed even slot, the condition its three claims are written under. In the same run `PARITY-REF`, green on both cores, anchors the slot numbering to Figure 6-9, and `SYSDMA-C29`, green on fx68k, shows the step that takes an odd slot without DMA waiting for the next even one where bitplane DMA holds the odd slots |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there |
 
 ---
@@ -148,11 +148,21 @@ plane 1.
 | run | what is counted | fx68k | TG68K | graded by |
 |---|---|---:|---:|---|
 | no DMA | CPU accesses on an odd slot | **20006 of 41007** | 0 of 45209 | `PARITY` |
-| no DMA | consecutive CPU accesses in one line an odd number of slots apart | **7801 of 40606** | 0 of 44808 | `A8` |
+| no DMA | consecutive CPU accesses in one line an odd number of slots apart | **7801 of 40606** | 0 of 44808 | `A8`, not counted |
 | share-mode blit, from its first to its last destination write | CPU accesses on an odd slot | **104 of 242** | **124 of 254** | `PARITY` |
 
 `PARITY` grades both halves in one line, so it is red on both cores; on TG68K
 the share-mode half alone makes it red.
+
+**`A8` is red on fx68k and is not evidence on this page.** Its claims are
+conditional: p. 196 says that *if* an instruction misses its even slot the
+68000 waits for its next available slot. The predicate takes every pair of
+consecutive CPU accesses in a line and asks whether they are an even number of
+slots apart. It never identifies an instruction that missed an allocated
+cycle, nor that the access after the miss was granted in the next available
+slot, so an odd spacing is a proxy for the missed-cycle antecedent and not a
+test of it. The 7801 odd spacings are odd-slot CPU accesses, which `PARITY`
+grades without the antecedent. The measurement stays in the table above.
 
 **Where the odd slots come from.** Read with the package's own programs,
 harness and slot numbering — a measurement for this page, not a graded
@@ -263,8 +273,8 @@ Figure 6-9 calls odd — so the CPU would be held to the colour clocks whose
   from the line's own refresh group, as Figure 6-9 numbers them; every
   plane-1 fetch of the lores build lands on an odd slot (`PARITY-REF`, 15360
   of 15360 on both cores), the first of each line at $3F.
-- **The comparators read green on a live input.** The package's mutation
-  records feed the unchanged `A8` and `PARITY` comparators the CPU accesses
+- **The `PARITY` comparator reads green on a live input.** The package's
+  mutation records feed the unchanged `A8` and `PARITY` comparators the CPU accesses
   inside the four-plane lores fetch windows, where bitplane DMA holds the odd
   slots: 0 odd of 50178 pairs and 0 of 50946 accesses on fx68k, 0 of 60672
   pairs and 0 of 61440 accesses on TG68K.
