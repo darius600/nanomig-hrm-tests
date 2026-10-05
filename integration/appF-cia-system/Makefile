@@ -30,13 +30,17 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb \
             p5b_ciaa_ta p5b_ciaa_tb p5b_ciab_ta p5b_ciab_tb \
             p6_k123 \
             p3_ciaa_ta p3_ciaa_tb p3_ciab_ta p3_ciab_tb \
-            p3_ciab_tb_l2 p3_ciab_tb_nostart p3_ciab_tb_pulse p3_ciab_tb_pbon0 p3_ciab_tb_cputoggle \
+            p3_ciab_tb_l2 p3_ciab_tb_nostart p3_ciab_tb_pulse p3_ciab_tb_pbon0 p3_ciab_tb_cputoggle p3_ciab_tb_cputoggle_low \
             p4_ciaa_ta_l20 p4_ciaa_ta_l21 p4_ciaa_ta_l22 p4_ciaa_ta_l23 p4_ciaa_ta_l24 p4_ciaa_ta_l25 \
             p4_ciaa_tb_l20 p4_ciaa_tb_l21 p4_ciaa_tb_l22 p4_ciaa_tb_l23 p4_ciaa_tb_l24 p4_ciaa_tb_l25 \
             p4_ciab_ta_l20 p4_ciab_ta_l21 p4_ciab_ta_l22 p4_ciab_ta_l23 p4_ciab_ta_l24 p4_ciab_ta_l25 \
             p4_ciab_tb_l20 p4_ciab_tb_l21 p4_ciab_tb_l22 p4_ciab_tb_l23 p4_ciab_tb_l24 p4_ciab_tb_l25 \
-            p4_ciab_tb_l20_toggle p4_ciab_tb_l20_nostart \
-            p9_legw_l40 p9_legw_l100 \
+            p4c_ciab_ta_l40 p4c_ciab_ta_l41 p4c_ciab_ta_l42 p4c_ciab_ta_l43 p4c_ciab_ta_l44 p4c_ciab_ta_l45 \
+            p4c_ciab_tb_l40 p4c_ciab_tb_l41 p4c_ciab_tb_l42 p4c_ciab_tb_l43 p4c_ciab_tb_l44 p4c_ciab_tb_l45 \
+            p4c_ciab_tb_l40_two \
+            p9_legw_l40 p9_legw_l100 p9_legw_l40_nouf p9_legw_l40_lvl1 \
+            p9_legw_ctl_l40 p9_legw_ctl_l100 p9_legw_ctl_l20 p9_legw_ctl_l40_nouf p9_legw_ctl_l40_lvl1 \
+            p9_legf_ciab_tb_cputoggle p9_legf_ciab_tb_cputoggle_skip \
             p9_legf_ciab_tb_l40 p9_legf_ciab_tb_l41 p9_legf_ciab_tb_l64 p9_legf_ciab_tb_l100
 
 include ../harness/nanomig.mk

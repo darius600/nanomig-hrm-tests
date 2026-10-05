@@ -298,6 +298,8 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - OUTMODE = 0 (CR ← $03) with the same latch. The page predicts a one-cycle pulse per underflow instead of a level change. Samples are 0 except for at most one sample near a flag, so transitions come in adjacent pairs or not at all, and the pairing fails.
 - PBON = 0 (CR ← $05). The line is an input and reads 1 throughout, while flags continue: the pairing fails.
 
+**Live control (P3-GREENCTL).** The same predicate, pairing and initial level together, on a toggle the CPU makes: PBON = 0 (CR ← $01, the timer does not drive the pin), DDRB bit 7 an output with PR bit 7 = 1, L = 60, and after every ICR read that shows the TB flag the CPU writes PRB with bit 7 inverted. The predicate passes. *Contrast:* the same program with PR bit 7 = 0 before the start: the pairing holds and the level before the first flag is 0, so the predicate fails.
+
 **Reference frame.** Loop iteration indices only.
 
 ---
@@ -329,9 +331,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - **Pre4.2 (coverage).** Every residue mod P(L) is hit by at least 2 PRB samples. A run that fails coverage is not graded and is reported. At least 2 of the 6 latch values must be graded (consecutive latches make it likely that the loop's E-spacing is coprime to some P). *Contrast:* a latch whose P(L) shares a factor with the loop's measured E-spacing (the builder picks it from a run) leaves residues uncovered, and the precondition fails.
 - **Pre4.3.** P(L) is uniquely determined (F3: iteration spacing ≤ P/2, at least 16 flags). *Contrast:* with L = 3, the flags merge and no unique P fits.
 
-**Contrasting case.**
-- OUTMODE = 1 (CR ← $07) with the same L: about half of all residues read high, and the single-residue check fails.
-- START = 0 (CR ← $02) with coverage from a run with START = 1: no sample is high, and the "every underflow" check fails.
+**Live control (P4-GREENCTL).** The same comparator (period, coverage, one residue high) on a pulse the CPU makes at one fixed phase of the timer's own period, for CIAB timer A and timer B. For each L in {40, 41, 42, 43, 44, 45}: DDRB bit n ← 1 (output), PR bit n ← 0, CR ← $00, R-LATCH(L), read ICR (discard), CR ← $01 (START, PBON = 0, pulse, continuous). Then 400 iterations, each of them: read the timer's low counter byte x; write PRB bit n ← 1 if x = 10, else 0; R-SAMPLE(PRB, ICR). The latches are those whose P(L) is at least twice the loop's iteration spacing (F3), which is 16 E periods here. The comparator passes on the latches whose coverage holds. *Contrast:* a table with a second high count value (x = 15) gives two residues high, and the single-residue check fails.
 
 **Reference frame.** F2 (E-index) and F3 (P(L)). "One cycle" is taken as one φ2 cycle, the clock "used for internal device operation" (p353); see Section 3, item 2.
 
@@ -583,6 +583,12 @@ Why δ is 0 or 1: p342 says the timer will "count down from the latched value to
 - Leg W: the L = 40 run made with a latch of 20 gives W(100) − W(20) = 80, outside 60 ± s. (A larger latch in the L = 100 run could outlast its sampler and leave W undefined.)
 
 A run counting CNT with no input (CR ← $27, or CRB ← $27) is not a contrast: with no underflow, Pre3.2 and F3 fail and the run is not graded instead of red.
+
+**Preconditions asserted by the package, leg W.** Each leg-W program reads PRB right before its start (Pre2.3: bit n clear) and, after the sampler, polls CR bit 0 and reads ICR (Pre2.2: the first poll reads 0 and the TB flag is set). P9-LEGW is graded only where both hold for both legs; otherwise it is not graded.
+
+**Live controls.**
+- **P9-LEGF-TRANSITIONS-GREENCTL.** The same period measurement and transition-spacing comparator on P3's CPU-driven toggle (PBON = 0, DDRB bit 7 an output, the CPU inverts PRB bit 7 after every flagged ICR read) with L = 40. The comparator passes. *Contrast:* the CPU inverts only after every second flagged read: consecutive transitions are about 2·P(L) apart and the comparator fails.
+- **P9-LEGW-GREENCTL.** The same width comparator on a width the CPU makes. For L ∈ {40, 100}: P2 leg S's start with CR ← $09 (START, PBON = 0, one-shot); right after the start marker the CPU writes PRB with bit 7 = 1, and in an R-SAMPLE(PRB) loop that also reads ICR it writes PRB with bit 7 = 0 after the ICR read that shows the TB flag. The level before the start (bit 7 clear) and the TB flag read inside the sampler are asserted for both runs, and the comparator passes. *Contrast:* the L = 40 run made with a latch of 20 gives W(100) − W(20) ≈ 80, outside 60 ± s.
 
 **Reference frame.** F2 and F3.
 
