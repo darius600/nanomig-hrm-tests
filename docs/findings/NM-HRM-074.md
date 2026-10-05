@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `cia_timera.v`, `cia_timerb.v`, `ciab.v`, `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L39-L40) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L54-L55) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** and **minimig-dev/MinimigAGA-MiST-TC64**. NanoMig has the four modules from the Minimig line; MiSTer's own comments mark both bits not implemented and TC64 carries the same statements, so there is no fix to port — see *What the others say* |
-| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) — `PROP-CRA-PBON`, claims `sol:F-cra.c4`, `opus:F-cra.c4` (p. 348), and `PROP-CRA-OUTMODE`, claims `sol:F-cra.c5`, `opus:F-cra.c5` (p. 348), both red on the `ciab` fixture; [`integration/appF-cia-system`](../../integration/appF-cia-system) — `P1-MAIN-CRA`, claim `sol:F-cra.c17` (p. 349), `P1-MAIN-CRB`, claims `sol:F-crb.c3`, `opus:F-crb.c2` (p. 349) and `sol:F-crb.c14` (p. 350), `P1-MAIN`, claims `opus:F-timers.c10`, `opus:F-timers.c11`, `sol:F-timers.c12` (p. 342) and `opus:F-ports.c7`, `sol:F-ports.c7` (p. 341), `P2-TOGGLE`, claim `opus:F-timers.c14` (p. 342), and `P3` (toggle mode, pp. 342, 348–350), `P4` (pulse mode, pp. 341, 342), `P9-LEGF-TRANSITIONS` (pp. 341, 342) and `P9-LEGW` (p. 341), which carry no claim id; each red on fx68k and on TG68K and each graded on CIA-B only: CIA-A's PRB read never shows a driven level ([NM-HRM-054](NM-HRM-054.md)), which the package records instead of grading. The claim ids of `P3`, `P4` and `P9` sit on the package's P10 rows, which join these lines and measure nothing of their own — see *Measured* |
+| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) — `PROP-CRA-PBON`, claims `sol:F-cra.c4`, `opus:F-cra.c4` (p. 348), and `PROP-CRA-OUTMODE`, claims `sol:F-cra.c5`, `opus:F-cra.c5` (p. 348), both red on the `ciab` fixture; [`integration/appF-cia-system`](../../integration/appF-cia-system) — `P1-MAIN-CRA`, claim `sol:F-cra.c17` (p. 349), `P1-MAIN-CRB`, claims `sol:F-crb.c3`, `opus:F-crb.c2` (p. 349) and `sol:F-crb.c14` (p. 350), `P1-MAIN`, claims `opus:F-timers.c10`, `opus:F-timers.c11`, `sol:F-timers.c12` (p. 342) and `opus:F-ports.c7`, `sol:F-ports.c7` (p. 341), `P2-TOGGLE`, claim `opus:F-timers.c14` (p. 342), and `P3` (toggle mode, pp. 342, 348–350), which carries no claim id; each red on fx68k and on TG68K and each graded on CIA-B only: CIA-A's PRB read never shows a driven level ([NM-HRM-054](NM-HRM-054.md)), which the package records instead of grading. Three more lines of the package are red on both cores and are not counted among the reds that carry the finding: `P4` (pulse mode, pp. 341, 342), `P9-LEGF-TRANSITIONS` (pp. 341, 342) and `P9-LEGW` (p. 341), none of which has a green control through its own comparator, see *Measured*. The claim ids of `P3`, `P4` and `P9` sit on the package's P10 rows, which join these lines and measure nothing of their own — see *Measured* |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 341, 342, 348, 349, 350, 351, 352, 354; Appendix E, printed p. 337 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `hrm/appF-ciab-port-assignments`: 2 red (`PROP-CRA-PBON`, `PROP-CRA-OUTMODE`; 7 passed, 3 failed, the third red being [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`: 61 passed, 26 failed on each core, the same lines on both, and 11 of the 26 reds are this finding's lines. Seven are in P1, P2 and the environment checks, the first 26 graded lines (`FIXTURE` to `F1-ANCHOR-PER-RUN`; 19 passed, 7 failed): the four named in *Test* and `P2-TOGGLE`'s three component lines, which carry no claim id — `P2-LEGR` (low after RES), `P2-MAIN` (high after each start from a level of 0) and `P2-LEGH` (high after a start from high). The other four are `P3`, `P4`, `P9-LEGF-TRANSITIONS` and `P9-LEGW`. Nine of the package's P10 rows are red through these lines, seven through them alone and two, `opus:F-cra.c13` and `opus:F-crb.c14`, through lines of [NM-HRM-078](NM-HRM-078.md) as well; the other six reds are NM-HRM-078's lines and rows and `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)). P1 to P4 are graded on CIA-B's two instances, where `P1-PRE1.4/O1` holds (with DDRB bit n = 1 and PBON off, PRB reads the data bit, 0 and then 1), and not on CIA-A's, where it fails and is recorded; P9 runs on CIA-B's timer B alone. In the same run `P1-CONTROL` — the PBON = 0 run, graded against the page's PBON = 0 values through the same comparator — and `P1-OTHERBITS` are green on CIA-B, as are `P1-PRE1.1`–`P1-PRE1.3`, `P2-PRE2.2`–`P2-PRE2.4`, `P3-PRE`, `P4-PRE` and `P9-LEGF`; `P2-PRE2.1`, `P2-CONTRAST` and `P2-LEGH-CONTRAST` are recorded rather than graded, because this build already reads what each contrast predicts |
+| **Assertions** | `hrm/appF-ciab-port-assignments`: 2 red (`PROP-CRA-PBON`, `PROP-CRA-OUTMODE`; 7 passed, 3 failed, the third red being [NM-HRM-063](NM-HRM-063.md)'s). `integration/appF-cia-system`: 61 passed, 26 failed on each core, the same lines on both, and 11 of the 26 reds are this finding's lines. Seven are in P1, P2 and the environment checks, the first 26 graded lines (`FIXTURE` to `F1-ANCHOR-PER-RUN`; 19 passed, 7 failed): the four named in *Test* and `P2-TOGGLE`'s three component lines, which carry no claim id — `P2-LEGR` (low after RES), `P2-MAIN` (high after each start from a level of 0) and `P2-LEGH` (high after a start from high). The eighth red line that carries the finding is `P3`. The other three, `P4`, `P9-LEGF-TRANSITIONS` and `P9-LEGW`, are not counted: `P4` has no green control through its pulse comparator, `P9-LEGF-TRANSITIONS` none through its transition-spacing comparator, and `P9-LEGW` does not assert that its own timer underflowed and has no built control. Nine of the package's P10 rows are red through these eleven lines. Six are red through lines that carry the finding, four through them alone (`sol:F-timers.c13`; `opus:F-timers.c12, opus:F-timers.c13`; `sol:F-cra.c16`; `opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13`) and two, `opus:F-cra.c13` and `opus:F-crb.c14`, through lines of [NM-HRM-078](NM-HRM-078.md) as well. Three, `opus:F-cra.c12`, `opus:F-crb.c13` and `opus:F-timers.c6, sol:F-timers.c8`, are red only through `P4` and `P9-LEGW` and are not counted. The other six reds are NM-HRM-078's lines and rows and `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)). P1 to P4 are graded on CIA-B's two instances, where `P1-PRE1.4/O1` holds (with DDRB bit n = 1 and PBON off, PRB reads the data bit, 0 and then 1), and not on CIA-A's, where it fails and is recorded; P9 runs on CIA-B's timer B alone. In the same run `P1-CONTROL` — the PBON = 0 run, graded against the page's PBON = 0 values through the same comparator — and `P1-OTHERBITS` are green on CIA-B, as are `P1-PRE1.1`–`P1-PRE1.3`, `P2-PRE2.2`–`P2-PRE2.4`, `P3-PRE`, `P4-PRE` and `P9-LEGF`; `P2-PRE2.1`, `P2-CONTRAST` and `P2-LEGH-CONTRAST` are recorded rather than graded, because this build already reads what each contrast predicts |
 | **Verdict of the four** | **unanimous against NanoMig on PBON; split on p. 342's toggle and pulse clauses, which the silicon follows and none of the four follows in full.** WinUAE, vAmiga, Denise and Copperline all put a timer output on PB6 or PB7 when PBON is set, chosen by OUTMODE; none leaves the two bits without effect. vAmiga and Denise pulse high for one cycle, WinUAE shows 0 in pulse mode and Copperline pulses low; vAmiga, Denise and Copperline invert the toggle at each underflow, where WinUAE shows the START bit; Denise's and Copperline's toggle is high after reset, and Copperline's is not set on a start; vAmiga's CIA-B lets DDRB keep an input line at its pull-up. Outside the emulators, the 8520R4 dissection's netlist gives a positive pulse, a toggle low after RES, high after a start and inverted at every underflow, and a line driven while PBON or the DDRB bit is set, as p. 342 does — see *What other Commodore documents say* |
 | **See also** | [NM-HRM-054](NM-HRM-054.md) (CIA-A's port B has no data register, so a PRB read of CIA-A returns the joystick-adapter inputs and cannot show PB6 or PB7 either), [NM-HRM-063](NM-HRM-063.md) (FLAG, the other red of the same unit package) |
 
@@ -238,13 +238,18 @@ with PBON (CR = $07) over a latch of 60, with DDRB bit n = 1 and the data bit
 every underflow and at no other time, and be high before the first. On CIA-B's
 two instances ICR flags 88 underflows, and PRB reads the same byte in all 600
 samples, $BF for timer A and $7F for timer B: bit n stays at the driven 0 and
-never changes, and the line is red. `P3-PRE`, the underflows at least three
+never changes, and the line is red: 88 underflow flags against no transition at
+all is the clause "on every timer underflow, the output can either toggle", which
+`P3` carries. `P3` also requires the level before the first flag to be high,
+a conjunct its control does not run (see *The control*). `P3-PRE`, the underflows at least three
 samples apart and at least 16 of them, is green. `P9-LEGF-TRANSITIONS`
 (`:2217-2247`) is the same program on timer B with a latch of 40, and requires
 consecutive transitions one underflow period apart: by p. 341 the latch is "a
 divider of the input clocking frequency", and the toggle's frequency follows
 it. It reads the same way, 131 underflows and bit 7 at 0 in all 600 samples,
-and is red. In the same runs `P9-LEGF` finds the underflow period unique and
+and is red. It is not counted among the reds that carry the finding: no input
+is known on which its transition-spacing comparator reads green, since
+`P3-GREENCTL` runs the pairing comparator and not this one. In the same runs `P9-LEGF` finds the underflow period unique and
 equal to L + 1 for latches 40, 41, 64 and 100, and is green: the timer runs at
 the rate its latch sets, and only its output is missing.
 
@@ -255,7 +260,11 @@ each; p. 342 has the line low except for one φ2 cycle at every underflow.
 L + 1, and in four of the six runs of each instance the samples cover every
 residue of it. On CIA-B PRB reads $FF in all 400 samples of every run, the
 pull-up of a line DDRB leaves an input, so every residue reads high and not a
-single one, and the line is red.
+single one, and the line is red. It is not counted among the reds that carry
+the finding: the package records that no input is known on which its
+one-residue, one-cycle pulse comparator reads green (see *The control*), so
+nothing shows that the comparator can be satisfied at this sampling
+resolution.
 
 `P9-LEGW` (`:2249-2280`) starts CIA-B's timer B as a one-shot in toggle mode
 with PBON (CR = $0F), DDRB bit 7 = 1 and the data bit 0, once with a latch of
@@ -263,7 +272,11 @@ with PBON (CR = $0F), DDRB bit 7 = 1 and the data bit 0, once with a latch of
 "variable width pulses" as the difference of the two widths, each from the
 start to the first sample at which bit 7 has fallen back to 0, against
 60 ± s E periods. Bit 7 reads 0 in every sample of both runs ($7F): it never
-rises, neither width exists, and the line is red. It is `P2-MAIN`'s
+rises, neither width exists (the package prints both widths as undefined), and
+the line is red. It is not counted among the reds that carry the finding: the
+two runs do not assert that their own timer underflowed, so an undefined width
+could come from a missing underflow or window as well as from a missing output,
+and the control named for it is not built. It is `P2-MAIN`'s
 observation, no start raising the line, at two more latches, as
 `P9-LEGF-TRANSITIONS` is `P3`'s at another; neither adds a measurement of its
 own.
@@ -286,16 +299,19 @@ periods, and cannot sit on one residue as a one-cycle pulse would. For
 
 **The claim rows.** The package's P10 rows carry the claim ids of P2, P3, P4
 and P9 (`:2296-2371`). Each joins the lines named for its claim and measures
-nothing of its own, so none is evidence beside those lines. Seven are red
-through this finding's lines alone: `sol:F-timers.c13` (`P2-TOGGLE`, `P3`,
-`P4`); `opus:F-timers.c12, opus:F-timers.c13` (`P3`, `P4`); CRA's and CRB's
-OUTMODE, `sol:F-cra.c16` and `opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13`
-(`P3`, `P4`, by timer); the bitmaps' 0-settings, `opus:F-cra.c12` and
-`opus:F-crb.c13`, whose only red member is `P4`, OUTMODE = 0; and
-`opus:F-timers.c6, sol:F-timers.c8` (`P4`, `P9-LEGW`). The bitmaps'
-1-settings, `opus:F-cra.c13` and `opus:F-crb.c14`, are red through
-`P1-MAIN-CRA` or `P1-MAIN-CRB` and `P3`, and also through the INMODE lines of
-[NM-HRM-078](NM-HRM-078.md) and, for CRA, through `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)).
+nothing of its own, so none is evidence beside those lines. Four are red
+through lines that carry this finding alone: `sol:F-timers.c13` (`P2-TOGGLE`
+and `P3`); `opus:F-timers.c12, opus:F-timers.c13` (`P3`); CRA's OUTMODE,
+`sol:F-cra.c16` (`P3`, timer A); and CRB's, `opus:F-crb.c3, sol:F-crb.c4,
+sol:F-crb.c13` (`P3`, timer B). Each of these has `P4` as a further member,
+and none depends on it. The bitmaps' 1-settings, `opus:F-cra.c13` and
+`opus:F-crb.c14`, are red through `P1-MAIN-CRA` or `P1-MAIN-CRB` and `P3`, and
+also through the INMODE lines of [NM-HRM-078](NM-HRM-078.md) and, for CRA,
+through `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)). Three rows are not counted:
+the bitmaps' 0-settings, `opus:F-cra.c12` and `opus:F-crb.c13`, whose only red
+member is `P4` (OUTMODE = 0, pulse), and `opus:F-timers.c6, sol:F-timers.c8`,
+whose red members are `P4` and `P9-LEGW`. A row is evidence on this page only
+through a member that carries the finding.
 
 ---
 
@@ -430,9 +446,12 @@ been run here. What it would change:
   `PROP-CRA-PBON` samples a pulse-mode output at one instant, which a correct
   one-cycle pulse passes only if the sample falls inside it; NanoMig's red does
   not depend on that, since no path exists. `P4` has no green control at the
-  system's ports, and `P9-LEGW` and `P9-LEGF-TRANSITIONS` repeat `P2-MAIN`'s
-  and `P3`'s observation rather than adding one. And none of the four
-  implements every clause of p. 342.
+  system's ports, `P9-LEGF-TRANSITIONS` none through its own comparator and
+  `P9-LEGW` an unbuilt one, so the three are red lines that do not carry the
+  finding; `P9-LEGW` and `P9-LEGF-TRANSITIONS` repeat `P2-MAIN`'s and
+  `P3`'s observation rather than adding one. The finding stands on `P1`, `P2`
+  and `P3` at the system's ports and on the two module-level assertions. And
+  none of the four implements every clause of p. 342.
 
 ---
 
