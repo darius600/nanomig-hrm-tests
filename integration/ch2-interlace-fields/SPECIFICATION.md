@@ -328,7 +328,7 @@ The contrasting case that makes each one fail is in the last column.
 | PI-3 | Interlace is active: the check of P1 holds. It is also a precondition of P4, whose retrieval lines are graded only on an interlaced run. | I-a |
 | PI-4 | Every field contains exactly 256 groups of bitplane fetches. Each group is 20 fetches of consecutive ascending word addresses. | I-h |
 | PI-5 | HCNT rises by exactly 1 in every field. | I-g |
-| PI-6 | Every bitplane fetch from inside PIC returns the tag of the memory line at its address. Fetches outside PIC are not covered. | I-k |
+| PI-6 | Every bitplane fetch from inside PIC returns the tag of the memory line at its address, and every recorded field has at least one such fetch. Fetches outside PIC are not covered. | I-k (tags), I-c (no fetch inside PIC) |
 | PI-7(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch (for P5). | I-l |
 | PI-7(spr) | In every field, the Copper fetch of the SPR0PT MOVEs precedes the field's first sprite-0 fetch (for P6). | I-m |
 | PI-8 | The sprite-0 structure at SPR is fetched at least once during the run (for P6). | I-i |
@@ -851,6 +851,10 @@ under T-f -- several lines' worth either way, on both cores.
   of the 12 graded fields, never 228; P3 measures red on both cores. PT-5
   (every measured length is 227 or 228) is unaffected and stays green,
   since 227 is one of the two page values.
+- The normal run prints Delta, the type f_k and the length x_k of each of
+  the 12 graded fields, and the number of measured line lengths that are 227
+  colour clocks, 228 colour clocks and neither, as MEASURED lines before the
+  P3 line.
 
 **PI-7(bpl)'s own contrast (I-l).** Measured on both cores: with the
 BPL1PT MOVEs read at their real list offset (after the SPR0-7PT MOVEs and
@@ -868,13 +872,14 @@ handler of Program I. M1 therefore keeps its run state (record pointer, wrap
 count, record count, gap flag) in address registers and touches chip memory
 only for the record words and the two markers, and the handler keeps the
 address of the list COP1LC receives next in a register. Measured on both
-cores, with the normal runs: PI-1 and PT-1 hold in the normal runs and in
-every contrast that does not target them, including T-a and T-g and the
-LACE-clear run I-a.
+cores: PI-1 and PT-1 are graded in the normal runs and hold there, and
+each contrast run that prints them as a live control (among them I-a, T-a and
+T-g) shows them holding in that run.
 
 **PI-4 in I-c.** With the BPL1PT MOVEs left out, the fetches of the later
 fields lie outside PIC's window, so PI-4 (which counts groups inside that
-window) does not hold in I-c on either core. The first 20-word fetch of
+window) does not hold in I-c on either core, and neither does PI-6, whose
+population clause needs a fetch from inside PIC in every recorded field. The first 20-word fetch of
 every field is found wherever it lies instead. p61's rule predicts the
 first address of field 1 from the last fetch of field 0 + 2 + the modulo;
 measured on both cores, the prediction (573440) equals field 1's first

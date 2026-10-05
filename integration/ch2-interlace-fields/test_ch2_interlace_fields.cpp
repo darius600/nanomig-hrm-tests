@@ -34,7 +34,7 @@
 // MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f); PI-2's comparator prints FAIL
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
 // MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
-// MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k); PI-6's comparator prints FAIL; control PI-1
+// MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k) and NMH_MUTATE=PI-6(pop) runs prog_i_c (both lists omit the BPL1PT MOVEs, so no recorded field fetches from inside PIC, I-c); PI-6's comparator prints FAIL through the tags and through the empty population; control PI-1
 // MUTATION PI-7(bpl) stimulus red: NMH_MUTATE=PI-7(bpl) runs prog_i_l (the BPL1PT MOVEs sit after the WAIT, I-l); the comparator locates the MOVEs in the assembled list and prints FAIL
 // MUTATION PI-7(spr) stimulus red: NMH_MUTATE=PI-7(spr) runs prog_i_m (the SPR0PT MOVEs sit after the WAIT, I-m); the comparator locates the MOVEs in the assembled list and prints FAIL
 // MUTATION PI-8 stimulus red: NMH_MUTATE=PI-8 runs prog_i_i (DMACON leaves SPREN clear, I-i); PI-8's comparator prints FAIL
@@ -47,7 +47,7 @@
 // MUTATION P4c stimulus red: NMH_MUTATE=P4c runs prog_i_b (I-b); P4c's comparator prints FAIL; controls PI-1..PI-6, P4e
 // MUTATION P4d stimulus red: NMH_MUTATE=P4d runs prog_i_b (I-b) and NMH_MUTATE=P4d(step) runs prog_i_p (both lists keep PIC and PIC+40 but BPL1MOD = BPL2MOD = 38, I-p, so A-group i to B-group i still rises by 40 and B-group i to A-group i+1 does not); P4d's comparator prints FAIL; the three clauses of the comparator print as measured lines; controls PI-1..PI-6, P4e
 // MUTATION P4e stimulus red: NMH_MUTATE=P4e runs prog_i_d (the handler never repoints COP1LC, I-d); P4e's comparator prints FAIL; controls PI-1..PI-6
-// MUTATION P5 stimulus red: NMH_MUTATE=P5 runs prog_i_c (both lists omit the BPL1PT MOVEs, I-c); P5's comparator prints FAIL through the first 20-word fetch measured wherever it lies; controls: the search populates every field, PI-1, PI-2, PI-6; PI-4 and PI-7(bpl) do not apply
+// MUTATION P5 stimulus red: NMH_MUTATE=P5 runs prog_i_c (both lists omit the BPL1PT MOVEs, I-c); P5's comparator prints FAIL through the first 20-word fetch measured wherever it lies; controls: the search populates every field, PI-1, PI-2; PI-4, PI-6 and PI-7(bpl) do not apply
 // MUTATION P5-NOREWRITE stimulus red: NMH_MUTATE=P5-NOREWRITE runs prog_i_c as the rewrite run (both lists omit the BPL1PT MOVEs, I-c) and NMH_MUTATE=P5-NOREWRITE(ctrl) runs prog_i as the no-rewrite run (the lists rewrite, I-0); the unchanged conjunction prints FAIL; the other half is a live control; controls PI-1, PI-2, PI-10
 // MUTATION PI-10 stimulus red: NMH_MUTATE=PI-10 runs prog_i_q as the no-rewrite run (I-c and M1 waits between samples, I-q); PI-10's comparator prints FAIL
 // MUTATION P6 stimulus red: NMH_MUTATE=P6 runs prog_i_e (both lists omit the SPR0PT MOVEs, I-e); P6's comparator prints FAIL; controls PI-1, PI-2, PI-8
@@ -457,13 +457,27 @@ bool pi5_hcnt(const IAnalysis& a) {
     return true;
 }
 
+// The fetches from inside PIC during field f.
+size_t pic_reads_in(const IAnalysis& a, const IField& f) {
+    size_t n = 0;
+    for (const auto& acc : a.r.log) {
+        if (acc.is_write || acc.cycle < f.begin || acc.cycle >= f.end) continue;
+        if (acc.word_addr * 2 >= kI_PIC && acc.word_addr * 2 < kI_PIC_END) ++n;
+    }
+    return n;
+}
+
+// Every fetch from inside PIC returns its tag, and every recorded field has at
+// least one such fetch (an empty population is not a pass).
 bool pi6_tags(const IAnalysis& a) {
+    if (!a.matched) return false;
     for (const auto& acc : a.r.log) {
         if (acc.is_write) continue;
         if (acc.word_addr * 2 < kI_PIC || acc.word_addr * 2 >= kI_PIC_END) continue;
         uint32_t line = (acc.word_addr * 2 - kI_PIC) / 40;
         if (acc.data != (uint16_t)(0x8000 | line)) return false;
     }
+    for (const auto& f : a.fields) if (pic_reads_in(a, f) == 0) return false;
     return true;
 }
 
@@ -727,7 +741,8 @@ void g_PI5(const IAnalysis& a) {
 }
 void g_PI6(const IAnalysis& a) {
     checks.expect(pi6_tags(a),
-        "PI-6: every bitplane fetch from inside PIC returns the tag ($8000 OR its memory line) of its address");
+        "PI-6: every bitplane fetch from inside PIC returns the tag ($8000 OR its memory line) of its address, "
+        "and every recorded field has at least one fetch from inside PIC");
 }
 void g_PI7bpl(const IAnalysis& a) {
     checks.expect(pi7_bpl(a),
@@ -948,7 +963,7 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         {"PI-7(bpl)", "prog_i_l"}, {"PI-7(spr)", "prog_i_m"},
         {"P6", "prog_i_e"},
         {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-4", "prog_i_h"},
-        {"PI-5", "prog_i_g"}, {"PI-6", "prog_i_k"}, {"PI-8", "prog_i_i"},
+        {"PI-5", "prog_i_g"}, {"PI-6", "prog_i_k"}, {"PI-6(pop)", "prog_i_c"}, {"PI-8", "prog_i_i"},
         {"FIX-I", "prog_i_n"},
     };
     auto it = kProg.find(label);
@@ -1052,9 +1067,9 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         std::vector<BplGroup> firsts;
         bool haveAll = p5_first_groups(a, firsts);
         ctl(label, "the 20-word search populates every field", haveAll);
-        ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-6", p.pi6);
-        checks.record("P5/PI-4 and P5/PI-7(bpl): not applicable in this run, the lists hold no BPL1PT MOVEs and the fetches lie outside PIC's window");
-        g_P5(a, p.pi1 && p.pi2 && p.pi6);
+        ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2);
+        checks.record("P5/PI-4, P5/PI-6 and P5/PI-7(bpl): not applicable in this run, the lists hold no BPL1PT MOVEs and the fetches lie outside PIC's window");
+        g_P5(a, p.pi1 && p.pi2);
         if (haveAll && firsts.size() >= 2) {
             // p61: the next field starts at the last fetch of the previous
             // field + 2 + modulo (BPL1MOD = 40). Computed from field 0's last
@@ -1088,6 +1103,14 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
     } else if (label == "PI-6") {
         ctl(label, "PI-1", p.pi1);
         g_PI6(a);
+    } else if (label == "PI-6(pop)") {
+        ctl(label, "PI-1", p.pi1);
+        g_PI6(a);
+        if (a.matched) {
+            std::string m;
+            for (size_t k = 0; k < a.fields.size(); ++k) m += (k ? "," : "") + std::to_string(pic_reads_in(a, a.fields[k]));
+            checks.note(label + " mutation measured: fetches from inside PIC in fields 0.." + std::to_string(kI_K - 1) + " = " + m);
+        }
     } else if (label == "PI-7(bpl)") {
         g_PI7bpl(a);
         if (a.matched && !a.fields.empty()) {
@@ -1420,12 +1443,41 @@ void g_PT6(const TAnalysis& a) {
     checks.note(std::string("PT-6 gate of P3 (consecutive field lengths alternate between 262 and 263): ") +
                 (open ? "open" : "closed") + "; N_0..N_" + std::to_string(kT_K - 1) + " = " + lens);
 }
+// What the P3 verdict rests on, computed from this run: Delta, the type f_k and
+// the last-line length x_k of every graded field, and how many of the measured
+// line lengths of those fields are 227 and 228 colour clocks.
+std::string cc_text(int64_t clk) {
+    return clk % (int64_t)kClkSysPerColourClock == 0 ? std::to_string(clk / (int64_t)kClkSysPerColourClock)
+                                                     : std::to_string(clk) + "clk_sys";
+}
+void p3_measured(const TAnalysis& a, int64_t delta) {
+    checks.note("P3 measured: Delta = " + std::to_string(delta) + " clk_sys (" + cc_text(delta) + " colour clocks)");
+    std::string fx;
+    size_t n227 = 0, n228 = 0, other = 0, total = 0;
+    for (int k = 0; k <= 11; ++k) {
+        std::vector<int64_t> lens;
+        std::string f = a.fields[(size_t)k].N == 262 ? "short" : a.fields[(size_t)k].N == 263 ? "long"
+                        : "N=" + std::to_string(a.fields[(size_t)k].N);
+        if (!line_lengths(a, k, delta, lens) || lens.empty()) { fx += (k ? " " : "") + std::string("(") + f + ",?)"; continue; }
+        fx += (k ? " " : "") + std::string("(") + f + "," + cc_text(lens.back()) + ")";
+        for (int64_t L : lens) {
+            ++total;
+            if (L == 227 * (int64_t)kClkSysPerColourClock) ++n227;
+            else if (L == 228 * (int64_t)kClkSysPerColourClock) ++n228;
+            else ++other;
+        }
+    }
+    checks.note("P3 measured: (f_k, x_k in colour clocks) for k = 0..11 = " + fx);
+    checks.note("P3 measured: of " + std::to_string(total) + " line lengths in fields 0..11, " + std::to_string(n227) +
+                " are 227 colour clocks, " + std::to_string(n228) + " are 228 and " + std::to_string(other) + " are neither");
+}
 void g_P3(const TAnalysis& a, const TPre& t) {
     if (!t.pt6) { checks.record("P3: not graded, gate closed (PT-6 did not hold on this run)"); return; }
     if (!(t.pt1 && t.pt2 && t.pt3 && t.pt4 && t.pt5 && t.pt7)) {
         checks.record("P3: NOT GRADED, a precondition (PT-1 to PT-5 or PT-7) did not hold on this run");
         return;
     }
+    p3_measured(a, t.delta);
     int phase = -1;
     bool p3ok = p3(a, t.delta, &phase);
     checks.expect(p3ok,
