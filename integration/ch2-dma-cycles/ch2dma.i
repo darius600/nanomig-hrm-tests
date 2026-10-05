@@ -128,9 +128,9 @@ DISK_FLAG       equ     RESULTS+4       ; byte: "disk start sequence already run
 ; overlay, quiesces DMA, writes the level-3 vector and clears the results
 ; area; S1 writes the run's Copper list(s) and sprite structures; only then
 ; do S3/S4 point COP1LC at the list and enable Copper and the channel DMA.
-; The register writes in S2/S3 carry only the pointer values.
+; S2/S3 write the run's register settings and pointer values; no block contents.
 
-COP_MAIN        equ     $001000         ; the run's main Copper list (L0/L3/L4/L5/L_S1/L_A/L3x/L0u/L0m); reserve 4KB
+COP_MAIN        equ     $001000         ; the run's main Copper list (L0/L3/L4/L5/L_S1/L_A/L3x/L0u/L0uj/L0m); reserve 4KB
 COP_SECOND      equ     $002000         ; a second list some runs need (L5b/L_B/L3x's continuation); reserve 2KB
 CH_AUD0         equ     $003000
 CH_AUD1         equ     $003200
