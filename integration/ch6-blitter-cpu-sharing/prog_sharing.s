@@ -5,7 +5,8 @@
 ; (share mode). prog_sharing_nasty.s (NASTY set) runs the same blit with
 ; BLTPRI set (nasty mode, never yields). prog_sharing_tiny.s (SHARE and
 ; TINY both set) runs the share-mode blit shrunk to a near-instant
-; one-word transfer (A2's mutation). prog_sharing_aligned.s (ALIGNED set,
+; one-word transfer (A2's mutation); prog_sharing_nasty_tiny.s (NASTY and
+; TINY both set) does the same in nasty mode (A4PRE's mutation). prog_sharing_aligned.s (ALIGNED set,
 ; SYSDMA-C29's mutation and A6's own no-DMA reference) replaces the
 ; counting loop's BRA.S (10 clocks, not a whole multiple of 4) with
 ; JMP (An) (8 clocks): every instruction's own bus-cycle timing (MC68000
@@ -54,7 +55,11 @@ start:
         move.w  #$0000,BLTDMOD(a0)
         move.l  #SHARE_SRC,BLTAPTH(a0)
         move.l  #SHARE_DST,BLTDPTH(a0)
+        ifd     TINY
+        move.w  #$0041,BLTSIZE(a0)     ; height=1,width=1 -- near-instant blit
+        else
         move.w  #$7D01,BLTSIZE(a0)     ; height=500,width=1 -- starts the blit
+        endif
         endif
 
         moveq   #0,d0

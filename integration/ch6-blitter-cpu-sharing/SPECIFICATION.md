@@ -57,8 +57,10 @@ program is the stimulus; the C++ test grades what the ports showed.
     unless the 'copper danger bit', COPCON is set true." FASTRUN's and
     FASTRUN-LOCKOUT's own stimuli set it so the Copper's own list can
     reach `BLTSIZE`.
-- One colour clock (one memory slot) is 8 `clk_sys` cycles
-  (`amiga_clk.v`: `cck` toggles once every 4 `clk_sys`).
+- One colour clock (one memory slot, p.194) is the unit of every slot count
+  below. Its length in `clk_sys` cycles is derived in the run, from Figure
+  6-9's refresh pattern, and asserted there (SLOT-UNIT below); it is not an
+  input of this specification.
 - Every assertion's `expect()` label starts with its own short id (`A1`,
   `A2`, ...), then `[p<page>...]` where it carries claim ids (an id-less
   label states its page inline), then every claim id it establishes in
@@ -88,6 +90,48 @@ blit's destination reads back as the known source word. Printed as
 
 Mutation (`prog_fixture_mut.s`, `NMH_MUTATE=FIXTURE`): stores $DEAD
 instead of $BEEF; the unchanged check must go red.
+
+## Slot unit (no claim id)
+
+### SLOT-UNIT [Figure 6-9, p194] four refresh slots on every other memory cycle
+
+No claim id (an apparatus check: every slot-dependent line below counts in
+this unit).
+
+Proposition: p.194 lists "4 cycles for memory refresh" per horizontal line
+and Figure 6-9 draws them on every other memory cycle (slots 0, 2, 4 and 6
+of the line's own refresh block). Two refresh accesses of one line are
+therefore two slots apart, and the smallest positive gap between two
+refresh accesses of a run is two slots.
+
+Program: `prog_sharing.s`, `BASELINE` build (no DMA channel enabled): its
+only RAM-port accesses are the 68000's own (program fetches in
+$080400-$0805FF, the scratch write, the reset-vector reads from the overlay
+window) and refresh, which no DMACON bit switches off; every other read is
+refresh, by exclusion.
+
+Observed: the refresh reads grouped into lines (a gap over eight times the
+smallest gap starts a new group); for every group its size and the offsets
+of its accesses from its first.
+
+Derived: the slot unit, half the smallest positive gap between two refresh
+accesses.
+
+Expected value: every group holds exactly four accesses, at offsets of 0, 2,
+4 and 6 slot units, and at least one group is found (a group the capture
+ended inside is not a line and is left out). The modal line period is
+printed as a measurement and graded by nothing: p.194 gives "227.5" colour
+clocks per line, an average of lines of different lengths.
+
+Mutation (`NMH_MUTATE=SLOT-UNIT`): the capture the comparator reads is the
+four-low-resolution-bitplane build, whose bitplane DMA adds reads to the
+refresh reads, so that its groups are not four refresh slots per line; the
+unit stays the baseline's. The unchanged "every group is four accesses at
+0, 2, 4 and 6 units" check must go red.
+
+If the unit cannot be derived or the pattern fails, every slot-dependent
+line (A8, SYSDMA-C29, A9, A10, A11, A6, OPEN50, PARITY-REF, PARITY) prints
+`NOT GRADED` naming SLOT-UNIT.
 
 ## Assertions
 
@@ -239,15 +283,18 @@ replaced with the true one-word (`SMALL`) build, already finished (BBUSY
 clear) by the time it is read; the unchanged "BBUSY set, more writes
 still to come" check must go red.
 
-### A2 [p169,p186] the CPU keeps running while the blitter works
+### A2 [p169,p186,p198] the CPU keeps running while the blitter works
 
 Claims: `6-intro.c20`, `ch6-intro.c21`, `ch6-intro.c22`,
 `6-blitter-done-flag.c2`, `6-blitter-done-flag.c3`, `ch6-done.c2`,
-`ch6-done.c3`.
+`ch6-done.c3`, `ch6-sysdma.c53`.
 
 Proposition: the blitter is an asynchronous coprocessor; the 68000 is not
 halted or blocked while a blit is in progress -- existence only, at least
-one CPU write strictly inside the blit's active window.
+one CPU write strictly inside the blit's active window. p.198: "There are
+certain cases, however, when the blitter and the 68000 can share memory
+cycles" (`ch6-sysdma.c53`): a share-mode blit's active window in which the
+CPU also makes chip-bus writes is such a case.
 
 Program (`prog_sharing.s`, `SHARE` build): a tight CPU loop increments a
 counter and stores it to the scratch word on every pass, concurrently
@@ -263,9 +310,9 @@ Expected value: existence only -- at least one such write. p.169 ("the
 680x0 CPU continues to run as the blit is executing") and p.186 ("they
 can both work concurrently") give no bound on how long the CPU may then
 wait between two chip-bus writes; p.198's own release rule (three denied
-cycles, one released) is what governs that, graded separately (the A5
-halt below). A bound invented here (a fraction of the window, a multiple
-of the median gap) would not be from the page.
+cycles, one released) is what governs that, withdrawn below (A5-WITHDRAWN).
+A bound invented here (a fraction of the window, a multiple of the median
+gap) would not be from the page.
 
 Measured: 48 scratch writes strictly inside the window on fx68k, 50 on
 TG68K.
@@ -275,13 +322,14 @@ Mutation (`prog_sharing_tiny.s`, `SHARE` and `TINY` both set,
 the unchanged check must go red (the active window collapses to zero
 length, so no write can fall strictly inside it).
 
-### A4 [p194,p198] the blitter has higher DMA priority than the 68000
+### A4 [p198] with DMAF_BLITHOG set the blitter keeps the bus
 
-Claims: `6-system-dma.c13`, `ch6-sysdma.c11`, `6-blitter-priority.c1`,
-`ch6-sysdma.c52`.
+No claim id: the inventory's claims on the blitter's priority over the 68000
+say "normally" (A4-SHARE below).
 
-Proposition: with `BLTPRI` set ("nasty"), the blitter never yields a
-contested cycle -- its fixed higher priority holds for the whole blit.
+Proposition: p.198: "If DMAF_BLITHOG is a 1, the blitter will keep the bus
+for every available Chip memory cycle." The register bit is `BLTPRI` of
+`DMACON` (the "blitter-nasty" bit).
 
 Program (`prog_sharing.s`, `NASTY` build): the same CPU scratch-counter
 loop as A2, `BLTPRI`=1, a large continuously-demanding blit.
@@ -290,50 +338,75 @@ Observed (precondition, its own id, "A4PRE"): the blit's active window
 spans enough cycles to have contained several CPU-loop iterations had the
 CPU been let through -- guards against a vacuously short window.
 
-Observed (claim): the count of scratch-word writes inside the active
+Observed (proposition): the count of scratch-word writes inside the active
 window.
 
-Expected value: precondition holds, and the count is exactly zero.
+Expected value: precondition holds, and the count is exactly zero. If the
+precondition fails the line prints `NOT GRADED`.
 
 Mutation (`prog_sharing_share.s`, `NMH_MUTATE=A4`): swaps in the
 share-mode capture for this same check; the unchanged "count is zero"
-check must go red (share mode lets some through, per A8/SLOTSPAN below).
-The precondition itself is not separately exercised by a mutation: every
-capture in this package that shrinks the window also changes `BLTPRI` or
-the display configuration, which flips the main assertion rather than
-isolating the window-length precondition alone -- not exercised, by a
-scope decision.
+check must go red (share mode lets some through).
 
-### A5-WITHDRAWN [p198] share mode: the blitter yields after N consecutive denied CPU cycles
+Precondition mutation (`prog_sharing_nasty_tiny.s`, `NASTY` and `TINY` set,
+`NMH_MUTATE=A4PRE`): the nasty-mode blit shrinks to a near-instant one-word
+transfer; the unchanged "window long enough" check must go red, and A4
+prints `NOT GRADED`.
 
-Claims: `6-blitter-priority.c13`, `ch6-sysdma.c53`, `ch6-sysdma.c62`.
-**Withdrawn** (`checks.record()`, not `expect()` -- these ids are not on
-a graded line; no mutation).
+### A4-SHARE [p194,p198] the blitter normally has a higher priority than the 68000
 
-p.198: "If the 68000 is unsatisfied for three consecutive memory cycles,
-the blitter will release the bus for one cycle." p.194 defines a memory
-cycle as one colour clock (one slot). The page does not fix from which
-slot after a granted CPU access the "unsatisfied" count is meant to
-start; three readings are each consistent with the RAM-port log and
-disagree with each other about the CPU-to-CPU grant spacing they predict
-in the share-mode window (`prog_sharing_share.s`):
+Claims: `6-system-dma.c13`, `ch6-sysdma.c11`, `6-blitter-priority.c1`,
+`ch6-sysdma.c52`.
 
-| reading | the 68000 requests from | spacing between grants | blitter slots between |
-|---|---|---|---|
-| every slot, from the granted slot + 1 | g+1 | 4 slots | 3 |
-| every slot, from g+2 (past Figure 6-10's own internal-operation portion) | g+2 | 5 slots | 4 |
-| only the 68000's own even-numbered memory cycles (p.196), from g+2 | g+2 | 8 slots | 7 |
+Proposition: p.194 "The blitter is given the higher priority because it
+performs data copying, modifying, and line drawing operations operations
+much faster than the 68000"; p.198 "the blitter normally has a higher
+priority than the processor for DMA cycles". With `BLTPRI` clear (share
+mode, "normally") a CPU that is continuously ready loses cycles to the
+blitter: a 68000 with priority over the blitter would be served first in
+every contested slot and keep the rate it has with the bus to itself.
 
-The RAM-port log shows a dominant 5-slot spacing (4 blitter accesses
-between consecutive CPU grants: 189 of 241 fx68k instances, 244 of 253
-TG68K), matching the second reading -- but that reading puts every other
-CPU grant on an odd-numbered slot, which p.196 excludes (see PARITY
-below, which grades exactly those odd-slot grants in the share-mode
-window and is red on both cores independent of which of these three
-readings is meant). No reading agrees with both p.198 and p.196 at once;
-the page is ambiguous at the point tested. Writing a new assertion here
-would mean picking the counting convention itself, which the page does
-not license.
+Program: `prog_sharing.s`, `SHARE` build (the share-mode blit's active window
+with the CPU scratch-counter loop running), against `BASELINE` (the same
+loop, no DMA, the bus to itself).
+
+Observed (precondition, "A4-SHARE-PRE", no claim id): the share window is
+nonempty and the reference run holds CPU accesses.
+
+Observed (proposition): the count of the CPU's chip-bus accesses (program
+fetches and scratch writes) per `clk_sys` inside the share-mode blit's
+active window, against the same count over the BASELINE run from its first
+to its last CPU access. The two rates are compared by cross multiplication,
+so no division and no threshold enters.
+
+Expected value: the in-window rate is strictly lower than the free rate.
+
+Mutation (`NMH_MUTATE=A4-SHARE`): the reference rate is taken from the
+nasty-mode blit's own active window (`prog_sharing_nasty.s`, where the CPU
+makes two accesses) instead of the BASELINE run; the unchanged "strictly
+lower" check must go red.
+
+Precondition mutation (`prog_sharing_tiny.s`, `NMH_MUTATE=A4-SHARE-PRE`): the
+share-mode blit shrinks to a near-instant one-word transfer, so its active
+window is empty; the precondition goes red and A4-SHARE prints `NOT GRADED`.
+
+### A5-WITHDRAWN [p198] share mode: the blitter releases the bus after three unsatisfied CPU cycles
+
+Claims: `6-blitter-priority.c13`, `ch6-sysdma.c62`. **Withdrawn**
+(`checks.record()`, not `expect()` -- these ids are not on a graded line; no
+mutation).
+
+p.198: "If the 68000 is unsatisfied for three consecutive memory cycles, the
+blitter will release the bus for one cycle." p.194 defines a memory cycle as
+one colour clock (one slot). The sentence is explicit; what this boundary
+lacks is its antecedent. A 68000 is unsatisfied from the cycle in which it
+raises a bus request, and the RAM-port log shows only the cycles in which an
+access happened, never the cycle in which a request was raised and denied.
+Where the count of consecutive unsatisfied cycles starts, and so when the
+release is due, cannot be located from the log, and `nanomig.v` has no CPU
+bus-request port to read it from. The modal spacing of consecutive CPU
+accesses inside the share-mode window is printed as a measurement and graded
+by nothing.
 
 ## How slots are numbered at the RAM port
 
@@ -629,29 +702,19 @@ aligned-loop planes instead of four; the unchanged "equals the no-DMA
 period" check must go red (160 `clk_sys` vs. 80, both cores -- six
 planes measurably slow the CPU, per A11/OPEN50).
 
-### SLOTSPAN [p196] a 68000 cycle is one memory slot plus one free slot
+### SLOTSPAN-WITHDRAWN [p196] a 68000 cycle is one memory slot plus one free slot -- withdrawn
 
-Claim: `6-system-dma.c58`.
+Claim: `6-system-dma.c58`. **Withdrawn** (`checks.record()`; measured, not
+graded; no mutation).
 
-Proposition: Figure 6-10 divides an average 68000 cycle into an
-internal-operation half and a memory-access half of equal length -- one
-memory slot occupied, the neighbouring slot free.
-
-Program: `prog_sharing.s`, `BASELINE` build (no DMA at all).
-
-Observed: the modal (most frequent) gap between consecutive CPU bus
-accesses.
-
-Expected value: exactly two slots (16 `clk_sys`).
-
-Measured: 16 `clk_sys` on both cores.
-
-Mutation (`NMH_MUTATE=SLOTSPAN`): the *same* quantity (the modal gap
-between consecutive CPU bus accesses) is taken from the share-mode
-blit's own active window instead (`prog_sharing_share.s`) -- contended,
-not the stimulus's own free-running rhythm. The unchanged "exactly two
-slots" check must go red: the modal gap there is 40 `clk_sys` (5 slots),
-both cores.
+Figure 6-10 divides an average 68000 cycle into an internal-operation
+portion and a memory-access portion of equal length. The RAM port records
+one sample per CPU bus access, at the moment of the access: an access's own
+duration (the memory-access portion) and the internal-operation portion are
+not separately observable, only their sum, the interval between two accesses,
+and "average" ranges over an instruction mix the page does not give. The
+modal interval between consecutive CPU accesses of the `BASELINE` loop is
+printed as a measurement and graded by nothing.
 
 ### OPEN50 [p196,p197] six bitplanes steal 50% of the open slots four would have left
 
@@ -709,10 +772,12 @@ in the no-DMA run).** A real, measured disagreement between the two
 cores in the no-DMA case, not reconciled; both cores use odd slots under
 share-mode contention.
 
-Mutation (`NMH_MUTATE=PARITY`): both windows are replaced with the same
-live, proven input A8's own mutation uses -- the four-lores-plane
-build's own in-fetch-window CPU accesses, all on even slots by the same,
-unchanged reference -- and the check reads GREEN on both cores.
+Mutation (`NMH_MUTATE=PARITY`, `stimulus green`): PARITY is red on both cores
+unmutated. Both windows are replaced with a live input on which the same,
+unchanged comparator is proven to read GREEN -- the four-lores-plane
+build's own in-fetch-window CPU accesses, all on even slots by the same
+reference -- and the check reads green on both cores; the comparator is not
+hard-wired to fail.
 
 ### ORDER [p169] a blitter copy finishes before an equal-sized CPU copy loop
 

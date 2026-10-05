@@ -16,7 +16,11 @@
 // MUTATION A3 stimulus red blit size grown from one word to two hundred, via NMH_MUTATE=A3
 // MUTATION A3PRE stimulus red dummy chip-memory read moved before the blit is started, via NMH_MUTATE=A3PRE
 // MUTATION BBUSY-PREDICTS stimulus red the true 200-word blit substituted with the one-word build (already finished, BBUSY clear), via NMH_MUTATE=BBUSY-PREDICTS
+// MUTATION SLOT-UNIT stimulus red the refresh-pattern capture substituted with the four-lores-plane build, whose bitplane DMA adds reads to the refresh reads so that its groups are not four refresh slots per line, via NMH_MUTATE=SLOT-UNIT
+// MUTATION A4PRE stimulus red nasty-mode blit shrunk to a near-instant one-word transfer (prog_sharing_nasty_tiny.s), via NMH_MUTATE=A4PRE
 // MUTATION A4 stimulus red BLTPRI cleared (nasty -> share), via NMH_MUTATE=A4
+// MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
+// MUTATION A4-SHARE stimulus red reference rate taken from the nasty-mode blit's own active window (the CPU makes two accesses there) instead of the no-DMA run, via NMH_MUTATE=A4-SHARE
 // MUTATION A6 stimulus red six aligned planes substituted for four inside the fetch window, via NMH_MUTATE=A6
 // MUTATION A8 stimulus green baseline capture substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator), via NMH_MUTATE=A8
 // MUTATION A8 stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (live, odd-slot spacings on both cores, same unchanged comparator), via NMH_MUTATE=A8-SHARE
@@ -25,32 +29,28 @@
 // MUTATION A10 stimulus red bitplane resolution changed from high to low, via NMH_MUTATE=A10
 // MUTATION A10PRE stimulus red bitplane program substituted with one that never enables bitplane DMA, via NMH_MUTATE=A10PRE
 // MUTATION A11 stimulus red both sides run the same four-bitplane config, via NMH_MUTATE=A11
-// MUTATION PARITY stimulus red no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator), via NMH_MUTATE=PARITY
+// MUTATION PARITY stimulus green no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator): PARITY is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=PARITY
 // MUTATION PARITY-REF stimulus red the lores-plane capture substituted with the no-bitplane-DMA baseline (no BPL1 reads at all), via NMH_MUTATE=PARITY-REF
 // MUTATION SYSDMA-C29 stimulus red the misaligned (BRA.S) in-window capture substituted with the whole-4-clock-aligned loop's own (no waited step), via NMH_MUTATE=SYSDMA-C29
-// MUTATION SLOTSPAN stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (contended, 5 slots apart), via NMH_MUTATE=SLOTSPAN
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
 // MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
 // MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included; measured 0 in-window writes on fx68k (red through both the existence and the every-gap-equals-period clause) and 1 on TG68K (existence clause stays green; red only through the every-gap-equals-period clause, since a single in-window write forms no in-window gap), via NMH_MUTATE=FASTRUN
 // MUTATION FASTRUN-LOCKOUT stimulus red FR_CODE moved to chip RAM ($0C0800, prog_fastrun_lockout_chipcode.s), FR_CNT still in fast RAM: the fetch window is entirely DMA (A10PRE: p.197's own "40 * 4 = 160 time slots", none left over), so no CPU access is possible anywhere strictly inside it; measured 0 counter writes strictly inside the window on both cores, via NMH_MUTATE=FASTRUN-LOCKOUT
 // MUTATION FASTRUN-LOCKOUT-PRE stimulus red prog_fastrun_lockout_2plane.s (FR_2PLANE set): two hi-res bitplanes (BPLCON0 $A000, same DDFSTRT/DDFSTOP) leave 80 of the window's 160 slots free (Figure 6-9's own double dagger); the blitter's own first access lands inside the window instead of after it, so the precondition itself goes red, via NMH_MUTATE=FASTRUN-LOCKOUT-PRE
 //
-// A4's precondition (the nasty-mode window's own length) is not exercised
-// by a dedicated mutation: every capture in this package that shrinks the
-// window also changes BLTPRI or the display configuration, which would
-// flip the main assertion rather than isolate the window-length
-// precondition alone -- not exercised, by a scope decision. A5 is
-// withdrawn (see the A5-WITHDRAWN record below); it carries no assertion
-// and no mutation. ch6-multi.c4 is withdrawn (see the MULTI-C4-WITHDRAWN
-// record below); it carries no assertion and no mutation.
-// 6-system-dma.c56 is withdrawn (see the TAS-WITHDRAWN record below); it
-// carries no assertion and no mutation.
+// A5 is withdrawn (see the A5-WITHDRAWN record below); it carries no
+// assertion and no mutation. SLOTSPAN is withdrawn (see the SLOTSPAN-WITHDRAWN
+// record below); it carries no assertion and no mutation. ch6-multi.c4 is
+// withdrawn (see the MULTI-C4-WITHDRAWN record below); it carries no assertion
+// and no mutation. 6-system-dma.c56 is withdrawn (see the TAS-WITHDRAWN record
+// below); it carries no assertion and no mutation.
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -117,9 +117,12 @@ constexpr uint32_t kFrCopDataWord  = 0x0C1016;
 constexpr uint32_t kProgLo = 0x080400;
 constexpr uint32_t kProgHi = 0x080600;
 
-// amiga_clk.v: cck toggles once every 4 clk_sys, so one colour clock (one
-// memory slot) is 8 clk_sys.
-constexpr uint64_t kCck = 8;
+// The slot unit: one memory slot (one colour clock, p.194), in clk_sys cycles.
+// Derived in main() from the refresh pattern of a run with no DMA enabled
+// (Figure 6-9, p.194: four refresh slots, on every other memory cycle) and
+// asserted there (SLOT-UNIT-PRE, SLOT-UNIT); never read from an RTL source.
+// While it is not derived it is 1, so that no helper divides by zero.
+uint64_t kCck = 1;
 
 struct Checks {
     void expect(bool condition, const std::string& label) {
@@ -130,6 +133,10 @@ struct Checks {
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0, failed = 0;
 };
+
+void not_graded(Checks& checks, const std::string& id, const std::string& unmet) {
+    checks.record("NOT GRADED " + id + ": precondition(s) not met: " + unmet);
+}
 
 uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
 
@@ -481,6 +488,70 @@ std::vector<uint64_t> lores_inwindow_cpu_cycles(const Capture& cap_lores4) {
     return out;
 }
 
+// ---- the slot unit, from the refresh pattern -----------------------------
+//
+// A run with no DMA channel enabled (prog_sharing.s, BASELINE) carries only
+// the 68000's own accesses (program fetches, the scratch write, the reset
+// vector reads from the overlay window) and the refresh slots, which no
+// DMACON bit switches off: every other read in it is refresh, by exclusion.
+// p.194 lists "4 cycles for memory refresh" per line and Figure 6-9 draws
+// them on every other memory cycle, so two refresh accesses of one line are
+// two slots apart and the smallest positive gap between two refresh
+// accesses is two slots.
+
+struct RefreshSet {
+    std::vector<uint64_t> reads;  // chronological cycles of every read taken as refresh
+    size_t other = 0;             // accesses that are neither CPU, reset-vector nor refresh
+    uint64_t end = 0;             // cycle of the last access of the capture
+};
+
+RefreshSet refresh_by_exclusion(const Capture& c, uint32_t scratch_word) {
+    RefreshSet r;
+    for (const auto& a : c.log) {
+        r.end = a.cycle;
+        if (is_cpu_access(a, scratch_word)) continue;
+        if (!a.is_write && a.word_addr >= nmh::kKickShadowWordBase) continue; // reset-vector read
+        if (a.is_write) ++r.other; else r.reads.push_back(a.cycle);
+    }
+    return r;
+}
+
+uint64_t smallest_gap(const std::vector<uint64_t>& v) {
+    uint64_t small = 0;
+    for (size_t i = 1; i < v.size(); ++i) {
+        uint64_t d = v[i] - v[i - 1];
+        if (d > 0 && (small == 0 || d < small)) small = d;
+    }
+    return small;
+}
+
+// Groups the refresh reads into lines: a gap over eight times the smallest
+// gap starts a new group.
+std::vector<std::vector<uint64_t>> group_refresh(const std::vector<uint64_t>& reads, uint64_t small) {
+    std::vector<std::vector<uint64_t>> groups;
+    for (size_t i = 0; i < reads.size(); ++i) {
+        if (i == 0 || reads[i] - reads[i - 1] > 8 * small) groups.push_back({});
+        groups.back().push_back(reads[i]);
+    }
+    return groups;
+}
+
+// SLOT-UNIT's comparator: every line's refresh group holds four accesses, at
+// offsets 0, 2, 4 and 6 slots from the first (Figure 6-9). A trailing group
+// the capture ended inside is not a line and is left out; `lines` counts the
+// groups graded.
+bool refresh_pattern_ok(const RefreshSet& r, uint64_t unit, uint64_t small, size_t& lines) {
+    auto groups = group_refresh(r.reads, small);
+    if (!groups.empty() && r.end - groups.back().back() < 2 * small && groups.back().size() < 4) groups.pop_back();
+    lines = groups.size();
+    for (const auto& g : groups) {
+        if (g.size() != 4) return false;
+        for (size_t k = 0; k < 4; ++k)
+            if (g[k] - g[0] != 2 * k * unit) return false;
+    }
+    return lines > 0;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -638,6 +709,7 @@ int main(int argc, char** argv) {
     Capture cap_share  = run_capture(dir + "/prog_sharing_share.bin", kShareRunBudget, false, {});
     Capture cap_nasty  = run_capture(dir + "/prog_sharing_nasty.bin", kShareRunBudget, false, {});
     Capture cap_tiny   = run_capture(dir + "/prog_sharing_tiny.bin", kShareRunBudget, false, {});
+    Capture cap_nasty_tiny = run_capture(dir + "/prog_sharing_nasty_tiny.bin", kShareRunBudget, false, {});
     Capture cap_base_aligned = run_capture(dir + "/prog_sharing_aligned.bin", kShareRunBudget, false, {});
 
     Capture cap_lores4 = run_capture(dir + "/prog_bitplane.bin", kBpRunBudget, false, {});
@@ -656,6 +728,54 @@ int main(int argc, char** argv) {
                 " lores6.log.size=" + std::to_string(cap_lores6.log.size()) +
                 " lores4_aligned.log.size=" + std::to_string(cap_lores4_aligned.log.size()) +
                 " lores6_aligned.log.size=" + std::to_string(cap_lores6_aligned.log.size()));
+
+    // ---- SLOT-UNIT [Figure 6-9, p194] (no claim id): the slot unit every
+    // slot-dependent line below uses is derived from the refresh pattern of
+    // the no-DMA capture, and that pattern is asserted: p.194 lists "4 cycles
+    // for memory refresh" per horizontal line and Figure 6-9 draws them on
+    // every other memory cycle. The unit is the smallest positive gap between
+    // two refresh accesses divided by two (two slots apart); the assertion is
+    // that every line's refresh group holds exactly four accesses at 0, 2, 4
+    // and 6 units. A change of clock divider would move the unit and the
+    // pattern together; a capture whose low reads are not four refresh slots
+    // per line breaks the pattern.
+    bool slot_ok = false;
+    {
+        RefreshSet rs_base = refresh_by_exclusion(cap_base, word_addr(kShareScratch));
+        uint64_t small = smallest_gap(rs_base.reads);
+        uint64_t unit = small / 2;
+        size_t base_lines = 0;
+        slot_ok = small > 0 && small % 2 == 0 && refresh_pattern_ok(rs_base, unit, small, base_lines);
+        if (slot_ok) kCck = unit;
+
+        const Capture& sel = (mv == "SLOT-UNIT") ? cap_lores4 : cap_base;
+        RefreshSet rs_sel = refresh_by_exclusion(sel, word_addr(kShareScratch));
+        size_t sel_lines = 0;
+        bool pattern = small > 0 && small % 2 == 0 && refresh_pattern_ok(rs_sel, unit, small, sel_lines);
+
+        std::vector<uint64_t> starts;
+        for (const auto& g : group_refresh(rs_base.reads, small)) starts.push_back(g.front());
+        std::map<uint64_t, size_t> period_hist;
+        for (size_t i = 1; i < starts.size(); ++i) ++period_hist[starts[i] - starts[i - 1]];
+        uint64_t line_period = 0; size_t line_period_n = 0;
+        for (const auto& kv : period_hist) if (kv.second > line_period_n) { line_period_n = kv.second; line_period = kv.first; }
+        checks.note("SLOT-UNIT: smallest gap between two refresh accesses = " + std::to_string(small) +
+                    " clk_sys, slot unit = " + std::to_string(unit) + " clk_sys; modal line period = " +
+                    std::to_string(line_period) + " clk_sys = " +
+                    std::to_string(unit ? line_period / unit : 0) + " slots (" + std::to_string(line_period_n) +
+                    " of " + std::to_string(starts.size() > 0 ? starts.size() - 1 : 0) + " line intervals); " +
+                    std::to_string(sel_lines) + " refresh group(s) graded");
+        checks.expect(pattern,
+            "SLOT-UNIT [Figure 6-9, p194]: every line's refresh group holds exactly four accesses at 0, 2, 4 "
+            "and 6 slot units from its first (unit " + std::to_string(unit) + " clk_sys = half the smallest "
+            "refresh gap; " + std::to_string(sel_lines) + " group(s)) [not graded -- apparatus check, no claim uid]");
+        if (!slot_ok) kCck = 1;
+    }
+    auto gated = [&](const std::string& id) {
+        if (slot_ok) return true;
+        not_graded(checks, id, "SLOT-UNIT");
+        return false;
+    };
 
     auto dst_writes = [](const Capture& c) {
         return write_cycles_in_range(c.log, word_addr(kShareDstLo), word_addr(kShareDstHi));
@@ -685,16 +805,21 @@ int main(int argc, char** argv) {
                     ", " + std::to_string(in_win.size()) +
                     " scratch write(s) strictly inside it (excluding the window's own endpoints)");
         checks.expect(lo != hi && !in_win.empty(),
-            "A2 [p169,p186] 6-intro.c20,ch6-intro.c21,ch6-intro.c22,6-blitter-done-flag.c2,"
-            "6-blitter-done-flag.c3,ch6-done.c2,ch6-done.c3: the CPU makes at least one write to "
-            "its own counter strictly inside a share-mode blit's active window (" +
-            std::to_string(in_win.size()) + " such write(s)) -- existence only, no bound of its "
+            "A2 [p169,p186,p198] 6-intro.c20,ch6-intro.c21,ch6-intro.c22,6-blitter-done-flag.c2,"
+            "6-blitter-done-flag.c3,ch6-done.c2,ch6-done.c3,ch6-sysdma.c53: the CPU makes at least one "
+            "write to its own counter strictly inside a share-mode blit's active window (" +
+            std::to_string(in_win.size()) + " such write(s)), so the blitter and the 68000 are both "
+            "served from the chip bus cycles of that window -- existence only, no bound of its "
             "own on the gap between writes");
     }
 
-    // ---- A4 [p194,p198] the blitter has higher DMA priority than the 68000 --
+    // ---- A4 [p198] with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus.
+    // p.198: "If DMAF_BLITHOG is a 1, the blitter will keep the bus for every
+    // available Chip memory cycle." No claim id is carried: the claim ids of
+    // the blitter's priority over the 68000 say "normally", which A4-SHARE
+    // below grades in share mode.
     {
-        const Capture& cap = (mv == "A4") ? cap_share : cap_nasty;
+        const Capture& cap = (mv == "A4") ? cap_share : (mv == "A4PRE" ? cap_nasty_tiny : cap_nasty);
         auto [lo, hi] = dst_span(cap);
         auto sc = scratch_writes(cap);
         size_t in_win = count_in_window(sc, lo, hi);
@@ -702,40 +827,97 @@ int main(int argc, char** argv) {
         checks.expect(nontrivial,
             "A4PRE: the nasty-mode blit's active window is long enough to have contained "
             "several CPU-loop iterations had the CPU been let through (" + std::to_string(hi - lo) + " cycles)");
-        checks.expect(nontrivial && in_win == 0,
-            "A4 [p194,p198] 6-system-dma.c13,ch6-sysdma.c11,6-blitter-priority.c1,ch6-sysdma.c52: "
-            "with BLTPRI set (nasty), the CPU makes no chip-bus progress at all during the blit's "
-            "active window (" + std::to_string(in_win) + " scratch writes)");
+        if (nontrivial) {
+            checks.expect(in_win == 0,
+                "A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available "
+                "Chip memory cycle -- the CPU writes its own counter not once during the blit's active "
+                "window (" + std::to_string(in_win) + " scratch writes)");
+        } else {
+            not_graded(checks, "A4", "A4PRE");
+        }
     }
 
-    // ---- A5 [p198] share mode: the blitter yields after N consecutive
-    // denied CPU cycles -- WITHDRAWN. p.198 fixes "three" denials then a
-    // released fourth slot, but not which slot after a granted CPU access
-    // the "unsatisfied" count starts from. The RAM-port log gives three
-    // readings of "unsatisfied", each predicting a different CPU-to-CPU
-    // grant spacing in the share-mode window (measured: 5 slots, 4
-    // blitter accesses between, fx68k 189 of 241, TG68K 243 of 253):
-    //   - every slot counted from g+1: 4 slots between grants, 3 blitter
-    //   - every slot counted from g+2 (past Figure 6-10's own internal-
-    //     operation portion): 5 slots between grants, 4 blitter
-    //   - only the CPU's own even-numbered memory cycles (p.196), from
-    //     g+2: 8 slots between grants, 7 blitter
-    // The measured 5-slot spacing matches the second reading, but that
-    // reading puts every other grant on an ODD slot, which p.196
-    // excludes -- no reading agrees with both p.198 and p.196 at once.
-    // The page is ambiguous at the point tested (BRIEF.md's halt
-    // condition); the odd-slot grants themselves are not lost, though --
-    // they are exactly what the corrected PARITY assertion below grades,
-    // red on both cores regardless of which of the three readings is
-    // meant.
-    checks.record(
-        "A5-WITHDRAWN [p198] 6-blitter-priority.c13,ch6-sysdma.c53,ch6-sysdma.c62: withdrawn -- "
-        "the page does not fix which slot after a granted CPU access the unsatisfied-cycle count "
-        "starts from, three readings of it each predict a different grant spacing, and the "
-        "measured spacing (5 slots, 4 blitter accesses between, both cores) matches only one of "
-        "them -- the one that puts every other CPU grant on an odd slot, which p.196 excludes. "
-        "The page is ambiguous at this point; the odd-slot grants themselves are graded by PARITY "
-        "below, not lost by this withdrawal");
+    // ---- A4-SHARE [p194,p198] "the blitter normally has a higher priority
+    // than the processor": with BLTPRI clear (share mode) a CPU loop that is
+    // continuously ready (the BASELINE build runs it at its own free rate)
+    // loses cycles to the blitter -- inside the blit's active window it makes
+    // fewer chip-bus accesses per slot than it makes with the bus to itself. A
+    // 68000 with priority over the blitter would be served first in every
+    // contested slot and keep its free rate. Rates are compared by cross
+    // multiplication (accesses * reference span < reference accesses * span),
+    // so no threshold and no division enters.
+    {
+        struct Rate { uint64_t n = 0, span = 0; };
+        auto cpu_rate = [](const Capture& c, uint64_t lo, uint64_t hi) {
+            Rate r; r.span = hi > lo ? hi - lo : 0;
+            for (const auto& a : c.log)
+                if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi) ++r.n;
+            return r;
+        };
+        auto cpu_span = [](const Capture& c) -> std::pair<uint64_t, uint64_t> {
+            uint64_t first = 0, last = 0; bool any = false;
+            for (const auto& a : c.log)
+                if (is_cpu_access(a, word_addr(kShareScratch))) { if (!any) first = a.cycle; last = a.cycle; any = true; }
+            return {first, last};
+        };
+        const Capture& cap = (mv == "A4-SHARE-PRE") ? cap_tiny : cap_share;
+        auto [lo, hi] = dst_span(cap);
+        Rate win = cpu_rate(cap, lo, hi);
+        // Reference: the same loop with the bus to itself (the BASELINE
+        // capture, first to last CPU access); the mutation takes the nasty-
+        // mode blit's own active window instead.
+        std::pair<uint64_t, uint64_t> rw = (mv == "A4-SHARE") ? dst_span(cap_nasty) : cpu_span(cap_base);
+        Rate ref = cpu_rate((mv == "A4-SHARE") ? cap_nasty : cap_base, rw.first, rw.second);
+        bool pre = lo != hi && win.span > 0 && ref.span > 0 && ref.n > 0;
+        checks.note("A4-SHARE: CPU accesses " + std::to_string(win.n) + " in a share-mode window of " +
+                    std::to_string(win.span) + " clk_sys; reference " + std::to_string(ref.n) + " in " +
+                    std::to_string(ref.span) + " clk_sys (" + std::string(mv == "A4-SHARE" ? "nasty-mode window" : "no-DMA run") + ")");
+        checks.expect(pre,
+            "A4-SHARE-PRE: the share-mode blit has a nonempty active window and the reference run holds "
+            "CPU accesses (window " + std::to_string(win.span) + " clk_sys, reference " + std::to_string(ref.span) +
+            " clk_sys) [not graded -- apparatus check, no claim uid]");
+        if (pre) {
+            checks.expect(win.n * ref.span < ref.n * win.span,
+                "A4-SHARE [p194,p198] 6-system-dma.c13,ch6-sysdma.c11,6-blitter-priority.c1,ch6-sysdma.c52: "
+                "with BLTPRI clear the blitter still has priority over the 68000 -- the continuously ready "
+                "CPU loop makes fewer chip-bus accesses per clk_sys inside the share-mode blit's active window (" +
+                std::to_string(win.n) + " in " + std::to_string(win.span) + ") than with the bus to itself (" +
+                std::to_string(ref.n) + " in " + std::to_string(ref.span) + ")");
+        } else {
+            not_graded(checks, "A4-SHARE", "A4-SHARE-PRE");
+        }
+    }
+
+    // ---- A5 [p198] share mode: "If the 68000 is unsatisfied for three
+    // consecutive memory cycles, the blitter will release the bus for one
+    // cycle" -- WITHDRAWN. The sentence is explicit, but its antecedent is
+    // the 68000's own bus request: a request is unsatisfied from the cycle it
+    // is raised, and the RAM-port log shows only the cycles in which an
+    // access happened, never the cycle in which one was requested and
+    // denied. The count of consecutive unsatisfied cycles, and with it the
+    // cycle at which the blitter's release is due, cannot be located at this
+    // boundary; nanomig.v exposes no CPU bus-request signal. The measured
+    // line below is computed from the run and graded by nothing.
+    {
+        auto [lo, hi] = dst_span(cap_share);
+        std::vector<uint64_t> cpu;
+        for (const auto& a : cap_share.log)
+            if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi) cpu.push_back(a.cycle);
+        std::map<uint64_t, size_t> hist;
+        for (size_t i = 1; i < cpu.size(); ++i) ++hist[cpu[i] - cpu[i - 1]];
+        uint64_t mode_gap = 0; size_t mode_n = 0;
+        for (const auto& kv : hist) if (kv.second > mode_n) { mode_n = kv.second; mode_gap = kv.first; }
+        checks.note("A5: inside the share-mode blit's active window consecutive CPU accesses are most often " +
+                    std::to_string(mode_gap) + " clk_sys apart (" + std::to_string(mode_n) + " of " +
+                    std::to_string(cpu.empty() ? 0 : cpu.size() - 1) + " intervals)");
+        checks.record(
+            "A5-WITHDRAWN [p198] 6-blitter-priority.c13,ch6-sysdma.c62: withdrawn -- the page's rule "
+            "(three consecutive unsatisfied 68000 memory cycles, then the blitter releases the bus for one "
+            "cycle) counts cycles in which the 68000 has a request outstanding, and the RAM port "
+            "shows only the cycles in which an access happened; no cycle in which a request was "
+            "raised and denied is visible, so where the count starts, and when the release is due, "
+            "cannot be located at this boundary (nanomig.v has no CPU bus-request port)");
+    }
 
     // ---- A8 [p194,p196] a denied cycle means the CPU simply waits for
     // its own next available (same-parity) slot -- graded per line
@@ -743,7 +925,7 @@ int main(int argc, char** argv) {
     // slots, p.194, an odd count, so a fixed-cycle reference's parity
     // flips every line: a pair spanning a line start is excluded, not
     // counted as a violation).
-    {
+    if (gated("A8")) {
         bool mutated = (mv == "A8");
         bool mutated_share = (mv == "A8-SHARE");
         const Capture& src_cap = mutated ? cap_lores4 : (mutated_share ? cap_share : cap_base);
@@ -787,7 +969,7 @@ int main(int argc, char** argv) {
     // in place of BRA.S) has no such step -- used here as SYSDMA-C29's
     // own mutation. TG68K's own loop has no fractional-slot instruction
     // either, so it is reported not exercised rather than graded.
-    {
+    if (gated("SYSDMA-C29")) {
         bool mutated = (mv == "SYSDMA-C29");
         const Capture& cap = mutated ? cap_lores4_aligned : cap_lores4;
         std::vector<uint64_t> cpu_src = lores_inwindow_cpu_cycles(cap);
@@ -811,7 +993,7 @@ int main(int argc, char** argv) {
     }
 
     // ---- A9 [p196] four or fewer low-resolution bitplanes still let the CPU through
-    {
+    if (gated("A9")) {
         const Capture& pre_cap = (mv == "A9PRE") ? cap_base : cap_lores4;
         auto pre_wins = fetch_windows(bp_reads_of(pre_cap));
         checks.expect(!pre_wins.empty(),
@@ -833,7 +1015,7 @@ int main(int argc, char** argv) {
     }
 
     // ---- A10 [p196,p197] four high-resolution bitplanes lock the CPU out
-    {
+    if (gated("A10")) {
         const Capture& pre_cap = (mv == "A10PRE") ? cap_base : cap_hires4;
         auto pre_wins = fetch_windows(bp_reads_of(pre_cap));
         auto pre_cyc = cyc_of(pre_cap);
@@ -859,7 +1041,7 @@ int main(int argc, char** argv) {
     }
 
     // ---- A11 [p196] more than four low-resolution bitplanes measurably steal cycles
-    {
+    if (gated("A11")) {
         size_t lo4 = bp_scratch_count(cap_lores4);
         size_t lo6 = bp_scratch_count((mv == "A11") ? cap_lores4 : cap_lores6);
         checks.expect(lo4 > 0 && lo6 * 100 <= lo4 * 95,
@@ -873,7 +1055,7 @@ int main(int argc, char** argv) {
     // whole slots (MC68000 timing tables: ADDQ.W Dn = 4 clocks, MOVE.W
     // Dn,(An) = 8, JMP (An) = 8 -- every one a whole multiple of 4,
     // unlike BRA.S's 10; see SYSDMA-C29 above and prog_sharing_aligned.s).
-    {
+    if (gated("A6")) {
         const Capture& cap = (mv == "A6") ? cap_lores6_aligned : cap_lores4_aligned;
         auto wins = fetch_windows(bp_reads_of(cap));
         auto sw = write_cycles_in_range(cap.log, word_addr(kBpScratch), word_addr(kBpScratch) + 1);
@@ -900,42 +1082,35 @@ int main(int argc, char** argv) {
             " clk_sys) equals its no-DMA period (" + std::to_string(base_period) + " clk_sys)");
     }
 
-    // ---- SLOTSPAN [p196] 6-system-dma.c58: Figure 6-10 divides an
-    // average 68000 cycle into an internal-operation half and a
-    // memory-access half -- one memory slot, one free slot. Measured as
-    // the modal gap between consecutive CPU bus accesses in the no-DMA
-    // baseline (or, under NMH_MUTATE=SLOTSPAN, the SAME quantity --
-    // consecutive CPU-access gaps -- taken from the share-mode blit's own
-    // active window instead, contended and 5 slots apart, not 2).
+    // ---- SLOTSPAN [p196] 6-system-dma.c58 -- withdrawn. Figure 6-10 divides
+    // an average 68000 cycle into an internal-operation portion and a
+    // memory-access portion of equal length. The RAM port records one sample
+    // per CPU bus access, at the moment of the access: an access's own
+    // duration (the memory-access portion) and the internal-operation portion
+    // are not separately observable, only their sum, the interval between two
+    // accesses, and "average" ranges over an instruction mix the page does not
+    // give. The modal interval of this package's own loop is printed as a
+    // measurement and graded by nothing.
     {
+        std::vector<uint64_t> cpu_cycles;
+        for (const auto& a : cap_base.log)
+            if (is_cpu_access(a, word_addr(kShareScratch))) cpu_cycles.push_back(a.cycle);
         std::vector<uint64_t> gaps;
-        if (mv == "SLOTSPAN") {
-            auto [lo, hi] = dst_span(cap_share);
-            std::vector<uint64_t> cpu_cycles;
-            for (const auto& a : cap_share.log)
-                if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi)
-                    cpu_cycles.push_back(a.cycle);
-            std::sort(cpu_cycles.begin(), cpu_cycles.end());
-            for (size_t i = 1; i < cpu_cycles.size(); ++i) gaps.push_back(cpu_cycles[i] - cpu_cycles[i - 1]);
-        } else {
-            std::vector<uint64_t> cpu_cycles;
-            for (const auto& a : cap_base.log)
-                if (is_cpu_access(a, word_addr(kShareScratch))) cpu_cycles.push_back(a.cycle);
-            std::sort(cpu_cycles.begin(), cpu_cycles.end());
-            for (size_t i = 1; i < cpu_cycles.size(); ++i) gaps.push_back(cpu_cycles[i] - cpu_cycles[i - 1]);
-        }
+        for (size_t i = 1; i < cpu_cycles.size(); ++i) gaps.push_back(cpu_cycles[i] - cpu_cycles[i - 1]);
         uint64_t m = mode_of(gaps);
-        checks.note("SLOTSPAN: modal consecutive-CPU-access gap (" +
-                    std::string(mv == "SLOTSPAN" ? "share-mode blit's own active window" : "no-DMA baseline") +
-                    ") = " + std::to_string(m) + " clk_sys (" + std::to_string(m / kCck) + " slot(s))");
-        checks.expect(!gaps.empty() && m == 2 * kCck,
-            "SLOTSPAN [p196] 6-system-dma.c58: each 68000 bus cycle occupies one memory slot "
-            "and leaves the neighbouring slot free -- the modal gap between consecutive CPU "
-            "accesses is exactly two slots (" + std::to_string(m) + " clk_sys)");
+        checks.note("SLOTSPAN: modal interval between consecutive CPU bus accesses of the BASELINE loop = " +
+                    std::to_string(m) + " clk_sys (" + std::to_string(m / kCck) + " slot(s)), " +
+                    std::to_string(gaps.size()) + " intervals");
+        checks.record(
+            "SLOTSPAN-WITHDRAWN [p196] 6-system-dma.c58: withdrawn -- the RAM port shows one sample per CPU "
+            "bus access, not where the access began or ended, so the memory-access portion and the "
+            "internal-operation portion of Figure 6-10's average 68000 cycle cannot be measured separately "
+            "at this boundary, and the page names no instruction mix over which the average is taken");
     }
 
+
     // ---- OPEN50 [p196,p197] six bitplanes steal 50% of the open slots four would have left
-    {
+    if (gated("OPEN50")) {
         auto median_dma_per_window = [](const Capture& c) {
             auto wins = fetch_windows(bp_reads_of(c));
             auto cyc = cyc_of(c);
@@ -964,7 +1139,7 @@ int main(int argc, char** argv) {
     // four-lores-plane build must therefore classify odd by this same
     // reference; a reference that mislabelled the phase would not show
     // this.
-    {
+    if (gated("PARITY-REF")) {
         const Capture& cap = (mv == "PARITY-REF") ? cap_base : cap_lores4;
         auto bpl = bp_reads_of(cap);
         LineRef lref = make_line_ref(cap.log);
@@ -991,7 +1166,7 @@ int main(int argc, char** argv) {
     // numbered at the RAM port" in SPECIFICATION.md) -- graded over the
     // no-DMA run and, separately, the share-mode blit's own active
     // window.
-    {
+    if (gated("PARITY")) {
         bool mutated = (mv == "PARITY");
 
         std::vector<uint64_t> base_cpu = mutated ? lores_inwindow_cpu_cycles(cap_lores4)
