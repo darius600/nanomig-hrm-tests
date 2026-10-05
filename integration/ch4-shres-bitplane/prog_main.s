@@ -213,7 +213,11 @@ PATTERN2TAB:
 	endif
 PATTERN2TAB_END:
 SPR0TAB:
+	ifd	MUT_C11
+	include	"bp_data_sprite0_vc11.i"
+	else
 	include	"bp_data_sprite0.i"
+	endif
 SPR0TAB_END:
 F0TAB:
 				include	"bp_cop_f0_base.i"
@@ -313,30 +317,78 @@ F6TAB:
 				endif
 F6TAB_END:
 F7TAB:
+				ifd	MUT_C11G
+				include	"bp_cop_f7_v6c.i"
+				else
 				ifd	MUT_V5C
 				include	"bp_cop_f7_v5c.i"
 				else
 				ifd	MUT_V6A
 				include	"bp_cop_f7_v6a.i"
 				else
+				ifd	MUT_V6C
+				include	"bp_cop_f7_v6c.i"
+				else
+				ifd	MUT_V6S
+				include	"bp_cop_f7_v6s.i"
+				else
+				ifd	MUT_C10
+				include	"bp_cop_f7_vc10.i"
+				else
+				ifd	MUT_C7B
+				include	"bp_cop_f7_vc7b.i"
+				else
+				ifd	MUT_RUNENDS
+				include	"bp_cop_f7_vruns.i"
+				else
+				ifd	MUT_C4C
+				include	"bp_cop_f7_vc4c.i"
+				else
 				include	"bp_cop_f7_base.i"
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
+				endif
 				endif
 				endif
 F7TAB_END:
 F8TAB:
+				ifd	MUT_C11G
+				include	"bp_cop_f8_vc11g.i"
+				else
+				ifd	MUT_V6E
+				include	"bp_cop_f8_v6e.i"
+				else
+				ifd	MUT_C4B
+				include	"bp_cop_f8_vc4b.i"
+				else
 				include	"bp_cop_f8_base.i"
+				endif
+				endif
+				endif
 F8TAB_END:
 F9TAB:
 				ifd	MUT_V6B
 				include	"bp_cop_f9_v6b.i"
 				else
+				ifd	MUT_V6Q
+				include	"bp_cop_f9_v6q.i"
+				else
 				include	"bp_cop_f9_base.i"
+				endif
 				endif
 F9TAB_END:
 F10TAB:
 				ifd	MUT_V6D
 				include	"bp_cop_f10_v6d.i"
 				else
+				ifd	MUT_V6L
+				include	"bp_cop_f10_v6l.i"
+				else
 				include	"bp_cop_f10_base.i"
+				endif
 				endif
 F10TAB_END:

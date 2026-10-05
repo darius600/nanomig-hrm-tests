@@ -20,28 +20,54 @@
 // preconditions it shares with other clauses move too, honestly, not
 // trimmed to look surgical). "->" separates the record's own targeted
 // clause from the rest of the cascade. Counts are fx68k's; TG68K's PASS,
-// FAIL and RECORDED lines are identical, line for line, on all twenty.
+// FAIL and RECORDED lines are identical, line for line, on every record below.
 //
-// MUTATION fixture NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF -> fixture only (67 passed, 35 failed)
-// MUTATION C1 NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> C1, and every SuperHires-dependent check downstream: C5/R2, R2 (F2-F4, and the bottom-line check), C6 (F1 diversity), C8 (F1-F4 pair coverage), all twelve P1.cX, P2's three palette-diversity checks; P4, P1J and the V4c checks print nothing at all (their own frames never decode) (20 passed, 28 failed)
+// MUTATION fixture NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF -> fixture only (74 passed, 38 failed)
+// MUTATION C1 NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> C1, and every SuperHires-dependent check downstream: C5/R2, R2 (F2-F4, and the bottom-line check), C6 (F1 diversity), C8 (F1-F4 pair coverage), all twelve P1.cX, P2's three palette-diversity checks; P4, P1J and the V4c checks print nothing at all (their own frames never decode); C5-F7F10 goes red with them (25 passed, 32 failed)
 // MUTATION C2 NMH_MUTATE=C2: the program never writes DONE -> C2 only; grading stops there, by the comparator's own rule (3 passed, 1 failed)
-// MUTATION C3 NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> C3, and F1's own downstream: C4 (header), C5/R2, C6's old diversity check, R2's bottom-line check, P2's three palette-diversity checks; P2.R/G/B themselves turn PASS, since F2-F4's own Q0 lines still populate them once F1 drops out (63 passed, 39 failed)
-// MUTATION C4 NMH_MUTATE=C4: F5's list points at itself instead of F6 -> C4, and F6's own downstream: C7 (both the band count and the timing check), C6 (F6), C3 (the F1-F6 aggregate), R1 (the F1-F6 aggregate), R2 (F6's lores mapping) (61 passed, 41 failed)
-// MUTATION C5/R2 NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> C5/R2, C4 (header), and P2's three palette-diversity checks; P2.R/G/B themselves turn PASS on F2-F4's own Q0 lines -- P2's own green control, on the same comparator, with the diversity check honestly reporting why (66 passed, 36 failed)
-// MUTATION C6 NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window -> C6, and F1's own downstream: C4 (header), C5/R2, C6's old diversity check, R2's bottom-line check, P2's three palette-diversity checks; P2.R/G/B turn PASS the same way as under C5 (64 passed, 38 failed)
-// MUTATION C7 NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00 -> C7's own timing check only; the band-count check and every other line stay at baseline (67 passed, 35 failed)
-// MUTATION C8 NMH_MUTATE=C8: the pattern section restricted to values 0 and 3 -> C8's own pair-coverage check, and C6's old diversity check; eighteen P4 bits that FAIL at baseline and twelve that PASS become NOT OBSERVABLE instead (the restricted pattern no longer puts every value on the perturbed lines), not a new FAIL or a lost one (48 passed, 24 failed)
-// MUTATION C9 NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> C9, and all twelve P1.cX (sprite 0 draws over F1's own playfield) (55 passed, 47 failed)
-// MUTATION P1.3R NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> all twelve P1.cX, through both letters of every component, on the Q3 band's pixels (56 passed, 46 failed)
-// MUTATION C5/R2 NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000) -> identical to C5 (same list, bp_cop_f1_v2.i); not the specification's V2, P2's own hires contrast, which the package does not build (66 passed, 36 failed)
-// MUTATION P3.H/P3.L/P7.1 NMH_MUTATE=V3A: F1 in hires with S0-S3 replaced by a COLOR01 sweep -> C4 (header), C5/R2, C7's band count, P2's three palette-diversity checks, and P2.R/G/B turning PASS the same way as under C5; P3.H, P3.L and P7.1 stay FAIL, already red at baseline through their own SuperHires half (65 passed, 37 failed)
-// MUTATION P3.H NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC -> no new red: P3.H is already FAIL at baseline (its SuperHires half). MEASURED confirms the targeted mechanism still moves: the Hires side drops from 16 to 4 distinct values under this mutation (68 passed, 34 failed)
-// MUTATION P3.L NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC -> no new red, for the same reason as V3B; MEASURED confirms the Lores side drops from 16 to 4 distinct values (68 passed, 34 failed)
-// MUTATION P4.n00b11 NMH_MUTATE=V4A: F2 band 11 (n=00,b=11) also inverts COLOR01 bit11 (another Color) -> P4.n00b11 only, of all 204 P4/P1J lines (67 passed, 35 failed)
-// MUTATION C4/R2 NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000) -> C4 (header) and R2 (F2-F4's own mapping, now checked for the SuperHires form specifically); no P4 or P1J line moves, and C7's band count holds (F4's own list carries its closing restore band) (66 passed, 36 failed)
-// MUTATION P5.L NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, same build as V4B) -> identical cascade to V4B (C4, R2); P5.L's SuperHires half stays FAIL, already red at baseline -- this run shows nothing new about it, and no mutation in this package can turn that comparator green through a live input (see the RECORDED line next to it) (66 passed, 36 failed)
-// MUTATION P4 (24 p-half bits of COLOR00-03) NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> exactly the 24 p-half bits, all PASS at baseline, turn FAIL; no other P4/P1J line moves (44 passed, 58 failed)
-// MUTATION P5.L (Hires half) NMH_MUTATE=V5B: F5's COLOR05 band inverts COLOR01 instead -> "registers COLOR04-0F change no graded pixel in Hires mode" only (67 passed, 35 failed)
+// MUTATION C3 NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> C3, and F1's own downstream: C4 (header), C5/R2, C6's old diversity check, R2's bottom-line check, P2's three palette-diversity checks; P2.R/G/B themselves turn PASS, since F2-F4's own Q0 lines still populate them once F1 drops out (70 passed, 42 failed)
+// MUTATION C4 NMH_MUTATE=C4: F5's list points at itself instead of F6 -> C4, and F6's own downstream: C7 (both the band count and the timing check), C6 (F6), C3 (the F1-F6 aggregate), R1 (the F1-F6 aggregate), R2 (F6's lores mapping); F7-F10 never run: C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10 (61 passed, 48 failed)
+// MUTATION C5/R2 NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> C5/R2, C4 (header), and P2's three palette-diversity checks; P2.R/G/B themselves turn PASS on F2-F4's own Q0 lines -- P2's own green control, on the same comparator, with the diversity check honestly reporting why (73 passed, 39 failed)
+// MUTATION C6 NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window -> C6, and F1's own downstream: C4 (header), C5/R2, C6's old diversity check, R2's bottom-line check, P2's three palette-diversity checks; P2.R/G/B turn PASS the same way as under C5 (71 passed, 41 failed)
+// MUTATION C7 NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00 -> C7's own timing check only; the band-count check and every other line stay at baseline (74 passed, 38 failed)
+// MUTATION C8 NMH_MUTATE=C8: the pattern section restricted to values 0 and 3 -> C8's own pair-coverage check, and C6's old diversity check; eighteen P4 bits that FAIL at baseline and twelve that PASS become NOT OBSERVABLE instead (the restricted pattern no longer puts every value on the perturbed lines), not a new FAIL or a lost one (55 passed, 27 failed)
+// MUTATION C9 NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> C9, and all twelve P1.cX (sprite 0 draws over F1's own playfield) (62 passed, 50 failed)
+// MUTATION P1.3R NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> all twelve P1.cX, through both letters of every component, on the Q3 band's pixels (63 passed, 49 failed)
+// MUTATION C5/R2 NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000) -> identical to C5 (same list, bp_cop_f1_v2.i); not the specification's V2, P2's own hires contrast, which the package does not build (73 passed, 39 failed)
+// MUTATION P3.H/P3.L/P7.1 NMH_MUTATE=V3A: F1 in hires with S0-S3 replaced by a COLOR01 sweep -> C4 (header), C5/R2, C7's band count, P2's three palette-diversity checks, and P2.R/G/B turning PASS the same way as under C5; P3.H, P3.L and P7.1 stay FAIL, already red at baseline through their own SuperHires half (72 passed, 40 failed)
+// MUTATION P3.H NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC -> no new red: P3.H is already FAIL at baseline (its SuperHires half). MEASURED confirms the targeted mechanism still moves: the Hires side drops from 16 to 4 distinct values under this mutation (75 passed, 37 failed)
+// MUTATION P3.L NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC -> no new red, for the same reason as V3B; MEASURED confirms the Lores side drops from 16 to 4 distinct values (75 passed, 37 failed)
+// MUTATION P4.n00b11 NMH_MUTATE=V4A: F2 band 11 (n=00,b=11) also inverts COLOR01 bit11 (another Color) -> P4.n00b11 only, of all 204 P4/P1J lines (74 passed, 38 failed)
+// MUTATION C4/R2 NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000) -> C4 (header) and R2 (F2-F4's own mapping, now checked for the SuperHires form specifically); no P4 or P1J line moves, and C7's band count holds (F4's own list carries its closing restore band) (73 passed, 39 failed)
+// MUTATION P5.L NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, same build as V4B) -> identical cascade to V4B (C4, R2); P5.L's SuperHires half stays FAIL, already red at baseline -- this run shows nothing new about it, and no mutation in this package can turn that comparator green through a live input (see the RECORDED line next to it) (73 passed, 39 failed)
+// MUTATION P4 (24 p-half bits of COLOR00-03) NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> exactly the 24 p-half bits, all PASS at baseline, turn FAIL; no other P4/P1J line moves (51 passed, 61 failed)
+// MUTATION P5.L (Hires half) NMH_MUTATE=V5B: F5's COLOR05 band inverts COLOR01 instead -> "registers COLOR04-0F change no graded pixel in Hires mode" only (74 passed, 38 failed)
+//
+// F7-F10 (sprite colour frames), counts as above. A comparator of P5.U, P6.1 or P6.2 is not graded while C11 fails (it fails on both cores at baseline), so
+// its verdict under a mutation is the MEASURED line "<id> comparator without the C11 gate (not graded) gives PASS|FAIL" and the RECORDED line
+// "NOT GRADED, C11 did not hold"; "->" below names the verdict that line gives.
+//
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4B: F8's header writes BPLCON2 = $0000 instead of $0024 -> C4-F7F10 only; every F7-F10 comparator is then not graded (73 passed, 38 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4C: F7's list points at itself instead of F8, so F8-F10 never run -> C4-F7F10 (frame order), and on the frames that never ran C10 (F8-F10 fetch no sprite data), C5-F7F10 and C7-F7F10 (70 passed, 41 failed)
+// MUTATION C5-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0 = $A000 -> C5-F7F10 (no s fits F7's SuperHires mapping; the hires mapping fits, s = 141), with C4-F7F10 (the planned header) and RUN-ENDS (F7's runs are 32 periods long and end at 300, F8's end at 284); every F7-F10 comparator is then not graded (71 passed, 40 failed)
+// MUTATION C7-F7F10 stimulus red NMH_MUTATE=C7B: the block 3 band's WAIT of F7 at horizontal $80 instead of $00 -> C7-F7F10 only, through bad_h=1 and bad_before=1 (its MOVEs land after the line's first bitplane fetch); every F7-F10 comparator is then not graded (73 passed, 38 failed)
+// MUTATION C10 stimulus red NMH_MUTATE=C10: F7's SPR0PT points at the null sprite -> C10 (F7: pairs=0, null_reads=16); C11 and RUN-ENDS are not graded (no F7 line shows a run), and so is every F7-F10 comparator (72 passed, 37 failed)
+// MUTATION C11 stimulus red NMH_MUTATE=C11: sprite 0's data words are $FF00 where they are $FFFF (8 pixels wide) -> C11 stays FAIL, as at baseline (F7 and F8 16 periods); F10's run is 16 periods instead of 32; C10 holds, every other line is at baseline (75 passed, 37 failed)
+// MUTATION C11 stimulus green NMH_MUTATE=C11G: F7 and F8 run with BPLCON0 = $A000 -> C11 PASS through the same comparator (runs of 32 periods in F7, F8 and F10), with C4-F7F10 and C5-F7F10 red (73 passed, 38 failed)
+// MUTATION RUN-ENDS stimulus red NMH_MUTATE=RUNENDS: F7's band at beam $5C changes COLOR00 to $0F00 for the rest of the frame -> RUN-ENDS (the run ends on 6 of 21 F7 baseline lines are [269,284]; the other 15 lines differ from the background over the whole interval); C11 stays FAIL; every F7-F10 comparator is then not graded (74 passed, 38 failed)
+// MUTATION R1-F7F10 none impossible: not exercised, by a scope decision -- the copies of a source line are two read-outs of one stored line; no stimulus of this package changes one read-out and not the other, and none was found that does
+// MUTATION P6.1-F9PF stimulus red NMH_MUTATE=V6Q: F9's band change at line 30 writes COLOR00-0F = Q0 instead of Q1 -> P6.1-F9PF (544 of 544 positions equal); P6.1 is then not graded (74 passed, 38 failed)
+// MUTATION P6.1 stimulus red NMH_MUTATE=V6A: F7 writes COLOR16-31 = T0c while the expectation stays T0 -> P6.1's comparator gives FAIL (F7 clause: 882 of 882 component values differ, F9 clause: 840 of 840 pixels differ from F7's baseline); the F8 clause holds (75 passed, 37 failed)
+// MUTATION P6.1 stimulus red NMH_MUTATE=V6E: F8 writes COLOR10-1F = T0 while the expectation stays T0c -> P6.1's comparator gives FAIL through the F8 clause only: 2520 of 2520 component values differ from the letters of T0c (75 passed, 37 failed)
+// MUTATION P6.1 stimulus red NMH_MUTATE=V6B: F9 writes COLOR10-1F = T0c -> P6.1's comparator gives FAIL through the F9 clause only: 840 of 840 inner pixels differ from F7's baseline (75 passed, 37 failed)
+// MUTATION P6.2-SHR stimulus green NMH_MUTATE=V6S: the block of F7 planned to invert COLOR20 inverts COLOR17 instead -> P6.2-SHR's comparator gives PASS (it gives FAIL at baseline) through the same comparator: 14 inner pixels of block 3's value-1 line change (75 passed, 37 failed)
+// MUTATION P6.2-HIRES stimulus red NMH_MUTATE=V6D: the block of F10 planned to invert COLOR20 inverts COLOR17 instead -> P6.2-HIRES's comparator gives FAIL; P6.2-LIVE and every other line hold (75 passed, 37 failed)
+// MUTATION P6.2-LIVE stimulus red NMH_MUTATE=V6L: the block of F10 planned to invert COLOR17 inverts COLOR20 instead -> P6.2-LIVE's comparator gives FAIL (the lines of value 1 in block 15 do not invert); P6.2-HIRES holds (75 passed, 37 failed)
+// MUTATION P6.2 stimulus green NMH_MUTATE=V6S: as above -> P6.2's comparator gives PASS (SuperHires half, Hires half and Hires comparator all hold), where it gives FAIL at baseline through the SuperHires half (75 passed, 37 failed)
+// MUTATION P6.2 stimulus red NMH_MUTATE=V6D: as above -> P6.2's comparator gives FAIL through the Hires half, the SuperHires half being FAIL as well at baseline (75 passed, 37 failed)
+// MUTATION P5.U stimulus red NMH_MUTATE=V5C: block 2 of F7 also writes Color 0's inverted letters into the seven lower registers that hold them, block 3 restores them (the first lines of blocks 2 and 3 are spacer lines) -> P5.U's comparator gives FAIL: 1088 of 20128 compared playfield pixels change; every other comparator keeps its baseline verdict (75 passed, 37 failed)
+// MUTATION P7.2 none impossible: no stimulus of this package makes P5.L's SuperHires half pass (no register COLOR04-0F changes a SuperHires pixel on either core), and P7.2 is FAIL through that half whatever P6.2 gives; P6.2's own half is exercised by P6.2's records
+// MUTATION P7.3 none impossible: no stimulus of this package makes P5.L's SuperHires half pass, and P7.3 is FAIL through that half whatever P5.U gives; P5.U's own half is exercised by P5.U's records
 //
 // prog.bin loaded, cpu_nrst_out released within the boot budget: not
 // exercised, by a scope decision -- both are harness/boot outcomes settled
@@ -272,6 +298,7 @@ struct SourceLine {
     std::vector<uint16_t> p1, p2;          // fetched data, in address order
     std::vector<uint32_t> p1_off, p2_off;  // word offset within the buffer
     bool pure_r = false;
+    bool zero = false;                     // every fetched word came from the zero buffer
 };
 
 // Groups plane1/plane2 reads within [c_lo,c_hi) into per-line bursts by a
@@ -609,7 +636,7 @@ WPhi measure_global_w_phi(const std::vector<nmh::VideoSample>& video, const Fram
     return {};
 }
 
-GradedFrame finish_graded_frame(const Capture& cap, FrameLines&& fl, int w, int phi) {
+GradedFrame finish_graded_frame(const Capture& cap, FrameLines&& fl, int w, int phi, int top_n = 24) {
     GradedFrame gf;
     gf.fc = std::move(fl.fc);
     gf.lines = std::move(fl.lines);
@@ -646,7 +673,7 @@ GradedFrame finish_graded_frame(const Capture& cap, FrameLines&& fl, int w, int 
     // predicted). Harness/RTL note for the report, not a change to any
     // expected value -- lines 1-23 remain a graded, spec-sized population.
     std::vector<int> top_idx;
-    for (int i = 0; i < 24 && i < (int)gf.lines.size(); ++i) top_idx.push_back(i);
+    for (int i = 0; i < top_n && i < (int)gf.lines.size(); ++i) top_idx.push_back(i);
     if (gf.xR > gf.xL) {
         SSearch ss = find_s(cap.video, gf.lines, gf.out_of, top_idx, gf.mode, w, phi,
                              (long)gf.xL, (long)gf.xR);
@@ -1013,6 +1040,646 @@ R1Result check_r1_copies(const std::vector<nmh::VideoSample>& video, const Grade
     return r;
 }
 
+// ============================================================================
+// F7-F10: the sprite colour frames (SPECIFICATION.md 4.6, P5.U, P6.1, P6.2,
+// C10, C11)
+// ============================================================================
+
+// Source lines of a frame whose bitplane pointers move from the stream buffers
+// to the zero buffer partway down the frame (SPECIFICATION.md 4.6, F7-F10).
+// Plane-1 and plane-2 reads of the zero buffer address the same words, so a
+// line of the zero buffer is kept as a burst of zero words, not as two planes.
+std::vector<SourceLine> find_source_lines_z(const std::vector<nmh::RamAccess>& log,
+                                             uint64_t c_lo, uint64_t c_hi) {
+    uint32_t b1 = word_addr(kPlane1Buf), b2 = word_addr(kPlane2Buf), bz = word_addr(kZeroBuf);
+    struct Raw { uint64_t cycle; uint32_t wa; uint16_t data; };
+    std::vector<Raw> all_reads;
+    std::vector<int> kind; // 0 stream, 1 zero buffer
+    for (auto& a : log) {
+        if (a.is_write || a.cycle < c_lo || a.cycle >= c_hi) continue;
+        bool in1 = a.word_addr >= b1 && a.word_addr < b1 + kBufWords;
+        bool in2 = a.word_addr >= b2 && a.word_addr < b2 + kBufWords;
+        bool inz = a.word_addr >= bz && a.word_addr < bz + kBufWords;
+        if (!(in1 || in2 || inz)) continue;
+        all_reads.push_back({a.cycle, a.word_addr, a.data});
+        kind.push_back(inz ? 1 : 0);
+    }
+    std::vector<SourceLine> lines;
+    constexpr uint64_t kGap = 300;
+    std::vector<long> zero_reads; std::vector<bool> zero_all;
+    nmh::RamAccess prev{}; bool have_prev = false;
+    for (size_t i = 0; i < all_reads.size(); ++i) {
+        const Raw& r = all_reads[i];
+        if (lines.empty() || r.cycle - lines.back().cycle_hi > kGap) {
+            lines.push_back(SourceLine{r.cycle, r.cycle, {}, {}, {}, {}, false, false});
+            zero_reads.push_back(0); zero_all.push_back(true);
+            have_prev = false;
+        }
+        auto& L = lines.back();
+        L.cycle_hi = r.cycle;
+        if (kind[i] == 1) {
+            zero_reads.back()++;
+            if (r.data != 0) zero_all.back() = false;
+            continue;
+        }
+        // stream read: same coalescing rule as find_source_lines
+        if (have_prev && prev.word_addr == r.wa && prev.data == r.data) continue;
+        prev = nmh::RamAccess{r.cycle, r.wa, r.data, false, false, false};
+        have_prev = true;
+        if (r.wa >= b1 && r.wa < b1 + kBufWords) { L.p1.push_back(r.data); L.p1_off.push_back(r.wa - b1); }
+        else                                      { L.p2.push_back(r.data); L.p2_off.push_back(r.wa - b2); }
+    }
+    for (size_t k = 0; k < lines.size(); ++k) {
+        auto& L = lines[k];
+        bool stream_empty = L.p1.empty() && L.p2.empty();
+        if (stream_empty && zero_reads[k] > 0 && zero_all[k]) {
+            L.zero = true;
+            L.p1.assign((size_t)zero_reads[k] / 2, 0);
+            L.p2.assign((size_t)zero_reads[k] / 2, 0);
+            continue;
+        }
+        bool pure = !L.p1.empty() && zero_reads[k] == 0;
+        for (auto d : L.p1) if (d != 0xFFFF) pure = false;
+        for (auto d : L.p2) if (d != 0xFFFF) pure = false;
+        L.pure_r = pure;
+    }
+    return lines;
+}
+
+FrameLines decode_frame_lines_z(const Capture& cap, int frame_idx, const std::vector<nmh::Span>& outlines) {
+    FrameLines fl;
+    fl.fc = decode_frame(cap.log, frame_idx);
+    if (!fl.fc.found) return fl;
+    FrameCop nextfc = frame_idx < 10 ? decode_frame(cap.log, frame_idx + 1) : FrameCop{};
+    uint64_t hi = (frame_idx < 10 && nextfc.found) ? nextfc.start_cycle : fl.fc.end_cycle + 3'000'000;
+    fl.lines = find_source_lines_z(cap.log, fl.fc.start_cycle, hi);
+    if (fl.lines.size() > 200) fl.lines.resize(200);   // window lines 0-199 of this frame
+    for (auto& L : fl.lines) {
+        LineMap lm = map_source_to_output(outlines, L.cycle_lo, L.cycle_hi);
+        std::vector<nmh::Span> spans;
+        for (size_t idx : lm.span_idx) spans.push_back(outlines[idx]);
+        fl.out_of.push_back(spans);
+    }
+    return fl;
+}
+
+constexpr int kSprPairs = 60;
+
+// What the port shows of sprite 0's and the other sprites' DMA in one frame.
+struct SprFetch {
+    bool ctl_seen[2] = {false, false};
+    uint16_t ctl[2] = {0, 0};
+    std::array<int, 120> half;                 // data word of each pair half, -1 if never read
+    std::array<int, kSprPairs> line;           // source line the pair's first word was fetched on, -1 if none
+    long pair_reads = 0;                       // reads of the 120 data words
+    long null_reads = 0;                       // reads of the null sprite
+    bool null_zero = true;                     // every null-sprite read returned $0000
+    SprFetch() { half.fill(-1); line.fill(-1); }
+    int value(int j) const {                   // pair j's colour value: low word = bit 0, high word = bit 1
+        if (half[2*j] < 0 || half[2*j+1] < 0) return -1;
+        return (half[2*j] != 0 ? 1 : 0) + (half[2*j+1] != 0 ? 2 : 0);
+    }
+    int pairs_seen() const { int n = 0; for (int j = 0; j < kSprPairs; ++j) if (value(j) >= 0) ++n; return n; }
+};
+
+SprFetch decode_sprite_fetch(const Capture& cap, const FrameLines& fl) {
+    SprFetch sf;
+    if (!fl.fc.found || fl.lines.empty()) return sf;
+    uint64_t lo = fl.fc.start_cycle, hi = fl.lines.back().cycle_hi;
+    uint32_t s0 = word_addr(kSpr0Struct), ns = word_addr(kNullSpr);
+    for (auto& a : cap.log) {
+        if (a.is_write || a.cycle < lo || a.cycle > hi) continue;
+        if (a.word_addr >= s0 && a.word_addr < s0 + 124) {
+            int off = (int)(a.word_addr - s0);
+            if (off < 2) { if (!sf.ctl_seen[off]) { sf.ctl_seen[off] = true; sf.ctl[off] = a.data; } }
+            else if (off < 122) {
+                int h = off - 2;
+                ++sf.pair_reads;
+                if (sf.half[h] < 0) sf.half[h] = a.data;
+                if ((h & 1) == 0 && sf.line[h/2] < 0) {
+                    // the line whose own bitplane burst follows this fetch
+                    size_t k = 0;
+                    while (k < fl.lines.size() && fl.lines[k].cycle_lo <= a.cycle) ++k;
+                    sf.line[h/2] = k < fl.lines.size() ? (int)k : -1;
+                }
+            }
+        } else if (a.word_addr >= ns && a.word_addr < ns + 2) {
+            ++sf.null_reads;
+            if (a.data != 0) sf.null_zero = false;
+        }
+    }
+    return sf;
+}
+
+// A graded frame's pixels over the check interval [xL,xR) of one source line.
+struct Row { bool ok = false; std::vector<uint16_t> px; };
+
+uint16_t pack12(const nmh::VideoSample& s) { return (uint16_t)((s.r << 8) | (s.g << 4) | s.b); }
+
+Row get_row(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf, int li) {
+    Row r;
+    if (li < 0 || li >= (int)gf.lines.size() || li >= (int)gf.out_of.size() || gf.out_of[li].empty() ||
+        gf.xR <= gf.xL || gf.w <= 0) return r;
+    nmh::Span sp = gf.out_of[li].back();
+    r.px.resize(gf.xR - gf.xL);
+    for (size_t x = gf.xL; x < gf.xR; ++x) {
+        auto o = pixel_sample(sp, gf.w, gf.phi, (long)x);
+        if (!o) return Row{};
+        r.px[x - gf.xL] = pack12(video[*o]);
+    }
+    r.ok = true;
+    return r;
+}
+
+// SPECIFICATION.md P6 item 3: the run of a sprite line is the maximal set of
+// consecutive visible pixels whose twelve bits differ from those at the same x
+// on window lines 31-35 of the same frame.
+struct RunInfo { bool shows = false; long xa = 0, xb = 0; long len() const { return xb - xa + 1; } };
+
+struct SprFrame {
+    int f = 0;
+    bool found = false;
+    GradedFrame g;
+    SprFetch sf;
+    std::vector<char> spacer;                  // per source line: its band change is a spacer line
+    std::vector<Row> row;                      // per sprite line j
+    std::vector<RunInfo> run;                  // per sprite line j
+    std::vector<uint16_t> bg;                  // window lines 31-35, per x - xL
+    std::vector<char> bg_ok;
+    bool bg_have = false;
+    int lines_ok() const { return (int)g.lines.size(); }
+    int src_line(int j) const { return sf.line[j]; }
+    bool line_graded(int j) const {
+        if (!found || j < 0 || j >= (int)row.size()) return false;
+        int li = sf.line[j];
+        return li >= 0 && li < (int)spacer.size() && !spacer[li] && row[j].ok;
+    }
+};
+
+SprFrame build_sprite_frame(const Capture& cap, FrameLines&& fl, int f, int w, int phi) {
+    SprFrame s;
+    s.f = f;
+    s.sf = decode_sprite_fetch(cap, fl);
+    s.g = finish_graded_frame(cap, std::move(fl), w, phi, 30);
+    s.found = s.g.fc.found && s.g.lines.size() == 200;
+    if (!s.found) return s;
+    s.spacer.assign(s.g.lines.size(), 0);
+    for (const Band& b : s.g.fc.bands)
+        if (b.moves.size() > 4 && b.line >= 0 && b.line < (int)s.spacer.size()) s.spacer[b.line] = 1;
+    s.row.assign(kSprPairs, Row{});
+    s.run.assign(kSprPairs, RunInfo{});
+    // background rows
+    std::vector<Row> bgr;
+    for (int li = 31; li <= 35; ++li) bgr.push_back(get_row(cap.video, s.g, li));
+    bool all_ok = s.g.xR > s.g.xL;
+    for (auto& r : bgr) all_ok = all_ok && r.ok;
+    if (all_ok) {
+        size_t n = s.g.xR - s.g.xL;
+        s.bg.assign(n, 0); s.bg_ok.assign(n, 0);
+        for (size_t i = 0; i < n; ++i) {
+            bool same = true;
+            for (auto& r : bgr) same = same && r.px[i] == bgr[0].px[i];
+            s.bg[i] = bgr[0].px[i]; s.bg_ok[i] = same ? 1 : 0;
+        }
+        s.bg_have = true;
+    }
+    for (int j = 0; j < kSprPairs; ++j) {
+        int li = s.sf.line[j];
+        if (li < 0) continue;
+        s.row[j] = get_row(cap.video, s.g, li);
+        if (!s.row[j].ok || !s.bg_have) continue;
+        // longest run of consecutive differing pixels
+        long best_lo = -1, best_len = 0, cur_lo = -1, cur_len = 0;
+        size_t n = s.row[j].px.size();
+        for (size_t i = 0; i < n; ++i) {
+            bool d = s.bg_ok[i] && s.row[j].px[i] != s.bg[i];
+            if (d) { if (cur_len == 0) cur_lo = (long)i; ++cur_len; if (cur_len > best_len) { best_len = cur_len; best_lo = cur_lo; } }
+            else cur_len = 0;
+        }
+        if (best_len > 0) {
+            s.run[j].shows = true;
+            s.run[j].xa = (long)s.g.xL + best_lo;
+            s.run[j].xb = (long)s.g.xL + best_lo + best_len - 1;
+        }
+    }
+    return s;
+}
+
+// Which of a frame's sprite blocks are baseline blocks (SPECIFICATION.md 4.6).
+bool is_baseline_block(int f, int blk) {
+    if (f == 7) return blk <= 1 || blk >= 15;
+    if (f == 10) return blk <= 1 || blk >= 18;
+    return true;
+}
+
+// Twelve-bit values shown at (sprite value v, position) on a frame's baseline sprite lines.
+struct BaseSets { std::array<std::vector<std::set<uint16_t>>, 4> s; };
+
+BaseSets build_base_sets(const SprFrame& sfr) {
+    BaseSets b;
+    size_t n = sfr.g.xR > sfr.g.xL ? sfr.g.xR - sfr.g.xL : 0;
+    for (auto& v : b.s) v.assign(n, std::set<uint16_t>{});
+    for (int j = 0; j < kSprPairs; ++j) {
+        if (!is_baseline_block(sfr.f, j / 3) || !sfr.line_graded(j)) continue;
+        int v = sfr.sf.value(j);
+        if (v < 1 || v > 3) continue;
+        for (size_t i = 0; i < n; ++i) b.s[v][i].insert(sfr.row[j].px[i]);
+    }
+    return b;
+}
+
+struct RunSummary {
+    int lines = 0, with_run = 0, same_ends = 0;
+    long xa = 0, xb = 0;
+    long len_min = LONG_MAX, len_max = 0;
+    bool consistent() const { return with_run > 0 && same_ends == with_run; }
+};
+
+RunSummary summarise_runs(const SprFrame& sfr, bool baseline_only) {
+    RunSummary r;
+    bool first = true;
+    for (int j = 0; j < kSprPairs; ++j) {
+        if (baseline_only && !is_baseline_block(sfr.f, j / 3)) continue;
+        if (!sfr.line_graded(j)) continue;
+        ++r.lines;
+        if (!sfr.run[j].shows) continue;
+        ++r.with_run;
+        if (first) { r.xa = sfr.run[j].xa; r.xb = sfr.run[j].xb; first = false; }
+        if (sfr.run[j].xa == r.xa && sfr.run[j].xb == r.xb) ++r.same_ends;
+        r.len_min = std::min(r.len_min, sfr.run[j].len());
+        r.len_max = std::max(r.len_max, sfr.run[j].len());
+    }
+    return r;
+}
+
+// C4 for F7-F10: the header MOVEs that SPECIFICATION.md 4.3 lists (BPLCON0-2,
+// DIW, DDF, modulos, bitplane pointers) carry the planned data. The colour
+// registers and the sprite pointers are the stimuli under test and are not read here.
+bool check_sprite_header(const FrameCop& fc, uint16_t expected_bplcon0) {
+    if (!fc.found || fc.header.size() != 61) return false;
+    auto get = [&](uint16_t reg) -> long {
+        auto it = fc.header.find(reg);
+        return it != fc.header.end() ? (long)it->second : -1;
+    };
+    return get(0x100) == expected_bplcon0 && get(0x102) == 0x0000 && get(0x104) == 0x0024 &&
+           get(0x08E) == 0x2C81 && get(0x090) == 0xF4A1 && get(0x092) == 0x003C && get(0x094) == 0x00D4 &&
+           get(0x108) == 0x0000 && get(0x10A) == 0x0000 &&
+           get(0x0E0) == (long)(kPlane1Buf >> 16) && get(0x0E2) == (long)(kPlane1Buf & 0xFFFF) &&
+           get(0x0E4) == (long)(kPlane2Buf >> 16) && get(0x0E6) == (long)(kPlane2Buf & 0xFFFF);
+}
+
+// Grades F7-F10 (SPECIFICATION.md P5.U, P6.1, P6.2, P7.2, P7.3 and their
+// preconditions C4, C5, C7, C10, C11). `p5l_state`: 0 not graded, 1 PASS, 2 FAIL.
+void grade_sprite_frames(const Capture& cap, Checks& checks, const WPhi& wp, const GradedFrame& f6, int p5l_state) {
+    auto outlines = nmh::find_lines(cap.video);
+    SprFrame fr[4];
+    for (int i = 0; i < 4; ++i) {
+        FrameLines fl = decode_frame_lines_z(cap, 7 + i, outlines);
+        fr[i] = build_sprite_frame(cap, std::move(fl), 7 + i, wp.w, wp.phi);
+    }
+    SprFrame& F7 = fr[0]; SprFrame& F8 = fr[1]; SprFrame& F9 = fr[2]; SprFrame& F10 = fr[3];
+    static const char* kName[4] = {"F7", "F8", "F9", "F10"};
+    static const uint16_t kBplcon0[4] = {0x2040, 0x2040, 0x2040, 0xA000};
+    static const int kBands[4] = {15, 1, 1, 18};
+    static const int kMode[4] = {0, 0, 0, 1};
+
+    // ---- C4: F7-F10 ran their own lists in order, each with the planned header
+    bool c4 = f6.fc.found;
+    for (int i = 0; i < 4; ++i) {
+        c4 = c4 && fr[i].found && check_sprite_header(fr[i].g.fc, kBplcon0[i]);
+        uint64_t prev = i == 0 ? f6.fc.start_cycle : fr[i-1].g.fc.start_cycle;
+        c4 = c4 && fr[i].g.fc.start_cycle > prev;
+    }
+    checks.expect(c4, "C4-F7F10 precondition: F7-F10 ran their own lists in order after F6, each with the planned "
+                      "BPLCON0-2, DIW, DDF, modulo and bitplane-pointer header values");
+
+    // ---- C5: the pixel mapping of lines 0-29 fits uniquely, in the mode the frame runs in
+    bool c5 = true; std::string c5s;
+    for (int i = 0; i < 4; ++i) {
+        bool ok = fr[i].found && fr[i].g.ok && fr[i].g.mode == kMode[i] &&
+                  fr[i].g.xL == fr[0].g.xL && fr[i].g.xR == fr[0].g.xR;
+        c5 = c5 && ok;
+        c5s += std::string(" ") + kName[i] + (ok ? "=ok" : "=no") + ":s=" + std::to_string(fr[i].g.s);
+    }
+    checks.expect(c5, "C5-F7F10 precondition: on lines 0-29 of F7-F9 the SuperHires pixel mapping (i=2x-s) and on F10 the hires "
+                      "mapping (i=x-s) fits uniquely, with one check interval for the four frames;" + c5s);
+
+    // ---- C7: every planned band change found once, every WAIT at h=$00, after the previous line's
+    // last bitplane fetch and, spacer lines excepted, before its own line's first
+    bool c7 = true; int bh = 0, ba = 0, bb = 0; std::string c7s;
+    for (int i = 0; i < 4; ++i) {
+        bool count_ok = fr[i].found && (int)fr[i].g.fc.bands.size() == kBands[i];
+        C7Result t = fr[i].found ? check_c7_timing(fr[i].g) : C7Result{};
+        c7 = c7 && count_ok && t.ok;
+        bh += t.bad_h; ba += t.bad_after; bb += t.bad_before;
+        c7s += std::string(" ") + kName[i] + ":bands=" + std::to_string(fr[i].found ? (int)fr[i].g.fc.bands.size() : -1);
+    }
+    checks.expect(c7, "C7-F7F10 precondition (SPECIFICATION.md 6/C7, block changes included): every planned band change of F7-F10 "
+                      "was found once, every WAIT is at h=$00, after the previous line's last bitplane fetch and, spacer lines "
+                      "excepted, before its own line's first, bad_h=" + std::to_string(bh) + " bad_after=" + std::to_string(ba) +
+                      " bad_before=" + std::to_string(bb) + ";" + c7s);
+
+    // ---- C10: sprite 0 fetches its two control words and 60 data pairs, sprites 1-7 only $0000 control words
+    bool c10 = true; std::string c10s;
+    for (int i = 0; i < 4; ++i) {
+        const SprFetch& sf = fr[i].sf;
+        bool ok = fr[i].found && sf.ctl_seen[0] && sf.ctl_seen[1] && sf.ctl[0] == 0x5060 && sf.ctl[1] == 0x8C00 &&
+                  sf.pairs_seen() == kSprPairs && sf.pair_reads == 2 * kSprPairs &&
+                  sf.null_reads > 0 && sf.null_zero;
+        for (int j = 0; ok && j < kSprPairs; ++j) {
+            if (sf.value(j) != (j % 3) + 1) ok = false;                   // line j with j mod 3 = 0 has value 1, 1 -> 2, 2 -> 3
+            if (j > 0 && sf.line[j] != sf.line[j-1] + 1) ok = false;      // one pair per consecutive line
+            if (sf.line[j] < 0) ok = false;
+        }
+        c10 = c10 && ok;
+        c10s += std::string(" ") + kName[i] + ":pairs=" + std::to_string(sf.pairs_seen()) + ",reads=" + std::to_string(sf.pair_reads) +
+                ",first_line=" + std::to_string(sf.line[0]) + ",null_reads=" + std::to_string(sf.null_reads);
+    }
+    checks.expect(c10, "C10 precondition p.105-108: in each of F7-F10 the port shows sprite 0 fetching its two control words and "
+                       "60 data pairs, one pair on each of 60 consecutive lines with the planned values, and sprites 1-7 fetching only "
+                       "$0000 control words;" + c10s);
+
+    // ---- runs
+    RunSummary r7 = summarise_runs(F7, true), r8 = summarise_runs(F8, true), r10 = summarise_runs(F10, true);
+    RunSummary r9 = summarise_runs(F9, true);
+    checks.note("F7 baseline sprite lines: " + std::to_string(r7.lines) + " graded, " + std::to_string(r7.with_run) +
+                " show a run, ends [" + std::to_string(r7.xa) + "," + std::to_string(r7.xb) + "], length " +
+                std::to_string(r7.with_run ? r7.len_min : 0) + ".." + std::to_string(r7.len_max) + " hires periods");
+    checks.note("F8 sprite lines: " + std::to_string(r8.lines) + " graded, " + std::to_string(r8.with_run) +
+                " show a run, ends [" + std::to_string(r8.xa) + "," + std::to_string(r8.xb) + "], length " +
+                std::to_string(r8.with_run ? r8.len_min : 0) + ".." + std::to_string(r8.len_max));
+    checks.note("F9 sprite lines: " + std::to_string(r9.lines) + " graded, " + std::to_string(r9.with_run) +
+                " show a run, ends [" + std::to_string(r9.xa) + "," + std::to_string(r9.xb) + "], length " +
+                std::to_string(r9.with_run ? r9.len_min : 0) + ".." + std::to_string(r9.len_max));
+    checks.note("F10 baseline sprite lines: " + std::to_string(r10.lines) + " graded, " + std::to_string(r10.with_run) +
+                " show a run, ends [" + std::to_string(r10.xa) + "," + std::to_string(r10.xb) + "], length " +
+                std::to_string(r10.with_run ? r10.len_min : 0) + ".." + std::to_string(r10.len_max));
+
+    bool have7 = r7.with_run > 0, have10 = r10.with_run > 0;
+
+    // ---- C11: the run of every baseline line that shows one is 32 +- 1 hires periods
+    // (p.101: a sprite is 16 pixels wide in every playfield mode; a lores pixel is two hires periods)
+    bool c11 = have7;
+    for (const RunSummary* r : {&r7, &r8, &r10})
+        if (r->with_run > 0 && (r->len_min < 31 || r->len_max > 33)) c11 = false;
+    if (have7) {
+        checks.expect(c11, "C11 precondition p.101: the run of every baseline sprite line that shows one is 32 +- 1 hires periods long in F7, F8 and F10, "
+                           "lengths F7 " + std::to_string(r7.len_min) + ".." + std::to_string(r7.len_max) + ", F8 " +
+                           std::to_string(r8.with_run ? r8.len_min : 0) + ".." + std::to_string(r8.len_max) + ", F10 " +
+                           std::to_string(r10.with_run ? r10.len_min : 0) + ".." + std::to_string(r10.len_max));
+    } else {
+        checks.record("C11 precondition p.101: NOT GRADED, F7 shows no run on any baseline sprite line");
+    }
+
+    // ---- the run's ends are the same on every baseline line that shows one; F8's are F7's
+    bool ends = have7 && r7.consistent() && (r8.with_run == 0 || (r8.consistent() && r8.xa == r7.xa && r8.xb == r7.xb)) &&
+                (!have10 || r10.consistent());
+    if (have7) {
+        checks.expect(ends, "RUN-ENDS precondition (SPECIFICATION.md 7/P6 item 3): the run has the same ends on every baseline sprite line that shows one, "
+                            "F7 [" + std::to_string(r7.xa) + "," + std::to_string(r7.xb) + "] on " + std::to_string(r7.same_ends) + " of " +
+                            std::to_string(r7.with_run) + " lines, F8 on " + std::to_string(r8.same_ends) + " of " + std::to_string(r8.with_run) +
+                            " lines with its own ends and the ends of F7 " + std::string(r8.with_run == 0 || (r8.xa == r7.xa && r8.xb == r7.xb) ? "equal" : "different") +
+                            ", F10 [" + std::to_string(r10.xa) + "," + std::to_string(r10.xb) + "] on " +
+                            std::to_string(r10.same_ends) + " of " + std::to_string(r10.with_run) + " lines");
+    } else {
+        checks.record("RUN-ENDS precondition (SPECIFICATION.md 7/P6 item 3): NOT GRADED, F7 shows no run on any baseline sprite line");
+    }
+
+    // ---- R1 for F7-F10: every output copy of a graded source line agrees with the others
+    long r1_pairs = 0, r1_diff = 0;
+    for (int i = 0; i < 4; ++i) if (fr[i].found) {
+        R1Result r = check_r1_copies(cap.video, fr[i].g);
+        r1_pairs += r.pairs; r1_diff += r.mismatches;
+    }
+    checks.expect(r1_pairs > 0 && r1_diff == 0,
+                  "R1-F7F10 precondition (SPECIFICATION.md 4.7): every output copy of a graded source line of F7-F10 agrees with the others, " +
+                  std::to_string(r1_pairs) + " pairs checked, " + std::to_string(r1_diff) + " differing");
+
+    bool bg_all = F7.bg_have && F8.bg_have && F9.bg_have && F10.bg_have;
+    bool pre = c4 && c5 && c7 && c10 && bg_all;
+    bool run_pre = pre && c11 && ends;          // the run anchors the inner pixels
+    // C11 is the only precondition that did not hold: the comparators below still run and are printed as MEASURED
+    bool c11_only = pre && have7 && !c11 && ends;
+
+    // A comparator's result: `ok` is its verdict, `label` its graded line.
+    struct Eval { bool ran = false; bool ok = false; std::string label; };
+    auto emit = [&](const Eval& e, bool graded, const std::string& ng_label) {
+        size_t cut = e.label.find(": ");
+        std::string head = cut == std::string::npos ? e.label : e.label.substr(0, cut);
+        std::string text = cut == std::string::npos ? std::string() : e.label.substr(cut + 2);
+        std::string id = head.substr(0, head.find(' '));
+        if (graded) checks.expect(e.ok, e.label);
+        else if (e.ran && c11_only) {
+            checks.record(head + ": NOT GRADED, C11 did not hold");
+            checks.note(id + " comparator without the C11 gate (not graded) gives " + std::string(e.ok ? "PASS" : "FAIL") + ": " + text);
+        } else checks.record(ng_label);
+    };
+
+    // ---- F9's lower registers changed: the playfield outside F7's run differs at every compared position
+    bool f9pf_ok = false; long f9pf_n = 0, f9pf_same = 0;
+    if (pre && have7) {
+        for (long x = (long)F7.g.xL; x < (long)F7.g.xR; ++x) {
+            if (x >= r7.xa && x <= r7.xb) continue;
+            size_t i = (size_t)(x - (long)F7.g.xL);
+            if (!F7.bg_ok[i] || !F9.bg_ok[i]) continue;
+            ++f9pf_n;
+            if (F9.bg[i] == F7.bg[i]) ++f9pf_same;
+        }
+        f9pf_ok = f9pf_n > 0 && f9pf_same == 0;
+        checks.expect(f9pf_ok, "P6.1-F9PF precondition (SPECIFICATION.md 7/P6 item 4): COLOR00-0F changed from Q0 to Q1 between F7 and F9, so "
+                               "the playfield outside the run differs at every compared position, positions " + std::to_string(f9pf_n) +
+                               ", equal " + std::to_string(f9pf_same));
+    } else {
+        checks.record("P6.1-F9PF precondition: NOT GRADED, a precondition of the F7-F10 frames did not hold");
+    }
+
+    auto letters = [](int v, int comp) { return comp == 0 ? (v & 3) : comp == 1 ? ((v + 1) & 3) : ((v + 2) & 3); };
+    auto comp_bits = [](uint16_t p, int c) { return (c == 0 ? (p >> 10) : c == 1 ? (p >> 6) : (p >> 2)) & 3; };
+
+    // ---- P6.1 (APPC-shr.c9, p.302)
+    if (pre && !have7) {
+        // SPECIFICATION.md 7/P6 item 3: no baseline line shows a run although C10 holds
+        checks.expect(false, "P6.1 APPC-shr.c9 p.302: no baseline sprite line of F7 shows a run although C10 holds, so no inner pixel shows the letters of Color 16+v");
+    } else {
+        Eval e;
+        if ((run_pre || c11_only) && f9pf_ok) {
+            e.ran = true;
+            long xa = r7.xa, xb = r7.xb;
+            long n7 = 0, bad7 = 0, norun7 = 0, n8 = 0, bad8 = 0, n9 = 0, bad9 = 0;
+            BaseSets b7 = build_base_sets(F7);
+            for (int j = 0; j < kSprPairs; ++j) {
+                int v = F7.sf.value(j);
+                if (is_baseline_block(7, j / 3) && F7.line_graded(j)) {
+                    if (!F7.run[j].shows) ++norun7;
+                    else for (long x = xa + 1; x <= xb - 1; ++x) {
+                        uint16_t p = F7.row[j].px[(size_t)(x - (long)F7.g.xL)];
+                        for (int c = 0; c < 3; ++c) { ++n7; if (comp_bits(p, c) != letters(v, c)) ++bad7; }
+                    }
+                }
+                if (F8.line_graded(j)) {
+                    for (long x = xa + 1; x <= xb - 1; ++x) {
+                        uint16_t p = F8.row[j].px[(size_t)(x - (long)F8.g.xL)];
+                        for (int c = 0; c < 3; ++c) { ++n8; if (comp_bits(p, c) != 3 - letters(v, c)) ++bad8; }
+                    }
+                }
+                if (F9.line_graded(j) && v >= 1 && v <= 3) {
+                    for (long x = xa + 1; x <= xb - 1; ++x) {
+                        size_t i = (size_t)(x - (long)F9.g.xL);
+                        const std::set<uint16_t>& ref = b7.s[v][i];
+                        ++n9;
+                        if (!(ref.size() == 1 && *ref.begin() == F9.row[j].px[i])) ++bad9;
+                    }
+                }
+            }
+            checks.note("P6.1: F7 baseline " + std::to_string(n7) + " component values, " + std::to_string(bad7) + " differ from the letters of T0, " +
+                        std::to_string(norun7) + " baseline lines show no run; F8 " + std::to_string(n8) + " component values, " +
+                        std::to_string(bad8) + " differ from the letters of T0c; F9 " + std::to_string(n9) + " pixels, " +
+                        std::to_string(bad9) + " differ from the baseline pixel of F7");
+            e.ok = n7 > 0 && n8 > 0 && n9 > 0 && bad7 == 0 && norun7 == 0 && bad8 == 0 && bad9 == 0;
+            e.label = "P6.1 APPC-shr.c9 p.302: the inner pixels of a sprite-0 line of value v show the encoded letters of Color 16+v in bits 3-2 of R, G and B "
+                      "(F7 under T0, F8 under T0c) and are unchanged by COLOR00-0F (F9 against F7), pixels F7 " + std::to_string(n7) +
+                      " F8 " + std::to_string(n8) + " F9 " + std::to_string(n9);
+        }
+        emit(e, run_pre && f9pf_ok, "P6.1 APPC-shr.c9 p.302: NOT GRADED, a precondition (C4, C5, C7, C10, C11, RUN-ENDS or P6.1-F9PF) did not hold");
+    }
+
+    // ---- P6.2 (CH4-appC-context.c6, p.301; p.108, p.103)
+    int p62 = 0;   // 0 not graded, 1 PASS, 2 FAIL
+    if ((run_pre || c11_only) && have10) {
+        BaseSets b7 = build_base_sets(F7), b10 = build_base_sets(F10);
+        bool graded = run_pre;
+        // SuperHires half: some block among the thirteen inversion blocks changes an inner pixel
+        long cmp7 = 0, chg7 = 0; std::string per;
+        for (int blk = 2; blk <= 14; ++blk) {
+            long ch = 0;
+            for (int j = 3 * blk; j < 3 * blk + 3; ++j) {
+                int v = F7.sf.value(j);
+                if (!F7.line_graded(j) || v < 1 || v > 3) continue;
+                for (long x = r7.xa + 1; x <= r7.xb - 1; ++x) {
+                    size_t i = (size_t)(x - (long)F7.g.xL);
+                    if (b7.s[v][i].empty()) continue;
+                    ++cmp7;
+                    if (!b7.s[v][i].count(F7.row[j].px[i])) { ++chg7; ++ch; }
+                }
+            }
+            per += " block" + std::to_string(blk) + "=" + std::to_string(ch);
+        }
+        checks.note("P6.2 F7 inner pixels changed per block (blocks 2-14 invert COLOR16, COLOR20-31 in that order):" + per);
+        bool shr_ok = cmp7 > 0 && chg7 > 0;
+        Eval e1; e1.ran = true; e1.ok = shr_ok;
+        e1.label = "P6.2-SHR p.301 (SuperHires half): at least one of the thirteen inversion blocks (COLOR16, COLOR20-31) of F7 changes an inner pixel of sprite 0, "
+                   "inner pixels compared " + std::to_string(cmp7) + ", changed " + std::to_string(chg7);
+        emit(e1, graded, "");
+        // Hires half: none of them changes an inner pixel in F10
+        long cmp10 = 0, chg10 = 0;
+        for (int blk = 2; blk <= 14; ++blk)
+            for (int j = 3 * blk; j < 3 * blk + 3; ++j) {
+                int v = F10.sf.value(j);
+                if (!F10.line_graded(j) || v < 1 || v > 3) continue;
+                for (long x = r10.xa + 1; x <= r10.xb - 1; ++x) {
+                    size_t i = (size_t)(x - (long)F10.g.xL);
+                    if (b10.s[v][i].empty()) continue;
+                    ++cmp10;
+                    if (!b10.s[v][i].count(F10.row[j].px[i])) ++chg10;
+                }
+            }
+        bool hires_ok = cmp10 > 0 && chg10 == 0;
+        Eval e2; e2.ran = true; e2.ok = hires_ok;
+        e2.label = "P6.2-HIRES p.108, p.103 (Hires half): none of the thirteen inversion blocks of F10 changes an inner pixel of sprite 0, "
+                   "inner pixels compared " + std::to_string(cmp10) + ", changed " + std::to_string(chg10);
+        emit(e2, graded, "");
+        // the Hires comparator is live: the baseline shows register 16+v, blocks 15-17 invert 17, 18, 19 on the lines of value 1, 2, 3
+        long cmpb = 0, badb = 0, cmpl = 0, badl = 0, cmpo = 0, bado = 0;
+        for (int v = 1; v <= 3; ++v)
+            for (long x = r10.xa + 1; x <= r10.xb - 1; ++x) {
+                size_t i = (size_t)(x - (long)F10.g.xL);
+                ++cmpb;
+                const auto& st = b10.s[v][i];
+                if (!(st.size() == 1 && *st.begin() == kQ0[v])) ++badb;
+            }
+        for (int blk = 15; blk <= 17; ++blk)
+            for (int j = 3 * blk; j < 3 * blk + 3; ++j) {
+                int v = F10.sf.value(j);
+                if (!F10.line_graded(j) || v < 1 || v > 3) continue;
+                for (long x = r10.xa + 1; x <= r10.xb - 1; ++x) {
+                    size_t i = (size_t)(x - (long)F10.g.xL);
+                    const auto& st = b10.s[v][i];
+                    uint16_t p = F10.row[j].px[i];
+                    if (v == blk - 14) {
+                        ++cmpl;
+                        if (!(st.size() == 1 && p == (uint16_t)(*st.begin() ^ 0x0FFF))) ++badl;
+                    } else {
+                        ++cmpo;
+                        if (!st.count(p)) ++bado;
+                    }
+                }
+            }
+        bool live_ok = cmpb > 0 && cmpl > 0 && cmpo > 0 && badb == 0 && badl == 0 && bado == 0;
+        Eval e3; e3.ran = true; e3.ok = live_ok;
+        e3.label = "P6.2-LIVE p.108 (Hires half): baseline inner pixels of F10 show all twelve bits of register 16+v, blocks 15-17 invert all twelve bits of "
+                   "the lines of value 1, 2, 3 and no other line, baseline " + std::to_string(cmpb) + " pixels (" + std::to_string(badb) +
+                   " differ), inverted " + std::to_string(cmpl) + " (" + std::to_string(badl) + " differ), other " + std::to_string(cmpo) +
+                   " (" + std::to_string(bado) + " changed)";
+        emit(e3, graded, "");
+        Eval e4; e4.ran = true; e4.ok = shr_ok && hires_ok && live_ok;
+        e4.label = "P6.2 CH4-appC-context.c6 p.301, p.108: some inner sprite-0 pixel depends on an upper register other than COLOR17-19 in SuperHires "
+                   "and none does in Hires (SuperHires half " + std::string(shr_ok ? "holds" : "fails") + ", Hires half " +
+                   std::string(hires_ok ? "holds" : "fails") + ", Hires comparator " + std::string(live_ok ? "live" : "not live") + ")";
+        emit(e4, graded, "");
+        if (graded) p62 = e4.ok ? 1 : 2;
+    } else if (pre && !have7) {
+        checks.record("P6.2 CH4-appC-context.c6 p.301: NOT GRADED, no baseline sprite line of F7 shows a run, so there are no inner pixels");
+    } else {
+        checks.record("P6.2 CH4-appC-context.c6 p.301: NOT GRADED, a precondition (C4, C5, C7, C10, C11, RUN-ENDS) did not hold or F10 shows no run");
+    }
+
+    // ---- P5.U: no visible playfield pixel depends on an upper register (F7, outside the sprite run)
+    int p5u = 0;
+    if (pre && (!have7 || c11 || c11_only) && (!have7 || ends)) {
+        BaseSets b7 = build_base_sets(F7);
+        long ua = have7 ? r7.xa : 1, ub = have7 ? r7.xb : 0;     // no run: every graded pixel is outside it
+        long cmp = 0, chg = 0, blines = 0; std::string per;
+        for (int blk = 2; blk <= 14; ++blk) {
+            long ch = 0;
+            for (int j = 3 * blk; j < 3 * blk + 3; ++j) {
+                int v = F7.sf.value(j);
+                if (!F7.line_graded(j) || v < 1 || v > 3) continue;
+                ++blines;
+                for (long x = (long)F7.g.xL; x < (long)F7.g.xR; ++x) {
+                    if (x >= ua && x <= ub) continue;
+                    size_t i = (size_t)(x - (long)F7.g.xL);
+                    if (b7.s[v][i].empty()) continue;
+                    ++cmp;
+                    if (!b7.s[v][i].count(F7.row[j].px[i])) { ++chg; ++ch; }
+                }
+            }
+            per += " block" + std::to_string(blk) + "=" + std::to_string(ch);
+        }
+        checks.note("P5.U F7 playfield pixels outside the run changed per block (blocks 2-14 invert COLOR16, COLOR20-31 in that order):" + per);
+        Eval e; e.ran = true; e.ok = cmp > 0 && chg == 0;
+        e.label = "P5.U p.301/302: no inversion of COLOR16 or COLOR20-31 changes a visible playfield pixel of F7 outside the sprite run, "
+                  "lines " + std::to_string(blines) + ", pixels compared " + std::to_string(cmp) + ", changed " + std::to_string(chg);
+        bool graded = !have7 || run_pre;
+        emit(e, graded, "");
+        if (graded) p5u = e.ok ? 1 : 2;
+    } else {
+        checks.record("P5.U p.301/302: NOT GRADED, a precondition (C4, C5, C7, C10, C11 or RUN-ENDS) did not hold");
+    }
+
+    // ---- P7.2 and P7.3: claims that name the clauses of two propositions at once
+    // (SPECIFICATION.md 7/P7: PASS when both halves pass, FAIL when either fails, not graded when either is not graded)
+    auto joint = [&](int a, int b, const std::string& label, const std::string& ng) {
+        std::string halves = std::string(a == 1 ? "holds" : a == 2 ? "fails" : "not graded") + " / " + (b == 1 ? "holds" : b == 2 ? "fails" : "not graded");
+        if (a == 2 || b == 2) checks.expect(false, label + halves);
+        else if (a == 0 || b == 0) checks.record(ng);
+        else checks.expect(true, label + halves);
+    };
+    joint(p5l_state, p62, "P7.2 APPC-shr.c6 p.301: multiplexing occurs for bitplane and sprite colour information (P5.L and P6.2 together; P5.L / P6.2): ",
+          "P7.2 APPC-shr.c6 p.301 (P5.L and P6.2 together): NOT GRADED, P5.L or P6.2 is not graded");
+    joint(p5l_state, p5u, "P7.3 APPC-shr.c8 p.301: the bitplane colours are encoded in the sixteen lower registers (P5.L and P5.U together; P5.L / P5.U): ",
+          "P7.3 APPC-shr.c8 p.301 (P5.L and P5.U together): NOT GRADED, P5.L or P5.U is not graded");
+}
+
 // Grades one capture against every Phase-A proposition and precondition.
 // Shared by the normal run (prog_main, default Config) and every mutation
 // (a different program and/or Config, same comparator, unchanged): the
@@ -1043,10 +1710,8 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
     // the baseline generator.
     auto pat = (mutate == "C8") ? build_pattern_vc8() : build_pattern();
 
-    // ---- graded frames F1-F6. F7-F10's Copper lists and sprite data exist
-    // (prog_main.s), but P5.U, P6.1, P6.2 and the sprite halves of P7.2/P7.3
-    // are not built, by a scope decision -- see the records
-    // at the end of this function.
+    // ---- graded frames F1-F6. F7-F10 are graded by grade_sprite_frames at
+    // the end of this function.
     FrameLines fl1 = decode_frame_lines(cap, 1, kPlane1Buf, kPlane2Buf);
     FrameLines fl2 = decode_frame_lines(cap, 2, kPlane1Buf, kPlane2Buf);
     FrameLines fl3 = decode_frame_lines(cap, 3, kPlane1Buf, kPlane2Buf);
@@ -1431,6 +2096,7 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
 
     // ---- P5.L (Hires half): F5's registers 04-0F change nothing, 00-03
     // invert exactly the value-n pixels in all twelve bits --------------
+    bool p5l_hires_graded = false, p5l_hires_pass = false;
     if (f5.ok && f5.fc.bands.size() == 33) {
         std::vector<int> idxs; for (int i=0;i<24 && i<(int)f5.lines.size();++i) idxs.push_back(i);
         int lo = f5.fc.bands[32].line+1; for (int i=lo;i<=199 && i<(int)f5.lines.size();++i) idxs.push_back(i);
@@ -1476,6 +2142,8 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         checks.expect(total_checked > 0 && hires_low_ok,
                       "P5.L p.301/94 (Hires half): registers COLOR00-03 invert exactly the value-n pixels, all twelve bits, checked=" +
                       std::to_string(total_checked));
+        p5l_hires_graded = true;
+        p5l_hires_pass = total_checked > 0 && hires_high_clean && hires_low_ok;
     } else {
         checks.record("P5.L (Hires half): F5's register-invert bands not decoded as planned, not graded");
     }
@@ -1506,20 +2174,9 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         }
     }
 
-    // ---- P5.U, P6.1, P6.2, and the sprite halves of P7.2/P7.3:
-    // F7-F10's Copper lists and sprite/null-sprite data exist (built
-    // for a later pass), but no frame here points SPR0PT at them and no
-    // check here observes a sprite run or an upper-register (COLOR16-31)
-    // playfield pixel -- withdrawn with their reason, not built, by a scope
-    // decision. Building them needs: SPR0PT wired into F7-F10 (prog_main.s
-    // already carries the Copper lists), a sprite-line/run finder (R6),
-    // preconditions C10 and C11, and P5.U/P6.1/P6.2's own grading over
-    // F7-F9's inner pixels and F10's Hires run.
-    checks.record("P5.U (p.301/302): needs F7-F10's sprite run and preconditions C10/C11; not built, by a scope decision");
-    checks.record("P6.1 APPC-shr.c9 p.302: needs F7-F9's sprite run and inner pixels; not built, by a scope decision");
-    checks.record("P6.2 CH4-appC-context.c6 p.301: needs F7 and F10's sprite run; not built, by a scope decision");
-    checks.record("P7.3 APPC-shr.c8 p.301 (P5.L and P5.U together): P5.U not built, by a scope decision, so P7.3 is not graded");
-    checks.record("P7.2 APPC-shr.c6 p.301 (P5.L and P6.2 together): P6.2 not built, by a scope decision, so P7.2 is not graded");
+    // ---- F7-F10: P5.U, P6.1, P6.2 and, with P5.L, P7.2 and P7.3
+    int p5l_state = (p5l_shr_any <= 0) ? 2 : (p5l_hires_graded ? (p5l_hires_pass ? 1 : 2) : 0);
+    grade_sprite_frames(cap, checks, wp, f6, p5l_state);
 }
 
 void run_normal(const std::string& dir, Checks& checks) {
@@ -1680,6 +2337,8 @@ int main(int argc, char** argv) {
     static const std::set<std::string> kKnownMuts = {
         "V1","V2","V3A","V3B","V3C","V4A","V4B","V4D","V5","V5B",
         "C1","C2","C3","C4","C5","C6","C7","C8","C9","FIX",
+        "V5C","V6A","V6B","V6C","V6D","V6E","V6L","V6Q","V6S",
+        "C4B","C4C","C7B","C10","C11","C11G","RUNENDS",
     };
     if (mutate.empty()) {
         run_normal(dir, checks);
