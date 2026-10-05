@@ -10,7 +10,7 @@
 | **Report to** | **NanoMig and MiSTer-devel/Minimig-AGA_MiSTer**, as a question rather than a defect: both lines, and TC64, carry the simplification with the same comment, so there is no fix in either to port |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`, claim `C-scan.c02`, and `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)`, claim `opus:7-appC-beam.c2` (p. 304); [`integration/ch2-interlace-fields`](../../integration/ch2-interlace-fields) reproduces it at the system boundary, in ECS/NTSC on both CPU cores: `P3`, claims `ch2-vertical-beam-position.c15` to `.c19` and `COP2-vertical-beam-position.c17` to `.c22` (p. 24), red on fx68k and on TG68K |
 | **Chapter** | Appendix C — ECS, printed p. 304; 2 — Coprocessor, printed pp. 23, 24; 6 — Blitter, printed p. 194 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | In `hrm/ch3-beam-counters-and-blanking`, 2 red, both NTSC. The control that writes HTOTAL and measures the line it produces is green in the same run; the PAL pair beside them is [NM-HRM-068](NM-HRM-068.md)'s. In `integration/ch2-interlace-fields`, 1 red on each core, `P3` (28 passed, 1 failed on fx68k and on TG68K); its preconditions `PT-1` to `PT-7` are green on both, among them the gate `PT-6`: the NTSC fields alternate 262 and 263 lines |
+| **Assertions** | In `hrm/ch3-beam-counters-and-blanking`, 2 red, both NTSC. The control that writes HTOTAL and measures the line it produces is green in the same run; the PAL pair beside them is [NM-HRM-068](NM-HRM-068.md)'s. In `integration/ch2-interlace-fields`, 1 red on each core, `P3` (31 passed, 1 failed on fx68k and on TG68K); its preconditions `PT-1`, `PT-2`, `PT-3`, `PT-5` and `PT-7` are green on both, and the two gates `PT-4` and `PT-6` print open: the NTSC fields alternate 262 and 263 lines, and the Copper marks of line 0 and line 1 are 227 colour clocks apart |
 | **Verdict of the four** | **unanimous against NanoMig**: WinUAE, vAmiga, Denise and Copperline all make every other NTSC line 228 colour clocks. NanoMig toggles the bit that reports a long line and keeps every line at 227 |
 | **See also** | [NM-HRM-068](NM-HRM-068.md) — the PAL row of the same sentence, where p. 23 sides with the RTL; [NM-HRM-033](NM-HRM-033.md) — the condition on the same toggle; [NM-AA-005](NM-AA-005.md) — the AA specification's HTOTAL entry, the same missing long line under a programmed line length |
 
@@ -96,13 +96,25 @@ line. p. 24's four-field pattern — a short field ending on a short line, a
 long field ending on a long line, a short field ending on a long line, a long
 field ending on a short line — needs a long last line, 228 colour clocks by
 p. 23, in two fields of every four. `P3` grades the pattern over twelve consecutive fields, at any
-phase. The fields do alternate, 263 and 262 lines (`PT-6`, green), but every
-field's last line lasts 1816 cycles, 227 colour clocks at the package's 8
+phase. It is gated: it prints NOT GRADED when `PT-4` (the line 0-to-1 marks are
+227 or 228 colour clocks apart) or `PT-6` (the fields alternate between 262 and
+263 lines) is closed, and both print open in the normal run. The fields do
+alternate, 263 and 262 lines (`N_0..N_12 = 263,262,263,...`), but every
+field's last line lasts 227 colour clocks, 1816 cycles at the package's 8
 cycles per colour clock, so no phase fits and `P3` is red on fx68k and on
-TG68K. Read with the package's own program and analysis, instrumented to print
-every line it measures — a measurement for this page, not a graded assertion —
-all 3150 lines of those twelve fields last 1816 cycles on both cores, and none
-lasts 1824.
+TG68K. The run prints what the verdict rests on as `MEASURED` lines before
+`P3`, identical on both cores:
+
+```text
+MEASURED: P3 measured: Delta = 1288 clk_sys (161 colour clocks)
+MEASURED: P3 measured: (f_k, x_k in colour clocks) for k = 0..11 = (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227)
+MEASURED: P3 measured: of 3150 line lengths in fields 0..11, 3150 are 227 colour clocks, 0 are 228 and 0 are neither
+```
+
+The twelve pairs are (long, 227) and (short, 227) alternating, never a 228
+([`test_ch2_interlace_fields.cpp:1453-1472`](../../integration/ch2-interlace-fields/test_ch2_interlace_fields.cpp)
+prints them). PT-5, which accepts either length, stays green because 227 is one of the two
+page values.
 
 ---
 
