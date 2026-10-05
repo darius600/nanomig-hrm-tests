@@ -1,7 +1,7 @@
 ; prog_r3.s -- SPECIFICATION.md section 5.2, P3 (runs R3 and R3n, and their
 ; contrasts). B1 and B2 are chosen per section 4 for the 2 MB Zorro II
 ; memory board this package's fastram_config offers (SPECIFICATION.md
-; addendum): B1=$00200000, B2=B1+size=$00400000, both multiples of the
+; section 8.1): B1=$00200000, B2=B1+size=$00400000, both multiples of the
 ; board's size inside the standard 8 MB space.
 ;
 ; Independent points vary, each selected by a symbol an including source
@@ -22,6 +22,8 @@
 ;                  instead of reading IMG2
 ;   MUT_IOBASE  -- with MUT_R3N, targets $00A00000 (Figure K-1, p.386:
 ;                  Zorro II I/O expansion space) instead of OTHER_BASE
+;   MUT_SELF    -- with MUT_R3N, targets the configured base CONFIG_BASE
+;                  itself instead of OTHER_BASE
 
         include "nanomig.i"
         include "common.i"
@@ -48,7 +50,11 @@ OTHER_BASE  equ  B2
         ifd     MUT_IOBASE
 NOTHER_TARGET equ $00A00000    ; Figure K-1 (p.386): Zorro II I/O expansion space
         else
+        ifd     MUT_SELF
+NOTHER_TARGET equ CONFIG_BASE
+        else
 NOTHER_TARGET equ OTHER_BASE
+        endif
         endif
 
 P0       equ     $A55A

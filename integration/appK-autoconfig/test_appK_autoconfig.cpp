@@ -3,49 +3,50 @@
 // value. This file only implements what SPECIFICATION.md already
 // committed to.
 //
+// Every precondition is printed as its own line before the proposition that
+// rests on it; a proposition whose precondition printed FAIL is recorded as
+// not graded and never reaches expect().
+//
 // NMH_MUTATE selects a mutated program in place of its normal counterpart,
 // one assertion or precondition at a time; none is exercised by a plain
-// `make test`.
+// `make test`. Under a mutation each program set runs at the first CPU
+// setting only.
 //
-// MUTATION P1b, P7-part-(i) stimulus red RESET at A replaced by NOP (R1a), via NMH_MUTATE=P1A: the
-//   unchanged "power LED leaves bright" comparator, fed R1a, goes red (no LED change occurs)
-// MUTATION P2, P7-part-(ii) stimulus red MOVE.W D0,(A0) at A+2 replaced by NOP (R1b), via
-//   NMH_MUTATE=P2: the unchanged "C2 pixel appears" comparator, fed R1b, goes red (no C2 pixel)
-// MUTATION P1-DISPANCHOR stimulus red COLOR00 preset to C1'=$0C3F instead of C1, via
-//   NMH_MUTATE=P1-DISPANCHOR: the unchanged anchor comparator, still expecting C1, goes red -- F_ref
-//   shows C1', not C1
-// MUTATION P1-NOEXCEPTION stimulus red SR set to $0700 (user mode) before RESET, so RESET is a
-//   privilege violation, via NMH_MUTATE=P1-NOEXCEPTION: the unchanged "no exception" comparator goes
-//   red (H_E runs)
-// MUTATION P3-IMG1 stimulus red step b writes register 48 (configures immediately) in place of the
-//   4A write, via NMH_MUTATE=P3-IMG1
-// MUTATION P3-IMG2 stimulus red steps c and d skipped, board never configured, via
-//   NMH_MUTATE=P3-IMG2
-// MUTATION P3-CONTENT stimulus red step c (the register-48 write) left out, step d kept: the board
-//   is never mapped in, so R0/R1 read back at their unanswered default instead of P0/P1V, via
-//   NMH_MUTATE=P3-CONTENT
-// MUTATION GATE-G stimulus red the shut-up write to 4C skipped (IMG re-read from the same
-//   unconfigured PIC instead), via NMH_MUTATE=GATE-G
-// MUTATION P7-part-(iii) stimulus red RESET at A replaced by NOP (R6a/R6am), via NMH_MUTATE=P6: the
-//   unchanged "board returns to unconfigured" comparator, fed R6a/R6am, goes red (the board stays
-//   configured)
+// MUTATION FIXTURE none impossible not exercised, by a scope decision: an apparatus check with no claim and no page-predicted contrast; a program that skips the vector write would falsify it and the package does not drive one
+// MUTATION P1-MARKERS none impossible not exercised, by a scope decision: the uniqueness of the V1 write and of the V0 write before t_M1 are apparatus anchors that no page predicts a contrast for; a program that writes V1 twice would falsify them and the package does not drive one
+// MUTATION P1-LEDCAL stimulus red the write that switches the power LED to bright (CIAAPRA bit 1 = 0) replaced by a write that keeps bit 1 = 1, RESET at A replaced by NOP so the run completes (prog_r1_nocal), via NMH_MUTATE=P1-LEDCAL: the unchanged calibration comparator, fed it, goes red (the LED never leaves its dim level)
+// MUTATION P1-DISPANCHOR stimulus red COLOR00 preset to C1'=$0C3F instead of C1, RESET at A replaced by NOP so the run completes (prog_r1_c1prime), via NMH_MUTATE=P1-DISPANCHOR: the unchanged anchor comparator, still expecting C1, goes red -- F_ref shows C1', not C1; F_ref ends before t_M1, so the NOP does not reach the comparator
+// MUTATION P1-NOEXCEPTION none impossible unavailable from this oracle: the only contrast is RESET executed in user mode, which rests on 680x0 privilege-violation behaviour that no cited manual page predicts (Motorola, not the manual)
+// MUTATION P1b stimulus red RESET at A replaced by NOP (prog_r1a), via NMH_MUTATE=P1A: the unchanged "power LED leaves bright" comparator, fed it, goes red (no LED change occurs); the run completes
+// MUTATION P2-WITNESS stimulus red RESET at A replaced by NOP (prog_r1a), via NMH_MUTATE=P1A: the unchanged "reset witnessed" comparator, fed it, goes red (no LED change occurs); the run completes
+// MUTATION P2 none impossible unfalsifiable by a live page-predicted stimulus at this boundary: p.223 predicts that the instruction after RESET executes, so a stimulus that removes the witness instruction (the C2 write) leaves the clause true and turns only the witness red; no input of this boundary makes the CPU stop after RESET while keeping the witness
+// MUTATION GATE-G-PRECOND none impossible unavailable from this oracle: register 08 bit 6 is a property of the board the harness offers; no stimulus changes what the board reports about itself
+// MUTATION P3-IMG-PRECOND none impossible not exercised, by a scope decision: run liveness (loaded, window found) is an apparatus anchor; no page predicts a contrast
+// MUTATION P3-IMG1 stimulus red step b writes register 48 (configures immediately) in place of the 4A write (prog_r3_c48first), via NMH_MUTATE=P3-IMG1: the unchanged comparator goes red (IMG1 differs from IMG0)
+// MUTATION P3-IMG2 stimulus red steps c and d skipped, board never configured (prog_r3_nocfg), via NMH_MUTATE=P3-IMG2: the unchanged comparator goes red (IMG2 equals IMG0)
+// MUTATION P3-CONTENT-PRECOND none impossible not exercised, by a scope decision: the board-type, size, memory-flag and scratch-write anchors are properties of the offered board and of the program order; no page predicts a contrast
+// MUTATION P3-CONTENT stimulus red step c (the register-48 write) left out, step d kept (prog_r3_no48): the board is never mapped in, so R0/R1 read back at their unanswered default instead of P0/P1V, via NMH_MUTATE=P3-CONTENT
+// MUTATION P3-NOTOTHER-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the run R3n
+// MUTATION P3-BASE-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the runs R3' and R3n'
+// MUTATION P3-BASE-ASSIGNED stimulus red step c (the register-48 write) left out of R3', step d kept (prog_r3_swap_no48): the board is never mapped in at B2, so the readback at B2 is the unanswered default instead of P0/P1V, via NMH_MUTATE=P3-BASE-ASSIGNED
+// MUTATION P3-CONTROL-IO-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the run of the control
+// MUTATION P3-CONTROL-IO stimulus red the write/readback aimed at the configured base B1 itself instead of at $00A00000 (prog_r3_io_self), via NMH_MUTATE=P3-CONTROL-IO: the unchanged "R2 != P2V, or no answer" comparator goes red (a configured memory board answers at its base, p.433)
+// MUTATION P3-CONTROL-UNCONF-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the run of the control
+// MUTATION P3-CONTROL-UNCONF stimulus red the board configured at $00400000 (steps b-d with the bases exchanged) and the write/readback aimed at $00400000 (prog_r3_unconf_self), via NMH_MUTATE=P3-CONTROL-UNCONF: the unchanged comparator goes red (a configured memory board answers at its base, p.433)
+// MUTATION P6-CONFIG none impossible not exercised, by a scope decision: the configuration took effect before RESET in R6 and R6m; a program that leaves out the register-48 write (as P3-CONTENT's) would falsify it and the package does not drive one in the R6 family
+// MUTATION P6-WITNESS stimulus red RESET at A replaced by NOP in R6 and R6m (prog_r6a, prog_r6am), via NMH_MUTATE=P6: the unchanged "LED change observed after t_M1" comparator goes red (no LED changes); both runs complete
+// MUTATION P6 none impossible not exercised, by a scope decision: the page's only contrasting case for P6 (RESET replaced by NOP, R6a/R6am) also removes P6's own reset-witness precondition P6-WITNESS, so grading P6 against it reports not graded, not red, through P6's own clause (SPECIFICATION.md section 5.2 P6, "6. Contrasting cases"); a real contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers
+// MUTATION P3-NOTOTHER stimulus green already red on the unmutated stimulus, which a stimulus mutation cannot make more red; the same "R2 != P2V, or no answer" comparator, fed the board configured at $00200000 and read at $00A00000 (prog_r3_io) or the board left unconfigured and read at $00400000 (prog_r3_unconf_n), prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
+// MUTATION P3-BASE stimulus green already red on the unmutated stimulus; the same "R2 != P2V, or no answer" comparator, fed the same two control stimuli, prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
 //
-// P6 has no mutation of its own: not exercised, by a scope decision. The
-// page's only contrasting case for P6 (RESET replaced by NOP, R6a/R6am)
-// also removes P6's own reset-witness precondition -- with no RESET there
-// is no LED change to witness -- so grading P6 directly against it reports
-// "not graded", not red, through P6's own clause (SPECIFICATION.md section
-// 5.2 P6, "6. Contrasting cases"). That contrast is carried by P7 part
-// (iii) instead, via NMH_MUTATE=P6 above, whose precondition list
-// (SPECIFICATION.md section 5.3.5) excludes the reset witness.
-//
-// P3-NOTOTHER and P3-BASE are already red (the memory board also answers
-// at the base it was not given): each gets two green controls on the same
-// "R2 != P2V, or no answer" comparator instead of a dedicated mutation --
-// the board configured normally, read at $00A00000 (Figure K-1, p.386:
-// Zorro II I/O expansion space, outside the 8 MB memory space the board
-// can occupy); and the board left unconfigured, read at $00400000. Both
-// are proven-live inputs through the same comparator R3n uses.
+// GATE-G, P3-NOTOTHER and P3-BASE are red: GATE-G through p.436, P3-NOTOTHER
+// and P3-BASE through pp.391 and 435. Each has green controls on the same
+// comparator instead of a mutation of its own: GATE-G the comparator of
+// P3-IMG2 (a PIC that leaves $00E8xxxx after the configuring write to 48);
+// P3-NOTOTHER and P3-BASE the comparator of P3-CONTROL-IO and
+// P3-CONTROL-UNCONF (the board configured normally and read at $00A00000;
+// the board left unconfigured and read at $00400000). Every control carries
+// its own mutation record above.
 //
 // P4 and P5 carry no assertion: SPECIFICATION.md section 1 declines
 // K-0840 and K-0838 whole (no Zorro III device at this boundary). Not
@@ -114,10 +115,9 @@ constexpr uint16_t kVecokYes  = 0xFACE;
 constexpr uint32_t kMkCalDim    = kMK_NEXT + 0;
 constexpr uint32_t kMkCalBright = kMK_NEXT + 2;
 constexpr uint32_t kMK1 = kMK_NEXT + 4;
-constexpr uint32_t kMK2 = kMK_NEXT + 6;
 constexpr uint16_t kCalDimMark = 0xCA10, kCalBrightMark = 0xCA20;
-constexpr uint16_t kV1 = 0xBBBB, kV2 = 0xCCCC;
-constexpr uint16_t kC1 = 0x0C30, kC1Prime = 0x0C3F, kC2 = 0x03AC, kCE = 0x0F0F;
+constexpr uint16_t kV1 = 0xBBBB;
+constexpr uint16_t kC1 = 0x0C30, kC2 = 0x03AC, kCE = 0x0F0F;
 
 // gate G / P3-family IMG base (prog_rg*.s, prog_r3*.s all start their own
 // IMG0 at MK_NEXT)
@@ -132,11 +132,9 @@ constexpr uint32_t kR3R1      = kMK_NEXT + 194;
 constexpr uint32_t kR3Scratch = kMK_NEXT + 196;
 constexpr uint32_t kR3R2      = kMK_NEXT + 198;
 constexpr uint16_t kP0v = 0xA55A, kP1v = 0x3CC3, kP2v = 0x5AA5;
-constexpr uint32_t kB1 = 0x00200000, kB2 = 0x00400000;
 
 // R6-family (prog_r6*.s)
 constexpr uint32_t kR6Mk1  = kMK_NEXT + 0;
-constexpr uint32_t kR6Mk2  = kMK_NEXT + 2;
 constexpr uint32_t kR6Img0 = kMK_NEXT + 4;
 constexpr uint32_t kR6R0   = kMK_NEXT + 68;
 constexpr uint32_t kR6Img3 = kMK_NEXT + 72;
@@ -197,13 +195,31 @@ std::vector<uint64_t> write_cycles(const std::vector<nmh::RamAccess>& log, uint3
     return out;
 }
 
+// "Every" needs the whole population: an empty set is never true.
+template <class V, class F>
+bool all_of_pop(const V& v, F f) {
+    if (v.empty()) return false;
+    for (const auto& x : v) if (!f(x)) return false;
+    return true;
+}
+
 // Register 00's physical byte (not complemented, section 4): bits7-4 from
 // the word at a pair's first address, bits3-0 from the word at its
-// second. Register 00 bit 5 is the memory flag ("If this bit is set, the
-// PIC's memory will be linked into the system free pool", section 4).
-bool reg00_memory_flag(const std::array<uint16_t, 32>& img0) {
+// second. Type = bits 7-6, memory flag = bit 5 ("If this bit is set, the
+// PIC's memory will be linked into the system free pool", section 4),
+// size = bits 2-0.
+struct Reg00 { int type; bool memory; int size; };
+Reg00 decode_reg00(const std::array<uint16_t, 32>& img0) {
     int nib_hi = (img0[0] >> 12) & 0xF;
-    return (nib_hi >> 1) & 1; // bit 5 is bit 1 of the hi nybble (bits 7-4)
+    int nib_lo = (img0[1] >> 12) & 0xF;
+    int byte = (nib_hi << 4) | nib_lo;
+    return { (byte >> 6) & 0x3, ((byte >> 5) & 1) != 0, byte & 0x7 };
+}
+// Zorro II (type 11), memory flag set, size field 110 = 2 megabytes
+// (p.432-433): the board the two 2 MB bases of section 4 are chosen for.
+bool board_is_zorro2_2mb_memory(const std::array<uint16_t, 32>& img0) {
+    Reg00 r = decode_reg00(img0);
+    return r.type == 0b11 && r.memory && r.size == 0b110;
 }
 
 // Runs to the completion marker or to `budget` clk_sys cycles, whichever
@@ -236,7 +252,7 @@ DoneWait wait_done_or_second_vsync(nmh::NanomigHarness& h, uint32_t done_word_ad
     return out;
 }
 
-// ---- R1-family capture (P1, P2 and, via reuse, P6/P7's reset witness) -
+// ---- R1-family capture (P1, P2) ---------------------------------------
 
 struct LedTrans { uint64_t cycle; bool pwr; bool fdd; };
 
@@ -252,15 +268,18 @@ struct R1Out {
     bool fref_ok = false;
     bool led_calib_ok = false;    // both calibration phases held their level for their whole
                                    // marker-bounded duration, and the two levels differ
-    bool pwr_bright_at_m1 = false; // L_bright, the calibrated bright level
+    bool l_dim = false;            // the calibrated power-LED levels (valid when led_calib_ok)
+    bool l_bright = false;
+    bool pwr_at_m1 = false;        // the power-LED level at t_M1
     std::optional<uint64_t> t_v2;
     uint64_t t_c2 = 0;
     bool c2_pixel_seen = false;
     bool pwr_change_seen = false;
     uint64_t pwr_change_cycle = 0;
-    bool pwr_change_to_dim = false;
+    bool pwr_change_to_dim = false;   // the first change after t_M1 goes to the calibrated L_dim
     bool pwr_change_in_window = false; // pwr_change_cycle in [t_m1, t_c2]
     bool fdd_ever_changed = false; // for the P1a finding only
+    bool done = false;             // the completion marker was written
 };
 
 R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
@@ -292,6 +311,7 @@ R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
     out.m0_seen = count_writes(h.ram_log(), kMK0, kV0) >= 1;
     out.v1_writes = count_writes(h.ram_log(), kMK1, kV1);
     out.t_m1 = first_write_cycle(h.ram_log(), kMK1, kV1);
+    out.done = count_writes(h.ram_log(), kDoneAddr, kDoneValue) >= 1;
 
     if (out.t_m1) {
         for (const auto& a : h.ram_log()) {
@@ -336,10 +356,15 @@ R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
             else if (t.cycle < *out.t_m1) { stable_bright = false; }
         }
         out.led_calib_ok = have_dim && have_bright && stable_dim && stable_bright && (dim_level != bright_level);
-        out.pwr_bright_at_m1 = bright_level;
+        out.l_dim = dim_level;
+        out.l_bright = bright_level;
     }
 
     if (!out.t_m1) return out;
+
+    // The power-LED level at t_M1: the last transition at or before it.
+    for (auto& t : trans)
+        if (t.cycle <= *out.t_m1) out.pwr_at_m1 = t.pwr;
 
     auto frames = nmh::find_frames(h.video());
     int fref_idx = -1;
@@ -379,22 +404,13 @@ R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
         if (t.cycle > *out.t_m1) {
             out.pwr_change_seen = true;
             out.pwr_change_cycle = t.cycle;
-            out.pwr_change_to_dim = !t.pwr;
+            out.pwr_change_to_dim = out.led_calib_ok && t.pwr == out.l_dim;
             out.pwr_change_in_window = t.cycle <= out.t_c2;
             break;
         }
     }
 
     return out;
-}
-
-// P1's own precondition list (SPECIFICATION.md section 5.1.5): loaded,
-// t_V2 found (the window anchor), the V1/V0 markers, no exception, the
-// display anchor, and both power-LED calibration phases. Shared by P1b,
-// P2 and P7 parts (i) and (ii), which all rest on it.
-bool p1_preconds_ok(const R1Out& r) {
-    return r.loaded && r.t_v2.has_value() && r.v1_writes == 1 && r.v0_writes_before_m1 == 1 &&
-           r.no_exception && r.fref_ok && r.led_calib_ok;
 }
 
 // ---- gate G / P3 capture (no frame waits, DONE-or-second-vsync bounded)
@@ -469,11 +485,31 @@ R3Out run_r3(const std::string& bin) {
     auto scratch_cycles = write_cycles(h.ram_log(), kR3Scratch, 0x0000);
     if (r0_cycle)
         for (auto c : scratch_cycles) if (c < *r0_cycle) { out.scratch_before_r0 = true; break; }
-    auto r2_cycle = out.r2 ? first_write_cycle(h.ram_log(), kR3R2, *out.r2) : std::nullopt;
-    if (r2_cycle)
+    // The scratch write precedes the read of R2 in program order. When the
+    // read is answered, its store of R2 bounds it; when it is not, no store
+    // exists and the scratch write itself is the whole witness.
+    auto r2_cycle = (out.done && out.r2) ? first_write_cycle(h.ram_log(), kR3R2, *out.r2) : std::nullopt;
+    if (r2_cycle) {
         for (auto c : scratch_cycles) if (c < *r2_cycle) { out.scratch_before_r2 = true; break; }
+    } else {
+        out.scratch_before_r2 = !scratch_cycles.empty();
+    }
 
     return out;
+}
+
+bool r3_live(const R3Out& r) { return r.loaded && r.t_v2_found; }
+// What the write/readback at the other base measured: the completion marker
+// and the stored R2.
+void note_r2(Checks& c, const char* what, const R3Out& r) {
+    char buf[160];
+    std::snprintf(buf, sizeof buf, "%s: completion marker %s, R2 = $%04X (P2 = $%04X)", what,
+                  r.done ? "written" : "absent", (unsigned)r.r2.value_or(0), (unsigned)kP2v);
+    c.note(buf);
+}
+// "R2 != P2V, or no answer": the board does not answer at the address read.
+bool r3_no_answer_or_other(const R3Out& r) {
+    return !r.done || r.r2.value_or(0x0000) != kP2v;
 }
 
 // ---- R6-family capture (P6: reuses P1's steps a-d, then RESET + tail) -
@@ -548,6 +584,14 @@ R6Out run_r6(const std::string& bin, uint8_t cpu_config, bool mem_ending) {
     return out;
 }
 
+// The names of the preconditions that printed FAIL, for a "not graded" record.
+std::string failed_names(std::initializer_list<std::pair<const char*, bool>> pre) {
+    std::string out;
+    for (const auto& p : pre)
+        if (!p.second) out += (out.empty() ? "" : ", ") + std::string(p.first);
+    return out;
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -561,22 +605,43 @@ int main(int argc, char** argv) {
 
     // CPU settings this core runs (nanomig.v cpu_config, 00=68000,
     // 01=68010, 11=68020; the harness's own Config comment: "00 = 68000
-    // core behaviour"). p.394 speaks of "the 680x0 RESET instruction";
-    // core A (fx68k) implements only the 68000, core B (TG68K) the three.
+    // core behaviour"). p.394 speaks of "the 680x0 RESET instruction"; core
+    // A (fx68k) implements only the 68000, core B (TG68K) the three.
     std::vector<uint8_t> settings = is_tg68k ? std::vector<uint8_t>{0, 1, 3} : std::vector<uint8_t>{0};
     // Under a mutation, one CPU setting is enough to see the predicted
-    // stimulus-red/stimulus-green outcome: the normal (NMH_MUTATE unset)
-    // run above already covers every setting, and is unaffected by this.
+    // stimulus-red outcome: the normal (NMH_MUTATE unset) run covers every
+    // setting and is unaffected by this.
     if (!mv.empty()) settings = {settings[0]};
 
+    auto run_r1_set = [&](const char* prog, uint16_t bg) {
+        std::vector<R1Out> v;
+        for (uint8_t s : settings) v.push_back(run_r1(dir + "/" + prog + ".bin", s, bg));
+        return v;
+    };
+    auto note_mutant_done = [&](const char* what, bool all_done) {
+        checks.note(std::string("NMH_MUTATE=") + mv + ": the mutated run (" + what + ") wrote the completion marker: " +
+                    (all_done ? "yes" : "no"));
+    };
+
+    // The unmutated R1 run set feeds every R1-family line except the one a
+    // selector replaces.
+    const std::vector<R1Out> r1_base = run_r1_set("prog_r1", kC1);
+    std::vector<R1Out> r1_nop, r1_nocal, r1_disp;
+    if (mv == "P1A")               { r1_nop   = run_r1_set("prog_r1a", kC1);
+                                     note_mutant_done("prog_r1a", all_of_pop(r1_nop, [](const R1Out& r) { return r.done; })); }
+    if (mv == "P1-LEDCAL")         { r1_nocal = run_r1_set("prog_r1_nocal", kC1);
+                                     note_mutant_done("prog_r1_nocal", all_of_pop(r1_nocal, [](const R1Out& r) { return r.done; })); }
+    if (mv == "P1-DISPANCHOR")     { r1_disp  = run_r1_set("prog_r1_c1prime", kC1);   // kC1 stays the expected colour
+                                     note_mutant_done("prog_r1_c1prime", all_of_pop(r1_disp, [](const R1Out& r) { return r.done; })); }
+    const std::vector<R1Out>& r1_ledcal_feed  = mv == "P1-LEDCAL" ? r1_nocal : r1_base;
+    const std::vector<R1Out>& r1_disp_feed    = mv == "P1-DISPANCHOR" ? r1_disp : r1_base;
+    const std::vector<R1Out>& r1_p1b_feed     = mv == "P1A" ? r1_nop : r1_base;
+    const std::vector<R1Out>& r1_witness_feed = mv == "P1A" ? r1_nop : r1_base;
+
     // ---- FIXTURE: vector-table check, on every R1-family setting -------
-    bool fixture_ok = true;
     bool fdd_ever_changed_any = false;
-    for (uint8_t s : settings) {
-        R1Out r = run_r1(dir + "/prog_r1.bin", s, kC1);
-        if (!(r.loaded && r.vecok && r.m0_seen)) fixture_ok = false;
-        if (r.fdd_ever_changed) fdd_ever_changed_any = true;
-    }
+    for (const auto& r : r1_base) if (r.fdd_ever_changed) fdd_ever_changed_any = true;
+    const bool fixture_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.loaded && r.vecok && r.m0_seen; });
     checks.expect(fixture_ok,
         "FIXTURE: R1 loads, the vector-table check passes and M0 is written, on every CPU setting "
         "[not graded -- apparatus check, no claim uid]");
@@ -584,37 +649,68 @@ int main(int argc, char** argv) {
         "the drive-LED port ") + (fdd_ever_changed_any ? "changed level at least once" : "never changed level") +
         " on any CPU setting (NM-HRM-046).");
 
+    // ================= P1 / P2 preconditions, printed first ===============
+    const bool p1_markers_ok = all_of_pop(r1_base, [](const R1Out& r) {
+        return r.loaded && r.t_v2.has_value() && r.v1_writes == 1 && r.v0_writes_before_m1 == 1; });
+    checks.expect(p1_markers_ok,
+        "P1-MARKERS [apparatus anchor of section 3, no claim uid]: R1 loads, the second vertical-sync leading edge "
+        "after t_M1 is found, the V1 write appears exactly once and the V0 write exactly once before t_M1, "
+        "on every CPU setting");
+
+    const bool p1_ledcal_ok = all_of_pop(r1_ledcal_feed, [](const R1Out& r) { return r.loaded && r.led_calib_ok; });
+    checks.expect(p1_ledcal_ok,
+        "P1-LEDCAL [p351]: the power LED holds one level for the whole dim phase (pra bit 1 = 1) and a "
+        "different level for the whole bright phase (pra bit 1 = 0), on every CPU setting");
+
+    const bool p1_disp_ok = all_of_pop(r1_disp_feed, [](const R1Out& r) { return r.loaded && r.fref_ok; });
+    checks.expect(p1_disp_ok,
+        "P1-DISPANCHOR [p46,p48]: F_ref shows only COLOR00's value and black, confirming the "
+        "display anchor, on every CPU setting");
+
+    const bool p1_noexc_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.loaded && r.no_exception; });
+    checks.expect(p1_noexc_ok,
+        "P1-NOEXCEPTION [p223]: no pixel of value C_E and no write of V_E to MK_E anywhere in the "
+        "run (H_E never runs), on every CPU setting");
+
     // ================= P1 (P1a not checkable; P1b graded) ===============
     {
-        bool p1b_ok = true;
-        for (uint8_t s : settings) {
-            std::string bin = dir + (mv == "P1A" ? "/prog_r1a.bin" : "/prog_r1.bin");
-            R1Out r = run_r1(bin, s, kC1);
-            bool preconds = p1_preconds_ok(r);
-            bool val = r.pwr_change_seen && r.pwr_change_to_dim && r.pwr_change_in_window;
-            if (!(preconds && val)) p1b_ok = false;
+        std::string why = failed_names({{"P1-MARKERS", p1_markers_ok}, {"P1-LEDCAL", p1_ledcal_ok},
+                                        {"P1-DISPANCHOR", p1_disp_ok}, {"P1-NOEXCEPTION", p1_noexc_ok}});
+        if (why.empty() && !all_of_pop(r1_p1b_feed, [](const R1Out& r) { return r.loaded; })) why = "the P1b run did not load";
+        if (why.empty()) {
+            const bool p1b_ok = all_of_pop(r1_p1b_feed, [](const R1Out& r) {
+                return r.pwr_at_m1 == r.l_bright && r.pwr_change_seen && r.pwr_change_to_dim && r.pwr_change_in_window; });
+            checks.expect(p1b_ok,
+                "P1b [p351,p354,p223]: CIA-A's port A reverts to inputs and the power LED leaves its bright "
+                "state for the calibrated dim level after the RESET instruction, on every CPU setting");
+        } else {
+            checks.record("P1b [p351,p354,p223]: not graded: precondition failed (" + why + ")");
         }
-        checks.expect(p1b_ok,
-            "P1b [p351,p354,p223]: CIA-A's port A reverts to inputs and the power LED leaves its bright "
-            "state after the RESET instruction, on every CPU setting");
         checks.record("P1a [p244,p370]: not graded: precondition failed (the drive LED never follows "
             "the motor; NM-HRM-046)");
     }
 
     // ================= P2 =================================================
     {
-        bool p2_ok = true;
+        const bool witness_ok = all_of_pop(r1_witness_feed, [](const R1Out& r) {
+            return r.loaded && r.pwr_change_seen && r.pwr_change_in_window; });
+        checks.expect(witness_ok,
+            "P2-WITNESS [p394,p223]: a system reset took place in the R1 run: the power LED changes in "
+            "[t_M1, t_C2], on every CPU setting");
+
+        std::string why = failed_names({{"P1-MARKERS", p1_markers_ok}, {"P1-LEDCAL", p1_ledcal_ok},
+                                        {"P1-DISPANCHOR", p1_disp_ok}, {"P1-NOEXCEPTION", p1_noexc_ok},
+                                        {"P2-WITNESS", witness_ok}});
         int v0_after_total = 0;
-        for (uint8_t s : settings) {
-            std::string bin = dir + (mv == "P2" ? "/prog_r1b.bin" : "/prog_r1.bin");
-            R1Out r = run_r1(bin, s, kC1);
-            bool preconds = p1_preconds_ok(r) && r.pwr_change_seen && r.pwr_change_in_window; // reset witnessed
-            v0_after_total += r.v0_writes_after_m1;
-            if (!(preconds && r.c2_pixel_seen)) p2_ok = false;
+        for (const auto& r : r1_base) v0_after_total += r.v0_writes_after_m1;
+        if (why.empty()) {
+            const bool p2_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.c2_pixel_seen; });
+            checks.expect(p2_ok,
+                "P2 [p223,p394,p411]: RESET does not reset the CPU; execution continues with the next "
+                "instruction (a visible pixel of C2 appears after RESET), on every CPU setting");
+        } else {
+            checks.record("P2 [p223,p394,p411]: not graded: precondition failed (" + why + ")");
         }
-        checks.expect(p2_ok,
-            "P2 [p223,p394,p411]: RESET does not reset the CPU; execution continues with the next "
-            "instruction (a visible pixel of C2 appears after RESET), on every CPU setting");
         checks.note(std::string("P2 V0-after-M1 writes across all CPU settings: ") + std::to_string(v0_after_total) +
             " (not graded: no page bounds how long a full-system reset, which this is not, would take)");
     }
@@ -626,11 +722,8 @@ int main(int argc, char** argv) {
         // register 00's physical byte (not complemented): bits7-4 from the
         // word at AC_BASE+0, bits3-0 from the word at AC_BASE+2 (section 4,
         // Figure K-14 a)).
-        int nib_hi = (g.img[0] >> 12) & 0xF;
-        int nib_lo = (g.img[1] >> 12) & 0xF;
-        int type_byte = (nib_hi << 4) | nib_lo;
-        int type = (type_byte >> 6) & 0x3;
-        g2 = type == 0b10 || type == 0b11;
+        Reg00 r00 = decode_reg00(g.img);
+        g2 = r00.type == 0b10 || r00.type == 0b11;
         auto reserved_ones = [&](int idx) { return (g.img[idx] & 0xF000) == 0xF000; };
         g3 = reserved_ones(6) && reserved_ones(26) && reserved_ones(28) && reserved_ones(30); // 0C,34,38,3C
 
@@ -651,27 +744,50 @@ int main(int argc, char** argv) {
             "none, or the harness's start-up had already configured it)");
     }
 
-    // ---- Gate G precondition, then GATE-G's own contrast: the real
-    // stimulus writes $00 to the shut-up address 4C; under NMH_MUTATE=GATE-G
-    // that write is skipped (prog_rg.bin re-run instead), so the unchanged
-    // "differs from IMG0" check must go red (an unconfigured PIC answers
-    // the same way twice).
-    bool reg08_precond_pass = !gate_g_pass || reg08_can_shutup;
-    checks.expect(reg08_precond_pass,
-        "GATE-G precondition [p433]: register 08 bit 6 reads logical 0, the board can be shut up");
-    {
-        std::string bin = dir + (mv == "GATE-G" ? "/prog_rg.bin" : "/prog_rg_shutup.bin");
-        SimpleImgOut r = run_simple_img(bin, kImgAtMkNext);
-        bool differs = r.loaded && r.t_v2_found && (!r.done || !img_equal(r.img, g.img));
-        bool gate_g_graded = gate_g_pass && reg08_can_shutup;
-        checks.expect(gate_g_graded ? differs : true,
-            "GATE-G [p436]: writing $00 to the shut-up address 4C makes the PIC that supports shut-up "
-            "disappear from $00E8xxxx (a differing image, or no answer)");
+    // ---- Gate G precondition, then GATE-G's own check: the stimulus writes
+    // $00 to the shut-up address 4C and reads the image again.
+    if (gate_g_pass) {
+        checks.expect(reg08_can_shutup,
+            "GATE-G-PRECOND [p433]: register 08 bit 6 reads logical 0, the board can be shut up");
+    } else {
+        checks.record("GATE-G-PRECOND [p433]: unavailable: Gate G supplied no register image");
+    }
+    if (gate_g_pass && reg08_can_shutup) {
+        SimpleImgOut r = run_simple_img(dir + "/prog_rg_shutup.bin", kImgAtMkNext);
+        if (r.loaded && r.t_v2_found) {
+            checks.expect(!r.done || !img_equal(r.img, g.img),
+                "GATE-G [p433,p436]: writing $00 to the shut-up address 4C makes the PIC that supports shut-up "
+                "disappear from $00E8xxxx (a differing image, or no answer)");
+        } else {
+            checks.record("GATE-G [p433,p436]: not graded: the shut-up run did not load or did not run past "
+                "the second vertical-sync leading edge");
+        }
+    } else {
+        checks.record("GATE-G [p433,p436]: not graded: Gate G failed or register 08 bit 6 indicates the board "
+            "cannot be shut up");
     }
 
     // ================= P3 (only if gate G passed) =========================
     if (gate_g_pass) {
-        // ---- IMG1 = IMG0 (contrast: P3-IMG1 / R3c) -----------------------
+        const R3Out r_base  = run_r3(dir + "/prog_r3.bin");
+        const R3Out rn_base = run_r3(dir + "/prog_r3_n.bin");
+        const R3Out rs_base = run_r3(dir + "/prog_r3_swap.bin");
+        const R3Out rsn     = run_r3(dir + "/prog_r3_swap_n.bin");
+        auto mutated_r3 = [&](const char* sel, const char* prog, const R3Out& normal) {
+            if (mv != sel) return normal;
+            R3Out m = run_r3(dir + "/" + prog + ".bin");
+            checks.note(std::string("NMH_MUTATE=") + mv + ": the mutated run (" + prog + ") wrote the completion marker: " +
+                        (m.done ? "yes" : "no"));
+            return m;
+        };
+        const R3Out r_img1   = mutated_r3("P3-IMG1", "prog_r3_c48first", r_base);
+        const R3Out r_img2   = mutated_r3("P3-IMG2", "prog_r3_nocfg", r_base);
+        const R3Out r_cont   = mutated_r3("P3-CONTENT", "prog_r3_no48", r_base);
+        const R3Out rs_feed  = mutated_r3("P3-BASE-ASSIGNED", "prog_r3_swap_no48", rs_base);
+        const R3Out r_io     = mutated_r3("P3-CONTROL-IO", "prog_r3_io_self", run_r3(dir + "/prog_r3_io.bin"));
+        const R3Out r_unconf = mutated_r3("P3-CONTROL-UNCONF", "prog_r3_unconf_self", run_r3(dir + "/prog_r3_unconf_n.bin"));
+
+        // ---- IMG1 = IMG0 (contrast: P3-IMG1 / R3c) and IMG2 != IMG0 --------
         // img1 is written at step b, before any of R3's own risky access,
         // so it is trustworthy on the unmutated run regardless of
         // out.done. Under the R3c mutation img1 *is* the run's own last
@@ -679,94 +795,121 @@ int main(int argc, char** argv) {
         // answering there too, img1 stays at its unwritten (zero) default,
         // which the comparator below already reads as "not equal" to the
         // real, nonzero img0 -- the same formula catches both outcomes.
-        {
-            std::string bin = dir + (mv == "P3-IMG1" ? "/prog_r3_c48first.bin" : "/prog_r3.bin");
-            R3Out r = run_r3(bin);
-            bool ok = r.loaded && r.t_v2_found && img_equal(r.img1, r.img0);
-            checks.expect(ok,
+        const bool img_pre = r3_live(r_img1) && r3_live(r_img2);
+        checks.expect(img_pre,
+            "P3-IMG-PRECOND [apparatus anchor of section 2.2, no claim uid]: the runs behind P3-IMG1 and P3-IMG2 "
+            "loaded and ran to the completion marker or past the second vertical-sync leading edge");
+        if (img_pre) {
+            checks.expect(img_equal(r_img1.img1, r_img1.img0),
                 "P3-IMG1 [p431,p436]: the nybble write to register 4A alone does not configure the "
                 "board (register-image unchanged)");
-        }
-
-        // ---- IMG2 != IMG0, or no answer (contrast: P3-IMG2 / R3u) --------
-        {
-            std::string bin = dir + (mv == "P3-IMG2" ? "/prog_r3_nocfg.bin" : "/prog_r3.bin");
-            R3Out r = run_r3(bin);
-            bool ok = r.loaded && r.t_v2_found && (!r.done || !img_equal(r.img2, r.img0));
-            checks.expect(ok,
+            checks.expect(!r_img2.done || !img_equal(r_img2.img2, r_img2.img0),
                 "P3-IMG2 [p435,p431]: after the byte write to register 48 the PIC leaves $00E8xxxx "
                 "(one AUTOCONFIG device offered; a differing register-image)");
+        } else {
+            checks.record("P3-IMG1 [p431,p436]: not graded: precondition failed (P3-IMG-PRECOND)");
+            checks.record("P3-IMG2 [p435,p431]: not graded: precondition failed (P3-IMG-PRECOND)");
         }
 
         // ---- memory-board content check (R0=P0, R1=P1V), both R3 and R3n -
         // R0/R1 are written at step d, before R3's own risky IMG2 read (or
         // R3n's own risky OTHER_BASE read): trustworthy regardless of done.
-        // Under NMH_MUTATE=P3-CONTENT, r's own run substitutes the register-48
-        // write left out (step d kept): R0/R1 read back at their unanswered
-        // default, so the unchanged "R0=P0" check must go red with the
-        // population still present.
-        {
-            std::string bin_r = dir + (mv == "P3-CONTENT" ? "/prog_r3_no48.bin" : "/prog_r3.bin");
-            R3Out r = run_r3(bin_r);
-            R3Out rn = run_r3(dir + "/prog_r3_n.bin");
-            bool ok = r.loaded && r.t_v2_found && reg00_memory_flag(r.img0) && r.scratch_before_r0 &&
-                      r.r0 && *r.r0 == kP0v && r.r1 && *r.r1 == kP1v &&
-                      rn.loaded && rn.t_v2_found && reg00_memory_flag(rn.img0) && rn.scratch_before_r0 &&
-                      rn.r0 && *rn.r0 == kP0v && rn.r1 && *rn.r1 == kP1v &&
-                      !r.alias_before_r0 && !rn.alias_before_r0;
-            checks.expect(ok,
+        const bool content_pre = r3_live(r_cont) && r3_live(rn_base) &&
+                                 board_is_zorro2_2mb_memory(r_cont.img0) && board_is_zorro2_2mb_memory(rn_base.img0) &&
+                                 r_cont.scratch_before_r0 && rn_base.scratch_before_r0;
+        checks.expect(content_pre,
+            "P3-CONTENT-PRECOND [p432,p433]: both runs loaded and ran past the window; register 00 reads "
+            "type 11, memory flag set and size 110 (2 megabytes); the scratch write precedes the readback");
+        if (content_pre) {
+            checks.expect(r_cont.r0 && *r_cont.r0 == kP0v && r_cont.r1 && *r_cont.r1 == kP1v &&
+                          rn_base.r0 && *rn_base.r0 == kP0v && rn_base.r1 && *rn_base.r1 == kP1v &&
+                          !r_cont.alias_before_r0 && !rn_base.alias_before_r0,
                 "P3-CONTENT [p433]: a memory board answers with what software wrote at the base it was "
                 "given, in both runs, with no aliasing write below $200000 before the readback");
+        } else {
+            checks.record("P3-CONTENT [p433]: not graded: precondition failed (P3-CONTENT-PRECOND)");
         }
 
         // ---- R2 != P2, or no answer (R3n's own check): P3-NOTOTHER -------
-        {
-            R3Out rn = run_r3(dir + "/prog_r3_n.bin");
-            bool ok = rn.loaded && rn.t_v2_found && reg00_memory_flag(rn.img0) && rn.scratch_before_r2 &&
-                      (!rn.done || *rn.r2 != kP2v);
-            checks.expect(ok,
-                "P3-NOTOTHER (sol:K-0837, opus:K-0869, opus:K-0014, sol:K-0008) [p391,p433-434]: "
+        const bool notother_pre = r3_live(rn_base) && board_is_zorro2_2mb_memory(rn_base.img0) &&
+                                  rn_base.scratch_before_r2;
+        checks.expect(notother_pre,
+            "P3-NOTOTHER-PRECOND [p432,p433]: R3n loaded and ran past the window; register 00 reads type 11, "
+            "memory flag set and size 110 (2 megabytes); the scratch write precedes the readback of R2");
+        note_r2(checks, "P3-NOTOTHER run R3n", rn_base);
+        if (notother_pre) {
+            checks.expect(r3_no_answer_or_other(rn_base),
+                "P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]: "
                 "\"The software then tells each board where to reside in memory\" (p.391) and \"the "
                 "low order register takes bits 23-16\" (p.435) -- the memory board does not also "
                 "answer at the base it was not given");
+        } else {
+            checks.record("P3-NOTOTHER [p391,p433-435]: not graded: precondition failed (P3-NOTOTHER-PRECOND)");
         }
 
         // ---- base-exchange contrast (P3-BASE / R3', R3n') -----------------
-        {
-            R3Out r = run_r3(dir + "/prog_r3_swap.bin");
-            R3Out rn = run_r3(dir + "/prog_r3_swap_n.bin");
-            bool ok = r.loaded && r.t_v2_found && reg00_memory_flag(r.img0) && r.scratch_before_r0 &&
-                      r.r0 && *r.r0 == kP0v && r.r1 && *r.r1 == kP1v &&
-                      rn.loaded && rn.t_v2_found && reg00_memory_flag(rn.img0) && rn.scratch_before_r2 &&
-                      (!rn.done || *rn.r2 != kP2v);
-            checks.expect(ok,
-                "P3-BASE (sol:K-0837, opus:K-0869, opus:K-0014, sol:K-0008) [p388,p433]: \"The "
+        const bool base_pre = r3_live(rs_feed) && r3_live(rsn) &&
+                              board_is_zorro2_2mb_memory(rs_feed.img0) && board_is_zorro2_2mb_memory(rsn.img0) &&
+                              rs_feed.scratch_before_r0 && rsn.scratch_before_r2;
+        checks.expect(base_pre,
+            "P3-BASE-PRECOND [p432,p433]: R3' and R3n' loaded and ran past the window; register 00 reads "
+            "type 11, memory flag set and size 110 (2 megabytes) in both; the scratch write precedes the "
+            "readback in each");
+        note_r2(checks, "P3-BASE run R3n'", rsn);
+        if (base_pre) {
+            const bool assigned = rs_feed.r0 && *rs_feed.r0 == kP0v && rs_feed.r1 && *rs_feed.r1 == kP1v;
+            checks.expect(assigned,
+                "P3-BASE-ASSIGNED [p391,p435]: with B1 and B2 exchanged and B2 written to register 48, a "
+                "write/readback at B2 returns what was written (the board answers at the base it was given)");
+            checks.expect(assigned && r3_no_answer_or_other(rsn),
+                "P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]: \"The "
                 "software then tells each board where to reside in memory\" (p.391) and \"the low "
                 "order register takes bits 23-16\" (p.435) -- with B1 and B2 exchanged the board "
                 "answers at B2 and not at B1");
+        } else {
+            checks.record("P3-BASE-ASSIGNED [p391,p435]: not graded: precondition failed (P3-BASE-PRECOND)");
+            checks.record("P3-BASE [p388,p391,p433,p435]: not graded: precondition failed (P3-BASE-PRECOND)");
         }
 
         // ---- green controls for P3-NOTOTHER and P3-BASE, same comparator -
-        {
-            R3Out r_io = run_r3(dir + "/prog_r3_io.bin");
-            bool ok_io = r_io.loaded && r_io.t_v2_found && reg00_memory_flag(r_io.img0) &&
-                         r_io.scratch_before_r2 && (!r_io.done || *r_io.r2 != kP2v);
-            checks.expect(ok_io,
-                "P3-NOTOTHER/P3-BASE control [p386]: with the board configured at $00200000, the same "
+        const bool io_pre = r3_live(r_io) && board_is_zorro2_2mb_memory(r_io.img0) && r_io.scratch_before_r2;
+        checks.expect(io_pre,
+            "P3-CONTROL-IO-PRECOND [p432,p433]: the control run loaded and ran past the window; register 00 "
+            "reads type 11, memory flag set and size 110 (2 megabytes); the scratch write precedes the "
+            "readback of R2");
+        note_r2(checks, "P3-CONTROL-IO run", r_io);
+        if (io_pre) {
+            checks.expect(r3_no_answer_or_other(r_io),
+                "P3-CONTROL-IO [p386]: with the board configured at $00200000, the same "
                 "write/readback at $00A00000 (Figure K-1: Zorro II I/O expansion space) does not "
-                "answer");
+                "return what was written (R2 differs from P2, or no completion marker)");
+        } else {
+            checks.record("P3-CONTROL-IO [p386]: not graded: precondition failed (P3-CONTROL-IO-PRECOND)");
+        }
 
-            R3Out r_unconf = run_r3(dir + "/prog_r3_unconf_n.bin");
-            bool ok_unconf = r_unconf.loaded && r_unconf.t_v2_found && r_unconf.scratch_before_r2 &&
-                              (!r_unconf.done || *r_unconf.r2 != kP2v);
-            checks.expect(ok_unconf,
-                "P3-NOTOTHER/P3-BASE control [p431]: with the board left unconfigured, the same "
-                "write/readback at $00400000 does not answer");
+        const bool unconf_pre = r3_live(r_unconf) && board_is_zorro2_2mb_memory(r_unconf.img0) && r_unconf.scratch_before_r2;
+        checks.expect(unconf_pre,
+            "P3-CONTROL-UNCONF-PRECOND [p432,p433]: the control run loaded and ran past the window; register "
+            "00 reads type 11, memory flag set and size 110 (2 megabytes); the scratch write precedes the "
+            "readback of R2");
+        note_r2(checks, "P3-CONTROL-UNCONF run", r_unconf);
+        if (unconf_pre) {
+            checks.expect(r3_no_answer_or_other(r_unconf),
+                "P3-CONTROL-UNCONF [p431]: with the board left unconfigured, the same "
+                "write/readback at $00400000 does not return what was written (R2 differs from P2, "
+                "or no completion marker)");
+        } else {
+            checks.record("P3-CONTROL-UNCONF [p431]: not graded: precondition failed (P3-CONTROL-UNCONF-PRECOND)");
         }
     } else {
         checks.record("P3 [p384,p391,p431,p435,p436]: not checkable: no AUTOCONFIG device answers in "
             "$00E8xxxx (gate G failed)");
     }
+
+    // opus:K-0014, sol:K-0008 (p.384): withdrawn whole.
+    checks.record("opus:K-0014 sol:K-0008 [p384]: withdrawn whole to this record: each claim also states that "
+        "addressing jumpers were eliminated, which has no observable at this boundary; the software "
+        "assignment of the base address is graded by P3-NOTOTHER and P3-BASE without these ids");
 
     // P4, P5: declined whole (SPECIFICATION.md section 1); no assertion, no mutation.
     checks.record("P4 [p435] (K-0840): not specified -- the 4A/A19-A16 table is headed for Zorro III "
@@ -775,113 +918,63 @@ int main(int argc, char** argv) {
         "and a 32-bit address bus; nanomig.v's memory address ports are 24 bits wide.");
 
     // ================= P6 (only if gate G passed) ==========================
-    //
-    // Shared comparator for P6's own clause (IMG3 == IMG0; the memory
-    // board's re-check R3 != P0'), evaluated against a given pair of
-    // programs and a given precondition set: unmutated for P6 itself
-    // (require_witness = true, the full precondition list), and under
-    // NMH_MUTATE=P6, fed R6a/R6am with require_witness = false for P7 part
-    // (iii) only (SPECIFICATION.md section 5.3.5 excludes the reset
-    // witness from part (iii)'s own preconditions).
-    // Each (setting, R6-or-R6m) pair is graded on its own: a pair whose own
-    // precondition fails is excluded from `ok`, not folded into a global
-    // failure, so the proposition is withdrawn only for the settings that
-    // actually failed their precondition, not whenever any one setting does.
-    struct P6Result { bool checked = false; bool pass = false; };
-    auto grade_p6 = [&](const std::string& bin_a, const std::string& bin_am, bool require_witness) {
-        P6Result out;
-        bool ok = true;
-        bool any_graded = false;
-        for (uint8_t s : settings) {
-            R6Out r6 = run_r6(dir + bin_a, s, false);
-            R6Out r6m = run_r6(dir + bin_am, s, true);
-            bool precond = r6.loaded && r6.no_exception && r6.config_took_effect && r6.done.has_value() &&
-                           (!require_witness || r6.led_witness);
-            bool precond_m = r6m.loaded && r6m.no_exception && r6m.config_took_effect && r6m.done.has_value() &&
-                             (!require_witness || r6m.led_witness);
-            if (precond) {
-                any_graded = true;
-                if (!img_equal(r6.img3, r6.img0)) ok = false;
-            }
-            if (precond_m) {
-                any_graded = true;
-                if (!(r6m.r3 && *r6m.r3 != kP0Prime)) ok = false;
-            }
-        }
-        out.checked = any_graded;
-        out.pass = ok && out.checked;
-        return out;
-    };
-
-    P6Result p6r = gate_g_pass ? grade_p6("/prog_r6.bin", "/prog_r6m.bin", true) : P6Result{};
-    bool p6_pass = p6r.pass;
-    bool p6_checked_this_run = p6r.checked;
+    // Each CPU setting runs R6 (register-image ending) and R6m (memory-board
+    // ending) in full; P6 is graded only when both runs pass every
+    // precondition at every setting. Under NMH_MUTATE=P6 both runs have RESET
+    // replaced by NOP.
     if (gate_g_pass) {
-        if (p6_checked_this_run) {
-            checks.expect(p6_pass,
+        struct P6Pair { R6Out a, m; };
+        std::vector<P6Pair> p6;
+        const bool p6_nop = mv == "P6";
+        for (uint8_t s : settings)
+            p6.push_back({ run_r6(dir + (p6_nop ? "/prog_r6a.bin" : "/prog_r6.bin"), s, false),
+                           run_r6(dir + (p6_nop ? "/prog_r6am.bin" : "/prog_r6m.bin"), s, true) });
+        if (p6_nop)
+            note_mutant_done("prog_r6a, prog_r6am", all_of_pop(p6, [](const P6Pair& p) { return p.a.done && p.m.done; }));
+
+        const bool p6_config_ok = all_of_pop(p6, [](const P6Pair& p) {
+            return p.a.loaded && p.m.loaded && p.a.no_exception && p.m.no_exception &&
+                   p.a.config_took_effect && p.m.config_took_effect; });
+        checks.expect(p6_config_ok,
+            "P6-CONFIG [p431,p436]: R6 and R6m load, no exception handler runs, and the board answers at "
+            "its base before RESET (R0 = P0), on every CPU setting");
+
+        const bool p6_witness_ok = all_of_pop(p6, [](const P6Pair& p) { return p.a.led_witness && p.m.led_witness; });
+        checks.expect(p6_witness_ok,
+            "P6-WITNESS [p394,p223]: a system reset took place in R6 and R6m themselves: the LED changes "
+            "after t_M1 and before the second vertical-sync leading edge, on every CPU setting");
+
+        const bool p6_chipmem_ok = all_of_pop(p6, [](const P6Pair& p) { return p.a.done.has_value() && p.m.done.has_value(); });
+        if (p6_chipmem_ok) {
+            checks.note("P6 Chip memory answered at the program's addresses after RESET (the completion marker "
+                "was written by R6 and R6m) on every CPU setting");
+        } else {
+            checks.record("P6-CHIPMEM [p223]: Chip memory did not answer at the program's addresses after "
+                "RESET on some CPU setting (p.223: \"Software must assume that memory is not available\")");
+        }
+
+        std::string why = failed_names({{"P6-CONFIG", p6_config_ok}, {"P6-WITNESS", p6_witness_ok},
+                                        {"P6-CHIPMEM", p6_chipmem_ok}});
+        if (why.empty()) {
+            const bool p6_ok = all_of_pop(p6, [](const P6Pair& p) {
+                return img_equal(p.a.img3, p.a.img0) && p.m.r3 && *p.m.r3 != kP0Prime; });
+            checks.expect(p6_ok,
                 "P6 [p223,p394,p431]: RESET returns a configured PIC to the unconfigured state "
                 "(register-image restored; a memory board no longer answers at its old base), on every "
                 "CPU setting");
         } else {
-            checks.record("P6 [p223,p394,p431]: not checkable on this system: Chip memory did not answer "
-                "at the program's addresses after RESET on any CPU setting (p.223: \"Software must assume "
-                "that memory is not available\").");
+            checks.record("P6 [p223,p394,p431]: not graded: precondition failed (" + why + ")");
         }
     } else {
         checks.record("P6 [p223,p394,p431]: not checkable: no AUTOCONFIG device answers in $00E8xxxx "
             "(gate G failed)");
     }
 
-    // ================= P7 (combines P1's reset witness, P2, P6) ============
-    {
-        bool part_i = true, part_ii = true;
-        for (uint8_t s : settings) {
-            std::string bin_i = dir + (mv == "P1A" ? "/prog_r1a.bin" : "/prog_r1.bin");
-            R1Out ri = run_r1(bin_i, s, kC1);
-            if (!(p1_preconds_ok(ri) && ri.pwr_change_seen && ri.pwr_change_to_dim && ri.pwr_change_in_window))
-                part_i = false;
-
-            std::string bin_ii = dir + (mv == "P2" ? "/prog_r1b.bin" : "/prog_r1.bin");
-            R1Out rii = run_r1(bin_ii, s, kC1);
-            if (!(p1_preconds_ok(rii) && rii.pwr_change_seen && rii.pwr_change_in_window && rii.c2_pixel_seen))
-                part_ii = false;
-        }
-
-        std::string bin_a_name  = (mv == "P6") ? "/prog_r6a.bin"  : "/prog_r6.bin";
-        std::string bin_am_name = (mv == "P6") ? "/prog_r6am.bin" : "/prog_r6m.bin";
-        P6Result p7iii = gate_g_pass ? grade_p6(bin_a_name, bin_am_name, false) : P6Result{};
-        bool part_iii = p7iii.checked && p7iii.pass;
-
-        if (!gate_g_pass) {
-            checks.record("P7 (opus:K-0164, sol:K-0155) [p394]: withdrawn whole to this record: gate G "
-                "failed (fastram_config at the harness default 0 offers no Zorro II fast RAM, so "
-                "/BUSRST has no witness).");
-        } else if (!p7iii.checked) {
-            checks.record("P7 (opus:K-0164, sol:K-0155) [p394]: withdrawn whole to this record: part "
-                "(iii)'s precondition failed (Chip memory did not answer after RESET on this system).");
-        } else {
-            checks.expect(part_i && part_ii && part_iii,
-                "P7 (opus:K-0164, sol:K-0155) [p394]: the RESET instruction drives only /RST and "
-                "/BUSRST -- the system reset (i), not /HLT (ii), and expansion devices reset their "
-                "autoconfiguration logic (iii) -- on every CPU setting");
-        }
-    }
-
-    // ---- display-anchor and no-exception precondition contrasts ---------
-    {
-        std::string bin = dir + (mv == "P1-DISPANCHOR" ? "/prog_r1_c1prime.bin" : "/prog_r1.bin");
-        R1Out r = run_r1(bin, 0, kC1); // kC1 stays the expected colour under the mutation too
-        checks.expect(r.loaded && r.fref_ok,
-            "P1-DISPANCHOR [p46,p48]: F_ref shows only COLOR00's value and black, confirming the "
-            "display anchor");
-    }
-    {
-        std::string bin = dir + (mv == "P1-NOEXCEPTION" ? "/prog_r1_priv.bin" : "/prog_r1.bin");
-        R1Out r = run_r1(bin, 0, kC1);
-        checks.expect(r.loaded && r.no_exception,
-            "P1-NOEXCEPTION [p223]: no pixel of value C_E and no write of V_E to MK_E anywhere in the "
-            "run (H_E never runs)");
-    }
+    // opus:K-0164, sol:K-0155 (p.394): withdrawn whole.
+    checks.record("opus:K-0164 sol:K-0155 [p394]: withdrawn whole to this record: the claims state the "
+        "levels of the expansion-bus lines /RST, /BUSRST and /HLT, and none of the three is an output "
+        "of this boundary; the reset, CPU-continuation and autoconfiguration-reset consequences are "
+        "graded as P1b, P2 and P6 without these ids");
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;

@@ -4,14 +4,15 @@
 ; drive-motor latch, waits two frames to anchor F_ref, then executes the
 ; RESET sequence of section 2.3.
 ;
-; Four independent points vary, each selected by a symbol an including
+; The run ends with the completion marker (DONE) after the tail, which is
+; reached when Chip memory answers there.
+;
+; Three independent points vary, each selected by a symbol an including
 ; source sets before this file:
 ;   MUT_NORESET  -- R1a: RESET at A replaced by NOP (section 5.1.6)
-;   MUT_NOMOVE   -- R1b: MOVE.W D0,(A0) at A+2 replaced by NOP (section 5.2.6 of P2)
 ;   MUT_C1PRIME  -- display-anchor contrast: COLOR00 preset to C1'=$0C3F
-;   MUT_PRIV     -- "no exception" contrast: SR set to user mode ($0700)
-;                    immediately before the RESET sequence, so RESET itself
-;                    is a privilege violation
+;   MUT_NOCAL    -- power-LED calibration contrast: the write that switches
+;                    the LED to bright keeps CIAAPRA bit 1 = 1
 ; prog_r1.s itself sets none of them.
 
         include "nanomig.i"
@@ -61,7 +62,11 @@ start:
         ; markers instead of assuming a starting level.
         move.w  #CALDIM,MK_CALDIM      ; entering the dim phase (ddra/pra set by ENV_SETUP)
         WAITVERTB
+        ifd     MUT_NOCAL
+        move.b  #$02,CIAAPRA           ; /LED stays 1 (dim); OVL stays 0
+        else
         move.b  #$00,CIAAPRA           ; /LED=0 (bright); OVL stays 0
+        endif
         move.w  #CALBRIGHT,MK_CALBRIGHT ; entering the bright phase
         WAITVERTB
 
@@ -79,10 +84,6 @@ start:
         WAITVERTB
         WAITVERTB
 
-        ifd     MUT_PRIV
-        move.w  #$0700,SR              ; user mode: RESET below is a privilege violation
-        endif
-
         ; RESET sequence (section 2.3): A0=COLOR00, D0=C2, A2=MK1, D1=V1
         lea     CUSTOM+COLOR00,a0
         move.w  #C2,d0
@@ -99,13 +100,9 @@ seq_a:
         reset
         endif
 seq_ap2:
-        ifd     MUT_NOMOVE
-        nop
-        else
         move.w  d0,(a0)                ; A+2: C2 -> COLOR00
-        endif
 tail:
         move.w  #V2,MK2                ; M2 (only if Chip memory answers here)
-.hang:  bra.s   .hang
+        DONE
 
         H_E_HANDLER
