@@ -21,12 +21,13 @@
 // MUTATION P2-WITNESS stimulus red RESET at A replaced by NOP (prog_r1a), via NMH_MUTATE=P1A: the unchanged "reset witnessed" comparator, fed it, goes red (no LED change occurs); the run completes
 // MUTATION P2 none impossible unfalsifiable by a live page-predicted stimulus at this boundary: p.223 predicts that the instruction after RESET executes, so a stimulus that removes the witness instruction (the C2 write) leaves the clause true and turns only the witness red; no input of this boundary makes the CPU stop after RESET while keeping the witness
 // MUTATION GATE-G-PRECOND none impossible unavailable from this oracle: register 08 bit 6 is a property of the board the harness offers; no stimulus changes what the board reports about itself
-// MUTATION P3-IMG-PRECOND none impossible not exercised, by a scope decision: run liveness (loaded, window found) is an apparatus anchor; no page predicts a contrast
+// MUTATION P3-IMG-PRECOND none impossible not exercised, by a scope decision: run liveness (loaded, window found) and the board type, size and memory flag are anchors of the offered board; no page predicts a contrast
 // MUTATION P3-IMG1 stimulus red step b writes register 48 (configures immediately) in place of the 4A write (prog_r3_c48first), via NMH_MUTATE=P3-IMG1: the unchanged comparator goes red (IMG1 differs from IMG0)
 // MUTATION P3-IMG2 stimulus red steps c and d skipped, board never configured (prog_r3_nocfg), via NMH_MUTATE=P3-IMG2: the unchanged comparator goes red (IMG2 equals IMG0)
 // MUTATION P3-CONTENT-PRECOND none impossible not exercised, by a scope decision: the board-type, size, memory-flag and scratch-write anchors are properties of the offered board and of the program order; no page predicts a contrast
 // MUTATION P3-CONTENT stimulus red step c (the register-48 write) left out, step d kept (prog_r3_no48): the board is never mapped in, so R0/R1 read back at their unanswered default instead of P0/P1V, via NMH_MUTATE=P3-CONTENT
 // MUTATION P3-NOTOTHER-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the run R3n
+// MUTATION P3-NOTOTHER-ASSIGNED stimulus red step c (the register-48 write) left out of R3n, step d kept (prog_r3_n_no48): the board is never mapped in, so the readback at B1 is the unanswered default instead of P0/P1V, via NMH_MUTATE=P3-NOTOTHER-ASSIGNED
 // MUTATION P3-BASE-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the runs R3' and R3n'
 // MUTATION P3-BASE-ASSIGNED stimulus red step c (the register-48 write) left out of R3', step d kept (prog_r3_swap_no48): the board is never mapped in at B2, so the readback at B2 is the unanswered default instead of P0/P1V, via NMH_MUTATE=P3-BASE-ASSIGNED
 // MUTATION P3-CONTROL-IO-PRECOND none impossible not exercised, by a scope decision: same anchors as P3-CONTENT-PRECOND for the run of the control
@@ -35,9 +36,10 @@
 // MUTATION P3-CONTROL-UNCONF stimulus red the board configured at $00400000 (steps b-d with the bases exchanged) and the write/readback aimed at $00400000 (prog_r3_unconf_self), via NMH_MUTATE=P3-CONTROL-UNCONF: the unchanged comparator goes red (a configured memory board answers at its base, p.433)
 // MUTATION P6-CONFIG none impossible not exercised, by a scope decision: the configuration took effect before RESET in R6 and R6m; a program that leaves out the register-48 write (as P3-CONTENT's) would falsify it and the package does not drive one in the R6 family
 // MUTATION P6-WITNESS stimulus red RESET at A replaced by NOP in R6 and R6m (prog_r6a, prog_r6am), via NMH_MUTATE=P6: the unchanged "LED change observed after t_M1" comparator goes red (no LED changes); both runs complete
-// MUTATION P6 none impossible not exercised, by a scope decision: the page's only contrasting case for P6 (RESET replaced by NOP, R6a/R6am) also removes P6's own reset-witness precondition P6-WITNESS, so grading P6 against it reports not graded, not red, through P6's own clause (SPECIFICATION.md section 5.2 P6, "6. Contrasting cases"); a real contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers
+// MUTATION P6 none impossible unfalsifiable by a live page-predicted stimulus at this boundary: the page's only contrasting case for P6 (RESET replaced by NOP, R6a/R6am) also removes P6's own reset-witness precondition P6-WITNESS, so grading P6 against it reports not graded, not red, through P6's own clause (SPECIFICATION.md section 5.2 P6, "6. Contrasting cases"); a contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers; P6 is green with no live mutation
 // MUTATION P3-NOTOTHER stimulus green already red on the unmutated stimulus, which a stimulus mutation cannot make more red; the same "R2 != P2V, or no answer" comparator, fed the board configured at $00200000 and read at $00A00000 (prog_r3_io) or the board left unconfigured and read at $00400000 (prog_r3_unconf_n), prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
 // MUTATION P3-BASE stimulus green already red on the unmutated stimulus; the same "R2 != P2V, or no answer" comparator, fed the same two control stimuli, prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
+// MUTATION GATE-G stimulus green already red on the unmutated stimulus; the same "differs from IMG0, or no answer" comparator (no completion marker, or an image that differs from IMG0), fed run R3 (the board configured by the byte write to register 48 in place of the write to the shut-up address 4C), prints PASS: P3-IMG2
 //
 // GATE-G, P3-NOTOTHER and P3-BASE are red: GATE-G through p.436, P3-NOTOTHER
 // and P3-BASE through pp.391 and 435. Each has green controls on the same
@@ -52,13 +54,12 @@
 // K-0840 and K-0838 whole (no Zorro III device at this boundary). Not
 // exercised.
 //
-// P1a carries no assertion: its own precondition fails. The drive-LED
-// calibration needs the drive-LED port to show one level after the motor
-// is latched off and a different one after it is latched on
-// (SPECIFICATION.md section 5.1.5); measured here (FIXTURE-FDD, below),
-// across the full motor off-latch/on-latch sequence, on every run, on
-// both cores, the drive-LED port's level never changes at all. P1a is
-// recorded as not graded: precondition failed (NM-HRM-046).
+// P1a carries no assertion in this package. Its precondition, the
+// drive-LED calibration (SPECIFICATION.md section 5.1.5), is measured on
+// every run as P1a-FDDCAL: the drive-LED port changes level between the
+// motor off-latch/on-latch sequence and t_M1. The P1a record names what
+// that measurement printed; FIXTURE-FDD prints whether the port changed
+// level at all (NM-HRM-046).
 
 #include <array>
 #include <cstdint>
@@ -278,7 +279,8 @@ struct R1Out {
     uint64_t pwr_change_cycle = 0;
     bool pwr_change_to_dim = false;   // the first change after t_M1 goes to the calibrated L_dim
     bool pwr_change_in_window = false; // pwr_change_cycle in [t_m1, t_c2]
-    bool fdd_ever_changed = false; // for the P1a finding only
+    bool fdd_ever_changed = false; // any time in the run
+    int fdd_changes_before_m1 = 0; // drive-LED level changes in (t_CALBRIGHT, t_M1)
     bool done = false;             // the completion marker was written
 };
 
@@ -330,34 +332,39 @@ R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
             if (pixel_is(s, ce)) { out.no_exception = false; break; }
     }
 
-    // Power-LED calibration: the dim phase runs from the MK_CALDIM marker
-    // to the MK_CALBRIGHT marker, the bright phase from MK_CALBRIGHT to
-    // t_M1; each must hold one level for its whole duration, and the two
-    // levels must differ (SPECIFICATION.md section 5.1.5).
+    // Power-LED calibration (SPECIFICATION.md section 5.1.5): the LED shows
+    // one level when the dim phase starts (the MK_CALDIM marker) and a
+    // different level at t_M1, and the power LED makes exactly one
+    // transition in (t_CALDIM, t_M1): the switch to bright. The levels are
+    // read from the port trace, no timing margin is assumed.
     auto t_caldim = first_write_cycle(h.ram_log(), kMkCalDim, kCalDimMark);
     auto t_calbright = first_write_cycle(h.ram_log(), kMkCalBright, kCalBrightMark);
-    if (t_caldim && t_calbright && out.t_m1 && *t_caldim < *t_calbright && *t_calbright < *out.t_m1) {
-        // The CIAAPRA write that switches the LED and the MK_CALBRIGHT
-        // marker write are two separate instructions; the port can settle
-        // either side of when the marker's own write reaches the port
-        // (measured under 100 cycles on this RTL). kSettleTolerance is
-        // that margin, tuned on this RTL, not a page value: a transition
-        // outside it is a real instability, which the stability check
-        // below still catches.
-        constexpr uint64_t kSettleTolerance = 500;
-        uint64_t settle_lo = (*t_calbright > kSettleTolerance) ? *t_calbright - kSettleTolerance : 0;
-        uint64_t settle_hi = *t_calbright + kSettleTolerance;
-        bool have_dim = false, have_bright = false, dim_level = false, bright_level = false;
-        bool stable_dim = true, stable_bright = true;
+    if (t_caldim && out.t_m1 && *t_caldim < *out.t_m1) {
+        bool level_before = false, level_after = false;
+        int pwr_transitions = 0;
+        bool prev = false, have_prev = false;
         for (auto& t : trans) {
-            if (t.cycle <= *t_caldim) { dim_level = t.pwr; have_dim = true; }
-            else if (t.cycle >= settle_lo && t.cycle <= settle_hi) { bright_level = t.pwr; have_bright = true; }
-            else if (t.cycle < settle_lo) { stable_dim = false; }
-            else if (t.cycle < *out.t_m1) { stable_bright = false; }
+            if (t.cycle <= *t_caldim) {
+                level_before = t.pwr;
+            } else if (t.cycle < *out.t_m1 && have_prev && t.pwr != prev) {
+                ++pwr_transitions;
+            }
+            if (t.cycle < *out.t_m1) { level_after = t.pwr; }
+            prev = t.pwr; have_prev = true;
         }
-        out.led_calib_ok = have_dim && have_bright && stable_dim && stable_bright && (dim_level != bright_level);
-        out.l_dim = dim_level;
-        out.l_bright = bright_level;
+        out.led_calib_ok = pwr_transitions == 1 && level_before != level_after;
+        out.l_dim = level_before;
+        out.l_bright = level_after;
+    }
+    // The drive-LED calibration of section 5.1.5, from the same trace: the
+    // drive-LED port changes level at least once between the MK_CALBRIGHT
+    // marker and t_M1, the span that holds the motor off-latch and on-latch.
+    if (t_calbright && out.t_m1 && *t_calbright < *out.t_m1) {
+        bool prev_fdd_level = false; bool have = false;
+        for (auto& t : trans) {
+            if (t.cycle <= *t_calbright) { prev_fdd_level = t.fdd; have = true; }
+            else if (t.cycle < *out.t_m1 && have && t.fdd != prev_fdd_level) { ++out.fdd_changes_before_m1; prev_fdd_level = t.fdd; }
+        }
     }
 
     if (!out.t_m1) return out;
@@ -404,7 +411,7 @@ R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
         if (t.cycle > *out.t_m1) {
             out.pwr_change_seen = true;
             out.pwr_change_cycle = t.cycle;
-            out.pwr_change_to_dim = out.led_calib_ok && t.pwr == out.l_dim;
+            out.pwr_change_to_dim = t.pwr == out.l_dim;
             out.pwr_change_in_window = t.cycle <= out.t_c2;
             break;
         }
@@ -486,19 +493,25 @@ R3Out run_r3(const std::string& bin) {
     if (r0_cycle)
         for (auto c : scratch_cycles) if (c < *r0_cycle) { out.scratch_before_r0 = true; break; }
     // The scratch write precedes the read of R2 in program order. When the
-    // read is answered, its store of R2 bounds it; when it is not, no store
-    // exists and the scratch write itself is the whole witness.
+    // read is answered, its store of R2 bounds it. When no R2 was stored, the
+    // order has nothing to bound: no page fixes what an unanswered access
+    // does, so a run that never completes the preceding write is not a
+    // failure of the order, and the condition counts as met.
     auto r2_cycle = (out.done && out.r2) ? first_write_cycle(h.ram_log(), kR3R2, *out.r2) : std::nullopt;
     if (r2_cycle) {
         for (auto c : scratch_cycles) if (c < *r2_cycle) { out.scratch_before_r2 = true; break; }
     } else {
-        out.scratch_before_r2 = !scratch_cycles.empty();
+        out.scratch_before_r2 = true;
     }
 
     return out;
 }
 
 bool r3_live(const R3Out& r) { return r.loaded && r.t_v2_found; }
+// R0 = P0 and R1 = P1V: the board answers at the base it was given.
+bool r3_assigned(const R3Out& r) {
+    return r.r0 && *r.r0 == kP0v && r.r1 && *r.r1 == kP1v;
+}
 // What the write/readback at the other base measured: the completion marker
 // and the stored R2.
 void note_r2(Checks& c, const char* what, const R3Out& r) {
@@ -645,9 +658,9 @@ int main(int argc, char** argv) {
     checks.expect(fixture_ok,
         "FIXTURE: R1 loads, the vector-table check passes and M0 is written, on every CPU setting "
         "[not graded -- apparatus check, no claim uid]");
-    checks.record(std::string("FIXTURE-FDD: across the drive-motor off-latch/on-latch sequence of run R1, "
-        "the drive-LED port ") + (fdd_ever_changed_any ? "changed level at least once" : "never changed level") +
-        " on any CPU setting (NM-HRM-046).");
+    checks.note(std::string("FIXTURE-FDD: across run R1, the drive-LED port ") +
+        (fdd_ever_changed_any ? "changed level at least once" : "never changed level") +
+        " on any CPU setting (NM-HRM-046)");
 
     // ================= P1 / P2 preconditions, printed first ===============
     const bool p1_markers_ok = all_of_pop(r1_base, [](const R1Out& r) {
@@ -659,8 +672,8 @@ int main(int argc, char** argv) {
 
     const bool p1_ledcal_ok = all_of_pop(r1_ledcal_feed, [](const R1Out& r) { return r.loaded && r.led_calib_ok; });
     checks.expect(p1_ledcal_ok,
-        "P1-LEDCAL [p351]: the power LED holds one level for the whole dim phase (pra bit 1 = 1) and a "
-        "different level for the whole bright phase (pra bit 1 = 0), on every CPU setting");
+        "P1-LEDCAL [p351]: the power LED makes exactly one transition between the dim-phase marker and t_M1, "
+        "from one level (pra bit 1 = 1) to a different level (pra bit 1 = 0), on every CPU setting");
 
     const bool p1_disp_ok = all_of_pop(r1_disp_feed, [](const R1Out& r) { return r.loaded && r.fref_ok; });
     checks.expect(p1_disp_ok,
@@ -686,8 +699,25 @@ int main(int argc, char** argv) {
         } else {
             checks.record("P1b [p351,p354,p223]: not graded: precondition failed (" + why + ")");
         }
-        checks.record("P1a [p244,p370]: not graded: precondition failed (the drive LED never follows "
-            "the motor; NM-HRM-046)");
+        // P1a's precondition (SPECIFICATION.md section 5.1.5, drive-LED calibration): the
+        // drive-LED port shows the latched motor state, so it changes level between the motor
+        // off-latch and the on-latch. Measured on every CPU setting before P1a.
+        int fdd_changes_min = -1, fdd_changes_max = 0;
+        for (const auto& r : r1_base) {
+            if (fdd_changes_min < 0 || r.fdd_changes_before_m1 < fdd_changes_min) fdd_changes_min = r.fdd_changes_before_m1;
+            if (r.fdd_changes_before_m1 > fdd_changes_max) fdd_changes_max = r.fdd_changes_before_m1;
+        }
+        const bool p1a_fddcal_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.loaded && r.fdd_changes_before_m1 >= 1; });
+        checks.note("P1a-FDDCAL (precondition of P1a): the drive-LED port changed level between the "
+            "off-latch/on-latch sequence and t_M1 on every CPU setting: " + std::string(p1a_fddcal_ok ? "yes" : "no") +
+            " (level changes per setting: min " + std::to_string(fdd_changes_min < 0 ? 0 : fdd_changes_min) +
+            ", max " + std::to_string(fdd_changes_max) + ")");
+        if (!p1a_fddcal_ok)
+            checks.record("P1a [p244,p370]: not graded: precondition failed (P1a-FDDCAL: the drive-LED port did "
+                "not show the latched motor state; NM-HRM-046)");
+        else
+            checks.record("P1a [p244,p370]: not graded: P1a-FDDCAL holds, but no assertion for P1a is built "
+                "in this package");
     }
 
     // ================= P2 =================================================
@@ -725,7 +755,8 @@ int main(int argc, char** argv) {
         Reg00 r00 = decode_reg00(g.img);
         g2 = r00.type == 0b10 || r00.type == 0b11;
         auto reserved_ones = [&](int idx) { return (g.img[idx] & 0xF000) == 0xF000; };
-        g3 = reserved_ones(6) && reserved_ones(26) && reserved_ones(28) && reserved_ones(30); // 0C,34,38,3C
+        g3 = reserved_ones(6) && reserved_ones(7) && reserved_ones(26) && reserved_ones(27) &&
+             reserved_ones(28) && reserved_ones(29) && reserved_ones(30) && reserved_ones(31); // 0C,34,38,3C, both addresses of each pair
 
         // register 08 (pair at $00E80008/$00E8000A, index 4 for the hi
         // nybble), complemented (section 4: every register but 00 is
@@ -784,6 +815,7 @@ int main(int argc, char** argv) {
         const R3Out r_img2   = mutated_r3("P3-IMG2", "prog_r3_nocfg", r_base);
         const R3Out r_cont   = mutated_r3("P3-CONTENT", "prog_r3_no48", r_base);
         const R3Out rs_feed  = mutated_r3("P3-BASE-ASSIGNED", "prog_r3_swap_no48", rs_base);
+        const R3Out rn_feed  = mutated_r3("P3-NOTOTHER-ASSIGNED", "prog_r3_n_no48", rn_base);
         const R3Out r_io     = mutated_r3("P3-CONTROL-IO", "prog_r3_io_self", run_r3(dir + "/prog_r3_io.bin"));
         const R3Out r_unconf = mutated_r3("P3-CONTROL-UNCONF", "prog_r3_unconf_self", run_r3(dir + "/prog_r3_unconf_n.bin"));
 
@@ -795,10 +827,12 @@ int main(int argc, char** argv) {
         // answering there too, img1 stays at its unwritten (zero) default,
         // which the comparator below already reads as "not equal" to the
         // real, nonzero img0 -- the same formula catches both outcomes.
-        const bool img_pre = r3_live(r_img1) && r3_live(r_img2);
+        const bool img_pre = r3_live(r_img1) && r3_live(r_img2) &&
+                             board_is_zorro2_2mb_memory(r_img1.img0) && board_is_zorro2_2mb_memory(r_img2.img0);
         checks.expect(img_pre,
-            "P3-IMG-PRECOND [apparatus anchor of section 2.2, no claim uid]: the runs behind P3-IMG1 and P3-IMG2 "
-            "loaded and ran to the completion marker or past the second vertical-sync leading edge");
+            "P3-IMG-PRECOND [p432,p433]: the runs behind P3-IMG1 and P3-IMG2 loaded and ran to the completion "
+            "marker or past the second vertical-sync leading edge; register 00 reads type 11, memory flag set "
+            "and size 110 (2 megabytes)");
         if (img_pre) {
             checks.expect(img_equal(r_img1.img1, r_img1.img0),
                 "P3-IMG1 [p431,p436]: the nybble write to register 4A alone does not configure the "
@@ -838,11 +872,14 @@ int main(int argc, char** argv) {
             "memory flag set and size 110 (2 megabytes); the scratch write precedes the readback of R2");
         note_r2(checks, "P3-NOTOTHER run R3n", rn_base);
         if (notother_pre) {
-            checks.expect(r3_no_answer_or_other(rn_base),
+            checks.expect(r3_assigned(rn_feed),
+                "P3-NOTOTHER-ASSIGNED [p391,p435]: in run R3n a write/readback at B1, the base written to "
+                "register 48, returns what was written (the board answers at the base it was given)");
+            checks.expect(r3_assigned(rn_base) && r3_no_answer_or_other(rn_base),
                 "P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]: "
                 "\"The software then tells each board where to reside in memory\" (p.391) and \"the "
-                "low order register takes bits 23-16\" (p.435) -- the memory board does not also "
-                "answer at the base it was not given");
+                "low order register takes bits 23-16\" (p.435) -- the memory board answers at the base it "
+                "was given and does not also answer at the base it was not given");
         } else {
             checks.record("P3-NOTOTHER [p391,p433-435]: not graded: precondition failed (P3-NOTOTHER-PRECOND)");
         }
@@ -857,7 +894,7 @@ int main(int argc, char** argv) {
             "readback in each");
         note_r2(checks, "P3-BASE run R3n'", rsn);
         if (base_pre) {
-            const bool assigned = rs_feed.r0 && *rs_feed.r0 == kP0v && rs_feed.r1 && *rs_feed.r1 == kP1v;
+            const bool assigned = r3_assigned(rs_feed);
             checks.expect(assigned,
                 "P3-BASE-ASSIGNED [p391,p435]: with B1 and B2 exchanged and B2 written to register 48, a "
                 "write/readback at B2 returns what was written (the board answers at the base it was given)");

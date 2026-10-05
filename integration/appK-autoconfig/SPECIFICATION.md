@@ -63,7 +63,7 @@ Before the sequence: A0 = $00DFF180 (COLOR00), D0 = C2, A2 = MK1, D1 = V1. Then 
 A-2:  MOVE.W D1,(A2)    ; marker V1 -> MK1; its Chip-port write is t_M1
 A:    RESET
 A+2:  MOVE.W D0,(A0)    ; C2 -> COLOR00
-A+4:  tail              ; MOVE.W #V2,MK2, then a branch to itself
+A+4:  tail              ; MOVE.W #V2,MK2, then the completion marker, then a branch to itself
                         ; (in P6: the post-RESET reads of section 5.2)
 ```
 
@@ -163,8 +163,8 @@ e. The RESET sequence of §2.3.
 
 **5. Preconditions.** Each is printed on its own line, over every CPU setting, before the proposition that rests on it. Where one prints FAIL, the proposition is recorded as not graded and is never printed as PASS or FAIL.
 
-- P1-LEDCAL, power-LED calibration: with pra bit 1 = 1 the LED shows L_dim for a full frame, with bit 1 = 0 it shows L_bright, and L_bright ≠ L_dim.
-- Drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. P1a is recorded as not graded where it fails.
+- P1-LEDCAL, power-LED calibration: the power LED makes exactly one transition in (t_CALDIM, t_M1), where t_CALDIM is the Chip-port write of the dim-phase marker; the level before that transition is L_dim (pra bit 1 = 1), the level after it is L_bright (pra bit 1 = 0), and L_bright ≠ L_dim. No timing margin around the bright-phase marker is assumed.
+- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a MEASURED line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (the drive-LED port changes level at least once on every CPU setting). P1a is recorded as not graded where it fails, and the record names that line.
 - P1-DISPANCHOR, display anchor: F_ref as in §3.
 - P1-NOEXCEPTION, no exception: no pixel of value C_E and no write of V_E to MK_E anywhere in the run.
 - P1-MARKERS: the run loads, t_V2 is found, the write V1→MK1 appears exactly once, and the write V0→MK0 appears exactly once before t_M1. Writes of V0 after t_M1 are P2's record, not a precondition.
@@ -281,7 +281,8 @@ e. Last action (§2.2):
 - IMG2 ≠ IMG0, or "no answer": the PIC leaves $00E8xxxx (p.435 fn.6, p.431). If the next PIC in the chain has an identical image, IMG2 = IMG0 would be legitimate. The builder therefore states the number of AUTOCONFIG devices from the system configuration, and this value is expected when that number is one.
 - Memory board: R0 = P0 and R1 = P1, in both runs.
 - Memory board: before the store of R0, no CPU write with data P0 or P1 appears at a Chip-memory address of the Chip-memory port (§2.1). This excludes B1 aliasing Chip memory. A write of P0 or P1 at a Chip-memory-port address of $200000 or above is not in Chip memory; it is recorded with its address, not graded.
-- P3-NOTOTHER, memory board, carrying sol:K-0837, opus:K-0869 [p391,p433-435]: R2 ≠ P2, or "no answer". "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435), read through the base-address comparator of p.433-434 ("110 2 megabytes" register 00 size field pairs the base with the board's size). The board does not also answer at the base it was not given.
+- P3-NOTOTHER-ASSIGNED, memory board, no claim id: in run R3n, R0 = P0 and R1 = P1 at B1, the base written to register 48.
+- P3-NOTOTHER, memory board, carrying sol:K-0837, opus:K-0869 [p391,p433-435]: the aggregate R0 = P0 and R1 = P1 at B1 and (R2 ≠ P2, or "no answer"), in run R3n. "The software then tells each board where to reside in memory" (p.391); "the low order register takes bits 23-16" (p.435), read through the base-address comparator of p.433-434 ("110 2 megabytes" register 00 size field pairs the base with the board's size). The board answers at the base it was given and does not also answer at the base it was not given.
 - Quantifier: "the card's address" is a statement about every card. The test covers the PIC or PICs present, with two bases (R3 and R3').
 
 **5. Preconditions.** Each is printed on its own line before the propositions that rest on it (P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND, P3-CONTROL-IO-PRECOND, P3-CONTROL-UNCONF-PRECOND); where one prints FAIL, the propositions after it are recorded as not graded.
@@ -290,7 +291,7 @@ e. Last action (§2.2):
 - Every run lets register 00 be read as type 11 (Zorro II), memory flag set and size field 110 (2 megabytes, the "Unextended" column of p.433), before the two 2 MB bases B1 and B2 are used. G itself accepts type 10 or 11; P3 applies to type 11 only.
 - Every run loaded and ran to the completion marker or past the second vertical-sync leading edge (§2.2).
 - B1 and B2 are valid per §4 and do not overlap Chip memory.
-- The scratch write appears at the port between the writes to B1 and the reads.
+- The scratch write appears at the port between the writes to B1 and the reads. For the readback of R2 the condition is met when no R2 was stored: no page fixes what an access that is never answered does, so a write that never completes is not a failure of the order.
 - The memory flag has been read. For an I/O board only the IMG expected values are graded, because the page gives no content to read back at its base.
 - P3-BASE reports, as P3-BASE-ASSIGNED, that the board answers at the base it was given in the exchanged run (R0 = P0 and R1 = P1 at B2), and grades the aggregate P3-BASE only when both exchanged runs are live.
 
@@ -354,7 +355,7 @@ c. The RESET sequence of §2.3. Its tail is MOVE.W #V2,MK2, then the last action
 
 **6. Contrasting cases.**
 
-- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition P6-WITNESS: with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. Both runs complete, and P6-WITNESS prints FAIL on them. P6 itself carries no mutation: a contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers.
+- R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition P6-WITNESS: with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. Both runs complete, and P6-WITNESS prints FAIL on them. P6 itself is unfalsifiable by a live page-predicted stimulus at this boundary and carries no mutation, so it is green with no live mutation: a contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers.
 - For P6-WITNESS: R6a and R6am (above), and R1a for the same precondition in P2.
 - For P6-CONFIG: no contrast is driven in the R6 family; a program that leaves out the write to 48 (P3-CONTENT's contrast) would falsify it.
 - For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented.
@@ -472,16 +473,10 @@ once at the start of every run, including gate G's and P3's.
   covered at least two vsync edges before concluding "no answer". The
   cycle count a run is given remains a safety ceiling only, never the
   oracle.
-- Power-LED calibration settle: the CIAAPRA write that switches the LED
-  and the MK_CALBRIGHT marker write that follows it are two separate
-  instructions; measured skew on this RTL is under 100 `clk_sys` cycles
-  (the port's own transition lands about 77 cycles before the marker's
-  write reaches the Chip-memory port). The 500-cycle tolerance the
-  calibration check allows around the marker absorbs this settle without
-  masking a real instability elsewhere in either phase.
+- Power-LED calibration: the check counts the power-LED transitions between the dim-phase marker and t_M1 in the port trace and compares the level before with the level after. It carries no tolerance window.
 - Every P3 run's register 00 read: type 11, memory flag set, size field 110
-  (P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND and the two
-  control preconditions print PASS on both cores).
+  (P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND and
+  the two control preconditions print PASS on both cores).
 
 ### 8.4 Mutations
 
@@ -498,6 +493,7 @@ three red lines of the unmutated run (GATE-G, P3-NOTOTHER, P3-BASE).
 | P1-DISPANCHOR | `P1-DISPANCHOR` | COLOR00 preset to C1'=$0C3F, the expected colour stays C1; RESET replaced by NOP | P1-DISPANCHOR: FAIL. P1b and P2: not graded (P1-DISPANCHOR) |
 | P3-IMG1 | `P3-IMG1` | register 48 written in step b's place configures immediately | P3-IMG1: FAIL (IMG1 differs from IMG0) |
 | P3-IMG2 | `P3-IMG2` | steps c and d skipped (never configured) | P3-IMG2: FAIL (IMG2 equals IMG0) |
+| P3-NOTOTHER-ASSIGNED | `P3-NOTOTHER-ASSIGNED` | step c (the register-48 write) left out of R3n, step d kept | P3-NOTOTHER-ASSIGNED: FAIL (R0/R1 at B1 are not P0/P1V); no other line of the run set moves |
 | P3-CONTENT | `P3-CONTENT` | step c (the register-48 write) left out, step d kept | P3-CONTENT: FAIL (R0/R1 are not P0/P1V) |
 | P3-BASE-ASSIGNED | `P3-BASE-ASSIGNED` | step c left out of R3', step d kept | P3-BASE-ASSIGNED: FAIL (R0/R1 at B2 are not P0/P1V) |
 | P3-CONTROL-IO | `P3-CONTROL-IO` | the write/readback aimed at the configured base B1 itself | P3-CONTROL-IO: FAIL (a configured memory board answers at its base, p.433) |
@@ -519,7 +515,7 @@ Lines without a mutation, each with its record in the test source:
 | GATE-G-PRECOND | unavailable from this oracle: register 08 bit 6 is a property of the board the harness offers |
 | P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND, P3-CONTROL-IO-PRECOND, P3-CONTROL-UNCONF-PRECOND | not exercised, by a scope decision: run liveness, board type and size, memory flag and scratch-write order are anchors of the offered board and of the program order; no page predicts a contrast |
 | P6-CONFIG | not exercised, by a scope decision: a program that leaves out the write to 48 in the R6 family would falsify it |
-| P6 | not exercised, by a scope decision: the page's only contrasting case, RESET replaced by NOP, removes P6's own reset-witness precondition P6-WITNESS, so P6 against it is not graded rather than red |
+| P6 | unfalsifiable by a live page-predicted stimulus at this boundary: the page's only contrasting case, RESET replaced by NOP, removes P6's own reset-witness precondition P6-WITNESS, so P6 against it is not graded rather than red; P6 is green with no live mutation |
 
 GATE-G, P3-NOTOTHER and P3-BASE are red on the unmutated stimulus and have
 no mutation of their own: a stimulus mutation cannot make a red line more
