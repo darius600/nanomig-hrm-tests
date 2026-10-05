@@ -469,9 +469,9 @@ comparison works on the least significant bits of the vertical count").
 1. **Proposition.** Every NTSC interlaced field has 262 or 263 lines, and of
    any two consecutive fields at least one has 262 lines. This is exactly the
    part on which p24 and p34 agree.
-   - Claims: `COP2-vertical-beam-position.c13`, plus the agreed part of
-     `COP2-using-the-copper-in-interlaced-mode.c3`, `.c7` and
-     `COP2-vertical-beam-position.c14`.
+   - Claims: the agreed part of `COP2-using-the-copper-in-interlaced-mode.c3`,
+     `.c7` and `COP2-vertical-beam-position.c14`. `COP2-vertical-beam-position.c13`
+     is not graded (section 1) and the run records it as declined.
    - Pages 24 and 34.
 
    The two pages, quoted:
@@ -865,9 +865,10 @@ in every field under I-l, on both cores, as p22's WAIT semantics and
 p35's DIWSTRT ($2C81, line 44) predict.
 
 **The sampling blackout (PI-1, PT-1).** M1 samples the beam position in a
-tight loop. Whatever keeps the CPU away from that loop for more than one
-line makes the next sample jump by two lines, which sets the gap flag that
-PI-1 and PT-1 grade. Two things do: the wrap routine of M1 and the level-3
+tight loop. Whatever keeps the CPU away from that loop for so long that the
+next accepted sample lies two or more lines past the previous one sets the
+gap flag that PI-1 and PT-1 grade; an absence of more than one line does so
+or not according to where it begins. Two things keep the CPU away: the wrap routine of M1 and the level-3
 handler of Program I. M1 therefore keeps its run state (record pointer, wrap
 count, record count, gap flag) in address registers and touches chip memory
 only for the record words and the two markers, and the handler keeps the

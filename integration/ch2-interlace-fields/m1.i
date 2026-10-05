@@ -9,7 +9,7 @@
 ;   M1_STARTW   -- address of the one-word start marker
 ;   M1_DONEW    -- address of the one-word completion marker
 ; and calls `bsr m1_run`. m1_run returns (rts) once M1_DONEW has been
-; written; d0-d7/a0/a1/a6 are clobbered.
+; written; d0-d7 and a2-a6 are clobbered, a0 and a1 are left alone.
 ;
 ; M1_DELAY, if the includer defines it, adds a busy-wait inside the
 ; sampling loop -- section 3.6's precondition contrast (I-j / T-f): "M1
