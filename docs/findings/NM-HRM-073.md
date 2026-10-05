@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L196-L199) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L196-L199) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**. NanoMig has the strobe latches from there and TC64 carries the same two, so there is no fix to port; WinUAE shows a later strobe replacing a pending one — see *What the others say* |
-| **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control) — `P4`, claims `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (pp. 25, 26, 30, 276), which grades Run 1 (COP1LC, COPJMP1) and Run 2 (COP2LC, COPJMP2) together, run on both CPU cores and red on fx68k and on TG68K through Run 2. Three assertions without a claim id are red on both cores through the same start at COP1LC: `P4-Run2` (pp. 25, 26, 30, 276), Run 2 alone; `P4-Run3-reorder` (p. 25), where p. 25 gives C; and `P4-Run3-PAIR` (p. 25), Run 3 and Run 3-reorder graded together. `P4-Run3` is a precondition, the first fetch B or C, red at A, so Run 3's own clause (B, where all four implementations give C) is recorded as not reached — a separate question this page does not file, see *Run 3 is a separate question* |
+| **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control) — `P4`, claims `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (pp. 25, 26, 30, 276), which grades Run 1 (COP1LC, COPJMP1) and Run 2 (COP2LC, COPJMP2) together, run on both CPU cores and red on fx68k and on TG68K through Run 2. Three assertions without a claim id are red on both cores through the same start at COP1LC: `P4-Run2` (pp. 25, 26, 30, 276), Run 2 alone; `P4-Run3-reorder` (p. 25), where p. 25 gives C; and `P4-Run3-PAIR` (p. 25), Run 3 and Run 3-reorder graded together. `P4-Run3` is red on both cores and is not counted among the reds that carry the finding: its predicate, a first fetch at B or C, is a gate that p. 25 does not print. Run 3's first fetch, A, is not B, the value p. 25 gives, and no assertion grades that fetch against B directly — see *Run 3 is a separate question* |
 | **Chapter** | 2 — Coprocessor Hardware, printed pp. 25, 26, 30, 32; Appendix A, printed p. 276; 7 — System Control Hardware, printed p. 219 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `P4`, `P4-Run2`, `P4-Run3-reorder`, `P4-Run3-PAIR` and the precondition `P4-Run3` red on fx68k and on TG68K, each through a first fetch at A (96 passed, 5 failed on each core; these five are the only reds). In the same run `P4-CTRL` and `P4-CTRL-C`, COP1LC = B and COP1LC = C with COPJMP1, read B and C through the same comparator on both cores, and the preconditions `P4a`, `P4b` and `P4c` hold, `P4c` graded on the captures of Run 1, Run 2, Run 3 and Run 3-reorder each |
+| **Assertions** | Four red assertions carry the finding on fx68k and on TG68K, `P4`, `P4-Run2`, `P4-Run3-reorder` and `P4-Run3-PAIR`, each through a first fetch at A. The fifth red line, `P4-Run3`, is not counted: it asks whether Run 3's first fetch is B or C, which p. 25 does not require (96 passed, 5 failed on each core; these five are the only reds). In the same run `P4-CTRL` and `P4-CTRL-C`, COP1LC = B and COP1LC = C with COPJMP1, read B and C through the same comparator on both cores, and the preconditions `P4a`, `P4b` and `P4c` hold, `P4c` graded on the captures of Run 1, Run 2, Run 3 and Run 3-reorder each |
 | **Verdict of the four** | **unanimous against NanoMig on the package's runs**: WinUAE, vAmiga, Denise and Copperline all start Run 1 at A and Run 2 at B, where NanoMig starts Run 2 at A. Their mechanisms differ in a way the package's addresses do not separate: WinUAE, vAmiga and Copperline start at COP2LC whatever vertical blank came before the COPJMP2; Denise, like NanoMig, keeps the vertical blank's COP1LC strobe pending while Copper DMA is off, but merges it with the COPJMP2 and starts at COP1LC \| COP2LC, which for the package's lists, $001000 and $001200, is B's address |
 
 ---
@@ -156,10 +156,13 @@ A, B or C after M1, identical on fx68k and TG68K:
 `P4` grades them together and `P4-Run2` grades Run 2 alone, and both are red
 through Run 2. `P4-Run3-reorder` is red because Run 3-reorder starts at A
 where p. 25 gives C, by the same mechanism, and `P4-Run3-PAIR`, which grades
-Run 3 and Run 3-reorder together, is red through both starting at A. The
-precondition `P4-Run3`, a first fetch at B or C, is red at A, so Run 3's own
-clause is recorded as not reached; that clause is a separate question (see
-below). `P4a` holds: the first stored DMACONR has bit 7 clear. `P4b`
+Run 3 and Run 3-reorder together, is red through both starting at A.
+`P4-Run3` tests whether Run 3's first fetch is B or C and is red at A. That
+gate is not on p. 25, so the line is not counted among the reds. Run 3's first
+fetch, A, is not B, which p. 25 gives for the strobe written with COP2LC = B;
+no assertion grades it against B, and the package prints Run 3's own clause
+as recorded and not reached. Whether Run 3 reads B or C once the standing
+latch is out of the way is a separate question (see below). `P4a` holds: the first stored DMACONR has bit 7 clear. `P4b`
 holds: no fetch in A, B or C before M1. Both are graded on Run 1's capture.
 
 **No vertical blank lies between the strobe and the fetch.** `P4c`, the
@@ -233,10 +236,12 @@ when Copper DMA starts, and vAmiga and Copperline let a later write to the
 strobed location register move a Copper that has had no Copper DMA since the
 vertical blank. That is a question about p. 25's sentence, not about the
 standing COP1LC request this page files, and NanoMig's A in Run 3 does not
-reach it. Run 3's clause grades that sentence; on both cores it is not
-reached, because the precondition `P4-Run3` is red at A through the standing
-latch this page files, and with that latch out of the way Run 3 would read C
-and the clause would be red, so this page does not file it.
+reach it. Run 3's first fetch is A on both cores, through the standing
+latch this page files, where p. 25 gives B. No assertion grades it against B:
+the package's line for Run 3, `P4-Run3`, asks for B or C, a gate p. 25 does not
+print, and is red at A. With the latch out of the way Run 3 would read C and
+a clause graded against B would be red for that reason, so this page does not
+file it.
 `P4-Run3-reorder` does not reach the question: COP2LC holds C both when
 COPJMP2 is written and when Copper DMA comes on, p. 25 and all four give C,
 and its red, A, is this page's.
