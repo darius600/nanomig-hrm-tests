@@ -1,0 +1,98 @@
+; prog_lpen.s -- the light-pen sampling program (SPECIFICATION.md section
+; 2.3, steps S1-S8). Every configuration value is written with a move from
+; its memory word, so the Chip-memory port shows the CPU reading the value
+; just before the write.
+;
+; NO_S3    (define before including): step S3 (the BEAMCON0 write) is left
+;          out. This is the OCS build.
+; NO_DONE  (define before including): step S8's done mark is skipped; the
+;          program hangs instead.
+; NO_FIX   (define before including): the fixture constant stored first
+;          differs.
+; SLOW     (define before including): each loop body gets a delay of more
+;          than one video line (about 3.3 lines), and the loops are shorter.
+
+        include "nanomig.i"
+        include "appDE_regs.i"
+        org     PROGRAM_ORG
+
+S2_ITERS        equ 3000        ; connector-identity loop iterations
+N_REF           equ 19999       ; DBF count of the reference loop (20000 reads)
+N_MEAS          equ 45999       ; DBF count of the measurement loop (46000 reads)
+        ifd     SLOW
+N_REF_USED      equ 599
+N_MEAS_USED     equ 1999
+        else
+N_REF_USED      equ N_REF
+N_MEAS_USED     equ N_MEAS
+        endif
+
+start:
+        move.w  #$2700,sr               ; supervisor, all interrupt levels masked
+        lea     CUSTOM,a6
+
+        ifd     NO_FIX
+        move.w  #$BEEF,MARK0            ; fixture mutation: a different constant
+        else
+        move.w  #$5A5A,MARK0            ; fixture: known constant, stored first
+        endif
+
+; ---- S1: clear every enable (bit 15 = 0 clears, p.280) -------------------
+        move.w  #$7FFF,INTENA(a6)
+        move.w  #$7FFF,DMACON(a6)
+
+; ---- S2: connector identity: JOY0DAT and JOY1DAT while the harness drives
+; pin 4 of one connector low and then high ---------------------------------
+        lea     RING_S2,a5
+        moveq   #0,d6
+        move.l  #S2_ITERS,d5
+.s2loop:
+        move.w  JOY0DAT(a6),0(a5,d6.w)
+        move.w  JOY1DAT(a6),2(a5,d6.w)
+        addq.w  #4,d6
+        andi.w  #(RING_S2_BYTES-4),d6
+        subq.l  #1,d5
+        bne.s   .s2loop
+
+        move.w  #$B5B5,MARK_PHASE       ; boundary: connector-identity loop done
+
+; ---- S3 (ECS only): BEAMCON0 <- cfg_BEAMCON0 -------------------------------
+        ifnd    NO_S3
+        move.w  CFG_BEAMCON0,$DFF1DC
+        endif
+
+; ---- S4: BPLCON0 <- cfg_BPLCON0_ref ----------------------------------------
+        move.w  CFG_BPLCON0_REF,$DFF100
+
+; ---- S5: reference phase ---------------------------------------------------
+        lea     SAMPLES,a0
+        move.w  #N_REF_USED,d0
+.ref:
+        move.l  $DFF004,(a0)+
+        ifd     SLOW
+        move.w  #150,d1
+.refdly dbf     d1,.refdly
+        endif
+        dbf     d0,.ref
+
+        move.w  #$A001,MARK_REFEND      ; boundary: reference phase done
+
+; ---- S6: BPLCON0 <- cfg_BPLCON0 --------------------------------------------
+        move.w  CFG_BPLCON0,$DFF100
+
+; ---- S7: measurement phase -------------------------------------------------
+        move.w  #N_MEAS_USED,d0
+.meas:
+        move.l  $DFF004,(a0)+
+        ifd     SLOW
+        move.w  #150,d1
+.measdly dbf    d1,.measdly
+        endif
+        dbf     d0,.meas
+
+; ---- S8: done mark ---------------------------------------------------------
+        ifd     NO_DONE
+.hang   bra.s   .hang
+        else
+        DONE
+        endif

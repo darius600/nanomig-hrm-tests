@@ -667,38 +667,187 @@ may share one run. Each contrast must still be reported red on its own.
 
 ### 4.1 Scope built
 
-Only P5 is built. P1-P4 (the light-pen trigger/latch propositions) are not
-built, by a scope decision: this build's budget covered P5 only. Building
-them would need: a beam-position model fitted from the reference-phase
-reads (section 2.6), with its uncertainty checked against the u<=2 bound
-P2(b) needs; pulses driven on the light-pen connector's pin 6, timed to
-that model's own instants across the ten-field schedule of section 2.5;
-the field/window classification of section 2.7 applied to every read; and
-a mutation for each of the four propositions and for preconditions C3-C6,
-run on both cores.
+P1 to P5 and the preconditions C0 to C6 are built. The section 0 claims are
+named on RECORDED lines and graded nowhere.
 
-Within P5, both connectors are run. J12 is graded in full: the pin-5 bit
-(POTGOR bit 8) and the pin-9 bit (bit 10). On J11, only bit 14 (pin 9,
-observed, not graded) is live at these ports; nothing this harness drives
-changes bit 12 (pin 5) -- driving the same signal that moves J12's pin-5
-bit while sampling a J11 run leaves bit 12 at a constant 1 throughout (the
-run's own MEASURED line). p.327's pin-5 proposition is therefore graded on
-J12 and declined as RECORDED on J11, per opus:E-gameport.c6,
+What is not graded, and why:
+
+- **P2(b), the absolute horizontal position.** Its precondition (u <= 2,
+  sections 2.6 and 2.8) does not hold. The port shows no custom-register
+  access, so each long read is bracketed by the last instruction fetch before
+  it and the first store after it, which are 6 colour clocks apart (3 bus
+  cycles) on both cores. The anchor then stays uncertain by u = 7 colour clocks
+  (4.5). Every run prints the horizontal offset of each P_f as a MEASURED line
+  and a RECORDED line says that P2(b) is NOT GRADED; (a), (c) and (d) are
+  graded.
+- **NTSC runs.** A2 (p.23: "Every other line is a long line (228 color
+  clocks, 0-$E3), with the others being 227 color clocks long") fails in every
+  NTSC configuration: the field length of the reference phase (4.5) divides
+  into 263 lines of 227 colour clocks and into no alternating pattern. C3
+  includes A2, so every line that depends on C3 is NOT GRADED in the four NTSC
+  runs; their MEASURED lines still print what the checks computed.
+- **Claim ids.** opus:E-lightpen.c24 ("PORT 0") and opus:E-lightpen.c4,
+  sol:E-lightpen.c3 ("There is no hardware bit to indicate this trigger") each
+  bundle a clause that nothing here grades (section 0.3), so they sit on
+  RECORDED lines only. opus:E-lightpen.c3 and sol:E-lightpen.c2 ("a trigger
+  pulse is generated which can be enabled to latch the horizontal and vertical
+  beam positions") are established by P1 and P2 together, so they sit on the
+  aggregate line LP-LATCH-ENABLE-AND-POSITION, which requires both.
+- **A4 population.** A4 is asserted on the reads that no proposition grades
+  by itself: F2 before its pulse, and the count of at least two current reads
+  before the pulse in each triggered field. The live windows of F1, F3 to F8
+  and F9 are graded by P4, P3(c) and P3(d); an anchor that depended on the
+  clause it anchors could not turn that clause red.
+- **P3(c) with nothing held.** P3(c) (release) is graded only where P3(a)
+  holds; where no position was held in the preceding fields it prints NOT
+  GRADED instead of passing for lack of anything to release.
+
+P5 is graded as before. Within it, both connectors are run. J12 is graded in
+full: the pin-5 bit (POTGOR bit 8) and the pin-9 bit (bit 10). On J11, only
+bit 14 (pin 9, observed, not graded) is live at these ports; nothing this
+harness drives changes bit 12 (pin 5) -- driving the same signal that moves
+J12's pin-5 bit while sampling a J11 run leaves bit 12 at a constant 1
+throughout (the run's own MEASURED line). p.327's pin-5 proposition is therefore
+graded on J12 and declined as RECORDED on J11, per opus:E-gameport.c6,
 sol:E-gameport.c5, for that connector's half.
 
 ### 4.2 Configurations run
 
-Every P5 run (base and all five contrasts) used the harness's own default
-`Config`: `chipset_config`'s ECS bit set, no other options selected. OCS
-and the PAL/NTSC distinction (section 2.1's full matrix) were not run, by
-a scope decision: no port at this boundary selects the video standard --
-it is chipset register state -- and P5's stimulus never writes BEAMCON0 or
-reads it; the pen-pressed mechanism this package exercises has no
-dependence on `chipset_config` either. Running the remaining combinations
-needs only clearing that bit (OCS) and re-running; nothing else in the
-stimulus depends on it.
+P5: every run used the harness's own default `Config`: `chipset_config`'s ECS
+bit set, no other options selected. OCS and the PAL/NTSC distinction were not
+run for P5, by a scope decision: no port at this boundary selects the video
+standard -- it is chipset register state -- and P5's stimulus never writes
+BEAMCON0 or reads it. Running the remaining combinations needs only clearing
+that bit (OCS) and re-running.
 
-### 4.3 Timing margins tuned on this RTL
+Light pen: every configuration of section 2.1 (ECS and OCS, PAL and NTSC), and
+for each the pulse schedule on both harness connectors (`joystick0` and
+`joystick1` of `nanomig.v`). The connector that is J12 or J11 is read from C0
+in each run, not assumed. S3 writes BEAMCON0 with $0020 (PAL) or $0000 (NTSC)
+in the ECS runs and is left out of the OCS program. The contrasting runs use
+ECS, PAL and `joystick1`.
+
+### 4.3 Programs and harness
+
+- `prog_pot.s` and `prog_pot_nodone.s` are the P5 programs.
+- `prog_lpen.s` is S1 to S8 of section 2.3: S2 reuses the connector-identity
+  loop of the P5 program (3000 iterations), S5 is 20000 reads and S7 is 46000
+  reads of `MOVE.L $DFF004,(A0)+` looped with DBF, stored from $100000 on. Each
+  configuration value is read from its memory word ($0C0010 BEAMCON0, $0C0012
+  BPLCON0 for S4, $0C0014 BPLCON0 for S6) so that the port shows the read. A
+  marker word ($0C0024) is stored between S5 and S6. `prog_lpen_ocs.s` leaves
+  out S3, `prog_lpen_nodone.s` leaves out S8, `prog_lpen_fix.s` stores a
+  different first fixture constant and `prog_lpen_slow.s` puts a delay of about
+  3.3 lines in each loop body and uses 600 and 2000 reads.
+- The harness waits for the first fixture store, drives pin 4 (or pin 3 in the
+  contrast) of the connector under test for 400000 cycles (S2), and waits for
+  the phase marker, then for the S5 marker. It fits the model (4.4) to the
+  S5 reads, places F0 in the field of the S6 write, schedules every pulse from
+  the model, applies each pin change at its exact cycle and reads the pin back,
+  and runs to the done mark.
+- A sample's bracket is the cycle of the last fetch from the program's own
+  code before its first store and the cycle of that store.
+
+### 4.4 The beam model
+
+The model has a field of N lines with a pattern of line lengths in colour
+clocks and a start instant T0. Its field length is the median of the video
+port's field lengths in the reference phase (the first, partial field is
+dropped). Of the hypotheses whose field length equals it (all lines 227, 227
+then alternating, 228 then alternating, all lines 228) it keeps the first under
+which every reference word read is current, where a word is current if it equals
+the model counter at some instant of its bracket. T0 is fitted by interval
+intersection: each read bounds T0 to an interval, the model keeps the largest
+set of reads whose intervals overlap, and u is the width of that overlap in
+colour clocks, rounded up.
+
+The model carries one parameter the specification does not list: the number of
+colour clocks by which the vertical count trails the horizontal wrap (4.5). The
+pages do not tie the two counters to one instant. A read at the first
+horizontal counts of a line can show the previous line's vertical count; with a
+lag of zero the model has no instant at which that pair appears, and A1 fails
+for those reads. The lag is the smallest of 0, 1 and 2 under which A1 holds. It
+moves no window boundary by more than that many colour clocks and no pulse
+target, which all sit at H = $40 and later.
+
+The windows of section 2.7 use the model's line boundaries. F0 is the field
+that contains the S6 configuration read. Pulses fall half a colour clock after
+the model instant of their target and last 4 colour clocks. Every pulse is
+driven on pin 6 (bit 4 of the joystick byte).
+
+### 4.5 Measured values
+
+Both cores, every light-pen run (the two connectors agree):
+
+| | fx68k | TG68K |
+|---|---|---|
+| lines per field, PAL / NTSC | 313 / 263 | 313 / 263 |
+| line pattern | all 227 colour clocks | all 227 colour clocks |
+| reference field length, PAL / NTSC (clk_sys) | 568408 / 477608 | 568408 / 477608 |
+| lag of the vertical count behind the horizontal wrap | 1 colour clock | 2 colour clocks |
+| anchor uncertainty u | 7 colour clocks | 7 colour clocks |
+| largest H read | 225 | 226 |
+| largest gap between consecutive reads | 20 colour clocks (PAL, NTSC) | 21 colour clocks (PAL, NTSC) |
+
+Outcome of the normal run on the repository's chipset. fx68k and TG68K print
+the same verdict lines: 100 passed, 28 failed on each, of which the 20 P5 lines
+and their results are unchanged (20 passed).
+
+- The fixture and C0, C1, C2, A1, A3, A4, C4, C5 hold in all eight light-pen
+  runs on both cores; C6 holds in the four ECS runs and is not applicable in
+  the four OCS runs. A2 holds in the four PAL runs and fails in the four NTSC
+  runs.
+- PAL runs (ECS and OCS, both connectors). The first read after each pulse
+  reads the moving beam, 7 to 24 colour clocks beyond the pulse position (the
+  MEASURED lines give each offset), and no read is held. P2 fails (no
+  connector latches), and P1, P3(a), P3(b), P3(d) and P4 fail on both
+  connectors, as does the aggregate line. P3(c) is NOT GRADED because nothing
+  was held.
+- NTSC runs. A2 fails, so every line that depends on C3 is NOT GRADED.
+
+Contrasting runs, ECS, PAL, `joystick1`, `NMH_MUTATE` selects the change. Every
+run below printed FAIL on the named line on fx68k and on TG68K; the repository
+rows are on the repository's chipset, the private rows on the copy of 4.6.
+
+| line | `NMH_MUTATE` | chipset | change | result (both cores) |
+|---|---|---|---|---|
+| LP-FIXTURE-MARK0 | LP-FIX | repository | first fixture store holds $BEEF | red (the run cannot synchronise, so C0, C1, C2, A1 and C6 fail too) |
+| LP-C0-IDENTITY | LP-C0 | repository | pin 3 driven in S2 | red, only this line |
+| LP-C1-DONE | LP-C1 | repository | no done mark | red, only this line |
+| LP-C2-STORED | LP-C2 | repository | BPLCON0 word $0000, $0008 declared | red, only this line |
+| LP-C3-A1-READS-CURRENT | LP-A1 | repository | 9 clk_sys per colour clock declared | red, only this line |
+| LP-C3-A2-LINE-LENGTHS, LP-C3-A3-FIELD-LENGTH | LP-STD | repository | NTSC declared in a PAL run | red, these two lines |
+| LP-C4-DENSITY | LP-C4 | repository | delay of about 3.3 lines per read | red, only this line |
+| LP-C5-PULSES | LP-C5 | repository | pulses on pin 9 | red, only this line |
+| LP-C6-LPENDIS-CLEAR | LP-C6 | repository | BEAMCON0 $2020 | red, only this line |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4 | private | F2 pulse at line 40 | red, only this line |
+| LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P1 | private | BPLCON0 word $0000 | red, with P2, P3(a), P3(b), P3(d), P4 |
+| LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD | LP-P2A | private | F2 pulse not driven | red, with P1, P4 and the aggregate |
+| LP-P2-LATCH-AT-PULSE | LP-P2B | private | F3 pulse 2 colour clocks later | red, with the aggregate |
+| LP-P3B-HELD-PULSE-IGNORED | LP-P3B | private | F7 pulse at line 60 not driven | red, with P1, P3(a), P4 and the aggregate |
+| LP-P3C-RELEASE | LP-P3C | private | pulse at line 50 of F8 | red, with P4 |
+| LP-P3D-PULSE-BEFORE-ENABLE | LP-P3D | private | F9 pulse at line 50 | red, with P4 |
+| LP-P4-DETERMINE-TRIGGER | LP-P4A | private | pulse at line 100 of F1 | red, only this line |
+
+On the private chipset the normal run prints 128 passed and 4 failed on both
+cores: every light-pen line passes in the four PAL runs, P3(c) is graded and
+passes, and the four failures are A2 in the NTSC runs.
+
+### 4.6 Controls on a chipset that follows the pages
+
+On the repository's chipset the registers read the moving beam in every light-pen
+run, so every light-pen line that grades the latch is red there, and a stimulus
+change cannot make a red line redder. Each of these lines has a control that runs its comparator
+on a live input from a different mechanism: a private copy of the chipset
+sources, outside the repository, that contains a latch following p.238 and
+p.239. In it BPLCON0 bit 3 enables the capture, a falling edge on pin 6 of either
+connector latches the beam position, the latch holds until the start of line 20
+and is re-enabled then, and a field that ends without a trigger latches at its
+end. The package's own run on that copy passes every light-pen line in the PAL
+runs (4.5 gives the NTSC outcome), and the stimulus contrasts of the table below
+run on it.
+
+### 4.7 Timing margins tuned on this RTL
 
 Two spin counts and one interval length were tuned on this RTL rather than
 taken from the page, each guarded by a precondition the run checks:
@@ -721,3 +870,7 @@ taken from the page, each guarded by a precondition the run checks:
   to cross V=100-200 at least once inside it, on both video standards.
   The per-window "at least 50 graded samples" precondition guards a
   window that misses the crossing.
+- The light-pen program reads 20000 reference and 46000 measurement samples.
+  The reference phase covers four complete PAL fields and five NTSC fields
+  (section 2.6 needs three), and the measurement phase reaches line 100 of F10;
+  C1 guards the sample count and C4 guards the coverage.

@@ -27,3 +27,11 @@ RING_S2_BYTES   equ 32          ; 8 pairs * 4 bytes; must be a power of two
 RING_POT        equ $0C1000     ; pen-pressed program: ring of (long VPOSR:VHPOSR, word POTGOR)
 RING_POT_STRIDE equ 6
 RING_POT_COUNT  equ 64
+
+; ---- Light-pen program (prog_lpen.s) ---------------------------------
+BEAMCON0        equ $1DC
+CFG_BEAMCON0    equ $0C0010     ; word: BEAMCON0 value (ECS only)
+CFG_BPLCON0_REF equ $0C0012     ; word: BPLCON0 value for the reference phase
+CFG_BPLCON0     equ $0C0014     ; word: BPLCON0 value for the measurement phase
+MARK_REFEND     equ $0C0024     ; written once, when the reference phase ends
+SAMPLES         equ $100000     ; long (VPOSR:VHPOSR) samples, reference then measurement
