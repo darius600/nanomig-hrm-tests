@@ -53,11 +53,11 @@
 // MUTATION PT-1 stimulus red: NMH_MUTATE=PT-1 runs prog_t_f (M1 waits between samples, T-f); PT-1's comparator prints FAIL
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL
-// MUTATION PT-4 stimulus red: NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); PT-4's comparator prints FAIL through line 0-to-1 (3528 clk_sys), not through the restart-to-mark margin
-// MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g); PT-5's comparator prints FAIL through measured line lengths outside {227,228}; controls PT-1, PT-3 and every mark present
-// MUTATION PT-6 stimulus red: NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); PT-6's comparator prints FAIL; control PT-1
+// MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g); PT-5's comparator prints FAIL through measured line lengths outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present
 // MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h); PT-7's comparator prints FAIL
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-7
+// GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-3
+// GATE PT-6 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); the gate prints closed and P3 prints "not graded, gate closed"; control PT-1
 // MUTATION P3 none impossible: already red in the normal run and not exercised further: NMH_MUTATE=P3 runs prog_t with PAL selected (T-b) and P3's comparator prints FAIL again; no input in this package makes P3's comparator green, so what is shown is that the controls PT-1..PT-7 hold while it is red, not that the comparator can pass
 
 #include <cstdio>
@@ -1084,15 +1084,15 @@ bool pt3_delta(const TAnalysis& a, int64_t* delta_out = nullptr) {
     return have;
 }
 
+// Gate of PT-5 and P3: in every field the Copper mark of line 1 follows the
+// mark of line 0 by 227 or 228 colour clocks, so the two marks lie on
+// consecutive lines and the mark of line 0 is anchored on line 0.
 bool pt4_restart_wait(const TAnalysis& a) {
     if (!a.matched) return false;
     for (int k = 0; k < kT_K; ++k) {
-        const auto& f = a.fields[(size_t)k];
         auto mc0 = copper_mark(a, k, 0);
         auto mc1 = copper_mark(a, k, 1);
         if (!mc0 || !mc1) return false;
-        int64_t sinceRestart = (int64_t)*mc0 - (int64_t)f.begin;
-        if (sinceRestart <= 6 * (int64_t)kClkSysPerColourClock) return false;
         int64_t line01 = (int64_t)*mc1 - (int64_t)*mc0;
         if (line01 != 227 * (int64_t)kClkSysPerColourClock && line01 != 228 * (int64_t)kClkSysPerColourClock) return false;
     }
@@ -1190,7 +1190,7 @@ TPre t_pre(const TAnalysis& a) {
     p.pt2 = pt2_groups(a);
     p.pt3 = pt3_delta(a, &p.delta);
     p.pt4 = pt4_restart_wait(a);
-    p.pt5 = p.pt3 && pt5_line_lengths(a, p.delta);
+    p.pt5 = p.pt3 && p.pt4 && pt5_line_lengths(a, p.delta);
     p.pt6 = pt6_gate(a);
     p.pt7 = pt7_anchor(a);
     return p;
@@ -1217,13 +1217,31 @@ void g_PT3(const TAnalysis& a) {
         "PT-3: the Copper-mark-to-bitplane-mark offset Delta has one single value on every line 44..254 "
         "of every field");
 }
+// PT-4 is a gate, not a graded line: p25 leaves open whether the restart lies
+// at the start or at the end of vertical blanking, and an implementation that
+// restarts at the end of blanking satisfies the (0,$E0) WAIT at once. The gate
+// state is printed; PT-5 and P3 are NOT GRADED when it is closed.
 void g_PT4(const TAnalysis& a) {
-    checks.expect(pt4_restart_wait(a),
-        "PT-4: in every field, the Copper restarts before its (0,$E0) WAIT is satisfied (mark follows the "
-        "restart by more than 6 colour clocks) and really waited for it (line 0-to-1 is 227 or 228)");
+    bool open = pt4_restart_wait(a);
+    int64_t lo = INT64_MAX, hi = INT64_MIN;
+    int have = 0;
+    if (a.matched) {
+        for (int k = 0; k < kT_K; ++k) {
+            auto mc0 = copper_mark(a, k, 0);
+            auto mc1 = copper_mark(a, k, 1);
+            if (!mc0 || !mc1) continue;
+            int64_t d = (int64_t)*mc1 - (int64_t)*mc0;
+            lo = std::min(lo, d); hi = std::max(hi, d); ++have;
+        }
+    }
+    std::string m = std::string("PT-4 gate of PT-5 and P3 (in every field the Copper marks of line 0 and line 1 "
+                                "are 227 or 228 colour clocks apart): ") + (open ? "open" : "closed") +
+                    "; line 0-to-1 measured in " + std::to_string(have) + " of " + std::to_string(kT_K) + " fields";
+    if (have) m += ", " + std::to_string(lo) + " to " + std::to_string(hi) + " clk_sys";
+    checks.note(m);
 }
 void g_PT5(const TAnalysis& a, const TPre& t) {
-    if (!t.pt3) { checks.record("PT-5: NOT GRADED, its precondition PT-3 (the offset Delta the last-line length needs) did not hold on this run"); return; }
+    if (!(t.pt3 && t.pt4)) { checks.record("PT-5: NOT GRADED, a precondition (PT-3, the offset Delta the last-line length needs, or PT-4, the gate that anchors the line-0 marks) did not hold on this run"); return; }
     checks.expect(pt5_line_lengths(a, t.delta),
         "PT-5: every measured line length (section 2.7) is 227 or 228 colour clocks");
 }
@@ -1239,9 +1257,15 @@ void g_P2(const TAnalysis& a, bool pre) {
         "P2 p24,p34: every NTSC interlaced field has 262 or 263 lines, and no two consecutive fields are "
         "both 263");
 }
+// PT-6 is a gate, not a graded line: p34 reads the NTSC fields as all 262
+// lines, and an implementation that follows p34 closes the gate. P3 reports
+// "not graded, gate closed" then; that is not a failure.
 void g_PT6(const TAnalysis& a) {
-    checks.expect(pt6_gate(a),
-        "PT-6: consecutive field lengths alternate between 262 and 263 (the gate P3 needs)");
+    bool open = pt6_gate(a);
+    std::string lens;
+    for (int k = 0; k < kT_K; ++k) lens += (k ? "," : "") + (a.fields[(size_t)k].N < 0 ? std::string("?") : std::to_string(a.fields[(size_t)k].N));
+    checks.note(std::string("PT-6 gate of P3 (consecutive field lengths alternate between 262 and 263): ") +
+                (open ? "open" : "closed") + "; N_0..N_" + std::to_string(kT_K - 1) + " = " + lens);
 }
 void g_P3(const TAnalysis& a, const TPre& t) {
     if (!t.pt6) { checks.record("P3: not graded, gate closed (PT-6 did not hold on this run)"); return; }
@@ -1328,18 +1352,12 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
     } else if (label == "PT-3") {
         g_PT3(a);
     } else if (label == "PT-4") {
+        // T-c: the gate closes, so PT-5 and P3 are NOT GRADED.
+        ctl(label, "PT-1", t.pt1); ctl(label, "PT-3", t.pt3);
         g_PT4(a);
-        if (a.matched && !a.fields.empty()) {
-            auto mc0 = copper_mark(a, 0, 0);
-            auto mc1 = copper_mark(a, 0, 1);
-            if (mc0 && mc1) {
-                int64_t sinceRestart = (int64_t)*mc0 - (int64_t)a.fields[0].begin;
-                int64_t line01 = (int64_t)*mc1 - (int64_t)*mc0;
-                checks.note(label + " mutation field 0 measured: restart-to-mark margin = " +
-                            std::to_string(sinceRestart) + " clk_sys, line 0-to-1 = " +
-                            std::to_string(line01) + " clk_sys");
-            }
-        }
+        ctl(label, "the gate PT-4 is closed", !t.pt4);
+        g_PT5(a, t);
+        g_P3(a, t);
     } else if (label == "PT-5") {
         // T-g: line 10's WAIT uses H=$40, so every Copper mark stays live and
         // the length of line 9 and of line 10 change. Line 10 lies below line
@@ -1361,14 +1379,17 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
                 }
             }
         }
-        ctl(label, "PT-1", t.pt1); ctl(label, "PT-3", t.pt3);
+        ctl(label, "PT-1", t.pt1); ctl(label, "PT-3", t.pt3); ctl(label, "PT-4", t.pt4);
         ctl(label, "every mark the line lengths need is present", allMarks);
         g_PT5(a, t);
         checks.note(label + " mutation measured: " + std::to_string(outside) + " of " + std::to_string(measured) +
                     " line lengths outside 227 and 228 colour clocks; first: " + (first.empty() ? "none" : first));
     } else if (label == "PT-6") {
+        // T-a: the gate closes, so P3 reports "not graded, gate closed".
         ctl(label, "PT-1", t.pt1);
         g_PT6(a);
+        ctl(label, "the gate PT-6 is closed", !t.pt6);
+        g_P3(a, t);
     } else if (label == "PT-7") {
         g_PT7(a);
     } else if (label == "FIX-T") {

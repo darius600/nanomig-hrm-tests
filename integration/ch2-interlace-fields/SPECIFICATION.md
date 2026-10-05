@@ -402,9 +402,9 @@ comparison works on the least significant bits of the vertical count").
 | PT-1 | The completion word was written, and all K M1 records are valid. | T-f |
 | PT-2 | In every field, the number of groups of bitplane fetches equals N_k - 44, and each group is 20 consecutive ascending word addresses. This shows that the bitplane marks run from line 44 to the last line, and it confirms N_k independently of the CPU. | T-e |
 | PT-3 | Δ has one single value on every line 44 ... 254 of every field. | T-d |
-| PT-4 | In every field, m_c(k, 0) - R_k > 6 colour clocks, and m_c(k, 1) - m_c(k, 0) is 227 or 228. Together these mean the Copper restarted on line 0 before position $E0 and really waited for (0, $E0). If the WAIT is satisfied at once, as p23 describes for a position the beam has already passed, the mark follows within the 6 memory cycle times a WAIT takes (p20). | T-c |
-| PT-5 | Every line length of section 2.7 is 227 or 228. Graded only when PT-3 holds, because the last line's length uses Delta. | T-g |
-| PT-6 (gate of P3) | Consecutive field lengths alternate between the two values p24 gives for the selected standard: 262 and 263 in NTSC, 312 and 313 in PAL. | T-a |
+| PT-4 (gate of PT-5 and P3) | In every field, m_c(k, 1) - m_c(k, 0) is 227 or 228 colour clocks: the marks of line 0 and line 1 lie on consecutive lines, so the Copper mark of line 0 is anchored on line 0. p25 leaves open whether the restart lies at the start or at the end of vertical blanking, and a restart at the end of blanking satisfies the WAIT (0, $E0) at once, so PT-4 is printed as a gate state and is not graded. When it is closed, PT-5 and P3 are not graded. | T-c |
+| PT-5 | Every line length of section 2.7 is 227 or 228. Graded only when PT-3 and PT-4 hold, because the last line's length uses Delta and every mark of line 0 uses the anchor PT-4 gives. | T-g |
+| PT-6 (gate of P3) | Consecutive field lengths alternate between the two values p24 gives for the selected standard: 262 and 263 in NTSC, 312 and 313 in PAL. p34 reads the NTSC fields as all 262 lines, so an implementation that follows p34 closes the gate; PT-6 is printed as a gate state and is not graded, and P3 is reported as not graded, gate closed. | T-a |
 | PT-7 | Anchor check of section 2.6. | T-h |
 
 ---
@@ -545,7 +545,8 @@ comparison works on the least significant bits of the vertical count").
    pattern comes first is not tied to anything on the page, so φ is free.
    Line-length alternation inside a field is p23's statement and is not
    graded here, but every line length is recorded.
-5. **Preconditions.** PT-1 to PT-7. PT-6 is the gate.
+5. **Preconditions.** PT-1 to PT-7. PT-6 and PT-4 are gates: when either
+   is closed, P3 is reported as not graded.
 6. **Contrasting case.** T-b (PAL). p23 says "In PAL, they are all 227
    long", so x_k = 227 for every field. No (long, 228) entry occurs and the
    check goes red. PT-1 to PT-7 still hold, because PAL fields alternate
@@ -741,7 +742,8 @@ comparison works on the least significant bits of the vertical count").
    the vertical blanking period" by the operating system.
    - M2 works under either reading.
    - P3's measurement of the last line needs the restart on line 0 before
-     position $E0. PT-4 asserts this instead of assuming it.
+     position $E0. PT-4 gates it instead of assuming it: when it does not
+     hold, PT-5 and P3 are not graded.
 4. **Who resets COP1LC.** p35: "during the vertical blanking interval, COP1LC
    will be automatically reset to point to the original list". This is not
    something p25 says the hardware does, and p33 gives the task to a graphics
