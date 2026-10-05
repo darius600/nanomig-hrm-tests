@@ -1,7 +1,7 @@
 ; ---- generated: one WAIT (v,$E0) + MOVE COLOR00,bg pair for v = 0 ... 254 ----
 ; T_WAIT0_ZERO (T-c): the v=0 WAIT uses H=$00 instead of $E0.
 ; T_LINE100_C0 (T-d): the v=100 WAIT uses H=$C0 instead of $E0.
-; T_SKIP10 (T-g): the v=10 WAIT+MOVE pair is omitted entirely.
+; T_LINE10_40 (T-g): the v=10 WAIT uses H=$40 instead of $E0.
         ifd     T_WAIT0_ZERO
         dc.w    $0001,$FFFE
         else
@@ -28,10 +28,12 @@
         dc.w    COLOR00,$0000
         dc.w    $09E1,$FFFE
         dc.w    COLOR00,$0000
-        ifnd    T_SKIP10
+        ifd     T_LINE10_40
+        dc.w    $0A41,$FFFE
+        else
         dc.w    $0AE1,$FFFE
-        dc.w    COLOR00,$0000
         endif
+        dc.w    COLOR00,$0000
         dc.w    $0BE1,$FFFE
         dc.w    COLOR00,$0000
         dc.w    $0CE1,$FFFE

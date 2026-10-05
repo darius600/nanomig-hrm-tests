@@ -44,24 +44,24 @@
 ; the current field's first accepted V, same raw position and sentinel;
 ; d6/d7 = the OR/AND of the LOF bit (31) seen this field, also left in
 ; its raw bit position. Memory is touched only on a wrap (m1_onwrap, at
-; most M1_K+2 times for the whole run) and on the rare sample that is
-; itself a gap.
+; most M1_K+2 times for the whole run).
 
-M1_GAP          equ     $0C7A00
-M1_WRAPCNT      equ     $0C7A02
-M1_FIELDS       equ     $0C7A04
-M1_RECPTR       equ     $0C7A08         ; long
-M1_DONEFLAG     equ     $0C7A0C
+; The run's own bookkeeping lives in address registers, so that a wrap
+; touches chip memory only for the record words and the two markers:
+;   a2 = pointer to the next record word
+;   a3 = number of wraps seen
+;   a4 = number of records written
+;   a5 = gap flag of the field being sampled (0 or 1)
 
 m1_run:
                 moveq   #-1,d4          ; PREVP: no previous accepted sample yet
                 moveq   #-1,d5          ; FIRSTP: no field open yet
                 moveq   #0,d6           ; LOFORP
                 moveq   #0,d7           ; LOFANDP
-                clr.w   M1_GAP.l
-                clr.w   M1_WRAPCNT.l
-                clr.w   M1_FIELDS.l
-                move.l  #M1_RECBASE,M1_RECPTR.l
+                suba.l  a3,a3
+                suba.l  a4,a4
+                suba.l  a5,a5
+                lea     M1_RECBASE,a2
                 lea     CUSTOM,a6
 
 .sample:
@@ -93,12 +93,12 @@ m1_run:
                 add.l   #$100,d2        ; d2 = prevV + 1 (raw)
                 cmp.l   d2,d3
                 ble     .doaccum        ; V <= prevV+1: no gap
-                move.w  #1,M1_GAP.l
+                lea     1.w,a5
                 bra     .doaccum
 
 .iswrap:
-                bsr     m1_onwrap       ; may clobber d2-d7/a0/a1; d0/d1 preserved
-                tst.w   M1_DONEFLAG.l
+                bsr     m1_onwrap       ; clobbers d2/d3 and a2-a5; d0/d1 preserved
+                tst.w   d2              ; d2 = 1 once the completion word is written
                 beq.s   .newfield
                 bra     m1_return
 .newfield:
@@ -132,50 +132,46 @@ m1_return:
 ; ---- wrap handling: section 2.5 item 5, verbatim (see file header) ----
 ; On entry: d4 = PREVP of the field that just ended (its last accepted
 ; V), d5 = FIRSTP of that same field, d6/d7 = its LOF OR/AND, all in raw
-; bit position; M1_GAP is that field's gap flag. d0/d1 (the sample that
+; bit position; a5 is that field's gap flag. d0/d1 (the sample that
 ; triggered this wrap -- the new field's own first sample) must be left
-; untouched; d2-d7/a0/a1 are free.
+; untouched; d2/d3 and a2-a5 are this routine's. d2 returns 1 once the
+; completion word has been written, otherwise 0.
 
 m1_onwrap:
-                move.w  M1_WRAPCNT.l,d2
-                addq.w  #1,d2
-                move.w  d2,M1_WRAPCNT.l
-                clr.w   M1_DONEFLAG.l
-                cmp.w   #2,d2
+                moveq   #0,d2
+                lea     1(a3),a3
+                cmpa.w  #2,a3
                 beq     .startcap
                 blt     .ignore
-                ; d2 > 2: close the field.
-                move.l  M1_RECPTR.l,a1
+                ; more than 2 wraps: close the field.
                 move.l  d5,d3
                 lsr.l   #8,d3
                 and.w   #$1FF,d3
-                move.w  d3,(a1)+                ; firstV
+                move.w  d3,(a2)+                ; firstV
                 move.l  d4,d3
                 lsr.l   #8,d3
                 and.w   #$1FF,d3
-                move.w  d3,(a1)+                ; lastV
-                move.w  M1_GAP.l,(a1)+
+                move.w  d3,(a2)+                ; lastV
+                move.w  a5,(a2)+                ; gap flag
                 tst.l   d6
                 smi     d3
                 and.w   #1,d3
-                move.w  d3,(a1)+                ; lofOR
+                move.w  d3,(a2)+                ; lofOR
                 tst.l   d7
                 smi     d3
                 and.w   #1,d3
-                move.w  d3,(a1)+                ; lofAND
-                move.l  a1,M1_RECPTR.l
-                clr.w   M1_GAP.l
-                addq.w  #1,M1_FIELDS.l
-                move.w  M1_FIELDS.l,d3
-                cmp.w   #M1_K,d3
+                move.w  d3,(a2)+                ; lofAND
+                suba.l  a5,a5
+                lea     1(a4),a4
+                cmpa.w  #M1_K,a4
                 blt     .ret
                 move.w  #$D1CE,M1_DONEW.l
-                move.w  #1,M1_DONEFLAG.l
+                moveq   #1,d2
 .ret:
                 rts
 .startcap:
                 move.w  #$FACE,M1_STARTW.l
-                clr.w   M1_GAP.l
+                suba.l  a5,a5
                 rts
 .ignore:
                 rts

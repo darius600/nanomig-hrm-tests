@@ -18,6 +18,8 @@
 ;   I_LATEPTR    I-l   the BPL1PT MOVEs placed after WAIT $2D01,$FF00
 ;   I_LATESPR    I-m   the SPR0PT MOVEs placed after WAIT $2D01,$FF00
 ;   I_BADFIX     I-n   FIXMARK stores $DEAD, not $BEEF
+;   I_NOLACE + M1_DELAY   I-o   LACE = 0 and M1 waits between samples
+;   I_MOD38      I-p   BPL1MOD = BPL2MOD = 38, not 40
 
         include "nanomig.i"
         include "ch2.i"
@@ -28,7 +30,6 @@ SPR             equ     $087000         ; sprite 0 structure, 16 bytes
 NULLSPR         equ     $087010         ; $0000,$0000, for sprites 1-7
 LISTA           equ     $080800
 LISTB           equ     $080900
-CUR             equ     $087220         ; word: 0 = LISTA is current, 1 = LISTB
 HCNT            equ     $087222         ; word
 
 M1_K            equ     8
@@ -47,7 +48,6 @@ start:
         move.b  #0,CIAAPRA.l
 
         clr.w   HCNT.l
-        move.w  #0,CUR.l               ; CUR = LISTA (0)
 
         ; The fixture proves it can deliver a known value before anything
         ; else reads one.
@@ -104,8 +104,13 @@ start:
         endif
         move.w  #$0000,BPLCON1(a0)
         move.w  #$0000,BPLCON2(a0)
+        ifd     I_MOD38
+        move.w  #38,BPL1MOD(a0)
+        move.w  #38,BPL2MOD(a0)
+        else
         move.w  #40,BPL1MOD(a0)
         move.w  #40,BPL2MOD(a0)
+        endif
         move.w  #$0038,DDFSTRT(a0)
         move.w  #$00D0,DDFSTOP(a0)
         move.w  #$2C81,DIWSTRT(a0)
@@ -148,7 +153,12 @@ start:
         move.w  #$C010,INTENA(a0)
         endif
 
-        ; step 9: accept interrupt levels 3 and up.
+        ; step 9: the handler's registers (section 3.3), then accept
+        ; interrupt levels 3 and up. a6 = CUSTOM, a1 = the list the handler
+        ; writes into COP1LC next, a0 = the other one.
+        lea     CUSTOM,a6
+        lea     LISTB,a1
+        lea     LISTA,a0
         move.w  #$2000,sr
 
         ; step 10: run M1, then stop.
@@ -156,24 +166,16 @@ start:
         DONE
 
 ; ---- level-3 handler (autovector 27, address $6C; COPER is level 3, p219) ----
+; Section 3.3. The list COP1LC receives next is kept in a1 and the other one
+; in a0, so the handler is short: it must not keep the CPU away from the
+; beam-position samples of M1 for as long as a line.
 i_handler:
-        movem.l a1,-(a7)
-        lea     CUSTOM,a1
-        ifd     I_NOTOGGLE
-        bra.s   .skiptoggle
+        ifnd    I_NOTOGGLE
+        move.l  a1,COP1LCH(a6)          ; step 1: COP1LC, one long word
+        exg     a0,a1                   ; step 2: the other list is next
         endif
-        tst.w   CUR.l
-        bne.s   .curb
-        move.l  #LISTB,COP1LCH(a1)
-        move.w  #1,CUR.l
-        bra.s   .skiptoggle
-.curb:
-        move.l  #LISTA,COP1LCH(a1)
-        clr.w   CUR.l
-.skiptoggle:
-        addq.w  #1,HCNT.l
-        move.w  #$0010,INTREQ(a1)
-        movem.l (a7)+,a1
+        addq.w  #1,HCNT.l               ; step 3
+        move.w  #$0010,INTREQ(a6)       ; step 4: clears COPER
         rte
 
 ; ---- Copper lists (section 3.2) ----

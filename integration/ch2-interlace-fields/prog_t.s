@@ -11,7 +11,7 @@
 ;   T_LINE100_C0   T-d  the mark of line 100 uses (100,$C0), not (100,$E0)
 ;   T_DIWSTOP_NORM T-e  DIWSTOP = $F4C1 (the normal NTSC value, p59)
 ;   M1_DELAY       T-f  M1 waits between samples (see m1.i)
-;   T_SKIP10       T-g  the WAIT and MOVE of line 10 are deleted
+;   T_LINE10_40    T-g  the WAIT of line 10 uses H=$40, not $E0
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
 
