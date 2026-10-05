@@ -223,6 +223,35 @@ inline std::vector<RamAccess> coalesce(const std::vector<RamAccess>& log) {
     return out;
 }
 
+// Marks every entry that continues the bus cycle of the entry directly
+// before it in the log: same word_addr, direction, data and byte enables,
+// and exactly `period` clk_sys cycles later. Unlike coalesce(), identical
+// entries separated by idle bus periods (the log holds only the periods
+// with an access) are distinct accesses and are never marked. `period` is
+// the measured spacing of the log's samples (one bus period).
+inline std::vector<bool> held_continuations(const std::vector<RamAccess>& log, uint64_t period) {
+    std::vector<bool> held(log.size(), false);
+    for (size_t i = 1; i < log.size(); ++i) {
+        const RamAccess& p = log[i - 1];
+        const RamAccess& a = log[i];
+        held[i] = a.cycle >= p.cycle && a.cycle - p.cycle == period &&
+                  a.word_addr == p.word_addr && a.is_write == p.is_write && a.data == p.data &&
+                  a.upper_byte == p.upper_byte && a.lower_byte == p.lower_byte;
+    }
+    return held;
+}
+
+// The log without its held continuations; the first entry of each held bus
+// cycle is kept. coalesce() is unchanged; this is the variant that requires
+// temporal adjacency.
+inline std::vector<RamAccess> coalesce_adjacent(const std::vector<RamAccess>& log, uint64_t period) {
+    std::vector<bool> held = held_continuations(log, period);
+    std::vector<RamAccess> out;
+    for (size_t i = 0; i < log.size(); ++i)
+        if (!held[i]) out.push_back(log[i]);
+    return out;
+}
+
 // Result of driving the design out of reset (see NanomigHarness::boot()).
 struct BootResult {
     bool     cpu_released;      // cpu_nrst_out observed high before the cycle budget ran out
