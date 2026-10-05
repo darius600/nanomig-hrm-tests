@@ -11,6 +11,11 @@
 ;                        without DMAEN) instead of $8280 at step 5
 ;   P1_MUT_SLOWSAMP   -- precondition (c) mutation: a delay inserted between
 ;                        samples (2.4's own contrasting case for B2/B3)
+;
+; P1_BIT7_OFF together with P1_MUT_EARLY_ON or P1_MUT_SLOWSAMP applies that
+; mutation to the contrasting case's own preconditions. P1_BIT7_OFF with
+; P1_MUT_OFF_NO_DMAEN writes DMACON = $0000 at step 5, which leaves DMAEN
+; clear as well as COPEN.
 
         include "nanomig.i"
         include "copctl.i"
@@ -54,7 +59,18 @@ start:
         move.w  #1,MARKBUF             ; M1
 
         ifd     P1_BIT7_OFF
+        ifd     P1_MUT_OFF_NO_DMAEN
+        move.w  #$0000,DMACON(a0)      ; OFF precondition (b) mutation: no
+                                        ; bit selected, so DMAEN stays clear
+        else
+        ifd     P1_MUT_EARLY_ON
+        move.w  #$0080,DMACON(a0)      ; OFF precondition (a) mutation: clear
+                                        ; the COPEN bit the early write set;
+                                        ; DMAEN stays set, as in the contrast
+        else
         move.w  #$8200,DMACON(a0)      ; contrasting case: bit 7 clear
+        endif
+        endif
         else
         ifd     P1_MUT_NO_DMAEN
         move.w  #$8080,DMACON(a0)      ; precondition (b) mutation

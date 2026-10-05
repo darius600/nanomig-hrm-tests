@@ -10,6 +10,9 @@
 ;   P8_COP_MUT_A    -- precondition (a) mutation: INTENA=$C020 with a
 ;                       level-3 handler that clears bit 5; INTENAR is then
 ;                       non-zero
+;   P8_COP_MUT_B    -- precondition (b) mutation: WAIT V=$20 and no clear,
+;                       so bit 4 already reads 1 at the first record stored
+;                       after MC
 ;   P8_COP_MUT_III  -- check (iii) contrast: once a poll record reads bit 4
 ;                       = 1, INTREQ=$0010 is written again (once); a later
 ;                       record then reads 0
@@ -35,7 +38,13 @@ start:
 
         ; List: $8001,$FF00 (WAIT V=$80, H ignored) ; $009C,$8010 (MOVE
         ; INTREQ, sets bit 4) ; $FFFF,$FFFE.
+        ifd     P8_COP_MUT_B
+        move.l  #$2001FF00,LIST1         ; precondition (b) mutation: WAIT
+                                          ; V=$20, so the MOVE executes before
+                                          ; the poll starts
+        else
         move.l  #$8001FF00,LIST1
+        endif
         ifd     P8_COP_NOMOVE
         move.l  #$01800F00,LIST1+4       ; device contrast: COLOR00, not INTREQ
         else
@@ -69,7 +78,9 @@ start:
         cmpi.w  #$60,d1
         bgt.s   .w1
 
+        ifnd    P8_COP_MUT_B
         move.w  #$0010,INTREQ(a0)
+        endif
         move.w  #7,MARKBUF+6              ; MC
 
         ; Poll until the end of the frame: a generous fixed span.

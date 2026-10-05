@@ -136,10 +136,10 @@ Taken from p.21, p.22, p.31 and the summary on p.36 (Table 2-2):
   requester, so both exclusions rest on something else:
   - 68000 accesses: once a list has been written, the 68000 never reads it
     (2.1), so no read inside a list region is the 68000's.
-  - Refresh in P1, P2 and P4: recognised by its address. The build
-    measured every refresh access as a read of word address 0 and of no
-    other address, and no list region of those propositions contains word
-    address 0 (5.1: lists at $001000 and above).
+  - Refresh in P1, P2 and P4: recognised by its address. Every refresh
+    access measures as a read of word address 0 and of no other address,
+    and no list region of those propositions contains word address 0 (5.1:
+    lists at $001000 and above).
   - Refresh in P3 and P5–P12: a refresh access is one made while the
     `refresh` output (port list: "ram refresh cycle") is asserted.
 
@@ -224,9 +224,11 @@ from beam counts to rows or columns is derived from the pages. Anchor check
 same number of rows. Row lengths are not compared: the harness gives the
 doubler's rows only as coming "at roughly twice the rate" of the
 chipset's own horizontal sync, and no page describes the doubler.
-Contrasting case: set LACE (BPLCON0 bit 2) before the compared frames.
-Fields then alternate between 312 and 313 lines (p.24: "long and short
-fields (interlace only)"), and V1 fails.
+Contrasting case: write BEAMCON0 ($1DC) with its PAL bit clear a frame
+and a half after the enable, so that the compared frames differ in length,
+and V1 fails. Setting LACE (BPLCON0 bit 2) is not used as the contrast: p.24
+("long and short fields (interlace only)") predicts fields of 313 and 312
+lines, but the four compared frames measure equal with LACE set (5.6).
 
 ### 2.6 Interrupt-level recorders (P9, P11)
 
@@ -282,7 +284,10 @@ final WAIT (`$FFFF,$FFFE`). That WAIT "never finishes" (p.30), and while
 waiting the Copper "does not use the memory bus at all" (p.19), so the next
 Copper fetch is the one the restart from COP1LC in vertical blanking causes
 (p.25, p.30, p.32). This locates the restart in the fetch sequence without
-placing it against a frame boundary.
+placing it against a frame boundary. At the port the restart is identified
+inside the list's own region (2.3): the next channel read in that region
+after the final WAIT's IR2 must be a read of the list's first word (IR1);
+a pair whose next read in the region is any other word is not a restart.
 
 ---
 
@@ -310,16 +315,23 @@ placing it against a frame boundary.
    the two complete frames. p.30: "Bit 7, COPEN, enables Copper DMA when set
    to 1." The case with bit 7 at 0 rests on p.222: "The contents of this
    register are shown in Table 7-6 (bit on if enabled)", and is graded by
-   the contrasting case.
+   the contrasting case. The two cases are graded together as one
+   assertion, which carries both claims; each case is also a line of its own
+   and carries no claim id.
 5. **Preconditions.**
    - (a) No Copper fetch in W0.
    - (b) The stored DMACONR has bit 9 = 1 and bit 7 = 1 (p.222: "There is a
      read address as well as a write address to the DMA control register so
      you can tell which DMA channels are enabled").
    - (c) Anchor checks B1–B3 over the two frames.
+
+   The same three preconditions guard the contrasting main case. For it,
+   (b) requires bit 9 = 1 (DMAEN set, so the absence of fetches is the
+   COPEN bit's) and leaves bit 7 = 0 to the assertion.
 6. **Contrasting cases.**
    - Main: DMACON = $8200 (SET/CLR and DMAEN only). Expected: no Copper
-     fetch in W1, and DMACONR bit 7 = 0.
+     fetch in L1's region from t(M2) on (which includes W1), and DMACONR
+     bit 7 = 0.
    - For (a): write DMACON = $8280 at the start of the program, before step
      3. Fetches then appear in W0.
    - For (b): DMACON = $8080 (COPEN without DMAEN). DMACONR bit 9 reads 0,
@@ -371,7 +383,8 @@ placing it against a frame boundary.
    - Main: in phase 2 write DMACON = $0000 instead of $0080. p.218:
      "Positions 14-0 that have 0 value will not be affected when you do the
      write". Expected: fetches continue in each frame, and bit 4 is 1 again
-     after the next restart.
+     after the next restart. This case clears no bit, so its line is a
+     control and carries no claim id.
    - For (a): L2 with the MOVE replaced by `$0180,$0F00`. Bit 4 is never
      set in phase 1.
    - For (b): INTENA = $8010 (bit 4 set, the master enable bit 14 left at
@@ -398,7 +411,9 @@ placing it against a frame boundary.
    DMA through DMACON, and speaks of the channels DMACON enables. Memory
    refresh is also DMA (p.20, p.194), but no page gives it a DMACON bit, so
    it is not one of those channels and is not graded (section 4, item 11).
-   Both claims are graded whole by the nine channel cases and case M.
+   Both claims are graded whole by one assertion that conjoins Base's
+   coverage, the nine channel cases and case M. Those lines are components
+   and carry no claim id.
 2. **Stimulus.** Nine disjoint data regions of 32 KB ($8000 bytes) each,
    in the order BPL, SPR, AUD0, AUD1, AUD2, AUD3, DSK, BLT, COP: region k
    (k = 0 … 8) starts at $10000 + k × $8000, so together they fill
@@ -542,7 +557,8 @@ placing it against a frame boundary.
    In every run: M1; DMACON = $8280; M2; sampler until the end of the next
    complete frame.
 3. **Observation.** The first Copper fetch in the A, B or C regions after
-   t(M1), and the frame it lies in.
+   t(M1): its exact word address, which is compared with the first word of
+   the selected list (IR1), and the frame it lies in.
 4. **Expected.**
 
    | Run | First fetch after M1 |
@@ -574,6 +590,10 @@ placing it against a frame boundary.
      first fetch. Otherwise a vertical blank (p.219: blanking is lines 0–25
      for PAL) lies in that stretch, and the restart from COP1LC (p.25)
      could have supplied the address instead of the strobe under test.
+
+   Each of (a)-(c) holds in every one of the six captures (Runs 1, 2 and 3,
+   Run 3-reorder, and the two comparator contrasts) and is printed before
+   any line that grades that capture.
 6. **Contrasting cases.**
    - Main: Run 1 and Run 2 differ only in which strobe is written, and the
      page predicts A and B respectively, graded together. For Run 3, move
@@ -853,7 +873,7 @@ placing it against a frame boundary.
 3. **Observation.** The case's bit in each poll record stored after t(MC),
    and the time of the device's event:
    - COP: the MOVE's IR2 fetch.
-   - VB: the frame wrap.
+   - VB: the first frame wrap stored after t(MC).
    - BLIT: the last write in region D.
 4. **Expected.**
    - (i) Every record stored after t(MC) and before the event reads 0.
@@ -877,12 +897,18 @@ placing it against a frame boundary.
      blit finishes."
 5. **Preconditions.**
    - (a) INTENAR bits 14–0 read 0 (read and stored): the flags are polled,
-     not serviced.
+     not serviced. This is read and graded in each of the three cases.
    - (b) The first record stored after t(MC) reads 0, so a later 1 is new.
    - (c) The event happens inside the window:
      - COP: the IR2 fetch is present.
      - BLIT: 2048 writes of $FFFF appear in D.
-     - VB: a frame wrap is present.
+     - VB: a frame wrap stored after t(MC) is present, and the change from 0
+       to 1 falls between a record on the last line of the old frame or on
+       line 0 and a record on line 0 or line 1.
+
+   Every one of these is printed before the assertion that depends on it.
+   The three devices are graded by one assertion that carries the three
+   claims; each device is also a line of its own and carries no claim id.
 6. **Contrasting cases.**
    - COP: replace the MOVE with `$0180,$0F00`. Bit 4 stays 0.
    - BLIT: omit the BLTSIZE write. Bit 6 stays 0.
@@ -1325,11 +1351,11 @@ placing it against a frame boundary.
 
 ---
 
-## 5. What the build added
+## 5. Recorded
 
-Programs, measured values and mutations the build committed. Section 2's
-common ground is unchanged; this records what implementing it against
-`nanomig.v` measured.
+Measured values of the plain run on each core (fx68k and TG68K), the layout
+the programs use, and the mutation runs. Section 2's common ground is
+unchanged.
 
 ### 5.1 Memory layout
 
@@ -1370,255 +1396,173 @@ Copper restart's own fetch measures consistently just before the record
 that first shows the lower V, in the same few-hundred-cycle gap on both
 cores.
 
-### 5.3 P4: the fixed stimulus, measured
+### 5.3 P4: the first fetch's exact address
 
-With the location registers and the strobe written only after a record
-shows V between $40 and $C0, and precondition (c) holding (the last record
-stored before t(MS) and the record following the first record stored after
-the first fetch lie in the same frame and both read V > 25): measured, on
-both cores, Run 1's first fetch after M1 is A's IR1, matching p.25 and
-p.30. Run 2's, Run 3's and Run 3-reorder's first fetch after M1 is also A's
-IR1 on both cores, where p.25, p.26, p.30 and p.276 predict B, B and C
-respectively. The comparator contrast COP1LC = B, COPJMP1 (`P4-CTRL`)
-measures B's IR1 on both cores, the same as p.25 predicts, through the same
-comparator that Run 1 uses; the comparator contrast COP1LC = C, COPJMP1
-(`P4-CTRL-C`) measures C's IR1 on both cores, through the same comparator.
+Each of the six captures (Run 1, Run 2, Run 3, Run 3-reorder, and the two
+comparator contrasts) is compared at the exact word address of its first
+Copper fetch after t(M1) with the first word of the list the page selects
+(p.25, p.26, p.30, p.276). The plain run prints each address. Measured, on
+both cores:
 
-Claims `ch2-starting-the-copper-after-reset.c1.s2` (Run 1) and
-`ch2-starting-the-copper-after-reset.c2.s2` (Run 2) are graded together as
-one assertion (`P4`), which is red on both cores through Run 2's clause.
-Run 2 is also graded on its own, as `P4-Run2`, restating `P4`'s own clause
-for Run 2 alone: red on both cores, for the same reason as `P4`.
+| Capture | Selected list's first word | First fetch after t(M1) | Equal |
+|---|---|---|---|
+| Run 1 (COP1LC=A, COPJMP1) | A, $001000 | $001000 | yes |
+| Run 2 (COP1LC=A, COP2LC=B, COPJMP2) | B, $001200 | $001000 | no |
+| Run 3 (... COPJMP2, then COP2LC=C) | B, $001200 | $001000 | no |
+| Run 3-reorder (COP2LC=C before COPJMP2) | C, $001400 | $001000 | no |
+| comparator contrast B (COP1LC=B, COPJMP1) | B, $001200 | $001200 | yes |
+| comparator contrast C (COP1LC=C, COPJMP1) | C, $001400 | $001400 | yes |
 
-`P4-Run3` and `P4-Run3-reorder` carry no claim id and grade the narrower
-clause of p.25's "is loaded into the Copper program counter" against each
-run's own location-register value at the moment its strobe was written.
-`P4-Run3`'s own clause (B against C) is reached only when the first fetch
-is B or C; measured, on both cores, the first fetch is A, so a precondition
-gates it and the line is RECORDED as not reached instead of graded.
+In each of the four runs the first fetch is exactly A's IR1. Each capture
+is guarded by its own three preconditions (5 (a)-(c)): the first
+stored DMACONR has bit 7 = 0, no Copper fetch in A, B or C before t(M1), and
+the stretch from t(MS) to the first fetch lies outside vertical blanking.
+All eighteen guard lines read PASS on both cores.
+
+`P4` (Run 1 and Run 2 together, carrying `ch2-starting-the-copper-after-reset.c1.s2`
+and `ch2-starting-the-copper-after-reset.c2.s2`) is red through Run 2's
+clause, and `P4-Run2` states that clause for Run 2 alone. `P4-Run3` and
+`P4-Run3-reorder` carry no claim id and grade the narrower clause of p.25's
+"is loaded into the Copper program counter" against each run's own
+location-register value at the moment its strobe was written: the value
+that Run 3 held at the strobe was B, and the first fetch is A's. 
 `P4-Run3-reorder` alone cannot isolate "the value at the strobe" (COP2LC
 holds C both at the strobe and at DMA-on), so it repeats `P4-Run2`'s clause
-with C; measured, on both cores, its first fetch is also A, so it is red,
-for the same reason as `P4-Run2`, not through its own labelled clause.
-`P4-Run3-PAIR` grades Run 3 and Run 3-reorder together, as the
-specification's own pair (P4 items 4 and 6); red on both cores for the same
-reason. Its own green demonstration, substituting `P4-CTRL`'s and
-`P4-CTRL-C`'s own captures for Run 3's and Run 3-reorder's, measures PASS
-on both cores: the same paired comparator reads true for a live B/C pair.
+with C. `P4-Run3-PAIR` grades Run 3 and Run 3-reorder together, as the
+specification's own pair (P4 items 4 and 6). All five are red on both
+cores. The comparator contrasts `P4-CTRL` and `P4-CTRL-C` read B's and C's
+IR1 through the same comparator and are green on both cores.
 
-### 5.4 Mutations: measured per core
+### 5.4 The plain run
 
-Every mutation below was run once on each core (`NMH_MUTATE=<value>`) after
-the normal run, by re-running the built binary with the environment
-variable set. Each measured a FAIL on exactly its own precondition or
-assertion, on both cores, with every other line unchanged from the normal
-run (the P4 lines already red or recorded on every normal run -- `P4`,
-`P4-Run2`, the `P4-Run3` precondition, `P4-Run3-reorder`, `P4-Run3-PAIR` --
-aside):
+Measured, on both cores: 123 passed, 5 failed, and no RECORDED line. The
+five failures are `P4`, `P4-Run2`, `P4-Run3`, `P4-Run3-reorder` and
+`P4-Run3-PAIR`. Both cores print the same lines. A line whose
+preconditions did not hold prints `RECORDED: <label> NOT GRADED` and
+neither PASS nor FAIL; none does in the plain run.
 
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| FIXTURE | FIXTURE | FAIL | FAIL |
-| P1-SWAP | P1 (main assertion) | FAIL | FAIL |
-| P1OFF-SWAP | P1-OFF | FAIL | FAIL |
-| P1-A | P1a | FAIL | FAIL |
-| P1-B | P1b | FAIL | FAIL |
-| P1-C | P1c | FAIL | FAIL |
-| P2-SWAP | P2 (main assertion) | FAIL | FAIL |
-| P2OFF-SWAP | P2-OFF | FAIL | FAIL |
-| P2-A | P2a | FAIL | FAIL |
-| P2-B | P2b | FAIL | FAIL |
-| P2-C | P2c | FAIL | FAIL |
-| P4-A | P4a | FAIL | FAIL |
-| P4-B | P4b | FAIL | FAIL |
-| P4-C | P4c | FAIL | FAIL |
-| P4-RUN3-PAIR-A | P4-Run3-PAIR (green demonstration) | PASS | PASS |
+### 5.5 P2 and P3
 
-FIXTURE, P1-SWAP, P1OFF-SWAP, P2-SWAP and P2OFF-SWAP are not stimulus
-mutations: they swap in the other, already-built capture (or, for FIXTURE,
-a program storing $DEAD instead of $BEEF) in place of the one the
-assertion normally grades, so the assertion's own comparator is exercised
-against a live input the page predicts the opposite outcome for.
-`P4-RUN3-PAIR-A` is the same style, on an already-red line: it swaps
-`P4-CTRL`'s and `P4-CTRL-C`'s own captures (COP1LC/COPJMP1, not
-COP2LC/COPJMP2) into Run 3's and Run 3-reorder's own slots, and measures
-PASS on both cores, showing the same paired comparator reads true for a
-live B/C pair.
+P2c: with the phase-2 sampler unrolled (5.2), P2c (anchor checks B1-B3
+over the two complete frames after M2) reads PASS on both fx68k and
+TG68K. The control `P2-OFF` writes DMACON = $0000, a no-op (p.218), carries
+no claim id, and reads PASS on both cores: fetching continues and INTREQR
+bit 4 returns.
 
-The P4 comparator contrasts (prog_p4_ctrl_cop1b.bin, `P4-CTRL`, and
-prog_p4_ctrl_cop1c.bin, `P4-CTRL-C`, both in the normal run's own output)
-are not `NMH_MUTATE`-gated; they are this package's own contrasting cases.
-`P4-CTRL` is `P4`'s and `P4-Run2`'s falsifiability demonstration and
-`P4-Run3`'s own green control (both expect B); `P4-CTRL-C` is
-`P4-Run3-reorder`'s and `P4-Run3-PAIR`'s own green control (expects C).
-Measured, on both cores: `P4-CTRL` reads B's IR1 and `P4-CTRL-C` reads C's
-IR1, matching p.25, showing the same comparator that reports these lines'
-reds is not vacuous.
-
-### 5.5 P2c: both cores agree
-
-Measured: with the phase-2 sampler unrolled (5.2), P2c (anchor checks
-B1-B3 over the two complete frames after M2) reads PASS on both fx68k and
-TG68K. Both cores agree on every check in this package.
-
-### 5.6 P3: memory layout, refresh recognition and disk DMA, measured
-
-This proposition's own nine data regions (P3 stimulus step 2), 32 KB each:
-BPL $010000-$017FFF, SPR $018000-$01FFFF, AUD0 $020000-$027FFF, AUD1
+P3 has nine data regions (P3 stimulus step 2), 32 KB each: BPL
+$010000-$017FFF, SPR $018000-$01FFFF, AUD0 $020000-$027FFF, AUD1
 $028000-$02FFFF, AUD2 $030000-$037FFF, AUD3 $038000-$03FFFF, DSK
 $040000-$047FFF, BLT $048000-$04FFFF, COP $050000-$057FFF.
 
-Refresh recognition (2.3): measured, on prog_p1.bin's own captured log,
-every RAM read where the `refresh` port reads asserted is at word address
-0, and at least one such read exists -- the same signature 5.1 already
-measured for P1/P2/P4, checked directly against the port. Measured again,
-directly on prog_p3_run_base.bin's own captured log: at least one
-refresh-asserted read exists, and none of them falls inside any of P3's own
-nine regions. Since every one of those regions starts at $10000 or above, a
-word-address-0 read can never fall inside one; P3's own region-bounded
-checks therefore exclude word address 0 directly, exactly as P1/P2/P4
-already do, rather than sampling the refresh port cycle by cycle for every
-access.
+Refresh recognition (2.3): measured, on prog_p1.bin's captured log, every
+RAM read where the refresh port reads asserted is at word address 0, and at
+least one such read exists, the same signature 5.1 measured for P1/P2/P4,
+checked directly against the port. Measured again on prog_p3_run_base.bin's
+captured log: at least one refresh-asserted read exists, and none of them
+falls inside any of the nine regions. Both lines carry no claim id. Since
+every one of those regions starts at $10000 or above, a word-address-0 read
+can never fall inside one; P3's region-bounded checks therefore exclude word
+address 0 directly, exactly as P1/P2/P4 do, rather than sampling the
+refresh port cycle by cycle for every access. No program controls the
+address of a refresh access, so no stimulus can falsify the address
+invariants of these two lines.
 
-Disk DMA (precondition (a), section 4 item 12): the harness's own
-`floppy_config` = 0 is one drive (DF0), write-enabled, with no disk image
-served (`nanomig_harness.h`); the program itself selects no drive. Measured,
-on both cores: disk DMA runs and completes even so -- region DSK shows an
-access in Base, within its own 100-word transfer starting at DSKPTH ($100
-above region DSK's own start), none in the DSK case or in case M; DSKBYTR
-bit 14 (DMAON) reads 1 in Base and 0 in the DSK case and in case M.
+Disk DMA (precondition (a), section 4 item 12): the harness's `floppy_config`
+= 0 is one drive (DF0), write-enabled, with no disk image served; the
+program itself selects no drive. Measured, on both cores: disk DMA runs and
+completes even so -- region DSK shows an access in Base, within its own
+100-word transfer starting at DSKPTH ($100 above region DSK's own start),
+none in the DSK case or in case M; DSKBYTR bit 14 (DMAON) reads 1 in Base
+and 0 in the DSK case and in case M.
 
-Base coverage (P3 item 4's first sentence, `P3-BASE`): measured, on both
-cores, every region other than DSK has at least one access in Base --
-BPL, SPR, AUD0-AUD3, BLT and COP are all live there, not just left silent
-by every case run alike. Precondition (c)'s comparator (SPECIFICATION.md
-P3 stimulus: each channel's own pointer, $100 above its own region's
-start): measured, on both cores, in Base the lowest address accessed in
-each region equals that region's own start plus $100, for every region a
-channel touches. Every claim-bearing case line (`P3-BPL` ... `P3-COP`,
-`P3-M`) additionally requires its own region to have shown an access in
-Base, measured true on both cores for the nine that do.
+Base coverage (`P3-BASE`): measured, on both cores, every region other than
+DSK has at least one access in Base -- BPL, SPR, AUD0-AUD3, BLT and COP are
+all live there. Precondition (c)'s comparator: measured, on both cores, in
+Base the lowest address accessed in each region equals that region's own
+start plus $100, for every region a channel touches. The aggregate
+`P3-ALL`, which carries `ch2-stopping-the-copper.c8` and
+`COP2-stopping-the-copper.c11`, conjoins Base's coverage, the nine channel
+cases and case M, and reads PASS on both cores; `P3-BASE`, the nine
+channel cases and `P3-M` are its components and carry no claim id.
 
-### 5.7 P3 mutations: measured per core
-
-Every mutation below was run once on each core (`NMH_MUTATE=<value>`) by
-re-running the built binary with the environment variable set. Each
-measured a FAIL on exactly its own precondition or assertion, on both
-cores, with every other line unchanged from the normal run (the P4 lines
-already red or recorded on every normal run -- `P4`, `P4-Run2`,
-`P4-Run3-reorder`, `P4-Run3-PAIR` FAIL and the `P4-Run3` precondition FAIL
-with `P4-Run3` itself RECORDED -- aside), with one exception described
-after the table (`P3-A`):
-
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| P3-A | P3a | FAIL | FAIL |
-| P3-B | P3b | FAIL | FAIL |
-| P3-C | P3c | FAIL | FAIL |
-| P3-D | P3d | FAIL | FAIL |
-| P3-BASE-SWAP | P3-BASE | FAIL | FAIL |
-| P3-BPL-SWAP | P3-BPL | FAIL | FAIL |
-| P3-SPR-SWAP | P3-SPR | FAIL | FAIL |
-| P3-AUD0-SWAP | P3-AUD0 | FAIL | FAIL |
-| P3-AUD1-SWAP | P3-AUD1 | FAIL | FAIL |
-| P3-AUD2-SWAP | P3-AUD2 | FAIL | FAIL |
-| P3-AUD3-SWAP | P3-AUD3 | FAIL | FAIL |
-| P3-DSK-SWAP | P3-DSK | FAIL | FAIL |
-| P3-BLT-SWAP | P3-BLT | FAIL | FAIL |
-| P3-COP-SWAP | P3-COP | FAIL | FAIL |
-| P3-M-SWAP | P3-M | FAIL | FAIL |
-| P3-DSKBYTR-SWAP | P3-DSKBYTR | FAIL | FAIL |
-| P3-REFRESH-A | P3-REFRESH (ii) | FAIL | FAIL |
-
-`P3-BASE-SWAP` through `P3-M-SWAP` and `P3-DSKBYTR-SWAP` swap Base's own
-already-built capture (or, for `P3-DSKBYTR-SWAP`, Base's own DSKBYTR value)
-into the named line's own slot; `P3-REFRESH-A` adds a synthetic region
-containing word address 0 to `P3-REFRESH`'s own checked region list
-(a comparator demonstration, not a stimulus change: refresh's own
-word-address-0 signature is an RTL invariant no captured program can
-violate).
-
-The one exception is `P3-A`: measured, on both cores, with region DSK
-silent in Base, precondition (a) fails, and the claim
-`ch2-stopping-the-copper.c8`/`COP2-stopping-the-copper.c11` is then not
-graded whole by the ten cases. `P3-DSK` reads RECORDED as inconclusive, as
-it always does when (a) fails, and the other nine case lines (`P3-BPL`,
-`P3-SPR`, `P3-AUD0`, `P3-AUD1`, `P3-AUD2`, `P3-AUD3`, `P3-BLT`, `P3-COP`,
-`P3-M`) also turn RECORDED, their ids withdrawn, each naming its own
-comparator's live PASS (measured PASS on all nine, both cores: the mutation
-touches only Base's own DSK access, not the nine channels' own case runs).
-`P3-BASE` is unaffected (its own claim excludes DSK). The summary line
-changes from 96 passed, 5 failed to 85 passed, 6 failed on both cores: ten
-lines leave the tally (converted from a graded PASS to a RECORDED line) and
-`P3a` itself turns FAIL.
-
-### 5.8 P6: measured
+### 5.6 P6, P8 and P10
 
 P6's own list O reuses the LIST1 address ($001000; a fresh harness instance
-per run, so no other proposition's use of that address is disturbed). The
-restart mechanism of 2.8 (a channel fetch after list O's own end-of-list
-IR2 fetch) was measured against the port for the first time by this
-proposition; precondition (b)'s per-restart MOVE-order check passed on
-both cores against that same mechanism.
+per run, so no other proposition's use of that address is disturbed).
+Precondition (b) identifies each restart at the port as a read of the
+list's first word after the fetch of the final WAIT's IR2, and its
+per-restart MOVE-order check passes on both cores.
 
-Mutations, run once on each core (`NMH_MUTATE=<value>`) after the normal
-run, by re-running the built binary with the environment variable set:
+P6c (V1) in the plain run: the four video frames after the enable measure
+568,408 clk_sys samples and 627 doubler rows each. With LACE (BPLCON0 bit
+2) set, alone and with one bitplane fetched, the four frames measure
+567,500 clk_sys samples and 626 doubler rows each and are equal to each other, so V1 holds and LACE does not
+falsify it (908 samples and one doubler row fewer than without LACE). With BEAMCON0 written with its PAL bit clear a frame and a half
+after the enable, the first frame measures 568,408 samples and 627 rows and
+the next three measure 477,608 samples and 527 rows each, and P6c reads
+FAIL.
 
-| Mutation | Own check | fx68k | TG68K |
+P8: three device cases (COP, VB, BLIT) share one grading function applied
+to each device's own bit, marker and event. The BLIT case reuses the DATA1
+region ($002000) established for P3's BLT region; region D there measures
+2048 writes of $FFFF in the graded window on both cores. The VB event is
+the first frame wrap stored after t(MC). The wrap boundary measures a record
+on line 312 followed by a record on line 0 on both cores, which is the
+boundary the assertion requires. INTENAR bits 14-0 read 0 in all three
+cases.
+
+P10: list R reuses the LIST1 address ($001000). The five samples (lines
+$38, $48, $58, $68, $78) and the four MOVE executions are located from the
+same port-log mechanism P1-P8 use; precondition (a)'s ordering check (each
+MOVE's IR2 fetch between the previous sample's store and the record just
+before the next sample) passes on both cores.
+
+### 5.7 Mutation runs
+
+Each run below executes the built binary of one core with `NMH_ONLY` set to
+the section and `NMH_MUTATE` set to the listed selectors, which act on
+different lines. The last column lists the lines that read the stated
+verdict; fx68k and TG68K agree on every one. A record in the test source's
+header names one selector and one line.
+
+| Run | NMH_ONLY | NMH_MUTATE | Lines |
 |---|---|---|---|
-| P6-A | P6a | FAIL | FAIL |
-| P6-B | P6b | FAIL | FAIL |
-| P6-C | P6c | PASS | PASS |
+| fixture | FIXTURE | FIXTURE | FAIL: FIXTURE |
+| p1_a | P1 | P1-FIX-DONE-NODONE, P1-OFF-FIX-STRUCT-EMPTY | FAIL: P1-FIX-DONE, P1-OFF-FIX-STRUCT |
+| p1_b | P1 | P1-OFF-FIX-DONE-NODONE, P1-FIX-STRUCT-EMPTY | FAIL: P1-OFF-FIX-DONE, P1-FIX-STRUCT |
+| p1_c | P1 | P1-A, P1-B, P1-C, P1-OFFA, P1-OFFB, P1-OFFC | FAIL: P1a, P1b, P1c, P1-OFFa, P1-OFFb, P1-OFFc |
+| p1_d | P1 | P1-SWAP | FAIL: P1, P1-ON-OFF |
+| p1_e | P1 | P1OFF-SWAP | FAIL: P1-OFF, P1-ON-OFF |
+| p2_a | P2 | P2-FIX-DONE-NODONE, P2-OFF-FIX-STRUCT-EMPTY | FAIL: P2-FIX-DONE, P2-OFF-FIX-STRUCT |
+| p2_b | P2 | P2-OFF-FIX-DONE-NODONE, P2-FIX-STRUCT-EMPTY | FAIL: P2-OFF-FIX-DONE, P2-FIX-STRUCT |
+| p2_c | P2 | P2-A, P2-B, P2-C | FAIL: P2a, P2b, P2c |
+| p2_d | P2 | P2-SWAP, P2OFF-SWAP | FAIL: P2, P2-OFF |
+| p3_a | P3 | P3-APP-I-NODONE, P3-REFRESH-NODONE | FAIL: P3-APP-I, P3-REFRESH |
+| p3_fix | P3 | P3-FIX-Base-NODONE, P3-FIX-BPL-NODONE, P3-FIX-SPR-NODONE, P3-FIX-AUD0-NODONE, P3-FIX-AUD1-NODONE, P3-FIX-AUD2-NODONE, P3-FIX-AUD3-NODONE, P3-FIX-DSK-NODONE, P3-FIX-BLT-NODONE, P3-FIX-COP-NODONE, P3-FIX-M-NODONE | FAIL: P3-FIX-Base, P3-FIX-BPL, P3-FIX-SPR, P3-FIX-AUD0, P3-FIX-AUD1, P3-FIX-AUD2, P3-FIX-AUD3, P3-FIX-DSK, P3-FIX-BLT, P3-FIX-COP, P3-FIX-M |
+| p3_pre | P3 | P3-A, P3-B, P3-C, P3-D | FAIL: P3a, P3b, P3c, P3d |
+| p3_base | P3 | P3-BASE-SWAP | FAIL: P3-BASE, P3-ALL |
+| p3_bpl | P3 | P3-BPL-SWAP | FAIL: P3-BPL, P3-ALL |
+| p3_swaps | P3 | P3-SPR-SWAP, P3-AUD0-SWAP, P3-AUD1-SWAP, P3-AUD2-SWAP, P3-AUD3-SWAP, P3-DSK-SWAP, P3-BLT-SWAP, P3-COP-SWAP, P3-M-SWAP, P3-DSKBYTR-SWAP | FAIL: P3-SPR, P3-AUD0, P3-AUD1, P3-AUD2, P3-AUD3, P3-DSK, P3-BLT, P3-COP, P3-M, P3-DSKBYTR |
+| p4_fix | P4 | P4-FIX-Run1-NODONE, P4-FIX-Run2-NODONE, P4-FIX-Run3-NODONE, P4-FIX-Run3-reorder-NODONE, P4-FIX-CTRL-NODONE, P4-FIX-CTRL-C-NODONE | FAIL: P4-FIX-Run1, P4-FIX-Run2, P4-FIX-Run3, P4-FIX-Run3-reorder, P4-FIX-CTRL, P4-FIX-CTRL-C |
+| p4_guards | P4 | P4-A-RUN1, P4-A-RUN2, P4-A-RUN3, P4-A-RUN3R, P4-A-CTRL, P4-A-CTRLC, P4-B-RUN1, P4-B-RUN2, P4-B-RUN3, P4-B-RUN3R, P4-B-CTRL, P4-B-CTRLC, P4-C-RUN1, P4-C-RUN2, P4-C-RUN3, P4-C-RUN3R, P4-C-CTRL, P4-C-CTRLC | FAIL: P4a-Run1, P4a-Run2, P4a-Run3, P4a-Run3-reorder, P4a-CTRL, P4a-CTRL-C, P4b-Run1, P4b-Run2, P4b-Run3, P4b-Run3-reorder, P4b-CTRL, P4b-CTRL-C, P4c-Run1, P4c-Run2, P4c-Run3, P4c-Run3-reorder, P4c-CTRL, P4c-CTRL-C |
+| p4_swaps | P4 | P4-RUN2-CTRL, P4-RUN3-CTRL, P4-RUN3R-CTRL, P4-CTRL-RUN1, P4-CTRLC-RUN1 | FAIL: P4-CTRL, P4-CTRL-C; PASS: P4, P4-Run2, P4-Run3, P4-Run3-reorder |
+| p4_pair | P4 | P4-RUN3-PAIR-A | PASS: P4-Run3-PAIR |
+| p10_a | P10 | P10-FIX-DONE-NODONE, P10-MAIN2-FIX-DONE-NODONE | FAIL: P10-FIX-DONE, P10-MAIN2-FIX-DONE |
+| p10_b | P10 | P10-FIX-LINES-EMPTY | FAIL: P10-FIX-LINES |
+| p10_c | P10 | P10-A, P10-B, P10-C | FAIL: P10a, P10b, P10c |
+| p10_d | P10 | P10-SWAP, P10-MAIN2-SWAP | FAIL: P10, P10-MAIN2 |
+| p8_fix | P8 | P8-COP-FIX-DONE-NODONE, P8-VB-FIX-DONE-NODONE, P8-BLIT-FIX-DONE-NODONE, P8-COP-DEV-FIX-DONE-NODONE, P8-COP-III-FIX-DONE-NODONE, P8-VB-DEV-FIX-DONE-NODONE, P8-BLIT-DEV-FIX-DONE-NODONE | FAIL: P8-COP-FIX-DONE, P8-VB-FIX-DONE, P8-BLIT-FIX-DONE, P8-COP-DEV-FIX-DONE, P8-COP-III-FIX-DONE, P8-VB-DEV-FIX-DONE, P8-BLIT-DEV-FIX-DONE |
+| p8_guards | P8 | P8-C, P8-VB-C, P8-BLIT-C, P8-A, P8-VB-A, P8-BLIT-A, P8-COP-B, P8-B, P8-BLIT-B | FAIL: P8c-COP, P8c-VB, P8c-BLIT, P8a-COP, P8a-VB, P8a-BLIT, P8b-COP, P8b-VB, P8b-BLIT |
+| p8_bnd | P8 | P8-VB-BOUNDARY | FAIL: P8-VB-BOUNDARY |
+| p8_cop | P8 | P8-COP-SWAP | FAIL: P8-COP, P8 |
+| p8_vb | P8 | P8-VB-SWAP | FAIL: P8-VB, P8 |
+| p8_blit | P8 | P8-BLIT-SWAP | FAIL: P8-BLIT, P8 |
+| p8_dev | P8 | P8-COP-DEV-SWAP, P8-COP-III-SWAP, P8-VB-DEV-SWAP, P8-BLIT-DEV-SWAP | FAIL: P8-COP-DEV, P8-COP-III, P8-VB-DEV, P8-BLIT-DEV |
+| p6_a | P6 | P6-FIX-FRAME-NODONE | FAIL: P6-FIX-FRAME |
+| p6_b | P6 | P6-FIX-ROWS-MUTA | FAIL: P6-FIX-ROWS |
+| p6_c | P6 | P6-i-FIX-NODONE, P6-ii-FIX-NODONE, P6-A, P6-B, P6-C3 | FAIL: P6-i-FIX, P6-ii-FIX, P6a, P6b, P6c |
+| p6_d | P6 | P6-BELOW-SWAP, P6-ORDER-SWAP, P6-I-SWAP, P6-II-SWAP | FAIL: P6-BELOW, P6-ORDER, P6-i, P6-ii |
 
-P6-C (LACE set, precondition (c)'s own contrast for V1) did not redden P6c
-on either core: the check stayed PASS under the mutation. Every other
-mutation in this table measured a FAIL on exactly its own precondition, on
-both cores, with every other line unchanged from the normal run (the four
-already-red P4 lines aside).
-
-### 5.9 P8: measured
-
-Three device cases (COP, VB, BLIT) share one grading function
-(`grade_p8_bit`) applied to each device's own bit, marker and event. The
-BLIT case reuses the DATA1 region ($002000) already established for P3's
-own BLT region grading; region D there measured 2048 writes of $FFFF in
-the graded window on both cores, matching precondition (c). The VB case's
-boundary check (the frame wrap falling between a record on the last line
-of the old frame or line 0, and a record on line 0 or line 1) measured
-true on both cores.
-
-Mutations, run once on each core (`NMH_MUTATE=<value>`):
-
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| P8-A | P8a (COP case) | FAIL | FAIL |
-| P8-B | P8b (VB case) | FAIL | FAIL |
-| P8-C | P8c (COP case) | FAIL | FAIL |
-
-Each measured a FAIL on exactly its own precondition, on both cores, with
-every other line unchanged from the normal run (the four already-red P4
-lines aside).
-
-### 5.10 P10: measured
-
-List R reuses the LIST1 address ($001000). The five samples (lines $38,
-$48, $58, $68, $78) and the four MOVE executions were located from the
-same port-log mechanism P1-P8 already use; precondition (a)'s ordering
-check (each MOVE's IR2 fetch between the previous sample's store and the
-record just before the next sample) passed on both cores.
-
-Mutations, run once on each core (`NMH_MUTATE=<value>`):
-
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| P10-A | P10a | FAIL | FAIL |
-| P10-B | P10b | FAIL | FAIL |
-| P10-C | P10c | FAIL | FAIL |
-
-Each measured a FAIL on exactly its own precondition, on both cores, with
-every other line unchanged from the normal run (the four already-red P4
-lines aside).
-
-### 5.11 Not built
+### 5.8 Not built
 
 P5, P7, P9, P11 and P12 are not built.

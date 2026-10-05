@@ -9,6 +9,10 @@
 ;                     the final WAIT (never executes)
 ;   P6_MUT_B       -- precondition (b) mutation: DMACON = $8200 (COPEN clear)
 ;   P6_MUT_C       -- precondition (c) mutation: LACE set (2.5's own V1 contrast)
+;   P6_MUT_SWAP01  -- the values of C0 and C1 exchanged: the colour that
+;                     comes first on the line is no longer red
+;   P6_MUT_SWAP13  -- the values of C1 and C3 exchanged: the colour that
+;                     appears lower on the screen is no longer yellow
 
         include "nanomig.i"
         include "copctl.i"
@@ -24,13 +28,38 @@ start:
         ifd     P6_MUT_C
         move.w  #$0204,BPLCON0(a0)
         else
+        ifd     P6_MUT_C2
+        ; LACE with one bitplane fetched from an all-zero area (COLOR00
+        ; still shows everywhere), the interlaced one-plane display setup of
+        ; SPECIFICATION.md P11.
+        move.w  #$1204,BPLCON0(a0)
+        move.w  #$2C81,DIWSTRT(a0)
+        move.w  #$2CC1,DIWSTOP(a0)
+        move.w  #$0038,DDFSTRT(a0)
+        move.w  #$00D0,DDFSTOP(a0)
+        move.w  #40,BPL1MOD(a0)
+        move.l  #DATA2,BPL1PTH(a0)
+        else
         move.w  #$0200,BPLCON0(a0)
+        endif
         endif
 
         ; step 3: List O at LIST1. C0-C3 = $0F00,$00F0,$000F,$0FF0.
+        ifd     P6_MUT_SWAP01
+        move.l  #$018000F0,LIST1          ; mutation: the first MOVE sets C1's value
+        else
         move.l  #$01800F00,LIST1          ; MOVE COLOR00,C0
+        endif
         move.l  #$6061FFFE,LIST1+4        ; WAIT1: unchanged by any case
+        ifd     P6_MUT_SWAP01
+        move.l  #$01800F00,LIST1+8        ; mutation: the second MOVE sets C0's value
+        else
+        ifd     P6_MUT_SWAP13
+        move.l  #$01800FF0,LIST1+8        ; mutation: the second MOVE sets C3's value
+        else
         move.l  #$018000F0,LIST1+8        ; MOVE COLOR00,C1
+        endif
+        endif
         ifd     P6_WAIT2_C1
         move.l  #$60C1FFFE,LIST1+12       ; contrast (i): second WAIT $60A1 -> $60C1
         else
@@ -46,7 +75,11 @@ start:
         move.l  #$FFFFFFFE,LIST1+24       ; precondition (a) mutation: END here
         move.l  #$01800FF0,LIST1+28       ; C3's MOVE placed after END: dead code
         else
+        ifd     P6_MUT_SWAP13
+        move.l  #$018000F0,LIST1+24       ; mutation: the fourth MOVE sets C1's value
+        else
         move.l  #$01800FF0,LIST1+24       ; MOVE COLOR00,C3
+        endif
         move.l  #$FFFFFFFE,LIST1+28       ; END
         endif
 
@@ -56,7 +89,11 @@ start:
         ifd     P6_MUT_B
         move.w  #$8200,DMACON(a0)         ; precondition (b) mutation: COPEN clear
         else
+        ifd     P6_MUT_C2
+        move.w  #$8380,DMACON(a0)         ; COPEN and BPLEN
+        else
         move.w  #$8280,DMACON(a0)
+        endif
         endif
         move.w  #0,COPJMP1(a0)            ; strobe again (2.8 step 3)
         move.w  #3,MARKBUF+4              ; MJ
@@ -66,6 +103,13 @@ start:
         ; time the run so the video capture spans enough frames.
         lea     RECBUF,a6
         moveq   #0,d7
+        ifd     P6_MUT_C3
+        ; frames of different length after the enable: about a frame and a
+        ; half after MJ, BEAMCON0 is written with its PAL bit clear.
+        move.w  #20000,d6
+.dly:   dbra    d6,.dly
+        move.w  #$0000,$1DC(a0)
+        endif
         move.w  #3000-1,d3
 .pd:    SAMPLE
         SAMPLE

@@ -4,6 +4,10 @@
 ;
 ;   (no symbol)    -- main
 ;   P8_BLIT_NOSIZE -- device contrast: omit the BLTSIZE write. Bit 6 stays 0
+;   P8_BLIT_MUT_A  -- precondition (a) mutation: INTENA = $8040 (bit 6 set,
+;                     master enable left clear)
+;   P8_BLIT_MUT_B  -- precondition (b) mutation: a whole blit runs and
+;                     finishes before MC
 
         include "nanomig.i"
         include "copctl.i"
@@ -14,11 +18,26 @@ start:
         CLEAR_OVL_DDR
         lea     CUSTOM,a0
         CLEAR_DMA_INT
+        ifd     P8_BLIT_MUT_A
+        move.w  #$8040,INTENA(a0)        ; precondition (a) mutation: bit 6
+                                          ; set, master enable (bit 14) left
+                                          ; clear: INTENAR is non-zero
+        endif
         move.w  INTENAR(a0),RESULTS+4    ; precondition (a): INTENAR bits 14-0 = 0
 
         ; step 1: DMACON = $8240 (SET/CLR, DMAEN, BLTEN); INTREQ = $0040; MC.
         move.w  #$8240,DMACON(a0)
         move.w  #$0040,INTREQ(a0)
+        ifd     P8_BLIT_MUT_B
+        ; precondition (b) mutation: a whole blit runs and finishes before
+        ; MC, so bit 6 already reads 1 at the first record stored after MC.
+        move.w  #$01FF,BLTCON0(a0)
+        move.w  #$0000,BLTCON1(a0)
+        move.w  #$0000,BLTDMOD(a0)
+        move.l  #DATA1,BLTDPTH(a0)
+        move.w  #$1020,BLTSIZE(a0)
+        WAIT_INTREQ_SET 6
+        endif
         move.w  #7,MARKBUF+6              ; MC
 
         ; step 2: D-only blit into DATA1 (64 lines x 32 words).

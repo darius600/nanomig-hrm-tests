@@ -78,8 +78,7 @@ start:
         ifd     P4_CTRL_COP1C
         ; Comparator contrast: COP1LC = C (LIST3), COPJMP1 (p.25 predicts
         ; the first fetch is C's, not A's or B's) -- the control for P4-Run3
-        ; and P4-Run3-reorder's own comparator (defect: no control showed it
-        ; reading C).
+        ; and P4-Run3-reorder's own comparator, reading C on a live input.
         move.l  #LIST2,COP2LCH(a0)      ; decoy, never strobed
         move.l  #LIST3,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)

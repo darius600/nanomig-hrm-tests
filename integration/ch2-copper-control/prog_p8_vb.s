@@ -4,6 +4,10 @@
 ;   (no symbol)   -- main
 ;   P8_VB_MUT_B   -- precondition (b) mutation: skip the clear (write
 ;                    nothing before polling begins)
+;   P8_VB_MUT_A   -- precondition (a) mutation: INTENA = $8020 (bit 5 set,
+;                    master enable left clear)
+;   P8_VB_MUT_BND -- boundary-record mutation: a long delay between the
+;                    poll records of phase 2
 
         include "nanomig.i"
         include "copctl.i"
@@ -14,6 +18,11 @@ start:
         CLEAR_OVL_DDR
         lea     CUSTOM,a0
         CLEAR_DMA_INT
+        ifd     P8_VB_MUT_A
+        move.w  #$8020,INTENA(a0)        ; precondition (a) mutation: bit 5
+                                          ; set, master enable (bit 14) left
+                                          ; clear: INTENAR is non-zero
+        endif
         move.w  INTENAR(a0),RESULTS+4    ; precondition (a): INTENAR bits 14-0 = 0
 
         lea     RECBUF,a6
@@ -60,9 +69,17 @@ start:
 
         ; Phase 2: poll through the next frame wrap and beyond -- a
         ; generous fixed span, like every other proposition's poll phase.
+        ifd     P8_VB_MUT_BND
+        move.w  #40-1,d3                  ; boundary-record mutation: few, widely spaced records
+        else
         move.w  #4000-1,d3
+        endif
 .pd:    SAMPLE
         addq.l  #1,d7
+        ifd     P8_VB_MUT_BND
+        move.w  #2500,d6                  ; boundary-record mutation: a long
+.bd:    dbra    d6,.bd                    ; delay between the poll records
+        endif
         dbra    d3,.pd
 
         move.l  d7,RESULTS+8
