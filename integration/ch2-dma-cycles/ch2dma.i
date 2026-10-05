@@ -123,9 +123,12 @@ DISK_FLAG       equ     RESULTS+4       ; byte: "disk start sequence already run
 ; ---- chip-address layout ($000000-$07FFFF, DMA-only, see above) -------
 ; Every block below is disjoint and padded (>=64 bytes zero on both sides,
 ; see SPECIFICATION.md S2.7) by construction of the gaps between the
-; addresses. The test's C++ side pokes every byte of every block used by
-; a given run before boot(); a program only ever writes the pointer VALUE
-; (a custom-register write, unaffected by ovl) into the relevant register.
+; addresses. The C++ side pokes nothing (every runner passes nopoke): each
+; program builds its own contents by CPU writes. S0 clears the CIA-A boot
+; overlay, quiesces DMA, writes the level-3 vector and clears the results
+; area; S1 writes the run's Copper list(s) and sprite structures; only then
+; do S3/S4 point COP1LC at the list and enable Copper and the channel DMA.
+; The register writes in S2/S3 carry only the pointer values.
 
 COP_MAIN        equ     $001000         ; the run's main Copper list (L0/L3/L4/L5/L_S1/L_A/L3x/L0u/L0m); reserve 4KB
 COP_SECOND      equ     $002000         ; a second list some runs need (L5b/L_B/L3x's continuation); reserve 2KB

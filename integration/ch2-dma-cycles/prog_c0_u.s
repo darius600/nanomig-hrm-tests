@@ -2,7 +2,9 @@
 ; 2.8): the Copper jumps to sub-list U (outside every declared block) right
 ; after line $80's refresh group (WAIT VP=$80,HP=$04), fetching U's words
 ; on odd cycles. Those extra accesses join the refresh group without moving
-; its first access, so F2/F3 still hold, and the program still finishes.
+; its first access, so F3 still holds and the program still finishes. F2
+; fails in one line per frame, where the Copper's read of the word after
+; U's END falls on an odd cycle before the line's fourth refresh slot.
 
         include "nanomig.i"
         include "ch2dma.i"

@@ -1,7 +1,7 @@
 # ch2-dma-cycles: see SPECIFICATION.md.
 
 TEST_CPP := test_ch2_dma_cycles.cpp
-PROGS    := prog_c0 prog_c0_u prog_c0_m prog_c0_nofinish \
+PROGS    := prog_c0 prog_c0_u prog_c0_m prog_c0_nofinish prog_c0_exit6 \
             prog_c1a prog_c1a_noaud0 prog_c1a_xaud prog_c1b \
             prog_c2a prog_c2a_noenable prog_c2a_xdsk prog_c2b \
             prog_c3 prog_c3_nospren prog_c3_xspr \

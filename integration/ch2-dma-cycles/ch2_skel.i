@@ -3,7 +3,7 @@
 ; what differs: S1's own chip-memory build calls (ch2build.i), S2's
 ; register writes, and S4's DMACON bits. Every block S1 writes sits below
 ; logical $080000 (ch2dma.i) and is reachable to a CPU write only once the
-; boot overlay is released, which S0 now does.
+; boot overlay is released, which S0 does.
 
 ; CIA-A: PRA bit 0 is OVL (p.223: "The OVL bit in one of the 8520 Chips
 ; disables the overlay"; Appendix F p.339: pra at $BFE001, ddra at $BFE201,

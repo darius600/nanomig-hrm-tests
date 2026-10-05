@@ -5,7 +5,7 @@ the pages of the *Amiga Hardware Reference Manual*, 3rd edition. Its author neve
 implementation under test or any existing test. Every expected value below is taken from a
 printed page and quoted. Where the pages leave a value open or disagree with each other, the
 specification says so and grades only what all of them agree on. It specifies twelve
-propositions. Nineteen of the package's 22 claims support them; three could not be used.
+propositions. Eighteen of the package's 22 claims support them; four could not be used.
 
 Page numbers are printed page numbers. "Fig." means a figure of the manual. "p.X" without a
 chapter means the page in the manual.
@@ -19,6 +19,7 @@ chapter means the page in the manual.
 | `COP2-about-the-copper.c34` | 20 | The blitter DMA channel handles animation. | The parenthesis *"(the DMA channel that handles animation, line drawing, and polygon filling)"* says which channel the sentence means. It describes no behaviour. "Animation" is a use, not a machine function: no register setting, output or value on p.20 or on any other page defines what "handling animation" produces. There is nothing to observe and no expected value. |
 | `COP2-about-the-copper.c35` | 20 | The blitter DMA channel handles line drawing. | The same parenthesis. The claim states a purpose and gives no observable and no expected value. What a line-mode blit writes is specified only on pp.189–192, and no sentence there is a claim of this package. A check built from those pages would test behaviour this package holds no claim for, with expected values taken entirely from pages outside it. |
 | `COP2-about-the-copper.c36` | 20 | The blitter DMA channel handles polygon filling. | As for c35. Area fill is specified on pp.184–186, which are outside this package's claims. |
+| `ch2-about-the-copper.c21` | 20 | The Copper requests the bus only during odd-numbered memory cycles, which prevents collision with audio, disk, refresh, sprites and most low-resolution display DMA. | One sentence bundles three things: the requests, the collisions, and five DMA channels. The Chip-memory port shows the accesses that happen, not the requests made or the collisions avoided. P6 grades the parity of the accesses in the Copper block and P7 grades that the Copper's cycles do not move when the even-cycle channels run; neither observes a request or a collision, and P7 leaves the disk-to-memory direction undone (D9). The id is therefore not cited on any graded line. |
 
 The sentence those three claims come from also says something testable: *"The Copper,
 therefore, needs priority over only the 680x0 and the blitter"*. No claim of this package
@@ -82,7 +83,10 @@ this timing chart has been "adjusted" to match those requirements."* The footnot
 cycle 0 on the first refresh slot, and it also declares every absolute position in the chart
 adjusted. **Handling:** no absolute slot number from Fig. 6-9 is graded. The chart is used
 only for relations that do not depend on its origin: which drawn slots share a parity, and
-that the four refresh slots come first in the line and within its first eight slots.
+where the four refresh slots lie relative to the first of them. The figure hatches four
+slots, on every second slot, with one unhatched slot between each pair: at 0, 2, 4 and 6
+memory cycles from the first hatched slot, the one its footnote calls cycle 0. F2 grades
+those offsets.
 
 **D4. Length of a PAL line.** p.23: *"In PAL, they are all 227 long."* p.194: *"there are
 227.5 "color clocks", or memory access cycles"* per line. p.304 lists *"PAL (625 lines,
@@ -172,8 +176,10 @@ that run.
   phase at these ports (D5): the CPU's phase relative to the DMA grid is measured and reported
   on its own line, not folded into F1.
 - **Contrast for F1.** None exists. No page describes a stimulus that moves an access off
-  the memory-cycle grid. The checker is instead verified by a self-test: a copy of a
-  recorded trace with one access moved by one time unit (when S > 1) must fail F1.
+  the memory-cycle grid; the harness samples the port at one fixed point of every bus period.
+  The checker is instead verified by a self-test, SELFTEST-F1: a synthetic trace with one
+  access moved by one time unit must fail F1. F2's comparator has the same kind of self-test,
+  SELFTEST-F2, besides its stimulus contrast.
 
 ### 2.2 Attribution of accesses
 
@@ -198,7 +204,10 @@ that this report agrees with the address attribution. That assertion is a precon
 
 - **Precondition A1 (attribution guard).** In the baseline configuration C0 (§2.9), every
   access in the observed frames is either in the refresh set R, in the CPU block, or in the
-  Copper block. Nothing falls into any other declared block.
+  Copper block. Nothing falls into any other declared block. The measurement declares every
+  reserved block that is not the refresh set: the Copper block, the four audio blocks, the
+  disk block, the eight sprite blocks and the null block, and all six bitplane blocks. The
+  contrast changes only the program.
 - **Contrast for A1.** Run C0 with AUD0LCH/L pointing at audio block 0, AUD0LEN = 16,
   AUD0PER = 124, and AUD0EN set. p.144 predicts audio DMA: *"When both DMAEN and AUDxEN are
   set, the DMA will start for channel x"*. Accesses then fall into audio block 0 and A1
@@ -228,9 +237,14 @@ The video output is not used for this frame. hsync passes a line doubler, and it
 to the memory cycles is not stated on any page.
 
 **How the test checks the anchor:**
-- **Precondition F2.** Every refresh group in the observed frames has at least two accesses.
-  (p.194 lists *"4 cycles for memory refresh"*. That count is not graded here; F2 only makes
-  the refresh check non-vacuous.)
+- **Precondition F2 (the four refresh slots).** In every refresh group in the observed
+  frames, the first four accesses lie at 0, 2, 4 and 6 memory cycles from the first one.
+  These are the four hatched *"MEMORY REFRESH DMA TIME"* slots of Fig. 6-9 (p.195), drawn on
+  every second slot from the first one, which the figure's footnote calls cycle 0; p.194
+  lists *"4 cycles for memory refresh"*. F2 is what makes the first refresh access of a line
+  the line's cycle 0 in this specification: it asserts the four slots and their drawn
+  offsets, so that A_n is the figure's first refresh slot before any parity is graded from
+  it. The offsets are read off the figure; the figure does not print them as numbers.
 - **Precondition F3.** For every pair of consecutive groups in the observed frames,
   A_{n+1} − A_n equals 227·S or 228·S (the values p.23 names; p.194 and p.304 average 227.5,
   see D4).
@@ -238,8 +252,9 @@ to the memory cycles is not stated on any page.
   through a MOVE whose words lie outside every declared block, and makes it fetch those
   words near horizontal position `$70` of line `$80`. p.19 and p.22 predict Copper fetches
   there, after the WAIT resolves. Those unattributed accesses sit more than 16 cycles from
-  any refresh group, so they form a group of their own. That splits line `$80` into two
-  pieces whose lengths are neither 227 nor 228, and F3 fails.
+  any refresh group, so they form a group of their own. That group is not four slots at the
+  drawn offsets, so F2 fails, and it splits line `$80` into two pieces whose lengths are
+  neither 227 nor 228, so F3 fails.
 
 ### 2.4 Frames and observation spans
 
@@ -456,7 +471,9 @@ of p.23. Every run is made on both CPU cores and graded per core.
    group of line `$80` (WAIT HP=`$04`). p.20 and p.275 put Copper fetches on odd cycles, so
    line `$80`'s refresh set gains accesses with odd s, and the check goes red. The extra
    accesses come within 16 cycles of the group, so they join it without moving its first
-   access. F2 and F3 therefore still hold, and the program finishes. The contrasts for
+   access. F3 therefore still holds, and the program finishes. F2 fails in one line per frame,
+   where the Copper's read of the word after U's END falls on an odd cycle before the
+   line's fourth refresh slot; the P1 record shows the parity failure on its own. The contrasts for
    F1–F3, A1 and C1 are given in §2.1–2.3 and §2.6.
 7. **Reference frame.** Frame F: cycle 0 is the line's first refresh access, as Fig. 6-9
    draws it (D3). It is checked by F2 and F3.
@@ -482,8 +499,10 @@ of p.23. Every run is made on both CPU cores and graded per core.
    - F1–F3, A1, C1.
    - **K2a:** the stored DSKBYTR value has bit 14 (DMAON) = 1, and bit 13 (DISKWRITE) = 1 in
      C2a and C6 or 0 in C2b (p.248, Appendix A p.278; see D6).
-   - **K2b:** at least 500 disk-block accesses in the observed frames of each run. If K2b
-     fails in C2b only, the read direction is reported as not exercised (D9).
+   - **K2b:** the disk block receives at least one access in each observed frame of each
+     run. p.194 allots at most 3 disk cycles to a line and p.246 gives the transfer 8000
+     words, so a transfer that is running cannot finish within the three observed frames.
+     If K2b fails in C2b only, the read direction is reported as not exercised (D9).
 6. **Contrasting case.** Run **X-dsk**: C2a with list L5 instead of L0. DSKPTH/L points at
    the start of the Copper block, and the S6 value is `$C000`\|8000. The 16000 bytes from that
    address hold the Copper block and its padding only. In this run the disk block is declared
@@ -492,7 +511,7 @@ of p.23. Every run is made on both CPU cores and graded per core.
    check finds odd-s accesses and goes red. The disk DMA still runs, so K2a and K2b hold.
    - **Contrast for K2a and K2b:** C2a with both DSKLEN writes of S6 set to `$4000`\|8000
      (bit 15 clear). Both p.248 and Appendix A p.278 predict DMAON = 0, and no disk accesses
-     occur.
+     occur. The program still finishes, and DSKBYTR is still read.
 7. **Reference frame.** Frame F.
 
 ### P3 — Audio DMA uses only the even memory cycles
@@ -511,15 +530,16 @@ of p.23. Every run is made on both CPU cores and graded per core.
    find the start of the data"*. The location-reload fetches are therefore included.
 4. **Expected value.** Every audio-block access has even s (p.20). "Only" is graded over
    every fetch of every channel at two periods, alone and under full load.
-5. **Preconditions.** F1–F3, A1, C1. **K3:** each of the four channels has at least 100
-   accesses in the observed frames of each run.
+5. **Preconditions.** F1–F3, A1, C1. **K3:** each of the four channels is active:
+   it has at least one access in each observed frame of each run (p.144: *"When both DMAEN
+   and AUDxEN are set, the DMA will start for channel x"*).
 6. **Contrasting case.** Run **X-aud**: C1a with list L5, AUD0LCH/L at the start of the
    Copper block, and AUD0LEN equal to the number of words in the Copper block. In this run
    audio block 0 is declared as that span. Audio channel 0 and the Copper then read the same
    words, one on even and one on odd cycles (p.20), so the audio check goes red. K3 still
    holds.
-   - **Contrast for K3:** C1a without AUD0EN in the S4 write. Channel 0 then has no accesses,
-     and K3 fails.
+   - **Contrast for K3:** C1a without AUD0EN in the S4 write. Channel 0 then has no accesses
+     in any observed frame, and K3 fails.
 7. **Reference frame.** Frame F.
 
 ### P4 — Sprite DMA uses only the even memory cycles
@@ -573,8 +593,10 @@ of p.23. Every run is made on both CPU cores and graded per core.
    - (b) "Most": in every line with bitplane fetches, the number of bitplane fetches with even
      s is greater than the number with odd s.
    - Not graded: the parity of planes 5 and 6, and of high-resolution fetches (D2).
-5. **Preconditions.** F1–F3, A1, C1. **K5:** every enabled plane has fetches in at least 150
-   lines of every observed frame.
+5. **Preconditions.** F1–F3, A1, C1. **K5:** every enabled plane has fetches in at least
+   as many lines of every observed frame as the display window is high. The programs write
+   DIWSTRT `$2C81` and DIWSTOP `$2CC1`; p.59, Table 3-9, gives PAL VSTART `$2C` and VSTOP
+   `$2C` (= `$12C`), so the window is `$12C` − `$2C` = 256 lines high.
 6. **Contrasting case.** Run **X-bpl**: C4-4 with list L5, whose V_all writes BPL1PTH/L with
    the start of the Copper block. In this run plane block 1 is declared as that address plus
    40 × 256 bytes, which contains L5 and the padding after it. Plane 1 and the Copper read the
@@ -588,7 +610,8 @@ of p.23. Every run is made on both CPU cores and graded per core.
 
 1. **Proposition.** Every Copper access lies on the odd-numbered memory cycles of its line,
    so it never falls on a cycle of the refresh, disk, audio, sprite or low-resolution-plane
-   1–4 class. Claim `ch2-about-the-copper.c21`, p.20; Appendix A p.275.
+   1–4 class. The sentence is on p.20; Appendix A p.275 says the same. The claim id of that
+   sentence is withdrawn (§0): the Chip-memory port shows accesses, not requests.
 2. **Stimulus.** Every run has Copper DMA. The Copper is installed per p.30 (S3 before S4).
    The quantifier is covered by these cases:
    - restart fetches in every run;
@@ -606,11 +629,32 @@ of p.23. Every run is made on both CPU cores and graded per core.
    only the odd bus cycles are requested"*. "Only" is graded over every Copper access of every
    run and mode. C7a and C7b grade it where the Copper is short of odd cycles. Those two runs
    grade nothing about the bitplanes (D2).
+   **One access, however many samples.** The Chip-memory port is sampled once per memory
+   cycle and a cycle that is held appears as one identical sample per period it spans. p.20
+   gives the Copper no exception at wake-up, WAIT, MOVE or the end of a line: a MOVE or SKIP
+   is two requested memory cycles over four memory-cycle times and a WAIT three over six
+   (p.20; Fig. 6-9 note, *"Copper Data Move instructions require 4 slots. Copper Wait
+   instructions require 6 slots"*), and a waiting Copper is off the bus (p.19, p.22). Two
+   consecutive memory cycles cannot both be odd, so a sample that repeats the sample directly
+   before it in the log (same word, direction, data and byte enables) exactly one measured
+   bus period S later is the same bus cycle seen in a second period, not a second request.
+   Before P6 is graded, such a sample is dropped from the Copper-block population and the
+   first sample of the held cycle is kept. Nothing else changes in the population, the
+   comparator, the expected parity or the origin of the in-line cycle numbers. The number of
+   samples dropped and their in-line cycle numbers are printed per run.
 5. **Preconditions.** F1–F3, A1, C1. **K6:** in every observed frame of C5, C6, C7a and C7b,
    every word of L5 and L5b is read at least once (the list ran to its end).
 6. **Contrasting case.** Run **X-aud** (P3.6). Audio channel 0 reads the Copper block on
    even cycles (p.20), so the check on the Copper block goes red. The Copper still runs L5 to
-   its end, so K6 holds.
+   its end, so K6 holds. The block that holds the aliased words is declared as the Copper
+   block and the same comparator, including the held-cycle rule, grades it.
+   - **Control for the held-cycle rule (P6-HELD-CONTROL):** a synthetic trace shows that the
+     rule keeps the first sample of a held cycle and keeps identical samples that are two
+     periods apart or differ in datum, direction or byte enables. No stimulus can produce two
+     genuine adjacent identical Copper accesses at this port: they would be two Copper
+     requests in adjacent memory cycles, which is what P6 says the Copper never does, and the
+     log cannot tell such a pair from one held cycle. A stimulus control does not exist, so
+     the control is the synthetic one.
    - **Contrast for K6:** L5 with END placed directly after V_all. The WAIT/MOVE words after
      it are then never fetched, and K6 fails.
 7. **Reference frame.** Frame F.
@@ -619,8 +663,9 @@ of p.23. Every run is made on both CPU cores and graded per core.
 
 1. **Proposition.** Because the Copper requests only odd cycles, audio, disk, refresh, sprite
    and low-resolution (≤ 4 planes) DMA never collide with it: the Copper's fetches land on the
-   same cycles whether those channels run or not. Claim `ch2-about-the-copper.c21`, p.20;
-   Appendix A p.275.
+   same cycles whether those channels run or not. The sentence is on p.20; Appendix A p.275
+   says the same. The claim id of that sentence is withdrawn (§0): neither requests nor
+   collisions are observable at this port.
 2. **Stimulus.** C5 (Copper alone) and C6 (the same list L5, with audio, disk, eight sprites
    and four low-resolution planes running). The CPU is in STOP (S6). The blitter is off.
 3. **Observation.** For i = 0..112, the **segment i** of the list is the Copper-block
@@ -640,7 +685,8 @@ of p.23. Every run is made on both CPU cores and graded per core.
    - **T2:** no CPU-block access lies in any line spanned by a segment, in either run.
    - **T3:** in the lines of the segments in C6, bitplane fetches occur in every line; sprite
      fetches occur in every line of segments i = 16..35 and 64..83 (VP `$50`–`$63` and
-     `$80`–`$93`); and audio and disk accesses each occur in at least half of the lines.
+     `$80`–`$93`); and audio and disk accesses each occur in the segment lines of every observed
+     frame, which shows both channels active while the segments run.
 6. **Contrasting case.** Run **C6'**: C6 with list L5' (WAIT i = 32 at HP `$42` instead of
    `$40`). Compared with C5 on L5, segment 32 must start later: p.22 says *"The WAIT
    instruction causes the Copper to wait until the video beam counters are equal to (or
@@ -809,37 +855,39 @@ of p.23. Every run is made on both CPU cores and graded per core.
 ### Built: P1–P7
 
 P1–P7 (the memory-cycle-parity half of this specification) are built: `Makefile`,
-`test_ch2_dma_cycles.cpp`, 35 `.s` programs. Every named precondition (A1, K2a, K2b, K3, K4,
+`test_ch2_dma_cycles.cpp`, 36 `.s` programs. Every named precondition (A1, K2a, K2b, K3, K4,
 K5, K6, T1, T2, T3) is its own graded line, not folded silently into its proposition. F1, F2 and
 F3 (§2.1, §2.3) are their own graded lines too, printed per run before P1, for every
 configuration §2.9 and §2.10 name (C0, C1a, C1b, C2a, C2b, C3, C4-1..6, C4-4w, C5, C6, C7a, C7b,
-S1, S2 in PAL/ECS; C0, C6 and S1 also in NTSC/ECS, PAL/OCS and NTSC/OCS). D9's own carve-out is
-exercised organically: C2b (read direction, no drive) shows 0 disk-block accesses in the
-observed frames of both cores, so its read direction is recorded declined rather than graded.
+S1, S2 in PAL/ECS; C0, C6 and S1 also in NTSC/ECS, PAL/OCS and NTSC/OCS). Three self-tests of
+the comparators, SELFTEST-F1, SELFTEST-F2 and P6-HELD-CONTROL, run on synthetic traces. D9's own
+carve-out is exercised organically: C2b (read direction, no drive) shows no disk-block access in
+any observed frame on both cores, so its read direction is recorded declined rather than graded.
+`ch2-about-the-copper.c21` is recorded as not asserted (§0).
 
 Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 
 | line | fx68k | tg68k |
 |---|---|---|
-| F1, F2, F3 (every run and mode) | PASS | PASS |
-| FIXTURE (x2) | PASS | PASS |
+| F1, F2, F3 (every run and mode) | PASS; F2: every refresh group (939 per PAL run, 789 per NTSC run) is four accesses at offsets 0, 2, 4, 6 | PASS, same groups |
+| SELFTEST-F1, SELFTEST-F2, P6-HELD-CONTROL | PASS | PASS |
+| FIXTURE, FIXTURE-PEEK | PASS | PASS |
 | P1 | PASS | PASS |
-| K2a, K2b | PASS (K2b/D9 declines C2b) | PASS (K2b/D9 declines C2b) |
+| K2a, K2b | PASS; K2b: disk-block accesses per observed frame 936/939/939 in C2a and in C6 (K2b/D9 declines C2b: 0/0/0) | same counts |
 | P2 | PASS | PASS |
-| P3, K3 | PASS | PASS |
+| P3, K3 | PASS; K3: every channel has accesses in every observed frame (C1a 286/287/286, C1b 80/79/80, C6 286/287/286) | PASS (C6 287/286/287) |
 | P4, K4 | PASS | PASS |
-| P6 | **FAIL**: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b) Copper-block reads at even s = 226 (the cycle before the next line's first refresh), each repeating the previous read (s = 225) of the same word; every other Copper-block read in these runs, and every read in C0/C1a/C1b/C2a/C2b/C3/C4-1..6/C4-4w/S1/S2, is on odd s | **FAIL**, identical counts |
-| A1 | PASS | PASS |
-| P5, K5 | PASS | PASS |
-| K6, T1, T2, T3 | PASS | PASS |
+| P6 | PASS; the Copper-block reads on an even in-line cycle are held continuations, all at s = 226 (the cycle before the next line's first refresh), each the sample of the same word, direction, data and byte enables one bus period after the s = 225 sample: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b), and 24 in each of C6 NTSC/ECS, C6 PAL/OCS and C6 NTSC/OCS; none remains on an even cycle after they are dropped, and C0, C1a, C1b, C2a, C2b, C3, C4-1..6, C4-4w, S1, S2 and the C0 and S1 mode runs have none | PASS, identical counts |
+| A1 | PASS (0 violations) | PASS |
+| P5, K5 | PASS; K5: 256 lines with fetches for every enabled plane in every observed frame | PASS |
+| K6, T1, T2, T3 | PASS; T3: audio lines per frame 106/105/106, disk lines per frame 113/113/113 | PASS (audio 106/106/106) |
 | P7 | PASS (0 of 339 segment/frame pairs mismatch) | PASS (0 mismatches) |
-| summary | 102 passed, 1 failed | 102 passed, 1 failed |
+| summary | 106 passed, 0 failed | 106 passed, 0 failed |
 
-Every mutation of the header comment was run once on both cores from the built object
-directories (`NMH_MUTATE=<value>`) and went red through the clause it targets, or (K2a, K3, K4,
-K5) through the precondition it targets, or (P6) showed the green control through the same
-comparator instead, P6 being already red at baseline. F1 and F2 are each verified by a
-self-test, not an RTL run.
+Every mutation of the header comment was replayed on both cores from the built object
+directories (`NMH_MUTATE=<value>`) and printed FAIL through the comparator it targets, with
+the program reaching DONE (the FIXTURE mutation removes DONE, which is what that check tests). F1, SELFTEST-F1, SELFTEST-F2 and P6-HELD-CONTROL have no
+stimulus mutation, and the header says why.
 
 The NTSC/ECS, PAL/OCS and NTSC/OCS mode variants of C0, C6 and S1 (§2.10) are graded for P1 and
 P6, through the same `Config` the harness already exposes; no new program was needed.
