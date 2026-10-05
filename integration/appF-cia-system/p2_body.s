@@ -12,10 +12,21 @@
 ;   SLATCH  (default $0020)  -- leg S's own latch value (Pre2.2's contrast: $FFFF)
 ;   HLATCH  (default $FFFF)  -- leg H's own latch value (Pre2.4's contrast: $0008)
 ;   S1VAL..S4VAL (default $0F each) -- leg S's four start-write values
-;                               (P2's contrasting case sets S4VAL=$0E;
-;                               Pre2.3's contrast sets S1VAL=$0D)
-;   MUT_PRE21                -- Pre2.1's own contrast (an extra start+latch
-;                               before leg R's own write)
+;   H1VAL (default $07), H3VAL (default $07), STOPVAL (default $06) -- leg H's
+;                               start, second start and stop writes
+;   MUT_PRE23_Z1             -- Pre2.3's own contrast: DDRB bit n is released for
+;                               z_1's read only (with S1VAL=$0D, PBON off)
+;
+; Control mode (the CPU stands in for the timer's output on the pin):
+;   CPU_DRIVE                -- PBON is 0 in every CR value the wrapper sets
+;                               ($04/$0D/$05 in place of $06/$0F/$07), DDRB bit n
+;                               is an output, and the CPU writes PRB bit n: low
+;                               before any start, high right after every start
+;                               write, low again after a one-shot has ended.
+;   NORAISE1..NORAISE4       -- no CPU raise after leg S's start k
+;   NORAISE_H1               -- no CPU raise after leg H's first start
+;   MUT_LEGR_STARTED         -- a start, with the CPU raising the line, before
+;                               leg R's own write
 
         ifnd    SLATCH
 SLATCH          equ     $0020
@@ -35,6 +46,15 @@ S3VAL           equ     $0F
         ifnd    S4VAL
 S4VAL           equ     $0F
         endc
+        ifnd    H1VAL
+H1VAL           equ     $07
+        endc
+        ifnd    H3VAL
+H3VAL           equ     $07
+        endc
+        ifnd    STOPVAL
+STOPVAL         equ     $06
+        endc
 
 P2_R1           equ     RESULTS+8
 P2_S            equ     RESULTS+10      ; 4*64 words = 512 bytes
@@ -46,10 +66,6 @@ P2_H3           equ     P2_H2+2
 P2_IH           equ     P2_H3+2
 P2_POLL         equ     P2_IH+2         ; 4 words, one per start (Pre2.2)
 P2_S0           equ     P2_POLL+4*2     ; the driven level right before start 1
-
-        ifnd    H1VAL
-H1VAL           equ     $07
-        endc
 
 MK_R_SEL        equ     $0C1002
 MK_R_END        equ     $0C1004
@@ -67,6 +83,11 @@ LEGS_K          macro   ; \1=k \2=S-array addr \3=Z addr \4=I addr \5=CR start v
                 move.w  #MARKER_SENTINEL,MK_S\1_PRE
                 move.b  #\5,CR
                 move.w  #MARKER_SENTINEL,MK_S\1_POST
+                ifd     CPU_DRIVE
+                ifnd    NORAISE\1
+                move.b  #DDRB_INIT|M,PRB        ; the CPU sets the line high at the start
+                endc
+                endc
                 lea     \2,a1
                 moveq   #63,d2
 .rs\1:          moveq   #0,d0
@@ -82,7 +103,17 @@ LEGS_K          macro   ; \1=k \2=S-array addr \3=Z addr \4=I addr \5=CR start v
                 blt.s   .poll\1
 .pd\1:
                 move.w  d1,\6
+                ifd     CPU_DRIVE
+                move.b  #DDRB_INIT,PRB          ; the CPU toggles the line low at the underflow
+                endc
+                ifd     MUT_PRE23_Z\1
+                move.b  #DDRB_INIT,DDRB         ; the line is released for z_k's read
+                endc
                 READ_STORE PRB,\3
+                ifd     MUT_PRE23_Z\1
+                move.b  #DDRB_INIT|M,DDRB       ; and driven again
+                move.b  #DDRB_INIT,PRB
+                endc
                 READ_STORE ICR,\4
                 endm
 
@@ -92,15 +123,22 @@ start:
         SETUP
 
 ; ---- leg R (first actions on this CIA's timer after reset) -------------
-        ifd     MUT_PRE21
-        RLATCH  TLO,THI,$FFFF
-        move.b  #$07,CR
-        endc
         ifd     CIAB_PREWRITE
         move.b  #$FF,PRB
         endc
+        ifd     CPU_DRIVE
+        move.b  #DDRB_INIT|M,DDRB
+        move.b  #DDRB_INIT,PRB           ; the CPU drives the line low
+        ifd     MUT_LEGR_STARTED
+        RLATCH  TLO,THI,$FFFF
+        move.b  #$05,CR                  ; START, PBON off, toggle, continuous
+        move.b  #DDRB_INIT|M,PRB         ; the CPU raises the line at the start
+        endc
+        move.b  #$04,CR                  ; toggle, not started
+        else
         move.b  #DDRB_INIT,DDRB
         move.b  #$06,CR                  ; PBON,toggle,not started
+        endc
         READ_STORE PRB,P2_R1
         ifd     DO_O2
         move.b  #$08,PRB
@@ -113,20 +151,11 @@ start:
         endc
 
 ; ---- leg S (start from low, four times) --------------------------------
-; DDRB bit n=1 / PR bit n=0: a specification change from p342's own
-; wording ("This function overrides the DDRB control bit and forces the
-; appropriate PB line to become an output"), so the level before each
-; start is a driven 0 rather than an undriven pull-up. See the commit
-; message for why.
+; DDRB bit n=1 / PR bit n=0 (SPECIFICATION.md P2): the level before each
+; start is a driven 0, not an undriven pull-up.
         move.b  #$00,CR
-        ifd     MUT_PRE23_NODRIVE
-; Pre2.3's own contrast: leave DDRB bit n=0 (input), so PBON=0 in start
-; 1 (S1VAL=$0D) leaves the line at its pull-up instead of a driven 0.
-        move.b  #DDRB_INIT,DDRB
-        else
         move.b  #DDRB_INIT|M,DDRB
         move.b  #DDRB_INIT,PRB
-        endc
         READ_STORE PRB,P2_S0           ; the level right before start 1
         RLATCH  TLO,THI,SLATCH
         LEGS_K  1,P2_S+0*128,P2_Z+0*2,P2_I+0*2,S1VAL,P2_POLL+0*2
@@ -135,17 +164,25 @@ start:
         LEGS_K  4,P2_S+3*128,P2_Z+3*2,P2_I+3*2,S4VAL,P2_POLL+3*2
 
 ; ---- leg H (start from high) --------------------------------------------
-; Same DDRB/PR override as leg S (still holds from leg S; restated here
-; so leg H does not depend on leg S's own ordering).
-        move.b  #$06,CR
+; Same DDRB bit n = 1 / PR bit n = 0 override as leg S (still holds from
+; leg S; restated here so leg H does not depend on leg S's own ordering).
+        move.b  #STOPVAL,CR
         move.b  #DDRB_INIT|M,DDRB
         move.b  #DDRB_INIT,PRB
         RLATCH  TLO,THI,HLATCH
         move.b  #H1VAL,CR
+        ifd     CPU_DRIVE
+        ifnd    NORAISE_H1
+        move.b  #DDRB_INIT|M,PRB         ; the CPU sets the line high at the start
+        endc
+        endc
         READ_STORE PRB,P2_H1
-        move.b  #$06,CR
+        move.b  #STOPVAL,CR
         READ_STORE PRB,P2_H2
-        move.b  #$07,CR
+        move.b  #H3VAL,CR
+        ifd     CPU_DRIVE
+        move.b  #DDRB_INIT|M,PRB         ; the CPU sets the line high at the start
+        endc
         READ_STORE PRB,P2_H3
         READ_STORE ICR,P2_IH
 

@@ -1,6 +1,5 @@
-; p2_ciab_tb_pre21.s -- Pre2.1's own contrast (CIAB/timer B): an extra
-; start (R-LATCH($FFFF), CR<-$07) is inserted before leg R's own write.
-; The page then predicts r1=1 (started, no underflow) and LED-R off.
+; p2c_ciab_tb.s -- P2's live control (CIAB, timer B): the CPU stands in for the
+; timer's output on the pin (PBON=0 in every CR value). See p2_body.s.
         include "nanomig.i"
         include "ciaregs.i"
 PRB             equ     CIAB_PRB
@@ -13,6 +12,12 @@ N               equ     7
 M               equ     $80
 DDRB_INIT       equ     $08
 CIAB_PREWRITE   equ     1
-DO_O2           equ     1
-MUT_PRE21       equ     1
+CPU_DRIVE       equ     1
+S1VAL           equ     $0D
+S2VAL           equ     $0D
+S3VAL           equ     $0D
+S4VAL           equ     $0D
+H1VAL           equ     $05
+H3VAL           equ     $05
+STOPVAL         equ     $04
         include "p2_body.s"

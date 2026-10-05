@@ -1,4 +1,4 @@
-; p3_ciab_tb_pbon0.s -- see p3_body.s.
+; p4_ciab_tb_l22_nostart.s -- P4-PRE's contrast: the run of p4_ciab_tb_l22 with CR<-$02 (not started). See p4_body.s.
                 include "nanomig.i"
                 include "ciaregs.i"
 PRB             equ     CIAB_PRB
@@ -7,7 +7,6 @@ CR              equ     CIAB_CRB
 TLO             equ     CIAB_TBLO
 THI             equ     CIAB_TBHI
 ICR             equ     CIAB_ICR
-M               equ     $80
-LATCHVAL        equ     60
-CRVAL           equ     $05
-                include "p3_body.s"
+LATCHVAL        equ     22
+CRVAL           equ     $02
+                include "p4_body.s"
