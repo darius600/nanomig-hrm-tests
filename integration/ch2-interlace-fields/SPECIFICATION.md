@@ -323,7 +323,7 @@ The contrasting case that makes each one fail is in the last column.
 |---|---|---|
 | PI-1 | The completion word was written. All K M1 records are valid (section 2.5). Every record's last V is at least 255, so no wrap is spurious. | I-j |
 | PI-2 | Anchor check of section 2.6. Every restart fetch is the first word of LISTA or of LISTB. | I-f |
-| PI-3 | Interlace is active: the check of P1 holds. | I-a |
+| PI-3 | Interlace is active: the check of P1 holds. It is also a precondition of P4, whose retrieval lines are graded only on an interlaced run. | I-a |
 | PI-4 | Every field contains exactly 256 groups of bitplane fetches. Each group is 20 fetches of consecutive ascending word addresses. | I-h |
 | PI-5 | HCNT rises by exactly 1 in every field. | I-g |
 | PI-6 | Every bitplane fetch from inside PIC returns the tag of the memory line at its address. Fetches outside PIC are not covered. | I-k |
@@ -645,6 +645,7 @@ comparison works on the least significant bits of the vertical count").
      clause go red while the first step stays green, which the mutation run
      prints clause by clause. (a) and (e) stay green.
    - The contrasts for the preconditions are I-j, I-f, I-a, I-h, I-g and I-k.
+     On I-a (LACE clear), PI-3 is red and P4 is reported as not graded.
 7. **Reference frame.**
    - Field: the restart interval (M2).
    - Frame: an A-field and the next B-field.

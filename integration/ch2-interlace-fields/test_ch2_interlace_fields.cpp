@@ -643,7 +643,7 @@ IPre i_pre(const IAnalysis& a) {
             pi6_tags(a), pi7_bpl(a), pi7_spr(a), pi8_spr_fetched(a)};
 }
 bool p1_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi4; }
-bool p4_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi4 && p.pi5 && p.pi6; }
+bool p4_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi3 && p.pi4 && p.pi5 && p.pi6; }
 
 // ---- Program I assertions: one function per label, used by the normal
 // run and by that label's mutation run alike ----------------------------
@@ -819,7 +819,7 @@ void run_program_i_assertions(const std::string& dir) {
 
 // The controls every label of the P4 family prints: its preconditions and P4e.
 void p4_controls(const std::string& label, const IPre& p) {
-    ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-4", p.pi4);
+    ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-3", p.pi3); ctl(label, "PI-4", p.pi4);
     ctl(label, "PI-5", p.pi5); ctl(label, "PI-6", p.pi6);
 }
 
@@ -845,7 +845,13 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
     if (label == "P1" || label == "PI-3") {
         ctl(label, "all 8 non-interlaced field lengths are equal", all_lengths_equal(a));
         ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-4", p.pi4);
-        if (label == "P1") g_P1(a, p1_gate(p)); else g_PI3(a);
+        if (label == "P1") g_P1(a, p1_gate(p));
+        else {
+            // The gate PI-3 closes P4: with LACE clear, the retrieval lines
+            // of P4 are not graded (they would not depend on interlace).
+            g_PI3(a);
+            g_P4c(a, p4_gate(p));
+        }
         std::vector<int> N;
         if (all_lengths_equal(a, &N)) checks.note(label + " mutation: N=" + std::to_string(N[0]) + " on all 8 fields");
     } else if (label == "P1-NOLACE" || label == "P1-NOLACE(ctrl)") {
@@ -863,7 +869,7 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
     } else if (label == "PI-9") {
         g_PI9(a);
     } else if (label == "P4a") {
-        ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-4", p.pi4);
+        ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-3", p.pi3); ctl(label, "PI-4", p.pi4);
         ctl(label, "PI-5", p.pi5); ctl(label, "PI-6", p.pi6);
         ctl(label, "PI-7(bpl)", p.pi7b); ctl(label, "PI-7(spr)", p.pi7s); ctl(label, "PI-8", p.pi8);
         ctl(label, "P4e", p4e(a));
