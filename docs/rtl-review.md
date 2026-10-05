@@ -100,14 +100,14 @@ Module links point at the NanoMig revision the pages cite, `4495f86`.
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-074](findings/NM-HRM-074.md) | PBON and OUTMODE are stored and read back but reach no logic, so PB6 and PB7 never carry the timer output pp. 341, 342 and 348–350 put there | a test fails against the page; the implementations split |
-| [NM-HRM-078](findings/NM-HRM-078.md) | CRA bit 5 and CRB bit 5 are stored and never read: a timer set to count CNT counts φ2, and CRB's four input modes are two | a test fails against the page |
+| [NM-HRM-078](findings/NM-HRM-078.md) | CRA bit 5 and CRB bit 5 are stored and never read: a timer set to count CNT counts φ2 | a test fails against the page |
 
 ## [`src/minimig-aga/cia_timerb.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timerb.v) — 2
 
 | finding | subject | evidence |
 |---|---|---|
 | [NM-HRM-074](findings/NM-HRM-074.md) | PBON and OUTMODE are stored and read back but reach no logic, so PB6 and PB7 never carry the timer output pp. 341, 342 and 348–350 put there | a test fails against the page; the implementations split |
-| [NM-HRM-078](findings/NM-HRM-078.md) | CRA bit 5 and CRB bit 5 are stored and never read: a timer set to count CNT counts φ2, and CRB's four input modes are two | a test fails against the page |
+| [NM-HRM-078](findings/NM-HRM-078.md) | CRA bit 5 and CRB bit 5 are stored and never read: a timer set to count CNT counts φ2 | a test fails against the page |
 
 ## [`src/minimig-aga/ciaa.v`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v) — 3
 
