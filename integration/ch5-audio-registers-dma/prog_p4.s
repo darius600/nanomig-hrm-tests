@@ -33,10 +33,10 @@ start:
         move.w  #$8200,DMACON(a0)       ; COPEN stays clear
         else
         ifd     G2_BREAK
-        move.w  #$8000,DMACON(a0)       ; DMAEN left out
+        move.w  #$8080,DMACON(a0)       ; COPEN set, DMAEN (bit 9) left out
         else
         ifd     G5_BREAK
-        move.w  #$8290,DMACON(a0)       ; SPREN also set
+        move.w  #$82A0,DMACON(a0)       ; SPREN also set
         else
         move.w  #$8280,DMACON(a0)
         endif

@@ -41,7 +41,7 @@ start:
         move.w  #$8200,DMACON(a0)       ; SPREN stays clear
         else
         ifd     G2_BREAK
-        move.w  #$8000,DMACON(a0)       ; DMAEN left out
+        move.w  #$8020,DMACON(a0)       ; SPREN set, DMAEN (bit 9) left out
         else
         ifd     G5_BREAK
         move.w  #$8320,DMACON(a0)       ; BPLEN also set

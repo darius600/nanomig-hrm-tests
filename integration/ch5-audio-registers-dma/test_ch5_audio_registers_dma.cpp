@@ -23,23 +23,40 @@
 // MUTATION P1-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5
 // MUTATION P2 stimulus red the SET write for DMACON bit 0 in the sweep is left out, via NMH_MUTATE=OMIT
 // MUTATION P2-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P3-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P3-G2 stimulus red DMAEN left out of the enabling write, via NMH_MUTATE=G2
-// MUTATION P3-G3 stimulus red one extra CPU write into P (the block under test) inside the window, via NMH_MUTATE=G3
+// MUTATION P3-ON stimulus red BPLEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
+// MUTATION P3 stimulus red BPLEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P3-OFF stimulus red BPLEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P3 stimulus red BPLEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P3-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
+// MUTATION P3-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BPLEN still set, via NMH_MUTATE=G2
+// MUTATION P3-G3 stimulus red one extra CPU write into P (the block under test), via NMH_MUTATE=G3
 // MUTATION P3-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P3-G5 stimulus red SPREN also set before the window, via NMH_MUTATE=G5
-// MUTATION P4-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P4-G2 stimulus red DMAEN left out of the enabling write, via NMH_MUTATE=G2
+// MUTATION P3-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
+// MUTATION P4-ON stimulus red COPEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
+// MUTATION P4 stimulus red COPEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P4-OFF stimulus red COPEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P4 stimulus red COPEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P4-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
+// MUTATION P4-G2 stimulus red DMAEN (bit 9) left out of the enabling write, COPEN still set, via NMH_MUTATE=G2
 // MUTATION P4-G3 stimulus red one extra CPU write into L (the block under test), past its own content, via NMH_MUTATE=G3
 // MUTATION P4-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P4-G5 stimulus red SPREN also set before the window, via NMH_MUTATE=G5
-// MUTATION P5-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P5-G2 stimulus red DMAEN left out of the enabling write, via NMH_MUTATE=G2
-// MUTATION P5-G3 stimulus red one extra CPU write into Q (the block under test), past the blit's own destination footprint, via NMH_MUTATE=G3
+// MUTATION P4-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
+// MUTATION P5-ON stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
+// MUTATION P5 stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P5-OFF stimulus red BLTEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P5 stimulus red BLTEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P5-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
+// MUTATION P5-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTEN still set, via NMH_MUTATE=G2
+// MUTATION P5-G3 stimulus red one extra CPU write into Q (the block under test), outside the blit's destination footprint, via NMH_MUTATE=G3
+// MUTATION P5-G3 stimulus red one extra CPU write onto the first word of the blit's own destination footprint, via NMH_MUTATE=G3IN
 // MUTATION P5-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P5-G5 stimulus red SPREN also set before the window, via NMH_MUTATE=G5
-// MUTATION P6-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P6-G2 stimulus red DMAEN left out of the enabling write, via NMH_MUTATE=G2
+// MUTATION P5-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
+// MUTATION P6-ON stimulus red SPREN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
+// MUTATION P6 stimulus red SPREN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P6-OFF stimulus red SPREN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P6 stimulus red SPREN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P6-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
+// MUTATION P6-G2 stimulus red DMAEN (bit 9) left out of the enabling write, SPREN still set, via NMH_MUTATE=G2
 // MUTATION P6-G3 stimulus red one extra CPU write into S0 (the block under test), past its own content, via NMH_MUTATE=G3
 // MUTATION P6-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
 // MUTATION P6-G5 stimulus red BPLEN also set before the window, via NMH_MUTATE=G5
@@ -52,12 +69,20 @@
 // MUTATION P8-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
 // MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI
 // MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts (P8's own C1 contrast), via NMH_MUTATE=C1
-// MUTATION P9-G(writes) stimulus red BLTCON0 exchanged between blits 1 and 2 (P9's own C1 contrast), so blit 1 no longer writes the $0000 this fixed precondition checks, via NMH_MUTATE=C1
-// MUTATION P9-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P9-G(after completion) stimulus red the wait before Z_1's store is dropped, via NMH_MUTATE=NOWAIT
+// MUTATION P9-MAIN stimulus red BLTCON0 exchanged between blits 1 and 2 and the source exchanged between blits 4 and 5: the exchanged program through the unchanged main table, via NMH_MUTATE=C1
+// MUTATION P9 stimulus red the exchanged program through the unchanged main table of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P9-SWAP stimulus red the main program through the unchanged exchanged table, via NMH_MUTATE=INV
+// MUTATION P9 stimulus red the main program through the unchanged exchanged table of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P9-G(writes) stimulus red BLTCON0 exchanged between blits 1 and 2, so blit 1 no longer writes the $0000 this precondition checks, via NMH_MUTATE=C1
+// MUTATION P9-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
+// MUTATION P9-G2 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G2
+// MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE
+// MUTATION P9-G(after completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT
 // MUTATION P10-G(list ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
 // MUTATION P11-G(finished) stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
 // MUTATION P11-G(list ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
+
+
 
 #include <algorithm>
 #include <cstdint>
@@ -574,59 +599,159 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
 }  // namespace p2
 
 // ===========================================================================
+// P3-P6 share one shape: one DMACON enable bit, with DMAEN set, turns one
+// kind of DMA on, and with that bit clear the DMA does not happen. The run
+// of each proposition is made twice, with the bit set (the main program) and
+// with the bit clear (the _c1 program); both halves are graded in the normal
+// run, and the contrasting cases of the mutation records put one program
+// through the other half's unchanged comparator.
+// ===========================================================================
+
+namespace enableprop {
+
+struct Def {
+    const char* name;      // "P3"
+    const char* prog;      // "p3": the programs are prog_p3.bin, prog_p3_c1.bin, prog_p3_g1.bin ...
+    const char* claims;    // the ids and page of the aggregate line
+    const char* pages;     // the pages of the two halves' lines
+    const char* bit_name;  // "BPLEN"
+    uint16_t bit;          // the DMACON bit's mask
+    uint16_t o_id, c_id;   // the window's markers
+    int min_v;             // G4: the vertical-sync pulses the window must hold
+    const char* on_text;   // what the main run must show
+    const char* off_text;  // what the contrast run must show
+    const char* g3_text;   // G3's own wording
+    const char* g4_text;   // G4's own wording
+    std::vector<ExtraPreload> extra;
+    bool sprite0_real;
+    bool has_g3in;         // a second G3 mutation, inside the footprint
+    bool (*seen_on)(const Capture&, const Window&);
+    bool (*seen_off)(const Capture&, const Window&);
+    // G3 for one run: no CPU write falls into the block under test; `on` says
+    // whether the run is the one with the bit set.
+    bool (*g3_ok)(const Capture&, const Window&, bool on);
+};
+
+void run(const Def& d, Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
+    auto bin = [&](const char* suffix) { return dir + "/prog_" + d.prog + suffix + ".bin"; };
+    nmh::Config cfg;
+    auto go = [&](const std::string& b) { return run_capture(b, run_budget, cfg, d.extra, d.sprite0_real); };
+    const std::string nm = d.name;
+
+    Capture cap_main = go(bin(""));
+    Capture cap_c1 = go(bin("_c1"));
+    auto w_main = find_window(cap_main.log, d.o_id, d.c_id);
+    auto w_c1 = find_window(cap_c1.log, d.o_id, d.c_id);
+
+    // The graded halves. C1 puts the contrast program through the on-comparator
+    // and INV puts the main program through the off-comparator; neither
+    // comparator changes.
+    const Capture& in_on = (mv == "C1") ? cap_c1 : cap_main;
+    const auto& win_on = (mv == "C1") ? w_c1 : w_main;
+    const Capture& in_off = (mv == "INV") ? cap_main : cap_c1;
+    const auto& win_off = (mv == "INV") ? w_main : w_c1;
+    bool on_ok = in_on.loaded && in_on.done.has_value() && win_on.has_value() && d.seen_on(in_on, *win_on);
+    bool off_ok = in_off.loaded && in_off.done.has_value() && win_off.has_value() && d.seen_off(in_off, *win_off);
+
+    checks.expect(on_ok, nm + "-ON [" + d.pages + "]: " + d.on_text);
+    checks.expect(off_ok, nm + "-OFF [" + d.pages + "]: " + d.off_text);
+    checks.expect(on_ok && off_ok, nm + " [" + d.claims + "]: " + d.on_text + "; " + d.off_text);
+
+    // Preconditions, each over the run with the bit set (or its mutated
+    // program) and the run with the bit clear.
+    auto pick = [&](const char* sel, const char* suffix, Capture& store) -> const Capture& {
+        if (mv == sel) { store = go(bin(suffix)); return store; }
+        return cap_main;
+    };
+    auto window_of = [&](const Capture& c) { return find_window(c.log, d.o_id, d.c_id); };
+    auto stored1 = [&](const Capture& c, uint16_t& v) {
+        auto r = stored_at(c.log, kR, 1);
+        if (r.size() != 1) return false;
+        v = r[0];
+        return true;
+    };
+
+    {   // G1: the program finished
+        Capture store; const Capture& c = pick("G1", "_g1", store);
+        bool ok = c.loaded && c.done.has_value() && window_of(c).has_value() &&
+                  cap_c1.loaded && cap_c1.done.has_value() && w_c1.has_value();
+        checks.expect(ok, nm + "-G1: the program finished");
+    }
+    {   // G2: DMAEN and the bit under test as the run intends them
+        Capture store; const Capture& c = pick("G2", "_g2", store);
+        uint16_t v_on = 0, v_off = 0;
+        bool ok = c.loaded && c.done.has_value() && stored1(c, v_on) &&
+                  cap_c1.loaded && cap_c1.done.has_value() && stored1(cap_c1, v_off);
+        if (ok) ok = (v_on & 0x0200) && (v_on & d.bit) && (v_off & 0x0200) && !(v_off & d.bit);
+        checks.expect(ok, nm + "-G2 [p.144]: the stored DMACONR readback shows DMAEN (bit 9) set and " + d.bit_name +
+                          " set with the bit enabled and clear with the bit left clear");
+    }
+    {   // G4: frames in the window
+        Capture store; const Capture& c = pick("G4", "_g4", store);
+        auto w = window_of(c);
+        bool ok = c.loaded && c.done.has_value() && w.has_value() &&
+                  (int)count_window(vsync_starts(c.video), w->lo, w->hi) >= d.min_v &&
+                  cap_c1.loaded && cap_c1.done.has_value() && w_c1.has_value() &&
+                  (int)count_window(vsync_starts(cap_c1.video), w_c1->lo, w_c1->hi) >= d.min_v;
+        checks.expect(ok, nm + "-G4: " + d.g4_text);
+    }
+    {   // G5: no other DMA bit among 8-0
+        Capture store; const Capture& c = pick("G5", "_g5", store);
+        uint16_t v_on = 0, v_off = 0;
+        bool ok = c.loaded && c.done.has_value() && stored1(c, v_on) &&
+                  cap_c1.loaded && cap_c1.done.has_value() && stored1(cap_c1, v_off);
+        if (ok) ok = (v_on & 0x01FF) == d.bit && (v_off & 0x01FF) == 0;
+        checks.expect(ok, nm + "-G5: " + std::string(d.bit_name) +
+                          " is the only DMACON bit 8-0 set in the stored readback when enabled, and none is set "
+                          "when the bit is left clear");
+    }
+    {   // G3: no CPU write into the block under test
+        Capture store;
+        const Capture* cp = &cap_main;
+        if (mv == "G3") { store = go(bin("_g3")); cp = &store; }
+        else if (d.has_g3in && mv == "G3IN") { store = go(bin("_g3in")); cp = &store; }
+        const Capture& c = *cp;
+        auto w = window_of(c);
+        bool ok = w.has_value() && d.g3_ok(c, *w, true) &&
+                  w_c1.has_value() && d.g3_ok(cap_c1, *w_c1, false);
+        checks.expect(ok, nm + "-G3: " + d.g3_text);
+    }
+}
+
+}  // namespace enableprop
+
+// ===========================================================================
 // P3: BPLEN (bit 8) turns bitplane DMA on (SPECIFICATION.md P3).
 // ===========================================================================
 
 namespace p3 {
 
 constexpr uint16_t kO = 0x0020, kC = 0x0021;
-const char kClaims[] = "p.278 5-appA-p278.c17, A-dmacon.b08";
+
+bool seen_on(const Capture& cap, const Window& w) {
+    size_t at_p = reads_at(cap.log, kP, w.lo, w.hi);
+    size_t in_range = reads_in_range(cap.log, kP, kP + 0x8000, w.lo, w.hi);
+    return at_p >= 1 && in_range > 0;
+}
+
+bool seen_off(const Capture& cap, const Window& w) {
+    return reads_in_range(cap.log, kP, kP + 0x8000, w.lo, w.hi) == 0;
+}
+
+// G3: no CPU write falls into P during the window.
+bool g3_ok(const Capture& cap, const Window& w, bool) {
+    return writes_in_range(cap.log, kP, kP + 0x8000, w.lo, w.hi) == 0;
+}
 
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    bool bplen_on = (mv != "C1");
-    std::string bin = dir + (mv == "C1" ? "/prog_p3_c1.bin" : "/prog_p3.bin");
-    Capture cap = run_capture(bin, run_budget);
-    auto w = find_window(cap.log, kO, kC);
-
-    bool ok = cap.loaded && cap.done.has_value() && w.has_value();
-    if (ok) {
-        size_t at_p = reads_at(cap.log, kP, w->lo, w->hi);
-        size_t in_range = reads_in_range(cap.log, kP, kP + 0x8000, w->lo, w->hi);
-        ok = bplen_on ? (at_p >= 1 && in_range > 0) : (in_range == 0);
-    }
-    checks.expect(ok, std::string("P3 [") + kClaims +
-        "]: with BPLEN set, at least one read at P and more than zero reads in [P,P+$8000) in the window; "
-        "with BPLEN clear, none");
-
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p3_g1.bin", run_budget) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value() && find_window(cap_g1.log, kO, kC).has_value(),
-        "P3-G1: the program finished");
-
-    Capture cap_g2 = (mv == "G2") ? run_capture(dir + "/prog_p3_g2.bin", run_budget) : cap;
-    auto r_g2 = stored_at(cap_g2.log, kR, 1);
-    bool g2_ok = cap_g2.loaded && cap_g2.done.has_value() && r_g2.size() == 1;
-    if (g2_ok) { uint16_t v = r_g2[0]; g2_ok = (v & 0x0200) && (bool(v & 0x0100) == bplen_on); }
-    checks.expect(g2_ok, "P3-G2 [p.144]: the stored DMACONR readback shows DMAEN (bit 9) set and BPLEN (bit 8) "
-                         "matching this run's own enabling write");
-
-    Capture cap_g4 = (mv == "G4") ? run_capture(dir + "/prog_p3_g4.bin", run_budget) : cap;
-    auto w_g4 = (mv == "G4") ? find_window(cap_g4.log, kO, kC) : w;
-    bool g4_ok = cap_g4.loaded && cap_g4.done.has_value() && w_g4.has_value() &&
-                 count_window(vsync_starts(cap_g4.video), w_g4->lo, w_g4->hi) >= 3;
-    checks.expect(g4_ok, "P3-G4: V(W) >= 3 (two whole frames and the display-window lines inside the window)");
-
-    Capture cap_g5 = (mv == "G5") ? run_capture(dir + "/prog_p3_g5.bin", run_budget) : cap;
-    auto r_g5 = stored_at(cap_g5.log, kR, 1);
-    bool g5_ok = cap_g5.loaded && cap_g5.done.has_value() && r_g5.size() == 1;
-    if (g5_ok) g5_ok = (r_g5[0] & 0x01FF) == (bplen_on ? 0x0100 : 0x0000);
-    checks.expect(g5_ok, "P3-G5: bit 8 (BPLEN) is the only DMACON bit 8-0 set in the stored readback");
-
-    // G3: no CPU write falls into P during the window. Live invariant on
-    // every run, mutated by prog_p3_g3.s (one extra CPU write into P).
-    Capture cap_g3 = (mv == "G3") ? run_capture(dir + "/prog_p3_g3.bin", run_budget) : cap;
-    auto w_g3 = (mv == "G3") ? find_window(cap_g3.log, kO, kC) : w;
-    bool g3_ok = w_g3.has_value() && writes_in_range(cap_g3.log, kP, kP + 0x8000, w_g3->lo, w_g3->hi) == 0;
-    checks.expect(g3_ok, "P3-G3: zero writes observed in [P,P+$8000) in the window");
+    enableprop::Def d{
+        "P3", "p3", "p.278 5-appA-p278.c17, A-dmacon.b08", "p.62, p.278", "BPLEN", 0x0100, kO, kC, 3,
+        "with BPLEN set, at least one read at P and more than zero reads in [P,P+$8000) in the window",
+        "with BPLEN clear, no read in [P,P+$8000) in the window",
+        "zero writes observed in [P,P+$8000) in the window",
+        "V(W) >= 3 (two whole frames and the display-window lines inside the window)",
+        {}, false, false, seen_on, seen_off, g3_ok};
+    enableprop::run(d, checks, dir, mv, run_budget);
 }
 
 }  // namespace p3
@@ -638,54 +763,30 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
 namespace p4 {
 
 constexpr uint16_t kO = 0x0030, kC = 0x0031;
-const char kClaims[] = "p.278 5-appA-p278.c18, A-dmacon.b07";
+
+bool seen_on(const Capture& cap, const Window& w) {
+    return reads_at(cap.log, kList, w.lo, w.hi) >= 2;
+}
+
+bool seen_off(const Capture& cap, const Window& w) {
+    return reads_in_range(cap.log, kList, kList + 8, w.lo, w.hi) == 0;
+}
+
+// G3: no CPU write falls into L during the window.
+bool g3_ok(const Capture& cap, const Window& w, bool) {
+    return writes_in_range(cap.log, kList, kList + 64, w.lo, w.hi) == 0;
+}
 
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    bool copen_on = (mv != "C1");
-    std::vector<ExtraPreload> extra = {{kList, {0x0180, 0x0F00, 0xFFFF, 0xFFFE}}};
-    std::string bin = dir + (mv == "C1" ? "/prog_p4_c1.bin" : "/prog_p4.bin");
-    Capture cap = run_capture(bin, run_budget, nmh::Config{}, extra);
-    auto w = find_window(cap.log, kO, kC);
-
-    bool ok = cap.loaded && cap.done.has_value() && w.has_value();
-    if (ok) {
-        size_t at_l = reads_at(cap.log, kList, w->lo, w->hi);
-        size_t in_range = reads_in_range(cap.log, kList, kList + 8, w->lo, w->hi);
-        ok = copen_on ? (at_l >= 2) : (in_range == 0);
-    }
-    checks.expect(ok, std::string("P4 [") + kClaims +
-        "]: with COPEN set, at least 2 reads at L in the window (two vertical blankings, each restarting the "
-        "Copper at L); with COPEN clear, none in [L,L+8)");
-
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p4_g1.bin", run_budget, nmh::Config{}, extra) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value() && find_window(cap_g1.log, kO, kC).has_value(),
-        "P4-G1: the program finished");
-
-    Capture cap_g2 = (mv == "G2") ? run_capture(dir + "/prog_p4_g2.bin", run_budget, nmh::Config{}, extra) : cap;
-    auto r_g2 = stored_at(cap_g2.log, kR, 1);
-    bool g2_ok = cap_g2.loaded && cap_g2.done.has_value() && r_g2.size() == 1;
-    if (g2_ok) { uint16_t v = r_g2[0]; g2_ok = (v & 0x0200) && (bool(v & 0x0080) == copen_on); }
-    checks.expect(g2_ok, "P4-G2: the stored DMACONR readback shows DMAEN (bit 9) set and COPEN (bit 7) "
-                         "matching this run's own enabling write");
-
-    Capture cap_g4 = (mv == "G4") ? run_capture(dir + "/prog_p4_g4.bin", run_budget, nmh::Config{}, extra) : cap;
-    auto w_g4 = (mv == "G4") ? find_window(cap_g4.log, kO, kC) : w;
-    bool g4_ok = cap_g4.loaded && cap_g4.done.has_value() && w_g4.has_value() &&
-                 count_window(vsync_starts(cap_g4.video), w_g4->lo, w_g4->hi) >= 3;
-    checks.expect(g4_ok, "P4-G4: V(W) >= 3");
-
-    Capture cap_g5 = (mv == "G5") ? run_capture(dir + "/prog_p4_g5.bin", run_budget, nmh::Config{}, extra) : cap;
-    auto r_g5 = stored_at(cap_g5.log, kR, 1);
-    bool g5_ok = cap_g5.loaded && cap_g5.done.has_value() && r_g5.size() == 1;
-    if (g5_ok) g5_ok = (r_g5[0] & 0x01FF) == (copen_on ? 0x0080 : 0x0000);
-    checks.expect(g5_ok, "P4-G5: bit 7 (COPEN) is the only DMACON bit 8-0 set in the stored readback");
-
-    // G3: no CPU write falls into L during the window. Live invariant on
-    // every run, mutated by prog_p4_g3.s (one extra CPU write into L).
-    Capture cap_g3 = (mv == "G3") ? run_capture(dir + "/prog_p4_g3.bin", run_budget, nmh::Config{}, extra) : cap;
-    auto w_g3 = (mv == "G3") ? find_window(cap_g3.log, kO, kC) : w;
-    bool g3_ok = w_g3.has_value() && writes_in_range(cap_g3.log, kList, kList + 64, w_g3->lo, w_g3->hi) == 0;
-    checks.expect(g3_ok, "P4-G3: zero writes observed in [L,L+64) in the window");
+    enableprop::Def d{
+        "P4", "p4", "p.278 5-appA-p278.c18, A-dmacon.b07", "p.30, p.278", "COPEN", 0x0080, kO, kC, 3,
+        "with COPEN set, at least 2 reads at L in the window (two vertical blankings, each restarting the "
+        "Copper at L)",
+        "with COPEN clear, no read in [L,L+8) in the window",
+        "zero writes observed in [L,L+64) in the window",
+        "V(W) >= 3",
+        {{kList, {0x0180, 0x0F00, 0xFFFF, 0xFFFE}}}, false, false, seen_on, seen_off, g3_ok};
+    enableprop::run(d, checks, dir, mv, run_budget);
 }
 
 }  // namespace p4
@@ -697,64 +798,49 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
 namespace p5 {
 
 constexpr uint16_t kO = 0x0040, kC = 0x0041;
-const char kClaims[] = "p.278 5-appA-p278.c19, A-dmacon.b06";
+
+bool seen_on(const Capture& cap, const Window& w) {
+    return writes_in_range(cap.log, kQ, kQ + 0x200, w.lo, w.hi) >= 1;
+}
+
+// With BLTEN clear: no write in [Q,Q+$200) and no write anywhere outside the
+// CPU's own areas. G, R and MK (SPECIFICATION.md 2.3) all fall inside one
+// contiguous span, kCpuAreaLo..kCpuAreaHi.
+bool seen_off(const Capture& cap, const Window& w) {
+    size_t writes_q = writes_in_range(cap.log, kQ, kQ + 0x200, w.lo, w.hi);
+    size_t writes_anywhere = writes_in_range(cap.log, 0x000000, 0x200000, w.lo, w.hi) -
+                             writes_in_range(cap.log, kCpuAreaLo, kCpuAreaHi, w.lo, w.hi);
+    return writes_q == 0 && writes_anywhere == 0;
+}
+
+// G3. The blitter's own destination footprint is [Q,Q+$200): BLTSIZE $0410 is
+// height 16 and width 16 (p.269), 256 words, each written once. With the bit
+// set, no write falls into the rest of Q's block, and every word of the
+// footprint is written exactly once, so no CPU write lies among the
+// blitter's. With the bit clear, no write falls into the block at all.
+bool g3_ok(const Capture& cap, const Window& w, bool on) {
+    if (!on) return writes_in_range(cap.log, kQ, kQ + 0x2000, w.lo, w.hi) == 0;
+    if (writes_in_range(cap.log, kQ + 0x200, kQ + 0x2000, w.lo, w.hi) != 0) return false;
+    std::vector<int> per_word(256, 0);
+    uint32_t base = word_addr(kQ);
+    for (const auto& a : cap.log)
+        if (a.is_write && a.cycle >= w.lo && a.cycle <= w.hi && a.word_addr >= base && a.word_addr < base + 256)
+            ++per_word[a.word_addr - base];
+    for (int n : per_word) if (n != 1) return false;
+    return true;
+}
 
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    bool blten_on = (mv != "C1");
-    std::string bin = dir + (mv == "C1" ? "/prog_p5_c1.bin" : "/prog_p5.bin");
-    Capture cap = run_capture(bin, run_budget);
-    auto w = find_window(cap.log, kO, kC);
-
-    bool ok = cap.loaded && cap.done.has_value() && w.has_value();
-    if (ok) {
-        size_t writes_q = writes_in_range(cap.log, kQ, kQ + 0x200, w->lo, w->hi);
-        if (blten_on) {
-            ok = writes_q >= 1;
-        } else {
-            // "no write anywhere outside the CPU areas": G, R and MK
-            // (SPECIFICATION.md 2.3) all fall inside one contiguous span,
-            // kCpuAreaLo..kCpuAreaHi.
-            size_t writes_anywhere = writes_in_range(cap.log, 0x000000, 0x200000, w->lo, w->hi) -
-                                      writes_in_range(cap.log, kCpuAreaLo, kCpuAreaHi, w->lo, w->hi);
-            ok = writes_q == 0 && writes_anywhere == 0;
-        }
-    }
-    checks.expect(ok, std::string("P5 [") + kClaims +
-        "]: with BLTEN set, at least one write in [Q,Q+$200) in the window; with BLTEN clear, none there and "
-        "no write anywhere outside the CPU's own areas");
-
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p5_g1.bin", run_budget) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value() && find_window(cap_g1.log, kO, kC).has_value(),
-        "P5-G1: the program finished");
-
-    Capture cap_g2 = (mv == "G2") ? run_capture(dir + "/prog_p5_g2.bin", run_budget) : cap;
-    auto r_g2 = stored_at(cap_g2.log, kR, 1);
-    bool g2_ok = cap_g2.loaded && cap_g2.done.has_value() && r_g2.size() == 1;
-    if (g2_ok) { uint16_t v = r_g2[0]; g2_ok = (v & 0x0200) && (bool(v & 0x0040) == blten_on); }
-    checks.expect(g2_ok, "P5-G2: the stored DMACONR readback shows DMAEN (bit 9) set and BLTEN (bit 6) "
-                         "matching this run's own enabling write");
-
-    Capture cap_g4 = (mv == "G4") ? run_capture(dir + "/prog_p5_g4.bin", run_budget) : cap;
-    auto w_g4 = (mv == "G4") ? find_window(cap_g4.log, kO, kC) : w;
-    bool g4_ok = cap_g4.loaded && cap_g4.done.has_value() && w_g4.has_value() &&
-                 count_window(vsync_starts(cap_g4.video), w_g4->lo, w_g4->hi) >= 1;
-    checks.expect(g4_ok, "P5-G4: V(W) >= 1");
-
-    Capture cap_g5 = (mv == "G5") ? run_capture(dir + "/prog_p5_g5.bin", run_budget) : cap;
-    auto r_g5 = stored_at(cap_g5.log, kR, 1);
-    bool g5_ok = cap_g5.loaded && cap_g5.done.has_value() && r_g5.size() == 1;
-    if (g5_ok) g5_ok = (r_g5[0] & 0x01FF) == (blten_on ? 0x0040 : 0x0000);
-    checks.expect(g5_ok, "P5-G5: bit 6 (BLTEN) is the only DMACON bit 8-0 set in the stored readback");
-
-    // G3: no CPU write falls into Q during the window, outside the blit's
-    // own destination footprint [Q,Q+$200) (which the main assertion
-    // above already grades on its own terms). Live invariant on every
-    // run, mutated by prog_p5_g3.s (one extra CPU write into Q).
-    Capture cap_g3 = (mv == "G3") ? run_capture(dir + "/prog_p5_g3.bin", run_budget) : cap;
-    auto w_g3 = (mv == "G3") ? find_window(cap_g3.log, kO, kC) : w;
-    bool g3_ok = w_g3.has_value() &&
-                 writes_in_range(cap_g3.log, kQ + 0x200, kQ + 0x2000, w_g3->lo, w_g3->hi) == 0;
-    checks.expect(g3_ok, "P5-G3: zero writes observed in [Q+$200,Q+$2000) in the window");
+    enableprop::Def d{
+        "P5", "p5", "p.278 5-appA-p278.c19, A-dmacon.b06", "p.186, p.269, p.278", "BLTEN", 0x0040, kO, kC, 1,
+        "with BLTEN set, at least one write in [Q,Q+$200) in the window",
+        "with BLTEN clear, no write in [Q,Q+$200) and no write anywhere outside the CPU's own areas",
+        "with BLTEN set, zero writes observed in [Q+$200,Q+$2000) in the window and each word of [Q,Q+$200) "
+        "written exactly once (BLTSIZE $0410 is 16 x 16 words, p.269), so no CPU write lies among the "
+        "blitter's own; with BLTEN clear, zero writes in [Q,Q+$2000)",
+        "V(W) >= 1",
+        {}, false, true, seen_on, seen_off, g3_ok};
+    enableprop::run(d, checks, dir, mv, run_budget);
 }
 
 }  // namespace p5
@@ -767,7 +853,6 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
 namespace p6 {
 
 constexpr uint16_t kO = 0x0050, kC = 0x0051;
-const char kClaims[] = "p.278 5-appA-p278.c20, A-dmacon.b05";
 
 bool all16_read(const Capture& cap, const Window& w) {
     if (reads_at(cap.log, kS0, w.lo, w.hi) < 1) return false;
@@ -786,51 +871,21 @@ bool none_of_8_blocks(const Capture& cap, const Window& w) {
     return true;
 }
 
+// G3: no CPU write falls into S0 (the block under test) during the window.
+bool g3_ok(const Capture& cap, const Window& w, bool) {
+    return writes_in_range(cap.log, kS0, kS0 + 0x100, w.lo, w.hi) == 0;
+}
+
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    bool spren_on = (mv != "C1");
-    std::string bin = dir + (mv == "C1" ? "/prog_p6_c1.bin" : "/prog_p6.bin");
-    Capture cap = run_capture(bin, run_budget, nmh::Config{}, {}, /*sprite0_real=*/true);
-    auto w = find_window(cap.log, kO, kC);
-
-    bool ok = cap.loaded && cap.done.has_value() && w.has_value();
-    if (ok) ok = spren_on ? all16_read(cap, *w) : none_of_8_blocks(cap, *w);
-    checks.expect(ok, std::string("P6 [") + kClaims +
-        "]: with SPREN set, each of the 16 addresses (2 words x 8 sprite structures) is read at least once "
-        "in the window; with SPREN clear, none of the eight blocks is read at all");
-
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p6_g1.bin", run_budget, nmh::Config{}, {}, true) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value() && find_window(cap_g1.log, kO, kC).has_value(),
-        "P6-G1: the program finished");
-
-    Capture cap_g2 = (mv == "G2") ? run_capture(dir + "/prog_p6_g2.bin", run_budget, nmh::Config{}, {}, true) : cap;
-    auto r_g2 = stored_at(cap_g2.log, kR, 1);
-    bool g2_ok = cap_g2.loaded && cap_g2.done.has_value() && r_g2.size() == 1;
-    if (g2_ok) { uint16_t v = r_g2[0]; g2_ok = (v & 0x0200) && (bool(v & 0x0020) == spren_on); }
-    checks.expect(g2_ok, "P6-G2: the stored DMACONR readback shows DMAEN (bit 9) set and SPREN (bit 5) "
-                         "matching this run's own enabling write");
-
-    Capture cap_g4 = (mv == "G4") ? run_capture(dir + "/prog_p6_g4.bin", run_budget, nmh::Config{}, {}, true) : cap;
-    auto w_g4 = (mv == "G4") ? find_window(cap_g4.log, kO, kC) : w;
-    bool g4_ok = cap_g4.loaded && cap_g4.done.has_value() && w_g4.has_value() &&
-                 count_window(vsync_starts(cap_g4.video), w_g4->lo, w_g4->hi) >= 3;
-    checks.expect(g4_ok, "P6-G4: V(W) >= 3");
-
-    // G5's own generic check, and the "bitplane DMA off" precondition (the
-    // same stored-value clause, bit 8): only bit 5 (SPREN) among bits 8-0.
-    Capture cap_g5 = (mv == "G5") ? run_capture(dir + "/prog_p6_g5.bin", run_budget, nmh::Config{}, {}, true) : cap;
-    auto r_g5 = stored_at(cap_g5.log, kR, 1);
-    bool g5_ok = cap_g5.loaded && cap_g5.done.has_value() && r_g5.size() == 1;
-    if (g5_ok) g5_ok = (r_g5[0] & 0x01FF) == (spren_on ? 0x0020 : 0x0000);
-    checks.expect(g5_ok, "P6-G5: bit 5 (SPREN) is the only DMACON bit 8-0 set in the stored readback "
-                         "(bit 8, bitplane DMA, is clear -- the same clause as the bitplane-off precondition)");
-
-    // G3: no CPU write falls into S0 (the block under test) during the
-    // window. Live invariant on every run, mutated by prog_p6_g3.s (one
-    // extra CPU write into S0, past its own 14-word content).
-    Capture cap_g3 = (mv == "G3") ? run_capture(dir + "/prog_p6_g3.bin", run_budget, nmh::Config{}, {}, true) : cap;
-    auto w_g3 = (mv == "G3") ? find_window(cap_g3.log, kO, kC) : w;
-    bool g3_ok = w_g3.has_value() && writes_in_range(cap_g3.log, kS0, kS0 + 0x100, w_g3->lo, w_g3->hi) == 0;
-    checks.expect(g3_ok, "P6-G3: zero writes observed in [S0,S0+$100) in the window");
+    enableprop::Def d{
+        "P6", "p6", "p.278 5-appA-p278.c20, A-dmacon.b05", "p.114, p.126, p.278", "SPREN", 0x0020, kO, kC, 3,
+        "with SPREN set, each of the 16 addresses (2 words x 8 sprite structures) is read at least once in "
+        "the window",
+        "with SPREN clear, none of the eight blocks is read at all",
+        "zero writes observed in [S0,S0+$100) in the window",
+        "V(W) >= 3",
+        {}, /*sprite0_real=*/true, false, all16_read, none_of_8_blocks, g3_ok};
+    enableprop::run(d, checks, dir, mv, run_budget);
 }
 
 }  // namespace p6
@@ -1032,6 +1087,39 @@ namespace p9 {
 const char kClaims[] =
     "p.278 5-appA-p278.c14, A-dmacon.b13; p.278 5-appA-p278.c10, 5-appA-p278.c8; p.289 5-appB-p289.c4";
 
+// The five blits' destination blocks (blits 1-3) and source blocks (blits 4
+// and 5), each 16 words; the exchanged program reads Zb in blit 4 and F in
+// blit 5.
+constexpr uint32_t kBlock[5] = {kQ, kQ + 0x100, kQ + 0x200, kF, kZb};
+constexpr uint32_t kBlockSwapped[5] = {kQ, kQ + 0x100, kQ + 0x200, kZb, kF};
+
+// What one run of the program shows: Z_1..Z_5 with the times of their stores
+// into R, and, logged into G, the read of each wait that showed bit 14 = 0.
+struct Run {
+    bool ok = false;
+    std::vector<uint16_t> z;
+    std::vector<uint64_t> z_cycle;
+    std::vector<uint16_t> term;
+    std::vector<uint64_t> term_cycle;
+};
+
+Run parse(const Capture& cap) {
+    Run r;
+    for (const auto& w : writes_seq(cap.log, kR, kR + 10)) { r.z.push_back(w.data); r.z_cycle.push_back(w.cycle); }
+    for (const auto& w : writes_seq(cap.log, kLog, kLog + 10)) { r.term.push_back(w.data); r.term_cycle.push_back(w.cycle); }
+    r.ok = cap.loaded && r.z.size() == 5 && r.term.size() == 5;
+    return r;
+}
+
+// Bit 13 of each Z_k against a table of 1 = set.
+bool table_ok(const Run& r, const int expect[5]) {
+    if (!r.ok) return false;
+    for (int k = 0; k < 5; ++k)
+        if (((r.z[k] & 0x2000) != 0) != (expect[k] != 0)) return false;
+    return true;
+}
+
+// 16 words, all of them written once with `data`.
 bool writes_all(const Capture& cap, uint32_t addr, size_t count, uint16_t data) {
     auto w = writes_seq(cap.log, addr, addr + uint32_t(count) * 2);
     if (w.size() != count) return false;
@@ -1051,64 +1139,126 @@ bool reads_only(const Capture& cap, uint32_t addr, size_t count) {
     return reads == count;
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    std::string bin = dir + "/prog_p9.bin";
-    if (mv == "C1") bin = dir + "/prog_p9_c1.bin";
-    Capture cap = run_capture(bin, run_budget);
-    auto z = stored_at(cap.log, kR, 5);
+// The time of the last port access in block k's 16 words, if any.
+std::optional<uint64_t> last_access(const Capture& cap, int k, bool swapped) {
+    uint32_t wlo = word_addr((swapped ? kBlockSwapped : kBlock)[k]), whi = wlo + 16;
+    std::optional<uint64_t> t;
+    for (const auto& a : cap.log)
+        if (a.word_addr >= wlo && a.word_addr < whi) t = t ? std::max(*t, a.cycle) : a.cycle;
+    return t;
+}
 
-    bool have_z = cap.loaded && z.size() == 5;
-
-    const int expect_main[5] = {1, 0, 1, 0, 1};
-    const int expect_c1[5]   = {0, 1, 1, 1, 0};
-    const int* expect = (mv == "C1") ? expect_c1 : expect_main;
-
-    bool z_ok = have_z;
-    if (z_ok) for (int k = 0; k < 5; ++k) {
-        bool bit13 = (z[k] & 0x2000) != 0;
-        if (bit13 != (expect[k] != 0)) z_ok = false;
+// Blits 4 and 5 leave D unwritten: no write falls outside the CPU's own
+// areas (G, R, MK) from the first access to F or Zb to the last.
+bool no_write_outside_cpu_areas(const Capture& cap) {
+    uint64_t first = UINT64_MAX, last = 0;
+    bool any = false;
+    for (uint32_t base : {kF, kZb}) {
+        uint32_t wlo = word_addr(base), whi = wlo + 16;
+        for (const auto& a : cap.log)
+            if (a.word_addr >= wlo && a.word_addr < whi) {
+                any = true;
+                first = std::min(first, a.cycle);
+                last = std::max(last, a.cycle);
+            }
     }
-    if (have_z) {
-        std::string zs = "P9: Z1.." "Z5 = ";
-        for (int k = 0; k < 5; ++k) zs += hex16(z[k]) + " ";
+    if (!any) return false;
+    size_t outside = writes_in_range(cap.log, 0x000000, 0x200000, first, last) -
+                     writes_in_range(cap.log, kCpuAreaLo, kCpuAreaHi, first, last);
+    return outside == 0;
+}
+
+// Each Z_k was stored after the last port access of its blit, and after a
+// read with bit 14 = 0.
+bool after_completion(const Capture& cap, const Run& r, bool swapped) {
+    if (!r.ok) return false;
+    for (int k = 0; k < 5; ++k) {
+        auto t = last_access(cap, k, swapped);
+        if (!t) return false;
+        if (r.term[k] & 0x4000) return false;
+        if (!(r.term_cycle[k] < r.z_cycle[k])) return false;
+        if (!(r.z_cycle[k] > *t)) return false;
+    }
+    return true;
+}
+
+void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
+    const int expect_main[5] = {1, 0, 1, 0, 1};
+    const int expect_swap[5] = {0, 1, 1, 1, 0};
+
+    Capture cap_main = run_capture(dir + "/prog_p9.bin", run_budget);
+    Capture cap_swap = run_capture(dir + "/prog_p9_c1.bin", run_budget);
+    Run run_main = parse(cap_main), run_swap = parse(cap_swap);
+
+    // C1 puts the exchanged program through the main table; INV puts the
+    // main program through the exchanged table. Neither table changes.
+    const Run& in_main = (mv == "C1") ? run_swap : run_main;
+    const Run& in_swap = (mv == "INV") ? run_main : run_swap;
+    bool main_ok = table_ok(in_main, expect_main);
+    bool swap_ok = table_ok(in_swap, expect_swap);
+
+    if (run_main.ok) {
+        std::string zs = "P9: Z1..Z5 = ";
+        for (int k = 0; k < 5; ++k) zs += hex16(run_main.z[k]) + " ";
         checks.note(zs);
     }
-    checks.expect(z_ok, std::string("P9 [") + kClaims +
-        "]: bit 13 of each Z_k matches the proposition's table (blits 1-3 show the flag describes the "
-        "latest blit; blits 4-5 grade 'even if D is not written')");
+    checks.expect(main_ok,
+        "P9-MAIN [p.222, p.187]: bit 13 of each Z_k matches the proposition's table (blits 1-3 show the flag "
+        "describes the latest blit; blits 4-5 grade 'even if D is not written')");
+    checks.expect(swap_ok,
+        "P9-SWAP [p.222, p.187]: with BLTCON0 exchanged between blits 1 and 2 and the source exchanged between "
+        "blits 4 and 5, bit 13 of each Z_k follows the exchanged table");
+    checks.expect(main_ok && swap_ok, std::string("P9 [") + kClaims +
+        "]: bit 13 of each Z_k matches the proposition's table, and the exchanged table when the logic outputs "
+        "are exchanged");
 
-    // Data-content preconditions (main list only -- addresses are fixed
-    // regardless of NMH_MUTATE, since only BLTCON0/source assignments swap
-    // under C1, not which physical block each blit numeral touches).
-    bool wr_ok = writes_all(cap, kQ, 16, 0x0000) && writes_all(cap, kQ + 0x100, 16, 0xFFFF) &&
-                 writes_all(cap, kQ + 0x200, 16, 0x0000);
-    checks.expect(wr_ok, "P9-G(writes): blits 1 and 3 made 16 writes of $0000 in their ranges; blit 2 made "
-                         "16 writes of $FFFF");
-
-    bool rd_ok = reads_only(cap, kF, 16) && reads_only(cap, kZb, 16);
-    checks.expect(rd_ok, "P9-G(reads): blits 4 and 5 made 16 reads in F and Zb respectively, and no write there");
-
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p9_g1.bin", run_budget) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value(), "P9-G1: the program finished");
-
-    bool g2_ok = z.size() >= 1; // DMAEN/BLTEN are implied by every blit having run at all
-    checks.expect(g2_ok, "P9-G2: G2 for $8240 (DMAEN, BLTEN) -- every blit ran, which needs both set");
-
-    Capture cap_gnw = (mv == "NOWAIT") ? run_capture(dir + "/prog_p9_gnowait.bin", run_budget) : cap;
-    // "After completion": Z_1's store must follow the last port access of
-    // blit 1 (its last write in the Q range).
-    bool after_ok = false;
-    {
-        auto z1w = writes_seq(cap_gnw.log, kR, kR + 2);
-        auto q1 = writes_seq(cap_gnw.log, kQ, kQ + 32);
-        if (!z1w.empty() && !q1.empty()) {
-            uint64_t z1_cycle = z1w.front().cycle;
-            uint64_t last_q1 = q1.back().cycle;
-            for (auto& w : q1) last_q1 = std::max(last_q1, w.cycle);
-            after_ok = z1_cycle > last_q1;
-        }
+    // ---- preconditions, each over the main run and the exchanged run ----
+    auto pick = [&](const char* sel, const char* file, Capture& store) -> const Capture& {
+        if (mv == sel) { store = run_capture(dir + "/" + file, run_budget); return store; }
+        return cap_main;
+    };
+    {   // G(writes): blits 1 and 3 write $0000 and blit 2 $FFFF in the main run; exchanged in the other.
+        Capture store; const Capture& c = pick("C1", "prog_p9_c1.bin", store);
+        bool ok = writes_all(c, kQ, 16, 0x0000) && writes_all(c, kQ + 0x100, 16, 0xFFFF) &&
+                  writes_all(c, kQ + 0x200, 16, 0x0000) &&
+                  writes_all(cap_swap, kQ, 16, 0xFFFF) && writes_all(cap_swap, kQ + 0x100, 16, 0x0000) &&
+                  writes_all(cap_swap, kQ + 0x200, 16, 0x0000);
+        checks.expect(ok, "P9-G(writes): blits 1 and 3 made 16 writes of $0000 in their ranges; blit 2 made "
+                          "16 writes of $FFFF (blits 1 and 2 exchanged in the exchanged run)");
     }
-    checks.expect(after_ok, "P9-G(after completion): Z_1 was stored after the last port access of blit 1");
+    {   // G(reads)
+        Capture store; const Capture& c = pick("GDWRITE", "prog_p9_gdwrite.bin", store);
+        bool ok = reads_only(c, kF, 16) && reads_only(c, kZb, 16) && no_write_outside_cpu_areas(c) &&
+                  reads_only(cap_swap, kF, 16) && reads_only(cap_swap, kZb, 16) &&
+                  no_write_outside_cpu_areas(cap_swap);
+        checks.expect(ok, "P9-G(reads): blits 4 and 5 made 16 reads in F and Zb respectively, no write there, and "
+                          "no write outside the CPU's own areas while they ran");
+    }
+    {
+        Capture store; const Capture& c = pick("G1", "prog_p9_g1.bin", store);
+        checks.expect(c.loaded && c.done.has_value() && cap_swap.done.has_value(), "P9-G1: the program finished");
+    }
+    {   // G2: every Z_k is a DMACONR readback with the enabling write's bits only
+        Capture store; const Capture& c = pick("G2", "prog_p9_g2.bin", store);
+        Run r = parse(c);
+        bool ok = r.ok && run_swap.ok;
+        if (ok) for (int k = 0; k < 5; ++k)
+            if ((r.z[k] & 0x07FF) != 0x0240 || (run_swap.z[k] & 0x07FF) != 0x0240) { ok = false; break; }
+        checks.expect(ok, "P9-G2: G2 for $8240 -- every stored Z_k shows DMAEN (bit 9) and BLTEN (bit 6) set and "
+                          "no other bit among 10 and 8-0");
+    }
+    {
+        Capture store; const Capture& c = pick("NOWAIT", "prog_p9_gnowait.bin", store);
+        checks.expect(after_completion(c, parse(c), false) && after_completion(cap_swap, run_swap, true),
+                      "P9-G(after completion): each Z_k (k = 1..5) was stored after the last port access of its "
+                      "blit and after a read with bit 14 = 0");
+    }
+
+    checks.record(
+        "P9: the 'only' of 'read only' is not graded. p.278 gives bit 15, 'bits written with a 1 get set or "
+        "cleared', and calls bit 13 '(read only)', and no page says what a DMACON write with bit 13 set does; "
+        "every DMACON write here keeps bit 13 clear "
+        "(half graded: 5-appA-p278.c14, A-dmacon.b13)");
 }
 
 }  // namespace p9

@@ -135,6 +135,14 @@ Every audio, sprite, bitplane, Copper and blitter-source area above is a
 | G4 | V(W) is at least the value the proposition names. | Set the delay count to 0: V(W) falls short, G4 goes red. |
 | G5 | Of DMACON bits 8-0, only the channels the proposition names are set during the window (from the same stored DMACONR value). | Also set SPREN (`$8020`) before the window: G5 goes red. |
 
+Every contrasting case of a proposition that this table does not cover is
+also graded in the normal run, as an assertion of its own (P3-OFF, P9-SWAP and
+so on), because each is a prediction of the pages. The mutation of the main
+assertion puts the contrasting program through the main assertion's unchanged
+comparator, and the mutation of the contrasting assertion puts the main program
+through the contrasting assertion's unchanged comparator. The preconditions are
+graded over every run of the proposition, the contrasting runs included.
+
 ## 3. Propositions
 
 ### P1: The CPU writes AUDxLCH and AUDxLCL, and each channel fetches its data from the location written
@@ -361,7 +369,8 @@ and more than zero reads in the range.
 
 **Contrasting cases.**
 - `DMACON = $8200` in step 3, so BPLEN stays clear. Expected: no read in
-  [P, P + `$8000`). G2 then expects bit 9 set and bit 8 clear.
+  [P, P + `$8000`). G2 then expects bit 9 set and bit 8 clear. This run is
+  graded in the normal run as P3-OFF.
 - For the preconditions: section 2.6.
 
 **Reference frame.** Frames by vertical-sync pulses (section 2.5). The test
@@ -406,7 +415,8 @@ restarts the Copper at L (p.30).
 **Preconditions.** G1, G2 (bits 9 and 7 set), G3, G5, and G4 with V ≥ 3.
 
 **Contrasting cases.**
-- `DMACON = $8200` in step 4. Expected: no read in [L, L + 8).
+- `DMACON = $8200` in step 4. Expected: no read in [L, L + 8). This run is
+  graded in the normal run as P4-OFF.
 - For the preconditions: section 2.6.
 
 **Reference frame.** Frames by vertical-sync pulses. The relation to vertical
@@ -450,10 +460,19 @@ access.
 **Expected.** At least one write.
 
 **Preconditions.** G1, G2 (bits 9 and 6 set), G3, G5, and G4 with V ≥ 1.
+- G3 for the block under test. With BLTEN set: no write in [Q + `$200`,
+  Q + `$2000`), and each of the 256 words of the blit's footprint
+  [Q, Q + `$200`) written exactly once (BLTSIZE `$0410` is height 16 and
+  width 16, p.269), so that no CPU write lies among the blitter's. With
+  BLTEN clear: no write in [Q, Q + `$2000`).
 
 **Contrasting cases.**
+- For G3 inside the footprint: one extra CPU write onto the first word of
+  [Q, Q + `$200`) inside the window. That word is then written twice and G3
+  goes red.
 - `DMACON = $8200` in step 3. Expected: no write in [Q, Q + `$200`), and no
-  write anywhere outside the CPU areas.
+  write anywhere outside the CPU areas. This run is graded in the normal run
+  as P5-OFF.
 - For the preconditions: section 2.6.
 
 **Not graded.**
@@ -510,6 +529,7 @@ in the blocks [S_0, S_0 + `$100`) and [N_k, N_k + `$100`), inside
 
 **Contrasting cases.**
 - `DMACON = $8200` in step 3. Expected: no read in any of the eight blocks.
+  This run is graded in the normal run as P6-OFF.
 - For the bitplane precondition: also set BPLEN. The stored value shows
   bit 8 set, and the precondition goes red.
 - For the other preconditions: section 2.6.
@@ -711,7 +731,7 @@ destination channel is off.
    - write the registers;
    - `BLTSIZE = $0104` (height 4, width 4: 16 words);
    - wait for the end: one dummy read of DMACONR, then read until bit 14
-     is 0 (p.186);
+     is 0 (p.186), and store the read that showed bit 14 = 0 into G;
    - read DMACONR once more and store the value as Z_k in R.
 
    All five use `BLTCON1 = 0`, `BLTDMOD = 0`, `BLTAMOD ($064) = 0` and
@@ -733,7 +753,8 @@ flag describes the latest blit. Blits 4 and 5 grade the "even if those
 destination bits are not written" of p.187.
 
 **Preconditions.**
-- G1, and G2 for `$8240`.
+- G1, and G2 for `$8240`: every stored Z_k shows bits 9 and 6 set and no
+  other bit among 10 and 8-0.
 - Blits 1 and 3 made 16 writes in their ranges, all with data `$0000`.
 - Blit 2 made 16 writes, all with data `$FFFF`.
 - Blits 4 and 5 made 16 reads in F (respectively Zb) and no write outside the
@@ -743,10 +764,16 @@ destination bits are not written" of p.187.
 
 **Contrasting cases.**
 - Exchange BLTCON0 between blits 1 and 2, and exchange F and Zb between
-  blits 4 and 5. The expected bits then change to 0, 1, 1, 1, 0.
+  blits 4 and 5. The expected bits then change to 0, 1, 1, 1, 0. This run is
+  graded in the normal run as P9-SWAP, with that table.
 - For the "after completion" precondition: drop the wait before Z_1. Z_1's
   store may then fall before the blit's last write, and the precondition goes
   red.
+- For the "no write outside the CPU areas" precondition: blit 4 also uses D
+  (BLTCON0 = `$09F0`, BLTDPT = Q + `$300`). It writes outside the CPU areas
+  and the precondition goes red.
+- For G2: also set SPREN in the enabling write. The stored values show
+  bit 5 and G2 goes red.
 - For the other preconditions: section 2.6.
 
 **Not graded.**

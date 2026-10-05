@@ -42,10 +42,10 @@ start:
         move.w  #$8200,DMACON(a0)       ; BLTEN stays clear
         else
         ifd     G2_BREAK
-        move.w  #$8000,DMACON(a0)       ; DMAEN left out
+        move.w  #$8040,DMACON(a0)       ; BLTEN set, DMAEN (bit 9) left out
         else
         ifd     G5_BREAK
-        move.w  #$8250,DMACON(a0)       ; SPREN also set
+        move.w  #$8260,DMACON(a0)       ; SPREN also set
         else
         move.w  #$8240,DMACON(a0)
         endif
@@ -53,7 +53,10 @@ start:
         endif
         move.w  DMACONR(a0),(a3)+
         ifd     G3_BREAK
-        move.w  #$DEAD,QQ+$1000 ; G3's mutation: a CPU write into the block under test, inside the window
+        move.w  #$DEAD,QQ+$1000 ; G3's mutation: a CPU write into the block under test, outside the blit's footprint
+        endif
+        ifd     G3IN_BREAK
+        move.w  #$DEAD,QQ       ; G3's second mutation: a CPU write onto the blit's own first destination word
         endif
 
         move.w  #$0410,BLTSIZE(a0)      ; height=16,width=16 -- starts the blit
