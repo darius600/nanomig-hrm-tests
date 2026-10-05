@@ -1,6 +1,6 @@
 # What is in here, and what each document is for
 
-Four documents besides this map, and three folders. A red test is not
+Three documents besides this map, and three folders. A red test is not
 self-explanatory: someone reading `FAIL` needs to know what the printed page
 says, what the RTL does, whether anyone else agrees, and who decides. The first
 three rows below answer that.
