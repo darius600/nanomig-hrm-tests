@@ -18,12 +18,12 @@
 // MUTATION FIXTURE stimulus red the program stores $BEE0 as its fixture word (p1_ciaa_ta_fixture.bin): the delivered word is not $BEEF, via NMH_MUTATE=FIXTURE
 // MUTATION EP1 stimulus red a write to CIAA CRA precedes SETUP's own read (ep1_contrast.bin): the read returns $0A instead of $00, via NMH_MUTATE=EP1
 // MUTATION EP2 stimulus red Copper DMA started in the window (ep2_contrast.bin): the Copper's own fetch of $0C3000 appears at the Chip-memory port, via NMH_MUTATE=EP2
-// MUTATION EP2 stimulus red Copper DMA started from a list in low Chip memory (ep2_contrast_low.bin): the Copper's own fetch lands below $1000 outside a refresh group, via NMH_MUTATE=EP2-LOW
+// MUTATION EP2 stimulus red Copper DMA started from a list in low Chip memory (ep2_contrast_low.bin): the Copper's own fetch lands below $1000 outside a refresh group (the run's MEASURED line gives the count), via NMH_MUTATE=EP2-LOW
 // MUTATION EP3 stimulus red the program completes its work and stores $600E as its final marker (p1_ciaa_ta_ep3.bin): no DONE_VALUE write, via NMH_MUTATE=EP3
 // MUTATION F1-ANCHOR stimulus red shorter lines (HTOTAL, BEAMCON0) set after the first marker (p1_ciaa_ta_f1.bin): consecutive refresh line marks are no longer 454*T_CPU apart, via NMH_MUTATE=F1-ANCHOR
 // MUTATION F1-ANCHOR-CONTRAST none impossible unfalsifiable at this boundary: the line only compares the measured line marks against 1.25*T_CPU, and no stimulus makes line marks 454 or 456 apart at 1.25*T_CPU while they are not at T_CPU
 // MUTATION EP1-PER-RUN stimulus red the CIAA/timer-B P1 program writes CIAA CRA before its first read of it (p1_ciaa_tb_ep1.bin): that capture's EP1 words are not all $00, via NMH_MUTATE=EP1-PER-RUN
-// MUTATION EP2-PER-RUN stimulus red the CIAA/timer-B P1 program starts Copper DMA from a list in low Chip memory (p1_ciaa_tb_ep2.bin): a non-refresh low-address fetch in that capture's window, via NMH_MUTATE=EP2-PER-RUN
+// MUTATION EP2-PER-RUN stimulus red the CIAA/timer-B P1 program starts Copper DMA from a list in low Chip memory (p1_ciaa_tb_ep2.bin): a non-refresh low-address fetch in that capture's window, via NMH_MUTATE=EP2-PER-RUN; on TG68K the fetch falls inside a refresh group and F1-ANCHOR-PER-RUN is red with it
 // MUTATION EP3-PER-RUN stimulus red the CIAA/timer-B P1 program stores $600E as its final marker (p1_ciaa_tb_ep3.bin): that capture has no DONE_VALUE write, via NMH_MUTATE=EP3-PER-RUN
 // MUTATION F1-ANCHOR-PER-RUN stimulus red the CIAA/timer-B P1 program sets shorter lines after the first marker (p1_ciaa_tb_f1.bin): that capture's line marks are off the cadence, via NMH_MUTATE=F1-ANCHOR-PER-RUN
 // MUTATION P1-PRE1.1 stimulus red CIAB/timer B's pull-up reference read with DDRB bit n=1 and the data bit 0 beforehand (p1_ciab_tb_pre11.bin), via NMH_MUTATE=P1-PRE11
@@ -215,7 +215,7 @@ struct RunRecord {
     std::string bin;
     bool loaded = false, done = false, ep1 = false;
     bool f1 = false;              // F1's anchor holds
-    bool ep2_graded = false;      // EP2 is graded only where the run completed and F1 holds
+    bool ep2_graded = false;      // EP2 is graded on a run that completed
     bool ep2 = false;
 };
 std::vector<RunRecord>& run_registry() { static std::vector<RunRecord> v; return v; }
@@ -629,11 +629,16 @@ bool in_range(uint32_t w, uint32_t lo_byte, uint32_t hi_byte) {
     return w >= word_addr(lo_byte) && w < word_addr(hi_byte);
 }
 
-bool ep2_ok(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi, bool* saw_extra = nullptr) {
-    // A read below $1000 is a refresh read only when it belongs to a group of
-    // exactly four reads 4*T_CPU apart and F1's line-cadence anchor holds.
+bool ep2_ok(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi, bool* saw_extra = nullptr,
+            size_t* stray_low = nullptr, size_t* stray_other = nullptr) {
+    // A read below $1000 is a refresh read only when it belongs to a group of exactly four reads
+    // 4*T_CPU apart whose first read is a line mark on F1's cadence relative to a neighbouring group
+    // (454 or 456 T_CPU after the previous group's first read, or before the next one's). T_CPU comes
+    // from the uniform groups; F1's anchor over the whole run need not hold, because a stray read
+    // inside a refresh group is what breaks it.
     Anchor anc = measure_anchor(log);
-    if (!anc.ok) return false;
+    if (anc.t_cpu == 0) return false;
+    const uint64_t T = anc.t_cpu;
     std::vector<uint64_t> low_reads;
     for (const auto& x : log) if (!x.is_write && x.word_addr < 0x1000) low_reads.push_back(x.cycle);
     std::sort(low_reads.begin(), low_reads.end());
@@ -642,21 +647,34 @@ bool ep2_ok(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi, bo
         if (i == 0 || low_reads[i] - low_reads[i - 1] > 100) groups.push_back({});
         groups.back().push_back(low_reads[i]);
     }
+    const size_t n = groups.size();
+    std::vector<bool> four(n, false);
+    for (size_t gi = 0; gi < n; ++gi) {
+        const auto& g = groups[gi];
+        bool uniform = g.size() == 4;
+        for (size_t k = 1; k < g.size() && uniform; ++k) if (g[k] - g[k - 1] != 4 * T) uniform = false;
+        four[gi] = uniform;
+    }
+    auto line_apart = [&](size_t i, size_t j) {
+        uint64_t d = groups[j].front() - groups[i].front();
+        return d == 454 * T || d == 456 * T;
+    };
     const uint64_t log_end = log.empty() ? 0 : log.back().cycle;
     std::set<uint64_t> refresh;
-    for (size_t gi = 0; gi < groups.size(); ++gi) {
+    for (size_t gi = 0; gi < n; ++gi) {
         const auto& g = groups[gi];
-        bool uniform = true;
-        for (size_t k = 1; k < g.size(); ++k) if (g[k] - g[k - 1] != 4 * anc.t_cpu) uniform = false;
+        bool accept = four[gi] && ((gi > 0 && four[gi - 1] && line_apart(gi - 1, gi)) ||
+                                   (gi + 1 < n && four[gi + 1] && line_apart(gi, gi + 1)));
         // A run ends at its DONE write, which can fall inside a refresh group: a last group of one to
-        // three reads whose next read would come after the end of the log, and whose first read is a
-        // line mark on F1's cadence, is a refresh group cut short by the end of the run.
-        bool cut_short = false;
-        if (g.size() < 4 && gi > 0 && gi + 1 == groups.size() && log_end < g.back() + 4 * anc.t_cpu) {
-            uint64_t d = g.front() - groups[gi - 1].front();
-            cut_short = (d == 454 * anc.t_cpu || d == 456 * anc.t_cpu);
+        // three reads, 4*T_CPU apart, whose next read would come after the end of the log and whose
+        // first read is a line mark on the cadence of the group before it, is a refresh group cut short.
+        if (!accept && gi > 0 && gi + 1 == n && g.size() < 4 && four[gi - 1] && line_apart(gi - 1, gi) &&
+            log_end < g.back() + 4 * T) {
+            bool uniform = true;
+            for (size_t k = 1; k < g.size(); ++k) if (g[k] - g[k - 1] != 4 * T) uniform = false;
+            accept = uniform;
         }
-        if (uniform && (g.size() == 4 || cut_short)) for (uint64_t c : g) refresh.insert(c);
+        if (accept) for (uint64_t c : g) refresh.insert(c);
     }
     bool ok = true;
     for (const auto& a : log) {
@@ -669,6 +687,8 @@ bool ep2_ok(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi, bo
         if (in_range(a.word_addr, 0x0C4000, 0x0C4002)) continue;   // K3's byte
         ok = false;
         if (saw_extra) *saw_extra = true;
+        if (!a.is_write && a.word_addr < 0x1000) { if (stray_low) ++*stray_low; }
+        else if (stray_other) ++*stray_other;
     }
     return ok;
 }
@@ -682,7 +702,7 @@ void register_run(const std::string& bin, bool loaded, bool done, const Ep1Words
     r.ep1 = true;
     for (const auto& w : ep1) if (!w.has_value() || *w != 0) r.ep1 = false;
     r.f1 = measure_anchor(log).ok;
-    r.ep2_graded = done && r.f1;
+    r.ep2_graded = done;
     if (r.ep2_graded) {
         auto s = mark(log, kMkStart);
         uint64_t last = log.empty() ? 0 : log.back().cycle;
@@ -1293,7 +1313,12 @@ int main(int argc, char** argv) {
                                                                                       : "/p1_ciaa_ta.bin");
         Capture e = run_capture(bin, kRunBudget, {});
         auto s = mark(e.log, kMkStart);
-        bool ok = e.loaded && e.done.has_value() && s.has_value() && ep2_ok(e.log, *s, *e.done);
+        size_t stray_low = 0, stray_other = 0;
+        bool ok = e.loaded && e.done.has_value() && s.has_value() &&
+                  ep2_ok(e.log, *s, *e.done, nullptr, &stray_low, &stray_other);
+        checks.note("EP2 dedicated run: reads below $1000 outside a refresh group=" + std::to_string(stray_low) +
+                    ", other accesses outside the CPU ranges=" + std::to_string(stray_other) +
+                    ", F1 anchor holds=" + std::string(measure_anchor(e.log).ok ? "yes" : "no"));
         checks.expect(ok,
             "EP2 [SPECIFICATION.md 1.2]: between the first and last marker, the Chip-memory port "
             "shows only CPU accesses and memory-refresh accesses");
@@ -2610,8 +2635,7 @@ int main(int argc, char** argv) {
     // ---- EP1, EP2, EP3 and F1's anchor, asserted on every capture the package
     // consumed (SPECIFICATION.md 1.2: "Every run asserts all three"). The
     // captures are recorded as they are made (register_run). EP2 is graded on
-    // the runs that completed and passed F1: without F1's line cadence a
-    // refresh read cannot be told from a stray one.
+    // the runs that completed.
     {
         const auto& runs = run_registry();
         std::set<std::string> bins;
@@ -2647,7 +2671,7 @@ int main(int argc, char** argv) {
             if (!bad_ep2.empty()) checks.note("EP2-PER-RUN failed on: " + bad_ep2);
         } else {
             checks.record("EP2-PER-RUN [SPECIFICATION.md 1.2]: not graded -- " + std::to_string(runs.size() - n_ep2_graded) +
-                          " of " + std::to_string(runs.size()) + " captures did not complete or failed F1's anchor");
+                          " of " + std::to_string(runs.size()) + " captures did not complete");
         }
     }
 
