@@ -1499,7 +1499,7 @@ void grade_sprite_frames(const Capture& cap, Checks& checks, const WPhi& wp, con
     // ---- P6.1 (APPC-shr.c9, p.302)
     if (pre && !have7) {
         // SPECIFICATION.md 7/P6 item 3: no baseline line shows a run although C10 holds
-        checks.expect(false, "P6.1 APPC-shr.c9 p.302: no baseline sprite line of F7 shows a run although C10 holds, so no inner pixel shows the letters of Color 16+v");
+        checks.expect(have7, "P6.1 APPC-shr.c9 p.302: no baseline sprite line of F7 shows a run although C10 holds, so no inner pixel shows the letters of Color 16+v");
     } else {
         Eval e;
         if ((run_pre || c11_only) && f9pf_ok) {
@@ -1670,9 +1670,9 @@ void grade_sprite_frames(const Capture& cap, Checks& checks, const WPhi& wp, con
     // (SPECIFICATION.md 7/P7: PASS when both halves pass, FAIL when either fails, not graded when either is not graded)
     auto joint = [&](int a, int b, const std::string& label, const std::string& ng) {
         std::string halves = std::string(a == 1 ? "holds" : a == 2 ? "fails" : "not graded") + " / " + (b == 1 ? "holds" : b == 2 ? "fails" : "not graded");
-        if (a == 2 || b == 2) checks.expect(false, label + halves);
-        else if (a == 0 || b == 0) checks.record(ng);
-        else checks.expect(true, label + halves);
+        bool failed = a == 2 || b == 2;
+        if (!failed && (a == 0 || b == 0)) checks.record(ng);
+        else checks.expect(a == 1 && b == 1, label + halves);
     };
     joint(p5l_state, p62, "P7.2 APPC-shr.c6 p.301: multiplexing occurs for bitplane and sprite colour information (P5.L and P6.2 together; P5.L / P6.2): ",
           "P7.2 APPC-shr.c6 p.301 (P5.L and P6.2 together): NOT GRADED, P5.L or P6.2 is not graded");
