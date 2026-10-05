@@ -60,12 +60,15 @@
 //   returns $0A instead of $00, via NMH_MUTATE=EP1
 // MUTATION EP2 stimulus red Copper DMA started in the window (ep2_contrast.bin): the Copper's own fetch
 //   of $0C3000 appears at the Chip-memory port, via NMH_MUTATE=EP2
-// MUTATION EP3 stimulus red the program never reaches DONE (ep3_contrast.bin): no final marker, no
-//   graded result, via NMH_MUTATE=EP3
-// MUTATION F1-ANCHOR stimulus red the same live refresh capture, evaluated against 1.25x the measured
-//   T_CPU instead of 1x, via NMH_MUTATE=(none -- recomputed from the normal capture, no separate binary)
-// MUTATION FIXTURE not separately mutated: it is the same program-stored-constant channel every other
-//   result store already uses; a break in it would show as every other result reading wrong too
+// MUTATION EP2 stimulus red Copper DMA started from a list in low Chip memory (ep2_contrast_low.bin): the Copper's own fetch lands below $1000 outside a refresh group, via NMH_MUTATE=EP2-LOW
+// MUTATION EP3 stimulus red the program completes its work and stores $600E as its final marker (p1_ciaa_ta_ep3.bin): no DONE_VALUE write, via NMH_MUTATE=EP3
+// MUTATION F1-ANCHOR stimulus red shorter lines (HTOTAL, BEAMCON0) set after the first marker (p1_ciaa_ta_f1.bin): consecutive refresh line marks are no longer 454*T_CPU apart, via NMH_MUTATE=F1-ANCHOR
+// MUTATION F1-ANCHOR-CONTRAST none impossible unfalsifiable at this boundary: the line only compares the measured line marks against 1.25*T_CPU, and no stimulus makes line marks 454 or 456 apart at 1.25*T_CPU while they are not at T_CPU
+// MUTATION FIXTURE stimulus red the program stores $BEE0 as its fixture word (p1_ciaa_ta_fixture.bin): the delivered word is not $BEEF, via NMH_MUTATE=FIXTURE
+// MUTATION EP1-PER-RUN stimulus red the CIAA/timer-B P1 program writes CIAA CRA before its first read of it (p1_ciaa_tb_ep1.bin): that capture's EP1 words are not all $00, via NMH_MUTATE=EP1-PER-RUN
+// MUTATION EP2-PER-RUN stimulus red the CIAA/timer-B P1 program starts Copper DMA from a list in low Chip memory (p1_ciaa_tb_ep2.bin): a non-refresh low-address fetch in that capture's window, via NMH_MUTATE=EP2-PER-RUN
+// MUTATION EP3-PER-RUN stimulus red the CIAA/timer-B P1 program stores $600E as its final marker (p1_ciaa_tb_ep3.bin): that capture has no DONE_VALUE write, via NMH_MUTATE=EP3-PER-RUN
+// MUTATION F1-ANCHOR-PER-RUN stimulus red the CIAA/timer-B P1 program sets shorter lines after the first marker (p1_ciaa_tb_f1.bin): that capture's line marks are off the cadence, via NMH_MUTATE=F1-ANCHOR-PER-RUN
 // MUTATION P3 stimulus green a CPU-driven toggle through the same predicate: P3-GREENCTL below
 // MUTATION P3-GREENCTL stimulus red the level before the first flag written as 0 instead of 1 (p3_ciab_tb_cputoggle_low.bin): the level conjunct of P3's predicate fails while the pairing holds, via NMH_MUTATE=P3-GREENCTL
 // MUTATION P4 stimulus green a CPU-driven pulse at one fixed phase of the timer's period through the same comparator: P4-GREENCTL below
@@ -85,6 +88,7 @@
 // instances", not once per instance).
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -93,6 +97,7 @@
 #include <iostream>
 #include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -210,6 +215,32 @@ struct Checks {
     int passed = 0, failed = 0;
 };
 
+// ---- the common preconditions of every run (SPECIFICATION.md 1.2 EP1-EP3, 1.4 F1) --
+// Every capture the package consumes is recorded here as it is made; the per-run
+// assertions at the end of main grade the whole population. The dedicated EP and F1
+// contrast runs switch the recording off (NoRegister), so that their mutations
+// change only their own assertions.
+struct RunRecord {
+    std::string bin;
+    bool loaded = false, done = false, ep1 = false;
+    bool f1 = false;              // F1's anchor holds
+    bool ep2_graded = false;      // EP2 is graded only where the run completed and F1 holds
+    bool ep2 = false;
+};
+std::vector<RunRecord>& run_registry() { static std::vector<RunRecord> v; return v; }
+bool& registering() { static bool b = true; return b; }
+struct NoRegister {
+    bool saved;
+    NoRegister() : saved(registering()) { registering() = false; }
+    ~NoRegister() { registering() = saved; }
+};
+using Ep1Words = std::array<std::optional<uint16_t>, 4>;
+void register_run(const std::string& bin, bool loaded, bool done, const Ep1Words& ep1,
+                  const std::vector<nmh::RamAccess>& log);
+template <class H> Ep1Words ep1_of(H& h) {
+    return {h.peek_logical(kEp1CraA), h.peek_logical(kEp1CrbA), h.peek_logical(kEp1CraB), h.peek_logical(kEp1CrbB)};
+}
+
 // ---- generic capture (peek_logical + full ram_log copy) ------------------
 
 struct Capture {
@@ -225,11 +256,12 @@ Capture run_capture(const std::string& bin, uint64_t run_budget,
     Capture c;
     nmh::NanomigHarness h(cfg);
     c.loaded = h.load_program(bin) > 0;
-    if (!c.loaded) return c;
+    if (!c.loaded) { register_run(bin, false, false, Ep1Words{}, c.log); return c; }
     c.released = h.boot(kBootBudget).cpu_released;
     c.done = h.run_until_write(kDoneAddr, kDoneValue, run_budget);
     c.log = h.ram_log();
     for (auto a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
+    register_run(bin, true, c.done.has_value(), ep1_of(h), c.log);
     return c;
 }
 
@@ -259,7 +291,7 @@ LedCapture run_capture_led(const std::string& bin, uint64_t budget,
     LedCapture c;
     nmh::NanomigHarness h(cfg);
     c.loaded = h.load_program(bin) > 0;
-    if (!c.loaded) return c;
+    if (!c.loaded) { register_run(bin, false, false, Ep1Words{}, c.log); return c; }
     c.released = h.boot(kBootBudget).cpu_released;
     c.led_before_boot = h.ports()->fdd_led;
     c.origin = h.cycles();
@@ -278,6 +310,7 @@ LedCapture run_capture_led(const std::string& bin, uint64_t budget,
     }
     c.log = h.ram_log();
     for (auto a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
+    register_run(bin, true, c.done.has_value(), ep1_of(h), c.log);
     return c;
 }
 
@@ -305,12 +338,13 @@ Capture run_capture_param(const std::string& bin, uint32_t param_addr, uint8_t p
     Capture c;
     nmh::NanomigHarness h(cfg);
     c.loaded = h.load_program(bin) > 0;
-    if (!c.loaded) return c;
+    if (!c.loaded) { register_run(bin, false, false, Ep1Words{}, c.log); return c; }
     h.poke_word(param_addr / 2, param_value);
     c.released = h.boot(kBootBudget).cpu_released;
     c.done = h.run_until_write(kDoneAddr, kDoneValue, run_budget);
     c.log = h.ram_log();
     for (auto a : peek_addrs) c.peeks.push_back(h.peek_logical(a));
+    register_run(bin, true, c.done.has_value(), ep1_of(h), c.log);
     return c;
 }
 
@@ -547,7 +581,7 @@ KeyCapture run_capture_key(const std::string& bin, uint32_t ready_addr, bool sen
     KeyCapture r;
     nmh::NanomigHarness h(cfg);
     r.loaded = h.load_program(bin) > 0;
-    if (!r.loaded) return r;
+    if (!r.loaded) { register_run(bin, false, false, Ep1Words{}, r.log); return r; }
     r.released = h.boot(kBootBudget).cpu_released;
     uint32_t w_ready = word_addr(ready_addr);
     std::optional<uint64_t> ready_cycle;
@@ -582,6 +616,7 @@ KeyCapture run_capture_key(const std::string& bin, uint32_t ready_addr, bool sen
     }
     r.log = h.ram_log();
     for (auto a : peek_addrs) r.peeks.push_back(h.peek_logical(a));
+    register_run(bin, true, r.done.has_value(), ep1_of(h), r.log);
     return r;
 }
 
@@ -593,29 +628,76 @@ Capture view_of(const KeyCapture& kc) {
 }
 
 // ---- EP2: between the first marker (MK_START) and the last (DONE), the
-// Chip-memory port shows only refresh accesses (F1/F4's own shape) or
-// accesses to this package's own CPU-owned ranges (the program's own
-// code, its results, its markers). Any other address in the window is a
-// stray DMA master -- exactly EP2's own contrast (the Copper's own fetch
-// of $0C3000).
+// Chip-memory port shows only refresh accesses (F4's own shape: a group of
+// four reads, two memory cycles apart, on F1's line cadence) or accesses to
+// this package's own CPU-owned ranges (E9: the program's own code, its
+// results, its markers, the parameter block, K3's byte). Any other access in
+// the window is a stray DMA master -- exactly EP2's own contrast (the
+// Copper's own fetch of $0C3000, or of a list in low Chip memory).
 bool in_range(uint32_t w, uint32_t lo_byte, uint32_t hi_byte) {
     return w >= word_addr(lo_byte) && w < word_addr(hi_byte);
 }
 
-bool is_refresh_word(uint32_t w) { return w < 0x1000; }
-
 bool ep2_ok(const std::vector<nmh::RamAccess>& log, uint64_t lo, uint64_t hi, bool* saw_extra = nullptr) {
+    // A read below $1000 is a refresh read only when it belongs to a group of
+    // exactly four reads 4*T_CPU apart and F1's line-cadence anchor holds.
+    Anchor anc = measure_anchor(log);
+    if (!anc.ok) return false;
+    std::vector<uint64_t> low_reads;
+    for (const auto& x : log) if (!x.is_write && x.word_addr < 0x1000) low_reads.push_back(x.cycle);
+    std::sort(low_reads.begin(), low_reads.end());
+    std::vector<std::vector<uint64_t>> groups;
+    for (size_t i = 0; i < low_reads.size(); ++i) {
+        if (i == 0 || low_reads[i] - low_reads[i - 1] > 100) groups.push_back({});
+        groups.back().push_back(low_reads[i]);
+    }
+    const uint64_t log_end = log.empty() ? 0 : log.back().cycle;
+    std::set<uint64_t> refresh;
+    for (size_t gi = 0; gi < groups.size(); ++gi) {
+        const auto& g = groups[gi];
+        bool uniform = true;
+        for (size_t k = 1; k < g.size(); ++k) if (g[k] - g[k - 1] != 4 * anc.t_cpu) uniform = false;
+        // A run ends at its DONE write, which can fall inside a refresh group: a last group of one to
+        // three reads whose next read would come after the end of the log, and whose first read is a
+        // line mark on F1's cadence, is a refresh group cut short by the end of the run.
+        bool cut_short = false;
+        if (g.size() < 4 && gi > 0 && gi + 1 == groups.size() && log_end < g.back() + 4 * anc.t_cpu) {
+            uint64_t d = g.front() - groups[gi - 1].front();
+            cut_short = (d == 454 * anc.t_cpu || d == 456 * anc.t_cpu);
+        }
+        if (uniform && (g.size() == 4 || cut_short)) for (uint64_t c : g) refresh.insert(c);
+    }
     bool ok = true;
     for (const auto& a : log) {
         if (a.cycle < lo || a.cycle > hi) continue;
-        if (is_refresh_word(a.word_addr)) continue;
+        if (!a.is_write && a.word_addr < 0x1000 && refresh.count(a.cycle)) continue;   // refresh
         if (in_range(a.word_addr, 0x080000, 0x081000)) continue;   // program code
         if (in_range(a.word_addr, 0x0C0000, 0x0C1000)) continue;   // results + DONE_ADDR
         if (in_range(a.word_addr, 0x0C1000, 0x0C1020)) continue;   // markers
+        if (in_range(a.word_addr, 0x0C2000, 0x0C2020)) continue;   // parameter block
+        if (in_range(a.word_addr, 0x0C4000, 0x0C4002)) continue;   // K3's byte
         ok = false;
         if (saw_extra) *saw_extra = true;
     }
     return ok;
+}
+
+void register_run(const std::string& bin, bool loaded, bool done, const Ep1Words& ep1,
+                  const std::vector<nmh::RamAccess>& log) {
+    if (!registering()) return;
+    RunRecord r;
+    r.bin = bin; r.loaded = loaded; r.done = done;
+    if (!loaded) { run_registry().push_back(r); return; }
+    r.ep1 = true;
+    for (const auto& w : ep1) if (!w.has_value() || *w != 0) r.ep1 = false;
+    r.f1 = measure_anchor(log).ok;
+    r.ep2_graded = done && r.f1;
+    if (r.ep2_graded) {
+        auto s = mark(log, kMkStart);
+        uint64_t last = log.empty() ? 0 : log.back().cycle;
+        r.ep2 = s.has_value() && ep2_ok(log, *s, last);
+    }
+    run_registry().push_back(r);
 }
 
 // ---- P1: per-instance leg grading, gated by Pre1.1 (a1,a2,d2), Pre1.3
@@ -810,15 +892,21 @@ int main(int argc, char** argv) {
 
     // ---- fixture, asserted first (SPECIFICATION.md 1.2 E7) ------------
     {
-        Capture f = run_capture(dir + "/p1_ciaa_ta.bin", kRunBudget, {kFixtureAddr});
+        NoRegister dedicated;
+        Capture f = run_capture(dir + (mv == "FIXTURE" ? "/p1_ciaa_ta_fixture.bin" : "/p1_ciaa_ta.bin"),
+                                kRunBudget, {kFixtureAddr});
         checks.expect(f.loaded && f.done.has_value() && pk_ok(f,0) && pk(f,0) == kFixtureValue,
-            "FIXTURE [SPECIFICATION.md 1.2 E7]: the program can deliver a known stored constant "
+            "FIXTURE [SPECIFICATION.md 1.2]: the program can deliver a known stored constant "
             "before any other result is graded");
     }
 
     // ---- P1 instances -----------------------------------------------------
     std::string p1_ciaa_ta = dir + "/p1_ciaa_ta.bin";
-    std::string p1_ciaa_tb = dir + "/p1_ciaa_tb.bin";
+    std::string p1_ciaa_tb = dir + (mv == "EP1-PER-RUN" ? "/p1_ciaa_tb_ep1.bin"
+                                    : mv == "EP2-PER-RUN" ? "/p1_ciaa_tb_ep2.bin"
+                                    : mv == "EP3-PER-RUN" ? "/p1_ciaa_tb_ep3.bin"
+                                    : mv == "F1-ANCHOR-PER-RUN" ? "/p1_ciaa_tb_f1.bin"
+                                    : "/p1_ciaa_tb.bin");
     std::string p1_ciab_ta = dir + "/p1_ciab_ta.bin";
     std::string p1_ciab_tb = dir + (mv == "P1-PRE11" ? "/p1_ciab_tb_pre11.bin"
                                     : mv == "P1-PRE12" ? "/p1_ciab_tb_pre12.bin"
@@ -1137,8 +1225,10 @@ int main(int argc, char** argv) {
         (void)h1_bit;
     }
 
-    // ---- environment preconditions (EP1-EP3, F1 anchor) ----------------
+    // ---- environment preconditions (EP1-EP3, F1 anchor), on one dedicated run
+    // each (the per-run assertions at the end of main grade every capture) ---
     {
+        NoRegister dedicated;
         std::string bin = dir + (mv == "EP1" ? "/ep1_contrast.bin" : "/p1_ciaa_ta.bin");
         Capture e = run_capture(bin, kRunBudget, {kEp1CraA,kEp1CrbA,kEp1CraB,kEp1CrbB});
         bool ok = e.loaded && e.done.has_value() && pk_ok(e,0) && pk_ok(e,1) && pk_ok(e,2) && pk_ok(e,3) &&
@@ -1147,7 +1237,9 @@ int main(int argc, char** argv) {
                           "to them, return $00");
     }
     {
-        std::string bin = dir + (mv == "EP2" ? "/ep2_contrast.bin" : "/p1_ciaa_ta.bin");
+        NoRegister dedicated;
+        std::string bin = dir + (mv == "EP2" ? "/ep2_contrast.bin" : mv == "EP2-LOW" ? "/ep2_contrast_low.bin"
+                                                                                      : "/p1_ciaa_ta.bin");
         Capture e = run_capture(bin, kRunBudget, {});
         auto s = mark(e.log, kMkStart);
         bool ok = e.loaded && e.done.has_value() && s.has_value() && ep2_ok(e.log, *s, *e.done);
@@ -1156,52 +1248,21 @@ int main(int argc, char** argv) {
             "shows only CPU accesses and memory-refresh accesses");
     }
     {
-        uint64_t budget = (mv == "EP3") ? 500'000 : kRunBudget;
-        std::string bin = dir + (mv == "EP3" ? "/ep3_contrast.bin" : "/p1_ciaa_ta.bin");
-        Capture e = run_capture(bin, budget, {});
+        NoRegister dedicated;
+        std::string bin = dir + (mv == "EP3" ? "/p1_ciaa_ta_ep3.bin" : "/p1_ciaa_ta.bin");
+        Capture e = run_capture(bin, kRunBudget, {});
         checks.expect(e.loaded && e.done.has_value(),
             "EP3 [SPECIFICATION.md 1.2]: the program reaches DONE and has a final marker");
     }
     {
-        Capture e = run_capture(dir + "/p1_ciaa_ta.bin", kRunBudget, {});
+        NoRegister dedicated;
+        Capture e = run_capture(dir + (mv == "F1-ANCHOR" ? "/p1_ciaa_ta_f1.bin" : "/p1_ciaa_ta.bin"), kRunBudget, {});
         Anchor anc = measure_anchor(e.log);
         checks.expect(anc.ok, "F1-ANCHOR [p194,p195,p23]: consecutive refresh line-marks are 454*T_CPU apart "
                               "(or alternately 456/454*T_CPU), measured from the run's own refresh reads");
         bool contrast_fails = anc.ok && !anchor_holds_at(anc, double(anc.t_cpu) * 1.25);
         checks.expect(contrast_fails, "F1-ANCHOR-CONTRAST [p194,p195,p23]: the same comparator, evaluated "
                                       "against 1.25x the measured T_CPU, fails");
-    }
-
-    // ---- EP1, EP2 and F1's anchor, asserted per run (SPECIFICATION.md
-    // 1.2: "Every run asserts all three") -- computed from the eight P1/P2
-    // instance captures already made above, with no further harness runs.
-    {
-        struct RunRef { const Capture* c; size_t ep1_base; };
-        std::vector<RunRef> runs = {
-            {&p1a, kP1IdxEp1}, {&p1b, kP1IdxEp1}, {&p1c, kP1IdxEp1}, {&p1d_view, kP1IdxEp1},
-            {&p2a, kP2IdxEp1}, {&p2b, kP2IdxEp1}, {&p2c, kP2IdxEp1}, {&p2d_view, kP2IdxEp1},
-        };
-        bool ep1_all = true, ep2_all = true, f1_all = true;
-        for (auto& r : runs) {
-            const Capture& c = *r.c;
-            bool ep1ok = c.loaded && c.done.has_value() && c.peeks.size() >= r.ep1_base + 4;
-            for (int i = 0; i < 4 && ep1ok; ++i)
-                if (!pk_ok(c, r.ep1_base+i) || pk(c, r.ep1_base+i) != 0) ep1ok = false;
-            ep1_all = ep1_all && ep1ok;
-
-            auto s = mark(c.log, kMkStart);
-            bool ep2ok = c.loaded && c.done.has_value() && s.has_value() && ep2_ok(c.log, *s, *c.done);
-            ep2_all = ep2_all && ep2ok;
-
-            Anchor anc = measure_anchor(c.log);
-            f1_all = f1_all && anc.ok;
-        }
-        checks.expect(ep1_all, "EP1-PER-RUN [SPECIFICATION.md 1.2]: EP1 holds on every P1 and P2 "
-                               "instance run (all eight)");
-        checks.expect(ep2_all, "EP2-PER-RUN [SPECIFICATION.md 1.2]: EP2 holds on every P1 and P2 "
-                               "instance run (all eight)");
-        checks.expect(f1_all, "F1-ANCHOR-PER-RUN [p194,p195,p23]: F1's own anchor holds on every P1 "
-                              "and P2 instance run (all eight)");
     }
 
     // ---- P3 (toggle mode inverts on every underflow, and at no other time) -
@@ -2061,7 +2122,7 @@ int main(int argc, char** argv) {
             M11 r;
             std::string bin = dir + "/p865_ciaa_mode11.bin";
             nmh::NanomigHarness h(nmh::Config{});
-            if (h.load_program(bin) == 0) return r;
+            if (h.load_program(bin) == 0) { register_run(bin, false, false, Ep1Words{}, {}); return r; }
             h.poke_word(0x0C2000/2, crbval);
             h.boot(kBootBudget);
             uint32_t w_ready = word_addr(0x0C1004);
@@ -2088,6 +2149,7 @@ int main(int argc, char** argv) {
                     h.cycles() >= *ready_cycle + 100ull*10*t_cpu) key_pending = true;
             }
             r.loaded = done.has_value();
+            register_run(bin, true, done.has_value(), ep1_of(h), h.ram_log());
             if (r.loaded) {
                 r.i = h.peek_logical(0x0C0008).value_or(0xFFFF); r.v = h.peek_logical(0x0C000A).value_or(0xFFFF);
                 auto lg = h.ram_log();
@@ -2495,6 +2557,50 @@ int main(int argc, char** argv) {
     checks.record("opus:F-signals.c1, sol:F-signals.c69 [p353]: declined whole -- both say phi2 is a "
                   "\"TTL compatible input\", an electrical property of an input pin that nothing a test "
                   "sees depends on");
+
+    // ---- EP1, EP2, EP3 and F1's anchor, asserted on every capture the package
+    // consumed (SPECIFICATION.md 1.2: "Every run asserts all three"). The
+    // captures are recorded as they are made (register_run). EP2 is graded on
+    // the runs that completed and passed F1: without F1's line cadence a
+    // refresh read cannot be told from a stray one.
+    {
+        const auto& runs = run_registry();
+        std::set<std::string> bins;
+        size_t n_ep1 = 0, n_done = 0, n_f1 = 0, n_ep2_graded = 0, n_ep2 = 0, n_loaded = 0;
+        std::string bad_ep1, bad_done, bad_f1, bad_ep2;
+        auto add = [](std::string& list, const std::string& bin) {
+            std::string shortname = bin.substr(bin.find_last_of('/') + 1);
+            if (list.find(shortname) == std::string::npos) list += (list.empty() ? "" : ", ") + shortname;
+        };
+        for (const auto& r : runs) {
+            bins.insert(r.bin);
+            if (r.loaded) ++n_loaded;
+            if (r.ep1) ++n_ep1; else add(bad_ep1, r.bin);
+            if (r.done) ++n_done; else add(bad_done, r.bin);
+            if (r.f1) ++n_f1; else add(bad_f1, r.bin);
+            if (r.ep2_graded) { ++n_ep2_graded; if (r.ep2) ++n_ep2; else add(bad_ep2, r.bin); }
+        }
+        checks.note("per-run population: " + std::to_string(runs.size()) + " captures of " +
+                    std::to_string(bins.size()) + " programs, " + std::to_string(n_loaded) + " loaded");
+        checks.expect(!runs.empty() && n_ep1 == runs.size(),
+            "EP1-PER-RUN [SPECIFICATION.md 1.2]: EP1 holds on every capture the package consumed");
+        if (!bad_ep1.empty()) checks.note("EP1-PER-RUN failed on: " + bad_ep1);
+        checks.expect(!runs.empty() && n_done == runs.size(),
+            "EP3-PER-RUN [SPECIFICATION.md 1.2]: every capture the package consumed reaches DONE and has a final marker");
+        if (!bad_done.empty()) checks.note("EP3-PER-RUN failed on: " + bad_done);
+        checks.expect(!runs.empty() && n_f1 == runs.size(),
+            "F1-ANCHOR-PER-RUN [p194,p195,p23]: F1's own anchor holds on every capture the package consumed");
+        if (!bad_f1.empty()) checks.note("F1-ANCHOR-PER-RUN failed on: " + bad_f1);
+        if (n_ep2_graded == runs.size() && !runs.empty()) {
+            checks.expect(n_ep2 == n_ep2_graded,
+                "EP2-PER-RUN [SPECIFICATION.md 1.2]: between the first and last marker, every capture the package "
+                "consumed shows only CPU accesses and memory-refresh accesses");
+            if (!bad_ep2.empty()) checks.note("EP2-PER-RUN failed on: " + bad_ep2);
+        } else {
+            checks.record("EP2-PER-RUN [SPECIFICATION.md 1.2]: not graded -- " + std::to_string(runs.size() - n_ep2_graded) +
+                          " of " + std::to_string(runs.size()) + " captures did not complete or failed F1's anchor");
+        }
+    }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;

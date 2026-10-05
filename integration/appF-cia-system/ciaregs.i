@@ -65,12 +65,29 @@ ICR_CLEARMASK   equ     $7F     ; SETCLR=0: clears every mask bit named here
 MARKER_SENTINEL equ     $FACE
 MK_START        equ     $0C1000
 
-; ---- fixture constant (SPECIFICATION.md 1.2 E7) -------------------------
+; ---- fixture constant (SPECIFICATION.md 1.2, FIXTURE) -------------------------
 ; A program-stored constant, delivered before anything else is graded: it
 ; proves the fixture can hand back a value the program itself wrote, so a
 ; check expecting $00 on a word nothing wrote cannot pass by coincidence.
 FIXTURE_ADDR    equ     $0C1FFC
+        ifnd    FIXTURE_VALUE
 FIXTURE_VALUE   equ     $BEEF
+        endc
+
+; ---- FINISH: the program's last action. DONE (nanomig.i), or, when a
+; wrapper defines MUT_EP3, a final marker with another value followed by a
+; branch to itself, so the program completes its work without the final
+; marker EP3 requires.
+        ifd     MUT_EP3
+FINISH          macro
+                move.w  #$600E,DONE_ADDR
+.fin\@:         bra.s   .fin\@
+                endm
+        else
+FINISH          macro
+                DONE
+                endm
+        endc
 
 ; ---- results area ($0C0000+, SPECIFICATION.md 1.2 E9) ------------------
 ; EP1's own four reads (CRA/CRB on both CIAs, made before any other write
@@ -100,6 +117,9 @@ SETUP           macro
                 move.b  CIAA_ICR,d0             ; discarded (clears flags)
                 move.b  #ICR_CLEARMASK,CIAB_ICR
                 move.b  CIAB_ICR,d0             ; discarded (clears flags)
+                ifd     MUT_EP1
+                move.b  #$0A,CIAA_CRA           ; a write before the first read of CRA
+                endc
                 move.b  CIAA_CRA,d0
                 move.w  d0,EP1_CRA_A
                 move.b  CIAA_CRB,d0
@@ -109,6 +129,16 @@ SETUP           macro
                 move.b  CIAB_CRB,d0
                 move.w  d0,EP1_CRB_B
                 move.w  #MARKER_SENTINEL,MK_START
+                ifd     MUT_F1
+                move.w  #$00C8,$1C0(a0)         ; HTOTAL: shorter lines
+                move.w  #$0080,$1DC(a0)         ; BEAMCON0: VARBEAMEN
+                endc
+                ifd     MUT_EP2LOW
+                move.w  #0,COP1LCH(a0)          ; Copper list in low Chip memory
+                move.w  #$0100,COP1LCL(a0)
+                move.w  #0,COPJMP1(a0)
+                move.w  #$8280,DMACON(a0)       ; SET,DMAEN,COPEN
+                endc
                 endm
 
 ; ---- R-LATCH(T,L) (SPECIFICATION.md 1.5): low byte then high byte -----

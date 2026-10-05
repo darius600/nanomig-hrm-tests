@@ -147,7 +147,11 @@ start:
 
 ; ---- step 6: leg B (PR-data override) ----------------------------------
         move.b  #$3F|M,DDRB
+        ifd     MUT_B0
+        move.b  #Q1,PRB                  ; control contrast: data bit n = 0
+        else
         move.b  #M|Q1,PRB
+        endc
         READ_STORE PRB,P1_B1
 
 ; ---- step 7: leg C (timer output high) ---------------------------------
@@ -217,4 +221,4 @@ start:
         move.b  #Q2|$08,PRB              ; deselect; DONE is the last marker
         endc
 
-        DONE
+        FINISH
