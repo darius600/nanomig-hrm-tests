@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `src/minimig-aga/cpu_wrapper.v:117`, the Zorro II RAM select, and `:639-642`, the register-48 write — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L117) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, **minimig-dev/MinimigAGA-MiST-TC64** and NanoMig, if the manual's reading is accepted. The select is **inherited**: NanoMig's is MiSTer's, and TC64 decodes the same range in its own CPU interface, so no line has a fix to port, and a fix made upstream must be ported to NanoMig deliberately, as there is no automatic merge; see *What the others say* |
-| **Test** | [`integration/appK-autoconfig`](../../integration/appK-autoconfig) — two assertions, run on both CPU cores: `P3-NOTOTHER` (`test_appK_autoconfig.cpp:722-732`) and `P3-BASE` (`:734-747`), red on fx68k and on TG68K. Both carry `sol:K-0837`, `opus:K-0869`, `opus:K-0014` and `sol:K-0008`. Their two green controls on the same comparator (`:749-765`) are green on both cores |
+| **Test** | [`integration/appK-autoconfig`](../../integration/appK-autoconfig) — two assertions, run on both CPU cores: `P3-NOTOTHER` (`test_appK_autoconfig.cpp:878-882`) and `P3-BASE` (`:901-905`), red on fx68k and on TG68K. Both carry `sol:K-0837` and `opus:K-0869`; the id-less `P3-NOTOTHER-ASSIGNED` (`:875-877`) and `P3-BASE-ASSIGNED` (`:898-900`) come before them and are green on both cores. Their two controls on the same comparator, `P3-CONTROL-IO` (`:919-922`) and `P3-CONTROL-UNCONF` (`:934-937`), are green on both cores |
 | **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 384, 386, 388, 391, 395, 433–436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red on fx68k and 2 on TG68K (`P3-NOTOTHER`, `P3-BASE`; 13 passed, 3 failed on each core). The third red on each core, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. In the same run `P3-CONTENT`, green on both cores, reads back what was written at the base the board was given; `P3-IMG2`, green, shows the board leaving $E8xxxx on the register-48 write; and the two `P3-NOTOTHER/P3-BASE control` lines, green on both cores, read $0000 where `P3-NOTOTHER` and `P3-BASE` read P2: at $A00000 with the board configured at $200000, and at $400000 with the board left unconfigured |
+| **Assertions** | 2 red on fx68k and 2 on TG68K (`P3-NOTOTHER`, `P3-BASE`; 25 passed, 3 failed on each core). The third red on each core, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. In the same run `P3-CONTENT`, `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED`, green on both cores, read back what was written at the base the board was given; `P3-IMG2`, green, shows the board leaving $E8xxxx on the register-48 write; and `P3-CONTROL-IO` and `P3-CONTROL-UNCONF`, green on both cores, read $0000 where `P3-NOTOTHER` and `P3-BASE` read P2: at $A00000 with the board configured at $200000, and at $400000 with the board left unconfigured |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline take the base from the byte written to register 48 and map a Zorro II memory board from that base, for its own size and nowhere else. MiSTer and TC64, descendants, select $200000–$9FFFFF once the board is configured, whatever was written, as NanoMig does |
 | **See also** | [NM-HRM-064](NM-HRM-064.md), the shut-up register, red in the same package as `GATE-G`; [NM-HRM-065](NM-HRM-065.md), register 48 and a Zorro III board |
 
@@ -175,32 +175,45 @@ carries A23-A16 (p. 435):
 | run | base written to 48 | after the write | read back | assertion | fx68k | TG68K |
 |---|---|---|---|---|---|---|
 | R3, R3n | $20, so $200000 | P0 = $A55A at $200000 and P1 = $3CC3 at $200002, a $0000 write to a chip-RAM word, both read | P0, P1 | `P3-CONTENT` | green | green |
+| R3n | $20, so $200000 | the same P0 and P1 reads | P0, P1 | `P3-NOTOTHER-ASSIGNED` | green | green |
 | R3n | $20, so $200000 | then P2 = $5AA5 at $400000, a $0000 write to a chip-RAM word, $400000 read | **P2** | `P3-NOTOTHER` | **red** | **red** |
-| R3' | $40, so $400000 | P0 and P1 at $400000 and $400002, a $0000 write to a chip-RAM word, both read | P0, P1 | `P3-BASE` | **red**, through R3n' | **red**, through R3n' |
-| R3n' | $40, so $400000 | the same, then P2 at $200000, a $0000 write to a chip-RAM word, $200000 read | **P2** | | | |
-| R3n at $A00000 (`prog_r3_io.s`) | $20, so $200000 | as R3n, with P2 written at $A00000 and $A00000 read | $0000 | `P3-NOTOTHER/P3-BASE control [p386]` | green | green |
-| R3n unconfigured (`prog_r3_unconf_n.s`) | not written; 4A only | P2 at $400000, a $0000 write to a chip-RAM word, $400000 read | $0000 | `P3-NOTOTHER/P3-BASE control [p431]` | green | green |
+| R3' | $40, so $400000 | P0 and P1 at $400000 and $400002, a $0000 write to a chip-RAM word, both read | P0, P1 | `P3-BASE-ASSIGNED` | green | green |
+| R3n' | $40, so $400000 | the same, then P2 at $200000, a $0000 write to a chip-RAM word, $200000 read | **P2** | `P3-BASE` | **red** | **red** |
+| R3n at $A00000 (`prog_r3_io.s`) | $20, so $200000 | as R3n, with P2 written at $A00000 and $A00000 read | $0000 | `P3-CONTROL-IO` | green | green |
+| R3n unconfigured (`prog_r3_unconf_n.s`) | not written; 4A only | P2 at $400000, a $0000 write to a chip-RAM word, $400000 read | $0000 | `P3-CONTROL-UNCONF` | green | green |
 
 The two red lines print their claim ids and pages as
-`P3-NOTOTHER (sol:K-0837, opus:K-0869, opus:K-0014, sol:K-0008) [p391,p433-434]`
+`P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]`
 and
-`P3-BASE (sol:K-0837, opus:K-0869, opus:K-0014, sol:K-0008) [p388,p433]`,
+`P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]`,
 and both quote p. 391's and p. 435's sentences given under *What the HRM
-says*. `P3-NOTOTHER` (`test_appK_autoconfig.cpp:722-732`) passes when the run
-never finishes or the word read differs from P2. The same line also requires
-register 00's memory flag and the $0000 write to a chip-RAM word between the
-write of P2 and its read; both hold in R3n on both cores, so its red means the run finished and read P2
-back at a base the board was not given. `P3-BASE` (`:734-747`) takes R3' and
-R3n' together and is red through R3n' alone: R3' reads P0 and P1 back at
-$400000. The two controls (`:749-765`) run the same comparator where the board
-is not to answer: at $A00000, Zorro II I/O expansion space in Figure K-1
-(p. 386), with the board configured at $200000; and at $400000 with the board
-never configured. Both runs finish and read $0000, not P2, so the comparator
-goes green on a live input. The words in the *read back* column were read from
-the package's own programs, run once more on each core with the same harness
-and settings and printed rather than graded: they are the same on both cores.
+says*. Each is an aggregate. `P3-NOTOTHER` (`test_appK_autoconfig.cpp:878-882`)
+is `R0 = P0 && R1 = P1V && (!done || R2 != P2)` in R3n: it passes when the
+board answers at the base it was given and the run never finishes or the
+word read at the other base differs from P2. `P3-NOTOTHER-ASSIGNED`
+(`:875-877`) grades the first two terms alone and is green on both cores, so
+the red is the last term: R3n finishes and reads P2 back at a base the board
+was not given. The line also requires register 00's memory flag and the
+$0000 write to a chip-RAM word between the write of P2 and its read
+(`P3-NOTOTHER-PRECOND`, `:870-872`), both of which hold on both cores.
+`P3-BASE` (`:901-905`) is the same aggregate over R3' and R3n':
+`P3-BASE-ASSIGNED` (`:898-900`) grades P0 and P1 read back at $400000 in R3'
+and is green, and R3n' reads P2 back at $200000, so the line is red. The
+source carries a `MUTATION P3-NOTOTHER stimulus green` record (`:40`) and a
+`MUTATION P3-BASE stimulus green` record (`:41`), each naming the two
+controls as the green runs of the same comparator, and neither red line has a
+mutation of its own. `P3-CONTROL-IO` (`:919-922`) and `P3-CONTROL-UNCONF`
+(`:934-937`) run that comparator, `!done || R2 != P2`, where the board is not
+to answer: at $A00000, Zorro II I/O expansion space in Figure K-1 (p. 386),
+with the board configured at $200000; and at $400000 with the board never
+configured. Both runs finish and read $0000, not P2, so the comparator goes
+green on a live input. The log prints R2 for each of the four runs, as
+`MEASURED: P3-NOTOTHER run R3n: completion marker written, R2 = $5AA5`, the
+same for R3n', and `R2 = $0000` for the two control runs; the values are the
+same on both cores. P0 and P1 are graded by `P3-CONTENT` and by the two
+`...-ASSIGNED` lines.
 
-**The select, measured for this page.** A probe program with the package's
+**The select, probed.** A probe program with the package's
 environment, harness and settings — a measurement, not a graded assertion —
 configures the board, writes a distinct word at nine addresses and reads each
 back, logging `nanomig.v`'s `fastram_sel` and `fastram_addr`:
@@ -311,7 +324,8 @@ address. This has not been run here. What it would change:
   these pages predicts an answer outside the base*).
 - **The comparator reads green on a live input.** In the same run
   `P3-CONTENT` reads back P0 and P1 at the base the board was given, in both
-  runs, and the two `P3-NOTOTHER/P3-BASE control` lines put the red lines'
+  runs, `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED` do the same in R3n and
+  R3', and `P3-CONTROL-IO` and `P3-CONTROL-UNCONF` put the red lines'
   own comparator on two inputs and are green on both cores: with the board
   configured at $200000 a word written at $A00000 reads back $0000, and with
   the board unconfigured a word written at $400000 reads back $0000. The
