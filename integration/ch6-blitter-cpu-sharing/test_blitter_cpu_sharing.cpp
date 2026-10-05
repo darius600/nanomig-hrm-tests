@@ -9,7 +9,11 @@
 // preconditions and the assertions -- no separate "-mutation" line.
 //
 // MUTATION FIXTURE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=FIXTURE
-// MUTATION A1 stimulus red pointer value changed to a different source address, via NMH_MUTATE=A1
+// MUTATION A1-A stimulus red the single MOVE.L to BLTAPTH points at the A decoy word instead of the A source word, via NMH_MUTATE=A1-A
+// MUTATION A1-B stimulus red the single MOVE.L to BLTBPTH points at the B decoy word instead of the B source word, via NMH_MUTATE=A1-B
+// MUTATION A1-C stimulus red the single MOVE.L to BLTCPTH points at the C decoy word instead of the C source word, via NMH_MUTATE=A1-C
+// MUTATION A1-D stimulus red the single MOVE.L to BLTDPTH points at the D decoy word instead of the intended destination word, via NMH_MUTATE=A1-D
+// MUTATION A1 stimulus red the single MOVE.L of all four channels points at the channel's decoy word, via NMH_MUTATE=A1
 // MUTATION DESC-BASE stimulus red the blitter's-own-convention capture substituted with the off-by-one capture, via NMH_MUTATE=DESC-BASE
 // MUTATION DESC-OFFBY1 stimulus red the one-word-past capture substituted with a two-words-past capture (outside the exact range graded), via NMH_MUTATE=DESC-OFFBY1
 // MUTATION A2 stimulus red blit shrunk to a near-instant one-word transfer, via NMH_MUTATE=A2
@@ -21,22 +25,29 @@
 // MUTATION A4 stimulus red BLTPRI cleared (nasty -> share), via NMH_MUTATE=A4
 // MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
 // MUTATION A4-SHARE stimulus red reference rate taken from the nasty-mode blit's own active window (the CPU makes two accesses there) instead of the no-DMA run, via NMH_MUTATE=A4-SHARE
-// MUTATION A6 stimulus red six aligned planes substituted for four inside the fetch window, via NMH_MUTATE=A6
-// MUTATION A8 stimulus green baseline capture substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator), via NMH_MUTATE=A8
-// MUTATION A8 stimulus red baseline capture substituted with the share-mode blit's own active-window CPU accesses (live, odd-slot spacings on both cores, same unchanged comparator), via NMH_MUTATE=A8-SHARE
-// MUTATION A9 stimulus red bitplane resolution changed from low to high, via NMH_MUTATE=A9
-// MUTATION A9PRE stimulus red bitplane program substituted with one that never enables bitplane DMA, via NMH_MUTATE=A9PRE
-// MUTATION A10 stimulus red bitplane resolution changed from high to low, via NMH_MUTATE=A10
+// MUTATION A8PRE stimulus red the no-DMA run (no blitter, so no DMA access takes a slot the 68000 was ready for) substituted for the share-mode run, via NMH_MUTATE=A8PRE
+// MUTATION A8 implementation red private copy of minimig_m68k_bridge.v outside the repository in which the 68000 is not acknowledged in the first two free colour clocks after a colour clock the chipset took from it; the unchanged comparator finds an even-numbered free slot left unused between every missed even cycle and its access (111 of 111 on fx68k, 123 of 123 on TG68K; on fx68k A11 also reads red, since the display windows take colour clocks from the 68000 too), via the binary built from that copy, run with NMH_MUTATE=A8
+// MUTATION SYSDMA-C29 stimulus red the whole-4-clock-aligned loop substituted for the BRA.S loop (no instruction leaves the 68000 ready for an odd-numbered slot), via NMH_MUTATE=SYSDMA-C29
+// MUTATION SYSDMA-C29 stimulus green the share-mode blit's run substituted for the display run: a live input on which the same comparator finds missed cycles with an odd-numbered ready slot on both cores, via NMH_MUTATE=SYSDMA-C29-SHARE
+// MUTATION A9PRE stimulus red the four-plane run substituted with the no-DMA aligned run (no display windows), via NMH_MUTATE=A9PRE
+// MUTATION A9 stimulus red the four-plane aligned run substituted with the six-plane aligned run, via NMH_MUTATE=A9
 // MUTATION A10PRE stimulus red bitplane program substituted with one that never enables bitplane DMA, via NMH_MUTATE=A10PRE
-// MUTATION A11 stimulus red both sides run the same four-bitplane config, via NMH_MUTATE=A11
-// MUTATION PARITY stimulus green no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator): PARITY is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=PARITY
-// MUTATION PARITY-REF stimulus red the lores-plane capture substituted with the no-bitplane-DMA baseline (no BPL1 reads at all), via NMH_MUTATE=PARITY-REF
-// MUTATION SYSDMA-C29 stimulus red the misaligned (BRA.S) in-window capture substituted with the whole-4-clock-aligned loop's own (no waited step), via NMH_MUTATE=SYSDMA-C29
+// MUTATION A10 stimulus red bitplane resolution changed from high to low, via NMH_MUTATE=A10
+// MUTATION A11PRE stimulus red the five-plane run substituted with the no-DMA run (no display windows), via NMH_MUTATE=A11PRE
+// MUTATION A11 stimulus red the five- and six-plane runs substituted with the four-plane run, via NMH_MUTATE=A11
+// MUTATION A6 stimulus red six aligned planes substituted for four inside the fetch window, via NMH_MUTATE=A6
+// MUTATION OPEN50PRE stimulus red the six-plane run substituted with the no-DMA run (no display windows), via NMH_MUTATE=OPEN50PRE
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
+// MUTATION PARITY-REF stimulus red the lores-plane capture substituted with the no-bitplane-DMA baseline (no BPL1 reads at all), via NMH_MUTATE=PARITY-REF
+// MUTATION PARITY stimulus green no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator): PARITY is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=PARITY
 // MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
+// MUTATION TAS-SPAN-PRE stimulus red the TAS.B replaced by NOP, so the TAS address shows three cycles instead of five (prog_tas_span_mut.s), via NMH_MUTATE=TAS-SPAN-PRE
+// MUTATION TAS-SPAN none impossible unfalsifiable at this boundary: the read and the write of a read-modify-write are two RAM-port samples in two different slots, so no stimulus makes their span at most one slot, and an ordinary cycle is one sample
 // MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included; measured 0 in-window writes on fx68k (red through both the existence and the every-gap-equals-period clause) and 1 on TG68K (existence clause stays green; red only through the every-gap-equals-period clause, since a single in-window write forms no in-window gap), via NMH_MUTATE=FASTRUN
 // MUTATION FASTRUN-LOCKOUT stimulus red FR_CODE moved to chip RAM ($0C0800, prog_fastrun_lockout_chipcode.s), FR_CNT still in fast RAM: the fetch window is entirely DMA (A10PRE: p.197's own "40 * 4 = 160 time slots", none left over), so no CPU access is possible anywhere strictly inside it; measured 0 counter writes strictly inside the window on both cores, via NMH_MUTATE=FASTRUN-LOCKOUT
 // MUTATION FASTRUN-LOCKOUT-PRE stimulus red prog_fastrun_lockout_2plane.s (FR_2PLANE set): two hi-res bitplanes (BPLCON0 $A000, same DDFSTRT/DDFSTOP) leave 80 of the window's 160 slots free (Figure 6-9's own double dagger); the blitter's own first access lands inside the window instead of after it, so the precondition itself goes red, via NMH_MUTATE=FASTRUN-LOCKOUT-PRE
+// MUTATION BBUSY-LOCKOUT-PRE stimulus red prog_bbusy_lockout_2plane.s (FR_2PLANE set): two hi-res bitplanes leave 80 of the window's 160 slots free; the blitter's first access lands inside the window, so the precondition goes red, via NMH_MUTATE=BBUSY-LOCKOUT-PRE
+// MUTATION BBUSY-LOCKOUT stimulus red prog_bbusy_lockout_intena.s (BB_INTENA set): both tests read INTENAR, whose bit 14 is clear, instead of DMACONR, via NMH_MUTATE=BBUSY-LOCKOUT
 //
 // A5 is withdrawn (see the A5-WITHDRAWN record below); it carries no
 // assertion and no mutation. SLOTSPAN is withdrawn (see the SLOTSPAN-WITHDRAWN
@@ -210,7 +221,8 @@ FastCapture run_capture_fastram(const std::string& bin, uint64_t step_budget,
             // (h.cycles() was already incremented past it), matching
             // ram_log()'s own convention of recording the cycle a sample
             // was taken at.
-            raw_fast.push_back({h.cycles() - 1, (uint32_t)h.ports()->fastram_addr, 0,
+            raw_fast.push_back({h.cycles() - 1, (uint32_t)h.ports()->fastram_addr,
+                                 h.ports()->fastram_wr ? (uint16_t)h.ports()->fastram_din : (uint16_t)0,
                                  bool(h.ports()->fastram_wr), false, false});
         }
     }
@@ -248,12 +260,6 @@ size_t count_in_window(const std::vector<uint64_t>& cycles, uint64_t lo, uint64_
     return n;
 }
 
-uint64_t median(std::vector<uint64_t> v) {
-    if (v.empty()) return 0;
-    std::sort(v.begin(), v.end());
-    return v[v.size() / 2];
-}
-
 // Most frequent value (the histogram's mode), not the middle of the sorted
 // list -- used where a single dominant, structurally-recurring value is
 // the thing being compared (loop periods, access spacings), and a few
@@ -286,7 +292,8 @@ uint64_t mode_of(const std::vector<uint64_t>& v) {
 
 struct Burst { uint64_t first, last; size_t count; };
 
-std::vector<Burst> group_bursts(const std::vector<uint64_t>& cycles, uint64_t gap = 200) {
+std::vector<Burst> group_bursts(const std::vector<uint64_t>& cycles, uint64_t gap = 0) {
+    if (gap == 0) gap = 25 * kCck;   // a gap over 25 slots starts a new burst
     std::vector<Burst> out;
     if (cycles.empty()) return out;
     uint64_t s = cycles[0], p = cycles[0]; size_t n = 1;
@@ -301,10 +308,19 @@ std::vector<Burst> group_bursts(const std::vector<uint64_t>& cycles, uint64_t ga
 
 struct FetchWindow { uint64_t lo, hi; };
 
+// Only full lines are windows: the burst of a line holds as many BPL1 reads
+// as the run's most frequent burst (20 words of a low-resolution line, 40 of
+// a high-resolution one, p.197); a burst the capture started or ended inside
+// holds fewer and is left out.
 std::vector<FetchWindow> fetch_windows(const std::vector<uint64_t>& bpl_reads) {
     std::vector<FetchWindow> out;
-    for (auto& b : group_bursts(bpl_reads)) {
-        if (b.count < 2) continue;
+    auto bursts = group_bursts(bpl_reads);
+    std::map<size_t, size_t> count_hist;
+    for (auto& b : bursts) if (b.count >= 2) ++count_hist[b.count];
+    size_t full = 0, full_n = 0;
+    for (const auto& kv : count_hist) if (kv.second > full_n) { full_n = kv.second; full = kv.first; }
+    for (auto& b : bursts) {
+        if (b.count < 2 || b.count != full) continue;
         uint64_t spacing = (b.last - b.first) / (b.count - 1);
         uint64_t lead = spacing > kCck ? spacing - kCck : 0;
         out.push_back({b.first - lead, b.last});
@@ -341,16 +357,12 @@ std::vector<uint64_t> bp_reads_of(const Capture& c) {
     return read_cycles_in_range(c.log, word_addr(kBpPtrLo), word_addr(kBpPtrHi));
 }
 
-size_t bp_scratch_count(const Capture& c) {
-    return write_cycles_in_range(c.log, word_addr(kBpScratch), word_addr(kBpScratch) + 1).size();
-}
-
 // ---- p.194/Figure 6-9's per-line slot numbering -------------------------
 //
 // Refresh reads are RAM-port reads below word address $1000 -- far below
 // every program-specific range this package uses (kProgLo/kProgHi, every
 // scratch word, every blit source/destination, BPL1PTR): 4 reads per
-// line, 2 slots apart, grouped here by a gap over 100 clk_sys starting a
+// line, 2 slots apart, grouped here by a gap over 12.5 slots starting a
 // new line. Figure 6-9 draws refresh on odd-numbered slots, the last one
 // at $05. A CPU access is sampled at cycle == 5 (mod 8), a DMA (refresh)
 // access at cycle == 1 (mod 8), so a CPU cycle minus a refresh cycle is
@@ -373,7 +385,7 @@ struct LineRef {
     std::vector<LineGroup> groups;
 };
 
-// Every read below word address $1000 is grouped by gap (over 100 clk_sys
+// Every read below word address $1000 is grouped by gap (over 12.5 slots
 // starts a new group), then only the groups matching Figure 6-9's own
 // refresh shape -- exactly four reads, each two slots (16 clk_sys) after
 // the one before -- are kept as line anchors. In the bitplane builds,
@@ -389,7 +401,7 @@ LineRef make_line_ref(const std::vector<nmh::RamAccess>& log) {
     std::vector<std::vector<uint64_t>> groups;
     groups.push_back({low_reads[0]});
     for (size_t i = 1; i < low_reads.size(); ++i) {
-        if (low_reads[i] - low_reads[i - 1] > 100) groups.push_back({});
+        if (low_reads[i] - low_reads[i - 1] > (25 * kCck) / 2) groups.push_back({});   // over 12.5 slots: a new group
         groups.back().push_back(low_reads[i]);
     }
     for (const auto& g : groups) {
@@ -411,16 +423,6 @@ int64_t line_of(const LineRef& ref, uint64_t cycle) {
     return i == 0 ? -1 : (int64_t)i - 1;
 }
 
-// True when a line boundary (some line's own first refresh read) falls
-// strictly between two chronologically-ordered cycles -- such a pair
-// spans two lines, so a fixed-cycle reference's parity is not comparable
-// across it (Figure 6-9's numbering restarts every line, p.194: 227
-// slots per line, an odd count).
-bool crosses_line(const LineRef& ref, uint64_t prev, uint64_t cur) {
-    size_t i = std::upper_bound(ref.firsts.begin(), ref.firsts.end(), prev) - ref.firsts.begin();
-    return i < ref.firsts.size() && ref.firsts[i] <= cur;
-}
-
 // True if `cycle` (a CPU chip-bus access) is on an even-numbered slot by
 // Figure 6-9's own per-line numbering; false (with *known = false) if it
 // precedes every line this capture found.
@@ -430,37 +432,6 @@ bool is_even_slot(const LineRef& ref, uint64_t cycle, bool* known = nullptr) {
     if (i < 0) return false;
     int64_t d = floordiv((int64_t)cycle - (int64_t)ref.groups[(size_t)i].last, (int64_t)kCck);
     return (d % 2) != 0; // odd slot-offset from the line's own last refresh read => even slot
-}
-
-struct PairStats { size_t pairs = 0, odd = 0; };
-
-// Consecutive-pair slot parity (A8/SYSDMA-C29's shared comparator): among
-// `cycles` (already sorted, chronological CPU accesses), counts pairs
-// whose gap is a whole number of slots and that do not cross a line
-// boundary (see crosses_line), splitting even-slot-spacing (`pairs -
-// odd`) from odd-slot-spacing (`odd`) pairs.
-PairStats within_line_parity(const LineRef& ref, const std::vector<uint64_t>& cycles) {
-    PairStats s;
-    for (size_t i = 1; i < cycles.size(); ++i) {
-        uint64_t prev = cycles[i - 1], cur = cycles[i];
-        uint64_t gap = cur - prev;
-        if (gap % kCck != 0) continue;
-        if (crosses_line(ref, prev, cur)) continue;
-        ++s.pairs;
-        if ((gap / kCck) % 2 == 1) ++s.odd;
-    }
-    return s;
-}
-
-// Counts consecutive-pair gaps in `cycles` (already sorted) that are
-// exactly `slots` colour-clock slots apart -- used to find one specific,
-// recurring step (not every odd- or even-slot pair) among a mixed
-// population of in-window CPU-access gaps.
-size_t count_gap_slots(const std::vector<uint64_t>& cycles, uint64_t slots) {
-    size_t n = 0;
-    for (size_t i = 1; i < cycles.size(); ++i)
-        if (cycles[i] - cycles[i - 1] == slots * kCck) ++n;
-    return n;
 }
 
 std::vector<uint64_t> sorted_cpu_cycles(const Capture& cap, uint32_t scratch_word) {
@@ -486,6 +457,132 @@ std::vector<uint64_t> lores_inwindow_cpu_cycles(const Capture& cap_lores4) {
     }
     std::sort(out.begin(), out.end());
     return out;
+}
+
+// ---- slots, and the 68000's missed cycles ----------------------------------
+//
+// p.196: "Some 68000 instructions do not match perfectly with the allocation
+// of even cycles and cause cycles to be missed. If cycles are missed, the
+// 68000 must wait until its next available memory slot before continuing."
+//
+// The RAM port shows the cycles in which an access happened, never the
+// cycle in which the 68000 asked for one, so a miss is identified from two
+// accesses of the 68000's own and the address pair they form (a program
+// fetch or the scratch write each has its own address, so the pair names the
+// instruction boundary it brackets):
+//  - with no DMA access in any slot between them, the second follows the
+//    first after a gap of `g` slots, the pair's unimpeded gap; the largest
+//    unimpeded gap measured for the pair in the run is `g`, so the 68000 is
+//    ready for the second access `g` slots after the first at the latest;
+//  - when the pair is further apart than `g`, the slot t = first + g is the
+//    slot the 68000 was ready for. If a DMA access took t, the cycle was
+//    missed, and the 68000 had to wait for its next available slot.
+// A slot is numbered by Figure 6-9's per-line numbering (the first refresh
+// slot of a line is number 1, so odd numbers carry refresh, and the even
+// numbers are the 68000's); a pair that spans a line start is left out,
+// because the numbering restarts there (a line is 227 slots, an odd number).
+
+struct CpuAccess { int64_t slot; uint32_t addr; bool wr; };
+
+struct SlotMap {
+    bool ok = false;
+    int64_t phase = 0;                  // cycle modulo kCck of a refresh access
+    std::vector<char> occ;              // slot -> a DMA (non-CPU) access took it
+    std::vector<int64_t> line_first;    // slot of each line's first refresh access
+    std::vector<CpuAccess> cpu;         // the 68000's own accesses, in order
+    int64_t slot_of(uint64_t cycle) const { return ((int64_t)cycle - phase) / (int64_t)kCck; }
+    bool occupied(int64_t s) const { return s >= 0 && s < (int64_t)occ.size() && occ[(size_t)s]; }
+    int64_t line_index(int64_t s) const {
+        size_t i = std::upper_bound(line_first.begin(), line_first.end(), s) - line_first.begin();
+        return i == 0 ? -1 : (int64_t)i - 1;
+    }
+    // Even-numbered by Figure 6-9: the line's first refresh slot is number 1.
+    bool fig_even(int64_t s) const {
+        int64_t i = line_index(s);
+        return i >= 0 && ((s - line_first[(size_t)i]) % 2) == 1;
+    }
+};
+
+SlotMap make_slot_map(const Capture& c, uint32_t scratch_word) {
+    SlotMap m;
+    LineRef ref = make_line_ref(c.log);
+    if (ref.groups.empty() || c.log.empty()) return m;
+    m.phase = (int64_t)(ref.groups[0].first % kCck);
+    m.occ.assign((size_t)(((int64_t)c.log.back().cycle - m.phase) / (int64_t)kCck) + 2, 0);
+    for (const auto& a : c.log) {
+        int64_t s = m.slot_of(a.cycle);
+        if (is_cpu_access(a, scratch_word)) m.cpu.push_back({s, a.word_addr, a.is_write});
+        else m.occ[(size_t)s] = 1;
+    }
+    for (uint64_t f : ref.firsts) m.line_first.push_back(m.slot_of(f));
+    m.ok = true;
+    return m;
+}
+
+typedef std::tuple<uint32_t, bool, uint32_t, bool> PairKey;   // address and direction of both accesses
+
+// The unimpeded gap of every address pair of a run: the largest gap, in
+// slots, over its occurrences with no DMA access in any slot between.
+std::map<PairKey, int64_t> unimpeded_gaps(const SlotMap& m) {
+    std::map<PairKey, int64_t> g;
+    for (size_t i = 1; i < m.cpu.size(); ++i) {
+        const CpuAccess& y = m.cpu[i - 1];
+        const CpuAccess& x = m.cpu[i];
+        bool free_between = true;
+        for (int64_t s = y.slot + 1; s < x.slot && free_between; ++s) if (m.occupied(s)) free_between = false;
+        if (!free_between) continue;
+        PairKey k{y.addr, y.wr, x.addr, x.wr};
+        auto it = g.find(k);
+        if (it == g.end() || it->second < x.slot - y.slot) g[k] = x.slot - y.slot;
+    }
+    return g;
+}
+
+struct MissStats {
+    size_t pairs = 0;          // consecutive 68000 access pairs examined
+    size_t nokey = 0;          // pairs whose address pair has no unimpeded gap
+    size_t crossing = 0;       // delayed pairs that span a line start
+    size_t delayed_free = 0;   // delayed pairs whose ready slot no DMA access took
+    size_t miss_even = 0;      // missed cycles: the ready slot is even-numbered and a DMA access took it
+    size_t miss_odd = 0;       // missed cycles: the ready slot is odd-numbered and a DMA access took it
+    size_t skipped = 0;        // missed even cycles with an even-numbered free slot left unused before the access
+    uint32_t ex_from = 0, ex_to = 0; bool ex_wr_from = false, ex_wr_to = false; int64_t ex_gap = 0; // first missed pair
+};
+
+MissStats analyse_misses(const SlotMap& m, const std::map<PairKey, int64_t>& g0) {
+    MissStats st;
+    for (size_t i = 1; i < m.cpu.size(); ++i) {
+        const CpuAccess& y = m.cpu[i - 1];
+        const CpuAccess& x = m.cpu[i];
+        ++st.pairs;
+        auto it = g0.find(PairKey{y.addr, y.wr, x.addr, x.wr});
+        if (it == g0.end()) { ++st.nokey; continue; }
+        int64_t g = it->second;
+        if (x.slot - y.slot <= g) continue;                          // not delayed
+        if (m.line_index(y.slot) != m.line_index(x.slot)) { ++st.crossing; continue; }
+        int64_t t = y.slot + g;                                       // the slot the 68000 was ready for
+        if (!m.occupied(t)) { ++st.delayed_free; continue; }
+        bool even = m.fig_even(t);
+        if (even) ++st.miss_even; else ++st.miss_odd;
+        if (st.ex_gap == 0) { st.ex_from = y.addr; st.ex_wr_from = y.wr; st.ex_to = x.addr; st.ex_wr_to = x.wr; st.ex_gap = x.slot - y.slot; }
+        if (even) {
+            for (int64_t s = t; s < x.slot; ++s)
+                if (m.fig_even(s) && !m.occupied(s)) { ++st.skipped; break; }
+        }
+    }
+    return st;
+}
+
+std::string hexs(uint32_t v) {
+    char b[16]; std::snprintf(b, sizeof b, "%X", v);
+    return std::string(b);
+}
+
+std::string miss_note(const MissStats& st) {
+    return std::to_string(st.pairs) + " access pairs, " + std::to_string(st.miss_even) + " missed even cycle(s), " +
+           std::to_string(st.miss_odd) + " missed odd cycle(s), " + std::to_string(st.skipped) +
+           " with an even free slot left unused, " + std::to_string(st.delayed_free) + " delayed with a free ready slot, " +
+           std::to_string(st.crossing) + " spanning a line start, " + std::to_string(st.nokey) + " without an unimpeded gap";
 }
 
 // ---- the slot unit, from the refresh pattern -----------------------------
@@ -574,16 +671,41 @@ int main(int argc, char** argv) {
                            "both read back correctly [not graded -- apparatus check, no claim uid]");
     }
 
-    // ---- A1 [p170] pointer register: adjacent words, one 32-bit write --
+    // ---- A1 [p170] "The two words of each register are adjacent in the 68000
+    // address space, with the high address word first, so they can both be
+    // written with one 32-bit write from the processor." Each of the four
+    // pointer registers (A, B, C, D) is exercised on its own: in its blit
+    // only that channel's pointer is set by a single MOVE.L, so a pointer
+    // that missed its target shows in that channel's destination word alone.
+    // The component lines carry no claim id; the aggregate carries them.
     {
-        std::string bin = dir + (mv == "A1" ? "/prog_pointer_mutant.bin" : "/prog_pointer.bin");
-        Capture primary = run_capture(bin, kBootBudget + kDoneRunBudget, true, {kResults});
-        bool primary_ok = primary.loaded && primary.done.has_value() &&
-                           primary.peeks.size() == 1 && primary.peeks[0] && *primary.peeks[0] == 0xCAFE;
-        checks.expect(primary_ok,
-            "A1 [p170] 6-dma-channels.c16,6-dma-channels.c18,ch6-dma.c14,ch6-dma.c16: "
-            "a single 32-bit MOVE.L to BLTAPTH sets both pointer words; the blit reads the "
-            "intended source word ($CAFE)");
+        std::string bin = "/prog_pointer.bin";
+        if (mv == "A1") bin = "/prog_pointer_mutant.bin";
+        else if (mv == "A1-A") bin = "/prog_pointer_mutant_a.bin";
+        else if (mv == "A1-B") bin = "/prog_pointer_mutant_b.bin";
+        else if (mv == "A1-C") bin = "/prog_pointer_mutant_c.bin";
+        else if (mv == "A1-D") bin = "/prog_pointer_mutant_d.bin";
+        Capture p = run_capture(dir + bin, kBootBudget + kDoneRunBudget, true,
+                                {kResults, kResults + 2, kResults + 4, kResults + 6});
+        bool ran = p.loaded && p.done.has_value() && p.peeks.size() == 4;
+        auto is = [&](size_t k, uint16_t want) { return ran && p.peeks[k] && *p.peeks[k] == want; };
+        bool a_ok = is(0, 0xCAFE), b_ok = is(1, 0xB00B), c_ok = is(2, 0xC0DE), d_ok = is(3, 0xD00D);
+        checks.expect(a_ok,
+            "A1-A [p170]: a single 32-bit MOVE.L to BLTAPTH sets both words of the A pointer -- the A-to-D blit "
+            "writes the source word $CAFE");
+        checks.expect(b_ok,
+            "A1-B [p170]: a single 32-bit MOVE.L to BLTBPTH sets both words of the B pointer -- the B-to-D blit "
+            "writes the source word $B00B");
+        checks.expect(c_ok,
+            "A1-C [p170]: a single 32-bit MOVE.L to BLTCPTH sets both words of the C pointer -- the C-to-D blit "
+            "writes the source word $C0DE");
+        checks.expect(d_ok,
+            "A1-D [p170]: a single 32-bit MOVE.L to BLTDPTH sets both words of the D pointer -- the A-to-D blit "
+            "writes the source word $D00D to the intended destination word");
+        checks.expect(a_ok && b_ok && c_ok && d_ok,
+            "A1 [p170] 6-dma-channels.c16,6-dma-channels.c18,ch6-dma.c14,ch6-dma.c16: the two words of each of the "
+            "blitter's pointer registers (A, B, C and D) are adjacent, high word first, and one 32-bit write sets both "
+            "-- every channel's blit uses the intended word");
     }
 
     // ---- DESC-BASE / DESC-OFFBY1 [p182] ch6-desc.c12: the blitter's own
@@ -697,8 +819,8 @@ int main(int argc, char** argv) {
                     ", RESULTS store at cycle " + std::to_string(results_cycle) +
                     ", " + std::to_string(bbusy_dst_w.size()) + " D-writes total");
         checks.expect(bbusy_ok && bbusy_busy && writes_still_incoming,
-            "BBUSY-PREDICTS [p186] 6-blitter-done-flag.c10,ch6-done.c12: after the "
-            "prescribed intervening read, BBUSY reading set correctly predicts more destination "
+            "BBUSY-PREDICTS [p186]: DMAF_BLTDONE (DMACONR bit 14) \"is set when a blit is in progress\" -- "
+            "after the prescribed intervening read, BBUSY reading set predicts more destination "
             "writes still to come in ram_log() -- the last D-write (cycle " + std::to_string(last_dst_write) +
             ") is after the RESULTS store that captured the read (cycle " + std::to_string(results_cycle) + ")");
     }
@@ -717,6 +839,10 @@ int main(int argc, char** argv) {
     Capture cap_lores6 = run_capture(dir + "/prog_bitplane_planes6.bin", kBpRunBudget, false, {});
     Capture cap_lores4_aligned = run_capture(dir + "/prog_bitplane_aligned.bin", kBpRunBudget, false, {});
     Capture cap_lores6_aligned = run_capture(dir + "/prog_bitplane_planes6_aligned.bin", kBpRunBudget, false, {});
+    Capture cap_lores5 = run_capture(dir + "/prog_bitplane_planes5.bin", kBpRunBudget, false, {});
+    Capture cap_lores1_aligned = run_capture(dir + "/prog_bitplane_aligned_p1.bin", kBpRunBudget, false, {});
+    Capture cap_lores2_aligned = run_capture(dir + "/prog_bitplane_aligned_p2.bin", kBpRunBudget, false, {});
+    Capture cap_lores3_aligned = run_capture(dir + "/prog_bitplane_aligned_p3.bin", kBpRunBudget, false, {});
 
     checks.note("capture health: base.log.size=" + std::to_string(cap_base.log.size()) +
                 " share.log.size=" + std::to_string(cap_share.log.size()) +
@@ -789,12 +915,12 @@ int main(int argc, char** argv) {
         return {*std::min_element(d.begin(), d.end()), *std::max_element(d.begin(), d.end())};
     };
 
-    // ---- A2 [p169,p186] the CPU keeps running while the blitter works --
+    // ---- A2 [p169,p186,p198] the CPU keeps running while the blitter works --
     // existence only: p.169 ("the 680x0 CPU continues to run as the blit
     // is executing") and p.186 ("they can both work concurrently") give
     // no bound on how long the CPU may then wait between two chip-bus
     // writes -- p.198's own release rule (three denied cycles, one
-    // released) is what governs that, graded separately (the A5 halt).
+    // released) is what governs that, withdrawn below (A5-WITHDRAWN).
     {
         const Capture& cap = (mv == "A2") ? cap_tiny : cap_share;
         auto [lo, hi] = dst_span(cap);
@@ -919,99 +1045,137 @@ int main(int argc, char** argv) {
             "cannot be located at this boundary (nanomig.v has no CPU bus-request port)");
     }
 
-    // ---- A8 [p194,p196] a denied cycle means the CPU simply waits for
-    // its own next available (same-parity) slot -- graded per line
-    // (Figure 6-9 restarts slot numbering every line, and a line is 227
-    // slots, p.194, an odd count, so a fixed-cycle reference's parity
-    // flips every line: a pair spanning a line start is excluded, not
-    // counted as a violation).
+    // ---- A8 [p194,p196] "If cycles are missed, the 68000 must wait until its
+    // next available memory slot before continuing." A cycle is missed when a
+    // DMA access takes the even-numbered slot the 68000 was ready for (see
+    // "slots, and the 68000's missed cycles" above: the slot is found from two
+    // accesses of the 68000's own, identified by address, and the largest
+    // unimpeded gap of that address pair in the same run). The 68000's next
+    // available slot is the first even-numbered slot no DMA access takes; the
+    // page does not say whether a free odd-numbered slot is also available to
+    // it (the odd-slot accesses are PARITY's finding), so the graded line
+    // leaves that open: the access must not come later than the first free
+    // even-numbered slot, i.e. no free even-numbered slot may lie unused
+    // between the missed slot and the access.
+    // Population: the share-mode blit's own run, where the blitter takes slots
+    // from the 68000 throughout.
     if (gated("A8")) {
-        bool mutated = (mv == "A8");
-        bool mutated_share = (mv == "A8-SHARE");
-        const Capture& src_cap = mutated ? cap_lores4 : (mutated_share ? cap_share : cap_base);
-        std::vector<uint64_t> cpu_src;
-        std::string src_desc;
-        if (mutated) { cpu_src = lores_inwindow_cpu_cycles(cap_lores4); src_desc = "four-lores-plane in-window accesses"; }
-        else if (mutated_share) {
-            auto [lo, hi] = dst_span(cap_share);
-            for (const auto& a : cap_share.log)
-                if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi)
-                    cpu_src.push_back(a.cycle);
-            std::sort(cpu_src.begin(), cpu_src.end());
-            src_desc = "share-mode blit's own active window";
-        } else { cpu_src = sorted_cpu_cycles(cap_base, word_addr(kShareScratch)); src_desc = "no-DMA baseline"; }
-        LineRef lref = make_line_ref(src_cap.log);
-        PairStats s = within_line_parity(lref, cpu_src);
-        checks.note("A8: " + std::to_string(s.odd) + " odd-slot-spacing instance(s) of " +
-                    std::to_string(s.pairs) + " within-line, slot-aligned consecutive-CPU-access "
-                    "pairs (" + src_desc + ")");
-        checks.expect(s.pairs > 0 && s.odd == 0,
-            "A8 [p194,p196] 6-system-dma.c54,6-system-dma.c55,ch6-sysdma.c30: no two consecutive "
-            "CPU bus accesses within one line are an odd number of slots apart -- a denied cycle "
-            "always waits for the CPU's own next available (same-parity) slot, never a different "
-            "one (" + std::to_string(s.odd) + " odd-spacing instance(s) of " + std::to_string(s.pairs) + ")");
-    }
-
-    // ---- SYSDMA-C29 [p196] ch6-sysdma.c29: some 68000 instructions miss
-    // the even-cycle allocation, and p.196 gives the consequence of a
-    // missed cycle as a wait, not a landing: "If cycles are missed, the
-    // 68000 must wait until its next available memory slot before
-    // continuing." That wait is only observable where the page's own
-    // allocation actually holds the odd slots against the CPU -- inside
-    // the four-lores-plane fetch window (Figure 6-11: planes on the odd
-    // slots), not the free-running no-DMA baseline, where the same
-    // fractional-slot instruction (BRA.S, a 10-clock internal operation,
-    // not a whole multiple of 4) simply lands on the odd slot instead
-    // (A8's/PARITY's own red, a different fact). Inside the window, the
-    // fetch after BRA.S's internal operation instead waits a full extra
-    // slot: a recurring 4-slot step, not the free-running 3-slot one.
-    // The whole-4-clock-aligned loop (prog_bitplane_aligned.s, JMP (An)
-    // in place of BRA.S) has no such step -- used here as SYSDMA-C29's
-    // own mutation. TG68K's own loop has no fractional-slot instruction
-    // either, so it is reported not exercised rather than graded.
-    if (gated("SYSDMA-C29")) {
-        bool mutated = (mv == "SYSDMA-C29");
-        const Capture& cap = mutated ? cap_lores4_aligned : cap_lores4;
-        std::vector<uint64_t> cpu_src = lores_inwindow_cpu_cycles(cap);
-        size_t total_pairs = cpu_src.empty() ? 0 : cpu_src.size() - 1;
-        size_t waited4 = count_gap_slots(cpu_src, 4);
-        checks.note("SYSDMA-C29: " + std::to_string(waited4) + " in-window 4-slot (waited-to-"
-                    "next-even) step instance(s) of " + std::to_string(total_pairs) +
-                    " in-window consecutive-CPU-access pairs (" +
-                    (mutated ? "whole-4-clock-aligned loop" : "BRA.S-based loop") + ")");
-        if (!is_tg68k) {
-            checks.expect(waited4 > 0,
-                "SYSDMA-C29 [p196] ch6-sysdma.c29: some 68000 instructions miss the even-cycle "
-                "allocation -- inside the four-lores-plane fetch window, the fetch after a "
-                "fractional-slot internal operation (BRA.S) waits a full extra slot instead of "
-                "landing on the odd one denied it (" + std::to_string(waited4) + " of " +
-                std::to_string(total_pairs) + " in-window pairs, exactly 4 slots apart)");
+        const Capture& cap = (mv == "A8PRE") ? cap_base : cap_share;
+        SlotMap m = make_slot_map(cap, word_addr(kShareScratch));
+        std::map<PairKey, int64_t> g0 = unimpeded_gaps(m);
+        MissStats st = analyse_misses(m, g0);
+        std::string ex = st.ex_gap == 0 ? std::string("none")
+                       : std::string(st.ex_wr_from ? "write $" : "fetch $") + hexs(st.ex_from * 2) + " -> " +
+                         (st.ex_wr_to ? "write $" : "fetch $") + hexs(st.ex_to * 2) + ", " + std::to_string(st.ex_gap) + " slots";
+        checks.note("A8: " + miss_note(st) + "; first missed pair: " + ex);
+        bool pre = m.ok && st.miss_even > 0;
+        checks.expect(pre,
+            "A8PRE [p196]: some 68000 cycles are missed on even-numbered slots -- a DMA access takes the slot the "
+            "68000 was ready for (" + std::to_string(st.miss_even) + " missed even cycle(s), address pair " + ex + ")");
+        if (pre) {
+            checks.expect(st.skipped == 0,
+                "A8 [p194,p196] 6-system-dma.c54,6-system-dma.c55,ch6-sysdma.c30: every 68000 access that missed its "
+                "even-numbered slot is granted no later than the next available slot -- no free even-numbered slot "
+                "lies unused between the missed slot and the access (" + std::to_string(st.skipped) + " of " +
+                std::to_string(st.miss_even) + " missed even cycles)");
         } else {
-            checks.note("SYSDMA-C29 [p196] ch6-sysdma.c29: not exercised on TG68K -- its own "
-                        "loop has no fractional-slot internal operation, so no such wait occurs");
+            not_graded(checks, "A8", "A8PRE");
         }
     }
 
-    // ---- A9 [p196] four or fewer low-resolution bitplanes still let the CPU through
-    if (gated("A9")) {
-        const Capture& pre_cap = (mv == "A9PRE") ? cap_base : cap_lores4;
-        auto pre_wins = fetch_windows(bp_reads_of(pre_cap));
-        checks.expect(!pre_wins.empty(),
-            "A9PRE [p196]: bitplane fetch windows are actually found (" +
-            std::to_string(pre_wins.size()) + ")");
+    // ---- SYSDMA-C29 [p196] ch6-sysdma.c29: "Some 68000 instructions do not
+    // match perfectly with the allocation of even cycles and cause cycles to be
+    // missed." An instruction does not match the allocation when the slot the
+    // 68000 is ready for after it (the unimpeded gap of the address pair, see
+    // "slots, and the 68000's missed cycles" above) is an odd-numbered slot,
+    // which the display takes in the four-low-resolution-bitplane window
+    // (Figure 6-9, Figure 6-11): the cycle is then missed. Existence only.
+    // The line is graded on both cores with the same comparator.
+    if (gated("SYSDMA-C29")) {
+        const Capture& cap = (mv == "SYSDMA-C29") ? cap_lores4_aligned : (mv == "SYSDMA-C29-SHARE" ? cap_share : cap_lores4);
+        SlotMap m = make_slot_map(cap, word_addr(kBpScratch));
+        std::map<PairKey, int64_t> g0 = unimpeded_gaps(m);
+        MissStats st = analyse_misses(m, g0);
+        std::string ex = st.ex_gap == 0 ? std::string("none")
+                       : std::string(st.ex_wr_from ? "write $" : "fetch $") + hexs(st.ex_from * 2) + " -> " +
+                         (st.ex_wr_to ? "write $" : "fetch $") + hexs(st.ex_to * 2) + ", " + std::to_string(st.ex_gap) + " slots";
+        checks.note("SYSDMA-C29: " + miss_note(st) + "; first missed pair: " + ex);
+        checks.expect(m.ok && st.miss_odd > 0,
+            "SYSDMA-C29 [p196] ch6-sysdma.c29: some 68000 instructions do not match the allocation of even cycles and "
+            "cause cycles to be missed -- in the four-low-resolution-bitplane run (" + std::to_string(st.miss_odd) +
+            " access(es) whose ready slot is odd-numbered and was taken by a DMA access, " + std::to_string(st.pairs) +
+            " access pairs)");
+    }
 
-        const Capture& cap = (mv == "A9") ? cap_hires4 : cap_lores4;
-        auto wins = fetch_windows(bp_reads_of(cap));
-        auto cyc = cyc_of(cap);
-        size_t min_cpu = wins.empty() ? 0 : ~size_t(0);
-        for (auto& w : wins) min_cpu = std::min(min_cpu, count_window(cap.log, cyc, w.lo, w.hi, word_addr(kBpScratch)).cpu);
-        checks.note("A9: " + std::to_string(wins.size()) + " fetch window(s); minimum CPU accesses "
-                    "in any one window = " + std::to_string(wins.empty() ? 0 : min_cpu));
-        checks.expect(!wins.empty() && min_cpu > 0,
-            "A9 [p196] 6-system-dma.c61,ch6-sysdma.c34: with four or fewer low-resolution "
-            "bitplanes, the CPU gets at least one chip-bus access (a program fetch or a scratch "
-            "write) inside every line's own fetch window (minimum " +
-            std::to_string(wins.empty() ? 0 : min_cpu) + " per window)");
+    // ---- A9 [p196] "If the display contains four or fewer low resolution
+    // bitplanes, the 68000 can be granted alternate memory cycles (if it is
+    // ready to ask for the cycle and is the highest priority item at the
+    // time)." Alternate memory cycles are every second slot, and the even
+    // ones (Figure 6-10). The stimulus is a 68000 that is continuously ready,
+    // the whole-4-clock-aligned counting loop, with nothing else enabled
+    // beside the display, so that nothing ranks above it but the display's own
+    // slots: for one, two, three and four low-resolution bitplanes, every pair
+    // of consecutive CPU accesses inside a line's fetch window must be exactly
+    // two slots apart and on an even-numbered slot. The precondition is that
+    // the windows are found and that the loop is continuously ready: with no
+    // DMA access between two of its accesses they are two slots apart.
+    if (gated("A9")) {
+        struct PlaneRun { int planes; const Capture* cap; };
+        std::vector<PlaneRun> runs = {{1, &cap_lores1_aligned}, {2, &cap_lores2_aligned}, {3, &cap_lores3_aligned},
+                                      {4, (mv == "A9") ? &cap_lores6_aligned : &cap_lores4_aligned}};
+        if (mv == "A9PRE") runs[3].cap = &cap_base_aligned;
+        bool pre = true, pattern = true;
+        std::string per_pre, per_pat;
+        for (const auto& r : runs) {
+            auto wins = fetch_windows(bp_reads_of(*r.cap));
+            SlotMap m = make_slot_map(*r.cap, word_addr(kBpScratch));
+            std::vector<int64_t> slo, shi;
+            for (const auto& w : wins) { slo.push_back(m.slot_of(w.lo)); shi.push_back(m.slot_of(w.hi)); }
+            auto win_of = [&](int64_t s) -> int {
+                size_t k = std::upper_bound(slo.begin(), slo.end(), s) - slo.begin();
+                if (k == 0) return -1;
+                --k;
+                return s <= shi[k] ? (int)k : -1;
+            };
+            size_t pairs = 0, bad = 0, free_pairs = 0, free_off = 0;
+            // The loop is running from its first scratch write on; the setup before it is not the loop.
+            int64_t loop_from = -1;
+            for (const auto& a : m.cpu) if (a.wr) { loop_from = a.slot; break; }
+            for (size_t i = 1; m.ok && i < m.cpu.size(); ++i) {
+                const CpuAccess& y = m.cpu[i - 1];
+                const CpuAccess& x = m.cpu[i];
+                int wy = win_of(y.slot), wx = win_of(x.slot);
+                if (wy >= 0 && wy == wx) {
+                    ++pairs;
+                    if (x.slot - y.slot != 2 || !m.fig_even(y.slot) || !m.fig_even(x.slot)) ++bad;
+                }
+                bool free_between = true;
+                for (int64_t s = y.slot + 1; s < x.slot && free_between; ++s) if (m.occupied(s)) free_between = false;
+                if (free_between && loop_from >= 0 && y.slot >= loop_from && m.line_index(y.slot) == m.line_index(x.slot)) {
+                    ++free_pairs;
+                    if (x.slot - y.slot != 2) ++free_off;
+                }
+            }
+            bool ready = free_pairs > 0 && free_off == 0;
+            pre = pre && m.ok && !wins.empty() && ready;
+            pattern = pattern && pairs > 0 && bad == 0;
+            per_pre += " " + std::to_string(r.planes) + "pl:" + std::to_string(wins.size()) + "win/" +
+                       std::to_string(free_pairs - free_off) + "of" + std::to_string(free_pairs) + "free";
+            per_pat += " " + std::to_string(r.planes) + "pl:" + std::to_string(bad) + "of" + std::to_string(pairs);
+        }
+        checks.expect(pre,
+            "A9PRE [p196]: for one to four low-resolution bitplanes the fetch windows are found and the aligned "
+            "loop is continuously ready -- from its first scratch write on, two slots between consecutive "
+            "accesses of one line wherever no DMA access lies between them (windows / ready pairs of free pairs:" +
+            per_pre + ")");
+        if (pre) {
+            checks.expect(pattern,
+                "A9 [p196] 6-system-dma.c61,ch6-sysdma.c34: with four or fewer low-resolution bitplanes the 68000 is "
+                "granted alternate memory cycles -- every pair of consecutive CPU accesses inside a fetch window is "
+                "exactly two slots apart, on even-numbered slots (pairs off the pattern of all pairs:" + per_pat + ")");
+        } else {
+            not_graded(checks, "A9", "A9PRE");
+        }
     }
 
     // ---- A10 [p196,p197] four high-resolution bitplanes lock the CPU out
@@ -1040,46 +1204,108 @@ int main(int argc, char** argv) {
             std::to_string(max_cpu) + " per window)");
     }
 
-    // ---- A11 [p196] more than four low-resolution bitplanes measurably steal cycles
+    // ---- A11 [p196] "if there are more than four bitplanes, bitplane DMA will
+    // begin to steal cycles from the 68000 during the display." Graded inside
+    // the display windows: the beam is the same in every run (the boot is
+    // identical until the display starts), so a window found at the same
+    // cycle in the four-, five- and six-plane runs is the same line's fetch
+    // window. In every such window the CPU makes strictly fewer chip-bus
+    // accesses with five planes than with four, and with six than with four.
+    // No percentage is asked for: the page gives only the direction.
     if (gated("A11")) {
-        size_t lo4 = bp_scratch_count(cap_lores4);
-        size_t lo6 = bp_scratch_count((mv == "A11") ? cap_lores4 : cap_lores6);
-        checks.expect(lo4 > 0 && lo6 * 100 <= lo4 * 95,
-            "A11 [p196] 6-system-dma.c62,ch6-sysdma.c36: six low-resolution bitplanes (" +
-            std::to_string(lo6) + " scratch writes) measurably reduce the CPU's chip-bus "
-            "accesses relative to four (" + std::to_string(lo4) + ")");
+        struct WinCpu { std::map<uint64_t, size_t> by_hi; size_t outside = 0; };
+        auto per_window = [](const Capture& c) {
+            WinCpu w;
+            auto wins = fetch_windows(bp_reads_of(c));
+            auto cyc = cyc_of(c);
+            for (const auto& fw : wins) w.by_hi[fw.hi] = count_window(c.log, cyc, fw.lo, fw.hi, word_addr(kBpScratch)).cpu;
+            size_t inside = 0;
+            for (const auto& kv : w.by_hi) inside += kv.second;
+            size_t total = 0;
+            for (const auto& a : c.log) if (is_cpu_access(a, word_addr(kBpScratch))) ++total;
+            w.outside = total - inside;
+            return w;
+        };
+        WinCpu w4 = per_window(cap_lores4);
+        WinCpu w5 = per_window((mv == "A11PRE") ? cap_base : (mv == "A11") ? cap_lores4 : cap_lores5);
+        WinCpu w6 = per_window((mv == "A11") ? cap_lores4 : cap_lores6);
+        size_t matched = 0, fewer5 = 0, fewer6 = 0;
+        for (const auto& kv : w4.by_hi) {
+            auto i5 = w5.by_hi.find(kv.first);
+            auto i6 = w6.by_hi.find(kv.first);
+            if (i5 == w5.by_hi.end() || i6 == w6.by_hi.end()) continue;
+            ++matched;
+            if (i5->second < kv.second) ++fewer5;
+            if (i6->second < kv.second) ++fewer6;
+        }
+        bool pre = matched > 0 && matched == w4.by_hi.size() && matched == w5.by_hi.size() && matched == w6.by_hi.size() &&
+                   w4.outside > 0 && w5.outside > 0 && w6.outside > 0;
+        checks.note("A11: " + std::to_string(w4.by_hi.size()) + " four-plane window(s), " + std::to_string(matched) +
+                    " found at the same cycle with five and six planes; CPU accesses outside the windows: " +
+                    std::to_string(w4.outside) + " / " + std::to_string(w5.outside) + " / " + std::to_string(w6.outside));
+        checks.expect(pre,
+            "A11PRE [p196]: the four-, five- and six-plane runs show the same display windows (" +
+            std::to_string(matched) + " of " + std::to_string(w4.by_hi.size()) + ", " + std::to_string(w5.by_hi.size()) +
+            ", " + std::to_string(w6.by_hi.size()) + ") and the CPU keeps running in all three (accesses outside the windows) "
+            "[not graded -- apparatus check, no claim uid]");
+        if (pre) {
+            checks.expect(fewer5 == matched && fewer6 == matched,
+                "A11 [p196] 6-system-dma.c62,ch6-sysdma.c36: with more than four low-resolution bitplanes bitplane DMA "
+                "steals cycles from the 68000 during the display -- inside every display window the CPU makes strictly "
+                "fewer chip-bus accesses with five planes (" + std::to_string(fewer5) + " of " + std::to_string(matched) +
+                " windows) and with six planes (" + std::to_string(fewer6) + " of " + std::to_string(matched) +
+                " windows) than with four");
+        } else {
+            not_graded(checks, "A11", "A11PRE");
+        }
     }
 
-    // ---- A6 [p196] alternate cycles are enough for full speed in the
-    // normal case -- the stimulus loop's own bus cycles must all align to
-    // whole slots (MC68000 timing tables: ADDQ.W Dn = 4 clocks, MOVE.W
-    // Dn,(An) = 8, JMP (An) = 8 -- every one a whole multiple of 4,
-    // unlike BRA.S's 10; see SYSDMA-C29 above and prog_sharing_aligned.s).
+    // ---- A6 [p196] "the allocation of alternate memory cycles to the 68000
+    // makes it appear to the 68000 that it has the memory all of the time, and
+    // it will run at full speed." The stimulus loop's own bus cycles must all
+    // align to whole slots (MC68000 timing tables: ADDQ.W Dn = 4 clocks, MOVE.W
+    // Dn,(An) = 8, JMP (An) = 8 -- every one a whole multiple of 4, unlike
+    // BRA.S's 10; see SYSDMA-C29 above and prog_sharing_aligned.s). Full speed
+    // is the loop's period with the bus to itself, the interval between two
+    // scratch writes with no DMA access in any slot between them; it is
+    // measured on the no-DMA run of the same loop. Inside the four-low-
+    // resolution-bitplane display windows every interval between two scratch
+    // writes of one window must equal it -- every one, not the most frequent.
     if (gated("A6")) {
         const Capture& cap = (mv == "A6") ? cap_lores6_aligned : cap_lores4_aligned;
+        auto scratch_intervals = [](const Capture& c, bool unimpeded_only, const std::vector<FetchWindow>* wins) {
+            SlotMap m = make_slot_map(c, word_addr(kBpScratch));
+            std::vector<uint64_t> out;
+            if (!m.ok) return out;
+            std::vector<uint64_t> w;
+            for (const auto& a : c.log) if (a.is_write && a.word_addr == word_addr(kBpScratch)) w.push_back(a.cycle);
+            for (size_t i = 1; i < w.size(); ++i) {
+                if (unimpeded_only) {
+                    bool free_between = true;
+                    for (int64_t s = m.slot_of(w[i - 1]) + 1; s < m.slot_of(w[i]) && free_between; ++s)
+                        if (m.occupied(s)) free_between = false;
+                    if (free_between) out.push_back(w[i] - w[i - 1]);
+                } else {
+                    for (const auto& fw : *wins)
+                        if (w[i - 1] >= fw.lo && w[i] <= fw.hi) { out.push_back(w[i] - w[i - 1]); break; }
+                }
+            }
+            return out;
+        };
         auto wins = fetch_windows(bp_reads_of(cap));
-        auto sw = write_cycles_in_range(cap.log, word_addr(kBpScratch), word_addr(kBpScratch) + 1);
-        std::vector<uint64_t> in_win;
-        for (auto& w : wins) for (auto c : sw) if (c >= w.lo && c <= w.hi) in_win.push_back(c);
-        std::sort(in_win.begin(), in_win.end());
-        in_win.erase(std::unique(in_win.begin(), in_win.end()), in_win.end());
-        std::vector<uint64_t> in_win_gaps;
-        for (size_t i = 1; i < in_win.size(); ++i) in_win_gaps.push_back(in_win[i] - in_win[i - 1]);
-        uint64_t in_win_period = mode_of(in_win_gaps);
-
-        auto base_sc = scratch_writes(cap_base_aligned);
-        std::vector<uint64_t> base_gaps;
-        for (size_t i = 1; i < base_sc.size(); ++i) base_gaps.push_back(base_sc[i] - base_sc[i - 1]);
-        uint64_t base_period = mode_of(base_gaps);
-
-        checks.note("A6: aligned-loop CPU period inside the fetch window = " + std::to_string(in_win_period) +
-                    " clk_sys (modal, " + std::to_string(in_win_gaps.size()) + " gaps); no-DMA period = " +
-                    std::to_string(base_period) + " clk_sys (modal, " + std::to_string(base_gaps.size()) + " gaps)");
-        checks.expect(in_win_period > 0 && in_win_period == base_period,
-            "A6 [p196] 6-system-dma.c53,ch6-sysdma.c28: with a stimulus loop whose own bus cycles "
-            "all align to whole slots (MC68000 timing tables), the CPU's loop period inside the "
-            "four-lores-plane fetch window (" + std::to_string(in_win_period) +
-            " clk_sys) equals its no-DMA period (" + std::to_string(base_period) + " clk_sys)");
+        std::vector<uint64_t> in_win = scratch_intervals(cap, false, &wins);
+        std::vector<uint64_t> free_run = scratch_intervals(cap_base_aligned, true, nullptr);
+        uint64_t period = mode_of(free_run);
+        size_t off = 0;
+        for (auto g : in_win) if (g != period) ++off;
+        checks.note("A6: no-DMA period of the aligned loop = " + std::to_string(period) + " clk_sys (" +
+                    std::to_string(free_run.size()) + " unimpeded intervals); " + std::to_string(in_win.size()) +
+                    " scratch-write interval(s) inside the display windows, " + std::to_string(off) + " not equal to it");
+        checks.expect(period > 0 && !in_win.empty() && off == 0,
+            "A6 [p196] 6-system-dma.c53,ch6-sysdma.c28: with a stimulus loop whose own bus cycles all align to whole "
+            "slots (MC68000 timing tables), the CPU runs at full speed in the four-low-resolution-bitplane display -- "
+            "every interval between two scratch writes inside a fetch window (" + std::to_string(in_win.size()) +
+            " intervals) equals the loop's no-DMA period (" + std::to_string(period) + " clk_sys)");
     }
 
     // ---- SLOTSPAN [p196] 6-system-dma.c58 -- withdrawn. Figure 6-10 divides
@@ -1109,26 +1335,50 @@ int main(int argc, char** argv) {
     }
 
 
-    // ---- OPEN50 [p196,p197] six bitplanes steal 50% of the open slots four would have left
+    // ---- OPEN50 [p196,p197] "During the display time for a six bitplane
+    // display (low resolution, 320 pixels wide), 160 time slots will be taken
+    // by bitplane DMA for each horizontal line. As you can see from Figure
+    // 6-11, bitplane DMA steals 50 percent of the open slots that the processor
+    // might have used if there were only four bitplanes displayed." Each
+    // fetch window spans the 160 time slots of the page; a slot not taken by a
+    // DMA access is open. Graded in every window, not in the median one: all
+    // four-plane windows leave the same number of slots open, all six-plane
+    // windows leave half as many.
     if (gated("OPEN50")) {
-        auto median_dma_per_window = [](const Capture& c) {
+        auto open_per_window = [](const Capture& c, bool& all_160) {
+            std::vector<int64_t> open;
+            SlotMap m = make_slot_map(c, word_addr(kBpScratch));
             auto wins = fetch_windows(bp_reads_of(c));
             auto cyc = cyc_of(c);
-            std::vector<uint64_t> dma;
-            for (auto& w : wins) dma.push_back(count_window(c.log, cyc, w.lo, w.hi, word_addr(kBpScratch)).dma);
-            return median(dma);
+            all_160 = m.ok && !wins.empty();
+            for (const auto& w : wins) {
+                if (m.slot_of(w.hi) - m.slot_of(w.lo) + 1 != 160) all_160 = false;
+                open.push_back(160 - (int64_t)count_window(c.log, cyc, w.lo, w.hi, word_addr(kBpScratch)).dma);
+            }
+            return open;
         };
-        uint64_t dma_lo4 = median_dma_per_window(cap_lores4);
-        uint64_t dma_lo6 = median_dma_per_window((mv == "OPEN50") ? cap_lores4 : cap_lores6);
-        int64_t open_lo4 = 160 - (int64_t)dma_lo4;
-        int64_t open_lo6 = 160 - (int64_t)dma_lo6;
-        checks.note("OPEN50: median DMA accesses per 160-slot window -- four planes=" + std::to_string(dma_lo4) +
-                    " (open=" + std::to_string(open_lo4) + "), six planes=" + std::to_string(dma_lo6) +
-                    " (open=" + std::to_string(open_lo6) + ")");
-        checks.expect(open_lo4 > 0 && open_lo6 * 2 == open_lo4,
-            "OPEN50 [p196,p197] 6-system-dma.c65,ch6-sysdma.c38: six low-resolution bitplanes "
-            "steal 50 percent of the open slots four bitplanes would have left (" +
-            std::to_string(open_lo6) + " of " + std::to_string(open_lo4) + " open slots remain)");
+        bool len4 = false, len6 = false;
+        std::vector<int64_t> o4 = open_per_window(cap_lores4, len4);
+        std::vector<int64_t> o6 = open_per_window((mv == "OPEN50") ? cap_lores4 : (mv == "OPEN50PRE") ? cap_base : cap_lores6, len6);
+        bool pre = len4 && len6;
+        checks.expect(pre,
+            "OPEN50PRE [p196,p197]: every fetch window of the four- and six-plane runs spans the page's 160 time "
+            "slots (" + std::to_string(o4.size()) + " and " + std::to_string(o6.size()) +
+            " window(s)) [not graded -- apparatus check, no claim uid]");
+        if (pre) {
+            int64_t min4 = *std::min_element(o4.begin(), o4.end()), max4 = *std::max_element(o4.begin(), o4.end());
+            int64_t min6 = *std::min_element(o6.begin(), o6.end()), max6 = *std::max_element(o6.begin(), o6.end());
+            checks.note("OPEN50: open slots per 160-slot window -- four planes " + std::to_string(min4) + ".." + std::to_string(max4) +
+                        ", six planes " + std::to_string(min6) + ".." + std::to_string(max6));
+            checks.expect(min4 > 0 && min4 == max4 && min6 == max6 && min6 * 2 == min4,
+                "OPEN50 [p196,p197] 6-system-dma.c65,ch6-sysdma.c38: six low-resolution bitplanes steal 50 percent "
+                "of the open slots four bitplanes would have left -- in every fetch window the four-plane run leaves " +
+                std::to_string(min4) + ".." + std::to_string(max4) + " slots open and the six-plane run " +
+                std::to_string(min6) + ".." + std::to_string(max6) + " (" + std::to_string(o4.size()) + " and " +
+                std::to_string(o6.size()) + " windows)");
+        } else {
+            not_graded(checks, "OPEN50", "OPEN50PRE");
+        }
     }
 
     // ---- PARITY-REF [Figure 6-9] (no claim id): the per-line slot
@@ -1276,6 +1526,51 @@ int main(int argc, char** argv) {
             "chipset may do between TAS's own read and its own write. Measured (share-mode blit "
             "concurrent): " + std::to_string(between) + " other RAM-port access(es) land between "
             "them, which the page does not forbid");
+    }
+
+    // ---- TAS-SPAN [p196] 6-system-dma.c57, ch6-sysdma.c33: "the indivisible
+    // read-modify-write cycle that is used only in this instruction will not
+    // fit into a DMA memory access slot." An ordinary 68000 bus cycle occupies
+    // one memory slot (Figure 6-10). On the RAM port a cycle is the run of
+    // samples of one address and direction; its span is the cycle of its last
+    // sample minus the cycle of its first. The TAS cycle is the read at the
+    // TAS address and the write that follows it; it does not fit a slot if
+    // its span from the read's first sample to the write exceeds one slot,
+    // while every ordinary cycle at the same address (a plain write, a plain
+    // read, a plain write, measured in the same run) spans at most one slot.
+    // The run is prog_tas_span.s: no DMA channel is enabled, so no master
+    // other than the 68000 and the refresh slots uses the bus.
+    {
+        std::string bin = (mv == "TAS-SPAN-PRE") ? "/prog_tas_span_mut.bin" : "/prog_tas_span.bin";
+        Capture t = run_capture(dir + bin, kBootBudget + kDoneRunBudget, true, {});
+        struct Cycle { bool wr; uint16_t data; uint64_t first, last; };
+        std::vector<Cycle> cycles;
+        for (const auto& a : t.log) {
+            if (a.word_addr != word_addr(kTasAddr)) continue;
+            if (!cycles.empty() && cycles.back().wr == a.is_write && cycles.back().data == a.data) { cycles.back().last = a.cycle; continue; }
+            cycles.push_back({a.is_write, a.data, a.cycle, a.cycle});
+        }
+        bool shape = t.loaded && t.done.has_value() && cycles.size() == 5 &&
+                     cycles[0].wr && !cycles[1].wr && cycles[2].wr && !cycles[3].wr && cycles[4].wr;
+        checks.expect(shape,
+            "TAS-SPAN-PRE [p196]: the TAS address shows the five cycles of the program -- write, read, write (the "
+            "ordinary accesses), then the TAS read and write (" + std::to_string(cycles.size()) + " cycles) "
+            "[not graded -- apparatus check, no claim uid]");
+        if (shape && slot_ok) {
+            uint64_t ordinary_max = 0;
+            for (size_t k = 0; k < 3; ++k) ordinary_max = std::max(ordinary_max, cycles[k].last - cycles[k].first);
+            uint64_t tas_span = cycles[4].first - cycles[3].first;
+            checks.note("TAS-SPAN: slot unit " + std::to_string(kCck) + " clk_sys; the three ordinary cycles span at most " +
+                        std::to_string(ordinary_max) + " clk_sys; the TAS read spans " + std::to_string(cycles[3].last - cycles[3].first) +
+                        " clk_sys and its write follows the read's first sample after " + std::to_string(tas_span) + " clk_sys");
+            checks.expect(tas_span > kCck && ordinary_max <= kCck,
+                "TAS-SPAN [p196] 6-system-dma.c57,ch6-sysdma.c33: the indivisible read-modify-write cycle of TAS does not fit "
+                "into one DMA memory access slot -- its write follows its read after " + std::to_string(tas_span) +
+                " clk_sys, more than one slot (" + std::to_string(kCck) + " clk_sys), while the ordinary cycles of the same run span at most " +
+                std::to_string(ordinary_max) + " clk_sys");
+        } else {
+            not_graded(checks, "TAS-SPAN", std::string(shape ? "" : "TAS-SPAN-PRE ") + (slot_ok ? "" : "SLOT-UNIT"));
+        }
     }
 
     // ---- ch6-multi.c4 [p187] -- TG68K only; cpu_config selects
@@ -1542,6 +1837,97 @@ int main(int argc, char** argv) {
             " such write(s)) strictly inside the display's own fetch window, an interval the "
             "precondition (FASTRUN-LOCKOUT-PRE) confirms falls entirely between the Copper's own "
             "MOVE to BLTSIZE and the blitter's own first DMA access");
+    }
+
+    // ---- BBUSY-LOCKOUT [p186] 6-blitter-done-flag.c10, ch6-done.c12,
+    // ch6-done.c10: "If a blit has just been started but has been locked out of
+    // memory access because of, for instance, display fetches, this bit may not
+    // yet be set. ... The solution is to read a chip memory or hardware register
+    // address with the processor before testing the bit. ... The first "test" of
+    // the blitter done bit may not return the correct result, but the second
+    // will." The case is built as FASTRUN-LOCKOUT builds it (four high-
+    // resolution bitplanes lock out the blitter and the 68000 alike, p.197; the
+    // Copper starts the blit just before a fetch window), with the 68000 in
+    // Fast memory reading DMACONR twice in a row, storing both values to Fast
+    // memory (prog_bbusy_lockout.s). The 68000 does not need a Chip bus cycle
+    // for anything but the two register reads, so it is the reads that are held
+    // across the window: the iteration whose previous pair was stored before the
+    // window began and whose own first store comes after it was pending on a
+    // register read throughout the window (nothing else in the loop waits), so
+    // its second read completed after the window and after the blit's start,
+    // and before the blit's last write. The blitter's first access also comes
+    // after the window, so the blit was started and locked out. The second
+    // test of that iteration must show the blitter busy; the value of the first
+    // test is a measurement (the page says it may not be correct).
+    {
+        std::string bin = "/prog_bbusy_lockout.bin";
+        if (mv == "BBUSY-LOCKOUT-PRE") bin = "/prog_bbusy_lockout_2plane.bin";
+        else if (mv == "BBUSY-LOCKOUT") bin = "/prog_bbusy_lockout_intena.bin";
+        nmh::Config cfg_bb;
+        cfg_bb.fastram_config = 0x01;
+        FastCapture cap = run_capture_fastram(dir + bin, kDoneRunBudget, {}, cfg_bb);
+
+        auto cop_fetch = read_cycles_in_range(cap.log, word_addr(kFrCopDataWord), word_addr(kFrCopDataWord) + 1);
+        auto blit_reads = read_cycles_in_range(cap.log, word_addr(kFrLockoutSrcLo), word_addr(kFrLockoutSrcHi));
+        auto blit_writes = write_cycles_in_range(cap.log, word_addr(kShareDstLo), word_addr(kShareDstHi));
+        std::vector<uint64_t> blit_all = blit_reads;
+        blit_all.insert(blit_all.end(), blit_writes.begin(), blit_writes.end());
+        uint64_t cop_bound = cop_fetch.empty() ? 0 : cop_fetch.front();
+        uint64_t blit_first = blit_all.empty() ? 0 : *std::min_element(blit_all.begin(), blit_all.end());
+        uint64_t blit_last = blit_all.empty() ? 0 : *std::max_element(blit_all.begin(), blit_all.end());
+        auto wins = fetch_windows(read_cycles_in_range(cap.log, word_addr(kBpPtrLo), word_addr(kBpPtrHi)));
+        const FetchWindow* w = nullptr;
+        for (auto& fw : wins) if (fw.lo >= cop_bound) { w = &fw; break; }
+        bool locked = slot_ok && !cop_fetch.empty() && !blit_all.empty() && w != nullptr && w->hi <= blit_first;
+
+        // The stored pairs: two consecutive Fast-memory words per iteration, the
+        // first read's value then the second's.
+        std::map<uint32_t, std::pair<uint64_t, uint16_t>> stored;   // word address -> (cycle, value)
+        for (const auto& a : cap.fastlog)
+            if (a.is_write && a.word_addr >= word_addr(kFrCnt) && a.word_addr < word_addr(kFrCnt) + 4096 && !stored.count(a.word_addr))
+                stored[a.word_addr] = {a.cycle, a.data};
+        size_t pending = 0; bool found = false;
+        uint64_t t1 = 0; uint16_t first_v = 0, second_v = 0;
+        if (w != nullptr) {
+            for (size_t i = 1; i * 2 + 1 < 4096 && !found; ++i) {
+                auto cur1 = stored.find(word_addr(kFrCnt) + (uint32_t)(2 * i));
+                auto prev2 = stored.find(word_addr(kFrCnt) + (uint32_t)(2 * i - 1));
+                auto cur2 = stored.find(word_addr(kFrCnt) + (uint32_t)(2 * i + 1));
+                if (cur1 == stored.end() || prev2 == stored.end() || cur2 == stored.end()) continue;
+                if (prev2->second.first < w->lo && cur1->second.first > w->hi) {
+                    pending = i; found = true;
+                    t1 = cur1->second.first; first_v = cur1->second.second; second_v = cur2->second.second;
+                }
+            }
+        }
+        bool pre = locked && found && cap.done.has_value() && t1 < blit_last;
+        checks.note("BBUSY-LOCKOUT: Copper data-word fetch at cycle " + std::to_string(cop_bound) + "; fetch window " +
+                    (w ? std::to_string(w->lo) + ".." + std::to_string(w->hi) : std::string("none")) +
+                    "; blitter's first access at " + std::to_string(blit_first) + ", last at " + std::to_string(blit_last) +
+                    "; pair pending across the window: " + (found ? "iteration " + std::to_string(pending) + ", first store at cycle " +
+                    std::to_string(t1) : std::string("none")));
+        if (found) {
+            char fv[8], sv[8];
+            std::snprintf(fv, sizeof fv, "%04X", (unsigned)first_v);
+            std::snprintf(sv, sizeof sv, "%04X", (unsigned)second_v);
+            checks.note("BBUSY-LOCKOUT: first test read " + std::string(fv) + " (BBUSY " + ((first_v & 0x4000) ? "set" : "clear") +
+                        "), second test read " + std::string(sv) + " (BBUSY " + ((second_v & 0x4000) ? "set" : "clear") + ")");
+        }
+        checks.expect(pre,
+            "BBUSY-LOCKOUT-PRE [p186,p197]: the blit was started and locked out -- one four-high-resolution-bitplane "
+            "fetch window lies between the Copper's fetch of the BLTSIZE value and the blitter's first access, and a "
+            "register-read pair of the 68000 was pending across it and completed before the blit's last write "
+            "[not graded -- apparatus check, no claim uid]");
+        if (pre) {
+            std::string second_state = (second_v & 0x4000) ? "set" : "clear";
+            checks.expect((second_v & 0x4000) != 0,
+                "BBUSY-LOCKOUT [p186] 6-blitter-done-flag.c10,ch6-done.c12,ch6-done.c10: with a blit started and locked out "
+                "of memory access by display fetches, the second test of the blitter done bit, after the prescribed "
+                "intervening hardware-register read, returns the correct result -- DMACONR bit 14 reads set while the "
+                "blit is in progress (second read " + second_state + ")");
+        } else {
+            not_graded(checks, "BBUSY-LOCKOUT", "BBUSY-LOCKOUT-PRE");
+        }
     }
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);

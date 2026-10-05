@@ -24,7 +24,10 @@ program is the stimulus; the C++ test grades what the ports showed.
   instruction fetch is identified the same way: every program in this
   package is well under 512 bytes and `PROGRAM_ORG` ($080400, `nanomig.i`)
   is fixed, so a read in $080400-$0805FF is a program fetch, never a DMA
-  access.
+  access. The counting loop of `prog_sharing.s` and `prog_bitplane.s` sits at
+  the same address ($080500) in every build of both, so that the same
+  instruction boundary has the same pair of addresses in every capture; a
+  setup shorter than $100 bytes precedes it and jumps to it.
 - Custom-register offsets beyond the subset `nanomig.i` already defines
   (`CUSTOM`, `DMACONR`/`DMACON`, the `BLT*` blitter registers) are defined
   locally in this package's own `.s` sources, from the manual's own
@@ -44,6 +47,9 @@ program is the stimulus; the C++ test grades what the ports showed.
     (narrower, since a high-resolution line fetches twice as often).
   - `BPL1PTH`/`BPL1PTL` ($DFF0E0/$DFF0E2) and the following bitplane
     pointer pairs, each 4 bytes apart.
+  - `INTENAR` ($DFF01C), the read of the interrupt enables (BBUSY-LOCKOUT's
+    mutation reads it instead of `DMACONR`; its bit 14 is `INTEN`, which no
+    program here sets).
   - `COP1LCH`/`COP1LCL` ($DFF080/$DFF082) and `COPJMP1` ($DFF088):
     the Copper's own first-list pointer and its strobe (FASTRUN's and
     FASTRUN-LOCKOUT's own stimuli, below, use these to start a blit
@@ -72,7 +78,10 @@ program is the stimulus; the C++ test grades what the ports showed.
   so the normal run prints only the fixture, the preconditions and the
   assertions -- no separate "-mutation" line. Where an assertion is
   already red at baseline, its mutation instead shows the same, unchanged
-  comparator reading GREEN on a different, proven-live input (A8, PARITY).
+  comparator reading GREEN on a different, proven-live input (PARITY,
+  SYSDMA-C29 on TG68K). A mutation of the design under test (`implementation`)
+  is a private copy of an RTL file outside the repository, built into a
+  separate binary; the repository's own RTL is never changed.
 - Both CPU cores run every test. An assertion's verdict is reported for
   each, and a disagreement between them is reported as such, not
   reconciled.
@@ -135,27 +144,46 @@ line (A8, SYSDMA-C29, A9, A10, A11, A6, OPEN50, PARITY-REF, PARITY) prints
 
 ## Assertions
 
-### A1 [p170] pointer register: adjacent words, one 32-bit write
+### A1 [p170] pointer registers: adjacent words, one 32-bit write
 
 Claims: `6-dma-channels.c16`, `6-dma-channels.c18`, `ch6-dma.c14`,
 `ch6-dma.c16`.
 
-Proposition: `BLTAPTH`/`BLTAPTL` (the high/low words of the blitter's A
-pointer, $DFF050/$DFF052) are adjacent in the 68000 address space, and a
-single 32-bit `MOVE.L` to `BLTAPTH` sets both, correctly pointing the
-blitter at the intended source word.
+Proposition: p.170: "The address pointer registers are each composed of two
+words, named BLTxPTH and BLTxPTL ... The two words of each register are
+adjacent in the 68000 address space, with the high address word first, so
+they can both be written with one 32-bit write from the processor." x is
+A, B, C or D. For each of the four pointer registers a single 32-bit
+`MOVE.L` to `BLTxPTH` sets both words, correctly pointing the channel at the
+intended word.
 
-Program (`prog_pointer.s`): stores a known word pattern at a chosen
-source address `SRC` in chip RAM, executes one `MOVE.L #SRC,BLTAPTH(a0)`,
-configures a minimal A-to-D one-word copy blit, runs it, `DONE`.
+Program (`prog_pointer.s`): four one-word blits, one per channel, each in
+turn, with its own source word, its own decoy word and its own destination
+word (every word a distinct pattern). The pointer of the channel under test
+is set by one `MOVE.L #addr,BLTxPTH`; every other pointer the blit uses is
+set by two `MOVE.W` writes, so a failed 32-bit write shows in that channel
+alone:
 
-Observed: `peek_logical()` of the blit's destination word.
+| channel | pointer set by `MOVE.L` | blit | minterm | result word |
+|---|---|---|---|---|
+| A | `BLTAPTH` | D = A | $F0 | $CAFE (A source) |
+| B | `BLTBPTH` | D = B | $CC | $B00B (B source) |
+| C | `BLTCPTH` | D = C | $AA | $C0DE (C source) |
+| D | `BLTDPTH` | D = A | $F0 | $D00D (A source, to the intended destination) |
 
-Expected value: the destination word equals the pattern stored at `SRC`.
+The four result words are stored to `RESULTS`, `RESULTS`+2, +4 and +6 and read
+with `peek_logical()`.
 
-Mutation (`prog_pointer_mutant.s`, `NMH_MUTATE=A1`): `SRC` points at a
-different chip-RAM address holding a different known pattern; the
-unchanged check (still comparing against the first pattern) must go red.
+Components (`A1-A`, `A1-B`, `A1-C`, `A1-D`, no claim id): each result word
+equals its source pattern. Aggregate (`A1`, carrying the four claim ids): all
+four component propositions hold.
+
+Mutations (stimulus): `prog_pointer_mutant_a.s` .. `_d.s` (`PTR_MUT_A` ..
+`PTR_MUT_D`, `NMH_MUTATE=A1-A` .. `A1-D`) point one channel's `MOVE.L` at that
+channel's decoy word (destination decoy for D); the unchanged component check
+of that channel must go red and the aggregate with it.
+`prog_pointer_mutant.s` (all four set, `NMH_MUTATE=A1`) must turn the
+aggregate red.
 
 ### DESC-BASE / DESC-OFFBY1 [p182] the descending-mode pointer convention
 
@@ -253,13 +281,15 @@ Mutation (`prog_earlycheck_reordered.s`, `EARLY_REORDER` set,
 started; the unchanged "destination write precedes the dummy read" check
 must go red.
 
-### BBUSY-PREDICTS [p186] BBUSY set correctly predicts more writes still to come
+### BBUSY-PREDICTS [p186] BBUSY set predicts more writes still to come
 
-Claims: `6-blitter-done-flag.c10`, `ch6-done.c12`.
+No claim id (the ids of the busy-bit test pair are on BBUSY-LOCKOUT, below).
 
-Proposition: after the manual's prescribed intervening chip-memory read
-(p.186's NOTE), a `BBUSY` read that comes back *set* is not a false
-alarm: the blit genuinely still has destination writes left to make.
+Proposition: p.186: "A blitter done flag, also called the blitter busy flag,
+is provided as DMAF_BLTDONE (bit 14) in DMACONR. This flag is set when a blit
+is in progress." After the manual's prescribed intervening chip-memory read,
+a `BBUSY` read that comes back *set* is not a false alarm: the blit genuinely
+still has destination writes left to make.
 
 Program: `prog_earlycheck_large.s` (200-word blit): the manual's dummy
 read, then the immediate `DMACONR` read and store.
@@ -273,10 +303,6 @@ bounds when the CPU started looking).
 Expected value: `BBUSY` reads set, and the last destination write's cycle
 is after the RESULTS store's cycle -- more writes really were still to
 come.
-
-Measured: on both cores, only 26 of the blit's 200 destination writes had
-landed by the time RESULTS was stored; the last lands hundreds of cycles
-later.
 
 Mutation (`NMH_MUTATE=BBUSY-PREDICTS`): the true 200-word build is
 replaced with the true one-word (`SMALL`) build, already finished (BBUSY
@@ -410,33 +436,59 @@ by nothing.
 
 ## How slots are numbered at the RAM port
 
-A8, PARITY and SYSDMA-C29 below all depend on this. Figure 6-9 (p.195)
-draws a memory-refresh block at the start of each horizontal line's own
-DMA-slot allocation, ahead of the display fetch region; p.194 gives a
-line as "227.5 'color clocks', or memory access cycles" -- 227 whole
-slots, an odd count, so any fixed-cycle reference's parity flips from one
-line to the next.
+A8, SYSDMA-C29, A9, A10, A11, A6, OPEN50 and PARITY below depend on this.
+Figure 6-9 (p.195) draws a memory-refresh block at the start of each
+horizontal line's own DMA-slot allocation, ahead of the display fetch
+region; p.194 gives a line as "227.5 'color clocks', or memory access
+cycles" -- 227 whole slots in the run (SLOT-UNIT prints it), an odd count, so
+any fixed-cycle reference's parity flips from one line to the next. The slot
+unit is the one SLOT-UNIT derives and asserts.
 
 At the RAM port, refresh shows up as reads below word address $1000 --
 far below every program-specific range this package uses (`PROGRAM_ORG`,
 every scratch word, every blit source/destination, every bitplane
 pointer) -- 4 per line, 2 slots apart, matching Figure 6-9's own refresh
-block. Every low read is grouped (a gap over 100 `clk_sys` starts a new
+block. Every low read is grouped (a gap over 12.5 slots starts a new
 group), but not every such group is a line's own refresh: in the
 bitplane builds, BPL2-4's own pointers are left unset and so also read
-low memory, in groups of a different size (60 and 48, not 4) and
-spacing. Only a group that is exactly four reads, each two slots (16
-`clk_sys`) after the one before, is kept as a line's own start; any other
-group is some other master's low read, not refresh, and does not anchor
-a line. PARITY-REF's own precondition below, not an unproven assumption,
-is what confirms the reads this restricted grouping keeps still land on
-the real refresh schedule. A CPU chip-bus access is graded even/odd by
-its own slot offset from *its own line's* last refresh read,
-floor-divided by one slot (8 `clk_sys`) -- not by its raw remainder,
-since a CPU sample and a DMA (refresh) sample are each taken at a fixed
-sub-slot phase 4 `clk_sys` apart, so their difference is never an exact
-multiple of a slot, only its floor is meaningful. This is a fact about
-this RTL's own two sample phases, not a page citation.
+low memory, in groups of a different size and spacing. Only a group that is
+exactly four reads, each two slots after the one before, is kept as a line's
+own start; any other group is some other master's low read, not refresh, and
+does not anchor a line. PARITY-REF's own precondition below, not an unproven
+assumption, is what confirms the reads this restricted grouping keeps still
+land on the real refresh schedule. A slot is numbered from its line's first
+refresh slot, which is number 1 (so the refresh slots carry the odd numbers,
+Figure 6-9); a CPU chip-bus access is graded even/odd by its own slot offset
+from *its own line's* last refresh read, floor-divided by one slot -- not by
+its raw remainder, since a CPU sample and a DMA (refresh) sample are each
+taken at a fixed sub-slot phase half a slot apart, so their difference is
+never an exact multiple of a slot, only its floor is meaningful. This is a
+fact about the RAM-port sampling of the harness, not a page citation.
+
+## Missed cycles of the 68000
+
+p.196: "Some 68000 instructions do not match perfectly with the allocation of
+even cycles and cause cycles to be missed. If cycles are missed, the 68000
+must wait until its next available memory slot before continuing." A8 and
+SYSDMA-C29 below identify a missed cycle from the RAM-port log alone. The
+log shows the cycles in which an access happened, never the cycle in which
+the 68000 asked for one, so the cycle the 68000 was ready for is found from
+two accesses of its own and the address pair they form (a program fetch and
+the scratch write each have their own address, so a pair names the
+instruction boundary it brackets):
+
+- with no DMA access in any slot between them, the second access follows the
+  first after `g` slots, that address pair's *unimpeded gap*; the largest
+  unimpeded gap the run shows for the pair is `g`, so the 68000 is ready for
+  the second access `g` slots after the first at the latest;
+- when the pair is further apart than `g`, the slot `t` = first + `g` is the
+  slot the 68000 was ready for; if a DMA access took `t`, the cycle was
+  *missed* (a delayed pair whose `t` no DMA access took is counted and set
+  aside);
+- a pair that spans a line start is set aside, because the slot numbering
+  restarts there.
+
+A missed cycle is *even* or *odd* by the number of its slot `t` (Figure 6-9).
 
 ### PARITY-REF [Figure 6-9] the per-line reference's own anchor
 
@@ -466,126 +518,147 @@ Mutation (`NMH_MUTATE=PARITY-REF`): the capture is `prog_sharing.bin` (no
 bitplane DMA enabled at all); the unchanged "found, and all odd" check
 must go red (zero BPL1 reads at all).
 
-### A8 [p194,p196] a denied cycle means the CPU simply waits for its next available slot
+### A8 [p194,p196] a missed cycle waits for the next available slot
 
 Claims: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`.
 
-Proposition: a cycle the CPU is denied is not lost or retried some other
-way -- the CPU's next access lands on its very next available (i.e.
-same-parity) slot, never the other parity.
+Proposition: p.196: "If cycles are missed, the 68000 must wait until its next
+available memory slot before continuing." A missed even-numbered cycle (the
+slot the 68000 was ready for, which Figure 6-10 assigns to it, was taken by a
+DMA access) is followed by the access at the next available slot. The page
+does not say whether a free odd-numbered slot is also available to the 68000
+(the odd-slot accesses are PARITY's finding), so the graded line leaves that
+open: the access must come no later than the first free even-numbered slot,
+that is, no free even-numbered slot may lie unused between the missed slot
+and the access. A wait that skips an available slot would not be a wait
+"until its next available memory slot".
 
-Program: `prog_sharing.s`, `BASELINE` build (no blit at all).
+Program: `prog_sharing_share.s` (`SHARE` build): the counting loop with a
+share-mode blit running, so the blitter takes slots from the 68000
+throughout the blit's active window. The loop sits at the same address in
+every build of `prog_sharing.s` and `prog_bitplane.s`.
 
-Observed: for every pair of consecutive CPU bus accesses (a program fetch
-or a scratch write) within one line (no line boundary -- no refresh
-group's own first read -- falling between them) whose gap is a whole
-number of slots, whether that gap is an even or an odd number of slots.
-Pairs that span a line start are excluded: Figure 6-9's numbering
-restarts every line, so a fixed-cycle reference cannot compare parity
-across that boundary.
+Observed (precondition, "A8PRE", no claim id): the number of missed
+even-numbered cycles found by the procedure above (see "Missed cycles of the
+68000"), and the address pair of the first (printed).
 
-Expected value: no odd-slot gap ever occurs.
+Expected value (precondition): at least one.
 
-Measured: 7801 odd-slot instances of 40606 within-line pairs on fx68k;
-0 of 44808 on TG68K.
+Observed (claim): among those missed even cycles, the number with a free
+even-numbered slot between the missed slot and the access.
 
-**fx68k: red. TG68K: green.** A real, measured disagreement between the
-two cores, not reconciled (BRIEF.md). See SYSDMA-C29 below for what the
-fx68k red is.
+Expected value: zero.
 
-Mutation (`NMH_MUTATE=A8`): the baseline capture is replaced with the
-four-lores-plane build's own in-fetch-window CPU accesses (a different,
-live, nonzero population -- 50178 pairs on fx68k, 60672 on TG68K) through
-the same, unchanged comparator (including its `pairs > 0` guard); the
-check reads GREEN there on both cores, showing the comparator is not
-hard-wired to fail.
+Mutation (precondition, `NMH_MUTATE=A8PRE`): the no-DMA run (`prog_sharing.s`)
+replaces the share-mode run; no DMA access takes a slot the 68000 was ready
+for, so no even cycle is missed, the precondition goes red and A8 prints
+`NOT GRADED`.
 
-Second mutation (`NMH_MUTATE=A8-SHARE`, since fx68k is already red at
-baseline and TG68K is not): the baseline capture is replaced with the
-share-mode blit's own active-window CPU accesses (the same population
-PARITY's own share-mode window uses), through the same, unchanged
-comparator. This population's grants sit 5 slots apart (see the
-A5-WITHDRAWN halt below), an odd number, so the check reads RED on both
-cores -- including TG68K, for which no other mutation here does.
+Mutation (`implementation`, run with `NMH_MUTATE=A8`): a private copy of
+`minimig_m68k_bridge.v`, outside the repository, in which the 68000 is not
+acknowledged in the first two free colour clocks after a colour clock the
+chipset took from it; the package is built against that copy and the
+unchanged comparator finds a free even-numbered slot left unused after every
+missed even cycle (two consecutive slots are left unused, so that one of
+them is even-numbered whatever the parity of the first). No stimulus can
+make this comparator red: the 68000 is always either pending or not, and the
+stimulus cannot make the design leave a slot free that a pending 68000 could
+have used. A stimulus that idles the 68000 (a long instruction) is calibrated
+away by the unimpeded gap, and the TG68K core has no instruction timing to
+idle at all.
 
 ### SYSDMA-C29 [p196] some 68000 instructions miss the even-cycle allocation
 
 Claim: `ch6-sysdma.c29`.
 
 Proposition: "Some 68000 instructions do not match perfectly with the
-allocation of even cycles and cause cycles to be missed. If cycles are
-missed, the 68000 must wait until its next available memory slot before
-continuing." p.196's own consequence of a missed cycle is a *wait*, not
-a landing on the wrong slot -- that wait is only observable where the
-page's allocation actually holds the odd slots against the CPU (the
-four-lores-plane fetch window, Figure 6-11: planes on the odd slots),
-not the free-running no-DMA baseline, where the same fractional-slot
-instruction simply lands on the odd slot instead (A8's and PARITY's own
-red, a different fact).
+allocation of even cycles and cause cycles to be missed." An instruction
+does not match the allocation when the slot the 68000 is ready for after it
+is an odd-numbered slot, which Figure 6-10 assigns to other devices; in the
+four-low-resolution-bitplane display the display takes those slots
+(Figure 6-9, Figure 6-11), so the cycle is missed. Existence only.
 
-Program: `prog_bitplane.s`, `PLANES=4 HIRES=0` build (A9's own capture).
-Its counting loop is `ADDQ.W #1,D0` / `MOVE.W D0,(A1)` / `BRA.S .loop`;
-`BRA.S` is a 10-clock-period internal operation (MC68000 timing tables),
-not a whole multiple of 4, unlike every other instruction in the loop.
+Program: `prog_bitplane.s`, four low-resolution planes (`ADDQ.W #1,D0` / `MOVE.W D0,(A1)` / `BRA.S .loop`).
 
-Observed: among the same in-window CPU accesses A8's own mutation uses
-(`lores_inwindow_cpu_cycles`), the count of consecutive-pair gaps that
-are exactly 4 slots (32 `clk_sys`) apart -- the specific, recurring step
-from the fetch after `BRA.S`'s own internal operation to the next fetch.
+Observed: among the pairs of consecutive CPU accesses, the number of missed
+odd-numbered cycles found by the procedure of "Missed cycles of the 68000"
+(the address pair of the first is printed).
 
-Expected value: fx68k -- at least one such 4-slot step (existential, no
-threshold set by a run). Not exercised on TG68K, whose own loop has no
-fractional-slot internal operation and so produces no such step.
-
-Measured: 9984 of 9984 in-window cases on fx68k are exactly this 4-slot
-step (every one of them, since the step recurs once per loop iteration
-throughout the run). TG68K: not exercised.
+Expected value: at least one, on both cores, by the same comparator. A core
+whose 68000 is never ready for an odd-numbered slot in this run reads red.
 
 Mutation (`prog_bitplane_aligned.s`, `ALIGNED` set,
-`NMH_MUTATE=SYSDMA-C29`): the loop's `BRA.S` is replaced with `JMP (An)`
-(8 clock periods, a whole multiple of 4, MC68000 timing tables) -- every
-instruction's own bus-cycle timing then aligns to whole slots, inside
-the window the same as outside it. The unchanged "at least one 4-slot
-step" check must go red on fx68k (zero such steps).
+`NMH_MUTATE=SYSDMA-C29`, `stimulus red`): the loop's `BRA.S` is replaced
+with `JMP (An)` (a whole multiple of four clock periods, MC68000 timing
+tables): every gap is two slots and the 68000 is never ready for an odd
+slot; the unchanged "at least one" check must go red.
 
-### A9 [p196] four or fewer low-resolution bitplanes still let the CPU through
+Mutation (`NMH_MUTATE=SYSDMA-C29-SHARE`, `stimulus green`): where the
+unmutated line is red, the same comparator reads the share-mode blit's own run
+(`prog_sharing_share.s`), a different, live input on which the 68000 is ready
+for odd slots the blitter takes; the check must read green.
+
+### A9 [p196] four or fewer low-resolution bitplanes grant the CPU alternate cycles
 
 Claims: `6-system-dma.c61`, `ch6-sysdma.c34`.
 
 (`ch6-sysdma.c35` -- "only if it is ready to ask for the cycle and is the
 highest priority item at the time" -- is withdrawn; see the table below.)
 
-Proposition: display DMA at four (or fewer) low-resolution bitplanes
-leaves the CPU able to get alternate memory cycles.
+Proposition: p.196: "If the display contains four or fewer low resolution
+bitplanes, the 68000 can be granted alternate memory cycles (if it is ready
+to ask for the cycle and is the highest priority item at the time)."
+Alternate memory cycles are every second slot, the even-numbered ones
+(Figure 6-10). The stimulus is a 68000 that is continuously ready -- the
+whole-4-clock-aligned counting loop -- with nothing enabled beside the
+display, so that nothing ranks above it but the display's own slots; the
+claim's condition is met. For one, two, three and four low-resolution
+bitplanes, every pair of consecutive CPU accesses inside a line's fetch
+window must be exactly two slots apart and both on even-numbered slots.
 
-Program (`prog_bitplane.s`, `PLANES=4 HIRES=0` build): sets `BPLCON0` for
-four low-resolution bitplanes with the standard low-resolution
-`DIWSTRT`/`DIWSTOP`/`DDFSTRT`/`DDFSTOP`, lets display DMA reach its active
-window, runs the CPU scratch-counter loop throughout.
+Programs: `prog_bitplane_aligned_p1.s`, `_p2.s`, `_p3.s` (`BP_NPLANES`=1, 2, 3,
+`ALIGNED`) and `prog_bitplane_aligned.s` (four planes): the aligned counting
+loop (`ADDQ.W #1,D0` / `MOVE.W D0,(A1)` / `JMP (A2)`, 4, 8 and 8 clock
+periods) with the standard low-resolution `DIWSTRT`/`DIWSTOP`/`DDFSTRT`/
+`DDFSTOP`.
 
-Observed (precondition, "A9PRE", no claim id -- a precondition
-establishes that windows exist at all, not the claim itself): p.197's
-per-line fetch windows are found.
+**Fetch windows** (shared with A10, A11, A6, OPEN50, PARITY): BPL1-range
+reads ($0C6000..) are grouped into per-line bursts (a gap over 25 slots
+starts a new burst). p.197: "either 20 or 40 words will be fetched during the
+horizontal line display time"; a burst holds as many reads as the run's most
+frequent burst (one burst the capture started or ended inside holds fewer
+and is not a window). Four high-resolution bitplanes need "all of the
+available memory time slots during the display time just to fetch the 40 data
+words for each line of the four bitplanes (40 * 4 = 160 time slots)"
+(p.197), and Figure 6-12 fills every one of those 160 slots with planes in the
+repeating order 4-2-3-1 -- BPL1 is fetched *last* in its own 4-slot group.
+Figure 6-11 (six-bitplane, same page) shows the same structure at low
+resolution, an 8-slot group ending in plane 1. So each burst's own window is:
+from `(burst's own modal read-to-read spacing) - 1 slot` before its first
+read, to its last read -- derived from the capture's own measured spacing
+rather than a hard-coded, resolution-specific constant.
 
-Expected value (precondition): at least one window is found.
+Observed (precondition, "A9PRE", no claim id): for each of the four plane
+counts, that fetch windows are found and that the loop is continuously ready --
+for every pair of its accesses of one line with no DMA access in any slot
+between them, the gap is exactly two slots.
 
-Observed (claim): the minimum, over every one of the run's per-line fetch
-windows, of the count of CPU chip-bus accesses (a program fetch or a
-scratch write) inside that window.
+Observed (claim): for each plane count, the pairs of consecutive CPU accesses
+that lie in one fetch window, and among them those that are not two slots
+apart or not on even-numbered slots.
 
-Expected value: precondition holds, and the minimum is at least one --
-not just "some window has a CPU access", every one does.
+Expected value: precondition holds, and for every plane count there is at
+least one pair and none is off the pattern. If the precondition fails the line
+prints `NOT GRADED`.
 
-Measured: minimum 66 per window on fx68k, 80 on TG68K (both cores: 768
-windows).
+Mutation (`NMH_MUTATE=A9`): the four-plane run is replaced with the six-plane
+aligned run (`prog_bitplane_planes6_aligned.s`): six planes take even slots
+from the 68000 and its pairs are four slots apart; the unchanged check must
+go red.
 
-Mutation (`NMH_MUTATE=A9`): the capture is `prog_bitplane_hires.bin`
-(A10's own build) instead; the unchanged "minimum > 0" check must go red
-(A10 measures exactly 0 there).
-
-Precondition mutation (`NMH_MUTATE=A9PRE`): the capture is
-`prog_sharing.bin` (no bitplane DMA enabled at all); the unchanged
-"windows are found" check must go red (zero windows).
+Precondition mutation (`NMH_MUTATE=A9PRE`): the four-plane run is replaced
+with the no-DMA aligned run (`prog_sharing_aligned.s`), which has no display
+windows; the precondition goes red and A9 prints `NOT GRADED`.
 
 ### A10 [p196,p197] four high-resolution bitplanes lock the CPU out entirely
 
@@ -599,19 +672,7 @@ Program (`prog_bitplane_hires.s`, `PLANES=4 HIRES=1` build): as A9,
 `BPLCON0`'s `HIRES` bit set, the high-resolution `DDFSTRT`/`DDFSTOP`
 window.
 
-**Fetch windows** (shared with A9, A6, OPEN50, PARITY): BPL1-range reads
-($0C6000..) are grouped into per-line bursts (a gap over 200 `clk_sys`
-starts a new burst). p.197: four high-resolution bitplanes need "all of
-the available memory time slots during the display time just to fetch the
-40 data words for each line of the four bitplanes (40 * 4 = 160 time
-slots)", and Figure 6-12 fills every one of those 160 slots with planes
-in the repeating order 4-2-3-1 -- BPL1 is fetched *last* in its own
-4-slot group. Figure 6-11 (six-bitplane, same page) shows the same
-structure at low resolution, an 8-slot group ending in plane 1. So each
-burst's own window is: from `(burst's own modal read-to-read spacing) -
-1 slot` before its first read, to its last read -- derived from the
-capture's own measured spacing rather than a hard-coded,
-resolution-specific constant.
+Fetch windows: as defined in A9.
 
 Observed (precondition, "A10PRE", no claim id): every window's non-CPU
 (DMA) access count.
@@ -641,26 +702,42 @@ Precondition mutation (`NMH_MUTATE=A10PRE`): the capture is
 `prog_sharing.bin` (no bitplane DMA at all); the unchanged "every window
 fully DMA" check must go red (zero windows found at all).
 
-### A11 [p196] more than four low-resolution bitplanes measurably steal cycles
+### A11 [p196] more than four low-resolution bitplanes steal cycles during the display
 
 Claims: `6-system-dma.c62`, `ch6-sysdma.c36`.
 
-Proposition: raising low-resolution bitplane count above four steals
-cycles from the CPU that it had at four or fewer.
+Proposition: p.196: "if there are more than four bitplanes, bitplane DMA will
+begin to steal cycles from the 68000 during the display." Raising the
+low-resolution bitplane count above four takes cycles from the CPU that it
+had at four. Graded inside the display windows, with five and with six
+planes, by the page's direction only: no percentage is asked for.
 
-Program: `prog_bitplane.s`, `PLANES=6 HIRES=0` build, vs. the `PLANES=4
-HIRES=0` build (A9), both run for the same fixed cycle budget.
+Programs: `prog_bitplane.s` with `PLANES=4` (default), `prog_bitplane_planes5.s`
+(`BP_NPLANES`=5) and `prog_bitplane_planes6.s` (`BP_PLANES6`), the same
+counting loop (`BRA.S`) and display window in each. The beam is the same in
+every run (the boot is identical until the display starts), so a fetch window
+found at the same cycle in the four-, five- and six-plane runs is the same
+line's window.
 
-Observed: total scratch-counter-loop writes over the whole run,
-`PLANES=6` vs. `PLANES=4`.
+Observed (precondition, "A11PRE", no claim id): the fetch windows of the
+three runs coincide (every window of the four-plane run is found at the same
+cycle in the other two, and no other), and the CPU keeps running in all three
+runs (it makes chip-bus accesses outside the windows) -- so a dead CPU cannot
+satisfy the comparison.
 
-Expected value: `PLANES=6`'s count is at most 95% of `PLANES=4`'s.
+Observed (claim): for every window, the number of the CPU's chip-bus accesses
+(program fetches and scratch writes) inside it, in each of the three runs.
 
-Measured: fx68k -- 14489 vs. 18586 (78%). TG68K -- 15334 vs. 21478 (72%).
+Expected value: precondition holds, and in every window the five-plane count
+and the six-plane count are each strictly lower than the four-plane count.
 
-Mutation (`NMH_MUTATE=A11`): the `PLANES=4` capture is compared against
-itself; the unchanged "at most 95%" check must go red (100% of itself,
-no difference between identical configurations).
+Mutation (`NMH_MUTATE=A11`): the five- and six-plane runs are replaced with
+the four-plane run; the counts are equal and the unchanged strict check must
+go red.
+
+Precondition mutation (`NMH_MUTATE=A11PRE`): the five-plane run is replaced
+with the no-DMA run; there are no windows to coincide, the precondition goes
+red and A11 prints `NOT GRADED`.
 
 ### A6 [p196] alternate cycles are enough for full speed in the normal case
 
@@ -683,24 +760,24 @@ about the instruction, not this claim about alternate-cycle allocation.
 `BRA.S`'s 10.
 
 Program: `prog_bitplane_aligned.s` (four low-res planes, aligned loop)
-for the in-window period; `prog_sharing_aligned.s` (`BASELINE`, aligned
-loop) for the no-DMA period.
+for the in-window intervals; `prog_sharing_aligned.s` (`BASELINE`, aligned
+loop) for the loop's period with the bus to itself.
 
-Observed: the CPU's own scratch-write-to-scratch-write period, taken as
-the *modal* (most frequent) gap -- inside the four-lores-plane fetch
-windows (the per-line window derived under A10 above), and separately in
-the no-DMA baseline run.
+Observed: the loop's full-speed period, the interval between two scratch
+writes with no DMA access in any slot between them in the no-DMA run (its most
+frequent value is taken; the intervals are printed with their count); and
+every interval between two scratch writes that lie in one fetch window of the
+four-low-res-plane run (the windows of A9).
 
-Expected value: the two modal periods are equal.
-
-Measured: 80 `clk_sys` both ways, both cores (12287 in-window gaps, 9039
-no-DMA gaps).
+Expected value: there is at least one in-window interval, and every one of
+them equals the full-speed period -- every interval, not the most frequent
+one.
 
 Mutation (`prog_bitplane_planes6_aligned.s`, `BP_PLANES6` and `ALIGNED`
-both set, `NMH_MUTATE=A6`): the in-window period is taken from six
-aligned-loop planes instead of four; the unchanged "equals the no-DMA
-period" check must go red (160 `clk_sys` vs. 80, both cores -- six
-planes measurably slow the CPU, per A11/OPEN50).
+both set, `NMH_MUTATE=A6`): the in-window intervals are taken from six
+aligned-loop planes instead of four; the unchanged "every interval equals
+the full-speed period" check must go red (six planes slow the CPU, per
+A11/OPEN50).
 
 ### SLOTSPAN-WITHDRAWN [p196] a 68000 cycle is one memory slot plus one free slot -- withdrawn
 
@@ -722,23 +799,29 @@ Claims: `6-system-dma.c65`, `ch6-sysdma.c38`.
 
 Proposition: "bitplane DMA steals 50 percent of the open slots the
 processor might have used if there were only four bitplanes displayed"
-(p.197, of the six-bitplane case, Figure 6-11).
+(p.197, of the six-bitplane case, Figure 6-11). p.196: "160 time slots"
+per line during the display time; a slot not taken by a DMA access is open.
+Graded in every fetch window, not only in the median one.
 
 Program: `prog_bitplane.s`, `PLANES=4` and `PLANES=6` builds, using the
 same p.197 fetch windows as A9/A10.
 
-Observed: the median, over every window, of the non-CPU (DMA) access
-count, for both plane counts; "open slots" = 160 minus that median.
+Observed (precondition, "OPEN50PRE", no claim id): every fetch window of the
+two runs spans the page's 160 slots.
 
-Expected value: the six-plane open-slot count is exactly half the
-four-plane open-slot count.
+Observed (claim): for every window, the number of open slots (160 minus the
+non-CPU accesses inside it), for both plane counts.
 
-Measured: four planes -- 80 DMA, 80 open (both cores). Six planes -- 120
-DMA, 40 open (both cores). 40 is exactly half of 80.
+Expected value: precondition holds, and all four-plane windows leave the same
+positive number of slots open, all six-plane windows leave the same number,
+and the six-plane number is exactly half the four-plane number.
 
 Mutation (`NMH_MUTATE=OPEN50`): the six-plane side is the four-plane
-capture instead; the unchanged "exactly half" check must go red (80 is
-not half of 80).
+capture instead; the unchanged "exactly half" check must go red.
+
+Precondition mutation (`NMH_MUTATE=OPEN50PRE`): the six-plane run is replaced
+with the no-DMA run; there are no windows, the precondition goes red and
+OPEN50 prints `NOT GRADED`.
 
 ### PARITY [p196] the 68000 uses only the even-numbered memory-access cycles
 
@@ -763,8 +846,8 @@ active window.
 Expected value: every CPU access, in both windows, falls on an
 even-numbered slot; the odd phase is never used.
 
-Measured: fx68k -- 20006 of 41007 no-DMA accesses on odd slots; 104 of
-242 in the share-mode window. TG68K -- 0 of 45209 no-DMA; 124 of 254 in
+Measured: fx68k -- 20006 of 41007 no-DMA accesses on odd slots; 125 of
+243 in the share-mode window. TG68K -- 0 of 45209 no-DMA; 124 of 254 in
 the share-mode window.
 
 **fx68k: red (both windows). TG68K: red (share-mode window only; clean
@@ -846,6 +929,46 @@ on fx68k even with no DMA at all: its own TAS read alone spans 3 slots
 there, so the comparator could not go green either way, and the claim
 concerns the 68000's own bus protocol rather than the chipset boundary
 this suite tests.
+
+### TAS-SPAN [p196] the read-modify-write cycle of TAS does not fit into one slot
+
+Claims: `6-system-dma.c57`, `ch6-sysdma.c33`.
+
+Proposition: p.196: "the indivisible read-modify-write cycle that is used
+only in this instruction will not fit into a DMA memory access slot." An
+ordinary 68000 bus cycle occupies one memory slot (Figure 6-10). On the RAM
+port a cycle is the run of samples of one address and direction; its span is
+the cycle of its last sample minus the cycle of its first. The TAS cycle is
+the read at the TAS address and the write that follows; it does not fit a slot
+if its span, from the read's first sample to the write, exceeds one slot,
+while every ordinary cycle at the same address, measured in the same run,
+spans at most one slot.
+
+Program (`prog_tas_span.s`): three ordinary accesses to one byte (a write, a
+read, a write), then one `TAS.B` on it, with no DMA channel enabled.
+
+Observed (precondition, "TAS-SPAN-PRE", no claim id): the cycles at the TAS
+address are the program's five: write, read, write, then the TAS read and
+write.
+
+Observed (claim): the longest span among the three ordinary cycles; the
+interval from the first sample of the TAS read to the TAS write.
+
+Expected value: precondition holds, the ordinary spans are at most one slot
+and the TAS interval exceeds one slot.
+
+Mutation (precondition, `prog_tas_span_mut.s`, `NMH_MUTATE=TAS-SPAN-PRE`): the
+`TAS.B` is replaced with `NOP`; the address shows three cycles, the
+precondition goes red and TAS-SPAN prints `NOT GRADED`.
+
+Mutation of TAS-SPAN itself: `none impossible`, unfalsifiable at this
+boundary. The read and the write of a read-modify-write are two RAM-port
+samples in two different slots, so no stimulus makes their span at most one
+slot, and an ordinary cycle is one sample; only a design that did the whole
+cycle inside one slot could be red, and the stimulus cannot make the design
+do that. The line is a comparison against the slot unit that SLOT-UNIT
+asserts, and the three ordinary cycles measured in the same run are its
+control on the same RAM-log basis.
 
 ### ch6-multi.c4 [p187] a 68020 running from cache may race ahead of the blitter -- withdrawn
 
@@ -1081,27 +1204,185 @@ is unaffected by the plane count); the blitter's own first DMA access now
 falls at cycle 2401113, inside the window instead of 40 `clk_sys` after
 it. The precondition goes red on both cores.
 
+### BBUSY-LOCKOUT [p186] the second busy-bit test is correct in a locked-out blit
+
+Claims: `6-blitter-done-flag.c10`, `ch6-done.c12`, `ch6-done.c10`.
+
+Proposition: p.186: "If a blit has just been started but has been locked out
+of memory access because of, for instance, display fetches, this bit may not
+yet be set. The processor, on the other hand, may be running completely
+uninhibited out of Fast memory or its internal cache, so it will continue to
+have memory cycles. The solution is to read a chip memory or hardware register
+address with the processor before testing the bit ... The first "test" of the
+blitter done bit may not return the correct result, but the second will."
+
+Program (`prog_bbusy_lockout.s`, `prog_fastrun_lockout.s` with `BB_TEST`): the
+display, the Copper list and the blit of FASTRUN-LOCKOUT (four
+high-resolution bitplanes lock the blitter and the 68000 out of the fetch
+window, p.197; the Copper starts the blit just before a window), with
+`BLTPRI` clear, and a 68000 loop in Fast memory that reads `DMACONR` twice in
+a row and stores both values, in order, to Fast memory, 600 times.
+
+The 68000 needs a Chip bus cycle for nothing in that loop but the two register
+reads, so it is the reads that are held across the window. An iteration whose
+previous pair was stored before the window began and whose own first store comes
+after it was pending on a register read throughout the window (nothing else
+in the loop waits), so its second read completed after the window -- after the
+Copper's write of the blit size -- and, since the pair was stored before the
+blit's last write, before the blit ended. The blitter's first access also comes
+after the window, so the blit had been started and locked out.
+
+Observed (precondition, "BBUSY-LOCKOUT-PRE", no claim id): one fetch window lies
+between the Copper's fetch of the BLTSIZE value and the blitter's first access;
+a pair pending across it exists; the program reached `DONE`; and that pair was
+stored before the blit's last write.
+
+Observed (claim): `BBUSY` (bit 14) of the second value of that pair. The first
+value is printed as a measurement.
+
+Expected value: precondition holds, and `BBUSY` reads set. If the precondition
+fails the line prints `NOT GRADED`.
+
+Mutation (`NMH_MUTATE=BBUSY-LOCKOUT`, `prog_bbusy_lockout_intena.s`,
+`BB_INTENA`): both tests read `INTENAR`, whose bit 14 is clear; the unchanged
+check must go red.
+
+Precondition mutation (`NMH_MUTATE=BBUSY-LOCKOUT-PRE`,
+`prog_bbusy_lockout_2plane.s`, `FR_2PLANE`): two high-resolution bitplanes leave
+half the window's slots free, the blitter's first access lands inside the
+window, the precondition goes red and BBUSY-LOCKOUT prints `NOT GRADED`.
+
 ## Claims not asserted
 
 | claim id(s) | page | reason |
 |---|---|---|
 | `6-intro.c5`, `ch6-intro.c5` | 169 | Factor not toleranced ("approximately twice as fast" has no numeric tolerance on the page); ordering asserted by ORDER above (a blitter A-to-D copy of 500 words, uncontended, finishes before a 68000 `MOVE.W` copy loop of the same 500 words). ORDER carries no claim id of its own -- only the ordering is graded, not the factor, so these ids stay withdrawn rather than moving onto ORDER's own label. |
-| `6-blitter-done-flag.c9`, `ch6-done.c11`, `ch6-done.c8` | 186 | These claims are permissive ("may not return the correct result", "may not yet be set"), so no simulation outcome contradicts them; a deterministic Verilator run cannot falsify a "may". The mechanism the page actually gives (p.186's NOTE) is deterministic, not metastable: a blit just started can be locked out of its first DMA cycle by display fetches, so `DMAF_BLTDONE` has not yet gone high, while the CPU keeps running and can observe the not-yet-set flag. BBUSY-PREDICTS above demonstrates the deterministic half directly (`c10`/`c12`). |
-| `ch6-done.c10` | 186 | "Reading a chip memory or hardware register address with the processor before testing the bit avoids the problem" needs a case where the bit would otherwise have been misleading -- a blit locked out of its own first DMA cycle by display fetches (p.186's NOTE), not merely a large blit still running. BBUSY-PREDICTS's own fixture is the latter; the former is not built here. `6-blitter-done-flag.c10`/`ch6-done.c12` state the narrower "the [test after the read] returns the correct result", which BBUSY-PREDICTS does demonstrate. |
+| `6-blitter-done-flag.c9`, `ch6-done.c11`, `ch6-done.c8` | 186 | These claims are permissive ("may not return the correct result", "may not yet be set"), so no simulation outcome contradicts them; a deterministic Verilator run cannot falsify a "may". The mechanism the page actually gives (p.186's NOTE) is deterministic, not metastable: a blit just started can be locked out of its first DMA cycle by display fetches, so `DMAF_BLTDONE` has not yet gone high, while the CPU keeps running and can observe the not-yet-set flag. BBUSY-LOCKOUT above builds that locked-out case and grades the second test (`6-blitter-done-flag.c10`, `ch6-done.c12`, `ch6-done.c10`); the first test's value there is printed as a measurement. |
 | `ch6-multi.c4` | 187 | See its own section above: `cpu_config`=3 was tried on TG68K and measured, producing no observable difference from `cpu_config`=0 in a no-DMA fixture; fx68k does not read `cpu_config` at all. The page's own consequence needs the CPU cache path too, which was not exercised. |
-| `6-system-dma.c12`, `ch6-sysdma.c10` | 194 | "The two lowest priority levels" ranks the blitter and CPU against every other DMA channel (audio, disk, sprites, copper, bitplane), not just against each other. Confirming it needs all of those channels driven simultaneously against blitter and CPU, a materially larger fixture than this package's scope. The narrower fact -- the blitter outranks the CPU specifically -- is A4. Holds as a scope decision with a named fixture. |
-| `ch6-sysdma.c35` | 196 | "Only if it is ready to ask for the cycle and is the highest priority item at the time" -- no assertion in this package measures readiness-and-priority as its own condition (A9 measures the outcome, not this qualifier). A fixture with a higher-priority requester (a nasty-mode blit) contending during the lores display, checking the CPU gets no slot in the fetch windows then, would settle it; not built here. |
+| `6-system-dma.c12`, `ch6-sysdma.c10` | 194 | "The two lowest priority levels" ranks the blitter and CPU against every other DMA channel (audio, disk, sprites, copper, bitplane), not just against each other. Confirming it needs all of those channels driven simultaneously against blitter and CPU, a materially larger fixture than this package's scope. The narrower fact -- the blitter outranks the CPU specifically -- is A4-SHARE (and A4 with `BLTPRI` set). Holds as a scope decision with a named fixture. |
+| `ch6-sysdma.c35` | 196 | "The 68000 is granted the cycle only if it is ready to ask for it and is the highest priority item at the time": the "only if" direction -- never granted when it has not asked or is outranked -- needs the 68000's request visible, which the RAM port does not show (see A5-WITHDRAWN). A9 grades the "if" direction: a continuously ready, otherwise unopposed 68000 is granted alternate cycles. |
 | `6-system-dma.c51`, `6-system-dma.c52`, `ch6-sysdma.c26`, `ch6-sysdma.c27` | 196 | "About half" of instruction time is an average over the 68000's own full instruction mix, with no numeric tolerance given on the page. An instruction-timing histogram compiled per core would settle it. |
-| `6-system-dma.c57`, `ch6-sysdma.c33` | 196 | The indivisible TAS cycle "will not fit into a DMA memory access slot" states a consequence without the page naming an observable difference between "did not fit" and "took a longer cycle instead" -- and `c56` itself, which would have graded that most directly, is withdrawn (see TAS-WITHDRAWN above). |
 | `ch6-sysdma.c32` | 196 | "The 68000 test-and-set instruction (TAS) should never be used in the Amiga" is prescriptive advice to a programmer, not an RTL-observable claim; holds as written. |
 | `ch6-sysdma.c31` | 196 | "Most instructions do not cause cycles to be missed" is a statistic over the instruction set with no numeric tolerance; holds as written (SYSDMA-C29 above establishes the *existence* of misses, per `c29`, not their rate). |
 
-Total: 18 graded assertions (A1, A3, DESC-OFFBY1, A2, A4, A8, SYSDMA-C29,
-A9, A10, A11, A6, SLOTSPAN, OPEN50, PARITY, ORDER, BBUSY-PREDICTS,
-FASTRUN, FASTRUN-LOCKOUT), carrying 39 claim ids in full, plus unlabelled
-apparatus/precondition checks that carry no claim id (FIXTURE, DESC-BASE,
-A3PRE, A4PRE, A9PRE, A10PRE, PARITY-REF, FASTRUN-LOCKOUT-PRE). 3 claim
-ids withdrawn by `checks.record()` as A5-WITHDRAWN. 1 claim id withdrawn
-as TAS-WITHDRAWN. 1 claim id withdrawn as `ch6-multi.c4`. 17 claim ids
-withdrawn in the table above. 39 + 17 + 3 + 1 + 1 = 61 claim ids checked
-in total.
+Total: 17 graded assertions carry claim ids (A1, A2, A3, DESC-OFFBY1,
+A4-SHARE, A8, SYSDMA-C29, A9, A10, A11, A6, OPEN50, PARITY, TAS-SPAN,
+BBUSY-LOCKOUT, FASTRUN, FASTRUN-LOCKOUT), 42 claim ids in full. Graded lines
+without a claim id: A1-A, A1-B, A1-C, A1-D, A4, ORDER, BBUSY-PREDICTS.
+Apparatus and precondition checks without a claim id: FIXTURE, SLOT-UNIT,
+DESC-BASE, A3PRE, A4PRE, A4-SHARE-PRE, A8PRE, A9PRE, A10PRE, A11PRE,
+OPEN50PRE, PARITY-REF, TAS-SPAN-PRE, FASTRUN-LOCKOUT-PRE, BBUSY-LOCKOUT-PRE.
+5 claim ids are withdrawn by `checks.record()`: 2 as A5-WITHDRAWN, 1 as
+SLOTSPAN-WITHDRAWN, 1 as TAS-WITHDRAWN, 1 as `ch6-multi.c4`. 14 claim ids
+are withdrawn in the table above. 42 + 5 + 14 = 61 claim ids checked in
+total.
+
+## RECORDED
+
+The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 38 passed, 1 failed; tg68k 37 passed, 2 failed.
+
+| line | fx68k | tg68k |
+|---|---|---|
+| `FIXTURE` | PASS | PASS |
+| `A1-A` | PASS | PASS |
+| `A1-B` | PASS | PASS |
+| `A1-C` | PASS | PASS |
+| `A1-D` | PASS | PASS |
+| `A1` | PASS | PASS |
+| `DESC-BASE` | PASS | PASS |
+| `DESC-OFFBY1` | PASS | PASS |
+| `A3` | PASS | PASS |
+| `A3PRE` | PASS | PASS |
+| `BBUSY-PREDICTS` | PASS | PASS |
+| `SLOT-UNIT` | PASS | PASS |
+| `A2` | PASS | PASS |
+| `A4PRE` | PASS | PASS |
+| `A4` | PASS | PASS |
+| `A4-SHARE-PRE` | PASS | PASS |
+| `A4-SHARE` | PASS | PASS |
+| `A5-WITHDRAWN` | RECORDED | RECORDED |
+| `A8PRE` | PASS | PASS |
+| `A8` | PASS | PASS |
+| `SYSDMA-C29` | PASS | FAIL |
+| `A9PRE` | PASS | PASS |
+| `A9` | PASS | PASS |
+| `A10PRE` | PASS | PASS |
+| `A10` | PASS | PASS |
+| `A11PRE` | PASS | PASS |
+| `A11` | PASS | PASS |
+| `A6` | PASS | PASS |
+| `SLOTSPAN-WITHDRAWN` | RECORDED | RECORDED |
+| `OPEN50PRE` | PASS | PASS |
+| `OPEN50` | PASS | PASS |
+| `PARITY-REF` | PASS | PASS |
+| `PARITY` | FAIL | FAIL |
+| `ORDER` | PASS | PASS |
+| `TAS-WITHDRAWN` | RECORDED | RECORDED |
+| `TAS-SPAN-PRE` | PASS | PASS |
+| `TAS-SPAN` | PASS | PASS |
+| `FASTRUN` | PASS | PASS |
+| `FASTRUN-LOCKOUT-PRE` | PASS | PASS |
+| `FASTRUN-LOCKOUT` | PASS | PASS |
+| `BBUSY-LOCKOUT-PRE` | PASS | PASS |
+| `BBUSY-LOCKOUT` | PASS | PASS |
+| `MULTI-C4-WITHDRAWN` | - | RECORDED |
+
+Measurements printed by the run (fx68k):
+
+```text
+DESC-OFFBY1: A (pointer at last word) writes first=yes extra=no; B (pointer one word past the last) writes $0C2100=no $0C2102=yes $0C2104=yes $0C2106=yes $0C2108=yes $0C210A=no
+BBUSY-PREDICTS: 200-word build -- last D-write at cycle 2274873, RESULTS store at cycle 2274645, 26 D-writes total
+capture health: base.log.size=47619 share.log.size=48282 nasty.log.size=48154 tiny.log.size=47612 base_aligned.log.size=51819
+capture health: lores4.log.size=163218 hires4.log.size=173463 lores6.log.size=173456 lores4_aligned.log.size=177674 lores6_aligned.log.size=177674
+SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
+A2: active window 2274377..2284489, 48 scratch write(s) strictly inside it (excluding the window's own endpoints)
+A4-SHARE: CPU accesses 243 in a share-mode window of 10112 clk_sys; reference 41007 in 726488 clk_sys (no-DMA run)
+A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (190 of 242 intervals)
+A8: 40669 access pairs, 124 missed even cycle(s), 305 missed odd cycle(s), 0 with an even free slot left unused, 0 delayed with a free ready slot, 400 spanning a line start, 6 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
+SYSDMA-C29: 92965 access pairs, 0 missed even cycle(s), 11097 missed odd cycle(s), 0 with an even free slot left unused, 0 delayed with a free ready slot, 178 spanning a line start, 0 without an unimpeded gap; first missed pair: fetch $80506 -> fetch $80500, 4 slots
+A10: 768 fetch window(s); maximum CPU accesses in any one window = 0
+A11: 768 four-plane window(s), 768 found at the same cycle with five and six planes; CPU accesses outside the windows: 42278 / 42276 / 42276
+A6: no-DMA period of the aligned loop = 80 clk_sys (8398 unimpeded intervals); 11520 scratch-write interval(s) inside the display windows, 0 not equal to it
+SLOTSPAN: modal interval between consecutive CPU bus accesses of the BASELINE loop = 16 clk_sys (2 slot(s)), 41006 intervals
+OPEN50: open slots per 160-slot window -- four planes 80..80, six planes 40..40
+PARITY-REF: 15360 of 15360 BPL1 reads classify odd by the per-line reference (four-lores-plane build)
+PARITY: no-DMA (baseline) odd-slot accesses 20006 of 41007; share-mode window (blit's own active window) odd-slot accesses 125 of 243
+ORDER: CPU copy loop of 500 word(s) spans 44200 clk_sys (500 writes seen); the nasty-mode blit's own 500-word copy spans 8112 clk_sys, same yardstick (first to last destination write)
+TAS: read-to-write gap = 24 clk_sys, 5 other RAM-port access(es) between them (TAS.B, share-mode blit concurrent)
+TAS-SPAN: slot unit 8 clk_sys; the three ordinary cycles span at most 0 clk_sys; the TAS read spans 16 clk_sys and its write follows the read's first sample after 24 clk_sys
+ch6-multi.c4 [p187]: not applicable on fx68k (fixed 68000 implementation; cpu_config selects TG68K-only behaviour, nanomig.v:198)
+FASTRUN: 50-iteration -- done=y RESULTS=50 blit window=2276281..2284425 FR_CNT fast-RAM writes strictly inside=49; 2000-iteration -- done=y RESULTS=2000 blit window=2276281..2284425 FR_CNT fast-RAM writes strictly inside=75; in-window period(mode)=108 clk_sys (74 gaps), after-window period=108 clk_sys (1923 gaps), every in-window gap equals after-window period=y
+FASTRUN-LOCKOUT: done=y RESULTS=8000; Copper's own MOVE-data-word fetch at cycle=2401033; fetch window=2401049..2402321; blitter's own first DMA access at cycle=2402361; FR_CNT fast-RAM writes strictly inside the fetch window=12
+BBUSY-LOCKOUT: Copper data-word fetch at cycle 2401033; fetch window 2401049..2402321; blitter's first access at 2402369, last at 2433225; pair pending across the window: iteration 42, first store at cycle 2402372
+BBUSY-LOCKOUT: first test read 03C0 (BBUSY clear), second test read 43C0 (BBUSY set)
+```
+
+Measurements printed by the run (tg68k):
+
+```text
+DESC-OFFBY1: A (pointer at last word) writes first=yes extra=no; B (pointer one word past the last) writes $0C2100=no $0C2102=yes $0C2104=yes $0C2106=yes $0C2108=yes $0C210A=no
+BBUSY-PREDICTS: 200-word build -- last D-write at cycle 2274833, RESULTS store at cycle 2274645, 26 D-writes total
+capture health: base.log.size=51822 share.log.size=52429 nasty.log.size=52305 tiny.log.size=51811 base_aligned.log.size=51822
+capture health: lores4.log.size=177677 hires4.log.size=177677 lores6.log.size=177677 lores4_aligned.log.size=177677 lores6_aligned.log.size=177677
+SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
+A2: active window 2274337..2284537, 50 scratch write(s) strictly inside it (excluding the window's own endpoints)
+A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
+A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
+A8: 44815 access pairs, 125 missed even cycle(s), 116 missed odd cycle(s), 0 with an even free slot left unused, 0 delayed with a free ready slot, 399 spanning a line start, 7 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
+SYSDMA-C29: 107423 access pairs, 0 missed even cycle(s), 0 missed odd cycle(s), 0 with an even free slot left unused, 0 delayed with a free ready slot, 950 spanning a line start, 0 without an unimpeded gap; first missed pair: none
+A10: 768 fetch window(s); maximum CPU accesses in any one window = 0
+A11: 768 four-plane window(s), 768 found at the same cycle with five and six planes; CPU accesses outside the windows: 45984 / 45984 / 45984
+A6: no-DMA period of the aligned loop = 80 clk_sys (8399 unimpeded intervals); 11520 scratch-write interval(s) inside the display windows, 0 not equal to it
+SLOTSPAN: modal interval between consecutive CPU bus accesses of the BASELINE loop = 16 clk_sys (2 slot(s)), 45208 intervals
+OPEN50: open slots per 160-slot window -- four planes 80..80, six planes 40..40
+PARITY-REF: 15360 of 15360 BPL1 reads classify odd by the per-line reference (four-lores-plane build)
+PARITY: no-DMA (baseline) odd-slot accesses 0 of 45209; share-mode window (blit's own active window) odd-slot accesses 124 of 254
+ORDER: CPU copy loop of 500 word(s) spans 48112 clk_sys (500 writes seen); the nasty-mode blit's own 500-word copy spans 8112 clk_sys, same yardstick (first to last destination write)
+TAS: read-to-write gap = 40 clk_sys, 4 other RAM-port access(es) between them (TAS.B, share-mode blit concurrent)
+TAS-SPAN: slot unit 8 clk_sys; the three ordinary cycles span at most 0 clk_sys; the TAS read spans 0 clk_sys and its write follows the read's first sample after 16 clk_sys
+ch6-multi.c4 [p187]: loop iterations over 3000000 cycles, no DMA -- cpu_config=3 (68020): 9040, cpu_config=0 (68000): 9040 -- contradicts nothing on the page (no DMA is competing for the bus here)
+FASTRUN: 50-iteration -- done=y RESULTS=50 blit window=2276057..2284169 FR_CNT fast-RAM writes strictly inside=48; 2000-iteration -- done=y RESULTS=2000 blit window=2276057..2284169 FR_CNT fast-RAM writes strictly inside=127; in-window period(mode)=64 clk_sys (126 gaps), after-window period=64 clk_sys (1870 gaps), every in-window gap equals after-window period=y
+FASTRUN-LOCKOUT: done=y RESULTS=8000; Copper's own MOVE-data-word fetch at cycle=2401033; fetch window=2401049..2402321; blitter's own first DMA access at cycle=2402361; FR_CNT fast-RAM writes strictly inside the fetch window=20
+BBUSY-LOCKOUT: Copper data-word fetch at cycle 2401033; fetch window 2401049..2402321; blitter's first access at 2402369, last at 2433545; pair pending across the window: iteration 69, first store at cycle 2402408
+BBUSY-LOCKOUT: first test read 43C0 (BBUSY set), second test read 63C0 (BBUSY set)
+```

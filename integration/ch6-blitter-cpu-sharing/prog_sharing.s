@@ -23,6 +23,8 @@ SHARE_SCRATCH   equ     $0C0100
 SHARE_SRC       equ     $0C2000
 SHARE_DST       equ     $0C4000
 
+LOOP_ORG        equ     PROGRAM_ORG+$100        ; every setup above is shorter than this
+
         org     PROGRAM_ORG
 
 start:
@@ -65,12 +67,19 @@ start:
         moveq   #0,d0
         lea     SHARE_SCRATCH,a1
         ifd     ALIGNED
-        lea     .loop,a2
-.loop:  addq.w  #1,d0                   ; 4 clocks (1 slot)
+        lea     LOOP,a2
+        endif
+        jmp     LOOP.l                  ; the counting loop sits at the same address in every build of
+                                        ; prog_sharing.s and prog_bitplane.s, so the same instruction
+                                        ; boundary has the same pair of addresses in every capture
+
+        org     LOOP_ORG
+        ifd     ALIGNED
+LOOP:   addq.w  #1,d0                   ; 4 clocks (1 slot)
         move.w  d0,(a1)                 ; 8 clocks (2 slots)
         jmp     (a2)                    ; 8 clocks (2 slots) -- aligned, unlike BRA.S's 10
         else
-.loop:  addq.w  #1,d0
+LOOP:   addq.w  #1,d0
         move.w  d0,(a1)
-        bra.s   .loop
+        bra.s   LOOP
         endif

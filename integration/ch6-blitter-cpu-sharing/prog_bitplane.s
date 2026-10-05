@@ -10,6 +10,8 @@
 ; prog_bitplane_planes6_aligned.s (BP_PLANES6 and ALIGNED both set, A6's
 ; mutation) replace the loop's BRA.S with JMP (An), the same whole-4-clock
 ; -aligned loop prog_sharing_aligned.s uses -- see that file.
+; prog_bitplane_planes5.s (BP_NPLANES=5) and prog_bitplane_aligned_p1/p2/p3.s
+; (BP_NPLANES=1/2/3 with ALIGNED): other low-resolution plane counts.
 ;
 ; DIWSTRT/DIWSTOP/DDFSTRT/DDFSTOP values are the manual's own standard
 ; display-window/fetch-window constants (Chapter 3), not RTL-derived.
@@ -32,6 +34,8 @@ BPL2MOD         equ     $10A
 BPL1PTH         equ     $0E0
 BPL1PTL         equ     $0E2
 
+LOOP_ORG        equ     PROGRAM_ORG+$100        ; every setup above is shorter than this
+
         org     PROGRAM_ORG
 
 start:
@@ -50,22 +54,33 @@ start:
         else
         move.w  #$0038,DDFSTRT(a0)
         move.w  #$00D0,DDFSTOP(a0)
+        ifd     BP_NPLANES
+        move.w  #BP_NPLANES*$1000,BPLCON0(a0) ; BP_NPLANES low-resolution bitplanes (BPLCON0 bits 14-12)
+        else
         ifd     BP_PLANES6
         move.w  #$6000,BPLCON0(a0)     ; 6 low-resolution bitplanes
         else
         move.w  #$4000,BPLCON0(a0)     ; 4 low-resolution bitplanes
         endif
         endif
+        endif
 
         moveq   #0,d0
         lea     BP_SCRATCH,a1
         ifd     ALIGNED
-        lea     .loop,a2
-.loop:  addq.w  #1,d0                   ; 4 clocks (1 slot)
+        lea     LOOP,a2
+        endif
+        jmp     LOOP.l                  ; the counting loop sits at the same address in every build of
+                                        ; prog_sharing.s and prog_bitplane.s, so the same instruction
+                                        ; boundary has the same pair of addresses in every capture
+
+        org     LOOP_ORG
+        ifd     ALIGNED
+LOOP:   addq.w  #1,d0                   ; 4 clocks (1 slot)
         move.w  d0,(a1)                 ; 8 clocks (2 slots)
         jmp     (a2)                    ; 8 clocks (2 slots) -- aligned, unlike BRA.S's 10
         else
-.loop:  addq.w  #1,d0
+LOOP:   addq.w  #1,d0
         move.w  d0,(a1)
-        bra.s   .loop
+        bra.s   LOOP
         endif

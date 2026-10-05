@@ -83,6 +83,13 @@
 ; when the Copper's own MOVE and the blit's own lockout interval actually
 ; happen, not have already finished and returned.
 ;
+; BB_TEST (prog_bbusy_lockout.s, BBUSY-LOCKOUT): the same display, Copper
+; list and blit, with BLTPRI clear, and a different loop in Fast memory --
+; two reads of BB_REG (DMACONR) in a row, both values stored to consecutive
+; Fast-memory words from FR_CNT, 600 times; BB_INTENA reads INTENAR instead
+; (the comparator's mutation); FR_2PLANE is the precondition mutation as
+; for FASTRUN-LOCKOUT.
+;
 ; This file alone (no symbol set) runs the loop in fast RAM ($200000,
 ; FR_CODE below), with four high-resolution bitplanes (BPLCON0=$C000).
 ; prog_fastrun_lockout_chipcode.s (FR_CHIPCODE set) moves only FR_CODE to
@@ -104,9 +111,18 @@
 
         include "nanomig.i"
 
+        ifd     BB_TEST
+FR_ITERS        equ     600             ; BB_TEST: one pair of register reads per iteration, 600 pairs
+        else
 FR_ITERS        equ     8000            ; large enough to still be running well after the Copper's own
                                         ; WAIT (LINES_AHEAD lines out) releases and the blit's own
                                         ; lockout interval passes -- see the header comment
+        endif
+        ifd     BB_INTENA
+BB_REG          equ     INTENAR         ; BB_INTENA: both reads take INTENAR, whose bit 14 (INTEN) is clear
+        else
+BB_REG          equ     DMACONR
+        endif
 
 BLIT_SRC        equ     $0C2000         ; unused content: only the blit's own timing matters here
 BLIT_DST        equ     $0C4000         ; same range test_blitter_cpu_sharing.cpp's kShareDstLo/Hi use
@@ -205,7 +221,11 @@ start:
         move.w  #$0000,BLTDMOD(a0)
         move.l  #BLIT_SRC,BLTAPTH(a0)
         move.l  #BLIT_DST,BLTDPTH(a0)
+        ifd     BB_TEST
+        move.w  #$8240,DMACON(a0)      ; SET DMAEN,BLTEN (BB_TEST: BLTPRI clear, share mode) -- primed, but
+        else
         move.w  #$8640,DMACON(a0)      ; SET DMAEN,BLTEN,BLTPRI -- primed, but
+        endif
                                         ; BLTSIZE is unwritten, so nothing
                                         ; transfers until the Copper's own
                                         ; MOVE below runs.
@@ -298,8 +318,16 @@ loop_template:
                                         ; -- the Copper now runs the list
                                         ; already loaded from COP1LC by the
                                         ; strobe above
+        ifd     BB_TEST
+.loop:  move.w  BB_REG(a0),d2          ; the first test: a read of a hardware register address
+        move.w  BB_REG(a0),d3          ; the second test
+        move.w  d2,(a2)+               ; both values to Fast memory, in order
+        move.w  d3,(a2)+
+        dbra    d0,.loop
+        else
 .loop:  addq.w  #1,(a2)
         dbra    d0,.loop
+        endif
         jmp     (a3)
 loop_template_end:
 
