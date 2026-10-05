@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L196-L199) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L196-L199) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**. NanoMig has the strobe latches from there and TC64 carries the same two, so there is no fix to port; WinUAE shows a later strobe replacing a pending one — see *What the others say* |
-| **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control) — `P4`, claims `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (pp. 25, 26, 30, 276), which grades Run 1 (COP1LC, COPJMP1) and Run 2 (COP2LC, COPJMP2) together, run on both CPU cores and red on fx68k and on TG68K through Run 2. Three assertions without a claim id are red on both cores through the same start at COP1LC: `P4-Run2` (pp. 25, 26, 30, 276), Run 2 alone; `P4-Run3-reorder` (p. 25), where p. 25 gives C; and `P4-Run3-PAIR` (p. 25), Run 3 and Run 3-reorder graded together. `P4-Run3` is red on both cores and is not counted among the reds that carry the finding: its predicate, a first fetch at B or C, is a gate that p. 25 does not print. Run 3's first fetch, A, is not B, the value p. 25 gives, and no assertion grades that fetch against B directly — see *Run 3 is a separate question* |
+| **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control) — `P4`, claims `ch2-starting-the-copper-after-reset.c1.s2`, `ch2-starting-the-copper-after-reset.c2.s2` (pp. 25, 26, 30, 276), which grades Run 1 (COP1LC, COPJMP1) and Run 2 (COP2LC, COPJMP2) together, run on both CPU cores and red on fx68k and on TG68K through Run 2. Four assertions without a claim id are red on both cores through the same start at COP1LC: `P4-Run2` (pp. 25, 26, 30, 276), Run 2 alone; `P4-Run3` (p. 25), Run 3 graded against B, the value p. 25 gives; `P4-Run3-reorder` (p. 25), where p. 25 gives C; and `P4-Run3-PAIR` (p. 25), Run 3 and Run 3-reorder graded together. In Runs 1, 2, 3 and 3-reorder the Copper's first fetch is $001000, the first word of COP1LC's list A, so the five reds record one behaviour, not five independent results — see *Run 3 is a separate question* for what Run 3 adds |
 | **Chapter** | 2 — Coprocessor Hardware, printed pp. 25, 26, 30, 32; Appendix A, printed p. 276; 7 — System Control Hardware, printed p. 219 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | Four red assertions carry the finding on fx68k and on TG68K, `P4`, `P4-Run2`, `P4-Run3-reorder` and `P4-Run3-PAIR`, each through a first fetch at A. The fifth red line, `P4-Run3`, is not counted: it asks whether Run 3's first fetch is B or C, which p. 25 does not require (96 passed, 5 failed on each core; these five are the only reds). In the same run `P4-CTRL` and `P4-CTRL-C`, COP1LC = B and COP1LC = C with COPJMP1, read B and C through the same comparator on both cores, and the preconditions `P4a`, `P4b` and `P4c` hold, `P4c` graded on the captures of Run 1, Run 2, Run 3 and Run 3-reorder each |
+| **Assertions** | Five red assertions carry the finding on fx68k and on TG68K, each through a first fetch at A, $001000: `P4`, `P4-Run2`, `P4-Run3`, `P4-Run3-reorder` and `P4-Run3-PAIR`. They record one behaviour, not five independent results (125 passed, 5 failed on each core; these five are the only reds). In the same run `P4-CTRL` and `P4-CTRL-C`, COP1LC = B and COP1LC = C with COPJMP1, fetch exactly the first words of their selected lists, $001200 and $001400, through the same comparator on both cores, and the preconditions `P4a`, `P4b` and `P4c` hold, each graded on the capture of Run 1, Run 2, Run 3, Run 3-reorder, `P4-CTRL` and `P4-CTRL-C` |
 | **Verdict of the four** | **unanimous against NanoMig on the package's runs**: WinUAE, vAmiga, Denise and Copperline all start Run 1 at A and Run 2 at B, where NanoMig starts Run 2 at A. Their mechanisms differ in a way the package's addresses do not separate: WinUAE, vAmiga and Copperline start at COP2LC whatever vertical blank came before the COPJMP2; Denise, like NanoMig, keeps the vertical blank's COP1LC strobe pending while Copper DMA is off, but merges it with the COPJMP2 and starts at COP1LC \| COP2LC, which for the package's lists, $001000 and $001200, is B's address |
 
 ---
@@ -152,25 +152,37 @@ A, B or C after M1, identical on fx68k and TG68K:
 | `P4-CTRL` | COP2LC = A, COP1LC = B, COPJMP1 | B | B |
 | `P4-CTRL-C` | COP1LC = C, COPJMP1 | C | C |
 
-**This finding rests on Runs 1 and 2**, the two runs that carry the claims:
-`P4` grades them together and `P4-Run2` grades Run 2 alone, and both are red
-through Run 2. `P4-Run3-reorder` is red because Run 3-reorder starts at A
-where p. 25 gives C, by the same mechanism, and `P4-Run3-PAIR`, which grades
-Run 3 and Run 3-reorder together, is red through both starting at A.
-`P4-Run3` tests whether Run 3's first fetch is B or C and is red at A. That
-gate is not on p. 25, so the line is not counted among the reds. Run 3's first
-fetch, A, is not B, which p. 25 gives for the strobe written with COP2LC = B;
-no assertion grades it against B, and the package prints Run 3's own clause
-as recorded and not reached. Whether Run 3 reads B or C once the standing
-latch is out of the way is a separate question (see below). `P4a` holds: the first stored DMACONR has bit 7 clear. `P4b`
-holds: no fetch in A, B or C before M1. Both are graded on Run 1's capture.
+**The five reds record one behaviour.** In Runs 2, 3 and 3-reorder the first
+fetch is $001000, A's first word, the first word of COP1LC's list. `P4` grades
+Run 1 and Run 2 together and `P4-Run2` grades Run 2 alone, both against B, the
+list p. 30's strobe selects, and both are red through Run 2. `P4-Run3` grades
+Run 3's first fetch against B, the value COP2LC holds when COPJMP2 is written
+(p. 25), and is red at A. `P4-Run3-reorder` grades Run 3-reorder against C,
+where p. 25 gives C, and is red at A; `P4-Run3-PAIR` grades Run 3 and Run 3-reorder
+together and is red through both starting at A. Run 3's own B, and the C that
+all four implementations read for it, are a separate question (see below).
+`P4a` holds: the first stored DMACONR has bit 7 clear. `P4b` holds: no fetch in
+A, B or C before M1. Both are graded on each of the six captures, as is `P4c`.
+
+The assertions are graded in
+[`test_ch2_copper_control.cpp`](../../integration/ch2-copper-control/test_ch2_copper_control.cpp)
+at these lines:
+
+| assertion | grading call and label |
+|---|---|
+| **P4** | `test_ch2_copper_control.cpp:1169-1170` |
+| **P4-Run2** | `test_ch2_copper_control.cpp:1186-1187` |
+| **P4-Run3** | `test_ch2_copper_control.cpp:1191-1192` |
+| **P4-Run3-reorder** | `test_ch2_copper_control.cpp:1206-1207` |
+| **P4-Run3-PAIR** | `test_ch2_copper_control.cpp:1223-1224` |
+| **P4-CTRL** | `test_ch2_copper_control.cpp:1235-1236` |
+| **P4-CTRL-C** | `test_ch2_copper_control.cpp:1238-1239` |
 
 **No vertical blank lies between the strobe and the fetch.** `P4c`, the
 package's precondition (c) — no frame wrap and no record with V ≤ 25 between
-MS and the first fetch — is graded on the captures of Run 1, Run 2, Run 3 and
-Run 3-reorder, and holds on both cores; read the same way from `P4-CTRL`'s
-capture, a measurement for this page and not a graded assertion, it holds
-there too. In every run the last record stored before MS reads line 64, no
+MS and the first fetch — is graded on the captures of Run 1, Run 2, Run 3,
+Run 3-reorder, `P4-CTRL` and `P4-CTRL-C`, and holds on all six on both cores.
+In every run the last record stored before MS reads line 64, no
 record is stored between MS and the first fetch, and the fetch follows MS by
 420 clk_sys (Runs 1 and 2, `P4-CTRL`) or 516 (Run 3 and its reorder) on
 fx68k, 428 or 524 on TG68K: 52½ to 65½ colour clocks of 8 clk_sys, in a PAL
@@ -237,11 +249,10 @@ strobed location register move a Copper that has had no Copper DMA since the
 vertical blank. That is a question about p. 25's sentence, not about the
 standing COP1LC request this page files, and NanoMig's A in Run 3 does not
 reach it. Run 3's first fetch is A on both cores, through the standing
-latch this page files, where p. 25 gives B. No assertion grades it against B:
-the package's line for Run 3, `P4-Run3`, asks for B or C, a gate p. 25 does not
-print, and is red at A. With the latch out of the way Run 3 would read C and
-a clause graded against B would be red for that reason, so this page does not
-file it.
+latch this page files, where p. 25 gives B, and `P4-Run3` grades it against B
+and is red at A. With the latch out of the way Run 3 would read C and
+`P4-Run3` would stay red, for the reason of this section, which this page does
+not file.
 `P4-Run3-reorder` does not reach the question: COP2LC holds C both when
 COPJMP2 is written and when Copper DMA comes on, p. 25 and all four give C,
 and its red, A, is this page's.
@@ -281,8 +292,8 @@ shows what a cleared latch gives. What it would change:
 - Run 2 would start at B and Run 3-reorder at C, and `P4` would read A and B,
   so `P4`, `P4-Run2` and `P4-Run3-reorder` would pass;
 - Run 3 would start at C, as on each of the four, because lines 196–199 still
-  read the location register in the reload cycle, and Run 3's clause and
-  `P4-Run3-PAIR` would be red — the separate question above;
+  read the location register in the reload cycle, and `P4-Run3` and
+  `P4-Run3-PAIR` would stay red — the separate question above;
 - with Copper DMA on, the reload follows a strobe within a few colour clocks,
   so the latch is rarely pending there; a CPU COPJMP2 in the colour clocks
   between the start of frame and the vertical blank's reload would start the
@@ -296,9 +307,9 @@ shows what a cleared latch gives. What it would change:
   B with COPJMP1 and COP2LC = A as a decoy, reads B on both cores, so A in Runs
   2, 3 and 3-reorder is not a comparator stuck on list A.
 - **Copper DMA was off, and nothing was fetched early.** `P4a` and `P4b` hold
-  on both cores, graded on Run 1's capture.
+  on both cores, graded on each of the six captures.
 - **No vertical blank lies between the strobe and the fetch.** `P4c` holds on
-  both cores, graded on the captures of Runs 1, 2, 3 and 3-reorder: MS, the
+  both cores, graded on each of the six captures: MS, the
   strobe, DMA-on and the first fetch follow each other within 66 colour clocks
   on line 64, with no record between them; the restart that lies before them
   is the one at the start of that frame.
@@ -306,9 +317,10 @@ shows what a cleared latch gives. What it would change:
   frame, the same Run 2 starts at B on both cores.
 - **Both cores agree**, and the Copper, not the CPU, decides the address: the
   two cores write the registers at different times and read the same list.
-- **It rests on Runs 1 and 2 alone.** `P4`, which carries the claims, grades
-  only those two runs, and all four implementations give its answer, A and B.
-  Run 3, where the four and p. 25 part, is not part of it.
+- **The claims rest on Runs 1 and 2.** `P4`, which carries them, grades only
+  those two runs, and all four implementations give its answer, A and B. Run 3
+  and Run 3-reorder start at the same A, one behaviour; what Run 3 adds, where
+  the four and p. 25 part, is not part of the finding.
 
 ---
 
