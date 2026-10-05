@@ -89,7 +89,7 @@ start:
         endif
         move.w  DMACONR(a0),(a3)+
         ifd     G3_BREAK
-        move.w  #$DEAD,A0       ; G3's mutation: a CPU write into the block under test, inside W_0
+        move.w  #$DEAD,($60000).l ; G3's mutation: a CPU write into A_0, inside W_0 (absolute: A0 would name the register)
         endif
         move.l  #DELAY_N,d0
         beq.s   .sk0

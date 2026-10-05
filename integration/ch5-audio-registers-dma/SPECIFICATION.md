@@ -244,7 +244,7 @@ for the preconditions are those of section 2.6.
 ### P2: DMACONR at $DFF002 reads back the DMA control bits held by DMACON
 
 **Claims:**
-- p.278: `5-appA-p278.c5`, `.c6`, `.c8`, `.c10` (control part), `A-dmaconr.acc`,
+- p.278: `5-appA-p278.c5`, `.c6`, `.c8`, `A-dmaconr.acc`,
   `A-dmaconr.addr`
 - p.289: `5-appB-p289.c1`, `.c2`, `.c4`
 - p.263: `5-appA-p263.c1`, `A-pre.c1`
@@ -951,7 +951,7 @@ the blitter registers should be written").
 | Proposition | Claims |
 |---|---|
 | P1 | `5-appA-p266.c2`, `5-appA-p266.c8`, `A-audxlch.acc`, `A-audxlcl.acc`, `5-appB-p290.c20`, `5-appB-p290.c27`, `5-appB-p290.c55`, `5-appB-p290.c62`, `5-appB-p290.c90`, `5-appB-p290.c97`, `5-appB-p290.c125`, `5-appB-p290.c132`, `B-aud0lch.acc`, `B-aud0lcl.acc`, `B-aud1lch.acc`, `B-aud1lcl.acc`, `B-aud2lch.acc`, `B-aud2lcl.acc`, `B-aud3lch.acc`, `B-aud3lcl.acc`, `5-appC-p298.c4`, `C-map.lch.acc`, `5-appC-p309.c4`, `5-appA-p263.c1`, `A-pre.c1` |
-| P2 | `5-appA-p278.c5`, `5-appA-p278.c6`, `5-appA-p278.c8`, `5-appA-p278.c10`, `A-dmaconr.acc`, `A-dmaconr.addr`, `5-appB-p289.c1`, `5-appB-p289.c2`, `5-appB-p289.c4`, `5-appA-p263.c1`, `A-pre.c1` |
+| P2 | `5-appA-p278.c5`, `5-appA-p278.c6`, `5-appA-p278.c8`, `A-dmaconr.acc`, `A-dmaconr.addr`, `5-appB-p289.c1`, `5-appB-p289.c2`, `5-appB-p289.c4`, `5-appA-p263.c1`, `A-pre.c1` |
 | P3 | `5-appA-p278.c17`, `A-dmacon.b08` |
 | P4 | `5-appA-p278.c18`, `A-dmacon.b07` |
 | P5 | `5-appA-p278.c19`, `A-dmacon.b06` |
@@ -979,13 +979,18 @@ section 2.3, and the mechanism items below.
   $00 to CIA-A pra ($BFE001), clearing OVL (bit 0) before any other write
   (p.223; Appendix F, p.339, gives the two addresses and "Direction for
   port A (BFE001);1=output (set to 0x03)"). Measured: every marker write,
-  every DMACONR store into R, and G3's own mutation write, land at the
-  RAM port at exactly the byte address the program names, on both cores.
+  every DMACONR store into R, and the write of G3's mutation for P1 (a
+  `MOVE.W` to the absolute address `$60000`), land at the RAM port at
+  exactly the byte address the program names, on both cores.
+- **Fixture.** Before any proposition, a program stores a known constant at
+  RESULTS and, after the overlay is cleared, at R; the test reads the first
+  by peeking memory and the second from the RAM-port record, which is how
+  every proposition reads its results.
 - **DMA-block content.** Every DMA block a proposition reads from (audio
   data, sprite structures, the Copper list, blit source patterns) is
   poked into chip RAM directly before `boot()`, the same mechanism
   `load_program()` itself uses; no program instruction writes it. Content
-  is immaterial where the page says so (p.263, "any values"; the sprite
+  is immaterial where section 2.3 says so ("any values"; the sprite
   and Copper-list content follow the pages P1/P6/P10/P11 cite).
 - **R's stored values are read from the RAM port's own log** of the CPU's
   store instructions (the write's data field), not peeked from memory
