@@ -1,6 +1,6 @@
-; P7.5-CIAB-GREENCTL: CRA<-$20 (INMODE=CNT, START=0) in place of $21. See
-; p75_body.s. A proven-live input through the same "v=$1000" comparator
-; P7.5's own CIAB leg uses.
+; P7.5, CIAB: CRA<-$20 (INMODE=CNT, START=0) in place of $21: the timer is never started.
+; See p75_body.s.
+START_BRACKET   equ     1
                 include "nanomig.i"
                 include "ciaregs.i"
 CR              equ     CIAB_CRA

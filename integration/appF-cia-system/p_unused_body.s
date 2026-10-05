@@ -3,8 +3,13 @@
 ;
 ; Wrapper symbols: CR,TLO,THI, FIRSTVAL (the unbracketed first write),
 ; SECONDVAL (the bracketed second write).
+; Optional: UNDELAY (the delay loop's count, default $03E8).
 ;
 ; SPECIFICATION.md P7.7.
+
+        ifnd    UNDELAY
+UNDELAY         equ     $03E8
+        endc
 
 PUN_C1          equ     RESULTS+8
 PUN_C2          equ     RESULTS+10
@@ -26,7 +31,7 @@ start:
         move.b  #SECONDVAL,CR
         move.w  #MARKER_SENTINEL,MK_UN_B
         READ_STORE CR,PUN_C2
-        move.w  #$03E8,d7              ; ~1000 E periods
+        move.w  #UNDELAY,d7            ; ~1000 E periods
 .d1:    dbra    d7,.d1
         move.w  #MARKER_SENTINEL,MK_UN_C
         move.b  #$00,CR

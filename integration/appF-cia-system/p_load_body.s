@@ -5,6 +5,8 @@
 ; Wrapper symbols: CR,TLO,THI,ICR.
 ; Optional: MUT_LD0 (contrast: CR<-$00 instead of $10 in the stopped leg)
 ;           MUT_RUN01 (contrast: CR<-$01 instead of $11 in the running leg)
+;           MUT_NOSTART (contrast: CR<-$00 instead of $01 in the stopped leg: the
+;                        counter never moves)
 ;
 ; SPECIFICATION.md P7.4/P8.4.
 
@@ -27,7 +29,11 @@ start:
 ; ---- stopped leg --------------------------------------------------------
         move.b  #$00,CR
         RLATCH  TLO,THI,$4000
+        ifd     MUT_NOSTART
+        move.b  #$00,CR
+        else
         move.b  #$01,CR
+        endc
         move.w  #$07D0,d7              ; ~2000 E periods
 .d1:    dbra    d7,.d1
         move.b  #$00,CR

@@ -5,6 +5,10 @@
 ; Wrapper symbols: PRB,DDRB,CR,TLO,THI,ICR, LATCHVAL, CRVAL.
 ;   Baseline: CRVAL=$03 (START,PBON,pulse,continuous).
 ;   Contrasting case: CRVAL=$07 (toggle, same L) or $02 (not started).
+;   Optional: MUT_YSPREAD (the ICR samples are taken from a Chip-memory byte after
+;               one NOP in every second iteration; the PRB samples are not changed)
+;             MUT_XSPREAD (the PRB samples are taken from a Chip-memory byte after
+;               one NOP in every second iteration; the ICR samples are not changed)
 ;
 ; SPECIFICATION.md P4.
 
@@ -21,7 +25,15 @@ start:
         moveq   #0,d0
         move.b  ICR,d0                  ; discard
         move.b  #CRVAL,CR
+        ifd     MUT_YSPREAD
+        RSAMPLE2_YSPREAD 400,P4_PRB,PRB,P4_ICR
+        else
+        ifd     MUT_XSPREAD
+        RSAMPLE2_XSPREAD 400,P4_PRB,PRB,P4_ICR,ICR
+        else
         RSAMPLE2 400,P4_PRB,PRB,P4_ICR,ICR
+        endc
+        endc
         move.b  #$00,CR
 
         DONE

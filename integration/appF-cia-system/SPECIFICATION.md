@@ -10,7 +10,7 @@ This is the specification of the integration test package `appF-cia-system`. It 
 |---|---|---|
 | opus:F-portsig.c47 | 351 | "PC...not used" (CIAB). None of the outputs a test can see shows a PC pin on either CIA, and "not used" describes no behaviour and gives no value. (The text layer puts the FLAG gloss "disk index*" on the PC line. The printed page puts it on "F....INDEX*", and the claim reads it correctly.) |
 | opus:F-signals.c1, sol:F-signals.c69 (both whole) | 353 | Both claims say that φ2 is a "TTL compatible input". That is an electrical property of an input pin, and nothing a test sees depends on it. A claim with a clause the package does not grade is not claimed, so both ids are declined whole. What else they say (φ2 is used for internal device operation and as the timing reference for the bus) is still checked, by P5 and P6, without these ids. |
-| sol:F-signals.c70: ".715909 Mhz for NTSC or .709379 Mhz for PAL" (in its quote; the claim itself says only that φ2 is the E clock) | 353 | The test measures time in system clock cycles. Absolute frequencies come from the harness's clock, not from the design. Only the stated ratio, "1/10 of the CPU clock", is checked (P5). |
+| opus:F-signals.c2, sol:F-signals.c70 (both whole) | 353 | Both claims say that φ2 "is connected to" the 680x0 "E" clock, which "runs at 1/10 of the CPU clock". No output of the system shows φ2 or the E clock. What a test sees is the rate at which a timer counting φ2 decrements, and a timer clock of its own, divided by ten, would give the same rate; so the connection is not observable at this boundary, and both ids are withdrawn whole. P5 still measures that rate, and its lines are graded without these ids. The absolute frequencies in c70's quote (".715909 Mhz for NTSC or .709379 Mhz for PAL") are not checked either: the test measures time in system clock cycles, and absolute frequencies come from the harness's clock, not from the design. Only the stated ratio, "1/10 of the CPU clock", is checked (P5). |
 | opus:F-cra.c12, opus:F-crb.c13: the reading that LOAD has a "0 setting" of force load | 349, 350 | The bitmaps print one entry for LOAD, "1=force load (strobe)", split over two lines. LOAD has no 0 setting: "writing a 0 has no effect" (p348, p349). The rest of both claims is used (P10). |
 
 No claim in this package needs data read from or written to a disk surface.
@@ -146,7 +146,7 @@ CRB INMODE (CRB6 CRB5): 00 counts φ2 pulses, 01 positive CNT transitions, 10 ti
   - No port carries KCLK or KDAT, so the test sees neither, and no check uses the time or the length of a KCLK pulse. The page's timing only sizes the waits (P7.5) and gives the direction graded in P8.65 mode 11. Where a case needs the transmission inside its window, the window precondition of P7.5 places it: the code is sent after the ready marker, and the SP flag is read set before the stop write.
   - No handshake is given. Every case that uses R-KEY ends within 143 ms of sending the code, and so within 143 ms of the last clock, since the keyboard resyncs only after "143 ms" without a handshake (p359). The test sends no other code in the run.
   - **KP (keyboard idle).** A run of the case's program without R-KEY, in which the CIAA timer that the case does not grade counts CNT: CRB ← $21 when timer A is graded, CRA ← $21 when timer B is graded. Where the case uses that timer otherwise, this write replaces its start write. The probe timer is unchanged over a window of the same length. The probe is always the other timer, so that a wrong INMODE on the timer under test cannot fail KP in place of its own check. *Contrast:* with R-KEY inside that window, it changes by 8.
-  - **Not usable as a gating precondition.** KP's own probe counts CNT, the same INMODE setting that P7.5, P8.65 mode 01 and mode 11 grade on the timer under test; where CNT counting does not work at `nanomig.v`'s ports, KP cannot be established independently of the clause it would gate. This package records KP's own reading rather than grading it as a precondition, and does not gate CIAA's own P7.5/P8.65 mode 01/mode 11 legs on it: their own comparators, and the CIAB legs (which need no key and grade INMODE by its φ2 setting alone), carry the result without KP.
+  - **Not usable as a gating precondition.** KP's own probe counts CNT, the same INMODE setting that P7.5, P8.65 mode 01 and mode 11 grade on the timer under test; where CNT counting does not work at `nanomig.v`'s ports, KP cannot be established independently of the clause it would gate. This package records KP's own reading rather than grading it as a precondition. It does not grade P7.5's CIAA leg (P7.5 measures it), and it does not gate CIAA's P8.65 mode 01/mode 11 legs on KP: their own comparators, and the CIAB legs (which need no key and grade INMODE by its φ2 setting alone), carry the result without KP.
 
 ### 1.6 Runs
 
@@ -355,7 +355,7 @@ P3 is graded only where Pre3.1 and Pre3.2 hold on all four instances. The two co
 **Proposition.** A timer counting φ2 pulses (CRA INMODE = 0, CRB INMODE = 00) decrements once per E cycle, that is once per 10 CPU clock periods.
 
 **Claims.**
-- Graded whole here, p353: opus:F-signals.c2, sol:F-signals.c70.
+- None is graded whole. opus:F-signals.c2 and sol:F-signals.c70 (p353) are withdrawn whole: φ2 being connected to the E clock is not observable at this boundary (Section 0). P5's lines measure the rate at which a timer counting φ2 decrements and carry no claim id.
 - P5 also grades the φ2 input-mode settings of sol:F-cra.c13 and opus:F-cra.c12 (p349), sol:F-crb.c7 (p349), and sol:F-crb.c10 and opus:F-crb.c13 (p350). P10 carries those ids.
 - opus:F-signals.c1 and sol:F-signals.c69 are declined whole (Section 0).
 
@@ -363,19 +363,19 @@ P3 is graded only where Pre3.1 and Pre3.2 hold on all four instances. The two co
 
 **Stimulus.**
 - **Leg (a), differential.** CR ← $00. R-LATCH($FFFF). Bracketed write CR ← $01 (START, φ2, continuous). A delay loop of D iterations. Bracketed write CR ← $00. Read HI, read LO → V. Read ICR → i.
-  - There are two runs, D = D1 and D = D2. The builder chooses them so that τ1 ≈ 50 000·T_CPU and τ2 ≈ 550 000·T_CPU, where τ is the time from the marker after the start write to the marker after the stop write.
+  - There are two runs, D = D1 and D = D2. D1 and D2 are chosen so that τ1 ≈ 50 000·T_CPU and τ2 ≈ 550 000·T_CPU, where τ is the time from the marker after the start write to the marker after the stop write.
 - **Leg (b), per sample.** CR ← $00. R-LATCH($FFFF). CR ← $01. R-SAMPLE(256; LO register) → v_i. CR ← $00.
 
 **Observation.** Δ = $FFFF − V and τ from the markers (O3, F1). For leg (b), the low bytes v_i at their E-indices e_i.
 
 **Expected.** Source: "On the Amiga, this is connected to the 680x0 "E" clock. The "E" clock runs at 1/10 of the CPU clock." (p353), and "0 = Timer A counts 02 pulses" (p348) and "Timer B counts 02 pulses" (p349).
 - **(a)** Δ2 − Δ1 = round((τ2 − τ1) / (10·T_CPU)) ± 1. The code between the markers is identical in both runs, so start and stop latencies cancel.
-- **(b)** For every i, (v_i − v_(i+1)) mod 256 = e_(i+1) − e_i.
+- **(b)** For every one of the 255 adjacent pairs of the 256 samples, (v_i − v_(i+1)) mod 256 = e_(i+1) − e_i.
 
 **Preconditions.**
-- **Pre5.1.** There is no underflow in the window: the i flag is 0. *Contrast:* with R-LATCH($1000) and D2, the flag is 1.
-- **Pre5.2.** The counter is read while stopped: a second read of HI/LO gives V again. *Contrast:* leave out the stop write, and the two reads differ.
-- **Pre5.3 (leg b).** The E-index frame is valid for the LO-read loop (P6). *Contrast:* see P6.
+- **Pre5.1.** There is no underflow in the window: the i flag is 0, for all four timers in both runs. When it fails, leg (a) is not graded. *Contrast:* with R-LATCH($1000) and D2, the flag is 1.
+- **Pre5.2.** The counter is read while stopped: a second read of HI/LO gives V again, for all four timers in both runs. When it fails, leg (a) is not graded. *Contrast:* leave out the stop write, and the two reads differ.
+- **Pre5.3 (leg b).** For each of the four runs, F1's anchor holds, all 256 samples are present, and the E-index frame is valid for the LO-read loop: its phases take at most two values, 2·T_CPU apart (P6). When it fails, leg (b) is not graded. *Contrast:* a sampler with no CIA access in its loop takes five phases, so the frame is not valid; a sampler of 255 iterations leaves the population one short.
 - **EP2 and the F1 anchor.**
 
 **Contrasting case.** Count CNT instead of φ2 (CRA ← $21, CRB ← $21) with no key sent. The page predicts Δ1 = Δ2 = 0 and v_i constant: the timer "counts positive CNT transitions" (p348, p349), and there are none. CIAA's CNT is KCLK, high while idle (p357). CIAB's CNT is POUT (p351), which nothing drives. *Precondition of the contrast:* KP (1.5).
@@ -395,15 +395,16 @@ P3 is graded only where Pre3.1 and Pre3.2 hold on all four instances. The two co
 **Stimulus.** Environment (1.2), then three loops of 200 iterations, each iteration reading one byte and storing it (E6):
 - **K1:** the byte is read from CIAA PRB.
 - **K2:** the byte is read from CIAB PRB.
-- **K3 (contrast, graded in the same run):** the same instruction reads a Chip-memory byte instead ($0C4000, E9). The builder pads the loop body so that the iteration time I3 is not a multiple of 10·T_CPU.
+- **K3 (contrast, graded in the same run):** the same instruction reads a Chip-memory byte instead ($0C4000, E9). The loop body is padded with NOPs so that the iteration time I3 is not a multiple of 10·T_CPU.
 
-The R-SAMPLE loops used in P4, P5(b) and P9 (including P2 leg S's loop, which P9 leg W reuses) are checked the same way, once for each store instruction in the body.
+The R-SAMPLE loops used in P4, P5(b) and P9 (including P2 leg S's loop, which P9 leg W reuses) are checked the same way, once for each store instruction in the body: for P4, both the PRB stores and the ICR stores. P5 leg (b) checks its four loops itself (Pre5.3); P6 checks one of them, with P4's loop (CIAB/timer B, L=20) and P9 leg W's sampler (CIAB/timer B, L=40), each from one representative run.
 
 **Observation.** The store times t_i. Their phases φ_i = (t_i − t_0) mod T_E, folded into [−T_E/2, T_E/2).
 
 **Expected.**
 - **K1, K2 and every R-SAMPLE loop:** the φ_i of one store instruction lie within a band no wider than 2·T_CPU. They take at most two values, 2·T_CPU apart.
-- **K3:** its φ_i take all five values 0, 2, 4, 6 and 8·T_CPU mod T_E, a spread of 8·T_CPU, so the 2·T_CPU band does not hold for it. This is a bound derived from the pages below, not an order.
+- **K3:** its φ_i take exactly the five values 0, 2, 4, 6 and 8·T_CPU mod T_E, and no other, a spread of 8·T_CPU, so the 2·T_CPU band does not hold for it. This is a bound derived from the pages below, not an order.
+- **Resolution.** Store times lie on CPU clock edges (F1), so the φ_i are compared to the resolution of T_CPU: two phases are told apart when they are more than half a T_CPU apart, the separation of two values is checked to within half a T_CPU, and a phase is taken as the nearest whole number of T_CPU.
 
 Why the band is 2·T_CPU:
 - "A low level on CS while 02 is high causes the device to respond to signals on the R/W and address (RS) lines" (p353), and the data pins drive "unless CS is low and R/W and 02 are high" (p354). So each transfer occupies the φ2-high part of an E cycle and ends at a fixed phase of E.
@@ -416,9 +417,10 @@ Why K3 spreads: every access of K3's loop, which contains no CIA access, is on t
 
 **Preconditions.**
 - **EP2 and the F1 anchor.**
-- **Pre6.1 (K3).** The measured I3 mod T_E is not 0. *Contrast:* padding that makes I3 a multiple of 10·T_CPU fails this precondition.
+- **Pre6.1 (K3).** The measured I3, the most frequent interval between consecutive K3 stores, mod T_E is not 0. When it fails, K3 is not graded. *Contrast:* padding that makes I3 a multiple of 10·T_CPU fails this precondition.
+- **Pre6.2 (every loop).** Each loop run completed with F1's anchor and stored every sample of its population: K1, K2 and K3 200 each, P4's PRB and ICR streams 400 each, P5 leg (b)'s LO loop 256, P9 leg W's sampler 200. When it fails for a run, the lines that grade that run are not graded. *Contrast:* K1 of 199 iterations.
 
-**Contrasting case.** K3 is the contrast to K1 and K2: the same loop with the CIA read replaced by a Chip-memory read, which no page ties to E. It is graded in the same run, and the band that K1 and K2 must meet does not hold for it.
+**Contrasting case.** K3 is the contrast to K1 and K2: the same loop with the CIA read replaced by a Chip-memory read, which no page ties to E. It is graded in the same run, and the band that K1 and K2 must meet does not hold for it. For the loops that must meet the band, the contrast is the same loop with a Chip-memory read in place of the CIA read (K1, P5 leg (b), P9 leg W), or with one store stream taken from Chip memory after a NOP in every second iteration (P4's PRB stores, P4's ICR stores): the stores then take more than two phases.
 
 **Reference frame.** F1 and F2.
 
@@ -438,7 +440,7 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 - **Expected.** "1 = start Timer A, 0 = stop Timer A." (p348).
   - u1 = u2 = $8000: stopped, the counter holds, and the latch write loaded it (p343).
   - u3 < u2. The size of u2 − u3 is reported against τ/T_E (P5 grades the rate).
-- **Precondition.** No underflow (ICR TA = 0 at the end). *Contrast:* R-LATCH($0100) makes TA = 1.
+- **Precondition.** No underflow (ICR TA = 0 at the end). When it fails, P7.0 is not graded. *Contrast:* R-LATCH($0100) makes TA = 1.
 - **Contrasting case.** CR ← $01 during the first delay makes u2 ≠ u1.
 
 #### P7.3: Bit 3 is RUNMODE (1 one-shot, 0 continuous)
@@ -449,8 +451,8 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 - **Expected.** Source: "1 = one-shot mode, 0 = continuous mode." (p348); "In one-shot mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, then stop. In continuous mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, and repeat the procedure continuously." (p342); and "This bit is automatically reset (= 0) when underflow occurs during one-shot mode." (p348).
   - Leg O: exactly one ICR sample has TA = 1; c bit 0 = 0; u = 40.
   - Leg C: more than one ICR sample has TA = 1, and c bit 0 = 1 (START is reset only by an underflow "during one-shot mode"). u is reported, not graded: the counter is running when it is read.
-- **Precondition.** Consecutive ICR stores are at most 20 E periods apart (P/2 for any P ≥ 40, F3), from their store times (F1, F2), so that a timer that repeats shows more than one flag. *Contrast:* a loop body padded beyond 20 E periods fails it.
-- **Contrasting case.** Each leg is the other's. CR ← $01 in leg O gives more than one TA sample, so "exactly one" fails; CR ← $09 in leg C gives exactly one, so "more than one" fails.
+- **Precondition.** All 400 ICR stores of each leg are present, and consecutive ICR stores are at most 20 E periods apart (P/2 for any P ≥ 40, F3), from their store times (F1, F2), so that a timer that repeats shows more than one flag. When it fails, P7.3 and its contrasting case are not graded. *Contrast:* a loop body padded beyond 20 E periods fails the second clause; a sampler of 399 iterations fails the first.
+- **Contrasting case.** Each leg is the other's. CR ← $01 in leg O gives more than one TA sample, so "exactly one" fails; CR ← $09 in leg C gives exactly one, so "more than one" fails. A leg O started with CR ← $08 (one-shot, START = 0) shows no flag, so "exactly one" fails.
 
 #### P7.4: Bit 4 is LOAD (force load, strobe, reads 0)
 
@@ -459,35 +461,39 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 - **Expected.** Source: "A strobe bit allows the timer latch to be loaded into the timer counter at any time, whether the timer is running or not." (p342), and "bit 4 will always read back a zero and writing a 0 has no effect." (p348).
   - v2 = $4000.
   - c bit 4 = 0.
-  - $FFFF − v3 ≤ τ_LS/T_E + 2, where τ_LS runs from the marker before the LOAD write to the marker after the stop write. The +2 allows for load and stop latencies the page does not state. Without the load, $FFFF − v3 would be about 5100.
-- **Precondition.** v1 ≠ $4000 (the counter has moved). *Contrast:* with no start, v1 = $4000.
-- **Contrasting case.**
+  - $FFFF − v3 ≤ (D − A)/T_E + 1, where A is the marker before the LOAD write and D the marker after the stop write. The LOAD write and the stop write are each known only to lie between the two markers around it (E5); the number of whole E cycles counted between two events is then at most the time from the first marker before them to the last marker after them, in E periods, plus 1 (counting whole pulses in an interval). The four markers must come in the order A, B, C, D. Without the load, $FFFF − v3 would be about 5100.
+- **Precondition.** v1 ≠ $4000 (the counter has moved). When it fails, P7.4 is not graded. *Contrast:* with no start, v1 = $4000.
+- **Contrasting case.** Each runs through the same comparator, so that P7.4 is red.
   - CR ← $00 instead of $10 gives v2 = v1 ("writing a 0 has no effect").
-  - CR ← $01 instead of $11 gives $FFFF − v3 ≥ τ_total/T_E − 2, where τ_total runs from the marker after the start write to the marker before the stop write.
+  - CR ← $01 instead of $11 gives $FFFF − v3 of about 5100, above (D − A)/T_E + 1.
 
 #### P7.5: Bit 5 is INMODE (1 counts positive CNT transitions, 0 counts φ2)
 
 - **Stimulus, CIAA.** CR ← $00. R-LATCH($1000). Read ICR (discard). CR ← $21 (START, CNT). "Ready" marker. R-KEY. The program waits W E periods, with 1500 ≤ W ≤ 3000 (the 8 bits take about 8 × 60 µs, about 340 E periods, per p358; the upper bound keeps the φ2 contrast below the latch). W, wherever it is measured below, runs from the marker after the start write (the "ready" marker) to the marker after the stop write, as P5 leg (a) measures τ: the counter keeps counting through the ICR read and the bracketed stop write, past the point the wait loop itself ends. Read ICR → i. Bracketed write CR ← $00. Read TAHI, TALO → v.
-- **Stimulus, CIAB.** The same without R-KEY (CIAB CNT is POUT, which nothing drives).
+- **Stimulus, CIAB.** The same without R-KEY (CIAB CNT is POUT, which nothing drives), with a "ready" marker after the start write and a marker before it.
 - **Expected.** Source: "1 = Timer A counts positive CNT transitions" (p348), with CNT = KCLK (p351) and "a pulse on KCLK (low then high)" per bit, "until all eight data bits have been sent" (p357).
-  - CIAA: $1000 − v = 8.
-  - CIAB: v = $1000.
+  - CIAB (graded): v = $1000. CIAB's CNT has no driver, so a started timer in INMODE = CNT sees no positive transition and holds its value.
+  - CIAA (measured, not graded): $1000 − v = 8 on a conforming timer. Whatever v reads, no output of the system shows KCLK at the timer's CNT input. A decrement above 8 can therefore be an ignored INMODE bit (the timer counts φ2) or a KCLK that does not reach CNT as the page's pulses, and this leg cannot tell them apart. The line prints the decrement and says so.
 - **Preconditions.**
   - KP (its probe is timer B, CRB ← $21). *Contrast:* KP's own contrast.
-  - **Window (CIAA).** The whole transmission lies between the start write and the stop write.
-    - It starts after the start write: the test sends the code d_k ≥ 100 E periods after the ready marker, which follows the start write, as the test's own send time against the marker's store time shows.
+  - **Window (CIAA).** The whole transmission lies between the start write and the stop write, and W lies in [1500, 3000] E periods.
+    - It starts after the start write: the test sends the code d_k ≥ 100 E periods after the ready marker, which follows the start write, as the test's own send time against the marker's store time shows, and before the ICR read.
     - It has ended before the stop write: i, read before the stop write, has SP = 1. The serial port is in input mode (CRA bit 6 = 0), and "After eight CNT pulses, the data in the shift register is dumped into the serial data register and an interrupt is generated." (p345).
-    - *Contrast:* send the key after the stop write. i then has SP = 0.
-- **Contrasting case.** CR ← $01 (bit 5 = 0, φ2): $1000 − v = round(W/T_E) ± 2, on both CIAs.
-- **Left open.** The SDR value is reported, not graded. What it should hold depends on the keyboard's bit order and polarity (p357-p358), which are claims outside this package.
+    - The ready marker, the ICR read, the marker before the stop write and the marker after it come in that order, and W, from the first to the last, lies in [1500, 3000] E periods.
+    - *Contrast:* send the key after the stop write, or wait fewer than 1500 E periods. The window precondition then fails.
+  - **Window (CIAB).** The ready marker, the marker before the stop write and the marker after it come in that order, and W lies in [1500, 3000] E periods. When it fails, the CIAB leg is not graded. *Contrast:* wait fewer than 1500 E periods.
+- **Contrasting case.** CR ← $01 (bit 5 = 0, φ2): $1000 − v lies between (S_b − R)/T_E − 1 and (S_a − A)/T_E + 1 on both CIAs, where A is the marker before the start write, R the marker after it, S_b the marker before the stop write and S_a the marker after it: the E cycles counted between two events, each known only to lie between the markers around it, as in P7.4. A CIAB run with CR ← $20 (not started) in place of $01 counts none, and fails it.
+- **Control (CIAB leg).** The same equality comparator on a started timer in INMODE = CNT whose count input is known. CIAA's timer A, CR ← $21, is started twice with the same code, and stopped and read after each start. In the first interval no CNT edge occurs: the key code is not sent before it ends, and the ICR read after it has SP = 0. In the second interval one key code (eight KCLK pulses) is sent after the ready marker, and i has SP = 1. A conforming timer has $1000 − v1 = 0 after the first interval and v1 − v2 = 8 after the second. *Contrast:* the key sent in the first interval, so that its precondition fails; no key in the second, so that v1 − v2 = 0.
+- **Left open.** The SDR value is reported, not graded. What it should hold depends on the keyboard's bit order and polarity (p357-p358), which are claims outside this package. Whether KCLK reaches CIAA's CNT as the page's pulses is not observable (CIAA leg, above).
 
 #### P7.6: Bit 6 is SPMODE (1 serial port output, 0 input)
 
 - **Stimulus, CIAB.** CR ← $00. R-LATCH(10). Read ICR (discard). CR ← $41 (START, SPMODE output, continuous). SDR ← $A5. R-SAMPLE(300; ICR). CR ← $00.
 - **Expected, CIAB.** Source: "1 = Serial port=output (CNT is the source of the shift clock)" (p348), and p345: "Transmission will start following a write to the serial data register. [...] After eight CNT pulses, an interrupt is generated". At least one sample has SP = 1. The number of TA flags before the first SP flag is reported, not graded: its value, 16 by "Data is shifted out on the SP pin at 1/2 the underflow rate of Timer A" (p345), belongs to claims outside this package.
 - **CIAA.** Only the input setting is exercised. SP = 1 in i, the ICR read that P7.5's CIAA run (CR ← $21, bit 6 = 0) makes before its stop write, is this leg's positive result; P7.5 uses the same value as its window precondition. Its contrast is the same run without R-KEY: SP = 0. CIAA is not put into output mode, because its SP and CNT are the keyboard's KDAT and KCLK (p351), and the host drives KDAT as the keyboard handshake (p357).
-- **Precondition (CIAB).** Timer A underflows during the window: at least 20 samples have TA = 1. *Contrast:* CR ← $40 (not started) gives no TA and no SP.
+- **Precondition (CIAB).** Timer A underflows during the window: at least 20 samples have TA = 1. When it fails, P7.6-CIAB is not graded. *Contrast:* CR ← $40 (not started) gives no TA and no SP.
 - **Contrasting case (CIAB).** CR ← $01 (bit 6 = 0, input): SP = 0 in every sample. In input mode, data shift only "on the rising edge of the signal applied to the CNT pin" (p345), and CIAB's CNT (POUT) is not driven.
+- **Control (CIAB).** The same program (CR ← $41, SDR ← $A5, R-SAMPLE(300; ICR)) on CIA-A, through the same comparator (at least one sample has SP = 1). *Contrast:* CR ← $01 in place of $41 on CIA-A, with no key sent.
 
 #### P7.7: Bit 7 is unused (unaffected by a write, 0 on a read)
 
@@ -496,10 +502,10 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
   - c1 = $00.
   - c2 = $01.
   - |w81 − w01| ≤ 1: the timer behaves as it does with $01.
-- **Precondition.** Both runs have the same bracket-to-bracket time within 1 E period. *Contrast:* a different delay count D breaks this.
-- **Contrasting case.** One for each half of the page's sentence.
+- **Precondition.** Both runs have the same bracket-to-bracket time within 1 E period. When it fails, P7.7 is not graded. *Contrast:* a different delay count D breaks this.
+- **Contrasting case.** Each runs through the same comparator, so that P7.7 is red. One for each half of the page's sentence.
   - *Forced to 0 on a read:* CR ← $02 (PBON, a used bit; the timer stays stopped, so R-LATCH still applies) in place of CR ← $80. A used bit reads back (Section 3, item 7), so the page predicts c1 = $02, and c1 = $00 fails.
-  - *Unaffected by a write:* CR ← $21 (START and INMODE, a used bit) in place of CR ← $81. The timer then "counts positive CNT transitions" (p348), and there are none (no key is sent: KP on CIAA; CIAB's CNT is not driven, P7.5), so w21 = $8000, far from w01, and |w − w01| ≤ 1 fails.
+  - *Unaffected by a write:* CR ← $80 (START = 0) in place of CR ← $81. START, a used bit, is not set, so the timer does not run: w stays $8000, far from w01, and c2 reads $00, so |w81 − w01| ≤ 1 and c2 = $01 fail.
 - **Control.** c2' = $01 in the second run: a used bit reads back set while the timer runs. p348 describes START being cleared only by a one-shot underflow.
 
 ---
@@ -645,6 +651,7 @@ The sentence of opus:F-timers.c6 names no value. Each capability it lists is sho
 8. **The CIAA TOD source** is "VSync or line tick" (p339). P8.7 grades CIAA only in a way that holds for either source.
 9. **p352's example** sets one-shot mode before writing TAHI, so its TAHI write already starts the timer (p342). Its DMACON write carries the comment "Kill all chip interrupts". This spec takes from p352 only the latch write order.
 10. **The claims' text readings of the bitmaps on p349 and p350** print "=" as "*" or "-" and "1" as "l". The printed images confirm the readings used here.
+11. **KCLK at CIAA's CNT input.** p351 wires CIAA's CNT to KCLK and p357 gives eight KCLK pulses per key code, but no output of the system shows the pulses at the timer's CNT input. A CIAA timer in INMODE = CNT that decrements by more than 8 while one key code is sent is therefore ambiguous: INMODE may be ignored, or KCLK may not reach CNT as the page's pulses. P7.5 grades the CIAB leg, whose CNT nothing drives, and measures the CIAA leg.
 
 ---
 
@@ -658,7 +665,7 @@ O2 (the drive LED) is not graded at this port. O2's own legs and its calibration
 
 This section is generated from the output `make test` prints on each core (fx68k and TG68K); it contains nothing else.
 
-fx68k: 81 passed, 26 failed. TG68K: 81 passed, 26 failed.
+fx68k: 88 passed, 26 failed. TG68K: 88 passed, 26 failed.
 
 ### 5.1 Graded lines
 
@@ -717,9 +724,9 @@ fx68k: 81 passed, 26 failed. TG68K: 81 passed, 26 failed.
 | P7.0 | PASS | PASS |
 | P80-PRE | PASS | PASS |
 | P8.0 | PASS | PASS |
+| P7.3-PRE | PASS | PASS |
 | P7.3 | PASS | PASS |
 | P7.3-CONTRAST | PASS | PASS |
-| P7.3-PRE | PASS | PASS |
 | P8.3 | PASS | PASS |
 | P8.3-CONTRAST | PASS | PASS |
 | P8.3-PRE | PASS | PASS |
@@ -727,15 +734,20 @@ fx68k: 81 passed, 26 failed. TG68K: 81 passed, 26 failed.
 | P7.4 | PASS | PASS |
 | P8.4-PRE | PASS | PASS |
 | P8.4 | PASS | PASS |
-| P7.7 | PASS | PASS |
 | P7.7-PRE | PASS | PASS |
-| P7.5 | FAIL | FAIL |
+| P7.7 | PASS | PASS |
 | P7.5-WINDOW | PASS | PASS |
+| P7.5-WINDOW-CIAB | PASS | PASS |
+| P7.5 | FAIL | FAIL |
+| P7.5-CONTRAST | PASS | PASS |
 | P8.65-MODE01 | FAIL | FAIL |
 | P8.65-MODE01-WINDOW | PASS | PASS |
 | P7.6-CIAA | PASS | PASS |
-| P7.6-CIAB | FAIL | FAIL |
+| P7.6-CIAA-CONTRAST | PASS | PASS |
 | P7.6-CIAB-PRE | PASS | PASS |
+| P7.6-CIAB | FAIL | FAIL |
+| P7.6-CIAB-CONTRAST | PASS | PASS |
+| P7.6-CIAB-GREENCTL | PASS | PASS |
 | P8.65-MODE10 | PASS | PASS |
 | P8.65-MODE10-PRE | PASS | PASS |
 | P8.65-MODE11-PAIRN | PASS | PASS |
@@ -746,11 +758,13 @@ fx68k: 81 passed, 26 failed. TG68K: 81 passed, 26 failed.
 | P8.7-RUNX | PASS | PASS |
 | P8.7-RUNY | PASS | PASS |
 | P8.7-CIAA | PASS | PASS |
-| P5-LEGA | PASS | PASS |
 | P5-PRE51 | PASS | PASS |
 | P5-PRE52 | PASS | PASS |
+| P5-LEGA | PASS | PASS |
+| P5-PRE53 | PASS | PASS |
 | P5-LEGB | PASS | PASS |
 | P6-PRE61 | PASS | PASS |
+| P6-PRE62 | PASS | PASS |
 | P6-K1K2 | PASS | PASS |
 | P6-K3 | PASS | PASS |
 | P6-P4LOOP | PASS | PASS |
@@ -842,12 +856,13 @@ fx68k: P70 CIAA/CRA: u1=$80$00 u2=$80$00 u3=$74$24
 fx68k: P70 CIAB/CRA: u1=$80$00 u2=$80$00 u3=$74$24
 fx68k: P80 CIAA/CRB: u1=$80$00 u2=$80$00 u3=$74$24
 fx68k: P80 CIAB/CRB: u1=$80$00 u2=$80$00 u3=$74$24
-both: P7.3 CIAA flags O=1 C=48; CIAB flags O=1 C=48
+both: P7.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
 both: P8.3 CIAA flags O=1 C=48; CIAB flags O=1 C=48
-fx68k: P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91; CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91
+fx68k: P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
 fx68k: P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91; CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91
 fx68k: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02
-fx68k: P7.5 CIAA i=$08 v=$0744 W=2236.000000E; CIAB v=$0744
+fx68k: P7.5-CIAA [p348,p351,p357]: not graded -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT
+fx68k: P7.5 CIAB v=$0744 W=2236.000000E
 fx68k: P8.65-MODE01 CIAA i=$08 v=$0744; CIAB v=$0744
 both: P7.6-CIAB TA samples=136 SP seen=no
 both: P8.65-M10 CIAA: measured P(30)=31 (uniquely determined)
@@ -863,17 +878,23 @@ fx68k: P5-LEGA CIAA/TA tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000
 fx68k: P5-LEGA CIAA/TB tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=48436.000000
 fx68k: P5-LEGA CIAB/TA tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=48436.000000
 fx68k: P5-LEGA CIAB/TB tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=48436.000000
-fx68k: P6 K1 band=2.000000*T_CPU distinct=2; K2 band=2.000000*T_CPU distinct=2; K3 band=8.000000*T_CPU distinct=5; I3=184 clk_sys, T_E=40
-both: per-run population: 119 captures of 105 programs, 119 loaded
+both: P5-PRE53 CIAA/TA: samples=256 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
+both: P5-PRE53 CIAA/TB: samples=256 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
+both: P5-PRE53 CIAB/TA: samples=256 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
+both: P5-PRE53 CIAB/TB: samples=256 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
+fx68k: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=184 clk_sys, T_E=40
+both: P6-P4LOOP PRB values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; ICR values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
+both: per-run population: 124 captures of 109 programs, 124 loaded
 TG68K: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=113.000000 s=10.020101E
 TG68K: P70 CIAA/CRA: u1=$80$00 u2=$80$00 u3=$71$D8
 TG68K: P70 CIAB/CRA: u1=$80$00 u2=$80$00 u3=$71$D8
 TG68K: P80 CIAA/CRB: u1=$80$00 u2=$80$00 u3=$71$D8
 TG68K: P80 CIAB/CRB: u1=$80$00 u2=$80$00 u3=$71$D8
-TG68K: P7.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E; CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E
+TG68K: P7.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80); CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80)
 TG68K: P8.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E; CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E
 TG68K: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7B3E c2(01)=$01 w01=$7B3E; CIAB c1(81)=$00 c2(81)=$01 w81=$7B3E c2(01)=$01 w01=$7B3E
-TG68K: P7.5 CIAA i=$08 v=$0596 W=2666.000000E; CIAB v=$0596
+TG68K: P7.5-CIAA [p348,p351,p357]: not graded -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2666 (the page's count is 8) over W=2666.000000E, i=$08, v=$0596; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT
+TG68K: P7.5 CIAB v=$0596 W=2666.000000E
 TG68K: P8.65-MODE01 CIAA i=$08 v=$0596; CIAB v=$0596
 TG68K: P8.65-MODE11 D_X(N)=666 D_Y(N)=666 D_X(K)=666 D_Y(K)=666 window(N)=106680 window(K)=106680
 TG68K: P8.7-PRE CIAB: T0=133 lines-measured=132
@@ -883,7 +904,7 @@ TG68K: P5-LEGA CIAA/TA tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000
 TG68K: P5-LEGA CIAA/TB tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
 TG68K: P5-LEGA CIAB/TA tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
 TG68K: P5-LEGA CIAB/TB tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
-TG68K: P6 K1 band=2.000000*T_CPU distinct=2; K2 band=2.000000*T_CPU distinct=2; K3 band=8.000000*T_CPU distinct=5; I3=192 clk_sys, T_E=40
+TG68K: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=192 clk_sys, T_E=40
 ```
 
 ### 5.3 Recorded lines (not graded)
@@ -896,13 +917,14 @@ both: P2-PRE2.1 [p342]: the program's first write to this CR is leg R's own; the
 both: P3 [p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured CIAA/TA: PRB $FF in 600 samples, bit n set in 600, Q=88; CIAA/TB: PRB $FF in 600 samples, bit n set in 600, Q=88
 both: P4 [p341,p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured over the six latch runs of CIAA/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAA/TB: PRB $FF, bit n set in 2400 of 2400 samples
 both: P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with a latch of 42 (P9-LEGF), leg W's the CPU-driven L=40 run made with a latch of 20 (P9-LEGW-GREENCTL); both are selected through NMH_MUTATE
-fx68k: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0748, with-key v=$0748 -- both CNT, so this cannot be distinguished on this build; P7.5's own CIAB leg carries the red without it
+fx68k: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0748, with-key v=$0748 -- both CNT, so the two cannot be told apart here; P7.5's own CIAB leg carries the red without it
 fx68k: KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. Measured: no-key v=$0748, with-key v=$0748 -- P8.65 mode 01's own CIAB leg carries the red without it
 both: P8.65-MODE11-PAIRK [SPECIFICATION.md P8.65 mode 11]: a proven-live green input through the same comparator is named but not built here: run Y with CRB<-$40 (mode 10, START=0) gives D_Y=0<D_X, the same "less than" the red uses -- not exercised, by a scope decision: the package's other green controls cover P3, the CIA-B legs of P7.5 and P8.65 mode 01, P7.6-CIAB and P7.7
 both: P8.65-MODE11-CONTRAST [SPECIFICATION.md P8.65 mode 11]: each pair is the other's own contrast (sending the key in pair N, or leaving it out of pair K), for D_X=D_Y (PAIRN); pair K's own data (D_X=D_Y=559/666) also satisfies PAIRN, so that half is not distinguishable from PAIRN's own baseline on this build. A run with CRB<-$01 (mode 00, phi2) gives a usable contrast instead (NMH_MUTATE=M11-MODE00CONTRAST)
 both: P8.7-RUNY [SPECIFICATION.md P8.7]: run Y follows run X in the same program rather than being its own run from reset (SPECIFICATION.md 1.6, "each leg of a proposition is its own run from reset unless its stimulus says otherwise"; P8.7's own stimulus does not say otherwise) -- its own alarm holds T0+12 (set by run X, since CRB stays $00 through run Y and nothing clears it) rather than the reset value 0 the page's own prediction argues from; measured, the prediction (no ALRM in run Y, T1-A within the lines elapsed) holds either way
+both: opus:F-signals.c2, sol:F-signals.c70 [p353]: withdrawn whole -- the claims say that phi2 is connected to the 680x0 "E" clock. P5-LEGA and P5-LEGB measure the rate at which a timer counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; whether phi2 is the E clock itself is not observable at this boundary
 both: opus:F-portsig.c47 [p351]: declined whole -- "PC...not used" (CIAB); no output this package sees shows a PC pin on either CIA, and "not used" describes no behaviour
 both: opus:F-signals.c1, sol:F-signals.c69 [p353]: declined whole -- both say phi2 is a "TTL compatible input", an electrical property of an input pin that nothing a test sees depends on
-TG68K: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0599, with-key v=$0599 -- both CNT, so this cannot be distinguished on this build; P7.5's own CIAB leg carries the red without it
+TG68K: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0599, with-key v=$0599 -- both CNT, so the two cannot be told apart here; P7.5's own CIAB leg carries the red without it
 TG68K: KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. Measured: no-key v=$0599, with-key v=$0599 -- P8.65 mode 01's own CIAB leg carries the red without it
 ```

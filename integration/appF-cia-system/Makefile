@@ -10,7 +10,7 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb p1_ciab_tb_pre11 p1_ciab
             p7_ciab_run p7_ciab_run_pad p8_ciaa_run p8_ciab_run p8_ciab_run_pad p7_ciaa_load p7_ciab_load \
             p7_ciab_load_ld0 p7_ciab_load_run01 p8_ciaa_load p8_ciab_load p8_ciab_load_ld0 p8_ciab_load_run01 \
             p7_ciaa_unused81 p7_ciaa_unused01 p7_ciab_unused81 p7_ciab_unused01 p7_ciab_unused_c1contrast \
-            p7_ciab_unused_wcontrast p7_ciab_unused81_startoff p7_ciaa_inmode p7_ciaa_inmode_phi2 p7_ciab_inmode \
+            p7_ciab_unused81_startoff p7_ciaa_inmode p7_ciaa_inmode_phi2 p7_ciab_inmode \
             p7_ciab_inmode_phi2 p7_ciab_inmode_nostart p8_ciaa_inmode01 p8_ciaa_inmode01_phi2 p8_ciab_inmode01 \
             p8_ciab_inmode01_phi2 p8_ciab_inmode01_nostart kp_a kp_b p76_ciab p76_ciab_contrast p76_ciab_pre \
             p76_ciaa p865_ciaa_mode10 p865_ciab_mode10 p865_ciab_mode10_contrast p865_ciab_mode10_shortlatch \
@@ -31,6 +31,10 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb p1_ciab_tb_pre11 p1_ciab
             p1_ciaa_ta_ep3 p1_ciaa_ta_f1 p1_ciaa_tb_ep1 p1_ciaa_tb_ep2 p1_ciaa_tb_ep3 p1_ciaa_tb_f1 \
             ep2_contrast_low p1_ciab_tb_pbon0_b0 p2c_ciab_ta p2c_ciab_tb p2c_ciab_tb_legr p2c_ciab_tb_k4 \
             p2c_ciab_tb_h1 p2c_ciab_tb_pre22 p2c_ciab_tb_pre23 p2c_ciab_tb_pre24 p4_ciab_tb_l21_nostart \
-            p4_ciab_tb_l22_nostart p4_ciab_tb_l24_nostart p9_legf_ciab_tb_l41_m
+            p4_ciab_tb_l22_nostart p4_ciab_tb_l24_nostart p9_legf_ciab_tb_l41_m \
+            p5a_ciab_tb_d2_nostart p5b_ciab_tb_nostart p5b_ciab_tb_chip p5b_ciab_tb_short p6_k123_short \
+            p6_k123_k1chip p6_k123_k3mix p6_k123_n3 p6_k123_n5 p4_ciab_tb_l20_yspread p4_ciab_tb_l20_xspread \
+            p9_legw_l40_chip p7_ciaa_inmode_ctl p76_ciaa_in p7_ciab_load_nostart p7_ciab_run_short \
+            p7_ciab_unused81_delay p7_ciaa_inmode_short p7_ciab_inmode_short
 
 include ../harness/nanomig.mk

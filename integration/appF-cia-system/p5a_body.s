@@ -7,6 +7,7 @@
 ; Optional: MUT_PRE51 (R-LATCH($1000) instead of $FFFF)
 ;           MUT_PRE52 (no stop write before the second V read)
 ;           MUT_CNT (CR<-$21, CNT, instead of $01, phi2 -- the contrasting case)
+;           MUT_NOSTART (CR<-$00 instead of the start write: the timer never runs)
 ;
 ; SPECIFICATION.md P5.
 
@@ -33,7 +34,11 @@ start:
         ifd     MUT_CNT
         move.b  #$21,CR                 ; contrast: CNT instead of phi2
         else
+        ifd     MUT_NOSTART
+        move.b  #$00,CR                 ; no start: the counter holds
+        else
         move.b  #$01,CR                 ; START, phi2, continuous
+        endc
         endc
         move.w  #MARKER_SENTINEL,MK_5A_B
         move.w  #DELAYCNT,d7

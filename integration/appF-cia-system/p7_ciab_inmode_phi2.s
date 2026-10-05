@@ -1,4 +1,5 @@
 ; P7.5, CIAB, contrasting case (STARTVAL=$01). See p75_body.s.
+START_BRACKET   equ     1
                 include "nanomig.i"
                 include "ciaregs.i"
 CR              equ     CIAB_CRA

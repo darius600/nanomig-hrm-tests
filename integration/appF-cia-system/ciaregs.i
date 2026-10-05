@@ -205,6 +205,80 @@ RSAMPLE2        macro
                 dbra    d2,.rs\@
                 endm
 
+; ---- R-SAMPLE(n; X) with the register read replaced by a read of K3's Chip-memory
+; byte (the loop then holds no CIA access). \1=count \2=array base address.
+RSAMPLE1_CHIP   macro
+                lea     \2,a1
+                move.w  #(\1-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a1)+
+                dbra    d2,.rs\@
+                endm
+
+; ---- R-SAMPLE(n; X, Y) with both register reads replaced by reads of K3's
+; Chip-memory byte. \1=count \2=array base X \4=array base Y.
+RSAMPLE2_CHIP   macro
+                lea     \2,a1
+                lea     \4,a2
+                move.w  #(\1-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a1)+
+                moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a2)+
+                dbra    d2,.rs\@
+                endm
+
+; ---- R-SAMPLE(n; X, Y), X read from a CIA register and stored at once, Y read
+; from K3's Chip-memory byte after one NOP in every second iteration: the Y
+; stores take four phases of the E cycle while the X stores keep the CIA read's
+; two. \1=count (even) \2=array base X \3=X reg addr \4=array base Y.
+RSAMPLE2_YSPREAD macro
+                lea     \2,a1
+                lea     \4,a2
+                move.w  #(\1/2-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  \3,d0
+                move.w  d0,(a1)+
+                moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a2)+
+                moveq   #0,d0
+                move.b  \3,d0
+                move.w  d0,(a1)+
+                nop
+                moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a2)+
+                dbra    d2,.rs\@
+                endm
+
+; ---- R-SAMPLE(n; X, Y), X read from K3's Chip-memory byte after one NOP in every
+; second iteration and stored, Y read from a CIA register and stored at once: the
+; X stores take four phases of the E cycle while the Y stores keep the CIA read's
+; two. \1=count (even) \2=array base X \4=array base Y \5=Y reg addr.
+RSAMPLE2_XSPREAD macro
+                lea     \2,a1
+                lea     \4,a2
+                move.w  #(\1/2-1),d2
+.rs\@:          moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a1)+
+                moveq   #0,d0
+                move.b  \5,d0
+                move.w  d0,(a2)+
+                nop
+                moveq   #0,d0
+                move.b  CHIPBYTE_K3,d0
+                move.w  d0,(a1)+
+                moveq   #0,d0
+                move.b  \5,d0
+                move.w  d0,(a2)+
+                dbra    d2,.rs\@
+                endm
+
 ; ---- R-SAMPLE(n; X), padded loop body (P7.3/P8.3's own precondition
 ; contrast: "a loop body padded beyond 20 E periods fails it"). \4 is an
 ; inner delay-loop count added inside every iteration.

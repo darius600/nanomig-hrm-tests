@@ -5,7 +5,8 @@
 ; (timer B), on both CIAs.
 ;
 ; Wrapper symbols: CR,TLO,THI,ICR,ICRMASK. Optional: MUT_PAD (Pre7.3's own
-; contrast: a loop body padded beyond 20 E periods).
+; contrast: a loop body padded beyond 20 E periods), MUT_SHORT (399 samples
+; instead of 400).
 ;
 ; SPECIFICATION.md P7.3/P8.3.
 
@@ -25,7 +26,11 @@ start:
         ifd     MUT_PAD
         RSAMPLE1_PAD 400,PRUN_ICR,ICR,150
         else
+        ifd     MUT_SHORT
+        RSAMPLE1 399,PRUN_ICR,ICR
+        else
         RSAMPLE1 400,PRUN_ICR,ICR
+        endc
         endc
         READ_STORE CR,PRUN_C
         READ_TIMER THI,TLO,PRUN_U

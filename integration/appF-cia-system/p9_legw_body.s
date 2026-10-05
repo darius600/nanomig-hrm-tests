@@ -8,6 +8,8 @@
 ; Wrapper symbols: PRB,DDRB,CR,TLO,THI,N,M,DDRB_INIT, SLATCH, NSAMP.
 ; Optional: LVL1 (leave DDRB bit n an input, so the level before the start
 ; is the pull-up's 1).
+;           MUT_CHIP (each sample reads a Chip-memory byte, not PRB: no CIA access
+;           in the sampler loop)
 ;
 ; SPECIFICATION.md P9 leg W (reusing P2 leg S).
 
@@ -39,7 +41,11 @@ start:
         lea     P9W_S,a1
         move.w  #(NSAMP-1),d2
 .rs:    moveq   #0,d0
+        ifd     MUT_CHIP
+        move.b  CHIPBYTE_K3,d0
+        else
         move.b  PRB,d0
+        endc
         move.w  d0,(a1)+
         dbra    d2,.rs
         moveq   #0,d1
