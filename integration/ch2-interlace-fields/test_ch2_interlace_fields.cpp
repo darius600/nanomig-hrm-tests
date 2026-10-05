@@ -48,7 +48,11 @@
 // MUTATION P4d stimulus red: NMH_MUTATE=P4d runs prog_i_b (I-b) and NMH_MUTATE=P4d(step) runs prog_i_p (both lists keep PIC and PIC+40 but BPL1MOD = BPL2MOD = 38, I-p, so A-group i to B-group i still rises by 40 and B-group i to A-group i+1 does not); P4d's comparator prints FAIL; the three clauses of the comparator print as measured lines; controls PI-1..PI-6, P4e
 // MUTATION P4e stimulus red: NMH_MUTATE=P4e runs prog_i_d (the handler never repoints COP1LC, I-d); P4e's comparator prints FAIL; controls PI-1..PI-6
 // MUTATION P5 stimulus red: NMH_MUTATE=P5 runs prog_i_c (both lists omit the BPL1PT MOVEs, I-c); P5's comparator prints FAIL through the first 20-word fetch measured wherever it lies; controls: the search populates every field, PI-1, PI-2, PI-6; PI-4 and PI-7(bpl) do not apply
+// MUTATION P5-NOREWRITE stimulus red: NMH_MUTATE=P5-NOREWRITE runs prog_i_c as the rewrite run (both lists omit the BPL1PT MOVEs, I-c) and NMH_MUTATE=P5-NOREWRITE(ctrl) runs prog_i as the no-rewrite run (the lists rewrite, I-0); the unchanged conjunction prints FAIL; the other half is a live control; controls PI-1, PI-2, PI-10
+// MUTATION PI-10 stimulus red: NMH_MUTATE=PI-10 runs prog_i_q as the no-rewrite run (I-c and M1 waits between samples, I-q); PI-10's comparator prints FAIL
 // MUTATION P6 stimulus red: NMH_MUTATE=P6 runs prog_i_e (both lists omit the SPR0PT MOVEs, I-e); P6's comparator prints FAIL; controls PI-1, PI-2, PI-8
+// MUTATION P6-NOREWRITE stimulus red: NMH_MUTATE=P6-NOREWRITE runs prog_i_e as the rewrite run (both lists omit the SPR0PT MOVEs, I-e) and NMH_MUTATE=P6-NOREWRITE(ctrl) runs prog_i as the no-rewrite run (the lists rewrite, I-0); the unchanged conjunction prints FAIL; the other half is a live control; controls PI-1, PI-2, PI-8, PI-11
+// MUTATION PI-11 stimulus red: NMH_MUTATE=PI-11 runs prog_i_r as the no-rewrite run (I-e and M1 waits between samples, I-r); PI-11's comparator prints FAIL
 // MUTATION FIX-T stimulus red: NMH_MUTATE=FIX-T runs prog_t_i (FIXMARK stores $DEAD, not $BEEF, T-i); the known-value comparator prints FAIL
 // MUTATION PT-1 stimulus red: NMH_MUTATE=PT-1 runs prog_t_f (M1 waits between samples, T-f); PT-1's comparator prints FAIL
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL
@@ -636,6 +640,54 @@ bool p6(const IAnalysis& a) {
     return true;
 }
 
+// The "not rewritten" half of ch2-putting-together-a-copper-instruction-list.c3
+// on the run whose lists omit the BPL1PT MOVEs: in no later field (index 1
+// upward; the first recorded field may be the first field after DMA-on, which
+// starts at the pointer the CPU wrote) does the first 20-word fetch start at
+// the address the rewrite would have given. An unpopulated search is false.
+bool p5_norewrite(const IAnalysis& c) {
+    std::vector<BplGroup> firsts;
+    if (!p5_first_groups(c, firsts) || firsts.size() != (size_t)kI_K) return false;
+    for (size_t k = 1; k < firsts.size(); ++k) {
+        uint32_t rewritten = (c.fields[k].list == 'A') ? kI_PIC : kI_PIC + 40;
+        if (firsts[k].addr * 2 == rewritten) return false;
+    }
+    return true;
+}
+
+// The four data words of the sprite structure fetched in field f.
+int sprite_words_fetched_in(const IAnalysis& a, const IField& f) {
+    int n = 0;
+    for (uint32_t wbyte : {kI_SPR + 4, kI_SPR + 6, kI_SPR + 8, kI_SPR + 10}) {
+        uint32_t wa = wbyte / 2;
+        for (const auto& acc : a.r.log)
+            if (!acc.is_write && acc.word_addr == wa && acc.cycle >= f.begin && acc.cycle < f.end) { ++n; break; }
+    }
+    return n;
+}
+
+// The "not rewritten" half of ch2-putting-together-a-copper-instruction-list.c4
+// on the run whose lists omit the SPR0PT MOVEs: none of the four data words is
+// fetched in any later field (index 1 upward, as for p5_norewrite).
+bool p6_norewrite(const IAnalysis& c) {
+    if (!c.matched) return false;
+    for (size_t k = 1; k < c.fields.size(); ++k)
+        if (sprite_words_fetched_in(c, c.fields[k]) != 0) return false;
+    return true;
+}
+
+// The no-rewrite runs are valid fixtures: PI-1 and PI-2 on the run, and the
+// population the comparator reads is there (the 20-word search finds a group in
+// every field of the I-c run; every field of the I-e run is a live bitplane
+// field, PI-4, and the sprite structure is fetched at some time, PI-8).
+bool pi10_ctrl_valid(const IAnalysis& c) {
+    std::vector<BplGroup> firsts;
+    return pi1_valid(c) && pi2_anchor(c) && p5_first_groups(c, firsts);
+}
+bool pi11_ctrl_valid(const IAnalysis& c) {
+    return pi1_valid(c) && pi2_anchor(c) && pi4_groups(c) && pi8_spr_fetched(c);
+}
+
 // The preconditions of Program I on one run.
 struct IPre { bool pi1, pi2, pi3, pi4, pi5, pi6, pi7b, pi7s, pi8; };
 IPre i_pre(const IAnalysis& a) {
@@ -643,6 +695,8 @@ IPre i_pre(const IAnalysis& a) {
             pi6_tags(a), pi7_bpl(a), pi7_spr(a), pi8_spr_fetched(a)};
 }
 bool p1_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi4; }
+bool p5_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi4 && p.pi6 && p.pi7b; }
+bool p6_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi7s && p.pi8; }
 bool p4_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi3 && p.pi4 && p.pi5 && p.pi6; }
 
 // ---- Program I assertions: one function per label, used by the normal
@@ -756,15 +810,44 @@ void g_P4e(const IAnalysis& a, bool pre) {
 void g_P5(const IAnalysis& a, bool pre) {
     if (!pre) { checks.record("P5: NOT GRADED, a precondition (PI-1, PI-2, PI-4, PI-6 or PI-7(bpl)) did not hold on this run"); return; }
     checks.expect(p5(a),
-        "P5 p27 ch2-putting-together-a-copper-instruction-list.c3 ch2-using-the-copper-in-interlaced-mode.c16 "
+        "P5 p27 ch2-using-the-copper-in-interlaced-mode.c16 "
         "COP2-using-the-copper-in-interlaced-mode.c15: rewriting the bitplane pointer during vertical "
         "blanking starts every field's retrieval at the rewritten address");
 }
 void g_P6(const IAnalysis& a, bool pre) {
     if (!pre) { checks.record("P6: NOT GRADED, a precondition (PI-1, PI-2, PI-7(spr) or PI-8) did not hold on this run"); return; }
     checks.expect(p6(a),
-        "P6 p27 ch2-putting-together-a-copper-instruction-list.c4: rewriting the sprite-0 pointer during "
+        "P6 p27: rewriting the sprite-0 pointer during "
         "vertical blanking fetches the sprite's data in every recorded field");
+}
+void g_PI10(const IAnalysis& c) {
+    checks.expect(pi10_ctrl_valid(c),
+        "PI-10: the no-BPL1PT-rewrite run (I-c) is a valid fixture -- its completion word was written, all 8 "
+        "of its M1 records are valid, its restart anchor holds and the first 20-word fetch of every one of "
+        "its fields is found (PI-1 and PI-2 on that run, and the search P5-NOREWRITE reads is populated)");
+}
+void g_PI11(const IAnalysis& c) {
+    checks.expect(pi11_ctrl_valid(c),
+        "PI-11: the no-SPR0PT-rewrite run (I-e) is a valid fixture -- its completion word was written, all 8 "
+        "of its M1 records are valid, its restart anchor holds, every one of its fields has 256 groups of 20 "
+        "bitplane fetches and the sprite structure is fetched at least once (PI-1, PI-2, PI-4 and PI-8 on "
+        "that run)");
+}
+void g_P5_NOREWRITE(const IAnalysis& a, const IAnalysis& c, bool pre) {
+    if (!pre) { checks.record("P5-NOREWRITE: NOT GRADED, a precondition (PI-1, PI-2, PI-4, PI-6 or PI-7(bpl) on the rewrite run, or PI-10 on the no-rewrite run) did not hold"); return; }
+    checks.expect(p5(a) && p5_norewrite(c),
+        "P5-NOREWRITE p27 ch2-putting-together-a-copper-instruction-list.c3: the bitplane pointers must be "
+        "rewritten during vertical blanking so the data is properly retrieved -- with the rewrite every "
+        "recorded field starts at the rewritten address, and without it (I-c) no later recorded field "
+        "starts there");
+}
+void g_P6_NOREWRITE(const IAnalysis& a, const IAnalysis& c, bool pre) {
+    if (!pre) { checks.record("P6-NOREWRITE: NOT GRADED, a precondition (PI-1, PI-2, PI-7(spr) or PI-8 on the rewrite run, or PI-11 on the no-rewrite run) did not hold"); return; }
+    checks.expect(p6(a) && p6_norewrite(c),
+        "P6-NOREWRITE p27 ch2-putting-together-a-copper-instruction-list.c4: the sprite pointers must be "
+        "rewritten during vertical blanking so the data is properly retrieved -- with the rewrite the "
+        "sprite's data is fetched in every recorded field, and without it (I-e) no later recorded field "
+        "fetches it");
 }
 
 void run_program_i_assertions(const std::string& dir) {
@@ -811,8 +894,36 @@ void run_program_i_assertions(const std::string& dir) {
         "field or to time t; ch2-using-the-copper-in-interlaced-mode.c12 is not graded either, its 16.6ms "
         "figure is declined (section 1) and the id bundles that figure with the ordering claim P4e does grade");
 
-    g_P5(a, p.pi1 && p.pi2 && p.pi4 && p.pi6 && p.pi7b);
-    g_P6(a, p.pi1 && p.pi2 && p.pi7s && p.pi8);
+    g_P5(a, p5_gate(p));
+    g_P6(a, p6_gate(p));
+
+    // The no-rewrite runs (I-c, I-e), run here (not as mutations) so that the
+    // "must be rewritten" half of c3 and c4 gets a graded line of its own,
+    // each behind its own fixture precondition.
+    {
+        IAnalysis c5 = analyze_i(dir, "prog_i_c");
+        g_PI10(c5);
+        g_P5_NOREWRITE(a, c5, p5_gate(p) && pi10_ctrl_valid(c5));
+        std::vector<BplGroup> firsts;
+        if (p5_first_groups(c5, firsts)) {
+            std::string m;
+            for (size_t k = 0; k < firsts.size(); ++k) m += (k ? "," : "") + std::to_string(firsts[k].addr * 2);
+            checks.note("P5-NOREWRITE: first 20-word fetch address of fields 0.." + std::to_string(kI_K - 1) +
+                        " of the no-rewrite run = " + m + " (PIC = " + std::to_string(kI_PIC) + ")");
+        }
+    }
+    {
+        IAnalysis c6 = analyze_i(dir, "prog_i_e");
+        g_PI11(c6);
+        g_P6_NOREWRITE(a, c6, p6_gate(p) && pi11_ctrl_valid(c6));
+        if (c6.matched) {
+            std::string m;
+            for (size_t k = 0; k < c6.fields.size(); ++k)
+                m += (k ? "," : "") + std::to_string(sprite_words_fetched_in(c6, c6.fields[k]));
+            checks.note("P6-NOREWRITE: sprite data words (of 4) fetched in fields 0.." + std::to_string(kI_K - 1) +
+                        " of the no-rewrite run = " + m);
+        }
+    }
 }
 
 // ---- Program I mutation runs (one variant program per invocation) ------
@@ -831,7 +942,9 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         {"P4a", "prog_i_b"},
         {"P4b", "prog_i_b"}, {"P4c", "prog_i_b"}, {"P4d", "prog_i_b"}, {"P4d(step)", "prog_i_p"},
         {"P4e", "prog_i_d"},
-        {"P5", "prog_i_c"},
+        {"P5", "prog_i_c"}, {"P5-NOREWRITE", "prog_i_c"}, {"P5-NOREWRITE(ctrl)", "prog_i"},
+        {"P6-NOREWRITE", "prog_i_e"}, {"P6-NOREWRITE(ctrl)", "prog_i"},
+        {"PI-10", "prog_i_q"}, {"PI-11", "prog_i_r"},
         {"PI-7(bpl)", "prog_i_l"}, {"PI-7(spr)", "prog_i_m"},
         {"P6", "prog_i_e"},
         {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-4", "prog_i_h"},
@@ -890,6 +1003,46 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
     } else if (label == "P4e") {
         p4_controls(label, p);
         g_P4e(a, p4_gate(p));
+    } else if (label == "PI-10") {
+        g_PI10(a);
+    } else if (label == "PI-11") {
+        g_PI11(a);
+    } else if (label == "P5-NOREWRITE" || label == "P5-NOREWRITE(ctrl)") {
+        // One run serves as both: I-c as the rewrite run (the first half goes
+        // red, PI-4, PI-6 and PI-7(bpl) do not apply as in the P5 run below,
+        // and the second half is a live control), I-0 as the no-rewrite run
+        // (the second half goes red, the first half is a live control).
+        const IAnalysis& c = a;
+        bool pi10 = pi10_ctrl_valid(c);
+        ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2);
+        ctl(label, "PI-10", pi10);
+        bool gate;
+        if (label == "P5-NOREWRITE") {
+            ctl(label, "the no-rewrite half", p5_norewrite(c));
+            checks.record("P5-NOREWRITE/PI-4, PI-6 and PI-7(bpl): not applicable in this run, the lists hold no BPL1PT MOVEs and the fetches lie outside PIC's window");
+            gate = p.pi1 && p.pi2;
+        } else {
+            ctl(label, "PI-4", p.pi4); ctl(label, "PI-6", p.pi6); ctl(label, "PI-7(bpl)", p.pi7b);
+            ctl(label, "the rewrite half", p5(a));
+            gate = p5_gate(p);
+        }
+        g_P5_NOREWRITE(a, c, gate && pi10);
+    } else if (label == "P6-NOREWRITE" || label == "P6-NOREWRITE(ctrl)") {
+        const IAnalysis& c = a;
+        bool pi11 = pi11_ctrl_valid(c);
+        ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-8", p.pi8);
+        ctl(label, "PI-11", pi11);
+        bool gate;
+        if (label == "P6-NOREWRITE") {
+            ctl(label, "the no-rewrite half", p6_norewrite(c));
+            checks.record("P6-NOREWRITE/PI-7(spr): not applicable in this run, the lists hold no SPR0PT MOVEs");
+            gate = p.pi1 && p.pi2 && p.pi8;
+        } else {
+            ctl(label, "PI-7(spr)", p.pi7s);
+            ctl(label, "the rewrite half", p6(a));
+            gate = p6_gate(p);
+        }
+        g_P6_NOREWRITE(a, c, gate && pi11);
     } else if (label == "P5") {
         // I-c: no BPL1PT rewrite, so there is no PI-7(bpl) to hold, and the
         // fields' fetches leave the PIC window PI-4 counts in. The other

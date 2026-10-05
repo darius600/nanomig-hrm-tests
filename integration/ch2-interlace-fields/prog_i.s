@@ -20,6 +20,8 @@
 ;   I_BADFIX     I-n   FIXMARK stores $DEAD, not $BEEF
 ;   I_NOLACE + M1_DELAY   I-o   LACE = 0 and M1 waits between samples
 ;   I_MOD38      I-p   BPL1MOD = BPL2MOD = 38, not 40
+;   I_NOPTRLIST + M1_DELAY   I-q   both lists omit the BPL1PT MOVEs and M1 waits between samples
+;   I_NOSPRLIST + M1_DELAY   I-r   both lists omit the SPR0PT MOVEs and M1 waits between samples
 
         include "nanomig.i"
         include "ch2.i"

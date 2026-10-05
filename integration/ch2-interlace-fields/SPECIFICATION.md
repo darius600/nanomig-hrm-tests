@@ -32,8 +32,8 @@ Every other claim is used. The mapping is:
 | P2 | Agreed part of `COP2-using-the-copper-in-interlaced-mode.c3`, `.c7` and `COP2-vertical-beam-position.c14` |
 | P3 | `ch2-vertical-beam-position.c15`, `.c16`, `.c17`, `.c18`, `.c19`; `COP2-vertical-beam-position.c17`, `.c18`, `.c19`, `.c20`, `.c21`, `.c22` |
 | P4 | `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c10`, `.c12` (order only), `.c13`, `.c14`, `.c15`, `.c16`, `.c17`, `.c18`, `.c19`, `.c20.s2`; `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c18`, `.c19` |
-| P5 | `ch2-putting-together-a-copper-instruction-list.c3`; `ch2-...-interlaced-mode.c16`, `COP2-...-interlaced-mode.c15` |
-| P6 | `ch2-putting-together-a-copper-instruction-list.c4` |
+| P5 | `ch2-...-interlaced-mode.c16`, `COP2-...-interlaced-mode.c15`; with the no-rewrite run, `ch2-putting-together-a-copper-instruction-list.c3` (P5-NOREWRITE) |
+| P6 | `ch2-putting-together-a-copper-instruction-list.c4`, with the no-rewrite run (P6-NOREWRITE) |
 
 ---
 
@@ -314,6 +314,8 @@ Each variant changes only what is listed.
 | I-n | FIXMARK stores $DEAD, not $BEEF |
 | I-o | `BPLCON0 = $1200` (LACE = 0) and M1 waits (M1_DELAY, section 7) between two samples |
 | I-p | `BPL1MOD = BPL2MOD = 38` |
+| I-q | I-c, and M1 waits (M1_DELAY, section 7) between two samples |
+| I-r | I-e, and M1 waits (M1_DELAY, section 7) between two samples |
 
 ### 3.6 Preconditions of Program I
 
@@ -331,6 +333,8 @@ The contrasting case that makes each one fail is in the last column.
 | PI-7(spr) | In every field, the Copper fetch of the SPR0PT MOVEs precedes the field's first sprite-0 fetch (for P6). | I-m |
 | PI-8 | The sprite-0 structure at SPR is fetched at least once during the run (for P6). | I-i |
 | PI-9 | The LACE-clear control run (I-a) is a valid fixture: PI-1 and PI-2 hold on that run (for P1-NOLACE). | I-o |
+| PI-10 | The no-BPL1PT-rewrite run (I-c) is a valid fixture: PI-1 and PI-2 hold on that run, and the first 20-word fetch of every one of its fields is found (for P5-NOREWRITE). | I-q |
+| PI-11 | The no-SPR0PT-rewrite run (I-e) is a valid fixture: PI-1, PI-2 and PI-4 hold on that run, and the sprite structure is fetched at least once (for P6-NOREWRITE). | I-r |
 
 ---
 
@@ -658,12 +662,14 @@ comparison works on the least significant bits of the vertical count").
 1. **Proposition.** When the bitplane pointer is rewritten during vertical
    blanking, the retrieval of every field starts at the rewritten address.
    When it is not rewritten, the next field's retrieval does not start there.
-   - Claims: `ch2-putting-together-a-copper-instruction-list.c3`, with
-     `ch2-using-the-copper-in-interlaced-mode.c16` and
-     `COP2-using-the-copper-in-interlaced-mode.c15`.
+   - Claims: `ch2-using-the-copper-in-interlaced-mode.c16` and
+     `COP2-using-the-copper-in-interlaced-mode.c15` (P5, the rewrite half),
+     `ch2-putting-together-a-copper-instruction-list.c3` (P5-NOREWRITE, the
+     conjunction of both halves).
    - Page 27.
 2. **Stimulus.** Program I (I-0). Each list rewrites BPL1PTH/L first thing
-   after the restart.
+   after the restart. For P5-NOREWRITE also Program I with the variant I-c,
+   run directly in the normal run.
 3. **Observation.** The address of the first bitplane fetch of each of the 8
    recorded fields. PI-7(bpl) confirms that the rewrite precedes it.
 4. **Expected.** The first fetch is at PIC in every A-field and at PIC + 40
@@ -671,7 +677,18 @@ comparison works on the least significant bits of the vertical count").
    and the sprite pointers must be rewritten during the vertical blanking
    interval so the data will be properly retrieved when the screen display
    starts again."
-5. **Preconditions.** PI-1, PI-2, PI-4, PI-6, PI-7(bpl).
+
+   `ch2-putting-together-a-copper-instruction-list.c3` says "must be
+   rewritten", which holds both halves: with the rewrite the retrieval starts
+   at the rewritten address, and without it the next field's retrieval does
+   not start there. P5-NOREWRITE grades both in one assertion: the P5 check on
+   Program I, and on a run of I-c that no recorded field after the first
+   starts its first 20-word fetch at the address its list would have written
+   (PIC for an A-field, PIC + 40 for a B-field). The first recorded field is
+   not graded in the second half, because it may be the first field after
+   DMA-on, which starts at the pointer the CPU wrote.
+5. **Preconditions.** PI-1, PI-2, PI-4, PI-6, PI-7(bpl); for P5-NOREWRITE
+   also PI-10.
 6. **Contrasting case.** I-c (no rewrite; the CPU wrote PIC once before DMA
    was turned on).
    - Over the whole run, the first field after DMA-on starts at PIC.
@@ -688,6 +705,11 @@ comparison works on the least significant bits of the vertical count").
      PI-7(bpl) to order. The first 20-word fetch of every field is found
      wherever it lies, and that every field has one is a live control.
 
+   P5-NOREWRITE's contrasts are I-c in the place of the rewrite run (the first
+   half goes red; the second half is a live control) and I-0 in the place of
+   the no-rewrite run (the second half goes red; the first half is a live
+   control). The contrast of PI-10 is I-q.
+
    The contrasts for the preconditions are those of section 3.6, and I-l for
    PI-7(bpl).
 7. **Reference frame.** The restart interval (M2).
@@ -697,10 +719,13 @@ comparison works on the least significant bits of the vertical count").
 1. **Proposition.** When sprite pointer 0 is rewritten during vertical
    blanking, the sprite's data is fetched in every field. When it is not,
    later fields do not fetch it.
-   - Claim: `ch2-putting-together-a-copper-instruction-list.c4`.
+   - Claim: `ch2-putting-together-a-copper-instruction-list.c4`
+     (P6-NOREWRITE, the conjunction of both halves; the P6 line grades the
+     rewrite half and carries no claim).
    - Page 27.
 2. **Stimulus.** Program I (I-0). Each list rewrites SPR0PTH/L after the
-   restart, and SPREN is set.
+   restart, and SPREN is set. For P6-NOREWRITE also Program I with the
+   variant I-e, run directly in the normal run.
 3. **Observation.** The fetches of the words at SPR + 4, SPR + 6, SPR + 8
    and SPR + 10 (the two data lines) in each of the 8 recorded fields.
 4. **Expected.** All four data words are fetched in every recorded field.
@@ -708,7 +733,8 @@ comparison works on the least significant bits of the vertical count").
    - p110: "If you want the sprite to be displayed in subsequent display
      fields, you must rewrite the contents of the sprite pointers during each
      vertical blanking interval."
-5. **Preconditions.** PI-1, PI-2, PI-7(spr), PI-8.
+5. **Preconditions.** PI-1, PI-2, PI-7(spr), PI-8; for P6-NOREWRITE also
+   PI-11.
 6. **Contrasting case.** I-e (no rewrite; the CPU wrote SPR once before DMA
    was turned on). p110: "during the display field, the pointers are
    incremented to point to the data which is being fetched".
@@ -717,6 +743,14 @@ comparison works on the least significant bits of the vertical count").
    - None of SPR ... SPR + 14 is fetched in any recorded field, so the check
      goes red.
    - PI-7(spr) does not apply, because there is no rewrite.
+
+   P6-NOREWRITE grades both halves in one assertion: the P6 check on Program
+   I, and on a run of I-e that none of the four data words is fetched in any
+   recorded field after the first (the first recorded field is not graded, as
+   for P5-NOREWRITE). Its contrasts are I-e in the place of the rewrite run
+   (the first half goes red; the second half is a live control) and I-0 in the
+   place of the no-rewrite run (the second half goes red; the first half is a
+   live control). The contrast of PI-11 is I-r.
 
    The contrasts for the preconditions are I-j, I-f, I-m and I-i.
 7. **Reference frame.** The restart interval (M2).
@@ -784,8 +818,8 @@ comparison works on the least significant bits of the vertical count").
 
 ## 7. Build
 
-Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_n.s`
-(I-a to I-n, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
+Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_r.s`
+(I-a to I-r, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
 `prog_t_c.s` to `prog_t_i.s` (T-a, T-c to T-i, section 4.4; T-b is the same
 binary as T-0 with PAL selected in the harness, not a separate source);
 `m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
