@@ -76,9 +76,9 @@ start:
 
         org     LOOP_ORG
         ifd     ALIGNED
-LOOP:   addq.w  #1,d0                   ; 4 clocks (1 slot)
-        move.w  d0,(a1)                 ; 8 clocks (2 slots)
-        jmp     (a2)                    ; 8 clocks (2 slots) -- aligned, unlike BRA.S's 10
+LOOP:   addq.w  #1,d0                   ; 4 clocks (2 slots)
+        move.w  d0,(a1)                 ; 8 clocks (4 slots)
+        jmp     (a2)                    ; 8 clocks (4 slots) -- aligned, unlike BRA.S's 10
         else
 LOOP:   addq.w  #1,d0
         move.w  d0,(a1)

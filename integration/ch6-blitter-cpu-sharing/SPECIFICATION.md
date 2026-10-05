@@ -218,7 +218,9 @@ never written) still reads $0000.
 Mutation (`NMH_MUTATE=DESC-BASE`): the capture is
 `prog_descblit_offby1.bin` (one word past the last, below) instead; the
 unchanged "faithful, sentinel untouched" check must go red (the first
-word goes unwritten and the sentinel is written instead).
+word goes unwritten and the sentinel is written instead). DESC-OFFBY1 reads
+red under this selector as well, because its predicate requires the same
+capture (first word written, word past the block not written).
 
 Observed (claim): which of $0C2100/$0C2102/$0C2104/$0C2106/$0C2108/$0C210A
 land a write in `ram_log()`, comparing the blitter's own convention
@@ -564,8 +566,7 @@ them is even-numbered whatever the parity of the first). No stimulus can
 make this comparator red: the 68000 is always either pending or not, and the
 stimulus cannot make the design leave a slot free that a pending 68000 could
 have used. A stimulus that idles the 68000 (a long instruction) is calibrated
-away by the unimpeded gap, and the TG68K core has no instruction timing to
-idle at all.
+away by the unimpeded gap.
 
 ### SYSDMA-C29 [p196] some 68000 instructions miss the even-cycle allocation
 
@@ -962,11 +963,13 @@ Mutation (precondition, `prog_tas_span_mut.s`, `NMH_MUTATE=TAS-SPAN-PRE`): the
 precondition goes red and TAS-SPAN prints `NOT GRADED`.
 
 Mutation of TAS-SPAN itself: `none impossible`, unfalsifiable at this
-boundary. The read and the write of a read-modify-write are two RAM-port
-samples in two different slots, so no stimulus makes their span at most one
-slot, and an ordinary cycle is one sample; only a design that did the whole
-cycle inside one slot could be red, and the stimulus cannot make the design
-do that. The line is a comparison against the slot unit that SLOT-UNIT
+boundary. The distance from the TAS read to its write is fixed by the
+68000's own read-modify-write cycle, and the chip set can only lengthen it,
+never shorten it, so no stimulus brings it down to one slot or less; only a
+design that did the whole cycle inside one slot could be red, and the
+stimulus cannot make the design do that. Replacing the TAS with another
+instruction changes the shape that TAS-SPAN-PRE checks, not the span this
+line grades. The line is a comparison against the slot unit that SLOT-UNIT
 asserts, and the three ordinary cycles measured in the same run are its
 control on the same RAM-log basis.
 
@@ -1254,6 +1257,13 @@ window, the precondition goes red and BBUSY-LOCKOUT prints `NOT GRADED`.
 
 ## Claims not asserted
 
+Each row is printed by the run as one `RECORDED` line (`ORDER-FACTOR-NOT-ASSERTED`,
+`DONE-FLAG-MAY-NOT-ASSERTED`, `PRIORITY-SCOPE-NOT-ASSERTED`,
+`REQUEST-ONLY-IF-NOT-ASSERTED`, `HALF-INSTRUCTION-TIME-NOT-ASSERTED`,
+`TAS-ADVICE-NOT-ASSERTED`, `MOST-INSTRUCTIONS-NOT-ASSERTED`; the row of
+`ch6-multi.c4` is MULTI-C4-WITHDRAWN above), so that every id appears on a
+line of the run.
+
 | claim id(s) | page | reason |
 |---|---|---|
 | `6-intro.c5`, `ch6-intro.c5` | 169 | Factor not toleranced ("approximately twice as fast" has no numeric tolerance on the page); ordering asserted by ORDER above (a blitter A-to-D copy of 500 words, uncontended, finishes before a 68000 `MOVE.W` copy loop of the same 500 words). ORDER carries no claim id of its own -- only the ordering is graded, not the factor, so these ids stay withdrawn rather than moving onto ORDER's own label. |
@@ -1326,6 +1336,13 @@ The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines
 | `BBUSY-LOCKOUT-PRE` | PASS | PASS |
 | `BBUSY-LOCKOUT` | PASS | PASS |
 | `MULTI-C4-WITHDRAWN` | - | RECORDED |
+| `ORDER-FACTOR-NOT-ASSERTED` | RECORDED | RECORDED |
+| `DONE-FLAG-MAY-NOT-ASSERTED` | RECORDED | RECORDED |
+| `PRIORITY-SCOPE-NOT-ASSERTED` | RECORDED | RECORDED |
+| `REQUEST-ONLY-IF-NOT-ASSERTED` | RECORDED | RECORDED |
+| `HALF-INSTRUCTION-TIME-NOT-ASSERTED` | RECORDED | RECORDED |
+| `TAS-ADVICE-NOT-ASSERTED` | RECORDED | RECORDED |
+| `MOST-INSTRUCTIONS-NOT-ASSERTED` | RECORDED | RECORDED |
 
 Measurements printed by the run (fx68k):
 

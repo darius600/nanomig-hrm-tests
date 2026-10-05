@@ -14,7 +14,7 @@
 // MUTATION A1-C stimulus red the single MOVE.L to BLTCPTH points at the C decoy word instead of the C source word, via NMH_MUTATE=A1-C
 // MUTATION A1-D stimulus red the single MOVE.L to BLTDPTH points at the D decoy word instead of the intended destination word, via NMH_MUTATE=A1-D
 // MUTATION A1 stimulus red the single MOVE.L of all four channels points at the channel's decoy word, via NMH_MUTATE=A1
-// MUTATION DESC-BASE stimulus red the blitter's-own-convention capture substituted with the off-by-one capture, via NMH_MUTATE=DESC-BASE
+// MUTATION DESC-BASE stimulus red the blitter's-own-convention capture substituted with the off-by-one capture, via NMH_MUTATE=DESC-BASE; DESC-OFFBY1 reads red as well, since its predicate also requires that same capture (first word written, word past the block not written)
 // MUTATION DESC-OFFBY1 stimulus red the one-word-past capture substituted with a two-words-past capture (outside the exact range graded), via NMH_MUTATE=DESC-OFFBY1
 // MUTATION A2 stimulus red blit shrunk to a near-instant one-word transfer, via NMH_MUTATE=A2
 // MUTATION A3 stimulus red blit size grown from one word to two hundred, via NMH_MUTATE=A3
@@ -42,7 +42,7 @@
 // MUTATION PARITY stimulus green no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator): PARITY is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=PARITY
 // MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
 // MUTATION TAS-SPAN-PRE stimulus red the TAS.B replaced by NOP, so the TAS address shows three cycles instead of five (prog_tas_span_mut.s), via NMH_MUTATE=TAS-SPAN-PRE
-// MUTATION TAS-SPAN none impossible unfalsifiable at this boundary: the read and the write of a read-modify-write are two RAM-port samples in two different slots, so no stimulus makes their span at most one slot, and an ordinary cycle is one sample
+// MUTATION TAS-SPAN none impossible unfalsifiable at this boundary: the distance from the TAS read to its write is fixed by the 68000's own read-modify-write cycle and the chip set can only lengthen it, never shorten it, so no stimulus brings it down to one slot or less; replacing the TAS by another instruction changes the shape the precondition checks (TAS-SPAN-PRE) instead of the span this line grades
 // MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included; measured 0 in-window writes on fx68k (red through both the existence and the every-gap-equals-period clause) and 1 on TG68K (existence clause stays green; red only through the every-gap-equals-period clause, since a single in-window write forms no in-window gap), via NMH_MUTATE=FASTRUN
 // MUTATION FASTRUN-LOCKOUT stimulus red FR_CODE moved to chip RAM ($0C0800, prog_fastrun_lockout_chipcode.s), FR_CNT still in fast RAM: the fetch window is entirely DMA (A10PRE: p.197's own "40 * 4 = 160 time slots", none left over), so no CPU access is possible anywhere strictly inside it; measured 0 counter writes strictly inside the window on both cores, via NMH_MUTATE=FASTRUN-LOCKOUT
 // MUTATION FASTRUN-LOCKOUT-PRE stimulus red prog_fastrun_lockout_2plane.s (FR_2PLANE set): two hi-res bitplanes (BPLCON0 $A000, same DDFSTRT/DDFSTOP) leave 80 of the window's 160 slots free (Figure 6-9's own double dagger); the blitter's own first access lands inside the window instead of after it, so the precondition itself goes red, via NMH_MUTATE=FASTRUN-LOCKOUT-PRE
@@ -1929,6 +1929,38 @@ int main(int argc, char** argv) {
             not_graded(checks, "BBUSY-LOCKOUT", "BBUSY-LOCKOUT-PRE");
         }
     }
+
+    // ---- claims this package does not assert: one record per row of
+    // SPECIFICATION.md's "Claims not asserted" table, so that each id is
+    // printed on a RECORDED line.
+    checks.record(
+        "ORDER-FACTOR-NOT-ASSERTED [p169] 6-intro.c5,ch6-intro.c5: not asserted -- the factor (\"approximately "
+        "twice as fast\") has no numeric tolerance on the page; the ordering is graded by ORDER, which carries "
+        "no claim id");
+    checks.record(
+        "DONE-FLAG-MAY-NOT-ASSERTED [p186] 6-blitter-done-flag.c9,ch6-done.c11,ch6-done.c8: not asserted -- the "
+        "claims are permissive (\"may not return the correct result\", \"may not yet be set\"), so no "
+        "simulation outcome contradicts them; BBUSY-LOCKOUT grades the mechanism the page gives for the second "
+        "test, and the first test's value is printed as a measurement");
+    checks.record(
+        "PRIORITY-SCOPE-NOT-ASSERTED [p194] 6-system-dma.c12,ch6-sysdma.c10: not asserted -- \"the two lowest "
+        "priority levels\" ranks the blitter and the 68000 against every other DMA channel, and confirming it "
+        "needs all of them driven at once, a fixture beyond this package; the narrower fact that the blitter "
+        "outranks the 68000 is the idless A4-SHARE line");
+    checks.record(
+        "REQUEST-ONLY-IF-NOT-ASSERTED [p196] ch6-sysdma.c35: not asserted -- the \"only if\" direction (never "
+        "granted when it has not asked or is outranked) needs the 68000's request visible, which the RAM port "
+        "does not show; A9 grades the \"if\" direction");
+    checks.record(
+        "HALF-INSTRUCTION-TIME-NOT-ASSERTED [p196] 6-system-dma.c51,6-system-dma.c52,ch6-sysdma.c26,ch6-sysdma.c27: "
+        "not asserted -- \"about half\" of instruction time is an average over the 68000's full instruction mix "
+        "with no numeric tolerance on the page");
+    checks.record(
+        "TAS-ADVICE-NOT-ASSERTED [p196] ch6-sysdma.c32: not asserted -- advice to a programmer, not a claim "
+        "observable at the RAM port");
+    checks.record(
+        "MOST-INSTRUCTIONS-NOT-ASSERTED [p196] ch6-sysdma.c31: not asserted -- \"most instructions do not cause "
+        "cycles to be missed\" is a statistic over the instruction set with no numeric tolerance on the page");
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
