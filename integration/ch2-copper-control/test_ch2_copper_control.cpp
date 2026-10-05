@@ -31,11 +31,16 @@
 // the kind is stimulus, implementation or none and the result is red,
 // green or impossible. A line whose result is `impossible` says why.
 //
-// Two selectors are not mutations. NMH_MUTATE=P6-C and NMH_MUTATE=P6-C2
+// Four selectors are not mutations. NMH_MUTATE=P6-C and NMH_MUTATE=P6-C2
 // run the program that sets LACE (BPLCON0 bit 2), alone and with one
 // bitplane fetched. P6c stays PASS under both on both cores: the four
-// compared video frames measure equal (SPECIFICATION.md 5.6), so LACE is
+// compared video spans measure equal (SPECIFICATION.md 5.6), so LACE is
 // not an input that falsifies V1. P6c's own record uses BEAMCON0.
+// NMH_MUTATE=P3-A runs Base without its second DSKLEN write, so region DSK
+// is silent in Base: P3a prints that as a MEASURED line and P3-DSK and
+// P3-ALL are not graded; no line is graded on it, so it has no record.
+// NMH_MUTATE=P3-APP-I-REFPTR and NMH_MUTATE=P3-REFRESH-REFPTR run a program
+// that writes REFPTR ($028); see the two `none impossible` records.
 //
 // MUTATION FIXTURE stimulus red NMH_MUTATE=FIXTURE: the program stores $DEAD instead of $BEEF -- measured FAIL on "FIXTURE", both cores
 // MUTATION P1-FIX-DONE stimulus red NMH_MUTATE=P1-FIX-DONE-NODONE: prog_nodone.bin, which never stores DONE, in place of prog_p1.bin -- measured FAIL on "P1-FIX-DONE", both cores
@@ -62,9 +67,9 @@
 // MUTATION P2 stimulus red NMH_MUTATE=P2-SWAP: prog_p2_off.bin's capture (DMACON=$0000, fetches continue) graded in place of prog_p2.bin's -- measured FAIL on "P2", both cores
 // MUTATION P2-OFF stimulus red NMH_MUTATE=P2OFF-SWAP: prog_p2.bin's capture (COPEN cleared, no fetch continues) graded in place of prog_p2_off.bin's -- measured FAIL on "P2-OFF", both cores
 // MUTATION P3-APP-I stimulus red NMH_MUTATE=P3-APP-I-NODONE: prog_nodone.bin in place of prog_p1.bin; this falsifies the conjuncts that the run reaches DONE and that a refresh-asserted read exists, not the address-0 invariant -- measured FAIL on "P3-APP-I", both cores
-// MUTATION P3-APP-I none impossible unfalsifiable at this boundary: no program controls the address of a refresh access, so no stimulus makes a refresh-asserted read fall at a word address other than 0
+// MUTATION P3-APP-I none impossible no observable effect at this boundary: p.282 lists REFPTR ($028) as writeable; NMH_MUTATE=P3-APP-I-REFPTR runs prog_p1_refptr.bin, which writes REFPTR=$8100 and reaches DONE, and every refresh-asserted read stays at word address 0 (the line stays PASS), measured on both cores
 // MUTATION P3-REFRESH stimulus red NMH_MUTATE=P3-REFRESH-NODONE: prog_nodone.bin in place of prog_p3_run_base.bin; this falsifies the conjuncts that the run reaches DONE and that a refresh-asserted access exists, not the not-in-region invariant -- measured FAIL on "P3-REFRESH", both cores
-// MUTATION P3-REFRESH none impossible unfalsifiable at this boundary: no program controls the address of a refresh access, so no stimulus makes a refresh-asserted access fall inside one of the nine regions
+// MUTATION P3-REFRESH none impossible no observable effect at this boundary: p.282 lists REFPTR ($028) as writeable; NMH_MUTATE=P3-REFRESH-REFPTR runs prog_p3_refptr.bin, which writes REFPTR=$8100 (byte $10200, inside region BPL, if read as a word address) and reaches DONE, and no refresh-asserted access falls inside a region (the line stays PASS), measured on both cores
 // MUTATION P3-FIX-Base stimulus red NMH_MUTATE=P3-FIX-Base-NODONE: prog_nodone.bin in place of Case Base's program -- measured FAIL on "P3-FIX-Base", both cores
 // MUTATION P3-FIX-BPL stimulus red NMH_MUTATE=P3-FIX-BPL-NODONE: prog_nodone.bin in place of Case BPL's program -- measured FAIL on "P3-FIX-BPL", both cores
 // MUTATION P3-FIX-SPR stimulus red NMH_MUTATE=P3-FIX-SPR-NODONE: prog_nodone.bin in place of Case SPR's program -- measured FAIL on "P3-FIX-SPR", both cores
@@ -76,7 +81,6 @@
 // MUTATION P3-FIX-BLT stimulus red NMH_MUTATE=P3-FIX-BLT-NODONE: prog_nodone.bin in place of Case BLT's program -- measured FAIL on "P3-FIX-BLT", both cores
 // MUTATION P3-FIX-COP stimulus red NMH_MUTATE=P3-FIX-COP-NODONE: prog_nodone.bin in place of Case COP's program -- measured FAIL on "P3-FIX-COP", both cores
 // MUTATION P3-FIX-M stimulus red NMH_MUTATE=P3-FIX-M-NODONE: prog_nodone.bin in place of Case M's program -- measured FAIL on "P3-FIX-M", both cores
-// MUTATION P3a stimulus red NMH_MUTATE=P3-A: Base's second DSKLEN=$C064 write left out (prog_p3_mut_a.bin), so region DSK is silent in Base -- measured FAIL on "P3a", both cores
 // MUTATION P3b stimulus red NMH_MUTATE=P3-B: Base's DMACON=$83FE (AUD0EN left clear) graded against P=$3FF (prog_p3_mut_b.bin) -- measured FAIL on "P3b", both cores
 // MUTATION P3c stimulus red NMH_MUTATE=P3-C: SPR1PT moved to AUD0's region start, AUD0LC 256 bytes above it (prog_p3_mut_c.bin) -- measured FAIL on "P3c", both cores
 // MUTATION P3d stimulus red NMH_MUTATE=P3-D: Base's sampler replaced by the sparse sampler of 2.4 (prog_p3_mut_d.bin) -- measured FAIL on "P3d", both cores
@@ -149,19 +153,23 @@
 // MUTATION P8b-COP stimulus red NMH_MUTATE=P8-COP-B: WAIT V=$20 and no clear, so bit 4 reads 1 at the first record after MC (prog_p8_cop_mut_b.bin) -- measured FAIL on "P8b-COP", both cores
 // MUTATION P8b-VB stimulus red NMH_MUTATE=P8-B: the VB case's clear skipped (prog_p8_vb_mut_b.bin) -- measured FAIL on "P8b-VB", both cores
 // MUTATION P8b-BLIT stimulus red NMH_MUTATE=P8-BLIT-B: a whole blit runs and finishes before MC, so bit 6 reads 1 at the first record after MC (prog_p8_blit_mut_b.bin) -- measured FAIL on "P8b-BLIT", both cores
-// MUTATION P8-VB-BOUNDARY stimulus red NMH_MUTATE=P8-VB-BOUNDARY: a long delay between the poll records, so the last record before the wrap is not on the last lines (prog_p8_vb_mut_bnd.bin) -- measured FAIL on "P8-VB-BOUNDARY", both cores
+// MUTATION P8d-COP stimulus red NMH_MUTATE=P8-COP-D: a delay after MC (prog_p8_cop_mut_d.bin), so no poll record is stored before the Copper's MOVE executes; the event is present -- measured FAIL on "P8d-COP", both cores
+// MUTATION P8d-VB stimulus red NMH_MUTATE=P8-VB-D: MC written at V >= $130 and no record stored until line 0 or 1 (prog_p8_vb_mut_d.bin), so no record lies between MC and the frame wrap; the wrap is present -- measured FAIL on "P8d-VB", both cores
+// MUTATION P8d-BLIT stimulus red NMH_MUTATE=P8-BLIT-D: the program waits for bit 6 = 1 before its first record (prog_p8_blit_mut_d.bin), so no record is stored before the blit's last write; the writes are present -- measured FAIL on "P8d-BLIT", both cores
+// MUTATION P8-VB-BOUNDARY stimulus red NMH_MUTATE=P8-VB-BOUNDARY-A: VERTB set from the program at V >= $130, before the wrap, so bit 5 reads 1 in the last record before the wrap (prog_p8_vb_mut_bnd_a.bin) -- measured FAIL on "P8-VB-BOUNDARY", both cores; P8-VB and P8 print NOT GRADED
+// MUTATION P8-VB-BOUNDARY stimulus red NMH_MUTATE=P8-VB-BOUNDARY-B: INTREQ=$0020 written before every poll record, so no record at line 0 or 1 reads bit 5 = 1 (prog_p8_vb_mut_bnd_b.bin) -- measured FAIL on "P8-VB-BOUNDARY", both cores; P8-VB and P8 print NOT GRADED
 // MUTATION P8-COP stimulus red NMH_MUTATE=P8-COP-SWAP: the capture of prog_p8_cop_nomove.bin (the MOVE replaced by COLOR00) graded in place of prog_p8_cop.bin's -- measured FAIL on "P8-COP", both cores
-// MUTATION P8-VB stimulus red NMH_MUTATE=P8-VB-SWAP: the capture of prog_p8_vb_narrow.bin graded in place of prog_p8_vb.bin's -- measured FAIL on "P8-VB", both cores
-// MUTATION P8-BLIT stimulus red NMH_MUTATE=P8-BLIT-SWAP: the capture of prog_p8_blit_nosize.bin graded in place of prog_p8_blit.bin's -- measured FAIL on "P8-BLIT", both cores
+// MUTATION P8-VB stimulus red NMH_MUTATE=P8-VB-SWAP: the capture of prog_p8_vb_mut_iii.bin (INTREQ=$0020 written once a record reads bit 5 = 1; the wrap is present) graded in place of prog_p8_vb.bin's -- measured FAIL on "P8-VB", both cores
+// MUTATION P8-BLIT stimulus red NMH_MUTATE=P8-BLIT-SWAP: the capture of prog_p8_blit_mut_iii.bin (INTREQ=$0040 written once a record reads bit 6 = 1; the writes in region D are present) graded in place of prog_p8_blit.bin's -- measured FAIL on "P8-BLIT", both cores
 // MUTATION P8 stimulus red NMH_MUTATE=P8-COP-SWAP: the COP component fails (prog_p8_cop_nomove.bin's capture in its place) -- measured FAIL on "P8", both cores
-// MUTATION P8 stimulus red NMH_MUTATE=P8-VB-SWAP: the VB component fails (prog_p8_vb_narrow.bin's capture in its place) -- measured FAIL on "P8", both cores
-// MUTATION P8 stimulus red NMH_MUTATE=P8-BLIT-SWAP: the BLIT component fails (prog_p8_blit_nosize.bin's capture in its place) -- measured FAIL on "P8", both cores
+// MUTATION P8 stimulus red NMH_MUTATE=P8-VB-SWAP: the VB component fails (prog_p8_vb_mut_iii.bin's capture in its place) -- measured FAIL on "P8", both cores
+// MUTATION P8 stimulus red NMH_MUTATE=P8-BLIT-SWAP: the BLIT component fails (prog_p8_blit_mut_iii.bin's capture in its place) -- measured FAIL on "P8", both cores
 // MUTATION P8-COP-DEV stimulus red NMH_MUTATE=P8-COP-DEV-SWAP: the capture of prog_p8_cop.bin (the MOVE present) graded in place of the contrast's -- measured FAIL on "P8-COP-DEV", both cores
 // MUTATION P8-COP-III stimulus red NMH_MUTATE=P8-COP-III-SWAP: the capture of prog_p8_cop.bin (no second clear) graded in place of the contrast's -- measured FAIL on "P8-COP-III", both cores
 // MUTATION P8-VB-DEV stimulus red NMH_MUTATE=P8-VB-DEV-SWAP: the capture of prog_p8_vb.bin graded in place of the contrast's -- measured FAIL on "P8-VB-DEV", both cores
 // MUTATION P8-BLIT-DEV stimulus red NMH_MUTATE=P8-BLIT-DEV-SWAP: the capture of prog_p8_blit.bin graded in place of the contrast's -- measured FAIL on "P8-BLIT-DEV", both cores
 // MUTATION P6-FIX-FRAME stimulus red NMH_MUTATE=P6-FIX-FRAME-NODONE: prog_nodone.bin in place of prog_p6_main.bin -- measured FAIL on "P6-FIX-FRAME", both cores
-// MUTATION P6-FIX-ROWS stimulus red NMH_MUTATE=P6-FIX-ROWS-MUTA: prog_p6_mut_a.bin (the C3 MOVE after the final WAIT, so no row has C3) in place of prog_p6_main.bin -- measured FAIL on "P6-FIX-ROWS", both cores
+// MUTATION P6-FIX-ROWS stimulus red NMH_MUTATE=P6-FIX-ROWS-MUTA: prog_p6_mut_a.bin (the C3 MOVE after the final WAIT, so no row has C3) in place of prog_p6_main.bin -- measured FAIL on "P6-FIX-ROWS", both cores; P6a prints NOT GRADED
 // MUTATION P6-i-FIX stimulus red NMH_MUTATE=P6-i-FIX-NODONE: prog_nodone.bin in place of prog_p6_wait2_c1.bin -- measured FAIL on "P6-i-FIX", both cores
 // MUTATION P6-ii-FIX stimulus red NMH_MUTATE=P6-ii-FIX-NODONE: prog_nodone.bin in place of prog_p6_wait3_b0.bin -- measured FAIL on "P6-ii-FIX", both cores
 // MUTATION P6a stimulus red NMH_MUTATE=P6-A: the C3 MOVE placed after the final WAIT (prog_p6_mut_a.bin) -- measured FAIL on "P6a", both cores
@@ -1268,7 +1276,9 @@ int main(int argc, char** argv) {
         // where the refresh port reads clear) -- the port is the finer
         // signal, which is exactly why P3 uses it instead of the address
         // alone.
-        CaptureR rc1 = run_capture_refresh(bin("/prog_p1.bin", {"P3-APP-I"}), kSamplerRunBudget, {});
+        CaptureR rc1 = run_capture_refresh(has("P3-APP-I-REFPTR") ? dir + "/prog_p1_refptr.bin"
+                                                                   : bin("/prog_p1.bin", {"P3-APP-I"}),
+                                           kSamplerRunBudget, {});
         bool refresh_ok = rc1.loaded && rc1.done.has_value();
         bool any_read = false, any_refresh_read = false;
         if (refresh_ok) {
@@ -1291,7 +1301,9 @@ int main(int argc, char** argv) {
         // inferred from part (i)'s different addresses. At least one
         // refresh-asserted read exists, and none of them falls inside any
         // of the nine regions.
-        CaptureR rc3 = run_capture_refresh(bin("/prog_p3_run_base.bin", {"P3-REFRESH"}), kSamplerRunBudget, {});
+        CaptureR rc3 = run_capture_refresh(has("P3-REFRESH-REFPTR") ? dir + "/prog_p3_refptr.bin"
+                                                                     : bin("/prog_p3_run_base.bin", {"P3-REFRESH"}),
+                                           kSamplerRunBudget, {});
         bool part2_ok = rc3.loaded && rc3.done.has_value();
         bool part2_any_refresh_read = false, part2_none_in_region = true;
         if (part2_ok) {
@@ -1394,9 +1406,10 @@ int main(int argc, char** argv) {
             if (!case_results[i].ok) p3_fix = false;
         }
 
-        // ---- Precondition (a): region DSK has at least one access in
-        // Base (section 4, item 12: the pages do not say whether disk DMA
-        // runs with no drive attached).
+        // ---- Region DSK in Base, measured and not graded (section 4,
+        // item 12: the pages do not say whether disk DMA runs with no drive
+        // attached). P3-DSK and P3-ALL are graded only where region DSK
+        // shows an access in Base.
         bool dsk_established = false;
         bool pre_b = false, pre_c = false, pre_d = false;
         if (p3_fix) {
@@ -1404,7 +1417,9 @@ int main(int argc, char** argv) {
             P3CaseResult a_case = mut_a ? run_p3_case("/prog_p3_mut_a.bin", kP3Budget) : P3CaseResult{};
             const P3CaseResult& a_src = mut_a ? a_case : case_results[0];
             dsk_established = a_src.ok && a_src.region_access[R_DSK];
-            checks.expect(dsk_established, "P3a precondition: region DSK has at least one access in Base");
+            checks.note(std::string("P3a: region DSK shows ") + (dsk_established ? "at least one access" : "no access") +
+                        " in Base; the pages do not say whether disk DMA runs with no drive attached, so this is "
+                        "not graded");
 
             // ---- Precondition (b): in every run, the stored DMACONR bits 9-0
             // equal that run's own pattern P (p.222).
@@ -1462,7 +1477,6 @@ int main(int argc, char** argv) {
                 "P3d precondition: anchor checks B1 and B3 hold (lines $10-$FF) for the frame boundary, "
                 "over every one of the eleven runs' own graded frame");
         } else {
-            checks.skip("P3a", "a P3-FIX line failed");
             checks.skip("P3b", "a P3-FIX line failed");
             checks.skip("P3c", "a P3-FIX line failed");
             checks.skip("P3d", "a P3-FIX line failed");
@@ -1492,10 +1506,10 @@ int main(int argc, char** argv) {
         // ---- The nine channel cases and case M. Each case's own mutation
         // (NMH_MUTATE=P3-<label>-SWAP) grades Base's own capture in that
         // case's own slot. A case line is a component of
-        // P3-ALL and carries no claim id. When precondition (a) fails,
-        // region DSK showed no access in Base, so the DSK case is
-        // inconclusive and not graded; the other cases' comparators leave
-        // region DSK out of their "every other region" check.
+        // P3-ALL and carries no claim id. When region DSK shows no access in
+        // Base (measured above, not graded), the DSK case has nothing to
+        // contrast with and is not graded; every case's comparator leaves
+        // out a region that was silent in Base.
         bool case_ok[kP3N] = {};
         for (int i = 1; i < kP3N; ++i) {
             const P3Case& kc = kP3Cases[i];
@@ -1518,7 +1532,6 @@ int main(int argc, char** argv) {
                       case_results[0].ok && case_results[0].region_access[idx];
             for (int r = 0; r < R_N; ++r) {
                 if (r == idx) continue;
-                if (r == R_DSK && !dsk_established) continue; // left out per precondition (a)
                 if (!case_results[0].ok || !case_results[0].region_access[r]) continue; // Base was silent there too
                 if (!cr.region_access[r]) ok = false;
             }
@@ -1534,8 +1547,8 @@ int main(int argc, char** argv) {
             if (!p3_pre) {
                 checks.skip(id, "a P3 fixture or precondition failed");
             } else if (idx == R_DSK && !dsk_established) {
-                checks.skip(id, "region DSK showed no access in Base (precondition P3a failed), so the DSK "
-                                "case is inconclusive");
+                checks.skip(id, "region DSK showed no access in Base, which the pages leave open, so the "
+                                "DSK case has nothing to contrast with");
             } else {
                 checks.expect(ok, label);
             }
@@ -1553,8 +1566,9 @@ int main(int argc, char** argv) {
                 "DMAEN clear no region has an access");
         } else if (p3_pre) {
             checks.record("P3-ALL [ids withdrawn: ch2-stopping-the-copper.c8,COP2-stopping-the-copper.c11 "
-                          "[p.30,p.222,p.278]]: region DSK's own case is not graded this run (precondition "
-                          "P3a failed), so the claims are not graded whole by the ten cases");
+                          "[p.30,p.222,p.278]]: region DSK's own case is not graded this run (region DSK shows "
+                          "no access in Base, which the pages leave open), so the claims are not graded whole "
+                          "by the ten cases");
         } else {
             checks.skip("P3-ALL", "a P3 fixture or precondition failed");
         }
@@ -1743,6 +1757,11 @@ int main(int argc, char** argv) {
         Capture iii    = p8_load(bin("/prog_p8_cop_mut_iii.bin", {"P8-COP-III-FIX-DONE"}), {});
         Capture narrow = p8_load(bin("/prog_p8_vb_narrow.bin",  {"P8-VB-DEV-FIX-DONE"}), {});
         Capture nosize = p8_load(bin("/prog_p8_blit_nosize.bin", {"P8-BLIT-DEV-FIX-DONE"}), {});
+        // Captures that a swap selector grades in a component's place; they
+        // are run only under that selector.
+        Capture swap_vb, swap_blit;
+        if (has("P8-VB-SWAP"))   swap_vb   = p8_load(dir + "/prog_p8_vb_mut_iii.bin", {});
+        if (has("P8-BLIT-SWAP")) swap_blit = p8_load(dir + "/prog_p8_blit_mut_iii.bin", {});
         checks.expect(done_of(cop),    "P8-COP-FIX-DONE: prog_p8_cop.bin reaches DONE");
         checks.expect(done_of(vb),     "P8-VB-FIX-DONE: prog_p8_vb.bin reaches DONE");
         checks.expect(done_of(blit),   "P8-BLIT-FIX-DONE: prog_p8_blit.bin reaches DONE");
@@ -1765,18 +1784,25 @@ int main(int argc, char** argv) {
             return e;
         };
 
+        // The COP event: the first fetch of the MOVE's IR2 after t(MC).
+        auto cop_event = [&](const Capture& c) -> std::optional<uint64_t> {
+            auto t_mc = first_write_cycle(c.log, kMarkBuf + 6);
+            if (!t_mc) return std::nullopt;
+            return first_channel_read_at(c.log, kP8CopMoveIr2, *t_mc);
+        };
+
         // ---- Preconditions (c): the event happens inside the window.
-        // COP: MC and the Copper's MOVE IR2 fetch are both present.
+        // COP: MC and a fetch of the Copper's MOVE IR2 after MC are both present.
         bool c_cop = false;
         {
             Capture cap_c;
             const Capture& cc = (has("P8-C")) ? (cap_c = p8_load(dir + "/prog_p8_cop_mut_c.bin", {})) : cop;
             c_cop = done_of(cc) && first_write_cycle(cc.log, kMarkBuf + 6).has_value() &&
-                    first_channel_read_at(cc.log, kP8CopMoveIr2, 0).has_value();
+                    cop_event(cc).has_value();
         }
         if (done_of(cop)) checks.expect(c_cop,
-            "P8c-COP precondition: MC and the event (the Copper's MOVE IR2 fetch) are both present, so "
-            "the event happens inside the window (COP case)");
+            "P8c-COP precondition: MC and the event (the first fetch of the Copper's MOVE IR2 after MC) "
+            "are both present, so the event happens inside the window (COP case)");
         else checks.skip("P8c-COP", "P8-COP-FIX-DONE failed");
         // VB: MC and a frame wrap stored after MC are both present.
         bool c_vb = false;
@@ -1860,26 +1886,87 @@ int main(int argc, char** argv) {
             "P8b-BLIT precondition: the first poll record stored after MC reads bit 6 = 0 (BLIT case)");
         else checks.skip("P8b-BLIT", "P8-BLIT-FIX-DONE failed");
 
-        // ---- VB reference frame: the frame wrap after MC falls between a
-        // record on the last line of the old frame or line 0, and a record
-        // on line 0 or line 1.
+        // ---- Preconditions (d): the population that (i) speaks about is not
+        // empty -- at least one poll record is stored after MC and before
+        // the event. Each is printed before the components.
+        auto pop_between = [](const std::vector<Rec>& recs, uint64_t t_mc, uint64_t t_ev) {
+            int n = 0;
+            for (const auto& r : recs) if (r.t0 > t_mc && r.t1 < t_ev) ++n;
+            return n;
+        };
+        bool d_cop = false, d_vb = false, d_blit = false;
+        if (done_of(cop) && c_cop) {
+            Capture cap_d;
+            const Capture& cd = has("P8-COP-D") ? (cap_d = p8_load(dir + "/prog_p8_cop_mut_d.bin", {})) : cop;
+            auto t_mc = first_write_cycle(cd.log, kMarkBuf + 6);
+            auto t_ev = cop_event(cd);
+            int n = (done_of(cd) && t_mc && t_ev) ? pop_between(p8_recs(cd), *t_mc, *t_ev) : -1;
+            d_cop = n > 0;
+            checks.expect(d_cop,
+                "P8d-COP precondition: at least one poll record is stored after MC and before the event "
+                "(COP case)");
+            checks.note("P8d-COP: " + (n < 0 ? std::string("no event in the capture") : std::to_string(n) + " poll record(s) stored after MC and before the event"));
+        } else checks.skip("P8d-COP", "P8-COP-FIX-DONE or P8c-COP failed");
+        if (done_of(vb) && c_vb) {
+            Capture cap_d;
+            const Capture& cd = has("P8-VB-D") ? (cap_d = p8_load(dir + "/prog_p8_vb_mut_d.bin", {})) : vb;
+            int n = -1;
+            if (done_of(cd)) {
+                auto rd = p8_recs(cd);
+                VbEvent e = vb_event(cd, rd);
+                if (e.t_mc && e.t_ev) n = pop_between(rd, *e.t_mc, *e.t_ev);
+            }
+            d_vb = n > 0;
+            checks.expect(d_vb,
+                "P8d-VB precondition: at least one poll record is stored after MC and before the event "
+                "(VB case)");
+            checks.note("P8d-VB: " + (n < 0 ? std::string("no event in the capture") : std::to_string(n) + " poll record(s) stored after MC and before the event"));
+        } else checks.skip("P8d-VB", "P8-VB-FIX-DONE or P8c-VB failed");
+        if (done_of(blit) && c_blit) {
+            Capture cap_d;
+            const Capture& cd = has("P8-BLIT-D") ? (cap_d = p8_load(dir + "/prog_p8_blit_mut_d.bin", {})) : blit;
+            auto t_mc = first_write_cycle(cd.log, kMarkBuf + 6);
+            int n = -1;
+            if (done_of(cd) && t_mc) {
+                auto ws = writes_of_value_in(cd.log, 0xFFFF, kData1, kData1 + 0x1000, *t_mc, UINT64_MAX);
+                if (ws.last) n = pop_between(p8_recs(cd), *t_mc, *ws.last);
+            }
+            d_blit = n > 0;
+            checks.expect(d_blit,
+                "P8d-BLIT precondition: at least one poll record is stored after MC and before the event "
+                "(BLIT case)");
+            checks.note("P8d-BLIT: " + (n < 0 ? std::string("no event in the capture") : std::to_string(n) + " poll record(s) stored after MC and before the event"));
+        } else checks.skip("P8d-BLIT", "P8-BLIT-FIX-DONE or P8c-BLIT failed");
+
+        // ---- VB reference frame: the flag changes from 0 to 1 at the frame
+        // wrap. The last record stored before the wrap reads bit 5 = 0, and a
+        // record on line 0 or line 1 (the records from the wrap record on,
+        // while V <= 1) reads bit 5 = 1.
         bool boundary_ok = false;
         {
             Capture cap_bd;
-            const Capture& cb = (has("P8-VB-BOUNDARY")) ? (cap_bd = p8_load(dir + "/prog_p8_vb_mut_bnd.bin", {})) : vb;
+            const Capture& cb = has("P8-VB-BOUNDARY-A") ? (cap_bd = p8_load(dir + "/prog_p8_vb_mut_bnd_a.bin", {}))
+                              : has("P8-VB-BOUNDARY-B") ? (cap_bd = p8_load(dir + "/prog_p8_vb_mut_bnd_b.bin", {}))
+                                                        : vb;
             if (done_of(cb)) {
                 auto rb = p8_recs(cb);
                 VbEvent e = vb_event(cb, rb);
                 if (e.t_ev) {
-                    boundary_ok = (rb[e.a].V == 0 || rb[e.a].V >= 300) && (rb[e.b].V == 0 || rb[e.b].V == 1);
+                    bool before_zero = ((rb[e.a].intreqr >> 5) & 1) == 0;
+                    bool at_wrap_one = false;
+                    for (size_t i = e.b; i < rb.size() && rb[i].V <= 1; ++i)
+                        if ((rb[i].intreqr >> 5) & 1) { at_wrap_one = true; break; }
+                    boundary_ok = before_zero && at_wrap_one;
                     checks.note(std::string("P8-VB wrap boundary records: V=") + std::to_string(rb[e.a].V) +
-                                " -> V=" + std::to_string(rb[e.b].V));
+                                " -> V=" + std::to_string(rb[e.b].V) + "; bit 5 reads " +
+                                (before_zero ? "0" : "1") + " in the last record before the wrap and " +
+                                (at_wrap_one ? "1" : "0") + " in a record at V <= 1 from the wrap on");
                 }
             }
         }
         if (done_of(vb) && c_vb) checks.expect(boundary_ok,
-            "P8-VB-BOUNDARY precondition [p.219]: the frame wrap falls between a record on the last "
-            "line of the old frame or line 0, and a record on line 0 or line 1");
+            "P8-VB-BOUNDARY precondition [p.219]: INTREQR bit 5 reads 0 in the last record stored before the "
+            "frame wrap and 1 in a record on line 0 or line 1 from the wrap on");
         else checks.skip("P8-VB-BOUNDARY", "P8-VB-FIX-DONE or P8c-VB failed");
 
         // ---- Component results: every poll record stored after MC and
@@ -1887,65 +1974,74 @@ int main(int argc, char** argv) {
         // record reads 1, and every record after the first 1 reads 1.
         // COP: the event is the MOVE's IR2 fetch. Own MUTATION
         // (P8-COP-SWAP): the capture with the MOVE replaced by COLOR00.
-        const bool cop_guards = done_of(cop) && c_cop && a_cop && b_cop;
-        const bool vb_guards = done_of(vb) && c_vb && a_vb && b_vb && boundary_ok;
-        const bool blit_guards = done_of(blit) && c_blit && a_blit && b_blit;
+        const bool cop_guards = done_of(cop) && c_cop && a_cop && b_cop && d_cop;
+        const bool vb_guards = done_of(vb) && c_vb && a_vb && b_vb && d_vb && boundary_ok;
+        const bool blit_guards = done_of(blit) && c_blit && a_blit && b_blit && d_blit;
         bool cop_cond = false, vb_cond = false, blit_cond = false;
+        bool cop_event_in = false, vb_event_in = false, blit_event_in = false;
         {
             const Capture& cr = (has("P8-COP-SWAP")) ? nomove : cop;
             auto t_mc = first_write_cycle(cr.log, kMarkBuf + 6);
-            auto t_ev = first_channel_read_at(cr.log, kP8CopMoveIr2, 0);
+            auto t_ev = cop_event(cr);
             if (done_of(cr) && t_mc && t_ev) {
+                cop_event_in = true;
                 auto g = grade_p8_bit(p8_recs(cr), *t_mc, *t_ev, 4);
                 cop_cond = g.zero_before && g.later_one && g.after_first_one;
             }
         }
         {
-            const Capture& cr = (has("P8-VB-SWAP")) ? narrow : vb;
+            const Capture& cr = (has("P8-VB-SWAP")) ? swap_vb : vb;
             if (done_of(cr)) {
                 auto rr = p8_recs(cr);
                 VbEvent e = vb_event(cr, rr);
                 if (e.t_mc && e.t_ev) {
+                    vb_event_in = true;
                     auto g = grade_p8_bit(rr, *e.t_mc, *e.t_ev, 5);
                     vb_cond = g.zero_before && g.later_one && g.after_first_one;
                 }
             }
         }
         {
-            const Capture& cr = (has("P8-BLIT-SWAP")) ? nosize : blit;
+            const Capture& cr = (has("P8-BLIT-SWAP")) ? swap_blit : blit;
             auto t_mc = first_write_cycle(cr.log, kMarkBuf + 6);
             if (done_of(cr) && t_mc) {
                 auto ws = writes_of_value_in(cr.log, 0xFFFF, kData1, kData1 + 0x1000, *t_mc, UINT64_MAX);
                 if (ws.last) {
+                    blit_event_in = true;
                     auto g = grade_p8_bit(p8_recs(cr), *t_mc, *ws.last, 6);
                     blit_cond = g.zero_before && g.later_one && g.after_first_one;
                 }
             }
         }
-        if (cop_guards) checks.expect(cop_cond,
+        // A component whose own capture has no event is not graded.
+        if (cop_guards && cop_event_in) checks.expect(cop_cond,
             "P8-COP [p.35,p.280,p.219]: every poll record after MC and before the Copper's MOVE executes "
             "reads bit 4 = 0, a later record reads 1, and every record after the first 1 reads 1 "
             "(component of P8; carries no claim id)");
+        else if (cop_guards) checks.skip("P8-COP", "the capture graded has no event after MC");
         else checks.skip("P8-COP", "a COP fixture or precondition failed");
-        if (vb_guards) checks.expect(vb_cond,
+        if (vb_guards && vb_event_in) checks.expect(vb_cond,
             "P8-VB [p.35,p.280,p.219]: every poll record after MC and before the frame wrap reads bit 5 "
             "= 0, a later record reads 1, and every record after the first 1 reads 1 (component of P8; "
             "carries no claim id)");
+        else if (vb_guards) checks.skip("P8-VB", "the capture graded has no frame wrap after MC");
         else checks.skip("P8-VB", "a VB fixture or precondition failed");
-        if (blit_guards) checks.expect(blit_cond,
+        if (blit_guards && blit_event_in) checks.expect(blit_cond,
             "P8-BLIT [p.35,p.280,p.220,p.187]: every poll record after MC and before the last write in "
             "region D reads bit 6 = 0, a later record reads 1, and every record after the first 1 reads 1 "
             "(component of P8; carries no claim id)");
+        else if (blit_guards) checks.skip("P8-BLIT", "the capture graded has no write in region D after MC");
         else checks.skip("P8-BLIT", "a BLIT fixture or precondition failed");
 
         // ---- The aggregate: the three devices together.
-        if (cop_guards && vb_guards && blit_guards) checks.expect(cop_cond && vb_cond && blit_cond,
+        if (cop_guards && vb_guards && blit_guards && cop_event_in && vb_event_in && blit_event_in)
+            checks.expect(cop_cond && vb_cond && blit_cond,
             "P8 ch2-the-copper-and-the-680x0.c2,COP2-the-copper-and-the-680x0.c2,"
             "COP2-the-copper-and-the-680x0.c3 [p.35,p.280,p.219,p.220,p.187]: with every interrupt "
             "disabled, a 68000 polling INTREQR sees the Copper's flag (bit 4), the start-of-vertical-"
             "blank flag (bit 5) and the blitter's flag (bit 6) each read 0 until its device's event, "
             "then 1, and keep reading 1");
-        else checks.skip("P8", "a COP, VB or BLIT fixture or precondition failed");
+        else checks.skip("P8", "a COP, VB or BLIT fixture, precondition or event failed");
 
         // ---- Device contrasts. Each has its own fixture, printed above, and
         // is a control: it carries no claim id.
@@ -1967,7 +2063,7 @@ int main(int argc, char** argv) {
         {
             const Capture& cr = (has("P8-COP-III-SWAP")) ? cop : iii;
             auto t_mc = first_write_cycle(cr.log, kMarkBuf + 6);
-            auto t_ev = first_channel_read_at(cr.log, kP8CopMoveIr2, 0);
+            auto t_ev = cop_event(cr);
             bool ok = done_of(cr) && t_mc.has_value() && t_ev.has_value();
             if (ok) {
                 auto g = grade_p8_bit(p8_recs(cr), *t_mc, *t_ev, 4);
@@ -2018,6 +2114,7 @@ int main(int argc, char** argv) {
             bool ok = false;
             std::optional<size_t> r1, r3;      // row indices in the graded frame
             std::optional<size_t> i0, i1, i2;  // leftmost sample index of C0/C1/C2 on row r1
+            std::optional<size_t> col2;         // i2 counted from row r1's hs edge (2.5's column)
             bool all_four = false;
             nmh::Span frame{0, 0};
             std::vector<nmh::Span> lines;      // doubler rows inside the graded frame
@@ -2058,6 +2155,7 @@ int main(int argc, char** argv) {
                     if (!r.i1 && is_color(video[j], 0x0, 0xF, 0x0)) r.i1 = j;
                     if (!r.i2 && is_color(video[j], 0x0, 0x0, 0xF)) r.i2 = j;
                 }
+                if (r.i2) r.col2 = *r.i2 - row.begin;
             }
             bool c0 = false, c1 = false, c2 = false, c3 = false;
             for (size_t j = r.frame.begin; j < r.frame.end; ++j) {
@@ -2090,15 +2188,19 @@ int main(int argc, char** argv) {
         checks.expect(wb0.ok, "P6-ii-FIX: prog_p6_wait3_b0.bin reaches DONE and yields a second complete "
                                "video frame after the enable");
 
-        // ---- Precondition (a): all four colours appear.
+        // ---- Precondition (a): all four colours appear. It reads the same
+        // capture as P6-FIX-ROWS, so it is graded only when that line passed.
         bool pre_a = false, pre_b = false, pre_c = false;
-        if (base.ok) {
+        if (have_rows) {
             bool mut_a = (has("P6-A"));
             P6Result a_res = mut_a ? analyze_p6(dir + "/prog_p6_mut_a.bin") : P6Result{};
             const P6Result& a_src = mut_a ? a_res : base;
             pre_a = a_src.ok && a_src.all_four;
             checks.expect(pre_a, "P6a precondition: all four colours (C0-C3) appear in the graded frame");
-
+        } else {
+            checks.skip("P6a", "P6-FIX-FRAME or P6-FIX-ROWS failed");
+        }
+        if (base.ok) {
             // ---- Precondition (b): at least three restarts follow t(MJ),
             // each identified at the port as a fetch of the list's first word
             // after a fetch of the final WAIT's IR2, and between each two
@@ -2167,7 +2269,6 @@ int main(int argc, char** argv) {
                                   "the enable has the same clk_sys sample count and the same doubler "
                                   "row count)");
         } else {
-            checks.skip("P6a", "P6-FIX-FRAME failed");
             checks.skip("P6b", "P6-FIX-FRAME failed");
             checks.skip("P6c", "P6-FIX-FRAME failed");
         }
@@ -2199,12 +2300,18 @@ int main(int argc, char** argv) {
             else checks.skip("P6-ORDER", "a P6 fixture or precondition failed");
         }
         // Contrast (i): WAIT2 $60A1 -> $60C1. The right end of the C1 run on
-        // row r1 (i.e. the start of C2, i2) moves to a larger column.
+        // row r1 (i.e. the start of C2) moves to a larger column, a column
+        // being the count of clk_sys samples from that row's hs edge (2.5),
+        // taken in each run from its own row r1.
         {
-            bool cond = wc1.ok && wc1.i2.has_value() && base.i2.has_value() && *wc1.i2 > *base.i2;
+            bool cond = wc1.ok && wc1.col2.has_value() && base.col2.has_value() && *wc1.col2 > *base.col2;
+            if (p6_pre && wc1.ok && wc1.col2 && base.col2)
+                checks.note("P6-i: the C2 run's start on row r1, in clk_sys samples from the row's hs edge: main run " +
+                            std::to_string(*base.col2) + ", second WAIT $60C1 " + std::to_string(*wc1.col2));
             if (p6_pre && wc1.ok) checks.expect(cond,
                 "P6-i [p.27]: with the second WAIT changed from $60A1 to $60C1, the C2 run's own "
-                "start on row r1 moves to a larger column than in the main run");
+                "start on row r1, counted in clk_sys samples from that row's hs edge, moves to a larger "
+                "column than in the main run");
             else checks.skip("P6-i", "a P6 fixture or precondition failed");
         }
         // Contrast (ii): WAIT3 $A061 -> $B061. r3 increases.

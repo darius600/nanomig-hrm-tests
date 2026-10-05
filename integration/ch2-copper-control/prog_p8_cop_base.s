@@ -16,6 +16,9 @@
 ;   P8_COP_MUT_III  -- check (iii) contrast: once a poll record reads bit 4
 ;                       = 1, INTREQ=$0010 is written again (once); a later
 ;                       record then reads 0
+;   P8_COP_MUT_D    -- population mutation: a delay of about 130 lines after
+;                       MC, so no poll record is stored before the Copper's
+;                       MOVE has executed
 
         include "nanomig.i"
         include "copctl.i"
@@ -82,6 +85,11 @@ start:
         move.w  #$0010,INTREQ(a0)
         endif
         move.w  #7,MARKBUF+6              ; MC
+
+        ifd     P8_COP_MUT_D
+        move.w  #6000-1,d6                ; population mutation: no record yet
+.dl:    dbra    d6,.dl
+        endif
 
         ; Poll until the end of the frame: a generous fixed span.
         ifd     P8_COP_MUT_III

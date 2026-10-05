@@ -6,6 +6,7 @@
 ; is written as literal hex per SPECIFICATION.md 2.2 and never needs these
 ; symbols.
 COPCON          equ     $02E
+REFPTR          equ     $028
 COP1LCH         equ     $080
 COP2LCH         equ     $084
 COPJMP1         equ     $088

@@ -223,12 +223,16 @@ from beam counts to rows or columns is derived from the pages. Anchor check
 (V1): every compared frame has the same number of clk_sys samples and the
 same number of rows. Row lengths are not compared: the harness gives the
 doubler's rows only as coming "at roughly twice the rate" of the
-chipset's own horizontal sync, and no page describes the doubler.
+chipset's own horizontal sync, and no page describes the doubler. Where two
+runs' columns are compared (P6 contrast (i)), each column is counted from
+the hs edge that starts its own run's row, never as an index into the trace.
 Contrasting case: write BEAMCON0 ($1DC) with its PAL bit clear a frame
 and a half after the enable, so that the compared frames differ in length,
-and V1 fails. Setting LACE (BPLCON0 bit 2) is not used as the contrast: p.24
-("long and short fields (interlace only)") predicts fields of 313 and 312
-lines, but the four compared frames measure equal with LACE set (5.6).
+and V1 fails. Setting LACE (BPLCON0 bit 2) is not used as the contrast: V1 compares
+the spans between vsync edges, which cannot show whether the fields of an
+interlaced picture alternate in length (p.24: "long and short fields
+(interlace only)"). The four compared spans measure equal with LACE set
+(5.6).
 
 ### 2.6 Interrupt-level recorders (P9, P11)
 
@@ -478,10 +482,11 @@ a pair whose next read in the region is any other word is not a restart.
 3. **Observation.** Accesses attributed to each region (2.3) from t(M2) to
    the end of the first complete frame after M2. Also DSKBYTR bit 14 (DMAON).
 4. **Expected.**
-   - Base: every region other than DSK has at least one access (DSK is
-     precondition (a)).
+   - Base: every region other than DSK has at least one access. Region DSK
+     is measured and not graded (item 5 (a)).
    - Case X: region X has none, and every other region that has an access
-     in Base has at least one.
+     in Base has at least one. The DSK case is graded only where region DSK
+     has an access in Base.
    - Case M: every region has none.
    - DSKBYTR bit 14 = 1 in Base and 0 in the DSK case and in case M.
 
@@ -495,11 +500,12 @@ a pair whose next read in the region is any other word is not a restart.
      DMA bits must be true. This means the DMAEN bit in DSKLEN, and the DSKEN
      & DMAEN bits in DMACON."
 5. **Preconditions.**
-   - (a) Region DSK has at least one access in Base. The pages do not say
-     whether disk DMA runs with no drive attached (section 4, item 12), so
-     the Base run must show it. Without it, the DSK case is inconclusive,
-     not green, and region DSK is left out of the other cases' "every other
-     region" check; DSKBYTR bit 14 is graded either way.
+   - (a) Whether region DSK has an access in Base is measured and printed,
+     not graded: the pages do not say whether disk DMA runs with no drive
+     attached (section 4, item 12). The DSK case and the aggregate are graded
+     only where it has one. Where it has none, the DSK case and the aggregate
+     are not graded, and no other case counts region DSK, which was silent
+     in Base as well. DSKBYTR bit 14 is graded either way.
    - (b) In every run, the stored DMACONR bits 9–0 equal P (p.222).
    - (c) In Base, the lowest address accessed in each region is the
      address the program wrote into that region's own channel (its pointer
@@ -511,9 +517,11 @@ a pair whose next read in the region is any other word is not a restart.
 6. **Contrasting cases.**
    - Main: the case runs contrast with Base. Each differs only in one bit,
      and the page predicts that region falls silent.
-   - For (a): in Base, leave out the second DSKLEN = $C064 write (p.247:
-     "Write this value again into the DSKLEN register. This actually starts
-     the DMA"). Region DSK is then silent in Base.
+   - For the measurement in (a): in Base, leave out the second DSKLEN = $C064
+     write (p.247: "Write this value again into the DSKLEN register. This
+     actually starts the DMA"). Region DSK is then silent in Base, and the
+     DSK case and the aggregate are not graded. No line is graded on this
+     measurement itself, so it has no mutation record.
    - For (b): write DMACON = $83FE (SET/CLR set, every channel and DMAEN on,
      bit 0 AUD0EN left clear) graded against P = $3FF. DMACONR bits 9–0 then
      read $3FE, not $3FF, and every channel but AUD0 keeps running.
@@ -755,7 +763,9 @@ a pair whose next read in the region is any other word is not a restart.
    - (c) V1.
 6. **Contrasting cases.**
    - (i) Change the second WAIT from `$60A1` to `$60C1`. Expected: the right
-     end of the C1 run on row r1 moves to a larger column.
+     end of the C1 run on row r1 moves to a larger column, a column being
+     the count of clk_sys samples from that row's hs edge (2.5), taken in each
+     run from its own row r1.
    - (ii) Change the third WAIT from `$A061` to `$B061`. Expected: r3
      increases.
    - For (a): place the C3 MOVE after the final WAIT. C3 then never appears.
@@ -872,7 +882,7 @@ a pair whose next read in the region is any other word is not a restart.
      3. Poll for one complete frame.
 3. **Observation.** The case's bit in each poll record stored after t(MC),
    and the time of the device's event:
-   - COP: the MOVE's IR2 fetch.
+   - COP: the first fetch of the MOVE's IR2 after t(MC).
    - VB: the first frame wrap stored after t(MC).
    - BLIT: the last write in region D.
 4. **Expected.**
@@ -880,8 +890,10 @@ a pair whose next read in the region is any other word is not a restart.
    - (ii) A later record reads 1.
    - (iii) After the first record that reads 1, every record in the window
      reads 1.
-   - For VB, the change from 0 to 1 falls between a record on the last line
-     of the old frame or on line 0 and a record on line 0 or line 1.
+   - For VB, the change from 0 to 1 falls at the frame wrap: the last
+     record stored before the wrap reads 0, and a record on line 0 or line
+     1, from the wrap record on, reads 1 (p.219: "at line 0"). No page gives
+     the number of the last line (section 4, item 5), so none is used.
 
    Sentences:
    - p.35: "The 680x0 can poll for interrupt flags set in the INTREQ
@@ -900,11 +912,12 @@ a pair whose next read in the region is any other word is not a restart.
      not serviced. This is read and graded in each of the three cases.
    - (b) The first record stored after t(MC) reads 0, so a later 1 is new.
    - (c) The event happens inside the window:
-     - COP: the IR2 fetch is present.
+     - COP: a fetch of the MOVE's IR2 after t(MC) is present.
      - BLIT: 2048 writes of $FFFF appear in D.
      - VB: a frame wrap stored after t(MC) is present, and the change from 0
-       to 1 falls between a record on the last line of the old frame or on
-       line 0 and a record on line 0 or line 1.
+       to 1 falls at that wrap (the boundary line of item 4).
+   - (d) The population that (i) speaks about is not empty: at least one
+     poll record is stored after t(MC) and before the event, in each case.
 
    Every one of these is printed before the assertion that depends on it.
    The three devices are graded by one assertion that carries the three
@@ -915,8 +928,21 @@ a pair whose next read in the region is any other word is not a restart.
    - VB: poll only from V = $40 to V = $F0 of one frame. Bit 5 stays 0
      (p.219 places the event at line 0). This removes the event as well,
      so VB's (c) fails with it: no page gives an input that keeps line 0
-     in the window and VERTB clear. The contrast shows only that (ii)'s
-     comparator can fail.
+     in the window and VERTB clear. The line that grades this contrast
+     states only that bit 5 never reads 1 in it.
+   - For (iii), VB and BLIT cases: once a poll record stored after t(MC)
+     reads the case's bit as 1, the program writes INTREQ = $0020 (VB) or
+     $0040 (BLIT) again. p.280: the status bits "must be reset when desired
+     by writing to this address". The event stays in the window, a later
+     record reads 0, and (iii) fails; in the VB case (ii) fails with it.
+   - For the VB boundary: VERTB is set from the program (INTREQ = $8020) at
+     V >= $130, a few lines before the wrap, so the last record before the
+     wrap reads 1; or INTREQ = $0020 is written before every poll record, so
+     no record at line 0 or line 1 reads 1.
+   - For (d): the program stores no poll record between t(MC) and the
+     event. COP: a delay after MC longer than the distance to the WAIT. VB:
+     MC is written at V >= $130 and the first record is stored at line 0 or
+     1. BLIT: the program waits for bit 6 = 1 before its first record.
    - For (iii), COP case: once a poll record stored after t(MC) reads 1,
      the program writes INTREQ = $0010 again. p.280: the status
      bits "must be reset when desired by writing to this address". A later
@@ -1341,8 +1367,9 @@ a pair whose next read in the region is any other word is not a restart.
     DMACON bit, is not one of them. P3 grades the channels the tables name,
     and so grades its two claims whole.
 12. **Disk DMA with no drive.** p.246–248 do not say whether disk DMA
-    transfers words when no drive is attached. P3 turns this into a
-    precondition ((a)) rather than an expected value.
+    transfers words when no drive is attached. P3 prints whether region DSK
+    has an access in Base (item 5 (a)) and grades the DSK case and the
+    aggregate only where it has one; it never expects either outcome.
 13. **Figure 6-9** (p.195). Its footnote says "This cycle 0 appears to
     exclude one of the memory refresh cycles. This is not the case. Actual
     system hardware demands certain specific values … Therefore this timing
@@ -1413,7 +1440,11 @@ both cores:
 | comparator contrast B (COP1LC=B, COPJMP1) | B, $001200 | $001200 | yes |
 | comparator contrast C (COP1LC=C, COPJMP1) | C, $001400 | $001400 | yes |
 
-In each of the four runs the first fetch is exactly A's IR1. Each capture
+In each of the four runs the first fetch is exactly A's IR1: Run 1, Run 2,
+Run 3 and Run 3-reorder all show the same first fetch, $001000. `P4` (through
+Run 2), `P4-Run2`, `P4-Run3` and `P4-Run3-reorder` therefore record one
+behaviour, seen four times, not four independent results; `P4-Run3-PAIR` is
+graded on the same Run 3 and Run 3-reorder captures. Each capture
 is guarded by its own three preconditions (5 (a)-(c)): the first
 stored DMACONR has bit 7 = 0, no Copper fetch in A, B or C before t(M1), and
 the stretch from t(MS) to the first fetch lies outside vertical blanking.
@@ -1435,9 +1466,10 @@ IR1 through the same comparator and are green on both cores.
 
 ### 5.4 The plain run
 
-Measured, on both cores: 123 passed, 5 failed, and no RECORDED line. The
-five failures are `P4`, `P4-Run2`, `P4-Run3`, `P4-Run3-reorder` and
-`P4-Run3-PAIR`. Both cores print the same lines. A line whose
+Measured, on both cores: 125 passed, 5 failed, 13 MEASURED lines and no
+RECORDED line. The five failures are `P4`, `P4-Run2`, `P4-Run3`,
+`P4-Run3-reorder` and `P4-Run3-PAIR`. Both cores print the same lines, except
+for the three counts of the `P8d` lines (5.6). A line whose
 preconditions did not hold prints `RECORDED: <label> NOT GRADED` and
 neither PASS nor FAIL; none does in the plain run.
 
@@ -1463,17 +1495,24 @@ falls inside any of the nine regions. Both lines carry no claim id. Since
 every one of those regions starts at $10000 or above, a word-address-0 read
 can never fall inside one; P3's region-bounded checks therefore exclude word
 address 0 directly, exactly as P1/P2/P4 do, rather than sampling the
-refresh port cycle by cycle for every access. No program controls the
-address of a refresh access, so no stimulus can falsify the address
-invariants of these two lines.
+refresh port cycle by cycle for every access. p.282 lists REFPTR ($028) as
+"writeable for test purposes only, and should never be written by the
+microprocessor". Measured, on both cores: with REFPTR written ($8100, once,
+after the prologue) in prog_p1_refptr.bin and prog_p3_refptr.bin, each
+reaching DONE, every refresh-asserted read stays at word address 0 and no
+refresh-asserted access falls inside a region, so both lines stay PASS. A
+write of REFPTR has no observable effect at this boundary on either core,
+and neither line has a stimulus that reddens it; their records say so.
 
-Disk DMA (precondition (a), section 4 item 12): the harness's `floppy_config`
+Disk DMA (section 4 item 12; measured and not graded): the harness's `floppy_config`
 = 0 is one drive (DF0), write-enabled, with no disk image served; the
 program itself selects no drive. Measured, on both cores: disk DMA runs and
 completes even so -- region DSK shows an access in Base, within its own
 100-word transfer starting at DSKPTH ($100 above region DSK's own start),
 none in the DSK case or in case M; DSKBYTR bit 14 (DMAON) reads 1 in Base
-and 0 in the DSK case and in case M.
+and 0 in the DSK case and in case M. The plain run prints the Base
+measurement as a MEASURED line (`P3a`). Where region DSK is silent in Base
+(selector `P3-A`), the DSK case and the aggregate are not graded.
 
 Base coverage (`P3-BASE`): measured, on both cores, every region other than
 DSK has at least one access in Base -- BPL, SPR, AUD0-AUD3, BLT and COP are
@@ -1505,10 +1544,14 @@ FAIL.
 P8: three device cases (COP, VB, BLIT) share one grading function applied
 to each device's own bit, marker and event. The BLIT case reuses the DATA1
 region ($002000) established for P3's BLT region; region D there measures
-2048 writes of $FFFF in the graded window on both cores. The VB event is
-the first frame wrap stored after t(MC). The wrap boundary measures a record
-on line 312 followed by a record on line 0 on both cores, which is the
-boundary the assertion requires. INTENAR bits 14-0 read 0 in all three
+2048 writes of $FFFF in the graded window on both cores. The COP event is
+the first fetch of the MOVE's IR2 after t(MC); the VB event is the first
+frame wrap stored after t(MC). The wrap boundary measures a record on line
+312 followed by a record on line 0 on both cores; bit 5 reads 0 in the
+record before the wrap and 1 in a record at V <= 1 from the wrap on, which
+is the boundary the assertion requires. The poll records stored after t(MC)
+and before the event (the `P8d` lines) number, on fx68k and TG68K: COP 388
+and 400, VB 443 and 456, BLIT 108 and 113. INTENAR bits 14-0 read 0 in all three
 cases.
 
 P10: list R reuses the LIST1 address ($001000). The five samples (lines
@@ -1538,14 +1581,19 @@ header names one selector and one line.
 | p2_c | P2 | P2-A, P2-B, P2-C | FAIL: P2a, P2b, P2c |
 | p2_d | P2 | P2-SWAP, P2OFF-SWAP | FAIL: P2, P2-OFF |
 | p3_a | P3 | P3-APP-I-NODONE, P3-REFRESH-NODONE | FAIL: P3-APP-I, P3-REFRESH |
+| p3_refptr | P3 | P3-APP-I-REFPTR, P3-REFRESH-REFPTR | no line moves: PASS: P3-APP-I, P3-REFRESH |
 | p3_fix | P3 | P3-FIX-Base-NODONE, P3-FIX-BPL-NODONE, P3-FIX-SPR-NODONE, P3-FIX-AUD0-NODONE, P3-FIX-AUD1-NODONE, P3-FIX-AUD2-NODONE, P3-FIX-AUD3-NODONE, P3-FIX-DSK-NODONE, P3-FIX-BLT-NODONE, P3-FIX-COP-NODONE, P3-FIX-M-NODONE | FAIL: P3-FIX-Base, P3-FIX-BPL, P3-FIX-SPR, P3-FIX-AUD0, P3-FIX-AUD1, P3-FIX-AUD2, P3-FIX-AUD3, P3-FIX-DSK, P3-FIX-BLT, P3-FIX-COP, P3-FIX-M |
-| p3_pre | P3 | P3-A, P3-B, P3-C, P3-D | FAIL: P3a, P3b, P3c, P3d |
+| p3_pre | P3 | P3-B, P3-C, P3-D | FAIL: P3b, P3c, P3d |
+| p3_dsk | P3 | P3-A | MEASURED: P3a reads "no access"; NOT GRADED: P3-DSK, P3-ALL |
 | p3_base | P3 | P3-BASE-SWAP | FAIL: P3-BASE, P3-ALL |
 | p3_bpl | P3 | P3-BPL-SWAP | FAIL: P3-BPL, P3-ALL |
 | p3_swaps | P3 | P3-SPR-SWAP, P3-AUD0-SWAP, P3-AUD1-SWAP, P3-AUD2-SWAP, P3-AUD3-SWAP, P3-DSK-SWAP, P3-BLT-SWAP, P3-COP-SWAP, P3-M-SWAP, P3-DSKBYTR-SWAP | FAIL: P3-SPR, P3-AUD0, P3-AUD1, P3-AUD2, P3-AUD3, P3-DSK, P3-BLT, P3-COP, P3-M, P3-DSKBYTR |
 | p4_fix | P4 | P4-FIX-Run1-NODONE, P4-FIX-Run2-NODONE, P4-FIX-Run3-NODONE, P4-FIX-Run3-reorder-NODONE, P4-FIX-CTRL-NODONE, P4-FIX-CTRL-C-NODONE | FAIL: P4-FIX-Run1, P4-FIX-Run2, P4-FIX-Run3, P4-FIX-Run3-reorder, P4-FIX-CTRL, P4-FIX-CTRL-C |
 | p4_guards | P4 | P4-A-RUN1, P4-A-RUN2, P4-A-RUN3, P4-A-RUN3R, P4-A-CTRL, P4-A-CTRLC, P4-B-RUN1, P4-B-RUN2, P4-B-RUN3, P4-B-RUN3R, P4-B-CTRL, P4-B-CTRLC, P4-C-RUN1, P4-C-RUN2, P4-C-RUN3, P4-C-RUN3R, P4-C-CTRL, P4-C-CTRLC | FAIL: P4a-Run1, P4a-Run2, P4a-Run3, P4a-Run3-reorder, P4a-CTRL, P4a-CTRL-C, P4b-Run1, P4b-Run2, P4b-Run3, P4b-Run3-reorder, P4b-CTRL, P4b-CTRL-C, P4c-Run1, P4c-Run2, P4c-Run3, P4c-Run3-reorder, P4c-CTRL, P4c-CTRL-C |
-| p4_swaps | P4 | P4-RUN2-CTRL, P4-RUN3-CTRL, P4-RUN3R-CTRL, P4-CTRL-RUN1, P4-CTRLC-RUN1 | FAIL: P4-CTRL, P4-CTRL-C; PASS: P4, P4-Run2, P4-Run3, P4-Run3-reorder |
+| p4_swaps | P4 | P4-RUN2-CTRL, P4-RUN3-CTRL, P4-RUN3R-CTRL, P4-CTRL-RUN1, P4-CTRLC-RUN1 | FAIL: P4-CTRL, P4-CTRL-C; PASS: P4, P4-Run2, P4-Run3, P4-Run3-reorder, P4-Run3-PAIR (the Run 3 and Run 3-reorder slots both hold a contrast capture, so the pair reads B and C) |
+| p4_run2ctrl | P4 | P4-RUN2-CTRL | PASS: P4, P4-Run2 |
+| p4_run3ctrl | P4 | P4-RUN3-CTRL | PASS: P4-Run3 |
+| p4_run3rctrl | P4 | P4-RUN3R-CTRL | PASS: P4-Run3-reorder |
 | p4_pair | P4 | P4-RUN3-PAIR-A | PASS: P4-Run3-PAIR |
 | p10_a | P10 | P10-FIX-DONE-NODONE, P10-MAIN2-FIX-DONE-NODONE | FAIL: P10-FIX-DONE, P10-MAIN2-FIX-DONE |
 | p10_b | P10 | P10-FIX-LINES-EMPTY | FAIL: P10-FIX-LINES |
@@ -1553,13 +1601,15 @@ header names one selector and one line.
 | p10_d | P10 | P10-SWAP, P10-MAIN2-SWAP | FAIL: P10, P10-MAIN2 |
 | p8_fix | P8 | P8-COP-FIX-DONE-NODONE, P8-VB-FIX-DONE-NODONE, P8-BLIT-FIX-DONE-NODONE, P8-COP-DEV-FIX-DONE-NODONE, P8-COP-III-FIX-DONE-NODONE, P8-VB-DEV-FIX-DONE-NODONE, P8-BLIT-DEV-FIX-DONE-NODONE | FAIL: P8-COP-FIX-DONE, P8-VB-FIX-DONE, P8-BLIT-FIX-DONE, P8-COP-DEV-FIX-DONE, P8-COP-III-FIX-DONE, P8-VB-DEV-FIX-DONE, P8-BLIT-DEV-FIX-DONE |
 | p8_guards | P8 | P8-C, P8-VB-C, P8-BLIT-C, P8-A, P8-VB-A, P8-BLIT-A, P8-COP-B, P8-B, P8-BLIT-B | FAIL: P8c-COP, P8c-VB, P8c-BLIT, P8a-COP, P8a-VB, P8a-BLIT, P8b-COP, P8b-VB, P8b-BLIT |
-| p8_bnd | P8 | P8-VB-BOUNDARY | FAIL: P8-VB-BOUNDARY |
+| p8_bnd_a | P8 | P8-VB-BOUNDARY-A | FAIL: P8-VB-BOUNDARY; NOT GRADED: P8-VB, P8 |
+| p8_bnd_b | P8 | P8-VB-BOUNDARY-B | FAIL: P8-VB-BOUNDARY; NOT GRADED: P8-VB, P8 |
+| p8_d | P8 | P8-COP-D, P8-VB-D, P8-BLIT-D | FAIL: P8d-COP, P8d-VB, P8d-BLIT; NOT GRADED: P8-COP, P8-VB, P8-BLIT, P8 |
 | p8_cop | P8 | P8-COP-SWAP | FAIL: P8-COP, P8 |
 | p8_vb | P8 | P8-VB-SWAP | FAIL: P8-VB, P8 |
 | p8_blit | P8 | P8-BLIT-SWAP | FAIL: P8-BLIT, P8 |
 | p8_dev | P8 | P8-COP-DEV-SWAP, P8-COP-III-SWAP, P8-VB-DEV-SWAP, P8-BLIT-DEV-SWAP | FAIL: P8-COP-DEV, P8-COP-III, P8-VB-DEV, P8-BLIT-DEV |
 | p6_a | P6 | P6-FIX-FRAME-NODONE | FAIL: P6-FIX-FRAME |
-| p6_b | P6 | P6-FIX-ROWS-MUTA | FAIL: P6-FIX-ROWS |
+| p6_b | P6 | P6-FIX-ROWS-MUTA | FAIL: P6-FIX-ROWS; NOT GRADED: P6a, P6-BELOW, P6-ORDER, P6-i, P6-ii |
 | p6_c | P6 | P6-i-FIX-NODONE, P6-ii-FIX-NODONE, P6-A, P6-B, P6-C3 | FAIL: P6-i-FIX, P6-ii-FIX, P6a, P6b, P6c |
 | p6_d | P6 | P6-BELOW-SWAP, P6-ORDER-SWAP, P6-I-SWAP, P6-II-SWAP | FAIL: P6-BELOW, P6-ORDER, P6-i, P6-ii |
 

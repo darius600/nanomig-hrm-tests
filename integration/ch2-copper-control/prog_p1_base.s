@@ -11,6 +11,8 @@
 ;                        without DMAEN) instead of $8280 at step 5
 ;   P1_MUT_SLOWSAMP   -- precondition (c) mutation: a delay inserted between
 ;                        samples (2.4's own contrasting case for B2/B3)
+;   P1_MUT_REFPTR     -- refresh-address stimulus: REFPTR ($028, p.282) is
+;                        written with $8100 right after the prologue
 ;
 ; P1_BIT7_OFF together with P1_MUT_EARLY_ON or P1_MUT_SLOWSAMP applies that
 ; mutation to the contrasting case's own preconditions. P1_BIT7_OFF with
@@ -26,6 +28,9 @@ start:
         CLEAR_OVL
         lea     CUSTOM,a0
         CLEAR_DMA_INT
+        ifd     P1_MUT_REFPTR
+        move.w  #$8100,REFPTR(a0)      ; refresh-address stimulus: p.282 lists REFPTR as writeable
+        endif
 
         ; List L1 at LIST1: $0180,$0F00 (MOVE COLOR00) ; $FFFF,$FFFE
         move.l  #$01800F00,LIST1
