@@ -245,14 +245,31 @@ start of the data."
 
 - **Boundaries.** A pass begins with each audio DMA read of the table's first
   word, the word at the address written to AUD0LC. Number these reads
-  t_1, t_2, ... in time order.
-- **Anchor check.** Each read of the first word except t_1 is immediately
-  preceded, among the channel's reads, by a read of the table's last word.
-  Within a pass, the read addresses rise by 2.
-- **Analysis window.** W_T = [t_2, t_(2+N)), N passes long. The first pass is
-  left out because p. 164 says of DMA start: "Because of pipelining in Agnus,
-  the first data word must be thrown away". The page leaves open whether the
-  first word of the first pass is output.
+  t_1, t_2, ... in time order. t_2, the first read of the first word after
+  t_1, is the table's first restart.
+- **Anchor check, from the first restart on.** Every read of the table's
+  words from t_2 on is the next word after the one read before it, the read
+  addresses rising by 2 within a pass, and every later read of the first word
+  (t_3, t_4, ...) is immediately preceded, among the channel's reads, by a
+  read of the table's last word. What precedes t_2 is not examined: that is
+  the first pass.
+- **The first pass is not graded.** It is counted and printed as a MEASURED
+  line that names NM-HRM-084, which grades it in
+  `hrm/ch5-audio-dma-first-pass`. No graded line of this package depends on
+  its length or on whether a table switch went through the start-up
+  sequence. p. 164 says of DMA start: "Because of pipelining in Agnus, the
+  first data word must be thrown away", and the page leaves open whether the
+  first word of the first pass is output. p. 145 leaves open whether a
+  channel that is disabled and enabled again begins with the start-up
+  sequence: "If the channel is disabled for a very short time (less than two
+  sampling periods) it may stay on and thus continue from where it left
+  off." Which of the two a table switch does depends on how long the CPU
+  keeps the channel disabled.
+- **Analysis window.** W_T = [t_2, t_(2+N)), N passes long, entirely after
+  the first restart. p. 139: "Each time the system retrieves the last audio
+  word from the data area, it uses the contents of these location registers
+  to again find the start of the data." The anchor check holds that sentence
+  on every restart inside the window.
 
 **F3: disk word index, used by P6.**
 p. 247: "As each data word is transferred, the length value is decremented.
@@ -375,7 +392,7 @@ A failing precondition means "not graded", never green.
 
 | Id | Precondition | How the test checks it | Contrasting case (precondition goes red; the program still finishes) |
 |---|---|---|---|
-| A1 | Audio DMA for the table ran, pass after pass | F2's anchor check holds, with at least N + 2 reads of the table's first word | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
+| A1 | Audio DMA for the table ran, pass after pass, from its first restart on | F2's anchor check holds from t_2 on, with at least N + 2 reads of the table's first word (t_1 ... t_(N+2)). The length of the first pass is not examined | DMACON = $8200 instead of $8201 (AUD0EN not set): no audio reads |
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0) | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
 | A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples | P = 124 (p. 140's minimum), which fails A3 when the harness delivers fewer than about 114,000 samples per second. If the harness is faster, no legal period fails A3; the test states that this case does not apply |
 | A4 | The window holds enough levels, and one LSB is resolved | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3; the fitted \|b\| is at least 4 steps of the harness's own sample resolution | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
@@ -786,16 +803,13 @@ otherwise.
   throughout. The pages disagree on which named jack that is (2.5); this
   package observes whichever side actually carries channel 0 (measured at
   runtime, not fixed in source) and does not grade which named jack it is.
-- **F2's anchor, measured per table and per core (2.4).** Implemented as
-  specified, t_1 exempt: for T1, t_2 is preceded by word 2 of the table, not
-  the last word, on both cores, so A1 for T1 is red on both cores and P1/P2
-  are not graded there. For T3, t_2 is preceded by the table's next-to-last
-  word on fx68k only (A1 for T3 red there, P4 not graded on fx68k; A1 for T3
-  holds on TG68K, P4 graded there). For T2, t_2 is preceded by the last word
-  on both cores (A1 for T2 holds, P3 graded on both cores). For T2S (its own
-  program, `prog_t2s.s`, run from a clean boot independent of T1/T2/T3), t_2
-  is preceded by the last word on both cores (A1 for T2S holds, P3B graded
-  on both cores).
+- **F2's anchor and the first pass (2.4).** The anchor is checked from t_2,
+  each table's first restart, on; what precedes t_2 is the first pass. Per
+  table and per core the test prints the first pass's length as a MEASURED
+  line that names NM-HRM-084. It is not graded and not counted in
+  passed or failed, so P1-P4, P3B and A1, A3-A5 do not depend on it. For T2S
+  (its own program, `prog_t2s.s`, run from a clean boot independent of
+  T1/T2/T3) the same applies.
 - **A5's population, measured per table and per core (2.7).** Every held
   run inside a graded window is either one of the two the window's own
   edges cut (LEVELS step 3) or exactly the same duration as every other
