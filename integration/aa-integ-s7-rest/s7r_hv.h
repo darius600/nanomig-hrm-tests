@@ -89,7 +89,6 @@ inline Cap runbin(const std::string& bin, uint64_t cycles = 7'000'000) {
 }
 
 inline bool fixture_ok(const Cap& c) { return c.loaded && c.released && c.fixture == 0xBEEF; }
-inline bool run_ok(const Cap& c) { return fixture_ok(c) && c.done; }
 
 // The accesses of class `k` with t in [t0, t1].
 inline std::vector<Acc> select(const Cap& c, Cls k, uint64_t t0 = 0, uint64_t t1 = ~0ull) {

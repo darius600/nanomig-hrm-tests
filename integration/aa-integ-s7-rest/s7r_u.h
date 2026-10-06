@@ -21,7 +21,7 @@ inline UDef udef(const std::string& nm) {
     if (nm == "U2") { d.bph = 0x000A; d.bpl = 0x5555; d.bmod = 0xFFF0; d.sph = 0x000C; d.spl = 0xDB97; }
     if (nm == "U3") { d.bph = 0xFFF5; d.sph = 0xFFF3; }
     if (nm == "U4") { d.bstrt = 0xF8; d.bstop = 0x108; d.sstrt = 0x100; d.sstop = 0x110; d.vlo = 0xE8; d.vhi = 0x120; }
-    if (nm == "UR") { d.vhi = 0x120; }
+    if (nm == "UR") { d.vhi = 0x121; }
     if (nm == "D1" || nm == "D0") { d.bmod = 0; d.sstrt = 0xF0; d.sstop = 0xF4; }
     return d;
 }
@@ -37,7 +37,7 @@ struct URun {
     uint32_t P = 0, S = 0;
     int bstep = 0;
     uint32_t blo = 0, bhi = 0;
-    std::vector<Acc> uh;                   // UHRES-class accesses from the record to the end marker
+    std::vector<Acc> uh;                   // accesses from the record to the end marker that are not refresh, CPU or zero-block accesses
     std::vector<Acc> bplh, sprh, stray;    // the same up to t(Vhi), sorted by range
     std::map<int, std::vector<Acc>> bl, sl;   // per line V
 };
@@ -62,7 +62,8 @@ inline void measure_u(URun& r) {
     r.blo = uint32_t(std::max<int64_t>(0, lo - 0x100)); r.bhi = uint32_t(hi + 0x100);
     if (!r.tsd || !r.tend) return;
     for (auto& x : c.acc) {
-        if (x.t < r.tsd || x.t > r.tend || classify(x) != C_UH) continue;
+        const Cls k = classify(x);
+        if (x.t < r.tsd || x.t > r.tend || (k != C_UH && k != C_COP)) continue;   // not a refresh, CPU or zero-block access
         r.uh.push_back(x);
     }
     const uint64_t tlast = (r.m.have.size() && r.m.have.back()) ? r.m.t.back() : r.tend;

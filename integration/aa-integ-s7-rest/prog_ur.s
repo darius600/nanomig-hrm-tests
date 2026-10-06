@@ -11,5 +11,5 @@ U_SSTOP         equ     $0068
 U_CON0          equ     $0000
 U_DMA           equ     $8000
 U_VLO           equ     $040
-U_VHI           equ     $120
+U_VHI           equ     $121
         include "prog_u.s"

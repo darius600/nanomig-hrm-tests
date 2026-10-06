@@ -38,8 +38,11 @@ start:
         move.w  d0,COPJMP1(a0)
         move.w  #REF_COPCON,COPCON(a0)
         move.w  #$8280,DMACON(a0)
-.wait:  move.w  VHPOSR(a0),d0
+.wait:  move.w  VPOSR(a0),d1
+        and.w   #7,d1
+        bne.s   .line
+        move.w  VHPOSR(a0),d0
         lsr.w   #8,d0
         cmp.b   #$60,d0
         blo.s   .wait
-        EPILOGUE
+.line:  EPILOGUE

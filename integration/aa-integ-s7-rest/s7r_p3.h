@@ -5,8 +5,6 @@
 
 namespace s7r {
 
-inline std::string ids_pair(const char* a, const char* b) { return std::string(a) + " " + b; }
-
 inline std::string u_summary(const URun& r) {
     int ok1 = 0, ok2 = 0;
     for (int v = r.d.bstrt; v < r.d.bstop; ++v) if (on_line(r.bl, v).size() == 1) ++ok1;
@@ -64,7 +62,7 @@ inline void run_uhres(Checks& ck, Shared& sh) {
     if (mut("PR-U2")) b1 = "prog_u1_skip.bin";
     if (mut("PR-U3")) b1 = "prog_u1_late.bin";
     if (mut("PR-U4") || mut("PR-9-U4")) b0 = "prog_u1.bin";
-    if (mut("PR-U5")) { b1 = "prog_u1_gate0.bin"; glo1 = 0; }
+    if (mut("PR-U5")) { b1 = "prog_u1_gate3.bin"; glo1 = 3; }
     if (mut("R2-XCHK-U")) { /* the shared run UR is the mutated one */ }
     if (mut("P3-E1") || mut("P3-AGG") || mut("P6-E1") || mut("P6-AGG")) b1 = "prog_u0.bin";
     if (mut("P3-E2") || mut("P6-E2")) b1 = "prog_u2.bin";
@@ -72,7 +70,7 @@ inline void run_uhres(Checks& ck, Shared& sh) {
     if (mut("P3-E5")) b1 = "prog_u1_sph16.bin";
     if (mut("P3-U0") || mut("P6-U0")) b0 = "prog_u1.bin";
     if (mut("P3-U0d")) b0d = "prog_u1.bin";
-    if (mut("P4")) b2 = "prog_u2_m16.bin";
+    if (mut("P4")) b2 = "prog_u2_m0.bin";
     if (mut("P5")) b1 = "prog_u1_s58.bin";
     if (mut("P6-E3")) b1 = "prog_u1_rw.bin";
     if (mut("P6-CTRL")) b1 = "prog_u1_sstrt50.bin";
