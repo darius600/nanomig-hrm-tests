@@ -92,6 +92,15 @@ unlabelled, page-derived functional proposition: P1/P2 (c6, HTOTAL's
 highest-count effect), P3 (c5, HSSTRT's start-position effect) and P4 (c4,
 HSSTOP's stop-position effect).
 
+c4 and c5 each also say which edge of the sync pulse the register sets (sync
+stop, sync start). P3 and P4 cannot show that, and this is a stated limit of
+the package: both grade a move relative to the picture (the landmark M of
+P3 point 3), and the scan doubler regenerates sync (`nanomig.v` selects the
+doubler; `Amber.v` restarts its read-out at the incoming HSYNC edge), so no
+page-anchored reference for which edge moved survives to the boundary the
+test sees. The ids therefore stay on the RECORDED lines of c4 and c5, with
+this reason, and on no graded line.
+
 ## 2. Page notes
 
 1. **Page number.** Claims c1 to c6 record p.279. On the printed scan, p.279
@@ -351,6 +360,7 @@ Precondition contrast runs:
 | X-NTSC | H1 with the harness set to NTSC | PC-ID |
 | X-HALT-H | H1 with MARK1's write omitted | PC-MARK |
 | X-HALT-S | SA with MARK1's write omitted | PC-MARK |
+| X-NODONE | H1 whose program holds in place after MARK2 without the DONE write | DONE |
 | X-SHORT | H1 with a `DBRA` count of 16 blocks (1024 samples) | P1-LINES, P2-LINES |
 | X-BURST | H1 and H2 whose sampling loop reads VHPOSR without storing until H decreases, then stores 4 samples, 400 times | P1-COVER (both runs) |
 | X-NOBPL | SA with PLANE holding only 32 of its 256 lines of pattern | P3/P4-LINES |
@@ -445,7 +455,8 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    - (b) T2 − T1 = $C0 − $B0 = 16. (P2(b).)
    - (c) T1 − $B0 is 0 or 1. (P2(c).)
    - The conjunction of (a) for both runs, (b) and (c) is the whole
-     proposition.
+     proposition for the one change the runs make, HTOTAL $B0 to $C0
+     (d = 16); other values of d are not run.
 
    Sources: "Highest number count, horiz. line (VARBEAMEN=1)" (p.280),
    together with p.23's count from $0, gives N+1. "The value in this
@@ -489,7 +500,10 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
 
 1. **Proposition.** While VARHSYEN and VARBEAMEN are both 1, changing only
    HSSTRT moves the leading edge of the horizontal sync pulse relative to
-   the picture and leaves its trailing edge in place, in every line. p.280,
+   the picture and leaves its trailing edge in place, in every line. The
+   test grades the move of the landmark's distance to each edge, in the
+   picture-relative frame of point 7; that the moved edge is the leading one
+   is not shown (point 7, "Stated limit"). p.280,
    with p.298, p.304 and p.305; `opus:8-appA-oos.c5` bundles this with
    address, write-only, Agnus and ECS-mark clauses section 1 declines, so no
    id is carried here.
@@ -505,15 +519,14 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
      the landmark M, the first white pixel after L.
    - The graded distances are dL = M − L and dT = M − T.
 4. **Expected.**
-   - (a) Within each run, dL and dT are the same in every graded line, to
-     ±1 output pixel clock.
+   - (a) Within each run, dL and dT are exactly the same in every graded
+     line (no tolerance band: the pages give none).
    - (b) dL(SB) ≠ dL(SA): exact inequality.
    - (c) dT(SB) = dT(SA): exact equality.
 
-   dL(SA), dL(SB), dT(SA) and dT(SB) in (b) and (c) are each the median of
-   that run's class (established constant to ±1 by (a); the median names
-   the one value (a) already guarantees, rather than picking a single
-   line's own reading).
+   dL(SA), dL(SB), dT(SA) and dT(SB) in (b) and (c) are each the value (a)
+   establishes as the same in every line of that run's class (named as the
+   class's median, rather than a single line's own reading).
 
    Sources: "HSSTRT 1DE W A(E) Horizontal sync start (VARHSY)" (p.280),
    "HSSTRT W A Horizontal line position for HSYNC start" (p.304), and "8
@@ -531,8 +544,8 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    moves the leading edge and does not move the trailing edge -- as exact
    inequality and exact equality, not against an invented threshold (no
    ">=4", "<=1" or "+-1" band). The quantifier is "every line": all graded
-   lines, at least 400 output lines (tightened to an exact population by
-   P3/P4-LINES below). Vertical-blanking lines carry no landmark, and the
+   lines, exactly 256 per parity class (P3/P4-LINES below). Vertical-blanking
+   lines carry no landmark, and the
    pages say nothing about HSYNC during VSYNC.
 5. **Preconditions.**
    - PC-ID and PC-MARK.
@@ -571,21 +584,30 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
      to land the sync pulse on the landmark and force a drop; not
      exercised, by a scope decision.
    - **Anchor A5:** the landmark M's own distance to R, the nearest
-     memory-refresh access before it (p.194, p.285) -- a landmark
-     independent of DIWSTRT, DDFSTRT, HSSTRT and HSSTOP alike. Graded on
-     the three VARHSYEN = 0 contrast runs, where nothing is expected to
-     move: M's distance to R must be exactly the same in SA0, SB0 and SC0.
+     memory-refresh access before it (the reference: p.194, p.285) -- a
+     landmark independent of DIWSTRT, DDFSTRT, HSSTRT and HSSTOP alike.
+     Graded on the three VARHSYEN = 0 contrast runs, where nothing is
+     expected to move (p.280 "(VARHSY)", p.305 VARHSYEN): M's distance to R
+     must be exactly the same in SA0, SB0 and SC0.
      This confirms the apparatus introduces no spurious shift of its own
      when the chip's own signals do not move. With VARHSYEN = 1 (the live
      SA/SB/SC runs), M's distance to R is measured and printed but not
      graded: it changes between SA, SB and SC even though DIWSTRT and
-     DDFSTRT (hence M's own chip-side position) are unchanged, showing
-     that the harness's video output does not preserve a fixed
-     relationship between the sync edges and this independent reference
-     once the sync timing itself changes. A5 therefore cannot attribute
-     (b)'s and (c)'s move to the leading edge specifically rather than to
-     the picture; it establishes only that the apparatus itself is exact
-     when nothing moves.
+     DDFSTRT (hence M's own chip-side position) are unchanged, because
+     the scan doubler (`Amber.v`, compiled as part of `nanomig.v`)
+     restarts its read-out at the incoming HSYNC edge and so regenerates
+     sync. A5 therefore cannot attribute (b)'s and (c)'s move to the
+     leading edge specifically rather than to the picture; it establishes
+     only that the apparatus itself is exact when nothing moves.
+   - **Stated limit.** P3 and P4 are graded in the picture-relative frame:
+     dL and dT are distances from the sync edges to the landmark M, and a
+     change of HSSTRT or HSSTOP shows as a change of one distance with
+     the other exactly unchanged. Which edge moved is not shown: the scan
+     doubler regenerates sync, so no reference fixed in the chip's line
+     (A5's refresh access is the page-anchored candidate) survives to the
+     test's boundary, and a reference that did would be harness or RTL
+     knowledge, not page. The labels of P3 and P4 and a RECORDED line say
+     so.
 
    **Doubled lines.** The line doubler emits two output lines per chip
    line, and nothing on the pages covers the second. The graded lines are
@@ -599,7 +621,9 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
 
 1. **Proposition.** While VARHSYEN and VARBEAMEN are both 1, changing only
    HSSTOP moves the trailing edge of the horizontal sync pulse relative to
-   the picture and leaves its leading edge in place, in every line. p.280,
+   the picture and leaves its leading edge in place, in every line. As in
+   P3, the test grades the picture-relative move; that the moved edge is
+   the trailing one is not shown (P3 point 7, "Stated limit"). p.280,
    with p.298, p.304 and p.305; `opus:8-appA-oos.c4` bundles this with
    address, write-only, Agnus and ECS-mark clauses section 1 declines, so no
    id is carried here.
@@ -607,12 +631,13 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
    with s = $0010 and B = $01A0.
 3. **Observation.** As P3: graded lines, L, T, M, dL and dT.
 4. **Expected.**
-   - (a) Within each run, dL and dT are constant to ±1 in every graded line.
+   - (a) Within each run, dL and dT are exactly the same in every graded
+     line.
    - (b) dT(SC) ≠ dT(SA): exact inequality.
    - (c) dL(SC) = dL(SA): exact equality.
 
    As in P3, dT(SA), dT(SC), dL(SA) and dL(SC) in (b) and (c) are each the
-   median of that run's class.
+   value (a) establishes for that run's class.
 
    Sources: "HSSTOP 1C2 W A(E) Horizontal line position for HSYNC stop"
    (p.280, and in the same words on p.304 and p.298). The start is HSSTRT's
@@ -632,10 +657,10 @@ A4-DROPPED has no contrast run: see section 7's own note under "Anchor A4".
      dT(SC0) = dT(SA0) and dL(SC0) = dL(SA0), both exact equality.
    - For the preconditions: as P3.
 7. **Reference frame.** As P3, including anchors A4 and A5 and the grading
-   by parity class. A5's own limit applies identically: it confirms the
-   apparatus is exact when nothing moves (the VARHSYEN = 0 contrast) but
-   cannot attribute (b)'s live move to the trailing edge specifically
-   rather than to the picture.
+   by parity class. A5's own limit and the stated limit apply identically: A5
+   confirms the apparatus is exact when nothing moves (the VARHSYEN = 0
+   contrast) but cannot attribute (b)'s live move to the trailing edge
+   specifically rather than to the picture.
 
 ## 7. Measurements
 
@@ -686,13 +711,13 @@ nearest memory-refresh access is exactly the same (1681 in class 0, 773
 in class 1, on both cores): PASS. With VARHSYEN=1 (SA/SB/SC, not graded),
 the same distance is 1671/1735/1671 in class 0 and 763/827/763 in class
 1 -- SB (whose HSSTRT differs from SA and SC) differs from both by
-exactly 64, while SA and SC (equal HSSTRT) match exactly, on both cores.
+exactly 64, while SA and SC (equal HSSTRT) match exactly, on both cores
+(the scan doubler regenerates sync).
 Recorded as A5-NOT-DISPOSITIVE (section 6, P3 point 7).
 
 **Mutations.** Replayed on both cores, from `out_<core>.txt` under each
 `NMH_MUTATE` value; each run turned exactly the check(s) named red and
-nothing else, and DONE was reached in every capture except where the
-mutation's own clause is PC-MARK.
+nothing else.
 
 | NMH_MUTATE | Went red | fx68k | TG68K |
 |---|---|---|---|
@@ -701,6 +726,7 @@ mutation's own clause is PC-MARK.
 | `X-NTSC` | PC-ID [H1, X-NTSC] | FAIL | FAIL |
 | `X-HALT-H` | PC-MARK [H1, X-HALT-H] | FAIL | FAIL |
 | `X-HALT-S` | PC-MARK [SA, X-HALT-S] | FAIL | FAIL |
+| `X-NODONE` | DONE [H1,X-NODONE] | FAIL | FAIL |
 | `X-SHORT` | P1-LINES [H1], P2-LINES [H1] | FAIL, FAIL | FAIL, FAIL |
 | `X-BURST` | P1-COVER [H1], P1-COVER [H2] | FAIL, FAIL | FAIL, FAIL |
 | `X-NOBPL` | P3/P4-LINES [SA] | FAIL | FAIL |
@@ -708,18 +734,34 @@ mutation's own clause is PC-MARK.
 | `A1` | A1 [H1c], A1 [H2c], P1 [H1], P1 [H2], P1 [H1c], P1 [H2c] | FAIL x6 | FAIL x6 |
 | `X-AUD0` | A2 [H1], A2 [H2], A2 [H1c], A2 [H2c] | FAIL x4 | FAIL x4 |
 | `A3` | A3 [H1c], A3 [H2c] | FAIL, FAIL | FAIL, FAIL |
-| `P2A` | P2(a) [H1] | FAIL | FAIL |
-| `P2B` | P2(b) | FAIL | FAIL |
-| `P2C` | P2(c) | FAIL | FAIL |
+| `P2A` | P2(a) [H1], P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
+| `P2A-H2` | P2(a) [H2], P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
+| `P2B` | P2(b), P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
+| `P2C` | P2(c), P2 (conjunction) | FAIL, FAIL | FAIL, FAIL |
+| `P2CON` | P2 contrast | FAIL | FAIL |
 | `P3-NOMOVE` | P3 | FAIL | FAIL |
 | `P4-NOMOVE` | P4 | FAIL | FAIL |
+| `A5` | A5 | FAIL | FAIL |
 
-Every mutated run also fails the conjunction line P2 when its own clause
-is one of P2(a)/(b)/(c) (P2A, P2B, P2C), since the conjunction depends on
-them; this is the expected, derived consequence of the same substitution,
-not a separate mutation.
+The conjunction line P2 depends on P2(a) [H1], P2(a) [H2], P2(b) and
+P2(c), so P2A, P2A-H2, P2B and P2C each turn it red together with their
+own clause; P2CON turns the P2 contrast line red.
 
-In every row the setup still worked: PC-ID, PC-MARK (except the row that
-targets it) and the run's other preconditions held, the program reached
-DONE (except `X-HALT-H`/`X-HALT-S`, where DONE is still reached but the
-marker is not), and the measured population was not emptied.
+Every mutant capture prints its own liveness lines, and each is PASS in
+every row except the line the row targets:
+
+- DONE, for every capture that runs a program of its own (the row that
+  targets it is `X-NODONE`; in `X-HALT-H` and `X-HALT-S` the program still
+  reaches DONE and only the marker is missing; `FIXTURE` prints DONE only);
+- PC-ID and PC-MARK, for every H and S capture except where the row targets
+  one (`X-OCS`, `X-NTSC` target PC-ID; `X-HALT-H`, `X-HALT-S` target
+  PC-MARK);
+- a population line for each capture whose red is a comparator over a
+  population: P2-LINES for the four `X-AUD0` captures and for `P2A` and
+  `P2A-H2`, P3/P4-LINES for `X-A4DOUBLE` (at least 256 graded entries in each parity
+  class, since a line with two white spans counts twice) and, as its target,
+  `X-NOBPL`.
+
+The substitution rows (`A1`, `A3`, `P2B`, `P2C`, `P2CON`, `P3-NOMOVE`,
+`P4-NOMOVE`, `A5`) run no capture of their own: they feed other runs'
+measured values through the unchanged comparator.

@@ -11,6 +11,9 @@
 ;                     (a wrap), then store 4 samples; repeat 400 times.
 ;   AUD0_ON        -- X-AUD0: audio channel 0 DMA started, so a DMA access
 ;                     other than refresh appears at the port.
+;   NO_DONE        -- X-NODONE: after MARK2 the program holds in place
+;                     without storing DONE_VALUE, so only the DONE line
+;                     of the test goes red.
 ;   RETOTAL_MID    -- P2A: partway through the sampling loop, HTOTAL is
 ;                     written again with RETOTAL_N in place of N. p.280's
 ;                     own row carries no exception for a second write, so
@@ -100,4 +103,8 @@ start:
         endif
 
         move.w  #$5A5A,MARK2
+        ifd     NO_DONE
+.stop:  bra.s   .stop                   ; X-NODONE: hold in place without the DONE write
+        else
         DONE
+        endif
