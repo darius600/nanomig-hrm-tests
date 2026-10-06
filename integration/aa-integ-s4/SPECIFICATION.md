@@ -44,12 +44,11 @@ None of the package's claims needs a disk surface.
   memory. Each proposition is run on both builds that `nanomig.mk` makes, in
   the CPU core's default 68000 behaviour. No proposition uses 68010 or 68020
   behaviour.
-- The AA specification is graded on the TG68K build only: it is the one
-  build that `nanomig.mk` compiles with `-DENABLE_AGA`, NanoMig's AGA
-  configuration. The fx68k build is NanoMig's configuration without AGA. Its
-  results are recorded, not graded. No proposition, precondition or contrast
-  depends on the fx68k build having an AA feature; this includes the FMODE
-  contrasts of P1 and P7 and the BPLCON4 writes of 2.5.
+- Both builds are graded. The chip set is selected by the `chipset_config`
+  port, which every run sets to 0x10; `ENABLE_AGA` appears in no simulated
+  source, so the two builds run the same chip set and differ only in the CPU
+  core. Every proposition, precondition and contrast prints PASS or FAIL on
+  both builds.
 - The programs are assembled for the 68000, vasm's default CPU. With
   `-m68010` or higher, vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, and on a
   68000 a CLR reads its address before it writes it: a store of index 0 to
@@ -348,9 +347,12 @@ background to be BLACK and not the contents of COLOR00." (p.4); "BRDRBLNK=
 effect only with ECSENA set: "ECSENA= When low(default), the following bits
 in BPLCON3 are disabled: BRDRBLNK,... however there effects are inhibited
 until ECSENA goes high." (p.17). The border is therefore black. Inside the
-window, colour index 0 and colour index 1 are both red. Whether a line is in
-the window can therefore be seen on the video output whatever data the
-bit-plane fetch delivers, and even if no fetch happens on that line.
+window, colour index 0 and colour index 1 are both red. The window
+instrument shows the lines of the display window on the video output. No page
+says what the display window shows when no bit-plane data is fetched (BPU = 0:
+"Shows only a background color; no playfield is visible", HRM p.48), so the
+instrument is used only where bit-plane DMA runs, and P6 does not grade
+against it.
 
 ### 2.6 How differences are graded
 
@@ -561,15 +563,25 @@ Claim: opus:AA-ddf.use-b02. Page 21.
 3. **Observation.** f_c and l_c as in P1. n_c is the number of B1 reads per
    fetched line.
 4. **Expected.**
-   - f(H2) - f(H1) = 4 x P, and l(H2) = l(H1).
-   - l(H2) - l(H3) = 4 x P, and f(H2) = f(H3).
+   - f(H2) - f(H1) = 4 x P (the first read, DDFSTRT half).
+   - l(H2) = l(H1): a DDFSTRT change alone leaves the last read. This is
+     graded as a line of its own (P5-last), because no reading of the pages
+     escapes it: DDFSTOP is the same in H1 and H2, and AA p.21 gives the end
+     of the fetch to DDFSTOP ("DDFSTOP(Right edge of display data fetch)").
+     A configuration that fetches a second hires word in the block at $D8
+     contradicts HRM p.80, "the rightmost limit remains ($D8) and only one
+     word is fetched at this limit".
+   - l(H2) - l(H3) = 4 x P, and f(H2) = f(H3) (the DDFSTOP half).
 
-   The weight 4 is that of H3 (2.4). The proposition is stated for hires
-   only, where the two pages agree. The AA page names bit 2 H3 without any
-   condition. For the original chips, the manual it builds on says "Bits
-   7-2 - pixel position H8-H3 (bit H3 only respected in Hires Mode.)"
-   (HRM p.91). No page states an expected value for H3 in lores, so none is
-   graded.
+   The weight 4 is that of H3 (2.4), and it agrees with HRM p.60: "DDFSTRT =
+   DDFSTOP - (4 * (word count - 2)) for high resolution", with the normal
+   hires values $3C and $D4. The proposition is stated
+   for hires only, where the AA page and the HRM agree. The AA page names bit
+   2 H3 without any condition. For the original chips, the manual it builds on
+   says "Bits 7-2 - pixel position H8-H3 (bit H3 only respected in Hires
+   Mode.)" (HRM p.91). No page states an expected value for H3 in lores, so
+   none is graded. The HRM figures put the DDF resolution elsewhere (section 4
+   item 3).
 5. **Preconditions.**
    - (i)-(v) of P1 for H1, H2 and H3.
    - (vi) Hires is in force: n in each hires configuration is greater than
@@ -578,16 +590,19 @@ Claim: opus:AA-ddf.use-b02. Page 21.
      data per line.
 6. **Contrasting case.** H1 against H2, and H3 against H2. An implementation
    that ignored H3 in hires gives a difference of 0 where 4 x P is
-   predicted. Contrast for (vi): BPLCON0 = 0x1000 in H2 gives n equal to
+   predicted. The green control of P5-last is P5-ctl, which runs the same
+   comparison l(a) = l(b) on C2 against C1 (bit 3 of DDFSTRT changed alone). Contrast for (vi): BPLCON0 = 0x1000 in H2 gives n equal to
    the lores count, and (vi) fails.
 7. **Reference frame.** RF-M and RF-L.
 
-### P6. Bit-plane DMA runs on exactly the lines of the display window
+### P6. Bit-plane DMA runs on exactly the lines of the display window the registers give
 
 Claims: opus:AA-ddf.c6, sol:AA-ddf.c3. Page 21.
 
 1. **Proposition.** The set of beam lines on which bit-plane DMA fetches is
-   the set of beam lines on which the display window is open.
+   the set of lines of the display window that DIWSTRT and DIWSTOP give: it
+   starts at the line DIWSTRT bits 15-8 name, and its last line moves with
+   DIWSTOP bits 15-8 as P8 and P9 state for the window.
 2. **Stimulus.** S-WIN with list L-A including the marker block (the
    pointer MOVEs load Z). Two configurations:
    - W1: DIWSTRT = 0x4081, DIWSTOP = 0xF0C1.
@@ -595,32 +610,46 @@ Claims: opus:AA-ddf.c6, sol:AA-ddf.c3. Page 21.
 
    DIWHIGH is not written.
 3. **Observation.** Fetch is the set of lines v (RF-L) with at least one
-   read in Z inside [A(v), A(v+1)). Win is the set from RF-V. Both are taken
-   over the configuration's observed field.
-4. **Expected.** Fetch = Win in W1 and in W2, line for line. Source: "The
-   vertical Bit Plane DMA timing is identical to the Display windows
-   described above." (p.21). "Above" refers to DIWSTRT and DIWSTOP, whose
-   description in this document follows on p.21-p.22. Only the identity is
-   graded here. Where the window lies is graded in P8-P11.
+   read in Z inside [A(v), A(v+1)), over the configuration's observed field.
+   Win (RF-V) is measured in the same field and printed, and not graded.
+4. **Expected.** Fetch is one contiguous run of lines in W1 and in W2; its
+   first line is 0x40 in W1 and 0x50 in W2 (DIWSTRT bits 15-8, as in P8); and
+   last(Fetch, W1) - last(Fetch, W2) = 0xF0 - 0xA0 = 0x50 lines (DIWSTOP bits
+   15-8, as in P9, whose rule grades differences only). Source: "The vertical
+   Bit Plane DMA timing is identical to the Display windows described
+   above." (p.21). "Above" refers to DIWSTRT and DIWSTOP, whose description
+   in this document follows on p.21-p.22: the window those two registers
+   give is the window P8 and P9 state. P6 grades the fetched lines against
+   that window as the registers give it, and not against the window
+   instrument: on this design the instrument follows the fetch (it shows no
+   window with BPU = 0, 5.5), so a comparison with it would compare two sets
+   that both come from the fetch.
+
+   P6 is not the same assertion as P8 and P9. P8 and P9 grade the display
+   window as the video output shows it against the registers; P6 grades the
+   bit-plane DMA lines against the registers. The ids of P6 stay on P6,
+   because the claim says the DMA lines follow the window the two registers
+   describe, and P6 is the line that grades the DMA lines.
 5. **Preconditions.**
-   - (i) The RF-L and RF-V checks hold.
+   - (i) The RF-L checks hold.
    - (ii) Fetch is non-empty, and every Z read lies within
      [A(0x3E), A(0xF2)).
    - (iii) The stored DMACONR shows DMAEN, BPLEN and COPEN.
-   - (iv) Win lies inside 0x3E-0xF1.
-6. **Contrasting case.** W2 against W1. The page predicts that both sets
-   move together. An implementation that fetched a fixed range of lines, or
-   followed only one of the two registers, would fail Fetch = Win in one of
-   the two configurations. Contrasts for the preconditions:
+   - (iv) The window the registers give lies inside 0x3E-0xF1: in both
+     configurations DIWSTRT bits 15-8 are at least 0x3E, and DIWSTOP bits 15-8
+     lie in 0x80-0xF1 (so that V8 = not V7 puts the stop inside the
+     observation).
+6. **Contrasting case.** W2 against W1. The page predicts that the first and
+   the last fetched line follow the registers. An implementation that fetched
+   a fixed range of lines, or followed only one of the two registers, would
+   fail the first-line or the last-line difference in one of the two
+   configurations. Contrasts for the preconditions:
    - (ii): BPLCON0 <- 0x0001 (BPU = 000, ECSENA = 1) empties Fetch: "BPUx
-     =Bit plane use code 0000-1000 (NONE thru 8 inclusive)" (p.16). The
-     window instrument shows the window whatever the fetch delivers (2.5),
-     so (i), (iii) and (iv) still hold.
+     =Bit plane use code 0000-1000 (NONE thru 8 inclusive)" (p.16).
    - (iii): the DMACONR copy stored before the DMACON write, as in P1.
-   - (i): BPLCON3 = 0x0C00 makes RF-V fail (see 2.4).
-   - (iv): DIWSTOP = 0x10C1 makes the window run past 0xF1.
-7. **Reference frame.** RF-L for the fetch lines, RF-V for the window lines.
-   Both anchor on the Copper's WAIT positions (p.20).
+   - (iv): DIWSTOP = 0x10C1 puts the stop line past 0xF1.
+7. **Reference frame.** RF-L for the fetch lines. It anchors on the Copper's
+   WAIT positions (p.20).
 
 ### P7. The bit-plane pointer advances by the fetched bytes plus the modulo, so the modulo depends on the plane's size and on the fetch window
 
@@ -1015,21 +1044,25 @@ Claim: opus:AA-dmacon.b05. Page 22.
    0x8020 (SPREN without DMAEN) predicts no reads, and DMACONR bit 9 = 0.
 7. **Reference frame.** RF-F.
 
-### P20. BLTPRI: while blitter DMA runs, the CPU gets no bus cycle
+### P20. BLTPRI: while the blitter uses every cycle, the CPU gets none
 
 Claim: opus:AA-dmacon.b10. Page 22. (opus:AA-dmacon.b10c is declined,
-section 1: /BLS is not a port.)
+section 1: /BLS is not a port.) The id stays on P20 for what b10 says:
+"Blitter DMA priority(over CPU micro)".
 
 1. **Proposition.** With BLTPRI set, the CPU makes no Chip-memory access
-   between the first and the last Chip-memory access of a running blit.
-   With BLTPRI clear, it makes at least one.
+   between the blitter's second access and its second-to-last access in a
+   running blit, where the blitter has every cycle. With BLTPRI clear, it
+   makes at least one.
 2. **Stimulus.**
    - Blitter set-up as in P18, but with BLTSIZE <- 0x2020: height 128 lines,
      width 32 words, 4096 words.
-   - The A-and-D copy is chosen because the manual this page builds on
-     gives it no idle blitter cycle: "a copy cycle, using A and D, takes
-     four clock ticks per cycle" (HRM p.193), that is, two accesses in two
-     memory cycles.
+   - The A-and-D copy is chosen because its cycle sequence has no idle cycle
+     between the second access and the second-to-last: "9  A D  A0 - A1 D0 A2
+     D1 - D2" (HRM p.188, Table 6-2) leaves the blitter idle only after the
+     first access and before the last, and "a copy cycle, using A and D,
+     takes four clock ticks per cycle" (HRM p.193) gives one A and one D
+     access in two memory cycles in between.
    - DMACON <- 0x8640 (SET, BLTPRI, DMAEN, BLTEN) before the blitter
      registers. In the contrast: DMACON <- 0x8240.
    - Right after the BLTSIZE write the CPU runs this loop, 20 000 times,
@@ -1041,42 +1074,46 @@ section 1: /BLS is not a port.)
 
      Every iteration fetches instructions from PROG and writes to SCR.
    - Then an end marker. No other DMA is on.
-3. **Observation.** I is the open interval between the blitter's first
-   access (a read in BLT_S or a write in BLT_D) after the BLTSIZE write and
-   its last access. The test counts the CPU's accesses (reads in PROG,
-   writes in SCR and MARK) whose time lies in I. The page's interval is
-   "while blitter DMA is running", and the test knows the blit is running
-   from its own accesses.
-4. **Expected.** With BLTPRI = 1, the count in I is 0. The quantifier "any"
-   covers the whole of I, so a single CPU access anywhere in I is a
-   failure. Source: "10 BLTPRI Blitter DMA priority(over CPU micro) ...
-   (disables /BLS pin, preventing micro from stealing any bus cycles while
-   blitter DMA is running)" (p.22).
+3. **Observation.** The blitter's accesses (reads in BLT_S and writes in
+   BLT_D after the BLTSIZE write) are taken in time order. I is the open
+   interval between the second access and the second-to-last. The test
+   counts the CPU's accesses (reads in PROG, writes in SCR and MARK) whose
+   time lies in I. The accesses of the two edge intervals (between the
+   first and the second access, and between the second-to-last and the last)
+   are counted and printed as MEASURED lines, and not graded.
+4. **Expected.** With BLTPRI = 1, the count in I is 0. In I the blitter uses
+   every cycle (HRM p.188, p.193), so a CPU access there is a cycle taken
+   from a blitter that has the priority: "the blitter will keep the bus for
+   every available Chip memory cycle" (HRM p.198, with BLTPRI, "DMAF_BLITHOG",
+   set). Source: "10 BLTPRI Blitter DMA priority(over CPU micro)" (p.22). The
+   two edge intervals each contain a cycle that Table 6-2 leaves idle; no page
+   says whether a cycle the blitter does not use goes to the CPU, so what the
+   CPU does there is measured.
 5. **Preconditions.**
    - (i) The blit completes: 4096 reads in BLT_S and 4096 writes in BLT_D
      (height x width, p.14).
-   - (ii) The CPU is inside its loop throughout I. It makes an access less
-     than 64 memory cycles before I begins and less than 64 after I ends,
-     and SCR writes continue after I. A memory cycle here is P system clock
-     cycles, with P as RF-M measures it in P1 on the same system.
-   - (iii) No bit-plane, sprite, Copper, disk or audio access occurs in I.
+   - (ii) The CPU is inside its loop throughout the blit. It makes an access
+     less than 64 memory cycles before the blitter's first access and less
+     than 64 after its last, and SCR writes continue after the blit. A
+     memory cycle here is P system clock cycles, with P as RF-M measures it
+     in P1 on the same system.
+   - (iii) No bit-plane, sprite, Copper, disk or audio access occurs between
+     the blitter's first and last access.
    - (iv) The stored DMACONR shows bits 10, 9 and 6 as written.
-6. **Contrasting case.** BLTPRI = 0, all else unchanged. The page presents
-   BLTPRI as what prevents the micro from stealing cycles through /BLS, so
-   with it clear, the count in I is at least 1. The rate at which the
+6. **Contrasting case.** BLTPRI = 0, all else unchanged. With it clear, the
+   count in I is at least 1: the page presents BLTPRI as the priority over the
+   CPU, and without it the CPU is served in I. The rate at which the
    original chips released the bus (HRM p.198: one cycle after the 68000
    has waited three consecutive cycles) is not graded. Contrasts for the
    preconditions:
    - (i): BLTSIZE <- 0x2010 (height 128 lines, width 16 words) gives 2048
-     reads and 2048 writes (height x width, p.14), and (i) fails, while I
-     is still bounded by blitter accesses. (DMACON <- 0x8600, without
+     reads and 2048 writes (height x width, p.14), and (i) fails, while the
+     blit is still bounded by blitter accesses. (DMACON <- 0x8600, without
      BLTEN, would leave I empty.)
    - (ii): in the BLTPRI = 0 configuration, a loop of 10 iterations ends
-     while the blit is still running, no SCR write follows I, and (ii)
-     fails. This contrast is run without BLTPRI: with it, the clause under
-     test ("preventing micro from stealing any bus cycles while blitter DMA
-     is running", p.22) would itself hold the loop back until the blit
-     ends.
+     while the blit is still running, no SCR write follows the blit, and (ii)
+     fails. This contrast is run without BLTPRI: with it, the priority under
+     test would itself hold the loop back until the blit ends.
 7. **Reference frame.** I, bounded by the blitter's own accesses.
 
 ### P21. BBUSY (DMACONR bit 14) reports a blit in progress
@@ -1241,7 +1278,17 @@ section 1: BZERO's status behaviour is only precondition (ii) here.)
    proposition grades it.
 3. **H3.** The AA page gives no condition. The HRM says "bit H3 only
    respected in Hires Mode" (HRM p.91). The package specifies H3 only for
-   hires, where both pages agree.
+   hires, where both pages agree. The HRM itself is not consistent on the
+   hires data-fetch resolution. For P5: HRM p.60 ("DDFSTRT = DDFSTOP - (4 *
+   (word count - 2)) for high resolution", normal hires $3C and $D4), HRM p.91
+   (H3 respected in hires) and HRM p.80 ("only one word is fetched at this
+   limit"). Against P5: HRM p.195 Figure 6-9 ("Data fetch start can only be
+   specified at even multiples of 8 clocks. This is the clock position which
+   should be specified for the normal width display. (20 word fetch for 320
+   pixel, 40 word fetch for 640 pixel width)") and p.197 Figure 6-12 (the hires
+   timing cycle T..T+7, every plane fetched twice), which put the hires fetch
+   on a resolution of 8 clocks. P5 follows the AA USE line with HRM p.60 and
+   p.91; a design that followed p.195 would fail P5's first-read clause.
 4. **"(max)", the asterisk, and "maxes & mins".**
    - The extra-wide row carries "(max) *", but the page has no footnote for
      that asterisk. The next asterisks on the pages belong to DIWSTRT and
@@ -1287,10 +1334,15 @@ section 1: BZERO's status behaviour is only precondition (ii) here.)
     graded.
 13. **BLTPRI.** The page says "stealing any bus cycles"; the HRM says "the
     blitter will keep the bus for every available Chip memory cycle" (HRM
-    p.198). The package grades the strict reading (no CPU access at all
-    while the blit runs) with a blit that has no idle cycle. It also
-    requires at least one CPU access without BLTPRI, which the page implies
-    but whose rate it does not state.
+    p.198). The HRM's cycle sequence for an A-and-D copy leaves two cycles
+    idle, one after the first access and one before the last ("9  A D  A0 -
+    A1 D0 A2 D1 - D2", HRM p.188, Table 6-2). No page says whether a cycle the
+    blitter does not use is one the CPU may take, or one the blitter keeps. The
+    package grades the CPU's accesses between the blitter's second access and
+    its second-to-last, where the blitter has every cycle, and prints the
+    accesses in the two edge intervals as MEASURED lines. It also requires at
+    least one CPU access without BLTPRI, which the page implies but whose
+    rate it does not state.
 14. **UHRES enabling bits.** p.16 says UHRES "also needs bits in DMACON"
     without naming them. p.22 names DMAEN.
 15. **DIWHIGH start bits in the HRM.** The HRM labels DIWHIGH bits 2-0
@@ -1340,7 +1392,7 @@ enabled; the planes B1-B4 are written with a counting pattern.
 ### 5.2 Labels
 
 The first token of an expect label is the label that NMH_MUTATE selects. A
-proposition is `Pn`, a joint assertion `Jn`, a control `Pn-ctl`. Preconditions:
+proposition is `Pn`, a joint assertion `Jn`, a control `Pn-ctl`. `P5-last` is the line of P5 that grades l(H2) = l(H1) on its own; it carries no claim id. Preconditions:
 `Pn-fix` (the fixture constant read back at the end of each run), `Pn-i-RFM`,
 `Pn-i-RFL` (the two parts of precondition (i) of the fetch propositions),
 `Pn-i-RFV` (RF-V), `Pn-ii` ... `Pn-vi` (the numbered preconditions of the
@@ -1349,8 +1401,11 @@ the specification lists under P6 (iii) only), `Pn-reg` (the region precondition 
 2.3, evaluated from the port log and from the command list), and for
 P16-P19 `Pn-i` (RF-F), `Pn-ii` (the DMACONR copy), `Pn-reg`. P3 and P4 are graded
 under the preconditions printed for P1 and P2 (the same runs, a subset of their
-configurations). `CONFIG` is the check that every run selects the AA chip set
-(chipset_config 0x10) and 2 MB of Chip memory, `RF-RUNS` the check that P, L and
+configurations). `CONFIG` is the precondition that the host's own configuration value
+selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (a
+check of the stimulus, not a measurement of the DUT: AA in force at the ports
+is shown by the FMODE contrasts of P1, P5 and P7, whose B1 steps are 4 bytes under
+chipset_config 0x10 with FMODE = 0x0001), `RF-RUNS` the check that P, L and
 A(0x3E) - T0 are the same in every run.
 
 ### 5.3 Where the build had to choose
@@ -1358,8 +1413,14 @@ A(0x3E) - T0 are the same in every run.
 1. **RF-L, "none between the fetch of END and the next T0".** In every field of
    every run the Copper reads one further word, at the byte address of the
    word after the list's END instruction, after it has read both words of END
-   (see 5.4). That address lies inside COP. The pages state nothing about a fetch
-   after END, so `Pn-i-RFL` grades the part that has a page (each anchor fetch is
+   (see 5.4). That address lies inside COP. The read comes at the
+   vertical-blank restart: the MEASURED line prints that it lies 16 system
+   clock cycles (2 memory cycles) before the next field's first fetch from
+   COP1LC (T0), and not during the wait on END. No page describes the bus cycles of that
+   restart. "(keeps Coprocessor off of bus until beam position has been
+   reached)" (p.20) covers the wait; "COP1LC is automatically used at the
+   beginning of each vertical blank time." (p.21) names only the pointer.
+   `Pn-i-RFL` therefore grades the part that has a page (each anchor fetch is
    read once, A(v+1) - A(v) constant, A(0x3E) - T0 constant, both words of END
    fetched) and the read after END is a MEASURED line.
 2. **Precondition (ii) of P8-P11.** "DIWHIGH has not been written" is evaluated
@@ -1370,31 +1431,31 @@ A(0x3E) - T0 are the same in every run.
    DMACONR is compared with the bits of the last DMACON write of the command
    list, so that the mutations of the assertions (which change the written
    value) leave the precondition true.
-4. **The mutation of P6.** The page predicts Fetch = Win on every input, so no
-   input has the page predict the opposite. The mutation changes where plane 1 is
-   read: from line 0x70 the Copper points BPL1PT at B1 in place of Z, so the set of
-   lines with a read in Z ends early while the window does not. It shows that
-   the comparator can fail; it is not a contrasting case of the page.
-5. **The mutations of P5 and P20**, whose assertions are red, are the control
-   P5-ctl and the implementation record of 5.5.
+4. **The mutation of P6.** In both fields the Copper loads BPL1PT with B1
+   after WAIT (0x70,..), so that the lines with a read in Z end at 0x6F in W1 and
+   in W2 (Fetch 040-06F in W1, 050-06F in W2). The last-line difference of the two
+   configurations is then 0 where the registers give 0x50, and P6 fails through the
+   unchanged comparator.
+5. **The mutation of P5 and P5-last**, whose assertions are red, is the control
+   P5-ctl, which runs the same comparators on a live input.
 
 ### 5.4 Measured values
 
 The final run of each core (`make -k -B test`; out_tg68k.txt and out_fx68k.txt).
-Both builds print the same lines except where noted. System clock cycles are
+Both builds print the same lines except where noted (P20, P21 and P22-ii). System clock cycles are
 counted from A(v); P = 8 system clock cycles per memory cycle and L = 1816
 system clock cycles per line in every run on both builds.
 
 ```text
-P1 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP
+P1 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP, 16 system clock cycles before the next T0
 P1 measured (system clock cycles from A(v)): 0x0028 f=344 l=1688 n=22; 0x0030 f=408 l=1688 n=21; 0x0038 f=472 l=1688 n=20; 0x0040 f=536 l=1688 n=19; 0x0060 f=792 l=1688 n=15; 0x0068 f=856 l=1688 n=14; 0x00B8 f=1496 l=1688 n=4; P = 8
-P2 measured: Copper reads after the second word of the list's END: 6 in 6 fields, at byte address 0x08C2E8, inside COP
+P2 measured: Copper reads after the second word of the list's END: 6 in 6 fields, at byte address 0x08C2E8, inside COP, 16 system clock cycles before the next T0
 P2 measured (system clock cycles from A(v)): 0x0058 f=472 l=728 n=5; 0x0098 f=472 l=1240 n=13; 0x00B8 f=472 l=1496 n=17; 0x00C8 f=472 l=1624 n=19; 0x00D0 f=472 l=1688 n=20; 0x00D8 f=472 l=1752 n=21; P = 8
-P5 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP
+P5 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP, 16 system clock cycles before the next T0
 P5 measured (system clock cycles from A(v)): H1 f=440 l=1752; H2 f=472 l=1720; H3 f=472 l=1720; C1 f=376 l=1688; C2 f=440 l=1688; C3 f=440 l=1624; P = 8
 P5 measured: the DDFSTRT half (H2 against H1) does not hold, the DDFSTOP half (H2 against H3) does not hold
-P6 measured, configuration 1: Fetch 176 lines (040 - 0EF), Win 176 lines (040 - 0EF), k = 2
-P6 measured, configuration 2: Fetch 80 lines (050 - 09F), Win 80 lines (050 - 09F), k = 2
+P6 measured, configuration 1: Fetch 176 lines (040 - 0EF), Win 176 lines (040 - 0EF), k = 2, RF-V holds, Win equals Fetch: yes
+P6 measured, configuration 2: Fetch 80 lines (050 - 09F), Win 80 lines (050 - 09F), k = 2, RF-V holds, Win equals Fetch: yes
 P7 measured (bytes): pitch plane 1 / plane 2: M-A 48/64, M-B 50/66, M-C 64/48
 P8 measured (first-last line of Win): 40: 040-0EF; 41: 041-0EF; 42: 042-0EF; 44: 044-0EF; 48: 048-0EF; 50: 050-0EF; 60: 060-0EF; 30: 030-0EF; 70: 070-0EF
 P9 measured (first-last line of Win): B0: 040-0AF; B1: 040-0B0; B2: 040-0B1; B4: 040-0B3; B8: 040-0B7; A0: 040-09F; 90: 040-08F; F0: 040-0EF
@@ -1409,41 +1470,38 @@ P17 measured (reads in COP in the two fields, COPEN set / clear): 10 / 0
 P18 measured (BLT_S reads / BLT_D writes): BLTEN set 251 / 252, BLTEN clear 0 / 0
 P19 measured (reads per field and sprite, SPREN set / clear): 20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0
 P23 measured: DMACONR bit 13 in z0 z1 z2 y0 y1 y2: 111 000
-P20 (CPU accesses inside the blit interval, BLTPRI set / clear)
-    TG68K: 2 / 2073     fx68k: 2 / 1984
+P20 measured (CPU accesses between the blitter's second and second-to-last access, BLTPRI set / clear)
+    TG68K: 0 / 2071     fx68k: 0 / 1982
+P20 measured (CPU accesses between the blitter's first and second access, BLTPRI set / clear): 1 / 1; between its second-to-last and last access: 1 / 1
+    (both builds)
+P22-ii (samples of B1 or B2 inside the blit)
+    TG68K: 507          fx68k: 509
 P21 (phase-B samples inside the blit, base run / long phase A)
     TG68K: 511 / 511    fx68k: 515 / 514
 ```
 
 Graded counts: both builds print 149 passed, 2 failed. The two FAIL lines are
-P5 and P20.
+P5 and P5-last.
 
 P5. DDFSTRT bit 2 (H3) moves the first read of every fetched line 4 memory
 cycles later (f: 440 to 472), but it also moves the last read 4 memory cycles
-earlier (l: 1752 to 1720) with DDFSTOP unchanged; and DDFSTOP bit 2 (0x00D4
-against 0x00D0, DDFSTRT 0x003C) leaves the last read where it was (1720 and
-1720). The control P5-ctl, the same two comparators on bit 3 of both registers
+earlier (l: 1752 to 1720) with DDFSTOP unchanged (P5-last); and DDFSTOP bit 2
+(0x00D4 against 0x00D0, DDFSTRT 0x003C) leaves the last read where it was (1720
+and 1720). The control P5-ctl, the same comparators on bit 3 of both registers
 in hires, prints PASS.
 
-P20. With BLTPRI set, two CPU accesses (a write to SCR and a read in PROG) fall
-inside the open interval between the blitter's first and last access, the
-first 12 system clock cycles after the first blitter access and the second 4
-system clock cycles before the last, on both builds. With BLTPRI clear 2073
-(TG68K) and 1984 (fx68k) fall inside.
+P20. With BLTPRI set no CPU access falls between the blitter's second access and
+its second-to-last; with BLTPRI clear 2071 (TG68K) and 1982 (fx68k) fall there.
+In each edge interval one CPU access falls with BLTPRI set and one with it clear,
+on both builds (printed as MEASURED lines, not graded).
 
 ### 5.5 Measurements outside the graded run
 
 1. **Window instrument without bit planes.** In the mutation run P6-ii
    (BPLCON0 = 0x0001, BPU = 0) both builds show no red row between the markers:
-   Win is empty (0 lines) in both configurations, with Fetch empty as well. The statement of
-   2.5 that the window shows "even if no fetch happens on that line" does not
-   hold on either build.
-2. **P20 implementation record.** A private copy of the chip set, outside the
-   repository, in which the CPU is granted no memory cycle while BLTPRI is set
-   and the blitter is busy, and for three bus cycles after, built with the same
-   test source and run on TG68K with NMH_ONLY=P20: P20 prints PASS (0 accesses
-   inside the interval with BLTPRI set, 2073 with it clear), and P20-i to
-   P20-iv print PASS.
+   Win is empty (0 lines) in both configurations, with Fetch empty as well. The
+   window instrument therefore follows the fetch on this design, and P6 is
+   graded against the registers (P6).
 
 ### 5.6 Mutations
 
@@ -1452,6 +1510,6 @@ Every assertion, control and precondition has one record in the header of
 the stimulus (the command list, the Copper list or the harness configuration)
 and prints FAIL through the unchanged comparator on both builds, with every run
 reaching DONE. Where the mutated stimulus also changes a neighbouring
-precondition, the record lists it as "Also printing FAIL". P5 and P20 are
-the two assertions that are red in the normal run; their records name the
-green control (5.3, 5.5).
+precondition, the record lists it as "Also printing FAIL". P5 and P5-last
+are the assertions that are red in the normal run; their records name the
+green control (5.3).

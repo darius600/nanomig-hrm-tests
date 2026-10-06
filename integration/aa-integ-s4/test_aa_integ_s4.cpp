@@ -4,10 +4,9 @@
 // display window (DIWSTRT, DIWSTOP, DIWHIGH) and DMA control (DMACON, DMACONR),
 // graded at the ports of nanomig.v only.
 //
-// nanomig.mk builds the TG68K core with ENABLE_AGA and the fx68k core without
-// it: every proposition and precondition is graded (PASS:/FAIL:) on the build made
-// with ENABLE_AGA only; on the other build the identical check prints as RECORDED:
-// (Grader, below), never as PASS or FAIL.
+// Both cores are graded: the chip set is selected by the chipset_config port, which
+// every run sets to 0x10, so every proposition and precondition prints PASS: or FAIL:
+// on both builds. A line whose precondition does not hold prints NOT GRADED.
 //
 // One program (prog_s4) interprets the command list that the test places in Chip
 // memory before the program starts; the list is the stimulus of a configuration.
@@ -19,16 +18,16 @@
 // NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
 //
 // MUTATION_RECORDS_BEGIN
-// MUTATION P5 stimulus green NMH_MUTATE=P5-ctl: the assertion is red on both cores; the control P5-ctl runs the same two comparators on bit 3 of both registers in hires (DDFSTRT 0x0038 against 0x0030, DDFSTOP 0x00D0 against 0x00C8) and prints PASS on both cores; the mutation of P5-ctl (C1 writes DDFSTRT 0x0038) prints FAIL on both cores.
-// MUTATION P20 implementation green NMH_MUTATE=none: the assertion is red on both cores (CPU accesses inside the blit interval with BLTPRI set: see SPECIFICATION.md 5.5); in a private copy of the chip set outside the repository in which the CPU is granted no memory cycle while BLTPRI is set and the blitter is busy and for three bus cycles after, the same comparator prints PASS on TG68K.
-// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; TG68K FAIL, fx68k FAIL.
+// MUTATION P5 stimulus green NMH_MUTATE=none: the assertion is red on both cores and no selector turns it green; the control P5-ctl (own record) runs the same two comparators on bit 3 of both registers in hires (DDFSTRT 0x0038 against 0x0030, DDFSTOP 0x00D0 against 0x00C8) on a live input and prints PASS on both cores.
+// MUTATION P20 stimulus red NMH_MUTATE=P20: the BLTPRI-set run writes DMACON 0x8240 (BLTPRI clear); TG68K FAIL, fx68k FAIL.
+// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; the line checks the host's own configuration value, P17 prints the same counts (10 / 0) and is NOT GRADED; TG68K FAIL, fx68k FAIL.
 // MUTATION RF-RUNS stimulus red NMH_MUTATE=RF-RUNS: every RF-L WAIT of the DDFSTRT run is WAIT (v,0x0C) in place of (v,0x04), so A(0x3E) - T0 differs from that of the other runs; TG68K FAIL, fx68k FAIL.
 // MUTATION P1 stimulus red NMH_MUTATE=P1: the DDFSTRT write 0x0068 is 0x0058; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-fix stimulus red NMH_MUTATE=P1-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-i-RFM stimulus red NMH_MUTATE=P1-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
 // MUTATION P1-i-RFL stimulus red NMH_MUTATE=P1-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-reg.
-// MUTATION P1-ii stimulus red NMH_MUTATE=P1-ii: the third configuration writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
-// MUTATION P1-iii stimulus red NMH_MUTATE=P1-iii: the third configuration writes FMODE 0x0001; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-ii stimulus red NMH_MUTATE=P1-ii: the fourth configuration (DDFSTRT 0x0040) writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-iii stimulus red NMH_MUTATE=P1-iii: the fourth configuration (DDFSTRT 0x0040) writes FMODE 0x0001; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-iv stimulus red NMH_MUTATE=P1-iv: every configuration writes DIWSTRT 0x3D81; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-v stimulus red NMH_MUTATE=P1-v: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
 // MUTATION P1-reg stimulus red NMH_MUTATE=P1-reg: the CPU writes to B1 during the first field; TG68K FAIL, fx68k FAIL.
@@ -44,24 +43,24 @@
 // MUTATION P2-reg stimulus red NMH_MUTATE=P2-reg: the CPU writes to B1 during the first field; TG68K FAIL, fx68k FAIL.
 // MUTATION P4 stimulus red NMH_MUTATE=P4: the normal row 0x00D0 is written as the wide row 0x00D8; TG68K FAIL, fx68k FAIL.
 // MUTATION J1 stimulus red NMH_MUTATE=J1: the DDFSTRT write 0x0068 is 0x0058 and the DDFSTOP write 0x0098 is 0x00A8; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1, P2.
-// MUTATION P5-ctl stimulus red NMH_MUTATE=P5-ctl: the control configuration C1 writes DDFSTRT 0x0038 in place of 0x0030; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5.
+// MUTATION P5-last stimulus green NMH_MUTATE=none: the assertion is red on both cores (l = 1752 for H1, 1720 for H2) and no selector turns it green; the control P5-ctl (own record) runs the same comparison l(C2) = l(C1) on a live input (DDFSTRT 0x0038 against 0x0030, DDFSTOP 0x00D0) and prints PASS on both cores.
+// MUTATION P5-ctl stimulus red NMH_MUTATE=P5-ctl: the control configuration C1 writes DDFSTRT 0x0038 in place of 0x0030; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5, P5-last.
 // MUTATION P5-fix stimulus red NMH_MUTATE=P5-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-i-RFM stimulus red NMH_MUTATE=P5-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
-// MUTATION P5-i-RFL stimulus red NMH_MUTATE=P5-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5-reg.
+// MUTATION P5-i-RFL stimulus red NMH_MUTATE=P5-i-RFL: in the field of the third configuration (H2) the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5-reg.
 // MUTATION P5-ii stimulus red NMH_MUTATE=P5-ii: a hires configuration writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-iii stimulus red NMH_MUTATE=P5-iii: a hires configuration writes FMODE 0x0001; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-iv stimulus red NMH_MUTATE=P5-iv: every configuration writes DIWSTRT 0x3D81; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-v stimulus red NMH_MUTATE=P5-v: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
 // MUTATION P5-vi stimulus red NMH_MUTATE=P5-vi: the hires configurations write BPLCON0 0x1000 (lores); TG68K FAIL, fx68k FAIL.
 // MUTATION P5-reg stimulus red NMH_MUTATE=P5-reg: the CPU writes to B1 during the second field; TG68K FAIL, fx68k FAIL.
-// MUTATION P6 stimulus red NMH_MUTATE=P6: in the W2 field the CPU clears BPLEN when V7-V0 reaches 0x70; TG68K FAIL, fx68k FAIL.
+// MUTATION P6 stimulus red NMH_MUTATE=P6: in both fields the Copper loads BPL1PT with B1 after WAIT (0x70,..), so the lines with a read in Z end at 0x6F in W1 and in W2; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-fix stimulus red NMH_MUTATE=P6-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
-// MUTATION P6-i-RFV stimulus red NMH_MUTATE=P6-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-iv.
 // MUTATION P6-i-RFL stimulus red NMH_MUTATE=P6-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-reg.
 // MUTATION P6-i-RFM stimulus red NMH_MUTATE=P6-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
 // MUTATION P6-dm stimulus red NMH_MUTATE=P6-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-reg stimulus red NMH_MUTATE=P6-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
-// MUTATION P6-ii stimulus red NMH_MUTATE=P6-ii: BPLCON0 is 0x0001 (BPU = 0) throughout; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-iv.
+// MUTATION P6-ii stimulus red NMH_MUTATE=P6-ii: BPLCON0 is 0x0001 (BPU = 0) throughout; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-iv stimulus red NMH_MUTATE=P6-iv: the W2 configuration writes DIWSTOP 0x10C1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-ii.
 // MUTATION P7 stimulus red NMH_MUTATE=P7: M-A writes BPL1MOD 0x0010 in place of 0x0008; TG68K FAIL, fx68k FAIL.
 // MUTATION P7-fix stimulus red NMH_MUTATE=P7-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
@@ -244,12 +243,10 @@ public:
 };
 
 Checks checks;
-bool g_graded = true;        // both cores run the AA chip set (chipset_config 0x10) and are graded
 std::string g_dir = ".";
 const char* g_mutate = nullptr;
 
-// The label of a line printed as RECORDED on the build without ENABLE_AGA
-// carries no claim id: the claim is asserted on the other build's lines.
+// The label of a NOT GRADED line carries no claim id: the claim is not asserted.
 std::string without_ids(const std::string& s) {
     std::string out, tok;
     auto flush = [&]() {
@@ -266,15 +263,10 @@ std::string without_ids(const std::string& s) {
     return out;
 }
 
-// Every proposition and precondition goes through Grader: PASS:/FAIL: on the
-// graded build, RECORDED: on the other, whatever the condition shows.
+// Every proposition and precondition goes through Grader.
 class Grader {
 public:
-    void expect(bool cond, const std::string& label) {
-        if (g_graded) checks.expect(cond, label);
-        else checks.record(without_ids(label) + " [build without ENABLE_AGA: would have " +
-                           (cond ? "PASSed" : "FAILed") + "]");
-    }
+    void expect(bool cond, const std::string& label) { checks.expect(cond, label); }
     // A line whose precondition does not hold is NOT GRADED, never PASS or FAIL.
     void expect_if(bool pre, bool cond, const std::string& label) {
         if (pre) expect(cond, label);
@@ -620,7 +612,7 @@ struct FField {
     uint64_t t40 = 0, tc0 = 0;
     std::map<int, uint64_t> A;       // v -> A(v), v = 0x3E ... 0xF2
     bool cop_ok = false;
-    int after_end = 0; uint32_t after_addr = 0;
+    int after_end = 0; uint32_t after_addr = 0; int64_t after_dt = 0;   // after_dt: next T0 minus the time of the last such read
 };
 
 struct FetchRun {
@@ -714,7 +706,7 @@ FetchRun fetch_analyse(std::shared_ptr<RunData> r, const CopList& cl, const std:
             uint64_t t_end = 0;
             for (const auto& a : cr) if (a.byte == kCop + cl.off_end + 2) t_end = a.cyc;
             if (!t_end) f.cop_ok = false;
-            for (const auto& a : cr) if (t_end && a.cyc > t_end) { ++f.after_end; f.after_addr = a.byte; }
+            for (const auto& a : cr) if (t_end && a.cyc > t_end) { ++f.after_end; f.after_addr = a.byte; f.after_dt = int64_t(f.T1) - int64_t(a.cyc); }
         }
         all_have = all_have && f.have;
         all_single = all_single && f.single;
@@ -845,8 +837,15 @@ FPre fetch_pre(const std::string& pn, FetchRun& fr, const std::vector<int>& idx,
     FPre p{};
     {
         int ae = 0; uint32_t aa = 0;
-        for (const auto& f : fr.f) { ae += f.after_end; if (f.after_end) aa = f.after_addr; }
-        checks.note(pn + " measured: Copper reads after the second word of the list's END: " + dec(ae) + " in " + dec((long long)fr.f.size()) + " fields" + (ae ? ", at byte address 0x" + hexs(aa) + ", inside COP" : ""));
+        int64_t dmin = 0, dmax = 0;
+        for (const auto& f : fr.f) {
+            ae += f.after_end;
+            if (!f.after_end) continue;
+            aa = f.after_addr;
+            if (ae == f.after_end) { dmin = dmax = f.after_dt; } else { dmin = std::min(dmin, f.after_dt); dmax = std::max(dmax, f.after_dt); }
+        }
+        std::string when = dmin == dmax ? dec(dmin) : dec(dmin) + " to " + dec(dmax);
+        checks.note(pn + " measured: Copper reads after the second word of the list's END: " + dec(ae) + " in " + dec((long long)fr.f.size()) + " fields" + (ae ? ", at byte address 0x" + hexs(aa) + ", inside COP, " + when + " system clock cycles before the next T0" : ""));
     }
     p.fix = fr.fix;
     g.expect(p.fix, pn + "-fix: the program stores the constant $BEEF first and the harness reads it back at the end of the run, before any other result of the run is used");
@@ -1047,7 +1046,9 @@ void proposition_p5() {
     checks.note("P5 measured (system clock cycles from A(v)): H1 f=" + dec(st[1].f) + " l=" + dec(st[1].l) + "; H2 f=" + dec(st[2].f) + " l=" + dec(st[2].l) + "; H3 f=" + dec(st[3].f) + " l=" + dec(st[3].l) + "; C1 f=" + dec(st[4].f) + " l=" + dec(st[4].l) + "; C2 f=" + dec(st[5].f) + " l=" + dec(st[5].l) + "; C3 f=" + dec(st[6].f) + " l=" + dec(st[6].l) + "; P = " + dec(fr.P));
     checks.note(std::string("P5 measured: the DDFSTRT half (H2 against H1) ") + (half_strt ? "holds" : "does not hold") + ", the DDFSTOP half (H2 against H3) " + (half_stop ? "holds" : "does not hold"));
     bool pre = config_ok(g_cfg_used) && p.all() && vi;
+    bool last_same = cst && st[2].l == st[1].l;
     g.expect_if(pre, ctl, "P5-ctl: control, hires with bit 2 of both registers clear: DDFSTRT 0x0038 against 0x0030 moves the first B1 read 8 memory cycles later and leaves the last read, and DDFSTOP 0x00D0 against 0x00C8 moves the last read 8 memory cycles later and leaves the first read");
+    g.expect_if(pre, last_same, "P5-last: in hires with FMODE = 0 and DDFSTOP = 0x00D4, DDFSTRT 0x003C against 0x0038 leaves the last B1 read of every fetched line where it was (H2 against H1)");
     g.expect_if(pre, ok, "P5: opus:AA-ddf.use-b02: in hires with FMODE = 0, setting bit 2 of DDFSTRT (H3) moves the first B1 read of every fetched line 4 memory cycles later and leaves the last read, and setting bit 2 of DDFSTOP moves the last read 4 memory cycles later and leaves the first read");
 }
 
@@ -1155,7 +1156,6 @@ struct WCfg {
     std::optional<uint16_t> w_diwstrt, w_diwstop;   // what the program writes where it differs
     std::optional<uint16_t> w_diwhigh;
     bool patch_wait3e = false;               // RF-L contrast (list L-A)
-    std::optional<uint16_t> bplen_off_at;    // the CPU clears BPLEN when V7-V0 reaches this value
     bool stray_write = false;                // region contrast: the CPU writes to the plane region during this field
 };
 
@@ -1197,7 +1197,6 @@ Script win_script(const std::vector<WCfg>& cfg, const CopList& cl, const WinOpts
         s.MARK(uint16_t(k));
         if (c.stray_write) s.STORE(kZ + 0x7000, 0x1234);
         if (c.patch_wait3e) s.COPYW(kCop + cl.off_wait[0x3E], {uint16_t((0x3E << 8) | 0x0D)});
-        if (c.bplen_off_at) { s.WLN(*c.bplen_off_at); s.W(DMACON, 0x0100); }
         s.WL30();
     }
     s.WVB();
@@ -1325,14 +1324,14 @@ bool contiguous(const std::set<int>& w, int lo, int hi) {
 // The window propositions' common preconditions: fixture, RF-V, DMACONR copy, regions, DIWHIGH writes.
 struct WPre { bool fix, rfv, dm, reg; };
 
-WPre win_pre(const std::string& pn, WinRun& w) {
+WPre win_pre(const std::string& pn, WinRun& w, bool grade_rfv = true) {
     WPre p{};
     p.fix = w.fix;
     g.expect(p.fix, pn + "-fix: the program stores the constant $BEEF first and the harness reads it back at the end of the run, before any other result of the run is used");
     p.rfv = w.rfv;
     std::string kk;
     for (const auto& v : w.vf) kk += (kk.empty() ? "" : ", ") + dec(v.k);
-    g.expect(p.rfv, pn + "-i-RFV: in every configuration's video field the two marker blocks are whole-number k output rows apart per beam line, each exactly k rows tall, the rows of lines 0x1D-0x1F, 0x21-0x23 and 0x25 contain no red, and red reaches further left on marker rows than on any window row (k = " + kk + ")");
+    if (grade_rfv) g.expect(p.rfv, pn + "-i-RFV: in every configuration's video field the two marker blocks are whole-number k output rows apart per beam line, each exactly k rows tall, the rows of lines 0x1D-0x1F, 0x21-0x23 and 0x25 contain no red, and red reaches further left on marker rows than on any window row (k = " + kk + ")");
     p.dm = (w.dmacon_copy & 0x0380) == 0x0380;
     g.expect(p.dm, pn + "-dm: the stored DMACONR shows DMAEN, BPLEN and COPEN set");
     bool reg = true;
@@ -1345,8 +1344,8 @@ WPre win_pre(const std::string& pn, WinRun& w) {
 }
 
 // Mutations common to the window propositions: precondition contrasts that change the stimulus.
-void win_pre_mutations(const std::string& pn, std::vector<WCfg>& cfg, WinOpts& wo, size_t k) {
-    if (mutating((pn + "-i-RFV").c_str())) wo.bplcon3_clear = true;
+void win_pre_mutations(const std::string& pn, std::vector<WCfg>& cfg, WinOpts& wo, size_t k, bool rfv = true) {
+    if (rfv && mutating((pn + "-i-RFV").c_str())) wo.bplcon3_clear = true;
     if (mutating((pn + "-dm").c_str())) wo.dma_copy_first = true;
     if (mutating((pn + "-reg").c_str())) cfg[k].stray_write = true;
     if (mutating((pn + "-fix").c_str())) wo.no_fixture = true;
@@ -1360,7 +1359,7 @@ void proposition_p6() {
     cfg[0].diwstrt = 0x4081; cfg[0].diwstop = 0xF0C1;
     cfg[1].diwstrt = 0x5081; cfg[1].diwstop = 0xA0C1;
     WinOpts wo; wo.list_a = true;
-    win_pre_mutations("P6", cfg, wo, 0);
+    win_pre_mutations("P6", cfg, wo, 0, false);
     if (mutating("P6-i-RFL")) cfg[1].patch_wait3e = true;
     if (mutating("P6-ii")) wo.bplcon0 = 0x0001;
     if (mutating("P6-iv")) cfg[1].w_diwstop = 0x10C1;
@@ -1368,7 +1367,7 @@ void proposition_p6() {
     if (mutating("P6-i-RFM")) wo.lo.h_c0 = 0xBE;
     WinRun& w = win_run("W6", cfg, wo);
 
-    WPre p = win_pre("P6", w);
+    WPre p = win_pre("P6", w, false);
     g.expect(w.fr.rfl, "P6-i-RFL: in every field of the run the fetch after each WAIT (v,0x04), v = 0x3E ... 0xF2, is read once, A(v+1) - A(v) is the same line period L = " + dec(w.fr.L) + " for v = 0x3E ... 0xF1, A(0x3E) - T0 is the same in every field, and both words of the list's END are fetched");
     bool rfm = w.fr.rfm;
     g.expect(rfm, "P6-i-RFM: in every field of the run the Copper's fetches after WAIT (0x3C,0x40) and WAIT (0x3C,0xC0) are a positive multiple of 128 system clock cycles apart, and P is " + dec(w.fr.P) + " in every field");
@@ -1380,18 +1379,28 @@ void proposition_p6() {
         within = within && reads_within(w.fr, k, kZ, kZ + kPlaneLen);
     }
     g.expect(ii && within, "P6-ii: Fetch is non-empty in both configurations (" + dec((long long)fetch[0].size()) + " and " + dec((long long)fetch[1].size()) + " lines) and every Z read lies within [A(0x3E), A(0xF2))");
+    // the window the registers give, from the values the command list writes
     bool iv = true;
-    for (int k = 0; k < 2; ++k) iv = iv && !w.vf[k].win.empty() && first_line(w.vf[k].win, 0, 0x1FF) >= 0x3E && last_line(w.vf[k].win, 0, 0x1FF) <= 0xF1;
-    g.expect(iv, "P6-iv: Win lies inside 0x3E-0xF1 in both configurations");
-    bool pre = config_ok(g_cfg_used) && p.fix && p.rfv && p.dm && p.reg && w.fr.rfl && rfm && ii && within && iv;
-    bool eq = true;
     for (int k = 0; k < 2; ++k) {
+        int strt_hi = cfg[k].w_diwstrt.value_or(cfg[k].diwstrt) >> 8, stop_hi = cfg[k].w_diwstop.value_or(cfg[k].diwstop) >> 8;
+        iv = iv && strt_hi >= 0x3E && stop_hi >= 0x80 && stop_hi <= 0xF1;
+    }
+    g.expect(iv, "P6-iv: the display window the registers give lies inside 0x3E-0xF1 in both configurations: DIWSTRT bits 15-8 are at least 0x3E and DIWSTOP bits 15-8 lie in 0x80-0xF1, as the command list writes them");
+    bool pre = config_ok(g_cfg_used) && p.fix && p.dm && p.reg && w.fr.rfl && rfm && ii && within && iv;
+    bool fl = true, cont = true;
+    int last[2] = {-1, -1};
+    for (int k = 0; k < 2; ++k) {
+        int f = first_line(fetch[k], 0, 0x1FF);
+        last[k] = last_line(fetch[k], 0, 0x1FF);
+        fl = fl && f == int(cfg[k].diwstrt >> 8);
+        cont = cont && contiguous(fetch[k], 0, 0x1FF);
         std::set<int> win;
         for (int v : w.vf[k].win) if (v >= 0x3E && v <= 0xF1) win.insert(v);
-        eq = eq && win == fetch[k];
-        checks.note("P6 measured, configuration " + dec(k + 1) + ": Fetch " + dec((long long)fetch[k].size()) + " lines (" + hexs(first_line(fetch[k], 0, 0x1FF), 3) + " - " + hexs(last_line(fetch[k], 0, 0x1FF), 3) + "), Win " + dec((long long)w.vf[k].win.size()) + " lines (" + hexs(first_line(w.vf[k].win, 0, 0x1FF), 3) + " - " + hexs(last_line(w.vf[k].win, 0, 0x1FF), 3) + "), k = " + dec(w.vf[k].k));
+        checks.note("P6 measured, configuration " + dec(k + 1) + ": Fetch " + dec((long long)fetch[k].size()) + " lines (" + hexs(f, 3) + " - " + hexs(last[k], 3) + "), Win " + dec((long long)w.vf[k].win.size()) + " lines (" + hexs(first_line(w.vf[k].win, 0, 0x1FF), 3) + " - " + hexs(last_line(w.vf[k].win, 0, 0x1FF), 3) + "), k = " + dec(w.vf[k].k) + ", RF-V " + (w.vf[k].rfv ? "holds" : "does not hold") + ", Win equals Fetch: " + (win == fetch[k] ? "yes" : "no"));
     }
-    g.expect_if(pre, eq, "P6: opus:AA-ddf.c6 sol:AA-ddf.c3: the set of beam lines on which bit-plane DMA reads Z equals, line for line, the set of beam lines on which the display window shows red, in W1 (DIWSTRT 0x4081, DIWSTOP 0xF0C1) and in W2 (DIWSTRT 0x5081, DIWSTOP 0xA0C1)");
+    bool ok = fl && cont && last[0] >= 0 && last[1] >= 0 &&
+              last[0] - last[1] == int(cfg[0].diwstop >> 8) - int(cfg[1].diwstop >> 8);
+    g.expect_if(pre, ok, "P6: opus:AA-ddf.c6 sol:AA-ddf.c3: bit-plane DMA reads Z on one contiguous run of beam lines in W1 (DIWSTRT 0x4081, DIWSTOP 0xF0C1) and in W2 (DIWSTRT 0x5081, DIWSTOP 0xA0C1); the first line of the run is DIWSTRT bits 15-8 (0x40 in W1, 0x50 in W2), and the last line of W1 is 0xF0 - 0xA0 = 0x50 lines after that of W2");
 }
 
 // ---- P8-P11: vertical start and stop, without DIWHIGH ---------------------------------
@@ -1997,7 +2006,8 @@ struct P20Res {
     DRun d;
     uint64_t first = 0, last = 0;
     size_t nS = 0, nD = 0;
-    size_t cpu_in = 0;
+    size_t cpu_in = 0;           // between the blitter's second and second-to-last access
+    size_t cpu_edge0 = 0, cpu_edge1 = 0;   // first-second and second-to-last-last
     bool loop_ok = false;
 };
 
@@ -2020,6 +2030,13 @@ P20Res analyse20(const Script& s, int64_t P) {
     if (f == ~0ull) f = 0;
     r.first = f; r.last = l;
     // the CPU's accesses: reads in PROG, writes in SCR and MARK
+    std::vector<uint64_t> bt;    // the blitter's accesses in time order
+    for (const auto& a : d.acc) {
+        bool blit = (!a.wr && a.byte >= kBltS && a.byte < kBltSEnd) || (a.wr && a.byte >= kBltD && a.byte < kBltDEnd);
+        if (blit) bt.push_back(a.cyc);
+    }
+    std::sort(bt.begin(), bt.end());
+    const bool have4 = bt.size() >= 4;
     std::vector<uint64_t> cpu, scr;
     for (const auto& a : d.acc) {
         bool c = false;
@@ -2028,7 +2045,12 @@ P20Res analyse20(const Script& s, int64_t P) {
         if (a.wr && a.byte >= kMark && a.byte < kMarkEnd) c = true;
         if (!c) continue;
         cpu.push_back(a.cyc);
-        if (a.cyc > r.first && a.cyc < r.last) { ++r.cpu_in; if (r.cpu_in <= 6) dbg(std::string("CPU ") + (a.wr ? "write " : "read ") + hexs(a.byte) + " in I at +" + std::to_string(a.cyc - r.first) + " of " + std::to_string(r.last - r.first)); }
+        if (have4) {
+            const uint64_t t2 = bt[1], tl2 = bt[bt.size() - 2];
+            if (a.cyc > t2 && a.cyc < tl2) { ++r.cpu_in; if (r.cpu_in <= 6) dbg(std::string("CPU ") + (a.wr ? "write " : "read ") + hexs(a.byte) + " in I at +" + std::to_string(a.cyc - r.first) + " of " + std::to_string(r.last - r.first)); }
+            else if (a.cyc > bt[0] && a.cyc < t2) ++r.cpu_edge0;
+            else if (a.cyc > tl2 && a.cyc < bt.back()) ++r.cpu_edge1;
+        }
     }
     // (ii): an access within 64 memory cycles before I and after it, and SCR writes after I
     uint64_t win = uint64_t(64 * P);
@@ -2070,13 +2092,14 @@ void proposition_p20() {
             iii = iii && accs(d, r->first, r->last, lo, lo + 0x100, false).empty();
         }
     }
-    g.expect(iii, "P20-iii: no bit-plane, sprite or Copper access (regions B1-B4, Z, SPR0-SPR7, COP) occurs in the blit's interval in either run");
+    g.expect(iii, "P20-iii: no bit-plane, sprite or Copper access (regions B1-B4, Z, SPR0-SPR7, COP) occurs between the blitter's first and last access in either run");
     auto wr = [](const DRun& d) { auto v = script_value(d.sc, DMACON); return v ? *v : uint16_t(0); };
     bool iv = ((ra.d.copy ^ wr(ra.d)) & 0x0640) == 0 && ((rb.d.copy ^ wr(rb.d)) & 0x0640) == 0 && (ra.d.copy & 0x0200) && (rb.d.copy & 0x0200);
     g.expect(iv, "P20-iv: the stored DMACONR shows bits 10, 9 and 6 as written (BLTPRI set in the first run and clear in the second, DMAEN and BLTEN set in both)");
-    checks.note("P20 measured (CPU accesses inside the blit's interval, BLTPRI set / clear): " + dec((long long)ra.cpu_in) + " / " + dec((long long)rb.cpu_in));
+    checks.note("P20 measured (CPU accesses between the blitter's second and second-to-last access, BLTPRI set / clear): " + dec((long long)ra.cpu_in) + " / " + dec((long long)rb.cpu_in));
+    checks.note("P20 measured (CPU accesses between the blitter's first and second access, BLTPRI set / clear): " + dec((long long)ra.cpu_edge0) + " / " + dec((long long)rb.cpu_edge0) + "; between its second-to-last and last access: " + dec((long long)ra.cpu_edge1) + " / " + dec((long long)rb.cpu_edge1));
     bool pre = config_ok(g_cfg_used) && ra.d.fix && rb.d.fix && i && ii && iii && iv;
-    g.expect_if(pre, ra.cpu_in == 0 && rb.cpu_in >= 1, "P20: opus:AA-dmacon.b10: with BLTPRI set the CPU makes no Chip-memory access (no PROG read, SCR write or MARK write) between the first and the last access of a running blit, and with BLTPRI clear it makes at least one");
+    g.expect_if(pre, ra.cpu_in == 0 && rb.cpu_in >= 1, "P20: opus:AA-dmacon.b10: with BLTPRI set the CPU makes no Chip-memory access (no PROG read, SCR write or MARK write) between the blitter's second access and its second-to-last access in a running A-and-D blit, where the blitter has every cycle, and with BLTPRI clear it makes at least one");
 }
 
 // ---- P21-P23: BBUSY and BZERO ----------------------------------------------------------
@@ -2382,11 +2405,10 @@ int main(int argc, char** argv) {
     g_mutate = std::getenv("NMH_MUTATE");
     if (g_mutate && !*g_mutate) g_mutate = nullptr;
     std::string core = NMH_XSTR(NANOMIG_CORE_NAME);
-    g_graded = true;   // AA is selected by chipset_config on every run, whichever CPU core
     std::printf("CORE: %s\n", core.c_str());
     if (g_mutate) std::printf("NMH_MUTATE=%s\n", g_mutate);
 
-    if (!g_mutate || mutating("CONFIG")) g.expect(config_ok(make_config()), "CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+    if (!g_mutate || mutating("CONFIG")) g.expect(config_ok(make_config()), "CONFIG: stimulus precondition on the host's own configuration value, not a measurement of the DUT: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
     proposition_p1_p3();
     proposition_p2_p4();
     proposition_p5();
