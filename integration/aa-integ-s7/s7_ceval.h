@@ -113,7 +113,7 @@ inline CEval eval_c(Checks& ck, const Prop& p, const CRun& r) {
                 RefreshCheck rc = refresh_groups(wc.refresh, win_lo[i], wins[i].second, K);
                 uint64_t lines = K ? (wins[i].second - win_lo[i]) / (228 * K) : 0;
                 ck.note(p.id + " refresh groups, window " + dec((long long)i) + ": " + dec((long long)lines) + " lines, " + dec((long long)rc.groups) + " groups, " + dec((long long)rc.whole) + " whole");
-                if (!rc.ok && !(lines < 2 && wc.refresh.empty())) e.pcr = false;
+                if (!rc.ok) e.pcr = false;
                 if (rc.whole + 1 < lines) e.pcr = false;
             }
         }

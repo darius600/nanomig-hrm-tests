@@ -111,7 +111,7 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
     rs.bin = (sel == p.id + "-FIXTURE") ? "prog_run_nofix.bin" : "prog_run.bin";
     Script& s = rs.sc;
     const bool m_assert = sel == p.id, m_pc1 = sel == p.id + "-PC1", m_pc2 = sel == p.id + "-PC2",
-               m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5";
+               m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5", m_pcr = sel == p.id + "-PCR";
     const uint16_t vtmo = m_pc3 ? 0 : kVbTmo;
     poke_words(rs.pokes, kIdle, idle_list());
     for (auto& k : p.pokes) rs.pokes.push_back(k);
@@ -154,9 +154,11 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
             s.w16(COPCON, cw);
             if (v.v0) v.v0(s);
             fb.ms = s.mark();
+            if (m_pcr) fb.me = s.mark();   // the contrast: M_end is written before M_wait, so the observation window is empty
             if (v.obs_replaces_step6) {
                 fb.idx = v.obs(s);
                 fb.mw = s.mark();
+                if (m_pc2) s.pollb(INTREQR, 0x0020, 30000);
             } else {
                 s.waitline(0x22);
                 fb.mw = s.mark();
@@ -166,7 +168,7 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
             s.w32(COP1LCH, kIdle);
             s.w16(COPCON, 0);
             fb.f_vb = s.rd(INTREQR);
-            fb.me = s.mark();
+            if (!m_pcr) fb.me = s.mark();
             if (v.after) v.after(s);
             if (m_pc1) s.w16(DMACON, 0x8080);
             vp.b.push_back(fb);

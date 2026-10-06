@@ -90,7 +90,8 @@ inline void run_f5(Checks& ck, const std::string& sel) {
     Script& s = hd.rs.sc;
     struct Case { int m0, m1, m2; };
     std::vector<Case> cases;
-    for (int i = 0; i < 10; ++i) {
+    const int nfam = g_mutate ? 2 : 10;   // a mutation run keeps the first two families
+    for (int i = 0; i < nfam; ++i) {
         Case cs{};
         s.vblsync();
         cs.m0 = s.mark();
@@ -101,9 +102,10 @@ inline void run_f5(Checks& ck, const std::string& sel) {
             s.w32(uint16_t(SPR0PTH + 4 * x), (a & 0xFFFF0000u) | lo);
         }
         if (sel == id + "-QUIET" && i == 1) s.lines(60);
+        if (sel == id + "-REF" && i == 1) cs.m2 = s.mark();   // the contrast: M2 is written before M1, so the window is empty
         cs.m1 = s.mark();
-        if (sel == id + "-POP" && i == 1) s.lines(3); else if (sel == id + "-REF" && i == 1) s.lines(1); else s.vblsync();
-        cs.m2 = s.mark();
+        if (sel == id + "-POP" && i == 1) s.lines(3); else if (sel == id + "-REF" && i == 1) { /* the contrast: M2 is written before M1 */ } else s.vblsync();
+        if (!(sel == id + "-REF" && i == 1)) cs.m2 = s.mark();
         cases.push_back(cs);
     }
     s.end();
@@ -114,7 +116,7 @@ inline void run_f5(Checks& ck, const std::string& sel) {
     bool fixture = f_fixture(c), tmo = c.timeouts == 0;
     bool dma = (logv(c, hd.dma_idx) & 0x0220) == 0x0220;
     bool quiet = true, pop = true, ref = true, ok = true;
-    for (int i = 0; i < 10; ++i) {
+    for (int i = 0; i < nfam; ++i) {
         uint64_t m0 = marker(c, cases[i].m0), m1 = marker(c, cases[i].m1), m2 = marker(c, cases[i].m2);
         std::vector<Region> regs;
         for (int x = 0; x < 8; ++x) { uint32_t a = kS[i] ^ (uint32_t(x) << 6); regs.push_back({a, a + 32}); }
@@ -236,21 +238,20 @@ inline void run_f9(Checks& ck, const std::string& sel) {
     poke_words(hd.rs.pokes, DB, {0x1111, 0x2222, 0x3333, 0x4444, 0x5555, 0x6666});
     s.w16(ADKCON, 0x9100); s.w16(INTREQ, 0x0002);
     s.w32(DSKPTH, DB);
+    int me = 0;
+    if (sel == id + "-REF") me = s.mark();   // the contrast: M_end is written before M_start, so the window is empty
     int ms = s.mark();
     uint16_t len = sel == id ? 0xC003 : 0xC004;
     s.w16(DSKLEN, 0x4000);
     if (sel == id + "-DMAON") { s.w16(DSKLEN, len); } else { s.w16(DSKLEN, len); s.w16(DSKLEN, len); }
     int i_on = s.rd(DSKBYTR);
-    int i_blk = -1, mb = 0, me = 0;
-    if (sel == id + "-REF") {
-        me = s.mark();
-        s.w16(DSKLEN, 0x4000);
-    } else {
+    int i_blk = -1, mb = 0;
+    {
         i_blk = s.pollb(INTREQR, 0x0002, 6000);
         mb = s.mark();
         s.w16(DSKLEN, 0x4000);
         s.lines(4);
-        me = s.mark();
+        if (sel != id + "-REF") me = s.mark();
     }
     s.w16(INTREQ, 0x0002);
     s.end();

@@ -888,7 +888,7 @@ A write to Chip RAM that is not an access of the program (section 1.6, CPU) is a
 
 - Marker windows are open intervals: an access at the cycle of a marker write is in no window.
 - A *colour clock* K is the median spacing of consecutive refresh-flagged reads of the run divided by two, measured in the run (the four refresh reads of a line are two colour clocks apart, "There are 4 refresh time slots", p.29). It is used only in the refresh precondition, together with 228 colour clocks per line (p.29, STRLONG "(228 CC)").
-- The refresh precondition (labels `...-PCR` and `...-REF`): the refresh-flagged reads of the window form groups, a gap of more than 8 K starting a new group; every group has four reads, except a group cut by the window's edge, which may have fewer; at least one whole group lies in the window. For C2, whose window can be shorter than two lines, a window shorter than two lines with no refresh-flagged read passes, and a longer window must hold at least its number of lines less one whole groups.
+- The refresh precondition (labels `...-PCR` and `...-REF`): the refresh-flagged reads of the window form groups, a gap of more than 8 K starting a new group; every group has four reads, except a group cut by the window's edge, which may have fewer; at least one whole group lies in the window. A window of n lines holds at least n - 1 whole groups.
 - C2's observation is the first read in the window that is a disk read or a stray read. The stray class includes every read that is none of CPU, refresh, Copper and the disk regions.
 - F6's bands. The video output is the scan-doubled output of the harness, so a line is an output line (a rising edge of `hs`). A pixel is black when its three 4-bit components are 0. C2-C8 are (15,0,0), (0,15,0), (0,0,15), (15,15,0), (0,15,15), (15,0,15), (15,15,15) (the 4-bit output of the p.19 extension of the 4-bit values). A band is a maximal run of output lines that hold a non-black pixel; its height is the number of lines; a gap is the number of black lines between two bands; the first and last column of a line are the sample offsets from the start of the line of its first and last non-black pixel.
 - F1 and F2 case (w, h): `BLTSIZE` is written as `(h << 6) | w`; the case (63, 1) and (1, 1023) of F1 and (v = 0x7FFF) and (w = 0x07FF) of F2 set every bit of their fields.
@@ -908,3 +908,32 @@ Every label starts with the proposition's id. The C propositions print `Cn-FIXTU
 
 `NMH_MUTATE=<label>` runs the proposition that owns the label with one changed stimulus and the unchanged comparator; `NMH_ONLY=Cn,Fm` restricts a run to the named propositions. The normal run runs no mutant. A mutation run of a C proposition runs the first register case of the proposition only.
 
+
+---
+
+## 7. Recorded
+
+The final `make -k -B test` ran on both cores; every run selects the AA chip set (`chipset_config = 0x10`) and configures one drive (`floppy_config = 0`).
+
+| | fx68k | TG68K |
+|---|---|---|
+| Graded lines (`PASS:` / `FAIL:`) | 126 passed, 0 failed | 126 passed, 0 failed |
+| `RECORDED:` lines | 8 (F4, F7, and the six declined groups of section 0) | 8 |
+| Mutation records in `test_aa_integ_s7.cpp` | 126, each prints `FAIL:` on its label | 126, each prints `FAIL:` on its label |
+| Colour clock K | 8 clk_sys cycles | 8 clk_sys cycles |
+| Claims asserted | 70 of 160 (86 of section 0, less the 16 of F4 and F7, section 6.4) | 70 of 160 |
+
+Measured values, per core, in the order of the propositions:
+
+- C1, C3, C5, C6 and C8-C11: for COPCON $0000 and $FFFD the observation equals U and for COPCON $0002 it equals W, on both cores.
+- C2: the first disk read is at Rd (0x0E0000) for COPCON $0000 and $FFFD; with COPCON $0002 it is at Re (0x0F0000) for DSKPTH and at Re' (0x0E0100) for DSKPTL. A disk DMA with DMAON set reads RAM in every run; the window of each case holds three whole groups of refresh reads over two lines.
+- C4: with COPCON $0000 and $FFFD the poll ends on a line in $41-$42, with COPCON $0002 on a line in $C0-$C1.
+- C7, C9, C10, C12: the blitter writes of every case are those the propositions list, with no write outside the four, three or two words counted; C12's observation blit writes $3C3C twice in both frames B, and $5A5A twice after a DMA preload of V1 in frame A.
+- F1, F2: every case writes exactly w x h words at DST + 2 i with $FFFF, and nothing before the BLTSIZE or BLTSIZH write.
+- F3: the blit reads ASRC and ASRC + 2 and nothing of BSRC and CSRC, and writes $FF00 and $F0F0.
+- F5: for each of the ten families every sprite pointer is read at its exact address; there is no stray read.
+- F6: seven bands of 8 output lines in the order C2-C8 in both graded frames, gaps of 8 lines, every band spanning the same columns: 142-780 on fx68k, 141-780 on TG68K; no $555 pixel.
+- F8: four reads of SRC_x and the four writes $8001, $4002, $2004, $1008 for each of A, B and C.
+- F9: four disk reads at DB, DB + 2, DB + 4, DB + 6; DSKBYTR bit 14 reads 1; INTREQR bit 1 is set after the fourth read.
+- F4 (measured, not graded): on both cores 0 of 22 cases read the written location first and 22 read it second; the first read is at the address the channel's pointer held before the case.
+- F7 (measured, not graded): on both cores each channel's window holds one read outside [AD, AD + 8), at 0x000000, and the level sequence of the proposition is present on one output signal (the left output for channels 0 and 3, the right output for channels 1 and 2).

@@ -1,4 +1,143 @@
 // test_aa_integ_s7.cpp -- aa-integ-s7: see SPECIFICATION.md.
+//
+// Copper-protected, DMA-only and address-pair registers of the AA register list, graded at the ports of
+// nanomig.v on both CPU cores with the AA chip set selected (chipset_config = 0x10). One program (prog_run)
+// executes a script that the test places in Chip memory; the test reads the RAM port, the refresh output, the
+// video and audio samples and the markers the program writes to the word MK.
+//
+// NMH_MUTATE=<label> runs the proposition that owns the label with one changed stimulus and the unchanged
+// comparator; a mutation run of a C proposition runs its first register case only, and a mutation run of F1,
+// F2 and F5 keeps the first cases. NMH_ONLY=C1,F3 restricts a run to the named propositions. The normal run
+// (NMH_MUTATE unset) never runs a mutant. F4 and F7 are not graded (SPECIFICATION.md 6.4) and have no record.
+//
+// MUTATION_RECORDS_BEGIN
+// MUTATION C1 stimulus red NMH_MUTATE=C1: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-FIXTURE stimulus red NMH_MUTATE=C1-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-PC1 stimulus red NMH_MUTATE=C1-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-PC2 stimulus red NMH_MUTATE=C1-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-PC3 stimulus red NMH_MUTATE=C1-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C1-PC1.
+// MUTATION C1-PC4 stimulus red NMH_MUTATE=C1-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C3 stimulus red NMH_MUTATE=C3: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C3-FIXTURE stimulus red NMH_MUTATE=C3-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C3-PC1 stimulus red NMH_MUTATE=C3-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C3-PC2 stimulus red NMH_MUTATE=C3-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C3-PC3 stimulus red NMH_MUTATE=C3-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C3-PC1.
+// MUTATION C3-PC4 stimulus red NMH_MUTATE=C3-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C5 stimulus red NMH_MUTATE=C5: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C5-FIXTURE stimulus red NMH_MUTATE=C5-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C5-PC1 stimulus red NMH_MUTATE=C5-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C5-PC2 stimulus red NMH_MUTATE=C5-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C5-PC3 stimulus red NMH_MUTATE=C5-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-PC1.
+// MUTATION C5-PC4 stimulus red NMH_MUTATE=C5-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C4 stimulus red NMH_MUTATE=C4: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C4-FIXTURE stimulus red NMH_MUTATE=C4-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C4-PC1 stimulus red NMH_MUTATE=C4-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C4-PC2 stimulus red NMH_MUTATE=C4-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C4-PC3 stimulus red NMH_MUTATE=C4-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C4-PC1.
+// MUTATION C4-PC4 stimulus red NMH_MUTATE=C4-PC4: the calibration does not write VHPOSW; TG68K FAIL, fx68k FAIL.
+// MUTATION C2 stimulus red NMH_MUTATE=C2: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C2-FIXTURE stimulus red NMH_MUTATE=C2-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C2-PC1 stimulus red NMH_MUTATE=C2-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C2-PC2 stimulus red NMH_MUTATE=C2-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C2-PC3 stimulus red NMH_MUTATE=C2-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C2-PC1.
+// MUTATION C2-PC4 stimulus red NMH_MUTATE=C2-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C2-PC5 stimulus red NMH_MUTATE=C2-PC5: DMACON is written without DSKEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C2-PC4, C2-PC6.
+// MUTATION C2-PC6 stimulus red NMH_MUTATE=C2-PC6: DSKLEN's DMAEN write is made once, not twice, so DMAON reads 0; TG68K FAIL, fx68k FAIL. Also printing FAIL: C2-PC4.
+// MUTATION C2-PCR stimulus red NMH_MUTATE=C2-PCR: M_end is written before M_wait, so the observation window is empty; TG68K FAIL, fx68k FAIL. Also printing FAIL: C2-PC5.
+// MUTATION C6 stimulus red NMH_MUTATE=C6: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C6-FIXTURE stimulus red NMH_MUTATE=C6-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C6-PC1 stimulus red NMH_MUTATE=C6-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C6-PC2 stimulus red NMH_MUTATE=C6-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C6-PC3 stimulus red NMH_MUTATE=C6-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C6-PC1.
+// MUTATION C6-PC4 stimulus red NMH_MUTATE=C6-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C6-PC7 stimulus red NMH_MUTATE=C6-PC7: one movement of 8 counts on the horizontal axis of port 0 is sent through the mouse inputs between the two reads; TG68K FAIL, fx68k FAIL. Also printing FAIL: C6-PC4.
+// MUTATION C7 stimulus red NMH_MUTATE=C7: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C7-FIXTURE stimulus red NMH_MUTATE=C7-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C7-PC1 stimulus red NMH_MUTATE=C7-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C7-PC2 stimulus red NMH_MUTATE=C7-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C7-PC3 stimulus red NMH_MUTATE=C7-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-PC1.
+// MUTATION C7-PC4 stimulus red NMH_MUTATE=C7-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C7-PC5 stimulus red NMH_MUTATE=C7-PC5: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-PC2, C7-PC3, C7-PC4, C7-PC6.
+// MUTATION C7-PC6 stimulus red NMH_MUTATE=C7-PC6: the observation blit is BLTSIZE $0043 (three words) in place of $0044; TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-PC4.
+// MUTATION C8 stimulus red NMH_MUTATE=C8: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C8-FIXTURE stimulus red NMH_MUTATE=C8-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C8-PC1 stimulus red NMH_MUTATE=C8-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C8-PC2 stimulus red NMH_MUTATE=C8-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C8-PC3 stimulus red NMH_MUTATE=C8-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C8-PC1.
+// MUTATION C8-PC4 stimulus red NMH_MUTATE=C8-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C8-PC5 stimulus red NMH_MUTATE=C8-PC5: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C8-PC2, C8-PC3, C8-PC4, C8-PC6.
+// MUTATION C8-PC6 stimulus red NMH_MUTATE=C8-PC6: the observation blit is BLTSIZE $0043 (three words) in place of $0042; TG68K FAIL, fx68k FAIL. Also printing FAIL: C8-PC4.
+// MUTATION C9 stimulus red NMH_MUTATE=C9: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C9-FIXTURE stimulus red NMH_MUTATE=C9-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C9-PC1 stimulus red NMH_MUTATE=C9-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C9-PC2 stimulus red NMH_MUTATE=C9-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C9-PC3 stimulus red NMH_MUTATE=C9-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C9-PC1.
+// MUTATION C9-PC4 stimulus red NMH_MUTATE=C9-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C9-PC5 stimulus red NMH_MUTATE=C9-PC5: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C9-PC2, C9-PC3, C9-PC4, C9-PC6.
+// MUTATION C9-PC6 stimulus red NMH_MUTATE=C9-PC6: the observation blit is BLTSIZE $0044 (four words) in place of $0043; TG68K FAIL, fx68k FAIL. Also printing FAIL: C9-PC4.
+// MUTATION C10 stimulus red NMH_MUTATE=C10: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C10-FIXTURE stimulus red NMH_MUTATE=C10-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C10-PC1 stimulus red NMH_MUTATE=C10-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C10-PC2 stimulus red NMH_MUTATE=C10-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C10-PC3 stimulus red NMH_MUTATE=C10-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C10-PC1.
+// MUTATION C10-PC4 stimulus red NMH_MUTATE=C10-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C10-PC5 stimulus red NMH_MUTATE=C10-PC5: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C10-PC2, C10-PC3, C10-PC4.
+// MUTATION C11 stimulus red NMH_MUTATE=C11: the frame B of COPCON $0000 writes COPCON $0002 in place of $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION C11-FIXTURE stimulus red NMH_MUTATE=C11-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C11-PC1 stimulus red NMH_MUTATE=C11-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C11-PC2 stimulus red NMH_MUTATE=C11-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C11-PC3 stimulus red NMH_MUTATE=C11-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C11-PC1.
+// MUTATION C11-PC4 stimulus red NMH_MUTATE=C11-PC4: the calibration does not write V1; TG68K FAIL, fx68k FAIL.
+// MUTATION C11-PC5 stimulus red NMH_MUTATE=C11-PC5: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C11-PC2, C11-PC3, C11-PC4.
+// MUTATION C12 stimulus red NMH_MUTATE=C12: in the frame B of COPCON $0000 the program preloads $5A5A into PX, so the DMA channel loads V1 as the register's value; TG68K FAIL, fx68k FAIL.
+// MUTATION C12-FIXTURE stimulus red NMH_MUTATE=C12-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION C12-PC1 stimulus red NMH_MUTATE=C12-PC1: COPEN is cleared (DMACON = $0080) after COP1LC is written and set again after M_end, so the Copper fetches no case list; TG68K FAIL, fx68k FAIL.
+// MUTATION C12-PC2 stimulus red NMH_MUTATE=C12-PC2: the program waits for the next vertical blank (INTREQR bit 5) between M_wait and the observation, so F_vb = 1; TG68K FAIL, fx68k FAIL.
+// MUTATION C12-PC3 stimulus red NMH_MUTATE=C12-PC3: every VBL_SYNC has timeout 0, so each wait ends by its timeout; TG68K FAIL, fx68k FAIL. Also printing FAIL: C12-PC1.
+// MUTATION C12-PC4 stimulus red NMH_MUTATE=C12-PC4: frame A does not write V1 into PX, so the preload of V1 loads V0 again; TG68K FAIL, fx68k FAIL. Also printing FAIL: C12-PC5.
+// MUTATION C12-PC5 stimulus red NMH_MUTATE=C12-PC5: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: C12-FIXTURE, C12-PC1, C12-PC2, C12-PC3, C12-PC4.
+// MUTATION F1 stimulus red NMH_MUTATE=F1: the last case writes the size (6,3) while (5,3) is expected; TG68K FAIL, fx68k FAIL.
+// MUTATION F1-FIXTURE stimulus red NMH_MUTATE=F1-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F1-DMA stimulus red NMH_MUTATE=F1-DMA: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F1-TMO.
+// MUTATION F1-TMO stimulus red NMH_MUTATE=F1-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION F1-IDLE stimulus red NMH_MUTATE=F1-IDLE: a blit of one word is started after the last case and not awaited; TG68K FAIL, fx68k FAIL.
+// MUTATION F2 stimulus red NMH_MUTATE=F2: the case with v = 8 writes v = 9; TG68K FAIL, fx68k FAIL.
+// MUTATION F2-FIXTURE stimulus red NMH_MUTATE=F2-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F2-DMA stimulus red NMH_MUTATE=F2-DMA: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F2-TMO.
+// MUTATION F2-TMO stimulus red NMH_MUTATE=F2-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION F2-IDLE stimulus red NMH_MUTATE=F2-IDLE: a blit is started with BLTSIZH after the last case and not awaited; TG68K FAIL, fx68k FAIL.
+// MUTATION F3 stimulus red NMH_MUTATE=F3: the full BLTCON0 is written with $FF0F in place of BLTCON0L; TG68K FAIL, fx68k FAIL.
+// MUTATION F3-FIXTURE stimulus red NMH_MUTATE=F3-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F3-DMA stimulus red NMH_MUTATE=F3-DMA: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F3-TMO.
+// MUTATION F3-TMO stimulus red NMH_MUTATE=F3-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION F3-IDLE stimulus red NMH_MUTATE=F3-IDLE: a second blit of two words is started after the window and not awaited; TG68K FAIL, fx68k FAIL.
+// MUTATION F5 stimulus red NMH_MUTATE=F5: SPR3PTL of the family S1 is written with bit 8 flipped; TG68K FAIL, fx68k FAIL.
+// MUTATION F5-FIXTURE stimulus red NMH_MUTATE=F5-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F5-DMA stimulus red NMH_MUTATE=F5-DMA: DMACON is written without SPREN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F5-POP.
+// MUTATION F5-QUIET stimulus red NMH_MUTATE=F5-QUIET: the program waits 60 lines after the pointer writes of family S1 before M1, so sprite reads fall between M0 and M1; TG68K FAIL, fx68k FAIL. Also printing FAIL: F5-POP.
+// MUTATION F5-POP stimulus red NMH_MUTATE=F5-POP: the second VBL_SYNC of family S1 is three lines, so fewer than eight reads fall between M1 and M2; TG68K FAIL, fx68k FAIL.
+// MUTATION F5-REF stimulus red NMH_MUTATE=F5-REF: M2 is written before M1 in family S1, so the window is empty; TG68K FAIL, fx68k FAIL. Also printing FAIL: F5-POP.
+// MUTATION F5-TMO stimulus red NMH_MUTATE=F5-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION F6 stimulus red NMH_MUTATE=F6: the band rows of planes 3 and 4 are swapped in memory; TG68K FAIL, fx68k FAIL.
+// MUTATION F6-FIXTURE stimulus red NMH_MUTATE=F6-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F6-DMA stimulus red NMH_MUTATE=F6-DMA: DMACON is written without BPLEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F6-READS.
+// MUTATION F6-FRAMES stimulus red NMH_MUTATE=F6-FRAMES: one VBL_SYNC in place of four between M_ready and M_done, so fewer than three complete frames lie in the interval; TG68K FAIL, fx68k FAIL. Also printing FAIL: F6-COPPER, F6-READS.
+// MUTATION F6-READS stimulus red NMH_MUTATE=F6-READS: BPLCON0 is $7000 (BPU = 7), so plane 8 is not fetched; TG68K FAIL, fx68k FAIL.
+// MUTATION F6-COPPER stimulus red NMH_MUTATE=F6-COPPER: COP1LC is not written, so the list is not read; TG68K FAIL, fx68k FAIL. Also printing FAIL: F6-READS.
+// MUTATION F6-TMO stimulus red NMH_MUTATE=F6-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION F8 stimulus red NMH_MUTATE=F8: the third source word of each source under test is $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION F8-FIXTURE stimulus red NMH_MUTATE=F8-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F8-DMA stimulus red NMH_MUTATE=F8-DMA: DMACON is written without BLTEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F8-READS, F8-TMO.
+// MUTATION F8-TMO stimulus red NMH_MUTATE=F8-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION F8-READS stimulus red NMH_MUTATE=F8-READS: USEx is cleared in BLTCON0, so the blit makes no read of SRC_x; TG68K FAIL, fx68k FAIL.
+// MUTATION F8-AFTER stimulus red NMH_MUTATE=F8-AFTER: a second blit is started after M_end of the last case and not awaited; TG68K FAIL, fx68k FAIL.
+// MUTATION F9 stimulus red NMH_MUTATE=F9: DSKLEN is $C003 in place of $C004 (both writes); TG68K FAIL, fx68k FAIL.
+// MUTATION F9-FIXTURE stimulus red NMH_MUTATE=F9-FIXTURE: the run loads prog_run_nofix.bin, which does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION F9-DMA stimulus red NMH_MUTATE=F9-DMA: DMACON is written without DSKEN; TG68K FAIL, fx68k FAIL. Also printing FAIL: F9-DMAON.
+// MUTATION F9-DMAON stimulus red NMH_MUTATE=F9-DMAON: DSKLEN's DMAEN write is made once, not twice, so DMAON reads 0; TG68K FAIL, fx68k FAIL.
+// MUTATION F9-REF stimulus red NMH_MUTATE=F9-REF: M_end is written before M_start, so the window is empty; TG68K FAIL, fx68k FAIL.
+// MUTATION F9-TMO stimulus red NMH_MUTATE=F9-TMO: a WAITB on DMACONR bit 15, which is never set, ends by its timeout before the first case; TG68K FAIL, fx68k FAIL.
+// MUTATION_RECORDS_END
 
 #include "s7_f6.h"
 

@@ -61,6 +61,12 @@ inline void run_f1_f2(Checks& ck, bool f2, const std::string& sel) {
         cases.push_back(reuse);
         if (sel == "F2") cases[3].wh = 9;   // contrast: v = 9 written for the nominal v = 8
     }
+    if (g_mutate) {   // a mutation run keeps the first cases, the case the contrast changes and the last cases
+        std::vector<SizeCase> keep;
+        const size_t n = cases.size(), tail = f2 ? 2 : 1, head = f2 ? 4 : 3;
+        for (size_t i = 0; i < n; ++i) if (i < head || i + tail >= n) keep.push_back(cases[i]);
+        cases = keep;
+    }
     struct Ids { int ms, mg, me; };
     std::vector<Ids> ids;
     const uint32_t dst = kDst2;
