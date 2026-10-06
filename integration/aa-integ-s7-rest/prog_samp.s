@@ -2,7 +2,8 @@
 ; after the prologue, 64 reads of SAMP_REG, each word stored to BUF + 2i.
 ; SAMP_DUAL set: HTOTAL <- SAMP_N, BEAMCON0 <- $2860 (LPENDIS, LOLDIS, DUAL, PAL),
 ; HHPOSW <- SAMP_X come first (P8 steps 2 to 4).
-; Optional: SAMP_PRENOP (one NOP before the loop), SAMP_DELAY (a delay inside the loop).
+; Optional: SAMP_PRENOP (one NOP before the loop), SAMP_PREDELAY (a delay loop of that many passes between the
+; HHPOSW write and the first read), SAMP_DELAY (a delay inside the loop).
 
         include "s7r.i"
 
@@ -21,6 +22,10 @@ start:
         endc
         ifd     SAMP_PRENOP
         nop
+        endc
+        ifd     SAMP_PREDELAY
+        moveq   #SAMP_PREDELAY,d6
+.p:     dbra    d6,.p
         endc
         lea     BUF,a1
         moveq   #63,d7

@@ -23,12 +23,10 @@ inline HvResult run_hv(Checks& ck) {
     bool fx = fixture_ok(r.cap);
     ck.expect(fx, "FIXTURE-HV: the run loaded, booted and stored the constant $BEEF at its fixture address before any sample is read");
     graded(ck, fx, r.conv.ok,
-           "HV-ANCHOR: at least 16 pairs of consecutive VHPOSR samples with the same V field exist, and the H field (bits 7-0) advances by at least 1 in each (AA p.29: 'RESOLUTION=1/160 OF SCREEN WIDTH (280 NS)', H8-H1 in bits 7-0)",
+           "HV-ANCHOR: at least 16 pairs of consecutive VHPOSR samples with the same V field exist, the H field (bits 7-0) advances by at least 1 in each, and no V value has more than one same-V pair whose H field decreased (AA p.29: 'RESOLUTION=1/160 OF SCREEN WIDTH (280 NS)', H8-H1 in bits 7-0)",
            "the run is not usable");
-    if (r.conv.ok)
-        ck.note("HV: " + dec(r.conv.pairs) + " pairs, " + dec(r.conv.wraps) + " pair(s) across a line start left out; conversion " + num3(r.conv.K) + " clk_sys cycles per memory cycle (" + cap_core() + ")");
-    else
-        ck.note("HV: " + dec(r.conv.pairs) + " pairs, " + dec(r.conv.wraps) + " across a line start, no conversion (" + cap_core() + ")");
+    ck.note("HV: " + dec(r.conv.pairs) + " pairs in " + dec(r.conv.segs) + " segments (S_HV), " + dec(r.conv.wraps) + " same-V pair(s) with a decreasing H field left out, at most " + dec(r.conv.maxdec) +
+            " for one V value; J_HV " + num3(r.conv.jmc) + " memory cycles; conversion " + num3(r.conv.K) + " clk_sys cycles per memory cycle (" + cap_core() + ")");
     return r;
 }
 
@@ -39,11 +37,35 @@ struct HRun {
     Samples s;
     bool stores_ok = false;       // PR-8c: end marker present and 64 sample stores
     double max_iv = 0, min_iv = 0;   // sample intervals in memory cycles
+    std::string bin;              // the program the run loads
+    uint32_t wr_addr = 0;         // byte address of the last word of the instruction that writes HHPOSW
+    uint64_t wr_t = 0;            // port time of the first read of that word (0: not found)
+    double lat = 0;               // from that fetch to the first sample store, in memory cycles (0: not measured)
 };
+
+// The byte address of the last word of the first instruction `move.w #<imm>,<d16>(a0)` (opcode $317C)
+// with d16 = HHPOSW ($01D8) in a program binary, which the harness loads at PROGRAM_ORG ($080400); 0 when none.
+inline uint32_t hhposw_instr_end(const std::string& bin) {
+    std::ifstream f(g_dir + "/" + bin, std::ios::binary);
+    std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    auto w = [&](size_t i) { return uint16_t((b[i] << 8) | b[i + 1]); };
+    for (size_t i = 0; i + 5 < b.size(); i += 2)
+        if (w(i) == 0x317C && w(i + 4) == 0x01D8) return 0x080400 + uint32_t(i) + 4;
+    return 0;
+}
+
+// The port time of the first read at a byte address; 0 when none.
+inline uint64_t read_time(const Cap& c, uint32_t addr) {
+    for (auto& x : c.acc) if (!x.w && x.a == addr) return x.t;
+    return 0;
+}
 
 inline void measure_h(HRun& h, double K) {
     h.s = samples(h.cap);
     h.stores_ok = h.cap.done && h.s.full;
+    h.wr_addr = hhposw_instr_end(h.bin);
+    h.wr_t = h.wr_addr ? read_time(h.cap, h.wr_addr) : 0;
+    h.lat = (h.wr_t && h.s.full && h.s.t[0] > h.wr_t) ? double(h.s.t[0] - h.wr_t) / K : 0;
     h.max_iv = 0; h.min_iv = 1e18;
     if (!h.s.full) { h.min_iv = 0; return; }
     for (size_t i = 0; i + 1 < h.s.t.size(); ++i) {
@@ -91,10 +113,11 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     HRun A, B, C, D;
     A.nm = "HA"; B.nm = "HB"; C.nm = "HC"; D.nm = "HD";
     A.N = 0x71; A.X = 0x10; B.N = 0x71; B.X = 0x40; C.N = 0x51; C.X = 0x10; D.N = 0x71; D.X = 0x10;
-    const std::string binA = pick(pick("prog_ha.bin", "PR-8b", "prog_ha_slow.bin"), "PR-8c", "prog_ha_noend.bin");
+    const std::string binA = pick(pick(pick("prog_ha.bin", "PR-8b", "prog_ha_slow.bin"), "PR-8c", "prog_ha_noend.bin"), "PR-8d", "prog_ha_wait.bin");
     const std::string binB = pick(pick(pick("prog_hb.bin", "P8-E1", "prog_ha.bin"), "P8-AGG", "prog_ha.bin"), "PR-8a", "prog_hb_nop.bin");
     const std::string binC = pick(pick(pick(pick("prog_hc.bin", "P8-E2", "prog_hc_n.bin"), "P8-E3", "prog_hc_x.bin"), "P8-E4", "prog_hc_v.bin"), "FIXTURE-P8", "prog_hc_nofix.bin");
     const std::string binD = pick("prog_ha.bin", "P8-HD", "prog_hb.bin");
+    A.bin = binA; B.bin = binB; C.bin = binC; D.bin = binD;
     A.cap = runbin(binA); B.cap = runbin(binB); C.cap = runbin(binC); D.cap = runbin(binD);
     for (HRun* h : {&A, &B, &C, &D}) measure_h(*h, K);
 
@@ -112,6 +135,11 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     bool pr8c = true;
     for (HRun* h : {&A, &B, &C}) pr8c = pr8c && h->stores_ok;
     ck.expect(pr8c, "PR-8c: HA, HB and HC end with the end marker and 64 sample stores are seen");
+    bool pr8d = kok;
+    for (HRun* h : {&A, &B, &C}) pr8d = pr8d && h->lat > 0 && h->lat < double(h->N + 1) / 2.0;
+    ck.expect(pr8d, "PR-8d: in HA, HB and HC the port shows the fetch of the last word of the instruction that writes HHPOSW, the first sample store follows it, and the latency from that fetch to the first sample store is below (N+1)/2 memory cycles");
+    if (kok)
+        ck.note("P8: latency from the fetch of the last word of the HHPOSW instruction to the first sample store, in memory cycles: HA " + num3(A.lat) + " HB " + num3(B.lat) + " HC " + num3(C.lat) + " (" + cap_core() + ")");
     if (kok)
         ck.note("P8: largest sample interval in memory cycles HA " + num3(A.max_iv) + " HB " + num3(B.max_iv) + " HC " + num3(C.max_iv) +
                 ", smallest HA " + num3(A.min_iv) + " (" + cap_core() + ")");
@@ -128,6 +156,7 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     }
 
     const bool pre = kok && pr8b && pr8c;
+    const bool pre3 = pre && pr8d;
     const std::string unmet = "PR-8b / PR-8c / the conversion";
 
     // E8.1: the write sets the counter (R3 pair HA/HB)
@@ -146,12 +175,13 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
            unmet);
 
     // E8.3: the write is the starting point
-    bool e3 = true;
-    for (HRun* h : {&A, &B, &C})
-        if (!(h->s.full && double(mod_(int(h->s.r[0] & 0xFF) - h->X, h->N + 1)) <= h->max_iv)) e3 = false;
-    graded(ck, pre, e3,
-           "P8-E3: in each of HA, HB and HC the first sample follows the written value X by at most the largest sample interval, counted modulo N+1 (AA p.24: HHPOSW writes the DUAL-mode beam counter)",
-           unmet);
+    bool e3 = pre3;
+    if (pre3)
+        for (HRun* h : {&A, &B, &C})
+            if (!(double(mod_(int(h->s.r[0] & 0xFF) - h->X, h->N + 1)) <= h->lat + 1.0)) e3 = false;
+    graded(ck, pre3, e3,
+           "P8-E3: in each of HA, HB and HC the first sample follows the written value X by at most the measured latency of PR-8d plus one count, counted modulo N+1 (AA p.24: HHPOSW writes the DUAL-mode beam counter)",
+           "PR-8b / PR-8c / PR-8d / the conversion");
 
     // E8.4: it counts, one count per memory cycle
     bool e4 = true;
@@ -166,13 +196,14 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
         }
         double elapsed = double(h->s.t[63] - h->s.t[0]) / K;
         double J = h->max_iv - h->min_iv;
-        // the tolerance: the run's own jitter of the read-to-store delay, plus the same quantity of run HV
-        // carried through the conversion (the conversion is the ratio of HV's elapsed time to its H advance)
-        const double tol = J + hv.conv.jmc * elapsed / hv.conv.sdh;
+        // the tolerance: the run's own jitter of the read-to-store delay, plus the conversion's error: each of the
+        // S_HV segments of run HV carries up to J_HV of read-to-store jitter and one memory cycle of H quantization,
+        // so the ratio K is uncertain by S_HV * (J_HV + 1) / sum(dH), which scales the elapsed time
+        const double tol = J + double(hv.conv.segs) * (hv.conv.jmc + 1.0) * elapsed / hv.conv.sdh;
         e4m += " " + h->nm + ": sum d " + dec(sum) + " elapsed " + num3(elapsed) + " J " + num3(J) + " tolerance " + num3(tol);
         if (!(pos && std::fabs(double(sum) - elapsed) <= tol)) e4 = false;
     }
-    ck.note("P8-E4 values (memory cycles):" + e4m + " (" + cap_core() + ")");
+    ck.note("P8-E4 values (memory cycles), S_HV " + dec(hv.conv.segs) + " J_HV " + num3(hv.conv.jmc) + ":" + e4m + " (" + cap_core() + ")");
     graded(ck, pre, e4,
            "P8-E4: in each of HA, HB and HC the count advances by at least 1 between consecutive samples, and the sum of the advances equals the elapsed memory cycles between the first and the last sample store within the run's own sample-interval jitter plus the conversion's (AA p.24 HTOTAL 'this many + 1 280ns increments', p.21 'memory cycles are 280 ns')",
            unmet);
@@ -187,9 +218,9 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     const std::string ids =
         "opus:AA-hhposw.c1 opus:AA-hhposw.c2 opus:AA-hhposw.c5 opus:AA-hhposr.c1 opus:AA-hhposr.c2 opus:AA-hhposr.c5 "
         "sol:AA-hhposw.c1 sol:AA-hhposw.c2 sol:AA-hhposw.c5 sol:AA-hhposr.c1 sol:AA-hhposr.c2 sol:AA-hhposr.c5";
-    graded(ck, pre && pr8a, e1 && e2 && e3 && e4,
+    graded(ck, pre3 && pr8a, e1 && e2 && e3 && e4,
            "P8-AGG: HHPOSW writes and HHPOSR reads the DUAL-mode horizontal beam counter, which counts up to HTOTAL and then starts again (AA p.10 rows 1D8 and 1DA, p.24) " + ids,
-           "PR-8a / PR-8b / PR-8c / the conversion");
+           "PR-8a / PR-8b / PR-8c / PR-8d / the conversion");
 }
 
 } // namespace s7r

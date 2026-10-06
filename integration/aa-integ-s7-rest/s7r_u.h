@@ -124,6 +124,36 @@ inline const std::vector<Acc>& on_line(const std::map<int, std::vector<Acc>>& m,
 inline size_t count_before(const std::vector<Acc>& v, uint64_t t) { size_t n = 0; for (auto& x : v) if (x.t < t) ++n; return n; }
 inline size_t count_after(const std::vector<Acc>& v, uint64_t t) { size_t n = 0; for (auto& x : v) if (x.t > t) ++n; return n; }
 
+// The marker loop of a run: the byte address of its first instruction (`move.w (a2),d0`, `move.b d0,d1`,
+// `sub.b d5,d1`, `cmp.b d6,d1`: the words $3012 $1200 $9205 $B206 of s7r.i, MARKLOOP) in the program binary,
+// which the harness loads at PROGRAM_ORG ($080400); 0 when none.
+inline uint32_t loop_head(const std::string& bin) {
+    std::ifstream f(g_dir + "/" + bin, std::ios::binary);
+    std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+    auto w = [&](size_t i) { return uint16_t((b[i] << 8) | b[i + 1]); };
+    for (size_t i = 0; i + 7 < b.size(); i += 2)
+        if (w(i) == 0x3012 && w(i + 2) == 0x1200 && w(i + 4) == 0x9205 && w(i + 6) == 0xB206) return 0x080400 + uint32_t(i);
+    return 0;
+}
+
+// A run's marker-loop passes between its first and its last marker: the fetches of the loop head, and the
+// largest interval between two of them (a pass), in clk_sys cycles.
+struct LoopPass { int n = 0; uint64_t maxiv = 0; };
+inline LoopPass loop_pass(const URun& r) {
+    LoopPass p;
+    const uint32_t a = loop_head(r.bin);
+    if (!a || r.m.have.empty() || !r.m.have.front() || !r.m.have.back()) return p;
+    const uint64_t t0 = r.m.t.front(), t1 = r.m.t.back();
+    uint64_t prev = 0;
+    for (auto& x : r.cap.acc) {
+        if (x.w || x.a != a || x.t < t0 || x.t > t1) continue;
+        ++p.n;
+        if (prev) p.maxiv = std::max(p.maxiv, x.t - prev);
+        prev = x.t;
+    }
+    return p;
+}
+
 // "Exactly one BPLH access on every line of lo..hi" (E3.1).
 inline bool one_per_line(const URun& r, int lo, int hi) {
     for (int v = lo; v <= hi; ++v) if (on_line(r.bl, v).size() != 1) return false;

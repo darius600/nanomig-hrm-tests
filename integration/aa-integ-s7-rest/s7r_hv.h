@@ -39,15 +39,19 @@ inline Samples samples(const Cap& c, int n = 64) {
 
 // Run HV: 64 reads of VHPOSR stored at BUF + 2i. For every pair of consecutive samples
 // with the same V field (bits 15-8) the H field (bits 7-0) advances by dH memory cycles
-// while the stores advance by dT clk_sys cycles. K = sum dT / sum dH. A pair whose H field
-// decreased straddles a line start and is not a pair of one line; it is counted apart.
+// while the stores advance by dT clk_sys cycles. K = sum dT / sum dH. A same-V pair whose H
+// field decreased straddles a line start and is not a pair of one line; it is counted apart,
+// and at most one such pair may exist for any one V value. The pairs that remain form
+// segments (maximal runs of consecutive pairs); K telescopes over them.
 struct Conv {
-    bool ok = false;           // the anchor: at least 16 pairs, each with dH >= 1
+    bool ok = false;           // the anchor: at least 16 pairs, each with dH >= 1, at most one decrease per V value
     int pairs = 0;
     int wraps = 0;             // same-V pairs whose H field decreased (a line start between the reads)
+    int maxdec = 0;            // the largest number of such pairs for one V value
+    int segs = 0;              // S_HV: segments of consecutive pairs
     bool each_pos = false;
     double K = 0;              // clk_sys cycles per memory cycle
-    double jmc = 0;            // largest minus smallest interval between two sample stores, in memory cycles
+    double jmc = 0;            // J_HV: largest minus smallest interval between two sample stores, in memory cycles
     double sdh = 0;            // sum of the H advances of the pairs, in memory cycles
     std::string why;
 };
@@ -58,17 +62,28 @@ inline Conv conversion(const Cap& c) {
     if (!s.full) { v.why = "fewer than 64 samples"; return v; }
     double sdt = 0, sdh = 0;
     v.each_pos = true;
+    std::map<int, int> dec_per_v;
+    bool prev_in = false;
     for (size_t i = 0; i + 1 < s.r.size(); ++i) {
-        if ((s.r[i] >> 8) != (s.r[i + 1] >> 8)) continue;
-        int dh = int(s.r[i + 1] & 0xFF) - int(s.r[i] & 0xFF);
-        if (dh < 0) { ++v.wraps; continue; }   // the H field wrapped: the pair straddles a line start
-        ++v.pairs;
-        if (dh < 1) v.each_pos = false;
-        sdt += double(s.t[i + 1] - s.t[i]);
-        sdh += dh;
+        bool in = false;
+        if ((s.r[i] >> 8) == (s.r[i + 1] >> 8)) {
+            int dh = int(s.r[i + 1] & 0xFF) - int(s.r[i] & 0xFF);
+            if (dh < 0) {                       // the H field fell back: the pair straddles a line start
+                ++v.wraps;
+                v.maxdec = std::max(v.maxdec, ++dec_per_v[s.r[i] >> 8]);
+            } else {
+                in = true;
+                ++v.pairs;
+                if (dh < 1) v.each_pos = false;
+                sdt += double(s.t[i + 1] - s.t[i]);
+                sdh += dh;
+                if (!prev_in) ++v.segs;
+            }
+        }
+        prev_in = in;
     }
-    v.ok = v.pairs >= 16 && v.each_pos && sdh > 0;
-    if (v.ok) {
+    v.ok = v.pairs >= 16 && v.each_pos && sdh > 0 && v.maxdec <= 1;
+    if (sdh > 0) {
         v.K = sdt / sdh;
         v.sdh = sdh;
         double lo = 1e18, hi = 0;

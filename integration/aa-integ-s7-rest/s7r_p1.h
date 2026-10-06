@@ -192,11 +192,11 @@ inline void run_refptr(Checks& ck, Shared& sh) {
                "P2: with COPCON bit 1 clear the Copper cannot write REFPTR: the refresh address sequences of RA0 (data $5555) and RB0 (data $AAAA) are identical in every position from the Copper's fetch of L+4 to the end marker (AA p.6 legend '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true')",
                "R2-XCHK-REF / PR-2a / PR-2b / equal refresh counts");
 
-        // the joint assertion
-        const bool pre = xc && pr1a && pr1b && pr1c && pr2b && comparable;
-        graded(ck, pre, p1rel && seq_identical(a0, b0),
-               "P1P2-JOINT: COPCON bit 1 decides whether the Copper can write REFPTR: with it set the refresh address sequences of RA and RB differ, with it clear those of RA0 and RB0 are identical in every position (AA p.6 row 028 '~' and legend; AA p.19 '(if 0, access to RGA>7E)') opus:AA-refptr.c5 sol:AA-refptr.c5",
-               "R2-XCHK-REF / PR-1a / PR-1b / PR-1c / PR-2b");
+        // the joint assertion: an effective MOVE with COPCON bit 1 set (PR-2a) is what a MOVE with the bit clear is measured against
+        const bool pre = xc && pr1a && pr1b && pr1c && pr2a && pr2b && comparable;
+        graded(ck, pre, seq_identical(a0, b0),
+               "P1P2-JOINT: the Copper may not write REFPTR unless COPCON bit 1 is set: where a MOVE to REFPTR with the bit set is effective (PR-2a: the refresh address sequences of RA and RB differ), the refresh address sequences of RA0 (data $5555) and RB0 (data $AAAA), whose MOVE is made with the bit clear, are identical in every position (AA p.6 row 028 '~' and legend '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true'; AA p.19 '(if 0, access to RGA>7E)') opus:AA-refptr.c5 sol:AA-refptr.c5",
+               "R2-XCHK-REF / PR-1a / PR-1b / PR-1c / PR-2a / PR-2b / equal refresh counts");
     }
 }
 

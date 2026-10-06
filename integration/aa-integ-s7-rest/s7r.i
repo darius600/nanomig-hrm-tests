@@ -84,7 +84,8 @@ EPILOGUE        macro
 ; \5 = gate width (0x30). For V = Vlo..Vhi: sample VHPOSR until its low byte
 ; lies in [gate, gate + width); read VPOSR; when the 11-bit line number equals V,
 ; store v, then h, at MK + 4*(V - Vlo). With U_RWV defined, the UHRES sprite pointer is
-; written again (U_SPH, U_SPL) right after the marker of line U_RWV.
+; written again (U_SPH, U_SPL) right after the marker of line U_RWV. With U_PAD defined, a delay of
+; U_PAD passes of DBRA follows the gate test (the pass that finds a marker takes longer).
 MARKLOOP        macro
                 lea     $DFF006,a2
                 lea     $DFF004,a3
@@ -97,6 +98,10 @@ MARKLOOP        macro
                 sub.b   d5,d1
                 cmp.b   d6,d1
                 bhs.s   .rep\@
+                ifd     U_PAD
+                moveq   #U_PAD,d7
+.pad\@          dbra    d7,.pad\@
+                endc
                 move.w  (a3),d2
                 move.w  d2,d4
                 and.w   #7,d4
