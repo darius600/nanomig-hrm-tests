@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option, the one MiSTer's line has already taken; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `cia_timera.v`, `cia_timerb.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_timera.v#L32) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_timera.v#L50) |
 | **Report to** | **NanoMig and minimig-dev/MinimigAGA-MiST-TC64.** MiSTer already selects each timer's count source from INMODE, so a fix exists to port — see *Where a fix already exists*. There is no automatic merge in either direction |
-| **Test** | [`hrm/appF-cia-timer-modes`](../../hrm/appF-cia-timer-modes) — two assertions, each on one timer module alone, with no CPU core: `CRA-INMODE`, claims `sol:F-cra.c8`, `opus:F-cra.c8` (p. 348), on the `cia_timera` fixture (`test_cia_timera.cpp:475-515`); `CRB-INMODE-ARITY-00-01`, claim `opus:F-crb.c6` (p. 349), on the `cia_timerb` fixture (`test_cia_timerb.cpp:476-518`). The same claim's codes `10` and `11` are `CRB-INMODE-ARITY-10-11`, a RECORDED line, declined (`test_cia_timerb.cpp:539-571`): the fixture has no CNT pin, and with CNT held high p. 349 itself predicts that modes 10 and 11 read alike. [`integration/appF-cia-system`](../../integration/appF-cia-system) grades the same bits at the system boundary, on fx68k and TG68K: `P7.5` (CRA bit 5, pp. 348, 351, 357), `P8.65-MODE01` (CRB mode 01, pp. 349, 351, 357) and `P8.65-MODE11-PAIRK` (CRB mode 11, pp. 349, 357), which carry no claim id, are red on both cores. `P7.5` and `P8.65-MODE01` carry this finding through their CIA-B legs. Their CIA-A legs are not counted: nothing in the package observes KCLK at the timer's CNT input, so an excess decrement there is either an ignored INMODE bit or a missing KCLK path. `P8.65-MODE11-PAIRK` is red on both cores and not counted either: it cannot separate an ignored mode 11 from a KCLK edge that never reaches CNT, and its control is not built — see *Measured*. The claim ids sit on the package's P10 rows, which join these lines and measure nothing of their own |
+| **Test** | [`hrm/appF-cia-timer-modes`](../../hrm/appF-cia-timer-modes) — two assertions, each on one timer module alone, with no CPU core: `CRA-INMODE`, claims `sol:F-cra.c8`, `opus:F-cra.c8` (p. 348), on the `cia_timera` fixture (`test_cia_timera.cpp:475-515`); `CRB-INMODE-ARITY-00-01`, claim `opus:F-crb.c6` (p. 349), on the `cia_timerb` fixture (`test_cia_timerb.cpp:476-518`). The same claim's codes `10` and `11` are `CRB-INMODE-ARITY-10-11`, a RECORDED line, declined (`test_cia_timerb.cpp:539-571`): the fixture has no CNT pin, and with CNT held high p. 349 itself predicts that modes 10 and 11 read alike. [`integration/appF-cia-system`](../../integration/appF-cia-system) grades the zero-edge half of the same bits at the system boundary, on fx68k and TG68K: `P7.5` (CRA bit 5, pp. 348, 351; CIA-B's timer A), `P7.5-CIAA-INMODE` (CRA bit 5; CIA-A's timer A over an interval with no CNT edge) and `P8.65-MODE01` (CRB mode 01, pp. 349, 351; CIA-B's timer B), which carry no claim id, are red on both cores. The counting half ("counts positive CNT transitions", pp. 348, 349) is not graded: each of the three prints a RECORDED line for it, `P7.5-COUNTING`, `P7.5-CIAA-INMODE-COUNTING` and `P8.65-MODE01-COUNTING`, because it needs a CNT source whose edges are known to reach the timer, and nothing in the package observes KCLK at CIA-A's CNT input. For the same reason the decrement CIA-A's timers make while a key code is sent is a MEASURED line, not graded, and so is `P8.65-MODE11-PAIRK` (CRB mode 11, pp. 349, 357); only mode 11's first half, with no key sent, is graded, and it is green. The claim ids sit on the package's P10 rows, which join these lines and measure nothing of their own |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 343, 348–351, 353; 8 — Interface Hardware, printed p. 251; Appendix G — Keyboard Interface, printed p. 357 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red: `CRA-INMODE` (`cia_timera`: 9 passed, 1 failed) and `CRB-INMODE-ARITY-00-01` (`cia_timerb`: 7 passed, 1 failed); `CRB-INMODE-ARITY-10-11` is a RECORDED line, not graded. In the same run `CRB-INMODE-CODE-00` and `CRB-INMODE-CODE-10`, green, show CRB bit 6 choosing between E-clock pulses and timer A's underflows on the same fixture. `integration/appF-cia-system`: 61 passed, 26 failed on each core, the same lines on both; 3 red lines are in this finding's scope. `P7.5` and `P8.65-MODE01` carry it, through their CIA-B legs; `P8.65-MODE11-PAIRK` is not counted. Two P10 rows are red through the CIA-B legs of those two lines, `sol:F-cra.c13` (CRA INMODE) and `sol:F-crb.c7, sol:F-crb.c10` (CRB INMODE; `P8.65-MODE11-PAIRK` is a further member of the second), and two more, `opus:F-cra.c13` and `opus:F-crb.c14`, through them and through lines of [NM-HRM-074](NM-HRM-074.md) and, for CRA, `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)); the other reds are those findings'. In the same run `P5-LEGA` (φ2 counted, one per E period), `P8.65-MODE10`, `P8.65-MODE11-PAIRN`, the three checks that the key arrived inside the window and `P8.65-MODE11-WINPRE` are green; `KP-A` and `KP-B` are recorded, not graded |
+| **Assertions** | 2 red: `CRA-INMODE` (`cia_timera`: 9 passed, 1 failed) and `CRB-INMODE-ARITY-00-01` (`cia_timerb`: 7 passed, 1 failed); `CRB-INMODE-ARITY-10-11` is a RECORDED line, not graded. In the same run `CRB-INMODE-CODE-00` and `CRB-INMODE-CODE-10`, green, show CRB bit 6 choosing between E-clock pulses and timer A's underflows on the same fixture. `integration/appF-cia-system`: 97 passed, 26 failed on each core, the same lines on both; 3 red lines are in this finding's scope, each the zero-edge half of INMODE = CNT: `P7.5` and `P8.65-MODE01` through their CIA-B legs, and `P7.5-CIAA-INMODE` through CIA-A's timer A over an interval with no CNT edge. The counting half is three RECORDED lines (`P7.5-COUNTING`, `P7.5-CIAA-INMODE-COUNTING`, `P8.65-MODE01-COUNTING`), not graded. Two P10 rows are red through these lines, `sol:F-cra.c13` (CRA INMODE) and `sol:F-crb.c7, sol:F-crb.c10` (CRB INMODE; its mode-11 member is not graded), and two more, `opus:F-cra.c13` and `opus:F-crb.c14`, through them and through lines of [NM-HRM-074](NM-HRM-074.md) and, for CRA, `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)); the other reds are those findings'. In the same run `P5-LEGA` (φ2 counted, one per E period), `P7.5-CONTRAST` and `P8.65-MODE01-CONTRAST` (CR = $01 counts the E cycles of the window on both CIAs), `P8.65-MODE10`, `P8.65-MODE11-PAIRN`, the window preconditions (`P7.5-WINDOW`, `P7.5-WINDOW-CIAB`, `P7.5-CIAA-INMODE-PRE`, `P8.65-MODE01-WINDOW`, `P8.65-MODE01-WINDOW-CIAB`, `P8.65-MODE11-WINDOW`, `P8.65-MODE11-WINPRE`) and `P7.6-CIAA` are green; `KP-A` and `KP-B` are recorded, not graded |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all stop a timer's E-clock count once its INMODE selects CNT, and count CNT's rising edges instead. vAmiga, Denise and Copperline drive CIA-A's CNT from the keyboard's KCLK and CIA-B's from PA1, and count CRB mode 11 only while CNT is high; WinUAE drives CIA-B's alone, from PA1, and counts mode 11 as mode 10 |
 
 ---
@@ -174,44 +174,67 @@ being the assertion above.
 
 At the system boundary,
 [`integration/appF-cia-system`](../../integration/appF-cia-system) grades
-both bits on fx68k and on TG68K, through 68000 programs on the whole of
-`nanomig.v`. It reads 61 passed, 26 failed on each core, the same lines on
-both. Three of its red lines carry this finding, and each shows it
-differently:
+the zero-edge half of both bits on fx68k and on TG68K, through 68000 programs
+on the whole of `nanomig.v`. It reads 97 passed, 26 failed on each core, the
+same lines on both. Three of its red lines carry this finding, and each shows
+it differently:
 
-- **`P7.5`** (`test_appF_cia_system.cpp:1370-1403`) loads timer A with $1000,
+- **`P7.5`** (`:2401-2403`) loads timer A with $1000,
   sets CRA to $21 (START, INMODE = CNT), waits, and reads the timer after the
   stop write; the package measures the window, from the marker after the
   start write to the one after the stop write, as 2236 E periods on fx68k and
-  2666 on TG68K. The line joins two legs. **On CIA-B**, whose CNT is POUT and
-  which nothing drives in this run, p. 348 leaves the timer where it was,
-  v = $1000. NanoMig's timer reads $0744 on fx68k and $0596 on TG68K: 2236 and
-  2666 counts, one for every E period of the window. This leg asks for nothing but a timer that reads bit 5, and it is
-  this finding. **On CIA-A** the test sends one key code inside the window and
-  expects 8 counts, one for each KCLK pulse p. 357 gives a code. The timer
-  reads the same $0744 and $0596, the φ2 count of the window. The key reaches
-  SDR whole, with no KCLK, as *What NanoMig does* shows, and nothing in the
-  package observes KCLK at the timer's CNT input, so that excess decrement is
-  either an ignored bit 5 or a missing KCLK path, and a timer that read bit 5
-  would not count 8 there either. The CIA-A leg is not counted among the reds
-  that carry the finding. `P7.5-WINDOW`, green, reads SP = 1 in ICR before the
-  stop write: the key arrived inside the window.
-- **`P8.65-MODE01`** (`:1427-1438`) is the same for timer B with CRB = $21,
-  and reads the same, $0744 and $0596 on both CIAs; its CIA-A leg is not
-  counted, for the reason `P7.5`'s is, and `P8.65-MODE01-WINDOW` is green.
-- **`P8.65-MODE11-PAIRK`** (`:1607-1657`) has CIA-A's timer B count timer A's
-  underflows (latch 3) in two runs, each with one key code sent, once in mode
-  10 (CRB = $41) and once in mode 11 (CRB = $61), and requires mode 11 to
-  count fewer: p. 349 counts in mode 11 only "while CNT pin is held high", and
-  p. 357 pulses KCLK low once per bit. Both runs count 559 on fx68k and 666 on
-  TG68K, over windows of equal length (`P8.65-MODE11-WINPRE`, green), and the
-  key arrived in both (`P8.65-MODE11-WINDOW`, green). Mode 11 counting as mode
-  10 is what NanoMig's unread bit 5 gives; it is also what a timer that read
-  bit 5 would give with a CNT that no key pulses, as MiSTer's does with CNT
-  tied high. The line cannot tell the two apart, so it is not counted among
-  the reds that carry the finding. Its control, run Y with the timer not
-  started, is named in the package and not built; with START = 0 the timer
-  would not be counting, so it would not show the comparator live.
+  2666 on TG68K. It grades CIA-B, whose CNT is POUT and which nothing drives in
+  this run, so the timer sees no positive transition: p. 348 leaves it where it
+  was, v = $1000. NanoMig's timer reads $0744 on fx68k and $0596 on TG68K: 2236
+  and 2666 counts, one for every E period of the window. `P7.5-WINDOW-CIAB`,
+  green, has the stop write after the ready marker with W in [1500, 3000] E
+  periods. This leg asks for nothing but a timer that reads bit 5, and it is
+  this finding.
+- **`P7.5-CIAA-INMODE`** (`:2442-2444`) is the same on CIA-A's timer A. One run
+  starts the timer twice with CRA = $21. In the first interval no key code is
+  sent and no CNT edge occurs: `P7.5-CIAA-INMODE-PRE`, green, shows that the ICR
+  read after the interval has SP = 0, that the key code is not sent before the
+  interval ends, and that the interval is long enough for a timer counting φ2 to
+  count at least one pulse. p. 348 leaves the timer at $1000, and the line reads
+  v1 = $0DFE on fx68k and $0D9D on TG68K. Because no edge is involved, this leg
+  does not depend on whether KCLK reaches CNT. The second interval of the same
+  run has one key code in it, and is printed, not graded: i2 = $08 and
+  v2 = $0544 on fx68k, $0335 on TG68K.
+- **`P8.65-MODE01`** (`:2481-2483`) is the first for timer B with CRB = $21, on
+  CIA-B, and reads the same, $0744 and $0596; `P8.65-MODE01-WINDOW-CIAB` is
+  green.
+
+The counting half of INMODE = CNT, "counts positive CNT transitions", is not
+graded in any of the three: `P7.5-COUNTING`, `P7.5-CIAA-INMODE-COUNTING` and
+`P8.65-MODE01-COUNTING` are RECORDED lines, because CIA-B's CNT is undriven and
+no output of the system shows KCLK at CIA-A's CNT input. So the P10 members of
+INMODE = CNT are FAIL or not graded, never PASS.
+
+With a key code in the window, CIA-A's timers are measured and not graded.
+On CIA-A the same program sends one key code inside the window, where a
+timer that counted CNT would count 8, one for each KCLK pulse p. 357 gives a code. The timer reads the same
+$0744 and $0596, the φ2 count of the window. The key reaches SDR whole, with no
+KCLK, as *What NanoMig does* shows, and nothing in the package observes KCLK at
+the timer's CNT input, so that excess decrement is either an ignored bit 5 or a
+missing KCLK path, and a timer that read bit 5 would not count 8 there either.
+The package prints it as a MEASURED line (`P7.5-CIAA`, and `P8.65-MODE01 CIAA`
+for timer B: $0744 and $0596 as well), not graded. `P7.5-WINDOW`, green,
+reads SP = 1 in ICR before the stop write: the key arrived inside the window,
+and `P7.6-CIAA`, graded under the timing clauses of that window, prints SP = 1
+as its own result, green.
+
+- **`P8.65-MODE11-PAIRK`** (`:2745-2748`) is a MEASURED line, not graded: CIA-A's
+  timer B counts timer A's underflows (latch 3) in two runs, each with one key
+  code sent, once in mode 10 (CRB = $41) and once in mode 11 (CRB = $61), and
+  p. 349 counts in mode 11 only "while CNT pin is held high" while p. 357
+  pulses KCLK low once per bit, so mode 11 should count fewer. Both runs count
+  559 on fx68k and 666 on TG68K (`D_Y(K) >= D_X(K)`), over windows of equal
+  length (`P8.65-MODE11-WINPRE`, green), and the key arrived in both
+  (`P8.65-MODE11-WINDOW`, green). Mode 11 counting as mode 10 is what
+  NanoMig's unread bit 5 gives; it is also what a timer that read bit 5 would
+  give with a CNT that no key pulses, as MiSTer's does with CNT tied high. The
+  line cannot tell the two apart, so it is not graded, and mode 11's P10 member
+  is not graded either: only its first half, with no key sent, is graded.
 
 Green in the same run: `P5-LEGA`, all four timers counting φ2 at one per E
 period; `P8.65-MODE10`, timer B counting timer A's underflows, 48 of them, on
@@ -219,31 +242,36 @@ both CIAs; and `P8.65-MODE11-PAIRN`, the two modes counting alike, 559 and 666,
 with no key sent, as p. 349 gives while CNT stays high. `KP-A` and `KP-B`, the
 check that the keyboard is idle, are recorded rather than graded: their probe
 is the other timer set to CNT, which on this build counts φ2 whether a key is
-sent or not.
+sent or not ($0748 with and without a key on fx68k, $0599 on TG68K).
 
-**The controls.** `P75-GREENCTL` (`:1417-1425`) and `P865M01-GREENCTL`
-(`:1450-1455`), which the package runs only when `NMH_MUTATE` selects them,
-put a stopped timer through the comparator of the CIA-B legs: on CIA-B, CRA or
-CRB is written $20 (INMODE = CNT, START = 0) in place of $21. Both are green on
-fx68k and on TG68K, reading v = $1000, and every other line of those runs
-reads as in the normal run: the read-out gives $1000 when the timer has not
-counted. With START = 0 no counting input reaches the comparator in these
-runs, so they do not separate a working read-out from a dead timer; that the
-timers count is shown by `P5-LEGA`, green on all four, and by the CIA-B legs'
-own $0744 and $0596. The CIA-A legs and `P8.65-MODE11-PAIRK` have no control in
-the package; for `P8.65-MODE11-PAIRK` it names one, run Y with the timer not
-started, and does not build it.
+**The controls.** `P7.5-CIAB-GREENCTL` and `P8.65-MODE01-CIAB-GREENCTL`
+(`:2456-2460`, `:2513-2517`), which the package runs only when `NMH_MUTATE`
+selects `P75-GREENCTL` or `P865M01-GREENCTL`, put a timer whose count input is
+known through one equality comparator. CIA-A's timer A (CRA = $21) or timer B
+(CRB = $21) is started twice with the same code, and stopped and read after each
+start. No CNT edge occurs in the first interval: the key code is not sent
+before it ends and the ICR read after it has SP = 0
+(`P7.5-CIAB-GREENCTL-PRE` and `P8.65-MODE01-CIAB-GREENCTL-PRE`, green). One key
+code, eight KCLK pulses, is sent in the second, and i has SP = 1. A timer that
+read its INMODE bit and saw the key code's pulses would read $1000 after the
+first interval and 8 below that after the second. On the repository's RTL both
+controls print FAIL on fx68k, reading v1 = $0DFE, i1 = $00, i2 = $08 and
+v2 = $0544: the timer counts φ2 in both intervals. The controls are not a
+second measurement of the finding: they show what a passing line would read,
+and need a timer that reads bit 5 and a key path that produces KCLK, which the
+repository's RTL has neither of. The CIA-A decrement while a key code is sent
+and `P8.65-MODE11-PAIRK` have no control of their own.
 
 **The claim rows.** The package's P10 rows carry the INMODE claim ids
-(`:2296-2371`). Each joins the lines named for its claim and measures nothing
+(`:3108-3172`). Each joins the lines named for its claim and measures nothing
 of its own, so none is evidence beside those lines. `sol:F-cra.c13`, CRA
-INMODE, is red through `P7.5`'s CIA-B leg, and `sol:F-crb.c7, sol:F-crb.c10`,
-CRB INMODE, through `P8.65-MODE01`'s CIA-B leg; `P8.65-MODE11-PAIRK`, a
-further red member of the second, is not counted. `P5` and `P8.65-MODE10`,
-their other members, are green. The bitmaps' 1-settings,
-`opus:F-cra.c13` and `opus:F-crb.c14`, are red through the same lines and also
-through the PBON and OUTMODE lines of [NM-HRM-074](NM-HRM-074.md) and, for
-CRA, through `P7.6-CIAB` ([NM-HRM-086](NM-HRM-086.md)).
+INMODE, is red through `P7.5` and `P7.5-CIAA-INMODE`, and
+`sol:F-crb.c7, sol:F-crb.c10`, CRB INMODE, through `P8.65-MODE01`; its mode-11
+member is not graded. `P5` and `P8.65-MODE10`, their other members, are green.
+The bitmaps' 1-settings, `opus:F-cra.c13` and `opus:F-crb.c14`, are red through
+the same lines and also through the PBON and OUTMODE lines of
+[NM-HRM-074](NM-HRM-074.md) and, for CRA, through `P7.6-CIAB`
+([NM-HRM-086](NM-HRM-086.md)).
 
 ---
 
@@ -355,9 +383,11 @@ change:
 - CIA-A's timers would count KCLK only if the key path produced it. p. 357's
   eight pulses per code are the page's KCLK, and nothing in NanoMig makes them.
   In `integration/appF-cia-system` the CIA-B legs of `P7.5` and
-  `P8.65-MODE01` would read v = $1000, as they ask; their CIA-A legs, which
-  expect 8 counts, and `P8.65-MODE11-PAIRK`, which expects mode 11 to count
-  fewer than mode 10, would stay red.
+  `P8.65-MODE01` would read v = $1000, as they ask, and so would
+  `P7.5-CIAA-INMODE`'s first interval; the decrement CIA-A's timers make while a
+  key code is sent, which expects 8 counts, and `P8.65-MODE11-PAIRK`, which
+  expects mode 11 to count fewer than mode 10, are not graded and would print
+  what the key path gives.
 
 ---
 
@@ -389,14 +419,16 @@ change:
   timer that keeps counting E-clock pulses after it is set to count CNT, and a
   CRB mode 01 that counts them too; whether any Amiga software does that is not
   settled here.
-- **At the system's ports only the CIA-B legs isolate bit 5.** The CIA-A legs
-  of `P7.5` and `P8.65-MODE01`, and `P8.65-MODE11-PAIRK`, expect what KCLK
-  pulses on CIA-A's CNT would give. They read what an unread bit 5 gives, but
-  with no KCLK they would not read the page's values with bit 5 read either,
-  and none of the three is counted among the reds that carry the finding.
-- **No assertion grades CRB mode 11.** Its equality with mode 10 is read from
-  the source line quoted under *Measured*, and the pair-K line cannot separate
-  it from a KCLK that never reaches CNT.
+- **At the system's ports the zero-edge half isolates bit 5.** It holds on
+  CIA-B's two timers and on CIA-A's timer A over an interval with no CNT edge.
+  The decrement CIA-A's timers make while a key code is sent, and
+  `P8.65-MODE11-PAIRK`, expect what KCLK pulses on CIA-A's CNT would give. They
+  read what an unread bit 5 gives, but with no KCLK they would not read the
+  page's values with bit 5 read either, so none of the three is graded.
+- **Only mode 11's first half is graded.** `P8.65-MODE11-PAIRN`, with CNT idle
+  high, is green: mode 11 counts what mode 10 counts, as p. 349 gives. The
+  half that needs CNT low is the pair-K line, and it cannot separate an ignored
+  mode 11 from a KCLK that never reaches CNT.
 
 ---
 

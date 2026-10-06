@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `ciab.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciab.v#L186) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciab.v#L238) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig, MiSTer and TC64 all tie CIA-B's serial interrupt to 0, so there is no fix to port; the transmit logic CIA-A already has in all three is what a fix would reuse — see *Suggested change* |
-| **Test** | [`integration/appF-cia-system`](../../integration/appF-cia-system) — one assertion, run on both CPU cores: `P7.6-CIAB [p345,p348]: at least one ICR sample has SP=1 (CRA<-$41, SPMODE output, SDR<-$A5)`, the SPMODE = 1 field of claim `opus:F-cra.c13` (p. 349), red on fx68k and on TG68K. Its green control is `P7.6-CIAB-GREENCTL`, run with `NMH_MUTATE=P76CIAB-GREENCTL`: the same program on CIA-A, through the same comparator |
+| **Test** | [`integration/appF-cia-system`](../../integration/appF-cia-system) — one assertion, run on both CPU cores: `P7.6-CIAB [p345,p348]: at least one ICR sample has SP=1 (CRA<-$41, SPMODE output, SDR<-$A5)`, the SPMODE = 1 field of claim `opus:F-cra.c13` (p. 349), red on fx68k and on TG68K. Its green control is `P7.6-CIAB-GREENCTL`, in the same run: the same program on CIA-A, through the same comparator |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 340, 345–349, 351; Appendix E — I/O Connectors and Interfaces, printed pp. 324, 337 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 1 red on each core, `P7.6-CIAB`: 0 of 300 ICR samples show SP on fx68k and on TG68K. In the same run `P7.6-CIAB-PRE`, green on both cores, finds timer A underflowing in 136 of the 300 samples. Run with `NMH_MUTATE=P76CIAB-GREENCTL`, `P7.6-CIAB-GREENCTL`, the same program on CIA-A through the same comparator, is green on both cores |
+| **Assertions** | 1 red on each core, `P7.6-CIAB`: 0 of 300 ICR samples show SP on fx68k and on TG68K. In the same run `P7.6-CIAB-PRE`, green on both cores, finds timer A underflowing in 136 of the 300 samples. `P7.6-CIAB-GREENCTL`, the same program on CIA-A through the same comparator, is green on both cores in the same run, and so is `P7.6-CIAA`, graded under the timing clauses of the key-code window: CIA-A's SP reads 1 after a key code with the serial port in input mode |
 | **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline run one CIA model for both chips, and on CIA-B, with CRA bit 6 set, shift a byte written to SDR out on timer A's underflows and set ICR bit 3 when the eighth bit is out. WinUAE, vAmiga and Denise take two underflows a bit, as p. 345's "1/2 the underflow rate" does; Copperline takes one. vAmiga, Copperline and WinUAE also tie CIA-B's SP and CNT to its PA0 and PA1, the lines pp. 337 and 351 pair them with |
 
 ---
@@ -155,10 +155,10 @@ read (`p76_ciab.s`). It grades, on fx68k and on TG68K:
 |---|---:|---:|---|
 | CIA-B, `p76_ciab.s`: samples showing TA | 136 of 300 | 136 of 300 | `P7.6-CIAB-PRE`, green |
 | CIA-B, `p76_ciab.s`: samples showing SP | **0 of 300** | **0 of 300** | `P7.6-CIAB`, **red** |
-| CIA-A, `p76_ciaa.s`, the same program: a sample showing SP | yes | yes | `P7.6-CIAB-GREENCTL`, run with `NMH_MUTATE=P76CIAB-GREENCTL`, green |
+| CIA-A, `p76_ciaa.s`, the same program: a sample showing SP | yes | yes | `P7.6-CIAB-GREENCTL`, green |
 
-The package prints 61 passed, 26 failed on each core, and 62 passed, 26 failed
-with the green control added. `P7.6-CIAB` is the one red line of this finding;
+The package prints 97 passed, 26 failed on each core, `P7.6-CIAB-GREENCTL` among
+the passes. `P7.6-CIAB` is the one red line of this finding;
 `P10 opus:F-cra.c13`, the conjunction over the CRA bitmap's 1-settings, is red
 through it among other members.
 

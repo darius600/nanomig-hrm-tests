@@ -117,18 +117,19 @@ low when SEL0* (PB3) falls, and a wait loop; then the same with PRB written
 $80, $88 and $80, MTR* high. `fdd_led` is read at the end of each wait. The package prints,
 the same on both cores:
 
-    RECORDED: P1-LP/P1-O2 [p244]: fdd_led follows disk DMA, not MTR* latched at drive select (NM-HRM-046) -- measured: LED when the CPU leaves reset=off, after R-SELECT with MTR*=0 (on leg)=off, after R-SELECT with MTR*=1 (off leg)=off -- reads off throughout this run, on both legs: this package starts no disk DMA, and R-SELECT's own select/motor write is not a proven-live input at this port -- O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded
+    RECORDED: P1-LP/P1-O2 [p244]: not graded -- measured: LED when the CPU leaves reset=off, after R-SELECT with MTR*=0 (on leg)=off, after R-SELECT with MTR*=1 (off leg)=off -- the same level at all three points, so no input of this package is shown to move the light at this port; O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded
 
 With DF0's motor latched on, `fdd_led` reads 0, the on leg's `off`, where
 p. 244 has the light on. The off leg reads `off` too, so the light is dark
 after both selects. `LED when the CPU leaves reset` is read on the cycle the
 CPU leaves reset, before the program runs. The record states what it does not
-show: the package starts no disk DMA, the one input known to light the LED,
-and the select and motor write of R-SELECT is not a proven-live input at this
-port, so the reading shows the light dark, not a comparison against a lit
-state. The package prints no value for the four O2 legs, nor for P2's leg R:
+show: the light reads the same level at all three points, so no input of the
+package is shown to move it, and the reading shows the light dark, not a
+comparison against a lit state. The package starts no disk DMA, the one input
+known to light the LED. It prints no value for the four O2 legs, nor for P2's
+leg R:
 
-    RECORDED: LED-R [p244]: not graded -- fdd_led follows disk DMA, not MTR* latched at select (NM-HRM-046); O2 is not observable at this port, the same fact P1-LP/P1-O2 record
+    RECORDED: LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2
 
 At leg R, PB7 is an input and reads high on this build (P2's r1 = $FF on CIA-B
 timer B), so DF0's motor latch is off at that select whatever the light
@@ -149,9 +150,10 @@ on there too.
 is not a graded red of its own.** The package prints no FAIL for the light; its
 26 FAILs on each core belong to other findings, eleven of them to
 [NM-HRM-074](NM-HRM-074.md). Its RECORDED lines
-say the light follows disk DMA, but the package starts no disk DMA: what it
-shows at the system's ports is the light not following the motor, and
-`CTRL-DMA-DRIVES-FDD-LED` above is what shows DMA lighting it.
+say that no input of the package is shown to move the light at this port, and
+the package starts no disk DMA: what it shows at the system's ports is the
+light not following the motor, and `CTRL-DMA-DRIVES-FDD-LED` above is what
+shows DMA lighting it.
 
 ## What a user would actually see
 
