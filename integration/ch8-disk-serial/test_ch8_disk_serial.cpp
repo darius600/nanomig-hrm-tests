@@ -25,7 +25,7 @@
 // The three baseline reds (P1, P2, P3) stay red, unaffected, throughout.
 //
 // MUTATION P1-NPLUS1 stimulus red NMH_MUTATE=P1-NPLUS1: SERPER written with N+1 (1, 372, 32397) and graded against N -- both cores (69 passed, 8 failed): flips "P1 control (green today) [p255]: N=0 (W=1) alone, same grid check", "P1 control (green today) [p255]: N=32396 (W=1) alone, same grid check", "P1 control (green today) [p255]: the within-word intervals ...", "P2(ii) control (green today) [p255]: the (N=0, N=32396) pair alone ...", and "P2 [p255]: on PAL, the fixed period equals one PAL colour clock ..." (its own U/C=1 check, via pal_n0/pal_n32396's own +1 binaries)
-// MUTATION 1c/2c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK forced low then high between the lead-in and MARK=0 -- both cores: flips "1c [p257]: TxD does not change ...", "2c [p257]: TxD idle before MARK=0, PAL N=371 run" and "P1 control (green today) [p255]: the within-word intervals ..." (the two extra TxD changes move t0). fx68k only (69 passed, 8 failed) also flips "1a [p194,p195] R1 anchor: ..." and "2a [p194,p195] R1 anchor on the PAL N=371 run: ..." through the R1 population clause (1 of 1644/1944 candidate groups malformed); TG68K does not reproduce that (71 passed, 6 failed) -- a genuine cross-core difference (G6), not reconciled
+// MUTATION 1c/2c stimulus red NMH_MUTATE=P1-1C: ADKCON UARTBRK forced low then high between the lead-in and MARK=0 -- both cores (71 passed, 6 failed): flips "1c [p257]: TxD does not change ...", "2c [p257]: TxD idle before MARK=0, PAL N=371 run" and "P1 control (green today) [p255]: the within-word intervals ..." (the two extra TxD changes move t0). The R1 anchor and population lines 1a and 2a stay green on both cores: the population counts only refresh groups that lie wholly inside the capture
 // MUTATION 1d/2d stimulus red NMH_MUTATE=P1-1D: next word polled on TSRE instead of TBE before being written -- both cores (72 passed, 5 failed): flips "1d [p257,p283]: for k=2..4, MARK=k comes before word (k-1)'s own stop-bit change ..." and "2d [p257,p283]: words sent back to back, PAL N=371 run"
 // MUTATION 1e/2e stimulus red NMH_MUTATE=P1-1E: word 2's SERDAT write left out while still polling for its transfer -- both cores (69 passed, 8 failed): flips "1d [p257,p283]: ...", "1e [p283]: MARK=DONE is present and no poll ... ended at its own bound in the N=371 NTSC run", "2d [p257,p283]: ...", "2e [p283]: run completed, no poll ... PAL N=371 run" and "P1 control (green today) [p255]: the within-word intervals ..."
 // MUTATION 4c stimulus red NMH_MUTATE=P4-4C: FAST=1 run writes ADKCON <- $0100 instead of $8100 (bit 15 clear clears the bit) -- both cores (72 passed, 5 failed): flips "P4-NTSC-FAST1 4c [p249]: ADKCONR bit 8 read back as 1 ..." and "P4-PAL-FAST1 4c [p249]: ADKCONR bit 8 read back as 1 ..."
@@ -35,7 +35,7 @@
 //   Chip-memory read rate it measures to the bit-cell time, so it is not a graded proposition and carries no
 //   mutation of its own. |(t128-t64)-(t192-t128)| is measured, not graded, for the same reason (no page
 //   sentence bounds it) and likewise carries no mutation.
-// MUTATION 5b stimulus red NMH_MUTATE=P5-5B: the UARTBRK set step left out, so the two anchor levels read equal -- both cores (73 passed, 4 failed): flips "5b [p257]: TxD is 0 between MARK=BRK and MARK=UNBRK ..."
+// MUTATION 5b stimulus red NMH_MUTATE=P5-5B: only the ADKCON write that sets UARTBRK is left out; MARK=BRK is still written, so the run still shows 12 markers and the level between MARK=BRK and MARK=UNBRK reads 1, like the level after MARK=UNBRK -- both cores (73 passed, 4 failed): flips "5b [p257]: TxD is 0 between MARK=BRK and MARK=UNBRK ..." through that level comparison
 // MUTATION 5c stimulus red NMH_MUTATE=P5-5C: character 0 read and cleared only after s_2, so OVRUN sets -- both cores (70 passed, 7 failed): flips "5a [p283]: MARK=DONE is present ..., run A", "5c [p256]: OVRUN (bit 15) is 0 ..., run A", "5d [p256]: MARK=READY precedes s_0 ..., run A" and "(a)+(c) [p255,p256,p257,p283]: ..."
 // MUTATION 5d stimulus red NMH_MUTATE=P5-5D: the INTREQ clear left out, so the next poll sees RBF=1 at once -- both cores (70 passed, 7 failed): flips "5d [p256]: ..., run A", "5e [p255]: every G5 bracket (run A) ...", "(a)+(c) [p255,p256,p257,p283]: ..." and "(b) [p256]: the G5 bracket's lower end ..."
 // MUTATION 5e stimulus red NMH_MUTATE=P5-5E: every poll iteration padded by >= T/4, so the G5 bracket is no longer narrower than T/4 -- both cores (71 passed, 6 failed): flips "5e [p255]: every G5 bracket (run A) ...", "(a)+(c) [p255,p256,p257,p283]: ..." and "(b) [p256]: ..."
@@ -94,17 +94,28 @@ nmh::Config cfg_for(bool ntsc) {
 
 struct RefreshGroup { uint64_t r1, r2, r3, r4; };
 
-std::vector<RefreshGroup> find_refresh_groups(const std::vector<nmh::RamAccess>& log) {
+// The candidate groups of low-address reads, split where two reads lie more
+// than 100 cycles apart. The last group is dropped when the capture ended
+// within 100 cycles of its last read: the gap rule has not closed it, so it
+// may lack reads the capture never saw, and it does not lie wholly inside the
+// capture.
+std::vector<std::vector<uint64_t>> candidate_groups(const std::vector<nmh::RamAccess>& log, uint64_t end_cycle) {
     std::vector<uint64_t> low;
     for (const auto& a : log) if (!a.is_write && a.word_addr < 0x1000) low.push_back(a.cycle);
-    std::vector<RefreshGroup> out;
-    if (low.empty()) return out;
     std::vector<std::vector<uint64_t>> groups;
+    if (low.empty()) return groups;
     groups.push_back({low[0]});
     for (size_t i = 1; i < low.size(); ++i) {
         if (low[i] - low[i - 1] > 100) groups.push_back({});
         groups.back().push_back(low[i]);
     }
+    if (end_cycle - groups.back().back() <= 100) groups.pop_back();
+    return groups;
+}
+
+std::vector<RefreshGroup> find_refresh_groups(const std::vector<nmh::RamAccess>& log, uint64_t end_cycle) {
+    std::vector<RefreshGroup> out;
+    auto groups = candidate_groups(log, end_cycle);
     for (const auto& g : groups) {
         if (g.size() != 4) continue;
         out.push_back({g[0], g[1], g[2], g[3]});
@@ -136,17 +147,10 @@ bool check_r1_anchor(const std::vector<RefreshGroup>& groups, double candidate_C
 // ones.
 struct RefreshPopulation { int groups = 0, malformed = 0; };
 
-RefreshPopulation refresh_population(const std::vector<nmh::RamAccess>& log, double C) {
+RefreshPopulation refresh_population(const std::vector<nmh::RamAccess>& log, double C, uint64_t end_cycle) {
     RefreshPopulation p;
-    std::vector<uint64_t> low;
-    for (const auto& a : log) if (!a.is_write && a.word_addr < 0x1000) low.push_back(a.cycle);
-    if (low.empty() || C <= 0) return p;
-    std::vector<std::vector<uint64_t>> groups;
-    groups.push_back({low[0]});
-    for (size_t i = 1; i < low.size(); ++i) {
-        if (low[i] - low[i - 1] > 100) groups.push_back({});
-        groups.back().push_back(low[i]);
-    }
+    auto groups = candidate_groups(log, end_cycle);
+    if (groups.empty() || C <= 0) return p;
     p.groups = int(groups.size());
     double expected = 2.0 * C;
     for (const auto& g : groups) {
@@ -204,9 +208,9 @@ TxRun run_tx(const std::string& bin, bool ntsc, uint64_t post_boot_budget) {
         }
     }
 
-    r.refresh = find_refresh_groups(h.ram_log());
+    r.refresh = find_refresh_groups(h.ram_log(), h.cycles());
     if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
-    { auto pop = refresh_population(h.ram_log(), r.C); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
+    { auto pop = refresh_population(h.ram_log(), r.C, h.cycles()); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
 
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
@@ -382,9 +386,9 @@ RxRun run_rx(const std::string& bin, uint64_t budget, double T, double t_scale, 
         }
     }
     for (int j = 0; j < 8; ++j) r.results.push_back(h.peek_logical(kResultAddr + 2 * j));
-    r.refresh = find_refresh_groups(h.ram_log());
+    r.refresh = find_refresh_groups(h.ram_log(), h.cycles());
     if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
-    { auto pop = refresh_population(h.ram_log(), r.C); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
+    { auto pop = refresh_population(h.ram_log(), r.C, h.cycles()); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
         int count = 0;
@@ -708,9 +712,9 @@ FastRun run_fast(const std::string& bin, bool ntsc, uint64_t budget) {
     r.done_cycle = h.run_until_write(kMarkAddr, kMarkDone, budget);
     r.log = h.ram_log();
     r.result = h.peek_logical(kResultAddr);
-    r.refresh = find_refresh_groups(r.log);
+    r.refresh = find_refresh_groups(r.log, h.cycles());
     if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
-    { auto pop = refresh_population(r.log, r.C); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
+    { auto pop = refresh_population(r.log, r.C, h.cycles()); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
         int count = 0;

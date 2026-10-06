@@ -37,8 +37,8 @@ start:
 ; ---- step 2: R4 line-level anchor ----
         ifnd MUT_NOBRK
         move.w  #$8800,ADKCON(a0)      ; UARTBRK set
-        move.w  #MARK_BRK,MARK
         endif
+        move.w  #MARK_BRK,MARK
         move.w  #DELAYCOUNT-1,d0       ; >= 100 colour clocks (G4-style margin)
 .dly:   dbra    d0,.dly
         move.w  #$0800,ADKCON(a0)      ; UARTBRK cleared
