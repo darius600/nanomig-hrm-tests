@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L136-L150) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L157-L171) |
 | **Report to** | **Minimig-AGA and NanoMig.** All four implementations keep the reset interval out of the final count; this one counts through it |
-| **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge) reads the counters; [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports) reads POTGOR at the system boundary: `C0-Fc` to `C4-Fc`, claims `opus:8-dio.c21`, `sol:8-dio.c19` (p. 240), graded on their own in each of PAL+ECS, NTSC+ECS, PAL+OCS and NTSC+OCS on both CPU cores, red in all four on fx68k and on TG68K |
+| **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge) reads the counters; [`integration/ch8-controller-ports`](../../integration/ch8-controller-ports) reads POTGOR at the system boundary: `C0-Fc` to `C4-Fc` and their aggregate `P1-START`, which carries claims `opus:8-dio.c21`, `sol:8-dio.c19` (p. 240), graded on their own in each of PAL+ECS, NTSC+ECS, PAL+OCS and NTSC+OCS on both CPU cores, red in all four on fx68k and on TG68K |
 | **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 8 red in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other five are [NM-HRM-037](NM-HRM-037.md)'s): on the first increment `opus:8-potchg.c1` and `sol:8-pot.c16` (p.235 body text) and `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5), and on the final count `FINALCOUNT-BODY-OPUS`, `FINALCOUNT-BODY-SOL`, `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`; 20 red per core at the system boundary, `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`), with the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) green in each on the same measurement basis; the `VGREEN` record turns `C3-Fc` green through the same comparator |
+| **Assertions** | 8 red in `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other five are [NM-HRM-037](NM-HRM-037.md)'s): on the first increment `opus:8-potchg.c1` and `sol:8-pot.c16` (p.235 body text) and `opus:8-fig8-5.c1` and `sol:8-fig8-5.c2` (Figure 8-5), and on the final count `FINALCOUNT-BODY-OPUS`, `FINALCOUNT-BODY-SOL`, `FINALCOUNT-FIG8-5-OPUS` and `FINALCOUNT-FIG8-5-SOL`; 24 red per core at the system boundary: `C0-Fc` to `C4-Fc` in each of the four configurations (labelled with a `-NTSC+ECS`, `-PAL+OCS` or `-NTSC+OCS` suffix outside PAL+ECS: `C0-Fc`, `C1-Fc`, `C2-Fc`, `C3-Fc`, `C4-Fc`; `C0-Fc-NTSC+ECS`, `C1-Fc-NTSC+ECS`, `C2-Fc-NTSC+ECS`, `C3-Fc-NTSC+ECS`, `C4-Fc-NTSC+ECS`; `C0-Fc-PAL+OCS`, `C1-Fc-PAL+OCS`, `C2-Fc-PAL+OCS`, `C3-Fc-PAL+OCS`, `C4-Fc-PAL+OCS`; `C0-Fc-NTSC+OCS`, `C1-Fc-NTSC+OCS`, `C2-Fc-NTSC+OCS`, `C3-Fc-NTSC+OCS`, `C4-Fc-NTSC+OCS`), and each configuration's aggregate over them (`P1-START`, `P1-START-NTSC+ECS`, `P1-START-PAL+OCS`, `P1-START-NTSC+OCS`), with the output-driven line (`C1-Fc-OUT` to `C4-Fc-OUT`) and the chip's own low drive (`PC2`) green in each on the same measurement basis; the `VGREEN` record turns `C3-Fc` green through the same comparator |
 | **Verdict of the four** | **2–2 on the counter read, 3–1 on the POTGOR discharge, unanimous on the final count.** Denise and Copperline hold the counters at zero through the reset interval, so a read inside it returns 0, as the counter package's first-increment assertions require; WinUAE and vAmiga run the counters through the interval and restart them from zero at its end, so they too read non-zero after one line. On POTGOR, WinUAE, vAmiga and Denise discharge an input line through the interval, so a line nothing pulls up reads 0 there, as the integration package's assertions require; Copperline's POTGOR read has no discharge and returns 1 on a released line, as NanoMig's does. vAmiga's joystick, its mouse at the default setting, and Denise's joypad and mouse pull a released button's line high in every read, so with one attached those two read 1 as well. All four keep the interval out of the final count, which NanoMig includes, and all four put PAL at eight lines; on NTSC WinUAE and vAmiga use a flat 8, Denise and Copperline 7 |
 
 ---
@@ -68,7 +68,8 @@ pots (dump capacitors, start counters)", the capacitors sit on the pot lines
 and 8 just before START (`PC3`) and $5500 in every counted read after it, which
 the package prints in hex: every input line reads 1, as before START. The
 package grades each of PAL+ECS, NTSC+ECS, PAL+OCS and NTSC+OCS on its own, and
-`C0-Fc` to `C4-Fc` are red in all four on fx68k and on TG68K, 20 reds per core.
+`C0-Fc` to `C4-Fc` are red in all four on fx68k and on TG68K, and so is each
+configuration's aggregate `P1-START`: 24 reds per core.
 In every configuration the output-driven line reads 1 in the same reads
 (`C1-Fc-OUT` to `C4-Fc-OUT`), lines the chip drives low read $0000 at the same
 line of their frame (`PC2`), and `PC1` to `PC4` hold; all of these are green.
@@ -81,12 +82,12 @@ and `C4-Fc` stay red on bit 12 alone ($1000, $1100, $1400, $5000), because no
 port at this boundary reaches RX ([NM-HRM-037](NM-HRM-037.md)).
 
 The grading and its hex record are
-[`test_ch8_controller_ports.cpp:546-582`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L546-L582),
+[`test_ch8_controller_ports.cpp:711-760`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L711-L760),
 the four configurations
-[`:138-140`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L138-L140)
-and [`:643-661`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L643-L661),
+[`:279-281`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L279-L281)
+and [`:763-784`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L763-L784),
 and the `VGREEN` record
-[`:614-636`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L614-L636).
+[`:815-834`](../../integration/ch8-controller-ports/test_ch8_controller_ports.cpp#L815-L834).
 
 The cause is the same absence on the register side. POTGOR's input bits are
 the button levels, gated only by each line's output-enable and data bits
