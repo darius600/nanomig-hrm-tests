@@ -18,7 +18,8 @@ PROGS    += prog_cb_o2 prog_cb_oF prog_cb_o0 prog_cb_oD \
             prog_cb_e2_sizh3 prog_cb_o2_nocop prog_cb_o2_noblt prog_cb_o2_cpuearly \
             prog_cb_e2_nocop prog_cb_e2_noblt prog_cb_e2_cpuearly prog_cb_oD_cpublt80 \
             prog_cb_eD_cpublt80 prog_cb_o0_cpublt80 prog_cb_e0_cpublt80 prog_cb_o0_cpuwr \
-            prog_cb_e0_cpuwr prog_cb_o2_cpuwr prog_cb_e2_cpuwr prog_cb_o2_fix
+            prog_cb_e0_cpuwr prog_cb_o2_cpuwr prog_cb_e2_cpuwr prog_cb_o2_fix \
+            prog_cb_e2_cpusizh prog_cb_e0_cpusizh
 
 # BEAM (P14)
 PROGS    += prog_beam prog_beam_b0 prog_beam_lace1 prog_beam_nolace prog_beam_fix prog_beam_short prog_beam_lowrd

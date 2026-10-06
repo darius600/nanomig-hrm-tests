@@ -26,14 +26,14 @@
 //   P9-PROP, P9-PRE1, P9-PRE2, P9-PRE3, FIXTURE-CPUPTR -> prog_cpuptr_*.bin
 //   P10-PROP, P10-PRE1, P10-PRE2, P10-PRE3, FIXTURE-JUMP -> prog_jump_*.bin
 //   P11-PROP, P11-PRE1, P11-PRE3, FIXTURE-BLIT   -> prog_blit_*.bin
-//   P12-PROP, P12-ECSREG, P12-PRE1, P12-PRE2, P12-PRE3, P12-PRE3-QUIET,
-//   P13-PAIR1, P13-PAIR2, P13-PRE1, P13-PRE2, P13-PRE3, FIXTURE-CB
+//   P12-PROP, P12-ECSREG, P12-PRE1, P12-PRE2, P12-PRE3, P12-PRE3-QUIET, P12-PRE3-SIZH,
+//   P13-PAIR1, P13-PAIR2, P13-PRE1, P13-PRE2, P13-PRE2-SIZH, P13-PRE3, FIXTURE-CB
 //                                                -> prog_cb_<o|e><2|F|0|D>[_*].bin
 //   P14-PROP-ECS, P14-PROP-OCS, P14-PRE1 (the ECS slot runs the OCS chip set),
 //   P14-PRE2 (both slots PAL), P14-PRE3, P14-POP, R5-ANCHOR-BEAM, FIXTURE-BEAM
 //                                                -> prog_beam_*.bin
 //   P1-CONTROL, P1-PRE1, P1-PRE2, P1-PRE3, P2-PROP, P2-PRE1, P2-PRE2,
-//   P2-PRE3, P2-PRE4, P2-PRE4-NOSPR, P3-PROP, P3-PRE1 (the BITS-OCS slot runs
+//   P2-DEP (the SHR-SWEEP slot has SHSH1 cleared everywhere), P2-PRE4, P2-PRE4-NOSPR, P3-PROP, P3-PRE1 (the BITS-OCS slot runs
 //   the ECS chip set), P3-PRE2 (the same, with BPLCON0 = $1240), P3-PRE3,
 //   P3-PRE4, P3-PRE5, R5-ANCHOR-SHR, FIXTURE-SHR  -> prog_shr*_*.bin
 //
@@ -77,10 +77,12 @@
 // MUTATION P12-PRE2 stimulus red NMH_MUTATE=P12-PRE2: DMACON without BLTEN in both $0002 runs -- fx68k/TG68K: FAIL (DMACONR=0280); P12 is NOT GRADED
 // MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3: the CPU writes BLTSIZE = $0082 before M1 (structural clause: one BLTSIZE store in each binary) -- fx68k/TG68K: FAIL; P12 is NOT GRADED
 // MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3-QUIET: the CPU writes $1111 to $30200 inside M1-M2 (quiet-window clause) -- fx68k/TG68K: FAIL; P12 is NOT GRADED
-// MUTATION P12 stimulus red NMH_MUTATE=P12-PROP: the first BLTSIZE MOVE carries $0081 in both $0002 runs -- fx68k/TG68K: FAIL (DST1 gets two words instead of four); every precondition holds
+// MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3-SIZH: the ECS run's CPU writes BLTSIZH = $0001 before M1 (one MOVE.W #imm,BLTSIZH($05E) in the binary) -- fx68k/TG68K: FAIL (BLTSIZH stores OCS=0 ECS=1; the quiet-window clause moves with it, 4 unexplained writes in M1-M2 on ECS); P12 is NOT GRADED
+// MUTATION P12 stimulus red NMH_MUTATE=P12-PROP:the first BLTSIZE MOVE carries $0081 in both $0002 runs -- fx68k/TG68K: FAIL (DST1 gets two words instead of four); every precondition holds
 // MUTATION P12 stimulus red NMH_MUTATE=P12-ECSREG: the ECS BLTSIZH MOVE carries $0003 -- fx68k/TG68K: FAIL (DST3 gets three words instead of four); every precondition holds
 // MUTATION P13-PRE1 stimulus red NMH_MUTATE=P13-PRE1: DMACON without COPEN in the OCS and ECS $0002 runs -- fx68k/TG68K: FAIL; P13 is NOT GRADED
 // MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2: the CPU writes BLTSIZE = $0082 at V7-0 >= $80 in the $0000 runs, where none is declared -- fx68k/TG68K: FAIL; P13 is NOT GRADED
+// MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2-SIZH: the ECS $0000 run's CPU writes BLTSIZH = $0001 before M1 (one BLTSIZH store in the binary, none declared) -- fx68k/TG68K: FAIL (BLTSIZH stores ECS=1; no other precondition moves); P13 is NOT GRADED
 // MUTATION P13-PRE3 stimulus red NMH_MUTATE=P13-PRE3: the CPU writes $1111 to $30200 inside M1-M2 of the $0000 runs -- fx68k/TG68K: FAIL; P13 is NOT GRADED
 // MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR1: the first BLTSIZE MOVE carries $0081 in the $FFFF runs -- fx68k/TG68K: FAIL (the $0002 and $FFFF outcomes differ on both chip sets); every precondition holds
 // MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR2: the CPU writes BLTSIZE = $0082 at V7-0 >= $80 of the first field in the $FFFD runs, one store declared for them -- fx68k/TG68K: FAIL (the $0000 and $FFFD outcomes differ on both chip sets); every precondition holds
@@ -98,13 +100,14 @@
 // MUTATION P1-PRE2 stimulus red NMH_MUTATE=P1-PRE2: DMACON without SPREN in the SHR-SWEEP run -- fx68k/TG68K: FAIL (no sprite lines); P1-PRE3 moves with it, P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE3 stimulus red NMH_MUTATE=P1-PRE3: usage 0 of the SHR-SWEEP run has VSTOP = VSTART + 5 (a fifth data pair keeps the next usages aligned) -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-CONTROL stimulus red NMH_MUTATE=P1-CONTROL: usage 2 of the SHR-SWEEP run has CTL $5400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 2 has d=80, not 82); every precondition holds
-// MUTATION P1 none impossible red in the baseline on both cores, so no stimulus can make it fail harder, and none makes it pass: every 70 ns position needs the implementation to act on SPRxCTL bit 4, which it does not (d is the same for k = 2j and 2j+1 in every group pair). The green control through the same comparator on the same run is P1-CONTROL (even k, SHSH1 clear). Not exercised, by a scope decision: an implementation mutation that makes bit 4 act would turn it green and is not made
+// MUTATION P1 implementation green a private copy of the RTL outside the repository in which SPRxCTL bit 4 (SHSH1) delays the sprite's serial output by two 28 MHz clocks (70 ns) while the sprite resolution is SuperHires (denise_sprites_shifter.v and denise_sprites.v; the EBR shifter build of TG68K and the non-EBR build of fx68k), built with make NANOMIG=<copy> and run on both cores: every precondition holds, P1-CONTROL passes and P1 passes with d = 80 81 82 ... 89 in both graded fields; with the repository's RTL P1 is red on both cores (d = 80 80 82 82 84 84 86 86 88 88). The control through the same comparator on the same run is P1-CONTROL (even k, SHSH1 clear)
 // MUTATION P2-PRE1 stimulus red NMH_MUTATE=P2-PRE1: the SHR-LORES slot runs the SuperHires program (BPLCON0 = $1240) -- fx68k/TG68K: FAIL (ruler period 8, not 32); P2 is NOT GRADED
 // MUTATION P2-PRE2 stimulus red NMH_MUTATE=P2-PRE2: usage 2 of the Lores run has CTL $5400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 2 has d=80, not 82); P2 is NOT GRADED
-// MUTATION P2-PRE3 none impossible red in the baseline on both cores because P1 is red: it needs the SHR-SWEEP run to pass P1, which no stimulus does while the implementation ignores SPRxCTL bit 4. Not exercised, by a scope decision: an implementation mutation that makes bit 4 act would turn it green and is not made
 // MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4: usage 0 of the Lores run has VSTOP = VSTART + 5 -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P2 is NOT GRADED
 // MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4-NOSPR: DMACON without SPREN in the Lores run -- fx68k/TG68K: FAIL (no sprite lines); P2-PRE2 moves with it and P2 is NOT GRADED
-// MUTATION P2 none impossible NOT GRADED on both cores in the baseline, because P2-PRE3 is red, so its comparator is never reached. The contrast (NMH_MUTATE=P2-PROP: the Copper switches to SuperHires after the ruler lines of the Lores run) prints P2-PRE3 FAIL and P2 NOT GRADED, and its groups still show even d, since the implementation ignores bit 4. Not exercised, by a scope decision: an implementation mutation that makes bit 4 act would reach the comparator and is not made
+// MUTATION P2 implementation green the private copy of the RTL described at P1 (SPRxCTL bit 4 acts in SuperHires), both cores: every precondition holds, P1 passes and P2 passes (d even on every line of every group in the Lores run); with the repository's RTL P2 prints RECORDED NOT GRADED, depends on P1, because P1 is red
+// MUTATION P2 stimulus red NMH_MUTATE=P2-PROP: the Copper switches to SuperHires after the ruler lines of the Lores run (prog_shrl_sw) -- on the private copy of the RTL described at P1, both cores: P2 FAIL with every precondition holding (the sprite lines are drawn in SuperHires, odd k give odd d); with the repository's RTL P2 is NOT GRADED, depends on P1
+// MUTATION P2 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy of the RTL described at P1, both cores: P1 FAIL and P2 NOT GRADED, depends on P1, with P2-PRE1, P2-PRE2 and P2-PRE4 holding
 // MUTATION P3-PRE1 stimulus red NMH_MUTATE=P3-PRE1: the BITS-OCS slot runs the ECS chip set -- fx68k/TG68K: FAIL (VPOSR identification $20, expected $00); P3 is NOT GRADED
 // MUTATION P3-PRE2 stimulus red NMH_MUTATE=P3-PRE2: the BITS-OCS slot runs BPLCON0 = $1240 on the ECS chip set -- fx68k/TG68K: FAIL (ruler period 8, not 32); P3-PRE1 moves with it (identification $20) and P3 is NOT GRADED
 // MUTATION P3-PRE3 stimulus red NMH_MUTATE=P3-PRE3: usage 4 has CTL $6400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 4 has d=80, not 82); P3 is NOT GRADED
@@ -1240,7 +1243,7 @@ Run do_run(const std::string& dir, const std::string& key, const std::string& bi
             (key[1] == '2' ? "0002" : key[1] == 'F' ? "FFFF" : key[1] == '0' ? "0000" : "FFFD");
     bool ok1 = false, ok2 = false;
     r.bltsize_writes = ct::count_move_imm_a0(dir + "/" + bin, 0x0058, &ok1);
-    r.bltsizh_writes = ct::count_move_imm_a0(dir + "/" + bin, 0x01DE, &ok2);
+    r.bltsizh_writes = ct::count_move_imm_a0(dir + "/" + bin, 0x005E, &ok2);
     r.bin_read = ok1 && ok2;
     auto o = run_program(ct::make_cfg(r.ecs, false), dir + "/" + bin);
     r.done = o.loaded > 0 && o.released && o.done_seen;
@@ -1328,10 +1331,12 @@ const Ovr kOvr[] = {
     {"P12-PRE2", "o2", "noblt", 0}, {"P12-PRE2", "e2", "noblt", 0},
     {"P12-PRE3", "o2", "cpuearly", 0}, {"P12-PRE3", "e2", "cpuearly", 0},
     {"P12-PRE3-QUIET", "o2", "cpuwr", 0}, {"P12-PRE3-QUIET", "e2", "cpuwr", 0},
+    {"P12-PRE3-SIZH", "e2", "cpusizh", 0},
     {"P13-PAIR1", "oF", "s81", 0},  {"P13-PAIR1", "eF", "s81", 0},
     {"P13-PAIR2", "oD", "cpublt80", 1}, {"P13-PAIR2", "eD", "cpublt80", 1},
     {"P13-PRE1", "o2", "nocop", 0}, {"P13-PRE1", "e2", "nocop", 0},
     {"P13-PRE2", "o0", "cpublt80", 0}, {"P13-PRE2", "e0", "cpublt80", 0},
+    {"P13-PRE2-SIZH", "e0", "cpusizh", 0},
     {"P13-PRE3", "o0", "cpuwr", 0}, {"P13-PRE3", "e0", "cpuwr", 0},
     {"FIXTURE-CB", "o2", "fix", 0},
 };
@@ -1847,7 +1852,7 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     if (mv == "P2-PROP") binL = "prog_shrl_sw.bin";
     if (mv == "P2-PRE1") binL = "prog_shr.bin";
     if (mv == "P2-PRE2") binL = "prog_shrl_u2cl.bin";
-    if (mv == "P2-PRE3") binS = "prog_shr_nosh1.bin";
+    if (mv == "P2-DEP") binS = "prog_shr_nosh1.bin";
     if (mv == "P2-PRE4") binL = "prog_shrl_g0h5.bin";
     if (mv == "P2-PRE4-NOSPR") binL = "prog_shrl_nospr.bin";
     if (mv == "P3-PROP") binO = "prog_shro_u1sh0.bin";
@@ -1912,14 +1917,16 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     if (wantL) {
         bool pre1 = ruler_is(L, 32);
         bool pre2 = all_fields(L, p2pre2_field);
-        bool pre3 = p1_pass;
         bool pre4 = all_fields(L, sref_ok) && all_fields(L, g0_four);
         c.expect(pre1, "P2-PRE1: the R != 0 pattern of the three ruler lines has a period of 32 output pixels, so Lores is active in every graded field");
         c.expect(pre2, "P2-PRE2: for even k the Lores run shows d = 80 + k, so the measurement resolves 140 ns steps in Lores");
-        c.expect(pre3, "P2-PRE3: the paired SHR-SWEEP run passes P1, so bit 4 is live in this configuration");
         c.expect(pre4, "P2-PRE4: SREF shows its e_A on every one of its 80 scan lines and group 0 has 4 scan lines in the Lores run (P1's preconditions 2 and 3)");
-        if (!(fx && anc && pre1 && pre2 && pre3 && pre4)) {
-            c.record("P2: NOT GRADED, a precondition does not hold (FIXTURE-SHR, R5-ANCHOR-SHR, P2-PRE1, P2-PRE2, P2-PRE3 or P2-PRE4)");
+        if (!(fx && anc && pre1 && pre2 && pre4)) {
+            c.record("P2: NOT GRADED, a precondition does not hold (FIXTURE-SHR, R5-ANCHOR-SHR, P2-PRE1, P2-PRE2 or P2-PRE4)");
+        } else if (!p1_pass) {
+            // the paired SHR-SWEEP run must pass P1: bit 4 must be live in this configuration, or a
+            // parity pass could come from a bit that is ignored everywhere (SPECIFICATION.md P2, item 3 of its preconditions)
+            c.record("P2: NOT GRADED, depends on P1");
         } else {
             c.expect(all_fields(L, p2_field), "P2: on ECS in Lores, a sprite with SPRxCTL bit 4 set starts at a whole multiple of 140 ns, never at an odd "
                                               "multiple of 70 ns (p.303) -- ten groups, d even on every line of every group");

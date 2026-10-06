@@ -551,7 +551,9 @@ parity.
    Lores.
 3. The paired run SHR-SWEEP, under the same configuration, passes P1. This shows
    that bit 4 is live in this configuration, so that a parity pass cannot come
-   from a bit that is ignored everywhere.
+   from a bit that is ignored everywhere. This is a dependency on P1's line, not
+   a measurement of the Lores run, so it has no line of its own: when P1 does not
+   pass, the run prints `RECORDED: P2: NOT GRADED, depends on P1`.
 4. P1's preconditions 2 and 3 hold here too.
 
 **6. Contrasting cases.**
@@ -564,8 +566,8 @@ parity.
   P2-PRE1 as well.
 - Precondition 1: BPLCON0 = $1240 (period 8).
 - Precondition 2: usage 2 with CTL $5400 (SH0 cleared). d_2 = 80, not 82.
-- Precondition 3: SHR-SWEEP with SHSH1 cleared everywhere. P1's step check
-  fails.
+- Dependency on P1: SHR-SWEEP with SHSH1 cleared everywhere. P1's step check
+  fails, and P2 is not graded.
 - Precondition 4: as P1's contrasts for its preconditions 2 and 3.
 
 **7. Reference frame.** As in P1.
@@ -1355,7 +1357,9 @@ $05A–$05E are not registers ("new" on p.298). Not covered: $078, $07C
 - Precondition 1: DMACON without COPEN. There are no list reads.
 - Precondition 2: DMACON without BLTEN. Bit 6 = 0.
 - Precondition 3: add a CPU write BLTSIZE = $0082 before M1. The structural check
-  flags it.
+  flags it. On the ECS run, add a CPU write BLTSIZH = $0001 before M1 instead. The
+  structural check flags it as well, and so does the quiet-window check, because
+  the blit that write starts runs inside M1–M2.
 
 **7. Reference frame.** R5 (field by L1 fetch). Address ranges at the port.
 
@@ -1413,7 +1417,8 @@ the equality is graded. Sources:
   red.
 - Precondition 1: as in P12.
 - Precondition 2: a CPU write of BLTSIZE in the $0000 run. The structural check
-  flags it.
+  flags it. A CPU write of BLTSIZH ($05E) in the ECS $0000 run, which declares none,
+  is flagged in the same way.
 - Precondition 3: add a CPU write to $30200 inside the window.
 
 **7. Reference frame.** As in P12. Outcomes are compared field by field in order.
@@ -1519,9 +1524,8 @@ writes only the PAL bit.
 
 ## 5. Recorded
 
-Final run of `make -k -B test` on both cores: fx68k 65 passed, 2 failed; TG68K 65 passed, 2 failed.
-The same two lines are red on both: P1 and P2-PRE3. P2 is NOT GRADED on both. Every other graded
-line passes on both.
+Final run of `make -k -B test` on both cores: fx68k 65 passed, 1 failed; TG68K 65 passed, 1 failed.
+The same line is red on both: P1. P2 is NOT GRADED on both. Every other graded line passes on both.
 
 ### 5.1 Programs
 
@@ -1542,7 +1546,14 @@ and includes the program source; each wrapper is one contrasting case of its pro
 | BLIT | `prog_blit.s` | P11 | FIXTURE-BLIT, P11-PRE1, P11-PRE2, P11-PRE3, P11 |
 | COPBLT-v | `prog_cb.s`, wrappers `prog_cb_<o or e><2, F, 0 or D>[_<contrast>].s` | P12, P13 | FIXTURE-CB, P12-PRE1, P12-PRE2, P12-PRE3, P12, P13-PRE1, P13-PRE2, P13-PRE3, P13 |
 | BEAM | `prog_beam.s` | P14 | FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-POP, R5-ANCHOR-BEAM, P14 |
-| SHR-SWEEP, SHR-LORES, BITS-OCS | `prog_shr.s` (SHR-SWEEP), wrappers `prog_shrl*.s` (SHR-LORES) and `prog_shro*.s` (BITS-OCS) | P1, P2, P3 | FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL, P1, P2-PRE1, P2-PRE2, P2-PRE3, P2-PRE4, P2, P3-PRE1 to P3-PRE5, P3 |
+| SHR-SWEEP, SHR-LORES, BITS-OCS | `prog_shr.s` (SHR-SWEEP), wrappers `prog_shrl*.s` (SHR-LORES) and `prog_shro*.s` (BITS-OCS) | P1, P2, P3 | FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL, P1, P2-PRE1, P2-PRE2, P2-PRE4, P2, P3-PRE1 to P3-PRE5, P3 |
+
+P2's proposition contrast is not P1's run with the Lores program replaced by BPLCON0 = $1240
+for the whole run, because that run also breaks P2-PRE1 (its ruler period is 8). It is the
+program `prog_shrl_sw`: the Copper writes BPLCON0 = $1200 at the head of its list and $1240 after
+the ruler lines, so the ruler keeps period 32 and the sprite lines are drawn in SuperHires. P2 is
+graded only when P1 passes in the paired SHR-SWEEP run (P2, preconditions, item 3); otherwise the
+run prints `RECORDED: P2: NOT GRADED, depends on P1`.
 
 The COPBLT-v letters are the chip set (o OCS, e ECS) and the COPCON value ($0002, $FFFF, $0000,
 $FFFD). The harness configuration for the chip set and the video standard is `chipset_config`
@@ -1554,7 +1565,7 @@ The scan-line counts of BEAM and SHR use R5: the refresh-group spacing is measur
 first group of the capture, which precedes the program, and R5-ANCHOR-BEAM and R5-ANCHOR-SHR grade
 that every refresh group of the graded span has four cycles at that spacing. R1's anchor (one
 HSYNC activation per line) holds by the way the lines are split. P12-PRE3 and P13-PRE2 count the
-stores of the program binary to BLTSIZE and BLTSIZH (a `MOVE.W #imm,d16(a0)` to $058 or $1DE);
+stores of the program binary to BLTSIZE and BLTSIZH (a `MOVE.W #imm,d16(a0)` to $058 or $05E);
 P12-PRE3 and P13-PRE3 call a write at the port inside M1-M2 a blitter write when it is one the
 specification expects, or when it lies in the decoy destination (written only by a blit the CPU
 started).
@@ -1565,9 +1576,8 @@ started).
 |---|---|---|
 | P1 | FAIL | in each of the two graded fields d = 80 80 82 82 84 84 86 86 88 88 for k = 0..9: every odd k shows the d of k-1, so SPRxCTL bit 4 moved the sprite by none of the 70 ns steps |
 | P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL | PASS | ruler period 8; SREF 80 scan lines at one column; group 0 four scan lines; the SHSH1-clear groups (even k) show d = 80 + k |
-| P2 | NOT GRADED | P2-PRE3 (the SHR-SWEEP run passes P1) fails because P1 is red |
+| P2 | NOT GRADED | the paired SHR-SWEEP run does not pass P1 (P1 is red), so the run prints `RECORDED: P2: NOT GRADED, depends on P1` |
 | P2-PRE1, P2-PRE2, P2-PRE4 | PASS | ruler period 32; even k show d = 80 + k; SREF and group 0 as in P1; the Lores groups show the same d sequence as the SuperHires run |
-| P2-PRE3 | FAIL | see P1 |
 | P3 and P3-PRE1 to P3-PRE5 | PASS | VPOSR identification $00; ruler period 32; five groups, d = 80 80 80 80 82, each four scan lines |
 | P10 and P10-PRE1 to P10-PRE3 | PASS | the first read after M_f in either list is at $020004 in all six fields; in fields 2, 4 and 6 L2's first word is then read and $020006 is not, in fields 1, 3 and 5 $020006 is read and L2 is not |
 | P12 and P12-PRE1 to P12-PRE3 | PASS | two graded fields on each chip set; 20 accesses in $30000-$303FF in the first graded field on OCS, 32 on ECS |

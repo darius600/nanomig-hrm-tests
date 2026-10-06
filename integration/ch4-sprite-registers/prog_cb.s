@@ -11,6 +11,8 @@
 ;   MUT_NOCOP     -- DMACON without COPEN (precondition 1 contrast)
 ;   MUT_NOBLT     -- DMACON without BLTEN (precondition 2 contrast)
 ;   MUT_CPUEARLY  -- the CPU writes BLTSIZE = $0082 before M1 (P12 precondition 3)
+;   MUT_CPUSIZH   -- ECS: the CPU writes BLTSIZH = $0001 before M1 (P12 and P13
+;                    structural contrast: a CPU store to BLTSIZH)
 ;   MUT_CPUBLT80  -- the CPU writes BLTSIZE = $0082 at V7-0 >= $80 of the first
 ;                    field inside M1-M2 (P13 pair-2 contrast, precondition 2)
 ;   MUT_CPUWR     -- the CPU writes $1111 to $30200 inside M1-M2 (P13 precondition 3)
@@ -117,6 +119,9 @@ start:
 
         ifd     MUT_CPUEARLY
         move.w  #$0082,BLTSIZE(a0)     ; P12 precondition 3 contrast
+        endif
+        ifd     MUT_CPUSIZH
+        move.w  #$0001,BLTSIZH(a0)     ; P12/P13 structural contrast: CPU store to BLTSIZH
         endif
 
         move.w  #$0020,d1
