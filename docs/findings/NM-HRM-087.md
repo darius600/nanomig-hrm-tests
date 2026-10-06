@@ -8,9 +8,9 @@
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121) |
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig has the VPOSR/VHPOSR read path from there, and TC64 reads the running counter the same way, so there is no fix to port. A fix also needs a light-pen line into Agnus, which neither line's `minimig.v` nor NanoMig's `nanomig.v` has — see *What NanoMig does* |
-| **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam) — eighteen assertions over one program, graded in OCS/PAL and OCS/NTSC on both CPU cores: `P1`, `P2` with its component `P2(ii)`, `P3` with its components `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8` with `P8(release-at-20)`, `P9` with `P9(boundary)`, `P10(a)`, `P11`, `P12` (pp. 227, 228, 229, 238, 239; claims in *Measured*). Each is red on fx68k and on TG68K. On a copy of the RTL with the pp. 238-239 latch added, `P1`, `P2`, `P2(ii)`, `P3(a)`, `P3(c)`, `P4`, `P5`, `P9`, `P9(boundary)` and `P12` turn green on both cores, and so do `P6`, `P7` and `P8` except in NTSC on fx68k; those are the reds this finding rests on. `P3`, `P3(b)`, `P10(a)`, `P8(release-at-20)` and `P11`, and `P6` to `P8` in NTSC on fx68k, stay red on that copy: the package grades them in a frame or on samples the page does not fix, so they are not read as evidence for this finding |
+| **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam) — one program, graded in OCS/PAL and OCS/NTSC on both CPU cores. Nineteen lines are red on fx68k and on TG68K: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239; claims in *Measured*). On a copy of the RTL with the pp. 238-239 latch added, every one of the 240 lines of the run passes on fx68k and on TG68K (240 passed, 0 failed on each core), the nineteen included |
 | **Chapter** | 8 — Interface Hardware, printed pp. 227, 228, 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed p. 79; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 18 red on fx68k and 18 on TG68K in each of OCS/PAL and OCS/NTSC (138 passed, 36 failed on each core). In ECS/PAL and ECS/NTSC the same eighteen are recorded, not graded, because p. 305 gives LPENDIS no reset value. In the same run the page-model control, the page's latch applied to the run's own measured samples and graded by the same code, is green in all four configurations on both cores (18 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green |
+| **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC (156 passed, 38 failed on each core). In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded, because p. 305 gives LPENDIS no reset value. In the same run the page-model control, the page's latch applied to the run's own measured samples and graded by the same code, is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green |
 | **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line |
 
 ---
@@ -200,40 +200,58 @@ live in every configuration on both cores: `CP1` to `CP6` are green, with u = 7
 colour clocks, CIA-A's port A reading $FF at idle, and all 54 input changes
 landing on their scheduled cycle, each pulse exactly 4 colour clocks wide.
 
-| configuration | fx68k | TG68K | page-model control, both cores |
-|---|---|---|---|
-| OCS/PAL | 11 passed, **14 failed** | 11 passed, **14 failed** | 18 passed, 0 failed |
-| OCS/NTSC | 11 passed, **14 failed** | 11 passed, **14 failed** | 18 passed, 0 failed |
-| ECS/PAL | 11 passed, 0 failed; the fourteen recorded | the same | 18 passed, 0 failed |
-| ECS/NTSC | 11 passed, 0 failed; the fourteen recorded | the same | 18 passed, 0 failed |
+| configuration | fx68k | TG68K | page-model control, both cores | a copy of the RTL with the pp. 238-239 latch added, both cores |
+|---|---|---|---|---|
+| OCS/PAL | 15 passed, **19 failed** | 15 passed, **19 failed** | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
+| OCS/NTSC | 15 passed, **19 failed** | 15 passed, **19 failed** | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
+| ECS/PAL | 13 passed, 0 failed; the 21 recorded | the same | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
+| ECS/NTSC | 13 passed, 0 failed; the 21 recorded | the same | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
 
-The fourteen reds, the same in both OCS configurations and on both cores:
+The nineteen reds, the same in both OCS configurations and on both cores. A
+line without a claim id carries none because it is a component of a combined
+assertion, or because no claim is established by it alone:
 
 | assertion | claims | page | what it grades |
 |---|---|---|---|
-| `P1` | `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6` | 238, 227 | a pin-6 pulse on at least one port is captured; recorded: port 1 *captured=no*, port 2 *captured=no* |
-| `P2` | `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22` | 238, 228 | pin 6 captures, pins 1–4, 5 and 9 do not |
-| `P3(a)`, `P3(b)`, `P3(c)` | `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, and `sol:8-pen.c20` on (a), `sol:8-pen.c19` on (b) and (c) | 238 | the captured V and H are the beam's at the pulse, exactly |
+| `P1` | `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6` | 238, 227 | a pin-6 pulse on at least one port is captured, frozen and not current, at the position `P3(a)` and `P3(b)` require; recorded: port 1 *captured=no*, port 2 *captured=no* |
+| `P2` | `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22` | 238, 228 | pin 6 captures and pins 1–4, 5 and 9 do not |
+| `P2(ii)` | none | 238, 228 | the pin-6 pulse of field B18 is captured; its sibling `P2(i)`, the other pins' pulses are not captured, is green |
+| `P3` | `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19` | 238 | the captured position is the beam's at the pulse, exactly: V, H within a window, and one offset for every pulse |
+| `P3(a)` | `sol:8-pen.c20` | 238 | the captured V is the model line at the pulse |
+| `P3(b)`, `P3(c)` | none | 238 | the captured H lies within [H_ref(t_on), H_ref(t_on)+4+u]; the offset H − H_ref(t_on) is the same for every pulse |
 | `P4` | `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22` | 229, 238 | V8 in VPOSR bit 0, V7–V0 and H8–H1 in VHPOSR |
 | `P5` | `opus:8-lpen.c36`, `sol:8-pen.c36` | 239 | after a trigger VPOSR is frozen until the release |
 | `P6` | `opus:8-lpen.c38`, `sol:8-pen.c38` | 239 | no read in a latched window is current |
 | `P7` | `opus:8-lpen.c37`, `sol:8-pen.c37` | 239 | a field with no trigger latches at its end |
-| `P8` | `opus:8-lpen.c39` | 239 | the latch holds through vertical blanking and no longer |
-| `P9` | none (p. 238 step 1's claims are declined in the package) | 238 | capture re-arms by itself as vertical blank ends |
+| `P8` | `opus:8-lpen.c39` | 239 | every latch holds until the end of internal vertical blanking, and the counter is current after it |
+| `P8(release-at-20)` | `sol:8-pen.c39` | 239 | the held value is still visible up to V = 20 and the live counter from u colour clocks after it, in each of 20 windows |
+| `P9` | none | 238 | capture re-arms by itself as vertical blank ends: no hold-over, a pulse after blank is captured, in every field |
+| `P9(boundary)` | none | 238 | a pulse at line 20, the stated release line, is captured |
+| `P9(release)` | `opus:8-lpen.c12`, `sol:8-pen.c12` | 238 | no pulse is held over the release (`P9(a)`, green) and the pulse at line 20 is captured (`P9(boundary)`) |
 | `P10(a)` | `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18` | 239, 229 | with bit 3 set, pulses are captured and field ends latch |
 | `P11` | `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46` | 239 | the two-read detection method answers correctly |
 | `P12` | `opus:8-lpen.c52` | 239 | the single read during vertical blanking answers correctly |
 
 **Nothing latches, with or without a pulse.** `P1` records that neither port's
 pulse was captured. `P7` is red because the reads in lines 0 to 19 after a
-field with no pulse are not one value, and `P7(c)` is not graded: its
+field with no pulse are not one value, and `P7(c)` is not evaluated: its
 population, the no-pulse fields whose next vertical blank reads one value, is
 empty. The ECS runs print it outright — *"every phase-B sample
 measured current (no pen capture, no end-of-field latch)"* — and the RTL above
 reads the counter the same way in both chipsets. The page-model control
-replaces 35610 and 29125 of the 90000 phase-B samples on fx68k and 38491 and
-31362 on TG68K (PAL and NTSC) with the values p. 238 and p. 239 predict, and
+replaces 38279 and 31600 of the 90000 phase-B samples on fx68k and 41427 and
+34083 on TG68K (PAL and NTSC) with the values p. 238 and p. 239 predict, and
 the same `P1` to `P13` code grades those green.
+
+**A copy of the RTL with the pp. 238-239 latch added** passes every line. The
+copy stores BPLCON0 bit 3 in `agnus_beamcounter.v`; the counter entering line
+20 releases any freeze and arms the capture; a falling edge of the AND of the
+two controller ports' pin 6, while armed, stores VPOSR and VHPOSR; the end of
+a field with nothing stored stores them; reads return the stored words. LPENDIS
+is not modelled. The run prints 240 passed, 0 failed on fx68k and on TG68K,
+which is 35 raw and 25 control lines in each of the four configurations. Its
+captures have the offset d = H − H_ref(t_on) = 2 colour clocks for each of the
+14 graded pulses in every configuration.
 
 ---
 
@@ -317,31 +335,36 @@ Silent on this point: Commodore, A500/A2000 Gary specification, undated; Commodo
 ## Suggested change
 
 **One option: give Agnus a light-pen line and the latch p. 239 describes.**
-This has not been run here.
+A copy of the RTL with the four changes below, and without LPENDIS, is the
+copy the Test row names; the lists after them say what it does.
 
 - **The line.** An input on `agnus` and `agnus_beamcounter`, driven in
   `nanomig.v` or `minimig.v` from port 2's pin 6, the A500's default on
   p. 238 and in the technical reference, which is `_fire1`, CIA-A's PA7
-  input. A jumper-like choice of `_fire0` would give the A1000's port 1.
+  input. A jumper-like choice of `_fire0` would give the A1000's port 1. The
+  copy takes the AND of `_fire0` and `_fire1`, so a pulse on either port
+  captures.
 - **The enable.** Store BPLCON0 bit 3 in `agnus_beamcounter` beside ERSY and
   LACE (lines 144–163), reset to 0 as p. 271 says.
 - **The latch.** With bit 3 set and nothing latched, a falling edge of the
   line outside vertical blanking stores `vpos` and `hpos`; with no edge in the
   field, the end of the field stores them (`eof`, line 377). The end of
   vertical blanking releases the latch: the module's `vblend`, line 447, is
-  line 25 in PAL and 20 in NTSC, where p. 239 says line 20 for both.
+  line 25 in PAL and 20 in NTSC, where p. 239 says line 20 for both. The copy
+  releases when the counter enters line 20, in PAL and in NTSC.
 - **The read.** While latched, the multiplexer of lines 108–115 returns the
   stored `vpos[10:8]` and `{vpos[7:0],hpos[8:1]}` instead of the counters; in
   ECS, with BEAMCON0 bit 13 set, VPOSR returns the counter (p. 305: *"on
   vertical pos read"*; the page does not say whether VHPOSR does too).
 
-What it would change:
+What it would change, from the copy's runs:
 
-- the reds named in the Test row as resting on this finding would turn green,
-  as they do on a copy of the RTL with the latch added;
-- the package's contrasting runs that need a latch at the ports, `K3`, `K4`
-  and `K17`, would reach their clauses; on NanoMig as it is they cannot (see
-  below);
+- all nineteen red lines of the Test row turn green on fx68k and on TG68K,
+  and so does every other line of the run: 240 passed, 0 failed on each core;
+- `K3` and `K4`, which set bit 3 in phase C and in phase A, turn `P10(b)` red
+  at the ports: 34 passed, 2 failed, the run's `P10(b)` and the page-model
+  contrast's, on both cores. On NanoMig as it is `P10(b)` stays green in both
+  (see below);
 - a program that polls VPOSR with bit 3 set would see it frozen, as p. 239
   warns, and a joystick's fire button held on port 2 would latch the counters,
   as the technical reference's *"FIRE input"* implies for the A500.
@@ -352,8 +375,10 @@ What it would change:
 
 - **The comparators read green on the page's latch.** The page-model control
   applies p. 238 step 4 and p. 239 to each run's own measured samples and
-  grades them with the same `P1` to `P13` code: 18 passed, 0 failed in OCS/PAL,
-  OCS/NTSC, ECS/PAL and ECS/NTSC, on fx68k and on TG68K.
+  grades them with the same `P1` to `P13` code: 25 passed, 0 failed in OCS/PAL,
+  OCS/NTSC, ECS/PAL and ECS/NTSC, on fx68k and on TG68K. A copy of the RTL
+  with the latch added passes every line of the run itself, 240 passed,
+  0 failed on each core.
 - **The fixture is live.** `CP1` to `CP6` hold in every configuration: the beam
   model is anchored on phase A, sampling is dense, pin 6 of both ports reads
   open at CIA-A ($FF), and every scheduled pulse arrives on its cycle, 4 colour
@@ -362,18 +387,22 @@ What it would change:
   which needs no trigger at all, and is red: after a field with no pulse the
   reads in lines 0 to 19 are not one value. No choice of port, pin, polarity
   or pulse width reaches a counter that has no latch in front of it.
-- **It is Agnus's, not the CPU's.** The fourteen reds and every count above are
+- **It is Agnus's, not the CPU's.** The nineteen reds and every count above are
   the same on fx68k and TG68K.
 - **ECS shows the same and is not graded.** The ECS runs measure every phase-B
-  sample current and record the fourteen lines, because p. 305 does not give
+  sample current and record 21 lines, the nineteen reds and `P2(i)` and `P9(a)`, because p. 305 does not give
   LPENDIS's reset value. NanoMig's own BEAMCON0 resets bit 13 to 0, which on
   NanoMig's own terms would leave the latched value visible, if there were one.
-- **The package cannot show the latch clauses going from green to red at the
-  ports on this RTL.** `K3` and `K4`, which set bit 3 in phase C and in
-  phase A, leave `P10(b)` green (11 passed, 0 failed), and `K17`, which adds a
-  line-200 pulse to every phase-A field with bit 3 set, leaves `CP1` green with
-  L = 312 (3 passed, 0 failed), on both cores. Each needs a latch to go red;
-  the page-model control carries that demonstration instead.
+- **`K3` and `K4` turn `P10(b)` red only where a latch is in front of the
+  counter.** They set bit 3 in phase C and in phase A. On NanoMig as it is
+  `P10(b)` stays green and the run prints 15 passed, 20 failed: the nineteen
+  reds and the page-model contrast's own `P10(b)`, on both cores. `K17` and
+  `K18` add pulses to phase A with bit 3 set; each pulse is delivered on its
+  cycle and the program finishes, and the only graded `CP1` lines they print
+  are the page-model contrast's: `K17` has `CP1` and `CP1(A2)` red with L = 200
+  measured (9 passed, 2 failed), `K18` has `CP1`, `CP1(A1)` and `CP1(A2)` red
+  (7 passed, 3 failed). `K17` and `K18` print the same on the copy of the RTL
+  with the latch.
 - **What weakens it is that half of the implementations agree with NanoMig.**
   vAmiga and Denise have no light-pen latch either. The two that have one,
   WinUAE and Copperline, both latch at the end of a field with bit 3 set,
