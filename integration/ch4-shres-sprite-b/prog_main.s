@@ -26,8 +26,8 @@ start:
         ; ---- PC0: chip identification, read directly from the design and
         ; stored for the test to grade (Appendix B p.290 VPOSR/DENISEID;
         ; p.299 for the expected values).
-        move.w  VPOSR(a0),RESULTS+2
-        move.w  DENISEID(a0),RESULTS+4
+        move.w  IDREG_VPOSR(a0),RESULTS+2
+        move.w  IDREG_DENISE(a0),RESULTS+4
 
         ; ---- step 1 (SPECIFICATION.md 3.4.1)
         move.w  #$7FFF,DMACON(a0)
@@ -47,7 +47,7 @@ start:
         move.w  #$5060,(a1)+            ; SPR0POS
         move.w  #$8200,(a1)+            ; SPR0CTL
         move.l  #SPR1DAT,a1
-        move.w  #$506C,(a1)+            ; SPR1POS
+        move.w  #SPR1POSVAL,(a1)+       ; SPR1POS
         move.w  #$8201,(a1)+            ; SPR1CTL
 
         ; SPR0DAT / SPR1DAT colour descriptors + terminator (SPRDESC, sprb.i)

@@ -42,8 +42,7 @@ BPLBUF          equ     $020000
 
 ; ---- mutation-selected constants (SPECIFICATION.md section 5/6) ----------
 ;
-; Exactly one of MUT_CR1/MUT_CR2/MUT_CR3/MUT_CR4/MUT_CR5/MUT_CR6/MUT_CR8/
-; MUT_CR9/MUT_CR10/MUT_CR11 is defined (equ'd to 1) by a mutant wrapper
+; Exactly one of MUT_CR1 ... MUT_CR13 (CR7 and CR12-CR13 included) is defined (equ'd to 1) by a mutant wrapper
 ; before it includes prog_main.s; prog_main.s itself (assembled standalone)
 ; defines none of them, giving the baseline/normal stimulus.
 
@@ -61,13 +60,38 @@ FRAME_COUNT     equ     3
 FRAME_COUNT     equ     6
                 endif
 
-; Reference-frame contrast CR11: DMACON = $8380 (SPREN not set) instead of
-; $83A0, removing the sprite anchor the reference frame depends on.
+; REF contrast CR11: bits 3-2 of every component of every COLOR16-31 word
+; the Copper writes are cleared (word & $F333), so no sprite sample is lit
+; after the test's 2-bit mask while sprite DMA, the pattern set and the
+; whole Copper list run as before.
                 ifd     MUT_CR11
-DMACONVAL       equ     $8380
+CMASK           equ     $F333
                 else
-DMACONVAL       equ     $83A0
+CMASK           equ     $FFFF
                 endif
+
+; SU contrast CR13: sprite 1's POS word holds HSTART 221 ($6E, CTL bit 0 = 1)
+; instead of 217 ($6C).
+                ifd     MUT_CR13
+SPR1POSVAL      equ     $506E
+                else
+SPR1POSVAL      equ     $506C
+                endif
+
+; PC0 contrasts (INTENAR comes from nanomig.i): the register read into RESULTS+2 (VPOSR slot, CR12) and
+; RESULTS+4 (DENISEID slot, CR7) is INTENAR instead.
+                ifd     MUT_CR12
+IDREG_VPOSR     equ     INTENAR
+                else
+IDREG_VPOSR     equ     VPOSR
+                endif
+                ifd     MUT_CR7
+IDREG_DENISE    equ     INTENAR
+                else
+IDREG_DENISE    equ     DENISEID
+                endif
+
+DMACONVAL       equ     $83A0
 
 ; FIXTURE contrast CR9: RESULTS stores $DEAD instead of $BEEF.
                 ifd     MUT_CR9

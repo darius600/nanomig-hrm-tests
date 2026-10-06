@@ -71,21 +71,21 @@ COPTAB:
 
                 ; COLOR16-31, section T (S0 baseline; CR1->S2; CR2->S1)
                 ifd     MUT_CR1
-                dc.w    $01A0,$0AF0, $01A2,$0E34, $01A4,$0278, $01A6,$06BC
-                dc.w    $01A8,$0BC1, $01AA,$0F05, $01AC,$0349, $01AE,$078D
-                dc.w    $01B0,$08D2, $01B2,$0C16, $01B4,$005A, $01B6,$049E
-                dc.w    $01B8,$09E3, $01BA,$0D27, $01BC,$016B, $01BE,$05AF
+                dc.w    $01A0,$0AF0&CMASK, $01A2,$0E34&CMASK, $01A4,$0278&CMASK, $01A6,$06BC&CMASK
+                dc.w    $01A8,$0BC1&CMASK, $01AA,$0F05&CMASK, $01AC,$0349&CMASK, $01AE,$078D&CMASK
+                dc.w    $01B0,$08D2&CMASK, $01B2,$0C16&CMASK, $01B4,$005A&CMASK, $01B6,$049E&CMASK
+                dc.w    $01B8,$09E3&CMASK, $01BA,$0D27&CMASK, $01BC,$016B&CMASK, $01BE,$05AF&CMASK
                 else
                 ifd     MUT_CR2
-                dc.w    $01A0,$05AF, $01A2,$09E3, $01A4,$0D27, $01A6,$016B
-                dc.w    $01A8,$06BC, $01AA,$0AF0, $01AC,$0E34, $01AE,$0278
-                dc.w    $01B0,$078D, $01B2,$0BC1, $01B4,$0F05, $01B6,$0349
-                dc.w    $01B8,$049E, $01BA,$08D2, $01BC,$0C16, $01BE,$005A
+                dc.w    $01A0,$05AF&CMASK, $01A2,$09E3&CMASK, $01A4,$0D27&CMASK, $01A6,$016B&CMASK
+                dc.w    $01A8,$06BC&CMASK, $01AA,$0AF0&CMASK, $01AC,$0E34&CMASK, $01AE,$0278&CMASK
+                dc.w    $01B0,$078D&CMASK, $01B2,$0BC1&CMASK, $01B4,$0F05&CMASK, $01B6,$0349&CMASK
+                dc.w    $01B8,$049E&CMASK, $01BA,$08D2&CMASK, $01BC,$0C16&CMASK, $01BE,$005A&CMASK
                 else
-                dc.w    $01A0,$005A, $01A2,$049E, $01A4,$08D2, $01A6,$0C16
-                dc.w    $01A8,$016B, $01AA,$05AF, $01AC,$09E3, $01AE,$0D27
-                dc.w    $01B0,$0278, $01B2,$06BC, $01B4,$0AF0, $01B6,$0E34
-                dc.w    $01B8,$0349, $01BA,$078D, $01BC,$0BC1, $01BE,$0F05
+                dc.w    $01A0,$005A&CMASK, $01A2,$049E&CMASK, $01A4,$08D2&CMASK, $01A6,$0C16&CMASK
+                dc.w    $01A8,$016B&CMASK, $01AA,$05AF&CMASK, $01AC,$09E3&CMASK, $01AE,$0D27&CMASK
+                dc.w    $01B0,$0278&CMASK, $01B2,$06BC&CMASK, $01B4,$0AF0&CMASK, $01B6,$0E34&CMASK
+                dc.w    $01B8,$0349&CMASK, $01BA,$078D&CMASK, $01BC,$0BC1&CMASK, $01BE,$0F05&CMASK
                 endif
                 endif
 
@@ -105,40 +105,40 @@ COPTAB:
                 endif
 
                 ; COLOR16-31, S1
-                dc.w    $01A0,$05AF, $01A2,$09E3, $01A4,$0D27, $01A6,$016B
-                dc.w    $01A8,$06BC, $01AA,$0AF0, $01AC,$0E34, $01AE,$0278
-                dc.w    $01B0,$078D, $01B2,$0BC1, $01B4,$0F05, $01B6,$0349
-                dc.w    $01B8,$049E, $01BA,$08D2, $01BC,$0C16, $01BE,$005A
+                dc.w    $01A0,$05AF&CMASK, $01A2,$09E3&CMASK, $01A4,$0D27&CMASK, $01A6,$016B&CMASK
+                dc.w    $01A8,$06BC&CMASK, $01AA,$0AF0&CMASK, $01AC,$0E34&CMASK, $01AE,$0278&CMASK
+                dc.w    $01B0,$078D&CMASK, $01B2,$0BC1&CMASK, $01B4,$0F05&CMASK, $01B6,$0349&CMASK
+                dc.w    $01B8,$049E&CMASK, $01BA,$08D2&CMASK, $01BC,$0C16&CMASK, $01BE,$005A&CMASK
 
                 dc.w    $6207,$FFFE                     ; WAIT line 98
 
                 ; COLOR16-31, S2
-                dc.w    $01A0,$0AF0, $01A2,$0E34, $01A4,$0278, $01A6,$06BC
-                dc.w    $01A8,$0BC1, $01AA,$0F05, $01AC,$0349, $01AE,$078D
-                dc.w    $01B0,$08D2, $01B2,$0C16, $01B4,$005A, $01B6,$049E
-                dc.w    $01B8,$09E3, $01BA,$0D27, $01BC,$016B, $01BE,$05AF
+                dc.w    $01A0,$0AF0&CMASK, $01A2,$0E34&CMASK, $01A4,$0278&CMASK, $01A6,$06BC&CMASK
+                dc.w    $01A8,$0BC1&CMASK, $01AA,$0F05&CMASK, $01AC,$0349&CMASK, $01AE,$078D&CMASK
+                dc.w    $01B0,$08D2&CMASK, $01B2,$0C16&CMASK, $01B4,$005A&CMASK, $01B6,$049E&CMASK
+                dc.w    $01B8,$09E3&CMASK, $01BA,$0D27&CMASK, $01BC,$016B&CMASK, $01BE,$05AF&CMASK
 
                 dc.w    $6C07,$FFFE                     ; WAIT line 108
 
                 ; COLOR16-31, S3
-                dc.w    $01A0,$0F05, $01A2,$0349, $01A4,$078D, $01A6,$0BC1
-                dc.w    $01A8,$0C16, $01AA,$005A, $01AC,$049E, $01AE,$08D2
-                dc.w    $01B0,$0D27, $01B2,$016B, $01B4,$05AF, $01B6,$09E3
-                dc.w    $01B8,$0E34, $01BA,$0278, $01BC,$06BC, $01BE,$0AF0
+                dc.w    $01A0,$0F05&CMASK, $01A2,$0349&CMASK, $01A4,$078D&CMASK, $01A6,$0BC1&CMASK
+                dc.w    $01A8,$0C16&CMASK, $01AA,$005A&CMASK, $01AC,$049E&CMASK, $01AE,$08D2&CMASK
+                dc.w    $01B0,$0D27&CMASK, $01B2,$016B&CMASK, $01B4,$05AF&CMASK, $01B6,$09E3&CMASK
+                dc.w    $01B8,$0E34&CMASK, $01BA,$0278&CMASK, $01BC,$06BC&CMASK, $01BE,$0AF0&CMASK
 
                 dc.w    $7607,$FFFE                     ; WAIT line 118
 
                 ; COLOR16-31, band 4 (S0x baseline; CR3 -> S0-c18)
                 ifd     MUT_CR3
-                dc.w    $01A0,$005A, $01A2,$049E, $01A4,$041E, $01A6,$0C16
-                dc.w    $01A8,$016B, $01AA,$05AF, $01AC,$052F, $01AE,$0D27
-                dc.w    $01B0,$014B, $01B2,$058F, $01B4,$050F, $01B6,$0D07
-                dc.w    $01B8,$0349, $01BA,$078D, $01BC,$070D, $01BE,$0F05
+                dc.w    $01A0,$005A&CMASK, $01A2,$049E&CMASK, $01A4,$041E&CMASK, $01A6,$0C16&CMASK
+                dc.w    $01A8,$016B&CMASK, $01AA,$05AF&CMASK, $01AC,$052F&CMASK, $01AE,$0D27&CMASK
+                dc.w    $01B0,$014B&CMASK, $01B2,$058F&CMASK, $01B4,$050F&CMASK, $01B6,$0D07&CMASK
+                dc.w    $01B8,$0349&CMASK, $01BA,$078D&CMASK, $01BC,$070D&CMASK, $01BE,$0F05&CMASK
                 else
-                dc.w    $01A0,$0FA5, $01A2,$07AD, $01A4,$0BE1, $01A6,$0F25
-                dc.w    $01A8,$0DA7, $01AA,$05AF, $01AC,$09E3, $01AE,$0D27
-                dc.w    $01B0,$0EB4, $01B2,$06BC, $01B4,$0AF0, $01B6,$0E34
-                dc.w    $01B8,$0F85, $01BA,$078D, $01BC,$0BC1, $01BE,$0F05
+                dc.w    $01A0,$0FA5&CMASK, $01A2,$07AD&CMASK, $01A4,$0BE1&CMASK, $01A6,$0F25&CMASK
+                dc.w    $01A8,$0DA7&CMASK, $01AA,$05AF&CMASK, $01AC,$09E3&CMASK, $01AE,$0D27&CMASK
+                dc.w    $01B0,$0EB4&CMASK, $01B2,$06BC&CMASK, $01B4,$0AF0&CMASK, $01B6,$0E34&CMASK
+                dc.w    $01B8,$0F85&CMASK, $01BA,$078D&CMASK, $01BC,$0BC1&CMASK, $01BE,$0F05&CMASK
                 endif
 
                 dc.w    $8407,$FFFE                     ; WAIT line 132

@@ -2,7 +2,7 @@
 
 This specification was written from the package's claims (`claims-spec-stage.jsonl`, 224 claims) and from the pages of the *Amiga Hardware Reference Manual*, 3rd edition, by an author who has never seen the implementation or any test. It says what the 68000 test program writes and prepares, what the test observes, what the pages let it expect, and where the pages leave the outcome open. Page numbers are printed page numbers.
 
-It contains four propositions (P1-P4) and six preconditions (PC0-PC4 and REF). All four propositions share one stimulus (section 3) and one reference frame (section 4).
+It contains four propositions (P1-P4) and seven preconditions (PC0-PC4, REF and SU), and PC2w, a width check that gates only part of P1-P4. All four propositions share one stimulus (section 3) and one reference frame (section 4).
 
 ---
 
@@ -223,13 +223,13 @@ v0 is the first output line of the graded frame whose longest run of consecutive
 
 ### 4.4 Horizontal anchors
 
-The distance a1 - a0 measures 50 samples on every line of the graded frame (25 low-res pixels between HSTART 192 and 217, p. 107, times the harness's two-samples-per-70ns-pair sampling); it is not itself graded here. Sprite pixel i (0 = leftmost = bit 15 of the data words) covers samples **a0 + 2i and a0 + 2i + 1** for sprite 0 and **a1 + 2i and a1 + 2i + 1** for sprite 1, from three statements:
+The distance a1 - a0 is graded by SU (section 5): 25 low-resolution positions between HSTART 192 and 217 (p. 107), each 140 ns (p. 303, SH0 "140 ns increment"), at 70 ns per sample, give 50 samples. Sprite pixel i (0 = leftmost = bit 15 of the data words) covers samples **a0 + 2i and a0 + 2i + 1** for sprite 0 and **a1 + 2i and a1 + 2i + 1** for sprite 1, from three statements:
 
-- a sprite pixel is one low-resolution pixel: "The shift occurs once during each low resolution pixel time" (p. 124), "changing the resolution or interlace mode of the playfield has no effect on the size or resolution of a sprite" (p. 101), "The sprite resolution is independent of the bitplane resolution" (p. 128);
+- a sprite pixel is one low-resolution pixel: "The shift occurs once during each low resolution pixel time" (p. 124), "changing the resolution or interlace mode of the playfield has no effect on the size or resolution of a sprite" (p. 101);
 - a low-resolution pixel is four SuperHires pixels: "a 35ns pixel display rate - twice the horizontal resolution of Hires mode, and four times the Lores rates" (p. 300);
 - the harness shows every second SuperHires pixel.
 
-PC2w (section 5) checks this mapping directly, against the L1/L2/L3 lines' full 32-sample width, and is expected to fail. Where it does, the mapping above is not used to locate a sample: P1-P4's own uniform-line grading (section 6) does not need it, and only the LA lines, which do need a pixel-exact position, are graded while PC2w holds.
+PC2w (section 5) checks this mapping directly, against the L1/L2/L3 lines' full width of 16 pixels x 2 samples (the 2 comes from SU), and is expected to fail. Where it does, the mapping above is not used to locate a sample: P1-P4's uniform-line lines (section 6) do not need it, and only the LA-line lines, which do need a pixel-exact position, are graded while PC2w holds and are NOT GRADED otherwise.
 
 ### 4.5 Chip-bus identification
 
@@ -239,35 +239,39 @@ Copper instruction fetches are fetches from COPLIST. The sprite data fetch for s
 
 ## 5. Preconditions and their contrasting cases
 
-If a precondition fails, it is reported as a failed precondition. It is never reported as a verdict on a claim.
+If a precondition fails, it is reported as a failed precondition. It is never reported as a verdict on a claim: a line whose precondition is not met is printed NOT GRADED (a RECORDED line naming the line and the preconditions not met), never PASS or FAIL. A precondition that is itself NOT GRADED counts as not met for the lines that depend on it. The dependencies are: PC0 on FIXTURE; SU on REF; PC1 and PC2w on REF and SU (PC2w does not depend on PC1); PC2 on REF; every P1-P4 line on PC0, REF, PC1, PC2, PC3 and PC4; every LA line (P1-LA to P4-LA) additionally on PC2w. A line whose population is empty is NOT GRADED too.
 
-**PC0 (configuration).** The program stores VPOSR and DENISEID ($07C, Appendix B p. 290) at boot, before anything else is written. VPOSR bits 14-8 read $20, the enhanced Agnus's own PAL identification ("8368 (hr) ... = 20 for PAL", p. 299), and DENISEID bits 7-0 read $FC ("The enhanced HighRes Denise (8373) will return $FC in the lower 8 bits", p. 299); the harness also runs 2 MB Chip memory.
-*Contrast CR7:* select a Chip memory size other than 2 MB (harness `memory_config`), leaving ECS (`chipset_config`) unchanged. PC0's own memory-size clause goes red on its own; VPOSR and DENISEID stay the enhanced values, and SuperHires (PC1) stays in effect, because the pages tie SuperHires to the enhanced Denise chip (p. 296, "The enhanced Denise chip provides the new SuperHires mode"), not to the amount of Chip memory installed.
+**PC0 (identification).** The program stores VPOSR and DENISEID ($07C, Appendix B p. 290) at boot, before anything else is written. VPOSR bits 14-8 read $20, the enhanced Agnus's own PAL identification ("8368 (hr) ... = 20 for PAL", p. 299), and DENISEID bits 7-0 read $FC ("The enhanced HighRes Denise (8373) will return $FC in the lower 8 bits", p. 299). Both values are read from the design. The harness's own configuration (ECS, 2 MB Chip memory) is the test's input, not something PC0 measures; a RECORDED line states it. The pages tie SuperHires to the enhanced Denise chip (p. 296, "The enhanced Denise chip provides the new SuperHires mode"), not to the amount of Chip memory installed.
+*Contrast CR7:* the program stores INTENAR ($01C), which reads $0000 at that point, instead of DENISEID at RESULTS+4. The DENISEID clause goes red on its own; the VPOSR clause, SuperHires and every other precondition stay as in the baseline.
+*Contrast CR12:* the program stores INTENAR instead of VPOSR at RESULTS+2. The VPOSR clause goes red on its own.
 
-**REF (reference frame located).** The graded frame yields a sprite anchor v0/a0/a1 -- the first output line of the graded frame whose longest run of consecutive lit samples exceeds 4 (4.3: VSTART = 80 is "where the topmost line of the sprite will be positioned", p. 107, against the pattern-only runs of at most 1 sample in SuperHires (p. 300), 2 in Hires (p. 271) or 4 in the original chip set's lores (p. 271, p. 300)) -- and a consistent line-doubling factor d (4.3, measured from the trace, not assumed). Every later check that uses v0/a0/a1/d (PC1, PC2w, PC2(c)/(d)/(e), P1-P4) is gated on REF instead of repeating its own absence test.
-*Contrast CR11:* DMACON <- $8380 (SPREN not set). No sprite DMA takes place (p. 278; p. 114 "When you enable sprite DMA for one sprite, you enable DMA for all the sprites"), so no run longer than 4 samples exists anywhere in the graded frame and REF goes red; every check REF gates goes red for that same, now-named reason. The Copper, bitplane DMA and program run as before.
+**REF (reference frame located).** The graded frame yields a sprite anchor v0/a0/a1 -- the first output line of the graded frame whose longest run of consecutive lit samples exceeds 4 (4.3: VSTART = 80 is "where the topmost line of the sprite will be positioned", p. 107, against the pattern-only runs of at most 1 sample in SuperHires (p. 300), 2 in Hires (p. 271) or 4 in the original chip set's lores (p. 271, p. 300)) -- and a consistent line-doubling factor d (4.3, measured from the trace, not assumed). Every later check that uses v0/a0/a1/d (SU, PC1, PC2w, PC2, P1-P4) is NOT GRADED when REF is not met, instead of repeating its own absence test.
+*Contrast CR11:* every COLOR16-31 data word the Copper writes has bits 3-2 of each component cleared (word AND $F333, in every set). Sprite DMA, the sprite data, the pattern set and the Copper list structure run as before, but every sprite sample is dark after the mask of 4.1, so no run longer than 4 samples exists anywhere in the graded frame and REF goes red alone. The test's mirror of the Copper list (3.5) carries the same masked words, so PC3 still compares against what was written.
+
+**SU (sample unit).** a1 - a0 = 50. Sprite 1 sits 25 low-resolution positions right of sprite 0 (HSTART 217 - 192, from the POS and CTL words of 3.2, p. 107); one position is 140 ns ("SH0 ... Start horiz. value Low bit 140 ns increment", p. 303); one sample is 70 ns (every second 35 ns SuperHires pixel is shown, p. 300). SU turns the harness's sampling into a calibration asserted in the run: samples per low-resolution position = (a1 - a0) / 25 = 2, which PC2w uses for the sprite width.
+*Contrast CR13:* sprite 1's POS word is $506E (HSTART 221) instead of $506C. a1 - a0 becomes 58 and SU goes red; the test's mirror of the sprite words (PC2(a)) carries the changed word, so PC2(a) still compares against what was written. PC1 and PC2w, which depend on SU, are NOT GRADED.
 
 **PC1 (SuperHires in effect around the sprite band).** On every output line of source lines 46-55 and 140-160 of the graded frame, samples a0 to a0 + 99 alternate lit and dark with runs of exactly one sample, in either phase. Page: "SuperHires mode provides a 35ns pixel display rate" (p. 300). The data $CCCC is 1100 repeated: two SuperHires pixels on and two off, which is one sample lit and one dark. The same holds whichever pixel of each pair the harness shows. SuperHires mode therefore holds from region A through the sprite band to region B. This is the "while SuperHires" condition of the claims ("On ECS SuperHires"). That the program writes BPLCON0 only once, in step 3, and that the graded pass's Copper fetches contain no MOVE to $0100, is established by PC3's own exact content match against 3.5's list, not reasserted here.
-*Contrast CR4:* BPLCON0 <- $9000 (HIRES = 1, SHRES = 0, one bitplane). "HIRES=High-resolution (70 ns pixels)" (p. 271), so runs of two samples appear and PC1 goes red. The sprites still display. P1-P3 are expected to pass in this run as well (section 1.1). That is why PC1 is needed.
+*Contrast CR4:* BPLCON0 <- $9000 (HIRES = 1, SHRES = 0, one bitplane). "HIRES=High-resolution (70 ns pixels)" (p. 271), so runs of two samples appear and PC1 goes red. The sprites still display, and every P line is NOT GRADED because PC1 is not met (the colours would be those of Hires, not SuperHires).
 
 **PC2 (sprite frame).** In the graded frame:
 (a) Chip bus: sprite 0 and sprite 1 fetch their control words and all 50 data word pairs, each word equal to 3.2's own POS/CTL/SPRDESC/terminator values, in address order.
 (c) Samples a0-4 to a0-1, a0+32 to a1-1, and a1+32 to a1+35 are dark on the output lines of source lines 80-129, and a1 - a0 >= 33.
 (d) On the output lines of source lines 70-79 and 130-131, samples a0-4 to a1+35 are dark.
-(e) On every uniform (L1/L2/L3) line of every band 0-4, both sprites and both output-line copies: each sprite shows at least one lit sample (00 "becomes transparent and shows the color of any other sprite or playfield that has lower video priority", p. 103, so a non-transparent value 01/10/11 must show as something), and the set of lit-sample offsets relative to that sprite's own anchor (a0 or a1) is the same set every time -- one sprite width, however wide it measures, applies uniformly. These two page-grounded relations replace a fixed sample count, which would assume the very width PC2w tests.
+(e) (needs REF; the whole of PC2 is NOT GRADED when REF is not met, and a MEASURED line then gives (a) alone) On every uniform (L1/L2/L3) line of every band 0-4, both sprites and both output-line copies: each sprite shows at least one lit sample (00 "becomes transparent and shows the color of any other sprite or playfield that has lower video priority", p. 103, so a non-transparent value 01/10/11 must show as something), and the set of lit-sample offsets relative to that sprite's own anchor (a0 or a1) is the same set every time -- one sprite width, however wide it measures, applies uniformly. These two page-grounded relations replace a fixed sample count, which would assume the very width PC2w tests.
 
 The width clause is graded by the separate precondition PC2w below, not by (a)/(c)/(d)/(e) here: PC2w does not gate (a)/(c)/(d)/(e), it gates only the LA-line grading of P1-P4 (section 6).
 
-*Contrast CR5:* the sprite descriptor's two-word terminator (3.2, after the 50th source line) is written $0001,$0000 instead of $0000,$0000. No sprite pixel takes its value from the terminator (3.2's mapping ends at source line 129), so the fetched word no longer equals 3.2's own content while every graded line, and SPREN, stay exactly as before: (a) goes red through this one content mismatch, and the anchor and (c)/(d)/(e)'s populations all stay live.
+*Contrast CR5:* the sprite descriptor's two-word terminator (3.2, after the 50th source line) is written $0001,$0000 instead of $0000,$0000. No sprite pixel takes its value from the terminator (3.2's mapping ends at source line 129), so the fetched word no longer equals 3.2's own content while every graded line, and SPREN, stay exactly as before: (a) goes red through this one content mismatch, and the anchor and (c)/(d)/(e)'s populations all stay live. Every P line is NOT GRADED, because PC2 is not met.
 
-**PC2w (sprite pixel width).** On every L1/L2/L3 line of the graded frame, sprite 0 is lit exactly over samples a0..a0+31 and dark at a0-1 and a0+32, and sprite 1 is lit exactly over a1..a1+31 and dark at a1-1 and a1+32. Page: "Sprites, however, are independent of playfield modes of display, so changing the resolution or interlace mode of the playfield has no effect on the size or resolution of a sprite" (p. 101); "The shift occurs once during each low resolution pixel time" (p. 124); "The sprite resolution is independent of the bitplane resolution" (p. 128). One boolean grades both the lit interval and its dark boundaries: an interval that is lit but too wide, or too narrow, both fail the same check. This precondition is graded, and it is expected to fail: that red is the result these pages predict being measured, not a defect to repair. It gates only the LA-line grading of P1-P4 (section 6); PC2(a)/(c)/(d)/(e) do not depend on it.
+**PC2w (sprite pixel width).** A sprite is 16 pixels of one low-resolution position each, so with SU's (a1 - a0) / 25 = 2 samples per position its width is 32 samples. On every L1/L2/L3 line of the graded frame, sprite 0 is lit exactly over samples a0..a0+31 and dark at a0-1 and a0+32, and sprite 1 is lit exactly over a1..a1+31 and dark at a1-1 and a1+32. Page: "Sprites, however, are independent of playfield modes of display, so changing the resolution or interlace mode of the playfield has no effect on the size or resolution of a sprite" (p. 101); "The shift occurs once during each low resolution pixel time" (p. 124). One boolean grades both the lit interval and its dark boundaries: an interval that is lit but too wide, or too narrow, both fail the same check. This precondition is graded (when REF and SU are met), and it is expected to fail: that red is the result these pages predict being measured, not a defect to repair. It gates only the LA-line lines of P1-P4 (section 6); PC2(a)/(c)/(d)/(e) do not depend on it.
 *Green control CR4:* BPLCON0 <- $9000 (Hires instead of SuperHires). A low-resolution pixel is one Hires sample pair too (p. 271), so the same 32-sample-plus-boundary comparator is expected to pass under this contrast.
 
-**PC3 (register contents in place, and as specified).** The Copper restarts its list every vertical blanking interval ("At the start of each vertical blanking interval, COP1LC is automatically used to start the program counter", p. 25; "every time vertical blanking occurs the Copper will restart at the same location", p. 30), so the pass that carries the graded frame's own fetches starts before that frame and ends after it: the graded pass is the one that starts at the last fetch of the list's word 0 at or before the graded frame's first sample, and ends at the next such fetch. Within that pass, the Copper fetches every instruction word of the list in order, and the MOVE data words equal those of 3.3 and 3.5. For band k = 1..4, all 32 fetches of the band's colour group come after the last sprite-0 and sprite-1 data fetch of source line 80 + 10(k-1) + 7 and before the first data fetch of source line 80 + 10k. The two colour groups of section T and the dark-set group after the line-58 WAIT all come before the first sprite data fetch of line 80.
-*Contrast CR6:* the band-1 WAIT becomes $5C07 (line 92) instead of $5807. Its colour group is then fetched after the data fetch of line 90 instead of before it, and PC3 goes red through that ordering clause. The late colour group also leaves S0 (not yet overwritten by S1) active on band 1's first value-01 lines, so P1's letters G, H, J, K and L (graded against S1's band-1 expected value) go red too; the record states both effects.
+**PC3 (register contents in place, and as specified).** The Copper restarts its list every vertical blanking interval ("At the start of each vertical blanking interval, COP1LC is automatically used to start the program counter", p. 25; "every time vertical blanking occurs the Copper will restart at the same location", p. 30), so a pass of the list begins at every vertical blanking interval. The graded pass is the one that starts at the last fetch of the list's word 0 at or before the graded frame's first sample, and ends at the next such fetch; it begins before the graded frame's first sample and ends inside the frame. Within that pass, the Copper fetches every instruction word of the list in order, and the MOVE data words equal those of 3.3 and 3.5. For band k = 1..4, all 32 fetches of the band's colour group come after the last sprite-0 and sprite-1 data fetch of source line 80 + 10(k-1) + 7 and before the first data fetch of source line 80 + 10k. The two colour groups of section T and the dark-set group after the line-58 WAIT all come before the first sprite data fetch of line 80.
+*Contrast CR6:* the band-1 WAIT becomes $5C07 (line 92) instead of $5807. Its colour group is then fetched after the data fetch of line 90 instead of before it, and PC3 goes red through that ordering clause. Every P line is NOT GRADED, because PC3 is not met.
 
-**PC4 (run length).** MARKER receives $A5A5, the graded frame is complete, and at least three complete Copper passes precede it. A complete pass is every one of the list's 306 words, word 0 to its last WAIT (word 305), fetched once each in address order between two successive fetches of word 0.
-*Contrast CR8:* the program writes MARKER after three frame starts instead of six, bounding one complete graded frame (all preconditions but PC4 stay live, every population stays populated) preceded by fewer than three complete Copper passes, and PC4 goes red through its own pass count alone.
+**PC4 (run length).** The graded frame is complete, and at least three complete Copper passes precede it. (The receipt of $A5A5 at MARKER is RUN's, not PC4's: the graded frame is found from MARKER or from nanomig.i's DONE write, whichever the run produced.) A complete pass is every one of the list's 306 words, word 0 to its last WAIT (word 305), fetched once each in address order between two successive fetches of word 0.
+*Contrast CR8:* the program writes MARKER after three frame starts instead of six, bounding one complete graded frame (all preconditions but PC4 stay live, every population stays populated) preceded by fewer than three complete Copper passes, and PC4 goes red through its own pass count alone. Every P line is NOT GRADED, because PC4 is not met.
 
 ---
 
@@ -277,9 +281,10 @@ Common to P1-P4:
 
 - **Stimulus:** section 3.
 - **Frame:** section 4.
-- **Preconditions:** PC0-PC4 and REF. (PC2w is not a precondition of P1-P4: it gates only the LA-line grading below.)
+- **Preconditions:** PC0-PC4 and REF (PC1 stands on SU in turn). PC2w is not a precondition of P1-P4: it gates only the LA-line lines below.
+- **Lines per letter:** every letter has two lines over disjoint populations, a uniform-line line (P1 to P4) and an LA-line line (P1-LA to P4-LA). Neither alone is the whole claim of the letter's ids, so the ids stay on RECORDED lines (below) and on no PASS/FAIL line. Each line prints its population, and a line with an empty population is NOT GRADED.
 - **Observation, uniform lines (L1/L2/L3), width-free.** On every uniform line of its bands, each sprite's own visible run holds one value throughout (p. 107-108: both descriptor words are $FFFF/$0000, $0000/$FFFF or $FFFF/$FFFF, so every sample the sprite shows on such a line is a pixel of that one value). Value 00 is the playfield showing through ("becomes transparent and shows the color of any other sprite or playfield that has lower video priority", p. 103; the playfield here is the dark set, masked value $000), so a *lit* sample (m(s) != $000) is a sample the sprite itself shows. Every lit sample of sprite 0 in [a0, a1) and of sprite 1 in [a1, a1 + (a1-a0)) on these lines is graded against the band's expected value below; PC2(e) asserts that this population is never empty and that the set of lit offsets repeats identically, so grading it grades the sprite's own output, not an assumed window.
-- **Observation, LA lines (mixed values), pixel-exact.** Graded only while PC2w holds, using the pixel mapping of 4.4: pixel i's two samples are a0+2i/a0+2i+1 (sprite 0) or a1+2i/a1+2i+1 (sprite 1). Recorded, not graded, while PC2w fails (its own red, section 5).
+- **Observation, LA lines (mixed values), pixel-exact.** The LA-line lines are graded only while PC2w holds, using the pixel mapping of 4.4: pixel i's two samples are a0+2i/a0+2i+1 (sprite 0) or a1+2i/a1+2i+1 (sprite 1). They are NOT GRADED while PC2w fails (its own red, section 5).
 - **Sprites used:** only sprites 0 and 1, by p. 130 Table 4-6 ("0 or 1 ... 01 ... 17, 10 ... 18, 11 ... 19"; also p. 108 Table 4-2, p. 115 Table 4-3) -- the only sprites whose colours the pages tie to colours 17-19.
 - **Components:** only bits 3 and 2 of each component are graded. Bits 1 and 0 have no expected value. The key gives them no letter ("--"), p. 301 says "There are only two bits of red, green and blue color resolution", and p. 302 speaks of "the loss of lower bits of precision in specifying SuperHires colors". Bits 1 and 0 may be recorded, but they never carry a verdict.
 - **Quantifier:** the key speaks of *the* colour of a sprite pixel of colour c, so every graded sample of colour c must match; one mismatching sample fails the letter (or, for P4, the joint check) concerned.
@@ -399,3 +404,58 @@ The ids break down as follows:
 | Group 1, bits 15-12, not used | 32 |
 | Group 3, c268 and c269, not used as stated | 2 |
 | **Total** | **224** |
+
+## RECORDED
+
+The final run of `make -k -B test` on each core (`test-fx68k` and `test-tg68k`). `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met (printed as a RECORDED line); the letter ids stay on RECORDED lines. Counts: fx68k 28 passed, 1 failed; TG68K 28 passed, 1 failed. The only red is PC2w; its LA-line dependants are NOT GRADED, and PC2w's page sentences (p. 101, p. 124) are in section 5.
+
+| line | fx68k | TG68K |
+|---|---|---|
+| `RUN` | PASS | PASS |
+| `FIXTURE` | PASS | PASS |
+| `PC0` | PASS | PASS |
+| `REF` | PASS | PASS |
+| `SU` | PASS | PASS |
+| `PC1` | PASS | PASS |
+| `PC2w` | FAIL | FAIL |
+| `PC2` | PASS | PASS |
+| `PC3` | PASS | PASS |
+| `PC4` | PASS | PASS |
+| `P1 letter G` | PASS | PASS |
+| `P1-LA letter G` | NOT GRADED | NOT GRADED |
+| `P1 letter H` | PASS | PASS |
+| `P1-LA letter H` | NOT GRADED | NOT GRADED |
+| `P1 letter I` | PASS | PASS |
+| `P1-LA letter I` | NOT GRADED | NOT GRADED |
+| `P1 letter J` | PASS | PASS |
+| `P1-LA letter J` | NOT GRADED | NOT GRADED |
+| `P1 letter K` | PASS | PASS |
+| `P1-LA letter K` | NOT GRADED | NOT GRADED |
+| `P1 letter L` | PASS | PASS |
+| `P1-LA letter L` | NOT GRADED | NOT GRADED |
+| `P2 letter M` | PASS | PASS |
+| `P2-LA letter M` | NOT GRADED | NOT GRADED |
+| `P2 letter N` | PASS | PASS |
+| `P2-LA letter N` | NOT GRADED | NOT GRADED |
+| `P2 letter O` | PASS | PASS |
+| `P2-LA letter O` | NOT GRADED | NOT GRADED |
+| `P2 letter P` | PASS | PASS |
+| `P2-LA letter P` | NOT GRADED | NOT GRADED |
+| `P2 letter Q` | PASS | PASS |
+| `P2-LA letter Q` | NOT GRADED | NOT GRADED |
+| `P2 letter R` | PASS | PASS |
+| `P2-LA letter R` | NOT GRADED | NOT GRADED |
+| `P3 letter S` | PASS | PASS |
+| `P3-LA letter S` | NOT GRADED | NOT GRADED |
+| `P3 letter T` | PASS | PASS |
+| `P3-LA letter T` | NOT GRADED | NOT GRADED |
+| `P3 letter U` | PASS | PASS |
+| `P3-LA letter U` | NOT GRADED | NOT GRADED |
+| `P3 letter V` | PASS | PASS |
+| `P3-LA letter V` | NOT GRADED | NOT GRADED |
+| `P3 letter W` | PASS | PASS |
+| `P3-LA letter W` | NOT GRADED | NOT GRADED |
+| `P3 letter X` | PASS | PASS |
+| `P3-LA letter X` | NOT GRADED | NOT GRADED |
+| `P4` | PASS | PASS |
+| `P4-LA` | NOT GRADED | NOT GRADED |

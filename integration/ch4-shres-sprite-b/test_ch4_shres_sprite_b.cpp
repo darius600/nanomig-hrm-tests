@@ -7,10 +7,12 @@
 // encoding of p.302 for four bands of pattern lines, plus two pattern
 // regions used only to confirm SuperHires is in effect (PC1). This test
 // finds the graded frame from the video trace alone (v0/a0/a1/d,
-// SPECIFICATION.md section 4), grades that finding itself (REF) before
-// using it, grades P1-P4 per letter from masked samples, and checks
-// PC0-PC4 (plus the PC2w width precondition) from the same trace plus the
-// RAM-port log.
+// SPECIFICATION.md section 4), grades that finding itself (REF) and the
+// sample unit (SU) before using them, grades P1-P4 per letter from masked
+// samples in two lines per letter (uniform lines; LA lines, graded only
+// while PC2w holds), and checks PC0-PC4 (plus the PC2w width precondition)
+// from the same trace plus the RAM-port log. A line whose precondition is
+// not met prints NOT GRADED, never PASS or FAIL.
 //
 // NMH_MUTATE selects one contrast in place of the baseline stimulus; none
 // is exercised by a plain `make test`.
@@ -20,31 +22,43 @@
 //   NMH_MUTATE=CR4  prog_cr4.bin  (BPLCON0 = $9000 instead of $1040)
 //   NMH_MUTATE=CR5  prog_cr5.bin  (sprite descriptor terminator = $0001,$0000 instead of $0000,$0000)
 //   NMH_MUTATE=CR6  prog_cr6.bin  (band-1 WAIT = $5C07 instead of $5807)
-//   NMH_MUTATE=CR7  prog_main.bin (memory_config selects a different Chip size)
+//   NMH_MUTATE=CR7  prog_cr7.bin  (the program stores INTENAR instead of DENISEID at RESULTS+4)
 //   NMH_MUTATE=CR8  prog_cr8.bin  (MARKER written after 3 frame starts, not 6)
 //   NMH_MUTATE=CR9  prog_cr9.bin  (RESULTS stores $DEAD instead of $BEEF)
 //   NMH_MUTATE=CR10 prog_cr10.bin (the program never writes MARKER, but still reaches DONE)
-//   NMH_MUTATE=CR11 prog_cr11.bin (DMACON = $8380, SPREN not set)
+//   NMH_MUTATE=CR11 prog_cr11.bin (every COLOR16-31 data word & $F333: no lit sprite sample)
+//   NMH_MUTATE=CR12 prog_cr12.bin (the program stores INTENAR instead of VPOSR at RESULTS+2)
+//   NMH_MUTATE=CR13 prog_cr13.bin (SPR1POS = $506E, HSTART 221, instead of $506C, HSTART 217)
 //
-// Every record below states what fx68k and TG68K each produced on the
-// forced `make -k -B test` run this repair kept in out_fx68k.txt/out_tg68k.txt.
+// Every record below states what fx68k and TG68K each produced running
+// `NMH_MUTATE=CRn ./Vnanomig <package directory>` in obj_dir_<core>.
 //
-// MUTATION P1 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters G,I,K mismatch, H,J,L unaffected -- measured fx68k: FAIL via G,I,K red, H,J,L green (18 passed, 10 failed overall: this plus P2/P3 below plus baseline PC2w); TG68K: same (cycle counts differ, all PASS/FAIL verdicts identical)
+// A line whose precondition is not met prints "RECORDED: NOT GRADED: ..." and no PASS/FAIL. The baseline (make -B test) is 28 passed, 1 failed on fx68k and on TG68K: the only red is PC2w; the 19 LA lines (P1-LA to P4-LA) are NOT GRADED because PC2w is red. "P-private" below is a build of this package against a private copy of denise.v outside the repository (spres_d = 2'b01 whenever BPLCON2/BPLCON3 select no sprite resolution, so a sprite pixel is one low-resolution pixel in SuperHires too, the reading of p.101 and p.124): there PC2w passes, every line is graded and the baseline is 48 passed, 0 failed on both cores.
+// MUTATION P1 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters G,I,K mismatch, H,J,L unaffected -- measured fx68k: FAIL via G,I,K red, H,J,L green (19 passed, 10 failed overall: these three, P2/P3 below and PC2w; the 19 LA lines NOT GRADED); TG68K: same
 // MUTATION P2 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters M,O,Q mismatch, N,P,R unaffected -- measured fx68k: FAIL via M,O,Q red, N,P,R green; TG68K: same
 // MUTATION P3 stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- letters S,U,W mismatch, T,V,X unaffected -- measured fx68k: FAIL via S,U,W red, T,V,X green; TG68K: same
-// MUTATION P1 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $48C to S1 $8C0 changes G,H,J,K,L, I unaffected -- measured fx68k: FAIL via G,H,J,K,L red, I green (13 passed, 15 failed overall: this plus P2/P3 below plus baseline PC2w); TG68K: same
+// MUTATION P1 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $48C to S1 $8C0 changes G,H,J,K,L, I unaffected -- measured fx68k: FAIL via G,H,J,K,L red, I green (14 passed, 15 failed overall: these five, P2/P3 below and PC2w); TG68K: same
 // MUTATION P2 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $8C0 to S1 $C04 changes N,O,P,R, M,Q unaffected -- measured fx68k: FAIL via N,O,P,R red, M,Q green; TG68K: same
 // MUTATION P3 stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- S0 $C04 to S1 $048 changes S,T,V,W,X, U unaffected -- measured fx68k: FAIL via S,T,V,W,X red, U green; TG68K: same
-// MUTATION P4 stimulus red NMH_MUTATE=CR3: band-4 COLOR16-31 = S0-c18 instead of S0x -- colour 18's samples mismatch -- measured fx68k: FAIL via P4 colour-18 mismatch, PC0-PC4 green (26 passed, 2 failed overall: P4, baseline PC2w); TG68K: same
-// MUTATION PC1 stimulus red NMH_MUTATE=CR4: BPLCON0=$9000 (HIRES) instead of $1040 (SHRES) -- pattern runs of two instead of one -- measured fx68k: FAIL via PC1 only, PC2w flips PASS under this contrast (27 passed, 1 failed overall, PC1 the only red); TG68K: same
-// MUTATION PC2w stimulus green NMH_MUTATE=CR4: already red at baseline (p.101/p.124/p.128 predict all 32 samples lit, only 16 measure); the same width-plus-boundary comparator passes 3840/3840 lit and 240/240 boundary samples dark under HIRES, where a low-resolution pixel is one Hires sample pair too -- measured fx68k: PASS; TG68K: same
-// MUTATION PC2 stimulus red NMH_MUTATE=CR5: sprite descriptor terminator = $0001,$0000 instead of $0000,$0000 -- content mismatch after the last graded line, anchor (a0=269, a1=319) and both populations stay live -- measured fx68k: FAIL via PC2(a) content mismatch (1/1 words sprite0/sprite1), PC0/PC1/PC3/PC4 green (26 passed, 2 failed overall: PC2, baseline PC2w); TG68K: same
-// MUTATION PC3 stimulus red NMH_MUTATE=CR6: band-1 WAIT=$5C07 (line 92) instead of $5807 (line 88) -- the late colour group also leaves S0 active for band 1's first value-01 lines -- measured fx68k: FAIL via PC3 (ordering) and P1 letters G,H,J,K,L red (21 passed, 7 failed overall: PC3, 5 letters, baseline PC2w); TG68K: same
-// MUTATION PC0 stimulus red NMH_MUTATE=CR7: memory_config changed from 2 MB Chip memory (0x03) to 0x02, chipset_config (ECS, SuperHires) unchanged -- measured fx68k: FAIL via PC0's memory_config clause only, PC1-PC4 green (26 passed, 2 failed overall: PC0, baseline PC2w); TG68K: same
-// MUTATION PC4 stimulus red NMH_MUTATE=CR8: MARKER written after 3 frame starts instead of 6 -- one complete, populated graded frame preceded by 1 complete Copper pass (< 3 required) -- measured fx68k: FAIL via PC4's pass count only, PC0-PC3 green (26 passed, 2 failed overall: PC4, baseline PC2w); TG68K: same
-// MUTATION FIXTURE stimulus red NMH_MUTATE=CR9: RESULTS stores $DEAD instead of $BEEF -- measured fx68k: FAIL via FIXTURE only (26 passed, 2 failed overall: FIXTURE, baseline PC2w); TG68K: same
-// MUTATION RUN stimulus red NMH_MUTATE=CR10: the program never writes MARKER, but still writes nanomig.i's DONE_ADDR/DONE_VALUE as an independent completion witness -- measured fx68k: FAIL via RUN (marker never seen); PC4 also FAILs, since PC4's own definition requires MARKER too; REF/PC1/PC2/PC3/P1-P4 green (25 passed, 3 failed overall: RUN, PC4, baseline PC2w); TG68K: same
-// MUTATION REF stimulus red NMH_MUTATE=CR11: DMACON=$8380 (SPREN not set) instead of $83A0 -- no sprite DMA, so no >4-sample run exists and REF goes red -- measured fx68k: FAIL via REF (v0 not found); PC1/PC2w/PC2/PC3 also FAIL, each through its own clause (0 transitions, 0 lit samples, empty populations, no sprite fetches to order); RUN/FIXTURE/PC0/PC4 green, P1-P4 recorded not graded (4 passed, 5 failed overall: REF, PC1, PC2w, PC2, PC3); TG68K: same
+// MUTATION P4 stimulus red NMH_MUTATE=CR3: band-4 COLOR16-31 = S0-c18 instead of S0x -- colour 18's samples mismatch -- measured fx68k: FAIL via P4 colour-18 mismatch, PC0-PC4 green (27 passed, 2 failed overall: P4, baseline PC2w); TG68K: same
+// MUTATION P1-LA stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- on the repository RTL every LA line is NOT GRADED (PC2w red), so this record is measured on P-private -- measured P-private fx68k: P1-LA letters G,I,K red, H,J,L green, and the same nine letters red on the uniform-line lines (30 passed, 18 failed overall: the 18 letter lines); TG68K: same
+// MUTATION P2-LA stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- measured P-private fx68k: P2-LA letters M,O,Q red, N,P,R green; TG68K: same
+// MUTATION P3-LA stimulus red NMH_MUTATE=CR1: section-T COLOR16-31 = S2 instead of S0 in band 0 -- measured P-private fx68k: P3-LA letters S,U,W red, T,V,X green; TG68K: same
+// MUTATION P1-LA stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- measured P-private fx68k: P1-LA letters G,H,J,K,L red, I green (20 passed, 28 failed overall: the 28 letter lines of both populations); TG68K: same
+// MUTATION P2-LA stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- measured P-private fx68k: P2-LA letters N,O,P,R red, M,Q green; TG68K: same
+// MUTATION P3-LA stimulus red NMH_MUTATE=CR2: section-T COLOR16-31 = S1 instead of S0 in band 0 -- measured P-private fx68k: P3-LA letters S,T,V,W,X red, U green; TG68K: same
+// MUTATION P4-LA stimulus red NMH_MUTATE=CR3: band-4 COLOR16-31 = S0-c18 instead of S0x -- measured P-private fx68k: P4-LA FAIL together with P4 (46 passed, 2 failed overall: these two); TG68K: same
+// MUTATION PC1 stimulus red NMH_MUTATE=CR4: BPLCON0=$9000 (HIRES) instead of $1040 (SHRES) -- pattern runs of two instead of one -- measured fx68k: FAIL via PC1 only; PC2w flips PASS; the 38 P lines (both populations) NOT GRADED because PC1 is not met (9 passed, 1 failed overall, PC1 the only red); TG68K: same
+// MUTATION PC2w stimulus green NMH_MUTATE=CR4: already red at baseline (p.101/p.124 predict all 32 samples lit, only 16 measure); the same width-plus-boundary comparator passes 3840/3840 lit and 240/240 boundary samples dark under HIRES, where a low-resolution pixel is one Hires sample pair too -- measured fx68k: PASS; TG68K: same; P-private: PASS with the same counts at baseline and under CR4
+// MUTATION PC2 stimulus red NMH_MUTATE=CR5: sprite descriptor terminator = $0001,$0000 instead of $0000,$0000 -- content mismatch after the last graded line, anchor (a0=269, a1=319) and both populations stay live -- measured fx68k: FAIL via PC2(a) content mismatch (1/1 words sprite0/sprite1), PC0/SU/PC1/PC3/PC4 green, the 38 P lines NOT GRADED because PC2 is not met (8 passed, 2 failed overall: PC2, baseline PC2w); TG68K: same
+// MUTATION PC3 stimulus red NMH_MUTATE=CR6: band-1 WAIT=$5C07 (line 92) instead of $5807 -- band 1's colour group is fetched after the data fetch of line 90 -- measured fx68k: FAIL via PC3 (ordering) only; the 38 P lines NOT GRADED because PC3 is not met (8 passed, 2 failed overall: PC3, baseline PC2w); TG68K: same
+// MUTATION PC0 stimulus red NMH_MUTATE=CR7: the program stores INTENAR (reads $0000 there) instead of DENISEID at RESULTS+4 -- measured fx68k: FAIL via PC0's DENISEID clause (VPOSR=A000, DENISEID=0000), the VPOSR clause and every other precondition green, the 38 P lines NOT GRADED because PC0 is not met (8 passed, 2 failed overall: PC0, baseline PC2w); TG68K: same
+// MUTATION PC0 stimulus red NMH_MUTATE=CR12: the program stores INTENAR (reads $0000 there) instead of VPOSR at RESULTS+2 -- measured fx68k: FAIL via PC0's VPOSR clause (VPOSR=0000, DENISEID=FFFC), the DENISEID clause and every other precondition green, the 38 P lines NOT GRADED because PC0 is not met (8 passed, 2 failed overall: PC0, baseline PC2w); TG68K: same
+// MUTATION PC4 stimulus red NMH_MUTATE=CR8: MARKER written after 3 frame starts instead of 6 -- one complete, populated graded frame preceded by 1 complete Copper pass (< 3 required) -- measured fx68k: FAIL via PC4's pass count only, PC0-PC3 green, the 38 P lines NOT GRADED because PC4 is not met (8 passed, 2 failed overall: PC4, baseline PC2w); TG68K: same
+// MUTATION FIXTURE stimulus red NMH_MUTATE=CR9: RESULTS stores $DEAD instead of $BEEF -- measured fx68k: FAIL via FIXTURE; PC0, which reads RESULTS+2/+4, and the 38 P lines depending on it are NOT GRADED (7 passed, 2 failed overall: FIXTURE, baseline PC2w); TG68K: same
+// MUTATION RUN stimulus red NMH_MUTATE=CR10: the program never writes MARKER, but still writes nanomig.i's DONE_ADDR/DONE_VALUE as an independent completion witness -- measured fx68k: FAIL via RUN (marker never seen) only; every other line keeps its baseline verdict, PC4 included (4 complete passes) (27 passed, 2 failed overall: RUN, baseline PC2w); TG68K: same
+// MUTATION SU stimulus red NMH_MUTATE=CR13: sprite 1's POS word = $506E (HSTART 221) instead of $506C (HSTART 217), the test's sprite-word mirror following -- a1-a0 = 58 instead of 50 -- measured fx68k: FAIL via SU only; PC1 and PC2w NOT GRADED because SU is not met, the 38 P lines NOT GRADED because PC1 is not met; REF/PC0/PC2/PC3/PC4 green (7 passed, 1 failed overall: SU); TG68K: same; P-private: the same lines move the same way (7 passed, 1 failed)
+// MUTATION REF stimulus red NMH_MUTATE=CR11: every COLOR16-31 data word of the Copper list AND $F333 (bits 3-2 of each component cleared), the test's Copper-list mirror following -- sprite DMA and the list structure unchanged but no sprite sample is lit after the 4.1 mask, so no >4-sample run exists -- measured fx68k: FAIL via REF only (v0 not found); SU, PC1, PC2w, PC2 and the 38 P lines NOT GRADED because REF is not met; RUN/FIXTURE/PC0/PC3/PC4 green, and a MEASURED line gives PC2(a) alone as met (5 passed, 1 failed overall: REF); TG68K: same
 
 #include <cstdio>
 #include <cstdlib>
@@ -106,7 +120,13 @@ constexpr uint64_t kChunk         = 200'000;
 constexpr uint64_t kMaxAfterBoot  = 16'000'000;
 constexpr int kFramesAfterMarker  = 2;
 
-enum class Scenario { Base, CR1, CR2, CR3, CR4, CR5, CR6, CR7, CR8, CR9, CR10, CR11 };
+// Sprite control words of the unmutated stimulus (SPECIFICATION.md 3.2) and
+// sprite 1's POS word under CR13; HSTART = POS bits 7-0 x 2 + CTL bit 0.
+constexpr uint16_t kS0Pos = 0x5060, kS0Ctl = 0x8200;
+constexpr uint16_t kS1PosBase = 0x506C, kS1PosCr13 = 0x506E, kS1CtlBase = 0x8201;
+constexpr long hstart_of(uint16_t pos, uint16_t ctl) { return ((pos & 0xFF) << 1) | (ctl & 1); }
+
+enum class Scenario { Base, CR1, CR2, CR3, CR4, CR5, CR6, CR7, CR8, CR9, CR10, CR11, CR12, CR13 };
 
 Scenario parse_scenario(const std::string& v) {
     if (v == "CR1") return Scenario::CR1;
@@ -120,6 +140,8 @@ Scenario parse_scenario(const std::string& v) {
     if (v == "CR9") return Scenario::CR9;
     if (v == "CR10") return Scenario::CR10;
     if (v == "CR11") return Scenario::CR11;
+    if (v == "CR12") return Scenario::CR12;
+    if (v == "CR13") return Scenario::CR13;
     return Scenario::Base;
 }
 
@@ -131,18 +153,21 @@ std::string bin_for(Scenario sc) {
         case Scenario::CR4: return "prog_cr4.bin";
         case Scenario::CR5: return "prog_cr5.bin";
         case Scenario::CR6: return "prog_cr6.bin";
+        case Scenario::CR7: return "prog_cr7.bin";
         case Scenario::CR8: return "prog_cr8.bin";
         case Scenario::CR9: return "prog_cr9.bin";
         case Scenario::CR10: return "prog_cr10.bin";
         case Scenario::CR11: return "prog_cr11.bin";
-        default: return "prog_main.bin"; // Base and CR7 share the baseline program
+        case Scenario::CR12: return "prog_cr12.bin";
+        case Scenario::CR13: return "prog_cr13.bin";
+        default: return "prog_main.bin";
     }
 }
 
 std::string hex4(uint16_t v) { char b[8]; std::snprintf(b, sizeof b, "%04X", v); return b; }
 
 // ---- Copper list mirror (sprb.i's COPTAB, literal) --------------------
-std::vector<uint16_t> build_expected_coptab(bool cr1, bool cr2, bool cr3, bool cr6) {
+std::vector<uint16_t> build_expected_coptab(bool cr1, bool cr2, bool cr3, bool cr6, bool cr11) {
     std::vector<uint16_t> t;
     auto add = [&](std::initializer_list<uint16_t> vals) { for (auto v : vals) t.push_back(v); };
 
@@ -228,6 +253,11 @@ std::vector<uint16_t> build_expected_coptab(bool cr1, bool cr2, bool cr3, bool c
     add({0x0198,0x0000, 0x019A,0x0CCC, 0x019C,0x0000, 0x019E,0x0000});
 
     add({0xFFFF,0xFFFE});
+
+    // CR11: every COLOR16-31 data word has bits 3-2 of each component cleared.
+    if (cr11)
+        for (size_t i = 0; i + 1 < t.size(); i += 2)
+            if (t[i] >= 0x01A0 && t[i] <= 0x01BE && (t[i] & 1) == 0) t[i + 1] &= 0xF333;
 
     return t;
 }
@@ -472,7 +502,7 @@ int main(int argc, char** argv) {
 
     nmh::Config cfg;
     cfg.chipset_config = 0x08; // ECS throughout -- Denise stays SuperHires-capable in every scenario
-    cfg.memory_config = (sc == Scenario::CR7) ? 0x02 : 0x03;
+    cfg.memory_config = 0x03; // 2 MB Chip memory
     nmh::NanomigHarness h(cfg);
 
     std::string bin = dir + "/" + bin_for(sc);
@@ -528,6 +558,17 @@ int main(int argc, char** argv) {
              "reset (" + std::to_string(boot.cycles_to_release) + " clk_sys cycles), MARKER received $A5A5 "
              "within budget" + (marker_seen ? (" at cycle " + std::to_string(*marker_cycle)) : " -- not seen"));
 
+    // A line whose precondition is not met is declined, never graded: the
+    // record names the line and every precondition that is not met.
+    auto not_graded = [&](const std::string& line, const std::string& why) {
+        c.record("NOT GRADED: " + line + " -- precondition not met: " + why);
+    };
+    auto unmet = [](std::initializer_list<std::pair<const char*, bool>> l) {
+        std::string s;
+        for (auto& p : l) if (!p.second) { if (!s.empty()) s += ", "; s += p.first; }
+        return s;
+    };
+
     // ---- fixture: a program-stored constant, read back first ------------
     auto fixture = h.peek_logical(kResults);
     bool fixture_ok = fixture.has_value() && *fixture == 0xBEEF;
@@ -535,19 +576,26 @@ int main(int argc, char** argv) {
              " (read back " + (fixture ? hex4(*fixture) : std::string("nothing")) + ")");
 
     // ---- PC0: chip identification, measured from the design (the program
-    // reads VPOSR and DENISEID back; chipset_config/memory_config are the
-    // harness's own inputs, not something the program measures) ----------
+    // reads VPOSR and DENISEID back and stores them at RESULTS; the harness's
+    // chipset_config/memory_config are its own inputs and are not graded) ---
     auto vposr = h.peek_logical(kResults + 2);
     auto deniseid = h.peek_logical(kResults + 4);
     bool pc0_vposr_ok = vposr.has_value() && (((*vposr >> 8) & 0x7F) == 0x20);
     bool pc0_denise_ok = deniseid.has_value() && ((*deniseid & 0xFF) == 0xFC);
-    bool pc0_ok = pc0_vposr_ok && pc0_denise_ok && cfg.memory_config == 0x03;
-    c.expect(pc0_ok, "PC0: chip identification measured from the design -- VPOSR bits 14-8 = $20 "
-             "(p.299 \"8368 (hr) ... = 20 for PAL\") and DENISEID bits 7-0 = $FC (p.299 \"The enhanced "
-             "HighRes Denise (8373) will return $FC in the lower 8 bits\"), with 2 MB Chip memory "
-             "(VPOSR=" + (vposr ? hex4(*vposr) : std::string("--")) +
-             ", DENISEID=" + (deniseid ? hex4(*deniseid) : std::string("--")) +
-             ", memory_config=0x" + hex4(cfg.memory_config) + ")");
+    bool pc0_ok = false;
+    if (fixture_ok) {
+        pc0_ok = pc0_vposr_ok && pc0_denise_ok;
+        c.expect(pc0_ok, "PC0: chip identification measured from the design -- VPOSR bits 14-8 = $20 "
+                 "(p.299 \"8368 (hr) ... = 20 for PAL\") and DENISEID bits 7-0 = $FC (p.299 \"The enhanced "
+                 "HighRes Denise (8373) will return $FC in the lower 8 bits\") (VPOSR=" +
+                 (vposr ? hex4(*vposr) : std::string("--")) +
+                 ", DENISEID=" + (deniseid ? hex4(*deniseid) : std::string("--")) + ")");
+    } else {
+        not_graded("PC0 (chip identification read from RESULTS+2/+4)", "FIXTURE");
+    }
+    c.record("PC0 configuration (not graded): the harness runs chipset_config=0x" + hex4(cfg.chipset_config) +
+             " (ECS) and memory_config=0x" + hex4(cfg.memory_config) + " (2 MB Chip memory); no page "
+             "ties the identification registers to the memory size, and this configuration is the test's own input.");
 
     const auto& video = h.video();
     auto colog = nmh::coalesce(h.ram_log());
@@ -580,111 +628,152 @@ int main(int argc, char** argv) {
 
     // ---- REF: the reference frame itself (SPECIFICATION.md section 4) --
     // v0/a0/a1 (the sprite anchor, located by the page-grounded >4-sample
-    // run of 4.3: VSTART=80 is "where the topmost line of the sprite will
-    // be positioned", p.107, and the pattern alone reaches at most 1
+    // run of 4.3: VSTART=80 is "where the topmost line of the sprite will be
+    // positioned", p.107, and the pattern alone reaches at most 1
     // (SuperHires, p.300), 2 (Hires, p.271) or 4 (lores, p.271/p.300)
     // samples) and d (the line-doubler factor, measured, not assumed) are
     // graded here, once, before anything that depends on them. Every later
-    // check that uses v0/a0/a1/d is gated on this one precondition instead
-    // of repeating its own absence test.
+    // line that uses v0/a0/a1/d prints NOT GRADED when REF is not met.
     bool ref_ok = graded_frame.has_value() && anchor.found && dm.ok;
     c.expect(ref_ok, "REF: reference frame -- the graded frame yields a sprite anchor (v0/a0/a1, the "
              ">4-sample run identified by p.107's VSTART=80 \"where the topmost line of the sprite will be "
              "positioned\" against the pattern-only runs of p.271/p.300) and a consistent line-doubling "
              "factor d, before any check that uses them");
 
-    // ---- PC1: SuperHires in effect around the sprite band ------------------
-    bool pc1_ok = ref_ok;
-    long pc1_checked = 0;
+    // ---- SU: the sample unit (SPECIFICATION.md 4.4). Sprite 1 sits 25
+    // low-resolution positions right of sprite 0 (HSTART 217 - 192, from the
+    // POS/CTL words of the unmutated stimulus, p.107); one position is
+    // 140 ns (p.303 SH0 "140 ns increment"); one sample is 70 ns (every
+    // second 35 ns SuperHires pixel is shown, p.300). So a1 - a0 must be 50.
+    const long kSuHstartDelta = hstart_of(kS1PosBase, kS1CtlBase) - hstart_of(kS0Pos, kS0Ctl);
+    const long kSuExpected = kSuHstartDelta * 140 / 70;
+    bool su_ok = false;
     if (ref_ok) {
-        auto check_region = [&](int lo, int hi) {
-            for (int n = lo; n <= hi; ++n) for (int copy = 0; copy < dm.d; ++copy) {
-                auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
-                if (!span) { pc1_ok = false; continue; }
-                for (size_t off = anchor.a0; off < anchor.a0 + 99; ++off) {
-                    auto s1 = nmh::sample_at(video, *span, off);
-                    auto s2 = nmh::sample_at(video, *span, off + 1);
-                    ++pc1_checked;
-                    if (!s1 || !s2) { pc1_ok = false; continue; }
-                    bool cur = !dark(mask(*s1)), nxt = !dark(mask(*s2));
-                    if (cur == nxt) pc1_ok = false;
-                }
-            }
-        };
-        check_region(46, 55);
-        check_region(140, 160);
+        su_ok = (long)(anchor.a1 - anchor.a0) == kSuExpected;
+        c.expect(su_ok, "SU: sample unit -- a1 - a0 = " + std::to_string(kSuExpected) + " samples: HSTART " +
+                 std::to_string(hstart_of(kS1PosBase, kS1CtlBase)) + " - " + std::to_string(hstart_of(kS0Pos, kS0Ctl)) +
+                 " = " + std::to_string(kSuHstartDelta) + " low-resolution positions (p.107) of 140 ns "
+                 "(p.303 SH0 \"140 ns increment\"), at 70 ns per sample (every second 35 ns SuperHires pixel, p.300) "
+                 "(a0=" + std::to_string(anchor.a0) + ", a1=" + std::to_string(anchor.a1) + ", a1-a0=" +
+                 std::to_string(anchor.a1 - anchor.a0) + ")");
+    } else {
+        not_graded("SU (sample unit, a1 - a0 = 50)", "REF");
     }
-    c.expect(pc1_ok, "PC1: SuperHires in effect -- samples a0..a0+99 on source lines 46-55 and 140-160 of the "
-              "graded frame alternate lit/dark with runs of exactly one sample (" +
-              std::to_string(pc1_checked) + " transitions checked); that BPLCON0 is written only once (step 3) "
-              "and the graded pass's Copper fetches contain no MOVE to $0100 is established by PC3's own exact "
-              "content match, not repeated here");
+
+    // ---- PC1: SuperHires in effect around the sprite band ------------------
+    bool pc1_ok = false;
+    {
+        long pc1_checked = 0;
+        bool pc1_pass = true;
+        if (ref_ok && su_ok) {
+            auto check_region = [&](int lo, int hi) {
+                for (int n = lo; n <= hi; ++n) for (int copy = 0; copy < dm.d; ++copy) {
+                    auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
+                    if (!span) { pc1_pass = false; continue; }
+                    for (size_t off = anchor.a0; off < anchor.a0 + 99; ++off) {
+                        auto s1 = nmh::sample_at(video, *span, off);
+                        auto s2 = nmh::sample_at(video, *span, off + 1);
+                        ++pc1_checked;
+                        if (!s1 || !s2) { pc1_pass = false; continue; }
+                        bool cur = !dark(mask(*s1)), nxt = !dark(mask(*s2));
+                        if (cur == nxt) pc1_pass = false;
+                    }
+                }
+            };
+            check_region(46, 55);
+            check_region(140, 160);
+        }
+        if (!(ref_ok && su_ok)) {
+            not_graded("PC1 (SuperHires in effect)", unmet({{"REF", ref_ok}, {"SU", su_ok}}));
+        } else if (pc1_checked == 0) {
+            not_graded("PC1 (SuperHires in effect)", "empty population (0 transitions)");
+        } else {
+            pc1_ok = pc1_pass;
+            c.expect(pc1_ok, "PC1: SuperHires in effect -- samples a0..a0+99 on source lines 46-55 and 140-160 of the "
+                      "graded frame alternate lit/dark with runs of exactly one sample (" +
+                      std::to_string(pc1_checked) + " transitions checked); that BPLCON0 is written only once (step 3) "
+                      "and the graded pass's Copper fetches contain no MOVE to $0100 is established by PC3's own exact "
+                      "content match, not repeated here");
+        }
+    }
 
     // ---- PC2w: sprite pixel width (precondition; gates only the LA-line
-    // grading of P1-P4 below). "Exactly" is graded both ways: every one of
-    // the 32 in-interval samples must be lit, and the sample immediately
-    // outside each edge (a0-1/a0+32, a1-1/a1+32) must be dark, both in the
-    // same boolean. Expected to fail against the printed page: that
+    // grading of P1-P4 below). A sprite is 16 pixels of one low-resolution
+    // position each; SU gives the samples per position, (a1 - a0) / 25 = 2,
+    // so the width is 16 x 2 = 32 samples. "Exactly" is graded both ways:
+    // every in-interval sample must be lit, and the sample immediately
+    // outside each edge (a0-1/a0+width, a1-1/a1+width) must be dark, both in
+    // the same boolean. Expected to fail against the printed page: that
     // failure is a result, not something to repair.
-    bool pc2w_ok = ref_ok;
+    bool pc2w_graded = false, pc2w_ok = false;
     long pc2w_lit = 0, pc2w_dark = 0, pc2w_checked = 0;
     long pc2w_boundary_lit = 0, pc2w_boundary_dark = 0, pc2w_boundary_checked = 0;
-    if (ref_ok) {
+    long pc2w_width = 0;
+    if (ref_ok && su_ok) {
+        pc2w_width = 16 * (long)(anchor.a1 - anchor.a0) / kSuHstartDelta;
+        bool pass = true;
         for (int band = 0; band < 5; ++band) {
             for (int lineInBand = 0; lineInBand < 6; ++lineInBand) { // L1,L1,L2,L2,L3,L3
                 int n = 80 + 10 * band + lineInBand;
                 for (int copy = 0; copy < dm.d; ++copy) {
                     auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
-                    if (!span) { pc2w_ok = false; continue; }
+                    if (!span) { pass = false; continue; }
                     for (int sprite = 0; sprite < 2; ++sprite) {
                         size_t anchor_pos = sprite == 0 ? anchor.a0 : anchor.a1;
-                        for (size_t off = 0; off < 32; ++off) {
+                        for (long off = 0; off < pc2w_width; ++off) {
                             ++pc2w_checked;
-                            auto samp = nmh::sample_at(video, *span, anchor_pos + off);
+                            auto samp = nmh::sample_at(video, *span, anchor_pos + (size_t)off);
                             bool lit = samp && !dark(mask(*samp));
                             if (lit) ++pc2w_lit; else ++pc2w_dark;
-                            if (!lit) pc2w_ok = false;
+                            if (!lit) pass = false;
                         }
-                        for (long boff : {-1L, 32L}) {
+                        for (long boff : {-1L, pc2w_width}) {
                             ++pc2w_boundary_checked;
                             std::optional<nmh::VideoSample> samp;
                             if (boff >= 0 || anchor_pos >= 1) // guard the a0-1 underflow case
                                 samp = nmh::sample_at(video, *span, (size_t)((long)anchor_pos + boff));
                             bool lit = samp && !dark(mask(*samp));
                             if (lit) ++pc2w_boundary_lit; else ++pc2w_boundary_dark;
-                            if (lit || !samp) pc2w_ok = false;
+                            if (lit || !samp) pass = false;
                         }
                     }
                 }
             }
         }
+        if (pc2w_checked > 0) { pc2w_graded = true; pc2w_ok = pass; }
     }
-    c.expect(pc2w_ok, "PC2w: on every L1/L2/L3 line of the graded frame, sprite 0 is lit exactly over samples "
-             "a0..a0+31 and dark at a0-1/a0+32, and sprite 1 exactly over a1..a1+31 and dark at a1-1/a1+32 "
-             "(p.101 \"Sprites, however, are independent of playfield modes of display, so changing the "
-             "resolution or interlace mode of the playfield has no effect on the size or resolution of a "
-             "sprite\"; p.124 \"The shift occurs once during each low resolution pixel time\"; p.128 \"The "
-             "sprite resolution is independent of the bitplane resolution\") (" + std::to_string(pc2w_lit) +
-             " lit, " + std::to_string(pc2w_dark) + " dark of " + std::to_string(pc2w_checked) +
-             " interval samples checked; " + std::to_string(pc2w_boundary_dark) + " of " +
-             std::to_string(pc2w_boundary_checked) + " boundary samples dark as required)");
+    if (pc2w_graded) {
+        c.expect(pc2w_ok, "PC2w: on every L1/L2/L3 line of the graded frame, sprite 0 is lit exactly over samples "
+                 "a0..a0+" + std::to_string(pc2w_width - 1) + " and dark at a0-1/a0+" + std::to_string(pc2w_width) +
+                 ", and sprite 1 exactly over a1..a1+" + std::to_string(pc2w_width - 1) + " and dark at a1-1/a1+" +
+                 std::to_string(pc2w_width) + " (the width is 16 pixels x (a1-a0)/25 = 2 samples per low-resolution "
+                 "pixel, from SU; p.101 \"Sprites, however, are independent of playfield modes of display, so changing "
+                 "the resolution or interlace mode of the playfield has no effect on the size or resolution of a "
+                 "sprite\"; p.124 \"The shift occurs once during each low resolution pixel time\") (" +
+                 std::to_string(pc2w_lit) + " lit, " + std::to_string(pc2w_dark) + " dark of " +
+                 std::to_string(pc2w_checked) + " interval samples checked; " + std::to_string(pc2w_boundary_dark) +
+                 " of " + std::to_string(pc2w_boundary_checked) + " boundary samples dark as required)");
+    } else {
+        not_graded("PC2w (sprite pixel width)", unmet({{"REF", ref_ok}, {"SU", su_ok}}));
+    }
     c.record("PC2w page basis: p.101 \"Sprites, however, are independent of playfield modes of display, so "
-              "changing the resolution or interlace mode of the playfield has no effect on the size or "
-              "resolution of a sprite.\"; p.124 \"The shift occurs once during each low resolution pixel time "
-              "and continues until all 16 bits have been transferred to the display circuitry.\"; p.128 \"The "
-              "sprite resolution is independent of the bitplane resolution.\" A red here is the result the "
-              "page predicts being measured, not a defect to repair; PC2w gates only the LA-line grading of "
-              "P1-P4, and PC2(a)/(c)/(d)/(e) do not depend on it.");
+             "changing the resolution or interlace mode of the playfield has no effect on the size or "
+             "resolution of a sprite.\"; p.124 \"The shift occurs once during each low resolution pixel time "
+             "and continues until all 16 bits have been transferred to the display circuitry.\" A red here is the "
+             "result the page predicts being measured, not a defect to repair; PC2w gates only the LA-line "
+             "grading of P1-P4, and PC2(a)/(c)/(d)/(e) do not depend on it.");
 
-    // ---- P1-P4: per-letter masked-colour grading -----------------------
+    // ---- uniform-line scan: P1-P4's uniform-line population and PC2(e) ---
     // Uniform lines (L1/L2/L3) are graded width-free: every LIT sample in
     // [a0,a1) (sprite 0) / [a1,a1+(a1-a0)) (sprite 1) is graded against the
     // band's expected value, whatever the measured width turns out to be
     // (SPECIFICATION.md section 6). LA lines need the pixel-exact a0+2i
     // mapping (4.4) and are graded only while PC2w holds.
-    std::array<bool, kNumLetters> letter_ok; letter_ok.fill(true);
-    std::array<long, kNumLetters> letter_pop; letter_pop.fill(0);
-    bool p4_ok = true; long p4_pop = 0;
+    std::array<bool, kNumLetters> letter_ok_u; letter_ok_u.fill(true);
+    std::array<long, kNumLetters> letter_pop_u; letter_pop_u.fill(0);
+    std::array<bool, kNumLetters> letter_ok_la; letter_ok_la.fill(true);
+    std::array<long, kNumLetters> letter_pop_la; letter_pop_la.fill(0);
+    bool p4_ok_u = true, p4_ok_la = true; long p4_pop_u = 0, p4_pop_la = 0;
 
     // PC2(e): population and offset-consistency invariant across the same
     // uniform-line scan (replaces a fixed sample count, which would assume
@@ -711,8 +800,8 @@ int main(int argc, char** argv) {
                                 if (samp && !dark(mask(*samp))) {
                                     lit_offsets.push_back(off);
                                     RGB3 act = mask(*samp);
-                                    if (band < 4) grade_letters_bit(value, exp, act, letter_ok, letter_pop);
-                                    else { p4_ok = p4_ok && eq(act, exp); ++p4_pop; }
+                                    if (band < 4) grade_letters_bit(value, exp, act, letter_ok_u, letter_pop_u);
+                                    else { p4_ok_u = p4_ok_u && eq(act, exp); ++p4_pop_u; }
                                 }
                             }
                         }
@@ -727,40 +816,6 @@ int main(int argc, char** argv) {
         }
     }
 
-    // LA lines: mixed pixel values need the pixel-exact a0+2i/a1+2i mapping
-    // (4.4), so they are graded only while PC2w holds; otherwise recorded.
-    if (ref_ok && pc2w_ok) {
-        for (int band = 0; band < 5; ++band) {
-            for (int lineInBand = 6; lineInBand <= 7; ++lineInBand) { // LA, LA
-                int n = 80 + 10 * band + lineInBand;
-                for (int pixel = 0; pixel < 16; ++pixel) {
-                    int value = pixel_value(lineInBand, pixel);
-                    if (value == 0) continue;
-                    RGB3 exp = expected_v(band, value);
-                    for (int sprite = 0; sprite < 2; ++sprite) {
-                        size_t anchor_pos = sprite == 0 ? anchor.a0 : anchor.a1;
-                        for (int copy = 0; copy < dm.d; ++copy) {
-                            auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
-                            for (int s01 = 0; s01 < 2; ++s01) {
-                                std::optional<nmh::VideoSample> samp;
-                                if (span) samp = nmh::sample_at(video, *span, anchor_pos + 2 * pixel + s01);
-                                RGB3 act = samp ? mask(*samp) : RGB3{0xFF, 0xFF, 0xFF};
-                                if (band < 4) grade_letters_bit(value, exp, act, letter_ok, letter_pop);
-                                else { p4_ok = p4_ok && eq(act, exp); ++p4_pop; }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    } else if (ref_ok) {
-        c.record("P1-P4 LA lines (bands 0-4, pixels of value 01/10/11): not graded this run -- PC2w "
-                  "(p.101/p.124/p.128, the sprite-pixel-width precondition) failed, so the exact "
-                  "pixel-to-sample position the mixed-value LA lines need cannot be trusted.");
-    }
-
-    bool pc2e_ok = ref_ok && pop_nonempty_ok && offsets_consistent_ok;
-
     // ---- PC2: sprite frame (chip-bus content, guard bands, population) -----
     std::vector<uint16_t> s0d, s1d; std::vector<uint64_t> s0c, s1c; std::vector<bool> s0s, s1s;
     bool spr0_seq = false, spr1_seq = false;
@@ -768,20 +823,20 @@ int main(int argc, char** argv) {
         spr0_seq = check_full_traversal(colog, kSpr0WordBase, kSprWords, graded_frame->begin, graded_frame->end, s0d, s0c, s0s);
         spr1_seq = check_full_traversal(colog, kSpr1WordBase, kSprWords, graded_frame->begin, graded_frame->end, s1d, s1c, s1s);
     }
-    auto exp_s0 = build_expected_sprdesc(0x5060, 0x8200);
-    auto exp_s1 = build_expected_sprdesc(0x506C, 0x8201);
+    auto exp_s0 = build_expected_sprdesc(kS0Pos, kS0Ctl);
+    auto exp_s1 = build_expected_sprdesc(sc == Scenario::CR13 ? kS1PosCr13 : kS1PosBase, kS1CtlBase);
     bool spr0_content_ok = spr0_seq, spr1_content_ok = spr1_seq;
     int spr0_mismatches = 0, spr1_mismatches = 0;
     if (spr0_seq) for (int i = 0; i < kSprWords; ++i) if (s0d[i] != exp_s0[i]) { spr0_content_ok = false; ++spr0_mismatches; }
     if (spr1_seq) for (int i = 0; i < kSprWords; ++i) if (s1d[i] != exp_s1[i]) { spr1_content_ok = false; ++spr1_mismatches; }
     bool pc2a_ok = spr0_seq && spr1_seq && spr0_content_ok && spr1_content_ok;
 
-    bool pc2c_ok = ref_ok;
-    long pc2c_checked = 0;
-    bool pc2d_ok = ref_ok;
-    long pc2d_checked = 0;
+    bool pc2_ok = false;
     if (ref_ok) {
-        pc2c_ok = (anchor.a1 > anchor.a0) && (anchor.a1 - anchor.a0 >= 33);
+        bool pc2c_ok = (anchor.a1 > anchor.a0) && (anchor.a1 - anchor.a0 >= 33);
+        long pc2c_checked = 0;
+        bool pc2d_ok = true;
+        long pc2d_checked = 0;
         for (int n = 80; n <= 129; ++n) for (int copy = 0; copy < dm.d; ++copy) {
             auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
             if (!span) { pc2c_ok = false; continue; }
@@ -810,26 +865,35 @@ int main(int argc, char** argv) {
         };
         darkregion(70, 79);
         darkregion(130, 131);
+        bool pc2e_ok = pop_nonempty_ok && offsets_consistent_ok;
+
+        pc2_ok = pc2a_ok && pc2c_ok && pc2d_ok && pc2e_ok;
+        c.expect(pc2_ok, "PC2: sprite frame -- (a) sprite 0/1 fetch control+50 data pairs in address order, each "
+                 "word equal to 3.2's own POS/CTL/SPRDESC/terminator values (" +
+                 std::to_string(spr0_mismatches) + "/" + std::to_string(spr1_mismatches) +
+                 " content mismatches sprite0/1), (c) guard bands dark and a1-a0>=33 (" +
+                 std::to_string(pc2c_checked) + " samples), (d) lines 70-79/130-131 fully dark (" +
+                 std::to_string(pc2d_checked) + " samples), (e) every uniform line of every band/sprite/copy "
+                 "shows at least one lit sample and the same set of lit offsets every time (" +
+                 std::to_string(pop_checked) + " line-instances, " + std::to_string(offsets_checked) +
+                 " offset-set comparisons)");
+    } else {
+        not_graded("PC2 (sprite frame: (a) chip-bus content, (c) guard bands, (d) dark lines, (e) population)", "REF");
+        c.note("PC2(a) alone, not graded this run: " + std::string(pc2a_ok ? "sprite 0/1 fetched in order with every word as expected" :
+               "sprite fetches or content differ from 3.2 (") + (pc2a_ok ? "" : std::to_string(spr0_mismatches) + "/" +
+               std::to_string(spr1_mismatches) + " content mismatches sprite0/1)"));
     }
 
-    bool pc2_ok = pc2a_ok && pc2c_ok && pc2d_ok && pc2e_ok;
-    c.expect(pc2_ok, "PC2: sprite frame -- (a) sprite 0/1 fetch control+50 data pairs in address order, each "
-             "word equal to 3.2's own POS/CTL/SPRDESC/terminator values (" +
-             std::to_string(spr0_mismatches) + "/" + std::to_string(spr1_mismatches) +
-             " content mismatches sprite0/1), (c) guard bands dark and a1-a0>=33 (" +
-             std::to_string(pc2c_checked) + " samples), (d) lines 70-79/130-131 fully dark (" +
-             std::to_string(pc2d_checked) + " samples), (e) every uniform line of every band/sprite/copy "
-             "shows at least one lit sample and the same set of lit offsets every time (" +
-             std::to_string(pop_checked) + " line-instances, " + std::to_string(offsets_checked) +
-             " offset-set comparisons)");
-
     // ---- PC3: register contents in place, and as specified -----------------
-    // Graded over the Copper PASS that carries the graded frame, not the
+    // Graded over the Copper pass that carries the graded frame, not the
     // vsync-bounded frame itself: the Copper restarts every vertical
-    // blanking interval (p.25, p.30), so the pass starts before the frame
-    // and ends after it.
+    // blanking interval (p.25, p.30). The pass is the span from the last
+    // fetch of the list's word 0 at or before the graded frame's first
+    // sample to the next such fetch; it begins before the frame's first
+    // sample and ends inside the frame.
     bool cr1 = (sc == Scenario::CR1), cr2 = (sc == Scenario::CR2), cr3 = (sc == Scenario::CR3), cr6 = (sc == Scenario::CR6);
-    auto expected_cop = build_expected_coptab(cr1, cr2, cr3, cr6);
+    bool cr11 = (sc == Scenario::CR11);
+    auto expected_cop = build_expected_coptab(cr1, cr2, cr3, cr6, cr11);
 
     std::optional<uint64_t> pass_start, pass_end;
     if (graded_frame) {
@@ -902,44 +966,105 @@ int main(int argc, char** argv) {
     // ---- PC4: run length -----------------------------------------------
     // A complete pass is every one of the list's 306 words, word 0 to its
     // last WAIT (word 305), fetched once each in address order between two
-    // successive fetches of word 0.
-    long pass_count = 0;
-    if (graded_frame) {
-        std::vector<uint64_t> word0_cycles;
-        for (auto& a : colog)
-            if (!a.is_write && a.word_addr == kCoplistWordBase && a.cycle < graded_frame->begin)
-                word0_cycles.push_back(a.cycle);
-        std::sort(word0_cycles.begin(), word0_cycles.end());
-        for (size_t i = 0; i + 1 < word0_cycles.size(); ++i) {
-            std::vector<uint16_t> pd; std::vector<uint64_t> pc; std::vector<bool> ps;
-            if (check_full_traversal(colog, kCoplistWordBase, kCopWords, word0_cycles[i], word0_cycles[i + 1], pd, pc, ps))
-                ++pass_count;
+    // successive fetches of word 0. MARKER's receipt is RUN's, not PC4's, so
+    // PC4 does not depend on RUN.
+    bool pc4_ok = false;
+    {
+        long pass_count = 0;
+        if (graded_frame) {
+            std::vector<uint64_t> word0_cycles;
+            for (auto& a : colog)
+                if (!a.is_write && a.word_addr == kCoplistWordBase && a.cycle < graded_frame->begin)
+                    word0_cycles.push_back(a.cycle);
+            std::sort(word0_cycles.begin(), word0_cycles.end());
+            for (size_t i = 0; i + 1 < word0_cycles.size(); ++i) {
+                std::vector<uint16_t> pd; std::vector<uint64_t> pc; std::vector<bool> ps;
+                if (check_full_traversal(colog, kCoplistWordBase, kCopWords, word0_cycles[i], word0_cycles[i + 1], pd, pc, ps))
+                    ++pass_count;
+            }
+        }
+        pc4_ok = graded_frame.has_value() && pass_count >= 3;
+        c.expect(pc4_ok, "PC4: the graded frame is complete, and " + std::to_string(pass_count) +
+                 " complete Copper passes (word 0 to word 305 fetched once each, in order, >= 3 required) precede it");
+    }
+
+    // ---- P1-P4: per-letter masked-colour grading -----------------------
+    // Every P line is graded only when PC0, REF, PC1, PC2, PC3 and PC4 are
+    // met (each graded and passed). Each letter has two lines over disjoint
+    // populations: the uniform-line line (graded width-free) and the LA-line
+    // line (pixel-exact mapping of 4.4, graded only while PC2w holds). Claim
+    // ids sit on the RECORDED lines below, on no PASS/FAIL line: neither
+    // population alone is the whole claim, and 1.1 withdraws them anyway.
+    bool p_gate = pc0_ok && ref_ok && pc1_ok && pc2_ok && pc3_ok && pc4_ok;
+    std::string p_unmet = unmet({{"PC0", pc0_ok}, {"REF", ref_ok}, {"PC1", pc1_ok}, {"PC2", pc2_ok},
+                                  {"PC3", pc3_ok}, {"PC4", pc4_ok}});
+
+    // LA lines: mixed pixel values need the pixel-exact a0+2i/a1+2i mapping
+    // (4.4), so they are graded only while PC2w holds.
+    bool la_gate = p_gate && pc2w_graded && pc2w_ok;
+    if (la_gate) {
+        for (int band = 0; band < 5; ++band) {
+            for (int lineInBand = 6; lineInBand <= 7; ++lineInBand) { // LA, LA
+                int n = 80 + 10 * band + lineInBand;
+                for (int pixel = 0; pixel < 16; ++pixel) {
+                    int value = pixel_value(lineInBand, pixel);
+                    if (value == 0) continue;
+                    RGB3 exp = expected_v(band, value);
+                    for (int sprite = 0; sprite < 2; ++sprite) {
+                        size_t anchor_pos = sprite == 0 ? anchor.a0 : anchor.a1;
+                        for (int copy = 0; copy < dm.d; ++copy) {
+                            auto span = src_line_copy(lif, anchor.v0_idx, dm.d, n, copy);
+                            for (int s01 = 0; s01 < 2; ++s01) {
+                                std::optional<nmh::VideoSample> samp;
+                                if (span) samp = nmh::sample_at(video, *span, anchor_pos + 2 * pixel + s01);
+                                RGB3 act = samp ? mask(*samp) : RGB3{0xFF, 0xFF, 0xFF};
+                                if (band < 4) grade_letters_bit(value, exp, act, letter_ok_la, letter_pop_la);
+                                else { p4_ok_la = p4_ok_la && eq(act, exp); ++p4_pop_la; }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-    bool pc4_ok = marker_seen && graded_frame.has_value() && pass_count >= 3;
-    c.expect(pc4_ok, "PC4: MARKER received $A5A5, the graded frame is complete, and " + std::to_string(pass_count) +
-             " complete Copper passes (word 0 to word 305 fetched once each, in order, >= 3 required) precede it");
+    std::string la_unmet = p_unmet;
+    if (p_gate && !(pc2w_graded && pc2w_ok)) la_unmet = pc2w_graded ? "PC2w (failed)" : "PC2w (not graded)";
 
-    // ---- P1-P4 -----------------------------------------------------------
     for (int i = 0; i < 18; ++i) {
         auto& m = kLetterMeta[i];
-        std::string label = "P" + std::to_string(m.value) + " colour" + std::to_string(16 + m.value) + " " +
-                             std::string(m.comp) + " (letter " + std::string(1, m.name) + ") p302 -- every "
-                             "graded lit sample of colour" + std::to_string(16 + m.value) +
-                             " (bands 0-3, uniform L1/L2/L3 lines width-free plus LA lines while PC2w holds) "
-                             "matches the band-predicted value in this bit";
-        if (ref_ok) c.expect(letter_ok[L_G + i], label);
-        else c.record("not graded (REF, the reference-frame precondition, failed this run): " + label);
+        std::string tag = "P" + std::to_string(m.value);
+        std::string what = " colour" + std::to_string(16 + m.value) + " " + std::string(m.comp) + " (letter " +
+                           std::string(1, m.name) + ") p302 -- ";
+        std::string label = tag + what + "every graded lit sample of colour" + std::to_string(16 + m.value) +
+                            " on the uniform L1/L2/L3 lines of bands 0-3 (width-free) matches the band-predicted "
+                            "value in this bit (" + std::to_string(letter_pop_u[L_G + i]) + " samples)";
+        std::string label_la = tag + "-LA" + what + "every colour" + std::to_string(16 + m.value) +
+                               " pixel of the LA lines of bands 0-3 (pixel-exact a0+2i mapping, two samples per "
+                               "pixel) matches the band-predicted value in this bit (" +
+                               std::to_string(letter_pop_la[L_G + i]) + " samples)";
+        if (!p_gate) not_graded(tag + what + "uniform lines", p_unmet);
+        else if (letter_pop_u[L_G + i] == 0) not_graded(tag + what + "uniform lines", "empty population");
+        else c.expect(letter_ok_u[L_G + i], label);
+        if (!la_gate) not_graded(tag + "-LA" + what + "LA lines", la_unmet);
+        else if (letter_pop_la[L_G + i] == 0) not_graded(tag + "-LA" + what + "LA lines", "empty population");
+        else c.expect(letter_ok_la[L_G + i], label_la);
         c.record(std::string("letter ") + m.name + " ids (withdrawn, 1.1): " + m.ids + " -- the page does not "
                  "say which register a sprite pixel reads, so a letter check with all positions written "
                  "alike cannot establish one register bit.");
     }
     {
         std::string label = "P4 colour16 letters A-F p302 -- band 4's colours 17-19 match S0's G-X-predicted "
-            "values exactly in every graded lit sample (colour16's letters A-F do not show); the colour "
-            "proposition alone is graded, and the 24 ids remain recorded below without a verdict of their own";
-        if (ref_ok) c.expect(p4_ok, label);
-        else c.record("not graded (REF, the reference-frame precondition, failed this run): " + label);
+            "values exactly in every graded lit sample of the uniform L1/L2/L3 lines (colour16's letters A-F do not "
+            "show) (" + std::to_string(p4_pop_u) + " samples)";
+        std::string label_la = "P4-LA colour16 letters A-F p302 -- band 4's colours 17-19 match S0's G-X-predicted "
+            "values exactly in every pixel of value 01, 10 or 11 of the LA lines (pixel-exact a0+2i mapping) (" +
+            std::to_string(p4_pop_la) + " samples)";
+        if (!p_gate) not_graded("P4 colour16 letters A-F, uniform lines", p_unmet);
+        else if (p4_pop_u == 0) not_graded("P4 colour16 letters A-F, uniform lines", "empty population");
+        else c.expect(p4_ok_u, label);
+        if (!la_gate) not_graded("P4-LA colour16 letters A-F, LA lines", la_unmet);
+        else if (p4_pop_la == 0) not_graded("P4-LA colour16 letters A-F, LA lines", "empty population");
+        else c.expect(p4_ok_la, label_la);
         c.record(std::string("P4 colour16 letters A-F ids (withdrawn, 1.1): ") + kP4Ids + " -- the page does "
                  "not say which register a sprite pixel reads, so a letter check with all positions written "
                  "alike cannot establish one register bit.");
