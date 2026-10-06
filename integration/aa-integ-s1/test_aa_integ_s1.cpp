@@ -1,6 +1,6 @@
 // test_aa_integ_s1.cpp
 //
-// aa-integ-s1: see SPECIFICATION.md. BPLCON1 horizontal scroll (P1-P5) and the bit-plane fetch increment and the modulos (P7-P9).
+// aa-integ-s1: see SPECIFICATION.md. BPLCON1 horizontal scroll (P1-P5), the bit-plane fetch increment and the modulos (P7-P9), BYPASS (P6), LPEN, the joystick and mouse registers and the UART break (P10-P12) and the disk DMA pointer and the DUAL-mode secondary beam counter (P13-P15).
 //
 // Every run selects the AA chip set with chipset_config = $10 (SPECIFICATION.md
 // section 0). Both builds, fx68k and TG68K, grade every proposition,
@@ -30,6 +30,22 @@
 // MUTATION P4b-C1 stimulus green NMH_MUTATE=P4b-C1: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS.
 // MUTATION P4b-C2 stimulus green NMH_MUTATE=P4b-C2: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS.
 // MUTATION P5 stimulus green NMH_MUTATE=P5: live input through the same line: P4 runs (a) and (b) write BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS.
+// MUTATION UNIT-FIXTURE stimulus red NMH_MUTATE=UNIT-FIXTURE: the unit run loads prog_regs_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION UNIT-AA stimulus red NMH_MUTATE=UNIT-AA: chipset_config = $08 (the ECS chip set) in the unit run; TG68K FAIL, fx68k FAIL.
+// MUTATION UNIT-R2 stimulus red NMH_MUTATE=UNIT-R2: the unit run writes BEAMCON0 = $00A0 (VARBEAMEN) and HTOTAL = $0040: lines of 65 CCK; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-R4 stimulus red NMH_MUTATE=P6-R4: COLOR01 = $0500 is written with LOCT=0 and $0A00 with LOCT=1, the two writes exchanged; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the B0/T_id run loads prog_regs_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-F3 stimulus red NMH_MUTATE=P6-F3: the B0/T_id run ends 3,300,000 cycles after boot(), before F3 is complete; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-R1 stimulus red NMH_MUTATE=P6-R1: the B1/T_id run writes BEAMCON0 = $0000 (NTSC); TG68K FAIL, fx68k FAIL.
+// MUTATION P6-POP stimulus red NMH_MUTATE=P6-POP: the B0/T_id run writes DMACON = $8280 (BPLEN clear); TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-RED16.
+// MUTATION P6-TBL stimulus red NMH_MUTATE=P6-TBL: the B0/T_x run loads table T_id; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-RED16 stimulus red NMH_MUTATE=P6-RED16: the B0/T_id run loads a T_id with the red nibble limited to 0-7; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-SPR stimulus red NMH_MUTATE=P6-SPR: the B0/T_id run writes DMACON = $8380 (SPREN clear); TG68K FAIL, fx68k FAIL.
+// MUTATION P6-SCROLL stimulus red NMH_MUTATE=P6-SCROLL: the B0/T_id run writes BPLCON1 = $0000; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-I stimulus red NMH_MUTATE=P6-I: the B1/T_id run writes BPLCON1 = $0000 while B0/T_id keeps $0033 (the scroll clause); TG68K FAIL, fx68k FAIL.
+// MUTATION P6-I stimulus red NMH_MUTATE=P6-I-PRIO: the B1/T_id run writes BPLCON2 = $0000 (playfields in front of the sprites) while B0/T_id keeps $0024 (the priority clause); TG68K FAIL, fx68k FAIL.
+// MUTATION P6-II stimulus green NMH_MUTATE=P6-II: live input through the same comparator: the B1/T_x run is run as B0/T_id (table T_id, BYPASS clear); TG68K PASS, fx68k PASS.
+// MUTATION P6-AGG stimulus green NMH_MUTATE=P6-AGG: live input through the same line: the B1/T_x run is run as B0/T_id (table T_id, BYPASS clear); TG68K PASS, fx68k PASS.
 // MUTATION P7-F0000 stimulus red NMH_MUTATE=P7-F0000: the FMODE = $0000 run writes $0003; TG68K FAIL, fx68k FAIL.
 // MUTATION P7-F0001 stimulus red NMH_MUTATE=P7-F0001: the FMODE = $0001 run writes $0003; TG68K FAIL, fx68k FAIL.
 // MUTATION P7-F0002 stimulus red NMH_MUTATE=P7-F0002: the FMODE = $0002 run writes $0003; TG68K FAIL, fx68k FAIL.
@@ -57,6 +73,38 @@
 // MUTATION P9-R3 stimulus red NMH_MUTATE=P9-R3: run D0 places the second marker at line $81 instead of $80; TG68K FAIL, fx68k FAIL.
 // MUTATION P9-POP stimulus red NMH_MUTATE=P9-POP: run D0 writes BPLCON0 = $4000 (4 planes); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-FIRST stimulus red NMH_MUTATE=P9-FIRST: run D0 writes DIWSTRT = $2E81; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-MAIN stimulus red NMH_MUTATE=P10-MAIN: both runs load prog_lpen_same.bin, which reads VPOSR:VHPOSR once and stores the value as w0 and w1; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL, fx68k FAIL.
+// MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by about 110 lines; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS, fx68k PASS.
+// MUTATION P11-JOY stimulus red NMH_MUTATE=P11-JOY: the state "right" drives the left switch ($02) in place of the right switch ($01) on both connectors; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
+// MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
+// MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE-RET: the second movement brings 39 counts instead of 40; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
+// MUTATION P11-AGG stimulus red NMH_MUTATE=P11-AGG: the 40 counts of the third movement are -1 instead of +1 on Y; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-MOUSE.
+// MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the joystick run loads prog_joy_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-UNIT stimulus red NMH_MUTATE=P11-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
+// MUTATION P11-POP stimulus red NMH_MUTATE=P11-POP: each hold lasts 0.15 ms instead of 2 ms; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-STILL stimulus red NMH_MUTATE=P11-STILL: one X count is injected through the mouse inputs in the middle of a hold; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-MAIN stimulus red NMH_MUTATE=P12-MAIN: the main run loads prog_uart_k.bin: ADKCON = $0800 at step 5; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: the main run loads prog_uart_early.bin: ADKCON = $8800 in place of $0800 at step 2, so UARTBRK is set before M1; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-KPRE stimulus red NMH_MUTATE=P12-KPRE: the contrast run loads prog_uart.bin: the break stays set; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-FIXTURE stimulus red NMH_MUTATE=P12-FIXTURE: the main run loads prog_uart_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-UNIT stimulus red NMH_MUTATE=P12-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
+// MUTATION P13-MAIN stimulus red NMH_MUTATE=P13-MAIN: run Y writes DSKPTH = $0005 (3 bits of A20-A16) in place of $0015; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-RUN stimulus red NMH_MUTATE=P13-RUN: run X writes DMACON = $8200 (DSKEN clear); TG68K FAIL, fx68k FAIL.
+// MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: run X loads prog_disk_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-PAIRS stimulus red NMH_MUTATE=P14-PAIRS: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-R2 stimulus red NMH_MUTATE=P14-R2: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added); TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-PHASE.
+// MUTATION P14-U3 stimulus red NMH_MUTATE=P14-U3: run U3 writes BEAMCON0 = $0820 and no VTOTAL (run U0's); TG68K FAIL, fx68k FAIL.
+// MUTATION P14-FIXTURE stimulus red NMH_MUTATE=P14-FIXTURE: run U1 loads prog_dual_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-UNIT stimulus red NMH_MUTATE=P14-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
+// MUTATION P15-V1 stimulus green NMH_MUTATE=P15-V1: live inputs through the same comparators: run V0 loads prog_cpuuh_line.bin (one CPU read of the region per line in place of the UHRES pointer) and run V1 loads prog_cpuuh_57.bin (one per 57 CCK); TG68K PASS, fx68k PASS.
+// MUTATION P15-V0 stimulus green NMH_MUTATE=P15-V0: live input through the same comparator: run V0 loads prog_cpuuh_line.bin (one CPU read of the region per line in place of the UHRES pointer); TG68K PASS, fx68k PASS. Also printing FAIL: P15-V1.
+// MUTATION P15-FIXTURE stimulus red NMH_MUTATE=P15-FIXTURE: run V0 loads prog_uhres_nofix.bin; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-R2 stimulus red NMH_MUTATE=P15-R2: run V0 writes BEAMCON0 = $00A0, HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-F3 stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(); TG68K FAIL, fx68k FAIL.
+// MUTATION P15-R3 stimulus red NMH_MUTATE=P15-R3: run V0 places the second marker at line $99 instead of $98; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF1H2 stimulus red NMH_MUTATE=P2A1-PF1H2: the FMODE = $0000 (a1) test run writes the neighbouring bit $0002 in place of $0001; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF1H3 stimulus red NMH_MUTATE=P2A1-PF1H3: the FMODE = $0000 (a1) test run writes the neighbouring bit $0001 in place of $0002; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF1H4 stimulus red NMH_MUTATE=P2A1-PF1H4: the FMODE = $0000 (a1) test run writes the neighbouring bit $0002 in place of $0004; TG68K FAIL, fx68k FAIL.
@@ -98,6 +146,13 @@
 // MUTATION P4b-C1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P4b-C2 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P5 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
+// MUTATION P14-POS none impossible no stimulus makes the precondition green: a CPU sampler samples only 113 (TG68K) and 109 (fx68k) of the 227 line positions in run U1, and no sampling loop of the CPU reaches the others
+// MUTATION P14-U1 none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
+// MUTATION P14-U2 none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
+// MUTATION P14-REL none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
+// MUTATION P14-MAIN none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
+// MUTATION P14-AGG none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
+// MUTATION P14-PHASE none impossible unfalsifiable at this boundary: the line compares the phases of the sample times of a CPU loop, whose period varies by one colour clock between samples; a stimulus that confines the phases to fewer than HTOTAL+1 values would need a loop of fixed period, which a CPU loop does not give
 
 #include <cstdio>
 #include <cstdlib>
@@ -1124,6 +1179,988 @@ void prop_p9(Checks& checks, Grader& g) {
         not_graded(checks, "P9 aggregate", "fixture, R2, F3, R3 anchor, population or first fetch line");
     }
 }
+
+// ---- P6: BYPASS ------------------------------------------------------------
+
+constexpr uint32_t kP6Plane = 0x100000, kP6PlanePitch = 0x1000;
+constexpr uint32_t kP6Sprite = 0x0B4000, kP6Zero = 0x0B4100;
+
+struct P6Cfg {
+    bool bypass = false;
+    bool tx = false;                  // table T_x instead of T_id
+    bool half_table = false;          // T_id with the red nibble limited to 0-7
+    uint16_t bplcon1 = 0x0033;
+    uint16_t bplcon2 = 0x0024;
+    uint16_t dmacon = 0x83A0;
+    uint16_t beamcon0 = 0x0020;
+    uint64_t cycles = 4'700'000;
+    std::string bin = "prog_regs.bin";
+};
+
+uint16_t p6_entry(int i, bool tx, bool half) {
+    int hi = i >> 4, lo = i & 15;
+    int r = tx ? 15 - hi : hi;
+    if (half) r &= 7;
+    int b = tx ? hi : 15 - hi;
+    return uint16_t((r << 8) | (lo << 4) | b);
+}
+
+int p6_value(int g) { int m = g % 16; return (m << 4) | (15 - m); }
+
+RunSpec p6_spec(const P6Cfg& c) {
+    RunSpec s;
+    s.bin = c.bin; s.cycles = c.cycles;
+    CopList cl(kCopList);
+    for (int k = 0; k < 8; ++k) cl.ptr(uint16_t(0x0E0 + 4 * k), kP6Plane + k * kP6PlanePitch);
+    cl.ptr(0x120, kP6Sprite);
+    for (int x = 1; x < 8; ++x) cl.ptr(uint16_t(0x120 + 4 * x), kP6Zero);
+    cl.end();
+    cl.poke_into(s.pokes);
+    // plane k holds bit k-1 of v(g) for the 20 groups of every line; the
+    // modulus of -40 bytes returns each pointer to the line's start
+    for (int k = 0; k < 8; ++k)
+        for (int g = 0; g < 20; ++g)
+            s.pokes.push_back({kP6Plane + k * kP6PlanePitch + 2 * g, uint16_t(((p6_value(g) >> k) & 1) ? 0xFFFF : 0x0000)});
+    std::vector<uint16_t> spr = {0x6060, 0x7000};
+    for (int i = 0; i < 16; ++i) { spr.push_back(0xFFFF); spr.push_back(0x0000); }
+    spr.push_back(0); spr.push_back(0);
+    poke_words(s.pokes, kP6Sprite, spr);
+    s1_step1(s.rl, c.beamcon0);
+    s.rl.add(0x100, uint16_t(0x0010 | (c.bypass ? 0x0020 : 0)));
+    s.rl.add(0x102, c.bplcon1);
+    s.rl.add(0x104, c.bplcon2);
+    s.rl.add(0x10C, 0x0011);
+    s.rl.add(0x08E, 0x2C81); s.rl.add(0x090, 0xF0C1);
+    s.rl.add(0x092, kDdfstrtLores); s.rl.add(0x094, kDdfstopLores);
+    s.rl.add(0x108, 0xFFD8); s.rl.add(0x10A, 0xFFD8);
+    s.rl.add(0x1FC, 0x0000);
+    for (int b = 0; b < 8; ++b) {
+        s.rl.add(0x106, uint16_t(0x0C00 | (b << 13)));
+        for (int j = 0; j < 32; ++j) s.rl.add(uint16_t(0x180 + 2 * j), p6_entry(32 * b + j, c.tx, c.half_table));
+    }
+    s.rl.add(0x106, 0x0C00);
+    s.rl.add(0x080, uint16_t(kCopList >> 16)); s.rl.add(0x082, uint16_t(kCopList & 0xFFFF)); s.rl.add(0x088, 0);
+    s.rl.add(0x096, c.dmacon);
+    s.rl.finish();
+    return s;
+}
+
+// R4: one LORES plane of $AAAA, COLOR01 written with LOCT=0 and then LOCT=1.
+RunSpec p6_r4_spec(bool swapped) {
+    RunSpec s;
+    s.cycles = 4'700'000;
+    CopList cl(kCopList);
+    cl.ptr(0x0E0, kP6Plane);
+    cl.end();
+    cl.poke_into(s.pokes);
+    for (int g = 0; g < 20; ++g) s.pokes.push_back({kP6Plane + 2 * g, 0xAAAA});
+    s1_step1(s.rl);
+    s.rl.add(0x100, 0x1000);
+    s.rl.add(0x102, 0x0000);
+    s.rl.add(0x104, 0x0024);
+    s.rl.add(0x10C, 0x0011);
+    s.rl.add(0x08E, 0x2C81); s.rl.add(0x090, 0xF0C1);
+    s.rl.add(0x092, kDdfstrtLores); s.rl.add(0x094, kDdfstopLores);
+    s.rl.add(0x108, 0xFFD8); s.rl.add(0x10A, 0xFFD8);
+    s.rl.add(0x1FC, 0x0000);
+    s.rl.add(0x106, 0x0C00);
+    s.rl.add(0x180, 0x0222);
+    s.rl.add(0x182, swapped ? 0x0500 : 0x0A00);
+    s.rl.add(0x106, 0x0E00);
+    s.rl.add(0x182, swapped ? 0x0A00 : 0x0500);
+    s.rl.add(0x106, 0x0C00);
+    s.rl.add(0x080, uint16_t(kCopList >> 16)); s.rl.add(0x082, uint16_t(kCopList & 0xFFFF)); s.rl.add(0x088, 0);
+    s.rl.add(0x096, 0x8380);
+    s.rl.finish();
+    return s;
+}
+
+// The lines of a frame, each as its samples.
+using Img = std::vector<std::vector<VideoSample>>;
+
+Img frame_img(const Cap& c, Span fr) {
+    Img img;
+    for (auto& ln : nmh::find_lines(c.video)) {
+        if (ln.begin < fr.begin || ln.end > fr.end) continue;
+        img.emplace_back(c.video.begin() + ln.begin, c.video.begin() + ln.end);
+    }
+    return img;
+}
+
+bool is_window_px(const VideoSample& s) {
+    // neither the blanked level (0,0,0) nor COLOR00 of table T_id, whose entry 0 is red 0, green 0, blue $F
+    return !(s.r == 0 && s.g == 0 && s.b == 0) && !(s.r == 0 && s.g == 0 && s.b == 15);
+}
+
+struct P6Run {
+    Cap cap;
+    std::optional<size_t> x;
+    bool f3_ok = false;
+    Span f3{0, 0};
+    Img img;
+    size_t shape_lines = 0; double shape_period = 0, shape_width = 0;
+};
+
+P6Run run_p6(const RunSpec& s, uint32_t plane_lo, uint32_t plane_hi) {
+    P6Run r;
+    r.cap = run_spec(s);
+    r.x = enable_frame(r.cap, plane_lo, plane_hi);
+    auto frames = nmh::find_frames(r.cap.video);
+    if (r.x && *r.x + 3 + 1 < frames.size()) {
+        r.f3_ok = true; r.f3 = frames[*r.x + 3];
+        r.img = frame_img(r.cap, r.f3);
+        HsyncShape h = hsync_shape(r.cap.video, *r.x + 3);
+        r.shape_lines = h.line_count; r.shape_period = h.avg_period; r.shape_width = h.avg_width;
+    }
+    std::vector<VideoSample>().swap(r.cap.video);   // the frame's lines are kept in img
+    return r;
+}
+
+bool same_shape(const P6Run& a, const P6Run& b) {
+    return a.f3_ok && b.f3_ok && a.shape_lines > 0 && a.shape_lines == b.shape_lines &&
+           near_int(a.shape_period, b.shape_period, 1.0) && near_int(a.shape_width, b.shape_width, 1.0);
+}
+
+// Compares the red channel of two images at the pixels of `mask`; returns the
+// number of pixels compared and how many differ. `rows_ok` is false when the
+// images do not have the same number of lines or a line is too short.
+struct RedCmp { size_t compared = 0, differ = 0; bool rows_ok = true; };
+
+RedCmp compare_red(const Img& a, const Img& b, const Img& mask_from) {
+    RedCmp r;
+    if (a.size() != b.size() || a.size() != mask_from.size()) { r.rows_ok = false; return r; }
+    for (size_t l = 0; l < a.size(); ++l) {
+        for (size_t c = 0; c < mask_from[l].size(); ++c) {
+            if (!is_window_px(mask_from[l][c])) continue;
+            if (c >= a[l].size() || c >= b[l].size()) { r.rows_ok = false; continue; }
+            ++r.compared;
+            if (a[l][c].r != b[l][c].r) ++r.differ;
+        }
+    }
+    return r;
+}
+
+void prop_p6(Checks& checks, Grader& g) {
+    // runs: B0 and B1 with table T_id and T_x, plus the three for the preconditions
+    P6Cfg b0id, b1id, b0x, b1x, b0n, b0s0;
+    b1id.bypass = true; b0x.tx = true; b1x.bypass = true; b1x.tx = true;
+    b0n.dmacon = 0x8380;                // SPREN cleared: no sprite
+    b0s0.bplcon1 = 0x0000;              // no scroll
+    if (mutating("P6-FIXTURE")) b0id.bin = "prog_regs_nofix.bin";
+    if (mutating("P6-R1")) b1id.beamcon0 = 0x0000;
+    if (mutating("P6-F3")) b0id.cycles = 3'300'000;
+    if (mutating("P6-TBL")) b0x.tx = false;
+    if (mutating("P6-RED16")) b0id.half_table = true;
+    if (mutating("P6-SPR")) b0id.dmacon = 0x8380;
+    if (mutating("P6-SCROLL")) b0id.bplcon1 = 0x0000;
+    if (mutating("P6-POP")) b0id.dmacon = 0x8280;
+    if (mutating("P6-I")) b1id.bplcon1 = 0x0000;
+    if (mutating("P6-I-PRIO")) b1id.bplcon2 = 0x0000;
+    // P6-II and P6-AGG: a live input through the same comparators: the B1/T_x run is run as B0/T_id
+    if (mutating("P6-II") || mutating("P6-AGG")) { b1x.bypass = false; b1x.tx = false; }
+    const uint32_t lo = kCopList, hi = kCopList + 0x100;   // the frame holding the first Copper fetch is the one the DMA enable falls in
+    // A mutation names the runs it changes; the runs it needs are the only ones made. B0/T_id is always made.
+    const std::string ms = g_mutate ? g_mutate : "";
+    const bool dev = ms.empty() || ms == "P6-NONE" || ms == "P6-II" || ms == "P6-AGG";
+    const bool nb1 = dev || ms == "P6-R1" || ms == "P6-I" || ms == "P6-I-PRIO";
+    const bool nx1 = dev;
+    const bool nx0 = dev || ms == "P6-TBL";
+    const bool nn = dev || ms == "P6-SPR";
+    const bool ns0 = dev || ms == "P6-SCROLL";
+    const bool nr4 = dev || ms == "P6-R4";
+    P6Run rid0 = run_p6(p6_spec(b0id), lo, hi), rid1, rx0, rx1, rn, rs0, r4;
+    std::vector<P6Run*> all = {&rid0};
+    if (nb1) { rid1 = run_p6(p6_spec(b1id), lo, hi); all.push_back(&rid1); }
+    if (nx0) { rx0 = run_p6(p6_spec(b0x), lo, hi); all.push_back(&rx0); }
+    if (nx1) { rx1 = run_p6(p6_spec(b1x), lo, hi); all.push_back(&rx1); }
+    if (nn) { rn = run_p6(p6_spec(b0n), lo, hi); all.push_back(&rn); }
+    if (ns0) { rs0 = run_p6(p6_spec(b0s0), lo, hi); all.push_back(&rs0); }
+
+    // ---- R4, run with COLOR01 written in two parts ----
+    bool r4_ok = true;
+    if (nr4) {
+        r4 = run_p6(p6_r4_spec(mutating("P6-R4")), kCopList, kCopList + 0x100);
+        std::set<int> r4_reds;
+        if (r4.f3_ok)
+            for (auto& row : r4.img) for (auto& px : row) if (px.g == 0 && px.b == 0 && px.r != 0) r4_reds.insert(px.r);
+        r4_ok = r4_reds.size() == 1 && *r4_reds.begin() == 0xA;
+        std::string r4_note;
+        for (int v : r4_reds) r4_note += " $" + hexw(v, 1);
+        g.expect(r4_ok, "P6-R4: precondition R4: a COLOR01 pixel written $0A00 with LOCT=0 and then $0500 with LOCT=1 (AA p.19) shows red $A, so the 4-bit output carries R7-R4");
+        checks.note("P6 R4: red values of COLOR01 pixels:" + r4_note);
+        if (ms == "P6-R4") return;
+    }
+
+    bool fixture = true, f3ok = !nr4 || r4.f3_ok;
+    for (P6Run* r : all) { fixture = fixture && r->cap.loaded && r->cap.released && r->cap.fixture_ok; f3ok = f3ok && r->f3_ok; }
+    g.expect(fixture, "P6-FIXTURE: all runs loaded, booted and stored the $BEEF fixture before any observation");
+    g.expect(f3ok, "P6-F3: precondition frame F3: in every run the frame holding the first Copper-list fetch is found and its third successor F3 is complete");
+    bool r1ok = f3ok;
+    for (P6Run* r : all) r1ok = r1ok && same_shape(rid0, *r);
+    dep_expect(checks, f3ok, r1ok, "P6-R1: precondition R1 anchor: hsync period, hsync width and output-line count per frame are equal in every compared run", "F3");
+    if (!(fixture && f3ok && r1ok)) {
+        not_graded(checks, "P6 preconditions and assertions", "fixture, F3 or R1 anchor");
+        return;
+    }
+
+    // observed pixels: those of B0/T_id whose colour is not COLOR00's or the blanked level
+    size_t px_n = 0; std::set<size_t> rows_with; std::map<size_t, size_t> per_row;
+    for (size_t l = 0; l < rid0.img.size(); ++l)
+        for (auto& px : rid0.img[l]) if (is_window_px(px)) { ++px_n; rows_with.insert(l); ++per_row[l]; }
+    bool equal_cols = true;
+    for (auto& kv : per_row) if (kv.second != per_row.begin()->second) equal_cols = false;
+    bool pop = rows_with.size() >= 196 && equal_cols;
+    g.expect(pop, "P6-POP: precondition population: the window of B0/T_id covers at least 196 lines of F3 with the same number of window columns on each");
+    checks.note("P6 population: " + dec((long long)rows_with.size()) + " lines, " + dec(per_row.empty() ? 0 : (long long)per_row.begin()->second) + " window columns on a line");
+
+    // table matters: red(B0/T_x) != red(B0/T_id) at every observed pixel
+    bool tbl_ok = true;
+    if (nx0) {
+        RedCmp tbl = compare_red(rid0.img, rx0.img, rid0.img);
+        tbl_ok = pop && tbl.rows_ok && tbl.compared > 0 && tbl.differ == tbl.compared;
+        g.expect(tbl_ok, "P6-TBL: precondition table: the red of B0/T_x differs from that of B0/T_id at every observed pixel, so the colour table decides the red without BYPASS");
+        checks.note("P6 table: " + dec((long long)tbl.differ) + " of " + dec((long long)tbl.compared) + " pixels differ between B0/T_x and B0/T_id");
+    }
+
+    // all 16 red values appear in B0/T_id
+    std::set<int> reds;
+    for (auto& row : rid0.img) for (auto& px : row) if (is_window_px(px)) reds.insert(px.r);
+    g.expect(reds.size() == 16 && *reds.begin() == 0 && *reds.rbegin() == 15, "P6-RED16: precondition values: B0/T_id shows all 16 red values in the window");
+
+    // the sprite's columns: where B0/T_id differs from the run without sprite DMA
+    size_t spr_rows = 0; bool spr_ok = true;
+    bool spr_over_other = false;
+    if (nn) spr_ok = pop && rid0.img.size() == rn.img.size();
+    if (nn && spr_ok) {
+        for (size_t l = 0; l < rid0.img.size(); ++l) {
+            size_t n = 0;
+            for (size_t c = 0; c < rid0.img[l].size() && c < rn.img[l].size(); ++c) {
+                if (rid0.img[l][c].r == rn.img[l][c].r) continue;
+                ++n;
+                if (rid0.img[l][c].r != 1) spr_ok = false;
+                if (rn.img[l][c].r != 1) spr_over_other = true;
+            }
+            if (n) { ++spr_rows; if (n != 32) spr_ok = false; }
+        }
+        spr_ok = spr_ok && spr_rows > 0 && spr_rows % 16 == 0 && spr_over_other;
+    }
+    if (nn) {
+        g.expect(spr_ok, "P6-SPR: precondition sprite: on lines $60-$6F sprite 0's 32 columns show red 1 in B0/T_id, including over groups whose high nibble is not 1");
+        checks.note("P6 sprite: " + dec((long long)spr_rows) + " output lines carry sprite columns");
+    }
+
+    // scroll in effect: boundaries of B0/T_id lie 6 op right of those with BPLCON1 = $0000
+    bool scroll_ok = true;
+    if (ns0) {
+        scroll_ok = false;
+        size_t l = *rows_with.begin();
+        auto bounds = [&](const P6Run& r) {
+            std::vector<size_t> b;
+            const auto& row = r.img[l];
+            size_t first = 0, last = 0; bool seen = false;
+            for (size_t c = 0; c < rid0.img[l].size() && c < row.size(); ++c)
+                if (is_window_px(rid0.img[l][c])) { if (!seen) first = c; last = c; seen = true; }
+            for (size_t c = first + 1; seen && c <= last && c < row.size(); ++c)
+                if (row[c].r != row[c - 1].r) b.push_back(c);
+            return b;
+        };
+        std::vector<size_t> ub = bounds(rs0), sb = bounds(rid0);
+        scroll_ok = ub.size() >= 10 && !sb.empty();
+        for (size_t u : ub) if (std::find(sb.begin(), sb.end(), u + 6) == sb.end()) scroll_ok = false;
+        checks.note("P6 scroll: " + dec((long long)ub.size()) + " group boundaries without scroll, " + dec((long long)sb.size()) + " with BPLCON1=$0033, line index " + dec((long long)l));
+        g.expect(scroll_ok, "P6-SCROLL: precondition scroll: every group boundary of B0/T_id lies 6 op (6 samples) to the right of the one with BPLCON1 = $0000");
+    }
+
+    bool pre = r4_ok && pop && tbl_ok && reds.size() == 16 && spr_ok && scroll_ok;
+    if (!nb1) return;
+    if (!pre) { not_graded(checks, "P6 assertions", "R4, population, table, values, sprite or scroll precondition"); return; }
+
+    RedCmp i = compare_red(rid1.img, rid0.img, rid0.img);
+    bool i_ok = i.rows_ok && i.compared > 0 && i.differ == 0;
+    g.expect(i_ok, "P6-I: with BYPASS set (BPLCON0 = $0030) and table T_id the red of every observed pixel equals that of the run without BYPASS (BPLCON0 = $0010), at BPLCON1 = $0033 and with sprite 0 in front");
+    checks.note("P6 (i): " + dec((long long)i.differ) + " of " + dec((long long)i.compared) + " pixels differ between B1/T_id and B0/T_id");
+    if (!nx1) return;
+    RedCmp ii = compare_red(rx1.img, rid1.img, rid0.img);
+    bool ii_ok = ii.rows_ok && ii.compared > 0 && ii.differ == 0;
+    g.expect(ii_ok, "P6-II: with BYPASS set the red of every observed pixel is the same with table T_x as with table T_id");
+    checks.note("P6 (ii): " + dec((long long)ii.differ) + " of " + dec((long long)ii.compared) + " pixels differ between B1/T_x and B1/T_id");
+    g.expect(i_ok && ii_ok, "P6-AGG sol:AA-bplcon0.c19: with BYPASS set the red output carries the address bits 7-4 chosen by scrolling and priority, as without BYPASS, and does not use the colour table (AA p.17 'bitplanes are scrolled and prioritized normally, but bypass color table and 8 bit wide data appear on R(7:0)')");
+}
+
+// ---- P10-P15 helpers -------------------------------------------------------
+
+// Time units. One CCK is 280 ns (AA p.21: "memory cycles are 280 ns"); K, the
+// clk_sys cycles per CCK, is measured by the unit run.
+uint64_t g_K = 0;
+
+uint64_t ns_to_cycles(double ns) { return (uint64_t)std::llround(ns / 280.0 * double(g_K)); }
+uint64_t us_to_cycles(double us) { return ns_to_cycles(us * 1000.0); }
+uint64_t ms_to_cycles(double ms) { return ns_to_cycles(ms * 1e6); }
+
+// Writes of one word address, in order: (cycle, data).
+std::vector<std::pair<uint64_t, uint16_t>> writes_to(const Cap& c, uint32_t byte_addr) {
+    std::vector<std::pair<uint64_t, uint16_t>> v;
+    for (auto& a : c.ram) if (a.is_write && a.word_addr * 2 == byte_addr) v.push_back({a.cycle, a.data});
+    return v;
+}
+
+bool reached_done(const Cap& c) { return c.done; }
+
+constexpr uint64_t kCpuStart = 2'450'000;  // cycles after boot() before the CPU has run its first instruction (measured, asserted by each run's fixture)
+
+// ---- the unit run: K, from the refresh accesses of a run with no DMA --------
+
+void prop_unit(Checks& checks, Grader& g) {
+    RunSpec s;
+    s.cycles = kCpuStart + 100'000;
+    s.chipset = mutating("UNIT-AA") ? 0x08 : 0x10;
+    const bool varb = mutating("UNIT-R2") || mutating("P11-UNIT") || mutating("P12-UNIT") || mutating("P14-UNIT");
+    s1_step1(s.rl, varb ? 0x00A0 : 0x0020);
+    if (varb) s.rl.add(0x1C0, 0x0040);
+    s.rl.finish();
+    if (mutating("UNIT-FIXTURE")) s.bin = "prog_regs_nofix.bin";
+    Cap c = run_spec(s);
+    R2 r = analyse_r2(c);
+    bool fixture = c.loaded && c.released && c.fixture_ok;
+    g.expect(fixture, "UNIT-FIXTURE: the unit run loaded, booted and stored the $BEEF fixture before any observation");
+    dep_expect(checks, fixture, (c.results4 & 0xFF) == 0xF8, "UNIT-AA: LISAID ($DFF07C) reads $F8 in its low byte, which AA p.26 gives for the AA chip set ('LISA returns hex (F8)'; the ECS Denise returns $FC), so the AA chip set is selected", "fixture");
+    checks.note("UNIT: LISAID reads $" + hexw(c.results4));
+    dep_expect(checks, fixture, r.ok, "UNIT-R2: the refresh output of a run with no DMA enabled comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart (HRM p.194: 227.5 colour clocks per line; Figure 6-9)", "fixture");
+    checks.note("UNIT: K = " + dec((long long)r.K) + " clk_sys cycles per CCK; " + dec((long long)r.groups) + " lines; line spacing " + num(r.gap_min) + " to " + num(r.gap_max) + " CCK");
+    g_K = (fixture && r.ok) ? r.K : 0;
+}
+
+// ---- P10: LPEN is off after power-up ---------------------------------------
+
+constexpr uint32_t kLpOut = 0x0B9000, kLpMarks = 0x0B9100;
+
+struct LpRun {
+    Cap cap;
+    R2 r2;
+    uint32_t w0[3] = {}, w1[3] = {};
+    uint64_t t_v[3] = {}, t_w1[3] = {};
+    bool have = false;
+};
+
+LpRun run_lpen(const std::string& bin, uint64_t cycles = 4'700'000) {
+    LpRun l;
+    RunSpec s;
+    s.bin = bin; s.cycles = cycles;
+    l.cap = run_spec(s);        // no register list: the program writes its own registers; the list area is left empty
+    l.r2 = analyse_r2(l.cap);
+    l.have = true;
+    for (int i = 0; i < 3; ++i) {
+        auto m = writes_to(l.cap, kLpMarks + 2 * i);
+        auto hi0 = writes_to(l.cap, kLpOut + 8 * i), lo0 = writes_to(l.cap, kLpOut + 8 * i + 2);
+        auto hi1 = writes_to(l.cap, kLpOut + 8 * i + 4), lo1 = writes_to(l.cap, kLpOut + 8 * i + 6);
+        if (m.empty() || hi0.empty() || lo0.empty() || hi1.empty() || lo1.empty()) { l.have = false; continue; }
+        l.t_v[i] = m.front().first;
+        l.t_w1[i] = hi1.front().first;
+        l.w0[i] = (uint32_t(hi0.front().second) << 16) | lo0.front().second;
+        l.w1[i] = (uint32_t(hi1.front().second) << 16) | lo1.front().second;
+    }
+    return l;
+}
+
+unsigned lp_v(uint32_t w) { return ((w >> 16) & 1u) << 8 | ((w >> 8) & 0xFFu); }
+
+void prop_p10(Checks& checks, Grader& g) {
+    // P10-MAIN: both runs read once and store the value twice, so the check goes red while the latch precondition holds;
+    // P10-LATCH: the contrast run is that same program, a live input through the latch comparator
+    LpRun m = run_lpen(mutating("P10-MAIN") ? "prog_lpen_same.bin" : mutating("P10-FIXTURE") ? "prog_lpen_nofix.bin" :
+                       mutating("P10-R2") ? "prog_lpen_var.bin" : mutating("P10-WIN") ? "prog_lpen_late.bin" : "prog_lpen.bin");
+    LpRun c = run_lpen(mutating("P10-LATCH") || mutating("P10-MAIN") ? "prog_lpen_same.bin" : "prog_lpen_c.bin");
+    bool fixture = m.cap.loaded && m.cap.released && m.cap.fixture_ok && m.cap.done && m.have &&
+                   c.cap.loaded && c.cap.released && c.cap.fixture_ok && c.cap.done && c.have;
+    g.expect(fixture, "P10-FIXTURE: both runs loaded, booted, stored the $BEEF fixture, read the registers three times and reached DONE");
+    g.expect(m.r2.ok && c.r2.ok, "P10-R2: precondition R2 anchor: in both runs the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
+    bool win = fixture && m.r2.ok;
+    for (int i = 0; win && i < 3; ++i) {
+        int64_t a = line_of(m.r2, m.t_v[i]), b = line_of(m.r2, m.t_w1[i]);
+        checks.note("P10 pair " + dec(i) + ": " + dec(b - a) + " line boundaries between the marker and the store of w1");
+        if (!(b - a < 19)) win = false;
+    }
+    dep_expect(checks, fixture && m.r2.ok, win, "P10-WIN: precondition (i): in every pair fewer than 19 R2 line boundaries lie between the marker store (the start of vertical blank, AA p.25 VERTB) and the store of w1", "fixture or R2 anchor");
+    bool latch = fixture && c.r2.ok;
+    for (int i = 0; latch && i < 3; ++i) if (c.w1[i] != c.w0[i]) latch = false;
+    dep_expect(checks, fixture, latch, "P10-LATCH: precondition (ii): with BPLCON0 = $0008 (LPEN = 1) written before the reads, w1 equals w0 in every pair, so the latch freezes the counter in this system", "fixture");
+    checks.record("P10 precondition (iii): the program source of the main run contains no write to BPLCON0 ($DFF100); the contrast build adds that one write");
+    for (int i = 0; fixture && i < 3; ++i)
+        checks.note("P10 main pair " + dec(i) + ": w0=$" + hexw(m.w0[i], 8) + " (V=" + dec(lp_v(m.w0[i])) + ") w1=$" + hexw(m.w1[i], 8) +
+                    "; LPEN run: w0=$" + hexw(c.w0[i], 8) + " w1=$" + hexw(c.w1[i], 8));
+    if (!(fixture && m.r2.ok && win && latch)) { not_graded(checks, "P10 main check", "fixture, R2 anchor, vertical-blank window or latch precondition"); return; }
+    bool ok = true;
+    for (int i = 0; i < 3; ++i) ok = ok && m.w1[i] != m.w0[i] && lp_v(m.w0[i]) < 20;
+    g.expect(ok, "P10-MAIN opus:AA-lpen.c1: after power-on and before any write to BPLCON0, in every one of three reads within vertical blank, VPOSR:VHPOSR reads differently 40 CCK later and its vertical position is below 20 (AA p.17 'LPEN =Light pen enable(reset on power up)')");
+}
+
+// ---- P11: JOY0DAT and JOY1DAT ----------------------------------------------
+
+constexpr uint32_t kJoyA = 0x0D0000, kJoyB = 0x0D8000, kJoyCount = 7200;
+
+// One entry per loop iteration: the store times of the JOY0DAT read (t) and of the JOY1DAT read (t2) and the two values.
+// Both reads precede their stores, so an iteration lies before a time T when t2 < T.
+struct Reads { std::vector<uint64_t> t, t2; std::vector<uint16_t> v0, v1; };
+
+Reads joy_reads(const Cap& c) {
+    Reads r;
+    std::vector<std::pair<uint64_t, uint16_t>> a(kJoyCount, {0, 0}), b(kJoyCount, {0, 0});
+    std::vector<uint8_t> ha(kJoyCount, 0), hb(kJoyCount, 0);
+    for (auto& x : c.ram) {
+        if (!x.is_write) continue;
+        uint32_t byte = x.word_addr * 2;
+        if (byte >= kJoyA && byte < kJoyA + 2 * kJoyCount) { size_t k = (byte - kJoyA) / 2; a[k] = {x.cycle, x.data}; ha[k] = 1; }
+        if (byte >= kJoyB && byte < kJoyB + 2 * kJoyCount) { size_t k = (byte - kJoyB) / 2; b[k] = {x.cycle, x.data}; hb[k] = 1; }
+    }
+    for (size_t k = 0; k < kJoyCount; ++k) {
+        if (!ha[k] || !hb[k]) break;
+        r.t.push_back(a[k].first); r.t2.push_back(b[k].first); r.v0.push_back(a[k].second); r.v1.push_back(b[k].second);
+    }
+    return r;
+}
+
+struct JoyState { const char* name; uint8_t bits; int f, l, b, r; };
+// joystick0/joystick1 bits: fire4, fire3, fire2, fire, up, down, left, right
+const JoyState kJoyStates[9] = {
+    {"none", 0x00, 0, 0, 0, 0}, {"up", 0x08, 1, 0, 0, 0}, {"down", 0x04, 0, 0, 1, 0},
+    {"left", 0x02, 0, 1, 0, 0}, {"right", 0x01, 0, 0, 0, 1}, {"up+left", 0x0A, 1, 1, 0, 0},
+    {"up+right", 0x09, 1, 0, 0, 1}, {"down+left", 0x06, 0, 1, 1, 0}, {"down+right", 0x05, 0, 0, 1, 1},
+};
+
+struct Decoded { int f, l, b, r; };
+Decoded decode_joy(uint16_t v) {
+    int b9 = (v >> 9) & 1, b8 = (v >> 8) & 1, b1 = (v >> 1) & 1, b0 = v & 1;
+    return {b9 ^ b8, b9, b1 ^ b0, b1};
+}
+
+struct JoyRun {
+    Cap cap;
+    Reads rd;
+    uint64_t t0 = 0;
+    std::vector<uint64_t> change;   // absolute cycle of each of the 18 state changes
+};
+
+void prop_p11(Checks& checks, Grader& g) {
+    g.expect(g_K > 0, "P11-UNIT: precondition: the CCK unit K was measured by the unit run before the 2 ms, 0.2 ms and 50 us durations were derived");
+    if (g_K == 0) { not_graded(checks, "P11 checks", "unit"); return; }
+    const uint64_t hold = ms_to_cycles(2.0), settle = ms_to_cycles(0.2);
+    // ---- (a) joystick ----
+    JoyRun ja;
+    {
+        RunSpec s;
+        s.bin = mutating("P11-FIXTURE") ? "prog_joy_nofix.bin" : "prog_joy.bin";
+        s.cycles = 3'900'000;
+        uint64_t holdc = mutating("P11-POP") ? ms_to_cycles(0.15) : hold;
+        auto t0 = std::make_shared<int64_t>(-1);
+        auto changes = std::make_shared<std::vector<uint64_t>>();
+        s.drive = [=, &ja](nmh::NanomigHarness& h, uint64_t i) {
+            if (*t0 < 0) { auto fx = h.peek_logical(kResults); if (fx && *fx == 0xBEEF) { *t0 = (int64_t)i; } else return; }
+            uint64_t rel = i - (uint64_t)*t0;
+            if (rel % holdc != 0) {
+                if (mutating("P11-STILL") && rel == 3 * holdc + holdc / 2) {
+                    h.ports()->kbd_mouse_type = 0; h.ports()->kbd_mouse_data = 1; h.ports()->kbd_mouse_level = !h.ports()->kbd_mouse_level;
+                }
+                return;
+            }
+            uint64_t k = rel / holdc;
+            if (k >= 18) return;
+            const JoyState& st = kJoyStates[k % 9];
+            uint8_t bits = st.bits;
+            if (mutating("P11-JOY") && std::string(st.name) == "right") bits = 0x02;
+            // connector 0 (JOY0DAT, the left controller pair, AA p.25) is fed through `joystick1`, connector 1 (JOY1DAT) through `joystick0`
+            h.ports()->joystick1 = (k < 9) ? bits : 0;
+            h.ports()->joystick0 = (k >= 9) ? bits : 0;
+            changes->push_back(i);
+        };
+        ja.cap = run_spec(s);
+        ja.rd = joy_reads(ja.cap);
+        ja.change = *changes;
+        ja.t0 = *t0 >= 0 ? (uint64_t)*t0 : 0;
+        // changes hold run-relative cycles; make them absolute
+        for (auto& x : ja.change) x += ja.cap.base;
+    }
+    bool fixture = ja.cap.loaded && ja.cap.released && ja.cap.fixture_ok && ja.cap.done && ja.rd.t.size() == kJoyCount && ja.change.size() == 18;
+    g.expect(fixture, "P11-FIXTURE: the joystick run loaded, booted, stored the $BEEF fixture, stored all 7200 reads of both registers and reached DONE");
+    bool still = fixture;
+    bool pop = fixture;
+    std::vector<std::pair<size_t, size_t>> win(18);   // read index range of each graded window
+    if (fixture) {
+        for (int k = 0; k < 18; ++k) {
+            uint64_t a = ja.change[k] + settle, b = (k + 1 < 18) ? ja.change[k + 1] : ja.change[k] + hold;
+            size_t lo = 0, hi = 0; bool any = false;
+            for (size_t i = 0; i < ja.rd.t.size(); ++i)
+                if (ja.rd.t[i] >= a && ja.rd.t2[i] < b) { if (!any) lo = i; hi = i + 1; any = true; }
+            win[k] = {lo, hi};
+            if (!any || hi - lo < 10) pop = false;
+            std::map<uint16_t, size_t> h0, h1;
+            for (size_t i = lo; any && i < hi; ++i) { ++h0[ja.rd.v0[i]]; ++h1[ja.rd.v1[i]]; }
+            for (size_t i = lo + 1; any && i < hi; ++i)
+                if (ja.rd.v0[i] != ja.rd.v0[lo] || ja.rd.v1[i] != ja.rd.v1[lo]) still = false;
+            std::string vals;
+            for (auto& kv : h0) vals += " $" + hexw(kv.first) + "x" + dec((long long)kv.second);
+            vals += " |";
+            for (auto& kv : h1) vals += " $" + hexw(kv.first) + "x" + dec((long long)kv.second);
+            checks.note("P11 hold " + dec(k) + ": " + dec((long long)(hi - lo)) + " reads; JOY0DAT values x count, then JOY1DAT:" + vals);
+        }
+    }
+    dep_expect(checks, fixture, pop, "P11-POP: precondition population: each of the 18 holds has at least 10 reads of both registers between 0.2 ms after its change and the next change", "fixture");
+    dep_expect(checks, fixture, still, "P11-STILL: precondition: while nothing changes, consecutive reads of both registers are equal within every hold", "fixture");
+    if (!(fixture && pop && still)) { not_graded(checks, "P11 joystick decode", "fixture, population or stillness precondition"); }
+    bool joy_ok = false;
+    if (fixture && pop && still) {
+        joy_ok = true;
+        for (int k = 0; k < 18; ++k) {
+            const JoyState& st = kJoyStates[k % 9];
+            Decoded d0 = decode_joy(ja.rd.v0[win[k].first]), d1 = decode_joy(ja.rd.v1[win[k].first]);
+            Decoded want{st.f, st.l, st.b, st.r}, zero{0, 0, 0, 0};
+            Decoded w0 = k < 9 ? want : zero, w1 = k < 9 ? zero : want;
+            bool a = d0.f == w0.f && d0.l == w0.l && d0.b == w0.b && d0.r == w0.r;
+            bool b = d1.f == w1.f && d1.l == w1.l && d1.b == w1.b && d1.r == w1.r;
+            joy_ok = joy_ok && a && b;
+            checks.note(std::string("P11 connector ") + (k < 9 ? "0" : "1") + " " + st.name + ": JOY0DAT=$" + hexw(ja.rd.v0[win[k].first]) +
+                        " JOY1DAT=$" + hexw(ja.rd.v1[win[k].first]) + (a && b ? "" : "  (differs from the expected F/L/B/R)"));
+        }
+        g.expect(joy_ok, "P11-JOY: for each of the nine switch states on each port, F = bit 9 xor bit 8, L = bit 9, B = bit 1 xor bit 0 and R = bit 1 of the port's register are 1 exactly for the closed switches, and all four are 0 in the other port's register (AA p.25-26 joystick decode)");
+    }
+
+    // ---- (b) mouse ----
+    JoyRun jm;
+    const int counts = mutating("P11-MOUSE-RET") ? 39 : 40;
+    const uint64_t step = us_to_cycles(50.0), mgap = ms_to_cycles(4.0), mstart = ms_to_cycles(2.0);
+    auto mt0 = std::make_shared<int64_t>(-1);
+    {
+        RunSpec s;
+        s.bin = "prog_joy.bin";
+        s.cycles = 3'900'000;
+        s.drive = [=](nmh::NanomigHarness& h, uint64_t i) {
+            if (*mt0 < 0) { auto fx = h.peek_logical(kResults); if (fx && *fx == 0xBEEF) { *mt0 = (int64_t)i; } else return; }
+            uint64_t rel = i - (uint64_t)*mt0;
+            if (rel < mstart) return;
+            uint64_t q = rel - mstart;
+            uint64_t m = q / mgap;
+            uint64_t qm = q % mgap;
+            if (m >= 4 || qm >= (uint64_t)40 * step) return;
+            uint64_t sub = qm % step;
+            const bool yaxis = m >= 2;
+            // a Y count is a type-1 datum; the input takes a type-1 datum for Y after a type-0 datum (an X count of 0)
+            if (sub != 0 && !(yaxis && sub == 16)) return;
+            uint64_t j = qm / step;
+            // movement 0 right (+1 on X), 1 left (-1 on X), 2 down (+1 on Y), 3 up (-1 on Y)
+            int dir = (m == 0 || m == 2) ? 1 : -1;
+            if (mutating("P11-MOUSE") && m == 0) dir = -1;
+            if (mutating("P11-AGG") && m == 2) dir = -1;
+            // a movement of `counts` counts: the last count of movement 1 is left out for P11-MOUSE-RET
+            if (m == 1 && j >= (uint64_t)counts) return;
+            if (yaxis && sub == 0) { h.ports()->kbd_mouse_type = 0; h.ports()->kbd_mouse_data = 0; }
+            else { h.ports()->kbd_mouse_type = yaxis ? 1 : 0; h.ports()->kbd_mouse_data = (uint8_t)(int8_t)dir; }
+            h.ports()->kbd_mouse_level = !h.ports()->kbd_mouse_level;
+        };
+        jm.cap = run_spec(s);
+        jm.rd = joy_reads(jm.cap);
+        jm.t0 = *mt0 >= 0 ? (uint64_t)*mt0 + jm.cap.base : 0;
+    }
+    bool mfix = jm.cap.loaded && jm.cap.released && jm.cap.fixture_ok && jm.cap.done && jm.rd.t.size() == kJoyCount;
+    bool mouse_ok = false;
+    if (!mfix) {
+        not_graded(checks, "P11 mouse", "fixture");
+    } else {
+        // reads before the first movement, between and after
+        auto last_before = [&](uint64_t t) { size_t k = 0; for (size_t i = 0; i < jm.rd.t.size(); ++i) if (jm.rd.t[i] < t) k = i; return k; };
+        mouse_ok = true;
+        bool moved[4] = {false, false, false, false};
+        uint16_t x_before = 0, y_before = 0;
+        for (int m = 0; m < 4; ++m) {
+            uint64_t s0 = jm.t0 + mstart + m * mgap, s1 = s0 + 40 * step + settle;
+            size_t k0 = last_before(s0), k1 = last_before(s1);
+            const bool xaxis = m < 2;
+            bool sign_ok = true;
+            for (size_t i = k0 + 1; i <= k1; ++i) {
+                int dx = (int8_t)((jm.rd.v0[i] & 0xFF) - (jm.rd.v0[i - 1] & 0xFF));
+                int dy = (int8_t)(((jm.rd.v0[i] >> 8) & 0xFF) - ((jm.rd.v0[i - 1] >> 8) & 0xFF));
+                int dm = xaxis ? dx : dy, doth = xaxis ? dy : dx;
+                int want = (m == 0 || m == 2) ? 1 : -1;
+                if (doth != 0) sign_ok = false;
+                if (dm != 0) { moved[m] = true; if ((dm > 0) != (want > 0)) sign_ok = false; }
+            }
+            mouse_ok = mouse_ok && sign_ok && moved[m];
+            checks.note("P11 mouse movement " + dec(m) + ": counter bits at the start $" + hexw(jm.rd.v0[k0]) + ", at the end $" + hexw(jm.rd.v0[k1]) +
+                        (sign_ok && moved[m] ? "" : "  (direction, axis or movement differs from the expected)"));
+            if (m == 0) { x_before = jm.rd.v0[k0]; }
+            if (m == 2) { y_before = jm.rd.v0[k0]; }
+            if (m == 1) mouse_ok = mouse_ok && (jm.rd.v0[k1] & 0xFF) == (x_before & 0xFF);
+            if (m == 3) mouse_ok = mouse_ok && ((jm.rd.v0[k1] >> 8) & 0xFF) == ((y_before >> 8) & 0xFF);
+        }
+        g.expect(mouse_ok, "P11-MOUSE: through the mouse inputs, 40 counts right and then left change bits 7-0 of the mouse register upward and then downward, and 40 down and up change bits 15-8 upward and downward, the other axis unchanged, each pair returning the counter to its start (AA p.25 JOY0DAT, HRM p.229)");
+    }
+    if (fixture && pop && still && mfix)
+        g.expect(joy_ok && mouse_ok, "P11-AGG sol:AA-mouse.c2: the joystick switches decode through bits 9, 8, 1 and 0 and the mouse counters count right, left, down and up through bits 7-0 and 15-8, as AA p.25-26 tabulates for the registers (AA p.5: the serial mouse interface is 'transparent to the programmer')");
+    else not_graded(checks, "P11 aggregate", "fixture, population or stillness precondition");
+}
+
+// ---- P12: UARTBRK ------------------------------------------------------------
+
+constexpr uint32_t kUartMarks = 0x0B9200;
+
+struct UartRun { Cap cap; uint64_t t[4] = {0, 0, 0, 0}; bool have = false; };
+
+UartRun run_uart(const std::string& bin) {
+    UartRun u;
+    RunSpec s;
+    s.bin = bin; s.cycles = 2'900'000; s.sample_txd = true;
+    u.cap = run_spec(s);
+    u.have = true;
+    for (int i = 0; i < 4; ++i) {
+        auto w = writes_to(u.cap, kUartMarks + 2 * i);
+        if (w.empty()) { u.have = false; continue; }
+        u.t[i] = w.front().first;
+    }
+    return u;
+}
+
+void prop_p12(Checks& checks, Grader& g) {
+    UartRun m = run_uart(mutating("P12-MAIN") ? "prog_uart_k.bin" : mutating("P12-PRE1") ? "prog_uart_early.bin" :
+                         mutating("P12-FIXTURE") ? "prog_uart_nofix.bin" : "prog_uart.bin");
+    UartRun k = run_uart(mutating("P12-KPRE") ? "prog_uart.bin" : "prog_uart_k.bin");
+    bool fixture = m.cap.loaded && m.cap.released && m.cap.fixture_ok && m.cap.done && m.have &&
+                   k.cap.loaded && k.cap.released && k.cap.fixture_ok && k.cap.done && k.have;
+    g.expect(fixture, "P12-FIXTURE: both runs loaded, booted, stored the $BEEF fixture, stored the four markers and reached DONE");
+    g.expect(g_K > 0, "P12-UNIT: precondition: the CCK unit K was measured by the unit run before the 30 CCK bit time and the 0.5 ms windows were derived");
+    if (!fixture || g_K == 0) { not_graded(checks, "P12 checks", "fixture or unit"); return; }
+    auto txd_at = [&](const UartRun& u, uint64_t cyc) { return u.cap.txd.at(cyc - u.cap.base) != 0; };
+    const uint64_t bit = 30 * g_K;                    // SERPER = $001D: one bit every 30 CCK (AA p.27)
+    // precondition 1: TxD = 1 before t(M1) (the 0.5 ms before it) and from one bit time after t(M4) to the end
+    auto high_over = [&](const UartRun& u, uint64_t a, uint64_t b) { for (uint64_t c = a; c < b; ++c) if (!txd_at(u, c)) return false; return true; };
+    uint64_t pre_len = ms_to_cycles(0.5);
+    bool pre1 = high_over(m, m.t[0] - pre_len, m.t[0]) &&
+                high_over(m, m.t[3] + bit, std::min<uint64_t>(m.cap.base + m.cap.txd.size(), m.t[3] + bit + ms_to_cycles(0.5)));
+    g.expect(pre1, "P12-PRE1: precondition: TxD is 1 during the 0.5 ms before marker M1 and from one bit time after marker M4 for 0.5 ms, so the 0 in the interval is the bit's doing");
+    // precondition 2: in contrast run K a word is transmitted inside the interval: start 0, data 1 0 1 0 1 0 1 0 (LSB first), stop 1
+    bool kpre = true; std::string pat;
+    {
+        uint64_t a = k.t[1], b = k.t[2];
+        uint64_t start = 0; bool found = false;
+        for (uint64_t c = a + 1; c < b; ++c) if (!txd_at(k, c) && txd_at(k, c - 1)) { start = c; found = true; break; }
+        if (!found) kpre = false;
+        else {
+            const int expect_bits[10] = {0, 1, 0, 1, 0, 1, 0, 1, 0, 1};
+            for (int i = 0; i < 10; ++i) {
+                uint64_t c = start + (uint64_t)i * bit + bit / 2;
+                bool v = c < b && txd_at(k, c);
+                pat += v ? '1' : '0';
+                if (v != (expect_bits[i] != 0)) kpre = false;
+            }
+        }
+    }
+    g.expect(kpre, "P12-KPRE: precondition: in contrast run K (ADKCON = $0800 at step 5) the interval carries the word $0155 as HRM p.258 draws it: a start bit 0, the data bits 1 0 1 0 1 0 1 0 LSB first and a stop bit 1, each 30 CCK long");
+    checks.note("P12 run K bits at bit centres: " + pat);
+    if (!(pre1 && kpre)) { not_graded(checks, "P12-MAIN", "TxD idle level or contrast word precondition"); return; }
+    bool all0 = true; size_t n = 0, ones = 0;
+    for (uint64_t c = m.t[1]; c <= m.t[2]; ++c) { ++n; if (txd_at(m, c)) { all0 = false; ++ones; } }
+    checks.note("P12 main run: " + dec((long long)n) + " samples from M2 to M3, " + dec((long long)ones) + " of them 1");
+    g.expect(all0, "P12-MAIN opus:AA-adkcon.c11: while ADKCON bit 11 (UARTBRK) is set TxD is 0 at every sample from marker M2 to marker M3, including while the word $0155 is shifted out (AA p.10 'UARTBRK Forces a UART break (clears TXD) if true')");
+}
+
+// ---- P13: disk DMA pointer ---------------------------------------------------
+
+bool is_refresh_access(const Cap& c, const nmh::RamAccess& a) {
+    if (a.cycle < c.base + 3) return false;
+    uint64_t i = a.cycle - c.base;
+    if (i >= c.refresh.size()) return false;
+    for (int d = 0; d <= 3; ++d) if (c.refresh[i - d]) return true;
+    return false;
+}
+
+struct DiskRun {
+    Cap cap;
+    std::vector<nmh::RamAccess> dma;   // reads that are neither CPU, register-list nor refresh accesses
+    bool dskblk = false;
+};
+
+DiskRun run_disk(uint32_t a, uint16_t dmacon, uint16_t dskpth_override_hi = 0xFFFF, const char* bin = "prog_disk.bin") {
+    DiskRun d;
+    RunSpec s;
+    s.bin = bin;
+    s.cycles = 3'900'000;
+    for (int i = 0; i < 8; ++i) s.pokes.push_back({a + 2 * i, uint16_t(0xD0D0 + i)});
+    s1_step1(s.rl);
+    s.rl.add(0x020, dskpth_override_hi != 0xFFFF ? dskpth_override_hi : uint16_t(a >> 16));
+    s.rl.add(0x022, uint16_t(a & 0xFFFF));
+    s.rl.add(0x09C, 0x0002);
+    s.rl.add(0x096, dmacon);
+    s.rl.add(0x024, 0x4000);
+    s.rl.add(0x024, 0xC008);
+    s.rl.add(0x024, 0xC008);
+    s.rl.finish();
+    d.cap = run_spec(s);
+    for (auto& x : d.cap.ram) {
+        if (x.is_write) continue;
+        uint32_t byte = x.word_addr * 2;
+        if (byte >= nmh::kProgramOrg && byte < nmh::kProgramOrg + 0x100) continue;    // the program's own fetches
+        if (byte >= kRList && byte < kRList + 0x100) continue;                      // the register list
+        if (x.word_addr >= nmh::kKickShadowWordBase) continue;                      // reset vectors
+        if (is_refresh_access(d.cap, x)) continue;
+        d.dma.push_back(x);
+    }
+    d.dskblk = (d.cap.results2 & 0x0002) != 0;
+    return d;
+}
+
+void prop_p13(Checks& checks, Grader& g) {
+    const uint32_t ax = 0x0A5432, ay = 0x154320;
+    uint16_t dmacon_x = mutating("P13-RUN") ? 0x8200 : 0x8210;
+    DiskRun x = run_disk(ax, dmacon_x, 0xFFFF, mutating("P13-FIXTURE") ? "prog_disk_nofix.bin" : "prog_disk.bin"), y = run_disk(ay, 0x8210);
+    if (mutating("P13-MAIN")) y = run_disk(ay, 0x8210, uint16_t(((ay >> 16) & 7) ));   // DSKPTH held as only 3 bits
+    bool fixture = x.cap.loaded && x.cap.released && x.cap.fixture_ok && y.cap.loaded && y.cap.released && y.cap.fixture_ok;
+    g.expect(fixture, "P13-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
+    bool occurs = fixture && !x.dma.empty() && !y.dma.empty() && x.dskblk && y.dskblk;
+    checks.note("P13 run X (A=$" + hexw(ax, 6) + "): " + dec((long long)x.dma.size()) + " disk DMA reads, DSKBLK " + (x.dskblk ? "set" : "not set") +
+                "; run Y (A=$" + hexw(ay, 6) + "): " + dec((long long)y.dma.size()) + " disk DMA reads, DSKBLK " + (y.dskblk ? "set" : "not set"));
+    dep_expect(checks, fixture, occurs, "P13-RUN: precondition: in both runs at least one disk DMA access occurs after the second $C008 write to DSKLEN and DSKBLK (INTREQR bit 1) is set", "fixture");
+    if (!occurs) { not_graded(checks, "P13-MAIN", "disk DMA does not run in this harness or the fixture failed"); return; }
+    std::string seq;
+    bool ok = true;
+    const DiskRun* rs[2] = {&x, &y};
+    const uint32_t as[2] = {ax, ay};
+    for (int r = 0; r < 2; ++r) {
+        const DiskRun& d = *rs[r];
+        ok = ok && d.dma.size() <= 8 && d.dma[0].word_addr * 2 == as[r];
+        for (size_t i = 0; i < d.dma.size(); ++i) ok = ok && d.dma[i].word_addr * 2 == as[r] + 2 * i;
+        seq += std::string(r ? "; Y:" : "X:");
+        for (size_t i = 0; i < d.dma.size() && i < 3; ++i) seq += " $" + hexw(d.dma[i].word_addr * 2, 6);
+    }
+    checks.note("P13 first disk DMA addresses " + seq);
+    g.expect(ok, "P13-MAIN opus:AA-dskpth.c9 sol:AA-disk-pointer.c1: with DSKPTH/DSKPTL written $0A5432 (run X) and $154320 (run Y), the first disk DMA access of each run is a read at exactly that address and all its disk DMA accesses are reads at A, A+2, ... in increasing order, so the pair holds a 20-bit word address covering A20-A16 both ways (AA p.23 'This pair of registers contains the 20 bit address of Disk DMA data')");
+}
+
+// ---- P14: DUAL, the secondary beam counter -----------------------------------
+
+constexpr uint32_t kDualBuf = 0x0C8000;
+
+struct DualRun {
+    Cap cap;
+    R2 r2;
+    std::vector<uint64_t> t;           // port time of the store of h_i
+    std::vector<uint8_t> h, m;         // HHPOSR bits 7-0, VHPOSR bits 7-0
+    std::vector<uint16_t> hw;          // the whole HHPOSR word
+    std::vector<uint64_t> tm;          // port time of the store of m_i
+    bool have = false;
+};
+
+DualRun run_dual(const std::string& bin, uint16_t beamcon0, uint16_t htotal, uint64_t cycles, bool varbeam_vtotal = false) {
+    DualRun d;
+    RunSpec s;
+    s.bin = bin; s.cycles = cycles;
+    s1_step1(s.rl, beamcon0);
+    s.rl.add(0x1C0, htotal);
+    if (varbeam_vtotal) s.rl.add(0x1C8, 0x0138);
+    s.rl.finish();
+    d.cap = run_spec(s);
+    d.r2 = analyse_r2(d.cap);
+    std::vector<uint8_t> have(1024, 0);
+    d.t.assign(1024, 0); d.tm.assign(1024, 0); d.h.assign(1024, 0); d.m.assign(1024, 0); d.hw.assign(1024, 0);
+    for (auto& a : d.cap.ram) {
+        if (!a.is_write) continue;
+        uint32_t byte = a.word_addr * 2;
+        if (byte < kDualBuf || byte >= kDualBuf + 4096) continue;
+        size_t i = (byte - kDualBuf) / 4;
+        if ((byte - kDualBuf) % 4 == 0) { d.t[i] = a.cycle; d.h[i] = uint8_t(a.data & 0xFF); d.hw[i] = a.data; have[i] |= 1; }
+        else { d.tm[i] = a.cycle; d.m[i] = uint8_t(a.data & 0xFF); have[i] |= 2; }
+    }
+    d.have = true;
+    for (int i = 0; i < 1024; ++i) if (have[i] != 3) d.have = false;
+    return d;
+}
+
+void prop_p14(Checks& checks, Grader& g) {
+    const uint16_t u1_htotal = mutating("P14-U1") ? 0x0070 : mutating("P14-REL") ? 0x0050 : 0x0040;
+    const uint16_t u2_htotal = mutating("P14-U2") ? 0x0040 : 0x0070;
+    // the contrasts: a loop period of two lines (PAIRS); VARBEAMEN
+    // lines in U1 (R2) or in U2 (MAIN); U3 without VARBEAMEN (U3)
+    const char* u1bin = mutating("P14-PAIRS") ? "prog_dual_pad121.bin" : mutating("P14-FIXTURE") ? "prog_dual_nofix.bin" : "prog_dual.bin";
+    const uint64_t u1cyc = mutating("P14-PAIRS") ? 3'700'000 : 3'100'000;
+    DualRun u1 = run_dual(u1bin, mutating("P14-R2") ? 0x08E0 : 0x0860, u1_htotal, u1cyc);
+    DualRun u2 = run_dual("prog_dual.bin", mutating("P14-MAIN") ? 0x08E0 : 0x0860, u2_htotal, 3'100'000);
+    DualRun u0 = run_dual("prog_dual.bin", 0x0820, 0x0040, 3'100'000);
+    DualRun u3 = run_dual("prog_dual.bin", mutating("P14-U3") ? 0x0820 : 0x08A0, 0x0040, 3'100'000, !mutating("P14-U3"));
+    DualRun* all[4] = {&u1, &u2, &u0, &u3};
+    bool fixture = true;
+    for (DualRun* d : all) fixture = fixture && d->cap.loaded && d->cap.released && d->cap.fixture_ok && d->cap.done && d->have;
+    g.expect(fixture, "P14-FIXTURE: the four runs loaded, booted, stored the $BEEF fixture, stored all 1024 samples and reached DONE");
+    g.expect(g_K > 0, "P14-UNIT: precondition: the CCK unit K was measured by the unit run before the sample times were converted to CCK");
+    if (!fixture || g_K == 0) { not_graded(checks, "P14 checks", "fixture or unit"); return; }
+    bool r2ok = true;
+    for (DualRun* d : {&u1, &u2, &u0}) r2ok = r2ok && d->r2.ok;
+    g.expect(r2ok, "P14-R2: precondition R2 anchor: in runs U1, U2 and U0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart");
+    checks.note("P14 U3 (VARBEAMEN, HTOTAL=$0040): " + std::string(u3.r2.ok ? "line spacing still 226 to 229 CCK" : "line spacing differs from 226 to 229 CCK") + " (" + num(u3.r2.gap_min) + " to " + num(u3.r2.gap_max) + ")");
+
+    // preconditions from times alone
+    auto phase_ok = [&](const DualRun& d, unsigned htotal) {
+        std::set<unsigned> seen;
+        for (int i = 0; i < 1024; ++i) seen.insert(unsigned((d.t[i] / g_K) % (htotal + 1)));
+        return seen.size() == htotal + 1;
+    };
+    auto period = [&](const DualRun& d) { std::vector<uint64_t> dt; for (int i = 1; i < 1024; ++i) dt.push_back(d.t[i] - d.t[i - 1]); std::sort(dt.begin(), dt.end()); return double(dt[dt.size() / 2]) / double(g_K); };
+    checks.note("P14 loop period (median distance of consecutive HHPOSR stores, CCK): U1 " + num(period(u1)) + ", U2 " + num(period(u2)) + ", U0 " + num(period(u0)));
+    auto period_hist = [&](const DualRun& d) { std::map<long long, int> h; for (int i = 1; i < 1024; ++i) ++h[(long long)((d.t[i] - d.t[i - 1]) / g_K)]; std::string r; for (auto& kv : h) r += " " + dec(kv.first) + "x" + dec(kv.second); return r; };
+    checks.note("P14 distances between consecutive samples (CCK x count): U1" + period_hist(u1) + "; U2" + period_hist(u2));
+    bool ph = phase_ok(u1, 0x40) && phase_ok(u2, 0x70);
+    g.expect(ph, "P14-PHASE: precondition: in U1 and U2 the sample times in CCK taken modulo HTOTAL+1 take every value from 0 to HTOTAL");
+    std::string pos_note;
+    auto pos_ok = [&](const DualRun& d, const char* name) {
+        std::set<unsigned> seen;
+        for (int i = 0; i < 1024; ++i) {
+            int64_t ln = line_of(d.r2, d.t[i]);
+            if (ln < 0) continue;
+            seen.insert(unsigned((d.t[i] - d.r2.start[ln]) / g_K));
+        }
+        std::string missing;
+        for (unsigned p = 0; p < 227; ++p) if (!seen.count(p)) missing += " " + dec(p);
+        pos_note += std::string(" ") + name + ": " + dec((long long)seen.size()) + " of 227 positions, missing:" + (missing.empty() ? " none" : missing) + ";";
+        return seen.size() >= 227;
+    };
+    bool pos = pos_ok(u1, "U1") & pos_ok(u2, "U2") & pos_ok(u0, "U0");
+    checks.note("P14 sample positions within the R2 line:" + pos_note);
+    g.expect(pos, "P14-POS: precondition: in U1, U2 and U0 the sample times take every CCK position of the 227 within their R2 line");
+    // qualifying pairs
+    std::vector<uint64_t> rt[3];
+    const DualRun* ds[3] = {&u1, &u2, &u0};
+    for (int di = 0; di < 3; ++di)
+        for (uint64_t st : ds[di]->r2.start) for (int k = 0; k < 4; ++k) rt[di].push_back(st + 2 * k * g_K);
+    auto refresh_between = [&](const DualRun& d, uint64_t a, uint64_t b) {
+        const std::vector<uint64_t>& v = (&d == &u1) ? rt[0] : (&d == &u2) ? rt[1] : rt[2];
+        auto it = std::upper_bound(v.begin(), v.end(), a);
+        return it != v.end() && *it < b;
+    };
+    struct Rel { size_t pairs = 0, bad = 0, notwhole = 0; };
+    auto rel = [&](const DualRun& d, unsigned htotal) {
+        Rel r;
+        for (int i = 1; i + 1 < 1024; ++i) {
+            if (refresh_between(d, d.tm[i - 1], d.t[i + 1])) continue;
+            ++r.pairs;
+            uint64_t dt = d.t[i + 1] - d.t[i];
+            if (dt % g_K != 0) { ++r.notwhole; continue; }
+            int lhs = ((int)d.h[i + 1] - (int)d.h[i]) % (int)(htotal + 1); if (lhs < 0) lhs += htotal + 1;
+            int rhs = (int)((dt / g_K) % (htotal + 1));
+            if (lhs != rhs) ++r.bad;
+        }
+        return r;
+    };
+    Rel r1 = rel(u1, 0x40), r2 = rel(u2, 0x70);
+    checks.note("P14 qualifying pairs: U1 " + dec((long long)r1.pairs) + " (" + dec((long long)r1.notwhole) + " not a whole number of CCK, " + dec((long long)r1.bad) + " differ), U2 " +
+                dec((long long)r2.pairs) + " (" + dec((long long)r2.notwhole) + ", " + dec((long long)r2.bad) + ")");
+    bool pairs = r1.pairs > 0 && r2.pairs > 0 && r1.notwhole == 0 && r2.notwhole == 0;
+    g.expect(pairs, "P14-PAIRS: precondition: in U1 and U2 qualifying pairs exist (no refresh access between the last store of the previous sample and the store of h of the second sample) and for each of them the difference of the two store times is a whole number of CCK");
+    unsigned mx1 = 0, mx2 = 0, mxm0 = 0, mxm1 = 0, mxm2 = 0, mxm3 = 0, mw1 = 0, mw2 = 0; bool mid = false;
+    for (int i = 0; i < 1024; ++i) {
+        mx1 = std::max<unsigned>(mx1, u1.h[i]); mx2 = std::max<unsigned>(mx2, u2.h[i]);
+        mw1 = std::max<unsigned>(mw1, u1.hw[i]); mw2 = std::max<unsigned>(mw2, u2.hw[i]);
+        mxm0 = std::max<unsigned>(mxm0, u0.m[i]); mxm1 = std::max<unsigned>(mxm1, u1.m[i]); mxm2 = std::max<unsigned>(mxm2, u2.m[i]); mxm3 = std::max<unsigned>(mxm3, u3.m[i]);
+        if (u2.h[i] > 0x40 && u2.h[i] <= 0x70) mid = true;
+    }
+    checks.note("P14 measured: largest whole HHPOSR word U1=$" + hexw(mw1) + " U2=$" + hexw(mw2));
+    checks.note("P14 measured: max h U1=$" + hexw(mx1, 2) + " U2=$" + hexw(mx2, 2) + "; max m U0=$" + hexw(mxm0, 2) + " U1=$" + hexw(mxm1, 2) + " U2=$" + hexw(mxm2, 2) + " U3=$" + hexw(mxm3, 2));
+    // the contrast of the main-counter comparison: U3's max m differs from U0's
+    g.expect(mxm3 != mxm0, "P14-U3: precondition: with VARBEAMEN and HTOTAL = $0040 (run U3) the main counter's maximum m differs from run U0's, so the main-counter comparison can go red");
+    if (!(r2ok && ph && pos && pairs)) { not_graded(checks, "P14 assertions", "R2 anchor, phase, position or qualifying-pair precondition"); return; }
+    bool u1ok = true, u2ok = true;
+    for (int i = 0; i < 1024; ++i) { u1ok = u1ok && u1.h[i] <= 0x40; u2ok = u2ok && u2.h[i] <= 0x70; }
+    u1ok = u1ok && mx1 == 0x40;
+    u2ok = u2ok && mx2 == 0x70 && mid;
+    g.expect(u1ok, "P14-U1: with DUAL set and HTOTAL = $0040 every h read from HHPOSR bits 7-0 is at most $40 and the maximum is $40");
+    g.expect(u2ok, "P14-U2: with DUAL set and HTOTAL = $0070 every h is at most $70, the maximum is $70 and values between $40 and $70 occur");
+    bool relok = r1.bad == 0 && r2.bad == 0;
+    g.expect(relok, "P14-REL: in U1 and U2, for every qualifying pair of consecutive samples, the difference of the h values modulo HTOTAL+1 equals the elapsed whole CCK modulo HTOTAL+1, exactly");
+    bool mainok = mxm0 == mxm1 && mxm1 == mxm2;
+    g.expect(mainok, "P14-MAIN: the maximum of the main counter's m (VHPOSR bits 7-0) is the same in U0, U1 and U2: DUAL leaves the line length of the main counter unchanged");
+    g.expect(u1ok && u2ok && relok && mainok, "P14-AGG sol:AA-hhpos.c1 sol:AA-hhpos.c5: with DUAL set HHPOSR reads a second horizontal counter that counts colour clocks from 0 to HTOTAL and restarts, while the main counter keeps its line (AA p.24 'secondary beam counter', 'Highest color clock count in horiz line')");
+}
+
+// ---- P15: DUAL and the UHRES pointer -----------------------------------------
+
+constexpr uint32_t kUhres = 0x160000;
+
+struct UhRun {
+    FetchRun fr;
+    CopList cl{kCopList};
+    std::optional<int64_t> idx_a, idx_b;
+    std::vector<Fetch> acc;
+};
+
+UhRun run_uhres(uint16_t beamcon0, uint16_t htotal, uint16_t bplcon0, const char* bin = "prog_uhres.bin",
+                int marker_b = 0x98, uint64_t cycles = 4'700'000) {
+    UhRun u;
+    RunSpec s;
+    CopList& cl = u.cl;
+    cl.marker(0x68);
+    cl.marker(marker_b);
+    cl.end();
+    cl.poke_into(s.pokes);
+    s.bin = bin;
+    s1_step1(s.rl, beamcon0);
+    if (htotal) s.rl.add(0x1C0, htotal);
+    if (beamcon0 & 0x0080) s.rl.add(0x1C8, 0x0138);
+    s.rl.add(0x100, bplcon0);
+    s.rl.add(0x1E6, 0x0006);
+    s.rl.add(0x1D4, 0x0060); s.rl.add(0x1D6, 0x00A0);
+    s.rl.add(0x1E8, 0x0016); s.rl.add(0x1EA, 0x8000);
+    s.rl.add(0x1D0, 0x0000); s.rl.add(0x1D2, 0x0000);
+    s.rl.add(0x104, 0x0024); s.rl.add(0x106, 0x0C00); s.rl.add(0x10C, 0x0011);
+    s.rl.add(0x08E, 0x2C81); s.rl.add(0x090, 0xF0C1);
+    s.rl.add(0x080, uint16_t(kCopList >> 16)); s.rl.add(0x082, uint16_t(kCopList & 0xFFFF)); s.rl.add(0x088, 0);
+    s.rl.add(0x096, 0x8380);
+    s.rl.finish();
+    s.cycles = cycles;
+    u.fr = run_fetch(s, kCopList, kCopList + 0x100);   // the frame holding the first Copper fetch is the one the DMA enable falls in
+    if (u.fr.f3_ok && u.fr.r2.ok) {
+        u.idx_a = marker_line_idx(u.fr, u.cl.marker_move_word.at(0x68));
+        u.idx_b = marker_line_idx(u.fr, u.cl.marker_move_word.at(marker_b));
+        if (u.idx_a && u.idx_b) {
+            u.acc = fetches_in(u.fr.cap, u.fr.r2, kUhres, kUhres + 0x8000, u.fr.f3);
+            std::vector<Fetch> kept;
+            for (auto& f : u.acc) if (f.line >= *u.idx_a && f.line <= *u.idx_b) kept.push_back(f);
+            u.acc = kept;
+        }
+    }
+    return u;
+}
+
+void prop_p15(Checks& checks, Grader& g) {
+    const uint16_t v1_beam = 0x0860;
+    // the contrasts: VARBEAMEN lines in V0 (R2); live inputs through the same comparators, a CPU loop reading the region in place
+    // of the UHRES pointer, one read per line in V0 (V0) and one per 57 CCK in V0 and V1 (V1)
+    UhRun v0 = run_uhres(mutating("P15-R2") ? 0x00A0 : 0x0820, mutating("P15-R2") ? 0x00E8 : 0, 0x0080,
+                         mutating("P15-FIXTURE") ? "prog_uhres_nofix.bin" : (mutating("P15-V0") || mutating("P15-V1")) ? "prog_cpuuh_line.bin" : "prog_uhres.bin", mutating("P15-R3") ? 0x99 : 0x98,
+                         mutating("P15-F3") ? 3'300'000 : 4'700'000);
+    UhRun v1 = run_uhres(v1_beam, 0x0038, 0x0080, mutating("P15-V1") ? "prog_cpuuh_57.bin" : "prog_uhres.bin");
+    UhRun* all[2] = {&v0, &v1};
+    bool fixture = true, r2ok = true, f3ok = true, r3ok = true;
+    for (UhRun* u : all) {
+        fixture = fixture && u->fr.cap.loaded && u->fr.cap.released && u->fr.cap.fixture_ok;
+        r2ok = r2ok && u->fr.r2.ok; f3ok = f3ok && u->fr.f3_ok;
+        r3ok = r3ok && u->idx_a && u->idx_b && (*u->idx_b - *u->idx_a) == (0x98 - 0x68);
+    }
+    g.expect(fixture, "P15-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
+    g.expect(r2ok, "P15-R2: precondition R2 anchor: in V0 the refresh output comes in groups of exactly four equally spaced accesses, consecutive groups 226 to 229 CCK apart; V1 runs with a 57 CCK secondary period and keeps the main line");
+    g.expect(f3ok, "P15-F3: precondition frame F3: the frame holding the first Copper-list fetch is found and its third successor F3 is complete in both runs");
+    dep_expect(checks, r2ok && f3ok, r3ok, "P15-R3: precondition R3 anchor: the markers at lines $68 and $98 fall 48 line boundaries apart in both runs", "R2 anchor or F3");
+    if (!(fixture && r2ok && f3ok && r3ok)) { not_graded(checks, "P15 checks", "fixture, R2, F3 or R3 anchor"); return; }
+    auto per_line = [](const UhRun& u) { std::map<int64_t, std::vector<Fetch>> m; for (auto& f : u.acc) m[f.line].push_back(f); return m; };
+    auto m0 = per_line(v0), m1 = per_line(v1);
+    bool v0pat = v0.idx_a && v0.idx_b && m0.size() == size_t(*v0.idx_b - *v0.idx_a + 1) && m0.size() >= 40;
+    for (auto& kv : m0) v0pat = v0pat && kv.second.size() == 1;
+    for (size_t i = 1; i < v0.acc.size(); ++i) v0pat = v0pat && v0.acc[i].addr - v0.acc[i - 1].addr == 8;
+    g.expect(v0pat, "P15-V0: precondition: with DUAL clear (V0) exactly one UHRES access occurs on each of at least 40 lines between markers $68 and $98, consecutive accesses 8 bytes apart (AA p.15: BPLHMOD plus 2)");
+    checks.note("P15 V0: " + dec((long long)v0.acc.size()) + " accesses on " + dec((long long)m0.size()) + " lines; V1: " + dec((long long)v1.acc.size()) + " accesses on " + dec((long long)m1.size()) + " lines");
+    if (!v0pat) { not_graded(checks, "P15-V1", "V0 does not show the one-per-line UHRES pattern"); return; }
+    bool v1ok = v1.idx_a && v1.idx_b && m1.size() == size_t(*v1.idx_b - *v1.idx_a + 1) && m1.size() >= 40;
+    for (auto& kv : m1) v1ok = v1ok && kv.second.size() >= 3;
+    for (size_t i = 1; i < v1.acc.size(); ++i) {
+        v1ok = v1ok && v1.acc[i].addr - v1.acc[i - 1].addr == 8;
+        double gap = double(v1.acc[i].cycle - v1.acc[i - 1].cycle) / double(v1.fr.r2.K);
+        v1ok = v1ok && gap >= 55.0 && gap <= 59.0;
+    }
+    g.expect(v1ok, "P15-V1 sol:AA-hhpos.c2: with DUAL set and HTOTAL = $0038 the UHRES pointer comes out at least 3 times on every line, every pair of consecutive accesses 8 bytes apart and 57 CCK, give or take 2 CCK, apart (AA p.12 'starts the UHRES pointer chain with the reset of this counter rather than the normal one')");
+}
 } // namespace
 
 // ===========================================================================
@@ -1523,9 +2560,17 @@ int main(int argc, char** argv) {
     }
 
     }
+    if (want("UNIT") || want("P11") || want("P12") || want("P14")) prop_unit(checks, g);
+    if (want("P6")) prop_p6(checks, g);
     if (want("P7")) prop_p7(checks, g);
     if (want("P8")) prop_p8(checks, g);
     if (want("P9")) prop_p9(checks, g);
+    if (want("P10")) prop_p10(checks, g);
+    if (want("P11")) prop_p11(checks, g);
+    if (want("P12")) prop_p12(checks, g);
+    if (want("P13")) prop_p13(checks, g);
+    if (want("P14")) prop_p14(checks, g);
+    if (want("P15")) prop_p15(checks, g);
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
 }

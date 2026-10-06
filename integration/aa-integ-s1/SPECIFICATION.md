@@ -119,7 +119,20 @@ A COLOR01 pixel then shows red A if the output carries R7-R4, or 5 if it carries
 
 **Build conventions.**
 - **Frames.** For the register-list runs the frame holding the first fetch of the Copper list is the frame the DMA-enabling write falls in; Fk is its k-th successor, delimited by vsync leading edges as in section 0. P1-P5 locate F1 from the video content: the first frame whose window population equals the next frame's.
+- **P6 modulus.** P6 writes BPL1MOD = BPL2MOD = $FFD8 (-40 bytes, one line's 20 words) instead of S2's $0000, so that every window line shows the same 20 words (AA p.16: a modulo "is automatically added to the address at the end of each line").
+- **Connectors.** JOY0DAT (the left controller pair, AA p.25) is driven through the input `joystick1` and JOY1DAT through `joystick0`; the port list wires the two inputs to the two connectors that way and no page names the mapping. P11's "port 0" is the connector of JOY0DAT.
+- **Mouse input.** A count is a signed 8-bit datum on `kbd_mouse_data`, taken when `kbd_mouse_level` toggles; `kbd_mouse_type` = 0 carries an X count and `kbd_mouse_type` = 1 a Y count. +1 is right and down, -1 is left and up (HRM p.229: the counters increment for right and "down", decrement for left and "up"). The input takes a Y count only after an X datum, so the build sends an X count of 0 before each Y count.
+- **Read times (P11).** Each loop iteration reads JOY0DAT and then JOY1DAT; a read precedes its store, so an iteration lies before a change when the store of its JOY1DAT value does.
 - **Mutations.** `NMH_MUTATE=<selector>` runs one contrast and only the proposition the selector names, with the one changed stimulus the `// MUTATION` record in the test source describes, through the proposition's own comparators. A mutation never changes an expected value. The programs named `*_nofix`, `*_k`, `*_c`, `*_same`, `*_late`, `*_var`, `*_early`, `*_pad*` and `prog_cpuuh_*` are the contrast builds.
+
+**Programs (P10-P12).**
+- `prog_lpen.s` (P10) performs P10's steps 1-4 with a wait of 13 dbra iterations (130 CPU clocks, 65 CCK) between the two reads; `prog_lpen_c.s` adds the BPLCON0 = $0008 write of contrast C, `prog_lpen_late.s` starts the reads about 110 lines after the marker, `prog_lpen_var.s` selects VARBEAMEN with HTOTAL = $00E8 and VTOTAL = $0138, `prog_lpen_same.s` stores one read as both w0 and w1, and `prog_lpen_nofix.s` has no fixture store.
+- `prog_joy.s` (P11) reads JOY0DAT and JOY1DAT 7200 times and stores each value to a buffer of its own (the store's port time is the read's time). `prog_joy_nofix.s` has no fixture store.
+- `prog_uart.s` (P12) follows P12's steps; `prog_uart_k.s` writes ADKCON = $0800 at step 5 (contrast K), `prog_uart_early.s` writes ADKCON = $8800 in place of $0800 at step 2, `prog_uart_nofix.s` has no fixture store.
+
+**Unit run (build).** A run with no DMA enabled, made before P10-P14 use time. It fixes K, the number of clk_sys cycles per CCK, from the `refresh` output: the four refresh accesses of a line are 2 CCK apart (R2), so K is half their spacing. P11 and P12 convert their durations through K (1 ms is 1,000,000 ns / 280 ns CCK = 3571.4 CCK; 280 ns is AA p.21's memory cycle) and P14 converts sample times through it. It also reads LISAID: its low byte is $F8 for the AA chip set (AA p.26, "LISA returns hex (F8)"; the ECS Denise returns $FC), which shows that `chipset_config` = $10 selected AA.
+
+**Programs (P13-P15).** `prog_disk.s` (P13) follows the register list with a poll of INTREQR bit 1 and then writes DSKLEN = $4000; the disk DMA accesses are the reads that are neither the program's own fetches, the register list, the reset vectors nor refresh accesses. `prog_dual.s` (P14) follows the list with the 1024 samples; `prog_dual_pad121.s` lengthens the loop body to 121 CCK. `prog_uhres.s` (P15) follows it with the rewrite of BPLHPTH/BPLHPTL after each VERTB; `prog_cpuuh_line.s` and `prog_cpuuh_57.s` read the region U with the CPU once per 227 and once per 57 CCK instead. `prog_disk_nofix.s`, `prog_dual_nofix.s` and `prog_uhres_nofix.s` have no fixture store.
 
 **S1 - program skeleton.**
 1. Clear all DMA enables, interrupt enables and interrupt requests: DMACON = $7FFF, INTENA = $7FFF, INTREQ = $7FFF (AA p.22 and p.25: bit 15 = 0 clears the bits written with 1). Write BEAMCON0 = $0020 (PAL, section 0), unless the proposition gives its own BEAMCON0 value.
@@ -397,6 +410,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - A B1 run with BPLCON1 = $0000, compared with B0/T_id at $0033, differs at the group boundaries, so (i) goes red through the scroll clause.
    - A B1/T_id run with BPLCON2 = $0000, compared with B0/T_id at $0024, differs on the sprite's columns wherever the group's high nibble is not 1, so (i) goes red through the priority clause. PF2P = 000 puts the playfield in front of all sprites (HRM p.210, Table 7-2), and v is never 0, so the playfield covers the sprite.
 7. **Reference frame.** R1 and R4.
+8. **Measured (build), TG68K and fx68k.** Preconditions: P6-R4 PASS, P6-FIXTURE PASS, P6-F3 PASS, P6-R1 PASS, P6-POP PASS, P6-TBL PASS, P6-RED16 PASS, P6-SPR PASS, P6-SCROLL PASS. R4: a COLOR01 pixel shows red $A. Population: 392 lines of F3 with 634 window columns a line on TG68K and 633 on fx68k. Table: 248528 of 248528 observed pixels differ between B0/T_x and B0/T_id (fx68k 248136 of 248136). Sprite: 32 output lines carry sprite columns. Scroll: 19 group boundaries, each 6 samples right of its unscrolled position. (i): 0 of 248528 pixels differ between B1/T_id and B0/T_id on TG68K (fx68k 0 of 248136), so P6-I is PASS. (ii): 248528 of 248528 pixels differ between B1/T_x and B1/T_id on TG68K (fx68k 248136 of 248136), so P6-II and the aggregate P6-AGG are FAIL on both cores: with BYPASS set the red output follows the colour table and not the address. Contrasts: `P6-I` (BPLCON1 = $0000 in the B1/T_id run) and `P6-I-PRIO` (BPLCON2 = $0000) print FAIL on P6-I on both cores. The red lines have a live input through the same comparators (`P6-II`, `P6-AGG`: the B1/T_x run is run as B0/T_id): both print PASS on both cores.
 
 ### P7 - bit-plane fetch increment from FMODE bits 1-0
 
@@ -537,6 +551,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - *Contrast for (i):* in run C, place the reads about 110 R2 line boundaries after t_V. Precondition (i) fails there. The freeze has been released at line 20, so w1 ≠ w0, which shows the window below 20 matters.
 6. **Contrasting case C.** The same program with BPLCON0 = $0008 (LPEN = 1, no planes) written before step 4. The page predicts w1 = w0 in every pair, so the main check goes red.
 7. **Reference frame.** R5, R2 (line boundaries after t_V) and the vertical-position field of AA p.29.
+8. **Measured (build), TG68K and fx68k.** P10-FIXTURE PASS, P10-R2 PASS, P10-WIN PASS (0 line boundaries between the marker and the store of w1 in every pair). P10-LATCH is FAIL: with BPLCON0 = $0008 written before the reads, w1 differs from w0 in every pair on both cores (TG68K: w0 = $A3000018, w1 = $A300006E; fx68k: w0 = $A300001B, w1 = $A3000068), so precondition (ii) does not hold and P10-MAIN prints NOT GRADED: the light-pen latch does not freeze the counters in this system. The main run's reads (TG68K: w0 = $A300001E, w1 = $A3000074; fx68k: w0 = $A3000023, w1 = $A3000070) show a vertical position of 0 in w0. Contrasts: `P10-MAIN` (both runs load `prog_lpen_same.bin`, which reads once and stores the value as w0 and w1) prints FAIL on P10-MAIN while P10-LATCH holds; `P10-FIXTURE`, `P10-R2` and `P10-WIN` print FAIL on their own lines. The red precondition has a live input through its comparator (`P10-LATCH`: the contrast run loads `prog_lpen_same.bin`): PASS on both cores.
 
 ### P11 - the joystick and mouse registers read as before
 
@@ -576,6 +591,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - The "none" state is graded as one of the nine states in (a), not used as a precondition: a wrong decode at rest must go red, not turn the check off.
 6. **Contrasting case.** Each state is the others' contrast. For example, the "right" data evaluated against the "left" expectation goes red. For the mouse, the "left" data evaluated against the "right" expectation has the opposite sign. With 39 counts left after 40 right, bits 7-0 end one count away from the start, and the return check goes red.
 7. **Reference frame.** R2, for the read times.
+8. **Measured (build), TG68K and fx68k.** Preconditions: P11-UNIT PASS, P11-FIXTURE PASS, P11-POP PASS, P11-STILL PASS. The register values in each of the nine states on connector 0 (JOY0DAT) and on connector 1 (JOY1DAT) are the same on both cores: none $0000, up $0100, down $0001, left $0300, right $04FF, up+left $06FC, up+right $05FF, down+left $07FD, down+right $08FE on connector 0; none $0000, up $0100, down $0001, left $FF00, right $FC03, up+left $FE00, up+right $FD03, down+left $FF05, down+right $FC06 on connector 1. Each decodes to the expected F, L, B and R (PASS). Mouse: 40 counts right moved bits 7-0 from $00 to $28 and 40 left back to $00; 40 down moved bits 15-8 from $00 to $28 and 40 up back to $00 (PASS). Aggregate PASS. Contrasts: `P11-JOY` (the state "right" drives the left switch), `P11-MOUSE` (the first movement is -1 counts), `P11-MOUSE-RET` (39 counts in the second movement), `P11-AGG` (the third movement is -1 counts), `P11-STILL` (one X count during a hold), `P11-POP` (holds of 0.15 ms), `P11-FIXTURE` and `P11-UNIT` each print FAIL on their own line on both cores.
 
 ### P12 - UARTBRK holds TxD at 0
 
@@ -608,6 +624,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - *Contrast:* writing ADKCON = $8800 at the start of the program makes TxD 0 before M1, and the first precondition fails.
 6. **Contrasting case K.** Write ADKCON = $0800 instead of $8800 at step 5. TxD in (M2, M3) then shows, per HRM p.258: a start bit 0; the data bits LSB first, 1 0 1 0 1 0 1 0; and a stop bit 1, each 30 CCK long. The 1 bits make the main check go red.
 7. **Reference frame.** R2.
+8. **Measured (build), TG68K and fx68k.** Preconditions: P12-FIXTURE PASS, P12-UNIT PASS, P12-PRE1 PASS, P12-KPRE PASS. Contrast run K, bits at the bit centres: 0101010101 on both cores (start 0, data 1 0 1 0 1 0 1 0, stop 1). Main run: TxD is 0 at all of 16521 samples from M2 to M3 on TG68K (14329 on fx68k), 0 of them 1. P12-MAIN PASS. Contrasts: `P12-MAIN` (contrast run K as the main run), `P12-PRE1` (ADKCON = $8800 in place of $0800 at step 2), `P12-KPRE` (the contrast run keeps the break set), `P12-FIXTURE` and `P12-UNIT` each print FAIL on their own line on both cores.
 
 ### P13 - disk DMA takes its address from a 20-bit pointer
 
@@ -639,6 +656,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - *Contrast:* DMACON without DSKEN gives no access (AA p.23: "DMAON DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)").
 6. **Contrasting case.** Run Y is run X's contrast: each of A20-A16 is 1 in one of the two runs. If DSKPTH held only 3 bits (AA p.23: "(old-3 bits)"), run X's first access would appear at $025432 instead of $0A5432 and run Y's at $054320 instead of $154320. If A20 alone were dropped, run Y's would appear at $054320. Either way the check goes red.
 7. **Reference frame.** R2.
+8. **Measured (build), TG68K and fx68k.** Disk DMA runs without a disk: each run shows 8 disk DMA reads and DSKBLK set. The first reads are at $0A5432, $0A5434, $0A5436 (run X) and $154320, $154322, $154324 (run Y), and every read is at the run's address plus 2 per access, so P13-RUN and P13-MAIN PASS on both cores. Contrasts: `P13-MAIN` (run Y writes DSKPTH = $0005, three of the five high bits), `P13-RUN` (run X without DSKEN) and `P13-FIXTURE` print FAIL on their own line on both cores.
 
 ### P14 - DUAL: a second horizontal counter that wraps at HTOTAL
 
@@ -682,6 +700,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - Evaluate U2 against U1's "max h = $40": it goes red.
    - U3, where HTOTAL acts on the main counter, gives max m = $40, which differs from max m in U0. This shows the main-counter comparison can go red.
 7. **Reference frame.** R2, for the CCK conversion.
+8. **Measured (build), TG68K and fx68k.** Preconditions: P14-FIXTURE PASS, P14-UNIT PASS, P14-R2 PASS, P14-PHASE PASS, P14-PAIRS PASS, P14-U3 PASS, P14-POS FAIL. The CPU loop stores one HHPOSR sample every 22 CCK (23 for 100 of 1023 intervals) on TG68K and every 21 CCK on fx68k, and in run U1 it samples 113 (TG68K) and 109 (fx68k) of the 227 line positions, so P14-POS is red on both cores and U1, U2, REL, MAIN and AGG print NOT GRADED. The registers show: HHPOSR bits 7-0 are $00 in every sample of U1 and U2 and the whole HHPOSR word is $0000 at its largest (both cores); VHPOSR bits 7-0 reach $E2 in U0, U1 and U2 on both cores and $FC (TG68K) or $2F (fx68k) in U3. There are 831 (TG68K) and 844 (fx68k) qualifying pairs in U1 and 831 and 844 in U2, every one of which differs from the page. Contrasts: `P14-PAIRS` (U1 loads a loop body of 121 CCK), `P14-R2` (U1 writes BEAMCON0 = $08E0), `P14-U3` (U3 writes BEAMCON0 = $0820 and no VTOTAL), `P14-FIXTURE` and `P14-UNIT` print FAIL on their own line on both cores. P14-POS has no stimulus that makes it green, and U1, U2, REL, MAIN and AGG are never graded, so none of them has a contrast (`none impossible` records in the test source).
 
 ### P15 - DUAL: the UHRES pointer chain restarts with the secondary counter
 
@@ -717,6 +736,7 @@ Contrasts (selectors `P2A1-<name>`, `P2A2-<name>`, `P2B-<name>`, `P2S-<name>` in
    - *Contrast:* BPLCON0 = $0000 gives no accesses.
 6. **Contrasting case.** Evaluate V0 against V1's "at least 3 per line": it goes red.
 7. **Reference frame.** R2 and R3.
+8. **Measured (build), TG68K and fx68k.** P15-FIXTURE PASS, P15-R2 PASS, P15-F3 PASS, P15-R3 PASS. P15-V0 is FAIL on both cores: run V0 (DUAL clear) shows 0 accesses in [U, U+$8000) on 0 lines between the markers, so the UHRES cycle does not reach the Chip-memory port in this system, and P15-V1 prints NOT GRADED. Contrasts: `P15-FIXTURE`, `P15-R2` and `P15-R3` print FAIL on their own line, and `P15-F3` (run V0 ends 3,300,000 cycles after boot) prints FAIL, on both cores. The red precondition has a live input through its comparator (`P15-V0`, `P15-V1`: run V0 loads `prog_cpuuh_line.bin`, one CPU read of the region per line in place of the UHRES pointer, and run V1 loads `prog_cpuuh_57.bin`, one per 57 CCK): P15-V0 and P15-V1 print PASS on both cores.
 
 ---
 
