@@ -12,9 +12,78 @@
 //
 // NMH_MUTATE=<selector> runs one contrast in place of the normal run: only what the selector names
 // runs, with the one stimulus the record describes, through the unchanged comparator. `make test`
-// leaves NMH_MUTATE unset and runs no mutant.
+// leaves NMH_MUTATE unset and runs no mutant. NMH_GEOM=<u>,<r> lets a mutation run take u and r from the
+// normal run of the same core instead of measuring them on its own M-H-00 run; the normal run ignores it.
 //
 // MUTATION_RECORDS_BEGIN
+// MUTATION P1 stimulus red NMH_MUTATE=P1: the M-L-00 cell is run with SPRES = 10 (70 ns) in place of 00 and graded against P1's 140 ns expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P2 stimulus red NMH_MUTATE=P2: the M-S-01 cell is run with SPRES = 00 in place of 01 and graded against P2's 140 ns expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P2a stimulus red NMH_MUTATE=P2a: the M-S-01 cell is run with SPRES = 00 in place of 01 and graded against P2a's 140 ns expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P3 stimulus red NMH_MUTATE=P3: cells M-L-00 and M-L-01 (LORES) are graded in place of M-S-00 and M-S-01 against 16u and 32u; TG68K FAIL, fx68k FAIL.
+// MUTATION P4 stimulus red NMH_MUTATE=P4: the M-L-10 cell is run with SPRES = 01 (140 ns) in place of 10 and graded against P4's 70 ns expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P5 stimulus red NMH_MUTATE=P5: the M-L-11 cell is run with SPRES = 10 (70 ns) in place of 11 and graded against P5's 35 ns expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P5a stimulus red NMH_MUTATE=P5a: the M-L-11 cell is run with SPRES = 10 (70 ns) in place of 11 and graded against P5a's 35 ns expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P11 stimulus red NMH_MUTATE=P11: the M-L-00 cell is run with SPRES = 10 in place of 00 (the other eleven cells are not run in this process); TG68K FAIL, fx68k FAIL.
+// MUTATION P12 stimulus red NMH_MUTATE=P12: the M-S-01 cell is run with SPRES = 00 in place of 01, in both parts of P12; TG68K FAIL, fx68k FAIL.
+// MUTATION P6 stimulus red NMH_MUTATE=P6: the W-01 cell is run with FMODE = $0000 in place of $0004 and graded against W-01's expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P6a stimulus red NMH_MUTATE=P6a: the W-00 cell is run with FMODE = $0004 in place of $0000 and graded against W-00's expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P6b stimulus red NMH_MUTATE=P6b: the W-01 cell is run with FMODE = $0000 in place of $0004 (W-10 unchanged) and graded against W-01's expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P6c stimulus red NMH_MUTATE=P6c: the W-11 cell is run with FMODE = $0004 in place of $000C and graded against W-11's expectation; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-ctl stimulus red NMH_MUTATE=P7-ctl: ATT = 0 in the sprites of the A-S-00 run in place of ATT = 1 (AX-S-00); the other cells are not run in this process; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-ctl stimulus red NMH_MUTATE=P7-L11: ATT = 0 in the sprites of the A-L-11 run in place of ATT = 1 (AX-L-11); the other cells are not run in this process; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-ctl stimulus red NMH_MUTATE=P7-W11: ATT = 0 in the sprites of the AW-11 run in place of ATT = 1 (AWX-11); the other cells are not run in this process; TG68K FAIL, fx68k FAIL.
+// MUTATION P8 stimulus red NMH_MUTATE=P8: band 5's MOVE writes $004B (band 4's value) in B-N (BX-N); TG68K FAIL, fx68k FAIL.
+// MUTATION P8 stimulus red NMH_MUTATE=P8-A: band 5's MOVE writes $004B (band 4's value) in B-A (BX-A); TG68K FAIL, fx68k FAIL.
+// MUTATION P9 stimulus red NMH_MUTATE=P9: case R writes BPLCON4 = $0001 (ESPRM = 0000, OSPRM = 0001) in step 3 (RX-E); TG68K FAIL, fx68k FAIL.
+// MUTATION P10 stimulus red NMH_MUTATE=P10: case R writes BPLCON4 = $0010 (ESPRM = 0001, OSPRM = 0000) in step 3 (RX-O); TG68K FAIL, fx68k FAIL.
+// MUTATION FIX-M stimulus red NMH_MUTATE=FIX-M: the M-S-01 run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-M stimulus red NMH_MUTATE=C1-M: the M-S-01 run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION C2-M stimulus red NMH_MUTATE=C2-M: the M-S-01 run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
+// MUTATION C3-M stimulus red NMH_MUTATE=C3-M: the M-S-01 run writes BPLCON0 = $9200 in place of $1240 (CP-3); TG68K FAIL, fx68k FAIL.
+// MUTATION C4-M stimulus red NMH_MUTATE=C4-M: the M-S-01 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-M.
+// MUTATION C5-M stimulus red NMH_MUTATE=C5-M: the M-L-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-M stimulus red NMH_MUTATE=C7-M: the M-L-00 run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-M stimulus red NMH_MUTATE=C7B-M: the M-L-00 run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
+// MUTATION FIX-W stimulus red NMH_MUTATE=FIX-W: the W-00 run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-W stimulus red NMH_MUTATE=C1-W: the W-00 run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION C2-W stimulus red NMH_MUTATE=C2-W: the W-00 run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
+// MUTATION C3-W stimulus red NMH_MUTATE=C3-W: the W-00 run writes BPLCON0 = $9200 in place of $1200 (CP-3); TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-W.
+// MUTATION C4-W stimulus red NMH_MUTATE=C4-W: the W-00 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-W.
+// MUTATION C5-W stimulus red NMH_MUTATE=C5-W: the W-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-W stimulus red NMH_MUTATE=C7-W: the W-00 run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-W stimulus red NMH_MUTATE=C7B-W: the W-00 run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
+// MUTATION FIX-A stimulus red NMH_MUTATE=FIX-A: the A-S-00 run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-A stimulus red NMH_MUTATE=C1-A: the A-S-00 run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION C2-A stimulus red NMH_MUTATE=C2-A: the A-S-00 run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
+// MUTATION C3-A stimulus red NMH_MUTATE=C3-A: the A-S-00 run writes BPLCON0 = $9200 in place of $1240 (CP-3); TG68K FAIL, fx68k FAIL.
+// MUTATION C4-A stimulus red NMH_MUTATE=C4-A: the A-S-00 run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-A, C5-A.
+// MUTATION C5-A stimulus red NMH_MUTATE=C5-A: the A-L-00 run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-A.
+// MUTATION C7-A stimulus red NMH_MUTATE=C7-A: the A-L-00 run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-A stimulus red NMH_MUTATE=C7B-A: the A-L-00 run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
+// MUTATION FIX-B stimulus red NMH_MUTATE=FIX-B: the B-N run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-B stimulus red NMH_MUTATE=C1-B: the B-N run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION C2-B stimulus red NMH_MUTATE=C2-B: the B-N run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
+// MUTATION C3-B stimulus red NMH_MUTATE=C3-B: the B-N run writes BPLCON0 = $9200 in place of $1200 (CP-3); TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-B.
+// MUTATION C4-B stimulus red NMH_MUTATE=C4-B: the B-N run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-B, C5-B.
+// MUTATION C5-B stimulus red NMH_MUTATE=C5-B: the B-N run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL. Also printing FAIL: BANDS-B.
+// MUTATION C7-B stimulus red NMH_MUTATE=C7-B: the B-N run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-B stimulus red NMH_MUTATE=C7B-B: the B-N run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
+// MUTATION FIX-R stimulus red NMH_MUTATE=FIX-R: the R run loads prog_nofix.bin, which stores no $BEEF constant; TG68K FAIL, fx68k FAIL.
+// MUTATION C1-R stimulus red NMH_MUTATE=C1-R: the R run loads prog_nodone.bin, which writes no DONE_VALUE (CP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION C2-R stimulus red NMH_MUTATE=C2-R: the R run loads prog_vbl.bin, which toggles COLOR00 between colour(0) and colour(2) in every vertical blank (CP-2); TG68K FAIL, fx68k FAIL.
+// MUTATION C3-R stimulus red NMH_MUTATE=C3-R: the R run writes BPLCON0 = $9200 in place of $1200 (CP-3); TG68K FAIL, fx68k FAIL. Also printing FAIL: C7-R.
+// MUTATION C4-R stimulus red NMH_MUTATE=C4-R: the R run writes DMACON = $8380 (SPREN clear) in place of $83A0 (CP-4); TG68K FAIL, fx68k FAIL. Also printing FAIL: C5-R, SEGS-R.
+// MUTATION C5-R stimulus red NMH_MUTATE=C5-R: the R run writes DIWSTRT = $2CB0 in place of $2C81 (CP-5); TG68K FAIL, fx68k FAIL. Also printing FAIL: SEGS-R.
+// MUTATION C7-R stimulus red NMH_MUTATE=C7-R: the R run places 1280 bytes of $CCCC in the bit-plane area in place of 640 (CP-7a); TG68K FAIL, fx68k FAIL.
+// MUTATION C7-R stimulus red NMH_MUTATE=C7B-R: the R run's Copper list adds MOVE BPLCON1 = $0000, WAIT $3007,$FFFE and MOVE BPLCON1 = $0033 after the pointer MOVEs (CP-7b); TG68K FAIL, fx68k FAIL.
+// MUTATION BANDS-A stimulus red NMH_MUTATE=BANDS-A: the A-S-00 run's sprites 6 and 7 have no lines, so three bands show; TG68K FAIL, fx68k FAIL.
+// MUTATION BANDS-B stimulus red NMH_MUTATE=BANDS-B: the B-N run's sprite 7 has no lines, so every row has 7 segments; TG68K FAIL, fx68k FAIL.
+// MUTATION C6-B stimulus red NMH_MUTATE=C6-B: the B-N run's Copper list ends with its end-of-list WAIT after band 9's MOVE, so the fetches of MOVEs 10 to 15 are absent; TG68K FAIL, fx68k FAIL.
+// MUTATION SEGS-R stimulus red NMH_MUTATE=SEGS-R: case R's sprite 7 has no lines, so every row has 7 segments; TG68K FAIL, fx68k FAIL.
+// MUTATION R1-R stimulus red NMH_MUTATE=R1-R: case R runs prog_pro.bin: a prologue at PROGRAM_ORG enables Copper DMA on a one-instruction list at $088100 and jumps to the entry at PROGRAM_ORG + $40 (RP-1); TG68K FAIL, fx68k FAIL.
+// MUTATION R2-R stimulus red NMH_MUTATE=R2-R: case R's Copper list adds MOVE BPLCON4 = $0011 (RP-2); TG68K FAIL, fx68k FAIL.
+// MUTATION P7 stimulus green NMH_MUTATE=P7-ctl: the assertion is red on both cores (cells AW-01 and AW-10); the control P7-ctl runs the same comparator on the twelve resolution cells and on AW-11 and prints PASS on both cores, and its mutations P7-ctl, P7-L11 and P7-W11 print FAIL on both cores.
+// The contrasts AWX-01 (NMH_MUTATE=P7-W01) and AWX-10 (NMH_MUTATE=P7-W10) print a MEASURED line only: through the comparator of P7 they fail on both cores, as AW-01 and AW-10 do with ATT = 1.
 // MUTATION_RECORDS_END
 
 #include <set>

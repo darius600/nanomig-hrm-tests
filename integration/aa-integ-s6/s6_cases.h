@@ -41,7 +41,7 @@ inline Case make_w(int idx) {
             s.lines.push_back(l);
         }
     }
-    c.c5_px = 16 * c.n; c.c5_ns = 140;
+    c.c5_px = 64; c.c5_ns = 140;      // the widest expected sprite, 128u from L (SPECIFICATION.md P6)
     return c;
 }
 
@@ -156,7 +156,7 @@ inline void apply_cp(Case& c, Cp k) {
     case Cp::C3: c.bplcon0 = c.res == 'H' ? 0x1200 : 0x9200; break;
     case Cp::C4: c.dmacon = 0x8380; break;
     case Cp::C5: c.diwstrt = 0x2CB0; break;
-    case Cp::C7a: c.calib_bytes = 1280; break;
+    case Cp::C7a: c.calib_bytes = c.spr[0].vstart < 0x50 ? 800 : 1280; break;   // calibration rows end above the first sprite line
     case Cp::C7b: {
         std::vector<uint16_t> x;
         append(x, cop_move(R_BPLCON1, 0x0000));

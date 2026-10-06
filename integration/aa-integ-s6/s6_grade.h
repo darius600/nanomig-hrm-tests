@@ -138,10 +138,15 @@ inline Pre compute_pre(const Run& r, const Geom& G) {
 
 // ---- C6 (B runs): the Copper fetches of all sixteen MOVE instructions, in list order ----------------------
 inline bool c6_ok(const Run& r) {
-    // the list: 18 pointer MOVEs (36 words), then per band a WAIT and a MOVE (4 words each)
+    // the list: the pointer MOVEs, then per band a WAIT and a MOVE of four words; the first band's WAIT is $4007,$FFFE
+    auto list = make_copper(r.c);
+    size_t w0 = list.size();
+    for (size_t i = 0; i + 1 < list.size(); i += 2)
+        if (list[i] == 0x4007 && list[i + 1] == 0xFFFE) { w0 = i; break; }
+    if (w0 == list.size()) return false;
     uint64_t last = 0;
     for (int b = 0; b < 16; ++b) {
-        uint32_t addr = kCopper + 2 * uint32_t(36 + 4 * b + 2);
+        uint32_t addr = kCopper + 2 * uint32_t(w0 + 4 * b + 2);
         bool found = false;
         for (const auto& a : r.gframe)
             if (!a.is_write && a.word_addr == addr / 2 && a.cycle > last) { last = a.cycle; found = true; break; }
@@ -323,20 +328,26 @@ inline CellRes grade_a(const Run& r, int Gs, int parts, const Geom& G, std::stri
             int L = -1;
             for (size_t x = 0; x < row.size(); ++x) if (opaque(row[x])) { L = int(x); break; }
             if (L < 0) { res.fail("band " + dec(p) + " row " + dec(i) + " has no opaque sample"); continue; }
-            auto sg = segs_of(row);
-            size_t want_segs = typeB ? size_t(parts) : 1;
-            if (sg.size() != want_segs) res.fail("band " + dec(p) + " row " + dec(i) + " has " + dec(sg.size()) + " segments, expected " + dec(want_segs));
+            std::string obs, exp;
+            bool row_ok = true;
             for (int g = 0; g < 8 * parts; ++g) {
                 int v = a_value(typeB, g);
                 int want = v == 0 ? 0 : 16 + v;
+                int got = -2;
+                bool uniform = true;
                 for (int q = 0; q < Gs; ++q) {
                     size_t x = size_t(L + g * Gs + q);
-                    if (x >= row.size() || idx_of(row[x]) != want) {
-                        res.fail("band " + dec(p) + " row " + dec(i) + " group " + dec(g) + " is not colour(" + dec(want) + ")");
-                        g = 8 * parts; break;
-                    }
+                    int id = x < row.size() ? idx_of(row[x]) : -3;
+                    if (q == 0) got = id; else if (id != got) uniform = false;
                 }
+                obs += (g ? "," : "") + (uniform ? dec(got) : std::string("mixed"));
+                exp += (g ? "," : "") + dec(want);
+                if (!uniform || got != want) row_ok = false;
             }
+            if (!row_ok) res.fail("band " + dec(p) + " row " + dec(i) + " shows the groups [" + obs + "] where colour indices [" + exp + "] are expected");
+            auto sg = segs_of(row);
+            size_t want_segs = typeB ? size_t(parts) : 1;
+            if (sg.size() != want_segs) res.fail("band " + dec(p) + " row " + dec(i) + " has " + dec(sg.size()) + " segments, expected " + dec(want_segs));
         }
     }
     return res;

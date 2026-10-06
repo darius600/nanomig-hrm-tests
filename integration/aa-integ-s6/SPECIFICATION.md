@@ -815,3 +815,160 @@ Each claim id is carried by one proposition, which grades it whole.
 | RX-E, RX-O | P9, P10 contrasts |
 | RP-1, RP-2 | R1, R2 contrasts |
 | CP-1 … CP-5, CP-7a, CP-7b | C1 … C5, C7 contrasts |
+
+
+---
+
+## 9 What the build adds
+
+### 9.1 Programs and placement
+
+`s6.i` is the one program of the package; `prog_main.s` assembles it as it
+stands, and the other four programs set one symbol before including it:
+`prog_nofix.s` leaves out the fixture store (the contrast of the FIX lines),
+`prog_nodone.s` leaves out step 6's write of DONE_VALUE (CP-1),
+`prog_vbl.s` polls INTREQR bit 5 after the DONE write, clears it through INTREQ
+and toggles COLOR00 between colour(0) and colour(2) in every vertical blank
+(CP-2), and `prog_pro.s` places the prologue of RP-1 at PROGRAM_ORG: it writes
+COP1LC = $088100, strobes COPJMP1, writes DMACON = $8280 (SET, DMAEN, COPEN)
+and jumps to the entry at PROGRAM_ORG + $40, where the program of
+`prog_main.s` starts. The programs are assembled for the 68000.
+
+The program stores the fixture constant $BEEF at RESULTS ($0C0000) first, then
+reads the register list from `RLIST` = $0B8000 and writes each value to its
+register with one MOVE.W, in list order, then stores the CPU read of LISAID
+($DFF07C) at RESULTS + 4 (reported as a MEASURED line, graded nowhere) and
+executes `DONE`. The list holds, in the order of 3.3: INTENA and DMACON
+cleared; BPLCON2 = $0024; the palette (3.2); BPLCON0, BPLCON1, BPLCON3,
+BPLCON4 (omitted in case R), FMODE, BPL1MOD, BPL2MOD, DIWSTRT, DIWSTOP, DDFSTRT,
+DDFSTOP; COP1LCH, COP1LCL, COPJMP1; DMACON = $83A0 last. `RLIST` is the one
+address 3.9 does not fix; it lies in the Chip memory of 3.9, apart from every
+region of that table (the list is under 1.2 KiB). The Copper list, the sprite
+structures and the bit-plane area are placed in Chip memory by the test before
+the program starts, at the addresses of 3.9.
+
+`s6_base.h` builds the register list, the Copper list and the sprite structures
+of a case and runs one case on one core (boot, run until the DONE write, then
+until four vertical syncs have followed it; the graded frame is the last
+complete frame, the frame before it the one C2 compares). A case that never
+writes DONE_VALUE runs for a fixed span. `s6_cases.h` defines the cases of 4 to
+6 and the contrasting variants of 3.8 (`apply_cp`). `s6_grade.h` holds the
+comparators and the common preconditions. `test_aa_integ_s6.cpp` holds the
+propositions, the group lines and the mutation selectors.
+
+### 9.2 Labels
+
+The first token of an expect label is the token `NMH_MUTATE` selects for it.
+Propositions: `P1` ... `P12`, `P6a`, `P6b`, `P6c`, `P2a`, `P5a`; `P7-ctl` is the
+control of P7 (9.3, item 7). The common preconditions of 3.8 are printed once
+per group of runs, ahead of the propositions that use the group: `FIX-<g>` (the
+program loaded, the CPU was released, the $BEEF constant was read back and a
+frame was captured), `C1-<g>`, `C2-<g>`, `C3-<g>`, `C4-<g>`, `C5-<g>`,
+`C7-<g>`, for the groups g = M (the twelve M runs), W (the four W runs), A (the
+twelve A runs and AW-01, AW-10, AW-11), B (B-N, B-A) and R (R). Each line is
+PASS when the check holds in every run of the group that the process ran; a
+FAIL line is followed by a MEASURED line naming the runs. The other
+preconditions: `BANDS-A` (four bands, P7), `BANDS-B` (sixteen bands and 8 or 4
+segments in every graded row, P8), `C6-B`, `SEGS-R` (one band and 8 segments in
+every row, P9 and P10), `R1-R`, `R2-R`. A proposition is graded when every run
+it uses holds all common preconditions and its own; otherwise its line is a
+`RECORDED: NOT GRADED` line, never PASS or FAIL. The comparator of a
+proposition reports its first deviation per run in a MEASURED line.
+
+`NMH_MUTATE=<label>` runs the contrast of the label in place of the normal
+run; for the group lines the selector is the label itself, `C7B-<g>` is the
+second contrast of `C7-<g>`. `NMH_GEOM=<u>,<r>` lets a mutation run take u and r
+from the normal run of the same core instead of measuring them on its own
+M-H-00 run; the normal run ignores it.
+
+### 9.3 Where the build had to choose
+
+1. **u and r** are measured on the M-H-00 calibration rows of each core (3.7):
+   r = (number of calibration rows) / 8, u = (interior run of $CCCC) / 2.
+2. **Reading the rows.** An output sample is a palette colour when its blue
+   gun is $A, and then decodes to index 16*r + g (3.2); a sample is opaque when
+   its index is not 0. A row is part of a group of rows when it holds an
+   opaque sample; the first group below the vertical blanking is the
+   calibration rows, the groups after it are the bands.
+3. **c3 and c1.** Check (c) and (d) of 4.1 call the colour of the solid rows
+   c3: it is the colour of the first solid row of the band, and every solid
+   row and the first run of every alternating row must show it; c1 is the
+   colour of the second run of an alternating row, equal in all odd runs and
+   different from c3.
+4. **Band rows.** A band must have exactly the row count of its table (6r in
+   4.1 and 5, 8r in P7, 7r in P8, 8r in case R), and the number of bands must
+   be the one the proposition names; a band with another count, or a missing
+   band, is a failure of the proposition.
+5. **P6.** The measured width of a case is the length of the solid-row
+   segment divided by 2u; the assertion also asks that the four widths are
+   16, 32, 32 and 64 and so the set {16, 32, 64}.
+6. **P7 rows.** Besides the colour of every group, the comparator counts the
+   segments of a row: one for type A rows, one per 16-pixel part for type B
+   rows (group 7 of each part is background).
+7. **P7-ctl.** P7 is red in the normal run (9.4). The control runs the
+   comparator of P7 on the twelve cells A-<res>-<spres> and on AW-11 (the cells
+   that pass) and prints PASS; its contrasts are AX-S-00, AX-L-11 and AWX-11,
+   graded through the same comparator. The contrasts AWX-01 and AWX-10 are run
+   as MEASURED lines: the comparator fails on them, as it does on AW-01 and
+   AW-10 with ATT = 1, so they separate nothing.
+8. **R1.** While the CPU is held in reset the RAM port reads word address 0;
+   the check starts at the first read of a reset vector and takes the first
+   Chip memory read after the vector reads. **R2** is evaluated on the
+   register list and on the Copper list as the run ended.
+9. **C5.** The expected length of a sprite is the page's: pixels times
+   nanoseconds per pixel of the proposition's cell; for the W runs it is the
+   widest sprite, 64 pixels of 140 ns.
+10. **The contrasting variants of the common preconditions** are applied to the
+    runs the group line names: M-S-01 (CP-1 to CP-4) and M-L-00 (CP-5, CP-7a,
+    CP-7b) as in 3.8, and by the same change to W-00, A-S-00 (CP-1 to CP-4) and
+    A-L-00 (CP-5, CP-7a, CP-7b), B-N and R. CP-3 writes BPLCON0 = $9200 (HIRES)
+    in a run that is not HIRES and $1200 (LORES) in a HIRES run. CP-7a places
+    1280 bytes (32 lines) of $CCCC where the first sprite starts at line $50; the
+    first band of B-N starts at line $41, so there it places 800 bytes (20
+    lines), which end above the band. The contrasts of `BANDS-A`, `BANDS-B` and
+    `SEGS-R` remove the sprites 6 and 7 (A), 7 (B) and 7 (R) from the structures:
+    their lines hold no data. The contrast of `C6-B` ends the Copper list with its
+    end-of-list WAIT after band 9's MOVE.
+11. **C6.** The addresses of the sixteen MOVE instructions are those of the
+    case's own list (the first band's WAIT is $4007,$FFFE; band b's MOVE lies
+    4b + 2 words after it); the check reads the fetches of the graded frame, in
+    list order.
+
+### 9.4 Measured values
+
+The final run of each core (`make -k -B test`, one target per process;
+out_tg68k.txt and out_fx68k.txt). Both builds print the same lines apart from
+the CORE line.
+
+```text
+u = 1 samples per 70 ns of display, r = 2 rows per beam line (M-H-00 calibration rows)
+calibration rows: 16 (HIRES, 8r), 32 (LORES, 16r), 8 (SHRES)
+P6 solid-row widths in pixels of 140 ns: W-00 16, W-01 32, W-10 32, W-11 64
+P7 cell AW-01: band 0 row 0 shows the groups [17,18,19,20,21,22,23,24,19,0,19,28,31,28,31,0] where colour indices [17,18,19,20,21,22,23,24,17,18,19,20,21,22,23,24] are expected
+P7 cell AW-10: band 0 row 0 shows the groups [17,18,19,20,21,22,23,24,19,0,19,28,31,28,31,0] where colour indices [17,18,19,20,21,22,23,24,17,18,19,20,21,22,23,24] are expected
+P7 cell AW-11: every check holds
+P9 bits 7-5 of the index (recorded, not graded): 0 of 1536 samples differ from index 16 + (k>>1)*4 + v
+P10 bits 7-5 of the index (recorded, not graded): 0 of 1536 samples differ from index 16 + (k>>1)*4 + v
+the CPU read of LISAID ($DFF07C) at the end of the register list returned $00F8 in every run
+```
+
+Graded counts: both builds print 58 passed, 1 failed. The FAIL line is P7.
+
+P7. The twelve cells A-<res>-<spres> and the 64-bit width run AW-11 show every
+group of every row in the colours of the table (P7-ctl prints PASS). In the two
+runs with a 4-byte fetch increment (AW-01, AW-10) the first 16-pixel part of the
+row shows the table's colours and the second part shows
+[19,0,19,28,31,28,31,0] where [17,...,24] is expected: the groups of the second
+part are those the table's 16 pixels give when each DATB word of the part is
+replaced by the DATA word of the same sprite. The same second part appears in
+type A and in type B rows.
+
+### 9.5 Mutations
+
+Every assertion, control and precondition has one record in the header of
+`test_aa_integ_s6.cpp`, selected by `NMH_MUTATE=<label>` (9.2). A mutation
+changes the stimulus and prints FAIL through the unchanged comparator on both
+builds, with every run reaching DONE. Where the mutated stimulus also changes a
+neighbouring precondition, the record lists it as "Also printing FAIL". P7 is
+the one assertion that is red in the normal run; its record names the green
+control P7-ctl, which has three records of its own (P7-ctl, P7-L11, P7-W11).
