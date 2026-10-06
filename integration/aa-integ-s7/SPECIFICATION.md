@@ -926,7 +926,7 @@ The final `make -k -B test` ran on both cores; every run selects the AA chip set
 Measured values, per core, in the order of the propositions:
 
 - C1, C3, C5, C6 and C8-C11: for COPCON $0000 and $FFFD the observation equals U and for COPCON $0002 it equals W, on both cores.
-- C2: the first disk read is at Rd (0x0E0000) for COPCON $0000 and $FFFD; with COPCON $0002 it is at Re (0x0F0000) for DSKPTH and at Re' (0x0E0100) for DSKPTL. A disk DMA with DMAON set reads RAM in every run; the window of each case holds three whole groups of refresh reads over two lines.
+- C2: the first disk read is at Rd (0x0E0000) for COPCON $0000 and $FFFD; with COPCON $0002 it is at Re (0x0F0000) for DSKPTH and at Re' (0x0E0100) for DSKPTL. A disk DMA with DMAON set reads RAM in every run; the window of each case is two lines long and holds two or three whole groups of refresh reads.
 - C4: with COPCON $0000 and $FFFD the poll ends on a line in $41-$42, with COPCON $0002 on a line in $C0-$C1.
 - C7, C9, C10, C12: the blitter writes of every case are those the propositions list, with no write outside the four, three or two words counted; C12's observation blit writes $3C3C twice in both frames B, and $5A5A twice after a DMA preload of V1 in frame A.
 - F1, F2: every case writes exactly w x h words at DST + 2 i with $FFFF, and nothing before the BLTSIZE or BLTSIZH write.
