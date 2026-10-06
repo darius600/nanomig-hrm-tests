@@ -10,56 +10,63 @@
 // NMH_ONLY=P1,P7 restricts a run to the named propositions (the fixture
 // always runs), to replay one mutation without the rest of the suite.
 //
-// MUTATION FIXTURE stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=FIXTURE
-// MUTATION FIXTURE-R stimulus red stored constant changed to DEAD instead of BEEF, via NMH_MUTATE=FIXTURE
+// MUTATION FIXTURE stimulus red stored constant at RESULTS changed to DEAD instead of BEEF, via NMH_MUTATE=FIXTURE
+// MUTATION FIXTURE-R stimulus red stored constant at R changed to DEAD instead of BEEF, via NMH_MUTATE=FIXTURE-R
+// MUTATION P1-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P1a, P1b and P1 are NOT GRADED
+// MUTATION P1-G2 stimulus red channel 0's enabling write leaves DMAEN out, via NMH_MUTATE=G2 -- P1a, P1b and P1 are NOT GRADED
+// MUTATION P1-G3 stimulus red one extra CPU write into A_0, through an absolute address, inside W_0, via NMH_MUTATE=G3 -- P1a, P1b and P1 are NOT GRADED
+// MUTATION P1-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4 -- P1a, P1b and P1 are NOT GRADED
+// MUTATION P1-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5 -- P1a, P1b and P1 are NOT GRADED
 // MUTATION P1a stimulus red channels 0-3's locations changed to A_x^H (the high-word contrast), via NMH_MUTATE=C1
 // MUTATION P1a stimulus red channels 0-3's locations changed to A_x^L (the low-word contrast), via NMH_MUTATE=C2
 // MUTATION P1a stimulus red channel 0 and channel 1's locations swapped (the register-to-channel contrast), via NMH_MUTATE=C3
 // MUTATION P1b stimulus red channel 0 and channel 1's locations swapped (the register-to-channel contrast), via NMH_MUTATE=C3
-// MUTATION P1-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P1-G2 stimulus red channel 0's enabling write leaves DMAEN out, via NMH_MUTATE=G2
-// MUTATION P1-G3 stimulus red one extra CPU write into A_0, through an absolute address, inside W_0, via NMH_MUTATE=G3
-// MUTATION P1-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P1-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5
+// MUTATION P1 stimulus red channels 0-3's locations changed to A_x^H through the unchanged comparators of the aggregate line, via NMH_MUTATE=C1
+// MUTATION P1 stimulus red channels 0-3's locations changed to A_x^L through the unchanged comparators of the aggregate line, via NMH_MUTATE=C2
+// MUTATION P1 stimulus red channel 0 and channel 1's locations swapped, through the unchanged comparators of the aggregate line, via NMH_MUTATE=C3
+// MUTATION P1-C1 stimulus red the main program (locations A_x) through the unchanged high-word comparator, via NMH_MUTATE=INVC1
+// MUTATION P1-C2 stimulus red the main program (locations A_x) through the unchanged low-word comparator, via NMH_MUTATE=INVC2
+// MUTATION P1-C3 stimulus red the main program (locations A_x) through the unchanged register-to-channel comparator, via NMH_MUTATE=INVC3
+// MUTATION P2-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P2 is NOT GRADED
 // MUTATION P2 stimulus red the SET write for DMACON bit 0 in the sweep is left out, via NMH_MUTATE=OMIT
-// MUTATION P2-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
+// MUTATION P2-OMIT stimulus red the main program (the SET write for DMACON bit 0 present) through the unchanged comparator of the omit line, via NMH_MUTATE=INVOMIT
+// MUTATION P3-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P3-ON and P3 are NOT GRADED
+// MUTATION P3-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BPLEN still set, via NMH_MUTATE=G2 -- P3-ON and P3 are NOT GRADED
+// MUTATION P3-G3 stimulus red one extra CPU write into P (the block under test), via NMH_MUTATE=G3 -- P3-ON and P3 are NOT GRADED
+// MUTATION P3-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P3-ON and P3 are NOT GRADED
+// MUTATION P3-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5 -- P3-ON and P3 are NOT GRADED
 // MUTATION P3-ON stimulus red BPLEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
-// MUTATION P3 stimulus red BPLEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P3-OFF stimulus red BPLEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P3 stimulus red BPLEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P3 stimulus red BPLEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
-// MUTATION P3-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P3-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BPLEN still set, via NMH_MUTATE=G2
-// MUTATION P3-G3 stimulus red one extra CPU write into P (the block under test), via NMH_MUTATE=G3
-// MUTATION P3-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P3-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
+// MUTATION P4-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P4-ON and P4 are NOT GRADED
+// MUTATION P4-G2 stimulus red DMAEN (bit 9) left out of the enabling write, COPEN still set, via NMH_MUTATE=G2 -- P4-ON and P4 are NOT GRADED
+// MUTATION P4-G3 stimulus red one extra CPU write into L (the block under test), past its own content, via NMH_MUTATE=G3 -- P4-ON and P4 are NOT GRADED
+// MUTATION P4-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P4-ON and P4 are NOT GRADED
+// MUTATION P4-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5 -- P4-ON and P4 are NOT GRADED
 // MUTATION P4-ON stimulus red COPEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
-// MUTATION P4 stimulus red COPEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P4-OFF stimulus red COPEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P4 stimulus red COPEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P4 stimulus red COPEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
-// MUTATION P4-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P4-G2 stimulus red DMAEN (bit 9) left out of the enabling write, COPEN still set, via NMH_MUTATE=G2
-// MUTATION P4-G3 stimulus red one extra CPU write into L (the block under test), past its own content, via NMH_MUTATE=G3
-// MUTATION P4-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P4-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
+// MUTATION P5-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P5-ON and P5 are NOT GRADED
+// MUTATION P5-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTEN still set, via NMH_MUTATE=G2 -- P5-G3 moves with it (no footprint word is written once in the window), P5-ON and P5 are NOT GRADED
+// MUTATION P5-G3 stimulus red one extra CPU write into Q (the block under test), outside the blit's destination footprint, via NMH_MUTATE=G3 -- P5-ON and P5 are NOT GRADED
+// MUTATION P5-G3 stimulus red one extra CPU write onto the first word of the blit's own destination footprint, via NMH_MUTATE=G3IN -- P5-ON and P5 are NOT GRADED
+// MUTATION P5-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P5-G3 moves with it (no footprint word is written once in the window), P5-ON and P5 are NOT GRADED
+// MUTATION P5-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5 -- P5-ON and P5 are NOT GRADED
 // MUTATION P5-ON stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
-// MUTATION P5 stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P5-OFF stimulus red BLTEN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P5 stimulus red BLTEN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P5 stimulus red BLTEN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
-// MUTATION P5-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P5-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTEN still set, via NMH_MUTATE=G2
-// MUTATION P5-G3 stimulus red one extra CPU write into Q (the block under test), outside the blit's destination footprint, via NMH_MUTATE=G3
-// MUTATION P5-G3 stimulus red one extra CPU write onto the first word of the blit's own destination footprint, via NMH_MUTATE=G3IN
-// MUTATION P5-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P5-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
+// MUTATION P6-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P6-ON and P6 are NOT GRADED
+// MUTATION P6-G2 stimulus red DMAEN (bit 9) left out of the enabling write, SPREN still set, via NMH_MUTATE=G2 -- P6-ON and P6 are NOT GRADED
+// MUTATION P6-G3 stimulus red one extra CPU write into S0 (the block under test), past its own content, via NMH_MUTATE=G3 -- P6-ON and P6 are NOT GRADED
+// MUTATION P6-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4 -- P6-ON and P6 are NOT GRADED
+// MUTATION P6-G5 stimulus red BPLEN also set before the window, via NMH_MUTATE=G5 -- P6-ON and P6 are NOT GRADED
 // MUTATION P6-ON stimulus red SPREN left clear: the contrast program through the unchanged on-comparator, via NMH_MUTATE=C1
-// MUTATION P6 stimulus red SPREN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P6-OFF stimulus red SPREN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
+// MUTATION P6 stimulus red SPREN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P6 stimulus red SPREN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
-// MUTATION P6-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P6-G2 stimulus red DMAEN (bit 9) left out of the enabling write, SPREN still set, via NMH_MUTATE=G2
-// MUTATION P6-G3 stimulus red one extra CPU write into S0 (the block under test), past its own content, via NMH_MUTATE=G3
-// MUTATION P6-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
-// MUTATION P6-G5 stimulus red BPLEN also set before the window, via NMH_MUTATE=G5
 // MUTATION P7-ON stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator, via NMH_MUTATE=C1
 // MUTATION P7 stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P7-ON stimulus green the CPU executes STOP straight after the BLTSIZE write: the unchanged zero-access comparator on an input proven to make no CPU access, via NMH_MUTATE=LIVE
@@ -162,6 +169,7 @@ constexpr uint32_t kZb    = 0x66100;
 constexpr uint32_t kP     = 0x68000;
 constexpr uint32_t kQ     = 0x74000;
 constexpr uint32_t kQ2    = 0x75000;
+constexpr uint32_t kList2 = 0x64100;   // LST2 of ch5.i: an end-of-list pair the "list ran" mutations point COP1LC at
 
 struct Checks {
     void expect(bool condition, const std::string& label) {
@@ -172,6 +180,39 @@ struct Checks {
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0, failed = 0;
 };
+
+// The five preconditions most propositions share (SPECIFICATION.md 2.6),
+// each evaluated on one run by itself: G1 the program finished, G2 the
+// stored DMACONR readback shows the bits the run intends, G3 no CPU write
+// into a DMA block inside a window, G4 the frames inside the window, G5 no
+// other DMA bit among 8-0.
+struct Pre {
+    bool g1 = false, g2 = false, g3 = false, g4 = false, g5 = false;
+};
+
+// The preconditions a graded line depends on, collected over the inputs the
+// line reads. The precondition lines print first; a line with an unmet
+// precondition prints NOT GRADED and names it, never PASS or FAIL.
+struct Deps {
+    std::vector<std::string> unmet;
+    void need(bool ok, const std::string& name) {
+        if (!ok && std::find(unmet.begin(), unmet.end(), name) == unmet.end()) unmet.push_back(name);
+    }
+    void need_pre(const Pre& p, const std::string& prefix) {
+        need(p.g1, prefix + "-G1");
+        need(p.g2, prefix + "-G2");
+        need(p.g3, prefix + "-G3");
+        need(p.g4, prefix + "-G4");
+        need(p.g5, prefix + "-G5");
+    }
+    bool met() const { return unmet.empty(); }
+};
+
+void not_graded(Checks& checks, const std::string& id, const Deps& d) {
+    std::string s;
+    for (const auto& u : d.unmet) s += (s.empty() ? "" : ", ") + u;
+    checks.record("NOT GRADED " + id + ": precondition(s) not met: " + s);
+}
 
 uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
 
@@ -228,6 +269,7 @@ void preload_all_blocks(nmh::NanomigHarness& h) {
     preload(h, kS0, {0x0000, 0x0000});
     for (int k = 0; k < 7; ++k) preload(h, kN[k], {0x0000, 0x0000});
     preload(h, kF, std::vector<uint16_t>(16, 0xFFFF));
+    preload(h, kList2, {0xFFFF, 0xFFFE});
     // Zb and P are already all-zero (mem_ default-initialised); no preload needed.
 }
 
@@ -296,6 +338,17 @@ size_t writes_in_range(const std::vector<nmh::RamAccess>& log, uint32_t lo_byte,
     return n;
 }
 
+// Every write in [lo_byte,hi_byte) inside [lo,hi] carries `data`.
+bool writes_carry(const std::vector<nmh::RamAccess>& log, uint32_t lo_byte, uint32_t hi_byte,
+                  uint64_t lo, uint64_t hi, uint16_t data) {
+    uint32_t wlo = word_addr(lo_byte), whi = word_addr(hi_byte);
+    for (const auto& a : log)
+        if (a.is_write && a.word_addr >= wlo && a.word_addr < whi && a.cycle >= lo && a.cycle <= hi &&
+            a.data != data)
+            return false;
+    return true;
+}
+
 size_t reads_in_range(const std::vector<nmh::RamAccess>& log, uint32_t lo_byte, uint32_t hi_byte,
                        uint64_t lo, uint64_t hi) {
     uint32_t wlo = word_addr(lo_byte), whi = word_addr(hi_byte);
@@ -352,7 +405,10 @@ constexpr uint32_t kProgHi = 0x080800;
 // FIXTURE
 // ===========================================================================
 static void run_fixture(Checks& checks, const std::string& dir, const std::string& mv) {
-    std::string bin = dir + (mv == "FIXTURE" ? "/prog_fixture_mut.bin" : "/prog_fixture.bin");
+    // FIXTURE and FIXTURE-R each have their own mutated program: $DEAD at
+    // RESULTS only, respectively at R only.
+    std::string bin = dir + (mv == "FIXTURE" ? "/prog_fixture_mut.bin" :
+                             mv == "FIXTURE-R" ? "/prog_fixture_mutr.bin" : "/prog_fixture.bin");
     nmh::Config cfg;
     nmh::NanomigHarness h(cfg);
     bool loaded = h.load_program(bin) > 0;
@@ -369,6 +425,7 @@ static void run_fixture(Checks& checks, const std::string& dir, const std::strin
     checks.expect(r_ok, "FIXTURE-R: the program stores a known constant ($BEEF) at R after clearing the ROM overlay, "
                         "and the RAM-port log shows that store");
 }
+
 
 // ===========================================================================
 // P1: the CPU writes AUDxLCH/AUDxLCL, and each channel fetches its data
@@ -417,6 +474,24 @@ bool check_b(const Capture& cap, const Windows& w) {
     return true;
 }
 
+// C1 and C2: in W_x at least 2 reads at loc[x] (A_x^H, respectively A_x^L)
+// and none at A_x.
+bool check_loc(const Capture& cap, const Windows& w, const uint32_t* loc) {
+    if (!w.ok) return false;
+    for (int x = 0; x < 4; ++x) {
+        if (reads_at(cap.log, loc[x], w.o[x], w.c[x]) < 2) return false;
+        if (reads_at(cap.log, kA[x], w.o[x], w.c[x]) != 0) return false;
+    }
+    return true;
+}
+
+// C3: in W_0 at least 2 reads at A_1 and none at A_0; in W_1 the reverse.
+bool check_c3(const Capture& cap, const Windows& w) {
+    if (!w.ok) return false;
+    return reads_at(cap.log, kA[1], w.o[0], w.c[0]) >= 2 && reads_at(cap.log, kA[0], w.o[0], w.c[0]) == 0 &&
+           reads_at(cap.log, kA[0], w.o[1], w.c[1]) >= 2 && reads_at(cap.log, kA[1], w.o[1], w.c[1]) == 0;
+}
+
 const char kClaims[] =
     "p.266 5-appA-p266.c2, 5-appA-p266.c8, A-audxlch.acc, A-audxlcl.acc; "
     "p.290 5-appB-p290.c20, 5-appB-p290.c27, 5-appB-p290.c55, 5-appB-p290.c62, "
@@ -426,122 +501,179 @@ const char kClaims[] =
     "p.298 5-appC-p298.c4, C-map.lch.acc; p.309 5-appC-p309.c4; "
     "p.263 5-appA-p263.c1, A-pre.c1";
 
+// What one run of one program shows: the preconditions, and what every
+// comparator of the proposition says about it.
+struct Eval {
+    Pre pre;
+    bool a = false, b = false, c1 = false, c2 = false, c3 = false;
+    std::string calib;
+};
+
+Eval evaluate(const Capture& cap, const char* cfg_name) {
+    Eval e;
+    Windows w = find_windows(cap);
+    auto vs = vsync_starts(cap.video);
+    auto r = stored_at(cap.log, kR, 4);
+
+    e.pre.g1 = cap.loaded && cap.done.has_value() && w.ok && w.end.has_value() && r.size() == 4;
+
+    e.pre.g2 = cap.loaded && r.size() == 4;
+    e.pre.g5 = e.pre.g2;
+    if (e.pre.g2) for (int x = 0; x < 4; ++x) {
+        uint16_t v = r[x];
+        if (!(v & 0x0200) || !(v & (1 << x))) e.pre.g2 = false;     // DMAEN + channel x bit
+        if ((v & 0x01FF) != (1u << x)) e.pre.g5 = false;            // only channel x's own bit among 8-0
+    }
+
+    e.pre.g4 = cap.loaded && w.ok;
+    if (e.pre.g4) for (int x = 0; x < 4; ++x)
+        if (count_window(vs, w.o[x], w.c[x]) < 2) e.pre.g4 = false;
+    if (e.pre.g4) for (int x = 0; x < 3; ++x)
+        if (count_window(vs, w.c[x], w.o[x + 1]) < 1) e.pre.g4 = false;
+
+    // G3: no CPU write falls into any DMA block during any window.
+    e.pre.g3 = cap.loaded && w.ok;
+    if (e.pre.g3) for (int x = 0; x < 4 && e.pre.g3; ++x) {
+        if (writes_in_range(cap.log, kA[x], kA[x] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+        if (writes_in_range(cap.log, kAL[x], kAL[x] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+        if (writes_in_range(cap.log, kAH[x], kAH[x] + 16, w.o[x], w.c[x]) != 0) e.pre.g3 = false;
+    }
+
+    e.a = cap.loaded && check_a(cap, w, 2);
+    e.b = cap.loaded && check_b(cap, w);
+    e.c1 = cap.loaded && check_loc(cap, w, kAH);
+    e.c2 = cap.loaded && check_loc(cap, w, kAL);
+    e.c3 = cap.loaded && check_c3(cap, w);
+
+    e.calib = std::string("P1 calibration ") + cfg_name + ": done=" +
+              (cap.done ? num((long long)*cap.done) : std::string("(timeout)"));
+    if (w.ok) {
+        for (int x = 0; x < 4; ++x)
+            e.calib += " V(W" + num(x) + ")=" + num((long long)count_window(vs, w.o[x], w.c[x])) +
+                       " o=" + num((long long)w.o[x]) + " c=" + num((long long)w.c[x]);
+    } else {
+        e.calib += " windows not all found";
+    }
+    return e;
+}
+
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    std::string main_bin = dir + "/prog_p1.bin";
-
-    // The contrasting cases C1-C3 replace the program of the main assertions
-    // (a) and (b); the comparators are unchanged.
-    std::string a_bin = main_bin;
-    if (mv == "C1") a_bin = dir + "/prog_p1_c1.bin";
-    else if (mv == "C2") a_bin = dir + "/prog_p1_c2.bin";
-    else if (mv == "C3") a_bin = dir + "/prog_p1_c3.bin";
-    std::string b_bin = main_bin;
-    if (mv == "C3") b_bin = dir + "/prog_p1_c3.bin";
-
     // SPECIFICATION.md P1: "Run under OCS and ECS". Every line below is
     // graded over both runs.
     nmh::Config cfg_ecs; cfg_ecs.chipset_config = 0x08;
     nmh::Config cfg_ocs; cfg_ocs.chipset_config = 0x00;
     const struct { const char* name; nmh::Config cfg; } runs[2] = {{"ECS", cfg_ecs}, {"OCS", cfg_ocs}};
 
-    bool a_ok = true, b_ok = true, g1_ok = true, g2_ok = true, g3_ok = true, g4_ok = true, g5_ok = true;
-    for (const auto& rn : runs) {
-        // ---- main assertions (a) and (b), each rerun under NMH_MUTATE ----
-        Capture cap_a = run_capture(a_bin, run_budget, rn.cfg);
-        Windows w_a = find_windows(cap_a);
-        {
-            std::string diag = std::string("P1 calibration ") + rn.name + ": done=" +
-                (cap_a.done ? num((long long)*cap_a.done) : std::string("(timeout)"));
-            if (w_a.ok) {
-                for (int x = 0; x < 4; ++x) {
-                    size_t v = count_window(vsync_starts(cap_a.video), w_a.o[x], w_a.c[x]);
-                    diag += " V(W" + num(x) + ")=" + num((long long)v) +
-                            " o=" + num((long long)w_a.o[x]) + " c=" + num((long long)w_a.c[x]);
-                }
-            } else {
-                diag += " windows not all found";
-            }
-            checks.note(diag);
-        }
-        bool a_this = cap_a.loaded && cap_a.done.has_value() && check_a(cap_a, w_a, 2);
+    // A precondition mutation replaces the main program everywhere it is
+    // read; the contrasting programs keep their own runs.
+    std::string mutant;
+    if (mv == "G1" || mv == "G2" || mv == "G3" || mv == "G4" || mv == "G5")
+        mutant = "/prog_p1_" + std::string(1, char(mv[0] + ('a' - 'A'))) + mv.substr(1) + ".bin";
 
-        Capture cap_b = (b_bin == a_bin) ? cap_a : run_capture(b_bin, run_budget, rn.cfg);
-        Windows w_b = (b_bin == a_bin) ? w_a : find_windows(cap_b);
-        bool b_this = cap_b.loaded && cap_b.done.has_value() && check_b(cap_b, w_b);
-
-        // ---- preconditions ---------------------------------------------
-        Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p1_g1.bin", run_budget, rn.cfg) : cap_a;
-        Windows w_g1 = (mv == "G1") ? find_windows(cap_g1) : w_a;
-        bool g1_this = cap_g1.loaded && cap_g1.done.has_value() && w_g1.ok && w_g1.end.has_value();
-
-        Capture cap_g2 = (mv == "G2") ? run_capture(dir + "/prog_p1_g2.bin", run_budget, rn.cfg) : cap_a;
-        auto r_g2 = stored_at(cap_g2.log, kR, 4);
-        bool g2_this = cap_g2.loaded && cap_g2.done.has_value() && r_g2.size() == 4;
-        if (g2_this) for (int x = 0; x < 4; ++x) {
-            uint16_t v = r_g2[x];
-            if (!(v & 0x0200) || !(v & (1 << x))) { g2_this = false; break; } // DMAEN + channel x bit
-        }
-
-        Capture cap_g4 = (mv == "G4") ? run_capture(dir + "/prog_p1_g4.bin", run_budget, rn.cfg) : cap_a;
-        Windows w_g4 = (mv == "G4") ? find_windows(cap_g4) : w_a;
-        bool g4_this = cap_g4.loaded && cap_g4.done.has_value() && w_g4.ok;
-        if (g4_this) for (int x = 0; x < 4; ++x) {
-            size_t v = count_window(vsync_starts(cap_g4.video), w_g4.o[x], w_g4.c[x]);
-            if (v < 2) { g4_this = false; break; }
-        }
-        if (g4_this) for (int x = 0; x < 3; ++x) {
-            size_t gapv = count_window(vsync_starts(cap_g4.video), w_g4.c[x], w_g4.o[x + 1]);
-            if (gapv < 1) { g4_this = false; break; }
-        }
-
-        Capture cap_g5 = (mv == "G5") ? run_capture(dir + "/prog_p1_g5.bin", run_budget, rn.cfg) : cap_a;
-        auto r_g5 = stored_at(cap_g5.log, kR, 4);
-        bool g5_this = cap_g5.loaded && cap_g5.done.has_value() && r_g5.size() == 4;
-        if (g5_this) for (int x = 0; x < 4; ++x) {
-            uint16_t bits = r_g5[x] & 0x01FF; // bits 8-0
-            if (bits != (1u << x)) { g5_this = false; break; } // only channel x's own bit
-        }
-
-        // G3: no CPU write falls into any DMA block during any window.
-        // Checked as a live invariant on every run, and mutated (prog_p1_g3.s,
-        // one extra CPU write into A_0 inside W_0).
-        Capture cap_g3 = (mv == "G3") ? run_capture(dir + "/prog_p1_g3.bin", run_budget, rn.cfg) : cap_a;
-        Windows w_g3 = (mv == "G3") ? find_windows(cap_g3) : w_a;
-        bool g3_this = w_g3.ok;
-        if (g3_this) for (int x = 0; x < 4 && g3_this; ++x) {
-            if (writes_in_range(cap_g3.log, kA[x], kA[x] + 16, w_g3.o[x], w_g3.c[x]) != 0) g3_this = false;
-            if (writes_in_range(cap_g3.log, kAL[x], kAL[x] + 16, w_g3.o[x], w_g3.c[x]) != 0) g3_this = false;
-            if (writes_in_range(cap_g3.log, kAH[x], kAH[x] + 16, w_g3.o[x], w_g3.c[x]) != 0) g3_this = false;
-        }
-
-        checks.note(std::string("P1 ") + rn.name + ": a=" + (a_this ? "ok" : "FAILED") + " b=" +
-                    (b_this ? "ok" : "FAILED"));
-        a_ok = a_ok && a_this; b_ok = b_ok && b_this;
-        g1_ok = g1_ok && g1_this; g2_ok = g2_ok && g2_this; g3_ok = g3_ok && g3_this;
-        g4_ok = g4_ok && g4_this; g5_ok = g5_ok && g5_this;
+    Eval ev_main[2], ev_mut[2], ev_c1[2], ev_c2[2], ev_c3[2];
+    for (int i = 0; i < 2; ++i) {
+        ev_main[i] = evaluate(run_capture(dir + "/prog_p1.bin", run_budget, runs[i].cfg), runs[i].name);
+        ev_c1[i] = evaluate(run_capture(dir + "/prog_p1_c1.bin", run_budget, runs[i].cfg), runs[i].name);
+        ev_c2[i] = evaluate(run_capture(dir + "/prog_p1_c2.bin", run_budget, runs[i].cfg), runs[i].name);
+        ev_c3[i] = evaluate(run_capture(dir + "/prog_p1_c3.bin", run_budget, runs[i].cfg), runs[i].name);
+        if (!mutant.empty()) ev_mut[i] = evaluate(run_capture(dir + mutant, run_budget, runs[i].cfg), runs[i].name);
     }
 
-    checks.expect(a_ok,
-        std::string("P1a [") + kClaims +
-        "]: for every channel x=0..3, at least 2 reads at A_x in W_x once the location is written and the channel "
-        "started, under OCS and ECS");
-    checks.expect(b_ok,
-        std::string("P1b [") + kClaims +
-        "]: for every channel x=0..3, no read at A_y (y != x) in W_x -- no other channel takes the value, "
-        "under OCS and ECS");
-    checks.expect(g1_ok,
+    // The input of each line. C1, C2 and C3 put a contrasting program through
+    // the comparators of P1a and P1b (C3 through both); INVC1, INVC2 and
+    // INVC3 put the main program through the comparator of the contrasting
+    // line. No comparator changes.
+    const Eval* a_in[2]; const Eval* b_in[2]; const Eval* c1_in[2]; const Eval* c2_in[2]; const Eval* c3_in[2];
+    for (int i = 0; i < 2; ++i) {
+        const Eval& m = mutant.empty() ? ev_main[i] : ev_mut[i];
+        a_in[i] = (mv == "C1") ? &ev_c1[i] : (mv == "C2") ? &ev_c2[i] : (mv == "C3") ? &ev_c3[i] : &m;
+        b_in[i] = (mv == "C3") ? &ev_c3[i] : &m;
+        c1_in[i] = (mv == "INVC1") ? &ev_main[i] : &ev_c1[i];
+        c2_in[i] = (mv == "INVC2") ? &ev_main[i] : &ev_c2[i];
+        c3_in[i] = (mv == "INVC3") ? &ev_main[i] : &ev_c3[i];
+        checks.note(a_in[i]->calib);
+        checks.note(std::string("P1 ") + runs[i].name + ": a=" + (a_in[i]->a ? "ok" : "FAILED") + " b=" +
+                    (b_in[i]->b ? "ok" : "FAILED"));
+    }
+
+    // ---- the preconditions, over every input the lines below read ----------
+    auto all_pre = [&](bool Pre::*member) {
+        for (int i = 0; i < 2; ++i)
+            for (const Eval* e : {a_in[i], b_in[i], c1_in[i], c2_in[i], c3_in[i]})
+                if (!(e->pre.*member)) return false;
+        return true;
+    };
+    checks.expect(all_pre(&Pre::g1),
         "P1-G1: the program finished -- END was written and every DMACONR readback was stored (OCS and ECS)");
-    checks.expect(g2_ok,
+    checks.expect(all_pre(&Pre::g2),
         "P1-G2 [p.144]: each stored DMACONR readback shows DMAEN (bit 9) and the enabled channel's own bit set "
         "(OCS and ECS)");
-    checks.expect(g4_ok,
+    checks.expect(all_pre(&Pre::g4),
         "P1-G4: V(W_x) >= 2 for every channel window, and at least one vertical-sync pulse "
         "separates C_x from O_(x+1) (OCS and ECS)");
-    checks.expect(g5_ok,
+    checks.expect(all_pre(&Pre::g5),
         "P1-G5: of DMACON bits 8-0 in each stored readback, only the channel x being enabled is set "
         "(OCS and ECS)");
-    checks.expect(g3_ok, "P1-G3: zero writes observed in any A_x/A_x^L/A_x^H range across all four windows "
-                         "(OCS and ECS)");
+    checks.expect(all_pre(&Pre::g3),
+        "P1-G3: zero writes observed in any A_x/A_x^L/A_x^H range across all four windows (OCS and ECS)");
+
+    // ---- the graded lines ---------------------------------------------------
+    auto deps_of = [&](const Eval* const (&in)[2], const Eval* const (&in2)[2]) {
+        Deps d;
+        for (int i = 0; i < 2; ++i) { d.need_pre(in[i]->pre, "P1"); d.need_pre(in2[i]->pre, "P1"); }
+        return d;
+    };
+    auto all_of = [&](const Eval* const (&in)[2], bool Eval::*member) { return in[0]->*member && in[1]->*member; };
+
+    {
+        Deps d = deps_of(a_in, a_in);
+        if (d.met())
+            checks.expect(all_of(a_in, &Eval::a),
+                "P1a [p.139, p.144, p.266]: for every channel x=0..3, at least 2 reads at A_x in W_x once the "
+                "location is written and the channel started, under OCS and ECS");
+        else not_graded(checks, "P1a", d);
+    }
+    {
+        Deps d = deps_of(b_in, b_in);
+        if (d.met())
+            checks.expect(all_of(b_in, &Eval::b),
+                "P1b [p.144, p.145]: for every channel x=0..3, no read at A_y (y != x) in W_x -- no other channel "
+                "takes the value, under OCS and ECS");
+        else not_graded(checks, "P1b", d);
+    }
+    {
+        Deps d = deps_of(a_in, b_in);
+        if (d.met())
+            checks.expect(all_of(a_in, &Eval::a) && all_of(b_in, &Eval::b),
+                std::string("P1 [") + kClaims +
+                "]: P1a and P1b both hold: each channel x fetches from the location written to AUDxLCH and "
+                "AUDxLCL and no other channel takes the value, under OCS and ECS");
+        else not_graded(checks, "P1", d);
+    }
+    {
+        Deps d = deps_of(c1_in, c1_in);
+        if (d.met())
+            checks.expect(all_of(c1_in, &Eval::c1),
+                "P1-C1 [p.139, p.266]: with only the word written to AUDxLCH changed, to A_x^H, at least 2 reads "
+                "at A_x^H and none at A_x in W_x, for every channel x, under OCS and ECS");
+        else not_graded(checks, "P1-C1", d);
+    }
+    {
+        Deps d = deps_of(c2_in, c2_in);
+        if (d.met())
+            checks.expect(all_of(c2_in, &Eval::c2),
+                "P1-C2 [p.139, p.266]: with only the word written to AUDxLCL changed, to A_x^L, at least 2 reads "
+                "at A_x^L and none at A_x in W_x, for every channel x, under OCS and ECS");
+        else not_graded(checks, "P1-C2", d);
+    }
+    {
+        Deps d = deps_of(c3_in, c3_in);
+        if (d.met())
+            checks.expect(all_of(c3_in, &Eval::c3),
+                "P1-C3 [p.263, p.266]: with the values written to channels 0 and 1 swapped, at least 2 reads at A_1 "
+                "and none at A_0 in W_0, and at least 2 reads at A_0 and none at A_1 in W_1, under OCS and ECS");
+        else not_graded(checks, "P1-C3", d);
+    }
 
     // The "only" of "write-only" is not graded; the write half is.
     checks.record(
@@ -577,51 +709,95 @@ const char kClaims[] =
     "A-dmaconr.acc, A-dmaconr.addr; p.289 5-appB-p289.c1, 5-appB-p289.c2, "
     "5-appB-p289.c4; p.263 5-appA-p263.c1, A-pre.c1";
 
+// What one run of one program shows: G1, and what the comparators of P2 and
+// P2-OMIT say about it.
+struct Eval {
+    bool g1 = false;
+    bool table = false;       // each stored value, masked, equals its row
+    bool bit0_clear = false;  // the value stored after the omitted SET write shows bit 0 = 0
+    int first_bad = -1;
+    std::vector<uint16_t> r;
+};
+
+Eval evaluate(const Capture& cap) {
+    Eval e;
+    e.r = stored_at(cap.log, kR, 26);
+    e.g1 = cap.loaded && cap.done.has_value() && e.r.size() == 26;
+    if (e.r.size() == 26) {
+        e.table = true;
+        for (int i = 0; i < 26; ++i)
+            if ((e.r[i] & 0x07FF) != kExpected[i]) { e.table = false; e.first_bad = i; break; }
+        e.bit0_clear = (e.r[2] & 0x0001) == 0;
+    }
+    return e;
+}
+
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
     std::vector<ExtraPreload> extra = {{kList, {0xFFFF, 0xFFFE}}};
-
-    std::string bin = dir + "/prog_p2.bin";
-    if (mv == "OMIT") bin = dir + "/prog_p2_omit.bin";
 
     // SPECIFICATION.md P2: "Run under OCS and ECS".
     nmh::Config cfg_ecs; cfg_ecs.chipset_config = 0x08;
     nmh::Config cfg_ocs; cfg_ocs.chipset_config = 0x00;
     const struct { const char* name; nmh::Config cfg; } runs[2] = {{"ECS", cfg_ecs}, {"OCS", cfg_ocs}};
 
-    bool all_ok = true, all_g1 = true;
-    for (const auto& rn : runs) {
-        Capture cap = run_capture(bin, run_budget, rn.cfg, extra);
-        auto r = stored_at(cap.log, kR, 26);
-
-        bool ok = cap.loaded && cap.done.has_value() && r.size() == 26;
-        int first_bad = -1;
-        if (ok) for (int i = 0; i < 26; ++i) {
-            if ((r[i] & 0x07FF) != kExpected[i]) { ok = false; first_bad = i; break; }
-        }
-        if (!ok && first_bad >= 0 && (size_t)first_bad < r.size())
-            checks.note(std::string("P2 ") + rn.name + ": row " + num(first_bad) + " stored " +
-                        hex16(r[first_bad] & 0x07FF) + ", expected " + hex16(kExpected[first_bad]));
-        all_ok = all_ok && ok;
-
-        Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p2_g1.bin", run_budget, rn.cfg, extra) : cap;
-        auto r_g1 = stored_at(cap_g1.log, kR, 26);
-        all_g1 = all_g1 && cap_g1.loaded && cap_g1.done.has_value() && r_g1.size() == 26;
+    Eval ev_main[2], ev_omit[2], ev_g1[2];
+    for (int i = 0; i < 2; ++i) {
+        ev_main[i] = evaluate(run_capture(dir + "/prog_p2.bin", run_budget, runs[i].cfg, extra));
+        ev_omit[i] = evaluate(run_capture(dir + "/prog_p2_omit.bin", run_budget, runs[i].cfg, extra));
+        if (mv == "G1") ev_g1[i] = evaluate(run_capture(dir + "/prog_p2_g1.bin", run_budget, runs[i].cfg, extra));
     }
-    checks.expect(all_ok, std::string("P2 [") + kClaims +
-        "]: each of the 26 stored DMACONR readbacks, masked with $07FF, equals the proposition's table "
-        "(row 3 grades every DMA control bit on its own; row 5 grades bits written as zero staying unchanged), "
-        "under OCS and ECS");
-    checks.expect(all_g1, "P2-G1: all 26 values were stored (OCS and ECS)");
+
+    // OMIT puts the program without one SET write through the comparator of
+    // P2; INVOMIT puts the main program through the comparator of P2-OMIT;
+    // G1 replaces the main program by the one that never finishes. No
+    // comparator changes.
+    const Eval* p2_in[2]; const Eval* omit_in[2];
+    for (int i = 0; i < 2; ++i) {
+        p2_in[i] = (mv == "OMIT") ? &ev_omit[i] : (mv == "G1") ? &ev_g1[i] : &ev_main[i];
+        omit_in[i] = (mv == "INVOMIT") ? &ev_main[i] : &ev_omit[i];
+        if (!p2_in[i]->table && p2_in[i]->first_bad >= 0)
+            checks.note(std::string("P2 ") + runs[i].name + ": row " + num(p2_in[i]->first_bad) + " stored " +
+                        hex16(p2_in[i]->r[p2_in[i]->first_bad] & 0x07FF) + ", expected " +
+                        hex16(kExpected[p2_in[i]->first_bad]));
+    }
+
+    checks.expect(p2_in[0]->g1 && p2_in[1]->g1 && omit_in[0]->g1 && omit_in[1]->g1,
+                  "P2-G1: the program finished and all 26 values were stored (OCS and ECS)");
+
+    {
+        Deps d;
+        for (int i = 0; i < 2; ++i) d.need(p2_in[i]->g1, "P2-G1");
+        if (d.met())
+            checks.expect(p2_in[0]->table && p2_in[1]->table, std::string("P2 [") + kClaims +
+                "]: each of the 26 stored DMACONR readbacks, masked with $07FF, equals the proposition's table "
+                "(row 3 grades every DMA control bit on its own; row 5 grades bits written as zero staying "
+                "unchanged), under OCS and ECS");
+        else not_graded(checks, "P2", d);
+    }
+    {
+        Deps d;
+        for (int i = 0; i < 2; ++i) d.need(omit_in[i]->g1, "P2-G1");
+        if (d.met())
+            checks.expect(omit_in[0]->bit0_clear && omit_in[1]->bit0_clear,
+                "P2-OMIT [p.278]: with the SET write for DMACON bit 0 left out of step 3, the DMACONR value stored "
+                "next shows bit 0 = 0 (bits written with a zero are unchanged), under OCS and ECS");
+        else not_graded(checks, "P2-OMIT", d);
+    }
 
     // The "only" of "read-only" is not graded; the read half is.
     checks.record(
         "P2: the 'only' of 'read-only' is not graded. p.263 says of a write to a read-only register only that it "
         "'will cause unpredictable results', which gives no expected value, so no program writes $DFF002 "
         "(half graded: 5-appA-p278.c6, A-dmaconr.acc, 5-appB-p289.c2)");
+    // The blitter-status half of the DMA-control and blitter-status register is graded by P8 and P9.
+    checks.record(
+        "P2: the blitter-status half of 'DMA-control and blitter-status read register' is not graded here: every "
+        "stored value is masked with $07FF, which leaves out bit 14 (blitter busy) and bit 13 (blitter zero); P8 "
+        "grades bit 14 and P9 grades bit 13 "
+        "(half graded: 5-appA-p278.c8, 5-appB-p289.c4)");
 }
 
 }  // namespace p2
-
 // ===========================================================================
 // P3-P6 share one shape: one DMACON enable bit, with DMAEN set, turns one
 // kind of DMA on, and with that bit clear the DMA does not happen. The run
@@ -656,90 +832,87 @@ struct Def {
     bool (*g3_ok)(const Capture&, const Window&, bool on);
 };
 
+// One run of one program, kept with the preconditions it shows. `on` says
+// whether the run intends the bit set.
+struct Run {
+    Capture cap;
+    std::optional<Window> w;
+    Pre pre;
+};
+
+Run make_run(const Def& d, Capture cap, bool on) {
+    Run r;
+    r.cap = std::move(cap);
+    r.w = find_window(r.cap.log, d.o_id, d.c_id);
+    const Capture& c = r.cap;
+    const std::optional<Window>& w = r.w;
+
+    r.pre.g1 = c.loaded && c.done.has_value() && w.has_value();
+    auto rs = stored_at(c.log, kR, 1);
+    bool stored = c.loaded && rs.size() == 1;
+    uint16_t v = stored ? rs[0] : uint16_t(0);
+    // DMAEN (bit 9) set, and the bit under test set or clear as the run intends.
+    r.pre.g2 = stored && (v & 0x0200) && (on ? (v & d.bit) != 0 : (v & d.bit) == 0);
+    // No other DMA bit among 8-0.
+    r.pre.g5 = stored && (v & 0x01FF) == (on ? d.bit : 0);
+    r.pre.g4 = c.loaded && w.has_value() &&
+               (int)count_window(vsync_starts(c.video), w->lo, w->hi) >= d.min_v;
+    r.pre.g3 = c.loaded && w.has_value() && d.g3_ok(c, *w, on);
+    return r;
+}
+
 void run(const Def& d, Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
     auto bin = [&](const char* suffix) { return dir + "/prog_" + d.prog + suffix + ".bin"; };
     nmh::Config cfg;
     auto go = [&](const std::string& b) { return run_capture(b, run_budget, cfg, d.extra, d.sprite0_real); };
     const std::string nm = d.name;
 
-    Capture cap_main = go(bin(""));
-    Capture cap_c1 = go(bin("_c1"));
-    auto w_main = find_window(cap_main.log, d.o_id, d.c_id);
-    auto w_c1 = find_window(cap_c1.log, d.o_id, d.c_id);
+    // A precondition mutation replaces the main program (the run with the
+    // bit set) everywhere it is read; the contrast run keeps its own.
+    const char* mutant = nullptr;
+    if (mv == "G1") mutant = "_g1";
+    else if (mv == "G2") mutant = "_g2";
+    else if (mv == "G3") mutant = "_g3";
+    else if (d.has_g3in && mv == "G3IN") mutant = "_g3in";
+    else if (mv == "G4") mutant = "_g4";
+    else if (mv == "G5") mutant = "_g5";
 
-    // The graded halves. C1 puts the contrast program through the on-comparator
-    // and INV puts the main program through the off-comparator; neither
-    // comparator changes.
-    const Capture& in_on = (mv == "C1") ? cap_c1 : cap_main;
-    const auto& win_on = (mv == "C1") ? w_c1 : w_main;
-    const Capture& in_off = (mv == "INV") ? cap_main : cap_c1;
-    const auto& win_off = (mv == "INV") ? w_main : w_c1;
-    bool on_ok = in_on.loaded && in_on.done.has_value() && win_on.has_value() && d.seen_on(in_on, *win_on);
-    bool off_ok = in_off.loaded && in_off.done.has_value() && win_off.has_value() && d.seen_off(in_off, *win_off);
+    Run main_run = make_run(d, go(bin(mutant ? mutant : "")), true);
+    Run c1_run = make_run(d, go(bin("_c1")), false);
 
-    checks.expect(on_ok, nm + "-ON [" + d.pages + "]: " + d.on_text);
-    checks.expect(off_ok, nm + "-OFF [" + d.pages + "]: " + d.off_text);
-    checks.expect(on_ok && off_ok, nm + " [" + d.claims + "]: " + d.on_text + "; " + d.off_text);
+    // C1 puts the contrast program through the on-comparator and INV puts the
+    // main program through the off-comparator; neither comparator changes.
+    const Run& in_on = (mv == "C1") ? c1_run : main_run;
+    const Run& in_off = (mv == "INV") ? main_run : c1_run;
 
-    // Preconditions, each over the run with the bit set (or its mutated
-    // program) and the run with the bit clear.
-    auto pick = [&](const char* sel, const char* suffix, Capture& store) -> const Capture& {
-        if (mv == sel) { store = go(bin(suffix)); return store; }
-        return cap_main;
-    };
-    auto window_of = [&](const Capture& c) { return find_window(c.log, d.o_id, d.c_id); };
-    auto stored1 = [&](const Capture& c, uint16_t& v) {
-        auto r = stored_at(c.log, kR, 1);
-        if (r.size() != 1) return false;
-        v = r[0];
-        return true;
-    };
+    // ---- the preconditions, over the run with the bit set and the run with it clear ----
+    checks.expect(main_run.pre.g1 && c1_run.pre.g1, nm + "-G1: the program finished");
+    checks.expect(main_run.pre.g2 && c1_run.pre.g2,
+        nm + "-G2 [p.144]: the stored DMACONR readback shows DMAEN (bit 9) set and " + d.bit_name +
+        " set with the bit enabled and clear with the bit left clear");
+    checks.expect(main_run.pre.g4 && c1_run.pre.g4, nm + "-G4: " + d.g4_text);
+    checks.expect(main_run.pre.g5 && c1_run.pre.g5,
+        nm + "-G5: " + std::string(d.bit_name) + " is the only DMACON bit 8-0 set in the stored readback when "
+        "enabled, and none is set when the bit is left clear");
+    checks.expect(main_run.pre.g3 && c1_run.pre.g3, nm + "-G3: " + d.g3_text);
 
-    {   // G1: the program finished
-        Capture store; const Capture& c = pick("G1", "_g1", store);
-        bool ok = c.loaded && c.done.has_value() && window_of(c).has_value() &&
-                  cap_c1.loaded && cap_c1.done.has_value() && w_c1.has_value();
-        checks.expect(ok, nm + "-G1: the program finished");
-    }
-    {   // G2: DMAEN and the bit under test as the run intends them
-        Capture store; const Capture& c = pick("G2", "_g2", store);
-        uint16_t v_on = 0, v_off = 0;
-        bool ok = c.loaded && c.done.has_value() && stored1(c, v_on) &&
-                  cap_c1.loaded && cap_c1.done.has_value() && stored1(cap_c1, v_off);
-        if (ok) ok = (v_on & 0x0200) && (v_on & d.bit) && (v_off & 0x0200) && !(v_off & d.bit);
-        checks.expect(ok, nm + "-G2 [p.144]: the stored DMACONR readback shows DMAEN (bit 9) set and " + d.bit_name +
-                          " set with the bit enabled and clear with the bit left clear");
-    }
-    {   // G4: frames in the window
-        Capture store; const Capture& c = pick("G4", "_g4", store);
-        auto w = window_of(c);
-        bool ok = c.loaded && c.done.has_value() && w.has_value() &&
-                  (int)count_window(vsync_starts(c.video), w->lo, w->hi) >= d.min_v &&
-                  cap_c1.loaded && cap_c1.done.has_value() && w_c1.has_value() &&
-                  (int)count_window(vsync_starts(cap_c1.video), w_c1->lo, w_c1->hi) >= d.min_v;
-        checks.expect(ok, nm + "-G4: " + d.g4_text);
-    }
-    {   // G5: no other DMA bit among 8-0
-        Capture store; const Capture& c = pick("G5", "_g5", store);
-        uint16_t v_on = 0, v_off = 0;
-        bool ok = c.loaded && c.done.has_value() && stored1(c, v_on) &&
-                  cap_c1.loaded && cap_c1.done.has_value() && stored1(cap_c1, v_off);
-        if (ok) ok = (v_on & 0x01FF) == d.bit && (v_off & 0x01FF) == 0;
-        checks.expect(ok, nm + "-G5: " + std::string(d.bit_name) +
-                          " is the only DMACON bit 8-0 set in the stored readback when enabled, and none is set "
-                          "when the bit is left clear");
-    }
-    {   // G3: no CPU write into the block under test
-        Capture store;
-        const Capture* cp = &cap_main;
-        if (mv == "G3") { store = go(bin("_g3")); cp = &store; }
-        else if (d.has_g3in && mv == "G3IN") { store = go(bin("_g3in")); cp = &store; }
-        const Capture& c = *cp;
-        auto w = window_of(c);
-        bool ok = w.has_value() && d.g3_ok(c, *w, true) &&
-                  w_c1.has_value() && d.g3_ok(cap_c1, *w_c1, false);
-        checks.expect(ok, nm + "-G3: " + d.g3_text);
-    }
+    // ---- the graded lines ----------------------------------------------------
+    Deps d_on, d_off, d_both;
+    d_on.need_pre(in_on.pre, nm);
+    d_off.need_pre(in_off.pre, nm);
+    d_both.need_pre(in_on.pre, nm);
+    d_both.need_pre(in_off.pre, nm);
+
+    if (d_on.met())
+        checks.expect(d.seen_on(in_on.cap, *in_on.w), nm + "-ON [" + d.pages + "]: " + d.on_text);
+    else not_graded(checks, nm + "-ON", d_on);
+    if (d_off.met())
+        checks.expect(d.seen_off(in_off.cap, *in_off.w), nm + "-OFF [" + d.pages + "]: " + d.off_text);
+    else not_graded(checks, nm + "-OFF", d_off);
+    if (d_both.met())
+        checks.expect(d.seen_on(in_on.cap, *in_on.w) && d.seen_off(in_off.cap, *in_off.w),
+                      nm + " [" + d.claims + "]: " + d.on_text + "; " + d.off_text);
+    else not_graded(checks, nm, d_both);
 }
 
 }  // namespace enableprop

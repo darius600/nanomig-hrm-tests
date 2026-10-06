@@ -148,6 +148,17 @@ comparator, and the mutation of the contrasting assertion puts the main program
 through the contrasting assertion's unchanged comparator. The preconditions are
 graded over every run of the proposition, the contrasting runs included.
 
+Each precondition is evaluated on one run by itself, and the precondition
+lines print before the lines they guard. A graded line depends on every
+precondition of the proposition on the run or runs it reads; when one of them
+is not met on that input, the line prints as `NOT GRADED` and names the unmet
+precondition, never as PASS or FAIL. A run's own intent is part of its
+precondition (the run with the bit clear is expected to show the bit clear),
+so a contrasting program put through the other half's comparator keeps its
+preconditions and goes red through that comparator. A precondition's own
+mutation replaces the main program, so every line that reads the main
+program prints NOT GRADED on it.
+
 ## 3. Propositions
 
 ### P1: The CPU writes AUDxLCH and AUDxLCL, and each channel fetches its data from the location written
@@ -244,6 +255,14 @@ C1 and C2 show that each of the two registers takes its own write. C3 shows
 that the address (chip address + `$DFF000`) selects the channel. The contrasts
 for the preconditions are those of section 2.6.
 
+C1, C2 and C3 are graded in the normal run, each as a line of its own, over
+the contrasting program and with the comparators above: P1-C1 (at least 2
+reads at A_x^H and none at A_x in W_x, every x), P1-C2 (the same for A_x^L)
+and P1-C3 (at least 2 reads at A_1 and none at A_0 in W_0, and the reverse in
+W_1). Each is mutated by putting the main program through its comparator. (a)
+and (b) are two lines, P1a and P1b, and the line P1, which carries the claims
+of this proposition, is P1a and P1b together. P1a and P1b carry no claim id.
+
 **Reference frame.** Only the marker windows and the vertical-sync count.
 
 **Open, not graded.**
@@ -320,7 +339,10 @@ of p.278. Step 5 grades "Bits written with a zero are unchanged".
   reading from a read only register".
 - Bits 14 and 13: see P8 and P9. Before any blit, bit 13 has no stated value
   (p.187: "The Zero flag is only valid after the blitter has completed its
-  operation").
+  operation"). `5-appA-p278.c8` and `5-appB-p289.c4`, "DMA-control and
+  blitter-status read register", are therefore half graded here: P2 grades
+  the DMA-control bits and masks the status bits off, P8 and P9 grade the
+  status bits.
 - The "only" of "read-only": p.263, "Do not attempt to write to a read-only
   register, as this will cause unpredictable results". No program writes
   `$DFF002`.
@@ -329,7 +351,10 @@ of p.278. Step 5 grades "Bits written with a zero are unchanged".
 
 **Contrasting cases.**
 - Omit the SET write for one bit b in step 3. The next stored value shows
-  bit b = 0 and the row goes red; the program still finishes.
+  bit b = 0 and the row goes red; the program still finishes. The test omits
+  the write for bit 0 and grades the value stored next as P2-OMIT, in the
+  normal run, under OCS and ECS; P2 grades the same program through its own
+  table and goes red.
 - For G1: the branch-to-self of section 2.6.
 
 **Reference frame.** None.

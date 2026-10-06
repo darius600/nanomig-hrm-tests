@@ -1,7 +1,7 @@
 # ch5-audio-registers-dma: see SPECIFICATION.md.
 
 TEST_CPP := test_ch5_audio_registers_dma.cpp
-PROGS    := prog_fixture prog_fixture_mut \
+PROGS    := prog_fixture prog_fixture_mut prog_fixture_mutr \
             prog_p1 prog_p1_c1 prog_p1_c2 prog_p1_c3 \
             prog_p1_g1 prog_p1_g2 prog_p1_g3 prog_p1_g4 prog_p1_g5 \
             prog_p2 prog_p2_omit prog_p2_g1 \
