@@ -5,50 +5,42 @@
 // into chip RAM by this file; prog.s and its mutation wrappers only perform
 // the CPU register writes of section 3.3.
 //
-// NMH_MUTATE selects a mutation in place of the normal run, one at a time;
-// none is exercised by a plain `make test`. The normal run itself also
-// captures C1 (prog_c1.bin) once, internally, to assert the R1/R2 anchor
-// (SPECIFICATION.md 3.6 R1) before P1-P4 are graded; that capture is
-// separate from the NMH_MUTATE=C1 replay below, which grades PC1's own
-// mutation record.
+// One evaluation serves the normal run and every NMH_MUTATE selector: each
+// run prints the same lines in the same order (prog.bin, cpu_nrst_out, DONE,
+// fixture, R1, PC6, PC1-PC4, PC5-BOUNDS, PC5, R5, P1-P4). A line whose
+// precondition did not print PASS prints `NOT GRADED: <id> [<precondition>]`
+// instead of PASS or FAIL. R1 takes its own HIRES capture (prog_c1.bin) in
+// every run. The records below name every line that changes, per core.
 //
-// MUTATION PC1 stimulus red NMH_MUTATE=C1: BPLCON0=$9000 (HIRES, SHRES=0) instead of $1040 -- pattern spacing becomes 16 visible pixels instead of 8 -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION PC2 stimulus red NMH_MUTATE=C2: sprite 1's own terminator word (p.108: both terminator words should be $0000) is poked to $BAD1 instead -- the terminator lies beyond CTL's VSTOP, so it is never displayed and sprite 1's own measured population (all 294 words) stays fully fetched -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION PC3 stimulus red NMH_MUTATE=C3: SPR2PTH (step 5 and the Copper list) points at sprite 0's data instead of its own null2 structure -- null2's own two words go unread and sprite 0's own words are read more than once -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION PC4 stimulus red NMH_MUTATE=C4: band 2's WAIT changed from $8B41 to $9141 (the fifth colour-17 line of band 2) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION PC5 stimulus red NMH_MUTATE=C5: the COLOR00-COLOR15 <- B4 MOVEs after WAIT $C541 are left out -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION PC6 stimulus red NMH_MUTATE=C6: three frame waits after step 7 instead of four, so fewer than two graded frames occur (measured: 1) while the measured frame population stays nonempty -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION R5 stimulus red NMH_MUTATE=C7: colour-17 lines of band 0 ($53-$5A), both sprites, get low=$FF00/high=$0000 instead of $FFFF/$0000 -- group 0's own runs narrow to 8 visible pixels while every other group's runs stay at their own (equal) length, breaking the equal-length guard inside R5 (section 3.7); p.101 permits the shape change, so this is not a P2 contrast (C9 already tests P2's own colour clause) -- P1 and P2 stay green -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P1 stimulus red NMH_MUTATE=C8: band 4's COLOR16-COLOR31 reload (after WAIT $C541) uses band 0's values instead of band 3's -- groups 12-14 stop matching band 3 (PC5 and R5 stay green: neither depends on COLOR16-COLOR31 or on colour content) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P2 stimulus red NMH_MUTATE=C8: group 12 (band 4, colour 17) belongs to P2's own group set (0,3,6,9,12), so C8 prints red here too -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P3 stimulus red NMH_MUTATE=C8: group 13 (band 4, colour 18) belongs to P3's own group set (1,4,7,10,13), so C8 prints red here too -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P4 stimulus red NMH_MUTATE=C8: group 14 (band 4, colour 19) belongs to P4's own group set (2,5,8,11,14), so C8 prints red here too -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P1 stimulus red NMH_MUTATE=C9: band 1's COLOR16-COLOR31 reload swaps G and H -- group 3 alone stops matching, and P1 grades all fifteen groups -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P2 stimulus red NMH_MUTATE=C9: group 3 also belongs to P2's own group set (0,3,6,9,12) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P1 stimulus red NMH_MUTATE=C10: band 2's COLOR16-COLOR31 reload swaps O and P -- group 7 alone stops matching, and P1 grades all fifteen groups -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P3 stimulus red NMH_MUTATE=C10: group 7 also belongs to P3's own group set (1,4,7,10,13) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P1 stimulus red NMH_MUTATE=C11: band 2's COLOR16-COLOR31 reload swaps W and X -- group 8 alone stops matching, and P1 grades all fifteen groups -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION P4 stimulus red NMH_MUTATE=C11: group 8 also belongs to P4's own group set (2,5,8,11,14) -- measured: fx68k FAIL, TG68K FAIL
-// MUTATION fixture stimulus red NMH_MUTATE=C12: the program stores $DEAD instead of $BEEF at result+2 -- measured: fx68k FAIL, TG68K FAIL
+// MUTATION PC1 stimulus red NMH_MUTATE=C1: BPLCON0=$9000 (HIRES, SHRES=0) instead of $1040 -- the pattern spacing becomes 16 visible pixels instead of 8 -> FAIL PC1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC2 stimulus red NMH_MUTATE=C2: sprite 1's own terminator word (p.108: both terminator words should be $0000) is poked to $BAD1 instead -- the terminator lies beyond CTL's VSTOP, so it is never displayed, and sprite 1's population (294 logical reads per graded frame) stays fully fetched -> FAIL PC2; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC3 stimulus red NMH_MUTATE=C3: SPR2PTH (step 5 and the Copper list) points at sprite 3's own null structure ($2804) instead of sprite 2's -- per graded frame null2 is read 0 times of 2 and null3 4 times, while sprite 0's and sprite 1's structures stay at 294 reads (PC2 stays green) -> FAIL PC3; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC4 stimulus red NMH_MUTATE=C4: band 2's WAIT changed from $8B41 to $9141 (the fifth colour-17 line of band 2) -> FAIL PC4; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC5 stimulus red NMH_MUTATE=C5: the COLOR00-COLOR15 <- B4 MOVEs after WAIT $C541 are left out -> FAIL PC5; NOT GRADED P1; fx68k 15 passed, 1 failed, 1 lines not graded; TG68K 15 passed, 1 failed, 1 lines not graded
+// MUTATION PC6 stimulus red NMH_MUTATE=C6: three frame waits after step 7 instead of four -- 4 Copper restarts, 1 graded frame, and the lines that grade each frame still read PASS on it -> FAIL PC6; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC5-BOUNDS stimulus red NMH_MUTATE=C13: COLOR00 in REF is $0000 instead of $0AAA -- the pattern's off samples and the border are zero, so the nonzero extent shrinks to the lit pattern and zero samples lie inside it -> FAIL PC5-BOUNDS; NOT GRADED PC5 P1; fx68k 14 passed, 1 failed, 2 lines not graded; TG68K 14 passed, 1 failed, 2 lines not graded
+// MUTATION R1 stimulus red NMH_MUTATE=R1: band 1's COLOR16-COLOR31 swap G and H in the anchor capture's Copper list only (C9's data) -- group 3 of the anchor capture stops matching the section 3.5 U values; the run's own capture is untouched -> FAIL R1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION R1 stimulus red NMH_MUTATE=R1S: the anchor capture runs prog.bin (SuperHires) instead of prog_c1.bin -- its pattern-line spacing measures 8 instead of 16; the run's own capture is untouched -> FAIL R1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C7: the colour-17 lines of band 0 ($53-$5A), both sprites, get low=$FF00/high=$0000 instead of $FFFF/$0000 -- group 0's runs narrow to 8 visible pixels while every other group's stay equal, so the equal-length clause goes red; p.101 permits the shape change, so this is not a P2 contrast -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C14: POS and CTL of both sprites are $0000 -- neither sprite starts and no group appears (the group-count clause), PC2 and PC4 lose their fetches too -> FAIL PC2 PC4 R5; NOT GRADED PC5 P1 P2 P3 P4; fx68k 9 passed, 3 failed, 5 lines not graded; TG68K 9 passed, 3 failed, 5 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C15: POS and CTL of sprite 1 only are $0000 -- one run per group line (the run-count clause), and PC2 loses sprite 1's fetches -> FAIL PC2 R5; NOT GRADED P1 P2 P3 P4; fx68k 11 passed, 2 failed, 4 lines not graded; TG68K 11 passed, 2 failed, 4 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C16: every sprite data word keeps only its bit 0 -- every run is one sample wide, all runs stay equal and every line has two, so only the interior-pixel clause goes red -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION P1 stimulus red NMH_MUTATE=C8: band 4's COLOR16-COLOR31 reload (after WAIT $C541) uses band 0's values instead of band 3's -- groups 12-14 stop matching band 3 (PC5 and R5 stay green: neither depends on COLOR16-COLOR31 or on colour content) -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
+// MUTATION P2 stimulus red NMH_MUTATE=C8: group 12 (band 4, colour 17) belongs to P2's own group set (0,3,6,9,12), so C8 prints red here too -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
+// MUTATION P3 stimulus red NMH_MUTATE=C8: group 13 (band 4, colour 18) belongs to P3's own group set (1,4,7,10,13), so C8 prints red here too -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
+// MUTATION P4 stimulus red NMH_MUTATE=C8: group 14 (band 4, colour 19) belongs to P4's own group set (2,5,8,11,14), so C8 prints red here too -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
+// MUTATION P1 stimulus red NMH_MUTATE=C9: band 1's COLOR16-COLOR31 reload swaps G and H -- group 3 alone stops matching, and P1 grades all fifteen groups -> FAIL P1 P2; NOT GRADED none; fx68k 15 passed, 2 failed, 0 lines not graded; TG68K 15 passed, 2 failed, 0 lines not graded
+// MUTATION P2 stimulus red NMH_MUTATE=C9: group 3 also belongs to P2's own group set (0,3,6,9,12) -> FAIL P1 P2; NOT GRADED none; fx68k 15 passed, 2 failed, 0 lines not graded; TG68K 15 passed, 2 failed, 0 lines not graded
+// MUTATION P1 stimulus red NMH_MUTATE=C10: band 2's COLOR16-COLOR31 reload swaps O and P -- group 7 alone stops matching, and P1 grades all fifteen groups -> FAIL P1 P3; NOT GRADED none; fx68k 15 passed, 2 failed, 0 lines not graded; TG68K 15 passed, 2 failed, 0 lines not graded
+// MUTATION P3 stimulus red NMH_MUTATE=C10: group 7 also belongs to P3's own group set (1,4,7,10,13) -> FAIL P1 P3; NOT GRADED none; fx68k 15 passed, 2 failed, 0 lines not graded; TG68K 15 passed, 2 failed, 0 lines not graded
+// MUTATION P1 stimulus red NMH_MUTATE=C11: band 2's COLOR16-COLOR31 reload swaps W and X -- group 8 alone stops matching, and P1 grades all fifteen groups -> FAIL P1 P4; NOT GRADED none; fx68k 15 passed, 2 failed, 0 lines not graded; TG68K 15 passed, 2 failed, 0 lines not graded
+// MUTATION P4 stimulus red NMH_MUTATE=C11: group 8 also belongs to P4's own group set (2,5,8,11,14) -> FAIL P1 P4; NOT GRADED none; fx68k 15 passed, 2 failed, 0 lines not graded; TG68K 15 passed, 2 failed, 0 lines not graded
+// MUTATION fixture stimulus red NMH_MUTATE=C12: the program stores $DEAD instead of $BEEF at result+2 -> FAIL fixture; NOT GRADED none; fx68k 16 passed, 1 failed, 0 lines not graded; TG68K 16 passed, 1 failed, 0 lines not graded
+// MUTATION DONE stimulus red NMH_MUTATE=NODONE: the program stops in an endless loop right before its DONE store, so every line that grades the run prints NOT GRADED while R1, which has its own capture, still reads PASS -> FAIL DONE; NOT GRADED PC6 PC1 PC2 PC3 PC4 PC5-BOUNDS PC5 R5 P1 P2 P3 P4; fx68k 4 passed, 1 failed, 12 lines not graded; TG68K 4 passed, 1 failed, 12 lines not graded
+// MUTATION prog.bin stimulus red NMH_MUTATE=NOPROG: no program image of that name exists, so nothing runs and every line that depends on the run prints NOT GRADED while R1, which has its own capture, still reads PASS -> FAIL prog.bin; NOT GRADED cpu_nrst_out DONE fixture PC6 PC1 PC2 PC3 PC4 PC5-BOUNDS PC5 R5 P1 P2 P3 P4; fx68k 1 passed, 1 failed, 15 lines not graded; TG68K 1 passed, 1 failed, 15 lines not graded
+// MUTATION cpu_nrst_out none impossible: unfalsifiable at this package's boundary -- the release happens in boot(), before the program's first instruction runs, and no stimulus of this package (the program image, the chip-RAM data, the Copper list) is an input of it; every selector above prints it PASS
 //
-// prog.bin loaded, cpu_nrst_out released within the boot budget: not
-// exercised, by a scope decision -- both are harness/boot outcomes settled
-// before the program's first instruction executes; every mutation in this
-// package changes only program or data content the CPU or chipset reads
-// afterward, so none of this package's own stimulus can make either check
-// fail without corrupting the build itself.
-// the program's DONE mark was written: not exercised, by a scope decision
-// -- every contrast in this package changes a register, a pointer or a
-// colour value the chipset reads, never the CPU's own control flow, so
-// none of them can stop the program from reaching its own DONE store.
-// R1 (p.301 p.300 anchor): not exercised, by a scope decision -- R1
-// calibrates this package's own channel/bit-order reading technique using
-// the same register loads (section 3.5) every proposition already depends
-// on; no stimulus in this package's own space can selectively break the
-// anchor without equally breaking the propositions it calibrates. Its own
-// premise (that the internal capture is HIRES) is nonetheless positively
-// confirmed: NMH_MUTATE=C1 measures the same capture technique's
-// pattern-line spacing at 16 visible pixels, printed above.
+//
 
 #include <algorithm>
 #include <array>
@@ -71,7 +63,7 @@
 
 namespace {
 
-// ---- the fixed assertion call form (BRIEF.md) -----------------------------
+// ---- the assertion call form: expect grades, note measures, record declines ----
 struct Checks {
     void expect(bool condition, const std::string& label) {
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
@@ -79,8 +71,35 @@ struct Checks {
     }
     void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
-    int passed = 0, failed = 0;
+    // A line whose precondition does not hold is neither PASS nor FAIL: it
+    // prints its own leading id (never the claim ids of its label) and the
+    // precondition that did not hold.
+    void not_graded(const std::string& label, const std::string& why) {
+        std::string id = label.substr(0, label.find(' '));
+        if (!id.empty() && id.back() == ':') id.pop_back();
+        std::cout << "RECORDED: NOT GRADED: " << id << " [" << why << "]\n";
+        ++ungraded;
+    }
+    int passed = 0, failed = 0, ungraded = 0;
 };
+
+enum class St { PASS, FAIL, NG };
+
+// Prints `label` as PASS or FAIL, or as NOT GRADED with `ng_reason` when the
+// reason is nonempty (then `ok` is never read).
+St grade(Checks& ck, const std::string& label, const std::string& ng_reason, bool ok) {
+    if (!ng_reason.empty()) { ck.not_graded(label, ng_reason); return St::NG; }
+    ck.expect(ok, label);
+    return ok ? St::PASS : St::FAIL;
+}
+
+// The ids of the lines in `deps` that did not print PASS, space separated.
+std::string not_holding(std::initializer_list<std::pair<const char*, St>> deps) {
+    std::string s;
+    for (auto& d : deps)
+        if (d.second != St::PASS) { if (!s.empty()) s += " "; s += d.first; }
+    return s;
+}
 
 // ---- addresses (ch4.i, restated) ------------------------------------------
 constexpr uint32_t kResults  = 0x0C0000;
@@ -111,15 +130,17 @@ uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
 // ---- section 3.5 tables, transcribed literally from SPECIFICATION.md -----
 
 // REF's entry 0 (bitplane colour 0, and the border colour whenever no
-// bitplane is fetched) is $0888 -- U=(2,2,2), one of the two backgrounds
-// "background-like" already covers (section 3.6 R5) -- instead of $0000.
-// This is PC5's own all-nonblack calibration anchor (SPECIFICATION.md
-// 3.8, section 6): with every sample of the pattern line and its
-// surrounding border genuinely nonzero, the display window's own first and
-// last nonzero sample (measure_window()) can only be the true hardware
-// blanking edge, never a REF pixel that happens to carry U=(0,0,0).
+// bitplane is fetched) is $0AAA: letters a=1 b=0 c=1 d=0 e=1 f=0 in row 00 of
+// p.301 ("a b a b c d c d e f e f", bits 11..0), so bits 11 and 9 are both a,
+// 10 and 8 both b, and so on -- U=(2,2,2), one of the two backgrounds
+// "background-like" already covers (section 3.6 R5). This is PC5-BOUNDS's own
+// all-nonblack anchor (SPECIFICATION.md 3.8, section 6): with every sample of
+// the pattern line and of its surrounding border genuinely nonzero, the first
+// and last nonzero sample (measure_window()) can only be the end of the
+// video port's blanked output, never a REF pixel that happens to carry
+// U=(0,0,0).
 const uint16_t kRef[16] = {
-    0x0888,0x0CCC,0x0000,0x0000,0x0333,0x0FFF,0x0333,0x0333,
+    0x0AAA,0x0CCC,0x0000,0x0000,0x0333,0x0FFF,0x0333,0x0333,
     0x0000,0x0CCC,0x0000,0x0000,0x0000,0x0CCC,0x0000,0x0000
 };
 const uint16_t kB0[16] = { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 };
@@ -167,48 +188,52 @@ std::pair<uint16_t,uint16_t> line_pattern(int off) {
     /* 21..28 */                  return {0xFFFF,0xFFFF}; // colour 19
 }
 
-// mutate_c7: band 0's colour-17 lines (global pair index 3..10) get
-// low=$FF00/high=$0000 instead of $FFFF/$0000 (SPECIFICATION.md 3.8, C7).
-std::vector<std::pair<uint16_t,uint16_t>> expected_pairs(bool mutate_c7) {
+// C7: band 0's colour-17 lines (global pair index 3..10) get low=$FF00 /
+// high=$0000 instead of $FFFF/$0000 (SPECIFICATION.md 3.8, C7).
+// C16: every data word keeps only its bit 0, so every run is one sample wide.
+std::vector<std::pair<uint16_t,uint16_t>> expected_pairs(int mut_c7_c16) {
     std::vector<std::pair<uint16_t,uint16_t>> pairs;
     pairs.reserve(145);
     for (int b = 0; b < 5; ++b)
         for (int off = 0; off < 29; ++off) {
             int idx = b*29+off;
-            if (mutate_c7 && idx >= 3 && idx <= 10) pairs.push_back({0xFF00,0x0000});
-            else pairs.push_back(line_pattern(off));
+            if (mut_c7_c16 == 7 && idx >= 3 && idx <= 10) pairs.push_back({0xFF00,0x0000});
+            else {
+                auto p = line_pattern(off);
+                if (mut_c7_c16 == 16) { p.first &= 0x0001; p.second &= 0x0001; }
+                pairs.push_back(p);
+            }
         }
     return pairs;
 }
 
 // ---- mutation ids ----------------------------------------------------------
 
-enum class Mut { NONE, C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12 };
+// C1-C16 and R1/R1S are the stimulus selectors of the header records; NODONE
+// and NOPROG are the program-level ones.
+enum class Mut { NONE, C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16, R1,R1S, NODONE, NOPROG };
 
 std::optional<Mut> parse_mut(const std::string& s) {
-    if (s.empty())  return Mut::NONE;
-    if (s=="C1")  return Mut::C1;
-    if (s=="C2")  return Mut::C2;
-    if (s=="C3")  return Mut::C3;
-    if (s=="C4")  return Mut::C4;
-    if (s=="C5")  return Mut::C5;
-    if (s=="C6")  return Mut::C6;
-    if (s=="C7")  return Mut::C7;
-    if (s=="C8")  return Mut::C8;
-    if (s=="C9")  return Mut::C9;
-    if (s=="C10") return Mut::C10;
-    if (s=="C11") return Mut::C11;
-    if (s=="C12") return Mut::C12;
-    return std::nullopt;
+    static const std::map<std::string,Mut> m = {
+        {"",Mut::NONE},{"C1",Mut::C1},{"C2",Mut::C2},{"C3",Mut::C3},{"C4",Mut::C4},{"C5",Mut::C5},
+        {"C6",Mut::C6},{"C7",Mut::C7},{"C8",Mut::C8},{"C9",Mut::C9},{"C10",Mut::C10},{"C11",Mut::C11},
+        {"C12",Mut::C12},{"C13",Mut::C13},{"C14",Mut::C14},{"C15",Mut::C15},{"C16",Mut::C16},
+        {"R1",Mut::R1},{"R1S",Mut::R1S},{"NODONE",Mut::NODONE},{"NOPROG",Mut::NOPROG},
+    };
+    auto it = m.find(s);
+    if (it == m.end()) return std::nullopt;
+    return it->second;
 }
 
 std::string prog_name_for(Mut m) {
     switch (m) {
-        case Mut::C1:  return "prog_c1";
-        case Mut::C3:  return "prog_c3";
-        case Mut::C6:  return "prog_c6";
-        case Mut::C12: return "prog_c12";
-        default:       return "prog"; // C2, C4, C5, C7-C11: data-only contrasts
+        case Mut::C1:     return "prog_c1";
+        case Mut::C3:     return "prog_c3";
+        case Mut::C6:     return "prog_c6";
+        case Mut::C12:    return "prog_c12";
+        case Mut::NODONE: return "prog_nodone";
+        case Mut::NOPROG: return "prog_missing"; // no such image exists
+        default:          return "prog"; // data-only contrasts and the anchor selectors
     }
 }
 
@@ -231,14 +256,14 @@ CopperBuild build_copper(Mut mut) {
     pushl(0x0E0, kBplBuf);                                   // BPL1PTH/L
     pushl(0x120, kSpr0Data);                                 // SPR0PTH/L
     pushl(0x124, kSpr1Data);                                  // SPR1PTH/L
-    pushl(0x128, (mut==Mut::C3) ? kSpr0Data : kNull2);        // SPR2PTH/L
+    pushl(0x128, (mut==Mut::C3) ? kNull3 : kNull2);           // SPR2PTH/L (C3: sprite 3's own null)
     pushl(0x12C, kNull3);                                     // SPR3PTH/L
     pushl(0x130, kNull4);                                     // SPR4PTH/L
     pushl(0x134, kNull5);                                     // SPR5PTH/L
     pushl(0x138, kNull6);                                     // SPR6PTH/L
     pushl(0x13C, kNull7);                                     // SPR7PTH/L
 
-    for (int i=0;i<16;++i) push(0x180+2*i, kRef[i]);          // COLOR00-15 <- REF
+    for (int i=0;i<16;++i) push(0x180+2*i, (i==0 && mut==Mut::C13) ? 0x0000 : kRef[i]); // COLOR00-15 <- REF (C13: COLOR00 = $0000)
     cb.mark["band0_start"] = w.size();
     for (int i=0;i<16;++i) push(0x1A0+2*i, kBandUpper[0][i]); // COLOR16-31 <- band0
     cb.mark["top_end"] = w.size();
@@ -311,7 +336,8 @@ void poke_bitplane_buffer(nmh::NanomigHarness& h, uint32_t base, size_t words) {
 struct Capture {
     bool loaded=false, released=false;
     std::optional<uint64_t> done;
-    std::vector<nmh::RamAccess> log;
+    std::vector<nmh::RamAccess> log;      // one entry per RAM-port sample
+    uint64_t period = 0;                  // measured clk_sys cycles between consecutive RAM-port samples
     std::vector<nmh::VideoSample> video;
     std::optional<uint16_t> deniseid, fixture;
     std::vector<uint16_t> cop_words;
@@ -319,13 +345,16 @@ struct Capture {
     std::map<std::string,size_t> mark;
 };
 
-Capture run_case(const std::string& dir, Mut mut) {
+// `copper_mut` selects the Copper list independently of `mut` and `prog` the
+// program image, so the R1 selectors can change the anchor capture alone.
+Capture run_case(const std::string& dir, Mut mut, std::optional<Mut> copper_mut = std::nullopt,
+                 const std::string& prog = "") {
     Capture c;
     nmh::Config cfg; // defaults: ECS, 2.0 MB chip RAM, 68000 behaviour (SPECIFICATION.md 3.1)
     nmh::NanomigHarness h(cfg);
 
     poke_bitplane_buffer(h, kBplBuf, kBplWords);
-    c.pairs = expected_pairs(mut==Mut::C7);
+    c.pairs = expected_pairs(mut==Mut::C7 ? 7 : mut==Mut::C16 ? 16 : 0);
     poke_sprite_structure(h, kSpr0Data, 0x5050, 0xE100, c.pairs);
     poke_sprite_structure(h, kSpr1Data, 0x5060, 0xE100, c.pairs);
     for (uint32_t na : kNullAddrs) poke_null_structure(h, na);
@@ -342,21 +371,34 @@ Capture run_case(const std::string& dir, Mut mut) {
         uint32_t term_word = word_addr(kSpr1Data) + 2 + (uint32_t)(2*c.pairs.size()) + 1;
         h.poke_word(term_word, 0xBAD1);
     }
+    // C14 / C15: POS and CTL of both sprites (C14) or of sprite 1 alone (C15)
+    // are zero, so the sprite never starts (p.107: VSTART and VSTOP are in
+    // these words).
+    if (mut == Mut::C14) { h.poke_word(word_addr(kSpr0Data), 0); h.poke_word(word_addr(kSpr0Data)+1, 0); }
+    if (mut == Mut::C14 || mut == Mut::C15) { h.poke_word(word_addr(kSpr1Data), 0); h.poke_word(word_addr(kSpr1Data)+1, 0); }
 
-    auto cb = build_copper(mut);
+    auto cb = build_copper(copper_mut.value_or(mut));
     c.cop_words = cb.words;
     c.mark = cb.mark;
     for (size_t i=0;i<cb.words.size();++i) h.poke_word(word_addr(kCopList)+(uint32_t)i, cb.words[i]);
 
-    c.loaded = h.load_program(dir + "/" + prog_name_for(mut) + ".bin") > 0;
+    c.loaded = h.load_program(dir + "/" + (prog.empty() ? prog_name_for(mut) : prog) + ".bin") > 0;
     if (!c.loaded) return c;
     c.released = h.boot(kBootBudget).cpu_released;
     c.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
     c.log = h.ram_log();
+    // The smallest spacing between consecutive RAM-port samples is one bus
+    // period (the measured spacing nmh::coalesce_adjacent takes): entries
+    // that continue a bus cycle held by wait states (same address, direction,
+    // data and byte enables, exactly one period later) are one logical access.
+    for (size_t i = 1; i < c.log.size(); ++i) {
+        uint64_t d = c.log[i].cycle - c.log[i-1].cycle;
+        if (d > 0 && (c.period == 0 || d < c.period)) c.period = d;
+    }
     c.video = h.video();
-    // The fixture is read before anything else is read (BRIEF.md: "the
-    // fixture proves it can deliver a known value before anything reads
-    // one"), including the DENISEID readback recorded just below.
+    // The fixture is read before anything else is read: it proves the
+    // fixture can deliver a known value, including the DENISEID readback
+    // recorded just below.
     c.fixture  = h.peek_logical(kResults + 2);
     c.deniseid = h.peek_logical(kResults + 0);
     return c;
@@ -494,9 +536,9 @@ FrameAnalysis analyze_frame(const std::vector<nmh::VideoSample>& video, nmh::Spa
 struct ColourCheck {
     bool groups_count_ok=false;
     bool runs_per_line_ok=true;
+    bool interior_ok=true;           // every run of every group line has an interior pixel to grade
     bool run_length_ok=true;         // equal-length guard (p.101: "Sprites are 16 pixels wide")
     std::array<bool,15> colour_ok;   // per group: every interior pixel matches expected_u(group)
-    std::array<bool,15> group_present{};
     int run_len_min=-1, run_len_max=-1; // observed run lengths this frame, samples
     // bits 1-0 of every graded pixel, per group per channel (section 3.7's own
     // logged, ungraded record): the smallest and largest value observed.
@@ -507,7 +549,9 @@ struct ColourCheck {
         r_lo.fill(3); g_lo.fill(3); b_lo.fill(3);
         r_hi.fill(0); g_hi.fill(0); b_hi.fill(0);
     }
-    bool structural_ok() const { return groups_count_ok && runs_per_line_ok && run_length_ok; }
+    // R5: 15 groups, two runs on every group line, every run with an
+    // interior pixel, every run the same length.
+    bool structural_ok() const { return groups_count_ok && runs_per_line_ok && interior_ok && run_length_ok; }
     bool group_ok_all() const { for (bool b: colour_ok) if(!b) return false; return true; }
     bool all_ok() const { return structural_ok() && group_ok_all(); }
 };
@@ -519,7 +563,6 @@ ColourCheck colour_check(const std::vector<nmh::VideoSample>& video, const Frame
 
     size_t ngroups = std::min<size_t>(fa.groups.size(), 15);
     for (size_t g=0; g<ngroups; ++g) {
-        cc.group_present[g] = true;
         U want = expected_u((int)g);
         for (auto& line : fa.groups[g].lines) {
             auto runs = find_runs(video, line);
@@ -527,6 +570,7 @@ ColourCheck colour_check(const std::vector<nmh::VideoSample>& video, const Frame
             std::sort(runs.begin(), runs.end(), [](const Run&a, const Run&b){ return a.start<b.start; });
             for (auto& r : runs) {
                 size_t len = r.end-r.start;
+                if (len < 3) cc.interior_ok = false; // no interior pixel: nothing of this run is graded
                 if (cc.run_len_min<0 || (int)len<cc.run_len_min) cc.run_len_min=(int)len;
                 if ((int)len>cc.run_len_max) cc.run_len_max=(int)len;
                 for (size_t i=r.start+1; i+1<r.end; ++i) {
@@ -551,18 +595,26 @@ ColourCheck colour_check(const std::vector<nmh::VideoSample>& video, const Frame
     return cc;
 }
 
-// ---- PC5's window (SPECIFICATION.md 3.8, section 6: "PC5's window") -------
+// ---- PC5-BOUNDS: the visible extent of a line (SPECIFICATION.md 3.8, section 6)
 //
-// The window is DIWSTRT to DIWSTOP as the program sets them (p.59), less the
-// one pixel next to each end of a run. Its bounds (as an offset from any
-// line's own begin -- constant, since DIWSTRT/DIWSTOP are set once in step 4
-// and never rewritten) are found from the pattern line above the sprite
-// region: PC1's own marker, anchored independently of every sprite and
-// colour register any proposition in section 4 grades (rule: an anchor never
-// depends on the clause under test). Its first and last sample outside the
-// video port's own blanked output (nanomig_harness.h's VideoSample, already
-// blanked during hbl/vbl) bracket the display window.
-struct Window { size_t lo_off=0, hi_off=0; bool ok=false; };
+// The video port blanks the line outside its visible extent (nanomig_harness.h
+// VideoSample is already blanked during hbl/vbl), so a REF pattern line, whose
+// every visible sample is nonzero, has its first and last nonzero sample at
+// the two ends of that extent. Blanking is a property of the line position,
+// so the same extent applies to every other line of the frame (constant,
+// since DIWSTRT/DIWSTOP are set once in step 4 and never rewritten). The
+// extent is measured on the pattern line above the sprite region, anchored
+// independently of every sprite and colour register any proposition in
+// section 4 grades.
+struct Window {
+    size_t lo_off=0, hi_off=0;          // visible extent [lo_off,hi_off) from the line's own begin
+    size_t lit_lo_off=0, lit_hi_off=0;  // the pattern's own lit extent [lit_lo_off,lit_hi_off)
+    size_t line_len=0;                  // samples in the pattern line itself
+    bool found=false;                   // a pattern line with a nonzero sample exists
+    bool nonblack_inside=false;         // no zero sample inside [lo_off,hi_off)
+    bool border_is_bg=false;            // outside the lit extent, inside the visible extent: U=(10,10,10), both sides nonempty
+    bool ok() const { return found && nonblack_inside && border_is_bg; }
+};
 
 Window measure_window(const std::vector<nmh::VideoSample>& video, const FrameAnalysis& fa) {
     Window w;
@@ -573,48 +625,59 @@ Window measure_window(const std::vector<nmh::VideoSample>& video, const FrameAna
         while (lo < hi && !(video[lo].r || video[lo].g || video[lo].b)) ++lo;
         while (hi > lo && !(video[hi-1].r || video[hi-1].g || video[hi-1].b)) --hi;
         if (hi <= lo) continue;
+        w.found = true;
+        w.line_len = end - begin;
         w.lo_off = lo - begin;
         w.hi_off = hi - begin;
-        w.ok = true;
+        w.nonblack_inside = true;
+        for (size_t i=lo; i<hi; ++i)
+            if (!(video[i].r || video[i].g || video[i].b)) w.nonblack_inside = false;
+        size_t lit_lo = hi, lit_hi = lo;
+        for (size_t i=lo; i<hi; ++i)
+            if (!is_background_like(sample_u(video[i]))) { if (lit_lo==hi) lit_lo = i; lit_hi = i+1; }
+        w.lit_lo_off = lit_lo - begin;
+        w.lit_hi_off = lit_hi - begin;
+        w.border_is_bg = lit_lo > lo && hi > lit_hi;
+        for (size_t i=lo; i<lit_lo && i<hi; ++i) if (!(sample_u(video[i])==kBg2)) w.border_is_bg = false;
+        for (size_t i=lit_hi; i<hi; ++i)          if (!(sample_u(video[i])==kBg2)) w.border_is_bg = false;
         break;
     }
     return w;
 }
 
-// PC5: within the window, outside however many runs the line has (0, 1 or 2
-// -- generalised so a precondition contrast that removes a run, such as C2,
-// does not itself break this check), every visible pixel, apart from the one
-// pixel next to each run's own ends, must show the group's expected
-// background.
-bool pc5_group_ok(const std::vector<nmh::VideoSample>& video, const GroupLines& gl, U want_bg,
-                   const Window& w, std::string* dbg=nullptr) {
-    if (!w.ok) { if (dbg && dbg->empty()) *dbg = "no window anchor (no pattern line found)"; return false; }
+// PC5: on every line of the group, every visible sample of the line (the
+// extent of w), outside however many runs the line has (0, 1 or 2 --
+// generalised so a contrast that removes a run does not itself break this
+// check), apart from the one sample next to each run's own ends, must show
+// the group's expected background (p.46: the background colour "is also
+// displayed outside the defined display window, in the border area"). Every
+// line must contribute at least one compared sample, or the group is
+// reported as unpopulated.
+struct Pc5Group { bool ok=true; bool populated=true; };
+
+Pc5Group pc5_group(const std::vector<nmh::VideoSample>& video, const GroupLines& gl, U want_bg, const Window& w) {
+    Pc5Group r;
     for (auto& line : gl.lines) {
         size_t wlo = line.begin + w.lo_off;
         size_t whi = line.begin + w.hi_off;
         if (whi > line.end) whi = line.end;
         auto runs = find_runs(video, line);
         std::sort(runs.begin(), runs.end(), [](const Run&a,const Run&b){ return a.start<b.start; });
-        size_t cur = wlo;
+        size_t cur = wlo, graded = 0;
         for (size_t ri=0; ri<=runs.size(); ++ri) {
             size_t seg_hi = (ri<runs.size()) ? (runs[ri].start>0 ? runs[ri].start-1 : runs[ri].start) : whi;
             size_t seg_lo = std::max(cur, wlo);
             seg_hi = std::min(seg_hi, whi);
             for (size_t i=seg_lo; i<seg_hi; ++i) {
-                U u = sample_u(video[i]);
-                if (!(u==want_bg)) {
-                    if (dbg && dbg->empty())
-                        *dbg = "pixel " + std::to_string(i) + " U=(" + std::to_string(u.r) + "," + std::to_string(u.g) +
-                               "," + std::to_string(u.b) + ") want=(" + std::to_string(want_bg.r) + "," +
-                               std::to_string(want_bg.g) + "," + std::to_string(want_bg.b) + ") window=[" +
-                               std::to_string(wlo) + "," + std::to_string(whi) + ")";
-                    return false;
-                }
+                ++graded;
+                if (!(sample_u(video[i])==want_bg)) r.ok = false;
             }
             if (ri<runs.size()) cur = runs[ri].end+1;
         }
+        if (graded == 0) r.populated = false;
     }
-    return true;
+    if (gl.lines.empty()) r.populated = false;
+    return r;
 }
 
 // ---- RAM-log helpers (PC2, PC3, PC4) ---------------------------------------
@@ -632,53 +695,54 @@ std::optional<uint64_t> first_read_cycle(const std::vector<nmh::RamAccess>& log,
     return std::nullopt;
 }
 
-size_t count_reads(const std::vector<nmh::RamAccess>& log, uint32_t wa, uint16_t value,
-                    uint64_t fbegin, uint64_t fend) {
-    size_t n=0;
-    for (auto& a : log) {
-        if (a.is_write || a.word_addr!=wa || a.data!=value) continue;
+// The reads of [base_word, base_word+nwords) inside [fbegin,fend), in time
+// order, as logical accesses: entries that continue a bus cycle held by wait
+// states (same address, data and byte enables, exactly one measured bus
+// period later: nmh::coalesce_adjacent) are one access, and two reads of the
+// same word at any other spacing stay two.
+std::vector<nmh::RamAccess> logical_reads(const Capture& c, uint32_t base_word, size_t nwords,
+                                           uint64_t fbegin, uint64_t fend) {
+    std::vector<nmh::RamAccess> reads;
+    for (auto& a : c.log) {
+        if (a.is_write) continue;
         if (a.cycle<fbegin || a.cycle>=fend) continue;
-        ++n;
+        if (a.word_addr<base_word || a.word_addr>=base_word+(uint32_t)nwords) continue;
+        reads.push_back(a);
     }
-    return n;
+    std::sort(reads.begin(), reads.end(), [](const nmh::RamAccess&a, const nmh::RamAccess&b){ return a.cycle<b.cycle; });
+    return c.period ? nmh::coalesce_adjacent(reads, c.period) : reads;
 }
 
-// every offset in [0,expected.size()) fetched at least once, correctly, in range.
-bool all_fetched(const std::vector<nmh::RamAccess>& log, uint32_t base_word,
-                  const std::vector<uint16_t>& expected, uint64_t fbegin, uint64_t fend) {
-    for (size_t off=0; off<expected.size(); ++off)
-        if (!first_read_cycle(log, base_word+(uint32_t)off, expected[off], fbegin, fend)) return false;
+// No word of the structure is read more than once (a read of a word with
+// the prepared value counts once per logical access).
+bool read_at_most_once(const Capture& c, uint32_t base_word, const std::vector<uint16_t>& expected,
+                        uint64_t fbegin, uint64_t fend) {
+    std::vector<size_t> n(expected.size(), 0);
+    for (auto& a : logical_reads(c, base_word, expected.size(), fbegin, fend)) {
+        size_t off = a.word_addr - base_word;
+        if (a.data == expected[off] && ++n[off] > 1) return false;
+    }
     return true;
 }
 
 // PC2 check 1 (SPECIFICATION.md 3.8): every offset of a structure fetched
 // exactly once, at its own address, with the prepared value, in exactly
 // the offset order Table 4-1 lays the structure out -- and no other read
-// of any word inside the structure's own address range. Reads that share
-// one bus cycle stretched by wait states collapse to one logical access
-// first (nmh::coalesce), so a multi-cycle fetch is never counted twice.
-bool exact_ordered_fetch(const std::vector<nmh::RamAccess>& log, uint32_t base_word,
+// of any word inside the structure's own address range.
+bool exact_ordered_fetch(const Capture& c, uint32_t base_word,
                           const std::vector<uint16_t>& expected, uint64_t fbegin, uint64_t fend) {
-    std::vector<nmh::RamAccess> reads;
-    for (auto& a : log) {
-        if (a.is_write) continue;
-        if (a.cycle<fbegin || a.cycle>=fend) continue;
-        if (a.word_addr<base_word || a.word_addr>=base_word+(uint32_t)expected.size()) continue;
-        reads.push_back(a);
-    }
-    std::sort(reads.begin(), reads.end(), [](const nmh::RamAccess&a, const nmh::RamAccess&b){ return a.cycle<b.cycle; });
-    auto coalesced = nmh::coalesce(reads);
-    if (coalesced.size() != expected.size()) return false;
+    auto reads = logical_reads(c, base_word, expected.size(), fbegin, fend);
+    if (reads.size() != expected.size()) return false;
     for (size_t i=0;i<expected.size();++i)
-        if (coalesced[i].word_addr!=base_word+(uint32_t)i || coalesced[i].data!=expected[i]) return false;
+        if (reads[i].word_addr!=base_word+(uint32_t)i || reads[i].data!=expected[i]) return false;
     return true;
 }
 
 struct Range { uint64_t lo=kNoCycle, hi=0; bool any=false; bool all=false; };
 
 // PC4 check 1 (SPECIFICATION.md 3.8): every marked Copper word in
-// [off_lo,off_hi) must be fetched (r.all), not merely any one of them
-// (the previous r.any let one fetched word stand in for an entire reload).
+// [off_lo,off_hi) must be fetched (r.all); one fetched word does not stand
+// in for an entire reload (r.any only says that some word was).
 Range chunk_range(const std::vector<nmh::RamAccess>& log, uint32_t base_word,
                    const std::vector<uint16_t>& expected, size_t off_lo, size_t off_hi,
                    uint64_t fbegin, uint64_t fend) {
@@ -776,10 +840,9 @@ bool pc4_frame_ok(const Capture& c, nmh::Span f) {
 }
 
 // ---- R1/R2's own HIRES-spacing measurement (SPECIFICATION.md 3.6, 3.8) ----
-// Shared by the normal run's internal R1 anchor and the C1 mutation replay:
-// both need to establish -- not merely assume -- that a capture taken with
-// BPLCON0 = $9000 actually is HIRES, by measuring the pattern line's own
-// spacing (p.300: SuperHires's 35ns rate is "twice the horizontal
+// R1's anchor capture has to establish -- not merely assume -- that a capture
+// taken with BPLCON0 = $9000 actually is HIRES, by measuring the pattern
+// line's own spacing (p.300: SuperHires's 35ns rate is "twice the horizontal
 // resolution of Hires mode", so an 8-visible-pixel SuperHires spacing
 // becomes 16 under HIRES).
 
@@ -803,11 +866,55 @@ SpacingMeasure measure_pattern_spacing(const std::vector<nmh::VideoSample>& vide
     return sm;
 }
 
-// ---- assertion labels shared between the normal run and its mutations -----
-// (BRIEF.md: a mutation's record names the assertion-label its own expect()
-// uses "exactly". C7-C11 replay these same strings through the same
-// computation the normal run uses, expecting the opposite polarity.)
+// ---- assertion labels -------------------------------------------------------
+// A mutation record names the leading id of the label its own expect() prints.
+// Every selector runs the same evaluation, so every selector prints these same
+// labels.
 
+const char* kProgLabel = "prog.bin loaded";
+const char* kCpuLabel  = "cpu_nrst_out released within the boot budget";
+const char* kDoneLabel = "DONE: the program's DONE mark was written";
+const char* kFixLabel  =
+    "fixture: the program-stored constant $BEEF was read back before anything else is graded";
+const char* kR1Label =
+    "R1 p.301 p.300 (anchor): with HIRES (SHRES=0) instead of SuperHires -- established by a measured "
+    "pattern-line spacing of 16 visible pixels, twice the SuperHires 8-pixel spacing -- COLOR17-COLOR19 "
+    "read as ordinary 0x0RGB registers already show the section 3.5 U values for every group, "
+    "establishing the channel and bit order (and the 8-pixel reading PC1 rests on) before PC1 and "
+    "P1-P4 are graded";
+const char* kPc1Label =
+    "PC1 p.300: SuperHires is in effect (every graded frame has a pattern line above the sprite "
+    "region, spacing 8 visible pixels, half of the 16 R1 measures with SHRES=0)";
+const char* kPc2Label =
+    "PC2 p.107 p.108: sprites 0 and 1 fetch POS, CTL and all 145 data pairs ($50-$E0) with "
+    "the prepared values plus the terminator, exactly once each, each at its own fixed "
+    "offset in Table 4-1's own order, with no other read of either structure's own address "
+    "range, every graded frame";
+const char* kPc3Label =
+    "PC3 p.114 p.115: sprites 2 to 7 are idle (each of their six independently identifiable "
+    "null structures' two words is read exactly once, and no word of sprite 0's or sprite "
+    "1's own structure is read more than once)";
+const char* kPc5BoundsLabel =
+    "PC5-BOUNDS p.46 p.59: the visible extent of the REF pattern line above the sprite region (its "
+    "first to its last nonzero sample) is the same in every graded frame, holds no zero sample, "
+    "and shows U=(10,10,10), COLOR00's own colour (p.46), on every sample before the pattern's "
+    "first and after its last lit sample";
+const char* kPc5Label =
+    "PC5 p.302 p.46 p.301: band 4's reload of COLOR00-COLOR15 took effect: on every line of groups "
+    "12-14 every visible sample of the line outside the two runs (the whole extent PC5-BOUNDS measures, "
+    "border area included: p.46, \"also displayed outside the defined display window, in the border "
+    "area\"), apart from the sample next to each run end, shows U=(10,10,10), on groups 0-11 "
+    "U=(00,00,00), every graded frame";
+// R5 (SPECIFICATION.md 3.6, 3.8): the group/run structure itself, graded
+// once for the whole frame, separately from any single group's colour
+// (P1-P4, which grade only their own groups' colour). A structural defect
+// (a missing group, a stray run, an unequal run length, a run with no
+// interior pixel) must not by itself make an unrelated colour proposition
+// go red: it makes them NOT GRADED.
+const char* kR5Label =
+    "R5 p.101 p.302: the sprite region has exactly 15 groups, every group line has exactly two runs, "
+    "every run has an interior pixel, and every run of every graded group line is the same length as "
+    "every other (p.101: \"Sprites are 16 pixels wide\")";
 const char* kP1Label =
     "P1 p.302: SuperHires sprite colours are held in COLOR16-COLOR31, not in "
     "the lower sixteen registers (groups 0-11 track their band, groups 12-14 match band 3's "
@@ -824,89 +931,149 @@ const char* kP4Label =
     "P4 p.302 APPC-sprkeykey.c19r APPC-sprkeykey.c19g APPC-sprkeykey.c19b "
     "CH4-appC-color.c11 CH4-appC-color.c12 CH4-appC-color.c13: colour 19 is displayed with red "
     "bits3-2=ST, green bits3-2=UV, blue bits3-2=WX on groups 2,5,8,11,14";
-const char* kPc5Label =
-    "PC5 p.302 p.59: band 4's reload of COLOR00-COLOR15 took effect (background U=(10,10,10) on "
-    "groups 12-14, U=(00,00,00) on groups 0-11, within the display window, every graded frame)";
-// R5 (SPECIFICATION.md 3.6, 3.8): the group/run structure itself, graded
-// once for the whole frame, separately from any single group's colour
-// (P1-P4, which grade only their own groups' colour_ok). A structural
-// defect (a missing group, a stray run, an unequal run length) must not by
-// itself make an unrelated colour proposition go red.
-const char* kR5Label =
-    "R5 p.101 p.302: the sprite region has exactly 15 groups, every group line has exactly two runs, "
-    "and every run of every graded group line is the same length as every other (p.101: \"Sprites are "
-    "16 pixels wide\")";
 
-// ---- the colour check, evaluated across every graded frame -----------------
-// Shared by the normal run and by the mutations that replay P1-P4 as
-// "stimulus red" (C7-C11, SPECIFICATION.md 3.8 and section 4).
+// ---- the evaluation of every graded frame ---------------------------------
 
 struct Verdict {
-    bool any_frame=false;
-    bool p1=true, p2=true, p3=true, p4=true, pc5=true, r5=true;
-    int run_len_lo=-1, run_len_hi=-1; // R2's own SuperHires run-width measurement (ungraded)
+    bool structure_ok = true;                // R5, every graded frame
+    std::array<bool,15> colour_ok;           // per group, every graded frame (P1-P4)
+    bool bounds_ok = true;                   // PC5-BOUNDS
+    bool bounds_set = false;
+    size_t lo=0, hi=0, lit_lo=0, lit_hi=0, line_len=0;   // the measured extent, first graded frame
+    bool pc5_populated = true, pc5_ok = true;
+    int run_len_lo=-1, run_len_hi=-1;        // R2's own SuperHires run-width measurement (ungraded)
     std::array<int,15> r_lo, r_hi, g_lo, g_hi, b_lo, b_hi;
+    Verdict() {
+        colour_ok.fill(true);
+        r_lo.fill(3); g_lo.fill(3); b_lo.fill(3);
+        r_hi.fill(0); g_hi.fill(0); b_hi.fill(0);
+    }
 };
 
 Verdict evaluate(const Capture& c, const GradedRun& g) {
     Verdict v;
-    v.r_lo.fill(3); v.g_lo.fill(3); v.b_lo.fill(3);
-    v.r_hi.fill(0); v.g_hi.fill(0); v.b_hi.fill(0);
     for (auto& f : g.frames) {
         FrameAnalysis fa = analyze_frame(c.video, f);
-        if (!fa.ok) { v.p1=v.p2=v.p3=v.p4=v.pc5=v.r5=false; continue; }
-        v.any_frame = true;
+        if (!fa.ok) { v.structure_ok = false; v.bounds_ok = false; v.pc5_populated = false; continue; }
         ColourCheck cc = colour_check(c.video, fa);
-        // R5 grades the structure (group count, run count, run length) on
-        // its own; P1-P4 grade only their own groups' colour_ok, so a
-        // structural defect in one group never makes an unrelated colour
-        // proposition go red (SPECIFICATION.md 3.6 R5, 3.8).
-        if (!cc.structural_ok()) v.r5 = false;
+        if (!cc.structural_ok()) v.structure_ok = false;
         if (cc.run_len_min>=0) {
             v.run_len_lo = (v.run_len_lo<0) ? cc.run_len_min : std::min(v.run_len_lo, cc.run_len_min);
             v.run_len_hi = std::max(v.run_len_hi, cc.run_len_max);
         }
-        for (int g0=0; g0<15; ++g0)          if (!cc.colour_ok[g0]) v.p1=false;
-        for (int g0 : {0,3,6,9,12})          if (!cc.colour_ok[g0]) v.p2=false;
-        for (int g0 : {1,4,7,10,13})         if (!cc.colour_ok[g0]) v.p3=false;
-        for (int g0 : {2,5,8,11,14})         if (!cc.colour_ok[g0]) v.p4=false;
         for (int g0=0; g0<15; ++g0) {
+            if (!cc.colour_ok[g0]) v.colour_ok[g0] = false;
             v.r_lo[g0]=std::min(v.r_lo[g0], cc.r_lo[g0]); v.r_hi[g0]=std::max(v.r_hi[g0], cc.r_hi[g0]);
             v.g_lo[g0]=std::min(v.g_lo[g0], cc.g_lo[g0]); v.g_hi[g0]=std::max(v.g_hi[g0], cc.g_hi[g0]);
             v.b_lo[g0]=std::min(v.b_lo[g0], cc.b_lo[g0]); v.b_hi[g0]=std::max(v.b_hi[g0], cc.b_hi[g0]);
         }
 
         Window w = measure_window(c.video, fa);
-        if (fa.groups.size()==15 && w.ok) {
-            for (int gi=0; gi<15; ++gi)
-                if (!pc5_group_ok(c.video, fa.groups[gi], expected_background(gi), w)) v.pc5=false;
-        } else v.pc5=false;
+        if (!w.ok()) v.bounds_ok = false;
+        if (w.found) {
+            if (!v.bounds_set) { v.bounds_set = true; v.lo=w.lo_off; v.hi=w.hi_off; v.lit_lo=w.lit_lo_off; v.lit_hi=w.lit_hi_off; v.line_len=w.line_len; }
+            else if (v.lo!=w.lo_off || v.hi!=w.hi_off) v.bounds_ok = false;
+        }
+        if (fa.groups.size()==15 && w.ok()) {
+            for (int gi=0; gi<15; ++gi) {
+                Pc5Group r = pc5_group(c.video, fa.groups[gi], expected_background(gi), w);
+                if (!r.ok) v.pc5_ok = false;
+                if (!r.populated) v.pc5_populated = false;
+            }
+        } else v.pc5_populated = false;
     }
-    if (!v.any_frame) v.p1=v.p2=v.p3=v.p4=v.pc5=false;
+    if (!v.bounds_set) v.bounds_ok = false;
     return v;
 }
 
-// ---- the normal run ---------------------------------------------------------
+// ---- R1's anchor capture ----------------------------------------------------
+// An internal HIRES capture (prog_c1.bin), taken in every run. NMH_MUTATE=R1
+// swaps G and H of band 1's COLOR16-COLOR31 in this capture's Copper list
+// only; NMH_MUTATE=R1S runs the SuperHires program in this capture only. The
+// run's own capture is untouched by both.
 
-void run_normal(const std::string& dir, Checks& checks) {
-    Capture c = run_case(dir, Mut::NONE);
+struct Anchor {
+    bool ok = false;
+    SpacingMeasure spacing;
+    int run_lo=-1, run_hi=-1;
+};
 
-    checks.expect(c.loaded, "prog.bin loaded");
-    checks.expect(c.released, "cpu_nrst_out released within the boot budget");
-    checks.expect(c.done.has_value(), "the program's DONE mark was written");
-    checks.expect(c.fixture.has_value() && *c.fixture==0xBEEF,
-                  "fixture: the program-stored constant $BEEF was read back before anything else is graded");
+Anchor run_anchor(const std::string& dir, Mut sel) {
+    Anchor a;
+    std::optional<Mut> copper;
+    std::string prog;
+    if (sel == Mut::R1)  copper = Mut::C9;
+    if (sel == Mut::R1S) prog = "prog";
+    Capture c1 = run_case(dir, Mut::C1, copper, prog);
+    a.ok = c1.loaded && c1.done.has_value();
+    if (!a.ok) return a;
+    GradedRun g1 = find_graded(c1);
+    a.ok = !g1.frames.empty();
+    for (auto& f : g1.frames) {
+        FrameAnalysis fa = analyze_frame(c1.video, f);
+        if (!fa.ok) { a.ok = false; continue; }
+        ColourCheck cc = colour_check(c1.video, fa);
+        if (!cc.all_ok()) a.ok = false;
+        if (cc.run_len_min>=0) {
+            a.run_lo = (a.run_lo<0) ? cc.run_len_min : std::min(a.run_lo, cc.run_len_min);
+            a.run_hi = std::max(a.run_hi, cc.run_len_max);
+        }
+    }
+    // Establish the premise that this capture is actually HIRES (p.300)
+    // before trusting its colour check as the R1 anchor.
+    a.spacing = measure_pattern_spacing(c1.video, g1.frames);
+    if (!a.spacing.any || a.spacing.min_spacing!=16 || a.spacing.max_spacing!=16) a.ok = false;
+    return a;
+}
 
+// ---- one run: the same evaluation for the normal run and every selector ----
+
+std::string join_not_holding(const std::string& ids) {
+    return ids.empty() ? "" : "precondition not holding: " + ids;
+}
+
+size_t reads_in(const Capture& c, uint32_t base_byte, size_t nwords, nmh::Span f) {
+    return logical_reads(c, word_addr(base_byte), nwords, f.begin, f.end).size();
+}
+
+void run_all(const std::string& dir, Mut mut, Checks& checks) {
+    Capture c = run_case(dir, mut);
+    const bool loaded = c.loaded;
+    const bool ran = c.loaded && c.done.has_value();
+    const std::string no_img = "no program image was loaded (prog.bin)";
+
+    grade(checks, kProgLabel, "", loaded);
+    grade(checks, kCpuLabel, loaded ? "" : no_img, c.released);
+    grade(checks, kDoneLabel, loaded ? "" : no_img, c.done.has_value());
+    grade(checks, kFixLabel, loaded ? "" : no_img, c.fixture.has_value() && *c.fixture==0xBEEF);
     if (c.deniseid)
         checks.note("DENISEID = " + std::to_string(*c.deniseid) + " (p.299, recorded only)");
 
-    if (!c.loaded || !c.done) return;
+    // R1 comes before every line that rests on it (PC1's 8 visible pixels, P1-P4).
+    Anchor an = run_anchor(dir, mut);
+    St s_r1 = grade(checks, kR1Label, "", an.ok);
+    if (an.spacing.any)
+        checks.note("R1/R2 p.300 anchor: the anchor capture's pattern-line spacing measures " +
+                    std::to_string(an.spacing.min_spacing) + "-" + std::to_string(an.spacing.max_spacing) +
+                    " visible pixels");
+    if (an.run_hi >= 0)
+        checks.note("R2 p.101 (anchor, ungraded): in the anchor capture, sprite runs measure " +
+                    std::to_string(an.run_lo) + "-" + std::to_string(an.run_hi) + " visible pixels");
 
-    GradedRun g = find_graded(c);
-    checks.expect(g.frames.size()>=2,
-                  "PC6 p.25 p.30: at least two graded frames (R3) -- " + std::to_string(g.restarts.size()) +
-                  " Copper restart(s) observed, " + std::to_string(g.frames.size()) + " graded frame(s)");
-    if (g.frames.empty()) return;
+    const std::string no_run = ran ? "" : (loaded ? "the program did not reach its DONE mark (DONE)" : no_img);
+    GradedRun g = ran ? find_graded(c) : GradedRun{};
+    const std::string no_frames = !no_run.empty() ? no_run : (g.frames.empty() ? "no graded frame (PC6)" : "");
+    if (loaded) {
+        size_t logical = c.log.empty() ? 0 : (c.period ? nmh::coalesce_adjacent(c.log, c.period).size() : c.log.size());
+        checks.note("RAM-port log: " + std::to_string(c.log.size()) + " samples, " + std::to_string(logical) +
+                    " logical accesses after collapsing wait-state repeats, bus period " +
+                    std::to_string(c.period) + " clk_sys cycles (measured)");
+    }
+
+    St s_pc6 = grade(checks,
+        "PC6 p.25 p.30: at least two graded frames (R3) -- " + std::to_string(g.restarts.size()) +
+        " Copper restart(s) observed, " + std::to_string(g.frames.size()) + " graded frame(s)",
+        no_run, g.frames.size()>=2);
 
     // PC1: a pattern line above the sprite region, spacing 8 visible pixels, every frame.
     bool pc1 = true;
@@ -917,11 +1084,9 @@ void run_normal(const std::string& dir, Checks& checks) {
         for (auto& la : fa.pre_region) if (la.is_pattern_line) { ++npat; if (la.pattern_spacing!=8) spacing_ok=false; }
         if (npat<1 || !spacing_ok) pc1=false;
     }
-    checks.expect(pc1, "PC1 p.300: SuperHires is in effect (every graded frame has a pattern line above the "
-                       "sprite region, spacing 8 visible pixels)");
+    St s_pc1 = grade(checks, kPc1Label, no_frames, pc1);
 
     // PC2: sprites 0 and 1 fetch exactly the prepared data, every frame.
-    bool pc2 = true;
     std::vector<uint16_t> spr0_expected, spr1_expected;
     auto push_struct = [](std::vector<uint16_t>& v, uint16_t pos, uint16_t ctl,
                            const std::vector<std::pair<uint16_t,uint16_t>>& pairs) {
@@ -931,84 +1096,92 @@ void run_normal(const std::string& dir, Checks& checks) {
     };
     push_struct(spr0_expected, 0x5050, 0xE100, c.pairs);
     push_struct(spr1_expected, 0x5060, 0xE100, c.pairs);
+    bool pc2_s0 = true, pc2_s1 = true;
     for (auto& f : g.frames) {
-        if (!exact_ordered_fetch(c.log, word_addr(kSpr0Data), spr0_expected, f.begin, f.end)) pc2=false;
-        if (!exact_ordered_fetch(c.log, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc2=false;
+        if (!exact_ordered_fetch(c, word_addr(kSpr0Data), spr0_expected, f.begin, f.end)) pc2_s0=false;
+        if (!exact_ordered_fetch(c, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc2_s1=false;
     }
-    checks.expect(pc2, "PC2 p.107 p.108: sprites 0 and 1 fetch POS, CTL and all 145 data pairs ($50-$E0) with "
-                       "the prepared values plus the terminator, exactly once each, each at its own fixed "
-                       "offset in Table 4-1's own order, with no other read of either structure's own address "
-                       "range, every graded frame");
+    St s_pc2 = grade(checks, kPc2Label, no_frames, pc2_s0 && pc2_s1);
+    if (no_frames.empty()) {
+        std::string s = std::string("PC2 detail (ungraded): sprite 0 ") + (pc2_s0 ? "PASS" : "FAIL") +
+                        ", sprite 1 " + (pc2_s1 ? "PASS" : "FAIL") + "; logical reads per graded frame";
+        for (size_t fi=0; fi<g.frames.size(); ++fi) {
+            s += "; frame " + std::to_string(fi) + ": sprite 0 " +
+                 std::to_string(reads_in(c, kSpr0Data, spr0_expected.size(), g.frames[fi])) + "/" +
+                 std::to_string(spr0_expected.size()) + ", sprite 1 " +
+                 std::to_string(reads_in(c, kSpr1Data, spr1_expected.size(), g.frames[fi])) + "/" +
+                 std::to_string(spr1_expected.size());
+            for (int i=0; i<6; ++i)
+                s += ", null" + std::to_string(i+2) + " " + std::to_string(reads_in(c, kNullAddrs[i], 2, g.frames[fi])) + "/2";
+        }
+        checks.note(s);
+    }
 
     // PC3: sprites 2-7 idle. Each of the six is given its own safe-null
     // structure (ch4.i), so each of the six must show the exact same
     // two-word fetch PC2 requires of a real sprite; sprite 0 and sprite 1's
-    // own structures must not be over-fetched (the signature a second
-    // sprite channel reading one of them, instead of its own null, would
-    // leave -- see C3 below).
+    // own structures must not be over-fetched.
     bool pc3 = true;
     for (auto& f : g.frames) {
         for (uint32_t na : kNullAddrs)
-            if (!exact_ordered_fetch(c.log, word_addr(na), {0,0}, f.begin, f.end)) pc3=false;
-        for (size_t off=0; off<spr0_expected.size(); ++off)
-            if (count_reads(c.log, word_addr(kSpr0Data)+(uint32_t)off, spr0_expected[off], f.begin, f.end) > 1) pc3=false;
-        for (size_t off=0; off<spr1_expected.size(); ++off)
-            if (count_reads(c.log, word_addr(kSpr1Data)+(uint32_t)off, spr1_expected[off], f.begin, f.end) > 1) pc3=false;
+            if (!exact_ordered_fetch(c, word_addr(na), {0,0}, f.begin, f.end)) pc3=false;
+        if (!read_at_most_once(c, word_addr(kSpr0Data), spr0_expected, f.begin, f.end)) pc3=false;
+        if (!read_at_most_once(c, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc3=false;
     }
-    checks.expect(pc3, "PC3 p.114 p.115: sprites 2 to 7 are idle (each of their six independently identifiable "
-                       "null structures' two words is read exactly once, and no word of sprite 0's or sprite "
-                       "1's own structure is read more than once)");
+    St s_pc3 = grade(checks, kPc3Label, no_frames, pc3);
 
-    // PC4: Copper colour loads fall between the displayed sprite pixels.
+    // PC4: Copper colour loads fall between the displayed sprite pixels, on a
+    // nonempty set of graded Copper passes covering the graded frames.
     bool pc4 = true;
     for (auto& f : g.passes) if (!pc4_frame_ok(c, f)) pc4=false;
-    checks.expect(pc4, "PC4 p.126 p.23: the Copper's colour-register MOVEs fall between sprite 0's own pair "
-                       "fetches on the bus (top-of-list before the first bitplane fetch, the B0 reload before "
-                       "line $50, each band's reload between its own line and two lines later)");
+    std::string pc4_ng = no_frames;
+    if (pc4_ng.empty() && (g.passes.empty() || g.passes.size() < g.frames.size()))
+        pc4_ng = "fewer graded Copper passes than graded frames";
+    St s_pc4 = grade(checks,
+        "PC4 p.126 p.23: the Copper's colour-register MOVEs fall between sprite 0's own pair "
+        "fetches on the bus (top-of-list before the first bitplane fetch, the B0 reload before "
+        "line $50, each band's reload between its own line and two lines later), on " +
+        std::to_string(g.passes.size()) + " graded Copper pass(es) for " + std::to_string(g.frames.size()) +
+        " graded frame(s)", pc4_ng, pc4);
 
-    // R1/R2 anchor: capture C1 (HIRES) inside the normal run and assert that
-    // COLOR17-COLOR19, read as ordinary registers, already show the section
-    // 3.5 U values, before P1-P4 are graded (SPECIFICATION.md 3.6 R1).
-    Capture c1 = run_case(dir, Mut::C1);
-    bool anchor_ok = c1.loaded && c1.done.has_value();
-    SpacingMeasure c1_spacing;
-    if (anchor_ok) {
-        GradedRun g1 = find_graded(c1);
-        anchor_ok = !g1.frames.empty();
-        for (auto& f : g1.frames) {
-            FrameAnalysis fa = analyze_frame(c1.video, f);
-            if (!fa.ok || !colour_check(c1.video, fa).all_ok()) anchor_ok = false;
-        }
-        // Establish the premise that this capture is actually HIRES (p.300)
-        // before trusting its colour check as the R1 anchor.
-        c1_spacing = measure_pattern_spacing(c1.video, g1.frames);
-        if (!c1_spacing.any || c1_spacing.min_spacing!=16 || c1_spacing.max_spacing!=16) anchor_ok = false;
+    Verdict v;
+    if (no_frames.empty()) v = evaluate(c, g);
+
+    St s_bounds = grade(checks, kPc5BoundsLabel, no_frames, v.bounds_ok);
+    if (no_frames.empty() && v.bounds_set)
+        checks.note("PC5-BOUNDS: the visible extent of the pattern line measures [" + std::to_string(v.lo) + "," +
+                    std::to_string(v.hi) + ") of its " + std::to_string(v.line_len) + " samples, " + std::to_string(v.hi - v.lo) +
+                    " samples, and its lit pattern [" + std::to_string(v.lit_lo) + "," + std::to_string(v.lit_hi) + ")");
+
+    std::string pc5_ng = no_frames;
+    if (pc5_ng.empty() && s_bounds != St::PASS) pc5_ng = "precondition not holding: PC5-BOUNDS";
+    if (pc5_ng.empty() && !v.pc5_populated)
+        pc5_ng = "the sprite region does not show 15 groups with a compared sample on every group line";
+    St s_pc5 = grade(checks, kPc5Label, pc5_ng, v.pc5_ok);
+
+    St s_r5 = grade(checks, kR5Label, no_frames, v.structure_ok);
+
+    // P1-P4 grade their own colour clauses only when every precondition of
+    // SPECIFICATION.md 4 item 5 holds, and only on their whole group sets.
+    std::string base = not_holding({{"R1",s_r1},{"PC6",s_pc6},{"PC1",s_pc1},{"PC2",s_pc2},{"PC3",s_pc3},
+                                    {"PC4",s_pc4},{"R5",s_r5}});
+    std::string p1need = base;
+    {
+        std::string extra = not_holding({{"PC5-BOUNDS",s_bounds},{"PC5",s_pc5}});
+        if (!extra.empty()) p1need += (p1need.empty() ? "" : " ") + extra;
     }
-    checks.expect(anchor_ok, "R1 p.301 p.300 (anchor): with HIRES (SHRES=0) instead of SuperHires -- "
-                             "established by a measured pattern-line spacing of 16 visible pixels, twice the "
-                             "SuperHires 8-pixel spacing -- COLOR17-COLOR19 read as ordinary 0x0RGB registers "
-                             "already show the section 3.5 U values for every group, establishing the channel "
-                             "and bit order before P1-P4 are graded");
-    if (c1_spacing.any)
-        checks.note("R1/R2 p.300 anchor: the internal HIRES capture's pattern-line spacing measures " +
-                    std::to_string(c1_spacing.min_spacing) + "-" + std::to_string(c1_spacing.max_spacing) +
-                    " visible pixels");
-
-    // colour check (section 3.7), shared by P1-P4, plus PC5 (band 4's background).
-    Verdict v = evaluate(c, g);
-
-    checks.expect(v.pc5, kPc5Label);
-    checks.expect(v.r5, kR5Label);
-    checks.expect(v.p1, kP1Label);
-    checks.expect(v.p2, kP2Label);
-    checks.expect(v.p3, kP3Label);
-    checks.expect(v.p4, kP4Label);
+    auto set_ok = [&](std::initializer_list<int> gs) { for (int x : gs) if (!v.colour_ok[x]) return false; return true; };
+    bool p1 = true; for (int x=0; x<15; ++x) if (!v.colour_ok[x]) p1 = false;
+    grade(checks, kP1Label, join_not_holding(p1need), p1);
+    grade(checks, kP2Label, join_not_holding(base), set_ok({0,3,6,9,12}));
+    grade(checks, kP3Label, join_not_holding(base), set_ok({1,4,7,10,13}));
+    grade(checks, kP4Label, join_not_holding(base), set_ok({2,5,8,11,14}));
 
     if (v.run_len_hi>=0)
-        checks.note("R2 p.101 (ungraded): the SuperHires sprite run width measures " +
+        checks.note("R2 p.101 (ungraded): the sprite run width of this run measures " +
                     std::to_string(v.run_len_lo) + "-" + std::to_string(v.run_len_hi) + " visible pixels");
 
-    checks.record("CH4-appC-color.c1 (p.302): P1 loads all sixteen upper registers (COLOR16-COLOR31)"
+    checks.record("CH4-appC-color.c1 (p.302): P1 loads all sixteen upper registers (COLOR16-COLOR31) "
                   "together and observes only colours 17-19 (COLOR17-COLOR19), so it cannot show that all "
                   "sixteen registers participate in the SuperHires scheme; the per-register decode is graded "
                   "at the unit level, in hrm/ch3-shres-sprite-colour-encoding. P1 keeps grading what it "
@@ -1016,11 +1189,13 @@ void run_normal(const std::string& dir, Checks& checks) {
                   "predicts, and reloading COLOR00-COLOR15 does not.");
 
     // Bits 1-0 of every graded pixel, per group (section 3.7): recorded, never graded.
-    for (int gi=0; gi<15; ++gi) {
-        checks.note("group " + std::to_string(gi) + " bits1-0 (section 3.7, ungraded): R=[" +
-                    std::to_string(v.r_lo[gi]) + "," + std::to_string(v.r_hi[gi]) + "] G=[" +
-                    std::to_string(v.g_lo[gi]) + "," + std::to_string(v.g_hi[gi]) + "] B=[" +
-                    std::to_string(v.b_lo[gi]) + "," + std::to_string(v.b_hi[gi]) + "]");
+    if (no_frames.empty()) {
+        for (int gi=0; gi<15; ++gi) {
+            checks.note("group " + std::to_string(gi) + " bits1-0 (section 3.7, ungraded): R=[" +
+                        std::to_string(v.r_lo[gi]) + "," + std::to_string(v.r_hi[gi]) + "] G=[" +
+                        std::to_string(v.g_lo[gi]) + "," + std::to_string(v.g_hi[gi]) + "] B=[" +
+                        std::to_string(v.b_lo[gi]) + "," + std::to_string(v.b_hi[gi]) + "]");
+        }
     }
 
     // ---- claims this package declines, restated from SPECIFICATION.md ------
@@ -1042,232 +1217,6 @@ void run_normal(const std::string& dir, Checks& checks) {
                    "P2/P3/P4.");
 }
 
-// ---- contrasts (C1-C11), one at a time under NMH_MUTATE -------------------
-
-void run_contrast(const std::string& dir, Mut mut, Checks& checks) {
-    Capture c = run_case(dir, mut);
-    checks.expect(c.loaded, "mutant program loaded");
-    checks.expect(c.done.has_value(), "the mutant program's DONE mark was written");
-    if (!c.loaded || !c.done) return;
-
-    GradedRun g = find_graded(c);
-
-    if (mut == Mut::C6) {
-        checks.expect(g.frames.size()>=2,
-                      "PC6 p.25 p.30: at least two graded frames (R3) -- " + std::to_string(g.restarts.size()) +
-                      " Copper restart(s) observed, " + std::to_string(g.frames.size()) + " graded frame(s)");
-        return;
-    }
-    if (g.frames.empty()) {
-        checks.record("NMH_MUTATE=" + std::string("(this run)") + ": no graded frame was found, the mutation's "
-                       "own check cannot be evaluated");
-        return;
-    }
-
-    if (mut == Mut::C1) {
-        bool pc1 = true;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok) { pc1=false; continue; }
-            int npat=0; bool spacing_ok=true;
-            for (auto& la : fa.pre_region) if (la.is_pattern_line) { ++npat; if (la.pattern_spacing!=8) spacing_ok=false; }
-            if (npat<1 || !spacing_ok) pc1=false;
-        }
-        checks.expect(pc1, "PC1 p.300: SuperHires is in effect (every graded frame has a pattern line above the "
-                           "sprite region, spacing 8 visible pixels)");
-
-        // The page-300 HIRES spacing itself (R1/R2's own anchor,
-        // SPECIFICATION.md 3.6 R2, 3.8): the same capture's pattern line
-        // must measure 16 visible pixels, twice the SuperHires spacing PC1
-        // grades above. This is a genuine assertion, not only PC1's own
-        // negative ("spacing is not 8").
-        SpacingMeasure sp = measure_pattern_spacing(c.video, g.frames);
-        checks.expect(sp.any && sp.min_spacing==16 && sp.max_spacing==16,
-                      "R1/R2 p.300: in this HIRES capture, the pattern line's spacing measures 16 visible "
-                      "pixels (twice the SuperHires 8-pixel spacing PC1 grades)");
-        if (sp.any)
-            checks.note("R1/R2 p.300: measured pattern-line spacing " + std::to_string(sp.min_spacing) + "-" +
-                        std::to_string(sp.max_spacing) + " visible pixels");
-
-        bool colour_still_ok = true;
-        int run_lo=-1, run_hi=-1;
-        for (auto& f : g.frames) {
-            FrameAnalysis fa = analyze_frame(c.video, f);
-            if (!fa.ok) { colour_still_ok=false; continue; }
-            ColourCheck cc = colour_check(c.video, fa);
-            if (!cc.all_ok()) colour_still_ok=false;
-            if (cc.run_len_min>=0) {
-                run_lo = (run_lo<0) ? cc.run_len_min : std::min(run_lo, cc.run_len_min);
-                run_hi = std::max(run_hi, cc.run_len_max);
-            }
-        }
-        checks.note(std::string("R1/R2 anchor: with HIRES (SHRES=0), the colour check itself still reads ") +
-                    (colour_still_ok ? "PASS" : "FAIL") +
-                    " -- COLOR17-19 read as ordinary 0x0RGB registers already carry the key's bits (SPECIFICATION.md 1.2, 3.6 R1)");
-        if (run_hi>=0)
-            checks.note("R2 p.101 (anchor, ungraded): in this HIRES capture, sprite runs measure " +
-                        std::to_string(run_lo) + "-" + std::to_string(run_hi) + " visible pixels");
-        return;
-    }
-    if (mut == Mut::C2) {
-        // Re-run PC2's own check (SPECIFICATION.md 3.8): sprite 1's own
-        // terminator word was poked to a page-incorrect nonzero value
-        // (run_case()), so the same exact-value check that reads PASS in
-        // the normal run reads FAIL here, through the value clause alone --
-        // the measured population (both structures, all 294 words each)
-        // stays fully live.
-        std::vector<uint16_t> spr0_expected, spr1_expected;
-        auto push_struct = [](std::vector<uint16_t>& v, uint16_t pos, uint16_t ctl,
-                               const std::vector<std::pair<uint16_t,uint16_t>>& pairs) {
-            v.push_back(pos); v.push_back(ctl);
-            for (auto& p : pairs) { v.push_back(p.first); v.push_back(p.second); }
-            v.push_back(0); v.push_back(0);
-        };
-        push_struct(spr0_expected, 0x5050, 0xE100, c.pairs);
-        push_struct(spr1_expected, 0x5060, 0xE100, c.pairs);
-        bool pc2_spr0 = true, pc2_spr1 = true;
-        for (auto& f : g.frames) {
-            if (!exact_ordered_fetch(c.log, word_addr(kSpr0Data), spr0_expected, f.begin, f.end)) pc2_spr0=false;
-            if (!exact_ordered_fetch(c.log, word_addr(kSpr1Data), spr1_expected, f.begin, f.end)) pc2_spr1=false;
-        }
-        checks.expect(pc2_spr0 && pc2_spr1,
-                      "PC2 p.107 p.108: sprites 0 and 1 fetch POS, CTL and all 145 data pairs ($50-$E0) with "
-                      "the prepared values plus the terminator, exactly once each, each at its own fixed "
-                      "offset in Table 4-1's own order, with no other read of either structure's own address "
-                      "range, every graded frame");
-        checks.note(std::string("sprite 0's own fetch stays ") + (pc2_spr0 ? "PASS" : "FAIL") +
-                    ", sprite 1's own fetch is " + (pc2_spr1 ? "PASS" : "FAIL") +
-                    " (its poked terminator word no longer matches the expected $0000)");
-        // PC5 must not depend on this precondition (SPECIFICATION.md 3.8):
-        // the wrong word sits beyond sprite 1's own VSTOP, so it is never
-        // displayed, and PC5's own window-based background check is
-        // unaffected.
-        Verdict v = evaluate(c, g);
-        checks.note(std::string("PC5 stays ") + (v.pc5 ? "PASS" : "FAIL") +
-                    " under this mutation (the wrong word is never displayed)");
-        return;
-    }
-    if (mut == Mut::C3) {
-        // Re-run PC3's own check (SPECIFICATION.md 3.8): under this mutation
-        // sprite 2's channel fetches sprite 0's structure instead of its own
-        // null2 structure, so null2's own two words go unread and sprite 0's
-        // own words are read more than once per graded frame; the same
-        // check that reads PASS in the normal run reads FAIL here.
-        std::vector<uint16_t> spr0_expected;
-        auto push_struct = [](std::vector<uint16_t>& v, uint16_t pos, uint16_t ctl,
-                               const std::vector<std::pair<uint16_t,uint16_t>>& pairs) {
-            v.push_back(pos); v.push_back(ctl);
-            for (auto& p : pairs) { v.push_back(p.first); v.push_back(p.second); }
-            v.push_back(0); v.push_back(0);
-        };
-        push_struct(spr0_expected, 0x5050, 0xE100, c.pairs);
-        bool pc3 = true;
-        for (auto& f : g.frames) {
-            for (uint32_t na : kNullAddrs)
-                if (!exact_ordered_fetch(c.log, word_addr(na), {0,0}, f.begin, f.end)) pc3=false;
-            for (size_t off=0; off<spr0_expected.size(); ++off)
-                if (count_reads(c.log, word_addr(kSpr0Data)+(uint32_t)off, spr0_expected[off], f.begin, f.end) > 1) pc3=false;
-        }
-        checks.expect(pc3, "PC3 p.114 p.115: sprites 2 to 7 are idle (each of their six independently "
-                           "identifiable null structures' two words is read exactly once, and no word of "
-                           "sprite 0's or sprite 1's own structure is read more than once)");
-        Verdict v = evaluate(c, g);
-        checks.note(std::string("the displayed colour-match is ") + (v.p1 ? "unchanged" : "changed") +
-                    " -- sprite 0 has priority over sprite 2 (p.115)");
-        return;
-    }
-    if (mut == Mut::C4) {
-        // Re-run PC4's own check: band 2's WAIT now lands inside sprite 0's
-        // own pair fetches, so the same check that reads PASS in the normal
-        // run reads FAIL here.
-        bool pc4 = true;
-        for (auto& f : g.passes) if (!pc4_frame_ok(c, f)) pc4 = false;
-        checks.expect(pc4, "PC4 p.126 p.23: the Copper's colour-register MOVEs fall between sprite 0's own pair "
-                           "fetches on the bus (top-of-list before the first bitplane fetch, the B0 reload before "
-                           "line $50, each band's reload between its own line and two lines later)");
-        return;
-    }
-    if (mut == Mut::C5) {
-        // Re-run PC5's own check: leaving out the COLOR00-COLOR15<-B4 MOVEs
-        // means band 4's background never reaches (10,10,10), so the same
-        // check that reads PASS in the normal run reads FAIL here.
-        Verdict v = evaluate(c, g);
-        checks.expect(v.pc5, kPc5Label);
-        checks.note(std::string("the colour-match clause of the colour check itself still reads ") +
-                    (v.p1 ? "PASS" : "FAIL"));
-        return;
-    }
-    if (mut == Mut::C7) {
-        // R5's own contrast (SPECIFICATION.md 3.8, not P2's: p.101 permits
-        // any shape within the 16-pixel width, so narrowing group 0's own
-        // runs is not a page-opposite case for P2's colour clause; C9
-        // already tests that). Group 0's runs narrow to 8 samples while
-        // every other group's stay at their own (equal) length, so the
-        // equal-length guard inside R5 goes red through that clause alone,
-        // replayed with the SAME expect() the normal run uses. P1-P4 do not
-        // depend on R5 (each grades only its own groups' colour), so they
-        // stay green here; printed to show that the mutation is scoped to
-        // R5 alone.
-        Verdict v = evaluate(c, g);
-        checks.expect(v.r5, kR5Label);
-        checks.expect(v.p1, kP1Label);
-        checks.expect(v.p2, kP2Label);
-        return;
-    }
-    if (mut == Mut::C8) {
-        // Band 4's reload uses band 0's values instead of band 3's, so
-        // groups 12-14 (all three of band 4's colours) stop matching band
-        // 3. Group 12 belongs to P2's own group set, group 13 to P3's and
-        // group 14 to P4's, and P1 grades all fifteen groups, so this
-        // mutation prints red on P1, P2, P3 and P4 alike -- every affected
-        // line, not only P1's own. PC5 (the lower-register background) does
-        // not depend on COLOR16-COLOR31, so it stays green, and R5 (the
-        // group/run structure) is unaffected too.
-        Verdict v = evaluate(c, g);
-        checks.expect(v.p1, kP1Label);
-        checks.expect(v.p2, kP2Label);
-        checks.expect(v.p3, kP3Label);
-        checks.expect(v.p4, kP4Label);
-        checks.expect(v.pc5, kPc5Label);
-        checks.expect(v.r5, kR5Label);
-        return;
-    }
-    if (mut == Mut::C9) {
-        // Band 1's G/H swap breaks group 3 alone. Group 3 belongs to both
-        // P1's group set (all fifteen) and P2's own (0,3,6,9,12), so this
-        // mutation prints red on both, not on P2 alone.
-        Verdict v = evaluate(c, g);
-        checks.expect(v.p1, kP1Label);
-        checks.expect(v.p2, kP2Label);
-        return;
-    }
-    if (mut == Mut::C10) {
-        // Band 2's O/P swap breaks group 7 alone, which belongs to both
-        // P1's group set and P3's own (1,4,7,10,13).
-        Verdict v = evaluate(c, g);
-        checks.expect(v.p1, kP1Label);
-        checks.expect(v.p3, kP3Label);
-        return;
-    }
-    if (mut == Mut::C11) {
-        // Band 2's W/X swap breaks group 8 alone, which belongs to both
-        // P1's group set and P4's own (2,5,8,11,14).
-        Verdict v = evaluate(c, g);
-        checks.expect(v.p1, kP1Label);
-        checks.expect(v.p4, kP4Label);
-        return;
-    }
-    if (mut == Mut::C12) {
-        // The fixture check's own contrast (SPECIFICATION.md 3.8): the
-        // program stores $DEAD instead of $BEEF, so the same expect() the
-        // normal run uses goes red on the value clause alone.
-        checks.expect(c.fixture.has_value() && *c.fixture==0xBEEF,
-                      "fixture: the program-stored constant $BEEF was read back before anything else is "
-                      "graded");
-        return;
-    }
-}
-
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1280,14 +1229,10 @@ int main(int argc, char** argv) {
 
     Checks checks;
     auto mut = parse_mut(mutate);
-    if (!mut) {
-        checks.record("unrecognised NMH_MUTATE value: " + mutate);
-    } else if (*mut == Mut::NONE) {
-        run_normal(dir, checks);
-    } else {
-        run_contrast(dir, *mut, checks);
-    }
+    if (!mut) checks.record("unrecognised NMH_MUTATE value: " + mutate);
+    else      run_all(dir, *mut, checks);
 
+    std::printf("%d lines not graded\n", checks.ungraded);
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed==0 ? 0 : 1;
 }

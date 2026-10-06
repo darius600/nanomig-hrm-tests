@@ -3,9 +3,11 @@
 ; printed pages 289-292) and this package's chip-RAM data addresses.
 ; CUSTOM, DMACON, INTENA, COLOR00 are nanomig.i's own.
 ;
-; SPECIFICATION.md section 3.2: everything is in Chip memory below $80000,
-; word aligned (p.104). Sprite and bitplane pointers keep the high three
-; bits of a Chip RAM address (p.110; p.285, p.291), and the Copper location
+; SPECIFICATION.md section 3.2: the bitplane buffer, the sprite structures,
+; the null structures and the Copper list are in Chip memory below $80000,
+; word aligned (p.104); the program and the result area are above it, at
+; $080400 and $0C0000. Sprite and bitplane pointers keep the high three bits
+; of a Chip RAM address (p.110; p.285, p.291), and the Copper location
 ; register has two additional bits under the Enhanced Chip Set (p.309).
 
 ; -- Appendix B, address order --

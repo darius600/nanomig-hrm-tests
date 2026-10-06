@@ -109,7 +109,7 @@ for colours 17-19; none, for colour 16, section 1.1); the checks mask bits
 the dash half states the reason above: a bit the key does not encode
 predicts nothing a test can see.
 
-### 1.5 `CH4-appC-color.c1`: recorded, not graded on P1's own assertion (1 claim)
+### 1.5 `CH4-appC-color.c1`: recorded, not graded (1 claim)
 
 `CH4-appC-color.c1` (p. 302, "SuperHires sprites are encoded in the upper
 sixteen color registers using a similar scheme") reads as a claim about
@@ -350,15 +350,20 @@ values.
 from the bitplane table on page 301.
 
 - **REF** is used on the pattern lines above the sprites. Bitplane colour 0
-  is `$0888` (U=(2,2,2), one of the two backgrounds "background-like"
-  already covers, section 3.6 R5) instead of the all-letters-0 the table
-  would otherwise give it: with the border and every "off" pattern sample
-  genuinely nonzero, PC5's own window anchor (section 6) can use the
-  display window's first and last nonzero sample without a black REF pixel
-  being mistaken for hardware blanking. Bitplane colour 1 has all letters
-  1, and colours 2 and 3 have all letters 0 (they are unused with one
-  bitplane):
-  `$0888 $0CCC $0000 $0000 $0333 $0FFF $0333 $0333 $0000 $0CCC $0000 $0000 $0000 $0CCC $0000 $0000`.
+  is `$0AAA`. Row `00` of the table on page 301 reads
+  `a b a b c d c d e f e f` over bits 11 to 0, so bits 11 and 9 both carry
+  letter a, bits 10 and 8 letter b, bits 7 and 5 letter c, bits 6 and 4
+  letter d, bits 3 and 1 letter e, bits 2 and 0 letter f. `$0AAA` is that
+  row with a = c = e = 1 and b = d = f = 0, so it is consistent with the
+  table cell by cell. Its U is (2,2,2), one of the two backgrounds
+  "background-like" already covers (section 3.6 R5). Colour 0 is therefore
+  nonzero (not the all-letters-0 `$0000`), so that the border and every
+  "off" pattern sample are genuinely nonzero and PC5-BOUNDS (section 3.8)
+  can read the end of the video port's blanked output as the first and last
+  nonzero sample without a black REF pixel being mistaken for it. Bitplane
+  colour 1 has all letters 1, and colours 2 and 3 have all letters 0 (they
+  are unused with one bitplane):
+  `$0AAA $0CCC $0000 $0000 $0333 $0FFF $0333 $0333 $0000 $0CCC $0000 $0000 $0000 $0CCC $0000 $0000`.
 - **B0** is `$0000` in all sixteen registers. All four bitplane colours are
   the same, so the playfield is uniformly U = (00,00,00), whichever
   register the display uses.
@@ -385,16 +390,19 @@ No expected sprite colour equals (00,00,00), (10,10,10) or (11,11,11).
   "GH--". So the first letter is bit 3 of the displayed four-bit component
   and the second letter is bit 2. For a visible pixel, U = (R bits 3–2,
   G bits 3–2, B bits 3–2).
-  *Anchor check:* in the calibration capture C1 (section 3.8), COLOR17 to
+  *Anchor check:* in the anchor capture (a run of the C1 program of section 3.8), COLOR17 to
   COLOR19 act as ordinary colour registers, "stored as 0x0RGB" (p. 301;
   Table 4-6). The same U values as in section 3.5 must appear there, and
   the capture's own pattern-line spacing must measure 16 visible pixels
   (R2), establishing that the capture is actually HIRES before its colour
   check is trusted. If either does not hold, the test's channel or bit
-  order is not established, and no verdict is given. The normal run
-  captures C1 itself and asserts this anchor before grading P1 to P4, so
-  every graded run carries its own proof that the channel and bit order
-  hold, not only the separate C1 replay.
+  order is not established, and no verdict is given: P1 to P4 print NOT
+  GRADED (section 3.8). Every run, the normal run and each contrast,
+  captures C1 itself and asserts this anchor on its own line R1, printed
+  before PC1 (whose 8 visible pixels rest on the 16 this capture measures)
+  and before P1 to P4, so every graded run carries its own proof that the
+  channel and bit order hold. The anchor capture is a run of its own: a
+  stimulus confined to it (section 3.8, R1 and R1S) moves R1 alone.
 - **R2: visible pixels.** The harness shows one sample per two SuperHires
   pixel times, that is, one per high-resolution pixel (p. 300: "a 35ns
   pixel display rate - twice the horizontal resolution of Hires mode, and
@@ -415,9 +423,9 @@ No expected sprite colour equals (00,00,00), (10,10,10) or (11,11,11).
   pixel ("Sprite size is based on a pixel that is 1/320th of a screen's
   width") applied directly to HIRES mode, where one visible sample is half
   of that pixel, predicts a 32-visible-pixel sprite run, which the
-  calibration capture C1 (section 3.8) measures.
+  anchor capture (section 3.6 R1) measures.
 
-  *Anchor check:* in the calibration capture C1, the pattern repeats every
+  *Anchor check:* in the anchor capture, the pattern repeats every
   16 visible pixels (asserted, and printed per core) and each sprite run
   is 32 visible pixels (measured and printed per core, section 6).
 - **R3: frames.** A Copper restart is a Copper fetch from the address
@@ -480,6 +488,8 @@ the following hold:
 - The sprite region contains exactly 15 groups, and every line of every
   group has exactly two runs, the sprite-0 run on the left and the
   sprite-1 run on the right.
+- Every run has an interior pixel (at least three samples), so every line
+  of every group contributes graded pixels.
 - Every run of every graded group line has the same length as every other
   (p. 101: "Sprites are 16 pixels wide"). No page states the width of a
   sprite pixel in SuperHires mode (section 3.6 R2); this guard grades only
@@ -488,7 +498,10 @@ the following hold:
 
 P1 to P4 each grade one clause on top of R5: every interior pixel of every
 run of their own groups has the U of its group's band and colour
-(section 3.5).
+(section 3.5). A proposition prints PASS only when every precondition of
+its item 5 printed PASS, which includes R5 and with it the whole group set
+and graded pixels on every line of it. When a precondition prints FAIL or
+NOT GRADED, the proposition prints NOT GRADED, never PASS or FAIL.
 
 Bits 1 and 0 of every graded pixel are recorded in the log for each group
 (the smallest and largest value per channel) and never graded
@@ -497,23 +510,35 @@ Bits 1 and 0 of every graded pixel are recorded in the log for each group
 ### 3.8 Preconditions, each with its contrast
 
 The test asserts these before it grades anything. A contrast is a separate
-run of a changed program, graded against the unchanged expectations. In
-every contrast run the program still finishes, and every precondition other
-than the one named still holds.
+run of a changed program or changed data, graded against the unchanged
+expectations. In every contrast run the program still finishes (except
+NODONE and NOPROG), and every precondition other than the one named still
+holds. Every run, the normal run and each contrast, evaluates every line of
+section 6 and prints it; a line whose precondition did not print PASS
+prints `NOT GRADED: <id> [<precondition>]` in its place. The "what then
+happens" column names every line that changes, and NOT GRADED counts as a
+change.
 
 | id | precondition | how the test knows | contrast (the change) | what then happens |
 |---|---|---|---|---|
-| PC1 | SuperHires is in effect. | Every graded frame has at least one pattern line (R5) above the sprite region, and every such pattern line has a spacing of 8 visible pixels. p. 300: "35ns pixel display rate - twice the horizontal resolution of Hires mode". Sixteen pattern pixels per period at 35 ns make 8 visible pixels (R2). | **C1:** `BPLCON0` ← `$9000` (HIRES, one bitplane, SHRES = 0). | The spacing is 16 visible pixels, so PC1 goes red. By design, the colour check still passes in C1: this is the calibration of R1 and R2 -- confirmed by measuring the same capture's own pattern-line spacing (16 visible pixels) and sprite run width (32 visible pixels). It also shows why PC1 is indispensable: without SuperHires, COLOR17 to COLOR19 already show the key's bits (section 1.2). |
-| PC2 | Sprites 0 and 1 fetched exactly the prepared data. | In each graded frame, each sprite fetches POS, CTL and all 145 data pairs plus the terminator, exactly once each, each at its own fixed offset in Table 4-1's own order, with no other read of either structure's own address range (a read within one bus cycle stretched by wait states is collapsed to one logical access first). | **C2:** sprite 1's own structure stays fully fetched; only its own second terminator word (p. 108: both terminator words should be `$0000`) is poked to `$BAD1`. The terminator lies beyond CTL's VSTOP, so this word is never displayed. | Sprite 1's own exact-value clause goes red, so PC2 goes red, while sprite 1's measured population (all 294 words) stays fully fetched and PC5 is unaffected (the wrong word is never displayed). |
-| PC3 | Sprites 2 to 7 are idle. | In each graded frame, each of the six independently identifiable null structures' two words is read exactly once, and no word of sprite 0's or sprite 1's own structure is read more than once (the signature a second sprite channel reading one of them, instead of its own null structure, would leave). | **C3:** SPR2PT points to the sprite-0 structure instead of its own null structure. | Sprite 2's own null structure goes unread and sprite 0's own words are read more than once, so PC3 goes red. The output is unchanged, because sprite 0 hides sprite 2 (p. 115: "The lowest numbered sprite has the highest priority and appears in front of all other sprites"). |
-| PC4 | Colour loads fall between displayed sprite pixels. | (a) Every MOVE fetch at the top of the list comes before the frame's first bitplane fetch. (b) The MOVE fetches after `WAIT $4041` come before sprite 0's pair fetch for line `$50`. (c) For b = 1 to 4, all MOVE fetches of band b's reload (including, for b = 4, the COLOR00-COLOR15 MOVEs after `WAIT $C541`) come after sprite 0's pair fetch for line s_b, and before its pair fetch for line s_b+2 (R4). Every marked word of each chunk must be fetched (not merely any one of them) before its own bounds are compared. Sprite 1 fetches in the same horizontal blanking interval (p. 126), so sprite 0's fetches are enough to mark the lines. | **C4:** band 2's WAIT becomes `$9141` (the fifth colour-17 line of band 2). | Part (c) fails for band 2, so PC4 goes red. |
-| PC5 (P1 only) | Band 4's load of the lower registers took effect. | On every line of groups 12 to 14, within the display window (DIWSTRT to DIWSTOP as the program sets them, p. 59) and outside the two runs, every visible pixel, apart from the pixel next to each end of a run, has U = (10,10,10). On groups 0 to 11 it has U = (00,00,00). The window's own bounds come from an all-nonblack calibration anchor (section 6): the pattern line's own border and every sample of its own repeating pattern are genuinely nonzero (REF, section 3.5), so the window's first and last nonzero sample can only be the true hardware blanking edge, never a black REF pixel. | **C5:** leave out the MOVEs to COLOR00–COLOR15 after `WAIT $C541`. | Band 4 keeps U = (00,00,00), so PC5 goes red. The colour check still passes. |
-| PC6 | There are graded frames. | At least two graded frames (R3). | **C6:** three frame waits after step 7 instead of four. | Fewer than two graded frames occur (measured: 1) while the measured frame population stays nonempty, so PC6 goes red on the count clause, not on an empty population. |
-| R5 | The group/run structure itself (section 3.7) holds, graded once for the whole frame and separately from any single group's colour: the sprite region has exactly 15 groups, every group line has exactly two runs, and every run of every graded group line is the same length as every other (p. 101: "Sprites are 16 pixels wide"). | The structural clauses of the colour check (section 3.7), applied to every graded frame. | **C7:** the colour-17 lines of band 0 (`$53` to `$5A`) of both sprites get the low word `$FF00` and the high word `$0000`. | Group 0's own runs narrow to 8 visible pixels while every other group's runs stay at their own (equal) length, so the equal-length clause of R5 goes red. p. 101 permits the shape change within the 16-pixel width, so this is not a contrast for P2's own colour clause (C9 already tests that); P1 and P2 stay green, since neither depends on R5. |
+| PC1 | SuperHires is in effect. | Every graded frame has at least one pattern line (R5) above the sprite region, and every such pattern line has a spacing of 8 visible pixels. p. 300: "35ns pixel display rate - twice the horizontal resolution of Hires mode". Sixteen pattern pixels per period at 35 ns make 8 visible pixels (R2). R1 is printed before it: its anchor capture measures the 16 visible pixels the same pattern has under HIRES. | **C1:** `BPLCON0` ← `$9000` (HIRES, one bitplane, SHRES = 0). | The spacing is 16 visible pixels, so PC1 goes red, and P1 to P4 print NOT GRADED. R1 is unaffected: its anchor capture is this same HIRES program, taken in every run. It shows why PC1 is indispensable: without SuperHires, COLOR17 to COLOR19 already show the key's bits (section 1.2). |
+| PC2 | Sprites 0 and 1 fetched exactly the prepared data. | In each graded frame, each sprite fetches POS, CTL and all 145 data pairs plus the terminator, exactly once each, each at its own fixed offset in Table 4-1's own order, with no other read of either structure's own address range (entries that continue a bus cycle held by wait states are collapsed first, `nmh::coalesce_adjacent` with the bus period the run measures, and printed). | **C2:** sprite 1's own structure stays fully fetched; only its own second terminator word (p. 108: both terminator words should be `$0000`) is poked to `$BAD1`. The terminator lies beyond CTL's VSTOP, so this word is never displayed. | Sprite 1's own exact-value clause goes red, so PC2 goes red, while sprite 1's population (all 294 words) stays fully fetched; P1 to P4 print NOT GRADED. Every other line holds, PC5 included (the wrong word is never displayed). |
+| PC3 | Sprites 2 to 7 are idle. | In each graded frame, each of the six independently identifiable null structures' two words is read exactly once, and no word of sprite 0's or sprite 1's own structure is read more than once (the signature a second sprite channel reading one of them, instead of its own null structure, would leave). | **C3:** SPR2PT points to sprite 3's own null structure (`$2804`) instead of sprite 2's own. | Sprite 2's own null structure goes unread (0 reads of 2) and sprite 3's is read four times instead of twice, so PC3 goes red; sprite 0's and sprite 1's structures are untouched, so PC2 stays green (294 reads each); P1 to P4 print NOT GRADED. |
+| PC4 | Colour loads fall between displayed sprite pixels. | (a) Every MOVE fetch at the top of the list comes before the frame's first bitplane fetch. (b) The MOVE fetches after `WAIT $4041` come before sprite 0's pair fetch for line `$50`. (c) For b = 1 to 4, all MOVE fetches of band b's reload (including, for b = 4, the COLOR00-COLOR15 MOVEs after `WAIT $C541`) come after sprite 0's pair fetch for line s_b, and before its pair fetch for line s_b+2 (R4). Every marked word of each chunk must be fetched (not merely any one of them) before its own bounds are compared. Sprite 1 fetches in the same horizontal blanking interval (p. 126), so sprite 0's fetches are enough to mark the lines. The set of graded Copper passes is nonempty and has at least as many members as there are graded frames. | **C4:** band 2's WAIT becomes `$9141` (the fifth colour-17 line of band 2). | Part (c) fails for band 2, so PC4 goes red. Band 2's reload now lands inside group 6, so no colour proposition is graded: P1 to P4 print NOT GRADED. |
+| PC5-BOUNDS | The visible extent of a line is known. | On the REF pattern line above the sprite region, in every graded frame: the first to the last nonzero sample is the same extent in every graded frame, no sample inside it is zero, and every sample inside it before the pattern's first lit sample and after its last lit sample is U = (10,10,10), COLOR00's own colour (p. 46, section 6). The bounds and the line length are printed. | **C13:** `COLOR00` ← `$0000` in REF, so the pattern's "off" samples and the border are zero. | The nonzero extent shrinks to the lit pattern and zero samples lie inside it, so PC5-BOUNDS goes red; PC5 and P1 print NOT GRADED. P2 to P4 are unaffected. |
+| PC5 (P1 only) | Band 4's load of the lower registers took effect. | On every line of groups 12 to 14, on every visible sample of the line (the extent PC5-BOUNDS measures, the border area included: p. 46, "also displayed outside the defined display window, in the border area") outside the two runs, apart from the sample next to each end of a run, U = (10,10,10). On groups 0 to 11, U = (00,00,00). Every line of every group contributes at least one compared sample. | **C5:** leave out the MOVEs to COLOR00–COLOR15 after `WAIT $C541`. | Band 4 keeps U = (00,00,00), so PC5 goes red and P1 prints NOT GRADED. P2 to P4 still pass: the colour check of the upper registers does not depend on the lower ones. |
+| PC6 | There are graded frames. | At least two graded frames (R3). | **C6:** three frame waits after step 7 instead of four. | One graded frame occurs (4 restarts), so PC6 goes red on the count clause while the frame population stays nonempty; the lines that grade each frame still pass on it, and P1 to P4 print NOT GRADED. |
+| R1 | The channel and bit order are established. | The anchor capture (a HIRES run, taken in every run) shows section 3.5's U values on every group and its pattern spacing measures 16 visible pixels (section 3.6 R1). | **R1:** band 1's COLOR16 to COLOR31 swap G and H in the anchor capture's Copper list only. **R1S:** the anchor capture runs the SuperHires program, so its spacing is 8. | R1 goes red alone, on its colour clause (R1) and on its spacing clause (R1S); P1 to P4 print NOT GRADED. The run's own capture is untouched, so every other line holds. |
+| R5 | The group/run structure itself (section 3.7) holds, graded once for the whole frame and separately from any single group's colour: the sprite region has exactly 15 groups, every group line has exactly two runs, every run has an interior pixel, and every run of every graded group line is the same length as every other (p. 101: "Sprites are 16 pixels wide"). | The structural clauses of the colour check (section 3.7), applied to every graded frame. | **C7:** the colour-17 lines of band 0 (`$53` to `$5A`) of both sprites get the low word `$FF00` and the high word `$0000`. **C16:** every data word keeps only its bit 0, so every run is one sample wide. **C14:** POS and CTL of both sprites are `$0000`. **C15:** POS and CTL of sprite 1 are `$0000`. | C7: group 0's runs narrow to 8 visible pixels while every other group's stay at their own (equal) length, so the equal-length clause goes red (p. 101 permits the shape change within the 16-pixel width, so this is not a contrast for P2's colour clause; C9 tests that). C16: every run has no interior pixel while all runs stay equal, so the interior clause alone goes red. C15: one run per line, so the run-count clause goes red, and PC2 with it. C14: no group at all, so R5, PC2 and PC4 go red and PC5 prints NOT GRADED. In each, P1 to P4 print NOT GRADED. |
+| fixture | The harness delivers a known word. | The program-stored `$BEEF` is read back at result+2 before anything else is graded. | **C12:** the program stores `$DEAD` instead. | The fixture line goes red alone. |
+| DONE | The program reached its DONE store. | The harness saw `$600D` at `DONE_ADDR`. | **NODONE:** the program stops in an endless loop right before its DONE store. | DONE goes red; every line that grades the run (PC6 to P4) prints NOT GRADED. R1, which has its own capture, still reads PASS. |
+| prog.bin | The image loaded. | The harness loaded `prog.bin`. | **NOPROG:** the image's name does not exist. | prog.bin goes red; every line that depends on the run prints NOT GRADED. |
+| cpu_nrst_out | The CPU left reset within the boot budget. | The harness observed `cpu_nrst_out` high. | None: impossible. The release happens in `boot()` before the program's first instruction runs, and no stimulus of this package (the program image, the chip-RAM data) is an input of it; every selector of this package prints it PASS. | |
 
-Every contrast keeps its own measured population nonempty and drives its
-own check red through the clause the "what then happens" column names, not
-through an empty population.
+Every contrast drives its own line red through the clause the "what then
+happens" column names. C14 and C15 remove sprite population itself: their
+reds are R5's group-count and run-count clauses and PC2's own fetch clauses,
+and the lines that need the population print NOT GRADED.
 
 ---
 
@@ -539,9 +564,11 @@ through an empty population.
    from band to band. Every interior pixel of groups 12 to 14 (band 4)
    shows the same U as the corresponding group of band 3. "Upper sixteen"
    means all sixteen: all of them are loaded in every band.
-5. **Preconditions.** PC1 to PC6, including PC5, which shows that the
-   lower registers really changed in band 4, and R5, the group/run
-   structure P1's own colour clause is graded on top of (section 3.7).
+5. **Preconditions.** R1, PC1 to PC6, including PC5-BOUNDS and PC5, which
+   show that the lower registers really changed in band 4 over the whole
+   visible line, and R5, the group/run structure P1's own colour clause is
+   graded on top of (section 3.7). When one of them prints FAIL or NOT
+   GRADED, P1 prints NOT GRADED.
 6. **Contrast.** **C8:** after `WAIT $C541`, load COLOR16 to COLOR31 with
    the band-0 values of section 3.5 instead of the band-3 values. The page
    then predicts band-0 colours for groups 12 to 14. The check "band 4
@@ -572,8 +599,9 @@ through an empty population.
    the colour-17 column of section 3.5 for the group's band. The
    quantifier is every pixel, of both sprites, with all four values of
    every field. Bits 1–0 are not graded (section 1.4).
-5. **Preconditions.** PC1 to PC4, PC6, and R5, the group/run structure
-   P2's own colour clause is graded on top of (section 3.7).
+5. **Preconditions.** R1, PC1 to PC4, PC6, and R5, the group/run structure
+   P2's own colour clause is graded on top of (section 3.7). When one of
+   them prints FAIL or NOT GRADED, P2 prints NOT GRADED.
 6. **Contrast.** **C9:** in band 1, swap G and H (from G=0, H=1 to G=1,
    H=0). All registers that carry G or H change. Band 1's COLOR16 to
    COLOR31 become:
@@ -597,8 +625,9 @@ through an empty population.
 3. **Observation.** As in P2, on groups 1, 4, 7, 10 and 13.
 4. **Expected.** p. 302: "Sprite (Color 18) :   MN-- OP-- QR--". U equals
    the colour-18 column of section 3.5, with the same quantifiers as P2.
-5. **Preconditions.** PC1 to PC4, PC6, and R5, the group/run structure
-   P3's own colour clause is graded on top of (section 3.7).
+5. **Preconditions.** R1, PC1 to PC4, PC6, and R5, the group/run structure
+   P3's own colour clause is graded on top of (section 3.7). When one of
+   them prints FAIL or NOT GRADED, P3 prints NOT GRADED.
 6. **Contrast.** **C10:** in band 2, swap O and P (from O=1, P=0 to O=0,
    P=1). Band 2's COLOR16 to COLOR31 become:
    `$0F05 $0BC1 $074D $0349 $0E34 $0AF0 $067C $0278 $0D17 $09D3 $055F $015B $0C16 $08D2 $045E $005A`.
@@ -619,8 +648,9 @@ through an empty population.
 3. **Observation.** As in P2, on groups 2, 5, 8, 11 and 14.
 4. **Expected.** p. 302: "Sprite (Color 19) :   ST-- UV-- WX--". U equals
    the colour-19 column of section 3.5, with the same quantifiers as P2.
-5. **Preconditions.** PC1 to PC4, PC6, and R5, the group/run structure
-   P4's own colour clause is graded on top of (section 3.7).
+5. **Preconditions.** R1, PC1 to PC4, PC6, and R5, the group/run structure
+   P4's own colour clause is graded on top of (section 3.7). When one of
+   them prints FAIL or NOT GRADED, P4 prints NOT GRADED.
 6. **Contrast.** **C11:** in band 2, swap W and X (from W=1, X=0 to W=0,
    X=1). Band 2's COLOR16 to COLOR31 become:
    `$0F05 $0BC1 $078D $0345 $0E34 $0AF0 $06BC $0274 $0D27 $09E3 $05AF $0167 $0C15 $08D1 $049D $0055`.
@@ -643,7 +673,7 @@ from these pages can show that.
 
 | claims | count | use |
 |---|---|---|
-| `CH4-appC-color.c1` | 1 | none: recorded on P1's own assertion, not graded by it (section 1.5) |
+| `CH4-appC-color.c1` | 1 | none: a RECORDED line, not graded (section 1.5) |
 | `APPC-sprkeykey.c17r/g/b`, `CH4-appC-color.c5`–`c7` | 6 | P2 (letter half); the "--" half has no expected value (section 1.4) |
 | `APPC-sprkeykey.c18r/g/b`, `CH4-appC-color.c8`–`c10` | 6 | P3 (as above) |
 | `APPC-sprkeykey.c19r/g/b`, `CH4-appC-color.c11`–`c13` | 6 | P4 (as above) |
@@ -658,18 +688,26 @@ from these pages can show that.
 
 `prog.s` performs the register writes of section 3.3 and the pointer writes
 of section 3.2; wrapper sources (`prog_c1.s`, `prog_c3.s`, `prog_c6.s`,
-`prog_c12.s`) each set one symbol and `include "prog.s"`, giving the
-CPU-side contrasts (C1, C3, C6, C12) their own assembled program. The
-sprite, bitplane and Copper-list data of sections 3.2 and 3.4 is poked
-directly into chip RAM by `test_ch4_shres_sprite_a.cpp`; the data-only
-contrasts (C2, C4, C5, C7, C8, C9, C10, C11) select a different poked
-value, or a single wrong word inside an otherwise-correct structure (C2),
-in place of a separate assembled program. `ch4.i` gives the register
-offsets (Appendix B, pp. 289-292) and this package's own chip-RAM
-addresses, all below `$80000` as section 3.2 states.
+`prog_c12.s`, `prog_nodone.s`) each set one symbol and `include "prog.s"`,
+giving the CPU-side contrasts (C1, C3, C6, C12, NODONE) their own assembled
+program. The sprite, bitplane and Copper-list data of sections 3.2 and 3.4
+is poked directly into chip RAM by `test_ch4_shres_sprite_a.cpp`; the
+data-only contrasts (C2, C4, C5, C7 to C11, C13 to C16) select a different
+poked value, or a single wrong word inside an otherwise-correct structure
+(C2), in place of a separate assembled program, and the anchor selectors R1
+and R1S change the anchor capture only. NOPROG names an image that does not
+exist. `ch4.i` gives the register offsets (Appendix B, pp. 289-292) and
+this package's own chip-RAM addresses; the data addresses are below
+`$80000` as section 3.2 states.
+
+Every run, the normal run and each selector, executes one evaluation and
+prints the same lines in the same order: `prog.bin`, `cpu_nrst_out`,
+`DONE`, `fixture`, R1, PC6, PC1 to PC4, PC5-BOUNDS, PC5, R5, P1 to P4.
+A line whose precondition did not print PASS prints
+`NOT GRADED: <id> [<precondition>]` in its place.
 
 **Measured: the sprite pixel period in SuperHires.** R2's own anchor
-(section 3.6) is confirmed by the C1 (HIRES) capture: on both cores, its
+(section 3.6) is confirmed by the R1 capture (HIRES): on both cores, its
 pattern line's spacing measures exactly 16 visible pixels (p. 300: twice
 the SuperHires 8-pixel spacing PC1 grades) and each sprite run measures
 exactly 32 visible pixels. In the normal (SuperHires) run, on both cores,
@@ -681,19 +719,32 @@ not depend on either width being 32 or 16, only on every run of a graded
 frame sharing the same length as every other, which both captures satisfy
 on their own terms.
 
-**PC5's window.** The window is DIWSTRT to DIWSTOP as the program sets
-them (p. 59), less the one pixel next to each end of a run (section 3.7's
-own exclusion, applied at every run boundary within the window). The
-window's own bounds are found once per graded frame from the pattern line
-above the sprite region (R5, PC1's own marker, set once in step 4 and
-never rewritten): its first and last sample outside the video port's own
-blanked output (`nanomig_harness.h`'s `VideoSample`, already blanked during
-hbl/vbl) bracket the display window, independently of any sprite or colour
-register any proposition in section 4 grades. This is an all-nonblack
-calibration anchor: REF's own "off" state (section 3.5) is U = (10,10,10),
-not U = (00,00,00), so the border and every sample of the pattern line's
-own repeating pattern are genuinely nonzero throughout the display window,
-and only the true hardware blanking outside DIWSTRT-DIWSTOP can produce
-the literal-zero sample the scan looks for. A black REF pixel can
-therefore never be mistaken for that blanking, on either end of the
-window.
+**PC5-BOUNDS and PC5: the visible line.** The video port blanks the line
+outside its visible extent (`nanomig_harness.h`'s `VideoSample`, already
+blanked during hbl/vbl). PC5-BOUNDS measures that extent on the REF pattern
+line above the sprite region, which is set once in step 4 and never
+rewritten, as the first to the last nonzero sample, independently of any
+sprite or colour register any proposition in section 4 grades. Every
+sample of that line is nonzero between those two ends (REF colour 0 is
+`$0AAA`, section 3.5), so the two ends are the ends of the blanked output
+and not a black REF pixel. PC5-BOUNDS asserts that the extent is the same in
+every graded frame, that it holds no zero sample, and that every sample
+of it before the pattern's first lit sample and after its last one is
+U = (10,10,10), COLOR00's own colour. p. 46: "COLOR00 is always reserved
+for the background color. The background color shows in any area on the
+display where there is no other object present and is also displayed
+outside the defined display window, in the border area." Both the area
+outside DIWSTRT-DIWSTOP and the area inside it where no object is present
+show COLOR00, so the pattern's own "off" samples and the border are one
+colour on this line, and the extent PC5-BOUNDS measures is the whole
+visible line, not the display window. It does not locate DIWSTRT and
+DIWSTOP: no line of this package gives a window content that differs from
+the border.
+
+PC5 grades that whole visible extent on every line of every group, outside
+the two runs and apart from the one sample next to each end of a run
+(section 3.7's own exclusion), against the group's background (p. 46: the
+border shows the background colour too, so every sample of the extent shows
+it). The measured extent is printed by the run: on both cores, on every
+graded frame, 754 samples of a 908-sample line, [65,819), with the lit
+pattern in [141,769).

@@ -10,13 +10,16 @@
 ;   (no symbol) -- the normal run
 ;   MUT_C1      -- P1's precondition contrast: BPLCON0 = $9000 (HIRES,
 ;                  SHRES=0) instead of $1040
-;   MUT_C3      -- PC3's contrast: SPR2PTH points at SPR0_DATA instead of
-;                  NULL2_DATA (Copper list likewise, when NMH_MUTATE=C3)
+;   MUT_C3      -- PC3's contrast: SPR2PTH points at NULL3_DATA, sprite 3's own
+;                  null structure, instead of NULL2_DATA (Copper list
+;                  likewise, when NMH_MUTATE=C3)
 ;   MUT_C6      -- PC6's contrast: three frame waits after step 7 instead
 ;                  of four, so fewer than two graded frames occur while the
 ;                  measured frame population stays nonempty
 ;   MUT_C12     -- the fixture check's own contrast: $DEAD stored instead
 ;                  of $BEEF
+;   MUT_NODONE  -- the DONE line's own contrast: the program stops in an
+;                  endless loop right before its DONE store
 ;
 ; NMH_MUTATE=C2 is a data-only contrast (a wrong word poked into sprite 1's
 ; own structure): it runs this same, unmodified program (SPECIFICATION.md
@@ -58,7 +61,7 @@ start:
         move.l  #SPR0_DATA,SPR0PTH(a0)
         move.l  #SPR1_DATA,SPR1PTH(a0)
         ifd     MUT_C3
-        move.l  #SPR0_DATA,SPR2PTH(a0) ; PC3 contrast: sprite 2 -> sprite 0's data
+        move.l  #NULL3_DATA,SPR2PTH(a0) ; PC3 contrast: sprite 2 -> sprite 3's own null structure
         else
         move.l  #NULL2_DATA,SPR2PTH(a0)
         endif
@@ -106,6 +109,9 @@ finish:
         endif
 
         ; step 10
+        ifd     MUT_NODONE
+.hang:  bra.s   .hang
+        endif
         DONE
 
 ; ---- subroutines (a0 = CUSTOM throughout; d0/d1 scratch) ------------------
