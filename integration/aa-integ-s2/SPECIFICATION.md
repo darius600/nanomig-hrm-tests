@@ -255,16 +255,32 @@ so the minterm only has to make the blit run.
 - **HHPOSR samples.** Where HHPOSR is sampled, a `MOVE.W $DFF1DA,(An)+` is
   interleaved in the same loop.
 - **Anchor check.** In a dry run in normal mode (`BEAMCON0 = $0020`,
-  `BPLCON0 = 0`), consecutive `(V,H)` samples increase strictly in
-  lexicographic order, except across the wrap at the end of a frame. The
-  counter runs and is being read.
+  `BPLCON0 = 0`) the counter runs and is being read. The page does not say in
+  which colour clock V steps relative to the wrap of H, so the anchor asks what
+  the page supports of every two consecutive samples:
+  1. they are not equal in `(V,H)`;
+  2. V does not decrease, except across the wrap at the end of a frame (a frame
+     sample ends at VERTB, so a decrease can only fall on its last two
+     samples), and steps by at most 1;
+  3. within one value of V, H decreases at most once (the wrap at the end of
+     the line).
+
+  The pairs of the third kind (H wrapped, V not yet stepped) are MEASURED. A
+  sample taken at the step from line 255 to line 256 can carry the old V8 with
+  the new V7-0 (the long word is read as two bus cycles). A sample whose V falls
+  by 255 or 256 against its predecessor while its successor reads V >= 256 is
+  completed in V with the V8 it lacks and counted in a MEASURED line; the VPOSR
+  word itself is never changed, and V8 is graded on it as read.
 
 **F5: the observed sync lines are the chip's HSY* and VSY* pins** (anchor for
 P9 and P10).
 
 The claims in P9 and P10 concern the HSY* and VSY* pins. The harness shows
-horizontal and vertical sync only after a line doubler, which may regenerate
-them. The following runs decide whether the pins can be seen. In all of them:
+horizontal sync only after a line doubler, which regenerates it (`nanomig.v`
+instantiates it with `dblscan` 1'b1, and Amber.v then outputs the doubler's line
+buffer as `hs`); the vertical sync is passed through (Amber.v: `_vsync_out <=
+dblscan ? _vsync_in : 1'b1`). The following runs decide whether the pins can be
+seen. In all of them:
 HSSTRT = `$0020`, HSSTOP = `$0030`, VSSTRT = 100, VSSTOP = 103,
 HTOTAL = `$00E2`, VTOTAL = `$0138`, and BEAMCON0 has PAL (bit 5) and
 VARBEAMEN (bit 7) set and every other bit 0 except those named below.
@@ -317,7 +333,12 @@ The anchor holds when all of the following are true in the graded frame (F6):
   - The observed vertical sync differs in exactly one interval, of exactly
     `2*T_L`.
   - It is identical elsewhere.
-- **S-V3 against S-V1:** the observed vertical sync is inverted at every sample.
+
+The anchor S-V is S-V1 against S-V2 alone. S-V3 against S-V1 is a graded line of
+its own, F5-SV-INV, and is not part of the anchor: p.13 "HSYTRUE,VSYTRUE,CSYTRUE=
+These change the polarity of the HSY*, VSY*, & CSY* pins", so the observed
+vertical sync is inverted at every sample. A chip that ignores VSYTRUE fails that
+line (NM-HRM-032), and the VSY* lines of P9 and P10 are graded all the same.
 
 **Interval lengths are exact.** The pages state no tolerance for them, so
 none is applied, here or in P9 and P10. An interval is counted in video
@@ -344,11 +365,15 @@ short if LACE=0)", and VSSTRT = 100. Chip line 100 is the interval of length
 `(n - 100) * T_L` after it. This numbering uses S-V1 and F3 only, so the
 VSY* parts do not depend on S-H.
 
-If S-H fails, the HSY* parts of P9 and P10 cannot be checked in this harness.
-They are then reported as not checkable, not as red. If S-V fails, the same
-holds for the VSY* parts. The anchor's own contrasting cases are built in:
-S-H2 against S-H1 and S-V2 against S-V1 must differ, and S-H3 and S-V3 must
-invert.
+If S-H fails, the HSY* parts of P9 and P10 that need it cannot be checked in
+this harness: hs is not observable at this boundary (the scan doubler
+regenerates it). They are then reported as not checkable, not as red. If S-V
+fails, F5-SV-DIFF is FAIL (the vertical sync is passed through to the harness, so the
+failure is the chip's) and the VSY* parts of P9 and P10 are not graded. The anchor's own contrasting cases are
+built in: S-H2 against S-H1 and S-V2 against S-V1 must differ, and S-H3 must
+invert. P9-NH, P9-NC and P10-CPAIR assert identity at every sample, which a
+deterministic scan doubler keeps whatever it regenerates, so they need no
+anchor: each is graded when its runs exist and are cycle-aligned (F6).
 
 **F6: graded frame and run alignment.**
 
@@ -977,8 +1002,10 @@ not graded: p.12 speaks of the "beam hit position".
   - The hit's `V` is 255, so VPOSR bit 0 (V8) stays 0 in the "after" samples.
 - **P8-0, HHPOSR:** all "after" samples are identical.
 - **P8-1:**
-  - `(V,H)` increases strictly from each sample to the next across the whole
-    window, including after the pulse.
+  - The samples show the counters running across the whole window, including
+    after the pulse: every two consecutive samples satisfy the three criteria of
+    the F4 anchor (not equal; V does not decrease and steps by at most 1; within
+    one value of V, H decreases at most once).
   - The last samples have `V >= 256`, so VPOSR bit 0 = 1: VPOSR, too, is
     shown to read the actual counter.
   - HHPOSR: consecutive "after" samples are not all identical.
@@ -998,7 +1025,8 @@ All three registers are graded in both settings, subject to precondition 3.
    samples advance throughout. The page speaks of a latched value only where
    a hit exists; HRM p.239 describes the trigger.
 2. **LPE enables the latch.** Contrast: P8-0 with step 4 writing
-   `BPLCON0 = $0000`. The samples then advance through the pulse: "LPEN =Light
+   `BPLCON0 = $0000`. The samples then advance through the pulse, showing the
+   counters running by the criteria of the F4 anchor: "LPEN =Light
    pen enable" (p.17), and p.12 conditions the latched read on LPE.
 3. **The alternate counter runs,** so that HHPOSR can be graded. In P8-dry,
    HHPOSR takes at least two different values. If it does not, HHPOSR is not
@@ -1142,10 +1170,12 @@ in F5.
 
 **Preconditions,** each with its contrasting case:
 
-1. **F5 anchor S-H holds** (for (a)) and S-V holds (for (b)). The anchor's
-   contrasts are part of F5. If S-H or S-V fails, the corresponding part is
-   reported as not checkable, and its claim ids come off the assertion
-   (they are recorded as not graded, with the failed anchor as the reason):
+1. **F5 anchor S-H holds** (for the CSCBEN = 1 pairs of (a)) and S-V holds
+   (for (b), on S-V1 against S-V2 alone). The anchor's contrasts are part of F5.
+   If S-H or S-V fails, the corresponding part is not graded (reported as not
+   checkable for S-H, with F5-SV-DIFF FAIL for S-V), and its claim ids come off the assertion (they are recorded as not graded,
+   with the failed anchor as the reason). The CSCBEN = 0 pairs of (a) (P9-NH and
+   P9-NC) assert identity at every sample and need no anchor (F5):
    - (a) grades opus:AA-beamcon0.c15, sol:AA-beamcon0.c33 and
      opus:AA-beamcon0.c38;
    - (b) grades opus:AA-beamcon0.c16 and sol:AA-beamcon0.c34;
@@ -1219,6 +1249,8 @@ VARBEAMEN is set in every run, as in F5.
   VARHSYEN have priority, so each needs both halves: if S-H or S-V fails,
   both ids come off the assertion and are recorded as not graded, with the
   failed anchor as the reason; the checkable half is still run and reported.
+  P10-CPAIR asserts identity at every sample and needs no anchor (F5): it is
+  graded when its two runs exist and are cycle-aligned.
 - **Cycle alignment (F6).** Contrast: none; this is a validity check on the
   comparison.
 - **The vertical-sync lines exist in the graded frame.** Asserted as in P9.
@@ -1399,15 +1431,21 @@ time it comes out" (BPLHPT), and with DUAL these differ (section 4, item 14).
    fetch only the null sprite, all other DMA is off, and the CPU is stopped.
    Contrast: none. The page conditions the claim on free bandwidth, and this
    setup leaves as much as the enables above allow.
-3. **The alternate counter wraps at least twice per main line,** so `k >= 2`:
+3. **The alternate counter wraps at least twice per main line,** so `k >= 2`
+   (for P12-1; the DUAL-clear case P12-0 does not use the alternate counter):
    in P11's DUAL run, HHPOSR decreases at least twice within every main line.
    Here this is a precondition and not the clause under test, which is the
    UHRES chain. Contrast: `HTOTAL = $00E2` makes `k` fall. The page
    then predicts fewer appearances; `k` and the count must move together.
 4. **F3 anchor**, and `VMARK(90)` lies in the port line the test calls 90.
    The marker is written within a few CCK of the line start because the poll
-   reads VHPOSR repeatedly. Contrast: none; this is how the reference frame is
-   placed.
+   reads VHPOSR repeatedly. The refresh accesses are the reads of byte
+   addresses below `$1000` (the port shows them at `$000000`), and the port line
+   holding `VMARK(90)` and every port line of lines 90-109 must be a group of
+   exactly four of them, one line period long, with no exemption at the start of
+   the window. Contrast: a lores bit plane fetched from byte address `$000000`
+   with BPL1MOD -40 (every line reads the same 20 words) puts more than four
+   accesses at the refresh addresses in every line, so the anchor fails (P12-F3).
 
 **Contrasting case.** P12-0 (DUAL off): one bit-plane and two sprite pointer
 appearances per line.
@@ -1487,7 +1525,9 @@ Frame A: the F4 sample loop over a full frame, storing VPOSR (for LOL) with
 ### P14: In normal mode, the PAL bit selects different decodes from PAL = 0; the page names no PAL values
 
 **Claims:** opus:AA-beamcon0.c35, sol:AA-beamcon0.c52, opus:AA-beamcon0.b5,
-sol:AA-beamcon0.c16. **Pages:** p.12, p.29.
+sol:AA-beamcon0.c16, all graded by P14-1 alone (PAL = 1 decodes differ from
+PAL = 0 decodes); the NTSC long-line lines P14-0-LOL, P14-0-LINES and
+P14-0-LONGONLY and the aggregate P14 carry none. **Pages:** p.12, p.29.
 
 **Proposition.** With VARBEAMEN = 0, the frame timing with BEAMCON0 bit 5
 (PAL) = 1 differs from the timing with PAL = 0. With PAL = 0, every other line
@@ -1780,16 +1820,17 @@ Mutation variants (a symbol defined before the include) and the labels that sele
    the port accesses between `BLIT_GO` and `BLIT_DONE` that the program's own ranges (program image and tables, parameter, result and marker
    areas, stack, sample buffers, the vector `$6C`) and the refresh address range (below `$1000`) do not explain; those inside `$0F0000-$0F00FF`
    are channel D's in the blits of A, B and C. The other propositions use the regions of their sections.
-2. **F3 refresh accesses.** A port access outside the program's ranges, with the CPU halted and no DMA enabled, is a refresh access; the port shows
-   them as reads of byte address `$000000`. A line starts at the first access of each group; groups are split at gaps larger than half the largest
+2. **F3 refresh accesses.** In the stretches of P13, P14 and F5 a port access outside the program's ranges, with the CPU halted and no DMA enabled, is a refresh
+   access (P12 identifies them by address, item 9); the port shows them as reads of byte address `$000000`. A line starts at the first access of each group; groups are split at gaps larger than half the largest
    gap of the window. The anchor requires exactly four accesses in every group but the first and the last of the window and every line period a
    whole number of colour clocks.
 3. **F4 anchor.** The page gives the position as the fields V and H of VHPOSR and does not say in which colour clock V steps relative to the wrap of
-   H. The anchor therefore asks what the page supports: V never decreases except across the wrap at the end of the frame (the last two samples of a
-   sample frame, which ends at VERTB), and within one value of V the H of consecutive samples increases except across the wrap at the end of a line
-   (a fall to below half the previous H). Pairs of that second kind (H wrapped, V not yet stepped) are counted in `MEASURED` lines. A sample taken at the step from
-   line 255 to line 256 can carry the old V8 with the new V7-0 because the long word is read as two bus cycles; such a sample (V falling by 255 or 256)
-   is completed with the V8 it lacks and counted in a `MEASURED` line.
+   H. The anchor therefore asks what the page supports of every two consecutive samples: they are not equal in (V,H); V does not decrease, except across
+   the wrap at the end of the frame (the last two samples of a sample frame, which ends at VERTB), and steps by at most 1; within one value of V, H decreases
+   at most once (the wrap at the end of a line). Pairs of that last kind (H wrapped, V not yet stepped) are counted in `MEASURED` lines. P8-1-VH and P8-LPE
+   apply the same criteria to their samples, without the frame-end exception. A sample taken at the step from line 255 to line 256 can carry the old V8 with
+   the new V7-0 because the long word is read as two bus cycles; such a sample (V falling by 255 or 256 against its predecessor, its successor reading
+   V >= 256) is completed in V with the V8 it lacks and counted in a `MEASURED` line. VPOSR is never changed, and V8 is graded on it as read.
 4. **LOL per line.** The LOL of a sampled line is that of the line's first sample: a sample taken after H wraps and before V steps carries the next line's LOL.
 5. **P14-STABLE.** Two consecutive frames give the same V_max and the same frame period in units of T_L, the period divided by the mean line period of the
    stopped frame and rounded to a whole number of lines.
@@ -1797,13 +1838,18 @@ Mutation variants (a symbol defined before the include) and the labels that sele
    before the last sample on line 255, and the run takes samples up to 14 after that one. The F4 anchor is evaluated over those N samples. The pulse lasts
    2*T_C system clocks. P8-HHRUN and P8-TRIGGER are reports: when HHPOSR takes one value only in the dry run, or no pulse run freezes (V,H), the dependent lines are
    NOT GRADED, as section 3, P8, preconditions 1 and 3 say.
-7. **F5 anchors.** S-H and S-V hold or do not hold; a part that does not hold prints `NOT CHECKABLE`, never `FAIL`. The runs of P9 and P10 are not taken when
-   neither part holds. P9-A grades opus:AA-beamcon0.c15, sol:AA-beamcon0.c33 and opus:AA-beamcon0.c38, P9-B grades opus:AA-beamcon0.c16 and sol:AA-beamcon0.c34,
-   P9-ID grades opus:AA-beamcon0.b10 and sol:AA-beamcon0.c11 when either part is checkable, and P10 needs both parts.
-8. **P9-BV position.** The page fixes the blank's start only to line 150 and V_var's to line 100, each at a horizontal position it does not fix, so the test grades
-   that the first differing sample lies between 49 and 51 line periods after the start of V_var, and that the differing samples span at most two line periods.
-9. **P12.** The refresh accesses of the stopped stretch are those outside the program's ranges and outside `$180000-$1AFFFF`. The port line numbered 90 is the group
-   at or before the VMARK(90) store. P12-BANDWIDTH counts, on lines 102-108, every access that refresh, the UHRES regions and the null sprite do not explain.
+7. **F5 anchors.** S-H and S-V hold or do not hold; an S-H part that does not hold prints `NOT CHECKABLE`, never `FAIL`; an S-V that does not hold prints `FAIL` on F5-SV-DIFF and leaves the VSY* lines NOT GRADED. S-V is S-V1 against S-V2 alone; S-V3 is the
+   graded line F5-SV-INV, which prints FAIL on a chip that ignores VSYTRUE and does not decide whether the VSY* lines are graded. The runs of P9 and P10 are not
+   taken when neither part holds; P9-NH, P9-NC and P10-CPAIR assert identity at every sample and take their own runs. P9-A grades opus:AA-beamcon0.c15,
+   sol:AA-beamcon0.c33 and opus:AA-beamcon0.c38, P9-B grades opus:AA-beamcon0.c16 and sol:AA-beamcon0.c34, P9-ID grades opus:AA-beamcon0.b10 and
+   sol:AA-beamcon0.c11 when either part is checkable, and P10 needs both parts.
+8. **P9-BV position.** The page fixes the blank's start only to line 150, at no horizontal position, and V_var's to line 100 at HSSTRT (p.12, short fields), so the
+   test grades that the first differing sample lies between 49 and 51 line periods after the start of V_var, and that the differing samples span at most two line
+   periods.
+9. **P12.** The refresh accesses of the stopped stretch are the reads of byte addresses below `$1000` (the vector `$6C` excepted). The port line numbered 90 is the
+   group at or before the VMARK(90) store. The anchor requires that group and every group of lines 90-109 to hold exactly four accesses and to span a whole number of
+   colour clocks, with no exemption at the start of the window. P12-BANDWIDTH counts, on lines 102-108, every access that refresh, the UHRES regions and the null sprite
+   do not explain.
 10. **Run economy.** A precondition whose own run a mutation does not touch is not evaluated in that mutation run and prints `RECORDED: <label>: not evaluated in this mutation run`.
 
 ### 6.4 Measured values
@@ -1831,6 +1877,11 @@ P8 measured: P8-0 run: 7 samples before the pulse, 15 after; P8-1 run: 7 before,
 F5 measured: S-H1 against S-H2, hs: 628 intervals [line -1, length 16] [line 0, length 16] [line 0, length 16] [line 1, length 16]; T_C = 8, lines in the frame 313
 F5 measured: S-V1 against S-V2, vs: 1 intervals [line 102, length 3632]
 F5 measured: V_var length 4540 system clocks starting in line 100; V_norm length 4540 starting in line 2
+P9 measured: CSCBEN set, HSSTRT $20 against $24, hs: 0 intervals
+P9 measured: CSCBEN set, HCENTER $91 against $99, hs: 0 intervals; differing lines 0 (V_var gives 3, V_norm gives 2 or 3)
+P9 measured: CSCBEN set, VBSTRT 150 against 152, vs: 0 intervals
+P10 measured: VARHSYEN, HSSTOP $30 against $34, hs: 628 intervals [line -1, length 16] [line 0, length 16] [line 0, length 16] [line 1, length 16]; VARVSYEN, VSSTOP 103 against 105, vs: 1 intervals [line 102, length 3632]
+P10 measured: CSCBEN and VARHSYEN, HCENTER $91 against $99, hs: 0 intervals; same pair, vs: 1 intervals [line 4, length 64]
 P11 measured: HTOTAL=0038: maximum H = 226, maximum HHPOSR (bits 7-0) = 0, HHPOSR decreases per main line = 0.000 (0 over 313 lines)
 P11 measured: HHPOSR decreases per main line 0.000 with HTOTAL $38 and 0.000 with HTOTAL $E2, expected ratio 3.982
 P12 measured: colour clock T_C = 8 system clocks; HHPOSR rate per colour clock = 0.000, alternate counter period = 0.000 colour clocks, fewest HHPOSR decreases on a main line = 0
@@ -1968,49 +2019,49 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P8-FIXTURE | stimulus red | NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P8-FIXTURE; NOT GRADED 5; fx68k: FAIL P8-FIXTURE; NOT GRADED 5 |
 | P8-ANCHOR | stimulus red | NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before; TG68K: FAIL P8-ANCHOR; NOT GRADED 5; fx68k: FAIL P8-ANCHOR; NOT GRADED 5 |
 | P8-FIT | stimulus red | NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; TG68K: FAIL P8-FIT; NOT GRADED 5; fx68k: FAIL P8-FIT; NOT GRADED 5 |
-| P8-LPE | stimulus red | NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; on the repository build the same run leaves the line PASS |
-| P8-0-VH | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
-| P8-0-HH | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
-| P8-1-VH | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8-1-VH (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8 |
-| P8-1-HH | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8-1-HH (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8 |
-| P8 | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8 (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8 |
+| P8-LPE | stimulus red | NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS |
+| P8-0-VH | stimulus red | NMH_MUTATE=P8-0-VH on the private build of 6.6: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; private TG68K build: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P8-0-HH | stimulus red | NMH_MUTATE=P8-0-HH on the private build of 6.6: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; private TG68K build: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P8-1-VH | stimulus red | NMH_MUTATE=P8-1-VH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P8-1-HH | stimulus red | NMH_MUTATE=P8-1-HH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P8 | stimulus red | NMH_MUTATE=P8 on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
 | F5-FIXTURE | stimulus red | NMH_MUTATE=F5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5; fx68k: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5 |
 | F5-LINES | stimulus red | NMH_MUTATE=F5-LINES: a bit plane fetched in the S-H1 run; TG68K: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5 |
-| F5-ALIGN | stimulus red | NMH_MUTATE=F5-ALIGN: one more register in S-H2's list; TG68K: FAIL F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-ALIGN; NOT CHECKABLE 5 |
-| F5-SH-DIFF | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| F5-SH-INV | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| F5-SV-DIFF | stimulus red | NMH_MUTATE=F5-SV-DIFF: S-V2 with VSSTOP 103, like S-V1; TG68K: no line failed; NOT CHECKABLE 6; fx68k: no line failed; NOT CHECKABLE 6 |
+| F5-ALIGN | stimulus red | NMH_MUTATE=F5-ALIGN: HTOTAL $00E0 in place of $00E2 in S-H2; TG68K: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3 |
+| F5-SH-DIFF | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| F5-SH-INV | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| F5-SV-DIFF | stimulus red | NMH_MUTATE=F5-SV-DIFF: S-V2 with VSSTOP 103, like S-V1; TG68K: FAIL F5-SV-DIFF, F5-SV-INV; NOT CHECKABLE 4; fx68k: FAIL F5-SV-DIFF, F5-SV-INV; NOT CHECKABLE 4 |
 | F5-SV-INV | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT CHECKABLE on the repository build |
-| P9-AH | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P9-AC | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P9-NH | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P9-NC | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P9-BV | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P9-BV () the private build prints FAIL P9-BV, P9-B, P9-ID |
-| P9-NV | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P9-NV () the private build prints FAIL P9-NV, P9-B, P9-ID |
-| P9-A | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P9-B | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
-| P9-ID | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
-| P10-CPAIR | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P10-SPAIR | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
-| P10-VPAIR | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P10-VPAIR () the private build prints FAIL P10-VPAIR, P10-VSPAIR |
-| P10-VSPAIR | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P10-VSPAIR () the private build prints FAIL P10-VSPAIR |
-| P10 | none impossible | not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| P9-AH | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| P9-AC | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| P9-NH | stimulus red | NMH_MUTATE=P9-NH: VARHSYEN set in both runs of the pair (BEAMCON0 $01A0 in place of $00A0); TG68K: FAIL F5-SV-INV, P9-NH, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P9-NH, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3 |
+| P9-NC | stimulus red | NMH_MUTATE=P9-NC: VARHSYEN set in both runs of the pair (BEAMCON0 $01A0 in place of $00A0); TG68K: FAIL F5-SV-INV, P9-NC, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P9-NC, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3 |
+| P9-BV | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-BV (VBSTRT 150 in both runs of the pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3 |
+| P9-NV | stimulus red | NMH_MUTATE=P9-NV on the private build of 6.6: CSCBEN set in both runs of the pair (BEAMCON0 $04A0 in place of $00A0); private TG68K build: FAIL P9-NV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS |
+| P9-A | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| P9-B | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-B (VBSTRT 150 in both runs of the CSCBEN-set pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3 |
+| P9-ID | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-ID (VBSTRT 150 in both runs of the CSCBEN-set pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3 |
+| P10-CPAIR | stimulus green | NMH_MUTATE=P10-CPAIR: CSCBEN set and VARHSYEN clear in both runs of the pair (BEAMCON0 $04A0 in place of $05A0): the same comparator on a pair that differs in HCENTER alone, with the variable composite sync not routed; the line is PASS on TG68K and PASS on fx68k in this run, against FAIL on both in the normal run; TG68K: FAIL F5-SV-INV; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV; NOT GRADED 2; NOT CHECKABLE 3 |
+| P10-SPAIR | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
+| P10-VPAIR | stimulus red | NMH_MUTATE=P10-VPAIR on the private build of 6.6: CSCBEN set and VARVSYEN clear in both runs of the pair (BEAMCON0 $04A0 in place of $06A0); private TG68K build: FAIL P10-VPAIR; NOT GRADED 2; NOT CHECKABLE 3; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS |
+| P10-VSPAIR | stimulus red | NMH_MUTATE=P10-VSPAIR: VSSTOP 103 in both runs of the pair; TG68K: FAIL F5-SV-INV, P10-CPAIR, P10-VSPAIR; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P10-CPAIR, P10-VSPAIR; NOT GRADED 2; NOT CHECKABLE 3 |
+| P10 | none impossible | not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable |
 | P11-FIXTURE | stimulus red | NMH_MUTATE=P11-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P11-FIXTURE, P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-FIXTURE, P11-HHRUN; NOT GRADED 3 |
 | P11-ANCHOR | stimulus red | NMH_MUTATE=P11-ANCHOR: the samples are stored below the one before; TG68K: FAIL P11-ANCHOR, P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-ANCHOR, P11-HHRUN; NOT GRADED 3 |
 | P11-HHRUN | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build |
-| P11-MAXH | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
-| P11-HHMAX | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-HHMAX (HTOTAL $0070 in place of $0038) the private build prints FAIL P11-HHMAX, P11 |
-| P11 | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
-| P11-PERIOD | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-PERIOD () the private build prints FAIL P11-PERIOD |
+| P11-MAXH | none impossible | no stimulus keeps the precondition P11-HHRUN: the only stimulus that bounds the main counter by HTOTAL sets VARBEAMEN, which makes the main lines 57 colour clocks long, and this sample loop (one sample per 34 colour clocks) then leaves lines with a single sample, so HHPOSR takes one value on them, the precondition fails and the line is NOT GRADED |
+| P11-HHMAX | stimulus red | NMH_MUTATE=P11-HHMAX on the private build of 6.6: HTOTAL $0070 in place of $0038; private TG68K build: FAIL P11-HHMAX, P11; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P11 | stimulus red | NMH_MUTATE=P11 on the private build of 6.6: HTOTAL $0070 in place of $0038 in the DUAL run; private TG68K build: FAIL P11-HHMAX, P11; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P11-PERIOD | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-PERIOD (HTOTAL $0038 in place of $00E2 in the contrast run) the private build prints FAIL P11-PERIOD |
 | P12-FIXTURE | stimulus red | NMH_MUTATE=P12-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 4; fx68k: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 4 |
-| P12-F3 | none impossible | not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built |
-| P12-UHRES | stimulus green | NMH_MUTATE=P12-UHRES: one lores bit plane fetched from the bit-plane region and a sprite with data in the sprite region in place of UHRES; the line is FAIL without it and PASS with it on TG68K; fx68k: FAIL P12-K; NOT GRADED 4 |
+| P12-F3 | stimulus red | NMH_MUTATE=P12-F3: a lores bit plane fetched from byte address $000000 with BPL1MOD -40, so that every line reads the same 20 words of the refresh addresses; TG68K: FAIL P12-F3, P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4; fx68k: FAIL P12-F3, P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4 |
+| P12-UHRES | stimulus green | NMH_MUTATE=P12-UHRES: one lores bit plane fetched from the bit-plane region and a sprite with data in the sprite region in place of UHRES, so that both regions are accessed on every graded line; the line is PASS on TG68K and PASS on fx68k in this run, against FAIL on both in the normal run; TG68K: FAIL P12-K, P12-0; NOT GRADED 3; fx68k: FAIL P12-K, P12-0; NOT GRADED 3 |
 | P12-BANDWIDTH | stimulus red | NMH_MUTATE=P12-BANDWIDTH: a lores bit plane fetched from $0F8000 on lines 102-108; TG68K: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4; fx68k: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4 |
 | P12-K | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P12-K (HTOTAL $00E2 in place of $0038 in the DUAL run of P11) the private build prints FAIL P12-UHRES, P12-K |
-| P12-0 | none impossible | not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built |
-| P12-1-BPL | none impossible | not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built |
-| P12-1-SPR | none impossible | not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built |
-| P12 | none impossible | not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built |
+| P12-0 | stimulus red | NMH_MUTATE=P12-0 on the private build of 6.6: DUAL set in the P12-0 run; private TG68K build: FAIL P12-0, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P12-1-BPL | stimulus red | NMH_MUTATE=P12-1-BPL on the private build of 6.6: DUAL clear in the P12-1 run; private TG68K build: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P12-1-SPR | stimulus red | NMH_MUTATE=P12-1-SPR on the private build of 6.6: DUAL clear in the P12-1 run; private TG68K build: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
+| P12 | stimulus red | NMH_MUTATE=P12 on the private build of 6.6: DUAL clear in the P12-1 run; private TG68K build: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED |
 | P13-FIXTURE | stimulus red | NMH_MUTATE=P13-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P13-FIXTURE; NOT GRADED 3; fx68k: FAIL P13-FIXTURE; NOT GRADED 3 |
 | P13-F3 | stimulus red | NMH_MUTATE=P13-F3: a bit plane fetched in frame B; TG68K: FAIL P13-F3; NOT GRADED 3; fx68k: FAIL P13-F3; NOT GRADED 3 |
 | P13-F4 | stimulus red | NMH_MUTATE=P13-F4: the samples are stored below the one before; TG68K: FAIL P13-F4; NOT GRADED 3; fx68k: FAIL P13-F4; NOT GRADED 3 |
@@ -2029,23 +2080,30 @@ Every mutation leaves the comparator and the expected values alone. A record of 
 | P14-NORMAL | stimulus red | NMH_MUTATE=P14-NORMAL: BEAMCON0 $00A0 (VARBEAMEN set) in the PAL-set run; TG68K: FAIL P14-NORMAL; NOT GRADED 5; fx68k: FAIL P14-NORMAL; NOT GRADED 5 |
 | P14-0-LOL | stimulus red | NMH_MUTATE=P14-0-LOL: PAL set in the P14-0 run; TG68K: FAIL P14-0-LOL, P14-0-LINES, P14-1, P14; NOT GRADED 1; fx68k: FAIL P14-0-LOL, P14-0-LINES, P14-1, P14; NOT GRADED 1 |
 | P14-0-LINES | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P14-0-LINES (PAL set in the P14-0 run) the private build prints FAIL P14-0-LOL, P14-0-LINES, P14-1, P14 |
-| P14-0-LONGONLY | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build |
+| P14-0-LONGONLY | implementation red | the private build of 6.6 with every line long (the long-line toggle never returns to short): the normal run prints FAIL P13-0-LINES, P13-0-LOL, P14-0-LOL, P14-0-LINES, P14-0-LONGONLY, P14; NOT GRADED 5; NOT CHECKABLE 3; the line is PASS in the normal run of the private build without that change |
 | P14-1 | stimulus red | NMH_MUTATE=P14-1: PAL clear in the P14-1 run; TG68K: FAIL P14-0-LINES, P14-1, P14; NOT GRADED 1; fx68k: FAIL P14-0-LINES, P14-1, P14; NOT GRADED 1 |
 | P14 | implementation green | the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P14 (PAL clear in the P14-1 run) the private build prints FAIL P14-1, P14 |
 
 ### 6.6 The private build
 
 Where a line cannot go red or green on the repository build, because the chip set does not do what the page says (no light-pen latch, no alternate counter on
-HHPOSR, no lengthened line, a vertical sync that follows the long-field convention, no VSYTRUE inversion, no composite blank on VSY*), the test was also run
-on a TG68K build whose chip set follows the pages in those points: a light-pen trigger on the controller ports' fire inputs latches the beam position while
+HHPOSR, no lengthened line, a vertical sync that follows the long-field convention, no VSYTRUE inversion, no composite blank on VSY*, no UHRES DMA), the test was
+also run on a TG68K build whose chip set follows the pages in those points: a light-pen trigger on the controller ports' fire inputs latches the beam position while
 BPLCON0 bit 3 is set, HHPOSR reads an alternate counter that counts to HTOTAL with DUAL set, a long line lasts one colour clock more, VSY* carries the comparator VSY with
 VARVSYEN, the variable composite blank with CSCBEN, and is inverted by VSYTRUE, and the comparator VSY is set and reset at VSSTRT and VSSTOP with the
-horizontal position HSSTRT on short fields. The copy lives outside the repository and is not part of the package; `implementation green` in 6.5 means that the line
-printed PASS on that build. The `MEASURED` and `PASS` lines of that run: 140 passed, 1 failed. The only line left FAIL there is P12-UHRES, because the build has no UHRES DMA.
+horizontal position HSSTRT on short fields. The UHRES DMA follows p.15, p.16, p.22 and p.27: with BPLCON0 bit 7 (UHRES) and DMACON DMAEN set, at each reset of the
+horizontal counter in use (the main counter; with DUAL the alternate counter) the chain takes the next three "free" memory cycles, those that no refresh, disk, audio,
+bit-plane or sprite channel uses: the first for the sprite pointer, the second for the bit-plane pointer, the third for the sprite pointer again; each pointer is a pair of
+5 and 15 bits (p.6), the bit-plane pointer advances after each access by 2 plus the sign-extended BPLHMOD and the sprite pointer by 2, and the accesses come on the lines from
+BPLHSTRT up to, not including, BPLHSTOP (bit plane) and from SPRHSTRT to SPRHSTOP (sprite). The refresh accesses keep the address $000000. A second copy differs from the first
+in one point, the long-line toggle: every line is long (6.5, P14-0-LONGONLY). The copies live outside the repository and are not part of the package; `implementation green` in
+6.5 means that the line printed PASS on the first copy, and a record of a stimulus on the private build names the line that printed FAIL there. The normal run of the first copy:
+148 passed, 0 failed.
+
 
 ### 6.7 RECORDED: the final run of every core
 
-TG68K: 117 passed, 7 failed. fx68k: 117 passed, 7 failed. Both builds select the AA chip set (`chipset_config` 0x10) and 2 MB of Chip memory in every run and are graded.
+TG68K: 122 passed, 12 failed. fx68k: 122 passed, 12 failed. Private build (TG68K): 148 passed, 0 failed. Both builds select the AA chip set (`chipset_config` 0x10) and 2 MB of Chip memory in every run and are graded.
 
 | Line | TG68K | fx68k | private build |
 |---|---|---|---|
@@ -2152,20 +2210,20 @@ TG68K: 117 passed, 7 failed. fx68k: 117 passed, 7 failed. Both builds select the
 | F5-SH-DIFF | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
 | F5-SH-INV | NOT CHECKABLE | NOT CHECKABLE | NOT CHECKABLE |
 | F5-SV-DIFF | PASS | PASS | PASS |
-| F5-SV-INV | NOT CHECKABLE | NOT CHECKABLE | PASS |
+| F5-SV-INV | FAIL | FAIL | PASS |
 | P9-AH | NOT GRADED | NOT GRADED | NOT GRADED |
 | P9-AC | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-NH | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-NC | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-BV | NOT GRADED | NOT GRADED | PASS |
-| P9-NV | NOT GRADED | NOT GRADED | PASS |
+| P9-NH | PASS | PASS | PASS |
+| P9-NC | PASS | PASS | PASS |
+| P9-BV | FAIL | FAIL | PASS |
+| P9-NV | PASS | PASS | PASS |
 | P9-A | NOT GRADED | NOT GRADED | NOT GRADED |
-| P9-B | NOT GRADED | NOT GRADED | PASS |
-| P9-ID | NOT GRADED | NOT GRADED | PASS |
-| P10-CPAIR | NOT GRADED | NOT GRADED | NOT GRADED |
+| P9-B | FAIL | FAIL | PASS |
+| P9-ID | FAIL | FAIL | PASS |
+| P10-CPAIR | FAIL | FAIL | PASS |
 | P10-SPAIR | NOT GRADED | NOT GRADED | NOT GRADED |
-| P10-VPAIR | NOT GRADED | NOT GRADED | PASS |
-| P10-VSPAIR | NOT GRADED | NOT GRADED | PASS |
+| P10-VPAIR | PASS | PASS | PASS |
+| P10-VSPAIR | PASS | PASS | PASS |
 | P10 | NOT GRADED | NOT GRADED | NOT GRADED |
 | P11-FIXTURE | PASS | PASS | PASS |
 | P11-ANCHOR | PASS | PASS | PASS |
@@ -2176,13 +2234,13 @@ TG68K: 117 passed, 7 failed. fx68k: 117 passed, 7 failed. Both builds select the
 | P11-PERIOD | NOT GRADED | NOT GRADED | PASS |
 | P12-FIXTURE | PASS | PASS | PASS |
 | P12-F3 | PASS | PASS | PASS |
-| P12-UHRES | FAIL | FAIL | FAIL |
+| P12-UHRES | FAIL | FAIL | PASS |
 | P12-BANDWIDTH | PASS | PASS | PASS |
 | P12-K | FAIL | FAIL | PASS |
-| P12-0 | NOT GRADED | NOT GRADED | NOT GRADED |
-| P12-1-BPL | NOT GRADED | NOT GRADED | NOT GRADED |
-| P12-1-SPR | NOT GRADED | NOT GRADED | NOT GRADED |
-| P12 | NOT GRADED | NOT GRADED | NOT GRADED |
+| P12-0 | NOT GRADED | NOT GRADED | PASS |
+| P12-1-BPL | NOT GRADED | NOT GRADED | PASS |
+| P12-1-SPR | NOT GRADED | NOT GRADED | PASS |
+| P12 | NOT GRADED | NOT GRADED | PASS |
 | P13-FIXTURE | PASS | PASS | PASS |
 | P13-F3 | PASS | PASS | PASS |
 | P13-F4 | PASS | PASS | PASS |

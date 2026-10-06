@@ -109,49 +109,49 @@
 // MUTATION P8-FIXTURE stimulus red NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P8-FIXTURE; NOT GRADED 5; fx68k: FAIL P8-FIXTURE; NOT GRADED 5
 // MUTATION P8-ANCHOR stimulus red NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before; TG68K: FAIL P8-ANCHOR; NOT GRADED 5; fx68k: FAIL P8-ANCHOR; NOT GRADED 5
 // MUTATION P8-FIT stimulus red NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; TG68K: FAIL P8-FIT; NOT GRADED 5; fx68k: FAIL P8-FIT; NOT GRADED 5
-// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; on the repository build the same run leaves the line PASS
-// MUTATION P8-0-VH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
-// MUTATION P8-0-HH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
-// MUTATION P8-1-VH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8-1-VH (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8
-// MUTATION P8-1-HH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8-1-HH (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8
-// MUTATION P8 implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8 (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8
+// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS
+// MUTATION P8-0-VH stimulus red NMH_MUTATE=P8-0-VH on the private build of 6.6: the P8-0 pulse is placed on line 256, after the first sample of the dry run on that line; private TG68K build: FAIL P8-0-VH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P8-0-HH stimulus red NMH_MUTATE=P8-0-HH on the private build of 6.6: LPENDIS is set in the P8-0 run and clear in the P8-1 run in place of the other way round; private TG68K build: FAIL P8-0-VH, P8-0-HH, P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P8-1-VH stimulus red NMH_MUTATE=P8-1-VH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P8-1-HH stimulus red NMH_MUTATE=P8-1-HH on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P8 stimulus red NMH_MUTATE=P8 on the private build of 6.6: LPENDIS = 0 in the P8-1 run; private TG68K build: FAIL P8-1-VH, P8-1-HH, P8; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
 // MUTATION F5-FIXTURE stimulus red NMH_MUTATE=F5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5; fx68k: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5
 // MUTATION F5-LINES stimulus red NMH_MUTATE=F5-LINES: a bit plane fetched in the S-H1 run; TG68K: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5
-// MUTATION F5-ALIGN stimulus red NMH_MUTATE=F5-ALIGN: one more register in S-H2's list; TG68K: FAIL F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-ALIGN; NOT CHECKABLE 5
-// MUTATION F5-SH-DIFF none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION F5-SH-INV none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION F5-SV-DIFF stimulus red NMH_MUTATE=F5-SV-DIFF: S-V2 with VSSTOP 103, like S-V1; TG68K: no line failed; NOT CHECKABLE 6; fx68k: no line failed; NOT CHECKABLE 6
+// MUTATION F5-ALIGN stimulus red NMH_MUTATE=F5-ALIGN: HTOTAL $00E0 in place of $00E2 in S-H2; TG68K: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3; fx68k: FAIL F5-ALIGN, F5-SV-INV; NOT CHECKABLE 3
+// MUTATION F5-SH-DIFF none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION F5-SH-INV none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION F5-SV-DIFF stimulus red NMH_MUTATE=F5-SV-DIFF: S-V2 with VSSTOP 103, like S-V1; TG68K: FAIL F5-SV-DIFF, F5-SV-INV; NOT CHECKABLE 4; fx68k: FAIL F5-SV-DIFF, F5-SV-INV; NOT CHECKABLE 4
 // MUTATION F5-SV-INV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT CHECKABLE on the repository build
-// MUTATION P9-AH none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P9-AC none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P9-NH none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P9-NC none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P9-BV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P9-BV () the private build prints FAIL P9-BV, P9-B, P9-ID
-// MUTATION P9-NV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P9-NV () the private build prints FAIL P9-NV, P9-B, P9-ID
-// MUTATION P9-A none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P9-B implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
-// MUTATION P9-ID implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
-// MUTATION P10-CPAIR none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P10-SPAIR none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
-// MUTATION P10-VPAIR implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P10-VPAIR () the private build prints FAIL P10-VPAIR, P10-VSPAIR
-// MUTATION P10-VSPAIR implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P10-VSPAIR () the private build prints FAIL P10-VSPAIR
-// MUTATION P10 none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-AH none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-AC none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-NH stimulus red NMH_MUTATE=P9-NH: VARHSYEN set in both runs of the pair (BEAMCON0 $01A0 in place of $00A0); TG68K: FAIL F5-SV-INV, P9-NH, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P9-NH, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
+// MUTATION P9-NC stimulus red NMH_MUTATE=P9-NC: VARHSYEN set in both runs of the pair (BEAMCON0 $01A0 in place of $00A0); TG68K: FAIL F5-SV-INV, P9-NC, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P9-NC, P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
+// MUTATION P9-BV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-BV (VBSTRT 150 in both runs of the pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
+// MUTATION P9-NV stimulus red NMH_MUTATE=P9-NV on the private build of 6.6: CSCBEN set in both runs of the pair (BEAMCON0 $04A0 in place of $00A0); private TG68K build: FAIL P9-NV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS
+// MUTATION P9-A none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-B implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-B (VBSTRT 150 in both runs of the CSCBEN-set pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
+// MUTATION P9-ID implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-ID (VBSTRT 150 in both runs of the CSCBEN-set pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
+// MUTATION P10-CPAIR stimulus green NMH_MUTATE=P10-CPAIR: CSCBEN set and VARHSYEN clear in both runs of the pair (BEAMCON0 $04A0 in place of $05A0): the same comparator on a pair that differs in HCENTER alone, with the variable composite sync not routed; the line is PASS on TG68K and PASS on fx68k in this run, against FAIL on both in the normal run; TG68K: FAIL F5-SV-INV; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV; NOT GRADED 2; NOT CHECKABLE 3
+// MUTATION P10-SPAIR none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P10-VPAIR stimulus red NMH_MUTATE=P10-VPAIR on the private build of 6.6: CSCBEN set and VARVSYEN clear in both runs of the pair (BEAMCON0 $04A0 in place of $06A0); private TG68K build: FAIL P10-VPAIR; NOT GRADED 2; NOT CHECKABLE 3; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS
+// MUTATION P10-VSPAIR stimulus red NMH_MUTATE=P10-VSPAIR: VSSTOP 103 in both runs of the pair; TG68K: FAIL F5-SV-INV, P10-CPAIR, P10-VSPAIR; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P10-CPAIR, P10-VSPAIR; NOT GRADED 2; NOT CHECKABLE 3
+// MUTATION P10 none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
 // MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P11-FIXTURE, P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-FIXTURE, P11-HHRUN; NOT GRADED 3
 // MUTATION P11-ANCHOR stimulus red NMH_MUTATE=P11-ANCHOR: the samples are stored below the one before; TG68K: FAIL P11-ANCHOR, P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-ANCHOR, P11-HHRUN; NOT GRADED 3
 // MUTATION P11-HHRUN implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build
-// MUTATION P11-MAXH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
-// MUTATION P11-HHMAX implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-HHMAX (HTOTAL $0070 in place of $0038) the private build prints FAIL P11-HHMAX, P11
-// MUTATION P11 implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
-// MUTATION P11-PERIOD implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-PERIOD () the private build prints FAIL P11-PERIOD
+// MUTATION P11-MAXH none impossible no stimulus keeps the precondition P11-HHRUN: the only stimulus that bounds the main counter by HTOTAL sets VARBEAMEN, which makes the main lines 57 colour clocks long, and this sample loop (one sample per 34 colour clocks) then leaves lines with a single sample, so HHPOSR takes one value on them, the precondition fails and the line is NOT GRADED
+// MUTATION P11-HHMAX stimulus red NMH_MUTATE=P11-HHMAX on the private build of 6.6: HTOTAL $0070 in place of $0038; private TG68K build: FAIL P11-HHMAX, P11; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P11 stimulus red NMH_MUTATE=P11 on the private build of 6.6: HTOTAL $0070 in place of $0038 in the DUAL run; private TG68K build: FAIL P11-HHMAX, P11; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P11-PERIOD implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-PERIOD (HTOTAL $0038 in place of $00E2 in the contrast run) the private build prints FAIL P11-PERIOD
 // MUTATION P12-FIXTURE stimulus red NMH_MUTATE=P12-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 4; fx68k: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 4
-// MUTATION P12-F3 none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
-// MUTATION P12-UHRES stimulus green NMH_MUTATE=P12-UHRES: one lores bit plane fetched from the bit-plane region and a sprite with data in the sprite region in place of UHRES; the line is FAIL without it and PASS with it on TG68K; fx68k: FAIL P12-K; NOT GRADED 4
+// MUTATION P12-F3 stimulus red NMH_MUTATE=P12-F3: a lores bit plane fetched from byte address $000000 with BPL1MOD -40, so that every line reads the same 20 words of the refresh addresses; TG68K: FAIL P12-F3, P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4; fx68k: FAIL P12-F3, P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4
+// MUTATION P12-UHRES stimulus green NMH_MUTATE=P12-UHRES: one lores bit plane fetched from the bit-plane region and a sprite with data in the sprite region in place of UHRES, so that both regions are accessed on every graded line; the line is PASS on TG68K and PASS on fx68k in this run, against FAIL on both in the normal run; TG68K: FAIL P12-K, P12-0; NOT GRADED 3; fx68k: FAIL P12-K, P12-0; NOT GRADED 3
 // MUTATION P12-BANDWIDTH stimulus red NMH_MUTATE=P12-BANDWIDTH: a lores bit plane fetched from $0F8000 on lines 102-108; TG68K: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4; fx68k: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4
 // MUTATION P12-K implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P12-K (HTOTAL $00E2 in place of $0038 in the DUAL run of P11) the private build prints FAIL P12-UHRES, P12-K
-// MUTATION P12-0 none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
-// MUTATION P12-1-BPL none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
-// MUTATION P12-1-SPR none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
-// MUTATION P12 none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
+// MUTATION P12-0 stimulus red NMH_MUTATE=P12-0 on the private build of 6.6: DUAL set in the P12-0 run; private TG68K build: FAIL P12-0, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P12-1-BPL stimulus red NMH_MUTATE=P12-1-BPL on the private build of 6.6: DUAL clear in the P12-1 run; private TG68K build: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P12-1-SPR stimulus red NMH_MUTATE=P12-1-SPR on the private build of 6.6: DUAL clear in the P12-1 run; private TG68K build: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
+// MUTATION P12 stimulus red NMH_MUTATE=P12 on the private build of 6.6: DUAL clear in the P12-1 run; private TG68K build: FAIL P12-1-BPL, P12-1-SPR, P12; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K NOT GRADED, fx68k NOT GRADED
 // MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P13-FIXTURE; NOT GRADED 3; fx68k: FAIL P13-FIXTURE; NOT GRADED 3
 // MUTATION P13-F3 stimulus red NMH_MUTATE=P13-F3: a bit plane fetched in frame B; TG68K: FAIL P13-F3; NOT GRADED 3; fx68k: FAIL P13-F3; NOT GRADED 3
 // MUTATION P13-F4 stimulus red NMH_MUTATE=P13-F4: the samples are stored below the one before; TG68K: FAIL P13-F4; NOT GRADED 3; fx68k: FAIL P13-F4; NOT GRADED 3
@@ -170,7 +170,7 @@
 // MUTATION P14-NORMAL stimulus red NMH_MUTATE=P14-NORMAL: BEAMCON0 $00A0 (VARBEAMEN set) in the PAL-set run; TG68K: FAIL P14-NORMAL; NOT GRADED 5; fx68k: FAIL P14-NORMAL; NOT GRADED 5
 // MUTATION P14-0-LOL stimulus red NMH_MUTATE=P14-0-LOL: PAL set in the P14-0 run; TG68K: FAIL P14-0-LOL, P14-0-LINES, P14-1, P14; NOT GRADED 1; fx68k: FAIL P14-0-LOL, P14-0-LINES, P14-1, P14; NOT GRADED 1
 // MUTATION P14-0-LINES implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P14-0-LINES (PAL set in the P14-0 run) the private build prints FAIL P14-0-LOL, P14-0-LINES, P14-1, P14
-// MUTATION P14-0-LONGONLY implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P14-0-LONGONLY implementation red the private build of 6.6 with every line long (the long-line toggle never returns to short): the normal run prints FAIL P13-0-LINES, P13-0-LOL, P14-0-LOL, P14-0-LINES, P14-0-LONGONLY, P14; NOT GRADED 5; NOT CHECKABLE 3; the line is PASS in the normal run of the private build without that change
 // MUTATION P14-1 stimulus red NMH_MUTATE=P14-1: PAL clear in the P14-1 run; TG68K: FAIL P14-0-LINES, P14-1, P14; NOT GRADED 1; fx68k: FAIL P14-0-LINES, P14-1, P14; NOT GRADED 1
 // MUTATION P14 implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P14 (PAL clear in the P14-1 run) the private build prints FAIL P14-1, P14
 
@@ -1187,8 +1187,10 @@ struct Sm {
 
 // The long word is read as two bus cycles, VPOSR first. A sample taken at the
 // step from line 255 to line 256 can carry the old V8 with the new V7-0: its V
-// then falls by 255 or 256 against the sample before it. Such a sample is
-// completed with the V8 it lacks, and counted in g_tears.
+// then falls by 255 or 256 against the sample before it while the sample after it
+// reads V >= 256. Such an isolated torn sample is completed in V with the V8 it
+// lacks and counted in g_tears. The VPOSR word itself is never changed: V8 is
+// graded on it as read.
 int g_tears = 0;
 
 std::vector<Sm> samples_of(const RunData& r, uint32_t base, uint32_t limit, bool hh) {
@@ -1214,9 +1216,11 @@ std::vector<Sm> samples_of(const RunData& r, uint32_t base, uint32_t limit, bool
         s.lol = (x.w[0] >> 7) & 1;
         out.push_back(s);
     }
-    for (size_t i = 1; i < out.size(); ++i) {
-        int d = out[i - 1].V - out[i].V;
-        if (d >= 255 && d <= 256 && out[i - 1].V < 512) { out[i].V += 256; out[i].vposr |= 1; ++g_tears; }
+    std::vector<int> raw;
+    for (const auto& x : out) raw.push_back(x.V);
+    for (size_t i = 1; i + 1 < out.size(); ++i) {
+        int d = raw[i - 1] - raw[i];
+        if (d >= 255 && d <= 256 && raw[i - 1] < 256 && raw[i + 1] >= 256) { out[i].V += 256; ++g_tears; }
     }
     return out;
 }
@@ -1241,32 +1245,38 @@ long long colour_clock(const std::vector<Sm>& s, double* raw = nullptr) {
 
 // F4 anchor: the counters run and are being read. The page gives the position
 // as the fields V and H of VHPOSR and does not say in which colour clock V
-// steps relative to the wrap of H, so the anchor asks what the page supports:
-// V never decreases except across the wrap at the end of a frame (the sample
-// frame ends at VERTB, so the wrap can only fall on its last two samples), and
-// while V stays the same H increases
-// strictly except across the wrap at the end of a line (a fall to below half
-// its previous value, V not yet stepped). Returns the number of violations.
-// f4_lag counts the pairs of the second kind, which the strict lexicographic
-// order of (V,H) would also reject.
-int f4_violations(const std::vector<Sm>& s) {
-    int bad = 0;
+// steps relative to the wrap of H, so the anchor asks what the page supports of
+// consecutive samples a and b:
+//   (i)   they are not equal in (V,H): a counter that runs is read at two times;
+//   (ii)  V does not decrease and steps by at most one (a frame sample ends at
+//         VERTB, so a decrease of V can only fall on its last two samples);
+//   (iii) within one value of V, H decreases at most once (the wrap at the end
+//         of the line, whichever colour clock V steps in).
+// f4_violations returns the number of pairs that break one of them. f4_lag counts
+// the pairs of the third kind (H wrapped, V not yet stepped), which the strict
+// lexicographic order of (V,H) would also reject; they are MEASURED.
+int f4_scan(const std::vector<Sm>& s, bool frame_end, int* first_bad, int* lag) {
+    int bad = 0, nlag = 0, dec_in_v = 0;
+    if (first_bad) *first_bad = -1;
     for (size_t i = 1; i < s.size(); ++i) {
         const Sm& a = s[i - 1];
         const Sm& b = s[i];
-        bool frame_wrap = i + 2 >= s.size() && b.V < a.V;
-        bool line_wrap = b.V == a.V && b.H * 2 < a.H;
-        bool ok = frame_wrap || line_wrap || b.V > a.V || (b.V == a.V && b.H > a.H);
-        if (!ok) ++bad;
+        bool wrap = frame_end && i + 2 >= s.size() && b.V < a.V;
+        bool viol = false;
+        if (b.V == a.V && b.H == a.H) viol = true;                        // (i)
+        if (!wrap && (b.V < a.V || b.V > a.V + 1)) viol = true;          // (ii)
+        if (b.V != a.V) dec_in_v = 0;
+        else if (b.H < a.H) {                                             // (iii) and the lag pairs
+            ++nlag;
+            if (++dec_in_v > 1) viol = true;
+        }
+        if (viol) { ++bad; if (first_bad && *first_bad < 0) *first_bad = (int)i; }
     }
+    if (lag) *lag = nlag;
     return bad;
 }
-int f4_lag(const std::vector<Sm>& s) {
-    int n = 0;
-    for (size_t i = 1; i < s.size(); ++i)
-        if (s[i].V == s[i - 1].V && s[i].H * 2 < s[i - 1].H) ++n;
-    return n;
-}
+int f4_violations(const std::vector<Sm>& s, bool frame_end = true) { return f4_scan(s, frame_end, nullptr, nullptr); }
+int f4_lag(const std::vector<Sm>& s) { int n = 0; f4_scan(s, true, nullptr, &n); return n; }
 
 // ---- the beam programs: runs, port lines (F3) and frames (F6) ---------------
 
@@ -1404,8 +1414,7 @@ void proposition_p11() {
     o.post = 1; o.hh = true; o.stops = 2;
     o.regs = regs(0x0038, 0x0060);
     if (mutating("P11-FIXTURE")) o.prog = "prog_beam_nofix";
-    if (mutating("P11-MAXH") || mutating("P11")) o.regs = {{kHTOTAL, 0x0038}, {kVTOTAL, 0x0138}, {kBEAMCON0, 0x08A0}};
-    if (mutating("P11-HHMAX")) o.regs = regs(0x0070, 0x0060);
+    if (mutating("P11-HHMAX") || mutating("P11")) o.regs = regs(0x0070, 0x0060);
     BeamRun d = beam_run(o);
     g.expect(d.fixture, "P11-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     int viol = f4_violations(d.post1);
@@ -1622,10 +1631,11 @@ void proposition_p14() {
     int va1 = f4_violations(rv.post1), va2 = f4_violations(rv.post2), vb1 = f4_violations(r0.post1), vb2 = f4_violations(r0.post2);
     checks.note("P14 measured: F4 violations, PAL set frames " + dec(va1) + " and " + dec(va2) + ", PAL clear frames " + dec(vb1) + " and " + dec(vb2));
     for (const auto* sv : {&rv.post1, &rv.post2, &r0.post1, &r0.post2}) {
-        for (size_t i = 1; i < sv->size(); ++i) {
-            const Sm& a = (*sv)[i - 1]; const Sm& b = (*sv)[i];
-            bool ok = (i + 2 >= sv->size() && b.V < a.V) || (b.V == a.V && b.H * 2 < a.H) || b.V > a.V || (b.V == a.V && b.H > a.H);
-            if (!ok) { checks.note("P14 measured: sample " + dec((long long)i) + ": " + dec(a.V) + ":" + dec(a.H) + " then " + dec(b.V) + ":" + dec(b.H)); break; }
+        int fb = -1;
+        f4_scan(*sv, true, &fb, nullptr);
+        if (fb > 0) {
+            const Sm& a = (*sv)[fb - 1]; const Sm& b = (*sv)[fb];
+            checks.note("P14 measured: sample " + dec(fb) + ": " + dec(a.V) + ":" + dec(a.H) + " then " + dec(b.V) + ":" + dec(b.H));
         }
     }
     g.expect(!rv.post1.empty() && !r0.post1.empty() && va1 == 0 && va2 == 0 && vb1 == 0 && vb2 == 0,
@@ -1681,9 +1691,9 @@ void proposition_p14() {
     g.expect_if(pre && longlen == 228, nolongpair, "P14-0-LONGONLY: with PAL clear in normal mode no two consecutive port lines are both long");
     // P14-1: at least one of the frame length and the line-length pattern differs from P14-0
     bool differs = f1a != f0a || l1.cck != l0.cck;
-    g.expect_if(pre, differs, "P14-1: with PAL set in normal mode the frame length in lines or the sequence of port line lengths differs from that with PAL clear");
+    g.expect_if(pre, differs, "P14-1: opus:AA-beamcon0.c35 sol:AA-beamcon0.c52 opus:AA-beamcon0.b5 sol:AA-beamcon0.c16: with PAL set in normal mode the frame length in lines or the sequence of port line lengths differs from that with PAL clear");
     g.expect_if(pre, lol0 && lines0 && nolongpair && differs,
-        "P14: opus:AA-beamcon0.c35 sol:AA-beamcon0.c52 opus:AA-beamcon0.b5 sol:AA-beamcon0.c16: in normal mode the PAL bit selects decodes that differ from those with PAL clear, which has every other line a long line of 228 colour clocks");
+        "P14: in normal mode the PAL bit selects decodes that differ from those with PAL clear, which has every other line a long line of 228 colour clocks");
 }
 
 // ---- P12 --------------------------------------------------------------------
@@ -1732,7 +1742,9 @@ struct UhRun {
     std::vector<double> len_cck;       // those lines' lengths in colour clocks
 };
 
-bool uh_range(uint32_t a) { return a >= 0x180000 && a < 0x1B0000; }
+// a refresh access: a read of the refresh addresses (byte address below $1000), not the level-3 vector the
+// interrupt that ends a stopped stretch reads
+bool is_refresh(const Acc& a) { return !a.wr && a.byte < 0x1000 && !(a.byte >= 0x6C && a.byte < 0x70); }
 
 // extra: registers added to the list, and sprite words poked at the sprite data address
 UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "prog_uhres", RegList extra = {},
@@ -1768,11 +1780,11 @@ UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "p
     uint64_t tnext = 0;
     for (const auto& m : d.marks) if (m.code == kMFrame && m.cyc > u.tvm) { tnext = m.cyc; break; }
     if (!tnext || tc <= 0) return u;
-    // refresh accesses: no program range and no UHRES, sprite or null-sprite region explains them
+    // refresh accesses: reads of the refresh addresses (below $1000, the vector $6C the interrupt reads excepted)
     std::vector<uint64_t> t;
     uint64_t t0 = u.tvm > 4 * 230 * (uint64_t)tc ? u.tvm - 4 * 230 * (uint64_t)tc : 0;
     for (const auto& a : d.acc)
-        if (a.cyc > t0 && a.cyc < tnext && !program_range(a.byte) && !uh_range(a.byte)) t.push_back(a.cyc);
+        if (a.cyc > t0 && a.cyc < tnext && is_refresh(a)) t.push_back(a.cyc);
     if (t.size() < 8) return u;
     uint64_t gmax = 0;
     for (size_t i = 1; i < t.size(); ++i) gmax = std::max(gmax, t[i] - t[i - 1]);
@@ -1784,7 +1796,13 @@ UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "p
     std::vector<long long> lines;
     u.anchor = f3_anchor(u.groups, tc, &lines);
     for (size_t i = 0; i < u.groups.size(); ++i) if (u.groups[i].t <= u.tvm) u.g90 = (int)i;
-    if (u.g90 < 0 || u.g90 + 19 >= (int)u.groups.size()) { u.anchor = false; return u; }
+    if (u.g90 < 0 || u.g90 + 20 >= (int)u.groups.size()) { u.anchor = false; return u; }
+    // the group holding VMARK(90) and every group of lines 90-109 is a four-access group of one line period
+    for (int k = 0; k <= 19; ++k) {
+        const Grp& ga = u.groups[(size_t)(u.g90 + k)];
+        const Grp& gb = u.groups[(size_t)(u.g90 + k + 1)];
+        if (ga.n != 4 || (long long)(gb.t - ga.t) % tc != 0) u.anchor = false;
+    }
     for (int ln = 102; ln <= 108; ++ln) {
         size_t gi = (size_t)(u.g90 + (ln - 90));
         uint64_t a = u.groups[gi].t, b = u.groups[gi + 1].t;
@@ -1830,15 +1848,21 @@ void proposition_p12() {
         RegList ex = disp;
         ex.push_back({0x0E0, 0x0018}); ex.push_back({0x0E2, 0x0000});
         p0 = uh_run(0x0020, 0x1000, dr.tc, "prog_uhres_ctl", ex, true);
+    } else if (mutating("P12-F3")) {
+        // a lores bit plane fetched from byte address $000000 with BPL1MOD -40, so that every line reads the same 20
+        // words of the refresh addresses: its reads look like refresh accesses
+        RegList ex = disp;
+        ex.push_back({0x0E0, 0x0000}); ex.push_back({0x0E2, 0x0000}); ex.push_back({0x108, 0xFFD8});
+        p0 = uh_run(0x0020, 0x1000, dr.tc, prog.c_str(), ex);
     } else if (mutating("P12-BANDWIDTH")) {
         // a bit plane fetched in the lines under test
         RegList ex = disp;
         ex.push_back({0x0E0, 0x000F}); ex.push_back({0x0E2, 0x8000});
         p0 = uh_run(0x0020, 0x1000, dr.tc, prog.c_str(), ex);
-    } else p0 = uh_run(0x0020, 0x0080, dr.tc, prog.c_str());
+    } else p0 = uh_run(mutating("P12-0") ? 0x0060 : 0x0020, 0x0080, dr.tc, prog.c_str());   // P12-0: DUAL set in the P12-0 run
     g.expect(p0.fixture, "P12-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool f3 = p0.anchor && p0.g90 >= 0;
-    g.expect(f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses come in groups of exactly four, every line period is a whole number of colour clocks, and VMARK(90) lies in a port line the test calls 90");
+    g.expect(f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses (reads of byte addresses below $1000) come in groups of exactly four, one group per line period, every line period is a whole number of colour clocks, and the port line holding VMARK(90), which the test calls 90, and every line of lines 90-109 is such a group");
     // UHRES DMA exists: both regions are accessed on every graded line of P12-0
     bool exists = !p0.bplh.empty();
     for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] == 0 || p0.sprh[i] == 0) exists = false;
@@ -1863,10 +1887,12 @@ void proposition_p12() {
         for (size_t i = 0; i < p1.bplh.size(); ++i) s += " " + dec(p1.bplh[i]) + "/" + dec(p1.sprh[i]);
         checks.note("P12 measured, DUAL set: BPLHPT/SPRHPT accesses on lines 102-108:" + s);
     }
-    // P12-0: exactly 1 bit-plane pointer access and 2 sprite pointer accesses on every graded line
+    // P12-0: exactly 1 bit-plane pointer access and 2 sprite pointer accesses on every graded line;
+    // the DUAL-clear case does not use the alternate counter, so P12-K is not among its preconditions
+    bool pre0 = p0.fixture && f3 && exists && bw;
     bool c0 = !p0.bplh.empty();
     for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] != 1 || p0.sprh[i] != 2) c0 = false;
-    g.expect_if(pre, c0, "P12-0: with DUAL clear every graded line shows exactly 1 UHRES bit-plane pointer access and exactly 2 UHRES sprite pointer accesses");
+    g.expect_if(pre0, c0, "P12-0: with DUAL clear every graded line shows exactly 1 UHRES bit-plane pointer access and exactly 2 UHRES sprite pointer accesses");
     // P12-1: k alternate-counter resets per line
     bool b1 = !p1.bplh.empty(), s1 = !p1.sprh.empty();
     for (size_t i = 0; i < p1.bplh.size(); ++i) {
@@ -2061,16 +2087,20 @@ void proposition_p9_p10() {
     g.expect_anchor(sh_inv, "F5-SH-INV: S-H3 against S-H1 (HSYTRUE set): the observed horizontal sync is the logical inverse at every sample");
     bool sv_diff = v_pair_one_interval(*rv1, *rv2, &dv);
     checks.note("F5 measured: " + itv_note("S-V1 against S-V2, vs", dv, *rv1));
-    g.expect_anchor(sv_diff, "F5-SV-DIFF: S-V1 against S-V2 (VSSTOP 103 against 105): the observed vertical sync differs in exactly one interval, of exactly two line periods, and is identical elsewhere");
+    // the vertical sync is passed through to the harness, so a failure of S-V1 against S-V2 is the chip's, not the harness's: FAIL
+    g.expect_if(rv1->ok && rv2->ok && aligned(*rv1, *rv2), sv_diff, "F5-SV-DIFF: S-V1 against S-V2 (VSSTOP 103 against 105): the observed vertical sync differs in exactly one interval, of exactly two line periods, and is identical elsewhere");
+    // S-V3 is a line of its own: the VSY* pin is the vertical sync as the chip outputs it, and VSYTRUE changes its polarity
     bool sv_inv = inverted(*rv3, *rv1, 1);
-    g.expect_anchor(sv_inv, "F5-SV-INV: S-V3 against S-V1 (VSYTRUE set): the observed vertical sync is inverted at every sample");
+    g.expect_if(rv1->ok && rv3->ok && aligned(*rv1, *rv3), sv_inv,
+                "F5-SV-INV: p.13 \"HSYTRUE,VSYTRUE,CSYTRUE= These change the polarity of the HSY*, VSY*, & CSY* pins\": S-V3 against S-V1 (VSYTRUE set): the observed vertical sync is inverted at every sample");
     auto vvar = vs_active(*rv1);
     auto vnorm = vs_active(*rr0);
     checks.note("F5 measured: V_var length " + (vvar ? dec((long long)(vvar->b - vvar->a)) : std::string("n/a")) + " system clocks starting in line " +
                 (vvar ? dec(line_of(*rv1, vvar->a)) : std::string("n/a")) + "; V_norm length " + (vnorm ? dec((long long)(vnorm->b - vnorm->a)) : std::string("n/a")) +
                 " starting in line " + (vnorm ? dec(line_of(*rr0, vnorm->a)) : std::string("n/a")));
     bool s_h = rh1->ok && rh2->ok && rh3->ok && al && sh_diff && sh_inv;
-    bool s_v = rv1->ok && rv2->ok && rv3->ok && rr0->ok && al && sv_diff && sv_inv && vvar && vnorm;
+    // anchor S-V: S-V1 against S-V2 differ in one interval of two line periods and V_var and V_norm exist
+    bool s_v = rv1->ok && rv2->ok && rr0->ok && aligned(*rv1, *rv2) && aligned(*rv1, *rr0) && sv_diff && vvar && vnorm;
     if (!s_h) checks.record("NOT CHECKABLE: F5-SH: the HSY* parts of P9 and P10, since anchor S-H does not hold in this harness");
     if (!s_v) checks.record("NOT CHECKABLE: F5-SV: the VSY* parts of P9 and P10, since anchor S-V does not hold in this harness");
     if (!w9 && !w10) return;
@@ -2083,16 +2113,18 @@ void proposition_p9_p10() {
     SyncSet c_h2 = c_h1; c_h2.hsstrt = 0x24;
     SyncSet c_c2 = c_h1; c_c2.hcenter = 0x99;
     SyncSet c_v2 = c_h1; c_v2.vbstrt = 152;
-    SyncSet n_h1; n_h1.bc0 = 0x00A0;
-    SyncSet n_h2 = n_h1; n_h2.hsstrt = 0x24;
-    SyncSet n_c2 = n_h1; n_c2.hcenter = 0x99;
-    SyncSet n_v2 = n_h1; n_v2.vbstrt = 152;
+    // the CSCBEN-clear pairs: each pair has its own base run, so that the mutation of one pair moves only its own line
+    SyncSet n_base; n_base.bc0 = 0x00A0;
+    SyncSet nh1 = n_base, nh2 = n_base; nh2.hsstrt = 0x24;
+    SyncSet nc1 = n_base, nc2 = n_base; nc2.hcenter = 0x99;
+    SyncSet nv1 = n_base, nv2 = n_base; nv2.vbstrt = 152;
     if (mutating("P9-AH")) c_h2 = c_h1;
     if (mutating("P9-AC")) c_c2 = c_h1;
-    if (mutating("P9-BV")) c_v2 = c_h1;
-    if (mutating("P9-NH")) { n_h1.bc0 = 0x04A0; n_h2 = n_h1; n_h2.hsstrt = 0x24; }
-    if (mutating("P9-NC")) { n_h1.bc0 = 0x04A0; n_c2 = n_h1; n_c2.hcenter = 0x99; }
-    if (mutating("P9-NV")) { n_h1.bc0 = 0x04A0; n_v2 = n_h1; n_v2.vbstrt = 152; }
+    if (mutating("P9-BV") || mutating("P9-B") || mutating("P9-ID")) c_v2 = c_h1;
+    // VARHSYEN set in the compared runs: HSSTRT reaches HSY* (P9-NH) and HCENTER the vertical sync (P9-NC)
+    if (mutating("P9-NH")) nh1.bc0 = nh2.bc0 = 0x01A0;
+    if (mutating("P9-NC")) nc1.bc0 = nc2.bc0 = 0x01A0;
+    if (mutating("P9-NV")) nv1.bc0 = nv2.bc0 = 0x04A0;
     if (w9) {
         auto a1 = L(c_h1), a2 = L(c_h2), cc2 = L(c_c2), b2 = L(c_v2);
         std::vector<Itv> dA, dC, dB;
@@ -2120,8 +2152,9 @@ void proposition_p9_p10() {
         if (bv_ok && vvar) {
             size_t first = dB.front().a, last = dB.back().b;
             long long tl = median_line(*a1);
-            // The blank starts in line 150 and V_var in line 100, each at a horizontal position the page does
-            // not fix, so the two starts lie between 49 and 51 line periods apart.
+            // The blank starts in line 150 at a horizontal position the page does not fix, and V_var starts
+            // in line 100 at HSSTRT (p.12, short fields), so the two starts lie between 49 and 51 line
+            // periods apart.
             long long lo = (long long)vvar->a + 49 * tl;
             bv_ok = (long long)first >= lo && (long long)first < lo + 2 * tl && (long long)(last - first) <= 2 * tl;
             bool half1 = false, half2 = false;
@@ -2134,17 +2167,20 @@ void proposition_p9_p10() {
         if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, VBSTRT 150 against 152, vs", dB, *a1));
         else checks.record("P9 and P10: the runs are not taken, since neither anchor S-H nor S-V holds");
         // CSCBEN clear: each pair identical at every sample, on both pins
-        auto b1 = L(n_h1), b2h = L(n_h2), b2c = L(n_c2), b2v = L(n_v2);
+        // P9-NH and P9-NC assert identity at every sample: a deterministic scan doubler keeps identical inputs identical,
+        // so they do not need anchor S-H and their runs are always taken
+        auto bh1 = sync_run(nh1), bh2 = sync_run(nh2), bc1 = sync_run(nc1), bc2 = sync_run(nc2), bv1 = L(nv1), bv2 = L(nv2);
         auto same = [&](const SyncRun& x, const SyncRun& y) { return aligned(x, y) && diff_itv(x, y, 0).empty() && diff_itv(x, y, 1).empty(); };
-        bool nh_ok = same(*b1, *b2h), nc_ok = same(*b1, *b2c), nv_ok = same(*b1, *b2v);
+        bool nh_ok = same(*bh1, *bh2), nc_ok = same(*bc1, *bc2), nv_ok = same(*bv1, *bv2);
         bool pre_a = s_h && a1->ok && a2->ok && cc2->ok && aligned(*a1, *a2) && aligned(*a1, *cc2) && vvar && vnorm;
         bool pre_b = s_v && a1->ok && b2->ok && aligned(*a1, *b2) && vvar && vnorm;
         g.expect_if(pre_a, ah_ok, "P9-AH: with CSCBEN set and VARHSYEN and VARVSYEN clear, changing HSSTRT from $20 to $24 changes the HSY* output on every chip line, in one interval of exactly 4 colour clocks");
         g.expect_if(pre_a, ac_ok, "P9-AC: with CSCBEN set, changing HCENTER from $91 to $99 changes the HSY* output on consecutive chip lines only, as many as there are lines in vertical sync, each in one interval of exactly 8 colour clocks");
-        g.expect_if(pre_a, nh_ok, "P9-NH: with CSCBEN clear, changing HSSTRT from $20 to $24 changes neither pin at any sample");
-        g.expect_if(pre_a, nc_ok, "P9-NC: with CSCBEN clear, changing HCENTER from $91 to $99 changes neither pin at any sample");
+        bool pre_nh = bh1->ok && bh2->ok, pre_nc = bc1->ok && bc2->ok;
+        g.expect_if(pre_nh, nh_ok, "P9-NH: with CSCBEN clear, changing HSSTRT from $20 to $24 changes neither pin at any sample");
+        g.expect_if(pre_nc, nc_ok, "P9-NC: with CSCBEN clear, changing HCENTER from $91 to $99 changes neither pin at any sample");
         g.expect_if(pre_b, bv_ok, "P9-BV: with CSCBEN set, changing VBSTRT from 150 to 152 changes the VSY* output only inside one interval of at most two line periods that starts between 49 and 51 line periods after the start of V_var, each of its two line periods holding differing samples");
-        g.expect_if(pre_b, nv_ok, "P9-NV: with CSCBEN clear, changing VBSTRT from 150 to 152 changes neither pin at any sample");
+        g.expect_if(s_v && bv1->ok && bv2->ok, nv_ok, "P9-NV: with CSCBEN clear, changing VBSTRT from 150 to 152 changes neither pin at any sample");
         bool a_all = ah_ok && ac_ok && nh_ok && nc_ok, b_all = bv_ok && nv_ok;
         g.expect_if(pre_a, a_all,
             "P9-A: opus:AA-beamcon0.c15 sol:AA-beamcon0.c33 opus:AA-beamcon0.c38: with CSCBEN set the variable composite sync comes out on the HSY* pin: set on HSSTRT on every line and on HCENTER in vertical sync; with CSCBEN clear neither register reaches the pins");
@@ -2156,29 +2192,34 @@ void proposition_p9_p10() {
 
     // ---- P10 ----
     if (w10) {
-        SyncSet h_base; h_base.bc0 = 0x05A0;
-        SyncSet h_c2 = h_base; h_c2.hcenter = 0x99;
-        SyncSet h_s2 = h_base; h_s2.hsstop = 0x34;
-        SyncSet w_base; w_base.bc0 = 0x06A0;
-        SyncSet w_v2 = w_base; w_v2.vbstrt = 152;
-        SyncSet w_s2 = w_base; w_s2.vsstop = 105;
-        if (mutating("P10-CPAIR")) h_base.bc0 = h_c2.bc0 = 0x04A0;
-        if (mutating("P10-SPAIR")) h_s2.hsstop = 0x30;
-        if (mutating("P10-VPAIR")) w_base.bc0 = w_v2.bc0 = 0x04A0;
-        if (mutating("P10-VSPAIR")) w_s2.vsstop = 103;
-        auto p1 = L(h_base), p2 = L(h_c2), p3 = L(h_s2), q1 = L(w_base), q2 = L(w_v2), q3 = L(w_s2);
+        // each pair has its own base run, so that the mutation of one pair moves only its own line
+        SyncSet hc1; hc1.bc0 = 0x05A0;
+        SyncSet hc2 = hc1; hc2.hcenter = 0x99;
+        SyncSet hs1 = hc1, hs2 = hc1; hs2.hsstop = 0x34;
+        SyncSet wv1; wv1.bc0 = 0x06A0;
+        SyncSet wv2 = wv1; wv2.vbstrt = 152;
+        SyncSet ws1 = wv1, ws2 = wv1; ws2.vsstop = 105;
+        if (mutating("P10-CPAIR")) hc1.bc0 = hc2.bc0 = 0x04A0;
+        if (mutating("P10-SPAIR")) hs2.hsstop = 0x30;
+        if (mutating("P10-VPAIR")) wv1.bc0 = wv2.bc0 = 0x04A0;
+        if (mutating("P10-VSPAIR")) ws2.vsstop = 103;
+        // P10-CPAIR asserts identity at every sample and does not need anchor S-H: its runs are always taken
+        auto p1 = sync_run(hc1), p2 = sync_run(hc2), ps1 = L(hs1), p3 = L(hs2), q1 = L(wv1), q2 = L(wv2), qs1 = L(ws1), q3 = L(ws2);
         bool cpair = aligned(*p1, *p2) && diff_itv(*p1, *p2, 0).empty() && diff_itv(*p1, *p2, 1).empty();
         std::vector<Itv> dS, dVS;
-        bool spair = h_pair_every_line(*p1, *p3, 4, &dS);
+        bool spair = h_pair_every_line(*ps1, *p3, 4, &dS);
         bool vpair = aligned(*q1, *q2) && diff_itv(*q1, *q2, 0).empty() && diff_itv(*q1, *q2, 1).empty();
-        bool vspair = v_pair_one_interval(*q1, *q3, &dVS);
-        if (any) checks.note("P10 measured: " + itv_note("VARHSYEN, HSSTOP $30 against $34, hs", dS, *p1) + "; " + itv_note("VARVSYEN, VSSTOP 103 against 105, vs", dVS, *q1));
-        bool pre_h = s_h && p1->ok && p2->ok && p3->ok && aligned(*p1, *p3);
-        bool pre_v = s_v && q1->ok && q2->ok && q3->ok && aligned(*q1, *q3);
-        g.expect_if(pre_h, cpair, "P10-CPAIR: with CSCBEN and VARHSYEN set, changing HCENTER from $91 to $99 changes nothing at any sample: the comparator HSY is independent of HCENTER");
-        g.expect_if(pre_h, spair, "P10-SPAIR: with CSCBEN and VARHSYEN set, changing HSSTOP from $30 to $34 changes the HSY* output on every chip line, vertical-sync lines included, in one interval of exactly 4 colour clocks");
-        g.expect_if(pre_v, vpair, "P10-VPAIR: with CSCBEN and VARVSYEN set, changing VBSTRT from 150 to 152 changes nothing at any sample: the comparator VSY is independent of VBSTRT");
-        g.expect_if(pre_v, vspair, "P10-VSPAIR: with CSCBEN and VARVSYEN set, changing VSSTOP from 103 to 105 changes the VSY* output in exactly one interval of exactly two line periods");
+        bool vspair = v_pair_one_interval(*qs1, *q3, &dVS);
+        if (any) checks.note("P10 measured: " + itv_note("VARHSYEN, HSSTOP $30 against $34, hs", dS, *ps1) + "; " + itv_note("VARVSYEN, VSSTOP 103 against 105, vs", dVS, *qs1));
+        checks.note("P10 measured: " + itv_note("CSCBEN and VARHSYEN, HCENTER $91 against $99, hs", diff_itv(*p1, *p2, 0), *p1) + "; " +
+                    itv_note("same pair, vs", diff_itv(*p1, *p2, 1), *p1));
+        bool pre_s = s_h && ps1->ok && p3->ok && aligned(*ps1, *p3), pre_c = p1->ok && p2->ok;
+        bool pre_vp = s_v && q1->ok && q2->ok, pre_vs = s_v && qs1->ok && q3->ok && aligned(*qs1, *q3);
+        bool pre_h = pre_s && pre_c, pre_v = pre_vp && pre_vs;
+        g.expect_if(pre_c, cpair, "P10-CPAIR: with CSCBEN and VARHSYEN set, changing HCENTER from $91 to $99 changes nothing at any sample: the comparator HSY is independent of HCENTER");
+        g.expect_if(pre_s, spair, "P10-SPAIR: with CSCBEN and VARHSYEN set, changing HSSTOP from $30 to $34 changes the HSY* output on every chip line, vertical-sync lines included, in one interval of exactly 4 colour clocks");
+        g.expect_if(pre_vp, vpair, "P10-VPAIR: with CSCBEN and VARVSYEN set, changing VBSTRT from 150 to 152 changes nothing at any sample: the comparator VSY is independent of VBSTRT");
+        g.expect_if(pre_vs, vspair, "P10-VSPAIR: with CSCBEN and VARVSYEN set, changing VSSTOP from 103 to 105 changes the VSY* output in exactly one interval of exactly two line periods");
         g.expect_if(pre_h && pre_v, cpair && spair && vpair && vspair,
             "P10: opus:AA-beamcon0.c19 sol:AA-beamcon0.c35: VARHSYEN and VARVSYEN have priority over CSCBEN: with CSCBEN set HSY* carries the comparator HSY (set on HSSTRT, reset on HSSTOP on every line, independent of HCENTER) and VSY* the comparator VSY (independent of VBSTRT)");
     }
@@ -2251,14 +2292,14 @@ void proposition_p8() {
     g.expect(dry.fixture, "P8-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool crosses = false;
     for (size_t i = 1; i < ds.size(); ++i) if (ds[i - 1].V == 255 && ds[i].V == 256) crosses = true;
-    checks.note("P8 measured: dry run over all " + dec((long long)ds.size()) + " samples: F4 violations = " + dec(f4_violations(ds)) + ", line wraps with V not yet stepped = " +
+    checks.note("P8 measured: dry run over all " + dec((long long)ds.size()) + " samples: F4 violations = " + dec(f4_violations(ds, false)) + ", line wraps with V not yet stepped = " +
                 dec(f4_lag(ds)) + ", crosses 255 to 256 = " + dec(crosses ? 1 : 0) +
                 ", last sample V:H = " + (ds.empty() ? std::string("n/a") : dec(ds.back().V) + ":" + dec(ds.back().H)));
     LpRun dry_anchor = dry;
     if (mutating("P8-ANCHOR")) dry_anchor = lp_run(0x0020, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0, "prog_lpen_rev");
     // the anchor is checked over the samples of the window the pulse runs take
     if (nsamp > 0 && (int)dry_anchor.s.size() > nsamp) dry_anchor.s.resize(nsamp);
-    int viol_a = f4_violations(dry_anchor.s);
+    int viol_a = f4_violations(dry_anchor.s, false);
     g.expect(!dry_anchor.s.empty() && viol_a == 0 && crosses,
              "P8-ANCHOR: in the dry run (no pulse) the samples of the window show the counters running: V never decreases and H increases within a line, and the samples cross from V = 255 to V = 256");
     // the alternate counter runs: HHPOSR takes at least two different values in the dry run
@@ -2281,9 +2322,16 @@ void proposition_p8() {
 
     // the pulse runs
     bool pulse_on = !mutating("P8-TRIGGER");
-    uint16_t bc0_for_0 = (mutating("P8-0-VH") || mutating("P8-0-HH")) ? 0x2020 : 0x0020;
-    uint16_t bc0_for_1 = (mutating("P8-1-VH") || mutating("P8-1-HH") || mutating("P8")) ? 0x0020 : 0x2020;
-    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay, plen) : LpRun();
+    // P8-0-HH swaps LPENDIS between the two pulse runs (the latch is then in the P8-1 run and the
+    // P8-0 run reads the running counters); P8-1-VH, P8-1-HH and P8 clear it in the P8-1 run
+    uint16_t bc0_for_0 = mutating("P8-0-HH") ? 0x2020 : 0x0020;
+    uint16_t bc0_for_1 = (mutating("P8-0-HH") || mutating("P8-1-VH") || mutating("P8-1-HH") || mutating("P8")) ? 0x0020 : 0x2020;
+    // P8-0-VH places the P8-0 pulse on line 256: the first sample of the dry run on that line
+    uint64_t delay0 = delay;
+    if (mutating("P8-0-VH") && fit_geom)
+        for (size_t i = 0; i + 1 < ds.size(); ++i)
+            if (ds[i].V == 256) { delay0 = ds[i + 1].t + 2 - dry.t_go; break; }
+    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay0, plen) : LpRun();
     LpRun p1 = fit_geom ? lp_run(bc0_for_1, nsamp, 0x0008, pulse_on, delay, plen) : LpRun();
 
     auto split = [&](const LpRun& L, std::vector<Sm>& before, std::vector<Sm>& after) {
@@ -2312,8 +2360,7 @@ void proposition_p8() {
         LpRun c = lp_run(0x0020, nsamp, mutating("P8-LPE") ? 0x0008 : 0x0000, true, delay, plen);
         std::vector<Sm> bc, ac;
         split(c, bc, ac);
-        lpe_ok = !ac.empty() && !frozen(ac);
-        for (size_t i = 1; i < ac.size(); ++i) if (!vh_less(ac[i - 1], ac[i])) lpe_ok = false;
+        lpe_ok = !ac.empty() && !frozen(ac) && f4_violations(ac, false) == 0;
         g.expect(lpe_ok, "P8-LPE: with BPLCON0 bit 3 (LPEN) clear the same pulse does not freeze the samples: they advance through and after it");
     } else checks.record("P8-LPE: not evaluated in this run");
 
@@ -2340,8 +2387,7 @@ void proposition_p8() {
     bool h0 = !a0s.empty();
     for (const auto& x : a0s) if (x.hh != a0s[0].hh) h0 = false;
     // P8-1, VPOSR and VHPOSR
-    bool v1 = !p1.s.empty();
-    for (size_t i = 1; i < p1.s.size(); ++i) if (!vh_less(p1.s[i - 1], p1.s[i])) v1 = false;
+    bool v1 = !p1.s.empty() && f4_violations(p1.s, false) == 0;
     if (v1) {
         const Sm& last = p1.s.back();
         v1 = last.V >= 256 && (last.vposr & 1) == 1;
