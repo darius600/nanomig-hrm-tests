@@ -101,9 +101,9 @@ struct Script {
     }
     // reads of reg until nhits have had (value & mask) != 0; after each the loop writes cval to INTREQ and the
     // next of `words` to SERDAT; at most tmo+1 reads without a hit
-    void feed(uint16_t reg, uint16_t mask, uint16_t tmo, uint16_t cval, const std::vector<uint16_t>& words, bool storm = false) {
+    void feed(uint16_t reg, uint16_t mask, uint16_t tmo, uint16_t cval, const std::vector<uint16_t>& words) {
         uint32_t resume = kScript + uint32_t(2 * (w.size() + 8 + words.size()));
-        w.insert(w.end(), {uint16_t(storm ? 13 : 12), reg, mask, uint16_t(words.size()), tmo, cval, uint16_t(resume >> 16), uint16_t(resume & 0xFFFF)});
+        w.insert(w.end(), {12, reg, mask, uint16_t(words.size()), tmo, cval, uint16_t(resume >> 16), uint16_t(resume & 0xFFFF)});
         w.insert(w.end(), words.begin(), words.end());
     }
     void end() { w.push_back(0); }

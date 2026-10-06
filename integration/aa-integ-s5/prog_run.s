@@ -23,9 +23,6 @@
 ;                                  three in the log
 ;  11 WM   addr_hi addr_lo val     marker, MOVE.W val to the chip-RAM word,
 ;                                  marker
-;  13 FEED2 reg mask nhits tmo cval rhi rlo w1 .. wn
-;                                  as FEED, but the loop also writes cval to
-;                                  INTREQ after every read without a hit
 ;  12 FEED reg mask nhits tmo cval rhi rlo w1 .. wn
 ;                                  read reg and store it in the log until
 ;                                  nhits reads have had (value & mask) != 0
@@ -73,7 +70,6 @@ tbl:    bra.w   op_end
         bra.w   op_rd3
         bra.w   op_wm
         bra.w   op_feed
-        bra.w   op_feed2
 
 op_end:
         DONE
@@ -202,27 +198,3 @@ op_feed:
 .done:  move.l  SAVE,a1
         bra     next
 
-op_feed2:
-        move.w  (a1)+,d1
-        move.w  (a1)+,d2
-        move.w  (a1)+,d7
-        move.w  (a1)+,d3
-        move.w  (a1)+,d5
-        move.l  (a1)+,SAVE
-        lea     0(a0,d1.w),a2
-        lea     INTREQ_(a0),a6
-        lea     SERDAT_(a0),a5
-        subq.w  #1,d7
-.l:     move.w  (a2),d4
-        move.w  d4,(a3)+
-        and.w   d2,d4
-        bne.s   .hit
-        move.w  d5,(a6)
-        dbra    d3,.l
-        addq.w  #1,RESULTS+2
-        bra.s   .done
-.hit:   move.w  d5,(a6)
-        move.w  (a1)+,(a5)
-        dbra    d7,.l
-.done:  move.l  SAVE,a1
-        bra     next

@@ -25,7 +25,7 @@ inline std::function<void(Script&)> brk_hook() {
 
 // ---- the baseline S0 (2.1), its read-back (2.9) and the G-C poll (2.2) ------
 struct Prefix {
-    int i_intenar = -1, i_dmaconr = -1, i_adkconr = -1;   // log indexes of the three read-backs
+    int i_intenar = -1, i_dmaconr = -1, i_adkconr = -1, i_intreqr = -1;   // log indexes of the read-backs after the baseline
     int i_gc = -1, n_gc = 0;                              // log index and length of the VHPOSR poll
     int logn = 0;                                         // log words stored so far
 };
@@ -40,6 +40,7 @@ inline Prefix prefix(Script& s, bool gc = true, unsigned gc_n = 119, const std::
     if (!g0) s.w16(ADKCON, 0x08FF);
     for (int x = 0; x < 4; ++x) s.w16(audvol(x), 0);
     if (after_s0) after_s0(s);
+    p.i_intreqr = p.logn++; s.rd(INTREQR);
     p.i_intenar = p.logn++; s.rd(INTENAR);
     p.i_dmaconr = p.logn++; s.rd(DMACONR);
     p.i_adkconr = p.logn++; s.rd(ADKCONR);

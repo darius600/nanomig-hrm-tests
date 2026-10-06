@@ -249,7 +249,7 @@ inline void run_p8(Checks& ck) {
         r.pre = prefix(s, true, 119, mut("P8-INTENA") ? std::function<void(Script&)>([x](Script& sc) { sc.w16(INTENA, uint16_t(0xC000 | (1u << (7 + x)))); }) : nullptr);
         std::vector<uint16_t> blk = {0x1010, 0x3030, 0x5050, 0x7070, 0xD0D0, 0x9090};
         if (mut("P8")) blk.insert(blk.end(), {0xB0B0, 0xF0F0, 0x4040});
-        if (mut("P8-L9")) blk[0] = 0x9090;                 // contrast: the calibration word occurs twice per block
+        if (mut("P8-L9")) blk[5] = 0x9494;                 // contrast: the last word of the block is not the calibration word
         poke_words(rs.pokes, kBuf[x], blk);
         poke_words(rs.pokes, kBuf[x] + 0x100, {0x9090});
         // calibration

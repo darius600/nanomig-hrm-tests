@@ -111,7 +111,7 @@ inline void run_vol_att(Checks& ck, const std::string& pid, const char* claim, i
     note_gc(ck, pid, v.r.st);
     uint16_t dmn = logv(v.r.cap, v.i_dm_n), dmm = logv(v.r.cap, v.i_dm_m);
     bool gd = (dmn & 0x200) && (dmn & (1u << n)) && (dmm & 0x200) && (dmm & (1u << m));
-    bool gf = v.fm.size() >= 12;
+    bool gf = v.fm.size() >= 12 && v.r.f.size() >= 12;
     bool dist = true;
     for (int i = 0; i < 4; ++i) for (int j = i + 1; j < 4; ++j) dist &= std::fabs(v.L[i] - v.L[j]) > 2.0;
     uint16_t a2 = logv(v.r.cap, v.i_adk2), a3 = logv(v.r.cap, v.i_adk3);
@@ -122,7 +122,7 @@ inline void run_vol_att(Checks& ck, const std::string& pid, const char* claim, i
             "), modulator fetches=" + dec((long long)v.fm.size()) + ", ADKCONR phase 2/3 = " + hex4(a2) + "/" + hex4(a3));
     print_std(ck, pid, agg, 1);
     ck.expect(gd, pid + "-G-D: after each start DMACONR bit 9 and the started channel's bit read 1, for channel n and for channel m (AA p.22)");
-    ck.expect(gf, pid + "-G-F: channel m makes at least 12 fetches in phase 2 (AA p.22 '00 AUD0EN')");
+    ck.expect(gf, pid + "-G-F: channel m makes at least 12 fetches in phase 2 and channel n at least 12 over the run (AA p.22 '00 AUD0EN')");
     ck.expect(dist, pid + "-PRE-CAL: the calibration levels L64, L16, L40 and L32 differ pairwise by more than 2 LSB (AA p.11 AUDxVOL)");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && dist;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F or the calibration";
@@ -248,7 +248,7 @@ inline void run_per_att(Checks& ck, const std::string& pid, const char* claim, i
     note_gc(ck, pid, v.r.st);
     uint16_t dmn = logv(v.r.cap, v.i_dm_n), dmm = logv(v.r.cap, v.i_dm_m);
     bool gd = (dmn & 0x200) && (dmn & (1u << n)) && (dmm & 0x200) && (dmm & (1u << m));
-    bool gf = v.fm.size() >= 12;
+    bool gf = v.fm.size() >= 12 && v.r.f.size() >= 12;
     // G-P in phase 1: runs of 400 colour clocks
     bool gp = true;
     {
@@ -272,7 +272,7 @@ inline void run_per_att(Checks& ck, const std::string& pid, const char* claim, i
             ") segments 200/600/350 = " + dec((long long)o.cnt[0]) + "/" + dec((long long)o.cnt[1]) + "/" + dec((long long)o.cnt[2]) + ", ADKCONR phase 2/3 = " + hex4(a2) + "/" + hex4(a3) + ", modulator fetches=" + dec((long long)v.fm.size()));
     print_std(ck, pid, agg, 1);
     ck.expect(gd, pid + "-G-D: after each start DMACONR bit 9 and the started channel's bit read 1, for channel n and for channel m (AA p.22)");
-    ck.expect(gf, pid + "-G-F: channel m makes at least 12 fetches in phase 2 (AA p.22 '00 AUD0EN')");
+    ck.expect(gf, pid + "-G-F: channel m makes at least 12 fetches in phase 2 and channel n at least 12 over the run (AA p.22 '00 AUD0EN')");
     ck.expect(gp, pid + "-G-P: in phase 1 all runs of channel " + dec(n) + " last 400 colour clocks within tau (AA p.11 AUDxPER)");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && gp;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F or G-P";
@@ -298,7 +298,8 @@ inline Bit3 bit3_run(int k, bool with_bit3, const std::string& variant) {
     s.w32(audlc(3), kBuf[3]); s.w16(audlen(3), 2); s.w16(audper(3), 700); s.w16(audvol(3), 0);
     uint16_t adk = 0x8008;
     std::string var = variant;
-    if (var == "ATT" && k == 0) var = "VOL";   // no attach bit modulates channel 0: the contrast is a CPU volume write
+    // (no attach bit modulates channel 0: for k = 0 the page's contrast is the CPU volume write, selected by P15-VOL)
+    if (var == "ATT" && k == 0) var = "";
     if (var == "ATT") {   // the page's contrast: the volume attach bit of the channel before k as well
         int mm = k - 1;
         if (mm >= 0) {

@@ -122,7 +122,10 @@ inline TxRun tx_run(const std::string& variant) {
     r.T_expect = 64;
     int n_wait = mut("P17-R") ? 40 : (mut("P16-IDLE") ? 30 : 130);
     r.i_poll0 = r.pre.logn;
-    if (variant == "X") { s.w16(SERDAT, 0x0181); }
+    if (variant == "X") { s.w16(SERDAT, 0x0181); }   // at the start of the wait
+    if (variant == "X16") {                          // 10 poll reads in, so that the frame lies inside the 20T before the first write
+        s.poll(INTREQR, 59); s.w16(SERDAT, 0x0181); n_wait -= 60; r.pre.logn += 60;
+    }
     if (mut("P17-R")) {   // contrast: the poll loop is slowed down so that R exceeds the bound
         for (int i = 0; i < n_wait; ++i) { s.rd(INTREQR); s.dly(8); }
     } else s.poll(INTREQR, unsigned(n_wait));
@@ -131,7 +134,6 @@ inline TxRun tx_run(const std::string& variant) {
     std::vector<uint16_t> words;
     for (int k = 1; k < 8; ++k) words.push_back(uint16_t(0x100 | wd[size_t(k)]));
     uint16_t cval = mut("P17-NOCLEAR") ? uint16_t(0) : uint16_t(1);
-    const bool storm = mut("P17-ONE");
     if (variant == "DELAY") {
         // word 5 only after three frame times of idle
         s.feed(INTREQR, 0x0001, 600, cval, std::vector<uint16_t>(words.begin(), words.begin() + 3));
@@ -140,7 +142,7 @@ inline TxRun tx_run(const std::string& variant) {
         r.m_x.push_back(s.w16(SERDAT, words[3]));
         s.feed(INTREQR, 0x0001, 600, cval, std::vector<uint16_t>(words.begin() + 4, words.end()));
     } else {
-        s.feed(INTREQR, 0x0001, 600, cval, words, storm);
+        s.feed(INTREQR, 0x0001, 600, cval, words);
     }
     if (variant == "EXTRA") { s.dly(wait_iters(25 * 64)); s.w16(SERDAT, 0x01FF); }   // contrast: a ninth word after frame 8
     s.poll(INTREQR, 150);
@@ -157,7 +159,7 @@ inline TxRun tx_run(const std::string& variant) {
 
 inline void run_p16_17(Checks& ck) {
     const bool sel16 = mut("P16-D3") || mut("P16-DELAY");
-    std::string var = mut("P16-D3") ? "D3" : (mut("P16-DELAY") ? "DELAY" : ((mut("P17-X") || mut("P16-X")) ? "X" : (mut("P16-EXTRA") ? "EXTRA" : "")));
+    std::string var = mut("P16-D3") ? "D3" : (mut("P16-DELAY") ? "DELAY" : (mut("P17-X") ? "X" : (mut("P16-X") ? "X16" : (mut("P16-EXTRA") ? "EXTRA" : ""))));
     (void)sel16;
     TxRun r = tx_run(var);
     Std st = std_pre(r.cap, r.pre, {});
@@ -168,10 +170,11 @@ inline void run_p16_17(Checks& ck) {
     const uint64_t t_end = c.base + c.txd.size() - 1;
     // TxD from 20T before the first write
     uint64_t t0 = r.t_w1 > 20 * T ? r.t_w1 - 20 * T : c.base + 1;
-    int idle = tx_at(c, t0);
-    auto frames = tx_frames(c, t0, t_end, idle, T);
+    uint64_t t_ser0 = marker(c, r.m_ser + 1);   // frames are looked for from the SERPER write on
+    int idle = tx_at(c, t_ser0 + 1);
+    auto frames = tx_frames(c, t_ser0 + 1, t_end, idle, T);
     uint64_t tmeas = 0;
-    bool gt = g_t(c, frames, t0, t_end, T, K, tmeas);
+    bool gt = g_t(c, frames, t_ser0 + 1, t_end, T, K, tmeas);
     bool gbrk = (logv(c, r.pre.i_adkconr) & 0x0800) == 0;
     // the idle precondition: TxD constant from the SERPER marker to the first write, for at least 20T
     uint64_t t_ser = marker(c, r.m_ser + 1);
@@ -228,7 +231,9 @@ inline void run_p16_17(Checks& ck) {
     graded(ck, pre, a_ok && b_ok && c_ok && d_ok && e_ok, "P16 sol:AA-serdat.c6 sol:AA-serdat.c7: every word written to SERDAT goes to the transmit buffer and is transmitted on TxD once, in the order written, and a word waiting in the buffer moves into the shift register as soon as it is empty, so its frame follows the previous frame with no idle cell (AA p.27)", un);
 
     // ---- P17 ----
-    bool zero_ok = true, one_ok = true, any = frames.size() == 8 && hit.size() == 7;
+    std::vector<TxFrame> fr17;   // the frames of the eight words: those that start after the first write
+    for (auto& f : frames) if (f.s > r.t_w1) fr17.push_back(f);
+    bool zero_ok = true, one_ok = true, any = fr17.size() == 8 && hit.size() == 7;
     bool clear_ok = true;
     std::string det;
     if (any) {
@@ -238,7 +243,7 @@ inline void run_p16_17(Checks& ck) {
             else {
                 size_t h = hit[size_t(k - 2)];
                 uint64_t wr_early = c.log[h].first;                 // the write of word k happens after this store
-                uint64_t stop_start = frames[size_t(k - 2)].s + 9 * T;
+                uint64_t stop_start = fr17[size_t(k - 2)].s + 9 * T;
                 e = std::max(wr_early, stop_start);
                 lo = c.log[h + 1].first;                            // the first read after the clear
                 clear_ok &= h + 1 < c.log.size() && !(c.log[h + 1].second & 1);
@@ -248,7 +253,7 @@ inline void run_p16_17(Checks& ck) {
                 if (ti >= lo && ti < e && (c.log[i].second & 1)) zero_ok = false;
             }
             // the first read of 1 after the clear: TBE is set by the start of frame k, a read of 1 follows within two poll intervals
-            uint64_t sk = frames[size_t(k - 1)].s;
+            uint64_t sk = fr17[size_t(k - 1)].s;
             bool found = false; uint64_t t1 = 0;
             for (size_t i = ip0; i < c.log.size(); ++i) if (c.log[i].first >= lo && (c.log[i].second & 1)) { t1 = c.log[i].first; found = true; break; }
             size_t i1 = ip0;
@@ -259,13 +264,13 @@ inline void run_p16_17(Checks& ck) {
         }
     }
     // the clear marker of the first word: S0's INTREQ write precedes every poll: the first poll reads 0
-    clear_ok &= !pl.empty() && !(pl[0].second & 1) && any;
+    clear_ok &= !(logv(c, r.pre.i_intreqr) & 1) && any;
     ck.note("P17: R=" + dec((long long)R) + " cycles; reads of 1 followed by a write: " + dec((long long)hit.size()) + "; per move k: window e_k - first clear read, and the first read of 1 minus the start of frame k (cycles): " + det);
     print_std(ck, "P17", agg, 1);
     ck.expect(gbrk, "P17-G-BRK: after S0 ADKCONR bit 11 (UARTBRK) reads 0 (AA p.10 '11 UARTBRK')");
     ck.expect(gt, "P17-G-T: every TxD edge lies on a grid of pitch T from its frame's first edge, within +-c, and the shortest edge interval is T within +-c (AA p.27 SERPER)");
     ck.expect(R > 0 && R <= 32 * K, "P17-G-R: R, the largest interval between consecutive log stores of the poll loop, is at most T/2 = 32 colour clocks (SPECIFICATION.md 2.3)");
-    ck.expect(clear_ok && !pl.empty() && !(logv(c, r.pre.i_intenar) & 0x7FFF), "P17-PRE-CLEAR: INTENAR reads 0 and the first read after each clear reads 0 (AA p.25 INTENA, INTREQ set/clear)");
+    ck.expect(clear_ok && !(logv(c, r.pre.i_intenar) & 0x7FFF), "P17-PRE-CLEAR: INTENAR reads 0 and the first read after each clear reads 0 (AA p.25 INTENA, INTREQ set/clear)");
     bool pre17 = agg.fixture && agg.s0 && agg.gc && gbrk && gt && R > 0 && R <= 32 * K && clear_ok;
     const std::string un17 = "fixture, G-S0, G-C, G-BRK, G-T, G-R or the clear precondition";
     graded(ck, pre17 && any, zero_ok, "P17-ZERO: for every move k = 1..8 every read stored after the clear before word k and before the earliest instant e_k of the move reads 0 in INTREQR bit 0 (AA p.27 'This sets the Interrupt Request TBE (transmit buffer empty)'; AA p.25 '00 TBE 1 Serial port Transmit Buffer Empty')", un17);

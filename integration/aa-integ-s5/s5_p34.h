@@ -6,7 +6,7 @@
 namespace s5 {
 
 // One run of channel 0 with a data set of `words`, volume 64, period 300, played for `blocks` blocks.
-inline ARun data_run(const std::vector<uint16_t>& words, unsigned blocks, uint16_t vol = 0x0040, uint16_t per = 300, int x = 0, int vol_mid = -1) {
+inline ARun data_run(const std::vector<uint16_t>& words, unsigned blocks, uint16_t vol = 0x0040, uint16_t per = 300, int x = 0, const std::function<void(Script&)>& mid = nullptr) {
     ARun r;
     RunSpec rs; rs.bin = run_bin();
     Script& s = rs.sc;
@@ -16,7 +16,7 @@ inline ARun data_run(const std::vector<uint16_t>& words, unsigned blocks, uint16
     s.w16(audlen(x), uint16_t(words.size())); s.w16(audper(x), per); s.w16(audvol(x), vol);
     r.m_start = s.w16(DMACON, start_val(1u << x));
     r.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
-    if (vol_mid >= 0) { s.dly(wait_iters(8000)); s.w16(audvol(x), uint16_t(vol_mid)); }
+    if (mid) { s.dly(wait_iters(8400)); mid(s); }
     s.dly(wait_iters(unsigned(2 * per) * unsigned(words.size()) * (blocks + 1)));
     r.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(200);
@@ -34,7 +34,8 @@ inline void run_p3(Checks& ck) {
     std::vector<uint16_t> words;
     for (int i = 0; i < 9; ++i) words.push_back(uint16_t(B[i] * 0x0101));
     if (mut("P3-SWAP")) std::swap(words[1], words[2]);
-    ARun r = data_run(words, 4, mut("P3-SCALE") ? 0 : 0x0040, mut("P3-PER") ? 600 : 300, 0, mut("P3-VOL") ? 32 : -1);
+    ARun r = data_run(words, 4, mut("P3-SCALE") ? 0 : 0x0040, mut("P3-PER") ? 600 : 300, 0,
+                    mut("P3-CHG") ? std::function<void(Script&)>([](Script& sc) { sc.wm(kBuf[0] + 8, 0x4040); }) : std::function<void(Script&)>());   // contrast: the CPU replaces word 5 (0xFF) between pass 2 and pass 3
     PreAgg agg; agg.add(r.st);
     note_gc(ck, "P3", r.st);
     uint16_t d = logv(r.cap, r.i_dmaconr);
@@ -85,10 +86,11 @@ inline void run_p4(Checks& ck) {
     const uint8_t W[10][2] = {{a, a}, {b, c}, {d, d}, {c, b}, {a, a}, {b, d}, {c, c}, {d, b}, {a, a}, {b, b}};
     std::vector<uint16_t> words;
     for (int i = 0; i < 10; ++i) words.push_back(uint16_t((W[i][0] << 8) | W[i][1]));
-    if (mut("P4-SAME")) words[1] = uint16_t((b << 8) | b);
+    if (mut("P4-SAME") || mut("P4-LIVESAME")) words[1] = uint16_t((b << 8) | b);
+    if (mut("P4-LV") || mut("P4-LIVELV")) words[1] = uint16_t((b << 8) | 0x40);   // contrast: the second byte of word 2 is 0x40, a level that is not calibrated
     if (mut("P4-CAL")) words[6] = uint16_t((b << 8) | b);   // contrast: word 7 is (b,b) in place of (c,c), so L(c) is not calibrated apart from L(b)
     uint8_t Wl[10][2]; std::memcpy(Wl, W, sizeof Wl);
-    if (mut("P4-LIVE")) { Wl[8][0] = Wl[8][1] = c; words[8] = uint16_t((c << 8) | c); }   // a live input: word 9 is (c,c), so no byte repeats across the first pass's end
+    if (mut("P4-LIVE") || mut("P4-LIVESAME") || mut("P4-LIVELV")) { Wl[8][0] = Wl[8][1] = c; words[8] = uint16_t((c << 8) | c); }   // a live input: word 9 is (c,c), so no byte repeats across the first pass's end
     ARun r = data_run(words, 4, 0x0040, mut("P4-PER") ? 600 : 300);
     PreAgg agg; agg.add(r.st);
     note_gc(ck, "P4", r.st);

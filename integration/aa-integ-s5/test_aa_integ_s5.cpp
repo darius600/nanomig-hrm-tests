@@ -62,6 +62,16 @@ int main(int argc, char** argv) {
     if (want("P18")) run_p18(ck);
     if (want("P19")) run_p19(ck);
     if (want("P20")) run_p20(ck);
+    if (!only && !g_mutate) {
+        // claims the package declines (SPECIFICATION.md section 1) and clauses it leaves open
+        ck.record("DECLINED sol:AA-audxdat.c8: '0.8 volts (peak to peak, typ)' is an analog voltage; the ports show digital samples, and 'typ' is no limit");
+        ck.record("DECLINED sol:AA-audxvol.c5: '15-07 Not used' states no value; every stimulus writes these bits as 0");
+        ck.record("DECLINED sol:AA-serdat.c9: 'A stop bit must be provided as part of the data word' is an obligation on the program; every stimulus meets it");
+        ck.record("DECLINED sol:AA-audxlen.c2: 'AUDxLEN 0A4 W' read half: the page gives no value for a read of a write-only address; the write half is exercised by P1");
+        ck.record("DECLINED sol:AA-audxvol.c2: 'AUDxVOL 0A8 W' read half: no value for a read of a write-only address; the write half is graded in P6");
+        ck.record("DECLINED sol:AA-audxdat.c2: 'AUDxDAT 0AA W' read half: no value for a read of a write-only address; the write half is graded in P5");
+        ck.record("NOT GRADED: which byte of an AUDxDAT word is output first (recorded in P4), what the output does after both bytes of a direct write (P5), when an attached modulator word takes effect (P9-P14), the meaning of AUDxLEN = 0, SERDATR bits 9 and 8 and OVRUN, SERDATR bit 13 while TBE is cleared with the buffer empty or set by software with the buffer full");
+    }
     std::printf("%d passed, %d failed\n", ck.passed, ck.failed);
     return ck.failed == 0 ? 0 : 1;
 }
