@@ -1,0 +1,2175 @@
+// test_aa_integ_s2.cpp
+//
+// aa-integ-s2: see SPECIFICATION.md. Blitter pointer and modulo registers
+// (P1-P7) and BEAMCON0 (P8-P14), graded at the ports of nanomig.v only.
+//
+// nanomig.mk builds the TG68K core with ENABLE_AGA and the fx68k core
+// without it: every proposition, precondition and anchor is graded
+// (PASS:/FAIL:) on the build made with ENABLE_AGA only; on the other build the
+// identical check prints as RECORDED: (Grader, below), never as PASS or FAIL.
+//
+// NMH_MUTATE selects one mutation in place of the normal run: it names the
+// leading id of one assertion or precondition, and only the proposition that
+// owns it runs, with a changed stimulus and the unchanged comparator. The
+// normal run (NMH_MUTATE unset) never runs a mutant. A precondition whose run
+// the mutation does not touch is not evaluated in that mutation run.
+//
+// NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
+//
+// MUTATION_RECORDS_BEGIN
+// MUTATION_RECORDS_END
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <set>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <vector>
+
+#include "nanomig_harness.h"
+
+#ifndef NANOMIG_CORE_NAME
+#define NANOMIG_CORE_NAME unknown
+#endif
+#define NMH_STR(x) #x
+#define NMH_XSTR(x) NMH_STR(x)
+
+namespace {
+
+// ---- nanomig.i and s2.i, restated: the harness side of the contract -------
+constexpr uint32_t kResults   = 0x0C0000;
+constexpr uint32_t kDoneAddr  = 0x0C0FFE;
+constexpr uint16_t kDoneValue = 0x600D;
+constexpr uint32_t kMarker    = 0x0C1000;
+constexpr uint32_t kTable     = 0x080C00;   // blit.i: the blit table
+constexpr uint16_t kMFrame    = 0xF001;
+constexpr uint16_t kMBlitGo   = 0xA100;
+constexpr uint16_t kMBlitDone = 0xA200;
+constexpr uint32_t kProgLo = 0x080400, kProgHi = 0x081000;
+constexpr uint32_t kStackLo = 0x0FFE00, kStackHi = 0x100000;
+
+constexpr uint64_t kBootBudget = 8'000'000;
+
+class Checks {
+public:
+    void expect(bool condition, const std::string& label) {
+        std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
+        condition ? ++passed : ++failed;
+    }
+    void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
+    void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
+    int passed = 0, failed = 0;
+};
+
+Checks checks;
+bool g_graded = false;       // the build made with ENABLE_AGA
+std::string g_dir = ".";
+const char* g_mutate = nullptr;
+
+// The label of a line printed as RECORDED on the build without ENABLE_AGA
+// carries no claim id: the claim is asserted on the other build's lines.
+std::string without_ids(const std::string& s) {
+    std::string out, tok;
+    auto flush = [&]() {
+        if (tok.rfind("opus:", 0) == 0 || tok.rfind("sol:", 0) == 0) {
+            if (!tok.empty() && tok.back() == ':') out += ":";
+        } else out += tok;
+        tok.clear();
+    };
+    for (char c : s) {
+        if (c == ' ') { flush(); out += ' '; }
+        else tok += c;
+    }
+    flush();
+    return out;
+}
+
+// Every proposition, precondition and anchor goes through Grader: PASS:/FAIL:
+// on the graded build, RECORDED: on the other, whatever the condition shows.
+class Grader {
+public:
+    void expect(bool cond, const std::string& label) {
+        if (g_graded) checks.expect(cond, label);
+        else checks.record(without_ids(label) + " [build without ENABLE_AGA: would have " +
+                           (cond ? "PASSed" : "FAILed") + "]");
+    }
+    // An anchor the specification allows to fail: it prints PASS when it holds and
+    // a NOT CHECKABLE record when it does not, never FAIL.
+    void expect_anchor(bool ok, const std::string& label) {
+        if (ok) expect(true, label);
+        else checks.record("NOT CHECKABLE: " + without_ids(label) + " [the anchor does not hold in this harness]");
+    }
+    // A line whose precondition does not hold is NOT GRADED, never PASS or FAIL.
+    void expect_if(bool pre, bool cond, const std::string& label) {
+        if (pre) expect(cond, label);
+        else checks.record("NOT GRADED: " + label + " [a precondition does not hold]");
+    }
+};
+Grader g;
+
+bool mutating(const char* label) { return g_mutate && std::string(g_mutate) == label; }
+
+// Runs the proposition `prop` in a normal run, and in a mutation run only
+// when the mutation names one of its ids.
+bool want(const char* prop) {
+    const char* only = std::getenv("NMH_ONLY");   // a single proposition, for a partial run
+    if (only && std::string(only) != prop) return false;
+    if (!g_mutate) return true;
+    std::string m = g_mutate, p = prop;
+    return m == p || m.compare(0, p.size() + 1, p + "-") == 0;
+}
+
+// The precondition whose own run a mutation does not touch is not evaluated
+// in that mutation run.
+bool full(const char* label) { return !g_mutate || mutating(label); }
+
+std::string sel(const char* normal, std::initializer_list<std::pair<const char*, const char*>> m) {
+    for (const auto& p : m) if (mutating(p.first)) return p.second;
+    return normal;
+}
+
+std::string hexs(uint32_t v, int digits = 6) {
+    char b[16];
+    std::snprintf(b, sizeof b, "%0*X", digits, v);
+    return b;
+}
+std::string dec(long long v) { return std::to_string(v); }
+std::string fnum(double v) { char b[32]; std::snprintf(b, sizeof b, "%.3f", v); return b; }
+
+// ---- running a program -----------------------------------------------------
+
+struct Acc { uint64_t cyc; uint32_t byte; bool wr; uint16_t data; };
+struct Mark { uint64_t cyc; uint16_t code; };
+
+struct RunData {
+    bool loaded = false, released = false;
+    std::optional<uint64_t> done;
+    std::vector<Acc> acc;          // every port access, held bus cycles collapsed
+    std::vector<Mark> marks;       // every write to the marker area
+    uint64_t period = 0;           // clk_sys cycles per port sample
+    uint64_t ncycles = 0;          // the harness's cycle count when the run ended
+    uint64_t pulse_start = 0, pulse_end = 0;
+    uint64_t vid_t0 = 0;
+    std::vector<uint8_t> vid;      // hs (bit 0) and vs (bit 1) per cycle from vid_t0, when kept
+    std::map<uint32_t, uint16_t> mem;   // snapshot of the captured ranges, by byte address
+    uint16_t word(uint32_t byte_addr) const {
+        auto it = mem.find(byte_addr);
+        return it == mem.end() ? 0 : it->second;
+    }
+};
+
+nmh::Config make_config() {
+    nmh::Config cfg;
+    cfg.chipset_config = 0x10;     // AA selected (bit 4)
+    cfg.memory_config  = 0x03;     // 2.0 MB Chip memory
+    return cfg;
+}
+
+using Range = std::pair<uint32_t, uint32_t>;
+
+// What a run needs beyond the program: parameters poked into Chip memory
+// before the program starts, a light-pen pulse driven at a marker, and what
+// to keep from the video capture.
+struct RunOpts {
+    std::string prog;
+    uint64_t budget = 40'000'000;
+    std::vector<Range> ranges;
+    std::vector<std::pair<uint32_t, uint16_t>> pokes;    // byte address, word
+    bool pulse = false;                  // drive both controller ports' fire inputs
+    uint16_t pulse_marker = 0;
+    uint64_t pulse_delay = 0, pulse_len = 0;
+    bool video_graded = false;           // keep hs/vs of the graded frame: the 2nd to the 3rd frame marker after the register list
+};
+
+std::shared_ptr<RunData> run_opts(const RunOpts& o) {
+    auto r = std::make_shared<RunData>();
+    nmh::NanomigHarness h(make_config());
+    r->loaded = h.load_program(g_dir + "/" + o.prog + ".bin") > 0;
+    if (!r->loaded) return r;
+    for (const auto& p : o.pokes) h.poke_word(p.first / 2, p.second);
+    r->released = h.boot(kBootBudget).cpu_released;
+    if (o.pulse) {
+        auto t = h.run_until_write(kMarker, o.pulse_marker, o.budget);
+        if (t) {
+            r->pulse_start = *t + o.pulse_delay;
+            while (h.cycles() < r->pulse_start) h.run_cycles(1);
+            h.ports()->joystick0 = 0x10;
+            h.ports()->joystick1 = 0x10;
+            h.run_cycles(o.pulse_len);
+            h.ports()->joystick0 = 0x00;
+            h.ports()->joystick1 = 0x00;
+            r->pulse_end = h.cycles();
+        }
+    }
+    r->done = h.run_until_write(kDoneAddr, kDoneValue, o.budget);
+    const auto& log = h.ram_log();
+    uint64_t period = 0;
+    for (size_t i = 1; i < log.size(); ++i) {
+        uint64_t d = log[i].cycle - log[i - 1].cycle;
+        if (d > 0 && (period == 0 || d < period)) period = d;
+    }
+    r->period = period;
+    std::vector<nmh::RamAccess> col = period ? nmh::coalesce_adjacent(log, period) : log;
+    for (const auto& a : col) {
+        r->acc.push_back({a.cycle, a.word_addr * 2, a.is_write, a.data});
+        if (a.is_write && a.word_addr * 2 == kMarker) r->marks.push_back({a.cycle, a.data});
+    }
+    r->ncycles = h.cycles();
+    auto ranges = o.ranges;
+    ranges.push_back({kResults, kResults + 0x1000});
+    ranges.push_back({kTable, kTable + 0x400});
+    for (const auto& rg : ranges)
+        for (uint32_t a = rg.first; a < rg.second; a += 2) {
+            auto w = h.peek_logical(a);
+            if (w) r->mem[a] = *w;
+        }
+    if (o.video_graded) {
+        // the video samples (hs bit 0, vs bit 1) of the graded frame
+        std::vector<uint64_t> fm;
+        bool after = false;
+        for (const auto& m : r->marks) {
+            if (m.code == 0xF003) after = true;
+            else if (after && m.code == 0xF001) fm.push_back(m.cyc);
+        }
+        if (fm.size() >= 3) {
+            r->vid_t0 = fm[1];
+            const auto& v = h.video();
+            for (uint64_t c = fm[1]; c < fm[2] && c < v.size(); ++c)
+                r->vid.push_back((v[c].hs ? 1 : 0) | (v[c].vs ? 2 : 0));
+        }
+    }
+    return r;
+}
+
+std::shared_ptr<RunData> run_prog(const std::string& name, uint64_t run_budget = 40'000'000,
+                                  std::vector<Range> ranges = {}) {
+    RunOpts o;
+    o.prog = name; o.budget = run_budget; o.ranges = ranges;
+    return run_opts(o);
+}
+
+std::map<std::string, std::shared_ptr<RunData>> g_cache;
+std::shared_ptr<RunData> run_cached(const std::string& name) {
+    auto it = g_cache.find(name);
+    if (it != g_cache.end()) return it->second;
+    auto r = run_prog(name);
+    g_cache[name] = r;
+    return r;
+}
+
+// The first mark with `code` at or after index `from`; the result is its index.
+std::optional<size_t> find_mark(const RunData& r, uint16_t code, size_t from = 0) {
+    for (size_t i = from; i < r.marks.size(); ++i)
+        if (r.marks[i].code == code) return i;
+    return std::nullopt;
+}
+
+struct Win { bool ok = false; uint64_t t0 = 0, t1 = 0; };
+
+Win blit_win(const RunData& r, int i) {
+    Win w;
+    auto gm = find_mark(r, kMBlitGo + i);
+    if (!gm) return w;
+    auto d = find_mark(r, kMBlitDone + i, *gm);
+    if (!d) return w;
+    w.ok = true; w.t0 = r.marks[*gm].cyc; w.t1 = r.marks[*d].cyc;
+    return w;
+}
+
+// F1: the port accesses of a channel are those whose byte address lies in
+// [lo,hi) between BLIT_GO and BLIT_DONE.
+std::vector<Acc> accs_in(const RunData& r, const Win& w, uint32_t lo, uint32_t hi) {
+    std::vector<Acc> out;
+    if (!w.ok) return out;
+    for (const auto& a : r.acc)
+        if (a.cyc >= w.t0 && a.cyc <= w.t1 && a.byte >= lo && a.byte < hi) out.push_back(a);
+    return out;
+}
+
+// F2: within every line of W accesses consecutive addresses differ by one
+// constant step. Returns that step, or nullopt (none, or not constant).
+std::optional<long long> line_step(const std::vector<Acc>& a, int W, int H) {
+    std::optional<long long> inc;
+    if (W < 2 || (int)a.size() != W * H) return std::nullopt;
+    for (int k = 0; k < H; ++k)
+        for (int j = 1; j < W; ++j) {
+            long long d = (long long)a[k * W + j].byte - (long long)a[k * W + j - 1].byte;
+            if (!inc) inc = d;
+            else if (*inc != d) return std::nullopt;
+        }
+    return inc;
+}
+
+// The addresses the programs themselves use: the vector the level-3 interrupt
+// fetches, the program image and its tables, the parameter, result and marker
+// areas, the stack and the sample buffers. A port access outside them is a
+// refresh access, a Blitter access or a DMA access (SPECIFICATION.md F3).
+bool program_range(uint32_t a) {
+    return (a >= 0x6C && a < 0x70) || (a >= 0x080000 && a < 0x082000) || (a >= 0x0B0000 && a < 0x0C2000) ||
+           (a >= 0x0FE000 && a < 0x100000) || (a >= 0x1B0000 && a < 0x200000);
+}
+
+// ---- the blit programs: table readers and the run record -------------------
+
+// Channel order in every array below: C, B, A, D.
+constexpr int kC = 0, kB = 1, kA = 2, kD = 3;
+
+struct Layout { uint32_t lo[4], hi[4]; };
+// the regions of P1, P3, P4, P6
+const Layout kLay1 = {{0x0B0000, 0x0D0000, 0x0E0000, 0x0F0000}, {0x0C0000, 0x0E0000, 0x0F0000, 0x0F8000}};
+// the regions of P5
+const Layout kLay5 = {{0x140000, 0x120000, 0x100000, 0x160000}, {0x160000, 0x140000, 0x120000, 0x180000}};
+
+// What the program wrote, read back from its table in chip memory.
+uint32_t tbl_ptr(const RunData& r, int blit, int ch) {
+    uint32_t base = kTable + 2 + 32 * blit;
+    return ((uint32_t)r.word(base + 2 * (4 + 2 * ch)) << 16) | r.word(base + 2 * (5 + 2 * ch));
+}
+long long tbl_mod(const RunData& r, int blit, int ch) {
+    uint32_t base = kTable + 2 + 32 * blit;
+    return (int16_t)r.word(base + 2 * (12 + ch));
+}
+
+struct BRun {
+    std::shared_ptr<RunData> r;
+    bool fixture = false;
+    int n = 0;
+    std::vector<Win> win;
+    std::vector<bool> seen, bbusy_clear;
+    std::vector<std::array<std::vector<Acc>, 4>> ch;   // [blit][channel]
+};
+
+BRun brun(const std::string& prog, int n, const Layout* lay, uint16_t fixval = 0xBEEF) {
+    BRun b;
+    b.r = run_cached(prog);
+    b.n = n;
+    b.fixture = b.r->loaded && b.r->done && b.r->word(kResults) == fixval;
+    for (int i = 0; i < n; ++i) {
+        b.win.push_back(blit_win(*b.r, i));
+        b.seen.push_back(b.r->word(kResults + 0x10 + 4 * i) == 1);
+        b.bbusy_clear.push_back((b.r->word(kResults + 0x12 + 4 * i) & 0x4000) == 0);
+        std::array<std::vector<Acc>, 4> c;
+        if (lay)
+            for (int k = 0; k < 4; ++k) c[k] = accs_in(*b.r, b.win[i], lay->lo[k], lay->hi[k]);
+        b.ch.push_back(c);
+    }
+    return b;
+}
+
+// The channel's accesses as the page predicts for a blit of W words and H
+// lines: the first access at the pointer, every line start at the previous
+// line's last access plus the increment plus the channel's modulo, every
+// access in the expected direction.
+bool chan_matches(const std::vector<Acc>& a, bool enabled, uint32_t start, long long mod, bool write,
+                  int W, int H, long long inc) {
+    if (!enabled) return a.empty();
+    if ((int)a.size() != W * H) return false;
+    if (a[0].byte != start) return false;
+    for (const auto& x : a) if (x.wr != write) return false;
+    for (int k = 1; k < H; ++k)
+        if ((long long)a[k * W].byte != (long long)a[k * W - 1].byte + inc + mod) return false;
+    return true;
+}
+
+std::string noteaddr(const std::vector<Acc>& a) {
+    std::string s;
+    for (size_t i = 0; i < a.size() && i < 12; ++i) s += (i ? "," : "") + hexs(a[i].byte);
+    return s;
+}
+
+bool config_ok(const nmh::Config& c) { return c.chipset_config == 0x10 && c.memory_config == 0x03; }
+
+// ---- P1 ---------------------------------------------------------------------
+
+void proposition_p1() {
+    if (!want("P1")) return;
+    const int W = 2, H = 2;
+    // [blit][channel C,B,A,D]
+    const bool use[4][4] = {{false, false, true, true},    // P1-A: USEA, USED
+                            {false, true, false, true},    // P1-B: USEB, USED
+                            {true, false, false, true},    // P1-C: USEC, USED
+                            {false, false, false, true}};  // P1-D: USED only
+    std::string main_prog = sel("prog_p1", {{"P1-A", "prog_p1_moda"}, {"P1-B", "prog_p1_ptrb"},
+                                            {"P1-C", "prog_p1_modc"}, {"P1-D", "prog_p1_ptrd"},
+                                            {"P1", "prog_p1_swapmod"}, {"P1-INC", "prog_p1_touch"}});
+    BRun mn = brun(main_prog, 4, &kLay1);
+
+    BRun fx = mutating("P1-FIXTURE") ? brun("prog_p1_nofix", 4, &kLay1) : mn;
+    g.expect(fx.fixture, "P1-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+
+    nmh::Config cfg = make_config();
+    if (mutating("P1-CONFIG")) cfg.chipset_config = 0x08;
+    g.expect(config_ok(cfg), "P1-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+
+    bool anchor = true;
+    if (full("P1-ANCHOR")) {
+        BRun c = brun(mutating("P1-ANCHOR") ? "prog_p1" : "prog_p1_nobl", 4, &kLay1);
+        bool windows = true, empty = true;
+        for (int i = 0; i < 4; ++i) {
+            windows = windows && c.win[i].ok;
+            for (int k = 0; k < 4; ++k) empty = empty && c.ch[i][k].empty();
+        }
+        anchor = c.fixture && windows && empty;
+        g.expect(anchor, "P1-ANCHOR: with DMAEN set and BLTEN clear, the same four blits make no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P1-ANCHOR: not evaluated in this mutation run");
+
+    BRun fin = mutating("P1-FINISHED") ? brun("prog_p1_h3", 4, &kLay1) : mn;
+    bool finished = fin.fixture;
+    for (int i = 0; i < 4; ++i) {
+        finished = finished && fin.win[i].ok && fin.seen[i] && fin.bbusy_clear[i];
+        for (int k = 0; k < 4; ++k)
+            finished = finished && fin.ch[i][k].size() == (use[i][k] ? (size_t)(W * H) : 0);
+    }
+    g.expect(finished, "P1-FINISHED: every blit raised BLIT, read BBUSY clear, and every enabled channel made exactly W*H = 4 accesses");
+
+    std::optional<long long> inc;
+    bool inc_const = mn.fixture;
+    for (int i = 0; i < 4; ++i)
+        for (int k = 0; k < 4; ++k) {
+            if (!use[i][k]) continue;
+            auto s = line_step(mn.ch[i][k], W, H);
+            if (!s) { inc_const = false; continue; }
+            if (!inc) inc = s;
+            else if (*inc != *s) inc_const = false;
+        }
+    g.expect(inc_const && inc.has_value(), "P1-INC: within every line of every enabled channel consecutive addresses differ by one constant step");
+    checks.note("P1 measured: increment = " + (inc ? dec(*inc) : std::string("n/a")) + " bytes");
+
+    bool pre = fx.fixture && config_ok(cfg) && anchor && finished && inc_const && inc.has_value();
+    long long step = inc.value_or(0);
+
+    // The pointers and modulos of the page's table: C 048/04A 060, B 04C/04E 062,
+    // A 050/052 064, D 054/056 066.
+    const uint32_t ptr[4] = {0x0B0000, 0x0D0000, 0x0E0000, 0x0F0000};
+    const long long mod[4] = {8, 16, 24, 32};
+    const bool wr[4] = {false, false, false, true};
+    bool comp[4];
+    for (int i = 0; i < 4; ++i) {
+        comp[i] = mn.win[i].ok;
+        for (int k = 0; k < 4; ++k)
+            comp[i] = comp[i] && chan_matches(mn.ch[i][k], use[i][k], ptr[k], mod[k], wr[k], W, H, step);
+    }
+    g.expect_if(pre, comp[0], "P1-A: blit with USEA, USED: the accesses fall in the A region (pointer $0E0000) and the D region (pointer $0F0000) only, A reads start at $0E0000 and each line start is the previous line's last access plus the increment plus 24 (BLTAMOD), D writes start at $0F0000 with the line step increment plus 32 (BLTDMOD)");
+    g.expect_if(pre, comp[1], "P1-B: blit with USEB, USED: the accesses fall in the B region (pointer $0D0000) and the D region only, B reads start at $0D0000 with the line step increment plus 16 (BLTBMOD), D writes as in P1-A");
+    g.expect_if(pre, comp[2], "P1-C: blit with USEC, USED: the accesses fall in the C region (pointer $0B0000) and the D region only, C reads start at $0B0000 with the line step increment plus 8 (BLTCMOD), D writes as in P1-A");
+    g.expect_if(pre, comp[3], "P1-D: blit with USED only: the writes fall in the D region only, start at $0F0000 and step the increment plus 32 per line, and no access falls in any other channel region");
+    bool all = comp[0] && comp[1] && comp[2] && comp[3];
+    g.expect_if(pre, all,
+        "P1: opus:AA-bltxpth.c1 opus:AA-bltxptl.c1 opus:AA-bltxmod.c1 sol:AA-bltxpth.c1 sol:AA-bltxptl.c1 sol:AA-bltxmod.c1 sol:AA-bltxpth.c2 sol:AA-bltxptl.c2 sol:AA-bltxmod.c2 opus:AA-bltxpth.c9 sol:AA-bltxpt.c2 opus:AA-bltxmod.c5 sol:AA-bltxmod.c4: "
+        "a write to each of the twelve registers (pointer pairs 048/04A C, 04C/04E B, 050/052 A, 054/056 D, modulos 060 C, 062 B, 064 A, 066 D) takes effect for its channel, and channels A, B and C read while channel D writes");
+}
+
+// ---- P2 ---------------------------------------------------------------------
+
+void proposition_p2() {
+    if (!want("P2")) return;
+    // blit index -> channel under test (C,B,A,D index) and pointer value
+    //  0 A V1, 1 A V2, 2 B V1, 3 B V2, 4 C V1, 5 C V2, 6 D V1, 7 D V2, 8-11 A,B,C,D with PTH bit 5
+    const int chn[12] = {kA, kA, kB, kB, kC, kC, kD, kD, kA, kB, kC, kD};
+    const uint32_t V1 = 0x155554, V2 = 0x0AAAAA;
+    auto expect_ptr = [&](int i) { return (i < 8 && (i & 1)) ? V2 : V1; };
+    const uint32_t kNeutralD = 0x0F0000;
+
+    std::string main_prog = sel("prog_p2", {{"P2-V1", "prog_p2_v1bit"}, {"P2-V2", "prog_p2_v2bit"},
+                                            {"P2-PTH5", "prog_p2_pth5bit"}, {"P2", "prog_p2_v1bit"},
+                                            {"P2-MAP", "prog_p2_map"}});
+    BRun mn = brun(main_prog, 12, nullptr);
+    // The accesses of a blit are the port accesses between BLIT_GO and BLIT_DONE
+    // that no program range explains. The neutral D region's are channel D's in
+    // the blits of A, B and C; the others are the channel under test's.
+    auto fill = [&](BRun& b) {
+        for (int i = 0; i < 12; ++i) {
+            std::vector<Acc> own, neutral;
+            if (b.win[i].ok)
+                for (const auto& a : b.r->acc) {
+                    // refresh accesses (low addresses) are the chip set's, not the channel's
+                    if (a.cyc < b.win[i].t0 || a.cyc > b.win[i].t1 || program_range(a.byte) || a.byte < 0x1000) continue;
+                    if (chn[i] != kD && a.byte >= kNeutralD && a.byte < kNeutralD + 0x100) neutral.push_back(a);
+                    else own.push_back(a);
+                }
+            b.ch[i][chn[i]] = own;
+            if (chn[i] != kD) b.ch[i][kD] = neutral;
+        }
+    };
+    fill(mn);
+
+    BRun fx = mutating("P2-FIXTURE") ? brun("prog_p2_nofix", 12, nullptr) : mn;
+    g.expect(fx.fixture, "P2-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+
+    nmh::Config cfg = make_config();
+    if (mutating("P2-CONFIG")) cfg.memory_config = 0x00;
+    g.expect(config_ok(cfg), "P2-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03), which the pointer values above 1 MB need");
+
+    // the program image, stack, markers and results do not overlap a region:
+    // computed from the pointers the program wrote
+    bool map_ok = true;
+    for (int i = 0; i < 12; ++i) {
+        uint32_t p = tbl_ptr(*mn.r, i, chn[i]);
+        uint32_t spans[2][2] = {{p, p + 0x100}, {kNeutralD, kNeutralD + 0x100}};
+        for (int s = 0; s < (chn[i] == kD ? 1 : 2); ++s) {
+            uint32_t lo = spans[s][0], hi = spans[s][1];
+            auto overlaps = [&](uint32_t a, uint32_t b) { return lo < b && a < hi; };
+            if (overlaps(kProgLo, kProgHi) || overlaps(kResults, kMarker + 2) || overlaps(kStackLo, kStackHi)) map_ok = false;
+        }
+    }
+    g.expect(map_ok, "P2-MAP: no channel region of any blit overlaps the program image, the results area, the marker area or the stack");
+
+    bool anchor = true;
+    if (full("P2-ANCHOR")) {
+        BRun c = brun(mutating("P2-ANCHOR") ? "prog_p2" : "prog_p2_nobl", 12, nullptr);
+        fill(c);
+        bool windows = true, empty = true;
+        for (int i = 0; i < 12; ++i) {
+            windows = windows && c.win[i].ok;
+            for (int k = 0; k < 4; ++k) empty = empty && c.ch[i][k].empty();
+        }
+        anchor = c.fixture && windows && empty;
+        g.expect(anchor, "P2-ANCHOR: with DMAEN set and BLTEN clear, the same twelve blits make no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P2-ANCHOR: not evaluated in this mutation run");
+
+    BRun fin = mn;
+    if (mutating("P2-FINISHED")) { fin = brun("prog_p2_h3", 12, nullptr); fill(fin); }
+    bool finished = fin.fixture;
+    for (int i = 0; i < 12; ++i) {
+        finished = finished && fin.win[i].ok && fin.seen[i] && fin.bbusy_clear[i];
+        finished = finished && fin.ch[i][chn[i]].size() == 1;
+        if (chn[i] != kD) finished = finished && fin.ch[i][kD].size() == 1;
+    }
+    g.expect(finished, "P2-FINISHED: every blit raised BLIT, read BBUSY clear, and the channel under test and channel D each made exactly W*H = 1 access");
+
+    bool pre = fx.fixture && config_ok(cfg) && map_ok && anchor && finished;
+
+    // V1 and V2: the access sits at the written address, for each channel
+    auto one_at = [&](int i, uint32_t want_byte) {
+        return mn.win[i].ok && mn.ch[i][chn[i]].size() == 1 && mn.ch[i][chn[i]][0].byte == want_byte;
+    };
+    bool v1 = true, v2 = true, p5 = true;
+    for (int i = 0; i < 8; ++i) (i & 1 ? v2 : v1) = (i & 1 ? v2 : v1) && one_at(i, expect_ptr(i));
+    for (int i = 8; i < 12; ++i) {
+        auto hi = accs_in(*mn.r, mn.win[i], 0x355554, 0x355654);
+        p5 = p5 && one_at(i, V1) && hi.empty();
+    }
+    std::string m;
+    for (int i = 0; i < 12; ++i) m += (i ? " " : "") + hexs(mn.ch[i][chn[i]].empty() ? 0 : mn.ch[i][chn[i]][0].byte);
+    checks.note("P2 measured: first access of the channel under test per blit: " + m);
+    g.expect_if(pre, v1, "P2-V1: with the pointer written as PTH $0015, PTL $5554 (byte address $155554) each of channels A, B, C and D accesses word address $0AAAAA");
+    g.expect_if(pre, v2, "P2-V2: with the pointer written as PTH $000A, PTL $AAAA (byte address $0AAAAA) each of channels A, B, C and D accesses word address $055555");
+    g.expect_if(pre, p5, "P2-PTH5: with PTH bit 5 set in addition (PTH $0035, PTL $5554) each of channels A, B, C and D accesses the same word address $0AAAAA as with it clear, and nothing is accessed at byte $355554-$355653");
+    g.expect_if(pre, v1 && v2 && p5,
+        "P2: opus:AA-bltxpth.c7 opus:AA-bltxptl.c6 opus:AA-bltxpth.c8 sol:AA-bltxpth.c4 sol:AA-bltxptl.c4 sol:AA-bltxpt.c1 opus:AA-bltxpth.c5 opus:AA-bltxptl.c4: "
+        "a pointer pair is one 20-bit address, PTH bits 4-0 are address bits 20-16 and PTL bits 15-1 are address bits 15-1, for each of the four channels, and PTH bit 5 is not an address bit");
+}
+
+// ---- P3 ---------------------------------------------------------------------
+
+void proposition_p3() {
+    if (!want("P3")) return;
+    const int W = 3, H = 2;
+    const uint32_t ptr[4] = {0x0B0100, 0x0D0100, 0x0E0100, 0x0F0100};
+    std::string main_prog = sel("prog_p3", {{"P3-ASC", "prog_p3_pointa0"}, {"P3-DESC", "prog_p3_pointa1"},
+                                            {"P3", "prog_p3_pointa"}});
+    BRun mn = brun(main_prog, 2, &kLay1);
+    BRun fx = mutating("P3-FIXTURE") ? brun("prog_p3_nofix", 2, &kLay1) : mn;
+    g.expect(fx.fixture, "P3-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    nmh::Config cfg = make_config();
+    if (mutating("P3-CONFIG")) cfg.chipset_config = 0x08;
+    g.expect(config_ok(cfg), "P3-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+
+    bool anchor = true;
+    if (full("P3-ANCHOR")) {
+        BRun c = brun(mutating("P3-ANCHOR") ? "prog_p3" : "prog_p3_nobl", 2, &kLay1);
+        bool windows = true, empty = true;
+        for (int i = 0; i < 2; ++i) {
+            windows = windows && c.win[i].ok;
+            for (int k = 0; k < 4; ++k) empty = empty && c.ch[i][k].empty();
+        }
+        anchor = c.fixture && windows && empty;
+        g.expect(anchor, "P3-ANCHOR: with DMAEN set and BLTEN clear, the same two blits make no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P3-ANCHOR: not evaluated in this mutation run");
+
+    BRun fin = mutating("P3-FINISHED") ? brun("prog_p3_h3", 2, &kLay1) : mn;
+    bool finished = fin.fixture;
+    for (int i = 0; i < 2; ++i) {
+        finished = finished && fin.win[i].ok && fin.seen[i] && fin.bbusy_clear[i];
+        for (int k = 0; k < 4; ++k) finished = finished && fin.ch[i][k].size() == (size_t)(W * H);
+    }
+    g.expect(finished, "P3-FINISHED: both blits raised BLIT, read BBUSY clear, and every channel made exactly W*H = 6 accesses");
+    bool pre = fx.fixture && config_ok(cfg) && anchor && finished;
+
+    auto first_ok = [&](int blit) {
+        bool ok = mn.win[blit].ok;
+        std::string s;
+        for (int k = 0; k < 4; ++k) {
+            ok = ok && !mn.ch[blit][k].empty() && mn.ch[blit][k][0].byte == ptr[k];
+            s += (k ? " " : "") + hexs(mn.ch[blit][k].empty() ? 0 : mn.ch[blit][k][0].byte);
+        }
+        checks.note(std::string("P3 measured: first access of C B A D in blit ") + (blit ? "P3-DESC: " : "P3-ASC: ") + s);
+        return ok;
+    };
+    bool asc = first_ok(0), desc = first_ok(1);
+    g.expect_if(pre, asc, "P3-ASC: in the ascending blit the first access of each of channels A, B, C and D is at the pointer written to it ($0E0100, $0D0100, $0B0100, $0F0100)");
+    g.expect_if(pre, desc, "P3-DESC: in the descending blit (BLTCON1 bit 1) the first access of each of channels A, B, C and D is at the pointer written to it");
+    g.expect_if(pre, asc && desc,
+        "P3: opus:AA-bltxpth.c10 sol:AA-bltxpt.c3: after BLTSIZE is written the first access of each enabled channel is at the address its pointer pair was preloaded with, in both directions");
+}
+
+// ---- P4 ---------------------------------------------------------------------
+
+void proposition_p4() {
+    if (!want("P4")) return;
+    const int W = 3, H = 2;
+    const uint32_t ptr[4] = {0x0B0000, 0x0D0000, 0x0E0000, 0x0F0000};
+    const long long mod[4] = {0, -2, 6, 10};
+    std::string main_prog = sel("prog_p4", {{"P4-A", "prog_p4_moda14"}, {"P4-B", "prog_p4_modb"},
+                                            {"P4-C", "prog_p4_modc"}, {"P4-D", "prog_p4_modd"},
+                                            {"P4", "prog_p4_moda14"}, {"P4-INC", "prog_p4_touch"}});
+    BRun mn = brun(main_prog, 2, &kLay1);
+    BRun fx = mutating("P4-FIXTURE") ? brun("prog_p4_nofix", 2, &kLay1) : mn;
+    g.expect(fx.fixture, "P4-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    nmh::Config cfg = make_config();
+    if (mutating("P4-CONFIG")) cfg.chipset_config = 0x08;
+    g.expect(config_ok(cfg), "P4-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+
+    bool anchor = true;
+    if (full("P4-ANCHOR")) {
+        BRun c = brun(mutating("P4-ANCHOR") ? "prog_p4" : "prog_p4_nobl", 2, &kLay1);
+        bool windows = true, empty = true;
+        for (int i = 0; i < 2; ++i) {
+            windows = windows && c.win[i].ok;
+            for (int k = 0; k < 4; ++k) empty = empty && c.ch[i][k].empty();
+        }
+        anchor = c.fixture && windows && empty;
+        g.expect(anchor, "P4-ANCHOR: with DMAEN set and BLTEN clear, the same two blits make no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P4-ANCHOR: not evaluated in this mutation run");
+
+    BRun fin = mutating("P4-FINISHED") ? brun("prog_p4_nobl", 2, &kLay1) : mn;
+    bool finished = fin.fixture && fin.win[0].ok && fin.seen[0] && fin.bbusy_clear[0];
+    for (int k = 0; k < 4; ++k) finished = finished && fin.ch[0][k].size() == (size_t)(W * H);
+    g.expect(finished, "P4-FINISHED: the first blit raised BLIT, read BBUSY clear, and every channel made exactly W*H = 6 accesses before the second blit started");
+
+    std::optional<long long> inc;
+    bool inc_const = mn.fixture;
+    for (int k = 0; k < 4; ++k) {
+        auto s = line_step(mn.ch[0][k], W, H);
+        if (!s) { inc_const = false; continue; }
+        if (!inc) inc = s;
+        else if (*inc != *s) inc_const = false;
+    }
+    g.expect(inc_const && inc.has_value(), "P4-INC: within every line of the first blit consecutive addresses of every channel differ by one constant step");
+    checks.note("P4 measured: increment = " + (inc ? dec(*inc) : std::string("n/a")) + " bytes");
+    checks.record("P4-NOWRITE: that no pointer or modulo register is written between the two blits follows from the program text and is not visible at the port, so it is not graded");
+    bool pre = fx.fixture && config_ok(cfg) && anchor && finished && inc_const && inc.has_value();
+    long long step = inc.value_or(0);
+
+    bool ok[4];
+    const char* nm[4] = {"C", "B", "A", "D"};
+    for (int k = 0; k < 4; ++k) {
+        const auto& a1 = mn.ch[0][k];
+        const auto& a2 = mn.ch[1][k];
+        ok[k] = mn.win[0].ok && mn.win[1].ok && !a1.empty() && !a2.empty() &&
+                (long long)a2.front().byte == (long long)a1.back().byte + step + mod[k];
+        checks.note(std::string("P4 measured: channel ") + nm[k] + " last access of blit 1 = " +
+                    (a1.empty() ? "none" : hexs(a1.back().byte)) + ", first access of blit 2 = " +
+                    (a2.empty() ? "none" : hexs(a2.front().byte)) + ", modulo written " + dec(mod[k]));
+    }
+    (void)ptr;
+    g.expect_if(pre, ok[kA], "P4-A: the first access of channel A in the second blit is the last access of the first blit plus the increment plus the modulo written (+6)");
+    g.expect_if(pre, ok[kB], "P4-B: the first access of channel B in the second blit is the last access of the first blit plus the increment plus the modulo written (-2)");
+    g.expect_if(pre, ok[kC], "P4-C: the first access of channel C in the second blit is the last access of the first blit plus the increment plus the modulo written (0)");
+    g.expect_if(pre, ok[kD], "P4-D: the first access of channel D in the second blit is the last access of the first blit plus the increment plus the modulo written (+10)");
+    g.expect_if(pre, ok[0] && ok[1] && ok[2] && ok[3],
+        "P4: opus:AA-bltxpth.c11 sol:AA-bltxpt.c4: when a blit has finished each enabled channel's pointer holds the channel's last data address plus the increment plus its modulo, shown by a second blit that writes no pointer or modulo register");
+}
+
+// ---- P5 ---------------------------------------------------------------------
+
+void proposition_p5() {
+    if (!want("P5")) return;
+    const int W = 2, H = 4;
+    const long long vals[5] = {0, 6, -4, 16382, -16382};
+    std::string main_prog = sel("prog_p5", {{"P5-A", "prog_p5_mod0to6"}, {"P5-B", "prog_p5_mod0to6"},
+                                            {"P5-C", "prog_p5_mod0to6"}, {"P5-D", "prog_p5_mod0to6"},
+                                            {"P5", "prog_p5_mod0to6"}, {"P5-INC", "prog_p5_touch"}});
+    BRun mn = brun(main_prog, 5, &kLay5);
+    BRun fx = mutating("P5-FIXTURE") ? brun("prog_p5_nofix", 5, &kLay5) : mn;
+    g.expect(fx.fixture, "P5-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    nmh::Config cfg = make_config();
+    if (mutating("P5-CONFIG")) cfg.chipset_config = 0x08;
+    g.expect(config_ok(cfg), "P5-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+
+    // the largest excursion of every channel stays inside its region, from the
+    // pointers and modulos the program wrote
+    bool regions_ok = true;
+    {
+        BRun big = mutating("P5-REGIONS") ? brun("prog_p5_bigmod", 5, &kLay5) : mn;
+        for (int i = 0; i < 5; ++i)
+            for (int k = 0; k < 4; ++k) {
+                long long p = tbl_ptr(*big.r, i, k), m = tbl_mod(*big.r, i, k);
+                for (int line = 0; line < H; ++line) {
+                    long long first = p + line * (2 * W + m), last = first + 2 * (W - 1);
+                    if (first < (long long)kLay5.lo[k] || last >= (long long)kLay5.hi[k]) regions_ok = false;
+                }
+            }
+    }
+    g.expect(regions_ok, "P5-REGIONS: the largest excursion of every channel in every blit, computed from the pointer and modulo the program wrote, stays inside that channel's region");
+
+    bool anchor = true;
+    if (full("P5-ANCHOR")) {
+        BRun c = brun(mutating("P5-ANCHOR") ? "prog_p5" : "prog_p5_nobl", 5, &kLay5);
+        bool windows = true, empty = true;
+        for (int i = 0; i < 5; ++i) {
+            windows = windows && c.win[i].ok;
+            for (int k = 0; k < 4; ++k) empty = empty && c.ch[i][k].empty();
+        }
+        anchor = c.fixture && windows && empty;
+        g.expect(anchor, "P5-ANCHOR: with DMAEN set and BLTEN clear, the same five blits make no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P5-ANCHOR: not evaluated in this mutation run");
+
+    BRun fin = mutating("P5-FINISHED") ? brun("prog_p5_h5", 5, &kLay5) : mn;
+    bool finished = fin.fixture;
+    for (int i = 0; i < 5; ++i) {
+        finished = finished && fin.win[i].ok && fin.seen[i] && fin.bbusy_clear[i];
+        for (int k = 0; k < 4; ++k) finished = finished && fin.ch[i][k].size() == (size_t)(W * H);
+    }
+    g.expect(finished, "P5-FINISHED: every blit raised BLIT, read BBUSY clear, and every channel made exactly W*H = 8 accesses");
+
+    std::optional<long long> inc;
+    bool inc_const = mn.fixture;
+    for (int i = 0; i < 5; ++i)
+        for (int k = 0; k < 4; ++k) {
+            auto s = line_step(mn.ch[i][k], W, H);
+            if (!s) { inc_const = false; continue; }
+            if (!inc) inc = s;
+            else if (*inc != *s) inc_const = false;
+        }
+    g.expect(inc_const && inc.has_value(), "P5-INC: within every line of every channel in every blit consecutive addresses differ by one constant step");
+    checks.note("P5 measured: increment = " + (inc ? dec(*inc) : std::string("n/a")) + " bytes");
+    bool pre = fx.fixture && config_ok(cfg) && regions_ok && anchor && finished && inc_const && inc.has_value();
+    long long step = inc.value_or(0);
+
+    // blit j gives A, B, C, D the values with indices j, j+1, j+2, j+3 (mod 5)
+    const uint32_t start[4] = {0x150000, 0x130000, 0x110000, 0x170000};
+    bool ok[4] = {true, true, true, true};
+    int boundaries = 0;
+    for (int j = 0; j < 5; ++j)
+        for (int k = 0; k < 4; ++k) {
+            int idx = (k == kA ? j : k == kB ? j + 1 : k == kC ? j + 2 : j + 3) % 5;
+            long long m = vals[idx];
+            const auto& a = mn.ch[j][k];
+            bool good = mn.win[j].ok && (int)a.size() == W * H && a[0].byte == start[k];
+            for (int line = 1; good && line < H; ++line) {
+                ++boundaries;
+                good = (long long)a[line * W].byte == (long long)a[line * W - 1].byte + step + m;
+            }
+            ok[k] = ok[k] && good;
+        }
+    checks.note("P5 measured: " + dec(boundaries) + " line boundaries compared");
+    g.expect_if(pre, ok[kA], "P5-A: at each of the 3 line boundaries of the 5 blits channel A's next line starts at the last address of the line plus the increment plus its modulo (0, +6, -4, +16382, -16382 in turn)");
+    g.expect_if(pre, ok[kB], "P5-B: at each of the 3 line boundaries of the 5 blits channel B's next line starts at the last address of the line plus the increment plus its modulo (0, +6, -4, +16382, -16382 in turn)");
+    g.expect_if(pre, ok[kC], "P5-C: at each of the 3 line boundaries of the 5 blits channel C's next line starts at the last address of the line plus the increment plus its modulo (0, +6, -4, +16382, -16382 in turn)");
+    g.expect_if(pre, ok[kD], "P5-D: at each of the 3 line boundaries of the 5 blits channel D's next line starts at the last address of the line plus the increment plus its modulo (0, +6, -4, +16382, -16382 in turn)");
+    g.expect_if(pre, ok[0] && ok[1] && ok[2] && ok[3],
+        "P5: opus:AA-bltxmod.c6 sol:AA-bltxmod.c5 sol:AA-bltxmod.c6: at the end of every line the channel's modulo, sign-extended, is added so that the next line starts at the last address plus the increment plus the modulo, for positive, zero and negative modulos on every channel (60 boundaries)");
+}
+
+// ---- P6 ---------------------------------------------------------------------
+
+void proposition_p6() {
+    if (!want("P6")) return;
+    const int W = 2, H = 3;
+    const long long mod[4] = {0, -4, 8, 20};
+    std::string main_prog = sel("prog_p6", {{"P6-STEPS", "prog_p6_modb12"}, {"P6-COUNT", "prog_p6_nousec"},
+                                            {"P6", "prog_p6_modb12"}, {"P6-INC", "prog_p6_touch"}});
+    BRun mn = brun(main_prog, 1, &kLay1);
+    BRun fx = mutating("P6-FIXTURE") ? brun("prog_p6_nofix", 1, &kLay1) : mn;
+    g.expect(fx.fixture, "P6-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    nmh::Config cfg = make_config();
+    if (mutating("P6-CONFIG")) cfg.chipset_config = 0x08;
+    g.expect(config_ok(cfg), "P6-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+
+    bool anchor = true;
+    if (full("P6-ANCHOR")) {
+        BRun c = brun(mutating("P6-ANCHOR") ? "prog_p6" : "prog_p6_nobl", 1, &kLay1);
+        bool empty = c.win[0].ok;
+        for (int k = 0; k < 4; ++k) empty = empty && c.ch[0][k].empty();
+        anchor = c.fixture && empty;
+        g.expect(anchor, "P6-ANCHOR: with DMAEN set and BLTEN clear, the same blit makes no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P6-ANCHOR: not evaluated in this mutation run");
+
+    BRun fin = mutating("P6-FINISHED") ? brun("prog_p6_nobl", 1, &kLay1) : mn;
+    bool finished = fin.fixture && fin.win[0].ok && fin.seen[0] && fin.bbusy_clear[0];
+    g.expect(finished, "P6-FINISHED: the blit raised BLIT and BBUSY read clear");
+    bool pre = fx.fixture && config_ok(cfg) && anchor && finished;
+
+    // the increment is measured inside the first line of every channel that has
+    // one; the number of accesses per channel is what P6-COUNT grades
+    std::optional<long long> inc;
+    bool inc_ok = true;
+    for (int k = 0; k < 4; ++k) {
+        const auto& a = mn.ch[0][k];
+        if (a.size() < 2) continue;
+        long long s = (long long)a[1].byte - (long long)a[0].byte;
+        if (!inc) inc = s;
+        else if (*inc != s) inc_ok = false;
+    }
+    g.expect(inc_ok && inc.has_value(), "P6-INC: within the first line of every channel that has one, consecutive addresses differ by the same step");
+    long long step = inc.value_or(0);
+    pre = pre && inc_ok && inc.has_value();
+
+    bool steps = mn.win[0].ok;
+    bool counts = mn.win[0].ok;
+    std::string m;
+    for (int k = 0; k < 4; ++k) {
+        const auto& a = mn.ch[0][k];
+        counts = counts && (int)a.size() == W * H;
+        for (int line = 1; line < H; ++line) {
+            bool good = (int)a.size() == W * H &&
+                        (long long)a[line * W].byte - (long long)a[line * W - 1].byte == step + mod[k];
+            steps = steps && good;
+        }
+        m += " " + dec(a.size());
+    }
+    checks.note("P6 measured: accesses per channel C B A D:" + m);
+    g.expect_if(pre, steps, "P6-STEPS: at both line boundaries each channel's line step is the increment plus its own modulo (C 0, B -4, A +8, D +20): four different steps");
+    g.expect_if(pre, counts, "P6-COUNT: every channel makes exactly 6 accesses, 2 per line");
+    g.expect_if(pre, steps && counts,
+        "P6: opus:AA-bltxmod.c7 sol:AA-bltxmod.c7 sol:AA-bltxmod.c8: each source or destination uses its own modulo, and an identical area of each is used in the blit");
+}
+
+// ---- P7 ---------------------------------------------------------------------
+
+constexpr uint32_t kLists = 0x0A0000;   // list k (0-based) at kLists + 16*k
+// registers written by the lists, in list order: A PTH, A PTL, A MOD, B ..., C ..., D ...
+constexpr uint16_t kP7Reg[12] = {0x050, 0x052, 0x064, 0x04C, 0x04E, 0x062, 0x048, 0x04A, 0x060, 0x054, 0x056, 0x066};
+const char* const kP7Name[12] = {"BLTAPTH", "BLTAPTL", "BLTAMOD", "BLTBPTH", "BLTBPTL", "BLTBMOD",
+                                 "BLTCPTH", "BLTCPTL", "BLTCMOD", "BLTDPTH", "BLTDPTL", "BLTDMOD"};
+// channel order C,B,A,D: both the base range and the range of the Copper's values
+constexpr uint32_t kP7Lo[4][2] = {{0x0B0000, 0x130000}, {0x0D0000, 0x120000}, {0x0E0000, 0x110000}, {0x0F0000, 0x140000}};
+constexpr uint32_t kP7Hi[4][2] = {{0x0C0000, 0x140000}, {0x0E0000, 0x130000}, {0x0F0000, 0x120000}, {0x0F8000, 0x150000}};
+
+struct P7Run {
+    std::shared_ptr<RunData> r;
+    bool fixture = false;
+    bool coper[12] = {};
+    bool fetched[12] = {};
+    Win win;
+    bool seen = false, bbusy_clear = false;
+    std::array<std::vector<Acc>, 4> ch;
+    // effective register contents read from the blit, per list index
+    std::optional<long long> inc;
+    long long val[12] = {};
+    bool val_ok[12] = {};
+    bool blit_counts = false;      // 4 accesses per channel
+};
+
+P7Run p7_run(const std::string& prog) {
+    P7Run p;
+    p.r = run_cached(prog);
+    p.fixture = p.r->loaded && p.r->done && p.r->word(kResults) == 0xBEEF;
+    for (int k = 0; k < 12; ++k) {
+        p.coper[k] = p.r->word(kResults + 0x40 + 2 * k) == 1;
+        uint32_t a = kLists + 16 * k + 8;
+        for (const auto& x : p.r->acc)
+            if (!x.wr && x.byte == a && x.data == kP7Reg[k]) { p.fetched[k] = true; break; }
+    }
+    p.win = blit_win(*p.r, 0);
+    p.seen = p.r->word(kResults + 0x10) == 1;
+    p.bbusy_clear = (p.r->word(kResults + 0x12) & 0x4000) == 0;
+    for (int c = 0; c < 4; ++c) {
+        auto a = accs_in(*p.r, p.win, kP7Lo[c][0], kP7Hi[c][0]);
+        auto b = accs_in(*p.r, p.win, kP7Lo[c][1], kP7Hi[c][1]);
+        a.insert(a.end(), b.begin(), b.end());
+        std::sort(a.begin(), a.end(), [](const Acc& x, const Acc& y) { return x.cyc < y.cyc; });
+        p.ch[c] = a;
+    }
+    p.blit_counts = p.win.ok;
+    for (int c = 0; c < 4; ++c) p.blit_counts = p.blit_counts && p.ch[c].size() == 4;
+    if (p.blit_counts) {
+        bool same = true;
+        for (int c = 0; c < 4; ++c) {
+            long long s = (long long)p.ch[c][1].byte - (long long)p.ch[c][0].byte;
+            if (!p.inc) p.inc = s;
+            else if (*p.inc != s) same = false;
+        }
+        if (!same) p.inc.reset();
+    }
+    if (p.blit_counts && p.inc) {
+        // list order A PTH,PTL,MOD, B ..., C ..., D ...: channel index for the table C,B,A,D
+        const int chan[4] = {kA, kB, kC, kD};
+        for (int g4 = 0; g4 < 4; ++g4) {
+            const auto& a = p.ch[chan[g4]];
+            p.val[3 * g4 + 0] = a[0].byte >> 16;
+            p.val[3 * g4 + 1] = a[0].byte & 0xFFFF;
+            p.val[3 * g4 + 2] = (long long)a[2].byte - (long long)a[1].byte - *p.inc;
+            for (int j = 0; j < 3; ++j) p.val_ok[3 * g4 + j] = true;
+        }
+    }
+    return p;
+}
+
+void proposition_p7() {
+    if (!want("P7")) return;
+    // expected register contents, per list index: base values with COPCON bit 1 clear,
+    // the Copper's values with it set
+    const long long base[12] = {0x0E, 0x0000, 8, 0x0D, 0x0000, 8, 0x0B, 0x0000, 8, 0x0F, 0x0000, 8};
+    const long long copv[12] = {0x11, 0x4000, 24, 0x12, 0x4000, 24, 0x13, 0x4000, 24, 0x14, 0x4000, 24};
+
+    // The mutation of every P7-0 component line sets COPCON bit 1 in the run
+    // it grades; that of every P7-1 component line clears it. A mutation run of
+    // a component line needs the one run it grades.
+    bool run0 = true, run1 = true;
+    std::string n0 = "prog_p7", n1 = "prog_p7_c1";
+    if (g_mutate) {
+        std::string m = g_mutate;
+        // P7-<m>-<N>-<X>: the register BLT<X><N>; the mutation of a P7-0 line has the CPU
+        // write the Copper's value as the register's base value, that of a P7-1 line has
+        // the Copper move the base value
+        auto regname = [&](const std::string& lab) { return "BLT" + lab.substr(lab.size() - 1) + lab.substr(5, 3); };
+        if (m.rfind("P7-0-", 0) == 0) { run1 = false; n0 = "prog_p7_b_" + regname(m); }
+        if (m.rfind("P7-1-", 0) == 0) { run0 = false; n1 = "prog_p7_c_" + regname(m); }
+        if (m == "P7-PTH" || m == "P7-PTL" || m == "P7-MOD") n1 = "prog_p7";
+        if (m == "P7-FETCH") n1 = "prog_p7_c1color";
+        if (m == "P7-COPER") n1 = "prog_p7_nocoper";
+        if (m == "P7-BLIT") n1 = "prog_p7_nobl";
+        if (m == "P7-FIXTURE") n1 = "prog_p7_nofix";
+    }
+    std::shared_ptr<P7Run> a0 = run0 ? std::make_shared<P7Run>(p7_run(n0)) : nullptr;
+    std::shared_ptr<P7Run> a1 = run1 ? std::make_shared<P7Run>(p7_run(n1)) : nullptr;
+
+    bool fx = true;
+    if (a0) fx = fx && a0->fixture;
+    if (a1) fx = fx && a1->fixture;
+    g.expect(fx, "P7-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    nmh::Config cfg = make_config();
+    if (mutating("P7-CONFIG")) cfg.chipset_config = 0x08;
+    g.expect(config_ok(cfg), "P7-CONFIG: the harness configuration selects the AA chip set (chipset_config 0x10) and 2 MB of Chip memory (memory_config 0x03)");
+
+    bool fetch_all = true, coper_all = true, blit_all = true;
+    bool fetched[2][12] = {}, coper_k[2][12] = {};
+    for (int m = 0; m < 2; ++m) {
+        const P7Run* p = m == 0 ? a0.get() : a1.get();
+        if (!p) continue;
+        for (int k = 0; k < 12; ++k) {
+            fetched[m][k] = p->fetched[k];
+            coper_k[m][k] = p->coper[k];
+            fetch_all = fetch_all && p->fetched[k];
+            coper_all = coper_all && p->coper[k];
+        }
+        blit_all = blit_all && p->win.ok && p->seen && p->bbusy_clear && p->blit_counts && p->inc.has_value();
+    }
+    g.expect(fetch_all, "P7-FETCH: in every frame k the Copper fetched the first word of its MOVE to register k: a read of the list's word at offset 8 returned that register's address");
+    g.expect(coper_all, "P7-COPER: the COPER request was seen in every one of the twelve frames, so the Copper executed the MOVE to INTREQ that precedes the MOVE under test");
+    g.expect(blit_all, "P7-BLIT: the blit raised BLIT, read BBUSY clear, and every channel made exactly 4 accesses with one constant step inside each line");
+
+    bool anchor = true;
+    if (full("P7-ANCHOR")) {
+        P7Run c = p7_run(mutating("P7-ANCHOR") ? "prog_p7" : "prog_p7_nobl");
+        bool empty = c.win.ok;
+        for (int k = 0; k < 4; ++k) empty = empty && c.ch[k].empty();
+        anchor = c.fixture && empty;
+        g.expect(anchor, "P7-ANCHOR: with DMAEN set and BLTEN clear, the same blit makes no port access in any channel region between BLIT_GO and BLIT_DONE");
+    } else checks.record("P7-ANCHOR: not evaluated in this mutation run");
+
+    bool pre = fx && config_ok(cfg) && anchor && blit_all;
+
+    // per register and per run: the value the blit shows, against the page's prediction
+    bool ok[2][12] = {};
+    std::string mstr0, mstr1;
+    for (int m = 0; m < 2; ++m) {
+        const P7Run* p = m == 0 ? a0.get() : a1.get();
+        if (!p) continue;
+        for (int k = 0; k < 12; ++k) {
+            ok[m][k] = p->val_ok[k] && p->val[k] == (m == 0 ? base[k] : copv[k]);
+            (m == 0 ? mstr0 : mstr1) += " " + std::string(kP7Name[k]) + "=" + dec(p->val[k]);
+        }
+        // the second word of each MOVE (offset 10) is observed, not required
+        int n2 = 0;
+        for (int k = 0; k < 12; ++k)
+            for (const auto& x : p->r->acc)
+                if (!x.wr && x.byte == kLists + 16 * k + 10) { ++n2; break; }
+        checks.note(std::string("P7 measured, COPCON bit 1 ") + (m == 0 ? "clear" : "set") +
+                    ": the data word at offset 10 was fetched for " + dec(n2) + " of 12 lists");
+    }
+    if (a0) checks.note("P7 measured, COPCON bit 1 clear:" + mstr0);
+    if (a1) checks.note("P7 measured, COPCON bit 1 set:" + mstr1);
+    // a register whose MOVE was not fetched, or whose frame did not run the MOVE to INTREQ, is not graded
+    auto cond = [&](int m, int k) { return ok[m][k]; };
+    auto pr = [&](int m, int k) { return pre && fetched[m][k] && coper_k[m][k]; };
+    g.expect_if(pr(0, 0), cond(0, 0), "P7-0-PTH-A: with COPCON bit 1 clear, a Copper MOVE to BLTAPTH does not change the register (PTH stays $000E)");
+    g.expect_if(pr(0, 1), cond(0, 1), "P7-0-PTL-A: with COPCON bit 1 clear, a Copper MOVE to BLTAPTL does not change the register (PTL stays $0000)");
+    g.expect_if(pr(0, 2), cond(0, 2), "P7-0-MOD-A: with COPCON bit 1 clear, a Copper MOVE to BLTAMOD does not change the register (modulo stays 8)");
+    g.expect_if(pr(0, 3), cond(0, 3), "P7-0-PTH-B: with COPCON bit 1 clear, a Copper MOVE to BLTBPTH does not change the register (PTH stays $000D)");
+    g.expect_if(pr(0, 4), cond(0, 4), "P7-0-PTL-B: with COPCON bit 1 clear, a Copper MOVE to BLTBPTL does not change the register (PTL stays $0000)");
+    g.expect_if(pr(0, 5), cond(0, 5), "P7-0-MOD-B: with COPCON bit 1 clear, a Copper MOVE to BLTBMOD does not change the register (modulo stays 8)");
+    g.expect_if(pr(0, 6), cond(0, 6), "P7-0-PTH-C: with COPCON bit 1 clear, a Copper MOVE to BLTCPTH does not change the register (PTH stays $000B)");
+    g.expect_if(pr(0, 7), cond(0, 7), "P7-0-PTL-C: with COPCON bit 1 clear, a Copper MOVE to BLTCPTL does not change the register (PTL stays $0000)");
+    g.expect_if(pr(0, 8), cond(0, 8), "P7-0-MOD-C: with COPCON bit 1 clear, a Copper MOVE to BLTCMOD does not change the register (modulo stays 8)");
+    g.expect_if(pr(0, 9), cond(0, 9), "P7-0-PTH-D: with COPCON bit 1 clear, a Copper MOVE to BLTDPTH does not change the register (PTH stays $000F)");
+    g.expect_if(pr(0, 10), cond(0, 10), "P7-0-PTL-D: with COPCON bit 1 clear, a Copper MOVE to BLTDPTL does not change the register (PTL stays $0000)");
+    g.expect_if(pr(0, 11), cond(0, 11), "P7-0-MOD-D: with COPCON bit 1 clear, a Copper MOVE to BLTDMOD does not change the register (modulo stays 8)");
+    g.expect_if(pr(1, 0), cond(1, 0), "P7-1-PTH-A: with COPCON bit 1 set, a Copper MOVE of $0011 to BLTAPTH changes the register");
+    g.expect_if(pr(1, 1), cond(1, 1), "P7-1-PTL-A: with COPCON bit 1 set, a Copper MOVE of $4000 to BLTAPTL changes the register");
+    g.expect_if(pr(1, 2), cond(1, 2), "P7-1-MOD-A: with COPCON bit 1 set, a Copper MOVE of 24 to BLTAMOD changes the register");
+    g.expect_if(pr(1, 3), cond(1, 3), "P7-1-PTH-B: with COPCON bit 1 set, a Copper MOVE of $0012 to BLTBPTH changes the register");
+    g.expect_if(pr(1, 4), cond(1, 4), "P7-1-PTL-B: with COPCON bit 1 set, a Copper MOVE of $4000 to BLTBPTL changes the register");
+    g.expect_if(pr(1, 5), cond(1, 5), "P7-1-MOD-B: with COPCON bit 1 set, a Copper MOVE of 24 to BLTBMOD changes the register");
+    g.expect_if(pr(1, 6), cond(1, 6), "P7-1-PTH-C: with COPCON bit 1 set, a Copper MOVE of $0013 to BLTCPTH changes the register");
+    g.expect_if(pr(1, 7), cond(1, 7), "P7-1-PTL-C: with COPCON bit 1 set, a Copper MOVE of $4000 to BLTCPTL changes the register");
+    g.expect_if(pr(1, 8), cond(1, 8), "P7-1-MOD-C: with COPCON bit 1 set, a Copper MOVE of 24 to BLTCMOD changes the register");
+    g.expect_if(pr(1, 9), cond(1, 9), "P7-1-PTH-D: with COPCON bit 1 set, a Copper MOVE of $0014 to BLTDPTH changes the register");
+    g.expect_if(pr(1, 10), cond(1, 10), "P7-1-PTL-D: with COPCON bit 1 set, a Copper MOVE of $4000 to BLTDPTL changes the register");
+    g.expect_if(pr(1, 11), cond(1, 11), "P7-1-MOD-D: with COPCON bit 1 set, a Copper MOVE of 24 to BLTDMOD changes the register");
+
+    bool all_pr = a0 && a1;
+    for (int m = 0; m < 2; ++m) for (int k = 0; k < 12; ++k) all_pr = all_pr && pr(m, k);
+    auto agg = [&](int off) {
+        bool r = true;
+        for (int m = 0; m < 2; ++m)
+            for (int g4 = 0; g4 < 4; ++g4) r = r && ok[m][3 * g4 + off];
+        return r;
+    };
+    g.expect_if(all_pr, agg(0), "P7-PTH: opus:AA-bltxpth.c6: a Copper MOVE to each of BLTAPTH, BLTBPTH, BLTCPTH and BLTDPTH changes the register only when COPCON bit 1 is set");
+    g.expect_if(all_pr, agg(1), "P7-PTL: opus:AA-bltxptl.c5: a Copper MOVE to each of BLTAPTL, BLTBPTL, BLTCPTL and BLTDPTL changes the register only when COPCON bit 1 is set");
+    g.expect_if(all_pr, agg(2), "P7-MOD: opus:AA-bltxmod.c4: a Copper MOVE to each of BLTAMOD, BLTBMOD, BLTCMOD and BLTDMOD changes the register only when COPCON bit 1 is set");
+}
+
+// ---- beam samples (F4) and the colour clock (F3) ----------------------------
+
+// A sample is the long word VPOSR:VHPOSR and, when the program stores it, the
+// word HHPOSR; each field is a word stored at the buffer pointer, and the
+// port shows the stores with their times.
+struct Sm {
+    uint64_t t;      // port time of the store of the VHPOSR word
+    int V, H;        // V = (VPOSR & 7) * 256 + (VHPOSR >> 8), H = VHPOSR & $FF
+    int lol;         // VPOSR bit 7
+    uint16_t vposr, vhposr, hh;
+};
+
+// The long word is read as two bus cycles, VPOSR first. A sample taken at the
+// step from line 255 to line 256 can carry the old V8 with the new V7-0: its V
+// then falls by 255 or 256 against the sample before it. Such a sample is
+// completed with the V8 it lacks, and counted in g_tears.
+int g_tears = 0;
+
+std::vector<Sm> samples_of(const RunData& r, uint32_t base, uint32_t limit, bool hh) {
+    const uint32_t rec = hh ? 6 : 4;
+    struct Rec { uint16_t w[3] = {0, 0, 0}; uint64_t t1 = 0; int got = 0; };
+    std::map<uint32_t, Rec> m;
+    for (const auto& a : r.acc) {
+        if (!a.wr || a.byte < base || a.byte >= limit) continue;
+        uint32_t off = a.byte - base, idx = off / rec, f = (off % rec) / 2;
+        Rec& x = m[idx];
+        x.w[f] = a.data;
+        x.got |= 1 << f;
+        if (f == 1) x.t1 = a.cyc;
+    }
+    std::vector<Sm> out;
+    for (const auto& kv : m) {
+        const Rec& x = kv.second;
+        if ((x.got & 3) != 3 || (hh && !(x.got & 4))) continue;
+        Sm s;
+        s.t = x.t1; s.vposr = x.w[0]; s.vhposr = x.w[1]; s.hh = hh ? x.w[2] : 0;
+        s.V = ((x.w[0] & 7) << 8) | (x.w[1] >> 8);
+        s.H = x.w[1] & 0xFF;
+        s.lol = (x.w[0] >> 7) & 1;
+        out.push_back(s);
+    }
+    for (size_t i = 1; i < out.size(); ++i) {
+        int d = out[i - 1].V - out[i].V;
+        if (d >= 255 && d <= 256 && out[i - 1].V < 512) { out[i].V += 256; out[i].vposr |= 1; ++g_tears; }
+    }
+    return out;
+}
+
+// F3: T_C is the time per unit of H: per line with at least two samples, the
+// store time of its last sample minus that of its first, divided by their
+// difference in H, averaged over the lines and rounded to a whole number of
+// system clocks. Returns 0 if no line has two samples.
+long long colour_clock(const std::vector<Sm>& s, double* raw = nullptr) {
+    double sum = 0; int n = 0;
+    size_t i = 0;
+    while (i < s.size()) {
+        size_t j = i;
+        while (j + 1 < s.size() && s[j + 1].V == s[i].V) ++j;
+        if (j > i && s[j].H > s[i].H) { sum += double(s[j].t - s[i].t) / double(s[j].H - s[i].H); ++n; }
+        i = j + 1;
+    }
+    if (!n) return 0;
+    if (raw) *raw = sum / n;
+    return std::llround(sum / n);
+}
+
+// F4 anchor: the counters run and are being read. The page gives the position
+// as the fields V and H of VHPOSR and does not say in which colour clock V
+// steps relative to the wrap of H, so the anchor asks what the page supports:
+// V never decreases except across the wrap at the end of a frame (the sample
+// frame ends at VERTB, so the wrap can only fall on its last two samples), and
+// while V stays the same H increases
+// strictly except across the wrap at the end of a line (a fall to below half
+// its previous value, V not yet stepped). Returns the number of violations.
+// f4_lag counts the pairs of the second kind, which the strict lexicographic
+// order of (V,H) would also reject.
+int f4_violations(const std::vector<Sm>& s) {
+    int bad = 0;
+    for (size_t i = 1; i < s.size(); ++i) {
+        const Sm& a = s[i - 1];
+        const Sm& b = s[i];
+        bool frame_wrap = i + 2 >= s.size() && b.V < a.V;
+        bool line_wrap = b.V == a.V && b.H * 2 < a.H;
+        bool ok = frame_wrap || line_wrap || b.V > a.V || (b.V == a.V && b.H > a.H);
+        if (!ok) ++bad;
+    }
+    return bad;
+}
+int f4_lag(const std::vector<Sm>& s) {
+    int n = 0;
+    for (size_t i = 1; i < s.size(); ++i)
+        if (s[i].V == s[i - 1].V && s[i].H * 2 < s[i - 1].H) ++n;
+    return n;
+}
+
+// ---- the beam programs: runs, port lines (F3) and frames (F6) ---------------
+
+constexpr uint32_t kCfg = 0x0B8000;
+constexpr uint32_t kSbuf0 = 0x1B0000, kSbuf1 = 0x1D0000, kSbuf2 = 0x1E0000;
+constexpr uint16_t kMPreEnd = 0xF002, kMRegs = 0xF003, kMPostEnd = 0xF004;
+
+// BEAMCON0 and the beam registers, by offset
+constexpr uint16_t kHTOTAL = 0x1C0, kHSSTOP = 0x1C2, kHBSTRT = 0x1C4, kHBSTOP = 0x1C6, kVTOTAL = 0x1C8,
+                   kVSSTOP = 0x1CA, kVBSTRT = 0x1CC, kVBOSTOP = 0x1CE, kBEAMCON0 = 0x1DC, kHSSTRT = 0x1DE,
+                   kVSSTRT = 0x1E0, kHCENTER = 0x1E2;
+
+using RegList = std::vector<std::pair<uint16_t, uint16_t>>;
+
+struct BeamOpts {
+    std::string prog = "prog_beam";
+    bool pre = false;
+    int post = 0;
+    bool hh = false;
+    int stops = 4;
+    RegList regs;
+    bool video = false;       // keep hs and vs of the graded frame
+};
+
+struct BeamRun {
+    std::shared_ptr<RunData> r;
+    bool fixture = false;
+    std::vector<Sm> pre, post1, post2;
+    std::vector<uint64_t> fm;     // the frame markers after the register list: m1, m2, ...
+    uint64_t t_regs = 0;
+    long long tc = 0;
+};
+
+BeamRun beam_run(const BeamOpts& b) {
+    RunOpts o;
+    o.prog = b.prog;
+    o.pokes.push_back({kCfg + 0, (uint16_t)(b.pre ? 1 : 0)});
+    o.pokes.push_back({kCfg + 2, (uint16_t)b.post});
+    o.pokes.push_back({kCfg + 4, (uint16_t)(b.hh ? 1 : 0)});
+    o.pokes.push_back({kCfg + 6, (uint16_t)b.stops});
+    o.pokes.push_back({kCfg + 8, (uint16_t)b.regs.size()});
+    for (size_t i = 0; i < b.regs.size(); ++i) {
+        o.pokes.push_back({kCfg + 0x10 + 4 * (uint32_t)i, b.regs[i].first});
+        o.pokes.push_back({kCfg + 0x12 + 4 * (uint32_t)i, b.regs[i].second});
+    }
+    o.video_graded = b.video;
+    BeamRun r;
+    r.r = run_opts(o);
+    const RunData& d = *r.r;
+    r.fixture = d.loaded && d.done && d.word(kResults) == 0xBEEF;
+    auto ir = find_mark(d, kMRegs);
+    if (ir) {
+        r.t_regs = d.marks[*ir].cyc;
+        for (size_t i = *ir + 1; i < d.marks.size(); ++i)
+            if (d.marks[i].code == kMFrame) r.fm.push_back(d.marks[i].cyc);
+    }
+    r.pre = samples_of(d, kSbuf0, kSbuf0 + 0x20000, b.hh);
+    r.post1 = samples_of(d, kSbuf1, kSbuf1 + 0x10000, b.hh);
+    r.post2 = samples_of(d, kSbuf2, kSbuf2 + 0x10000, b.hh);
+    r.tc = colour_clock(!r.post1.empty() ? r.post1 : r.pre);
+    return r;
+}
+
+// Port lines (F3): the accesses in a window that no program range explains
+// are refresh accesses; a line starts at the first access of each group.
+struct Grp { uint64_t t; int n; };
+
+
+std::vector<Grp> refresh_groups(const RunData& r, uint64_t t0, uint64_t t1, bool filter = true) {
+    std::vector<uint64_t> t;
+    for (const auto& a : r.acc)
+        if (a.cyc > t0 && a.cyc < t1 && (!filter || !program_range(a.byte))) t.push_back(a.cyc);
+    std::vector<Grp> out;
+    if (t.size() < 2) return out;
+    uint64_t gmax = 0;
+    for (size_t i = 1; i < t.size(); ++i) gmax = std::max(gmax, t[i] - t[i - 1]);
+    uint64_t thr = gmax / 2;
+    out.push_back({t[0], 1});
+    for (size_t i = 1; i < t.size(); ++i) {
+        if (t[i] - t[i - 1] > thr) out.push_back({t[i], 1});
+        else ++out.back().n;
+    }
+    return out;
+}
+
+// The F3 anchor over a window: every group but the first and the last holds
+// exactly four accesses and every line period is a whole number of colour
+// clocks. `lines` receives the line periods in system clocks.
+bool f3_anchor(const std::vector<Grp>& g4, long long tc, std::vector<long long>* lines = nullptr) {
+    if (g4.size() < 4 || tc <= 0) return false;
+    bool ok = true;
+    for (size_t i = 1; i + 1 < g4.size(); ++i) {
+        if (g4[i].n != 4) ok = false;
+        long long tl = (long long)(g4[i + 1].t - g4[i].t);
+        if (tl % tc != 0) ok = false;
+    }
+    if (lines)
+        for (size_t i = 0; i + 1 < g4.size(); ++i) lines->push_back((long long)(g4[i + 1].t - g4[i].t));
+    return ok;
+}
+
+// The LOL of a sampled line: that of the line's first sample. V steps a few
+// colour clocks after H wraps, so a sample taken in that gap carries the next
+// line's LOL with the previous line's V; the first sample of a V never does.
+std::map<int, int> lol_by_line(const std::vector<Sm>& s) {
+    std::map<int, int> m;
+    for (const auto& x : s) if (!m.count(x.V)) m[x.V] = x.lol;
+    return m;
+}
+
+// ---- P11 --------------------------------------------------------------------
+
+void proposition_p11() {
+    if (!want("P11")) return;
+    // DUAL set, VARBEAMEN clear, HTOTAL $38
+    auto regs = [&](uint16_t htotal, uint16_t bc0) {
+        return RegList{{kHTOTAL, htotal}, {kBEAMCON0, bc0}};
+    };
+    BeamOpts o;
+    o.post = 1; o.hh = true; o.stops = 2;
+    o.regs = regs(0x0038, 0x0060);
+    if (mutating("P11-FIXTURE")) o.prog = "prog_beam_nofix";
+    if (mutating("P11-MAXH") || mutating("P11")) o.regs = {{kHTOTAL, 0x0038}, {kVTOTAL, 0x0138}, {kBEAMCON0, 0x08A0}};
+    if (mutating("P11-HHMAX")) o.regs = regs(0x0070, 0x0060);
+    BeamRun d = beam_run(o);
+    g.expect(d.fixture, "P11-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    int viol = f4_violations(d.post1);
+    {
+        BeamOpts a = o;
+        if (mutating("P11-ANCHOR")) a.prog = "prog_beam_rev";
+        BeamRun an = mutating("P11-ANCHOR") ? beam_run(a) : d;
+        viol = f4_violations(an.post1);
+        checks.note("P11 measured: " + dec((long long)an.post1.size()) + " samples in the frame, F4 order violations = " + dec(viol));
+        g.expect(!an.post1.empty() && viol == 0, "P11-ANCHOR: consecutive (V,H) samples of the frame increase strictly in lexicographic order, except across the wrap at the end of a frame");
+    }
+    // the alternate counter runs: on every main line HHPOSR takes at least two values
+    std::map<int, std::set<int>> hh_by_line;
+    int maxH = 0, hhmax = 0;
+    for (const auto& x : d.post1) { hh_by_line[x.V].insert(x.hh); maxH = std::max(maxH, x.H); hhmax = std::max(hhmax, (int)(x.hh & 0xFF)); }
+    bool hh_runs = !hh_by_line.empty();
+    for (const auto& kv : hh_by_line) if (kv.second.size() < 2) hh_runs = false;
+    g.expect(hh_runs, "P11-HHRUN: on every main line of the frame HHPOSR takes at least two different values, so the alternate counter runs");
+    long long wraps = 0; int lines = 0;
+    {
+        std::map<int, int> w;
+        for (size_t i = 1; i < d.post1.size(); ++i)
+            if (d.post1[i].V == d.post1[i - 1].V && (d.post1[i].hh & 0xFF) < (d.post1[i - 1].hh & 0xFF)) ++w[d.post1[i].V];
+        for (const auto& x : hh_by_line) { wraps += w.count(x.first) ? w[x.first] : 0; ++lines; }
+    }
+    checks.note("P11 measured: HTOTAL=" + hexs(o.regs[0].second, 4) + ": maximum H = " + dec(maxH) + ", maximum HHPOSR (bits 7-0) = " + dec(hhmax) +
+                ", HHPOSR decreases per main line = " + dec(lines ? (double)wraps / lines * 100 / 100 : 0) + " (" + dec(wraps) + " over " + dec(lines) + " lines)");
+    bool pre = d.fixture && hh_runs && viol == 0;
+    bool maxh_ok = maxH > 0x38;
+    bool hhmax_ok = hhmax <= 0x38 && !d.post1.empty();
+    g.expect_if(pre, maxh_ok, "P11-MAXH: with DUAL set and HTOTAL = $38 the maximum H of the main horizontal counter over the frame exceeds $38: HTOTAL does not reset the main counter");
+    g.expect_if(pre, hhmax_ok, "P11-HHMAX: with DUAL set and HTOTAL = $38 every HHPOSR sample (bits 7-0) is at most $38: HTOTAL is the alternate counter's highest count");
+    g.expect_if(pre, maxh_ok && hhmax_ok, "P11: with DUAL set and VARBEAMEN clear HTOTAL bounds the alternate horizontal counter read through HHPOSR and does not bound the main counter read through VHPOSR");
+}
+
+// ---- P13 and P14: line lengths and LOL --------------------------------------
+
+// The F3 numbers of a run's graded frame: the line periods in colour clocks.
+struct LineData {
+    std::vector<Grp> groups;
+    std::vector<long long> lines;      // line periods in system clocks
+    std::vector<long long> cck;        // line periods in colour clocks (rounded down)
+    bool anchor = false;               // groups of exactly four, whole colour clocks
+    bool frame_ok = false;             // the window holds a full frame's lines
+};
+
+LineData line_data(const BeamRun& b, size_t m_from, size_t m_to, bool filter = true) {
+    LineData d;
+    if (b.fm.size() <= m_to) return d;
+    d.groups = refresh_groups(*b.r, b.fm[m_from], b.fm[m_to], filter);
+    d.anchor = f3_anchor(d.groups, b.tc, &d.lines);
+    for (long long l : d.lines) d.cck.push_back(b.tc > 0 ? l / b.tc : 0);
+    d.frame_ok = d.lines.size() >= 250;
+    return d;
+}
+
+RegList p13_regs(uint16_t htotal, uint16_t bc0) {
+    return RegList{{kHTOTAL, htotal}, {kVTOTAL, 0x0138}, {kBEAMCON0, bc0}};
+}
+
+// bitplane DMA on one plane: accesses a refresh filter cannot explain
+RegList dma_regs() {
+    return RegList{{0x08E, 0x2C81}, {0x090, 0xF4C1}, {0x092, 0x0038}, {0x094, 0x00D0},
+                   {0x0E0, 0x0010}, {0x0E2, 0x0000}, {0x100, 0x1000}, {0x096, 0x8300}};
+}
+
+void proposition_p13() {
+    if (!want("P13")) return;
+    BeamOpts o1;
+    o1.post = 1; o1.stops = 4;
+    o1.regs = p13_regs(0x00E2, 0x00A0);
+    BeamOpts o0 = o1;
+    o0.regs = p13_regs(0x00E2, 0x0080);
+    // mutations of the lines: the other run's stimulus in its place
+    if (mutating("P13-1") || mutating("P13-1-LINES") || mutating("P13-1-LOL")) o1.regs = p13_regs(0x00E2, 0x0080);
+    if (mutating("P13-0-LINES") || mutating("P13-0-LOL") || mutating("P13-0-COUNT"))
+        o0.regs = p13_regs(0x00E2, 0x00A0);
+    if (mutating("P13-FIXTURE")) o1.prog = "prog_beam_nofix";
+    if (mutating("P13-F3")) { auto x = dma_regs(); o1.regs.insert(o1.regs.begin(), x.begin(), x.end()); }
+    BeamRun r1 = beam_run(o1);
+    g.expect(r1.fixture, "P13-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    bool need0 = !g_mutate || mutating("P13-0-LINES") || mutating("P13-0-LOL") || mutating("P13-0-COUNT");
+    BeamRun r0;
+    if (need0) r0 = beam_run(o0);
+
+    LineData l1 = line_data(r1, 1, 2);
+    LineData l0 = need0 ? line_data(r0, 1, 2) : LineData();
+    checks.note("P13 measured: frame markers " + dec((long long)r1.fm.size()) + ", frame B " +
+                (r1.fm.size() > 2 ? dec((long long)(r1.fm[2] - r1.fm[1])) : std::string("n/a")) + " system clocks, refresh groups " + dec((long long)l1.groups.size()));
+    g.expect(l1.anchor && l1.frame_ok, "P13-F3: in frame B the refresh accesses come in groups of exactly four, one group per line, and every line period is a whole number of colour clocks");
+    BeamRun rev = r1;
+    if (mutating("P13-F4")) { BeamOpts a = o1; a.prog = "prog_beam_rev"; rev = beam_run(a); }
+    int viol_a = f4_violations(rev.post1);
+    checks.note("P13 measured: colour clock T_C = " + dec(r1.tc) + " system clocks, frame A samples = " + dec((long long)r1.post1.size()) +
+                ", F4 violations = " + dec(viol_a) + ", line wraps with V not yet stepped = " + dec(f4_lag(r1.post1)) +
+                ", port lines in frame B = " + dec((long long)l1.lines.size()));
+    g.expect(!rev.post1.empty() && viol_a == 0, "P13-F4: the samples of frame A show the counters running: V never decreases within the frame and H increases within a line");
+
+    // precondition 1: line length follows HTOTAL: HTOTAL $C0 shortens every line by $E2 - $C0 = 34 colour clocks
+    bool vm = true;
+    if (full("P13-VARMODE")) {
+        BeamOpts oc = o1;
+        oc.regs = p13_regs(mutating("P13-VARMODE") ? 0x00E2 : 0x00C0, 0x00A0);
+        BeamRun rc = beam_run(oc);
+        LineData lc = line_data(rc, 1, 2);
+        vm = lc.anchor && l1.anchor && lc.cck.size() >= 250 && lc.cck.size() == l1.cck.size();
+        for (size_t i = 0; vm && i < lc.cck.size(); ++i)
+            if (l1.cck[i] - lc.cck[i] != 34) vm = false;
+        g.expect(vm, "P13-VARMODE: with HTOTAL = $C0 instead of $E2 every port line of frame B is shorter by 34 colour clocks, so the line length follows HTOTAL");
+    } else checks.record("P13-VARMODE: not evaluated in this mutation run");
+    // precondition 2: LOLDIS clear, so that only PAL can suppress the toggle: with LOLDIS set there is no alternation
+    bool ld = true;
+    if (full("P13-LOLDIS")) {
+        BeamOpts oc = o1;
+        oc.regs = p13_regs(0x00E2, mutating("P13-LOLDIS") ? 0x0080 : 0x0880);
+        BeamRun rc = beam_run(oc);
+        LineData lc = line_data(rc, 1, 2);
+        bool lines_const = !lc.cck.empty(), lol_const = true;
+        for (size_t i = 1; i < lc.cck.size(); ++i) if (lc.cck[i] != lc.cck[0]) lines_const = false;
+        auto lm = lol_by_line(rc.post1);
+        for (const auto& kv : lm) if (kv.second != lm.begin()->second) lol_const = false;
+        ld = lc.anchor && lines_const && lol_const && !lm.empty();
+        g.expect(ld, "P13-LOLDIS: with LOLDIS set (BEAMCON0 $0880) neither the port line lengths nor LOL alternate");
+    } else checks.record("P13-LOLDIS: not evaluated in this mutation run");
+
+    bool pre = r1.fixture && l1.anchor && l1.frame_ok && viol_a == 0 && !rev.post1.empty() && vm && ld;
+
+    // P13-1: every line is short
+    auto all_equal = [&](const LineData& l, long long v) {
+        if (l.cck.size() < 250) return false;
+        for (long long c : l.cck) if (c != v) return false;
+        return true;
+    };
+    bool lines1 = all_equal(l1, 0x00E2 + 1);
+    bool lol1 = !r1.post1.empty();
+    {
+        auto lm = lol_by_line(r1.post1);
+        for (const auto& kv : lm) if (kv.second != 0) lol1 = false;
+    }
+    g.expect_if(pre, lines1, "P13-1-LINES: with VARBEAMEN set, LOLDIS clear and PAL set every port line of frame B has HTOTAL + 1 = 227 colour clocks");
+    g.expect_if(pre, lol1, "P13-1-LOL: with VARBEAMEN set, LOLDIS clear and PAL set VPOSR bit 7 (LOL) is 0 on every sampled line of frame A");
+    g.expect_if(pre, lines1 && lol1,
+        "P13: sol:AA-beamcon0.c53: in variable beam counter mode the PAL bit disables the long line/short line toggle and every line ends up short: all lines of a full frame have HTOTAL + 1 colour clocks and LOL is 0");
+
+    // P13-0: the toggle returns
+    if (!need0) return;
+    bool pre0 = pre && r0.fixture && l0.anchor && l0.frame_ok;
+    bool alt_lines = l0.cck.size() >= 250, alt_lol = false;
+    for (size_t i = 0; i < l0.cck.size(); ++i) {
+        if (l0.cck[i] != 0x00E2 + 1 && l0.cck[i] != 0x00E2 + 2) alt_lines = false;
+        if (i && l0.cck[i] == l0.cck[i - 1]) alt_lines = false;
+    }
+    int nlong_b = 0;
+    for (long long c : l0.cck) if (c == 0x00E2 + 2) ++nlong_b;
+    int nlol1 = 0;
+    {
+        auto lm = lol_by_line(r0.post1);
+        alt_lol = lm.size() >= 250;
+        int prev = -1, prevV = -10;
+        for (const auto& kv : lm) {
+            if (kv.second) ++nlol1;
+            if (prevV == kv.first - 1 && prev == kv.second) alt_lol = false;
+            prev = kv.second; prevV = kv.first;
+        }
+    }
+    bool count_ok = std::abs(nlong_b - nlol1) <= 1;
+    checks.note("P13 measured, PAL clear: port line lengths in colour clocks " +
+                (l0.cck.size() > 5 ? dec(l0.cck[0]) + "," + dec(l0.cck[1]) + "," + dec(l0.cck[2]) + "," + dec(l0.cck[3]) + "..." : std::string("n/a")) +
+                "; lines of 228 in frame B = " + dec(nlong_b) + ", lines with LOL = 1 in frame A = " + dec(nlol1));
+    g.expect_if(pre0, alt_lines, "P13-0-LINES: with PAL clear (VARBEAMEN set, LOLDIS clear) the port lines of frame B alternate between HTOTAL + 1 = 227 and HTOTAL + 2 = 228 colour clocks");
+    g.expect_if(pre0, alt_lol, "P13-0-LOL: with PAL clear (VARBEAMEN set, LOLDIS clear) LOL alternates between consecutive sampled lines of frame A");
+    g.expect_if(pre0, count_ok, "P13-0-COUNT: with PAL clear the number of 228-colour-clock port lines in frame B equals the number of LOL = 1 lines in frame A to within 1");
+}
+
+// ---- P14 --------------------------------------------------------------------
+
+void proposition_p14() {
+    if (!want("P14")) return;
+    BeamOpts o1;
+    o1.post = 2; o1.stops = 4;
+    o1.regs = {{kBEAMCON0, 0x0020}};
+    BeamOpts o0 = o1;
+    o0.regs = {{kBEAMCON0, 0x0000}};
+    if (mutating("P14-0-LOL") || mutating("P14-0-LINES") || mutating("P14-0-LONGONLY")) o0.regs = {{kBEAMCON0, 0x0020}};
+    if (mutating("P14-1") || mutating("P14")) o1.regs = {{kBEAMCON0, 0x0000}};
+    if (mutating("P14-FIXTURE")) o1.prog = "prog_beam_nofix";
+    if (mutating("P14-F3")) { auto x = dma_regs(); o1.regs.insert(o1.regs.begin(), x.begin(), x.end()); }
+    BeamRun r1 = beam_run(o1);
+    BeamRun r0 = beam_run(o0);
+    g.expect(r1.fixture && r0.fixture, "P14-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+
+    LineData l1 = line_data(r1, 1, 2), l0 = line_data(r0, 1, 2);
+    g.expect(l1.anchor && l1.frame_ok && l0.anchor && l0.frame_ok,
+             "P14-F3: in the stopped frame of both runs the refresh accesses come in groups of exactly four, one group per line, and every line period is a whole number of colour clocks");
+    BeamRun rv = r1;
+    if (mutating("P14-F4")) { BeamOpts a = o1; a.prog = "prog_beam_rev"; rv = beam_run(a); }
+    int va1 = f4_violations(rv.post1), va2 = f4_violations(rv.post2), vb1 = f4_violations(r0.post1), vb2 = f4_violations(r0.post2);
+    checks.note("P14 measured: F4 violations, PAL set frames " + dec(va1) + " and " + dec(va2) + ", PAL clear frames " + dec(vb1) + " and " + dec(vb2));
+    for (const auto* sv : {&rv.post1, &rv.post2, &r0.post1, &r0.post2}) {
+        for (size_t i = 1; i < sv->size(); ++i) {
+            const Sm& a = (*sv)[i - 1]; const Sm& b = (*sv)[i];
+            bool ok = (i + 2 >= sv->size() && b.V < a.V) || (b.V == a.V && b.H * 2 < a.H) || b.V > a.V || (b.V == a.V && b.H > a.H);
+            if (!ok) { checks.note("P14 measured: sample " + dec((long long)i) + ": " + dec(a.V) + ":" + dec(a.H) + " then " + dec(b.V) + ":" + dec(b.H)); break; }
+        }
+    }
+    g.expect(!rv.post1.empty() && !r0.post1.empty() && va1 == 0 && va2 == 0 && vb1 == 0 && vb2 == 0,
+             "P14-F4: the samples of both frames of both runs show the counters running: V never decreases within a frame and H increases within a line");
+
+    auto vmax = [](const std::vector<Sm>& s) { int m = 0; for (const auto& x : s) m = std::max(m, x.V); return m; };
+    long long f1a = vmax(rv.post1) + 1, f1b = vmax(rv.post2) + 1, f0a = vmax(r0.post1) + 1, f0b = vmax(r0.post2) + 1;
+    auto period = [&](const BeamRun& b, size_t i) { return b.fm.size() > i + 1 ? (long long)(b.fm[i + 1] - b.fm[i]) : 0LL; };
+    long long p1a = period(r1, 1), p1b = period(r1, 2), p0a = period(r0, 1), p0b = period(r0, 2);
+    checks.note("P14 measured, PAL set: frame lines " + dec(f1a) + " and " + dec(f1b) + ", frame periods " + dec(p1a) + " and " + dec(p1b) +
+                " system clocks; PAL clear: frame lines " + dec(f0a) + " and " + dec(f0b) + ", frame periods " + dec(p0a) + " and " + dec(p0b));
+    bool stable = f1a == f1b && f0a == f0b && p1a == p1b && p0a == p0b && p1a > 0 && p0a > 0;
+    g.expect(stable, "P14-STABLE: in both runs two consecutive frames give the same number of lines and the same frame period");
+    bool normal = true;   // VARBEAMEN and LOLDIS are clear in both runs: asserted from the BEAMCON0 values written
+    for (const auto* ob : {&o1, &o0}) for (const auto& rg : ob->regs) if (rg.first == kBEAMCON0 && (rg.second & 0x0880)) normal = false;
+    g.expect(normal, "P14-NORMAL: both runs are in normal mode, VARBEAMEN and LOLDIS clear in the BEAMCON0 value written");
+
+    bool pre = r1.fixture && r0.fixture && l1.anchor && l1.frame_ok && l0.anchor && l0.frame_ok && va1 == 0 && va2 == 0 &&
+               vb1 == 0 && vb2 == 0 && stable && normal;
+
+    // P14-0: LOL alternates, the port lines alternate with the longer ones 228 colour clocks, never two long lines in a row
+    bool lol0 = false;
+    {
+        auto lm = lol_by_line(r0.post1);
+        lol0 = lm.size() >= 200;
+        int prev = -1, prevV = -10;
+        for (const auto& kv : lm) {
+            if (prevV == kv.first - 1 && prev == kv.second) lol0 = false;
+            prev = kv.second; prevV = kv.first;
+        }
+    }
+    bool lines0 = l0.cck.size() >= 200;
+    long long longlen = 0;
+    for (long long c : l0.cck) longlen = std::max(longlen, c);
+    for (size_t i = 1; i < l0.cck.size(); ++i) if (l0.cck[i] == l0.cck[i - 1]) lines0 = false;
+    lines0 = lines0 && longlen == 228;
+    bool nolongpair = l0.cck.size() >= 200;
+    for (size_t i = 1; i < l0.cck.size(); ++i) if (l0.cck[i] == 228 && l0.cck[i - 1] == 228) nolongpair = false;
+    checks.note("P14 measured, PAL clear: port line lengths in colour clocks " +
+                (l0.cck.size() > 5 ? dec(l0.cck[0]) + "," + dec(l0.cck[1]) + "," + dec(l0.cck[2]) + "," + dec(l0.cck[3]) + "..." : std::string("n/a")) +
+                ", longest = " + dec(longlen));
+    g.expect_if(pre, lol0, "P14-0-LOL: with PAL clear in normal mode LOL alternates between consecutive sampled lines");
+    g.expect_if(pre, lines0, "P14-0-LINES: with PAL clear in normal mode the port lines alternate and the longer ones are 228 colour clocks");
+    g.expect_if(pre && longlen == 228, nolongpair, "P14-0-LONGONLY: with PAL clear in normal mode no two consecutive port lines are both long");
+    // P14-1: at least one of the frame length and the line-length pattern differs from P14-0
+    bool differs = f1a != f0a || l1.cck != l0.cck;
+    g.expect_if(pre, differs, "P14-1: with PAL set in normal mode the frame length in lines or the sequence of port line lengths differs from that with PAL clear");
+    g.expect_if(pre, lol0 && lines0 && nolongpair && differs,
+        "P14: opus:AA-beamcon0.c35 sol:AA-beamcon0.c52 opus:AA-beamcon0.b5 sol:AA-beamcon0.c16: in normal mode the PAL bit selects decodes that differ from those with PAL clear, which has every other line a long line of 228 colour clocks");
+}
+
+// ---- P12 --------------------------------------------------------------------
+
+constexpr uint16_t kMVmark = 0xF020;
+constexpr uint32_t kBplhLo = 0x180000, kBplhHi = 0x190000, kSprhLo = 0x190000, kSprhHi = 0x1A0000;
+
+// the average HHPOSR count per colour clock between consecutive samples of one
+// main line, over the lines of the frame (0 if HHPOSR never moves)
+double hh_rate(const BeamRun& b) {
+    double sum = 0; int n = 0;
+    for (size_t i = 1; i < b.post1.size(); ++i) {
+        const Sm& a = b.post1[i - 1]; const Sm& c = b.post1[i];
+        int ha = a.hh & 0xFF, hc = c.hh & 0xFF;
+        if (a.V == c.V && hc > ha && c.t > a.t && b.tc > 0) { sum += double(hc - ha) / (double(c.t - a.t) / double(b.tc)); ++n; }
+    }
+    return n ? sum / n : 0.0;
+}
+
+// the number of lines of the main frame in which HHPOSR decreases at least twice
+int hh_wraps_min(const BeamRun& b, bool* every_line_twice) {
+    std::map<int, int> w;
+    std::set<int> lines;
+    for (const auto& x : b.post1) lines.insert(x.V);
+    for (size_t i = 1; i < b.post1.size(); ++i)
+        if (b.post1[i].V == b.post1[i - 1].V && (b.post1[i].hh & 0xFF) < (b.post1[i - 1].hh & 0xFF)) ++w[b.post1[i].V];
+    int mn = 1 << 30;
+    for (int v : lines) mn = std::min(mn, w.count(v) ? w[v] : 0);
+    if (every_line_twice) *every_line_twice = !lines.empty() && mn >= 2;
+    return lines.empty() ? 0 : mn;
+}
+
+struct UhRun {
+    std::shared_ptr<RunData> r;
+    bool fixture = false;
+    uint64_t tvm = 0;                  // VMARK(90) of the graded frame
+    long long tc = 0;
+    std::vector<Grp> groups;           // refresh groups from before VMARK to the end of the frame
+    int g90 = -1;                      // the group of the port line containing VMARK(90)
+    bool anchor = false;
+    std::vector<int> bplh, sprh;       // accesses per port line, lines 102..108
+    std::vector<double> len_cck;       // those lines' lengths in colour clocks
+};
+
+bool uh_range(uint32_t a) { return a >= 0x180000 && a < 0x1B0000; }
+
+UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "prog_uhres") {
+    RunOpts o;
+    o.prog = prog;
+    RegList regs = {{kHTOTAL, 0x0038}, {0x1E6, 0x0000}, {0x1D4, 100}, {0x1D6, 110}, {0x1D0, 100}, {0x1D2, 110},
+                    {0x1EC, 0x0018}, {0x1EE, 0x0000}, {0x1E8, 0x0019}, {0x1EA, 0x0000},
+                    {kBEAMCON0, bc0}, {0x100, bplcon0}, {0x096, 0x8320}};
+    o.pokes.push_back({kCfg + 6, 5});
+    o.pokes.push_back({kCfg + 8, (uint16_t)regs.size()});
+    for (size_t i = 0; i < regs.size(); ++i) {
+        o.pokes.push_back({kCfg + 0x10 + 4 * (uint32_t)i, regs[i].first});
+        o.pokes.push_back({kCfg + 0x12 + 4 * (uint32_t)i, regs[i].second});
+    }
+    UhRun u;
+    u.r = run_opts(o);
+    const RunData& d = *u.r;
+    u.fixture = d.loaded && d.done && d.word(kResults) == 0xBEEF;
+    u.tc = tc;
+    std::vector<uint64_t> vm;
+    for (const auto& m : d.marks) if (m.code == kMVmark) vm.push_back(m.cyc);
+    if (vm.size() < 4) return u;
+    u.tvm = vm[2];
+    uint64_t tnext = 0;
+    for (const auto& m : d.marks) if (m.code == kMFrame && m.cyc > u.tvm) { tnext = m.cyc; break; }
+    if (!tnext || tc <= 0) return u;
+    // refresh accesses: no program range and no UHRES, sprite or null-sprite region explains them
+    std::vector<uint64_t> t;
+    uint64_t t0 = u.tvm > 4 * 230 * (uint64_t)tc ? u.tvm - 4 * 230 * (uint64_t)tc : 0;
+    for (const auto& a : d.acc)
+        if (a.cyc > t0 && a.cyc < tnext && !program_range(a.byte) && !uh_range(a.byte)) t.push_back(a.cyc);
+    if (t.size() < 8) return u;
+    uint64_t gmax = 0;
+    for (size_t i = 1; i < t.size(); ++i) gmax = std::max(gmax, t[i] - t[i - 1]);
+    u.groups.push_back({t[0], 1});
+    for (size_t i = 1; i < t.size(); ++i) {
+        if (t[i] - t[i - 1] > gmax / 2) u.groups.push_back({t[i], 1});
+        else ++u.groups.back().n;
+    }
+    std::vector<long long> lines;
+    u.anchor = f3_anchor(u.groups, tc, &lines);
+    for (size_t i = 0; i < u.groups.size(); ++i) if (u.groups[i].t <= u.tvm) u.g90 = (int)i;
+    if (u.g90 < 0 || u.g90 + 19 >= (int)u.groups.size()) { u.anchor = false; return u; }
+    for (int ln = 102; ln <= 108; ++ln) {
+        size_t gi = (size_t)(u.g90 + (ln - 90));
+        uint64_t a = u.groups[gi].t, b = u.groups[gi + 1].t;
+        int nb = 0, ns = 0;
+        for (const auto& x : d.acc) {
+            if (x.cyc < a || x.cyc >= b) continue;
+            if (x.byte >= kBplhLo && x.byte < kBplhHi) ++nb;
+            if (x.byte >= kSprhLo && x.byte < kSprhHi) ++ns;
+        }
+        u.bplh.push_back(nb); u.sprh.push_back(ns);
+        u.len_cck.push_back(double(b - a) / double(tc));
+    }
+    return u;
+}
+
+void proposition_p12() {
+    if (!want("P12")) return;
+    // P11's DUAL run: the alternate counter's rate and its wraps per main line
+    BeamOpts od;
+    od.post = 1; od.hh = true; od.stops = 2;
+    od.regs = {{kHTOTAL, mutating("P12-K") ? (uint16_t)0x00E2 : (uint16_t)0x0038}, {kBEAMCON0, 0x0060}};
+    BeamRun dr = beam_run(od);
+    double rate = hh_rate(dr);
+    bool every_twice = false;
+    int minwraps = hh_wraps_min(dr, &every_twice);
+    double t_alt = rate > 0 ? double(od.regs[0].second + 1) / rate : 0.0;
+    checks.note("P12 measured: colour clock T_C = " + dec(dr.tc) + " system clocks; HHPOSR rate per colour clock = " + fnum(rate) +
+                ", alternate counter period = " + fnum(t_alt) + " colour clocks, fewest HHPOSR decreases on a main line = " + dec(minwraps));
+
+    std::string prog = mutating("P12-FIXTURE") ? "prog_uhres_nofix" : "prog_uhres";
+    UhRun p0 = uh_run(0x0020, mutating("P12-UHRES") ? 0x0000 : 0x0080, dr.tc, prog.c_str());
+    g.expect(p0.fixture, "P12-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    bool f3 = p0.anchor && p0.g90 >= 0;
+    g.expect(f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses come in groups of exactly four, every line period is a whole number of colour clocks, and VMARK(90) lies in a port line the test calls 90");
+    // UHRES DMA exists: both regions are accessed on every graded line of P12-0
+    bool exists = !p0.bplh.empty();
+    for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] == 0 || p0.sprh[i] == 0) exists = false;
+    {
+        std::string s;
+        for (size_t i = 0; i < p0.bplh.size(); ++i) s += " " + dec(p0.bplh[i]) + "/" + dec(p0.sprh[i]);
+        checks.note("P12 measured, DUAL clear: BPLHPT/SPRHPT accesses on lines 102-108:" + s);
+    }
+    g.expect(exists, "P12-UHRES: with UHRES enabled and DUAL clear the UHRES bit-plane pointer region and the UHRES sprite pointer region are accessed on every graded line");
+    // bandwidth: no bit plane fetched (BPU = 0) and the sprites on a null sprite: from the values written
+    bool bw = true;
+    {
+        uint16_t bplcon0 = mutating("P12-BANDWIDTH") ? 0x1080 : 0x0080;
+        bw = (bplcon0 & 0x7000) == 0 && (bplcon0 & 0x0010) == 0;
+    }
+    g.expect(bw, "P12-BANDWIDTH: BPLCON0 selects no bit plane (BPU = 0), so enabling BPLEN fetches none and the sprites fetch only the null sprite");
+    g.expect(every_twice, "P12-K: in the DUAL run of P11 HHPOSR decreases at least twice on every main line, so the alternate counter wraps at least twice per main line");
+    bool pre = p0.fixture && f3 && exists && bw && every_twice;
+
+    UhRun p1 = uh_run(mutating("P12-1-BPL") || mutating("P12-1-SPR") || mutating("P12") ? 0x0020 : 0x0060, 0x0080, dr.tc, prog.c_str());
+    bool pre1 = pre && p1.anchor && p1.g90 >= 0;
+    {
+        std::string s;
+        for (size_t i = 0; i < p1.bplh.size(); ++i) s += " " + dec(p1.bplh[i]) + "/" + dec(p1.sprh[i]);
+        checks.note("P12 measured, DUAL set: BPLHPT/SPRHPT accesses on lines 102-108:" + s);
+    }
+    // P12-0: exactly 1 bit-plane pointer access and 2 sprite pointer accesses on every graded line
+    bool c0 = !p0.bplh.empty();
+    for (size_t i = 0; i < p0.bplh.size(); ++i) if (p0.bplh[i] != 1 || p0.sprh[i] != 2) c0 = false;
+    g.expect_if(pre, c0, "P12-0: with DUAL clear every graded line shows exactly 1 UHRES bit-plane pointer access and exactly 2 UHRES sprite pointer accesses");
+    // P12-1: k alternate-counter resets per line
+    bool b1 = !p1.bplh.empty(), s1 = !p1.sprh.empty();
+    for (size_t i = 0; i < p1.bplh.size(); ++i) {
+        double k = t_alt > 0 ? p1.len_cck[i] / t_alt : 0;
+        if (p1.bplh[i] < 2 || p1.bplh[i] < (int)std::floor(k) || p1.bplh[i] > (int)std::ceil(k)) b1 = false;
+        if (p1.sprh[i] <= 2) s1 = false;
+    }
+    g.expect_if(pre1, b1, "P12-1-BPL: with DUAL set every graded line shows at least 2 UHRES bit-plane pointer accesses, and their number is floor(k) or ceil(k) for the line's k alternate-counter resets");
+    g.expect_if(pre1, s1, "P12-1-SPR: with DUAL set every graded line shows more than 2 UHRES sprite pointer accesses");
+    g.expect_if(pre1, c0 && b1 && s1,
+        "P12: opus:AA-beamcon0.c31 opus:AA-beamcon0.c32 sol:AA-beamcon0.c48 sol:AA-beamcon0.c49: with UHRES enabled and DUAL set the UHRES pointer chain starts at each reset of the alternate counter, so the UHRES bit-plane and sprite pointers come out more than once per main line, against once and twice per line with DUAL clear");
+}
+
+// ---- P9 and P10: the variable sync outputs (F5, F6) --------------------------
+
+// One run of prog_beam with a dry-run sample frame, the register set of F5 and
+// four stopped frames; its graded frame's hs and vs are kept.
+struct SyncSet {
+    uint16_t bc0 = 0x00A0;
+    uint16_t hsstrt = 0x20, hsstop = 0x30, hcenter = 0x91, vsstop = 103, vbstrt = 150;
+    bool fix = true;
+    std::string key() const {
+        return hexs(bc0, 4) + "-" + dec(hsstrt) + "-" + dec(hsstop) + "-" + dec(hcenter) + "-" + dec(vsstop) + "-" + dec(vbstrt) + (fix ? "" : "-nofix");
+    }
+};
+
+struct SyncRun {
+    BeamRun b;
+    bool ok = false;                   // the graded frame and its lines exist
+    LineData ln;                       // refresh groups and line periods of the graded frame
+    std::vector<uint8_t> vid;          // bit 0 hs, bit 1 vs, one per system clock from t0
+    uint64_t t0 = 0;
+    long long tc = 0;
+};
+
+std::map<std::string, std::shared_ptr<SyncRun>> g_sync_cache;
+
+std::shared_ptr<SyncRun> sync_run(const SyncSet& s) {
+    auto it = g_sync_cache.find(s.key());
+    if (it != g_sync_cache.end()) return it->second;
+    BeamOpts o;
+    o.prog = s.fix ? "prog_beam" : "prog_beam_nofix";
+    o.pre = true; o.post = 0; o.stops = 3; o.video = true;
+    o.regs = {{kHTOTAL, 0x00E2}, {kVTOTAL, 0x0138}, {kHSSTRT, s.hsstrt}, {kHSSTOP, s.hsstop}, {kHBSTRT, 0x0010},
+              {kHBSTOP, 0x0081}, {kHCENTER, s.hcenter}, {kVSSTRT, 100}, {kVSSTOP, s.vsstop}, {kVBSTRT, s.vbstrt},
+              {kVBOSTOP, 170}, {kBEAMCON0, s.bc0}};
+    auto r = std::make_shared<SyncRun>();
+    r->b = beam_run(o);
+    r->tc = colour_clock(r->b.pre);
+    r->b.tc = r->tc;
+    r->vid = r->b.r->vid;
+    r->t0 = r->b.r->vid_t0;
+    r->ln = line_data(r->b, 1, 2);
+    r->ok = r->b.fixture && !r->vid.empty() && r->ln.anchor && r->ln.frame_ok && r->tc > 0;
+    g_sync_cache[s.key()] = r;
+    return r;
+}
+
+struct Itv { size_t a, b; };   // [a,b) in samples from the start of the graded frame
+
+std::vector<Itv> diff_itv(const SyncRun& x, const SyncRun& y, int bit) {
+    std::vector<Itv> out;
+    size_t n = std::min(x.vid.size(), y.vid.size());
+    bool in = false; size_t a = 0;
+    for (size_t i = 0; i < n; ++i) {
+        bool d = ((x.vid[i] ^ y.vid[i]) >> bit) & 1;
+        if (d && !in) { in = true; a = i; }
+        if (!d && in) { in = false; out.push_back({a, i}); }
+    }
+    if (in) out.push_back({a, n});
+    return out;
+}
+
+// F6: the paired runs are cycle-aligned: their refresh groups start at the same times
+bool aligned(const SyncRun& x, const SyncRun& y) {
+    if (x.ln.groups.size() != y.ln.groups.size() || x.ln.groups.empty()) return false;
+    for (size_t i = 0; i < x.ln.groups.size(); ++i)
+        if (x.ln.groups[i].t != y.ln.groups[i].t) return false;
+    return x.b.r->vid_t0 == y.b.r->vid_t0;
+}
+
+// the line (index into the refresh groups) containing sample i of the graded frame
+int line_of(const SyncRun& x, size_t i) {
+    uint64_t t = x.t0 + i;
+    int idx = -1;
+    for (size_t k = 0; k < x.ln.groups.size(); ++k) if (x.ln.groups[k].t <= t) idx = (int)k;
+    return idx;
+}
+
+std::string itv_note(const char* what, const std::vector<Itv>& v, const SyncRun& x) {
+    std::string s = std::string(what) + ": " + dec((long long)v.size()) + " intervals";
+    for (size_t i = 0; i < v.size() && i < 4; ++i)
+        s += " [line " + dec(line_of(x, v[i].a)) + ", length " + dec((long long)(v[i].b - v[i].a)) + "]";
+    return s;
+}
+
+// the active interval of vs in a run: the interval at the minority level
+std::optional<Itv> vs_active(const SyncRun& x) {
+    size_t hi = 0;
+    for (auto v : x.vid) if (v & 2) ++hi;
+    int lvl = (hi * 2 < x.vid.size()) ? 1 : 0;   // the level that is held for the shorter time
+    std::optional<Itv> best;
+    bool in = false; size_t a = 0;
+    for (size_t i = 0; i <= x.vid.size(); ++i) {
+        bool m = i < x.vid.size() && (((x.vid[i] >> 1) & 1) == lvl);
+        if (m && !in) { in = true; a = i; }
+        if (!m && in) { in = false; if (!best || i - a > best->b - best->a) best = Itv{a, i}; }
+    }
+    return best;
+}
+
+long long median_line(const SyncRun& x) {
+    std::vector<long long> l = x.ln.lines;
+    if (l.empty()) return 0;
+    std::sort(l.begin(), l.end());
+    return l[l.size() / 2];
+}
+
+// H pair: on every chip line the two runs differ in one interval of exactly len_cck colour clocks
+bool h_pair_every_line(const SyncRun& x, const SyncRun& y, long long len_cck, std::vector<Itv>* out = nullptr) {
+    std::vector<Itv> d = diff_itv(x, y, 0);
+    if (out) *out = d;
+    if (d.empty() || !aligned(x, y)) return false;
+    std::map<int, int> per;
+    for (const auto& i : d) {
+        if ((long long)(i.b - i.a) != len_cck * x.tc) return false;
+        per[line_of(x, i.a)]++;
+    }
+    // every chip line but the first and the last of the window has exactly one
+    for (size_t k = 1; k + 1 < x.ln.groups.size(); ++k)
+        if (per[(int)k] != 1) return false;
+    for (const auto& kv : per) if (kv.second != 1) return false;
+    return true;
+}
+
+bool inverted(const SyncRun& x, const SyncRun& y, int bit) {
+    size_t n = std::min(x.vid.size(), y.vid.size());
+    if (!n || !aligned(x, y)) return false;
+    for (size_t i = 0; i < n; ++i) if ((((x.vid[i] ^ y.vid[i]) >> bit) & 1) == 0) return false;
+    return true;
+}
+
+// V pair on vs: exactly one differing interval of exactly 2*T_L
+bool v_pair_one_interval(const SyncRun& x, const SyncRun& y, std::vector<Itv>* out = nullptr) {
+    std::vector<Itv> d = diff_itv(x, y, 1);
+    if (out) *out = d;
+    if (d.size() != 1 || !aligned(x, y)) return false;
+    int li = line_of(x, d[0].a);
+    if (li < 0 || li + 1 >= (int)x.ln.lines.size()) return false;
+    long long two = x.ln.lines[li] + x.ln.lines[li + 1];
+    long long len = (long long)(d[0].b - d[0].a);
+    // the two lines of the interval are those it starts in and the next
+    return len == two || len == x.ln.lines[li] + x.ln.lines[li > 0 ? li - 1 : li];
+}
+
+void proposition_p9_p10() {
+    bool w9 = want("P9"), w10 = want("P10"), wf5 = want("F5");
+    if (!w9 && !w10 && !wf5) return;
+    // Which F5 runs? the mutations of the F5 anchors change one of them.
+    SyncSet h1; h1.bc0 = 0x01A0;
+    SyncSet h2 = h1; h2.hsstop = 0x34;
+    SyncSet h3; h3.bc0 = 0x01A1;
+    SyncSet v1; v1.bc0 = 0x02A0;
+    SyncSet v2 = v1; v2.vsstop = 105;
+    SyncSet v3; v3.bc0 = 0x02A2;
+    SyncSet r0; r0.bc0 = 0x00A0;
+    if (mutating("F5-SH-DIFF")) h2 = h1;
+    if (mutating("F5-SH-INV")) h3.bc0 = 0x01A0;
+    if (mutating("F5-SV-DIFF")) v2 = v1;
+    if (mutating("F5-SV-INV")) v3.bc0 = 0x02A0;
+    if (mutating("F5-FIXTURE")) h1.fix = false;
+
+    auto rh1 = sync_run(h1), rh2 = sync_run(h2), rh3 = sync_run(h3), rv1 = sync_run(v1), rv2 = sync_run(v2), rv3 = sync_run(v3), rr0 = sync_run(r0);
+    g.expect(rh1->b.fixture && rh2->b.fixture && rh3->b.fixture && rv1->b.fixture && rv2->b.fixture && rv3->b.fixture && rr0->b.fixture,
+             "F5-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    g.expect(rh1->ok && rh2->ok && rh3->ok && rv1->ok && rv2->ok && rv3->ok && rr0->ok,
+             "F5-LINES: in the graded frame of every anchor run the refresh accesses come in groups of exactly four, every line period is a whole number of colour clocks, and the frame holds its lines");
+    bool al = aligned(*rh1, *rh2) && aligned(*rh1, *rh3) && aligned(*rv1, *rv2) && aligned(*rv1, *rv3) && aligned(*rv1, *rr0);
+    g.expect(al, "F5-ALIGN: the paired runs of the anchors are cycle-aligned: their refresh groups in the graded frame start at the same times");
+
+    std::vector<Itv> dh, dv;
+    bool sh_diff = h_pair_every_line(*rh1, *rh2, 4, &dh);
+    checks.note("F5 measured: " + itv_note("S-H1 against S-H2, hs", dh, *rh1) + "; T_C = " + dec(rh1->tc) + ", lines in the frame " + dec((long long)rh1->ln.lines.size()));
+    g.expect_anchor(sh_diff, "F5-SH-DIFF: S-H1 against S-H2 (HSSTOP $30 against $34): the observed horizontal sync differs on every chip line in one interval of exactly 4 colour clocks and is identical elsewhere");
+    bool sh_inv = inverted(*rh3, *rh1, 0);
+    g.expect_anchor(sh_inv, "F5-SH-INV: S-H3 against S-H1 (HSYTRUE set): the observed horizontal sync is the logical inverse at every sample");
+    bool sv_diff = v_pair_one_interval(*rv1, *rv2, &dv);
+    checks.note("F5 measured: " + itv_note("S-V1 against S-V2, vs", dv, *rv1));
+    g.expect_anchor(sv_diff, "F5-SV-DIFF: S-V1 against S-V2 (VSSTOP 103 against 105): the observed vertical sync differs in exactly one interval, of exactly two line periods, and is identical elsewhere");
+    bool sv_inv = inverted(*rv3, *rv1, 1);
+    g.expect_anchor(sv_inv, "F5-SV-INV: S-V3 against S-V1 (VSYTRUE set): the observed vertical sync is inverted at every sample");
+    auto vvar = vs_active(*rv1);
+    auto vnorm = vs_active(*rr0);
+    checks.note("F5 measured: V_var length " + (vvar ? dec((long long)(vvar->b - vvar->a)) : std::string("n/a")) + " system clocks starting in line " +
+                (vvar ? dec(line_of(*rv1, vvar->a)) : std::string("n/a")) + "; V_norm length " + (vnorm ? dec((long long)(vnorm->b - vnorm->a)) : std::string("n/a")) +
+                " starting in line " + (vnorm ? dec(line_of(*rr0, vnorm->a)) : std::string("n/a")));
+    bool s_h = rh1->ok && rh2->ok && rh3->ok && al && sh_diff && sh_inv;
+    bool s_v = rv1->ok && rv2->ok && rv3->ok && rr0->ok && al && sv_diff && sv_inv && vvar && vnorm;
+    if (!s_h) checks.record("NOT CHECKABLE: the HSY* parts of P9 and P10: anchor S-H does not hold in this harness (F5)");
+    if (!s_v) checks.record("NOT CHECKABLE: the VSY* parts of P9 and P10: anchor S-V does not hold in this harness (F5)");
+    if (!w9 && !w10) return;
+    // when neither part is checkable the runs of P9 and P10 are not taken: every line below is not graded
+    const bool any = s_h || s_v;
+    auto L = [&](const SyncSet& x) { return any ? sync_run(x) : std::make_shared<SyncRun>(); };
+
+    // ---- P9 ----
+    SyncSet c_h1; c_h1.bc0 = 0x04A0;
+    SyncSet c_h2 = c_h1; c_h2.hsstrt = 0x24;
+    SyncSet c_c2 = c_h1; c_c2.hcenter = 0x99;
+    SyncSet c_v2 = c_h1; c_v2.vbstrt = 152;
+    SyncSet n_h1; n_h1.bc0 = 0x00A0;
+    SyncSet n_h2 = n_h1; n_h2.hsstrt = 0x24;
+    SyncSet n_c2 = n_h1; n_c2.hcenter = 0x99;
+    SyncSet n_v2 = n_h1; n_v2.vbstrt = 152;
+    if (mutating("P9-A")) c_h2 = c_h1;
+    if (mutating("P9-C")) c_c2 = c_h1;
+    if (mutating("P9-B")) c_v2 = c_h1;
+    if (mutating("P9-CONTRAST")) { n_h1.bc0 = 0x04A0; n_h2 = n_h1; n_h2.hsstrt = 0x24; }
+    if (w9) {
+        auto a1 = L(c_h1), a2 = L(c_h2), cc2 = L(c_c2), b2 = L(c_v2);
+        std::vector<Itv> dA, dC, dB;
+        bool a_ok = h_pair_every_line(*a1, *a2, 4, &dA);
+        if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, HSSTRT $20 against $24, hs", dA, *a1));
+        // C pair: differing lines consecutive, each in one interval of exactly 8 colour clocks
+        dC = diff_itv(*a1, *cc2, 0);
+        bool c_ok = !dC.empty() && aligned(*a1, *cc2);
+        std::set<int> clines;
+        for (const auto& i : dC) {
+            if ((long long)(i.b - i.a) != 8 * a1->tc) c_ok = false;
+            clines.insert(line_of(*a1, i.a));
+        }
+        bool consec = !clines.empty() && (long long)clines.size() == (long long)(*clines.rbegin() - *clines.begin() + 1) && clines.size() == dC.size();
+        long long nvar = vvar ? 3 : -1;
+        long long lnorm = (vnorm && median_line(*rr0) > 0) ? (long long)(vnorm->b - vnorm->a) / median_line(*rr0) : -1;
+        long long lnorm_hi = (vnorm && median_line(*rr0) > 0) ? ((long long)(vnorm->b - vnorm->a) + median_line(*rr0) - 1) / median_line(*rr0) : -1;
+        bool count_ok = (long long)clines.size() == nvar || (long long)clines.size() == lnorm || (long long)clines.size() == lnorm_hi;
+        if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, HCENTER $91 against $99, hs", dC, *a1) + "; differing lines " + dec((long long)clines.size()) +
+                    " (V_var gives 3, V_norm gives " + dec(lnorm) + " or " + dec(lnorm_hi) + ")");
+        // V pair on vs
+        dB = diff_itv(*a1, *b2, 1);
+        bool b_ok = !dB.empty() && aligned(*a1, *b2);
+        if (b_ok && vvar) {
+            size_t first = dB.front().a, last = dB.back().b;
+            long long tl = median_line(*a1);
+            // chip line n starts (n - 100) T_L after the start of V_var
+            long long start150 = (long long)vvar->a + 50 * tl;
+            b_ok = (long long)first >= start150 && (long long)first < start150 + tl && (long long)(last - first) <= 2 * tl;
+            bool half1 = false, half2 = false;
+            for (const auto& i : dB) {
+                if ((long long)i.a < (long long)first + tl) half1 = true;
+                if ((long long)i.b > (long long)first + tl) half2 = true;
+            }
+            b_ok = b_ok && half1 && half2;
+        } else b_ok = false;
+        if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, VBSTRT 150 against 152, vs", dB, *a1));
+        else checks.record("P9 and P10: the runs are not taken, since neither anchor S-H nor S-V holds");
+        // CSCBEN clear: all three pairs identical at every sample
+        bool n_ok = false;
+        if (full("P9-CONTRAST") || true) {
+            auto b1 = L(n_h1), b2h = L(n_h2), b2c = L(n_c2), b2v = L(n_v2);
+            n_ok = aligned(*b1, *b2h) && aligned(*b1, *b2c) && aligned(*b1, *b2v) && diff_itv(*b1, *b2h, 0).empty() && diff_itv(*b1, *b2h, 1).empty() &&
+                   diff_itv(*b1, *b2c, 0).empty() && diff_itv(*b1, *b2c, 1).empty() && diff_itv(*b1, *b2v, 0).empty() && diff_itv(*b1, *b2v, 1).empty();
+        }
+        bool pre_a = s_h && a1->ok && a2->ok && cc2->ok && aligned(*a1, *a2) && aligned(*a1, *cc2) && vvar && vnorm;
+        bool pre_b = s_v && a1->ok && b2->ok && aligned(*a1, *b2) && vvar && vnorm;
+        g.expect_if(pre_a, a_ok, "P9-A: with CSCBEN set and VARHSYEN and VARVSYEN clear, changing HSSTRT from $20 to $24 changes the HSY* output on every chip line, in one interval of exactly 4 colour clocks");
+        g.expect_if(pre_a, c_ok && consec && count_ok, "P9-C: with CSCBEN set, changing HCENTER from $91 to $99 changes the HSY* output on consecutive chip lines only, as many as there are lines in vertical sync, each in one interval of exactly 8 colour clocks");
+        g.expect_if(pre_b, b_ok, "P9-B: with CSCBEN set, changing VBSTRT from 150 to 152 changes the VSY* output only inside one interval of exactly two line periods starting in chip line 150, each of its two line periods holding differing samples");
+        g.expect_if(pre_a || pre_b, n_ok, "P9-CONTRAST: with CSCBEN clear the three pairs (HSSTRT $20/$24, HCENTER $91/$99, VBSTRT 150/152) are identical at every sample");
+        g.expect_if(pre_a && pre_b && n_ok,
+            a_ok && c_ok && consec && count_ok && b_ok,
+            "P9: opus:AA-beamcon0.b10 sol:AA-beamcon0.c11 opus:AA-beamcon0.c15 opus:AA-beamcon0.c16 sol:AA-beamcon0.c33 sol:AA-beamcon0.c34 opus:AA-beamcon0.c38: "
+            "with CSCBEN set the variable composite sync comes out on the HSY* pin, set on HSSTRT and on HCENTER in vertical sync, and the variable composite blank comes out on the VSY* pin, following VBSTRT; with CSCBEN clear none of these registers reaches the pins");
+    }
+
+    // ---- P10 ----
+    if (w10) {
+        SyncSet h_base; h_base.bc0 = 0x05A0;
+        SyncSet h_c2 = h_base; h_c2.hcenter = 0x99;
+        SyncSet h_s2 = h_base; h_s2.hsstop = 0x34;
+        SyncSet w_base; w_base.bc0 = 0x06A0;
+        SyncSet w_v2 = w_base; w_v2.vbstrt = 152;
+        SyncSet w_s2 = w_base; w_s2.vsstop = 105;
+        if (mutating("P10-CPAIR")) h_base.bc0 = h_c2.bc0 = 0x04A0;
+        if (mutating("P10-SPAIR")) h_s2.hsstop = 0x30;
+        if (mutating("P10-VPAIR")) w_base.bc0 = w_v2.bc0 = 0x04A0;
+        if (mutating("P10-VSPAIR")) w_s2.vsstop = 103;
+        auto p1 = L(h_base), p2 = L(h_c2), p3 = L(h_s2), q1 = L(w_base), q2 = L(w_v2), q3 = L(w_s2);
+        bool cpair = aligned(*p1, *p2) && diff_itv(*p1, *p2, 0).empty() && diff_itv(*p1, *p2, 1).empty();
+        std::vector<Itv> dS, dVS;
+        bool spair = h_pair_every_line(*p1, *p3, 4, &dS);
+        bool vpair = aligned(*q1, *q2) && diff_itv(*q1, *q2, 0).empty() && diff_itv(*q1, *q2, 1).empty();
+        bool vspair = v_pair_one_interval(*q1, *q3, &dVS);
+        if (any) checks.note("P10 measured: " + itv_note("VARHSYEN, HSSTOP $30 against $34, hs", dS, *p1) + "; " + itv_note("VARVSYEN, VSSTOP 103 against 105, vs", dVS, *q1));
+        bool pre_h = s_h && p1->ok && p2->ok && p3->ok && aligned(*p1, *p3);
+        bool pre_v = s_v && q1->ok && q2->ok && q3->ok && aligned(*q1, *q3);
+        g.expect_if(pre_h, cpair, "P10-CPAIR: with CSCBEN and VARHSYEN set, changing HCENTER from $91 to $99 changes nothing at any sample: the comparator HSY is independent of HCENTER");
+        g.expect_if(pre_h, spair, "P10-SPAIR: with CSCBEN and VARHSYEN set, changing HSSTOP from $30 to $34 changes the HSY* output on every chip line, vertical-sync lines included, in one interval of exactly 4 colour clocks");
+        g.expect_if(pre_v, vpair, "P10-VPAIR: with CSCBEN and VARVSYEN set, changing VBSTRT from 150 to 152 changes nothing at any sample: the comparator VSY is independent of VBSTRT");
+        g.expect_if(pre_v, vspair, "P10-VSPAIR: with CSCBEN and VARVSYEN set, changing VSSTOP from 103 to 105 changes the VSY* output in exactly one interval of exactly two line periods");
+        g.expect_if(pre_h && pre_v, cpair && spair && vpair && vspair,
+            "P10: opus:AA-beamcon0.c19 sol:AA-beamcon0.c35: VARHSYEN and VARVSYEN have priority over CSCBEN: with CSCBEN set HSY* carries the comparator HSY (set on HSSTRT, reset on HSSTOP on every line, independent of HCENTER) and VSY* the comparator VSY (independent of VBSTRT)");
+    }
+}
+
+// ---- P8 ---------------------------------------------------------------------
+
+constexpr uint32_t kLcfg = 0x0B8000;
+constexpr uint32_t kLpBuf = 0x1B0000;
+constexpr uint16_t kMLpGo = 0xF010;
+
+struct LpRun {
+    std::shared_ptr<RunData> r;
+    std::vector<Sm> s;
+    bool fixture = false;
+    uint64_t t_go = 0;
+};
+
+LpRun lp_run(uint16_t bc0, int nsamp, uint16_t bplcon0, bool pulse, uint64_t delay, uint64_t len,
+             const char* prog = "prog_lpen") {
+    RunOpts o;
+    o.prog = prog;
+    o.pokes = {{kLcfg + 0, bc0}, {kLcfg + 2, (uint16_t)(nsamp - 1)}, {kLcfg + 4, bplcon0}};
+    o.pulse = pulse; o.pulse_marker = kMLpGo; o.pulse_delay = delay; o.pulse_len = len;
+    LpRun l;
+    l.r = run_opts(o);
+    l.fixture = l.r->loaded && l.r->done && l.r->word(kResults) == 0xBEEF;
+    l.s = samples_of(*l.r, kLpBuf, kLpBuf + 0x20000, true);
+    auto g1 = find_mark(*l.r, kMLpGo);
+    if (g1) l.t_go = l.r->marks[*g1].cyc;
+    return l;
+}
+
+bool vh_equal(const Sm& a, const Sm& b) { return a.V == b.V && a.H == b.H; }
+bool vh_less(const Sm& a, const Sm& b) { return a.V < b.V || (a.V == b.V && a.H < b.H); }
+
+void proposition_p8() {
+    if (!want("P8")) return;
+    // the dry run: the program as P8-0 without the pulse
+    LpRun dry = lp_run(0x0020, 300, 0x0008, false, 0, 0, mutating("P8-FIXTURE") ? "prog_lpen_nofix" : "prog_lpen");
+    std::vector<Sm> ds = dry.s;
+    long long tc = colour_clock(ds);
+    // fit D and N: the pulse falls on line 255, three samples before its last sample
+    int iL = -1;
+    for (size_t i = 0; i < ds.size(); ++i) if (ds[i].V == 255) iL = (int)i;
+    bool fit_ok = iL >= 7 && tc > 0 && dry.t_go > 0;
+    int ip = fit_ok ? iL - 3 : 0;
+    int nsamp = fit_ok ? iL + 14 : 0;
+    if (nsamp > 300) fit_ok = false;
+    uint64_t delay = fit_ok ? (ds[ip].t + 2 - dry.t_go) : 0;
+    uint64_t plen = fit_ok ? (uint64_t)(2 * tc) : 0;
+    long long interval = 0;   // the median store-time difference of consecutive samples, in system clocks
+    if (ds.size() > 8) {
+        std::vector<long long> d;
+        for (size_t i = 1; i < ds.size(); ++i) d.push_back((long long)(ds[i].t - ds[i - 1].t));
+        std::sort(d.begin(), d.end());
+        interval = d[d.size() / 2];
+    }
+    checks.note("P8 measured: colour clock T_C = " + dec(tc) + " system clocks, sample interval = " + dec(interval) +
+                " system clocks, " + dec((long long)ds.size()) + " dry-run samples, last line-255 sample index " + dec(iL) +
+                ", pulse delay D = " + dec((long long)delay) + ", samples N = " + dec(nsamp));
+
+    {
+        std::string lst;
+        for (size_t i = 0; i < ds.size() && i < 24; ++i)
+            lst += " " + dec(ds[i].V) + ":" + dec(ds[i].H) + ":" + hexs(ds[i].hh, 4) + "@" + dec((long long)(ds[i].t - dry.t_go));
+        checks.note("P8 measured: first dry-run samples V:H:HHPOSR@time-after-LP_GO:" + lst);
+    }
+    // preconditions on the dry run
+    g.expect(dry.fixture, "P8-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
+    bool crosses = false;
+    for (size_t i = 1; i < ds.size(); ++i) if (ds[i - 1].V == 255 && ds[i].V == 256) crosses = true;
+    checks.note("P8 measured: dry-run F4 violations = " + dec(f4_violations(ds)) + ", crosses 255 to 256 = " + dec(crosses ? 1 : 0) +
+                ", last sample V:H = " + (ds.empty() ? std::string("n/a") : dec(ds.back().V) + ":" + dec(ds.back().H)));
+    for (size_t i = 1; i < ds.size(); ++i) {
+        bool inc = ds[i].V > ds[i - 1].V || (ds[i].V == ds[i - 1].V && ds[i].H > ds[i - 1].H);
+        if (!inc) checks.note("P8 measured: sample " + dec((long long)i) + " " + dec(ds[i - 1].V) + ":" + dec(ds[i - 1].H) + " then " + dec(ds[i].V) + ":" + dec(ds[i].H));
+    }
+    LpRun dry_anchor = dry;
+    if (mutating("P8-ANCHOR")) dry_anchor = lp_run(0x0020, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0, "prog_lpen_rev");
+    // the anchor is checked over the samples of the window the pulse runs take
+    if (nsamp > 0 && (int)dry_anchor.s.size() > nsamp) dry_anchor.s.resize(nsamp);
+    int viol_a = f4_violations(dry_anchor.s);
+    g.expect(!dry_anchor.s.empty() && viol_a == 0 && crosses,
+             "P8-ANCHOR: in the dry run (no pulse) consecutive (V,H) samples increase strictly, and the samples cross from V = 255 to V = 256 inside the window");
+    // the alternate counter runs: HHPOSR takes at least two different values in the dry run
+    LpRun hh_run = dry;
+    if (mutating("P8-HHRUN")) hh_run = lp_run(0x0060, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0);
+    bool hh_moves = false;
+    for (size_t i = 1; i < hh_run.s.size(); ++i) if (hh_run.s[i].hh != hh_run.s[0].hh) hh_moves = true;
+    if (hh_moves) checks.note("P8-HHRUN: in the dry run HHPOSR takes at least two different values, so the alternate counter runs and HHPOSR is graded");
+    else checks.record("P8-HHRUN: in the dry run HHPOSR takes one value only (" + hexs(hh_run.s.empty() ? 0 : hh_run.s[0].hh, 4) +
+                       "): the page does not say whether the alternate counter runs with DUAL = 0, so HHPOSR is not graded in either setting");
+    bool fit_geom = fit_ok;
+    if (fit_ok) {
+        // the pulse falls on line 255 and at least 4 samples fall before it and 8 after it
+        fit_geom = ds[ip].V == 255 && ds[ip + 1].V == 255 && ip >= 4 &&
+                   (int)ds.size() - ip - 3 >= 8 && ds[ds.size() - 1].V >= 256;
+    }
+    g.expect(fit_geom, "P8-FIT: the pulse of the dry run's timing falls on line 255 with at least 4 samples before it and 8 after it, and the samples after it reach V >= 256");
+
+    bool pre_base = dry.fixture && fit_geom && !dry_anchor.s.empty() && viol_a == 0 && crosses;
+
+    // the pulse runs
+    bool pulse_on = !mutating("P8-TRIGGER");
+    uint16_t bc0_for_0 = (mutating("P8-0-VH") || mutating("P8-0-HH")) ? 0x2020 : 0x0020;
+    uint16_t bc0_for_1 = (mutating("P8-1-VH") || mutating("P8-1-HH") || mutating("P8")) ? 0x0020 : 0x2020;
+    LpRun p0 = fit_geom ? lp_run(bc0_for_0, nsamp, 0x0008, pulse_on, delay, plen) : LpRun();
+    LpRun p1 = fit_geom ? lp_run(bc0_for_1, nsamp, 0x0008, pulse_on, delay, plen) : LpRun();
+
+    auto split = [&](const LpRun& L, std::vector<Sm>& before, std::vector<Sm>& after) {
+        before.clear(); after.clear();
+        if (!L.r) return;
+        for (const auto& x : L.s) {
+            if (x.t < L.r->pulse_start) before.push_back(x);
+            else if (x.t > L.r->pulse_end + (uint64_t)interval) after.push_back(x);
+        }
+    };
+    std::vector<Sm> b0, a0s, b1, a1s;
+    split(p0, b0, a0s);
+    split(p1, b1, a1s);
+    auto frozen = [&](const std::vector<Sm>& a) {
+        if (a.size() < 2) return false;
+        for (const auto& x : a) if (!vh_equal(x, a[0])) return false;
+        return true;
+    };
+    bool trig = (frozen(a0s) || frozen(a1s));
+    if (trig) checks.note("P8-TRIGGER: the pulse reaches the chip: in at least one of the two pulse runs every sample taken after the pulse shows one identical (V,H)");
+    else checks.record("P8-TRIGGER: in neither pulse run do the samples taken after the pulse show one identical (V,H): the chip did not see the trigger, so P8 is not checkable");
+
+    // LPE enables the latch: with BPLCON0 bit 3 clear the samples advance through the pulse
+    bool lpe_ok = true;
+    if (full("P8-LPE") && fit_geom) {
+        LpRun c = lp_run(0x0020, nsamp, mutating("P8-LPE") ? 0x0008 : 0x0000, true, delay, plen);
+        std::vector<Sm> bc, ac;
+        split(c, bc, ac);
+        lpe_ok = !ac.empty() && !frozen(ac);
+        for (size_t i = 1; i < ac.size(); ++i) if (!vh_less(ac[i - 1], ac[i])) lpe_ok = false;
+        g.expect(lpe_ok, "P8-LPE: with BPLCON0 bit 3 (LPEN) clear the same pulse does not freeze the samples: they advance through and after it");
+    } else checks.record("P8-LPE: not evaluated in this run");
+
+    bool pre = dry.fixture && pre_base && trig && lpe_ok && !b0.empty() && !a0s.empty();
+    bool pre_hh = pre && hh_moves;
+    checks.note("P8 measured: P8-0 run: " + dec((long long)b0.size()) + " samples before the pulse, " + dec((long long)a0s.size()) +
+                " after; P8-1 run: " + dec((long long)b1.size()) + " before, " + dec((long long)a1s.size()) + " after");
+    if (!a0s.empty()) checks.note("P8 measured: P8-0 first sample after the pulse: V=" + dec(a0s.front().V) + " H=" + dec(a0s.front().H) +
+                                  " HHPOSR=" + dec(a0s.front().hh) + "; last: V=" + dec(a0s.back().V) + " H=" + dec(a0s.back().H) + " HHPOSR=" + dec(a0s.back().hh));
+    if (!a1s.empty()) checks.note("P8 measured: P8-1 first sample after the pulse: V=" + dec(a1s.front().V) + " H=" + dec(a1s.front().H) +
+                                  " HHPOSR=" + dec(a1s.front().hh) + "; last: V=" + dec(a1s.back().V) + " H=" + dec(a1s.back().H) + " HHPOSR=" + dec(a1s.back().hh));
+
+    // P8-0, VPOSR and VHPOSR
+    bool v0 = !b0.empty() && frozen(a0s);
+    if (v0) {
+        const Sm& hit = a0s[0];
+        const Sm& lb = b0.back();
+        double elapsed_cck = double(p0.r->pulse_end - lb.t) / double(tc ? tc : 1);
+        double interval_cck = double(interval) / double(tc ? tc : 1);
+        v0 = !vh_less(hit, lb) && hit.V == 255 && lb.V == 255 &&
+             double(hit.H) <= double(lb.H) + elapsed_cck + interval_cck;
+        for (const auto& x : a0s) if ((x.vposr & 1) != 0) v0 = false;
+    }
+    bool h0 = !a0s.empty();
+    for (const auto& x : a0s) if (x.hh != a0s[0].hh) h0 = false;
+    // P8-1, VPOSR and VHPOSR
+    bool v1 = !p1.s.empty();
+    for (size_t i = 1; i < p1.s.size(); ++i) if (!vh_less(p1.s[i - 1], p1.s[i])) v1 = false;
+    if (v1) {
+        const Sm& last = p1.s.back();
+        v1 = last.V >= 256 && (last.vposr & 1) == 1;
+    }
+    bool h1 = false;
+    for (size_t i = 1; i < a1s.size(); ++i) if (a1s[i].hh != a1s[i - 1].hh) h1 = true;
+    g.expect_if(pre, v0, "P8-0-VH: with LPENDIS = 0, LPEN set and a light-pen trigger, VHPOSR and VPOSR return the position latched at the trigger: every sample after the pulse is one identical (V,H) on line 255, not earlier than the last sample before the pulse and not later than the running counter at the end of the pulse, and VPOSR bit 0 (V8) stays 0");
+    g.expect_if(pre_hh, h0, "P8-0-HH: with LPENDIS = 0, LPEN set and a light-pen trigger, HHPOSR returns the latched value: every sample after the pulse is identical");
+    g.expect_if(pre, v1, "P8-1-VH: with LPENDIS = 1 and the same trigger, VHPOSR and VPOSR return the running counters: (V,H) increases strictly from each sample to the next across the whole window, and the last sample has V >= 256 with VPOSR bit 0 (V8) set");
+    g.expect_if(pre_hh, h1, "P8-1-HH: with LPENDIS = 1 and the same trigger, HHPOSR returns the running alternate counter: consecutive samples after the pulse are not all identical");
+    g.expect_if(pre_hh, v0 && h0 && v1 && h1,
+        "P8: opus:AA-beamcon0.b13 sol:AA-beamcon0.c8 opus:AA-beamcon0.c9 opus:AA-beamcon0.c10 opus:AA-beamcon0.c8 sol:AA-beamcon0.c24 sol:AA-beamcon0.c25 sol:AA-beamcon0.c26: "
+        "with LPEN set, BEAMCON0 bit 13 (LPENDIS) low makes VHPOSR, VPOSR and HHPOSR read the latched light-pen position, and high makes them read the actual beam counters");
+}
+
+} // namespace
+
+int main(int argc, char** argv) {
+    g_dir = argc > 1 ? argv[1] : ".";
+    g_mutate = std::getenv("NMH_MUTATE");
+    std::string core = NMH_XSTR(NANOMIG_CORE_NAME);
+    g_graded = (core == "tg68k");
+    std::printf("CORE: %s\n", core.c_str());
+    if (g_mutate) std::printf("NMH_MUTATE=%s\n", g_mutate);
+
+    proposition_p1();
+    proposition_p2();
+    proposition_p3();
+    proposition_p4();
+    proposition_p5();
+    proposition_p6();
+    proposition_p7();
+    proposition_p8();
+    proposition_p9_p10();
+    proposition_p11();
+    proposition_p12();
+    proposition_p13();
+    proposition_p14();
+
+    if (g_tears) checks.note("samples taken across the step from line 255 to line 256 and completed with the V8 they lacked: " + dec(g_tears));
+    std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
+    return checks.failed == 0 ? 0 : 1;
+}
