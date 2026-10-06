@@ -1497,70 +1497,82 @@ writes only the PAL bit.
 
 ---
 
-## 5. Build
+## 5. Recorded
 
-Built, with one assertion each: P4, P5, P6, P7, P8, P9, P10, P11. Every
-program clears the CIA-A overlay first (ddra=$03 at $BFE201, then pra=$00
-at $BFE001, 3.2) before any write below $80000, then fills its own Copper
-lists and sprite/blitter data structures there itself (3.2's anchor check).
-ZERO's content is not written explicitly: the harness's own Chip-RAM model
-starts every word at $0000 (`nanomig_harness.h`'s `NanomigHarness`
-constructor), which already matches the table's stated content, and no
-proposition built here reads a bitplane pixel (every run uses the plain
-colour set, black on black, 3.6).
+Final run of `make -k -B test` on both cores: fx68k 64 passed, 3 failed; TG68K 64 passed, 3 failed.
+The same three lines are red on both: P10, P1 and P2-PRE3. P2 is NOT GRADED on both. Every other
+graded line passes on both.
 
-Five programs:
+### 5.1 Programs
 
-- MANUAL (`prog_manual.s`): P4, P5. Mutations: P4-READ, P4-WRITE, P4-PRE1,
-  P4-PRE2, P5-PROP, P5-REF, P5-PRE1, P5-PRE2, FIXTURE-MANUAL.
-- AUTO / AUTO-ODD (`prog_auto.s`, `prog_autoodd.s`): P6, P7, P8. Mutations:
-  P6-PROP, P6-REF, P6-PRE1, P6-PRE2, P7-PROP, FIXTURE-AUTO, P8-PROP
-  (`prog_autoodd_c1.s`), P8-PRE2 (plain AUTO's own log checked against
-  AUTO-ODD's fixed expectation).
-- CPU-PTR (`prog_cpuptr.s`): P9. Mutations: P9-PROP, P9-PRE1, P9-PRE2,
-  P9-PRE3, FIXTURE-CPUPTR.
-- JUMP (`prog_jump.s`): P10. Mutations: P10-PROP, P10-PRE1, P10-PRE2,
-  P10-PRE3, FIXTURE-JUMP.
-- BLIT (`prog_blit.s`): P11. Mutations: P11-PROP, P11-PRE1, P11-PRE3,
-  FIXTURE-BLIT.
+Every program clears the CIA-A overlay first (ddra=$03 at $BFE201, then pra=$00 at $BFE001, 3.2)
+before any write below $80000, then fills its own Copper lists, sprite structures and buffers
+there itself (3.2's anchor check). ZERO's content is not written: the harness's Chip-RAM model
+starts every word at $0000 (`nanomig_harness.h`'s `NanomigHarness` constructor), which matches
+the table's stated content. RULER's first 8 KB are filled with $FF00; the Copper switches the
+bitplane pointer to ZERO at line $30, so no later word is fetched. A wrapper source sets symbols
+and includes the program source; each wrapper is one contrasting case of its program.
 
-P4/P5's precondition checks (markers precede/follow the display window)
-read a value the program stores at the moment of each marker: the current
-(V8:V7-0) from VPOSR/VHPOSR, the same technique 3.8 uses throughout for
-waiting on the beam from the CPU. This is a measurement, not a tuned
-constant: the precondition is graded against the page's own DIWSTRT/DIWSTOP
-lines ($2C, $F8), not against a value chosen to make the check pass.
+| program | source | propositions | graded lines |
+|---|---|---|---|
+| MANUAL | `prog_manual.s` | P4, P5 | FIXTURE-MANUAL, P4-PRE1, P4-PRE2, P5-PRE1, P5-PRE2, P4, P5 |
+| AUTO, AUTO-ODD | `prog_auto.s`, `prog_autoodd.s` | P6, P7, P8 | FIXTURE-AUTO, P6-PRE1, P6-PRE2, P8-PRE2, P6, P7, P8 |
+| CPU-PTR | `prog_cpuptr.s` | P9 | FIXTURE-CPUPTR, P9-PRE1, P9-PRE2, P9-PRE3, P9 |
+| JUMP | `prog_jump.s` | P10 | FIXTURE-JUMP, P10-PRE1, P10-PRE2, P10-PRE3, P10 |
+| BLIT | `prog_blit.s` | P11 | FIXTURE-BLIT, P11-PRE1, P11-PRE2, P11-PRE3, P11 |
+| COPBLT-v | `prog_cb.s`, wrappers `prog_cb_<o or e><2, F, 0 or D>[_<contrast>].s` | P12, P13 | FIXTURE-CB, P12-PRE1, P12-PRE2, P12-PRE3, P12, P13-PRE1, P13-PRE2, P13-PRE3, P13 |
+| BEAM | `prog_beam.s` | P14 | FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-POP, R5-ANCHOR-BEAM, P14 |
+| SHR-SWEEP, SHR-LORES, BITS-OCS | `prog_shr.s` (SHR-SWEEP), wrappers `prog_shrl*.s` (SHR-LORES) and `prog_shro*.s` (BITS-OCS) | P1, P2, P3 | FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL, P1, P2-PRE1, P2-PRE2, P2-PRE3, P2-PRE4, P2, P3-PRE1 to P3-PRE5, P3 |
 
-JUMP's harness run continues 700000 clk_sys cycles past the program's own
-DONE mark: field 6's own precondition (P10-PRE3) needs the Copper's WAIT
-for line $F0 to complete, which happens after the program itself has
-nothing left to do. The precondition check (P10-PRE3) is itself the guard:
-had the run stopped too early, that check would show the read missing and
-fail honestly, not pass by omission.
+The COPBLT-v letters are the chip set (o OCS, e ECS) and the COPCON value ($0002, $FFFF, $0000,
+$FFFD). The harness configuration for the chip set and the video standard is `chipset_config`
+bit 3 (ECS) and bit 1 (NTSC).
 
-**P10 -- measured, both cores (fx68k and TG68K identical).** In every one
-of the six fields, the first read in either Copper list after M_f is at
-$020004 (L1's own MOVE COLOR00, word offset 2), never at $020800 (L2). This
-holds for fields 2, 4 and 6 exactly as for fields 1, 3 and 5, although only
-2, 4 and 6 write COPJMP2. The precondition checks (P10-PRE1, P10-PRE2,
-P10-PRE3) all pass: the Copper list is read as expected, every marker
-appears, and every marker precedes the $20004 read -- so the write reached
-the design and the field boundaries are exactly where the proposition
-expects them. P10 is graded and red through its own clause alone.
+The graded lines of COPBLT-v, BEAM and SHR grade a proposition only when its preconditions hold.
+A failing precondition prints FAIL on its own line, and the dependent line prints NOT GRADED.
+The scan-line counts of BEAM and SHR use R5: the refresh-group spacing is measured from the
+first group of the capture, which precedes the program, and R5-ANCHOR-BEAM and R5-ANCHOR-SHR grade
+that every refresh group of the graded span has four cycles at that spacing. R1's anchor (one
+HSYNC activation per line) holds by the way the lines are split. P12-PRE3 and P13-PRE2 count the
+stores of the program binary to BLTSIZE and BLTSIZH (a `MOVE.W #imm,d16(a0)` to $058 or $1DE);
+P12-PRE3 and P13-PRE3 call a write at the port inside M1-M2 a blitter write when it is one the
+specification expects, or when it lies in the decoy destination (written only by a blit the CPU
+started).
 
-### Not built, by a scope decision
+### 5.2 Final verdicts
 
-- **P1, P2, P3** (`APPC-pos.c2 CH4-appC-position.c18 CH4-appC-position.c4`
-  for P1; P2 and P3 carry no claim id of their own). These need a video-edge
-  sweep across ten (P1, P2) or five (P3) sprite usages, with a per-usage
-  column measurement (e_A, e_B, d) repeated over every usage and cross-checked
-  against the SuperHires/Lores/OCS reference frame (R1-R4) built separately
-  from P4-P11's own. That apparatus was not built.
-- **P12, P13** (`APPC2-copcon.c2` for P12, `APPC2-copcon.c1` for P13). These
-  need a three-blit Copper list, including the ECS-only BLTCON0L, BLTSIZV
-  and BLTSIZH registers, run on both OCS and ECS, plus (for P13) four
-  COPCON values on both chip sets compared pairwise. That apparatus was not
-  built.
-- **P14** (`APPC2-BEAMCON0.uhres1`). This needs the harness's NTSC
-  configuration and an interlaced-frame scan-line count measured through R5
-  on both OCS and ECS. That apparatus was not built.
+| line | both cores | measured |
+|---|---|---|
+| P1 | FAIL | in each of the two graded fields d = 80 80 82 82 84 84 86 86 88 88 for k = 0..9: every odd k shows the d of k-1, so SPRxCTL bit 4 moved the sprite by none of the 70 ns steps |
+| P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL | PASS | ruler period 8; SREF 80 scan lines at one column; group 0 four scan lines; the SHSH1-clear groups (even k) show d = 80 + k |
+| P2 | NOT GRADED | P2-PRE3 (the SHR-SWEEP run passes P1) fails because P1 is red |
+| P2-PRE1, P2-PRE2, P2-PRE4 | PASS | ruler period 32; even k show d = 80 + k; SREF and group 0 as in P1; the Lores groups show the same d sequence as the SuperHires run |
+| P2-PRE3 | FAIL | see P1 |
+| P3 and P3-PRE1 to P3-PRE5 | PASS | VPOSR identification $00; ruler period 32; five groups, d = 80 80 80 80 82, each four scan lines |
+| P12 and P12-PRE1 to P12-PRE3 | PASS | two graded fields on each chip set; 20 accesses in $30000-$303FF in the first graded field on OCS, 32 on ECS |
+| P13 and P13-PRE1 to P13-PRE3 | PASS | the $0002 and $FFFF outcomes are equal on both chip sets; the $0000 and $FFFD outcomes are equal on both |
+| P14 and P14-PRE1 to P14-PRE3, P14-POP | PASS | N = 525 in every graded frame before M1 on both chip sets; after M1 625 on ECS and 525 on OCS |
+| R5-ANCHOR-BEAM, R5-ANCHOR-SHR | PASS | no malformed refresh group; spacing 16 clk_sys cycles |
+
+### 5.3 Measured, not graded
+
+- P10: in every one of the six fields, the first read in either Copper list after M_f is at
+  $020004 (L1's own MOVE COLOR00, word offset 2), never at $020800 (L2). This holds for fields
+  2, 4 and 6 exactly as for fields 1, 3 and 5, although only 2, 4 and 6 write COPJMP2. The
+  precondition checks (P10-PRE1, P10-PRE2, P10-PRE3) all pass: the Copper list is read as
+  expected, every marker appears, and every marker precedes the $20004 read, so the write reached
+  the design and the field boundaries are exactly where the proposition expects them. P10 is
+  graded and red through its own clause alone. JUMP's harness run continues 700000 clk_sys cycles
+  past the program's own DONE mark: field 6's own precondition (P10-PRE3) needs the Copper's WAIT
+  for line $F0 to complete.
+- COPCON clear (P13, 2.1): in the $0000 and $FFFD runs there is no access at all in
+  $30000-$303FF on either chip set, so on both the Copper's blitter MOVEs reach no blitter
+  register when the danger bit is clear. The pages disagree for ECS (2.1), so this is not graded.
+  The equality of the $0000 and $FFFD outcomes compares two empty outcomes; the contrast that
+  makes the CPU start a blit in the $FFFD run gives it accesses, which the equality then reports.
+- BEAM: the interlaced NTSC frame is 525 scan lines before M1 on both chip sets (2.10).
+
+### 5.4 Not made
+
+The disk half of P11 and the claims of section 1 have no line. Every other proposition of
+section 4 has its lines above.

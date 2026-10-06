@@ -63,6 +63,10 @@ COLOR19         equ     $1A6
 COLOR25         equ     $1B2
 COLOR26         equ     $1B4
 COLOR27         equ     $1B6
+BLTCON0L        equ     $05A            ; ECS: low bits of BLTCON0 (p.309)
+BLTSIZV         equ     $05C            ; ECS: blit height in rows (p.308)
+BLTSIZH         equ     $05E            ; ECS: blit width in words; starts the blit (p.308)
+BEAMCON0        equ     $1DC            ; ECS: beam counter control (p.298, p.305)
 
 ; -- SPECIFICATION.md 3.2's own byte addresses, below $80000 (this
 ; package's scope: P4-P11 only; RULER/SWP/SREF are P1-P3's, not built,
@@ -73,7 +77,10 @@ NULL_SPRITE     equ     $021000         ; $0000,$0000: the safe null sprite (p.1
 S1_DATA         equ     $025000
 S2_DATA         equ     $027000
 S4_DATA         equ     $028000
+SWP_DATA        equ     $029000         ; sprite-2 structure (P1-P3)
+SREF_DATA       equ     $02A000         ; reference sprite-0 structure (P1-P3)
 BLIT_BASE       equ     $030000
+RULER_BUF       equ     $040000         ; bitplane buffer; words $FF00 (P1-P3)
 ZERO_BUF        equ     $050000         ; bitplane buffer; every word $0000 (SPECIFICATION.md's
                                         ; table). The harness's chip-RAM model starts zeroed
                                         ; (nanomig_harness.h, NanomigHarness's mem_ constructor),
