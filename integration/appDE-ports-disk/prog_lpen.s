@@ -12,21 +12,25 @@
 ; SLOW     (define before including): each loop body gets a delay of more
 ;          than one video line (about 3.3 lines), and the loops are shorter.
 ; W_AT, W_LEN (define before including, with W_V8 or W_H): the reference
-;          loop is split after W_AT reads. W_V8 flips the V8 bit of the
-;          vertical counter (VPOSW) for the next W_LEN reads and flips it back.
+;          loop is split after W_AT reads. W_V8 sets the V8 bit of the
+;          vertical counter (VPOSW) for the next W_LEN reads and clears it
+;          again. The beam is between lines 57 and 255 there: V8 is clear, and
+;          with it set the counter is above the field's last line.
 ;          W_H writes a horizontal count above $E2 (VHPOSW, with the current
 ;          vertical count) and the loop goes on.
-; M_AT, M_LEN (define before including): the same V8 flip inside the
+; M_AT, M_LEN (define before including): the same V8 set and clear inside the
 ;          measurement loop, after M_AT of its reads, for M_LEN reads.
 
         include "nanomig.i"
         include "appDE_regs.i"
         org     PROGRAM_ORG
 
-WRITE_V8        macro                   ; flip V8 of the vertical counter (VPOSW)
-        move.w  VPOSR(a6),d2
-        eori.w  #1,d2
-        move.w  d2,VPOSW(a6)
+V8_ON           macro                   ; V8 of the vertical counter set (VPOSW); bit 15 keeps LONG
+        move.w  d3,VPOSW(a6)
+        endm
+
+V8_OFF          macro                   ; V8 of the vertical counter clear (VPOSW)
+        move.w  d4,VPOSW(a6)
         endm
 
 WRITE_H         macro                   ; horizontal count $F0, current vertical count (VHPOSW)
@@ -49,6 +53,14 @@ N_MEAS_USED     equ N_MEAS
 start:
         move.w  #$2700,sr               ; supervisor, all interrupt levels masked
         lea     CUSTOM,a6
+        ifd     W_V8
+        move.w  #$8001,d3               ; VPOSW word with V8 set (bit 15 = LONG stays set)
+        move.w  #$8000,d4               ; VPOSW word with V8 clear
+        endif
+        ifd     M_AT
+        move.w  #$8001,d3
+        move.w  #$8000,d4
+        endif
 
         ifd     NO_FIX
         move.w  #$BEEF,MARK0            ; fixture mutation: a different constant
@@ -91,7 +103,7 @@ start:
         move.l  $DFF004,(a0)+
         dbf     d0,.refa
         ifd     W_V8
-        WRITE_V8
+        V8_ON
         endif
         ifd     W_H
         WRITE_H
@@ -101,7 +113,7 @@ start:
         move.l  $DFF004,(a0)+
         dbf     d0,.refb
         ifd     W_V8
-        WRITE_V8
+        V8_OFF
         endif
         move.w  #(N_REF_USED-W_AT-W_LEN),d0
 .refc:
@@ -129,12 +141,12 @@ start:
 .meas1:
         move.l  $DFF004,(a0)+
         dbf     d0,.meas1
-        WRITE_V8
+        V8_ON
         move.w  #(M_LEN-1),d0
 .meas2:
         move.l  $DFF004,(a0)+
         dbf     d0,.meas2
-        WRITE_V8
+        V8_OFF
         move.w  #(N_MEAS_USED-M_AT-M_LEN),d0
 .meas3:
         move.l  $DFF004,(a0)+

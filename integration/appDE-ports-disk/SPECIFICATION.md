@@ -302,8 +302,8 @@ of the field.
 | C0 | **Connector identity.** In S2 the harness drives pin 4 (RIGHT*) of harness connector A low during the first of the two fields and high in the second. Bit 1 of exactly one of JOY0DAT and JOY1DAT follows pin 4 (p.329: "Right: bit#1"; p.281: "0=left controller pair, 1=right controller pair"). If it is JOY0DAT, A is J12 (p.327). | The harness drives pin 3 (LEFT*) instead. p.329 gives Left as "bit#9", so bit 1 does not follow and C0 fails. |
 | C1 | The program finished: the done marker is present and the sample count is N_ref + N_meas (plus the S2 samples). | Remove S8. C1 fails. |
 | C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. | Declare $0008 and store $0000 in cfg_BPLCON0 (this is the P1 contrast). C2 reports the mismatch. |
-| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase flips V8 of the vertical counter for 100 reads (and a second write flips it back); the model fits the other reads and the flipped ones disagree with it. A4: the same VPOSW flip for 100 reads of F2 before its pulse. |
-| A2 | Graded line (section 2.6), not a precondition. | A VHPOSW write inside the reference phase takes H above $E2. Declaring the other video standard than the one selected, or R one harness cycle too large, changes the expected side only; those two changes are oracle-side. |
+| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse. Declaring R one harness cycle too large (A1) or the other video standard than the one selected (A3) changes the expected side only. |
+| A2 | Graded line (section 2.6), not a precondition. | A VHPOSW write inside the reference phase takes H above $E2. Declaring the other video standard than the one selected changes the expected side only. |
 | C4 | Density: consecutive VHPOSR reads are at most 32 color clocks apart in every graded window, every W_blank has at least 10 reads, and after each pulse at least 2 reads fall within 64 color clocks of its rising edge. | Add a delay of more than one line to the loop body. C4 fails. |
 | C5 | The pulses are as scheduled: the harness log shows each pulse on pin 6 of the connector under test, 4 color clocks wide, at its scheduled time, and no other controller pin changes during S5–S8. | Log a pulse on pin 5 instead of pin 6. C5 fails. |
 | C6 | ECS only: BEAMCON0 was written with bit 13 (LPENDIS) = 0 (checked through C2). | BEAMCON0 bit 13 = 1. p.305: "Ignore latched pen value on vertical pos read". The V bits of the reads in W_trig then equal the model V (the moving beam), so the hold checks of P1 and P3 fail on V. |
@@ -704,7 +704,7 @@ This table summarizes the runs above; it adds nothing to them.
 | F2 pulse removed; F3 pulse +2 color clocks | P2, P3(a), P4 contrasts | at least ECS/PAL, both cores |
 | extra pulse (100, $40) in F1; extra pulse (50, $40) in F8; F9 pulse moved to line 50 | P3(c), P3(d), P4 contrasts | at least ECS/PAL, both cores |
 | BEAMCON0 bit 13 = 1 | C6 contrast | ECS/PAL, both cores |
-| NTSC selected with PAL declared; VPOSW flip inside S5; VHPOSW write inside S5; loop delayed; S8 removed; pin 3 instead of pin 4 in S2 | C3 (A3, A1), A2, C4, C1, C0 contrasts | ECS/PAL, both cores |
+| NTSC selected with PAL declared; VPOSW writes inside S5; VHPOSW write inside S5; loop delayed; S8 removed; pin 3 instead of pin 4 in S2 | C3 (A3, A1), A2, C4, C1, C0 contrasts | ECS/PAL, both cores |
 | other standard declared; R declared too large | A2, A3, A1 oracle-side changes | ECS/PAL, both cores |
 | pen-pressed, X the connector C0 identifies | P5 | all |
 | pin 9 instead of pin 5; right button in the identity loop; no done marker; POTGO word $0001; another input driven; short interval | P5 contrasts | at least ECS/PAL, both cores |
@@ -751,8 +751,8 @@ What is not graded, and why:
 - **A4 on the repository's chipset.** There the registers read the moving
   beam before every pulse, so a change of the pulse schedule cannot make A4
   red (measured: the F2 pulse at line 40 leaves A4 green on both cores). A4's
-  contrasts are therefore a VPOSW write in F2 before the pulse, which flips V8
-  of the vertical counter for 100 reads and flips it back (repository
+  contrasts are therefore a VPOSW write in F2 before the pulse, which sets V8
+  of the vertical counter for 100 reads and clears it again (repository
   chipset), and the pulse moved to line 40 (private chipset of 4.6).
 - **A2 and NTSC.** A2 (p.23: "Every other line is a long line (228 color
   clocks, 0-$E3), with the others being 227 color clocks long") fails in every
@@ -804,8 +804,8 @@ clear.
   out S3, `prog_lpen_nodone.s` leaves out S8, `prog_lpen_fix.s` stores a
   different first fixture constant, `prog_lpen_slow.s` puts a delay of about
   3.3 lines in each loop body and uses 600 and 2000 reads, `prog_lpen_v8.s`
-  flips V8 of the vertical counter (VPOSW) after 3000 reads of S5 for 100 reads
-  and flips it back, `prog_lpen_m8.s` flips V8 for 100 reads of S7, after 4600
+  sets V8 of the vertical counter (VPOSW) after 3000 reads of S5 for 100 reads
+  and clears it again, `prog_lpen_m8.s` sets V8 for 100 reads of S7, after 4800
   of them, which lie in F2 before its pulse, and `prog_lpen_hw.s` writes a
   horizontal count of $F0 (VHPOSW, with the current vertical count) after
   19000 reads of S5.
@@ -905,10 +905,40 @@ TG68K; the repository rows are on the repository's chipset.
 | P5-WINDOW-COUNT | P5-SHORT | repository | third level interval 5000 cycles | red for window 2; P5(a) and P5(b) of window 2 NOT GRADED |
 | P5A-PIN5-FOLLOWS, P5B-OTHER-POT-BITS-1 | P5-PIN9 | repository | pin 9 driven instead of pin 5 in window 2 | red for window 2 on both lines |
 | LP-FIXTURE-MARK0 | LP-FIX | repository | first fixture store holds $BEEF | red, only this precondition line; the proposition lines are NOT GRADED |
-| LP-C3-A1-READS-CURRENT | LP-A1W | repository | V8 of the vertical counter flipped for 100 reads of S5 | red, only this line |
-| LP-A2-LINE-LENGTHS | LP-A2 | repository | H written above $E2 inside S5 | red, with LP-C3-A1-READS-CURRENT and LP-C3-A4-FIELD-ANCHOR |
+| LP-C0-IDENTITY | LP-C0 | repository | pin 3 driven in S2 | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C1-DONE | LP-C1 | repository | no done mark | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C2-STORED | LP-C2 | repository | BPLCON0 word $0000, $0008 declared | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C3-A1-READS-CURRENT | LP-A1 (oracle) | repository | 9 clk_sys per colour clock declared | red from the no-model branch; A2, A3, A4, C4 and C5 are NOT GRADED |
+| LP-C3-A1-READS-CURRENT | LP-A1W | repository | V8 of the vertical counter set for 100 reads of S5 | red, only this line |
+| LP-A2-LINE-LENGTHS, LP-C3-A3-FIELD-LENGTH | LP-STD (oracle) | repository | NTSC declared in a PAL run | red, these two lines |
 | LP-C3-A3-FIELD-LENGTH | LP-A3 | repository | NTSC selected, PAL declared | red, only this line |
+| LP-A2-LINE-LENGTHS | LP-A2 | repository | H written above $E2 inside S5 | red, with LP-C3-A1-READS-CURRENT and LP-C3-A4-FIELD-ANCHOR |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4W | repository | V8 of the vertical counter set for 100 reads of F2 before its pulse | red, only this line |
+| LP-C4-DENSITY | LP-C4 | repository | delay of about 3.3 lines per read | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C5-PULSES | LP-C5 | repository | pulses on pin 9 | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C6-LPENDIS-CLEAR | LP-C6 | repository | BEAMCON0 $2020 | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4 | repository | F2 pulse at line 40 | green: the reads before the pulse are current, A4 does not move (4.1) |
+| LP-C3-A4-FIELD-ANCHOR | LP-A4 | private | F2 pulse at line 40 | red, only this line |
+| LP-P1A-LATCH-HOLDS, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P1 | private | BPLCON0 word $0000 in the base run | red, with P2, P3(a), P3(b), P3(d), P4 (the repository pattern) |
+| LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P1B | private | BPLCON0 word $0008 in the bit-clear run | red, these three lines |
+| LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD | LP-P2A | private | F2 pulse not driven | red, with P1A, the P1 aggregate, P4 and LP-LATCH-ENABLE-AND-POSITION |
+| LP-P2-LATCH-AT-PULSE | LP-P2B | private | F3 pulse 2 colour clocks later | red, with LP-LATCH-ENABLE-AND-POSITION |
+| LP-P3B-HELD-PULSE-IGNORED | LP-P3B | private | F7 pulse at line 60 not driven | red, with P1A, P3(a), P4, the P1 aggregate and LP-LATCH-ENABLE-AND-POSITION |
+| LP-P3C-RELEASE | LP-P3C | private | pulse at line 50 of F8 | red, with P4 |
+| LP-P3D-PULSE-BEFORE-ENABLE | LP-P3D | private | F9 pulse at line 50 | red, with P4 |
+| LP-P4-DETERMINE-TRIGGER | LP-P4A | private | pulse at line 100 of F1 | red, only this line |
 
+On the private chipset the normal run prints 290 passed and 4 failed on both cores: every
+light-pen line passes in all eight runs (PAL and NTSC), P3(c) is graded and
+passes, P1B passes on both connectors, and the four failures are A2 in the NTSC
+runs.
+
+A second private copy, in which the latch captures a pulse whatever BPLCON0 bit 3
+holds (the end-of-field latch stays gated by bit 3), prints 30 passed, 3 failed
+for the unchanged ECS/PAL run on both cores (`NMH_MUTATE=LP-BASE`): the three
+failures are LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE and
+LP-LATCH-ENABLE-AND-POSITION. A chipset that latches whatever bit 3 holds
+therefore fails the line that grades the bit-clear half.
 
 ### 4.6 Controls on a chipset that follows the pages
 
