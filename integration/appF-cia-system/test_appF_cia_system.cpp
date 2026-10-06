@@ -105,8 +105,8 @@
 // MUTATION P7.7-PRE stimulus red CIAB's $81 run with a different delay count (p7_ciab_unused81_delay.bin): the bracket-to-bracket times of the two runs differ by more than one E period, via NMH_MUTATE=P77-PRE; P7.7 is then not graded
 // MUTATION P7.7 stimulus red CIAB's $81 run with CR<-$80 (START=0) as its second write (p7_ciab_unused81_startoff.bin): c2 reads $00 and w stays $8000, via NMH_MUTATE=P77-STARTOFF
 // MUTATION P7.7 stimulus red CIAB's $81 run with CR<-$02 (a used bit) in place of CR<-$80 as its first write (p7_ciab_unused_c1contrast.bin): c1 reads $02, via NMH_MUTATE=P77-C1CONTRAST
-// MUTATION P7.5-WINDOW stimulus red CIAA's key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=P7.5-WINDOW; P7.6-CIAA is red with it
-// MUTATION P7.5-WINDOW stimulus red CIAA's wait of 200 dbra iterations instead of 2200 (p7_ciaa_inmode_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P7.5-WINDOW-W; P7.6-CIAA stays green
+// MUTATION P7.5-WINDOW stimulus red CIAA's key code scheduled 3500 E periods after the ready marker, after any window of at most 3000 E periods: the run ends first and no key is sent, via NMH_MUTATE=P7.5-WINDOW; P7.6-CIAA is then not graded
+// MUTATION P7.5-WINDOW stimulus red CIAA's wait of 200 dbra iterations instead of 2200 (p7_ciaa_inmode_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P7.5-WINDOW-W; P7.6-CIAA is then not graded
 // MUTATION P7.5-WINDOW-CIAB stimulus red CIAB's wait of 200 dbra iterations instead of 2200 (p7_ciab_inmode_short.bin): W is shorter than 1500 E periods, via NMH_MUTATE=P7.5-WINDOW-CIAB; P7.5 is then not graded
 // MUTATION P7.5 stimulus green CIAB's start write CR<-$20 (INMODE=CNT, START=0) instead of $21 (p7_ciab_inmode_nostart.bin): the timer holds, v is $1000, via NMH_MUTATE=P7.5; the control through a started timer is P7.5-CIAB-GREENCTL below
 // MUTATION P7.5 implementation green the private copy of the RTL described at P7.5-CIAB-GREENCTL below: CIAB's timer A holds v=$1000 in CRA INMODE=CNT, and the MEASURED line for CIAA shows the decrement of 8
@@ -117,7 +117,8 @@
 // MUTATION P7.5-CIAB-GREENCTL-PRE stimulus red the key code scheduled 100 E periods after the first interval's ready marker (NMH_MUTATE=P75-GREENCTL-PRE): the ICR read after the first interval has SP=1 and the key is sent before that interval ends
 // MUTATION P7.5-CIAB-GREENCTL implementation green a private copy of the RTL outside the repository in which CRA bit 5 selects, for CIA-A's timer A, one CNT pulse per KCLK pulse of a key code (eight) in place of phi2, and CIA-B's CNT stays low (cia_timera.v, ciaa.v, ciab.v; the same copy carries the change of cia_timerb.v described at P8.65-MODE01-CIAB-GREENCTL), built with make NANOMIG=<copy> and run with NMH_MUTATE=P75-GREENCTL: v1 is $1000 after the interval with no edge and v2 is $0FF8 after the interval with the key code; with the repository's RTL the line is red on both cores because the timer counts phi2 (v1 is $0DFE on fx68k and $0D9D on TG68K)
 // MUTATION P7.5-CIAB-GREENCTL stimulus red on that copy, the key code left out of the second interval (NMH_MUTATE=P75-GREENCTL-NOKEY): v2 stays $1000, where v1-v2 should be 8
-// MUTATION P7.6-CIAA stimulus red CIAA's R-KEY left out (NMH_MUTATE=P76CIAA): i has SP=0; P7.5-WINDOW is red with it
+// MUTATION P7.5-WINDOW stimulus red CIAA's R-KEY left out (NMH_MUTATE=P76CIAA): no key code is sent and i has SP=0; P7.6-CIAA is then not graded
+// MUTATION P7.6-CIAA implementation red a private copy of the RTL outside the repository in which a key code does not set CIA-A's SP flag (ciaa.v: the keystrobe no longer reaches the interrupt controller's serial input), built with make NANOMIG=<copy>: i has SP=0 while every timing clause holds, P7.6-CIAA prints FAIL and P7.5-WINDOW is red with it; no stimulus of this package makes SP=0 in a run whose timing clauses hold
 // MUTATION P7.6-CIAA-CONTRAST stimulus red the key sent in the run whose comparator expects SP=0: SP=1, via NMH_MUTATE=P76CIAA-CONTRAST-MUT
 // MUTATION P7.6-CIAB-PRE stimulus red CIAB's start write CR<-$40 (not started) instead of $41 (p76_ciab_pre.bin): no TA flag, via NMH_MUTATE=P76CIAB-PRE; P7.6-CIAB is then not graded
 // MUTATION P7.6-CIAB stimulus green the same SPMODE-output program run on CIA-A (p76_ciaa.bin): at least one ICR sample has SP=1, the line P7.6-CIAB-GREENCTL below
@@ -161,9 +162,7 @@
 // MUTATION P10-sol:F-cra.c16 stimulus green the preconditions of its failing members falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P3 and P4 are not graded on the timer-A instances and the row prints RECORDED not graded instead of FAIL
 // MUTATION P10-opus:F-crb.c3 stimulus green the preconditions of its failing members falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P3 and P4 are not graded on the timer-B instances and the row prints RECORDED not graded instead of FAIL
 // MUTATION P10-sol:F-cra.c13 stimulus green the preconditions of its failing members falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P7.5 and P7.5-CIAA-INMODE are not graded, P5 on the timer-A instances passes and the row prints RECORDED not graded instead of FAIL
-// MUTATION P10-sol:F-cra.c13 implementation green the private copy of the RTL described at P7.5-CIAB-GREENCTL: P5 on the timer-A instances, P7.5 and P7.5-CIAA-INMODE pass and the row prints PASS
 // MUTATION P10-sol:F-crb.c7 stimulus green the precondition of its failing member P8.65 mode 01 falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P8.65 mode 01 is not graded, mode 11's member is never graded and the row prints RECORDED not graded instead of FAIL
-// MUTATION P10-sol:F-crb.c7 implementation green the private copy of the RTL described at P7.5-CIAB-GREENCTL: P5 on the timer-B instances, P8.65 mode 01 and mode 10 pass and mode 11's member is never graded, so the row prints RECORDED not graded instead of FAIL
 // MUTATION P10-opus:F-cra.c12 stimulus green the precondition of its failing member P4 falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P4 is not graded on the timer-A instances, the other members of the 0-setting row pass or are not graded, and the row prints RECORDED not graded instead of FAIL
 // MUTATION P10-opus:F-cra.c13 stimulus green the preconditions of its failing members falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P1 PBON=1, P3, P7.5, P7.5-CIAA-INMODE and P7.6-CIAB are not graded and the row prints RECORDED not graded instead of FAIL
 // MUTATION P10-opus:F-crb.c13 stimulus green the precondition of its failing member P4 falsified, via NMH_MUTATE=P2-PRE22,P3-PRE31,P4-PRE,P10-NOPERIOD-L40,P9-LEGW-PRE22,P1-PRE12,P7.5-WINDOW-CIAB,P7.5-CIAA-INMODE-PRE,P76CIAB-PRE,P8.65-MODE01-WINDOW-CIAB (the list of P10-sol:F-timers.c13): P4 is not graded on the timer-B instances, the other members of the 0-setting row pass or are not graded, and the row prints RECORDED not graded instead of FAIL
@@ -1128,6 +1127,7 @@ int main(int argc, char** argv) {
         V p70_stop = V::NOTGRADED, p70_start = V::NOTGRADED;
         V p73_oneshot = V::NOTGRADED, p73_cont = V::NOTGRADED;
         V p74 = V::NOTGRADED, p75 = V::NOTGRADED, p75_ciaa = V::NOTGRADED;
+        V p74_read = V::NOTGRADED, p84_read = V::NOTGRADED;   // LOAD reads 0 (c bit 4), the 0-setting rows' member
         V p76_ciaa = V::NOTGRADED, p76_ciab = V::NOTGRADED, p77 = V::NOTGRADED;
         V p80_stop = V::NOTGRADED, p80_start = V::NOTGRADED;
         V p83_oneshot = V::NOTGRADED, p83_cont = V::NOTGRADED, p84 = V::NOTGRADED;
@@ -2176,6 +2176,7 @@ int main(int argc, char** argv) {
         };
         // The LOAD strobe's count bound comes from the markers that bracket the LOAD write and the stop write
         // (count_bounds); the precondition is printed first and the line is graded only when it holds.
+        struct LoadV { V whole = V::NOTGRADED, read = V::NOTGRADED; };
         auto grade_load = [&](const std::string& base_a, const std::string& base_b, const char* propid, const char* pagecite) {
             LoadResult la = run_load(base_a), lb = run_load(base_b);
             auto ok_one = [](const LoadResult& r) {
@@ -2206,22 +2207,29 @@ int main(int argc, char** argv) {
                         "; CIAB v1=" + hex4(lb.v1) + " v2=" + hex4(lb.v2) +
                         " c=" + hex2(lb.c) + " v3=" + hex4(lb.v3) + " (counted " + std::to_string(0xFFFF - lb.v3) +
                         ", bound " + bound_text(lb) + ")");
-            return vof(pre_ok, ok);
+            LoadV lv;
+            lv.whole = vof(pre_ok, ok);
+            // LOAD has no 0 setting (Section 0): the 0-setting rows of P10 join only "LOAD reads 0" (c bit 4 = 0 on both
+            // CIAs, read after the LOAD write), not the force load and its count bound.
+            lv.read = vof(la.loaded && lb.loaded, (la.c & 0x10) == 0 && (lb.c & 0x10) == 0);
+            return lv;
         };
         // The contrasts change the CIAB program: no start in the stopped leg (PRE), CR<-$00 instead of
         // $10 (LD0), CR<-$01 instead of $11 in the running leg (CONTRAST).
-        pv.p74 = grade_load(dir+"/p7_ciaa_load.bin",
+        LoadV l7 = grade_load(dir+"/p7_ciaa_load.bin",
                    dir + (sel("P74-PRE") ? "/p7_ciab_load_nostart.bin"
                           : sel("P74-LD0") ? "/p7_ciab_load_ld0.bin"
                           : sel("P74-CONTRAST") ? "/p7_ciab_load_run01.bin"
                           : "/p7_ciab_load.bin"),
                    "P7.4", "p342,p348");
-        pv.p84 = grade_load(dir+"/p8_ciaa_load.bin",
+        pv.p74 = l7.whole; pv.p74_read = l7.read;
+        LoadV l8 = grade_load(dir+"/p8_ciaa_load.bin",
                    dir + (sel("P84-PRE") ? "/p8_ciab_load_nostart.bin"
                           : sel("P84-LD0") ? "/p8_ciab_load_ld0.bin"
                           : sel("P84-CONTRAST") ? "/p8_ciab_load_run01.bin"
                           : "/p8_ciab_load.bin"),
                    "P8.4", "p342,p349");
+        pv.p84 = l8.whole; pv.p84_read = l8.read;
     }
 
     // ---- P7.7 (CRA bit 7, unused) -------------------------------------------
@@ -2308,10 +2316,19 @@ int main(int argc, char** argv) {
     };
     InmodeResult p75a, p75b;
     InmodeResult p865_01a, p865_01b;
+    // The reason the counting half of INMODE=CNT is not graded (P7.5, P7.5-CIAA-INMODE, P8.65-MODE01).
+    const std::string counting_why =
+        "the counting half of INMODE=CNT (\"counts positive CNT transitions\", p348, p349) needs a CNT source whose "
+        "edges are known to reach the timer; CIAB's CNT is undriven and no output of the system shows KCLK at CIAA's "
+        "CNT input (Section 3, item 11), so the normal run grades only the zero-edge half and the P10 members of "
+        "INMODE=CNT are FAIL or not graded, never PASS";
     // The window precondition (SPECIFICATION.md P7.5): 1500 <= W <= 3000 E periods; where a key is sent, the key
     // code is put on the port group at least 100 E periods after the ready marker, which follows the start write,
     // and before the ICR read; the ICR read (i) shows SP=1; the stop write comes after.
-    auto window_ok = [](const InmodeResult& r, bool with_key) {
+    // The timing clauses (marker order, W in [1500,3000] E periods, and where a key is sent, the key code put on the
+    // port group at least 100 E periods after the ready marker and before the ICR read, itself before the stop write)
+    // are what P7.6-CIAA is graded under; the window adds i's SP=1, which is P7.6-CIAA's own result.
+    auto window_timing = [](const InmodeResult& r, bool with_key) {
         if (!r.loaded || !r.have_tcpu || !r.ready || !r.stop_a || !r.stop_b) return false;
         bool order = *r.ready < *r.stop_a && *r.stop_a < *r.stop_b;
         bool w_in = r.w_e >= 1500.0 && r.w_e <= 3000.0;
@@ -2319,7 +2336,10 @@ int main(int argc, char** argv) {
         if (!r.send || !r.icr_store) return false;
         bool sent = double(*r.send) >= double(*r.ready) + 100.0*10.0*double(r.t_cpu) &&
                     *r.send < *r.icr_store && *r.icr_store < *r.stop_a;
-        return order && w_in && sent && (r.i & kIcrSp);
+        return order && w_in && sent;
+    };
+    auto window_ok = [&](const InmodeResult& r, bool with_key) {
+        return window_timing(r, with_key) && (!with_key || (r.i & kIcrSp));
     };
     // CR<-$01 (phi2) counts the E cycles between the start write and the stop write, each bounded by the markers
     // around it (count_bounds): $1000-v lies between the two bounds.
@@ -2369,9 +2389,12 @@ int main(int argc, char** argv) {
         checks.expect(win_b, "P7.5-WINDOW-CIAB [SPECIFICATION.md P7.5]: on CIAB the stop write follows the ready "
                       "marker and W lies in [1500,3000] E periods");
         bool ciab_ok = p75b.loaded && p75b.v == 0x1000;
-        pv.p75 = vof(win_b, ciab_ok);
-        emit(checks, win_b, ciab_ok, "P7.5", "P7.5 [p348,p351]: with CRA INMODE=CNT, CIAB's timer A (CNT undriven) "
-             "does not move over the window: v=$1000", "P7.5-WINDOW-CIAB failed");
+        // Only the zero-edge half of INMODE=CNT is graded, so the P10 member is FAIL or not graded, never PASS.
+        pv.p75 = (win_b && !ciab_ok) ? V::FAIL : V::NOTGRADED;
+        emit(checks, win_b, ciab_ok, "P7.5", "P7.5 [p348,p351]: INMODE=CNT, zero-edge half: with CRA INMODE=CNT, CIAB's "
+             "timer A (CNT undriven, no positive transition) does not move over the window: v=$1000",
+             "P7.5-WINDOW-CIAB failed");
+        checks.record("P7.5-COUNTING [p348,p351]: not graded -- " + counting_why);
         checks.note("P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK "
                     "pulses) in the window, decremented by " + std::to_string(0x1000 - int(p75a.v)) + " (the page's "
                     "count is 8) over W=" + std::to_string(p75a.w_e) + "E, i=" + hex2(p75a.i) + ", v=" + hex4(p75a.v) +
@@ -2408,9 +2431,11 @@ int main(int argc, char** argv) {
                           "long enough that a timer counting phi2 would have counted at least one pulse "
                           "(count_bounds' lower bound is at least 1)");
             const bool ok = cr.loaded && cr.v1 == 0x1000;
-            pv.p75_ciaa = vof(pre, ok);
-            emit(checks, pre, ok, "P7.5-CIAA-INMODE", "P7.5-CIAA-INMODE [p348,p351]: with CRA INMODE=CNT (CR<-$21, started), "
-                 "CIAA's timer A does not move over an interval in which no CNT edge occurs: v1=$1000", "P7.5-CIAA-INMODE-PRE failed");
+            pv.p75_ciaa = (pre && !ok) ? V::FAIL : V::NOTGRADED;   // the zero-edge half only: FAIL or not graded
+            emit(checks, pre, ok, "P7.5-CIAA-INMODE", "P7.5-CIAA-INMODE [p348,p351]: INMODE=CNT, zero-edge half: with CRA "
+                 "INMODE=CNT (CR<-$21, started), CIAA's timer A does not move over an interval in which no CNT edge "
+                 "occurs: v1=$1000", "P7.5-CIAA-INMODE-PRE failed");
+            checks.record("P7.5-CIAA-INMODE-COUNTING [p348,p351]: not graded -- " + counting_why);
             checks.note("P7.5-CIAA-INMODE CIAA v1=" + hex4(cr.v1) + " i1=" + hex2(cr.i1) + " (first interval, no CNT edge); "
                         "after the second start, with one key code: i2=" + hex2(cr.i2) + " v2=" + hex4(cr.v2) +
                         " (the page's count is 8)");
@@ -2445,9 +2470,11 @@ int main(int argc, char** argv) {
         checks.expect(m01_win_b, "P8.65-MODE01-WINDOW-CIAB [SPECIFICATION.md P8.65]: on CIAB the stop write follows the "
                       "ready marker and W lies in [1500,3000] E periods");
         bool m01_ciab_ok = p865_01b.loaded && p865_01b.v == 0x1000;
-        pv.p865_01 = vof(m01_win_b, m01_ciab_ok);
-        emit(checks, m01_win_b, m01_ciab_ok, "P8.65-MODE01", "P8.65-MODE01 [p349,p351]: with CRB INMODE=01 (CNT), CIAB's "
-             "timer B (CNT undriven) does not move over the window: v=$1000", "P8.65-MODE01-WINDOW-CIAB failed");
+        pv.p865_01 = (m01_win_b && !m01_ciab_ok) ? V::FAIL : V::NOTGRADED;   // the zero-edge half only
+        emit(checks, m01_win_b, m01_ciab_ok, "P8.65-MODE01", "P8.65-MODE01 [p349,p351]: INMODE=01 (CNT), zero-edge half: "
+             "with CRB INMODE=01, CIAB's timer B (CNT undriven, no positive transition) does not move over the window: "
+             "v=$1000", "P8.65-MODE01-WINDOW-CIAB failed");
+        checks.record("P8.65-MODE01-COUNTING [p349,p351]: not graded -- " + counting_why);
         checks.note("P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK "
                     "pulses) in the window, decremented by " + std::to_string(0x1000 - int(p865_01a.v)) + " (the page's "
                     "count is 8) over W=" + std::to_string(p865_01a.w_e) + "E, i=" + hex2(p865_01a.i) + ", v=" +
@@ -2514,10 +2541,13 @@ int main(int argc, char** argv) {
     {
         // CIAA leg reuses P7.5's own run (i, made before its stop write) --
         // this leg's own positive result and its own window precondition.
+        // Graded under P7.5-WINDOW's timing clauses (the key code sent in time, W in its window); SP=1 is its result.
+        const bool ciaa_timing = window_timing(p75a, true);
         bool ciaa_ok = p75a.loaded && (p75a.i & kIcrSp);
-        pv.p76_ciaa = vof(window_ok(p75a, true), ciaa_ok);   // P7.5-WINDOW is this leg's own window precondition
-        checks.expect(ciaa_ok, "P7.6-CIAA [p345,p351,p357]: SP=1 in i, the ICR read P7.5's CIAA run "
-                      "makes before its stop write (input mode, CRA bit6=0)");
+        pv.p76_ciaa = vof(ciaa_timing, ciaa_ok);
+        emit(checks, ciaa_timing, ciaa_ok, "P7.6-CIAA", "P7.6-CIAA [p345,p351,p357]: SP=1 in i, the ICR read P7.5's CIAA run "
+             "makes before its stop write (input mode, CRA bit6=0)",
+             "the timing clauses of P7.5-WINDOW (the key code sent in time, W in its window) failed");
         // The contrast is the same run without R-KEY: SP=0. Its mutation sends the key (P76CIAA-CONTRAST-MUT).
         {
             InmodeResult ciaa_noKey = grade_inmode(dir+"/p7_ciaa_inmode.bin", sel("P76CIAA-CONTRAST-MUT"));
@@ -3100,11 +3130,11 @@ int main(int argc, char** argv) {
         // (SPECIFICATION.md P10: LOAD has no 0-setting, Section 0). A setting's verdict joins only what grades that setting.
         Members m7;
         m7.push_back({pv.p70_stop, "P7.0-STOP"}); add4(m7, pv.p1_control, "P1-CONTROL", ta); add4(m7, pv.p4, "P4", ta);
-        m7.push_back({pv.p73_cont, "P7.3-CONT"}); m7.push_back({pv.p74, "P7.4"}); add4(m7, pv.p5, "P5", ta);
-        m7.push_back({pv.p76_ciaa, "P7.6-CIAA"});
+        m7.push_back({pv.p73_cont, "P7.3-CONT"}); m7.push_back({pv.p74_read, "P7.4-READ"}); add4(m7, pv.p5, "P5", ta);
+        m7.push_back({pv.p76_ciaa, "P7.6-CIAA"}); m7.push_back({pv.p77, "P7.7"});
         row("P10-opus:F-cra.c12 [p349: opus:F-cra.c12]: every 0-setting field of the CRA bitmap (P7.0 START=0; P1-CONTROL "
             "PBON=0; P4 OUTMODE=0, timer-A instances; P7.3 RUNMODE=0; P7.4 LOAD reads 0; P5 INMODE=0, "
-            "timer-A instances; P7.6-CIAA SPMODE=0)", m7);
+            "timer-A instances; P7.6-CIAA SPMODE=0; P7.7 bit 7 unused)", m7);
         Members m8;
         m8.push_back({pv.p70_start, "P7.0-START"}); add4(m8, pv.p1_main, "P1-MAIN", ta); add4(m8, pv.p3, "P3", ta);
         m8.push_back({pv.p73_oneshot, "P7.3-ONESHOT"}); m8.push_back({pv.p74, "P7.4"}); m8.push_back({pv.p75, "P7.5"});
@@ -3114,7 +3144,7 @@ int main(int argc, char** argv) {
             "P7.5-CIAA-INMODE INMODE=1; P7.6-CIAB SPMODE=1)", m8);
         Members m9;
         m9.push_back({pv.p80_stop, "P8.0-STOP"}); add4(m9, pv.p1_control, "P1-CONTROL", tb); add4(m9, pv.p4, "P4", tb);
-        m9.push_back({pv.p83_cont, "P8.3-CONT"}); m9.push_back({pv.p84, "P8.4"}); add4(m9, pv.p5, "P5", tb);
+        m9.push_back({pv.p83_cont, "P8.3-CONT"}); m9.push_back({pv.p84_read, "P8.4-READ"}); add4(m9, pv.p5, "P5", tb);
         m9.push_back({pv.p87_y, "P8.7-RUNY"});
         row("P10-opus:F-crb.c13 [p350: opus:F-crb.c13]: every 0-setting field of the CRB bitmap (P8.0 START=0; P1-CONTROL "
             "PBON=0; P4 OUTMODE=0, timer-B instances; P8.3 RUNMODE=0; P8.4 LOAD reads 0; P5 INMODE=00, "
