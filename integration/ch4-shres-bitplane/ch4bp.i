@@ -50,8 +50,8 @@ F10LIST         equ     COPBASE+10*COPSTEP
 ; prog_main.s; this section only resolves the few things prog_main.s's own
 ; instruction stream branches on.
 
-; fixture contrast (BRIEF.md: "the fixture proves it can deliver a known
-; value before anything reads one")
+; fixture contrast: the fixture proves it can deliver a known value
+; before anything reads one
                 ifd     MUT_FIX
 FIXTUREVAL      equ     $DEAD
                 else
