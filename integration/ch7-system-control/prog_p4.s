@@ -4,20 +4,30 @@
 ; pair for E250 (line 250) before the end, exactly as specified.
 ;
 ; The CPU's own "waits about 20 lines" after E250 (SPECIFICATION.md's own
-; words) is built as a fixed instruction-count spin (P4_SPIN below), not a
-; poll of VPOSR/VHPOSR: a Copper WAIT cannot target line 250+20=270 at all
-; (its own V field is 8 bits, p.24's own ambiguity #11 -- ovs. line 255),
-; and polling the very register the field 4 grades would be circular on an
-; implementation that actually freezes it (unlike this one). P4_SPIN is
-; tuned on this RTL; the reference-frame bound in SPECIFICATION.md (X's
-; store at least 156*228 colour clocks after t(A1), Y's at least 100*228
-; before the next field's own t(A1)) is the precondition that guards it,
-; checked by test_ch7_system_control.cpp.
+; words) is a counted poll of INTREQR, not a poll of VPOSR/VHPOSR: a Copper
+; WAIT cannot target line 250+20=270 at all (its V field is 8 bits, p.24's
+; ambiguity #11), and polling the very register the proposition grades would
+; be circular on an implementation that actually freezes it. The count is
+; calibrated in the run itself: in F0, where no trigger has happened, the
+; same polling loop (spin below) counts its iterations between the COPER
+; signals of E110 and E130, which the Copper list places 20 lines apart
+; (WAIT lines 110 and 130, p.22). That count, CALIB, is the iteration count
+; of the delay after E250 in F1 and F3. The reference-frame bound in
+; SPECIFICATION.md (X's store at least 156*228 colour clocks after t(A1), Y's
+; at least 100*228 before the next field's own t(A1)) is the precondition
+; that guards the result, checked by test_ch7_system_control.cpp.
 ;
 ;   NOLPENDIS  -- the page's own contrasting case: F1's own E60 write is
 ;                 $0020 instead of $2020 (LPENDIS never set).
 ;   F3LPENDIS  -- precondition 3's own contrast: F3's own E60 write is also
 ;                 $2020 instead of $0020 (LPENDIS set in the control field too).
+;   DDRAFORCE  -- the DDRA precondition's contrast: bits 6-7 forced to outputs.
+;   ANCHORMUT  -- the anchor precondition's contrast: the second A anchor WAITs
+;                 for line 101.
+;   PERIODMUT  -- the period precondition's contrast: every BEAMCON0 write has
+;                 bit 5 clear (the other standard).
+;   SHORTSPIN  -- the reference-frame precondition's contrast: the delay after
+;                 E250 is 10 poll iterations.
 
         include "nanomig.i"
 
@@ -33,7 +43,7 @@ COP_LIST        equ     $0C1000         ; 92 bytes (P3's list plus E250)
 MAINTICK        equ     $0C1100         ; 6 words: fields F-1,F0,F1,F2,F3 (indices 0-4) plus one more
 RECORDS         equ     $0C2000         ; X,Y,X',Y': 4*3 = 12 words
 
-P4_SPIN         equ     2000            ; see the header note
+CALIB           equ     $0C1180         ; long: spin iterations over the 20 lines E110..E130
 
         org     PROGRAM_ORG
 
@@ -48,14 +58,24 @@ start:
         moveq   #0,d2
         move.b  d0,d2
         move.w  d2,RESULTS.l
+        ifd     DDRAFORCE
+        or.b    #$C0,d0
+        move.b  d0,CIAADDRA.l
+        else
         move.b  d0,d1
         and.b   #$C0,d1
         beq.s   .ddra_done
         and.b   #$3F,d0
         move.b  d0,CIAADDRA.l
+        endif
 .ddra_done:
 
-        move.w  #$0020,BEAMCON0(a0)     ; ECS, PAL, LPENDIS=0
+        ifd     PERIODMUT
+BC_PAL          equ     $0000
+        else
+BC_PAL          equ     $0020
+        endif
+        move.w  #BC_PAL,BEAMCON0(a0)    ; ECS, PAL, LPENDIS=0
         move.w  #$0008,BPLCON0(a0)      ; LPEN=1
         move.w  #$0000,COLOR00(a0)
 
@@ -75,7 +95,11 @@ start:
         move.w  #COLOR00,COP_LIST+20.l
         move.w  #$0F00,COP_LIST+22.l
 
+        ifd     ANCHORMUT
+        move.w  #$65A1,COP_LIST+24.l    ; contrast: line 101 instead of 100
+        else
         move.w  #$64A1,COP_LIST+24.l
+        endif
         move.w  #$FFFE,COP_LIST+26.l
         move.w  #COLOR00,COP_LIST+28.l
         move.w  #$0000,COP_LIST+30.l
@@ -145,23 +169,35 @@ main_loop:
         btst    #4,d7
         beq.s   main_loop
         move.w  #$0010,INTREQ(a0)       ; clear COPER
+        cmp.w   #2,d1                    ; E110?
+        bne.s   .not_e110
+        cmp.w   #1,d0                    ; F0: no trigger has happened yet
+        bne.s   .not_e110
+        moveq   #0,d6
+        move.l  #$7FFFFFFF,d5            ; no cap: the loop ends at E130's COPER
+        bsr     spin
+        move.w  #$0010,INTREQ(a0)       ; clear E130's COPER
+        move.l  d6,CALIB.l
+        addq.w  #1,d1                    ; E130 was consumed here
+        bra     .coper_done
+.not_e110:
         cmp.w   #1,d1                    ; E60?
         bne.s   .not_e60
         cmp.w   #2,d0                    ; F1?
         bne.s   .maybe_f3_e60
         ifd     NOLPENDIS
-        move.w  #$0020,BEAMCON0(a0)      ; contrast: LPENDIS never set
+        move.w  #BC_PAL,BEAMCON0(a0)    ; contrast: LPENDIS never set
         else
-        move.w  #$2020,BEAMCON0(a0)      ; F1: LPENDIS=1
+        move.w  #BC_PAL|$2000,BEAMCON0(a0) ; F1: LPENDIS=1
         endif
         bra     .coper_done
 .maybe_f3_e60:
         cmp.w   #4,d0                    ; F3?
         bne.s   .coper_done
         ifd     F3LPENDIS
-        move.w  #$2020,BEAMCON0(a0)      ; contrast: LPENDIS set in the control field too
+        move.w  #BC_PAL|$2000,BEAMCON0(a0) ; contrast: LPENDIS set in the control field too
         else
-        move.w  #$0020,BEAMCON0(a0)      ; F3 control: re-affirm LPENDIS=0
+        move.w  #BC_PAL,BEAMCON0(a0)    ; F3 control: re-affirm LPENDIS=0
         endif
         bra     .coper_done
 .not_e60:
@@ -177,19 +213,27 @@ main_loop:
         bra     main_loop
 
 .handle_e250_f1:
-        move.w  #P4_SPIN-1,d5
-.spin1: dbra    d5,.spin1
+        move.l  CALIB.l,d5
+        ifd     SHORTSPIN
+        moveq   #10,d5                  ; contrast: a delay of a few lines
+        endif
+        moveq   #0,d6
+        bsr     spin
         bsr     p4_store                 ; X
-        move.w  #$0020,BEAMCON0(a0)
+        move.w  #BC_PAL,BEAMCON0(a0)
         bsr     p4_store                 ; Y
         addq.w  #1,d1
         bra     main_loop
 
 .handle_e250_f3:
-        move.w  #P4_SPIN-1,d5
-.spin3: dbra    d5,.spin3
+        move.l  CALIB.l,d5
+        ifd     SHORTSPIN
+        moveq   #10,d5                  ; contrast: a delay of a few lines
+        endif
+        moveq   #0,d6
+        bsr     spin
         bsr     p4_store                 ; X'
-        move.w  #$0020,BEAMCON0(a0)
+        move.w  #BC_PAL,BEAMCON0(a0)
         bsr     p4_store                 ; Y'
         cmp.w   #4,d0
         beq     all_done                 ; stop right after F3's own Y'
@@ -198,6 +242,20 @@ main_loop:
 
 all_done:
         DONE
+
+; ---- spin: polls INTREQR; d6 counts the iterations. Ends when d6 reaches
+; the cap in d5 or when COPER (bit 4) is set, whichever comes first. The
+; calibration (cap never reached, ends at a COPER) and the delays (COPER
+; never set, end at the cap) run this same instruction sequence.
+spin:
+.sp:    move.w  INTREQR(a0),d7
+        addq.l  #1,d6
+        cmp.l   d5,d6
+        bhs.s   .sp_out
+        btst    #4,d7
+        beq.s   .sp
+.sp_out:
+        rts
 
 ; ---- p4_store: stores one 3-word reading (VPOSR from long read, VHPOSR
 ; from the long read, VHPOSR from a separate word read) at (a5)+.

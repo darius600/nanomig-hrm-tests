@@ -1,45 +1,78 @@
 // test_ch7_system_control.cpp -- ch7-system-control. See SPECIFICATION.md
 // for every assertion's proposition, program, observed value and expected
 // value. This file only implements what SPECIFICATION.md already
-// committed to.
-//
-// P1 and P2 (display priority, bitplane/sprite combination) are not
-// implemented here: see the "Report back" section of the build's own
-// report for the reason (budget). Only P3 and P4 are built.
+// committed to: P1 (display priority), P2 (bitplane and sprite data in one
+// output), P3 (light-pen read) and P4 (LPENDIS).
 //
 // NMH_MUTATE selects a mutated program or drive schedule in place of its
-// normal counterpart, one assertion at a time; none is exercised by a
-// plain `make test`.
+// normal counterpart; none is exercised by a plain `make test`. A selector
+// starting P1- or P2- runs only that proposition's ECS-PAL case with
+// prog_pri_pal_<name>.bin or prog_p2_pal_<name>.bin; the other selectors
+// act on the P3 and P4 runs.
 //
-// MUTATION P3-ANCHOR stimulus red second A anchor's WAIT moved to line 101 instead of 100, via NMH_MUTATE=P3-ANCHOR (measured: P3-PRE-ANCHOR FAIL on both cores)
-// MUTATION P3-READTIME stimulus red a ~30-line delay added before every field's V1 read, via NMH_MUTATE=P3-READTIME (measured: P3-PRE-READTIME FAIL on both cores)
-// MUTATION P3-DDRA stimulus unfalsifiable at this boundary: CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P3-DDRA -- the program stores CIAADDRA's own pre-fix value before the fix-or-force branch runs (p.339's own step order), so the graded word can never reflect what that branch does; see the P3-PRE-DDRA-MUTATION record (both cores)
-// MUTATION P3-NOPULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P3-NOPULSE (measured: P3-PRE-PULSE FAIL on both cores, graded against the nominal 3-pulse schedule)
-// MUTATION P3-HOLD stimulus red pin 6 held pressed from line 30 of F2 to the end of F2 instead of the normal schedule, via NMH_MUTATE=P3-HOLD (measured: P3-PRE-LIVE's own contrast line PASSes -- E40/E60 of F2 still read live on both cores, since no freeze exists to hold them)
-// MUTATION P3-OFFSET stimulus unfalsifiable at this boundary: F1's own trigger moved to t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET -- H(L1) is already a live read (item1/g1 FAILs in the primary run too), so it cannot depend on where the pulse landed; see the P3-PRE-OFFSET-MUTATION record (both cores)
-// MUTATION P3-BEAMCON0 stimulus unfalsifiable at this boundary: the ECS-NTSC build's BEAMCON0 write ($0000) run against a PAL-configured harness (bit 5 opposite the selected standard), via NMH_MUTATE=P3-BEAMCON0 -- the measured field period does not change under this mutation; see the P3-PRE-PERIOD-MUTATION record (both cores)
-// MUTATION P3-LPEN stimulus green (cannot go red on this RTL): LPEN-clear build substituted for the LPEN-set build under the same unchanged trigger schedule and comparator -- both read the live beam, via NMH_MUTATE=P3-LPEN (measured on both cores)
-// MUTATION P4-NOLPENDIS stimulus unfalsifiable at this boundary: F1's own E60 write changed to $0020 instead of $2020 (LPENDIS never set), via NMH_MUTATE=P4-NOLPENDIS -- X is measured to read the same live value either way; see the P4-MUTATION record (both cores)
-// MUTATION P4-F3LPENDIS stimulus unfalsifiable at this boundary: F3's own E60 write changed to $2020 instead of $0020 (LPENDIS set in the control field too), via NMH_MUTATE=P4-F3LPENDIS -- P4-PRE-CONTROL already FAILs in the primary run; see the P4-MUTATION record (both cores)
-// MUTATION P4-NOPULSE-F1 stimulus unfalsifiable at this boundary: the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 -- P4-PRE-LATCHF1 already FAILs in the primary run; see the P4-MUTATION record (both cores)
+// P1 and P2 observe the video output. A row is identified by the tag drawn
+// in bitplane 1; k (output samples per lores pixel) and s0 (the first sample
+// of tag block 0) are measured from the output; the evaluated field is the
+// video frame holding the middle of the field between the second and third
+// VERTB tick of its configuration; every expected colour follows the
+// printed priority rules from the sprite and playfield positions measured
+// in the run's own reference bands. The preconditions are evaluated and
+// printed before the graded lines; a graded line whose preconditions fail
+// prints RECORDED ... NOT GRADED.
+//
+// MUTATION P1-FIXTURE-RUN stimulus red the marker of every configuration stored after the tick that begins the evaluated field instead of before it, via NMH_MUTATE=P1-LATEMARK (measured: P1-FIXTURE-RUN FAIL, every dependent line NOT GRADED, both cores)
+// MUTATION P1-PRE-FRAME stimulus red no COP1LC write for configuration 4 (B3), via NMH_MUTATE=P1-NOCOP (measured: P1-PRE-FRAME FAIL, P1-GROUP-B NOT GRADED, both cores)
+// MUTATION P1-PRE-TAGS stimulus red one row of the image of A1 and A2 whose tag block 2 is half set, so it does not decode, via NMH_MUTATE=P1-TAGBAD (measured: P1-PRE-TAGS FAIL, P1-GROUP-A NOT GRADED, both cores)
+// MUTATION P1-PRE-WINDOW stimulus red the CPU writes BPLCON1 $0011 at line 215 of every evaluated field and clears it after the field, so the rows below line 215 start one lores pixel later than the rows above it, via NMH_MUTATE=P1-SCROLL (measured: P1-PRE-WINDOW FAIL, both cores)
+// MUTATION P1-PRE-SPRITES stimulus red DMACON written without SPREN, via NMH_MUTATE=P1-SPRENCLR (measured: P1-PRE-SPRITES FAIL, and P1-PRE-VEXTENT FAIL because no sprite shows at all, every group NOT GRADED, both cores)
+// MUTATION P1-PRE-PLAYFIELDS stimulus red BPL2PT of B1-B8 at the all-zero image, via NMH_MUTATE=P1-BPL2ZERO (measured: P1-PRE-PLAYFIELDS FAIL, P1-GROUP-B NOT GRADED, both cores)
+// MUTATION P1-PRE-VEXTENT stimulus red the sprites of B1-B8 end at line 130 instead of 140, via NMH_MUTATE=P1-VSTOP130 (measured: P1-PRE-VEXTENT FAIL, P1-GROUP-B NOT GRADED, both cores)
+// MUTATION P1-GROUP-A stimulus red A1 with slot j holding sprite 7-j, graded against the table of A1, via NMH_MUTATE=P1-AMIRROR (measured: P1-GROUP-A FAIL on A1 only, every precondition PASS, both cores)
+// MUTATION P1-GROUP-B stimulus red PF1P and PF2P exchanged in B1-B8, via NMH_MUTATE=P1-BSWAP (measured: P1-GROUP-B FAIL on B1-B5 and B8, every precondition PASS, both cores)
+// MUTATION P1-GROUP-B stimulus red PF2PRI inverted in B1-B8, via NMH_MUTATE=P1-PRIFLIP (measured: P1-GROUP-B FAIL on B1-B8, every precondition PASS, both cores)
+// MUTATION P1-GROUP-E stimulus red v replaced by 4-v in E0-E4, via NMH_MUTATE=P1-EREV (measured: P1-GROUP-E FAIL on every configuration except E2, every precondition PASS, both cores)
+// MUTATION P1-COLOUR-OF-HIGHEST-PRIORITY stimulus red A1 with slot j holding sprite 7-j, via NMH_MUTATE=P1-AMIRROR (measured: FAIL together with P1-GROUP-A, both cores)
+// MUTATION P2-FIXTURE-RUN stimulus red the marker stored after the tick that begins the evaluated field instead of before it, via NMH_MUTATE=P2-LATEMARK (measured: P2-FIXTURE-RUN FAIL, the dependent lines NOT GRADED, both cores)
+// MUTATION P2-PRE-FRAME stimulus red the Copper starts from a copy of the list at another address and no COP1LC write follows, via NMH_MUTATE=P2-NOCOP (measured: P2-PRE-FRAME FAIL, P2-COMBINE NOT GRADED, both cores)
+// MUTATION P2-PRE-TAGS stimulus red the tag id of the band is 2 instead of 1, via NMH_MUTATE=P2-TAGID (measured: P2-PRE-TAGS FAIL, P2-COMBINE NOT GRADED, both cores)
+// MUTATION P2-PRE-WINDOW stimulus red the CPU writes BPLCON1 $0011 at line 215 of the evaluated field and clears it after the field, via NMH_MUTATE=P2-SCROLL (measured: P2-PRE-WINDOW FAIL, both cores)
+// MUTATION P2-PRE-PLANE-FETCH stimulus red BPL4PT at the image of plane 2, via NMH_MUTATE=P2-BPL4PLANE2 (measured: P2-PRE-PLANE-FETCH FAIL, P2-COMBINE NOT GRADED, both cores)
+// MUTATION P2-COMBINE stimulus red DMACON written without SPREN, via NMH_MUTATE=P2-SPRENCLR (measured: P2-COMBINE FAIL, every precondition PASS, both cores)
+// MUTATION P2-COMBINE stimulus red BPL4PT at the all-zero image inside the area of plane 4, via NMH_MUTATE=P2-BPL4ZERO (measured: P2-COMBINE FAIL, every precondition PASS, both cores)
+//
+// MUTATION P3-PRE-ANCHOR stimulus red second A anchor WAIT moved to line 101 instead of 100, via NMH_MUTATE=P3-ANCHOR (measured: P3-PRE-ANCHOR FAIL on both cores)
+// MUTATION P3-PRE-READTIME stimulus red a ~30-line delay added before the V1 read of every field, via NMH_MUTATE=P3-READTIME (measured: P3-PRE-READTIME FAIL on both cores)
+// MUTATION P3-PRE-DDRA stimulus impossible unfalsifiable at this boundary: CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P3-DDRA -- the program stores CIAADDRA before the fix-or-force branch runs (p.339 step order), so the graded word can never reflect what that branch does; see the P3-PRE-DDRA-MUTATION record (both cores)
+// MUTATION P3-PRE-PULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P3-NOPULSE (measured: P3-PRE-PULSE FAIL on both cores, graded against the nominal 3-pulse schedule)
+// MUTATION P3-PRE-LIVE stimulus green pin 6 held pressed from line 30 of F2 to the end of F2 instead of the normal schedule, via NMH_MUTATE=P3-HOLD (measured: the contrast line of P3-PRE-LIVE PASSes on both cores -- E40/E60 of F2 still read the live beam, since no freeze exists to hold them)
+// MUTATION P3 stimulus impossible unfalsifiable at this boundary: the F1 trigger moved to t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET -- H(L1) is already a live read (item 1 FAILs in the primary run too), so it cannot depend on where the pulse landed; see the P3-PRE-OFFSET-MUTATION record (both cores)
+// MUTATION P3-PRE-PERIOD stimulus red the ECS-NTSC build BEAMCON0 write ($0000) run against a PAL-configured harness (bit 5 opposite the selected standard), via NMH_MUTATE=P3-BEAMCON0 (measured: the field period after the write is the NTSC one and P3-PRE-PERIOD FAIL on both cores, through the unchanged comparator)
+// MUTATION P3-LPEN stimulus green LPEN-clear build substituted for the LPEN-set build under the same unchanged trigger schedule and comparator -- both read the live beam, via NMH_MUTATE=P3-LPEN (measured on both cores)
+// MUTATION P4 stimulus impossible unfalsifiable at this boundary: the E60 write of F1 changed to $0020 instead of $2020 (LPENDIS never set), via NMH_MUTATE=P4-NOLPENDIS -- X is measured to read the same live value either way; see the P4-MUTATION record (both cores)
+// MUTATION P4-PRE-CONTROL stimulus impossible unfalsifiable at this boundary: the E60 write of F3 changed to $2020 instead of $0020 (LPENDIS set in the control field too), via NMH_MUTATE=P4-F3LPENDIS -- P4-PRE-CONTROL already FAILs in the primary run; see the P4-MUTATION record (both cores)
+// MUTATION P4-PRE-LATCHF1 stimulus impossible unfalsifiable at this boundary: the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 -- P4-PRE-LATCHF1 already FAILs in the primary run; see the P4-MUTATION record (both cores)
+// MUTATION P4-PRE-DDRA stimulus impossible unfalsifiable at this boundary: CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P4-DDRA -- the program stores CIAADDRA before the fix-or-force branch runs, so the stored word cannot reflect that branch; see the P4-PRE-DDRA-MUTATION record (both cores)
+// MUTATION P4-PRE-ANCHOR stimulus red the second A anchor WAITs for line 101 instead of 100, via NMH_MUTATE=P4-ANCHOR (measured: P4-PRE-ANCHOR FAIL on both cores, every other precondition as in the primary run)
+// MUTATION P4-PRE-PERIOD stimulus red every BEAMCON0 write has bit 5 clear (the other standard), via NMH_MUTATE=P4-PERIOD (measured: the field period changes and P4-PRE-PERIOD FAIL on both cores; P4-PRE-REFFRAME FAILs too, because the delay after E250 outlasts the shorter field)
+// MUTATION P4-PRE-REFFRAME stimulus red the delay after E250 is 10 poll iterations instead of the calibrated count, via NMH_MUTATE=P4-SHORT (measured: P4-PRE-REFFRAME FAIL on both cores, every other precondition as in the primary run)
 //
 // P3's own finding, affecting every one of the above: VPOSR and VHPOSR are
 // observed to return the live beam counter on every build and every trigger
 // schedule tried, never a value held constant through a triggered interval.
-// Every assertion that grades "the value is latched / equals the pen
-// position / differs from the live beam" (P3 items 1, 2, 5 and P4's own
-// graded relation where it depends on a genuine latch) is therefore
-// expected to read FAIL here; a red result is the valid, finished outcome
-// the brief describes, not a test defect. P3-LPEN's own contrast is listed
-// "stimulus green" for the same reason: the LPEN-clear build and the
-// LPEN-set build measure the same live-beam value, so the unchanged
-// comparator returns the same (FAIL-for-latching / PASS-for-live) verdict
-// either way and the contrast cannot demonstrate a difference.
+// The assertions that grade "the value is latched / equals the pen position
+// / differs from the live beam" (P3 items 1, 2, 5 and P4's graded relation
+// where it depends on a genuine latch) therefore read FAIL here. P3-LPEN's
+// contrast is recorded "stimulus green" for the same reason: the LPEN-clear
+// build and the LPEN-set build measure the same live-beam value, so the
+// unchanged comparator returns the same verdict either way.
 
 #include <algorithm>
 #include <cstdint>
+#include <cctype>
 #include <cstdio>
 #include <iostream>
+#include <map>
+#include <set>
 #include <optional>
 #include <string>
 #include <vector>
@@ -322,6 +355,793 @@ DrivenResult driven_run(const std::string& bin, nmh::Config cfg,
 
 } // namespace
 
+// ======================================================================
+// P1 / P2: video-output analysis (SPECIFICATION.md, "Playfield geometry
+// and row tags", "Reference frames and how the test checks them")
+// ======================================================================
+namespace pri {
+
+struct Col { uint8_t r, g, b; };
+inline bool same(const Col& a, const Col& b) { return a.r == b.r && a.g == b.g && a.b == b.b; }
+constexpr Col BG{0, 0, 0}, PF1C{0xF, 0, 0}, PF2C{0, 0xF, 0};
+// SC0..SC7: the colours of sprites 0..7 (COLOR19, 17/18, 23, 21/22, 27, 25/26, 31, 29/30)
+constexpr Col SC[8] = {{0xF,0xF,0}, {0xF,0,0xF}, {0,0xF,0xF}, {0xF,8,0}, {0,8,0xF}, {8,0xF,0}, {0xF,0xF,0xF}, {8,8,8}};
+// P2: the colours of the planes 1..6 alone (COLOR01, 09, 02, 10, 04, 12)
+constexpr Col P2C[6] = {{0xF,0,0}, {0,0xF,0}, {0xA,0,0}, {0,0xA,0}, {5,0,0}, {0,5,0}};
+
+std::string cs(const Col& c) {
+    char b[8];
+    snprintf(b, sizeof b, "$%X%X%X", c.r, c.g, c.b);
+    return b;
+}
+
+// ---- memory map of prog_pri.s / prog_p2.s ----
+constexpr uint32_t kTicks = 0x0C1000, kMarks = 0x0C1100;
+constexpr uint32_t kListBase = 0x30000, kListStep = 0x100;
+constexpr uint32_t kImgLo = 0x10000, kImgHi = 0x1F000;      // P1: every bitplane image
+constexpr uint32_t kP2Img = 0x40000, kP2Step = 0x6000;      // P2: plane n image region
+
+struct Reads { std::vector<uint64_t> cyc; std::vector<uint32_t> addr; };
+
+struct Trace {
+    const std::vector<nmh::VideoSample>* video = nullptr;
+    std::vector<nmh::Span> frames, lines;
+    std::vector<uint64_t> tick, mark;     // cycle of the first write at each tick / marker address; 0 = never
+    Reads list_reads, plane_reads;        // reads inside the Copper-list area / the bitplane image areas
+};
+
+Trace make_trace(const nmh::NanomigHarness& h, int ncfg, bool p2) {
+    Trace t;
+    t.video = &h.video();
+    t.frames = nmh::find_frames(h.video());
+    t.lines = nmh::find_lines(h.video());
+    t.tick.assign((size_t)ncfg * 3, 0);
+    t.mark.assign((size_t)ncfg, 0);
+    auto log = nmh::coalesce(h.ram_log());
+    for (const auto& a : log) {
+        uint32_t byte = a.word_addr * 2;
+        if (a.is_write) {
+            if (byte >= kTicks && byte < kTicks + 2 * t.tick.size()) {
+                uint64_t& c = t.tick[(byte - kTicks) / 2];
+                if (!c) c = a.cycle;
+            } else if (byte >= kMarks && byte < kMarks + 2 * t.mark.size()) {
+                uint64_t& c = t.mark[(byte - kMarks) / 2];
+                if (!c) c = a.cycle;
+            }
+            continue;
+        }
+        if (byte >= kListBase && byte < kListBase + 0x1000) {
+            t.list_reads.cyc.push_back(a.cycle);
+            t.list_reads.addr.push_back(byte);
+        } else if (p2 ? (byte >= kP2Img && byte < kP2Img + 6 * kP2Step) : (byte >= kImgLo && byte < kImgHi)) {
+            t.plane_reads.cyc.push_back(a.cycle);
+            t.plane_reads.addr.push_back(byte);
+        }
+    }
+    return t;
+}
+
+// index of the video frame (vs rising edge to the next) holding a cycle; -1 if none
+int frame_at(const Trace& t, uint64_t cycle) {
+    int best = -1;
+    for (size_t i = 0; i < t.frames.size(); ++i)
+        if (t.frames[i].begin <= cycle && cycle < t.frames[i].end) best = (int)i;
+    return best;
+}
+
+inline Col at(const Trace& t, size_t i) {
+    const auto& v = (*t.video)[i];
+    return {v.r, v.g, v.b};
+}
+
+// One output row that shows tag block 0: the first sample of PF1C, and the
+// width of the PF1C run starting there.
+struct Row { size_t b = 0, e = 0; long j0 = 0; int w0 = 0; int id = -1; };
+
+std::vector<Row> raw_rows(const Trace& t, int fi) {
+    std::vector<Row> rows;
+    const nmh::Span fr = t.frames[(size_t)fi];
+    auto it = std::lower_bound(t.lines.begin(), t.lines.end(), fr.begin,
+                               [](const nmh::Span& s, size_t v) { return s.begin < v; });
+    for (; it != t.lines.end() && it->end <= fr.end; ++it) {
+        Row r;
+        r.b = it->begin; r.e = it->end;
+        long j0 = -1;
+        for (size_t i = r.b; i < r.e; ++i)
+            if (same(at(t, i), PF1C)) { j0 = (long)(i - r.b); break; }
+        if (j0 < 0) continue;
+        int w = 0;
+        for (size_t i = r.b + (size_t)j0; i < r.e && same(at(t, i), PF1C); ++i) ++w;
+        r.j0 = j0; r.w0 = w;
+        rows.push_back(r);
+    }
+    return rows;
+}
+
+// Decodes a row's tag with k samples per lores pixel: block 0 must be PF1C,
+// blocks 1-4 each wholly PF1C (1) or wholly BG (0).
+int decode_id(const Trace& t, const Row& r, int k) {
+    if (k <= 0) return -1;
+    if (r.j0 + 40L * k > (long)(r.e - r.b)) return -1;
+    int id = 0;
+    for (int blk = 0; blk < 5; ++blk) {
+        int ones = 0, zeros = 0;
+        for (int s = 0; s < 8 * k; ++s) {
+            Col c = at(t, r.b + (size_t)(r.j0 + (long)blk * 8 * k + s));
+            if (same(c, PF1C)) ++ones; else if (same(c, BG)) ++zeros;
+        }
+        if (blk == 0) { if (ones != 8 * k) return -1; continue; }
+        if (ones == 8 * k) id = id * 2 + 1;
+        else if (zeros == 8 * k) id = id * 2;
+        else return -1;
+    }
+    return id;
+}
+
+// the colour at lores-relative sample rel of a row (nullopt outside the line)
+inline std::optional<Col> sample(const Trace& t, const Row& r, long rel) {
+    long off = r.j0 + rel;
+    if (off < 0 || off >= (long)(r.e - r.b)) return std::nullopt;
+    return at(t, r.b + (size_t)off);
+}
+
+struct Run { long start = 0, len = 0; Col col{0,0,0}; };
+
+// maximal runs of one non-BG colour between x = 40 and x = 320 of a row
+std::vector<Run> runs_of(const Trace& t, const Row& r, int k) {
+    std::vector<Run> out;
+    for (long rel = 40L * k; rel < 320L * k; ++rel) {
+        auto c = sample(t, r, rel);
+        if (!c || same(*c, BG)) continue;
+        if (!out.empty() && out.back().start + out.back().len == rel && same(out.back().col, *c)) ++out.back().len;
+        else out.push_back({rel, 1, *c});
+    }
+    return out;
+}
+
+bool runs_equal(const std::vector<Run>& a, const std::vector<Run>& b) {
+    if (a.size() != b.size()) return false;
+    for (size_t i = 0; i < a.size(); ++i)
+        if (a[i].start != b[i].start || a[i].len != b[i].len || !same(a[i].col, b[i].col)) return false;
+    return true;
+}
+
+} // namespace pri
+
+namespace pri {
+
+struct Cfg { char group; const char* name; int v, w, pri; int slot_spr[8]; };
+// SPECIFICATION.md "Configurations": A1, A2, B1-B8, E0-E4. slot_spr[j] is the sprite in slot j.
+const Cfg kCfgs[15] = {
+    {'A', "A1", 0, 0, 0, {0,1,2,3,4,5,6,7}},
+    {'A', "A2", 0, 0, 0, {7,0,6,1,5,2,4,3}},
+    {'B', "B1", 0, 4, 0, {}}, {'B', "B2", 1, 0, 1, {}}, {'B', "B3", 2, 1, 1, {}}, {'B', "B4", 3, 2, 1, {}},
+    {'B', "B5", 4, 3, 1, {}}, {'B', "B6", 2, 2, 0, {}}, {'B', "B7", 2, 2, 1, {}}, {'B', "B8", 0, 2, 1, {}},
+    {'E', "E0", 0, 0, 0, {}}, {'E', "E1", 1, 1, 0, {}}, {'E', "E2", 2, 2, 0, {}},
+    {'E', "E3", 3, 3, 0, {}}, {'E', "E4", 4, 4, 0, {}},
+};
+constexpr int kB1 = 2, kB7 = 8;
+
+struct Refs {
+    bool ok = false;
+    long R[8] = {0,0,0,0,0,0,0,0};          // B/E: start of sprite i's run
+    long slot[8] = {0,0,0,0,0,0,0,0};       // A: start of slot j's run
+};
+
+struct CfgRes {
+    bool frame_found = false;
+    bool pre_frame = false, pre_tags = false, pre_sprites = false, pre_play = true, pre_vext = true;
+    std::string d_frame, d_tags, d_sprites, d_play, d_vext;
+    long compared = 0, wrong = 0, ungraded = 0, outside = 0;
+    std::string first_wrong, ungraded_seen;
+    std::map<int, int> rows_by_id;
+    size_t rows_total = 0;
+};
+
+// expected colour at lores-relative sample rel of a row with tag id (nullopt = the pages leave it open)
+std::optional<Col> expected(const Cfg& c, const Refs& rf, int id, long rel, int k) {
+    if (rel < 0 || rel >= 320L * k) return BG;                  // border margins
+    long x = rel / k;
+    if (x < 40) {                                               // tag region
+        int blk = (int)(x / 8);
+        if (blk == 0) return PF1C;
+        return ((id >> (4 - blk)) & 1) ? PF1C : BG;
+    }
+    auto in_run = [&](long s) { return rel >= s && rel < s + 16L * k; };
+    if (id == 0) return BG;
+    if (c.group == 'A') {
+        int best = -1;
+        for (int j = 0; j < 8; ++j) {
+            bool even = (j % 2) == 0;
+            if (id == 1 && !even) continue;                     // band E: only the even slots
+            if (id == 3 && even) continue;                      // band O: only the odd slots
+            if (in_run(rf.slot[j])) { int s = c.slot_spr[j]; if (best < 0 || s < best) best = s; }
+        }
+        if (id < 1 || id > 3) return std::nullopt;
+        return best >= 0 ? SC[best] : BG;
+    }
+    int sp = -1;
+    for (int i = 0; i < 8; ++i) if (in_run(rf.R[i])) sp = i;
+    if (c.group == 'E') {
+        if (id == 2) { if (sp >= 0 && sp / 2 < c.v) return SC[sp]; return PF1C; }
+        if (id == 6) return PF1C;
+        return std::nullopt;
+    }
+    // group B
+    if (sp >= 0 && id >= 1 && id <= 4) {
+        int g = sp / 2;
+        switch (id) {
+        case 1: return SC[sp];
+        case 2: return g < c.v ? SC[sp] : PF1C;
+        case 3: return g < c.w ? SC[sp] : PF2C;
+        default:
+            if (g < c.v && g < c.w) return SC[sp];
+            if (c.pri == 0 && g >= c.v) return PF1C;
+            if (c.pri == 1 && g >= c.w) return PF2C;
+            return std::nullopt;
+        }
+    }
+    switch (id) {
+    case 1: case 5: return BG;
+    case 2: case 6: return PF1C;
+    case 3: case 7: return PF2C;
+    case 4: case 8: return c.pri == 0 ? PF1C : PF2C;
+    default: return std::nullopt;
+    }
+}
+
+struct P1Out {
+    bool fixture_ok = false; std::string d_fixture;
+    int k = 0; bool k_ok = false;
+    bool window_ok = false; std::string d_window;
+    CfgRes cfg[15];
+    Refs refs[15];
+};
+
+P1Out analyze_p1(const Trace& t) {
+    P1Out o;
+    // ---- fixture: ticks and markers in order, one marker between t0 and t1 of each configuration
+    {
+        bool ok = true; std::string d;
+        for (size_t i = 0; i < t.tick.size(); ++i) {
+            if (!t.tick[i]) { ok = false; d += " tick" + std::to_string(i) + "=missing"; }
+            else if (i && t.tick[i-1] && t.tick[i] <= t.tick[i-1]) { ok = false; d += " tick" + std::to_string(i) + "=out-of-order"; }
+        }
+        for (int k = 0; k < 15; ++k) {
+            uint64_t m = t.mark[(size_t)k], t0 = t.tick[(size_t)(3*k)], t1 = t.tick[(size_t)(3*k+1)];
+            if (!m || !(t0 < m && m < t1)) { ok = false; d += " marker" + std::to_string(k) + "=not-between-t0-and-t1"; }
+        }
+        o.fixture_ok = ok; o.d_fixture = d.empty() ? "45 ticks in order, 15 markers each between its t0 and t1" : d;
+    }
+    std::vector<Row> raw[15];
+    int fidx[15];
+    int kmin = 0;
+    for (int k = 0; k < 15; ++k) {
+        fidx[k] = -1;
+        uint64_t t1 = t.tick[(size_t)(3*k+1)], t2 = t.tick[(size_t)(3*k+2)];
+        if (!t1 || !t2) continue;
+        fidx[k] = frame_at(t, (t1 + t2) / 2);
+        o.cfg[k].frame_found = fidx[k] >= 0;
+        if (fidx[k] < 0) continue;
+        raw[k] = raw_rows(t, fidx[k]);
+        for (const auto& r : raw[k]) if (!kmin || r.w0 < kmin) kmin = r.w0;
+    }
+    o.k = (kmin > 0 && kmin % 8 == 0) ? kmin / 8 : 0;
+    o.k_ok = o.k > 0;
+    // ---- window columns: block 0 is 8k wide in every row without a set tag bit, and s0 is one index everywhere
+    {
+        std::set<long> j0s; bool w_ok = o.k_ok; size_t n0 = 0, nrows = 0; std::string d;
+        for (int k = 0; k < 15; ++k)
+            for (auto& r : raw[k]) {
+                r.id = decode_id(t, r, o.k);
+                if (r.id < 0) continue;
+                ++nrows; j0s.insert(r.j0);
+                if (r.id == 0) { ++n0; if (r.w0 != 8 * o.k) { w_ok = false; d = "a row with id 0 has block 0 of " + std::to_string(r.w0) + " samples"; } }
+            }
+        if (n0 == 0) { w_ok = false; d += " no row with id 0"; }
+        if (j0s.size() != 1) { w_ok = false; d += " s0 takes " + std::to_string(j0s.size()) + " different values"; }
+        o.window_ok = w_ok;
+        o.d_window = "k=" + std::to_string(o.k) + " (kmin=" + std::to_string(kmin) + "), " + std::to_string(nrows) +
+                     " decoded rows, s0 values: " + std::to_string(j0s.size()) +
+                     (j0s.empty() ? "" : " first=" + std::to_string(*j0s.begin())) + (d.empty() ? "" : " --" + d);
+    }
+    // ---- per configuration
+    for (int c = 0; c < 15; ++c) {
+        CfgRes& R = o.cfg[c];
+        const Cfg& cf = kCfgs[c];
+        if (!R.frame_found) { R.d_frame = "no video frame holds the evaluated field"; continue; }
+        const int k = o.k;
+        // frame association: Copper fetches in the field, list c only, the list's end before the first bitplane fetch
+        {
+            uint64_t t1 = t.tick[(size_t)(3*c+1)], t2 = t.tick[(size_t)(3*c+2)];
+            uint32_t lo = kListBase + kListStep * (uint32_t)c, hi = lo + kListStep;
+            int planes = cf.group == 'E' ? 1 : 2;
+            uint32_t end_word = lo + 2u * (uint32_t)(4 + 4 * planes + 32);
+            size_t n = 0, outside = 0; uint64_t first_end = 0, first_plane = 0;
+            for (size_t i = 0; i < t.list_reads.cyc.size(); ++i) {
+                uint64_t cy = t.list_reads.cyc[i];
+                if (cy < t1 || cy >= t2) continue;
+                ++n;
+                uint32_t a = t.list_reads.addr[i];
+                if (a < lo || a >= hi) ++outside;
+                else if (a == end_word && !first_end) first_end = cy;
+            }
+            for (size_t i = 0; i < t.plane_reads.cyc.size(); ++i) {
+                uint64_t cy = t.plane_reads.cyc[i];
+                if (cy >= t1 && cy < t2) { first_plane = cy; break; }
+            }
+            R.pre_frame = n > 0 && outside == 0 && first_end && first_plane && first_end < first_plane;
+            R.d_frame = std::to_string(n) + " list reads in the field, " + std::to_string(outside) + " outside list " +
+                        std::to_string(c) + ", end WAIT first fetched at +" + (first_end ? std::to_string(first_end - t1) : "never") +
+                        ", first bitplane fetch at +" + (first_plane ? std::to_string(first_plane - t1) : "never");
+        }
+        // tags: every row decodes, bands in table order with the table's relative counts
+        std::vector<Row>& rows = raw[c];
+        std::vector<int> seq;
+        size_t undecoded = 0;
+        for (auto& r : rows) {
+            if (r.id < 0) ++undecoded;
+            else { R.rows_by_id[r.id]++; if (r.id != 0) seq.push_back(r.id); }
+        }
+        R.rows_total = rows.size();
+        {
+            std::vector<int> bands = cf.group == 'A' ? std::vector<int>{1,2,3}
+                                   : cf.group == 'B' ? std::vector<int>{1,2,3,4,5,6,7,8} : std::vector<int>{2,6};
+            bool ok = undecoded == 0 && !seq.empty() && std::is_sorted(seq.begin(), seq.end());
+            int n = R.rows_by_id.count(bands[0]) ? R.rows_by_id[bands[0]] : 0;
+            if (cf.group == 'E') n = R.rows_by_id.count(6) ? R.rows_by_id[6] : 0;
+            for (int b : bands) {
+                int cnt = R.rows_by_id.count(b) ? R.rows_by_id[b] : 0;
+                int want = n;
+                if (cf.group == 'B' && b == 5) want = n / 2;
+                if (cf.group == 'E' && b == 2) want = 2 * n;
+                if (cnt == 0 || cnt != want || (cf.group == 'B' && b == 5 && n % 2)) ok = false;
+            }
+            for (auto& kv : R.rows_by_id) if (kv.first != 0 && std::find(bands.begin(), bands.end(), kv.first) == bands.end()) ok = false;
+            R.pre_tags = ok;
+            std::string d = std::to_string(undecoded) + " undecodable rows; rows per id:";
+            for (auto& kv : R.rows_by_id) d += " " + std::to_string(kv.first) + ":" + std::to_string(kv.second);
+            R.d_tags = d;
+        }
+        // sprite references
+        Refs& rf = o.refs[c];
+        auto band_runs = [&](int id, bool& same_all, bool& any) {
+            std::vector<Run> first; same_all = true; any = false;
+            for (auto& r : rows) {
+                if (r.id != id) continue;
+                auto ru = runs_of(t, r, k);
+                if (!any) { first = ru; any = true; }
+                else if (!runs_equal(first, ru)) same_all = false;
+            }
+            return first;
+        };
+        if (k > 0) {
+            if (cf.group == 'A') {
+                bool s1, a1, s3, a3;
+                auto re = band_runs(1, s1, a1), ro = band_runs(3, s3, a3);
+                bool ok = a1 && a3 && s1 && s3 && re.size() == 4 && ro.size() == 4;
+                auto okrun = [&](const std::vector<Run>& v) {
+                    for (size_t i = 0; i < v.size(); ++i) {
+                        if (v[i].len != 16L * k) return false;
+                        if (i && v[i].start != v[i-1].start + 16L * k) return false;
+                        bool isc = false; for (auto& s : SC) if (same(s, v[i].col)) isc = true;
+                        if (!isc) return false;
+                    }
+                    return true;
+                };
+                if (ok) ok = okrun(re) && okrun(ro);
+                if (ok) for (int m = 0; m < 4; ++m) { rf.slot[2*m] = re[(size_t)m].start; rf.slot[2*m+1] = ro[(size_t)m].start; }
+                rf.ok = ok; R.pre_sprites = ok;
+                R.d_sprites = "band E: " + std::to_string(re.size()) + " runs" + (s1 ? "" : " (rows differ)") +
+                              ", band O: " + std::to_string(ro.size()) + " runs" + (s3 ? "" : " (rows differ)");
+            } else if (cf.group == 'B') {
+                bool s, a;
+                auto ru = band_runs(1, s, a);
+                bool ok = a && s && ru.size() == 8;
+                if (ok) for (int i = 0; i < 8; ++i) {
+                    if (ru[(size_t)i].len != 16L * k || !same(ru[(size_t)i].col, SC[i])) ok = false;
+                    if (i && ru[(size_t)i].start <= ru[(size_t)i-1].start) ok = false;
+                    rf.R[i] = ru[(size_t)i].start;
+                }
+                rf.ok = ok; R.pre_sprites = ok;
+                std::string d = "band S: " + std::to_string(ru.size()) + " runs" + (s ? "" : " (rows differ)") + ":";
+                for (auto& r : ru) d += " " + cs(r.col) + "@" + std::to_string(r.start) + "+" + std::to_string(r.len);
+                R.d_sprites = d;
+            } else {
+                R.pre_sprites = o.refs[kB1].ok;     // judged on B1's reference band
+                if (o.refs[kB1].ok) for (int i = 0; i < 8; ++i) rf.R[i] = o.refs[kB1].R[i];
+                rf.ok = o.refs[kB1].ok;
+                R.d_sprites = "reference runs of B1 reused";
+            }
+        }
+        // playfields present
+        if (cf.group == 'B' || cf.group == 'E') {
+            bool ok = k > 0; std::string d; int checked = 0;
+            for (auto& r : rows) {
+                int want = -1;
+                if (r.id == 6) want = 1; else if (cf.group == 'B' && r.id == 7) want = 2;
+                if (want < 0) continue;
+                ++checked;
+                for (long rel = 40L * k; rel < 320L * k && ok; ++rel) {
+                    auto cc = sample(t, r, rel);
+                    if (!cc || !same(*cc, want == 1 ? PF1C : PF2C)) { ok = false; d = "a row of id " + std::to_string(r.id) + " shows another colour at x=" + std::to_string(rel / k); }
+                }
+            }
+            if (checked == 0) ok = false;
+            R.pre_play = ok; R.d_play = std::to_string(checked) + " rows checked" + (d.empty() ? "" : "; " + d);
+        }
+        // vertical extent (B7)
+        if (c == kB7 && k > 0 && rf.ok) {
+            bool ok = true; int rows_in = 0, rows_after = 0; std::string d;
+            for (auto& r : rows) {
+                if (r.id >= 1 && r.id <= 4) {
+                    ++rows_in;
+                    for (int i = 0; i < 4 && ok; ++i)
+                        for (long rel = rf.R[i]; rel < rf.R[i] + 16L * k; ++rel) {
+                            auto cc = sample(t, r, rel);
+                            if (!cc || !same(*cc, SC[i])) { ok = false; d = "a row of id " + std::to_string(r.id) + " lacks sprite " + std::to_string(i); break; }
+                        }
+                } else if (r.id == 5) {
+                    ++rows_after;
+                    for (long rel = 40L * k; rel < 320L * k && ok; ++rel) {
+                        auto cc = sample(t, r, rel);
+                        if (!cc || !same(*cc, BG)) { ok = false; d = "a row of id 5 shows a colour"; }
+                    }
+                }
+            }
+            if (rows_in == 0 || rows_after == 0) ok = false;
+            R.pre_vext = ok; R.d_vext = std::to_string(rows_in) + " rows inside the sprites' lines, " + std::to_string(rows_after) + " rows of the band after VSTOP" + (d.empty() ? "" : "; " + d);
+        } else if (c == kB7) {
+            R.pre_vext = false; R.d_vext = "no sprite references";
+        }
+        // ---- the comparison itself, every sample of every decoded row
+        if (rf.ok && k > 0) {
+            for (auto& r : rows) {
+                if (r.id < 0) continue;
+                for (long rel = -8L * k; rel < 328L * k; ++rel) {
+                    auto got = sample(t, r, rel);
+                    if (!got) { ++R.outside; continue; }
+                    auto want = expected(cf, rf, r.id, rel, k);
+                    if (!want) {
+                        ++R.ungraded;
+                        if (R.ungraded_seen.empty()) R.ungraded_seen = "row id " + std::to_string(r.id) + " x=" + std::to_string(rel / k) + " shows " + cs(*got);
+                        continue;
+                    }
+                    ++R.compared;
+                    if (!same(*got, *want)) {
+                        ++R.wrong;
+                        if (R.first_wrong.empty())
+                            R.first_wrong = "row id " + std::to_string(r.id) + " x=" + std::to_string(rel / k) + " (sample " + std::to_string(rel) + ") shows " + cs(*got) + ", page says " + cs(*want);
+                    }
+                }
+            }
+        }
+    }
+    return o;
+}
+
+} // namespace pri
+
+namespace pri {
+
+// ---- P2: six planes and eight sprites in one row -------------------------------
+struct P2Out {
+    bool fixture_ok = false; std::string d_fixture;
+    int k = 0;
+    bool window_ok = false; std::string d_window;
+    bool pre_frame = false; std::string d_frame;
+    bool pre_tags = false; std::string d_tags;
+    bool pre_fetch = false; std::string d_fetch;
+    bool have_rows = false;
+    long compared = 0, wrong = 0;
+    std::string first_wrong;
+    size_t rows_band = 0;
+};
+
+P2Out analyze_p2(const Trace& t) {
+    P2Out o;
+    {
+        bool ok = t.tick.size() == 3 && t.mark.size() == 1;
+        for (size_t i = 0; ok && i < 3; ++i) if (!t.tick[i] || (i && t.tick[i] <= t.tick[i-1])) ok = false;
+        if (ok && !(t.tick[0] < t.mark[0] && t.mark[0] < t.tick[1])) ok = false;
+        o.fixture_ok = ok; o.d_fixture = ok ? "3 ticks in order, the marker between t0 and t1" : "ticks or marker missing or out of order";
+        if (!ok) return o;
+    }
+    const uint64_t t1 = t.tick[1], t2 = t.tick[2];
+    int fi = frame_at(t, (t1 + t2) / 2);
+    if (fi < 0) { o.d_frame = "no video frame holds the evaluated field"; return o; }
+    std::vector<Row> rows = raw_rows(t, fi);
+    int kmin = 0;
+    for (const auto& r : rows) if (!kmin || r.w0 < kmin) kmin = r.w0;
+    o.k = (kmin > 0 && kmin % 8 == 0) ? kmin / 8 : 0;
+    const int k = o.k;
+    {
+        std::set<long> j0s; bool ok = k > 0; size_t n0 = 0; std::string d;
+        for (auto& r : rows) {
+            r.id = decode_id(t, r, k);
+            if (r.id < 0) continue;
+            j0s.insert(r.j0);
+            if (r.id == 0) { ++n0; if (r.w0 != 8 * k) { ok = false; d = "a row with id 0 has block 0 of " + std::to_string(r.w0) + " samples"; } }
+        }
+        if (n0 == 0) { ok = false; d += " no row with id 0"; }
+        if (j0s.size() != 1) { ok = false; d += " s0 takes " + std::to_string(j0s.size()) + " different values"; }
+        o.window_ok = ok;
+        o.d_window = "k=" + std::to_string(k) + " (kmin=" + std::to_string(kmin) + "), " + std::to_string(rows.size()) + " rows" + (d.empty() ? "" : " --" + d);
+    }
+    // frame association and plane fetches
+    {
+        uint32_t lo = kListBase, hi = lo + kListStep, end_word = lo + 2u * (4 + 4 * 6 + 32);
+        size_t n = 0, outside = 0; uint64_t first_end = 0, first_plane = 0;
+        for (size_t i = 0; i < t.list_reads.cyc.size(); ++i) {
+            uint64_t cy = t.list_reads.cyc[i];
+            if (cy < t1 || cy >= t2) continue;
+            ++n;
+            uint32_t a = t.list_reads.addr[i];
+            if (a < lo || a >= hi) ++outside;
+            else if (a == end_word && !first_end) first_end = cy;
+        }
+        size_t per_plane[6] = {0,0,0,0,0,0};
+        for (size_t i = 0; i < t.plane_reads.cyc.size(); ++i) {
+            uint64_t cy = t.plane_reads.cyc[i];
+            if (cy < t1 || cy >= t2) continue;
+            if (!first_plane) first_plane = cy;
+            per_plane[(t.plane_reads.addr[i] - kP2Img) / kP2Step]++;
+        }
+        o.pre_frame = n > 0 && outside == 0 && first_end && first_plane && first_end < first_plane;
+        o.d_frame = std::to_string(n) + " list reads in the field, " + std::to_string(outside) + " outside the list, end WAIT first fetched at +" +
+                    (first_end ? std::to_string(first_end - t1) : "never") + ", first bitplane fetch at +" + (first_plane ? std::to_string(first_plane - t1) : "never");
+        bool all = true; std::string d = "reads per plane image:";
+        for (int p = 0; p < 6; ++p) { if (!per_plane[p]) all = false; d += " " + std::to_string(per_plane[p]); }
+        o.pre_fetch = all; o.d_fetch = d;
+    }
+    // tags: rows of id 1 present, no other non-zero id, nothing undecodable
+    size_t undecoded = 0; std::vector<int> seq;
+    for (auto& r : rows) { if (r.id < 0) ++undecoded; else if (r.id) seq.push_back(r.id); }
+    for (int s : seq) if (s != 1) undecoded += 1000;
+    o.rows_band = seq.size();
+    o.pre_tags = undecoded == 0 && !seq.empty();
+    o.d_tags = std::to_string(seq.size()) + " rows of id 1, " + std::to_string(undecoded) + " undecodable or foreign rows";
+    // ---- the comparison: sprite runs found by colour in the first row of the band
+    if (k <= 0 || seq.empty()) return o;
+    const Row* first = nullptr;
+    for (auto& r : rows) if (r.id == 1) { first = &r; break; }
+    if (!first) return o;
+    o.have_rows = true;
+    auto fr = runs_of(t, *first, k);
+    long R[8]; bool found[8];
+    for (int i = 0; i < 8; ++i) {
+        found[i] = false; R[i] = -1000000000L;
+        for (auto& ru : fr) if (same(ru.col, SC[i]) && ru.start < 272L * k) { R[i] = ru.start; found[i] = true; }
+    }
+    auto note_wrong = [&](const std::string& s) { ++o.wrong; if (o.first_wrong.empty()) o.first_wrong = s; };
+    for (int i = 0; i < 8; ++i) {
+        ++o.compared;
+        if (!found[i]) note_wrong("sprite " + std::to_string(i) + " (" + cs(SC[i]) + ") has no run in the band");
+        else {
+            bool len_ok = false; for (auto& ru : fr) if (ru.start == R[i] && same(ru.col, SC[i]) && ru.len == 16L * k) len_ok = true;
+            if (!len_ok) note_wrong("sprite " + std::to_string(i) + " is not one run of 16 lores pixels");
+            if (i && found[i-1] && R[i] <= R[i-1]) note_wrong("sprite " + std::to_string(i) + " is not to the right of sprite " + std::to_string(i-1));
+        }
+    }
+    for (auto& r : rows) {
+        if (r.id < 0) continue;
+        for (long rel = -8L * k; rel < 328L * k; ++rel) {
+            auto got = sample(t, r, rel);
+            if (!got) continue;
+            Col want = BG;
+            if (rel < 0 || rel >= 320L * k) want = BG;
+            else {
+                long x = rel / k;
+                if (x < 40) { int blk = (int)(x / 8); want = blk == 0 ? PF1C : (((r.id >> (4 - blk)) & 1) ? PF1C : BG); }
+                else if (r.id == 1) {
+                    if (x >= 272) want = P2C[(x - 272) / 8];
+                    else for (int i = 0; i < 8; ++i) if (found[i] && rel >= R[i] && rel < R[i] + 16L * k) want = SC[i];
+                }
+            }
+            ++o.compared;
+            if (!same(*got, want)) note_wrong("row id " + std::to_string(r.id) + " x=" + std::to_string(rel / k) + " (sample " + std::to_string(rel) + ") shows " + cs(*got) + ", page says " + cs(want));
+        }
+    }
+    return o;
+}
+
+// ---- running one program --------------------------------------------------------
+struct RunOut {
+    bool loaded = false, released = false;
+    std::optional<uint64_t> done;
+    P1Out p1;
+    P2Out p2;
+};
+
+RunOut run_p1(const std::string& bin, const nmh::Config& cfg, uint64_t budget) {
+    RunOut r;
+    nmh::NanomigHarness h(cfg);
+    r.loaded = h.load_program(bin) > 0;
+    if (!r.loaded) return r;
+    r.released = h.boot(kBootBudget).cpu_released;
+    r.done = h.run_until_write(kDoneAddr, kDoneValue, budget);
+    if (!r.done) return r;
+    Trace t = make_trace(h, 15, false);
+    r.p1 = analyze_p1(t);
+    return r;
+}
+
+RunOut run_p2(const std::string& bin, const nmh::Config& cfg, uint64_t budget) {
+    RunOut r;
+    nmh::NanomigHarness h(cfg);
+    r.loaded = h.load_program(bin) > 0;
+    if (!r.loaded) return r;
+    r.released = h.boot(kBootBudget).cpu_released;
+    r.done = h.run_until_write(kDoneAddr, kDoneValue, budget);
+    if (!r.done) return r;
+    Trace t = make_trace(h, 1, true);
+    r.p2 = analyze_p2(t);
+    return r;
+}
+
+} // namespace pri
+
+// ---- P1 and P2: the graded lines ------------------------------------------------
+static void grade_p1(Checks& checks, const std::string& tag, const pri::RunOut& r) {
+    using namespace pri;
+    checks.expect(r.loaded && r.released && r.done.has_value() && r.p1.fixture_ok,
+        "P1-FIXTURE-RUN " + tag + ": the program loaded, the CPU was released, the program reached DONE, and "
+        "the field ticks and configuration markers are in order [not graded -- apparatus check] (" + r.p1.d_fixture + ")");
+    if (!(r.loaded && r.released && r.done && r.p1.fixture_ok)) {
+        checks.record("P1 " + tag + ": NOT GRADED -- the fixture did not deliver the schedule");
+        return;
+    }
+    const P1Out& o = r.p1;
+    checks.note("P1 " + tag + " reference frame: k=" + std::to_string(o.k) + " output samples per lores pixel; " + o.d_window);
+    bool all_frame = true, all_tags = true, all_sprites = true, all_play = true;
+    std::string bad_frame, bad_tags, bad_sprites, bad_play;
+    for (int c = 0; c < 15; ++c) {
+        const CfgRes& R = o.cfg[c];
+        if (!R.pre_frame) { all_frame = false; bad_frame += std::string(" ") + kCfgs[c].name + "[" + R.d_frame + "]"; }
+        if (!R.pre_tags) { all_tags = false; bad_tags += std::string(" ") + kCfgs[c].name + "[" + R.d_tags + "]"; }
+        if (!R.pre_sprites) { all_sprites = false; bad_sprites += std::string(" ") + kCfgs[c].name + "[" + R.d_sprites + "]"; }
+        if (!R.pre_play) { all_play = false; bad_play += std::string(" ") + kCfgs[c].name + "[" + R.d_play + "]"; }
+        checks.note("P1 " + tag + " " + kCfgs[c].name + ": " + std::to_string(R.rows_total) + " rows, " + std::to_string(R.compared) +
+                    " samples compared, " + std::to_string(R.wrong) + " different, " + std::to_string(R.ungraded) + " left open by the pages" +
+                    (R.first_wrong.empty() ? "" : "; first difference: " + R.first_wrong) +
+                    (R.ungraded_seen.empty() ? "" : "; open sample: " + R.ungraded_seen));
+    }
+    checks.expect(all_frame,
+        "P1-PRE-FRAME " + tag + " [p.25]: in the evaluated field of every configuration every Copper fetch lies inside that "
+        "configuration's own list, and the list's ending WAIT is fetched before the first bitplane fetch" + (all_frame ? "" : " --" + bad_frame));
+    checks.expect(all_tags,
+        "P1-PRE-TAGS " + tag + " [p.213]: every output row with a tag decodes, and the bands appear in the order and with the "
+        "relative row counts of the band table in every configuration" + (all_tags ? "" : " --" + bad_tags));
+    checks.expect(o.window_ok,
+        "P1-PRE-WINDOW " + tag + " [p.59]: tag block 0 is exactly 8k samples wide and starts at one sample index in every "
+        "row of every evaluated field (" + o.d_window + ")");
+    checks.expect(all_sprites,
+        "P1-PRE-SPRITES " + tag + " [p.126]: in every reference band the sprite runs are present, 16k samples wide, "
+        "identical in every row and ordered left to right" + (all_sprites ? "" : " --" + bad_sprites));
+    checks.expect(all_play,
+        "P1-PRE-PLAYFIELDS " + tag + " [p.213]: in the bands with sprites absent, every column from x = 40 shows the playfield "
+        "the band sets" + (all_play ? "" : " --" + bad_play));
+    const CfgRes& B7 = o.cfg[kB7];
+    checks.expect(B7.pre_vext,
+        "P1-PRE-VEXTENT " + tag + " [p.107]: in B7 the sprites of groups 0 and 1 appear in every row of the bands inside their "
+        "VSTART-VSTOP lines and in no row of the band after VSTOP (" + B7.d_vext + ")");
+
+    auto gate = [&](char group, std::string& why) {
+        why.clear();
+        if (!r.p1.k_ok) why += " k";
+        if (!o.window_ok) why += " window";
+        for (int c = 0; c < 15; ++c) {
+            if (kCfgs[c].group != group) continue;
+            const CfgRes& R = o.cfg[c];
+            if (!R.pre_frame) why += std::string(" frame:") + kCfgs[c].name;
+            if (!R.pre_tags) why += std::string(" tags:") + kCfgs[c].name;
+            if (!R.pre_sprites) why += std::string(" sprites:") + kCfgs[c].name;
+            if (!R.pre_play) why += std::string(" playfields:") + kCfgs[c].name;
+        }
+        if (group == 'B' && !B7.pre_vext) why += " vextent";
+        if (group == 'E' && !o.cfg[kB1].pre_sprites) why += " B1-sprites";
+        return why.empty();
+    };
+    auto counts = [&](char group, long& cmp, long& wrong, std::string& detail) {
+        cmp = 0; wrong = 0; detail.clear();
+        for (int c = 0; c < 15; ++c) {
+            if (kCfgs[c].group != group) continue;
+            cmp += o.cfg[c].compared; wrong += o.cfg[c].wrong;
+            if (o.cfg[c].wrong) detail += std::string(" ") + kCfgs[c].name + ":" + std::to_string(o.cfg[c].wrong);
+        }
+    };
+    bool all_gated = true; long all_cmp = 0, all_wrong = 0;
+    struct Grp { bool graded; long cmp, wrong; std::string why, detail; };
+    auto grp = [&](char g) {
+        Grp x;
+        bool ok = gate(g, x.why);
+        counts(g, x.cmp, x.wrong, x.detail);
+        x.graded = ok && x.cmp > 0;
+        if (!x.graded) { x.why = "NOT GRADED -- precondition(s) failed:" + x.why + (x.cmp == 0 ? " (no sample compared)" : ""); all_gated = false; }
+        else { all_cmp += x.cmp; all_wrong += x.wrong; }
+        return x;
+    };
+    auto tail = [&](const Grp& x) {
+        return std::to_string(x.cmp) + " samples compared, " + std::to_string(x.wrong) + " different" + (x.detail.empty() ? "" : " (" + x.detail + " )");
+    };
+    const Grp ga = grp('A'), gb = grp('B'), ge = grp('E');
+    if (!ga.graded) checks.record("P1-GROUP-A " + tag + ": " + ga.why);
+    else checks.expect(ga.wrong == 0,
+        "P1-GROUP-A " + tag + ": sprite against sprite: in every sample of the configurations A1 and A2 the lower-numbered of the "
+        "overlapping sprites shows [p.207] -- " + tail(ga));
+    if (!gb.graded) checks.record("P1-GROUP-B " + tag + ": " + gb.why);
+    else checks.expect(gb.wrong == 0,
+        "P1-GROUP-B " + tag + ": sprites against dual playfields: in every sample of B1-B8 the colour of the object in front shows, "
+        "as Table 7-2 and PF2PRI order them [p.210, p.211] -- " + tail(gb));
+    if (!ge.graded) checks.record("P1-GROUP-E " + tag + ": " + ge.why);
+    else checks.expect(ge.wrong == 0,
+        "P1-GROUP-E " + tag + ": sprites against a single playfield: in every sample of E0-E4 the colour of the object in front shows, "
+        "as Table 7-2 orders them [p.210] -- " + tail(ge));
+    if (!all_gated) {
+        checks.record("P1-COLOUR-OF-HIGHEST-PRIORITY " + tag + ": NOT GRADED -- a group above was not graded");
+    } else {
+        checks.expect(all_wrong == 0,
+            "P1-COLOUR-OF-HIGHEST-PRIORITY " + tag + " opus:7-cd.c3 sol:7-collision.c5 [p.213]: at every pixel of every row of the evaluated field "
+            "of all fifteen configurations the colour of the highest-priority object is displayed, and the background colour where there is none -- " +
+            std::to_string(all_cmp) + " samples compared, " + std::to_string(all_wrong) + " different");
+    }
+}
+
+static void grade_p2(Checks& checks, const std::string& tag, const pri::RunOut& r) {
+    checks.expect(r.loaded && r.released && r.done.has_value() && r.p2.fixture_ok,
+        "P2-FIXTURE-RUN " + tag + ": the program loaded, the CPU was released, the program reached DONE, and the field ticks "
+        "and the marker are in order [not graded -- apparatus check] (" + r.p2.d_fixture + ")");
+    if (!(r.loaded && r.released && r.done && r.p2.fixture_ok)) {
+        checks.record("P2 " + tag + ": NOT GRADED -- the fixture did not deliver the schedule");
+        return;
+    }
+    const pri::P2Out& o = r.p2;
+    checks.expect(o.pre_frame,
+        "P2-PRE-FRAME " + tag + " [p.25]: in the evaluated field every Copper fetch lies inside the configuration's own list, and the "
+        "list's ending WAIT is fetched before the first bitplane fetch (" + o.d_frame + ")");
+    checks.expect(o.pre_tags,
+        "P2-PRE-TAGS " + tag + " [p.213]: the rows of the band decode to tag id 1 and every other row to id 0 (" + o.d_tags + ")");
+    checks.expect(o.window_ok,
+        "P2-PRE-WINDOW " + tag + " [p.59]: tag block 0 is exactly 8k samples wide and starts at one sample index in every row (" + o.d_window + ")");
+    checks.expect(o.pre_fetch,
+        "P2-PRE-PLANE-FETCH " + tag + " [p.213]: the bitplane fetches of the evaluated field read from the image of each of the six planes (" + o.d_fetch + ")");
+    if (!(o.pre_frame && o.pre_tags && o.window_ok && o.pre_fetch && o.have_rows)) {
+        checks.record("P2-COMBINE " + tag + ": NOT GRADED -- a precondition failed");
+        return;
+    }
+    checks.note("P2 " + tag + ": " + std::to_string(o.rows_band) + " rows of the band, " + std::to_string(o.compared) + " samples compared, " +
+                std::to_string(o.wrong) + " different" + (o.first_wrong.empty() ? "" : "; first difference: " + o.first_wrong));
+    checks.expect(o.wrong == 0,
+        "P2-COMBINE " + tag + " opus:7-cd.c2 [p.213]: every row of the band shows the contributions of all eight sprites (SC0-SC7, 16 lores pixels "
+        "each, left to right) and of all six bitplanes (one block each, in the colour of that plane alone), and background elsewhere -- " +
+        std::to_string(o.compared) + " samples compared, " + std::to_string(o.wrong) + " different");
+}
+
+static void run_pri_section(Checks& checks, const std::string& dir, const std::string& mv) {
+    struct Combo { const char* label; bool ecs, ntsc; };
+    std::vector<Combo> combos = {{"OCS-PAL", false, false}, {"ECS-PAL", true, false}, {"OCS-NTSC", false, true}, {"ECS-NTSC", true, true}};
+    const bool mutated = !mv.empty();
+    for (const auto& combo : combos) {
+        if (mutated && !(combo.ecs && !combo.ntsc)) continue;
+        const std::string std_name = combo.ntsc ? "ntsc" : "pal";
+        const std::string tag = std::string(combo.label) + (mutated ? " [" + mv + "]" : "");
+        if (!mutated || mv.rfind("P1-", 0) == 0) {
+            std::string bin = dir + "/prog_pri_" + std_name + (mutated ? "_" + mv.substr(3) : "") + ".bin";
+            auto lower = [](std::string s) { for (auto& ch : s) ch = (char)std::tolower((unsigned char)ch); return s; };
+            if (mutated) bin = dir + "/prog_pri_pal_" + lower(mv.substr(3)) + ".bin";
+            pri::RunOut r = pri::run_p1(bin, cfg_for(combo.ecs, combo.ntsc), 34'000'000);
+            grade_p1(checks, tag, r);
+        }
+        if (!mutated || mv.rfind("P2-", 0) == 0) {
+            auto lower = [](std::string s) { for (auto& ch : s) ch = (char)std::tolower((unsigned char)ch); return s; };
+            std::string bin = dir + "/prog_p2_" + std_name + ".bin";
+            if (mutated) bin = dir + "/prog_p2_pal_" + lower(mv.substr(3)) + ".bin";
+            pri::RunOut r = pri::run_p2(bin, cfg_for(combo.ecs, combo.ntsc), 12'000'000);
+            grade_p2(checks, tag, r);
+        }
+    }
+}
+
 int main(int argc, char** argv) {
     const std::string dir = argc > 1 ? argv[1] : ".";
     std::printf("CORE: %s\n", NMH_XSTR(NANOMIG_CORE_NAME));
@@ -329,17 +1149,22 @@ int main(int argc, char** argv) {
 
     const char* mutate_env = std::getenv("NMH_MUTATE");
     const std::string mv = mutate_env ? mutate_env : "";
+    const bool pri_mut = mv.rfind("P1-", 0) == 0 || mv.rfind("P2-", 0) == 0;
 
     // ================= P3 =================
-    // Runs OCS-PAL and ECS-PAL (both required by the run matrix). NTSC is
-    // not run here -- see the build's own report (budget).
+    // Runs OCS and ECS, PAL and NTSC (the run matrix). NTSC is selected
+    // through chipset_config (cfg_for); every mutation selector applies to
+    // the ECS-PAL combination only, so a mutated run skips the NTSC ones.
     struct Combo { const char* label; bool ecs; bool ntsc; const char* bin; };
     Combo combos[] = {
-        {"OCS-PAL", false, false, "/prog_lp_ocs_pal.bin"},
-        {"ECS-PAL", true,  false, "/prog_lp_ecs_pal.bin"},
+        {"OCS-PAL",  false, false, "/prog_lp_ocs_pal.bin"},
+        {"ECS-PAL",  true,  false, "/prog_lp_ecs_pal.bin"},
+        {"OCS-NTSC", false, true,  "/prog_lp_ocs_ntsc.bin"},
+        {"ECS-NTSC", true,  true,  "/prog_lp_ecs_ntsc.bin"},
     };
 
     for (const auto& combo : combos) {
+        if (pri_mut || mv.rfind("P4-", 0) == 0 || (combo.ntsc && !mv.empty())) continue;
         std::string bin = dir + combo.bin;
         std::string mutbin = bin;
         std::vector<uint64_t> extra_trigger_offset; // unused placeholder
@@ -602,10 +1427,9 @@ int main(int argc, char** argv) {
             checks.note("P3-BEAMCON0 " + tag + " period: pre=" + std::to_string(pre_period) +
                         " post=" + std::to_string(post_period) + " cycles (bit 5 written opposite "
                         "the selected standard)");
-            checks.record("P3-PRE-PERIOD-MUTATION " + tag + " [p.305,p.24]: unfalsifiable at this "
-                "boundary -- the measured field period (above) does not change under this mutation, "
-                "so this contrast cannot be made to fail the unchanged-period precondition check on "
-                "this RTL");
+            checks.expect(have && std::abs(pre_period - post_period) <= 128,
+                "P3-PRE-PERIOD " + tag + " [p.24]: the field period measured before the BEAMCON0 "
+                "write equals the period measured after it");
         } else {
             checks.record("P3-PRE-PERIOD " + tag + ": not applicable -- BEAMCON0 does not exist "
                 "under OCS (p.305)");
@@ -695,7 +1519,7 @@ int main(int argc, char** argv) {
     }
 
     // ================= P4 (ECS, PAL) =================
-    {
+    if (!pri_mut && mv.rfind("P3-", 0) != 0) {
         constexpr uint32_t kP4CopE250 = kCopList + 84;
         constexpr uint32_t kP4MainTick = 0x0C1100; // 5 words: fields F-1,F0,F1,F2,F3
         nmh::Config cfg = cfg_for(/*ecs=*/true, /*ntsc=*/false);
@@ -704,6 +1528,10 @@ int main(int argc, char** argv) {
         std::string used_bin = dir + base_bin;
         if (mv == "P4-NOLPENDIS") used_bin = dir + "/prog_p4_nolpendis.bin";
         if (mv == "P4-F3LPENDIS") used_bin = dir + "/prog_p4_f3lpendis.bin";
+        if (mv == "P4-DDRA") used_bin = dir + "/prog_p4_ddraforce.bin";
+        if (mv == "P4-ANCHOR") used_bin = dir + "/prog_p4_anchormut.bin";
+        if (mv == "P4-PERIOD") used_bin = dir + "/prog_p4_periodmut.bin";
+        if (mv == "P4-SHORT") used_bin = dir + "/prog_p4_shortspin.bin";
         std::string tag = std::string("ECS-PAL") + (used_bin != dir + base_bin ? " [" + mv + "]" : "");
 
         DryResult dry = dry_run(used_bin, cfg);
@@ -758,7 +1586,8 @@ int main(int argc, char** argv) {
                     "P4-PRE-ANCHOR " + tag + " [p.22]: t(A2)-t(A1) equals 96 colour clocks within 2 "
                     "in every field (F-1..F3)");
 
-                // Precondition: reference-frame bound on X/Y (also P4_SPIN's own guard).
+                // Precondition: reference-frame bound on X/Y (also the guard of the
+                // delay that prog_p4.s calibrates in the run).
                 auto find_store = [&](uint32_t byte_addr) -> uint64_t {
                     auto w = write_cycles_at(run.log, byte_addr);
                     return w.empty() ? 0 : w.front();
@@ -774,6 +1603,33 @@ int main(int argc, char** argv) {
                               y_store > f1_a1 + 156u * 228u * kCck &&
                               (f2_a1 == 0 || y_store < f2_a1 - 100u * 228u * kCck) &&
                               xp_store > f3_a1 + 156u * 228u * kCck;
+                {
+                    // CALIB (prog_p4.s): spin iterations over the 20 lines between
+                    // the E110 and E130 COPER signals, measured in F0 and used as
+                    // the delay after E250. Read back from the program's own stores.
+                    constexpr uint32_t kP4Calib = 0x0C1180;
+                    uint32_t hi = 0, lo = 0;
+                    bool have_hi = false, have_lo = false;
+                    for (const auto& a : run.log) {
+                        if (!a.is_write) continue;
+                        if (a.word_addr == word_addr(kP4Calib))     { hi = a.data; have_hi = true; }
+                        if (a.word_addr == word_addr(kP4Calib + 2)) { lo = a.data; have_lo = true; }
+                    }
+                    auto e110 = read_cycles_at(run.log, kCopList + 36);
+                    auto e130 = read_cycles_at(run.log, kCopList + 44);
+                    auto e250 = read_cycles_at(run.log, kP4CopE250);
+                    std::string span = "?";
+                    if (e110.size() > kPhantomPasses + 1 && e130.size() > kPhantomPasses + 1)
+                        span = std::to_string(e130[kPhantomPasses + 1] - e110[kPhantomPasses + 1]);
+                    std::string delay = "?";
+                    if (e250.size() > kPhantomPasses + 2 && x_store > e250[kPhantomPasses + 2])
+                        delay = std::to_string(x_store - e250[kPhantomPasses + 2]);
+                    checks.note("P4 " + tag + " delay calibration: " +
+                                (have_hi && have_lo ? std::to_string((hi << 16) | lo) : std::string("?")) +
+                                " poll iterations measured over the 20 lines E110..E130 (F0), which the "
+                                "Copper fetches " + span + " cycles apart; the delay after E250 in F1 "
+                                "lasted " + delay + " cycles to X's store");
+                }
                 checks.note("P4 " + tag + " reference frame: x_store-f1_a1=" +
                             std::to_string(x_store - f1_a1) + " cycles, needs > " +
                             std::to_string(156u*228u*kCck));
@@ -843,6 +1699,16 @@ int main(int argc, char** argv) {
                     "P4 " + tag + " opus:7-appC-beamcon0.c4,sol:7-appC-beamcon0.c4 [p.305]: with "
                     "LPENDIS set, the pair (V8,V7-0) of X is not (0,100)");
 
+                if (mv == "P4-DDRA") {
+                    checks.record("P4-PRE-DDRA-MUTATION " + tag + ": unfalsifiable at this boundary -- the program "
+                        "stores CIAADDRA before the fix-or-force branch (p.339 step order), so the stored word is the "
+                        "value the hardware held before that branch ran, whichever branch follows");
+                }
+                if (mv == "P4-PERIOD") {
+                    checks.record("P4-PRE-PERIOD-MUTATION " + tag + ": every BEAMCON0 write had bit 5 clear (the other "
+                        "standard); the period check above " + std::string(period_ok ? "still holds, so this contrast "
+                        "cannot fail it on this RTL (the same outcome P3 measures)" : "fails, as p.24 and p.305 predict"));
+                }
                 if (mv == "P4-NOLPENDIS") {
                     checks.record("P4-MUTATION " + tag + ": unfalsifiable at this boundary -- "
                         "X is measured to read the same live value whether E60 writes $2020 or "
@@ -865,6 +1731,9 @@ int main(int argc, char** argv) {
             }
         }
     }
+
+    // ================= P1 and P2 =================
+    if (mv.empty() || pri_mut) run_pri_section(checks, dir, mv);
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
