@@ -914,7 +914,11 @@ M-H-00 run; the normal run ignores it.
 8. **R1.** While the CPU is held in reset the RAM port reads word address 0;
    the check starts at the first read of a reset vector and takes the first
    Chip memory read after the vector reads. **R2** is evaluated on the
-   register list and on the Copper list as the run ended.
+   register list and on the Copper list as the run ended. R2 reads the
+   register list because it is the only path by which prog_main.s writes a
+   custom register. The prologue of RP-1
+   (prog_pro.s) writes COP1LC in code, and R2 is not graded there: the R1-R
+   contrast prints R2-R PASS.
 9. **C5.** The expected length of a sprite is the page's: pixels times
    nanoseconds per pixel of the proposition's cell; for the W runs it is the
    widest sprite, 64 pixels of 140 ns.
@@ -928,7 +932,14 @@ M-H-00 run; the normal run ignores it.
     lines), which end above the band. The contrasts of `BANDS-A`, `BANDS-B` and
     `SEGS-R` remove the sprites 6 and 7 (A), 7 (B) and 7 (R) from the structures:
     their lines hold no data. The contrast of `C6-B` ends the Copper list with its
-    end-of-list WAIT after band 9's MOVE.
+    end-of-list WAIT after band 9's MOVE. CP-3, CP-4 and CP-5 also move a
+    neighbouring precondition in some groups, in the groups other than the case
+    the specification names (M-S-01 for CP-3, M-L-00 for CP-5) and, for CP-4,
+    in every group: CP-3 moves C7 in W, B and R; CP-4 moves C5 in M, W, A, B
+    and R, and BANDS in A and B or SEGS in R; CP-5 moves BANDS in A and B or
+    SEGS in R. The records of these selectors list the lines under "Also
+    printing FAIL"; the line under test fails through its own clause in each of
+    them.
 11. **C6.** The addresses of the sixteen MOVE instructions are those of the
     case's own list (the first band's WAIT is $4007,$FFFE; band b's MOVE lies
     4b + 2 words after it); the check reads the fetches of the graded frame, in
@@ -942,7 +953,6 @@ the CORE line.
 
 ```text
 u = 1 samples per 70 ns of display, r = 2 rows per beam line (M-H-00 calibration rows)
-calibration rows: 16 (HIRES, 8r), 32 (LORES, 16r), 8 (SHRES)
 P6 solid-row widths in pixels of 140 ns: W-00 16, W-01 32, W-10 32, W-11 64
 P7 cell AW-01: band 0 row 0 shows the groups [17,18,19,20,21,22,23,24,19,0,19,28,31,28,31,0] where colour indices [17,18,19,20,21,22,23,24,17,18,19,20,21,22,23,24] are expected
 P7 cell AW-10: band 0 row 0 shows the groups [17,18,19,20,21,22,23,24,19,0,19,28,31,28,31,0] where colour indices [17,18,19,20,21,22,23,24,17,18,19,20,21,22,23,24] are expected
