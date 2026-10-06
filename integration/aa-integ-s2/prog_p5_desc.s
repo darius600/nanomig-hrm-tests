@@ -1,2 +1,2 @@
-TOUCH equ $110020
+DESC equ 1
         include "prog_p5.s"

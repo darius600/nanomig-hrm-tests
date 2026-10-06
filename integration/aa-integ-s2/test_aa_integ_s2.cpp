@@ -15,19 +15,21 @@
 //
 // NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
 //
-// Kinds: stimulus changes what a program writes, implementation runs the private build of SPECIFICATION.md 6.6, none is a line no run changes.
+// Kinds: oracle changes the object a line reads (the runs keep make_config()), stimulus changes what a program or a register list
+// writes (on the private build of SPECIFICATION.md 6.6 where the record says so), implementation runs a copy of the chip set (the private
+// build of 6.6), none is a line no run changes.
 // MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5
-// MUTATION P1-CONFIG stimulus red NMH_MUTATE=P1-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P1-CONFIG; NOT GRADED 5; fx68k: FAIL P1-CONFIG; NOT GRADED 5
+// MUTATION P1-CONFIG oracle red NMH_MUTATE=P1-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P1-CONFIG; NOT GRADED 5; fx68k: FAIL P1-CONFIG; NOT GRADED 5
 // MUTATION P1-ANCHOR stimulus red NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5
 // MUTATION P1-FINISHED stimulus red NMH_MUTATE=P1-FINISHED: BLTSIZE $00C2 (height 3) in place of $0082; TG68K: FAIL P1-FINISHED; NOT GRADED 5; fx68k: FAIL P1-FINISHED; NOT GRADED 5
-// MUTATION P1-INC stimulus red NMH_MUTATE=P1-INC: a CPU read of byte $0E0020 right after every BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P1-FINISHED, P1-INC; NOT GRADED 5; fx68k: FAIL P1-FINISHED, P1-INC; NOT GRADED 5
+// MUTATION P1-INC stimulus red NMH_MUTATE=P1-INC: the second blit is descending (BLTCON1 bit 1) with its four pointers $40 higher: its accesses stay in the channel regions with step -2, so the step is no longer one constant (prog_p1_desc); TG68K: FAIL P1-INC; NOT GRADED 5; fx68k: FAIL P1-INC; NOT GRADED 5
 // MUTATION P1-A stimulus red NMH_MUTATE=P1-A: BLTAMOD written 28 in place of 24; TG68K: FAIL P1-A, P1; fx68k: FAIL P1-A, P1
 // MUTATION P1-B stimulus red NMH_MUTATE=P1-B: the pointer written to BLTBPTH and BLTBPTL is $0D0100 in place of $0D0000; TG68K: FAIL P1-B, P1; fx68k: FAIL P1-B, P1
 // MUTATION P1-C stimulus red NMH_MUTATE=P1-C: BLTCMOD written 12 in place of 8; TG68K: FAIL P1-C, P1; fx68k: FAIL P1-C, P1
 // MUTATION P1-D stimulus red NMH_MUTATE=P1-D: the pointer written to BLTDPTH and BLTDPTL is $0F0100 in place of $0F0000; TG68K: FAIL P1-A, P1-B, P1-C, P1-D, P1; fx68k: FAIL P1-A, P1-B, P1-C, P1-D, P1
 // MUTATION P1 stimulus red NMH_MUTATE=P1: the values written to BLTCMOD and BLTAMOD swapped (24 and 8); TG68K: FAIL P1-A, P1-C, P1; fx68k: FAIL P1-A, P1-C, P1
 // MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P2-FIXTURE; NOT GRADED 4; fx68k: FAIL P2-FIXTURE; NOT GRADED 4
-// MUTATION P2-CONFIG stimulus red NMH_MUTATE=P2-CONFIG: the harness configuration of the run selects memory_config 0x00 in place of 0x03; TG68K: FAIL P2-CONFIG; NOT GRADED 4; fx68k: FAIL P2-CONFIG; NOT GRADED 4
+// MUTATION P2-CONFIG oracle red NMH_MUTATE=P2-CONFIG: the Config object the line reads is set to memory_config 0x00 in place of 0x03; the runs of the proposition are still built from make_config(); TG68K: FAIL P2-CONFIG; NOT GRADED 4; fx68k: FAIL P2-CONFIG; NOT GRADED 4
 // MUTATION P2-MAP stimulus red NMH_MUTATE=P2-MAP: the second pointer value $0AAAAA replaced by $0C0000, an address of the results area; TG68K: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4
 // MUTATION P2-ANCHOR stimulus red NMH_MUTATE=P2-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2-ANCHOR; NOT GRADED 4; fx68k: FAIL P2-ANCHOR; NOT GRADED 4
 // MUTATION P2-FINISHED stimulus red NMH_MUTATE=P2-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-FINISHED; NOT GRADED 4
@@ -36,43 +38,43 @@
 // MUTATION P2-PTH5 stimulus red NMH_MUTATE=P2-PTH5: PTH written $0025 in place of $0035 in the four contrast blits; TG68K: FAIL P2-PTH5, P2; fx68k: FAIL P2-PTH5, P2
 // MUTATION P2 stimulus red NMH_MUTATE=P2: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2
 // MUTATION P3-FIXTURE stimulus red NMH_MUTATE=P3-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P3-FIXTURE; NOT GRADED 3; fx68k: FAIL P3-FIXTURE; NOT GRADED 3
-// MUTATION P3-CONFIG stimulus red NMH_MUTATE=P3-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P3-CONFIG; NOT GRADED 3; fx68k: FAIL P3-CONFIG; NOT GRADED 3
+// MUTATION P3-CONFIG oracle red NMH_MUTATE=P3-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P3-CONFIG; NOT GRADED 3; fx68k: FAIL P3-CONFIG; NOT GRADED 3
 // MUTATION P3-ANCHOR stimulus red NMH_MUTATE=P3-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P3-ANCHOR; NOT GRADED 3; fx68k: FAIL P3-ANCHOR; NOT GRADED 3
 // MUTATION P3-FINISHED stimulus red NMH_MUTATE=P3-FINISHED: BLTSIZE $00C3 (height 3) in place of $0083; TG68K: FAIL P3-FINISHED; NOT GRADED 3; fx68k: FAIL P3-FINISHED; NOT GRADED 3
 // MUTATION P3-ASC stimulus red NMH_MUTATE=P3-ASC: channel A's pointer $0E0200 in place of $0E0100 in the ascending blit; TG68K: FAIL P3-ASC, P3; fx68k: FAIL P3-ASC, P3
 // MUTATION P3-DESC stimulus red NMH_MUTATE=P3-DESC: channel A's pointer $0E0200 in place of $0E0100 in the descending blit; TG68K: FAIL P3-DESC, P3; fx68k: FAIL P3-DESC, P3
 // MUTATION P3 stimulus red NMH_MUTATE=P3: channel A's pointer $0E0200 in place of $0E0100 in both blits; TG68K: FAIL P3-ASC, P3-DESC, P3; fx68k: FAIL P3-ASC, P3-DESC, P3
 // MUTATION P4-FIXTURE stimulus red NMH_MUTATE=P4-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P4-FIXTURE; NOT GRADED 5; fx68k: FAIL P4-FIXTURE; NOT GRADED 5
-// MUTATION P4-CONFIG stimulus red NMH_MUTATE=P4-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P4-CONFIG; NOT GRADED 5; fx68k: FAIL P4-CONFIG; NOT GRADED 5
+// MUTATION P4-CONFIG oracle red NMH_MUTATE=P4-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P4-CONFIG; NOT GRADED 5; fx68k: FAIL P4-CONFIG; NOT GRADED 5
 // MUTATION P4-ANCHOR stimulus red NMH_MUTATE=P4-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P4-ANCHOR; NOT GRADED 5; fx68k: FAIL P4-ANCHOR; NOT GRADED 5
 // MUTATION P4-FINISHED stimulus red NMH_MUTATE=P4-FINISHED: BLTEN clear in the run that must have finished its first blit; TG68K: FAIL P4-FINISHED; NOT GRADED 5; fx68k: FAIL P4-FINISHED; NOT GRADED 5
-// MUTATION P4-INC stimulus red NMH_MUTATE=P4-INC: a CPU read of byte $0E0020 right after every BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P4-FINISHED, P4-INC; NOT GRADED 5; fx68k: FAIL P4-FINISHED, P4-INC; NOT GRADED 5
+// MUTATION P4-INC stimulus red NMH_MUTATE=P4-INC: a CPU read of byte $0E0020 right after every BLTSIZE write adds an access to channel A's region: the first blit then has no line of W accesses per channel and no step is measured, so the line is red through the access count; the constant-step clause has no mutation of its own; TG68K: FAIL P4-FINISHED, P4-INC; NOT GRADED 5; fx68k: FAIL P4-FINISHED, P4-INC; NOT GRADED 5
 // MUTATION P4-A stimulus red NMH_MUTATE=P4-A: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
 // MUTATION P4-B stimulus red NMH_MUTATE=P4-B: BLTBMOD written 4 in place of -2 in the first blit; TG68K: FAIL P4-B, P4; fx68k: FAIL P4-B, P4
 // MUTATION P4-C stimulus red NMH_MUTATE=P4-C: BLTCMOD written 4 in place of 0 in the first blit; TG68K: FAIL P4-C, P4; fx68k: FAIL P4-C, P4
 // MUTATION P4-D stimulus red NMH_MUTATE=P4-D: BLTDMOD written 14 in place of 10 in the first blit; TG68K: FAIL P4-D, P4; fx68k: FAIL P4-D, P4
 // MUTATION P4 stimulus red NMH_MUTATE=P4: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
 // MUTATION P5-FIXTURE stimulus red NMH_MUTATE=P5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P5-FIXTURE; NOT GRADED 5; fx68k: FAIL P5-FIXTURE; NOT GRADED 5
-// MUTATION P5-CONFIG stimulus red NMH_MUTATE=P5-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P5-CONFIG; NOT GRADED 5; fx68k: FAIL P5-CONFIG; NOT GRADED 5
+// MUTATION P5-CONFIG oracle red NMH_MUTATE=P5-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P5-CONFIG; NOT GRADED 5; fx68k: FAIL P5-CONFIG; NOT GRADED 5
 // MUTATION P5-REGIONS stimulus red NMH_MUTATE=P5-REGIONS: the modulo $3FFE of the set replaced by $7FFE; TG68K: FAIL P5-REGIONS; NOT GRADED 5; fx68k: FAIL P5-REGIONS; NOT GRADED 5
 // MUTATION P5-ANCHOR stimulus red NMH_MUTATE=P5-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P5-ANCHOR; NOT GRADED 5; fx68k: FAIL P5-ANCHOR; NOT GRADED 5
 // MUTATION P5-FINISHED stimulus red NMH_MUTATE=P5-FINISHED: BLTSIZE $0142 (height 5) in place of $0102; TG68K: FAIL P5-FINISHED; NOT GRADED 5; fx68k: FAIL P5-FINISHED; NOT GRADED 5
-// MUTATION P5-INC stimulus red NMH_MUTATE=P5-INC: a CPU read of byte $110020 right after every BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P5-FINISHED, P5-INC; NOT GRADED 5; fx68k: FAIL P5-FINISHED, P5-INC; NOT GRADED 5
-// MUTATION P5-A stimulus red NMH_MUTATE=P5-A: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
-// MUTATION P5-B stimulus red NMH_MUTATE=P5-B: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
-// MUTATION P5-C stimulus red NMH_MUTATE=P5-C: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
-// MUTATION P5-D stimulus red NMH_MUTATE=P5-D: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
+// MUTATION P5-INC stimulus red NMH_MUTATE=P5-INC: the third blit is descending (BLTCON1 bit 1) with its four pointers $10 higher: its accesses stay in the channel regions with step -2, so the step is no longer one constant (prog_p5_desc); TG68K: FAIL P5-INC; NOT GRADED 5; fx68k: FAIL P5-INC; NOT GRADED 5
+// MUTATION P5-A stimulus red NMH_MUTATE=P5-A: the modulo of channel A in the first blit is $0006 in place of $0000; TG68K: FAIL P5-A, P5; fx68k: FAIL P5-A, P5
+// MUTATION P5-B stimulus red NMH_MUTATE=P5-B: the modulo of channel B in the first blit is $0008 in place of $0006; TG68K: FAIL P5-B, P5; fx68k: FAIL P5-B, P5
+// MUTATION P5-C stimulus red NMH_MUTATE=P5-C: the modulo of channel C in the first blit is $0004 in place of $FFFC; TG68K: FAIL P5-C, P5; fx68k: FAIL P5-C, P5
+// MUTATION P5-D stimulus red NMH_MUTATE=P5-D: the modulo of channel D in the first blit is $3FFC in place of $3FFE; TG68K: FAIL P5-D, P5; fx68k: FAIL P5-D, P5
 // MUTATION P5 stimulus red NMH_MUTATE=P5: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
 // MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P6-FIXTURE; NOT GRADED 3; fx68k: FAIL P6-FIXTURE; NOT GRADED 3
-// MUTATION P6-CONFIG stimulus red NMH_MUTATE=P6-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P6-CONFIG; NOT GRADED 3; fx68k: FAIL P6-CONFIG; NOT GRADED 3
+// MUTATION P6-CONFIG oracle red NMH_MUTATE=P6-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P6-CONFIG; NOT GRADED 3; fx68k: FAIL P6-CONFIG; NOT GRADED 3
 // MUTATION P6-ANCHOR stimulus red NMH_MUTATE=P6-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P6-ANCHOR; NOT GRADED 3; fx68k: FAIL P6-ANCHOR; NOT GRADED 3
 // MUTATION P6-FINISHED stimulus red NMH_MUTATE=P6-FINISHED: BLTEN clear in the run that must have finished its blit; TG68K: FAIL P6-FINISHED; NOT GRADED 3; fx68k: FAIL P6-FINISHED; NOT GRADED 3
-// MUTATION P6-INC stimulus red NMH_MUTATE=P6-INC: a CPU read of byte $0E0020 right after the BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P6-INC; NOT GRADED 3; fx68k: FAIL P6-INC; NOT GRADED 3
+// MUTATION P6-INC stimulus red NMH_MUTATE=P6-INC: BLTSIZE $0102 (height 4) in place of $00C2: no channel makes W*H = 6 accesses, so no step is measured and the line is red through the empty population; the constant-step clause has no mutation of its own; TG68K: FAIL P6-INC; NOT GRADED 3; fx68k: FAIL P6-INC; NOT GRADED 3
 // MUTATION P6-STEPS stimulus red NMH_MUTATE=P6-STEPS: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
 // MUTATION P6-COUNT stimulus red NMH_MUTATE=P6-COUNT: BLTCON0 $0DF0 in place of $0FF0: channel C disabled; TG68K: FAIL P6-STEPS, P6-COUNT, P6; fx68k: FAIL P6-STEPS, P6-COUNT, P6
 // MUTATION P6 stimulus red NMH_MUTATE=P6: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
 // MUTATION P7-FIXTURE stimulus red NMH_MUTATE=P7-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P7-FIXTURE; NOT GRADED 27; fx68k: FAIL P7-FIXTURE; NOT GRADED 27
-// MUTATION P7-CONFIG stimulus red NMH_MUTATE=P7-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P7-CONFIG; NOT GRADED 27; fx68k: FAIL P7-CONFIG; NOT GRADED 27
+// MUTATION P7-CONFIG oracle red NMH_MUTATE=P7-CONFIG: the Config object the line reads is set to chipset_config 0x08 in place of 0x10; the runs of the proposition are still built from make_config(); TG68K: FAIL P7-CONFIG; NOT GRADED 27; fx68k: FAIL P7-CONFIG; NOT GRADED 27
 // MUTATION P7-FETCH stimulus red NMH_MUTATE=P7-FETCH: the Copper's MOVE to each register is a MOVE to COLOR00, COPCON bit 1 set; TG68K: FAIL P7-FETCH; NOT GRADED 15; fx68k: FAIL P7-FETCH; NOT GRADED 15
 // MUTATION P7-COPER stimulus red NMH_MUTATE=P7-COPER: the MOVE to INTREQ in every list is a MOVE to the no-operation register; TG68K: FAIL P7-COPER; NOT GRADED 15; fx68k: FAIL P7-COPER; NOT GRADED 15
 // MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-BLIT: BLTEN clear for the final blit; TG68K: FAIL P7-BLIT; NOT GRADED 27; fx68k: FAIL P7-BLIT; NOT GRADED 27
@@ -225,42 +227,19 @@ public:
 };
 
 Checks checks;
-bool g_graded = true;        // kept as a switch: both cores are graded
 std::string g_dir = ".";
 const char* g_mutate = nullptr;
 
-// The label of a line printed as RECORDED on the build without ENABLE_AGA
-// carries no claim id: the claim is asserted on the other build's lines.
-std::string without_ids(const std::string& s) {
-    std::string out, tok;
-    auto flush = [&]() {
-        if (tok.rfind("opus:", 0) == 0 || tok.rfind("sol:", 0) == 0) {
-            if (!tok.empty() && tok.back() == ':') out += ":";
-        } else out += tok;
-        tok.clear();
-    };
-    for (char c : s) {
-        if (c == ' ') { flush(); out += ' '; }
-        else tok += c;
-    }
-    flush();
-    return out;
-}
-
-// Every proposition, precondition and anchor goes through Grader: PASS:/FAIL:
-// on the graded build, RECORDED: on the other, whatever the condition shows.
+// Every proposition, precondition and anchor goes through Grader: PASS:/FAIL: on
+// both cores.
 class Grader {
 public:
-    void expect(bool cond, const std::string& label) {
-        if (g_graded) checks.expect(cond, label);
-        else checks.record(without_ids(label) + " [build without ENABLE_AGA: would have " +
-                           (cond ? "PASSed" : "FAILed") + "]");
-    }
+    void expect(bool cond, const std::string& label) { checks.expect(cond, label); }
     // An anchor the specification allows to fail: it prints PASS when it holds and
     // a NOT CHECKABLE record when it does not, never FAIL.
     void expect_anchor(bool ok, const std::string& label) {
         if (ok) expect(true, label);
-        else checks.record("NOT CHECKABLE: " + without_ids(label) + " [the anchor does not hold in this harness]");
+        else checks.record("NOT CHECKABLE: " + label + " [the anchor does not hold in this harness]");
     }
     // A line whose precondition does not hold is NOT GRADED, never PASS or FAIL.
     void expect_if(bool pre, bool cond, const std::string& label) {
@@ -554,7 +533,7 @@ void proposition_p1() {
                             {false, false, false, true}};  // P1-D: USED only
     std::string main_prog = sel("prog_p1", {{"P1-A", "prog_p1_moda"}, {"P1-B", "prog_p1_ptrb"},
                                             {"P1-C", "prog_p1_modc"}, {"P1-D", "prog_p1_ptrd"},
-                                            {"P1", "prog_p1_swapmod"}, {"P1-INC", "prog_p1_touch"}});
+                                            {"P1", "prog_p1_swapmod"}, {"P1-INC", "prog_p1_desc"}});
     BRun mn = brun(main_prog, 4, &kLay1);
 
     BRun fx = mutating("P1-FIXTURE") ? brun("prog_p1_nofix", 4, &kLay1) : mn;
@@ -848,9 +827,9 @@ void proposition_p5() {
     if (!want("P5")) return;
     const int W = 2, H = 4;
     const long long vals[5] = {0, 6, -4, 16382, -16382};
-    std::string main_prog = sel("prog_p5", {{"P5-A", "prog_p5_mod0to6"}, {"P5-B", "prog_p5_mod0to6"},
-                                            {"P5-C", "prog_p5_mod0to6"}, {"P5-D", "prog_p5_mod0to6"},
-                                            {"P5", "prog_p5_mod0to6"}, {"P5-INC", "prog_p5_touch"}});
+    std::string main_prog = sel("prog_p5", {{"P5-A", "prog_p5_moda"}, {"P5-B", "prog_p5_modb"},
+                                            {"P5-C", "prog_p5_modc"}, {"P5-D", "prog_p5_modd"},
+                                            {"P5", "prog_p5_mod0to6"}, {"P5-INC", "prog_p5_desc"}});
     BRun mn = brun(main_prog, 5, &kLay5);
     BRun fx = mutating("P5-FIXTURE") ? brun("prog_p5_nofix", 5, &kLay5) : mn;
     g.expect(fx.fixture, "P5-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
@@ -1074,9 +1053,10 @@ void proposition_p7() {
     const long long base[12] = {0x0E, 0x0000, 8, 0x0D, 0x0000, 8, 0x0B, 0x0000, 8, 0x0F, 0x0000, 8};
     const long long copv[12] = {0x11, 0x4000, 24, 0x12, 0x4000, 24, 0x13, 0x4000, 24, 0x14, 0x4000, 24};
 
-    // The mutation of every P7-0 component line sets COPCON bit 1 in the run
-    // it grades; that of every P7-1 component line clears it. A mutation run of
-    // a component line needs the one run it grades.
+    // The mutation of every P7-0 component line has the CPU write the Copper's value
+    // as the register's base value in the run it grades, and that of every P7-1
+    // component line has the Copper move the base value. A mutation run of a
+    // component line needs the one run it grades.
     bool run0 = true, run1 = true;
     std::string n0 = "prog_p7", n1 = "prog_p7_c1";
     if (g_mutate) {
@@ -2384,7 +2364,6 @@ int main(int argc, char** argv) {
     g_mutate = std::getenv("NMH_MUTATE");
     if (g_mutate && !*g_mutate) g_mutate = nullptr;
     std::string core = NMH_XSTR(NANOMIG_CORE_NAME);
-    g_graded = true;   // both cores run the AA chip set
     std::printf("CORE: %s\n", core.c_str());
     if (g_mutate) std::printf("NMH_MUTATE=%s\n", g_mutate);
 

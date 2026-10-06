@@ -1,2 +1,2 @@
-TOUCH equ $0E0020
+DESC equ 1
         include "prog_p1.s"

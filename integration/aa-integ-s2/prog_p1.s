@@ -5,6 +5,9 @@
 ;   DMA_BLT  DMACON value of step 1 ($8200: DMAEN without BLTEN)
 ;   SIZE     BLTSIZE value ($0082 = height 2, width 2; $00C2 = height 3)
 ;   TOUCH    a CPU read of this byte address right after each BLTSIZE write
+;   DESC     defined: the second blit is descending (BLTCON1 bit 1) with its four
+;            pointers $40 higher, so that its accesses (the modulo is subtracted in
+;            a descending blit) stay in the channel regions
 ;   FIXVAL   the constant stored first
 ;   PTRC PTRB PTRA PTRD  the pointer values; MODC MODB MODA MODD  the modulos
 
@@ -36,6 +39,14 @@ MODA    equ     24
 MODD    equ     32
         endc
 
+        ifd     DESC
+DCON1   equ     2
+DOFF    equ     $40
+        else
+DCON1   equ     0
+DOFF    equ     0
+        endc
+
         include "blit.i"
 
 blit_table:
@@ -43,8 +54,8 @@ blit_table:
         BLIT_HDR  0,$09F0,0,SIZE
         BLIT_PTR  PTRC,PTRB,PTRA,PTRD
         BLIT_MOD  MODC,MODB,MODA,MODD
-        BLIT_HDR  0,$05CC,0,SIZE
-        BLIT_PTR  PTRC,PTRB,PTRA,PTRD
+        BLIT_HDR  0,$05CC,DCON1,SIZE
+        BLIT_PTR  PTRC+DOFF,PTRB+DOFF,PTRA+DOFF,PTRD+DOFF
         BLIT_MOD  MODC,MODB,MODA,MODD
         BLIT_HDR  0,$03AA,0,SIZE
         BLIT_PTR  PTRC,PTRB,PTRA,PTRD
