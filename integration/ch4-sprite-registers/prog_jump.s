@@ -50,7 +50,7 @@ start:
         endif
 
         lea     MARK,a2
-        moveq   #5,d7                          ; fields 1..6, d7=f-1
+        moveq   #5,d7                          ; fields 1..6 in order, d7 = 6-f
 .fields:
         bsr     wait_vertb
 
@@ -61,8 +61,8 @@ start:
         endif
         bsr     wait_v_ge
 
-        move.w  d7,d6
-        addq.w  #1,d6                          ; d6 = field number f
+        moveq   #6,d6
+        sub.w   d7,d6                          ; d6 = field number f
 
         cmp.w   #2,d6
         bne.s   .writemark

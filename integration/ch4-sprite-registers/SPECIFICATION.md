@@ -132,6 +132,14 @@ resolution mode enable". P14 uses only bit 5, PAL.
 
 P3 rests on p.303.
 
+P1 has an expected value for ECS, although 2.1 gives none where the pages
+disagree, because these pages do not disagree about the ECS register. p.107,
+p.128 and p.284 describe SPRxCTL of the standard chip set. p.264 says that the
+registers "denoted with an "(E)"" are those "changed" by the Enhanced Chip Set and
+refers to "the register map in Appendix C" for which ones, and that map lists
+"142 SPRxCTL chg" (p.298). The ECS register is the one p.303 defines, with bit 4
+(SHSH1) in it.
+
 ### 2.6 A strobe triggered by a read
 
 p.287 says "S Strobe (write address with no register bits). Writing the register
@@ -548,8 +556,12 @@ parity.
 
 **6. Contrasting cases.**
 
-- Proposition: the same program with BPLCON0 = $1240, which is P1's run. The
-  page predicts d_1 = 81, which is odd, so the parity check goes red.
+- Proposition: the same program, except that the Copper writes BPLCON0 = $1200 at
+  the head of its list and BPLCON0 = $1240 after the ruler lines (`prog_shrl_sw`).
+  The ruler lines keep period 32, so P2-PRE1 holds, and the sprite lines are drawn
+  in SuperHires, where the page predicts d_1 = 81, which is odd, so the parity
+  check goes red. Writing $1240 for the whole run is P1's run and would break
+  P2-PRE1 as well.
 - Precondition 1: BPLCON0 = $1240 (period 8).
 - Precondition 2: usage 2 with CTL $5400 (SH0 cleared). d_2 = 80, not 82.
 - Precondition 3: SHR-SWEEP with SHSH1 cleared everywhere. P1's step check
@@ -1066,11 +1078,19 @@ $20000–$2000B and $20800–$20807.
 
 **4. Expected.**
 
-- In fields 2, 4 and 6, the first read in either list after M_f is at $20800.
+- In fields 2, 4 and 6, L2's first word ($20800) is read after M_f, and L1's MOVE
+  data word ($20006) is not read after M_f in the rest of the field.
 - In fields 1, 3 and 5, the first read in either list after M_f is at $20004 (L1's
   MOVE, after the WAIT completes), and there is no read of $20800–$20807 in the
   field.
 - In every field, there is no read of L2 before M_f.
+
+Whether the jump first makes a bus access at the old program counter ($20004,
+L1's MOVE register word, where the Copper waits) is not stated: p.25 says only
+that the location register is loaded into the program counter, "from which its
+next instruction will be fetched". The comparator neither requires nor forbids
+that access, and the first read after M_f in fields 2, 4 and 6 is printed as a
+MEASURED line.
 
 Sources:
 
@@ -1499,9 +1519,9 @@ writes only the PAL bit.
 
 ## 5. Recorded
 
-Final run of `make -k -B test` on both cores: fx68k 64 passed, 3 failed; TG68K 64 passed, 3 failed.
-The same three lines are red on both: P10, P1 and P2-PRE3. P2 is NOT GRADED on both. Every other
-graded line passes on both.
+Final run of `make -k -B test` on both cores: fx68k 65 passed, 2 failed; TG68K 65 passed, 2 failed.
+The same two lines are red on both: P1 and P2-PRE3. P2 is NOT GRADED on both. Every other graded
+line passes on both.
 
 ### 5.1 Programs
 
@@ -1549,6 +1569,7 @@ started).
 | P2-PRE1, P2-PRE2, P2-PRE4 | PASS | ruler period 32; even k show d = 80 + k; SREF and group 0 as in P1; the Lores groups show the same d sequence as the SuperHires run |
 | P2-PRE3 | FAIL | see P1 |
 | P3 and P3-PRE1 to P3-PRE5 | PASS | VPOSR identification $00; ruler period 32; five groups, d = 80 80 80 80 82, each four scan lines |
+| P10 and P10-PRE1 to P10-PRE3 | PASS | the first read after M_f in either list is at $020004 in all six fields; in fields 2, 4 and 6 L2's first word is then read and $020006 is not, in fields 1, 3 and 5 $020006 is read and L2 is not |
 | P12 and P12-PRE1 to P12-PRE3 | PASS | two graded fields on each chip set; 20 accesses in $30000-$303FF in the first graded field on OCS, 32 on ECS |
 | P13 and P13-PRE1 to P13-PRE3 | PASS | the $0002 and $FFFF outcomes are equal on both chip sets; the $0000 and $FFFD outcomes are equal on both |
 | P14 and P14-PRE1 to P14-PRE3, P14-POP | PASS | N = 525 in every graded frame before M1 on both chip sets; after M1 625 on ECS and 525 on OCS |
@@ -1557,14 +1578,14 @@ started).
 ### 5.3 Measured, not graded
 
 - P10: in every one of the six fields, the first read in either Copper list after M_f is at
-  $020004 (L1's own MOVE COLOR00, word offset 2), never at $020800 (L2). This holds for fields
-  2, 4 and 6 exactly as for fields 1, 3 and 5, although only 2, 4 and 6 write COPJMP2. The
-  precondition checks (P10-PRE1, P10-PRE2, P10-PRE3) all pass: the Copper list is read as
-  expected, every marker appears, and every marker precedes the $20004 read, so the write reached
-  the design and the field boundaries are exactly where the proposition expects them. P10 is
-  graded and red through its own clause alone. JUMP's harness run continues 700000 clk_sys cycles
-  past the program's own DONE mark: field 6's own precondition (P10-PRE3) needs the Copper's WAIT
-  for line $F0 to complete.
+  $020004 (L1's MOVE register word, where the Copper waits for line $F0), in fields 2, 4 and 6 as in
+  fields 1, 3 and 5. In fields 2, 4 and 6 L2's first word ($020800) is read after that and L1's MOVE
+  data word ($020006) is not; in fields 1, 3 and 5 $020006 is read and L2 is not. So a jump makes
+  one access at the old program counter before the first fetch from COP2LC. p.25 leaves open
+  whether a jump does that, and it is not graded. P10 passes: the three data values $0000, $FFFF and
+  $5A5A each restart the Copper at COP2LC. JUMP's harness run continues 700000 clk_sys cycles past
+  the program's own DONE mark: field 6's own precondition (P10-PRE3) needs the Copper's WAIT for
+  line $F0 to complete.
 - COPCON clear (P13, 2.1): in the $0000 and $FFFD runs there is no access at all in
   $30000-$303FF on either chip set, so on both the Copper's blitter MOVEs reach no blitter
   register when the danger bit is clear. The pages disagree for ECS (2.1), so this is not graded.

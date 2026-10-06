@@ -62,7 +62,7 @@
 // MUTATION P9-PRE2 stimulus red NMH_MUTATE=P9-PRE2: DMACON=$8380 (SPREN clear, as P6's precondition 1) -- fx68k/TG68K: FAIL (DMACONR bit 5=0)
 // MUTATION P9-PRE3 stimulus red NMH_MUTATE=P9-PRE3: SPR4PT=NULL in the Copper list -- fx68k/TG68K: FAIL (no sprite-4 run in any field)
 // MUTATION FIXTURE-CPUPTR stimulus red NMH_MUTATE=FIXTURE-CPUPTR: $DEAD stored instead of $BEEF -- fx68k/TG68K: FAIL
-// MUTATION P10 stimulus red NMH_MUTATE=P10-PROP: field 4 writes COLOR01 (not a strobe) instead of COPJMP2 -- fx68k/TG68K: FAIL (field 4 fetches L1's MOVE, not L2)
+// MUTATION P10 stimulus red NMH_MUTATE=P10-PROP: field 4 writes COLOR01 (not a strobe) instead of COPJMP2 -- fx68k/TG68K: FAIL (in field 4 L2's first word is not read after M_4 and L1's MOVE data word $020006 is; fields 2 and 6 read L2 and not $020006)
 // MUTATION P10-PRE1 stimulus red NMH_MUTATE=P10-PRE1: DMACON without COPEN -- fx68k/TG68K: FAIL (0 reads of $20000 at all)
 // MUTATION P10-PRE2 stimulus red NMH_MUTATE=P10-PRE2: omits field 2's marker write -- fx68k/TG68K: FAIL (M_2 missing)
 // MUTATION P10-PRE3 stimulus red NMH_MUTATE=P10-PRE3: waits until V7-0=$F4 (instead of $80) before every marker -- fx68k/TG68K: FAIL (markers fall after the $20004 read, not before)
@@ -969,16 +969,28 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                                       (a.word_addr >= kL2Base && a.word_addr < kL2Base + 4))) {
                 if (!first_after_cyc || a.cycle < *first_after_cyc) { first_after_cyc = a.cycle; first_after_addr = a.word_addr; }
             }
-            // Fixed, unchanged comparator: fields 2/4/6 always expect L2
-            // first. Under MUT_P10PROP field 4 writes COLOR01 (not a
-            // strobe) instead of COPJMP2, so no restart happens there and
-            // this naturally clashes with the same, unchanged expectation.
+            // Fixed, unchanged comparator: in fields 2/4/6 L2's first word is
+            // read after M_f and L1's MOVE data word is not read in the rest
+            // of the field. Whether the jump first touches the old program
+            // counter (the read of L1's MOVE register word, $20004) is open
+            // on p.25 and is not graded. Under MUT_P10PROP field 4 writes
+            // COLOR01 (not a strobe) instead of COPJMP2, so no restart happens
+            // there and this naturally clashes with the same, unchanged
+            // expectation.
             bool expect_l2 = (fnum == 2 || fnum == 4 || fnum == 6);
+            bool l2_read = false, l1_data_read = false;
+            for (auto& a : log) if (!a.is_write && a.cycle >= *m[i] && a.cycle < fi->second) {
+                if (a.word_addr == kL2Base) l2_read = true;
+                if (a.word_addr == kL1Base + 3) l1_data_read = true;
+            }
             c.note("P10 field " + std::to_string(fnum) + ": first read after M_" + std::to_string(fnum) +
                    " in either list is at $" + hex6(first_after_addr * 2) +
-                   (first_after_cyc ? (" (cycle " + std::to_string(*first_after_cyc) + ")") : " (none)"));
+                   (first_after_cyc ? (" (cycle " + std::to_string(*first_after_cyc) + ")") : " (none)") +
+                   "; after M_" + std::to_string(fnum) + " in the field: L2's first word " +
+                   (l2_read ? "read" : "not read") + ", L1's MOVE data word $020006 " +
+                   (l1_data_read ? "read" : "not read"));
             if (expect_l2) {
-                if (!(first_after_cyc && first_after_addr == kL2Base)) ok = false;
+                if (!l2_read || l1_data_read) ok = false;
             } else {
                 if (!(first_after_cyc && first_after_addr == kL1Base + 2)) ok = false;
                 bool any_l2 = false;
@@ -989,7 +1001,8 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         }
         c.expect(ok, "P10 (APPB2-legend.s1 APPB2-legend.s2 CH4-APPB-LEGEND.c022 CH4-APPB-LEGEND.c023 "
                  "CH4-APPB-LEGEND.c024): writing a strobe (COPJMP2) causes its effect whatever data is written "
-                 "(p.287,25,26) -- fields 2/4/6 fetch L2 first, fields 1/3/5 fetch L1's MOVE first and never L2");
+                 "(p.287,25,26) -- in fields 2/4/6 L2's first word is read after M_f and L1's MOVE data word is not; "
+                 "fields 1/3/5 read L1's MOVE first and never L2");
     }
 }
 
