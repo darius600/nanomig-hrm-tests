@@ -13,6 +13,8 @@
 ;         sample (CP2's own mutation), and BUFB is shortened to match.
 ; NMH_KFIX: the M0 marker write stores a different value (the FIXTURE
 ;           mutation), while M1-M4 and DONE are unaffected.
+; NMH_KNODONE: the program hangs after M4 without storing DONE_VALUE (the
+;           FIXTURE-DONE mutation).
         include "nanomig.i"
 
 M0      equ     $A000
@@ -104,7 +106,11 @@ start:
         cmpa.l  a1,a0
         bne.s   .d
         move.w  #M4,MARK
+        ifd     NMH_KNODONE
+.nodone bra.s   .nodone                 ; FIXTURE-DONE mutation: no DONE store
+        else
         DONE                            ; stores DONE_VALUE at DONE_ADDR, then hangs (nanomig.i)
+        endif
 
 wait150 move.l  $dff004,d0              ; wait until a read shows vertical position 150
         lsr.l   #8,d0

@@ -69,14 +69,19 @@ P11, and P12 grades the same sentence in the second method.
   package's own P1-P13 code, under the label prefix "PAGE-MODEL ". Capture
   is graded from line 20 on (p.238 step 1); a trigger's onset freezes the
   value (p.238 step 4); with no trigger, the counters latch at the field end
-  (p.239); the freeze holds until line 20 of the next field (p.239). This
-  print is the green control the main runs are held to, and the red each
-  contrasting run's own clause must reach. K3, K4 and K17 target a phase-A
-  or phase-C proposition instead, so each carries its own analogous
-  page-model contrast (§8), built the same way from that run's own measured
-  phase-A or phase-C samples and the same latch rule, and graded with the
-  same unchanged comparator (P10 (b) or CP1) rather than the phase-B P1-P13
-  grader.
+  (p.239); the freeze holds until line 20 of the next field (p.239). The
+  page model is a control of the comparators on the run's own samples, taken
+  in the model's own frame (the latch value is the model's position at the
+  onset); it shows that a comparator can turn red when a run's samples
+  change, and not that the comparators agree with a latch implemented in
+  hardware. That is shown by an implementation that follows pp.238-239, a
+  private copy of the RTL outside the repository, which every main run is
+  also graded against (§8, "Conforming implementation"). K3, K4, K17 and K18
+  target a phase-A or phase-C proposition instead, so each carries its own
+  analogous page-model contrast (§8), built the same way from that run's own
+  measured phase-A or phase-C samples and the same latch rule, and graded
+  with the same unchanged comparator (P10 (b) or CP1) rather than the
+  phase-B P1-P13 grader.
 - **Standard.** PAL or NTSC is a configuration of the machine, not of the
   program: p.295, "the chips from the US factory are configured for NTSC mode.
   In order to use them on a PAL system, you may have to reset the motherboard
@@ -247,7 +252,8 @@ wait150 move.l  $dff004,d0              ; wait until a read shows vertical posit
   access after them (the prefetch, or the first write of the stored long word).
   Take [a, b] as that gap. The builder derives the bus-cycle order from the
   CPU core and confirms it from the trace: the gap must be as long as at least
-  two bus cycles.
+  two bus cycles, that is four colour clocks (p.196: a 68000 access takes two
+  memory cycles).
 - **Model uncertainty.** u is the largest b - a in phase A, in colour clocks.
 
 ### 5.3 The beam model
@@ -278,32 +284,46 @@ to line L by its fitted line lengths and phase.
   two fields.
 - Because the read instant is only known within [a, b], beam(t) is an
   interval of width u.
-- H_ref(t) is the model computed with every fitted read instant taken at b.
-  It is used only for differences (P3 c).
+- H_ref(t) is the model computed with every fitted read instant taken at b:
+  its anchor is the median over the fitted samples of b minus the sample's
+  position in colour clocks (the model of the other bullets takes a). Every
+  true read instant lies in [a, b], so H_ref(t) is the counter's position at
+  time t less between 0 and u colour clocks: H_ref(t) <= counter(t) <=
+  H_ref(t) + u (P3 b). It is used for P3 (b), P3 (c) and P4.
 - A sample is **current** when its position lies in beam(t) for some t in its
-  [a, b].
+  [a, b]. beam(t) is the counter's position, with V as 5.3 below places it.
+
+**The counter's V-increment phase.** The counter's V does not change at H = 0
+of the model's line: it changes a few colour clocks into the line, at an H
+the pages do not state (p.238 gives the register's bits, not when V
+increments). While H is below that phase, a read returns the new line's H
+with the previous line's V. The phase is measured on the fitted samples of
+phase A, from their read values alone. A fitted sample whose reading puts the
+anchor one line later than the median anchor read the previous line's V, and
+its H is below the phase; a fitted sample at an H of at most 15 whose
+reading agrees with the median anchor read the new line's V, and its H is at
+or above the phase. The phase lies in the bracket from the largest H of the
+first kind plus one to the smallest H of the second kind, and it is taken at
+the lower end; both ends, and the number of fitted samples of the first kind,
+are printed as MEASURED. The model's V is the previous line's V while H is
+below the phase, and the model's line 0 reads L until then; the model's line
+start for V = N, used for the windows of 5.5, is the line's start plus the
+phase. A2 requires the bracket to hold (lower end not above upper end) and
+the phase to be at most 15 colour clocks. Measured: fx68k at H = 2 (bracket
+2 to 3), TG68K at H = 2 (bracket 2 to 3), in all four configurations.
 
 **Torn samples.** A sample whose two register reads straddle a change of V8 can
 combine V8 of one line with V7-V0 of another. These changes happen at model
-line 255 to 256 and at L to 0. Samples whose [a - 2, b] (in colour clocks)
-contains such a change are exempt from every check. The same combination is
-also checked directly by value: a sample that matches no model position in
-[a, b], but whose reading matches one with V8 flipped, straddled that V8
-change regardless of where the [a - 2, b] margin places it. Only a V8 change
-tears a sample this way: an ordinary line boundary (V8 unchanged) does not
-combine two different bit-8 values, and is graded normally.
-
-A second, distinct bookkeeping failure exempts a sample the same way, for a
-different reason: 5.2's "otherwise" branch takes `a` from the last code fetch
-before `b`. In this package's tight sampling loop the CPU can prefetch the
-next instruction's opcode while a bus stall (memory refresh, A3) still delays
-this sample's own write, so that fetch -- chronologically between the true
-read and the delayed write -- gets attributed to this sample instead of its
-own, placing `a` up to one whole modeled line after the true read. Detected
-directly, the same way as the V8 case: if a sample's own reading matches no
-position in [a, b] nor with V8 flipped, but matches a position exactly one
-modeled line before `a`, the earlier bound was misattributed, and the sample
-is exempt for that reason instead.
+line 255 to 256 and at L to 0, at the counter's V-increment phase. Samples
+whose [a - 2, b] (in colour clocks) contains such a change are torn, and are
+exempt from every check. The same combination is also checked directly by
+value: a sample that matches no model position in [a, b], but whose reading
+matches one with V8 flipped, straddled that V8 change regardless of where the
+[a - 2, b] margin places it. Only a V8 change tears a sample this way: an
+ordinary line boundary (V8 unchanged) does not combine two different bit-8
+values, and is graded normally. No other sample is exempt: a reading that
+matches no model position in [a, b] and no position with V8 flipped is not
+current, whatever it equals elsewhere in the field.
 
 ### 5.4 Anchors
 
@@ -313,8 +333,10 @@ is exempt for that reason instead.
   fields). Within the fitted lines of a field V never decreases, and line Vrun
   of each field begins L + 1 model lines after line Vrun of the field before
   (L of that earlier field), so the counter numbers lines 0 to L and returns
-  to 0 exactly once per field. u is at most 15 colour clocks, and at least two
-  bus cycles (5.2's own floor). Every model field has 262 or 263 lines in the
+  to 0 exactly once per field. u is at most 15 colour clocks, and at least four
+  (two bus cycles, 5.2's own floor). The V-increment phase of 5.3 is bracketed
+  consistently and is at most 15 colour clocks, the bound u has. Every model
+  field has 262 or 263 lines in the
   NTSC runs and 312 or 313 lines in the PAL runs (p.24: "In NTSC, the fields
   are 262, then 263 lines and in PAL, 312, then 313 lines"; p.40: "Each
   complete set of lines (262/NTSC or 312/PAL) is called a display field").
@@ -328,10 +350,12 @@ is exempt for that reason instead.
   refresh (p.194, "4 cycles for memory refresh") outranks the 68000 while the
   program keeps it running (section 4). u is instead bounded by what the
   model needs it for. Of the three uses (the width of beam(t), the P3(b)
-  window, and the torn exemption), the narrowest separation any graded check
-  or its contrasting case must make with u is P3(b) against K16: the B7
-  capture, moved by 20 colour clocks, must fall outside a window 4 + u wide,
-  so 20 > 4 + u, which gives u <= 15. Every other use separates positions at
+  window, and the release's uncertainty), the narrowest separation any graded
+  check or its contrasting case must make with u is P3(b): a capture 20
+  colour clocks away from the main onset must fall outside a window 4 + u
+  wide (K16 moves the B7 capture 20 colour clocks earlier, which falls below
+  the window whatever u is; the same distance later must fall above it), so
+  20 > 4 + u, which gives u <= 15. Every other use separates positions at
   least a line (227 colour clocks) apart, or keeps a mid-line pulse (H
   100-108) inside its line, which needs u < ~115; both hold at u <= 15.
 
@@ -365,13 +389,24 @@ latched for long stretches and cannot serve as its own reference.
     fields after it.
   - C0 is the field of the phase-C write. C1, C2 and C3 follow it.
   - L_k is the last line of field k.
+- **Counter lines.** Windows are counted by the counter, whose V changes at
+  the phase of 5.3 after the model's line start: line N of field k starts at
+  the model's line start plus that phase.
 - **Vrun** is 21 in NTSC and 29 in PAL. Every page puts the end of vertical
   blanking before this line (10.1).
 - **VB(k):** samples of field k whose [a, b] lies within lines 0 to 19.
 - **RUN(k):** samples of field k whose [a, b] lies within lines Vrun to
   L_k - 1 and ends before the onset of the first pin-6 pulse of field k at
   line 32 or later, as the **main-run** schedule places it. Pulses in lines 10
-  and 19, and pulses on other pins, do not end RUN.
+  and 19, and pulses on other pins, do not end RUN. P8 ends RUN(j) at the
+  first pin-6 pulse from line 20 on (9 P8).
+- **The release.** The freeze of p.239 ends when the counter reaches V = 20.
+  The a-model of 5.3 reaches it no later than the counter does and the
+  counter reaches it at most u colour clocks later. A sample is **before** the
+  release when its whole [a, b] lies before the model's V = 20, **after** it
+  when a lies at least u colour clocks after the model's V = 20, and **in the
+  release's uncertainty** between the two. Only samples before or after the
+  release are graded where the release matters (P8 c, P11, P12).
 - **Pulse times.** Each scheduled input change has an onset t_on. A pin-6 pulse
   has an end t_off = t_on + 4 colour clocks.
 - **POST(p):** for a pulse p in field k, the samples with a > t_off, up to the
@@ -385,8 +420,9 @@ latched for long stretches and cannot serve as its own reference.
 - **Shape.** A pulse drives the line low from its released high level for
   4 colour clocks and then releases it. Every onset sits at the same phase of
   the colour-clock grid, so onsets differ by whole colour clocks.
-- **Placement.** The schedule gives a pulse's position as the model position
-  H_ref(t_on) and the model line at t_on.
+- **Placement.** The schedule gives a pulse's position as the model line and
+  H at t_on of the model whose read instants are taken at a (5.3). H_ref(t_on)
+  is the same instant in the model whose read instants are taken at b.
 - **Scheduling.** The harness computes pulse times from the model of the same
   configuration and CPU core. It may take the model from a first run without
   input changes. The system is deterministic, and nothing the inputs do changes
@@ -431,7 +467,7 @@ phase. "Both" means the same pin on port 1 and port 2 at the same time.
 | B16 | 1 | none |
 | B17 | 1 | pin 6 both at (19, 100), then pin 6 both at (32, 100) |
 | B18 | 1 | pins 1, 2, 3, 4, 5, 9 both, at lines 40, 60, 80, 100, 120, 140 respectively (H = 100); then pin 6 both at (160, 100) |
-| B19 | 1 | pin 6 both at (20, 150), then pin 6 both at (280, 100) in PAL, (261, 100) in NTSC. The (280/261, 100) pulse is **observation only**: recorded and reported, not graded (10.2) |
+| B19 | 1 | pin 6 both at (20, 150), the only pulse of the field (the P9 boundary pulse, B19c) |
 | B20, B21, until C0 | 1 | none |
 | C0 | 0 from line 150 | none (not graded) |
 | C1 | 0 | pin 6 both at (100, 100) |
@@ -446,10 +482,10 @@ evaluated, not as green.
 
 | Id | Precondition | Contrasting run |
 |---|---|---|
-| CP1 | The beam model is anchored on phase A: A1 and A2 of 5.4 hold. | K17 (A1, A2), K15 (A2, standard) |
+| CP1 | The beam model is anchored on phase A: A1 and A2 of 5.4 hold. CP1 is printed as one line and as its two components, CP1 (A1) and CP1 (A2). | K15 (A2, standard), K17 (A2), K18 (A1) |
 | CP2 | Sampling is dense. In phases A to C, consecutive read instants are at most 56 colour clocks apart (a quarter line), and every line of every graded window holds at least two samples. In phase D, consecutive POTGOR samples are at most 50 microseconds apart (5.7). | K5 |
 | CP3 | No trigger is presented outside the schedule: pin 6 of both ports stays at the level of an open switch except during the scheduled pin-6 pulses. (a) The CIAAPRA read of §4, made in phase A, has bits 6 and 7 = 1. p.229: "CIAAPRA ($BFE001) Input and output for pin 6 (port 1 and 2 fire buttons)"; p.232: "Port 1 uses bit 6 and port 2 uses bit 7. A logic state of 1 means "switch open."" (b) By the harness's own record, pin 6 of both ports was at that same level throughout phases A to C, except during the scheduled pin-6 pulses. The pin is read through the CIA, not through the light-pen latch, so CP3 does not rest on any clause that P1 to P12 grade. | K11 |
-| CP4 | Inputs are delivered as scheduled. Each input change in the schedule of the run being made took place, by the harness's own record, at its scheduled model line and H (exactly, at the fixed grid phase), and each pulse lasted 4 colour clocks. No other input changed in phases A to D. For a contrasting run whose own target is a different clause, "the schedule" is its changed schedule, so CP4 stays a satisfied precondition for that clause. K12's own target is CP4 itself, so its placement is instead compared with the unmutated §6 schedule: grading it against its own (already shifted) schedule could never show a placement error. | K12 |
+| CP4 | Inputs are delivered as scheduled. Each input change in the schedule of the run being made took place, by the harness's own record, at its scheduled model line and H (exactly, at the fixed grid phase), and each pulse lasted 4 colour clocks. No other input changed in phases A to D. For a contrasting run whose own target is a different clause, "the schedule" is its changed schedule, so CP4 stays a satisfied precondition for that clause. In the main runs and in K12, CP4 also compares the cycles on which the phase-B and phase-C changes landed with the cycles of the §6 schedule, computed from the run's model. K12's own target is CP4 itself, so its placement is compared with the unmutated §6 schedule: grading it against its own (already shifted) schedule could never show a placement error. | K12 |
 | CP5 | The program ran as specified. M0 to M4 appear in order, and the program reaches DONE (the marker macro's own store of `DONE_VALUE` at `DONE_ADDR`, section 4). The BPLCON0 writes fall between the last read of `wait150` and M1 or M2, at line 150. Coverage: phase A at least two model periods, phase B up to line 40 of B21, phase C up to line 40 of C3, phase D at least 12 ms after M3. A proposition depends only on the part of CP5 for the phases it observes: P1 to P9, P10 (a), P11 and P12 on M0, M1, the phase-B write and the coverage of phases A and B; P10 (b) on M0, M2, the phase-C write and the coverage of phases A and C; P13 on M3, M4 and the coverage of phase D. The `wait150` that ends phase B reads VPOSR with bit 3 set, so it returns only after a release (P8). If it never returns, the phase-B propositions are graded on the stored phase-B samples, P10 (b) is graded on phase A only, and P13 is not evaluated. | K13 |
 | CP6 | The beam keeps its timing in phases B and C: A3 and A4 hold there. | K14 |
 
@@ -481,9 +517,24 @@ the run's result where the raw run cannot turn red on its own.
 | K12 | Every pulse is placed one line later than the schedule says. | Placement differs from the schedule. | CP4 |
 | K13 | The phase-B buffer is shortened so that phase B ends in B19. | Coverage missing. | CP5 |
 | K14 | Directly after the `wait150` that ends phase B (line 150, after every graded phase-B window), the program writes VHPOSW = $6400 once (line 100, H 0). p.285: "Write vertical and horizontal position of beam or lightpen"; Appendix B p.289: "Write vert and horiz position of beam". | The counter jumps back 50 lines and to H 0. The refresh group, drawn at a fixed place in the line (p.195), and the field boundary no longer sit where the model puts them in phase C. | CP6 (A3 or A4) |
-| K15 | The standard of the ECS/PAL run is switched: its harness `Config` selects NTSC, and its input schedule is the NTSC one (B19 at (261, 100)). | Fields of 262 or 263 lines, where the ECS/PAL run's A2 expects 312 or 313 (p.24, p.40). | CP1 (A2) |
-| K16 | The B7 pulse is placed at (100, 122) instead of (100, 102), and the B11 pulse at (41, 100) instead of (40, 100). P3 is graded with the main schedule's onsets. | Captures at (100, 122) and (41, 100): the value of the counter "at the instant the beam passed the light pen" (p.238). | P3 (a) for B11; P3 (b) for B7 (now outside the 4+u window); P3 (c) for B7 (the changed member now fails the one-offset-per-graded-pulse population requirement); the combined P3 assertion through all three |
-| K17 | As K4, and a pin-6 pulse (both ports) at (200, 100) is added in every phase-A field. | Each pulse is captured and VPOSR stays frozen until the end of vertical blanking (p.238 step 4, p.239), so the phase-A samples of lines 200 to L - 1 are not current and the largest V read in each field is 200, not L. Line 200 comes after the line 150 that `wait150` waits for, so the program still finishes. | CP1 (A1 or A2) |
+| K15 | The standard of the ECS/PAL run is switched: its harness `Config` selects NTSC, and phase D is timed in NTSC microseconds (the phase-B and phase-C schedule has no standard-dependent pulse). | Fields of 262 or 263 lines, where the ECS/PAL run's A2 expects 312 or 313 (p.24, p.40). | CP1 (A2) |
+| K16 | The B7 pulse is placed at (100, 82) instead of (100, 102), and the B11 pulse at (39, 100) instead of (40, 100). P3 is graded with the main schedule's onsets. Both captures precede the main onsets, so POST(B7) and POST(B11) hold the moved value throughout. | Captures at (100, 82) and (39, 100): the value of the counter "at the instant the beam passed the light pen" (p.238). | P3 (a) for B11; P3 (b) for B7 (the captured H lies 20 colour clocks below H_ref, outside the window [H_ref, H_ref + 4 + u]); P3 (c) for B7 (the changed member differs from the common offset by 20); the combined P3 assertion through all three |
+| K17 | As K4, and a pin-6 pulse (both ports) at (200, 100) is added in every phase-A field, each delivered when its cycle is reached (the positions come from the model of a first pass of the program without input changes). | Each pulse is captured and VPOSR stays frozen until the end of vertical blanking (p.238 step 4, p.239), so the phase-A samples of lines 200 to L - 1 are not current and the largest V read in each field is 200, not L. Line 200 comes after the line 150 that `wait150` waits for, so the program still finishes. The contrast latches the run's phase-A samples at the delivered onsets, requires L = 200 of the fit on them, and grades them with CP1. | CP1 (A2): the fitted L is 200, not 312 or 313 |
+| K18 | As K4, and one pin-6 pulse (both ports) at (200, 100) in the third phase-A field. | The pulse is captured and VPOSR stays frozen until the end of vertical blanking, so the samples of lines 200 to L - 1 of that field read the captured position and are not current. | CP1 (A1) |
+| FIXTURE | The program stores a different value where M0 belongs (`prog_fixture.s`) and continues through M1-M4 and DONE. | The M0 marker is not the known constant. | FIXTURE (M0) |
+| FIXTURE-DONE | The program hangs after M4 without storing `DONE_VALUE` (`prog_nodone.s`). | DONE is not reached. | FIXTURE (DONE) |
+| PIN9CTRL | Phase D omits the 8-10 ms pin-9 low drive. | POTGOR bits 10 and 14 stay 1 in that window (p.240, Table 8-4). | P13 (pin 9 control) |
+
+**Conforming implementation.** Every main run is also made against a private
+copy of the RTL, outside the repository, that implements the pages' reading
+of the latch: BPLCON0 bit 3 enables it; the counter reaching V = 20 releases
+any freeze and arms the capture; a falling edge of the trigger input (pin 6
+of either port) while armed captures VPOSR and VHPOSR; an end of field with
+nothing latched latches the counters; reads return the latched words.
+LPENDIS is not modelled, so an ECS configuration behaves as OCS. A graded line
+that is red on this implementation is a defect of the test, not a finding.
+The page-model lines are not graded on it: they apply the page's latch to
+samples the implementation has already latched.
 
 ---
 
@@ -549,8 +600,8 @@ the run's result where the raw run cannot turn red on its own.
      cannot be driven. Port-2 pin 5 (POTGOR bit 12) is not one of the pins
      this harness can drive (section 3, "Port mapping"): (i) is graded over
      the driven population only (pins 1-4 and 9 on both ports, pin 5 on
-     port 1), and port-2 pin 5 is recorded separately, carrying the same
-     ids, as not established.
+     port 1), and port-2 pin 5 is recorded separately, without claim ids, as
+     not established: the driven pulses establish the claims whole.
 5. **Preconditions.** CP1 to CP6. By CP4, the driven pulses were delivered on
    both ports (pin 5 on port 1 only) at their lines.
 6. **Contrasting case.** K9 preserves the real pin-1 delivery and grades a
@@ -593,10 +644,12 @@ the run's result where the raw run cannot turn red on its own.
      passed the light pen."
    - (a) V(P) equals the model line at t_on. The pulses sit at mid-line, so
      every instant of the pulse lies in the same line.
-   - (b) H(P) lies within beam([t_on, t_off]). The page states no delay between
-     pulse and capture and does not say which edge of the pulse counts. The
-     window is the pulse's own duration plus the model uncertainty u of 5.2.
-     It is not a tolerance granted to the implementation.
+   - (b) H(P) lies in [H_ref(t_on), H_ref(t_on) + 4 + u]. The page states no
+     delay between pulse and capture and does not say which edge of the pulse
+     counts: the capture instant lies in [t_on, t_off], and the counter's
+     position at any time lies in [H_ref, H_ref + u] (5.3), so the window is
+     the pulse's own duration plus the model uncertainty u of 5.2. It is not
+     a tolerance granted to the implementation.
    - (c) **Exactness.** The offset d(p) = H(P) - H_ref(t_on) is the same for
      every graded pulse, with a spread of 0, across all lines and all H steps.
      A shift of the onset by k colour clocks must shift the captured H by
@@ -611,12 +664,12 @@ the run's result where the raw run cannot turn red on its own.
 5. **Preconditions.** CP1 to CP6. By CP4, the H sweep and the lines were placed
    as scheduled.
 6. **Contrasting case.**
-   - K16: the page predicts captures at (41, 100) in B11 and (100, 122) in B7.
-     Graded with the main schedule's onsets, (a) is red for B11. For B7 the
-     captured H is 20 colour clocks after the main onset, beyond the window
-     of (b), whose width is 4 + u with u at most 15 (A2), and 20 away from the
-     common offset of (c); so (b) and (c) are red, each through the captured
-     value.
+   - K16: the page predicts captures at (39, 100) in B11 and (100, 82) in B7.
+     Both precede the main onsets, so POST(B11) and POST(B7) hold the moved
+     capture and are constant. Graded with the main schedule's onsets, (a) is
+     red for B11. For B7 the captured H is 20 colour clocks before H_ref of
+     the main onset, below the window of (b), and 20 away from the common
+     offset of (c); so (b) and (c) are red, each through the captured value.
    - K1: the page predicts no capture. POST(p) holds current samples, so (a),
      (b) and (c) are red.
 7. **Reference frame.** 5.2 (grid, u), 5.3 (beam, H_ref), 5.6 (onset phase).
@@ -789,38 +842,43 @@ the run's result where the raw run cannot turn red on its own.
    applies to it instead, and (a)'s internal-consistency half (VB(j) is one
    value) is required regardless of which mechanism latched it.
 3. **Observation.** For each such field j = k+1 (including j = 20, following
-   B19's own capture):
+   B19c's capture):
    - VB(j);
    - RUN(j), from Vrun to the first pin-6 pulse of j from the release line on
      (line >= 20, not just 5.5's narrower "graded" population of line >= 32
      pulses in fields B4-B18), or to L_j - 1 if there is none. j = 19 (after
-     B18's capture) has two such pulses: B19c (line 20, the P9 boundary
-     pulse) and B19's own observation-only one (line 261/280); B19c is
-     earlier and ends RUN(19) first. Where such an early pulse preempts the
+     B18's capture) has one such pulse, B19c (line 20, the P9 boundary pulse),
+     which ends RUN(19) at line 20. Where such an early pulse preempts the
      whole window (its onset at or before Vrun), RUN(j) is empty and (b) is
      satisfied vacuously: the field has no unlatched span left to grade, not
      missing data.
-   - (c) the samples of model line 20 of field j.
+   - (c) the samples of VB(j), and the samples of model line 20 of field j
+     that are after the release (5.5) and end before the first pin-6 pulse of
+     j from line 20 on.
 4. **Expected.**
    - The page. p.239: "This freeze is released at the end of internal vertical
      blanking (vertical position 20)."
    - (a) Every sample of VB(j), lines 0 to 19, has one and the same value.
      Where the value is also known (a capture's own POST(p), P5), it equals
-     that value too; for VB(B5), VB(B6) and VB(B20) it may be either kind,
-     depending on P1's port or on the observation-only field B19.
+     that value too; for VB(B5) and VB(B6) it may be either kind, depending
+     on P1's port. Positions are compared (10.8); torn samples are left out
+     of the comparison.
    - (b) Every sample of RUN(j) is current.
    - (c, sol:8-pen.c39) The held value is still visible before line 20 (no
      sample of VB(j) is current) and the live counter is visible from the
-     stated line-20 release (every sample of line 20 of field j is current).
-     p.239's "vertical position 20" is graded here at line resolution,
-     independent of standard, unlike (b)'s Vrun-based span.
+     stated line-20 release (every sample of line 20 of field j that is after
+     the release is current). Both sets must be non-empty. The release is the
+     counter's V = 20, which the model reaches at the V-increment phase after
+     the line's start and the counter at most u later (5.5): samples in
+     between are not graded. p.239's "vertical position 20" is graded here at
+     line resolution, independent of standard, unlike (b)'s Vrun-based span.
    - Not graded by (a)/(b): NTSC line 20 and PAL lines 20 to 28. p.219 ends
      vertical blanking at line 25 in PAL, and p.79 stops it at $15 (21) in
      NTSC and $1D (29) in PAL (10.1).
    - Reported for each window: the model line and H of the first sample that
      matches the live beam (not merely the first sample of the window).
      p.239 predicts line 20.
-   - Quantifier: every window, at least 20 per run (including B19's own).
+   - Quantifier: every window, 20 per run (including B19c's).
 5. **Preconditions.** CP1 to CP6.
 6. **Contrasting case.** K1: no latch, so (a) and (c) are red. K2: RUN(B2) and
    RUN(B3) are latched from line 100 on, so (b) is red.
@@ -832,29 +890,28 @@ the run's result where the raw run cannot turn red on its own.
    enabled again without any action by the program. A pulse after that point
    is captured, and a pulse inside vertical blank is not held over the
    release.
-   Claims: opus:8-lpen.c12, sol:8-pen.c12 (p.238 step 1). Once P8's restored
-   release-at-20 check establishes V=20 as the release line (c above), the
-   boundary itself becomes observable at (d) below, so these ids are no
-   longer declined whole.
+   Claims: opus:8-lpen.c12, sol:8-pen.c12 (p.238 step 1). "Just as" needs
+   both halves, nothing held over from before the release (a) and a pulse at
+   the release captured (d), so the two ids sit on one aggregate, P9
+   (release), and on neither component line. P8 (c) establishes V = 20 as the
+   release line.
 2. **Stimulus.**
    - B15: pin-6 pulses at (10, 100) and (32, 100), after B14's capture.
    - B17: pin-6 pulses at (19, 100) and (32, 100), after the no-trigger field
      B16.
-   - B19: an early pin-6 pulse at (20, 150), sitting exactly at the stated
-     release line, well before Vrun and before B19's own observation-only
-     pulse. Not B21 (whose own run region is one of P8's no-trigger
-     currency checks) and not a second pulse in B15/B17 (where a later
-     pulse in the same field would make apply_page_model's field-latch
-     reasoning -- P5's "a second trigger while still frozen does not
-     change the held value" -- mask that field's own later pulse's capture
-     in the synthetic PAGE-MODEL control).
+   - B19: one pin-6 pulse at (20, 150), sitting exactly at the stated
+     release line and well before Vrun. It is the only pulse of its field:
+     not B21 (whose own run region is one of P8's no-trigger currency
+     checks) and not a second pulse in B15/B17 (where a later pulse in the
+     same field would not change the frozen value, P5, and so would not
+     show its own capture).
    - The phase-B loop writes no register (§4).
 3. **Observation.**
    - RUN(B15) and RUN(B17), from Vrun up to the line-32 pulse;
    - POST of the two line-32 pulses;
    - the POST of every graded capture of B6 to B18;
    - (d) the samples from the line-20 pulse's own release to line 200 of the
-     same field (B19), safely before B19's own observation-only pulse.
+     same field (B19).
 4. **Expected.**
    - The page. p.238: "Just as the system exits vertical blank, the capture
      circuitry for the light pen is automatically enabled."
@@ -871,11 +928,14 @@ the run's result where the raw run cannot turn red on its own.
    - (c) The re-arming repeats in every field. Every graded pin-6 pulse of B6
      to B18 is captured, although the program wrote nothing after the phase-B
      enable.
-   - (d, opus:8-lpen.c12, sol:8-pen.c12) A pulse exactly at the stated release
-     line is captured -- the first eligible position, once P8 establishes
-     V=20 as the release line. The window is one held value from that
-     pulse's own release to line 200 of the same field.
-   - "Just as" is graded, through (d), at the one line the pages agree on for
+   - (d) A pulse exactly at the stated release line is captured -- the first
+     eligible position, once P8 establishes V = 20 as the release line. The
+     window is one held value from that pulse's own release to line 200 of
+     the same field.
+   - P9 (release), opus:8-lpen.c12 and sol:8-pen.c12: (a) and (d) together.
+     P9 (a) and P9 (boundary), the component lines of (a) and (d), carry no
+     id; the combined P9 assertion of (a), (b) and (c) carries none either.
+   - "Just as" is graded, through (a) and (d), at the one line the pages agree on for
      the light-pen-specific latch (p.239's own "vertical position 20", not
      tied to a standard, 10.1); lines 10 and 19 remain inside vertical blank
      on every page, and line 32 remains after it on every page.
@@ -946,12 +1006,14 @@ the run's result where the raw run cannot turn red on its own.
      line L of any field, torn samples, and samples whose [a, b] overlaps a
      pulse's [t_on, t_off].
    - Pairs excluded: those in fields B0, B4, B5 and B19, and in VB(B1), VB(B5),
-     VB(B6) and VB(B20). These windows depend on a field that is not graded, on
-     P1's port, or on the observation-only field B19.
+     VB(B6) and VB(B20). These windows depend on a field that is not graded,
+     on P1's port, or on the ungraded boundary pulse B19c.
+   - Pairs with a sample in the release's uncertainty (5.5) are excluded: such
+     a sample may show either side of the release.
    - The truth T(i) for "the light pen has triggered since the last
-     top-of-screen": a graded pin-6 pulse lies between the start of the last
-     model line 20 before a of sample i (the previous field's, if sample i
-     is itself still before its own line 20) and a of sample i, and the
+     top-of-screen": a graded pin-6 pulse lies between the model's V = 20 last
+     before a of sample i (the previous field's, if sample i is itself before
+     the release of its own field) and a of sample i, and the
      freeze that pulse set is still in place at sample i+1 too -- step 2 can
      only read "the same" while both reads see the same frozen value, so a
      pair spanning the release (sample i still latched, sample i+1 already
@@ -979,9 +1041,8 @@ the run's result where the raw run cannot turn red on its own.
    - After a capture, therefore, pairs must be equal (step 2 may not say "not
      triggered") and below $10500. Without a capture, equal pairs must lie
      above $10500.
-   - All graded captures are below line 261. For a capture at line 261 or later
-     (B19), step 4 contradicts p.238 step 4 (10.2), so it is not graded; its
-     pairs are reported.
+   - All graded captures are below line 261; for a capture at line 261 or
+     later step 4 contradicts p.238 step 4 (10.2).
    - Quantifier: every graded pair.
 5. **Preconditions.** CP1 to CP6. By CP4 and the schedule, both classes occur:
    pairs with T true (after 13 or more captures) and latched equal pairs with T
@@ -1003,7 +1064,8 @@ the run's result where the raw run cannot turn red on its own.
 2. **Stimulus.** Phase B (§6).
 3. **Observation.**
    - The samples: every sample whose [a, b] lies within lines 1 to 19 (the
-     page's "0<V20", 10.3) of fields B2, B3, B4, B7 to B19 and B21.
+     page's "0<V20", 10.3) and before the model's V = 20, of fields B2, B3,
+     B4, B7 to B19 and B21.
    - Excluded: VB(B1) (after B0), VB(B5) and VB(B6) (after the single-port
      fields), and VB(B20) (after B19).
    - The truth: the preceding field contains a graded pin-6 pulse.
@@ -1117,8 +1179,7 @@ the run's result where the raw run cannot turn red on its own.
      and NTSC line 261 with H > 0, a displayable line (p.79: 241 displayable
      lines after 21 blanked).
    - For such a pen the two statements contradict each other. P11 and P12 grade
-     the method only for captures below line 261. Field B19 records one capture
-     beyond that as observation only.
+     the method only for captures below line 261.
 3. **"0<V20".** The printed page lacks a relation sign in both places
    ("internal vertical blanking period of 0<V20"; "during the period of
    0<V20"). P12 grades lines 1 to 19, the part common to every reading.
@@ -1154,7 +1215,8 @@ the run's result where the raw run cannot turn red on its own.
    - p.239 says "the value in VPOSR is frozen" (pen capture) and "the counters
      latch" (no trigger), and its step 2 compares whole long words.
    - P5 and P11 compare whole values, as p.239 does, and report separately when
-     a difference lies only in bit 15. P6 to P8 compare positions.
+     a difference lies only in bit 15. P6 to P8 compare positions, and leave
+     torn samples out of the comparison.
 9. **Instant of the end-of-field latch.** "At the end of the display field"
    gives no H. P7 grades it at line resolution plus the ordering F >= R.
 10. **When a change of bit 3 takes effect** relative to the automatic enabling
