@@ -10,6 +10,7 @@
 ;   MUT_P10PRE3 -- precondition 3 contrast: wait until V7-0=$F4 instead of
 ;                  $80 before every marker
 ;   MUT_FIXTURE -- the fixture check's own contrast: $DEAD instead of $BEEF
+;   MUT_NODONE  -- the program never writes DONE
 
         include "nanomig.i"
         include "sprreg.i"
@@ -99,7 +100,7 @@ start:
         else
         move.w  #$BEEF,RESULTS+0
         endif
-        DONE
+        FINISH
 
 wait_vertb:
         move.w  INTREQR(a0),d0

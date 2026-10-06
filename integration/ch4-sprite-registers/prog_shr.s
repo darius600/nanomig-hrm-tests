@@ -17,6 +17,7 @@
 ;   MUT_LOWREAD  -- anchor contrast: the VERTB wait loop reads Chip word $0100,
 ;                   a non-refresh access at a low address
 ;   MUT_FIXTURE  -- the fixture check's own contrast: $DEAD instead of $BEEF
+;   MUT_NODONE   -- the program never writes DONE
 ;
 ; The program writes no custom register after it starts DMA other than
 ; INTREQ (SPECIFICATION.md P1 step 7).
@@ -120,7 +121,7 @@ start:
         else
         move.w  #$BEEF,RESULTS+2
         endif
-        DONE
+        FINISH
 
 wait_vertb:
         ifd     MUT_LOWREAD

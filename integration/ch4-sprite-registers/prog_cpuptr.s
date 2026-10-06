@@ -7,12 +7,13 @@
 ;                   (MOVE.W #$0002,SPR0PTH) instead of the long-word write,
 ;                   leaving SPR0PTL at its earlier decoy value $7000 (S2's
 ;                   own low word)
-;   MUT_P9PRE1   -- precondition 1 contrast: wait until V7-0>=$0060 instead
-;                   of a VERTB, before each field's pointer write
+;   MUT_P9PRE1   -- precondition 1 contrast: after the VERTB, wait until
+;                   V7-0>=$0060 before each field's pointer write
 ;   MUT_P9PRE2   -- precondition 2 contrast (as P6's precondition 1):
 ;                   DMACON = $8380 (SPREN clear)
 ;   MUT_P9PRE3   -- precondition 3 contrast: SPR4PT=NULL in the Copper list
 ;   MUT_FIXTURE  -- the fixture check's own contrast: $DEAD instead of $BEEF
+;   MUT_NODONE   -- the program never writes DONE
 
         include "nanomig.i"
         include "sprreg.i"
@@ -165,11 +166,10 @@ start:
         lea     MARK,a2
         moveq   #3,d7                          ; 4 fields
 .fields:
-        ifd     MUT_P9PRE1
-        move.w  #$0060,d1                      ; P9 precondition 1 contrast
-        bsr     wait_v_ge
-        else
         bsr     wait_vertb
+        ifd     MUT_P9PRE1
+        move.w  #$0060,d1                      ; P9 precondition 1 contrast: write at line $60 of the field
+        bsr     wait_v_ge
         endif
 
         move.w  #$7000,SPR0PTL(a0)
@@ -189,7 +189,7 @@ start:
         else
         move.w  #$BEEF,RESULTS+0
         endif
-        DONE
+        FINISH
 
 wait_vertb:
         move.w  INTREQR(a0),d0

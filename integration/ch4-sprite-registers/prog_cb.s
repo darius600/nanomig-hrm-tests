@@ -17,6 +17,7 @@
 ;                    field inside M1-M2 (P13 pair-2 contrast, precondition 2)
 ;   MUT_CPUWR     -- the CPU writes $1111 to $30200 inside M1-M2 (P13 precondition 3)
 ;   MUT_FIXTURE   -- the fixture check's own contrast: $DEAD instead of $BEEF
+;   MUT_NODONE    -- the program never writes DONE
 ;
 ; The code between M1 and M2 contains no subroutine call and no instruction
 ; that writes Chip memory other than the contrast writes named above: it
@@ -148,7 +149,7 @@ start:
         else
         move.w  #$BEEF,RESULTS+0
         endif
-        DONE
+        FINISH
 
 srca:   dc.w    $1234,$5678,$9ABC,$DEF0
 srcb:   dc.w    $F0F0,$0FF0,$FF00,$00FF

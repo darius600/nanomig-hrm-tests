@@ -14,6 +14,17 @@ CLEAR_OVL       macro
                 move.b  #$00,CIAAPRA
                 endm
 
+; FINISH -- the last thing a program does: DONE, or, when MUT_NODONE is set (the contrast of
+; the RUN-* lines and of the DONE clause of the FIXTURE-* lines), stop in place without ever
+; writing the DONE mark.
+FINISH          macro
+                ifd     MUT_NODONE
+.stuck\@        bra.s   .stuck\@
+                else
+                DONE
+                endif
+                endm
+
 ; -- Appendix B, address order (pp.289-292), not already in nanomig.i --
 COPCON          equ     $02E
 COP1LCH         equ     $080
@@ -68,9 +79,7 @@ BLTSIZV         equ     $05C            ; ECS: blit height in rows (p.308)
 BLTSIZH         equ     $05E            ; ECS: blit width in words; starts the blit (p.308)
 BEAMCON0        equ     $1DC            ; ECS: beam counter control (p.298, p.305)
 
-; -- SPECIFICATION.md 3.2's own byte addresses, below $80000 (this
-; package's scope: P4-P11 only; RULER/SWP/SREF are P1-P3's, not built,
-; see SPECIFICATION.md's build notes) --
+; -- SPECIFICATION.md 3.2's own byte addresses, below $80000 --
 COPLIST_L1      equ     $020000
 COPLIST_L2      equ     $020800
 NULL_SPRITE     equ     $021000         ; $0000,$0000: the safe null sprite (p.111, p.114)
@@ -84,9 +93,10 @@ RULER_BUF       equ     $040000         ; bitplane buffer; words $FF00 (P1-P3)
 ZERO_BUF        equ     $050000         ; bitplane buffer; every word $0000 (SPECIFICATION.md's
                                         ; table). The harness's chip-RAM model starts zeroed
                                         ; (nanomig_harness.h, NanomigHarness's mem_ constructor),
-                                        ; and no assertion this package builds inspects a
-                                        ; bitplane pixel (every run below uses the plain colour
-                                        ; set, black on black, 3.6), so no program writes it.
+                                        ; so no program writes it. P4-P11 run the plain colour
+                                        ; set (black on black, 3.6) and inspect no bitplane
+                                        ; pixel; P1-P3 grade the R != 0 ruler pixels, which stop
+                                        ; where the Copper points the bitplane at ZERO_BUF.
 
 ; -- SPECIFICATION.md 3.2's own results-area words --
 MARK            equ     RESULTS+$0100   ; one word per event, offsets fixed per program below

@@ -14,6 +14,7 @@
 ;   MUT_LOWREAD  -- anchor contrast: the VERTB wait loop reads Chip word $0100,
 ;                   a non-refresh access at a low address
 ;   MUT_FIXTURE  -- the fixture check's own contrast: $DEAD instead of $BEEF
+;   MUT_NODONE   -- the program never writes DONE
 
         include "nanomig.i"
         include "sprreg.i"
@@ -66,7 +67,7 @@ start:
         else
         move.w  #$BEEF,RESULTS+2
         endif
-        DONE
+        FINISH
 
 wait_vertb:
         ifd     MUT_LOWREAD

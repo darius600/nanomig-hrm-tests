@@ -10,6 +10,13 @@ PROGS    := prog_manual prog_manual_p4read prog_manual_p4write prog_manual_p4pre
             prog_jump prog_jump_prop prog_jump_pre1 prog_jump_pre2 prog_jump_pre3 prog_jump_fixture \
             prog_blit prog_blit_prop prog_blit_pre1 prog_blit_pre3 prog_blit_fixture
 
+# NODONE (a program that never writes DONE: the contrast of every RUN-* line and of the DONE clause
+# of FIXTURE-CB, FIXTURE-BEAM and FIXTURE-SHR), LOWRD (a non-refresh read at a low address: the
+# contrast of the R5 anchors), P4NOPOS (the MEASURED run), AUTOODD_PRE1
+PROGS    += prog_manual_nodone prog_manual_lowrd prog_manual_p4nopos prog_auto_nodone prog_auto_lowrd \
+            prog_autoodd_nodone prog_autoodd_pre1 prog_cpuptr_nodone prog_jump_nodone prog_blit_nodone \
+            prog_cb_o2_nodone prog_beam_nodone prog_shr_nodone
+
 # COPBLT-v (P12, P13): o = OCS, e = ECS; the next character is the COPCON value
 # 2 = $0002, F = $FFFF, 0 = $0000, D = $FFFD.
 PROGS    += prog_cb_o2 prog_cb_oF prog_cb_o0 prog_cb_oD \

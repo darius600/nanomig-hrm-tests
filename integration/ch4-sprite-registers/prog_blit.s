@@ -8,6 +8,7 @@
 ;   MUT_P11PRE3  -- precondition 3 contrast: an extra CPU write to Chip
 ;                   memory inside the M1-M2 window, breaking the quiet window
 ;   MUT_FIXTURE  -- the fixture check's own contrast: $DEAD instead of $BEEF
+;   MUT_NODONE   -- the program never writes DONE
 
         include "nanomig.i"
         include "sprreg.i"
@@ -87,7 +88,7 @@ start:
         else
         move.w  #$BEEF,RESULTS+0
         endif
-        DONE
+        FINISH
 
 wait_vertb:
         move.w  INTREQR(a0),d0

@@ -7,7 +7,10 @@
 ;   (no symbol) -- the normal run
 ;   MUT_P4READ  -- P4's read-half contrast: read a Chip-memory mirror word,
 ;                  written just before the read, instead of the register
-;   MUT_P4WRITE -- P4's write-half contrast: omit field B's SPR0POS write
+;   MUT_P4WRITE -- P4's write-half contrast: field B's SPR0POS write carries
+;                  $0062 instead of $0061 (p.123: d = 72 instead of 68)
+;   MUT_P4NOPOS -- not a contrast: field B without any SPR0POS write, run once
+;                  for the MEASURED line (SPR0POS keeps $0060 from field A)
 ;   MUT_P4PRE1  -- P4 precondition 1 contrast: omit the DECOY reads
 ;   MUT_P4PRE2  -- P4 precondition 2 contrast: read at V7-0=$0080 (inside
 ;                  the display window) instead of $00F8
@@ -18,6 +21,9 @@
 ;                  until V7-0>=$0080
 ;   MUT_FIXTURE -- the fixture check's own contrast: $DEAD stored instead
 ;                  of $BEEF
+;   MUT_LOWREAD -- anchor contrast: the VERTB wait loop reads Chip word $0100,
+;                  a non-refresh access at a low address
+;   MUT_NODONE  -- the program never writes DONE
 ;
 ; RESULTS+12/14/16/18 record the V (V8:V7-0) read at the moment of each
 ; marker (MA/RA/MB/RB): the test's own precondition checks (SPECIFICATION.md
@@ -156,10 +162,14 @@ start:
         bsr     wait_v_ge
         endif
 
+        ifd     MUT_P4NOPOS
+        ; not a contrast: omit field B's SPR0POS write
+        else
         ifd     MUT_P4WRITE
-        ; P4 write-half contrast: omit field B's SPR0POS write
+        move.w  #$0062,SPR0POS(a0)             ; P4 write-half contrast
         else
         move.w  #$0061,SPR0POS(a0)
+        endif
         ifd     MUT_P4READ
         move.w  #$0061,MEMTRACK+0
         endif
@@ -221,11 +231,14 @@ start:
         else
         move.w  #$BEEF,RESULTS+0
         endif
-        DONE
+        FINISH
 
 ; ---- subroutines (a0 = CUSTOM throughout) ---------------------------------
 
 wait_vertb:
+        ifd     MUT_LOWREAD
+        move.w  $0100,d3
+        endif
         move.w  INTREQR(a0),d0
         and.w   #$0020,d0
         beq.s   wait_vertb

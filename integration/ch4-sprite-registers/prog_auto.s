@@ -18,7 +18,11 @@
 ;   MUT_ODD      -- AUTO-ODD (P8): the Copper's SPR0PTL MOVE carries $5001
 ;                   instead of $5000
 ;   MUT_ODDC     -- P8 proposition contrast (needs MUT_ODD's baseline
-;                   otherwise unchanged): the MOVE carries $5002 instead
+;                   otherwise unchanged): the MOVE carries $5003 instead, an odd
+;                   value that the page reads as the word address $5002
+;   MUT_LOWREAD  -- anchor contrast: the VERTB wait loop reads Chip word $0100,
+;                   a non-refresh access at a low address
+;   MUT_NODONE   -- the program never writes DONE
 
         include "nanomig.i"
         include "sprreg.i"
@@ -29,7 +33,7 @@ SPR0PT_LO       equ     (S2_DATA&$FFFF)
         else
         ifd     MUT_ODDC
 SPR0PT_HI       equ     (S1_DATA>>16)
-SPR0PT_LO       equ     $5002
+SPR0PT_LO       equ     $5003
         else
         ifd     MUT_ODD
 SPR0PT_HI       equ     (S1_DATA>>16)
@@ -212,9 +216,12 @@ start:
         else
         move.w  #$BEEF,RESULTS+0
         endif
-        DONE
+        FINISH
 
 wait_vertb:
+        ifd     MUT_LOWREAD
+        move.w  $0100,d3
+        endif
         move.w  INTREQR(a0),d0
         and.w   #$0020,d0
         beq.s   wait_vertb
