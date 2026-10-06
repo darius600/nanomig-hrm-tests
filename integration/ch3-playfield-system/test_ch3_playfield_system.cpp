@@ -2,70 +2,133 @@
 //
 // ch3-playfield-system: see SPECIFICATION.md.
 //
-// P3 (BPLCON0 bit 3, LPEN) and P4 (LPEN after power-up) share one program
-// family (prog_lpen_*.s / prog_lpen_core.s): five VERTB-synchronized bursts
-// of 600 long reads of VPOSR/VHPOSR, stored to MEASURE_BASE. P3 grades LPEN=1
-// against LPEN=0; P4 grades the power-up state (BPLCON0 never written).
+// Test purpose: grade the playfield system bits of the printed pages at the system top: BPLCON0 bit 9 does not
+//   change the RGB output (P1) and the RGB output is the picture the registers and bitplane data define (P2),
+//   BPLCON0 bit 3 (LPEN) latches the beam position read through VPOSR/VHPOSR (P3) and is 0 after power-up (P4),
+//   and VBSTRT sets the line at which vertical blanking starts (P5).
+// Test class: HRM_CONFORMANCE for every graded line; the fixture and calibration lines (P1..P5 fixture, CAL-CC,
+//   CAL-VIDEO, P3-L, P4-L) are INTEGRATION_SMOKE; MEASURED lines grade nothing.
+// Primary oracle: Amiga Hardware Reference Manual, 3rd edition, the printed pages named in SPECIFICATION.md.
+// Requirement IDs: none
+// Non-goals: the composite video output, what a read of VBSTRT returns, the frozen value of the light pen latch,
+//   the release of the latch after vertical position 20, what vertical blanking shows on the RGB output.
 //
-// A CPU write to a custom register (BPLCON0, BEAMCON0) never reaches the
-// Chip-memory port -- only chip-RAM traffic (CPU or Copper) does. Where a
-// precondition is about "the program contains [no] write to $DFF1xx", this
-// file scans the loaded program's own machine code for the one instruction
-// form every source here uses for such a write, MOVE.W #imm,d16(An)
-// (opcode & 0xF1FF) == 0x317C, An in bits 11-9 -- verified against a vasm
-// build (opcode_test.s, not part of this package) before being relied on
-// here. A Copper-issued write to the same register is a normal chip-RAM
-// read (the Copper list itself) and is checked on ram_log instead.
+// P3 (BPLCON0 bit 3, LPEN) and P4 (LPEN after power-up) share one program family (prog_lpen_*.s /
+// prog_lpen_core.s): five VERTB-synchronized bursts of 600 long reads of VPOSR/VHPOSR, stored to MEASURE_BASE.
+// P3 grades LPEN=1 against LPEN=0, P4 grades the power-up state (BPLCON0 never written). P5 (prog_p5_*.s)
+// reads VPOSR/VHPOSR the same way. P1 and P2 (prog_p1_*.s) start a preloaded Copper list and grade the video output.
 //
-// NMH_MUTATE selects one mutated scenario in place of its normal
-// counterpart; none is exercised by a plain `make test`. Every mutation runs
-// the package's normal comparator unchanged: the only NMH_MUTATE-conditioned
-// code left in this file selects which binary, Copper list or window is fed
-// to that unchanged comparator (never the pass/fail meaning of a clause).
-//   NMH_MUTATE=P3D          prog_lpen_ecs_pal_l1_mutd.bin   (extra BPLCON0 write)
-//   NMH_MUTATE=P3A          prog_lpen_ecs_pal_l1_burst20.bin (20 reads, not 600)
-//   NMH_MUTATE=P3B          window end moved to t_f+30*227cc
-//   NMH_MUTATE=P3C_LPENDIS  prog_lpen_ecs_pal_l1_lpendis.bin (LPENDIS=1)
-//   NMH_MUTATE=P3C_WRONGSTD prog_lpen_ecs_pal_l0_wrongstd.bin (BEAMCON0 bit5 wrong)
-//   NMH_MUTATE=P4MAIN       prog_lpen_ecs_pal_l1.bin graded under P4's check
-//   NMH_MUTATE=P4B_PROG     prog_lpen_ecs_pal_l1.bin, static-scan precondition
-//   NMH_MUTATE=P4B_COP      prog_lpen_p4_copper.bin (+Copper preload)
-//   NMH_MUTATE=P4A          prog_lpen_p4_ecs_pal_burst20.bin
-//   NMH_MUTATE=P4C          prog_lpen_p4_ecs_pal_wrongstd.bin
-//   NMH_MUTATE=P1MAIN       config A/B run "1" uses a colour-register change
-//                           instead of bit 9, with run "0"'s Copper list
-//   NMH_MUTATE=P1A          dedicated PAL-vs-NTSC (S1 vs S2) run "0" comparison
-//   NMH_MUTATE=P1C          prog_p1_2c_pal_nobplen.bin (config B, S1, both runs)
-//   NMH_MUTATE=P1D          config B, S1, both runs' bitplane buffer zeroed
-//   NMH_MUTATE=P1E          dedicated: a genuine PAL run graded against NTSC
-//   NMH_MUTATE=P2B          prog_p1_2c_pal_mod2.bin (config B, S1, both runs)
-//   NMH_MUTATE=P5MAIN       prog_p5_pal_v1_novarvben.bin
-//   NMH_MUTATE=P5A          prog_p5_pal_v1_nobplen.bin
-//   NMH_MUTATE=P5B          dedicated: Copper WAIT(N-1,$30) before COLOR01=C2
-//                           replaced by WAIT(N-2,$30); the C3-side WAIT unchanged
-//   NMH_MUTATE=P5C          prog_p5_pal_v1_wrongstd.bin
+// A CPU write to a custom register (BPLCON0, BEAMCON0) never reaches the Chip-memory port -- only chip-RAM
+// traffic (CPU or Copper) does. Where a precondition is about "the program contains [no] write to $DFF1xx",
+// this file scans the loaded program's own machine code for the one instruction form every source here uses
+// for such a write, MOVE.W #imm,d16(An) (opcode & 0xF1FF) == 0x317C, An in bits 11-9 -- verified against a
+// vasm build (opcode_test.s, not part of this package) before being relied on here. A Copper-issued write to
+// the same register is a normal chip-RAM read (the Copper list itself) and is checked on the RAM log instead.
+// A CPU read of a custom register does not reach the port either, so the period of the VERTB polling loop,
+// which the field-length check adds to its tolerance, is measured from the loop's own instruction fetches.
 //
-// MUTATION opus:A-bpc.b03.c0 stimulus red an extra BPLCON0 write after the first VERTB detection, via NMH_MUTATE=P3D
-// MUTATION P3-a stimulus red burst reduced from 600 to 20 reads, fewer than 100 fall in the window, via NMH_MUTATE=P3A
-// MUTATION P3-b stimulus red window end moved to t_f+30*227cc, reads with V>19 appear in L0, via NMH_MUTATE=P3B
-// MUTATION P3-c stimulus red BEAMCON0 LPENDIS=1, L1's windows show strictly increasing values, via NMH_MUTATE=P3C_LPENDIS
-// MUTATION P3-c stimulus red BEAMCON0 bit5 opposite the configured standard, field-length check reports the other standard, via NMH_MUTATE=P3C_WRONGSTD
-// MUTATION opus:A-leg.lpen2 stimulus red the P3-L1 program graded under P4's strictly-increasing check, via NMH_MUTATE=P4MAIN
-// MUTATION P4-b stimulus red the P3-L1 program's static scan shows a BPLCON0 write P4's own program must not have, via NMH_MUTATE=P4B_PROG
-// MUTATION P4-b stimulus red a Copper list writes BPLCON0 even though the program itself never does, via NMH_MUTATE=P4B_COP
-// MUTATION P4-a stimulus red burst reduced to 20 reads in the P4 program, via NMH_MUTATE=P4A
-// MUTATION P4-c stimulus red BEAMCON0 bit5 opposite the configured standard in the P4 program, via NMH_MUTATE=P4C
-// MUTATION opus:3-a1000.c04 stimulus red a colour register changes instead of bit 9, same Copper list otherwise, via NMH_MUTATE=P1MAIN
-// MUTATION P1-a stimulus red a genuine PAL run's vsync-interval pattern compared with a genuine NTSC run's, via NMH_MUTATE=P1A
-// MUTATION P1-c stimulus red DMACON without BPLEN, no bitplane reads occur, via NMH_MUTATE=P1C
-// MUTATION P1-d stimulus red the bitplane buffer filled with $0000, no sample shows C1, via NMH_MUTATE=P1D
-// MUTATION P1-e stimulus red a genuine PAL run's field length graded against NTSC's values, via NMH_MUTATE=P1E
-// MUTATION P2-b stimulus red BPL1MOD=$0002, later lines start two bytes further out, via NMH_MUTATE=P2B
-// MUTATION opus:B-vbstrt.addr stimulus red BEAMCON0 without VARVBEN, line N also shows C2, via NMH_MUTATE=P5MAIN
-// MUTATION P5-a stimulus red DMACON without BPLEN, no line shows C1, via NMH_MUTATE=P5A
-// MUTATION P5-b stimulus red Copper WAIT(N-1,$30) before COLOR01=C2 replaced by WAIT(N-2,$30), the C2-side anchor finds V=N-2, via NMH_MUTATE=P5B
-// MUTATION P5-c stimulus red BEAMCON0 bit5 opposite the configured standard in the P5 program, via NMH_MUTATE=P5C
+// Aggregate lines carry the claim ids; the component lines they are built from carry none. A line whose
+// precondition failed prints RECORDED ... NOT GRADED, never PASS or FAIL. An aggregate prints FAIL as soon as one
+// graded component failed, PASS when every component was graded and passed, and is otherwise not graded.
+//
+// NMH_MUTATE selects one mutated scenario in place of its normal counterpart, in the first system configuration
+// only, and runs the group it belongs to; NMH_ONLY (a list of group names such as P3P4P5) restricts a plain run
+// to those groups. Neither is exercised by a plain `make test`. Every mutation runs the package's comparator
+// unchanged: the only NMH_MUTATE-conditioned code in this file selects which binary, Copper list, memory
+// contents or window is fed to that comparator, never the pass/fail meaning of a clause.
+//   CALCC         CAL-CC: the port clk7_en is read on an irregular subset of the cycles
+//   CALVID        CAL-VIDEO: the S1 run's line counts are checked against NTSC's
+//   P3FIX         the L1 program of S1 is a binary that does not exist
+//   P3A           prog_lpen_ecs_pal_l1_burst20.bin (20 reads, not 600)
+//   P3L           prog_lpen_ecs_pal_l0_nopoll.bin (no INTREQR polling loop)
+//   P3B           window end moved to t_f+30*227cc
+//   P3C_LPENDIS   prog_lpen_ecs_pal_l1_lpendis.bin (LPENDIS=1)
+//   P3C_WRONGSTD  prog_lpen_ecs_pal_l0_wrongstd.bin (BEAMCON0 bit 5 wrong)
+//   P3D           prog_lpen_ecs_pal_l1_mutd.bin (extra BPLCON0 write)
+//   P3MAIN        the L0 program stands in for the L1 program
+//   P4FIX         the program of S1 is a binary that does not exist
+//   P4A           prog_lpen_p4_ecs_pal_burst20.bin
+//   P4L           prog_lpen_p4_ecs_pal_nopoll.bin
+//   P4C           prog_lpen_p4_ecs_pal_wrongstd.bin
+//   P4B_PROG      prog_lpen_ecs_pal_l1.bin (a program that writes BPLCON0)
+//   P4B_COP       prog_lpen_p4_copper.bin (+Copper preload)
+//   P1FIX         run "1" of every configuration at S1 loads a binary that does not exist
+//   P1A           a genuine PAL run's sync samples compared with a genuine NTSC run's
+//   P1B           run "1" loads run "0"'s Copper list
+//   P1C           bitplane DMA off (B, C, E), or A given a one-plane list
+//   P1D           bitplane buffers zeroed (B, C, E), or COLOR00 set to another value by the Copper (A)
+//   P1E           a genuine PAL run's field length graded against NTSC's
+//   P1MAIN        run "1" also changes a colour register half way down the picture
+//   P2FIX         run "1" of configuration B at S1 loads a binary that does not exist
+//   P2A           run "1" loads run "0"'s Copper list
+//   P2B           prog_p1_2c_pal_mod2.bin (BPL1MOD=$0002)
+//   P2FLIP        bit 14 of w(100,5) flipped in memory, the expectation unchanged
+//   P2ITEM1       prog_p1_2c_pal_vstoplow.bin (VSTOP one line lower)
+//   P2EDGE        prog_p1_2c_pal_rightedge.bin (window 32 pixels wider, 21 words per line)
+//   P5FIX         the V1 program of S1 is a binary that does not exist
+//   P5A           prog_p5_pal_v1_nobplen.bin
+//   P5B           Copper WAIT(N-1,$30) before COLOR01=C2 replaced by WAIT(N-2,$30)
+//   P5C           prog_p5_pal_v1_wrongstd.bin
+//   P5D           the run is started with the OCS harness configuration
+//   P5MAIN        prog_p5_pal_v1_novarvben.bin
+//
+// The private chipset of the implementation records is a copy of the chipset sources outside the repository
+// with three changes, each a reading of the printed pages: (1) BPLCON0 bit 3 enables a latch of the beam
+// position at the end of the field, held until vertical position 20, and BEAMCON0 bit 13 makes a read ignore
+// it (pp.239, 305), (2) the vertical position counts at the clock edge at which the horizontal position wraps,
+// (3) with BEAMCON0 bit 12 set, VBSTRT starts and VBSTOP ends vertical blanking (pp.293, 304, 305). A second
+// private copy differs in one thing: the latch is enabled after reset.
+//
+// MUTATION CAL-CC stimulus red NMH_MUTATE=CALCC: the port clk7_en is read on an irregular subset of the cycles, the pulse intervals seen differ and the line prints FAIL
+// MUTATION CAL-VIDEO stimulus red NMH_MUTATE=CALVID: the S1 run's hs-period counts per field are graded against NTSC's line counts and the line prints FAIL (the P5 runs call the same function)
+// MUTATION P3 stimulus red NMH_MUTATE=P3FIX: the L1 program of S1 is a binary that does not exist and the fixture line prints FAIL
+// MUTATION P3-a stimulus red NMH_MUTATE=P3A: 20 reads per burst instead of 600, fewer than 100 fall in the window
+// MUTATION P3-L stimulus red NMH_MUTATE=P3L: the L0 program waits with a fixed delay, no INTREQR polling loop is seen in its fetches
+// MUTATION P3-b implementation green private chipset (vertical position counts at the horizontal wrap): P3-b passes in S1-S4 on both cores
+// MUTATION P3-b stimulus red NMH_MUTATE=P3B on the private chipset: window end moved to t_f+30*227cc, reads with V above 19 appear in L0
+// MUTATION P3-c stimulus red NMH_MUTATE=P3C_LPENDIS: BEAMCON0 written with LPENDIS=1
+// MUTATION P3-c stimulus red NMH_MUTATE=P3C_WRONGSTD: BEAMCON0 bit 5 opposite the configured standard
+// MUTATION P3-d stimulus red NMH_MUTATE=P3D: an extra BPLCON0 write after the first VERTB detection
+// MUTATION P3-MAIN implementation green private chipset (light pen latch): P3-MAIN passes in S1-S4 on both cores
+// MUTATION P3-MAIN stimulus red NMH_MUTATE=P3MAIN on the private chipset: the L0 program stands in for L1, the reads count and the line prints FAIL
+// MUTATION opus:A-bpc.b03.c0 implementation green private chipset (light pen latch): the aggregate passes on both cores
+// MUTATION opus:A-bpc.b03.c0 stimulus red NMH_MUTATE=P3MAIN on the private chipset: the L0 program stands in for L1 in S1 and the aggregate prints FAIL
+// MUTATION P4 stimulus red NMH_MUTATE=P4FIX: the program of S1 is a binary that does not exist and the fixture line prints FAIL
+// MUTATION P4-a stimulus red NMH_MUTATE=P4A: 20 reads per burst instead of 600
+// MUTATION P4-L stimulus red NMH_MUTATE=P4L: the program waits with a fixed delay, no INTREQR polling loop is seen in its fetches
+// MUTATION P4-c stimulus red NMH_MUTATE=P4C: BEAMCON0 bit 5 opposite the configured standard
+// MUTATION P4-B-PROGRAM stimulus red NMH_MUTATE=P4B_PROG: the program is P3's L1 program, which writes BPLCON0
+// MUTATION P4-B-COPPER stimulus red NMH_MUTATE=P4B_COP: a preloaded Copper list with a MOVE to BPLCON0 is started
+// MUTATION P4-MAIN implementation green private chipset (vertical position counts at the horizontal wrap): P4-MAIN passes in S1-S4 on both cores
+// MUTATION P4-MAIN implementation red second private chipset in which LPEN is 1 after reset: every precondition holds and the line prints FAIL in S1-S4 on both cores
+// MUTATION opus:A-leg.lpen2 implementation green private chipset (vertical position counts at the horizontal wrap): the aggregate passes on both cores
+// MUTATION opus:A-leg.lpen2 implementation red second private chipset in which LPEN is 1 after reset: the aggregate prints FAIL on both cores
+// MUTATION P1 stimulus red NMH_MUTATE=P1FIX: run "1" of every configuration at S1 loads a binary that does not exist and the fixture line prints FAIL
+// MUTATION P1-a stimulus red NMH_MUTATE=P1A: a genuine PAL run's sync samples are compared with a genuine NTSC run's
+// MUTATION P1-b stimulus red NMH_MUTATE=P1B: run "1" loads run "0"'s Copper list, so the fetched BPLCON0 values are run "0"'s
+// MUTATION P1-c stimulus red NMH_MUTATE=P1C: bitplane DMA off in B, C and E, and A given a one-plane Copper list
+// MUTATION P1-d stimulus red NMH_MUTATE=P1D: bitplane buffers zeroed in B, C and E, and COLOR00 set to another value by the Copper in A
+// MUTATION P1-e stimulus red NMH_MUTATE=P1E: a genuine PAL run's field length is graded against NTSC's values
+// MUTATION P1-MAIN stimulus red NMH_MUTATE=P1MAIN: run "1" keeps its bit-9 change and also sets a colour register half way down the picture, in A, B, C and E, every precondition holding
+// MUTATION opus:3-a1000.c04 stimulus red NMH_MUTATE=P1MAIN: run "1" keeps its bit-9 change and also sets a colour register half way down the picture, the aggregate prints FAIL
+// MUTATION P2 stimulus red NMH_MUTATE=P2FIX: run "1" of configuration B at S1 loads a binary that does not exist and the fixture line prints FAIL
+// MUTATION P2-a stimulus red NMH_MUTATE=P2A: run "1" loads run "0"'s Copper list, so the fetched BPLCON0 values are run "0"'s
+// MUTATION P2-b stimulus red NMH_MUTATE=P2B: BPL1MOD=$0002, later lines start two bytes further out
+// MUTATION P2-I1 stimulus red NMH_MUTATE=P2ITEM1: VSTOP one line lower, a data block has H-1 lines
+// MUTATION P2-I2 stimulus red NMH_MUTATE=P2FLIP: bit 14 of w(100,5) flipped in memory while the expectation is unchanged
+// MUTATION P2-I3 stimulus red NMH_MUTATE=P2EDGE: the window is 32 pixels wider and 21 words per line are fetched, so the sample after the 320th pixel shows data
+// MUTATION opus:3-a1000.c05 stimulus red NMH_MUTATE=P2FLIP: bit 14 of w(100,5) flipped in memory, the aggregate prints FAIL
+// MUTATION P5 stimulus red NMH_MUTATE=P5FIX: the V1 program of S1 is a binary that does not exist and the fixture line prints FAIL
+// MUTATION P5-a stimulus red NMH_MUTATE=P5A: DMACON without BPLEN, no line shows C1
+// MUTATION P5-b stimulus red NMH_MUTATE=P5B: Copper WAIT(N-1,$30) before COLOR01=C2 replaced by WAIT(N-2,$30), the C2-side anchor finds V=N-2
+// MUTATION P5-c stimulus red NMH_MUTATE=P5C: BEAMCON0 bit 5 opposite the configured standard
+// MUTATION P5-d stimulus red NMH_MUTATE=P5D: the run is started with the OCS harness configuration
+// MUTATION P5-MAIN implementation green private chipset (VBSTRT blanking): P5-MAIN passes in V1 and V2, S1 and S2 on both cores
+// MUTATION P5-MAIN stimulus red NMH_MUTATE=P5MAIN on the private chipset: BEAMCON0 without VARVBEN, line N also shows C2 and the line prints FAIL
+// MUTATION opus:B-vbstrt.addr implementation green private chipset (VBSTRT blanking): the aggregate passes on both cores
+// MUTATION opus:B-vbstrt.addr stimulus red NMH_MUTATE=P5MAIN on the private chipset: BEAMCON0 without VARVBEN, the aggregate prints FAIL
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -93,41 +156,30 @@ constexpr uint32_t kCopListAddr = 0x020000;
 constexpr uint64_t kBootBudget = 6'000'000;
 constexpr uint64_t kRunBudget  = 6'000'000;
 
-// 1 colour clock (cc) = 8 clk_sys cycles. p.24: "One horizontal count takes
-// one cycle of the system clock (processor is twice this)", i.e. one cc
-// equals two processor-clock cycles; nanomig_harness.h documents the RAM
-// port as sampled "once per 7 MHz bus period" (see RamAccess and tick_pair's
-// comment), i.e. the processor's own clock runs one cycle every 4 clk_sys
-// cycles here -- so one cc is 2*4 = 8 clk_sys cycles. This ratio is a fixed
-// property of the harness's clock generator (SPECIFICATION.md, "Line and
-// colour-clock lengths": "converts colour clocks to the harness's
-// system-clock cycles using the harness's clock definition"), the same for
-// every run; it is not a value fitted to make any check pass.
-constexpr uint64_t CC = 8;
+// One colour clock in clk_sys cycles. p.24: "One horizontal count takes one
+// cycle of the system clock (processor is twice this)": the colour clock is
+// two processor clocks. The processor clock is the 7 MHz clock whose enable
+// the design exports at the port clk7_en; the run measures its period at the
+// port (CAL-CC below) and sets this value from it before anything else uses it.
+uint64_t g_cc = 8;
 
-constexpr uint64_t kWinStart = 228 * CC;         // t_f + 228 cc
-constexpr uint64_t kWinEnd   = 18 * 227 * CC;     // t_f + 18*227 cc
-constexpr uint64_t kWinEndP3bMutant = 30 * 227 * CC; // P3-b contrast
-constexpr uint64_t kSlack    = 30 * CC;           // 30 cc, P3-a
+uint64_t win_start()          { return 228 * g_cc; }       // t_f + 228 cc
+uint64_t win_end()            { return 18 * 227 * g_cc; }   // t_f + 18*227 cc
+uint64_t win_end_p3b_mutant() { return 30 * 227 * g_cc; }   // P3-b contrast
+uint64_t spread_slack()       { return 30 * g_cc; }         // 30 cc, P3-a
 
-// Field-length check (Common definitions): PAL 312/313 lines of 227 cc;
-// NTSC 262/263 lines alternating 227/228 cc, within one line (227 cc) plus
-// the period of the detecting loop. The 227 cc term is the page's own
-// figure; the "+300" clk_sys-cycle term is a margin for the VERTB-polling
-// loop's own period, tuned on this RTL because a CPU register read (unlike
-// the chip-RAM write of its own marker/burst store) never reaches the
-// Chip-memory port and so cannot be timed directly -- disclosed in
-// SPECIFICATION.md's build notes, together with the observed field-length
-// deltas the run prints for every system configuration (MEASURED lines).
-constexpr uint64_t kFieldSlack = 227 * CC + 300;
-constexpr uint64_t kPalMin  = 70824ull * CC, kPalMax  = 71051ull * CC;
-constexpr uint64_t kNtscMin = 59605ull * CC, kNtscMax = 59833ull * CC;
-
-bool field_length_ok(uint64_t delta, bool ntsc) {
-    uint64_t a = ntsc ? kNtscMin : kPalMin;
-    uint64_t b = ntsc ? kNtscMax : kPalMax;
-    auto near = [&](uint64_t x) { return delta + kFieldSlack >= x && delta <= x + kFieldSlack; };
-    return near(a) || near(b);
+// Field-length check (SPECIFICATION.md, Common definitions): the time between
+// two consecutive detections equals one of the page's two field lengths
+// (PAL 312/313 lines of 227 cc = 70,824/71,051 cc; NTSC 262/263 lines =
+// 59,605/59,833 cc) "within one line (227 cc) plus the period of the detecting
+// loop". The period of the detecting loop is measured from the program's own
+// instruction fetches (poll_loop below) and asserted (P3-L, P4-L); a vsync
+// detection has no loop and passes 0.
+bool field_length_ok(uint64_t delta, bool ntsc, uint64_t loop_cycles = 0) {
+    const uint64_t slack = 227 * g_cc + loop_cycles;
+    const uint64_t lo = (ntsc ? 59605ull : 70824ull) * g_cc;
+    const uint64_t hi = (ntsc ? 59833ull : 71051ull) * g_cc;
+    return delta + slack >= lo && delta <= hi + slack;
 }
 
 class Checks {
@@ -139,6 +191,21 @@ public:
     void note(const std::string& msg)   { std::cout << "MEASURED: " << msg << "\n"; }
     void record(const std::string& msg) { std::cout << "RECORDED: " << msg << "\n"; }
     int passed = 0, failed = 0;
+};
+
+// An aggregate line carries a claim; its components carry none. It prints FAIL
+// as soon as one graded component failed, PASS when every expected component
+// was graded and passed, and is otherwise not graded.
+struct Agg {
+    int expected = 0, graded = 0, failed = 0;
+    void add(bool was_graded, bool pass) {
+        if (was_graded) { ++graded; if (!pass) ++failed; }
+    }
+    bool gradable() const { return failed > 0 || graded == expected; }
+    std::string counts() const {
+        return std::to_string(graded) + " of " + std::to_string(expected) + " components graded, " +
+               std::to_string(failed) + " failed";
+    }
 };
 
 nmh::Config cfg_for_s(int s) {
@@ -153,9 +220,43 @@ nmh::Config cfg_for_s(int s) {
 }
 bool s_is_ntsc(int s) { return s == 2 || s == 4; }
 bool s_is_ecs(int s)  { return s == 1 || s == 2; }
+bool cfg_is_ecs(const nmh::Config& c) { return (c.chipset_config & 0x08) != 0; }
 std::string s_name(int s) {
     return std::string(s_is_ecs(s) ? "ECS" : "OCS") + "/" + (s_is_ntsc(s) ? "NTSC" : "PAL");
 }
+
+// CAL-CC: the period of the 7 MHz clock enable at the port clk7_en, in clk_sys
+// cycles. With irregular_sampling the port is read on an irregular subset of
+// the cycles (the CALCC contrast).
+struct Clk7 {
+    bool regular = false;
+    uint64_t period = 0;
+    int pulses = 0;
+};
+Clk7 measure_clk7(bool irregular_sampling) {
+    Clk7 r;
+    nmh::NanomigHarness h{nmh::Config{}};
+    h.boot(200);  // drives por and reset; the clock enables run from there
+    std::vector<uint64_t> at;
+    for (uint64_t i = 0; i < 400; ++i) {
+        h.run_cycles(1);
+        if (irregular_sampling && (i % 3) == 1) continue;
+        if (h.ports()->clk7_en) at.push_back(i);
+    }
+    r.pulses = (int)at.size();
+    if (at.size() >= 8) {
+        r.period = at[1] - at[0];
+        r.regular = r.period > 0;
+        for (size_t i = 1; i < at.size(); ++i)
+            if (at[i] - at[i - 1] != r.period) r.regular = false;
+    }
+    return r;
+}
+
+struct LoopStat {
+    size_t iterations = 0;   // loop iterations seen (consecutive fetches closer than one line)
+    uint64_t period = 0;     // the longest such interval, in clk_sys cycles
+};
 
 struct Run {
     size_t loaded = 0;
@@ -163,7 +264,35 @@ struct Run {
     std::optional<uint64_t> done;
     std::vector<nmh::RamAccess> log;   // coalesced full log (reads and writes)
     std::vector<uint16_t> prog_words;  // the loaded program's own image
+    LoopStat loop;
 };
+
+// The detecting loop of the VERTB programs is `MOVE.W INTREQR(A0),D0`
+// (opcode $3028, displacement $001E) / BTST / BEQ. A CPU read of a custom
+// register never reaches the Chip-memory port, but the loop's own instruction
+// fetches do: the interval between consecutive fetches of its first word is
+// the loop's period. Intervals of one line (227 cc, p.23) or more are the
+// waits between bursts, not iterations.
+LoopStat poll_loop(const std::vector<uint16_t>& prog, const std::vector<nmh::RamAccess>& log) {
+    LoopStat ls;
+    size_t at = SIZE_MAX;
+    for (size_t i = 0; i + 1 < prog.size(); ++i)
+        if (prog[i] == 0x3028 && prog[i + 1] == 0x001E) { at = i; break; }
+    if (at == SIZE_MAX) return ls;
+    const uint32_t wa = nmh::kProgramOrg / 2 + (uint32_t)at;
+    uint64_t prev = 0;
+    bool have = false;
+    for (auto& a : log) {
+        if (a.is_write || a.word_addr != wa || a.data != 0x3028) continue;
+        if (have) {
+            uint64_t d = a.cycle - prev;
+            if (d < 227 * g_cc) { ++ls.iterations; ls.period = std::max(ls.period, d); }
+        }
+        prev = a.cycle;
+        have = true;
+    }
+    return ls;
+}
 
 // preload: physical byte address (even, <$80000 is fine -- see playfield.i)
 // -> words to poke there before boot(), for a program that only points a
@@ -183,6 +312,7 @@ Run run_program(const std::string& bin, const nmh::Config& cfg,
     r.released = h.boot(kBootBudget).cpu_released;
     r.done = h.run_until_write(kDoneAddr, kDoneValue, kBootBudget + kRunBudget);
     r.log = nmh::coalesce(h.ram_log());
+    r.loop = poll_loop(r.prog_words, r.log);
     return r;
 }
 
@@ -239,6 +369,9 @@ std::vector<Detection> extract_detections(const std::vector<nmh::RamAccess>& log
     return out;
 }
 
+uint32_t v_of17(uint32_t mv) { return (mv >> 8) & 0x1FFu; }   // V8..V0
+uint32_t h_of17(uint32_t mv) { return mv & 0xFFu; }            // H8..H1
+
 struct WindowResult {
     int count = 0;
     bool has_min_100 = false;
@@ -247,32 +380,42 @@ struct WindowResult {
     bool strictly_increasing = true;
     bool all_equal = true;
     bool v_in_1_19 = true;
+    int pairs = 0;       // consecutive counted reads
+    int bad_pairs = 0;   // pairs whose 17-bit value does not increase
+    int lag_pairs = 0;   // of those: V8..V0 unchanged and H8..H1 lower (H wrapped, V not yet counted)
+    int v_over_19 = 0;   // counted reads with V above 19
 };
 
-WindowResult analyze_window(const Detection& d, uint64_t win_start, uint64_t win_end) {
+WindowResult analyze_window(const Detection& d, uint64_t win_s, uint64_t win_e) {
     WindowResult wr;
     std::vector<std::pair<uint64_t, uint32_t>> in;
     for (auto& rc : d.reads) {
         if (rc.first < d.marker_cycle) continue;
         uint64_t rel = rc.first - d.marker_cycle;
-        if (rel >= win_start && rel <= win_end) in.push_back(rc);
+        if (rel >= win_s && rel <= win_e) in.push_back(rc);
     }
     wr.count = (int)in.size();
     wr.has_min_100 = wr.count >= 100;
     if (!in.empty()) {
         uint64_t rel_first = in.front().first - d.marker_cycle;
         uint64_t rel_last = in.back().first - d.marker_cycle;
-        wr.first_near_start = (rel_first - win_start) <= kSlack;
-        wr.last_near_end = (win_end - rel_last) <= kSlack;
+        wr.first_near_start = (rel_first - win_s) <= spread_slack();
+        wr.last_near_end = (win_e - rel_last) <= spread_slack();
     }
     bool first = true;
     uint32_t prev = 0;
     for (auto& rc : in) {
         uint32_t mv = rc.second & 0x1FFFFu;
-        uint32_t V = (mv >> 8) & 0x1FFu;
+        uint32_t V = v_of17(mv);
         if (V < 1 || V > 19) wr.v_in_1_19 = false;
+        if (V > 19) ++wr.v_over_19;
         if (!first) {
-            if (!(mv > prev)) wr.strictly_increasing = false;
+            ++wr.pairs;
+            if (!(mv > prev)) {
+                wr.strictly_increasing = false;
+                ++wr.bad_pairs;
+                if (v_of17(mv) == v_of17(prev) && h_of17(mv) < h_of17(prev)) ++wr.lag_pairs;
+            }
             if (mv != prev) wr.all_equal = false;
         }
         prev = mv; first = false;
@@ -281,14 +424,14 @@ WindowResult analyze_window(const Detection& d, uint64_t win_start, uint64_t win
 }
 
 // Diagnostic only (does not affect any grade): the first pair inside a
-// window's counted reads where mv does not increase, with its position,
-// cycles and values, or "(none)" if the whole window is strictly increasing.
-std::string first_violation(const Detection& d, uint64_t win_start, uint64_t win_end) {
+// window's counted reads where the 17-bit value does not increase, with its
+// position, cycles and values, or "(none)" if the whole window increases.
+std::string first_violation(const Detection& d, uint64_t win_s, uint64_t win_e) {
     std::vector<std::pair<uint64_t, uint32_t>> in;
     for (auto& rc : d.reads) {
         if (rc.first < d.marker_cycle) continue;
         uint64_t rel = rc.first - d.marker_cycle;
-        if (rel >= win_start && rel <= win_end) in.push_back(rc);
+        if (rel >= win_s && rel <= win_e) in.push_back(rc);
     }
     for (size_t i = 1; i < in.size(); ++i) {
         uint32_t prev = in[i - 1].second & 0x1FFFFu, cur = in[i].second & 0x1FFFFu;
@@ -296,8 +439,8 @@ std::string first_violation(const Detection& d, uint64_t win_start, uint64_t win
             char buf[192];
             std::snprintf(buf, sizeof buf,
                 "at read %zu/%zu: prev mv=%05X (V=%u H=%u) cyc=%llu -> cur mv=%05X (V=%u H=%u) cyc=%llu (delta cyc=%lld)",
-                i, in.size(), prev, (prev >> 8) & 0x1FFu, prev & 0xFFu, (unsigned long long)in[i - 1].first,
-                cur, (cur >> 8) & 0x1FFu, cur & 0xFFu, (unsigned long long)in[i].first,
+                i, in.size(), prev, v_of17(prev), h_of17(prev), (unsigned long long)in[i - 1].first,
+                cur, v_of17(cur), h_of17(cur), (unsigned long long)in[i].first,
                 (long long)(in[i].first - in[i - 1].first));
             return std::string(buf);
         }
@@ -332,6 +475,10 @@ constexpr uint32_t kBplPlane3 = 0x032000;
 constexpr uint32_t kBplPlane4 = 0x037000;
 
 constexpr uint16_t kC0 = 0x0359, kC1 = 0x0EA2, kC2 = 0x0F3C, kC3 = 0x04E7;
+constexpr uint16_t kC1Visible = 0x0EA3;  // C1 with blue bit 0 set (P1 contrast)
+constexpr uint16_t kC0Visible = 0x0358;  // C0 with blue bit 0 cleared (P1 contrast)
+constexpr uint16_t kPalette16[16] = {0x0359, 0x0EA2, 0x0F3C, 0x04E7, 0x0A0F, 0x00F5, 0x0FF0, 0x0888,
+                                      0x0C63, 0x036C, 0x09E1, 0x0E19, 0x05A5, 0x0D7B, 0x01BD, 0x0B42};
 
 bool shows(const nmh::VideoSample& s, uint16_t cw) {
     return s.r == ((cw >> 8) & 0xF) && s.g == ((cw >> 4) & 0xF) && s.b == (cw & 0xF);
@@ -370,64 +517,80 @@ std::vector<uint16_t> bitplane_c(int plane, int H) {
     return d;
 }
 
-// A Copper list built for a specific run ("0"/"1"), plus, for every MOVE to
-// BPLCON0 it contains, the physical word address of that MOVE's *data*
-// word and the value it must carry (P1-b/P2-a). The list repeats every
-// field (COP1LC auto-restart, p.25/p.30), so each such address is fetched
-// once per field with the log accumulating one entry per field -- P1-b
-// counts them.
-struct CopBuild {
-    std::vector<uint16_t> list;
-    std::vector<std::pair<uint32_t, uint16_t>> bplcon0_fetches;  // (word addr, expected data)
-};
+// What the pages say the Copper's MOVEs to BPLCON0 carry, in the order the
+// list executes them within one field (SPECIFICATION.md P1, table and
+// configuration E). It is the oracle for P1-b and does not depend on the list
+// a run loads.
+std::vector<uint16_t> expected_bplcon0(char cfg, int run) {
+    std::vector<uint16_t> v;
+    switch (cfg) {
+        case 'A': v.push_back(run ? 0x0200 : 0x0000); break;
+        case 'B': v.push_back(run ? 0x1200 : 0x1000); break;
+        case 'C': v.push_back(run ? 0xC200 : 0xC000); break;
+        default:
+            v.push_back(0x1000);
+            for (int L = 0x2C; L <= 0xFE; ++L) v.push_back(run ? ((L & 1) ? 0x1200 : 0x1000) : 0x1000);
+    }
+    return v;
+}
 
-CopBuild build_cop_A(int run) {
-    CopBuild cb;
-    uint16_t val = run == 0 ? 0x0000 : 0x0200;
-    cb.bplcon0_fetches.push_back({kCopListAddr / 2 + 1, val});
-    cop_move(cb.list, 0x100, val);
-    cop_end(cb.list);
-    return cb;
-}
-CopBuild build_cop_B(int run) {
-    CopBuild cb;
-    uint16_t val = run == 0 ? 0x1000 : 0x1200;
-    cb.bplcon0_fetches.push_back({kCopListAddr / 2 + 1, val});
-    cop_move(cb.list, 0x100, val);
-    cop_move(cb.list, 0x0E0, uint16_t(kBplPlane1 >> 16));
-    cop_move(cb.list, 0x0E2, uint16_t(kBplPlane1 & 0xFFFF));
-    cop_end(cb.list);
-    return cb;
-}
-CopBuild build_cop_C(int run) {
-    CopBuild cb;
-    uint16_t val = run == 0 ? 0xC000 : 0xC200;
-    cb.bplcon0_fetches.push_back({kCopListAddr / 2 + 1, val});
-    cop_move(cb.list, 0x100, val);
-    uint32_t planes[4] = {kBplPlane1, kBplPlane2, kBplPlane3, kBplPlane4};
-    uint16_t ph[4] = {0x0E0, 0x0E4, 0x0E8, 0x0EC}, pl[4] = {0x0E2, 0x0E6, 0x0EA, 0x0EE};
-    for (int i = 0; i < 4; ++i) {
-        cop_move(cb.list, ph[i], uint16_t(planes[i] >> 16));
-        cop_move(cb.list, pl[i], uint16_t(planes[i] & 0xFFFF));
+// The Copper list of one run. contrast: the list also changes one colour
+// register half way down the picture (a change the pages say is visible);
+// colour_top (config A): COLOR00 is set to another value for the whole field;
+// force: build the list of that configuration instead.
+std::vector<uint16_t> build_cop(char cfg, int run, bool contrast, bool colour_top, char force) {
+    std::vector<uint16_t> l;
+    const char eff = force ? force : cfg;
+    const uint16_t v = expected_bplcon0(eff, run)[0];
+    switch (eff) {
+        case 'A':
+            cop_move(l, 0x100, v);
+            if (colour_top) cop_move(l, 0x180, kC0Visible);
+            if (contrast) {
+                cop_move(l, 0x180, kC0);
+                cop_wait(l, 0x80, 0x00);
+                cop_move(l, 0x180, kC0Visible);
+            }
+            break;
+        case 'B':
+            cop_move(l, 0x100, v);
+            cop_move(l, 0x0E0, uint16_t(kBplPlane1 >> 16));
+            cop_move(l, 0x0E2, uint16_t(kBplPlane1 & 0xFFFF));
+            if (contrast) {
+                cop_move(l, 0x182, kC1);
+                cop_wait(l, 0x80, 0x00);
+                cop_move(l, 0x182, kC1Visible);
+            }
+            break;
+        case 'C': {
+            cop_move(l, 0x100, v);
+            const uint32_t planes[4] = {kBplPlane1, kBplPlane2, kBplPlane3, kBplPlane4};
+            const uint16_t ph[4] = {0x0E0, 0x0E4, 0x0E8, 0x0EC}, pl[4] = {0x0E2, 0x0E6, 0x0EA, 0x0EE};
+            for (int i = 0; i < 4; ++i) {
+                cop_move(l, ph[i], uint16_t(planes[i] >> 16));
+                cop_move(l, pl[i], uint16_t(planes[i] & 0xFFFF));
+            }
+            if (contrast) {
+                cop_move(l, 0x182, kC1);
+                cop_wait(l, 0x80, 0x00);
+                cop_move(l, 0x182, kC1Visible);
+            }
+            break;
+        }
+        default: {
+            cop_move(l, 0x100, 0x1000);
+            cop_move(l, 0x0E0, uint16_t(kBplPlane1 >> 16));
+            cop_move(l, 0x0E2, uint16_t(kBplPlane1 & 0xFFFF));
+            if (contrast) cop_move(l, 0x182, kC1);
+            for (int L = 0x2C; L <= 0xFE; ++L) {
+                cop_wait(l, (uint8_t)L, 0x80);
+                cop_move(l, 0x100, run ? ((L & 1) ? 0x1200 : 0x1000) : 0x1000);
+                if (contrast && L == 0x80) cop_move(l, 0x182, kC1Visible);
+            }
+        }
     }
-    cop_end(cb.list);
-    return cb;
-}
-CopBuild build_cop_E(int run) {
-    CopBuild cb;
-    cb.bplcon0_fetches.push_back({kCopListAddr / 2 + 1, 0x1000});
-    cop_move(cb.list, 0x100, 0x1000);
-    cop_move(cb.list, 0x0E0, uint16_t(kBplPlane1 >> 16));
-    cop_move(cb.list, 0x0E2, uint16_t(kBplPlane1 & 0xFFFF));
-    for (int L = 0x2C; L <= 0xFE; ++L) {
-        cop_wait(cb.list, (uint8_t)L, 0x80);
-        uint32_t off = (uint32_t)cb.list.size();
-        uint16_t val = (run == 0) ? 0x1000 : ((L & 1) ? 0x1200 : 0x1000);
-        cop_move(cb.list, 0x100, val);
-        cb.bplcon0_fetches.push_back({kCopListAddr / 2 + off + 1, val});
-    }
-    cop_end(cb.list);
-    return cb;
+    cop_end(l);
+    return l;
 }
 
 // DMA field boundaries (P1-c): consecutive Copper fetches of the list's own
@@ -436,6 +599,24 @@ CopBuild build_cop_E(int run) {
 std::vector<uint64_t> dma_field_starts(const std::vector<nmh::RamAccess>& log) {
     std::vector<uint64_t> out;
     for (auto& a : log) if (!a.is_write && a.word_addr == kCopListAddr / 2) out.push_back(a.cycle);
+    return out;
+}
+
+// The data words of the Copper's fetched MOVEs to BPLCON0 in [from,to): a
+// fetched first word $0100 at an even offset of the list, followed by the
+// fetch of the next word.
+std::vector<uint16_t> fetched_bplcon0(const std::vector<nmh::RamAccess>& log, uint64_t from, uint64_t to) {
+    std::vector<uint16_t> out;
+    const uint32_t base = kCopListAddr / 2;
+    int64_t pending = -1;
+    for (auto& a : log) {
+        if (a.is_write || a.cycle < from || a.cycle >= to) continue;
+        if (a.word_addr < base || a.word_addr >= base + 4096) continue;
+        const uint32_t off = a.word_addr - base;
+        if (pending >= 0 && (int64_t)off == pending) { out.push_back(a.data); pending = -1; }
+        else if ((off & 1) == 0 && a.data == 0x0100) pending = (int64_t)off + 1;
+        else pending = -1;
+    }
     return out;
 }
 
@@ -487,55 +668,192 @@ constexpr uint64_t kP1BootBudget = 3'000'000;
 constexpr uint64_t kP1RunCycles  = 5'500'000;  // >= 9 PAL max fields (568408*9 ~= 5.12M) + margin;
                                                 // P2 needs 6 DMA-field starts / 7 vsync assertions
 
+// What a display pair's stimulus changes relative to the nominal one.
+struct DispOpts {
+    std::string ov0, ov1;            // program overrides ("" = the nominal program)
+    bool contrast1 = false;          // run "1": the list also changes a colour register mid-picture
+    bool list1_is_list0 = false;     // run "1" loads run "0"'s Copper list
+    bool zero_bitplane = false;      // bitplane buffers filled with $0000
+    int flip_word_index = -1;        // XOR bit 14 into this word of plane 1 (both runs)
+    char force_list = 0;             // build the list of this configuration for both runs
+    bool a_colour_top = false;       // config A: COLOR00 set to another value by the Copper
+};
+
 struct DisplayData {
     VideoRun run0, run1;
-    CopBuild c0, c1;
     int H = 0;
     bool ok = false;
 };
 
-// Builds and runs one display configuration's pair of runs ("0"/"1"). ov0/ov1
-// override the CPU-program binary (empty = the normal one for cfgname/
-// standard); flip_word_index (config B/E only) XORs bit 14 of that word
-// index into the (unmodified-formula) bitplane data of BOTH runs (P2's
-// main-check contrast); mutant_same_list makes run "1" reuse run "0"'s
-// Copper list verbatim (P1's main-check contrast: bit 9 never changes,
-// only a colour register does, via ov1); zero_bitplane fills the buffer
-// with $0000 (P1-d contrast).
-DisplayData build_and_run_display(const std::string& dir, char cfgname, int s,
-                                   const std::string& ov0, const std::string& ov1,
-                                   bool mutant_same_list, bool zero_bitplane, int flip_word_index = -1) {
+// Builds and runs one display configuration's pair of runs ("0"/"1").
+DisplayData build_and_run_display(const std::string& dir, char cfgname, int s, const DispOpts& o) {
     DisplayData d;
     bool ntsc = s_is_ntsc(s);
     d.H = ntsc ? 200 : 256;
     bool palette16 = (cfgname == 'C');
-    std::string bin0 = ov0.empty() ? p1_bin(dir, palette16, ntsc) : ov0;
-    std::string bin1 = ov1.empty() ? p1_bin(dir, palette16, ntsc) : ov1;
+    std::string bin0 = o.ov0.empty() ? p1_bin(dir, palette16, ntsc) : o.ov0;
+    std::string bin1 = o.ov1.empty() ? p1_bin(dir, palette16, ntsc) : o.ov1;
 
     std::vector<std::pair<uint32_t, std::vector<uint16_t>>> bpl;
     if (cfgname == 'B' || cfgname == 'E') {
-        std::vector<uint16_t> data = zero_bitplane ? std::vector<uint16_t>((size_t)20 * d.H, 0) : bitplane_be(d.H);
-        if (flip_word_index >= 0 && (size_t)flip_word_index < data.size()) data[flip_word_index] ^= 0x4000;
+        std::vector<uint16_t> data = o.zero_bitplane ? std::vector<uint16_t>((size_t)20 * d.H, 0) : bitplane_be(d.H);
+        if (o.flip_word_index >= 0 && (size_t)o.flip_word_index < data.size()) data[o.flip_word_index] ^= 0x4000;
         bpl.push_back({kBplPlane1, data});
     } else if (cfgname == 'C') {
-        bpl.push_back({kBplPlane1, bitplane_c(1, d.H)});
-        bpl.push_back({kBplPlane2, bitplane_c(2, d.H)});
-        bpl.push_back({kBplPlane3, bitplane_c(3, d.H)});
-        bpl.push_back({kBplPlane4, bitplane_c(4, d.H)});
+        const uint32_t planes[4] = {kBplPlane1, kBplPlane2, kBplPlane3, kBplPlane4};
+        for (int p = 1; p <= 4; ++p)
+            bpl.push_back({planes[p - 1], o.zero_bitplane ? std::vector<uint16_t>((size_t)40 * d.H, 0) : bitplane_c(p, d.H)});
+    } else if (o.force_list == 'B') {
+        bpl.push_back({kBplPlane1, bitplane_be(d.H)});
     }
 
-    if (cfgname == 'A') { d.c0 = build_cop_A(0); d.c1 = build_cop_A(1); }
-    else if (cfgname == 'B') { d.c0 = build_cop_B(0); d.c1 = build_cop_B(1); }
-    else if (cfgname == 'C') { d.c0 = build_cop_C(0); d.c1 = build_cop_C(1); }
-    else { d.c0 = build_cop_E(0); d.c1 = build_cop_E(1); }
-
-    auto preloads0 = bpl; preloads0.push_back({kCopListAddr, d.c0.list});
-    auto preloads1 = bpl; preloads1.push_back({kCopListAddr, mutant_same_list ? d.c0.list : d.c1.list});
+    auto list0 = build_cop(cfgname, 0, false, o.a_colour_top, o.force_list);
+    auto list1 = o.list1_is_list0 ? list0 : build_cop(cfgname, 1, o.contrast1, o.a_colour_top, o.force_list);
+    auto preloads0 = bpl; preloads0.push_back({kCopListAddr, list0});
+    auto preloads1 = bpl; preloads1.push_back({kCopListAddr, list1});
 
     d.run0 = run_video(bin0, cfg_for_s(s), kP1BootBudget, kP1RunCycles, preloads0);
     d.run1 = run_video(bin1, cfg_for_s(s), kP1BootBudget, kP1RunCycles, preloads1);
     d.ok = d.run0.loaded > 0 && d.run1.loaded > 0;
     return d;
+}
+
+// P1-b: in every complete DMA field that overlaps [b,e) (two fields at least),
+// the Copper's fetched MOVEs to BPLCON0 carry the table's values, in order.
+bool bplcon0_fetches_ok(const VideoRun& r, const std::vector<uint64_t>& starts, uint64_t b, uint64_t e,
+                         const std::vector<uint16_t>& want, size_t* fields_checked = nullptr) {
+    size_t n = 0;
+    bool ok = true;
+    for (size_t f = 0; f + 1 < starts.size(); ++f) {
+        if (!(starts[f + 1] > b && starts[f] < e)) continue;
+        if (fetched_bplcon0(r.log, starts[f], starts[f + 1]) != want) ok = false;
+        ++n;
+    }
+    if (fields_checked) *fields_checked = n;
+    return ok && n >= 2;
+}
+
+// P1-a: the hsync and vsync samples of [b0,e0) of one trace equal those of [b1,e1) of the other, sample by sample.
+bool sync_samples_identical(const std::vector<nmh::VideoSample>& v0, size_t b0, size_t e0,
+                            const std::vector<nmh::VideoSample>& v1, size_t b1, size_t e1) {
+    if (e0 - b0 != e1 - b1) return false;
+    for (size_t i = 0; i < e0 - b0; ++i)
+        if (v0[b0 + i].hs != v1[b1 + i].hs || v0[b0 + i].vs != v1[b1 + i].vs) return false;
+    return true;
+}
+
+// P1-e: consecutive vsync assertions recur at the configured standard's field length.
+bool vsync_field_length_ok(const std::vector<size_t>& vsa, bool ntsc) {
+    bool ok = vsa.size() > 1;
+    for (size_t i = 1; i < vsa.size() && i < 8; ++i) ok = ok && field_length_ok(vsa[i] - vsa[i - 1], ntsc);
+    return ok;
+}
+
+// Calibration of the scan doubler's units (SPECIFICATION.md, Video output):
+// the output has m hs periods per beam line and k samples per low-resolution
+// pixel. Both are checked against the pages in the run: the hs periods between
+// consecutive vsync assertions number m times the page's line count of one
+// field (p.24: 312/313 PAL, 262/263 NTSC); a doubler line is the m-th part of
+// a beam line of 227 or 228 cc (p.23); a low-resolution pixel is half a colour
+// clock (p.239: "2 low resolution pixels" per horizontal count), so k is the
+// doubler line length divided by the 2*227 pixels of a line.
+constexpr int kDoublerM = 2;
+struct VideoCal {
+    bool ok = false;
+    int k = 0;
+    size_t median_len = 0;
+};
+VideoCal calibrate_video(const std::vector<nmh::VideoSample>& v, const std::vector<size_t>& vsa, bool ntsc) {
+    VideoCal vc;
+    if (vsa.size() < 2) return vc;
+    const size_t lo = ntsc ? 262 : 312, hi = ntsc ? 263 : 313;
+    auto lines = nmh::find_lines(v);
+    bool counts_ok = true;
+    for (size_t i = 0; i + 1 < vsa.size(); ++i) {
+        size_t n = 0;
+        for (auto& sp : lines) if (sp.begin >= vsa[i] && sp.begin < vsa[i + 1]) ++n;
+        if (!(n == kDoublerM * lo || n == kDoublerM * hi)) counts_ok = false;
+    }
+    std::vector<size_t> lens;
+    for (auto& sp : lines) if (sp.begin >= vsa.front() && sp.end <= vsa.back()) lens.push_back(sp.end - sp.begin);
+    bool len_ok = !lens.empty();
+    for (auto l : lens) if (!(kDoublerM * l >= 226 * g_cc && kDoublerM * l <= 229 * g_cc)) len_ok = false;
+    if (!lens.empty()) {
+        std::sort(lens.begin(), lens.end());
+        vc.median_len = lens[lens.size() / 2];
+        vc.k = (int)((vc.median_len + 227) / (2 * 227));
+    }
+    vc.ok = counts_ok && len_ok && vc.k >= 1;
+    return vc;
+}
+
+// A doubler line (one hs period) of the span [b,e) and what it shows.
+struct DLine {
+    size_t begin = 0, end = 0;
+    bool c1 = false;
+    size_t first_c1 = 0;   // sample index of the first sample showing C1
+};
+std::vector<DLine> doubler_lines(const std::vector<nmh::VideoSample>& v, size_t b, size_t e) {
+    std::vector<DLine> out;
+    for (auto& sp : nmh::find_lines(v)) {
+        if (sp.begin < b || sp.end > e) continue;
+        DLine d;
+        d.begin = sp.begin; d.end = sp.end;
+        for (size_t k = sp.begin; k < sp.end && k < v.size(); ++k)
+            if (shows(v[k], kC1)) { d.c1 = true; d.first_c1 = k; break; }
+        out.push_back(d);
+    }
+    return out;
+}
+
+// P2 main (SPECIFICATION.md P2, items 1-3), one run.
+struct P2Eval {
+    size_t blocks = 0, complete = 0;
+    bool i1 = false, i2 = false, i3 = false;
+    size_t first_bad_block = 0, first_bad_line = 0;
+    std::vector<size_t> complete_lens;
+};
+P2Eval eval_p2(const VideoRun& r, size_t b, size_t e, int H, int k) {
+    P2Eval ev;
+    auto dl = doubler_lines(r.video, b, e);
+    struct Blk { size_t start, len; };
+    std::vector<Blk> blocks;
+    for (size_t i = 0; i < dl.size();) {
+        if (!dl[i].c1) { ++i; continue; }
+        size_t j = i;
+        while (j < dl.size() && dl[j].c1) ++j;
+        blocks.push_back({i, j - i});
+        i = j;
+    }
+    ev.blocks = blocks.size();
+    bool lens_ok = true, pix_ok = true, border_ok = true;
+    for (size_t bi = 0; bi < blocks.size(); ++bi) {
+        const Blk& bk = blocks[bi];
+        const bool complete = bk.start > 0 && bk.start + bk.len < dl.size();
+        if (!complete) continue;
+        ++ev.complete;
+        ev.complete_lens.push_back(bk.len);
+        if (bk.len != (size_t)kDoublerM * (size_t)H) lens_ok = false;
+        for (size_t d = 0; d < bk.len; ++d) {
+            const DLine& ln = dl[bk.start + d];
+            const int j = (int)(d / kDoublerM);
+            const size_t s0 = ln.first_c1;
+            bool line_pix = s0 + (size_t)k * 320 <= ln.end;
+            for (int i = 0; line_pix && i < 320; ++i) {
+                const bool bit = (w_be(j, i / 16) >> (15 - (i % 16))) & 1;
+                for (int q = 0; q < k && line_pix; ++q)
+                    if (!shows(r.video[s0 + (size_t)k * i + q], bit ? kC1 : kC0)) line_pix = false;
+            }
+            if (!line_pix) { if (pix_ok) { ev.first_bad_block = bi; ev.first_bad_line = d; } pix_ok = false; }
+            const bool left = s0 > ln.begin && shows(r.video[s0 - 1], kC0);
+            const bool right = s0 + (size_t)k * 320 < ln.end && shows(r.video[s0 + (size_t)k * 320], kC0);
+            if (!(left && right)) border_ok = false;
+        }
+    }
+    ev.i1 = ev.complete >= 3 && lens_ok;
+    ev.i2 = ev.complete >= 3 && pix_ok;
+    ev.i3 = ev.complete >= 3 && border_ok;
+    return ev;
 }
 
 // -----------------------------------------------------------------------
@@ -548,19 +866,16 @@ struct P5Cop {
     uint32_t addr_c3 = 0;  // word address of the MOVE COLOR01,C3 data word
 };
 
-// marker_n is the vertical position the WAITs (and thus the anchor, P5-b)
-// use; reg_n is what VBSTRT/VBSTOP actually get set to in the CPU program.
-// They are equal except for the "value" contrasting case, where the
-// program writes VBSTRT=reg_n while the Copper markers stay at marker_n.
-P5Cop build_cop_P5(uint8_t marker_n) {
+// marker_n is the vertical position the WAITs (and thus the anchor, P5-b) use.
+P5Cop build_cop_P5(uint8_t wait_c2, uint8_t wait_c3) {
     P5Cop cb;
     cop_move(cb.list, 0x0E0, uint16_t(kBplPlane1 >> 16));
     cop_move(cb.list, 0x0E2, uint16_t(kBplPlane1 & 0xFFFF));
     cop_move(cb.list, 0x182, kC1);
-    cop_wait(cb.list, uint8_t(marker_n - 1), 0x30);
+    cop_wait(cb.list, wait_c2, 0x30);
     cb.addr_c2 = kCopListAddr / 2 + (uint32_t)cb.list.size() + 1;
     cop_move(cb.list, 0x182, kC2);
-    cop_wait(cb.list, uint8_t(marker_n + 1), 0x30);
+    cop_wait(cb.list, wait_c3, 0x30);
     cb.addr_c3 = kCopListAddr / 2 + (uint32_t)cb.list.size() + 1;
     cop_move(cb.list, 0x182, kC3);
     cop_end(cb.list);
@@ -578,15 +893,42 @@ std::string p5_bin(const std::string& dir, bool ntsc, bool v2) {
     return dir + (v2 ? "/prog_p5_pal_v2.bin" : "/prog_p5_pal_v1.bin");
 }
 
-P5Run run_p5(const std::string& bin, int s, uint8_t marker_n) {
+P5Run run_p5(const std::string& bin, const nmh::Config& cfg, uint8_t wait_c2, uint8_t wait_c3) {
     P5Run r;
-    r.cop = build_cop_P5(marker_n);
+    r.cop = build_cop_P5(wait_c2, wait_c3);
     std::vector<uint16_t> bitplane(20 * 196, 0xFFFF);
     std::vector<std::pair<uint32_t, std::vector<uint16_t>>> preloads = {
         {kBplPlane1, bitplane}, {kCopListAddr, r.cop.list}};
-    r.vr = run_video(bin, cfg_for_s(s), kP1BootBudget, kP1RunCycles, preloads);
+    r.vr = run_video(bin, cfg, kP1BootBudget, kP1RunCycles, preloads);
     r.ok = r.vr.loaded > 0;
     return r;
+}
+
+// The anchor (P5-b): around each of VERTB detections 2-4, the last VPOSR read
+// before the Copper's fetch of the COLOR01 data word and the first read after
+// it both show V == expect_v.
+bool p5_anchor(const VideoRun& vr, const std::vector<Detection>& det, uint32_t addr, uint8_t expect_v) {
+    for (int i = 1; i <= 3 && i < (int)det.size(); ++i) {
+        uint64_t t0 = det[i].marker_cycle;
+        uint64_t t1 = (i + 1 < (int)det.size()) ? det[i + 1].marker_cycle : t0 + 400000;
+        std::optional<uint64_t> tc;
+        for (auto& a : vr.log)
+            if (!a.is_write && a.word_addr == addr && a.cycle >= t0 && a.cycle < t1) { tc = a.cycle; break; }
+        if (!tc) return false;
+        uint64_t last_before = 0, first_after = 0;
+        bool have_before = false, have_after = false;
+        uint32_t val_before = 0, val_after = 0;
+        for (auto& rc : det[i].reads) {
+            if (rc.first < *tc) {
+                if (!have_before || rc.first > last_before) { last_before = rc.first; val_before = rc.second; have_before = true; }
+            } else {
+                if (!have_after || rc.first < first_after) { first_after = rc.first; val_after = rc.second; have_after = true; }
+            }
+        }
+        auto v8 = [](uint32_t v32) { return (uint8_t)(v_of17(v32 & 0x1FFFFu) & 0xFF); };
+        if (!(have_before && have_after && v8(val_before) == expect_v && v8(val_after) == expect_v)) return false;
+    }
+    return true;
 }
 
 }  // namespace
@@ -598,415 +940,573 @@ int main(int argc, char** argv) {
 
     const char* mutate_c = std::getenv("NMH_MUTATE");
     const std::string mv = mutate_c ? mutate_c : "";
-    // A mutation's run captures only what it changes (its own proposition
-    // group): the plain run (mv empty) still runs every group. (Named do_p*,
-    // not run_p*, so as not to shadow the run_p5() function below.)
-    const bool do_p3 = mv.empty() || mv.rfind("P3", 0) == 0;
-    const bool do_p4 = mv.empty() || mv.rfind("P4", 0) == 0;
-    const bool do_p1 = mv.empty() || mv.rfind("P1", 0) == 0;
-    const bool do_p2 = mv.empty() || mv.rfind("P2", 0) == 0;
-    const bool do_p5 = mv.empty() || mv.rfind("P5", 0) == 0;
-    const bool mut_p3d          = mv == "P3D";
-    const bool mut_p3a          = mv == "P3A";
-    const bool mut_p3b          = mv == "P3B";
-    const bool mut_p3c_lpendis  = mv == "P3C_LPENDIS";
-    const bool mut_p3c_wrongstd = mv == "P3C_WRONGSTD";
-    const bool mut_p4main       = mv == "P4MAIN";
-    const bool mut_p4b_prog     = mv == "P4B_PROG";
-    const bool mut_p4b_cop      = mv == "P4B_COP";
-    const bool mut_p4a          = mv == "P4A";
-    const bool mut_p4c          = mv == "P4C";
+    const char* only_c = std::getenv("NMH_ONLY");
+    const std::string only = only_c ? only_c : "";
+    auto grp = [&](const char* g) {
+        if (!mv.empty()) return mv.rfind(g, 0) == 0;
+        return only.empty() || only.find(g) != std::string::npos;
+    };
+    const bool do_p3 = grp("P3"), do_p4 = grp("P4"), do_p1 = grp("P1"), do_p5 = grp("P5");
+    const bool do_p2 = grp("P2") || mv == "CALVID";
+    // A mutation's run captures only what it changes, in the first system
+    // configuration; the plain run grades every system configuration.
+    const int smax = mv.empty() ? 4 : 1;
+    const int smax_p5 = mv.empty() ? 2 : 1;
+    auto mut = [&](const char* n) { return mv == n; };
 
-    const uint64_t win_end_p3b = mut_p3b ? kWinEndP3bMutant : kWinEnd;
+    // ---------------------------------------------------------------
+    // CAL-CC: the colour clock in clk_sys cycles, from the 7 MHz clock enable
+    // at the port (p.24: the colour clock is two processor clocks).
+    // ---------------------------------------------------------------
+    {
+        Clk7 k7 = measure_clk7(mut("CALCC"));
+        char b[96];
+        std::snprintf(b, sizeof b, "clk7_en pulses=%d period=%llu clk_sys cycles", k7.pulses, (unsigned long long)k7.period);
+        c.note(std::string("CAL-CC: ") + b);
+        c.expect(k7.regular,
+            "CAL-CC: the 7 MHz clock enable recurs at the port with one constant period over every pulse seen; "
+            "one colour clock is two of its periods (p.24)");
+        if (k7.regular) g_cc = 2 * k7.period;
+    }
+    c.note("colour clock = " + std::to_string(g_cc) + " clk_sys cycles");
 
     // ---------------------------------------------------------------
     // P3 -- BPLCON0 bit 3 (LPEN) enables the light-pen latch (p.271, p.89,
     // p.229, p.239). Claims: opus:A-bpc.b03.c0, sol:A-bplcon.c49,
     // opus:A-leg.lpen1, sol:A-bplcon.c72, opus:3-r0.c09, sol:3-regsum-bplcon0.c6
     // ---------------------------------------------------------------
-    for (int s = 1; do_p3 && s <= 4; ++s) {
-        const bool ntsc = s_is_ntsc(s);
-        const bool ecs = s_is_ecs(s);
-        nmh::Config cfg = cfg_for_s(s);
+    {
+        Agg agg3; agg3.expected = 4;
+        const uint64_t win_end_p3b = mut("P3B") ? win_end_p3b_mutant() : win_end();
+        for (int s = 1; do_p3 && s <= smax; ++s) {
+            const bool ntsc = s_is_ntsc(s);
+            const bool ecs = s_is_ecs(s);
+            const std::string sn = "S" + std::to_string(s);
+            nmh::Config cfg = cfg_for_s(s);
 
-        std::string bin_l0 = lpen_bin(dir, s, false);
-        std::string bin_l1 = lpen_bin(dir, s, true);
-        if (ecs && s == 1 && mut_p3d) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_mutd.bin";
-        if (ecs && s == 1 && mut_p3a) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_burst20.bin";
-        if (ecs && s == 1 && mut_p3c_lpendis) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_lpendis.bin";
-        if (ecs && s == 1 && mut_p3c_wrongstd) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_wrongstd.bin";
-        const int burstlen = (ecs && s == 1 && mut_p3a) ? 20 : 600;
+            std::string bin_l0 = lpen_bin(dir, s, false);
+            std::string bin_l1 = lpen_bin(dir, s, true);
+            if (s == 1 && mut("P3FIX")) bin_l1 = dir + "/prog_lpen_missing.bin";
+            if (s == 1 && mut("P3MAIN")) bin_l1 = bin_l0;
+            if (ecs && s == 1 && mut("P3D")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_mutd.bin";
+            if (ecs && s == 1 && mut("P3A")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_burst20.bin";
+            if (ecs && s == 1 && mut("P3C_LPENDIS")) bin_l1 = dir + "/prog_lpen_ecs_pal_l1_lpendis.bin";
+            if (ecs && s == 1 && mut("P3C_WRONGSTD")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_wrongstd.bin";
+            if (ecs && s == 1 && mut("P3L")) bin_l0 = dir + "/prog_lpen_ecs_pal_l0_nopoll.bin";
+            const int burstlen1 = (ecs && s == 1 && mut("P3A")) ? 20 : 600;
+            const int burstlen0 = 600;
 
-        Run r0 = run_program(bin_l0, cfg);
-        Run r1 = run_program(bin_l1, cfg);
-        const bool ok0 = r0.loaded && r0.released && r0.done.has_value();
-        const bool ok1 = r1.loaded && r1.released && r1.done.has_value();
+            Run r0 = run_program(bin_l0, cfg);
+            Run r1 = run_program(bin_l1, cfg);
+            const bool ok0 = r0.loaded && r0.released && r0.done.has_value();
+            const bool ok1 = r1.loaded && r1.released && r1.done.has_value();
 
-        c.expect(ok0 && ok1, std::string("P3 fixture S") + std::to_string(s) + " (" + s_name(s) +
-                  "): both L0 and L1 programs loaded, released reset and reached DONE");
+            c.expect(ok0 && ok1, "P3 fixture " + sn + " (" + s_name(s) +
+                      "): both L0 and L1 programs loaded, released reset and reached DONE");
 
-        auto det0 = extract_detections(r0.log, (ecs && s == 1 && mut_p3a) ? 600 : 600); // L0 never mutated for burst
-        auto det1 = extract_detections(r1.log, burstlen);
+            auto det0 = extract_detections(r0.log, burstlen0);
+            auto det1 = extract_detections(r1.log, burstlen1);
+            const uint64_t loopmax = std::max(r0.loop.period, r1.loop.period);
 
-        // Main proposition: in L1, every window (detections 2-5) holds one value.
-        bool main_ok = ok1;
-        int min_count_l1 = INT32_MAX;
-        for (int i = 1; i <= 4 && i < (int)det1.size(); ++i) {
-            WindowResult wr = analyze_window(det1[i], kWinStart, kWinEnd);
-            main_ok = main_ok && wr.all_equal && wr.count > 0;
-            min_count_l1 = std::min(min_count_l1, wr.count);
-        }
-        c.expect(main_ok,
-            "opus:A-bpc.b03.c0 sol:A-bplcon.c49 opus:A-leg.lpen1 sol:A-bplcon.c72 opus:3-r0.c09 sol:3-regsum-bplcon0.c6 "
-            "p271 p89 p229 p239 S" + std::to_string(s) + " (" + s_name(s) + "): with LPEN=1, every counted VPOSR/VHPOSR "
-            "read in the windows after VERTB detections 2-5 shows the same 17-bit value (frozen)");
-
-        // P3-a: >=100 reads per window, spread over it, in both runs.
-        bool p3a_ok = ok0 && ok1;
-        for (int i = 1; i <= 4; ++i) {
-            if (i >= (int)det0.size() || i >= (int)det1.size()) { p3a_ok = false; continue; }
-            WindowResult a = analyze_window(det0[i], kWinStart, kWinEnd);
-            WindowResult b = analyze_window(det1[i], kWinStart, kWinEnd);
-            p3a_ok = p3a_ok && a.has_min_100 && a.first_near_start && a.last_near_end
-                             && b.has_min_100 && b.first_near_start && b.last_near_end;
-        }
-        c.expect(p3a_ok, "P3-a S" + std::to_string(s) + ": each window (L0 and L1) holds >=100 counted reads, "
-                  "the first within 30 cc of the window start and the last within 30 cc of its end");
-
-        // P3-b: L0's anchor (strictly increasing, V in 1..19) and field length in both runs.
-        // Under NMH_MUTATE=P3B, win_end_p3b alone widens the window (t_f+30*227cc);
-        // the unchanged v_in_1_19 requirement then goes red by itself once V exceeds
-        // 19 inside the wider span -- no separate inversion of the verdict.
-        bool p3b_ok = ok0 && ok1;
-        for (int i = 1; i <= 4 && i < (int)det0.size(); ++i) {
-            WindowResult a = analyze_window(det0[i], kWinStart, win_end_p3b);
-            p3b_ok = p3b_ok && a.strictly_increasing && a.v_in_1_19;
-        }
-        for (int i = 0; i + 1 < (int)det0.size(); ++i)
-            p3b_ok = p3b_ok && field_length_ok(det0[i + 1].marker_cycle - det0[i].marker_cycle, ntsc);
-        for (int i = 0; i + 1 < (int)det1.size(); ++i)
-            p3b_ok = p3b_ok && field_length_ok(det1[i + 1].marker_cycle - det1[i].marker_cycle, ntsc);
-        c.expect(p3b_ok, "P3-b S" + std::to_string(s) + (mut_p3b ? " [window end -> t_f+30*227cc]" : "") +
-                  ": in L0 the counted reads increase strictly with V between 1 and 19, and consecutive VERTB "
-                  "detections in both runs recur at the configured field length");
-        {
-            // Disclosure for the tuned "+300" clk_sys margin in kFieldSlack
-            // (SPECIFICATION.md build notes): the actual field-length deltas this
-            // run measured, for every system configuration, so the margin's effect
-            // stays auditable.
-            std::string diag;
-            for (int i = 1; i <= 4 && i < (int)det0.size(); ++i) {
-                WindowResult a = analyze_window(det0[i], kWinStart, win_end_p3b);
-                diag += "[w" + std::to_string(i) + " incr=" + (a.strictly_increasing ? "Y" : "N") +
-                        " v1_19=" + (a.v_in_1_19 ? "Y" : "N") + " cnt=" + std::to_string(a.count) + "] ";
-                if (!a.strictly_increasing)
-                    diag += "[w" + std::to_string(i) + " first_violation " +
-                            first_violation(det0[i], kWinStart, win_end_p3b) + "] ";
+            // P3-a: >=100 reads per window, spread over it, in both runs.
+            bool p3a_ok = ok0 && ok1;
+            for (int i = 1; i <= 4; ++i) {
+                if (i >= (int)det0.size() || i >= (int)det1.size()) { p3a_ok = false; continue; }
+                WindowResult a = analyze_window(det0[i], win_start(), win_end());
+                WindowResult b = analyze_window(det1[i], win_start(), win_end());
+                p3a_ok = p3a_ok && a.has_min_100 && a.first_near_start && a.last_near_end
+                                 && b.has_min_100 && b.first_near_start && b.last_near_end;
             }
-            for (int i = 0; i + 1 < (int)det0.size(); ++i) {
-                uint64_t delta = det0[i + 1].marker_cycle - det0[i].marker_cycle;
-                diag += "[L0 d" + std::to_string(i) + "=" + std::to_string(delta) +
-                        " ok=" + (field_length_ok(delta, ntsc) ? "Y" : "N") + "] ";
-            }
-            for (int i = 0; i + 1 < (int)det1.size(); ++i) {
-                uint64_t delta = det1[i + 1].marker_cycle - det1[i].marker_cycle;
-                diag += "[L1 d" + std::to_string(i) + "=" + std::to_string(delta) +
-                        " ok=" + (field_length_ok(delta, ntsc) ? "Y" : "N") + "] ";
-            }
-            c.note("P3-b S" + std::to_string(s) + " diagnostic: " + diag);
-        }
+            c.expect(p3a_ok, "P3-a " + sn + ": each window (L0 and L1) holds >=100 counted reads, "
+                      "the first within 30 cc of the window start and the last within 30 cc of its end");
 
-        // P3-c (ECS only): BEAMCON0 carries LPENDIS=0 and the configured standard's
-        // bit 5 in both programs' own code, and the field-length check reports that
-        // standard. The check itself is never touched by NMH_MUTATE: under
-        // P3C_LPENDIS the L1 binary's own BEAMCON0 immediate genuinely carries
-        // LPENDIS=1, so the unconditional (*val1 & 0x2000)==0 requirement goes red
-        // by itself; under P3C_WRONGSTD the L0 binary's own bit 5 is genuinely
-        // wrong, so the unconditional bit-5 and field-length checks (always against
-        // the harness-configured standard) go red by themselves.
-        if (ecs) {
-            auto val0 = find_write_value(r0.prog_words, 0, 0x1DC);
-            auto val1 = find_write_value(r1.prog_words, 0, 0x1DC);
-            bool bit_ok = val0 && val1
-                          && ((*val0 & 0x2000) == 0) && (((*val0 >> 5) & 1) == (ntsc ? 0 : 1))
-                          && ((*val1 & 0x2000) == 0) && (((*val1 >> 5) & 1) == (ntsc ? 0 : 1));
-            bool std_ok = true;
+            // P3-L: the detecting loop's period, which the field-length check adds to its tolerance, is
+            // measured from the program's own instruction fetches.
+            const bool p3l_ok = r0.loop.iterations >= 100 && r1.loop.iterations >= 100;
+            c.expect(p3l_ok, "P3-L " + sn + ": the VERTB polling loop is seen spinning in the instruction fetches of "
+                      "both runs (at least 100 iterations each), so its period is measured");
+            c.note("P3-L " + sn + ": polling-loop period L0=" + std::to_string(r0.loop.period) + " L1=" +
+                   std::to_string(r1.loop.period) + " clk_sys cycles, iterations " +
+                   std::to_string(r0.loop.iterations) + "/" + std::to_string(r1.loop.iterations));
+
+            // P3-b: L0's anchor (strictly increasing, V in 1..19) and the field length in both runs.
+            bool b_incr = ok0 && ok1, b_vr = ok0 && ok1, b_fl = ok0 && ok1;
+            for (int i = 1; i <= 4; ++i) {
+                if (i >= (int)det0.size()) { b_incr = b_vr = false; continue; }
+                WindowResult a = analyze_window(det0[i], win_start(), win_end_p3b);
+                b_incr = b_incr && a.strictly_increasing && a.count > 0;
+                b_vr = b_vr && a.v_in_1_19 && a.count > 0;
+            }
             for (int i = 0; i + 1 < (int)det0.size(); ++i)
-                std_ok = std_ok && field_length_ok(det0[i + 1].marker_cycle - det0[i].marker_cycle, ntsc);
-            c.expect(bit_ok && std_ok,
-                "P3-c S" + std::to_string(s) + ": BEAMCON0 carries LPENDIS=0 and bit 5 for the configured standard "
-                "in both programs' own code, and the field-length check reports that standard");
-        }
-
-        // P3-d: BPLCON0 written exactly once by the CPU program (its own step-3
-        // write); no Copper fetch of a MOVE to $100 either (no Copper runs here).
-        // Unconditional: under NMH_MUTATE=P3D the L1 binary genuinely contains a
-        // second write, so n1==1 fails by itself.
-        int n0 = count_writes_to(r0.prog_words, 0, 0x100);
-        int n1 = count_writes_to(r1.prog_words, 0, 0x100);
-        bool cop_clean = !copper_fetched_move_to(r0.log, kCopListAddr, 0x0100) &&
-                         !copper_fetched_move_to(r1.log, kCopListAddr, 0x0100);
-        c.expect(n0 == 1 && n1 == 1 && cop_clean,
-            "P3-d S" + std::to_string(s) + ": BPLCON0 written exactly once by the program (no other CPU write to "
-            "$DFF100, no Copper fetch of a MOVE to $100)");
-
-        if (s == 1 && !det0.empty() && det0.size() > 1) {
-            std::string dump;
-            int shown = 0;
-            for (auto& rc : det0[1].reads) {
-                if (rc.first < det0[1].marker_cycle) continue;
-                uint64_t rel = rc.first - det0[1].marker_cycle;
-                if (rel >= kWinStart && rel <= kWinEnd && shown < 12) {
-                    uint32_t mv = rc.second & 0x1FFFFu;
-                    char buf[96];
-                    std::snprintf(buf, sizeof buf, "[rel=%llu raw=%08X mv=%05X V=%u H=%u] ",
-                        (unsigned long long)rel, rc.second, mv, (mv >> 8) & 0x1FFu, mv & 0xFFu);
-                    dump += buf; ++shown;
+                b_fl = b_fl && field_length_ok(det0[i + 1].marker_cycle - det0[i].marker_cycle, ntsc, loopmax);
+            for (int i = 0; i + 1 < (int)det1.size(); ++i)
+                b_fl = b_fl && field_length_ok(det1[i + 1].marker_cycle - det1[i].marker_cycle, ntsc, loopmax);
+            const bool p3b_ok = b_incr && b_vr && b_fl;
+            c.expect(p3b_ok, "P3-b " + sn + (mut("P3B") ? " [window end -> t_f+30*227cc]" : "") +
+                      ": in L0 the counted reads increase strictly with V between 1 and 19, and consecutive VERTB "
+                      "detections in both runs recur at the configured field length");
+            {
+                // What P3-b's parts measured: the counting part's violations and their kind.
+                std::string diag = std::string("increase=") + (b_incr ? "Y" : "N") + " V-in-1..19=" + (b_vr ? "Y" : "N") +
+                                   " field-length=" + (b_fl ? "Y" : "N") + " | ";
+                for (int i = 1; i <= 4 && i < (int)det0.size(); ++i) {
+                    WindowResult a = analyze_window(det0[i], win_start(), win_end_p3b);
+                    diag += "[w" + std::to_string(i) + " reads=" + std::to_string(a.count) + " pairs=" + std::to_string(a.pairs) +
+                            " not-increasing=" + std::to_string(a.bad_pairs) + " of-which-V-unchanged-and-H-lower=" +
+                            std::to_string(a.lag_pairs) + " V>19=" + std::to_string(a.v_over_19) + "] ";
+                    if (!a.strictly_increasing)
+                        diag += "[w" + std::to_string(i) + " first_violation " +
+                                first_violation(det0[i], win_start(), win_end_p3b) + "] ";
                 }
+                for (int i = 0; i + 1 < (int)det0.size(); ++i) {
+                    uint64_t delta = det0[i + 1].marker_cycle - det0[i].marker_cycle;
+                    diag += "[L0 d" + std::to_string(i) + "=" + std::to_string(delta) +
+                            " ok=" + (field_length_ok(delta, ntsc, loopmax) ? "Y" : "N") + "] ";
+                }
+                for (int i = 0; i + 1 < (int)det1.size(); ++i) {
+                    uint64_t delta = det1[i + 1].marker_cycle - det1[i].marker_cycle;
+                    diag += "[L1 d" + std::to_string(i) + "=" + std::to_string(delta) +
+                            " ok=" + (field_length_ok(delta, ntsc, loopmax) ? "Y" : "N") + "] ";
+                }
+                c.note("P3-b " + sn + " parts: " + diag);
             }
-            c.note("P3 S1 L0 window1 raw (first 12 in-window): " + dump);
-        }
 
-        c.note("P3 S" + std::to_string(s) + ": L1 min window count " +
-               (min_count_l1 == INT32_MAX ? std::string("n/a") : std::to_string(min_count_l1)) +
-               " reads; L0/L1 DONE at " + (r0.done ? std::to_string(*r0.done) : std::string("(none)")) + "/" +
-               (r1.done ? std::to_string(*r1.done) : std::string("(none)")));
+            // P3-c (ECS only): BEAMCON0 carries LPENDIS=0 and the configured standard's bit 5 in both
+            // programs' own code, and the field-length check reports that standard.
+            bool p3c_ok = true;
+            if (ecs) {
+                auto val0 = find_write_value(r0.prog_words, 0, 0x1DC);
+                auto val1 = find_write_value(r1.prog_words, 0, 0x1DC);
+                bool bit_ok = val0 && val1
+                              && ((*val0 & 0x2000) == 0) && (((*val0 >> 5) & 1) == (ntsc ? 0 : 1))
+                              && ((*val1 & 0x2000) == 0) && (((*val1 >> 5) & 1) == (ntsc ? 0 : 1));
+                bool std_ok = det0.size() > 1;
+                for (int i = 0; i + 1 < (int)det0.size(); ++i)
+                    std_ok = std_ok && field_length_ok(det0[i + 1].marker_cycle - det0[i].marker_cycle, ntsc, loopmax);
+                p3c_ok = bit_ok && std_ok;
+                c.expect(p3c_ok,
+                    "P3-c " + sn + ": BEAMCON0 carries LPENDIS=0 and bit 5 for the configured standard "
+                    "in both programs' own code, and the field-length check reports that standard");
+            }
+
+            // P3-d: BPLCON0 written exactly once by the CPU program (its own step-3 write); no Copper
+            // fetch of a MOVE to $100 either (no Copper runs here).
+            int n0 = count_writes_to(r0.prog_words, 0, 0x100);
+            int n1 = count_writes_to(r1.prog_words, 0, 0x100);
+            bool cop_clean = !copper_fetched_move_to(r0.log, kCopListAddr, 0x0100) &&
+                             !copper_fetched_move_to(r1.log, kCopListAddr, 0x0100);
+            const bool p3d_ok = n0 == 1 && n1 == 1 && cop_clean;
+            c.expect(p3d_ok,
+                "P3-d " + sn + ": BPLCON0 written exactly once by the program (no other CPU write to "
+                "$DFF100, no Copper fetch of a MOVE to $100)");
+
+            // P3 main. Its preconditions: the fixture, P3-a, P3-L, P3-c, P3-d, and the V-range and
+            // field-length parts of P3-b (printed above). The counting part of P3-b is the L0 control of
+            // this line, graded in P3-b, and is not a precondition of it.
+            const bool pre3 = ok0 && ok1 && p3a_ok && p3l_ok && p3c_ok && p3d_ok && b_vr && b_fl;
+            if (!pre3) {
+                c.record("P3-MAIN " + sn + ": NOT GRADED, a precondition failed (fixture/P3-a/P3-L/P3-c/P3-d/"
+                         "V-range/field-length)");
+                agg3.add(false, false);
+            } else {
+                bool main_ok = true;
+                int min_count_l1 = INT32_MAX;
+                for (int i = 1; i <= 4 && i < (int)det1.size(); ++i) {
+                    WindowResult wr = analyze_window(det1[i], win_start(), win_end());
+                    main_ok = main_ok && wr.all_equal && wr.count > 0;
+                    min_count_l1 = std::min(min_count_l1, wr.count);
+                }
+                c.expect(main_ok, "P3-MAIN " + sn + " (" + s_name(s) + "): with LPEN=1, every counted VPOSR/VHPOSR "
+                          "read in the windows after VERTB detections 2-5 shows the same 17-bit value (frozen)");
+                agg3.add(true, main_ok);
+                c.note("P3-MAIN " + sn + ": L1 min window count " + std::to_string(min_count_l1) + " reads");
+            }
+        }
+        if (do_p3) {
+            if (agg3.gradable())
+                c.expect(agg3.failed == 0,
+                    "opus:A-bpc.b03.c0 sol:A-bplcon.c49 opus:A-leg.lpen1 sol:A-bplcon.c72 opus:3-r0.c09 "
+                    "sol:3-regsum-bplcon0.c6 p271 p89 p229 p239 P3 aggregate: with LPEN=1 the VPOSR/VHPOSR reads "
+                    "in the windows after VERTB detections 2-5 hold one 17-bit value, in all four system configurations");
+            else
+                c.record("P3 aggregate: NOT GRADED, " + agg3.counts());
+        }
     }
 
     // ---------------------------------------------------------------
     // P4 -- LPEN is 0 after power-up (p.271). Claims: opus:A-leg.lpen2,
     // sol:A-bplcon.c73
     // ---------------------------------------------------------------
-    for (int s = 1; do_p4 && s <= 4; ++s) {
-        const bool ntsc = s_is_ntsc(s);
-        const bool ecs = s_is_ecs(s);
-        nmh::Config cfg = cfg_for_s(s);
+    {
+        Agg agg4; agg4.expected = 4;
+        for (int s = 1; do_p4 && s <= smax; ++s) {
+            const bool ntsc = s_is_ntsc(s);
+            const bool ecs = s_is_ecs(s);
+            const std::string sn = "S" + std::to_string(s);
+            nmh::Config cfg = cfg_for_s(s);
 
-        std::string bin = p4_bin(dir, s);
-        bool use_copper_preload = false;
-        if (ecs && s == 1 && mut_p4main) bin = dir + "/prog_lpen_ecs_pal_l1.bin";
-        if (ecs && s == 1 && mut_p4b_prog) bin = dir + "/prog_lpen_ecs_pal_l1.bin";
-        if (ecs && s == 1 && mut_p4a) bin = dir + "/prog_lpen_p4_ecs_pal_burst20.bin";
-        if (ecs && s == 1 && mut_p4c) bin = dir + "/prog_lpen_p4_ecs_pal_wrongstd.bin";
-        if (s == 1 && mut_p4b_cop) { bin = dir + "/prog_lpen_p4_copper.bin"; use_copper_preload = true; }
-        const int burstlen = (ecs && s == 1 && mut_p4a) ? 20 : 600;
+            std::string bin = p4_bin(dir, s);
+            bool use_copper_preload = false;
+            if (s == 1 && mut("P4FIX")) bin = dir + "/prog_lpen_missing.bin";
+            if (ecs && s == 1 && mut("P4B_PROG")) bin = dir + "/prog_lpen_ecs_pal_l1.bin";
+            if (ecs && s == 1 && mut("P4A")) bin = dir + "/prog_lpen_p4_ecs_pal_burst20.bin";
+            if (ecs && s == 1 && mut("P4C")) bin = dir + "/prog_lpen_p4_ecs_pal_wrongstd.bin";
+            if (ecs && s == 1 && mut("P4L")) bin = dir + "/prog_lpen_p4_ecs_pal_nopoll.bin";
+            if (s == 1 && mut("P4B_COP")) { bin = dir + "/prog_lpen_p4_copper.bin"; use_copper_preload = true; }
+            const int burstlen = (ecs && s == 1 && mut("P4A")) ? 20 : 600;
 
-        std::vector<std::pair<uint32_t, std::vector<uint16_t>>> preloads;
-        if (use_copper_preload) preloads.push_back({kCopListAddr, {0x0100, 0x0008, 0xFFFF, 0xFFFE}});
+            std::vector<std::pair<uint32_t, std::vector<uint16_t>>> preloads;
+            if (use_copper_preload) preloads.push_back({kCopListAddr, {0x0100, 0x0008, 0xFFFF, 0xFFFE}});
 
-        Run r = run_program(bin, cfg, preloads);
-        const bool ok = r.loaded && r.released && r.done.has_value();
-        c.expect(ok, "P4 fixture S" + std::to_string(s) + " (" + s_name(s) +
-                  "): program loaded, released reset and reached DONE");
+            Run r = run_program(bin, cfg, preloads);
+            const bool ok = r.loaded && r.released && r.done.has_value();
+            c.expect(ok, "P4 fixture " + sn + " (" + s_name(s) +
+                      "): program loaded, released reset and reached DONE");
 
-        // Unconditional: under NMH_MUTATE=P4MAIN the loaded binary is genuinely
-        // P3's L1 program (LPEN=1), whose VPOSR/VHPOSR reads are frozen, not
-        // strictly increasing, so this_ok goes red by itself.
-        auto det = extract_detections(r.log, burstlen);
-        bool main_ok = ok;
-        for (int i = 1; i <= 4 && i < (int)det.size(); ++i) {
-            WindowResult wr = analyze_window(det[i], kWinStart, kWinEnd);
-            bool this_ok = wr.strictly_increasing && wr.v_in_1_19 && wr.count > 0;
-            main_ok = main_ok && this_ok;
+            auto det = extract_detections(r.log, burstlen);
+
+            // P4-a: as P3-a.
+            bool p4a_ok = ok;
+            for (int i = 1; i <= 4; ++i) {
+                if (i >= (int)det.size()) { p4a_ok = false; continue; }
+                WindowResult wr = analyze_window(det[i], win_start(), win_end());
+                p4a_ok = p4a_ok && wr.has_min_100 && wr.first_near_start && wr.last_near_end;
+            }
+            c.expect(p4a_ok, "P4-a " + sn + ": each window holds >=100 counted reads, spread over it");
+
+            // P4-L: as P3-L.
+            const bool p4l_ok = r.loop.iterations >= 100;
+            c.expect(p4l_ok, "P4-L " + sn + ": the VERTB polling loop is seen spinning in the instruction fetches "
+                      "(at least 100 iterations), so its period is measured");
+            c.note("P4-L " + sn + ": polling-loop period " + std::to_string(r.loop.period) +
+                   " clk_sys cycles, iterations " + std::to_string(r.loop.iterations));
+
+            // P4-c (ECS only): as P3-c's field-length half.
+            bool p4c_ok = true;
+            if (ecs) {
+                bool std_ok = det.size() > 1;
+                for (int i = 0; i + 1 < (int)det.size(); ++i)
+                    std_ok = std_ok && field_length_ok(det[i + 1].marker_cycle - det[i].marker_cycle, ntsc, r.loop.period);
+                p4c_ok = std_ok;
+                c.expect(p4c_ok,
+                    "P4-c " + sn + ": the field-length check reports the configured standard");
+            }
+
+            // P4-b, program part: the program contains no write to $DFF100 at all.
+            int n = count_writes_to(r.prog_words, 0, 0x100);
+            const bool p4bp_ok = (n == 0);
+            c.expect(p4bp_ok, "P4-B-PROGRAM " + sn + (mut("P4B_PROG") ? " [P3's L1 program]" : "") +
+                      ": the program contains no write to $DFF100");
+
+            // P4-b, Copper part: no Copper instruction fetched is a MOVE to $100.
+            const bool p4bc_ok = !copper_fetched_move_to(r.log, kCopListAddr, 0x0100);
+            c.expect(p4bc_ok,
+                "P4-B-COPPER " + sn + (use_copper_preload ? " [Copper list writes BPLCON0]" : "") +
+                ": no Copper instruction fetched at the Chip-memory port is a MOVE to $100");
+
+            // P4 main: gated on every precondition above.
+            const bool pre4 = ok && p4a_ok && p4l_ok && p4c_ok && p4bp_ok && p4bc_ok;
+            int bad_pairs = 0, lag_pairs = 0, pairs = 0;
+            bool main_ok = true;
+            for (int i = 1; i <= 4 && i < (int)det.size(); ++i) {
+                WindowResult wr = analyze_window(det[i], win_start(), win_end());
+                main_ok = main_ok && wr.strictly_increasing && wr.v_in_1_19 && wr.count > 0;
+                pairs += wr.pairs; bad_pairs += wr.bad_pairs; lag_pairs += wr.lag_pairs;
+            }
+            if (!pre4) {
+                c.record("P4-MAIN " + sn + ": NOT GRADED, a precondition failed (fixture/P4-a/P4-L/P4-c/P4-b)");
+                agg4.add(false, false);
+            } else {
+                c.expect(main_ok, "P4-MAIN " + sn + " (" + s_name(s) + "): after power-up, before any BPLCON0 write, "
+                          "VPOSR/VHPOSR count strictly with V in 1..19 in every window after VERTB detections 2-5");
+                agg4.add(true, main_ok);
+            }
+            c.note("P4-MAIN " + sn + ": consecutive counted reads in windows 2-5: pairs=" + std::to_string(pairs) +
+                   " not-increasing=" + std::to_string(bad_pairs) + " of-which-V-unchanged-and-H-lower=" +
+                   std::to_string(lag_pairs));
+            c.note("P4 " + sn + ": DONE at " + (r.done ? std::to_string(*r.done) : std::string("(none)")));
         }
-        c.expect(main_ok, "opus:A-leg.lpen2 sol:A-bplcon.c73 p271 S" + std::to_string(s) + " (" + s_name(s) +
-                  (mut_p4main ? ", program is P3's L1" : "") +
-                  "): after power-up, before any BPLCON0 write, VPOSR/VHPOSR count strictly with V in 1..19 "
-                  "in every window after VERTB detections 2-5");
-
-        // P4-a: as P3-a.
-        bool p4a_ok = ok;
-        for (int i = 1; i <= 4 && i < (int)det.size(); ++i) {
-            WindowResult wr = analyze_window(det[i], kWinStart, kWinEnd);
-            p4a_ok = p4a_ok && wr.has_min_100 && wr.first_near_start && wr.last_near_end;
+        if (do_p4) {
+            if (agg4.gradable())
+                c.expect(agg4.failed == 0,
+                    "opus:A-leg.lpen2 sol:A-bplcon.c73 p271 P4 aggregate: after power-up, before any BPLCON0 write, "
+                    "VPOSR/VHPOSR count strictly with V in 1..19 in the windows after VERTB detections 2-5, in all "
+                    "four system configurations");
+            else
+                c.record("P4 aggregate: NOT GRADED, " + agg4.counts());
         }
-        c.expect(p4a_ok, "P4-a S" + std::to_string(s) + ": each window holds >=100 counted reads, spread over it");
-
-        // P4-c (ECS only): as P3-c's field-length half, unconditional -- under
-        // NMH_MUTATE=P4C the loaded binary's own BEAMCON0 bit 5 is genuinely wrong.
-        if (ecs) {
-            bool std_ok = true;
-            for (int i = 0; i + 1 < (int)det.size(); ++i)
-                std_ok = std_ok && field_length_ok(det[i + 1].marker_cycle - det[i].marker_cycle, ntsc);
-            c.expect(std_ok,
-                "P4-c S" + std::to_string(s) + ": the field-length check reports the configured standard");
-        }
-
-        // P4-b, program part: the program contains no write to $DFF100 at all.
-        // Unconditional: under NMH_MUTATE=P4B_PROG the loaded binary is genuinely
-        // P3's L1 program, which contains exactly one such write, so n==0 fails by
-        // itself.
-        int n = count_writes_to(r.prog_words, 0, 0x100);
-        c.expect(n == 0, "P4-b(program) S" + std::to_string(s) +
-                  (mut_p4b_prog ? " [P3's L1 program]" : "") +
-                  ": the program contains no write to $DFF100");
-
-        // P4-b, Copper part: no Copper instruction fetched is a MOVE to $100.
-        // Unconditional: under NMH_MUTATE=P4B_COP the preloaded, DMA-started list
-        // genuinely is one, so cop_clean is genuinely false and fails by itself.
-        bool cop_clean = !copper_fetched_move_to(r.log, kCopListAddr, 0x0100);
-        c.expect(cop_clean,
-            "P4-b(copper) S" + std::to_string(s) + (use_copper_preload ? " [Copper list writes BPLCON0]" : "") +
-            ": no Copper instruction fetched at the Chip-memory port is a MOVE to $100");
-
-        c.note("P4 S" + std::to_string(s) + ": DONE at " +
-               (r.done ? std::to_string(*r.done) : std::string("(none)")));
     }
 
     // ---------------------------------------------------------------
-    // P1 -- BPLCON0 bit 9 (COLOR_ON) has no effect on the RGB output
-    // (p.63-64). Claims: opus:3-a1000.c04, sol:3-composite.c6 (p.63),
-    // opus:3-sum.c21 (p.64). Configurations built here: A (background only),
-    // B (1 plane, low resolution). C (4 planes, high resolution) and E (bit
-    // 9 changed mid-line by the Copper) are not built in this pass; see the
-    // report.
+    // P1 -- BPLCON0 bit 9 (COLOR_ON) has no effect on the RGB output (p.63-64).
+    // Claims: opus:3-a1000.c04, sol:3-composite.c6 (p.63), opus:3-sum.c21 (p.64).
+    // Configurations A (background only), B (1 plane, low resolution), C (4
+    // planes, high resolution, 16 colours) and E (bit 9 changed mid-line by the
+    // Copper). P2 -- the RGB output is the correct picture whether bit 9 is set
+    // or clear (p.63). Claims: opus:3-a1000.c05, sol:3-composite.c7. P2 uses
+    // configuration B, and shares its pair of runs with P1's configuration B.
     // ---------------------------------------------------------------
-    const bool mut_p1main = mv == "P1MAIN";
-    const bool mut_p1a    = mv == "P1A";
-    const bool mut_p1c    = mv == "P1C";
-    const bool mut_p1d    = mv == "P1D";
-    const bool mut_p1e    = mv == "P1E";
-
-    for (char cfg : {'A', 'B'}) {
-        for (int s = 1; do_p1 && s <= 4; ++s) {
+    {
+        Agg agg1; agg1.expected = 16;
+        Agg agg2; agg2.expected = 4;
+        const char cfgs[4] = {'A', 'B', 'C', 'E'};
+        // P1A and P1E are dedicated contrasts, run below; they do not run the main loop.
+        const bool dedicated = mut("P1A") || mut("P1E");
+        for (int s = 1; (do_p1 || do_p2) && !dedicated && s <= smax; ++s) {
             const bool ntsc = s_is_ntsc(s);
             const int H = ntsc ? 200 : 256;
-            const std::string tag = std::string(1, cfg) + " S" + std::to_string(s);
+            for (char cfg : cfgs) {
+                if (cfg != 'B' && !do_p1) continue;
+                const std::string tag = std::string(1, cfg) + " S" + std::to_string(s);
+                const bool m1 = (s == 1);
 
-            std::string ov0, ov1;
-            bool mutant_same_list = false;
-            bool zero_bpl = false;
-            if (s == 1 && mut_p1main) {
-                ov1 = dir + (cfg == 'A' ? "/prog_p1_2c_pal_mutcolor00.bin" : "/prog_p1_2c_pal_mutcolor01.bin");
-                mutant_same_list = true;
-            }
-            if (s == 1 && cfg == 'B' && mut_p1c) ov0 = ov1 = dir + "/prog_p1_2c_pal_nobplen.bin";
-            if (s == 1 && cfg == 'B' && mut_p1d) zero_bpl = true;
-
-            DisplayData dd = build_and_run_display(dir, cfg, s, ov0, ov1, mutant_same_list, zero_bpl);
-            if (!dd.ok) { c.expect(false, "P1 fixture " + tag + ": both runs loaded"); continue; }
-
-            auto starts0 = dma_field_starts(dd.run0.log);
-            auto starts1 = dma_field_starts(dd.run1.log);
-            auto vsa0 = find_vsync_assertions(dd.run0.video);
-            auto vsa1 = find_vsync_assertions(dd.run1.video);
-            if (starts0.empty() || starts1.empty()) {
-                c.expect(false, "P1 fixture " + tag + ": the Copper never fetched the list");
-                continue;
-            }
-            uint64_t fetch0 = starts0.front(), fetch1 = starts1.front();
-            std::vector<size_t> w0, w1;
-            for (auto v : vsa0) if ((uint64_t)v > fetch0) w0.push_back(v);
-            for (auto v : vsa1) if ((uint64_t)v > fetch1) w1.push_back(v);
-
-            bool fixture_ok = w0.size() >= 4 && w1.size() >= 4 && starts0.size() >= 3 && starts1.size() >= 3;
-            c.expect(fixture_ok, "P1 fixture " + tag + ": at least 4 vsync assertions and 3 DMA-field starts "
-                      "after the first Copper fetch, in both runs");
-            if (!fixture_ok) continue;
-
-            size_t b0 = w0[1], e0 = w0[3];  // 2nd..4th vsync assertion
-            size_t b1 = w1[1], e1 = w1[3];
-            size_t len0 = e0 - b0, len1 = e1 - b1;
-            size_t cmp_len = std::min(len0, len1);
-
-            bool p1a_ok = (len0 == len1);
-            for (size_t i = 0; i < cmp_len && p1a_ok; ++i) {
-                auto& x0 = dd.run0.video[b0 + i]; auto& x1 = dd.run1.video[b1 + i];
-                if (x0.hs != x1.hs || x0.vs != x1.vs) p1a_ok = false;
-            }
-            // P1-a's own mutation (a dedicated PAL-vs-NTSC comparison) is graded in
-            // the block below; nothing here swaps the stimulus for configs A/B at
-            // s==1 under NMH_MUTATE=P1A, so p1a_ok is left unconditional.
-            c.expect(p1a_ok,
-                "P1-a " + tag + ": hsync and vsync samples of the two runs are identical over the compared span");
-
-            size_t diffs = 0;
-            for (size_t i = 0; i < cmp_len; ++i) {
-                auto& x0 = dd.run0.video[b0 + i]; auto& x1 = dd.run1.video[b1 + i];
-                if (x0.r != x1.r || x0.g != x1.g || x0.b != x1.b) ++diffs;
-            }
-            bool contrast_expected_red = (s == 1 && mut_p1main);
-            char diffbuf[32]; std::snprintf(diffbuf, sizeof diffbuf, "%zu", diffs);
-            // Unconditional: under NMH_MUTATE=P1MAIN run "1" genuinely uses a
-            // program with a changed colour register (not bit 9) and the SAME
-            // Copper list as run "0" (mutant_same_list), so diffs becomes genuinely
-            // nonzero and diffs==0 fails by itself.
-            c.expect(p1a_ok && diffs == 0,
-                "opus:3-a1000.c04 sol:3-composite.c6 opus:3-sum.c21 p63 p64 config" + tag +
-                (contrast_expected_red ? " [contrast: a colour register changed instead of bit 9]" : "") +
-                ": every R,G,B sample of run \"1\" equals run \"0\" at the same index (" +
-                std::string(diffbuf) + " differing samples)");
-
-            size_t plane_lo = kBplPlane1 / 2, plane_hi = plane_lo + (size_t)20 * H;
-            size_t expect_reads = (cfg == 'A') ? 0 : (size_t)20 * H;
-            auto count_bpl_reads = [&](const VideoRun& r, uint64_t from, uint64_t to) {
-                size_t n = 0;
-                for (auto& a : r.log)
-                    if (!a.is_write && a.cycle >= from && a.cycle < to && a.word_addr >= plane_lo && a.word_addr < plane_hi) ++n;
-                return n;
-            };
-            // Each field independently re-fetches the whole buffer (the
-            // Copper list reloads the same pointer every field), so the
-            // count is graded per field, not summed across the span.
-            size_t n0f2 = count_bpl_reads(dd.run0, starts0[1], starts0[2]);
-            size_t n0f3 = count_bpl_reads(dd.run0, starts0[2], starts0[3]);
-            size_t n1f2 = count_bpl_reads(dd.run1, starts1[1], starts1[2]);
-            size_t n1f3 = count_bpl_reads(dd.run1, starts1[2], starts1[3]);
-            // Unconditional: under NMH_MUTATE=P1C (config B, S1) both binaries are
-            // genuinely the no-BPLEN variant, so the actual read counts are 0 and
-            // the ==expect_reads requirement fails by itself (expect_reads stays
-            // 20*H, unchanged).
-            bool p1c_ok = (n0f2 == expect_reads && n0f3 == expect_reads &&
-                           n1f2 == expect_reads && n1f3 == expect_reads);
-            std::string p1c_counts = std::to_string(expect_reads) + " " + std::to_string(n0f2) + " " +
-                std::to_string(n0f3) + " " + std::to_string(n1f2) + " " + std::to_string(n1f3);
-            c.expect(p1c_ok,
-                "P1-c " + tag + ": DMA fields 2 and 3 each show exactly N bitplane-buffer reads "
-                "(expected/run0-field2/run0-field3/run1-field2/run1-field3 = " + p1c_counts + ")");
-
-            auto fetch_ok = [&](const VideoRun& r, const CopBuild& cb, uint64_t from, uint64_t to) {
-                for (auto& f : cb.bplcon0_fetches) {
-                    int cnt = 0;
-                    for (auto& a : r.log) {
-                        if (a.is_write || a.word_addr != f.first || a.cycle < from || a.cycle >= to) continue;
-                        ++cnt;
-                        if (a.data != f.second) return false;
+                DispOpts o;
+                if (do_p1 && m1) {
+                    if (mut("P1MAIN")) o.contrast1 = true;
+                    if (mut("P1B")) o.list1_is_list0 = true;
+                    if (mut("P1C")) {
+                        if (cfg == 'A') o.force_list = 'B';
+                        else if (cfg == 'C') o.ov0 = o.ov1 = dir + "/prog_p1_16c_pal_nobplen.bin";
+                        else o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_nobplen.bin";
                     }
-                    if (cnt < 2) return false;
+                    if (mut("P1D")) {
+                        if (cfg == 'A') o.a_colour_top = true;
+                        else o.zero_bitplane = true;
+                    }
+                    if (mut("P1FIX")) o.ov1 = dir + "/prog_p1_missing.bin";
                 }
-                return true;
-            };
-            bool p1b_ok = fetch_ok(dd.run0, dd.c0, b0, e0) &&
-                          fetch_ok(dd.run1, mutant_same_list ? dd.c0 : dd.c1, b1, e1);
-            c.expect(p1b_ok, "P1-b " + tag +
-                ": the Copper's fetched MOVE to BPLCON0 carries the table's value in every field of the compared span");
+                if (cfg == 'B' && do_p2 && m1) {
+                    if (mut("P2A")) o.list1_is_list0 = true;
+                    if (mut("P2B")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_mod2.bin";
+                    if (mut("P2FLIP")) o.flip_word_index = 100 * 20 + 5;
+                    if (mut("P2ITEM1")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_vstoplow.bin";
+                    if (mut("P2EDGE")) o.ov0 = o.ov1 = dir + "/prog_p1_2c_pal_rightedge.bin";
+                    if (mut("P2FIX")) o.ov1 = dir + "/prog_p1_missing.bin";
+                }
 
-            bool c0_0 = false, c1_0 = false, c0_1 = false, c1_1 = false;
-            for (size_t i = 0; i < len0; ++i) { auto& x = dd.run0.video[b0 + i]; if (shows(x, kC0)) c0_0 = true; if (shows(x, kC1)) c1_0 = true; }
-            for (size_t i = 0; i < len1; ++i) { auto& x = dd.run1.video[b1 + i]; if (shows(x, kC0)) c0_1 = true; if (shows(x, kC1)) c1_1 = true; }
-            // Unconditional: under NMH_MUTATE=P1D (config B, S1) both runs' bitplane
-            // buffer is genuinely filled with $0000, so c1_0/c1_1 become genuinely
-            // false and the c1_0&&c1_1 requirement fails by itself.
-            bool p1d_ok = (cfg == 'A') ? (c0_0 && c0_1) : (c0_0 && c1_0 && c0_1 && c1_1);
-            c.expect(p1d_ok,
-                "P1-d " + tag + ": the picture is not trivially uniform (the required colours occur)");
+                DisplayData dd = build_and_run_display(dir, cfg, s, o);
 
-            bool p1e_ok = true;
-            for (size_t i = 1; i < vsa0.size() && i < 8; ++i)
-                p1e_ok = p1e_ok && field_length_ok(vsa0[i] - vsa0[i - 1], ntsc);
-            c.expect(p1e_ok,  // P1-e's own mutation is graded in a dedicated block below
-                "P1-e " + tag + ": consecutive vsync assertions recur at the configured standard's field length");
+                auto starts0 = dma_field_starts(dd.run0.log);
+                auto starts1 = dma_field_starts(dd.run1.log);
+                auto vsa0 = find_vsync_assertions(dd.run0.video);
+                auto vsa1 = find_vsync_assertions(dd.run1.video);
+                std::vector<size_t> w0, w1;
+                if (dd.ok && !starts0.empty() && !starts1.empty()) {
+                    for (auto v : vsa0) if ((uint64_t)v > starts0.front()) w0.push_back(v);
+                    for (auto v : vsa1) if ((uint64_t)v > starts1.front()) w1.push_back(v);
+                }
+                const bool p1_here = do_p1;
+                const bool p2_here = (cfg == 'B' && do_p2);
+                const bool fixture_ok = dd.ok && w0.size() >= 4 && w1.size() >= 4 && starts0.size() >= 3 && starts1.size() >= 3;
+                const bool p2fix_ok = dd.ok && w0.size() >= 6 && w1.size() >= 6 && starts0.size() >= 6 && starts1.size() >= 6;
+                if (p1_here)
+                    c.expect(fixture_ok, "P1 fixture " + tag + ": both runs loaded, the Copper fetched the list, and at "
+                              "least 4 vsync assertions and 3 DMA-field starts follow the first Copper fetch in both runs");
+                if (p2_here)
+                    c.expect(p2fix_ok, "P2 fixture " + tag + ": both runs loaded, the Copper fetched the list, and at "
+                              "least 6 vsync assertions and 6 DMA-field starts follow the first Copper fetch in both runs");
+                if (p1_here && !fixture_ok) { c.record("P1-MAIN " + tag + ": NOT GRADED, the fixture failed"); agg1.add(false, false); }
+                if (p2_here && !p2fix_ok) { c.record("P2-MAIN " + tag + ": NOT GRADED, the fixture failed"); agg2.add(false, false); }
+
+                // ---- P1 ----
+                if (p1_here && fixture_ok) {
+                    const size_t b0 = w0[1], e0 = w0[3];  // 2nd..4th vsync assertion
+                    const size_t b1 = w1[1], e1 = w1[3];
+                    const size_t len0 = e0 - b0, len1 = e1 - b1;
+                    const size_t cmp_len = std::min(len0, len1);
+
+                    // P1-a: the sync samples of the two runs are identical over the compared span.
+                    const bool p1a_ok = sync_samples_identical(dd.run0.video, b0, e0, dd.run1.video, b1, e1);
+                    c.expect(p1a_ok,
+                        "P1-a " + tag + ": hsync and vsync samples of the two runs are identical over the compared span");
+
+                    // P1-b: the bit-9 value reached BPLCON0 -- the Copper's fetched MOVEs carry the table's values.
+                    size_t nf0 = 0, nf1 = 0;
+                    const bool p1b_ok = bplcon0_fetches_ok(dd.run0, starts0, b0, e0, expected_bplcon0(cfg, 0), &nf0) &&
+                                        bplcon0_fetches_ok(dd.run1, starts1, b1, e1, expected_bplcon0(cfg, 1), &nf1);
+                    c.expect(p1b_ok, "P1-b " + tag +
+                        ": in every DMA field of the compared span the Copper's fetched MOVEs to BPLCON0 carry the table's values");
+
+                    // P1-c: the display ran -- DMA fields 2 and 3 each show exactly N reads of the bitplane buffers.
+                    std::vector<std::pair<size_t, size_t>> ranges;   // word-address ranges of the bitplane buffers
+                    if (cfg == 'C') {
+                        const uint32_t planes[4] = {kBplPlane1, kBplPlane2, kBplPlane3, kBplPlane4};
+                        for (auto pl : planes) ranges.push_back({pl / 2, pl / 2 + (size_t)40 * H});
+                    } else {
+                        ranges.push_back({kBplPlane1 / 2, kBplPlane1 / 2 + (size_t)20 * H});
+                    }
+                    const size_t expect_reads = (cfg == 'A') ? 0 : (cfg == 'C' ? (size_t)4 * 40 * H : (size_t)20 * H);
+                    auto count_bpl_reads = [&](const VideoRun& r, uint64_t from, uint64_t to) {
+                        size_t n = 0;
+                        for (auto& a : r.log) {
+                            if (a.is_write || a.cycle < from || a.cycle >= to) continue;
+                            for (auto& rg : ranges) if (a.word_addr >= rg.first && a.word_addr < rg.second) { ++n; break; }
+                        }
+                        return n;
+                    };
+                    const size_t n0f2 = count_bpl_reads(dd.run0, starts0[1], starts0[2]);
+                    const size_t n0f3 = count_bpl_reads(dd.run0, starts0[2], starts0[3]);
+                    const size_t n1f2 = count_bpl_reads(dd.run1, starts1[1], starts1[2]);
+                    const size_t n1f3 = count_bpl_reads(dd.run1, starts1[2], starts1[3]);
+                    const bool p1c_ok = (n0f2 == expect_reads && n0f3 == expect_reads &&
+                                         n1f2 == expect_reads && n1f3 == expect_reads);
+                    std::string p1c_counts = std::to_string(expect_reads) + " " + std::to_string(n0f2) + " " +
+                        std::to_string(n0f3) + " " + std::to_string(n1f2) + " " + std::to_string(n1f3);
+                    c.expect(p1c_ok,
+                        "P1-c " + tag + ": DMA fields 2 and 3 each show exactly N bitplane-buffer reads "
+                        "(expected/run0-field2/run0-field3/run1-field2/run1-field3 = " + p1c_counts + ")");
+
+                    // P1-d: the picture is not trivially uniform.
+                    auto colours_seen = [&](const VideoRun& r, size_t b, size_t len, bool want[16]) {
+                        for (int i = 0; i < 16; ++i) want[i] = false;
+                        for (size_t i = 0; i < len; ++i) {
+                            const auto& x = r.video[b + i];
+                            for (int q = 0; q < 16; ++q) if (shows(x, kPalette16[q])) { want[q] = true; break; }
+                        }
+                    };
+                    bool seen0[16], seen1[16];
+                    colours_seen(dd.run0, b0, len0, seen0);
+                    colours_seen(dd.run1, b1, len1, seen1);
+                    bool p1d_ok;
+                    if (cfg == 'A') p1d_ok = seen0[0] && seen1[0];
+                    else if (cfg == 'C') { p1d_ok = true; for (int q = 0; q < 16; ++q) p1d_ok = p1d_ok && seen0[q] && seen1[q]; }
+                    else p1d_ok = seen0[0] && seen0[1] && seen1[0] && seen1[1];
+                    c.expect(p1d_ok, "P1-d " + tag + ": the picture is not trivially uniform (the required colours occur)");
+
+                    // P1-e: the field length matches the configured standard.
+                    const bool p1e_ok = vsync_field_length_ok(vsa0, ntsc);
+                    c.expect(p1e_ok,
+                        "P1-e " + tag + ": consecutive vsync assertions recur at the configured standard's field length");
+
+                    // P1 main, graded when every precondition above holds.
+                    if (!(p1a_ok && p1b_ok && p1c_ok && p1d_ok && p1e_ok)) {
+                        c.record("P1-MAIN " + tag + ": NOT GRADED, a precondition failed (P1-a/P1-b/P1-c/P1-d/P1-e)");
+                        agg1.add(false, false);
+                    } else {
+                        size_t diffs = 0;
+                        for (size_t i = 0; i < cmp_len; ++i) {
+                            auto& x0 = dd.run0.video[b0 + i]; auto& x1 = dd.run1.video[b1 + i];
+                            if (x0.r != x1.r || x0.g != x1.g || x0.b != x1.b) ++diffs;
+                        }
+                        char diffbuf[32]; std::snprintf(diffbuf, sizeof diffbuf, "%zu", diffs);
+                        const bool main_ok = (diffs == 0);
+                        c.expect(main_ok,
+                            "P1-MAIN config " + tag + ": every R,G,B sample of run \"1\" equals run \"0\" at the same index (" +
+                            std::string(diffbuf) + " differing samples)");
+                        agg1.add(true, main_ok);
+                    }
+                }
+
+                // ---- P2 ----
+                if (p2_here && p2fix_ok) {
+                    const size_t b0 = w0[1], e0 = w0[5], b1 = w1[1], e1 = w1[5];  // 2nd..6th vsync assertion
+
+                    // CAL-VIDEO: the doubler's units, against the pages.
+                    std::vector<size_t> span0(w0.begin() + 1, w0.begin() + 6), span1(w1.begin() + 1, w1.begin() + 6);
+                    const bool cal_ntsc = (m1 && mut("CALVID")) ? !ntsc : ntsc;
+                    VideoCal cal0 = calibrate_video(dd.run0.video, span0, cal_ntsc);
+                    VideoCal cal1 = calibrate_video(dd.run1.video, span1, cal_ntsc);
+                    const bool cal_ok = cal0.ok && cal1.ok && cal0.k == cal1.k;
+                    c.expect(cal_ok, "CAL-VIDEO " + tag + ": between consecutive vsync assertions the output has 2 hs periods "
+                              "per page-given line count, each a half beam line of 227 or 228 cc, and a low-resolution "
+                              "pixel spans k samples (k=" + std::to_string(cal0.k) + ", median doubler line " +
+                              std::to_string(cal0.median_len) + " samples)");
+
+                    // P2-a: P1-b and P1-e hold for the run.
+                    const bool p2a_ok = bplcon0_fetches_ok(dd.run0, starts0, b0, e0, expected_bplcon0('B', 0)) &&
+                                        bplcon0_fetches_ok(dd.run1, starts1, b1, e1, expected_bplcon0('B', 1)) &&
+                                        vsync_field_length_ok(vsa0, ntsc);
+                    c.expect(p2a_ok, "P2-a " + tag + ": P1-b and P1-e hold for the run");
+
+                    // P2-b: the buffer is read exactly once per word, in increasing address order, in DMA fields 2-5.
+                    auto p2b_check = [&](const VideoRun& r, uint64_t from, uint64_t to) {
+                        std::vector<uint64_t> addrs;
+                        for (auto& a : r.log)
+                            if (!a.is_write && a.cycle >= from && a.cycle < to && a.word_addr >= kBplPlane1 / 2 &&
+                                a.word_addr < kBplPlane1 / 2 + (uint64_t)20 * H)
+                                addrs.push_back(a.word_addr);
+                        if (addrs.size() != (size_t)20 * H) return false;
+                        for (size_t i = 1; i < addrs.size(); ++i) if (!(addrs[i] > addrs[i - 1])) return false;
+                        return true;
+                    };
+                    bool p2b_ok = true;
+                    for (int f = 1; f <= 4; ++f)
+                        p2b_ok = p2b_ok && p2b_check(dd.run0, starts0[f], starts0[f + 1]) &&
+                                            p2b_check(dd.run1, starts1[f], starts1[f + 1]);
+                    c.expect(p2b_ok, "P2-b " + tag + (m1 && mut("P2B") ? " [contrast: BPL1MOD=$0002]" : "") +
+                              ": the bitplane buffer is read exactly once per word, in increasing "
+                              "address order, across the 4-field span");
+
+                    // Items 1-3, each run; the item lines need CAL-VIDEO and P2-a, item 2 also P2-b.
+                    P2Eval ev0, ev1;
+                    if (cal_ok) { ev0 = eval_p2(dd.run0, b0, e0, H, cal0.k); ev1 = eval_p2(dd.run1, b1, e1, H, cal1.k); }
+                    const bool pre_common = fixture_ok && cal_ok && p2a_ok;
+                    bool graded_all = true, any_fail = false;
+                    if (!pre_common) {
+                        c.record("P2-I1 " + tag + ": NOT GRADED, a precondition failed (CAL-VIDEO/P2-a)");
+                        c.record("P2-I2 " + tag + ": NOT GRADED, a precondition failed (CAL-VIDEO/P2-a/P2-b)");
+                        c.record("P2-I3 " + tag + ": NOT GRADED, a precondition failed (CAL-VIDEO/P2-a)");
+                        graded_all = false;
+                    } else {
+                        const bool i1 = ev0.i1 && ev1.i1;
+                        c.expect(i1, "P2-I1 " + tag + (m1 && mut("P2ITEM1") ? " [contrast: VSTOP one line lower]" : "") +
+                                  ": each run shows at least three complete blocks of data lines and every complete block has "
+                                  "exactly H beam lines (blocks " + std::to_string(ev0.complete) + "/" + std::to_string(ev1.complete) + ")");
+                        any_fail = any_fail || !i1;
+                        if (p2b_ok) {
+                            const bool i2 = ev0.i2 && ev1.i2;
+                            c.expect(i2, "P2-I2 " + tag + (m1 && mut("P2FLIP") ? " [contrast: bit 14 of w(100,5) flipped]" : "") +
+                                      ": in every data line of every complete block, each of the 320 low-resolution pixels shows "
+                                      "C1 where the bit of w(j,k) is 1 and C0 where it is 0");
+                            any_fail = any_fail || !i2;
+                        } else {
+                            c.record("P2-I2 " + tag + ": NOT GRADED, a precondition failed (P2-b)");
+                            graded_all = false;
+                        }
+                        const bool i3 = ev0.i3 && ev1.i3;
+                        c.expect(i3, "P2-I3 " + tag + (m1 && mut("P2EDGE") ? " [contrast: window 32 pixels wider]" : "") +
+                                  ": in every data line of every complete block the sample before the first C1 sample and "
+                                  "the sample after the 320th pixel show C0");
+                        any_fail = any_fail || !i3;
+                    }
+                    agg2.add(graded_all || any_fail, !any_fail);
+                    c.note("P2 " + tag + ": complete blocks run0/run1 = " + std::to_string(ev0.complete) + "/" +
+                           std::to_string(ev1.complete) + ", first block length " +
+                           std::to_string(ev0.complete_lens.empty() ? 0 : ev0.complete_lens[0]) + " doubler lines, "
+                           "first line of run0 whose pixels do not match (block,line) = " +
+                           (ev0.i2 ? std::string("(none)") : "(" + std::to_string(ev0.first_bad_block) + "," +
+                                                                   std::to_string(ev0.first_bad_line) + ")"));
+                }
+            }
+        }
+        if (do_p1 && !dedicated) {
+            if (agg1.gradable())
+                c.expect(agg1.failed == 0,
+                    "opus:3-a1000.c04 sol:3-composite.c6 opus:3-sum.c21 p63 p64 P1 aggregate: changing only bit 9 of BPLCON0 "
+                    "leaves every R,G,B sample of two fields unchanged, in the four display configurations A, B, C, E "
+                    "and the four system configurations S1-S4");
+            else
+                c.record("P1 aggregate: NOT GRADED, " + agg1.counts());
+        }
+        if (do_p2) {
+            if (agg2.gradable())
+                c.expect(agg2.failed == 0,
+                    "opus:3-a1000.c05 sol:3-composite.c7 p63 P2 aggregate: with BPLCON0 bit 9 clear and set, the RGB output "
+                    "shows the picture the playfield registers and bitplane data define, in all four system configurations");
+            else
+                c.record("P2 aggregate: NOT GRADED, " + agg2.counts());
         }
     }
 
     // P1-a's own contrast: PAL for one run, NTSC for the other (config B, S1's
-    // and S2's stimulus, both "run 0"), through the same unchanged comparator
-    // the main loop's P1-a uses (hsync/vsync samples identical over the
+    // and S2's stimulus, both "run 0"), through the same comparator the main
+    // loop's P1-a uses (hsync/vsync samples identical over the
     // 2nd-to-4th-vsync span) -- expected to fail by itself, since a genuine PAL
     // run and a genuine NTSC run have different field lengths.
-    if (mut_p1a) {
-        DisplayData dpal = build_and_run_display(dir, 'B', 1, "", "", true, false);
-        DisplayData dntsc = build_and_run_display(dir, 'B', 2, "", "", true, false);
+    if (mut("P1A")) {
+        DispOpts o; o.list1_is_list0 = true;
+        DisplayData dpal = build_and_run_display(dir, 'B', 1, o);
+        DisplayData dntsc = build_and_run_display(dir, 'B', 2, o);
         bool ok = dpal.ok && dntsc.ok;
         bool p1a_ok = false;
         if (ok) {
@@ -1015,19 +1515,11 @@ int main(int argc, char** argv) {
             auto vsa0 = find_vsync_assertions(dpal.run0.video);
             auto vsa1 = find_vsync_assertions(dntsc.run0.video);
             if (!starts0.empty() && !starts1.empty()) {
-                uint64_t fetch0 = starts0.front(), fetch1 = starts1.front();
                 std::vector<size_t> w0, w1;
-                for (auto v : vsa0) if ((uint64_t)v > fetch0) w0.push_back(v);
-                for (auto v : vsa1) if ((uint64_t)v > fetch1) w1.push_back(v);
+                for (auto v : vsa0) if ((uint64_t)v > starts0.front()) w0.push_back(v);
+                for (auto v : vsa1) if ((uint64_t)v > starts1.front()) w1.push_back(v);
                 if (w0.size() >= 4 && w1.size() >= 4) {
-                    size_t b0 = w0[1], e0 = w0[3], b1 = w1[1], e1 = w1[3];
-                    size_t len0 = e0 - b0, len1 = e1 - b1;
-                    size_t cmp_len = std::min(len0, len1);
-                    p1a_ok = (len0 == len1);
-                    for (size_t i = 0; i < cmp_len && p1a_ok; ++i) {
-                        auto& x0 = dpal.run0.video[b0 + i]; auto& x1 = dntsc.run0.video[b1 + i];
-                        if (x0.hs != x1.hs || x0.vs != x1.vs) p1a_ok = false;
-                    }
+                    p1a_ok = sync_samples_identical(dpal.run0.video, w0[1], w0[3], dntsc.run0.video, w1[1], w1[3]);
                 }
             }
         }
@@ -1037,289 +1529,164 @@ int main(int argc, char** argv) {
     }
 
     // P1-e's own contrast: no in-program stimulus reaches the video standard
-    // (unlike P3/P4/P5, config B never writes BEAMCON0), so this runs the
-    // unchanged field_length_ok comparator on a genuine PAL run's (config B, S1)
-    // real vsync-interval deltas, graded against NTSC's values instead of PAL's --
-    // the spec's own contrast ("check the field length against the other
+    // (config B never writes BEAMCON0), so this runs the unchanged
+    // field-length comparator on a genuine PAL run's (config B, S1) real
+    // vsync intervals, graded against NTSC's values instead of PAL's -- the
+    // spec's own contrast ("check the field length against the other
     // standard's values; it fails").
-    if (mut_p1e) {
-        DisplayData dpal = build_and_run_display(dir, 'B', 1, "", "", true, false);
-        bool ok = dpal.ok;
-        auto vsa = ok ? find_vsync_assertions(dpal.run0.video) : std::vector<size_t>{};
-        bool wrong_std_ok = ok && vsa.size() > 1;
-        for (size_t i = 1; i < vsa.size() && i < 8 && wrong_std_ok; ++i)
-            wrong_std_ok = wrong_std_ok && field_length_ok(vsa[i] - vsa[i - 1], /*ntsc=*/true);
-        c.expect(ok && wrong_std_ok, "P1-e [contrast: a genuine PAL run's field length graded against NTSC's "
-                  "values] B S1: consecutive vsync assertions recur at the configured standard's field length");
-    }
-
-    // ---------------------------------------------------------------
-    // P2 -- the RGB output is the correct picture whether bit 9 is set or
-    // clear (p.63). Claims: opus:3-a1000.c05, sol:3-composite.c7. Uses
-    // config B (as the specification directs), a fresh run per system
-    // configuration.
-    // ---------------------------------------------------------------
-    // P2's main proposition (items 1-3) is not built in this pass -- see the
-    // report -- so only its fixture and its two graded preconditions, P2-a and
-    // P2-b, take a mutation.
-    const bool mut_p2b = mv == "P2B";
-
-    for (int s = 1; do_p2 && s <= 4; ++s) {
-        const bool ntsc = s_is_ntsc(s);
-        const int H = ntsc ? 200 : 256;
-        const std::string tag = std::string("B S") + std::to_string(s);
-        std::string ov;
-        if (s == 1 && mut_p2b) ov = dir + "/prog_p1_2c_pal_mod2.bin";
-
-        DisplayData dd = build_and_run_display(dir, 'B', s, ov, ov, false, false);
-        if (!dd.ok) { c.expect(false, "P2 fixture " + tag + ": both runs loaded"); continue; }
-
-        auto starts0 = dma_field_starts(dd.run0.log);
-        auto starts1 = dma_field_starts(dd.run1.log);
-        auto vsa0 = find_vsync_assertions(dd.run0.video);
-        auto vsa1 = find_vsync_assertions(dd.run1.video);
-        if (starts0.size() < 6 || starts1.size() < 6 || vsa0.size() < 7 || vsa1.size() < 7) {
-            c.expect(false, "P2 fixture " + tag + ": enough DMA fields and vsync assertions for a 4-field span");
-            continue;
-        }
-
-        // P2-a: P1-b and P1-e.
-        bool p2a_ok = true;
-        {
-            for (auto* dr : {&dd.run0, &dd.run1}) {
-                bool this_ok = true;
-                for (auto& f : (dr == &dd.run0 ? dd.c0 : dd.c1).bplcon0_fetches) {
-                    int cnt = 0;
-                    for (auto& a : dr->log) if (!a.is_write && a.word_addr == f.first) { ++cnt; if (a.data != f.second) this_ok = false; }
-                    if (cnt < 4) this_ok = false;
-                }
-                p2a_ok = p2a_ok && this_ok;
-            }
-            for (size_t i = 1; i < vsa0.size() && i < 6; ++i) p2a_ok = p2a_ok && field_length_ok(vsa0[i] - vsa0[i - 1], ntsc);
-        }
-        c.expect(p2a_ok, "P2-a " + tag + ": P1-b and P1-e hold for the run");
-
-        // P2-b: the buffer is read exactly once per word, in increasing
-        // address order, within each run's graded span.
-        auto p2b_check = [&](const VideoRun& r, uint64_t from, uint64_t to) {
-            std::vector<uint64_t> addrs;
-            for (auto& a : r.log)
-                if (!a.is_write && a.cycle >= from && a.cycle < to && a.word_addr >= kBplPlane1 / 2 &&
-                    a.word_addr < kBplPlane1 / 2 + (uint64_t)20 * H)
-                    addrs.push_back(a.word_addr);
-            if (addrs.size() != (size_t)20 * H) return false;
-            for (size_t i = 1; i < addrs.size(); ++i) if (!(addrs[i] > addrs[i - 1])) return false;
-            return true;
-        };
-        // Each of DMA fields 2-5 independently shows one pass (the Copper
-        // list reloads the same pointer every field), so this is graded per
-        // field, not summed across all four. Unconditional: under
-        // NMH_MUTATE=P2B both binaries genuinely carry BPL1MOD=$0002, so later
-        // lines start two bytes further out and addrs.size()!=20*H fails by itself.
-        bool p2b_ok = true;
-        for (int f = 1; f <= 4; ++f) {
-            p2b_ok = p2b_ok && p2b_check(dd.run0, starts0[f], starts0[f + 1]) &&
-                                p2b_check(dd.run1, starts1[f], starts1[f + 1]);
-        }
-        c.expect(p2b_ok, "P2-b " + tag + (s == 1 && mut_p2b ? " [contrast: BPL1MOD=$0002]" : "") +
-                  ": the bitplane buffer is read exactly once per word, in increasing "
-                  "address order, across the 4-field span");
-
-        c.record("P2 " + tag + ": the main proposition (items 1-3: complete blocks of H lines, the bit-for-bit "
-                  "picture, the C0 border samples) is not graded in this pass -- only its fixture and "
-                  "preconditions P2-a/P2-b are. See the report.");
+    if (mut("P1E")) {
+        DispOpts o; o.list1_is_list0 = true;
+        DisplayData dpal = build_and_run_display(dir, 'B', 1, o);
+        auto vsa = dpal.ok ? find_vsync_assertions(dpal.run0.video) : std::vector<size_t>{};
+        c.expect(dpal.ok && vsync_field_length_ok(vsa, /*ntsc=*/true),
+            "P1-e [contrast: a genuine PAL run's field length graded against NTSC's values] B S1: "
+            "consecutive vsync assertions recur at the configured standard's field length");
     }
 
     // ---------------------------------------------------------------
     // P5 -- VBSTRT ($1CC, ECS) and the line at which vertical blanking
     // starts. Claims: opus:B-vbstrt.addr (p.293), opus:C-vbstrt.c01,
-    // sol:C-scan.c20 (p.304). Run in S1, S2 only (the specification's own
-    // scope).
+    // sol:C-scan.c20 (p.304). Run in S1, S2 only (the specification's own scope).
     // ---------------------------------------------------------------
-    const bool mut_p5main = mv == "P5MAIN";
-    const bool mut_p5a    = mv == "P5A";
-    const bool mut_p5b    = mv == "P5B";
-    const bool mut_p5c    = mv == "P5C";
+    {
+        Agg agg5; agg5.expected = 4;
+        for (int s = 1; do_p5 && s <= smax_p5; ++s) {
+            const bool ntsc = s_is_ntsc(s);
+            for (int vidx = 0; vidx < (mv.empty() ? 2 : 1); ++vidx) {
+                const uint8_t N = vidx == 0 ? 0xA0 : 0xB0;
+                const std::string tag = "V" + std::to_string(vidx + 1) + " S" + std::to_string(s);
+                const bool here1 = (s == 1 && vidx == 0);
+                std::string bin = p5_bin(dir, ntsc, vidx == 1);
+                if (here1 && mut("P5MAIN")) bin = dir + "/prog_p5_pal_v1_novarvben.bin";
+                if (here1 && mut("P5A")) bin = dir + "/prog_p5_pal_v1_nobplen.bin";
+                if (here1 && mut("P5C")) bin = dir + "/prog_p5_pal_v1_wrongstd.bin";
+                if (here1 && mut("P5FIX")) bin = dir + "/prog_p5_missing.bin";
+                // the configuration the run is started with: S3's (OCS) under the P5D contrast
+                nmh::Config cfgp = cfg_for_s((here1 && mut("P5D")) ? 3 : s);
+                // the Copper's WAIT before the C2 change: N-1 (P5B contrast: N-2)
+                const uint8_t wait_c2 = (here1 && mut("P5B")) ? uint8_t(N - 2) : uint8_t(N - 1);
 
-    for (int s = 1; do_p5 && s <= 2; ++s) {
-        const bool ntsc = s_is_ntsc(s);
-        for (int vidx = 0; vidx < 2; ++vidx) {
-            const uint8_t N = vidx == 0 ? 0xA0 : 0xB0;
-            const std::string tag = "V" + std::to_string(vidx + 1) + " S" + std::to_string(s);
-            std::string bin = p5_bin(dir, ntsc, vidx == 1);
-            const bool here1 = (s == 1 && vidx == 0);
-            if (here1 && mut_p5main) bin = dir + "/prog_p5_pal_v1_novarvben.bin";
-            if (here1 && mut_p5a) bin = dir + "/prog_p5_pal_v1_nobplen.bin";
-            if (here1 && mut_p5c) bin = dir + "/prog_p5_pal_v1_wrongstd.bin";
+                P5Run pr = run_p5(bin, cfgp, wait_c2, uint8_t(N + 1));
+                std::vector<uint64_t> starts;
+                std::vector<size_t> vsa, w;
+                std::vector<Detection> det;
+                if (pr.ok) {
+                    starts = dma_field_starts(pr.vr.log);
+                    vsa = find_vsync_assertions(pr.vr.video);
+                    det = extract_detections(pr.vr.log, 200);
+                    if (!starts.empty()) for (auto v : vsa) if ((uint64_t)v > starts.front()) w.push_back(v);
+                }
+                const bool fixture_ok = pr.ok && starts.size() >= 5 && w.size() >= 6 && det.size() >= 4;
+                c.expect(fixture_ok, "P5 fixture " + tag + ": the program loaded, and enough DMA-field starts, vsync "
+                          "assertions after the first Copper fetch and VERTB-synchronized read bursts follow");
+                if (!fixture_ok) {
+                    c.record("P5-MAIN " + tag + ": NOT GRADED, the fixture failed");
+                    agg5.add(false, false);
+                    continue;
+                }
 
-            P5Run pr = run_p5(bin, s, N);
-            if (!pr.ok) { c.expect(false, "P5 fixture " + tag + ": program loaded"); continue; }
+                // CAL-VIDEO: the doubler's units (the span below pairs hs periods into beam lines).
+                std::vector<size_t> span(w.begin() + 1, w.begin() + 6);
+                VideoCal cal = calibrate_video(pr.vr.video, span, ntsc);
+                c.expect(cal.ok, "CAL-VIDEO " + tag + ": between consecutive vsync assertions the output has 2 hs periods "
+                          "per page-given line count, each a half beam line of 227 or 228 cc, and a low-resolution "
+                          "pixel spans k samples (k=" + std::to_string(cal.k) + ", median doubler line " +
+                          std::to_string(cal.median_len) + " samples)");
 
-            auto starts = dma_field_starts(pr.vr.log);
-            auto vsa = find_vsync_assertions(pr.vr.video);
-            auto det = extract_detections(pr.vr.log, 200);
-            bool fixture_ok = starts.size() >= 5 && vsa.size() >= 7 && det.size() >= 4;
-            c.expect(fixture_ok, "P5 fixture " + tag + ": enough DMA-field starts, vsync assertions and "
-                      "VERTB-synchronized read bursts");
-            if (!fixture_ok) continue;
-
-            uint64_t fetch0 = starts.front();
-            std::vector<size_t> w;
-            for (auto v : vsa) if ((uint64_t)v > fetch0) w.push_back(v);
-            if (w.size() < 6) { c.expect(false, "P5 fixture " + tag + ": enough vsync assertions after the first Copper fetch"); continue; }
-
-            // Beam lines (hsync-delimited, doubler copies merged) from the
-            // 2nd to the 6th vsync assertion; per line, which of C1/C2/C3 a
-            // sample shows.
-            size_t b = w[1], e = w[5];
-            auto raw_lines = nmh::find_lines(pr.vr.video);
-            struct LC { bool c1 = false, c2 = false, c3 = false; };
-            std::vector<LC> lines;
-            for (size_t i = 0; i + 1 < raw_lines.size(); i += 2) {
-                if (raw_lines[i].begin < b || raw_lines[i].end > e) continue;
-                LC lc;
-                for (int rep = 0; rep < 2; ++rep) {
-                    nmh::Span sp = rep == 0 ? raw_lines[i] : raw_lines[i + 1];
-                    for (size_t k = sp.begin; k < sp.end && k < pr.vr.video.size(); ++k) {
-                        auto& samp = pr.vr.video[k];
-                        if (shows(samp, kC1)) lc.c1 = true;
-                        if (shows(samp, kC2)) lc.c2 = true;
-                        if (shows(samp, kC3)) lc.c3 = true;
+                // Beam lines (hs periods, doubler copies merged) from the 2nd to the 6th vsync
+                // assertion; per line, which of C1/C2/C3 a sample shows. The pairing starts at the
+                // first doubler line that shows C1: data starts at the start of a beam line.
+                const size_t b = w[1], e = w[5];
+                auto dl_raw = nmh::find_lines(pr.vr.video);
+                struct LC { bool c1 = false, c2 = false, c3 = false; };
+                std::vector<nmh::Span> in_span;
+                for (auto& sp : dl_raw) if (sp.begin >= b && sp.end <= e) in_span.push_back(sp);
+                size_t first_c1_line = SIZE_MAX;
+                for (size_t i = 0; i < in_span.size() && first_c1_line == SIZE_MAX; ++i)
+                    for (size_t k = in_span[i].begin; k < in_span[i].end; ++k)
+                        if (shows(pr.vr.video[k], kC1)) { first_c1_line = i; break; }
+                std::vector<LC> lines;
+                if (first_c1_line != SIZE_MAX) {
+                    for (size_t i = first_c1_line % kDoublerM; i + 1 < in_span.size(); i += kDoublerM) {
+                        LC lc;
+                        for (int rep = 0; rep < kDoublerM; ++rep) {
+                            nmh::Span sp = in_span[i + rep];
+                            for (size_t k = sp.begin; k < sp.end && k < pr.vr.video.size(); ++k) {
+                                auto& samp = pr.vr.video[k];
+                                if (shows(samp, kC1)) lc.c1 = true;
+                                if (shows(samp, kC2)) lc.c2 = true;
+                                if (shows(samp, kC3)) lc.c3 = true;
+                            }
+                        }
+                        lines.push_back(lc);
                     }
                 }
-                lines.push_back(lc);
-            }
 
-            bool item1_ok = true;
-            int c2_count = 0;
-            std::vector<size_t> c2_pos;
-            for (size_t i = 0; i < lines.size(); ++i) {
-                if (!lines[i].c2) continue;
-                ++c2_count; c2_pos.push_back(i);
-                bool prev_ok = i > 0 && lines[i - 1].c1 && !lines[i - 1].c2;
-                bool next_ok = i + 1 < lines.size() && !lines[i + 1].c1 && !lines[i + 1].c2 && !lines[i + 1].c3;
-                if (!prev_ok || !next_ok) item1_ok = false;
-            }
-            bool item2_ok = c2_count >= 3;
-            for (size_t i = 1; i < c2_pos.size(); ++i) {
-                size_t delta = c2_pos[i] - c2_pos[i - 1];
-                if (!(ntsc ? (delta == 262 || delta == 263) : (delta == 312 || delta == 313))) item2_ok = false;
-            }
-            // Unconditional: under NMH_MUTATE=P5MAIN the loaded binary genuinely
-            // lacks VARVBEN, so blanking never starts at N and item1_ok goes red by
-            // itself (line N also shows C2, breaking next_ok).
-            bool main_ok = item1_ok && item2_ok;
-            c.expect(main_ok,
-                "opus:B-vbstrt.addr opus:C-vbstrt.c01 sol:C-scan.c20 p293 p304 p305 p79 " + tag +
-                (here1 && mut_p5main ? " [contrast: BEAMCON0 without VARVBEN]" : "") +
-                ": every beam line showing C2 is immediately preceded by a line showing C1 (not C2) and "
-                "immediately followed by a line showing none of C1/C2/C3; at least 3 such lines, one field apart");
-
-            // P5-a: beam lines N-10..N-2 (9 lines immediately before the
-            // first C2 line, which is beam line N-1) each show C1. Unconditional:
-            // under NMH_MUTATE=P5A the loaded binary genuinely has DMACON without
-            // BPLEN, so no line shows C1 and p5a_ok goes red by itself.
-            int idx_c2 = c2_pos.empty() ? -1 : (int)c2_pos.front();
-            bool p5a_ok = idx_c2 >= 9;
-            if (p5a_ok) for (int i = idx_c2 - 9; i < idx_c2; ++i) if (!lines[i].c1) p5a_ok = false;
-            c.expect(p5a_ok, "P5-a " + tag + (here1 && mut_p5a ? " [contrast: DMACON without BPLEN]" : "") +
-                ": beam lines N-10..N-2 each show C1");
-
-            // P5-b (anchor): around each of VERTB detections 2-4, the last
-            // VPOSR read before the Copper's fetch of the COLOR01=C2 data
-            // word, and the first read after it, both show V=N-1; likewise
-            // C3 with V=N+1.
-            bool p5b_ok = true;
-            for (int i = 1; i <= 3 && i < (int)det.size(); ++i) {
-                uint64_t t0 = det[i].marker_cycle;
-                uint64_t t1 = (i + 1 < (int)det.size()) ? det[i + 1].marker_cycle : t0 + 400000;
-                auto find_fetch = [&](uint32_t addr) -> std::optional<uint64_t> {
-                    for (auto& a : pr.vr.log)
-                        if (!a.is_write && a.word_addr == addr && a.cycle >= t0 && a.cycle < t1) return a.cycle;
-                    return std::nullopt;
-                };
-                auto v_of = [&](uint32_t v32) { return (uint8_t)(((v32 & 0x1FFFFu) >> 8) & 0x1FFu); };
-                auto check_anchor = [&](uint32_t addr, uint8_t expect_v) {
-                    auto tc = find_fetch(addr);
-                    if (!tc) return false;
-                    uint64_t last_before = 0; bool have_before = false;
-                    uint64_t first_after = 0; bool have_after = false;
-                    uint32_t val_before = 0, val_after = 0;
-                    for (auto& rc : det[i].reads) {
-                        if (rc.first < *tc) { if (!have_before || rc.first > last_before) { last_before = rc.first; val_before = rc.second; have_before = true; } }
-                        else { if (!have_after || rc.first < first_after) { first_after = rc.first; val_after = rc.second; have_after = true; } }
-                    }
-                    return have_before && have_after && v_of(val_before) == expect_v && v_of(val_after) == expect_v;
-                };
-                p5b_ok = p5b_ok && check_anchor(pr.cop.addr_c2, (uint8_t)(N - 1)) && check_anchor(pr.cop.addr_c3, (uint8_t)(N + 1));
-            }
-            c.expect(p5b_ok, "P5-b " + tag + ": the VPOSR/VHPOSR reads bracketing the Copper's COLOR01 change "
-                      "show V=N-1 (before/at the C2 change) and V=N+1 (before/at the C3 change)");
-
-            // P5-c: field length matches the configured standard. Unconditional:
-            // under NMH_MUTATE=P5C the loaded binary's own BEAMCON0 bit 5 is
-            // genuinely wrong.
-            bool p5c_ok = true;
-            for (size_t i = 1; i < vsa.size() && i < 8; ++i)
-                p5c_ok = p5c_ok && field_length_ok(vsa[i] - vsa[i - 1], ntsc);
-            c.expect(p5c_ok,
-                "P5-c " + tag + ": consecutive vsync assertions recur at the configured standard's field length");
-        }
-    }
-
-    // P5-b's own contrast, exactly as SPECIFICATION.md states it: "replace
-    // WAIT(N-1,$30) by WAIT(N-2,$30); the reads around t_c2 show V=N-2." Reuses
-    // V1/PAL's program (VBSTRT stays N=$A0 in the assembled binary) with a Copper
-    // list built directly here: only the WAIT before the COLOR01=C2 change moves
-    // to N-2=$9E; the WAIT before C3 stays at N+1=$A1, unchanged. The unchanged
-    // anchor check (V=N-1=$9F around the C2 fetch) then finds the real beam
-    // position one line early and fails by itself; the C3-side anchor, unaffected,
-    // still passes.
-    if (mut_p5b) {
-        P5Cop cop;
-        cop_move(cop.list, 0x0E0, uint16_t(kBplPlane1 >> 16));
-        cop_move(cop.list, 0x0E2, uint16_t(kBplPlane1 & 0xFFFF));
-        cop_move(cop.list, 0x182, kC1);
-        cop_wait(cop.list, 0x9E, 0x30);  // WAIT(N-2,$30) instead of WAIT(N-1,$30)
-        cop.addr_c2 = kCopListAddr / 2 + (uint32_t)cop.list.size() + 1;
-        cop_move(cop.list, 0x182, kC2);
-        cop_wait(cop.list, 0xA1, 0x30);  // WAIT(N+1,$30), unchanged
-        cop.addr_c3 = kCopListAddr / 2 + (uint32_t)cop.list.size() + 1;
-        cop_move(cop.list, 0x182, kC3);
-        cop_end(cop.list);
-        std::vector<uint16_t> bitplane(20 * 196, 0xFFFF);
-        std::vector<std::pair<uint32_t, std::vector<uint16_t>>> preloads = {
-            {kBplPlane1, bitplane}, {kCopListAddr, cop.list}};
-        VideoRun vr = run_video(dir + "/prog_p5_pal_v1.bin", cfg_for_s(1), kP1BootBudget, kP1RunCycles, preloads);
-        auto det = extract_detections(vr.log, 200);
-        bool ok = vr.loaded > 0 && det.size() >= 4;
-        bool p5b_ok = ok;
-        for (int i = 1; i <= 3 && i < (int)det.size(); ++i) {
-            uint64_t t0 = det[i].marker_cycle;
-            uint64_t t1 = (i + 1 < (int)det.size()) ? det[i + 1].marker_cycle : t0 + 400000;
-            auto find_fetch = [&](uint32_t addr) -> std::optional<uint64_t> {
-                for (auto& a : vr.log)
-                    if (!a.is_write && a.word_addr == addr && a.cycle >= t0 && a.cycle < t1) return a.cycle;
-                return std::nullopt;
-            };
-            auto v_of = [&](uint32_t v32) { return (uint8_t)(((v32 & 0x1FFFFu) >> 8) & 0x1FFu); };
-            auto check_anchor = [&](uint32_t addr, uint8_t expect_v) {
-                auto tc = find_fetch(addr);
-                if (!tc) return false;
-                uint64_t last_before = 0; bool have_before = false;
-                uint64_t first_after = 0; bool have_after = false;
-                uint32_t val_before = 0, val_after = 0;
-                for (auto& rc : det[i].reads) {
-                    if (rc.first < *tc) { if (!have_before || rc.first > last_before) { last_before = rc.first; val_before = rc.second; have_before = true; } }
-                    else { if (!have_after || rc.first < first_after) { first_after = rc.first; val_after = rc.second; have_after = true; } }
+                bool item1_ok = true;
+                int c2_count = 0;
+                std::vector<size_t> c2_pos;
+                for (size_t i = 0; i < lines.size(); ++i) {
+                    if (!lines[i].c2) continue;
+                    ++c2_count; c2_pos.push_back(i);
+                    bool prev_ok = i > 0 && lines[i - 1].c1 && !lines[i - 1].c2;
+                    bool next_ok = i + 1 < lines.size() && !lines[i + 1].c1 && !lines[i + 1].c2 && !lines[i + 1].c3;
+                    if (!prev_ok || !next_ok) item1_ok = false;
                 }
-                return have_before && have_after && v_of(val_before) == expect_v && v_of(val_after) == expect_v;
-            };
-            p5b_ok = p5b_ok && check_anchor(cop.addr_c2, 0x9F) && check_anchor(cop.addr_c3, 0xA1);
+                bool item2_ok = c2_count >= 3;
+                for (size_t i = 1; i < c2_pos.size(); ++i) {
+                    size_t delta = c2_pos[i] - c2_pos[i - 1];
+                    if (!(ntsc ? (delta == 262 || delta == 263) : (delta == 312 || delta == 313))) item2_ok = false;
+                }
+
+                // P5-a: beam lines N-10..N-2 (9 lines immediately before the first C2 line, which is
+                // beam line N-1) each show C1.
+                int idx_c2 = c2_pos.empty() ? -1 : (int)c2_pos.front();
+                bool p5a_ok = idx_c2 >= 9;
+                if (p5a_ok) for (int i = idx_c2 - 9; i < idx_c2; ++i) if (!lines[i].c1) p5a_ok = false;
+                c.expect(p5a_ok, "P5-a " + tag + (here1 && mut("P5A") ? " [contrast: DMACON without BPLEN]" : "") +
+                          ": beam lines N-10..N-2 each show C1");
+
+                // P5-b (anchor): the VPOSR/VHPOSR reads around each of VERTB detections 2-4 bracketing the
+                // Copper's COLOR01 changes show V=N-1 (C2 change) and V=N+1 (C3 change).
+                const bool p5b_ok = p5_anchor(pr.vr, det, pr.cop.addr_c2, (uint8_t)(N - 1)) &&
+                                    p5_anchor(pr.vr, det, pr.cop.addr_c3, (uint8_t)(N + 1));
+                c.expect(p5b_ok, "P5-b " + tag + (here1 && mut("P5B") ? " [contrast: WAIT(N-2,$30) before COLOR01=C2]" : "") +
+                          ": the VPOSR/VHPOSR reads bracketing the Copper's COLOR01 change "
+                          "show V=N-1 (before/at the C2 change) and V=N+1 (before/at the C3 change)");
+
+                // P5-c: the field length matches the configured standard.
+                const bool p5c_ok = vsync_field_length_ok(vsa, ntsc);
+                c.expect(p5c_ok,
+                    "P5-c " + tag + ": consecutive vsync assertions recur at the configured standard's field length");
+
+                // P5-d: the harness is configured ECS (p.298 lists VBSTRT and BEAMCON0 as new registers of the
+                // Enhanced Chip Set).
+                const bool p5d_ok = cfg_is_ecs(cfgp);
+                c.expect(p5d_ok, "P5-d " + tag + (here1 && mut("P5D") ? " [contrast: OCS]" : "") +
+                          ": the run was started with the harness configured ECS");
+
+                if (!(cal.ok && p5a_ok && p5b_ok && p5c_ok && p5d_ok)) {
+                    c.record("P5-MAIN " + tag + ": NOT GRADED, a precondition failed (CAL-VIDEO/P5-a/P5-b/P5-c/P5-d)");
+                    agg5.add(false, false);
+                } else {
+                    const bool main_ok = item1_ok && item2_ok;
+                    c.expect(main_ok,
+                        "P5-MAIN " + tag + (here1 && mut("P5MAIN") ? " [contrast: BEAMCON0 without VARVBEN]" : "") +
+                        ": every beam line showing C2 is immediately preceded by a line showing C1 (not C2) and "
+                        "immediately followed by a line showing none of C1/C2/C3; at least 3 such lines, one field apart");
+                    agg5.add(true, main_ok);
+                }
+            }
         }
-        c.expect(ok && p5b_ok, "P5-b [contrast: Copper WAIT(N-1,$30) before COLOR01=C2 replaced by WAIT(N-2,$30), "
-                  "program's VBSTRT stays N] V1 S1: the VPOSR/VHPOSR reads bracketing the Copper's COLOR01 change "
-                  "show V=N-1 (before/at the C2 change) and V=N+1 (before/at the C3 change)");
+        if (do_p5) {
+            if (agg5.gradable())
+                c.expect(agg5.failed == 0,
+                    "opus:B-vbstrt.addr opus:C-vbstrt.c01 sol:C-scan.c20 p293 p304 p305 p79 P5 aggregate: with VARVBEN set "
+                    "the line before the line VBSTRT names shows playfield data and the line it names does not, for "
+                    "VBSTRT=$A0 and $B0, in PAL and NTSC");
+            else
+                c.record("P5 aggregate: NOT GRADED, " + agg5.counts());
+        }
     }
 
     std::printf("%d passed, %d failed\n", c.passed, c.failed);

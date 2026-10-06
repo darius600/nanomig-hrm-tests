@@ -14,6 +14,10 @@
 ;   PALETTE16    COLOR00..COLOR15 = the 16-colour palette (config C);
 ;                otherwise only COLOR00=C0, COLOR01=C1 (configs A, B, E)
 ;   MUT_MOD2     P2-b contrast: BPL1MOD = $0002 instead of $0000
+;   MUT_NOBPLEN  P1-c contrast: DMACON without BPLEN
+;   MUT_VSTOPLOW P2 item-1 contrast: DIWSTOP's VSTOP one line lower
+;   MUT_RIGHTEDGE P2 item-3 contrast: window 32 pixels wider, 21 words per
+;                line fetched, BPL1MOD = -2
 ;
 ; This program never varies BPLCON0, the bitplane pointers or run "0"/"1":
 ; those live entirely in the preloaded Copper list, which is what P1/P2
@@ -29,17 +33,9 @@ start:
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
 
-        ifd     PALETTE16
-        ifd     MUT_COLOR00
-        move.w  #$0358,COLOR00(a0)
-        else
         move.w  #$0359,COLOR00(a0)
-        endc
-        ifd     MUT_COLOR01
-        move.w  #$0EA3,COLOR01(a0)
-        else
         move.w  #$0EA2,COLOR01(a0)
-        endc
+        ifd     PALETTE16
         move.w  #$0F3C,COLOR02(a0)
         move.w  #$04E7,COLOR03(a0)
         move.w  #$0A0F,COLOR04(a0)
@@ -54,26 +50,31 @@ start:
         move.w  #$0D7B,COLOR13(a0)
         move.w  #$01BD,COLOR14(a0)
         move.w  #$0B42,COLOR15(a0)
-        else
-        ifd     MUT_COLOR00
-        move.w  #$0358,COLOR00(a0)
-        else
-        move.w  #$0359,COLOR00(a0)
-        endc
-        ifd     MUT_COLOR01
-        move.w  #$0EA3,COLOR01(a0)
-        else
-        move.w  #$0EA2,COLOR01(a0)
-        endc
         endc
 
         move.w  #$0000,BPLCON1(a0)
         move.w  #$0000,BPLCON2(a0)
         move.w  #$2C81,DIWSTRT(a0)
         ifd     NTSC_MODE
+        ifd     MUT_VSTOPLOW
+        move.w  #$F3C1,DIWSTOP(a0)
+        else
+        ifd     MUT_RIGHTEDGE
+        move.w  #$F4E1,DIWSTOP(a0)
+        else
         move.w  #$F4C1,DIWSTOP(a0)
+        endc
+        endc
+        else
+        ifd     MUT_VSTOPLOW
+        move.w  #$2BC1,DIWSTOP(a0)
+        else
+        ifd     MUT_RIGHTEDGE
+        move.w  #$2CE1,DIWSTOP(a0)
         else
         move.w  #$2CC1,DIWSTOP(a0)
+        endc
+        endc
         endc
 
         ifd     HIRES_MODE
@@ -81,13 +82,21 @@ start:
         move.w  #$00D4,DDFSTOP(a0)
         else
         move.w  #$0038,DDFSTRT(a0)
+        ifd     MUT_RIGHTEDGE
+        move.w  #$00D8,DDFSTOP(a0)
+        else
         move.w  #$00D0,DDFSTOP(a0)
+        endc
         endc
 
         ifd     MUT_MOD2
         move.w  #2,BPL1MOD(a0)
         else
+        ifd     MUT_RIGHTEDGE
+        move.w  #$FFFE,BPL1MOD(a0)
+        else
         move.w  #0,BPL1MOD(a0)
+        endc
         endc
         move.w  #0,BPL2MOD(a0)
 

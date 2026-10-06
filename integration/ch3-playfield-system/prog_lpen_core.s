@@ -19,6 +19,8 @@
 ;                       the main loop, point COP1LC at COP_LIST_ADDR (already
 ;                       holding a MOVE BPLCON0,$0008 / WAIT $FFFF,$FFFE list,
 ;                       preloaded by the test) and start the Copper
+;   MUT_NOPOLL         P3-L/P4-L contrast: the INTREQR polling loop is replaced
+;                       by a fixed delay
 ;
 ; Five times: poll INTREQR bit 5 (VERTB), clear it, store the iteration
 ; index as a marker, then read VPOSR/VHPOSR (as one long word, p.216) a
@@ -85,9 +87,14 @@ start:
         lea     MEASURE_BASE,a1
         moveq   #0,d6                  ; iteration index, 0..4 ("detection" 1..5)
 .iter:
+        ifd     MUT_NOPOLL
+        move.w  #3000,d1               ; fixed delay instead of the VERTB poll
+.delay: dbra    d1,.delay
+        else
 .poll:  move.w  INTREQR(a0),d0   ; BTST on a memory operand tests a BYTE (the
         btst    #5,d0           ; high byte at an even address); load the
         beq.s   .poll           ; word into a register first to test bit 5 of it.
+        endc
         move.w  #$0020,INTREQ(a0)      ; clear VERTB (bit 5), SET/CLR=0
 
         ifd     MUT_EXTRA_WRITE
