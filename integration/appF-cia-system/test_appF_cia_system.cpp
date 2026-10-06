@@ -2923,10 +2923,8 @@ int main(int argc, char** argv) {
                     " delta1=" + std::to_string(a_ciab_ta.delta1) + " delta2=" + std::to_string(a_ciab_ta.delta2));
         checks.note("P5-LEGA CIAB/TB tau1=" + std::to_string(a_ciab_tb.tau1) + " tau2=" + std::to_string(a_ciab_tb.tau2) +
                     " delta1=" + std::to_string(a_ciab_tb.delta1) + " delta2=" + std::to_string(a_ciab_tb.delta2));
-        checks.record("opus:F-signals.c2, sol:F-signals.c70 [p353]: withdrawn whole -- the claims say that phi2 is "
-                      "connected to the 680x0 \"E\" clock. P5-LEGA and P5-LEGB measure the rate at which a timer "
-                      "counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; "
-                      "whether phi2 is the E clock itself is not observable at this boundary");
+        checks.record("opus:F-signals.c2 declined: the claim says that phi2 is connected to the 680x0 \"E\" clock; P5-LEGA and P5-LEGB measure the rate at which a timer counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; whether phi2 is the E clock itself is not observable at this boundary");
+        checks.record("sol:F-signals.c70 declined: the claim says that phi2 is connected to the 680x0 \"E\" clock; P5-LEGA and P5-LEGB measure the rate at which a timer counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; whether phi2 is the E clock itself is not observable at this boundary");
 
         // The CNT contrasting case (CIAB/timer B only) is the page's own, selected through NMH_MUTATE.
         if (sel("P5-CONTRAST")) {
@@ -3175,11 +3173,9 @@ int main(int argc, char** argv) {
     }
 
     // ---- Section 0 declines, printed as RECORDED lines -------------------
-    checks.record("opus:F-portsig.c47 [p351]: declined whole -- \"PC...not used\" (CIAB); no output this "
-                  "package sees shows a PC pin on either CIA, and \"not used\" describes no behaviour");
-    checks.record("opus:F-signals.c1, sol:F-signals.c69 [p353]: declined whole -- both say phi2 is a "
-                  "\"TTL compatible input\", an electrical property of an input pin that nothing a test "
-                  "sees depends on");
+    checks.record("opus:F-portsig.c47 declined: \"PC...not used\" (CIAB): no output this package sees shows a PC pin on either CIA, and \"not used\" describes no behaviour");
+    checks.record("opus:F-signals.c1 declined: the claim says phi2 is a \"TTL compatible input\", an electrical property of an input pin that nothing a test sees depends on");
+    checks.record("sol:F-signals.c69 declined: the claim says phi2 is a \"TTL compatible input\", an electrical property of an input pin that nothing a test sees depends on");
 
     // ---- EP1, EP2, EP3 and F1's anchor, asserted on every capture the package
     // consumed (SPECIFICATION.md 1.2: "Every run asserts all three"). The
