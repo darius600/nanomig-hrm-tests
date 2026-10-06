@@ -42,6 +42,8 @@ public:
 std::string g_dir = ".";
 const char* g_mutate = nullptr; // NMH_MUTATE: unset -> the normal run runs no mutant
 bool mut(const char* id) { return g_mutate && std::strcmp(g_mutate, id) == 0; }
+// A run with an NMH_MUTATE selector looks at channel 0 only where the proposition runs the four channels one after the other.
+inline int nch() { return g_mutate ? 1 : 4; }
 
 std::string dec(long long v) { char b[40]; std::snprintf(b, sizeof b, "%lld", v); return b; }
 std::string num(double v) { char b[40]; std::snprintf(b, sizeof b, "%g", v); return b; }

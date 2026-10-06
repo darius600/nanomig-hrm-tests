@@ -57,10 +57,10 @@ inline P5Run p5_run(int x) {
 
 inline void run_p5(Checks& ck) {
     std::vector<P5Run> runs;
-    for (int x = 0; x < 4; ++x) runs.push_back(p5_run(x));
+    for (int x = 0; x < nch(); ++x) runs.push_back(p5_run(x));
     PreAgg agg;
     bool off = true, flat = true, order = true, same_z = true, pairs = true;
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         P5Run& p = runs[size_t(x)];
         ARun& r = p.r;
         agg.add(r.st);
@@ -170,14 +170,14 @@ inline void run_p67(Checks& ck) {
     const bool p7 = true;
     const std::string pn = "P6";
     std::vector<VolSweep> sw[2];   // [0]: 0x7F7F, [1]: 0x8080
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         sw[0].push_back(vol_sweep(x, mut("P6-PRE") ? 0x0101 : 0x7F7F, p7));
         sw[1].push_back(vol_sweep(x, mut("P6-SIGN") ? 0x7F7F : 0x8080, p7));   // contrast: both data words 0x7F7F
     }
     PreAgg agg;
     bool gd = true, gf = true, win = true, scale = true;
     bool lin = true, zero = true, sign = true, bit6 = true;
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         for (int d = 0; d < 2; ++d) {
             VolSweep& v = sw[d][size_t(x)];
             agg.add(v.r.st);
@@ -216,9 +216,10 @@ inline void run_p67(Checks& ck) {
     for (int d = 0; d < 2; ++d) for (auto& v : sw[d]) { (void)v; }
     for (int d = 0; d < 2; ++d) for (auto& v : sw[d]) agg.add(v.r.st);
     for (const std::string pq : {std::string("P6"), std::string("P7")}) {
-        print_std(ck, pq, agg, 8);
-        ck.expect(gd, pq + "-G-D: after each start DMACONR bit 9 and the channel's bit read 1 in all eight runs (AA p.22)");
-        ck.expect(gf, pq + "-G-F: the channel's fetches occur in all eight runs (AA p.22 '00 AUD0EN')");
+        const size_t nrun = sw[0].size() + sw[1].size();
+        print_std(ck, pq, agg, nrun);
+        ck.expect(gd, pq + "-G-D: after each start DMACONR bit 9 and the channel's bit read 1 in all " + dec((long long)nrun) + " runs (AA p.22)");
+        ck.expect(gf, pq + "-G-F: the channel's fetches occur in all " + dec((long long)nrun) + " runs (AA p.22 '00 AUD0EN')");
         ck.expect(win, pq + "-PRE-WIN: every measuring window starts two lines after its write marker and ends before the next write marker (SPECIFICATION.md P6 step 2)");
         ck.expect(scale, pq + "-PRE-SCALE: for data 0x7F7F the larger of |A(63)| and |A(64)| is at least 126 LSB on every channel, so the sweep spans many times the quantisation bound (AA p.11 AUDxVOL)");
         bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && win && scale;
@@ -239,9 +240,9 @@ inline void run_p67(Checks& ck) {
 
 inline void run_p8(Checks& ck) {
     struct R8 { ARun r; int m_cal0 = 0, m_cal1 = 0, m_start8 = 0; int m_clear0 = 0; double L9 = 0; uint64_t R = 0; };
-    std::vector<R8> runs(4);
+    std::vector<R8> runs(static_cast<size_t>(nch()));
     const unsigned L = 6;
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         R8& q = runs[size_t(x)];
         ARun& r = q.r;
         RunSpec rs; rs.bin = run_bin();
@@ -295,7 +296,7 @@ inline void run_p8(Checks& ck) {
     }
     PreAgg agg;
     bool gd = true, gf = true, gr = true, once = true, blocks = true, clearok = true, wins = true, events_ok = true;
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         R8& q = runs[size_t(x)];
         ARun& r = q.r;
         agg.add(r.st);

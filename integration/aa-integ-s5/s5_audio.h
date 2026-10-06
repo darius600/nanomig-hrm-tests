@@ -106,12 +106,12 @@ inline ARun p2_run(int x, bool swap34, bool wrong_write, bool write_early) {
 
 inline void run_p2(Checks& ck) {
     std::vector<ARun> runs;
-    for (int x = 0; x < 4; ++x) runs.push_back(p2_run(x, mut("P2-SWAP"), mut("P2-C"), mut("P2-W")));
+    for (int x = 0; x < nch(); ++x) runs.push_back(p2_run(x, mut("P2-SWAP"), mut("P2-C"), mut("P2-W")));
     PreAgg agg;
     bool gd = true, gf = true, gw = true, gp = true, blocks8 = true, wr_both = true, flat = true;
     bool a_ok = true, b_ok = true, c_ok = true, lev4 = true;
     const uint16_t pat[8] = {kA, kB, kA, kC, kB, kD, kC, kD};
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         ARun& r = runs[size_t(x)];
         agg.add(r.st);
         note_gc(ck, "P2 ch" + dec(x), r.st);

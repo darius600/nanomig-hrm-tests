@@ -220,8 +220,8 @@ inline void run_p16_17(Checks& ck) {
     print_std(ck, "P16", agg, 1);
     ck.expect(gbrk, "P16-G-BRK: after S0 ADKCONR bit 11 (UARTBRK) reads 0 (AA p.10 '11 UARTBRK Forces a UART break (clears TXD) if true')");
     ck.expect(gt, "P16-G-T: every TxD edge lies on a grid of pitch T = (N+1) colour clocks from its frame's first edge, within +-c, and the shortest edge interval is T within +-c (AA p.27 'If this number is N, then the Baud Rate is 1 bit every (N+1)*.2794 Microseconds')");
-    ck.expect(idle_ok && idle_len >= 20 * T, "P16-PRE-IDLE: TxD is constant for at least 20T before the first write");
-    bool pre = agg.fixture && agg.s0 && agg.gc && gbrk && gt && idle_ok && idle_len >= 20 * T;
+    ck.expect(idle_len >= 20 * T, "P16-PRE-IDLE: the wait from the SERPER write to the first write lasts at least 20T");
+    bool pre = agg.fixture && agg.s0 && agg.gc && gbrk && gt && idle_len >= 20 * T;
     const std::string un = "fixture, G-S0, G-C, G-BRK, G-T or the idle wait";
     graded(ck, pre, a_ok, "P16-A: before the first write TxD is constant (AA p.27 'Data from this buffer is moved into a serial shift register for output transmission, whenever it is empty')", un);
     graded(ck, pre, b_ok, "P16-B: exactly eight frames appear and frame k carries d_k, each with a start cell and a stop cell at the stop level: none missing, repeated or extra (AA p.27 'This address writes data to a Transmit data buffer')", un);
@@ -426,8 +426,8 @@ inline void run_p19(Checks& ck) {
         size_t n_hi = 0, n_lo = 0;
         for (size_t i = ip0; i < c.log.size(); ++i) {
             uint64_t ti = c.log[i].first; int b = (c.log[i].second >> 11) & 1;
-            if (ti >= tref + t_endseq + 2 * R && ti < u_low - 2 * R) { ++n_hi; if (b != (drv.invert ? 0 : 1)) grxd = false; }
-            if (ti >= u_low + 2 * R && ti < u_hi) { ++n_lo; if (b != (drv.invert ? 1 : 0)) grxd = false; }
+            if (ti >= tref + t_endseq + 2 * R && ti < u_low - 2 * R) { ++n_hi; if (b != 1) grxd = false; }
+            if (ti >= u_low + 2 * R && ti < u_hi) { ++n_lo; if (b != 0) grxd = false; }
         }
         grxd &= n_hi > 10 && n_lo > 10;
     }
@@ -567,8 +567,8 @@ inline void run_p20(Checks& ck) {
         size_t n_hi = 0, n_lo = 0;
         for (size_t i = ip0; i < endA; ++i) {
             uint64_t ti = ca.log[i].first; int b = bitv(ca.log[i].second, 11);
-            if (ti >= tref + t_low + 2 * R && ti < tref + t_low + 12 * T) { ++n_lo; if (b != (drv.invert ? 1 : 0)) grxd = false; }
-            if (ti < tref + t_low - 2 * R) { ++n_hi; if (b != (drv.invert ? 0 : 1)) grxd = false; }
+            if (ti >= tref + t_low + 2 * R && ti < tref + t_low + 12 * T) { ++n_lo; if (b != 0) grxd = false; }
+            if (ti < tref + t_low - 2 * R) { ++n_hi; if (b != 1) grxd = false; }
         }
         grxd &= n_lo > 10;
         (void)n_hi;

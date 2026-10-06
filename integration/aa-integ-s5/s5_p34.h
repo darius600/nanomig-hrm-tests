@@ -16,7 +16,7 @@ inline ARun data_run(const std::vector<uint16_t>& words, unsigned blocks, uint16
     s.w16(audlen(x), uint16_t(words.size())); s.w16(audper(x), per); s.w16(audvol(x), vol);
     r.m_start = s.w16(DMACON, start_val(1u << x));
     r.i_dmaconr = r.pre.logn++; s.rd(DMACONR);
-    if (mid) { s.dly(wait_iters(8400)); mid(s); }
+    if (mid) mid(s);
     s.dly(wait_iters(unsigned(2 * per) * unsigned(words.size()) * (blocks + 1)));
     r.m_stop = s.w16(DMACON, uint16_t(1u << x));
     s.dly(200);
@@ -35,7 +35,13 @@ inline void run_p3(Checks& ck) {
     for (int i = 0; i < 9; ++i) words.push_back(uint16_t(B[i] * 0x0101));
     if (mut("P3-SWAP")) std::swap(words[1], words[2]);
     ARun r = data_run(words, 4, mut("P3-SCALE") ? 0 : 0x0040, mut("P3-PER") ? 600 : 300, 0,
-                    mut("P3-CHG") ? std::function<void(Script&)>([](Script& sc) { sc.wm(kBuf[0] + 8, 0x4040); }) : std::function<void(Script&)>());   // contrast: the CPU replaces word 5 (0xFF) between pass 2 and pass 3
+                    mut("P3-CHG") ? std::function<void(Script&)>([](Script& sc) {   // contrast: after every block-finished request of the channel the CPU
+                        for (int i = 0; i < 4; ++i) {              //   replaces word 5 (0xFF) by 0x4040 and 0xA0A0 in turn, so that
+                            sc.waitb(INTREQR, 0x0080, 60000);      //   consecutive passes read different words
+                            sc.w16(INTREQ, 0x0080);
+                            sc.wm(kBuf[0] + 8, (i & 1) ? 0xA0A0 : 0x4040);
+                        }
+                    }) : std::function<void(Script&)>());
     PreAgg agg; agg.add(r.st);
     note_gc(ck, "P3", r.st);
     uint16_t d = logv(r.cap, r.i_dmaconr);

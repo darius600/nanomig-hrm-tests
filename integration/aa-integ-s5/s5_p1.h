@@ -126,7 +126,7 @@ inline void p1_eval(P1Run& r) {
 inline void run_p1(Checks& ck) {
     std::vector<P1Run> runs;
     const bool live = mut("P1-LIVE");   // a live input through the same comparators: the lengths whose first block is whole
-    for (int x = 0; x < 4; ++x) {
+    for (int x = 0; x < nch(); ++x) {
         std::vector<unsigned> Ls = live ? std::vector<unsigned>{1u, 2u} : std::vector<unsigned>{1u, 2u, 3u, 7u, 16u};
         for (unsigned L : Ls) runs.push_back(p1_single(x, L));
     }

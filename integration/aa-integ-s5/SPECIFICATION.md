@@ -1351,3 +1351,219 @@ fetches starts at pass 2 (RF-W): P2 (a) to (c) grade pass 2 onward, P3 and
 P4 passes 2 and 3. P8 grades blocks 2 to 6 and finds word L's run by its level,
 calibrated on a one-word data set that looks the same under both readings.
 P5 to P7 and P9 to P15 do not pair output with particular fetches.
+
+
+---
+
+## 7. The build
+
+### 7.1 Files and how a run is made
+
+- `prog_run.s`: the one 68000 program of the package. It executes a script
+  that the test places in Chip memory before the run, and ends with `DONE`.
+  Every custom register is written by one `MOVE.W`, or by one `MOVE.L` on a
+  pointer pair, from a register or an immediate; never by `CLR` or a
+  read-modify-write instruction; no write-only register is read. The program is
+  assembled for the 68000 (vasm's default CPU, no `-m68010` or higher).
+  `prog_run_nofix.s` is the same program without the fixture store.
+- `test_aa_integ_s5.cpp` and the headers `s5_core.h`, `s5_common.h`, `s5_p1.h`,
+  `s5_audio.h`, `s5_p34.h`, `s5_p58.h`, `s5_p915.h`, `s5_serial.h`: the script
+  builder, the capture of a run, the shared anchors and one function per
+  proposition.
+- A run: the test writes the script and the data into Chip memory, loads the
+  program, boots, steps the system one clock at a time, records `refresh`,
+  `uart_tx` and the audio outputs for every clock, drives `uart_rx` where the
+  proposition needs it, and ends a few thousand clocks after the `DONE` write.
+  Every run selects the AA chip set (`chipset_config = 0x10`) and
+  `cpu_config = 0`. Both builds grade every proposition, precondition and
+  anchor: what is graded does not depend on the CPU core.
+- Memory (all in the Chip memory that the harness maps one to one): script
+  `0x0B0000`, markers `0x0B8000`, poll log `0x100000`, results `0x0C0000`,
+  buffers as in 2.1.
+
+### 7.2 The script ops
+
+Each op is listed with the registers it writes; a write is bracketed by two
+marker stores (a marker is the running count 1, 2, 3, ... stored at
+`MARKS + 2*(count-1)`).
+
+| op | effect |
+|---|---|
+| W16, W32, W8, WM | marker, one write (a register by `MOVE.W` or `MOVE.L`, a CIA byte, a Chip-memory word), marker |
+| DLY | a `DBRA` loop |
+| RD, RD3 | read one register, or two registers in the order a, b, a; each value is stored in the log |
+| POLL, WAITB | read one register again and again, each value stored in the log; WAITB ends at the first read whose masked value is not 0 |
+| PACT | POLL that writes a value to a register after every read whose masked value is not 0 (P8: the INTREQ clear) |
+| FEED | POLL that, after each of the first n reads with the bit set, writes the clear to INTREQ and the next word to SERDAT (P16, P17) |
+| MARK | one marker |
+
+The poll loops of PACT and FEED carry no marker around their writes: the log
+stores before and after a write bracket it, and `R` is measured over the log
+stores of the loop, without the interval that holds the first write of P16 or
+the end of FEED.
+
+### 7.3 Reference frames as built
+
+- **c** is 8 system clocks, measured from the refresh pattern of every run
+  (four reads per line, two colour clocks apart, 226 to 229 colour clocks
+  between line starts) and asserted by G-C against the VHPOSR slope.
+- **O** is the sum of the two outputs, each read as a 15-bit two's complement
+  value. **s** is one system clock (the capture's resolution) and
+  **tau = s + c** is 9 system clocks. **LSB** is one output unit. **Z** is
+  the mean of O over the first two lines of the VHPOSR poll that follows the
+  baseline. A **run** is a maximal interval over which O is constant, so a
+  word whose two bytes are equal is one run (G-P) and "settles" is a run that
+  lasts two periods or more.
+- **G-FLAT** is carried by those run lengths (G-P of P2 to P4) and by
+  P5-G-FLAT. The output of the reset state is flat at volume 64, so no write to
+  CIA-A (the filter control of 2.5) is made.
+- **Delays** are `DBRA` loops of at least four colour clocks per iteration;
+  every precondition that needs a delay at least as long as a stated number of
+  colour clocks measures it. A wait that the program times out of adds 1 to
+  the word at `RESULTS+2`, and the FIXTURE line of every proposition requires
+  that word to stay 0.
+- **P1** runs every (channel, length) case, and the all-channels case, on a
+  machine of its own: the address of the first fetch after a start depends on
+  what the channel did before.
+- **P4** grades each of passes 2 and 3 on its own preconditions
+  (`P4-G-W-2`, `P4-G-P-2`, `P4-PRE-CAL-2` and the three with suffix 3); the
+  aggregate line is graded on the passes whose preconditions hold, and needs at
+  least one.
+- **P5** grades "between them" (the first and the next change of the output)
+  and the three settled levels; what the output does after both bytes is not
+  graded (section 5.5).
+- **P8** places the calibration play and the block play on one machine, as
+  specified. On both builds the first fetch of the block play is at
+  `BUFx+0x100`, the location of the calibration play, and not at `BUFx`; the
+  windows from block 2 on do not use it.
+- **P16** has the precondition `P16-PRE-IDLE`: the wait from the SERPER write
+  to the first write lasts at least 20T. That TxD is constant in the 20T
+  before the first write is the check `P16-A`, not a precondition.
+- **P17-ONE** grades that a read of 1 is stored no later than the second log
+  store that follows the start of frame k's start cell. The stimulus clears
+  the request at the first read of 1, so a read stored later than the start of
+  the frame plus R can read 0 in an implementation that sets the request long
+  before the frame; the second store after the start reads after the start.
+- **P18-G-T** measures T on the single-cell pulses of the P16 stimulus with the
+  same SERPER value, in a run of its own (the frames of P18 have no
+  single-cell pulse), and checks the edges of the P18 frames against the grid
+  of that T.
+- **P19**, frame 8: the interval is from sigma_8 + R to the start of the 12T
+  low.
+- **P20**: the triples are located by the markers of the INTREQ writes
+  (run A) and of the INTREQ and SERDAT writes (run B).
+
+### 7.4 Mutations
+
+Every selector `NMH_MUTATE=<value>` changes the stimulus of one run set, or
+selects a live input, and leaves every comparator alone; the records are in the
+header of `test_aa_integ_s5.cpp`. Shared selectors: `FIXTURE` (the run loads
+`prog_run_nofix.bin`), `G0`, `GC`, `GD`, `GF`, `GT`, `GBRK`, `GRXD` (the
+contrasts of 2.2 to 2.9). `NMH_ONLY=P2,P5` restricts a run to the named
+propositions.
+
+The lines `P4-TWO-2`, `P4-LEN-2` and `P4-LEVEL-2` are graded only when the
+preconditions of pass 2 hold, which they do under `NMH_MUTATE=P4-LIVE` (word 9
+is (c,c) in place of (a,a), so no byte repeats across the end of the first
+pass): all three print PASS on TG68K and on fx68k. Under `P4-LIVESAME` (the
+live input with word 2 written (b,b)) `P4-TWO-2` prints FAIL on both cores;
+under `P4-LIVELV` (the live input with the second byte of word 2 written 0x40)
+`P4-LEVEL-2` prints FAIL on both cores. `P4-LEN-2` and `P4-LEN-3` have no
+stimulus mutation: one period governs both bytes of a word.
+
+### 7.5 RECORDED: the final run of each core
+
+Both builds print the same verdict on every line: tg68k: 177 passed, 20 failed; fx68k: 177 passed, 20 failed. The lines that print FAIL on both: P1-A, P1-B, P1-C, P1, P4-G-P-2, P4-PRE-CAL-2, P6-LIN, P6, P9-LEVELS, P9, P10-LEVELS, P10, P11-LEVELS, P11, P12-RUNS, P12, P13-RUNS, P13, P14-RUNS, P14.
+
+The preconditions `P4-G-P-2` and `P4-PRE-CAL-2` print FAIL because the output of the first pass and the first word of pass 2 form one run of 1200 colour clocks; `P4-TWO-2`, `P4-LEN-2` and `P4-LEVEL-2` are then NOT GRADED, and the aggregate line of P4 is graded on pass 3.
+
+Measurements, TG68K (`MEASURED:` lines of the run):
+
+```text
+P1 ch0 L=1 wrote 1: fetches=8 returns=8 distinct=1 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 0 0 0 0 0 0 0 
+P1 ch0 L=2 wrote 2: fetches=16 returns=8 distinct=2 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 0 1 0 1 0 1 0 1 0 1 0 1 0 1 
+P1 ch0 L=3 wrote 3: fetches=23 returns=7 distinct=5 outside=2 wrap_bad=1 step_bad=2 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 
+P1 ch0 L=7 wrote 7: fetches=53 returns=8 distinct=7 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
+P1 ch0 L=16 wrote 16: fetches=121 returns=8 distinct=16 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 0 1 2 3 4 5 6 7 8 
+P1 ch0 (all four) L=3 wrote 3: fetches=84 returns=28 distinct=5 outside=2 wrap_bad=1 step_bad=2 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 
+P1 ch1 (all four) L=5 wrote 5: fetches=84 returns=17 distinct=5 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 
+P1 ch2 (all four) L=7 wrote 7: fetches=84 returns=13 distinct=7 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
+P1 ch3 (all four) L=11 wrote 11: fetches=84 returns=8 distinct=11 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 10 0 1 2 
+P2 ch0: pass-2 anchor fetch at cycle 2324401, 67 fetches from it, 75 runs in the interval, word-6 fetches before/after the write 3/5, write at cycle 2437389, L(A)=6048 L(D)=-6048
+P3 pass 2 levels by word (bytes 00 7F 80 01 FF 60 A0 E0 20): 0 8001 -8064 63 -63 6048 -6048 -2016 2016 
+P3 pass 3 levels by word (bytes 00 7F 80 01 FF 60 A0 E0 20): 0 8001 -8064 63 -63 6048 -6048 -2016 2016 
+P4 order of the two bytes of a word (H: high byte first, L: low byte first), pass 2:  pass 3: HHHH (recorded, not graded)
+K slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=19 phase_ok=1 refresh_ok=1
+P5 ch0 window of write 4 (levels, lengths in cycles): 0(55) 8001(3200) -8064(46017) 
+P5 ch0 window of write 6 (levels, lengths in cycles): 0(55) -8064(3200) 8001(46017) 
+P5 ch0: H=8001 Lo=-8064 Z0=0 DMACONR=0000 fetches=0
+P6 ch0 word 0x7F7F A(v): 0:0 1:127 16:2032 32:4064 48:6096 62:7874 63:8001 64:8001  | 0x40|k: 0:8001 31:8001 63:8001
+P6 ch0 word 0x8080 A(v): 0:0 1:-128 16:-2048 32:-4096 48:-6144 62:-7936 63:-8064 64:-8064  | 0x40|k: 0:-8064 31:-8064 63:-8064
+P8 ch0: events=12 windows (events inside) W2:1 W3:1 W4:1 W5:1 W6:1  R=184 cycles, L9=-7056
+P9: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=19, ADKCONR phase 2/3 = 0001/0000
+P10: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=19, ADKCONR phase 2/3 = 0002/0000
+P11: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=19, ADKCONR phase 2/3 = 0004/0000
+P12: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0010/0000, modulator fetches=20
+P13: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0020/0000, modulator fetches=20
+P14: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0040/0000, modulator fetches=20
+P15 k=0: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=19 phase_ok=1 refresh_ok=1
+P15 k=0: run A runs=68 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=16/35
+P15 k=1: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=19 phase_ok=1 refresh_ok=1
+P15 k=1: run A runs=68 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=16/35
+P15 k=2: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=19 phase_ok=1 refresh_ok=1
+P15 k=2: run A runs=68 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=16/35
+P16: T=512 cycles, measured shortest edge interval 512, frames found 8, idle before the first write 13192 cycles (25.77 T), R=248 cycles (31.00 CCK), idle level 1
+P16 frames (byte, start in tenths of T after the first write marker): 0081@1 003C@101 005A@201 0000@301 00FF@401 0066@501 0018@601 00A5@701 
+P17: R=248 cycles; reads of 1 followed by a write: 7; per move k: window e_k - first clear read, and the first read of 1 minus the start of frame k (cycles): 1:e-lo=25424,first1-s=666 2:e-lo=3694,first1-s=126 3:e-lo=4242,first1-s=162 4:e-lo=4206,first1-s=54 5:e-lo=4314,first1-s=82 6:e-lo=4286,first1-s=118 7:e-lo=4250,first1-s=154 8:e-lo=3878,first1-s=46 
+P18: T=512 cycles; w(p) for p = 8 9 7 4 8 9: 4608 5120 4096 2560 4608 5120 cycles = 9.00 10.00 8.00 5.00 T (the HRM's single start bit gives (p+1)T, recorded, not graded)
+P19: R=104 cycles (13.00 CCK); frames 1..8 (reads in the interval / reads that differ) 1:41/0 2:41/0 3:42/0 4:41/0 5:41/0 6:42/0 7:36/0 8:79/0 
+P20 run A: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=19 phase_ok=1 refresh_ok=1
+P20 run A triples (SERDATR, INTREQR, SERDATR): 7B5A,0800,7B5A | 335A,0000,335A | 735A,0800,735A | 335A,0000,335A
+P20 run B triples: 2800,0001,2800 | 0800,0000,0800 | 2800,0001,2800
+```
+
+Measurements, fx68k (`MEASURED:` lines of the run):
+
+```text
+P1 ch0 L=1 wrote 1: fetches=7 returns=7 distinct=1 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 0 0 0 0 0 0 
+P1 ch0 L=2 wrote 2: fetches=13 returns=7 distinct=2 outside=0 wrap_bad=0 step_bad=0 first_at_base=1 DMACONR=0201 offsets: 0 1 0 1 0 1 0 1 0 1 0 1 0 
+P1 ch0 L=3 wrote 3: fetches=20 returns=6 distinct=5 outside=2 wrap_bad=1 step_bad=2 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 
+P1 ch0 L=7 wrote 7: fetches=45 returns=7 distinct=7 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
+P1 ch0 L=16 wrote 16: fetches=102 returns=7 distinct=16 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=0201 offsets: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 0 1 2 3 4 5 6 7 8 
+P1 ch0 (all four) L=3 wrote 3: fetches=70 returns=23 distinct=5 outside=2 wrap_bad=1 step_bad=2 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 1 2 0 
+P1 ch1 (all four) L=5 wrote 5: fetches=70 returns=15 distinct=5 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 0 1 2 3 4 
+P1 ch2 (all four) L=7 wrote 7: fetches=70 returns=11 distinct=7 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 0 1 2 3 4 5 6 0 1 2 3 4 5 6 0 1 2 3 
+P1 ch3 (all four) L=11 wrote 11: fetches=70 returns=7 distinct=11 outside=0 wrap_bad=0 step_bad=1 first_at_base=1 DMACONR=020F offsets: 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 10 0 1 2 
+P2 ch0: pass-2 anchor fetch at cycle 2322585, 55 fetches from it, 63 runs in the interval, word-6 fetches before/after the write 2/4, write at cycle 2413789, L(A)=6048 L(D)=-6048
+P3 pass 2 levels by word (bytes 00 7F 80 01 FF 60 A0 E0 20): 0 8001 -8064 63 -63 6048 -6048 -2016 2016 
+P3 pass 3 levels by word (bytes 00 7F 80 01 FF 60 A0 E0 20): 0 8001 -8064 63 -63 6048 -6048 -2016 2016 
+P4 order of the two bytes of a word (H: high byte first, L: low byte first), pass 2:  pass 3: HHHH (recorded, not graded)
+K slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=21 phase_ok=1 refresh_ok=1
+P5 ch0 window of write 4 (levels, lengths in cycles): 0(63) 8001(3200) -8064(38265) 
+P5 ch0 window of write 6 (levels, lengths in cycles): 0(63) -8064(3200) 8001(38289) 
+P5 ch0: H=8001 Lo=-8064 Z0=0 DMACONR=0000 fetches=0
+P6 ch0 word 0x7F7F A(v): 0:0 1:127 16:2032 32:4064 48:6096 62:7874 63:8001 64:8001  | 0x40|k: 0:8001 31:8001 63:8001
+P6 ch0 word 0x8080 A(v): 0:0 1:-128 16:-2048 32:-4096 48:-6144 62:-7936 63:-8064 64:-8064  | 0x40|k: 0:-8064 31:-8064 63:-8064
+P8 ch0: events=12 windows (events inside) W2:1 W3:1 W4:1 W5:1 W6:1  R=184 cycles, L9=-7056
+P9: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=16, ADKCONR phase 2/3 = 0001/0000
+P10: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=16, ADKCONR phase 2/3 = 0002/0000
+P11: calibration L64=8001 L16=2032 L40=5080 L32=4064; phase 2: segments=0 (L64 0, L16 0, L40 0, L32 0, other 0), modulator fetches=16, ADKCONR phase 2/3 = 0004/0000
+P12: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0010/0000, modulator fetches=17
+P13: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0020/0000, modulator fetches=17
+P14: phase 2 runs=0 transitional=0 (400-colour-clock runs 0, misplaced 0) segments 200/600/350 = 0/0/0, ADKCONR phase 2/3 = 0040/0000, modulator fetches=17
+P15 k=0: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=21 phase_ok=1 refresh_ok=1
+P15 k=0: run A runs=57 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=13/29
+P15 k=1: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=21 phase_ok=1 refresh_ok=1
+P15 k=1: run A runs=57 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=13/29
+P15 k=2: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=21 phase_ok=1 refresh_ok=1
+P15 k=2: run A runs=57 wrong length=0 wrong level=0 run B levels=2 ADKCONR A/B=0008/0000 fetches ch3/chk=13/29
+P16: T=512 cycles, measured shortest edge interval 512, frames found 8, idle before the first write 12240 cycles (23.91 T), R=240 cycles (30.00 CCK), idle level 1
+P16 frames (byte, start in tenths of T after the first write marker): 0081@1 003C@101 005A@201 0000@301 00FF@401 0066@501 0018@601 00A5@701 
+P17: R=240 cycles; reads of 1 followed by a write: 7; per move k: window e_k - first clear read, and the first read of 1 minus the start of frame k (cycles): 1:e-lo=23648,first1-s=714 2:e-lo=3654,first1-s=102 3:e-lo=4266,first1-s=106 4:e-lo=4262,first1-s=110 5:e-lo=4258,first1-s=114 6:e-lo=4254,first1-s=118 7:e-lo=4250,first1-s=114 8:e-lo=3854,first1-s=54 
+P18: T=512 cycles; w(p) for p = 8 9 7 4 8 9: 4608 5120 4096 2560 4608 5120 cycles = 9.00 10.00 8.00 5.00 T (the HRM's single start bit gives (p+1)T, recorded, not graded)
+P19: R=96 cycles (12.00 CCK); frames 1..8 (reads in the interval / reads that differ) 1:45/0 2:45/0 3:45/0 4:45/0 5:45/0 6:46/0 7:39/0 8:85/0 
+P20 run A: K=8 slope(H8..H1)=1.00/K slope(V7..V0)=0.00/K run=21 phase_ok=1 refresh_ok=1
+P20 run A triples (SERDATR, INTREQR, SERDATR): 7B5A,0800,7B5A | 3B5A,0000,3B5A | 735A,0800,735A | 335A,0000,335A
+P20 run B triples: 2800,0001,2800 | 0800,0000,0800 | 2800,0001,2800
+```
+
