@@ -5,7 +5,7 @@
 // Test class: HRM_CONFORMANCE for P1, P2, P3, (a)+(c), (b) and their controls; INTEGRATION_SMOKE for the apparatus and precondition lines (FIXTURE, the R1 and R2 anchors, the G3/G4 completion lines, 4a-4e, 5a-5f).
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, printed pp. 255-259 and 283-284 (serial port), 194-195 and 23-24 (colour clock, fields), 246-250 and 265 (disk DMA), as read in SPECIFICATION.md.
 // Requirement IDs: none; the claims sol:8-serper.c8, sol:8-serper.c9, sol:8-serper.c10, opus:8-serial.c36 and sol:8-serial.c21 are withdrawn from the graded lines and the other 29 declined, every id printed on a RECORDED line.
-// Non-goals: every 15-bit divisor beyond N=0, 371 and 32396; the disk bit-cell time; RESULT bit 8 under a ninth bit of 0; an absolute duration.
+// Non-goals: every 15-bit divisor beyond N=0, 371 and 32396; the disk bit-cell time; RESULT bit 8 under a ninth bit of 0; an absolute duration; the long/short alternation of NTSC lines (measured, not graded).
 //
 // NMH_MUTATE selects a stimulus substitution for every capture built from
 // it, one at a time; a plain `make test` runs none. The comparator and the
@@ -62,25 +62,25 @@
 // MUTATION 4a-NTSC-FAST1 none impossible: unfalsifiable at this boundary -- no stimulus the pages describe moves the refresh slots or the line length, so no capture of this package can make the anchor fail
 // MUTATION 4b-NTSC-FAST1 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST0, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a)+(c), (b).
 // MUTATION 4c-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST0, 4c-PAL-FAST1, 4c-PAL-FAST0.
-// MUTATION 4e-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST0, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0.
+// MUTATION 4e-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST0, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
 // MUTATION 4d-NTSC-FAST1 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0.
 // MUTATION P4-DONE-NTSC-FAST1 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST1, P4-DONE-PAL-FAST0.
 // MUTATION 4a-NTSC-FAST0 none impossible: unfalsifiable at this boundary -- no stimulus the pages describe moves the refresh slots or the line length, so no capture of this package can make the anchor fail
 // MUTATION 4b-NTSC-FAST0 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-PAL-FAST1, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a)+(c), (b).
 // MUTATION 4c-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST1, 4c-PAL-FAST1, 4c-PAL-FAST0.
-// MUTATION 4e-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0.
+// MUTATION 4e-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-PAL-FAST1, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
 // MUTATION 4d-NTSC-FAST0 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-PAL-FAST1, 4d-PAL-FAST0.
 // MUTATION P4-DONE-NTSC-FAST0 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-PAL-FAST1, P4-DONE-PAL-FAST0.
 // MUTATION 4a-PAL-FAST1 none impossible: unfalsifiable at this boundary -- no stimulus the pages describe moves the refresh slots or the line length, so no capture of this package can make the anchor fail
 // MUTATION 4b-PAL-FAST1 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST0, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a)+(c), (b).
 // MUTATION 4c-PAL-FAST1 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST1, 4c-NTSC-FAST0, 4c-PAL-FAST0.
-// MUTATION 4e-PAL-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0.
+// MUTATION 4e-PAL-FAST1 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST0. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
 // MUTATION 4d-PAL-FAST1 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST0.
 // MUTATION P4-DONE-PAL-FAST1 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST0.
 // MUTATION 4a-PAL-FAST0 none impossible: unfalsifiable at this boundary -- no stimulus the pages describe moves the refresh slots or the line length, so no capture of this package can make the anchor fail
 // MUTATION 4b-PAL-FAST0 stimulus red NMH_MUTATE=STD-SWAP: every capture is made with the other video standard selected: the NTSC runs on PAL and the PAL runs on NTSC; TG68K FAIL, fx68k FAIL. Also printing FAIL: 1b, P1N0-R2, P1N32396-R2, 2b, P2N0-R2, P2N32396-R2, 4b-NTSC-FAST1, 4b-NTSC-FAST0, 4b-PAL-FAST1, 5a-R2-A, 5a-R2-B. Also NOT GRADED: P1, P1-CTRL-N0, P1-CTRL-N32396, P1-CTRL-WITHIN, P2-CTRL-PAIR, P2, P3, 5f, (a)+(c), (b).
 // MUTATION 4c-PAL-FAST0 stimulus red NMH_MUTATE=P4-4C: the FAST=1 programs write ADKCON <- $0100 (bit 15 clear clears the bit) and the FAST=0 programs write ADKCON <- $8100 (sets it); TG68K FAIL, fx68k FAIL. Also printing FAIL: 4c-NTSC-FAST1, 4c-NTSC-FAST0, 4c-PAL-FAST1.
-// MUTATION 4e-PAL-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST1. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0.
+// MUTATION 4e-PAL-FAST0 stimulus red NMH_MUTATE=P4-4E: all four P4 programs use LENGTH=128 instead of 256; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4e-NTSC-FAST1, 4e-NTSC-FAST0, 4e-PAL-FAST1. Also NOT GRADED: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1, 4d-PAL-FAST0. Also NMH_MUTATE=P4-4E-ONCE (the CPU reads buffer word 10 after the transfer, so that word is read twice): 4e fails through its exactly-once clause with every index seen and in rising order, 4d stays PASS; TG68K FAIL, fx68k FAIL.
 // MUTATION 4d-PAL-FAST0 stimulus red NMH_MUTATE=P4-4D: in all four P4 programs DSKEN (DMACON bit 4) is cleared partway through the transfer, DSKBYTR is sampled while it is cleared, then DMAEN+DSKEN are set again; TG68K FAIL, fx68k FAIL. Also printing FAIL: 4d-NTSC-FAST1, 4d-NTSC-FAST0, 4d-PAL-FAST1.
 // MUTATION P4-DONE-PAL-FAST0 stimulus red NMH_MUTATE=P4-FORCETO: the P4 programs declare a poll that ended at its own bound before MARK=DONE; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4-DONE-NTSC-FAST1, P4-DONE-NTSC-FAST0, P4-DONE-PAL-FAST1.
 // MUTATION 5a-R1-A none impossible: unfalsifiable at this boundary -- no stimulus the pages describe moves the refresh slots or the line length, so no capture of this package can make the anchor fail
@@ -100,7 +100,7 @@
 // MUTATION 5e-B stimulus red NMH_MUTATE=P5-5E: every poll iteration is padded by T/4 or more in run A and in run B; TG68K FAIL, fx68k FAIL. Also printing FAIL: 5e-A. Also NOT GRADED: (a)+(c), (b).
 // MUTATION 5f stimulus red NMH_MUTATE=P5-5F: run B itself is driven at a bit time of 2T; TG68K FAIL, fx68k FAIL. Also printing FAIL: (b). Also NOT GRADED: (a)+(c).
 // MUTATION (a)+(c) stimulus red NMH_MUTATE=P5-C: run B loads prog_rx_a.bin (SERPER <- $8173 in run B too); TG68K FAIL, fx68k FAIL. Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (a)+(c) and (b) FAIL, the 5a-5e lines of run A stay PASS; TG68K FAIL, fx68k FAIL.
-// MUTATION (b) stimulus red NMH_MUTATE=P5-B: run A loads prog_rx_a_altper.bin (SERPER <- $80B9, N=185, driver unchanged); TG68K FAIL, fx68k FAIL. Also printing FAIL: (a)+(c). Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (a)+(c) and (b) FAIL, the 5a-5e lines of run A stay PASS; TG68K FAIL, fx68k FAIL.
+// MUTATION (b) stimulus red NMH_MUTATE=P5-B: run A loads prog_rx_a_altper.bin (SERPER <- $80B9, N=185, driver unchanged); TG68K FAIL, fx68k FAIL. Also printing FAIL: (a)+(c). Also NMH_MUTATE=P5-A (run A itself driven at a bit time of 2T): (a)+(c) and (b) FAIL, the 5a-5e lines of run A stay PASS; TG68K FAIL, fx68k FAIL. (b) is decided per character: of the 16 characters 16 reach their threshold at baseline, 8 stay below it under P5-B and 2 under P5-A, none straddles it, on both cores.
 
 #include <algorithm>
 #include <cmath>
@@ -135,12 +135,16 @@ struct Checks {
     // precondition named in `deps` was graded and passed; otherwise it prints
     // NOT GRADED (a RECORDED line), never PASS or FAIL. A dependency that was
     // never evaluated counts as not met.
-    void line(const std::string& id, const std::vector<std::string>& deps, bool cond, const std::string& text) {
+    std::string unmet_of(const std::vector<std::string>& deps) const {
         std::string unmet;
         for (const auto& d : deps) {
             auto it = verdict.find(d);
             if (it == verdict.end() || !it->second) unmet += (unmet.empty() ? "" : ", ") + d;
         }
+        return unmet;
+    }
+    void line(const std::string& id, const std::vector<std::string>& deps, bool cond, const std::string& text) {
+        const std::string unmet = unmet_of(deps);
         if (!unmet.empty()) {
             record("NOT GRADED " + id + ": precondition(s) not met: " + unmet);
             verdict[id] = false;
@@ -174,17 +178,36 @@ nmh::Config cfg_for(bool ntsc) {
 }
 
 // ---- R1: the colour clock, from the four refresh accesses per line -------
+//
+// Apparatus assumption the R1 anchors rest on: RamAccess carries no
+// attribution, and no page fixes the address of a memory-refresh access, so
+// a refresh access is taken to be any Chip-port read at a word address below
+// 0x1000, and the accesses of one line are the reads of that kind that lie
+// no more than 100 cycles apart.
 
 struct RefreshGroup { uint64_t r1, r2, r3, r4; };
+
+// The Chip-port log with its held continuations removed: a bus cycle
+// stretched by wait states logs one identical entry per 7 MHz period it
+// spans (nanomig_harness.h), and every count below is of accesses, not of
+// samples. The period is the smallest spacing of two consecutive samples.
+std::vector<nmh::RamAccess> logical_log(const std::vector<nmh::RamAccess>& log) {
+    uint64_t period = 0;
+    for (size_t i = 1; i < log.size(); ++i) {
+        uint64_t d = log[i].cycle - log[i - 1].cycle;
+        if (d > 0 && (period == 0 || d < period)) period = d;
+    }
+    return period ? nmh::coalesce_adjacent(log, period) : log;
+}
 
 // The candidate groups of low-address reads, split where two reads lie more
 // than 100 cycles apart. The last group is dropped when the capture ended
 // within 100 cycles of its last read: the gap rule has not closed it, so it
 // may lack reads the capture never saw, and it does not lie wholly inside the
 // capture.
-std::vector<std::vector<uint64_t>> candidate_groups(const std::vector<nmh::RamAccess>& log, uint64_t end_cycle) {
+std::vector<std::vector<uint64_t>> candidate_groups(const std::vector<nmh::RamAccess>& logical, uint64_t end_cycle) {
     std::vector<uint64_t> low;
-    for (const auto& a : log) if (!a.is_write && a.word_addr < 0x1000) low.push_back(a.cycle);
+    for (const auto& a : logical) if (!a.is_write && a.word_addr < 0x1000) low.push_back(a.cycle);
     std::vector<std::vector<uint64_t>> groups;
     if (low.empty()) return groups;
     groups.push_back({low[0]});
@@ -196,18 +219,53 @@ std::vector<std::vector<uint64_t>> candidate_groups(const std::vector<nmh::RamAc
     return groups;
 }
 
-std::vector<RefreshGroup> find_refresh_groups(const std::vector<nmh::RamAccess>& log, uint64_t end_cycle) {
-    std::vector<RefreshGroup> out;
-    auto groups = candidate_groups(log, end_cycle);
+// What a capture shows of R1. C is (r4-r1)/6 of the first four-read group.
+// `closed` counts every candidate group wholly inside the capture,
+// `malformed` those that are not four reads each 2C after the one before.
+// (b), NTSC: the first read of a line and that of the next line are 227*C
+// or 228*C apart (p.23: "Every other line is a long line (228 color clocks)
+// ..., with the others being 227 color clocks long"); `lines` spacings,
+// `line_bad` outside that range. Measured, not graded: the first read of
+// line L and that of line L+2 against 455*C (`pairs`, `pair_bad`).
+struct R1Scan {
+    std::vector<RefreshGroup> groups; // the four-read groups
+    double C = 0.0;
+    int closed = 0, malformed = 0;
+    int lines = 0, line_bad = 0;
+    int pairs = 0, pair_bad = 0;
+    double d1min = 1e18, d1max = 0, d2min = 1e18, d2max = 0; // spacing of first reads: line to line, line L to L+2
+};
+
+R1Scan scan_refresh(const std::vector<nmh::RamAccess>& log, uint64_t end_cycle) {
+    R1Scan s;
+    auto groups = candidate_groups(logical_log(log), end_cycle);
+    for (const auto& g : groups)
+        if (g.size() == 4) s.groups.push_back({g[0], g[1], g[2], g[3]});
+    if (!s.groups.empty()) s.C = double(s.groups[0].r4 - s.groups[0].r1) / 6.0;
+    s.closed = int(groups.size());
+    if (s.C <= 0) return s;
     for (const auto& g : groups) {
-        if (g.size() != 4) continue;
-        out.push_back({g[0], g[1], g[2], g[3]});
+        bool shape_ok = g.size() == 4;
+        for (size_t i = 1; shape_ok && i < g.size(); ++i)
+            if (std::abs(double(g[i] - g[i - 1]) - 2.0 * s.C) > 0.01) shape_ok = false;
+        if (!shape_ok) ++s.malformed;
     }
-    return out;
+    for (size_t i = 0; i + 1 < groups.size(); ++i) {
+        double d = double(groups[i + 1][0] - groups[i][0]);
+        s.d1min = std::min(s.d1min, d); s.d1max = std::max(s.d1max, d);
+        ++s.lines;
+        if (d < 227.0 * s.C - 0.01 || d > 228.0 * s.C + 0.01) ++s.line_bad;
+    }
+    for (size_t i = 0; i + 2 < groups.size(); ++i) {
+        double d = double(groups[i + 2][0] - groups[i][0]);
+        s.d2min = std::min(s.d2min, d); s.d2max = std::max(s.d2max, d);
+        ++s.pairs;
+        if (std::abs(double(groups[i + 2][0] - groups[i][0]) - 455.0 * s.C) > 0.01) ++s.pair_bad;
+    }
+    return s;
 }
 
-// Check (a): every group's three internal gaps equal 2*candidate_C, in
-// every line. Passing the *measured* C grades the real anchor.
+// Check (a): every group's three internal gaps equal 2*C, in every line.
 bool check_r1_anchor(const std::vector<RefreshGroup>& groups, double candidate_C) {
     if (groups.empty() || candidate_C <= 0) return false;
     double expected = 2.0 * candidate_C;
@@ -219,30 +277,17 @@ bool check_r1_anchor(const std::vector<RefreshGroup>& groups, double candidate_C
     return true;
 }
 
-// R1 population: find_refresh_groups() silently drops every candidate group
-// whose size is not exactly four, so check_r1_anchor() alone can pass while
-// a malformed or missing line was discarded before it ever saw one. This
-// re-walks the same low-address-read candidates (grouped by the same >100
-// cycle gap) and reports how many of them are NOT the shape Figure 6-9
-// draws: exactly four reads, each 2*C after the one before -- the same
-// shape check_r1_anchor grades, so nothing here is a new oracle, only a
-// completeness count over every candidate group, not just the retained
-// ones.
-struct RefreshPopulation { int groups = 0, malformed = 0; };
+// The R1 anchor of one capture: (a) on the four-read groups, no malformed
+// candidate group among those wholly inside the capture, and on NTSC (b).
+bool r1_ok(const R1Scan& s, bool ntsc) {
+    bool ok = !s.groups.empty() && check_r1_anchor(s.groups, s.C) && s.closed > 0 && s.malformed == 0;
+    if (ntsc) ok = ok && s.lines > 0 && s.line_bad == 0;
+    return ok;
+}
 
-RefreshPopulation refresh_population(const std::vector<nmh::RamAccess>& log, double C, uint64_t end_cycle) {
-    RefreshPopulation p;
-    auto groups = candidate_groups(log, end_cycle);
-    if (groups.empty() || C <= 0) return p;
-    p.groups = int(groups.size());
-    double expected = 2.0 * C;
-    for (const auto& g : groups) {
-        bool shape_ok = g.size() == 4;
-        for (size_t i = 1; shape_ok && i < g.size(); ++i)
-            if (std::abs(double(g[i] - g[i - 1]) - expected) > 0.01) shape_ok = false;
-        if (!shape_ok) ++p.malformed;
-    }
-    return p;
+std::string r1_note(const R1Scan& s, bool ntsc) {
+    return "R1 population groups=" + std::to_string(s.closed) + " malformed=" + std::to_string(s.malformed) +
+           (ntsc ? " (b) line spacings=" + std::to_string(s.lines) + " outside 227C..228C=" + std::to_string(s.line_bad) + "; measured, not graded: L to L+2 pairs=" + std::to_string(s.pairs) + " not 455C=" + std::to_string(s.pair_bad) + ", line spacing " + std::to_string(s.d1min) + ".." + std::to_string(s.d1max) + " L..L+2 spacing " + std::to_string(s.d2min) + ".." + std::to_string(s.d2max) : std::string(" (b) not applied on PAL"));
 }
 
 // ---- shared TX capture (P1/P2/P3) -----------------------------------------
@@ -255,7 +300,7 @@ struct TxRun {
     double C = 0.0;
     int field_lines = 0; // R2: refresh-groups in one representative field
     bool poll_timeout = false; // G4: a POLLBIT in this run reached its own bound
-    int pop_groups = 0, pop_malformed = 0; // R1 population (refresh_population)
+    R1Scan r1;
 };
 
 std::optional<uint64_t> mark_cycle(const TxRun& r, uint16_t value) {
@@ -291,9 +336,9 @@ TxRun run_tx(const std::string& bin, bool ntsc, uint64_t post_boot_budget) {
         }
     }
 
-    r.refresh = find_refresh_groups(h.ram_log(), h.cycles());
-    if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
-    { auto pop = refresh_population(h.ram_log(), r.C, h.cycles()); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
+    r.r1 = scan_refresh(h.ram_log(), h.cycles());
+    r.refresh = r.r1.groups;
+    r.C = r.r1.C;
 
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
@@ -398,7 +443,7 @@ struct RxRun {
     uint64_t s0 = 0;
     bool scheduled = false;
     bool poll_timeout = false; // G4: any of the custom RBF poll loops reached its own bound
-    int pop_groups = 0, pop_malformed = 0; // R1 population (refresh_population)
+    R1Scan r1;
 };
 
 std::optional<uint64_t> mark_cycle_rx(const RxRun& r, uint16_t value) {
@@ -469,9 +514,9 @@ RxRun run_rx(const std::string& bin, uint64_t budget, double T, double t_scale, 
         }
     }
     for (int j = 0; j < 8; ++j) r.results.push_back(h.peek_logical(kResultAddr + 2 * j));
-    r.refresh = find_refresh_groups(h.ram_log(), h.cycles());
-    if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
-    { auto pop = refresh_population(h.ram_log(), r.C, h.cycles()); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
+    r.r1 = scan_refresh(h.ram_log(), h.cycles());
+    r.refresh = r.r1.groups;
+    r.C = r.r1.C;
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
         int count = 0;
@@ -569,10 +614,8 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
     // ---- 5a: R1 anchor, R2 shows NTSC, the driver's own C=8 assumption,
     // and completion (G4), each on run A and on run B. ----
     auto grade_5a = [&](const RxRun& r, const std::string& run) {
-        checks.note("5a run " + run + ": R1 population groups=" + std::to_string(r.pop_groups) +
-                    " malformed=" + std::to_string(r.pop_malformed));
-        bool r1ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C) &&
-                    r.pop_groups > 0 && r.pop_malformed == 0;
+        checks.note("5a run " + run + ": " + r1_note(r.r1, true));
+        bool r1ok = r1_ok(r.r1, true);
         checks.line("5a-R1-" + run, {}, r1ok,
             "[p194,p195] R1 anchor, run " + run + ": every candidate refresh group in the run is 2C, 2C "
             "and 2C apart (Figure 6-9's own shape), none discarded before grading");
@@ -725,7 +768,7 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
             "bit 8 for every j, and its RBF event comes one bit time later than run B's own "
             "(mean_j D_j(A) - mean_j D_j(B) in [T/2,3T/2])");
         checks.record(
-            "opus:8-serial.c36,sol:8-serial.c21 [p255,p256,p257,p283]: withdrawn from the graded "
+            "opus:8-serial.c36 sol:8-serial.c21 [p255,p256,p257,p283]: withdrawn from the graded "
             "line above -- establishing that bit 8 specifically carries the ninth (parity) bit "
             "needs a run where the ninth bit is driven 0, and p.257 and p.283 disagree on what "
             "RESULT bit 8 should then read (0 or 1; see the run-A ninth-bit-zero variant below), "
@@ -733,26 +776,40 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
     }
 
     // ---- (b) No early signal ----
-    // G5 places the event in (t0-S, t1]; only the bracket's lower end
-    // bounds how early it could have been, so this reads t0-S, not t1
-    // (SPECIFICATION.md).
+    // G5 places the event in (t0-S, t1]. Per character, with the threshold
+    // s_j+9T (run A) or s_j+8T (run B): the character PASSES when the
+    // bracket's lower end t0-S reaches the threshold (the event lies after
+    // it), FAILS when t1 stays below it (the event lies before it), and
+    // otherwise is NOT GRADED: the bracket straddles the threshold, so no
+    // sampling phase the pages allow is excluded. The line passes only if no
+    // character fails and at least one is graded.
     {
-        bool ok = true;
-        for (int j = 0; j < 8; ++j) {
-            double sj = double(a.s0) + double(j) * step;
-            double lo = double(brackets_a[j].t0) - double(brackets_a[j].S);
-            if (!brackets_a[j].ok || !(lo >= sj + 9.0 * T)) ok = false;
-        }
-        for (int j = 0; j < 8; ++j) {
-            double sj = double(b.s0) + double(j) * step;
-            double lo = double(brackets_b[j].t0) - double(brackets_b[j].S);
-            if (!brackets_b[j].ok || !(lo >= sj + 8.0 * T)) ok = false;
-        }
+        int pass = 0, fail = 0, undecided = 0;
+        auto grade_char = [&](const Bracket& br, double sj, double thr_bits) {
+            if (!br.ok) { ++undecided; return; }
+            double thr = sj + thr_bits * T;
+            double lo = double(br.t0) - double(br.S);
+            if (lo >= thr) ++pass;
+            else if (double(br.t1) < thr) ++fail;
+            else ++undecided;
+        };
+        for (int j = 0; j < 8; ++j) grade_char(brackets_a[j], double(a.s0) + double(j) * step, 9.0);
+        for (int j = 0; j < 8; ++j) grade_char(brackets_b[j], double(b.s0) + double(j) * step, 8.0);
+        checks.note("(b) characters (of 16): reach the threshold=" + std::to_string(pass) +
+                    ", stay below it=" + std::to_string(fail) + ", straddle it (NOT GRADED)=" + std::to_string(undecided));
         std::vector<std::string> deps = p5_pre;
         for (const char* d : {"5d-A", "5d-B", "5e-A", "5e-B"}) deps.push_back(d);
-        checks.line("(b)", deps, ok,
-            "[p256] the G5 bracket's lower end (t0-S) for every j is no earlier than "
-            "s_j+9T (run A) or s_j+8T (run B)");
+        const std::string text =
+            "[p256] no character's RBF event lies before s_j+9T (run A) or s_j+8T (run B): none "
+            "has its G5 bracket (t0-S, t1] wholly below that threshold, and at least one has its "
+            "lower end t0-S at or past it";
+        if (checks.unmet_of(deps).empty() && fail == 0 && pass == 0) {
+            checks.record("NOT GRADED (b): no character's bracket decides the threshold (" +
+                          std::to_string(undecided) + " of 16 straddle it)");
+            checks.verdict["(b)"] = false;
+        } else {
+            checks.line("(b)", deps, fail == 0 && pass > 0, text);
+        }
     }
 
     // ---- P5 run-A ninth-bit-zero variant: recorded, not graded (p.257
@@ -763,15 +820,20 @@ void run_p5(const std::string& dir, const std::string& mv, Checks& checks) {
     {
         RxRun a0 = run_rx(dir + "/prog_rx_a.bin", kP5Budget, T, 1.0, true, true);
         std::string dump;
+        int bytes_ok = 0;
         for (int j = 0; j < 8; ++j) {
-            char buf[16];
-            int bit8 = a0.results[j] ? int((*a0.results[j] >> 8) & 1) : -1;
-            std::snprintf(buf, sizeof buf, " j%d=%d", j, bit8);
+            char buf[24];
+            uint32_t got = a0.results[j] ? uint32_t(*a0.results[j]) : 0xFFFFFFFFu;
+            std::snprintf(buf, sizeof buf, " j%d=%04X", j, got);
             dump += buf;
+            if (a0.results[j] && (*a0.results[j] & 0x00FF) == kRxBytes[j]) ++bytes_ok;
         }
-        checks.record("P5 run-A ninth-bit-zero variant [p257,p283]: RESULT bit 8 per character, "
-                       "every ninth bit driven 0:" + dump + " -- p.257 predicts 0, p.283 predicts "
-                       "1, so the pages disagree and this is not graded");
+        checks.note("P5 run-A ninth-bit-zero variant: loaded=" + std::to_string(a0.loaded) +
+                    " released=" + std::to_string(a0.released) + " DONE=" + std::to_string(rx_sequence_present(a0)) +
+                    " marks=" + std::to_string(a0.marks.size()) + " POLL_TIMEOUT=" + std::to_string(a0.poll_timeout) +
+                    " bits 7-0 = byte_j for " + std::to_string(bytes_ok) + " of 8; RESULT words (every ninth bit driven 0):" + dump);
+        checks.record("P5 run-A ninth-bit-zero variant [p257,p283]: RESULT bit 8 is not graded -- "
+                       "p.257 predicts 0, p.283 predicts 1, so the pages disagree");
     }
 }
 
@@ -790,7 +852,7 @@ struct FastRun {
     double C = 0.0;
     int field_lines = 0;
     bool poll_timeout = false; // G4: the custom disk poll loop reached its own bound
-    int pop_groups = 0, pop_malformed = 0; // R1 population (refresh_population)
+    R1Scan r1;
 };
 
 FastRun run_fast(const std::string& bin, bool ntsc, uint64_t budget) {
@@ -800,11 +862,11 @@ FastRun run_fast(const std::string& bin, bool ntsc, uint64_t budget) {
     if (!r.loaded) return r;
     r.released = h.boot(kBootBudget).cpu_released;
     r.done_cycle = h.run_until_write(kMarkAddr, kMarkDone, budget);
-    r.log = h.ram_log();
+    r.log = logical_log(h.ram_log());
     r.result = h.peek_logical(kResultAddr);
-    r.refresh = find_refresh_groups(r.log, h.cycles());
-    if (!r.refresh.empty()) r.C = double(r.refresh[0].r4 - r.refresh[0].r1) / 6.0;
-    { auto pop = refresh_population(r.log, r.C, h.cycles()); r.pop_groups = pop.groups; r.pop_malformed = pop.malformed; }
+    r.r1 = scan_refresh(h.ram_log(), h.cycles());
+    r.refresh = r.r1.groups;
+    r.C = r.r1.C;
     auto frames = nmh::find_frames(h.video());
     if (frames.size() >= 3) {
         int count = 0;
@@ -873,10 +935,12 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
     auto bin_fast1 = dir + (mv == "P4-4C" ? "/prog_fast1_4c.bin" :
                              mv == "P4-4D" ? "/prog_fast1_4d.bin" :
                              mv == "P4-4E" ? "/prog_fast1_4e.bin" :
+                             mv == "P4-4E-ONCE" ? "/prog_fast1_once.bin" :
                              mv == "P4-FORCETO" ? "/prog_fast1_forceto.bin" : "/prog_fast1.bin");
     auto bin_fast0 = dir + (mv == "P4-4C" ? "/prog_fast0_4c.bin" :
                              mv == "P4-4D" ? "/prog_fast0_4d.bin" :
                              mv == "P4-4E" ? "/prog_fast0_4e.bin" :
+                             mv == "P4-4E-ONCE" ? "/prog_fast0_once.bin" :
                              mv == "P4-FORCETO" ? "/prog_fast0_forceto.bin" : "/prog_fast0.bin");
     constexpr uint64_t kP4Budget = 21'000'000;
 
@@ -915,10 +979,8 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
             "it (opus:8-adkcon.c33 declined, SPECIFICATION.md 1.4)");
 
         // 4a: R1 anchor, and the run's own refresh-group population.
-        checks.note(pt + " R1 population groups=" + std::to_string(r.pop_groups) +
-                    " malformed=" + std::to_string(r.pop_malformed));
-        bool r1ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C) &&
-                    r.pop_groups > 0 && r.pop_malformed == 0;
+        checks.note(pt + " " + r1_note(r.r1, ntsc));
+        bool r1ok = r1_ok(r.r1, ntsc);
         checks.line("4a-" + tag, {}, r1ok,
             "[p194,p195] R1 anchor holds on this run, and every candidate refresh group is "
             "the same four-read, 2C-apart shape (Figure 6-9), none discarded before grading");
@@ -940,17 +1002,19 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
         // Its coverage clause is also the precondition of 4d (the window t_64..t_192
         // exists), so it is printed first.
         bool cov_ok = true, e_ok = true;
+        int unseen = 0, order_bad = 0;
         uint64_t prev = 0; bool have_prev = false;
         for (int i = 0; i <= 192; ++i) {
-            if (!t[i]) { e_ok = false; cov_ok = false; continue; }
-            if (have_prev && !(*t[i] > prev)) e_ok = false;
+            if (!t[i]) { e_ok = false; cov_ok = false; ++unseen; continue; }
+            if (have_prev && !(*t[i] > prev)) { e_ok = false; ++order_bad; }
             prev = *t[i]; have_prev = true;
         }
         auto counts = count_reads(r);
         int not_once = 0;
         for (int i = 0; i <= 192; ++i) if (counts[i] != 1) { e_ok = false; ++not_once; }
-        checks.note(pt + " 4e: indices i=0..192 not read exactly once=" + std::to_string(not_once) +
-                    ", window fetches t_64, t_128, t_192 all observed=" + std::to_string(cov_ok));
+        checks.note(pt + " 4e: of the 193 indices i=0..192, never read=" + std::to_string(unseen) +
+                    ", not read exactly once=" + std::to_string(not_once) + ", out of rising order=" +
+                    std::to_string(order_bad) + "; reads counted after coalescing held bus cycles");
         checks.line("4e-" + tag, {}, e_ok,
             "[p247] reads of B+2i are seen for i=0..192, each exactly "
             "once (by full read count, not just first-seen), in rising order");
@@ -985,6 +1049,39 @@ void run_p4(const std::string& dir, const std::string& mv, Checks& checks) {
     // mutant. NMH_MUTATE=P4-4D/4E likewise swap both binaries.
 }
 
+// The claims of the package that no line grades, each printed with its reason
+// (SPECIFICATION.md section 1), one RECORDED line per id.
+struct DeclinedRow { std::vector<const char*> ids; const char* page; const char* reason; };
+
+void record_declined(Checks& checks) {
+    const std::vector<DeclinedRow> rows = {
+        {{"opus:8-dsk.c10", "opus:8-dsk.c11", "opus:8-dsk.c12", "opus:8-dsk.c13", "opus:8-dsk.c14",
+          "opus:8-dsk.c15", "opus:8-dsk.c16", "sol:8-dsk.c10", "sol:8-dsk.c11", "sol:8-dsk.c12",
+          "sol:8-dsk.c13", "sol:8-dsk.c14", "sol:8-dsk.c15", "sol:8-dsk.c16", "sol:8-dsk.c17",
+          "sol:8-dsk.c18"}, "p241",
+         "needs data read from or written to a disk surface; the harness serves no disk and the disk "
+         "write data is not among the outputs a test sees (SPECIFICATION.md 1.1)"},
+        {{"opus:8-mfm.c7", "sol:8-gcr.c2"}, "p250",
+         "MSBSYNC acts on disk read and needs bytes read from a disk surface; no page says what the "
+         "controller receives when no disk is served (SPECIFICATION.md 1.1)"},
+        {{"opus:8-adkcon.c31", "sol:8-appa-adkbit.c13", "opus:8-appA-adkcon.c22"}, "p265",
+         "ADKCON bit 9 (MSBSYNC) acts on disk read, so the reason of the claims on p250 applies, and its "
+         "name cannot be observed (SPECIFICATION.md 1.1)"},
+        {{"opus:8-cia.c9", "sol:8-cia.c7", "opus:8-cia.c10", "sol:8-cia.c8"}, "p244",
+         "DSKRDY* is driven by the drive, which the harness does not serve; the claims give no expected "
+         "value without one (SPECIFICATION.md 1.2)"},
+        {{"sol:8-serper.c4", "sol:8-serper.c5"}, "p255",
+         "an absolute duration (279.36 ns NTSC, 281.94 ns PAL); a test measures cycles and no page ties "
+         "the clock to nanoseconds, so it is used only to convert (SPECIFICATION.md 1.3)"},
+        {{"opus:8-serper.c10"}, "p284",
+         "a constant (.2794 microseconds) for no named machine; it cannot be observed in cycles and on "
+         "PAL disagrees with p255's colour clock (SPECIFICATION.md 1.3)"},
+    };
+    for (const auto& row : rows)
+        for (const char* id : row.ids)
+            checks.record(std::string(id) + " [" + row.page + "]: not graded -- " + row.reason);
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -995,6 +1092,8 @@ int main(int argc, char** argv) {
     const char* mutate_env = std::getenv("NMH_MUTATE");
     const std::string mv = mutate_env ? mutate_env : "";
     g_std_swap = (mv == "STD-SWAP");
+
+    record_declined(checks);
 
     // ==== P1/P2/P3: shared captures =====================================
     //
@@ -1076,10 +1175,8 @@ int main(int argc, char** argv) {
 
     // ---- preconditions of P1 (N=371 NTSC run) ----
     {
-        checks.note("1a: R1 population groups=" + std::to_string(ntsc_n371.pop_groups) +
-                    " malformed=" + std::to_string(ntsc_n371.pop_malformed));
-        bool ok = !ntsc_n371.refresh.empty() && check_r1_anchor(ntsc_n371.refresh, ntsc_n371.C) &&
-                  ntsc_n371.pop_groups > 0 && ntsc_n371.pop_malformed == 0;
+        checks.note("1a: " + r1_note(ntsc_n371.r1, true));
+        bool ok = r1_ok(ntsc_n371.r1, true);
         checks.line("1a", {}, ok,
             "[p194,p195] R1 anchor: the four refresh accesses in every line of the N=371 NTSC "
             "run are 2C, 2C and 2C apart, the same C in every line, and every candidate refresh "
@@ -1142,10 +1239,8 @@ int main(int argc, char** argv) {
     // runs N=0 and N=32396, on each standard. (1d does not apply: a W=1
     // run has no "next word".) ----
     auto check_run_preconditions = [&](const TxRun& r, const std::string& pfx, bool ntsc) {
-        checks.note(pfx + ": R1 population groups=" + std::to_string(r.pop_groups) +
-                    " malformed=" + std::to_string(r.pop_malformed));
-        bool anchor_ok = !r.refresh.empty() && check_r1_anchor(r.refresh, r.C) &&
-                         r.pop_groups > 0 && r.pop_malformed == 0;
+        checks.note(pfx + ": " + r1_note(r.r1, ntsc));
+        bool anchor_ok = r1_ok(r.r1, ntsc);
         checks.line(pfx + "-R1", {}, anchor_ok,
             "[p194,p195] R1 anchor: the four refresh accesses in every line are 2C, 2C and 2C "
             "apart, the same C in every line, and every candidate refresh group has that same "
@@ -1218,10 +1313,8 @@ int main(int argc, char** argv) {
     // ---- P2 preconditions 2a-2e: 1a-1e restated on the PAL run, and the
     // per-run preconditions of the PAL single-word runs ----
     {
-        checks.note("2a: R1 population groups=" + std::to_string(pal_n371.pop_groups) +
-                    " malformed=" + std::to_string(pal_n371.pop_malformed));
-        bool ok = !pal_n371.refresh.empty() && check_r1_anchor(pal_n371.refresh, pal_n371.C) &&
-                  pal_n371.pop_groups > 0 && pal_n371.pop_malformed == 0;
+        checks.note("2a: " + r1_note(pal_n371.r1, false));
+        bool ok = r1_ok(pal_n371.r1, false);
         checks.line("2a", {}, ok, "[p194,p195] R1 anchor on the PAL N=371 run: the four refresh "
             "accesses in every line are 2C, 2C and 2C apart, and every candidate refresh group "
             "has that same shape (Figure 6-9), none discarded before grading");

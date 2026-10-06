@@ -123,6 +123,11 @@ start:
         bpl.s   .poll
         ori.w   #1,POLL_TIMEOUT
 .polldone:
+        ifd MUT_ONCE
+; ---- precondition 4e contrast: the CPU reads word 10 of the buffer, which
+; the disk DMA fetched long before, so that word is read twice ----
+        move.w  DBUF+20,d5
+        endif
 
 ; ---- step 8: DSKLEN <- $4000 (stop), MARK <- DONE ----
         move.w  #$4000,DSKLEN(a0)

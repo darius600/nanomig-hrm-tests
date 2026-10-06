@@ -6,8 +6,12 @@ claims (`claims-spec-stage.jsonl`) and the pages of the *Amiga Hardware
 Reference Manual*, 3rd edition, by an author who never saw the
 implementation or any test. Page numbers are printed page numbers.
 Quotations follow the printed page (the scan), which governs where the text
-layer differs. The package has five propositions, P1 to P5. Of the 34
-claims, 5 carry propositions and 29 do not (section 1).
+layer differs. The package has five propositions, P1 to P5. None of the 34
+claims is established by a graded line. Five are withdrawn from the graded
+lines of P1, P2, P3 and P5 for the reasons given there (`sol:8-serper.c8`,
+`sol:8-serper.c9`, `sol:8-serper.c10`, `opus:8-serial.c36` and
+`sol:8-serial.c21`), and 29 are declined (section 1). The run prints each of
+the 34 ids on a RECORDED line with its reason.
 
 ---
 
@@ -59,15 +63,16 @@ p.24 calls the 3.58 MHz color clock "the system clock": "One horizontal count ta
 
 So one Chip-memory slot is one color clock.
 
-**Definition.** C is the number of cycles per slot. In a line, take the four accesses the harness attributes to memory refresh, at times r1 to r4. Then C = (r4 − r1) / 6. C need not be an integer.
+**Definition.** C is the number of cycles per slot. In a line, take the four accesses of memory refresh, at times r1 to r4. Then C = (r4 − r1) / 6. C need not be an integer.
+
+**Apparatus assumption.** No page fixes the address of a refresh access, and the harness's log of the Chip port carries no attribution. The anchors below therefore rest on an identification that is the package's own: a refresh access is a Chip-port read at a word address below $1000, and the accesses of one line are the reads of that kind that lie no more than 100 cycles apart. A bus cycle stretched by wait states logs one entry per 7 MHz period it spans; every count of accesses in this package is taken after those held continuations are removed.
 
 **Anchor checks.**
 
-- **(a)** In every line of the run, the four refresh accesses are exactly 2C, 2C and 2C apart, with the same C in every line.
-- **(b)** NTSC only: the first refresh access of line L and that of line L+2 are 455·C apart.
+- **(a)** In every line of the run, the four refresh accesses are exactly 2C, 2C and 2C apart, with the same C in every line. Every candidate group of reads that lies wholly inside the capture counts as a line: a group with other than four reads, or with other gaps, fails (a). A group the end of the capture cuts off (the capture ended within 100 cycles of its last read) is not wholly inside it and is not counted.
+- **(b)** NTSC only: the first refresh access of one line and that of the next line are 227·C or 228·C apart, for every pair of consecutive lines of the run (a missing line gives about twice that).
   - p.23: "Every other line is a long line (228 color clocks, 0-$E3), with the others being 227 color clocks long."
-  - p.194: 227.5 per line.
-  - Both give 455 for two lines.
+- **(b') Measured, not graded.** The first refresh access of line L and that of line L+2 against 455·C. p.23's alternation of long and short lines and p.194's 227.5 per line both give 455 for two lines; the count of pairs that are not 455·C apart and the smallest and largest spacing are printed.
 
 **No line-length check on PAL.** The pages disagree:
 
@@ -75,7 +80,7 @@ So one Chip-memory slot is one color clock.
 - p.194: 227.5 color clocks per line, with no machine named.
 - p.304: "PAL (625 lines, 227.5 colorclocks per scan line)".
 
-**Contrast.** No stimulus described on the pages moves the refresh slots, so the red case is shown on the checker: grading (a) with a slot length of C/2 or 2C must fail.
+**Contrast.** No stimulus described on the pages moves the refresh slots or the line length, so the R1 lines carry no mutation: they are unfalsifiable at this boundary.
 
 ### R2: the video standard
 
@@ -122,7 +127,7 @@ A color clock is 0.27936 µs on NTSC and 0.28194 µs on PAL (p.255). p.24 gives 
 
 **Claims.**
 
-- `sol:8-serper.c8` (p.255)
+- `sol:8-serper.c8` (p.255), withdrawn from the graded line: "the number N" covers every 15-bit divisor and three sampled N cannot establish it, and the N=371 grid is red. The id is printed on a RECORDED line.
 
 **Page.**
 
@@ -224,7 +229,7 @@ The tolerance ±C/2 grades at the unit the page counts in, whole color clocks. E
 
 **Claims.**
 
-- `sol:8-serper.c9` (p.255)
+- `sol:8-serper.c9` (p.255), withdrawn from the graded lines for the same reason as `sol:8-serper.c8`. The id is printed on a RECORDED line.
 
 **The pages disagree on PAL.**
 
@@ -304,7 +309,7 @@ comparison and reports the measured Chip-memory read rate instead.
 
 - The data buffer holds one word. p.279, DSKDAT: "It contains two bytes of data that are either sent (written) to or received (read) from the disk. ... The DMA controller automatically transfers data to or from this register and RAM".
 - The words in memory are raw MFM, one cell per bit. p.250: "The raw MFM data that must be presented to the disk controller will be twice as large as the unencoded data".
-- **Neither page says when the next word leaves memory.** "One word per 16 cells" would need DSKDAT to be the whole of the storage between memory and the write-data pin, or Paula to request a word only when the previous one has been sent -- neither is printed. p.194 lets a device leave a slot unused ("If a device does not request one of its allocated time slots, the slot is open for other uses"), and pp.380-381 name only Paula's `DMAL`, "DMA request line". So the Chip-memory read rate P4 observes is not shown to be the bit-cell rate; P4's comparison against the bands below is declined (1.4).
+- **Neither page says when the next word leaves memory.** "One word per 16 cells" would need DSKDAT to be the whole of the storage between memory and the write-data pin, or Paula to request a word only when the previous one has been sent -- neither is printed. p.194 lets a device leave a slot unused ("If a device does not request one of its allocated time slots, the slot is open for other uses"), and pp.380-381 name only Paula's `DMAL`, "DMA request line". So the Chip-memory read rate P4 observes is not shown to be the bit-cell rate; P4's comparison against the 2 µs and 4 µs of p.265 is declined (1.4).
 - No disk and no drive are needed to observe the Chip-memory read rate itself. The only conditions p.248 lists for disk DMA are DSKLEN's DMAEN and DMACON's DSKEN and DMAEN ("All the various DMA bits must be true"), which is what preconditions 4c/4d test.
 
 **Stimulus.** There is one run for each combination of FAST value (1 or 0), standard (NTSC or PAL) and core.
@@ -358,10 +363,11 @@ For orientation, not graded: 32 µs per word is 114.5 color clocks on NTSC and 1
 - **4d. The disk write DMA runs throughout the window.** Every PROBE_D value stored between t_64 and t_192 has bit 14 (DMAON) = 1 and bit 13 (DISKWRITE) = 1.
   - p.248: "DMAON Indicates when DMA is actually enabled" and "DISKWRITE The disk write bit (in DSKLEN) is enabled."
   - Contrast: partway through the transfer, clear DMACON's DSKEN bit for a while and then set DMAEN and DSKEN again. Some PROBE_D values stored during the pause then have DMAON = 0 and DISKWRITE = 0, and 4d fails, while the same transfer resumes and the window still fills.
-- **4e. The fetches cover the window.** Reads of B + 2i are seen for at least i = 0 to 192, each exactly once, and in rising order of i.
+- **4e. The fetches cover the window.** Reads of B + 2i are seen for at least i = 0 to 192, each exactly once, and in rising order of i. Reads are counted as accesses, after the held continuations of a stretched bus cycle are removed.
   - p.247: "After each transfer occurs, the value of the pointer is incremented."
   - The program makes no access to the buffer after step 2.
-  - Contrast: use LENGTH = 128 ($C080, written twice). The fetches then end at i = 127, and 4e fails.
+  - Contrast: use LENGTH = 128 ($C080, written twice). The fetches then end at i = 127, and 4e fails through its coverage clause.
+  - Contrast for the exactly-once clause: after the transfer the program reads one buffer word (word 10) with the CPU. That word is then read twice, and 4e fails with every index seen and in order.
 
 **Also measured, not graded.** |(t_128 − t_64) − (t_192 − t_128)|, across the window. Neither p.194
 nor p.23 bounds this quantity or says that an active disk device must request a Chip-memory slot at
@@ -384,8 +390,7 @@ stimulus can turn it red or green (1.4). Preconditions 4a-4e keep their own cont
 
 **Claims.**
 
-- `opus:8-serial.c36` (p.255)
-- `sol:8-serial.c21` (p.255)
+- `opus:8-serial.c36` (p.255) and `sol:8-serial.c21` (p.255), withdrawn from the graded line: that bit 8 carries the ninth bit needs the ninth-bit-zero variant, and p.257 and p.283 disagree on what it reads. Both ids are printed on one RECORDED line.
 
 **Page.**
 
@@ -465,7 +470,7 @@ The RxD driver behaves the same in both runs:
   Bits 10-15 are not graded here; OVRUN is precondition 5c.
 - **(b) No early signal.** In run A, the RBF event for every j comes no earlier than s_j + 9T. In run B, it comes no earlier than s_j + 8T.
   - The start bit is followed by the data bits, so the ninth data bit begins at 9T. Nine data bits cannot have been received before the ninth begins, and eight not before the eighth.
-  - G5's own interval places the event in (t0 − S, t1]: only its lower end, t0 − S, bounds how early the event could have been. This is graded on the G5 bracket's lower end: t0 − S must be at least s_j + 9T in run A, or at least s_j + 8T in run B. That reading needs the bracket's width to be small (precondition 5e, on both runs).
+  - G5's own interval places the event in (t0 − S, t1]. The pages do not say where the receiver places its samples, so a character is decided only where the bracket decides it. A character passes when t0 − S is at least its threshold (s_j + 9T in run A, s_j + 8T in run B): the event lies after the threshold. It fails when t1 stays below the threshold: the event lies before it. Otherwise the bracket straddles the threshold and that character is not graded; the count of each kind is printed. The line passes only if no character fails and at least one passes; if no character is decided it is NOT GRADED. That reading needs the bracket's width to be small (precondition 5e, on both runs).
 - **(c) One bit later.** Let D_j be the bracket midpoint minus s_j. Then
 
   mean_j D_j(run A) − mean_j D_j(run B) must lie in [T/2, 3T/2].
@@ -584,6 +589,7 @@ end of the driven data is what exhausts `BND_RBF`).
 
 - R1's C measured 8.000000 (clk_sys cycles per colour-clock slot) on every
   capture, both standards, both cores.
+- R1 (b), NTSC: the first refresh accesses of consecutive lines lie 1816 cycles = 227·C apart on every NTSC capture, on both cores, so (b) holds; a line and the line after next lie 3632 cycles = 454·C apart, not the 455·C that p.23's alternation of long and short lines gives, on every capture (the measured (b') clause).
 - R2's field-line count measured 263 (NTSC) and 313 (PAL) on every capture,
   both cores.
 - P4's T_cell measured 1.331189 us (NTSC) and 1.343483 us (PAL), identical
@@ -600,7 +606,7 @@ end of the driven data is what exhausts `BND_RBF`).
   character (j=0..7), on both cores -- matching p.257's reading, not
   p.283's.
 
-### 4.3 What the build found
+### 4.3 Results
 
 **P1, P2 and P3 are red on both cores, on the same run.** Measured on the
 N=371, W=4 NTSC run (both standards, both cores): the main grid check
@@ -626,8 +632,8 @@ FAST=1 and FAST=0 and identical on both cores. p.265/p.249's bands (1.5-2.5
 us and 3.5-4.5 us) time the disk data clock, a different quantity from
 T_cell (1.4); P4-MAIN declines the comparison for that reason rather than
 grading T_cell against either band. |(t128-t64)-(t192-t128)| is also
-measured, not graded (no page sentence bounds it); the fetch cadence does
-not drift on any capture.
+measured, not graded (no page sentence bounds it): 1768 cycles on every
+capture, on both cores.
 
 **P5: every character (0-7) reads back correctly on both runs, both
 cores.** RESULT bits 7-0, bit 9 and bit 8 match (a)'s own expected values
