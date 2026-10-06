@@ -14,6 +14,6 @@ PROGS    := prog_fixture prog_fixture_mut prog_fixture_mutr \
             prog_p9 prog_p9_c1 prog_p9_g1 prog_p9_g2 prog_p9_gnowait prog_p9_gdwrite prog_p9_gwrites \
             prog_p10 prog_p10_cdang prog_p10_g1 prog_p10_g2k prog_p10_g2w prog_p10_g3 prog_p10_g3l \
             prog_p10_g4 prog_p10_g5 prog_p10_g_nolist \
-            prog_p11 prog_p11_g1 prog_p11_g2 prog_p11_g3 prog_p11_g4 prog_p11_g5 prog_p11_g_nolist
+            prog_p11 prog_p11_g1 prog_p11_g2 prog_p11_g3 prog_p11_g3q prog_p11_g4 prog_p11_g5 prog_p11_g_nolist
 
 include ../harness/nanomig.mk

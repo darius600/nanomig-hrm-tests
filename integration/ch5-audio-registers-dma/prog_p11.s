@@ -11,7 +11,9 @@
 ;   prog_p11_g3.s      (G3_BREAK)  -- one extra CPU write into L inside the window
 ;   prog_p11_g4.s      (DELAY_N=0) -- the delay collapses to nothing
 ;   prog_p11_g5.s      (G5_BREAK)  -- SPREN also set in the enabling write
-;   prog_p11_g_nolist.s (G_NOLIST) -- COPEN omitted from the enabling write
+;   prog_p11_g3q.s     (G3Q_BREAK) -- one extra CPU write of $1234 into Q2 inside the window
+;   prog_p11_g_nolist.s (G_NOLIST) -- COP1LC points at LST2, an end-of-list pair,
+;                                     with COPEN still set: the Copper never reads L
 
         include "ch5.i"
 
@@ -42,14 +44,15 @@ start:
         move.w  #0,BLTDMOD(a0)
         move.l  #QQ,BLTDPTH(a0)          ; the CPU's own destination
 
+        ifd     G_NOLIST
+        move.l  #LST2,COP1LCH(a0)        ; precondition mutation: the Copper is pointed away from L
+        else
         move.l  #LST,COP1LCH(a0)
+        endif
         moveq   #0,d0
         move.w  d0,COPJMP1(a0)           ; strobe (p.30)
 
         move.w  #OM,(a2)
-        ifd     G_NOLIST
-        move.w  #$8240,DMACON(a0)        ; COPEN omitted (precondition mutation)
-        else
         ifd     G2_BREAK
         move.w  #$80C0,DMACON(a0)        ; DMAEN (bit 9) left out (precondition mutation)
         else
@@ -59,10 +62,12 @@ start:
         move.w  #$82C0,DMACON(a0)        ; SET,DMAEN,COPEN,BLTEN
         endif
         endif
-        endif
         move.w  DMACONR(a0),(a3)+
         ifd     G3_BREAK
         move.w  #$DEAD,($64030).l        ; G3's mutation: a CPU write into L, inside the window
+        endif
+        ifd     G3Q_BREAK
+        move.w  #$1234,($75000).l        ; G3's second mutation: a CPU write into Q2, inside the window
         endif
 
         move.l  #DELAY_N,d0

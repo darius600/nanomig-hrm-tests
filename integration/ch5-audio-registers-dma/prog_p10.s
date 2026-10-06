@@ -17,7 +17,8 @@
 ;   prog_p10_g3l.s     (G3L_BREAK) -- one extra CPU write into L inside [K_O,K_C]
 ;   prog_p10_g4.s      (DELAY_N=0) -- the per-channel delay collapses to nothing
 ;   prog_p10_g5.s      (G5_BREAK)  -- SPREN also set before the windows
-;   prog_p10_g_nolist.s (G_NOLIST) -- COPEN omitted from the enabling write
+;   prog_p10_g_nolist.s (G_NOLIST) -- COP1LC points at LST2, an end-of-list pair,
+;                                     with COPEN still set: the Copper never reads L
 
         include "ch5.i"
 
@@ -79,19 +80,19 @@ start:
         move.w  #64,AUD3VOL(a0)
         move.w  #200,AUD3PER(a0)
 
+        ifd     G_NOLIST
+        move.l  #LST2,COP1LCH(a0)       ; precondition mutation: the Copper is pointed away from L
+        else
         move.l  #LST,COP1LCH(a0)
+        endif
         moveq   #0,d0
         move.w  d0,COPJMP1(a0)          ; strobe (p.30)
 
         move.w  #KO,(a2)
-        ifd     G_NOLIST
-        move.w  #$8200,DMACON(a0)       ; COPEN omitted (precondition mutation)
-        else
         ifd     G2K_BREAK
         move.w  #$8080,DMACON(a0)       ; DMAEN (bit 9) left out (precondition mutation)
         else
         move.w  #$8280,DMACON(a0)
-        endif
         endif
         move.w  DMACONR(a0),(a3)+
         ifd     G3L_BREAK

@@ -959,8 +959,10 @@ of the contrasting case.
   CPU write into the last word of L inside [`K_O`, `K_C`].
 - For G4: a delay count of 0, so V(W_x) falls short of 2.
 - For G5: also set SPREN before the windows.
-- For the "Copper ran the list" precondition: omit bit 7 from step 4's write.
-  No list read happens, and the precondition goes red.
+- For the "Copper ran the list" precondition: point COP1LC at an end-of-list
+  pair elsewhere (`$64100`) and keep COPEN set. The Copper runs, reads no
+  word of L, and the precondition goes red; the readbacks of G2 and G5 do not
+  change.
 
 **The danger bit itself cannot be shown to have been set.** No register exists
 on which every page agrees that CDANG changes the Copper's access:
@@ -1024,7 +1026,10 @@ the blitter registers should be written").
 
 **Preconditions.** Every one is graded on every run: OCS and ECS, each with
 the real list and with both lists of the contrasting cases.
-- G1, G2 (bits 9, 7 and 6 set), G3, and G4 with V ≥ 3.
+- G1, G2 (bits 9, 7 and 6 set), G4 with V ≥ 3, and G3: no CPU write falls
+  into L inside the window, and every write into Q2 or Q inside it carries
+  `$FFFF`, as a blitter write does (BLTCON0 `$01FF` is USED with LF `$FF`,
+  p.177), so no write there is a CPU write.
 - G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set.
 - The list's first 12 bytes were read at least once.
 
@@ -1036,10 +1041,12 @@ the real list and with both lists of the contrasting cases.
   P11-NOPTR.
 - For G1: a branch-to-self before `END`.
 - For G2: leave DMAEN out of the enabling write.
-- For G3: one extra CPU write into L, past its own content, inside the window.
+- For G3: one extra CPU write into L, past its own content, inside the window;
+  and, separately, one extra CPU write of `$1234` into Q2 inside the window.
 - For G4: a delay count of 0.
 - For G5: also set SPREN in the enabling write.
-- For the list precondition: omit COPEN from the enabling write.
+- For the list precondition: point COP1LC at an end-of-list pair elsewhere
+  (`$64100`) and keep COPEN set.
 
 **Not specified, because the pages disagree.**
 - *CDANG clear.* p.21 lets the Copper write `$054-$058` always. p.26 ("When
@@ -1164,9 +1171,156 @@ section 2.3, and the mechanism items below.
   that proposition's own block under test, inside its window): A_0 for P1
   (an absolute `MOVE.W`), P for P3, L for P4, Q for P5 (outside the blit's
   destination footprint and, separately, onto its first word), S0 for P6,
-  B_0 and, separately, L for P10, L for P11. Every other precondition of
+  B_0 and, separately, L for P10, L and, separately, Q2 for P11 (a write of
+  `$1234`, where a blitter write carries `$FFFF`). Every other precondition of
   every proposition has a mutation of its own as well.
 - **Markers.** P1 and P10 write `END`; P7, P9 and P11 write `END` after their
   last step. P3-P6 and P8 close with the window's closing marker and then
   `DONE`: their G1 grades that `DONE` was written and that the window's
   markers were found.
+
+## RECORDED
+
+The final run of `make -B` on each core (`test-fx68k` and `test-tg68k`). `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim, or a half that is not graded). Counts: fx68k 86 passed, 0 failed; tg68k 86 passed, 0 failed.
+
+| line | fx68k | tg68k |
+|---|---|---|
+| `FIXTURE` | PASS | PASS |
+| `FIXTURE-R` | PASS | PASS |
+| `P1-G1` | PASS | PASS |
+| `P1-G2` | PASS | PASS |
+| `P1-G4` | PASS | PASS |
+| `P1-G5` | PASS | PASS |
+| `P1-G3` | PASS | PASS |
+| `P1a` | PASS | PASS |
+| `P1b` | PASS | PASS |
+| `P1` | PASS | PASS |
+| `P1-C1` | PASS | PASS |
+| `P1-C2` | PASS | PASS |
+| `P1-C3` | PASS | PASS |
+| `P1 (record 1)` | RECORDED | RECORDED |
+| `P2-G1` | PASS | PASS |
+| `P2` | PASS | PASS |
+| `P2-OMIT` | PASS | PASS |
+| `P2 (record 1)` | RECORDED | RECORDED |
+| `P2 (record 2)` | RECORDED | RECORDED |
+| `P3-G1` | PASS | PASS |
+| `P3-G2` | PASS | PASS |
+| `P3-G4` | PASS | PASS |
+| `P3-G5` | PASS | PASS |
+| `P3-G3` | PASS | PASS |
+| `P3-ON` | PASS | PASS |
+| `P3-OFF` | PASS | PASS |
+| `P3` | PASS | PASS |
+| `P4-G1` | PASS | PASS |
+| `P4-G2` | PASS | PASS |
+| `P4-G4` | PASS | PASS |
+| `P4-G5` | PASS | PASS |
+| `P4-G3` | PASS | PASS |
+| `P4-ON` | PASS | PASS |
+| `P4-OFF` | PASS | PASS |
+| `P4` | PASS | PASS |
+| `P5-G1` | PASS | PASS |
+| `P5-G2` | PASS | PASS |
+| `P5-G4` | PASS | PASS |
+| `P5-G5` | PASS | PASS |
+| `P5-G3` | PASS | PASS |
+| `P5-ON` | PASS | PASS |
+| `P5-OFF` | PASS | PASS |
+| `P5` | PASS | PASS |
+| `P6-G1` | PASS | PASS |
+| `P6-G2` | PASS | PASS |
+| `P6-G4` | PASS | PASS |
+| `P6-G5` | PASS | PASS |
+| `P6-G3` | PASS | PASS |
+| `P6-ON` | PASS | PASS |
+| `P6-OFF` | PASS | PASS |
+| `P6` | PASS | PASS |
+| `P7-G1` | PASS | PASS |
+| `P7-G2` | PASS | PASS |
+| `P7-G3` | PASS | PASS |
+| `P7-G(CPU-still-wanted-the-bus)` | PASS | PASS |
+| `P7-ON` | PASS | PASS |
+| `P7-OFF` | PASS | PASS |
+| `P7` | PASS | PASS |
+| `P7 (record 1)` | RECORDED | RECORDED |
+| `P8-G1` | PASS | PASS |
+| `P8-G2` | PASS | PASS |
+| `P8-G3` | PASS | PASS |
+| `P8-G4` | PASS | PASS |
+| `P8` | PASS | PASS |
+| `P8-NOBLIT` | PASS | PASS |
+| `P8 (record 1)` | RECORDED | RECORDED |
+| `P9-G(writes)` | PASS | PASS |
+| `P9-G(reads)` | PASS | PASS |
+| `P9-G1` | PASS | PASS |
+| `P9-G2` | PASS | PASS |
+| `P9-G(after-completion)` | PASS | PASS |
+| `P9-MAIN` | PASS | PASS |
+| `P9-SWAP` | PASS | PASS |
+| `P9` | PASS | PASS |
+| `P9 (record 1)` | RECORDED | RECORDED |
+| `P10-G1` | PASS | PASS |
+| `P10-G2` | PASS | PASS |
+| `P10-G4` | PASS | PASS |
+| `P10-G3` | PASS | PASS |
+| `P10-G5` | PASS | PASS |
+| `P10-G(list-ran)` | PASS | PASS |
+| `P10` | PASS | PASS |
+| `P10-COLOR` | PASS | PASS |
+| `P11-G1` | PASS | PASS |
+| `P11-G2` | PASS | PASS |
+| `P11-G4` | PASS | PASS |
+| `P11-G3` | PASS | PASS |
+| `P11-G5` | PASS | PASS |
+| `P11-G(list-ran)` | PASS | PASS |
+| `P11` | PASS | PASS |
+| `P11-NOBLTSIZE` | PASS | PASS |
+| `P11-NOPTR` | PASS | PASS |
+| `5-appA-p264.c2` | RECORDED | RECORDED |
+| `5-appB-p287.c5` | RECORDED | RECORDED |
+| `5-appB-p290.c3` | RECORDED | RECORDED |
+
+Measurements printed by the run (fx68k):
+
+```text
+P1 calibration ECS: done=22616005 V(W0)=5 o=2275317 c=4817901 V(W1)=5 o=7360445 c=9903069 V(W2)=5 o=12445605 c=14988229 V(W3)=5 o=17530765 c=20073389
+P1 ECS: a=ok b=ok
+P1 calibration OCS: done=22616005 V(W0)=5 o=2275317 c=4817901 V(W1)=5 o=7360445 c=9903069 V(W2)=5 o=12445605 c=14988229 V(W3)=5 o=17530765 c=20073389
+P1 OCS: a=ok b=ok
+P7 BLTPRI set: T_first=2275161 T_last=2375249 CPU accesses in between=0
+P7 BLTPRI clear: T_first=2275161 T_last=2399465 CPU accesses in between=2975
+P7 D-only blit, BLTPRI set: T_first=2274801 T_last=2341505 CPU accesses in between=3429
+P7 D-only blit, BLTPRI clear: T_first=2274801 T_last=2341601 CPU accesses in between=3434
+P8: N(poll)=189 total_rest=197 t_last=2341849 b_nonvacuous=187
+P8 clauses of the graded run: idle=ok (b)=ok over 187 graded reads held (c)=ok
+P9: Z1..Z5 = 2240 0240 2240 0240 2240 
+P10 OCS/CDANG0: audio list ok, COLOR00 list ok
+P10 OCS/CDANG1: audio list ok, COLOR00 list ok
+P10 ECS/CDANG0: audio list ok, COLOR00 list ok
+P10 ECS/CDANG1: audio list ok, COLOR00 list ok
+P11 OCS: q2 writes 112 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
+P11 ECS: q2 writes 112 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
+```
+
+Measurements printed by the run (tg68k):
+
+```text
+P1 calibration ECS: done=15776325 V(W0)=3 o=2275229 c=3962893 V(W1)=3 o=5650485 c=7338141 V(W2)=3 o=9025741 c=10713397 V(W3)=3 o=12400989 c=14088653
+P1 ECS: a=ok b=ok
+P1 calibration OCS: done=15776325 V(W0)=3 o=2275229 c=3962893 V(W1)=3 o=5650485 c=7338141 V(W2)=3 o=9025741 c=10713397 V(W3)=3 o=12400989 c=14088653
+P1 OCS: a=ok b=ok
+P7 BLTPRI set: T_first=2275081 T_last=2375145 CPU accesses in between=0
+P7 BLTPRI clear: T_first=2275081 T_last=2400433 CPU accesses in between=3106
+P7 D-only blit, BLTPRI set: T_first=2274721 T_last=2341425 CPU accesses in between=4095
+P7 D-only blit, BLTPRI clear: T_first=2274721 T_last=2341425 CPU accesses in between=4095
+P8: N(poll)=257 total_rest=265 t_last=2341745 b_nonvacuous=255
+P8 clauses of the graded run: idle=ok (b)=ok over 255 graded reads held (c)=ok
+P9: Z1..Z5 = 2240 0240 2240 0240 2240 
+P10 OCS/CDANG0: audio list ok, COLOR00 list ok
+P10 OCS/CDANG1: audio list ok, COLOR00 list ok
+P10 ECS/CDANG0: audio list ok, COLOR00 list ok
+P10 ECS/CDANG1: audio list ok, COLOR00 list ok
+P11 OCS: q2 writes 80 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
+P11 ECS: q2 writes 80 q writes 0 (real list); 0/0 (no BLTSIZE); 0/16 (no pointer)
+```

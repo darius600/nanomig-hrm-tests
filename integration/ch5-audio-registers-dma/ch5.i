@@ -77,6 +77,7 @@ A1L             equ     A1+$0100
 A2L             equ     A2+$0100
 A3L             equ     A3+$0100
 LST             equ     $64000          ; L (Copper list); L is a vasm-reserved-ish name, avoided
+LST2            equ     $64100          ; an end-of-list location the "list ran" mutations point COP1LC at
 S0              equ     $65000
 N1              equ     $65100
 N2              equ     $65200
