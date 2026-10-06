@@ -7,11 +7,16 @@
 ; This file alone is the MAIN build. prog_p9_c1.s (C1 set) exchanges
 ; BLTCON0 between blits 1/2 and the source F/Zb between blits 4/5.
 ; prog_p9_g1.s (G1_BREAK), prog_p9_g2.s (G2_BREAK, SPREN also set in the
-; enabling write), prog_p9_gnowait.s (G_NOWAIT, drops the wait before Z_1)
-; and prog_p9_gdwrite.s (D4_ON, blit 4 also writes D) are the precondition
-; mutations.
+; enabling write), prog_p9_gnowait.s (G_NOWAIT, drops the wait before Z_1),
+; prog_p9_gdwrite.s (D4_ON, blit 4 also writes D) and prog_p9_gwrites.s
+; (BSIZE1 = $0103, blit 1 is 12 words, its logic output still zero) are the
+; precondition mutations.
 
         include "ch5.i"
+
+        ifnd    BSIZE1
+BSIZE1  equ     $0104
+        endif
 
         ifnd    BC0_1
 BC0_1   equ     $0100
@@ -54,7 +59,7 @@ start:
         ; ---- blit 1 ----
         move.w  #BC0_1,BLTCON0(a0)
         move.l  #QQ,BLTDPTH(a0)
-        move.w  #$0104,BLTSIZE(a0)
+        move.w  #BSIZE1,BLTSIZE(a0)
         ifd     G_NOWAIT
         move.w  DMACONR(a0),d0          ; no wait: one read straight after BLTSIZE
         else

@@ -67,31 +67,29 @@
 // MUTATION P6-OFF stimulus red SPREN set: the main program through the unchanged off-comparator, via NMH_MUTATE=INV
 // MUTATION P6 stimulus red SPREN left clear: the contrast program through the unchanged on-comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P6 stimulus red SPREN set: the main program through the unchanged off-comparator of the aggregate line, via NMH_MUTATE=INV
+// MUTATION P7-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P7-ON and P7 are NOT GRADED
+// MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set, via NMH_MUTATE=G2 -- P7-G3 and P7-G(CPU-still-wanted-the-bus) move with it (no blit runs without DMAEN); P7-ON and P7 are NOT GRADED
+// MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3 -- P7-G(CPU-still-wanted-the-bus) moves with it (no blit runs, so there is no T_last); P7-ON and P7 are NOT GRADED
+// MUTATION P7-G(CPU-still-wanted-the-bus) stimulus red the CPU's logging loop runs before the BLTSIZE write, so no CPU write into G follows T_last, via NMH_MUTATE=GEARLY -- P7-ON and P7 are NOT GRADED
 // MUTATION P7-ON stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator, via NMH_MUTATE=C1
-// MUTATION P7 stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator of the aggregate line, via NMH_MUTATE=C1
-// MUTATION P7-ON stimulus green the CPU executes STOP straight after the BLTSIZE write: the unchanged zero-access comparator on an input proven to make no CPU access, via NMH_MUTATE=LIVE
 // MUTATION P7-OFF stimulus red BLTPRI set: the main program through the unchanged at-least-one comparator, via NMH_MUTATE=INV
+// MUTATION P7 stimulus red BLTPRI cleared: the share-mode program through the unchanged zero-access comparator of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P7 stimulus red BLTPRI set: the main program through the unchanged at-least-one comparator of the aggregate line, via NMH_MUTATE=INV
-// MUTATION P7-OFF stimulus red the CPU executes STOP straight after the BLTSIZE write: that program through the unchanged at-least-one comparator, via NMH_MUTATE=LIVE
-// MUTATION P7 stimulus red the STOP-straight-after-BLTSIZE program through both unchanged comparators of the aggregate line, via NMH_MUTATE=LIVE
-// MUTATION P7-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set, via NMH_MUTATE=G2
-// MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3
-// MUTATION P7-G(CPU-still-wanted-the-bus) stimulus red the CPU executes STOP straight after the BLTSIZE write, so no CPU write follows T_last, via NMH_MUTATE=GSTOP
-// MUTATION P8 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts: that program through the unchanged comparator at the main run's graded reads, via NMH_MUTATE=C1
-// MUTATION P8-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
-// MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI
-// MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=C1
-// MUTATION P8-G4 stimulus red a delay between the BLTSIZE write and the first poll read, so the blit has ended before any read, via NMH_MUTATE=G4
+// MUTATION P8-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1 -- P8 is NOT GRADED
+// MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI -- P8 is NOT GRADED
+// MUTATION P8-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3 -- P8-G4 moves with it (no blit runs, so no read precedes T_last); P8 is NOT GRADED
+// MUTATION P8-G4 stimulus red a delay between the BLTSIZE write and the first poll read, so the blit has ended before any read, via NMH_MUTATE=G4 -- P8 is NOT GRADED
+// MUTATION P8 stimulus red the blit runs and the fourth poll read comes from a zero word (Zb) instead of DMACONR, so a graded read made while the blit is in progress shows bit 14 = 0, via NMH_MUTATE=ZPOLL
+// MUTATION P8-NOBLIT stimulus red the main program (a blit runs) through the unchanged no-blit comparator, via NMH_MUTATE=INVNOBLIT
+// MUTATION P9-G(writes) stimulus red blit 1 has BLTSIZE $0103 (12 words) instead of $0104, its logic output still zero, via NMH_MUTATE=GWRITES -- P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE -- P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1 -- P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G2 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G2 -- P9-MAIN and P9 are NOT GRADED
+// MUTATION P9-G(after-completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT -- P9-G(writes) moves with it (the next blit's registers are written while the first blit runs); P9-MAIN and P9 are NOT GRADED
 // MUTATION P9-MAIN stimulus red BLTCON0 exchanged between blits 1 and 2 and the source exchanged between blits 4 and 5: the exchanged program through the unchanged main table, via NMH_MUTATE=C1
-// MUTATION P9 stimulus red the exchanged program through the unchanged main table of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P9-SWAP stimulus red the main program through the unchanged exchanged table, via NMH_MUTATE=INV
+// MUTATION P9 stimulus red the exchanged program through the unchanged main table of the aggregate line, via NMH_MUTATE=C1
 // MUTATION P9 stimulus red the main program through the unchanged exchanged table of the aggregate line, via NMH_MUTATE=INV
-// MUTATION P9-G(writes) stimulus red BLTCON0 exchanged between blits 1 and 2, so blit 1 no longer writes the $0000 this precondition checks, via NMH_MUTATE=C1
-// MUTATION P9-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
-// MUTATION P9-G2 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G2
-// MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE
-// MUTATION P9-G(after-completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT
 // MUTATION P10 stimulus red the list that writes COLOR00 instead of the audio registers, through the unchanged audio comparator, via NMH_MUTATE=C1
 // MUTATION P10-COLOR stimulus red the audio list through the unchanged COLOR00 comparator, via NMH_MUTATE=INV
 // MUTATION P10-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
@@ -1159,79 +1157,145 @@ bool cpu_still_wanted(const Capture& cap) {
     return after >= 1 && before < 2048;
 }
 
+
+// The blit of the D-only program (USE code 1): its interval is the first to
+// the last destination write in [Q, Q + $2000), and the CPU accesses inside
+// it are counted as for the graded blit. It is measured, not graded.
+struct DBlit {
+    bool ran = false;
+    uint64_t t_first = 0, t_last = 0;
+    size_t cpu_n = 0;
+};
+
+DBlit measure_d(const Capture& cap) {
+    DBlit b;
+    uint32_t lo = word_addr(kQ), hi = word_addr(kQ + 0x2000);
+    size_t n = 0;
+    uint64_t tf = UINT64_MAX, tl = 0;
+    for (const auto& a : cap.log)
+        if (a.is_write && a.word_addr >= lo && a.word_addr < hi) {
+            ++n;
+            tf = std::min(tf, a.cycle);
+            tl = std::max(tl, a.cycle);
+        }
+    b.ran = cap.loaded && n >= 2;
+    if (b.ran) {
+        b.t_first = tf;
+        b.t_last = tl;
+        b.cpu_n = (tl > tf + 1) ? cpu_accesses_in(cap.log, tf + 1, tl - 1) : 0;
+    }
+    return b;
+}
+
+std::string describe_d(const char* name, const DBlit& b) {
+    if (!b.ran) return std::string("P7 D-only blit, ") + name + ": no blit";
+    return std::string("P7 D-only blit, ") + name + ": T_first=" + num((long long)b.t_first) + " T_last=" +
+           num((long long)b.t_last) + " CPU accesses in between=" + num((long long)b.cpu_n);
+}
+
+// What one run of one program shows: the blit, and the preconditions.
+struct Eval {
+    Blit b;
+    bool g1 = false;   // the program finished -- END was written
+    bool g2 = false;   // the stored DMACONR readback shows what the run intends
+    bool g3 = false;   // the blit ran
+    bool g6 = false;   // the CPU still wanted the bus when the blit ended
+};
+
+// `bltpri` says whether the run intends BLTPRI set.
+Eval evaluate(const Capture& cap, bool bltpri) {
+    Eval e;
+    e.b = measure(cap);
+    e.g1 = cap.loaded && cap.done.has_value() && marker(cap.log, kC).has_value() &&
+           marker(cap.log, kEnd).has_value();
+    auto r = stored_at(cap.log, kR, 1);
+    if (cap.loaded && r.size() == 1) {
+        uint16_t v = r[0];
+        e.g2 = (v & 0x0200) && (v & 0x0040) && (bltpri ? (v & 0x0400) != 0 : (v & 0x0400) == 0) &&
+               ((v & 0x01FF & ~0x0040) == 0);
+    }
+    e.g3 = e.b.ran;
+    e.g6 = cpu_still_wanted(cap);
+    return e;
+}
+
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
     Capture cap_main = run_capture(dir + "/prog_p7.bin", run_budget);
     Capture cap_c1 = run_capture(dir + "/prog_p7_c1.bin", run_budget);
-    Capture cap_live;
-    if (mv == "LIVE") cap_live = run_capture(dir + "/prog_p7_live.bin", run_budget);
+    Eval e_main = evaluate(cap_main, true);
+    Eval e_c1 = evaluate(cap_c1, false);
+    checks.note(describe("BLTPRI set", e_main.b));
+    checks.note(describe("BLTPRI clear", e_c1.b));
 
-    Blit m_main = measure(cap_main);
-    Blit m_c1 = measure(cap_c1);
-    checks.note(describe("BLTPRI set", m_main));
-    checks.note(describe("BLTPRI clear", m_c1));
+    // A precondition mutation replaces the main program (BLTPRI set).
+    Eval e_mut;
+    const char* mutant = nullptr;
+    if (mv == "G1") mutant = "prog_p7_g1.bin";
+    else if (mv == "G2") mutant = "prog_p7_g2.bin";
+    else if (mv == "G3") mutant = "prog_p7_g3.bin";
+    else if (mv == "GEARLY") mutant = "prog_p7_gearly.bin";
+    if (mutant) e_mut = evaluate(run_capture(dir + "/" + mutant, run_budget), true);
+    const Eval& e_main_in = mutant ? e_mut : e_main;
 
-    // The graded halves. C1 puts the BLTPRI-clear program through the
-    // on-comparator; LIVE puts a program whose CPU stops straight after
-    // BLTSIZE through both comparators; INV puts the main program through the
-    // off-comparator. Neither comparator changes.
-    const Capture& in_on = (mv == "C1") ? cap_c1 : (mv == "LIVE") ? cap_live : cap_main;
-    const Capture& in_off = (mv == "INV") ? cap_main : (mv == "LIVE") ? cap_live : cap_c1;
-    Blit b_on = measure(in_on);
-    Blit b_off = measure(in_off);
-    bool on_ok = b_on.ran && b_on.cpu_n == 0;
-    bool off_ok = b_off.ran && b_off.cpu_n >= 1;
+    // C1 puts the BLTPRI-clear program through the on-comparator; INV puts the
+    // main program through the off-comparator. Neither comparator changes.
+    const Eval& in_on = (mv == "C1") ? e_c1 : e_main_in;
+    const Eval& in_off = (mv == "INV") ? e_main : e_c1;
 
-    checks.expect(on_ok,
-        "P7-ON [p.278, p.222, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and last "
-        "blitter source read of a blit that uses A, B and C and not D (USE code E, p.188: A0 B0 C0 A1 B1 C1 A2 B2 C2)");
-    checks.expect(off_ok,
-        "P7-OFF [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit");
-    checks.expect(on_ok && off_ok,
-        std::string("P7 [") + kClaims +
-        "]: with BLTPRI set, zero CPU accesses in (T_first,T_last); with BLTPRI clear, at least one (p.198)");
+    // ---- the preconditions, over the run with BLTPRI set and the run with it clear ----
+    checks.expect(e_main_in.g1 && e_c1.g1, "P7-G1: the program finished -- END was written");
+    checks.expect(e_main_in.g2 && e_c1.g2,
+        "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching the run's own enabling "
+        "write (set in the main run, clear in the contrast run), and no other bit among 8-0");
+    checks.expect(e_main_in.g3 && e_c1.g3, "P7-G3: the blit ran -- at least 2 source reads, so T_first < T_last");
+    checks.expect(e_main_in.g6 && e_c1.g6,
+        "P7-G(CPU-still-wanted-the-bus): at least one CPU write into G falls after T_last, with fewer than 2048 "
+        "recorded before it");
 
-    // ---- preconditions, each over the run with BLTPRI set and the run with it clear ----
-    auto pick = [&](const char* sel, const char* file, Capture& store) -> const Capture& {
-        if (mv == sel) { store = run_capture(dir + "/" + file, run_budget); return store; }
-        return cap_main;
-    };
-    {
-        Capture store; const Capture& c = pick("G1", "prog_p7_g1.bin", store);
-        bool ok = c.loaded && c.done.has_value() && marker(c.log, kC).has_value() && marker(c.log, kEnd).has_value() &&
-                  cap_c1.loaded && cap_c1.done.has_value() && marker(cap_c1.log, kEnd).has_value();
-        checks.expect(ok, "P7-G1: the program finished -- END was written");
-    }
-    {
-        Capture store; const Capture& c = pick("G2", "prog_p7_g2.bin", store);
-        auto r_on = stored_at(c.log, kR, 1);
-        auto r_off = stored_at(cap_c1.log, kR, 1);
-        bool ok = c.loaded && r_on.size() == 1 && cap_c1.loaded && r_off.size() == 1;
-        if (ok) {
-            uint16_t v = r_on[0], w = r_off[0];
-            ok = (v & 0x0200) && (v & 0x0040) && (v & 0x0400) && ((v & 0x01FF & ~0x0040) == 0) &&
-                 (w & 0x0200) && (w & 0x0040) && !(w & 0x0400) && ((w & 0x01FF & ~0x0040) == 0);
+    // ---- the graded lines ----------------------------------------------------
+    auto deps_of = [&](std::initializer_list<const Eval*> ins) {
+        Deps d;
+        for (const Eval* e : ins) {
+            d.need(e->g1, "P7-G1");
+            d.need(e->g2, "P7-G2");
+            d.need(e->g3, "P7-G3");
+            d.need(e->g6, "P7-G(CPU-still-wanted-the-bus)");
         }
-        checks.expect(ok, "P7-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI matching the "
-                          "run's own enabling write (set in the main run, clear in the contrast run), and no "
-                          "other bit among 8-0");
-    }
-    {
-        Capture store; const Capture& c = pick("G3", "prog_p7_g3.bin", store);
-        checks.expect(measure(c).ran && m_c1.ran,
-                      "P7-G3: the blit ran -- at least 2 source reads, so T_first < T_last");
-    }
-    {
-        Capture store; const Capture& c = pick("GSTOP", "prog_p7_live.bin", store);
-        checks.expect(cpu_still_wanted(c) && cpu_still_wanted(cap_c1),
-                      "P7-G(CPU-still-wanted-the-bus): at least one CPU write into G falls after T_last, with "
-                      "fewer than 2048 recorded before it");
-    }
+        return d;
+    };
+    Deps d_on = deps_of({&in_on});
+    Deps d_off = deps_of({&in_off});
+    Deps d_both = deps_of({&in_on, &in_off});
+    if (d_on.met())
+        checks.expect(in_on.b.cpu_n == 0,
+            "P7-ON [p.278, p.222, p.198]: with BLTPRI set, zero CPU accesses in (T_first,T_last), the first and last "
+            "blitter source read of a blit that uses A, B and C and not D (USE code E, p.188: A0 B0 C0 A1 B1 C1 A2 B2 C2)");
+    else not_graded(checks, "P7-ON", d_on);
+    if (d_off.met())
+        checks.expect(in_off.b.cpu_n >= 1,
+            "P7-OFF [p.198]: with BLTPRI clear, at least one CPU access in (T_first,T_last) of the same blit");
+    else not_graded(checks, "P7-OFF", d_off);
+    if (d_both.met())
+        checks.expect(in_on.b.cpu_n == 0 && in_off.b.cpu_n >= 1,
+            std::string("P7 [") + kClaims +
+            "]: with BLTPRI set, zero CPU accesses in (T_first,T_last); with BLTPRI clear, at least one (p.198)");
+    else not_graded(checks, "P7", d_both);
+
+    // ---- the case the pages leave open: a D-only blit, measured and not graded ----
+    DBlit d_set = measure_d(run_capture(dir + "/prog_p7_donly.bin", run_budget));
+    DBlit d_clr = measure_d(run_capture(dir + "/prog_p7_donly_c1.bin", run_budget));
+    checks.note(describe_d("BLTPRI set", d_set));
+    checks.note(describe_d("BLTPRI clear", d_clr));
 
     checks.record(
         "P7: with a blit whose Table 6-2 sequence leaves a cycle without a blitter access (D only: 'D0 - D1 - D2', "
-        "p.188), the pages do not say whether BLTPRI withholds that unused cycle from the CPU. p.198 says the "
-        "blitter 'will keep the bus for every available Chip memory cycle'; p.194 says 'If a device does not "
-        "request one of its allocated time slots, the slot is open for other uses'. Such a blit is not graded.");
+        "p.188), the pages do not say whether BLTPRI withholds that unused cycle from the CPU. Read literally, "
+        "p.278 ('disables /BLS pin, preventing micro from stealing any bus cycles while blitter DMA is running') "
+        "gives the CPU no cycle. Read as a priority, p.278 ('Blitter DMA priority (over CPU micro)'), p.222 "
+        "('the blitter has full (instead of partial) priority over the 680x0') and p.194 ('The lowest priorities "
+        "are assigned to the blitter and the 68000, in that order') give the CPU a cycle that the blitter does "
+        "not request. p.198 ('the blitter will keep the bus for every available Chip memory cycle') fits both. "
+        "Such a blit is measured above and not graded.");
 }
 
 }  // namespace p7
@@ -1245,6 +1309,8 @@ namespace p8 {
 
 const char kClaims[] =
     "p.278 5-appA-p278.c13, A-dmacon.b14; p.278 5-appA-p278.c10, 5-appA-p278.c8; p.289 5-appB-p289.c4";
+
+constexpr uint16_t kOM = 0x0060, kCM = 0x0061;
 
 // G is $4000 bytes (SPECIFICATION.md 2.3); R lies above it.
 constexpr uint32_t kLogEnd = kLog + 0x4000;
@@ -1298,14 +1364,14 @@ std::vector<size_t> graded_set(const Poll& p) {
 }
 
 // (b): every graded read that the run holds shows bit 14 = 1; at least one
-// graded read is held.
-bool b_ok(const Poll& p, const std::vector<size_t>& graded, size_t* held = nullptr) {
+// graded read is held. `want` is the bit the reads must show.
+bool graded_reads_show(const Poll& p, const std::vector<size_t>& graded, bool want, size_t* held = nullptr) {
     size_t present = 0;
-    bool ok = struct_ok(p);
+    bool ok = true;
     for (size_t k : graded) {
         if (k >= p.n_poll()) continue;
         ++present;
-        if (!(p.v[4 + k] & 0x4000)) ok = false;
+        if (((p.v[4 + k] & 0x4000) != 0) != want) ok = false;
     }
     if (held) *held = present;
     return ok && present >= 1;
@@ -1314,7 +1380,7 @@ bool b_ok(const Poll& p, const std::vector<size_t>& graded, size_t* held = nullp
 // (c): the poll ends on a 0 before the 8192-read cap, and every read from
 // that first 0 on is also 0.
 bool c_ok(const Poll& p) {
-    if (!struct_ok(p)) return false;
+    if (p.c.size() < 4) return false;
     size_t n = p.n_poll();
     long first_zero = -1;
     for (size_t k = 1; k < n; ++k) if (!(p.v[4 + k] & 0x4000)) { first_zero = (long)k; break; }
@@ -1324,58 +1390,104 @@ bool c_ok(const Poll& p) {
     return true;
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    Capture cap_main = run_capture(dir + "/prog_p8.bin", run_budget);
-    Poll pm = parse(cap_main);
-    std::vector<size_t> graded = graded_set(pm);
+// What one run of one program shows.
+struct Eval {
+    Poll p;
+    bool g1 = false;   // the program finished: DONE, both markers, every read stored
+    bool g2 = false;   // the stored DMACONR readback and the stored idle reads show DMAEN and BLTEN set, BLTPRI clear, nothing else among 8-0
+    bool g3 = false;   // the blit ran
+    bool g4 = false;   // at least 2 graded reads, so (b) is not vacuous
+};
 
-    // C1 puts the program without a blit through the unchanged comparator,
-    // graded at the indices of the main run's graded reads.
-    Capture cap_c1;
-    if (mv == "C1") cap_c1 = run_capture(dir + "/prog_p8_c1.bin", run_budget);
-    const Capture& cap_in = (mv == "C1") ? cap_c1 : cap_main;
-    Poll pi = parse(cap_in);
-
-    checks.note("P8: N(poll)=" + num((long long)pm.n_poll()) + " total_rest=" +
-                num((long long)(pm.c.size() >= 4 ? pm.c.size() - 4 : 0)) +
-                " t_last=" + (pm.t_last ? num((long long)*pm.t_last) : std::string("(none)")) +
-                " b_nonvacuous=" + num((long long)graded.size()));
-
-    size_t held = 0;
-    bool b_this = b_ok(pi, graded, &held);
-    checks.note(std::string("P8 clauses of the graded run: idle=") + (idle_ok(pi) ? "ok" : "FAILED") +
-                " (b)=" + (b_this ? "ok" : "FAILED") + " over " + num((long long)held) + " graded reads held" +
-                " (c)=" + (c_ok(pi) ? "ok" : "FAILED"));
-    bool ok = cap_in.loaded && idle_ok(pi) && struct_ok(pi) && b_this && c_ok(pi);
-    checks.expect(ok, std::string("P8 [") + kClaims +
-        "]: the 4 idle reads show bit14=0; every poll read i>=2 with T_w(i) < T_last shows bit14=1; the poll "
-        "ends on a 0 before the 8192-read cap, and every read after that (including the 8 extra) is also 0");
-
-    auto pick = [&](const char* sel, const char* file, Capture& store) -> const Capture& {
-        if (mv == sel) { store = run_capture(dir + "/" + file, run_budget); return store; }
-        return cap_main;
+Eval evaluate(const Capture& cap) {
+    Eval e;
+    e.p = parse(cap);
+    e.g1 = cap.loaded && cap.done.has_value() && marker(cap.log, kOM).has_value() &&
+           marker(cap.log, kCM).has_value() && struct_ok(e.p);
+    // The stored readback in R and the four stored idle reads of (a) show the
+    // enabling write's bits only.
+    auto bits_ok = [](uint16_t v) {
+        return (v & 0x0200) && (v & 0x0040) && !(v & 0x0400) && ((v & 0x01FF & ~0x0040) == 0);
     };
+    auto r8 = stored_at(cap.log, kR, 1);
+    if (cap.loaded && r8.size() == 1 && e.p.c.size() >= 4) {
+        e.g2 = bits_ok(r8[0]);
+        for (int i = 0; i < 4; ++i) if (!bits_ok(e.p.v[i])) e.g2 = false;
+    }
+    e.g3 = blit_ran(e.p);
+    e.g4 = graded_set(e.p).size() >= 2;
+    return e;
+}
+
+void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
+    // The main run is the reference: its graded indices are the ones the
+    // other runs are graded at.
+    Eval ref = evaluate(run_capture(dir + "/prog_p8.bin", run_budget));
+    std::vector<size_t> graded = graded_set(ref.p);
+    Eval noblit = evaluate(run_capture(dir + "/prog_p8_c1.bin", run_budget));
+
+    // ZPOLL (the fourth poll read comes from a zero word) is the mutation of
+    // P8; each precondition has its own program, which replaces the main
+    // program for P8; G3's program is the one without a blit.
+    Eval mut;
+    const char* mutant = nullptr;
+    if (mv == "ZPOLL") mutant = "prog_p8_zpoll.bin";
+    else if (mv == "G1") mutant = "prog_p8_g1.bin";
+    else if (mv == "GBLTPRI") mutant = "prog_p8_gbltpri.bin";
+    else if (mv == "G3") mutant = "prog_p8_c1.bin";
+    else if (mv == "G4") mutant = "prog_p8_g4.bin";
+    if (mutant) mut = evaluate(run_capture(dir + "/" + mutant, run_budget));
+    const Eval& in_p8 = mutant ? mut : ref;
+    // INVNOBLIT puts the main program through the comparator of P8-NOBLIT.
+    const Eval& in_nb = (mv == "INVNOBLIT") ? ref : noblit;
+
+    checks.note("P8: N(poll)=" + num((long long)ref.p.n_poll()) + " total_rest=" +
+                num((long long)(ref.p.c.size() >= 4 ? ref.p.c.size() - 4 : 0)) +
+                " t_last=" + (ref.p.t_last ? num((long long)*ref.p.t_last) : std::string("(none)")) +
+                " b_nonvacuous=" + num((long long)graded.size()));
+    size_t held = 0;
+    bool b_this = graded_reads_show(in_p8.p, graded, true, &held);
+    checks.note(std::string("P8 clauses of the graded run: idle=") + (idle_ok(in_p8.p) ? "ok" : "FAILED") +
+                " (b)=" + (b_this ? "ok" : "FAILED") + " over " + num((long long)held) + " graded reads held" +
+                " (c)=" + (c_ok(in_p8.p) ? "ok" : "FAILED"));
+
+    // ---- the preconditions ---------------------------------------------------
+    checks.expect(in_p8.g1 && in_nb.g1,
+        "P8-G1: the program finished -- DONE was written, both markers were found and every read was stored");
+    checks.expect(in_p8.g2 && in_nb.g2,
+        "P8-G2: the stored DMACONR readback and the four stored idle reads show DMAEN and BLTEN set, BLTPRI clear, "
+        "and no other bit among 8-0");
+    checks.expect(in_p8.g3, "P8-G3: the blit ran -- T_last is defined (at least 2 writes in the Q range)");
+    // G4: at least 2 poll reads with i >= 2 fall before T_last, so (b) is not vacuous.
+    checks.expect(in_p8.g4, "P8-G4: at least 2 poll reads with i >= 2 have T_w(i) < T_last, so (b) is not vacuous");
+
+    // ---- the graded lines ----------------------------------------------------
     {
-        Capture store; const Capture& c = pick("G1", "prog_p8_g1.bin", store);
-        checks.expect(c.loaded && c.done.has_value(), "P8-G1: the program finished");
+        Deps d;
+        d.need(in_p8.g1, "P8-G1");
+        d.need(in_p8.g2, "P8-G2");
+        d.need(in_p8.g3, "P8-G3");
+        d.need(in_p8.g4, "P8-G4");
+        if (d.met())
+            checks.expect(idle_ok(in_p8.p) && b_this && c_ok(in_p8.p), std::string("P8 [") + kClaims +
+                "]: the 4 idle reads show bit14=0; every poll read i>=2 with T_w(i) < T_last shows bit14=1; the poll "
+                "ends on a 0 before the 8192-read cap, and every read after that (including the 8 extra) is also 0");
+        else not_graded(checks, "P8", d);
     }
     {
-        Capture store; const Capture& c = pick("GBLTPRI", "prog_p8_gbltpri.bin", store);
-        auto r8 = stored_at(c.log, kR, 1);
-        bool ok2 = c.loaded && r8.size() == 1;
-        if (ok2) { uint16_t v = r8[0]; ok2 = (v & 0x0200) && (v & 0x0040) && !(v & 0x0400) && ((v & 0x01FF & ~0x0040) == 0); }
-        checks.expect(ok2, "P8-G2: the stored DMACONR readback shows DMAEN and BLTEN set, BLTPRI clear, and no "
-                           "other bit among 8-0");
-    }
-    {
-        const Capture& c = (mv == "C1") ? cap_c1 : cap_main;
-        checks.expect(blit_ran(parse(c)), "P8-G3: the blit ran -- T_last is defined (at least 2 writes in the Q range)");
-    }
-    {
-        // G4: at least 2 poll reads with i >= 2 fall before T_last, so (b) is not vacuous.
-        Capture store; const Capture& c = pick("G4", "prog_p8_g4.bin", store);
-        checks.expect(graded_set(parse(c)).size() >= 2,
-                      "P8-G4: at least 2 poll reads with i >= 2 have T_w(i) < T_last, so (b) is not vacuous");
+        // The reads graded 1 in the main run, made by the program without a
+        // blit, are predicted 0 (p.186 sets the flag only while a blit is in
+        // progress). They are taken at the indices the main run grades.
+        Deps d;
+        d.need(in_nb.g1, "P8-G1");
+        d.need(in_nb.g2, "P8-G2");
+        d.need(ref.g3, "P8-G3");
+        d.need(ref.g4, "P8-G4");
+        if (d.met())
+            checks.expect(graded_reads_show(in_nb.p, graded, false),
+                "P8-NOBLIT [p.186]: with the BLTSIZE write replaced by a write to COLOR00, so that no blit starts, "
+                "every read of the poll at an index the main run grades shows bit14=0, and at least one is held");
+        else not_graded(checks, "P8-NOBLIT", d);
     }
 
     checks.record(
@@ -1492,77 +1604,114 @@ bool after_completion(const Capture& cap, const Run& r, bool swapped) {
     return true;
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    const int expect_main[5] = {1, 0, 1, 0, 1};
-    const int expect_swap[5] = {0, 1, 1, 1, 0};
 
-    Capture cap_main = run_capture(dir + "/prog_p9.bin", run_budget);
-    Capture cap_swap = run_capture(dir + "/prog_p9_c1.bin", run_budget);
-    Run run_main = parse(cap_main), run_swap = parse(cap_swap);
+constexpr uint16_t kEndId = 0x00FF;
+
+// What one run of one program shows: Z_k, both tables' verdicts and the
+// preconditions. `swapped` says the run is the exchanged program.
+struct Eval {
+    Run r;
+    bool main_table = false, swap_table = false;
+    bool g1 = false;    // the program finished: DONE, END, and every Z_k and wait read stored
+    bool gw = false;    // the blits made the writes the run intends
+    bool gr = false;    // blits 4 and 5 read F and Zb and wrote nowhere but the CPU's own areas
+    bool g2 = false;    // every Z_k shows the enabling write's bits only
+    bool gac = false;   // each Z_k was stored after its blit's last access and after a read with bit 14 = 0
+};
+
+Eval evaluate(const Capture& cap, bool swapped) {
+    static const int expect_main[5] = {1, 0, 1, 0, 1};
+    static const int expect_swap[5] = {0, 1, 1, 1, 0};
+    Eval e;
+    e.r = parse(cap);
+    e.main_table = table_ok(e.r, expect_main);
+    e.swap_table = table_ok(e.r, expect_swap);
+    e.g1 = cap.loaded && cap.done.has_value() && marker(cap.log, kEndId).has_value() && e.r.ok;
+    // Blits 1 and 3 write $0000 and blit 2 writes $FFFF in the main program; blits 1 and 2 are exchanged
+    // in the other.
+    const uint16_t d1 = swapped ? 0xFFFF : 0x0000, d2 = swapped ? 0x0000 : 0xFFFF;
+    e.gw = cap.loaded && writes_all(cap, kQ, 16, d1) && writes_all(cap, kQ + 0x100, 16, d2) &&
+           writes_all(cap, kQ + 0x200, 16, 0x0000);
+    e.gr = cap.loaded && reads_only(cap, kF, 16) && reads_only(cap, kZb, 16) && no_write_outside_cpu_areas(cap);
+    e.g2 = e.r.ok;
+    if (e.g2) for (int k = 0; k < 5; ++k)
+        if ((e.r.z[k] & 0x07FF) != 0x0240) { e.g2 = false; break; }
+    e.gac = after_completion(cap, e.r, swapped);
+    return e;
+}
+
+void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
+    Eval ev_main = evaluate(run_capture(dir + "/prog_p9.bin", run_budget), false);
+    Eval ev_swap = evaluate(run_capture(dir + "/prog_p9_c1.bin", run_budget), true);
+
+    // A precondition mutation replaces the main program.
+    Eval ev_mut;
+    const char* mutant = nullptr;
+    if (mv == "G1") mutant = "prog_p9_g1.bin";
+    else if (mv == "G2") mutant = "prog_p9_g2.bin";
+    else if (mv == "GWRITES") mutant = "prog_p9_gwrites.bin";
+    else if (mv == "GDWRITE") mutant = "prog_p9_gdwrite.bin";
+    else if (mv == "NOWAIT") mutant = "prog_p9_gnowait.bin";
+    if (mutant) ev_mut = evaluate(run_capture(dir + "/" + mutant, run_budget), false);
+    const Eval& m = mutant ? ev_mut : ev_main;
 
     // C1 puts the exchanged program through the main table; INV puts the
     // main program through the exchanged table. Neither table changes.
-    const Run& in_main = (mv == "C1") ? run_swap : run_main;
-    const Run& in_swap = (mv == "INV") ? run_main : run_swap;
-    bool main_ok = table_ok(in_main, expect_main);
-    bool swap_ok = table_ok(in_swap, expect_swap);
+    const Eval& in_main = (mv == "C1") ? ev_swap : m;
+    const Eval& in_swap = (mv == "INV") ? ev_main : ev_swap;
 
-    if (run_main.ok) {
+    if (ev_main.r.ok) {
         std::string zs = "P9: Z1..Z5 = ";
-        for (int k = 0; k < 5; ++k) zs += hex16(run_main.z[k]) + " ";
+        for (int k = 0; k < 5; ++k) zs += hex16(ev_main.r.z[k]) + " ";
         checks.note(zs);
     }
-    checks.expect(main_ok,
-        "P9-MAIN [p.222, p.187]: bit 13 of each Z_k matches the proposition's table (blits 1-3 show the flag "
-        "describes the latest blit; blits 4-5 grade 'even if D is not written')");
-    checks.expect(swap_ok,
-        "P9-SWAP [p.222, p.187]: with BLTCON0 exchanged between blits 1 and 2 and the source exchanged between "
-        "blits 4 and 5, bit 13 of each Z_k follows the exchanged table");
-    checks.expect(main_ok && swap_ok, std::string("P9 [") + kClaims +
-        "]: bit 13 of each Z_k matches the proposition's table, and the exchanged table when the logic outputs "
-        "are exchanged");
 
-    // ---- preconditions, each over the main run and the exchanged run ----
-    auto pick = [&](const char* sel, const char* file, Capture& store) -> const Capture& {
-        if (mv == sel) { store = run_capture(dir + "/" + file, run_budget); return store; }
-        return cap_main;
+    // ---- the preconditions, over the run read as the main program and the run read as the exchanged one ----
+    checks.expect(in_main.gw && in_swap.gw,
+        "P9-G(writes): blits 1 and 3 made 16 writes of $0000 in their ranges; blit 2 made 16 writes of $FFFF "
+        "(blits 1 and 2 exchanged in the exchanged run)");
+    checks.expect(in_main.gr && in_swap.gr,
+        "P9-G(reads): blits 4 and 5 made 16 reads in F and Zb respectively, no write there, and no write outside "
+        "the CPU's own areas while they ran");
+    checks.expect(in_main.g1 && in_swap.g1,
+        "P9-G1: the program finished -- END was written and every Z_k and every wait read was stored");
+    checks.expect(in_main.g2 && in_swap.g2,
+        "P9-G2: G2 for $8240 -- every stored Z_k shows DMAEN (bit 9) and BLTEN (bit 6) set and no other bit "
+        "among 10 and 8-0");
+    checks.expect(in_main.gac && in_swap.gac,
+        "P9-G(after-completion): each Z_k (k = 1..5) was stored after the last port access of its blit and after "
+        "a read with bit 14 = 0");
+
+    // ---- the graded lines ----------------------------------------------------
+    auto deps_of = [&](std::initializer_list<const Eval*> ins) {
+        Deps d;
+        for (const Eval* e : ins) {
+            d.need(e->gw, "P9-G(writes)");
+            d.need(e->gr, "P9-G(reads)");
+            d.need(e->g1, "P9-G1");
+            d.need(e->g2, "P9-G2");
+            d.need(e->gac, "P9-G(after-completion)");
+        }
+        return d;
     };
-    {   // G(writes): blits 1 and 3 write $0000 and blit 2 $FFFF in the main run; exchanged in the other.
-        Capture store; const Capture& c = pick("C1", "prog_p9_c1.bin", store);
-        bool ok = writes_all(c, kQ, 16, 0x0000) && writes_all(c, kQ + 0x100, 16, 0xFFFF) &&
-                  writes_all(c, kQ + 0x200, 16, 0x0000) &&
-                  writes_all(cap_swap, kQ, 16, 0xFFFF) && writes_all(cap_swap, kQ + 0x100, 16, 0x0000) &&
-                  writes_all(cap_swap, kQ + 0x200, 16, 0x0000);
-        checks.expect(ok, "P9-G(writes): blits 1 and 3 made 16 writes of $0000 in their ranges; blit 2 made "
-                          "16 writes of $FFFF (blits 1 and 2 exchanged in the exchanged run)");
-    }
-    {   // G(reads)
-        Capture store; const Capture& c = pick("GDWRITE", "prog_p9_gdwrite.bin", store);
-        bool ok = reads_only(c, kF, 16) && reads_only(c, kZb, 16) && no_write_outside_cpu_areas(c) &&
-                  reads_only(cap_swap, kF, 16) && reads_only(cap_swap, kZb, 16) &&
-                  no_write_outside_cpu_areas(cap_swap);
-        checks.expect(ok, "P9-G(reads): blits 4 and 5 made 16 reads in F and Zb respectively, no write there, and "
-                          "no write outside the CPU's own areas while they ran");
-    }
-    {
-        Capture store; const Capture& c = pick("G1", "prog_p9_g1.bin", store);
-        checks.expect(c.loaded && c.done.has_value() && cap_swap.done.has_value(), "P9-G1: the program finished");
-    }
-    {   // G2: every Z_k is a DMACONR readback with the enabling write's bits only
-        Capture store; const Capture& c = pick("G2", "prog_p9_g2.bin", store);
-        Run r = parse(c);
-        bool ok = r.ok && run_swap.ok;
-        if (ok) for (int k = 0; k < 5; ++k)
-            if ((r.z[k] & 0x07FF) != 0x0240 || (run_swap.z[k] & 0x07FF) != 0x0240) { ok = false; break; }
-        checks.expect(ok, "P9-G2: G2 for $8240 -- every stored Z_k shows DMAEN (bit 9) and BLTEN (bit 6) set and "
-                          "no other bit among 10 and 8-0");
-    }
-    {
-        Capture store; const Capture& c = pick("NOWAIT", "prog_p9_gnowait.bin", store);
-        checks.expect(after_completion(c, parse(c), false) && after_completion(cap_swap, run_swap, true),
-                      "P9-G(after-completion): each Z_k (k = 1..5) was stored after the last port access of its "
-                      "blit and after a read with bit 14 = 0");
-    }
+    Deps d_main = deps_of({&in_main});
+    Deps d_swap = deps_of({&in_swap});
+    Deps d_both = deps_of({&in_main, &in_swap});
+    if (d_main.met())
+        checks.expect(in_main.main_table,
+            "P9-MAIN [p.222, p.187]: bit 13 of each Z_k matches the proposition's table (blits 1-3 show the flag "
+            "describes the latest blit; blits 4-5 grade 'even if D is not written')");
+    else not_graded(checks, "P9-MAIN", d_main);
+    if (d_swap.met())
+        checks.expect(in_swap.swap_table,
+            "P9-SWAP [p.222, p.187]: with BLTCON0 exchanged between blits 1 and 2 and the source exchanged between "
+            "blits 4 and 5, bit 13 of each Z_k follows the exchanged table");
+    else not_graded(checks, "P9-SWAP", d_swap);
+    if (d_both.met())
+        checks.expect(in_main.main_table && in_swap.swap_table, std::string("P9 [") + kClaims +
+            "]: bit 13 of each Z_k matches the proposition's table, and the exchanged table when the logic outputs "
+            "are exchanged");
+    else not_graded(checks, "P9", d_both);
 
     checks.record(
         "P9: the 'only' of 'read only' is not graded. p.278 gives bit 15, 'bits written with a 1 get set or "

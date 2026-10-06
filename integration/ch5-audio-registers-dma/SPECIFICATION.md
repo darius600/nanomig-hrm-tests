@@ -597,16 +597,27 @@ Chip-memory access. With BLTPRI clear, it makes some.
   code 1 (D only) is `D0 - D1 - D2`: a cycle without a blitter access lies
   between every two destination writes. p.189: "This Table is only meant to be
   an illustration of the typical order of blitter cycles on the bus."
-- p.194, on the devices with a higher priority than the 68000: "If a device
-  does not request one of its allocated time slots, the slot is open for other
-  uses."
+- p.194, on who is served first: "The lowest priorities are assigned to the
+  blitter and the 68000, in that order."
 
 **The blit used.** P7 uses USE code E, so that no cycle between its first and
 last source read is one the blitter does not use. A blit whose sequence has a
-cycle without a blitter access (D only, for example) is not graded. p.198 says
-the blitter "will keep the bus for every available Chip memory cycle", and
-p.194 says an unrequested slot "is open for other uses"; the pages do not say
-whether BLTPRI withholds from the 68000 a cycle the blitter does not request.
+cycle without a blitter access (D only, for example) is not graded, because
+the pages read two ways on it:
+- Literally, p.278 ("preventing micro from stealing any bus cycles while
+  blitter DMA is running") gives the 68000 no cycle while the blit runs,
+  including a cycle the blitter does not use.
+- As a priority, p.278 ("Blitter DMA priority (over CPU micro)", "disables
+  /BLS pin"), p.222 ("the blitter has full (instead of partial) priority over
+  the 680x0") and p.194 (the blitter ranks above the 68000) describe an
+  arbitration between two requesters, and a cycle the blitter does not request
+  goes to the 68000. p.198 ("the blitter will keep the bus for every available
+  Chip memory cycle") fits both.
+
+The D-only blit (USE code 1, BLTCON0 `$01FF`, BLTSIZE `$2020`, destination Q)
+is run with BLTPRI set and with BLTPRI clear, and the CPU accesses between the
+first and the last destination write are printed as MEASURED lines. Nothing
+about them is graded.
 
 **Stimulus.** Default configuration.
 
@@ -656,15 +667,16 @@ every cycle of the interval. This is graded as P7-ON.
   access in (T_first, T_last), by p.198. All preconditions still hold, with
   bit 10 clear in the stored value. This run is graded in the normal run as
   P7-OFF.
-- For the comparators of P7-ON and P7-OFF: the CPU executes `STOP #$2700`
-  straight after the BLTSIZE write. It makes no access while the blit runs, so
-  the unchanged zero-access comparator of P7-ON holds on it and the unchanged
-  at-least-one comparator of P7-OFF goes red.
+- For the comparators of P7-ON and P7-OFF: the BLTPRI-clear program put
+  through the zero-access comparator of P7-ON (it makes CPU accesses, so the
+  line goes red), and the main program put through the at-least-one comparator
+  of P7-OFF (it makes none, so the line goes red). The same two inputs are
+  the contrasts of the aggregate line P7.
 - For the "blit ran" precondition: replace the BLTSIZE write by a write to
   COLOR00 (`$180`). No blit starts and the precondition goes red.
-- For the "CPU still wanted the bus" precondition: the same program that
-  executes `STOP #$2700` straight after the BLTSIZE write. No log write follows
-  T_last, and the precondition goes red.
+- For the "CPU still wanted the bus" precondition: the CPU's logging loop runs
+  before the BLTSIZE write. No log write follows T_last, the program still
+  finishes, and the precondition goes red.
 
 **Reference frame.** The blit interval is anchored on the first and last
 source read at the port. The test checks the anchor by requiring at least two
@@ -739,9 +751,10 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
   destination write the flag clears.
 
 **Preconditions.**
-- G1.
-- The stored values of (a) show bits 9 and 6 set, bit 10 clear, and no other
-  bit among 8-0.
+- G1: `DONE` was written, both markers were found, and every logged read was
+  stored.
+- The stored DMACONR readback and the stored values of (a) show bits 9 and 6
+  set, bit 10 clear, and no other bit among 8-0.
 - The blit ran: T_last is defined.
 - At least 2 reads with i ≥ 2 have T_w(i) < T_last, so that (b) is not
   vacuous.
@@ -749,10 +762,18 @@ made before any blit show 0. After the blit, the bit reads 0 and stays 0.
 **Contrasting cases.**
 - Replace the BLTSIZE write of step 4 by the same `MOVE.W` to COLOR00
   (`$180`). No blit starts, so the reads at the indices graded 1 in the main
-  run are predicted 0 (p.186 sets the flag only while a blit is in progress)
-  and (b) goes red. (b) is graded on this run at the indices that the main run
-  grades and this run holds. The program still finishes, because the poll
-  stops at read 2, and G1 and the DMACONR precondition still hold.
+  run are predicted 0 (p.186 sets the flag only while a blit is in progress).
+  This is graded in the normal run as P8-NOBLIT, at the indices that the main
+  run grades and this run holds, with at least one held. The program still
+  finishes, because the poll stops at read 2, and G1 and the DMACONR
+  precondition still hold. The main run's own G3 and G4 are preconditions of
+  P8-NOBLIT, since the indices come from it.
+- For (b): the blit still runs, and the fourth poll read comes from a zero word
+  instead of DMACONR. That read is made while the blit is in progress and shows
+  bit 14 = 0, so (b) goes red; the blit ran, at least 2 graded reads precede
+  T_last, and every other precondition still holds. The main program put
+  through the comparator of P8-NOBLIT is the mutation of that line.
+- For the "the blit ran" precondition: the program without a blit, as above.
 - For the "at least 2 reads inside the blit" precondition: delay the first poll
   read until the blit has ended, with a delay loop between the BLTSIZE write
   and the poll. No read i ≥ 2 falls before T_last, and the precondition goes
@@ -824,7 +845,8 @@ flag describes the latest blit. Blits 4 and 5 grade the "even if those
 destination bits are not written" of p.187.
 
 **Preconditions.**
-- G1, and G2 for `$8240`: every stored Z_k shows bits 9 and 6 set and no
+- G1: `DONE` and `END` were written, and every Z_k and every wait read was
+  stored. G2 for `$8240`: every stored Z_k shows bits 9 and 6 set and no
   other bit among 10 and 8-0.
 - Blits 1 and 3 made 16 writes in their ranges, all with data `$0000`.
 - Blit 2 made 16 writes, all with data `$FFFF`.
@@ -840,6 +862,10 @@ destination bits are not written" of p.187.
 - For the "after completion" precondition: drop the wait before Z_1. Z_1's
   store may then fall before the blit's last write, and the precondition goes
   red.
+- For the "16 writes" preconditions: blit 1 has BLTSIZE `$0103` (height 4,
+  width 3: 12 words). It makes 12 writes of `$0000` and the precondition goes
+  red; its logic output is still zero, so the expected bit 13 of Z_1 does not
+  change.
 - For the "no write outside the CPU areas" precondition: blit 4 also uses D
   (BLTCON0 = `$09F0`, BLTDPT = Q + `$300`). It writes outside the CPU areas
   and the precondition goes red.

@@ -9,9 +9,9 @@ PROGS    := prog_fixture prog_fixture_mut prog_fixture_mutr \
             prog_p4 prog_p4_c1 prog_p4_g1 prog_p4_g2 prog_p4_g3 prog_p4_g4 prog_p4_g5 \
             prog_p5 prog_p5_c1 prog_p5_g1 prog_p5_g2 prog_p5_g3 prog_p5_g3in prog_p5_g4 prog_p5_g5 \
             prog_p6 prog_p6_c1 prog_p6_g1 prog_p6_g2 prog_p6_g3 prog_p6_g4 prog_p6_g5 \
-            prog_p7 prog_p7_c1 prog_p7_live prog_p7_g1 prog_p7_g2 prog_p7_g3 \
-            prog_p8 prog_p8_c1 prog_p8_g1 prog_p8_g4 prog_p8_gbltpri \
-            prog_p9 prog_p9_c1 prog_p9_g1 prog_p9_g2 prog_p9_gnowait prog_p9_gdwrite \
+            prog_p7 prog_p7_c1 prog_p7_gearly prog_p7_donly prog_p7_donly_c1 prog_p7_g1 prog_p7_g2 prog_p7_g3 \
+            prog_p8 prog_p8_c1 prog_p8_zpoll prog_p8_g1 prog_p8_g4 prog_p8_gbltpri \
+            prog_p9 prog_p9_c1 prog_p9_g1 prog_p9_g2 prog_p9_gnowait prog_p9_gdwrite prog_p9_gwrites \
             prog_p10 prog_p10_cdang prog_p10_g1 prog_p10_g2k prog_p10_g2w prog_p10_g3 prog_p10_g3l \
             prog_p10_g4 prog_p10_g5 prog_p10_g_nolist \
             prog_p11 prog_p11_g1 prog_p11_g2 prog_p11_g3 prog_p11_g4 prog_p11_g5 prog_p11_g_nolist

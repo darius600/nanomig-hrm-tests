@@ -7,9 +7,9 @@
 ; loop). Variants (each its own source, including this one with a symbol
 ; set):
 ;   prog_p7_c1.s    (C1 set)       -- BLTPRI clear (share mode)
-;   prog_p7_live.s  (LIVE set)     -- STOP straight after BLTSIZE: the CPU
-;                                     makes no access while the blit runs, and
-;                                     no CPU write follows the blit
+;   prog_p7_gearly.s (GEARLY set)  -- the CPU's logging loop runs before the
+;                                     BLTSIZE write, so no CPU write into G
+;                                     follows the blit
 ;   prog_p7_g1.s    (G1_BREAK)     -- branch-to-self before END
 ;   prog_p7_g2.s    (G2_BREAK)     -- DMAEN (bit 9) left out of the enabling write
 ;   prog_p7_g3.s    (G3_NOBLIT)    -- no blit starts (BLTSIZE write replaced by a COLOR00 write)
@@ -54,21 +54,28 @@ start:
         endif
         move.w  DMACONR(a0),(a3)+
 
+        ifd     GEARLY
+        moveq   #0,d1                   ; precondition mutation: the logging loop runs before the blit
+        move.w  #2047,d2
+.E:     move.w  d1,(a4)+
+        addq.w  #1,d1
+        dbra    d2,.E
+        endif
+
         move.w  #OM,(a2)
         ifd     G3_NOBLIT
         move.w  #$2020,COLOR00(a0)      ; no blit starts
         else
         move.w  #$2020,BLTSIZE(a0)      ; height=128,width=32 -- starts the blit
         endif
-        ifd     LIVE
-        stop    #$2700
-        endif
 
+        ifnd    GEARLY
         moveq   #0,d1
         move.w  #2047,d2
 .L:     move.w  d1,(a4)+
         addq.w  #1,d1
         dbra    d2,.L
+        endif
 
         move.w  #CM,(a2)
         ifd     G1_BREAK
