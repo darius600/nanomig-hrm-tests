@@ -1,5 +1,8 @@
-; p87_ciaa.s -- P8.7, CIAA (CRB bit 7, ALARM). No wait before T0, no
-; sampler (SPECIFICATION.md P8.7, "Stimulus, CIAA").
+; p87_ciaa_body.s -- P8.7, CIAA (CRB bit 7, ALARM). Run X and run Y are separate runs from reset; no wait
+; before T0 and no sampler (SPECIFICATION.md P8.7, "Stimulus, CIAA"). The CRB value of the TOD writes is
+; read from the parameter block (E7): $80 in run X (alarm), $00 in run Y (TOD clock).
+;
+; Wrapper symbols: RUN_X or RUN_Y.
                 include "nanomig.i"
                 include "ciaregs.i"
 
@@ -26,8 +29,9 @@ start:
         moveq   #0,d0
         move.b  CIAA_ICR,d0             ; discard
 
-; ---- run X: CRA-wait no; CRB<-$80 (alarm), A = T0+$1000 -----------------
-        move.b  #$80,CIAA_CRB
+        ifd     RUN_X
+; ---- run X: CRB<-$80 (alarm), A = T0+$1000 -------------------------------
+        move.b  PARAM_A+1,CIAA_CRB      ; $80 (E7)
         move.l  P87_T0,d1
         addi.l  #$1000,d1
         move.l  d1,d2
@@ -42,14 +46,18 @@ start:
         move.w  #MARKER_SENTINEL,MK_87_T1X
         RDTOD24 CIAA_TODHI,CIAA_TODMID,CIAA_TODLO
         move.l  d0,P87_T1X
+        endc
 
-; ---- run Y: CRB stays $00, A = $001000 ----------------------------------
-        move.b  #$00,CIAA_CRB
+        ifd     RUN_Y
+; ---- run Y: CRB<-$00 (TOD clock), A = $001000 ----------------------------
+        move.b  PARAM_A+1,CIAA_CRB      ; $00 (E7)
         move.b  #$00,CIAA_TODHI
         move.b  #$10,CIAA_TODMID
         move.b  #$00,CIAA_TODLO
+        move.b  #$00,CIAA_CRB
         move.w  #MARKER_SENTINEL,MK_87_T1Y
         RDTOD24 CIAA_TODHI,CIAA_TODMID,CIAA_TODLO
         move.l  d0,P87_T1Y
+        endc
 
         DONE

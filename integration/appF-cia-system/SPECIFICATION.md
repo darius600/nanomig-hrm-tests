@@ -438,10 +438,13 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 
 - **Stimulus.** CR ← $00. R-LATCH($8000). Read TAHI, TALO → u1. A delay of about 1000 E periods between markers. Read → u2. Bracketed write CR ← $01. A delay of about 1000 E periods. Bracketed write CR ← $00. Read → u3.
 - **Expected.** "1 = start Timer A, 0 = stop Timer A." (p348).
-  - u1 = u2 = $8000: stopped, the counter holds, and the latch write loaded it (p343).
-  - u3 < u2. The size of u2 − u3 is reported against τ/T_E (P5 grades the rate).
-- **Precondition.** No underflow (ICR TA = 0 at the end). When it fails, P7.0 is not graded. *Contrast:* R-LATCH($0100) makes TA = 1.
-- **Contrasting case.** CR ← $01 during the first delay makes u2 ≠ u1.
+  - P7.0-STOP (the 0 setting): u1 = u2 = $8000: stopped, the counter holds, and the latch write loaded it (p343).
+  - P7.0-START (the 1 setting): u3 < u2. The size of u2 − u3 is reported against τ/T_E (P5 grades the rate).
+  - Each setting has its own line and its own verdict; both lines are over both CIAs.
+- **Precondition.** No underflow (ICR TA = 0 at the end). When it fails, P7.0-STOP and P7.0-START are not graded. *Contrast:* R-LATCH($0100) makes TA = 1.
+- **Contrasting case.** One for each setting, each through its own unchanged line.
+  - CR ← $01 during the first delay makes u2 ≠ u1: P7.0-STOP fails.
+  - CR ← $00 in place of the bracketed start write makes u3 = u2: P7.0-START fails.
 
 #### P7.3: Bit 3 is RUNMODE (1 one-shot, 0 continuous)
 
@@ -449,10 +452,11 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
   - *Leg O (one-shot):* CR ← $00. R-LATCH(40). Read ICR (discard). CR ← $09 (START, one-shot). R-SAMPLE(400; ICR). Read CRA → c. Read TAHI, TALO → u.
   - *Leg C (continuous):* the same with CR ← $01 (START, continuous) as the start write.
 - **Expected.** Source: "1 = one-shot mode, 0 = continuous mode." (p348); "In one-shot mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, then stop. In continuous mode, the timer will count down from the latched value to zero, generate an interrupt, reload the latched value, and repeat the procedure continuously." (p342); and "This bit is automatically reset (= 0) when underflow occurs during one-shot mode." (p348).
-  - Leg O: exactly one ICR sample has TA = 1; c bit 0 = 0; u = 40.
-  - Leg C: more than one ICR sample has TA = 1, and c bit 0 = 1 (START is reset only by an underflow "during one-shot mode"). u is reported, not graded: the counter is running when it is read.
-- **Precondition.** All 400 ICR stores of each leg are present, and consecutive ICR stores are at most 20 E periods apart (P/2 for any P ≥ 40, F3), from their store times (F1, F2), so that a timer that repeats shows more than one flag. When it fails, P7.3 and its contrasting case are not graded. *Contrast:* a loop body padded beyond 20 E periods fails the second clause; a sampler of 399 iterations fails the first.
-- **Contrasting case.** Each leg is the other's. CR ← $01 in leg O gives more than one TA sample, so "exactly one" fails; CR ← $09 in leg C gives exactly one, so "more than one" fails. A leg O started with CR ← $08 (one-shot, START = 0) shows no flag, so "exactly one" fails.
+  - P7.3-ONESHOT (the 1 setting), leg O: exactly one ICR sample has TA = 1; c bit 0 = 0; u = 40.
+  - P7.3-CONT (the 0 setting), leg C: more than one ICR sample has TA = 1, and c bit 0 = 1 (START is reset only by an underflow "during one-shot mode"). u is reported, not graded: the counter is running when it is read.
+  - Each setting has its own line and its own verdict; both lines are over both CIAs.
+- **Precondition.** All 400 ICR stores of each leg are present, and consecutive ICR stores are at most 20 E periods apart (P/2 for any P ≥ 40, F3), from their store times (F1, F2), so that a timer that repeats shows more than one flag. When it fails, P7.3-ONESHOT, P7.3-CONT and P7.3-CONTRAST are not graded. *Contrast:* a loop body padded beyond 20 E periods fails the second clause; a sampler of 399 iterations fails the first.
+- **Contrasting case.** Each leg is the other's (P7.3-CONTRAST): CR ← $01 in leg O gives more than one TA sample, so "exactly one" fails; CR ← $09 in leg C gives exactly one, so "more than one" fails. A leg O started with CR ← $08 (one-shot, START = 0) shows no flag, so P7.3-ONESHOT's "exactly one" fails; a leg C started with CR ← $09 makes P7.3-CONT's "more than one" fail, and P7.3-CONTRAST with it.
 
 #### P7.4: Bit 4 is LOAD (force load, strobe, reads 0)
 
@@ -474,6 +478,7 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 - **Expected.** Source: "1 = Timer A counts positive CNT transitions" (p348), with CNT = KCLK (p351) and "a pulse on KCLK (low then high)" per bit, "until all eight data bits have been sent" (p357).
   - CIAB (graded): v = $1000. CIAB's CNT has no driver, so a started timer in INMODE = CNT sees no positive transition and holds its value.
   - CIAA (measured, not graded): $1000 − v = 8 on a conforming timer. Whatever v reads, no output of the system shows KCLK at the timer's CNT input. A decrement above 8 can therefore be an ignored INMODE bit (the timer counts φ2) or a KCLK that does not reach CNT as the page's pulses, and this leg cannot tell them apart. The line prints the decrement and says so.
+  - CIAA, interval with no CNT edge (graded as P7.5-CIAA-INMODE): the timer does not move. "1 = Timer A counts positive CNT transitions, 0 = Timer A counts 02 pulses" (p348): with no positive CNT transition in an interval, a started timer in INMODE = CNT holds its value, whatever the keyboard line does in another interval. The run is the two-phase run of the control below: CR ← $21 starts timer A over a first interval in which no key code is sent and no CNT edge occurs; it is stopped and read → v1. Expected v1 = $1000. The second interval of the same run (one key code, eight KCLK pulses) is the measured leg above.
 - **Preconditions.**
   - KP (its probe is timer B, CRB ← $21). *Contrast:* KP's own contrast.
   - **Window (CIAA).** The whole transmission lies between the start write and the stop write, and W lies in [1500, 3000] E periods.
@@ -482,8 +487,11 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
     - The ready marker, the ICR read, the marker before the stop write and the marker after it come in that order, and W, from the first to the last, lies in [1500, 3000] E periods.
     - *Contrast:* send the key after the stop write, or wait fewer than 1500 E periods. The window precondition then fails.
   - **Window (CIAB).** The ready marker, the marker before the stop write and the marker after it come in that order, and W lies in [1500, 3000] E periods. When it fails, the CIAB leg is not graded. *Contrast:* wait fewer than 1500 E periods.
+  - **P7.5-CIAA-INMODE-PRE (the first interval of the two-phase run).** The ICR read after it has SP = 0, the key code is not sent before its stop write, and the interval is long enough that a timer counting φ2 would have counted at least one pulse: (S_b − R)/T_E − 1 ≥ 1, with the markers of the contrasting case below. When it fails, P7.5-CIAA-INMODE is not graded. *Contrast:* the key code sent in the first interval.
 - **Contrasting case.** CR ← $01 (bit 5 = 0, φ2): $1000 − v lies between (S_b − R)/T_E − 1 and (S_a − A)/T_E + 1 on both CIAs, where A is the marker before the start write, R the marker after it, S_b the marker before the stop write and S_a the marker after it: the E cycles counted between two events, each known only to lie between the markers around it, as in P7.4. A CIAB run with CR ← $20 (not started) in place of $01 counts none, and fails it.
+- **Contrasting case (P7.5-CIAA-INMODE).** CR ← $20 (INMODE = CNT, START = 0) in place of $21 as the first interval's start write: the timer holds, v1 = $1000, and the line passes. The same run with the key code in the first interval fails the precondition.
 - **Control (CIAB leg).** The same equality comparator on a started timer in INMODE = CNT whose count input is known. CIAA's timer A, CR ← $21, is started twice with the same code, and stopped and read after each start. In the first interval no CNT edge occurs: the key code is not sent before it ends, and the ICR read after it has SP = 0. In the second interval one key code (eight KCLK pulses) is sent after the ready marker, and i has SP = 1. A conforming timer has $1000 − v1 = 0 after the first interval and v1 − v2 = 8 after the second. *Contrast:* the key sent in the first interval, so that its precondition fails; no key in the second, so that v1 − v2 = 0.
+  - The first interval's equality ($1000 − v1 = 0) is P7.5-CIAA-INMODE's own line. The control line (P7.5-CIAB-GREENCTL) adds the second interval's v1 − v2 = 8; it is run only under its own selectors. On the repository's RTL both lines are red; the green evidence for P7.5 (CIAB leg), P7.5-CIAA-INMODE and the control is a private copy of the RTL, outside the repository, in which CRA bit 5 selects one CNT pulse per KCLK pulse of a key code in place of φ2 on CIAA and CIAB's CNT stays low.
 - **Left open.** The SDR value is reported, not graded. What it should hold depends on the keyboard's bit order and polarity (p357-p358), which are claims outside this package. Whether KCLK reaches CIAA's CNT as the page's pulses is not observable (CIAA leg, above).
 
 #### P7.6: Bit 6 is SPMODE (1 serial port output, 0 input)
@@ -518,7 +526,7 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRB are graded in P1, P3 and P4.
 
 #### P8.0, P8.3, P8.4: START, RUNMODE, LOAD
 
-These are specified exactly as P7.0, P7.3 and P7.4, with these substitutions: CRB for CRA, TBLO and TBHI for TALO and TAHI, and ICR bit 1 (TB) for bit 0 (TA). CRB bits 6-5 = 00 (φ2) and bit 7 = 0 in every written value. The expected values, preconditions and contrasting cases carry over unchanged, with the CRB text on p349 as the source: "1 = start Timer B, 0 = stop Timer B. This bit is automatically reset (= 0) when underflow occurs during one-shot mode.", "1 = one-shot mode, 0 = continuous mode.", and "1 = force load (this is a strobe input, there is no data storage; bit 4 will always read back a zero and writing a 0 has no effect.)".
+These are specified exactly as P7.0, P7.3 and P7.4, with these substitutions: CRB for CRA, TBLO and TBHI for TALO and TAHI, and ICR bit 1 (TB) for bit 0 (TA). CRB bits 6-5 = 00 (φ2) and bit 7 = 0 in every written value. The expected values, preconditions, populations and contrasting cases carry over unchanged. The lines are P8.0-STOP and P8.0-START (precondition P80-PRE), P8.3-ONESHOT, P8.3-CONT and P8.3-CONTRAST (precondition P8.3-PRE: all 400 ICR stores of each leg, at most 20 E periods apart) and P8.4 (precondition P8.4-PRE; the count bound is the markers' bound of P7.4). Their contrasting cases are P7.0's, P7.3's and P7.4's, each run through the unchanged line. The source is the CRB text on p349: "1 = start Timer B, 0 = stop Timer B. This bit is automatically reset (= 0) when underflow occurs during one-shot mode.", "1 = one-shot mode, 0 = continuous mode.", and "1 = force load (this is a strobe input, there is no data storage; bit 4 will always read back a zero and writing a 0 has no effect.)".
 
 #### P8.65: Bits 6-5 are INMODE (00 φ2, 01 CNT, 10 timer A underflows, 11 timer A underflows while CNT is high)
 
@@ -526,25 +534,30 @@ Source: "CRB6 CRB5 Mode Selected: 0 0 Timer B counts 02 pulses; 0 1 Timer B coun
 
 - **Mode 00.** P5, the timer-B instances.
 - **Mode 01.**
-  - *CIAA:* CRB ← $00. R-LATCH_B($1000). CRB ← $21. "Ready" marker. R-KEY. Wait W E periods, with 1500 ≤ W ≤ 3000 (W measured as in P7.5, from the marker after the start write to the marker after the stop write). Read ICR → i. Bracketed write CRB ← $00. Read TBHI, TBLO → v. Expected: $1000 − v = 8.
-  - *CIAB:* the same without R-KEY. Expected: v = $1000.
-  - Preconditions as in P7.5: KP, with timer A as its probe (CRA ← $21), and on CIAA the window (the code sent after the ready marker; SP = 1 in i, CRA staying $00 so that the serial port is in input mode). *Contrasting case:* CRB ← $01 gives $1000 − v = round(W/T_E) ± 2.
+  - *CIAA:* CRB ← $00. R-LATCH_B($1000). CRB ← $21. "Ready" marker. R-KEY. Wait W E periods, with 1500 ≤ W ≤ 3000 (W measured as in P7.5, from the marker after the start write to the marker after the stop write). Read ICR → i. Bracketed write CRB ← $00. Read TBHI, TBLO → v. Measured, not graded: $1000 − v = 8 on a conforming timer. Whatever v reads, no output of the system shows KCLK at timer B's CNT input, so a decrement above 8 can be an ignored CRB INMODE field (the timer counts φ2) or a KCLK that does not reach CNT, and this leg cannot tell them apart (Section 3, item 11). The line prints the decrement and says so.
+  - *CIAB (graded, P8.65-MODE01):* the same without R-KEY. Expected: v = $1000. CIAB's CNT has no driver, so a started timer B in INMODE = 01 sees no positive transition and holds its value.
+  - Preconditions as in P7.5: KP, with timer A as its probe (CRA ← $21), and the windows.
+    - **P8.65-MODE01-WINDOW (CIAA).** The window of P7.5 (CIAA): the code sent at least 100 E periods after the ready marker and before the ICR read, SP = 1 in i read before the stop write (CRA staying $00 so that the serial port is in input mode), and W in [1500, 3000] E periods. *Contrast:* the key code after the stop write, or a wait of fewer than 1500 E periods.
+    - **P8.65-MODE01-WINDOW-CIAB.** The ready marker, the marker before the stop write and the marker after it come in that order, and W lies in [1500, 3000] E periods. When it fails, P8.65-MODE01 is not graded. *Contrast:* a wait of fewer than 1500 E periods.
+  - *Contrasting case (P8.65-MODE01-CONTRAST):* CRB ← $01 (mode 00, φ2): $1000 − v lies between (S_b − R)/T_E − 1 and (S_a − A)/T_E + 1 on both CIAs, the markers around the start and stop writes as in P7.5. A CIAB run with CRB ← $20 (not started) in place of $01 counts none, and fails it.
+  - *Control (P8.65-MODE01-CIAB-GREENCTL):* the two-phase run of P7.5's control on CIAA's timer B: CRB ← $21 started twice with the same code, once over an interval with no CNT edge ($1000 − v1 = 0) and once with one key code (v1 − v2 = 8, i has SP = 1), through one equality comparator; run only under its own selectors. On the repository's RTL it is red; the green evidence for P8.65 mode 01 (CIAB leg) and the control is a private copy of the RTL, outside the repository, in which CRB bits 6-5 = 01 select one CNT pulse per KCLK pulse of a key code in place of φ2 on CIAA and CIAB's CNT stays low. *Contrast:* the key sent in the first interval, so that its precondition fails; no key in the second, so that v1 − v2 = 0.
 - **Mode 10 (both CIAs).**
   - *Stimulus:* CRA ← $00; R-LATCH_A(30); CRB ← $00; R-LATCH_B($FFFF). Read ICR (discard). CRB ← $41 (START, INMODE 10). CRA ← $01. R-SAMPLE(300; ICR). CRA ← $00. Read ICR (final). CRB ← $00. Read TBHI, TBLO → v.
   - *Expected:* $FFFF − v = N_A, the number of ICR reads after CRA's start write, including the final one, that have TA = 1.
-  - *Precondition:* the iteration spacing is ≤ P(30)/2, so each TA flag is exactly one underflow. *Contrast:* with R-LATCH_A(2), flags appear in consecutive reads.
-  - *Contrasting case:* CRB ← $01 (mode 00) gives $FFFF − v ≥ (window/T_E) − 2, far more than N_A. Leaving CRA at $00 is not a contrast: v = $FFFF and N_A = 0 still satisfy the expected equality, and with no TA flag the precondition cannot be measured.
+  - *Precondition (P8.65-MODE10-PRE):* all 300 ICR samples are present and the iteration spacing is ≤ P(30)/2, so each TA flag is exactly one underflow. When it fails, P8.65-MODE10 is not graded. *Contrast:* with R-LATCH_A(2), flags appear in consecutive reads.
+  - *Contrasting case (P8.65-MODE10-CONTRAST):* CRB ← $01 (mode 00), with the writes of CRB's start and stop bracketed by markers (E5), gives $FFFF − v between (S_b − R)/T_E − 1 and (S_a − A)/T_E + 1, the markers around the start and stop writes as in P7.5, far more than N_A. The same comparator on the mode-10 run fails it. CRB ← $01 through P8.65-MODE10's own equality fails it as well. Leaving CRA at $00 is not a contrast: v = $FFFF and N_A = 0 still satisfy the expected equality, and with no TA flag the precondition cannot be measured.
 - **Mode 11 (CIAA only; CIAB's CNT has no driver).**
   - *Stimulus:* two pairs of runs. In each pair, runs X and Y are identical except for the CRB value, which comes from the parameter block (E7): X writes $41 (mode 10), Y writes $61 (mode 11). Every run: CRA ← $00; R-LATCH_A(3); CRB ← $00; R-LATCH_B($FFFF); CRB ← value; bracketed write CRA ← $01; "ready" marker; wait W E periods, with 1500 ≤ W ≤ 3000; read ICR → i; bracketed write CRA ← $00; CRB ← $00; read TBHI, TBLO. The decrements are D_X and D_Y. Pair K sends R-KEY, at the same d_k in both runs; pair N sends no key.
-  - *Expected:* only the order is graded.
-    - Pair N: D_Y = D_X. Without a key, CNT is high throughout ("Before the transmission starts, both KCLK and KDAT are high", p357), so mode 11 counts every timer A underflow that mode 10 counts: "1 0 Timer B counts Timer A underflow pulses; 1 1 Timer B counts Timer A underflow pulses while CNT pin is held high" (p349).
-    - Pair K: D_Y < D_X. With a key, KCLK goes low once per bit ("a pulse on KCLK (low then high)", p357) for "about 20 microseconds" (p358), about 14 E periods at 1/10 of the CPU clock (p353, p2), while timer A with latch 3 underflows every 3 or 4 E periods (F3; Section 3, item 1). Underflows then fall while CNT is low, and mode 11 does not count them.
+  - *Expected:* only the order is graded, and only pair N (P8.65-MODE11-PAIRN).
+    - Pair N (graded): D_Y = D_X. Without a key, CNT is high throughout ("Before the transmission starts, both KCLK and KDAT are high", p357), so mode 11 counts every timer A underflow that mode 10 counts: "1 0 Timer B counts Timer A underflow pulses; 1 1 Timer B counts Timer A underflow pulses while CNT pin is held high" (p349).
+    - Pair K: D_Y < D_X. With a key, KCLK goes low once per bit ("a pulse on KCLK (low then high)", p357) for "about 20 microseconds" (p358), about 14 E periods at 1/10 of the CPU clock (p353, p2), while timer A with latch 3 underflows every 3 or 4 E periods (F3; Section 3, item 1). Underflows then fall while CNT is low, and mode 11 does not count them. This is measured, not graded (P8.65-MODE11-PAIRK is printed as a MEASURED line): no port shows KCLK at timer B's CNT input, so a D_Y equal to D_X is as well the answer of an ignored mode-11 selection as of a KCLK that does not reach CNT, and no run of the package separates the two (the two-phase run of P8.65 mode 01 proves a live CNT edge only on a timer that honours the INMODE field). The mode-11 claim has two halves, counting while CNT is high and not counting while it is low; with only the first graded, mode 11's member of the P10 row is not graded.
     - The size of D_X − D_Y is reported, not graded: no page gives the low time exactly, and no port shows KCLK.
   - *Preconditions:*
     - KP, with timer A as the probe: its own run is the pair's program without R-KEY and with CRA ← $21 in place of CRA ← $01, and timer A is unchanged. *Contrast:* its own.
-    - Pair K: the window of P7.5, with i read before CRA's stop write: the code is sent after the ready marker, and i has SP = 1 (CRA bit 6 is 0, input mode). *Contrast:* send the key after CRA's stop write; i then has SP = 0.
-    - In each pair, the two runs' windows, from the marker after CRA's start write to the marker after its stop write, are equally long in system clock cycles, so that modes 10 and 11 are offered the same timer A underflows. *Contrast:* a different wait W in run Y breaks it.
-  - *Contrasting case:* each pair is the other's. Sending the key in pair N gives D_Y < D_X, and "D_Y = D_X" fails; leaving it out of pair K gives D_Y = D_X, and "D_Y < D_X" fails.
+    - **P8.65-MODE11-WINDOW.** In all four runs the ready marker, the ICR read, the marker before CRA's stop write and the marker after it come in that order and W lies in [1500, 3000] E periods; in pair K, the window of P7.5, with i read before CRA's stop write: the code is sent at least 100 E periods after the ready marker and before the ICR read, and i has SP = 1 (CRA bit 6 is 0, input mode). *Contrast:* send the key after CRA's stop write; i then has SP = 0; or wait fewer than 1500 E periods in both runs of pair N.
+    - **P8.65-MODE11-WINPRE.** In each pair, the two runs' windows, from the marker after CRA's start write to the marker after its stop write, are equally long in system clock cycles, so that modes 10 and 11 are offered the same timer A underflows. *Contrast:* a different wait W in run Y (2300 dbra iterations in place of 2200) breaks it.
+    - When P8.65-MODE11-WINDOW or P8.65-MODE11-WINPRE fails, P8.65-MODE11-PAIRN is not graded.
+  - *Contrasting case (pair N, P8.65-MODE11-PAIRN):* run Y with CRB ← $01 (mode 00, φ2) in place of $61: it counts the E cycles of the window, not the timer A underflows, so D_Y ≠ D_X and "D_Y = D_X" fails.
 
 #### P8.7: Bit 7 is ALARM (1: TOD writes set the alarm; 0: they set the TOD clock)
 
@@ -553,17 +566,18 @@ Source: "1 = writing to TOD registers sets Alarm, 0 = writing to TOD registers s
 - **Stimulus, CIAB.**
   - *Setup:* CRB ← $00. Write TOD ← $000000. Wait at least 20 lines. Read TOD → T0 (bracketed by markers). Read ICR (discard).
   - *Run X:* CRB ← $80. Write TOD registers ← A = T0 + 12. CRB ← $00. Read TOD → T1. R-SAMPLE(n; TODLO, ICR), with n chosen by the builder so that the window covers at least 30 lines (F4).
-  - *Run Y:* the same with CRB kept at $00 during the writes, and A = $001000.
+  - *Run Y:* a run of its own, from reset: the same setup, then CRB kept at $00 during the writes, and A = $001000, T1 and the sampler as in run X. Each run is its own run from reset (Section 1.6); the CRB value of its TOD writes comes from the parameter block (E7).
 - **Expected, CIAB.**
-  - *Run X:* T1 − T0 = the number of lines (F4) between the T0 and T1 read markers, ± 1. The writes did not change TOD.
+  - *Run X (P8.7-RUNX):* T1 − T0 = the number of lines (F4) between the T0 and T1 read markers, ± 1. The writes did not change TOD.
     - The ALRM flag (ICR bit 2) appears. Let m be the index of the first TODLO sample equal to A & $FF; the sampler reads TODLO before ICR in every iteration (R-SAMPLE(n; TODLO, ICR)), so the alarm may already be set by the time iteration m − 1's own ICR is read, before its own TODLO sample has reached A. The first ALRM sample is ICR_(m−1) or ICR_m; no earlier ICR sample has ALRM.
     - The last two points rest on "A programmable alarm is provided for generating an interrupt at a desired time" (p344).
-  - *Run Y:* T1 − A = the number of lines between the marker after the TODLO write and the T1 read, ± 1.
-    - No ALRM flag appears in the window. The alarm was never written in this run, and "All other registers are reset to zero" (p354) makes it 0. TOD counts up from $001000 and does not reach 0 within the window.
-- **Stimulus, CIAA.** The same setup, with no wait needed. Run X uses A = T0 + $1000; run Y uses A = $001000. The T0 to T1 interval is kept under one frame. The sampler part is omitted.
-- **Expected, CIAA.** Run X: T1 − T0 ∈ [0, 2]. Run Y: T1 − A ∈ [0, 2]. These hold whichever of the two sources on p339 ("VSync or line tick") drives the counter.
-- **Precondition (CIAB).** TOD counts lines. Before run X or Y, two reads 20 lines apart differ by 20 ± 1. *Contrast:* with a 40-line wait, they differ by 40 ± 1.
-- **Contrasting case.** Flipping bit 7 turns run X into run Y and back. The page predicts the opposite outcome for T1 and for the ALRM flag.
+  - *Run Y (P8.7-RUNY):* T1 − A = the number of lines between the marker after the TODLO write and the T1 read, ± 1.
+    - No ALRM flag appears in the window (P8.7-RUNY). The alarm was never written in this run, which starts from reset, and "All other registers are reset to zero" (p354) makes it 0. TOD counts up from $001000 and does not reach 0 within the window.
+- **Stimulus, CIAA.** The same setup, with no wait needed, and each run from reset. Run X uses A = T0 + $1000; run Y uses A = $001000. The T0 to T1 interval is kept under one frame. The sampler part is omitted.
+- **Expected, CIAA.** Run X (P8.7-CIAA-RUNX): T1 − T0 ∈ [0, 2]. Run Y (P8.7-CIAA-RUNY): T1 − A ∈ [0, 2]. These hold whichever of the two sources on p339 ("VSync or line tick") drives the counter.
+- **Precondition (CIAB).** TOD counts lines. Before run X or Y, two reads 20 lines apart differ by 20 ± 1 (P8.7-PRE: in the setup of run X and of run Y, T0 matches the lines between the TOD ← 0 write and the T0 read). *Contrast:* with a 40-line wait, they differ by 40 ± 1; or the LSB of the TOD ← 0 write never written, so that TOD stays stopped.
+- **Population (CIAB, P8.7-POP).** All 450 TODLO stores and all 450 ICR stores of run X's sampler and of run Y's are present. *Contrast:* a sampler of 449 iterations. When P8.7-PRE or P8.7-POP fails, P8.7-RUNX and P8.7-RUNY are not graded.
+- **Contrasting case.** Flipping bit 7 turns run X into run Y and back, in each of the four lines: run X with CRB ← $00 for its TOD writes (the TOD is set to A, and no alarm is set), run Y with CRB ← $80 (the alarm is set to A, and TOD keeps counting from its setup). The page predicts the opposite outcome for T1 and for the ALRM flag.
 
 ---
 
@@ -611,10 +625,11 @@ A run counting CNT with no input (CR ← $27, or CRB ← $27) is not a contrast:
 
 ### P10: Claims that several propositions grade together
 
-Each claim below states more than any one of P1-P9 grades, so no one of them carries its id. The id is carried by an assertion of its own, one per row, per core:
-- it passes when every assertion it lists passed on that core;
+Each claim below states more than any one of P1-P9 grades, so no one of them carries its id. The id is carried by an assertion of its own, one per row, per core, labelled `P10-` and the row's first id:
+- Every member is a verdict of its own, already conjoined with its preconditions: PASS, FAIL, or NOT GRADED when a precondition or a population of the member fails. A member about timer instances has one verdict per instance (CIAA/timer A, CIAA/timer B, CIAB/timer A, CIAB/timer B); an instance whose PRB read-back is not live (Pre1.4/O1) is NOT GRADED, never PASS. A member about the two settings of a bit has one verdict per setting, and a row joins only the setting it names.
+- The row passes when every member it lists passed on that core;
 - it fails when any of them failed;
-- otherwise it is not graded, and its ids go on a record line that names the listed assertion that was not graded.
+- otherwise it is not graded, and its ids go on a record line that names the members that were not graded.
 
 | Claim | Page | What it states | Graded whole by |
 |---|---|---|---|
@@ -622,15 +637,15 @@ Each claim below states more than any one of P1-P9 grades, so no one of them car
 | opus:F-timers.c12, opus:F-timers.c13 | 342 | one bit selects the output while PB on/off is on; every underflow toggles it or gives a one-cycle positive pulse | P3, P4 (all four instances each) |
 | sol:F-cra.c16 | 349 | CRA OUTMODE: 0 pulse, 1 toggle | P3, P4 (timer-A instances) |
 | opus:F-crb.c3, sol:F-crb.c4, sol:F-crb.c13 | 349, 350 | CRB OUTMODE: 0 pulse, 1 toggle | P3, P4 (timer-B instances) |
-| sol:F-cra.c13 | 349 | CRA INMODE: 0 φ2, 1 CNT | P5 (timer-A instances), P7.5 |
-| sol:F-crb.c7, sol:F-crb.c10 | 349, 350 | CRB INMODE: 00 φ2, 01 CNT, 10 timer A underflows, 11 timer A underflows while CNT is high | P5 (timer-B instances), P8.65 modes 01, 10 and 11 |
-| opus:F-cra.c12 | 349 | every 0-setting field of the CRA bitmap (LOAD excepted: it has none, Section 0) | P7.0 (START=0); P1's control (PBON=0); P4, timer-A instances (OUTMODE=0); P7.3 (RUNMODE=0); P7.4 (LOAD reads 0); P5, timer-A instances (INMODE=0); P7.6-CIAA (SPMODE=0, input) |
-| opus:F-cra.c13 | 349 | every 1-setting field of the CRA bitmap | P7.0 (START=1); P1, timer-A instances (PBON=1); P3, timer-A instances (OUTMODE=1); P7.3 (RUNMODE=1); P7.4 (LOAD=1); P7.5 (INMODE=1); P7.6-CIAB (SPMODE=1); P7.7 (bit 7, unaffected) |
-| opus:F-crb.c13 | 350 | every 0-setting field of the CRB bitmap (LOAD excepted: it has none, Section 0) | P8.0 (START=0); P1's control (PBON=0); P4, timer-B instances (OUTMODE=0); P8.3 (RUNMODE=0); P8.4 (LOAD reads 0); P5, timer-B instances (INMODE=00); P8.7 run Y (ALARM=0) |
-| opus:F-crb.c14 | 350 | every 1-setting field of the CRB bitmap | P8.0 (START=1); P1, timer-B instances (PBON=1); P3 and P4, timer-B instances (OUTMODE=1); P8.3 (RUNMODE=1); P8.4 (LOAD=1); P8.65 modes 01, 10 and 11 (INMODE); P8.7 run X (ALARM=1) |
-| opus:F-timers.c6, sol:F-timers.c8 | 341 | the modes "allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms"; sol:F-timers.c8 adds that the latch "is a divider of the input clocking frequency" | P4 (pulse trains); P9 leg F (variable frequency, and the latch as divider) and leg W (variable width); P8.65 mode 10 (timers "linked for extended operations", p341: long delays) |
+| sol:F-cra.c13 | 349 | CRA INMODE: 0 φ2, 1 CNT | P5 (timer-A instances), P7.5 (CIAB), P7.5-CIAA-INMODE |
+| sol:F-crb.c7, sol:F-crb.c10 | 349, 350 | CRB INMODE: 00 φ2, 01 CNT, 10 timer A underflows, 11 timer A underflows while CNT is high | P5 (timer-B instances), P8.65 modes 01 (CIAB), 10 and 11 (mode 11 is graded in its first half only, so its member is not graded) |
+| opus:F-cra.c12 | 349 | every 0-setting field of the CRA bitmap (LOAD excepted: it has none, Section 0) | P7.0-STOP (START=0); P1's control, timer-A instances (PBON=0); P4, timer-A instances (OUTMODE=0); P7.3-CONT (RUNMODE=0); P7.4 (LOAD reads 0); P5, timer-A instances (INMODE=0); P7.6-CIAA (SPMODE=0, input) |
+| opus:F-cra.c13 | 349 | every 1-setting field of the CRA bitmap | P7.0-START (START=1); P1, timer-A instances (PBON=1); P3, timer-A instances (OUTMODE=1); P7.3-ONESHOT (RUNMODE=1); P7.4 (LOAD=1); P7.5 and P7.5-CIAA-INMODE (INMODE=1); P7.6-CIAB (SPMODE=1) |
+| opus:F-crb.c13 | 350 | every 0-setting field of the CRB bitmap (LOAD excepted: it has none, Section 0) | P8.0-STOP (START=0); P1's control, timer-B instances (PBON=0); P4, timer-B instances (OUTMODE=0); P8.3-CONT (RUNMODE=0); P8.4 (LOAD reads 0); P5, timer-B instances (INMODE=00); P8.7 run Y (ALARM=0, both CIAs) |
+| opus:F-crb.c14 | 350 | every 1-setting field of the CRB bitmap | P8.0-START (START=1); P1, timer-B instances (PBON=1); P3, timer-B instances (OUTMODE=1); P8.3-ONESHOT (RUNMODE=1); P8.4 (LOAD=1); P8.65 mode 01 (INMODE=01, CNT); P8.7 run X (ALARM=1, both CIAs) |
+| opus:F-timers.c6, sol:F-timers.c8 | 341 | the modes "allow generation of long time delays, variable width pulses, pulse trains, and variable frequency waveforms"; sol:F-timers.c8 adds that the latch "is a divider of the input clocking frequency" | P4 (pulse trains, all four instances); P9 leg F (variable frequency, and the latch as divider) with P9-LEGF-TRANSITIONS (the waveform's transitions) and leg W (variable width, with P6's frame for its loop); P8.65 mode 10 (timers "linked for extended operations", p341: long delays) |
 
-The sentence of opus:F-timers.c6 names no value. Each capability it lists is shown by the proposition named in its row, and nothing else of it is graded.
+The sentence of opus:F-timers.c6 names no value. Each capability it lists is shown by the proposition named in its row, and nothing else of it is graded. The CRB 1-setting row joins only mode 01 for INMODE; the other modes of the INMODE field are graded by the four-mode row. Bit 7 of CRA (P7.7) is unused and has no 1-setting, so it is in no row; P7.7 is graded on its own.
 
 ---
 
@@ -651,7 +666,7 @@ The sentence of opus:F-timers.c6 names no value. Each capability it lists is sho
 8. **The CIAA TOD source** is "VSync or line tick" (p339). P8.7 grades CIAA only in a way that holds for either source.
 9. **p352's example** sets one-shot mode before writing TAHI, so its TAHI write already starts the timer (p342). Its DMACON write carries the comment "Kill all chip interrupts". This spec takes from p352 only the latch write order.
 10. **The claims' text readings of the bitmaps on p349 and p350** print "=" as "*" or "-" and "1" as "l". The printed images confirm the readings used here.
-11. **KCLK at CIAA's CNT input.** p351 wires CIAA's CNT to KCLK and p357 gives eight KCLK pulses per key code, but no output of the system shows the pulses at the timer's CNT input. A CIAA timer in INMODE = CNT that decrements by more than 8 while one key code is sent is therefore ambiguous: INMODE may be ignored, or KCLK may not reach CNT as the page's pulses. P7.5 grades the CIAB leg, whose CNT nothing drives, and measures the CIAA leg.
+11. **KCLK at CIAA's CNT input.** p351 wires CIAA's CNT to KCLK and p357 gives eight KCLK pulses per key code, but no output of the system shows the pulses at the timer's CNT input. A CIAA timer in INMODE = CNT (CRA, or CRB bits 6-5 = 01) that decrements by more than 8 while one key code is sent is therefore ambiguous: INMODE may be ignored, or KCLK may not reach CNT as the page's pulses. P7.5 and P8.65 mode 01 grade the CIAB leg, whose CNT nothing drives, and measure the CIAA leg; P7.5 also grades CIAA's timer A over an interval in which no CNT edge occurs (P7.5-CIAA-INMODE), which does not depend on the KCLK path. For the same reason P8.65 mode 11's pair K (D_Y < D_X with a key sent) is measured, not graded.
 
 ---
 
@@ -665,7 +680,7 @@ O2 (the drive LED) is not graded at this port. O2's own legs and its calibration
 
 This section is generated from the output `make test` prints on each core (fx68k and TG68K); it contains nothing else.
 
-fx68k: 88 passed, 26 failed. TG68K: 88 passed, 26 failed.
+fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
 
 ### 5.1 Graded lines
 
@@ -721,15 +736,19 @@ fx68k: 88 passed, 26 failed. TG68K: 88 passed, 26 failed.
 | P9-LEGW-GREENCTL-PRE2.3 (#2) | PASS | PASS |
 | P9-LEGW-GREENCTL | PASS | PASS |
 | P70-PRE | PASS | PASS |
-| P7.0 | PASS | PASS |
+| P7.0-STOP | PASS | PASS |
+| P7.0-START | PASS | PASS |
 | P80-PRE | PASS | PASS |
-| P8.0 | PASS | PASS |
+| P8.0-STOP | PASS | PASS |
+| P8.0-START | PASS | PASS |
 | P7.3-PRE | PASS | PASS |
-| P7.3 | PASS | PASS |
+| P7.3-ONESHOT | PASS | PASS |
+| P7.3-CONT | PASS | PASS |
 | P7.3-CONTRAST | PASS | PASS |
-| P8.3 | PASS | PASS |
-| P8.3-CONTRAST | PASS | PASS |
 | P8.3-PRE | PASS | PASS |
+| P8.3-ONESHOT | PASS | PASS |
+| P8.3-CONT | PASS | PASS |
+| P8.3-CONTRAST | PASS | PASS |
 | P7.4-PRE | PASS | PASS |
 | P7.4 | PASS | PASS |
 | P8.4-PRE | PASS | PASS |
@@ -740,24 +759,30 @@ fx68k: 88 passed, 26 failed. TG68K: 88 passed, 26 failed.
 | P7.5-WINDOW-CIAB | PASS | PASS |
 | P7.5 | FAIL | FAIL |
 | P7.5-CONTRAST | PASS | PASS |
-| P8.65-MODE01 | FAIL | FAIL |
+| P7.5-CIAA-INMODE-PRE | PASS | PASS |
+| P7.5-CIAA-INMODE | FAIL | FAIL |
 | P8.65-MODE01-WINDOW | PASS | PASS |
+| P8.65-MODE01-WINDOW-CIAB | PASS | PASS |
+| P8.65-MODE01 | FAIL | FAIL |
+| P8.65-MODE01-CONTRAST | PASS | PASS |
 | P7.6-CIAA | PASS | PASS |
 | P7.6-CIAA-CONTRAST | PASS | PASS |
 | P7.6-CIAB-PRE | PASS | PASS |
 | P7.6-CIAB | FAIL | FAIL |
 | P7.6-CIAB-CONTRAST | PASS | PASS |
 | P7.6-CIAB-GREENCTL | PASS | PASS |
-| P8.65-MODE10 | PASS | PASS |
 | P8.65-MODE10-PRE | PASS | PASS |
-| P8.65-MODE11-PAIRN | PASS | PASS |
-| P8.65-MODE11-PAIRK | FAIL | FAIL |
+| P8.65-MODE10 | PASS | PASS |
+| P8.65-MODE10-CONTRAST | PASS | PASS |
 | P8.65-MODE11-WINDOW | PASS | PASS |
 | P8.65-MODE11-WINPRE | PASS | PASS |
+| P8.65-MODE11-PAIRN | PASS | PASS |
 | P8.7-PRE | PASS | PASS |
+| P8.7-POP | PASS | PASS |
 | P8.7-RUNX | PASS | PASS |
 | P8.7-RUNY | PASS | PASS |
-| P8.7-CIAA | PASS | PASS |
+| P8.7-CIAA-RUNX | PASS | PASS |
+| P8.7-CIAA-RUNY | PASS | PASS |
 | P5-PRE51 | PASS | PASS |
 | P5-PRE52 | PASS | PASS |
 | P5-LEGA | PASS | PASS |
@@ -770,17 +795,17 @@ fx68k: 88 passed, 26 failed. TG68K: 88 passed, 26 failed.
 | P6-P4LOOP | PASS | PASS |
 | P6-P5BLOOP | PASS | PASS |
 | P6-P9LOOP | PASS | PASS |
-| P10 | FAIL | FAIL |
-| P10 (#2) | FAIL | FAIL |
-| P10 (#3) | FAIL | FAIL |
-| P10 (#4) | FAIL | FAIL |
-| P10 (#5) | FAIL | FAIL |
-| P10 (#6) | FAIL | FAIL |
-| P10 (#7) | FAIL | FAIL |
-| P10 (#8) | FAIL | FAIL |
-| P10 (#9) | FAIL | FAIL |
-| P10 (#10) | FAIL | FAIL |
-| P10 (#11) | FAIL | FAIL |
+| P10-sol:F-timers.c13 | FAIL | FAIL |
+| P10-opus:F-timers.c12 | FAIL | FAIL |
+| P10-sol:F-cra.c16 | FAIL | FAIL |
+| P10-opus:F-crb.c3 | FAIL | FAIL |
+| P10-sol:F-cra.c13 | FAIL | FAIL |
+| P10-sol:F-crb.c7 | FAIL | FAIL |
+| P10-opus:F-cra.c12 | FAIL | FAIL |
+| P10-opus:F-cra.c13 | FAIL | FAIL |
+| P10-opus:F-crb.c13 | FAIL | FAIL |
+| P10-opus:F-crb.c14 | FAIL | FAIL |
+| P10-opus:F-timers.c6 | FAIL | FAIL |
 | EP1-PER-RUN | PASS | PASS |
 | EP3-PER-RUN | PASS | PASS |
 | F1-ANCHOR-PER-RUN | PASS | PASS |
@@ -852,28 +877,34 @@ both: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined)
 both: P9-LEGW polls=1/1 icr=$02/$02 s0=$7F/$7F (L=40 / L=100)
 both: P9-LEGW W(40)=? W(100)=? s=5.000000E
 fx68k: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=114.000000 s=10.020101E
-fx68k: P70 CIAA/CRA: u1=$80$00 u2=$80$00 u3=$74$24
-fx68k: P70 CIAB/CRA: u1=$80$00 u2=$80$00 u3=$74$24
-fx68k: P80 CIAA/CRB: u1=$80$00 u2=$80$00 u3=$74$24
-fx68k: P80 CIAB/CRB: u1=$80$00 u2=$80$00 u3=$74$24
+fx68k: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$7424
+fx68k: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$7424
+fx68k: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$7424
+fx68k: P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$7424
 both: P7.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
-both: P8.3 CIAA flags O=1 C=48; CIAB flags O=1 C=48
+both: P8.3 CIAA flags O=1 C=48 stores O=400 C=400; CIAB flags O=1 C=48 stores O=400 C=400
 fx68k: P7.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
-fx68k: P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91; CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91
+fx68k: P8.4 CIAA v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40); CIAB v1=$3819 v2=$4000 c=$00 v3=$FF91 (counted 110, bound 116.40)
 fx68k: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02; CIAB c1(81)=$00 c2(81)=$01 w81=$7C02 c2(01)=$01 w01=$7C02
-fx68k: P7.5-CIAA [p348,p351,p357]: not graded -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT
+fx68k: P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge
 fx68k: P7.5 CIAB v=$0744 W=2236.000000E
-fx68k: P8.65-MODE01 CIAA i=$08 v=$0744; CIAB v=$0744
+fx68k: P7.5-CIAA-INMODE CIAA v1=$0DFE i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0544 (the page's count is 8)
+fx68k: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK pulses) in the window, decremented by 2236 (the page's count is 8) over W=2236.000000E, i=$08, v=$0744; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE field from a KCLK pulse that does not reach CNT
+fx68k: P8.65-MODE01 CIAB v=$0744 W=2236.000000E
 both: P7.6-CIAB TA samples=136 SP seen=no
 both: P8.65-M10 CIAA: measured P(30)=31 (uniquely determined)
 both: P8.65-M10 CIAA: nA=48 v=$FFCF flagged=48
 both: P8.65-M10 CIAB: measured P(30)=31 (uniquely determined)
 both: P8.65-M10 CIAB: nA=48 v=$FFCF flagged=48
-fx68k: P8.65-MODE11 D_X(N)=559 D_Y(N)=559 D_X(K)=559 D_Y(K)=559 window(N)=89440 window(K)=89440
-fx68k: P8.7-PRE CIAB: T0=111 lines-measured=111
+both: P8.65-M10 contrast CIAB: measured P(30)=31 (uniquely determined)
+fx68k: P8.65-M10 contrast CIAB: nA=48 v=$FA0F flagged=48
+fx68k: P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=559 >= D_X(K)=559; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection from a KCLK that does not reach CNT
+fx68k: P8.65-MODE11 D_X(N)=559 D_Y(N)=559 D_X(K)=559 D_Y(K)=559 window(N)=89440/89440 window(K)=89440/89440
+fx68k: P8.7-PRE CIAB run X: T0=111 lines-measured=111
+fx68k: P8.7-PRE CIAB run Y: T0=111 lines-measured=111
 fx68k: P8.7-RUNX CIAB: firstMatch=51 firstALRM=51
-fx68k: P8.7 CIAB T0=111 T1X=112 T1Y=4096 linesX=1 linesY=0
-both: P8.7 CIAA T0=0 T1X=0 T1Y=4096
+fx68k: P8.7 CIAB T0(X)=111 T1X=112 T0(Y)=111 T1Y=4096 linesX=1 linesY=0
+both: P8.7 CIAA T0(X)=0 T1X=0 T0(Y)=0 T1Y=4096
 fx68k: P5-LEGA CIAA/TA tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=48436.000000
 fx68k: P5-LEGA CIAA/TB tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=48436.000000
 fx68k: P5-LEGA CIAB/TA tau1=202160.000000 tau2=1937440.000000 delta1=5054.000000 delta2=48436.000000
@@ -884,22 +915,38 @@ both: P5-PRE53 CIAB/TA: samples=256 values={0.00,2.00}*T_CPU, residues mod T_E={
 both: P5-PRE53 CIAB/TB: samples=256 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
 fx68k: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K3 values={-4.00,-2.00,0.00,2.00,4.00}*T_CPU, residues mod T_E={0,2,4,6,8}; I3=184 clk_sys, T_E=40
 both: P6-P4LOOP PRB values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; ICR values={0.00,2.00}*T_CPU, residues mod T_E={0,2}
-both: per-run population: 124 captures of 109 programs, 124 loaded
+both: P10-sol:F-timers.c13 members: P2(CIAA/TA) NOT GRADED; P2(CIAA/TB) NOT GRADED; P2(CIAB/TA) FAIL; P2(CIAB/TB) FAIL; P3(CIAA/TA) NOT GRADED; P3(CIAA/TB) NOT GRADED; P3(CIAB/TA) FAIL; P3(CIAB/TB) FAIL; P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL
+both: P10-opus:F-timers.c12 members: P3(CIAA/TA) NOT GRADED; P3(CIAA/TB) NOT GRADED; P3(CIAB/TA) FAIL; P3(CIAB/TB) FAIL; P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL
+both: P10-sol:F-cra.c16 members: P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL
+both: P10-opus:F-crb.c3 members: P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P4(CIAA/TB) NOT GRADED; P4(CIAB/TB) FAIL
+both: P10-sol:F-cra.c13 members: P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL
+both: P10-sol:F-crb.c7 members: P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.65-01 FAIL; P8.65-10 PASS; P8.65-11 NOT GRADED
+both: P10-opus:F-cra.c12 members: P7.0-STOP PASS; P1-CONTROL(CIAA/TA) NOT GRADED; P1-CONTROL(CIAB/TA) PASS; P4(CIAA/TA) NOT GRADED; P4(CIAB/TA) FAIL; P7.3-CONT PASS; P7.4 PASS; P5(CIAA/TA) PASS; P5(CIAB/TA) PASS; P7.6-CIAA PASS
+both: P10-opus:F-cra.c13 members: P7.0-START PASS; P1-MAIN(CIAA/TA) NOT GRADED; P1-MAIN(CIAB/TA) FAIL; P3(CIAA/TA) NOT GRADED; P3(CIAB/TA) FAIL; P7.3-ONESHOT PASS; P7.4 PASS; P7.5 FAIL; P7.5-CIAA-INMODE FAIL; P7.6-CIAB FAIL
+both: P10-opus:F-crb.c13 members: P8.0-STOP PASS; P1-CONTROL(CIAA/TB) NOT GRADED; P1-CONTROL(CIAB/TB) PASS; P4(CIAA/TB) NOT GRADED; P4(CIAB/TB) FAIL; P8.3-CONT PASS; P8.4 PASS; P5(CIAA/TB) PASS; P5(CIAB/TB) PASS; P8.7-RUNY PASS
+both: P10-opus:F-crb.c14 members: P8.0-START PASS; P1-MAIN(CIAA/TB) NOT GRADED; P1-MAIN(CIAB/TB) FAIL; P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P8.3-ONESHOT PASS; P8.4 PASS; P8.65-01 FAIL; P8.7-RUNX PASS
+both: P10-opus:F-timers.c6 members: P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL; P9-LEGF PASS; P9-LEGF-TRANSITIONS FAIL; P9-LEGW FAIL; P8.65-10 PASS
+both: per-run population: 130 captures of 115 programs, 130 loaded
 TG68K: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=113.000000 s=10.020101E
-TG68K: P70 CIAA/CRA: u1=$80$00 u2=$80$00 u3=$71$D8
-TG68K: P70 CIAB/CRA: u1=$80$00 u2=$80$00 u3=$71$D8
-TG68K: P80 CIAA/CRB: u1=$80$00 u2=$80$00 u3=$71$D8
-TG68K: P80 CIAB/CRB: u1=$80$00 u2=$80$00 u3=$71$D8
+TG68K: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$71D8
+TG68K: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$71D8
+TG68K: P80 CIAA/CRB: u1=$8000 u2=$8000 u3=$71D8
+TG68K: P80 CIAB/CRB: u1=$8000 u2=$8000 u3=$71D8
 TG68K: P7.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80); CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80)
-TG68K: P8.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E; CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E
+TG68K: P8.4 CIAA v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80); CIAB v1=$3691 v2=$4000 c=$00 v3=$FF7E (counted 129, bound 134.80)
 TG68K: P7.7 CIAA c1(81)=$00 c2(81)=$01 w81=$7B3E c2(01)=$01 w01=$7B3E; CIAB c1(81)=$00 c2(81)=$01 w81=$7B3E c2(01)=$01 w01=$7B3E
-TG68K: P7.5-CIAA [p348,p351,p357]: not graded -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2666 (the page's count is 8) over W=2666.000000E, i=$08, v=$0596; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT
+TG68K: P7.5-CIAA [p348,p351,p357]: not graded as a count -- CIAA's timer A, CRA INMODE=CNT, one key code (eight KCLK pulses) in the window, decremented by 2666 (the page's count is 8) over W=2666.000000E, i=$08, v=$0596; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE bit from a KCLK pulse that does not reach CNT; P7.5-CIAA-INMODE grades the interval with no CNT edge
 TG68K: P7.5 CIAB v=$0596 W=2666.000000E
-TG68K: P8.65-MODE01 CIAA i=$08 v=$0596; CIAB v=$0596
-TG68K: P8.65-MODE11 D_X(N)=666 D_Y(N)=666 D_X(K)=666 D_Y(K)=666 window(N)=106680 window(K)=106680
-TG68K: P8.7-PRE CIAB: T0=133 lines-measured=132
+TG68K: P7.5-CIAA-INMODE CIAA v1=$0D9D i1=$00 (first interval, no CNT edge); after the second start, with one key code: i2=$08 v2=$0335 (the page's count is 8)
+TG68K: P8.65-MODE01 CIAA [p349,p351,p357]: not graded -- CIAA's timer B, CRB INMODE=01, one key code (eight KCLK pulses) in the window, decremented by 2666 (the page's count is 8) over W=2666.000000E, i=$08, v=$0596; no port shows KCLK at the timer's CNT input, so this decrement cannot separate an ignored INMODE field from a KCLK pulse that does not reach CNT
+TG68K: P8.65-MODE01 CIAB v=$0596 W=2666.000000E
+TG68K: P8.65-M10 contrast CIAB: nA=48 v=$FA11 flagged=48
+TG68K: P8.65-MODE11-PAIRK [p349,p357]: not graded -- with a key sent, D_Y(K)=666 >= D_X(K)=666; no port shows KCLK at timer B's CNT input, so D_Y=D_X cannot separate an ignored CRB mode-11 selection from a KCLK that does not reach CNT
+TG68K: P8.65-MODE11 D_X(N)=666 D_Y(N)=666 D_X(K)=666 D_Y(K)=666 window(N)=106680/106680 window(K)=106680/106680
+TG68K: P8.7-PRE CIAB run X: T0=133 lines-measured=132
+TG68K: P8.7-PRE CIAB run Y: T0=133 lines-measured=132
 TG68K: P8.7-RUNX CIAB: firstMatch=51 firstALRM=50
-TG68K: P8.7 CIAB T0=133 T1X=134 T1Y=4096 linesX=1 linesY=0
+TG68K: P8.7 CIAB T0(X)=133 T1X=134 T0(Y)=133 T1Y=4096 linesX=1 linesY=0
 TG68K: P5-LEGA CIAA/TA tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
 TG68K: P5-LEGA CIAA/TB tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
 TG68K: P5-LEGA CIAB/TA tau1=241400.000000 tau2=2314520.000000 delta1=6035.000000 delta2=57863.000000
@@ -919,9 +966,6 @@ both: P4 [p341,p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measu
 both: P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with a latch of 42 (P9-LEGF), leg W's the CPU-driven L=40 run made with a latch of 20 (P9-LEGW-GREENCTL); both are selected through NMH_MUTATE
 fx68k: KP-A [SPECIFICATION.md 1.5 KP]: not a gating precondition (it depends on the clause under test, INMODE=CNT). Measured: no-key v=$0748, with-key v=$0748 -- both CNT, so the two cannot be told apart here; P7.5's own CIAB leg carries the red without it
 fx68k: KP-B [SPECIFICATION.md 1.5 KP]: not a gating precondition, the same reason. Measured: no-key v=$0748, with-key v=$0748 -- P8.65 mode 01's own CIAB leg carries the red without it
-both: P8.65-MODE11-PAIRK [SPECIFICATION.md P8.65 mode 11]: a proven-live green input through the same comparator is named but not built here: run Y with CRB<-$40 (mode 10, START=0) gives D_Y=0<D_X, the same "less than" the red uses -- not exercised, by a scope decision: the package's other green controls cover P3, the CIA-B legs of P7.5 and P8.65 mode 01, P7.6-CIAB and P7.7
-both: P8.65-MODE11-CONTRAST [SPECIFICATION.md P8.65 mode 11]: each pair is the other's own contrast (sending the key in pair N, or leaving it out of pair K), for D_X=D_Y (PAIRN); pair K's own data (D_X=D_Y=559/666) also satisfies PAIRN, so that half is not distinguishable from PAIRN's own baseline on this build. A run with CRB<-$01 (mode 00, phi2) gives a usable contrast instead (NMH_MUTATE=M11-MODE00CONTRAST)
-both: P8.7-RUNY [SPECIFICATION.md P8.7]: run Y follows run X in the same program rather than being its own run from reset (SPECIFICATION.md 1.6, "each leg of a proposition is its own run from reset unless its stimulus says otherwise"; P8.7's own stimulus does not say otherwise) -- its own alarm holds T0+12 (set by run X, since CRB stays $00 through run Y and nothing clears it) rather than the reset value 0 the page's own prediction argues from; measured, the prediction (no ALRM in run Y, T1-A within the lines elapsed) holds either way
 both: opus:F-signals.c2, sol:F-signals.c70 [p353]: withdrawn whole -- the claims say that phi2 is connected to the 680x0 "E" clock. P5-LEGA and P5-LEGB measure the rate at which a timer counting phi2 decrements, which a timer clock of its own, divided by ten, would also give; whether phi2 is the E clock itself is not observable at this boundary
 both: opus:F-portsig.c47 [p351]: declined whole -- "PC...not used" (CIAB); no output this package sees shows a PC pin on either CIA, and "not used" describes no behaviour
 both: opus:F-signals.c1, sol:F-signals.c69 [p353]: declined whole -- both say phi2 is a "TTL compatible input", an electrical property of an input pin that nothing a test sees depends on

@@ -1,6 +1,6 @@
-; P8.65-MODE01-CIAB-GREENCTL: CRB<-$20 (INMODE=CNT, START=0) in place of
-; $21. See p75_body.s. A proven-live input through the same "v=$1000"
-; comparator P8.65 mode 01's own CIAB leg uses.
+; P8.65 mode 01, CIAB: CRB<-$20 (INMODE=01, START=0) in place of $21: the timer is never started.
+; See p75_body.s.
+START_BRACKET   equ     1
                 include "nanomig.i"
                 include "ciaregs.i"
 CR              equ     CIAB_CRB

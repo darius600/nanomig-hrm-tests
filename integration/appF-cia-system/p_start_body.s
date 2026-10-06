@@ -5,6 +5,8 @@
 ; Wrapper symbols:
 ;   CR,TLO,THI,ICR  -- this instance's control/timer/ICR register addresses
 ;   ICRMASK         -- ICR_TA or ICR_TB
+; Optional: MUT_ST_PRE (R-LATCH($0100): an underflow happens), MUT_ST_CONTRAST (CR<-$01 during the
+;           first delay), MUT_ST_NOSTART (CR<-$00 as the start write)
 ;
 ; SPECIFICATION.md P7.0/P8.0.
 
@@ -39,7 +41,11 @@ start:
         READ_TIMER THI,TLO,PST_U2
 
         move.w  #MARKER_SENTINEL,MK_ST_A
+        ifd     MUT_ST_NOSTART
+        move.b  #$00,CR                 ; contrast: the start write leaves START=0, u3=u2
+        else
         move.b  #$01,CR                 ; START
+        endc
         move.w  #MARKER_SENTINEL,MK_ST_B
 
         move.w  #$0BB8,d7              ; ~1000 E periods
