@@ -62,7 +62,7 @@ inline void run_uhres(Checks& ck, Shared& sh) {
     if (mut("PR-U2")) b1 = "prog_u1_skip.bin";
     if (mut("PR-U3")) b1 = "prog_u1_late.bin";
     if (mut("PR-U4") || mut("PR-9-U4")) b0 = "prog_u1.bin";
-    if (mut("PR-U5")) { b1 = "prog_u1_gate3.bin"; glo1 = 3; }
+    if (mut("PR-U5")) { b1 = "prog_u1_gateB0.bin"; glo1 = 0xB0; }
     if (mut("R2-XCHK-U")) { /* the shared run UR is the mutated one */ }
     if (mut("P3-E1") || mut("P3-AGG") || mut("P6-E1") || mut("P6-AGG")) b1 = "prog_u0.bin";
     if (mut("P3-E2") || mut("P6-E2")) b1 = "prog_u2.bin";

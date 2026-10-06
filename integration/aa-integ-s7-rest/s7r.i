@@ -89,7 +89,7 @@ MARKLOOP        macro
                 lea     $DFF006,a2
                 lea     $DFF004,a3
                 lea     MK,a1
-                moveq   #\4,d5
+                moveq   #(\4)-(((\4)&$80)<<1),d5
                 moveq   #\5,d6
                 move.w  #\1,d3
 .rep\@          move.w  (a2),d0
