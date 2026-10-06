@@ -1309,3 +1309,149 @@ section 1: BZERO's status behaviour is only precondition (ii) here.)
       repeat the DDFSTOP heading and the USE line. The scan (p.21, bands 2
       and 3) shows the USE line with H2 at bit 1 and the tables as quoted
       above.
+
+
+---
+
+## 5 What the build adds
+
+### 5.1 Program and command list
+
+One program, `prog_s4.s`, runs every proposition. It sets the status register to
+0x2700, writes INTENA, INTREQ and DMACON with 0x7FFF, and then interprets a
+command list that the test places in Chip memory at PARAM = $0F0000 before the
+program starts. The command list is the stimulus of a configuration: register
+writes (one MOVE.W per write), Copper lists, sprite data, bit-plane data, blits,
+the vertical-blank loop of 2.2 and the DMACONR sampling loops. PARAM lies below
+$100000, apart from the regions of 2.3 and from the stack, and the program reads it
+only between commands. Commands: W (register write), WVB (wait for V8 = 0 and
+0x04 <= V7-V0 <= 0x14), WL30 (wait for V7-V0 >= 0x30), WLN (wait for V7-V0 >= n),
+MARK (store the configuration index to MARK), CPYD (store DMACONR to the next
+word of MARK + $100), SAMPLE and SSTORE (the DMACONR samples and the bracketing
+store, to SAMP), STORE, COPYW, FILLL, ZERO (CPU writes of data before DMA is
+enabled), RUN20 (the blit-time loop of P20) and WBLT, WSAMP (a register write
+immediately followed by a MARK store or by the sampling loop).
+
+MARK words: + 0 the configuration index, + 2 the constant $BEEF (the fixture,
+stored first), + 4 the end marker, + $100 and up the DMACONR copies. The program
+is assembled for the 68000. Z is written with zeros by the CPU (ZERO) before DMA is
+enabled; the planes B1-B4 are written with a counting pattern.
+
+### 5.2 Labels
+
+The first token of an expect label is the label that NMH_MUTATE selects. A
+proposition is `Pn`, a joint assertion `Jn`, a control `Pn-ctl`. Preconditions:
+`Pn-fix` (the fixture constant read back at the end of each run), `Pn-i-RFM`,
+`Pn-i-RFL` (the two parts of precondition (i) of the fetch propositions),
+`Pn-i-RFV` (RF-V), `Pn-ii` ... `Pn-vi` (the numbered preconditions of the
+proposition), `Pn-dm` (the DMACONR copy of the window propositions, which
+the specification lists under P6 (iii) only), `Pn-reg` (the region precondition of
+2.3, evaluated from the port log and from the command list), and for
+P16-P19 `Pn-i` (RF-F), `Pn-ii` (the DMACONR copy), `Pn-reg`. P3 and P4 are graded
+under the preconditions printed for P1 and P2 (the same runs, a subset of their
+configurations). `CONFIG` is the check that every run selects the AA chip set
+(chipset_config 0x10) and 2 MB of Chip memory, `RF-RUNS` the check that P, L and
+A(0x3E) - T0 are the same in every run.
+
+### 5.3 Where the build had to choose
+
+1. **RF-L, "none between the fetch of END and the next T0".** In every field of
+   every run the Copper reads one further word, at the byte address of the
+   word after the list's END instruction, after it has read both words of END
+   (see 5.4). That address lies inside COP. The pages state nothing about a fetch
+   after END, so `Pn-i-RFL` grades the part that has a page (each anchor fetch is
+   read once, A(v+1) - A(v) constant, A(0x3E) - T0 constant, both words of END
+   fetched) and the read after END is a MEASURED line.
+2. **Precondition (ii) of P8-P11.** "DIWHIGH has not been written" is evaluated
+   from the command list: it contains no write of DIWHIGH. Precondition (ii) of
+   P12-P15 ("DIWHIGH written after DIWSTRT and DIWSTOP in the same vertical
+   blank") is evaluated from the command list in the same way.
+3. **Precondition (iv) of P20 and (ii) of P16-P19**, "as written": the stored
+   DMACONR is compared with the bits of the last DMACON write of the command
+   list, so that the mutations of the assertions (which change the written
+   value) leave the precondition true.
+4. **The mutation of P6.** The page predicts Fetch = Win on every input, so no
+   input has the page predict the opposite. The mutation changes where plane 1 is
+   read: from line 0x70 the Copper points BPL1PT at B1 in place of Z, so the set of
+   lines with a read in Z ends early while the window does not. It shows that
+   the comparator can fail; it is not a contrasting case of the page.
+5. **The mutations of P5 and P20**, whose assertions are red, are the control
+   P5-ctl and the implementation record of 5.5.
+
+### 5.4 Measured values
+
+The final run of each core (`make -k -B test`; out_tg68k.txt and out_fx68k.txt).
+Both builds print the same lines except where noted. System clock cycles are
+counted from A(v); P = 8 system clock cycles per memory cycle and L = 1816
+system clock cycles per line in every run on both builds.
+
+```text
+P1 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP
+P1 measured (system clock cycles from A(v)): 0x0028 f=344 l=1688 n=22; 0x0030 f=408 l=1688 n=21; 0x0038 f=472 l=1688 n=20; 0x0040 f=536 l=1688 n=19; 0x0060 f=792 l=1688 n=15; 0x0068 f=856 l=1688 n=14; 0x00B8 f=1496 l=1688 n=4; P = 8
+P2 measured: Copper reads after the second word of the list's END: 6 in 6 fields, at byte address 0x08C2E8, inside COP
+P2 measured (system clock cycles from A(v)): 0x0058 f=472 l=728 n=5; 0x0098 f=472 l=1240 n=13; 0x00B8 f=472 l=1496 n=17; 0x00C8 f=472 l=1624 n=19; 0x00D0 f=472 l=1688 n=20; 0x00D8 f=472 l=1752 n=21; P = 8
+P5 measured: Copper reads after the second word of the list's END: 7 in 7 fields, at byte address 0x08C2E8, inside COP
+P5 measured (system clock cycles from A(v)): H1 f=440 l=1752; H2 f=472 l=1720; H3 f=472 l=1720; C1 f=376 l=1688; C2 f=440 l=1688; C3 f=440 l=1624; P = 8
+P5 measured: the DDFSTRT half (H2 against H1) does not hold, the DDFSTOP half (H2 against H3) does not hold
+P6 measured, configuration 1: Fetch 176 lines (040 - 0EF), Win 176 lines (040 - 0EF), k = 2
+P6 measured, configuration 2: Fetch 80 lines (050 - 09F), Win 80 lines (050 - 09F), k = 2
+P7 measured (bytes): pitch plane 1 / plane 2: M-A 48/64, M-B 50/66, M-C 64/48
+P8 measured (first-last line of Win): 40: 040-0EF; 41: 041-0EF; 42: 042-0EF; 44: 044-0EF; 48: 048-0EF; 50: 050-0EF; 60: 060-0EF; 30: 030-0EF; 70: 070-0EF
+P9 measured (first-last line of Win): B0: 040-0AF; B1: 040-0B0; B2: 040-0B1; B4: 040-0B3; B8: 040-0B7; A0: 040-09F; 90: 040-08F; F0: 040-0EF
+P10 measured (first-last line of Win): 0x4081: 040-0EF; 0xC081: 0C0-0EF
+P11 measured (first-last line of Win): 0x90C1: 040-08F; 0x10C1: 040-10F
+P12 measured (first-last line of Win): DIWHIGH 0x2100: 028-129; 0x2101: 128-129
+P13 measured (first-last line of Win, from line 0x1D): DIWHIGH 0x2100: 028-129; 0x2102: empty
+P14 measured (first-last line of Win): DIWHIGH 0x2000: 028-029; 0x2100: 028-129
+P15 measured (first-last line of Win up to 0x120): DIWHIGH 0x2100: 028-10F; 0x2300: 028-120
+P16 measured (reads per field and plane, BPLEN set / clear): 3520/0, 3520/0, 3520/0, 3520/0, 3520/0, 3520/0, 3520/0, 3520/0
+P17 measured (reads in COP in the two fields, COPEN set / clear): 10 / 0
+P18 measured (BLT_S reads / BLT_D writes): BLTEN set 251 / 252, BLTEN clear 0 / 0
+P19 measured (reads per field and sprite, SPREN set / clear): 20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0,20/0
+P23 measured: DMACONR bit 13 in z0 z1 z2 y0 y1 y2: 111 000
+P20 (CPU accesses inside the blit interval, BLTPRI set / clear)
+    TG68K: 2 / 2073     fx68k: 2 / 1984
+P21 (phase-B samples inside the blit, base run / long phase A)
+    TG68K: 511 / 511    fx68k: 515 / 514
+```
+
+Graded counts: both builds print 149 passed, 2 failed. The two FAIL lines are
+P5 and P20.
+
+P5. DDFSTRT bit 2 (H3) moves the first read of every fetched line 4 memory
+cycles later (f: 440 to 472), but it also moves the last read 4 memory cycles
+earlier (l: 1752 to 1720) with DDFSTOP unchanged; and DDFSTOP bit 2 (0x00D4
+against 0x00D0, DDFSTRT 0x003C) leaves the last read where it was (1720 and
+1720). The control P5-ctl, the same two comparators on bit 3 of both registers
+in hires, prints PASS.
+
+P20. With BLTPRI set, two CPU accesses (a write to SCR and a read in PROG) fall
+inside the open interval between the blitter's first and last access, the
+first 12 system clock cycles after the first blitter access and the second 4
+system clock cycles before the last, on both builds. With BLTPRI clear 2073
+(TG68K) and 1984 (fx68k) fall inside.
+
+### 5.5 Measurements outside the graded run
+
+1. **Window instrument without bit planes.** In the mutation run P6-ii
+   (BPLCON0 = 0x0001, BPU = 0) both builds show no red row between the markers:
+   Win is empty (0 lines) in both configurations, with Fetch empty as well. The statement of
+   2.5 that the window shows "even if no fetch happens on that line" does not
+   hold on either build.
+2. **P20 implementation record.** A private copy of the chip set, outside the
+   repository, in which the CPU is granted no memory cycle while BLTPRI is set
+   and the blitter is busy, and for three bus cycles after, built with the same
+   test source and run on TG68K with NMH_ONLY=P20: P20 prints PASS (0 accesses
+   inside the interval with BLTPRI set, 2073 with it clear), and P20-i to
+   P20-iv print PASS.
+
+### 5.6 Mutations
+
+Every assertion, control and precondition has one record in the header of
+`test_aa_integ_s4.cpp`, selected by `NMH_MUTATE=<label>`. A mutation changes
+the stimulus (the command list, the Copper list or the harness configuration)
+and prints FAIL through the unchanged comparator on both builds, with every run
+reaching DONE. Where the mutated stimulus also changes a neighbouring
+precondition, the record lists it as "Also printing FAIL". P5 and P20 are
+the two assertions that are red in the normal run; their records name the
+green control (5.3, 5.5).

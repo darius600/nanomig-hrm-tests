@@ -19,6 +19,157 @@
 // NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
 //
 // MUTATION_RECORDS_BEGIN
+// MUTATION P5 stimulus green NMH_MUTATE=P5-ctl: the assertion is red on both cores; the control P5-ctl runs the same two comparators on bit 3 of both registers in hires (DDFSTRT 0x0038 against 0x0030, DDFSTOP 0x00D0 against 0x00C8) and prints PASS on both cores; the mutation of P5-ctl (C1 writes DDFSTRT 0x0038) prints FAIL on both cores.
+// MUTATION P20 implementation green NMH_MUTATE=none: the assertion is red on both cores (CPU accesses inside the blit interval with BLTPRI set: see SPECIFICATION.md 5.5); in a private copy of the chip set outside the repository in which the CPU is granted no memory cycle while BLTPRI is set and the blitter is busy and for three bus cycles after, the same comparator prints PASS on TG68K.
+// MUTATION CONFIG stimulus red NMH_MUTATE=CONFIG: the harness runs with chipset_config 0x08 (ECS) in place of 0x10; TG68K FAIL, fx68k FAIL.
+// MUTATION RF-RUNS stimulus red NMH_MUTATE=RF-RUNS: every RF-L WAIT of the DDFSTRT run is WAIT (v,0x0C) in place of (v,0x04), so A(0x3E) - T0 differs from that of the other runs; TG68K FAIL, fx68k FAIL.
+// MUTATION P1 stimulus red NMH_MUTATE=P1: the DDFSTRT write 0x0068 is 0x0058; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-fix stimulus red NMH_MUTATE=P1-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-i-RFM stimulus red NMH_MUTATE=P1-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
+// MUTATION P1-i-RFL stimulus red NMH_MUTATE=P1-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-reg.
+// MUTATION P1-ii stimulus red NMH_MUTATE=P1-ii: the third configuration writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-iii stimulus red NMH_MUTATE=P1-iii: the third configuration writes FMODE 0x0001; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-iv stimulus red NMH_MUTATE=P1-iv: every configuration writes DIWSTRT 0x3D81; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-v stimulus red NMH_MUTATE=P1-v: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-reg stimulus red NMH_MUTATE=P1-reg: the CPU writes to B1 during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P3 stimulus red NMH_MUTATE=P3: the normal row 0x0038 is written as the narrow row 0x0040; TG68K FAIL, fx68k FAIL.
+// MUTATION P2 stimulus red NMH_MUTATE=P2: the DDFSTOP write 0x0098 is 0x00A8; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-fix stimulus red NMH_MUTATE=P2-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-i-RFM stimulus red NMH_MUTATE=P2-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
+// MUTATION P2-i-RFL stimulus red NMH_MUTATE=P2-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2-reg.
+// MUTATION P2-ii stimulus red NMH_MUTATE=P2-ii: the fourth configuration writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-iii stimulus red NMH_MUTATE=P2-iii: the fourth configuration writes FMODE 0x0001; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-iv stimulus red NMH_MUTATE=P2-iv: every configuration writes DIWSTRT 0x3D81; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-v stimulus red NMH_MUTATE=P2-v: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-reg stimulus red NMH_MUTATE=P2-reg: the CPU writes to B1 during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P4 stimulus red NMH_MUTATE=P4: the normal row 0x00D0 is written as the wide row 0x00D8; TG68K FAIL, fx68k FAIL.
+// MUTATION J1 stimulus red NMH_MUTATE=J1: the DDFSTRT write 0x0068 is 0x0058 and the DDFSTOP write 0x0098 is 0x00A8; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1, P2.
+// MUTATION P5-ctl stimulus red NMH_MUTATE=P5-ctl: the control configuration C1 writes DDFSTRT 0x0038 in place of 0x0030; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5.
+// MUTATION P5-fix stimulus red NMH_MUTATE=P5-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P5-i-RFM stimulus red NMH_MUTATE=P5-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
+// MUTATION P5-i-RFL stimulus red NMH_MUTATE=P5-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P5-reg.
+// MUTATION P5-ii stimulus red NMH_MUTATE=P5-ii: a hires configuration writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
+// MUTATION P5-iii stimulus red NMH_MUTATE=P5-iii: a hires configuration writes FMODE 0x0001; TG68K FAIL, fx68k FAIL.
+// MUTATION P5-iv stimulus red NMH_MUTATE=P5-iv: every configuration writes DIWSTRT 0x3D81; TG68K FAIL, fx68k FAIL.
+// MUTATION P5-v stimulus red NMH_MUTATE=P5-v: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P5-vi stimulus red NMH_MUTATE=P5-vi: the hires configurations write BPLCON0 0x1000 (lores); TG68K FAIL, fx68k FAIL.
+// MUTATION P5-reg stimulus red NMH_MUTATE=P5-reg: the CPU writes to B1 during the second field; TG68K FAIL, fx68k FAIL.
+// MUTATION P6 stimulus red NMH_MUTATE=P6: in the W2 field the CPU clears BPLEN when V7-V0 reaches 0x70; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-fix stimulus red NMH_MUTATE=P6-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-i-RFV stimulus red NMH_MUTATE=P6-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-iv.
+// MUTATION P6-i-RFL stimulus red NMH_MUTATE=P6-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-reg.
+// MUTATION P6-i-RFM stimulus red NMH_MUTATE=P6-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
+// MUTATION P6-dm stimulus red NMH_MUTATE=P6-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-reg stimulus red NMH_MUTATE=P6-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P6-ii stimulus red NMH_MUTATE=P6-ii: BPLCON0 is 0x0001 (BPU = 0) throughout; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-iv.
+// MUTATION P6-iv stimulus red NMH_MUTATE=P6-iv: the W2 configuration writes DIWSTOP 0x10C1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-ii.
+// MUTATION P7 stimulus red NMH_MUTATE=P7: M-A writes BPL1MOD 0x0010 in place of 0x0008; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-fix stimulus red NMH_MUTATE=P7-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-i-RFM stimulus red NMH_MUTATE=P7-i-RFM: the second RF-M WAIT is WAIT (0x3C,0xBE) in place of (0x3C,0xC0); TG68K FAIL, fx68k FAIL.
+// MUTATION P7-i-RFL stimulus red NMH_MUTATE=P7-i-RFL: in the second field the CPU rewrites WAIT (0x3E,..) to position 0x0C; TG68K FAIL, fx68k FAIL. Also printing FAIL: P7-reg.
+// MUTATION P7-ii stimulus red NMH_MUTATE=P7-ii: M-B writes FMODE 0x0001; TG68K FAIL, fx68k FAIL. Also printing FAIL: P7-iv.
+// MUTATION P7-iii stimulus red NMH_MUTATE=P7-iii: M-B writes BPLCON0 0x1000 (one plane); TG68K FAIL, fx68k FAIL. Also printing FAIL: P7-iv.
+// MUTATION P7-iv stimulus red NMH_MUTATE=P7-iv: M-B writes DDFSTOP 0x00D0, the value of M-A; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-v stimulus red NMH_MUTATE=P7-v: M-B writes DIWSTRT 0x5081; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-vi stimulus red NMH_MUTATE=P7-vi: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P7-reg stimulus red NMH_MUTATE=P7-reg: the CPU writes to B1 during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P8 stimulus red NMH_MUTATE=P8: the fifth DIWSTRT value 0x4881 is written as 0x4C81; TG68K FAIL, fx68k FAIL.
+// MUTATION P8-fix stimulus red NMH_MUTATE=P8-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P8-i-RFV stimulus red NMH_MUTATE=P8-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL.
+// MUTATION P8-dm stimulus red NMH_MUTATE=P8-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P8-reg stimulus red NMH_MUTATE=P8-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P8-ii stimulus red NMH_MUTATE=P8-ii: the last configuration writes DIWHIGH 0x2001 after DIWSTRT 0x4081; TG68K FAIL, fx68k FAIL.
+// MUTATION P9 stimulus red NMH_MUTATE=P9: the fourth DIWSTOP value 0xB4C1 is written as 0xB6C1; TG68K FAIL, fx68k FAIL.
+// MUTATION P9-fix stimulus red NMH_MUTATE=P9-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P9-i-RFV stimulus red NMH_MUTATE=P9-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL.
+// MUTATION P9-dm stimulus red NMH_MUTATE=P9-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P9-reg stimulus red NMH_MUTATE=P9-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P9-ii stimulus red NMH_MUTATE=P9-ii: the last configuration writes DIWHIGH 0x2100 after DIWSTOP 0xB0C1; TG68K FAIL, fx68k FAIL.
+// MUTATION J2 stimulus red NMH_MUTATE=J2: the fifth DIWSTRT value 0x4881 is written as 0x4C81 and the fourth DIWSTOP value 0xB4C1 as 0xB6C1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P8, P9.
+// MUTATION P10 stimulus red NMH_MUTATE=P10: DIWSTRT 0xC081 is written as 0xC481; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-fix stimulus red NMH_MUTATE=P10-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-i-RFV stimulus red NMH_MUTATE=P10-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-dm stimulus red NMH_MUTATE=P10-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-reg stimulus red NMH_MUTATE=P10-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P10-ii stimulus red NMH_MUTATE=P10-ii: the last configuration writes DIWHIGH 0x2001 after DIWSTRT 0x4081; TG68K FAIL, fx68k FAIL.
+// MUTATION P11 stimulus red NMH_MUTATE=P11: DIWSTOP 0x10C1 is written as 0x90C1; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-fix stimulus red NMH_MUTATE=P11-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-i-RFV stimulus red NMH_MUTATE=P11-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-dm stimulus red NMH_MUTATE=P11-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-reg stimulus red NMH_MUTATE=P11-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P11-ii stimulus red NMH_MUTATE=P11-ii: the last configuration writes DIWHIGH 0x2100 after DIWSTOP 0x90C1; TG68K FAIL, fx68k FAIL.
+// MUTATION J3 stimulus red NMH_MUTATE=J3: the DIWSTRT value 0xC081 is written as 0xC481 and the DIWSTOP value 0x10C1 as 0x90C1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P10, P11.
+// MUTATION P12 stimulus red NMH_MUTATE=P12: DIWHIGH 0x2101 is written as 0x2100; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-fix stimulus red NMH_MUTATE=P12-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-i-RFV stimulus red NMH_MUTATE=P12-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL. Also printing FAIL: P12-iii.
+// MUTATION P12-dm stimulus red NMH_MUTATE=P12-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-reg stimulus red NMH_MUTATE=P12-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-ii stimulus red NMH_MUTATE=P12-ii: the last configuration writes DIWHIGH before DIWSTRT and DIWSTOP; TG68K FAIL, fx68k FAIL.
+// MUTATION P12-iii stimulus red NMH_MUTATE=P12-iii: the second window writes DIWHIGH 0x2102 (start V9); TG68K FAIL, fx68k FAIL.
+// MUTATION P13 stimulus red NMH_MUTATE=P13: DIWHIGH 0x2102 is written as 0x2100; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-fix stimulus red NMH_MUTATE=P13-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-i-RFV stimulus red NMH_MUTATE=P13-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL. Also printing FAIL: P13-iii.
+// MUTATION P13-dm stimulus red NMH_MUTATE=P13-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-reg stimulus red NMH_MUTATE=P13-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-ii stimulus red NMH_MUTATE=P13-ii: the last configuration writes DIWHIGH before DIWSTRT and DIWSTOP; TG68K FAIL, fx68k FAIL.
+// MUTATION P13-iii stimulus red NMH_MUTATE=P13-iii: the base configuration writes DIWHIGH 0x2102; TG68K FAIL, fx68k FAIL.
+// MUTATION P14 stimulus red NMH_MUTATE=P14: DIWHIGH 0x2100 is written as 0x2000; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-fix stimulus red NMH_MUTATE=P14-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-i-RFV stimulus red NMH_MUTATE=P14-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-iii.
+// MUTATION P14-dm stimulus red NMH_MUTATE=P14-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-reg stimulus red NMH_MUTATE=P14-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-ii stimulus red NMH_MUTATE=P14-ii: the last configuration writes DIWHIGH before DIWSTRT and DIWSTOP; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-iii stimulus red NMH_MUTATE=P14-iii: the first configuration writes DIWHIGH 0x2102; TG68K FAIL, fx68k FAIL.
+// MUTATION P15 stimulus red NMH_MUTATE=P15: DIWHIGH 0x2300 is written as 0x2100; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-fix stimulus red NMH_MUTATE=P15-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-i-RFV stimulus red NMH_MUTATE=P15-i-RFV: BPLCON3 is 0x0C00 throughout, the marker block included; TG68K FAIL, fx68k FAIL. Also printing FAIL: P15-iii.
+// MUTATION P15-dm stimulus red NMH_MUTATE=P15-dm: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-reg stimulus red NMH_MUTATE=P15-reg: the CPU writes to Z during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-ii stimulus red NMH_MUTATE=P15-ii: the last configuration writes DIWHIGH before DIWSTRT and DIWSTOP; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-iii stimulus red NMH_MUTATE=P15-iii: the varied configuration writes DIWSTRT 0x2681; TG68K FAIL, fx68k FAIL.
+// MUTATION P16 stimulus red NMH_MUTATE=P16: the BPLEN-clear run writes DMACON 0x8300 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P16-fix stimulus red NMH_MUTATE=P16-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P16-i stimulus red NMH_MUTATE=P16-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
+// MUTATION P16-ii stimulus red NMH_MUTATE=P16-ii: the BPLEN-set run writes DMACON 0x8100 (BPLEN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P16-iii stimulus red NMH_MUTATE=P16-iii: BPLCON0 is 0x0000 (BPU = 0); TG68K FAIL, fx68k FAIL.
+// MUTATION P16-reg stimulus red NMH_MUTATE=P16-reg: the CPU writes to B1 during the observation; TG68K FAIL, fx68k FAIL.
+// MUTATION P17 stimulus red NMH_MUTATE=P17: the COPEN-clear run writes DMACON 0x8280 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P17-fix stimulus red NMH_MUTATE=P17-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P17-i stimulus red NMH_MUTATE=P17-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
+// MUTATION P17-ii stimulus red NMH_MUTATE=P17-ii: the COPEN-set run writes DMACON 0x8080 (COPEN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P17-iii stimulus red NMH_MUTATE=P17-iii: the CPU writes to COP during the first field; TG68K FAIL, fx68k FAIL.
+// MUTATION P18 stimulus red NMH_MUTATE=P18: the BLTEN-clear run writes DMACON 0x8240 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P18-fix stimulus red NMH_MUTATE=P18-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P18-i stimulus red NMH_MUTATE=P18-i: the BLTEN-set run writes DMACON 0x8040 (BLTEN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P18-ii stimulus red NMH_MUTATE=P18-ii: the CPU writes to BLT_S after the BLTSIZE write; TG68K FAIL, fx68k FAIL.
+// MUTATION P19 stimulus red NMH_MUTATE=P19: the SPREN-clear run writes DMACON 0x8220 in place of 0x8200; TG68K FAIL, fx68k FAIL.
+// MUTATION P19-fix stimulus red NMH_MUTATE=P19-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P19-i stimulus red NMH_MUTATE=P19-i: the first run leaves out the wait for V7-V0 >= 0x30 after its first store to MARK; TG68K FAIL, fx68k FAIL.
+// MUTATION P19-ii stimulus red NMH_MUTATE=P19-ii: the SPREN-set run writes DMACON 0x8020 (SPREN without DMAEN); TG68K FAIL, fx68k FAIL.
+// MUTATION P19-reg stimulus red NMH_MUTATE=P19-reg: the CPU writes to SPR0 during the observation; TG68K FAIL, fx68k FAIL.
+// MUTATION P20-fix stimulus red NMH_MUTATE=P20-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P20-i stimulus red NMH_MUTATE=P20-i: the BLTPRI-set run writes BLTSIZE 0x2010 (2048 words); TG68K FAIL, fx68k FAIL.
+// MUTATION P20-ii stimulus red NMH_MUTATE=P20-ii: the BLTPRI-clear run loops 10 times and then waits for the blit to end; TG68K FAIL, fx68k FAIL.
+// MUTATION P20-iii stimulus red NMH_MUTATE=P20-iii: the BLTPRI-set run enables bit-plane DMA (BPLEN, one plane from Z) and starts the blit at V7-V0 >= 0x60; TG68K FAIL, fx68k FAIL.
+// MUTATION P20-iv stimulus red NMH_MUTATE=P20-iv: the BLTPRI-set run stores the DMACONR copy before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P21 stimulus red NMH_MUTATE=P21: the BLTSIZE write is made at the start of phase A; TG68K FAIL, fx68k FAIL.
+// MUTATION P21-fix stimulus red NMH_MUTATE=P21-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P21-i stimulus red NMH_MUTATE=P21-i: BLTSIZE 0x2010 (2048 words); TG68K FAIL, fx68k FAIL.
+// MUTATION P21-ii stimulus red NMH_MUTATE=P21-ii: two vertical blanks are waited out between the BLTSIZE write and phase B; TG68K FAIL, fx68k FAIL.
+// MUTATION P21-iii stimulus red NMH_MUTATE=P21-iii: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P22 stimulus red NMH_MUTATE=P22: the blit is started before s0; TG68K FAIL, fx68k FAIL.
+// MUTATION P22-fix stimulus red NMH_MUTATE=P22-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P22-i stimulus red NMH_MUTATE=P22-i: BLTSIZE 0x2010 (2048 words); TG68K FAIL, fx68k FAIL.
+// MUTATION P22-ii stimulus red NMH_MUTATE=P22-ii: two vertical blanks are waited out between the BLTSIZE write and B1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P22-iv.
+// MUTATION P22-iii stimulus red NMH_MUTATE=P22-iii: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P22-iv stimulus red NMH_MUTATE=P22-iv: B1 has 3000 samples; TG68K FAIL, fx68k FAIL.
+// MUTATION P22-ctl stimulus red NMH_MUTATE=P22-ctl: the control run writes the DMACON 0xC000 and 0x4000 writes in place of the BLTPRI writes; TG68K FAIL, fx68k FAIL.
+// MUTATION P23 stimulus red NMH_MUTATE=P23: blit Y runs between z0 and z1; TG68K FAIL, fx68k FAIL.
+// MUTATION P23-fix stimulus red NMH_MUTATE=P23-fix: the program does not store the constant $BEEF; TG68K FAIL, fx68k FAIL.
+// MUTATION P23-i stimulus red NMH_MUTATE=P23-i: BLTSIZE 0x0408 (128 words per blit); TG68K FAIL, fx68k FAIL.
+// MUTATION P23-ii stimulus red NMH_MUTATE=P23-ii: blit Y has LF7-LF0 = 0x00; TG68K FAIL, fx68k FAIL.
+// MUTATION P23-iii stimulus red NMH_MUTATE=P23-iii: the DMACONR copy is stored before the DMACON write; TG68K FAIL, fx68k FAIL.
+// MUTATION P23-ctl stimulus red NMH_MUTATE=P23-ctl: the control run writes the DMACON 0xA000 and 0x2000 writes in place of the BLTPRI writes; TG68K FAIL, fx68k FAIL.
 // MUTATION_RECORDS_END
 
 #include <algorithm>
@@ -226,6 +377,7 @@ struct ListOpts {
     int h_c0 = 0xC0;
     int lh = 0x04;
     std::map<int, int> lh_line;       // per-line override of the RF-L WAIT's position
+    int ptr_switch = 0;               // mutation: after WAIT (ptr_switch,..) the Copper loads BPL1PT with B1
     uint16_t marker_clear = 0x0C00, marker_set = 0x0C20;
 };
 
@@ -242,6 +394,7 @@ CopList list_a(const ListOpts& o) {
         c.off_wait[v] = c.bytes();
         auto it = o.lh_line.find(v);
         append(c.w, cop_wait(v, it != o.lh_line.end() ? it->second : o.lh));
+        if (o.ptr_switch == v) { append(c.w, cop_move(BPL1PTH, uint16_t(kB1 >> 16))); append(c.w, cop_move(BPL1PTL, uint16_t(kB1))); }
     }
     c.off_end = c.bytes();
     c.w.push_back(0xFFFF); c.w.push_back(0xFFFE);
@@ -1211,7 +1364,8 @@ void proposition_p6() {
     if (mutating("P6-i-RFL")) cfg[1].patch_wait3e = true;
     if (mutating("P6-ii")) wo.bplcon0 = 0x0001;
     if (mutating("P6-iv")) cfg[1].w_diwstop = 0x10C1;
-    if (mutating("P6")) cfg[1].bplen_off_at = 0x70;
+    if (mutating("P6")) wo.lo.ptr_switch = 0x70;       // from line 0x70 the Copper points plane 1 at B1 in place of Z
+    if (mutating("P6-i-RFM")) wo.lo.h_c0 = 0xBE;
     WinRun& w = win_run("W6", cfg, wo);
 
     WPre p = win_pre("P6", w);
@@ -1267,7 +1421,7 @@ void proposition_p8() {
     auto cfg = p8_cfg();
     WinOpts wo;
     win_pre_mutations("P8", cfg, wo, 0);
-    if (mutating("P8")) cfg[4].w_diwstrt = 0x4C81;       // bits 15-8 of the fifth value are written as 0x4C in place of 0x48
+    if (mutating("P8") || mutating("J2")) cfg[4].w_diwstrt = 0x4C81;       // bits 15-8 of the fifth value are written as 0x4C in place of 0x48
     WinRun* w = nullptr;
     if (mutating("P8-ii")) {
         // the contrast writes DIWHIGH <- 0x2001 after DIWSTRT = 0x4081 (start V8 = 1), as the last configuration of its run
@@ -1305,7 +1459,7 @@ void proposition_p9() {
     auto cfg = p9_cfg();
     WinOpts wo;
     win_pre_mutations("P9", cfg, wo, 0);
-    if (mutating("P9")) cfg[3].w_diwstop = 0xB6C1;       // bits 15-8 of the fourth value are written as 0xB6 in place of 0xB4
+    if (mutating("P9") || mutating("J2")) cfg[3].w_diwstop = 0xB6C1;       // bits 15-8 of the fourth value are written as 0xB6 in place of 0xB4
     if (mutating("P9-ii")) { cfg.back().diwhigh = 0x2100; cfg.back().diwstop = 0xB0C1; cfg.back().w_diwstop.reset(); }
     WinRun& w = win_run("W9", cfg, wo);
     WinPropRun r = win_prop_pre("P9", w);
@@ -1331,7 +1485,7 @@ void proposition_p10() {
     cfg[0].diwstrt = 0x4081; cfg[1].diwstrt = 0xC081;
     WinOpts wo;
     win_pre_mutations("P10", cfg, wo, 0);
-    if (mutating("P10")) cfg[1].w_diwstrt = 0xC481;          // 0xC081 is written as 0xC481
+    if (mutating("P10") || mutating("J3")) cfg[1].w_diwstrt = 0xC481;          // 0xC081 is written as 0xC481
     if (mutating("P10-ii")) { cfg.back().diwhigh = 0x2001; cfg.back().diwstrt = 0x4081; cfg.back().w_diwstrt.reset(); }
     WinRun& w = win_run("W10", cfg, wo);
     WinPropRun r = win_prop_pre("P10", w);
@@ -1350,7 +1504,7 @@ void proposition_p11() {
     cfg[0].diwstop = 0x90C1; cfg[1].diwstop = 0x10C1;
     WinOpts wo;
     win_pre_mutations("P11", cfg, wo, 0);
-    if (mutating("P11")) cfg[1].w_diwstop = 0x90C1;          // 0x10C1 is written as 0x90C1
+    if (mutating("P11") || mutating("J3")) cfg[1].w_diwstop = 0x90C1;          // 0x10C1 is written as 0x90C1
     if (mutating("P11-ii")) { cfg.back().diwhigh = 0x2100; cfg.back().diwstop = 0x90C1; cfg.back().w_diwstop.reset(); }
     WinRun& w = win_run("W11", cfg, wo);
     WinPropRun r = win_prop_pre("P11", w);
@@ -1563,6 +1717,14 @@ void vb_loop(Script& s, int nmarks, const std::function<void(Script&)>& body, bo
 
 std::string kind_note(bool a, bool b) { return std::string(a ? "yes" : "no") + "/" + (b ? "yes" : "no"); }
 
+// DMACONR as written: the bits of `mask` of the stored copy equal those of the last DMACON write of the command
+// list, and bit 9 (DMAEN) is set exactly when the write set it.
+bool copy_as_written(const DRun& d, uint16_t mask) {
+    auto w = script_value(d.sc, DMACON);
+    if (!w) return false;
+    return (d.copy & (mask | 0x0200)) == (*w & (mask | 0x0200));
+}
+
 // ---- P16 BPLEN ----
 
 struct P16Opts { uint16_t dmacon; uint16_t bplcon0 = 0x4000; bool fix = true; bool skip_wl30 = false; bool copy_first = false; bool stray = false; };
@@ -1605,8 +1767,8 @@ void proposition_p16() {
     g.expect(ra.fix && rb.fix, "P16-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
     g.expect(i, "P16-i: the spacings of the stores to MARK in the vertical-blank loop agree to within 1 % in both runs (RF-F)");
-    bool ii = (ra.copy & 0x0300) == 0x0300 && (rb.copy & 0x0300) == 0x0200;
-    g.expect(ii, "P16-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 8 as written (1 in the first run, 0 in the second)");
+    bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0100) && copy_as_written(rb, 0x0100);
+    g.expect(ii, "P16-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 8 as written by the command list");
     auto bpu = [](const DRun& d) { auto v = script_value(d.sc, BPLCON0); return v ? (*v >> 12) & 7 : 0; };
     bool iii = bpu(ra) != 0 && bpu(rb) != 0;
     g.expect(iii, "P16-iii: BPU is not 0 in either run (BPLCON0 = 0x4000, BPU = 4)");
@@ -1662,8 +1824,8 @@ void proposition_p17() {
     g.expect(ra.fix && rb.fix, "P17-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
     g.expect(i, "P17-i: the spacings of the stores to MARK in the vertical-blank loop agree to within 1 % in both runs (RF-F)");
-    bool ii = (ra.copy & 0x0280) == 0x0280 && (rb.copy & 0x0280) == 0x0200;
-    g.expect(ii, "P17-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 7 as written (1 in the first run, 0 in the second)");
+    bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0080) && copy_as_written(rb, 0x0080);
+    g.expect(ii, "P17-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 7 as written by the command list");
     bool iii = true;
     for (const DRun* d : {&ra, &rb}) {
         auto f = field_k(*d->r, 0);
@@ -1713,8 +1875,8 @@ void proposition_p18() {
     if (mutating("P18")) b.dmacon = 0x8240;
     DRun ra = drun(s18(a)), rb = drun(s18(b));
     g.expect(ra.fix && rb.fix, "P18-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
-    bool i = (ra.copy & 0x0240) == 0x0240 && (rb.copy & 0x0240) == 0x0200;
-    g.expect(i, "P18-i: the stored DMACONR shows bit 9 (DMAEN) set and bit 6 as written (1 in the first run, 0 in the second)");
+    bool i = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0040) && copy_as_written(rb, 0x0040);
+    g.expect(i, "P18-i: the stored DMACONR shows bit 9 (DMAEN) set and bit 6 as written by the command list");
     auto window = [](const DRun& d) {
         uint64_t t0 = 0, t1 = 0;
         for (const auto& m : d.r->marks) if (m.data == 1) t0 = m.cyc;
@@ -1770,8 +1932,8 @@ void proposition_p19() {
     g.expect(ra.fix && rb.fix, "P19-fix: the program stores the constant $BEEF first and the harness reads it back at the end of each run, before any other result of the run is used");
     bool i = rff_ok(*ra.r, 3) && rff_ok(*rb.r, 3);
     g.expect(i, "P19-i: the spacings of the stores to MARK in the vertical-blank loop agree to within 1 % in both runs (RF-F)");
-    bool ii = (ra.copy & 0x0220) == 0x0220 && (rb.copy & 0x0220) == 0x0200;
-    g.expect(ii, "P19-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 5 as written (1 in the first run, 0 in the second)");
+    bool ii = (ra.copy & 0x0200) && (rb.copy & 0x0200) && copy_as_written(ra, 0x0020) && copy_as_written(rb, 0x0020);
+    g.expect(ii, "P19-ii: the stored DMACONR shows bit 9 (DMAEN) set and bit 5 as written by the command list");
     std::vector<Region> regs;
     std::vector<std::pair<uint32_t, uint32_t>> rr;
     for (int x = 0; x < 8; ++x) { regs.push_back({kSprBase + x * kSprStep, kSprBase + x * kSprStep + 0x100, false}); rr.push_back({kSprBase + x * kSprStep, kSprBase + x * kSprStep + 0x100}); }
@@ -1860,11 +2022,14 @@ P20Res analyse20(const Script& s, int64_t P) {
     // the CPU's accesses: reads in PROG, writes in SCR and MARK
     std::vector<uint64_t> cpu, scr;
     for (const auto& a : d.acc) {
-        if (!a.wr && a.byte >= kProg && a.byte < kProgEnd) cpu.push_back(a.cyc);
-        if (a.wr && a.byte >= kScr && a.byte < kScrEnd) { cpu.push_back(a.cyc); scr.push_back(a.cyc); }
-        if (a.wr && a.byte >= kMark && a.byte < kMarkEnd) cpu.push_back(a.cyc);
+        bool c = false;
+        if (!a.wr && a.byte >= kProg && a.byte < kProgEnd) c = true;
+        if (a.wr && a.byte >= kScr && a.byte < kScrEnd) { c = true; scr.push_back(a.cyc); }
+        if (a.wr && a.byte >= kMark && a.byte < kMarkEnd) c = true;
+        if (!c) continue;
+        cpu.push_back(a.cyc);
+        if (a.cyc > r.first && a.cyc < r.last) { ++r.cpu_in; if (r.cpu_in <= 6) dbg(std::string("CPU ") + (a.wr ? "write " : "read ") + hexs(a.byte) + " in I at +" + std::to_string(a.cyc - r.first) + " of " + std::to_string(r.last - r.first)); }
     }
-    for (uint64_t t : cpu) if (t > r.first && t < r.last) { ++r.cpu_in; if (r.cpu_in <= 6) dbg("CPU access in I at +" + std::to_string(t - r.first) + " of " + std::to_string(r.last - r.first)); }
     // (ii): an access within 64 memory cycles before I and after it, and SCR writes after I
     uint64_t win = uint64_t(64 * P);
     bool before = false, after = false, scr_after = false;
@@ -2245,6 +2410,14 @@ int main(int argc, char** argv) {
     proposition_p23();
     joint_assertions();
     rf_runs();
+    // the claims of SPECIFICATION.md section 1, which no proposition grades
+    checks.record("DECLINED-X-BITS: opus:AA-ddf.use-b00 opus:AA-ddf.use-b08 opus:AA-ddf.use-b09 opus:AA-ddf.use-b10 opus:AA-ddf.use-b11 opus:AA-ddf.use-b12 opus:AA-ddf.use-b13 opus:AA-ddf.use-b14 opus:AA-ddf.use-b15: bits printed X have no stated effect; the programs write them as 0");
+    checks.record("DECLINED-H2: opus:AA-ddf.use-b01: the page names bit 1 H2 and states no condition under which an H2 step moves the fetch");
+    checks.record("DECLINED-VARBEAM: opus:AA-ddf.c10 sol:AA-ddf.c6: no number is given for variable beam counter mode; the programs keep it off");
+    checks.record("DECLINED-MAX-ROWS: opus:AA-ddfstrt.t1 sol:AA-ddfstrt.c5 opus:AA-ddfstop.t3 sol:AA-ddfstop.c7: the rows labelled (max) state a limit that no proposition grades");
+    checks.record("DECLINED-VRAM: opus:AA-dmacon.b09b: the UHRES pointer addresses VRAM and its cycle is identified on the RGA lines, neither of which is a port of nanomig.v");
+    checks.record("DECLINED-NASTY: opus:AA-dmacon.b10b opus:AA-dmacon.b10c: the second name of bit 10 states no behaviour, and /BLS is a pin, not a port");
+    checks.record("DECLINED-STATUS: opus:AA-dmacon.c6: BZERO's status behaviour is only a precondition of P23 and no proposition grades it");
     checks.note("runs started: " + dec(g_runs) + ", reached DONE: " + dec(g_runs_done));
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
