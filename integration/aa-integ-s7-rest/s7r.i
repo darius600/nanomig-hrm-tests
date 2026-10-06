@@ -12,7 +12,7 @@ L               equ     $091000         ; Copper list, 12 bytes
 SDREC           equ     $0C0000         ; setup-done record (MK - 4)
 MK              equ     $0C0004         ; markers
 BUF             equ     $0C0400         ; sample buffer, 64 words
-FIXTURE         equ     $0C0800         ; known constant, stored before anything reads one
+FIXTURE         equ     $0C0800         ; known constant, stored before anything reads one; FIXTURE + 2: end of prologue step 1
 ; DONE_ADDR ($0C0FFE) and PROGRAM_STACK come from nanomig.i
 
 ; ---- custom registers (AA pp. 6-10, offsets from CUSTOM) --------------------
@@ -42,7 +42,7 @@ VTOTAL          equ     $1C8
 ; ---- common prologue, step 1 (SPECIFICATION.md section 2) --------------------
 ; The fixture constant is stored first; then DMACON, INTENA and INTREQ are
 ; cleared (bit 15 = 0), BPLCON0 and COPCON are 0, and BEAMCON0 = $0020
-; (PAL, every other bit 0).
+; (PAL, every other bit 0). The word 1 stored at FIXTURE + 2 marks the end of step 1.
 PROLOGUE        macro
                 ifnd    NOFIX
                 move.w  #$BEEF,FIXTURE
@@ -54,6 +54,7 @@ PROLOGUE        macro
                 move.w  #$0000,BPLCON0(a0)
                 move.w  #$0000,COPCON(a0)
                 move.w  #$0020,BEAMCON0(a0)
+                move.w  #$0001,FIXTURE+2
                 endm
 
 ; ---- wait for the start of the vertical blank (prologue step 3) --------------
@@ -82,7 +83,8 @@ EPILOGUE        macro
 ; \1 = Vlo, \2 = Vhi, \3 = V step (1), \4 = gate low byte of H (0x60),
 ; \5 = gate width (0x30). For V = Vlo..Vhi: sample VHPOSR until its low byte
 ; lies in [gate, gate + width); read VPOSR; when the 11-bit line number equals V,
-; store v, then h, at MK + 4*(V - Vlo).
+; store v, then h, at MK + 4*(V - Vlo). With U_RWV defined, the UHRES sprite pointer is
+; written again (U_SPH, U_SPL) right after the marker of line U_RWV.
 MARKLOOP        macro
                 lea     $DFF006,a2
                 lea     $DFF004,a3
@@ -106,6 +108,13 @@ MARKLOOP        macro
                 bne.s   .rep\@
                 move.w  d2,(a1)
                 move.w  d0,2(a1)
+                ifd     U_RWV
+                cmp.w   #U_RWV,d3
+                bne.s   .nrw\@
+                move.w  #U_SPH,SPRHPTH(a0)
+                move.w  #U_SPL,SPRHPTL(a0)
+.nrw\@
+                endc
                 addq.l  #4*\3,a1
                 addq.w  #\3,d3
                 cmp.w   #\2,d3

@@ -215,6 +215,18 @@ inline int line_of(const Markers& m, uint64_t t) {
     return -1;
 }
 
+// The port time of the write of DONE_VALUE to the end marker; 0 when it is missing.
+inline uint64_t end_time(const Cap& c) {
+    for (auto& x : c.acc) if (x.w && x.a == kDone && x.d == 0x600D) return x.t;
+    return 0;
+}
+
+// The port time of the first write to a byte address (with the value, when val >= 0); 0 when none.
+inline uint64_t write_time(const Cap& c, uint32_t addr, int val = -1) {
+    for (auto& x : c.acc) if (x.w && x.a == addr && (val < 0 || x.d == val)) return x.t;
+    return 0;
+}
+
 inline std::string cap_core() { return NMH_XSTR(NANOMIG_CORE_NAME); }
 
 } // namespace s7r

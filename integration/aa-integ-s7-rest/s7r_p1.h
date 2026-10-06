@@ -1,15 +1,9 @@
 // s7r_p1.h -- P1, P2 and the joint assertion P1+P2 (REFPTR), SPECIFICATION.md section 5.
 #pragma once
 
-#include "s7r_p8.h"
+#include "s7r_u.h"
 
 namespace s7r {
-
-// The port time of the write of DONE_VALUE to the end marker; 0 when it is missing.
-inline uint64_t end_time(const Cap& c) {
-    for (auto& x : c.acc) if (x.w && x.a == kDone && x.d == 0x600D) return x.t;
-    return 0;
-}
 
 // The Copper's reads of the list L: word offsets 0, 2, 4, 6, 8, 10 -> their port times and data.
 struct CopList {
@@ -84,9 +78,9 @@ inline bool refresh_every_line(const Cap& c, uint64_t t0, uint64_t t1, double K)
     return true;
 }
 
-inline void run_refptr(Checks& ck, const HvResult& hv) {
-    const bool kok = hv.conv.ok;
-    const double K = kok ? hv.conv.K : 0.0;
+inline void run_refptr(Checks& ck, Shared& sh) {
+    const bool kok = sh.hv.conv.ok;
+    const double K = kok ? sh.hv.conv.K : 0.0;
     RefRun RA, RB, RE, RNA, RNB, RA0, RB0;
     RA.nm = "RA"; RB.nm = "RB"; RE.nm = "RE"; RNA.nm = "RNA"; RNB.nm = "RNB"; RA0.nm = "RA0"; RB0.nm = "RB0";
     RA.val = 0x5555; RB.val = 0xAAAA; RE.val = 0x5555; RNA.val = 0x5555; RNB.val = 0xAAAA; RA0.val = 0x5555; RB0.val = 0xAAAA;
@@ -112,6 +106,9 @@ inline void run_refptr(Checks& ck, const HvResult& hv) {
     bool fx = true;
     for (RefRun* r : {&RA, &RB, &RE, &RNA, &RNB, &RA0, &RB0}) fx = fx && run_ok(r->cap);
     ck.expect(fx, "FIXTURE-REF: runs RA, RB, RE, RNA, RNB, RA0 and RB0 loaded, booted, stored the constant $BEEF at their fixture address, reached DONE and ended with the end marker before any trace is read");
+    bool xc = sh.ur_ok && sh.anchor;
+    for (RefRun* r : {&RA, &RB, &RE, &RNA, &RNB, &RA0, &RB0}) xc = xc && xcheck_cap(r->cap, sh.ur);
+    ck.expect(xc, "R2-XCHK-REF: in RA, RB, RE, RNA, RNB, RA0 and RB0, from the end of prologue step 1 to the end marker, the accesses the refresh output marks are exactly the accesses at the port times of UR's non-CPU accesses");
 
     // PR-1a: the Copper fetches L+0, L+2, L+4, L+6 in this order, once each, with the run's data
     auto want4 = [](const RefRun& r, uint16_t* w) { w[0] = 0x4001; w[1] = 0xFFFE; w[2] = r.da; w[3] = r.val; };
@@ -157,28 +154,28 @@ inline void run_refptr(Checks& ck, const HvResult& hv) {
     if (pr1a) ck.note("P1: refresh accesses between the fetch of L+6 and the end marker: RA " + dec((long long)sA.a.size()) + ", RB " + dec((long long)sB.a.size()) +
                       "; first RA address $" + hex(sA.a.empty() ? 0 : sA.a[0], 6) + " RB $" + hex(sB.a.empty() ? 0 : sB.a[0], 6) + " (" + cap_core() + ")");
 
-    const bool pre1 = pr1a && pr1b && pr1c;
+    const bool pre1 = xc && pr1a && pr1b && pr1c;
     const bool p1rel = pre1 && seq_differs(sA, sB);
     graded(ck, pre1, p1rel,
            "P1: a Copper MOVE to REFPTR (028) with COPCON bit 1 set changes the refresh addresses that follow: the sequence of refresh-access word addresses of RA (data $5555) differs from that of RB (data $AAAA) in at least one position (AA p.27: 'This register is used as a Dynamic RAM refresh address generator', AA p.6 row 028) opus:AA-refptr.c1 opus:AA-refptr.c2 sol:AA-refptr.c1 sol:AA-refptr.c2",
-           "PR-1a / PR-1b / PR-1c");
+           "R2-XCHK-REF / PR-1a / PR-1b / PR-1c");
 
     // contrasts of P1: the same comparator on pairs that the page predicts identical
     {
         RSeq a = refresh_seq(RA.cap, RA.cl.t[3], RA.tend), e = refresh_seq(RE.cap, RE.cl.t[3], RE.tend);
-        bool pre = pr1a && RE.cl.n[3] == 1 && RA.cl.n[3] == 1 && a.t.size() == e.t.size();
+        bool pre = xc && pr1a && RE.cl.n[3] == 1 && RA.cl.n[3] == 1 && a.t.size() == e.t.size();
         graded(ck, pre, seq_identical(a, e),
                "P1-RE: RE, which repeats RA's value $5555, has the same refresh address sequence as RA in every position (a predicted difference of 0)",
-               "PR-1a for RA / the fetch of L+6 in RE");
+               "R2-XCHK-REF / PR-1a for RA / the fetch of L+6 in RE");
         uint16_t wn[4];
         bool pre2 = RNA.tend && RNB.tend && RNA.cl.n[0] == 1 && RNB.cl.n[0] == 1;
         (void)wn;
         uint64_t ta = RNA.cl.n[3] ? RNA.cl.t[3] : 0, tb = RNB.cl.n[3] ? RNB.cl.t[3] : 0;
         RSeq na = refresh_seq(RNA.cap, ta, RNA.tend), nb = refresh_seq(RNB.cap, tb, RNB.tend);
-        pre2 = pre2 && ta && tb && na.t.size() == nb.t.size();
+        pre2 = xc && pre2 && ta && tb && na.t.size() == nb.t.size();
         graded(ck, pre2, seq_identical(na, nb),
                "P1-RN: RNA and RNB, whose Copper MOVE goes to 1FE ('NO-OP(NULL)', AA p.10) instead of 028, have the same refresh address sequence in every position (a predicted difference of 0)",
-               "the Copper's fetch of the MOVE's data word in RNA and RNB");
+               "R2-XCHK-REF / the Copper's fetch of the MOVE's data word in RNA and RNB");
     }
 
     // P2
@@ -191,15 +188,15 @@ inline void run_refptr(Checks& ck, const HvResult& hv) {
         RSeq a0 = pr2b ? refresh_seq(RA0.cap, RA0.cl.t[2], RA0.tend) : RSeq();
         RSeq b0 = pr2b ? refresh_seq(RB0.cap, RB0.cl.t[2], RB0.tend) : RSeq();
         const bool comparable = pr2b && a0.t.size() == b0.t.size() && !a0.t.empty();
-        graded(ck, pr2a && pr2b && comparable, seq_identical(a0, b0),
+        graded(ck, xc && pr2a && pr2b && comparable, seq_identical(a0, b0),
                "P2: with COPCON bit 1 clear the Copper cannot write REFPTR: the refresh address sequences of RA0 (data $5555) and RB0 (data $AAAA) are identical in every position from the Copper's fetch of L+4 to the end marker (AA p.6 legend '~=Address not writable by the Coprocessor unless COPCON bit 1 is set true')",
-               "PR-2a / PR-2b / equal refresh counts");
+               "R2-XCHK-REF / PR-2a / PR-2b / equal refresh counts");
 
         // the joint assertion
-        const bool pre = pr1a && pr1b && pr1c && pr2b && comparable;
+        const bool pre = xc && pr1a && pr1b && pr1c && pr2b && comparable;
         graded(ck, pre, p1rel && seq_identical(a0, b0),
                "P1P2-JOINT: COPCON bit 1 decides whether the Copper can write REFPTR: with it set the refresh address sequences of RA and RB differ, with it clear those of RA0 and RB0 are identical in every position (AA p.6 row 028 '~' and legend; AA p.19 '(if 0, access to RGA>7E)') opus:AA-refptr.c5 sol:AA-refptr.c5",
-               "PR-1a / PR-1b / PR-1c / PR-2b");
+               "R2-XCHK-REF / PR-1a / PR-1b / PR-1c / PR-2b");
     }
 }
 

@@ -1,6 +1,7 @@
 // test_aa_integ_s7_rest.cpp -- aa-integ-s7-rest: see SPECIFICATION.md.
 
 #include "s7r_p1.h"
+#include "s7r_p3.h"
 
 using namespace s7r;
 
@@ -16,11 +17,11 @@ int main(int argc, char** argv) {
         std::string l = std::string(",") + only + ",";
         return l.find(std::string(",") + p + ",") != std::string::npos;
     };
-    HvResult hv;
-    bool have_hv = false;
-    if (want("HV") || want("P8") || want("REF")) { hv = run_hv(ck); have_hv = true; }
-    if (want("REF") && have_hv) run_refptr(ck, hv);
-    if (want("P8") && have_hv) run_p8(ck, hv);
+    Shared sh;
+    if (want("HV") || want("P8") || want("REF") || want("U")) run_shared(ck, sh);
+    if (want("REF")) run_refptr(ck, sh);
+    if (want("U")) run_uhres(ck, sh);
+    if (want("P8")) run_p8(ck, sh.hv);
     std::printf("%d passed, %d failed\n", ck.passed, ck.failed);
     return ck.failed == 0 ? 0 : 1;
 }
