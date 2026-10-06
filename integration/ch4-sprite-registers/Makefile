@@ -29,7 +29,9 @@ PROGS    += prog_cb_o2 prog_cb_oF prog_cb_o0 prog_cb_oD \
             prog_cb_e2_cpusizh prog_cb_e0_cpusizh
 
 # BEAM (P14)
-PROGS    += prog_beam prog_beam_b0 prog_beam_lace1 prog_beam_nolace prog_beam_fix prog_beam_short prog_beam_lowrd
+# (prog_beam_o*: the OCS run, which writes BEAMCON0 sixteen times)
+PROGS    += prog_beam prog_beam_b0 prog_beam_nolace prog_beam_fix prog_beam_short prog_beam_lowrd \
+            prog_beam_o prog_beam_o_lace1 prog_beam_o_nolace prog_beam_o_short prog_beam_o_lowrd prog_beam_o_color
 
 # SHR-SWEEP, SHR-LORES, BITS-OCS (P1, P2, P3)
 PROGS    += prog_shr prog_shr_nosh1 prog_shr_nospr prog_shr_g0h5 prog_shr_fix prog_shr_lowrd prog_shr_u2cl prog_shrl_sw \

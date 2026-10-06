@@ -1448,8 +1448,9 @@ the equality is graded. Sources:
 
 **1. Proposition.** BEAMCON0 ($1DC) exists in the enhanced Agnus and not in the
 standard chip set. Writing its PAL bit turns an NTSC ECS system into PAL line
-timing. The same write on OCS changes nothing. Claim: `APPC2-BEAMCON0.uhres1`.
-Page 298, with pp.304, 305 and 299.
+timing. On OCS, writing any bit that p.305 defines, alone or with the others,
+changes nothing at the port: not the line count, not the sync polarity, not the
+blanking. Claim: `APPC2-BEAMCON0.uhres1`. Page 298, with pp.304, 305 and 299.
 
 **2. Stimulus.** Run BEAM, on ECS NTSC and on OCS NTSC. Both runs need the NTSC
 configuration; if the harness cannot make it, P14 is not made (3.1).
@@ -1463,6 +1464,14 @@ configuration; if the harness cannot make it, P14 is not made (3.1).
 5. Write BEAMCON0 ($DFF1DC) = $0020 (bit 5 "PAL Programmable pal mode enable",
    p.305; all other bits 0).
 6. Wait for 8 VERTB, write M2.
+
+Steps 5 and 6 are the ECS run's. On the OCS run, after M1, the program writes
+BEAMCON0 sixteen times and waits for one VERTB after each write: first each of
+bits 0 to 14 alone ($0001, $0002, $0004, ... $4000), which are the bits p.305
+defines (HSYTRUE, VSYTRUE, CSYTRUE, BLANKEN, VARCSYEN, PAL, DUAL, VARBEAMEN,
+VARHSYEN, VARVSYEN, CSCBEN, LOLDIS, VARVBEN, LPENDIS, HARDDIS), including the
+polarity bits of the H, V and composite sync, then $7FFF, all of them together.
+Then it writes M2.
 
 Steps 1–3 follow the overlay clear of 3.2 and come before anything else.
 
@@ -1479,14 +1488,31 @@ Graded:
   and the pages do not say from which field on a LACE write takes effect.
 - The four N_i starting at the third VSYNC activation after M1.
 
+On the OCS run also the video samples (red, green, blue, hs, vs) of each field,
+a field being the span from one VSYNC activation to the next: the fields before
+M1 from the second VSYNC activation after the program's first instruction fetch
+on, and every complete field after M1 that ends before M2. The harness records hs
+and vs as they are at the video output, so a change of their polarity or of their
+pulses is a different sample.
+
 **4. Expected.**
 
 - ECS: every graded N after M1 is 625.
-- OCS: every graded N after M1 equals the N of the graded frames before M1.
+- OCS: every graded N after M1 equals the N of the graded frames before M1, and
+  every field after M1 is identical, sample for sample (red, green, blue, hs and
+  vs), to the field of the same parity before M1, whichever of the sixteen values
+  was written before it.
 
 No NTSC line count is graded: the pages give 525 (p.24, p.304) and 524 (p.34)
 for an interlaced NTSC frame (2.10). Recorded, not graded: N before M1 on both
 chip sets, and N after M1 on OCS.
+
+The display is stationary in this run (all DMA off, one background colour), so
+a field repeats at the field period and a change at the port is a change the
+write made. p.305 describes BEAMCON0 as "a new register in the enhanced Agnus", so
+on the standard chip set none of its bits has an effect. The line count is graded
+through the refresh groups and the sync polarity, the blanking and the timing of
+every field through the samples.
 
 Sources:
 
@@ -1518,6 +1544,9 @@ writes only the PAL bit.
    lines and in PAL, 312, then 313 lines" (p.24). This shows interlace is on,
    which the frame counts of 2.10 assume. After M1, the ECS value 625 and the
    OCS equality with an interlaced count already need interlace.
+4. In the OCS run the fields before M1 of the same parity are identical, sample
+   for sample, with at least two fields of each parity. This shows the display is
+   stationary, so that a field after M1 can be compared with one before it.
 
 **6. Contrasting cases.**
 
@@ -1533,17 +1562,19 @@ writes only the PAL bit.
 - Precondition 2: PAL selected. N = 625 before M1.
 - Precondition 3: BPLCON0 = $0200 (LACE clear) in step 1. The two fields of a
   frame before M1 have the same length, and the precondition goes red.
+- Precondition 4: in the OCS run, COLOR00 = $0F00 after the third VERTB before M1.
+  The fields before M1 then differ within a parity.
 
 **7. Reference frame.** VSYNC activations on the output and refresh groups
 (R5). Markers M1 and M2 for the timing of the write.
 
-**Open.** What the other BEAMCON0 bits do, and what "UHRES" names (2.4).
+**Open.** What the BEAMCON0 bits do on ECS other than PAL, and what "UHRES" names (2.4).
 
 ---
 
 ## 5. Recorded
 
-Final run of `make -k -B test` on both cores: fx68k 69 passed, 1 failed; TG68K 69 passed, 1 failed.
+Final run of `make -k -B test` on both cores: fx68k 70 passed, 1 failed; TG68K 70 passed, 1 failed.
 The same line is red on both: P1. P2 is NOT GRADED on both. Every other graded line passes on both.
 
 ### 5.1 Programs
@@ -1564,7 +1595,7 @@ and includes the program source; each wrapper is one contrasting case of its pro
 | JUMP | `prog_jump.s` | P10 | RUN-JUMP, FIXTURE-JUMP, P10-PRE2, P10-PRE1, P10-PRE3, P10 |
 | BLIT | `prog_blit.s` | P11 | RUN-BLIT, FIXTURE-BLIT, P11-PRE2, P11-PRE1, P11-PRE3, P11 |
 | COPBLT-v | `prog_cb.s`, wrappers `prog_cb_<o or e><2, F, 0 or D>[_<contrast>].s` | P12, P13 | FIXTURE-CB, P12-PRE1, P12-PRE2, P12-PRE3, P12, P13-PRE1, P13-PRE2, P13-PRE3, P13 |
-| BEAM | `prog_beam.s` | P14 | FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-POP, R5-ANCHOR-BEAM, P14 |
+| BEAM | `prog_beam.s` (the ECS run), wrappers `prog_beam_o*.s` (the OCS run, sixteen BEAMCON0 writes) | P14 | FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-PRE4, P14-POP, R5-ANCHOR-BEAM, P14 |
 | SHR-SWEEP, SHR-LORES, BITS-OCS | `prog_shr.s` (SHR-SWEEP), wrappers `prog_shrl*.s` (SHR-LORES) and `prog_shro*.s` (BITS-OCS) | P1, P2, P3 | FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2, P1-PRE3, P1-CONTROL, P1, P2-PRE1, P2-PRE2, P2-PRE4, P2, P3-PRE1 to P3-PRE5, P3 |
 
 P2's proposition contrast is not P1's run with the Lores program replaced by BPLCON0 = $1240
@@ -1615,7 +1646,7 @@ started).
 | P11 and RUN-BLIT, FIXTURE-BLIT, P11-PRE1 to P11-PRE3 | PASS | exactly four writes at $30200-$30206 and none at $30208, in M1-M2 |
 | P12 and P12-PRE1 to P12-PRE3 | PASS | two graded fields on each chip set; 20 accesses in $30000-$303FF in the first graded field on OCS, 32 on ECS |
 | P13 and P13-PRE1 to P13-PRE3 | PASS | the $0002 and $FFFF outcomes are equal on both chip sets; the $0000 and $FFFD outcomes are equal on both |
-| P14 and P14-PRE1 to P14-PRE3, P14-POP | PASS | N = 525 in every graded frame before M1 on both chip sets; after M1 625 on ECS and 525 on OCS |
+| P14 and P14-PRE1 to P14-PRE4, P14-POP | PASS | N = 525 in every graded frame before M1 on both chip sets; after M1 625 on ECS and 525 on OCS; on OCS the 15 fields after M1 (one per BEAMCON0 value written) are identical, sample for sample, to the field of their parity before M1 |
 | R5-ANCHOR-BEAM, R5-ANCHOR-SHR | PASS | no malformed refresh group; spacing 16 clk_sys cycles |
 
 ### 5.3 Measured, not graded
@@ -1644,5 +1675,6 @@ started).
 
 ### 5.4 Not made
 
-The disk half of P11 and the claims of section 1 have no line. Every other proposition of
-section 4 has its lines above.
+The disk half of P11 and the claims of section 1 have no graded line. Each id of section 1 is
+printed on a `RECORDED` line of its own, with the reason of section 1 (26 ids). Every other
+proposition of section 4 has its lines above.

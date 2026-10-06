@@ -35,7 +35,8 @@
 //   P13-PAIR1, P13-PAIR2, P13-PRE1, P13-PRE2, P13-PRE2-SIZH, P13-PRE3, FIXTURE-CB,
 //   FIXTURE-CB-NODONE (prog_cb_o2_nodone)       -> prog_cb_<o|e><2|F|0|D>[_*].bin
 //   P14-PROP-ECS, P14-PROP-OCS, P14-PRE1 (the ECS slot runs the OCS chip set),
-//   P14-PRE2 (both slots PAL), P14-PRE3, P14-POP, R5-ANCHOR-BEAM, FIXTURE-BEAM,
+//   P14-PRE2 (both slots PAL), P14-PRE3, P14-PRE4 (the OCS slot changes COLOR00 before M1),
+//   P14-POP, R5-ANCHOR-BEAM, FIXTURE-BEAM,
 //   FIXTURE-BEAM-NODONE (prog_beam_nodone)      -> prog_beam_*.bin
 //   P1-CONTROL, P1-PRE1, P1-PRE2, P1-PRE3, P2-PROP, P2-PRE1, P2-PRE2,
 //   P2-DEP (the SHR-SWEEP slot has SHSH1 cleared everywhere), P2-PRE4,
@@ -108,10 +109,11 @@
 // MUTATION P14-PRE1 stimulus red NMH_MUTATE=P14-PRE1: the run declared ECS is configured as OCS -- fx68k/TG68K: FAIL (VPOSR identification $10, expected $30); P14 is NOT GRADED
 // MUTATION P14-PRE2 stimulus red NMH_MUTATE=P14-PRE2: both runs configured PAL -- fx68k/TG68K: FAIL (N=625 before M1); P14-PRE1 moves with it (identification $20 and $00) and P14 is NOT GRADED
 // MUTATION P14-PRE3 stimulus red NMH_MUTATE=P14-PRE3: BPLCON0 = $0200 (LACE clear) in step 1 of both runs -- fx68k/TG68K: FAIL (the two fields of a frame have the same length); P14 is NOT GRADED
-// MUTATION P14-POP stimulus red NMH_MUTATE=P14-POP: three VERTB after M1 instead of eight -- fx68k/TG68K: FAIL (two and three frames after M1 instead of four); P14 is NOT GRADED
-// MUTATION R5-ANCHOR-BEAM stimulus red NMH_MUTATE=R5-ANCHOR-BEAM: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (every refresh group malformed); P14-PRE2 and P14-PRE3 move with it (their scan-line counts use the same groups) and P14 is NOT GRADED
+// MUTATION P14-PRE4 stimulus red NMH_MUTATE=P14-PRE4: in the OCS run COLOR00 = $0F00 is written after the third VERTB before M1 (prog_beam_o_color) -- fx68k/TG68K: FAIL (the fields before M1 of one parity differ); P14 is NOT GRADED
+// MUTATION P14-POP stimulus red NMH_MUTATE=P14-POP: three VERTB after M1 instead of eight (three BEAMCON0 writes in the OCS run instead of sixteen) -- fx68k/TG68K: FAIL (two frames after M1 on ECS instead of four, two fields after M1 on OCS instead of at least 15); P14 is NOT GRADED
+// MUTATION R5-ANCHOR-BEAM stimulus red NMH_MUTATE=R5-ANCHOR-BEAM: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (most refresh groups malformed: ECS 28144 of 29016 and OCS 25448 of 26233 on fx68k); P14-PRE2 and P14-PRE3 move with it (their scan-line counts use the same groups) and P14 is NOT GRADED
 // MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-ECS: BEAMCON0 = $0000 in the ECS run -- fx68k/TG68K: FAIL (ECS frames after M1 stay 525); every precondition holds
-// MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-OCS: BPLCON0 = $0200 (LACE clear) is written at M1 in the OCS run -- fx68k/TG68K: FAIL (OCS frames after M1 are 526, not 525); every precondition holds
+// MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-OCS: BPLCON0 = $0200 (LACE clear) is written at M1 in the OCS run -- fx68k/TG68K: FAIL (OCS frames after M1 are 526, not 525, and every field after M1 differs from the field before it, the first one at field 10); every precondition holds
 // MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR: the SHR-SWEEP run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back SHR-SWEEP=DEAD); P1 and P1-CONTROL are NOT GRADED
 // MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR-NODONE: the SHR-SWEEP run never writes DONE (prog_shr_nodone) -- fx68k/TG68K: FAIL (read back SHR-SWEEP=no-DONE); R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 and P1-PRE3 move with it (the run gives them nothing) and P1 and P1-CONTROL are NOT GRADED
 // MUTATION R5-ANCHOR-SHR stimulus red NMH_MUTATE=R5-ANCHOR-SHR: the VERTB wait loop of the SHR-SWEEP run reads Chip word $0100 on every pass -- fx68k/TG68K: FAIL (every refresh group malformed); P1-PRE2 and P1-PRE3 move with it (their heights use the same groups), P1 and P1-CONTROL are NOT GRADED
@@ -983,10 +985,10 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         for (auto& a : log) if (!a.is_write && a.cycle >= *p[f] && in_sprite0_region(a.word_addr)) { first_after = a.cycle; first_after_addr = a.word_addr; break; }
         std::optional<uint64_t> next_head;
         for (auto h : heads) if (h > *p[f]) { next_head = h; break; }
-        c.note("P9-PRE1 diag field " + std::to_string(f + 1) + ": head " + std::to_string(*start) + " P_f " + std::to_string(*p[f]) +
-               " early " + std::to_string(early) + " first sprite-0 read after P_f " +
+        c.note("P9-PRE1 field " + std::to_string(f + 1) + ": head read " + std::to_string(*start) + ", P_f " + std::to_string(*p[f]) +
+               ", sprite-0 reads before P_f " + std::to_string(early) + ", first one after P_f " +
                (first_after ? std::to_string(*first_after) + " at $" + hex6(first_after_addr * 2) : std::string("none")) +
-               " next head " + (next_head ? std::to_string(*next_head) : std::string("none")));
+               ", next head read " + (next_head ? std::to_string(*next_head) : std::string("none")));
         if (early > 0 || !first_after || *first_after <= *p[f] || (next_head && *first_after > *next_head)) pre1 = false;
     }
     c.expect(pre1, "P9-PRE1: in each field, P_f precedes the first sprite-0 read at the port: no read in $25000-$25FFF or "
@@ -1593,6 +1595,11 @@ struct Run {
     std::vector<long> nb, na;
     bool fields_differ_by_one = false;
     ct::AnchorCount anc_before, anc_after;
+    // fields: index i is the field from VSYNC activation i to i+1; fb before M1, fa after M1 and before M2
+    std::vector<size_t> fb, fa;
+    bool stationary = false, fields_unchanged = false;
+    long parity_before[2] = {0, 0};
+    long first_changed = -1;
 };
 
 // bin: the program; cfg_ecs/cfg_ntsc: what the harness is configured to (the declared
@@ -1631,6 +1638,36 @@ Run do_run(const std::string& dir, const std::string& tag, const std::string& bi
         if (std::labs(f1 - f2) != 1) r.fields_differ_by_one = false;
     }
     for (size_t i : r.after) r.na.push_back(ct::groups_between(r.rg, r.vs[i], r.vs[i + 2]));
+    // the fields themselves, sample for sample (r, g, b, hs, vs)
+    for (size_t i = j0 + 1; i + 1 < r.vs.size() && r.vs[i + 1] < *r.m1; ++i) r.fb.push_back(i);
+    for (size_t i = k0; i + 1 < r.vs.size() && r.vs[i + 1] < *r.m2; ++i) r.fa.push_back(i);
+    auto same_field = [&](size_t a, size_t b) {
+        size_t la = r.vs[a + 1] - r.vs[a], lb = r.vs[b + 1] - r.vs[b];
+        if (la != lb) return false;
+        for (size_t k = 0; k < la; ++k) {
+            const auto& x = video[r.vs[a] + k];
+            const auto& y = video[r.vs[b] + k];
+            if (x.r != y.r || x.g != y.g || x.b != y.b || x.hs != y.hs || x.vs != y.vs) return false;
+        }
+        return true;
+    };
+    // stationary display: the fields before M1 of one parity (the parity of the VSYNC activation's
+    // index) are identical to each other, and there are at least two of each parity
+    bool st = !r.fb.empty();
+    for (size_t x = 0; x < r.fb.size(); ++x) {
+        ++r.parity_before[r.fb[x] % 2];
+        for (size_t y = x + 1; y < r.fb.size(); ++y)
+            if (r.fb[y] % 2 == r.fb[x] % 2 && !same_field(r.fb[x], r.fb[y])) st = false;
+    }
+    r.stationary = st && r.parity_before[0] >= 2 && r.parity_before[1] >= 2;
+    // every field after M1 equals the latest field before M1 of its parity
+    bool un = !r.fa.empty() && r.stationary;
+    for (size_t f : r.fa) {
+        std::optional<size_t> ref;
+        for (size_t g : r.fb) if (g % 2 == f % 2) ref = g;
+        if (!ref || !same_field(*ref, f)) { un = false; if (r.first_changed < 0) r.first_changed = (long)f; }
+    }
+    r.fields_unchanged = un;
     if (!r.before.empty()) r.anc_before = ct::anchor_between(r.rg, r.vs[r.before.front()], r.vs[r.before.back() + 2]);
     if (!r.after.empty()) r.anc_after = ct::anchor_between(r.rg, r.vs[r.after.front()], r.vs[r.after.back() + 2]);
     return r;
@@ -1646,21 +1683,22 @@ bool owns(const std::string& mv) { return mv.empty() || mv.rfind("P14", 0) == 0 
 
 void run(const std::string& dir, const std::string& mv, Checks& c) {
     // slot E: the ECS run; slot O: the OCS run; both NTSC
-    std::string binE = "prog_beam.bin", binO = "prog_beam.bin";
+    std::string binE = "prog_beam.bin", binO = "prog_beam_o.bin";
     bool cfgE_ecs = true, cfgE_ntsc = true, cfgO_ntsc = true;
     bool runE = true, runO = true;
     if (mv == "P14-PROP-ECS") { binE = "prog_beam_b0.bin"; runO = false; }
-    if (mv == "P14-PROP-OCS") { binO = "prog_beam_lace1.bin"; runE = false; }
+    if (mv == "P14-PROP-OCS") { binO = "prog_beam_o_lace1.bin"; runE = false; }
+    if (mv == "P14-PRE4") { binO = "prog_beam_o_color.bin"; runE = false; }
     if (mv == "P14-PRE1") { cfgE_ecs = false; runO = false; }
     if (mv == "P14-PRE2") { cfgE_ntsc = false; cfgO_ntsc = false; }
-    if (mv == "P14-PRE3") { binE = "prog_beam_nolace.bin"; binO = "prog_beam_nolace.bin"; }
-    if (mv == "P14-POP") { binE = "prog_beam_short.bin"; binO = "prog_beam_short.bin"; }
-    if (mv == "R5-ANCHOR-BEAM") { binE = "prog_beam_lowrd.bin"; binO = "prog_beam_lowrd.bin"; }
+    if (mv == "P14-PRE3") { binE = "prog_beam_nolace.bin"; binO = "prog_beam_o_nolace.bin"; }
+    if (mv == "P14-POP") { binE = "prog_beam_short.bin"; binO = "prog_beam_o_short.bin"; }
+    if (mv == "R5-ANCHOR-BEAM") { binE = "prog_beam_lowrd.bin"; binO = "prog_beam_o_lowrd.bin"; }
     if (mv == "FIXTURE-BEAM") { binE = "prog_beam_fix.bin"; runO = false; }
     if (mv == "FIXTURE-BEAM-NODONE") { binE = "prog_beam_nodone.bin"; runO = false; }
     // a single-half proposition contrast and a single-slot precondition contrast still
     // need the other slot's baseline run for the dependent line
-    if (mv == "P14-PROP-ECS" || mv == "P14-PROP-OCS") { runE = true; runO = true; }
+    if (mv == "P14-PROP-ECS" || mv == "P14-PROP-OCS" || mv == "P14-PRE4") { runE = true; runO = true; }
     if (mv == "P14-PRE1" || mv == "FIXTURE-BEAM" || mv == "FIXTURE-BEAM-NODONE") { runE = true; runO = true; }
 
     Run E, O;
@@ -1693,10 +1731,20 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                    " (ECS " + list(E.nb) + ", OCS " + list(O.nb) + ")");
     bool pre3 = E.fields_differ_by_one && O.fields_differ_by_one;
     c.expect(pre3, "P14-PRE3: in every graded frame before M1 the two fields differ in length by one scan line, so interlace is on");
-    bool pop = !E.before.empty() && !O.before.empty() && E.after.size() == 4 && O.after.size() == 4;
-    c.expect(pop, "P14-POP: the graded populations exist -- at least one frame before M1 and four after, on both runs (ECS "
+    c.note("BEAM OCS fields (VSYNC activation to the next): " + num((long)O.fb.size()) + " before M1 (" +
+           num(O.parity_before[0]) + " even, " + num(O.parity_before[1]) + " odd), " + num((long)O.fa.size()) +
+           " after M1 before M2; fields before M1 of one parity identical: " + (O.stationary ? "yes" : "no") +
+           "; every field after M1 identical to the field of its parity before M1: " +
+           (O.fields_unchanged ? "yes" : ("no, first different field " + num(O.first_changed))));
+    bool pre4 = O.stationary;
+    c.expect(pre4, "P14-PRE4: in the OCS run the fields before M1 of the same parity are identical sample for sample (colour, "
+                   "hs and vs), with at least two of each parity, so the display is stationary (fields before M1 "
+                   + num((long)O.fb.size()) + ")");
+    bool pop = !E.before.empty() && !O.before.empty() && E.after.size() == 4 && O.after.size() == 4 && O.fa.size() >= 15;
+    c.expect(pop, "P14-POP: the graded populations exist -- at least one frame before M1 and four after, on both runs, and at "
+                  "least 15 fields after M1 in the OCS run, one per BEAMCON0 value written (ECS "
                   + num((long)E.before.size()) + "+" + num((long)E.after.size()) + ", OCS " + num((long)O.before.size()) +
-                  "+" + num((long)O.after.size()) + ")");
+                  "+" + num((long)O.after.size()) + ", OCS fields after M1 " + num((long)O.fa.size()) + ")");
     bool anc = true;
     for (const Run* r : {&E, &O}) {
         if (r->anc_before.total == 0 || r->anc_after.total == 0) anc = false;
@@ -1708,18 +1756,21 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                   num((long)(O.anc_before.malformed + O.anc_after.malformed)) + " of " +
                   num((long)(O.anc_before.total + O.anc_after.total)) + ")");
 
-    if (!(fx && pre1 && pre2 && pre3 && pop && anc)) {
-        c.record("P14: NOT GRADED, a precondition does not hold (FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-POP or R5-ANCHOR-BEAM)");
+    if (!(fx && pre1 && pre2 && pre3 && pre4 && pop && anc)) {
+        c.record("P14: NOT GRADED, a precondition does not hold (FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-PRE4, P14-POP or R5-ANCHOR-BEAM)");
         return;
     }
     bool ecs_ok = true;
     for (long n : E.na) if (n != 625) ecs_ok = false;
     bool ocs_ok = true;
     for (long n : O.na) if (n != O.nb[0]) ocs_ok = false;
+    ocs_ok = ocs_ok && O.fields_unchanged;
     c.expect(ecs_ok && ocs_ok,
              "P14 (APPC2-BEAMCON0.uhres1): BEAMCON0 is new with ECS -- writing its PAL bit makes the interlaced frame 625 scan lines"
-             " on ECS and changes nothing on OCS (p.298,p.305,p.304,p.24) (ECS frames after M1 " + list(E.na) +
-             "; OCS frames after M1 " + list(O.na) + " against " + num(O.nb.empty() ? -1 : O.nb[0]) + " before)");
+             " on ECS, and on OCS writing each bit p.305 defines alone, then all of them, changes nothing at the port: the frame"
+             " keeps its line count and every field keeps its colour, hs and vs samples (p.298,p.305,p.304,p.24) (ECS frames"
+             " after M1 " + list(E.na) + "; OCS frames after M1 " + list(O.na) + " against " + num(O.nb.empty() ? -1 : O.nb[0]) +
+             " before; OCS fields after M1 identical to their reference " + (O.fields_unchanged ? "yes" : "no") + ")");
 }
 
 } // namespace beam
@@ -2062,6 +2113,50 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
 } // namespace shr
 
 // ============================================================================
+// Claims this package does not assert: one record per id, with the reason of SPECIFICATION.md
+// section 1, so that every id is printed on a RECORDED line and on no graded line.
+// ============================================================================
+namespace declined {
+
+struct Row { const char* id; const char* page; const char* reason; };
+
+const Row kRows[] = {
+    {"CH4-fig47.f10", "p106", "a statement about the corpus, not about the hardware: the page file's ASCII copy of Figure 4-7 repeats 'line 1' where the print says 'last line', and a test cannot observe a transcription"},
+    {"CH4-data.c2", "p129", "'normally used only by the display processor' describes customary use, and 'normally' cannot be checked; the behaviour next to it is graded by P6 without a claim id"},
+    {"APPC2-copcon.c5", "p310", "the pages disagree for ECS with CDANG clear (p.310 and p.21 against p.26, the '~' legend on p.287 and the marks on pp.289-290), so there is no expected value (section 2.1)"},
+    {"APPC2-copcon.c6", "p310", "compares CDANG set on the standard chip set with CDANG clear on ECS, and the ECS-clear half has no expected value (section 2.1)"},
+    {"APPB2-legend.star", "p287", "the '*' rows $000-$03E: for $010-$03E p.21 disagrees with p.287 and p.26, and for ECS with CDANG set p.310 disagrees too (section 2.1); every page agrees only on $000-$00E, whose rows are read-only or early-read dummy addresses, so a Copper write to them has no effect to look for"},
+    {"CH4-APPB-LEGEND.c006", "p287", "the '*' rows $000-$03E: for $010-$03E p.21 disagrees with p.287 and p.26, and for ECS with CDANG set p.310 disagrees too (section 2.1); every page agrees only on $000-$00E, whose rows are read-only or early-read dummy addresses, so a Copper write to them has no effect to look for"},
+    {"APPC2-copcon.conf2", "p310", "records a disagreement between appendix B and appendix C that it calls not resolved (section 2.1), and SPRHDAT's function is never described"},
+    {"APPC2-BEAMCON0.uhres3", "p298", "SPRHDAT is 'Ext. logic UHRES sprite pointer and data id' (p.290); no page describes its bits or any effect a program, the port, the video or the audio could show, and the pages disagree on whether it is an ECS register (section 2.4)"},
+    {"CH4-APPB-LEGEND.c016", "p287", "an early-read DMA transfer from the disk needs data read from a disk surface, and the harness serves no disk image yet; P11 keeps the stimulus for later"},
+    {"APPC2-copcon.c3", "p310", "P12 grades $040-$074 on the standard chip set with CDANG set; the lower end $03E is disputed (section 2.2), and $07E (DSKSYNC) acts only on a disk read, which needs a disk image the harness does not provide"},
+    {"APPC2-copcon.c4", "p310", "P12 grades $040-$074 and $05A-$05E on ECS with CDANG set; 'all of the Amiga chip registers' below $040 is disputed (section 2.1)"},
+    {"APPB2-legend.tilde", "p287", "P12 grades the '~' rows as writable by the Copper with COPCON set true; 'not writable ... unless' (the ban with the bit clear) is disputed (section 2.1)"},
+    {"CH4-APPB-LEGEND.c007", "p287", "P12 grades the '~' rows as writable by the Copper with COPCON set true; 'not writable ... unless' (the ban with the bit clear) is disputed (section 2.1)"},
+    {"APPC-pos.c3", "p303", "P1 grades steps of 70 ns; where those steps lie against the SuperHires pixel grid ('on 70ns boundaries') cannot be seen, because the video output drops every second SuperHires pixel, and for the same reason a finer step could not be seen, so '70 ns granularity' is not graded either"},
+    {"CH4-appC-position.c3", "p303", "P1 grades steps of 70 ns; where those steps lie against the SuperHires pixel grid ('on 70ns boundaries') cannot be seen, because the video output drops every second SuperHires pixel, and for the same reason a finer step could not be seen, so '70 ns granularity' is not graded either"},
+    {"APPC-pos.c13", "p303", "P1 grades that bit 4 acts on ECS and P3 that bits 3 and 4 do nothing on OCS; bit 3 on ECS is '(unimplemented)' (p.303) and has no effect a test could use to show that it exists"},
+    {"CH4-appC-position.c21", "p303", "P1 grades that bit 4 acts on ECS and P3 that bits 3 and 4 do nothing on OCS; bit 3 on ECS is '(unimplemented)' (p.303) and has no effect a test could use to show that it exists"},
+    {"APPB2-legend.er1", "p287", "P11 grades the blitter's destination transfer as a DMA write into Chip memory; the disk half needs a disk image the harness does not provide (CH4-APPB-LEGEND.c016)"},
+    {"APPB2-legend.er2", "p287", "P11 grades the blitter's destination transfer as a DMA write into Chip memory; the disk half needs a disk image the harness does not provide (CH4-APPB-LEGEND.c016)"},
+    {"CH4-APPB-LEGEND.c014", "p287", "P11 grades the blitter's destination transfer as a DMA write into Chip memory; the disk half needs a disk image the harness does not provide (CH4-APPB-LEGEND.c016)"},
+    {"CH4-APPB-LEGEND.c015", "p287", "P11 grades the blitter's destination transfer as a DMA write into Chip memory; the disk half needs a disk image the harness does not provide (CH4-APPB-LEGEND.c016)"},
+    {"CH4-build.c11", "p104", "P7 grades sprite data read by DMA from Chip memory; 'like all other data accessed by the custom chips' covers every DMA channel, and this package reads sprite data only"},
+    {"APPC-pos.c14", "p303", "P2 grades that in Lores bit 4 gives no 70 ns position; 'only available in SuperHires mode' covers Hires too, and for Hires p.303 says the result 'may lead to unpredictable results', so no test sets bit 4 in Hires (section 2.9)"},
+    {"CH4-appC-position.c22", "p303", "P2 grades that in Lores bit 4 gives no 70 ns position; 'only available in SuperHires mode' covers Hires too, and for Hires p.303 says the result 'may lead to unpredictable results', so no test sets bit 4 in Hires (section 2.9)"},
+    {"CH4-fig4-13.c9", "p125", "names two sources for every load, '68000 or DMA'; P5 grades the 68000 loads in the MANUAL run and P6 the DMA loads in the AUTO run, so no single line holds both and neither carries the id"},
+    {"CH4-fig413.f6", "p125", "names two sources for every load, '68000 or DMA'; P5 grades the 68000 loads in the MANUAL run and P6 the DMA loads in the AUTO run, so no single line holds both and neither carries the id"},
+};
+
+void print(Checks& c) {
+    for (const auto& r : kRows)
+        c.record(std::string(r.id) + " [" + r.page + "]: not asserted -- " + r.reason);
+}
+
+} // namespace declined
+
+// ============================================================================
 int main(int argc, char** argv) {
     const std::string dir = argc > 1 ? argv[1] : ".";
     std::printf("CORE: %s\n", NMH_XSTR(NANOMIG_CORE_NAME));
@@ -2080,6 +2175,7 @@ int main(int argc, char** argv) {
         cb::run(dir, mv, c);
         beam::run(dir, mv, c);
         shr::run(dir, mv, c);
+        declined::print(c);
     } else if (mv.rfind("P4", 0) == 0 || mv.rfind("P5", 0) == 0 || mv == "FIXTURE-MANUAL" || mv == "RUN-MANUAL" ||
                mv == "R5-ANCHOR-MANUAL") {
         manual::run(dir, mv, c);
