@@ -211,7 +211,22 @@ B (pp. 289-293) and Appendix A:
   own fixed slot, checked by the test before it relies on anything else
   that program stores. Stored right before the done marker, not first,
   so it cannot disturb the timing any earlier, DMA-dependent measurement
-  in the same program depends on.
+  in the same program depends on. Printed as FIXTURE-CONST; the lines that
+  read a stored result slot (A2, C1, P5, B1, B2) are graded behind it.
+- **Table content on the port.** Every poked table and buffer is checked on
+  the Chip-memory port before a line relies on it (FIXTURE-DATA): every read
+  of a table's words returns the content poked there and every word of it is
+  read; for a disk buffer, whose length one case shortens, every read
+  returns the poked content and at least one read happens. A table's A4, A5
+  and propositions are graded behind its own FIXTURE-DATA line. No graded
+  line of the disk program reads buffer content, so none is graded behind
+  those two.
+- **Result-slot writes.** Every result slot a program stores is written by
+  the program (FIXTURE-WRITE: one CPU write to it on the port); the line
+  that reads the slot (A2, B1 or B2 of a run) is graded behind that slot's
+  line.
+- **Done marker.** Every program ends by writing it (FIXTURE); a run that
+  does not show it grades nothing further.
 
 ### 2.4 Reference frames
 
@@ -300,15 +315,19 @@ unwrapping (below), using only the domain size the harness contract
 states, never a chosen sign bit.
 
 **LEVELS(W): the list of held levels in window W.**
-1. Take the output samples whose time lies in W, as the port's raw 15-bit
-   magnitude.
+1. Start the window on an output transition: its first sample is the first
+   sample at or after t_2 whose raw value differs from the sample before it.
+   Its end is F2's window end, t_(2+N). Take the output samples whose time
+   lies in that window, as the port's raw 15-bit magnitude. If the output
+   does not change inside F2's window (a flat output), the window is F2's
+   window itself.
 2. Split them into runs of identical consecutive values, and note each
    run's value and duration. Consecutive runs never share a value, by this
    construction.
-3. Drop the chronological first and the last run, unconditionally: F2's
-   window boundaries (2.4) are the cycles of a DMA *read*, not of an
-   audio-output *transition*, so the run already in progress at each edge
-   is only ever partly inside the window. A5 (2.7) grades that exactly the
+3. Drop the chronological last run, unconditionally: F2's window end (2.4)
+   is the cycle of a DMA *read*, not of an audio-output *transition*, so the
+   run in progress there is only ever partly inside the window. The first run
+   starts on a transition and is complete. A5 (2.7) grades that exactly the
    expected population of complete held levels remains.
 4. Unwrap the remaining runs' raw values into a continuous sequence: for
    each step from one run's value to the next, add or subtract whole
@@ -396,16 +415,24 @@ A failing precondition means "not graded", never green.
 | A2 | No attach mode: channel 0's data goes to its D/A converter | The stored ADKCONR has bits 7-0 = 0 (p. 265, bits 7-0) | Add ADKCON = $8001 (USE0V1) between the preamble and step 2, before the read. Bit 0 then reads 1. p. 165 predicts channel 0's data goes elsewhere: "AUDxAV Attach volume. Send data to volume latch of next channel instead of to D->A converter" |
 | A3 | Held levels are long enough to resolve | The median run in W_T spans at least 4 output samples | P = 124 (p. 140's minimum), which fails A3 when the harness delivers fewer than about 114,000 samples per second. If the harness is faster, no legal period fails A3; the test states that this case does not apply |
 | A4 | The window holds enough levels, and one LSB is resolved | The list L from LEVELS(W_T) has at least 2K entries for T1, T2 and T2S, and at least K + 1 for T3; the fitted \|b\| is at least 4 steps of the harness's own sample resolution | AUD0VOL = 0 (p. 266: "000000=no output"): the output stays flat, L has at most one entry |
-| A5 | The window's held levels are the complete expected population, with nothing unexplained dropped or added | L's length equals N x K - 1 exactly (N passes, K codes, less the two runs the window's own edges cut, LEVELS step 3) | A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L is one entry short of N x K - 1 |
+| A5 | The window's held levels are the complete population its length holds, with nothing unexplained dropped or added | L's length equals the number of complete held levels a window of its measured length holds: with e - s the window's length and r the median held level in it, both in samples, (e - s - 1) div r | A table with two adjacent equal codes within a pass (T2's own A5 case: word 2 repeats word 1's code) merges what should be two held levels into one; L falls short of that number, by one per pass |
 
-An apparatus note on A5's own bound: N x K - 1, not the N x K - 2 a naive
-reading of "drop the first and last of N x K" would give. Measured, every
-table and every core (section 5): the window's own raw run count is N x K +
-1 -- one more than N x K -- with the two chronologically extreme runs the
-only ones any shorter than the rest, and every run in between exactly the
-same length. A5 grades the deterministic trim (drop the first and last,
-unconditionally) against this measured population, not an invented
-threshold.
+Why A5 counts from the window's length and not from N x K. The window's end is
+the cycle of a DMA read (2.4), and the pages fix no phase between a read and
+the output transition it feeds: p. 141 gives each audio channel one DMA slot
+per horizontal scan line, so a read may wait up to a line for its slot, and
+t_(2+N) - t_2 differs from N x K x r by a skew the pages leave open. The
+window starts on a transition at s, every held level lasts the same time r
+(one sample period, or two for a table whose words repeat a code, p. 143), so
+the transitions fall at s + j x r and a window ending at e holds
+ceil((e - s) / r) runs, the last cut by e or ending on it. LEVELS step 3
+drops that last run either way, which leaves (e - s - 1) div r complete
+levels. That is N x K - 2, N x K - 1 or N x K as the skew falls, so A5 grades
+the number the window's own length gives, which does not depend on the skew.
+It still fails where a level is missing, merged or added: a held level of
+another length changes the number of runs against the length of the window.
+The test also prints, as a MEASURED line and not graded, how that count and
+N x K - 1 compare when the whole window is shifted across one held level.
 
 ---
 
@@ -528,8 +555,8 @@ threshold.
 ### P4: Every one-LSB step moves the output by the same amount
 
 1. **Proposition.** At a fixed volume, every one-LSB step of a data byte
-   moves the audio output by the same amount. Claim: A-audxdat.c5 (p. 265).
-   The 3 mV magnitude is not observable (1.2).
+   moves the audio output by the same amount. No claim id: A-audxdat.c5
+   (p. 265) is declined in full (1.2); the 3 mV magnitude is not observable.
 2. **Stimulus.** The audio program (2.6) with table T3 (all 256 codes, in
    ascending signed order, each word with equal bytes). Volume 64.
    - Why 64: p. 265 names no volume. p. 140 ties the full-range output to
@@ -807,15 +834,24 @@ otherwise.
   each table's first restart, on; what precedes t_2 is the first pass. Per
   table and per core the test prints the first pass's length as a MEASURED
   line that names NM-HRM-084. It is not graded and not counted in
-  passed or failed, so P1-P4, P3B and A1, A3-A5 do not depend on it. For T2S
-  (its own program, `prog_t2s.s`, run from a clean boot independent of
-  T1/T2/T3) the same applies.
-- **A5's population, measured per table and per core (2.7).** Every held
-  run inside a graded window is either one of the two the window's own
-  edges cut (LEVELS step 3) or exactly the same duration as every other
-  run in that window; the raw run count before that trim is N x K + 1 on
-  every table and core where A1 holds, so the trimmed count is N x K - 1
-  exactly, matching A5.
+  passed or failed, so P1-P4, P3B and A1, A3-A5 do not depend on it.
+  Measured, ECS/PAL and OCS/PAL alike: reads of the table's words before
+  t_2, against the table's length. T1: 3 of 4 on both cores. T2: 4 of 4 on
+  both. T3: 255 of 256 on fx68k, 256 of 256 on TG68K. T2S (its own program,
+  `prog_t2s.s`, run from a clean boot independent of T1/T2/T3): 2 of 2 on
+  both. With the anchor taken from t_2, A1 holds for every table on both
+  cores, and P1-P4 and P3B are graded on every run.
+- **A5's population and the window's phase, measured per table and per core
+  (2.7).** The printed window offsets compare t_(2+N) - t_2 with N x K x r
+  (r the held level in samples), in samples. T1: 65376 against 65536 on
+  both cores. T2: 67192 against 65536 on fx68k, 65376 against 65536 on
+  TG68K. T3: 1047832 against 1048576 on both. T2S: 32688 against 32768 on
+  both. The difference is the unspecified phase between the DMA reads and the
+  output (2.7). With the whole window shifted by 16 offsets across one held
+  level, the count A5 grades (floor((e - s - 1) / r)) is what the window
+  holds at 16 of 16 offsets for every table, both cores. N x K - 1 is
+  what it holds at 14 of 16 for T1, 3 of 16 for T2 on fx68k and 15 of 16 on
+  TG68K, 10 of 16 for T3 and 15 of 16 for T2S; the others differ by one.
 - **G1/G2/G3 (P6): declined, not a page disagreement.** ADKCON bit 8 (FAST)
   reads back correctly (B1 holds on both runs, every configuration, both
   cores). Measured D_F equals D_S exactly (310520 `clk_sys` cycles for 512
@@ -823,11 +859,7 @@ otherwise.
   1.336 us (PAL): the measured Chip-memory read rate does not change with
   the FAST bit. This is printed as a MEASURED line, not graded: G1, G2 and
   G3 decline to compare it with the bit-cell time, because no page ties a
-  Chip-memory read rate to that time (1.2, 3). A separate, legal audio-rate
-  capture (AUD0PER=124 then 248), run through the same two comparator
-  formulas G2 and G3 used, comes out green on both cores (a build-side
-  demonstration that the comparator formulas themselves can pass, not a
-  proposition of its own; SPECIFICATION.md's claims are unaffected).
+  Chip-memory read rate to that time (1.2, 3).
 - **Program placement.** The harness's own `PROGRAM_ORG` ($080400) and
   `RESULTS` ($0C0000) sit above $080000, outside the range 2.1 asks the
   DMA-referenced tables and buffers to stay under. Harmless for the stated
@@ -835,21 +867,27 @@ otherwise.
   pointer-width-limited DMA channel, only the CPU itself.
 - **Mutation scope.** Every mutation is replayed on both cores in every
   configuration its own assertion or precondition is graded in (2.1); the
-  F1/B4 contrasting case is ECS only, per 2.4, and the AUDRATE demonstration
-  runs under ECS/PAL alone. The normal run never runs a mutant.
-- **FIXTURE.** Each program (`prog_audio.s`, `prog_t2s.s`, `prog_adkcon.s`,
-  `prog_diskrate.s`) stores its own known constant last, right before DONE,
-  checked by the test before anything else that program stores; the
-  Chip-memory port's first read of every DMA-referenced table and buffer is
-  checked against the content poked there. Measured, TG68K: every FIXTURE-
-  CONST and FIXTURE-DATA check passes on the normal run, and NMH_MUTATE=
-  FIXTURE (each program's own constant changed) turns every FIXTURE-CONST
-  line red, with every other line unaffected. Measured, fx68k: the normal
-  run's own FIXTURE-CONST and FIXTURE-DATA checks pass the same way;
-  NMH_MUTATE=FIXTURE's own capture of `prog_audio.bin`'s mutant does not
-  reach DONE within budget on fx68k (see the mutation table in the test
-  file's own header for this and every other audio mutation's per-core
-  result).
+  F1/B4 contrasting case is ECS only, per 2.4. The normal run never runs a
+  mutant.
+- **Fixture lines (2.3).** Four kinds of line carry no claim: FIXTURE (the program
+  reached the done marker), FIXTURE-CONST (its known constant reads back),
+  FIXTURE-DATA (every read of a table or buffer on the Chip-memory port
+  returns the poked content) and FIXTURE-WRITE (each stored result slot
+  shows one CPU write). Measured, both cores: every one of them passes on
+  the normal run, 118 passed and 0 failed. Each has a selector that makes
+  exactly its own lines print FAIL through the unchanged comparator and
+  moves to RECORDED "not graded" the lines graded behind it. NODONE
+  replaces `prog_audio` by a program that never writes the done marker:
+  FIXTURE red in ECS/PAL and OCS/PAL on both cores. FIXCONST makes every
+  program store a different constant: the nine FIXTURE-CONST lines red;
+  A2, and through it A3-A5 and P1-P4 of every table, C1, P5, and B1 and B2
+  of both disk runs, not graded. FIXDATA pokes one word of each table and
+  both buffers other than the expected content: 14 FIXTURE-DATA lines red
+  (T1, T2, T3, T2S, both buffers); A4, A5 and the propositions of the four
+  tables not graded, A1 and A3 still graded and green. FIXWRITE leaves out
+  the ADKCONR store into A2's slot and run F's store into B1's slot: the
+  five FIXTURE-WRITE lines of those slots red, A2 and B1 for run F (and
+  what A2 gates) not graded.
 - **F1/B4's own contrasting case, measured inside the P6 interval.**
   Rewriting VTOTAL, HTOTAL and BEAMCON0 (2.4) halves the refresh-group
   spacing measured there to 114.00 color clocks on both cores, both ECS
