@@ -11,10 +11,29 @@
 ;          differs.
 ; SLOW     (define before including): each loop body gets a delay of more
 ;          than one video line (about 3.3 lines), and the loops are shorter.
+; W_AT, W_LEN (define before including, with W_V8 or W_H): the reference
+;          loop is split after W_AT reads. W_V8 flips the V8 bit of the
+;          vertical counter (VPOSW) for the next W_LEN reads and flips it back.
+;          W_H writes a horizontal count above $E2 (VHPOSW, with the current
+;          vertical count) and the loop goes on.
+; M_AT, M_LEN (define before including): the same V8 flip inside the
+;          measurement loop, after M_AT of its reads, for M_LEN reads.
 
         include "nanomig.i"
         include "appDE_regs.i"
         org     PROGRAM_ORG
+
+WRITE_V8        macro                   ; flip V8 of the vertical counter (VPOSW)
+        move.w  VPOSR(a6),d2
+        eori.w  #1,d2
+        move.w  d2,VPOSW(a6)
+        endm
+
+WRITE_H         macro                   ; horizontal count $F0, current vertical count (VHPOSW)
+        move.w  VHPOSR(a6),d2
+        move.b  #$F0,d2
+        move.w  d2,VHPOSW(a6)
+        endm
 
 S2_ITERS        equ 3000        ; connector-identity loop iterations
 N_REF           equ 19999       ; DBF count of the reference loop (20000 reads)
@@ -66,6 +85,29 @@ start:
 
 ; ---- S5: reference phase ---------------------------------------------------
         lea     SAMPLES,a0
+        ifd     W_AT
+        move.w  #(W_AT-1),d0
+.refa:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.refa
+        ifd     W_V8
+        WRITE_V8
+        endif
+        ifd     W_H
+        WRITE_H
+        endif
+        move.w  #(W_LEN-1),d0
+.refb:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.refb
+        ifd     W_V8
+        WRITE_V8
+        endif
+        move.w  #(N_REF_USED-W_AT-W_LEN),d0
+.refc:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.refc
+        else
         move.w  #N_REF_USED,d0
 .ref:
         move.l  $DFF004,(a0)+
@@ -74,6 +116,7 @@ start:
 .refdly dbf     d1,.refdly
         endif
         dbf     d0,.ref
+        endif
 
         move.w  #$A001,MARK_REFEND      ; boundary: reference phase done
 
@@ -81,6 +124,22 @@ start:
         move.w  CFG_BPLCON0,$DFF100
 
 ; ---- S7: measurement phase -------------------------------------------------
+        ifd     M_AT
+        move.w  #(M_AT-1),d0
+.meas1:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.meas1
+        WRITE_V8
+        move.w  #(M_LEN-1),d0
+.meas2:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.meas2
+        WRITE_V8
+        move.w  #(N_MEAS_USED-M_AT-M_LEN),d0
+.meas3:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.meas3
+        else
         move.w  #N_MEAS_USED,d0
 .meas:
         move.l  $DFF004,(a0)+
@@ -89,6 +148,7 @@ start:
 .measdly dbf    d1,.measdly
         endif
         dbf     d0,.meas
+        endif
 
 ; ---- S8: done mark ---------------------------------------------------------
         ifd     NO_DONE

@@ -2,49 +2,59 @@
 // every assertion's proposition, page, stimulus and expected value. This
 // file only implements what SPECIFICATION.md already committed to.
 //
-// Built here: P5 (the pen-pressed button) and the light pen, P1-P4 with the
-// preconditions C0-C6 (section 2 of SPECIFICATION.md). Section 0.1 (external
-// disk identification) is not built; the claims of section 0 are named on
-// RECORDED lines.
+// Built here: P5 (the pen-pressed button) in every configuration and the light
+// pen, P1-P4 with the preconditions C0-C6 and the graded line A2 (section 2 of
+// SPECIFICATION.md). Section 0.1 (external disk identification) is not built;
+// the claims of section 0 are named on RECORDED lines.
 //
 // NMH_MUTATE selects a mutated program or a fault-injected parameter in
 // place of its normal counterpart; none is exercised by a plain
 // `make test`. The values that start with LP- run one contrasting light-pen
-// run (ECS, PAL, the harness's joystick1); the others change the P5 run.
+// run (ECS, PAL, the harness's joystick1) beside the run with BPLCON0 bit 3
+// clear; FIX-LOAD and FIX-MARK0 run only the fixture lines; the others change
+// the P5 run (ECS, PAL).
 //
-// P5 records:
-// MUTATION C0 stimulus red the harness drives pin 3 (LEFT*) of the
-//   connector-identity connector instead of pin 4 (RIGHT*), via
-//   NMH_MUTATE=C0
-// MUTATION C1 stimulus red prog_pot_nodone.bin (the done mark is never
-//   stored), via NMH_MUTATE=C1
-// MUTATION P5 stimulus red pin 9 driven instead of pin 5 in the second
-//   low interval, via NMH_MUTATE=P5-PIN9
-// MUTATION P5 stimulus red POTGO's memory word stores $0001 instead of
-//   the declared $0000, via NMH_MUTATE=P5-POTGO
-// MUTATION P5 stimulus red one level interval shortened to under 300us,
-//   via NMH_MUTATE=P5-SHORT
+// Fixture and P5 records:
+// MUTATION FIXTURE-LOAD stimulus red NMH_MUTATE=FIX-LOAD: the harness loads prog_pot_missing.bin, which does not exist; the line prints FAIL and FIXTURE-MARK0 is NOT GRADED
+// MUTATION FIXTURE-MARK0 stimulus red NMH_MUTATE=FIX-MARK0: prog_pot_fix.bin stores $BEEF as its first store; the harness takes the first store to MARK0 whatever it holds and the line prints FAIL
+// MUTATION P5-C1-DONE stimulus red NMH_MUTATE=C1: prog_pot_nodone.bin never stores the done mark; the line prints FAIL and P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
+// MUTATION P5-C0-IDENTITY stimulus red NMH_MUTATE=C0: the harness holds the right mouse button (mouse_buttons bit 1) instead of the left one in the identity loop; neither bit 6 nor bit 7 of CIA-A port A follows and the line prints FAIL
+// MUTATION P5-POTGO-READ stimulus red NMH_MUTATE=P5-POTGO: POTGO's memory word stores $0001 instead of the declared $0000; the line prints FAIL
+// MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-SCHED: the harness also drives joystick0 bit 0 (pin 4 of the other connector) in the second level interval; the log shows changes on an input other than pin 5 and pin 9 and the line prints FAIL
+// MUTATION P5-WINDOW-COUNT stimulus red NMH_MUTATE=P5-SHORT: the third level interval (window 2) lasts 5000 cycles, under the 300 us settle bound; it has no graded sample and the line prints FAIL for window 2
+// MUTATION P5A-PIN5-FOLLOWS stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; pin 5's bit stays 1 and the window-2 line prints FAIL
+// MUTATION P5B-OTHER-POT-BITS-1 stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; POTGOR bit 10 reads 0 and the window-2 line prints FAIL
 //
 // Light-pen records. A record with "private chipset" names a run on a copy of
 // the chipset sources, outside the repository, that contain a latch following
-// p.238 and p.239 (SPECIFICATION.md 4.6): on the repository's chipset
-// the latch lines are red before any stimulus changes, so each of them is
-// shown by an implementation record to pass on a chipset that follows the
-// pages, and by a stimulus record to fail there when the stimulus changes.
-// Both cores give every result below.
-// MUTATION LP-FIXTURE-MARK0 stimulus red NMH_MUTATE=LP-FIX: prog_lpen_fix.bin stores $BEEF instead of $5A5A as its first store; the fixture line prints FAIL and, because the run cannot synchronise on the store, LP-C0-IDENTITY, LP-C1-DONE, LP-C2-STORED, LP-C3-A1-READS-CURRENT and LP-C6-LPENDIS-CLEAR print FAIL as well
+// p.238 and p.239 (SPECIFICATION.md 4.6): on the repository's chipset the
+// latch lines are red before any stimulus changes, so each of them is shown by
+// an implementation record to pass on a chipset that follows the pages, and by
+// a stimulus record to fail there when the stimulus changes. Both cores give
+// every result below. An oracle record changes what the test declares, not
+// what the machine is asked to do.
+// MUTATION LP-FIXTURE-MARK0 stimulus red NMH_MUTATE=LP-FIX: prog_lpen_fix.bin stores $BEEF instead of $5A5A as its first store; the run synchronises on the first store whatever it holds, the fixture line prints FAIL, every other precondition line holds and the proposition lines are NOT GRADED
 // MUTATION LP-C0-IDENTITY stimulus red NMH_MUTATE=LP-C0: S2 drives pin 3 instead of pin 4 of the connector under test; neither JOY0DAT nor JOY1DAT bit 1 follows and the line prints FAIL, the program still finishes
 // MUTATION LP-C1-DONE stimulus red NMH_MUTATE=LP-C1: prog_lpen_nodone.bin never stores the done mark; the line prints FAIL, every sample is still stored
 // MUTATION LP-C2-STORED stimulus red NMH_MUTATE=LP-C2: cfg_BPLCON0 holds $0000 while $0008 is declared; the port shows the read of $0000 and the line prints FAIL
-// MUTATION LP-C3-A1-READS-CURRENT stimulus red NMH_MUTATE=LP-A1: the model is built with 9 clk_sys per colour clock instead of 8; no model fits the reference reads and the line prints FAIL
-// MUTATION LP-C3-A2-LINE-LENGTHS stimulus red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; the measured pattern (all 227) is not the declared alternating one and the line prints FAIL
-// MUTATION LP-C3-A3-FIELD-LENGTH stimulus red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; 313 lines are not 262 or 263 and the line prints FAIL
+// MUTATION LP-C3-A1-READS-CURRENT oracle red NMH_MUTATE=LP-A1: the model is built with 9 clk_sys per colour clock instead of 8; no model fits the reference reads and the line prints FAIL from the no-model branch, the comparator is not reached
+// MUTATION LP-C3-A1-READS-CURRENT stimulus red NMH_MUTATE=LP-A1W: prog_lpen_v8.bin flips V8 of the vertical counter (VPOSW) for 100 reads inside the reference phase and flips it back; a model is fitted to the other reads, the flipped reads match no instant of their brackets and the line prints FAIL
+// MUTATION LP-A2-LINE-LENGTHS oracle red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; the measured pattern (all 227) is not the declared alternating one and the line prints FAIL
+// MUTATION LP-A2-LINE-LENGTHS stimulus red NMH_MUTATE=LP-A2: prog_lpen_hw.bin writes a horizontal count of $F0 (VHPOSW) inside the reference phase; the largest H read exceeds $E2 and the line prints FAIL; the counter stays displaced, so LP-C3-A1-READS-CURRENT and LP-C3-A4-FIELD-ANCHOR print FAIL as well
+// MUTATION LP-C3-A3-FIELD-LENGTH oracle red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; 313 lines are not 262 or 263 and the line prints FAIL
+// MUTATION LP-C3-A3-FIELD-LENGTH stimulus red NMH_MUTATE=LP-A3: the run is NTSC (chipset_config bit 1) and PAL is declared; 263 lines are not 312 or 313 and the line prints FAIL, no other precondition line moves
+// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4W: prog_lpen_m8.bin flips V8 of the vertical counter (VPOSW) for 100 reads of F2 before its pulse and flips it back; those reads do not equal the model and the line prints FAIL, no other precondition line moves
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4 private chipset: the F2 pulse is driven at line 40 instead of line 100, so the reads between line 40 and the declared pulse are held and not current; the line prints FAIL
 // MUTATION LP-C4-DENSITY stimulus red NMH_MUTATE=LP-C4: prog_lpen_slow.bin delays every loop body by about 3.3 lines, the reads are far apart and the line prints FAIL
 // MUTATION LP-C5-PULSES stimulus red NMH_MUTATE=LP-C5: the pulses are driven on pin 9 instead of pin 6; the line prints FAIL
 // MUTATION LP-C6-LPENDIS-CLEAR stimulus red NMH_MUTATE=LP-C6: BEAMCON0 is stored and declared as $2020, bit 13 set; the line prints FAIL and C2 holds
-// MUTATION LP-P1-LATCH-ENABLE implementation green private chipset: P1 passes in every PAL run on both connectors
-// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P1 private chipset: cfg_BPLCON0 stores and declares $0000, LPEN stays clear, the reads keep following the beam and the line prints FAIL
+// MUTATION LP-P1A-LATCH-HOLDS implementation green private chipset: P1A passes in every PAL run on both connectors
+// MUTATION LP-P1A-LATCH-HOLDS stimulus red NMH_MUTATE=LP-P1 private chipset: cfg_BPLCON0 stores and declares $0000 in the base run, LPEN stays clear, the reads keep following the beam and the line prints FAIL
+// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation green: P1B passes in every run on both connectors, on the repository's chipset and on the private chipset
+// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR stimulus red NMH_MUTATE=LP-P1B private chipset: the bit-clear run stores and declares $0008, the first trigger freezes the registers and the line prints FAIL
+// MUTATION LP-P1-LATCH-ENABLE implementation green private chipset: the aggregate passes in every PAL run
+// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P1 private chipset: the base run's half (P1A) prints FAIL and the aggregate prints FAIL
+// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P1B private chipset: the bit-clear run's half (P1B) prints FAIL and the aggregate prints FAIL
 // MUTATION LP-P2-LATCH-AT-PULSE implementation green private chipset: P2 passes in every PAL run
 // MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven; the first read after the would-be pulse is a live read and the line prints FAIL
 // MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2B private chipset: the F3 pulse is driven 2 colour clocks later; the offset between F3 and F2 is 3 instead of 1 and the line prints FAIL
@@ -59,7 +69,7 @@
 // MUTATION LP-P4-DETERMINE-TRIGGER implementation green private chipset: P4 passes in every PAL run
 // MUTATION LP-P4-DETERMINE-TRIGGER stimulus red NMH_MUTATE=LP-P4A private chipset: a pulse at line 100 is added to F1, the pairs after it are equal and the blanking value is below $10500; the line prints FAIL
 // MUTATION LP-LATCH-ENABLE-AND-POSITION implementation green private chipset: the aggregate passes in every PAL run
-// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P1 private chipset: LPEN stays clear and the line prints FAIL
+// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P1 private chipset: LPEN stays clear in the base run and the line prints FAIL
 
 #include <algorithm>
 #include <cstdint>
@@ -104,11 +114,9 @@ constexpr uint32_t kDoneAddrW     = 0x0C0FFE / 2;
 constexpr uint16_t kDoneValue     = 0x600D;
 
 constexpr uint64_t kBootBudget       = 6'000'000;
-// The chipset's own internal reset (minimig_syscontrol, counted in whole
-// video frames -- see nanomig_harness.h's boot() comment) releases well
-// after cpu_nrst_out: measured, the program's first store (MARK0) lands
-// only after roughly 4 frames. The harness synchronises on that store
-// (run_until_write) rather than assuming a cycle count.
+// Measured: the program's first store (MARK0) lands about 2.27 million clk_sys
+// cycles after cpu_nrst_out. The harness synchronises on that store (the first
+// write to MARK0, whatever it stores) rather than assuming a cycle count.
 constexpr uint64_t kMark0Budget      = 8'000'000;  // generous wait for the program's own first store
 constexpr uint64_t kC0FlipAt         = 400'000;    // host cycles the connector-identity pin is held active
 constexpr uint64_t kMarkPhaseBudget  = 3'000'000;  // generous wait for the program's own phase marker
@@ -122,25 +130,6 @@ constexpr uint64_t kWindowNormal     = 700'000;    // per P5 level-interval dura
 constexpr uint64_t kWindowShort      = 5'000;      // P5-SHORT: under the 300us settle bound below
 constexpr uint64_t kSettleCycles     = 9'000;      // > 300us at ~28.375MHz clk_sys (p.240's own bound)
 constexpr uint64_t kDoneBudget       = 2'500'000;  // follow-up budget for the sampling loop to reach DONE
-
-// nmh::Config's joystick0/1 layout (BRIEF.md, nanomig_harness.h): bit7..0 =
-// fire4,fire3,fire2,fire,up,down,left,right; 1 = the harness's own logical
-// "active" sense (the DB9 pin driven to its active level), 0 = idle.
-constexpr uint8_t kBitRight = 0x01;  // pin 4  (RIGHT*)
-constexpr uint8_t kBitLeft  = 0x02;  // pin 3  (LEFT*)
-constexpr uint8_t kBitFire2 = 0x20;  // pin 9 on the port-1 (J12) connector
-
-// Which top-level nanomig.v joystick port to drive.
-enum class NmhPort { kJoystick0, kJoystick1 };
-
-void set_bit(nmh::NanomigHarness& h, NmhPort port, uint8_t bit, bool on) {
-    auto* p = h.ports();
-    uint8_t& reg = (port == NmhPort::kJoystick0) ? p->joystick0 : p->joystick1;
-    reg = on ? uint8_t(reg | bit) : uint8_t(reg & ~bit);
-}
-
-// Which HRM-named connector a P5 run grades.
-enum class Conn { kJ12, kJ11 };
 
 struct Sample { uint64_t cycle; uint32_t val; };  // val = (hiword<<16)|loword
 
@@ -223,80 +212,139 @@ C0Result eval_c0(const std::vector<Sample>& s2, uint64_t /*flip_cycle*/) {
 // 10 = pin 9 of J12 (DATLY), bit 12 = pin 5 of J11 (port 2, DATRX), bit 14
 // = pin 9 of J11 (DATRY).
 //
-// Driving, each confirmed by its own run's PASS/FAIL and MEASURED lines,
-// not assumed from reading the design: J12's pin 5 (bit 8) follows
-// nanomig.v's mouse_buttons bit 2 (the third mouse button). J12's pin 9
-// (bit 10) can be forced toward 0 through nanomig.v's joystick0 bit 5
-// (fire2) -- used only for the P5-PIN9 mutation, and confirmed by that
-// mutation's own red result. J11's pin 9 (bit 14) is not driven by any
-// assertion here, only observed to stay 1. No port this harness drives
-// changes J11's pin 5 (bit 12): grade_p5() drives the same mouse_buttons
-// signal that moves J12's bit 8 while sampling J11's run, and it stays
-// constant -- that run's own MEASURED line is the evidence.
+// The harness drives the mouse-button inputs of nanomig.v: bit 0 is the left
+// button (CIA-A port A, p.232, which names the connector), bit 2 is the pin-5
+// button whose level POTGOR bit 8 or 12 shows. Which connector a run grades
+// comes from the CIA-A bits (P5-C0-IDENTITY), not from the name of the input.
 
-struct P5Run {
-    bool loaded = false;
-    std::optional<uint64_t> done, potgo_read, s2_end;
-    std::vector<Sample> s2;
-    std::vector<PotSample> pot;
-    uint64_t flip_cycle = 0;
-    uint64_t phase_start[4] = {0, 0, 0, 0};
-    uint64_t phase_end[4]   = {0, 0, 0, 0};
+std::string num(long long v) { return std::to_string(v); }
+
+// One top-level input bit the harness drives (port 0 = mouse_buttons, 1 = joystick0, 2 = joystick1).
+struct Pin { const char* name; int port; uint8_t mask; };
+enum PinId { kPinLeft = 0, kPinRight, kPinPin5, kPinPin9, kPinOther };
+const Pin kPins[] = {
+    {"mouse_buttons bit 0 (left button)", 0, 0x01},
+    {"mouse_buttons bit 1 (right button)", 0, 0x02},
+    {"mouse_buttons bit 2 (pin 5)", 0, 0x04},
+    {"joystick1 bit 5 (pin 9)", 2, 0x20},
+    {"joystick0 bit 0 (pin 4 of the other connector)", 1, 0x01},
 };
 
-P5Run run_p5(const nmh::Config& cfg, const std::string& bin, Conn conn, uint16_t cfg_potgo,
-             bool mutate_c0_pin, bool mutate_pin9, bool mutate_short) {
+uint8_t& pin_reg(nmh::NanomigHarness& h, int port) {
+    auto* p = h.ports();
+    return port == 0 ? p->mouse_buttons : (port == 1 ? p->joystick0 : p->joystick1);
+}
+
+struct PinEv { uint64_t sched = 0, applied = 0; int pin = 0; bool on = false; int readback = -1; };
+
+// Drives one input bit and logs the change (a write that changes nothing logs nothing).
+void drive(nmh::NanomigHarness& h, std::vector<PinEv>* log, int pin, bool on, uint64_t sched) {
+    const Pin& pn = kPins[pin];
+    uint8_t& r = pin_reg(h, pn.port);
+    const uint8_t before = r;
+    r = on ? uint8_t(r | pn.mask) : uint8_t(r & ~pn.mask);
+    if (r == before || !log) return;
+    PinEv e;
+    e.sched = sched; e.applied = h.cycles(); e.pin = pin; e.on = on;
+    e.readback = (pin_reg(h, pn.port) & pn.mask) ? 1 : 0;
+    log->push_back(e);
+}
+
+struct FirstWrite { uint64_t cycle = 0; uint16_t data = 0; };
+
+// Runs until the port shows the first write to a logical byte address, whatever it stores.
+std::optional<FirstWrite> first_write(nmh::NanomigHarness& h, uint32_t logical_byte_addr, uint64_t max_cycles) {
+    const uint32_t w = logical_byte_addr / 2;
+    size_t seen = h.ram_log().size();
+    const uint64_t start = h.cycles();
+    while (h.cycles() - start < max_cycles) {
+        h.run_cycles(16);
+        const auto& lg = h.ram_log();
+        for (; seen < lg.size(); ++seen)
+            if (lg[seen].is_write && lg[seen].word_addr == w) return FirstWrite{lg[seen].cycle, lg[seen].data};
+    }
+    return std::nullopt;
+}
+
+struct P5Opts {
+    bool ecs = true, ntsc = false;
+    std::string bin = "prog_pot.bin";
+    uint16_t cfg_potgo = 0x0000;
+    int id_pin = kPinLeft;       // the input driven in the identity phase
+    bool pin9 = false;           // second low interval: pin 9 instead of pin 5
+    bool shortw = false;         // second low interval shorter than the settle bound
+    bool other = false;          // an extra input (not pin 5 or pin 9) driven in the second interval
+};
+
+struct P5Run {
+    bool loaded = false, released = false, mark0 = false;
+    uint16_t mark0_val = 0;
+    std::optional<uint64_t> done, potgo_read, s2_end;
+    std::vector<uint16_t> s2;                 // CIA-A port A, one word per read
+    std::vector<PotSample> pot;
+    uint64_t flip_cycle = 0;
+    uint64_t sched[4] = {0, 0, 0, 0};         // scheduled instants of the four level changes
+    uint64_t phase_start[4] = {0, 0, 0, 0};
+    uint64_t phase_end[4]   = {0, 0, 0, 0};
+    bool idle_before = false;                 // every controller input inactive before the first change
+    std::vector<PinEv> ev;                    // the level changes
+};
+
+P5Run run_p5(const std::string& dir, const P5Opts& o) {
     P5Run r;
+    nmh::Config cfg;
+    cfg.chipset_config = uint8_t((o.ecs ? 0x08 : 0x00) | (o.ntsc ? 0x02 : 0x00));
     nmh::NanomigHarness h(cfg);
-    h.poke_word(kCfgPotgo, cfg_potgo);
-    if (h.load_program(bin) == 0) return r;
+    h.poke_word(kCfgPotgo, o.cfg_potgo);
+    if (h.load_program(dir + "/" + o.bin) == 0) return r;
     r.loaded = true;
-    h.boot(kBootBudget);
+    r.released = h.boot(kBootBudget).cpu_released;
+    if (!r.released) return r;
 
     // Synchronise on the program's own first store rather than assuming a
     // cycle count for the chipset's own internal reset (see kMark0Budget).
-    h.run_until_write(kMark0 * 2, 0x5A5A, kMark0Budget);
+    auto m0 = first_write(h, kMark0 * 2, kMark0Budget);
+    if (!m0) return r;
+    r.mark0 = true; r.mark0_val = m0->data;
 
-    // ---- C0: drive the connector-identity pin on nanomig's joystick0
-    // port (the same port for both Conn values -- the identity check does
-    // not depend on which HRM connector is under test for P5 itself).
-    uint8_t c0_bit = mutate_c0_pin ? kBitLeft : kBitRight;
-    set_bit(h, NmhPort::kJoystick0, c0_bit, true);
+    // ---- C0: the left mouse button down, then up, while the program samples CIA-A port A
+    drive(h, nullptr, o.id_pin, true, 0);
     h.run_cycles(kC0FlipAt);
     r.flip_cycle = h.cycles();
-    set_bit(h, NmhPort::kJoystick0, c0_bit, false);
+    drive(h, nullptr, o.id_pin, false, 0);
     r.s2_end = h.run_until_write(kMarkPhase * 2, 0xB5B5, kMarkPhaseBudget);
-
     {
         const auto& log = h.ram_log();
-        uint64_t cutoff = r.s2_end.value_or(r.flip_cycle + kMarkPhaseBudget) + 1;
-        r.s2 = decode_pairs(log, kRingS2, kRingS2Words, 0, cutoff);
+        const uint64_t cutoff = r.s2_end.value_or(r.flip_cycle + kMarkPhaseBudget) + 1;
+        for (const auto& a : log)
+            if (a.is_write && a.word_addr >= kRingS2 && a.word_addr < kRingS2 + kRingS2Words && a.cycle < cutoff)
+                r.s2.push_back(a.data);
     }
 
-    const uint64_t win = mutate_short ? kWindowShort : kWindowNormal;
+    const uint64_t win = o.shortw ? kWindowShort : kWindowNormal;
     const bool levels_low[4] = {true, false, true, false};  // low(pressed) in windows 0,2; high in 1,3
     const uint64_t durs[4] = {kWindowNormal, kWindowNormal, win, kWindowNormal};
+    auto* p = h.ports();
+    r.idle_before = (p->mouse_buttons == 0 && p->joystick0 == 0 && p->joystick1 == 0);
+    uint64_t t = h.cycles();
+    for (int i = 0; i < 4; ++i) { r.sched[i] = t; t += durs[i]; }
     for (int i = 0; i < 4; ++i) {
         r.phase_start[i] = h.cycles();
-        bool pressed = levels_low[i];
-        // P5-PIN9 substitutes the driven line only in the second low
+        const bool pressed = levels_low[i];
+        // P5-PIN9 substitutes the driven input only in the second low
         // interval (i==2), per SPECIFICATION.md's own contrast; the first
         // low interval (i==0) always drives pin 5, so the precondition
         // that pin 5 was driven at some point still holds.
-        bool use_pin9 = mutate_pin9 && (i == 2) && conn == Conn::kJ12;
-        auto* p = h.ports();
-        if (use_pin9) {
-            p->mouse_buttons = uint8_t(p->mouse_buttons & ~0x04u);
-            set_bit(h, NmhPort::kJoystick0, kBitFire2, pressed);
-        } else {
-            p->mouse_buttons = pressed ? uint8_t(p->mouse_buttons | 0x04u) : uint8_t(p->mouse_buttons & ~0x04u);
-            set_bit(h, NmhPort::kJoystick0, kBitFire2, false);
-        }
+        const bool use_pin9 = o.pin9 && (i == 2);
+        drive(h, &r.ev, kPinPin5, pressed && !use_pin9, r.sched[i]);
+        drive(h, &r.ev, kPinPin9, pressed && use_pin9, r.sched[i]);
+        if (o.other && (i == 1 || i == 2)) drive(h, &r.ev, kPinOther, i == 1, r.sched[i]);
         h.run_cycles(durs[i]);
         r.phase_end[i] = h.cycles();
     }
-    h.ports()->mouse_buttons = 0;
-    set_bit(h, NmhPort::kJoystick0, kBitFire2, false);
+    drive(h, nullptr, kPinPin5, false, 0);
+    drive(h, nullptr, kPinPin9, false, 0);
+    drive(h, nullptr, kPinOther, false, 0);
 
     r.done = h.run_until_write(kDoneAddrW * 2, kDoneValue, kDoneBudget);
     const auto& log = h.ram_log();
@@ -305,86 +353,121 @@ P5Run run_p5(const nmh::Config& cfg, const std::string& bin, Conn conn, uint16_t
     return r;
 }
 
-void grade_p5(Checks& checks, const std::string& tag, const P5Run& r, bool grade_pin5,
-              int bit_pin5, int bit_pin9) {
-    C0Result c0 = eval_c0(r.s2, r.flip_cycle);
+std::string cfg_name(bool ecs, bool ntsc) { return std::string(ecs ? "ECS" : "OCS") + "/" + (ntsc ? "NTSC" : "PAL"); }
+
+// Which connector the harness's mouse inputs reach, from CIA-A port A (p.232: port 1 uses bit 6, port 2 uses bit 7).
+struct P5Id { bool ok = false; bool j12 = false; int b6a = -1, b6b = -1, b7a = -1, b7b = -1; };
+
+P5Id eval_p5_id(const std::vector<uint16_t>& s2) {
+    P5Id id;
+    if (s2.empty()) return id;
+    id.b6b = (s2.front() >> 6) & 1; id.b7b = (s2.front() >> 7) & 1;
+    id.b6a = (s2.back() >> 6) & 1;  id.b7a = (s2.back() >> 7) & 1;
+    const bool f6 = (id.b6b != id.b6a), f7 = (id.b7b != id.b7a);
+    id.ok = (f6 != f7);                // exactly one of the two bits follows the button
+    id.j12 = f6;
+    return id;
+}
+
+void grade_p5(Checks& checks, bool ecs, bool ntsc, const P5Run& r) {
+    const P5Id id = eval_p5_id(r.s2);
+    const int bit_pin5 = (id.ok && !id.j12) ? 12 : 8;       // the connector's own pin-5 bit
+    const std::string conn = id.ok ? (id.j12 ? "J12" : "J11") : "connector not identified";
+    const std::string tag = cfg_name(ecs, ntsc) + " " + conn;
     {
         std::string s2_end_s = r.s2_end ? std::to_string(*r.s2_end) : "none";
         std::string done_s = r.done ? std::to_string(*r.done) : "none";
         char buf[256];
         std::snprintf(buf, sizeof buf,
-                      "%s diagnostic: flip_cycle=%llu s2_end=%s s2_samples=%zu (first=%llu last=%llu) "
-                      "pot_samples=%zu (first=%llu last=%llu) done=%s",
-                      tag.c_str(), (unsigned long long)r.flip_cycle, s2_end_s.c_str(),
-                      r.s2.size(),
-                      r.s2.empty() ? 0ULL : (unsigned long long)r.s2.front().cycle,
-                      r.s2.empty() ? 0ULL : (unsigned long long)r.s2.back().cycle,
-                      r.pot.size(),
+                      "%s diagnostic: flip_cycle=%llu s2_end=%s s2_samples=%zu pot_samples=%zu (first=%llu last=%llu) done=%s",
+                      tag.c_str(), (unsigned long long)r.flip_cycle, s2_end_s.c_str(), r.s2.size(), r.pot.size(),
                       r.pot.empty() ? 0ULL : (unsigned long long)r.pot.front().cycle,
-                      r.pot.empty() ? 0ULL : (unsigned long long)r.pot.back().cycle,
-                      done_s.c_str());
+                      r.pot.empty() ? 0ULL : (unsigned long long)r.pot.back().cycle, done_s.c_str());
         checks.note(buf);
         char buf2[256];
         std::snprintf(buf2, sizeof buf2,
-                      "%s C0 diagnostic: have_b=%d have_a=%d b_joy0bit1=%d a_joy0bit1=%d b_joy1bit1=%d a_joy1bit1=%d",
-                      tag.c_str(), c0.have_b, c0.have_a, c0.b_joy0, c0.a_joy0, c0.b_joy1, c0.a_joy1);
+                      "%s C0 diagnostic: CIA-A port A bit 6 first=%d last=%d, bit 7 first=%d last=%d",
+                      tag.c_str(), id.b6b, id.b6a, id.b7b, id.b7a);
         checks.note(buf2);
     }
-    checks.expect(r.loaded && r.done.has_value(), tag + " precondition C1: the program finished "
-                  "(prog_pot.bin's done mark is present)");
-    checks.expect(c0.ok, tag + " precondition C0: connector identity (bit 1 of exactly one of "
-                  "JOY0DAT/JOY1DAT follows the harness's connector-identity pin) [p.329,p.281,p.327]");
-    checks.expect(r.potgo_read.has_value(), tag + " precondition: the port shows the CPU reading "
-                  "POTGO's declared memory word ($0000) before the sampling loop [p.240]");
+    const bool c1 = r.loaded && r.done.has_value();
+    const bool potgo = r.potgo_read.has_value();
+    bool sched = r.idle_before && r.ev.size() == 4;
+    std::string sched_detail = "idle before the first change: " + std::string(r.idle_before ? "yes" : "no") +
+                               ", level changes logged: " + num(static_cast<long long>(r.ev.size())) + " of 4";
+    for (size_t i = 0; sched && i < 4; ++i) {
+        const PinEv& e = r.ev[i];
+        const bool low = (i == 0 || i == 2);
+        const bool good = e.sched == r.sched[i] && e.applied == e.sched && e.on == low &&
+                          (e.pin == kPinPin5 || e.pin == kPinPin9) && e.readback == (low ? 1 : 0);
+        if (!good) sched = false;
+    }
+    checks.expect(c1, "P5-C1-DONE " + tag + ": the program finished (prog_pot.bin's done mark is present)");
+    checks.expect(id.ok, "P5-C0-IDENTITY " + tag + ": connector identity: exactly one of bit 6 and bit 7 of CIA-A port A follows the "
+                  "left mouse button the harness drives; bit 6 is port 1 (J12), bit 7 is port 2 (J11) [p.232, p.327]");
+    checks.expect(potgo, "P5-POTGO-READ " + tag + ": the port shows the CPU reading POTGO's declared memory word ($0000) "
+                  "before the sampling loop [p.240]");
+    checks.expect(sched, "P5-SCHEDULE " + tag + ": the harness log shows the four level changes of pin 5 (low, high, low, high) "
+                  "at their scheduled cycles, read back as set, with every controller input inactive before the first and no "
+                  "input other than pin 5 and pin 9 changing (" + sched_detail + ") [p.240]");
+    const bool pre = c1 && id.ok && potgo && sched;
 
-    if (!grade_pin5) {
-        int n = 0, ones = 0, other_ones = 0;
-        for (const auto& s : r.pot) {
-            ++n;
-            if ((s.potgor >> bit_pin5) & 1) ++ones;
-            if ((s.potgor >> bit_pin9) & 1) ++other_ones;
-        }
+    // The other connector's pin-5 half: no input this harness drives reaches it.
+    {
+        int n = 0, ones = 0;
+        const int other_bit = (bit_pin5 == 8) ? 12 : 8;
+        const std::string other_name = (bit_pin5 == 8) ? "J11" : "J12";
+        for (const auto& s : r.pot) { ++n; if ((s.potgor >> other_bit) & 1) ++ones; }
         char buf[256];
         std::snprintf(buf, sizeof buf,
-                      "%s: POTGOR bit %d (this connector's pin 5) sampled %d times while the run drove "
-                      "the same mouse-button signal that moves J12's bit 8; %d of %d reads were 1 "
-                      "(bit %d, this connector's pin 9, was 1 in %d of %d)",
-                      tag.c_str(), bit_pin5, n, ones, n, bit_pin9, other_ones, n);
+                      "%s: POTGOR bit %d (%s's pin 5) sampled %d times while the run drove the mouse-button "
+                      "input that moves bit %d; %d of %d reads were 1",
+                      tag.c_str(), other_bit, other_name.c_str(), n, bit_pin5, ones, n);
         checks.note(buf);
-        checks.record(tag + ": pin 5 of this connector is not testable at nanomig.v's ports -- no port "
-                      "this harness drives changes POTGOR bit " + std::to_string(bit_pin5) +
-                      " (opus:E-gameport.c6, sol:E-gameport.c5, p.327, for this connector's half only)");
-        return;
+        checks.record(tag + ": pin 5 of " + other_name + " is not testable at nanomig.v's ports -- no input this harness "
+                      "drives changes POTGOR bit " + std::to_string(other_bit) +
+                      " (opus:E-gameport.c6, sol:E-gameport.c5, p.327, for " + other_name + "'s half only)");
     }
 
     for (int i = 0; i < 4; ++i) {
-        bool want_low = (i == 0 || i == 2);
-        uint64_t win_lo = r.phase_start[i] + kSettleCycles, win_hi = r.phase_end[i];
+        const bool want_low = (i == 0 || i == 2);
+        const uint64_t win_lo = r.phase_start[i] + kSettleCycles, win_hi = r.phase_end[i];
         int n = 0, bad = 0, other_bad = 0;
+        int zero_by_bit[16] = {0};
         for (const auto& s : r.pot) {
-            int V = Vof(mask17(s.vh));
+            const int V = Vof(mask17(s.vh));
             if (V < 100 || V > 200) continue;
             if (s.cycle < win_lo || s.cycle >= win_hi) continue;
             ++n;
-            bool bit_is_0 = !((s.potgor >> bit_pin5) & 1);
+            const bool bit_is_0 = !((s.potgor >> bit_pin5) & 1);
             if (bit_is_0 != want_low) ++bad;
-            if (!((s.potgor >> bit_pin9) & 1)) ++other_bad;
+            bool any = false;
+            for (int b : {8, 10, 12, 14})
+                if (b != bit_pin5 && !((s.potgor >> b) & 1)) { ++zero_by_bit[b]; any = true; }
+            if (any) ++other_bad;
         }
-        std::string idx = std::to_string(i);
+        const std::string idx = std::to_string(i);
         char buf[256];
         std::snprintf(buf, sizeof buf,
-                      "%s window %s (%s, V in 100-200, >=300us after the change): n=%d bad=%d other_bit_bad=%d",
-                      tag.c_str(), idx.c_str(), want_low ? "pin5 driven low" : "pin5 released high", n, bad, other_bad);
+                      "%s window %s (%s, V in 100-200, >=300us after the change): n=%d bad=%d other_bits_bad=%d (zero reads of bit 8: %d, 10: %d, 12: %d, 14: %d)",
+                      tag.c_str(), idx.c_str(), want_low ? "pin5 driven low" : "pin5 released high", n, bad, other_bad,
+                      zero_by_bit[8], zero_by_bit[10], zero_by_bit[12], zero_by_bit[14]);
         checks.note(buf);
-        checks.expect(n >= 50, tag + " P5 precondition window " + idx +
+        const bool cnt = n >= 50;
+        checks.expect(cnt, "P5-WINDOW-COUNT " + tag + " window " + idx +
                       ": at least 50 graded samples fall inside it (>=300us after the change, V in "
                       "100-200) [p.240]");
-        checks.expect(n > 0 && bad == 0, tag + " P5(a) window " + idx +
-                      ": POTGOR's pin-5 bit follows the driven level of pin 5 "
-                      "(opus:E-gameport.c6, sol:E-gameport.c5, p.327; p.240 Table 8-4; p.238)");
-        checks.expect(other_bad == 0, tag + " P5(b) window " + idx +
-                      ": the same connector's pin-9 bit (POTGOR) stays 1 throughout "
-                      "(opus:E-gameport.c6, sol:E-gameport.c5, p.327)");
+        if (pre && cnt) {
+            checks.expect(bad == 0, "P5A-PIN5-FOLLOWS " + tag + " window " + idx +
+                          ": POTGOR's pin-5 bit follows the driven level of pin 5 (p.327; p.240 Table 8-4; p.238)");
+            checks.expect(other_bad == 0, "P5B-OTHER-POT-BITS-1 " + tag + " window " + idx +
+                          ": the pin-9 bits of both connectors and the other connector's pin-5 bit (POTGOR) stay 1 throughout (p.240, p.327)");
+        } else {
+            checks.record("P5A-PIN5-FOLLOWS " + tag + " window " + idx + ": NOT GRADED, a precondition does not hold (P5-C1-DONE, "
+                          "P5-C0-IDENTITY, P5-POTGO-READ, P5-SCHEDULE or P5-WINDOW-COUNT)");
+            checks.record("P5B-OTHER-POT-BITS-1 " + tag + " window " + idx + ": NOT GRADED, a precondition does not hold (P5-C1-DONE, "
+                          "P5-C0-IDENTITY, P5-POTGO-READ, P5-SCHEDULE or P5-WINDOW-COUNT)");
+        }
     }
 }
 
@@ -407,7 +490,6 @@ constexpr int      kPulseCck      = 4;           // pulse width in colour clocks
 
 int64_t fdiv(int64_t n, int64_t d) { int64_t q = n / d; if ((n % d != 0) && ((n < 0) != (d < 0))) --q; return q; }
 int64_t fmod_(int64_t n, int64_t d) { return n - fdiv(n, d) * d; }
-std::string num(long long v) { return std::to_string(v); }
 std::string hexs(unsigned v) { char b[16]; std::snprintf(b, sizeof b, "%x", v); return b; }
 
 struct LS {                  // one long read VPOSR:VHPOSR
@@ -448,6 +530,7 @@ struct LpOpts {
     std::vector<Pulse> schedule = kBaseSchedule;
     Decl decl;
     bool keep_log = false;
+    bool bit_clear = false;            // the run with BPLCON0 bit 3 clear (the other half of P1)
 };
 
 struct PinEvent { int64_t cycle; int conn; uint8_t bit; bool on; int64_t applied = -1; int readback = -1; };
@@ -456,6 +539,7 @@ struct CfgRead { int64_t cycle = -1; int val = -1; };
 struct LpRun {
     LpOpts o;
     bool loaded = false, released = false, mark0 = false, s2done = false, refend = false, done = false;
+    uint16_t mark0_val = 0;
     int64_t t_mark0 = 0, t_flip = 0, t_s2end = 0, t_refend = 0, t_done = 0;
     CfgRead beam, ref, bpl;
     std::vector<Sample> s2;
@@ -670,10 +754,11 @@ LpRun lp_run(const std::string& dir, const LpOpts& o) {
     r.released = h.boot(kBootBudget).cpu_released;
     if (!r.released) return r;
 
-    auto m0 = h.run_until_write(kMark0 * 2, 0x5A5A, kMark0Budget);
+    auto m0 = first_write(h, kMark0 * 2, kMark0Budget);
     r.mark0 = m0.has_value();
     if (!r.mark0) return r;
-    r.t_mark0 = int64_t(*m0);
+    r.t_mark0 = int64_t(m0->cycle);
+    r.mark0_val = m0->data;
 
     // S2: pin 4 (pin 3 in the contrast) of the connector under test low, then high.
     auto* p = h.ports();
@@ -743,7 +828,7 @@ struct LpAn {
     bool conn_known = false, is_j12 = false;
     bool fixture = false, c0 = false, c1 = false, c2 = false, a1 = false, a2 = false, a3 = false, a4 = false,
          c4 = false, c5 = false, c6 = false, c6_applicable = false;
-    bool pre_ok = false;                   // C0-C6 and the anchor hold
+    bool pre_ok = false;                   // C0-C6 hold (A2 is its own graded line, not a precondition)
     bool have_model = false;
     // measured numbers for the MEASURED lines
     int u = 0, nlines = 0, kind = -1;
@@ -755,7 +840,7 @@ struct LpAn {
     int64_t t_fall[kLastField + 2] = {0}, t_rise[kLastField + 2] = {0};
     // proposition results for this run
     bool p2_a = false, p2_c = false, p2_ok = false;
-    bool p1 = false, p3a = false, p3b = false, p3c = false, p3d = false, p4 = false;
+    bool p1 = false, p1b = false, p3a = false, p3b = false, p3c = false, p3d = false, p4 = false;
     std::string p_detail;
 };
 
@@ -776,8 +861,9 @@ LpAn analyze_run(const LpRun& r) {
     A.c0 = c0.ok;
     if (c0.ok) { A.conn_known = true; A.is_j12 = (c0.b_joy0 != c0.a_joy0); }
     A.tag = std::string(o.ecs ? "ECS" : "OCS") + "/" + (o.ntsc ? "NTSC" : "PAL") + " " +
-            (A.conn_known ? (A.is_j12 ? "J12" : "J11") : (o.x == 0 ? "joystick0" : "joystick1"));
-    A.fixture = r.mark0;
+            (A.conn_known ? (A.is_j12 ? "J12" : "J11") : (o.x == 0 ? "joystick0" : "joystick1")) +
+            (o.bit_clear ? " (BPLCON0 bit 3 clear)" : "");
+    A.fixture = r.mark0 && r.mark0_val == 0x5A5A;
     A.c1 = r.done && r.samples.size() == size_t(d.exp_ref + d.exp_meas) && r.n_s2 == 3000;
     // C2: the port shows the CPU reading each configuration word, with the declared value, in order
     {
@@ -916,7 +1002,7 @@ LpAn analyze_run(const LpRun& r) {
         A.c5 = ok;
         A.c5_detail = det;
     }
-    A.pre_ok = A.fixture && A.c0 && A.c1 && A.c2 && A.a1 && A.a2 && A.a3 && A.a4 && A.c4 && A.c5 && A.c6;
+    A.pre_ok = A.fixture && A.c0 && A.c1 && A.c2 && A.a1 && A.a3 && A.a4 && A.c4 && A.c5 && A.c6;
 
     // ---- the propositions (computed whether or not the preconditions hold; graded only when they do)
     // P_f: the first read after the rising edge of the declared first pulse
@@ -957,6 +1043,17 @@ LpAn analyze_run(const LpRun& r) {
         for (int f = 2; f <= 7; ++f) { auto ix = idx_of(w_trig(f)); if (!all_eq(ix)) ok = false; }
         for (int k : {2, 9, 10}) { auto ix = idx_of(w_blank(k)); if (!all_eq(ix)) ok = false; }
         A.p1 = ok;
+    }
+    // P1 (bit 3 clear): in the same windows every read equals the model value and consecutive reads differ
+    {
+        bool ok = true;
+        auto chk = [&](const std::vector<size_t>& ix) {
+            if (ix.size() < 2 || !all_cur(ix)) { ok = false; return; }
+            for (size_t i = 1; i < ix.size(); ++i) if (S[ix[i]].P == S[ix[i - 1]].P) ok = false;
+        };
+        for (int f = 2; f <= 7; ++f) chk(idx_of(w_trig(f)));
+        for (int k : {2, 9, 10}) chk(idx_of(w_blank(k)));
+        A.p1b = ok;
     }
     // P3 (a): every read in W_trig(f) has P = P_f
     {
@@ -1036,7 +1133,6 @@ const char* kind_name(int k) {
     }
 }
 
-std::string cfg_name(bool ecs, bool ntsc) { return std::string(ecs ? "ECS" : "OCS") + "/" + (ntsc ? "NTSC" : "PAL"); }
 
 std::string failed_pre(const LpAn& A) {
     std::string f;
@@ -1046,7 +1142,6 @@ std::string failed_pre(const LpAn& A) {
     add(A.c1, "LP-C1-DONE");
     add(A.c2, "LP-C2-STORED");
     add(A.a1, "LP-C3-A1-READS-CURRENT");
-    add(A.a2, "LP-C3-A2-LINE-LENGTHS");
     add(A.a3, "LP-C3-A3-FIELD-LENGTH");
     add(A.a4, "LP-C3-A4-FIELD-ANCHOR");
     add(A.c4, "LP-C4-DENSITY");
@@ -1055,7 +1150,7 @@ std::string failed_pre(const LpAn& A) {
     return f;
 }
 
-void grade_pre(Checks& c, const LpRun& r, const LpAn& A) {
+void grade_pre(Checks& c, const LpRun& r, const LpAn& A, bool show_a2) {
     const std::string& t = A.tag;
     const LpOpts& o = r.o;
     std::string m1;
@@ -1078,14 +1173,14 @@ void grade_pre(Checks& c, const LpRun& r, const LpAn& A) {
     c.expect(A.c2, "LP-C2-STORED " + t + ": the port shows the CPU reading each configuration word with its declared value, in the order S3, S4, S6 (" + A.c2_detail + ")");
     if (!A.have_model) {
         c.expect(false, "LP-C3-A1-READS-CURRENT " + t + ": every reference-phase word read equals the model value at some instant inside its bracket (no model could be fitted) [p.216]");
-        for (const char* id : {"LP-C3-A2-LINE-LENGTHS", "LP-C3-A3-FIELD-LENGTH", "LP-C3-A4-FIELD-ANCHOR", "LP-C4-DENSITY", "LP-C5-PULSES"})
+        for (const char* id : {"LP-A2-LINE-LENGTHS", "LP-C3-A3-FIELD-LENGTH", "LP-C3-A4-FIELD-ANCHOR", "LP-C4-DENSITY", "LP-C5-PULSES"})
             c.record(std::string(id) + " " + t + ": NOT GRADED, no model could be fitted");
     } else {
         std::string d_a1 = num(static_cast<long long>(A.a1_bad)) + " of " + num(o.decl.exp_ref) + " reads have a word that matches no instant of its bracket";
         c.expect(A.a1, "LP-C3-A1-READS-CURRENT " + t + ": every reference-phase word read equals the model value at some instant inside its bracket (" + d_a1 + ") [p.216]");
         std::string d_a2 = std::string("measured: ") + kind_name(A.kind) + ", largest H read " + num(static_cast<long long>(A.maxH)) +
                            "; expected " + (o.decl.ntsc ? "alternating 227 and 228, H at most $E3" : "all 227, H at most $E2");
-        c.expect(A.a2, "LP-C3-A2-LINE-LENGTHS " + t + ": line lengths are 227 and 228 alternating (NTSC) or all 227 (PAL), and H never exceeds $E3 (NTSC) or $E2 (PAL) (" + d_a2 + ") [p.23]");
+        if (show_a2) c.expect(A.a2, "LP-A2-LINE-LENGTHS " + t + ": line lengths are 227 and 228 alternating (NTSC) or all 227 (PAL), and H never exceeds $E3 (NTSC) or $E2 (PAL) (" + d_a2 + ") [p.23]");
         std::string d_a3 = num(A.nlines) + " lines per field in each of " + num(static_cast<long long>(r.frame_len.size()) - 1) + " reference fields";
         c.expect(A.a3, "LP-C3-A3-FIELD-LENGTH " + t + ": the field has 262 or 263 lines (NTSC) or 312 or 313 lines (PAL), the same in every reference field (" + d_a3 + ") [p.24]");
         c.expect(A.a4, "LP-C3-A4-FIELD-ANCHOR " + t + ": in F2 every read before the pulse, and in every triggered field at least two, equals the model value inside its bracket (" + A.a4_detail + ") [p.216]");
@@ -1099,10 +1194,13 @@ void grade_pre(Checks& c, const LpRun& r, const LpAn& A) {
     }
 }
 
-// Grades one configuration from its runs (both connectors in the normal run, one in a contrast).
-void grade_config(Checks& c, const std::vector<const LpRun*>& runs, const std::vector<LpAn>& An, bool ecs, bool ntsc) {
+// Grades one configuration from its runs: the runs with BPLCON0 bit 3 set (both connectors in the
+// normal run, one in a contrast) and the runs with it clear.
+void grade_config(Checks& c, const std::vector<const LpRun*>& runs, const std::vector<LpAn>& An,
+                  const std::vector<const LpRun*>& cruns, const std::vector<LpAn>& cAn, bool ecs, bool ntsc) {
     const std::string cfg = cfg_name(ecs, ntsc);
-    for (size_t i = 0; i < runs.size(); ++i) grade_pre(c, *runs[i], An[i]);
+    for (size_t i = 0; i < runs.size(); ++i) grade_pre(c, *runs[i], An[i], true);
+    for (size_t i = 0; i < cruns.size(); ++i) grade_pre(c, *cruns[i], cAn[i], false);
     // measured pen positions, whether or not the preconditions hold
     for (size_t i = 0; i < runs.size(); ++i) {
         if (!An[i].have_model) continue;
@@ -1113,6 +1211,11 @@ void grade_config(Checks& c, const std::vector<const LpRun*>& runs, const std::v
                          ", P3(d)=" + (An[i].p3d ? "holds" : "does not hold") + ", P4=" + (An[i].p4 ? "holds" : "does not hold");
         c.note(pr);
     }
+    for (size_t i = 0; i < cruns.size(); ++i) {
+        if (!cAn[i].have_model) continue;
+        c.note(cAn[i].tag + " P1 (bit 3 clear) measured: every read equals the model value and consecutive reads differ in the windows: " +
+               (cAn[i].p1b ? "holds" : "does not hold"));
+    }
     int u = 0;
     for (const auto& A : An) if (A.have_model) u = std::max(u, A.u);
     std::string hnote = (u > 2) ? "NOT GRADED, its precondition does not hold: the anchor uncertainty is " + num(u) +
@@ -1122,11 +1225,24 @@ void grade_config(Checks& c, const std::vector<const LpRun*>& runs, const std::v
 
     std::vector<size_t> ok_runs;
     for (size_t i = 0; i < runs.size(); ++i) if (An[i].pre_ok) ok_runs.push_back(i);
+    std::vector<size_t> ok_cruns;
+    for (size_t i = 0; i < cruns.size(); ++i) if (cAn[i].pre_ok) ok_cruns.push_back(i);
+    // P1, bit 3 clear: every connector's run
+    bool p1b_all = true;
+    for (size_t i = 0; i < cruns.size(); ++i) {
+        if (cAn[i].pre_ok) {
+            c.expect(cAn[i].p1b, "LP-P1B-NO-LATCH-WHEN-CLEAR " + cAn[i].tag + ": with BPLCON0 bit 3 clear the pulses of the schedule leave VPOSR:VHPOSR reading the moving beam: every read in W_trig of F2 to F7 and in W_blank of F2, F9 and F10 equals the model value and consecutive reads differ [p.239, p.216]");
+            if (!cAn[i].p1b) p1b_all = false;
+        } else {
+            c.record("LP-P1B-NO-LATCH-WHEN-CLEAR " + cAn[i].tag + ": NOT GRADED, precondition(s) failed: " + failed_pre(cAn[i]));
+        }
+    }
+    const bool p1_graded = !cruns.empty() && ok_cruns.size() == cruns.size();
     if (ok_runs.empty()) {
         for (size_t i = 0; i < runs.size(); ++i) {
             const std::string fp = failed_pre(An[i]);
-            for (const char* id : {"LP-P1-LATCH-ENABLE", "LP-P2-LATCH-AT-PULSE", "LP-P3A-HOLD", "LP-P3B-HELD-PULSE-IGNORED", "LP-P3C-RELEASE",
-                                   "LP-P3D-PULSE-BEFORE-ENABLE", "LP-P4-DETERMINE-TRIGGER", "LP-LATCH-ENABLE-AND-POSITION"})
+            for (const char* id : {"LP-P1A-LATCH-HOLDS", "LP-P2-LATCH-AT-PULSE", "LP-P3A-HOLD", "LP-P3B-HELD-PULSE-IGNORED", "LP-P3C-RELEASE",
+                                   "LP-P3D-PULSE-BEFORE-ENABLE", "LP-P4-DETERMINE-TRIGGER", "LP-P1-LATCH-ENABLE", "LP-LATCH-ENABLE-AND-POSITION"})
                 c.record(std::string(id) + " " + An[i].tag + ": NOT GRADED, precondition(s) failed: " + fp);
         }
         return;
@@ -1148,7 +1264,7 @@ void grade_config(Checks& c, const std::vector<const LpRun*>& runs, const std::v
     for (size_t i : pen) {
         const LpAn& A = An[i];
         const std::string& t = A.tag;
-        c.expect(A.p1, "LP-P1-LATCH-ENABLE " + t + ": with BPLCON0 bit 3 set, a pulse freezes VPOSR:VHPOSR and so does the end of a field without one: every read in W_trig of F2 to F7 and in W_blank of F2, F9 and F10 has one position [p.333, p.239] opus:E-lightpen.c21 sol:E-lightpen.c18");
+        c.expect(A.p1, "LP-P1A-LATCH-HOLDS " + t + ": with BPLCON0 bit 3 set, a pulse freezes VPOSR:VHPOSR and so does the end of a field without one: every read in W_trig of F2 to F7 and in W_blank of F2, F9 and F10 has one position [p.333, p.239]");
         if (!A.p1) p1_all = false;
         c.expect(A.p3a, "LP-P3A-HOLD " + t + ": after a trigger every read until the end of the following vertical blanking has the latched position [p.333, p.239] opus:E-lightpen.c5 sol:E-lightpen.c4");
         c.expect(A.p3b, "LP-P3B-HELD-PULSE-IGNORED " + t + ": a second pulse while the position is held changes nothing (F7, line 180) [p.239]");
@@ -1156,10 +1272,17 @@ void grade_config(Checks& c, const std::vector<const LpRun*>& runs, const std::v
             c.expect(A.p3c, "LP-P3C-RELEASE " + t + ": at the end of internal vertical blanking the registers read the moving beam again [p.239, p.216]");
         else
             c.record("LP-P3C-RELEASE " + t + ": NOT GRADED, no position was held in the preceding fields (LP-P3A-HOLD does not hold), so there was nothing to release");
-        c.expect(A.p3d, "LP-P3D-PULSE-BEFORE-ENABLE " + t + ": a pulse before the capture circuitry is enabled (F9, line 10) is not captured [p.238]");
+        c.expect(A.p3d, "LP-P3D-PULSE-BEFORE-ENABLE " + t + ": a pulse before the capture circuitry is enabled (F9, line 10) is not captured, because the position of the end of F8 is still held: every read in W_blank of F9 has one position and every read in W_live of F9 equals the model value [p.239: \"If no trigger is seen, the counters latch at the end of the display field\"; p.238]");
         c.expect(A.p4, "LP-P4-DETERMINE-TRIGGER " + t + ": the two determinations of chapter 8 tell a triggered field from an untriggered one: two long reads agree and the value is below $10500 after a trigger, they differ without one, and the value read during blanking is above $10500 [p.239]");
     }
-    c.expect(d && p1_all, "LP-LATCH-ENABLE-AND-POSITION " + cfg + ": a trigger pulse is generated which can be enabled to latch the horizontal and vertical beam positions: LPEN enables the latch and the latch holds the position of the pulse [p.333] opus:E-lightpen.c3 sol:E-lightpen.c2");
+    if (p1_graded)
+        c.expect(p1_all && p1b_all, "LP-P1-LATCH-ENABLE " + cfg + ": bit 3 of BPLCON0 is the light pen enable: with it set a pulse freezes VPOSR:VHPOSR and so does the end of a field without one (LP-P1A-LATCH-HOLDS), with it clear the same pulses leave the registers reading the moving beam (LP-P1B-NO-LATCH-WHEN-CLEAR) [p.333, p.239] opus:E-lightpen.c21 sol:E-lightpen.c18");
+    else
+        c.record("LP-P1-LATCH-ENABLE " + cfg + ": NOT GRADED, the bit-clear half has no run whose preconditions hold");
+    if (p1_graded)
+        c.expect(d && p1_all && p1b_all, "LP-LATCH-ENABLE-AND-POSITION " + cfg + ": a trigger pulse is generated which can be enabled to latch the horizontal and vertical beam positions: LPEN enables the latch and the latch holds the position of the pulse [p.333] opus:E-lightpen.c3 sol:E-lightpen.c2");
+    else
+        c.record("LP-LATCH-ENABLE-AND-POSITION " + cfg + ": NOT GRADED, the bit-clear half has no run whose preconditions hold");
     for (size_t i = 0; i < runs.size(); ++i) {
         bool graded = false;
         for (size_t j : pen) if (j == i) graded = true;
@@ -1178,22 +1301,39 @@ LpOpts make_opts(bool ecs, bool ntsc, int x) {
     return o;
 }
 
+// The run with BPLCON0 bit 3 clear: the same schedule, the stored and declared word $0000.
+LpOpts make_clear_opts(bool ecs, bool ntsc, int x) {
+    LpOpts o = make_opts(ecs, ntsc, x);
+    o.bplcon0 = 0x0000;
+    o.decl.bplcon0 = 0x0000;
+    o.bit_clear = true;
+    return o;
+}
+
 void run_lp_config(Checks& c, const std::string& dir, bool ecs, bool ntsc) {
-    std::vector<LpRun> runs;
-    std::vector<LpAn> an;
+    std::vector<LpRun> runs, cruns;
+    std::vector<LpAn> an, can;
     runs.reserve(2);
+    cruns.reserve(2);
     for (int x = 0; x < 2; ++x) {
         runs.push_back(lp_run(dir, make_opts(ecs, ntsc, x)));
         an.push_back(analyze_run(runs.back()));
     }
-    std::vector<const LpRun*> rp;
+    for (int x = 0; x < 2; ++x) {
+        cruns.push_back(lp_run(dir, make_clear_opts(ecs, ntsc, x)));
+        can.push_back(analyze_run(cruns.back()));
+    }
+    std::vector<const LpRun*> rp, cp;
     for (const auto& r : runs) rp.push_back(&r);
-    grade_config(c, rp, an, ecs, ntsc);
+    for (const auto& r : cruns) cp.push_back(&r);
+    grade_config(c, rp, an, cp, can, ecs, ntsc);
 }
 
-// One contrasting run: ECS, PAL, the connector joystick1, and the change NMH_MUTATE names.
+// One contrasting run: ECS, PAL, the connector joystick1, and the change NMH_MUTATE names. The run with
+// bit 3 clear (the other half of P1) is run beside it, unchanged except where the change names it.
 bool run_lp_mutation(Checks& c, const std::string& dir, const std::string& mv) {
     LpOpts o = make_opts(true, false, 1);
+    LpOpts oc = make_clear_opts(true, false, 1);
     auto drop = [&](int field, int line) {
         std::vector<Pulse> s;
         for (const auto& p : o.schedule) if (!(p.field == field && p.line == line)) s.push_back(p);
@@ -1202,17 +1342,23 @@ bool run_lp_mutation(Checks& c, const std::string& dir, const std::string& mv) {
     auto move_to = [&](int field, int line, int nline, int nh) {
         for (auto& p : o.schedule) if (p.field == field && p.line == line) { p.line = nline; p.h = nh; }
     };
-    if (mv == "LP-FIX") o.prog = "prog_lpen_fix.bin";
+    if (mv == "LP-BASE") { /* no change: the unchanged ECS/PAL run on joystick1 and its bit-clear run */ }
+    else if (mv == "LP-FIX") o.prog = "prog_lpen_fix.bin";
     else if (mv == "LP-C0") o.c0_pin = kPin3;
     else if (mv == "LP-C1") o.prog = "prog_lpen_nodone.bin";
     else if (mv == "LP-C2") o.bplcon0 = 0x0000;
     else if (mv == "LP-A1") o.decl.R = kCck + 1;
+    else if (mv == "LP-A1W") o.prog = "prog_lpen_v8.bin";
     else if (mv == "LP-STD") o.decl.ntsc = true;
+    else if (mv == "LP-A3") { o = make_opts(true, true, 1); o.decl.ntsc = false; }
+    else if (mv == "LP-A2") o.prog = "prog_lpen_hw.bin";
     else if (mv == "LP-A4") move_to(2, 100, 40, 0x40);
+    else if (mv == "LP-A4W") o.prog = "prog_lpen_m8.bin";
     else if (mv == "LP-C4") { o.prog = "prog_lpen_slow.bin"; o.decl.exp_ref = 600; o.decl.exp_meas = 2000; }
     else if (mv == "LP-C5") o.pulse_pin = kPin9;
     else if (mv == "LP-C6") { o.beamcon0 = 0x2020; o.decl.beamcon0 = 0x2020; }
     else if (mv == "LP-P1") { o.bplcon0 = 0x0000; o.decl.bplcon0 = 0x0000; }
+    else if (mv == "LP-P1B") { oc.bplcon0 = 0x0008; oc.decl.bplcon0 = 0x0008; }
     else if (mv == "LP-P2A") drop(2, 100);
     else if (mv == "LP-P2B") move_to(3, 100, 100, 0x43);
     else if (mv == "LP-P3B") drop(7, 60);
@@ -1221,11 +1367,14 @@ bool run_lp_mutation(Checks& c, const std::string& dir, const std::string& mv) {
     else if (mv == "LP-P4A") o.schedule.push_back({1, 100, 0x40});
     else return false;
     LpRun r = lp_run(dir, o);
-    std::vector<LpAn> an;
+    LpRun rc = lp_run(dir, oc);
+    std::vector<LpAn> an, can;
     an.push_back(analyze_run(r));
-    std::vector<const LpRun*> rp;
+    can.push_back(analyze_run(rc));
+    std::vector<const LpRun*> rp, cp;
     rp.push_back(&r);
-    grade_config(c, rp, an, true, false);
+    cp.push_back(&rc);
+    grade_config(c, rp, an, cp, can, o.ecs, o.ntsc);
     return true;
 }
 
@@ -1250,60 +1399,62 @@ int main(int argc, char** argv) {
     Checks checks;
     const char* mutate_env = std::getenv("NMH_MUTATE");
     const std::string mv = mutate_env ? mutate_env : "";
+    auto finish = [&]() {
+        std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
+        return checks.failed == 0 ? 0 : 1;
+    };
 
     // ==== Fixture, ahead of anything graded ==============================
     {
         nmh::Config cfg;
         nmh::NanomigHarness h(cfg);
-        std::string bin = dir + "/prog_pot.bin";
+        std::string bin = dir + (mv == "FIX-LOAD" ? "/prog_pot_missing.bin" : (mv == "FIX-MARK0" ? "/prog_pot_fix.bin" : "/prog_pot.bin"));
         bool loaded = h.load_program(bin) > 0;
-        checks.expect(loaded, "FIXTURE stimulus: prog_pot.bin loads at PROGRAM_ORG");
+        checks.expect(loaded, "FIXTURE-LOAD stimulus: prog_pot.bin loads at PROGRAM_ORG");
         if (loaded) {
             h.boot(kBootBudget);
-            auto mark_cycle = h.run_until_write(kMark0 * 2, 0x5A5A, kBootBudget);
-            checks.expect(mark_cycle.has_value(),
-                          "FIXTURE stimulus: the program stores a known constant (MARK0=$5A5A) before "
+            auto first = first_write(h, kMark0 * 2, kMark0Budget);
+            checks.expect(first.has_value() && first->data == 0x5A5A,
+                          "FIXTURE-MARK0 stimulus: the program stores a known constant (MARK0=$5A5A) before "
                           "anything is read back");
+        } else {
+            checks.record("FIXTURE-MARK0 stimulus: NOT GRADED, the program did not load");
         }
     }
+    if (mv == "FIX-LOAD" || mv == "FIX-MARK0") return finish();
 
     if (mv.rfind("LP-", 0) == 0) {
         if (!run_lp_mutation(checks, dir, mv)) { std::printf("unknown NMH_MUTATE value %s\n", mv.c_str()); return 2; }
-        std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
-        return checks.failed == 0 ? 0 : 1;
+        return finish();
     }
 
-    // ==== P5: connector J12 (port 1) -- graded ============================
-    {
-        bool mutate_c0    = (mv == "C0");
-        bool mutate_c1    = (mv == "C1");
-        bool mutate_pin9  = (mv == "P5-PIN9");
-        bool mutate_potgo = (mv == "P5-POTGO");
-        bool mutate_short = (mv == "P5-SHORT");
-        std::string bin = dir + (mutate_c1 ? "/prog_pot_nodone.bin" : "/prog_pot.bin");
-        uint16_t cfg_potgo = mutate_potgo ? 0x0001 : 0x0000;
-        nmh::Config cfg;
-        P5Run r = run_p5(cfg, bin, Conn::kJ12, cfg_potgo, mutate_c0, mutate_pin9, mutate_short);
-        grade_p5(checks, "P5 J12", r, /*grade_pin5=*/true, /*bit_pin5=*/8, /*bit_pin9=*/10);
+    // ==== P5: one run per configuration; the connector it grades comes from C0 ==
+    if (!mv.empty()) {
+        P5Opts o;
+        if (mv == "C0") o.id_pin = kPinRight;
+        else if (mv == "C1") o.bin = "prog_pot_nodone.bin";
+        else if (mv == "P5-PIN9") o.pin9 = true;
+        else if (mv == "P5-POTGO") o.cfg_potgo = 0x0001;
+        else if (mv == "P5-SHORT") o.shortw = true;
+        else if (mv == "P5-SCHED") o.other = true;
+        else { std::printf("unknown NMH_MUTATE value %s\n", mv.c_str()); return 2; }
+        P5Run r = run_p5(dir, o);
+        grade_p5(checks, o.ecs, o.ntsc, r);
+        return finish();
     }
-
-    // ==== P5: connector J11 (port 2) -- pin 5 not reachable at nanomig.v's
-    // ports; run only under the normal invocation (no claim id to protect
-    // under a mutation). ==================================================
-    if (mv.empty()) {
-        nmh::Config cfg;
-        P5Run r = run_p5(cfg, dir + "/prog_pot.bin", Conn::kJ11, 0x0000, false, false, false);
-        grade_p5(checks, "P5 J11", r, /*grade_pin5=*/false, /*bit_pin5=*/12, /*bit_pin9=*/14);
-    }
+    for (bool ntsc : {false, true})
+        for (bool ecs : {true, false}) {
+            P5Opts o;
+            o.ecs = ecs; o.ntsc = ntsc;
+            P5Run r = run_p5(dir, o);
+            grade_p5(checks, ecs, ntsc, r);
+        }
 
     // ==== the light pen: P1-P4 and the preconditions C0-C6, every configuration ==
-    if (mv.empty()) {
-        record_declined(checks);
-        for (bool ntsc : {false, true})
-            for (bool ecs : {true, false})
-                run_lp_config(checks, dir, ecs, ntsc);
-    }
+    record_declined(checks);
+    for (bool ntsc : {false, true})
+        for (bool ecs : {true, false})
+            run_lp_config(checks, dir, ecs, ntsc);
 
-    std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
-    return checks.failed == 0 ? 0 : 1;
+    return finish();
 }

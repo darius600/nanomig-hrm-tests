@@ -10,9 +10,13 @@ JOY1DAT         equ $00C
 POTGOR          equ $016
 POTGO           equ $034
 BPLCON0R        equ $100
+VPOSW           equ $02A
+VHPOSW          equ $02C
 
 ; ---- Poked configuration words (read by the program, never written by it) --
 CFG_POTGO       equ $0C0016     ; word: POTGO value (pen-pressed program)
+
+CIAAPRA         equ $BFE001     ; CIA-A port A: fire buttons, bit 6 = port 1, bit 7 = port 2 (p.232)
 
 ; ---- Markers -----------------------------------------------------------
 MARK0           equ $0C0020     ; fixture: a known constant, stored first

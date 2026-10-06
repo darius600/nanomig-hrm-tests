@@ -1,7 +1,8 @@
 ; prog_pot.s -- the pen-pressed-button program (P5). Sets POTGO from a
 ; memory word (so its declared value is visible on the Chip-memory port,
 ; C2-style). It first runs a short connector-identity loop (for
-; precondition C0) while the harness flips a pin on one connector, marks
+; precondition C0) while the harness flips the left mouse button, which
+; samples CIA-A port A (bit 6 = port 1, bit 7 = port 2, p.232); it marks
 ; the phase boundary in chip RAM once that loop ends, then loops reading
 ; VPOSR:VHPOSR (for the sample's own line) and POTGOR into a small ring
 ; buffer for as long as the harness drives its pin-5/pin-9 schedule. The
@@ -11,6 +12,8 @@
 ; NO_DONE (define before including): the sampling loop's done mark is
 ;   skipped -- the program hangs instead of storing it. Used for
 ;   precondition C1's contrasting case.
+; NO_FIX (define before including): the fixture constant stored first
+;   differs.
 
         include "nanomig.i"
         include "appDE_regs.i"
@@ -23,24 +26,29 @@ start:
         move.w  #$2700,sr               ; supervisor, all interrupt levels masked
         lea     CUSTOM,a6
 
+        ifd     NO_FIX
+        move.w  #$BEEF,MARK0            ; fixture mutation: a different constant
+        else
         move.w  #$5A5A,MARK0            ; fixture: known constant, stored first
+        endif
 
         move.w  #$7FFF,INTENA(a6)
         move.w  #$7FFF,DMACON(a6)
         move.w  #$0000,BPLCON0R(a6)     ; LPEN=0: VPOSR/VHPOSR read the moving beam
 
-; ---- connector identity (C0): ring-sample JOY0DAT/JOY1DAT while the
-; harness flips a pin on one connector. No density requirement applies to
-; C0, so plain indexed addressing (a small ring, wrapped with an AND mask)
-; is fine here.
+; ---- connector identity (C0): ring-sample CIA-A port A while the harness
+; presses and releases the left mouse button. No density requirement
+; applies to C0, so plain indexed addressing (a small ring, wrapped with an
+; AND mask) is fine here.
         lea     RING_S2,a5
         moveq   #0,d6
         move.l  #S2_ITERS,d5
 .s2loop:
-        move.w  JOY0DAT(a6),0(a5,d6.w)
-        move.w  JOY1DAT(a6),2(a5,d6.w)
-        addq.w  #4,d6
-        andi.w  #(RING_S2_BYTES-4),d6
+        moveq   #0,d0
+        move.b  CIAAPRA,d0
+        move.w  d0,0(a5,d6.w)
+        addq.w  #2,d6
+        andi.w  #(RING_S2_BYTES-2),d6
         subq.l  #1,d5
         bne.s   .s2loop
 
