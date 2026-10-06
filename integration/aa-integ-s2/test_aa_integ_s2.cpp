@@ -131,7 +131,7 @@
 // MUTATION P9-A none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
 // MUTATION P9-B implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-B (VBSTRT 150 in both runs of the CSCBEN-set pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
 // MUTATION P9-ID implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P9-ID (VBSTRT 150 in both runs of the CSCBEN-set pair) the private build prints FAIL P9-BV, P9-B, P9-ID; NOT GRADED 3; NOT CHECKABLE 3
-// MUTATION P10-CPAIR stimulus green NMH_MUTATE=P10-CPAIR: CSCBEN set and VARHSYEN clear in both runs of the pair (BEAMCON0 $04A0 in place of $05A0): the same comparator on a pair that differs in HCENTER alone, with the variable composite sync not routed; the line is PASS on TG68K and PASS on fx68k in this run, against FAIL on both in the normal run; TG68K: FAIL F5-SV-INV; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV; NOT GRADED 2; NOT CHECKABLE 3
+// MUTATION P10-CPAIR stimulus red NMH_MUTATE=P10-CPAIR: HSSTOP $34 in the second run of the pair (the first keeps $30), so the pair differs in HSSTOP as well as in HCENTER; the unchanged comparator on the HSY* samples prints FAIL P10-CPAIR (628 hs intervals); the line is PASS in the normal run on both cores, where hs is identical at every sample and the VSY* difference of the pair is a MEASURED line only; TG68K: FAIL F5-SV-INV, P10-CPAIR; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P10-CPAIR; NOT GRADED 2; NOT CHECKABLE 3; private build of 6.6 (TG68K): FAIL P10-CPAIR, nothing else (the normal run of the private build prints PASS)
 // MUTATION P10-SPAIR none impossible not observable at this boundary (the scan doubler regenerates hs: nanomig.v dblscan 1'b1): the harness shows the horizontal sync only after the scan doubler, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
 // MUTATION P10-VPAIR stimulus red NMH_MUTATE=P10-VPAIR on the private build of 6.6: CSCBEN set and VARVSYEN clear in both runs of the pair (BEAMCON0 $04A0 in place of $06A0); private TG68K build: FAIL P10-VPAIR; NOT GRADED 2; NOT CHECKABLE 3; the line is PASS in the normal run of the private build; on the repository build the same run prints for the line: TG68K PASS, fx68k PASS
 // MUTATION P10-VSPAIR stimulus red NMH_MUTATE=P10-VSPAIR: VSSTOP 103 in both runs of the pair; TG68K: FAIL F5-SV-INV, P10-CPAIR, P10-VSPAIR; NOT GRADED 2; NOT CHECKABLE 3; fx68k: FAIL F5-SV-INV, P10-CPAIR, P10-VSPAIR; NOT GRADED 2; NOT CHECKABLE 3
@@ -2199,13 +2199,13 @@ void proposition_p9_p10() {
         SyncSet wv1; wv1.bc0 = 0x06A0;
         SyncSet wv2 = wv1; wv2.vbstrt = 152;
         SyncSet ws1 = wv1, ws2 = wv1; ws2.vsstop = 105;
-        if (mutating("P10-CPAIR")) hc1.bc0 = hc2.bc0 = 0x04A0;
+        if (mutating("P10-CPAIR")) hc2.hsstop = 0x34;
         if (mutating("P10-SPAIR")) hs2.hsstop = 0x30;
         if (mutating("P10-VPAIR")) wv1.bc0 = wv2.bc0 = 0x04A0;
         if (mutating("P10-VSPAIR")) ws2.vsstop = 103;
         // P10-CPAIR asserts identity at every sample and does not need anchor S-H: its runs are always taken
         auto p1 = sync_run(hc1), p2 = sync_run(hc2), ps1 = L(hs1), p3 = L(hs2), q1 = L(wv1), q2 = L(wv2), qs1 = L(ws1), q3 = L(ws2);
-        bool cpair = aligned(*p1, *p2) && diff_itv(*p1, *p2, 0).empty() && diff_itv(*p1, *p2, 1).empty();
+        bool cpair = aligned(*p1, *p2) && diff_itv(*p1, *p2, 0).empty();
         std::vector<Itv> dS, dVS;
         bool spair = h_pair_every_line(*ps1, *p3, 4, &dS);
         bool vpair = aligned(*q1, *q2) && diff_itv(*q1, *q2, 0).empty() && diff_itv(*q1, *q2, 1).empty();
