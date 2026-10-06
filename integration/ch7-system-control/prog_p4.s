@@ -28,6 +28,12 @@
 ;                 bit 5 clear (the other standard).
 ;   SHORTSPIN  -- the reference-frame precondition's contrast: the delay after
 ;                 E250 is 10 poll iterations.
+;   YDELAY     -- the read-time precondition's contrast: 40 poll iterations
+;                 pass between the BEAMCON0 write and the second read.
+;   NOCOPEN    -- the A1-fetch fixture's contrast: DMACON is written without
+;                 COPEN, so the Copper never fetches.
+;   NODONE     -- the driven-run fixture's contrast: the program never stores
+;                 the DONE mark.
 
         include "nanomig.i"
 
@@ -45,6 +51,14 @@ RECORDS         equ     $0C2000         ; X,Y,X',Y': 4*3 = 12 words
 
 CALIB           equ     $0C1180         ; long: spin iterations over the 20 lines E110..E130
 
+YDELAY_SPIN     macro
+                ifd     YDELAY
+                moveq   #0,d6
+                moveq   #40,d5
+                bsr     spin
+                endif
+                endm
+
         org     PROGRAM_ORG
 
 start:
@@ -55,9 +69,6 @@ start:
 
         ; CIA-A DDRA fix, as in prog_lp.s.
         move.b  CIAADDRA.l,d0
-        moveq   #0,d2
-        move.b  d0,d2
-        move.w  d2,RESULTS.l
         ifd     DDRAFORCE
         or.b    #$C0,d0
         move.b  d0,CIAADDRA.l
@@ -69,6 +80,9 @@ start:
         move.b  d0,CIAADDRA.l
         endif
 .ddra_done:
+        moveq   #0,d2
+        move.b  CIAADDRA.l,d2           ; DDRA read again after the fix-or-force branch
+        move.w  d2,RESULTS.l            ; RESULTS+0: that DDRA, zero-extended
 
         ifd     PERIODMUT
 BC_PAL          equ     $0000
@@ -148,7 +162,12 @@ BC_PAL          equ     $0020
         move.w  d3,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
 
+        clr.l   CALIB.l
+        ifd     NOCOPEN
+        move.w  #$8200,DMACON(a0)       ; contrast: SET DMAEN only, no COPEN
+        else
         move.w  #$8280,DMACON(a0)
+        endif
 
         ; ---- Event loop. d0 = field index (0=F-1,1=F0,2=F1,3=F2,4=F3),
         ; d1 = per-field COPER counter (0=E40,1=E60,2=E110,3=E130,4=E190,
@@ -156,6 +175,7 @@ BC_PAL          equ     $0020
         lea     MAINTICK,a4
         lea     RECORDS,a5
         moveq   #-1,d0
+        moveq   #0,d1
 main_loop:
         move.w  INTREQR(a0),d7
         btst    #5,d7
@@ -221,6 +241,7 @@ main_loop:
         bsr     spin
         bsr     p4_store                 ; X
         move.w  #BC_PAL,BEAMCON0(a0)
+        YDELAY_SPIN
         bsr     p4_store                 ; Y
         addq.w  #1,d1
         bra     main_loop
@@ -234,6 +255,7 @@ main_loop:
         bsr     spin
         bsr     p4_store                 ; X'
         move.w  #BC_PAL,BEAMCON0(a0)
+        YDELAY_SPIN
         bsr     p4_store                 ; Y'
         cmp.w   #4,d0
         beq     all_done                 ; stop right after F3's own Y'
@@ -241,7 +263,11 @@ main_loop:
         bra     main_loop
 
 all_done:
+        ifd     NODONE
+.never: bra.s   .never                  ; contrast: no DONE mark
+        else
         DONE
+        endif
 
 ; ---- spin: polls INTREQR; d6 counts the iterations. Ends when d6 reaches
 ; the cap in d5 or when COPER (bit 4) is set, whichever comes first. The

@@ -278,7 +278,7 @@ Each precondition is checked before grading, and each has a contrast that makes 
 2. **Tags decode and the band order holds**, as above. Contrast: BPLEN clear.
 3. **Sprite runs are present and complete in the reference band**, as above. Contrast: SPREN clear.
 4. **Playfields are present.** In Group B, band F1 shows PF1C at every x ≥ 40 and band F2 shows PF2C. In Group E, band F1 shows PF1C. Contrast: point BPL2PT at an all-zero image; band F2 then shows BG and the precondition fails.
-5. **Vertical extent of the sprites.** Sprites appear in every row of the bands inside their VSTART–VSTOP and in no row of the first band after VSTOP (Group B: B0; Group A: the rows after band O). Contrast: Group B sprites with VSTOP 130. p. 107 says VSTOP is "the line AFTER the last displayed row", so band T loses its sprites in its last ten lines and the precondition fails.
+5. **Vertical extent of the sprites.** Sprites appear in every row of the bands inside their VSTART–VSTOP and in no row of the first band after VSTOP (Group B: B0; Group A: the rows after band O). The test evaluates Group B in B7 (the sprites of groups 0 and 1, which are in front of both playfields in every band) and Group A in A1 and A2 (the even slots in band E, every slot in band X, the odd slots in band O, and no sprite in the rows after band O). When a sprite reference is missing, the precondition prints NOT GRADED instead of FAIL. Contrasts: Group B sprites with VSTOP 130. p. 107 says VSTOP is "the line AFTER the last displayed row", so band T loses its sprites in its last ten lines and the precondition fails. Group A odd slots with VSTOP 130: ten rows after band O show sprites and the precondition fails.
 
 ### Contrasting cases (the check must go red)
 
@@ -327,6 +327,7 @@ Every row of the band contains all fourteen contributions:
 
 - **Frame association, tags and window columns**, as in P1, with the same contrasts.
 - **Each plane pointer points at its own image.** Check: the bitplane fetches seen at the memory port in the band's lines read from all six images.
+  - The band lies on lines 60-79; the test counts the fetches of lines 62-77 of the evaluated field (VERTB marks line 0, p. 219; one line is 227 colour clocks, p. 23), two lines in from each end.
   - Contrast: point BPL4PT at plane 2's image. The fetch check fails, and so does the plane-4 block.
 
 ### Contrasting cases
@@ -361,7 +362,7 @@ Each read is a long read of VPOSR (p. 216: the pair "can be read from … as lon
 ### Stimulus (program)
 
 1. Write INTENA `$7FFF`, INTREQ `$7FFF` and DMACON `$7FFF`.
-2. Read CIA-A DDRA and store it. If bit 6 or bit 7 is 1, clear those two bits and write the result back with bits 0–5 unchanged. Pin 6 of both ports must be an input: p. 228 says "These pins may also be configured as outputs", p. 229 describes CIAAPRA as "Input and output for pin 6 (port 1 & 2 fire buttons)", and p. 351 assigns PA6 and PA7 to the fire buttons.
+2. Read CIA-A DDRA. If bit 6 or bit 7 is 1, clear those two bits and write the result back with bits 0–5 unchanged. Read DDRA again and store that value. Pin 6 of both ports must be an input: p. 228 says "These pins may also be configured as outputs", p. 229 describes CIAAPRA as "Input and output for pin 6 (port 1 & 2 fire buttons)", and p. 351 assigns PA6 and PA7 to the fire buttons.
 3. ECS only: store a tick at each of two successive VERTBs, which gives the field period before the write. Then write BEAMCON0 `$0020` (PAL) or `$0000` (NTSC). This makes LPENDIS 0 and keeps bit 5 ("Programmable pal mode enable", p. 305) at the selected standard. The pages give no reset value for BEAMCON0.
 4. Write BPLCON0 `$0008` (LPEN = 1, no bitplanes) and COLOR00 `$000`.
 5. Build the Copper list, in beam order as p. 27 requires. The column Ev names the event:
@@ -380,9 +381,9 @@ Each read is a long read of VPOSR (p. 216: the pair "can be read from … as lon
    | `$D201,$FFFE` (line 210) | INTREQ ← `$8010` | E210 |
    | `$FFFF,$FFFE` | — | end |
 
-6. Write COP1LC, strobe COPJMP1, then write DMACON `$8280` (the p. 30 order).
+6. Wait for a VERTB (ECS: the one the second pre-write tick waited for), write COP1LC, strobe COPJMP1, then write DMACON `$8280` (the p. 30 order). The Copper then starts a few lines after the top of a field, and its first pass through the list runs in real time.
 7. Run an event loop that polls INTREQR.
-   - On bit 5 (VERTB), clear it with `$0020` and advance the field counter. Store the tick, wait about 2 lines, read (event V1), wait about 8 more lines, and read again (event V2).
+   - On bit 5 (VERTB), clear it with `$0020` and advance the field counter. Store the tick, wait about 2 lines, read (event V1), wait about 8 more lines, and read again (event V2). The waits are counted polls of INTREQR, never polls of VPOSR or VHPOSR: p. 239 says that with the light-pen latch enabled "the VPOSR register may be latched at any time, and cannot be relied on as a counter". The count is calibrated in the run: in the first pass of the Copper (before any VERTB has been seen) the same polling loop counts its iterations between the COPER signals of E110 and E130, which the list places 20 lines apart (WAIT lines 110 and 130, p. 22). The waits are one tenth and two fifths of that count.
    - On bit 4 (COPER), clear it with `$0010`, read, and number the event by its order in the field: E40, E60, E110, E130, E190, E210.
    - Each read stores a record: field number, event id, VPOSR, VHPOSR (both from the long read), and VHPOSR from the word read.
 8. Run one settling field F−1 with LPEN already on, then fields F0–F6, then the V1 and V2 reads at the start of F7, then store an end marker.
@@ -446,12 +447,15 @@ Let L1, L3 and L5 be the values read at E110 of F1, E110 of F3 and E190 of F5.
 
 ### Preconditions
 
+0. **Record layout.** All 72 records are present, and each carries the field and event words that its position implies: the first six are the first pass of the Copper (field word `$FFFF`, events E40 to E210 in order), then eight per field (V1, V2, E40 to E210), and two for F7. Contrast: the V1 record of every field carries event id 5.
 1. **Anchor check**, as above. Contrast: move the second anchor to line 101.
 2. **Read-time check**, as above. Contrast: add a 30-line delay before V1.
-3. **Pin 6 is not driven by the CIA.** The stored DDRA has bits 6 and 7 at 0 after step 2. Contrast: the program sets DDRA bits 6 and 7 to 1, and the check fails.
+3. **Pin 6 is not driven by the CIA.** The DDRA read after step 2 has bits 6 and 7 at 0. Contrast: the program sets DDRA bits 6 and 7 to 1, and the check fails.
 4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse. The log check fails, and item 1 goes red as well (F1 reads live).
-5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: hold pin 6 pressed from line 30 of F2 until the end of F2. p. 239 then predicts a freeze at line 30, so E40 and E60 of F2 both read V = 30 and the check fails.
-6. **ECS: the BEAMCON0 write changed nothing but LPENDIS.** The field period after step 3 equals the one measured before it (VERTB ticks). Contrast: write bit 5 opposite to the selected standard. p. 305 names bit 5 "Programmable pal mode enable", and p. 24 gives the line counts, so the period changes and the check fails.
+5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: the E40 WAIT at line 44 instead of line 40, so E40 reads V = 44 or 45 and the check fails (p. 22). Contrast through the page's freeze: hold pin 6 pressed from line 30 of F2 until the end of F2. p. 239 then predicts a freeze at line 30, so E40 and E60 of F2 both read V = 30 and the same check fails on an implementation that follows p. 239; on an implementation that never freezes the check passes.
+6. **ECS: the BEAMCON0 write changed nothing but LPENDIS.** The field period after step 3 equals the one measured before it (VERTB ticks), within one line (p. 23: 227 or 228 colour clocks, taken as 228). Contrast: write bit 5 opposite to the selected standard. p. 305 names bit 5 "Programmable pal mode enable", and p. 24 gives the line counts (312 and 262), so the period changes by fifty lines and the check fails.
+
+Items 1, 2 and 5 are graded only when preconditions 0 to 6 hold; otherwise each prints NOT GRADED with the failing preconditions. The claims of P3 are credited by one line that holds when items 1 and 2 both hold; items 1, 2 and 5 are component lines and carry no claim id.
 
 ### Contrasting cases
 
@@ -519,10 +523,14 @@ The anchors and the read-time check are those of P3. In addition, the store time
 
 ### Preconditions
 
-1. **Anchor check, read-time check and the CIA pin 6 check**, as in P3, with the same contrasts.
-2. **The latch is present in F1.** V(Y) = 100. Contrast: omit the F1 pulse. Y then reads the live beam (V8 = 1) and the check fails.
-3. **The control field shows the latched value with LPENDIS clear.** In F3, X′ equals Y′ and V(X′) = 100. Contrast: write `$2020` at E60 of F3 as well. X′ then differs from Y′ and the check fails.
-4. **Field period.** The field period is unchanged across all BEAMCON0 writes, measured from the VERTB ticks. Contrast: write `$2000` in PAL. p. 305 bit 5 and p. 24 predict a change, and the check fails.
+1. **Anchor check, the CIA pin 6 check and the drive log**, as in P3, with the same contrasts (the second anchor at line 101; DDRA bits 6 and 7 set; the F1 pulse omitted, which the drive log shows against the nominal schedule of two pulses).
+2. **Read time.** Y is stored within one line (p. 23) after X, and Y′ within one line after X′, because each second read follows its BEAMCON0 write at once. Contrast: 40 poll iterations between the write and the second read.
+3. **Field period.** The field period is unchanged across all BEAMCON0 writes, measured from the VERTB ticks, within one line (p. 23, taken as 228 colour clocks). Contrast: write `$2000` in PAL. p. 305 bit 5 and p. 24 predict a change, and the check fails. The reference-frame check is NOT GRADED when this one fails, because a shorter field ends before the delay does.
+4. **Reference frame**, as above. Contrast: wait only 10 poll iterations after E250.
+5. **The latch is present in F1.** V(Y) = 100, and H(Y) = H(X′) = H(Y′). Contrast: omit the F1 pulse. Y then reads the live beam (V8 = 1) and the check fails.
+6. **The control field shows the latched value with LPENDIS clear.** In F3, X′ equals Y′ and V(X′) = 100. Contrast: write `$2020` at E60 of F3 as well. X′ then differs from Y′ and the check fails.
+
+The graded relation is evaluated only when every precondition above holds, and the fixture checks (program loaded, A1 fetched at least five times, driven run reached DONE) hold; otherwise it prints NOT GRADED with the failing preconditions and credits no claim.
 
 ### Contrasting case
 
@@ -557,6 +565,7 @@ These are listed because they shaped the stimuli above.
 - `prog_pri.s` is P1 and `prog_p2.s` is P2. Both include `pri_common.i` (register offsets, memory map, window setup) and `pri_routines.i` (the builders). The CPU builds every image, sprite block and Copper list below `$80000` before DMA is on, after releasing the boot overlay through CIA-A. Bitplane images are 256 rows of 40 bytes; a row carries byte 0 = `$FF` (tag block 0), bytes 1-4 = the band id's bits as `$FF` or `$00`, and bytes 5-39 as the band table says. Sprite block *s* of a group lies at its base + *s* × `$200`.
 - P1 schedules the fifteen configurations as the skeleton says: wait VERTB (t0), write COP1LC, store marker *k*, wait VERTB (t1), wait VERTB (t2), so the evaluated field is [t1, t2). Every tick is stored at its own address and every marker at its own address, so the test reads their store cycles from the memory port.
 - `prog_p4.s` counts its delay after E250 with a poll of INTREQR instead of a fixed constant. In F0, where no trigger has happened, the same loop counts its iterations between the COPER signals of E110 and E130, which the list places 20 lines apart (WAIT lines 110 and 130, p. 22); that count is the iteration count of the delay in F1 and F3. The reference-frame precondition of P4 (X stored at least 156 × 228 colour clocks after t(A1), Y before the next field's t(A1) minus 100 × 228) is what asserts the result in every run, and the test prints the calibration count, the Copper's own spacing of E110 and E130, and the length of the delay.
+- `prog_lp.s` times the V1 and V2 reads of P3 with the same polling loop: in the first pass of the Copper, which starts right after a VERTB, it counts the iterations between the COPER signals of E110 and E130 (CALIB), and the waits after each VERTB are CALIB / 10 and 2 * CALIB / 5 iterations. The test prints CALIB and the Copper's own spacing of E110 and E130, and asserts the outcome through the read-time precondition (every V1 and V2 stored less than 18 lines after its VERTB tick). Both programs read CIAADDRA again after the fix-or-force branch and store that word; the DDRA precondition grades it.
 
 ### How the video output is read
 
@@ -574,10 +583,12 @@ Each contrast changes the stimulus only; the comparator and the expected values 
 |---|---|---|
 | P1 frame association: omit a COP1LC write | `P1-NOCOP`, `P2-NOCOP` | no COP1LC write for configuration 4 (P2: the Copper starts from a copy of the list at another address and no write follows) |
 | P1 rows: tags absent | `P1-TAGBAD`, `P2-TAGID` | one row of A1 and A2 whose tag block 2 is half set (P2: the band's id is 2) |
-| P1 window columns: DDFSTRT `$0030` | `P1-SCROLL`, `P2-SCROLL` | BPLCON1 `$0011` from line 215 on, cleared after the field. DDFSTRT `$0030` and BPLEN clear, the contrasts the sections above name, empty the population of decoded rows altogether (no row decodes), so they cannot tell a failing window check from an empty observation; the scroll keeps every row decodable and moves the rows below line 215 by one lores pixel |
+| P1 rows: band order and relative row counts | `P1-TAGCOUNT` | the first row of band X of A1 and A2 carries tag id 0, so every row still decodes and only the row count of band X differs from that of band E |
+| P1 window columns: DDFSTRT `$0030` | `P1-SCROLL`, `P2-SCROLL` | BPLCON1 `$0011` from line 215 on, cleared after the field; p. 82: "For each pixel of delay, the on-screen data shifts one pixel to the right", so the rows below line 215 start one lores pixel later than the rows above it. DDFSTRT `$0030` and BPLEN clear, the contrasts the sections above name, empty the population of decoded rows altogether (no row decodes), so they cannot tell a failing window check from an empty observation; the scroll keeps every row decodable and moves the rows below line 215 by one lores pixel |
 | P1 sprite columns: SPREN clear | `P1-SPRENCLR`, `P2-SPRENCLR` | DMACON `$8380` |
 | P1 playfields: BPL2PT at a zero image | `P1-BPL2ZERO` | BPL2PT of B1-B8 at the all-zero image |
 | P1 vertical extent: VSTOP 130 | `P1-VSTOP130` | the sprites of B1-B8 end at line 130 |
+| P1 vertical extent, Group A | `P1-AVSTOP130` | the odd slots of A1 and A2 end at line 130 instead of 120, so ten rows after band O show sprites |
 | P1 A-mirror, B-swap, PF2PRI flip, E-reverse | `P1-AMIRROR`, `P1-BSWAP`, `P1-PRIFLIP`, `P1-EREV` | as the page contrasts say |
 | P2 plane fetch: BPL4PT at plane 2's image | `P2-BPL4PLANE2` | as said |
 | P2: BPL4PT at an all-zero image | `P2-BPL4ZERO` | BPL4PT at the all-zero image inside plane 4's own area, so the fetch check still holds and only the plane-4 block changes |
@@ -594,28 +605,36 @@ In B8 where PF1, PF2 and a group-0 or group-1 sprite overlap, the colour seen is
 
 ### Recorded
 
-Both cores ran the final build (`make -k -B test`) and then every `NMH_MUTATE` selector below from the same object directories. `out_fx68k.txt`: 110 passed, 14 failed. `out_tg68k.txt`: 110 passed, 14 failed. Every line has the same verdict on both cores; what differs per core is only a measured number (listed below the table).
+Both cores ran the final build (`make -k -B test`) and then every `NMH_MUTATE` selector below from the same object directories. `out_fx68k.txt`: 115 passed, 18 failed. `out_tg68k.txt`: 115 passed, 18 failed. Every line has the same verdict on both cores; what differs per core is only a measured number (listed below the table).
 
 | Line | Cases | fx68k | TG68K |
 |---|---|---|---|
-| `P3 FIXTURE` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
+| `P3-FIXTURE-LOADED` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
+| `P3-FIXTURE-TRIGGERS` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
+| `P3-FIXTURE-DRIVEN` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
+| `P3-PRE-RECORDS` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P3-PRE-ANCHOR` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P3-PRE-READTIME` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P3-PRE-DDRA` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P3-PRE-PULSE` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P3-PRE-LIVE` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
-| `P3 item 1` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
-| `P3 item 2` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
-| `P3 item 5` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
+| `P3-HELD` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
+| `P3-PEN-POSITION` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
+| `P3-LATCHED-PEN-POSITION` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
+| `P3-FIELD-END-LATCH` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | FAIL | FAIL |
 | `P3-PRE-PERIOD` | ECS-PAL, ECS-NTSC | PASS | PASS |
-| `P4 FIXTURE` | ECS-PAL | PASS | PASS |
+| `P4-FIXTURE-LOADED` | ECS-PAL | PASS | PASS |
+| `P4-FIXTURE-A1` | ECS-PAL | PASS | PASS |
+| `P4-FIXTURE-DRIVEN` | ECS-PAL | PASS | PASS |
 | `P4-PRE-DDRA` | ECS-PAL | PASS | PASS |
 | `P4-PRE-ANCHOR` | ECS-PAL | PASS | PASS |
-| `P4-PRE-REFFRAME` | ECS-PAL | PASS | PASS |
+| `P4-PRE-READTIME` | ECS-PAL | PASS | PASS |
+| `P4-PRE-PULSE` | ECS-PAL | PASS | PASS |
 | `P4-PRE-PERIOD` | ECS-PAL | PASS | PASS |
+| `P4-PRE-REFFRAME` | ECS-PAL | PASS | PASS |
 | `P4-PRE-LATCHF1` | ECS-PAL | FAIL | FAIL |
 | `P4-PRE-CONTROL` | ECS-PAL | FAIL | FAIL |
-| `P4` | ECS-PAL | PASS | PASS |
+| `P4-LPENDIS-READ` | ECS-PAL | NOT GRADED | NOT GRADED |
 | `P1-FIXTURE-RUN` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P1-PRE-FRAME` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P1-PRE-TAGS` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
@@ -634,28 +653,35 @@ Both cores ran the final build (`make -k -B test`) and then every `NMH_MUTATE` s
 | `P2-PRE-PLANE-FETCH` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 | `P2-COMBINE` | OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC | PASS | PASS |
 
-The fourteen reds are the three P3 items (p. 216, p. 239) in each of the four cases and P4-PRE-LATCHF1 and P4-PRE-CONTROL (p. 239): VPOSR and VHPOSR return the live beam counter on every case tried, and no read is held between a trigger and the end of internal vertical blanking.
+The eighteen reds are the four P3 lines `P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH` (p. 216, p. 238, p. 239) in each of the four cases, and `P4-PRE-LATCHF1` and `P4-PRE-CONTROL` (p. 239): VPOSR and VHPOSR return the live beam counter on every case tried, and no read is held between a trigger and the end of internal vertical blanking. `P4-LPENDIS-READ` prints NOT GRADED because those two preconditions are red, and credits no claim.
+
+A private copy of the RTL outside the repository, which implements pp. 238-239 and the LPENDIS bit of p. 305 (BPLCON0 bit 3 enables a latch of vpos and hpos that a falling edge of pin 6 sets after line 20, that the end of the field sets when no trigger came, that vertical position 20 releases, and that VPOSR and VHPOSR return unless LPENDIS is set), was built against the unchanged package: P3 and P4 give 66 passed and 0 failed on both cores in the run without P1 and P2, `P4-LPENDIS-READ` is PASS, and the four P3 lines are PASS in all four cases, in NTSC too (V1 and V2 of F1, F3, F5 and F7 are `$13801` in PAL and `$10601` in NTSC).
 
 Measured values (not graded):
 
 - P1, every case and both cores: k = 2 output samples per lores pixel, s0 = 141 samples from the row's first sample, 512 rows per field in PAL and 400 in NTSC, 5155840 samples compared in PAL and 4026880 in NTSC (P1 PAL: 688128 in A1 and A2, 2747392 in B1-B8, 1720320 in E0-E4); P2: 344072 samples (PAL), 268808 (NTSC).
 - B8, the three-way overlap the pages leave open: 5120 samples per case are not graded; the colour seen there is `$0F0` (PF2C).
-- P3 item 2: V(L1) = 110, V(L3) = 110 and V(L5) = 190 in every case on both cores (the live beam at E110 and E190); H(L3) - H(L1) is 14, 14, 0, 0 on fx68k and 0, 0, 6, -8 on TG68K in OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC.
-- P4 delay calibration: fx68k 166 poll iterations over the 20 lines between E110 and E130 (the Copper fetches them 36320 cycles apart), the delay after E250 lasted 37060 cycles to X's store, X's store lies 308964 cycles after t(A1) (bound: more than 284544); TG68K 224 iterations, 36900 cycles, 308804 cycles. X reads V = 270 on both cores.
+- P3 delay calibration, polls of INTREQR over the 20 lines E110..E130 (the Copper fetches them 36320 cycles apart): 164 (PAL) and 163 (NTSC) on fx68k, 221 on TG68K.
+- P3 item 2: V(L1) = 110, V(L3) = 110 and V(L5) = 190 in every case on both cores (the live beam at E110 and E190); H(L3) - H(L1) is 6, 6, 16, 16 on fx68k and -4, -4, 2, -20 on TG68K in OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC.
+- P3 item 5: V1 and V2 of F1, F3, F5 and F7 read the live beam on this RTL: V1 at line 2 (`$0029B` and `$0028A` on fx68k, `$00262` to `$00254` on TG68K) and V2 at line 11 or 10 (`$00B1F` to `$00A7E`), unequal, below `$10500`, in every case.
+- P3 period of the field before and after the BEAMCON0 write: 568408 and 568360 (fx68k) and 568376 and 568568 (TG68K) cycles in ECS-PAL, 477640 and 477704 (fx68k) and 477592 and 477528 (TG68K) in ECS-NTSC; the bound is one line, 1824 cycles.
+- P4 delay calibration: fx68k 166 poll iterations over the 20 lines between E110 and E130, the delay after E250 lasted 37060 cycles to X's store, X's store lies 308964 cycles after t(A1) (bound: more than 284544); TG68K 224 iterations, 36932 cycles, 308836 cycles. Y is stored 440 (fx68k) and 432 (TG68K) cycles after X. X reads V = 270 on both cores; Y reads V = 270, with H = 141 and H(X') = 90, H(Y') = 145 on fx68k and H = 124, H(X') = 74, H(Y') = 128 on TG68K.
 
 ### Mutations replayed
 
-Each selector was run on both cores from the final build; the table gives what turned red (other labels keep their verdict of the primary run) and what printed NOT GRADED.
+Each selector was run on both cores from the final build; the table gives what turned red (other labels keep their verdict of the primary run) and what printed NOT GRADED. A selector of P3 runs the OCS-PAL case unchanged beside the mutated ECS-PAL case, so its summary counts the OCS-PAL lines too.
 
 | Selector | fx68k | TG68K |
 |---|---|---|
 | P1-LATEMARK | FAIL: P1-FIXTURE-RUN; NOT GRADED: P1 (0 passed, 1 failed) | FAIL: P1-FIXTURE-RUN; NOT GRADED: P1 (0 passed, 1 failed) |
 | P1-NOCOP | FAIL: P1-PRE-FRAME; NOT GRADED: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) | FAIL: P1-PRE-FRAME; NOT GRADED: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) |
 | P1-TAGBAD | FAIL: P1-PRE-TAGS; NOT GRADED: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) | FAIL: P1-PRE-TAGS; NOT GRADED: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) |
+| P1-TAGCOUNT | FAIL: P1-PRE-TAGS; NOT GRADED: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) | FAIL: P1-PRE-TAGS; NOT GRADED: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) |
 | P1-SCROLL | FAIL: P1-PRE-WINDOW; NOT GRADED: P1-GROUP-A, P1-GROUP-B, P1-GROUP-E, P1-COLOUR-OF-HIGHEST-PRIORITY (6 passed, 1 failed) | FAIL: P1-PRE-WINDOW; NOT GRADED: P1-GROUP-A, P1-GROUP-B, P1-GROUP-E, P1-COLOUR-OF-HIGHEST-PRIORITY (6 passed, 1 failed) |
-| P1-SPRENCLR | FAIL: P1-PRE-SPRITES, P1-PRE-VEXTENT; NOT GRADED: P1-GROUP-A, P1-GROUP-B, P1-GROUP-E, P1-COLOUR-OF-HIGHEST-PRIORITY (5 passed, 2 failed) | FAIL: P1-PRE-SPRITES, P1-PRE-VEXTENT; NOT GRADED: P1-GROUP-A, P1-GROUP-B, P1-GROUP-E, P1-COLOUR-OF-HIGHEST-PRIORITY (5 passed, 2 failed) |
+| P1-SPRENCLR | FAIL: P1-PRE-SPRITES; NOT GRADED: P1-PRE-VEXTENT, P1-GROUP-A, P1-GROUP-B, P1-GROUP-E, P1-COLOUR-OF-HIGHEST-PRIORITY (5 passed, 1 failed) | FAIL: P1-PRE-SPRITES; NOT GRADED: P1-PRE-VEXTENT, P1-GROUP-A, P1-GROUP-B, P1-GROUP-E, P1-COLOUR-OF-HIGHEST-PRIORITY (5 passed, 1 failed) |
 | P1-BPL2ZERO | FAIL: P1-PRE-PLAYFIELDS; NOT GRADED: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) | FAIL: P1-PRE-PLAYFIELDS; NOT GRADED: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) |
 | P1-VSTOP130 | FAIL: P1-PRE-VEXTENT; NOT GRADED: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) | FAIL: P1-PRE-VEXTENT; NOT GRADED: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) |
+| P1-AVSTOP130 | FAIL: P1-PRE-VEXTENT; NOT GRADED: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) | FAIL: P1-PRE-VEXTENT; NOT GRADED: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (8 passed, 1 failed) |
 | P1-AMIRROR | FAIL: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (9 passed, 2 failed) | FAIL: P1-GROUP-A, P1-COLOUR-OF-HIGHEST-PRIORITY (9 passed, 2 failed) |
 | P1-BSWAP | FAIL: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (9 passed, 2 failed) | FAIL: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (9 passed, 2 failed) |
 | P1-PRIFLIP | FAIL: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (9 passed, 2 failed) | FAIL: P1-GROUP-B, P1-COLOUR-OF-HIGHEST-PRIORITY (9 passed, 2 failed) |
@@ -667,20 +693,31 @@ Each selector was run on both cores from the final build; the table gives what t
 | P2-BPL4PLANE2 | FAIL: P2-PRE-PLANE-FETCH; NOT GRADED: P2-COMBINE (4 passed, 1 failed) | FAIL: P2-PRE-PLANE-FETCH; NOT GRADED: P2-COMBINE (4 passed, 1 failed) |
 | P2-SPRENCLR | FAIL: P2-COMBINE (5 passed, 1 failed) | FAIL: P2-COMBINE (5 passed, 1 failed) |
 | P2-BPL4ZERO | FAIL: P2-COMBINE (5 passed, 1 failed) | FAIL: P2-COMBINE (5 passed, 1 failed) |
-| P3-ANCHOR | FAIL: P3-PRE-ANCHOR (16 passed, 7 failed) | FAIL: P3-PRE-ANCHOR (16 passed, 7 failed) |
-| P3-READTIME | FAIL: P3-PRE-READTIME (16 passed, 7 failed) | FAIL: P3-PRE-READTIME (16 passed, 7 failed) |
-| P3-DDRA | no label turns red (17 passed, 6 failed) | no label turns red (17 passed, 6 failed) |
-| P3-NOPULSE | FAIL: P3-PRE-PULSE (16 passed, 7 failed) | FAIL: P3-PRE-PULSE (16 passed, 7 failed) |
-| P3-HOLD | no label turns red (16 passed, 3 failed) | no label turns red (16 passed, 3 failed) |
-| P3-OFFSET | no label turns red (17 passed, 6 failed) | no label turns red (17 passed, 6 failed) |
-| P3-BEAMCON0 | FAIL: P3-PRE-PERIOD (9 passed, 1 failed) | FAIL: P3-PRE-PERIOD (9 passed, 1 failed) |
-| P3-LPEN | no label turns red (18 passed, 6 failed) | no label turns red (18 passed, 6 failed) |
-| P4-NOLPENDIS | no label turns red (8 passed, 2 failed) | no label turns red (8 passed, 2 failed) |
-| P4-F3LPENDIS | no label turns red (8 passed, 2 failed) | no label turns red (8 passed, 2 failed) |
-| P4-NOPULSE-F1 | no label turns red (8 passed, 2 failed) | no label turns red (8 passed, 2 failed) |
-| P4-DDRA | no label turns red (8 passed, 2 failed) | no label turns red (8 passed, 2 failed) |
-| P4-ANCHOR | FAIL: P4-PRE-ANCHOR (7 passed, 3 failed) | FAIL: P4-PRE-ANCHOR (7 passed, 3 failed) |
-| P4-PERIOD | FAIL: P4-PRE-REFFRAME, P4-PRE-PERIOD (6 passed, 4 failed) | FAIL: P4-PRE-REFFRAME, P4-PRE-PERIOD (6 passed, 4 failed) |
-| P4-SHORT | FAIL: P4-PRE-REFFRAME (7 passed, 3 failed) | FAIL: P4-PRE-REFFRAME (7 passed, 3 failed) |
+| P3-NOBIN | FAIL: P3-FIXTURE-LOADED; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (9 passed, 5 failed) | FAIL: P3-FIXTURE-LOADED; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (9 passed, 5 failed) |
+| P3-NOCOPEN | FAIL: P3-FIXTURE-TRIGGERS; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (10 passed, 5 failed) | FAIL: P3-FIXTURE-TRIGGERS; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (10 passed, 5 failed) |
+| P3-NODONE | FAIL: P3-FIXTURE-DRIVEN; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (11 passed, 5 failed) | FAIL: P3-FIXTURE-DRIVEN; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (11 passed, 5 failed) |
+| P3-EVMIS | FAIL: P3-PRE-RECORDS; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-RECORDS; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-ANCHOR | FAIL: P3-PRE-ANCHOR; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-ANCHOR; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-READTIME | FAIL: P3-PRE-READTIME; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-READTIME; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-DDRA | FAIL: P3-PRE-DDRA; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-DDRA; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-NOPULSE | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-E40LINE44 | FAIL: P3-PRE-LIVE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-LIVE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-HOLD | no label turns red (18 passed, 4 failed) | no label turns red (18 passed, 4 failed) |
+| P3-BEAMCON0 | FAIL: P3-PRE-PERIOD (10 passed, 1 failed) | FAIL: P3-PRE-PERIOD (10 passed, 1 failed) |
+| P3-LPEN | no label turns red (20 passed, 8 failed) | no label turns red (20 passed, 8 failed) |
+| P3-OFFSET | no label turns red (19 passed, 8 failed) | no label turns red (19 passed, 8 failed) |
+| P4-NOBIN | FAIL: P4-FIXTURE-LOADED, P4-FIXTURE-A1 (0 passed, 2 failed) | FAIL: P4-FIXTURE-LOADED, P4-FIXTURE-A1 (0 passed, 2 failed) |
+| P4-NOCOPEN | FAIL: P4-FIXTURE-A1 (1 passed, 1 failed) | FAIL: P4-FIXTURE-A1 (1 passed, 1 failed) |
+| P4-NODONE | FAIL: P4-FIXTURE-DRIVEN (2 passed, 1 failed) | FAIL: P4-FIXTURE-DRIVEN (2 passed, 1 failed) |
+| P4-DDRA | FAIL: P4-PRE-DDRA (8 passed, 3 failed) | FAIL: P4-PRE-DDRA (8 passed, 3 failed) |
+| P4-ANCHOR | FAIL: P4-PRE-ANCHOR (8 passed, 3 failed) | FAIL: P4-PRE-ANCHOR (8 passed, 3 failed) |
+| P4-YDELAY | FAIL: P4-PRE-READTIME (8 passed, 3 failed) | FAIL: P4-PRE-READTIME (8 passed, 3 failed) |
+| P4-NOPULSE-F1 | FAIL: P4-PRE-PULSE (8 passed, 3 failed) | FAIL: P4-PRE-PULSE (8 passed, 3 failed) |
+| P4-PERIOD | FAIL: P4-PRE-PERIOD; NOT GRADED: P4-PRE-REFFRAME (7 passed, 3 failed) | FAIL: P4-PRE-PERIOD; NOT GRADED: P4-PRE-REFFRAME (7 passed, 3 failed) |
+| P4-SHORT | FAIL: P4-PRE-REFFRAME (8 passed, 3 failed) | FAIL: P4-PRE-REFFRAME (8 passed, 3 failed) |
+| P4-NOLPENDIS | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
+| P4-F3LPENDIS | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
 
-`P3-PRE-DDRA`, `P3`, `P4`, `P4-PRE-CONTROL`, `P4-PRE-LATCHF1` and `P4-PRE-DDRA` are recorded in the test as impossible or green; the reason is stated in each record and printed by the run (`P3-PRE-DDRA-MUTATION`, `P3-PRE-OFFSET-MUTATION`, `P4-MUTATION`, `P4-PRE-DDRA-MUTATION`).
+On the private copy of the RTL described above, the selectors P3-HOLD (`P3-PRE-LIVE` FAIL: E40 and E60 of F2 read V = 30), P3-OFFSET (`P3-PEN-POSITION` and `P3-LATCHED-PEN-POSITION` FAIL, H(L3) - H(L1) = 26), P3-LPEN (`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH` FAIL, the contrast line PASS), P4-NOLPENDIS (`P4-LPENDIS-READ` FAIL, X = (0,100)), P4-F3LPENDIS (`P4-PRE-CONTROL` and `P4-PRE-LATCHF1` FAIL) and P4-NOPULSE-F1 (`P4-PRE-LATCHF1` and `P4-PRE-PULSE` FAIL, `P4-LPENDIS-READ` NOT GRADED) move the lines named, on both cores.
+
+`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL` and `P4-LPENDIS-READ` carry implementation records; the selectors P3-OFFSET, P4-F3LPENDIS, P4-NOPULSE-F1 and P4-NOLPENDIS cannot move the lines they name on the repository's RTL, because those lines are already red or NOT GRADED there, and the run prints a record (`P3-PRE-OFFSET-MUTATION`, `P4-PRE-CONTROL-MUTATION`, `P4-PRE-LATCHF1-MUTATION`, `P4-LPENDIS-READ-MUTATION`) that says so.

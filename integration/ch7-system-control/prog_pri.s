@@ -10,6 +10,8 @@
 ;   MUT_EREV       -- E0-E4: v replaced by 4-v
 ;   MUT_SCROLL     -- the CPU writes BPLCON1 $0011 at line 215 of every evaluated field (below the last band)
 ;   MUT_TAGBAD     -- group A: one row whose tag block 2 is half set (it does not decode)
+;   MUT_TAGCOUNT   -- group A: the first row of band X carries tag id 0, so band X has one row fewer than band E
+;   MUT_AVSTOP130  -- group A: the odd slots end at line 130 instead of 120
 ;   MUT_SPRENCLR   -- DMACON without SPREN
 ;   MUT_NOCOP      -- no COP1LC write for configuration 4
 ;   MUT_BPL2ZERO   -- B1-B8: BPL2PT at the all-zero image
@@ -37,6 +39,9 @@ start:
                 BAND    180,0,0,1
                 ifd     MUT_TAGBAD
                 move.b  #$F0,IMG_A_P1+2         ; row 0, block 2: four of its eight pixels set
+                endif
+                ifd     MUT_TAGCOUNT
+                clr.b   IMG_A_P1+36*40+3        ; row 36, the first row of band X (id 2): block 3 cleared, so it decodes to id 0
                 endif
                 lea     IMG_B_P1,a2
                 BAND    16,0,0,1
@@ -173,6 +178,12 @@ mkgrp_a:
                 moveq   #80,d1
 .ev:            move.w  d1,d2
                 add.w   #40,d2
+                ifd     MUT_AVSTOP130
+                cmp.w   #80,d1
+                bne.s   .avs
+                add.w   #10,d2                  ; contrast: the odd slots end at line 130
+.avs:
+                endif
                 move.w  d7,d3
                 and.w   #1,d3
                 movea.l a3,a2

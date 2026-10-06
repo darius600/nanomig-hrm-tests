@@ -17,6 +17,22 @@
 ;                  anchor's WAIT targets line 101 instead of line 100.
 ;   V1DELAY     -- precondition-2 (read-time check) contrast: the V1 read
 ;                  of every field is moved about 30 lines later.
+;   E40LINE44   -- the live-read precondition's contrast: the E40 WAIT
+;                  targets line 44 instead of line 40.
+;   NOCOPEN     -- the Copper trigger-plan fixture's contrast: DMACON is
+;                  written without COPEN, so the Copper never fetches.
+;   NODONE      -- the driven-run fixture's contrast: the program never
+;                  stores the DONE mark.
+;   EVMIS       -- the record-layout precondition's contrast: the V1 record
+;                  of every field carries event id 5 instead of 6.
+;
+; The CPU's waits after VERTB (about 2 lines before V1, about 8 more before
+; V2) are counted polls of INTREQR, never polls of VPOSR or VHPOSR, the
+; registers under test: a light-pen latch may hold them at any time (p. 239).
+; The count is calibrated in the run: in the first Copper pass, which starts
+; right after a VERTB, the same polling loop (spin) counts its iterations
+; between the COPER signals of E110 and E130, which the Copper list places 20
+; lines apart (WAIT lines 110 and 130, p. 22); CALIB holds that count.
 ;
 ; Record format (test_ch7_system_control.cpp's own kRecordWords): each
 ; record is 5 words -- field index (0=F-1,1=F0,...,8=F7), event id
@@ -40,6 +56,7 @@ PRETICK0        equ     $0C1100
 PRETICK1        equ     $0C1102
 MAINTICK        equ     $0C1104         ; 9 words, one per VERTB (F-1..F7)
 RECORDS         equ     $0C2000         ; 72 records * 5 words
+CALIB           equ     $0C1180         ; long: poll iterations over the 20 lines E110..E130
 
         org     PROGRAM_ORG
 
@@ -54,9 +71,6 @@ start:
         ; output latch. DDRAFORCE is precondition 3's own contrast: force
         ; both bits to outputs instead.
         move.b  CIAADDRA.l,d0           ; d0.b = original DDRA
-        moveq   #0,d2
-        move.b  d0,d2
-        move.w  d2,RESULTS.l            ; RESULTS+0: original DDRA, zero-extended
         ifd     DDRAFORCE
         or.b    #$C0,d0
         move.b  d0,CIAADDRA.l
@@ -68,6 +82,9 @@ start:
         move.b  d0,CIAADDRA.l
 .ddra_done:
         endif
+        moveq   #0,d2
+        move.b  CIAADDRA.l,d2           ; DDRA read again after the fix-or-force branch
+        move.w  d2,RESULTS.l            ; RESULTS+0: that DDRA, zero-extended
 
         ifd     ECS_BUILD
         ; ---- P3 precondition 6's own fixture: measure the field period
@@ -94,7 +111,11 @@ start:
 
         ; ---- Copper list, in beam order (p.27), see SPECIFICATION.md's
         ; own WAIT/MOVE table (P3, "Stimulus (program)", step 5).
+        ifd     E40LINE44
+        move.w  #$2C01,COP_LIST.l               ; contrast: WAIT line 44 instead of 40
+        else
         move.w  #$2801,COP_LIST.l               ; WAIT line 40
+        endif
         move.w  #$FFFE,COP_LIST+2.l
         move.w  #INTREQ,COP_LIST+4.l             ; E40
         move.w  #$8010,COP_LIST+6.l
@@ -151,19 +172,33 @@ start:
         move.w  #$FFFF,COP_LIST+80.l             ; end: WAIT forever
         move.w  #$FFFE,COP_LIST+82.l
 
+        ; The Copper starts a few lines after a VERTB (ECS builds: the one
+        ; the second pre-write tick waited for, a few instructions ago; other
+        ; builds: the next one), so its first pass, the one that carries no
+        ; field number, runs in real time from the top of the field and the
+        ; E110..E130 calibration below measures 20 lines.
+        clr.l   CALIB.l
+        ifnd    ECS_BUILD
+        bsr     wait_vertb
+        endif
         move.l  #COP_LIST,d3
         move.w  d3,COP1LCL(a0)
         swap    d3
         move.w  d3,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)          ; strobe before DMA is turned on (p.30)
 
+        ifd     NOCOPEN
+        move.w  #$8200,DMACON(a0)       ; contrast: SET DMAEN only, no COPEN
+        else
         move.w  #$8280,DMACON(a0)       ; SET DMAEN,COPEN
+        endif
 
         ; ---- Event loop. d0 = field index (0=F-1 .. 8=F7), d1 = per-field
         ; COPER counter (0..5), a4 = MAINTICK pointer, a5 = RECORDS pointer.
         lea     MAINTICK,a4
         lea     RECORDS,a5
         moveq   #-1,d0
+        moveq   #0,d1
 main_loop:
         move.w  INTREQR(a0),d7
         btst    #5,d7
@@ -173,17 +208,33 @@ main_loop:
         moveq   #0,d1
         move.w  d0,(a4)+
 
+        ; V1: about 2 lines after the VERTB the CPU saw (CALIB / 10 polls);
+        ; V1DELAY: about 30 lines (3 * CALIB / 2 polls).
+        move.l  CALIB.l,d5
         ifd     V1DELAY
-        moveq   #32,d5                  ; contrast: ~30 lines later than normal
+        move.l  d5,d2
+        lsr.l   #1,d2
+        add.l   d2,d5
         else
-        moveq   #2,d5
+        divu    #10,d5
+        and.l   #$FFFF,d5
         endif
-        bsr     wait_for_v
+        moveq   #0,d6
+        bsr     spin
+        ifd     EVMIS
+        moveq   #5,d4                   ; contrast: V1 stored with event id 5
+        else
         moveq   #6,d4                   ; V1
+        endif
         bsr     read_and_store
 
-        moveq   #10,d5
-        bsr     wait_for_v
+        ; V2: about 8 lines later (2 * CALIB / 5 polls).
+        move.l  CALIB.l,d5
+        add.l   d5,d5
+        divu    #5,d5
+        and.l   #$FFFF,d5
+        moveq   #0,d6
+        bsr     spin
         moveq   #7,d4                   ; V2
         bsr     read_and_store
 
@@ -196,15 +247,32 @@ main_loop:
         move.w  #$0010,INTREQ(a0)       ; clear COPER
         move.w  d1,d4
         bsr     read_and_store
+        cmp.w   #2,d1                   ; E110 ...
+        bne.s   .coper_done
+        cmp.w   #-1,d0                  ; ... of the first pass, before any VERTB was seen
+        bne.s   .coper_done
+        moveq   #0,d6
+        move.l  #$7FFFFFFF,d5           ; no cap: the loop ends at E130's COPER
+        bsr     spin
+        move.w  #$0010,INTREQ(a0)       ; clear E130's COPER
+        move.l  d6,CALIB.l
+        addq.w  #1,d1                   ; E130 was consumed here
+        move.w  d1,d4
+        bsr     read_and_store
+.coper_done:
         addq.w  #1,d1
         bra     main_loop
 
 all_done:
+        ifd     NODONE
+.never: bra.s   .never                  ; contrast: no DONE mark
+        else
         DONE
+        endif
 
-; ---- wait_vertb: spins until INTREQR bit 5, then clears it. Used only by
-; the ECS_BUILD pre-write ticks, before the main loop (and its own d0/d1)
-; is initialised.
+; ---- wait_vertb: spins until INTREQR bit 5, then clears it. Used by the
+; ECS_BUILD pre-write ticks and once before the Copper is started, before
+; the main loop (and its own d0/d1) is initialised.
 wait_vertb:
 .wv:    move.w  INTREQR(a0),d7
         btst    #5,d7
@@ -212,15 +280,18 @@ wait_vertb:
         move.w  #$0020,INTREQ(a0)
         rts
 
-; ---- wait_for_v: spins until VHPOSR's own V byte (bits 15-8) reaches the
-; target line in d5. Only ever used for the V1/V2 waits, both well before
-; any trigger's own line (100/180), so it never depends on whether VPOSR is
-; live or latched.
-wait_for_v:
-.wfv:   move.w  VHPOSR(a0),d7
-        lsr.w   #8,d7
-        cmp.w   d5,d7
-        blt.s   .wfv
+; ---- spin: polls INTREQR; d6 counts the iterations. Ends when d6 reaches
+; the cap in d5 or when COPER (bit 4) is set, whichever comes first. The
+; calibration (cap never reached, ends at a COPER) and the delays (COPER
+; never set, end at the cap) run this same instruction sequence.
+spin:
+.sp:    move.w  INTREQR(a0),d7
+        addq.l  #1,d6
+        cmp.l   d5,d6
+        bhs.s   .sp_out
+        btst    #4,d7
+        beq.s   .sp
+.sp_out:
         rts
 
 ; ---- read_and_store: stores one record (see the header comment) at (a5)+,

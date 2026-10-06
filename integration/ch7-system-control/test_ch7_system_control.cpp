@@ -23,10 +23,12 @@
 // MUTATION P1-FIXTURE-RUN stimulus red the marker of every configuration stored after the tick that begins the evaluated field instead of before it, via NMH_MUTATE=P1-LATEMARK (measured: P1-FIXTURE-RUN FAIL, every dependent line NOT GRADED, both cores)
 // MUTATION P1-PRE-FRAME stimulus red no COP1LC write for configuration 4 (B3), via NMH_MUTATE=P1-NOCOP (measured: P1-PRE-FRAME FAIL, P1-GROUP-B NOT GRADED, both cores)
 // MUTATION P1-PRE-TAGS stimulus red one row of the image of A1 and A2 whose tag block 2 is half set, so it does not decode, via NMH_MUTATE=P1-TAGBAD (measured: P1-PRE-TAGS FAIL, P1-GROUP-A NOT GRADED, both cores)
+// MUTATION P1-PRE-TAGS stimulus red the first row of band X of A1 and A2 carries tag id 0, so every row decodes and band X has one row fewer than band E, via NMH_MUTATE=P1-TAGCOUNT (measured: P1-PRE-TAGS FAIL and no other line moves except P1-GROUP-A and P1-COLOUR-OF-HIGHEST-PRIORITY NOT GRADED, both cores)
 // MUTATION P1-PRE-WINDOW stimulus red the CPU writes BPLCON1 $0011 at line 215 of every evaluated field and clears it after the field, so the rows below line 215 start one lores pixel later than the rows above it, via NMH_MUTATE=P1-SCROLL (measured: P1-PRE-WINDOW FAIL, both cores)
-// MUTATION P1-PRE-SPRITES stimulus red DMACON written without SPREN, via NMH_MUTATE=P1-SPRENCLR (measured: P1-PRE-SPRITES FAIL, and P1-PRE-VEXTENT FAIL because no sprite shows at all, every group NOT GRADED, both cores)
+// MUTATION P1-PRE-SPRITES stimulus red DMACON written without SPREN, via NMH_MUTATE=P1-SPRENCLR (measured: P1-PRE-SPRITES FAIL, P1-PRE-VEXTENT NOT GRADED because no sprite reference exists, every group NOT GRADED, both cores)
 // MUTATION P1-PRE-PLAYFIELDS stimulus red BPL2PT of B1-B8 at the all-zero image, via NMH_MUTATE=P1-BPL2ZERO (measured: P1-PRE-PLAYFIELDS FAIL, P1-GROUP-B NOT GRADED, both cores)
 // MUTATION P1-PRE-VEXTENT stimulus red the sprites of B1-B8 end at line 130 instead of 140, via NMH_MUTATE=P1-VSTOP130 (measured: P1-PRE-VEXTENT FAIL, P1-GROUP-B NOT GRADED, both cores)
+// MUTATION P1-PRE-VEXTENT stimulus red the odd slots of A1 and A2 end at line 130 instead of 120, so ten rows after band O show sprites, via NMH_MUTATE=P1-AVSTOP130 (measured: P1-PRE-VEXTENT FAIL, P1-GROUP-A NOT GRADED, both cores)
 // MUTATION P1-GROUP-A stimulus red A1 with slot j holding sprite 7-j, graded against the table of A1, via NMH_MUTATE=P1-AMIRROR (measured: P1-GROUP-A FAIL on A1 only, every precondition PASS, both cores)
 // MUTATION P1-GROUP-B stimulus red PF1P and PF2P exchanged in B1-B8, via NMH_MUTATE=P1-BSWAP (measured: P1-GROUP-B FAIL on B1-B5 and B8, every precondition PASS, both cores)
 // MUTATION P1-GROUP-B stimulus red PF2PRI inverted in B1-B8, via NMH_MUTATE=P1-PRIFLIP (measured: P1-GROUP-B FAIL on B1-B8, every precondition PASS, both cores)
@@ -40,31 +42,41 @@
 // MUTATION P2-COMBINE stimulus red DMACON written without SPREN, via NMH_MUTATE=P2-SPRENCLR (measured: P2-COMBINE FAIL, every precondition PASS, both cores)
 // MUTATION P2-COMBINE stimulus red BPL4PT at the all-zero image inside the area of plane 4, via NMH_MUTATE=P2-BPL4ZERO (measured: P2-COMBINE FAIL, every precondition PASS, both cores)
 //
-// MUTATION P3-PRE-ANCHOR stimulus red second A anchor WAIT moved to line 101 instead of 100, via NMH_MUTATE=P3-ANCHOR (measured: P3-PRE-ANCHOR FAIL on both cores)
-// MUTATION P3-PRE-READTIME stimulus red a ~30-line delay added before the V1 read of every field, via NMH_MUTATE=P3-READTIME (measured: P3-PRE-READTIME FAIL on both cores)
-// MUTATION P3-PRE-DDRA stimulus impossible unfalsifiable at this boundary: CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P3-DDRA -- the program stores CIAADDRA before the fix-or-force branch runs (p.339 step order), so the graded word can never reflect what that branch does; see the P3-PRE-DDRA-MUTATION record (both cores)
-// MUTATION P3-PRE-PULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P3-NOPULSE (measured: P3-PRE-PULSE FAIL on both cores, graded against the nominal 3-pulse schedule)
-// MUTATION P3-PRE-LIVE stimulus green pin 6 held pressed from line 30 of F2 to the end of F2 instead of the normal schedule, via NMH_MUTATE=P3-HOLD (measured: the contrast line of P3-PRE-LIVE PASSes on both cores -- E40/E60 of F2 still read the live beam, since no freeze exists to hold them)
-// MUTATION P3 stimulus impossible unfalsifiable at this boundary: the F1 trigger moved to t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET -- H(L1) is already a live read (item 1 FAILs in the primary run too), so it cannot depend on where the pulse landed; see the P3-PRE-OFFSET-MUTATION record (both cores)
+// MUTATION P3-FIXTURE-LOADED stimulus red the program file does not exist, via NMH_MUTATE=P3-NOBIN (measured: P3-FIXTURE-LOADED FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-FIXTURE-TRIGGERS stimulus red DMACON written without COPEN so the Copper never fetches, via NMH_MUTATE=P3-NOCOPEN (measured: P3-FIXTURE-TRIGGERS FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-FIXTURE-DRIVEN stimulus red the program never stores the DONE mark, via NMH_MUTATE=P3-NODONE (measured: P3-FIXTURE-DRIVEN FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-PRE-RECORDS stimulus red the V1 record of every field carries event id 5 instead of 6, via NMH_MUTATE=P3-EVMIS (measured: P3-PRE-RECORDS FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-PRE-ANCHOR stimulus red second A anchor WAIT moved to line 101 instead of 100, via NMH_MUTATE=P3-ANCHOR (measured: P3-PRE-ANCHOR FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-PRE-READTIME stimulus red the V1 wait of every field is about 30 lines (three halves of the calibrated count) instead of about 2, via NMH_MUTATE=P3-READTIME (measured: P3-PRE-READTIME FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-PRE-DDRA stimulus red CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P3-DDRA (measured: the value read after the branch has bits 6 and 7 set, P3-PRE-DDRA FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-PRE-PULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P3-NOPULSE (measured: P3-PRE-PULSE FAIL on both cores, graded against the nominal 3-pulse schedule, the four P3 lines NOT GRADED)
+// MUTATION P3-PRE-LIVE stimulus red the E40 WAIT at line 44 instead of line 40, via NMH_MUTATE=P3-E40LINE44 (measured: E40 reads V=44 or 45, P3-PRE-LIVE FAIL, the four P3 lines NOT GRADED, both cores)
+// MUTATION P3-PRE-LIVE stimulus green pin 6 held pressed from line 30 of F2 to the end of F2 instead of the normal schedule, via NMH_MUTATE=P3-HOLD, through the unchanged comparator (measured: the line is PASS on both cores because no freeze exists to hold E40 and E60 of F2; on the private copy of the RTL described at P3-HELD the same selector turns it FAIL, E40 and E60 of F2 read V=30)
 // MUTATION P3-PRE-PERIOD stimulus red the ECS-NTSC build BEAMCON0 write ($0000) run against a PAL-configured harness (bit 5 opposite the selected standard), via NMH_MUTATE=P3-BEAMCON0 (measured: the field period after the write is the NTSC one and P3-PRE-PERIOD FAIL on both cores, through the unchanged comparator)
-// MUTATION P3-LPEN stimulus green LPEN-clear build substituted for the LPEN-set build under the same unchanged trigger schedule and comparator -- both read the live beam, via NMH_MUTATE=P3-LPEN (measured on both cores)
-// MUTATION P4 stimulus impossible unfalsifiable at this boundary: the E60 write of F1 changed to $0020 instead of $2020 (LPENDIS never set), via NMH_MUTATE=P4-NOLPENDIS -- X is measured to read the same live value either way; see the P4-MUTATION record (both cores)
-// MUTATION P4-PRE-CONTROL stimulus impossible unfalsifiable at this boundary: the E60 write of F3 changed to $2020 instead of $0020 (LPENDIS set in the control field too), via NMH_MUTATE=P4-F3LPENDIS -- P4-PRE-CONTROL already FAILs in the primary run; see the P4-MUTATION record (both cores)
-// MUTATION P4-PRE-LATCHF1 stimulus impossible unfalsifiable at this boundary: the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 -- P4-PRE-LATCHF1 already FAILs in the primary run; see the P4-MUTATION record (both cores)
-// MUTATION P4-PRE-DDRA stimulus impossible unfalsifiable at this boundary: CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P4-DDRA -- the program stores CIAADDRA before the fix-or-force branch runs, so the stored word cannot reflect that branch; see the P4-PRE-DDRA-MUTATION record (both cores)
-// MUTATION P4-PRE-ANCHOR stimulus red the second A anchor WAITs for line 101 instead of 100, via NMH_MUTATE=P4-ANCHOR (measured: P4-PRE-ANCHOR FAIL on both cores, every other precondition as in the primary run)
-// MUTATION P4-PRE-PERIOD stimulus red every BEAMCON0 write has bit 5 clear (the other standard), via NMH_MUTATE=P4-PERIOD (measured: the field period changes and P4-PRE-PERIOD FAIL on both cores; P4-PRE-REFFRAME FAILs too, because the delay after E250 outlasts the shorter field)
-// MUTATION P4-PRE-REFFRAME stimulus red the delay after E250 is 10 poll iterations instead of the calibrated count, via NMH_MUTATE=P4-SHORT (measured: P4-PRE-REFFRAME FAIL on both cores, every other precondition as in the primary run)
+// MUTATION P3-LPEN stimulus green LPEN-clear build substituted for the LPEN-set build under the same unchanged trigger schedule and comparator -- every read tracks the beam, via NMH_MUTATE=P3-LPEN (measured on both cores)
+// MUTATION P3-HELD implementation green a private copy of the RTL outside the repository in which agnus_beamcounter.v stores BPLCON0 bit 3, latches vpos and hpos on a falling edge of pin 6 after line 20 or at the end of the field, releases the latch at vpos 20 and returns it on VPOSR and VHPOSR unless ECS LPENDIS is set (pp. 238-239, p. 305), and agnus.v and minimig.v carry the AND of both fire inputs to it, built with make NANOMIG=<copy>: the line is PASS in OCS-PAL, ECS-PAL, OCS-NTSC and ECS-NTSC on both cores, and the repository's RTL is red there because VPOSR and VHPOSR read the live beam
+// MUTATION P3-PEN-POSITION implementation green the private copy described at P3-HELD: V(L1)=100, V(L3)=100, V(L5)=180 and H(L3)-H(L1)=40 in all four cases on both cores, where the repository's RTL reads V=110, 110, 190
+// MUTATION P3-PEN-POSITION stimulus impossible already red on this RTL: the F1 trigger at t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET -- H(L1) is already a live read here, so no input moves the line; on the private copy described at P3-HELD the same selector turns the line FAIL on both cores (H(L3)-H(L1) is 26 instead of 40)
+// MUTATION P3-LATCHED-PEN-POSITION implementation green the private copy described at P3-HELD: PASS in all four cases on both cores, where the repository's RTL is red
+// MUTATION P3-FIELD-END-LATCH implementation green the private copy described at P3-HELD: V1 and V2 of F1, F3, F5 and F7 are $13801 in PAL and $10601 in NTSC, PASS in all four cases on both cores, where the repository's RTL reads the live beam (V1 at line 2, V2 at line 11)
 //
-// P3's own finding, affecting every one of the above: VPOSR and VHPOSR are
-// observed to return the live beam counter on every build and every trigger
-// schedule tried, never a value held constant through a triggered interval.
-// The assertions that grade "the value is latched / equals the pen position
-// / differs from the live beam" (P3 items 1, 2, 5 and P4's graded relation
-// where it depends on a genuine latch) therefore read FAIL here. P3-LPEN's
-// contrast is recorded "stimulus green" for the same reason: the LPEN-clear
-// build and the LPEN-set build measure the same live-beam value, so the
-// unchanged comparator returns the same verdict either way.
+// MUTATION P4-FIXTURE-LOADED stimulus red the program file does not exist, via NMH_MUTATE=P4-NOBIN (measured: P4-FIXTURE-LOADED FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
+// MUTATION P4-FIXTURE-A1 stimulus red DMACON written without COPEN so the Copper never fetches, via NMH_MUTATE=P4-NOCOPEN (measured: P4-FIXTURE-A1 FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
+// MUTATION P4-FIXTURE-DRIVEN stimulus red the program never stores the DONE mark, via NMH_MUTATE=P4-NODONE (measured: P4-FIXTURE-DRIVEN FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
+// MUTATION P4-PRE-DDRA stimulus red CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P4-DDRA (measured: the value read after the branch has bits 6 and 7 set, P4-PRE-DDRA FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
+// MUTATION P4-PRE-ANCHOR stimulus red the second A anchor WAITs for line 101 instead of 100, via NMH_MUTATE=P4-ANCHOR (measured: P4-PRE-ANCHOR FAIL on both cores, every other precondition as in the primary run)
+// MUTATION P4-PRE-READTIME stimulus red 40 poll iterations between each BEAMCON0 write and the second read, via NMH_MUTATE=P4-YDELAY (measured: P4-PRE-READTIME FAIL on both cores, every other precondition as in the primary run)
+// MUTATION P4-PRE-PULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 (measured: P4-PRE-PULSE FAIL on both cores, graded against the nominal 2-pulse schedule)
+// MUTATION P4-PRE-PERIOD stimulus red every BEAMCON0 write has bit 5 clear (the other standard), via NMH_MUTATE=P4-PERIOD (measured: the field period changes and P4-PRE-PERIOD FAIL on both cores; P4-PRE-REFFRAME prints NOT GRADED)
+// MUTATION P4-PRE-REFFRAME stimulus red the delay after E250 is 10 poll iterations instead of the calibrated count, via NMH_MUTATE=P4-SHORT (measured: P4-PRE-REFFRAME FAIL on both cores, every other precondition as in the primary run)
+// MUTATION P4-PRE-LATCHF1 stimulus impossible already red on this RTL: the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 -- Y already reads the live beam (V=270), so no input moves the line; on the private copy described at P3-HELD the same selector turns the line FAIL on both cores (Y reads V=270)
+// MUTATION P4-PRE-LATCHF1 implementation green the private copy described at P3-HELD: V(Y)=100 and H(Y)=H(X')=H(Y') on both cores, where the repository's RTL reads V=270
+// MUTATION P4-PRE-CONTROL stimulus impossible already red on this RTL: the E60 write of F3 changed to $2020 instead of $0020 (LPENDIS set in the control field too), via NMH_MUTATE=P4-F3LPENDIS -- X' and Y' already read the live beam and differ, so no input moves the line; on the private copy described at P3-HELD the same selector turns the line FAIL on both cores (X' reads V8=1 and an H other than H(Y')=85, and P4-PRE-LATCHF1 turns FAIL with it because its H clause compares H(X'))
+// MUTATION P4-PRE-CONTROL implementation green the private copy described at P3-HELD: X'=Y' and V(X')=100 on both cores, where the repository's RTL reads V=270 and X' differs from Y'
+// MUTATION P4-LPENDIS-READ implementation green the private copy described at P3-HELD: every precondition holds and the line is PASS on both cores (X reads V8=1), where the repository's RTL leaves it NOT GRADED because P4-PRE-LATCHF1 and P4-PRE-CONTROL are red
+// MUTATION P4-LPENDIS-READ stimulus red the E60 write of F1 changed to $0020 instead of $2020 (LPENDIS never set), via NMH_MUTATE=P4-NOLPENDIS, run against the private copy described at P3-HELD through the unchanged comparator (measured: every precondition holds, X is (0,100) and the line is FAIL on both cores); against the repository's RTL the line is NOT GRADED in the primary run and in this run
+//
+// The repository's RTL reads FAIL on P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION and P3-FIELD-END-LATCH in all four cases and on P4-PRE-LATCHF1 and P4-PRE-CONTROL: VPOSR and VHPOSR return the live beam counter, never a value held between a trigger and the end of internal vertical blanking (p. 239). P4-LPENDIS-READ therefore prints NOT GRADED. Each of these lines has an implementation record that turns it green on a private copy of the RTL.
 
 #include <algorithm>
 #include <cstdint>
@@ -120,17 +132,17 @@ constexpr uint32_t kPreTick0 = 0x0C1100;
 constexpr uint32_t kPreTick1 = 0x0C1102;
 constexpr uint32_t kMainTick = 0x0C1104; // 9 words, one per field (F-1..F7)
 constexpr uint32_t kRecords  = 0x0C2000; // 5 words/record, see record_index()
+constexpr uint32_t kCalib    = 0x0C1180; // long: poll iterations over the 20 lines E110..E130 (prog_lp.s, prog_p4.s)
 
-// The Copper starts running the moment DMACON enables it, from wherever the
-// beam already is -- not from a VERTB the CPU's own poll loop has seen. In
-// practice this program's first pass through the whole list (E40..E210,
-// including A1/A2/B1/B2) always completes BEFORE the CPU's own main_loop
-// sees its first VERTB, so that first pass carries no field number at all
-// (measured: it stores 6 records with field==-1, ahead of field 0's own
-// block). Every array built directly from a Copper-fetch address (A1/B1/
-// E40../E210's own read_cycles_at()) therefore has this one extra leading
-// entry that MAINTICK/RECORDS (CPU-authored, only touched from inside
-// main_loop) do not: kPhantomPasses skips it.
+// The programs start the Copper right after a VERTB, so its first pass through
+// the whole list (E40..E210, including A1/A2/B1/B2) runs before the CPU's own
+// main_loop sees its first VERTB. That first pass carries no field number
+// (it stores 6 records with field word $FFFF, ahead of field 0's own block;
+// P3-PRE-RECORDS asserts both the count and the words). Every array built
+// directly from a Copper-fetch address (A1/B1/E40../E210's own
+// read_cycles_at()) therefore has this one extra leading entry that
+// MAINTICK/RECORDS (CPU-authored, only touched from inside main_loop) do
+// not: kPhantomPasses skips it.
 constexpr size_t kPhantomPasses = 1;
 
 // One colour clock (one memory slot) equals 8 clk_sys cycles at the harness
@@ -141,6 +153,7 @@ constexpr size_t kPhantomPasses = 1;
 // outside their small tolerances, not just occasionally.
 constexpr uint64_t kCck = 8;
 constexpr uint64_t kLineCycles = 227 * kCck; // p.23/p.304's own colour-clocks-per-line, in clk_sys
+constexpr uint64_t kLongLineCycles = 228 * kCck; // p.23: one line is 227 or 228 colour clocks; the bound of the period checks
 
 constexpr uint64_t kBootBudget = 6'000'000;
 constexpr uint64_t kRunBudget  = 9'000'000; // > 9 PAL fields + spin margin
@@ -531,6 +544,7 @@ struct Refs {
 struct CfgRes {
     bool frame_found = false;
     bool pre_frame = false, pre_tags = false, pre_sprites = false, pre_play = true, pre_vext = true;
+    bool vext_eval = false;   // the vertical-extent check ran (a group-A configuration or B7 with its sprite references)
     std::string d_frame, d_tags, d_sprites, d_play, d_vext;
     long compared = 0, wrong = 0, ungraded = 0, outside = 0;
     std::string first_wrong, ungraded_seen;
@@ -770,7 +784,9 @@ P1Out analyze_p1(const Trace& t) {
             if (checked == 0) ok = false;
             R.pre_play = ok; R.d_play = std::to_string(checked) + " rows checked" + (d.empty() ? "" : "; " + d);
         }
-        // vertical extent (B7)
+        // vertical extent: Group B (B7: the sprites of groups 0 and 1 show in every row of the bands inside
+        // their lines and in no row of band B0) and Group A (the sprites of every slot show in the rows of
+        // the bands E, X, O that hold them and in no row after band O)
         if (c == kB7 && k > 0 && rf.ok) {
             bool ok = true; int rows_in = 0, rows_after = 0; std::string d;
             for (auto& r : rows) {
@@ -790,9 +806,37 @@ P1Out analyze_p1(const Trace& t) {
                 }
             }
             if (rows_in == 0 || rows_after == 0) ok = false;
+            R.vext_eval = true;
             R.pre_vext = ok; R.d_vext = std::to_string(rows_in) + " rows inside the sprites' lines, " + std::to_string(rows_after) + " rows of the band after VSTOP" + (d.empty() ? "" : "; " + d);
-        } else if (c == kB7) {
-            R.pre_vext = false; R.d_vext = "no sprite references";
+        } else if (cf.group == 'A' && k > 0 && rf.ok) {
+            bool ok = true; int rows_in = 0, rows_after = 0; std::string d;
+            int last_o = -1;
+            for (size_t i = 0; i < rows.size(); ++i) if (rows[i].id == 3) last_o = (int)i;
+            for (size_t i = 0; i < rows.size(); ++i) {
+                const Row& r = rows[i];
+                if (r.id >= 1 && r.id <= 3) {
+                    ++rows_in;
+                    for (int j = 0; j < 8 && ok; ++j) {
+                        bool even = (j % 2) == 0;
+                        if ((r.id == 1 && !even) || (r.id == 3 && even)) continue;   // slots absent in that band
+                        for (long rel = rf.slot[j]; rel < rf.slot[j] + 16L * k; ++rel) {
+                            auto cc = sample(t, r, rel);
+                            if (!cc || same(*cc, BG)) { ok = false; d = "a row of id " + std::to_string(r.id) + " shows no sprite at slot " + std::to_string(j); break; }
+                        }
+                    }
+                } else if (r.id == 0 && (int)i > last_o && last_o >= 0) {
+                    ++rows_after;
+                    for (long rel = 40L * k; rel < 320L * k && ok; ++rel) {
+                        auto cc = sample(t, r, rel);
+                        if (!cc || !same(*cc, BG)) { ok = false; d = "a row after band O shows a colour"; }
+                    }
+                }
+            }
+            if (rows_in == 0 || rows_after == 0) ok = false;
+            R.vext_eval = true;
+            R.pre_vext = ok; R.d_vext = std::to_string(rows_in) + " rows inside the sprites' lines, " + std::to_string(rows_after) + " rows after band O" + (d.empty() ? "" : "; " + d);
+        } else if (c == kB7 || cf.group == 'A') {
+            R.vext_eval = false; R.pre_vext = false; R.d_vext = "no sprite references";
         }
         // ---- the comparison itself, every sample of every decoded row
         if (rf.ok && k > 0) {
@@ -880,17 +924,20 @@ P2Out analyze_p2(const Trace& t) {
             if (a < lo || a >= hi) ++outside;
             else if (a == end_word && !first_end) first_end = cy;
         }
+        // The band lies on lines 60-79; the fetches counted are those of lines 62-77 of the evaluated
+        // field (VERTB marks line 0, p.219; one line is 227 colour clocks, p.23), two lines in from each end.
+        const uint64_t band_lo = t1 + 62 * kLineCycles, band_hi = t1 + 78 * kLineCycles;
         size_t per_plane[6] = {0,0,0,0,0,0};
         for (size_t i = 0; i < t.plane_reads.cyc.size(); ++i) {
             uint64_t cy = t.plane_reads.cyc[i];
             if (cy < t1 || cy >= t2) continue;
             if (!first_plane) first_plane = cy;
-            per_plane[(t.plane_reads.addr[i] - kP2Img) / kP2Step]++;
+            if (cy >= band_lo && cy < band_hi) per_plane[(t.plane_reads.addr[i] - kP2Img) / kP2Step]++;
         }
         o.pre_frame = n > 0 && outside == 0 && first_end && first_plane && first_end < first_plane;
         o.d_frame = std::to_string(n) + " list reads in the field, " + std::to_string(outside) + " outside the list, end WAIT first fetched at +" +
                     (first_end ? std::to_string(first_end - t1) : "never") + ", first bitplane fetch at +" + (first_plane ? std::to_string(first_plane - t1) : "never");
-        bool all = true; std::string d = "reads per plane image:";
+        bool all = true; std::string d = "reads per plane image in lines 62-77:";
         for (int p = 0; p < 6; ++p) { if (!per_plane[p]) all = false; d += " " + std::to_string(per_plane[p]); }
         o.pre_fetch = all; o.d_fetch = d;
     }
@@ -1022,9 +1069,17 @@ static void grade_p1(Checks& checks, const std::string& tag, const pri::RunOut& 
         "P1-PRE-PLAYFIELDS " + tag + " [p.213]: in the bands with sprites absent, every column from x = 40 shows the playfield "
         "the band sets" + (all_play ? "" : " --" + bad_play));
     const CfgRes& B7 = o.cfg[kB7];
-    checks.expect(B7.pre_vext,
-        "P1-PRE-VEXTENT " + tag + " [p.107]: in B7 the sprites of groups 0 and 1 appear in every row of the bands inside their "
-        "VSTART-VSTOP lines and in no row of the band after VSTOP (" + B7.d_vext + ")");
+    const CfgRes& A1 = o.cfg[0];
+    const CfgRes& A2 = o.cfg[1];
+    const bool vext_eval = B7.vext_eval && A1.vext_eval && A2.vext_eval;
+    const bool vext_ok = vext_eval && B7.pre_vext && A1.pre_vext && A2.pre_vext;
+    if (!vext_eval)
+        checks.record("P1-PRE-VEXTENT " + tag + ": NOT GRADED -- the sprite references of A1, A2 or B7 are missing (see P1-PRE-SPRITES)");
+    else
+        checks.expect(vext_ok,
+            "P1-PRE-VEXTENT " + tag + " [p.107]: the sprites appear in every row of the bands inside their VSTART-VSTOP lines and in no row of "
+            "the first band after VSTOP -- Group B (B7, groups 0 and 1; band B0): " + B7.d_vext + "; Group A (A1; the rows after band O): " + A1.d_vext +
+            "; A2: " + A2.d_vext);
 
     auto gate = [&](char group, std::string& why) {
         why.clear();
@@ -1038,7 +1093,8 @@ static void grade_p1(Checks& checks, const std::string& tag, const pri::RunOut& 
             if (!R.pre_sprites) why += std::string(" sprites:") + kCfgs[c].name;
             if (!R.pre_play) why += std::string(" playfields:") + kCfgs[c].name;
         }
-        if (group == 'B' && !B7.pre_vext) why += " vextent";
+        if (group == 'B' && !(B7.vext_eval && B7.pre_vext)) why += " vextent";
+        if (group == 'A' && !(A1.vext_eval && A1.pre_vext && A2.vext_eval && A2.pre_vext)) why += " vextent";
         if (group == 'E' && !o.cfg[kB1].pre_sprites) why += " B1-sprites";
         return why.empty();
     };
@@ -1104,7 +1160,7 @@ static void grade_p2(Checks& checks, const std::string& tag, const pri::RunOut& 
     checks.expect(o.window_ok,
         "P2-PRE-WINDOW " + tag + " [p.59]: tag block 0 is exactly 8k samples wide and starts at one sample index in every row (" + o.d_window + ")");
     checks.expect(o.pre_fetch,
-        "P2-PRE-PLANE-FETCH " + tag + " [p.213]: the bitplane fetches of the evaluated field read from the image of each of the six planes (" + o.d_fetch + ")");
+        "P2-PRE-PLANE-FETCH " + tag + " [p.213]: the bitplane fetches of the band's lines (lines 62-77 of the evaluated field) read from the image of each of the six planes (" + o.d_fetch + ")");
     if (!(o.pre_frame && o.pre_tags && o.window_ok && o.pre_fetch && o.have_rows)) {
         checks.record("P2-COMBINE " + tag + ": NOT GRADED -- a precondition failed");
         return;
@@ -1151,6 +1207,23 @@ int main(int argc, char** argv) {
     const std::string mv = mutate_env ? mutate_env : "";
     const bool pri_mut = mv.rfind("P1-", 0) == 0 || mv.rfind("P2-", 0) == 0;
 
+    // ================= Claims that give no proposition (SPECIFICATION.md) =================
+    if (mv.empty()) {
+        checks.record("opus:7-reset.c3 [p.223]: declined -- the page makes the outcome model-dependent (\"On some Amiga models, "
+            "portions of the RAM still respond. On other models, no RAM responds. Software must assume that memory is not "
+            "available.\"); both outcomes conform, so no expected value exists");
+        checks.record("sol:7-reset.c6 [p.223]: declined -- the first half of the same sentence says that some models behave this way; "
+            "one system cannot confirm or refute a statement about some models, so there is no expected value");
+        checks.record("sol:7-reset.c7 [p.223]: declined -- the second half of the same sentence says that other models behave this way; "
+            "as for sol:7-reset.c6, there is no expected value");
+        checks.record("opus:7-appC-beamcon0.c7 [p.305]: declined -- BEAMCON0 bit 10 CSCBEN \"Composite sync redirection\": the page gives "
+            "only this name, neither where composite sync is redirected to nor from where, and no pin, polarity or timing; "
+            "composite sync is on a pin of its own (p.379, p.381) and a test sees only horizontal and vertical sync, so there "
+            "is no stated effect and no observable output");
+        checks.record("sol:7-appC-beamcon0.c7 [p.305]: declined -- the same row of the same table as opus:7-appC-beamcon0.c7, "
+            "so the same reason applies");
+    }
+
     // ================= P3 =================
     // Runs OCS and ECS, PAL and NTSC (the run matrix). NTSC is selected
     // through chipset_config (cfg_for); every mutation selector applies to
@@ -1166,10 +1239,7 @@ int main(int argc, char** argv) {
     for (const auto& combo : combos) {
         if (pri_mut || mv.rfind("P4-", 0) == 0 || (combo.ntsc && !mv.empty())) continue;
         std::string bin = dir + combo.bin;
-        std::string mutbin = bin;
-        std::vector<uint64_t> extra_trigger_offset; // unused placeholder
         uint64_t f1_offset = 16;
-        bool skip_dry_mutation = false;
 
         // Program-level mutations only apply to the ECS-PAL combo (the
         // representative base for P3's preconditions -- see the header
@@ -1177,26 +1247,37 @@ int main(int argc, char** argv) {
         bool is_ecs_pal = combo.ecs && !combo.ntsc;
         std::string used_bin = bin;
         std::optional<HoldWindow> hold;
-        std::vector<uint64_t> omit; // event names to omit from the trigger schedule
 
         if (is_ecs_pal && mv == "P3-ANCHOR") used_bin = dir + "/prog_lp_ecs_pal_anchormut.bin";
         if (is_ecs_pal && mv == "P3-READTIME") used_bin = dir + "/prog_lp_ecs_pal_v1delay.bin";
         if (is_ecs_pal && mv == "P3-DDRA") used_bin = dir + "/prog_lp_ecs_pal_ddraforce.bin";
         if (is_ecs_pal && mv == "P3-LPEN") used_bin = dir + "/prog_lp_ecs_pal_lpenclear.bin";
+        if (is_ecs_pal && mv == "P3-E40LINE44") used_bin = dir + "/prog_lp_ecs_pal_e40line44.bin";
+        if (is_ecs_pal && mv == "P3-NOCOPEN") used_bin = dir + "/prog_lp_ecs_pal_nocopen.bin";
+        if (is_ecs_pal && mv == "P3-NODONE") used_bin = dir + "/prog_lp_ecs_pal_nodone.bin";
+        if (is_ecs_pal && mv == "P3-EVMIS") used_bin = dir + "/prog_lp_ecs_pal_evmis.bin";
+        if (is_ecs_pal && mv == "P3-NOBIN") used_bin = dir + "/prog_lp_missing.bin";
         if (is_ecs_pal && mv == "P3-OFFSET") f1_offset = 30;
 
         DryResult dry = dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
-        std::string tag = std::string(combo.label) + (used_bin != bin ? " [" + mv + "]" : "");
+        std::string tag = std::string(combo.label) + ((is_ecs_pal && !mv.empty()) ? " [" + mv + "]" : "");
+        // A failed fixture leaves the graded lines of this run NOT GRADED, never absent.
+        const bool items_run = !(is_ecs_pal && mv == "P3-HOLD") && mv != "P3-BEAMCON0";
+        auto fixture_failed = [&](const std::string& which) {
+            if (!items_run) return;
+            for (const char* l : {"P3-HELD", "P3-PEN-POSITION", "P3-LATCHED-PEN-POSITION", "P3-FIELD-END-LATCH"})
+                checks.record(std::string(l) + " " + tag + ": NOT GRADED -- the fixture check " + which + " failed");
+        };
 
         checks.expect(dry.loaded && dry.released,
-            "P3 FIXTURE " + tag + ": program loaded and CPU released within the boot budget "
+            "P3-FIXTURE-LOADED " + tag + ": program loaded and CPU released within the boot budget "
             "[not graded -- apparatus check]");
-        if (!dry.loaded) continue;
+        if (!dry.loaded) { fixture_failed("P3-FIXTURE-LOADED"); continue; }
 
         TriggerPlan plan = plan_triggers(dry.log, is_ecs_pal ? f1_offset : 16);
-        checks.expect(plan.ok, "P3 FIXTURE " + tag + ": the Copper's own A1/B1 fetch occurs once per "
+        checks.expect(plan.ok, "P3-FIXTURE-TRIGGERS " + tag + ": the Copper's own A1/B1 fetch occurs once per "
             "field, at least 5 (A1) and 7 (B1) times, in the dry run [not graded -- apparatus check]");
-        if (!plan.ok) continue;
+        if (!plan.ok) { fixture_failed("P3-FIXTURE-TRIGGERS"); continue; }
 
         std::vector<uint64_t> triggers = {plan.f1, plan.f3, plan.f5};
         if (is_ecs_pal && mv == "P3-NOPULSE") triggers = {plan.f3, plan.f5};
@@ -1225,8 +1306,8 @@ int main(int argc, char** argv) {
 
         DrivenResult run = driven_run(used_bin, cfg_for(combo.ecs, combo.ntsc), triggers, 4 * kCck, hold);
         checks.expect(run.loaded && run.done.has_value(),
-            "P3 FIXTURE " + tag + ": the driven run reached DONE [not graded -- apparatus check]");
-        if (!run.loaded || !run.done) continue;
+            "P3-FIXTURE-DRIVEN " + tag + ": the driven run reached DONE [not graded -- apparatus check]");
+        if (!run.loaded || !run.done) { fixture_failed("P3-FIXTURE-DRIVEN"); continue; }
 
         Records recs = parse_records(run.mem, run.log);
         auto get = [&](int field, int event) -> const Rec& {
@@ -1240,16 +1321,55 @@ int main(int argc, char** argv) {
             return idx < 0 ? 0 : recs.store_cycle[idx];
         };
 
+        // The preconditions of the graded lines, in print order.
+        std::vector<std::pair<std::string, bool>> pre;
+
         // ---- Preconditions ----
+
+        // 0. Record layout: every record carries the field and event words
+        // that record_index() assumes for its position, the first
+        // kPhantomRecords records being the first Copper pass (field word
+        // $FFFF, events E40..E210 in order).
+        {
+            int bad = 0, missing = 0;
+            std::string first_bad;
+            for (int i = 0; i < kTotalRecords; ++i) {
+                const Rec& r = recs.recs[(size_t)i];
+                if (!r.present) { ++missing; continue; }
+                int exp_field, exp_event;
+                if (i < kPhantomRecords) { exp_field = 0xFFFF; exp_event = i; }
+                else {
+                    int j = i - kPhantomRecords;
+                    exp_field = j / 8;
+                    int p = j % 8;
+                    exp_event = p == 0 ? 6 : p == 1 ? 7 : p - 2;
+                }
+                if (r.field != exp_field || r.event != exp_event) {
+                    ++bad;
+                    if (first_bad.empty())
+                        first_bad = "record " + std::to_string(i) + " carries field " + std::to_string(r.field) +
+                                    " event " + std::to_string(r.event) + ", its position implies field " +
+                                    std::to_string(exp_field) + " event " + std::to_string(exp_event);
+                }
+            }
+            bool ok = missing == 0 && bad == 0;
+            checks.note("P3 " + tag + " records: " + std::to_string(kTotalRecords - missing) + " of " +
+                        std::to_string(kTotalRecords) + " present, " + std::to_string(bad) + " with a field or event word " +
+                        "other than the one their position implies" + (first_bad.empty() ? "" : "; first: " + first_bad));
+            checks.expect(ok,
+                "P3-PRE-RECORDS " + tag + " [not graded -- apparatus check]: all 72 records are present and each carries the field "
+                "and event words that its position in the record area implies");
+            pre.push_back({"P3-PRE-RECORDS", ok});
+        }
 
         // 1. Anchor check.
         {
             auto a1 = read_cycles_at(dry.log, kCopA1), a2 = read_cycles_at(dry.log, kCopA2);
             auto b1 = read_cycles_at(dry.log, kCopB1), b2 = read_cycles_at(dry.log, kCopB2);
-            // Skip the leading phantom pass (kPhantomPasses). DONE fires
+            // Skip the leading first pass (kPhantomPasses). DONE fires
             // right after F7's own V2 (before F7 ever reaches its own A1),
             // so only 8 real fields' worth of A1/B1 pairs (F-1..F6) are
-            // ever logged -- 9 entries total with the phantom pass.
+            // ever logged -- 9 entries total with the first pass.
             constexpr size_t kRealFields = 8;
             bool sizes_ok = a1.size() >= kRealFields + kPhantomPasses && a2.size() >= kRealFields + kPhantomPasses &&
                              b1.size() >= kRealFields + kPhantomPasses && b2.size() >= kRealFields + kPhantomPasses;
@@ -1274,14 +1394,35 @@ int main(int argc, char** argv) {
             }
             checks.note("P3 " + tag + " anchor: worst |spacing-768| = " + std::to_string(worst_spacing) +
                         " cycles, worst period deviation = " + std::to_string(worst_period) + " cycles");
-            checks.expect(sizes_ok && spacing_ok && period_ok,
+            bool ok = sizes_ok && spacing_ok && period_ok;
+            checks.expect(ok,
                 "P3-PRE-ANCHOR " + tag + " [p.22]: t(A2)-t(A1) and t(B2)-t(B1) each equal 96 colour "
                 "clocks within 2 in every field, and the field period (from t(A1)) is the same for "
                 "all fields");
+            pre.push_back({"P3-PRE-ANCHOR", ok});
         }
 
         // 2. Read-time check.
         {
+            // CALIB: poll iterations over the 20 lines E110..E130 of the first
+            // Copper pass (prog_lp.s), the unit of the V1/V2 waits.
+            {
+                uint32_t hi = 0, lo = 0;
+                bool have_hi = false, have_lo = false;
+                for (const auto& a : run.log) {
+                    if (!a.is_write) continue;
+                    if (a.word_addr == word_addr(kCalib))     { hi = a.data; have_hi = true; }
+                    if (a.word_addr == word_addr(kCalib + 2)) { lo = a.data; have_lo = true; }
+                }
+                auto e110 = read_cycles_at(run.log, kCopE110);
+                auto e130 = read_cycles_at(run.log, kCopE130);
+                std::string span = "?";
+                if (!e110.empty() && !e130.empty()) span = std::to_string(e130.front() - e110.front());
+                checks.note("P3 " + tag + " delay calibration: " +
+                            (have_hi && have_lo ? std::to_string((hi << 16) | lo) : std::string("?")) +
+                            " poll iterations measured over the 20 lines E110..E130 of the first Copper pass, "
+                            "which the Copper fetches " + span + " cycles apart");
+            }
             struct Sig { int field, event; uint32_t signal_addr; };
             std::vector<Sig> sigs = {
                 {0,0,kCopE40},{0,1,kCopE60},{0,2,kCopE110},{0,3,kCopE130},{0,4,kCopE190},{0,5,kCopE210},
@@ -1291,7 +1432,7 @@ int main(int argc, char** argv) {
             for (int f = 0; f <= 7; ++f) {
                 for (auto s : sigs) {
                     auto fetches = read_cycles_at(dry.log, s.signal_addr);
-                    size_t j = (size_t)f + kPhantomPasses; // skip the leading phantom pass
+                    size_t j = (size_t)f + kPhantomPasses; // skip the leading first pass
                     if (j >= fetches.size()) { ok = false; continue; }
                     uint64_t store = storec(f, s.event);
                     if (store == 0 || store <= fetches[j] || store - fetches[j] > kLineCycles) ok = false;
@@ -1311,24 +1452,18 @@ int main(int argc, char** argv) {
                 "P3-PRE-READTIME " + tag + " [p.22]: every Copper-signalled read is stored within "
                 "one line of its signalling MOVE's own fetch, and every V1/V2 is stored less than "
                 "18 lines after its field's own VERTB tick");
+            pre.push_back({"P3-PRE-READTIME", ok});
         }
 
-        // 3. Pin 6 not driven by the CIA (the STORED, pre-fix DDRA value).
+        // 3. Pin 6 not driven by the CIA (the CIAADDRA value read after the fix-or-force step).
         {
             bool ok = run.ddra_stored.has_value() && (*run.ddra_stored & 0xC0) == 0;
-            checks.note("P3 " + tag + " DDRA: stored value = " +
+            checks.note("P3 " + tag + " DDRA: value read after the fix-or-force step = " +
                         (run.ddra_stored ? std::to_string(*run.ddra_stored) : std::string("(missing)")));
             checks.expect(ok,
-                "P3-PRE-DDRA " + tag + " [p.228,p.229,p.351]: the stored CIAADDRA value has bits 6 "
-                "and 7 clear (pin 6 of both ports is an input)");
-            if (is_ecs_pal && mv == "P3-DDRA") {
-                checks.record("P3-PRE-DDRA-MUTATION " + tag + ": unfalsifiable at this boundary -- "
-                    "the program stores CIAADDRA before the fix-or-force branch (p.339's own step "
-                    "order: \"read ... and store it\", then \"if ... clear\"), so the STORED word is "
-                    "always the hardware's own pre-fix reset value regardless of what the fix-or-"
-                    "force branch does afterwards; forcing bits 6-7 to outputs cannot change what was "
-                    "already stored before that branch ran");
-            }
+                "P3-PRE-DDRA " + tag + " [p.228,p.229,p.351]: the CIAADDRA value read after the fix-or-force "
+                "step has bits 6 and 7 clear (pin 6 of both ports is an input)");
+            pre.push_back({"P3-PRE-DDRA", ok});
         }
 
         // 4. The pulse was driven. Graded against the NOMINAL schedule (3
@@ -1351,10 +1486,12 @@ int main(int argc, char** argv) {
             checks.expect(ok,
                 "P3-PRE-PULSE " + tag + ": the test's own drive log shows each scheduled pulse at "
                 "its scheduled time and nothing else on pin 6");
+            pre.push_back({"P3-PRE-PULSE", ok});
         }
 
-        if (!applying_hold && !beamcon0_mismatch) {
+        if (!beamcon0_mismatch) {
             // 5 & item4: beam reads live before/after every trigger, every field.
+            // The same comparator runs under every selector, P3-HOLD included.
             bool ok = true;
             int checked = 0;
             for (int f = 0; f <= 7; ++f) {
@@ -1379,24 +1516,14 @@ int main(int argc, char** argv) {
             }
             checks.note("P3 " + tag + " item4/pre5: " + std::to_string(checked) + " live-beam reads checked");
             checks.expect(ok,
-                "P3-PRE-LIVE " + tag + " opus:7-bp.c3,sol:7-beam.c3 [p.216]: before a trigger and "
+                "P3-PRE-LIVE " + tag + " [p.216]: before a trigger and "
                 "after its release, VPOSR/VHPOSR read the live beam (E40/E60 of every field; "
                 "E110-E210 of every field without a trigger)");
-        }
-
-        if (applying_hold) {
-            const Rec& e40 = get(3, 0); // F2 = field index 3
-            const Rec& e60 = get(3, 1);
-            bool held = e40.present && e60.present && V_of(e40) == 30 && V_of(e60) == 30;
-            checks.note("P3-HOLD " + tag + ": E40 V=" + (e40.present ? std::to_string(V_of(e40)) : "?") +
-                        " E60 V=" + (e60.present ? std::to_string(V_of(e60)) : "?") + " (predicted 30,30 if frozen)");
-            checks.expect(!held,
-                "P3-PRE-LIVE " + tag + " (contrast, pin 6 held from line 30 of F2 to end of F2): "
-                "E40 and E60 of F2 no longer read the live beam if p.239's freeze applied at line 30");
+            pre.push_back({"P3-PRE-LIVE", ok});
         }
 
         // 6. ECS-only: field period unaffected by the BEAMCON0 write.
-        if (combo.ecs && !beamcon0_mismatch) {
+        if (combo.ecs) {
             auto pre0 = write_cycles_at(dry.log, kPreTick0);
             auto pre1 = write_cycles_at(dry.log, kPreTick1);
             auto mticks = field_tick_cycles(run.log);
@@ -1405,101 +1532,110 @@ int main(int argc, char** argv) {
             int64_t post_period = have ? (int64_t)mticks[1] - (int64_t)mticks[0] : 0;
             // The pre-write tick and the post-write tick are each stored by
             // a different code path (wait_vertb's own bsr/rts vs
-            // main_loop's inline handling), so a genuine, fixed few-cycle
-            // software latency difference between the two is expected; a
-            // real PAL/NTSC period difference (p.24: 313 vs 262 lines) is
-            // tens of thousands of cycles, three orders of magnitude
-            // larger, so 128 cycles (16 colour clocks) safely separates
-            // "no real change" from "real change" either way.
-            bool ok = have && std::abs(pre_period - post_period) <= 128;
-            checks.note("P3 " + tag + " BEAMCON0 period: pre=" + std::to_string(pre_period) +
-                        " post=" + std::to_string(post_period) + " cycles");
+            // main_loop's inline handling), so a small, fixed software
+            // latency difference between the two is expected. The bound is
+            // one line (p.23: 227 or 228 colour clocks, taken as 228): p.24
+            // gives the PAL field 312 lines and the NTSC field 262, fifty
+            // lines apart, so a change of standard is fifty times the bound.
+            bool ok = have && std::abs(pre_period - post_period) <= (int64_t)kLongLineCycles;
+            checks.note("P3 " + tag + (beamcon0_mismatch ? " BEAMCON0 period (bit 5 written opposite the selected standard): pre="
+                                                          : " BEAMCON0 period: pre=") + std::to_string(pre_period) +
+                        " post=" + std::to_string(post_period) + " cycles, bound one line = " +
+                        std::to_string(kLongLineCycles) + " cycles");
             checks.expect(ok,
-                "P3-PRE-PERIOD " + tag + " [p.24]: the field period measured before the BEAMCON0 "
-                "write equals the period measured after it");
-        } else if (combo.ecs && beamcon0_mismatch) {
-            auto pre0 = write_cycles_at(dry.log, kPreTick0);
-            auto pre1 = write_cycles_at(dry.log, kPreTick1);
-            auto mticks = field_tick_cycles(run.log);
-            bool have = !pre0.empty() && !pre1.empty() && mticks[1] != 0 && mticks[0] != 0;
-            int64_t pre_period = have ? (int64_t)pre1.front() - (int64_t)pre0.front() : 0;
-            int64_t post_period = have ? (int64_t)mticks[1] - (int64_t)mticks[0] : 0;
-            checks.note("P3-BEAMCON0 " + tag + " period: pre=" + std::to_string(pre_period) +
-                        " post=" + std::to_string(post_period) + " cycles (bit 5 written opposite "
-                        "the selected standard)");
-            checks.expect(have && std::abs(pre_period - post_period) <= 128,
-                "P3-PRE-PERIOD " + tag + " [p.24]: the field period measured before the BEAMCON0 "
-                "write equals the period measured after it");
+                "P3-PRE-PERIOD " + tag + " [p.23,p.24]: the field period measured before the BEAMCON0 "
+                "write equals the period measured after it, within one line");
+            if (!beamcon0_mismatch) pre.push_back({"P3-PRE-PERIOD", ok});
         } else {
             checks.record("P3-PRE-PERIOD " + tag + ": not applicable -- BEAMCON0 does not exist "
                 "under OCS (p.305)");
         }
 
         if (!beamcon0_mismatch && !applying_hold) {
-            // ---- Main assertion: items 1, 2, 5 (the latching claim). ----
-            struct Group { int f_events, f_tail; const char* name; std::vector<int> events; };
-            auto m_group_ok = [&](int f_events, std::vector<int> events, int f_tail) {
-                std::vector<uint32_t> ms;
-                bool word_ok = true, present = true;
-                for (int e : events) {
-                    const Rec& r = get(f_events, e);
-                    if (!r.present) { present = false; continue; }
-                    ms.push_back(M_of(r));
-                    if (r.vhposr_word != r.vhposr_long) word_ok = false;
-                }
-                for (int e : {6,7}) {
-                    const Rec& r = get(f_tail, e);
-                    if (!r.present) { present = false; continue; }
-                    ms.push_back(M_of(r));
-                    if (r.vhposr_word != r.vhposr_long) word_ok = false;
-                }
-                bool same = present && !ms.empty();
-                for (auto m : ms) if (m != ms[0]) same = false;
-                return present && same && word_ok;
-            };
-            bool g1 = m_group_ok(2, {2,3,4,5}, 3); // F1 -> F2
-            bool g3 = m_group_ok(4, {2,3,4,5}, 5); // F3 -> F4
-            bool g5 = m_group_ok(6, {4,5}, 7);     // F5 -> F6 (E190,E210 only)
-            checks.expect(g1 && g3 && g5,
-                "P3 " + tag + " opus:7-bp.c3,sol:7-beam.c3,opus:7-bp.c11 [p.216,p.239]: once "
-                "triggered, VPOSR/VHPOSR stay at one constant value (the word read equalling the "
-                "long read's low word) through E110-E210 of the field and V1/V2 of the field after "
-                "it -- F1 (E110-E210,V1/V2 of F2): " + std::string(g1?"held":"changed") +
-                "; F3: " + std::string(g3?"held":"changed") + "; F5 (E190/E210,V1/V2 of F6): " +
-                std::string(g5?"held":"changed"));
+            std::string why;
+            for (const auto& p : pre) if (!p.second) why += " " + p.first;
+            const std::string not_graded = ": NOT GRADED -- precondition(s) failed:" + why;
+            if (!why.empty()) {
+                checks.record("P3-HELD " + tag + not_graded);
+                checks.record("P3-PEN-POSITION " + tag + not_graded);
+                checks.record("P3-LATCHED-PEN-POSITION " + tag + not_graded);
+                checks.record("P3-FIELD-END-LATCH " + tag + not_graded);
+            } else {
+                // ---- Items 1, 2, 5 (the latching claim). ----
+                auto m_group_ok = [&](int f_events, std::vector<int> events, int f_tail) {
+                    std::vector<uint32_t> ms;
+                    bool word_ok = true, present = true;
+                    for (int e : events) {
+                        const Rec& r = get(f_events, e);
+                        if (!r.present) { present = false; continue; }
+                        ms.push_back(M_of(r));
+                        if (r.vhposr_word != r.vhposr_long) word_ok = false;
+                    }
+                    for (int e : {6,7}) {
+                        const Rec& r = get(f_tail, e);
+                        if (!r.present) { present = false; continue; }
+                        ms.push_back(M_of(r));
+                        if (r.vhposr_word != r.vhposr_long) word_ok = false;
+                    }
+                    bool same = present && !ms.empty();
+                    for (auto m : ms) if (m != ms[0]) same = false;
+                    return present && same && word_ok;
+                };
+                bool g1 = m_group_ok(2, {2,3,4,5}, 3); // F1 -> F2
+                bool g3 = m_group_ok(4, {2,3,4,5}, 5); // F3 -> F4
+                bool g5 = m_group_ok(6, {4,5}, 7);     // F5 -> F6 (E190,E210 only)
+                const bool item1 = g1 && g3 && g5;
+                checks.expect(item1,
+                    "P3-HELD " + tag + " [p.216,p.239]: once "
+                    "triggered, VPOSR/VHPOSR stay at one constant value (the word read equalling the "
+                    "long read's low word) through E110-E210 of the field and V1/V2 of the field after "
+                    "it -- F1 (E110-E210,V1/V2 of F2): " + std::string(g1?"held":"changed") +
+                    "; F3: " + std::string(g3?"held":"changed") + "; F5 (E190/E210,V1/V2 of F6): " +
+                    std::string(g5?"held":"changed"));
 
-            const Rec& l1 = get(2, 2), &l3 = get(4, 2), &l5 = get(6, 4);
-            bool item2 = l1.present && l3.present && l5.present &&
-                         V_of(l1) == 100 && V_of(l3) == 100 && V_of(l5) == 180 &&
-                         (int64_t)H_of(l3) - (int64_t)H_of(l1) == 40;
-            checks.note("P3 " + tag + " item2: V(L1)=" + (l1.present?std::to_string(V_of(l1)):"?") +
-                        " V(L3)=" + (l3.present?std::to_string(V_of(l3)):"?") +
-                        " V(L5)=" + (l5.present?std::to_string(V_of(l5)):"?") +
-                        " H(L3)-H(L1)=" + (l1.present&&l3.present?std::to_string((int64_t)H_of(l3)-(int64_t)H_of(l1)):"?"));
-            checks.expect(item2,
-                "P3 " + tag + " opus:7-bp.c3,sol:7-beam.c3,opus:7-bp.c11 [p.239]: the latched value "
-                "is the light-pen position -- V(L1)=100, V(L3)=100, V(L5)=180, H(L3)-H(L1)=40");
-            if (is_ecs_pal && mv == "P3-OFFSET") {
-                checks.record("P3-PRE-OFFSET-MUTATION " + tag + ": unfalsifiable at this boundary -- "
-                    "H(L1) (E110 of F1) is a live read on this RTL (item1/g1 already reads FAIL), so "
-                    "its value tracks the beam's own progress at line 110 regardless of where within "
-                    "the line the trigger pulse landed; moving the pulse cannot move a value that "
-                    "was never derived from it");
-            }
+                const Rec& l1 = get(2, 2), &l3 = get(4, 2), &l5 = get(6, 4);
+                const bool item2 = l1.present && l3.present && l5.present &&
+                             V_of(l1) == 100 && V_of(l3) == 100 && V_of(l5) == 180 &&
+                             (int64_t)H_of(l3) - (int64_t)H_of(l1) == 40;
+                checks.note("P3 " + tag + " item2: V(L1)=" + (l1.present?std::to_string(V_of(l1)):"?") +
+                            " V(L3)=" + (l3.present?std::to_string(V_of(l3)):"?") +
+                            " V(L5)=" + (l5.present?std::to_string(V_of(l5)):"?") +
+                            " H(L3)-H(L1)=" + (l1.present&&l3.present?std::to_string((int64_t)H_of(l3)-(int64_t)H_of(l1)):"?"));
+                checks.expect(item2,
+                    "P3-PEN-POSITION " + tag + " [p.238,p.239]: the latched value "
+                    "is the light-pen position -- V(L1)=100, V(L3)=100, V(L5)=180, H(L3)-H(L1)=40");
+                if (is_ecs_pal && mv == "P3-OFFSET") {
+                    checks.record("P3-PRE-OFFSET-MUTATION " + tag + ": P3-PEN-POSITION is already red on this "
+                        "RTL: H(L1) (E110 of F1) is a live read here (P3-HELD already reads FAIL), so "
+                        "its value tracks the beam's own progress at line 110 regardless of where within "
+                        "the line the trigger pulse landed, and this selector cannot move the line "
+                        "(see the implementation record at P3-PEN-POSITION)");
+                }
 
-            bool ok5 = true;
-            uint32_t threshold = 0x10500;
-            for (int f : {2,4,6,8}) {
-                const Rec& v1 = get(f,6), &v2 = get(f,7);
-                if (!v1.present || !v2.present) { ok5 = false; continue; }
-                if (M_of(v1) != M_of(v2)) ok5 = false;
-                bool above = combo.ntsc ? (M_of(v1) >= threshold) : (M_of(v1) > threshold);
-                if (!above) ok5 = false;
+                checks.expect(item1 && item2,
+                    "P3-LATCHED-PEN-POSITION " + tag + " opus:7-bp.c3 sol:7-beam.c3 opus:7-bp.c11 [p.216,p.238,p.239]: once "
+                    "the pen has triggered, VPOSR/VHPOSR return the position of the pen, not the beam position, "
+                    "until the end of internal vertical blanking of the next field (P3-HELD and P3-PEN-POSITION both hold)");
+
+                bool ok5 = true;
+                std::string v12;
+                uint32_t threshold = 0x10500;
+                for (int f : {2,4,6,8}) {
+                    const Rec& v1 = get(f,6), &v2 = get(f,7);
+                    if (!v1.present || !v2.present) { ok5 = false; continue; }
+                    char b[64];
+                    snprintf(b, sizeof b, " F%d V1=$%05X V2=$%05X", f - 1, M_of(v1), M_of(v2));
+                    v12 += b;
+                    if (M_of(v1) != M_of(v2)) ok5 = false;
+                    bool above = combo.ntsc ? (M_of(v1) >= threshold) : (M_of(v1) > threshold);
+                    if (!above) ok5 = false;
+                }
+                checks.note("P3 " + tag + " item5: M of V1 and V2 after a field without a trigger:" + v12);
+                checks.expect(ok5,
+                    "P3-FIELD-END-LATCH " + tag + " [p.239]: with no trigger in "
+                    "the preceding field, V1 and V2 agree and their M is " +
+                    std::string(combo.ntsc ? "not less than" : "greater than") + " $10500 (F1,F3,F5,F7)");
             }
-            checks.expect(ok5,
-                "P3 " + tag + " opus:7-bp.c3,sol:7-beam.c3,opus:7-bp.c11 [p.239]: with no trigger in "
-                "the preceding field, V1 and V2 agree and their M is " +
-                std::string(combo.ntsc ? "not less than" : "greater than") + " $10500 (F1,F3,F5,F7)");
         }
         // P3-LPEN's own dedicated comparator: runs in addition to the main
         // block above (mv=="P3-LPEN" sets neither beamcon0_mismatch nor
@@ -1513,8 +1649,7 @@ int main(int argc, char** argv) {
                         " (live beam would be 110/111)");
             checks.expect(still_live,
                 "P3-LPEN " + tag + " (contrast, BPLCON0 LPEN clear): every read tracks the beam "
-                "(E110 of F1 reads V in {110,111}), the same outcome the primary run already shows "
-                "on this RTL -- see the header note");
+                "(E110 of F1 reads V in {110,111})");
         }
     }
 
@@ -1532,19 +1667,25 @@ int main(int argc, char** argv) {
         if (mv == "P4-ANCHOR") used_bin = dir + "/prog_p4_anchormut.bin";
         if (mv == "P4-PERIOD") used_bin = dir + "/prog_p4_periodmut.bin";
         if (mv == "P4-SHORT") used_bin = dir + "/prog_p4_shortspin.bin";
-        std::string tag = std::string("ECS-PAL") + (used_bin != dir + base_bin ? " [" + mv + "]" : "");
+        if (mv == "P4-YDELAY") used_bin = dir + "/prog_p4_ydelay.bin";
+        if (mv == "P4-NOCOPEN") used_bin = dir + "/prog_p4_nocopen.bin";
+        if (mv == "P4-NODONE") used_bin = dir + "/prog_p4_nodone.bin";
+        if (mv == "P4-NOBIN") used_bin = dir + "/prog_p4_missing.bin";
+        std::string tag = std::string("ECS-PAL") + (mv.empty() ? "" : " [" + mv + "]");
 
         DryResult dry = dry_run(used_bin, cfg);
         checks.expect(dry.loaded && dry.released,
-            "P4 FIXTURE " + tag + ": program loaded and CPU released within the boot budget "
+            "P4-FIXTURE-LOADED " + tag + ": program loaded and CPU released within the boot budget "
             "[not graded -- apparatus check]");
 
         auto a1 = read_cycles_at(dry.log, kCopA1);
-        bool have_a1 = a1.size() >= kPhantomPasses + 5; // phantom + F-1,F0,F1,F2,F3
+        bool have_a1 = a1.size() >= kPhantomPasses + 5; // first pass + F-1,F0,F1,F2,F3
         checks.expect(have_a1,
-            "P4 FIXTURE " + tag + ": the Copper's own A1 fetch occurs at least 5 times (plus the "
-            "leading phantom pass) in the dry run [not graded -- apparatus check]");
-        if (!dry.loaded || !have_a1) { /* fall through to summary */ }
+            "P4-FIXTURE-A1 " + tag + ": the Copper's own A1 fetch occurs at least 5 times (plus the "
+            "leading first pass) in the dry run [not graded -- apparatus check]");
+        if (!dry.loaded || !have_a1) {
+            checks.record("P4-LPENDIS-READ " + tag + ": NOT GRADED -- the fixture check " + std::string(!dry.loaded ? "P4-FIXTURE-LOADED" : "P4-FIXTURE-A1") + " failed");
+        }
         else {
             uint64_t f1_trig = a1[kPhantomPasses + 2] + 16 * kCck;
             uint64_t f3_trig = a1[kPhantomPasses + 4] + 16 * kCck;
@@ -1553,7 +1694,7 @@ int main(int argc, char** argv) {
 
             DrivenResult run = driven_run(used_bin, cfg, triggers, 4 * kCck, std::nullopt, 12);
             checks.expect(run.loaded && run.done.has_value(),
-                "P4 FIXTURE " + tag + ": the driven run reached DONE [not graded -- apparatus check]");
+                "P4-FIXTURE-DRIVEN " + tag + ": the driven run reached DONE [not graded -- apparatus check]");
             if (run.loaded && run.done) {
                 auto make_rec = [&](size_t base) -> Rec {
                     Rec r;
@@ -1567,11 +1708,15 @@ int main(int argc, char** argv) {
                 };
                 Rec X = make_rec(0), Y = make_rec(3), Xp = make_rec(6), Yp = make_rec(9);
 
+                // The preconditions of the graded line, in print order.
+                std::vector<std::pair<std::string, bool>> pre;
+
                 // Precondition: DDRA (as in P3).
                 bool ddra_ok = run.ddra_stored.has_value() && (*run.ddra_stored & 0xC0) == 0;
                 checks.expect(ddra_ok,
-                    "P4-PRE-DDRA " + tag + " [p.228,p.229,p.351]: the stored CIAADDRA value has "
-                    "bits 6 and 7 clear");
+                    "P4-PRE-DDRA " + tag + " [p.228,p.229,p.351]: the CIAADDRA value read after the "
+                    "fix-or-force step has bits 6 and 7 clear");
+                pre.push_back({"P4-PRE-DDRA", ddra_ok});
 
                 // Precondition: anchor check (A2-A1 spacing), as in P3.
                 auto a2 = read_cycles_at(dry.log, kCopA2);
@@ -1585,9 +1730,8 @@ int main(int argc, char** argv) {
                 checks.expect(anchor_ok,
                     "P4-PRE-ANCHOR " + tag + " [p.22]: t(A2)-t(A1) equals 96 colour clocks within 2 "
                     "in every field (F-1..F3)");
+                pre.push_back({"P4-PRE-ANCHOR", anchor_ok});
 
-                // Precondition: reference-frame bound on X/Y (also the guard of the
-                // delay that prog_p4.s calibrates in the run).
                 auto find_store = [&](uint32_t byte_addr) -> uint64_t {
                     auto w = write_cycles_at(run.log, byte_addr);
                     return w.empty() ? 0 : w.front();
@@ -1596,24 +1740,88 @@ int main(int argc, char** argv) {
                 uint64_t y_store = find_store(kRecords + 6);   // first word of Y
                 uint64_t xp_store = find_store(kRecords + 12);
                 uint64_t yp_store = find_store(kRecords + 18);
+
+                // Precondition: read time. Y is read at once after the BEAMCON0
+                // write that follows X, and Y' after X': each store lies within
+                // one line (p.23) of the one before it.
+                {
+                    bool ok = x_store && y_store && xp_store && yp_store &&
+                              y_store > x_store && y_store - x_store <= kLongLineCycles &&
+                              yp_store > xp_store && yp_store - xp_store <= kLongLineCycles;
+                    checks.note("P4 " + tag + " read time: Y stored " + std::to_string(y_store - x_store) +
+                                " cycles after X, Y' " + std::to_string(yp_store - xp_store) + " cycles after X', bound one line = " +
+                                std::to_string(kLongLineCycles) + " cycles");
+                    checks.expect(ok,
+                        "P4-PRE-READTIME " + tag + " [p.23]: Y is stored within one line after X and Y' within one line "
+                        "after X' (each second read follows its BEAMCON0 write at once)");
+                    pre.push_back({"P4-PRE-READTIME", ok});
+                }
+
+                // Precondition: the drive log shows the scheduled pulses and nothing else on pin 6.
+                {
+                    size_t nominal = 2;
+                    bool ok = run.pulses.size() == nominal;
+                    std::vector<uint64_t> nominal_triggers = {f1_trig, f3_trig};
+                    for (size_t i = 0; ok && i < nominal_triggers.size() && i < run.pulses.size(); ++i) {
+                        uint64_t a = run.pulses[i].first;
+                        if (a < nominal_triggers[i] || a > nominal_triggers[i] + 4) ok = false;
+                    }
+                    checks.note("P4 " + tag + " drive log: " + std::to_string(run.pulses.size()) +
+                                " pulse(s) driven, " + std::to_string(nominal) + " scheduled (nominal)");
+                    checks.expect(ok,
+                        "P4-PRE-PULSE " + tag + ": the test's own drive log shows each scheduled pulse at "
+                        "its scheduled time and nothing else on pin 6");
+                    pre.push_back({"P4-PRE-PULSE", ok});
+                }
+
+                // Precondition: field period unchanged across every BEAMCON0 write.
+                auto mticks_p4 = [&]() {
+                    std::vector<uint64_t> t;
+                    for (int i = 0; i < 5; ++i) {
+                        auto w = write_cycles_at(run.log, kP4MainTick + 2 * (uint32_t)i);
+                        t.push_back(w.empty() ? 0 : w.front());
+                    }
+                    return t;
+                }();
+                // main_loop's own VERTB poll is a tight but non-zero-length
+                // instruction loop, so the tick store lands a few
+                // instructions after the true hardware edge, by an amount
+                // that varies slightly field to field -- polling quantization
+                // jitter, not a period change. The bound is one line (p.23:
+                // 227 or 228 colour clocks, taken as 228); p.24 gives the PAL
+                // field 312 lines and the NTSC field 262, fifty lines apart.
+                bool period_ok = true;
+                int64_t p0 = (int64_t)mticks_p4[1] - (int64_t)mticks_p4[0];
+                std::string periods_dump = std::to_string(p0);
+                for (int i = 1; i < 4; ++i) {
+                    int64_t p = (int64_t)mticks_p4[i+1] - (int64_t)mticks_p4[i];
+                    periods_dump += "," + std::to_string(p);
+                    if (std::abs(p - p0) > (int64_t)kLongLineCycles) period_ok = false;
+                }
+                checks.note("P4 " + tag + " ticks: " + std::to_string(mticks_p4[0]) + " " +
+                            std::to_string(mticks_p4[1]) + " " + std::to_string(mticks_p4[2]) + " " +
+                            std::to_string(mticks_p4[3]) + " " + std::to_string(mticks_p4[4]) +
+                            "; periods: " + periods_dump + "; bound one line = " + std::to_string(kLongLineCycles) + " cycles");
+                checks.expect(period_ok,
+                    "P4-PRE-PERIOD " + tag + " [p.23,p.24,p.305]: the field period is unchanged across "
+                    "every BEAMCON0 write (measured from the VERTB ticks), within one line");
+                pre.push_back({"P4-PRE-PERIOD", period_ok});
+
+                // Precondition: reference-frame bound on X/Y (also the guard of the
+                // delay that prog_p4.s calibrates in the run). It depends on the
+                // period precondition: a shorter field ends before the delay does.
                 uint64_t f1_a1 = a1[kPhantomPasses + 2], f3_a1 = a1[kPhantomPasses + 4];
                 uint64_t f2_a1 = a1[kPhantomPasses + 3]; // next field after F1
-                uint64_t f4_a1 = a1.size() > kPhantomPasses + 5 ? a1[kPhantomPasses + 5] : 0; // next field after F3, if logged
-                bool ref_ok = x_store > f1_a1 + 156u * 228u * kCck &&
-                              y_store > f1_a1 + 156u * 228u * kCck &&
-                              (f2_a1 == 0 || y_store < f2_a1 - 100u * 228u * kCck) &&
-                              xp_store > f3_a1 + 156u * 228u * kCck;
                 {
                     // CALIB (prog_p4.s): spin iterations over the 20 lines between
                     // the E110 and E130 COPER signals, measured in F0 and used as
                     // the delay after E250. Read back from the program's own stores.
-                    constexpr uint32_t kP4Calib = 0x0C1180;
                     uint32_t hi = 0, lo = 0;
                     bool have_hi = false, have_lo = false;
                     for (const auto& a : run.log) {
                         if (!a.is_write) continue;
-                        if (a.word_addr == word_addr(kP4Calib))     { hi = a.data; have_hi = true; }
-                        if (a.word_addr == word_addr(kP4Calib + 2)) { lo = a.data; have_lo = true; }
+                        if (a.word_addr == word_addr(kCalib))     { hi = a.data; have_hi = true; }
+                        if (a.word_addr == word_addr(kCalib + 2)) { lo = a.data; have_lo = true; }
                     }
                     auto e110 = read_cycles_at(run.log, kCopList + 36);
                     auto e130 = read_cycles_at(run.log, kCopList + 44);
@@ -1633,52 +1841,33 @@ int main(int argc, char** argv) {
                 checks.note("P4 " + tag + " reference frame: x_store-f1_a1=" +
                             std::to_string(x_store - f1_a1) + " cycles, needs > " +
                             std::to_string(156u*228u*kCck));
-                checks.expect(ref_ok,
-                    "P4-PRE-REFFRAME " + tag + " [p.239, build note]: X (and X') is stored at least "
-                    "156*228 colour clocks after its own field's t(A1), placing it at line 256 or "
-                    "later, and Y is stored before the next field's own t(A1) minus 100*228 colour "
-                    "clocks");
-                (void)f4_a1; (void)xp_store; (void)yp_store;
-
-                // Precondition: field period unchanged across every BEAMCON0 write.
-                auto mticks_p4 = [&]() {
-                    std::vector<uint64_t> t;
-                    for (int i = 0; i < 5; ++i) {
-                        auto w = write_cycles_at(run.log, kP4MainTick + 2 * (uint32_t)i);
-                        t.push_back(w.empty() ? 0 : w.front());
-                    }
-                    return t;
-                }();
-                // main_loop's own VERTB poll is a tight but non-zero-length
-                // instruction loop, so the tick store lands a few
-                // instructions after the true hardware edge, by an amount
-                // that varies slightly field to field (measured: up to
-                // ~224 cycles, 28 colour clocks) -- polling quantization
-                // jitter, not a period change. A real PAL/NTSC difference
-                // (p.24: 313 vs 262 lines) is ~92,600 cycles, three orders
-                // of magnitude larger, so 512 cycles safely separates them.
-                bool period_ok = true;
-                int64_t p0 = (int64_t)mticks_p4[1] - (int64_t)mticks_p4[0];
-                std::string periods_dump = std::to_string(p0);
-                for (int i = 1; i < 4; ++i) {
-                    int64_t p = (int64_t)mticks_p4[i+1] - (int64_t)mticks_p4[i];
-                    periods_dump += "," + std::to_string(p);
-                    if (std::abs(p - p0) > 512) period_ok = false;
+                if (!period_ok) {
+                    checks.record("P4-PRE-REFFRAME " + tag + ": NOT GRADED -- precondition(s) failed: P4-PRE-PERIOD");
+                } else {
+                    bool ref_ok = x_store > f1_a1 + 156u * 228u * kCck &&
+                                  y_store > f1_a1 + 156u * 228u * kCck &&
+                                  (f2_a1 == 0 || y_store < f2_a1 - 100u * 228u * kCck) &&
+                                  xp_store > f3_a1 + 156u * 228u * kCck;
+                    checks.expect(ref_ok,
+                        "P4-PRE-REFFRAME " + tag + " [p.239, build note]: X (and X') is stored at least "
+                        "156*228 colour clocks after its own field's t(A1), placing it at line 256 or "
+                        "later, and Y is stored before the next field's own t(A1) minus 100*228 colour "
+                        "clocks");
+                    pre.push_back({"P4-PRE-REFFRAME", ref_ok});
                 }
-                checks.note("P4 " + tag + " ticks: " + std::to_string(mticks_p4[0]) + " " +
-                            std::to_string(mticks_p4[1]) + " " + std::to_string(mticks_p4[2]) + " " +
-                            std::to_string(mticks_p4[3]) + " " + std::to_string(mticks_p4[4]) +
-                            "; periods: " + periods_dump);
-                checks.expect(period_ok,
-                    "P4-PRE-PERIOD " + tag + " [p.305,p.24]: the field period is unchanged across "
-                    "every BEAMCON0 write (measured from the VERTB ticks)");
 
-                // Precondition: latch present in F1 (V(Y)=100) -- expected to fail on this RTL.
-                bool latch_f1 = Y.present && V_of(Y) == 100;
+                // Precondition: latch present in F1 -- V(Y)=100, and the H of the latch is the
+                // same in F1 (Y) and F3 (X', Y'), whose triggers start at the same phase.
+                bool latch_f1 = Y.present && Xp.present && Yp.present && V_of(Y) == 100 &&
+                                H_of(Y) == H_of(Xp) && H_of(Xp) == H_of(Yp);
                 checks.note("P4 " + tag + " Y: V=" + (Y.present?std::to_string(V_of(Y)):"?") +
-                            " H=" + (Y.present?std::to_string(H_of(Y)):"?"));
+                            " H=" + (Y.present?std::to_string(H_of(Y)):"?") +
+                            "; H(X')=" + (Xp.present?std::to_string(H_of(Xp)):"?") +
+                            " H(Y')=" + (Yp.present?std::to_string(H_of(Yp)):"?"));
                 checks.expect(latch_f1,
-                    "P4-PRE-LATCHF1 " + tag + " [p.239]: the latch is present in F1 -- V(Y)=100");
+                    "P4-PRE-LATCHF1 " + tag + " [p.239]: the latch is present in F1 -- V(Y)=100 and "
+                    "H(Y)=H(X')=H(Y')");
+                pre.push_back({"P4-PRE-LATCHF1", latch_f1});
 
                 // Precondition: control field shows the latched value with LPENDIS clear.
                 bool control_ok = Xp.present && Yp.present && M_of(Xp) == M_of(Yp) && V_of(Xp) == 100;
@@ -1688,46 +1877,43 @@ int main(int argc, char** argv) {
                 checks.expect(control_ok,
                     "P4-PRE-CONTROL " + tag + " [p.239]: F3 (LPENDIS clear throughout) shows X'=Y', "
                     "V(X')=100");
+                pre.push_back({"P4-PRE-CONTROL", control_ok});
 
-                // ---- Main assertion: the graded relation.
+                // ---- Main assertion: the graded relation, only when every precondition holds.
                 bool x8 = X.present && (X.vposr_long & 1) != 0;
                 uint32_t x70 = X.present ? (X.vhposr_long >> 8) : 0xFFFF;
-                bool graded = X.present && !((!x8) && x70 == 100);
                 checks.note("P4 " + tag + " X: V8=" + (X.present?std::to_string((int)x8):"?") +
                             " V7-0=" + (X.present?std::to_string(x70):"?"));
-                checks.expect(graded,
-                    "P4 " + tag + " opus:7-appC-beamcon0.c4,sol:7-appC-beamcon0.c4 [p.305]: with "
-                    "LPENDIS set, the pair (V8,V7-0) of X is not (0,100)");
+                std::string why;
+                for (const auto& p : pre) if (!p.second) why += " " + p.first;
+                if (!why.empty()) {
+                    checks.record("P4-LPENDIS-READ " + tag + ": NOT GRADED -- precondition(s) failed:" + why);
+                } else {
+                    bool graded = X.present && !((!x8) && x70 == 100);
+                    checks.expect(graded,
+                        "P4-LPENDIS-READ " + tag + " opus:7-appC-beamcon0.c4 sol:7-appC-beamcon0.c4 [p.305]: with "
+                        "LPENDIS set, the pair (V8,V7-0) of X is not (0,100)");
+                }
 
-                if (mv == "P4-DDRA") {
-                    checks.record("P4-PRE-DDRA-MUTATION " + tag + ": unfalsifiable at this boundary -- the program "
-                        "stores CIAADDRA before the fix-or-force branch (p.339 step order), so the stored word is the "
-                        "value the hardware held before that branch ran, whichever branch follows");
-                }
-                if (mv == "P4-PERIOD") {
-                    checks.record("P4-PRE-PERIOD-MUTATION " + tag + ": every BEAMCON0 write had bit 5 clear (the other "
-                        "standard); the period check above " + std::string(period_ok ? "still holds, so this contrast "
-                        "cannot fail it on this RTL (the same outcome P3 measures)" : "fails, as p.24 and p.305 predict"));
-                }
                 if (mv == "P4-NOLPENDIS") {
-                    checks.record("P4-MUTATION " + tag + ": unfalsifiable at this boundary -- "
-                        "X is measured to read the same live value whether E60 writes $2020 or "
-                        "$0020 (see the X note above); the graded relation (X is not (0,100)) "
-                        "holds either way, for the same reason it already holds in the primary run");
+                    checks.record("P4-LPENDIS-READ-MUTATION " + tag + ": P4-LPENDIS-READ is NOT GRADED on this RTL in the "
+                        "primary run (P4-PRE-LATCHF1 and P4-PRE-CONTROL are already red: no latched pair exists for X to "
+                        "differ from), so this selector, which sets LPENDIS never, cannot move it "
+                        "(see the implementation record at P4-LPENDIS-READ)");
                 }
                 if (mv == "P4-F3LPENDIS") {
-                    checks.record("P4-MUTATION " + tag + ": unfalsifiable at this boundary -- "
-                        "P4-PRE-CONTROL already reads FAIL in the primary run (no latch to show a "
-                        "value of 100 in the first place), so setting LPENDIS in F3 too cannot make "
-                        "an already-live X'/Y' pair 'more' live; both runs read the same beam-"
-                        "tracking values");
+                    checks.record("P4-PRE-CONTROL-MUTATION " + tag + ": P4-PRE-CONTROL is already red on this RTL "
+                        "(X' and Y' read the live beam, V=270, and differ), so setting LPENDIS in F3 as well "
+                        "cannot move it (see the implementation record at P4-PRE-CONTROL)");
                 }
                 if (mv == "P4-NOPULSE-F1") {
-                    checks.record("P4-MUTATION " + tag + ": unfalsifiable at this boundary -- "
-                        "P4-PRE-LATCHF1 already reads FAIL in the primary run (Y is never 100, no "
-                        "latch exists), so omitting the F1 trigger cannot make Y read differently: "
-                        "it is the live beam either way");
+                    checks.record("P4-PRE-LATCHF1-MUTATION " + tag + ": P4-PRE-LATCHF1 is already red on this RTL "
+                        "(Y reads the live beam, V=270), so omitting the F1 trigger cannot move it, but it fails "
+                        "P4-PRE-PULSE, which compares the drive log with the nominal schedule "
+                        "(see the implementation record at P4-PRE-LATCHF1)");
                 }
+            } else {
+                checks.record("P4-LPENDIS-READ " + tag + ": NOT GRADED -- the fixture check P4-FIXTURE-DRIVEN failed");
             }
         }
     }
