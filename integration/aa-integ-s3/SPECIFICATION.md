@@ -1344,3 +1344,100 @@ Each claim below states something that two or more propositions grade in parts. 
 12. **The MSB sentence** of BPLxDAT continues on p.16: "is therefore always on the left." Claim opus:AA-bplxdat.c11 says p.16 was not in its workspace; it is in the corpus and on the scan.
 13. **Attach bit in even sprites.** "(odd sprites only)" (p.28) gives bit 7 no function in even sprites. S10 expects an even sprite with bit 7 set to display as unattached.
 14. **Sprite list format and the order of DATA and DATB fetches.** These are not on the AA pages. They are taken from HRM pp.105-127 for the stimulus only; no expected value depends on which word lands in A or B.
+
+
+---
+
+## 5. Build
+
+This section records what the build adds to the specification above: the programs, the run machinery, the values it measured (labelled as measurements) and the mutations. Nothing in sections 1-4 is changed.
+
+### 5.1 Chip set and cores
+
+Every run sets `chipset_config = 0x10` (AA selected), except the ECS runs of S16, which set `0x08`. The chip set is an input of `nanomig.v`; it is not a property of the build. Both cores therefore run every program and both are graded: every assertion, precondition and anchor prints PASS or FAIL on the fx68k build and on the TG68K build, and a line whose precondition does not hold prints NOT GRADED. (Section 2.1 above states the TG68K build as the only graded one; the per-core results below are for both.)
+
+### 5.2 Files
+
+| File | Content |
+|---|---|
+| `prog_main.s` | the stimulus program: the register writes of a setup table, the setup marker, then an event table (below) |
+| `prog_nomarker.s` | `prog_main.s` without the setup-marker store (the mutation of PC-SETUP) |
+| `test_aa_integ_s3.cpp` | `main()`, the header with the `// MUTATION` records |
+| `s3_run.h`, `s3_std.h` | run description, Copper list and sprite list builders, execution on the harness, frames, tags, output lines |
+| `s3_check.h`, `s3_pre.h`, `s3_vid.h`, `s3_spr.h` | the grading scaffolding, the common preconditions PC-SETUP, PC-FRAME, PC-TAG, PC-PIXEL, pixel and column analysis |
+| `s3_props_*.h` | the propositions B1-B4, S1-S16, C1-C5 and the fixture and joint assertions |
+
+### 5.3 Programs and tables
+
+- The setup table (at `0x088000`) lists register writes; the program performs each with a word write from a data register, in the order of 2.1/2.4/2.6 (BEAMCON0 first, the display registers, the colour palette, COP1LC and COPJMP1, DMACON last), stores `0x5E7F` to `0x0C0000` and then works through the event table (at `0x08A000`). Both tables lie in the program region `0x080400-0x08FFFF` of 2.3.
+- An event is a wait for a number of vertical-blank flags (INTREQR bit 5, cleared by a write of `0x0020` to INTREQ), a wait for a beam position (VPOSR and VHPOSR read as one long; the line and H of the specification), a routine of 68000 instructions placed in the table, and a record of the re-read of VPOSR/VHPOSR and a marker word at `0x0C0010 + 0x10 * k`. The routine holds one `MOVE.W` per register write (a data register or an immediate source, so each register is written exactly once and never read before), per register read and per Chip-memory write. The values written most often are held in data registers before the beam wait. The first event of every run waits for one vertical-blank flag: a flag that is already set is consumed there, so that the next event counts the flags of the frames after the setup marker.
+- The Copper list is the one of 2.6 (vertical-blank block, tag block, end), with the Copper events of a proposition placed after the tag MOVE of their line.
+- The preconditions PC-STATIC are evaluated on the tables the program is given (the setup table and the event routines); the Copper list is not part of them.
+
+### 5.4 Measured values
+
+These are measurements of the final run, not oracles:
+
+- A chip line lasts P = 1816 clk_sys cycles, the video port shows 908 samples per output line, and 70 ns of chip time is one sample (u = 1, PC-PIXEL). The visible part of an output line is the samples 65-818.
+- A normal PAL frame (BEAMCON0 = `0x0020`) lasts 313 lines (568,408 cycles) in every run.
+- With HTOTAL = `0x00E2`, VTOTAL = `0x05FF` and BEAMCON0 = `0x08A0` the Copper restarts 2,791,192 cycles apart, which is 1537 lines of 1816 cycles; PC-FRAME of 2.12 asks for 1536 lines (p.29: "there's this many + 1 in a field").
+- With the SSCAN2 bit of FMODE set a sprite is shown a second time 512 output pixels to the right of its first image (S11); S12 reads the first image.
+
+### 5.5 Readings the build had to fix
+
+- F1 is the first frame whose Copper restart follows the setup marker; the restart that the DMACON write itself causes comes before the marker.
+- The columns of S3 and S4 are placed at 48 output pixels (24 lores pixels) from the leftmost cS pixel of the first graded line; a column pattern is compared pixel for pixel inside its 32 pixels.
+- PC-SPR(x) accepts reads after the end pair of a list: with the long frame the sprite pointer is read again at line 1024; only the reads up to the end pair are the list.
+- C1-C5 read CLXDAT with a type of event whose routine consists of one `MOVE.W CLXDAT(A1),<result>` so that the read lies near H = `0x08`; with eight bit planes and the DMA of the specification the 68000 is slow enough that a longer routine reads one line late.
+- J1-J4 take the verdicts of the parts from the same run. J-CONTROL applies the same conjunction to S1-S4, which are graded and green.
+
+### 5.6 Mutations
+
+Each assertion and each precondition has `// MUTATION` records in the header of `test_aa_integ_s3.cpp`: the selector `NMH_MUTATE=<value>` changes the stimulus only (a table, a Copper list, a program variant or a register value) and runs the unchanged comparator; the record states what changed and which lines printed FAIL on each core. Every red line has a green control through the same comparator: S5-CONTROL (k = 2..10 of S5), S6-CONTROL (the data word shifted by one 35-ns pixel), S7-CONTROL, S7-CONTROL-V and S7-CONTROL-SH1 (SH2 in place of SH1 and SH0), S14-CONTROL (SPRxCTL = `0x0001` in place of `0x0010`), C5-CONTROL and J-CONTROL. Lines that print NOT GRADED in every run (S7, S8, S9, S15, S16, C5 and the joint assertions on red parts) have records of kind `none impossible`: no stimulus reaches their comparator because a precondition of the line prints FAIL.
+
+### 5.7 Results of the final run
+
+Final run of `make -k -B test`: fx68k 159 passed, 20 failed; TG68K 164 passed, 17 failed.
+
+| Line | fx68k | TG68K |
+|---|---|---|
+| FIXTURE | PASS | PASS |
+| B1 | PASS | PASS |
+| B2 | PASS | PASS |
+| B3 | PASS | PASS |
+| B4 | PASS | PASS |
+| S1 | PASS | PASS |
+| S2 | PASS | PASS |
+| S3 | PASS | PASS |
+| S4 | PASS | PASS |
+| S5 | FAIL | FAIL |
+| S6 | FAIL | FAIL |
+| S7 | NOT GRADED | NOT GRADED |
+| S8 | NOT GRADED | NOT GRADED |
+| S9 | NOT GRADED | NOT GRADED |
+| S10 | PASS | PASS |
+| S11 | PASS | PASS |
+| S12 | PASS | PASS |
+| S13 | PASS | PASS |
+| S14 | FAIL | FAIL |
+| S15 | NOT GRADED | NOT GRADED |
+| S16 | NOT GRADED | NOT GRADED |
+| C1 | PASS | PASS |
+| C2 | NOT GRADED | NOT GRADED |
+| C3 | NOT GRADED | NOT GRADED |
+| C4 | PASS | PASS |
+| C5 | NOT GRADED | PASS |
+| J1 | FAIL | FAIL |
+| J2 | FAIL | FAIL |
+| J3 | FAIL | FAIL |
+| J4 | FAIL | FAIL |
+| J-CONTROL | PASS | PASS |
+| S5-CONTROL | PASS | PASS |
+| S6-CONTROL | PASS | PASS |
+| S7-CONTROL | PASS | PASS |
+| S7-CONTROL-SH1 | PASS | PASS |
+| S7-CONTROL-V | PASS | PASS |
+| S14-CONTROL | PASS | PASS |
+| C5-CONTROL | NOT GRADED | PASS |
+
+S5, S6 and S14 print FAIL on both cores; S7, S8, S9, S15, S16, C2, C3 (and C5 on fx68k) print NOT GRADED because a precondition prints FAIL; the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.
