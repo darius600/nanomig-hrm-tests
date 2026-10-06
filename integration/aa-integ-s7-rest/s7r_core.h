@@ -105,6 +105,8 @@ struct Cap {
 // The refresh output is a state of the bus-cycle allocation; an access sampled one
 // clk_sys cycle after the falling 7 MHz edge belongs to the allocation shown in the
 // few cycles before the sample.
+inline std::string cap_core_name() { return NMH_XSTR(NANOMIG_CORE_NAME); }
+
 inline bool refresh_at(const Cap& c, uint64_t cycle) {
     if (cycle < c.base + 3) return false;
     uint64_t i = cycle - c.base;
@@ -113,7 +115,87 @@ inline bool refresh_at(const Cap& c, uint64_t cycle) {
     return false;
 }
 
+// NMH_CACHE=<dir> keeps the capture of every run of a binary that was already run on this
+// design: a simulation of a given binary on a given design is deterministic, so a later
+// run of the test (a mutation run, which changes one run's binary) reads the captures of
+// the unchanged runs instead of simulating them again. The cache entry carries the program
+// image and the run settings; a different image or setting is a miss. The directory is
+// emptied whenever the design under test or the capture code changes.
+inline uint64_t fnv(const std::vector<uint8_t>& b) {
+    uint64_t h = 1469598103934665603ull;
+    for (uint8_t x : b) { h ^= x; h *= 1099511628211ull; }
+    return h;
+}
+
+inline bool cache_load(const std::string& path, uint64_t key, Cap& c) {
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return false;
+    uint64_t k = 0; uint8_t fl = 0; uint64_t na = 0, nr = 0;
+    f.read(reinterpret_cast<char*>(&k), sizeof k);
+    if (!f || k != key) return false;
+    f.read(reinterpret_cast<char*>(&fl), 1);
+    f.read(reinterpret_cast<char*>(&c.base), sizeof c.base);
+    f.read(reinterpret_cast<char*>(&c.done_cycle), sizeof c.done_cycle);
+    f.read(reinterpret_cast<char*>(&c.fixture), sizeof c.fixture);
+    f.read(reinterpret_cast<char*>(&nr), sizeof nr);
+    c.res.resize(nr);
+    f.read(reinterpret_cast<char*>(c.res.data()), std::streamsize(nr * sizeof(uint16_t)));
+    f.read(reinterpret_cast<char*>(&na), sizeof na);
+    c.acc.resize(na);
+    for (auto& a : c.acc) {
+        uint8_t wr = 0, rf = 0;
+        f.read(reinterpret_cast<char*>(&a.t), sizeof a.t);
+        f.read(reinterpret_cast<char*>(&a.a), sizeof a.a);
+        f.read(reinterpret_cast<char*>(&a.d), sizeof a.d);
+        f.read(reinterpret_cast<char*>(&wr), 1);
+        f.read(reinterpret_cast<char*>(&rf), 1);
+        a.w = wr; a.ref = rf;
+    }
+    if (!f) return false;
+    c.loaded = fl & 1; c.released = fl & 2; c.done = fl & 4;
+    return true;
+}
+
+inline void cache_store(const std::string& path, uint64_t key, const Cap& c) {
+    std::ofstream f(path, std::ios::binary | std::ios::trunc);
+    if (!f) return;
+    uint8_t fl = uint8_t((c.loaded ? 1 : 0) | (c.released ? 2 : 0) | (c.done ? 4 : 0));
+    uint64_t na = c.acc.size(), nr = c.res.size();
+    f.write(reinterpret_cast<const char*>(&key), sizeof key);
+    f.write(reinterpret_cast<const char*>(&fl), 1);
+    f.write(reinterpret_cast<const char*>(&c.base), sizeof c.base);
+    f.write(reinterpret_cast<const char*>(&c.done_cycle), sizeof c.done_cycle);
+    f.write(reinterpret_cast<const char*>(&c.fixture), sizeof c.fixture);
+    f.write(reinterpret_cast<const char*>(&nr), sizeof nr);
+    f.write(reinterpret_cast<const char*>(c.res.data()), std::streamsize(nr * sizeof(uint16_t)));
+    f.write(reinterpret_cast<const char*>(&na), sizeof na);
+    for (auto& a : c.acc) {
+        uint8_t wr = a.w, rf = a.ref;
+        f.write(reinterpret_cast<const char*>(&a.t), sizeof a.t);
+        f.write(reinterpret_cast<const char*>(&a.a), sizeof a.a);
+        f.write(reinterpret_cast<const char*>(&a.d), sizeof a.d);
+        f.write(reinterpret_cast<const char*>(&wr), 1);
+        f.write(reinterpret_cast<const char*>(&rf), 1);
+    }
+}
+
+inline Cap run_sim(const RunSpec& s);
+
 inline Cap run(const RunSpec& s) {
+    const char* dir = std::getenv("NMH_CACHE");
+    if (!dir) return run_sim(s);
+    std::ifstream bf(g_dir + "/" + s.bin, std::ios::binary);
+    std::vector<uint8_t> img((std::istreambuf_iterator<char>(bf)), std::istreambuf_iterator<char>());
+    uint64_t key = fnv(img) ^ (uint64_t(s.chipset) << 56) ^ (uint64_t(s.cpu_config) << 48) ^ (s.cycles * 31 + s.tail);
+    std::string path = std::string(dir) + "/" + cap_core_name() + "_" + s.bin + ".cap";
+    Cap c;
+    if (!img.empty() && cache_load(path, key, c)) return c;
+    c = run_sim(s);
+    if (!img.empty()) cache_store(path, key, c);
+    return c;
+}
+
+inline Cap run_sim(const RunSpec& s) {
     Cap c;
     nmh::Config cfg;
     cfg.chipset_config = s.chipset;

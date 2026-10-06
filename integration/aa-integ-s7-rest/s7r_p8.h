@@ -20,8 +20,8 @@ inline HvResult run_hv(Checks& ck) {
     HvResult r;
     r.cap = runbin(pick(pick("prog_hv.bin", "HV-ANCHOR", "prog_hv_c.bin"), "FIXTURE-HV", "prog_hv_nofix.bin"), 5'000'000);
     r.conv = conversion(r.cap);
-    bool fx = run_ok(r.cap);
-    ck.expect(fx, "FIXTURE-HV: the run loaded, booted, stored the constant $BEEF at its fixture address, reached DONE and ended with the end marker before any sample is read");
+    bool fx = fixture_ok(r.cap);
+    ck.expect(fx, "FIXTURE-HV: the run loaded, booted and stored the constant $BEEF at its fixture address before any sample is read");
     graded(ck, fx, r.conv.ok,
            "HV-ANCHOR: at least 16 pairs of consecutive VHPOSR samples with the same V field exist, and the H field (bits 7-0) advances by at least 1 in each (AA p.29: 'RESOLUTION=1/160 OF SCREEN WIDTH (280 NS)', H8-H1 in bits 7-0)",
            "the run is not usable");
@@ -98,8 +98,8 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
     A.cap = runbin(binA); B.cap = runbin(binB); C.cap = runbin(binC); D.cap = runbin(binD);
     for (HRun* h : {&A, &B, &C, &D}) measure_h(*h, K);
 
-    bool fx = run_ok(A.cap) && run_ok(B.cap) && run_ok(C.cap) && run_ok(D.cap);
-    ck.expect(fx, "FIXTURE-P8: runs HA, HB, HC and HD loaded, booted, stored the constant $BEEF at their fixture address, reached DONE and ended with the end marker before any sample is read");
+    bool fx = fixture_ok(A.cap) && fixture_ok(B.cap) && fixture_ok(C.cap) && fixture_ok(D.cap);
+    ck.expect(fx, "FIXTURE-P8: runs HA, HB, HC and HD loaded, booted and stored the constant $BEEF at their fixture address before any sample is read");
 
     // PR-8a, PR-8b, PR-8c
     std::set<uint32_t> pd = bin_diff("prog_ha.bin", "prog_hb.bin");
@@ -166,12 +166,15 @@ inline void run_p8(Checks& ck, const HvResult& hv) {
         }
         double elapsed = double(h->s.t[63] - h->s.t[0]) / K;
         double J = h->max_iv - h->min_iv;
-        e4m += " " + h->nm + ": sum d " + dec(sum) + " elapsed " + num3(elapsed) + " J " + num3(J);
-        if (!(pos && std::fabs(double(sum) - elapsed) <= J)) e4 = false;
+        // the tolerance: the run's own jitter of the read-to-store delay, plus the same quantity of run HV
+        // carried through the conversion (the conversion is the ratio of HV's elapsed time to its H advance)
+        const double tol = J + hv.conv.jmc * elapsed / hv.conv.sdh;
+        e4m += " " + h->nm + ": sum d " + dec(sum) + " elapsed " + num3(elapsed) + " J " + num3(J) + " tolerance " + num3(tol);
+        if (!(pos && std::fabs(double(sum) - elapsed) <= tol)) e4 = false;
     }
     ck.note("P8-E4 values (memory cycles):" + e4m + " (" + cap_core() + ")");
     graded(ck, pre, e4,
-           "P8-E4: in each of HA, HB and HC the count advances by at least 1 between consecutive samples, and the sum of the advances equals the elapsed memory cycles between the first and the last sample store within the run's own sample-interval jitter (AA p.24 HTOTAL 'this many + 1 280ns increments', p.21 'memory cycles are 280 ns')",
+           "P8-E4: in each of HA, HB and HC the count advances by at least 1 between consecutive samples, and the sum of the advances equals the elapsed memory cycles between the first and the last sample store within the run's own sample-interval jitter plus the conversion's (AA p.24 HTOTAL 'this many + 1 280ns increments', p.21 'memory cycles are 280 ns')",
            unmet);
 
     // HD against HA

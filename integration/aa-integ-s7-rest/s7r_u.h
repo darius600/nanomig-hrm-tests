@@ -22,6 +22,7 @@ inline UDef udef(const std::string& nm) {
     if (nm == "U3") { d.bph = 0xFFF5; d.sph = 0xFFF3; }
     if (nm == "U4") { d.bstrt = 0xF8; d.bstop = 0x108; d.sstrt = 0x100; d.sstop = 0x110; d.vlo = 0xE8; d.vhi = 0x120; }
     if (nm == "UR") { d.vhi = 0x120; }
+    if (nm == "D1" || nm == "D0") { d.bmod = 0; d.sstrt = 0xF0; d.sstop = 0xF4; }
     return d;
 }
 
@@ -148,17 +149,20 @@ struct Shared {
     bool have = false;
 };
 
-inline const char* ur_bin() { return (mut("R2-UR") || mut("R2-XCHK-REF") || mut("R2-XCHK-U") || mut("R2-XCHK-D")) ? "prog_ur_dma.bin" : "prog_ur.bin"; }
+inline const char* ur_bin() {
+    if (mut("FIXTURE-UR")) return "prog_ur_nofix.bin";
+    return (mut("R2-UR") || mut("R2-XCHK-REF") || mut("R2-XCHK-U") || mut("R2-XCHK-D")) ? "prog_ur_dma.bin" : "prog_ur.bin";
+}
 
 inline void run_shared(Checks& ck, Shared& s) {
     s.hv = run_hv(ck);
     s.ur = urun("UR", ur_bin());
     measure_u(s.ur);
-    s.ur_ok = run_ok(s.ur.cap);
+    s.ur_ok = fixture_ok(s.ur.cap);
     s.anchor = ur_anchor(s.ur);
     s.self = s.ur_ok && xcheck(s.ur, s.ur);
     s.have = true;
-    ck.expect(s.ur_ok, "FIXTURE-UR: run UR loaded, booted, stored the constant $BEEF at its fixture address, reached DONE and ended with the end marker before any access is classified");
+    ck.expect(s.ur_ok, "FIXTURE-UR: run UR loaded, booted and stored the constant $BEEF at its fixture address before any access is classified");
     ck.expect(s.ur_ok && s.anchor,
               "R2-UR: between every two consecutive markers of UR there is at least one refresh access, and UR has no read inside the zero block Z (DMACON with no channel enabled, AA p.22 'Enable all DMA below (also UHRES dma)')");
     ck.note("UR: " + dec((long long)s.ur.cap.acc.size()) + " accesses, markers " + dec(s.ur.an.count) + " of " + dec((long long)s.ur.m.have.size()) + " (" + cap_core() + ")");

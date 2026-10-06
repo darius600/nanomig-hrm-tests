@@ -47,6 +47,8 @@ struct Conv {
     int wraps = 0;             // same-V pairs whose H field decreased (a line start between the reads)
     bool each_pos = false;
     double K = 0;              // clk_sys cycles per memory cycle
+    double jmc = 0;            // largest minus smallest interval between two sample stores, in memory cycles
+    double sdh = 0;            // sum of the H advances of the pairs, in memory cycles
     std::string why;
 };
 
@@ -66,7 +68,16 @@ inline Conv conversion(const Cap& c) {
         sdh += dh;
     }
     v.ok = v.pairs >= 16 && v.each_pos && sdh > 0;
-    if (v.ok) v.K = sdt / sdh;
+    if (v.ok) {
+        v.K = sdt / sdh;
+        v.sdh = sdh;
+        double lo = 1e18, hi = 0;
+        for (size_t i = 0; i + 1 < s.t.size(); ++i) {
+            double iv = double(s.t[i + 1] - s.t[i]) / v.K;
+            lo = std::min(lo, iv); hi = std::max(hi, iv);
+        }
+        v.jmc = hi - lo;
+    }
     return v;
 }
 

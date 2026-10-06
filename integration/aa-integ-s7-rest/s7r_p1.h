@@ -104,8 +104,8 @@ inline void run_refptr(Checks& ck, Shared& sh) {
     for (RefRun* r : {&RA, &RB, &RE, &RNA, &RNB, &RA0, &RB0}) measure_ref(*r);
 
     bool fx = true;
-    for (RefRun* r : {&RA, &RB, &RE, &RNA, &RNB, &RA0, &RB0}) fx = fx && run_ok(r->cap);
-    ck.expect(fx, "FIXTURE-REF: runs RA, RB, RE, RNA, RNB, RA0 and RB0 loaded, booted, stored the constant $BEEF at their fixture address, reached DONE and ended with the end marker before any trace is read");
+    for (RefRun* r : {&RA, &RB, &RE, &RNA, &RNB, &RA0, &RB0}) fx = fx && fixture_ok(r->cap);
+    ck.expect(fx, "FIXTURE-REF: runs RA, RB, RE, RNA, RNB, RA0 and RB0 loaded, booted and stored the constant $BEEF at their fixture address before any trace is read");
     bool xc = sh.ur_ok && sh.anchor;
     for (RefRun* r : {&RA, &RB, &RE, &RNA, &RNB, &RA0, &RB0}) xc = xc && xcheck_cap(r->cap, sh.ur);
     ck.expect(xc, "R2-XCHK-REF: in RA, RB, RE, RNA, RNB, RA0 and RB0, from the end of prologue step 1 to the end marker, the accesses the refresh output marks are exactly the accesses at the port times of UR's non-CPU accesses");
