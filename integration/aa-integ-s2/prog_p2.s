@@ -5,7 +5,7 @@
 ; Symbols defined before this file is included select the variants:
 ;   DMA_BLT  DMACON value of step 1 ($8200: DMAEN without BLTEN)
 ;   SIZE     BLTSIZE value ($0041 = height 1, width 1; $00C1 = height 3)
-;   V1H V1L V2H V2L  the PTH and PTL words of the two pointer values
+;   V1H V1L V2H V2L  the PTH and PTL words of the two pointer values (V2DH, V2DL: channel D's V2)
 ;   P5H      the PTH word of the contrast blits ($0035: V1's PTH with bit 5 set)
 ;   FIXVAL   the constant stored first
 
@@ -26,6 +26,12 @@ V2L     equ     $AAAA
         endc
         ifnd    P5H
 P5H     equ     $0035
+        endc
+        ifnd    V2DH
+V2DH    equ     V2H
+        endc
+        ifnd    V2DL
+V2DL    equ     V2L
         endc
 
         include "blit.i"
@@ -60,7 +66,7 @@ blit_table:
         BLIT_PTRW $000B,$0000,$000D,$0000,$000E,$0000,V1H,V1L
         BLIT_MOD  8,16,24,32
         BLIT_HDR  0,$01FF,0,SIZE
-        BLIT_PTRW $000B,$0000,$000D,$0000,$000E,$0000,V2H,V2L
+        BLIT_PTRW $000B,$0000,$000D,$0000,$000E,$0000,V2DH,V2DL
         BLIT_MOD  8,16,24,32
 ; ---- contrast from above: V1 with PTH bit 5 set, A, B, C, D
         BLIT_HDR  0,$09F0,0,SIZE

@@ -7,13 +7,15 @@
 ;   CFG+6   number of frames
 ;   CFG+8   number of entries of the register list
 ;   CFG+$10 the register list: pairs of (register offset, value)
-; and the null sprite: two zero words at NULLSPR.
+; and the null sprite: two zero words at NULLSPR. CTL, defined before this file
+; is included, points sprite 0 at sprite data at SPRCTL instead.
 
         include "nanomig.i"
         include "s2.i"
 
 CFG     equ     $0B8000
 NULLSPR equ     $1A0000
+SPRCTL  equ     $190000                 ; CTL: the sprite data
 M_VMARK         equ     $F020
 M_REGS          equ     $F003
 
@@ -67,6 +69,10 @@ sprptrs:
 .l:     move.w  #(NULLSPR>>16),(a1)+
         move.w  #(NULLSPR&$FFFF),(a1)+
         dbra    d2,.l
+        ifd     CTL
+        move.w  #(SPRCTL>>16),$120(a0)          ; CTL: sprite 0 shows sprite data
+        move.w  #(SPRCTL&$FFFF),$122(a0)
+        endc
         rts
 
 ; fsync: wait for VERTB, clear it, write the frame marker.

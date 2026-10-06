@@ -3,10 +3,9 @@
 // aa-integ-s2: see SPECIFICATION.md. Blitter pointer and modulo registers
 // (P1-P7) and BEAMCON0 (P8-P14), graded at the ports of nanomig.v only.
 //
-// nanomig.mk builds the TG68K core with ENABLE_AGA and the fx68k core
-// without it: every proposition, precondition and anchor is graded
-// (PASS:/FAIL:) on the build made with ENABLE_AGA only; on the other build the
-// identical check prints as RECORDED: (Grader, below), never as PASS or FAIL.
+// Every run selects the AA chip set (chipset_config 0x10, a port input
+// independent of the CPU core) and 2 MB of Chip memory, so both cores run AA and
+// every proposition, precondition and anchor is graded (PASS:/FAIL:) on both.
 //
 // NMH_MUTATE selects one mutation in place of the normal run: it names the
 // leading id of one assertion or precondition, and only the proposition that
@@ -16,8 +15,162 @@
 //
 // NMH_ONLY=Pn runs the proposition Pn alone, without a mutation.
 //
-// MUTATION_RECORDS_BEGIN
-// MUTATION_RECORDS_END
+// Kinds: stimulus changes what a program writes, implementation runs the private build of SPECIFICATION.md 6.6, none is a line no run changes.
+// MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P1-FIXTURE; NOT GRADED 5; fx68k: FAIL P1-FIXTURE; NOT GRADED 5
+// MUTATION P1-CONFIG stimulus red NMH_MUTATE=P1-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P1-CONFIG; NOT GRADED 5; fx68k: FAIL P1-CONFIG; NOT GRADED 5
+// MUTATION P1-ANCHOR stimulus red NMH_MUTATE=P1-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P1-ANCHOR; NOT GRADED 5; fx68k: FAIL P1-ANCHOR; NOT GRADED 5
+// MUTATION P1-FINISHED stimulus red NMH_MUTATE=P1-FINISHED: BLTSIZE $00C2 (height 3) in place of $0082; TG68K: FAIL P1-FINISHED; NOT GRADED 5; fx68k: FAIL P1-FINISHED; NOT GRADED 5
+// MUTATION P1-INC stimulus red NMH_MUTATE=P1-INC: a CPU read of byte $0E0020 right after every BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P1-FINISHED, P1-INC; NOT GRADED 5; fx68k: FAIL P1-FINISHED, P1-INC; NOT GRADED 5
+// MUTATION P1-A stimulus red NMH_MUTATE=P1-A: BLTAMOD written 28 in place of 24; TG68K: FAIL P1-A, P1; fx68k: FAIL P1-A, P1
+// MUTATION P1-B stimulus red NMH_MUTATE=P1-B: the pointer written to BLTBPTH and BLTBPTL is $0D0100 in place of $0D0000; TG68K: FAIL P1-B, P1; fx68k: FAIL P1-B, P1
+// MUTATION P1-C stimulus red NMH_MUTATE=P1-C: BLTCMOD written 12 in place of 8; TG68K: FAIL P1-C, P1; fx68k: FAIL P1-C, P1
+// MUTATION P1-D stimulus red NMH_MUTATE=P1-D: the pointer written to BLTDPTH and BLTDPTL is $0F0100 in place of $0F0000; TG68K: FAIL P1-A, P1-B, P1-C, P1-D, P1; fx68k: FAIL P1-A, P1-B, P1-C, P1-D, P1
+// MUTATION P1 stimulus red NMH_MUTATE=P1: the values written to BLTCMOD and BLTAMOD swapped (24 and 8); TG68K: FAIL P1-A, P1-C, P1; fx68k: FAIL P1-A, P1-C, P1
+// MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P2-FIXTURE; NOT GRADED 4; fx68k: FAIL P2-FIXTURE; NOT GRADED 4
+// MUTATION P2-CONFIG stimulus red NMH_MUTATE=P2-CONFIG: the harness configuration of the run selects memory_config 0x00 in place of 0x03; TG68K: FAIL P2-CONFIG; NOT GRADED 4; fx68k: FAIL P2-CONFIG; NOT GRADED 4
+// MUTATION P2-MAP stimulus red NMH_MUTATE=P2-MAP: the second pointer value $0AAAAA replaced by $0C0000, an address of the results area; TG68K: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-MAP, P2-FINISHED; NOT GRADED 4
+// MUTATION P2-ANCHOR stimulus red NMH_MUTATE=P2-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P2-ANCHOR; NOT GRADED 4; fx68k: FAIL P2-ANCHOR; NOT GRADED 4
+// MUTATION P2-FINISHED stimulus red NMH_MUTATE=P2-FINISHED: BLTSIZE $00C1 (height 3) in place of $0041; TG68K: FAIL P2-FINISHED; NOT GRADED 4; fx68k: FAIL P2-FINISHED; NOT GRADED 4
+// MUTATION P2-V1 stimulus red NMH_MUTATE=P2-V1: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2
+// MUTATION P2-V2 stimulus red NMH_MUTATE=P2-V2: PTL written $AAA8 in place of $AAAA in the V2 blits; TG68K: FAIL P2-V2, P2; fx68k: FAIL P2-V2, P2
+// MUTATION P2-PTH5 stimulus red NMH_MUTATE=P2-PTH5: PTH written $0025 in place of $0035 in the four contrast blits; TG68K: FAIL P2-PTH5, P2; fx68k: FAIL P2-PTH5, P2
+// MUTATION P2 stimulus red NMH_MUTATE=P2: PTH written $0014 in place of $0015 in the V1 blits; TG68K: FAIL P2-V1, P2; fx68k: FAIL P2-V1, P2
+// MUTATION P3-FIXTURE stimulus red NMH_MUTATE=P3-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P3-FIXTURE; NOT GRADED 3; fx68k: FAIL P3-FIXTURE; NOT GRADED 3
+// MUTATION P3-CONFIG stimulus red NMH_MUTATE=P3-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P3-CONFIG; NOT GRADED 3; fx68k: FAIL P3-CONFIG; NOT GRADED 3
+// MUTATION P3-ANCHOR stimulus red NMH_MUTATE=P3-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P3-ANCHOR; NOT GRADED 3; fx68k: FAIL P3-ANCHOR; NOT GRADED 3
+// MUTATION P3-FINISHED stimulus red NMH_MUTATE=P3-FINISHED: BLTSIZE $00C3 (height 3) in place of $0083; TG68K: FAIL P3-FINISHED; NOT GRADED 3; fx68k: FAIL P3-FINISHED; NOT GRADED 3
+// MUTATION P3-ASC stimulus red NMH_MUTATE=P3-ASC: channel A's pointer $0E0200 in place of $0E0100 in the ascending blit; TG68K: FAIL P3-ASC, P3; fx68k: FAIL P3-ASC, P3
+// MUTATION P3-DESC stimulus red NMH_MUTATE=P3-DESC: channel A's pointer $0E0200 in place of $0E0100 in the descending blit; TG68K: FAIL P3-DESC, P3; fx68k: FAIL P3-DESC, P3
+// MUTATION P3 stimulus red NMH_MUTATE=P3: channel A's pointer $0E0200 in place of $0E0100 in both blits; TG68K: FAIL P3-ASC, P3-DESC, P3; fx68k: FAIL P3-ASC, P3-DESC, P3
+// MUTATION P4-FIXTURE stimulus red NMH_MUTATE=P4-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P4-FIXTURE; NOT GRADED 5; fx68k: FAIL P4-FIXTURE; NOT GRADED 5
+// MUTATION P4-CONFIG stimulus red NMH_MUTATE=P4-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P4-CONFIG; NOT GRADED 5; fx68k: FAIL P4-CONFIG; NOT GRADED 5
+// MUTATION P4-ANCHOR stimulus red NMH_MUTATE=P4-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P4-ANCHOR; NOT GRADED 5; fx68k: FAIL P4-ANCHOR; NOT GRADED 5
+// MUTATION P4-FINISHED stimulus red NMH_MUTATE=P4-FINISHED: BLTEN clear in the run that must have finished its first blit; TG68K: FAIL P4-FINISHED; NOT GRADED 5; fx68k: FAIL P4-FINISHED; NOT GRADED 5
+// MUTATION P4-INC stimulus red NMH_MUTATE=P4-INC: a CPU read of byte $0E0020 right after every BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P4-FINISHED, P4-INC; NOT GRADED 5; fx68k: FAIL P4-FINISHED, P4-INC; NOT GRADED 5
+// MUTATION P4-A stimulus red NMH_MUTATE=P4-A: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
+// MUTATION P4-B stimulus red NMH_MUTATE=P4-B: BLTBMOD written 4 in place of -2 in the first blit; TG68K: FAIL P4-B, P4; fx68k: FAIL P4-B, P4
+// MUTATION P4-C stimulus red NMH_MUTATE=P4-C: BLTCMOD written 4 in place of 0 in the first blit; TG68K: FAIL P4-C, P4; fx68k: FAIL P4-C, P4
+// MUTATION P4-D stimulus red NMH_MUTATE=P4-D: BLTDMOD written 14 in place of 10 in the first blit; TG68K: FAIL P4-D, P4; fx68k: FAIL P4-D, P4
+// MUTATION P4 stimulus red NMH_MUTATE=P4: BLTAMOD written 14 in place of 6 in the first blit; TG68K: FAIL P4-A, P4; fx68k: FAIL P4-A, P4
+// MUTATION P5-FIXTURE stimulus red NMH_MUTATE=P5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P5-FIXTURE; NOT GRADED 5; fx68k: FAIL P5-FIXTURE; NOT GRADED 5
+// MUTATION P5-CONFIG stimulus red NMH_MUTATE=P5-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P5-CONFIG; NOT GRADED 5; fx68k: FAIL P5-CONFIG; NOT GRADED 5
+// MUTATION P5-REGIONS stimulus red NMH_MUTATE=P5-REGIONS: the modulo $3FFE of the set replaced by $7FFE; TG68K: FAIL P5-REGIONS; NOT GRADED 5; fx68k: FAIL P5-REGIONS; NOT GRADED 5
+// MUTATION P5-ANCHOR stimulus red NMH_MUTATE=P5-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P5-ANCHOR; NOT GRADED 5; fx68k: FAIL P5-ANCHOR; NOT GRADED 5
+// MUTATION P5-FINISHED stimulus red NMH_MUTATE=P5-FINISHED: BLTSIZE $0142 (height 5) in place of $0102; TG68K: FAIL P5-FINISHED; NOT GRADED 5; fx68k: FAIL P5-FINISHED; NOT GRADED 5
+// MUTATION P5-INC stimulus red NMH_MUTATE=P5-INC: a CPU read of byte $110020 right after every BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P5-FINISHED, P5-INC; NOT GRADED 5; fx68k: FAIL P5-FINISHED, P5-INC; NOT GRADED 5
+// MUTATION P5-A stimulus red NMH_MUTATE=P5-A: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
+// MUTATION P5-B stimulus red NMH_MUTATE=P5-B: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
+// MUTATION P5-C stimulus red NMH_MUTATE=P5-C: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
+// MUTATION P5-D stimulus red NMH_MUTATE=P5-D: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
+// MUTATION P5 stimulus red NMH_MUTATE=P5: the modulo $0000 of the set replaced by $0006; TG68K: FAIL P5-A, P5-B, P5-C, P5-D, P5; fx68k: FAIL P5-A, P5-B, P5-C, P5-D, P5
+// MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P6-FIXTURE; NOT GRADED 3; fx68k: FAIL P6-FIXTURE; NOT GRADED 3
+// MUTATION P6-CONFIG stimulus red NMH_MUTATE=P6-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P6-CONFIG; NOT GRADED 3; fx68k: FAIL P6-CONFIG; NOT GRADED 3
+// MUTATION P6-ANCHOR stimulus red NMH_MUTATE=P6-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P6-ANCHOR; NOT GRADED 3; fx68k: FAIL P6-ANCHOR; NOT GRADED 3
+// MUTATION P6-FINISHED stimulus red NMH_MUTATE=P6-FINISHED: BLTEN clear in the run that must have finished its blit; TG68K: FAIL P6-FINISHED; NOT GRADED 3; fx68k: FAIL P6-FINISHED; NOT GRADED 3
+// MUTATION P6-INC stimulus red NMH_MUTATE=P6-INC: a CPU read of byte $0E0020 right after the BLTSIZE write puts an access off the stride among channel A's; TG68K: FAIL P6-INC; NOT GRADED 3; fx68k: FAIL P6-INC; NOT GRADED 3
+// MUTATION P6-STEPS stimulus red NMH_MUTATE=P6-STEPS: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
+// MUTATION P6-COUNT stimulus red NMH_MUTATE=P6-COUNT: BLTCON0 $0DF0 in place of $0FF0: channel C disabled; TG68K: FAIL P6-STEPS, P6-COUNT, P6; fx68k: FAIL P6-STEPS, P6-COUNT, P6
+// MUTATION P6 stimulus red NMH_MUTATE=P6: BLTBMOD written 12 in place of -4; TG68K: FAIL P6-STEPS, P6; fx68k: FAIL P6-STEPS, P6
+// MUTATION P7-FIXTURE stimulus red NMH_MUTATE=P7-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P7-FIXTURE; NOT GRADED 27; fx68k: FAIL P7-FIXTURE; NOT GRADED 27
+// MUTATION P7-CONFIG stimulus red NMH_MUTATE=P7-CONFIG: the harness configuration of the run selects chipset_config 0x08 in place of 0x10; TG68K: FAIL P7-CONFIG; NOT GRADED 27; fx68k: FAIL P7-CONFIG; NOT GRADED 27
+// MUTATION P7-FETCH stimulus red NMH_MUTATE=P7-FETCH: the Copper's MOVE to each register is a MOVE to COLOR00, COPCON bit 1 set; TG68K: FAIL P7-FETCH; NOT GRADED 15; fx68k: FAIL P7-FETCH; NOT GRADED 15
+// MUTATION P7-COPER stimulus red NMH_MUTATE=P7-COPER: the MOVE to INTREQ in every list is a MOVE to the no-operation register; TG68K: FAIL P7-COPER; NOT GRADED 15; fx68k: FAIL P7-COPER; NOT GRADED 15
+// MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-BLIT: BLTEN clear for the final blit; TG68K: FAIL P7-BLIT; NOT GRADED 27; fx68k: FAIL P7-BLIT; NOT GRADED 27
+// MUTATION P7-ANCHOR stimulus red NMH_MUTATE=P7-ANCHOR: the control run keeps BLTEN set (DMACON $8240) in place of clearing it ($8200); TG68K: FAIL P7-ANCHOR; NOT GRADED 27; fx68k: FAIL P7-ANCHOR; NOT GRADED 27
+// MUTATION P7-0-PTH-A stimulus red NMH_MUTATE=P7-0-PTH-A: the CPU writes the Copper's value as the base value of BLTAPTH; TG68K: FAIL P7-0-PTH-A; NOT GRADED 15; fx68k: FAIL P7-0-PTH-A; NOT GRADED 15
+// MUTATION P7-0-PTL-A stimulus red NMH_MUTATE=P7-0-PTL-A: the CPU writes the Copper's value as the base value of BLTAPTL; TG68K: FAIL P7-0-PTL-A; NOT GRADED 15; fx68k: FAIL P7-0-PTL-A; NOT GRADED 15
+// MUTATION P7-0-MOD-A stimulus red NMH_MUTATE=P7-0-MOD-A: the CPU writes the Copper's value as the base value of BLTAMOD; TG68K: FAIL P7-0-MOD-A; NOT GRADED 15; fx68k: FAIL P7-0-MOD-A; NOT GRADED 15
+// MUTATION P7-0-PTH-B stimulus red NMH_MUTATE=P7-0-PTH-B: the CPU writes the Copper's value as the base value of BLTBPTH; TG68K: FAIL P7-0-PTH-B; NOT GRADED 15; fx68k: FAIL P7-0-PTH-B; NOT GRADED 15
+// MUTATION P7-0-PTL-B stimulus red NMH_MUTATE=P7-0-PTL-B: the CPU writes the Copper's value as the base value of BLTBPTL; TG68K: FAIL P7-0-PTL-B; NOT GRADED 15; fx68k: FAIL P7-0-PTL-B; NOT GRADED 15
+// MUTATION P7-0-MOD-B stimulus red NMH_MUTATE=P7-0-MOD-B: the CPU writes the Copper's value as the base value of BLTBMOD; TG68K: FAIL P7-0-MOD-B; NOT GRADED 15; fx68k: FAIL P7-0-MOD-B; NOT GRADED 15
+// MUTATION P7-0-PTH-C stimulus red NMH_MUTATE=P7-0-PTH-C: the CPU writes the Copper's value as the base value of BLTCPTH; TG68K: FAIL P7-0-PTH-C; NOT GRADED 15; fx68k: FAIL P7-0-PTH-C; NOT GRADED 15
+// MUTATION P7-0-PTL-C stimulus red NMH_MUTATE=P7-0-PTL-C: the CPU writes the Copper's value as the base value of BLTCPTL; TG68K: FAIL P7-0-PTL-C; NOT GRADED 15; fx68k: FAIL P7-0-PTL-C; NOT GRADED 15
+// MUTATION P7-0-MOD-C stimulus red NMH_MUTATE=P7-0-MOD-C: the CPU writes the Copper's value as the base value of BLTCMOD; TG68K: FAIL P7-0-MOD-C; NOT GRADED 15; fx68k: FAIL P7-0-MOD-C; NOT GRADED 15
+// MUTATION P7-0-PTH-D stimulus red NMH_MUTATE=P7-0-PTH-D: the CPU writes the Copper's value as the base value of BLTDPTH; TG68K: FAIL P7-0-PTH-D; NOT GRADED 15; fx68k: FAIL P7-0-PTH-D; NOT GRADED 15
+// MUTATION P7-0-PTL-D stimulus red NMH_MUTATE=P7-0-PTL-D: the CPU writes the Copper's value as the base value of BLTDPTL; TG68K: FAIL P7-0-PTL-D; NOT GRADED 15; fx68k: FAIL P7-0-PTL-D; NOT GRADED 15
+// MUTATION P7-0-MOD-D stimulus red NMH_MUTATE=P7-0-MOD-D: the CPU writes the Copper's value as the base value of BLTDMOD; TG68K: FAIL P7-0-MOD-D; NOT GRADED 15; fx68k: FAIL P7-0-MOD-D; NOT GRADED 15
+// MUTATION P7-1-PTH-A stimulus red NMH_MUTATE=P7-1-PTH-A: the Copper moves the base value to BLTAPTH; TG68K: FAIL P7-1-PTH-A; NOT GRADED 15; fx68k: FAIL P7-1-PTH-A; NOT GRADED 15
+// MUTATION P7-1-PTL-A stimulus red NMH_MUTATE=P7-1-PTL-A: the Copper moves the base value to BLTAPTL; TG68K: FAIL P7-1-PTL-A; NOT GRADED 15; fx68k: FAIL P7-1-PTL-A; NOT GRADED 15
+// MUTATION P7-1-MOD-A stimulus red NMH_MUTATE=P7-1-MOD-A: the Copper moves the base value to BLTAMOD; TG68K: FAIL P7-1-MOD-A; NOT GRADED 15; fx68k: FAIL P7-1-MOD-A; NOT GRADED 15
+// MUTATION P7-1-PTH-B stimulus red NMH_MUTATE=P7-1-PTH-B: the Copper moves the base value to BLTBPTH; TG68K: FAIL P7-1-PTH-B; NOT GRADED 15; fx68k: FAIL P7-1-PTH-B; NOT GRADED 15
+// MUTATION P7-1-PTL-B stimulus red NMH_MUTATE=P7-1-PTL-B: the Copper moves the base value to BLTBPTL; TG68K: FAIL P7-1-PTL-B; NOT GRADED 15; fx68k: FAIL P7-1-PTL-B; NOT GRADED 15
+// MUTATION P7-1-MOD-B stimulus red NMH_MUTATE=P7-1-MOD-B: the Copper moves the base value to BLTBMOD; TG68K: FAIL P7-1-MOD-B; NOT GRADED 15; fx68k: FAIL P7-1-MOD-B; NOT GRADED 15
+// MUTATION P7-1-PTH-C stimulus red NMH_MUTATE=P7-1-PTH-C: the Copper moves the base value to BLTCPTH; TG68K: FAIL P7-1-PTH-C; NOT GRADED 15; fx68k: FAIL P7-1-PTH-C; NOT GRADED 15
+// MUTATION P7-1-PTL-C stimulus red NMH_MUTATE=P7-1-PTL-C: the Copper moves the base value to BLTCPTL; TG68K: FAIL P7-1-PTL-C; NOT GRADED 15; fx68k: FAIL P7-1-PTL-C; NOT GRADED 15
+// MUTATION P7-1-MOD-C stimulus red NMH_MUTATE=P7-1-MOD-C: the Copper moves the base value to BLTCMOD; TG68K: FAIL P7-1-MOD-C; NOT GRADED 15; fx68k: FAIL P7-1-MOD-C; NOT GRADED 15
+// MUTATION P7-1-PTH-D stimulus red NMH_MUTATE=P7-1-PTH-D: the Copper moves the base value to BLTDPTH; TG68K: FAIL P7-1-PTH-D; NOT GRADED 15; fx68k: FAIL P7-1-PTH-D; NOT GRADED 15
+// MUTATION P7-1-PTL-D stimulus red NMH_MUTATE=P7-1-PTL-D: the Copper moves the base value to BLTDPTL; TG68K: FAIL P7-1-PTL-D; NOT GRADED 15; fx68k: FAIL P7-1-PTL-D; NOT GRADED 15
+// MUTATION P7-1-MOD-D stimulus red NMH_MUTATE=P7-1-MOD-D: the Copper moves the base value to BLTDMOD; TG68K: FAIL P7-1-MOD-D; NOT GRADED 15; fx68k: FAIL P7-1-MOD-D; NOT GRADED 15
+// MUTATION P7-PTH stimulus red NMH_MUTATE=P7-PTH: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more
+// MUTATION P7-PTL stimulus red NMH_MUTATE=P7-PTL: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more
+// MUTATION P7-MOD stimulus red NMH_MUTATE=P7-MOD: COPCON bit 1 clear in the run that grades the Copper's values; TG68K: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more; fx68k: FAIL P7-1-PTH-A, P7-1-PTL-A, P7-1-MOD-A, P7-1-PTH-B, P7-1-PTL-B, P7-1-MOD-B and 9 more
+// MUTATION P8-FIXTURE stimulus red NMH_MUTATE=P8-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P8-FIXTURE; NOT GRADED 5; fx68k: FAIL P8-FIXTURE; NOT GRADED 5
+// MUTATION P8-ANCHOR stimulus red NMH_MUTATE=P8-ANCHOR: the dry run stores each sample below the one before; TG68K: FAIL P8-ANCHOR; NOT GRADED 5; fx68k: FAIL P8-ANCHOR; NOT GRADED 5
+// MUTATION P8-FIT stimulus red NMH_MUTATE=P8-FIT: the pulse placed at the third sample, so that fewer than 4 samples fall before it; TG68K: FAIL P8-FIT; NOT GRADED 5; fx68k: FAIL P8-FIT; NOT GRADED 5
+// MUTATION P8-LPE stimulus red NMH_MUTATE=P8-LPE on the private build of 6.6: BPLCON0 bit 3 set in the control run; private TG68K build: FAIL P8-LPE; NOT GRADED 5; on the repository build the same run leaves the line PASS
+// MUTATION P8-0-VH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P8-0-HH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P8-1-VH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8-1-VH (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8
+// MUTATION P8-1-HH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8-1-HH (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8
+// MUTATION P8 implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P8 (LPENDIS = 0 in the P8-1 run) the private build prints FAIL P8-1-VH, P8-1-HH, P8
+// MUTATION F5-FIXTURE stimulus red NMH_MUTATE=F5-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5; fx68k: FAIL F5-FIXTURE, F5-LINES; NOT CHECKABLE 5
+// MUTATION F5-LINES stimulus red NMH_MUTATE=F5-LINES: a bit plane fetched in the S-H1 run; TG68K: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-LINES, F5-ALIGN; NOT CHECKABLE 5
+// MUTATION F5-ALIGN stimulus red NMH_MUTATE=F5-ALIGN: one more register in S-H2's list; TG68K: FAIL F5-ALIGN; NOT CHECKABLE 5; fx68k: FAIL F5-ALIGN; NOT CHECKABLE 5
+// MUTATION F5-SH-DIFF none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION F5-SH-INV none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION F5-SV-DIFF stimulus red NMH_MUTATE=F5-SV-DIFF: S-V2 with VSSTOP 103, like S-V1; TG68K: no line failed; NOT CHECKABLE 6; fx68k: no line failed; NOT CHECKABLE 6
+// MUTATION F5-SV-INV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT CHECKABLE on the repository build
+// MUTATION P9-AH none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-AC none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-NH none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-NC none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-BV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P9-BV () the private build prints FAIL P9-BV, P9-B, P9-ID
+// MUTATION P9-NV implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P9-NV () the private build prints FAIL P9-NV, P9-B, P9-ID
+// MUTATION P9-A none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P9-B implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P9-ID implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P10-CPAIR none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P10-SPAIR none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P10-VPAIR implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P10-VPAIR () the private build prints FAIL P10-VPAIR, P10-VSPAIR
+// MUTATION P10-VSPAIR implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P10-VSPAIR () the private build prints FAIL P10-VSPAIR
+// MUTATION P10 none impossible not exercised, by a scope decision: the harness shows the horizontal sync only after the scan doubler, which regenerates it, so the anchor S-H cannot hold at this boundary and no stimulus makes the line gradable
+// MUTATION P11-FIXTURE stimulus red NMH_MUTATE=P11-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P11-FIXTURE, P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-FIXTURE, P11-HHRUN; NOT GRADED 3
+// MUTATION P11-ANCHOR stimulus red NMH_MUTATE=P11-ANCHOR: the samples are stored below the one before; TG68K: FAIL P11-ANCHOR, P11-HHRUN; NOT GRADED 3; fx68k: FAIL P11-ANCHOR, P11-HHRUN; NOT GRADED 3
+// MUTATION P11-HHRUN implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build
+// MUTATION P11-MAXH implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P11-HHMAX implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-HHMAX (HTOTAL $0070 in place of $0038) the private build prints FAIL P11-HHMAX, P11
+// MUTATION P11 implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P11-PERIOD implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build; with NMH_MUTATE=P11-PERIOD () the private build prints FAIL P11-PERIOD
+// MUTATION P12-FIXTURE stimulus red NMH_MUTATE=P12-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 4; fx68k: FAIL P12-FIXTURE, P12-UHRES, P12-K; NOT GRADED 4
+// MUTATION P12-F3 none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
+// MUTATION P12-UHRES stimulus green NMH_MUTATE=P12-UHRES: one lores bit plane fetched from the bit-plane region and a sprite with data in the sprite region in place of UHRES; the line is FAIL without it and PASS with it on TG68K; fx68k: FAIL P12-K; NOT GRADED 4
+// MUTATION P12-BANDWIDTH stimulus red NMH_MUTATE=P12-BANDWIDTH: a lores bit plane fetched from $0F8000 on lines 102-108; TG68K: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4; fx68k: FAIL P12-UHRES, P12-BANDWIDTH, P12-K; NOT GRADED 4
+// MUTATION P12-K implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P12-K (HTOTAL $00E2 in place of $0038 in the DUAL run of P11) the private build prints FAIL P12-UHRES, P12-K
+// MUTATION P12-0 none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
+// MUTATION P12-1-BPL none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
+// MUTATION P12-1-SPR none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
+// MUTATION P12 none impossible not exercised, by a scope decision: no UHRES pointer access reaches the port on either build, so the counts of the graded lines are not gradable, and no private copy of the chip set with UHRES DMA was built
+// MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P13-FIXTURE; NOT GRADED 3; fx68k: FAIL P13-FIXTURE; NOT GRADED 3
+// MUTATION P13-F3 stimulus red NMH_MUTATE=P13-F3: a bit plane fetched in frame B; TG68K: FAIL P13-F3; NOT GRADED 3; fx68k: FAIL P13-F3; NOT GRADED 3
+// MUTATION P13-F4 stimulus red NMH_MUTATE=P13-F4: the samples are stored below the one before; TG68K: FAIL P13-F4; NOT GRADED 3; fx68k: FAIL P13-F4; NOT GRADED 3
+// MUTATION P13-VARMODE stimulus red NMH_MUTATE=P13-VARMODE: HTOTAL $00E2 in place of $00C0 in the contrast run; TG68K: FAIL P13-VARMODE; NOT GRADED 3; fx68k: FAIL P13-VARMODE; NOT GRADED 3
+// MUTATION P13-LOLDIS stimulus red NMH_MUTATE=P13-LOLDIS: LOLDIS clear in the contrast run (BEAMCON0 $0080); TG68K: FAIL P13-LOLDIS; NOT GRADED 3; fx68k: FAIL P13-LOLDIS; NOT GRADED 3
+// MUTATION P13-1-LINES stimulus red NMH_MUTATE=P13-1-LINES on the private build of 6.6: PAL clear in the P13-1 run; private TG68K build: FAIL P13-1-LINES, P13-1-LOL, P13; on the repository build the same run leaves the line PASS
+// MUTATION P13-1-LOL stimulus red NMH_MUTATE=P13-1-LOL: PAL clear in the P13-1 run; TG68K: FAIL P13-1-LOL, P13; fx68k: FAIL P13-1-LOL, P13
+// MUTATION P13 stimulus red NMH_MUTATE=P13: PAL clear in the P13-1 run; TG68K: FAIL P13-1-LOL, P13; fx68k: FAIL P13-1-LOL, P13
+// MUTATION P13-0-LINES implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P13-0-LINES (PAL set in the P13-0 run) the private build prints FAIL P13-0-LINES, P13-0-LOL
+// MUTATION P13-0-LOL stimulus red NMH_MUTATE=P13-0-LOL: PAL set in the P13-0 run; TG68K: FAIL P13-0-LINES, P13-0-LOL; fx68k: FAIL P13-0-LINES, P13-0-LOL
+// MUTATION P13-0-COUNT implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build
+// MUTATION P14-FIXTURE stimulus red NMH_MUTATE=P14-FIXTURE: the program stores $DEAD in place of $BEEF; TG68K: FAIL P14-FIXTURE; NOT GRADED 5; fx68k: FAIL P14-FIXTURE; NOT GRADED 5
+// MUTATION P14-F3 stimulus red NMH_MUTATE=P14-F3: a bit plane fetched in the stopped frame; TG68K: FAIL P14-F3; NOT GRADED 5; fx68k: FAIL P14-F3; NOT GRADED 5
+// MUTATION P14-F4 stimulus red NMH_MUTATE=P14-F4: the samples are stored below the one before; TG68K: FAIL P14-F4; NOT GRADED 5; fx68k: FAIL P14-F4; NOT GRADED 5
+// MUTATION P14-STABLE stimulus red NMH_MUTATE=P14-STABLE: BPLCON0 LACE set: consecutive frames differ in length; TG68K: FAIL P14-STABLE; NOT GRADED 5; fx68k: FAIL P14-STABLE; NOT GRADED 5
+// MUTATION P14-NORMAL stimulus red NMH_MUTATE=P14-NORMAL: BEAMCON0 $00A0 (VARBEAMEN set) in the PAL-set run; TG68K: FAIL P14-NORMAL; NOT GRADED 5; fx68k: FAIL P14-NORMAL; NOT GRADED 5
+// MUTATION P14-0-LOL stimulus red NMH_MUTATE=P14-0-LOL: PAL set in the P14-0 run; TG68K: FAIL P14-0-LOL, P14-0-LINES, P14-1, P14; NOT GRADED 1; fx68k: FAIL P14-0-LOL, P14-0-LINES, P14-1, P14; NOT GRADED 1
+// MUTATION P14-0-LINES implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P14-0-LINES (PAL set in the P14-0 run) the private build prints FAIL P14-0-LOL, P14-0-LINES, P14-1, P14
+// MUTATION P14-0-LONGONLY implementation green the private build of 6.6 makes the line PASS on TG68K, where it is NOT GRADED on the repository build
+// MUTATION P14-1 stimulus red NMH_MUTATE=P14-1: PAL clear in the P14-1 run; TG68K: FAIL P14-0-LINES, P14-1, P14; NOT GRADED 1; fx68k: FAIL P14-0-LINES, P14-1, P14; NOT GRADED 1
+// MUTATION P14 implementation green the private build of 6.6 makes the line PASS on TG68K, where it is FAIL on the repository build; with NMH_MUTATE=P14 (PAL clear in the P14-1 run) the private build prints FAIL P14-1, P14
 
 #include <algorithm>
 #include <array>
@@ -72,7 +225,7 @@ public:
 };
 
 Checks checks;
-bool g_graded = false;       // the build made with ENABLE_AGA
+bool g_graded = true;        // kept as a switch: both cores are graded
 std::string g_dir = ".";
 const char* g_mutate = nullptr;
 
@@ -628,7 +781,6 @@ void proposition_p3() {
 void proposition_p4() {
     if (!want("P4")) return;
     const int W = 3, H = 2;
-    const uint32_t ptr[4] = {0x0B0000, 0x0D0000, 0x0E0000, 0x0F0000};
     const long long mod[4] = {0, -2, 6, 10};
     std::string main_prog = sel("prog_p4", {{"P4-A", "prog_p4_moda14"}, {"P4-B", "prog_p4_modb"},
                                             {"P4-C", "prog_p4_modc"}, {"P4-D", "prog_p4_modd"},
@@ -682,7 +834,6 @@ void proposition_p4() {
                     (a1.empty() ? "none" : hexs(a1.back().byte)) + ", first access of blit 2 = " +
                     (a2.empty() ? "none" : hexs(a2.front().byte)) + ", modulo written " + dec(mod[k]));
     }
-    (void)ptr;
     g.expect_if(pre, ok[kA], "P4-A: the first access of channel A in the second blit is the last access of the first blit plus the increment plus the modulo written (+6)");
     g.expect_if(pre, ok[kB], "P4-B: the first access of channel B in the second blit is the last access of the first blit plus the increment plus the modulo written (-2)");
     g.expect_if(pre, ok[kC], "P4-C: the first access of channel C in the second blit is the last access of the first blit plus the increment plus the modulo written (0)");
@@ -789,7 +940,7 @@ void proposition_p6() {
     const int W = 2, H = 3;
     const long long mod[4] = {0, -4, 8, 20};
     std::string main_prog = sel("prog_p6", {{"P6-STEPS", "prog_p6_modb12"}, {"P6-COUNT", "prog_p6_nousec"},
-                                            {"P6", "prog_p6_modb12"}, {"P6-INC", "prog_p6_touch"}});
+                                            {"P6", "prog_p6_modb12"}, {"P6-INC", "prog_p6_h4"}});
     BRun mn = brun(main_prog, 1, &kLay1);
     BRun fx = mutating("P6-FIXTURE") ? brun("prog_p6_nofix", 1, &kLay1) : mn;
     g.expect(fx.fixture, "P6-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
@@ -811,18 +962,17 @@ void proposition_p6() {
     g.expect(finished, "P6-FINISHED: the blit raised BLIT and BBUSY read clear");
     bool pre = fx.fixture && config_ok(cfg) && anchor && finished;
 
-    // the increment is measured inside the first line of every channel that has
-    // one; the number of accesses per channel is what P6-COUNT grades
+    // the increment is measured on the channels that make W*H accesses; how many
+    // accesses each channel makes is what P6-COUNT grades
     std::optional<long long> inc;
     bool inc_ok = true;
     for (int k = 0; k < 4; ++k) {
-        const auto& a = mn.ch[0][k];
-        if (a.size() < 2) continue;
-        long long s = (long long)a[1].byte - (long long)a[0].byte;
+        auto s = line_step(mn.ch[0][k], W, H);
+        if (!s) continue;
         if (!inc) inc = s;
-        else if (*inc != s) inc_ok = false;
+        else if (*inc != *s) inc_ok = false;
     }
-    g.expect(inc_ok && inc.has_value(), "P6-INC: within the first line of every channel that has one, consecutive addresses differ by the same step");
+    g.expect(inc_ok && inc.has_value(), "P6-INC: within every line of the channels that make W*H = 6 accesses, consecutive addresses differ by one constant step, the same for every such channel");
     long long step = inc.value_or(0);
     pre = pre && inc_ok && inc.has_value();
 
@@ -1249,6 +1399,21 @@ std::map<int, int> lol_by_line(const std::vector<Sm>& s) {
 
 // ---- P11 --------------------------------------------------------------------
 
+// the mean number of HHPOSR decreases per main line of the frame, and whether HHPOSR
+// takes at least two values on every main line
+double wraps_per_line(const BeamRun& b, bool* moves) {
+    std::map<int, std::set<int>> vals;
+    std::map<int, int> w;
+    for (const auto& x : b.post1) vals[x.V].insert(x.hh);
+    for (size_t i = 1; i < b.post1.size(); ++i)
+        if (b.post1[i].V == b.post1[i - 1].V && (b.post1[i].hh & 0xFF) < (b.post1[i - 1].hh & 0xFF)) ++w[b.post1[i].V];
+    long long total = 0;
+    bool m = !vals.empty();
+    for (const auto& kv : vals) { total += w.count(kv.first) ? w[kv.first] : 0; if (kv.second.size() < 2) m = false; }
+    if (moves) *moves = m;
+    return vals.empty() ? 0.0 : (double)total / (double)vals.size();
+}
+
 void proposition_p11() {
     if (!want("P11")) return;
     // DUAL set, VARBEAMEN clear, HTOTAL $38
@@ -1270,7 +1435,7 @@ void proposition_p11() {
         BeamRun an = mutating("P11-ANCHOR") ? beam_run(a) : d;
         viol = f4_violations(an.post1);
         checks.note("P11 measured: " + dec((long long)an.post1.size()) + " samples in the frame, F4 order violations = " + dec(viol));
-        g.expect(!an.post1.empty() && viol == 0, "P11-ANCHOR: consecutive (V,H) samples of the frame increase strictly in lexicographic order, except across the wrap at the end of a frame");
+        g.expect(!an.post1.empty() && viol == 0, "P11-ANCHOR: the samples of the frame show the counters running: V never decreases within the frame and H increases within a line");
     }
     // the alternate counter runs: on every main line HHPOSR takes at least two values
     std::map<int, std::set<int>> hh_by_line;
@@ -1287,13 +1452,28 @@ void proposition_p11() {
         for (const auto& x : hh_by_line) { wraps += w.count(x.first) ? w[x.first] : 0; ++lines; }
     }
     checks.note("P11 measured: HTOTAL=" + hexs(o.regs[0].second, 4) + ": maximum H = " + dec(maxH) + ", maximum HHPOSR (bits 7-0) = " + dec(hhmax) +
-                ", HHPOSR decreases per main line = " + dec(lines ? (double)wraps / lines * 100 / 100 : 0) + " (" + dec(wraps) + " over " + dec(lines) + " lines)");
+                ", HHPOSR decreases per main line = " + fnum(lines ? (double)wraps / lines : 0) + " (" + dec(wraps) + " over " + dec(lines) + " lines)");
     bool pre = d.fixture && hh_runs && viol == 0;
     bool maxh_ok = maxH > 0x38;
     bool hhmax_ok = hhmax <= 0x38 && !d.post1.empty();
     g.expect_if(pre, maxh_ok, "P11-MAXH: with DUAL set and HTOTAL = $38 the maximum H of the main horizontal counter over the frame exceeds $38: HTOTAL does not reset the main counter");
     g.expect_if(pre, hhmax_ok, "P11-HHMAX: with DUAL set and HTOTAL = $38 every HHPOSR sample (bits 7-0) is at most $38: HTOTAL is the alternate counter's highest count");
     g.expect_if(pre, maxh_ok && hhmax_ok, "P11: with DUAL set and VARBEAMEN clear HTOTAL bounds the alternate horizontal counter read through HHPOSR and does not bound the main counter read through VHPOSR");
+
+    // the contrast: HTOTAL is the alternate counter's highest count, so its period grows by (HTOTAL' + 1) / (HTOTAL + 1)
+    // and the number of HHPOSR decreases per main line falls by that ratio, to within 1
+    if (!g_mutate || mutating("P11-PERIOD")) {
+        BeamOpts o2;
+        o2.post = 1; o2.hh = true; o2.stops = 2;
+        o2.regs = regs(mutating("P11-PERIOD") ? 0x0038 : 0x00E2, 0x0060);
+        BeamRun d2 = beam_run(o2);
+        bool m1 = false, m2 = false;
+        double w1 = wraps_per_line(d, &m1), w2 = wraps_per_line(d2, &m2);
+        double ratio = double(0x00E2 + 1) / double(0x0038 + 1);
+        checks.note("P11 measured: HHPOSR decreases per main line " + fnum(w1) + " with HTOTAL $38 and " + fnum(w2) + " with HTOTAL $E2, expected ratio " + fnum(ratio));
+        g.expect_if(pre && d2.fixture && m2 && m1, std::fabs(w1 / ratio - w2) <= 1.0,
+            "P11-PERIOD: raising HTOTAL from $38 to $E2 in the DUAL run makes the number of HHPOSR decreases per main line fall by the ratio ($E2 + 1) / ($38 + 1), to within 1");
+    }
 }
 
 // ---- P13 and P14: line lengths and LOL --------------------------------------
@@ -1335,7 +1515,7 @@ void proposition_p13() {
     BeamOpts o0 = o1;
     o0.regs = p13_regs(0x00E2, 0x0080);
     // mutations of the lines: the other run's stimulus in its place
-    if (mutating("P13-1") || mutating("P13-1-LINES") || mutating("P13-1-LOL")) o1.regs = p13_regs(0x00E2, 0x0080);
+    if (mutating("P13") || mutating("P13-1-LINES") || mutating("P13-1-LOL")) o1.regs = p13_regs(0x00E2, 0x0080);
     if (mutating("P13-0-LINES") || mutating("P13-0-LOL") || mutating("P13-0-COUNT"))
         o0.regs = p13_regs(0x00E2, 0x00A0);
     if (mutating("P13-FIXTURE")) o1.prog = "prog_beam_nofix";
@@ -1447,6 +1627,8 @@ void proposition_p14() {
     if (mutating("P14-0-LOL") || mutating("P14-0-LINES") || mutating("P14-0-LONGONLY")) o0.regs = {{kBEAMCON0, 0x0020}};
     if (mutating("P14-1") || mutating("P14")) o1.regs = {{kBEAMCON0, 0x0000}};
     if (mutating("P14-FIXTURE")) o1.prog = "prog_beam_nofix";
+    if (mutating("P14-STABLE")) o1.regs.insert(o1.regs.begin(), {0x100, 0x0004});   // BPLCON0 LACE: the two fields differ in length
+    if (mutating("P14-NORMAL")) o1.regs = {{kHTOTAL, 0x00E2}, {kVTOTAL, 0x0138}, {kBEAMCON0, 0x00A0}};
     if (mutating("P14-F3")) { auto x = dma_regs(); o1.regs.insert(o1.regs.begin(), x.begin(), x.end()); }
     BeamRun r1 = beam_run(o1);
     BeamRun r0 = beam_run(o0);
@@ -1475,8 +1657,17 @@ void proposition_p14() {
     long long p1a = period(r1, 1), p1b = period(r1, 2), p0a = period(r0, 1), p0b = period(r0, 2);
     checks.note("P14 measured, PAL set: frame lines " + dec(f1a) + " and " + dec(f1b) + ", frame periods " + dec(p1a) + " and " + dec(p1b) +
                 " system clocks; PAL clear: frame lines " + dec(f0a) + " and " + dec(f0b) + ", frame periods " + dec(p0a) + " and " + dec(p0b));
-    bool stable = f1a == f1b && f0a == f0b && p1a == p1b && p0a == p0b && p1a > 0 && p0a > 0;
-    g.expect(stable, "P14-STABLE: in both runs two consecutive frames give the same number of lines and the same frame period");
+    // the frame period in units of T_L: the period over the mean line period of the stopped frame, rounded
+    auto mean_line = [](const LineData& l) {
+        double s = 0; for (long long x : l.lines) s += (double)x;
+        return l.lines.empty() ? 0.0 : s / (double)l.lines.size();
+    };
+    auto in_lines = [](long long p, double ml) { return ml > 0 ? std::llround((double)p / ml) : 0LL; };
+    long long u1a = in_lines(p1a, mean_line(l1)), u1b = in_lines(p1b, mean_line(l1));
+    long long u0a = in_lines(p0a, mean_line(l0)), u0b = in_lines(p0b, mean_line(l0));
+    checks.note("P14 measured: frame periods in units of T_L: PAL set " + dec(u1a) + " and " + dec(u1b) + ", PAL clear " + dec(u0a) + " and " + dec(u0b));
+    bool stable = f1a == f1b && f0a == f0b && u1a == u1b && u0a == u0b && u1a > 0 && u0a > 0;
+    g.expect(stable, "P14-STABLE: in both runs two consecutive frames give the same number of lines and the same frame period in units of T_L");
     bool normal = true;   // VARBEAMEN and LOLDIS are clear in both runs: asserted from the BEAMCON0 values written
     for (const auto* ob : {&o1, &o0}) for (const auto& rg : ob->regs) if (rg.first == kBEAMCON0 && (rg.second & 0x0880)) normal = false;
     g.expect(normal, "P14-NORMAL: both runs are in normal mode, VARBEAMEN and LOLDIS clear in the BEAMCON0 value written");
@@ -1532,11 +1723,13 @@ double hh_rate(const BeamRun& b) {
     return n ? sum / n : 0.0;
 }
 
-// the number of lines of the main frame in which HHPOSR decreases at least twice
+// the fewest HHPOSR decreases on a complete main line of the frame (the first and the last
+// sampled line are cut by the frame sample's start and end)
 int hh_wraps_min(const BeamRun& b, bool* every_line_twice) {
     std::map<int, int> w;
     std::set<int> lines;
     for (const auto& x : b.post1) lines.insert(x.V);
+    if (lines.size() > 2) { lines.erase(lines.begin()); lines.erase(std::prev(lines.end())); }
     for (size_t i = 1; i < b.post1.size(); ++i)
         if (b.post1[i].V == b.post1[i - 1].V && (b.post1[i].hh & 0xFF) < (b.post1[i - 1].hh & 0xFF)) ++w[b.post1[i].V];
     int mn = 1 << 30;
@@ -1554,17 +1747,29 @@ struct UhRun {
     int g90 = -1;                      // the group of the port line containing VMARK(90)
     bool anchor = false;
     std::vector<int> bplh, sprh;       // accesses per port line, lines 102..108
+    int other = 0;                     // accesses on those lines that refresh, UHRES and the null sprite do not explain
+    std::string other_first;           // the first of them
     std::vector<double> len_cck;       // those lines' lengths in colour clocks
 };
 
 bool uh_range(uint32_t a) { return a >= 0x180000 && a < 0x1B0000; }
 
-UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "prog_uhres") {
+// extra: registers added to the list, and sprite words poked at the sprite data address
+UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "prog_uhres", RegList extra = {},
+             bool sprite_data = false) {
     RunOpts o;
     o.prog = prog;
     RegList regs = {{kHTOTAL, 0x0038}, {0x1E6, 0x0000}, {0x1D4, 100}, {0x1D6, 110}, {0x1D0, 100}, {0x1D2, 110},
                     {0x1EC, 0x0018}, {0x1EE, 0x0000}, {0x1E8, 0x0019}, {0x1EA, 0x0000},
-                    {kBEAMCON0, bc0}, {0x100, bplcon0}, {0x096, 0x8320}};
+                    {kBEAMCON0, bc0}, {0x100, bplcon0}};
+    regs.insert(regs.end(), extra.begin(), extra.end());
+    regs.push_back({0x096, 0x8320});
+    if (sprite_data) {
+        // a sprite from line 90 to line 130, its data words zero
+        o.pokes.push_back({0x190000, 0x5A40});
+        o.pokes.push_back({0x190002, 0x8200});
+        for (uint32_t a = 0x190004; a < 0x190004 + 2 * 2 * 41; a += 2) o.pokes.push_back({a, 0x0000});
+    }
     o.pokes.push_back({kCfg + 6, 5});
     o.pokes.push_back({kCfg + 8, (uint16_t)regs.size()});
     for (size_t i = 0; i < regs.size(); ++i) {
@@ -1609,6 +1814,12 @@ UhRun uh_run(uint16_t bc0, uint16_t bplcon0, long long tc, const char* prog = "p
             if (x.byte >= kBplhLo && x.byte < kBplhHi) ++nb;
             if (x.byte >= kSprhLo && x.byte < kSprhHi) ++ns;
         }
+        for (const auto& x : d.acc) {
+            if (x.cyc < a || x.cyc >= b) continue;
+            if (x.byte < 0x1000 || (x.byte >= kBplhLo && x.byte < 0x1B0000)) continue;
+            ++u.other;
+            if (u.other_first.size() < 60) u.other_first += " " + hexs(x.byte) + (x.wr ? "w" : "r");
+        }
         u.bplh.push_back(nb); u.sprh.push_back(ns);
         u.len_cck.push_back(double(b - a) / double(tc));
     }
@@ -1630,7 +1841,21 @@ void proposition_p12() {
                 ", alternate counter period = " + fnum(t_alt) + " colour clocks, fewest HHPOSR decreases on a main line = " + dec(minwraps));
 
     std::string prog = mutating("P12-FIXTURE") ? "prog_uhres_nofix" : "prog_uhres";
-    UhRun p0 = uh_run(0x0020, mutating("P12-UHRES") ? 0x0000 : 0x0080, dr.tc, prog.c_str());
+    // the display registers a plain one-bit-plane display needs
+    RegList disp = {{0x08E, 0x2C81}, {0x090, 0xF4C1}, {0x092, 0x0038}, {0x094, 0x00D0}};
+    UhRun p0;
+    if (mutating("P12-UHRES")) {
+        // a live input for the same check: one lores bit plane fetched from the bit-plane region and a sprite
+        // with data in the sprite region, so that both regions are accessed on every graded line
+        RegList ex = disp;
+        ex.push_back({0x0E0, 0x0018}); ex.push_back({0x0E2, 0x0000});
+        p0 = uh_run(0x0020, 0x1000, dr.tc, "prog_uhres_ctl", ex, true);
+    } else if (mutating("P12-BANDWIDTH")) {
+        // a bit plane fetched in the lines under test
+        RegList ex = disp;
+        ex.push_back({0x0E0, 0x000F}); ex.push_back({0x0E2, 0x8000});
+        p0 = uh_run(0x0020, 0x1000, dr.tc, prog.c_str(), ex);
+    } else p0 = uh_run(0x0020, 0x0080, dr.tc, prog.c_str());
     g.expect(p0.fixture, "P12-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool f3 = p0.anchor && p0.g90 >= 0;
     g.expect(f3, "P12-F3: in the stopped stretch after VMARK(90) the refresh accesses come in groups of exactly four, every line period is a whole number of colour clocks, and VMARK(90) lies in a port line the test calls 90");
@@ -1643,18 +1868,16 @@ void proposition_p12() {
         checks.note("P12 measured, DUAL clear: BPLHPT/SPRHPT accesses on lines 102-108:" + s);
     }
     g.expect(exists, "P12-UHRES: with UHRES enabled and DUAL clear the UHRES bit-plane pointer region and the UHRES sprite pointer region are accessed on every graded line");
-    // bandwidth: no bit plane fetched (BPU = 0) and the sprites on a null sprite: from the values written
-    bool bw = true;
-    {
-        uint16_t bplcon0 = mutating("P12-BANDWIDTH") ? 0x1080 : 0x0080;
-        bw = (bplcon0 & 0x7000) == 0 && (bplcon0 & 0x0010) == 0;
-    }
-    g.expect(bw, "P12-BANDWIDTH: BPLCON0 selects no bit plane (BPU = 0), so enabling BPLEN fetches none and the sprites fetch only the null sprite");
-    g.expect(every_twice, "P12-K: in the DUAL run of P11 HHPOSR decreases at least twice on every main line, so the alternate counter wraps at least twice per main line");
+    // bandwidth is left: on the graded lines the port shows only refresh, UHRES and null-sprite accesses
+    bool bw = p0.anchor && p0.other == 0;
+    checks.note("P12 measured, DUAL clear: accesses on lines 102-108 that refresh, UHRES and the null sprite do not explain = " + dec(p0.other) +
+                (p0.other ? ", first:" + p0.other_first : std::string("")));
+    g.expect(bw, "P12-BANDWIDTH: on lines 102-108 the port shows only refresh, UHRES and null-sprite accesses: no bit plane is fetched, no other DMA runs and the CPU is stopped");
+    g.expect(every_twice, "P12-K: in the DUAL run of P11 HHPOSR decreases at least twice on every complete main line, so the alternate counter wraps at least twice per main line");
     bool pre = p0.fixture && f3 && exists && bw && every_twice;
 
     UhRun p1 = uh_run(mutating("P12-1-BPL") || mutating("P12-1-SPR") || mutating("P12") ? 0x0020 : 0x0060, 0x0080, dr.tc, prog.c_str());
-    bool pre1 = pre && p1.anchor && p1.g90 >= 0;
+    bool pre1 = pre && p1.anchor && p1.g90 >= 0 && p1.other == 0;
     {
         std::string s;
         for (size_t i = 0; i < p1.bplh.size(); ++i) s += " " + dec(p1.bplh[i]) + "/" + dec(p1.sprh[i]);
@@ -1685,8 +1908,11 @@ struct SyncSet {
     uint16_t bc0 = 0x00A0;
     uint16_t hsstrt = 0x20, hsstop = 0x30, hcenter = 0x91, vsstop = 103, vbstrt = 150;
     bool fix = true;
+    bool dma = false;       // a bit plane is fetched: accesses the refresh filter cannot explain
+    uint16_t htotal = 0x00E2;
     std::string key() const {
-        return hexs(bc0, 4) + "-" + dec(hsstrt) + "-" + dec(hsstop) + "-" + dec(hcenter) + "-" + dec(vsstop) + "-" + dec(vbstrt) + (fix ? "" : "-nofix");
+        return hexs(bc0, 4) + "-" + dec(hsstrt) + "-" + dec(hsstop) + "-" + dec(hcenter) + "-" + dec(vsstop) + "-" + dec(vbstrt) +
+               (fix ? "" : "-nofix") + (dma ? "-dma" : "") + "-ht" + dec(htotal);
     }
 };
 
@@ -1707,9 +1933,10 @@ std::shared_ptr<SyncRun> sync_run(const SyncSet& s) {
     BeamOpts o;
     o.prog = s.fix ? "prog_beam" : "prog_beam_nofix";
     o.pre = true; o.post = 0; o.stops = 3; o.video = true;
-    o.regs = {{kHTOTAL, 0x00E2}, {kVTOTAL, 0x0138}, {kHSSTRT, s.hsstrt}, {kHSSTOP, s.hsstop}, {kHBSTRT, 0x0010},
+    o.regs = {{kHTOTAL, s.htotal}, {kVTOTAL, 0x0138}, {kHSSTRT, s.hsstrt}, {kHSSTOP, s.hsstop}, {kHBSTRT, 0x0010},
               {kHBSTOP, 0x0081}, {kHCENTER, s.hcenter}, {kVSSTRT, 100}, {kVSSTOP, s.vsstop}, {kVBSTRT, s.vbstrt},
               {kVBOSTOP, 170}, {kBEAMCON0, s.bc0}};
+    if (s.dma) { auto x = dma_regs(); o.regs.insert(o.regs.begin(), x.begin(), x.end()); }
     auto r = std::make_shared<SyncRun>();
     r->b = beam_run(o);
     r->tc = colour_clock(r->b.pre);
@@ -1835,6 +2062,8 @@ void proposition_p9_p10() {
     if (mutating("F5-SV-DIFF")) v2 = v1;
     if (mutating("F5-SV-INV")) v3.bc0 = 0x02A0;
     if (mutating("F5-FIXTURE")) h1.fix = false;
+    if (mutating("F5-LINES")) h1.dma = true;
+    if (mutating("F5-ALIGN")) h2.htotal = 0x00E0;   // lines two colour clocks shorter: the paired runs' groups no longer start together
 
     auto rh1 = sync_run(h1), rh2 = sync_run(h2), rh3 = sync_run(h3), rv1 = sync_run(v1), rv2 = sync_run(v2), rv3 = sync_run(v3), rr0 = sync_run(r0);
     g.expect(rh1->b.fixture && rh2->b.fixture && rh3->b.fixture && rv1->b.fixture && rv2->b.fixture && rv3->b.fixture && rr0->b.fixture,
@@ -1862,8 +2091,8 @@ void proposition_p9_p10() {
                 " starting in line " + (vnorm ? dec(line_of(*rr0, vnorm->a)) : std::string("n/a")));
     bool s_h = rh1->ok && rh2->ok && rh3->ok && al && sh_diff && sh_inv;
     bool s_v = rv1->ok && rv2->ok && rv3->ok && rr0->ok && al && sv_diff && sv_inv && vvar && vnorm;
-    if (!s_h) checks.record("NOT CHECKABLE: the HSY* parts of P9 and P10: anchor S-H does not hold in this harness (F5)");
-    if (!s_v) checks.record("NOT CHECKABLE: the VSY* parts of P9 and P10: anchor S-V does not hold in this harness (F5)");
+    if (!s_h) checks.record("NOT CHECKABLE: F5-SH: the HSY* parts of P9 and P10, since anchor S-H does not hold in this harness");
+    if (!s_v) checks.record("NOT CHECKABLE: F5-SV: the VSY* parts of P9 and P10, since anchor S-V does not hold in this harness");
     if (!w9 && !w10) return;
     // when neither part is checkable the runs of P9 and P10 are not taken: every line below is not graded
     const bool any = s_h || s_v;
@@ -1878,14 +2107,16 @@ void proposition_p9_p10() {
     SyncSet n_h2 = n_h1; n_h2.hsstrt = 0x24;
     SyncSet n_c2 = n_h1; n_c2.hcenter = 0x99;
     SyncSet n_v2 = n_h1; n_v2.vbstrt = 152;
-    if (mutating("P9-A")) c_h2 = c_h1;
-    if (mutating("P9-C")) c_c2 = c_h1;
-    if (mutating("P9-B")) c_v2 = c_h1;
-    if (mutating("P9-CONTRAST")) { n_h1.bc0 = 0x04A0; n_h2 = n_h1; n_h2.hsstrt = 0x24; }
+    if (mutating("P9-AH")) c_h2 = c_h1;
+    if (mutating("P9-AC")) c_c2 = c_h1;
+    if (mutating("P9-BV")) c_v2 = c_h1;
+    if (mutating("P9-NH")) { n_h1.bc0 = 0x04A0; n_h2 = n_h1; n_h2.hsstrt = 0x24; }
+    if (mutating("P9-NC")) { n_h1.bc0 = 0x04A0; n_c2 = n_h1; n_c2.hcenter = 0x99; }
+    if (mutating("P9-NV")) { n_h1.bc0 = 0x04A0; n_v2 = n_h1; n_v2.vbstrt = 152; }
     if (w9) {
         auto a1 = L(c_h1), a2 = L(c_h2), cc2 = L(c_c2), b2 = L(c_v2);
         std::vector<Itv> dA, dC, dB;
-        bool a_ok = h_pair_every_line(*a1, *a2, 4, &dA);
+        bool ah_ok = h_pair_every_line(*a1, *a2, 4, &dA);
         if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, HSSTRT $20 against $24, hs", dA, *a1));
         // C pair: differing lines consecutive, each in one interval of exactly 8 colour clocks
         dC = diff_itv(*a1, *cc2, 0);
@@ -1900,43 +2131,47 @@ void proposition_p9_p10() {
         long long lnorm = (vnorm && median_line(*rr0) > 0) ? (long long)(vnorm->b - vnorm->a) / median_line(*rr0) : -1;
         long long lnorm_hi = (vnorm && median_line(*rr0) > 0) ? ((long long)(vnorm->b - vnorm->a) + median_line(*rr0) - 1) / median_line(*rr0) : -1;
         bool count_ok = (long long)clines.size() == nvar || (long long)clines.size() == lnorm || (long long)clines.size() == lnorm_hi;
+        bool ac_ok = c_ok && consec && count_ok;
         if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, HCENTER $91 against $99, hs", dC, *a1) + "; differing lines " + dec((long long)clines.size()) +
                     " (V_var gives 3, V_norm gives " + dec(lnorm) + " or " + dec(lnorm_hi) + ")");
         // V pair on vs
         dB = diff_itv(*a1, *b2, 1);
-        bool b_ok = !dB.empty() && aligned(*a1, *b2);
-        if (b_ok && vvar) {
+        bool bv_ok = !dB.empty() && aligned(*a1, *b2);
+        if (bv_ok && vvar) {
             size_t first = dB.front().a, last = dB.back().b;
             long long tl = median_line(*a1);
-            // chip line n starts (n - 100) T_L after the start of V_var
-            long long start150 = (long long)vvar->a + 50 * tl;
-            b_ok = (long long)first >= start150 && (long long)first < start150 + tl && (long long)(last - first) <= 2 * tl;
+            // The blank starts in line 150 and V_var in line 100, each at a horizontal position the page does
+            // not fix, so the two starts lie between 49 and 51 line periods apart.
+            long long lo = (long long)vvar->a + 49 * tl;
+            bv_ok = (long long)first >= lo && (long long)first < lo + 2 * tl && (long long)(last - first) <= 2 * tl;
             bool half1 = false, half2 = false;
             for (const auto& i : dB) {
                 if ((long long)i.a < (long long)first + tl) half1 = true;
                 if ((long long)i.b > (long long)first + tl) half2 = true;
             }
-            b_ok = b_ok && half1 && half2;
-        } else b_ok = false;
+            bv_ok = bv_ok && half1 && half2;
+        } else bv_ok = false;
         if (any) checks.note("P9 measured: " + itv_note("CSCBEN set, VBSTRT 150 against 152, vs", dB, *a1));
         else checks.record("P9 and P10: the runs are not taken, since neither anchor S-H nor S-V holds");
-        // CSCBEN clear: all three pairs identical at every sample
-        bool n_ok = false;
-        if (full("P9-CONTRAST") || true) {
-            auto b1 = L(n_h1), b2h = L(n_h2), b2c = L(n_c2), b2v = L(n_v2);
-            n_ok = aligned(*b1, *b2h) && aligned(*b1, *b2c) && aligned(*b1, *b2v) && diff_itv(*b1, *b2h, 0).empty() && diff_itv(*b1, *b2h, 1).empty() &&
-                   diff_itv(*b1, *b2c, 0).empty() && diff_itv(*b1, *b2c, 1).empty() && diff_itv(*b1, *b2v, 0).empty() && diff_itv(*b1, *b2v, 1).empty();
-        }
+        // CSCBEN clear: each pair identical at every sample, on both pins
+        auto b1 = L(n_h1), b2h = L(n_h2), b2c = L(n_c2), b2v = L(n_v2);
+        auto same = [&](const SyncRun& x, const SyncRun& y) { return aligned(x, y) && diff_itv(x, y, 0).empty() && diff_itv(x, y, 1).empty(); };
+        bool nh_ok = same(*b1, *b2h), nc_ok = same(*b1, *b2c), nv_ok = same(*b1, *b2v);
         bool pre_a = s_h && a1->ok && a2->ok && cc2->ok && aligned(*a1, *a2) && aligned(*a1, *cc2) && vvar && vnorm;
         bool pre_b = s_v && a1->ok && b2->ok && aligned(*a1, *b2) && vvar && vnorm;
-        g.expect_if(pre_a, a_ok, "P9-A: with CSCBEN set and VARHSYEN and VARVSYEN clear, changing HSSTRT from $20 to $24 changes the HSY* output on every chip line, in one interval of exactly 4 colour clocks");
-        g.expect_if(pre_a, c_ok && consec && count_ok, "P9-C: with CSCBEN set, changing HCENTER from $91 to $99 changes the HSY* output on consecutive chip lines only, as many as there are lines in vertical sync, each in one interval of exactly 8 colour clocks");
-        g.expect_if(pre_b, b_ok, "P9-B: with CSCBEN set, changing VBSTRT from 150 to 152 changes the VSY* output only inside one interval of exactly two line periods starting in chip line 150, each of its two line periods holding differing samples");
-        g.expect_if(pre_a || pre_b, n_ok, "P9-CONTRAST: with CSCBEN clear the three pairs (HSSTRT $20/$24, HCENTER $91/$99, VBSTRT 150/152) are identical at every sample");
-        g.expect_if(pre_a && pre_b && n_ok,
-            a_ok && c_ok && consec && count_ok && b_ok,
-            "P9: opus:AA-beamcon0.b10 sol:AA-beamcon0.c11 opus:AA-beamcon0.c15 opus:AA-beamcon0.c16 sol:AA-beamcon0.c33 sol:AA-beamcon0.c34 opus:AA-beamcon0.c38: "
-            "with CSCBEN set the variable composite sync comes out on the HSY* pin, set on HSSTRT and on HCENTER in vertical sync, and the variable composite blank comes out on the VSY* pin, following VBSTRT; with CSCBEN clear none of these registers reaches the pins");
+        g.expect_if(pre_a, ah_ok, "P9-AH: with CSCBEN set and VARHSYEN and VARVSYEN clear, changing HSSTRT from $20 to $24 changes the HSY* output on every chip line, in one interval of exactly 4 colour clocks");
+        g.expect_if(pre_a, ac_ok, "P9-AC: with CSCBEN set, changing HCENTER from $91 to $99 changes the HSY* output on consecutive chip lines only, as many as there are lines in vertical sync, each in one interval of exactly 8 colour clocks");
+        g.expect_if(pre_a, nh_ok, "P9-NH: with CSCBEN clear, changing HSSTRT from $20 to $24 changes neither pin at any sample");
+        g.expect_if(pre_a, nc_ok, "P9-NC: with CSCBEN clear, changing HCENTER from $91 to $99 changes neither pin at any sample");
+        g.expect_if(pre_b, bv_ok, "P9-BV: with CSCBEN set, changing VBSTRT from 150 to 152 changes the VSY* output only inside one interval of at most two line periods that starts between 49 and 51 line periods after the start of V_var, each of its two line periods holding differing samples");
+        g.expect_if(pre_b, nv_ok, "P9-NV: with CSCBEN clear, changing VBSTRT from 150 to 152 changes neither pin at any sample");
+        bool a_all = ah_ok && ac_ok && nh_ok && nc_ok, b_all = bv_ok && nv_ok;
+        g.expect_if(pre_a, a_all,
+            "P9-A: opus:AA-beamcon0.c15 sol:AA-beamcon0.c33 opus:AA-beamcon0.c38: with CSCBEN set the variable composite sync comes out on the HSY* pin: set on HSSTRT on every line and on HCENTER in vertical sync; with CSCBEN clear neither register reaches the pins");
+        g.expect_if(pre_b, b_all,
+            "P9-B: opus:AA-beamcon0.c16 sol:AA-beamcon0.c34: with CSCBEN set the variable composite blank comes out on the VSY* pin and follows VBSTRT; with CSCBEN clear VBSTRT does not reach the pins");
+        g.expect_if(pre_a || pre_b, (!pre_a || a_all) && (!pre_b || b_all),
+            "P9-ID: opus:AA-beamcon0.b10 sol:AA-beamcon0.c11: BEAMCON0 bit 10 is CSCBEN: setting it routes the variable composite sync to HSY* and the variable composite blank to VSY*, on whichever pin this harness can check");
     }
 
     // ---- P10 ----
@@ -2010,7 +2245,7 @@ void proposition_p8() {
     int iL = -1;
     for (size_t i = 0; i < ds.size(); ++i) if (ds[i].V == 255) iL = (int)i;
     bool fit_ok = iL >= 7 && tc > 0 && dry.t_go > 0;
-    int ip = fit_ok ? iL - 3 : 0;
+    int ip = fit_ok ? (mutating("P8-FIT") ? 2 : iL - 3) : 0;
     int nsamp = fit_ok ? iL + 14 : 0;
     if (nsamp > 300) fit_ok = false;
     uint64_t delay = fit_ok ? (ds[ip].t + 2 - dry.t_go) : 0;
@@ -2036,19 +2271,16 @@ void proposition_p8() {
     g.expect(dry.fixture, "P8-FIXTURE: the program stores the constant $BEEF first and the harness reads it back before any other result is used");
     bool crosses = false;
     for (size_t i = 1; i < ds.size(); ++i) if (ds[i - 1].V == 255 && ds[i].V == 256) crosses = true;
-    checks.note("P8 measured: dry-run F4 violations = " + dec(f4_violations(ds)) + ", crosses 255 to 256 = " + dec(crosses ? 1 : 0) +
+    checks.note("P8 measured: dry run over all " + dec((long long)ds.size()) + " samples: F4 violations = " + dec(f4_violations(ds)) + ", line wraps with V not yet stepped = " +
+                dec(f4_lag(ds)) + ", crosses 255 to 256 = " + dec(crosses ? 1 : 0) +
                 ", last sample V:H = " + (ds.empty() ? std::string("n/a") : dec(ds.back().V) + ":" + dec(ds.back().H)));
-    for (size_t i = 1; i < ds.size(); ++i) {
-        bool inc = ds[i].V > ds[i - 1].V || (ds[i].V == ds[i - 1].V && ds[i].H > ds[i - 1].H);
-        if (!inc) checks.note("P8 measured: sample " + dec((long long)i) + " " + dec(ds[i - 1].V) + ":" + dec(ds[i - 1].H) + " then " + dec(ds[i].V) + ":" + dec(ds[i].H));
-    }
     LpRun dry_anchor = dry;
     if (mutating("P8-ANCHOR")) dry_anchor = lp_run(0x0020, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0, "prog_lpen_rev");
     // the anchor is checked over the samples of the window the pulse runs take
     if (nsamp > 0 && (int)dry_anchor.s.size() > nsamp) dry_anchor.s.resize(nsamp);
     int viol_a = f4_violations(dry_anchor.s);
     g.expect(!dry_anchor.s.empty() && viol_a == 0 && crosses,
-             "P8-ANCHOR: in the dry run (no pulse) consecutive (V,H) samples increase strictly, and the samples cross from V = 255 to V = 256 inside the window");
+             "P8-ANCHOR: in the dry run (no pulse) the samples of the window show the counters running: V never decreases and H increases within a line, and the samples cross from V = 255 to V = 256");
     // the alternate counter runs: HHPOSR takes at least two different values in the dry run
     LpRun hh_run = dry;
     if (mutating("P8-HHRUN")) hh_run = lp_run(0x0060, nsamp > 0 ? nsamp : 300, 0x0008, false, 0, 0);
@@ -2150,8 +2382,9 @@ void proposition_p8() {
 int main(int argc, char** argv) {
     g_dir = argc > 1 ? argv[1] : ".";
     g_mutate = std::getenv("NMH_MUTATE");
+    if (g_mutate && !*g_mutate) g_mutate = nullptr;
     std::string core = NMH_XSTR(NANOMIG_CORE_NAME);
-    g_graded = (core == "tg68k");
+    g_graded = true;   // both cores run the AA chip set
     std::printf("CORE: %s\n", core.c_str());
     if (g_mutate) std::printf("NMH_MUTATE=%s\n", g_mutate);
 
@@ -2169,6 +2402,15 @@ int main(int argc, char** argv) {
     proposition_p13();
     proposition_p14();
 
+    // the claims of SPECIFICATION.md section 1, which no proposition grades
+    checks.record("DECLINED-CHIP: opus:AA-bltxmod.c3 opus:AA-bltxpth.c3 opus:AA-bltxptl.c3 sol:AA-bltxmod.c3 sol:AA-bltxpth.c3 sol:AA-bltxptl.c3: the chip column A names the chip that holds the register, and no output of nanomig.v shows which chip a register lives in");
+    checks.record("DECLINED-MARK: opus:AA-bltxpth.c4 opus:AA-bltxptl.c7: the revision marks h are statements about the document's history and no output shows them");
+    checks.record("DECLINED-UNUSED: opus:AA-beamcon0.b15 sol:AA-beamcon0.c6 opus:AA-beamcon0.b3 sol:AA-beamcon0.c18: the page gives the unused bits 15 and 3 no function and no value, so no read-back value and no effect is stated");
+    checks.record("DECLINED-CSY: opus:AA-beamcon0.c37 sol:AA-beamcon0.c54: the CSY* pin is not among the outputs the harness shows");
+    checks.record("DECLINED-INTERLACE: sol:AA-beamcon0.c50: the page does not say what 'doesn't work' looks like in 640*400*4 interlace mode, so no observation can be graded against it");
+    checks.record("DECLINED-NORMAL: opus:AA-beamcon0.c18: the claim joins a statement about the CSY* pin, which cannot be seen, to the CSCBEN routing that P9 grades under other ids");
+    checks.record("DECLINED-WRITEONLY: opus:AA-bltxpth.c2 opus:AA-bltxptl.c2 opus:AA-bltxmod.c2: the page gives no value for a read of a W address, so 'write only' has no observable consequence");
+    checks.record("DECLINED-DUAL: opus:AA-beamcon0.c30 sol:AA-beamcon0.c47: DUAL runs all the horizontal comparators with the alternate counter, and P11 grades HTOTAL only");
     if (g_tears) checks.note("samples taken across the step from line 255 to line 256 and completed with the V8 they lacked: " + dec(g_tears));
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
