@@ -29,7 +29,8 @@
 ;   MUT_A1  T1's own DMA is never enabled (DMACON $8200 instead of $8201: A1 for T1 goes red)
 ;   MUT_A2  ADKCON $8001 (USE0V1) is set before the ADKCONR read (A2 goes red)
 ;   MUT_A4  T1's own AUD0VOL is 0 instead of 64 (A4 for T1 goes red)
-;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
+;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
+;   MUT_FIXWRITE  the ADKCONR store is left out (FIXTURE-WRITE's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"
@@ -78,7 +79,9 @@ start:
         endc
 
         ; ---- step 2: read ADKCONR, store it (precondition A2) ----
+        ifnd    MUT_FIXWRITE
         move.w  ADKCONR(a0),RESULTS
+        endc
 
         ; ---- step 3: channels 1-3 stay off (p.266 "000000=no output") ----
         move.w  #0,AUD1VOL(a0)

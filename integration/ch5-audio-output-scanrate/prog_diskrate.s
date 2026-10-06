@@ -26,7 +26,9 @@
 ;               F1's and B4's own contrasting case. MUT_F1_NTSC selects
 ;               the NTSC BEAMCON0 value ($0080) in place of the PAL one
 ;               ($00A0), per SPECIFICATION.md 2.4.
-;   MUT_FIXTURE KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
+;   MUT_FIXTURE KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
+;   MUT_FIXWRITE run F's store of the ADKCONR read into R_B1_F is left out
+;               (FIXTURE-WRITE's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"
@@ -96,7 +98,9 @@ start:
         else
         move.w  #$8100,ADKCON(a0)
         endc
+        ifnd    MUT_FIXWRITE
         move.w  ADKCONR(a0),R_B1_F
+        endc
         ifd     MUT_B2
         move.w  #$8010,DMACON(a0)              ; B2 mutation: DMAEN (bit 9) clear
         else

@@ -8,7 +8,7 @@
 ; Optional assembly-time symbols:
 ;   MUT_P5  step 2 writes $8200 instead of $8100 (P5's own contrasting case)
 ;   MUT_C1  the store of R2 (step 3's readback) is left out (C1's contrasting case)
-;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
+;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"

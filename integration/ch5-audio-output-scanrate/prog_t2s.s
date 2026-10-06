@@ -10,7 +10,7 @@
 ; words' bytes swapped) is pure data, so no assembly-time symbol is
 ; needed for it either.
 ;
-;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE's own contrasting case)
+;   MUT_FIXTURE  KFIX stores $DEAD instead of $BEEF (FIXTURE-CONST line's own contrasting case)
 
         include "nanomig.i"
         include "ch5regs.i"
