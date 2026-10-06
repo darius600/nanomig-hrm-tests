@@ -5,11 +5,19 @@
 ; uses; no instruction here writes it. OCS/ECS is a harness Config choice
 ; (chipset_config), not a symbol here. This file alone (COPCON_VAL defaults
 ; to $0000, CDANG clear) is one of the two builds; prog_p10_cdang.s
-; (COPCON_VAL=$0002) is the other. prog_p10_g_nolist.s (G_NOLIST set) is
-; the "Copper ran the list" precondition's own mutation (COPEN omitted from
-; the enabling write). The common preconditions' mutations, G3 included,
-; are those of P1 (SPECIFICATION.md's own cross-reference, section 2.6 and
-; P1).
+; (COPCON_VAL=$0002) is the other. After each enabling DMACON write the
+; program reads DMACONR into R: R[0] after the Copper enable, R[1+x] after
+; channel x's enable.
+;
+; Precondition mutations (each its own source, including this one):
+;   prog_p10_g1.s      (G1_BREAK)  -- branch-to-self before END
+;   prog_p10_g2k.s     (G2K_BREAK) -- DMAEN (bit 9) left out of the Copper enable
+;   prog_p10_g2w.s     (G2W_BREAK) -- DMAEN cleared before, and left out of, channel 0's enable
+;   prog_p10_g3.s      (G3_BREAK)  -- one extra CPU write into B_0 inside W_0
+;   prog_p10_g3l.s     (G3L_BREAK) -- one extra CPU write into L inside [K_O,K_C]
+;   prog_p10_g4.s      (DELAY_N=0) -- the per-channel delay collapses to nothing
+;   prog_p10_g5.s      (G5_BREAK)  -- SPREN also set before the windows
+;   prog_p10_g_nolist.s (G_NOLIST) -- COPEN omitted from the enabling write
 
         include "ch5.i"
 
@@ -48,6 +56,9 @@ start:
         lea     RSTORE,a3
 
         move.w  #$07FF,DMACON(a0)
+        ifd     G5_BREAK
+        move.w  #$8020,DMACON(a0)       ; G5's mutation: SPREN also set
+        endif
         move.w  #$00FF,ADKCON(a0)
         move.w  #COPCON_VAL,COPCON(a0)
 
@@ -76,20 +87,40 @@ start:
         ifd     G_NOLIST
         move.w  #$8200,DMACON(a0)       ; COPEN omitted (precondition mutation)
         else
+        ifd     G2K_BREAK
+        move.w  #$8080,DMACON(a0)       ; DMAEN (bit 9) left out (precondition mutation)
+        else
         move.w  #$8280,DMACON(a0)
         endif
+        endif
         move.w  DMACONR(a0),(a3)+
+        ifd     G3L_BREAK
+        move.w  #$DEAD,($64022).l       ; G3's mutation: a CPU write into L (its last word), inside [K_O,K_C]
+        endif
 
         move.l  #KDELAY_N,d0
         beq.s   .skK
 .dK:    subq.l  #1,d0
         bne.s   .dK
-.skK:   move.w  #$0080,DMACON(a0)        ; Copper DMA off; DMAEN stays set
+.skK:
+        ifd     G2W_BREAK
+        move.w  #$0280,DMACON(a0)       ; Copper DMA off and DMAEN cleared (precondition mutation)
+        else
+        move.w  #$0080,DMACON(a0)       ; Copper DMA off; DMAEN stays set
+        endif
         move.w  #KC,(a2)
 
         ; ---- channel 0 ----
         move.w  #O0M,(a2)
+        ifd     G2W_BREAK
+        move.w  #$8001,DMACON(a0)       ; DMAEN left out (precondition mutation)
+        else
         move.w  #$8201,DMACON(a0)
+        endif
+        move.w  DMACONR(a0),(a3)+
+        ifd     G3_BREAK
+        move.w  #$DEAD,($70800).l       ; G3's mutation: a CPU write into B_0, inside W_0
+        endif
         move.l  #DELAY_N,d0
         beq.s   .sk0
 .d0:    subq.l  #1,d0
@@ -105,6 +136,7 @@ start:
         ; ---- channel 1 ----
         move.w  #O1M,(a2)
         move.w  #$8202,DMACON(a0)
+        move.w  DMACONR(a0),(a3)+
         move.l  #DELAY_N,d0
         beq.s   .sk1
 .d1:    subq.l  #1,d0
@@ -120,6 +152,7 @@ start:
         ; ---- channel 2 ----
         move.w  #O2M,(a2)
         move.w  #$8204,DMACON(a0)
+        move.w  DMACONR(a0),(a3)+
         move.l  #DELAY_N,d0
         beq.s   .sk2
 .d2:    subq.l  #1,d0
@@ -135,6 +168,7 @@ start:
         ; ---- channel 3 ----
         move.w  #O3M,(a2)
         move.w  #$8208,DMACON(a0)
+        move.w  DMACONR(a0),(a3)+
         move.l  #DELAY_N,d0
         beq.s   .sk3
 .d3:    subq.l  #1,d0
@@ -147,5 +181,8 @@ start:
         bne.s   .g3
 .sg3:
 
+        ifd     G1_BREAK
+.hang:  bra.s   .hang
+        endif
         move.w  #ENDM,(a2)
         DONE

@@ -85,8 +85,25 @@
 // MUTATION P9-G2 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G2
 // MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE
 // MUTATION P9-G(after completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT
+// MUTATION P10 stimulus red the list that writes COLOR00 instead of the audio registers, through the unchanged audio comparator, via NMH_MUTATE=C1
+// MUTATION P10-COLOR stimulus red the audio list through the unchanged COLOR00 comparator, via NMH_MUTATE=INV
+// MUTATION P10-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
+// MUTATION P10-G2 stimulus red DMAEN (bit 9) left out of the Copper enable, via NMH_MUTATE=G2K
+// MUTATION P10-G2 stimulus red DMAEN cleared after the Copper window and left out of channel 0's enable, via NMH_MUTATE=G2W
+// MUTATION P10-G3 stimulus red one extra CPU write into B_0 inside W_0, via NMH_MUTATE=G3
+// MUTATION P10-G3 stimulus red one extra CPU write into the last word of L inside [K_O,K_C], via NMH_MUTATE=G3L
+// MUTATION P10-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4
+// MUTATION P10-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5
 // MUTATION P10-G(list ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
-// MUTATION P11-G(finished) stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
+// MUTATION P11 stimulus red the list without the BLTSIZE MOVE, through the unchanged main comparator, via NMH_MUTATE=NOBLTSIZE
+// MUTATION P11 stimulus red the list without the pointer MOVEs, through the unchanged main comparator, via NMH_MUTATE=NOPTR
+// MUTATION P11-NOBLTSIZE stimulus red the real list through the unchanged no-BLTSIZE comparator, via NMH_MUTATE=INVNOBLTSIZE
+// MUTATION P11-NOPTR stimulus red the real list through the unchanged no-pointer comparator, via NMH_MUTATE=INVNOPTR
+// MUTATION P11-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
+// MUTATION P11-G2 stimulus red DMAEN (bit 9) left out of the enabling write, via NMH_MUTATE=G2
+// MUTATION P11-G3 stimulus red one extra CPU write into L, past its own content, inside the window, via NMH_MUTATE=G3
+// MUTATION P11-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
+// MUTATION P11-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
 // MUTATION P11-G(list ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
 
 
@@ -1392,8 +1409,7 @@ namespace p10 {
 
 constexpr uint16_t kO[4] = {0x0010, 0x0012, 0x0014, 0x0016};
 constexpr uint16_t kC[4] = {0x0011, 0x0013, 0x0015, 0x0017};
-constexpr uint16_t kKO = 0x0070, kKC = 0x0071;
-const char kClaims[] = "p.310 C-interp.copcon, C-interp.copcon.ecs";
+constexpr uint16_t kKO = 0x0070, kKC = 0x0071, kEnd = 0x00FF;
 
 std::vector<uint16_t> list_audio() {
     std::vector<uint16_t> v;
@@ -1407,6 +1423,7 @@ std::vector<uint16_t> list_audio() {
     return v;
 }
 
+// The same eight MOVEs, addressed to COLOR00.
 std::vector<uint16_t> list_color() {
     std::vector<uint16_t> v;
     for (int x = 0; x < 4; ++x) {
@@ -1431,6 +1448,9 @@ W4 find4(const std::vector<nmh::RamAccess>& log) {
     return w;
 }
 
+// With the audio list, in W_x channel x fetches from B_x and not from A_x;
+// with the COLOR00 list it fetches from A_x and not from B_x. In both, no
+// other channel's block is read.
 bool check_main(const Capture& cap, const W4& w, bool expect_audio) {
     if (!w.ok) return false;
     for (int x = 0; x < 4; ++x) {
@@ -1449,72 +1469,136 @@ bool check_main(const Capture& cap, const W4& w, bool expect_audio) {
     return true;
 }
 
+// Everything one run shows: the comparison and the preconditions.
+struct Eval { bool cmp = false, g1 = false, g2 = false, g3 = false, g4 = false, g5 = false, lst = false; };
+
+Eval evaluate(const Capture& cap, bool expect_audio) {
+    Eval e;
+    W4 w = find4(cap.log);
+    auto ko = marker(cap.log, kKO), kc = marker(cap.log, kKC);
+    bool have = cap.loaded && w.ok && ko.has_value() && kc.has_value();
+    e.cmp = cap.loaded && cap.done.has_value() && check_main(cap, w, expect_audio);
+    e.g1 = have && cap.done.has_value() && marker(cap.log, kEnd).has_value();
+
+    // The readbacks: R[0] after the Copper enable, R[1+x] after channel x's enable.
+    auto r = stored_at(cap.log, kR, 5);
+    bool stored = have && r.size() == 5;
+    e.g2 = stored && (r[0] & 0x0200) && (r[0] & 0x0080);
+    e.g5 = stored && (r[0] & 0x01FF) == 0x0080;
+    if (stored) for (int x = 0; x < 4; ++x) {
+        if (!((r[1 + x] & 0x0200) && (r[1 + x] & (1 << x)))) e.g2 = false;
+        if ((r[1 + x] & 0x01FF) != (1u << x)) e.g5 = false;
+    }
+
+    e.g4 = have && count_window(vsync_starts(cap.video), *ko, *kc) >= 2;
+    if (have) for (int x = 0; x < 4; ++x)
+        if (count_window(vsync_starts(cap.video), w.o[x], w.c[x]) < 2) e.g4 = false;
+
+    // G3: no CPU write falls into a DMA block during a window (A_x/B_x in
+    // each W_x, L in [K_O,K_C]).
+    e.g3 = have;
+    if (have) {
+        for (int x = 0; x < 4; ++x) {
+            if (writes_in_range(cap.log, kA[x], kA[x] + 16, w.o[x], w.c[x]) != 0) e.g3 = false;
+            if (writes_in_range(cap.log, kB[x], kB[x] + 16, w.o[x], w.c[x]) != 0) e.g3 = false;
+        }
+        if (writes_in_range(cap.log, kList, kList + 0x24, *ko, *kc) != 0) e.g3 = false;
+    }
+
+    // The Copper ran the list: every word of [L,L+$24) was read inside [K_O,K_C].
+    e.lst = have;
+    if (have) for (uint32_t off = 0; off < 0x24; off += 2)
+        if (reads_at(cap.log, kList + off, *ko, *kc) < 1) { e.lst = false; break; }
+    return e;
+}
+
 void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    bool list_is_color = (mv == "C1");
-    std::vector<ExtraPreload> extra = {{kList, list_is_color ? list_color() : list_audio()}};
-
-    std::string bin_main  = dir + "/prog_p10.bin";
-    std::string bin_cdang = dir + "/prog_p10_cdang.bin";
-
     nmh::Config cfg_ocs; cfg_ocs.chipset_config = 0x00;
     nmh::Config cfg_ecs; cfg_ecs.chipset_config = 0x08;
 
-    struct Combo { const char* name; std::string bin; nmh::Config cfg; };
-    Combo combos[4] = {
-        {"OCS/CDANG0", bin_main,  cfg_ocs},
-        {"OCS/CDANG1", bin_cdang, cfg_ocs},
-        {"ECS/CDANG0", bin_main,  cfg_ecs},
-        {"ECS/CDANG1", bin_cdang, cfg_ecs},
+    struct Combo { const char* name; bool cdang; nmh::Config cfg; };
+    const Combo combos[4] = {
+        {"OCS/CDANG0", false, cfg_ocs},
+        {"OCS/CDANG1", true,  cfg_ocs},
+        {"ECS/CDANG0", false, cfg_ecs},
+        {"ECS/CDANG1", true,  cfg_ecs},
     };
-    bool ok = true;
-    for (auto& combo : combos) {
-        Capture cap = run_capture(combo.bin, run_budget, combo.cfg, extra);
-        auto w = find4(cap.log);
-        bool this_ok = cap.loaded && cap.done.has_value() && check_main(cap, w, !list_is_color);
-        checks.note(std::string("P10 ") + combo.name + ": " + (this_ok ? "ok" : "FAILED"));
-        if (!this_ok) ok = false;
+
+    // The mutated programs of the preconditions replace the main program in
+    // the runs with CDANG clear.
+    std::string mutant;
+    if (mv == "G1") mutant = "/prog_p10_g1.bin";
+    else if (mv == "G2K") mutant = "/prog_p10_g2k.bin";
+    else if (mv == "G2W") mutant = "/prog_p10_g2w.bin";
+    else if (mv == "G3") mutant = "/prog_p10_g3.bin";
+    else if (mv == "G3L") mutant = "/prog_p10_g3l.bin";
+    else if (mv == "G4") mutant = "/prog_p10_g4.bin";
+    else if (mv == "G5") mutant = "/prog_p10_g5.bin";
+    else if (mv == "G_NOLIST") mutant = "/prog_p10_g_nolist.bin";
+
+    // Every combination is run with the audio list (the main case) and with
+    // the COLOR00 list (the contrasting case).
+    Eval main_ev[4], color_ev[4];
+    bool main_cmp_audio[4], main_cmp_color[4], color_cmp_color[4], color_cmp_audio[4];
+    for (int i = 0; i < 4; ++i) {
+        std::string bin = dir + (combos[i].cdang ? "/prog_p10_cdang.bin" : "/prog_p10.bin");
+        std::string bin_main = (!mutant.empty() && !combos[i].cdang) ? dir + mutant : bin;
+
+        std::vector<ExtraPreload> extra_audio = {{kList, list_audio()}};
+        std::vector<ExtraPreload> extra_color = {{kList, list_color()}};
+        Capture cap_a = run_capture(bin_main, run_budget, combos[i].cfg, extra_audio);
+        Capture cap_c = run_capture(bin, run_budget, combos[i].cfg, extra_color);
+
+        main_ev[i] = evaluate(cap_a, true);
+        color_ev[i] = evaluate(cap_c, false);
+        // The comparators the mutations of the two halves need.
+        main_cmp_audio[i] = main_ev[i].cmp;
+        main_cmp_color[i] = evaluate(cap_a, false).cmp;   // audio-list run, COLOR00 comparator
+        color_cmp_color[i] = color_ev[i].cmp;
+        color_cmp_audio[i] = evaluate(cap_c, true).cmp;   // COLOR00-list run, audio comparator
+        checks.note(std::string("P10 ") + combos[i].name + ": audio list " + (main_cmp_audio[i] ? "ok" : "FAILED") +
+                    ", COLOR00 list " + (color_cmp_color[i] ? "ok" : "FAILED"));
     }
-    checks.expect(ok, std::string("P10 [") + kClaims +
-        "]: under OCS and ECS, with CDANG clear or set, in W_x: at least 2 reads at B_x and none at A_x, and "
-        "none at A_y or B_y for y != x");
 
-    // Preconditions, checked once (ECS, CDANG clear): the common ones are
-    // graded and mutated by P1 (SPECIFICATION.md's own cross-reference).
-    std::vector<ExtraPreload> extra_audio = {{kList, list_audio()}};
-    Capture cap = run_capture(bin_main, run_budget, cfg_ecs, extra_audio);
-    auto w = find4(cap.log);
-    auto ko = marker(cap.log, kKO), kc = marker(cap.log, kKC);
-    checks.expect(cap.loaded && cap.done.has_value() && w.ok && ko.has_value() && kc.has_value(),
-        "P10-G1: the program finished");
-
-    auto r10 = stored_at(cap.log, kR, 1);
-    bool g2_ok = r10.size() == 1;
-    if (g2_ok) { uint16_t v = r10[0]; g2_ok = (v & 0x0200) && (v & 0x0080); }
-    checks.expect(g2_ok, "P10-G2: the stored DMACONR readback (Copper enable) shows DMAEN and COPEN set");
-
-    bool g4_ok = ko.has_value() && kc.has_value() && w.ok && count_window(vsync_starts(cap.video), *ko, *kc) >= 2;
-    if (g4_ok) for (int x = 0; x < 4; ++x)
-        if (count_window(vsync_starts(cap.video), w.o[x], w.c[x]) < 2) g4_ok = false;
-    checks.expect(g4_ok, "P10-G4: V >= 2 in [K_O,K_C] and in each W_x");
-
-    // G3: no CPU write falls into a DMA block during any window (A_x/B_x
-    // in each W_x, L in [K_O,K_C]). Live invariant only -- the mutation is
-    // P1's (SPECIFICATION.md's own cross-reference).
-    bool g3_ok = w.ok && ko.has_value() && kc.has_value();
-    if (g3_ok) for (int x = 0; x < 4; ++x) {
-        if (writes_in_range(cap.log, kA[x], kA[x] + 16, w.o[x], w.c[x]) != 0) g3_ok = false;
-        if (writes_in_range(cap.log, kB[x], kB[x] + 16, w.o[x], w.c[x]) != 0) g3_ok = false;
+    // C1 puts the COLOR00 list through the audio comparator; INV puts the audio
+    // list through the COLOR00 comparator. Neither comparator changes.
+    bool main_ok = true, color_ok = true;
+    for (int i = 0; i < 4; ++i) {
+        main_ok = main_ok && ((mv == "C1") ? color_cmp_audio[i] : main_cmp_audio[i]);
+        color_ok = color_ok && ((mv == "INV") ? main_cmp_color[i] : color_cmp_color[i]);
     }
-    if (g3_ok && writes_in_range(cap.log, kList, kList + 0x24, *ko, *kc) != 0) g3_ok = false;
-    checks.expect(g3_ok, "P10-G3: zero writes observed in any A_x/B_x range across all four windows, and in "
-                         "[L,L+$24) in [K_O,K_C]");
+    checks.expect(main_ok,
+        "P10 [p.139, p.147, p.21, p.26, p.287]: under OCS and ECS, with CDANG clear or set, in W_x: at least 2 reads "
+        "at B_x and none at A_x, and none at A_y or B_y for y != x");
+    checks.expect(color_ok,
+        "P10-COLOR [p.21, p.139]: with the same eight MOVEs addressed to COLOR00, under OCS and ECS, with CDANG "
+        "clear or set, in W_x: at least 2 reads at A_x and none at B_x, and none at A_y or B_y for y != x");
 
-    Capture cap_g_nolist = (mv == "G_NOLIST") ? run_capture(dir + "/prog_p10_g_nolist.bin", run_budget, cfg_ecs, extra_audio) : cap;
-    auto ko3 = marker(cap_g_nolist.log, kKO), kc3 = marker(cap_g_nolist.log, kKC);
-    bool ranlist_ok = ko3.has_value() && kc3.has_value();
-    if (ranlist_ok) for (uint32_t off = 0; off < 0x24; off += 2)
-        if (reads_at(cap_g_nolist.log, kList + off, *ko3, *kc3) < 1) { ranlist_ok = false; break; }
-    checks.expect(ranlist_ok, "P10-G(list ran): every word of [L,L+$24) was read at least once inside [K_O,K_C]");
+    // Preconditions, over all eight runs.
+    auto all = [&](bool Eval::*member) {
+        for (int i = 0; i < 4; ++i) if (!(main_ev[i].*member) || !(color_ev[i].*member)) return false;
+        return true;
+    };
+    checks.expect(all(&Eval::g1), "P10-G1: the program finished -- END was written (every run)");
+    checks.expect(all(&Eval::g2),
+        "P10-G2 [p.144]: the stored DMACONR readbacks (after the Copper enable and after each channel's enable) "
+        "show DMAEN (bit 9) set and the enabled COPEN (bit 7), respectively channel x's bit, set (every run)");
+    checks.expect(all(&Eval::g4), "P10-G4: V >= 2 in [K_O,K_C] and in each W_x (every run)");
+    checks.expect(all(&Eval::g3),
+        "P10-G3: zero writes observed in any A_x/B_x range across all four windows, and in [L,L+$24) in "
+        "[K_O,K_C] (every run)");
+    checks.expect(all(&Eval::g5),
+        "P10-G5: of DMACON bits 8-0 in each stored readback, only COPEN (Copper window) respectively the channel "
+        "x being enabled is set (every run)");
+    checks.expect(all(&Eval::lst),
+        "P10-G(list ran): every word of [L,L+$24) was read at least once inside [K_O,K_C] (every run)");
+
+    checks.record(
+        "C-interp.copcon C-interp.copcon.ecs: not graded. The claims name the whole range $DFF03E-$DFF07E "
+        "(standard chip set) and 'all of the Amiga chip registers' (ECS). P10 grades the eight audio location "
+        "registers only and P11 grades $054, $056 and $058 only; AUDxLEN, AUDxPER, AUDxVOL, AUDxDAT and the "
+        "other registers of the range are not covered. The CDANG-clear half is declined as well: p.21 lets the "
+        "Copper write $20 and up, p.26 and p.287 protect $40-$7E, and p.310 opens $03E-$07E");
 }
 
 }  // namespace p10
@@ -1526,8 +1610,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
 
 namespace p11 {
 
-constexpr uint16_t kO = 0x0080, kC = 0x0081;
-const char kClaims[] = "p.310 C-interp.copcon, C-interp.copcon.ecs";
+constexpr uint16_t kO = 0x0080, kC = 0x0081, kEnd = 0x00FF;
 
 std::vector<uint16_t> list_main() {
     return {0x0054, uint16_t(kQ2 >> 16), 0x0056, uint16_t(kQ2 & 0xFFFF), 0x0058, 0x0104, 0xFFFF, 0xFFFE};
@@ -1539,64 +1622,107 @@ std::vector<uint16_t> list_no_pointer() {
     return {0x0180, uint16_t(kQ2 >> 16), 0x0180, uint16_t(kQ2 & 0xFFFF), 0x0058, 0x0104, 0xFFFF, 0xFFFE};
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
-    std::vector<uint16_t> list;
-    if (mv == "NOBLTSIZE") list = list_no_bltsize();
-    else if (mv == "NOPTR") list = list_no_pointer();
-    else list = list_main();
-    std::vector<ExtraPreload> extra = {{kList, list}};
+// The three lists' writes in the window: with the real list a blit lands at
+// Q2 and none at Q; without BLTSIZE neither; without the pointer MOVEs the
+// blit lands at the CPU's own destination Q.
+struct Seen { size_t q2 = 0, q = 0; };
+bool main_cmp(const Seen& s) { return s.q2 >= 1 && s.q == 0; }
+bool nobltsize_cmp(const Seen& s) { return s.q2 == 0 && s.q == 0; }
+bool noptr_cmp(const Seen& s) { return s.q >= 1 && s.q2 == 0; }
 
+struct Eval {
+    bool have = false;
+    Seen seen;
+    bool g1 = false, g2 = false, g3 = false, g4 = false, g5 = false, lst = false;
+};
+
+Eval evaluate(const Capture& cap) {
+    Eval e;
+    auto w = find_window(cap.log, kO, kC);
+    e.have = cap.loaded && cap.done.has_value() && w.has_value();
+    if (!w) return e;
+    e.seen.q2 = writes_in_range(cap.log, kQ2, kQ2 + 0x20, w->lo, w->hi);
+    e.seen.q = writes_in_range(cap.log, kQ, kQ + 0x20, w->lo, w->hi);
+    e.g1 = e.have && marker(cap.log, kEnd).has_value();
+    auto r = stored_at(cap.log, kR, 1);
+    bool stored = r.size() == 1;
+    e.g2 = stored && (r[0] & 0x0200) && (r[0] & 0x0080) && (r[0] & 0x0040);
+    e.g5 = stored && (r[0] & 0x01FF) == 0x00C0;
+    e.g4 = count_window(vsync_starts(cap.video), w->lo, w->hi) >= 3;
+    // G3: no CPU write falls into L during the window (Q2 is filled exactly
+    // to its own $20-byte reservation by the blit itself, so it has no
+    // headroom to check separately).
+    e.g3 = writes_in_range(cap.log, kList, kList + 64, w->lo, w->hi) == 0;
+    e.lst = true;
+    for (uint32_t off = 0; off < 12; off += 2)
+        if (reads_at(cap.log, kList + off, w->lo, w->hi) < 1) { e.lst = false; break; }
+    return e;
+}
+
+void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t run_budget) {
     nmh::Config cfg_ocs; cfg_ocs.chipset_config = 0x00;
     nmh::Config cfg_ecs; cfg_ecs.chipset_config = 0x08;
+    const struct { const char* name; nmh::Config cfg; } cfgs[2] = {{"OCS", cfg_ocs}, {"ECS", cfg_ecs}};
 
-    bool ok = true;
-    for (auto cfg : {cfg_ocs, cfg_ecs}) {
-        Capture cap = run_capture(dir + "/prog_p11.bin", run_budget, cfg, extra);
-        auto w = find_window(cap.log, kO, kC);
-        bool this_ok = cap.loaded && cap.done.has_value() && w.has_value();
-        if (this_ok) {
-            size_t wq2 = writes_in_range(cap.log, kQ2, kQ2 + 0x20, w->lo, w->hi);
-            size_t wq  = writes_in_range(cap.log, kQ,  kQ  + 0x20, w->lo, w->hi);
-            if (mv == "NOBLTSIZE") this_ok = (wq2 == 0 && wq == 0);
-            else if (mv == "NOPTR") this_ok = (wq >= 1 && wq2 == 0);
-            else this_ok = (wq2 >= 1 && wq == 0);
-        }
-        checks.note(std::string("P11 chipset_config=") + hex16(cfg.chipset_config) + ": " + (this_ok ? "ok" : "FAILED"));
-        if (!this_ok) ok = false;
+    std::string mutant;
+    if (mv == "G1") mutant = "/prog_p11_g1.bin";
+    else if (mv == "G2") mutant = "/prog_p11_g2.bin";
+    else if (mv == "G3") mutant = "/prog_p11_g3.bin";
+    else if (mv == "G4") mutant = "/prog_p11_g4.bin";
+    else if (mv == "G5") mutant = "/prog_p11_g5.bin";
+    else if (mv == "G_NOLIST") mutant = "/prog_p11_g_nolist.bin";
+
+    Eval ev_main[2], ev_nobltsize[2], ev_noptr[2];
+    for (int i = 0; i < 2; ++i) {
+        std::string bin = dir + "/prog_p11.bin";
+        std::string bin_main = mutant.empty() ? bin : dir + mutant;
+        ev_main[i] = evaluate(run_capture(bin_main, run_budget, cfgs[i].cfg, {{kList, list_main()}}));
+        ev_nobltsize[i] = evaluate(run_capture(bin, run_budget, cfgs[i].cfg, {{kList, list_no_bltsize()}}));
+        ev_noptr[i] = evaluate(run_capture(bin, run_budget, cfgs[i].cfg, {{kList, list_no_pointer()}}));
+        checks.note(std::string("P11 ") + cfgs[i].name + ": q2 writes " + num((long long)ev_main[i].seen.q2) +
+                    " q writes " + num((long long)ev_main[i].seen.q) + " (real list); " +
+                    num((long long)ev_nobltsize[i].seen.q2) + "/" + num((long long)ev_nobltsize[i].seen.q) +
+                    " (no BLTSIZE); " + num((long long)ev_noptr[i].seen.q2) + "/" +
+                    num((long long)ev_noptr[i].seen.q) + " (no pointer)");
     }
-    checks.expect(ok, std::string("P11 [") + kClaims +
-        "]: under OCS and ECS, at least one write in [Q2,Q2+$20) and none in [Q,Q+$20) in the window "
-        "(NOBLTSIZE: neither; NOPTR: the CPU's own Q destination instead, none at Q2)");
 
-    // Preconditions, checked once under ECS with the real list. The common
-    // ones are graded and mutated by P1 (SPECIFICATION.md's own cross-reference).
-    Capture cap = run_capture(dir + "/prog_p11.bin", run_budget, cfg_ecs, {{kList, list_main()}});
-    auto w = find_window(cap.log, kO, kC);
-    auto r11 = stored_at(cap.log, kR, 1);
-    bool g2_ok = r11.size() == 1;
-    if (g2_ok) { uint16_t v = r11[0]; g2_ok = (v & 0x0200) && (v & 0x0080) && (v & 0x0040); }
-    checks.expect(cap.loaded && cap.done.has_value() && w.has_value() && g2_ok,
-        "P11-G1/G2: the program finished, and the stored DMACONR readback shows DMAEN, COPEN and BLTEN set");
+    // NOBLTSIZE and NOPTR put the contrasting lists through the main
+    // comparator; INVNOBLTSIZE and INVNOPTR put the real list through the
+    // contrasting comparators. No comparator changes.
+    bool m_ok = true, nb_ok = true, np_ok = true;
+    for (int i = 0; i < 2; ++i) {
+        const Eval& m_in = (mv == "NOBLTSIZE") ? ev_nobltsize[i] : (mv == "NOPTR") ? ev_noptr[i] : ev_main[i];
+        const Eval& nb_in = (mv == "INVNOBLTSIZE") ? ev_main[i] : ev_nobltsize[i];
+        const Eval& np_in = (mv == "INVNOPTR") ? ev_main[i] : ev_noptr[i];
+        m_ok = m_ok && m_in.have && main_cmp(m_in.seen);
+        nb_ok = nb_ok && nb_in.have && nobltsize_cmp(nb_in.seen);
+        np_ok = np_ok && np_in.have && noptr_cmp(np_in.seen);
+    }
+    checks.expect(m_ok,
+        "P11 [p.310, p.26, p.287, p.21]: under OCS and ECS, at least one write in [Q2,Q2+$20) and none in "
+        "[Q,Q+$20) in the window");
+    checks.expect(nb_ok,
+        "P11-NOBLTSIZE [p.186, p.269]: with the BLTSIZE MOVE replaced by a MOVE to COLOR00, under OCS and ECS, no write "
+        "in [Q2,Q2+$20) and none in [Q,Q+$20) in the window");
+    checks.expect(np_ok,
+        "P11-NOPTR [p.186, p.269]: with the two pointer MOVEs replaced by MOVEs to COLOR00, under OCS and ECS, at least "
+        "one write in [Q,Q+$20), the CPU's own destination, and none in [Q2,Q2+$20) in the window");
 
-    bool g4_ok = w.has_value() && count_window(vsync_starts(cap.video), w->lo, w->hi) >= 3;
-    checks.expect(g4_ok, "P11-G4: V(W) >= 3");
-
-    // G3: no CPU write falls into L during the window (Q2 is filled
-    // exactly to its own $20-byte reservation by the blit itself, so it
-    // has no headroom to check separately). Live invariant only -- the
-    // mutation is P1's.
-    bool g3_ok = w.has_value() && writes_in_range(cap.log, kList, kList + 64, w->lo, w->hi) == 0;
-    checks.expect(g3_ok, "P11-G3: zero writes observed in [L,L+64) in the window");
-
-    Capture cap_g1 = (mv == "G1") ? run_capture(dir + "/prog_p11_g1.bin", run_budget, cfg_ecs, {{kList, list_main()}}) : cap;
-    checks.expect(cap_g1.loaded && cap_g1.done.has_value(), "P11-G(finished): the program finished");
-
-    Capture cap_g_nolist = (mv == "G_NOLIST") ? run_capture(dir + "/prog_p11_g_nolist.bin", run_budget, cfg_ecs, {{kList, list_main()}}) : cap;
-    auto w3 = find_window(cap_g_nolist.log, kO, kC);
-    bool listran_ok = w3.has_value();
-    if (listran_ok) for (uint32_t off = 0; off < 12; off += 2)
-        if (reads_at(cap_g_nolist.log, kList + off, w3->lo, w3->hi) < 1) { listran_ok = false; break; }
-    checks.expect(listran_ok, "P11-G(list ran): the list's first 12 bytes were read at least once inside the window");
+    // Preconditions, over all six runs.
+    auto all = [&](bool Eval::*member) {
+        for (int i = 0; i < 2; ++i)
+            if (!(ev_main[i].*member) || !(ev_nobltsize[i].*member) || !(ev_noptr[i].*member)) return false;
+        return true;
+    };
+    checks.expect(all(&Eval::g1), "P11-G1: the program finished -- END was written (every run)");
+    checks.expect(all(&Eval::g2),
+        "P11-G2 [p.144]: the stored DMACONR readback shows DMAEN, COPEN and BLTEN set (every run)");
+    checks.expect(all(&Eval::g4), "P11-G4: V(W) >= 3 (every run)");
+    checks.expect(all(&Eval::g3), "P11-G3: zero writes observed in [L,L+64) in the window (every run)");
+    checks.expect(all(&Eval::g5),
+        "P11-G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set (every run)");
+    checks.expect(all(&Eval::lst),
+        "P11-G(list ran): the list's first 12 bytes were read at least once inside the window (every run)");
 }
 
 }  // namespace p11

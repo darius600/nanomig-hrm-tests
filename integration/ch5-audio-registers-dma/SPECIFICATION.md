@@ -18,6 +18,7 @@ differs from the scan, the scan is quoted and the difference is named.
 | `5-appA-p263.c9`, `A-pre.c9` | 263 | "Disk data, sprite data, bitplane data, audio data, copper lists and anything that will be blitted or accessed by custom chip DMA must be located in chip memory." This is an instruction to the programmer. Every stimulus below obeys it, and P1 checks its positive side: audio DMA fetches its data from the Chip-memory location written. The page does not say what happens when the instruction is broken. |
 | `5-appB-p287.c5` | 287 | "+ Address register pair. Must be an even address pointing to chip memory." Same kind of claim: every location and pointer written below is even and lies in Chip memory, and the page does not say what happens otherwise. |
 | `5-appB-p290.c3` | 290 | "DMACON is assigned to Denise." The chip column says which chip decodes a register, and no output of the system shows that. The claim also comes from a text-layer error: the printed row on p.290 reads `DMACON 096 W A D P`, as p.278 does, but the text layer lost "A" and "P". |
+| `C-interp.copcon`, `C-interp.copcon.ecs` | 310 | The claims name a whole range: "the Copper can access the address range from $DFF03E through $DFF07E" (standard chip set) and "all of the Amiga chip registers" (ECS). Grading them would need an observation of the Copper's write to every register of the range. P10 and P11 observe the eight audio location registers and `$054`, `$056`, `$058`; `$07E` (DSKSYNC) and the unassigned addresses have no output at the RAM port. The two ids are declined, and P10 and P11 carry none. |
 
 ## 2. Conventions shared by every proposition
 
@@ -831,7 +832,9 @@ p.187's "If the images do not overlap, the zero flag will stay true."
 
 ### P10: The Copper writes AUDxLCH and AUDxLCL whatever the danger bit, under OCS and ECS
 
-**Claims:** p.310: `C-interp.copcon`, `C-interp.copcon.ecs`.
+**Claims:** none carried. P10 grades part of the two claims of p.310,
+`C-interp.copcon` and `C-interp.copcon.ecs`, which name a whole range of
+registers; they are declined in section 1.
 
 **Proposition.** With COPCON's CDANG clear or set, under OCS and ECS, Copper
 MOVEs to AUDxLCH and AUDxLCL (x = 0..3) set the location that channel x then
@@ -881,9 +884,13 @@ The location the channel fetches from is the one the Copper wrote, after the
 CPU's (P1 sources, and p.147: "The location and length registers are read by
 the DMA channel before audio output begins.").
 
-**Preconditions.**
-- G1, G3, G5.
-- G2 for the Copper enable (bits 9 and 7) and for each audio window.
+**Preconditions.** Every one is graded on every run: the four combinations of
+OCS or ECS and CDANG clear or set, each with the list L and with the list L'
+of the contrasting case.
+- G1, G3, G5. G5 holds for the Copper window (only COPEN among bits 8-0) and for
+  each audio window (only channel x).
+- G2 for the Copper enable (bits 9 and 7) and for each audio window (bits 9
+  and x), from the five stored readbacks.
 - G4: V ≥ 2 in [`K_O`, `K_C`] and in each W_x.
 - The Copper ran the list: every word of [L, L + `$24`) was read at least
   once inside [`K_O`, `K_C`], the final WAIT at L + `$20` included. It comes
@@ -891,10 +898,18 @@ the DMA channel before audio output begins.").
 
 **Contrasting cases.**
 - List L' has the same eight MOVEs addressed to COLOR00 (`$0180`) with the
-  same data. Expected in W_x: at least 2 reads at A_x and none at B_x.
+  same data. Expected in W_x: at least 2 reads at A_x and none at B_x. This is
+  graded in the normal run, in all four combinations, as P10-COLOR.
+- For G1: a branch-to-self before `END`.
+- For G2: leave DMAEN out of the Copper enable; and, separately, clear DMAEN
+  with the Copper-off write and leave it out of channel 0's enabling write. The
+  stored readbacks lack bit 9.
+- For G3: one extra CPU write into B_0 inside W_0; and, separately, one extra
+  CPU write into the last word of L inside [`K_O`, `K_C`].
+- For G4: a delay count of 0, so V(W_x) falls short of 2.
+- For G5: also set SPREN before the windows.
 - For the "Copper ran the list" precondition: omit bit 7 from step 4's write.
   No list read happens, and the precondition goes red.
-- For the other preconditions: section 2.6 and P1.
 
 **The danger bit itself cannot be shown to have been set.** No register exists
 on which every page agrees that CDANG changes the Copper's access:
@@ -905,13 +920,16 @@ on which every page agrees that CDANG changes the Copper's access:
 So the CDANG = 1 runs rest on the COPCON write alone, and the test does not
 claim more.
 
-**Quantifier.** p.310 says "all of the Amiga chip registers". Here that is
-graded on the eight location registers only. AUDxLEN, AUDxPER, AUDxVOL and
-AUDxDAT are not covered by this package.
+**Quantifier.** p.310 says "all of the Amiga chip registers" and names
+`$DFF03E` through `$DFF07E`. P10 grades the eight location registers only.
+AUDxLEN, AUDxPER, AUDxVOL and AUDxDAT are not covered by this package, so the
+two claims are declined (section 1).
 
 ### P11: With the danger bit set, the Copper writes the blitter registers at $054, $056 and $058
 
-**Claims:** p.310: `C-interp.copcon`, `C-interp.copcon.ecs`.
+**Claims:** none carried. P11 grades part of the two claims of p.310,
+`C-interp.copcon` and `C-interp.copcon.ecs`, which name a whole range of
+registers; they are declined in section 1.
 
 **Proposition.** With CDANG set, under OCS and ECS, Copper MOVEs to BLTDPTH
 (`$054`), BLTDPTL (`$056`) and BLTSIZE (`$058`) take effect: a blit starts and
@@ -953,16 +971,24 @@ the blitter registers should be written").
 
 **Expected.** At least one write in the Q2 range and none in the Q range.
 
-**Preconditions.**
-- G1, G2 (bits 9, 7 and 6 set), G3, G5, and G4 with V ≥ 3.
+**Preconditions.** Every one is graded on every run: OCS and ECS, each with
+the real list and with both lists of the contrasting cases.
+- G1, G2 (bits 9, 7 and 6 set), G3, and G4 with V ≥ 3.
+- G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set.
 - The list's first 12 bytes were read at least once.
 
 **Contrasting cases.**
 - Replace the BLTSIZE MOVE by `$0180,$0000`. Expected: no write in either
-  range.
+  range. This is graded in the normal run as P11-NOBLTSIZE.
 - Replace the two pointer MOVEs by MOVEs to `$0180`. Expected: writes in the
-  Q range and none in the Q2 range.
-- For the preconditions: as in P10.
+  Q range and none in the Q2 range. This is graded in the normal run as
+  P11-NOPTR.
+- For G1: a branch-to-self before `END`.
+- For G2: leave DMAEN out of the enabling write.
+- For G3: one extra CPU write into L, past its own content, inside the window.
+- For G4: a delay count of 0.
+- For G5: also set SPREN in the enabling write.
+- For the list precondition: omit COPEN from the enabling write.
 
 **Not specified, because the pages disagree.**
 - *CDANG clear.* p.21 lets the Copper write `$054-$058` always. p.26 ("When
@@ -1031,9 +1057,9 @@ the blitter registers should be written").
 | P7 | `5-appA-p278.c15`, `A-dmacon.b10` |
 | P8 | `5-appA-p278.c13`, `A-dmacon.b14`, `5-appA-p278.c10`, `5-appA-p278.c8`, `5-appB-p289.c4` |
 | P9 | `5-appA-p278.c14`, `A-dmacon.b13`, `5-appA-p278.c10`, `5-appA-p278.c8`, `5-appB-p289.c4` |
-| P10 | `C-interp.copcon`, `C-interp.copcon.ecs` |
-| P11 | `C-interp.copcon`, `C-interp.copcon.ecs` |
-| none (section 1) | `5-appA-p264.c2`, `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8`, `5-appA-p263.c9`, `A-pre.c9`, `5-appB-p287.c5`, `5-appB-p290.c3` |
+| P10 | none (section 1) |
+| P11 | none (section 1) |
+| none (section 1) | `5-appA-p264.c2`, `5-appA-p263.c7`, `5-appA-p263.c8`, `A-pre.c8`, `5-appA-p263.c9`, `A-pre.c9`, `5-appB-p287.c5`, `5-appB-p290.c3`, `C-interp.copcon`, `C-interp.copcon.ecs` |
 
 ## 6. What the build adds
 
@@ -1083,11 +1109,13 @@ section 2.3, and the mechanism items below.
   finishes at cycle 22,616,005 on fx68k against 15,776,325 on TG68K), and
   P10 repeats that same run inside a larger program.
 - **G3 (no CPU write falls into any DMA block during any window)** is
-  mutated for P1, P3, P4, P5 and P6 (one extra CPU write into that
-  proposition's own block under test, inside its window): A0 for P1, P
-  for P3, L for P4, Q for P5 (past the blit's own destination footprint,
-  which the main assertion already grades on its own terms), S0 for P6.
-  P10 and P11 check G3 as a live invariant on their own blocks and
-  windows but do not repeat the mutation, per this document's own
-  cross-reference (P10, P11: "the other preconditions: section 2.6 and
-  P1").
+  mutated for every proposition that grades it (one extra CPU write into
+  that proposition's own block under test, inside its window): A_0 for P1
+  (an absolute `MOVE.W`), P for P3, L for P4, Q for P5 (outside the blit's
+  destination footprint and, separately, onto its first word), S0 for P6,
+  B_0 and, separately, L for P10, L for P11. Every other precondition of
+  every proposition has a mutation of its own as well.
+- **Markers.** P1 and P10 write `END`; P7, P9 and P11 write `END` after their
+  last step. P3-P6 and P8 close with the window's closing marker and then
+  `DONE`: their G1 grades that `DONE` was written and that the window's
+  markers were found.

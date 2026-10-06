@@ -3,11 +3,15 @@
 ; Copper list at LST is preloaded by the C++ harness (per-run: the real
 ; list, or one of the two contrasts) -- the same mechanism load_program()
 ; itself uses; no instruction here writes it. OCS/ECS is a harness Config
-; choice, not a symbol here. prog_p11_g1.s (G1_BREAK) and
-; prog_p11_g_nolist.s (G_NOLIST, COPEN omitted) are precondition mutations
-; of this proposition's own "list ran" clause. The other common
-; preconditions' mutations, G3 included, are those of P1 (SPECIFICATION.md's
-; own cross-reference).
+; choice, not a symbol here.
+;
+; Precondition mutations (each its own source, including this one):
+;   prog_p11_g1.s      (G1_BREAK)  -- branch-to-self before END
+;   prog_p11_g2.s      (G2_BREAK)  -- DMAEN (bit 9) left out of the enabling write
+;   prog_p11_g3.s      (G3_BREAK)  -- one extra CPU write into L inside the window
+;   prog_p11_g4.s      (DELAY_N=0) -- the delay collapses to nothing
+;   prog_p11_g5.s      (G5_BREAK)  -- SPREN also set in the enabling write
+;   prog_p11_g_nolist.s (G_NOLIST) -- COPEN omitted from the enabling write
 
         include "ch5.i"
 
@@ -19,6 +23,7 @@ DELAY_N equ     50000
 
 OM      equ     $0080
 CM      equ     $0081
+ENDM    equ     $00FF
 
 start:
         move.w  #$2700,sr
@@ -45,9 +50,20 @@ start:
         ifd     G_NOLIST
         move.w  #$8240,DMACON(a0)        ; COPEN omitted (precondition mutation)
         else
+        ifd     G2_BREAK
+        move.w  #$80C0,DMACON(a0)        ; DMAEN (bit 9) left out (precondition mutation)
+        else
+        ifd     G5_BREAK
+        move.w  #$82E0,DMACON(a0)        ; SPREN also set (precondition mutation)
+        else
         move.w  #$82C0,DMACON(a0)        ; SET,DMAEN,COPEN,BLTEN
         endif
+        endif
+        endif
         move.w  DMACONR(a0),(a3)+
+        ifd     G3_BREAK
+        move.w  #$DEAD,($64030).l        ; G3's mutation: a CPU write into L, inside the window
+        endif
 
         move.l  #DELAY_N,d0
         beq.s   .sk
@@ -59,4 +75,5 @@ start:
         ifd     G1_BREAK
 .hang:  bra.s   .hang
         endif
+        move.w  #ENDM,(a2)
         DONE
