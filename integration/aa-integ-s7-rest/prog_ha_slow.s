@@ -1,0 +1,7 @@
+; prog_ha_slow.s -- see prog_samp.s
+SAMP_DUAL       equ     1
+SAMP_REG        equ     $1DA
+SAMP_N          equ     $0071
+SAMP_X          equ     $0010
+SAMP_DELAY      equ     20
+        include "prog_samp.s"
