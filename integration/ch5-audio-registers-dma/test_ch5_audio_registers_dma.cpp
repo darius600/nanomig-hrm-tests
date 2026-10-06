@@ -70,7 +70,7 @@
 // MUTATION P7-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
 // MUTATION P7-G2 stimulus red DMAEN (bit 9) left out of the enabling write, BLTPRI and BLTEN still set, via NMH_MUTATE=G2
 // MUTATION P7-G3 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts, via NMH_MUTATE=G3
-// MUTATION P7-G(CPU still wanted the bus) stimulus red the CPU executes STOP straight after the BLTSIZE write, so no CPU write follows T_last, via NMH_MUTATE=GSTOP
+// MUTATION P7-G(CPU-still-wanted-the-bus) stimulus red the CPU executes STOP straight after the BLTSIZE write, so no CPU write follows T_last, via NMH_MUTATE=GSTOP
 // MUTATION P8 stimulus red the BLTSIZE write replaced by a COLOR00 write, so no blit starts: that program through the unchanged comparator at the main run's graded reads, via NMH_MUTATE=C1
 // MUTATION P8-G1 stimulus red branch-to-self inserted before DONE, via NMH_MUTATE=G1
 // MUTATION P8-G2 stimulus red BLTPRI set in step 2, via NMH_MUTATE=GBLTPRI
@@ -84,7 +84,7 @@
 // MUTATION P9-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
 // MUTATION P9-G2 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G2
 // MUTATION P9-G(reads) stimulus red blit 4 also uses D, so it writes outside the CPU areas, via NMH_MUTATE=GDWRITE
-// MUTATION P9-G(after completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT
+// MUTATION P9-G(after-completion) stimulus red the wait before Z_1 is dropped, via NMH_MUTATE=NOWAIT
 // MUTATION P10 stimulus red the list that writes COLOR00 instead of the audio registers, through the unchanged audio comparator, via NMH_MUTATE=C1
 // MUTATION P10-COLOR stimulus red the audio list through the unchanged COLOR00 comparator, via NMH_MUTATE=INV
 // MUTATION P10-G1 stimulus red branch-to-self inserted before END, via NMH_MUTATE=G1
@@ -94,7 +94,7 @@
 // MUTATION P10-G3 stimulus red one extra CPU write into the last word of L inside [K_O,K_C], via NMH_MUTATE=G3L
 // MUTATION P10-G4 stimulus red the per-channel delay collapses to nothing, via NMH_MUTATE=G4
 // MUTATION P10-G5 stimulus red SPREN also set before the windows, via NMH_MUTATE=G5
-// MUTATION P10-G(list ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
+// MUTATION P10-G(list-ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
 // MUTATION P11 stimulus red the list without the BLTSIZE MOVE, through the unchanged main comparator, via NMH_MUTATE=NOBLTSIZE
 // MUTATION P11 stimulus red the list without the pointer MOVEs, through the unchanged main comparator, via NMH_MUTATE=NOPTR
 // MUTATION P11-NOBLTSIZE stimulus red the real list through the unchanged no-BLTSIZE comparator, via NMH_MUTATE=INVNOBLTSIZE
@@ -104,7 +104,7 @@
 // MUTATION P11-G3 stimulus red one extra CPU write into L, past its own content, inside the window, via NMH_MUTATE=G3
 // MUTATION P11-G4 stimulus red the delay collapses to nothing, via NMH_MUTATE=G4
 // MUTATION P11-G5 stimulus red SPREN also set in the enabling write, via NMH_MUTATE=G5
-// MUTATION P11-G(list ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
+// MUTATION P11-G(list-ran) stimulus red COPEN omitted from the enabling write, via NMH_MUTATE=G_NOLIST
 
 
 
@@ -1050,7 +1050,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     {
         Capture store; const Capture& c = pick("GSTOP", "prog_p7_live.bin", store);
         checks.expect(cpu_still_wanted(c) && cpu_still_wanted(cap_c1),
-                      "P7-G(CPU still wanted the bus): at least one CPU write into G falls after T_last, with "
+                      "P7-G(CPU-still-wanted-the-bus): at least one CPU write into G falls after T_last, with "
                       "fewer than 2048 recorded before it");
     }
 
@@ -1387,7 +1387,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     {
         Capture store; const Capture& c = pick("NOWAIT", "prog_p9_gnowait.bin", store);
         checks.expect(after_completion(c, parse(c), false) && after_completion(cap_swap, run_swap, true),
-                      "P9-G(after completion): each Z_k (k = 1..5) was stored after the last port access of its "
+                      "P9-G(after-completion): each Z_k (k = 1..5) was stored after the last port access of its "
                       "blit and after a read with bit 14 = 0");
     }
 
@@ -1591,7 +1591,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
         "P10-G5: of DMACON bits 8-0 in each stored readback, only COPEN (Copper window) respectively the channel "
         "x being enabled is set (every run)");
     checks.expect(all(&Eval::lst),
-        "P10-G(list ran): every word of [L,L+$24) was read at least once inside [K_O,K_C] (every run)");
+        "P10-G(list-ran): every word of [L,L+$24) was read at least once inside [K_O,K_C] (every run)");
 
     checks.record(
         "C-interp.copcon C-interp.copcon.ecs: not graded. The claims name the whole range $DFF03E-$DFF07E "
@@ -1722,7 +1722,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv, uint64_t
     checks.expect(all(&Eval::g5),
         "P11-G5: of DMACON bits 8-0 in the stored readback, only COPEN and BLTEN are set (every run)");
     checks.expect(all(&Eval::lst),
-        "P11-G(list ran): the list's first 12 bytes were read at least once inside the window (every run)");
+        "P11-G(list-ran): the list's first 12 bytes were read at least once inside the window (every run)");
 }
 
 }  // namespace p11

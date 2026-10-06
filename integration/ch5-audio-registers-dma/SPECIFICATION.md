@@ -1097,7 +1097,7 @@ section 2.3, and the mechanism items below.
   R sits below $80000, outside the identity-mapped range the harness's
   `peek_logical()` resolves.
 - **P5 step 1 ("The CPU clears [Q, Q + `$200`)")** is a CPU loop (256
-  words), now that the overlay is cleared, rather than relying on a fresh
+  words), since the overlay is cleared, rather than relying on a fresh
   instance's own zero-initialised memory.
 - **Tuned constants.** The per-channel delay/gap counts (P1, P10) and the
   per-proposition delay counts (P3-P6, P11) are spin-loop counts with no
