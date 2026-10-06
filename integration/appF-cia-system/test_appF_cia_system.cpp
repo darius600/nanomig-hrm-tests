@@ -34,21 +34,24 @@
 // MUTATION EP3-PER-RUN stimulus red the CIAA/timer-B P1 program stores $600E as its final marker (p1_ciaa_tb_ep3.bin): that capture has no DONE_VALUE write, via NMH_MUTATE=EP3-PER-RUN
 // MUTATION F1-ANCHOR-PER-RUN stimulus red the CIAA/timer-B P1 program sets shorter lines after the first marker (p1_ciaa_tb_f1.bin): that capture's line marks are off the cadence, via NMH_MUTATE=F1-ANCHOR-PER-RUN
 // MUTATION P1-PRE1.1 stimulus red CIAB/timer B's pull-up reference read with DDRB bit n=1 and the data bit 0 beforehand (p1_ciab_tb_pre11.bin), via NMH_MUTATE=P1-PRE11
-// MUTATION P1-PRE1.2 stimulus red CIAB/timer B's step-4 latch changed to $FFFF (p1_ciab_tb_pre12.bin): the poll limit runs out, via NMH_MUTATE=P1-PRE12
+// MUTATION P1-PRE1.2 stimulus red CIAB/timer B's step-4 latch changed to $FFFF (p1_ciab_tb_pre12.bin): the poll limit runs out, via NMH_MUTATE=P1-PRE12; legs A1 and B are then not graded on that instance, and P1-MAIN-CRB and P1-MAIN stay FAIL through legs a2 and c1
 // MUTATION P1-PRE1.3 stimulus red CIAB/timer B's step-7 latch changed to $0004 (p1_ciab_tb_pre13.bin): an underflow happens during leg C, via NMH_MUTATE=P1-PRE13
 // MUTATION P1-PRE1.4/O1 stimulus red CIAB/timer B's O1-contrast leg left at data bit n=0 instead of 1 (p1_ciab_tb_pre14.bin): the "data 1 reads 1" half of the precondition no longer holds, via NMH_MUTATE=P1-PRE14; P1-MAIN-CRB is then not graded, because both timer-B instances are excluded
 // MUTATION P1-MAIN-CRA stimulus green the PBON=0 runs through the same comparator (grade_p1): P1-CONTROL below
 // MUTATION P1-MAIN-CRB stimulus green the PBON=0 runs through the same comparator (grade_p1): P1-CONTROL below
 // MUTATION P1-MAIN stimulus green the PBON=0 runs through the same comparator (grade_p1): P1-CONTROL below
+// MUTATION P1-CONTROL-PRE1.1 stimulus red CIAB/timer B's PBON=0 run with DDRB bit n set to output and the data bit 0 before the pull-up reference is read (p1_ciab_tb_pbon0_pre11.bin): r0 bit n reads 0, via NMH_MUTATE=P1-CONTROL-PRE11; P1-CONTROL is then not graded
+// MUTATION P1-CONTROL-PRE1.2 stimulus red CIAB/timer B's PBON=0 run with step 4's latch changed to $FFFF (p1_ciab_tb_pbon0_pre12.bin): the poll limit runs out and the i1 flag reads 0, via NMH_MUTATE=P1-CONTROL-PRE12; P1-CONTROL is then not graded
+// MUTATION P1-CONTROL-PRE1.3 stimulus red CIAB/timer B's PBON=0 run with step 7's latch changed to $0004 (p1_ciab_tb_pbon0_pre13.bin): an underflow happens during leg C and the i2 flag reads 1, via NMH_MUTATE=P1-CONTROL-PRE13; P1-CONTROL is then not graded
 // MUTATION P1-OTHERBITS stimulus red CIAB/timer B's leg-B pattern bit 0 flipped (p1_ciab_tb_otherbits.bin): b1's bits 0-5 no longer match this instance's written pattern, via NMH_MUTATE=P1-OTHERBITS
 // MUTATION P1-CONTROL stimulus red CIAB/timer B's PBON=0 run writes leg B's data bit n as 0 (p1_ciab_tb_pbon0_b0.bin): b1 bit n reads 0 where the page predicts 1, via NMH_MUTATE=P1-CONTROL
 // MUTATION P2-LEGR stimulus green a CPU-driven low level before any start through the same comparator: P2-LEGR-GREENCTL below
 // MUTATION P2-MAIN stimulus green a CPU-driven rise at every start through the same comparator: P2-MAIN-GREENCTL below
 // MUTATION P2-LEGH stimulus green a CPU-driven high at each leg-H start through the same comparator: P2-LEGH-GREENCTL below
 // MUTATION P2-TOGGLE stimulus green the CPU-driven level through legs R, S and H together: P2-TOGGLE-GREENCTL below
-// MUTATION P2-PRE2.2 stimulus red CIAB/timer B's leg-S latch changed to $FFFF (p2_ciab_tb_pre22.bin): the poll count of start 1 hits the limit and its TB flag reads 0, via NMH_MUTATE=P2-PRE22
+// MUTATION P2-PRE2.2 stimulus red CIAB/timer B's leg-S latch changed to $FFFF (p2_ciab_tb_pre22.bin): the poll count of start 1 hits the limit and its TB flag reads 0, via NMH_MUTATE=P2-PRE22; P2-MAIN then grades no start that follows a one-shot which had not ended on CIAB/timer B, and P2-LEGR, P2-MAIN, P2-LEGH and P2-TOGGLE stay FAIL through CIAB/timer A
 // MUTATION P2-PRE2.3 stimulus red CIAB/timer B's start 1 written as $0D with DDRB bit n released for z_1's read only (p2_ciab_tb_pre23.bin): z_1 reads the pull-up's 1 and start 2 is not graded, via NMH_MUTATE=P2-PRE23
-// MUTATION P2-PRE2.4 stimulus red CIAB/timer B's leg-H latch changed to $0008 (p2_ciab_tb_pre24.bin): the ih flag reads 1, via NMH_MUTATE=P2-PRE24
+// MUTATION P2-PRE2.4 stimulus red CIAB/timer B's leg-H latch changed to $0008 (p2_ciab_tb_pre24.bin): the ih flag reads 1, via NMH_MUTATE=P2-PRE24; P2-LEGH then does not grade CIAB/timer B and stays FAIL through CIAB/timer A
 // MUTATION P2-LEGR-GREENCTL stimulus red a start, with the CPU raising the line, before leg R's write (p2c_ciab_tb_legr.bin): r1 bit n reads 1 where the page predicts 0, via NMH_MUTATE=P2-LEGR-GREENCTL; P2-TOGGLE-GREENCTL is red with it
 // MUTATION P2-MAIN-GREENCTL stimulus red start 4 written as $0C (START=0) with no CPU raise (p2c_ciab_tb_k4.bin): s_4 shows no rise, via NMH_MUTATE=P2-MAIN-GREENCTL; P2-TOGGLE-GREENCTL is red with it
 // MUTATION P2-LEGH-GREENCTL stimulus red no CPU raise after leg H's first start (p2c_ciab_tb_h1.bin): h1 bit n reads 0, via NMH_MUTATE=P2-LEGH-GREENCTL; P2-TOGGLE-GREENCTL is red with it
@@ -63,14 +66,15 @@
 // MUTATION P4-PRE stimulus red three of CIAB/timer B's four usable latch runs not started (p4_ciab_tb_l21_nostart.bin, l22, l24): fewer than two usable latches, via NMH_MUTATE=P4-PRE; P4 is then not graded
 // MUTATION P4 stimulus green a CPU-driven pulse at one fixed phase of the timer's period through the same comparator: P4-GREENCTL below
 // MUTATION P4-GREENCTL stimulus red CIAB/timer B's L=40 control table with a second high count value (p4c_ciab_tb_l40_two.bin): two residues read high and the single-residue comparator fails, via NMH_MUTATE=P4-GREENCTL
+// MUTATION P9-LEGF-PRE stimulus red CIAB/timer B's L=40 run not started (p9_legf_ciab_tb_l40_nostart.bin): no flags, so no period is determined, via NMH_MUTATE=P10-NOPERIOD-L40; P9-LEGF and P9-LEGF-TRANSITIONS are then not graded
 // MUTATION P9-LEGF stimulus red CIAB/timer B's L=41 run made with a latch of 42 (p9_legf_ciab_tb_l41_m.bin): the period offset is one larger than the other three, via NMH_MUTATE=P9-LEGF
 // MUTATION P9-LEGF-TRANSITIONS stimulus green a CPU-driven transition train through the same comparator: P9-LEGF-TRANSITIONS-GREENCTL below
 // MUTATION P9-LEGF-TRANSITIONS-GREENCTL stimulus red the CPU inverts PRB bit 7 after every second flagged read (p9_legf_ciab_tb_cputoggle_skip.bin): consecutive transitions are about 2*P(L) apart and the spacing comparator fails, via NMH_MUTATE=P9-LEGF-TRANSITIONS-GREENCTL
-// MUTATION P9-LEGW-PRE2.2 stimulus red the L=40 leg-W latch changed to $FFFF (p9_legw_l40_nouf.bin): the one-shot has not ended when the sampler closes and the TB flag reads 0, via NMH_MUTATE=P9-LEGW-PRE22; P9-LEGW is then not graded
-// MUTATION P9-LEGW-PRE2.3 stimulus red the L=40 leg-W run leaves DDRB bit 7 an input (p9_legw_l40_lvl1.bin): the level before the start reads the pull-up's 1, via NMH_MUTATE=P9-LEGW-PRE23; P9-LEGW is then not graded
+// MUTATION P9-LEGW-PRE2.2 stimulus red the L=40 leg-W latch changed to $FFFF (p9_legw_l40_nouf.bin): the one-shot has not ended when the sampler closes and the TB flag reads 0, via NMH_MUTATE=P9-LEGW-PRE22 (the line covers the L=40 and the L=100 run); P9-LEGW is then not graded
+// MUTATION P9-LEGW-PRE2.3 stimulus red the L=40 leg-W run leaves DDRB bit 7 an input (p9_legw_l40_lvl1.bin): the level before the start reads the pull-up's 1, via NMH_MUTATE=P9-LEGW-PRE23 (the line covers the L=40 and the L=100 run); P9-LEGW is then not graded
 // MUTATION P9-LEGW stimulus green a CPU-driven width through the same comparator: P9-LEGW-GREENCTL below
-// MUTATION P9-LEGW-GREENCTL-PRE2.2 stimulus red the CPU-driven L=40 latch changed to $FFFF (p9_legw_ctl_l40_nouf.bin): the one-shot has not ended when the sampler closes and no TB flag is read, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE22; P9-LEGW-GREENCTL is then not graded
-// MUTATION P9-LEGW-GREENCTL-PRE2.3 stimulus red the CPU-driven L=40 run leaves DDRB bit 7 an input for the read before the start (p9_legw_ctl_l40_lvl1.bin): the level before the start reads the pull-up's 1, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE23; P9-LEGW-GREENCTL is then not graded
+// MUTATION P9-LEGW-GREENCTL-PRE2.2 stimulus red the CPU-driven L=40 latch changed to $FFFF (p9_legw_ctl_l40_nouf.bin): the one-shot has not ended when the sampler closes and no TB flag is read, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE22 (the line covers the L=40 and the L=100 run); P9-LEGW-GREENCTL is then not graded
+// MUTATION P9-LEGW-GREENCTL-PRE2.3 stimulus red the CPU-driven L=40 run leaves DDRB bit 7 an input for the read before the start (p9_legw_ctl_l40_lvl1.bin): the level before the start reads the pull-up's 1, via NMH_MUTATE=P9-LEGW-GREENCTL-PRE23 (the line covers the L=40 and the L=100 run); P9-LEGW-GREENCTL is then not graded
 // MUTATION P9-LEGW-GREENCTL stimulus red the CPU-driven L=40 run made with a latch of 20 (p9_legw_ctl_l20.bin): W(100)-W(20) is about 80, outside 60+-s, via NMH_MUTATE=P9-LEGW-GREENCTL
 // MUTATION P5-PRE51 stimulus red CIAB/timer B's D2 run made with R-LATCH($1000) (p5a_ciab_tb_d2_pre51.bin): the TB flag is set in the window, via NMH_MUTATE=P5-PRE51; P5-LEGA is then not graded
 // MUTATION P5-PRE52 stimulus red CIAB/timer B's D1 run made without the stop write (p5a_ciab_tb_d1_pre52.bin): the second read of the counter differs from the first, via NMH_MUTATE=P5-PRE52; P5-LEGA is then not graded
@@ -918,7 +922,7 @@ void register_run(const std::string& bin, bool loaded, bool done, const Ep1Words
     run_registry().push_back(r);
 }
 
-// ---- P1: per-instance leg grading, gated by Pre1.1 (a1,a2,d2), Pre1.3
+// ---- P1: per-instance leg grading, gated by Pre1.1 (a2,d2), Pre1.2 (a1,b1), Pre1.3
 // (c1) and Pre1.4/O1 (the whole instance -- SPECIFICATION.md P1
 // Preconditions). d1/O1C together ARE Pre1.4/O1: DDRB bit n=1, data 0,
 // PBON=0 reads 0 (d1); the contrast, data 1 reads 1 (O1C).
@@ -940,16 +944,19 @@ P1Legs grade_p1(const Capture& c, uint16_t n_mask, uint16_t icr_mask, uint16_t Q
     uint16_t d1 = pk(c,kP1IdxD1), d2 = pk(c,kP1IdxD2), o1c = pk(c,kP1IdxO1C);
     bool pre11 = pk_ok(c,0) && (r0 & n_mask);
     bool pre13 = pk_ok(c,7) && !(i2v & icr_mask);
+    // Pre1.2: step 4's one-shot ended within the poll limit and its own flag is set, so exactly one underflow
+    // preceded legs A1 and B (the timer output is low after it).
+    bool pre12 = pk_ok(c,2) && pk(c,2) < 1000 && pk_ok(c,3) && (pk(c,3) & icr_mask);
     bool o1_pos = pk_ok(c,kP1IdxD1) && !(d1 & n_mask);
     bool o1_con = pk_ok(c,kP1IdxO1C) && (o1c & n_mask);
     g.o1_live = o1_pos && o1_con;
     if (!g.o1_live) return g;   // instance excluded; CIA-A's read-back is recorded separately
     if (pre11) {
         g.a2_ok = pbon ? !(a2 & n_mask) : (a2 & n_mask) != 0;
-        g.a1_ok = pbon ? !(a1 & n_mask) : (a1 & n_mask) != 0;
+        if (pre12) g.a1_ok = pbon ? !(a1 & n_mask) : (a1 & n_mask) != 0;
         g.d2_ok = (d2 & n_mask) != 0;
     }
-    g.b1_ok = pbon ? !(b1 & n_mask) : (b1 & n_mask) != 0;
+    if (pre12) g.b1_ok = pbon ? !(b1 & n_mask) : (b1 & n_mask) != 0;
     if (pre13) g.c1_ok = pbon ? (c1 & n_mask) != 0 : !(c1 & n_mask);
     g.d1_ok = !(d1 & n_mask);
     uint16_t bit_o = (n_mask == 0x40) ? 0x80 : 0x40;
@@ -972,16 +979,20 @@ struct P2LegSResult {
     std::vector<std::string> notes;
 };
 
+// Start k+1 (k >= 1, 0-based) is graded only where Pre2.2 holds for start k (its one-shot ended before the
+// restart): pre22_of(c, k) is Pre2.2 of the 0-based start k.
 P2LegSResult grade_p2_legs(const Capture& c, uint16_t n_mask, const char* tag,
                             std::function<std::optional<bool>(const Capture&, int, int)> s_bit,
-                            std::function<std::optional<uint16_t>(const Capture&, int)> z_of) {
+                            std::function<std::optional<uint16_t>(const Capture&, int)> z_of,
+                            std::function<bool(const Capture&, int)> pre22_of) {
     P2LegSResult r;
     if (!c.loaded || !c.done || c.peeks.size() <= kP2IdxS0) return r;
     std::optional<bool> before;
     if (pk_ok(c, kP2IdxS0)) before = (pk(c, kP2IdxS0) & n_mask) != 0;
     for (int k = 0; k < 4; ++k) {
         bool pre23 = before.has_value() && !*before;
-        if (pre23) {
+        const bool pre22_prev = k == 0 || pre22_of(c, k - 1);
+        if (pre23 && pre22_prev) {
             r.graded_any = true;
             int rises = 0; bool any1 = false;
             bool prev = false; // the level before, known 0 here (Pre2.3)
@@ -996,7 +1007,8 @@ P2LegSResult grade_p2_legs(const Capture& c, uint16_t n_mask, const char* tag,
         } else {
             std::string state = before.has_value() ? (*before ? "1" : "?") : "unknown";
             r.notes.push_back(std::string(tag) + " start " + std::to_string(k+1) +
-                " not graded (Pre2.3: level before is " + state + ", not 0)");
+                (pre23 ? std::string(" not graded (Pre2.2: start ") + std::to_string(k) + "'s one-shot had not ended before the restart)"
+                       : " not graded (Pre2.3: level before is " + state + ", not 0)"));
         }
         auto z = z_of(c,k);
         before = z ? std::optional<bool>((*z & n_mask) != 0) : std::optional<bool>();
@@ -1180,7 +1192,7 @@ int main(int argc, char** argv) {
     auto poll_converged = [](const Capture& c) { return pk_ok(c,2) && pk(c,2) < 1000; };
     bool pre12 = poll_converged(p1a) && (pk(p1a,3)&kIcrTa) && poll_converged(p1b) && (pk(p1b,3)&kIcrTb) &&
                  poll_converged(p1c) && (pk(p1c,3)&kIcrTa) && poll_converged(p1d_view) && (pk(p1d_view,3)&kIcrTb);
-    checks.expect(pre12, "P1-PRE1.2 [p342]: exactly one underflow happens before leg A1 on all four instances "
+    checks.expect(pre12, "P1-PRE1.2 [p342]: exactly one underflow happens before legs A1 and B on all four instances "
                          "(CR bit 0 read 0 within the poll limit, i1's own flag set)");
 
     bool pre13 = !(pk(p1a,7)&kIcrTa) && !(pk(p1b,7)&kIcrTb) && !(pk(p1c,7)&kIcrTa) && !(pk(p1d_view,7)&kIcrTb);
@@ -1195,10 +1207,8 @@ int main(int argc, char** argv) {
     P1Legs gc = grade_p1(p1c, 0x40, kIcrTa, 0x3D, 0x3B);       // CIAB/TA
     P1Legs gd = grade_p1(p1d_view, 0x80, kIcrTb, 0x3D, 0x3B);  // CIAB/TB
 
-    checks.expect(gc.o1_live, "P1-PRE1.4/O1 [p341]: DDRB bit n=1, data 0, PBON=0 reads 0, and data 1 "
-                              "reads 1 (CIAB/timer A)");
-    checks.expect(gd.o1_live, "P1-PRE1.4/O1 [p341]: DDRB bit n=1, data 0, PBON=0 reads 0, and data 1 "
-                              "reads 1 (CIAB/timer B)");
+    checks.expect(gc.o1_live && gd.o1_live, "P1-PRE1.4/O1 [p341]: DDRB bit n=1, data 0, PBON=0 reads 0, and data 1 "
+                              "reads 1 (CIAB/timer A and CIAB/timer B)");
     checks.record("P1-PRE1.4/O1 [p341], CIA-A: not graded as a live read-back -- measured " +
                    hex2(pk(p1a,kP1IdxD1)) + " (d1) and " + hex2(pk(p1a,kP1IdxO1C)) + " (O1 contrast) on "
                    "CIAA/timer A, " + hex2(pk(p1b,kP1IdxD1)) + " and " + hex2(pk(p1b,kP1IdxO1C)) +
@@ -1284,11 +1294,33 @@ int main(int argc, char** argv) {
     // whose read-back is live: the green control P1-MAIN's own red needs
     // (SPECIFICATION.md P1, "P1's control").
     {
-        std::string cd_bin = dir + (sel("P1-CONTROL") ? "/p1_ciab_tb_pbon0_b0.bin" : "/p1_ciab_tb_pbon0.bin");
+        std::string cd_bin = dir + (sel("P1-CONTROL") ? "/p1_ciab_tb_pbon0_b0.bin"
+                                    : sel("P1-CONTROL-PRE11") ? "/p1_ciab_tb_pbon0_pre11.bin"
+                                    : sel("P1-CONTROL-PRE12") ? "/p1_ciab_tb_pbon0_pre12.bin"
+                                    : sel("P1-CONTROL-PRE13") ? "/p1_ciab_tb_pbon0_pre13.bin"
+                                    : "/p1_ciab_tb_pbon0.bin");
         Capture ca = run_capture(dir + "/p1_ciaa_ta_pbon0.bin", kRunBudget, p1_addrs);
         Capture cb = run_capture(dir + "/p1_ciaa_tb_pbon0.bin", kRunBudget, p1_addrs);
         Capture cc = run_capture(dir + "/p1_ciab_ta_pbon0.bin", kRunBudget, p1_addrs);
         Capture cd = run_capture(cd_bin, kRunBudget, p1_addrs);
+        // Pre1.1-Pre1.3 on the control's own runs, printed before the line they gate.
+        const Capture* kcs[4] = {&ca, &cb, &cc, &cd};
+        const uint16_t kn[4] = {0x40, 0x80, 0x40, 0x80};
+        const uint16_t kic[4] = {kIcrTa, kIcrTb, kIcrTa, kIcrTb};
+        bool cpre11 = true, cpre12 = true, cpre13 = true;
+        for (int i = 0; i < 4; ++i) {
+            const Capture& c = *kcs[i];
+            cpre11 = cpre11 && pk_ok(c,0) && (pk(c,0) & kn[i]);
+            cpre12 = cpre12 && poll_converged(c) && (pk(c,3) & kic[i]);
+            cpre13 = cpre13 && !(pk(c,7) & kic[i]);
+        }
+        checks.expect(cpre11, "P1-CONTROL-PRE1.1 [p341,p354]: the pull-up reference r0 has bit n=1, on the "
+                              "PBON=0 runs of all four instances");
+        checks.expect(cpre12, "P1-CONTROL-PRE1.2 [p342]: exactly one underflow happens before leg A1 on the "
+                              "PBON=0 runs of all four instances (CR bit 0 read 0 within the poll limit, i1's own flag set)");
+        checks.expect(cpre13, "P1-CONTROL-PRE1.3 [p342]: no underflow happens during leg C on the PBON=0 runs of "
+                              "all four instances (i2's own flag clear)");
+        const bool cpre_ok = cpre11 && cpre12 && cpre13;
         P1Legs ka = grade_p1(ca, 0x40, kIcrTa, 0x2A, 0x15, false), kb = grade_p1(cb, 0x80, kIcrTb, 0x2A, 0x15, false);
         P1Legs kc = grade_p1(cc, 0x40, kIcrTa, 0x3D, 0x3B, false), kd = grade_p1(cd, 0x80, kIcrTb, 0x3D, 0x3B, false);
         int n_live_ctl = int(ka.o1_live) + int(kb.o1_live) + int(kc.o1_live) + int(kd.o1_live);
@@ -1296,12 +1328,12 @@ int main(int argc, char** argv) {
         {
             const P1Legs* ks[4] = {&ka, &kb, &kc, &kd};
             for (int i = 0; i < 4; ++i)
-                pv.p1_control[i] = !ks[i]->o1_live ? V::NOTGRADED : vof(true, p1_main_ok(*ks[i]));
+                pv.p1_control[i] = (!ks[i]->o1_live || !cpre_ok) ? V::NOTGRADED : vof(true, p1_main_ok(*ks[i]));
         }
-        emit(checks, n_live_ctl > 0, control_ok, "P1-CONTROL",
+        emit(checks, n_live_ctl > 0 && cpre_ok, control_ok, "P1-CONTROL",
             "P1-CONTROL [p342]: P1's own comparator on the PBON=0 runs: every leg reads the page's own "
             "PBON=0 values (a2,a1,b1 bit n=1; c1=0; d1=0; d2=1), for the instances whose read-back is live "
-            "(Pre1.4/O1)", no_live);
+            "(Pre1.4/O1)", cpre_ok ? no_live : "P1-CONTROL-PRE1.1, -PRE1.2 or -PRE1.3 failed");
     }
 
     // ---- P2 instances -------------------------------------------------
@@ -1344,6 +1376,51 @@ int main(int argc, char** argv) {
         return *c.peeks[idx];
     };
 
+    // ---- Pre2.1-Pre2.4, printed before the lines they gate ---------------------
+    // Pre2.1 is recorded, not graded: no output of this package shows a write that precedes leg R's own
+    // beyond EP1's first reads. The page's contrast (a start before leg R's write gives r1 = 1) is
+    // P2-LEGR-GREENCTL's mutation.
+    checks.record("P2-PRE2.1 [p342]: the program's first write to this CR is leg R's own; the only "
+                   "observation of an earlier write is EP1's first read of CRA and CRB, graded by "
+                   "EP1-PER-RUN");
+
+    // Pre2.2: before each restart, the previous one-shot has ended (CR bit 0 read 0 within the poll limit --
+    // stored -- and the flag set), for starts 1 to 3 of all four instances (start 4 is not followed by a
+    // restart). p2_pre22_of is the precondition of the 0-based start k of one instance.
+    auto p2_pre22_of = [&](const Capture& c, int k, uint16_t icr_mask) {
+        if (!c.loaded || !c.done) return false;
+        size_t idx = kP2IdxPoll + k;
+        if (idx >= c.peeks.size() || !c.peeks[idx]) return false;
+        auto ik = p2_i(c,k);
+        return *c.peeks[idx] < 1000 && ik.has_value() && (*ik & icr_mask);
+    };
+    auto p2_poll_ok = [&](const Capture& c, uint16_t icr_mask) {
+        return p2_pre22_of(c, 0, icr_mask) && p2_pre22_of(c, 1, icr_mask) && p2_pre22_of(c, 2, icr_mask);
+    };
+    bool pre22_all = p2_poll_ok(p2a,kIcrTa) && p2_poll_ok(p2b,kIcrTb) && p2_poll_ok(p2c,kIcrTa) && p2_poll_ok(p2d_view,kIcrTb);
+    checks.expect(pre22_all, "P2-PRE2.2 [p342]: before each restart, the previous one-shot has ended "
+                             "(CR bit 0 read 0 within the poll limit, i_k's own flag set), for starts 1 to 3 "
+                             "of all four instances");
+
+    // Pre2.3: the level before start 2 is 0 (z_1's own bit n clear), so start 2 is graded. Mutated via the
+    // top-level selection (start 1 written as $0D with DDRB left an input).
+    bool z1_ok_p2d = false;
+    {
+        auto z1 = p2_z(p2d_view, 0);
+        bool ok = z1.has_value() && !(*z1 & 0x80);
+        z1_ok_p2d = ok;
+        checks.expect(ok, "P2-PRE2.3 [p342]: the level before start 2 is 0 (z_1's own bit n clear, "
+                          "CIAB/timer B), so start 2 is graded");
+    }
+
+    // Pre2.4: no underflow happens in leg H (ih's own flag clear), for all four instances.
+    auto p2_ih_ok = [](const Capture& c, uint16_t icr_mask) {
+        return c.loaded && c.done.has_value() && pk_ok(c,12) && !(pk(c,12)&icr_mask);
+    };
+    bool pre24_all = p2_ih_ok(p2a,kIcrTa) && p2_ih_ok(p2b,kIcrTb) && p2_ih_ok(p2c,kIcrTa) && p2_ih_ok(p2d_view,kIcrTb);
+    checks.expect(pre24_all, "P2-PRE2.4 [p342]: no underflow happens in leg H (ih's own flag clear), "
+                             "for all four instances");
+
     // ---- component lines (no claim id: SPECIFICATION.md P2 puts
     // opus:F-timers.c14 on one assertion over legs R, S and H together,
     // with each leg's own line carrying no id) --------------------------
@@ -1351,7 +1428,9 @@ int main(int argc, char** argv) {
     // above: it is a fact of the instance's own read-back channel, not of
     // which program runs it) -- CIA-A's instances are excluded, as they are
     // from P1-MAIN; P2-MAIN gets the same exclusion for free through its
-    // own Pre2.3 (s0 never reads 0 on CIA-A).
+    // own Pre2.3 (s0 never reads 0 on CIA-A). P2-MAIN grades start k+1 only
+    // where Pre2.2 holds for start k; P2-LEGH grades an instance only where
+    // Pre2.4 holds for it.
     auto p2_legr_component = [](const Capture& c, uint16_t n_mask) {
         return c.loaded && c.done.has_value() && pk_ok(c,0) && !(pk(c,0)&n_mask);
     };
@@ -1365,21 +1444,24 @@ int main(int argc, char** argv) {
          "P2-LEGR [p342]: the toggle output is low after RES (before any start), "
          "for the instances whose read-back is live (Pre1.4/O1)", no_live_p2);
 
+    auto p2_pre22_ta = [&](const Capture& c, int k) { return p2_pre22_of(c, k, kIcrTa); };
+    auto p2_pre22_tb = [&](const Capture& c, int k) { return p2_pre22_of(c, k, kIcrTb); };
     P2LegSResult r_a = grade_p2_legs(p2a, 0x40, "CIAA/TA",
-        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z);
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z, p2_pre22_ta);
     P2LegSResult r_b = grade_p2_legs(p2b, 0x80, "CIAA/TB",
-        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z);
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z, p2_pre22_tb);
     P2LegSResult r_c = grade_p2_legs(p2c, 0x40, "CIAB/TA",
-        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z);
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z, p2_pre22_ta);
     P2LegSResult r_d = grade_p2_legs(p2d_view, 0x80, "CIAB/TB",
-        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z);
+        [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z, p2_pre22_tb);
     bool p2_legs_all = r_a.all_ok && r_b.all_ok && r_c.all_ok && r_d.all_ok;
     const bool p2_main_graded = r_a.graded_any || r_b.graded_any || r_c.graded_any || r_d.graded_any;
     emit(checks, p2_main_graded, p2_legs_all, "P2-MAIN",
-         "P2-MAIN [p342]: every start whose own level-before is 0 (Pre2.3) sets the "
+         "P2-MAIN [p342]: every start whose own level-before is 0 (Pre2.3) and whose predecessor's one-shot "
+         "had ended (Pre2.2) sets the "
          "toggle output high (the level before, prepended, followed by exactly one "
          "rise and at least one 1), for all four instances",
-         "no start of any instance has Pre2.3 (level before 0)");
+         "no start of any instance has Pre2.2 and Pre2.3");
     for (auto& n : r_a.notes) checks.note(n);
     for (auto& n : r_b.notes) checks.note(n);
     for (auto& n : r_c.notes) checks.note(n);
@@ -1388,14 +1470,18 @@ int main(int argc, char** argv) {
     auto p2_legh_component = [](const Capture& c, uint16_t n_mask) {
         return c.loaded && c.done.has_value() && pk_ok(c,9) && pk_ok(c,11) && (pk(c,9)&n_mask) && (pk(c,11)&n_mask);
     };
-    bool p2_legh_all = (!ga.o1_live || p2_legh_component(p2a,0x40)) &&
-                        (!gb.o1_live || p2_legh_component(p2b,0x80)) &&
-                        (!gc.o1_live || p2_legh_component(p2c,0x40)) &&
-                        (!gd.o1_live || p2_legh_component(p2d_view,0x80));
-    emit(checks, n_live_p2 > 0, p2_legh_all, "P2-LEGH",
+    const bool legh_live[4] = {ga.o1_live && p2_ih_ok(p2a,kIcrTa), gb.o1_live && p2_ih_ok(p2b,kIcrTb),
+                               gc.o1_live && p2_ih_ok(p2c,kIcrTa), gd.o1_live && p2_ih_ok(p2d_view,kIcrTb)};
+    const int n_legh = int(legh_live[0]) + int(legh_live[1]) + int(legh_live[2]) + int(legh_live[3]);
+    bool p2_legh_all = (!legh_live[0] || p2_legh_component(p2a,0x40)) &&
+                        (!legh_live[1] || p2_legh_component(p2b,0x80)) &&
+                        (!legh_live[2] || p2_legh_component(p2c,0x40)) &&
+                        (!legh_live[3] || p2_legh_component(p2d_view,0x80));
+    emit(checks, n_legh > 0, p2_legh_all, "P2-LEGH",
          "P2-LEGH [p342]: h1=1 (set high on start) and h3=1 (set high again after a "
          "stop, whether or not h2 separated it from toggling), for the instances whose "
-         "read-back is live (Pre1.4/O1)", no_live_p2);
+         "read-back is live (Pre1.4/O1) and whose leg H had no underflow (Pre2.4)",
+         n_live_p2 > 0 ? "no instance with a live read-back has Pre2.4" : no_live_p2);
 
     // Per-instance values, for the record (SPECIFICATION.md section 5).
     auto p2_dump = [&](const Capture& c, const char* tag) {
@@ -1411,7 +1497,7 @@ int main(int argc, char** argv) {
 
     {
         const V vr = vof(n_live_p2 > 0, p2_legr_all), vs = vof(p2_main_graded, p2_legs_all),
-                vh = vof(n_live_p2 > 0, p2_legh_all);
+                vh = vof(n_legh > 0, p2_legh_all);
         const bool any_fail = vr == V::FAIL || vs == V::FAIL || vh == V::FAIL;
         const bool any_ng = vr == V::NOTGRADED || vs == V::NOTGRADED || vh == V::NOTGRADED;
         const V p2_toggle = any_fail ? V::FAIL : any_ng ? V::NOTGRADED : V::PASS;
@@ -1423,55 +1509,6 @@ int main(int argc, char** argv) {
 
     checks.record("LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2");
 
-    // ---- Pre2.1: no output of this package shows a write that precedes leg R's own
-    // beyond EP1's first reads; recorded, not graded. The page's contrast (a start
-    // before leg R's write gives r1 = 1) is P2-LEGR-GREENCTL's mutation.
-    checks.record("P2-PRE2.1 [p342]: the program's first write to this CR is leg R's own; the only "
-                   "observation of an earlier write is EP1's first read of CRA and CRB, graded by "
-                   "EP1-PER-RUN");
-
-    // ---- Pre2.2: before each restart, the previous one-shot has ended
-    // (CR bit 0 read 0 within the poll limit -- stored -- and the flag
-    // set), for starts 1 to 3 of all four instances (start 4 is not
-    // followed by a restart).
-    auto p2_poll_ok = [&](const Capture& c, uint16_t icr_mask) {
-        if (!c.loaded || !c.done) return false;
-        bool ok = true;
-        for (int k=0;k<3;++k) {
-            size_t idx = kP2IdxPoll + k;
-            if (idx >= c.peeks.size() || !c.peeks[idx]) return false;
-            uint16_t poll = *c.peeks[idx];
-            auto ik = p2_i(c,k);
-            bool flagset = ik.has_value() && (*ik & icr_mask);
-            ok = ok && (poll < 1000) && flagset;
-        }
-        return ok;
-    };
-    bool pre22_all = p2_poll_ok(p2a,kIcrTa) && p2_poll_ok(p2b,kIcrTb) && p2_poll_ok(p2c,kIcrTa) && p2_poll_ok(p2d_view,kIcrTb);
-    checks.expect(pre22_all, "P2-PRE2.2 [p342]: before each restart, the previous one-shot has ended "
-                             "(CR bit 0 read 0 within the poll limit, i_k's own flag set), for starts 1 to 3 "
-                             "of all four instances");
-
-    // ---- Pre2.3: the level before start 2 is 0 (z_1's own bit n clear),
-    // so start 2 is graded. Mutated via the top-level selection (start 1
-    // written as $0D with DDRB left an input).
-    bool z1_ok_p2d = false;
-    {
-        auto z1 = p2_z(p2d_view, 0);
-        bool ok = z1.has_value() && !(*z1 & 0x80);
-        z1_ok_p2d = ok;
-        checks.expect(ok, "P2-PRE2.3 [p342]: the level before start 2 is 0 (z_1's own bit n clear, "
-                          "CIAB/timer B), so start 2 is graded");
-    }
-
-    // ---- Pre2.4: no underflow happens in leg H (ih's own flag clear),
-    // for all four instances.
-    auto p2_ih_ok = [](const Capture& c, uint16_t icr_mask) {
-        return c.loaded && c.done.has_value() && pk_ok(c,12) && !(pk(c,12)&icr_mask);
-    };
-    bool pre24_all = p2_ih_ok(p2a,kIcrTa) && p2_ih_ok(p2b,kIcrTb) && p2_ih_ok(p2c,kIcrTa) && p2_ih_ok(p2d_view,kIcrTb);
-    checks.expect(pre24_all, "P2-PRE2.4 [p342]: no underflow happens in leg H (ih's own flag clear), "
-                             "for all four instances");
     {
         // One verdict per instance, conjoined with Pre1.4/O1 (the instance's read-back is live) and
         // Pre2.2, Pre2.3 and Pre2.4 (printed above): legs R, S and H of that instance.
@@ -1521,9 +1558,9 @@ int main(int argc, char** argv) {
 
         bool c_legr = (!gc.o1_live || p2_legr_component(q_a, 0x40)) && (!gd.o1_live || p2_legr_component(q_b, 0x80));
         P2LegSResult kr_a = grade_p2_legs(q_a, 0x40, "CPU CIAB/TA",
-            [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z);
+            [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x40); }, p2_z, p2_pre22_ta);
         P2LegSResult kr_b = grade_p2_legs(q_b, 0x80, "CPU CIAB/TB",
-            [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z);
+            [&](const Capture& c, int k, int j){ return p2_s_bit(c,k,j,0x80); }, p2_z, p2_pre22_tb);
         bool c_main = kr_a.all_ok && kr_b.all_ok;
         bool c_main_graded = kr_a.graded_any || kr_b.graded_any;
         bool c_legh = (!gc.o1_live || p2_legh_component(q_a, 0x40)) && (!gd.o1_live || p2_legh_component(q_b, 0x80));
@@ -1743,6 +1780,8 @@ int main(int argc, char** argv) {
         };
         checks.record("P4 [p341,p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured over the "
                       "six latch runs of CIAA/TA: " + p4_stat(s_a) + "; CIAA/TB: " + p4_stat(s_b));
+        checks.note("P4 [p341,p342], graded instances: measured over the six latch runs of CIAB/TA: " + p4_stat(s_c) +
+                    "; CIAB/TB: " + p4_stat(s_d));
         checks.note("P4 usable latches: CIAA/TA=" + std::to_string(s_a.usable) + " CIAA/TB=" + std::to_string(s_b.usable) +
                     " CIAB/TA=" + std::to_string(s_c.usable) + " CIAB/TB=" + std::to_string(s_d.usable));
 
@@ -1785,28 +1824,36 @@ int main(int argc, char** argv) {
                                                              : "/p9_legf_ciab_tb_l41.bin"), kIcrTb);
         PeriodResult p64 = period_of(dir+"/p9_legf_ciab_tb_l64.bin", kIcrTb);
         PeriodResult p100 = period_of(dir+"/p9_legf_ciab_tb_l100.bin", kIcrTb);
-        bool all_ok = p40.ok && p41.ok && p64.ok && p100.ok;
+        // P9-LEGF-PRE: all four runs completed with F1's anchor and each period is uniquely determined (F3: at
+        // least 16 flags, iteration spacing at most P/2); P9-LEGF and P9-LEGF-TRANSITIONS are graded only where
+        // it holds (the transitions' own L=40 run is the same program as the first of the four).
+        const bool legf_pre = p40.ok && p41.ok && p64.ok && p100.ok;
+        checks.expect(legf_pre, "P9-LEGF-PRE [SPECIFICATION.md P9, F3]: each of the L=40, 41, 64 and 100 runs of "
+                      "CIAB/timer B completed with F1's anchor and its period P(L) is uniquely determined (at least "
+                      "16 flags, iteration spacing at most P/2)");
         int64_t d40=p40.P-40, d41=p41.P-41, d64=p64.P-64, d100=p100.P-100;
-        bool delta_ok = all_ok && d40==d41 && d41==d64 && d64==d100 && (d40==0||d40==1);
-        pv.p9_legf = all_ok ? vof(true, delta_ok) : V::NOTGRADED;
+        bool delta_ok = legf_pre && d40==d41 && d41==d64 && d64==d100 && (d40==0||d40==1);
+        pv.p9_legf = vof(legf_pre, delta_ok);
         // opus:F-timers.c6/sol:F-timers.c8 bundle more than one proposition
         // (P4, leg F, leg W and P8.65 mode 10); P10 carries them (its own
         // row), not this component line (SPECIFICATION.md P10: "None
         // graded whole here").
-        checks.expect(delta_ok, "P9-LEGF [p341]: delta = P(L)-L is the same for L=40,41,64,100 and is 0 "
-                      "or 1 (CIAB/timer B)");
+        emit(checks, legf_pre, delta_ok, "P9-LEGF", "P9-LEGF [p341]: delta = P(L)-L is the same for L=40,41,64,100 "
+             "and is 0 or 1 (CIAB/timer B)", "P9-LEGF-PRE failed");
         checks.note("P9-LEGF P(40)=" + std::to_string(p40.P) + " P(41)=" + std::to_string(p41.P) +
                     " P(64)=" + std::to_string(p64.P) + " P(100)=" + std::to_string(p100.P));
 
         // "Consecutive PRB transitions are P(L) +- s E periods apart"
         // (SPECIFICATION.md P9), s the PRB sampling spacing (leg F's own
         // R-SAMPLE2 iteration time in E periods, measured in the run).
+        struct TransResult { bool run_ok = false, ok = false; size_t n = 0; double s_e = 0; };
         auto transitions_of = [&](const std::string& bin, const PeriodResult& pr) {
+            TransResult r;
             Capture c = run_capture(bin, kRunBudget, {});
             SampleSeries prb = read_series(c.log, kResults+8, 600);
             Anchor anc = measure_anchor(c.log);
-            bool ok = false; double s_e = 0;
-            if (!c.loaded || !c.done.has_value() || !anc.ok || !pr.ok) return ok;
+            r.run_ok = c.loaded && c.done.has_value() && anc.ok;
+            if (!r.run_ok || !pr.ok) return r;
             uint64_t t0 = 0; bool have = false; std::vector<int64_t> e_all; std::vector<bool> bit_all;
             double sum = 0; int n = 0; std::optional<uint64_t> prev;
             for (int i=0;i<600;++i) {
@@ -1817,19 +1864,28 @@ int main(int argc, char** argv) {
                 if (prev) { sum += double(*prb.cycle[i] - *prev) / (10.0*double(anc.t_cpu)); ++n; }
                 prev = prb.cycle[i];
             }
-            s_e = n ? sum / n : 0;
+            r.s_e = n ? sum / n : 0;
             std::vector<int64_t> trans;
             for (size_t i=0;i+1<bit_all.size();++i) if (bit_all[i] != bit_all[i+1]) trans.push_back(e_all[i+1]);
-            if (trans.size() < 2) return ok;
-            ok = true;
+            r.n = trans.size();
+            if (trans.size() < 2) return r;
+            r.ok = true;
             for (size_t i=1;i<trans.size();++i)
-                if (std::fabs(double(trans[i]-trans[i-1]) - double(pr.P)) > s_e + 0.5) { ok = false; break; }
-            return ok;
+                if (std::fabs(double(trans[i]-trans[i-1]) - double(pr.P)) > r.s_e + 0.5) { r.ok = false; break; }
+            return r;
         };
-        bool trans_ok = transitions_of(l40bin, p40);
-        pv.p9_legf_trans = p40.ok ? vof(true, trans_ok) : V::NOTGRADED;
-        checks.expect(trans_ok, "P9-LEGF-TRANSITIONS [p341,p342]: consecutive PRB transitions are P(L) "
-                      "+-s E periods apart, s the sampling spacing (CIAB/timer B, L=40)");
+        auto trans_text = [](const TransResult& r, const PeriodResult& pr) {
+            char b[32];
+            std::snprintf(b, sizeof b, "%.2f", r.s_e);
+            return std::to_string(r.n) + " PRB transitions in the 600 samples, P(40)=" + std::to_string(pr.P) +
+                   ", s=" + b + "E";
+        };
+        TransResult tr = transitions_of(l40bin, p40);
+        pv.p9_legf_trans = vof(legf_pre && tr.run_ok, tr.ok);
+        emit(checks, legf_pre && tr.run_ok, tr.ok, "P9-LEGF-TRANSITIONS", "P9-LEGF-TRANSITIONS [p341,p342]: "
+             "consecutive PRB transitions are P(L) +-s E periods apart, s the sampling spacing (CIAB/timer B, L=40)",
+             legf_pre ? "the L=40 transition run did not complete with F1's anchor" : "P9-LEGF-PRE failed");
+        checks.note("P9-LEGF-TRANSITIONS CIAB/TB L=40: " + trans_text(tr, p40));
 
         // P9-LEGF-TRANSITIONS-GREENCTL: the same period measurement and the same
         // transition-spacing comparator on a live transition train. The CPU
@@ -1839,12 +1895,13 @@ int main(int argc, char** argv) {
             std::string cbin = dir + (sel("P9-LEGF-TRANSITIONS-GREENCTL") ? "/p9_legf_ciab_tb_cputoggle_skip.bin"
                                                                            : "/p9_legf_ciab_tb_cputoggle.bin");
             PeriodResult pc = period_of(cbin, kIcrTb);
-            bool ctl_ok = transitions_of(cbin, pc);
+            TransResult ctl = transitions_of(cbin, pc);
             checks.note("P9-LEGF-TRANSITIONS-GREENCTL P(40)=" + std::to_string(pc.P) +
-                        (pc.ok ? " (uniquely determined)" : " (not uniquely determined)"));
-            checks.expect(ctl_ok, "P9-LEGF-TRANSITIONS-GREENCTL [p341,p342]: the same comparator passes on "
-                          "a CPU-driven transition train that follows the underflows (CIAB/timer B, L=40, "
-                          "PBON=0)");
+                        (pc.ok ? " (uniquely determined)" : " (not uniquely determined)") + ", " + trans_text(ctl, pc));
+            emit(checks, pc.ok && ctl.run_ok, ctl.ok, "P9-LEGF-TRANSITIONS-GREENCTL", "P9-LEGF-TRANSITIONS-GREENCTL "
+                 "[p341,p342]: the same comparator passes on "
+                 "a CPU-driven transition train that follows the underflows (CIAB/timer B, L=40, "
+                 "PBON=0)", "the CPU-driven run's period is not uniquely determined or the run did not complete");
         }
 
         // Leg W: P2 leg S's own mechanics, CIAB/timer B, for L in {40,100}.
@@ -1903,16 +1960,11 @@ int main(int argc, char** argv) {
         WidthRun w100 = width_of(dir+"/p9_legw_l100.bin");
         bool w_pre22 = w40.underflow_ok && w100.underflow_ok;
         bool w_pre23 = w40.level_ok && w100.level_ok;
-        checks.expect(w40.underflow_ok, "P9-LEGW-PRE2.2 [p342]: the one-shot has ended when the sampler "
+        checks.expect(w_pre22, "P9-LEGW-PRE2.2 [p342]: the one-shot has ended when the sampler "
                       "closes (CR bit 0 read 0 at the first poll) and the ICR read shows the TB flag "
-                      "(CIAB/timer B, L=40)");
-        checks.expect(w100.underflow_ok, "P9-LEGW-PRE2.2 [p342]: the one-shot has ended when the sampler "
-                      "closes (CR bit 0 read 0 at the first poll) and the ICR read shows the TB flag "
-                      "(CIAB/timer B, L=100)");
-        checks.expect(w40.level_ok, "P9-LEGW-PRE2.3 [p342]: the level before the start is 0 "
-                      "(CIAB/timer B, L=40)");
-        checks.expect(w100.level_ok, "P9-LEGW-PRE2.3 [p342]: the level before the start is 0 "
-                      "(CIAB/timer B, L=100)");
+                      "(CIAB/timer B, L=40 and L=100)");
+        checks.expect(w_pre23, "P9-LEGW-PRE2.3 [p342]: the level before the start is 0 "
+                      "(CIAB/timer B, L=40 and L=100)");
         checks.note("P9-LEGW polls=" + std::to_string(w40.poll) + "/" + std::to_string(w100.poll) +
                     " icr=" + hex2(w40.icr) + "/" + hex2(w100.icr) +
                     " s0=" + hex2(w40.s0) + "/" + hex2(w100.s0) + " (L=40 / L=100)");
@@ -1940,14 +1992,11 @@ int main(int argc, char** argv) {
                                         : "/p9_legw_ctl_l40.bin");
             WidthRun c40 = width_of(c40bin);
             WidthRun c100 = width_of(dir+"/p9_legw_ctl_l100.bin");
-            checks.expect(c40.underflow_ok, "P9-LEGW-GREENCTL-PRE2.2 [p342]: the one-shot has ended when the "
-                          "sampler closes and the sampler read the TB flag (CPU-driven, CIAB/timer B, L=40)");
-            checks.expect(c100.underflow_ok, "P9-LEGW-GREENCTL-PRE2.2 [p342]: the one-shot has ended when the "
-                          "sampler closes and the sampler read the TB flag (CPU-driven, CIAB/timer B, L=100)");
-            checks.expect(c40.level_ok, "P9-LEGW-GREENCTL-PRE2.3 [p342]: the level before the start is 0 "
-                          "(CPU-driven, CIAB/timer B, L=40)");
-            checks.expect(c100.level_ok, "P9-LEGW-GREENCTL-PRE2.3 [p342]: the level before the start is 0 "
-                          "(CPU-driven, CIAB/timer B, L=100)");
+            checks.expect(c40.underflow_ok && c100.underflow_ok, "P9-LEGW-GREENCTL-PRE2.2 [p342]: the one-shot has "
+                          "ended when the sampler closes and the sampler read the TB flag (CPU-driven, "
+                          "CIAB/timer B, L=40 and L=100)");
+            checks.expect(c40.level_ok && c100.level_ok, "P9-LEGW-GREENCTL-PRE2.3 [p342]: the level before the "
+                          "start is 0 (CPU-driven, CIAB/timer B, L=40 and L=100)");
             bool c_pre = c40.underflow_ok && c100.underflow_ok && c40.level_ok && c100.level_ok;
             checks.note("P9-LEGW-GREENCTL W(40)=" + width_str(c40) + " W(100)=" + width_str(c100) +
                         " s=" + std::to_string(std::max(c40.s_e, c100.s_e)) + "E");
@@ -2198,10 +2247,17 @@ int main(int argc, char** argv) {
                                       : "/p7_ciab_unused81.bin");
         auto b81a = run_un(dir+"/p7_ciaa_unused81.bin"), b01a = run_un(dir+"/p7_ciaa_unused01.bin");
         auto b81b = run_un(b81b_bin), b01b = run_un(dir+"/p7_ciab_unused01.bin");
-        auto ok_pair = [](const UnResult& r81, const UnResult& r01) {
+        // The two runs' counts differ by at most the whole pulses their bracket-to-bracket times differ by, plus
+        // one (counting whole pulses in an interval, as count_bounds does): |tau81-tau01|/T_E + 1.
+        auto w_tolerance = [](const UnResult& r81, const UnResult& r01) {
+            if (!r81.anc_ok || !r01.anc_ok || r81.t_cpu == 0) return 1.0;
+            double d = std::fabs(double(int64_t(r81.mkD) - int64_t(r81.mkA)) - double(int64_t(r01.mkD) - int64_t(r01.mkA)));
+            return d / (10.0 * double(r81.t_cpu)) + 1.0;
+        };
+        auto ok_pair = [&](const UnResult& r81, const UnResult& r01) {
             if (!r81.loaded || !r01.loaded) return false;
             return r81.c1 == 0 && r01.c1 == 0 && r81.c2 == 0x01 && r01.c2 == 0x01 &&
-                   std::abs(int(r81.w) - int(r01.w)) <= 1;
+                   std::fabs(double(int(r81.w) - int(r01.w))) <= w_tolerance(r81, r01);
         };
         bool ok = ok_pair(b81a,b01a) && ok_pair(b81b,b01b);
         // P7.7-PRE's own margin is the run's own T_E (F2: 10*T_CPU), not a
@@ -2218,7 +2274,8 @@ int main(int argc, char** argv) {
                       "P7.7-PRE [SPECIFICATION.md P7.7]: both runs have the same bracket-to-bracket time "
                       "within about 1 E period (the run's own T_E), on both CIAs");
         emit(checks, p77_pre, ok, "P7.7", "P7.7 [p349]: c1=$00 (bit7 forced to 0 on a read), c2=$01 (bit0 read back, "
-             "unaffected by bit7), and |w81-w01|<=1 (bit7 does not affect operation), on both "
+             "unaffected by bit7), and |w81-w01|<=|tau81-tau01|/T_E+1, tau the bracket-to-bracket time of a run "
+             "(bit7 does not affect operation), on both "
              "CIAs, in a $81-run and a $01-run of the same instance", "P7.7-PRE failed");
         checks.note("P7.7 CIAA c1(81)=" + hex2(b81a.c1) + " c2(81)=" + hex2(b81a.c2) + " w81=" + hex4(b81a.w) +
                     " c2(01)=" + hex2(b01a.c2) + " w01=" + hex4(b01a.w) +

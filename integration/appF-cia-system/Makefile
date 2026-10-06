@@ -39,6 +39,6 @@ PROGS    := p1_ciaa_ta p1_ciaa_tb p1_ciab_ta p1_ciab_tb p1_ciab_tb_pre11 p1_ciab
             p7_ciab_start_nostart p8_ciab_start_nostart p8_ciab_load_nostart p8_ciab_run_short p8_ciaa_inmode01_short \
             p8_ciab_inmode01_short p7_ciaa_inmode_ctl_nostart1 p8_ciaa_inmode01_ctl p865_ciaa_mode11_short \
             p865_ciaa_mode11_w2300 p9_legf_ciab_tb_l40_nostart p87_ciab_x p87_ciab_y p87_ciab_x_nolsb p87_ciab_x_short \
-            p87_ciaa_x p87_ciaa_y
+            p87_ciaa_x p87_ciaa_y p1_ciab_tb_pbon0_pre11 p1_ciab_tb_pbon0_pre12 p1_ciab_tb_pbon0_pre13
 
 include ../harness/nanomig.mk

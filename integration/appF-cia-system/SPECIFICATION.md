@@ -206,7 +206,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 
 **Preconditions.**
 - **Pre1.1.** r0 bit n = 1. The undriven line reads high: "Ports A and B have passive pull-up devices" (p341); "a read of the ports will return all highs because of passive pull-ups" (p354). Without this, legs A1 and A2 cannot tell a driven 0 from an undriven one, and d2 and LED-D2 cannot tell an input from an output driving 0. If r0 bit n = 0, legs A1 and A2, d2 and LED-D2 are not graded and the value is reported; legs B and C, d1 and LED-D1 still are. *Contrast:* set DDRB bit n = 1 and the data bit to 0 before the read, and r0 bit n = 0.
-- **Pre1.2.** Exactly one underflow happens before leg A1: CR bit 0 reads 0 within the poll limit, and i1 has TA (timer A) or TB (timer B) set. *Contrast:* with L = $FFFF in step 4, the poll limit runs out with bit 0 still 1 and the i1 flag at 0.
+- **Pre1.2.** Exactly one underflow happens before legs A1 and B: CR bit 0 reads 0 within the poll limit, and i1 has TA (timer A) or TB (timer B) set. Without it the toggle output is still high after the start, and a1 and b1 cannot show the low level the page predicts; where it fails on an instance, legs A1 and B are not graded on it and the value is reported (legs A2, C and D still are, under their own preconditions). *Contrast:* with L = $FFFF in step 4, the poll limit runs out with bit 0 still 1 and the i1 flag at 0.
 - **Pre1.3.** No underflow happens during leg C: the i2 flag is 0. *Contrast:* with L = $0004 in step 7, the flag is 1, and c1 is then not graded.
 - **Pre1.4 (O1, per instance).** DDRB bit n = 1, data 0, PBON = 0 reads 0 (this is leg D's own d1); the contrast, data 1 (DDRB bit n still 1, PBON still 0), reads 1 (an extra leg, read right after d1, before DDRB is relaxed for d2). Together these establish whether a PRB read on this instance can show a driven level at all: "When you READ a PR register, you read the actual current state of the I/O pins" (p341). Where it does not, P1's PBON legs (a2, a1, b1, c1, d1, d2) and P1-OTHERBITS' pattern-bit clause are not graded on that instance, and the instance's own read-back is reported instead.
 - **LP** for the O2 legs (O2).
@@ -220,7 +220,7 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - LED-A1 off (MTR* pulled up);
 - LED-C on (in leg C, DDRB bit 7 = 1 and the data bit 7 = 0, so MTR* is low).
 
-*Contrast:* the CIAB timer-B PBON = 0 run with leg B's data bit n written 0: b1 bit n reads 0 where the page predicts 1.
+Pre1.1, Pre1.2 and Pre1.3 are asserted on the control's own runs, on all four instances (P1-CONTROL-PRE1.1, P1-CONTROL-PRE1.2, P1-CONTROL-PRE1.3), and P1-CONTROL is graded only where all three hold. *Contrasts:* the CIAB timer-B PBON = 0 run with leg B's data bit n written 0: b1 bit n reads 0 where the page predicts 1; and, for the three preconditions, the contrasts of Pre1.1, Pre1.2 and Pre1.3 applied to that run.
 
 **Reference frame.** None beyond F1. E-indices are not needed.
 
@@ -257,11 +257,11 @@ Bit o has DDRB = 0 throughout (it is an input). On CIAB, R-SELECT needs DDRB bit
 - **Leg H.** h1 = 1 and h3 = 1 (bit n). h2 is reported, not graded (see Left open). h3 separates "set high" from "toggle" only when h2 = 1: a design that toggles on start would then give h3 = 0. If h2 = 0, h3 = 1 is still required, and the report says the leg did not separate the two.
 - **Quantifier.** "Whenever" means all four starts of leg S, plus leg H.
 
-**Preconditions.**
+**Preconditions.** Printed before the lines they gate.
 - **Pre2.1 (leg R).** E1 holds, and EP1 read CR = $00. The program's first write to this CR is the one in leg R. If the harness runs any code before the test program, leg R cannot be graded, and that is reported. The only observation of an earlier write is EP1's first read (EP1-PER-RUN); the package records Pre2.1 rather than grading it. *Contrast:* insert R-LATCH($FFFF) and CR ← $07 before leg R's write. The page then predicts r1 = 1 (started, no underflow) and LED-R off.
-- **Pre2.2 (leg S).** Before each restart (starts 1 to 3; start 4 is not followed by a restart), the previous one-shot has ended: CR bit 0 read 0 within the poll limit and i_k has the flag. *Contrast:* with R-LATCH($FFFF), the poll limit runs out with bit 0 still 1.
+- **Pre2.2 (leg S).** Before each restart (starts 1 to 3; start 4 is not followed by a restart), the previous one-shot has ended: CR bit 0 read 0 within the poll limit and i_k has the flag. Start k+1 is graded only where Pre2.2 holds for start k. *Contrast:* with R-LATCH($FFFF), the poll limit runs out with bit 0 still 1.
 - **Pre2.3 (leg S, start k).** The level before start k is 0: s0 bit n for k = 1 (the driven level leg S's own override wrote before any start), z_(k−1) bit n otherwise (the previous one-shot's underflow toggled the output low, p342). A start whose level before is not 0 is not graded, and the value is reported. *Contrast:* write start 1 as CR ← $0D (PBON = 0) and release DDRB bit n (an input) for z_1's read only, driving it again right after. That one-shot still ends, so Pre2.2 holds, but the line reads its pull-up: z_1 = 1, and start 2 is not graded. Everything else in leg S is unchanged.
-- **Pre2.4 (leg H).** The ih flag is 0 (no underflow in leg H). *Contrast:* with R-LATCH($0008), the flag is 1.
+- **Pre2.4 (leg H).** The ih flag is 0 (no underflow in leg H). Leg H is graded on an instance only where it holds there. *Contrast:* with R-LATCH($0008), the flag is 1.
 - **Pre1.4/O1 (legs R and H, per instance).** The same precondition P1 states: a fact of the instance's own read-back channel, not of which program runs it, so it is measured once from P1's own runs and reused here. Where it does not hold (CIA-A), legs R and H are not graded on that instance. Leg S needs no separate gate: Pre2.3 already excludes CIA-A on its own (s0 never reads 0 there).
 
 **Contrasting case.** In leg S, write start 4 as CR ← $0E (START = 0). The page predicts no start, so s_4 reads 0 throughout, with no rise, and the check fails for k = 4. Every precondition of start 4 still holds (start 3's one-shot ended, and z_3 = 0), and no later start depends on start 4's underflow. The pulse mode (CR ← $0B) is not a contrast for an order-only check: its one-cycle pulse at the underflow (p342) can fall on a sample and read as a single rise. For leg R, see Pre2.1's contrast. The package exercises these contrasts on the live control below, where a CPU-driven level gives the comparator a rise to find.
@@ -509,8 +509,8 @@ Bits 1 (PBON) and 2 (OUTMODE) of CRA are graded in P1, P3 and P4.
 - **Expected.** Source: "All unused register bits are unaffected by a write and forced to 0 on a read." (p349).
   - c1 = $00.
   - c2 = $01.
-  - |w81 − w01| ≤ 1: the timer behaves as it does with $01.
-- **Precondition.** Both runs have the same bracket-to-bracket time within 1 E period. When it fails, P7.7 is not graded. *Contrast:* a different delay count D breaks this.
+  - |w81 − w01| ≤ |τ81 − τ01|/T_E + 1, τ the bracket-to-bracket time of a run: the timer behaves as it does with $01. (The counts of two intervals differ by at most the whole pulses the intervals differ by, plus one, as in count_bounds; with equal bracket times the bound is 1.)
+- **Precondition.** Both runs have the same bracket-to-bracket time within 1 E period (P7.7-PRE). When it fails, P7.7 is not graded. *Contrast:* a different delay count D breaks this.
 - **Contrasting case.** Each runs through the same comparator, so that P7.7 is red. One for each half of the page's sentence.
   - *Forced to 0 on a read:* CR ← $02 (PBON, a used bit; the timer stays stopped, so R-LATCH still applies) in place of CR ← $80. A used bit reads back (Section 3, item 7), so the page predicts c1 = $02, and c1 = $00 fails.
   - *Unaffected by a write:* CR ← $80 (START = 0) in place of CR ← $81. START, a used bit, is not set, so the timer does not run: w stays $8000, far from w01, and c2 reads $00, so |w81 − w01| ≤ 1 and c2 = $01 fail.
@@ -605,7 +605,7 @@ Source: "1 = writing to TOD registers sets Alarm, 0 = writing to TOD registers s
 
 Why δ is 0 or 1: p342 says the timer will "count down from the latched value to zero, generate an interrupt, reload"; p346 calls an underflow "timer counts down past 0". The pages leave open which of L or L+1 the period is, so only δ's constancy and range are graded.
 
-**Preconditions.** Leg F: those of P3 (Pre3.1, Pre3.2) and of F3. Leg W: P2's Pre2.2 and Pre2.3, and the E-index frame for leg S's loop (P6's phase check). *Contrasts:* those of P3, F3, P2 and P6.
+**Preconditions.** Leg F: those of P3 (Pre3.1, Pre3.2) and of F3, asserted together as **P9-LEGF-PRE** before the lines they gate: each of the four runs (L = 40, 41, 64, 100) completed with F1's anchor and its period P(L) is uniquely determined (at least 16 flags, iteration spacing at most P/2). P9-LEGF and P9-LEGF-TRANSITIONS (which needs P(40)) are graded only where it holds; the transition run itself must also complete with F1's anchor. Leg W: P2's Pre2.2 and Pre2.3, and the E-index frame for leg S's loop (P6's phase check). *Contrasts:* those of P3, F3, P2 and P6.
 
 **Contrasting case.**
 - Changing L by Δ changes the period by exactly Δ: every pair of latch values in leg F is a contrast to the others. The run for L = 41 made with a latch of 42 gives a δ one larger than the other three, and "the same for all four L" fails.
@@ -613,10 +613,10 @@ Why δ is 0 or 1: p342 says the timer will "count down from the latched value to
 
 A run counting CNT with no input (CR ← $27, or CRB ← $27) is not a contrast: with no underflow, Pre3.2 and F3 fail and the run is not graded instead of red.
 
-**Preconditions asserted by the package, leg W.** Each leg-W program reads PRB right before its start (Pre2.3: bit n clear) and, after the sampler, polls CR bit 0 and reads ICR (Pre2.2: the first poll reads 0 and the TB flag is set). P9-LEGW is graded only where both hold for both legs; otherwise it is not graded.
+**Preconditions asserted by the package, leg W.** Each leg-W program reads PRB right before its start (Pre2.3: bit n clear) and, after the sampler, polls CR bit 0 and reads ICR (Pre2.2: the first poll reads 0 and the TB flag is set). P9-LEGW-PRE2.2 and P9-LEGW-PRE2.3 are each one line over both legs (L = 40 and L = 100). P9-LEGW is graded only where both hold for both legs; otherwise it is not graded. P9-LEGW-GREENCTL-PRE2.2 and -PRE2.3 are the same, each one line over both legs of the CPU-driven runs.
 
 **Live controls.**
-- **P9-LEGF-TRANSITIONS-GREENCTL.** The same period measurement and transition-spacing comparator on P3's CPU-driven toggle (PBON = 0, DDRB bit 7 an output, the CPU inverts PRB bit 7 after every flagged ICR read) with L = 40. The comparator passes. *Contrast:* the CPU inverts only after every second flagged read: consecutive transitions are about 2·P(L) apart and the comparator fails.
+- **P9-LEGF-TRANSITIONS-GREENCTL.** (graded only where its own run completed and its period is uniquely determined) The same period measurement and transition-spacing comparator on P3's CPU-driven toggle (PBON = 0, DDRB bit 7 an output, the CPU inverts PRB bit 7 after every flagged ICR read) with L = 40. The comparator passes. *Contrast:* the CPU inverts only after every second flagged read: consecutive transitions are about 2·P(L) apart and the comparator fails.
 - **P9-LEGW-GREENCTL.** The same width comparator on a width the CPU makes. For L ∈ {40, 100}: P2 leg S's start with CR ← $09 (START, PBON = 0, one-shot); right after the start marker the CPU writes PRB with bit 7 = 1, and in an R-SAMPLE(PRB) loop that also reads ICR it writes PRB with bit 7 = 0 after the ICR read that shows the TB flag. The level before the start (bit 7 clear) and the TB flag read inside the sampler are asserted for both runs, and the comparator passes. *Contrast:* the L = 40 run made with a latch of 20 gives W(100) − W(20) ≈ 80, outside 60 ± s.
 
 **Reference frame.** F2 and F3.
@@ -680,7 +680,7 @@ O2 (the drive LED) is not graded at this port. O2's own legs and its calibration
 
 This section is generated from the output `make test` prints on each core (fx68k and TG68K); it contains nothing else.
 
-fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
+fx68k: 97 passed, 26 failed. TG68K: 97 passed, 26 failed.
 
 ### 5.1 Graded lines
 
@@ -691,19 +691,21 @@ fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
 | P1-PRE1.2 | PASS | PASS |
 | P1-PRE1.3 | PASS | PASS |
 | P1-PRE1.4/O1 | PASS | PASS |
-| P1-PRE1.4/O1 (#2) | PASS | PASS |
 | P1-MAIN-CRA | FAIL | FAIL |
 | P1-MAIN-CRB | FAIL | FAIL |
 | P1-MAIN | FAIL | FAIL |
 | P1-OTHERBITS | PASS | PASS |
+| P1-CONTROL-PRE1.1 | PASS | PASS |
+| P1-CONTROL-PRE1.2 | PASS | PASS |
+| P1-CONTROL-PRE1.3 | PASS | PASS |
 | P1-CONTROL | PASS | PASS |
+| P2-PRE2.2 | PASS | PASS |
+| P2-PRE2.3 | PASS | PASS |
+| P2-PRE2.4 | PASS | PASS |
 | P2-LEGR | FAIL | FAIL |
 | P2-MAIN | FAIL | FAIL |
 | P2-LEGH | FAIL | FAIL |
 | P2-TOGGLE | FAIL | FAIL |
-| P2-PRE2.2 | PASS | PASS |
-| P2-PRE2.3 | PASS | PASS |
-| P2-PRE2.4 | PASS | PASS |
 | P2-GREENCTL-PRE2.2 | PASS | PASS |
 | P2-GREENCTL-PRE2.3 | PASS | PASS |
 | P2-GREENCTL-PRE2.4 | PASS | PASS |
@@ -722,18 +724,15 @@ fx68k: 98 passed, 26 failed. TG68K: 98 passed, 26 failed.
 | P4-PRE | PASS | PASS |
 | P4 | FAIL | FAIL |
 | P4-GREENCTL | PASS | PASS |
+| P9-LEGF-PRE | PASS | PASS |
 | P9-LEGF | PASS | PASS |
 | P9-LEGF-TRANSITIONS | FAIL | FAIL |
 | P9-LEGF-TRANSITIONS-GREENCTL | PASS | PASS |
 | P9-LEGW-PRE2.2 | PASS | PASS |
-| P9-LEGW-PRE2.2 (#2) | PASS | PASS |
 | P9-LEGW-PRE2.3 | PASS | PASS |
-| P9-LEGW-PRE2.3 (#2) | PASS | PASS |
 | P9-LEGW | FAIL | FAIL |
 | P9-LEGW-GREENCTL-PRE2.2 | PASS | PASS |
-| P9-LEGW-GREENCTL-PRE2.2 (#2) | PASS | PASS |
 | P9-LEGW-GREENCTL-PRE2.3 | PASS | PASS |
-| P9-LEGW-GREENCTL-PRE2.3 (#2) | PASS | PASS |
 | P9-LEGW-GREENCTL | PASS | PASS |
 | P70-PRE | PASS | PASS |
 | P7.0-STOP | PASS | PASS |
@@ -858,6 +857,7 @@ both: P4 ciab_tb L=22: measured P(L)=23 (uniquely determined), coverage met
 both: P4 ciab_tb L=23: measured P(L)=24 (uniquely determined), coverage not met
 both: P4 ciab_tb L=24: measured P(L)=25 (uniquely determined), coverage met
 both: P4 ciab_tb L=25: measured P(L)=26 (uniquely determined), coverage met
+both: P4 [p341,p342], graded instances: measured over the six latch runs of CIAB/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAB/TB: PRB $FF, bit n set in 2400 of 2400 samples
 both: P4 usable latches: CIAA/TA=4 CIAA/TB=4 CIAB/TA=4 CIAB/TB=4
 both: P4-GREENCTL ciab_ta L=40: measured P(L)=41 (uniquely determined), coverage met
 both: P4-GREENCTL ciab_ta L=41: measured P(L)=42 (uniquely determined), coverage not met
@@ -873,7 +873,8 @@ both: P4-GREENCTL ciab_tb L=44: measured P(L)=45 (uniquely determined), coverage
 both: P4-GREENCTL ciab_tb L=45: measured P(L)=46 (uniquely determined), coverage not met
 both: P4-GREENCTL usable latches: CIAB/TA=3 CIAB/TB=3
 both: P9-LEGF P(40)=41 P(41)=42 P(64)=65 P(100)=101
-both: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined)
+both: P9-LEGF-TRANSITIONS CIAB/TB L=40: 0 PRB transitions in the 600 samples, P(40)=41, s=9.00E
+fx68k: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 173 PRB transitions in the 600 samples, P(40)=41, s=11.87E
 both: P9-LEGW polls=1/1 icr=$02/$02 s0=$7F/$7F (L=40 / L=100)
 both: P9-LEGW W(40)=? W(100)=? s=5.000000E
 fx68k: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=114.000000 s=10.020101E
@@ -927,6 +928,7 @@ both: P10-opus:F-crb.c13 members: P8.0-STOP PASS; P1-CONTROL(CIAA/TB) NOT GRADED
 both: P10-opus:F-crb.c14 members: P8.0-START PASS; P1-MAIN(CIAA/TB) NOT GRADED; P1-MAIN(CIAB/TB) FAIL; P3(CIAA/TB) NOT GRADED; P3(CIAB/TB) FAIL; P8.3-ONESHOT PASS; P8.4 PASS; P8.65-01 FAIL; P8.7-RUNX PASS
 both: P10-opus:F-timers.c6 members: P4(CIAA/TA) NOT GRADED; P4(CIAA/TB) NOT GRADED; P4(CIAB/TA) FAIL; P4(CIAB/TB) FAIL; P9-LEGF PASS; P9-LEGF-TRANSITIONS FAIL; P9-LEGW FAIL; P8.65-10 PASS
 both: per-run population: 130 captures of 115 programs, 130 loaded
+TG68K: P9-LEGF-TRANSITIONS-GREENCTL P(40)=41 (uniquely determined), 157 PRB transitions in the 600 samples, P(40)=41, s=10.81E
 TG68K: P9-LEGW-GREENCTL W(40)=53.000000 W(100)=113.000000 s=10.020101E
 TG68K: P70 CIAA/CRA: u1=$8000 u2=$8000 u3=$71D8
 TG68K: P70 CIAB/CRA: u1=$8000 u2=$8000 u3=$71D8
@@ -959,8 +961,8 @@ TG68K: P6 K1 values={0.00,2.00}*T_CPU, residues mod T_E={0,2}; K2 values={0.00,2
 ```text
 both: P1-PRE1.4/O1 [p341], CIA-A: not graded as a live read-back -- measured $FF (d1) and $FF (O1 contrast) on CIAA/timer A, $FF and $FF on CIAA/timer B; CIA-A's instances are not graded on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause
 both: P1-LP/P1-O2 [p244]: not graded -- measured: LED when the CPU leaves reset=off, after R-SELECT with MTR*=0 (on leg)=off, after R-SELECT with MTR*=1 (off leg)=off -- the same level at all three points, so no input of this package is shown to move the light at this port; O2's own legs (LED-A1, LED-C, LED-D1, LED-D2) are not graded
-both: LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2
 both: P2-PRE2.1 [p342]: the program's first write to this CR is leg R's own; the only observation of an earlier write is EP1's first read of CRA and CRB, graded by EP1-PER-RUN
+both: LED-R [p244]: not graded -- O2 is not graded at this port; see P1-LP/P1-O2
 both: P3 [p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured CIAA/TA: PRB $FF in 600 samples, bit n set in 600, Q=88; CIAA/TB: PRB $FF in 600 samples, bit n set in 600, Q=88
 both: P4 [p341,p342], CIA-A: not graded (read-back not live, Pre1.4/O1) -- measured over the six latch runs of CIAA/TA: PRB $FF, bit n set in 2400 of 2400 samples; CIAA/TB: PRB $FF, bit n set in 2400 of 2400 samples
 both: P9-CONTRAST [SPECIFICATION.md P9]: leg F's contrast is the L=41 run made with a latch of 42 (P9-LEGF), leg W's the CPU-driven L=40 run made with a latch of 20 (P9-LEGW-GREENCTL); both are selected through NMH_MUTATE
