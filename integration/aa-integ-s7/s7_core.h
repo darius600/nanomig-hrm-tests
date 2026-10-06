@@ -51,7 +51,6 @@ inline std::string hex6(unsigned v) { char b[16]; std::snprintf(b, sizeof b, "%0
 // ---- memory map (SPECIFICATION.md 1.2 and the build section) ---------------
 constexpr uint32_t kScript   = 0x081000;
 constexpr uint32_t kProgLo   = 0x080400;   // PROGRAM_ORG
-constexpr uint32_t kProgHi   = 0x08CC36;   // the first byte of the S3 regions
 constexpr uint32_t kMK       = 0x0B8000;   // the marker word
 constexpr uint32_t kResults  = 0x0C0000;
 constexpr uint32_t kResHi    = 0x0C1000;   // RES and its log: [kResults, kResHi)
@@ -136,7 +135,13 @@ struct Cap {
     std::vector<uint16_t> log;                  // the log words the program stored
     uint64_t done_cycle = 0;
     uint64_t end_cycle = 0;
+    uint64_t period = 0;                        // clk_sys cycles per bus period: the smallest spacing of two log entries
+    uint32_t prog_end = 0, script_end = 0;      // the CPU spans of this run: image end + 16, script end + 16
 };
+
+// The CPU attribution spans of the run most recently executed (SPECIFICATION.md 1.6): the program image and the script,
+// each up to its end + 16.
+inline uint32_t g_prog_hi = kProgLo, g_script_hi = kScript;
 
 inline void scan_marks(Cap& c, size_t from, size_t to) {
     for (size_t i = from; i < to; ++i) {
@@ -153,8 +158,12 @@ inline Cap run(const RunSpec& s) {
     nmh::NanomigHarness h(cfg);
     for (size_t i = 0; i < s.sc.w.size(); ++i) h.poke_word(kScript / 2 + i, s.sc.w[i]);
     for (auto& p : s.pokes) h.poke_word(p.byte_addr / 2, p.value);
-    c.loaded = h.load_program(g_dir + "/" + s.bin) > 0;
+    const size_t psz = h.load_program(g_dir + "/" + s.bin);
+    c.loaded = psz > 0;
     if (!c.loaded) return c;
+    c.prog_end = kProgLo + uint32_t(psz) + 16;
+    c.script_end = kScript + uint32_t(2 * s.sc.w.size()) + 16;
+    g_prog_hi = c.prog_end; g_script_hi = c.script_end;
     c.released = h.boot(kBootBudget).cpu_released;
     c.base = h.cycles();
     size_t vbase = h.video().size();   // the harness captures from construction on
@@ -185,6 +194,10 @@ inline Cap run(const RunSpec& s) {
     c.timeouts = h.peek_logical(kResults + 2).value_or(0);
     c.done = done_at != 0;
     c.ram = h.ram_log();
+    for (size_t i = 1; i < c.ram.size(); ++i) {
+        uint64_t d = c.ram[i].cycle - c.ram[i - 1].cycle;
+        if (d > 0 && (c.period == 0 || d < c.period)) c.period = d;
+    }
     for (int i = 0; i < s.sc.logn; ++i) c.log.push_back(h.peek_logical(kLogBase + 2 * uint32_t(i)).value_or(0xDEAD));
     if (s.want_audio) c.audio.assign(h.audio().begin() + vbase, h.audio().end());
     if (s.want_video) c.video.assign(h.video().begin() + vbase, h.video().end());
@@ -209,16 +222,18 @@ inline bool refresh_at(const Cap& c, uint64_t cycle) {
     return false;
 }
 
-// One logical access: the first entry of each stretched bus cycle.
+// One logical access: the first entry of each stretched bus cycle. A bus cycle stretched by wait states appears
+// as one log entry per bus period; an entry that repeats the address, direction, data and byte lanes of the entry
+// before it exactly one bus period later continues that cycle (the harness's held_continuations), and nothing else
+// is merged.
 struct Acc { uint64_t t; uint32_t addr; uint16_t data; bool write; bool refresh; };
 
 inline std::vector<Acc> accesses(const Cap& c) {
     std::vector<Acc> out;
-    uint64_t pc = ~0ull; uint32_t pa = ~0u; uint16_t pd = 0; bool pw = false;
-    for (auto& a : c.ram) {
-        bool same = a.cycle - pc <= 8 && a.word_addr == pa && a.data == pd && a.is_write == pw;
-        pc = a.cycle; pa = a.word_addr; pd = a.data; pw = a.is_write;
-        if (same) continue;
+    const std::vector<bool> held = nmh::held_continuations(c.ram, c.period);
+    for (size_t i = 0; i < c.ram.size(); ++i) {
+        if (held[i]) continue;
+        const auto& a = c.ram[i];
         out.push_back({a.cycle, a.word_addr * 2, a.data, a.is_write, !a.is_write && refresh_at(c, a.cycle)});
     }
     return out;
@@ -230,7 +245,7 @@ inline bool in_any(const std::vector<Region>& rs, uint32_t a) {
     return false;
 }
 inline bool is_cpu(uint32_t a) {
-    return (a >= kProgLo && a < kProgHi) || (a >= kStackLo && a < kStackHi) || a == kMK || (a >= kResults && a < kResHi);
+    return (a >= kProgLo && a < g_prog_hi) || (a >= kScript && a < g_script_hi) || (a >= kStackLo && a < kStackHi) || a == kMK || (a >= kResults && a < kResHi);
 }
 
 // The reads of the window (t0, t1) by class. `chan` are the regions of the channel(s) the proposition
@@ -288,6 +303,19 @@ inline uint64_t colour_clock(const std::vector<Acc>& refresh) {
     if (d.empty()) return 0;
     std::sort(d.begin(), d.end());
     return d[d.size() / 2] / 2;
+}
+
+// MEASURED, not graded: how often the Copper read the word after the final WAIT of each of its lists. AA p.20, WAIT:
+// '(keeps Coprocessor off of bus until beam position has been reached)'; the final WAIT of a list never ends.
+inline void note_past_wait(Checks& ck, const std::string& id, const Cap& c, const std::vector<Acc>& acc,
+                           const std::vector<std::pair<std::string, uint32_t>>& words) {
+    std::string s = id + " Copper reads of the word after a list's final WAIT (AA p.20 WAIT '(keeps Coprocessor off of bus until beam position has been reached)'; not graded):";
+    for (auto& w : words) {
+        size_t n = 0;
+        for (auto& a : acc) if (!a.write && !a.refresh && a.t >= c.base && a.addr == w.second) ++n;
+        s += " " + w.first + " $" + hex6(w.second) + " " + dec((long long)n) + " reads;";
+    }
+    ck.note(s);
 }
 
 } // namespace s7

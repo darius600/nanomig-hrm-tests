@@ -84,7 +84,7 @@ inline Prop prop_c7() {
     Prop p; p.id = "C7";
     p.dmacon_once = 0x8240; p.dma_enable_bit = 0x0040;
     auto v0 = [](Script& s) { s.w16(BLTCON0, 0x0100); s.w16(BLTCON1, 0); set_masks(s); s.w16(BLTDMOD, 0); };
-    auto obs = [](Script& s) { s.w32(BLTDPTH, kDst); blit_start(s, mut("C7-PC6") ? 0x0043 : 0x0044); };   // the contrast: three words
+    auto obs = [](Script& s) { s.w32(BLTDPTH, kDst); blit_start(s, (mut("C7-PC6") && g_frame_b) ? 0x0043 : 0x0044); };   // the contrast: three words
     auto chan = reg_dst(kDst, kDst + 8);
     Obs u = wr_expect(kDst, {0, 0, 0, 0}), w = wr_expect(kDst, {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF});
     p.variants.push_back(blit_variant("BLTCON0", BLTCON0, 0x01FF, v0, obs, chan, u, w, 0));
@@ -98,7 +98,7 @@ inline Prop prop_c8() {
     Prop p; p.id = "C8";
     p.dmacon_once = 0x8240; p.dma_enable_bit = 0x0040;
     auto v0 = [](Script& s) { s.w16(BLTCON0, 0x01FF); s.w16(BLTCON1, 0); set_masks(s); s.w16(BLTDMOD, 0); };
-    auto obs = [](Script& s) { s.w32(BLTDPTH, kDst); blit_start(s, mut("C8-PC6") ? 0x0043 : 0x0042); };   // the contrast: three words
+    auto obs = [](Script& s) { s.w32(BLTDPTH, kDst); blit_start(s, (mut("C8-PC6") && g_frame_b) ? 0x0043 : 0x0042); };   // the contrast: three words
     auto chan = reg_dst(kDst - 2, kDst + 4);
     Obs u = {uint64_t(kDst) << 16, uint64_t(kDst + 2) << 16}, w = {uint64_t(kDst) << 16, uint64_t(kDst - 2) << 16};
     p.variants.push_back(blit_variant("BLTCON1", BLTCON1, 0x0002, v0, obs, chan, u, w, 1));
@@ -111,7 +111,7 @@ inline Prop prop_c9() {
     Prop p; p.id = "C9";
     p.dmacon_once = 0x8240; p.dma_enable_bit = 0x0040;
     auto v0 = [](Script& s) { set_masks(s); s.w16(BLTCON0, 0x09F0); s.w16(BLTCON1, 0); s.w16(BLTAMOD, 0); s.w16(BLTDMOD, 0); };
-    auto obs = [](Script& s) { s.w32(BLTAPTH, kAsrc); s.w32(BLTDPTH, kDst); blit_start(s, mut("C9-PC6") ? 0x0044 : 0x0043); };   // the contrast: four words
+    auto obs = [](Script& s) { s.w32(BLTAPTH, kAsrc); s.w32(BLTDPTH, kDst); blit_start(s, (mut("C9-PC6") && g_frame_b) ? 0x0044 : 0x0043); };   // the contrast: four words
     poke_words(p.pokes, kAsrc, {0xFFFF, 0xFFFF, 0xFFFF});
     auto chan = std::vector<Region>{{kDst, kDst + 6}, {kAsrc, kAsrc + 6}};
     auto wchan = reg_dst(kDst, kDst + 6);
@@ -190,7 +190,8 @@ inline Prop prop_c6() {
     v.obs = [marks](Script& s) {
         std::vector<int> i;
         i.push_back(s.rd(JOY0DAT)); i.push_back(s.rd(JOY1DAT));
-        marks->push_back(s.mark());
+        const int m = s.mark();
+        if (g_frame_b) marks->push_back(m);
         s.lines(1);
         i.push_back(s.rd(JOY0DAT)); i.push_back(s.rd(JOY1DAT));
         return i;
@@ -218,7 +219,7 @@ inline Prop prop_c2() {
         v.v1cpu = [=](Script& s) { s.w16(reg, v1); };
         v.obs = [](Script& s) {
             s.w16(DSKLEN, 0x4000); s.w16(DSKLEN, 0xC004);
-            if (!mut("C2-PC6")) s.w16(DSKLEN, 0xC004);   // the contrast: DMAEN of DSKLEN is written once only
+            if (!(mut("C2-PC6") && g_frame_b)) s.w16(DSKLEN, 0xC004);   // the contrast, in frame B: DMAEN of DSKLEN is written once only
             int i1 = s.rd(DSKBYTR);
             int i2 = s.pollb(INTREQR, 0x0002, 400);
             s.w16r(DSKLEN, 0x4000, INTREQ, 0x0002);

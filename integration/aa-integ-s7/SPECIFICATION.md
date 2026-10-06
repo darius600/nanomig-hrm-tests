@@ -6,7 +6,7 @@ This document specifies one integration test package for an FPGA re-implementati
 
 ## 0. Claims not turned into a proposition
 
-The package has 160 claims. 86 of them are graded whole by the propositions C1-C11, F1-F5 and F7 in sections 2 and 3. The 74 below are declined: 36 support no proposition (0.1, 0.2), and 38 support a proposition that grades only part of them (0.3). C12, F6, F8 and F9 grade those parts and carry no claim id.
+The package has 160 claims. 80 of them are graded whole by the propositions C1-C11, F1, F4, F5 and F7 in sections 2 and 3. The 80 below are declined: 36 support no proposition (0.1, 0.2), 38 support a proposition that grades only part of them (0.3), and 6 say something the ports cannot show (0.4). C12, F2, F3, F6, F8 and F9 grade what can be graded and carry no claim id.
 
 ### 0.1 `~` on a read address or a dummy address: no effect of a write is stated anywhere (28 claims)
 
@@ -52,6 +52,13 @@ A claim id goes on a proposition only if the proposition grades the whole claim.
 | BLTADAT, BLTBDAT, BLTCDAT `&` | opus:AA-bltadat.c4, sol:AA-bltadat.c4, opus:AA-bltbdat.c4, sol:AA-bltbdat.c4, opus:AA-bltcdat.c4, sol:AA-bltcdat.c4 | The DMA channel loads the register (F8) | "only": p.13 says "it may also be preloaded by the microprocessor" (D1). |
 | BLTDDAT `&` | opus:AA-bltddat.c4, sol:AA-bltddat.c4 | The destination data reaches RAM by blitter DMA (F8) | "only": p.13 says BLTDDAT "cannot be read by the micro", and no page says what a CPU read of 0xDFF000 returns, so no processor access to the register can be graded. |
 | DSKDAT `&` | opus:AA-dskdat.c4, sol:AA-dskdat.c4 | Disk DMA feeds DSKDAT from RAM (F9) | "only": a processor write to DSKDAT has its only stated effect on the disk surface (section 0.2). |
+
+### 0.4 The `h` mark: whether a register is new or changed in the hires chips is not observable (6 claims)
+
+| Register, mark | Claims | Graded part (proposition) | Part not graded, and why |
+|---|---|---|---|
+| BLTSIZV, BLTSIZH `h` | opus:AA-bltsizv.c4, sol:AA-bltsizv.c4, opus:AA-bltsizh.c4, sol:AA-bltsizh.c4 | With the AA chip set selected the registers work as p.14 describes (F2) | The claims read the mark as "a register new in the hires chip set" (p.6) or "an existing register with something added or changed for the hires chips" (p.10); p.14 prints capital `H`, "new register in hires chips" (p.10). Whether a register is new or changed relative to an earlier chip set is not observable at the ports of one chip set (section 4, D2). |
+| BLTCON0L `h` | opus:AA-bltcon0l.c4, sol:AA-bltcon0l.c4 | With the AA chip set selected the register replaces the minterm byte of BLTCON0 as p.13 describes (F3) | The same. |
 
 ---
 
@@ -113,7 +120,7 @@ The Copper stays on in every proposition. `0xFFFF, 0xFFFE` is a WAIT (p.20: IR1 
 
 The RAM-port log gives, for each access, the cycle, the word address, the data, read or write, and the byte lanes (`nanomig_harness.h`, `RamAccess`). It does not say which requester made the access. Accesses are attributed by address and by nanomig.v's `refresh` output:
 
-- **CPU:** reads in [0x080400, program end + 16), which covers the instruction prefetch past the last instruction and holds nothing else; and accesses to the stack, MK and RES. Inside any window a proposition grades, the program accesses nothing else.
+- **CPU:** reads of the program image, [0x080400, image end + 16), and of the script it executes, [script start, script end + 16), each of which covers the instruction or operand prefetch past its last word and holds nothing else; and accesses to the stack, MK and RES. Inside any window a proposition grades, the program accesses nothing else.
 - **Refresh:** a read sampled while the `refresh` output is high. The harness does not log that output; the test reads it through `ports()` while stepping with `run_cycles(1)`, at the cycle of each log entry.
 - **Copper:** reads of a Copper list the proposition names (IDLE, CASE, the F6 list).
 - **A DMA channel:** accesses to a region the proposition assigns to that channel. "Blitter write" means a write to one of the proposition's blitter destination regions, "audio read" a read of its audio region, "disk read" a read of its disk region, and so on.
@@ -262,7 +269,8 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
    - The refresh precondition of section 1.6.
 6. **Contrasting cases.**
    - As in section 1.9.
-   - PC6: DMACON without DSKEN makes DMAON = 0 (p.23). The stored bit 14 reads 0 and PC6 fails.
+   - PC6, in frame B only: DSKLEN's DMAEN is written once, not twice. DMAON reads 0 (HRM p.247: "the DMAEN bit in the DSKLEN register must be turned on twice in order to actually enable the disk DMA hardware"; HRM p.248: DMAON "Indicates when DMA is actually enabled"), the stored bit 14 reads 0 and PC6 fails.
+  - PC5: DMACON without DSKEN: DMA_CHECK fails.
 7. **Reference frame.** The markers.
 
 ### C3. VPOSW (02A)
@@ -480,9 +488,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - the write to BLTSIZV alone starts nothing;
    - BLTSIZV keeps its value for later BLTSIZH writes.
    
-   Claims: opus:AA-bltsizv.c4, sol:AA-bltsizv.c4, opus:AA-bltsizh.c4, sol:AA-bltsizh.c4 (p.7 mark `h`).
-   
-   The two legends define `h` differently: "h=new for HiRes chip set" (p.6) against "h= stuff added or changed in hires chips" (p.10). Both mark the register as part of the hires chip set, and that is what these ids assert; F2 grades it whole by running the registers with the AA chip set selected, which extends the hires chips (section 1.1). Absence from older chips is not what the ids assert. For these two registers the alphabetical list (p.14) prints capital `H`, "new register in hires chips" (p.10).
+   Claims: none. The `h` ids of BLTSIZV and BLTSIZH (p.7) are declined (section 0.4): whether a register is new or changed in the hires chips is not observable at the ports. F2 grades what is: that the registers work with the AA chip set selected, which extends the hires chips (section 1.1). The two legends define `h` differently: "h=new for HiRes chip set" (p.6) against "h= stuff added or changed in hires chips" (p.10); p.14 prints capital `H`, "new register in hires chips" (p.10).
 2. **Stimulus.**
    - Set-up as F1; destination DST2 of at least 32767 words.
    - Per case:
@@ -516,12 +522,12 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    - Rewrite BLTSIZV = 4 before the second reuse blit: 20 instead of 15.
    - v = 8 changed to 9: 9 writes.
    - Precondition contrast as F1.
-   - Not used as a contrast: selecting OCS behaviour. The ids assert membership of the hires chip set, not absence from the original chips, and the pages do not say what the harness's OCS selection removes.
+   - Not used as a contrast: selecting OCS behaviour. The pages do not say what the harness's OCS selection removes.
 7. **Reference frame.** The markers.
 
 ### F3. BLTCON0L writes only the minterm byte of BLTCON0
 
-1. **Proposition.** With the AA chip set selected, a write to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 (ASH3-0, USEA-USED) unchanged, whatever the upper byte of the written word. Claims: opus:AA-bltcon0l.c4, sol:AA-bltcon0l.c4 (p.7 mark `h`; p.13 capital `H` "new register in hires chips"). Both legends mark the register as part of the hires chip set, and F3 grades that whole with the AA chip set selected; absence from older chips is not what the ids assert (F2, D2).
+1. **Proposition.** With the AA chip set selected, a write to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 (ASH3-0, USEA-USED) unchanged, whatever the upper byte of the written word. Claims: none. The `h` ids of BLTCON0L (p.7 mark `h`; p.13 capital `H` "new register in hires chips") are declined (section 0.4); F3 grades the register's effect with the AA chip set selected.
 2. **Stimulus.**
    - DMACON = 0x8240. BLTCON1 = 0. BLTAFWM = BLTALWM = 0xFFFF. All modulos 0.
    - Pointers: BLTAPTH/L = ASRC (0x00FF, 0x0F0F); BLTBPTH/L = BSRC (2 words 0); BLTCPTH/L = CSRC (2 words 0); BLTDPTH/L = DST.
@@ -547,8 +553,10 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
 
 ### F4. AUD0LCH/AUD0LCL and AUD1LCH/AUD1LCL hold A20-A16 and A15-A1 of the channel's start address
 
-1. **Proposition.** The first audio DMA read of channel c (c = 0, 1) after its DMA is enabled is at `(AUDcLCH[4:0] << 16) | (AUDcLCL & 0xFFFE)`. Every one of the 5 high bits and 15 low bits takes part, and bits 15-5 of AUDcLCH and bit 0 of AUDcLCL do not.
-   
+1. **Proposition.** Let a = `(AUDcLCH[4:0] << 16) | (AUDcLCL & 0xFFFE)` (c = 0, 1). The channel's first or second DMA read after its DMA is enabled is at a, and at most one read of the channel in the window lies outside [a, a+8), the first. Every one of the 5 high bits and 15 low bits takes part, and bits 15-5 of AUDcLCH and bit 0 of AUDcLCL do not.
+
+   The pages leave the addresses of the first two reads open (section 4, D7), and the proposition holds under both readings.
+
    Claims: opus:AA-aud0lch.c5, sol:AA-aud0lch.c5, opus:AA-aud0lcl.c5, sol:AA-aud0lcl.c5, opus:AA-aud1lch.c5, sol:AA-aud1lch.c5, opus:AA-aud1lcl.c5, sol:AA-aud1lcl.c5 (p.7).
 2. **Stimulus.** For c in {0, 1} and a in S0-S9 (section 1.8), each region [a, a+8) zero:
    1. AUDcLEN = 4; AUDcPER = 400 (at least 124, p.11); AUDcVOL = 0.
@@ -557,31 +565,33 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
    4. LINES(2).
    5. M_go.
    6. DMACON = 0x8200 | (1 << c).
-   7. DMA_CHECK(AUDcEN).
+   7. DMA_CHECK(AUDcEN): read DMACONR and store it.
    8. LINES(20).
    9. M_end.
    10. DMACON = (1 << c).
    11. LINES(4).
-   
+
    Extra case for a = S0: AUDcLCH = 0xFFE0 | (S0 >> 16) and AUDcLCL = (S0 & 0xFFFF) | 1.
-3. **Observation.** Audio reads (reads of [a, a+8), the case's audio region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)).
+3. **Observation.** Audio reads (reads of [a, a+8), the case's audio region) and stray DMA reads (section 1.6) in (t(M_start), t(M_end)), in time order.
 4. **Expected.**
-   - The first read in (t(M_go), t(M_end)) that is an audio read or a stray DMA read is at a; this includes the extra case.
-   - No stray DMA read in (t(M_go), t(M_end)): every read the channel makes lies in [a, a+8).
+   - The first or the second read in (t(M_go), t(M_end)) that is an audio read or a stray DMA read is at a; this includes the extra case.
+   - At most one stray DMA read lies in (t(M_go), t(M_end)), and if there is one, it is the first read of the window.
    - Page grounds:
      - p.7 row functions "Audio channel 0 location (High 5 bits)" / "(Low 15 bits)";
      - p.6: "+=Address register pair.Low word uses DB1-DB15,High word DB0-DB4." and "LCL,LCH=20 bit Location (starting address) of DMA data";
-     - p.11: "This pair of registers contains the 20 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data."
+     - p.11: "This pair of registers contains the 20 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data.";
+     - HRM p.164: "Because of pipelining in Agnus, the first data word must be thrown away." (the reason one read outside [a, a+8) is allowed).
 5. **Preconditions.**
-   - DMA_CHECK(AUDcEN).
+   - DMA_CHECK(AUDcEN) in every case.
+   - Only channel c is enabled: DMACONR reads no enable bit of another audio channel.
    - No audio read and no stray DMA read in (t(M_start), t(M_go)).
-   - At least one audio read or stray DMA read in (t(M_go), t(M_end)). This counts the channel's reads wherever they go, so a wrong address fails the expected values, not this precondition.
-   - Only channel c is enabled in DMACON.
+   - At least two audio reads or stray DMA reads in (t(M_go), t(M_end)). This counts the channel's reads wherever they go, so a wrong address fails the expected values, not this precondition.
    - The refresh precondition of section 1.6.
    - No timeout.
 6. **Contrasting cases.**
-   - Each address and its complement in the family predict different first-read addresses. A read at the wrong address is a stray DMA read, so it fails through the first-read value, and the population precondition still holds.
-   - Precondition: omit the DMACON enable. DMA_CHECK fails and there are no audio reads.
+   - A bit of the written address flipped (A4, in the second case): every read of the channel lies outside [a, a+8), so the first-or-second clause and the one-stray clause both fail, and the population precondition still holds. Each address and its complement in the family predict different reads.
+   - The one-stray clause is moved on its own by F7's STRAY contrast, which uses the same predicate.
+   - Preconditions: omit the channel's DMACON enable (DMA_CHECK fails and there are no audio reads); enable the other channel of the pair too (ONLY); write the enable before M_start (QUIET); write M_end at once after the enable (POP); write M_end before M_go (REF, an empty window); a wait that ends by its timeout (TMO).
 7. **Reference frame.** The markers and the address family S0-S9 with its per-bit codes (section 1.8).
 
 ### F5. SPRxPTH/SPRxPTL hold A20-A16 and A15-A1 of sprite x's DMA address (x = 0-7)
@@ -702,13 +712,15 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
      - which output carries which channel.
 5. **Preconditions.**
    - DMA_CHECK(AUDcEN).
-   - At least eight audio reads in the window, each of the four addresses of [AD, AD+8) at least twice, and no stray DMA read in the window.
+   - At least eight audio reads in the window, and each of the four addresses of [AD, AD+8) at least twice.
+   - At most one read of the window lies outside [AD, AD+8), and if there is one it is the channel's first read after the enable (HRM p.164: "Because of pipelining in Agnus, the first data word must be thrown away."; the pages leave its address open, section 4, D7).
+   - DMA_CHECK(AUDcEN) in every case, read from DMACONR after the enable.
    - The refresh precondition of section 1.6.
    - ADKCONR & 0x00FF = 0, read before M_start (p.11: USExVy / USExPy clear).
    - No timeout.
 6. **Contrasting cases.**
    - The second word 0xC0C0 changed to 0x6060 (+96): now the second level is the highest, and L1 > L3 > L4 > L2 fails, as the page predicts.
-   - Precondition: omit the DMACON enable. DMA_CHECK fails and there are no audio reads.
+   - Preconditions: omit the DMACON enable (DMA_CHECK fails and there are no audio reads); set USE0V1 in ADKCON before the read of ADKCONR (ADK); a window of five lines (POP); rewrite AUDcLCL to AD + 0x100 sixty lines after the enable, so that the next restart (AA p.6: the location registers restart the pointer "whenever the audio length count is finished") reads outside [AD, AD+8) (STRAY); write M_end before the enable (REF, an empty window); a wait that ends by its timeout (TMO).
 7. **Reference frame.** The audio reads of the window give the time scale T. No absolute latency between a read and its output is assumed, because the page gives none. The twelve runs may start anywhere in the window, so neither the start of output nor the length of the first pass through the data affects the check.
 
 ### F8. BLTADAT/BLTBDAT/BLTCDAT are loaded by the blitter's source DMA; BLTDDAT goes to RAM by DMA
@@ -791,7 +803,7 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
   - p.15 (BPLxDAT): "They may also be written by either micro."
   
   These are the `%` description, not the `&` one. Every page agrees the DMA channel loads the register, and that is all F6, F7, F8 and C12 grade. The `&` claims, and the `~` claims of BLTADAT, BLTBDAT and BLTCDAT, are declined whole for that reason (section 0.3). For DSKDAT, DSKDATR and BLTDDAT no page contradicts "only", but nothing about processor writes to them is observable without a disk, or is stated at all (section 0).
-- **D2. The `h` legend.** p.6 says "h=new for HiRes chip set". p.10 says "h= stuff added or changed in hires chips" and "H= new register in hires chips". For BLTCON0L, BLTSIZV and BLTSIZH, the alphabetical list prints capital `H` (p.13-14). Under either legend the mark places the register in the hires chip set; F2 and F3 grade that, not absence from older chips. p.10 also defines lowercase `p` as "stuff added or changedin hires chips", while p.6 defines `p` as "new for IAA chip set". No proposition depends on `p`.
+- **D2. The `h` legend.** p.6 says "h=new for HiRes chip set". p.10 says "h= stuff added or changed in hires chips" and "H= new register in hires chips". For BLTCON0L, BLTSIZV and BLTSIZH, the alphabetical list prints capital `H` (p.13-14). Under either legend the mark says how the register relates to earlier chip sets, which no port shows; the six `h` ids are declined (section 0.4), and F2 and F3 grade that the registers work with the AA chip set selected. p.10 also defines lowercase `p` as "stuff added or changedin hires chips", while p.6 defines `p` as "new for IAA chip set". No proposition depends on `p`.
 - **D3. BLTDDAT's access type.** p.6 prints "ER" and p.13 prints "W". Neither is graded (section 0.1).
 - **D4. The Copper's reach with COPCON bit 1 clear.**
   - AA p.19: "(if 0, access to RGA>7E)".
@@ -804,6 +816,7 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
   - what value 0 means in BLTSIZE, BLTSIZH and BLTSIZV;
   - which byte of AUDxDAT is output first;
   - which sprite channel makes which sprite read.
+- **D7. The addresses of the first two audio reads after the enable.** HRM p.164: "In DMA-driven operation, transition to the 001 state occurs and DMA requests are sent to Agnus as soon as DMA is turned on. Because of pipelining in Agnus, the first data word must be thrown away. State 101 is entered as soon as this word arrives; a request for the next data word has already gone out." Figure 5-8 (HRM p.166) loads the output buffer only from the second word that arrives. HRM p.145: "Enabling an audio channel almost always starts the data output again from the top of the list of data pointed to by the location registers for that channel." HRM p.148 lists "Copy to "back-up" location register from AUD0LCL (will be used as a pointer showing current data word to fetch)" before "Start retrieving audio data each allocated DMA time slot". Read with p.164 and p.145, the thrown-away word is a read before the one at the location; read with p.148, the first read is at the location. The pages do not say which, so F4 and F7 allow the address of the first read to be open: F4 grades that the first or the second read is at a, and F4 and F7 allow one read outside the channel's region, the first.
 - **D6. Outside the claims.** SPRHDAT (078) is printed without `~` (p.7), although p.19 closes everything up to 07E to a Copper with CDANG clear. No claim of this package concerns it.
 
 ---
@@ -830,8 +843,8 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 | BLTSIZV | `~` | opus:/sol:AA-bltsizv.c5 | C11 |
 | BLTADAT, BLTBDAT, BLTCDAT | `~` | opus:/sol:AA-bltadat.c5, -bltbdat.c5, -bltcdat.c5 | 0.3 (declined; C12 grades the bit-1-clear half) |
 | BLTSIZE | function | opus:/sol:AA-bltsize.c5 | F1 |
-| BLTSIZV, BLTSIZH | `h` | opus:/sol:AA-bltsizv.c4, -bltsizh.c4 | F2 |
-| BLTCON0L | `h` | opus:/sol:AA-bltcon0l.c4 | F3 |
+| BLTSIZV, BLTSIZH | `h` | opus:/sol:AA-bltsizv.c4, -bltsizh.c4 | 0.4 (declined; F2 grades the registers' work) |
+| BLTCON0L | `h` | opus:/sol:AA-bltcon0l.c4 | 0.4 (declined; F3 grades the register's effect) |
 | AUD0LCH, AUD0LCL, AUD1LCH, AUD1LCL | function | opus:/sol:AA-aud0lch.c5, -aud0lcl.c5, -aud1lch.c5, -aud1lcl.c5 | F4 |
 | SPR0PTH-SPR7PTL | function | opus:/sol:AA-spr<n>pth.c5, -spr<n>ptl.c5 | F5 |
 | BPL2DAT-BPL8DAT | `&` | opus:/sol:AA-bpl<n>dat.c4 | 0.3 (declined; F6 grades the DMA part) |
@@ -869,10 +882,10 @@ Everything lies in the identity-mapped Chip RAM, outside the three places and th
 
 | Region | Bytes |
 |---|---|
-| Program image, and the script inside it | [0x080400, 0x08CC36): the program ends at the first byte of the S3 regions. The CPU attribution of section 1.6 is this span, the stack, MK and RES. |
+| Program image, and the script | The image starts at 0x080400 and the script at 0x081000; both end below 0x08CC36, the first byte of the S3 regions. The CPU attribution of section 1.6 is [0x080400, image end + 16) and [0x081000, script end + 16) of the run, the stack, MK and RES. |
 | MK | 0x0B8000 |
 | RES and the log | [0x0C0000, 0x0C1000) |
-| IDLE | 0x090000; the Copper list region is 16 bytes (the two list words and zero words) |
+| IDLE | 0x090000; the Copper list region is 16 bytes (the two list words and the zero words after them). AA p.20, WAIT: "(keeps Coprocessor off of bus until beam position has been reached)". The Copper nevertheless reads the word after the final WAIT of a list, IDLE + 4 after nearly every vertical-blank restart and the word after the end WAIT of a case list; the 16-byte region keeps these reads in the Copper class, and the runs print their counts per core as MEASURED lines (not graded). |
 | Case lists | 0x090100 + 0x40 k for the k-th register case of a proposition; C12 uses 0x090140, 0x090180, 0x0901C0 for BLTADAT, BLTBDAT, BLTCDAT; each list region is 16 bytes |
 | DST (C7-C12, F3, F8), C12's preload destination | 0x1B0200, 0x1B0400. They lie in the top of Chip memory, away from RES, the stack and the S regions, so that a blit that does not stop at its specified size overwrites no result. |
 | DST2 (F1, F2) | 0x1A0000, 65534 bytes |
@@ -887,26 +900,20 @@ A write to Chip RAM that is not an access of the program (section 1.6, CPU) is a
 ### 6.3 Reading of the pages the build fixes
 
 - Marker windows are open intervals: an access at the cycle of a marker write is in no window.
+- Attribution tolerances of the test, which no page states:
+  - A bus cycle stretched by wait states appears in the port's log once per bus period. A log entry that repeats the address, direction, data and byte lanes of the entry before it exactly one bus period later continues that cycle and is not a new access; nothing else is merged, so two accesses to one word with equal data that are not exact continuations are two accesses. The bus period is the smallest spacing of two consecutive log entries of the run (4 clk_sys cycles on both cores).
+  - A read counts as a refresh read when the `refresh` output was high in any of the four clk_sys cycles up to its log entry. The refresh precondition below guards this tolerance: a read wrongly flagged would break the groups of four.
 - A *colour clock* K is the median spacing of consecutive refresh-flagged reads of the run divided by two, measured in the run (the four refresh reads of a line are two colour clocks apart, "There are 4 refresh time slots", p.29). It is used only in the refresh precondition, together with 228 colour clocks per line (p.29, STRLONG "(228 CC)").
-- The refresh precondition (labels `...-PCR` and `...-REF`): the refresh-flagged reads of the window form groups, a gap of more than 8 K starting a new group; every group has four reads, except a group cut by the window's edge, which may have fewer; at least one whole group lies in the window. A window of n lines holds at least n - 1 whole groups.
+- The refresh precondition (labels `C2-PCR`, `F4-REF`, `F5-REF`, `F7-REF` and `F9-REF`): the refresh-flagged reads of the window form groups, a gap of more than 8 K starting a new group; every group has four reads, except a group cut by the window's edge, which may have fewer; at least one whole group lies in the window. A window of n lines holds at least n - 1 whole groups. The clause that the groups have four reads, one group per line, is unfalsifiable at this boundary: no stimulus changes how the refresh output groups its reads. The records of the precondition (an empty window) move its population clause, that at least one whole group lies in the window.
 - C2's observation is the first read in the window that is a disk read or a stray read. The stray class includes every read that is none of CPU, refresh, Copper and the disk regions.
 - F6's bands. The video output is the scan-doubled output of the harness, so a line is an output line (a rising edge of `hs`). A pixel is black when its three 4-bit components are 0. C2-C8 are (15,0,0), (0,15,0), (0,0,15), (15,15,0), (0,15,15), (15,0,15), (15,15,15) (the 4-bit output of the p.19 extension of the 4-bit values). A band is a maximal run of output lines that hold a non-black pixel; its height is the number of lines; a gap is the number of black lines between two bands; the first and last column of a line are the sample offsets from the start of the line of its first and last non-black pixel.
 - F1 and F2 case (w, h): `BLTSIZE` is written as `(h << 6) | w`; the case (63, 1) and (1, 1023) of F1 and (v = 0x7FFF) and (w = 0x07FF) of F2 set every bit of their fields.
 
-### 6.4 Propositions not built
-
-F4 and F7 are not built as graded lines, and F4's and F7's claims (opus:/sol:AA-aud0lch.c5, -aud0lcl.c5, -aud1lch.c5, -aud1lcl.c5 and -aud0dat.c2 to -aud3dat.c2) are declined.
-
-- F4 expects the first audio DMA read after the enable at the address the location registers hold. AA p.11 gives the registers as "the 20 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data" and says nothing of the first read. HRM p.164 says of the start-up: "Because of pipelining in Agnus, the first data word must be thrown away." The address of the thrown-away read is not a page value. The page-supported reading is that the data words used start at the registers' address, that is the read after the thrown-away one.
-- F7's precondition "no stray DMA read in the window" counts the thrown-away first read as a stray read, for the same reason; the proposition's expected levels are page-supported.
-
-The program of both runs as specified and prints the reads (F4: the first and the second read of each case) and the level runs (F7) as `MEASURED:` lines.
-
-### 6.5 Labels, selectors and mutations
+### 6.4 Labels, selectors and mutations
 
 Every label starts with the proposition's id. The C propositions print `Cn-FIXTURE`, `Cn-PC1` to `Cn-PC5` as section 1.9 names them (PC5 in the propositions that run a DMA channel), `Cn-PC6` (`C6-PC7` for the counters' stillness, as section 2 names it; `C2-PC6` for DMAON), `C2-PCR` for the refresh precondition, and the proposition's own line `Cn`. The F propositions print `Fn-FIXTURE`, `Fn-DMA` (DMA_CHECK), `Fn-TMO` (no timeout) and the preconditions of their sections, under the names in the mutation records of `test_aa_integ_s7.cpp`.
 
-`NMH_MUTATE=<label>` runs the proposition that owns the label with one changed stimulus and the unchanged comparator; `NMH_ONLY=Cn,Fm` restricts a run to the named propositions. The normal run runs no mutant. A mutation run of a C proposition runs the first register case of the proposition only.
+`NMH_MUTATE=<label>` runs the proposition that owns the label with one changed stimulus and the unchanged comparator; `NMH_ONLY=Cn,Fm` restricts a run to the named propositions. The normal run runs no mutant. A mutation run of a C proposition runs the first register case of the proposition only, and of C12 the first source (BLTADAT) only. The population contrasts of C2 (PC6), C6 (PC7) and C7, C8, C9 (PC6) apply to frame B only. A label may have more than one record when its line has more than one clause a stimulus can move (F5, F9: the stray clause).
 
 
 ---
@@ -917,11 +924,11 @@ The final `make -k -B test` ran on both cores; every run selects the AA chip set
 
 | | fx68k | TG68K |
 |---|---|---|
-| Graded lines (`PASS:` / `FAIL:`) | 126 passed, 0 failed | 126 passed, 0 failed |
-| `RECORDED:` lines | 8 (F4, F7, and the six declined groups of section 0) | 8 |
-| Mutation records in `test_aa_integ_s7.cpp` | 126, each prints `FAIL:` on its label | 126, each prints `FAIL:` on its label |
-| Colour clock K | 8 clk_sys cycles | 8 clk_sys cycles |
-| Claims asserted | 70 of 160 (86 of section 0, less the 16 of F4 and F7, section 6.4) | 70 of 160 |
+| Graded lines (`PASS:` / `FAIL:`) | 142 passed, 0 failed | 142 passed, 0 failed |
+| `RECORDED:` lines | 7 (the seven declined groups of section 0) | 7 |
+| Mutation records in `test_aa_integ_s7.cpp` | 145, each prints `FAIL:` on its label | 145, each prints `FAIL:` on its label |
+| Colour clock K, bus period | 8 and 4 clk_sys cycles | 8 and 4 clk_sys cycles |
+| Claims asserted | 80 of 160 (the 80 of section 0) | 80 of 160 |
 
 Measured values, per core, in the order of the propositions:
 
@@ -929,11 +936,12 @@ Measured values, per core, in the order of the propositions:
 - C2: the first disk read is at Rd (0x0E0000) for COPCON $0000 and $FFFD; with COPCON $0002 it is at Re (0x0F0000) for DSKPTH and at Re' (0x0E0100) for DSKPTL. A disk DMA with DMAON set reads RAM in every run; the window of each case is two lines long and holds two or three whole groups of refresh reads.
 - C4: with COPCON $0000 and $FFFD the poll ends on a line in $41-$42, with COPCON $0002 on a line in $C0-$C1.
 - C7, C9, C10, C12: the blitter writes of every case are those the propositions list, with no write outside the four, three or two words counted; C12's observation blit writes $3C3C twice in both frames B, and $5A5A twice after a DMA preload of V1 in frame A.
-- F1, F2: every case writes exactly w x h words at DST + 2 i with $FFFF, and nothing before the BLTSIZE or BLTSIZH write.
+- Copper reads past the final WAIT of a list (AA p.20, not graded), the same count on both cores: the word IDLE + 4 (0x090004) is read 3 times in C2, 4 in C12, 20 in F5 and 0 in F9; the word after the end WAIT of C2's DSKPTH case list (0x09010C) is read once, and the words after the other case lists of C2 and C12 are not read.
+- F1: every case writes exactly w x h words at DST + 2 i with $FFFF, and nothing before the BLTSIZE write. F2: the same with v x w words, and nothing before the BLTSIZH write.
 - F3: the blit reads ASRC and ASRC + 2 and nothing of BSRC and CSRC, and writes $FF00 and $F0F0.
+- F4: on both cores 0 of 22 cases read the written location first and 22 read it second; the first read is at the address the channel's pointer held before the case ($000000 in the first case), and it is the only read outside [a, a+8). A private copy of the chip set whose channel reads the location first (SPECIFICATION.md 4, D7) also passes: 22 of 22 first reads at the location, no read outside.
 - F5: for each of the ten families every sprite pointer is read at its exact address; there is no stray read.
 - F6: seven bands of 8 output lines in the order C2-C8 in both graded frames, gaps of 8 lines, every band spanning the same columns: 142-780 on fx68k, 141-780 on TG68K; no $555 pixel.
+- F7: each channel's window holds 29 or 30 reads of [AD, AD + 8) and one read outside it, the channel's first, at 0x000000; the level sequence of the proposition is present on one output signal (the left output for channels 0 and 3, the right output for channels 1 and 2). The private copy of the chip set of F4 also passes F7: no read outside [AD, AD + 8).
 - F8: four reads of SRC_x and the four writes $8001, $4002, $2004, $1008 for each of A, B and C.
 - F9: four disk reads at DB, DB + 2, DB + 4, DB + 6; DSKBYTR bit 14 reads 1; INTREQR bit 1 is set after the fourth read.
-- F4 (measured, not graded): on both cores 0 of 22 cases read the written location first and 22 read it second; the first read is at the address the channel's pointer held before the case.
-- F7 (measured, not graded): on both cores each channel's window holds one read outside [AD, AD + 8), at 0x000000, and the level sequence of the proposition is present on one output signal (the left output for channels 0 and 3, the right output for channels 1 and 2).

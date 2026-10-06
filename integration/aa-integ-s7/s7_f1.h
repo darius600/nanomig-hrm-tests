@@ -126,7 +126,7 @@ inline void run_f1_f2(Checks& ck, bool f2, const std::string& sel) {
     if (!f2)
         ck.expect(ok, "F1: a write to BLTSIZE starts the blitter, and the blit covers w words (bits 5-0) on each of h lines (bits 15-6): no blitter write before the write, exactly w*h writes after it at DST+2i with data $FFFF, in all 18 cases (AA p.14 'Writing to this register will start the Blitter', 'h=Height=Vertical lines', 'w=Width =Horiz pixels (6 bits=64 words=1024 pixels max)'; AA p.7 row function 'Blitter start and size (window width, height)') claims opus:AA-bltsize.c5 sol:AA-bltsize.c5");
     else
-        ck.expect(ok, "F2: with the AA chip set selected, BLTSIZV holds a 15-bit height and keeps it for later blits, BLTSIZH holds an 11-bit width and a write to it starts a blit of w words on h lines, a write to BLTSIZV alone starts nothing: no blitter write before the BLTSIZH write, exactly v*w writes after it at DST+2i with data $FFFF, in every case, and 6 then 15 writes in the reuse cases (AA p.14 'BLTSIZH H 05E W A Blitter H size & start (11 bit width)', 'BLTSIZV H 05C W A Blitter V size (15 bit height)', 'BLTSIZV need not be rewritten for subsequent blits if the vertical size is the same'; AA p.7 mark h) claims opus:AA-bltsizv.c4 sol:AA-bltsizv.c4 opus:AA-bltsizh.c4 sol:AA-bltsizh.c4");
+        ck.expect(ok, "F2: with the AA chip set selected, BLTSIZV holds a 15-bit height and keeps it for later blits, BLTSIZH holds an 11-bit width and a write to it starts a blit of w words on h lines, a write to BLTSIZV alone starts nothing: no blitter write before the BLTSIZH write, exactly v*w writes after it at DST+2i with data $FFFF, in every case, and 6 then 15 writes in the reuse cases (AA p.14 'BLTSIZH H 05E W A Blitter H size & start (11 bit width)', 'BLTSIZV H 05C W A Blitter V size (15 bit height)', 'BLTSIZV need not be rewritten for subsequent blits if the vertical size is the same'; AA p.7 mark h)");
     (void)total;
 }
 
@@ -168,7 +168,7 @@ inline void run_f3(Checks& ck, const std::string& sel) {
     bool idle = writes_only_in(acc, wins);
     ck.expect(idle, id + "-IDLE: no blitter write lies outside the window of the blit");
     if (!(fixture && dma && tmo && idle)) { not_graded(ck, id, "fixture, DMA, TMO or IDLE"); return; }
-    ck.expect(reads_ok && wok, "F3: with the AA chip set selected, a write of $FF0F to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 unchanged: the blit after BLTCON0 = $09F0 reads A only (two reads, ASRC and ASRC+2, none in BSRC or CSRC) and writes $FF00 and $F0F0 at DST and DST+2 (AA p.13 'BLTCON0L H 05A W A Blitter control register 0 (write lower 8 bits only) This is to speed up software-- the upper bits are often the same.'; AA p.7 mark h; AA p.14 BLTCON0 bits) claims opus:AA-bltcon0l.c4 sol:AA-bltcon0l.c4");
+    ck.expect(reads_ok && wok, "F3: with the AA chip set selected, a write of $FF0F to BLTCON0L replaces LF7-LF0 of BLTCON0 and leaves bits 15-8 unchanged: the blit after BLTCON0 = $09F0 reads A only (two reads, ASRC and ASRC+2, none in BSRC or CSRC) and writes $FF00 and $F0F0 at DST and DST+2 (AA p.13 'BLTCON0L H 05A W A Blitter control register 0 (write lower 8 bits only) This is to speed up software-- the upper bits are often the same.'; AA p.7 mark h; AA p.14 BLTCON0 bits)");
 }
 
 // ---- F8: BLTxDAT loaded by the blitter's source DMA ---------------------------------------

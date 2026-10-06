@@ -25,15 +25,16 @@ inline C12Run run_c12(const std::string& sel) {
     Script& s = rs.sc;
     const bool m_assert = sel == id, m_pc1 = sel == id + "-PC1", m_pc2 = sel == id + "-PC2", m_pc3 = sel == id + "-PC3",
                m_pc4 = sel == id + "-PC4", m_pc5 = sel == id + "-PC5";
-    const uint16_t vtmo = m_pc3 ? 0 : kVbTmo;
     poke_words(rs.pokes, kIdle, idle_list());
     poke_words(rs.pokes, kPx, {0x3C3C, 0x0000});
     prologue(s);
+    if (m_pc3) s.waitb(DMACONR, 0x8000, 50);   // the contrast: a wait that ends by its timeout (DMACONR bit 15 is never set)
     s.w16(DMACON, m_pc5 ? uint16_t(0x8200) : uint16_t(0x8240));
     r.dma_idx = s.rd(DMACONR);
     s.w16(BLTCON1, 0); set_masks(s);
     s.w16(BLTAMOD, 0); s.w16(BLTBMOD, 0); s.w16(BLTCMOD, 0); s.w16(BLTDMOD, 0);
-    for (int xi = 0; xi < 3; ++xi) {
+    const int nsrc = g_mutate ? 1 : 3;   // a mutation run keeps the first source (BLTADAT)
+    for (int xi = 0; xi < nsrc; ++xi) {
         C12Plan pl; pl.src = c12_sources()[xi];
         const C12Src& x = pl.src;
         poke_words(rs.pokes, kCase + 0x40 * uint32_t(xi + 1), {0x2001, 0xFFFE, x.datreg, 0x5A5A, 0xFFFF, 0xFFFE});
@@ -55,7 +56,7 @@ inline C12Run run_c12(const std::string& sel) {
             s.blitdone();
             b.me = s.mark();
         };
-        s.vblsync(vtmo);
+        s.vblsync();
         // frame A: the DMA channel loads the register with V0, then with V1
         preload(pl.a_pre0); observe(pl.a_obs0);
         if (!m_pc4) s.wm(kPx, 0x5A5A);
@@ -65,7 +66,7 @@ inline C12Run run_c12(const std::string& sel) {
             C12Frame fb; fb.c = c;
             s.w32(COP1LCH, casex);
             if (m_pc1) s.w16(DMACON, 0x0080);
-            s.vblsync(vtmo);
+            s.vblsync();
             s.w16(COPCON, c);
             if (m_assert && c == 0x0000) s.wm(kPx, 0x5A5A);   // the contrast: the DMA channel loads V1 as the register's value
             preload(fb.pre);
@@ -85,7 +86,7 @@ inline C12Run run_c12(const std::string& sel) {
         r.plan.push_back(pl);
     }
     s.end();
-    rs.cycles = 60'000'000;
+    rs.cycles = m_pc5 ? 120'000'000 : 60'000'000;   // the PC5 contrast leaves every blit running until its wait ends by the timeout
     r.cap = run(rs);
     r.acc = accesses(r.cap);
     return r;
@@ -98,6 +99,11 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     bool fixture = c.loaded && c.released && c.fixture_ok && c.done;
     bool pc1 = true, pc2 = true, pc3 = c.timeouts == 0, pc4 = true, pc5 = (logv(c, r.dma_idx) & 0x0240) == 0x0240, assert_ok = true;
     Ctx cx{&c, &r.acc};
+    {
+        std::vector<std::pair<std::string, uint32_t>> pw = {{"IDLE", kIdle + 4}};
+        for (size_t i = 0; i < r.plan.size(); ++i) pw.push_back({std::string(r.plan[i].src.name) + " list", kCase + 0x40 * uint32_t(i + 1) + 12});
+        note_past_wait(ck, id, c, r.acc, pw);
+    }
     const std::vector<Region> px = {{kPx, kPx + 4}}, pxa = {{kPx, kPx + 2}};
     std::vector<Region> chan = {{kDst, kDst + 4}, {kDst3, kDst3 + 2}, {kPx, kPx + 4}};
     std::vector<std::pair<uint64_t, uint64_t>> wins;
@@ -111,8 +117,9 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
     for (auto& pl : r.plan) {
         Obs u = wr_expect(kDst, {0x3C3C, 0x3C3C}), wdma = wr_expect(kDst, {0x5A5A, 0x5A5A});
         Obs o0 = data(pl.a_obs0), o1 = data(pl.a_obs1);
-        bool pc4x = o0 == u && o1 == wdma && blit_ok(pl.a_pre0, true) && blit_ok(pl.a_obs0, false) && blit_ok(pl.a_pre1, true) && blit_ok(pl.a_obs1, false);
-        pc4 = pc4 && pc4x;
+        // every blit is evaluated, so that its window enters PC5's list whatever the data say
+        const bool b0 = blit_ok(pl.a_pre0, true), b1 = blit_ok(pl.a_obs0, false), b2 = blit_ok(pl.a_pre1, true), b3 = blit_ok(pl.a_obs1, false);
+        pc4 = pc4 && o0 == u && o1 == wdma && b0 && b1 && b2 && b3;
         ck.note(id + " " + pl.src.name + " frame A: observation after the preload of V0 " + obs_str(o0, true) + ", after the preload of V1 " + obs_str(o1, true));
         for (auto& fb : pl.b) {
             uint64_t ms = marker(c, fb.ms), mw = marker(c, fb.mw), me = marker(c, fb.me);
@@ -124,7 +131,8 @@ inline void eval_print_c12(Checks& ck, const C12Run& r, const std::string& claim
             for (auto& a : w.copper) if (a.addr == kCase + 0x40 * uint32_t(&pl - &r.plan[0] + 1) + 4) ++n_move;
             pc1 = pc1 && n_move >= 1;
             pc2 = pc2 && (logv(c, fb.f_vb) & 0x20) == 0;
-            pc4 = pc4 && blit_ok(fb.pre, true) && blit_ok(fb.obs, false);
+            const bool bp = blit_ok(fb.pre, true), bo = blit_ok(fb.obs, false);
+            pc4 = pc4 && bp && bo;
             Obs o = data(C12Blit{fb.obs.ms, fb.obs.me});
             bool ok = o == u;
             assert_ok = assert_ok && ok;

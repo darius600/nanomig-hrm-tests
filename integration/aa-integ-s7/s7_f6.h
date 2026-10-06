@@ -175,8 +175,13 @@ inline void run_f6(Checks& ck, const std::string& sel) {
     ck.expect(fixture, id + "-FIXTURE: the run loaded, booted, stored the $BEEF constant at RESULTS and reached DONE, before any value is read");
     ck.expect(dma, id + "-DMA: DMACONR reads DMAEN and BPLEN set (AA p.22)");
     ck.expect(have, id + "-FRAMES: the second and the third complete frames (VSYNC to VSYNC) that begin after M_ready both end before M_done");
-    ck.expect(reads, id + "-READS: in each graded frame there are bitplane reads in each of B1-B8");
-    ck.expect(copper, id + "-COPPER: the Copper list was read in the vertical blank before each graded frame: every pointer word of the list was read in the frame before");
+    if (have) {
+        ck.expect(reads, id + "-READS: in each graded frame there are bitplane reads in each of B1-B8");
+        ck.expect(copper, id + "-COPPER: the Copper list was read in the vertical blank before each graded frame: every pointer word of the list was read in the frame before");
+    } else {
+        not_graded(ck, id + "-READS", id + "-FRAMES");
+        not_graded(ck, id + "-COPPER", id + "-FRAMES");
+    }
     ck.expect(tmo, id + "-TMO: no wait of the program ended by its timeout");
     if (!(fixture && dma && have && reads && copper && tmo)) { not_graded(ck, id, "a precondition"); return; }
     ck.expect(ok, "F6: in an 8-bitplane lores display the data bitplane DMA fetches for plane x (x = 2-8) goes into BPLxDAT and appears on the video output as colour index 2^(x-1): in each of two frames every pixel is black or one of C2-C8 and never $555, exactly seven bands in the order C2, C3, C4, C5, C6, C7, C8 each a single colour, all of one height with equal gaps and the same first and last column, and the two frames are identical (AA p.15 'These registers receive the DMA data fetched from RAM by the Bit Plane address pointers described above ... They act as a 8 word parallel to serial buffer for up to 8 memory Bit Planes'; AA p.16 BPU '0000-1000 (NONE thru 8 inclusive)'; AA p.17 PF2OF table; AA p.18 BPLAM)");

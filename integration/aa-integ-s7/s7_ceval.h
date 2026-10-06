@@ -13,7 +13,7 @@ inline std::string cname(uint16_t c) { return "$" + hex4(c); }
 
 struct CEval {
     bool fixture = false, pc1 = true, pc2 = true, pc3 = false, pc4 = true, pc5 = true, pc6 = true, assert_ok = true;
-    bool have_pc5 = false, have_pc6 = false, runs = true, pcr = true, have_pcr = false;
+    bool have_pc5 = false, have_pc6 = false, runs = true, pcr = true, have_pcr = false, pc4_ng = false;
     std::vector<Region> copper;
 };
 
@@ -64,7 +64,10 @@ inline CEval eval_c(Checks& ck, const Prop& p, const CRun& r) {
         for (auto& a : r.acc) if (a.refresh) rf.push_back(a);
         K_run = colour_clock(rf);
         ck.note(p.id + " run: " + dec((long long)c.base) + " clk_sys cycles to the release of the CPU, " + dec((long long)(c.end_cycle - c.base)) +
-                " cycles run after it, K=" + dec((long long)K_run) + " clk_sys cycles per colour clock");
+                " cycles run after it, K=" + dec((long long)K_run) + " clk_sys cycles per colour clock, bus period " + dec((long long)c.period) + " clk_sys cycles");
+        std::vector<std::pair<std::string, uint32_t>> pw = {{"IDLE", kIdle + 4}};
+        for (const auto& vp : r.plan) pw.push_back({vp.v.name + " list", vp.case_addr + 12});
+        note_past_wait(ck, p.id, c, r.acc, pw);
     }
     for (const auto& vp : r.plan) {
         const Variant& v = vp.v;
@@ -111,7 +114,7 @@ inline CEval eval_c(Checks& ck, const Prop& p, const CRun& r) {
                 Window wc = classify(r.acc, win_lo[i], wins[i].second, v.chan, copper_regions());
                 uint64_t K = K_run;
                 RefreshCheck rc = refresh_groups(wc.refresh, win_lo[i], wins[i].second, K);
-                uint64_t lines = K ? (wins[i].second - win_lo[i]) / (228 * K) : 0;
+                uint64_t lines = K && wins[i].second > win_lo[i] ? (wins[i].second - win_lo[i]) / (228 * K) : 0;
                 ck.note(p.id + " refresh groups, window " + dec((long long)i) + ": " + dec((long long)lines) + " lines, " + dec((long long)rc.groups) + " groups, " + dec((long long)rc.whole) + " whole");
                 if (!rc.ok) e.pcr = false;
                 if (rc.whole + 1 < lines) e.pcr = false;
@@ -130,7 +133,7 @@ inline CEval eval_c(Checks& ck, const Prop& p, const CRun& r) {
         for (auto& w : all_wins) if (a.t > w.first && a.t < w.second) inside = true;
         if (!inside) e.pc5 = false;
     }
-    if (!e.runs) e.pc4 = true;   // PC4 is evaluated only when the channel ran in every run (C2)
+    e.pc4_ng = !e.runs;   // PC4 compares frame A's reads, which a run with DMAON = 1 and no read does not have (C2)
     return e;
 }
 
@@ -142,11 +145,12 @@ inline void print_c(Checks& ck, const Prop& p, const CEval& e, const std::string
     ck.expect(e.pc1, id + "-PC1: in every frame B a Copper read of the MOVE's first word (CASE+4) lies between M_start and M_wait, so the Copper reached the MOVE (AA p.20 MOVE format)");
     ck.expect(e.pc2, id + "-PC2: in every frame B no vertical blank started during the case (INTREQR bit 5 is 0 at the end), so the case list ran once (AA p.21, p.25)");
     ck.expect(e.pc3, id + "-PC3: no wait of the program ended by its timeout");
-    ck.expect(e.pc4, id + "-PC4: the CPU's own write of V1 gives W and V0 alone gives U in frame A, and W differs from U, so the observation tells the two apart");
+    if (e.pc4_ng) ck.record("NOT GRADED " + id + "-PC4: a run with DMAON = 1 read nothing, so frame A's reads that the precondition compares do not exist; " + id + " fails through 'Disk DMA runs'");
+    else ck.expect(e.pc4, id + "-PC4: the CPU's own write of V1 gives W and V0 alone gives U in frame A, and W differs from U, so the observation tells the two apart");
     if (e.have_pc5) ck.expect(e.pc5, id + "-PC5: " + pc_extra);
     if (e.have_pc6) ck.expect(e.pc6, id + "-" + p.pcx + ": " + pc6_text);
-    if (e.have_pcr) ck.expect(e.pcr, id + "-PCR: in every window the refresh-flagged reads come in groups of four, one group per line, so the refresh output marks the refresh reads (AA p.29 '4 refresh time slots')");
-    bool pre = e.fixture && e.pc1 && e.pc2 && e.pc3 && e.pc4 && e.pc5 && e.pc6 && e.pcr;
+    if (e.have_pcr) ck.expect(e.pcr, id + "-PCR: in every window the refresh-flagged reads come in groups of four, one group per line, so the refresh output marks the refresh reads (AA p.29 '4 refresh time slots'); the clause 'groups of four, one group per line' is unfalsifiable at this boundary, and 'at least one whole group lies in the window' is the population clause a stimulus can move");
+    bool pre = e.fixture && e.pc1 && e.pc2 && e.pc3 && (e.pc4 || e.pc4_ng) && e.pc5 && e.pc6 && e.pcr;
     if (!pre) { not_graded(ck, id, "a precondition"); return; }
     ck.expect(e.assert_ok && e.runs, id + ": " + what + " " + claims_and_page);
 }

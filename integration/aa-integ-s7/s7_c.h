@@ -22,6 +22,10 @@ constexpr uint32_t kRe2   = kRd + 0x0100;
 // An observation: a list of values; a blitter write is (address << 16) | data, a register read its value.
 using Obs = std::vector<uint64_t>;
 
+// True while the script of a frame B's observation is being built: the population contrasts apply to frame B only,
+// so that the calibration of frame A (PC4) stays as it is.
+inline bool g_frame_b = false;
+
 inline std::string obs_str(const Obs& o, bool wide = false) {
     std::string s = "{";
     for (size_t i = 0; i < o.size() && i < 12; ++i) {
@@ -112,10 +116,10 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
     Script& s = rs.sc;
     const bool m_assert = sel == p.id, m_pc1 = sel == p.id + "-PC1", m_pc2 = sel == p.id + "-PC2",
                m_pc3 = sel == p.id + "-PC3", m_pc4 = sel == p.id + "-PC4", m_pc5 = sel == p.id + "-PC5", m_pcr = sel == p.id + "-PCR";
-    const uint16_t vtmo = m_pc3 ? 0 : kVbTmo;
     poke_words(rs.pokes, kIdle, idle_list());
     for (auto& k : p.pokes) rs.pokes.push_back(k);
     prologue(s);
+    if (m_pc3) s.waitb(DMACONR, 0x8000, 50);   // the contrast: a wait that ends by its timeout (DMACONR bit 15 is never set)
     if (p.dmacon_once) s.w16(DMACON, m_pc5 ? uint16_t(p.dmacon_once & ~p.dma_enable_bit) : p.dmacon_once);
     if (p.adkcon_once) s.w16(ADKCON, p.adkcon_once);
     if (p.extra_once) p.extra_once(s);
@@ -127,7 +131,7 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
         vp.case_addr = kCase + 0x40 * uint32_t(vi);
         poke_words(rs.pokes, vp.case_addr, v.caselist.empty() ? case_list(v.reg, v.v1) : v.caselist);
         // frame A: calibration, the Copper runs IDLE
-        s.vblsync(vtmo);
+        s.vblsync();
         if (v.cal) {
             v.cal(s, vp.c1, vp.c0);
         } else {
@@ -150,20 +154,24 @@ inline CRun run_c(const Prop& p, const std::string& sel) {
             uint16_t cw = (m_assert && c == 0x0000) ? uint16_t(0x0002) : c;
             s.w32(COP1LCH, vp.case_addr);
             if (m_pc1) s.w16(DMACON, 0x0080);
-            s.vblsync(vtmo);
+            s.vblsync();
             s.w16(COPCON, cw);
             if (v.v0) v.v0(s);
             fb.ms = s.mark();
             if (m_pcr) fb.me = s.mark();   // the contrast: M_end is written before M_wait, so the observation window is empty
             if (v.obs_replaces_step6) {
+                g_frame_b = true;
                 fb.idx = v.obs(s);
+                g_frame_b = false;
                 fb.mw = s.mark();
                 if (m_pc2) s.pollb(INTREQR, 0x0020, 30000);
             } else {
                 s.waitline(0x22);
                 fb.mw = s.mark();
                 if (m_pc2) s.pollb(INTREQR, 0x0020, 30000);
+                g_frame_b = true;
                 fb.idx = v.obs(s);
+                g_frame_b = false;
             }
             s.w32(COP1LCH, kIdle);
             s.w16(COPCON, 0);
