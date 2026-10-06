@@ -25,13 +25,25 @@
 ;   RUN_NODONE   -- P1's completion-word contrasting case: the program
 ;                    starts the Copper and halts without tracing or
 ;                    executing DONE.
+;   RUN_COPOFF   -- Copper DMA never enabled (DMACON = $8200): a trace
+;                    without Copper fetches.
+;   RUN_SHORT    -- A-short: the trace buffer holds 64 samples.
+;   RUN_NOOVL    -- the ROM overlay is not cleared (step 2 left out).
+;   RUN_TAILSHIFT-- the tail loop's WAIT(n,$60) becomes WAIT(n+1,$60).
+;   RUN_TAILPAST -- the last tail WAIT (n = 6, NTSC) is WAIT(7,$60) instead of WAIT(6,$60).
+;   RUN_LONGPAD  -- 16 further padding moves: WAIT(0,$60) is fetched after count $60.
+;   RUN_NOFIX    -- the fixture constant is not stored (copbeam.i).
 
         include "nanomig.i"
         include "copbeam.i"
 
+        ifd     RUN_SHORT
+SAMPLE_COUNT    equ     64
+        else
 SAMPLE_COUNT    equ     50000
-NOCOP_SAMPLE_COUNT equ  30000
-SLOW_SAMPLE_COUNT equ   500
+        endif
+NOCOP_SAMPLE_COUNT equ  12000
+SLOW_SAMPLE_COUNT equ   400
 
         org     PROGRAM_ORG
 
@@ -93,10 +105,10 @@ start:
         bne.s   .vloop
 
         ifnd    RUN_NOPREP
-        move.w  #$FFE3,(a1)+           ; WAIT($FF,$E2)
+        move.w  #$FFE1,(a1)+           ; WAIT($FF,$E0)
         move.w  #$FFFE,(a1)+
-        move.w  #$01FE,(a1)+           ; MARK($A0E2)
-        move.w  #$A0E2,(a1)+
+        move.w  #$01FE,(a1)+           ; MARK($A0E0)
+        move.w  #$A0E0,(a1)+
 
         move.w  #$A0F0,d1
 .padloop:
@@ -105,16 +117,40 @@ start:
         addq.w  #1,d1
         cmpi.w  #$A100,d1
         bne.s   .padloop
+        ifd     RUN_LONGPAD
+.padloop2:
+        move.w  #$01FE,(a1)+
+        move.w  d1,(a1)+
+        addq.w  #1,d1
+        cmpi.w  #$A110,d1
+        bne.s   .padloop2
+        endif
         endif
 
         ; tail loop: n = 0 .. N, WAIT(n,$60) MARK($0100+n)
         moveq   #0,d0
 .nloop:
         move.w  d0,d1
+        ifd     RUN_TAILSHIFT
+        addq.w  #1,d1
+        endif
+        ifd     RUN_TAILPAST
+        cmpi.w  #6,d0
+        bne.s   .notpast
+        addq.w  #1,d1
+.notpast:
+        endif
         lsl.w   #8,d1
         ori.w   #$61,d1
         move.w  d1,(a1)+
         move.w  #$FFFE,(a1)+
+        ifd     RUN_NTSC
+        cmpi.w  #6,d0
+        bne.s   .nodummy
+        move.w  #$01FE,(a1)+           ; MOVE($1FE,$0000): m_262 follows one instruction later
+        move.w  #$0000,(a1)+
+.nodummy:
+        endif
         move.w  #$01FE,(a1)+
         move.w  #$0100,d2
         add.w   d0,d2
@@ -140,7 +176,11 @@ start:
         ; ---- step 5: start the Copper (p.30's own sequence) ------------
         move.l  #LIST_A_BASE,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
+        ifd     RUN_COPOFF
+        move.w  #$8200,DMACON(a0)
+        else
         move.w  #$8280,DMACON(a0)
+        endif
 
         ; ---- step 6: trace loop -----------------------------------------
         lea     TRACE_BASE,a6
@@ -200,7 +240,7 @@ start:
         ifd     RUN_SLOW
         move.l  #SLOW_SAMPLE_COUNT,d6
 .trloop2: move.l VPOSR(a0),(a6)+
-        move.w  #4000,d0
+        move.w  #100,d0
 .slowdelay: dbra d0,.slowdelay
         subq.l  #1,d6
         bne.w   .trloop2

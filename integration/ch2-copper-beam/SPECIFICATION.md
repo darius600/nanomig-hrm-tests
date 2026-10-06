@@ -1259,128 +1259,432 @@ graded (section 1).
     Specified: it is not written, and the ECS runs rest on the assumption
     stated in 3.1, checked against the OCS runs.
 
-## 8. Build (Run A only; P3-P6 and P9 are not built in this pass)
+## 8. Build
 
-Programs: `prog_a.s` (Run A, PAL, ECS or OCS selected by the harness
-`Config` the test passes; `copbeam.i` holds this package's own register
-equates and the common prologue macro). Variant wrappers, each `include`ing
-`prog_a.s` with one symbol set (SPECIFICATION.md's own pattern, matching
-the apparatus control and the chapter-6 packages): `prog_a_ntsc.s` (NTSC
-tail loop), `prog_a_lace.s` (A-LACE), `prog_a_noprep_pal.s` /
-`prog_a_noprep_ntsc.s` (A-noprep), `prog_a_slow.s` (A-slow),
-`prog_a_hold.s` (A-hold), `prog_a_nocop.s` (A-noCop), `prog_a_anchor.s`
-(A-anchor), `prog_a_shift.s` (A-shift), `prog_a_p2waited.s` (an added
-stimulus mutation for P2's own "waited" precondition, named in 8.3),
-`prog_a_nodone.s` (P1's completion-word contrasting case).
+This section records what the build fixes where the specification leaves a
+choice, the programs, the final run of each core and the mutations. The
+propositions and expected values of sections 1 to 7 are unchanged; where the
+build grades less than a section states, 8.4 says so.
 
-The trace loop (RF2's stimulus, 3.4/5) is a flat run of `SAMPLE_COUNT`
-(50000) copies of `move.l VPOSR(a0),(a6)+`, with no loop-control
-instruction between samples: see 8.2. A-noCop and A-slow keep a `dbra`
-loop instead, since neither needs the tighter form (A-noCop only has to
-show R1 fails after DMACON is cleared; A-slow's whole point is a large
-gap). A-hold reads once and stores the same value `SAMPLE_COUNT` times.
+### 8.1 Programs
 
-### 8.1 RF1 (slots): S measured
+Every program is assembled for the 68000 with vasm's default CPU. The common
+prologue (steps 1 and 2 of 3.4, and the fixture constant of 8.2) is the macro
+`FRAME_INIT` in `copbeam.i`. A variant wrapper `prog_<run>_<variant>[_ntsc].s`
+sets one symbol and includes the run's program; `NMH_MUTATE=<value>` makes the
+test run the variant named in 8.6 in place of the normal run. A normal run
+(`make test`) runs no variant.
 
-S = 8 `clk_sys` cycles per slot, measured from refresh reads (RAM-port
-reads at word address 0, four per line, each two slots after the one
-before, Figure 6-9) in every capture, PAL and NTSC alike. The refresh
-count is taken from the harness's own uncoalesced port log, not the
-coalesced one: `coalesce()` (`nanomig_harness.h`) merges consecutive
-same-address, same-data log entries regardless of how many real cycles
-separate them, and refresh reads at address 0 always carry data 0000 --
-two genuinely distinct refresh reads with nothing else logged between them
-were observed merged into one in the coalesced log during this package's
-own build, understating the count and doubling the apparent spacing where
-it happened. The uncoalesced log does not have this failure mode (a
-same-slot access is a real bus arbitration event there, not a merge
-artefact), and RF1's own S1 collision check (3.2) is run against it.
+| Source | Run | Contents |
+|---|---|---|
+| `prog_a.s` | A | List A as written in 5, with the changes of 8.2 items 3 and 4; 50000 copies of `move.l VPOSR(a0),(a6)+` |
+| `prog_b.s` | B | Lists L_init, L_FE and L_0 ... L_15; 130 blocks of 1000 copies of the same step, one `dbra` between blocks |
+| `prog_c.s` | C | List C; 30000 copies of the same step |
+| `prog_d.s` | D, E | The plane data, the list of the run, the display registers; six field boundaries counted by polling VPOSR and VHPOSR |
+| `prog_<run>_ntsc.s` | A, B, C, D, E | The same program, run with the NTSC harness configuration |
 
-### 8.2 RF2 (T1): measured
+### 8.2 Choices the specification leaves open
 
-`SAMPLE_COUNT=50000` samples, PAL and NTSC, ECS: `PRE-T1` measures 9/49999
-and 10/49999 consecutive-sample gaps over 16 slots respectively (both
-cores agree). A `dbra`-looped version of the identical single instruction
-(kept for A-noCop, 8's own program list) measured roughly twice that
-violation rate, all at block boundaries (the `subq`/`bne` pair adds words
-to fetch between two samples); the flat form removes that source and
-leaves only the residual, which recurs at the same order of magnitude
-regardless of further unrolling. `PRE-T1`, `PRE-T2`, `PRE-R1`, `PRE-L1`,
-`PRE-S1a`, `PRE-S1b` and `PRE-FIELDS` are printed for both the PAL and the
-NTSC capture; `PRE-ANCHOR` (RF2, A-anchor's own precondition: every m_v
-lies on line v) is printed for both and passed (1456/1456 PAL, 1872/1872
-NTSC).
+1. **Standard and chip set.** `chipset_config` is $08 (ECS, PAL) and $0A (ECS,
+   NTSC); the OCS runs of Runs A, B and C use $00 and $02. The test never
+   assumes which standard a run has: `PRE-STD` reads the chip identification
+   (VPOSR bits 14-8, 3.1) of every sample, or the word stored at RESULTS in
+   Runs D and E, and prints FAIL when it does not name the standard of the
+   line. Both cores identify as $20 (PAL) and $30 (NTSC).
+2. **Fixture.** The program stores the known word $A5C3 to $0C0002 before
+   anything else is read. `FIX-CONST` asserts that the Chip-memory port logs
+   that write with that data. `FIX-LOAD` asserts that the program loaded and
+   the CPU was released. A failed fixture line makes every dependent line
+   NOT GRADED.
+3. **Run A: reaching line 256.** The list of Run A waits for ($FF,$E0), one
+   of the 113 positions of p.23, where section 5 gives ($FF,$E2): the marker is
+   `MARK($A0E0)`, and `PRE-E0` asserts that it is fetched in every field.
+   Run B measures the WAIT for ($FF,$E2) itself (P6, j = 0). The 16 padding
+   moves follow, and `PRE-P7L256` asserts that the second word of the WAIT
+   before m_256 is fetched on line 256 (RF2).
+4. **Run A, NTSC: the instruction after the last WAIT.** The marker m_262
+   follows one further instruction, `MOVE($1FE,$0000)`, so that the first
+   word of the instruction after a pending WAIT, which P6 measures as fetched
+   shortly before the next restart on both cores, is not taken for the end of
+   the WAIT for line 262.
+5. **Samples.** Runs A and C read the long word at $DFF004 in a flat run of
+   copies (50000 and 30000). Run B needs about 130000 samples; the copies
+   would reach the address of RESULTS, so it runs 130 blocks of 1000 copies
+   with one `dbra` between blocks.
+6. **Run B.** L_FE, the field of B-FE, is part of every run: L_init names
+   L_FE, L_FE names L_0. The markers of L_15 are those of L_14, as section 5 states.
+   `L1` of Run B reads the first two words of L_init. B-late waits for
+   ($FF,$E0), as item 3.
+7. **Run C, C-next.** The wait of q_5 is `WAIT(w_5+1,$50)` where section 5 gives
+   `WAIT(w_5+1,$20)`: with $50 the WAIT of r2_5 is fetched after its target,
+   which `PRE-C-WAITED` and `P4-C` assert it is not.
+8. **Runs D and E.** The CPU writes the colour registers and DIWSTRT,
+   DIWSTOP, DDFSTRT, DDFSTOP, BPLCON0, BPL1MOD (3.4 step 4); the list holds
+   the two bitplane pointer moves and END. The window lines of a field are the
+   output lines that show COLOR01. Output pixel clocks are the video samples
+   of the harness (one per `clk_sys` cycle); P_lo and P_hi are measured from
+   the calibration runs in the same standard.
+9. **Slot length.** S is measured in every capture of both cores from the
+   refresh reads (RF1) and is 8 `clk_sys` cycles per slot in all of them. The
+   refresh reads are taken from the harness's uncoalesced port log.
+10. **A-slow.** The delay between samples is a loop of 100 `dbra`
+    iterations, at least 300 slots (3.2); 400 samples are taken.
 
-### 8.3 P1: measured
+### 8.3 Preconditions beyond the specification's list
 
-Every complete field, PAL and NTSC, ECS and OCS alike (3.1's own
-cross-check: the field-length set measured under OCS equals the one
-measured under ECS in both standards, so P1 is graded under the checked
-assumption, not merely the stated one): the set of distinct V values is
-exactly {313} for PAL (not {312}) and exactly {263} for NTSC (not {262}),
-over every field captured (7 PAL, 9 NTSC). The field's first trusted
-sample is at V=0 and H=0 occurs in the trace, in both standards, matching
-p.27. `P1-COUNT-PAL` and `P1-COUNT-NTSC` are therefore FAIL on both cores;
-`P1-ORIGIN-PAL` and `P1-ORIGIN-NTSC` are PASS on both cores.
+| Id | What it asserts | Why |
+|---|---|---|
+| `PRE-T1E` | no line identification of this run is bracketed by a step that ended before the event | the part of T1 that RF2's line identification rests on; `PRE-T1` itself, as section 4 states it (every step at most 16 slots), is printed and stays red |
+| `PRE-E0`, `PRE-P7L256` | m_E0 is fetched in every field; the WAIT before m_256 is fetched on line 256 | guard the stimulus of 8.2 item 3 |
+| `PRE-P3ODDEND`, `PRE-P3COVER` | the odd count $E1 is read; line-end coverage of both NTSC line types | P3 (8.4 item 2) |
+| `PRE-C-R1LINE`, `PRE-C-WAITED` | r1_j lies on line w_j; every WAIT under test waited | P4 as section 6 states |
+| `PRE-B-CHAIN`, `PRE-B-L255`, `PRE-B-WAITED` | each restart fetches the list the previous one named, at least 3 fields of L_15; the WAIT of each list is fetched on line 255; every WAIT($FF,$40) waited | P6 as section 6 states |
+| `PRE-P5-CALLO`, `PRE-P5-CALHI`, `PRE-P5-EDGES`, `PRE-P5-WAITED` | the calibration and edge preconditions of P5 | P5 as section 6 states |
+| `PRE-P9-PLO`, `PRE-P9-LINES`, `PRE-P9-ONE0` | P_lo valid; at least one window line per field; exactly one run of 0 per window line | P9 as section 6 states |
 
-Mutations (`NMH_MUTATE=<value>`, run once per value on each core; both cores
-agree on every verdict below):
+The common preconditions are printed once per capture, with the capture's run
+named after the standard (`PRE-DONE PAL run A: ...`); they carry the same id in
+every run, so one mutation record names the id.
 
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| P1-STD-PAL | P1-COUNT-PAL (NTSC capture graded as PAL) | FAIL | FAIL |
-| P1-STD-NTSC | P1-COUNT-NTSC (PAL capture graded as NTSC) | FAIL | FAIL |
-| P1-LACE | P1-COUNT-PAL, A-LACE | FAIL | FAIL |
-| P1-T1 | PRE-T1 PAL, A-slow (108/108 gaps over 16 slots) | FAIL | FAIL |
-| P1-T2 | PRE-T2 PAL, A-hold (49999/49999 violate T2) | FAIL | FAIL |
-| P1-R1 | PRE-R1 PAL, A-noCop (28/30 fx68k, 20/22 TG68K spans) | FAIL | FAIL |
-| P1-DONE | PRE-DONE PAL, A-nodone | FAIL | FAIL |
+`PRE-T1` is red in every trace capture of both cores. The steps that exceed 16
+slots are listed by the test (`T1 ... gaps exceed 16 slots, N of them across a
+field boundary`): the step that spans the Copper's restart at a field boundary
+lasts about 19 to 20 slots, and Run C and Run B have further long steps while
+the Copper fetches. Without Copper DMA no step exceeds 16 slots (8.6, `A-COPOFF-PAL`: `PRE-T1` passes).
 
-### 8.4 P2: measured
+### 8.4 What the build grades differently from sections 1 to 7
 
-PAL: L(v) = 227 for every one of 1449 measured pairs (7 fields).
-NTSC: L(v) = 227 for every one of 1863 measured pairs (9 fields) as well
--- no value of 228 was measured, and consequently no alternation either.
-`P2-PAL` is therefore PASS and `P2-NTSC` is FAIL, on both cores.
+1. **P1, the number of lines.** Not graded. The pages give two field lengths.
+   p.24: "There are actually 262 NTSC (312 PAL) possible vertical positions."
+   p.34: "Whereas a normal NTSC display has 262 lines" and "PAL has 312 lines
+   normally". p.27 places the end of the display at "(226,262) NTSC (or (226,312)
+   PAL)" from "(0,0)", which are 263 and 313 positions. p.216, Table 7-5, gives
+   PAL only: V8 "Allows PAL line counts (313) to appear in PAL versions of the
+   Amiga." The test prints the measured number of distinct V values per complete
+   field on a `MEASURED:` line and the quotations on a `RECORDED: P1-COUNT ...
+   NOT GRADED` line that names `COP2-vertical-beam-position.c3`,
+   `COP2-vertical-beam-position.c4`, `COP2-using-the-copper-in-interlaced-mode.c2`
+   and `COP2-using-the-copper-in-interlaced-mode.c4`. The contrast A-LACE is not
+   built: a field of 313 PAL lines is no contrast while the non-interlaced field
+   already has 313. `P1-ORIGIN` is graded as section 6 states.
+2. **P3, the range of the count.** Section 6 grades the whole set of counts when both
+   parities are read. Both parities are read on both cores, but the sampler
+   never reads some odd counts near the start of the line (the lists of 8.5);
+   every even count is read. The whole set is therefore not something the
+   sampler can establish, whatever the chip set does. P3 grades what it can:
+   every H at most $E2 (PAL) or $E3 (NTSC), every even value from $00 to $E2,
+   and for NTSC the odd value $E3, which is graded only when `PRE-P3ODDEND`
+   shows that odd counts at the end of a line are read (the odd value $E1 occurs).
+   The odd values the sampler does not read are measured, not graded.
+   `COP2-horizontal-beam-position.c13` is not asserted whole and is declined on a
+   `RECORDED:` line. "$E3 only on long lines" is graded when `PRE-P3COVER` holds;
+   it never holds on either core.
+3. **P2, the contrast "select NTSC for the PAL check".** Not built: the lines
+   of the NTSC capture are all 227 slots, so `P2-PAL` stays green on it. The
+   mutation of `P2-PAL` is A-shift.
+4. **P4 (c).** `E_j = $40` is not graded. Where the next fetch falls in the
+   first counts of a line is left open by the pages (p.20: the Copper's cycles
+   do not collide with refresh, which occupies slots at the start of every line;
+   7, item 14), and E_j compares a fetch at the start of a line with a fetch at
+   count $40. `P4-C` grades that r2_j lies on line w_j + 1 and that the WAIT of
+   r2_j waited, which is what the page predicts: the WAIT for a position beyond
+   $E2 on line w_j ended before count $40 of line w_j + 1. E_j is measured per j.
+5. **P6.** `time(x_0) - time(a_0)` is recorded and not graded, as section 6 states,
+   together with the line of x_0 and, for h_j above $E2, the number of slots
+   between the fetch of x_j and the next restart and the number of fetches after
+   the second word of the WAIT. The contrast B-FE is a control line,
+   `P6-CONTROL`, that grades that $B300 is fetched in the same field and that
+   the WAIT($FF,$40) after it waited; `time($B301) - time($B300) = $40` is not
+   graded, for the reason of item 4, and is measured.
+6. **P7 and P8, the contrasts.** A-noprep puts the WAIT($00,$60) on line 255, so
+   `PRE-E0` and `PRE-P7L256` fail and `P7` is NOT GRADED: a precondition never
+   depends on the clause under test, and a failed precondition makes its
+   dependent line NOT GRADED. `P7` is mutated by A-tailshift, with every
+   precondition holding, and `P7-WAITED` by A-longpad. `P8` has no mutation of
+   its own, because `P8-AFTER` is red on both cores and no input of this package
+   passes it: `P8-LINES` is mutated by A-tailshift on the NTSC list and
+   `P8-NO262` by A-tailpast, a green control.
+7. **P8 and "six or seven".** p.24 says of the end of the field: "Some minor
+   complications can occur if you want something to happen within these last six
+   or seven scan lines." P8 grades the box's "256 + 6 = 262 lines": the lines
+   256 to 261 and no line 262. The measured NTSC field has a line 262 (the line
+   after 261 is 262, 8.5), the same count that P1 leaves ungraded.
 
-Mutations:
+### 8.5 The final run of each core
 
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| P2-STD-PAL | P2-PAL (NTSC capture graded as PAL) -- does not redden, see 8.4's own text | PASS (stays green) | PASS (stays green) |
-| P2-STD-NTSC | P2-NTSC (PAL capture graded as NTSC) | FAIL | FAIL |
-| P2-SHIFT | P2-PAL, A-shift | FAIL | FAIL |
-| P2-WAITED | an added mutation: an extra WAIT($7F,$40) inserted after MARK($7F) | FAIL through its own targeted clause (printed as its own PASS line, confirming the red) | same |
-| ANCHOR | PRE-ANCHOR PAL, A-anchor (1449/1449 markers off) | FAIL | FAIL |
+`make -k -B test`: fx68k 224 passed, 16 failed; TG68K 224 passed, 16 failed. The verdicts of every graded line are the same on both cores. `PRE-T1` is the specification's precondition as section 4 states it; the dependent lines are gated by `PRE-T1E` (8.3). The table counts the lines of each label over all runs and standards; a failing line names its standard and run.
 
-### 8.5 P7, P8: measured
+| label | fx68k | TG68K |
+|---|---|---|
+| `FIX-CONST` | 16 PASS | 16 PASS |
+| `FIX-LOAD` | 16 PASS | 16 PASS |
+| `P1-ORIGIN` | 2 PASS | 2 PASS |
+| `P2-NTSC` | 0 PASS, 1 FAIL (NTSC) | 0 PASS, 1 FAIL (NTSC) |
+| `P2-PAL` | 1 PASS | 1 PASS |
+| `P3-NTSC-SET` | 0 PASS, 1 FAIL (NTSC) | 0 PASS, 1 FAIL (NTSC) |
+| `P3-PAL` | 1 PASS | 1 PASS |
+| `P4` | 2 PASS | 2 PASS |
+| `P4-A` | 2 PASS | 2 PASS |
+| `P4-B` | 2 PASS | 2 PASS |
+| `P4-C` | 2 PASS | 2 PASS |
+| `P5-HI` | 2 PASS | 2 PASS |
+| `P5-LO` | 2 PASS | 2 PASS |
+| `P6-CONTROL` | 2 PASS | 2 PASS |
+| `P6-LARGEST` | 0 PASS, 2 FAIL (PAL; NTSC) | 0 PASS, 2 FAIL (PAL; NTSC) |
+| `P6-LINE255` | 2 PASS | 2 PASS |
+| `P6-NEVER` | 0 PASS, 2 FAIL (PAL; NTSC) | 0 PASS, 2 FAIL (PAL; NTSC) |
+| `P7` | 2 PASS | 2 PASS |
+| `P7-WAITED` | 2 PASS | 2 PASS |
+| `P8` | 0 PASS, 1 FAIL (NTSC) | 0 PASS, 1 FAIL (NTSC) |
+| `P8-AFTER` | 0 PASS, 1 FAIL (NTSC) | 0 PASS, 1 FAIL (NTSC) |
+| `P8-LINES` | 1 PASS | 1 PASS |
+| `P8-NO262` | 0 PASS, 1 FAIL (NTSC) | 0 PASS, 1 FAIL (NTSC) |
+| `P9-A` | 2 PASS | 2 PASS |
+| `P9-A-E` | 2 PASS | 2 PASS |
+| `P9-A-EW` | 2 PASS | 2 PASS |
+| `P9-B` | 2 PASS | 2 PASS |
+| `PRE-ANCHOR` | 2 PASS | 2 PASS |
+| `PRE-B-CHAIN` | 2 PASS | 2 PASS |
+| `PRE-B-L255` | 2 PASS | 2 PASS |
+| `PRE-B-WAITED` | 2 PASS | 2 PASS |
+| `PRE-C-R1LINE` | 2 PASS | 2 PASS |
+| `PRE-C-WAITED` | 2 PASS | 2 PASS |
+| `PRE-DONE` | 16 PASS | 16 PASS |
+| `PRE-E0` | 2 PASS | 2 PASS |
+| `PRE-FIELDS` | 16 PASS | 16 PASS |
+| `PRE-L1` | 16 PASS | 16 PASS |
+| `PRE-P2WAITED` | 2 PASS | 2 PASS |
+| `PRE-P3COVER` | 0 PASS, 1 FAIL (NTSC A) | 0 PASS, 1 FAIL (NTSC A) |
+| `PRE-P3ODDEND` | 1 PASS | 1 PASS |
+| `PRE-P5-CALHI` | 2 PASS | 2 PASS |
+| `PRE-P5-CALLO` | 2 PASS | 2 PASS |
+| `PRE-P5-EDGES` | 2 PASS | 2 PASS |
+| `PRE-P5-WAITED` | 2 PASS | 2 PASS |
+| `PRE-P7L256` | 2 PASS | 2 PASS |
+| `PRE-P9-LINES` | 2 PASS | 2 PASS |
+| `PRE-P9-ONE0` | 4 PASS | 4 PASS |
+| `PRE-P9-PLO` | 2 PASS | 2 PASS |
+| `PRE-R1` | 16 PASS | 16 PASS |
+| `PRE-S1A` | 16 PASS | 16 PASS |
+| `PRE-S1B` | 16 PASS | 16 PASS |
+| `PRE-STD` | 16 PASS | 16 PASS |
+| `PRE-T1` | 0 PASS, 6 FAIL (PAL A; NTSC A; PAL C; NTSC C; PAL B; NTSC B) | 0 PASS, 6 FAIL (PAL A; NTSC A; PAL C; NTSC C; PAL B; NTSC B) |
+| `PRE-T1E` | 6 PASS | 6 PASS |
+| `PRE-T2` | 6 PASS | 6 PASS |
 
-Every field captured, PAL and NTSC: the second word of WAIT($FF,$E2) is
-fetched promptly, at line 255 (the same line as m_$FF, matching A-anchor's
-own check for that marker), but the next instruction fetch (the first of
-the 16 padding moves) is not: it lands close to the field's own end, not
-"well inside line 256" as the padding's own reasoning (SPECIFICATION.md
-5, Run A) assumed. In consequence the tail loop (m_256 onward) is never
-reached in any of the 16 fields captured (`PRE-E2-REACHED`, 0/7 PAL, 0/9
-NTSC). `P7-PAL`, `P7-PAL-WAITED`, `P7-NTSC`, `P7-NTSC-WAITED` and all three
-P8 assertions are FAIL on both cores for this reason. See the report to
-the lead for what this means for Run B's own use of the same recipe
-(p.23's WAIT($FF,$E2), not yet built).
+```text
+CORE fx68k
+MEASURED: T1 PAL run A: 17 of 49999 consecutive-sample gaps exceed 16 slots, 10 of them across a field boundary
+MEASURED: T2 PAL run A: 0 of 46533 trusted-sample transitions violate T2
+MEASURED: R1 PAL run A: 0 of 7 inter-boundary spans have restart count != 1
+MEASURED: P1-COUNT PAL run A: distinct V values per complete field {313} over 7 complete fields
+MEASURED: P1-ORIGIN PAL run A: parity coverage yes (even seen, odd seen)
+MEASURED: P3 PAL run A: H values observed 00..E2, 208 distinct; even values not observed (0): none; odd values up to $E1 not observed (19): 05 07 09 0B 0D 11 15 19 1D 21 25 29 2D 31 35 39 3D 41 45; lines with H>=$E0 and L=228: 0, with L=227: 303
+MEASURED: OCS-CHECK PAL run A: ECS field-length set {313} vs OCS {313} -- match, assumption checked
+MEASURED: T1 NTSC run A: 20 of 49999 consecutive-sample gaps exceed 16 slots, 10 of them across a field boundary
+MEASURED: T2 NTSC run A: 0 of 46566 trusted-sample transitions violate T2
+MEASURED: R1 NTSC run A: 0 of 9 inter-boundary spans have restart count != 1
+MEASURED: P1-COUNT NTSC run A: distinct V values per complete field {263} over 9 complete fields
+MEASURED: P1-ORIGIN NTSC run A: parity coverage yes (even seen, odd seen)
+MEASURED: P3 NTSC run A: H values observed 00..E2, 203 distinct; even values not observed (0): none; odd values up to $E1 not observed (24): 05 07 09 0B 0D 0F 11 15 17 19 1D 21 23 25 29 2D 2F 31 35 39 3B 3D 41 45; lines with H>=$E0 and L=228: 0, with L=227: 315
+MEASURED: P8 NTSC run A: the trusted sample after the last sample of line 261 has V (count): 262x9 over 9 field boundaries
+MEASURED: OCS-CHECK NTSC run A: ECS field-length set {263} vs OCS {263} -- match, assumption checked
+MEASURED: T1 PAL run C: 96 of 29999 consecutive-sample gaps exceed 16 slots, 4 of them across a field boundary
+MEASURED: T2 PAL run C: 0 of 28053 trusted-sample transitions violate T2
+MEASURED: R1 PAL run C: 0 of 4 inter-boundary spans have restart count != 1
+MEASURED: P4 PAL run C: D_k - (h_k - $10) for h_k = $D2..$E2 (reading A predicts 0 or 1, reading B -1 or 0): k=105:0 k=106:0 k=107:0 k=108:0 k=109:0 k=110:0 k=111:0 k=112:0 k=113:3
+MEASURED: P4-C PAL run C: E_j and the line of r2_j per j: j=0(w=$A4, expected line 165):{E=62 line 165} j=1(w=$A6, expected line 167):{E=62 line 167} j=2(w=$A8, expected line 169):{E=62 line 169} j=3(w=$AA, expected line 171):{E=62 line 171} j=4(w=$AC, expected line 173):{E=62 line 173} j=5(w=$AE, expected line 175):{E=62 line 175} j=6(w=$B0, expected line 177):{E=62 line 177} j=7(w=$B2, expected line 179):{E=62 line 179} j=8(w=$B4, expected line 181):{E=62 line 181} j=9(w=$B6, expected line 183):{E=62 line 183} j=10(w=$B8, expected line 185):{E=62 line 185} j=11(w=$BA, expected line 187):{E=62 line 187} j=12(w=$BC, expected line 189):{E=62 line 189} j=13(w=$BE, expected line 191):{E=62 line 191}
+MEASURED: OCS-CHECK PAL run C: ECS field-length set {313} vs OCS {313} -- match, assumption checked
+MEASURED: T1 NTSC run C: 115 of 29999 consecutive-sample gaps exceed 16 slots, 6 of them across a field boundary
+MEASURED: T2 NTSC run C: 0 of 28037 trusted-sample transitions violate T2
+MEASURED: R1 NTSC run C: 0 of 5 inter-boundary spans have restart count != 1
+MEASURED: P4 NTSC run C: D_k - (h_k - $10) for h_k = $D2..$E2 (reading A predicts 0 or 1, reading B -1 or 0): k=105:0 k=106:0 k=107:0 k=108:0 k=109:0 k=110:0 k=111:0 k=112:0 k=113:3
+MEASURED: P4-C NTSC run C: E_j and the line of r2_j per j: j=0(w=$A4, expected line 165):{E=62 line 165} j=1(w=$A6, expected line 167):{E=62 line 167} j=2(w=$A8, expected line 169):{E=62 line 169} j=3(w=$AA, expected line 171):{E=62 line 171} j=4(w=$AC, expected line 173):{E=62 line 173} j=5(w=$AE, expected line 175):{E=62 line 175} j=6(w=$B0, expected line 177):{E=62 line 177} j=7(w=$B2, expected line 179):{E=62 line 179} j=8(w=$B4, expected line 181):{E=62 line 181} j=9(w=$B6, expected line 183):{E=62 line 183} j=10(w=$B8, expected line 185):{E=62 line 185} j=11(w=$BA, expected line 187):{E=62 line 187} j=12(w=$BC, expected line 189):{E=62 line 189} j=13(w=$BE, expected line 191):{E=62 line 191}
+MEASURED: OCS-CHECK NTSC run C: ECS field-length set {263} vs OCS {263} -- match, assumption checked
+MEASURED: T1 PAL run B: 151 of 129999 consecutive-sample gaps exceed 16 slots, 18 of them across a field boundary
+MEASURED: T2 PAL run B: 0 of 121914 trusted-sample transitions violate T2
+MEASURED: R1 PAL run B: 0 of 21 inter-boundary spans have restart count != 1
+MEASURED: P6 PAL run B: j=0: x_0 fetched in the same field, time(x_0)-time(a_0) = 13102 slots, on a line the trace does not identify (reading A predicts $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b)); fields of h_j > $E2: 19 of 19 fields: x_j fetched 2 slots before the next restart, 1 Copper fetches after the WAIT's second word;
+MEASURED: OCS-CHECK PAL run B: ECS field-length set {313} vs OCS {313} -- match, assumption checked
+MEASURED: T1 NTSC run B: 156 of 129999 consecutive-sample gaps exceed 16 slots, 11 of them across a field boundary
+MEASURED: T2 NTSC run B: 0 of 121909 trusted-sample transitions violate T2
+MEASURED: R1 NTSC run B: 0 of 25 inter-boundary spans have restart count != 1
+MEASURED: P6 NTSC run B: j=0: x_0 fetched in the same field, time(x_0)-time(a_0) = 1752 slots, on a line the trace does not identify (reading A predicts $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b)); fields of h_j > $E2: 23 of 23 fields: x_j fetched 2 slots before the next restart, 1 Copper fetches after the WAIT's second word;
+MEASURED: OCS-CHECK NTSC run B: ECS field-length set {263} vs OCS {263} -- match, assumption checked
+MEASURED: P5 PAL D-lo: 2048 window lines, 0 without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {2}
+MEASURED: P5 PAL D-hi: 2048 window lines, 0 without 320 COLOR01 runs of one common length with the COLOR00 runs between; lengths {1}
+MEASURED: P5 PAL D-sweep: 1120 A_u runs measured; P_lo=2, P_hi=1
+MEASURED: P9 PAL E: 2048 window lines, COLOR01 run lengths {640}, P_lo=2
+MEASURED: P5 NTSC D-lo: 1600 window lines, 0 without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {2}
+MEASURED: P5 NTSC D-hi: 1600 window lines, 0 without 320 COLOR01 runs of one common length with the COLOR00 runs between; lengths {1}
+MEASURED: P5 NTSC D-sweep: 1120 A_u runs measured; P_lo=2, P_hi=1
+MEASURED: P9 NTSC E: 1600 window lines, COLOR01 run lengths {640}, P_lo=2
+```
 
-Mutations:
+```text
+CORE TG68K
+MEASURED: T1 PAL run A: 16 of 49999 consecutive-sample gaps exceed 16 slots, 11 of them across a field boundary
+MEASURED: T2 PAL run A: 0 of 46531 trusted-sample transitions violate T2
+MEASURED: R1 PAL run A: 0 of 7 inter-boundary spans have restart count != 1
+MEASURED: P1-COUNT PAL run A: distinct V values per complete field {313} over 7 complete fields
+MEASURED: P1-ORIGIN PAL run A: parity coverage yes (even seen, odd seen)
+MEASURED: P3 PAL run A: H values observed 00..E2, 208 distinct; even values not observed (0): none; odd values up to $E1 not observed (19): 05 07 09 0B 0D 11 15 19 1D 21 25 29 2D 31 35 39 3D 41 45; lines with H>=$E0 and L=228: 0, with L=227: 304
+MEASURED: OCS-CHECK PAL run A: ECS field-length set {313} vs OCS {313} -- match, assumption checked
+MEASURED: T1 NTSC run A: 20 of 49999 consecutive-sample gaps exceed 16 slots, 10 of them across a field boundary
+MEASURED: T2 NTSC run A: 0 of 46557 trusted-sample transitions violate T2
+MEASURED: R1 NTSC run A: 0 of 9 inter-boundary spans have restart count != 1
+MEASURED: P1-COUNT NTSC run A: distinct V values per complete field {263} over 9 complete fields
+MEASURED: P1-ORIGIN NTSC run A: parity coverage yes (even seen, odd seen)
+MEASURED: P3 NTSC run A: H values observed 00..E2, 203 distinct; even values not observed (0): none; odd values up to $E1 not observed (24): 05 07 09 0B 0D 0F 13 15 17 1B 1F 21 23 27 2B 2D 2F 33 37 39 3B 3F 43 45; lines with H>=$E0 and L=228: 0, with L=227: 315
+MEASURED: P8 NTSC run A: the trusted sample after the last sample of line 261 has V (count): 262x9 over 9 field boundaries
+MEASURED: OCS-CHECK NTSC run A: ECS field-length set {263} vs OCS {263} -- match, assumption checked
+MEASURED: T1 PAL run C: 96 of 29999 consecutive-sample gaps exceed 16 slots, 4 of them across a field boundary
+MEASURED: T2 PAL run C: 0 of 28052 trusted-sample transitions violate T2
+MEASURED: R1 PAL run C: 0 of 4 inter-boundary spans have restart count != 1
+MEASURED: P4 PAL run C: D_k - (h_k - $10) for h_k = $D2..$E2 (reading A predicts 0 or 1, reading B -1 or 0): k=105:0 k=106:0 k=107:0 k=108:0 k=109:0 k=110:0 k=111:0 k=112:0 k=113:3
+MEASURED: P4-C PAL run C: E_j and the line of r2_j per j: j=0(w=$A4, expected line 165):{E=62 line 165} j=1(w=$A6, expected line 167):{E=62 line 167} j=2(w=$A8, expected line 169):{E=62 line 169} j=3(w=$AA, expected line 171):{E=62 line 171} j=4(w=$AC, expected line 173):{E=62 line 173} j=5(w=$AE, expected line 175):{E=62 line 175} j=6(w=$B0, expected line 177):{E=62 line 177} j=7(w=$B2, expected line 179):{E=62 line 179} j=8(w=$B4, expected line 181):{E=62 line 181} j=9(w=$B6, expected line 183):{E=62 line 183} j=10(w=$B8, expected line 185):{E=62 line 185} j=11(w=$BA, expected line 187):{E=62 line 187} j=12(w=$BC, expected line 189):{E=62 line 189} j=13(w=$BE, expected line 191):{E=62 line 191}
+MEASURED: OCS-CHECK PAL run C: ECS field-length set {313} vs OCS {313} -- match, assumption checked
+MEASURED: T1 NTSC run C: 115 of 29999 consecutive-sample gaps exceed 16 slots, 6 of them across a field boundary
+MEASURED: T2 NTSC run C: 0 of 28040 trusted-sample transitions violate T2
+MEASURED: R1 NTSC run C: 0 of 5 inter-boundary spans have restart count != 1
+MEASURED: P4 NTSC run C: D_k - (h_k - $10) for h_k = $D2..$E2 (reading A predicts 0 or 1, reading B -1 or 0): k=105:0 k=106:0 k=107:0 k=108:0 k=109:0 k=110:0 k=111:0 k=112:0 k=113:3
+MEASURED: P4-C NTSC run C: E_j and the line of r2_j per j: j=0(w=$A4, expected line 165):{E=62 line 165} j=1(w=$A6, expected line 167):{E=62 line 167} j=2(w=$A8, expected line 169):{E=62 line 169} j=3(w=$AA, expected line 171):{E=62 line 171} j=4(w=$AC, expected line 173):{E=62 line 173} j=5(w=$AE, expected line 175):{E=62 line 175} j=6(w=$B0, expected line 177):{E=62 line 177} j=7(w=$B2, expected line 179):{E=62 line 179} j=8(w=$B4, expected line 181):{E=62 line 181} j=9(w=$B6, expected line 183):{E=62 line 183} j=10(w=$B8, expected line 185):{E=62 line 185} j=11(w=$BA, expected line 187):{E=62 line 187} j=12(w=$BC, expected line 189):{E=62 line 189} j=13(w=$BE, expected line 191):{E=62 line 191}
+MEASURED: OCS-CHECK NTSC run C: ECS field-length set {263} vs OCS {263} -- match, assumption checked
+MEASURED: T1 PAL run B: 152 of 129999 consecutive-sample gaps exceed 16 slots, 19 of them across a field boundary
+MEASURED: T2 PAL run B: 0 of 121948 trusted-sample transitions violate T2
+MEASURED: R1 PAL run B: 0 of 21 inter-boundary spans have restart count != 1
+MEASURED: P6 PAL run B: j=0: x_0 fetched in the same field, time(x_0)-time(a_0) = 13102 slots, on a line the trace does not identify (reading A predicts $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b)); fields of h_j > $E2: 19 of 19 fields: x_j fetched 2 slots before the next restart, 1 Copper fetches after the WAIT's second word;
+MEASURED: OCS-CHECK PAL run B: ECS field-length set {313} vs OCS {313} -- match, assumption checked
+MEASURED: T1 NTSC run B: 156 of 129999 consecutive-sample gaps exceed 16 slots, 21 of them across a field boundary
+MEASURED: T2 NTSC run B: 0 of 121949 trusted-sample transitions violate T2
+MEASURED: R1 NTSC run B: 0 of 25 inter-boundary spans have restart count != 1
+MEASURED: P6 NTSC run B: j=0: x_0 fetched in the same field, time(x_0)-time(a_0) = 1752 slots, on a line the trace does not identify (reading A predicts $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b)); fields of h_j > $E2: 23 of 23 fields: x_j fetched 2 slots before the next restart, 1 Copper fetches after the WAIT's second word;
+MEASURED: OCS-CHECK NTSC run B: ECS field-length set {263} vs OCS {263} -- match, assumption checked
+MEASURED: P5 PAL D-lo: 2048 window lines, 0 without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {2}
+MEASURED: P5 PAL D-hi: 2048 window lines, 0 without 320 COLOR01 runs of one common length with the COLOR00 runs between; lengths {1}
+MEASURED: P5 PAL D-sweep: 1120 A_u runs measured; P_lo=2, P_hi=1
+MEASURED: P9 PAL E: 2048 window lines, COLOR01 run lengths {640}, P_lo=2
+MEASURED: P5 NTSC D-lo: 1600 window lines, 0 without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {2}
+MEASURED: P5 NTSC D-hi: 1600 window lines, 0 without 320 COLOR01 runs of one common length with the COLOR00 runs between; lengths {1}
+MEASURED: P5 NTSC D-sweep: 1120 A_u runs measured; P_lo=2, P_hi=1
+MEASURED: P9 NTSC E: 1600 window lines, COLOR01 run lengths {640}, P_lo=2
+```
 
-| Mutation | Own check | fx68k | TG68K |
-|---|---|---|---|
-| P7-NOPREP-PAL | P7-PAL, A-noprep: fetched on line 255 instead of 256 -- already red on the normal run (PRE-E2-REACHED), stays red here through a genuine per-marker mismatch instead of an empty population | FAIL | FAIL |
-| P7-NOPREP-NTSC | P7-NTSC, A-noprep, same reason | FAIL | FAIL |
 
-P8 carries no mutation of its own in this pass: its main clauses are
-already red on the normal run for the reason just given, and this package
-has no live input at this boundary that reaches the tail loop at all, so
-no contrasting case can show the comparator going green -- unfalsifiable
-at this boundary while `PRE-E2-REACHED` itself stays red.
+### 8.6 Mutations
 
-### 8.6 Not built
+Each value of `NMH_MUTATE` runs the section that owns the mutated line, with every comparator of that section unchanged; the program or the capture graded is the only difference. The verdict columns give the first line printed under the label on each core. The records are in the header of the test source.
 
-P3, P4 (Run C), P5 (Run D), P6 (Run B) and P9 (Runs D, E) are not built in
-this pass.
+| Label | Record | NMH_MUTATE | fx68k | TG68K | What changes |
+|---|---|---|---|---|---|
+| `FIX-LOAD` | none impossible | - | - | - | apparatus check: it fails only when the harness cannot load the program or release the CPU, which no stimulus of this package varies (not exercised, by a scope decision) |
+| `FIX-CONST` | stimulus red | `A-NOFIX-PAL` | FAIL | FAIL | the program leaves out the store of $A5C3 to $0C0002, so the port logs no such write and the dependent lines are NOT GRADED |
+| `PRE-DONE` | stimulus red | `A-NODONE-PAL` | FAIL | FAIL | the program starts the Copper and halts before the trace and before DONE, so the completion word is never written |
+| `PRE-S1A` | none impossible | - | - | - | unfalsifiable at this boundary: no input of the programs changes the refresh slots (RF1) |
+| `PRE-S1B` | none impossible | - | - | - | unfalsifiable at this boundary: no input of the programs changes the refresh slots, so no two accesses can be made to share one (RF1) |
+| `PRE-L1` | stimulus red | `A-NOOVL-PAL` | FAIL | FAIL | CIA-A is not written (step 2 left out), the overlay stays on, the CPU's writes of the list never reach Chip memory and the port logs none; the program still reaches DONE |
+| `PRE-T1` | stimulus green | `A-COPOFF-PAL` | PASS | PASS | Copper DMA is never enabled (DMACON = $8200), so no restart interrupts the trace and every step lasts 12 or 13 slots; the unchanged comparator passes where the normal run is red |
+| `PRE-T1E` | stimulus red | `A-SLOW-PAL` | FAIL | FAIL | a delay of 100 dbra iterations (at least 300 slots) between 400 samples, so the events fall between samples more than 16 slots apart |
+| `PRE-T2` | stimulus red | `A-HOLD-PAL` | FAIL | FAIL | one read of $DFF004 after polling H >= $20 is stored in every step, so H never increases between trusted samples |
+| `PRE-R1` | stimulus red | `A-NOCOP-PAL` | FAIL | FAIL | DMACON = $0080 (COPEN cleared) is written after the third field boundary the trace sees, so the later fields have no restart |
+| `PRE-FIELDS` | stimulus red | `A-SHORT-PAL` | FAIL | FAIL | the trace buffer holds 64 samples, far fewer than 6 complete fields |
+| `PRE-STD` | stimulus red | `A-STD-NTSC-LABEL-PALCAP` | FAIL | FAIL | the PAL capture is graded under the NTSC line, and its chip identification names PAL |
+| `PRE-ANCHOR` | stimulus red | `A-ANCHOR-PAL` | FAIL | FAIL | every WAIT(v,$40) becomes WAIT(v+1,$40), so m_v lies on line v+1 |
+| `PRE-P2WAITED` | stimulus red | `A-P2WAITED-PAL` | FAIL | FAIL | an extra WAIT($7F,$40) after MARK($7F) is fetched after its target has passed, so its delay equals lambda_min |
+| `PRE-E0` | stimulus red | `A-NOPREP-PAL` | FAIL | FAIL | WAIT($FF,$E0), MARK($A0E0) and the padding are left out, so m_E0 does not exist |
+| `PRE-P7L256` | stimulus red | `A-NOPREP-PAL` | FAIL | FAIL | WAIT($FF,$E0) and the padding are left out, so the second word of WAIT(0,$60) is fetched on line 255 |
+| `P1-ORIGIN` | none impossible | - | - | - | not exercised, by a scope decision: a write to VPOSW or VHPOSW (p.216) would move the counter and the pages would then predict the written position, not (0,0); the package never writes them |
+| `P2-PAL` | stimulus red | `A-SHIFT-PAL` | FAIL | FAIL | WAIT($80,$42) in place of WAIT($80,$40), so L($7F) and L($80) differ from 227 |
+| `P2-NTSC` | none impossible | - | - | - | already red on both cores, and no input of this package gives a line of 228 slots, so no capture can pass the comparator; neither unfalsifiable nor a scope decision |
+| `PRE-P3ODDEND` | stimulus red | `A-SHORT-NTSC` | FAIL | FAIL | the trace buffer holds 64 samples, so the odd count $E1 is not read |
+| `PRE-P3COVER` | none impossible | - | - | - | already red on both cores, and no capture of this package has a line of 228 slots, so no input passes the comparator; neither unfalsifiable nor a scope decision |
+| `P3-PAL` | stimulus red | `A-SHORT-PAL` | FAIL | FAIL | the trace buffer holds 64 samples, so most even counts are never read |
+| `P3-NTSC-SET` | none impossible | - | - | - | already red on both cores, and no capture of this package reads $E3, so no input passes the comparator; neither unfalsifiable nor a scope decision |
+| `P3-NTSC-LONGONLY` | none impossible | - | - | - | NOT GRADED on both cores because PRE-P3COVER fails, and no input exists for which the pages predict $E3 on a short line |
+| `P7` | stimulus red | `A-TAILSHIFT-PAL` | FAIL | FAIL | every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n |
+| `P7-WAITED` | stimulus red | `A-LONGPAD-PAL` | FAIL | FAIL | 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied |
+| `P8-LINES` | stimulus red | `A-TAILSHIFT-NTSC` | FAIL | FAIL | every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n |
+| `P8-AFTER` | none impossible | - | - | - | already red on both cores, and no input of this package changes the length of a field, so no capture has line 0 after line 261; neither unfalsifiable nor a scope decision |
+| `P8-NO262` | stimulus green | `A-TAILPAST-NTSC` | PASS | PASS | the last tail WAIT is WAIT(7,$60), a line that no field has, so m_262 is not fetched through the unchanged comparator where the normal run is red |
+| `P8` | none impossible | - | - | - | already red on both cores through P8-AFTER, which no input of this package passes; neither unfalsifiable nor a scope decision |
+| `PRE-C-R1LINE` | stimulus red | `C-CR1LINE-PAL` | FAIL | FAIL | WAIT(w_5,$C0) becomes WAIT(w_5+1,$C0), so r1_5 lies on line w_5+1 |
+| `PRE-C-WAITED` | stimulus red | `C-CLATE-PAL` | FAIL | FAIL | the reference of k = 90 is WAIT(u_90,$C4), so the following WAIT(u_90,$B4) is fetched after its target |
+| `P4-A` | stimulus red | `C-CSHIFT-PAL` | FAIL | FAIL | WAIT(u_50,$66) in place of WAIT(u_50,$64), so D_50 changes by 2 slots |
+| `P4-B` | stimulus red | `C-CSHIFTEND-PAL` | FAIL | FAIL | WAIT(u_106,$D6) in place of WAIT(u_106,$D4), so D_106 is not below D_107 |
+| `P4-C` | stimulus red | `C-CNEXT-PAL` | FAIL | FAIL | q_5 is WAIT(w_5+1,$50), so the WAIT of r2_5 is fetched after its target and did not wait |
+| `P4` | stimulus red | `C-CSHIFT-PAL` | FAIL | FAIL | WAIT(u_50,$66) in place of WAIT(u_50,$64), so the aggregate fails through P4-A |
+| `PRE-B-CHAIN` | stimulus red | `B-BCHAIN-PAL` | FAIL | FAIL | the COP1LC moves of L_3 name L_5, so the restart after L_3 fetches L_5 and not L_4 |
+| `PRE-B-L255` | stimulus red | `B-BLATE-PAL` | FAIL | FAIL | in L_1 a WAIT($FF,$E0) and 16 padding moves precede WAIT($FF,h_1), so its second word is fetched on line 256 |
+| `PRE-B-WAITED` | stimulus red | `B-BWAITED-PAL` | FAIL | FAIL | in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the latter is fetched after its target |
+| `P6-LINE255` | stimulus red | `B-B254-PAL` | FAIL | FAIL | in L_2 the first WAIT is for line $FE and a WAIT($FF,$30) follows it, so a_2 lies on line 254 while the preconditions still hold |
+| `P6-CONTROL` | stimulus red | `B-BFEOFF-PAL` | FAIL | FAIL | L_FE waits for ($FF,$FE), so $B300 is not fetched |
+| `P6-LARGEST` | none impossible | - | - | - | already red on both cores: the first word after a pending WAIT is fetched just before the next restart in every field, so x_j is fetched for every h_j above $E2 and no input of this package passes the comparator; neither unfalsifiable nor a scope decision |
+| `P6-NEVER` | none impossible | - | - | - | already red on both cores for the reason of P6-LARGEST: no field of this package has a WAIT that never ends without a fetch before the next restart; neither unfalsifiable nor a scope decision |
+| `PRE-P5-CALLO` | stimulus red | `D-DFLATLO-PAL` | FAIL | FAIL | every plane word of D-lo is $FFFF, so there are no alternating runs |
+| `PRE-P5-CALHI` | stimulus red | `D-DFLATHI-PAL` | FAIL | FAIL | every plane word of D-hi is $FFFF, so there are no alternating runs |
+| `PRE-P5-EDGES` | stimulus red | `D-DDROP-PAL` | FAIL | FAIL | the second MOVE($180,B) of line $50 is left out, so line $50 has no A to B edge |
+| `PRE-P5-WAITED` | stimulus red | `D-DLATE-PAL` | FAIL | FAIL | the second WAIT of line $50 is at $3A, already satisfied when it is fetched |
+| `P5-LO` | stimulus red | `D-DSHIFT-PAL` | FAIL | FAIL | the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 4 * 25 * P_lo while n_$50 is 24 |
+| `P5-HI` | stimulus red | `D-DSHIFT-PAL` | FAIL | FAIL | the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 8 * 25 * P_hi while n_$50 is 24 |
+| `PRE-P9-PLO` | stimulus red | `E-PLOFLAT-PAL` | FAIL | FAIL | the calibration run D-lo has every plane word $FFFF, so P_lo is not valid |
+| `PRE-P9-LINES` | stimulus red | `E-ENOBPL-PAL` | FAIL | FAIL | bitplane DMA is left off, so no output line shows COLOR01 |
+| `PRE-P9-ONE0` | stimulus red | `E-EBLACKGAP-PAL` | FAIL | FAIL | COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line has a second run of 0 |
+| `P9-A-E` | stimulus red | `E-EWIDEWIN-PAL` | FAIL | FAIL | DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo |
+| `P9-A-EW` | stimulus red | `E-EWWIDEWIN-PAL` | FAIL | FAIL | the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo |
+| `P9-A` | stimulus red | `E-EWIDEWIN-PAL` | FAIL | FAIL | DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the aggregate fails through P9-A-E |
+| `P9-B` | stimulus red | `E-EBLACK-PAL` | FAIL | FAIL | COLOR00 = $000, so no COLOR00 pixel is distinguishable from the blanking on either side |
+
+
+### 8.7 Claims
+
+The ids on `PASS:` and `FAIL:` lines of the final run are the asserted claims;
+the ids on `RECORDED:` lines are the declined claims. No id is on both.
+
+Asserted (verdicts on the lines that carry the id):
+
+- `COP2-horizontal-beam-position.c10`: FAIL
+- `COP2-horizontal-beam-position.c11`: FAIL
+- `COP2-horizontal-beam-position.c12`: FAIL
+- `COP2-horizontal-beam-position.c14`: FAIL
+- `COP2-horizontal-beam-position.c15`: PASS
+- `COP2-horizontal-beam-position.c3`: PASS
+- `COP2-horizontal-beam-position.c4`: PASS
+- `COP2-horizontal-beam-position.c5`: PASS
+- `COP2-horizontal-beam-position.c7`: PASS
+- `COP2-horizontal-beam-position.c9`: PASS
+- `COP2-putting-together-a-copper-instruction-list.c7`: PASS
+- `COP2-the-wait-instruction.c22`: PASS
+- `COP2-the-wait-instruction.c23`: PASS
+- `COP2-the-wait-instruction.c26`: FAIL
+- `COP2-the-wait-instruction.c27`: PASS
+- `COP2-the-wait-instruction.c28`: FAIL
+- `COP2-the-wait-instruction.c29`: FAIL
+- `COP2-vertical-beam-position.c11`: FAIL
+- `COP2-vertical-beam-position.c23`: PASS
+- `COP2-vertical-beam-position.c7`: PASS
+- `COP2-vertical-beam-position.c9`: FAIL
+- `ch2-horizontal-beam-position.c4`: PASS
+- `ch2-horizontal-beam-position.c5`: PASS
+- `ch2-horizontal-beam-position.c8`: PASS
+
+Declined on `RECORDED:` lines:
+
+- `COP2-copins-timing.c6`
+- `COP2-horizontal-beam-position.c13`
+- `COP2-horizontal-beam-position.c16`
+- `COP2-horizontal-beam-position.c6`
+- `COP2-horizontal-beam-position.c8`
+- `COP2-putting-together-a-copper-instruction-list.c10`
+- `COP2-putting-together-a-copper-instruction-list.c9`
+- `COP2-using-the-copper-in-interlaced-mode.c2`
+- `COP2-using-the-copper-in-interlaced-mode.c4`
+- `COP2-vertical-beam-position.c10`
+- `COP2-vertical-beam-position.c24`
+- `COP2-vertical-beam-position.c3`
+- `COP2-vertical-beam-position.c4`
+- `ch2-horizontal-beam-position.c14`
+- `ch2-horizontal-beam-position.c6`
+- `ch2-horizontal-beam-position.c7`
+- `ch2-vertical-beam-position.c21`
+
+In both lists: none

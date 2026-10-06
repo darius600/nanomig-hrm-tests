@@ -11,6 +11,7 @@ COP1LCL         equ     $082
 COPJMP1         equ     $088
 BPLCON0         equ     $100
 BPLCON1         equ     $102
+BPLCON2         equ     $104
 DIWSTRT         equ     $08E
 DIWSTOP         equ     $090
 DDFSTRT         equ     $092
@@ -28,8 +29,13 @@ CIAAPRA         equ     $BFE001
 FRAME_INIT      macro
                 move.w  #$7FFF,DMACON(a0)
                 move.w  #$7FFF,INTENA(a0)
+                ifnd    RUN_NOOVL
                 move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
+                endif
+                ifnd    RUN_NOFIX
+                move.w  #$A5C3,RESULTS+2        ; fixture constant
+                endif
                 endm
 
 ; Memory layout (SPECIFICATION.md 3.6).
