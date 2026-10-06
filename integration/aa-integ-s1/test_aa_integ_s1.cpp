@@ -7,7 +7,7 @@
 // precondition and anchor: the input does not depend on the CPU core.
 //
 // Programs (SPECIFICATION.md section 4): prog_bars.s and prog_bars_midrun.s take their configuration block from chip RAM, which the test pokes before boot() (P1-P5); prog_regs.s writes a register list the test pokes (P6-P9, the P15 setup). The files named *_nofix, *_k, *_c,
-// *_same, *_late, *_var, *_early and *_pad* are the contrast builds the MUTATION records name.
+// *_same, *_late, *_var, *_early, *_pad* and *_sync are the contrast builds the MUTATION records name.
 //
 // NMH_MUTATE=<selector> runs one contrast: only the proposition the selector
 // names runs, with the one stimulus the record describes, through the same
@@ -94,17 +94,16 @@
 // MUTATION P13-MAIN stimulus red NMH_MUTATE=P13-MAIN: run Y writes DSKPTH = $0005 (3 bits of A20-A16) in place of $0015; TG68K FAIL, fx68k FAIL.
 // MUTATION P13-RUN stimulus red NMH_MUTATE=P13-RUN: run X writes DMACON = $8200 (DSKEN clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P13-FIXTURE stimulus red NMH_MUTATE=P13-FIXTURE: run X loads prog_disk_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P14-PAIRS stimulus red NMH_MUTATE=P14-PAIRS: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK; TG68K FAIL, fx68k FAIL.
-// MUTATION P14-R2 stimulus red NMH_MUTATE=P14-R2: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added); TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-PHASE.
-// MUTATION P14-U3 stimulus red NMH_MUTATE=P14-U3: run U3 writes BEAMCON0 = $0820 and no VTOTAL (run U0's); TG68K FAIL, fx68k FAIL.
-// MUTATION P14-FIXTURE stimulus red NMH_MUTATE=P14-FIXTURE: run U1 loads prog_dual_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P14-UNIT stimulus red NMH_MUTATE=P14-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2.
+// MUTATION P14-PAIRS stimulus red NMH_MUTATE=P14-PAIRS: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK; TG68K FAIL, fx68k FAIL. TG68K: Also printing FAIL: P14-STEP. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: Also printing FAIL: P14-STEP, P14-POS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-R2 stimulus red NMH_MUTATE=P14-R2: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added); TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-PHASE. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-U3 stimulus red NMH_MUTATE=P14-U3: run U3 writes BEAMCON0 = $0820 and no VTOTAL (run U0's); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P14-MAIN, P14-AGG.
+// MUTATION P14-FIXTURE stimulus red NMH_MUTATE=P14-FIXTURE: run U1 loads prog_dual_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P14.
+// MUTATION P14-UNIT stimulus red NMH_MUTATE=P14-UNIT: the unit run writes BEAMCON0 = $00A0 and HTOTAL = $0040, so no CCK unit is derived; TG68K FAIL, fx68k FAIL. Also printing FAIL: UNIT-R2. Also NOT GRADED: P14.
 // MUTATION P15-V1 stimulus green NMH_MUTATE=P15-V1: live inputs through the same comparators: run V0 loads prog_cpuuh_line.bin (one CPU read of the region per line in place of the UHRES pointer) and run V1 loads prog_cpuuh_57.bin (one per 57 CCK); TG68K PASS, fx68k PASS.
-// MUTATION P15-V0 stimulus green NMH_MUTATE=P15-V0: live input through the same comparator: run V0 loads prog_cpuuh_line.bin (one CPU read of the region per line in place of the UHRES pointer); TG68K PASS, fx68k PASS. Also printing FAIL: P15-V1.
-// MUTATION P15-FIXTURE stimulus red NMH_MUTATE=P15-FIXTURE: run V0 loads prog_uhres_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P15-R2 stimulus red NMH_MUTATE=P15-R2: run V0 writes BEAMCON0 = $00A0, HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK; TG68K FAIL, fx68k FAIL.
-// MUTATION P15-F3 stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(); TG68K FAIL, fx68k FAIL.
-// MUTATION P15-R3 stimulus red NMH_MUTATE=P15-R3: run V0 places the second marker at line $99 instead of $98; TG68K FAIL, fx68k FAIL.
+// MUTATION P15-FIXTURE stimulus red NMH_MUTATE=P15-FIXTURE: run V0 loads prog_uhres_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15.
+// MUTATION P15-R2 stimulus red NMH_MUTATE=P15-R2: run V0 writes BEAMCON0 = $00A0, HTOTAL = $00E8 and VTOTAL = $0138: lines of 233 CCK; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15-R3, P15.
+// MUTATION P15-F3 stimulus red NMH_MUTATE=P15-F3: run V0 ends 3,300,000 cycles after boot(); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15-R3, P15.
+// MUTATION P15-R3 stimulus red NMH_MUTATE=P15-R3: run V0 places the second marker at line $99 instead of $98; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P15.
 // MUTATION P2A1-PF1H2 stimulus red NMH_MUTATE=P2A1-PF1H2: the FMODE = $0000 (a1) test run writes the neighbouring bit $0002 in place of $0001; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF1H3 stimulus red NMH_MUTATE=P2A1-PF1H3: the FMODE = $0000 (a1) test run writes the neighbouring bit $0001 in place of $0002; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF1H4 stimulus red NMH_MUTATE=P2A1-PF1H4: the FMODE = $0000 (a1) test run writes the neighbouring bit $0002 in place of $0004; TG68K FAIL, fx68k FAIL.
@@ -146,13 +145,14 @@
 // MUTATION P4b-C1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P4b-C2 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P5 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
-// MUTATION P14-POS none impossible no stimulus makes the precondition green: a CPU sampler samples only 113 (TG68K) and 109 (fx68k) of the 227 line positions in run U1, and no sampling loop of the CPU reaches the others
-// MUTATION P14-U1 none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
-// MUTATION P14-U2 none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
-// MUTATION P14-REL none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
-// MUTATION P14-MAIN none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
-// MUTATION P14-AGG none impossible not graded in any run: the precondition P14-POS prints FAIL on both cores, so this line prints NOT GRADED and no stimulus reaches its comparator
-// MUTATION P14-PHASE none impossible unfalsifiable at this boundary: the line compares the phases of the sample times of a CPU loop, whose period varies by one colour clock between samples; a stimulus that confines the phases to fewer than HTOTAL+1 values would need a loop of fixed period, which a CPU loop does not give
+// MUTATION P14-PHASE stimulus red NMH_MUTATE=P14-PHASE: run U1 writes BEAMCON0 = $08E0 (VARBEAMEN added): the lines are as long as the secondary counter's period and the sample times no longer take every phase; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-R2. Also NOT GRADED: P14-POS, P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-STEP stimulus red NMH_MUTATE=P14-STEP: run U1 loads prog_dual_pad121.bin: a loop body of 121 CCK, longer than HTOTAL+1; TG68K FAIL, fx68k FAIL. TG68K: Also printing FAIL: P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-AGG. fx68k: Also printing FAIL: P14-POS, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-POS stimulus red NMH_MUTATE=P14-POS: run U1 loads prog_dual_sync.bin, which waits for the main counter's H8-H1 to lie in $20-$2F before each sample: one sample per line, so U1 samples a few R2-relative positions and not those of U2 and U0; TG68K FAIL, fx68k FAIL. Also printing FAIL: P14-STEP, P14-PAIRS. Also NOT GRADED: P14-U1, P14-U2, P14-REL, P14-MAIN, P14-AGG.
+// MUTATION P14-U1 stimulus green NMH_MUTATE=P14-U1: live input through the same comparator: P14-U1 evaluates U0's VHPOSR samples, a counter that restarts at the line length R2 measures less 1, in place of U1's HHPOSR samples; TG68K PASS, fx68k PASS.
+// MUTATION P14-U2 stimulus green NMH_MUTATE=P14-U2: live input through the same comparator: P14-U2 evaluates U0's VHPOSR samples, a counter that restarts at the line length R2 measures less 1, in place of U2's HHPOSR samples; TG68K PASS, fx68k PASS.
+// MUTATION P14-REL stimulus green NMH_MUTATE=P14-REL: live input through the same comparator: P14-REL evaluates the qualifying pairs of U0's VHPOSR samples modulo the line length R2 measures in place of those of U1's and U2's HHPOSR samples; TG68K PASS, fx68k PASS.
+// MUTATION P14-MAIN stimulus red NMH_MUTATE=P14-MAIN: the VHPOSR samples of run U2 are replaced by those of run U3 (VARBEAMEN, HTOTAL = $0040), whose maximum differs from U0's; TG68K FAIL, fx68k FAIL.
+// MUTATION P14-AGG stimulus green NMH_MUTATE=P14-AGG: live input through the same line: P14-U1, P14-U2 and P14-REL evaluate U0's VHPOSR samples as in their own selectors, P14-MAIN the runs as they are; TG68K PASS, fx68k PASS. Also printing PASS: P14-U1, P14-U2, P14-REL.
 
 #include <cstdio>
 #include <cstdlib>
@@ -1972,14 +1972,13 @@ DualRun run_dual(const std::string& bin, uint16_t beamcon0, uint16_t htotal, uin
 }
 
 void prop_p14(Checks& checks, Grader& g) {
-    const uint16_t u1_htotal = mutating("P14-U1") ? 0x0070 : mutating("P14-REL") ? 0x0050 : 0x0040;
-    const uint16_t u2_htotal = mutating("P14-U2") ? 0x0040 : 0x0070;
-    // the contrasts: a loop period of two lines (PAIRS); VARBEAMEN
-    // lines in U1 (R2) or in U2 (MAIN); U3 without VARBEAMEN (U3)
-    const char* u1bin = mutating("P14-PAIRS") ? "prog_dual_pad121.bin" : mutating("P14-FIXTURE") ? "prog_dual_nofix.bin" : "prog_dual.bin";
-    const uint64_t u1cyc = mutating("P14-PAIRS") ? 3'700'000 : 3'100'000;
-    DualRun u1 = run_dual(u1bin, mutating("P14-R2") ? 0x08E0 : 0x0860, u1_htotal, u1cyc);
-    DualRun u2 = run_dual("prog_dual.bin", mutating("P14-MAIN") ? 0x08E0 : 0x0860, u2_htotal, 3'100'000);
+    // The contrasts (selectors) are described by the MUTATION records at the head of this file.
+    const bool pad = mutating("P14-PAIRS") || mutating("P14-STEP");
+    const char* u1bin = mutating("P14-POS") ? "prog_dual_sync.bin" : pad ? "prog_dual_pad121.bin" : mutating("P14-FIXTURE") ? "prog_dual_nofix.bin" : "prog_dual.bin";
+    const uint64_t u1cyc = mutating("P14-POS") ? 6'000'000 : pad ? 3'700'000 : 3'100'000;
+    const bool u1_var = mutating("P14-R2") || mutating("P14-PHASE");
+    DualRun u1 = run_dual(u1bin, u1_var ? 0x08E0 : 0x0860, 0x0040, u1cyc);
+    DualRun u2 = run_dual("prog_dual.bin", 0x0860, 0x0070, 3'100'000);
     DualRun u0 = run_dual("prog_dual.bin", 0x0820, 0x0040, 3'100'000);
     DualRun u3 = run_dual("prog_dual.bin", mutating("P14-U3") ? 0x0820 : 0x08A0, 0x0040, 3'100'000, !mutating("P14-U3"));
     DualRun* all[4] = {&u1, &u2, &u0, &u3};
@@ -2005,74 +2004,115 @@ void prop_p14(Checks& checks, Grader& g) {
     checks.note("P14 distances between consecutive samples (CCK x count): U1" + period_hist(u1) + "; U2" + period_hist(u2));
     bool ph = phase_ok(u1, 0x40) && phase_ok(u2, 0x70);
     g.expect(ph, "P14-PHASE: precondition: in U1 and U2 the sample times in CCK taken modulo HTOTAL+1 take every value from 0 to HTOTAL");
-    std::string pos_note;
-    auto pos_ok = [&](const DualRun& d, const char* name) {
+    auto step_ok = [&](const DualRun& d, unsigned htotal) {
+        for (int i = 1; i < 1024; ++i) if ((d.t[i] - d.t[i - 1]) / g_K >= htotal + 1) return false;
+        return true;
+    };
+    bool stepok = step_ok(u1, 0x40) && step_ok(u2, 0x70);
+    g.expect(stepok, "P14-STEP: precondition: in U1 and U2 every distance between two consecutive samples is shorter than HTOTAL+1 CCK, so a counter that restarts at HTOTAL restarts between some two consecutive samples");
+
+    // P14-POS: the sample positions within the R2 line, per run
+    auto pos_set = [&](const DualRun& d) {
         std::set<unsigned> seen;
         for (int i = 0; i < 1024; ++i) {
             int64_t ln = line_of(d.r2, d.t[i]);
             if (ln < 0) continue;
             seen.insert(unsigned((d.t[i] - d.r2.start[ln]) / g_K));
         }
-        std::string missing;
-        for (unsigned p = 0; p < 227; ++p) if (!seen.count(p)) missing += " " + dec(p);
-        pos_note += std::string(" ") + name + ": " + dec((long long)seen.size()) + " of 227 positions, missing:" + (missing.empty() ? " none" : missing) + ";";
-        return seen.size() >= 227;
+        return seen;
     };
-    bool pos = pos_ok(u1, "U1") & pos_ok(u2, "U2") & pos_ok(u0, "U0");
-    checks.note("P14 sample positions within the R2 line:" + pos_note);
-    g.expect(pos, "P14-POS: precondition: in U1, U2 and U0 the sample times take every CCK position of the 227 within their R2 line");
-    // qualifying pairs
-    std::vector<uint64_t> rt[3];
-    const DualRun* ds[3] = {&u1, &u2, &u0};
-    for (int di = 0; di < 3; ++di)
-        for (uint64_t st : ds[di]->r2.start) for (int k = 0; k < 4; ++k) rt[di].push_back(st + 2 * k * g_K);
-    auto refresh_between = [&](const DualRun& d, uint64_t a, uint64_t b) {
-        const std::vector<uint64_t>& v = (&d == &u1) ? rt[0] : (&d == &u2) ? rt[1] : rt[2];
-        auto it = std::upper_bound(v.begin(), v.end(), a);
-        return it != v.end() && *it < b;
+    std::set<unsigned> ps1 = pos_set(u1), ps2 = pos_set(u2), ps0 = pos_set(u0);
+    checks.note("P14 sample positions within the R2 line: U1 " + dec((long long)ps1.size()) + ", U2 " + dec((long long)ps2.size()) + ", U0 " + dec((long long)ps0.size()) + " of 227 positions");
+    std::string missing;
+    for (unsigned p = 0; p < 227; ++p) if (!ps1.count(p)) missing += " " + dec(p);
+    checks.note("P14 positions of the R2 line that U1 does not sample:" + (missing.empty() ? std::string(" none") : missing));
+    bool pos = r2ok && ps1 == ps2 && ps2 == ps0;
+    dep_expect(checks, r2ok, pos, "P14-POS: precondition: U0, U1 and U2 sample the same set of R2-relative positions (the sample time modulo the R2 line, in CCK)", "R2 anchor");
+
+    // the restart of a counter: the first sample that is smaller than its predecessor
+    auto first_restart = [&](const std::vector<uint8_t>& v) { for (int i = 1; i < 1024; ++i) if (v[i] < v[i - 1]) return i; return -1; };
+    struct TopRes { int restart = -1; bool ok = false; unsigned mx = 0; bool mid = false; };
+    auto cmp_top = [&](const std::vector<uint8_t>& v, unsigned top, unsigned mid_lo) {
+        TopRes r; r.restart = first_restart(v);
+        if (r.restart < 0) return r;
+        bool within = true;
+        for (int i = r.restart; i < 1024; ++i) {
+            within = within && v[i] <= top;
+            r.mx = std::max<unsigned>(r.mx, v[i]);
+            if (v[i] > mid_lo && v[i] <= top) r.mid = true;
+        }
+        r.ok = within && r.mx == top;
+        return r;
     };
-    struct Rel { size_t pairs = 0, bad = 0, notwhole = 0; };
-    auto rel = [&](const DualRun& d, unsigned htotal) {
-        Rel r;
+    // refresh accesses of a run, as port times
+    auto refresh_times = [&](const DualRun& d) { std::vector<uint64_t> v; for (uint64_t st : d.r2.start) for (int k = 0; k < 4; ++k) v.push_back(st + 2 * k * g_K); return v; };
+    // qualifying pairs of a sample series: T the store times of the series, P the store that precedes the first
+    // sample's read in program order (P[i - poff]); a pair qualifies when no refresh access lies between that store and T[i+1]
+    struct Rel { size_t pairs = 0, notwhole = 0, post = 0, bad = 0; int restart = -1; };
+    auto rel = [&](const DualRun& d, const std::vector<uint8_t>& v, const std::vector<uint64_t>& T, const std::vector<uint64_t>& P, int poff, unsigned top) {
+        Rel r; r.restart = first_restart(v);
+        std::vector<uint64_t> rt = refresh_times(d);
         for (int i = 1; i + 1 < 1024; ++i) {
-            if (refresh_between(d, d.tm[i - 1], d.t[i + 1])) continue;
+            uint64_t a = P[i - poff], b = T[i + 1];
+            auto it = std::upper_bound(rt.begin(), rt.end(), a);
+            if (it != rt.end() && *it < b) continue;
             ++r.pairs;
-            uint64_t dt = d.t[i + 1] - d.t[i];
+            uint64_t dt = T[i + 1] - T[i];
             if (dt % g_K != 0) { ++r.notwhole; continue; }
-            int lhs = ((int)d.h[i + 1] - (int)d.h[i]) % (int)(htotal + 1); if (lhs < 0) lhs += htotal + 1;
-            int rhs = (int)((dt / g_K) % (htotal + 1));
+            if (r.restart < 0 || i < r.restart) continue;
+            ++r.post;
+            int lhs = ((int)v[i + 1] - (int)v[i]) % (int)(top + 1); if (lhs < 0) lhs += top + 1;
+            int rhs = (int)((dt / g_K) % (top + 1));
             if (lhs != rhs) ++r.bad;
         }
         return r;
     };
-    Rel r1 = rel(u1, 0x40), r2 = rel(u2, 0x70);
-    checks.note("P14 qualifying pairs: U1 " + dec((long long)r1.pairs) + " (" + dec((long long)r1.notwhole) + " not a whole number of CCK, " + dec((long long)r1.bad) + " differ), U2 " +
-                dec((long long)r2.pairs) + " (" + dec((long long)r2.notwhole) + ", " + dec((long long)r2.bad) + ")");
+    Rel r1 = rel(u1, u1.h, u1.t, u1.tm, 1, 0x40), r2 = rel(u2, u2.h, u2.t, u2.tm, 1, 0x70);
+    checks.note("P14 qualifying pairs: U1 " + dec((long long)r1.pairs) + " (" + dec((long long)r1.notwhole) + " not a whole number of CCK; " + dec((long long)r1.post) + " after the first restart, " + dec((long long)r1.bad) + " differ), U2 " +
+                dec((long long)r2.pairs) + " (" + dec((long long)r2.notwhole) + "; " + dec((long long)r2.post) + ", " + dec((long long)r2.bad) + ")");
     bool pairs = r1.pairs > 0 && r2.pairs > 0 && r1.notwhole == 0 && r2.notwhole == 0;
     g.expect(pairs, "P14-PAIRS: precondition: in U1 and U2 qualifying pairs exist (no refresh access between the last store of the previous sample and the store of h of the second sample) and for each of them the difference of the two store times is a whole number of CCK");
-    unsigned mx1 = 0, mx2 = 0, mxm0 = 0, mxm1 = 0, mxm2 = 0, mxm3 = 0, mw1 = 0, mw2 = 0; bool mid = false;
+    unsigned mxm0 = 0, mxm1 = 0, mxm2 = 0, mxm3 = 0, mn3 = 255, mw1 = 0, mw2 = 0;
     for (int i = 0; i < 1024; ++i) {
-        mx1 = std::max<unsigned>(mx1, u1.h[i]); mx2 = std::max<unsigned>(mx2, u2.h[i]);
         mw1 = std::max<unsigned>(mw1, u1.hw[i]); mw2 = std::max<unsigned>(mw2, u2.hw[i]);
         mxm0 = std::max<unsigned>(mxm0, u0.m[i]); mxm1 = std::max<unsigned>(mxm1, u1.m[i]); mxm2 = std::max<unsigned>(mxm2, u2.m[i]); mxm3 = std::max<unsigned>(mxm3, u3.m[i]);
-        if (u2.h[i] > 0x40 && u2.h[i] <= 0x70) mid = true;
+        mn3 = std::min<unsigned>(mn3, u3.m[i]);
     }
-    checks.note("P14 measured: largest whole HHPOSR word U1=$" + hexw(mw1) + " U2=$" + hexw(mw2));
-    checks.note("P14 measured: max h U1=$" + hexw(mx1, 2) + " U2=$" + hexw(mx2, 2) + "; max m U0=$" + hexw(mxm0, 2) + " U1=$" + hexw(mxm1, 2) + " U2=$" + hexw(mxm2, 2) + " U3=$" + hexw(mxm3, 2));
+    TopRes ru1 = cmp_top(u1.h, 0x40, 0x40), ru2 = cmp_top(u2.h, 0x70, 0x40);
+    checks.note("P14 measured: first restart sample U1 " + dec(ru1.restart) + ", U2 " + dec(ru2.restart) + "; largest whole HHPOSR word U1=$" + hexw(mw1) + " U2=$" + hexw(mw2));
+    checks.note("P14 measured: max h after the first restart U1=$" + hexw(ru1.mx, 2) + " U2=$" + hexw(ru2.mx, 2) + "; max m U0=$" + hexw(mxm0, 2) + " U1=$" + hexw(mxm1, 2) + " U2=$" + hexw(mxm2, 2) + " U3=$" + hexw(mxm3, 2) + " (U3 min $" + hexw(mn3, 2) + ")");
     // the contrast of the main-counter comparison: U3's max m differs from U0's
-    g.expect(mxm3 != mxm0, "P14-U3: precondition: with VARBEAMEN and HTOTAL = $0040 (run U3) the main counter's maximum m differs from run U0's, so the main-counter comparison can go red");
-    if (!(r2ok && ph && pos && pairs)) { not_graded(checks, "P14 assertions", "R2 anchor, phase, position or qualifying-pair precondition"); return; }
-    bool u1ok = true, u2ok = true;
-    for (int i = 0; i < 1024; ++i) { u1ok = u1ok && u1.h[i] <= 0x40; u2ok = u2ok && u2.h[i] <= 0x70; }
-    u1ok = u1ok && mx1 == 0x40;
-    u2ok = u2ok && mx2 == 0x70 && mid;
-    g.expect(u1ok, "P14-U1: with DUAL set and HTOTAL = $0040 every h read from HHPOSR bits 7-0 is at most $40 and the maximum is $40");
-    g.expect(u2ok, "P14-U2: with DUAL set and HTOTAL = $0070 every h is at most $70, the maximum is $70 and values between $40 and $70 occur");
-    bool relok = r1.bad == 0 && r2.bad == 0;
-    g.expect(relok, "P14-REL: in U1 and U2, for every qualifying pair of consecutive samples, the difference of the h values modulo HTOTAL+1 equals the elapsed whole CCK modulo HTOTAL+1, exactly");
-    bool mainok = mxm0 == mxm1 && mxm1 == mxm2;
-    g.expect(mainok, "P14-MAIN: the maximum of the main counter's m (VHPOSR bits 7-0) is the same in U0, U1 and U2: DUAL leaves the line length of the main counter unchanged");
-    g.expect(u1ok && u2ok && relok && mainok, "P14-AGG sol:AA-hhpos.c1 sol:AA-hhpos.c5: with DUAL set HHPOSR reads a second horizontal counter that counts colour clocks from 0 to HTOTAL and restarts, while the main counter keeps its line (AA p.24 'secondary beam counter', 'Highest color clock count in horiz line')");
+    bool u3ok = mxm3 != mxm0;
+    g.expect(u3ok, "P14-U3: precondition: with VARBEAMEN and HTOTAL = $0040 (run U3) the main counter's maximum m differs from run U0's, so the main-counter comparison can go red");
+
+    // live input of the contrasts: U0's VHPOSR samples, a main counter that restarts at the line length measured by R2
+    const bool ctl_ok = u0.r2.ok && u0.r2.gap_max - u0.r2.gap_min < 0.5;
+    const unsigned ctl_top = ctl_ok ? unsigned(std::llround(u0.r2.gap_min)) - 1 : 0;
+
+    // ---- the graded lines, each on its own preconditions ----
+    const bool dep_u1 = r2ok && ph && stepok, dep_rel = r2ok && pairs && stepok, dep_main = r2ok && pos && u3ok;
+    bool u1ok = false, u2ok = false, relok = false, mainok = false;
+    if (dep_u1) {
+        TopRes a = (mutating("P14-U1") || mutating("P14-AGG")) ? cmp_top(u0.m, ctl_top, 0x40) : ru1;
+        TopRes b = (mutating("P14-U2") || mutating("P14-AGG")) ? cmp_top(u0.m, ctl_top, 0x40) : ru2;
+        u1ok = a.ok; u2ok = b.ok && b.mid;
+    }
+    dep_expect(checks, dep_u1, u1ok, "P14-U1: with DUAL set and HTOTAL = $0040 the counter restarts and, from its first restart, every h read from HHPOSR bits 7-0 is at most $40 and the maximum is $40", "R2 anchor, phase or step precondition");
+    dep_expect(checks, dep_u1, u2ok, "P14-U2: with DUAL set and HTOTAL = $0070 the counter restarts and, from its first restart, every h is at most $70, the maximum is $70 and values between $40 and $70 occur", "R2 anchor, phase or step precondition");
+    if (dep_rel) {
+        Rel a = r1, b = r2;
+        if (mutating("P14-REL") || mutating("P14-AGG")) { a = rel(u0, u0.m, u0.tm, u0.t, 0, ctl_top); b = a; }
+        relok = a.restart >= 0 && b.restart >= 0 && a.post > 0 && b.post > 0 && a.bad == 0 && b.bad == 0;
+    }
+    dep_expect(checks, dep_rel, relok, "P14-REL: in U1 and U2 the counter restarts and, for every qualifying pair of consecutive samples from its first restart, the difference of the h values modulo HTOTAL+1 equals the elapsed whole CCK modulo HTOTAL+1, exactly", "R2 anchor, qualifying-pair or step precondition");
+    if (dep_main) {
+        unsigned m2 = mutating("P14-MAIN") ? mxm3 : mxm2;
+        mainok = mxm0 == mxm1 && mxm1 == m2;
+    }
+    dep_expect(checks, dep_main, mainok, "P14-MAIN: the maximum of the main counter's m (VHPOSR bits 7-0) is the same in U0, U1 and U2: DUAL leaves the line length of the main counter unchanged", "R2 anchor, position or U3 precondition");
+    if (dep_u1 && dep_rel && dep_main)
+        g.expect(u1ok && u2ok && relok && mainok, "P14-AGG sol:AA-hhpos.c1 sol:AA-hhpos.c5: with DUAL set HHPOSR reads a second horizontal counter that counts colour clocks from 0 to HTOTAL and restarts, while the main counter keeps its line (AA p.24 'secondary beam counter', 'Highest color clock count in horiz line')");
+    else not_graded(checks, "P14-AGG", "preconditions of P14-U1, P14-U2, P14-REL or P14-MAIN");
 }
 
 // ---- P15: DUAL and the UHRES pointer -----------------------------------------
@@ -2149,9 +2189,9 @@ void prop_p15(Checks& checks, Grader& g) {
     bool v0pat = v0.idx_a && v0.idx_b && m0.size() == size_t(*v0.idx_b - *v0.idx_a + 1) && m0.size() >= 40;
     for (auto& kv : m0) v0pat = v0pat && kv.second.size() == 1;
     for (size_t i = 1; i < v0.acc.size(); ++i) v0pat = v0pat && v0.acc[i].addr - v0.acc[i - 1].addr == 8;
-    g.expect(v0pat, "P15-V0: precondition: with DUAL clear (V0) exactly one UHRES access occurs on each of at least 40 lines between markers $68 and $98, consecutive accesses 8 bytes apart (AA p.15: BPLHMOD plus 2)");
-    checks.note("P15 V0: " + dec((long long)v0.acc.size()) + " accesses on " + dec((long long)m0.size()) + " lines; V1: " + dec((long long)v1.acc.size()) + " accesses on " + dec((long long)m1.size()) + " lines");
-    if (!v0pat) { not_graded(checks, "P15-V1", "V0 does not show the one-per-line UHRES pattern"); return; }
+    checks.note("P15-V0: with DUAL clear (V0) exactly one UHRES access on each of at least 40 lines between markers $68 and $98, consecutive accesses 8 bytes apart (AA p.15: BPLHMOD plus 2): " + std::string(v0pat ? "shown" : "not shown") +
+                "; " + dec((long long)v0.acc.size()) + " accesses on " + dec((long long)m0.size()) + " lines in V0, " + dec((long long)v1.acc.size()) + " accesses on " + dec((long long)m1.size()) + " lines in V1");
+    if (!v0pat) { not_graded(checks, "P15-V1", "V0 does not show the one-per-line access pattern, the condition under which the specification makes P15 checkable"); return; }
     bool v1ok = v1.idx_a && v1.idx_b && m1.size() == size_t(*v1.idx_b - *v1.idx_a + 1) && m1.size() >= 40;
     for (auto& kv : m1) v1ok = v1ok && kv.second.size() >= 3;
     for (size_t i = 1; i < v1.acc.size(); ++i) {
