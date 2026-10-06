@@ -5,7 +5,9 @@
 ; CPU write below $80000 (nanomig_harness.h's address-space notes).
 ;
 ; Flags: NTSC_MODE (BEAMCON0 carries the NTSC value); N_V2 (VBSTRT/VBSTOP
-; use N=$B0 instead of $A0, and the poll threshold below follows).
+; use N=$B0 instead of $A0, and the poll threshold below follows). No page gives
+; the bit layout of VBSTRT and VBSTOP, so the line is written in the low bits and
+; in the high byte alike: VBSTRT = N*$101, VBSTOP = (N+8)*$101.
 ;
 ; Four times: poll INTREQR bit 5 (VERTB), clear it, store the iteration
 ; index as a marker, poll VHPOSR's V7-V0 field until it reaches N-3 (both N
@@ -17,8 +19,12 @@
 
         ifd     N_V2
 N_VAL           equ     $B0
+VB_START        equ     $B0B0
+VB_STOP         equ     $B8B8
         else
 N_VAL           equ     $A0
+VB_START        equ     $A0A0
+VB_STOP         equ     $A8A8
         endc
 
         org     PROGRAM_ORG
@@ -39,8 +45,8 @@ start:
         move.w  #$00D0,DDFSTOP(a0)
         move.w  #0,BPL1MOD(a0)
 
-        move.w  #N_VAL,VBSTRT(a0)
-        move.w  #N_VAL+8,VBSTOP(a0)
+        move.w  #VB_START,VBSTRT(a0)
+        move.w  #VB_STOP,VBSTOP(a0)
 
         ifd     MUT_NO_VARVBEN
         ifd     NTSC_MODE
@@ -64,10 +70,7 @@ start:
         endc
         endc
 
-        move.l  #COP_LIST_ADDR,d0
-        move.w  d0,COP1LCL(a0)
-        swap    d0
-        move.w  d0,COP1LCH(a0)
+        move.l  #COP_LIST_ADDR,COP1LCH(a0)  ; COP1LC, one long-word write to COP1LCH
         move.w  #0,COPJMP1(a0)         ; strobe: load Copper PC from COP1LC
         ifd     MUT_NOBPLEN
         move.w  #$8280,DMACON(a0)      ; P5-a contrast: BPLEN not set

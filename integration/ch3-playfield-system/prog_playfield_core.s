@@ -15,6 +15,7 @@
 ;                otherwise only COLOR00=C0, COLOR01=C1 (configs A, B, E)
 ;   MUT_MOD2     P2-b contrast: BPL1MOD = $0002 instead of $0000
 ;   MUT_NOBPLEN  P1-c contrast: DMACON without BPLEN
+;   MUT_WRONGSTD P1-e contrast: BEAMCON0 bit 5 opposite the configured standard
 ;   MUT_VSTOPLOW P2 item-1 contrast: DIWSTOP's VSTOP one line lower
 ;   MUT_RIGHTEDGE P2 item-3 contrast: window 32 pixels wider, 21 words per
 ;                line fetched, BPL1MOD = -2
@@ -100,10 +101,15 @@ start:
         endc
         move.w  #0,BPL2MOD(a0)
 
-        move.l  #COP_LIST_ADDR,d0
-        move.w  d0,COP1LCL(a0)
-        swap    d0
-        move.w  d0,COP1LCH(a0)
+        ifd     MUT_WRONGSTD
+        ifd     NTSC_MODE
+        move.w  #$0020,BEAMCON0(a0)    ; P1-e contrast: PAL bit set, configured NTSC
+        else
+        move.w  #$0000,BEAMCON0(a0)    ; P1-e contrast: PAL bit clear, configured PAL
+        endc
+        endc
+
+        move.l  #COP_LIST_ADDR,COP1LCH(a0)  ; COP1LC, one long-word write to COP1LCH
         move.w  #0,COPJMP1(a0)         ; strobe: load Copper PC from COP1LC
         ifd     MUT_NOBPLEN
         move.w  #$8280,DMACON(a0)      ; P1-c contrast: BPLEN not set

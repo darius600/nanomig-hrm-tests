@@ -21,6 +21,10 @@
 ;                       preloaded by the test) and start the Copper
 ;   MUT_NOPOLL         P3-L/P4-L contrast: the INTREQR polling loop is replaced
 ;                       by a fixed delay
+;   MUT_LATE_MARKER    P3-b contrast: a delay of about 26 lines (1200 DBRA
+;                       iterations of 10 processor cycles) between the VERTB
+;                       detection and the marker store, so the read window lies
+;                       beyond vertical position 19
 ;
 ; Five times: poll INTREQR bit 5 (VERTB), clear it, store the iteration
 ; index as a marker, then read VPOSR/VHPOSR (as one long word, p.216) a
@@ -44,10 +48,7 @@ start:
         move.w  #$7FFF,INTREQ(a0)
 
         ifd     MUT_COPPER_BPLCON0
-        move.l  #COP_LIST_ADDR,d0
-        move.w  d0,COP1LCL(a0)
-        swap    d0
-        move.w  d0,COP1LCH(a0)
+        move.l  #COP_LIST_ADDR,COP1LCH(a0)  ; COP1LC, one long-word write to COP1LCH
         move.w  #0,COPJMP1(a0)         ; strobe: load Copper PC from COP1LC
         move.w  #$8280,DMACON(a0)      ; SET/CLR, COPEN, DMAEN (no BPLEN)
         endc
@@ -102,6 +103,11 @@ start:
         bne.s   .noextra
         move.w  #$0000,BPLCON0(a0)     ; P3-d contrast: an extra write to $DFF100
 .noextra:
+        endc
+
+        ifd     MUT_LATE_MARKER
+        move.w  #1200-1,d1
+.late:  dbra    d1,.late
         endc
 
         move.w  d6,(a1)+               ; marker: the iteration index
