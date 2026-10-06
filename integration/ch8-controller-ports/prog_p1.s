@@ -7,7 +7,7 @@
 ; except the K5 variant, which is the same binary run under a different
 ; harness stimulus (no separate source needed).
 ;
-; K1, K3, K4, K6 and OUTLOW are compiled-in variants (this source with a
+; K1, K3, K4, K6, K7 and OUTLOW are compiled-in variants (this source with a
 ; symbol set, included by prog_p1_k1.s etc.), because they change a value
 ; the CPU instruction stream itself writes or a wait target baked into the
 ; code -- not something the harness can vary at its ports. K2 is already
@@ -44,6 +44,9 @@ WSTEP           macro
                 move.w  #\1,POTGO(a0)
                 READV
                 move.w  d1,(a1)+        ; Vw1
+                ifd     K7
+                WAITV   9               ; K7: the M1 marker is stored five lines late
+                endif
                 move.w  #MARK_M1,(a1)+  ; M1
                 endm
 
@@ -64,6 +67,9 @@ WSTEP_RPRE      macro
                 endif
                 READV
                 move.w  d1,(a1)+        ; Vw1
+                ifd     K7
+                WAITV   9               ; K7: the M1 marker is stored five lines late
+                endif
                 move.w  #MARK_M1,(a1)+  ; M1
                 endm
 
