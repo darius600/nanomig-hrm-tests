@@ -61,7 +61,7 @@ A claim id goes on a proposition only if the proposition grades the whole claim.
 
 - The AA chip set is selected (`Config.chipset_config = 0x10`), with 2 MB of Chip memory (`Config.memory_config` default). No proposition depends on whether the harness runs PAL or NTSC.
 - Drive 0 exists: `Config.floppy_config` is set to a value, taken from the harness's documented `Config` values, that configures drive 0. The builder states the value chosen in this specification. No disk image is mounted: the harness serves none, and `sdc_img_mounted` stays 0. With a drive configured, p.23's DMAON, "DMAEN(DSKLEN) & DMAEN(DMACON) & DSKEN(DMACON)", which has no drive term, decides whether disk DMA runs (C2, F9). Only if no documented value configures a drive at all are C2 and F9 NOT-CHECKABLE. No other proposition depends on the drive.
-- The package is graded on the TG68K build only, built with `ENABLE_AGA`, NanoMig's AGA configuration (`nanomig.mk`). The fx68k build has no `ENABLE_AGA`, NanoMig's non-AGA configuration. It runs the same programs; its results are recorded, not graded. No proposition depends on the fx68k build having an AA feature. Both cores run as a 68000 (`Config.cpu_config = 0`).
+- The package is graded on both CPU cores, fx68k and TG68K. Every run sets `Config.chipset_config = 0x10`, which selects the AA chip set on either core; the harness default is 0x08 (ECS). The define `ENABLE_AGA` appears only in the board top files, where it sets the AGA menu parameter of the system control: neither `src/minimig-aga` nor the harness uses it, and the AA selection of the chip set is the `chipset_config` port. Both cores run as a 68000 (`Config.cpu_config = 0`).
 - Programs are assembled for the 68000 (vasm's default CPU, no `-m68010` or higher), so every register write of 0x0000 in this document is a `MOVE`, a single write cycle, and never a `CLR`, which reads the address first. The propositions write 0 to write-only registers (DSKLEN, VPOSW, POTGO, JOYTEST, COPCON), and no page says what a read of such an address does.
 - Custom registers are addressed at 0xDFF000 plus the offset printed on p.6-10.
 - Addresses in this document are byte addresses. The memory port reports word addresses; compare a byte address `a` with the port's word address `a/2`. The harness guarantees that equality only in the identity-mapped Chip RAM 0x080000-0x1FFFFF (`nanomig_harness.h`, `kChipIdentityLo`/`kChipIdentityHi`), which is why every address in this document lies there. `[a, b)` is the byte range from `a` up to, but not including, `b`.
@@ -839,3 +839,72 @@ Drive 0 is configured and no disk image is mounted (section 1.1). If no document
 | AUD0DAT-AUD3DAT | `W` | opus:/sol:AA-aud<n>dat.c2 | F7 |
 | BLTADAT, BLTBDAT, BLTCDAT, BLTDDAT | `&` | opus:/sol:AA-bltadat.c4, -bltbdat.c4, -bltcdat.c4, -bltddat.c4 | 0.3 (declined; F8 grades the DMA part) |
 | DSKDAT | `&` | opus:/sol:AA-dskdat.c4 | 0.3 (declined; F9 grades the DMA part) |
+
+
+---
+
+## 6. Build
+
+This section states what the programs, the test and the placement of the regions add to sections 0-5. It changes no proposition, stimulus or expected value of those sections.
+
+### 6.1 Files
+
+| File | Content |
+|---|---|
+| `prog_run.s`, `prog_run_nofix.s` | The one stimulus program. It executes a script that the test places in Chip memory before the run, and ends with `DONE`. `prog_run_nofix.s` is the same program without the store of the constant `$BEEF` at `RESULTS`. Assembled for the 68000. Every custom register is written by one `MOVE.W` of a script word, or by one `MOVE.L` on a pointer pair; no `CLR` and no read-modify-write instruction is used. |
+| `s7_core.h` | The script builder, a run that captures the RAM port, the `refresh` output, the video and audio samples, the markers, and the attribution of reads of section 1.6. |
+| `s7_c.h`, `s7_ceval.h`, `s7_cprops.h`, `s7_c12.h` | The Copper-case procedure of section 1.9 and the propositions C1-C12. |
+| `s7_f1.h`, `s7_f2.h`, `s7_f6.h` | The propositions F1-F9. |
+| `test_aa_integ_s7.cpp` | `main`, the claim declines of section 0, and the `// MUTATION` records. |
+
+The script ops are `W16`, `W32` (one `MOVE.L` on a pointer pair), `DLY`, `RD` (store a register read in the log), `MARK`, `VBLSYNC`, `WAITLINE`, `LINES`, `BLITDONE`, `POLLB`, `WM` (a `MOVE.W` to a Chip RAM word), `W16R` and `WAITB`. `VBLSYNC`, `WAITLINE`, `LINES`, `BLITDONE` and `WAITB` add 1 to the word at `RESULTS`+2 when they end by their timeout; `POLLB` ends after a given number of reads and stores the last read. A timeout is at least as long as the section 1.5 timeout of the helper: the loops count at least eight colour clocks per iteration (a `DBRA` loop of a register read takes at least 36 CPU clocks), so 15000 iterations of `VBLSYNC` last more than three frames, and 30000 iterations of `BLITDONE` more than two.
+
+The program stores the log words (the values the CPU read from registers, in order) from `RESULTS`+$10 on, and the marker word MK is written with the marker value 1, 2, 3, ... at each `M_...` point, so each marker value is distinct and its first write to MK gives `t(M_x)`.
+
+`Config.floppy_config` is 0, the value that `nanomig_harness.h` documents as one drive, DF0, write enabled, normal speed. No disk image is mounted.
+
+### 6.2 Placement of the regions
+
+Everything lies in the identity-mapped Chip RAM, outside the three places and the S regions of section 1.
+
+| Region | Bytes |
+|---|---|
+| Program image, and the script inside it | [0x080400, 0x08CC36): the program ends at the first byte of the S3 regions. The CPU attribution of section 1.6 is this span, the stack, MK and RES. |
+| MK | 0x0B8000 |
+| RES and the log | [0x0C0000, 0x0C1000) |
+| IDLE | 0x090000; the Copper list region is 16 bytes (the two list words and zero words) |
+| Case lists | 0x090100 + 0x40 k for the k-th register case of a proposition; C12 uses 0x090140, 0x090180, 0x0901C0 for BLTADAT, BLTBDAT, BLTCDAT; each list region is 16 bytes |
+| DST (C7-C12, F3, F8), C12's preload destination | 0x1B0200, 0x1B0400. They lie in the top of Chip memory, away from RES, the stack and the S regions, so that a blit that does not stop at its specified size overwrites no result. |
+| DST2 (F1, F2) | 0x1A0000, 65534 bytes |
+| ASRC, BSRC, CSRC, PX | 0x0B2000, 0x0B2100, 0x0B2200, 0x0B2300 |
+| F8 sources | 0x0B3000 + 0x100 (3 x + k) for source k of the case x |
+| Rd, Re, Re' (C2) | 0x0E0000, 0x0F0000, 0x0E0100 |
+| AD (F7), DB (F9) | 0x0D8000, 0x0D2000 |
+| Bitplanes B1-B8 (F6), the F6 Copper list | 0x180000 + 0x4000 (x - 1), 0x090400 |
+
+A write to Chip RAM that is not an access of the program (section 1.6, CPU) is a blitter write, wherever it lands: the blitter is the only other writer. Every observation of blitter writes counts all of them, so a blit that writes outside the proposition's destination region is seen. The regions of a proposition are used to attribute reads. C12's program writes to PX are the preload of V1 and are not blitter accesses.
+
+### 6.3 Reading of the pages the build fixes
+
+- Marker windows are open intervals: an access at the cycle of a marker write is in no window.
+- A *colour clock* K is the median spacing of consecutive refresh-flagged reads of the run divided by two, measured in the run (the four refresh reads of a line are two colour clocks apart, "There are 4 refresh time slots", p.29). It is used only in the refresh precondition, together with 228 colour clocks per line (p.29, STRLONG "(228 CC)").
+- The refresh precondition (labels `...-PCR` and `...-REF`): the refresh-flagged reads of the window form groups, a gap of more than 8 K starting a new group; every group has four reads, except a group cut by the window's edge, which may have fewer; at least one whole group lies in the window. For C2, whose window can be shorter than two lines, a window shorter than two lines with no refresh-flagged read passes, and a longer window must hold at least its number of lines less one whole groups.
+- C2's observation is the first read in the window that is a disk read or a stray read. The stray class includes every read that is none of CPU, refresh, Copper and the disk regions.
+- F6's bands. The video output is the scan-doubled output of the harness, so a line is an output line (a rising edge of `hs`). A pixel is black when its three 4-bit components are 0. C2-C8 are (15,0,0), (0,15,0), (0,0,15), (15,15,0), (0,15,15), (15,0,15), (15,15,15) (the 4-bit output of the p.19 extension of the 4-bit values). A band is a maximal run of output lines that hold a non-black pixel; its height is the number of lines; a gap is the number of black lines between two bands; the first and last column of a line are the sample offsets from the start of the line of its first and last non-black pixel.
+- F1 and F2 case (w, h): `BLTSIZE` is written as `(h << 6) | w`; the case (63, 1) and (1, 1023) of F1 and (v = 0x7FFF) and (w = 0x07FF) of F2 set every bit of their fields.
+
+### 6.4 Propositions not built
+
+F4 and F7 are not built as graded lines, and F4's and F7's claims (opus:/sol:AA-aud0lch.c5, -aud0lcl.c5, -aud1lch.c5, -aud1lcl.c5 and -aud0dat.c2 to -aud3dat.c2) are declined.
+
+- F4 expects the first audio DMA read after the enable at the address the location registers hold. AA p.11 gives the registers as "the 20 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data" and says nothing of the first read. HRM p.164 says of the start-up: "Because of pipelining in Agnus, the first data word must be thrown away." The address of the thrown-away read is not a page value. The page-supported reading is that the data words used start at the registers' address, that is the read after the thrown-away one.
+- F7's precondition "no stray DMA read in the window" counts the thrown-away first read as a stray read, for the same reason; the proposition's expected levels are page-supported.
+
+The program of both runs as specified and prints the reads (F4: the first and the second read of each case) and the level runs (F7) as `MEASURED:` lines.
+
+### 6.5 Labels, selectors and mutations
+
+Every label starts with the proposition's id. The C propositions print `Cn-FIXTURE`, `Cn-PC1` to `Cn-PC5` as section 1.9 names them (PC5 in the propositions that run a DMA channel), `Cn-PC6` (`C6-PC7` for the counters' stillness, as section 2 names it; `C2-PC6` for DMAON), `C2-PCR` for the refresh precondition, and the proposition's own line `Cn`. The F propositions print `Fn-FIXTURE`, `Fn-DMA` (DMA_CHECK), `Fn-TMO` (no timeout) and the preconditions of their sections, under the names in the mutation records of `test_aa_integ_s7.cpp`.
+
+`NMH_MUTATE=<label>` runs the proposition that owns the label with one changed stimulus and the unchanged comparator; `NMH_ONLY=Cn,Fm` restricts a run to the named propositions. The normal run runs no mutant. A mutation run of a C proposition runs the first register case of the proposition only.
+
