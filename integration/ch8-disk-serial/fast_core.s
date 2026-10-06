@@ -55,6 +55,10 @@ start:
         move.w  #$8100,ADKCON(a0)
         endif
         endif
+        ifd MUT_SETFAST0
+; ---- precondition 4c contrast, FAST=0 run: bit 15 set, so this sets FAST ----
+        move.w  #$8100,ADKCON(a0)
+        endif
         move.w  ADKCONR(a0),d0
         move.w  d0,RESULT
 
@@ -122,6 +126,10 @@ start:
 
 ; ---- step 8: DSKLEN <- $4000 (stop), MARK <- DONE ----
         move.w  #$4000,DSKLEN(a0)
+        ifd MUT_FORCETO
+; ---- completion contrast: a poll that ended at its bound is declared ----
+        ori.w   #1,POLL_TIMEOUT
+        endif
         move.w  #MARK_DONE,MARK
 
         DONE

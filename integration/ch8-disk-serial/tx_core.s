@@ -76,7 +76,13 @@ start:
         move.w  #$0155,SERDAT(a0)
 .skipwr:
         move.w  #$0001,INTREQ(a0)
+        ifd MUT_NOMARK3
+; ---- FIXTURE contrast: the marker for k=3 is never written ----
+        cmp.w   #3,d1
+        beq.s   .nomark
+        endif
         move.w  d1,MARK
+.nomark:
         endif
         addq.w  #1,d1
         cmp.w   #WCOUNT,d1
@@ -85,6 +91,10 @@ start:
 
 ; ---- step 6: poll SERDATR bit 12 (TSRE) until 1, then MARK <- DONE ----
         POLLBIT SERDATR,12,BND_TSRE
+        ifd MUT_FORCETO
+; ---- completion contrast: a poll that ended at its bound is declared ----
+        ori.w   #1,POLL_TIMEOUT
+        endif
         move.w  #MARK_DONE,MARK
 
         DONE

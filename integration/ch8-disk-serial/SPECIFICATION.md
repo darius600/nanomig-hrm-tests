@@ -515,9 +515,8 @@ The RxD driver behaves the same in both runs:
 
 ## 4. Build
 
-This section records what the build added: the programs, the values it
-measured, and the mutations it ran. Propositions and expected values above
-are unchanged from what this document committed to before the build.
+This section records the package as it stands: the programs, the line ids
+and their preconditions, the values it measures, and the mutations.
 
 ### 4.1 Programs
 
@@ -525,17 +524,28 @@ are unchanged from what this document committed to before the build.
 Appendix B not already in `nanomig.i`, and the bounded-poll macro `POLLBIT`
 every program uses for G4, which also ORs a `POLL_TIMEOUT` flag whenever a
 poll's own bound is reached); `tx_core.s` (P1/P2/P3's shared engine) and its
-nine wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`,
-their three `_plus1` contrast variants, and `prog_tx_n371_1c/1d/1e.s`
-(precondition contrasts); `fast_core.s` (P4's shared engine) and its five
-wrappers `prog_fast0.s`, `prog_fast1.s`, `prog_fast1_4c/4d/4e.s`; `rx_core.s`
-(P5's shared engine, driven from the C++ test's own RxD schedule) and its
-seven wrappers `prog_rx_a.s`, `prog_rx_b.s`, `prog_rx_a_5b/5c/5d/5e.s`
-(precondition contrasts), `prog_rx_a_altper.s` ((b)'s own contrast; (a)'s,
+wrappers `prog_tx_n0[.s]`, `prog_tx_n371[.s]`, `prog_tx_n32396[.s]`, their
+three `_plus1` contrast variants, `prog_tx_n371_1c/1d/1e.s` (precondition
+contrasts), `prog_tx_n371_nomark3.s` (FIXTURE's contrast), and for the two
+single-word runs `prog_tx_n0_brk.s`, `prog_tx_n32396_brk.s` (1c's contrast)
+and `prog_tx_n0_forceto.s`, `prog_tx_n32396_forceto.s` (completion
+contrast); `fast_core.s` (P4's shared engine) and its wrappers
+`prog_fast0.s`, `prog_fast1.s`, the contrasts `prog_fast1_4c/4d/4e.s` and
+`prog_fast0_4c/4d/4e.s`, and `prog_fast1_forceto.s`, `prog_fast0_forceto.s`;
+`rx_core.s` (P5's shared engine, driven from the C++ test's own RxD
+schedule) and its wrappers `prog_rx_a.s`, `prog_rx_b.s`,
+`prog_rx_a_5b/5c/5d/5e.s` and `prog_rx_b_5c/5d/5e.s` (precondition
+contrasts), `prog_rx_a_altper.s` ((b)'s own contrast), and
+`prog_rx_a_forceto.s`, `prog_rx_b_forceto.s` (completion contrast). (a)'s,
 5f's and (c)'s own contrasts are driver/comparator-level, needing no
-separate program; the run-A ninth-bit-zero variant and the run-B
-preconditions are likewise driver/comparator-level, reusing `prog_rx_a.bin`
-and `prog_rx_b.bin`).
+separate program; the run-A ninth-bit-zero variant is likewise
+driver-level, reusing `prog_rx_a.bin`.
+
+The completion contrasts (`forceto`) write a 1 into `POLL_TIMEOUT` before
+MARK=DONE, which is the state a poll that ended at its bound leaves. The
+standard contrast (`NMH_MUTATE=STD-SWAP`) is not a program: every capture of
+the package is made with the other video standard selected than the one its
+checks expect.
 
 `ch8_defs.i`'s MARK, RESULT, PROBE_D, PROBE_I and POLL_TIMEOUT sit at
 $0C0000 and above, not below $80000 as G3 specifies for program data in
@@ -629,7 +639,56 @@ under "measured values" below.
 
 ### 4.4 Mutations
 
-See `test_ch8_disk_serial.cpp`'s own header comment for the full list, the
-`NMH_MUTATE` value each uses, and which labels each one flips (several
-share a binary or a capture, so one substitution can flip more than one
-label).
+See `test_ch8_disk_serial.cpp`'s own header comment: one `// MUTATION`
+record per graded line, under the line's own id, with the `NMH_MUTATE`
+value it uses and what that value moved on each core. Several lines share a
+binary or a capture, so one selector can move more than one line; each moved
+line is named in the record of the line the selector is aimed at.
+
+- The three red lines P1, P2 and P3 are red at baseline and stay red under
+  every selector. Their records name the substitution through live inputs of
+  the same comparator: the controls P1-CTRL-N0, P1-CTRL-N32396,
+  P1-CTRL-WITHIN and P2-CTRL-PAIR print PASS at baseline and FAIL under
+  `P1-NPLUS1`.
+- The R1 anchor lines and the 5a C=8 lines are "unfalsifiable at this
+  boundary": no stimulus the pages describe moves the refresh slots or the
+  number of cycles per colour clock, so no capture of this package can make
+  them fail. That is a property of the boundary, not a scope decision, and
+  it is kept apart from "not exercised" (a stimulus exists and the package
+  does not drive it), which no line of this package is.
+- Every R2 line fails under `STD-SWAP` (every capture made on the other
+  standard), the contrast R2 names.
+
+### 4.5 Line ids and preconditions
+
+Every graded line begins with an id of its own, and its record in the
+header names that id. A precondition prints before the lines that depend on
+it. A dependent line whose precondition was not graded and passed prints
+`RECORDED: NOT GRADED <id>: precondition(s) not met: ...`, never PASS or
+FAIL.
+
+| line | graded only when |
+|---|---|
+| `P1` | 1a-1e, P1N0-R1/R2/DONE/IDLE, P1N32396-R1/R2/DONE/IDLE |
+| `P1-CTRL-N0`, `P1-CTRL-N32396` | the four P1N0-* (P1N32396-*) lines |
+| `P1-CTRL-WITHIN`, `P3` | 1a-1e |
+| `1c`, `1e` | FIXTURE |
+| `1d` | FIXTURE, 1a |
+| `P1N0-IDLE`, `P1N32396-IDLE`, `P2N0-IDLE`, `P2N32396-IDLE` | the same run's `-DONE` |
+| `2c`, `2e` | FIXTURE-PAL |
+| `2d` | FIXTURE-PAL, 2a |
+| `P2` | 2a-2e, P2N0-*, P2N32396-* |
+| `P2-CTRL-PAIR` | 2a, P2N0-*, P2N32396-* |
+| `4d-<tag>` | the fetches at i = 64, 128 and 192 were observed (the coverage clause of 4e) |
+| `5b` | 5a-DONE-A |
+| `5f` | 5a-R1-B, 5a-R2-B, 5a-C8-B, 5a-DONE-B, 5c-B, 5d-B |
+| `(a)+(c)` | every 5a line of both runs, 5b, 5c, 5d and 5e of both runs, 5f |
+| `(b)` | every 5a line of both runs, 5b, 5d and 5e of both runs |
+
+The ids of the N=0 and N=32396 runs are `P1N0-`, `P1N32396-` (NTSC) and
+`P2N0-`, `P2N32396-` (PAL) followed by `R1` (anchor), `R2` (standard),
+`DONE` (MARK=0 and MARK=DONE present in order, no poll ended at its bound)
+and `IDLE` (TxD idle before MARK=0). The P4 ids end in the capture tag
+`NTSC-FAST1`, `NTSC-FAST0`, `PAL-FAST1` or `PAL-FAST0`: `4a-`, `4b-`, `4c-`,
+`4d-`, `4e-` and `P4-DONE-`. The P5 ids `5a-R1`, `5a-R2`, `5a-C8`, `5a-DONE`,
+`5c`, `5d` and `5e` end in `-A` or `-B` for the run.

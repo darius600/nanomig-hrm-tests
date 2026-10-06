@@ -222,5 +222,9 @@ start:
         endif
         move.w  #8,MARK
 
+        ifd MUT_FORCETO
+; ---- completion contrast: a poll that ended at its bound is declared ----
+        ori.w   #1,POLL_TIMEOUT
+        endif
         move.w  #MARK_DONE,MARK
         DONE
