@@ -56,6 +56,8 @@ CFG_FMODE       equ     CFG+8
 CFG_DDFSTRT     equ     CFG+10
 CFG_DDFSTOP     equ     CFG+12
 CFG_DMACON      equ     CFG+14
+CFG_BEAMCON0    equ     CFG+22  ; BEAMCON0 value (PAL $0020)
+CFG_WAITLO      equ     CFG+24  ; low word of every Copper WAIT of the S3 reload ($0007: horizontal position $06)
 
 BUF1            equ     $0B1000 ; plane-1 line buffer, 192 bytes, preloaded
 BUF2            equ     $0B1100 ; plane-2 line buffer, 192 bytes, preloaded
@@ -66,7 +68,9 @@ COPLIST         equ     $0B2000 ; generated per-line Copper list
 start:
         ; The fixture: a known constant, stored before anything else reads
         ; one (SPECIFICATION.md, "What a finished package looks like").
+        ifnd    NOFIX
         move.w  #$BEEF,RESULTS
+        endc
 
         lea     CUSTOM,a0
 
@@ -74,7 +78,8 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
-        move.w  #$0020,BEAMCON0(a0)    ; PAL (S1 step 1)
+        move.w  CFG_BEAMCON0,d0        ; PAL (S1 step 1)
+        move.w  d0,BEAMCON0(a0)
 
         ; S2 baseline, with the proposition's overrides read from CFG.
         move.w  CFG_BPLCON0,d0
@@ -115,7 +120,7 @@ start:
 .genloop:
         move.w  d2,d0
         lsl.w   #8,d0
-        ori.w   #$0007,d0
+        or.w    CFG_WAITLO,d0
         move.w  d0,(a1)+                       ; WAIT IR1: line V, early in the line (R3's own proven low byte)
         move.w  #$FFFE,(a1)+                   ; WAIT IR2
         move.w  #BPL1PTH,(a1)+

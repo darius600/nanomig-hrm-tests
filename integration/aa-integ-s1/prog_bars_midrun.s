@@ -41,6 +41,8 @@ CFG_FMODE       equ     CFG+8
 CFG_DDFSTRT     equ     CFG+10
 CFG_DDFSTOP     equ     CFG+12
 CFG_DMACON      equ     CFG+14
+CFG_BEAMCON0    equ     CFG+22  ; BEAMCON0 value (PAL $0020)
+CFG_WAITLO      equ     CFG+24  ; low word of every Copper WAIT of the S3 reload ($0007: horizontal position $06)
 
 CFG2_VAL        equ     CFG+16  ; value written to BPLCON1 at CFG2_EDGE
 CFG2_EDGE       equ     CFG+18  ; VERTB edge count (1-based) to write at
@@ -53,14 +55,17 @@ COPLIST         equ     $0B2000
         org     PROGRAM_ORG
 
 start:
+        ifnd    NOFIX
         move.w  #$BEEF,RESULTS
+        endc
 
         lea     CUSTOM,a0
 
         move.w  #$7FFF,DMACON(a0)
         move.w  #$7FFF,INTENA(a0)
         move.w  #$7FFF,INTREQ(a0)
-        move.w  #$0020,BEAMCON0(a0)
+        move.w  CFG_BEAMCON0,d0
+        move.w  d0,BEAMCON0(a0)
 
         move.w  CFG_BPLCON0,d0
         move.w  d0,BPLCON0(a0)
@@ -91,7 +96,7 @@ start:
 .genloop:
         move.w  d2,d0
         lsl.w   #8,d0
-        ori.w   #$0007,d0
+        or.w    CFG_WAITLO,d0
         move.w  d0,(a1)+
         move.w  #$FFFE,(a1)+
         move.w  #BPL1PTH,(a1)+

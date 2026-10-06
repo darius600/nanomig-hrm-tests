@@ -15,37 +15,32 @@
 // through a comparator that is red without it, PASS (green). `make test`
 // leaves NMH_MUTATE unset and runs none.
 //
-// MUTATION R1 stimulus red NMH_MUTATE=R1: the calibration run has no plane data, so no COLOR01 pixel appears to measure; TG68K FAIL, fx68k FAIL.
-// MUTATION P2 stimulus red NMH_MUTATE=P2: the three reference runs have no plane-1 data; TG68K FAIL, fx68k FAIL.
-// MUTATION P3 stimulus red NMH_MUTATE=P3-PRE: the reference run has no plane-1 data; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-AGG, P3-E0F0, P3-F0F0.
-// MUTATION P4 stimulus red NMH_MUTATE=P4-PRE: runs (a) and (b) have no plane-1 data; TG68K FAIL, fx68k FAIL. Also printing FAIL: P4a-D1, P4a-D2.
-// MUTATION P1 stimulus red NMH_MUTATE=P1: the test run writes $0000 to BPLCON1 ($DFF102) and $0033 to BPLCON4 ($DFF10C) in place of $0033 to BPLCON1; TG68K FAIL, fx68k FAIL.
-// MUTATION P3-0E0F stimulus red NMH_MUTATE=P3: chipset_config = $08 (the ECS chip set) in the four test runs instead of $10; TG68K FAIL, fx68k FAIL.
-// MUTATION P3-0F0F stimulus red NMH_MUTATE=P3: chipset_config = $08 (the ECS chip set) in the four test runs instead of $10; TG68K FAIL, fx68k FAIL.
-// MUTATION P3-E0F0 stimulus red NMH_MUTATE=P3: chipset_config = $08 (the ECS chip set) in the four test runs instead of $10; TG68K FAIL, fx68k FAIL.
-// MUTATION P3-F0F0 stimulus red NMH_MUTATE=P3: chipset_config = $08 (the ECS chip set) in the four test runs instead of $10; TG68K FAIL, fx68k FAIL.
-// MUTATION P3-AGG stimulus red NMH_MUTATE=P3: chipset_config = $08 (the ECS chip set) in the four test runs instead of $10; TG68K FAIL, fx68k FAIL.
-// MUTATION P4a-D1 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 instead of leaving the reset state; F5 stays the reference run's; TG68K FAIL, fx68k FAIL.
-// MUTATION P4a-D2 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 instead of leaving the reset state; F5 stays the reference run's; TG68K FAIL, fx68k FAIL.
-// MUTATION P4b-C1 stimulus green NMH_MUTATE=P4b-C1: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS.
-// MUTATION P4b-C2 stimulus green NMH_MUTATE=P4b-C2: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS.
-// MUTATION P5 stimulus green NMH_MUTATE=P5: live input through the same line: P4 runs (a) and (b) write BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS.
+// MUTATION P3-0E0F stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-0F0F stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-E0F0 stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-F0F0, P3-AGG.
+// MUTATION P3-F0F0 stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-E0F0, P3-AGG.
+// MUTATION P3-AGG stimulus red NMH_MUTATE=P3: PF1H7 (BPLCON1 bit 11) is cleared in the two PF1 test runs and PF2H7 (bit 15) in the two PF2 test runs, so that the delays are 63 op, not 127; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0.
+// MUTATION P4a-D1 stimulus red NMH_MUTATE=P4a-D1: the CPU writes BPLCON1 = $0200 (PF1H1) before F3 instead of leaving the reset state, F5 staying the reference run's, and run (b) writes BPLCON1 = $0000 before F3, so that P4b-C1 holds, the precondition of this line; TG68K FAIL, fx68k FAIL. Also printing PASS: P4b-C1, P4b-C2, P4a-D2.
+// MUTATION P4a-D2 stimulus red NMH_MUTATE=P4a-D2: the CPU writes BPLCON1 = $2000 (PF2H1) before F3 instead of leaving the reset state, F5 staying the reference run's, and run (b) writes BPLCON1 = $0000 before F3, so that P4b-C2 holds, the precondition of this line; TG68K FAIL, fx68k FAIL. Also printing PASS: P4b-C1, P4b-C2, P4a-D1.
+// MUTATION P4b-C1 stimulus green NMH_MUTATE=P4b-C1: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C2.
+// MUTATION P4b-C2 stimulus green NMH_MUTATE=P4b-C2: live input through the same comparator: the CPU writes BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C1.
+// MUTATION P5 stimulus green NMH_MUTATE=P5: live input through the same line: P4 runs (a) and (b) write BPLCON1 = $0000 before F3 instead of leaving the reset state; TG68K PASS, fx68k PASS. Also printing PASS: P4b-C1, P4b-C2, P4a-D1, P4a-D2.
 // MUTATION UNIT-FIXTURE stimulus red NMH_MUTATE=UNIT-FIXTURE: the unit run loads prog_regs_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL.
 // MUTATION UNIT-AA stimulus red NMH_MUTATE=UNIT-AA: chipset_config = $08 (the ECS chip set) in the unit run; TG68K FAIL, fx68k FAIL.
 // MUTATION UNIT-R2 stimulus red NMH_MUTATE=UNIT-R2: the unit run writes BEAMCON0 = $00A0 (VARBEAMEN) and HTOTAL = $0040: lines of 65 CCK; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-R4 stimulus red NMH_MUTATE=P6-R4: COLOR01 = $0500 is written with LOCT=0 and $0A00 with LOCT=1, the two writes exchanged; TG68K FAIL, fx68k FAIL.
-// MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the B0/T_id run loads prog_regs_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P6-F3 stimulus red NMH_MUTATE=P6-F3: the B0/T_id run ends 3,300,000 cycles after boot(), before F3 is complete; TG68K FAIL, fx68k FAIL.
-// MUTATION P6-R1 stimulus red NMH_MUTATE=P6-R1: the B1/T_id run writes BEAMCON0 = $0000 (NTSC); TG68K FAIL, fx68k FAIL.
+// MUTATION P6-FIXTURE stimulus red NMH_MUTATE=P6-FIXTURE: the B0/T_id run loads prog_regs_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P6.
+// MUTATION P6-F3 stimulus red NMH_MUTATE=P6-F3: the B0/T_id run ends 3,300,000 cycles after boot(), before F3 is complete; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P6-R1, P6.
+// MUTATION P6-R1 stimulus red NMH_MUTATE=P6-R1: the B1/T_id run writes BEAMCON0 = $0000 (NTSC); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P6.
 // MUTATION P6-POP stimulus red NMH_MUTATE=P6-POP: the B0/T_id run writes DMACON = $8280 (BPLEN clear); TG68K FAIL, fx68k FAIL. Also printing FAIL: P6-RED16.
 // MUTATION P6-TBL stimulus red NMH_MUTATE=P6-TBL: the B0/T_x run loads table T_id; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-RED16 stimulus red NMH_MUTATE=P6-RED16: the B0/T_id run loads a T_id with the red nibble limited to 0-7; TG68K FAIL, fx68k FAIL.
 // MUTATION P6-SPR stimulus red NMH_MUTATE=P6-SPR: the B0/T_id run writes DMACON = $8380 (SPREN clear); TG68K FAIL, fx68k FAIL.
 // MUTATION P6-SCROLL stimulus red NMH_MUTATE=P6-SCROLL: the B0/T_id run writes BPLCON1 = $0000; TG68K FAIL, fx68k FAIL.
-// MUTATION P6-I stimulus red NMH_MUTATE=P6-I: the B1/T_id run writes BPLCON1 = $0000 while B0/T_id keeps $0033 (the scroll clause); TG68K FAIL, fx68k FAIL.
-// MUTATION P6-I stimulus red NMH_MUTATE=P6-I-PRIO: the B1/T_id run writes BPLCON2 = $0000 (playfields in front of the sprites) while B0/T_id keeps $0024 (the priority clause); TG68K FAIL, fx68k FAIL.
-// MUTATION P6-II stimulus green NMH_MUTATE=P6-II: live input through the same comparator: the B1/T_x run is run as B0/T_id (table T_id, BYPASS clear); TG68K PASS, fx68k PASS.
-// MUTATION P6-AGG stimulus green NMH_MUTATE=P6-AGG: live input through the same line: the B1/T_x run is run as B0/T_id (table T_id, BYPASS clear); TG68K PASS, fx68k PASS.
+// MUTATION P6-I stimulus red NMH_MUTATE=P6-I: the B1/T_id run writes BPLCON1 = $0000 while B0/T_id keeps $0033 (the scroll clause), and the B1/T_x run is run as B0/T_id with the same BPLCON1, so that P6-II, the precondition of this line, holds; TG68K FAIL, fx68k FAIL. Also printing PASS: P6-II.
+// MUTATION P6-I stimulus red NMH_MUTATE=P6-I-PRIO: the B1/T_id run writes BPLCON2 = $0000 (playfields in front of the sprites) while B0/T_id keeps $0024 (the priority clause), and the B1/T_x run is run as B0/T_id with the same BPLCON2, so that P6-II, the precondition of this line, holds; TG68K FAIL, fx68k FAIL. Also printing PASS: P6-II.
+// MUTATION P6-II stimulus green NMH_MUTATE=P6-II: live input through the same comparator: the B1/T_x run is run as B0/T_id (table T_id, BYPASS clear); TG68K PASS, fx68k PASS. Also printing PASS: P6-I, P6-AGG.
+// MUTATION P6-AGG stimulus green NMH_MUTATE=P6-AGG: live input through the same line: the B1/T_x run is run as B0/T_id (table T_id, BYPASS clear); TG68K PASS, fx68k PASS. Also printing PASS: P6-II, P6-I.
 // MUTATION P7-F0000 stimulus red NMH_MUTATE=P7-F0000: the FMODE = $0000 run writes $0003; TG68K FAIL, fx68k FAIL.
 // MUTATION P7-F0001 stimulus red NMH_MUTATE=P7-F0001: the FMODE = $0001 run writes $0003; TG68K FAIL, fx68k FAIL.
 // MUTATION P7-F0002 stimulus red NMH_MUTATE=P7-F0002: the FMODE = $0002 run writes $0003; TG68K FAIL, fx68k FAIL.
@@ -73,11 +68,11 @@
 // MUTATION P9-R3 stimulus red NMH_MUTATE=P9-R3: run D0 places the second marker at line $81 instead of $80; TG68K FAIL, fx68k FAIL.
 // MUTATION P9-POP stimulus red NMH_MUTATE=P9-POP: run D0 writes BPLCON0 = $4000 (4 planes); TG68K FAIL, fx68k FAIL.
 // MUTATION P9-FIRST stimulus red NMH_MUTATE=P9-FIRST: run D0 writes DIWSTRT = $2E81; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-MAIN stimulus red NMH_MUTATE=P10-MAIN: both runs load prog_lpen_same.bin, which reads VPOSR:VHPOSR once and stores the value as w0 and w1; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL, fx68k FAIL.
+// MUTATION P10-MAIN stimulus red NMH_MUTATE=P10-MAIN: both runs load prog_lpen_same.bin, which reads VPOSR:VHPOSR once and stores the value as w0 and w1; TG68K FAIL, fx68k FAIL. Also printing PASS: P10-LATCH.
+// MUTATION P10-FIXTURE stimulus red NMH_MUTATE=P10-FIXTURE: the main run loads prog_lpen_nofix.bin; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN, P10-LATCH.
+// MUTATION P10-R2 stimulus red NMH_MUTATE=P10-R2: the main run loads prog_lpen_var.bin (BEAMCON0 = $00A0, HTOTAL = $00E8, VTOTAL = $0138: lines of 233 CCK); TG68K FAIL, fx68k FAIL. Also NOT GRADED: P10-WIN.
 // MUTATION P10-WIN stimulus red NMH_MUTATE=P10-WIN: the main run loads prog_lpen_late.bin, whose first read follows the marker by about 110 lines; TG68K FAIL, fx68k FAIL.
-// MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS, fx68k PASS.
+// MUTATION P10-LATCH stimulus green NMH_MUTATE=P10-LATCH: live input through the same comparator: the contrast run loads prog_lpen_same.bin; TG68K PASS, fx68k PASS. Also printing PASS: P10-MAIN.
 // MUTATION P11-JOY stimulus red NMH_MUTATE=P11-JOY: the state "right" drives the left switch ($02) in place of the right switch ($01) on both connectors; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
 // MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE: the 40 counts of the first movement are -1 instead of +1 on X; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
 // MUTATION P11-MOUSE stimulus red NMH_MUTATE=P11-MOUSE-RET: the second movement brings 39 counts instead of 40; TG68K FAIL, fx68k FAIL. Also printing FAIL: P11-AGG.
@@ -112,8 +107,8 @@
 // MUTATION P2A1-PF2H3 stimulus red NMH_MUTATE=P2A1-PF2H3: the FMODE = $0000 (a1) test run writes the neighbouring bit $0010 in place of $0020; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF2H4 stimulus red NMH_MUTATE=P2A1-PF2H4: the FMODE = $0000 (a1) test run writes the neighbouring bit $0020 in place of $0040; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A1-PF2H5 stimulus red NMH_MUTATE=P2A1-PF2H5: the FMODE = $0000 (a1) test run writes the neighbouring bit $0040 in place of $0080; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A1-PF1H1 stimulus red NMH_MUTATE=P2A1-PF1H1: the FMODE = $0000 (a1) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $0200 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A1-PF2H1 stimulus red NMH_MUTATE=P2A1-PF2H1: the FMODE = $0000 (a1) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $2000 is written; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A1-PF1H1 stimulus red NMH_MUTATE=P2A1-PF1H1: the FMODE = $0000 (a1) test run writes BPLCON1 = $0000 in place of $0200; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A1-PF2H1 stimulus red NMH_MUTATE=P2A1-PF2H1: the FMODE = $0000 (a1) test run writes BPLCON1 = $0000 in place of $2000; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A2-PF1H2 stimulus red NMH_MUTATE=P2A2-PF1H2: the FMODE = $0003 (a2) test run writes the neighbouring bit $0002 in place of $0001; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A2-PF1H3 stimulus red NMH_MUTATE=P2A2-PF1H3: the FMODE = $0003 (a2) test run writes the neighbouring bit $0001 in place of $0002; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A2-PF1H4 stimulus red NMH_MUTATE=P2A2-PF1H4: the FMODE = $0003 (a2) test run writes the neighbouring bit $0002 in place of $0004; TG68K FAIL, fx68k FAIL.
@@ -122,14 +117,12 @@
 // MUTATION P2A2-PF2H3 stimulus red NMH_MUTATE=P2A2-PF2H3: the FMODE = $0003 (a2) test run writes the neighbouring bit $0010 in place of $0020; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A2-PF2H4 stimulus red NMH_MUTATE=P2A2-PF2H4: the FMODE = $0003 (a2) test run writes the neighbouring bit $0020 in place of $0040; TG68K FAIL, fx68k FAIL.
 // MUTATION P2A2-PF2H5 stimulus red NMH_MUTATE=P2A2-PF2H5: the FMODE = $0003 (a2) test run writes the neighbouring bit $0040 in place of $0080; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A2-PF1H1 stimulus red NMH_MUTATE=P2A2-PF1H1: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $0200 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A2-PF1H6 stimulus red NMH_MUTATE=P2A2-PF1H6: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $0400 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A2-PF1H7 stimulus red NMH_MUTATE=P2A2-PF1H7: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $0800 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A2-PF2H1 stimulus red NMH_MUTATE=P2A2-PF2H1: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $2000 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A2-PF2H6 stimulus red NMH_MUTATE=P2A2-PF2H6: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $4000 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2A2-PF2H7 stimulus red NMH_MUTATE=P2A2-PF2H7: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $8000 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2B-PF1H0 stimulus red NMH_MUTATE=P2B-PF1H0: the SHRES stripe (b) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $0100 is written; TG68K FAIL, fx68k FAIL.
-// MUTATION P2B-PF2H0 stimulus red NMH_MUTATE=P2B-PF2H0: the SHRES stripe (b) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $1000 is written; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A2-PF1H1 stimulus red NMH_MUTATE=P2A2-PF1H1: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $0200; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A2-PF1H6 stimulus red NMH_MUTATE=P2A2-PF1H6: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $0400; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A2-PF1H7 stimulus red NMH_MUTATE=P2A2-PF1H7: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $0800; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A2-PF2H1 stimulus red NMH_MUTATE=P2A2-PF2H1: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $2000; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A2-PF2H6 stimulus red NMH_MUTATE=P2A2-PF2H6: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $4000; TG68K FAIL, fx68k FAIL.
+// MUTATION P2A2-PF2H7 stimulus red NMH_MUTATE=P2A2-PF2H7: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $8000; TG68K FAIL, fx68k FAIL.
 // MUTATION P2S-PF1H2 stimulus red NMH_MUTATE=P2S-PF1H2: the FMODE = $0003 (a2) test run writes the neighbouring bit $0002 in place of $0001, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF1H2.
 // MUTATION P2S-PF1H3 stimulus red NMH_MUTATE=P2S-PF1H3: the FMODE = $0003 (a2) test run writes the neighbouring bit $0001 in place of $0002, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF1H3.
 // MUTATION P2S-PF1H4 stimulus red NMH_MUTATE=P2S-PF1H4: the FMODE = $0003 (a2) test run writes the neighbouring bit $0002 in place of $0004, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF1H4.
@@ -138,8 +131,8 @@
 // MUTATION P2S-PF2H3 stimulus red NMH_MUTATE=P2S-PF2H3: the FMODE = $0003 (a2) test run writes the neighbouring bit $0010 in place of $0020, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF2H3.
 // MUTATION P2S-PF2H4 stimulus red NMH_MUTATE=P2S-PF2H4: the FMODE = $0003 (a2) test run writes the neighbouring bit $0020 in place of $0040, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF2H4.
 // MUTATION P2S-PF2H5 stimulus red NMH_MUTATE=P2S-PF2H5: the FMODE = $0003 (a2) test run writes the neighbouring bit $0040 in place of $0080, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF2H5.
-// MUTATION P2S-PF1H1 stimulus red NMH_MUTATE=P2S-PF1H1: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $0200 is written, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF1H1.
-// MUTATION P2S-PF2H1 stimulus red NMH_MUTATE=P2S-PF2H1: the FMODE = $0003 (a2) test run selects chipset_config = $08 (the ECS chip set) in place of $10 while BPLCON1 = $2000 is written, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF2H1.
+// MUTATION P2S-PF1H1 stimulus red NMH_MUTATE=P2S-PF1H1: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $0200, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF1H1.
+// MUTATION P2S-PF2H1 stimulus red NMH_MUTATE=P2S-PF2H1: the FMODE = $0003 (a2) test run writes BPLCON1 = $0000 in place of $2000, the (a1) run unchanged; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A2-PF2H1.
 // MUTATION P4a-D1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P4a-D2 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
 // MUTATION P4b-C1 implementation green NMH_MUTATE=P5-NONE: the test is built against a private copy of the design outside the repository in which the BPLCON1 register resets to $0000 (make test-<core> NANOMIG=<copy>, then NMH_MUTATE=P5-NONE); TG68K PASS, fx68k PASS.
@@ -153,6 +146,43 @@
 // MUTATION P14-REL stimulus green NMH_MUTATE=P14-REL: live input through the same comparator: P14-REL evaluates the qualifying pairs of U0's VHPOSR samples modulo the line length R2 measures in place of those of U1's and U2's HHPOSR samples; TG68K PASS, fx68k PASS.
 // MUTATION P14-MAIN stimulus red NMH_MUTATE=P14-MAIN: the VHPOSR samples of run U2 are replaced by those of run U3 (VARBEAMEN, HTOTAL = $0040), whose maximum differs from U0's; TG68K FAIL, fx68k FAIL.
 // MUTATION P14-AGG stimulus green NMH_MUTATE=P14-AGG: live input through the same line: P14-U1, P14-U2 and P14-REL evaluate U0's VHPOSR samples as in their own selectors, P14-MAIN the runs as they are; TG68K PASS, fx68k PASS. Also printing PASS: P14-U1, P14-U2, P14-REL.
+// MUTATION R1-FIXTURE stimulus red NMH_MUTATE=R1-FIXTURE: the LORES calibration run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-F1, R1-RL, R1-EVEN, R1-HIRES.
+// MUTATION R1-F1 stimulus red NMH_MUTATE=R1-F1: the LORES calibration run writes DMACON = $8280 (BPLEN clear): no bit-plane DMA, so no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-RL, R1-EVEN, R1-HIRES.
+// MUTATION R1-RL stimulus red NMH_MUTATE=R1-RL: the LORES calibration run's plane 1 holds the bytes $AA and $FF alternating, so the runs have two lengths; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-EVEN, R1-HIRES.
+// MUTATION R1-EVEN stimulus red NMH_MUTATE=R1-EVEN: the LORES calibration run is run as HIRES (BPLCON0 = $9000, HIRES fetch window): its runs are one sample long; TG68K FAIL, fx68k FAIL. Also NOT GRADED: R1-HIRES.
+// MUTATION R1-HIRES stimulus red NMH_MUTATE=R1-HIRES: the HIRES calibration run is run as LORES (BPLCON0 = $1000, LORES fetch window): its runs are r_L samples long; TG68K FAIL, fx68k FAIL.
+// MUTATION P1-FIXTURE stimulus red NMH_MUTATE=P1-FIXTURE: the test run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-F1, P1-R1, P1-S3A, P1-S3B-REF, P1-S3B-TEST, P1-D1, P1-D2.
+// MUTATION P1-F1 stimulus red NMH_MUTATE=P1-F1: the test run writes DMACON = $8280 (BPLEN clear): no bit-plane DMA, so no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-R1, P1-S3A, P1-S3B-REF, P1-S3B-TEST, P1-D1, P1-D2.
+// MUTATION P1-R1 stimulus red NMH_MUTATE=P1-R1: the test run writes BEAMCON0 = $0000 (NTSC): a different line count; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-D1, P1-D2.
+// MUTATION P1-S3A stimulus red NMH_MUTATE=P1-S3A: the Copper WAITs of the reference run are at horizontal position $40 in place of $06, later than DDFSTRT; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-D1, P1-D2.
+// MUTATION P1-S3B-REF stimulus red NMH_MUTATE=P1-S3B-REF: the reference run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-D1, P1-D2.
+// MUTATION P1-S3B-TEST stimulus red NMH_MUTATE=P1-S3B-TEST: the test run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P1-D1, P1-D2.
+// MUTATION P1-D1 stimulus red NMH_MUTATE=P1: the test run writes $0000 to BPLCON1 ($DFF102) and $0033 to BPLCON4 ($DFF10C) in place of $0033 to BPLCON1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-D2.
+// MUTATION P1-D2 stimulus red NMH_MUTATE=P1: the test run writes $0000 to BPLCON1 ($DFF102) and $0033 to BPLCON4 ($DFF10C) in place of $0033 to BPLCON1; TG68K FAIL, fx68k FAIL. Also printing FAIL: P1-D1.
+// MUTATION P2-FIXTURE stimulus red NMH_MUTATE=P2-FIXTURE: the (a1) reference run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. TG68K: Also NOT GRADED: P2-F1, P2-R1, P2-S3A, P2-S3B, P2A1-PF1H2. fx68k: Also NOT GRADED: P2-F1, P2-R1, P2-S3A, P2-S3B, P2-STEP8, P2-STRIPE, P2A1-PF1H2.
+// MUTATION P2-F1 stimulus red NMH_MUTATE=P2-F1: the (a1) reference run writes DMACON = $8280 (BPLEN clear): no steady frame is found; TG68K FAIL, fx68k FAIL. TG68K: Also NOT GRADED: P2-R1, P2-S3A, P2-S3B, P2A1-PF1H2. fx68k: Also NOT GRADED: P2-R1, P2-S3A, P2-S3B, P2-STEP8, P2-STRIPE, P2A1-PF1H2.
+// MUTATION P2-R1 stimulus red NMH_MUTATE=P2-R1: the (a1) test run of row PF1H2 writes BEAMCON0 = $0000 (NTSC): a different line count; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A1-PF1H2.
+// MUTATION P2-S3A stimulus red NMH_MUTATE=P2-S3A: the Copper WAITs of the (a1) reference run are at horizontal position $40 in place of $06; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A1-PF1H2.
+// MUTATION P2-S3B stimulus red NMH_MUTATE=P2-S3B: the (a1) reference run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A1-PF1H2.
+// MUTATION P2-STEP8 stimulus red NMH_MUTATE=P2-STEP8: the (a2) reference run writes FMODE = $0000: its plane-1 fetches are 2 bytes apart; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2A2-PF1H2.
+// MUTATION P2-STRIPE stimulus red NMH_MUTATE=P2-STRIPE: the (b) reference run's alternating parts hold $CC in place of $AA: the stripe colour is not uniform; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P2B-PF1H0.
+// MUTATION P2B-PF1H0 stimulus red NMH_MUTATE=P2B-PF1H0: the SHRES stripe (b) test run writes BPLCON1 = $0000 in place of $0100: no delay and no flip; TG68K FAIL, fx68k FAIL.
+// MUTATION P2B-PF2H0 stimulus red NMH_MUTATE=P2B-PF2H0: the SHRES stripe (b) test run writes BPLCON1 = $0000 in place of $1000: no delay and no flip; TG68K FAIL, fx68k FAIL.
+// MUTATION P2-PF1-CODE stimulus red NMH_MUTATE=P2-CODE: every row runs, and the (a1) test runs of rows PF1H2 and PF2H2 write the neighbouring bit $0002 in place of $0001 and $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF1H2, P2S-PF1H2, P2A1-PF2H2, P2S-PF2H2, P2-PF2-CODE.
+// MUTATION P2-PF2-CODE stimulus red NMH_MUTATE=P2-CODE: every row runs, and the (a1) test runs of rows PF1H2 and PF2H2 write the neighbouring bit $0002 in place of $0001 and $0008 in place of $0010; TG68K FAIL, fx68k FAIL. Also printing FAIL: P2A1-PF1H2, P2S-PF1H2, P2A1-PF2H2, P2S-PF2H2, P2-PF1-CODE.
+// MUTATION P3-FIXTURE stimulus red NMH_MUTATE=P3-FIXTURE: the reference run loads prog_bars_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-F1, P3-R1, P3-S3A, P3-S3B, P3-STEP8, P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-F1 stimulus red NMH_MUTATE=P3-F1: the reference run writes DMACON = $8280 (BPLEN clear): no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-R1, P3-S3A, P3-S3B, P3-STEP8, P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-R1 stimulus red NMH_MUTATE=P3-R1: the first test run writes BEAMCON0 = $0000 (NTSC): a different line count; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-S3A stimulus red NMH_MUTATE=P3-S3A: the Copper WAITs of the reference run are at horizontal position $40 in place of $06; TG68K FAIL, fx68k FAIL. Also printing FAIL: P3-STEP8. Also NOT GRADED: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-S3B stimulus red NMH_MUTATE=P3-S3B: the reference run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P3-STEP8 stimulus red NMH_MUTATE=P3-STEP8: the reference run writes FMODE = $0000: its plane-1 fetches are 2 bytes apart; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P3-0E0F, P3-0F0F, P3-E0F0, P3-F0F0, P3-AGG.
+// MUTATION P4-FIXTURE stimulus red NMH_MUTATE=P4-FIXTURE: the run (b) reference run loads prog_bars_midrun_nofix.bin, which stores no $BEEF; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P4-F1, P4-R1, P4-S3A, P4-S3B-B, P4-SIG, P4b-C1, P4b-C2.
+// MUTATION P4-F1 stimulus red NMH_MUTATE=P4-F1: the run (b) reference run writes DMACON = $8280 (BPLEN clear): no steady frame is found; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P4-R1, P4-S3A, P4-S3B-B, P4-SIG, P4b-C1, P4b-C2.
+// MUTATION P4-R1 stimulus red NMH_MUTATE=P4-R1: the run (b) copy that writes BPLCON1 = $0000 before F3 writes BEAMCON0 = $0000 (NTSC), its F5 side coming from the PAL reference run; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P4b-C1, P4b-C2.
+// MUTATION P4-S3A stimulus red NMH_MUTATE=P4-S3A: the Copper WAITs of the run (b) reference run are at horizontal position $40 in place of $06; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P4b-C1, P4b-C2.
+// MUTATION P4-S3B-A stimulus red NMH_MUTATE=P4-S3B-A: the run (a) reference run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL.
+// MUTATION P4-S3B-B stimulus red NMH_MUTATE=P4-S3B-B: the run (b) reference run's plane 2 holds no data: no E2; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P4-SIG, P4b-C1, P4b-C2.
+// MUTATION P4-SIG stimulus red NMH_MUTATE=P4-SIG: the alternating parts of run (b) hold $CC in place of $AA: the stripe colour is not uniform; TG68K FAIL, fx68k FAIL. Also NOT GRADED: P4b-C1, P4b-C2.
 
 #include <cstdio>
 #include <cstdlib>
@@ -218,6 +248,8 @@ constexpr uint32_t kCfgDmacon    = 0x0B000E; // -> DMACON ($096)
 constexpr uint32_t kCfg2Val      = 0x0B0010; // prog_bars_midrun.s only: -> BPLCON1 at kCfg2Edge
 constexpr uint32_t kCfg2Edge     = 0x0B0012; // VERTB edge count (1-based) to write at
 constexpr uint32_t kCfg2StopEdge = 0x0B0014; // VERTB edge count after which the program idles
+constexpr uint32_t kCfgBeamcon0  = 0x0B0016; // -> BEAMCON0 ($1DC)
+constexpr uint32_t kCfgWaitLo    = 0x0B0018; // low word of every Copper WAIT of the S3 reload
 
 constexpr uint32_t kBuf1 = 0x0B1000; // plane-1 line buffer, 192 bytes
 constexpr uint32_t kBuf2 = 0x0B1100; // plane-2 line buffer, 192 bytes
@@ -284,7 +316,10 @@ struct BarsConfig {
     uint16_t ddfstrt = kDdfstrtLores;
     uint16_t ddfstop = kDdfstopLores;
     uint16_t dmacon = 0x8380; // SET,DMAEN,BPLEN,COPEN
+    uint16_t beamcon0 = 0x0020; // PAL (S1 step 1); $0000 is the NTSC contrast
+    uint16_t waitlo = 0x0007;   // low word of every Copper WAIT of the S3 reload: horizontal position $06; $0041 is the contrast (position $40)
     uint8_t  chipset = 0x10;  // chipset_config: AA selected; 0x08 is the ECS chip set (the contrast)
+    const char* bin = "prog_bars.bin";
     Buf buf1 = zero_buf();
     Buf buf2 = zero_buf();
 };
@@ -295,6 +330,8 @@ struct RunOut {
     bool fixture_ok = false;
     std::vector<nmh::VideoSample> video;
     std::vector<nmh::RamAccess> ram;
+    std::vector<uint8_t> refresh;  // `refresh` output, one entry per clk_sys cycle from `base`
+    uint64_t base = 0;             // harness cycle of refresh[0]
 };
 
 RunOut run_bars(const BarsConfig& c, uint64_t run_budget = kBarsBudget) {
@@ -311,13 +348,20 @@ RunOut run_bars(const BarsConfig& c, uint64_t run_budget = kBarsBudget) {
     h.poke_word(kCfgDdfstrt / 2, c.ddfstrt);
     h.poke_word(kCfgDdfstop / 2, c.ddfstop);
     h.poke_word(kCfgDmacon / 2, c.dmacon);
+    h.poke_word(kCfgBeamcon0 / 2, c.beamcon0);
+    h.poke_word(kCfgWaitLo / 2, c.waitlo);
     poke_buf(h, kBuf1, c.buf1);
     poke_buf(h, kBuf2, c.buf2);
 
-    r.loaded = h.load_program(g_dir + "/prog_bars.bin") > 0;
+    r.loaded = h.load_program(g_dir + "/" + c.bin) > 0;
     if (!r.loaded) return r;
     r.released = h.boot(kBootBudget).cpu_released;
-    h.run_cycles(run_budget);
+    r.base = h.cycles();
+    r.refresh.reserve(run_budget);
+    for (uint64_t i = 0; i < run_budget; ++i) {
+        h.run_cycles(1);
+        r.refresh.push_back(h.ports()->refresh ? 1 : 0);
+    }
     auto fx = h.peek_logical(kResults);
     r.fixture_ok = fx.has_value() && *fx == 0xBEEF;
     r.video = h.video();
@@ -335,7 +379,10 @@ struct MidrunConfig {
     uint16_t mid_val = 0x0000;
     uint16_t mid_edge = 5;
     uint16_t stop_edge = 6;
+    uint16_t beamcon0 = 0x0020;
+    uint16_t waitlo = 0x0007;
     uint8_t  chipset = 0x10;
+    const char* bin = "prog_bars_midrun.bin";
     Buf buf1 = zero_buf();
     Buf buf2 = zero_buf();
 };
@@ -355,16 +402,24 @@ RunOut run_midrun(const MidrunConfig& c, uint64_t run_budget) {
     h.poke_word(kCfg2Val / 2, c.mid_val);
     h.poke_word(kCfg2Edge / 2, c.mid_edge);
     h.poke_word(kCfg2StopEdge / 2, c.stop_edge);
+    h.poke_word(kCfgBeamcon0 / 2, c.beamcon0);
+    h.poke_word(kCfgWaitLo / 2, c.waitlo);
     poke_buf(h, kBuf1, c.buf1);
     poke_buf(h, kBuf2, c.buf2);
 
-    r.loaded = h.load_program(g_dir + "/prog_bars_midrun.bin") > 0;
+    r.loaded = h.load_program(g_dir + "/" + c.bin) > 0;
     if (!r.loaded) return r;
     r.released = h.boot(kBootBudget).cpu_released;
-    h.run_cycles(run_budget);
+    r.base = h.cycles();
+    r.refresh.reserve(run_budget);
+    for (uint64_t i = 0; i < run_budget; ++i) {
+        h.run_cycles(1);
+        r.refresh.push_back(h.ports()->refresh ? 1 : 0);
+    }
     auto fx = h.peek_logical(kResults);
     r.fixture_ok = fx.has_value() && *fx == 0xBEEF;
     r.video = h.video();
+    r.ram = h.ram_log();
     return r;
 }
 
@@ -380,31 +435,6 @@ bool is_color(const VideoSample& s, uint8_t r, uint8_t g, uint8_t b) {
 constexpr uint8_t kC00r=2, kC00g=2, kC00b=2;   // COLOR00 = $0222
 constexpr uint8_t kC01r=0xF, kC01g=0, kC01b=0; // COLOR01 = $0F00
 constexpr uint8_t kC02r=0, kC02g=0xF, kC02b=0; // COLOR02 = $00F0
-
-std::optional<int> measure_r_l(const std::vector<VideoSample>& v, size_t frame_idx) {
-    auto frames = nmh::find_frames(v);
-    if (frame_idx >= frames.size()) return std::nullopt;
-    Span fr = frames[frame_idx];
-    auto lines = nmh::find_lines(v);
-    std::map<int,int> hist;
-    for (auto& ln : lines) {
-        if (ln.begin < fr.begin || ln.end > fr.end) continue;
-        int cur = -1, run_len = 0;
-        for (size_t i = ln.begin; i < ln.end; ++i) {
-            int cls = -1;
-            if (is_color(v[i], kC01r,kC01g,kC01b)) cls = 1;
-            else if (is_color(v[i], kC00r,kC00g,kC00b)) cls = 0;
-            if (cls == cur) { ++run_len; continue; }
-            if (cur != -1 && run_len > 1) ++hist[run_len];
-            cur = cls; run_len = (cls == -1) ? 0 : 1;
-        }
-        if (cur != -1 && run_len > 1) ++hist[run_len];
-    }
-    if (hist.empty()) return std::nullopt;
-    int best = -1, best_n = -1;
-    for (auto& [len, n] : hist) if (n > best_n) { best = len; best_n = n; }
-    return best;
-}
 
 std::vector<Span> window_lines(const std::vector<VideoSample>& v, size_t frame_idx,
                                 uint8_t r, uint8_t g, uint8_t b) {
@@ -495,7 +525,13 @@ std::optional<std::vector<int>> stripe_signature(const std::vector<VideoSample>&
     return sig;
 }
 
-bool near_int(double v, double target, double tol = 0.26) { return std::abs(v - target) <= tol; }
+bool exact(double v, double target) { return std::abs(v - target) < 1e-9; }
+
+struct Scale {
+    bool ok = false;      // every R1 line holds
+    double op = 1.0;      // video samples per op
+    int r_l = 0;
+};
 
 // boot() runs through several complete frames of NanoMig's own internal
 // (multi-frame, SOF-counted) reset before releasing the CPU, and video
@@ -653,11 +689,11 @@ struct R2 {
     double gap_min = 0, gap_max = 0;  // consecutive line starts, in CCK
 };
 
-R2 analyse_r2(const Cap& c) {
+R2 analyse_r2(const std::vector<uint8_t>& refresh, uint64_t base) {
     R2 r;
     std::vector<uint64_t> edges;
-    for (size_t i = 1; i < c.refresh.size(); ++i)
-        if (c.refresh[i] && !c.refresh[i - 1]) edges.push_back(c.base + i);
+    for (size_t i = 1; i < refresh.size(); ++i)
+        if (refresh[i] && !refresh[i - 1]) edges.push_back(base + i);
     std::vector<std::vector<uint64_t>> groups;
     for (size_t i = 0; i < edges.size(); ++i) {
         if (i == 0 || edges[i] - edges[i - 1] > 64) groups.push_back({});
@@ -684,6 +720,8 @@ R2 analyse_r2(const Cap& c) {
     return r;
 }
 
+R2 analyse_r2(const Cap& c) { return analyse_r2(c.refresh, c.base); }
+
 // Index of the R2 line holding cycle t (-1 before the first boundary).
 int64_t line_of(const R2& r, uint64_t t) {
     auto it = std::upper_bound(r.start.begin(), r.start.end(), t);
@@ -706,9 +744,9 @@ std::optional<size_t> enable_frame(const Cap& c, uint32_t lo_byte, uint32_t hi_b
 // A fetch: the accesses of one channel in one slot; its address is the lowest.
 struct Fetch { uint64_t cycle; uint32_t addr; int64_t line; };
 
-std::vector<Fetch> fetches_in(const Cap& c, const R2& r, uint32_t lo_byte, uint32_t hi_byte, Span fr) {
+std::vector<Fetch> fetches_in(const std::vector<nmh::RamAccess>& ram, const R2& r, uint32_t lo_byte, uint32_t hi_byte, Span fr) {
     std::vector<Fetch> out;
-    for (auto& a : c.ram) {
+    for (auto& a : ram) {
         if (a.is_write || a.cycle < fr.begin || a.cycle >= fr.end) continue;
         uint32_t byte = a.word_addr * 2;
         if (byte < lo_byte || byte >= hi_byte) continue;
@@ -720,6 +758,8 @@ std::vector<Fetch> fetches_in(const Cap& c, const R2& r, uint32_t lo_byte, uint3
     }
     return out;
 }
+
+std::vector<Fetch> fetches_in(const Cap& c, const R2& r, uint32_t lo_byte, uint32_t hi_byte, Span fr) { return fetches_in(c.ram, r, lo_byte, hi_byte, fr); }
 
 void not_graded(Checks& checks, const std::string& id, const std::string& unmet) {
     checks.record("NOT GRADED " + id + ": precondition(s) not met: " + unmet);
@@ -1318,7 +1358,7 @@ P6Run run_p6(const RunSpec& s, uint32_t plane_lo, uint32_t plane_hi) {
 
 bool same_shape(const P6Run& a, const P6Run& b) {
     return a.f3_ok && b.f3_ok && a.shape_lines > 0 && a.shape_lines == b.shape_lines &&
-           near_int(a.shape_period, b.shape_period, 1.0) && near_int(a.shape_width, b.shape_width, 1.0);
+           exact(a.shape_period, b.shape_period) && exact(a.shape_width, b.shape_width);
 }
 
 // Compares the red channel of two images at the pixels of `mask`; returns the
@@ -1340,7 +1380,7 @@ RedCmp compare_red(const Img& a, const Img& b, const Img& mask_from) {
     return r;
 }
 
-void prop_p6(Checks& checks, Grader& g) {
+void prop_p6(Checks& checks, Grader& g, const Scale& sc) {
     // runs: B0 and B1 with table T_id and T_x, plus the three for the preconditions
     P6Cfg b0id, b1id, b0x, b1x, b0n, b0s0;
     b1id.bypass = true; b0x.tx = true; b1x.bypass = true; b1x.tx = true;
@@ -1358,12 +1398,14 @@ void prop_p6(Checks& checks, Grader& g) {
     if (mutating("P6-I-PRIO")) b1id.bplcon2 = 0x0000;
     // P6-II and P6-AGG: a live input through the same comparators: the B1/T_x run is run as B0/T_id
     if (mutating("P6-II") || mutating("P6-AGG")) { b1x.bypass = false; b1x.tx = false; }
+    // P6-I and P6-I-PRIO: the precondition P6-II is made live in the same selector, the B1/T_x run being run as B0/T_id with the mutated register
+    if (mutating("P6-I") || mutating("P6-I-PRIO")) { b1x.bypass = false; b1x.tx = false; b1x.bplcon1 = b1id.bplcon1; b1x.bplcon2 = b1id.bplcon2; }
     const uint32_t lo = kCopList, hi = kCopList + 0x100;   // the frame holding the first Copper fetch is the one the DMA enable falls in
     // A mutation names the runs it changes; the runs it needs are the only ones made. B0/T_id is always made.
     const std::string ms = g_mutate ? g_mutate : "";
     const bool dev = ms.empty() || ms == "P6-NONE" || ms == "P6-II" || ms == "P6-AGG";
     const bool nb1 = dev || ms == "P6-R1" || ms == "P6-I" || ms == "P6-I-PRIO";
-    const bool nx1 = dev;
+    const bool nx1 = dev || ms == "P6-I" || ms == "P6-I-PRIO";
     const bool nx0 = dev || ms == "P6-TBL";
     const bool nn = dev || ms == "P6-SPR";
     const bool ns0 = dev || ms == "P6-SCROLL";
@@ -1440,12 +1482,12 @@ void prop_p6(Checks& checks, Grader& g) {
                 if (rid0.img[l][c].r != 1) spr_ok = false;
                 if (rn.img[l][c].r != 1) spr_over_other = true;
             }
-            if (n) { ++spr_rows; if (n != 32) spr_ok = false; }
+            if (n) { ++spr_rows; if (n != size_t(32 * sc.op)) spr_ok = false; }
         }
         spr_ok = spr_ok && spr_rows > 0 && spr_rows % 16 == 0 && spr_over_other;
     }
     if (nn) {
-        g.expect(spr_ok, "P6-SPR: precondition sprite: on lines $60-$6F sprite 0's 32 columns show red 1 in B0/T_id, including over groups whose high nibble is not 1");
+        dep_expect(checks, sc.ok, spr_ok, "P6-SPR: precondition sprite: on lines $60-$6F sprite 0's 32 op (32 times the R1 samples per op) of columns show red 1 in B0/T_id, including over groups whose high nibble is not 1", "R1 scale");
         checks.note("P6 sprite: " + dec((long long)spr_rows) + " output lines carry sprite columns");
     }
 
@@ -1466,25 +1508,25 @@ void prop_p6(Checks& checks, Grader& g) {
         };
         std::vector<size_t> ub = bounds(rs0), sb = bounds(rid0);
         scroll_ok = ub.size() >= 10 && !sb.empty();
-        for (size_t u : ub) if (std::find(sb.begin(), sb.end(), u + 6) == sb.end()) scroll_ok = false;
+        for (size_t u : ub) if (std::find(sb.begin(), sb.end(), u + size_t(6 * sc.op)) == sb.end()) scroll_ok = false;
         checks.note("P6 scroll: " + dec((long long)ub.size()) + " group boundaries without scroll, " + dec((long long)sb.size()) + " with BPLCON1=$0033, line index " + dec((long long)l));
-        g.expect(scroll_ok, "P6-SCROLL: precondition scroll: every group boundary of B0/T_id lies 6 op (6 samples) to the right of the one with BPLCON1 = $0000");
+        dep_expect(checks, sc.ok, scroll_ok, "P6-SCROLL: precondition scroll: every group boundary of B0/T_id lies 6 op (6 times the R1 samples per op) to the right of the one with BPLCON1 = $0000", "R1 scale");
     }
 
-    bool pre = r4_ok && pop && tbl_ok && reds.size() == 16 && spr_ok && scroll_ok;
+    bool pre = sc.ok && r4_ok && pop && tbl_ok && reds.size() == 16 && spr_ok && scroll_ok;
     if (!nb1) return;
-    if (!pre) { not_graded(checks, "P6 assertions", "R4, population, table, values, sprite or scroll precondition"); return; }
+    if (!pre) { not_graded(checks, "P6 assertions", "R1 scale, R4, population, table, values, sprite or scroll precondition"); return; }
 
-    RedCmp i = compare_red(rid1.img, rid0.img, rid0.img);
-    bool i_ok = i.rows_ok && i.compared > 0 && i.differ == 0;
-    g.expect(i_ok, "P6-I: with BYPASS set (BPLCON0 = $0030) and table T_id the red of every observed pixel equals that of the run without BYPASS (BPLCON0 = $0010), at BPLCON1 = $0033 and with sprite 0 in front");
-    checks.note("P6 (i): " + dec((long long)i.differ) + " of " + dec((long long)i.compared) + " pixels differ between B1/T_id and B0/T_id");
     if (!nx1) return;
     RedCmp ii = compare_red(rx1.img, rid1.img, rid0.img);
     bool ii_ok = ii.rows_ok && ii.compared > 0 && ii.differ == 0;
-    g.expect(ii_ok, "P6-II: with BYPASS set the red of every observed pixel is the same with table T_x as with table T_id");
+    g.expect(ii_ok, "P6-II: with BYPASS set the red of every observed pixel is the same with table T_x as with table T_id (AA p.17 'bypass color table and 8 bit wide data appear on R(7:0)')");
     checks.note("P6 (ii): " + dec((long long)ii.differ) + " of " + dec((long long)ii.compared) + " pixels differ between B1/T_x and B1/T_id");
-    g.expect(i_ok && ii_ok, "P6-AGG sol:AA-bplcon0.c19: with BYPASS set the red output carries the address bits 7-4 chosen by scrolling and priority, as without BYPASS, and does not use the colour table (AA p.17 'bitplanes are scrolled and prioritized normally, but bypass color table and 8 bit wide data appear on R(7:0)')");
+    RedCmp i = compare_red(rid1.img, rid0.img, rid0.img);
+    bool i_ok = i.rows_ok && i.compared > 0 && i.differ == 0;
+    dep_expect(checks, ii_ok, i_ok, "P6-I: with BYPASS set (BPLCON0 = $0030) and table T_id the red of every observed pixel equals that of the run without BYPASS (BPLCON0 = $0010), at BPLCON1 = $0033 and with sprite 0 in front", "P6-II: BYPASS has an effect on the red output (otherwise this comparison holds vacuously)");
+    checks.note("P6 (i): " + dec((long long)i.differ) + " of " + dec((long long)i.compared) + " pixels differ between B1/T_id and B0/T_id");
+    g.expect(i_ok && ii_ok, "P6-AGG sol:AA-bplcon0.c19: with BYPASS set the bit planes are scrolled and prioritized as without BYPASS (the red of every observed pixel equals the run without BYPASS, P6-I) and the colour table is bypassed, the red output not following the table (P6-II) (AA p.17 'bitplanes are scrolled and prioritized normally, but bypass color table and 8 bit wide data appear on R(7:0)')");
 }
 
 // ---- P10-P15 helpers -------------------------------------------------------
@@ -1583,7 +1625,7 @@ void prop_p10(Checks& checks, Grader& g) {
     dep_expect(checks, fixture && m.r2.ok, win, "P10-WIN: precondition (i): in every pair fewer than 19 R2 line boundaries lie between the marker store (the start of vertical blank, AA p.25 VERTB) and the store of w1", "fixture or R2 anchor");
     bool latch = fixture && c.r2.ok;
     for (int i = 0; latch && i < 3; ++i) if (c.w1[i] != c.w0[i]) latch = false;
-    dep_expect(checks, fixture, latch, "P10-LATCH: precondition (ii): with BPLCON0 = $0008 (LPEN = 1) written before the reads, w1 equals w0 in every pair, so the latch freezes the counter in this system", "fixture");
+    dep_expect(checks, fixture, latch, "P10-LATCH: precondition (ii): with BPLCON0 = $0008 (LPEN = 1) and LPENDIS = 0 (BEAMCON0 = $0020) written before the reads, w1 equals w0 in every pair, so the latch freezes the counter (HRM p.239 'Once the light pen input is enabled and the light pen issues a trigger signal, the value in VPOSR is frozen. If no trigger is seen, the counters latch at the end of the display field'; AA p.12 LPENDIS 'When this bit is a low and LPE (BPLCON0,BIT 3) is enabled, the light-pen latched value (beam hit position) will be read by VHPOSR, VPOSR and HHPOSR')", "fixture");
     checks.record("P10 precondition (iii): the program source of the main run contains no write to BPLCON0 ($DFF100); the contrast build adds that one write");
     for (int i = 0; fixture && i < 3; ++i)
         checks.note("P10 main pair " + dec(i) + ": w0=$" + hexw(m.w0[i], 8) + " (V=" + dec(lp_v(m.w0[i])) + ") w1=$" + hexw(m.w1[i], 8) +
@@ -2201,6 +2243,602 @@ void prop_p15(Checks& checks, Grader& g) {
     }
     g.expect(v1ok, "P15-V1 sol:AA-hhpos.c2: with DUAL set and HTOTAL = $0038 the UHRES pointer comes out at least 3 times on every line, every pair of consecutive accesses 8 bytes apart and 57 CCK, give or take 2 CCK, apart (AA p.12 'starts the UHRES pointer chain with the reset of this counter rather than the normal one')");
 }
+// ---- P1-P5: bar and stripe runs, their preconditions and their propositions ------------
+
+// Window lines of the display: DIWSTRT $2C81 and DIWSTOP $F0C1 give lines $2C-$EF (S2).
+constexpr size_t kWindowLines = 196;
+
+// What a run's fetches show in one frame: S3a (the first plane-1 and plane-2 fetch of every window line read the first
+// bytes of their line buffers) and the step between consecutive plane-1 fetches within a line.
+struct FetchInfo {
+    bool r2ok = false;
+    size_t lines1 = 0, lines2 = 0;
+    bool first_ok = false;       // S3a
+    long long step = 0;          // most common step between consecutive plane-1 fetches of one line
+    bool step_uniform = false;
+};
+
+FetchInfo fetch_info(const RunOut& r, Span fr) {
+    FetchInfo f;
+    R2 r2 = analyse_r2(r.refresh, r.base);
+    f.r2ok = r2.ok;
+    if (!r2.ok) return f;
+    auto p1 = fetches_in(r.ram, r2, kBuf1, kBuf1 + 192, fr);
+    auto p2 = fetches_in(r.ram, r2, kBuf2, kBuf2 + 192, fr);
+    std::map<int64_t, uint32_t> first1, first2;
+    for (auto& x : p1) if (!first1.count(x.line)) first1[x.line] = x.addr;
+    for (auto& x : p2) if (!first2.count(x.line)) first2[x.line] = x.addr;
+    f.lines1 = first1.size(); f.lines2 = first2.size();
+    bool ok = f.lines1 == kWindowLines && f.lines2 == kWindowLines;
+    for (auto& kv : first1) ok = ok && kv.second == kBuf1;
+    for (auto& kv : first2) ok = ok && kv.second == kBuf2;
+    f.first_ok = ok;
+    std::map<long long, size_t> hist; size_t pairs = 0;
+    for (size_t i = 1; i < p1.size(); ++i)
+        if (p1[i].line == p1[i - 1].line) { ++hist[(long long)p1[i].addr - (long long)p1[i - 1].addr]; ++pairs; }
+    size_t best = 0;
+    for (auto& kv : hist) if (kv.second > best) { best = kv.second; f.step = kv.first; }
+    f.step_uniform = pairs > 0 && best == pairs;
+    return f;
+}
+
+// One frame of a run: hsync shape, the edges, the fetches and, for stripe runs, the stripe colour signatures taken
+// relative to the frame's own solid edge (S3b).
+struct FrameInfo {
+    bool valid = false;
+    HsyncShape hs{0, 0, 0};
+    EdgeMeasure e1{false, std::nullopt, 0}, e2{false, std::nullopt, 0};
+    FetchInfo fi;
+    std::optional<std::vector<int>> sig1, sig2;
+};
+
+// The alternating part is 64 op wide, from 8 op to 72 op after the solid edge; its colour is read at every op from 12 to 68, 4 op in from each end (S3b).
+std::vector<double> stripe_offsets() { std::vector<double> v; for (int k = 12; k <= 68; ++k) v.push_back(k); return v; }
+const std::vector<double> kStripeOffsets = stripe_offsets();
+
+FrameInfo frame_info(const RunOut& r, const std::vector<Span>& frames, size_t idx, double op, bool stripes) {
+    FrameInfo f;
+    if (idx >= frames.size()) return f;
+    f.valid = true;
+    f.hs = hsync_shape(r.video, idx);
+    f.e1 = measure_edge_all_lines(r.video, idx, kC01r, kC01g, kC01b);
+    f.e2 = measure_edge_all_lines(r.video, idx, kC02r, kC02g, kC02b);
+    f.fi = fetch_info(r, frames[idx]);
+    if (stripes && f.e1.ok && f.e2.ok && f.e1.offset && f.e2.offset) {
+        f.sig1 = stripe_signature(r.video, idx, kC01r, kC01g, kC01b, double(*f.e1.offset), op, kStripeOffsets);
+        f.sig2 = stripe_signature(r.video, idx, kC02r, kC02g, kC02b, double(*f.e2.offset), op, kStripeOffsets);
+    }
+    return f;
+}
+
+struct RunInfo {
+    bool fixture = false;
+    std::optional<size_t> f1;
+    FrameInfo f3, f5;
+};
+
+RunInfo analyse_run(const RunOut& r, double op, bool stripes, bool want_f5) {
+    RunInfo i;
+    i.fixture = r.loaded && r.released && r.fixture_ok;
+    i.f1 = find_f1(r.video);
+    if (!i.f1) return i;
+    auto frames = nmh::find_frames(r.video);
+    i.f3 = frame_info(r, frames, *i.f1 + 2, op, stripes);
+    if (want_f5) i.f5 = frame_info(r, frames, *i.f1 + 4, op, stripes);
+    return i;
+}
+
+// R1 anchor between two frames: hsync period, hsync width and output-line count per frame equal.
+bool anchor_equal(const FrameInfo& a, const FrameInfo& b) {
+    return a.valid && b.valid && a.hs.line_count > 0 && a.hs.line_count == b.hs.line_count &&
+           exact(a.hs.avg_period, b.hs.avg_period) && exact(a.hs.avg_width, b.hs.avg_width);
+}
+
+std::optional<double> delta_op(std::optional<size_t> cfg, std::optional<size_t> ref, double op) {
+    if (!cfg || !ref) return std::nullopt;
+    return (double(*cfg) - double(*ref)) / op;
+}
+
+// The colour a stripe signature shows: 1 or 0 when all offsets agree, -1 otherwise.
+int sig_colour(const std::optional<std::vector<int>>& s) {
+    if (!s || s->empty()) return -1;
+    for (int c : *s) if (c != (*s)[0]) return -1;
+    return (*s)[0];
+}
+
+Buf alt_buf() {   // alternate bytes $AA and $FF: not a one-pixel-per-run pattern
+    Buf b{};
+    for (size_t i = 0; i < b.size(); i += 2) { b[i] = 0xAA; b[i + 1] = 0xFF; }
+    return b;
+}
+
+// ---- R1: scale and anchors ----
+
+struct RunLen { bool any = false, stable = false; int len = 0; };
+
+// On every window line of frame `frame_idx`, the runs of COLOR01 and COLOR00 between the first and the last COLOR01 sample
+// are complete. `stable`: they all have one length, which is `len`.
+RunLen measure_run_len(const std::vector<VideoSample>& v, size_t frame_idx) {
+    RunLen out;
+    auto frames = nmh::find_frames(v);
+    if (frame_idx >= frames.size()) return out;
+    Span fr = frames[frame_idx];
+    std::map<int, size_t> hist;
+    bool other = false;
+    for (auto& ln : nmh::find_lines(v)) {
+        if (ln.begin < fr.begin || ln.end > fr.end) continue;
+        size_t first = ln.end, last = ln.begin;
+        for (size_t i = ln.begin; i < ln.end; ++i)
+            if (is_color(v[i], kC01r, kC01g, kC01b)) { if (first == ln.end) first = i; last = i; }
+        if (first == ln.end) continue;
+        int cur = -1, run_len = 0;
+        for (size_t i = first; i <= last; ++i) {
+            int cls = is_color(v[i], kC01r, kC01g, kC01b) ? 1 : is_color(v[i], kC00r, kC00g, kC00b) ? 0 : -1;
+            if (cls == -1) other = true;
+            if (cls == cur) { ++run_len; continue; }
+            if (cur != -1) ++hist[run_len];
+            cur = cls; run_len = 1;
+        }
+        ++hist[run_len];
+    }
+    if (hist.empty()) return out;
+    int best = -1; size_t best_n = 0;
+    for (auto& kv : hist) if (kv.second > best_n) { best = kv.first; best_n = kv.second; }
+    out.any = true; out.len = best; out.stable = !other && hist.size() == 1;
+    return out;
+}
+
+struct CalRun { bool fixture = false; std::optional<size_t> f1; RunLen rl; };
+
+CalRun run_cal(const BarsConfig& c) {
+    CalRun k;
+    RunOut r = run_bars(c);
+    k.fixture = r.loaded && r.released && r.fixture_ok;
+    k.f1 = find_f1(r.video);
+    if (k.f1) k.rl = measure_run_len(r.video, *k.f1 + 2);
+    return k;
+}
+
+Scale prop_r1(Checks& checks) {
+    Scale sc;
+    BarsConfig lo; lo.bplcon0 = 0x1000; lo.write_bplcon1 = false; lo.buf1 = scale_buf();
+    BarsConfig hi; hi.bplcon0 = 0x9000; hi.write_bplcon1 = false; hi.ddfstrt = kDdfstrtShres; hi.ddfstop = kDdfstopShres; hi.buf1 = scale_buf();
+    if (run_mutation("R1-FIXTURE")) lo.bin = "prog_bars_nofix.bin";
+    if (run_mutation("R1-F1")) lo.dmacon = 0x8280;
+    if (run_mutation("R1-RL")) lo.buf1 = alt_buf();
+    if (run_mutation("R1-EVEN")) { lo.bplcon0 = 0x9000; lo.ddfstrt = kDdfstrtShres; lo.ddfstop = kDdfstopShres; }
+    if (run_mutation("R1-HIRES")) { hi.bplcon0 = 0x1000; hi.ddfstrt = kDdfstrtLores; hi.ddfstop = kDdfstopLores; }
+    CalRun a = run_cal(lo), b = run_cal(hi);
+    bool fixture = a.fixture && b.fixture;
+    checks.expect(fixture, "R1-FIXTURE: the LORES and the HIRES calibration run loaded, booted and stored the $BEEF fixture before any measurement is trusted");
+    bool f1 = a.f1.has_value() && b.f1.has_value();
+    dep_expect(checks, fixture, f1, "R1-F1: F1 (the first steady frame after the DMA enable) was located from the video trace in both calibration runs", "fixture");
+    bool d1 = fixture && f1;
+    dep_expect(checks, d1, a.rl.any && a.rl.stable, "R1-RL: on every window line of F3 of the LORES calibration run the runs of COLOR01 and COLOR00 between the first and the last COLOR01 sample are all equally long, one LORES pixel (AA p.17: LORES(140nS))", "fixture or F1");
+    int r_l = a.rl.len;
+    checks.note("R1: r_L = " + std::to_string(r_l) + " video samples per LORES pixel, measured on F3 (" + std::string(a.rl.stable ? "stable" : "not stable") + "); HIRES run length " + std::to_string(b.rl.len));
+    bool rl = d1 && a.rl.any && a.rl.stable;
+    dep_expect(checks, rl, r_l > 0 && r_l % 2 == 0, "R1-EVEN: r_L is even, so that one op (half a LORES pixel, 70 ns) is a whole number of video samples", "fixture, F1 or run length");
+    bool even = rl && r_l > 0 && r_l % 2 == 0;
+    dep_expect(checks, even, b.rl.any && b.rl.stable && 2 * b.rl.len == r_l, "R1-HIRES: the runs of the HIRES calibration run (BPLCON0 = $9000) are all r_L/2 samples long, one HIRES pixel (AA p.17: HIRES(70nS))", "fixture, F1, run length or even r_L");
+    sc.ok = even && b.rl.any && b.rl.stable && 2 * b.rl.len == r_l;
+    sc.r_l = r_l;
+    sc.op = r_l > 0 ? r_l / 2.0 : 1.0;
+    return sc;
+}
+
+// ---- P1 ----
+
+void prop_p1(Checks& checks, const Scale& sc) {
+    BarsConfig ref, tst;
+    ref.bplcon0 = 0x2000; ref.bplcon1 = 0x0000;
+    tst.bplcon0 = 0x2000; tst.bplcon1 = 0x0033;
+    for (auto* c : {&ref, &tst}) { c->buf1 = bars_buf(8); c->buf2 = bars_buf(24); }
+    if (run_mutation("P1")) { tst.bplcon1 = 0x0000; tst.bplcon4 = 0x0033; }   // $0000 to $102 and $0033 to $10C (BPLCON4) instead
+    if (run_mutation("P1-FIXTURE")) tst.bin = "prog_bars_nofix.bin";
+    if (run_mutation("P1-F1")) tst.dmacon = 0x8280;
+    if (run_mutation("P1-R1")) tst.beamcon0 = 0x0000;
+    if (run_mutation("P1-S3A")) ref.waitlo = 0x0041;
+    if (run_mutation("P1-S3B-REF")) ref.buf2 = zero_buf();
+    if (run_mutation("P1-S3B-TEST")) tst.buf2 = zero_buf();
+    RunInfo a, b;
+    { RunOut r = run_bars(ref); a = analyse_run(r, sc.op, false, false); }
+    { RunOut r = run_bars(tst); b = analyse_run(r, sc.op, false, false); }
+    bool fixture = a.fixture && b.fixture;
+    checks.expect(fixture, "P1-FIXTURE: both runs loaded, booted and stored the $BEEF fixture before any observation");
+    bool f1 = a.f1 && b.f1;
+    dep_expect(checks, fixture, f1, "P1-F1: F1 (first steady frame after DMA enable) located in both runs", "fixture");
+    bool d = fixture && f1;
+    dep_expect(checks, d, anchor_equal(a.f3, b.f3), "P1-R1: precondition R1 anchor: hsync period, hsync width and output-line count per frame equal between the reference and test runs", "fixture or F1");
+    checks.note("P1 R1 anchor: reference lines=" + std::to_string(a.f3.hs.line_count) + " period=" + num(a.f3.hs.avg_period) + " width=" + num(a.f3.hs.avg_width) +
+                "; test lines=" + std::to_string(b.f3.hs.line_count) + " period=" + num(b.f3.hs.avg_period) + " width=" + num(b.f3.hs.avg_width));
+    dep_expect(checks, d, a.f3.fi.first_ok && b.f3.fi.first_ok, "P1-S3A: precondition S3a: on every one of the 196 window lines of F3 of both runs the first plane-1 and the first plane-2 fetch read the first bytes of their line buffers", "fixture or F1");
+    dep_expect(checks, d, a.f3.e1.ok && a.f3.e2.ok, "P1-S3B-REF: precondition S3b (reference run): E1 and E2 exist on every window line of F3 and are equal on all of them", "fixture or F1");
+    dep_expect(checks, d, b.f3.e1.ok && b.f3.e2.ok, "P1-S3B-TEST: precondition S3b (test run): E1 and E2 exist on every window line of F3 and are equal on all of them", "fixture or F1");
+    bool pre = sc.ok && d && anchor_equal(a.f3, b.f3) && a.f3.fi.first_ok && b.f3.fi.first_ok && a.f3.e1.ok && a.f3.e2.ok && b.f3.e1.ok && b.f3.e2.ok;
+    auto d1 = delta_op(b.f3.e1.offset, a.f3.e1.offset, sc.op), d2 = delta_op(b.f3.e2.offset, a.f3.e2.offset, sc.op);
+    checks.note("P1 measured: Delta1=" + opt_num(d1) + " op, Delta2=" + opt_num(d2) + " op (r_L=" + std::to_string(sc.r_l) + ")");
+    dep_expect(checks, pre, d1 && exact(*d1, 6.0),
+        "P1-D1 opus:AA-bplcon1.h1 sol:AA-bplcon1.c6 sol:AA-bplcon1.c7: CPU write of $0033 to $DFF102 (BPLCON1, AA p.16 'BPLCON1 p 102 W D') "
+        "delays playfield 1 (PF1H2/PF1H3 set) by Delta1=+6 op on every window line of F3", "R1, fixture, F1, anchor, S3a or S3b");
+    dep_expect(checks, pre, d2 && exact(*d2, 6.0),
+        "P1-D2 opus:AA-bplcon1.h1 sol:AA-bplcon1.c6 sol:AA-bplcon1.c7: CPU write of $0033 to $DFF102 (BPLCON1, AA p.16) "
+        "delays playfield 2 (PF2H2/PF2H3 set) by Delta2=+6 op on every window line of F3", "R1, fixture, F1, anchor, S3a or S3b");
+}
+
+// ---- P2 ----
+
+struct P2Row { int bit; uint16_t value; const char* name; bool pf1; int op; bool a1, a2, b; const char* claims; };
+
+std::array<bool, 16> g_p2_ok{}, g_p2_graded{};   // per bit, shared with P5 (rows 8-15)
+
+struct P2Res { RunInfo a1, a2, b; bool have_a1 = false, have_a2 = false, have_b = false; };
+
+void prop_p2(Checks& checks, const Scale& sc) {
+    const P2Row rows[] = {
+        {0,0x0001,"PF1H2",true, 2, true, true, false, "opus:AA-bplcon1.b00 sol:AA-bplcon1.c30 sol:AA-bplcon1.c12 opus:AA-bplcon1.c6 sol:AA-bplcon1.c5"},
+        {1,0x0002,"PF1H3",true, 4, true, true, false, "opus:AA-bplcon1.b01 sol:AA-bplcon1.c29"},
+        {2,0x0004,"PF1H4",true, 8, true, true, false, "opus:AA-bplcon1.b02 sol:AA-bplcon1.c28"},
+        {3,0x0008,"PF1H5",true,16, true, true, false, "opus:AA-bplcon1.b03 sol:AA-bplcon1.c27"},
+        {4,0x0010,"PF2H2",false,2, true, true, false, "opus:AA-bplcon1.b04 sol:AA-bplcon1.c26"},
+        {5,0x0020,"PF2H3",false,4, true, true, false, "opus:AA-bplcon1.b05 sol:AA-bplcon1.c25"},
+        {6,0x0040,"PF2H4",false,8, true, true, false, "opus:AA-bplcon1.b06 sol:AA-bplcon1.c24"},
+        {7,0x0080,"PF2H5",false,16,true, true, false, "opus:AA-bplcon1.b07 sol:AA-bplcon1.c23"},
+        {8,0x0100,"PF1H0",true, 0, false,false,true,  "opus:AA-bplcon1.b08"},
+        {9,0x0200,"PF1H1",true, 1, true, true, false, "opus:AA-bplcon1.b09"},
+        {10,0x0400,"PF1H6",true,32,false,true, false, "opus:AA-bplcon1.b10"},
+        {11,0x0800,"PF1H7",true,64,false,true, false, "opus:AA-bplcon1.b11"},
+        {12,0x1000,"PF2H0",false,0, false,false,true,  "opus:AA-bplcon1.b12"},
+        {13,0x2000,"PF2H1",false,1, true, true, false, "opus:AA-bplcon1.b13"},
+        {14,0x4000,"PF2H6",false,32,false,true, false, "opus:AA-bplcon1.b14"},
+        {15,0x8000,"PF2H7",false,64,false,true, false, "opus:AA-bplcon1.b15"},
+    };
+    const std::string msel = g_mutate ? g_mutate : "";
+    const std::string selp = sel_prop();
+    auto msel_has = [&](const char* prefix) { return msel.compare(0, std::strlen(prefix), prefix) == 0; };
+    // precondition selectors name the mode and the one row they run
+    const bool pre_a1 = msel == "P2-FIXTURE" || msel == "P2-F1" || msel == "P2-R1" || msel == "P2-S3A" || msel == "P2-S3B";
+    const bool pre_a2 = msel == "P2-STEP8", pre_b = msel == "P2-STRIPE";
+    const bool p2_full = !g_mutate || msel == "P2-CODE";   // P2-CODE: every row runs, rows PF1H2 and PF2H2 in (a1) with their neighbouring bit written
+    const bool need_a1 = p2_full || selp == "P5" || msel_has("P2A1-") || msel_has("P2S-") || pre_a1;
+    const bool need_a2 = p2_full || selp == "P5" || msel_has("P2A2-") || msel_has("P2S-") || pre_a2;
+    const bool need_b  = p2_full || selp == "P5" || msel_has("P2B-") || pre_b;
+
+    BarsConfig a1_ref; a1_ref.bplcon0 = 0x2000; a1_ref.fmode = 0x0000; a1_ref.buf1 = bars_buf(8); a1_ref.buf2 = bars_buf(24);
+    BarsConfig a2_ref; a2_ref.bplcon0 = 0x2000; a2_ref.fmode = 0x0003; a2_ref.buf1 = bars_buf(8); a2_ref.buf2 = bars_buf(24);
+    BarsConfig b_ref;  b_ref.bplcon0 = 0x2040; b_ref.fmode = 0x0000; b_ref.ddfstrt = kDdfstrtShres; b_ref.ddfstop = kDdfstopShres;
+    b_ref.buf1 = stripe_buf(8, 10, 16); b_ref.buf2 = stripe_buf(56, 58, 16);
+    BarsConfig a1_test_mut;   // changes applied to the test run of the one row of a precondition selector
+    if (msel == "P2-FIXTURE") a1_ref.bin = "prog_bars_nofix.bin";
+    if (msel == "P2-F1") a1_ref.dmacon = 0x8280;
+    if (msel == "P2-S3A") a1_ref.waitlo = 0x0041;
+    if (msel == "P2-S3B") a1_ref.buf2 = zero_buf();
+    if (msel == "P2-STEP8") a2_ref.fmode = 0x0000;
+    if (msel == "P2-STRIPE") b_ref.buf1 = stripe_buf(8, 10, 16, true), b_ref.buf2 = stripe_buf(56, 58, 16, true);
+
+    // ---- reference runs ----
+    RunInfo ra1, ra2, rb;
+    if (need_a1) { RunOut r = run_bars(a1_ref); ra1 = analyse_run(r, sc.op, false, false); }
+    if (need_a2) { RunOut r = run_bars(a2_ref); ra2 = analyse_run(r, sc.op, false, false); }
+    if (need_b)  { RunOut r = run_bars(b_ref);  rb  = analyse_run(r, sc.op, true,  false); }
+
+    // ---- test runs, one per row and mode ----
+    std::vector<P2Res> res(16);
+    for (auto& row : rows) {
+        if (g_mutate && selp == "P5" && row.bit < 8) continue;
+        if (g_mutate && selp == "P2" && !p2_full) {
+            if (pre_a1 || pre_a2) { if (std::string(row.name) != "PF1H2") continue; }
+            else if (pre_b) { if (std::string(row.name) != "PF1H0") continue; }
+            else if (msel.find(row.name) == std::string::npos) continue;   // a mutation names one row
+        }
+        const std::string tok_a1 = "P2A1-" + std::string(row.name), tok_a2 = "P2A2-" + std::string(row.name);
+        const std::string tok_b = "P2B-" + std::string(row.name), tok_s = "P2S-" + std::string(row.name);
+        // The contrast of a row: the neighbouring bit written in place of the row's own (rows 0-7), or $0000
+        // written (rows 8-15: no delay, no flip).
+        const uint16_t neighbour = row.bit >= 1 ? (uint16_t)(1u << (row.bit - 1)) : (uint16_t)(1u << (row.bit + 1));
+        auto contrast = [&](BarsConfig& c, bool on) {
+            if (!on) return;
+            if (row.bit >= 8) c.bplcon1 = 0x0000; else c.bplcon1 = neighbour;
+        };
+        P2Res& pr = res[row.bit];
+        if (row.a1 && need_a1) {
+            BarsConfig c = a1_ref; c.bplcon1 = row.value;
+            if (msel == "P2-FIXTURE" || msel == "P2-F1" || msel == "P2-S3A" || msel == "P2-S3B") { c.bin = "prog_bars.bin"; c.dmacon = 0x8380; c.waitlo = 0x0007; c.buf2 = bars_buf(24); }
+            if (msel == "P2-R1") c.beamcon0 = 0x0000;
+            contrast(c, run_mutation(tok_a1) || (msel == "P2-CODE" && (std::string(row.name) == "PF1H2" || std::string(row.name) == "PF2H2")));
+            RunOut r = run_bars(c);
+            pr.a1 = analyse_run(r, sc.op, false, false); pr.have_a1 = true;
+        }
+        if (row.a2 && need_a2) {
+            BarsConfig c = a2_ref; c.bplcon1 = row.value;
+            if (msel == "P2-STEP8") c.fmode = 0x0003;
+            contrast(c, run_mutation(tok_a2) || run_mutation(tok_s));
+            RunOut r = run_bars(c);
+            pr.a2 = analyse_run(r, sc.op, false, false); pr.have_a2 = true;
+        }
+        if (row.b && need_b) {
+            BarsConfig c = b_ref; c.bplcon1 = row.value;
+            if (msel == "P2-STRIPE") { c.buf1 = stripe_buf(8, 10, 16); c.buf2 = stripe_buf(56, 58, 16); }
+            if (run_mutation(tok_b)) c.bplcon1 = 0x0000;   // $0000 written: no delay, no flip
+            RunOut r = run_bars(c);
+            pr.b = analyse_run(r, sc.op, true, false); pr.have_b = true;
+        }
+    }
+
+    // ---- preconditions, aggregated per mode over the runs made ----
+    struct Agg { bool any = false, fixture = true, f1 = true, r1 = true, s3b = true; };
+    Agg A1, A2, B;
+    bool s3a_a1 = true, s3a_a2 = true, s3a_b = true, step8 = true, stripe = true;
+    auto agg_run = [&](Agg& g2, const RunInfo& r, const RunInfo& ref) {
+        g2.any = true;
+        g2.fixture = g2.fixture && r.fixture;
+        g2.f1 = g2.f1 && r.f1.has_value();
+        g2.r1 = g2.r1 && anchor_equal(r.f3, ref.f3);
+        g2.s3b = g2.s3b && r.f3.e1.ok && r.f3.e2.ok;
+    };
+    if (need_a1) { A1.any = true; A1.fixture = ra1.fixture; A1.f1 = ra1.f1.has_value(); A1.s3b = ra1.f3.e1.ok && ra1.f3.e2.ok; s3a_a1 = ra1.f3.fi.first_ok; }
+    if (need_a2) { A2.any = true; A2.fixture = ra2.fixture; A2.f1 = ra2.f1.has_value(); A2.s3b = ra2.f3.e1.ok && ra2.f3.e2.ok; s3a_a2 = ra2.f3.fi.first_ok; step8 = ra2.f3.fi.step_uniform && ra2.f3.fi.step == 8; }
+    if (need_b)  { B.any = true; B.fixture = rb.fixture; B.f1 = rb.f1.has_value(); B.s3b = rb.f3.e1.ok && rb.f3.e2.ok; s3a_b = rb.f3.fi.first_ok;
+                   stripe = sig_colour(rb.f3.sig1) >= 0 && sig_colour(rb.f3.sig2) >= 0; }
+    for (auto& row : rows) {
+        P2Res& pr = res[row.bit];
+        if (pr.have_a1) agg_run(A1, pr.a1, ra1);
+        if (pr.have_a2) { agg_run(A2, pr.a2, ra2); step8 = step8 && pr.a2.f3.fi.step_uniform && pr.a2.f3.fi.step == 8; }
+        if (pr.have_b)  { agg_run(B, pr.b, rb); stripe = stripe && sig_colour(pr.b.f3.sig1) >= 0 && sig_colour(pr.b.f3.sig2) >= 0; }
+    }
+    Agg* modes[3] = {&A1, &A2, &B};
+    auto all_modes = [&](bool Agg::*m) { bool v = true; for (Agg* x : modes) if (x->any) v = v && x->*m; return v; };
+    checks.expect(all_modes(&Agg::fixture), "P2-FIXTURE: every reference and test run loaded, booted and stored the $BEEF fixture before any observation");
+    bool fix_all = all_modes(&Agg::fixture);
+    dep_expect(checks, fix_all, all_modes(&Agg::f1), "P2-F1: F1 located in every reference and test run", "fixture");
+    bool f1_all = fix_all && all_modes(&Agg::f1);
+    dep_expect(checks, f1_all, all_modes(&Agg::r1), "P2-R1: precondition R1 anchor: in every pair of a test run and its reference run, hsync period, hsync width and output-line count per frame are equal", "fixture or F1");
+    dep_expect(checks, f1_all, s3a_a1 && s3a_a2 && s3a_b, "P2-S3A: precondition S3a: on every one of the 196 window lines of F3 of each reference run the first plane-1 and the first plane-2 fetch read the first bytes of their line buffers", "fixture or F1");
+    dep_expect(checks, f1_all, all_modes(&Agg::s3b), "P2-S3B: precondition S3b: E1 and E2 exist on every window line of F3 and are equal on all of them in every reference and test run", "fixture or F1");
+    if (need_a2) dep_expect(checks, f1_all, step8, "P2-STEP8: precondition: in every (a2) run the consecutive plane-1 fetches within each window line are 8 bytes apart, which shows FMODE = $0003 took effect (AA p.23)", "fixture or F1");
+    if (need_b) dep_expect(checks, f1_all, stripe, "P2-STRIPE: precondition S3b (stripes): in every (b) run the alternating part shows one colour of each playfield at every sampled offset", "fixture or F1");
+    auto mode_dep = [&](const Agg& m, bool s3a, bool extra) {
+        return sc.ok && m.any && m.fixture && m.f1 && m.r1 && m.s3b && s3a && extra;
+    };
+    const bool dep1 = mode_dep(A1, s3a_a1, true), dep2 = mode_dep(A2, s3a_a2, step8), depb = mode_dep(B, s3a_b, stripe);
+
+    // ---- the row lines ----
+    const std::vector<double>& offs = kStripeOffsets; (void)offs;
+    for (auto& row : rows) {
+        P2Res& pr = res[row.bit];
+        if (!(pr.have_a1 || pr.have_a2 || pr.have_b)) continue;
+        const std::string tok_a1 = "P2A1-" + std::string(row.name), tok_a2 = "P2A2-" + std::string(row.name);
+        const std::string tok_b = "P2B-" + std::string(row.name), tok_s = "P2S-" + std::string(row.name);
+        double exp1 = row.pf1 ? row.op : 0, exp2 = row.pf1 ? 0 : row.op;
+        double d1a1 = 0, d2a1 = 0, d1a2 = 0, d2a2 = 0;
+        bool g1 = false, g2g = false, a1_ok = true, a2_ok = true, row_ok = true, row_graded = true;
+        if (pr.have_a1) {
+            auto d1 = delta_op(pr.a1.f3.e1.offset, ra1.f3.e1.offset, sc.op), d2 = delta_op(pr.a1.f3.e2.offset, ra1.f3.e2.offset, sc.op);
+            a1_ok = d1 && d2 && exact(*d1, exp1) && exact(*d2, exp2);
+            if (d1) d1a1 = *d1; if (d2) d2a1 = *d2;
+            dep_expect(checks, dep1, a1_ok, tok_a1 + " " + row.claims + ": BPLCON1=$" + hex4(row.value) + " (" + row.name +
+                       " alone) gives Delta1=" + num(exp1) + " op, Delta2=" + num(exp2) + " op on every window line of F3, LORES FMODE=0", "an (a1) precondition");
+            g1 = dep1; row_graded = row_graded && dep1; row_ok = row_ok && a1_ok;
+        }
+        if (pr.have_a2) {
+            auto d1 = delta_op(pr.a2.f3.e1.offset, ra2.f3.e1.offset, sc.op), d2 = delta_op(pr.a2.f3.e2.offset, ra2.f3.e2.offset, sc.op);
+            a2_ok = d1 && d2 && exact(*d1, exp1) && exact(*d2, exp2);
+            if (d1) d1a2 = *d1; if (d2) d2a2 = *d2;
+            dep_expect(checks, dep2, a2_ok, tok_a2 + " " + row.claims + ": BPLCON1=$" + hex4(row.value) + " (" + row.name +
+                       " alone) gives Delta1=" + num(exp1) + " op, Delta2=" + num(exp2) + " op on every window line of F3, LORES FMODE=$0003", "an (a2) precondition");
+            g2g = dep2; row_graded = row_graded && dep2; row_ok = row_ok && a2_ok;
+            if (pr.have_a1)
+                dep_expect(checks, dep1 && dep2, exact(d1a1, d1a2) && exact(d2a1, d2a2), tok_s + ": (a1) and (a2) give the same Delta for " + std::string(row.name), "an (a1) or (a2) precondition");
+        }
+        (void)g1; (void)g2g;
+        if (pr.have_b) {
+            int ownref = sig_colour(row.pf1 ? rb.f3.sig1 : rb.f3.sig2), otherref = sig_colour(row.pf1 ? rb.f3.sig2 : rb.f3.sig1);
+            int ownnew = sig_colour(row.pf1 ? pr.b.f3.sig1 : pr.b.f3.sig2), othernew = sig_colour(row.pf1 ? pr.b.f3.sig2 : pr.b.f3.sig1);
+            auto dsolid = delta_op(row.pf1 ? pr.b.f3.e1.offset : pr.b.f3.e2.offset, row.pf1 ? rb.f3.e1.offset : rb.f3.e2.offset, sc.op);
+            bool flips = ownref >= 0 && ownnew >= 0 && ownnew != ownref;
+            bool other_same = otherref >= 0 && othernew == otherref;
+            bool edge01 = dsolid && (exact(*dsolid, 0.0) || exact(*dsolid, 1.0));
+            bool b_ok = flips && other_same && edge01;
+            checks.note("P2 " + std::string(row.name) + " (b): own colour " + std::to_string(ownref) + " -> " + std::to_string(ownnew) + ", other colour " + std::to_string(otherref) + " -> " +
+                        std::to_string(othernew) + ", solid edge " + opt_num(dsolid) + " op");
+            dep_expect(checks, depb, b_ok, tok_b + " " + row.claims + ": BPLCON1=$" + hex4(row.value) + " (" + row.name +
+                       " alone, the SHRES 0.5-op bit) exchanges this playfield's stripe colour (COLOR01 and COLOR00), leaves the other playfield's unchanged and moves the solid part's edge by 0 or 1 op, SHRES FMODE=0", "a (b) precondition");
+            row_graded = row_graded && depb; row_ok = row_ok && b_ok;
+        }
+        g_p2_ok[row.bit] = row_ok; g_p2_graded[row.bit] = row_graded;
+    }
+
+    // ---- one aggregate line per playfield for the claims that cover its whole x = 0-7 code ----
+    if (p2_full) {
+        bool g_pf[2] = {true, true}, ok_pf[2] = {true, true};
+        for (auto& row : rows) { int k = row.pf1 ? 0 : 1; g_pf[k] = g_pf[k] && g_p2_graded[row.bit]; ok_pf[k] = ok_pf[k] && g_p2_ok[row.bit]; }
+        dep_expect(checks, g_pf[0], ok_pf[0], "P2-PF1-CODE opus:AA-pf1h.c1 sol:AA-bplcon1.c10: each of the eight bits PF1H7..PF1H0 (BPLCON1 bits 11-8 and 3-0) delays playfield 1 by its own weight, 2^k SHRES pixels for PF1Hk, as the rows of this proposition show (AA p.17 'PF1Hx= Playfield 1 horizontal scroll code,x=0-7')", "a PF1 row line");
+        dep_expect(checks, g_pf[1], ok_pf[1], "P2-PF2-CODE opus:AA-pf2h.c1 sol:AA-bplcon1.c9: each of the eight bits PF2H7..PF2H0 (BPLCON1 bits 15-12 and 7-4) delays playfield 2 by its own weight, 2^k SHRES pixels for PF2Hk, as the rows of this proposition show (AA p.17 'PF2Hx= Playfield 2 horizontal scroll code,x=0-7')", "a PF2 row line");
+    }
+}
+
+// ---- P3 ----
+
+void prop_p3(Checks& checks, const Scale& sc) {
+    BarsConfig ref; ref.bplcon0 = 0x2000; ref.fmode = 0x0003; ref.buf1 = bars_buf(8); ref.buf2 = bars_buf(24);
+    if (run_mutation("P3-FIXTURE")) ref.bin = "prog_bars_nofix.bin";
+    if (run_mutation("P3-F1")) ref.dmacon = 0x8280;
+    if (run_mutation("P3-S3A")) ref.waitlo = 0x0041;
+    if (run_mutation("P3-S3B")) ref.buf2 = zero_buf();
+    if (run_mutation("P3-STEP8")) ref.fmode = 0x0000;
+    RunInfo rr;
+    { RunOut r = run_bars(ref); rr = analyse_run(r, sc.op, false, false); }
+    struct P3Row { uint16_t value; double exp1lo, exp1hi, exp2lo, exp2hi; const char* label; };
+    const P3Row p3rows[] = {
+        {0x0E0F, 127,127, 0,0, "$0E0F (bits 0-3,9,10,11 = PF1H2..H7 minus H0): Delta1=127 op, Delta2=0 op"},
+        {0x0F0F, 127,128, 0,0, "$0F0F (as above plus bit 8 = PF1H0): Delta1=127 or 128 op, Delta2=0 op"},
+        {0xE0F0, 0,0, 127,127, "$E0F0 (bits 4-7,13,14,15 = PF2H2..H7 minus H0): Delta1=0 op, Delta2=127 op"},
+        {0xF0F0, 0,0, 127,128, "$F0F0 (as above plus bit 12 = PF2H0): Delta1=0 op, Delta2=127 or 128 op"},
+    };
+    RunInfo tr[4];
+    for (int i = 0; i < 4; ++i) {
+        BarsConfig c = ref; c.bplcon1 = p3rows[i].value;
+        // the test runs are the reference run's stimulus with its own BPLCON1; the precondition contrasts change the reference run only
+        c.bin = "prog_bars.bin"; c.dmacon = 0x8380; c.waitlo = 0x0007; c.buf2 = bars_buf(24); c.fmode = 0x0003;
+        if (run_mutation("P3")) c.bplcon1 = uint16_t(c.bplcon1 & ~(i < 2 ? 0x0800 : 0x8000));   // PF1H7 (rows 0, 1) or PF2H7 (rows 2, 3) cleared: the delay is 63, not 127
+        if (run_mutation("P3-R1") && i == 0) c.beamcon0 = 0x0000;
+        RunOut r = run_bars(c);
+        tr[i] = analyse_run(r, sc.op, false, false);
+    }
+    bool fixture = rr.fixture, f1 = rr.f1.has_value(), r1 = true, s3b = rr.f3.e1.ok && rr.f3.e2.ok, step8 = rr.f3.fi.step_uniform && rr.f3.fi.step == 8;
+    for (auto& t : tr) { fixture = fixture && t.fixture; f1 = f1 && t.f1.has_value(); r1 = r1 && anchor_equal(t.f3, rr.f3); s3b = s3b && t.f3.e1.ok && t.f3.e2.ok; step8 = step8 && t.f3.fi.step_uniform && t.f3.fi.step == 8; }
+    checks.expect(fixture, "P3-FIXTURE: the reference run and the four test runs loaded, booted and stored the $BEEF fixture before any observation");
+    dep_expect(checks, fixture, f1, "P3-F1: F1 located in the reference run and in the four test runs", "fixture");
+    bool d = fixture && f1;
+    dep_expect(checks, d, r1, "P3-R1: precondition R1 anchor: in each pair of a test run and the reference run hsync period, hsync width and output-line count per frame are equal", "fixture or F1");
+    dep_expect(checks, d, rr.f3.fi.first_ok, "P3-S3A: precondition S3a: on every one of the 196 window lines of F3 of the reference run the first plane-1 and the first plane-2 fetch read the first bytes of their line buffers", "fixture or F1");
+    dep_expect(checks, d, s3b, "P3-S3B: precondition S3b (as P2(a2)): E1 and E2 exist on every window line of F3 and are equal on all of them in the reference run and the four test runs", "fixture or F1");
+    dep_expect(checks, d, step8, "P3-STEP8: precondition (as P2(a2)): in the reference run and the four test runs the consecutive plane-1 fetches within each window line are 8 bytes apart", "fixture or F1");
+    bool pre = sc.ok && d && r1 && rr.f3.fi.first_ok && s3b && step8;
+    auto grade_row = [&](int i) {
+        auto d1 = delta_op(tr[i].f3.e1.offset, rr.f3.e1.offset, sc.op), d2 = delta_op(tr[i].f3.e2.offset, rr.f3.e2.offset, sc.op);
+        bool ok = d1 && d2 && *d1 >= p3rows[i].exp1lo && *d1 <= p3rows[i].exp1hi && *d2 >= p3rows[i].exp2lo && *d2 <= p3rows[i].exp2hi;
+        checks.note("P3 " + std::string(p3rows[i].label) + " measured Delta1=" + opt_num(d1) + " Delta2=" + opt_num(d2));
+        return ok;
+    };
+    const bool ok0 = grade_row(0), ok1 = grade_row(1), ok2 = grade_row(2), ok3 = grade_row(3);
+    const char* unmet = "R1, fixture, F1, anchor, S3a, S3b or step";
+    dep_expect(checks, pre, ok0, "P3-0E0F: BPLCON1=$0E0F (bits 0-3,9,10,11 = PF1H2..H7 minus H0): Delta1=127 op, Delta2=0 op, LORES FMODE=$0003, on every window line of F3", unmet);
+    dep_expect(checks, pre, ok1, "P3-0F0F: BPLCON1=$0F0F (as above plus bit 8 = PF1H0): Delta1=127 or 128 op, Delta2=0 op, LORES FMODE=$0003, on every window line of F3", unmet);
+    dep_expect(checks, pre, ok2, "P3-E0F0: BPLCON1=$E0F0 (bits 4-7,13,14,15 = PF2H2..H7 minus H0): Delta1=0 op, Delta2=127 op, LORES FMODE=$0003, on every window line of F3", unmet);
+    dep_expect(checks, pre, ok3, "P3-F0F0: BPLCON1=$F0F0 (as above plus bit 12 = PF2H0): Delta1=0 op, Delta2=127 or 128 op, LORES FMODE=$0003, on every window line of F3", unmet);
+    const bool all = ok0 && ok1 && ok2 && ok3;
+    dep_expect(checks, pre, all, "P3-AGG opus:AA-pf1h.c3 sol:AA-bplcon1.c13: with 64-bit bit-plane fetch in LORES each playfield's delay reaches 254 and 255 SHRES pixels (BPLCON1 = $0E0F, $0F0F, $E0F0 and $F0F0), the earlier maximum being 15 LORES pixels (AA p.17 'the scroll range has been quadrupled')", "R1, fixture, F1, anchor, S3a, S3b or step");
+}
+
+// ---- P4 ----
+
+struct P4Res { bool c_graded[2] = {false, false}, c_ok[2] = {false, false}, a_graded[2] = {false, false}, a_ok[2] = {false, false}; };
+
+P4Res prop_p4(Checks& checks, const Scale& sc) {
+    P4Res out;
+    const std::string ms = g_mutate ? g_mutate : "";
+    const bool none = !g_mutate || ms == "P4-NONE" || ms == "P5-NONE";
+    const bool a_runs = none || ms == "P4a-D1" || ms == "P4a-D2" || ms == "P5" || ms == "P4-S3B-A";
+    const bool b_runs = none || ms == "P4a-D1" || ms == "P4a-D2" || ms == "P4b-C1" || ms == "P4b-C2" || ms == "P5" ||
+                        ms == "P4-FIXTURE" || ms == "P4-F1" || ms == "P4-R1" || ms == "P4-S3A" || ms == "P4-S3B-B" || ms == "P4-SIG";
+    const bool ctrl_b = ms == "P4a-D1" || ms == "P4a-D2" || ms == "P4b-C1" || ms == "P4b-C2" || ms == "P5" || ms == "P4-R1";
+    // The reference runs carry the reset state in F3 and BPLCON1 = $0000 in F5. A mutated run changes only what BPLCON1 holds
+    // in F3 (the CPU writes the value at the first VERTB edge); its F5 side keeps coming from the reference run.
+    struct One { RunInfo ref, obs; bool mut = false; };
+    One A, B;
+    if (a_runs) {
+        MidrunConfig ca;
+        ca.bplcon0 = 0x2000; ca.fmode = 0x0003; ca.mid_val = 0x0000; ca.mid_edge = 5; ca.stop_edge = 6;
+        ca.buf1 = bars_buf(8); ca.buf2 = bars_buf(24);
+        if (ms == "P4-S3B-A") ca.buf2 = zero_buf();
+        { RunOut r = run_midrun(ca, kRunBudget); A.ref = analyse_run(r, sc.op, false, true); }
+        MidrunConfig cm = ca;
+        if (ms == "P4a-D1") { cm.mid_val = 0x0200; A.mut = true; }
+        if (ms == "P4a-D2") { cm.mid_val = 0x2000; A.mut = true; }
+        if (ms == "P5") { cm.mid_val = 0x0000; A.mut = true; }
+        if (A.mut) { cm.mid_edge = 1; cm.stop_edge = 3; RunOut r = run_midrun(cm, kRunBudget); A.obs = analyse_run(r, sc.op, false, false); }
+    }
+    if (b_runs) {
+        MidrunConfig cb;
+        cb.bplcon0 = 0x2040; cb.fmode = 0x0003; cb.ddfstrt = kDdfstrtShres; cb.ddfstop = kDdfstopShres;
+        cb.mid_val = 0x0000; cb.mid_edge = 5; cb.stop_edge = 6;
+        cb.buf1 = stripe_buf(8, 10, 16, ms == "P4-SIG");
+        cb.buf2 = stripe_buf(56, 58, 16, ms == "P4-SIG");
+        if (ms == "P4-FIXTURE") cb.bin = "prog_bars_midrun_nofix.bin";
+        if (ms == "P4-F1") cb.dmacon = 0x8280;
+        if (ms == "P4-S3A") cb.waitlo = 0x0041;
+        if (ms == "P4-S3B-B") cb.buf2 = zero_buf();
+        { RunOut r = run_midrun(cb, kRunBudget); B.ref = analyse_run(r, sc.op, true, true); }
+        if (ctrl_b) {
+            MidrunConfig cm = cb;
+            cm.bin = "prog_bars_midrun.bin"; cm.dmacon = 0x8380; cm.waitlo = 0x0007; cm.buf1 = stripe_buf(8, 10, 16); cm.buf2 = stripe_buf(56, 58, 16);
+            cm.mid_val = 0x0000; cm.mid_edge = 1; cm.stop_edge = 3;
+            if (ms == "P4-R1") cm.beamcon0 = 0x0000;
+            RunOut r = run_midrun(cm, kRunBudget); B.obs = analyse_run(r, sc.op, true, false); B.mut = true;
+        }
+    }
+    const RunInfo& ao = A.mut ? A.obs : A.ref;
+    const RunInfo& bo = B.mut ? B.obs : B.ref;
+
+    bool fixture = (!a_runs || (A.ref.fixture && (!A.mut || A.obs.fixture))) && (!b_runs || (B.ref.fixture && (!B.mut || B.obs.fixture)));
+    checks.expect(fixture, "P4-FIXTURE: every run (the reference runs and the runs that write BPLCON1 before F3) loaded, booted and stored the $BEEF fixture before any observation");
+    bool f1 = (!a_runs || (A.ref.f1 && (!A.mut || A.obs.f1))) && (!b_runs || (B.ref.f1 && (!B.mut || B.obs.f1)));
+    dep_expect(checks, fixture, f1, "P4-F1: F1 (first steady frame after DMA enable) located in every run", "fixture");
+    bool d = fixture && f1;
+    bool r1 = true;
+    if (a_runs) r1 = r1 && anchor_equal(ao.f3, A.ref.f5);
+    if (b_runs) r1 = r1 && anchor_equal(bo.f3, B.ref.f5);
+    dep_expect(checks, d, r1, "P4-R1: precondition R1 anchor: the frame observed after reset (F3) and the reference frame (F5) have the same hsync period, hsync width and output-line count per frame", "fixture or F1");
+    bool s3a = true;
+    if (a_runs) s3a = s3a && ao.f3.fi.first_ok && A.ref.f5.fi.first_ok;
+    if (b_runs) s3a = s3a && bo.f3.fi.first_ok && B.ref.f5.fi.first_ok;
+    dep_expect(checks, d, s3a, "P4-S3A: precondition S3a: on every one of the 196 window lines of the observed frame (F3) and of the reference frame (F5) the first plane-1 and the first plane-2 fetch read the first bytes of their line buffers", "fixture or F1");
+    bool s3b_a = a_runs && ao.f3.e1.ok && ao.f3.e2.ok && A.ref.f5.e1.ok && A.ref.f5.e2.ok;
+    bool s3b_b = b_runs && bo.f3.e1.ok && bo.f3.e2.ok && B.ref.f5.e1.ok && B.ref.f5.e2.ok;
+    if (a_runs) dep_expect(checks, d, s3b_a, "P4-S3B-A: precondition (run (a)): bars visible with E1 and E2 equal on every window line of F3 (reset-state BPLCON1) and of F5 (BPLCON1=$0000 reference)", "fixture or F1");
+    if (b_runs) dep_expect(checks, d, s3b_b, "P4-S3B-B: precondition (run (b)): stripe solid-part edges E1 and E2 equal on every window line of F3 (reset-state BPLCON1) and of F5 (BPLCON1=$0000 reference)", "fixture or F1");
+    bool sig_b = b_runs && sig_colour(bo.f3.sig1) >= 0 && sig_colour(bo.f3.sig2) >= 0 && sig_colour(B.ref.f5.sig1) >= 0 && sig_colour(B.ref.f5.sig2) >= 0;
+    if (b_runs) dep_expect(checks, d && s3b_b, sig_b, "P4-SIG: precondition S3b (stripes): in F3 and in F5 of run (b) each playfield's alternating part shows one colour at every sampled offset, taken from the frame's own solid edge", "fixture, F1 or edges");
+    const bool pre_common = sc.ok && d && r1 && s3a;
+
+    // ---- run (b): the reset value of PF1H0 and PF2H0, through the stripe colours ----
+    bool c_eq[2] = {false, false};
+    if (b_runs) {
+        int c1_3 = sig_colour(bo.f3.sig1), c1_5 = sig_colour(B.ref.f5.sig1), c2_3 = sig_colour(bo.f3.sig2), c2_5 = sig_colour(B.ref.f5.sig2);
+        c_eq[0] = c1_3 == c1_5; c_eq[1] = c2_3 == c2_5;
+        checks.note("P4 run(b) measured: plane-1 stripe colour F3 " + std::to_string(c1_3) + " F5 " + std::to_string(c1_5) + ", plane-2 stripe colour F3 " + std::to_string(c2_3) + " F5 " + std::to_string(c2_5));
+        bool depb = pre_common && s3b_b && sig_b;
+        dep_expect(checks, depb, c_eq[0],
+            "P4b-C1 opus:AA-bplcon1.b08.rst: after power-on reset, PF1H0 (BPLCON1 bit 8) reads 0 -- the plane-1 stripe colour (period 2 "
+            "SHRES pixels) is the same in F3 (reset state) and F5 (BPLCON1=$0000)", "R1, fixture, F1, anchor, S3a, S3b or stripe colour");
+        dep_expect(checks, depb, c_eq[1],
+            "P4b-C2 opus:AA-bplcon1.b12.rst: after power-on reset, PF2H0 (BPLCON1 bit 12) reads 0 -- the plane-2 stripe colour "
+            "is the same in F3 (reset state) and F5 (BPLCON1=$0000)", "R1, fixture, F1, anchor, S3a, S3b or stripe colour");
+        out.c_graded[0] = out.c_graded[1] = depb;
+        out.c_ok[0] = c_eq[0]; out.c_ok[1] = c_eq[1];
+    }
+
+    // ---- run (a): the reset value of the other bits, through the delay; graded where run (b) shows PFnH0 = 0 ----
+    if (a_runs) {
+        auto d1 = delta_op(ao.f3.e1.offset, A.ref.f5.e1.offset, sc.op), d2 = delta_op(ao.f3.e2.offset, A.ref.f5.e2.offset, sc.op);
+        auto in_set = [](std::optional<double> v) {
+            if (!v) return false;
+            double r = std::round(*v);
+            if (!exact(*v, r)) return false;
+            int i = (int)r;
+            return i >= 0 && i <= 30 && (i % 2 == 0);
+        };
+        bool d1_ok = in_set(d1), d2_ok = in_set(d2);
+        checks.note("P4 run(a) measured: F3-vs-F5 Delta1=" + opt_num(d1) + " op, Delta2=" + opt_num(d2) + " op");
+        bool depa = pre_common && s3b_a;
+        bool dep1 = depa && b_runs && out.c_graded[0] && c_eq[0], dep2 = depa && b_runs && out.c_graded[1] && c_eq[1];
+        dep_expect(checks, dep1, d1_ok,
+            "P4a-D1 opus:AA-bplcon1.b09.rst opus:AA-bplcon1.b10.rst opus:AA-bplcon1.b11.rst: after power-on reset and before any write to "
+            "BPLCON1 (AA p.16 RST_ column), playfield-1's delay in F3 is one of 0,2,...,30 op (PF1H1/H6/H7 read 0)", "R1, fixture, F1, anchor, S3a, S3b, or P4b-C1 does not show PF1H0 = 0");
+        dep_expect(checks, dep2, d2_ok,
+            "P4a-D2 opus:AA-bplcon1.b13.rst opus:AA-bplcon1.b14.rst opus:AA-bplcon1.b15.rst: after power-on reset and before any write to "
+            "BPLCON1 (AA p.16 RST_ column), playfield-2's delay in F3 is one of 0,2,...,30 op (PF2H1/H6/H7 read 0)", "R1, fixture, F1, anchor, S3a, S3b, or P4b-C2 does not show PF2H0 = 0");
+        out.a_graded[0] = dep1; out.a_graded[1] = dep2; out.a_ok[0] = d1_ok; out.a_ok[1] = d2_ok;
+    }
+    return out;
+}
+
+// ---- P5 ----
+
+void prop_p5(Checks& checks, const P4Res& p4) {
+    bool rows_graded = true, rows_ok = true;
+    for (int b = 8; b <= 15; ++b) { rows_graded = rows_graded && g_p2_graded[b]; rows_ok = rows_ok && g_p2_ok[b]; }
+    bool p4_graded = p4.c_graded[0] && p4.c_graded[1];
+    bool p4a_ok = (!p4.a_graded[0] || p4.a_ok[0]) && (!p4.a_graded[1] || p4.a_ok[1]);
+    bool p5_ok = rows_ok && p4.c_ok[0] && p4.c_ok[1] && p4a_ok;
+    dep_expect(checks, rows_graded && p4_graded, p5_ok,
+        "P5 sol:AA-bplcon1.c15 sol:AA-bplcon1.c16 sol:AA-bplcon1.c17 sol:AA-bplcon1.c18 sol:AA-bplcon1.c19 sol:AA-bplcon1.c20 "
+        "sol:AA-bplcon1.c21 sol:AA-bplcon1.c22: each of BPLCON1 bits 15-8 is the field AA p.16 names for it (P2's rows 8-15) "
+        "and RST_ initialises it to 0 (P4: run (b), and run (a) where it is graded)", "a precondition of P2's rows 8-15 or of P4's run (b)");
+    checks.note("P5 conjuncts: P2 rows 8-15 all-ok=" + std::to_string(rows_ok) + "; P4 run(b) stripe colours equal=" + std::to_string(p4.c_ok[0] && p4.c_ok[1]) +
+                "; P4 run(a) graded=" + std::to_string(p4.a_graded[0] && p4.a_graded[1]) + " even/0-30=" + std::to_string(p4a_ok));
+}
 } // namespace
 
 // ===========================================================================
@@ -2219,389 +2857,16 @@ int main(int argc, char** argv) {
     const bool all_runs = !g_mutate || std::string(g_mutate) == "ALL";
     auto want = [&](const char* p) { return all_runs || sel_prop() == p; };
     if (want("R1") || want("P1") || want("P2") || want("P3") || want("P4") || want("P5")) {
-    // ---- R1 Scale: measure r_L (LORES) from a dedicated calibration run ----
-    BarsConfig scale_cfg;
-    scale_cfg.bplcon0 = 0x1000; // LORES, BPU=1
-    scale_cfg.write_bplcon1 = false;
-    scale_cfg.buf1 = scale_buf();
-    if (run_mutation("R1")) scale_cfg.buf1 = zero_buf();   // no plane data: no COLOR01 pixel to measure
-    RunOut scale_run = run_bars(scale_cfg);
-    g.expect(scale_run.loaded, "R1 Scale fixture: prog_bars.bin loaded for the LORES all-$AAAA calibration run");
-    g.expect(scale_run.released, "R1 Scale fixture: cpu_nrst_out released within the boot budget");
-    g.expect(scale_run.fixture_ok, "R1 Scale fixture: $BEEF constant read back before any measurement is trusted");
-    auto scale_f1 = find_f1(scale_run.video);
-    g.expect(scale_f1.has_value(), "R1 Scale: F1 (first steady frame after DMA enable) was located from the video trace");
-    checks.note("R1 Scale: F1 index = " + (scale_f1 ? std::to_string(*scale_f1) : std::string("n/a")) +
-                 " (of " + std::to_string(nmh::find_frames(scale_run.video).size()) + " frames captured)");
-    auto r_l_opt = scale_f1 ? measure_r_l(scale_run.video, *scale_f1 + 2 /* F3 */) : std::nullopt;
-    g.expect(r_l_opt.has_value(), "R1 Scale: a stable LORES-pixel run length was found on F3's window lines (AA p.17, one LORES pixel = 140 ns)");
-    int r_l = r_l_opt.value_or(0);
-    checks.note("R1 Scale: r_L = " + std::to_string(r_l) + " video samples per LORES pixel, measured on F3");
-    g.expect(r_l > 0 && r_l % 2 == 0, "R1 Scale anchor: r_L is even");
-    double op = (r_l > 0) ? r_l / 2.0 : 1.0; // one op = 70 ns = half a LORES pixel (R1 "Scale")
-
-    auto delta_ops = [&](std::optional<size_t> e_cfg, std::optional<size_t> e_ref) -> std::optional<double> {
-        if (!e_cfg || !e_ref) return std::nullopt;
-        return (double(*e_cfg) - double(*e_ref)) / op;
-    };
-
-    // =======================================================================
-    // P1 -- BPLCON1 is the register at 102, written by a write (AA p.16)
-    // =======================================================================
-    if (!g_mutate || selp == "P1") {
-        BarsConfig ref, test_run;
-        ref.bplcon0 = 0x2000; ref.bplcon1 = 0x0000;
-        test_run.bplcon0 = 0x2000; test_run.bplcon1 = 0x0033;
-        // the contrasting case: $0000 to $102 and $0033 to $10C (BPLCON4) instead
-        if (run_mutation("P1")) { test_run.bplcon1 = 0x0000; test_run.bplcon4 = 0x0033; }
-        for (auto* c : {&ref, &test_run}) { c->buf1 = bars_buf(8); c->buf2 = bars_buf(24); }
-
-        RunOut r_ref = run_bars(ref);
-        RunOut r_tst = run_bars(test_run);
-
-        bool loaded_ok = r_ref.loaded && r_tst.loaded && r_ref.released && r_tst.released
-                          && r_ref.fixture_ok && r_tst.fixture_ok;
-        g.expect(loaded_ok, "P1 fixture: both runs loaded, booted and stored the $BEEF fixture before any observation");
-
-        auto f1_ref = find_f1(r_ref.video), f1_tst = find_f1(r_tst.video);
-        g.expect(f1_ref.has_value() && f1_tst.has_value(), "P1: F1 (first steady frame after DMA enable) located in both runs");
-        size_t f3_ref = f1_ref.value_or(0) + 2, f3_tst = f1_tst.value_or(0) + 2;
-
-        HsyncShape sr = hsync_shape(r_ref.video, f3_ref), st = hsync_shape(r_tst.video, f3_tst);
-        bool anchor = sr.line_count > 0 && sr.line_count == st.line_count
-                      && near_int(sr.avg_period, st.avg_period, 1.0) && near_int(sr.avg_width, st.avg_width, 1.0);
-        g.expect(anchor, "P1 precondition R1 anchor: hsync period, hsync width and output-line count per frame equal between the reference and test runs");
-        checks.note("P1 R1 anchor: reference lines=" + std::to_string(sr.line_count) + " period=" + num(sr.avg_period) +
-                     " width=" + num(sr.avg_width) + "; test lines=" + std::to_string(st.line_count) +
-                     " period=" + num(st.avg_period) + " width=" + num(st.avg_width));
-
-        EdgeMeasure e1_ref = measure_edge_all_lines(r_ref.video, f3_ref, kC01r,kC01g,kC01b);
-        EdgeMeasure e2_ref = measure_edge_all_lines(r_ref.video, f3_ref, kC02r,kC02g,kC02b);
-        g.expect(e1_ref.ok && e2_ref.ok, "P1 precondition S3b (reference run): E1 and E2 exist on every window line of F3 and are equal on all of them");
-        checks.note("P1 S3b reference: window lines checked E1=" + std::to_string(e1_ref.lines_checked) +
-                     " E2=" + std::to_string(e2_ref.lines_checked));
-
-        EdgeMeasure e1_tst = measure_edge_all_lines(r_tst.video, f3_tst, kC01r,kC01g,kC01b);
-        EdgeMeasure e2_tst = measure_edge_all_lines(r_tst.video, f3_tst, kC02r,kC02g,kC02b);
-        g.expect(e1_tst.ok, "P1 precondition S3a/S3b (test run): E1 exists on every window line of F3 and is equal on all of them");
-        g.expect(e2_tst.ok, "P1 precondition S3a/S3b (test run): E2 exists on every window line of F3 and is equal on all of them");
-
-        auto d1 = delta_ops(e1_tst.offset, e1_ref.offset);
-        auto d2 = delta_ops(e2_tst.offset, e2_ref.offset);
-        g.expect(d1.has_value() && near_int(*d1, 6.0),
-            "P1 opus:AA-bplcon1.h1 sol:AA-bplcon1.c6 sol:AA-bplcon1.c7: CPU write of $0033 to $DFF102 (BPLCON1, AA p.16 'BPLCON1 p 102 W D') "
-            "delays playfield 1 (PF1H2/PF1H3 set) by Delta1=+6 op on every window line of F3");
-        g.expect(d2.has_value() && near_int(*d2, 6.0),
-            "P1 opus:AA-bplcon1.h1 sol:AA-bplcon1.c6 sol:AA-bplcon1.c7: CPU write of $0033 to $DFF102 (BPLCON1, AA p.16) "
-            "delays playfield 2 (PF2H2/PF2H3 set) by Delta2=+6 op on every window line of F3");
-        checks.note("P1 measured: Delta1=" + opt_num(d1) + " op, Delta2=" + opt_num(d2) + " op (r_L=" + std::to_string(r_l) + ")");
-
-    }
-
-    // =======================================================================
-    // P2 -- weight and playfield of every BPLCON1 bit (AA p.16, p.17, p.5, p.3)
-    // =======================================================================
-    std::array<bool,16> p2_row_ok{}; // shared with P5 (rows 8-15)
-    if (!g_mutate || selp == "P2" || selp == "P5") {
-        struct Row { int bit; uint16_t value; const char* name; bool pf1; int op; bool a1, a2, b; std::string claims; };
-        std::vector<Row> rows = {
-            {0,0x0001,"PF1H2",true, 2, true, true, false, "opus:AA-bplcon1.b00 sol:AA-bplcon1.c30 opus:AA-pf1h.c1 sol:AA-bplcon1.c10 sol:AA-bplcon1.c12 opus:AA-bplcon1.c6 sol:AA-bplcon1.c5"},
-            {1,0x0002,"PF1H3",true, 4, true, true, false, "opus:AA-bplcon1.b01 sol:AA-bplcon1.c29 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {2,0x0004,"PF1H4",true, 8, true, true, false, "opus:AA-bplcon1.b02 sol:AA-bplcon1.c28 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {3,0x0008,"PF1H5",true,16, true, true, false, "opus:AA-bplcon1.b03 sol:AA-bplcon1.c27 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {4,0x0010,"PF2H2",false,2, true, true, false, "opus:AA-bplcon1.b04 sol:AA-bplcon1.c26 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {5,0x0020,"PF2H3",false,4, true, true, false, "opus:AA-bplcon1.b05 sol:AA-bplcon1.c25 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {6,0x0040,"PF2H4",false,8, true, true, false, "opus:AA-bplcon1.b06 sol:AA-bplcon1.c24 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {7,0x0080,"PF2H5",false,16,true, true, false, "opus:AA-bplcon1.b07 sol:AA-bplcon1.c23 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {8,0x0100,"PF1H0",true, 0, false,false,true,  "opus:AA-bplcon1.b08 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {9,0x0200,"PF1H1",true, 1, true, true, false, "opus:AA-bplcon1.b09 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {10,0x0400,"PF1H6",true,32,false,true, false, "opus:AA-bplcon1.b10 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {11,0x0800,"PF1H7",true,64,false,true, false, "opus:AA-bplcon1.b11 opus:AA-pf1h.c1 sol:AA-bplcon1.c10"},
-            {12,0x1000,"PF2H0",false,0, false,false,true,  "opus:AA-bplcon1.b12 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {13,0x2000,"PF2H1",false,1, true, true, false, "opus:AA-bplcon1.b13 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {14,0x4000,"PF2H6",false,32,false,true, false, "opus:AA-bplcon1.b14 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-            {15,0x8000,"PF2H7",false,64,false,true, false, "opus:AA-bplcon1.b15 opus:AA-pf2h.c1 sol:AA-bplcon1.c9"},
-        };
-        // A mutation selects one row and one branch; the reference runs that row needs are the only ones run.
-        const std::string msel = g_mutate ? g_mutate : "";
-        const bool p2_full = !g_mutate || selp == "P5" || msel == "P2";
-        auto msel_has = [&](const char* prefix) { return msel.compare(0, std::strlen(prefix), prefix) == 0; };
-        const bool need_a1 = p2_full || msel_has("P2A1-") || msel_has("P2S-");
-        const bool need_a2 = p2_full || msel_has("P2A2-") || msel_has("P2S-");
-        const bool need_b  = p2_full || msel_has("P2B-");
-
-        // reference runs, one per stimulus mode
-        BarsConfig a1_ref; a1_ref.bplcon0 = 0x2000; a1_ref.fmode = 0x0000; a1_ref.buf1 = bars_buf(8); a1_ref.buf2 = bars_buf(24);
-        BarsConfig a2_ref; a2_ref.bplcon0 = 0x2000; a2_ref.fmode = 0x0003; a2_ref.buf1 = bars_buf(8); a2_ref.buf2 = bars_buf(24);
-        BarsConfig b_ref;  b_ref.bplcon0 = 0x2040; b_ref.fmode = 0x0000; b_ref.ddfstrt = kDdfstrtShres; b_ref.ddfstop = kDdfstopShres;
-        b_ref.buf1 = stripe_buf(8,10,16); b_ref.buf2 = stripe_buf(56,58,16);
-        if (run_mutation("P2")) { a1_ref.buf1 = zero_buf(); a2_ref.buf1 = zero_buf(); b_ref.buf1 = zero_buf(); }   // plane 1 shows no data
-
-        RunOut ra1r, ra2r, rbr;
-        if (need_a1) ra1r = run_bars(a1_ref);
-        if (need_a2) ra2r = run_bars(a2_ref);
-        if (need_b)  rbr = run_bars(b_ref);
-        auto f1_a1r = find_f1(ra1r.video), f1_a2r = find_f1(ra2r.video), f1_br = find_f1(rbr.video);
-        size_t f3_a1r = f1_a1r.value_or(0)+2, f3_a2r = f1_a2r.value_or(0)+2, f3_br = f1_br.value_or(0)+2;
-        EdgeMeasure e1_a1r = measure_edge_all_lines(ra1r.video, f3_a1r, kC01r,kC01g,kC01b);
-        EdgeMeasure e2_a1r = measure_edge_all_lines(ra1r.video, f3_a1r, kC02r,kC02g,kC02b);
-        EdgeMeasure e1_a2r = measure_edge_all_lines(ra2r.video, f3_a2r, kC01r,kC01g,kC01b);
-        EdgeMeasure e2_a2r = measure_edge_all_lines(ra2r.video, f3_a2r, kC02r,kC02g,kC02b);
-        EdgeMeasure e1_br  = measure_edge_all_lines(rbr.video,  f3_br,  kC01r,kC01g,kC01b);
-        EdgeMeasure e2_br  = measure_edge_all_lines(rbr.video,  f3_br,  kC02r,kC02g,kC02b);
-        if (p2_full) {
-            g.expect(f1_a1r.has_value() && f1_a2r.has_value() && f1_br.has_value(), "P2 fixture: F1 located in all three reference runs (a1/a2/b)");
-            g.expect(e1_a1r.ok && e2_a1r.ok && e1_a2r.ok && e2_a2r.ok && e1_br.ok && e2_br.ok,
-                     "P2 precondition S3b: E1/E2 exist and are equal on every window line of F3 in all three reference runs");
-        }
-
-        std::vector<double> offs = {12, 18, 24, 30, 36};
-
-        for (auto& row : rows) {
-            if (g_mutate && selp == "P5" && row.bit < 8) continue;   // P5 needs only the rows 8-15
-            if (g_mutate && selp == "P2" && msel.find(row.name) == std::string::npos) continue;   // a mutation names one row
-            double d1a1 = 0, d2a1 = 0, d1a2 = 0, d2a2 = 0;
-            bool a1_ok = true, a2_ok = true;
-            const std::string tok_a1 = "P2A1-" + std::string(row.name);
-            const std::string tok_a2 = "P2A2-" + std::string(row.name);
-            const std::string tok_b  = "P2B-" + std::string(row.name);
-            const std::string tok_s  = "P2S-" + std::string(row.name);
-            // The contrast of a row: the neighbouring bit written in place of the row's own (rows 0-7), or the ECS
-            // chip set selected (rows 8-15, whose bits the AA chip set alone provides).
-            const uint16_t neighbour = row.bit >= 1 ? (uint16_t)(1u << (row.bit - 1)) : (uint16_t)(1u << (row.bit + 1));
-            auto contrast = [&](BarsConfig& c, bool on) {
-                if (!on) return;
-                if (row.bit >= 8) c.chipset = 0x08; else c.bplcon1 = neighbour;
-            };
-            if (row.a1 && need_a1) {
-                BarsConfig c = a1_ref; c.bplcon1 = row.value;
-                contrast(c, run_mutation(tok_a1));
-                RunOut r = run_bars(c);
-                auto f1 = find_f1(r.video);
-                size_t f3 = f1.value_or(0) + 2;
-                EdgeMeasure e1 = measure_edge_all_lines(r.video, f3, kC01r,kC01g,kC01b);
-                EdgeMeasure e2 = measure_edge_all_lines(r.video, f3, kC02r,kC02g,kC02b);
-                auto d1 = delta_ops(e1.offset, e1_a1r.offset), d2 = delta_ops(e2.offset, e2_a1r.offset);
-                a1_ok = f1.has_value() && e1.ok && e2.ok && d1 && d2;
-                double exp1 = row.pf1 ? row.op : 0, exp2 = row.pf1 ? 0 : row.op;
-                a1_ok = a1_ok && near_int(*d1, exp1) && near_int(*d2, exp2);
-                if (d1) d1a1 = *d1;
-                if (d2) d2a1 = *d2;
-                g.expect(a1_ok, tok_a1 + " " + row.claims + ": BPLCON1=$" + hex4(row.value) + " (" + row.name +
-                          " alone) gives Delta1=" + num(exp1) + " op, Delta2=" + num(exp2) + " op on every window line of F3, LORES FMODE=0");
-            }
-            if (row.a2 && need_a2) {
-                BarsConfig c = a2_ref; c.bplcon1 = row.value;
-                contrast(c, run_mutation(tok_a2) || run_mutation(tok_s));
-                RunOut r = run_bars(c);
-                auto f1 = find_f1(r.video);
-                size_t f3 = f1.value_or(0) + 2;
-                EdgeMeasure e1 = measure_edge_all_lines(r.video, f3, kC01r,kC01g,kC01b);
-                EdgeMeasure e2 = measure_edge_all_lines(r.video, f3, kC02r,kC02g,kC02b);
-                auto d1 = delta_ops(e1.offset, e1_a2r.offset), d2 = delta_ops(e2.offset, e2_a2r.offset);
-                a2_ok = f1.has_value() && e1.ok && e2.ok && d1 && d2;
-                double exp1 = row.pf1 ? row.op : 0, exp2 = row.pf1 ? 0 : row.op;
-                a2_ok = a2_ok && near_int(*d1, exp1) && near_int(*d2, exp2);
-                if (d1) d1a2 = *d1;
-                if (d2) d2a2 = *d2;
-                g.expect(a2_ok, tok_a2 + " " + row.claims + ": BPLCON1=$" + hex4(row.value) + " (" + row.name +
-                          " alone) gives Delta1=" + num(exp1) + " op, Delta2=" + num(exp2) + " op on every window line of F3, LORES FMODE=$0003");
-                if (row.a1 && need_a1) g.expect(near_int(d1a1, d1a2, 0.6) && near_int(d2a1, d2a2, 0.6),
-                          tok_s + " " + row.claims + ": (a1) and (a2) give the same Delta for " + row.name);
-            }
-            bool row_ok = (!row.a1 || !need_a1 || a1_ok) && (!row.a2 || !need_a2 || a2_ok);
-            if (row.b && need_b) {
-                BarsConfig c = b_ref; c.bplcon1 = row.value;
-                contrast(c, run_mutation(tok_b));
-                RunOut r = run_bars(c);
-                auto f1 = find_f1(r.video);
-                size_t f3 = f1.value_or(0) + 2;
-                uint8_t pr = row.pf1 ? kC01r : kC02r, pg = row.pf1 ? kC01g : kC02g, pb = row.pf1 ? kC01b : kC02b;
-                uint8_t or_ = row.pf1 ? kC02r : kC01r, og = row.pf1 ? kC02g : kC01g, ob = row.pf1 ? kC02b : kC01b;
-                double own_ref_edge = row.pf1 ? *e1_br.offset : *e2_br.offset;
-                double other_ref_edge = row.pf1 ? *e2_br.offset : *e1_br.offset;
-                auto sig_own_ref = stripe_signature(rbr.video, f3_br, pr,pg,pb, own_ref_edge, op, offs);
-                auto sig_own_new = stripe_signature(r.video, f3, pr,pg,pb, own_ref_edge, op, offs);
-                auto sig_other_ref = stripe_signature(rbr.video, f3_br, or_,og,ob, other_ref_edge, op, offs);
-                auto sig_other_new = stripe_signature(r.video, f3, or_,og,ob, other_ref_edge, op, offs);
-                bool own_changed = sig_own_ref && sig_own_new && *sig_own_ref != *sig_own_new;
-                bool other_same = sig_other_ref && sig_other_new && *sig_other_ref == *sig_other_new;
-                bool b_ok = f1.has_value() && own_changed && other_same;
-                row_ok = row_ok && b_ok;
-                g.expect(b_ok, tok_b + " " + row.claims + ": BPLCON1=$" + hex4(row.value) + " (" + row.name +
-                          " alone, the SHRES 0.5-op bit) flips this playfield's stripe pattern and leaves the other playfield's unchanged, SHRES FMODE=0");
-            }
-            p2_row_ok[row.bit] = row_ok;
-        }
-    }
-
-    // =======================================================================
-    // P3 -- the scroll range is quadrupled (AA p.17, p.31, p.3)
-    // =======================================================================
-    if (!g_mutate || selp == "P3") {
-        BarsConfig ref; ref.bplcon0 = 0x2000; ref.fmode = 0x0003; ref.buf1 = bars_buf(8); ref.buf2 = bars_buf(24);
-        if (run_mutation("P3-PRE")) ref.buf1 = zero_buf();   // plane 1 shows no data in the reference run
-        RunOut rref = run_bars(ref);
-        auto f1r = find_f1(rref.video);
-        size_t f3r = f1r.value_or(0) + 2;
-        EdgeMeasure e1r = measure_edge_all_lines(rref.video, f3r, kC01r,kC01g,kC01b);
-        EdgeMeasure e2r = measure_edge_all_lines(rref.video, f3r, kC02r,kC02g,kC02b);
-        g.expect(f1r.has_value() && e1r.ok && e2r.ok, "P3 precondition (as P2(a2)): E1/E2 found and equal on every window line of the reference run's F3");
-
-        struct P3Row { uint16_t value; double exp1lo, exp1hi, exp2lo, exp2hi; const char* label; };
-        std::vector<P3Row> p3rows = {
-            {0x0E0F, 127,127, 0,0, "$0E0F (bits 0-3,9,10,11 = PF1H2..H7 minus H0): Delta1=127 op, Delta2=0 op"},
-            {0x0F0F, 127,128, 0,0, "$0F0F (as above plus bit 8 = PF1H0): Delta1=127 or 128 op, Delta2=0 op"},
-            {0xE0F0, 0,0, 127,127, "$E0F0 (bits 4-7,13,14,15 = PF2H2..H7 minus H0): Delta1=0 op, Delta2=127 op"},
-            {0xF0F0, 0,0, 127,128, "$F0F0 (as above plus bit 12 = PF2H0): Delta1=0 op, Delta2=127 or 128 op"},
-        };
-        bool p3_all = true;
-        for (auto& pr : p3rows) {
-            BarsConfig c = ref; c.bplcon1 = pr.value;
-            if (run_mutation("P3")) c.chipset = 0x08;
-            RunOut r = run_bars(c);
-            auto f1 = find_f1(r.video);
-            size_t f3 = f1.value_or(0) + 2;
-            EdgeMeasure e1 = measure_edge_all_lines(r.video, f3, kC01r,kC01g,kC01b);
-            EdgeMeasure e2 = measure_edge_all_lines(r.video, f3, kC02r,kC02g,kC02b);
-            auto d1 = delta_ops(e1.offset, e1r.offset), d2 = delta_ops(e2.offset, e2r.offset);
-            bool ok = f1.has_value() && e1.ok && e2.ok && d1 && d2 &&
-                      *d1 >= pr.exp1lo - 0.3 && *d1 <= pr.exp1hi + 0.3 && *d2 >= pr.exp2lo - 0.3 && *d2 <= pr.exp2hi + 0.3;
-            p3_all = p3_all && ok;
-            g.expect(ok, "P3-" + hex4(pr.value) + ": BPLCON1=" + std::string(pr.label) +
-                      ", LORES FMODE=$0003, on every window line of F3");
-            checks.note("P3 " + std::string(pr.label) + " measured Delta1=" + opt_num(d1) + " Delta2=" + opt_num(d2));
-        }
-        g.expect(p3_all, "P3-AGG opus:AA-pf1h.c3 sol:AA-bplcon1.c13: with 64-bit bit-plane fetch in LORES each playfield's delay reaches 254 and 255 SHRES pixels (BPLCON1 = $0E0F, $0F0F, $E0F0 and $F0F0), the earlier maximum being 15 LORES pixels (AA p.17 'the scroll range has been quadrupled')");
-    }
-
-    // =======================================================================
-    // P4 -- RST_ values of BPLCON1 bits 15-8 (AA p.16)
-    // =======================================================================
-    std::optional<double> p4a_delta1, p4a_delta2; // shared with P5
-    bool p4a_ok = false, p4b_ok = false;
-    if (!g_mutate || selp == "P4" || selp == "P5") {
-        // The reference runs carry the reset state in F3 and BPLCON1 = $0000 in F5.
-        // A mutated run changes only what BPLCON1 holds in F3: the CPU writes the
-        // value at the first VERTB edge. Its F5 side keeps coming from the
-        // reference run, so the comparator is the one the reference runs use.
-        // P4a-D1 / P4a-D2: $0200 / $2000 (PF1H1 / PF2H1) in F3, which the page
-        // predicts to delay one playfield by 1 op; P4b-C1 / P4b-C2 / P5: $0000
-        // written in F3, a live input through the same comparator.
-        const bool ctrl_a = run_mutation("P5");
-        const bool ctrl_b = run_mutation("P4b-C1") || run_mutation("P4b-C2") || run_mutation("P5");
-        // ---- Run (a): LORES, FMODE=$0003, bars ----
-        MidrunConfig ca;
-        ca.bplcon0 = 0x2000; ca.fmode = 0x0003; ca.mid_val = 0x0000; ca.mid_edge = 5; ca.stop_edge = 6;
-        ca.buf1 = bars_buf(8); ca.buf2 = bars_buf(24);
-        if (run_mutation("P4-PRE")) ca.buf1 = zero_buf();   // plane 1 shows no data
-        RunOut ra_ref = run_midrun(ca, kRunBudget);
-        MidrunConfig ca_run = ca;
-        bool mut_a = false;
-        if (run_mutation("P4a-D1")) { ca_run.mid_val = 0x0200; mut_a = true; }
-        if (run_mutation("P4a-D2")) { ca_run.mid_val = 0x2000; mut_a = true; }
-        if (ctrl_a) { ca_run.mid_val = 0x0000; mut_a = true; }
-        if (mut_a) { ca_run.mid_edge = 1; ca_run.stop_edge = 3; }
-        RunOut ra_mut;
-        if (mut_a) ra_mut = run_midrun(ca_run, kRunBudget);
-        const RunOut& ra = mut_a ? ra_mut : ra_ref;
-
-        g.expect(ra.loaded && ra.released && ra.fixture_ok, "P4 run(a) fixture: loaded, booted and stored $BEEF before any observation");
-
-        auto f1a = find_f1(ra.video);
-        auto f1a_ref = find_f1(ra_ref.video);
-        g.expect(f1a.has_value(), "P4 run(a): F1 (first steady frame after DMA enable) located in the video trace");
-        size_t f3a = f1a.value_or(0) + 2, f5a = f1a_ref.value_or(0) + 4;
-
-        EdgeMeasure e1_reset = measure_edge_all_lines(ra.video, f3a /* F3: reset state */, kC01r,kC01g,kC01b);
-        EdgeMeasure e2_reset = measure_edge_all_lines(ra.video, f3a, kC02r,kC02g,kC02b);
-        g.expect(e1_reset.ok, "P4 run(a) precondition: bars visible with E1 equal on every window line of F3 (reset-state BPLCON1)");
-        g.expect(e2_reset.ok, "P4 run(a) precondition: bars visible with E2 equal on every window line of F3 (reset-state BPLCON1)");
-
-        EdgeMeasure e1_f5 = measure_edge_all_lines(ra_ref.video, f5a /* F5: BPLCON1 written to $0000 */, kC01r,kC01g,kC01b);
-        EdgeMeasure e2_f5 = measure_edge_all_lines(ra_ref.video, f5a, kC02r,kC02g,kC02b);
-        g.expect(e1_f5.ok && e2_f5.ok, "P4 run(a) precondition S3a/S3b: E1/E2 equal on every window line of F5 (BPLCON1=$0000 reference)");
-
-        auto d1 = delta_ops(e1_reset.offset, e1_f5.offset);
-        auto d2 = delta_ops(e2_reset.offset, e2_f5.offset);
-        p4a_delta1 = d1; p4a_delta2 = d2;
-        auto in_set = [](std::optional<double> d) {
-            if (!d) return false;
-            double r = std::round(*d);
-            if (!near_int(*d, r, 0.26)) return false;
-            int i = (int)r;
-            return i >= 0 && i <= 30 && (i % 2 == 0);
-        };
-        bool d1_ok = in_set(d1), d2_ok = in_set(d2);
-        p4a_ok = d1_ok && d2_ok;
-        g.expect(d1_ok,
-            "P4a-D1 opus:AA-bplcon1.b09.rst opus:AA-bplcon1.b10.rst opus:AA-bplcon1.b11.rst: after power-on reset and before any write to "
-            "BPLCON1 (AA p.16 RST_ column), playfield-1's delay in F3 is one of 0,2,...,30 op (PF1H1/H6/H7 read 0)");
-        g.expect(d2_ok,
-            "P4a-D2 opus:AA-bplcon1.b13.rst opus:AA-bplcon1.b14.rst opus:AA-bplcon1.b15.rst: after power-on reset and before any write to "
-            "BPLCON1 (AA p.16 RST_ column), playfield-2's delay in F3 is one of 0,2,...,30 op (PF2H1/H6/H7 read 0)");
-        checks.note("P4 run(a) measured: F3-vs-F5 Delta1=" + opt_num(d1) + " op, Delta2=" + opt_num(d2) + " op");
-
-        // ---- Run (b): SHRES, FMODE=$0003, stripes ----
-        MidrunConfig cb;
-        cb.bplcon0 = 0x2040; cb.fmode = 0x0003; cb.ddfstrt = kDdfstrtShres; cb.ddfstop = kDdfstopShres;
-        cb.mid_val = 0x0000; cb.mid_edge = 5; cb.stop_edge = 6;
-        cb.buf1 = stripe_buf(8, 10, 16);
-        cb.buf2 = stripe_buf(56, 58, 16);
-        if (run_mutation("P4-PRE")) cb.buf1 = zero_buf();
-        RunOut rb_ref = run_midrun(cb, kRunBudget);
-        MidrunConfig cb_run = cb;
-        if (ctrl_b) { cb_run.mid_val = 0x0000; cb_run.mid_edge = 1; cb_run.stop_edge = 3; }
-        RunOut rb_mut;
-        if (ctrl_b) rb_mut = run_midrun(cb_run, kRunBudget);
-        const RunOut& rb = ctrl_b ? rb_mut : rb_ref;
-        g.expect(rb.loaded && rb.released && rb.fixture_ok, "P4 run(b) fixture: loaded, booted and stored $BEEF before any observation");
-
-        auto f1b = find_f1(rb.video);
-        auto f1b_ref = find_f1(rb_ref.video);
-        g.expect(f1b.has_value(), "P4 run(b): F1 (first steady frame after DMA enable) located in the video trace");
-        size_t f3b = f1b.value_or(0) + 2, f5b = f1b_ref.value_or(0) + 4;
-
-        EdgeMeasure e1b_f5 = measure_edge_all_lines(rb_ref.video, f5b, kC01r,kC01g,kC01b);
-        EdgeMeasure e2b_f5 = measure_edge_all_lines(rb_ref.video, f5b, kC02r,kC02g,kC02b);
-        g.expect(e1b_f5.ok && e2b_f5.ok, "P4 run(b) precondition: stripe solid-part edges E1/E2 equal on every window line of F5 (BPLCON1=$0000 reference)");
-
-        std::vector<double> offs = {12, 18, 24, 30, 36};
-        auto sig1_f5 = e1b_f5.offset ? stripe_signature(rb_ref.video, f5b, kC01r,kC01g,kC01b, *e1b_f5.offset, op, offs) : std::nullopt;
-        auto sig1_f3 = e1b_f5.offset ? stripe_signature(rb.video, f3b, kC01r,kC01g,kC01b, *e1b_f5.offset, op, offs) : std::nullopt;
-        auto sig2_f5 = e2b_f5.offset ? stripe_signature(rb_ref.video, f5b, kC02r,kC02g,kC02b, *e2b_f5.offset, op, offs) : std::nullopt;
-        auto sig2_f3 = e2b_f5.offset ? stripe_signature(rb.video, f3b, kC02r,kC02g,kC02b, *e2b_f5.offset, op, offs) : std::nullopt;
-
-        bool c1_eq = sig1_f5 && sig1_f3 && *sig1_f5 == *sig1_f3;
-        bool c2_eq = sig2_f5 && sig2_f3 && *sig2_f5 == *sig2_f3;
-        p4b_ok = c1_eq && c2_eq;
-        g.expect(c1_eq,
-            "P4b-C1 opus:AA-bplcon1.b08.rst: after power-on reset, PF1H0 (BPLCON1 bit 8) reads 0 -- the plane-1 stripe pattern (period 2 "
-            "SHRES pixels) samples identically in F3 (reset state) and F5 (BPLCON1=$0000)");
-        g.expect(c2_eq,
-            "P4b-C2 opus:AA-bplcon1.b12.rst: after power-on reset, PF2H0 (BPLCON1 bit 12) reads 0 -- the plane-2 stripe pattern samples "
-            "identically in F3 (reset state) and F5 (BPLCON1=$0000)");
-    }
-
-    // =======================================================================
-    // P5 -- BPLCON1 bits 15-8: tabled name and reset value together
-    // (the conjunction of P2's rows 8-15 and P4)
-    // =======================================================================
-    if (!g_mutate || selp == "P5") {
-        bool p2_rows_8_15_ok = true;
-        for (int b = 8; b <= 15; ++b) p2_rows_8_15_ok = p2_rows_8_15_ok && p2_row_ok[b];
-        bool p5_ok = p2_rows_8_15_ok && p4a_ok && p4b_ok;
-        g.expect(p5_ok,
-            "P5 sol:AA-bplcon1.c15 sol:AA-bplcon1.c16 sol:AA-bplcon1.c17 sol:AA-bplcon1.c18 sol:AA-bplcon1.c19 sol:AA-bplcon1.c20 "
-            "sol:AA-bplcon1.c21 sol:AA-bplcon1.c22: each of BPLCON1 bits 15-8 is the field AA p.16 names for it (P2's rows 8-15) "
-            "and RST_ initialises it to 0 (P4)");
-        checks.note("P5 conjuncts: P2 rows 8-15 all-ok=" + std::to_string(p2_rows_8_15_ok) +
-                     "; P4 run(a) even/0-30=" + std::to_string(p4a_ok) + "; P4 run(b) stripe equality=" + std::to_string(p4b_ok));
-    }
-
+        Scale sc = prop_r1(checks);
+        P4Res p4;
+        if (all_runs || selp == "P1") prop_p1(checks, sc);
+        if (all_runs || selp == "P2" || selp == "P5") prop_p2(checks, sc);
+        if (all_runs || selp == "P3") prop_p3(checks, sc);
+        if (all_runs || selp == "P4" || selp == "P5") p4 = prop_p4(checks, sc);
+        if (all_runs || selp == "P5") prop_p5(checks, p4);
     }
     if (want("UNIT") || want("P11") || want("P12") || want("P14")) prop_unit(checks, g);
-    if (want("P6")) prop_p6(checks, g);
+    if (want("P6")) { Scale sc6 = prop_r1(checks); prop_p6(checks, g, sc6); }
     if (want("P7")) prop_p7(checks, g);
     if (want("P8")) prop_p8(checks, g);
     if (want("P9")) prop_p9(checks, g);
