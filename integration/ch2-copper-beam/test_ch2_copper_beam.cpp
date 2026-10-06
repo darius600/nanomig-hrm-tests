@@ -12,60 +12,57 @@
 // The mutation records: one line per label, the value of NMH_MUTATE that selects the variant, and what it changes. SPECIFICATION.md 8.6 gives the verdicts of both cores.
 //
 // MUTATION FIX-LOAD none impossible apparatus check: it fails only when the harness cannot load the program or release the CPU, which no stimulus of this package varies (not exercised, by a scope decision)
-// MUTATION FIX-CONST stimulus red NMH_MUTATE=A-NOFIX-PAL: the program leaves out the store of $A5C3 to $0C0002, so the port logs no such write and the dependent lines are NOT GRADED
-// MUTATION PRE-DONE stimulus red NMH_MUTATE=A-NODONE-PAL: the program starts the Copper and halts before the trace and before DONE, so the completion word is never written
+// MUTATION FIX-CONST stimulus red NMH_MUTATE=A-NOFIX-PAL: the program leaves out the store of $A5C3 to $0C0002, so the port logs no such write and the dependent lines are NOT GRADED; also moves (both cores): P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-DONE stimulus red NMH_MUTATE=A-NODONE-PAL: the program starts the Copper and halts before the trace and before DONE, so the completion word is never written; also moves (both cores): PRE-L1, PRE-T1E, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-S1A none impossible unfalsifiable at this boundary: no input of the programs changes the refresh slots (RF1)
 // MUTATION PRE-S1B none impossible unfalsifiable at this boundary: no input of the programs changes the refresh slots, so no two accesses can be made to share one (RF1)
-// MUTATION PRE-L1 stimulus red NMH_MUTATE=A-NOOVL-PAL: CIA-A is not written (step 2 left out), the overlay stays on, the CPU's writes of the list never reach Chip memory and the port logs none; the program still reaches DONE
-// MUTATION PRE-T1 stimulus green NMH_MUTATE=A-COPOFF-PAL: Copper DMA is never enabled (DMACON = $8200), so no restart interrupts the trace and every step lasts 12 or 13 slots; the unchanged comparator passes where the normal run is red
-// MUTATION PRE-T1E stimulus red NMH_MUTATE=A-SLOW-PAL: a delay of 100 dbra iterations (at least 300 slots) between 400 samples, so the events fall between samples more than 16 slots apart
-// MUTATION PRE-T2 stimulus red NMH_MUTATE=A-HOLD-PAL: one read of $DFF004 after polling H >= $20 is stored in every step, so H never increases between trusted samples
-// MUTATION PRE-R1 stimulus red NMH_MUTATE=A-NOCOP-PAL: DMACON = $0080 (COPEN cleared) is written after the third field boundary the trace sees, so the later fields have no restart
-// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=A-SHORT-PAL: the trace buffer holds 64 samples, far fewer than 6 complete fields
+// MUTATION PRE-L1 stimulus red NMH_MUTATE=A-NOOVL-PAL: CIA-A is not written (step 2 left out), the overlay stays on, the CPU's writes of the list never reach Chip memory and the port logs none; the program still reaches DONE; also moves (both cores): PRE-T1E, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256 PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-T1E stimulus red NMH_MUTATE=A-SLOW-PAL: a delay of 100 dbra iterations (at least 300 slots) between 400 samples, so the events fall between samples more than 16 slots apart; also moves (both cores): PRE-T2, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-T2 stimulus red NMH_MUTATE=A-HOLD-PAL: one read of $DFF004 after polling H >= $20 is stored in every step, so H never increases between trusted samples; also moves (both cores): PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-R1 stimulus red NMH_MUTATE=A-NOCOP-PAL: DMACON = $0080 (COPEN cleared) is written after the third field boundary the trace sees, so the later fields have no restart; also moves, fx68k: PRE-T1E, PRE-ANCHOR, PRE-P7L256, P3-PAL PASS to FAIL; P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED; TG68K: PRE-T1E, PRE-ANCHOR, PRE-P7L256 PASS to FAIL; P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=A-SHORT-PAL: the trace buffer holds 64 samples, far fewer than 6 complete fields; also moves (both cores): PRE-T1E, PRE-R1, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-P3SAMPLES stimulus red NMH_MUTATE=A-SHORT-PAL: the trace buffer holds 64 samples, far fewer than 6 complete fields, so P3 is NOT GRADED and not red; also moves (both cores): PRE-T1E, PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256 PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-STD stimulus red NMH_MUTATE=A-STD-NTSC-LABEL-PALCAP: the PAL capture is graded under the NTSC line, and its chip identification names PAL
-// MUTATION PRE-ANCHOR stimulus red NMH_MUTATE=A-ANCHOR-PAL: every WAIT(v,$40) becomes WAIT(v+1,$40), so m_v lies on line v+1
-// MUTATION PRE-P2WAITED stimulus red NMH_MUTATE=A-P2WAITED-PAL: an extra WAIT($7F,$40) after MARK($7F) is fetched after its target has passed, so its delay equals lambda_min
-// MUTATION PRE-E0 stimulus red NMH_MUTATE=A-NOPREP-PAL: WAIT($FF,$E0), MARK($A0E0) and the padding are left out, so m_E0 does not exist
-// MUTATION PRE-P7L256 stimulus red NMH_MUTATE=A-NOPREP-PAL: WAIT($FF,$E0) and the padding are left out, so the second word of WAIT(0,$60) is fetched on line 255
+// MUTATION PRE-ANCHOR stimulus red NMH_MUTATE=A-ANCHOR-PAL: every WAIT(v,$40) becomes WAIT(v+1,$40), so m_v lies on line v+1; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-P2WAITED stimulus red NMH_MUTATE=A-P2WAITED-PAL: an extra WAIT($7F,$40) after MARK($7F) is fetched after its target has passed, so its delay equals lambda_min; also moves (both cores): P2-PAL PASS to NOT GRADED
+// MUTATION PRE-E0 stimulus red NMH_MUTATE=A-NOPREP-PAL: WAIT($FF,$E0), MARK($A0E0) and the padding are left out, so m_E0 does not exist; also moves (both cores): PRE-P2WAITED, PRE-P7L256 PASS to FAIL; P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-P7L256 stimulus red NMH_MUTATE=A-NOPREP-PAL: WAIT($FF,$E0) and the padding are left out, so the second word of WAIT(0,$60) is fetched on line 255; also moves (both cores): PRE-P2WAITED, PRE-E0 PASS to FAIL; P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION P1-ORIGIN none impossible not exercised, by a scope decision: a write to VPOSW or VHPOSW (p.216) would move the counter and the pages would then predict the written position, not (0,0); the package never writes them
 // MUTATION P2-PAL stimulus red NMH_MUTATE=A-SHIFT-PAL: WAIT($80,$42) in place of WAIT($80,$40), so L($7F) and L($80) differ from 227
-// MUTATION P2-NTSC none impossible already red on both cores, and no input of this package gives a line of 228 slots, so no capture can pass the comparator; neither unfalsifiable nor a scope decision
-// MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-SHORT-NTSC: the trace buffer holds 64 samples, so the odd count $E1 is not read
-// MUTATION PRE-P3COVER none impossible already red on both cores, and no capture of this package has a line of 228 slots, so no input passes the comparator; neither unfalsifiable nor a scope decision
-// MUTATION P3-PAL stimulus red NMH_MUTATE=A-SHORT-PAL: the trace buffer holds 64 samples, so most even counts are never read
-// MUTATION P3-NTSC-SET none impossible already red on both cores, and no capture of this package reads $E3, so no input passes the comparator; neither unfalsifiable nor a scope decision
-// MUTATION P3-NTSC-LONGONLY none impossible NOT GRADED on both cores because PRE-P3COVER fails, and no input exists for which the pages predict $E3 on a short line
+// MUTATION P2-NTSC implementation green private copy of agnus_beamcounter.v, outside the repository, whose NTSC lines alternate between 228 and 227 counts (the line ends one count later when the long-line bit is set); the normal NTSC run A through the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): PRE-P3COVER, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
+// MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-SHORT-NTSC: the trace buffer holds 64 samples, so the odd count $E1 is not read; also moves (both cores): PRE-T1E, PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P2-NTSC FAIL to NOT GRADED; P1-ORIGIN, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
+// MUTATION PRE-P3COVER implementation green the same private copy with NTSC lines of 228 and 227 counts: H >= $E0 is observed on more than 20 lines of each length, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
+// MUTATION P3-PAL implementation red NMH_MUTATE=A-STD-PAL-LABEL-NTSCCAP: the NTSC capture of the private copy of agnus_beamcounter.v with NTSC lines of 228 and 227 counts, graded under the PAL label (p.23: PAL counts end at $E2): $E3 is read, so the unchanged comparator prints FAIL; on the repository's RTL the same selector prints PASS because no NTSC count exceeds $E2; PRE-STD also fails, as the contrast is the PAL check made on an NTSC run; also moves (both cores): PRE-STD PASS to FAIL; P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION P3-NTSC-SET implementation green the same private copy with NTSC lines of 228 and 227 counts: $E3 is read, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, PRE-P3COVER FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
+// MUTATION P3-NTSC-LONGONLY none impossible unfalsifiable at this boundary: a line whose counts run 0 ... $E3 has 228 counts, so no stimulus makes a line with L(v) = 227 show $E3; it is NOT GRADED on the repository's RTL (PRE-P3COVER fails) and graded, and PASS, on the private copy of agnus_beamcounter.v with NTSC lines of 228 and 227 counts (normal NTSC run A)
 // MUTATION P7 stimulus red NMH_MUTATE=A-TAILSHIFT-PAL: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n
-// MUTATION P7-WAITED stimulus red NMH_MUTATE=A-LONGPAD-PAL: 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied
-// MUTATION P8-LINES stimulus red NMH_MUTATE=A-TAILSHIFT-NTSC: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n
-// MUTATION P8-AFTER none impossible already red on both cores, and no input of this package changes the length of a field, so no capture has line 0 after line 261; neither unfalsifiable nor a scope decision
-// MUTATION P8-NO262 stimulus green NMH_MUTATE=A-TAILPAST-NTSC: the last tail WAIT is WAIT(7,$60), a line that no field has, so m_262 is not fetched through the unchanged comparator where the normal run is red
-// MUTATION P8 none impossible already red on both cores through P8-AFTER, which no input of this package passes; neither unfalsifiable nor a scope decision
-// MUTATION PRE-C-R1LINE stimulus red NMH_MUTATE=C-CR1LINE-PAL: WAIT(w_5,$C0) becomes WAIT(w_5+1,$C0), so r1_5 lies on line w_5+1
-// MUTATION PRE-C-WAITED stimulus red NMH_MUTATE=C-CLATE-PAL: the reference of k = 90 is WAIT(u_90,$C4), so the following WAIT(u_90,$B4) is fetched after its target
-// MUTATION P4-A stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so D_50 changes by 2 slots
-// MUTATION P4-B stimulus red NMH_MUTATE=C-CSHIFTEND-PAL: WAIT(u_106,$D6) in place of WAIT(u_106,$D4), so D_106 is not below D_107
-// MUTATION P4-C stimulus red NMH_MUTATE=C-CNEXT-PAL: q_5 is WAIT(w_5+1,$50), so the WAIT of r2_5 is fetched after its target and did not wait
-// MUTATION P4 stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so the aggregate fails through P4-A
+// MUTATION P7-WAITED stimulus red NMH_MUTATE=A-LONGPAD-PAL: 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied; also moves (both cores): PRE-P2WAITED PASS to FAIL; P2-PAL PASS to NOT GRADED
+// MUTATION P8-LINES stimulus red NMH_MUTATE=A-TAILSHIFT-NTSC: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n; also moves (both cores): P7 PASS to FAIL
+// MUTATION PRE-C-R1LINE stimulus red NMH_MUTATE=C-CR1LINE-PAL: WAIT(w_5,$C0) becomes WAIT(w_5+1,$C0), so r1_5 lies on line w_5+1; also moves (both cores): PRE-C-WAITED PASS to FAIL; P4 PASS to NOT GRADED
+// MUTATION PRE-C-WAITED stimulus red NMH_MUTATE=C-CLATE-PAL: the reference of k = 90 is WAIT(u_90,$C4), so the following WAIT(u_90,$B4) is fetched after its target; also moves (both cores): P4 PASS to NOT GRADED
+// MUTATION P4-A stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so D_50 changes by 2 slots; also moves (both cores): P4 PASS to FAIL
+// MUTATION P4-B stimulus red NMH_MUTATE=C-CSHIFTEND-PAL: WAIT(u_106,$D6) in place of WAIT(u_106,$D4), so D_106 is not below D_107; also moves (both cores): P4 PASS to FAIL
+// MUTATION P4-C stimulus red NMH_MUTATE=C-CNEXT-PAL: q_5 is WAIT(w_5+1,$50), so the WAIT of r2_5 is fetched after its target and did not wait; also moves (both cores): P4 PASS to FAIL
+// MUTATION P4 stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so the aggregate fails through P4-A; also moves (both cores): P4-A PASS to FAIL
 // MUTATION PRE-B-CHAIN stimulus red NMH_MUTATE=B-BCHAIN-PAL: the COP1LC moves of L_3 name L_5, so the restart after L_3 fetches L_5 and not L_4
 // MUTATION PRE-B-L255 stimulus red NMH_MUTATE=B-BLATE-PAL: in L_1 a WAIT($FF,$E0) and 16 padding moves precede WAIT($FF,h_1), so its second word is fetched on line 256
 // MUTATION PRE-B-WAITED stimulus red NMH_MUTATE=B-BWAITED-PAL: in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the latter is fetched after its target
 // MUTATION P6-LINE255 stimulus red NMH_MUTATE=B-B254-PAL: in L_2 the first WAIT is for line $FE and a WAIT($FF,$30) follows it, so a_2 lies on line 254 while the preconditions still hold
 // MUTATION P6-CONTROL stimulus red NMH_MUTATE=B-BFEOFF-PAL: L_FE waits for ($FF,$FE), so $B300 is not fetched
-// MUTATION P6-LARGEST none impossible already red on both cores: the first word after a pending WAIT is fetched just before the next restart in every field, so x_j is fetched for every h_j above $E2 and no input of this package passes the comparator; neither unfalsifiable nor a scope decision
-// MUTATION P6-NEVER none impossible already red on both cores for the reason of P6-LARGEST: no field of this package has a WAIT that never ends without a fetch before the next restart; neither unfalsifiable nor a scope decision
+// MUTATION P6-LARGEST implementation green private copy of agnus_copper.v, outside the repository, whose beam match stays set while a WAIT is pending, so that WAIT($FF,$E2) ends in line $FF; the normal run B through the unchanged comparator prints PASS where the repository's RTL prints FAIL (x_0 is fetched 163 slots after a_0). NMH_MUTATE=B-BE4-PAL (L_0 waits for $E4, the specification's contrast for x_0 not fetched) leaves the line FAIL on both cores, as in the normal run: the line is red before the contrast changes anything, so the contrast discriminates nothing here
+// MUTATION P6-NEVER stimulus red NMH_MUTATE=B-BEND-PAL: L_14 waits for ($FE,$FE) in place of ($FF,$FE), which ends when line $FF begins, so x_14 is fetched before line 0 of the next field while every precondition holds
 // MUTATION PRE-P5-CALLO stimulus red NMH_MUTATE=D-DFLATLO-PAL: every plane word of D-lo is $FFFF, so there are no alternating runs
 // MUTATION PRE-P5-CALHI stimulus red NMH_MUTATE=D-DFLATHI-PAL: every plane word of D-hi is $FFFF, so there are no alternating runs
 // MUTATION PRE-P5-EDGES stimulus red NMH_MUTATE=D-DDROP-PAL: the second MOVE($180,B) of line $50 is left out, so line $50 has no A to B edge
 // MUTATION PRE-P5-WAITED stimulus red NMH_MUTATE=D-DLATE-PAL: the second WAIT of line $50 is at $3A, already satisfied when it is fetched
-// MUTATION P5-LO stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 4 * 25 * P_lo while n_$50 is 24
-// MUTATION P5-HI stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 8 * 25 * P_hi while n_$50 is 24
-// MUTATION PRE-P9-PLO stimulus red NMH_MUTATE=E-PLOFLAT-PAL: the calibration run D-lo has every plane word $FFFF, so P_lo is not valid
-// MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01
+// MUTATION P5-LO stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 4 * 25 * P_lo while n_$50 is 24; also moves (both cores): P5-HI PASS to FAIL
+// MUTATION P5-HI stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 8 * 25 * P_hi while n_$50 is 24; also moves (both cores): P5-LO PASS to FAIL
+// MUTATION PRE-P9-PLO stimulus red NMH_MUTATE=E-PLOFLAT-PAL: the calibration run D-lo has every plane word $FFFF, so P_lo is not valid; also moves (both cores): PRE-P5-CALLO PASS to FAIL
+// MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01; also moves (both cores): PRE-P9-ONE0 PASS to FAIL
 // MUTATION PRE-P9-ONE0 stimulus red NMH_MUTATE=E-EBLACKGAP-PAL: COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line has a second run of 0
-// MUTATION P9-A-E stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo
-// MUTATION P9-A-EW stimulus red NMH_MUTATE=E-EWWIDEWIN-PAL: the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo
-// MUTATION P9-A stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the aggregate fails through P9-A-E
+// MUTATION P9-A-E stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
+// MUTATION P9-A-EW stimulus red NMH_MUTATE=E-EWWIDEWIN-PAL: the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
+// MUTATION P9-A stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the aggregate fails through P9-A-E; also moves (both cores): P9-A-E PASS to FAIL
 // MUTATION P9-B stimulus red NMH_MUTATE=E-EBLACK-PAL: COLOR00 = $000, so no COLOR00 pixel is distinguishable from the blanking on either side
 
 #include <algorithm>
@@ -137,6 +134,7 @@ uint8_t cfg_ecs(Tag t) { return t == PAL ? kECS_PAL : kECS_NTSC; }
 uint8_t cfg_ocs(Tag t) { return t == PAL ? kOCS_PAL : kOCS_NTSC; }
 
 std::string num(long long v) { return std::to_string(v); }
+std::string slots(long long v) { return std::to_string(v) + (v == 1 ? " slot" : " slots"); }
 std::string hex2(unsigned v) { char b[16]; std::snprintf(b, sizeof b, "%02X", v & 0xFF); return b; }
 std::string hex4(unsigned v) { char b[16]; std::snprintf(b, sizeof b, "%04X", v & 0xFFFF); return b; }
 
@@ -498,6 +496,31 @@ std::optional<int64_t> fetch_slot(const Analysis& a, uint32_t addr, const RWin& 
     return slot_of(a.sref, *fc);
 }
 
+// The start of line 0 of the next field (SPECIFICATION.md RF3), placed by count
+// arithmetic on the beam trace: one count per memory slot (p.24). a is the
+// last trusted sample before the first fall of V after from_cyc, and p the
+// sample before it in the trace. The read of a followed the writes of p and
+// preceded the writes of a, so the count at slot t of a's line is
+// H(a) + (t - r) with w(p) < r < w(a). A line ends at count $E2 at the
+// earliest and at count max_count_late at the latest (p.23), and line 0
+// starts one slot after the end of the last line. early is the earliest and
+// late the latest slot at which line 0 can have started.
+struct Line0 { int64_t early, late; };
+
+std::optional<Line0> line0_after(const Analysis& a, uint64_t from_cyc, int max_count_late) {
+    for (size_t b : trace_wraps(a.trusted)) {
+        if (a.trusted[b].cyc <= from_cyc) continue;
+        const Sample& sa = a.trusted[b - 1];
+        if (sa.cyc <= from_cyc || sa.idx == 0) return std::nullopt;
+        const Sample& sp = a.all[sa.idx - 1];
+        Line0 r;
+        r.early = sp.w + (0xE2 - sa.H) + 1;
+        r.late = sa.w + (max_count_late - sa.H) + 1;
+        return r;
+    }
+    return std::nullopt;
+}
+
 // delay(W) of SPECIFICATION.md 3.5 for the WAIT whose second word is at
 // wait_a + 1: the slot of the fetch of the word after it, minus the slot of
 // the fetch of that second word.
@@ -595,9 +618,8 @@ Gate report_common(Checks& checks, const Analysis& a, Tag tag, const std::string
     g.s1 = a.s1_spacing && a.s1_collision;
     g.l1 = a.l1;
     checks.expect(a.l1, "PRE-L1 " + tg + rn + "the Copper's first fetches read the words the CPU wrote in step 3");
-    checks.expect(a.rf2.t1, "PRE-T1 " + tg + rn + "every consecutive sample pair is at most 16 slots apart (RF2)");
-    checks.note("T1 " + tg + rn + num((long long)a.rf2.t1_violations) + " of " + num((long long)a.rf2.t1_total) +
-                " consecutive-sample gaps exceed 16 slots, " + num((long long)a.rf2.t1_at_boundary) + " of them across a field boundary");
+    checks.note("PRE-T1 " + tg + rn + num((long long)a.rf2.t1_violations) + " of " + num((long long)a.rf2.t1_total) +
+                " consecutive-sample gaps exceed 16 slots, " + num((long long)a.rf2.t1_at_boundary) + " of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)");
     g.t1e = gap_hits == 0 && events_identified > 0;
     checks.expect(g.t1e, "PRE-T1E " + tg + rn + "no event of this run is bracketed by a step that ended before it (the clause of T1 that RF2's line identification uses): " +
                   num((long long)gap_hits) + " events hit such a step, " + num((long long)events_identified) + " events identified");
@@ -632,15 +654,6 @@ std::string setstr(const std::set<int>& s) {
 }
 std::string setstr64(const std::set<int64_t>& s) {
     std::string o; for (auto v : s) o += (o.empty() ? "" : ",") + std::to_string(v); return o.empty() ? "(none)" : o;
-}
-
-// OCS cross-check of SPECIFICATION.md 3.1: recorded, not graded.
-void ocs_check(Checks& checks, const std::string& dir, const std::string& bin, Tag tag, const std::string& run,
-               const Analysis& ecs, const std::set<uint32_t>& bases, uint16_t w0, uint16_t w1, uint64_t budget) {
-    Analysis ocs = analyze(run_capture(dir + "/" + bin + ".bin", cfg_ocs(tag), budget), bases, w0, w1);
-    auto e = field_lengths(ecs), o = field_lengths(ocs);
-    checks.note("OCS-CHECK " + std::string(tagname(tag)) + " run " + run + ": ECS field-length set {" + setstr(e) + "} vs OCS {" + setstr(o) +
-                "} -- " + (e == o ? "match, assumption checked" : "MISMATCH, recorded not graded"));
 }
 
 // ==== SECTION A ===============================================================
@@ -717,6 +730,28 @@ P2Res grade_p2(const Analysis& a, const ALists& L, int tail_pairs) {
     return r;
 }
 
+// OCS cross-check of SPECIFICATION.md 3.1: recorded, not graded. It compares
+// the set of field lengths and, when tail_pairs is not negative (Run A), the
+// set of line lengths L(v) of P2.
+void ocs_check(Checks& checks, const std::string& dir, const std::string& bin, Tag tag, const std::string& run,
+               const Analysis& ecs, const std::set<uint32_t>& bases, uint16_t w0, uint16_t w1, uint64_t budget, int tail_pairs = -1) {
+    Analysis ocs = analyze(run_capture(dir + "/" + bin + ".bin", cfg_ocs(tag), budget), bases, w0, w1);
+    auto e = field_lengths(ecs), o = field_lengths(ocs);
+    bool same = e == o;
+    std::string lv;
+    if (tail_pairs >= 0) {
+        ALists le, lo;
+        le.list = decode_list(ecs.mem, *bases.begin()); le.mk = marker_map(le.list);
+        lo.list = decode_list(ocs.mem, *bases.begin()); lo.mk = marker_map(lo.list);
+        P2Res pe = grade_p2(ecs, le, tail_pairs), po = grade_p2(ocs, lo, tail_pairs);
+        same = same && pe.values == po.values;
+        lv = "; line-length L(v) set {" + setstr64(pe.values) + "} over " + num((long long)pe.measured) + " pairs vs OCS {" + setstr64(po.values) +
+             "} over " + num((long long)po.measured) + " pairs";
+    }
+    checks.note("OCS-CHECK " + std::string(tagname(tag)) + " run " + run + ": ECS field-length set {" + setstr(e) + "} vs OCS {" + setstr(o) + "}" + lv +
+                " -- " + (same ? "match, assumption checked" : "MISMATCH, recorded not graded"));
+}
+
 int window_of(const Analysis& a, uint64_t cyc) {
     for (size_t k = 0; k < a.rwins.size(); ++k) if (cyc >= a.rwins[k].lo && cyc < a.rwins[k].hi) return (int)k;
     return -1;
@@ -724,15 +759,21 @@ int window_of(const Analysis& a, uint64_t cyc) {
 
 struct P3Res {
     bool graded = true, ok = true, set_ok = true, e3_ok = true, odd_end_ok = false;
+    bool cover = false;       // both parities of H are read (RF2, parity coverage)
+    int parity = 0;           // the observed parity when cover is false
+    bool e3_graded = true;    // the "$E3 only on long lines" clause can be graded (an odd count is readable)
     std::set<int> hs;
     size_t lines_long = 0, lines_short = 0;
     std::vector<int> missing_even, missing_odd;
 };
 
-// P3: the horizontal count range (SPECIFICATION.md P3). The graded set is
-// the lowest count, every even count up to $E2, the highest count the page
-// gives, and nothing above it; the odd counts are measured (the sampler
-// reads no odd count in part of the line, see the specification's build notes).
+// P3: the horizontal count range (SPECIFICATION.md P3). With parity coverage
+// the graded set is the lowest count, every even count up to $E2, the highest
+// count the page gives, and nothing above it; the odd counts are measured (the
+// sampler reads no odd count in part of the line, see 8.4 item 2). Without
+// parity coverage the graded set is every value of the one parity read, from
+// the lowest to the highest not above the page's highest count, and nothing
+// above it; "$E3 only on long lines" is graded only when the parity read is odd.
 P3Res grade_p3(const Analysis& a, Tag expect, const P2Res& p2) {
     P3Res r;
     for (auto& s : a.all) r.hs.insert(s.H);
@@ -754,14 +795,25 @@ P3Res grade_p3(const Analysis& a, Tag expect, const P2Res& p2) {
     r.lines_long = long_lines.size(); r.lines_short = short_lines.size();
     r.e3_ok = !e3_on_short;
     if (r.hs.empty()) { r.graded = false; r.ok = false; r.set_ok = false; return r; }
-    bool within = true;
-    for (int h : r.hs) if (h > maxH) within = false;
+    bool within = true, any_even = false, any_odd = false;
+    for (int h : r.hs) { if (h > maxH) within = false; if (h & 1) any_odd = true; else any_even = true; }
+    r.cover = any_even && any_odd;
+    r.parity = any_odd && !any_even ? 1 : 0;
     bool even_all = true;
     for (int x = 0; x <= 0xE2; x += 2) if (!r.hs.count(x)) { even_all = false; r.missing_even.push_back(x); }
     for (int x = 1; x <= 0xE1; x += 2) if (!r.hs.count(x)) r.missing_odd.push_back(x);
     r.odd_end_ok = r.hs.count(0xE1) > 0;
-    r.set_ok = within && even_all && r.hs.count(maxH) > 0;
-    r.ok = r.set_ok && (expect == PAL || r.e3_ok);
+    if (r.cover) {
+        r.set_ok = within && even_all && r.hs.count(maxH) > 0;
+    } else {
+        int highest = maxH;
+        if ((highest & 1) != r.parity) --highest;
+        bool all = true;
+        for (int x = r.parity; x <= highest; x += 2) if (!r.hs.count(x)) all = false;
+        r.set_ok = within && all;
+        r.e3_graded = r.parity == 1;
+    }
+    r.ok = r.set_ok && (expect == PAL || !r.e3_graded || r.e3_ok);
     return r;
 }
 
@@ -774,8 +826,8 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
         plan.run[PAL] = plan.run[NTSC] = false;
         if (mv == "A-STD-NTSC-LABEL-PALCAP") {            // the PAL capture graded under the NTSC label
             plan.run[NTSC] = true; plan.bin[NTSC] = "prog_a"; plan.cfg[NTSC] = kECS_PAL;
-        } else if (mv == "A-STD-P8") {                    // the NTSC list on a PAL machine
-            plan.run[NTSC] = true; plan.bin[NTSC] = "prog_a_ntsc"; plan.cfg[NTSC] = kECS_PAL;
+        } else if (mv == "A-STD-PAL-LABEL-NTSCCAP") {     // the NTSC capture graded under the PAL label
+            plan.run[PAL] = true; plan.bin[PAL] = "prog_a_ntsc"; plan.cfg[PAL] = kECS_NTSC;
         } else {
             std::string rest = mv.substr(2);              // "<VARIANT>-<PAL|NTSC>"
             size_t dash = rest.rfind('-');
@@ -836,8 +888,9 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                 }
             }
         }
-        auto p2waited = waited_all(a, L.list, kListBaseW, [](const Instr& i) {
-            return (i.h() == 0x40 && i.v() >= 0x30) || (i.h() == 0x60 && i.v() <= 0x37);
+        // SPECIFICATION.md P2: WAIT(n,$60) for n = 0 .. $37 (PAL) or 0 .. 5 (NTSC)
+        auto p2waited = waited_all(a, L.list, kListBaseW, [tag](const Instr& i) {
+            return (i.h() == 0x40 && i.v() >= 0x30) || (i.h() == 0x60 && i.v() <= (tag == PAL ? 0x37 : 5));
         });
 
         // ---- preconditions ---------------------------------------------------
@@ -905,14 +958,17 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
         } else {
             if (!base_ok || !p2.complete) {
                 checks.record("P2-NTSC NOT GRADED COP2-horizontal-beam-position.c10 COP2-horizontal-beam-position.c11 COP2-horizontal-beam-position.c12 "
-                              "COP2-horizontal-beam-position.c14 COP2-vertical-beam-position.c11: precondition or population failed:" + g.why_not_core() +
+                              "COP2-vertical-beam-position.c11: precondition or population failed:" + g.why_not_core() +
                               std::string(anchor_ok ? "" : " PRE-ANCHOR") + std::string(p2waited.all ? "" : " PRE-P2WAITED") + std::string(p2.complete ? "" : " population-incomplete"));
             } else {
                 checks.expect(p2.in_set && p2.alt,
                               "P2-NTSC COP2-horizontal-beam-position.c10 COP2-horizontal-beam-position.c11 COP2-horizontal-beam-position.c12 "
-                              "COP2-horizontal-beam-position.c14 COP2-vertical-beam-position.c11 [p.23,p.24]: L(v) in {227,228} for every measured v, and "
+                              "COP2-vertical-beam-position.c11 [p.23,p.24]: L(v) in {227,228} for every measured v, and "
                               "L(v)!=L(v+1) for every measured consecutive pair, in every complete field");
             }
+            checks.record("P2-NTSC COP2-horizontal-beam-position.c14 not asserted: its clause (the remaining NTSC lines last 227 colour clocks) is about the short lines only; "
+                          "P2-NTSC grades the alternation of long and short lines, which is where it is red, so the clause is neither established nor contradicted by that line; "
+                          "the measured L(v) values are on the P2 line above");
         }
 
         // ---- P3 ---------------------------------------------------------------------
@@ -924,21 +980,30 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                         "; odd values up to $E1 not observed (" + num((long long)p3.missing_odd.size()) + "):" + (mo.empty() ? std::string(" none") : mo) +
                         "; lines with H>=$E0 and L=228: " + num((long long)p3.lines_long) + ", with L=227: " + num((long long)p3.lines_short));
             const bool cov_ok = p3.lines_long >= 20 && p3.lines_short >= 20;
+            size_t least = a.fields.empty() ? 0 : (size_t)-1;
+            for (auto& f : a.fields) least = std::min(least, f.hi - f.lo);
+            const bool p3s = a.fields.size() >= 6 && least >= 114;
+            checks.expect(p3s, "PRE-P3SAMPLES " + tg + " run A: at least 6 complete fields, each with at least 114 trusted samples, the number of even counts $00 ... $E2 (p.23) (" +
+                          num((long long)a.fields.size()) + " fields, at least " + num((long long)least) + " trusted samples per field)");
             if (tag == NTSC) {
-                checks.expect(p3.odd_end_ok, "PRE-P3ODDEND NTSC run A: the odd count $E1, next below the last even count, is read at the end of a line");
-                checks.expect(cov_ok, "PRE-P3COVER NTSC run A: H >= $E0 is observed on at least 20 distinct lines with L(v)=228 and at least 20 with L(v)=227 (" +
-                              num((long long)p3.lines_long) + " and " + num((long long)p3.lines_short) + ")");
+                if (p3.cover) checks.expect(p3.odd_end_ok, "PRE-P3ODDEND NTSC run A: the odd count $E1, next below the last even count, is read at the end of a line");
+                else checks.record("PRE-P3ODDEND NTSC run A: not needed, only counts of one parity are read (" + std::string(p3.parity ? "odd" : "even") + ")");
+                if (p3.e3_graded) checks.expect(cov_ok, "PRE-P3COVER NTSC run A: H >= $E0 is observed on at least 20 distinct lines with L(v)=228 and at least 20 with L(v)=227 (" +
+                                                num((long long)p3.lines_long) + " and " + num((long long)p3.lines_short) + ")");
+                else checks.record("PRE-P3COVER NTSC run A: not needed, $E3 cannot be read when only even counts are read");
             }
-            if (!g.counts()) {
-                checks.record("P3-" + tg + " NOT GRADED: precondition failed:" + g.why_not_counts());
+            if (!(g.counts() && p3s)) {
+                checks.record("P3-" + tg + " NOT GRADED: precondition failed:" + g.why_not_counts() + std::string(p3s ? "" : " PRE-P3SAMPLES"));
             } else if (tag == PAL) {
-                checks.expect(p3.set_ok, "P3-PAL [p.23,p.27]: every H is at most $E2, and every even value from $00 to $E2 is observed");
-            } else if (!p3.odd_end_ok) {
+                checks.expect(p3.set_ok, "P3-PAL [p.23,p.27]: every H is at most $E2, and every even value from $00 to $E2 is observed (when counts of one parity only are read: every value of that parity from the lowest to the highest not above $E2)");
+            } else if (p3.cover && !p3.odd_end_ok) {
                 checks.record("P3-NTSC-SET NOT GRADED: precondition failed: PRE-P3ODDEND");
             } else {
-                checks.expect(p3.set_ok, "P3-NTSC-SET [p.23]: every H is at most $E3, and every even value from $00 to $E2 and the odd value $E3 are observed");
+                checks.expect(p3.set_ok, "P3-NTSC-SET [p.23]: every H is at most $E3, and every even value from $00 to $E2 and the odd value $E3 are observed (when counts of one parity only are read: every value of that parity from the lowest to the highest not above $E3)");
                 const bool pop_ok = p2.complete && anchor_ok && p2waited.all;
-                if (!(cov_ok && pop_ok)) {
+                if (!p3.e3_graded) {
+                    checks.record("P3-NTSC-LONGONLY NOT GRADED COP2-horizontal-beam-position.c13: only even counts are read, so $E3 cannot be read");
+                } else if (!(cov_ok && pop_ok)) {
                     checks.record("P3-NTSC-LONGONLY NOT GRADED COP2-horizontal-beam-position.c13: precondition failed:" +
                                   std::string(cov_ok ? "" : " PRE-P3COVER") + std::string(pop_ok ? "" : " P2-population-or-anchor-or-waited"));
                 } else {
@@ -986,42 +1051,57 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                     if (r.status != 0 || r.line != 256 + n) lines_ok = false;
                 }
             }
-            bool after_ok = true; size_t after_checked = 0;
+            // measured: the line after line 261, and where m_262 is fetched against the start of line 0 of the next field
             std::map<int, int> after_v;
+            size_t after_checked = 0;
             if (!a.fields.empty()) {
                 for (size_t i = a.fields.front().lo; i + 1 < a.fields.back().hi && i + 1 < a.trusted.size(); ++i) {
-                    if (a.trusted[i].V == 261 && a.trusted[i + 1].V != 261) {
-                        ++after_checked; after_v[a.trusted[i + 1].V]++;
-                        if (a.trusted[i + 1].V != 0) after_ok = false;
-                    }
+                    if (a.trusted[i].V == 261 && a.trusted[i + 1].V != 261) { ++after_checked; after_v[a.trusted[i + 1].V]++; }
                 }
             }
-            if (after_checked < a.fields.size()) after_ok = false;
-            bool no262 = true; size_t no262_checked = 0;
-            auto m261 = L.m(0x105); auto m262 = L.m(0x106);
+            std::map<std::string, size_t> m262;
+            size_t m262_checked = 0;
+            auto m261 = L.m(0x105); auto m262a = L.m(0x106);
             for (auto& w : a.rwins) {
                 if (!m261) break;
                 auto f261 = fetch_in(a.ridx, *m261, w.lo, w.hi);
                 if (!f261) continue;
-                ++no262_checked;
-                if (m262 && fetch_in(a.ridx, *m262, *f261, w.hi)) no262 = false;
+                ++m262_checked;
+                auto l0 = line0_after(a, *f261, 0xE3);
+                auto f262 = m262a ? fetch_in(a.ridx, *m262a, *f261, w.hi) : std::nullopt;
+                std::string key;
+                if (!f262) key = "m_262 not fetched before the next restart";
+                else if (!l0) key = "m_262 fetched, the start of line 0 is not placed";
+                else {
+                    const int64_t s = slot_of(a.sref, *f262);
+                    key = "m_262 fetched " + (s < l0->early ? slots(l0->early - s) + " before the earliest start of line 0" :
+                                              s > l0->late ? slots(s - l0->late) + " after the latest start of line 0" : std::string("between the earliest and the latest start of line 0"));
+                }
+                ++m262[key];
             }
             std::string av; for (auto& kv : after_v) av += (av.empty() ? "" : ",") + std::to_string(kv.first) + "x" + std::to_string(kv.second);
+            std::string mv262; for (auto& kv : m262) mv262 += " " + num((long long)kv.second) + " of " + num((long long)m262_checked) + " fields: " + kv.first + ";";
             checks.note("P8 " + tg + " run A: the trusted sample after the last sample of line 261 has V (count): " + (av.empty() ? std::string("(none)") : av) + " over " + num((long long)after_checked) + " field boundaries");
+            checks.note("P8 " + tg + " run A: after m_261:" + (mv262.empty() ? std::string(" (none)") : mv262));
             const bool pre = g.core() && anchor_ok && e0_ok && p7pre_ok;
             const std::string why = g.why_not_core() + std::string(anchor_ok ? "" : " PRE-ANCHOR") + std::string(e0_ok ? "" : " PRE-E0") + std::string(p7pre_ok ? "" : " PRE-P7L256");
-            if (!pre || lines_checked == 0 || no262_checked == 0) {
-                checks.record("P8 NTSC NOT GRADED COP2-vertical-beam-position.c9: precondition or population failed:" + why);
+            if (!pre || lines_checked == 0) {
+                checks.record("P8-LINES NTSC NOT GRADED: precondition or population failed:" + why);
             } else {
                 checks.expect(lines_ok, "P8-LINES NTSC [p.24]: m_(256+n) lies on line 256+n for n=0..5, every complete field");
-                checks.expect(after_ok, "P8-AFTER NTSC [p.24,p.219]: the trusted sample after line 261 is on line 0, every complete field");
-                checks.expect(no262, "P8-NO262 NTSC [p.24]: m_262 is not fetched between m_261 and the next field boundary, every complete field");
-                checks.expect(lines_ok && after_ok && no262,
-                              "P8 NTSC COP2-vertical-beam-position.c9 [p.24]: vertical 0 through 5 after line 255 are the last six lines, 256 to 261, and there is no line 262");
             }
+            // the field-length dispute of P1-COUNT: the last line number and a line 262 are not graded
+            const std::string dispute =
+                "the pages give two field lengths. p.24: \"There are actually 262 NTSC (312 PAL) possible vertical positions.\" and, in the box, \"256 + 6 = 262\"; "
+                "p.34: \"a normal NTSC display has 262 lines\"; against p.24: \"these last six or seven scan lines\", p.27: \"to the end of the display (226,262) NTSC "
+                "(or (226,312) PAL)\" from \"(0,0)\", which are 263 and 313 positions, and p.100: \"line 0 to line 262\". p.216 Table 7-5 gives PAL only: V8 "
+                "\"Allows PAL line counts (313) to appear in PAL versions of the Amiga.\"";
+            checks.record("P8-AFTER NTSC NOT GRADED: whether line 0 follows line 261 depends on the field length; " + dispute);
+            checks.record("P8-NO262 NTSC NOT GRADED: whether a line 262 exists depends on the field length; " + dispute);
+            checks.record("P8 NTSC NOT GRADED COP2-vertical-beam-position.c9: \"covering the last 6 lines of the scan before vertical blanking occurs\" names the last six lines and so the field length; " + dispute);
         }
 
-        if (normal) ocs_check(checks, dir, plan.bin[ti], tag, "A", a, bases, 0x0001, 0xFFFE, kRunBudgetA);
+        if (normal) ocs_check(checks, dir, plan.bin[ti], tag, "A", a, bases, 0x0001, 0xFFFE, kRunBudgetA, tail_main);
     }
 }
 
@@ -1205,6 +1285,9 @@ void section_B(Checks& checks, const std::string& dir, const std::string& mv, bo
         size_t waited_expected = 0, waited_ok = 0;       // PRE-B-WAITED
         bool x0_reached = false, x0_seen = false;
         int64_t x0_delta = 0; int x0_line = -1;
+        std::set<int64_t> x0_early, x0_late;                 // line 0 of the next field, in slots after a_0
+        size_t l0_missing = 0;                               // fields in which the start of line 0 is not placed
+        const int max_late = tag == PAL ? 0xE2 : 0xE3;
         bool larger_never = true; size_t larger_checked = 0, larger_expected = 0;
         bool fe_never = true; size_t fe_checked = 0, fe_windows = 0;
         std::string l255_detail;
@@ -1247,30 +1330,43 @@ void section_B(Checks& checks, const std::string& dir, const std::string& mv, bo
                 auto d = wait_delay(a, *ma - 2, w);
                 if (d && lam && *d > *lam) ++waited_ok;
             }
-            // the fetch of x_j, and every Copper fetch after the WAIT's second word
+            // the fetch of x_j, and every Copper fetch after the second word of the WAIT and before the
+            // earliest start of line 0 of the next field (SPECIFICATION.md P6: the Copper stops until then)
             auto fx = fetch_in(a.ridx, *mx, w.lo, w.hi);
+            auto fs2 = fetch_in(a.ridx, *mx - 1, w.lo, w.hi);
+            std::optional<Line0> l0;
+            if (fs2) l0 = line0_after(a, *fs2, max_late);
+            if (tw && !l0) ++l0_missing;
+            const bool fx_before = fx && l0 && slot_of(a.sref, *fx) < l0->early;
             size_t after = 0;
-            if (tw) {
-                auto fs2 = fetch_in(a.ridx, *mx - 1, w.lo, w.hi);
-                if (fs2) for (auto it = std::upper_bound(allf.begin(), allf.end(), *fs2); it != allf.end() && *it < w.hi; ++it) ++after;
-            }
+            if (fs2 && l0)
+                for (auto it = std::upper_bound(allf.begin(), allf.end(), *fs2); it != allf.end() && *it < w.hi; ++it)
+                    if (slot_of(a.sref, *it) < l0->early) ++after;
             if (j == 0) {
                 x0_seen = true;
-                x0_reached = fx.has_value() && ta && slot_of(a.sref, *fx) > *ta;
+                x0_reached = fx_before && ta && slot_of(a.sref, *fx) > *ta;
                 if (fx && ta) { x0_delta = slot_of(a.sref, *fx) - *ta; auto lx = line_of(a, slot_of(a.sref, *fx)); x0_line = lx.status == 0 ? lx.line : -2; }
+                if (l0 && ta) { x0_early.insert(l0->early - *ta); x0_late.insert(l0->late - *ta); }
             } else {
                 ++larger_expected;
                 if (tw) {
                     ++larger_checked;
-                    if (fx || after > 0) larger_never = false;
-                    const std::string key = std::string(fx ? "x_j fetched " + num(slot_of(a.sref, w.hi) - slot_of(a.sref, *fx)) + " slots before the next restart" : "x_j not fetched") +
-                                            ", " + num((long long)after) + " Copper fetches after the WAIT's second word";
+                    if (fx_before || after > 0) larger_never = false;
+                    std::string rel;
+                    if (fx && l0) {
+                        const int64_t s = slot_of(a.sref, *fx);
+                        rel = s < l0->early ? slots(l0->early - s) + " before the earliest start of line 0" :
+                              s > l0->late ? slots(s - l0->late) + " after the latest start of line 0" : std::string("between the earliest and the latest start of line 0");
+                        rel += ", " + slots(slot_of(a.sref, w.hi) - s) + " before the next restart";
+                    }
+                    const std::string key = std::string(fx ? "x_j fetched " + (l0 ? rel : std::string("(the start of line 0 is not placed)")) : "x_j not fetched") +
+                                            ", " + num((long long)after) + " Copper fetches between the second word of the WAIT and the earliest start of line 0";
                     ++never_count[key];
                 }
             }
             if (j == 14 || j == 15) {
                 ++fe_windows;
-                if (tw) { ++fe_checked; if (fx || after > 0) fe_never = false; }
+                if (tw) { ++fe_checked; if (fx_before || after > 0) fe_never = false; }
             }
         }
 
@@ -1287,20 +1383,22 @@ void section_B(Checks& checks, const std::string& dir, const std::string& mv, bo
         const std::string why = g.why_not_core() + std::string(chain_ok ? "" : " PRE-B-CHAIN") + std::string(l255 ? "" : " PRE-B-L255") + std::string(wt ? "" : " PRE-B-WAITED");
 
         // ---- P6 ----------------------------------------------------------------------------------------
-        std::string rec = "j=0: x_0 " + std::string(x0_reached ? "fetched" : "not fetched") + " in the same field";
-        if (x0_seen && x0_reached) rec += ", time(x_0)-time(a_0) = " + num(x0_delta) + " slots, " + (x0_line >= 0 ? "on line " + num(x0_line) : std::string("on a line the trace does not identify")) + " (reading A predicts $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b))";
+        std::string rec = "j=0: x_0 " + std::string(x0_reached ? "fetched" : "not fetched") + " before line 0 of the next field";
+        if (x0_seen && x0_delta != 0) rec += ", time(x_0)-time(a_0) = " + num(x0_delta) + " slots, " + (x0_line >= 0 ? "on line " + num(x0_line) : std::string("on a line the trace does not identify")) +
+                                             "; line 0 of the next field starts " + setstr64(x0_early) + " (earliest) to " + setstr64(x0_late) + " (latest) slots after a_0" +
+                                             " (reading A predicts time(x_0)-time(a_0) = $A2 or $A3 = 162 or 163, reading B $A1 or $A2 = 161 or 162, p.23 and P4(b))";
         std::string nd;
         for (auto& kv : never_count) nd += " " + num((long long)kv.second) + " of " + num((long long)larger_checked) + " fields: " + kv.first + ";";
         checks.note("P6 " + tg + " run B: " + rec + "; fields of h_j > $E2:" + (nd.empty() ? std::string(" none") : nd));
-        if (!pre || a_checked != a_expected) {
+        if (!pre || a_checked != a_expected || l0_missing > 0) {
             checks.record("P6 " + tg + " NOT GRADED COP2-the-wait-instruction.c26 COP2-the-wait-instruction.c27 COP2-the-wait-instruction.c28 COP2-the-wait-instruction.c29: precondition or population failed:" + why +
-                          std::string(a_checked == a_expected ? "" : " population-incomplete"));
+                          std::string(a_checked == a_expected ? "" : " population-incomplete") + std::string(l0_missing == 0 ? "" : " start-of-line-0-not-placed"));
         } else {
             checks.expect(a_bad == 0, "P6-LINE255 " + tg + " COP2-the-wait-instruction.c27 [p.23]: a_j lies on line 255 in every field of every list L_0 .. L_15");
             checks.expect(x0_seen && x0_reached && larger_checked == larger_expected && larger_never,
-                          "P6-LARGEST " + tg + " COP2-the-wait-instruction.c26 [p.23]: $FFE2 is reached (x_0 fetched in the same field, after a_0) and no larger value is (x_j not fetched for h_j = $E4 .. $FE)");
+                          "P6-LARGEST " + tg + " COP2-the-wait-instruction.c26 [p.23,p.32,p.33,p.219]: $FFE2 is reached (x_0 is fetched after a_0 and before line 0 of the next field) and no larger value is (x_j is not fetched before line 0 of the next field for h_j = $E4 .. $FE)");
             checks.expect(fe_never && fe_windows >= 4 && fe_checked == fe_windows,
-                          "P6-NEVER " + tg + " COP2-the-wait-instruction.c28 COP2-the-wait-instruction.c29 [p.23,p.22]: for $FFFE, x_j is never fetched and no Copper fetch occurs before the next restart, in every one of the at least 4 fields with h_j = $FE");
+                          "P6-NEVER " + tg + " COP2-the-wait-instruction.c28 COP2-the-wait-instruction.c29 [p.23,p.22,p.219]: for $FFFE, x_j is never fetched and no Copper fetch occurs between the second word of the WAIT and the start of line 0 of the next field, in every one of the at least 4 fields with h_j = $FE");
             if (ctl_seen) checks.expect(ctl_ok, "P6-CONTROL " + tg + " [p.23]: WAIT($FE,$FE) ends when line $FF begins: $B300 is fetched in the same field and the WAIT($FF,$40) after it waited (time($B301)-time($B300) = " + num(ctl_delta) + " slots; $40 is not graded, for the reason of P4-C)");
             else checks.record("P6-CONTROL " + tg + " NOT GRADED: the L_FE field was not measured");
         }

@@ -25,12 +25,9 @@
 ;   RUN_NODONE   -- P1's completion-word contrasting case: the program
 ;                    starts the Copper and halts without tracing or
 ;                    executing DONE.
-;   RUN_COPOFF   -- Copper DMA never enabled (DMACON = $8200): a trace
-;                    without Copper fetches.
 ;   RUN_SHORT    -- A-short: the trace buffer holds 64 samples.
 ;   RUN_NOOVL    -- the ROM overlay is not cleared (step 2 left out).
 ;   RUN_TAILSHIFT-- the tail loop's WAIT(n,$60) becomes WAIT(n+1,$60).
-;   RUN_TAILPAST -- the last tail WAIT (n = 6, NTSC) is WAIT(7,$60) instead of WAIT(6,$60).
 ;   RUN_LONGPAD  -- 16 further padding moves: WAIT(0,$60) is fetched after count $60.
 ;   RUN_NOFIX    -- the fixture constant is not stored (copbeam.i).
 
@@ -134,23 +131,10 @@ start:
         ifd     RUN_TAILSHIFT
         addq.w  #1,d1
         endif
-        ifd     RUN_TAILPAST
-        cmpi.w  #6,d0
-        bne.s   .notpast
-        addq.w  #1,d1
-.notpast:
-        endif
         lsl.w   #8,d1
         ori.w   #$61,d1
         move.w  d1,(a1)+
         move.w  #$FFFE,(a1)+
-        ifd     RUN_NTSC
-        cmpi.w  #6,d0
-        bne.s   .nodummy
-        move.w  #$01FE,(a1)+           ; MOVE($1FE,$0000): m_262 follows one instruction later
-        move.w  #$0000,(a1)+
-.nodummy:
-        endif
         move.w  #$01FE,(a1)+
         move.w  #$0100,d2
         add.w   d0,d2
@@ -176,11 +160,7 @@ start:
         ; ---- step 5: start the Copper (p.30's own sequence) ------------
         move.l  #LIST_A_BASE,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
-        ifd     RUN_COPOFF
-        move.w  #$8200,DMACON(a0)
-        else
         move.w  #$8280,DMACON(a0)
-        endif
 
         ; ---- step 6: trace loop -----------------------------------------
         lea     TRACE_BASE,a6
@@ -197,12 +177,9 @@ start:
         else
         ifnd    RUN_NOCOP
         ifnd    RUN_SLOW
-        ; fast path: a flat run of the same instruction, no loop-control
-        ; overhead between samples (precondition T1, SPECIFICATION.md 3.2/
-        ; RF2: measured to fail intermittently, about once per 3000-6000
-        ; samples, when a step's own bus accesses meet a refresh slot, with
-        ; a dbra-based loop the loop-control words at the block boundary
-        ; roughly doubled that rate; this form is the tighter of the two).
+        ; a flat run of the same instruction: SAMPLE_COUNT copies of one
+        ; long-word read of VPOSR,VHPOSR stored to the trace buffer, with no
+        ; loop control between samples
         rept    SAMPLE_COUNT
         move.l  VPOSR(a0),(a6)+
         endr

@@ -16,7 +16,6 @@
 ;   RUN_BEND  -- L_14 waits for ($FE,$FE) instead of ($FF,$FE).
 ;   RUN_BWAITED -- in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the
 ;                latter is fetched after its target has passed.
-;   RUN_BSHORT -- the trace buffer holds one block only.
 ;   RUN_SLOW, RUN_NOOVL, RUN_NODONE are not used by this run.
 
         include "nanomig.i"
@@ -25,11 +24,7 @@
 LISTB_BASE      equ     $010400         ; L_j at LISTB_BASE + $100*j
 LISTFE_BASE     equ     $010200
 BLOCK_SAMPLES   equ     1000
-        ifd     RUN_BSHORT
-BLOCK_COUNT     equ     1
-        else
 BLOCK_COUNT     equ     130
-        endif
 
         org     PROGRAM_ORG
 
