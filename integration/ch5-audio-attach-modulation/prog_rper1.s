@@ -2,6 +2,8 @@
 ; 40. AUD1PER swept through 200,300,500,700,900 (200 already written by
 ; the initial setup, so M_on marks its own start), each held for at least
 ; 20000 ticks. Serves PC4 and the reference durations D_1(P).
+; MUT500 set (prog_rper1_mut.s): the step labelled 700 writes 500 (PC4-DUR's own
+; contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -46,7 +48,11 @@ start:
         move.l  #20000,d0
         bsr     wait_ticks_via_lines
 
+        ifd     MUT500
+        move.w  #500,AUD1PER(a0)       ; the step labelled 700 writes 500
+        else
         move.w  #700,AUD1PER(a0)
+        endif
         move.w  #12,MARKER
         move.l  #20000,d0
         bsr     wait_ticks_via_lines

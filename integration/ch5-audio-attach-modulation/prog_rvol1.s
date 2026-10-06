@@ -4,6 +4,8 @@
 ; register write (the marker before the first value is M_on itself,
 ; since the initial setup already writes VSET_1's first entry, 40).
 ; Serves PC4/PC5 and the reference level pairs L_1(v) used throughout.
+; MUT60 set (prog_rvol1_mut.s): the step labelled 60 writes 40 (PC4-VOL's own
+; contrast).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -94,7 +96,11 @@ start:
         move.l  #4000,d0
         bsr     wait_ticks_via_lines
 
+        ifd     MUT60
+        move.w  #40,AUD1VOL(a0)        ; the step labelled 60 writes 40
+        else
         move.w  #60,AUD1VOL(a0)
+        endif
         move.w  #21,MARKER
         move.l  #4000,d0
         bsr     wait_ticks_via_lines

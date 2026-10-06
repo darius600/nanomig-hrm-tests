@@ -6,7 +6,10 @@
 ; rewritten from 2000 to 1000 halfway through the session (the same
 ; mid-session-rewrite mechanism PC6/PC7's own contrasts use for AUD0PER),
 ; with the ordinary attach write ($8010) unchanged: ch3's fetch spacing
-; leaves 4000 -- clause (d)'s own honest contrast.
+; leaves 4000 -- clause (d)'s own honest contrast. TGTVOL set: ch1 (the
+; target)'s own AUDxVOL is rewritten from 40 to 20 halfway through the session,
+; with the attach write unchanged -- clause (b)'s own contrast (the target's
+; level pair leaves the reference for VOL 40).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -53,6 +56,12 @@ start:
         move.w  #1000,d6
         bsr     run_session_mut_ch_per
         else
+        ifd     TGTVOL
+        move.w  #1,d5
+        move.w  #20,d6
+        bsr     run_session_mut_ch_vol
+        else
         bsr     run_session
+        endif
         endif
         DONE

@@ -1,5 +1,6 @@
 ; prog_s_ap.s -- S-AP [P5, P10]: ch0 (M_P4, attach period, ADKCON bit 4)
 ; modulates ch1's period (SQ, unaffected in volume). See SPECIFICATION.md.
+; PER6000 set: AUD0PER=6000 instead of 4000 (P5's contrasting case).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -15,7 +16,11 @@ sq_data:        dc.w    $649C,$649C,$649C,$649C
 
 desc:
         dc.l    mp4_data
+        ifd     PER6000
+        dc.w    4,6000,63
+        else
         dc.w    4,4000,63
+        endif
         dc.l    sq_data
         dc.w    4,200,40
         dc.l    0

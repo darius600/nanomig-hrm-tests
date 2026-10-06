@@ -4,7 +4,8 @@
 ;
 ; LEN4 set: P9's own contrasting case (AUD0LEN=4 instead of 5; p.147
 ; predicts a 4-word cycle 8,48,20,60 instead of the true 5-word
-; 8,48,20,60,32).
+; 8,48,20,60,32). CH1LEN2 set: AUD1LEN=2 instead of 3 (P9 (b)'s own contrasting
+; case: channel 1 then cycles two words, not the three the check expects).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -26,7 +27,11 @@ desc:
         dc.w    5,4000,63
         endif
         dc.l    sq_data
+        ifd     CH1LEN2
+        dc.w    2,200,40
+        else
         dc.w    3,200,40
+        endif
         dc.l    0
         dc.w    0,0,0
         dc.l    0

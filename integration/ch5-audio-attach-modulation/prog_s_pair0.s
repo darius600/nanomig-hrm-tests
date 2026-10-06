@@ -7,6 +7,9 @@
 ; starting AUDxVOL (48) instead of 0, with the ordinary attach write
 ; ($8001) unchanged: ch3 becomes audible on its own, so the "other side
 ; constant" check must fail -- clause (c)'s own honest contrast.
+; TGTPER set: ch1 (the target)'s own AUDxPER is rewritten from 200 to 300
+; halfway through the session, with the attach write unchanged -- clause (b)'s
+; own contrast (the target's durations leave D_1(200)).
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -52,5 +55,11 @@ start:
         move.w  #$7FFF,DMACON(a0)
         move.w  #$00FF,ADKCON(a0)
         lea     desc,a2
+        ifd     TGTPER
+        move.w  #1,d5
+        move.w  #300,d6
+        bsr     run_session_mut_ch_per
+        else
         bsr     run_session
+        endif
         DONE

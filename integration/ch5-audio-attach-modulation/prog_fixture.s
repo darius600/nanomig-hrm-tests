@@ -3,7 +3,9 @@
 ; stored before anything reads one, and channel 0 played unattached,
 ; alone, shows more than one output value while its DMA is on.
 ; prog_fixture_mut.s (BROKEN set) stores a different constant, which the
-; harness's fixture check must then fail on.
+; harness's fixture check must then fail on. prog_fixture_noplay.s (NOPLAY set)
+; leaves AUD0EN clear, so channel 0 never plays and the activity check must
+; fail on it.
 
         include "nanomig.i"
         include "ch5_regs.i"
@@ -35,7 +37,11 @@ start:
         bsr     setup_channel
         lea     CUSTOM,a0
 
+        ifd     NOPLAY
+        move.w  #$8200,DMACON(a0)      ; DMAEN only: channel 0 never starts
+        else
         move.w  #$8201,DMACON(a0)      ; DMAEN + AUD0EN
+        endif
         move.w  #1,MARKER
         move.w  ADKCONR(a0),ADKR_STORE
         move.w  DMACONR(a0),DMACR_STORE

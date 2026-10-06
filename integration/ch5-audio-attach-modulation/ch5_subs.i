@@ -161,6 +161,70 @@ run_session_mut_ch_per:
         rts
 
 ; ---------------------------------------------------------------------
+; run_session_mut_ch_vol -- like run_session_mut_ch_per, but the mid-session
+; rewrite is of one channel's AUDxVOL.
+;   entry: a2 = pointer to a session_desc (as run_session)
+;          d5.w = channel index (0-3) whose AUDxVOL to rewrite
+;          d6.w = new AUDxVOL value
+;   clobbers: d0-d6, a0-a1
+run_session_mut_ch_vol:
+        movem.l d0-d6/a0-a1,-(sp)
+        lea     CUSTOM,a0
+        moveq   #0,d4
+.rsmv_ch:
+        move.w  d4,d0
+        mulu.w  #10,d0
+        tst.l   (a2,d0.w)
+        beq.s   .rsmv_unused
+        move.l  (a2,d0.w),a1
+        move.w  4(a2,d0.w),d1
+        move.w  6(a2,d0.w),d2
+        move.w  8(a2,d0.w),d3
+        move.w  d4,d0
+        mulu.w  #$10,d0
+        bsr     setup_channel
+        lea     CUSTOM,a0
+        bra.s   .rsmv_next
+.rsmv_unused:
+        move.w  d4,d0
+        mulu.w  #$10,d0
+        adda.w  d0,a0
+        move.w  #0,AUD0VOL(a0)
+        lea     CUSTOM,a0
+.rsmv_next:
+        addq.w  #1,d4
+        cmp.w   #4,d4
+        blt.s   .rsmv_ch
+
+        move.w  40(a2),ADKCON(a0)
+        move.w  ADKCONR(a0),ADKR_STORE
+        move.w  42(a2),DMACON(a0)
+        move.w  #1,MARKER
+        move.w  DMACONR(a0),DMACR_STORE
+
+        move.l  46(a2),d0
+        lsr.l   #1,d0
+        bsr     wait_ticks_via_lines
+
+        move.w  d5,d0
+        mulu.w  #$10,d0
+        lea     CUSTOM,a0
+        adda.w  d0,a0
+        move.w  d6,AUD0VOL(a0)
+        lea     CUSTOM,a0
+
+        move.l  46(a2),d0
+        lsr.l   #1,d0
+        bsr     wait_ticks_via_lines
+
+        move.w  44(a2),DMACON(a0)
+        move.w  #2,MARKER
+        move.w  #$00FF,ADKCON(a0)
+
+        movem.l (sp)+,d0-d6/a0-a1
+        rts
+
+; ---------------------------------------------------------------------
 ; wait_lines -- busy-waits for at least d0.w horizontal-line boundaries.
 ;   entry: d0.w = number of line boundaries to wait for (>=1)
 ;   clobbers: d0-d2, a0
