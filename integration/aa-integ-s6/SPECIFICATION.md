@@ -150,12 +150,11 @@ after reset; the program writes no BEAMCON0. The display-window values of 3.3
 are the PAL ones of HRM p.59; no check depends on the standard, since every
 graded line lies between $2C and $C0.
 
-Every case runs on both CPU builds of `nanomig.mk`. The AA specification is
-graded on the TG68K build only: it is built with `ENABLE_AGA`, NanoMig's AGA
-configuration, and runs with `cpu_config` = 0 (68000 behaviour). The fx68k build is NanoMig's non-AGA
-configuration (`nanomig.mk` gives it no `ENABLE_AGA`): its results are recorded,
-not graded, and no proposition, precondition or harness constant (u, r) is
-taken from it.
+Every case runs on both CPU builds of `nanomig.mk`, with `cpu_config` = 0
+(68000 behaviour), and both builds are graded. The chip set is selected by the
+`chipset_config` input of `nanomig.v`, not by the build: bit 4 selects AA on
+either core. The build define `ENABLE_AGA`, which `nanomig.mk` gives the TG68K
+build only, is read by no file of the chip set or of `nanomig.v`. Each build measures its own u and r (3.7) on its own M-H-00 run.
 
 ### 3.2 Palette
 
