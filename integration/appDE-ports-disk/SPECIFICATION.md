@@ -805,10 +805,10 @@ clear.
   different first fixture constant, `prog_lpen_slow.s` puts a delay of about
   3.3 lines in each loop body and uses 600 and 2000 reads, `prog_lpen_v8.s`
   sets V8 of the vertical counter (VPOSW) after 3000 reads of S5 for 100 reads
-  and clears it again, `prog_lpen_m8.s` sets V8 for 100 reads of S7, after 4800
-  of them, which lie in F2 before its pulse, and `prog_lpen_hw.s` writes a
-  horizontal count of $F0 (VHPOSW, with the current vertical count) after
-  19000 reads of S5.
+  and clears it again, `prog_lpen_m8_fx.s` and `prog_lpen_m8_tg.s` set V8 for
+  100 reads of S7, after 4800 (fx68k) or 7800 (TG68K) of them, which lie in F2
+  before its pulse on that core, and `prog_lpen_hw.s` writes a horizontal count
+  of $F0 (VHPOSW, with the current vertical count) after 19000 reads of S5.
 - The harness waits for the first fixture store (the first write to the
   marker word, whatever it stores; the fixture line grades the value), drives
   pin 4 (or pin 3 in the contrast) of the connector under test for 400000
@@ -982,6 +982,11 @@ taken from the page, each guarded by a precondition the run checks:
   to cross V=100-200 at least once inside it, on both video standards.
   The per-window "at least 50 graded samples" precondition guards a
   window that misses the crossing.
+- The position of the V8 contrast in S7 (`prog_lpen_m8_fx.s`,
+  `prog_lpen_m8_tg.s`) differs between the cores because the field phase at
+  S6 differs: the beam is at the end of a field on fx68k and at its start on
+  TG68K. The 100 reads must lie in F2 before its pulse, between lines 57 and
+  255 of that field; the run's own A4 line shows whether they do.
 - The light-pen program reads 20000 reference and 46000 measurement samples.
   The reference phase covers four complete PAL fields and five NTSC fields
   (section 2.6 needs three), and the measurement phase reaches line 100 of F10;

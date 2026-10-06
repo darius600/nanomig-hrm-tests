@@ -44,7 +44,7 @@
 // MUTATION LP-A2-LINE-LENGTHS implementation green: A2 passes in the four PAL runs on the repository's chipset and on the private chipset (the all-227 branch of the comparator; the alternating-line branch has no green control, SPECIFICATION.md 4.1)
 // MUTATION LP-C3-A3-FIELD-LENGTH oracle red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; 313 lines are not 262 or 263 and the line prints FAIL
 // MUTATION LP-C3-A3-FIELD-LENGTH stimulus red NMH_MUTATE=LP-A3: the run is NTSC (chipset_config bit 1) and PAL is declared; 263 lines are not 312 or 313 and the line prints FAIL, no other precondition line moves
-// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4W: prog_lpen_m8.bin sets V8 of the vertical counter (VPOSW) for 100 reads of F2 before its pulse and clears it again; those reads do not equal the model and the line prints FAIL, no other precondition line moves
+// MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4W: prog_lpen_m8_fx.bin (fx68k) or prog_lpen_m8_tg.bin (TG68K) sets V8 of the vertical counter (VPOSW) for 100 reads of F2 before its pulse and clears it again; those reads do not equal the model and the line prints FAIL, no other precondition line moves
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4 private chipset: the F2 pulse is driven at line 40 instead of line 100, so the reads between line 40 and the declared pulse are held and not current; the line prints FAIL
 // MUTATION LP-C4-DENSITY stimulus red NMH_MUTATE=LP-C4: prog_lpen_slow.bin delays every loop body by about 3.3 lines, the reads are far apart and the line prints FAIL
 // MUTATION LP-C5-PULSES stimulus red NMH_MUTATE=LP-C5: the pulses are driven on pin 9 instead of pin 6; the line prints FAIL
@@ -1357,7 +1357,7 @@ bool run_lp_mutation(Checks& c, const std::string& dir, const std::string& mv) {
     else if (mv == "LP-A3") { o = make_opts(true, true, 1); o.decl.ntsc = false; }
     else if (mv == "LP-A2") o.prog = "prog_lpen_hw.bin";
     else if (mv == "LP-A4") move_to(2, 100, 40, 0x40);
-    else if (mv == "LP-A4W") o.prog = "prog_lpen_m8.bin";
+    else if (mv == "LP-A4W") o.prog = (std::string(NMH_XSTR(NANOMIG_CORE_NAME)) == "tg68k") ? "prog_lpen_m8_tg.bin" : "prog_lpen_m8_fx.bin";
     else if (mv == "LP-C4") { o.prog = "prog_lpen_slow.bin"; o.decl.exp_ref = 600; o.decl.exp_meas = 2000; }
     else if (mv == "LP-C5") o.pulse_pin = kPin9;
     else if (mv == "LP-C6") { o.beamcon0 = 0x2020; o.decl.beamcon0 = 0x2020; }
