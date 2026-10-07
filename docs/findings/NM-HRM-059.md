@@ -5,27 +5,23 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.265, not against the RTL. Question: does p.265's ADKCON/ADKCONR bit-15 row describe a write-only SET/CLR control, so that a read of 0 is correct? Closes when an Amiga specialist records p.265's bit-15 row as write-only (a read of 0 is correct), or confirms that ADKCONR returns it, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. This is a defect in one printed page, not in the RTL |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect; the red is against p.265, not against the RTL. Question: does p.265's ADKCON/ADKCONR bit-15 row describe a write-only SET/CLR control, so that a read of 0 is correct? Closes when an Amiga specialist records p.265's bit-15 row as write-only (a read of 0 is correct), or confirms that ADKCONR returns it, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Scope** | Paula's ADKCONR read of bit 15; chip revision unknown; hardware read not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited from Minimig-AGA |
+| **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: `opus:8-adkcon.c12`, p. 265 (no ch8 ledger; as the FAIL line prints it) |
+| **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v#L132); inherited (MiSTer `rtl/paula.v:127`, `:193` and TC64 `rtl/minimig/paula.v:146`, `:212` carry the identical lines) |
 | **Test** | [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`: expected bit 15 of ADKCONR to follow the bit written, observed `0x7FFF`, bit 15 clear; the package reports `17 passed, 2 failed` |
-| **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way |
+| **Verdict of the four** | **unanimous with NanoMig.** All four read bit 15 as 0; only WinUAE guarantees it the same way. Hardware: not measured |
 | **Effort** | none — no RTL change; a documentation note on p.265 only |
 
 ---
 
 ## Source requirement
 
-### What the HRM says
-
 **Appendix A, printed p. 265** lists ADKCON (`09E`, write) and ADKCONR (`010`,
-read) as the two registers over one shared BIT#/USE table
-(`appx5-source/p265.txt`, scan reading; `appA-audio/p265.txt`, Developer CD
-text). Its bit-15 row reads:
+read) as the two registers over one shared BIT#/USE table. Its bit-15 row reads:
 
 > SET/CLR Set/clear control bit. Determines if bits written with a 1 get set or
 > cleared. Bits written with a zero are always unchanged.
@@ -70,8 +66,6 @@ what was written, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`, red.
 
 ## Decision
 
-No RTL change. A documentation reader decides which reading of p.265's bit-15
-row stands. If it is write-only, the defect is p.265's shared table and the red stays
+No RTL change. If p.265's bit-15 row is write-only, the defect is p.265's shared table and the red stays
 against the page; if it reads back, this page is refiled against the RTL and
-NanoMig's fifteen-bit `adkcon` becomes the question. Re-run:
-`make -C hrm/ch8-adkcon-and-interrupt-relations test`.
+NanoMig's fifteen-bit `adkcon` becomes the question.
