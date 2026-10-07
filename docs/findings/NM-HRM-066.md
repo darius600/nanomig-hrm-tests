@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Does p. 82's "this will disable sprite 7" at DDFSTRT = $0030 hold with one lores bitplane (`BPLCON0 = $1200`), where NanoMig keeps all 172 of sprite 7's fetches and loses none on any sprite? Closes when an Amiga specialist records that it holds, in which case the change under *Decision* is made, or that Figure 6-9 read by plane governs. The decision belongs to an Amiga specialist, not to this repository. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, where the same code stands; TC64 already blocks sprite DMA for the whole bitplane fetch, so a fix exists to port. There is no automatic merge in either direction |
+| **What is asked of a reader** | Does p. 82's "this will disable sprite 7" at DDFSTRT = $0030 hold with one lores bitplane (`BPLCON0 = $1200`), where NanoMig keeps all 172 of sprite 7's fetches and loses none on any sprite? Closes when the change under *Decision* is made and `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE`, `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` and `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` turn green, or when an Amiga specialist rejects it because Figure 6-9 read by plane governs, in which case this page is refiled against the printed page. |
+| **Report to** | `NanoMig direct` — harbaum/NanoMig |
 | **Scope** | Agnus in the OCS configuration (`ecs = 0`, `aga = 0`), measured with eight identically armed sprites; DDFSTRT = $0030 at one lores plane isolated, swept to $0018 at one lores plane; chip revision unknown, hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 3 — Playfield, printed pp. 80, 82–83; 6 — Blitter, printed pp. 195–197 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, by assertion: `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` `opus:3-max.c12` / `sol:3-max-window.c18` (p. 80); `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE` and `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` `opus:3-hscr.c10` / `sol:3-hscroll.c12` (p. 82); `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` and `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES` `opus:3-hscr.c17` / `sol:3-hscroll.c17` (p. 83); the chapter 6 passages (pp. 195–197) carry no claim id |
 | **Module** | `agnus.v`, `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L125) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L123); MiSTer has the same code; fixed in TC64 |
 | **Test** | [`hrm/ch7-dmacon-register-bits`](../../hrm/ch7-dmacon-register-bits): `make -C hrm/ch7-dmacon-register-bits test`; an expected red exits nonzero |
 | **Assertions** | 3 red, all with one lores bitplane (`BPLCON0 = $1200`): `DDFSTRT-0030-SPRITE-7-AT-ONE-BITPLANE` (expected sprite 7 to lose fetches at $0030, observed 172 of 172), `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-ONE-BITPLANE` (expected some of the eight channels reduced, observed none) and `DDFSTRT-EARLIER-THAN-0038-COSTS-SOME-SPRITES-FETCH-CYCLES` (expected some channel reduced at every swept start below $0038, observed none at $0030). Their siblings at 2, 4 and 6 lores bitplanes, `DDFSTRT-0030-SPRITE-7-AT-MULTIPLE-BITPLANES` and `DDFSTRT-0030-SOME-SPRITE-AFFECTED-AT-MULTIPLE-BITPLANES`, are green in the same run; the package reports `30 passed, 3 failed` |
-| **Verdict of the four** | **3–1 for p. 82's sentence.** WinUAE, vAmiga and Denise stop sprite DMA once the bitplane fetch has started, at any plane count; Copperline keeps sprite 7 at $0030 at any plane count and asserts it in its own test. NanoMig is the one whose answer depends on the plane count |
+| **Verdict of the four** | **3–1 for p. 82's sentence.** WinUAE, vAmiga and Denise stop sprite DMA once the bitplane fetch has started, at any plane count; Copperline keeps sprite 7 at $0030 at any plane count and asserts it in its own test. NanoMig is the one whose answer depends on the plane count — and Figure 6-9, read by plane with its own footnote, predicts NanoMig's counts slot for slot. Hardware: not measured |
 | **Effort** | S — two lines ported from TC64, one in `agnus_bitplanedma.v` and one in `agnus.v`; not run here |
 
 ---
@@ -46,9 +46,12 @@ $0030, and the sprite, 7.
 
 **Figure 6-9 on p. 195 does, slot by slot.** *Read from the drawing, not
 quoted:* one 320-mode fetch unit of eight colour clocks carries planes 4, 6 and
-2 in its second to fourth slots and planes 3, 5 and 1 in its sixth to eighth.
-The unit that starts one word early, at $30, is drawn over sprite 7's two
-slots, which fall on its planes 4 and 2. The figure's legend marks the bitplane
+2 in its second to fourth slots and planes 3, 5 and 1 in its sixth to eighth,
+the first and fifth being free. The unit that starts one word early, at $30, is
+drawn over sprite 7's two slots, which fall on its planes 4 and 2; the unit
+before it, from $28, falls on sprite 5's two slots (planes 4 and 2) and sprite
+6's (planes 3 and 1). The figure's note says that in this case the bit-plane
+DMA steals the cycles normally allocated to the sprites. The figure's legend marks the bitplane
 slots *"320 mode Bit-Plane DMA, by plane"* with a footnote sign, and the
 footnote, read from the image, reads:
 
@@ -108,7 +111,8 @@ sweeps the fetch start with one lores plane, and it is red because its first
 point loses nothing: at $0030 no channel loses a fetch (172 of 172); at $0028
 channel 6 keeps 90 of 172; at $0020 channels 4 and 6 keep 90; at $0018 channels
 2, 4 and 6 keep 90. The package reports the number of channels reduced and the
-worst one at each point; the rows it does not grade come from the same harness
+worst one at each point; which channels, and the rows it does not grade, come
+from the same harness
 printing all eight counts for every BPLCON0 above and every DDFSTRT in the sweep
 and at $0038, a measurement for this page, not a graded assertion. **Every one
 of those forty-five rows of eight counts is what Figure 6-9 predicts when its
@@ -131,7 +135,8 @@ lands on its slots, 90 when one does and 8 when both do.
   on OCS. The manual does not distinguish the two here, and the fixture runs as
   OCS.
 - Whether the three reds turn green with the change under *Decision* has not been
-  run. Real Agnus has not been measured.
+  run. Whether real Agnus blocks a sprite slot that no fetched plane uses is
+  not measured; WinUAE, vAmiga, Denise and TC64 say it does.
 
 ## Independent evidence
 
@@ -142,7 +147,7 @@ lands on its slots, 90 when one does and 8 when both do.
 | **Denise** | [`emulation/libami/agnus/graphics.cpp:342-345`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/graphics.cpp#L342-L345), [`:407`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/graphics.cpp#L407), [`agnus.h:324`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.h#L324) | starting the bitplane fetch sets `sprInhibited = true`, and a sprite fetch is queued only `if (!sprInhibited)`; `useBitplaneDMA()` is `(dmaConImm & 0x300) == 0x300`, BPLEN and DMAEN, so **1, 2, 4 and 6 planes all block sprite 7**, whose two slots are decided at `case 0x33` and `case 0x35` ([`agnus.cpp:600-601`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L600-L601)). The ECS path sets the same flag at `:306` |
 | **Copperline** | [`src/chipset/agnus.rs:529-560`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L529-L560), test [`:1810-1829`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L1810-L1829), [`src/bus/dma_slots.rs:849-854`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L849-L854) | **keeps sprite 7 at $0030 with 1, 2, 4 or 6 planes**: `let sprite7_block_start = 0x0030;` and the fetch has to start *before* $30 to disable it; the plane count only has to be non-zero, and no other sprite is ever disabled this way (`if sprite != 7 \|\| ...`). Its own test `early_bitplane_ddfstart_disables_only_sprite_seven_dma` asserts that $0030 leaves sprite 7 on and $0028 turns it off, with one lores plane. On the bus a sprite slot is resolved before a bitplane slot |
 | **MiSTer** | [`rtl/agnus.v:123`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L123), [`rtl/agnus_bitplanedma.v:472`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L472) | descendant — identical to NanoMig: `wire dma_spr = req_spr & spren;`, the same `dma_bpl` before `dma_spr` priority at `:170`/`:181`, and the same per-plane bitplane request |
-| **TC64** | [`rtl/minimig/agnus.v:186`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus.v#L186), [`rtl/minimig/agnus_bitplanedma.v:390`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L390) | descendant — **has already changed this line**: `assign dma_spr = req_spr & spren & !(ddf & bplen); // AMR - Disallow sprite fetches during bitplane data fetch.`, with `assign ddf = ecs ? ddfrun : ddfena; // AMR - Export ddfrun/ddfena for sprite DMA logic. (Imitates OCS bug, inhibiting too soon.)`. The per-plane bitplane request is unchanged; the sprite side now sees the whole fetch, at any plane count |
+| **TC64** | [`rtl/minimig/agnus.v:186`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus.v#L186), [`rtl/minimig/agnus_bitplanedma.v:390`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L390) | descendant — **has already changed this line**: `assign dma_spr = req_spr & spren & !(ddf & bplen); // AMR - Disallow sprite fetches during bitplane data fetch.`, with `assign ddf = ecs ? ddfrun : ddfena; // AMR - Export ddfrun/ddfena for sprite DMA logic. (Imitates OCS bug, inhibiting too soon.)`. The per-plane bitplane request at [`agnus_bitplanedma.v:448`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L448) is unchanged; the sprite side now sees the whole fetch, at any plane count |
 
 WinUAE, vAmiga and Denise stop sprite DMA for as long as the bitplane fetch
 runs, and none of the three asks how many planes are fetched; that disables
@@ -179,6 +184,6 @@ NanoMig already has `bplen` (`agnus.v:299`, `dmacon[8] & dmacon[9]`) and both
 `ddfrun` and `ddfena` in `agnus_bitplanedma.v`; the declaration of `bplen` has
 to come before its first use. That would make sprite 7's fate at $0030
 independent of the plane count, and move it away from Figure 6-9's by-plane
-counts at one to three lores planes, which is the other half of the decision.
-Re-run: `make -C hrm/ch7-dmacon-register-bits test`; the result with the change
-is not known.
+counts with one to three lores planes or one hires plane, which is the other
+half of the decision.
+Re-run: `make -C hrm/ch7-dmacon-register-bits test`.
