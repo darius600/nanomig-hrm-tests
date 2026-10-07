@@ -7,41 +7,64 @@ Manual, 3rd edition (1991), and five against the AA specification (1991).** The 
 NM-AA-005) is counted separately in [`../findings.md`](../findings.md), and
 the tests that hold them up live in `aa/` rather than `hrm/`. The fourteen
 withdrawn findings are kept apart, with their own list, in
-[`withdrawn/`](withdrawn/README.md). The header table is the same on all
-eighty-nine.
+[`withdrawn/`](withdrawn/README.md).
 
-**What every page has, in the same place: the header table.** These seven fields
-are on all 89 pages, and the first four answer *what am I being asked to do*
-before any prose is read:
+This page is the contract every finding page follows: one header table, five
+body sections, and a few rules about what goes where. `tools/check_findings_shape.py`
+in `hrm-testpipeline` enforces the header, the routing value, the five headings and
+the link limit, and reports each page by the row or heading it lacks.
 
-| field | values |
-|---|---|
-| **Lifecycle** | `open` or `withdrawn` |
-| **Filed against** | `the RTL`, `the printed page`, `the classification`, or `—` when withdrawn |
-| **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*, or *seen in the RTL source and measured inside the module; no assertion at the ports fails* (a red on an internal signal the manual documents, which no pin shows); or *none* |
-| **What is asked of a reader** | one sentence. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
-| **Module** | the RTL under discussion, permalinked at the pinned revision |
-| **Test** | the package that measures it, or `none yet` |
-| **Chapter** | which part of the manual judges it |
+## The header of an open page
 
-**Every open page carries three more, always in the same place:** *Report to*
-after *Module*, and *Assertions* and *Verdict of the four* after *Chapter*.
-When there is nobody to report to, no graded assertion or nothing to compare,
-the row says so; it is never left out. Only the optional rows follow them.
-Withdrawn pages keep the header they were withdrawn with, so the counts below
-include pages without one of the three:
+**One table, the same rows in the same order on every open page.** The first
+four rows say *what am I being asked to do* before any prose is read. An absent
+value is written `none`, `unknown` or `not measured`; a row is never left out.
+After the thirteen rows only the optional ones follow.
 
-| field | on | what it holds, or what its absence means |
+| # | row | what it holds |
 |---|---|---|
-| **Verdict of the four** | 83 of 89 | what the four independent implementations do; absent only on withdrawn pages |
-| **Report to** | 75 of 88 | who can act on the finding, or *nobody*; absent only on withdrawn pages |
-| **Assertions** | 79 of 88 | the red assertions by name with the package's count, or *none* and what the package records instead; absent only on withdrawn pages |
-| **See also** | 24 | optional: no sibling finding bears on it |
-| **Error class** | 12 | withdrawn pages only: it is not one of the recurring shapes |
-| **Boundary** | 2 | optional: no edge case was isolated |
-| **Provenance**, **Origin** | 1 each | optional one-offs, kept because the page needed them |
+| 1 | **Lifecycle** | `open` |
+| 2 | **Filed against** | `the RTL`, `the printed page` or `the classification` |
+| 3 | **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*, or *seen in the RTL source and measured inside the module; no assertion at the ports fails* (a red on an internal signal the manual documents, which no pin shows); or *none* |
+| 4 | **What is asked of a reader** | the exact decision and its boundary first, as one bounded yes/no question, then the event that closes it. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
+| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited from MiSTer's Minimig-AGA; report there first and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code) or `no RTL action` (the printed page or the classification is wrong, not the RTL). Never `nobody`, never a person's name |
+| 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown` |
+| 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software` |
+| 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids |
+| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and whether the code is inherited or fixed |
+| 10 | **Test** | the package that measures it and at most two exact commands, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero |
+| 11 | **Assertions** | the red assertions by id with one expected → observed result and the package's count, or `none` and what the package records instead |
+| 12 | **Verdict of the four** | what WinUAE, vAmiga, Denise and Copperline do: split, unanimous or no vote, and the hardware status |
+| 13 | **Effort** | `S`, `M` or `L` and one line of reason |
 
-Counted across all 89, the withdrawn ones included.
+Optional rows, after the thirteen and in this order: **See also** (at most
+three links to sibling findings), **Origin** (the document or run the finding
+was first read from) and **Provenance** (where material that is not in this
+repository comes from).
+
+## The header of a withdrawn page
+
+A withdrawn page is kept so the claim is not raised a second time. Its rows, in
+this order:
+
+| # | row | what it holds |
+|---|---|---|
+| 1 | **Lifecycle** | `withdrawn` |
+| 2 | **Filed against** | `—` |
+| 3 | **Evidence** | the withdrawal evidence: the measurement or passage that disproves the claim, in one sentence; not `none` |
+| 4 | **What is asked of a reader** | `Nothing.` and the one sentence that stops the claim being raised again |
+| 5 | **Withdrawal reason** | why the claim does not hold, in one sentence; the full account is the page's *Why it was withdrawn* |
+| 6 | **Error class** | which recurring shape the mistake had, or `none` |
+| 7 | **Replacement** | the green results and the package links that stand in for the finding, or `none` |
+| 8 | **Module** | as on an open page |
+| 9 | **Test** | as on an open page |
+| 10 | **Chapter** | as on an open page |
+| 11 | **Assertions** | the assertions that were graded, with their verdicts |
+| 12 | **Verdict of the four** | what the four do, or `none` |
+
+Optional rows after the twelve: **See also**, **Origin**, **Provenance**, as above.
+A withdrawn page has no `Report to`, `Scope`, `Software impact` or `Effort`.
+Neither header carries a date or the name of whoever changed it.
 
 **A title that ends in [RTL review]** marks a page whose header says three
 things: `open`, filed against `the RTL`, and a test that fails against the page. That page asks an
@@ -50,14 +73,60 @@ Amiga specialist to decide whether the RTL should change;
 is about. The mark is derived from the header, never set by hand, so it cannot
 say something the header does not.
 
-**What follows the header varies, and deliberately.** Most pages run *What the
-HRM says* → *What NanoMig does* → *What the others say* → *Suggested change* →
-*What holds the finding up*, some adding *For the specialists*. A withdrawn
-finding instead explains the withdrawal, and a finding filed against the printed
-page has no suggested change to make. Measured over the 83 pages against the
-manual, the withdrawn ones included, there are 61 distinct sequences of `##`
-headings; the page is written for its own subject once the
-header has told you whether to read it at all.
+## The body of an open page
+
+Five `##` sections, in this order, with these exact headings. A `###` below
+them is free, and no other `##` heading appears.
+
+1. **Source requirement** — what the manual prints, quoted with its printed page.
+   *What the HRM says* and *Which page this finding is against* belong here.
+2. **RTL and measurement** — which RTL line does it, what the test measures and which
+   assertion grades it. *What NanoMig does* and *Measured* belong here.
+3. **Risks and unknowns** — every limitation of the finding. *What weakens it* and
+   *For the specialists* belong here.
+4. **Independent evidence** — the witness matrix and what the other documents say.
+   *What the others say* belong here, and *What other Commodore documents say* only
+   where that source speaks.
+5. **Decision** — what is asked, the suggested change if there is one, and what
+   closes it. *Suggested change* belongs here.
+
+*What holds the finding up* has no section: a closing recap repeats the page.
+
+A withdrawn page is short. It says what the claim was and why it does not hold
+(*Why it was withdrawn*, first), shows the measurement or passage that disproves it,
+and ends with the condition under which the claim would be filed again. Its other
+headings are free.
+
+## Rules for every page
+
+- **Each fact once.** The header summarizes and the body proves; a page has no closing recap.
+- **Sizes are defaults, nothing more.** The gate does not measure them, and a page
+  that needs more writes more. Overflow never moves to a method document.
+
+  | part | default |
+  |---|---|
+  | Source requirement | 120 words, two quotations, 50 quoted words |
+  | RTL and measurement | 220 words, at most 8 code lines, a table of at most 6 rows |
+  | Risks and unknowns | 80 words |
+  | Independent evidence | 140 words |
+  | Decision | 140 words |
+  | the visible path of one page | 1,000 words open, 400 withdrawn |
+
+- **One witness matrix**, in the order WinUAE, vAmiga, Denise, Copperline, MiSTer, TC64.
+  MiSTer and TC64 are marked *descendant* and never counted among the four. A source
+  nobody read is written *not read*.
+- **No method prose on a page.** The oracle statement, the mutation and gate
+  explanation, the private-copy narrative, the revision ledger and the second-documents
+  paragraph are stated once, here and in *Second documents* below.
+- **No list of silent sources**, and no package that does not observe the claim.
+- **External observables before internal signals.** An internal confirmation keeps one
+  sentence and its link.
+- **Every limitation sits in *Risks and unknowns***: unmeasured hardware, untested
+  modes, conflicting passages, witness splits and revision limits. For a withdrawn page
+  that is the condition for filing again.
+- **Every page gives a reproducible next step**: the exact commands, the expected red
+  and green ids, the owner, the effort and the closure. A page about source that no
+  package observes says so.
 
 Where implementations are compared, six are quoted rather than cited: WinUAE,
 vAmiga, Denise and Copperline, then the two maintained Minimig lines, **MiSTer**
@@ -91,7 +160,7 @@ either repository, so a citation can be re-checked rather than trusted.
 
 ### The two Minimig lines are ancestors, not witnesses — and nothing merges them down
 
-**NanoMig was forked from MiSTer's Minimig-AGA, and there is at present no
+**NanoMig was forked from MiSTer's Minimig-AGA, and there is no
 automatic merge of fixes from MiSTer into NanoMig.** A correction made upstream
 does not arrive by itself; somebody ports it deliberately. That single fact is
 why these two rows earn their place in the table and why they are marked
@@ -168,10 +237,12 @@ there is work to do at all.
 
 ### These pages are written to be filed upstream
 
-Where a finding is inherited — which so far is all of chapter 5 and all of chapter 7, the latter checked line by line because two of its files differ substantially from upstream — it is the
-**ancestor's** finding. A fix in Minimig-AGA does not reach NanoMig by itself --
-see the paragraph above: somebody ports it deliberately. Reporting it there is likely to get it reviewed by people who know that
-code better than anyone here does. Two of chapter 7's five name nobody in their `Report to` row all the same: the other implementations agree with NanoMig there, and the printed sentence is the more likely defect.
+Where a finding is inherited, it is the **ancestor's** finding. A fix in
+Minimig-AGA does not reach NanoMig by itself -- see the paragraph above:
+somebody ports it deliberately. Reporting it there is likely to get it reviewed
+by people who know that code better than anyone here does. That is the
+`upstream first` routing value of `Report to`; a finding about the printed page
+carries `no RTL action`.
 
 So each page is written to stand on its own for a reader who has never seen this
 project: the manual quoted rather than referenced, the code quoted rather than
@@ -212,6 +283,4 @@ are in neither repository.
 
 ## The list of findings is one file
 
-[`../findings.md`](../findings.md). This page used to repeat it as a table, which
-stopped at NM-HRM-031 while the register grew to 65 — so the copy said the work
-ended thirty-four findings before it did. One register, kept in one place.
+[`../findings.md`](../findings.md) lists every open finding, once. This page does not repeat it.
