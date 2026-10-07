@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Should `gary.v` line 190, `sel_cia = cpu_address_in[23:16]==8'hBF`, compare only A23–A21 against `101`, as p. 353 prints, so that $A00000–$BEFFFF reaches the CIAs as on the A1000, A500 and A2000? The difference shows only at addresses p. 314 marks "Reserved. Do not use."; the decision belongs to an Amiga specialist, not to this repository. Closes when `gary.v` compares the three bits and `CIA-DECODE-DONTCARE` is green, or when the specialist declines and the reason is recorded here. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, if the manual's reading is accepted. MiSTer's `gary.v` has the same three lines; there is no automatic merge, so a fix there must then be ported to NanoMig deliberately. TC64 compares four address bits, one more than the page |
+| **What is asked of a reader** | Should `gary.v` line 190, `sel_cia = cpu_address_in[23:16]==8'hBF`, compare only A23–A21 against `101`, as p. 353 prints, so that $A00000–$BEFFFF reaches the CIAs as on the A1000, A500 and A2000? The difference shows only at addresses p. 314 marks "Reserved. Do not use." Closes when `gary.v` compares the three bits and `CIA-DECODE-DONTCARE` is green, or when an Amiga specialist rejects p. 353's three-bit decode, in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | `gary`'s CIA select and the chip selects below it: A23–A16 for the pair, A13 and A12 for the chips. The decode has no mode term, so it is the same in NanoMig's four modes, the OCS-A500 and OCS-A1000 modes among them; measured with `gary` compiled alone at $A00000 and $BE0000 against $BFE001. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 350, 351 and 353; Appendix E, printed p. 337; Appendix D, printed pp. 314–316; Appendix K, printed pp. 385 and 388 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `CIA-DECODE-DONTCARE`: `sol:F-signals.c56`, `sol:F-signals.c63`, `opus:F-conn.c1`, `opus:F-conn.c6` (p. 353); `CIA-AB-TWOBIT-RULE`: `sol:F-signals.c57`, `sol:F-signals.c58`, `opus:F-conn.c2` (p. 353); both assertions carry claim ids |
 | **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L190-L192) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195); inherited (MiSTer has the same code; TC64 differs, comparing four bits) |
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; an expected red exits nonzero |
 | **Assertions** | 1 red of 5 graded: `CIA-DECODE-DONTCARE` — expected `sel_cia`=1 at $A00000 and $BE0000, observed 0 at both; the package reads 4 passed, 1 failed. `CIA-AB-TWOBIT-RULE`, green in the same run, grades p. 353's two chip selects at $BFE001 and $BFD000 and, at $BFC100, where p. 353 is silent, p. 351's one select line per chip: both chips are selected there. It is not part of this finding |
-| **Verdict of the four** | **3–1 for p. 353 on the machines it describes, and no named model decodes NanoMig's window**: WinUAE's models with neither Gayle nor Fat Gary, vAmiga and Denise select the CIAs anywhere in $A00000–$BFFFFF, as p. 353's three bits do; Copperline answers only in $BFD000–$BFDFFF and $BFE000–$BFEFFF, narrower than NanoMig, and so do WinUAE's Gayle and Fat Gary models. Only a WinUAE configuration with the AGA chipset and neither gate array has NanoMig's $BF0000–$BFFFFF. At $BFC100 WinUAE's models without Gayle or Fat Gary, vAmiga and Denise select both CIAs, as NanoMig does and p. 351 predicts |
+| **Verdict of the four** | **3–1 for p. 353 on the machines it describes, and no named model decodes NanoMig's window**: WinUAE's models with neither Gayle nor Fat Gary, vAmiga and Denise select the CIAs anywhere in $A00000–$BFFFFF, as p. 353's three bits do; Copperline answers only in $BFD000–$BFDFFF and $BFE000–$BFEFFF, narrower than NanoMig, and so do WinUAE's Gayle and Fat Gary models. Only a WinUAE configuration with the AGA chipset and neither gate array has NanoMig's $BF0000–$BFFFFF. At $BFC100 WinUAE's models without Gayle or Fat Gary, vAmiga and Denise select both CIAs, as NanoMig does and p. 351 predicts. Hardware: not measured |
 | **Effort** | S: `gary.v` line 190 only, comparing `cpu_address_in[23:21]` in place of `[23:16]`; upstream the ROM mirrors at $A80000–$B7FFFF in MiSTer's `gary.v` must be left to them |
 | **See also** | [NM-HRM-062](NM-HRM-062.md) — the same paragraph of p. 353 prints its two binary patterns interchanged |
 
@@ -29,7 +29,9 @@ and, two sentences on:
 
 > Address bits A11, A10, A9, and A8 are used to specify which of the 16 internal registers you want to access. This is indicated by "r" in the address. All other bits are don't cares.
 
-The page fixes three bits for the pair (A23–A21 = `101`), A13/A12 to choose the chip and A11–A8 for the register, and calls every other bit a don't-care, A20 to A14 among them. Read that way, every address from $A00000 to $BFFFFF with the right A13/A12 reaches a CIA. The next paragraph is a rule for software, not a narrowing of that decode: "With future expansion in mind, we have decided on the following addresses: CIAA = BFEr01; CIAB = BFDr00. Software must use byte accesses to these address, and no other."
+The page fixes three bits for the pair (A23–A21 = `101`), A13/A12 to choose the chip and A11–A8 for the register, and calls every other bit a don't-care, A20 to A14 among them. Read that way, every address from $A00000 to $BFFFFF with the right A13/A12 reaches a CIA. The next paragraph is a rule for software, not a narrowing of that decode:
+
+> With future expansion in mind, we have decided on the following addresses: CIAA = BFEr01; CIAB = BFDr00. Software must use byte accesses to these address, and no other.
 
 **Appendix D, printed p. 314**, *A1000, A500 and A2000 Memory Map*, as the page image prints it:
 
@@ -41,7 +43,23 @@ The page fixes three bits for the pair (A23–A21 = `101`), A13/A12 to choose th
 
 The row tells software to stay out of $A00000–$BEFFFF; it does not say the CIAs do not answer there.
 
-**The A3000 gave part of the range away.** Appendix K, printed p. 388, on that machine's Zorro II mapping: "The I/O address space is mapped at $00E80000-$00EFFFFF, and a new 1.5 megabyte section (previously reserved for motherboard devices) from $00A00000-$00B7FFFF." Appendix D's *A3000 Memory Map*, printed p. 315 (read from the page image; the text layer's rows are shifted against their descriptions), and the drawing on printed p. 316 give that machine's CIAs one 64K bank, `$00BF 0000 - $00BF FFFF` "CIA Ports & Timers", below `$00B8 0000 - $00BE FFFF` "Reserved" — NanoMig's window exactly. So the manual describes two decodes, one per generation, and no page gives the narrower window to the A1000, A500 or A2000. Appendix K, printed p. 385, introduces that map: "The memory map in Figure K-1 shows how these three spaces are mapped in the A3000 system."
+**The A3000 gave part of the range away.** Appendix K, **printed p. 385**:
+
+> The memory map in Figure K-1 shows how these three spaces are mapped in the A3000 system.
+
+and **printed p. 388**, on that machine's Zorro II mapping:
+
+> The I/O address space is mapped at $00E80000-$00EFFFFF, and a new 1.5 megabyte section (previously reserved for motherboard devices) from $00A00000-$00B7FFFF.
+
+Appendix D's *A3000 Memory Map*, printed p. 315 (read from the page image; the text layer's rows are shifted against their descriptions), and the drawing on printed p. 316, give that machine's CIAs one 64K bank, NanoMig's window exactly:
+
+| Address Range | Description |
+|---|---|
+| `$00A0 0000 - $00B7 FFFF` | Zorro II I/O Expansion Space |
+| `$00B8 0000 - $00BE FFFF` | Reserved |
+| `$00BF 0000 - $00BF FFFF` | CIA Ports & Timers |
+
+So the manual describes two decodes, one per generation, and no page gives the narrower window to the A1000, A500 or A2000.
 
 **Where A13 and A12 are both low** ($BFC000), p. 353's sentence says when each chip is selected and not what happens when A12 and A13 are both low. Printed **p. 351**, under *Port Signal Assignments*, which printed p. 350 introduces as the part that "specifies how various signals relate to the available ports of the 8520", marks one address line per chip with the asterisk of an active-low line:
 
@@ -76,7 +94,7 @@ Three of the eight compared bits are the page's; A20–A16 are the five it calls
 | $BFD000 | $BF | 0, 1 | | 0 | 1 | `CIA-AB-TWOBIT-RULE` |
 | $BFC100 | $BF | 0, 0 | | **1** | **1** | `CIA-AB-TWOBIT-RULE`, as p. 351 predicts |
 
-Both $A00000 and $BE0000 carry `101` in A23–A21; $BE0000 differs from $BF in A16 alone. Neither reaches a CIA. The control on the same signal holds: setting A11–A1, which `gary.v` does not read, leaves CIA-A selected, so the fixture answers live. (`gary.v` has no A0: its address port is `[23:1]`.)
+Both $A00000 and $BE0000 carry `101` in A23–A21; $BE0000 differs from $BF in A16 alone. The two probes differ from the baseline only in the page's don't-cares and in A13, which chooses the chip and does not enter the pair's select. Neither reaches a CIA. The control on the same signal holds: setting A11–A1, which `gary.v` does not read, leaves CIA-A selected, so the fixture answers live. (`gary.v` has no A0: its address port is `[23:1]`.)
 
 `CIA-AB-TWOBIT-RULE` is green: p. 353's second sentence gives a condition under which each chip is selected and is silent on A12 and A13 both low, and where the manual does speak to $BFC100, on p. 351, it predicts what the two one-bit chip selects above do. So $BFC100 is not part of this finding.
 
