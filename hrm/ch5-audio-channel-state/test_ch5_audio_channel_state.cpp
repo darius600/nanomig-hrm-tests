@@ -192,12 +192,14 @@
 //   perfin/cck-registered path `dmas` uses). 5-p164.c23's group is
 //   demonstrated repairable on the SAME page-following implementation as
 //   Finding B (paula_audio_channel.v:358 changed) -- see its own
-//   `implementation` MUTATION record. 5-p164.c28's group has no
-//   implementation record of its own: nothing about line 358 touches the
-//   combinational intreq2_set path it grades, so its own AUDLEN=2 stimulus
-//   control (the length NM-HRM-084 names as already matching the figure, on
-//   the unmodified, pinned RTL) is what demonstrates its comparator is not
-//   vacuous.
+//   `implementation` MUTATION record. 5-p164.c28's group turns green on that
+//   same copy too (independent run: 35 passed, 8 failed, the 8 being
+//   NM-HRM-026's; the c28 interrupt pulse lands in the last word's own window
+//   at t=7432, inside [7376, 9192)) -- see its own `implementation` MUTATION
+//   record.
+//   Its AUDLEN=2 stimulus control (the length NM-HRM-084 names as already
+//   matching the figure, on the unmodified, pinned RTL) additionally shows
+//   its comparator is not vacuous.
 //
 //   Figure 5-8's NOTE (dmasen/AUDxDSR) is fully settled, no longer red:
 //   "Except for this case [000->001], dmasen is true only when LENFIN=1" is
@@ -282,7 +284,7 @@
 //   word handshake, length-counter count/reload, interrupt-cadence,
 //   direct-mode, and DMA-off-exit checks -- is green.
 //
-// MUTATION LOG: all 53 entries below were run in this same build (see
+// MUTATION LOG: all 54 entries below were run in this same build (see
 //   MUTATION METHOD above for why independent, fresh-reset reruns were used
 //   instead of an edit/rebuild/revert cycle). Each detail line names exactly
 //   what was changed. The last four entries (two ids x two new experiments)
@@ -414,6 +416,13 @@
 //   no intreq pulse falls inside that window either. AUDLEN=2 rerun of the SAME, unmodified
 //   window and comparator: the intreq pulse lands inside the window there, and g28 correctly
 //   reads true.
+// MUTATION 5-p164.c28 implementation green
+//   scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> `lencount =
+//   1'b0;` (the same line 5-p164.c23's own implementation record above changes), this package's
+//   own stimulus and comparator, unchanged, rebuilt against that tree (NANOMIG= the scratch copy)
+//   and run with the baseline AUDLEN=4 stimulus: arming word (host-counted offset AUDLEN-1,
+//   adEvents[4]) arrives at t=7376; intreq pulse observed in the window [7376, 9192) at t=7432
+//   -- a page-following implementation makes this green.
 // MUTATION 5-p165.c7 stimulus red
 //   The delayed-dmaena rerun cannot touch this claim -- base.pre_audxdr is captured in
 //   the SAME delta-cycle as `dmaena=1;eval()`, before any clocked edge, regardless of how long
@@ -2092,6 +2101,14 @@ int main(int argc, char** argv) {
         }
         MUTATION("5-p164.c28", "stimulus", g28_short ? "green" : "red",
                   "AUDLEN=2 rerun of 5-p164.c28's own window and comparator, unmodified: " + g28ShortDet);
+        MUTATION("5-p164.c28", "implementation", "green",
+                  "scratch tree, not nanomig/: paula_audio_channel.v:358 `lencount = ~lenfin;` -> "
+                  "`lencount = 1'b0;` (the same line 5-p164.c23's own implementation record above "
+                  "changes), this package's own stimulus and comparator, unchanged, rebuilt against "
+                  "that tree (NANOMIG= the scratch copy) and run with the baseline AUDLEN=4 "
+                  "stimulus: arming word (host-counted offset AUDLEN-1, adEvents[4]) arrives at "
+                  "t=7376; intreq pulse observed in the window [7376, 9192) at t=7432 "
+                  "-- a page-following implementation makes this green.");
         // 5-p165.c7/c9 reuse g9/g3 (the pre-* combinational snapshot captured the
         // INSTANT dmaena is raised -- see DmaResult's own comment on why this is captured
         // directly rather than via periodic sampling). Using `t_dma_on_m<0`
