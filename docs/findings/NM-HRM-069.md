@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the 68000 bridge or Agnus acknowledge a CPU chip-bus access only in colour clocks of the even parity, as p. 196's "only the even-numbered memory access cycles" says, where NanoMig now acknowledges it in any colour clock no DMA channel claims? The question stops at p. 196's parity; which count p. 198 means is outside it. The decision belongs to an Amiga specialist, not to this repository. It closes when the specialist accepts or declines p. 196's reading and the reason is recorded here; if accepted, when `PARITY` is green on both cores |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, if the manual's reading is accepted. MiSTer's bridge and Agnus carry the same acknowledge and counter as NanoMig, and TC64 the same two, so there is no fix to port |
+| **What is asked of a reader** | Should the 68000 bridge or Agnus acknowledge a CPU chip-bus access only in colour clocks of the even parity, as p. 196's "only the even-numbered memory access cycles" says, where NanoMig acknowledges it in any colour clock no DMA channel claims? The question stops at p. 196's parity; which count p. 198 means is outside it. Closes when the change is made and `PARITY` is green on both cores, or when an Amiga specialist rejects p. 196's reading, in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | the 68000's chip-bus accesses on both CPU cores (fx68k, TG68K), measured with a counting loop with no DMA but refresh (red on fx68k only) and beside a share-mode A-to-D blit (red on both); chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 6 — Blitter, printed pp. 194–198 (Figure 6-9 on p. 195, Figures 6-10 and 6-11 on pp. 196 and 197); 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `PARITY`: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`, p. 196; `A8-BOUNDARY`, recorded and not graded: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, pp. 194, 196; `SYSDMA-C29-BOUNDARY`, recorded and not graded: `ch6-sysdma.c29`, p. 196; `A5-WITHDRAWN`: `6-blitter-priority.c13`, `ch6-sysdma.c62`, p. 198, and `ch6-sysdma.c53`, which the page names for the p. 198 readings and the package's `A2` line carries. `PARITY-REF` (Figure 6-9) and the `A8` line carry no claim id |
-| **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code, and so has TC64) |
+| **Chapter** | 6 — Blitter, printed pp. 194–198 (Figure 6-9 on p. 195, Figures 6-10 and 6-11 on pp. 196 and 197); 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `PARITY`: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`, p. 196; `A8-BOUNDARY`, recorded and not graded: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, pp. 194, 196; `SYSDMA-C29-BOUNDARY`, recorded and not graded: `ch6-sysdma.c29`, p. 196; `A5-WITHDRAWN`: `6-blitter-priority.c13`, `ch6-sysdma.c62`, p. 198; `A2`, green and not evidence here: `ch6-sysdma.c53`, p. 198. `PARITY-REF` (Figure 6-9) and the `A8` line carry no claim id |
+| **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code; TC64 the same acknowledge, its counter also counting in turbo mode) |
 | **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding |
 | **Assertions** | `PARITY` is the one red of the package, on both cores (37 passed, 1 failed each): expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45209 and 124 of 254 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `PARITY-REF` and the `A8` line pass on both cores; `A8` is not evidence for this finding |
-| **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, none consults the colour clock's parity, and all four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there. Hardware: not measured |
 | **Effort** | S: one parity term in the last branch of `agnus.v`'s priority chain (lines 255–266) or one new input to the bridge's acknowledge; not run here |
 
 ---
@@ -63,6 +63,11 @@ eight-slot group and planes 5 and 6 on two of the even ones.
 
 The sentence counts cycles and does not say on which parity the released
 cycle falls.
+
+**Printed p. 194**, the one sentence that could give the 68000 an odd slot:
+
+> If a device does not request one of its allocated time slots, the slot is
+> open for other uses.
 
 ## RTL and measurement
 
@@ -114,7 +119,7 @@ plane 1.
 | no DMA | CPU accesses on an odd slot | **20006 of 41007** | 0 of 45209 | `PARITY` |
 | share-mode blit, from its first to its last destination write | CPU accesses on an odd slot | **125 of 243** | **124 of 254** | `PARITY` |
 
-`PARITY` grades both halves in one line, so it is red on both cores.
+`PARITY` grades both halves in one line, so it is red on both cores. A mutation build, not run by `make test` (`NMH_MUTATE=PARITY`), feeds the unchanged comparator the CPU accesses inside the four-plane lores fetch windows, where bitplane DMA holds the odd slots, and reads green: 0 odd of 50688 accesses on fx68k and 0 of 61440 on TG68K.
 
 - **No DMA, fx68k.** The loop's `bra.s` has an internal operation of two clock
   periods, which WinUAE, vAmiga and Denise spend as one colour clock; the next
@@ -135,12 +140,8 @@ plane 1.
   has no two-clock step, so it is green without DMA because its bus timing never
   offers the chip an odd request, not because anything waits; beside the blit it
   takes odd slots as fx68k does, and its red rests on the share-mode half alone.
-- **Conflicting passages.** Printed p. 194 says:
-
-  > If a device does not request one of its allocated time slots, the slot is
-  > open for other uses.
-
-  It could be read to let the 68000 in; it is about the four DMA devices the paragraph names — disk,
+- **Conflicting passages.** p. 194's open-slot sentence (quoted under *Source
+  requirement*) could be read to let the 68000 in; it is about the four DMA devices the paragraph names — disk,
   audio, display and sprites — and does not name the 68000, where p. 196 does,
   and says *only*. Printed p. 20 and Appendix A's COPINS entry on printed p. 275
   label the parities the other way round: in p. 20's words the Copper "requests
@@ -150,7 +151,8 @@ plane 1.
   the 68000 uses. Whichever labels are used, every page that does gives it one
   parity, the one opposite the fixed DMA, and the reds are CPU accesses on both.
 - **Copperline's release count is not independent of NanoMig.** Its limit of 3
-  is, by its own comment, *"Grounded in the Minimig RTL (agnus.v)"*.
+  is, by its own comment, *"Grounded in the Minimig RTL (agnus.v)"*
+  ([`src/bus.rs:40-50`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L40-L50)).
 - **Not graded: the missed-cycle wait.** The claims of `A8-BOUNDARY` and
   `SYSDMA-C29-BOUNDARY` are conditional on a missed cycle: p. 196 says that *if*
   an instruction misses its even slot the 68000 waits for its next available
@@ -189,11 +191,7 @@ is a separate question, and the package withdraws `A5` rather than choose.
 
 ### For the specialists
 
-1. **Does a 68000 in an Amiga ever get an odd slot?** p. 196 says never, and
-   says an instruction that misses its even slot waits for the next one. No
-   implementation read here does that; each lets the CPU into a free odd
-   colour clock.
-2. **Which count does p. 198 mean?** See the table above: 4, 5 or 8 slots
+1. **Which count does p. 198 mean?** See the table above: 4, 5 or 8 slots
    between grants. NanoMig and, by their code, the four implementations count
    every denied colour clock; only the reading that counts the 68000's own
    even cycles is written in the terms of p. 196.
