@@ -9,7 +9,7 @@
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: its `rtl/agnus_blitter.v` stores the bit and never reads it, exactly as NanoMig's does; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Scope** | ECS Agnus (`ecs` input true); measured on `agnus_blitter` as a one-word area blit using channels A, C and D, with only `BLTCON1` bit 7 varied. Line mode is not measured; no chip revision is named |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 6 — Blitter, Appendix C, printed p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · the test's `DOFF-NO-OBSERVABLE-EFFECT` carries claims `6-appc-modifications.c4`, `.c5`, `.c6`, `.c7`, `.c9`, `ch6-appc-ecs.c4`, `ch6-appc-ecs.c6`, `ch6-appc-map.bltcon1`, `6-appa-control.c18`, `ch6-appa-bltcon0.area.b07.con1`, `6-appa-registers.c20`, `ch6-appa-bltcon0.c6`, `ch6-blockdiag.c10`, `6-blitter-block-diagram.c11` (the test names pp. 198, 199, 267, 309 and 310 for them); the controls `BLTCON0L-GATED-BY-ECS` and `BLTSIZH-GATED-BY-ECS` carry their own claim ids in the test and are not graded here |
+| **Chapter** | 6 — Blitter, printed pp. 198 and 199; Appendix A, printed p. 267; Appendix C, printed pp. 298 and 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `DOFF-NO-OBSERVABLE-EFFECT`: p. 309 `6-appc-modifications.c4`, `6-appc-modifications.c5`, `6-appc-modifications.c6`, `6-appc-modifications.c7`, `ch6-appc-ecs.c4`, `ch6-appc-ecs.c6`; the ECS register map's BLTCON1 row, p. 298, `6-appc-modifications.c9`, `ch6-appc-map.bltcon1`; p. 267 `6-appa-control.c18`, `ch6-appa-bltcon0.area.b07.con1`, `6-appa-registers.c20`, `ch6-appa-bltcon0.c6`; p. 198 `ch6-blockdiag.c10`; p. 199 (Figure 6-13) `6-blitter-block-diagram.c11`; the controls `BLTCON0L-GATED-BY-ECS` and `BLTSIZH-GATED-BY-ECS` carry their own claim ids in the test and are not graded here |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v); inherited, the same code in MiSTer and TC64 |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs): `make -C hrm/ch6-blitter-ecs test`; the expected red exits nonzero |
 | **Assertions** | 1 red: `DOFF-NO-OBSERVABLE-EFFECT` — expected no D write with DOFF set, observed the same D write as with DOFF clear (`0x2222`). The package totals 12 passed, 4 failed; the other three reds belong to [NM-HRM-020](NM-HRM-020.md) and [NM-HRM-022](NM-HRM-022.md) |
@@ -76,6 +76,5 @@ wire doff = ecs & bltcon1[7];
 ```
 
 then suppress the D write when `doff` is set; the register decode already stores
-the bit. The manual decides, and it does clearly: three of the four emulators
-implement DOFF, each gated on ECS Agnus. The finding closes as stated in *What is
+the bit. The finding closes as stated in *What is
 asked of a reader*.
