@@ -9,11 +9,11 @@
 | **Report to** | `no RTL action` — AA documentation: whoever keeps errata for Commodore's AA specification |
 | **Scope** | a Coprocessor MOVE to $078 (SPRHDAT) with CDANG clear and with CDANG set, measured with the Copper's `ecs` input high; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 6 (the `~` legend) and p. 7 (the SPRHDAT row), the address-ordered register list · claim ids by assertion: `SPRHDAT-078-IS-RESTRICTED`: `opus:AA-sprhdat-tilde.c1`; `COP1LC-AT-080-082`: `opus:AA-cop1lch.c1`, `opus:AA-cop1lcl.c1`, `opus:AA-copjmp1.c1`, `sol:AA-cop1lch.c1`, `sol:AA-cop1lcl.c1`, `sol:AA-copjmp1.c1`; `COP2LC-AT-084-086`: `opus:AA-cop2lch.c1`, `opus:AA-cop2lcl.c1`, `opus:AA-copjmp2.c1`, `sol:AA-cop2lch.c1`, `sol:AA-cop2lcl.c1`, `sol:AA-copjmp2.c1`; `COPINS-AT-08C`: `opus:AA-copins.c1`, `sol:AA-copins.c1`; `COPCON-AT-02E`: `opus:AA-copcon.c1`, `sol:AA-copcon.c1`; `FIXTURE-DELIVERS-KNOWN-VALUE` and `COP1-AND-COP2-ARE-DISTINCT` carry no claim id |
+| **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 6 (the `~` legend) and p. 7 (the SPRHDAT row), the address-ordered register list · claim id: `SPRHDAT-078-IS-RESTRICTED`, the one assertion this page names, carries `opus:AA-sprhdat-tilde.c1` (PDF p. 7) |
 | **Module** | `src/minimig-aga/agnus_copper.v:225` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225) at the pinned revision; inherited (MiSTer and TC64 carry the same line) |
 | **Test** | [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) · `make -C aa/aa-copper-register-map test` (all green, exits zero) |
 | **Assertions** | `none` red. The package reports `7 passed, 0 failed`; the one that grades this page is `SPRHDAT-078-IS-RESTRICTED`: expected blocked with CDANG clear and allowed with CDANG set, observed the same. The package also records, ungraded, that the list's W/R/S access column cannot be graded at this boundary |
-| **Verdict of the four** | **unanimous, by range not by mark**: WinUAE, vAmiga, Denise and Copperline each refuse a Coprocessor MOVE to $078 with CDANG clear and allow it with CDANG set, by comparing the address against $080; none consults a table of marks. Hardware: not measured |
+| **Verdict of the four** | **unanimous, and all four implement a RANGE where the document prints a per-register mark.** Every one of them blocks a Coprocessor MOVE to `$078` with CDANG clear by comparing the address against `$080`, none consults a table of marks, and so the mark SPRHDAT's row is missing is one no implementation would read. See [What the others say](#independent-evidence). Hardware: not measured |
 | **Effort** | none — no RTL change; the suggested change is a citation rule for the corpus |
 
 ## Source requirement
@@ -50,7 +50,7 @@ if (ir2[8:7]==2'b00 && !cdang || ir2[8:6]==3'b000 && !ecs) // illegal access
 
 [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) drives a Coprocessor MOVE to $078 and reads whether it reaches `reg_address_out`: blocked with CDANG clear, allowed with CDANG set, the same as for every address the list marks `~` (`SPRHDAT-078-IS-RESTRICTED`, green). A MOVE that reached `reg_address_out` with CDANG clear would fail it.
 
-`tools/aa/tilde_vs_copper_range.py` reads all 237 address-list rows: 58 are marked `~`, 59 sit below $080. Zero are marked `~` at or above $080, so the document never claims a restriction the RTL does not enforce; one sits below $080 unmarked, SPRHDAT at $078 on p. 7, so it omits one the RTL does. Both counts include `(BPLHDAT)`, the name the list prints in brackets: it is marked `~` at $07A and cancels out.
+`tools/aa/tilde_vs_copper_range.py` in the pipeline repository, hrm-testpipeline, reads all 237 address-list rows: 58 are marked `~`, 59 sit below $080. Zero are marked `~` at or above $080, so the document never claims a restriction the RTL does not enforce; one sits below $080 unmarked, SPRHDAT at $078 on p. 7, so it omits one the RTL does. Both counts include `(BPLHDAT)`, the name the list prints in brackets: it is marked `~` at $07A and cancels out.
 
 ## Risks and unknowns
 
@@ -73,6 +73,6 @@ Two independent readers of the corpus reported the missing mark from the page, e
 
 ## Decision
 
-No RTL change. If the Amiga specialist records the mark as dropped in print, the page stays against the printed row; if the exemption is confirmed, the page is refiled against the RTL and NanoMig's block at $078 becomes the question.
+No RTL change. If the exemption is confirmed, NanoMig's block at $078 becomes the question.
 
-For the corpus: a claim about SPRHDAT's Coprocessor accessibility cites this finding rather than the row, because the row is silent and silence is not a permission. Re-run: `make -C aa/aa-copper-register-map test`.
+For the corpus: a claim about SPRHDAT's Coprocessor accessibility cites this finding rather than the row, because the row is silent and silence is not a permission.
