@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits): `make -C hrm/ch7-beamcon0-ecs-control-bits test`; the expected red exits nonzero |
 | **Assertions** | `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE` — red: expected the toggle to stop with LOLDIS alone, observed it still toggles. The package totals 8 passed, 4 failed; this page grades only the P6 assertion. The two-bit measurement beside it is `P6-COMBINATION-MEASURED`, a `note()` (control toggles; LOLDIS + VARBEAMEN frozen) |
 | **Verdict of the four** | **all four implement LOLDIS on its own**; NanoMig is alone in also requiring VARBEAMEN. Hardware: not measured |
-| **Effort** | S: one condition in `agnus_beamcounter.v` (the `if`/`else if` at L295 and L297), drop `&& varbeamen` |
+| **Effort** | S — one condition in `agnus_beamcounter.v` (the `if`/`else if` at L295 and L297), drop `&& varbeamen` |
 
 ---
 
