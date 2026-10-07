@@ -5,21 +5,24 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L36-L43) |
-| **Report to** | **the Minimig line** |
-| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `C4` and [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations) `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT` |
-| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red, in three packages |
+| **What is asked of a reader** | Does "Direct read of RXD pin on Paula chip." (p.257, SERDATR bit 11) require bit 11 to follow the RXD pin with no `clk7_en` edge in between, where NanoMig takes three? Closes when an Amiga specialist records that "direct" permits a synchroniser in front of bit 11, or that it requires zero lag, in which case the RTL changes. The decision belongs to an Amiga specialist, not to this repository. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, `rtl/paula_uart.v:36-43`, which holds the same lines at `da7632e`; TC64 holds them too, so NanoMig takes whatever is decided there |
+| **Scope** | SERDATR bit 11 read at `paula_uart` and at the `paula` boundary, after the RXD pin steps from 1 to 0; chip revision unknown; real Paula not measured |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 8 · printed p.257, SERDATR bit 11 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`: `sol:8-serdatr.c43` (p.257), `opus:8-serdatr.c23`, `opus:8-serdatr.c24`, `sol:8-serdatr.c105`, `sol:8-serdatr.c106` (p.283); `C4`: `opus:8-serial.c81` (p.257); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`: `opus:8-serial.c82` (p.257); all three reds carry a claim id |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L36-L43) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L36-L43); inherited |
+| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`; [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
+| **Assertions** | 3 red, one per package, each one of the package's reds: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, expected 0 `clk7_en` enables, observed 3 (`12 passed, 2 failed`); `C4`, expected 0 beats, observed 2 (`48 passed, 3 failed`); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, expected 0 edges, observed 3 (`17 passed, 2 failed`) |
 | **Verdict of the four** | **2–1 for the page, one cannot answer, and the one dissent does not match NanoMig either** |
+| **Effort** | unknown: the page states no suggested change; any change would touch the lines it lists, `paula_uart.v:36-43` and `:234` |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **p.257**, the whole of bit 11's entry: *"Direct read of RXD pin on Paula chip."*
 
-## What NanoMig does
+## RTL and measurement
 
 Two synchroniser flops and one more register:
 
@@ -29,56 +32,38 @@ Two synchroniser flops and one more register:
     rx_rxd <= rxds;                         // :234
     assign serdatr = {rx_ovrun, rx_rbf, tx_tbe, tx_tsre, rx_rxd};   // :248
 
-Measured: the bit lags a pin change by **three `clk7_en` edges**. The
-`ch8-serial-interface` package measured the same path as two beats from its own
-starting point and its control shows the bus read mux itself costs none — the
-two agree on there being a fixed chain and differ only in where they start
-counting.
+`ch8-serdatr-read-word` measures 3 `clk7_en` enables between a pin change and
+bit 11. `ch8-adkcon-and-interrupt-relations` measures the same 3 edges at the
+`paula` boundary. `ch8-serial-interface` measures 2 beats from its own starting
+point, against a control showing the bus read mux itself costs none: the three
+agree on a fixed chain and differ only in where they start counting.
 
-### Measured
+## Risks and unknowns
 
-[`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) measures a
-delay of 3 `clk7_en` enable(s) between a pin change and bit 11 —
-`RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, red, one of the package's `12
-passed, 2 failed`. [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)
-measures the same path from its own starting point as 2 `clk7_en` beats,
-against a control showing the bus read path itself is purely combinational —
-`C4`, red, one of the package's `48 passed, 3 failed`.
-[`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations)
-measures it at the `paula` boundary as 3 `clk7_en` edges, the same as at
-`paula_uart` — `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, red, one of the
-package's `17 passed, 2 failed`.
+- p.257 does not say whether "direct" forbids a synchroniser; the lag is not in
+  doubt, the adjudication is an Amiga hardware question.
+- Real Paula's lag is not measured; no named software depends on it.
+- The four independent implementations split: vAmiga and Denise read the pin
+  immediately, Copperline delays it, WinUAE has no pin to read.
 
-## What the others say
+## Independent evidence
 
 | | |
 |---|---|
+| **WinUAE** | **cannot answer.** No RXD pin to read: bit 11 is a break-state flag forced high unless a break is active (`od-win32/serial_win32.cpp:1050-1051`); only loopback reconstructs a level, from the transmit shift register by elapsed bit position (`:1032-1048`) |
 | **vAmiga** | **immediate.** `REPLACE_BIT(result, 11, serialPort.getRXD())` — `Core/Components/Paula/UART/UART.cpp:110`, and `getRXD()` is `getPin(3)` (`Core/Ports/SerialPort.h:151`). No intervening state |
 | **Denise** | **immediate.** `if (serial.getRXD()) out \|= 0x800;` — `emulation/libami/paula/uart.cpp:32`, over `getPin(RXD)` (`emulation/libami/system/serial.h:37`). No RX synchroniser exists in the tree |
-| **Copperline** | **delayed by two stages.** `serial_rx_pin_high` → `serial_rx_sync_0_high` → `serial_rx_sync_1_high` (`src/chipset/paula.rs:505-507`, advanced once per colour clock at `:1612-1616`), read at `:1101`. So the lag is two colour clocks, four `clk7_en` edges. Deliberate and tested: `fn serdatr_rxd_uses_two_stage_synchronized_pin()` at `:3896` |
-| **WinUAE** | **cannot answer.** There is no RXD pin to read. Bit 11 is a break-state flag forced high unless a break is active (`od-win32/serial_win32.cpp:1050-1051`); only the loopback path reconstructs a level, and it does so from the transmit shift register by elapsed bit position (`:1032-1048`) |
-| **MiSTer** | descendant — the same synchroniser on the same lines: `rtl/paula_uart.v:36-43` is byte-identical to NanoMig's, the same three-`clk7_en`-edge lag |
-| **TC64** | descendant — `rtl/minimig/paula_uart.v:36-43` — the identical two-flop synchroniser and `assign rxds = rxd_sync[1];`, same file, same line numbers, byte-identical. The three-`clk7_en`-edge lag this entry measures is inherited unchanged by both lines |
+| **Copperline** | **delayed by two stages.** `serial_rx_pin_high` → `serial_rx_sync_0_high` → `serial_rx_sync_1_high` (`src/chipset/paula.rs:505-507`, advanced once per colour clock at `:1612-1616`), read at `:1101`: two colour clocks, four `clk7_en` edges. Deliberate and tested: `fn serdatr_rxd_uses_two_stage_synchronized_pin()` at `:3896` |
+| **MiSTer** | descendant — `rtl/paula_uart.v:36-43` byte-identical to NanoMig's, the same three-edge lag |
+| **TC64** | descendant — `rtl/minimig/paula_uart.v:36-43`, byte-identical, the same three-edge lag |
 
-**Two of the four independent implementations read the pin exactly as the page
-says, one adds two synchroniser stages, one has no pin.** So a synchroniser is
-not unheard of — but nobody has three.
+## Decision
 
-That gap is the useful part of this entry. **A test that distinguishes
-NanoMig's three-`clk7_en` lag from Copperline's two colour clocks (four
-`clk7_en` edges) separates NanoMig from every emulator here, Copperline
-included**, and that is the measurement to take before anyone decides
-whether "direct" forbids a synchroniser at all. The adjudication is an Amiga
-hardware question; the lag is not in doubt.
-
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
-
-None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
-
+Whether "direct" forbids a synchroniser is for an Amiga specialist. The page
+states no suggested change. Because MiSTer and TC64 hold the same lines, the
+report goes to Minimig-AGA_MiSTer first. A test separating NanoMig's three
+`clk7_en` edges from Copperline's four would set NanoMig apart from every
+emulator that has a pin, and is the measurement to take before deciding. Re-run:
+`make -C hrm/ch8-serdatr-read-word test`, `make -C hrm/ch8-serial-interface test`
+and `make -C hrm/ch8-adkcon-and-interrupt-relations test`; each exits nonzero
+with the red named above.
