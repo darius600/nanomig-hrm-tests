@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch3-bitplane-pointers-and-modulo`](../../hrm/ch3-bitplane-pointers-and-modulo): `make -C hrm/ch3-bitplane-pointers-and-modulo test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `BPLXPTH-OCS-HIGH-THREE-BITS`: at `ecs` = 0, BPL1PTH = $001F and BPL1PTL = $0000, expected a first fetch at 0x070000, observed 0x1f0000; the package reports `19 passed, 1 failed`. Its control `BPLXPTH-OCS-HIGH-THREE-BITS-CONTROL`, BPL1PTH = $0007 through the same fixture and comparator, is green at 0x070000. The `ecs` = 1 twin, `BPLXPTH-ECS-HIGH-BITS-TWIN`, is a note, not graded |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored bitplane pointer by Agnus revision and names it in a test; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the bitplane fetch drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Hardware: not measured |
-| **Effort** | S at this site: one assignment in `agnus_bitplanedma.v` (line 220); declaring the core ECS-and-later changes no RTL; the other pointer sites are counted in [NM-HRM-043](NM-HRM-043.md) |
+| **Effort** | S — at this site: one assignment in `agnus_bitplanedma.v` (line 220); declaring the core ECS-and-later changes no RTL; the other pointer sites are counted in [NM-HRM-043](NM-HRM-043.md) |
 | **See also** | [NM-HRM-043](NM-HRM-043.md) (disk, and the six pointer sites), [NM-HRM-003](NM-HRM-003.md) (Copper) and [NM-HRM-014](NM-HRM-014.md) (the same register under ECS, filed against the printed page) |
 
 ---
