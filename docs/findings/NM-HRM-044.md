@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper): `make -C hrm/ch8-disk-pointer-ecs-and-copper test`; an expected red exits nonzero. [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep): `make -C hrm/ch2-copper-move-sweep test` (green line `APPBSTAR $10 DSKPTH ecs=0`) |
 | **Assertions** | 1 red of this page: `P1` against p.279 — expected the Copper MOVE to load DSKPTH, observed the pointer not loaded; the package totals `4 passed, 3 failed`, its other two reds belonging to [NM-HRM-043](NM-HRM-043.md). `COPLIVE` is green as the control. `APPBSTAR $10 DSKPTH ecs=0` is green against p.289 in `hrm/ch2-copper-move-sweep` (`97 passed, 1 failed`) |
 | **Verdict of the four** | **unanimous with NanoMig**: all four block a Copper write to `$020` on OCS, as p.289 marks it, and allow it under ECS with CDANG set, as p.310 allows; none lets the Copper initialise DSKPTH on OCS, as p.279 would. That is which reading practitioners took, not which page is right. Hardware: not measured |
-| **Effort** | none: no RTL change is asked |
+| **Effort** | none — no RTL change is asked |
 | **See also** | [NM-HRM-014](NM-HRM-014.md), the precedent for a finding about the manual rather than about the implementation. **Not [NM-HRM-004](NM-HRM-004.md)**, which is the ECS danger-bit *range* — a different claim, register and page |
 
 ---
