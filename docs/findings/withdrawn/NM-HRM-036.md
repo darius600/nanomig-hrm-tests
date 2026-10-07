@@ -12,7 +12,7 @@
 | **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L159-L162); `inherited` (MiSTer has the same code; TC64's bank 0 gate is `!ovl` alone, banks 1-3 unchanged) |
 | **Test** | `make -C hrm/ch7-reset-overlay test`; the package prints `6 passed, 0 failed` and has no expected red |
 | **Chapter** | 7 — System Control, printed p. 223 (the RESET instruction) · *Amiga Hardware Reference Manual*, 3rd ed., 1991; `RESET-ALL-MEMORY-DISAPPEARS-SWEEP`: `sol:7-reset.c13`, p. 223; `AUTOCONFIG-HALF-NOT-ASSERTED`: `sol:7-reset.c13`, p. 223; `RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY`: no claim id |
-| **Assertions** | `RESET-ALL-MEMORY-DISAPPEARS-SWEEP` required every chip bank to vanish with `ovl=1` (expected `sel_chip` 0 at all four addresses; observed 0, 2, 4, 8) and was red; it is now a `MEASURED:` line and a `record()` line, not graded. `RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY` green |
+| **Assertions** | `RESET-ALL-MEMORY-DISAPPEARS-SWEEP`, the withdrawn check (every chip bank gone with `ovl=1`: expected `sel_chip` 0 at all four addresses, observed 0, 2, 4, 8), is a `MEASURED:` line and a `record()` line, not graded. `RESET-ALL-MEMORY-DISAPPEARS-CONTROL-BANK0-ONLY` green |
 | **Verdict of the four** | **3–1**: vAmiga, Denise and Copperline each replace only the ROM's own 512K; only WinUAE, outside its aliased 0.5 MB + 0.5 MB configuration, makes "all memory" literally true for chip RAM. Hardware: p. 223 says models differ; the 1987 A500/A2000 TRM's A2000 decoder leaves no chip RAM answering in `$000000-1FFFFF` while OVL is high; no hardware was measured |
 
 ---
@@ -72,9 +72,8 @@ One address per 512K bank, `ovl=1`:
 - **Condition for filing again.** A printed page that requires chip RAM beyond
   bank 0 to stop responding while the overlay is active. p. 223 does not: it
   names both behaviours.
-- **No hardware was measured.** p. 223 says "On some Amiga models, portions of
-  the RAM still respond. On other models, no RAM responds."
-- **WinUAE** mirrors the ROM over `$000000-1FFFFF`, and makes the sentence true
+- **No hardware was measured.**
+- **WinUAE** mirrors the ROM over at least `$000000-1FFFFF` ([`memory.cpp:2923-2936`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2923-L2936)), and makes the sentence true
   for chip memory, except in its aliased 0.5 MB + 0.5 MB configuration.
 - **Gary specification:** the row says `OVR`, which elsewhere in that spec is
   the override pin; read as override it would contradict the ROME condition
