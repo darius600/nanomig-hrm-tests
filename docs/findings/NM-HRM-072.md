@@ -14,7 +14,7 @@
 | **Test** | [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial): `make -k -C integration/ch8-disk-serial test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
 | **Assertions** | `P1`, `P2`, `P3`, red on fx68k and on TG68K (74 passed, 3 failed on each core; these three are the package's only reds). `P1`: expected every TxD change within ±C/2 of t0 + k·(N+1)·C, observed 20 of 40 at N=371. `P2` (ii): expected U_N equal for every N, observed U_371 = 8.000827 against U_32396 = 8.000000, beyond a tolerance of 0.000579. `P3`: expected 40 of 40 at N=371, observed 20 of 40 |
 | **Verdict of the four** | **unanimous against NanoMig**: vAmiga, Denise and Copperline load a waiting word in the step that ends the stop bit, so its start bit follows the stop bit after N+1 colour clocks, as p. 255 says. WinUAE has no TxD pin; in its cycle-exact mode with no serial device it starts the waiting word's frame 10(N+1) colour clocks after the previous frame began, and in its loopback mode 3 colour clocks later. None adds half a colour clock. Hardware: not measured |
-| **Effort** | S: `paula_uart.v` only — the `tx_shift == 16'd0` branch of lines 111–117 and line 139, which has to set `tx_tbe` on the load |
+| **Effort** | S — `paula_uart.v` only — the `tx_shift == 16'd0` branch of lines 111–117 and line 139, which has to set `tx_tbe` on the load |
 
 ---
 
