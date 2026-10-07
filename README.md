@@ -80,7 +80,7 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
 | graded packages, `integration/` | **34**, each run on both CPU cores: 11 green, 23 carrying a red; 26 against the manual, 8 against the AA specification |
 | assertions, `integration/` | **3702** on fx68k — 3373 pass, **329 fail**; **3760** on TG68K — 3434 pass, **326 fail** |
-| registered findings | **75**, all open — 70 against the Hardware Reference Manual and 5 against the AA specification. **50 ask you to decide whether the RTL should change**; 66 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
+| registered findings | **75**, all open — 70 against the Hardware Reference Manual and 5 against the AA specification. **50 ask you to decide whether the RTL should change**; 66 rest on a failing test, 2 were seen in the RTL source, with no test yet or measured only inside the module, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
 | accepted units, recorded in [`hrm-testpipeline/acceptance/`](https://github.com/darius600/hrm-testpipeline/tree/main/acceptance) | **20** — twelve against the manual (chapters 1 to 8, appendix F, appendix K, appendices D and E together, appendices H and J together) and eight against the second oracle |
@@ -103,8 +103,7 @@ it reaches.
 `./run_all.sh` prints `tests: 154 passed, 63 failed, 0 build errors` for `hrm/`
 and `tests: 29 passed, 4 failed, 0 build errors` for `aa/`, and one
 line per core for each of the 34 graded `integration/` packages; the table comes
-from such a run. `check_published_counts.py --runlog`, in the separate
-`hrm-testpipeline` repository, checks it against the run's log.
+from such a run. A tool in the separate `hrm-testpipeline` repository checks it against the run's log.
 
 ## Where to go next
 
