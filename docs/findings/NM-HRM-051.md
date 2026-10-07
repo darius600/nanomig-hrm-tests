@@ -5,17 +5,20 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `hid.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/hid.v#L100-L104) · no counterpart upstream |
-| **Report to** | **NanoMig.** There is no ancestor line to file this against, and the finding does not generalise to the Minimig family |
-| **Test** | [`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) — `CAPS-LOCK-RELEASE-NOT-ACCEPTED` and `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`, both red |
-| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red of 15. `CAPS-LOCK-DOWN-ACCEPTED` and `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` are green controls on the same stimulus path |
-| **Verdict of the four** | **3–1 against.** WinUAE, Denise and Copperline each implement the rule; vAmiga has no Caps Lock case at all and behaves as NanoMig does |
+| **What is asked of a reader** | Question: should NanoMig's `hid.v` report no event when Caps Lock (HID `$39`, Amiga `$62`) is released, and give the second press bit 7 set (`$E2`), as p.359 prints? Closes when an Amiga specialist records yes or no for NanoMig's keyboard path; the decision belongs to an Amiga specialist, not to this repository. |
+| **Report to** | `NanoMig direct` — NanoMig (`src/misc/hid.v` is NanoMig's own code; MiSTer has no counterpart, so there is no ancestor line to file this against) |
+| **Scope** | NanoMig's `hid.v` keyboard-event path for HID `$39`: the release after the first press, and the second press, after reset; real keyboard hardware not measured |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 8 — Interface Hardware · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · Appendix G, printed p. 359 (Caps Lock rule) and p. 360 (LED off after start-up). Claim ids, each with the assertion that carries it: `CAPS-LOCK-DOWN-ACCEPTED` `opus:8-appG.c51`, `sol:8-appG.c63`; `CAPS-LOCK-RELEASE-NOT-ACCEPTED` `opus:8-appG.c52`, `sol:8-appG.c64`; `CAPS-LOCK-BIT7-CARRIES-LED-STATE` `opus:8-appG.c53`, `sol:8-appG.c65`; `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` `opus:8-appG.c54`, `sol:8-appG.c66`; `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE` `opus:8-appG.c55`, `sol:8-appG.c67`. `CONTROL-FIXTURE-DELIVERS-KNOWN-VALUE` and `CONTROL-NO-EVENT-ON-UNMAPPED-CODE` carry no claim id |
+| **Module** | `hid.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/hid.v#L100-L104) · no counterpart in MiSTer; TC64 has a Caps Lock rule of its own · fixed |
+| **Test** | [`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events): `make -C hrm/ch8-keyboard-events test`; an expected red exits nonzero |
+| **Assertions** | 2 red of 15: `CAPS-LOCK-RELEASE-NOT-ACCEPTED` expected no event on release, observed an event; `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE` expected bit 7 set on the second press, observed clear; the package reports `13 passed, 2 failed`. `CAPS-LOCK-DOWN-ACCEPTED` and `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` are green controls on the same stimulus path |
+| **Verdict of the four** | **3–1 against.** WinUAE, Denise and Copperline each implement the rule; vAmiga has no Caps Lock case and behaves as NanoMig does; hardware status not measured |
+| **Effort** | unknown; the page states no suggested change. What it names as missing in `hid.v` is a per-key branch for `$62` and a register that remembers a press count or lock state |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **p.359**, the whole paragraph, because both halves of it are load-bearing:
 
@@ -25,18 +28,16 @@
 > up/down bit will be 0; when pushing Caps Lock shuts off the LED, the up/down
 > bit will be 1."*
 
-**p.360** supplies the initial condition that makes this determinate: the
-keyboard shuts the Caps Lock LED off at the end of its start-up sequence. So
-after power-on the first press turns the LED on and the second shuts it off.
+**p.360**: the keyboard shuts the Caps Lock LED off at the end of its start-up
+sequence, so after power-on the first press turns the LED on and the second shuts
+it off. The rule is two successive bytes, `$62` then `$E2`, and nothing in
+between; on this key the up/down bit carries the lock state, not the key state.
 
-The rule is therefore a statement about two successive bytes: `$62`, then `$E2`,
-and nothing at all in between. The up/down bit on this one key carries the
-**lock state**, not the key state.
+## RTL and measurement
 
-## What NanoMig does
-
-`hid.v` has no Caps Lock case anywhere. The acceptance condition carries no
-per-key branch and no `data_in[7]` branch:
+`hid.v` has no Caps Lock case and no `data_in[7]` branch (`grep -rni caps` over
+the pinned HDL sources finds only `minimig.v:139`, a changelog comment, and
+`amiga_keymap.v:79`, the table entry):
 
 ```verilog
   if(state == 4'd0 && amiga_keycode != 7'h7f) begin      // hid.v:101
@@ -45,13 +46,8 @@ per-key branch and no `data_in[7]` branch:
      kbd_mouse_data  <= { data_in[7], amiga_keycode };   // hid.v:104
 ```
 
-and there is no register anywhere in the module that remembers a press count or
-a lock state — `grep -rni caps` over the pinned submodule's HDL sources returns
-exactly two lines, `minimig.v:139` (a changelog comment about autofire) and
-`amiga_keymap.v:79` (the key's table entry), neither of them a branch.
-
-What `hid.v:101-104` and `amiga_keymap.v:79` give for two press/release cycles
-of HID `$39`; the package measures the first three rows (below):
+What `hid.v:101-104` and `amiga_keymap.v:79` give for two press/release cycles of
+HID `$39`; the package measures the first three rows:
 
 | | reported? | `kbd_mouse_data` | bit 7 | p.359 requires |
 |---|---|---|---|---|
@@ -60,59 +56,42 @@ of HID `$39`; the package measures the first three rows (below):
 | press #2 | yes | `$62` | **0** | reported, **bit 1** |
 | release #2 | **yes** | `$E2` | 1 | **not reported at all** |
 
-Four events where the page specifies two, and the one bit that was supposed to
-distinguish the two presses never changes.
+Two divergences, graded separately. The release fires
+(`CAPS-LOCK-RELEASE-NOT-ACCEPTED`, red): software counting keystrokes would see
+twice as many Caps Lock events as it should. The second press carries bit 7
+clear (`CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`, red): software reading the up/down bit
+to learn the lock state would read "on" forever. The first press is correct
+under the page's own rule and green as `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO`, which
+makes the second press's `0` a measurement: same path, same key, one press apart.
 
-### Measured
+## Risks and unknowns
 
-[`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events) presses HID `$39`
-(Caps Lock), releases it and presses it again: the release reports an event —
-`CAPS-LOCK-RELEASE-NOT-ACCEPTED`, red — where p.359 says none should fire, and
-the second press still carries bit 7 clear — `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`,
-red — where p.359's LED rule needs it set. Two of the package's `13 passed, 2
-failed`; `CAPS-LOCK-DOWN-ACCEPTED` and `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` stay
-green as controls on the same stimulus path.
+- Real keyboard behaviour is not measured, and no named software depends on it.
+- The vote is split: vAmiga has no Caps Lock case at all, so this is not a case
+  where everyone else agrees and NanoMig alone is out.
+- TC64 was read from source, not run; it sends the second `$E2` on the second
+  release rather than on the second press.
+- WinUAE passes the key through unchanged in raw keyboard modes
+  (`currprefs.keyboard_mode > 0`).
+- The measured package covers press #1, release #1 and press #2; release #2 is
+  read from the code, not asserted.
 
-## Two divergences, not one
-
-They fail differently and are graded separately:
-
-- **The release fires.** Software counting keystrokes sees twice as many Caps
-  Lock events as it should.
-- **The value on the second press is wrong.** Software reading the up/down bit
-  to learn the lock state — which is the only thing the bit means on this key —
-  reads "on" forever.
-
-The first press is correct under the page's own rule and is graded green as
-`CAPS-LOCK-LED-ON-PRESS-BIT-ZERO`. That is what makes the second press's `0`
-a measurement rather than an assumption: the same path, the same key, one press
-apart.
-
-## What the others say
+## Independent evidence
 
 | | |
 |---|---|
-| **WinUAE** | **Conformant, by mirroring the host.** `target_checkcapslock` drops the key's release (`if (*state == 0) return -1;`, which its caller skips with `continue`, `inputdevice.cpp:8565-8567`) and replaces the press's up/down state with the host machine's own caps-lock state before the event is translated (`od-win32/keyboard_win32.cpp:573-598`, `od-unix/input.cpp:1402-1418`), so the byte's up/down bit follows the lock and not the key. In raw keyboard modes (`currprefs.keyboard_mode > 0`) it returns early and passes the key through unchanged |
-| **vAmiga** | **Not conformant — the same shape as NanoMig.** `Core/Peripherals/Keyboard/Keyboard.cpp` has no `0x62` case: `press()` queues the code and `release()` queues `keycode \| 0x80` for every key alike. Its one lock mechanism (`lock()` / `isLocked()`) exists for the Cmd/Amiga key combination, not for Caps Lock |
-| **Denise** | **Conformant, both halves, explicitly.** The release returns before emitting anything — `if (stroke == 0x62) // Caps Lock release  return;` (`emulation/libami/input/keyboard/keyboard.cpp:203-204`) — and the press toggles the modelled LED and sets bit 7 when that press turns it off (`:230-234`) |
-| **Copperline** | **Conformant, and documented as the keyboard's own behaviour.** The `caps_lock_on` field's comment reads *"owned by the keyboard: the key toggles it, sending a press code on toggle-on and a release code on toggle-off; the physical key release sends nothing"* (`src/chipset/keyboard.rs:272-275`) |
-| **MiSTer** | descendant — **no counterpart.** No `hid.v` and no `keymap` in the pinned tree: `rtl/minimig.v:207` takes `kbd_mouse_data` as a top-level input and the keyboard's own behaviour is decided in software above the chipset |
-| **TC64** | descendant — no `hid.v`, but a Caps Lock rule of its own in the builds with `MINIMIG_PS2_KEYBOARD` (`rtl/minimig/amiga_keyboard.v:70`): `ciaa_ps2keyboard.v` toggles a `capslock` register on each press and suppresses every Caps Lock event while it is set (`rtl/minimig/ciaa_ps2keyboard.v:351-366`). Read from the source, the first press sends `$62`, the first release and the second press send nothing, and the second release sends `$E2`: the page's two bytes, the second one on the release rather than the press. Its MiST builds take `kbd_mouse_data` already decoded (`rtl/minimig/amiga_keyboard.v:156-202`) |
+| **WinUAE** | **Conformant, by mirroring the host.** `target_checkcapslock` drops the key's release (`if (*state == 0) return -1;`, which its caller skips with `continue`, `inputdevice.cpp:8565-8567`) and replaces the press's up/down state with the host's caps-lock state before translation (`od-win32/keyboard_win32.cpp:573-598`, `od-unix/input.cpp:1402-1418`) |
+| **vAmiga** | **Not conformant — the same shape as NanoMig.** `Core/Peripherals/Keyboard/Keyboard.cpp` has no `0x62` case: `press()` queues the code and `release()` queues `keycode \| 0x80` for every key alike. Its one lock mechanism (`lock()` / `isLocked()`) serves the Cmd/Amiga key combination, not Caps Lock |
+| **Denise** | **Conformant, explicitly.** The release returns before emitting anything — `if (stroke == 0x62) // Caps Lock release  return;` (`emulation/libami/input/keyboard/keyboard.cpp:203-204`) — and the press toggles the modelled LED and sets bit 7 when that press turns it off (`:230-234`) |
+| **Copperline** | **Conformant, documented as the keyboard's own behaviour.** The `caps_lock_on` comment reads *"owned by the keyboard: the key toggles it, sending a press code on toggle-on and a release code on toggle-off; the physical key release sends nothing"* (`src/chipset/keyboard.rs:272-275`) |
+| **MiSTer** | descendant — **no counterpart.** No `hid.v` and no `keymap` in the pinned tree: `rtl/minimig.v:207` takes `kbd_mouse_data` as a top-level input and the keyboard's behaviour is decided in software above the chipset |
+| **TC64** | descendant — no `hid.v`, but a Caps Lock rule of its own in the builds with `MINIMIG_PS2_KEYBOARD` (`rtl/minimig/amiga_keyboard.v:70`): `ciaa_ps2keyboard.v` toggles a `capslock` register on each press and suppresses every Caps Lock event while it is set (`rtl/minimig/ciaa_ps2keyboard.v:351-366`). The first press sends `$62`, the first release and second press send nothing, the second release sends `$E2`. Its MiST builds take `kbd_mouse_data` already decoded (`rtl/minimig/amiga_keyboard.v:156-202`) |
 
-Three of the four independent implementations arrive at the page's byte
-sequence by three different routes — mirroring the host's lock, modelling the
-LED in the keyboard, or owning the toggle in a keyboard MCU. vAmiga does not
-implement the rule, which is worth saying plainly: this is not a case where
-everyone else agrees and NanoMig alone is out.
+## Decision
 
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
-
-None of them speaks to this point.
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
-
+No suggested change is filed on this page: the two reds are the observable
+difference, and whether NanoMig's `hid.v` follows p.359 is for an Amiga
+specialist. Re-run `make -C hrm/ch8-keyboard-events test`; expected red
+`CAPS-LOCK-RELEASE-NOT-ACCEPTED` and `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE`, green
+`CAPS-LOCK-DOWN-ACCEPTED` and `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO`. Closes when the
+specialist records yes or no for NanoMig's keyboard path.
