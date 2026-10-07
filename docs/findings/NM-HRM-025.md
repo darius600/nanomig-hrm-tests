@@ -5,17 +5,20 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer** — the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
-| **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale), [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map) |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 4 red: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map`; `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`) and `TABLE-5-9-HAS-65-VOLUME-LEVELS` in `hrm/ch5-audio-volume-scale`, whose two other reds are [NM-HRM-002](NM-HRM-002.md)'s (*Confirming a fix, and what stays red afterwards*) |
-| **Verdict of the four** | all four clamp at 64 and keep it distinct from 63 |
+| **What is asked of a reader** | Question: should `paula_audio_mixer` give AUDxVOL = 64 a gain of its own on the multiply path (`ldata`/`rdata`), distinct from 63, as Table 5-9 prints 0.0 dB against -0.1 dB, where it now reads `ldatasum` 4032 for both? The decision belongs to an Amiga specialist, not to this repository. Closes when an Amiga specialist records the answer; on a yes, the change is reported to MiSTer-devel/Minimig-AGA_MiSTer and ported to NanoMig from there. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: `paula_audio_mixer.v` is byte-identical there at `da7632e`, so the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **Scope** | chip revision unknown; the manual names none. Measured on the multiply path with channel 0 only, volume register values 63, 64, 65, 96 and 127 giving the same `ldatasum`; the PWM path is correct and reaches no output |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 5 — Audio, printed p. 163, Table 5-9; Appendix A, printed p. 266, AUDxVOL · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids as the test labels print them, without reader prefix: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` `5-appA-p266.c32`, `A-audxvol.c3` (p. 266); `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63` `5-p163.c1`, `5-t59.v64`, `5-p163.c3`, `5-t59.v63` (p. 163); `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`) `5-p163.c1`, `5-t59.v64`, folded `5-vol.c2`, `5-vol.c6`, `5-p139.c13`, `5-p140.c2` (p. 163, with p. 139 and p. 140 restatements); `TABLE-5-9-HAS-65-VOLUME-LEVELS` `5-vol.c3`, `5-vol.c4` (p. 139), whose label also cites p. 266's 65 linear levels without an id. All four assertions carry claim ids |
+| **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33); inherited |
+| **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map): `make -C hrm/ch5-audio-register-map test`; an expected red exits nonzero |
+| **Assertions** | 4 red. `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map` (`8 passed, 1 failed`): expected `ldata` at AUDxVOL=64 to differ from AUDxVOL=63, observed 4032 for both. In `hrm/ch5-audio-volume-scale` (`69 passed, 5 failed`): `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, expected `ldatasum(vol0=63)` and `ldatasum(vol0=64)` to differ, observed identical; `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`), expected 0.0 dB within ±0.1, observed `ldatasum=4032`, -0.137 dB; `TABLE-5-9-HAS-65-VOLUME-LEVELS`, expected 65 distinct outputs over registers 0..64, observed 64. Its two other reds, `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT`, are [NM-HRM-002](NM-HRM-002.md)'s |
+| **Verdict of the four** | unanimous against NanoMig's multiply path: all four clamp at 64 and keep it distinct from 63; no hardware measurement |
+| **Effort** | S — the `.volume` connection in `paula_audio_mixer.v` (four instances, `sv0` to `sv3`) and the width of `paula_audio_volume`'s `volume` port, as the suggested change states |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Table 5-9, printed p. 163** gives each volume setting a decibel value. The two
 at the top are distinct:
@@ -29,86 +32,58 @@ at the top are distinct:
 
 > "65 linear volume levels"
 
-and describes bit 6 as forcing maximum output.
+and describes bit 6 as forcing maximum output. So the manual asks for 65 distinct
+levels, and for 63 and 64 to differ.
 
-So the manual asks for 65 distinct levels, and for 63 and 64 to differ.
-
----
-
-## What NanoMig does
+## RTL and measurement
 
 `paula_audio_mixer` wires bit 6 of the seven-bit volume register *down into* the
-six-bit input of the volume helper, by OR-ing it into every bit:
+six-bit input of the volume helper by OR-ing it into every bit
+([`paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33),
+comment "when volume MSB is set, volume is always maximum"). With `vol0 = 64`
+(`1000000`) the helper sees `111111`, which is **63**.
 
-[`src/minimig-aga/paula_audio_mixer.v#L23-L33`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33)
-
-```verilog
-// when volume MSB is set, volume is always maximum
-paula_audio_volume sv0
-(
-  .sample(sample0),
-  .volume({  (vol0[6] | vol0[5]),
-            (vol0[6] | vol0[4]),
-            (vol0[6] | vol0[3]),
-            (vol0[6] | vol0[2]),
-            (vol0[6] | vol0[1]),
-            (vol0[6] | vol0[0]) }),
-  .out(msample0)
-```
-
-With `vol0 = 64` (`1000000`), bit 6 is set, so every one of the six bits handed
-to the helper is forced high — the helper sees `111111`, which is **63**.
-
-**The same design implements volume a second time, and that one is correct.**
-The PWM path keeps the register at its full seven bits and compares across
-widths, so 64 stays above 63:
-
-[`src/minimig-aga/paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L101-L103)
-
-```verilog
-      audvol[6:0] <= 7'b000_0000;
-    else if (aen && (reg_address_in[3:1]==AUDVOL[3:1]))
-      audvol[6:0] <= data[6:0];
-```
-
-[`src/minimig-aga/paula_audio_channel.v#L149`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L149)
-
-```verilog
-assign volgate = (volcnt < audvol);
-```
-
-**Only the multiply path leaves the design.** `nanomig.v` connects the multiply
-outputs to its own audio ports and leaves the PWM outputs unconnected:
-
-[`src/nanomig.v#L1535-L1538`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1535-L1538)
-
-```verilog
-	.ldata        (audio_left       ), // left DAC data
-	.rdata        (audio_right      ), // right DAC data
-	.ldata_okk    (                 ), // 9bit
-	.rdata_okk    (                 ), // 9bit
-```
-
-`ldata` is the mixer's `ldatasum` (`paula_audio.v:282`, through `paula.v:303`
-and `minimig.v:528`), so volume 64 reaches `audio_left` as 63. Every board top
+The same design implements volume a second time, correctly: the PWM path keeps
+`audvol` at seven bits
+([`paula_audio_channel.v#L101-L103`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L101-L103))
+and compares across widths, `assign volgate = (volcnt < audvol);`
+([`#L149`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L149)),
+so 64 stays above 63. Only the multiply path leaves the design:
+[`nanomig.v#L1535-L1538`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1535-L1538)
+connects `ldata`/`rdata` to `audio_left`/`audio_right` and leaves
+`ldata_okk`/`rdata_okk` unconnected. `ldata` is the mixer's `ldatasum`
+(`paula_audio.v:282`, through `paula.v:303` and `minimig.v:528`). Every board top
 in the tree instantiates `nanomig` and takes its audio from `audio_left` and
-`audio_right` ([`src/tang/nano20k/top.sv:666-667`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/tang/nano20k/top.sv#L666-L667)
-is one of twelve); no file outside `src/minimig-aga/` other than `nanomig.v`
-names `ldata_okk` or `rdata_okk`. The correct PWM path reaches no output.
-
-### Measured
+`audio_right`
+([`src/tang/nano20k/top.sv:666-667`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/tang/nano20k/top.sv#L666-L667)
+is one of twelve); no file outside `src/minimig-aga/` other than `nanomig.v` names
+`ldata_okk` or `rdata_okk`.
 
 | path | volumes 63, 64, 65, 96, 127 | levels |
 |---|---|---|
 | multiply (`ldata`/`rdata`) | `ldatasum = 4032` for **all five** | 64 distinct |
 | PWM (`ldata_okk`/`rdata_okk`) | open-tick counts 0, 4, 128, 252, 256 for volumes 0, 1, 32, 63, 64 — exactly 4× each written value | **65 distinct** by that rule; five sampled |
 
----
+Controls: `MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES` compares 62 against 63 on
+the same fixture and is green, and `VOLUME-65-LEVELS` is green on the PWM output.
 
-## What the others say
+## Risks and unknowns
 
-Nobody decides this but the manual. Every line below was read in a checkout at
-the pinned revision and the quotation verified there.
+- Chip revision and real hardware are not measured, and no affected software is
+  on the result.
+- Both packages drive channel 0 only. `sv1` to `sv3` in `paula_audio_mixer.v` carry
+  the same construction but are not measured; what `paula_audio_volume` does with a
+  seventh bit is not examined here.
+- The PWM path shows 65 levels from five sampled volumes only.
+- Measured against the multiply path's own maximum, the whole of Table 5-9 runs
+  **+0.09 to +0.18 dB high** there, and reproduces to the printed decimal on the PWM
+  path.
+- MiSTer carries both paths to its top level and lets a status bit choose:
+  [`Minimig.sv:1227-1230`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/Minimig.sv#L1227-L1230)
+  sends `ldata_okk` to its output when `paula_pwm` (`status[50]`) is set and `ldata`
+  otherwise. NanoMig has no such choice.
+
+## Independent evidence
 
 | | code | |
 |---|---|---|
@@ -116,108 +91,45 @@ the pinned revision and the quotation verified there.
 | **vAmiga** | [`Core/Components/Paula/Audio/StateMachineRegs.cpp:36-38`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachineRegs.cpp#L36-L38) | <pre>// 2. All values greater than 64 are treated as 64 (max volume)<br>audvolLatch = (u16)std::min(value & 0x7F, 64);</pre> |
 | **Denise** | [`emulation/libami/paula/audio.cpp:153-154`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L153-L154) | <pre>value &= 127;<br>if (value & 0x40) value = 0x40;</pre> |
 | **Copperline** | [`src/chipset/paula.rs:227-229`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L227-L229) | <pre>fn paula_volume_from_word(word: u16) -> u8 {<br>&nbsp;&nbsp;&nbsp;&nbsp;((word & 0x007F) as u8).min(64)<br>}</pre> |
-| **MiSTer** | [`rtl/paula_audio_mixer.v:23-33`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) | descendant — byte-identical to NanoMig, the same OR-into-six-bits construction; `paula_audio_mixer.v` is byte-identical across all three trees, confirmed by a full-file comparison, so the 64-collapses-to-63 defect is inherited by both. MiSTer also carries NanoMig's second, correct path unchanged — the PWM `volgate` block in `paula_audio_channel.v:149` |
-| **TC64** | [`rtl/minimig/paula_audio_mixer.v:23-33`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_mixer.v#L23-L33) | descendant — the same construction, unchanged. The second, correct implementation cited above for contrast is not inherited symmetrically: `paula_audio_channel.v`'s `audvol` write (NanoMig `:101-103`) is byte-identical in MiSTer (same lines) and in TC64 `rtl/minimig/paula_audio_channel.v:95-97`, but the PWM `volgate` block that makes that second path correct (NanoMig `:136-150`, including the `:149` line quoted above) **does not exist in TC64 at all** — TC64's audio channel goes straight from the `intreq` assign to the period counter, with only a vestigial, unused `volcntrld` signal left behind. TC64 has only the defective multiply path; MiSTer carries both, exactly as NanoMig does |
+| **MiSTer** | [`rtl/paula_audio_mixer.v:23-33`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33) | descendant — byte-identical to NanoMig (full-file comparison; also byte-identical in TC64): the same OR-into-six-bits construction, so the collapse is inherited. MiSTer also carries NanoMig's correct second path unchanged, the PWM `volgate` block in `paula_audio_channel.v:149` |
+| **TC64** | [`rtl/minimig/paula_audio_mixer.v:23-33`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_mixer.v#L23-L33) | descendant — the same construction, unchanged. The `audvol` write (NanoMig `paula_audio_channel.v:101-103`) is byte-identical in MiSTer and in TC64 `rtl/minimig/paula_audio_channel.v:95-97`, but the PWM `volgate` block (NanoMig `:136-150`) **does not exist in TC64**: its audio channel goes from the `intreq` assign straight to the period counter, with only a vestigial, unused `volcntrld` signal left. TC64 has only the defective multiply path |
 
-**All four independent implementations clamp at 64 and keep it distinct from
-63.** Two say why in their own comments. MiSTer and TC64 do not belong in that
-count: `paula_audio_mixer.v` is byte-identical in both, so both collapse 64 into
-63 exactly as NanoMig does — as descendants they inherit the defect, not a
-correction of it.
+Two of the four say why in their own comments. Denise's line sits beside NanoMig's
+because both implement appendix A's "bit 6 forces maximum" and reach different
+answers: Denise masks to seven bits and forces the **value** to `0x40`, 64, while
+`paula_audio_mixer` ORs bit 6 into the low six bits and arrives at 63.
 
-Denise's line is the one to put beside NanoMig's, because both implement
-appendix A's "bit 6 forces maximum" and they arrive at different answers: Denise
-masks to seven bits and then forces the **value** to `0x40` — 64 — while
-`paula_audio_mixer` ORs bit 6 down into the low six bits and arrives at 63.
+## Decision
 
-
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
-
-None of them speaks to this point.
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
-
----
-
-## Suggested change
-
-Clamp rather than OR, which is what the other four do and what the manual's
-"65 levels" requires. The helper's input is six bits, so the seventh level needs
-the helper itself to widen, or the mixer to special-case it:
+Clamp rather than OR, which is what the four witnesses do and what the manual's "65
+levels" requires. The helper's input is six bits, so the seventh level needs the
+helper itself to widen, or the mixer to special-case it:
 
 ```verilog
 // 64 is a level of its own, not a saturated 63.
 .volume(vol0[6] ? 7'd64 : {1'b0, vol0[5:0]}),
 ```
 
-with `paula_audio_volume`'s `volume` port widened to `[6:0]`. That change makes
-the multiply path agree with the PWM path already in the same design.
+with `paula_audio_volume`'s `volume` port widened to `[6:0]`. That makes the
+multiply path agree with the PWM path already in the same design. This is a
+suggestion; the decision is the specialist's.
 
-**This is a suggestion, not a decision.** The multiply path is the one
-`nanomig.v` sends to its audio outputs, so the collapse is in what every build
-plays; the PWM path, which already keeps 64 apart from 63, reaches no output.
-
-### Confirming a fix, and what stays red afterwards
-
-Rerun the two packages named at the top of this page **against the tree you
-changed**. Both Makefiles default to `NANOMIG ?= ../../nanomig`, the pinned
-submodule, so a bare `make` here rebuilds the unmodified RTL and reproduces the
-reds below no matter what you fixed:
+**Confirming a fix.** Both Makefiles default to `NANOMIG ?= ../../nanomig`, the
+pinned submodule, so a bare `make` rebuilds the unmodified RTL and reproduces the
+reds below whatever you fixed. Rerun against the tree you changed:
 
 ```sh
 make -C hrm/ch5-audio-register-map test NANOMIG=/path/to/your/NanoMig
 make -C hrm/ch5-audio-volume-scale  test NANOMIG=/path/to/your/NanoMig
 ```
 
-Leave `NANOMIG` off only when you deliberately want the pinned revision — for
-instance to reproduce the before-state in the table below.
+Leave `NANOMIG` off only to reproduce the before-state.
 
-**Before any change, measured against the pinned submodule:**
-
-| Package | Result | Which reds |
+| Package | Before any change (pinned submodule) | After a correct fix |
 |---|---|---|
-| `ch5-audio-register-map` | `8 passed, 1 failed` | `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` — this finding |
-| `ch5-audio-volume-scale` | `69 passed, 5 failed` | three for this finding — `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, `TABLE-5-9-VOLUME-TO-DECIBEL vol0=64`, `TABLE-5-9-HAS-65-VOLUME-LEVELS`. **Two are not**: `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT` belong to **NM-HRM-002**, the stereo routing |
+| `ch5-audio-register-map` | `8 passed, 1 failed`: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` | `9 passed, 0 failed` |
+| `ch5-audio-volume-scale` | `69 passed, 5 failed`: this finding's `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, `TABLE-5-9-VOLUME-TO-DECIBEL vol0=64`, `TABLE-5-9-HAS-65-VOLUME-LEVELS`; and **not** this finding's, `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT` | `72 passed, 2 failed`: the two routing reds |
 
-**After a correct fix**, expect `ch5-audio-register-map` fully green and
-`ch5-audio-volume-scale` down to its two routing reds — `9 passed, 0 failed`
-and `72 passed, 2 failed`.
-
-**So `ch5-audio-volume-scale` staying red is not a failed fix.** Its two
-remaining reds are a different finding about which channel lands on which side,
-and nothing suggested here touches them. Read the assertion label before
-concluding anything: each one names the finding it belongs to.
-
----
-
-## What holds the finding up
-
-- **A control on the same fixture and the same measurement basis.**
-  `MULTIPLY-PATH-DISTINGUISHES-ADJACENT-VOLUMES` compares 62 against 63 and is
-  **green**, so the collapse at 64 is a property of that value and not a dead
-  sweep.
-- **The other path in the same design.** `VOLUME-65-LEVELS` is green on the PWM
-  output, which rules out the test's own arithmetic.
-- The collapse assertion's stimulus mutation is recorded `impossible`: the OR is
-  unconditional and no port gates it, so nothing can be changed to make the
-  assertion go red for a different reason. The adjacency control stands in its
-  place.
-
----
-
-## For the specialists
-
-Measured against the multiply path's own maximum, the whole of Table 5-9 runs
-**+0.09 to +0.18 dB high** there, and reproduces to the printed decimal on the PWM
-path. The multiply path is the one a NanoMig build plays: `nanomig.v:1535-1538`
-connects `ldata`/`rdata` to `audio_left`/`audio_right` and leaves
-`ldata_okk`/`rdata_okk` unconnected. MiSTer, a descendant, carries both paths to
-its top level and lets a status bit choose:
-[`Minimig.sv:1227-1230`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/Minimig.sv#L1227-L1230)
-sends `ldata_okk` to its output when `paula_pwm` (`status[50]`) is set and
-`ldata` otherwise.
+So `ch5-audio-volume-scale` staying red is not a failed fix: its two remaining reds
+belong to [NM-HRM-002](NM-HRM-002.md), the stereo routing, which nothing suggested
+here touches. Read the assertion label before concluding anything.
