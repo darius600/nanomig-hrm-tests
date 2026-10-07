@@ -5,22 +5,24 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Does "Direct read of RXD pin on Paula chip." (p.257, SERDATR bit 11) require bit 11 to follow the RXD pin with no `clk7_en` edge in between, where NanoMig takes three? Closes when an Amiga specialist records that "direct" permits a synchroniser in front of bit 11, or that it requires zero lag, in which case the RTL changes. The decision belongs to an Amiga specialist, not to this repository. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, `rtl/paula_uart.v:36-43`, which holds the same lines at `da7632e`; TC64 holds them too, so NanoMig takes whatever is decided there |
+| **What is asked of a reader** | Does "Direct read of RXD pin on Paula chip." (p.257, SERDATR bit 11) require bit 11 to follow the RXD pin with no `clk7_en` edge in between, where NanoMig takes three? It closes when `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, `C4` and `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT` turn green, or when an Amiga specialist records that "direct" permits a synchroniser in front of bit 11. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | SERDATR bit 11 read at `paula_uart` and at the `paula` boundary, after the RXD pin steps from 1 to 0; chip revision unknown; real Paula not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 · printed p.257, SERDATR bit 11 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`: `sol:8-serdatr.c43` (p.257), `opus:8-serdatr.c23`, `opus:8-serdatr.c24`, `sol:8-serdatr.c105`, `sol:8-serdatr.c106` (p.283); `C4`: `opus:8-serial.c81` (p.257); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`: `opus:8-serial.c82` (p.257); all three reds carry a claim id |
 | **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L36-L43) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_uart.v#L36-L43); inherited |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`; [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 3 red, one per package, each one of the package's reds: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, expected 0 `clk7_en` enables, observed 3 (`12 passed, 2 failed`); `C4`, expected 0 beats, observed 2 (`48 passed, 3 failed`); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, expected 0 edges, observed 3 (`17 passed, 2 failed`) |
-| **Verdict of the four** | **2–1 for the page, one cannot answer, and the one dissent does not match NanoMig either** |
-| **Effort** | unknown: the page states no suggested change; any change would touch the lines it lists, `paula_uart.v:36-43` and `:234` |
+| **Verdict of the four** | **2–1 for the page, one cannot answer, and the one dissent does not match NanoMig either**. Hardware: not measured |
+| **Effort** | none; if an Amiga specialist records that "direct" requires zero lag, size unknown: the change touches `paula_uart.v:36-43` and `:234` |
 
 ---
 
 ## Source requirement
 
-**p.257**, the whole of bit 11's entry: *"Direct read of RXD pin on Paula chip."*
+**p.257**, the whole of bit 11's entry:
+
+> Direct read of RXD pin on Paula chip.
 
 ## RTL and measurement
 
@@ -59,11 +61,9 @@ agree on a fixed chain and differ only in where they start counting.
 
 ## Decision
 
-Whether "direct" forbids a synchroniser is for an Amiga specialist. The page
-states no suggested change. Because MiSTer and TC64 hold the same lines, the
-report goes to Minimig-AGA_MiSTer first. A test separating NanoMig's three
-`clk7_en` edges from Copperline's four would set NanoMig apart from every
-emulator that has a pin, and is the measurement to take before deciding. Re-run:
-`make -C hrm/ch8-serdatr-read-word test`, `make -C hrm/ch8-serial-interface test`
-and `make -C hrm/ch8-adkcon-and-interrupt-relations test`; each exits nonzero
-with the red named above.
+Does p.257's "direct" forbid the synchroniser in front of bit 11? No change is
+proposed now. A test separating NanoMig's three `clk7_en` edges from
+Copperline's four would set NanoMig apart from every emulator that has a pin,
+and is the measurement to take before deciding. The page closes when the three
+reds turn green, or when an Amiga specialist records that "direct" permits a
+synchroniser.
