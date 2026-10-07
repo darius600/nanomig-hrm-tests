@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should NanoMig's blitter stop writing channel D when `BLTCON1` bit 7 (DOFF) is set on ECS Agnus, as Appendix C p.309 prints, given that nothing in `agnus_blitter.v` reads that bit? Closes when an Amiga specialist either accepts the addition under *Decision* or records that NanoMig need not build DOFF. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: its `rtl/agnus_blitter.v` stores the bit and never reads it, exactly as NanoMig's does; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **What is asked of a reader** | Should NanoMig's blitter stop writing channel D when `BLTCON1` bit 7 (DOFF) is set on ECS Agnus, as Appendix C p.309 prints, where NanoMig writes D with the bit set as with it clear? Closes when the DOFF decode under *Decision* is added and `DOFF-NO-OBSERVABLE-EFFECT` is green, or when an Amiga specialist records that NanoMig need not build DOFF. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | ECS Agnus (`ecs` input true); measured on `agnus_blitter` as a one-word area blit using channels A, C and D, with only `BLTCON1` bit 7 varied. Line mode is not measured; no chip revision is named |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 6 — Blitter, printed pp. 198 and 199; Appendix A, printed p. 267; Appendix C, printed pp. 298 and 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `DOFF-NO-OBSERVABLE-EFFECT`: p. 309 `6-appc-modifications.c4`, `6-appc-modifications.c5`, `6-appc-modifications.c6`, `6-appc-modifications.c7`, `ch6-appc-ecs.c4`, `ch6-appc-ecs.c6`; the ECS register map's BLTCON1 row, p. 298, `6-appc-modifications.c9`, `ch6-appc-map.bltcon1`; p. 267 `6-appa-control.c18`, `ch6-appa-bltcon0.area.b07.con1`, `6-appa-registers.c20`, `ch6-appa-bltcon0.c6`; p. 198 `ch6-blockdiag.c10`; p. 199 (Figure 6-13) `6-blitter-block-diagram.c11`; the controls `BLTCON0L-GATED-BY-ECS` and `BLTSIZH-GATED-BY-ECS` carry their own claim ids in the test and are not graded here |
+| **Chapter** | 6 — Blitter, printed pp. 172, 189, 198 and 199; Appendix A, printed pp. 267 and 269; Appendix C, printed pp. 298, 308 and 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `DOFF-NO-OBSERVABLE-EFFECT`: p. 309 `6-appc-modifications.c4`, `6-appc-modifications.c5`, `6-appc-modifications.c6`, `6-appc-modifications.c7`, `ch6-appc-ecs.c4`, `ch6-appc-ecs.c6`; the ECS register map's BLTCON1 row, p. 298, `6-appc-modifications.c9`, `ch6-appc-map.bltcon1`; p. 267 `6-appa-control.c18`, `ch6-appa-bltcon0.area.b07.con1`, `6-appa-registers.c20`, `ch6-appa-bltcon0.c6`; p. 198 `ch6-blockdiag.c10`; p. 199 (Figure 6-13) `6-blitter-block-diagram.c11`; the control `BLTCON0L-GATED-BY-ECS`: p. 269 `6-appa-registers.c25`, `6-appa-registers.c26`, `6-appa-registers.c27`, `ch6-appa-bltcon0l.c3`; the map's BLTCON0L row, p. 298, `ch6-appc-map.bltcon0l`, `6-appc-modifications.c11`; p. 309 `ch6-appc-ecs.c9`; the control `BLTSIZH-GATED-BY-ECS`: p. 269 `6-appa-registers.c73`, `6-appa-registers.c74`; the map's BLTSIZH row, p. 298, `6-appc-modifications.c13`, `ch6-appc-map.bltsizh`; p. 308 `ch6-appc-bltsizh.c1`, `6-appc-big-blits.c25`, `ch6-appc-bigblits.c5`, `ch6-appc-bigblits.c6`; p. 172 `6-dma-channels.c66`, `ch6-dma.c68`; p. 189 `ch6-line.c7` |
 | **Module** | `agnus_blitter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v); inherited, the same code in MiSTer and TC64 |
 | **Test** | [`hrm/ch6-blitter-ecs`](../../hrm/ch6-blitter-ecs): `make -C hrm/ch6-blitter-ecs test`; the expected red exits nonzero |
 | **Assertions** | 1 red: `DOFF-NO-OBSERVABLE-EFFECT` — expected no D write with DOFF set, observed the same D write as with DOFF clear (`0x2222`). The package totals 12 passed, 4 failed; the other three reds belong to [NM-HRM-020](NM-HRM-020.md) and [NM-HRM-022](NM-HRM-022.md) |
-| **Verdict of the four** | three of four implement it, each gated on ECS Agnus; vAmiga does not |
+| **Verdict of the four** | three of four implement it, each gated on ECS Agnus; vAmiga does not. Hardware: not measured |
 | **Effort** | S: one decode of `bltcon1[7]` gated on `ecs`, and the D write gate in `agnus_blitter.v` |
 | **See also** | [NM-HRM-020](NM-HRM-020.md), [NM-HRM-022](NM-HRM-022.md) |
 
@@ -32,8 +32,8 @@ The page states no line-mode condition.
 
 **`bltcon1[7]` does not occur in `agnus_blitter.v` at all.** The bits the module
 reads from `BLTCON1` are 15–12, 4, 3, 2, 1 and 0; bit 7 is stored with the rest
-by `bltcon1[11:0] <= data_in[11:0]` and nothing reads it. The D write is gated by
-`used` and `chsel` only. This is an unbuilt feature rather than a wrong one:
+by [`bltcon1[11:0] <= data_in[11:0]`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L282) and nothing reads it. The D write is gated by
+[`used`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L252) and [`chsel`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L490-L491) only. This is an unbuilt feature rather than a wrong one:
 there is no incorrect logic to correct.
 
 The same one-word D write is run with `BLTCON1` bit 7 clear and with it set.
@@ -47,8 +47,7 @@ its `ecs` input works.
   whether anything depends on DOFF being absent.
 - **The page does not say what "disables the output" does to the write.** WinUAE
   and Denise still perform the D write but store the bus value in place of the
-  blitter's; Copperline suppresses the store. The suggested change takes the
-  second reading.
+  blitter's; Copperline suppresses the store. The suggested change and `DOFF-NO-OBSERVABLE-EFFECT`, which requires no D write, take the second reading: DOFF built the WinUAE and Denise way leaves the red red.
 - **Line mode is not measured**, and the page states no line-mode condition.
 - **No hardware measurement** of DOFF is recorded here; vAmiga does not implement it.
 
