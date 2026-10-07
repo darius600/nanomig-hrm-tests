@@ -60,11 +60,11 @@ live only inside WSL.
 NanoMig comes in as a submodule, pinned to the commit the tests were verified
 against; nothing under `nanomig/` is modified. Cloned without `--recursive`?
 `git submodule update --init`. NanoMig checked out elsewhere?
-`make -B -C hrm/<package> NANOMIG=/path/to/NanoMig` (`-B` because otherwise a
+`make -B -C hrm/<package> NANOMIG=/path/to/NanoMig` (`-B` here and below because otherwise a
 package whose build is up to date runs the old build, not one from that tree).
 Against another Minimig core,
 name the RTL file on the command line, for example
-`make -C hrm/ch5-audio-location-pointer SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test`,
+`make -B -C hrm/ch5-audio-location-pointer SRC=/path/to/Minimig-AGA_MiSTer/rtl/agnus_audiodma.v test`,
 after looking up the variable in the package's `Makefile` (most use `SRC`,
 `SRC_DIR` or `RTL`). A red against another core is not a finding here.
 
