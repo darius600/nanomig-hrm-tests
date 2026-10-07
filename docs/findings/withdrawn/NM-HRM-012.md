@@ -1,4 +1,4 @@
-# NM-HRM-012 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires
+# NM-HRM-012 — SPRxCTL bit 0 (SH0) is honoured at every resolution, not only SuperHires [withdrawn]
 
 | | |
 |---|---|
