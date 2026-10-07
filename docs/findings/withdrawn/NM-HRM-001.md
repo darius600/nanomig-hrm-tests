@@ -1,4 +1,4 @@
-# NM-HRM-001 — PAL frame has one line too many
+# NM-HRM-001 — PAL frame has one line too many [withdrawn]
 
 | | |
 |---|---|
