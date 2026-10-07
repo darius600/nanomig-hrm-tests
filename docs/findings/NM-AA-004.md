@@ -71,7 +71,7 @@ show the fixture reads the register.
   from an ECS one may read either bit.
 - **Probe that would settle it.** Hardware: an Amiga with an 8374 Alice,
   PAL, and an NTSC unit if one is to hand. Minimal read: a program that reads VPOSR
-  (`$DFF004`) and masks bits 14-8. Expected capture: `$22` / `$32` or `$23` / `$33`; *Decision* says
+  (`$DFF004`) and masks bits 14-8. Expected capture: `$22` / `$32` or `$23` / `$33`; *What is asked of a reader* and *Effort* say
   what each means.
 
 ## Independent evidence
