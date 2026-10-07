@@ -4,20 +4,22 @@
 |---|---|
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
-| **Evidence** | none |
+| **Evidence** | Figure 5-8's 000→010 arc carries `AUDxIR`, and NanoMig raises the request there (measured at tick 80) and again at the word transition p. 164 names (tick 176) |
 | **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. Figure 5-8 raises the interrupt at the write, where NanoMig raises it. |
-| **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L283-L285) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285) |
-| **Test** | [`hrm/ch5-audio-direct-output`](../../../hrm/ch5-audio-direct-output) — its `5-p157.c13` / `5-direct.c4` assertion requires an AUDxIR pulse at the word transition that ends word 1 (p. 157, p. 164, Figure 5-8's 011→010 arc) and no longer forbids the one Figure 5-8 draws at the write; measured at tick 176, green; `12 passed, 0 failed` |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Withdrawal reason** | p. 157's "after one data word has been output" describes the interrupt at the word transition; it does not forbid the one Figure 5-8 draws at the write |
 | **Error class** | **a sentence graded without the figure that completes it** |
-| **Verdict of the four** | **unanimous with NanoMig and with Figure 5-8**: WinUAE, vAmiga, Denise and Copperline all raise the interrupt at the write that starts direct output, and again at every word transition; Copperline asserts both in its own tests |
-| **Boundary** | at the pins — `intreq` and `sample` are both top-level ports |
+| **Replacement** | Green: `5-p157.c13` / `5-direct.c4` in [`hrm/ch5-audio-direct-output`](../../../hrm/ch5-audio-direct-output) requires an `AUDxIR` pulse at the word transition that ends word 1 (p. 157, p. 164, Figure 5-8's 011→010 arc), measured at tick 176 |
+| **Module** | `paula_audio_channel.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L283-L285) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L283-L285); inherited, identical in MiSTer at the same lines, the same two branches in TC64 |
+| **Test** | `make -C hrm/ch5-audio-direct-output test`; `12 passed, 0 failed` |
+| **Chapter** | 5 — Audio, printed pp. 147, 157, 164, 166 (Figure 5-8), 265 (appendix A) · *Amiga Hardware Reference Manual*, 3rd ed., 1991; claim ids `5-p157.c13` and `5-direct.c4` (p. 157) belong to the one assertion below; pp. 147, 164, 166 and 265 are quoted or tabulated on this page and carry no claim id here |
+| **Assertions** | `5-p157.c13 5-direct.c4`: green, `AUDxIR` after the low byte (tick 136) and no later than the next high byte (tick 184), measured at tick 176; its diagnostic (the pulse at 176 is a later event than the write's pulse at 80) green |
+| **Verdict of the four** | **unanimous with NanoMig and with Figure 5-8**: WinUAE, vAmiga, Denise and Copperline all raise the interrupt at the write that starts direct output, and again at every word transition; Copperline asserts both in its own tests. Hardware: not measured |
 
 ---
 
 ## Why it was withdrawn
 
-The assertion grades one sentence of printed p. 157, "the interrupt occurs
+The assertion graded one sentence of printed p. 157, "the interrupt occurs
 after one data word has been output", as a rule that **no** interrupt may come
 before the first word has been output. The page does not say that.
 
@@ -33,6 +35,11 @@ NanoMig raises both, at the moments the figure puts them: at the write
 expires (tick 176, the low byte having reached the output at 136; then every 96
 ticks). So do all four independent implementations. Read together with the
 figure and p. 164, the manual predicts what NanoMig does.
+
+**Condition for filing again.** A page that states that no interrupt may precede
+the first word's output in direct mode, or a reading of Figure 5-8 whose
+000→010 arc carries no `AUDxIR`. Neither p. 157 nor the figure as read below
+does.
 
 ---
 
@@ -114,13 +121,8 @@ begin
 
 NanoMig numbers that low-byte state `110`, not the figure's `011`
 ([NM-HRM-026](../NM-HRM-026.md)); the transition is the same one. `AUDxIR` is the
-interrupt port itself:
-
-[`src/minimig-aga/paula_audio_channel.v#L133`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L133)
-
-```verilog
-assign intreq = AUDxIR;
-```
+interrupt port itself ([`#L133`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L133)),
+and `intreq` and `sample` are both top-level ports.
 
 ### Measured
 
@@ -141,64 +143,26 @@ says; it recurs every 96 ticks (272, 368, ...) while `intpen` stays low.
 
 ---
 
+## Risks and unknowns
+
+- Hardware: not measured. The ticks are one baseline stimulus (DMA off, `intpen` low) on NanoMig's RTL, and
+  the recurrence every 96 ticks holds only while `intpen` stays low.
+
+---
+
 ## What the others say
 
-Every line below was read in a local checkout at the pinned revision named in
-the link.
-
-| | code | |
-|---|---|---|
-| **WinUAE** | [`audio.cpp:1833-1835`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1833-L1835) | <pre>} else if (cdp-&gt;dat_written && !isirq (nr)) {<br>&nbsp;&nbsp;&nbsp;&nbsp;cdp-&gt;state = 2;<br>&nbsp;&nbsp;&nbsp;&nbsp;setirq(nr, 1);</pre> a CPU write with DMA off reaches the state machine at once ([`:2562-2567`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L2562-L2567)), and leaving idle raises the interrupt as it enters state 2, WinUAE's `010`; `setirq` posts it one colour clock later, `INTREQ_INT(nr + 7, CYCLE_UNIT);` ([`:1573-1574`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1573-L1574)); leaving state 3 with DMA off raises it again, `if (napnav) { setirq(nr, 32);` ([`:2005-2006`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L2005-L2006)) |
-| **vAmiga** | [`Core/Components/Paula/Audio/StateMachineRegs.cpp:84-89`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachineRegs.cpp#L84-L89) | `if (!AUDxIP()) move_000_010();` in IRQ mode, and `move_000_010` performs the figure's four actions ([`StateMachine.cpp:198-212`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L198-L212)): <pre>volcntrld();<br>percntrld();<br>pbufld1();<br>AUDxIR();</pre> `AUDxIR()` schedules the interrupt one DMA cycle later, `paula.scheduleIrqRel(IrqSource::AUD0, DMA_CYCLES(1));` ([`:96-104`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L96-L104)); `move_011_010` calls it again in IRQ mode ([`:344-345`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L344-L345)) |
-| **Denise** | [`emulation/libami/paula/audio.cpp:120-127`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L120-L127) | <pre>if (cha.state == 0) {<br>&nbsp;&nbsp;&nbsp;&nbsp;if (!AUDxIP(nr)) {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;percntrld&lt;nr, true&gt;();<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;volcntrld()<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;pbufld1&lt;nr&gt;();<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;AUDxIR(nr)</pre> the DMA-off write from idle, with the figure's actions; the return from state 3 with DMA off raises it again, `} else AUDxIR(nr)` ([`:208-209`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L208-L209)); the request is posted one clock later, `int64_t nextClock = agnus.clock + 1;` ([`irq.cpp:54-55`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/irq.cpp#L54-L55)) |
-| **Copperline** | [`src/chipset/paula.rs:1856-1864`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1856-L1864) | `/// 000 -> 010 (IRQ mode): a CPU AUDxDAT write starts direct output.` and the transition ends in `self.latch_interrupt_sources(INT_AUDX[ch]);`, reached from an idle channel with no interrupt pending ([`:1977-1978`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1977-L1978)); `// IRQ mode: every word start raises the interrupt` on the 011→010 transition ([`:1930-1933`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1930-L1933)); its own test asserts the first right after the write, `assert_eq!(paula.intreq & INT_AUD0, INT_AUD0);` ([`:2806-2809`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L2806-L2809)), and the second at the word boundary ([`:2842-2845`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L2842-L2845)) |
-| **MiSTer** | [`rtl/paula_audio_channel.v:281-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L281-L285), [`:421-425`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L421-L425) | descendant — byte-identical to NanoMig, same line numbers: `AUDxIR = 1'b1;` on the idle exit and `AUDxIR = (intreq2 & AUDxON) \| ~AUDxON;` on the word transition |
-| **TC64** | [`rtl/minimig/paula_audio_channel.v:258-262`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L258-L262), [`:398-402`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L398-L402) | descendant — the same two branches: `AUDxIR = 1'b1;` on the idle exit and `AUDxIR = (intreq2 & AUDxON) \| ~AUDxON;` on the word transition |
+| | |
+|---|---|
+| **WinUAE** | [`audio.cpp:1833-1835`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1833-L1835): a CPU write with DMA off reaches the state machine at once ([`:2562-2567`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L2562-L2567)) and leaving idle calls `setirq(nr, 1)` as it enters state 2, WinUAE's `010`; `setirq` posts it one colour clock later ([`:1573-1574`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L1573-L1574)); leaving state 3 with DMA off raises it again, `if (napnav) { setirq(nr, 32);` ([`:2005-2006`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/audio.cpp#L2005-L2006)) |
+| **vAmiga** | [`StateMachineRegs.cpp:84-89`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachineRegs.cpp#L84-L89): `move_000_010()` in IRQ mode performs the figure's four actions including `AUDxIR()` ([`StateMachine.cpp:198-212`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L198-L212)), which schedules the interrupt one DMA cycle later ([`:96-104`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L96-L104)); `move_011_010` calls it again in IRQ mode ([`:344-345`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Paula/Audio/StateMachine.cpp#L344-L345)) |
+| **Denise** | [`audio.cpp:120-127`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L120-L127): the DMA-off write from idle carries the figure's actions ending in `AUDxIR(nr)`; the return from state 3 with DMA off raises it again, `} else AUDxIR(nr)` ([`:208-209`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/audio.cpp#L208-L209)); the request is posted one clock later ([`irq.cpp:54-55`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/paula/irq.cpp#L54-L55)) |
+| **Copperline** | [`paula.rs:1856-1864`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1856-L1864): `/// 000 -> 010 (IRQ mode): a CPU AUDxDAT write starts direct output.` ending in `self.latch_interrupt_sources(INT_AUDX[ch]);` ([`:1977-1978`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1977-L1978)); `// IRQ mode: every word start raises the interrupt` on the 011→010 transition ([`:1930-1933`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L1930-L1933)); its own test asserts the first right after the write ([`:2806-2809`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L2806-L2809)) and the second at the word boundary ([`:2842-2845`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/paula.rs#L2842-L2845)) |
+| **MiSTer** | descendant — [`rtl/paula_audio_channel.v:281-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L281-L285), [`:421-425`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_channel.v#L421-L425) byte-identical to NanoMig, same line numbers |
+| **TC64** | descendant — [`rtl/minimig/paula_audio_channel.v:258-262`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L258-L262), [`:398-402`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_channel.v#L398-L402) the same two branches |
 
 **All four independent implementations raise the interrupt at the write that
 starts direct output**, WinUAE, vAmiga and Denise one clock after it and
 Copperline at once, and **all four raise it again at every word transition**
-while DMA is off. vAmiga, Denise and Copperline carry the figure's own action
-list on the idle exit. MiSTer and TC64 share NanoMig's code and confirm the
+while DMA is off. MiSTer and TC64 share NanoMig's code and confirm the
 ancestry, not the reading.
-
----
-
-## What the test measures
-
-The failing assertion in `hrm/ch5-audio-direct-output` takes the **first**
-`AUDxIR` after the write and requires it no earlier than the word's low byte
-(`test_ch5_audio_direct_output.cpp:713`):
-
-```cpp
-bool per_manual = (firstAudxir >= 0 && tLo1 >= 0 && firstAudxir >= tLo1);
-```
-
-An implementation that follows Figure 5-8 raises its first `AUDxIR` on the
-`000→010` arc, at the write, and cannot pass it. The interrupt p. 157 names is
-the one at tick 176, after the low byte at 136.
-
-`hrm/ch5-audio-channel-state` grades the figure's arc as `F58.t000_010` and
-passes it, but its predicate (`test_ch5_audio_channel_state.cpp:880`) checks
-the arc's cause and destination only, not the `AUDxIR` action its text names.
-
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](../README.md#second-documents).
-
-None of them speaks to this point.
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023.
-
----
-
-## Why this entry is kept
-
-p. 157's sentence, read on its own, sounds like a rule about the first word,
-and the measured interrupt at the write looks like a violation of it. The state
-diagram two pages later draws that interrupt as an action of the write, and all
-four implementations raise it there. A reader who grades p. 157 without Figure
-5-8 will find the same red again; this page is where they find the figure.
