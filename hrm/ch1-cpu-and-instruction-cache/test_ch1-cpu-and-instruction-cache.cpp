@@ -298,7 +298,7 @@ int main() {
         "observing this needs the embedded CPU core to actually fetch/"
         "execute a program that performs an AUTOCONFIG read at $E80000 -- "
         "cpu_wrapper has no address-input port (chip_addr is `output reg`, "
-        "cpu_wrapper.v:60), only the internal CPU core (fx68k.v:473 / "
+        "cpu_wrapper.v:60), only the internal CPU core (fx68k.sv:1473 / "
         "TG68KdotC_Kernel.v:404) generates one, by executing instructions. "
         "No port of cpu_wrapper carries an opcode; per the task's own rule "
         "that is a HALT, not something to solve by reaching outside. "
