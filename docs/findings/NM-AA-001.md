@@ -14,7 +14,9 @@
 | **Test** | [`aa/aa-clxcon2-address`](../../aa/aa-clxcon2-address) · `make -C aa/aa-clxcon2-address test`, or `hrm/run_all.sh --in ../aa` (that one runs the whole `aa/` tree) |
 | **Assertions** | none red. Five graded, all green: `CLXCON2-AT-10E` (unwritten, `bpldata=0x7F` collides; after `$00C3` is written to `$10E` it does not), `CLXCON2-NOT-AT-10C` (a write to `$10C` does not change the match), `CLXCON2-CLEARED-BY-CLXCON` (armed, it does not collide; after a CLXCON write it does), `CLXDAT-AT-00E` (a read at `$00E` answers with bit 15 set and `$010` is silent), `CLXCON-AT-098` (a write at `$098` clears CLXCON2 and a write at `$09A` does not). `aa-clxcon2-address: 5 passed, 0 failed` |
 | **Verdict of the four** | **unanimous for $10E, and it leaves the document's other half with nobody behind it.** Three of the four decode CLXCON2, and all three decode it at `$10E` with BPLCON4 at `$10C`. The fourth implements neither register and still names both at those addresses in its own register table. Not one of them puts CLXCON2 at `$10C`. Hardware: not measured |
-| **Effort** | none — no RTL change; nothing in `denise_collision.v` is touched |
+| **Effort** | none — no RTL change, nothing in `denise_collision.v` is touched |
+
+---
 
 ## Source requirement
 
@@ -75,5 +77,3 @@ Denise's abstention is the informative one: a register it does not implement sti
 ## Decision
 
 Nothing changes in the RTL. A claim about CLXCON2's address cites both pages and says which it follows and why; the p. 8 list and `custom.h` agree on `$10E`, and the alphabetical entry's `$10C` is held by no implementation. This does not repair the document, it narrows what may be cited.
-
-For the pipeline: `tools/aa/cross_page_addresses.py` reads every register row in the corpus, groups by name and reports any register stated at more than one address, saying which one the shipped header agrees with. Over 349 register rows and 257 names, 92 of them stated on more than one page, **CLXCON2 is the only one.** Five register rows (`SPRHDAT &h 078`, and the same for SPRHPTH, SPRHPTL, BPLHPTH and BPLHPTL) carry two marks, one from the usage legend and one from the revision legend, and disagree with their own alphabetical entries (`+h` or `&h` against a bare `H`); none disagrees about its address.
