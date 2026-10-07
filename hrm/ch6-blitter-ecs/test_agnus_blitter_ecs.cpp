@@ -8,7 +8,7 @@
 //   where `ecs` actually exists alongside the pointer registers.
 // Test class: HRM_CONFORMANCE
 // Primary oracle: Amiga Hardware Reference Manual, Third Edition, printed
-//   pp. 172, 189, 198-199, 267, 269-270, 308-310.
+//   pp. 172, 189, 198-199, 267, 269-270, 298, 308-309.
 // Non-goals: the OCS BLTSIZE zero-means-64/1024 encoding's own numeric
 //   values (6-appc-big-blits.c22's "1024-line maximum") - that IS "zero
 //   meaning 64 and 1024", the exact phrase packages.md item 8 assigns to
@@ -62,7 +62,7 @@
 // changes are implemented five different ways": "BLTSIZV $05C new - V size,
 // 15-bit | line 548 | no - and the comment on that line calls it ECS".
 // BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS below tests what the manual's own
-// "new" marking for this register implies (p309/310: BLTSIZV is new to ECS,
+// "new" marking for this register implies (p298: BLTSIZV is new to ECS,
 // so an ecs=0 write should not behave like an ecs=1 write) and is REQUIRED
 // to go red (NM-HRM-020); it must not be made to pass.
 //
@@ -148,7 +148,7 @@
 //     states the direction p.172/p.270/p.309 give and is required red for
 //     the identical RTL cause.
 //
-//   BLTSIZH-GATED-BY-ECS (p172, p189, p269, p308, p310):
+//   BLTSIZH-GATED-BY-ECS (p172, p189, p269, p298, p308):
 //     6-appa-registers.c73, 6-appa-registers.c74, 6-appc-modifications.c13,
 //     ch6-appc-map.bltsizh, ch6-appc-bltsizh.c1, 6-appc-big-blits.c25,
 //     ch6-appc-bigblits.c5, 6-dma-channels.c66, ch6-dma.c68, ch6-line.c7,
@@ -195,7 +195,7 @@
 //     supports" treatment used throughout this file).
 //
 //   BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS *** REQUIRED RED, SEE ABOVE ***
-//     (p269, p308, p310): 6-appc-modifications.c12, ch6-appc-map.bltsizv,
+//     (p269, p298, p308): 6-appc-modifications.c12, ch6-appc-map.bltsizv,
 //     6-appa-registers.c70, 6-appa-registers.c71, ch6-appc-bltsizv.c1,
 //     6-appc-big-blits.c65, ch6-appc-bigblits.c8 .
 //
@@ -228,7 +228,7 @@
 //     ch6-appc-bigblits.c7 .
 //
 //   DOFF-NO-OBSERVABLE-EFFECT *** REQUIRED RED, SEE ABOVE *** (p198, p199,
-//     p267, p309, p310): 6-appc-modifications.c4, 6-appc-modifications.c5,
+//     p267, p298, p309): 6-appc-modifications.c4, 6-appc-modifications.c5,
 //     6-appc-modifications.c6, 6-appc-modifications.c7,
 //     6-appc-modifications.c9, ch6-appc-ecs.c4, ch6-appc-ecs.c6,
 //     ch6-appc-map.bltcon1, 6-appa-control.c18,
@@ -284,7 +284,7 @@
 //
 // NOT ASSERTED - PROSE / NOTATION (absent_signal: none; reason_kind:
 //   insufficient - no hardware behaviour, nothing to name a signal for):
-//   ch6-appc-map.legend (p310, "A=Agnus chip, D=Denise chip, P=Paula chip,
+//   ch6-appc-map.legend (p298, "A=Agnus chip, D=Denise chip, P=Paula chip,
 //     W=Write, R=Read, S=Strobe" - the register map's own notation legend,
 //     the same treatment packages.md gives "the book's own notation
 //     conventions (p175)") - RECORDED at runtime (see main()'s first
@@ -549,14 +549,14 @@
 //     BLTSIZV and BLTSIZH, blits up to 32K by 32K are possible, much
 //     larger than the original chip set could accept. ch6-appc-bigblits.c6.
 //
-//   [P8] BLTCON0L-EXPEDITES-SETUP (p.309/310) -- "The BLTCON0L register
+//   [P8] BLTCON0L-EXPEDITES-SETUP (p.309) -- "The BLTCON0L register
 //     writes the low bits of
 //     BLTCON0, thereby expediting" [setup] -- writing only the low bits of
 //     BLTCON0 expedites the set up of some blits and generally speeds up
 //     the software, since the upper bits are often the same.
 //     ch6-appc-ecs.c8.
 //
-//   [P9] REGISTER-MAP-LEGEND (p.310) -- "A=Agnus chip, D=Denise chip,
+//   [P9] REGISTER-MAP-LEGEND (p.298) -- "A=Agnus chip, D=Denise chip,
 //     P=Paula chip, W=Write,
 //     R=Read, S=Strobe" -- the register map's own notation legend.
 //     ch6-appc-map.legend.
@@ -790,7 +790,7 @@ int main(int argc, char** argv) {
     Verilated::commandArgs(argc, argv);
     Checks checks;
 
-    // ---------------- ch6-appc-map.legend: RECORDED, not graded (p.310) ----------------
+    // ---------------- ch6-appc-map.legend: RECORDED, not graded (p.298) ----------------
     // ch6-blitter-ecs.jsonl's routing.route for this claim is
     // "record:ch6-blitter-ecs", not "package:ch6-blitter-ecs". "A=Agnus chip,
     // D=Denise chip, P=Paula chip, W=Write, R=Read, S=Strobe" is the register
@@ -800,7 +800,7 @@ int main(int argc, char** argv) {
     // table column header abbreviates. The marks the legend defines are graded
     // row by row elsewhere (which registers are "new" under ECS, in this
     // package; which are write-only, in hrm/ch6-blitter-regdecode), never here.
-    checks.record("ch6-appc-map.legend (p.310): the register map's own "
+    checks.record("ch6-appc-map.legend (p.298): the register map's own "
         "notation legend (A=Agnus, D=Denise, P=Paula chip; W=Write, R=Read, "
         "S=Strobe) - no hardware behaviour, nothing to name a signal for. Not "
         "asserted; not counted toward pass/fail.");
@@ -1052,7 +1052,7 @@ int main(int argc, char** argv) {
             "docs/findings.md. 6-dma-channels.c67, ch6-dma.c69.");
     }
 
-    // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.308, p.310) ----------------
+    // ---------------- BLTSIZH-GATED-BY-ECS (p.172, p.189, p.269, p.298, p.308) ----------------
     // Also carries ch6-appc-bigblits.c6 (p.308, "much larger than the original
     // chip set could accept" - the OCS-comparison half of the joint 32K-by-32K
     // claim also cited on both ZERO-WRAP assertions): this assertion
@@ -1217,7 +1217,7 @@ int main(int argc, char** argv) {
             "ch6-appc-bigblits.c2, ch6-appc-bigblits.c6, 6-dma-channels.c69, ch6-dma.c70 .");
     }
 
-    // ---------------- BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS (p.269, p.308, p.310) ----------------
+    // ---------------- BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS (p.269, p.298, p.308) ----------------
     // *** REQUIRED RED - see file header. Do not adjust this assertion to pass. ***
     {
         // Branch 1: BLTSIZV written while ecs=0, then ecs raised only to write BLTSIZH
@@ -1244,7 +1244,7 @@ int main(int argc, char** argv) {
 
         checks.expect(r1 != r2,
             "BLTSIZV-LOADS-HEIGHT-REGARDLESS-OF-ECS: appendix C marks BLTSIZV 'new' for ECS "
-            "(p.309/310), the same status BLTSIZH and BLTCON0L carry and are correctly "
+            "(p.298), the same status BLTSIZH and BLTCON0L carry and are correctly "
             "gated for (see BLTSIZH-GATED-BY-ECS and BLTCON0L-GATED-BY-ECS above) - so a "
             "BLTSIZV write made while ecs=0 is expected to behave differently from one made "
             "while ecs=1 (r1 != r2). MEASURED: r1=" + std::to_string(r1) +
@@ -1364,7 +1364,7 @@ int main(int argc, char** argv) {
             "blits.c64, ch6-appc-bigblits.c7 .");
     }
 
-    // ---------------- DOFF-NO-OBSERVABLE-EFFECT (p.198, p.199, p.267, p.309, p.310) ----------------
+    // ---------------- DOFF-NO-OBSERVABLE-EFFECT (p.198, p.199, p.267, p.298, p.309) ----------------
     // *** REQUIRED RED - see file header. Do not adjust this assertion to pass. ***
     {
         Harness h_doff0(true);
@@ -1399,7 +1399,7 @@ int main(int argc, char** argv) {
             "channel D'). MEASURED: with identical stimulus otherwise (the same run that "
             "produces one D write with DOFF clear, h_doff0.data_writes={0x" +
             std::string(doff0_word) +
-            "}), setting DOFF still produces the SAME D write. bltcon1[11:0] is stored on "
+            "}), setting DOFF still produces a D write (h_doff1.data_writes is non-empty; its value is not compared with h_doff0's). bltcon1[11:0] is stored on "
             "every BLTCON1 write with no per-bit exception (agnus_blitter.v:277-283) and no "
             "expression anywhere in the file reads bltcon1[7]; the D write gate is `used` "
             "and `chsel`, agnus_blitter.v:252,490-491 - DOFF genuinely has no wire into "
