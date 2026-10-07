@@ -5,17 +5,20 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig has the VPOSR/VHPOSR read path from there, and TC64 reads the running counter the same way, so there is no fix to port. A fix also needs a light-pen line into Agnus, which neither line's `minimig.v` nor NanoMig's `nanomig.v` has — see *What NanoMig does* |
-| **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam) — one program, graded in OCS/PAL and OCS/NTSC on both CPU cores. Nineteen lines are red on fx68k and on TG68K: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239; claims in *Measured*). On a copy of the RTL with the pp. 238-239 latch added, every one of the 240 lines of the run passes on fx68k and on TG68K (240 passed, 0 failed on each core), the nineteen included |
-| **Chapter** | 8 — Interface Hardware, printed pp. 227, 228, 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed p. 79; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC (156 passed, 38 failed on each core). In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded, because p. 305 gives LPENDIS no reset value. In the same run the page-model control, the page's latch applied to the run's own measured samples and graded by the same code, is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green |
-| **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line |
+| **What is asked of a reader** | Should `agnus_beamcounter.v`, with BPLCON0 bit 3 set, freeze VPOSR and VHPOSR on a light-pen trigger and, with none, at the end of the field, until vertical position 20, as p. 239 prints, where NanoMig returns the running counter? The decision belongs to an Amiga specialist, not to this repository. It closes when the specialist records a yes and the nineteen reds listed under *Assertions* are green on both cores, or records a no with the reason here |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Scope** | OCS Agnus, BPLCON0 bit 3 set for more than twenty fields, VPOSR and VHPOSR read with a pin-6 pulse on port 1, on port 2, on both and with none; graded in OCS/PAL and OCS/NTSC, recorded not graded in ECS/PAL and ECS/NTSC (p. 305 gives LPENDIS no reset value). Chip revision: unknown |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 8 — Interface Hardware, printed pp. 227, 228 (Table 8-1), 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed p. 79; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P1`: `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6`, pp. 238, 227; `P2`: `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22`, pp. 238, 228; `P3`: `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19`, p. 238; `P3(a)`: `sol:8-pen.c20`, p. 238; `P4`: `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22`, pp. 229, 238; `P5`: `opus:8-lpen.c36`, `sol:8-pen.c36`, p. 239; `P6`: `opus:8-lpen.c38`, `sol:8-pen.c38`, p. 239; `P7`: `opus:8-lpen.c37`, `sol:8-pen.c37`, p. 239; `P8`: `opus:8-lpen.c39`, p. 239; `P8(release-at-20)`: `sol:8-pen.c39`, p. 239; `P9(release)`: `opus:8-lpen.c12`, `sol:8-pen.c12`, p. 238; `P10(a)`: `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18`, pp. 239, 229; `P11`: `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46`, p. 239; `P12`: `opus:8-lpen.c52`, p. 239; `P13`, green: `opus:8-lpen.c10`, `opus:8-lpen.c11`, `sol:8-pen.c10`, `sol:8-pen.c11`, p. 238. `P2(ii)`, `P3(b)`, `P3(c)`, `P9`, `P9(boundary)` and the control `P10(b)` carry no claim id |
+| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121); MiSTer has the same read path and TC64's is NanoMig's line for line; inherited |
+| **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam): `make -k -C integration/ch8-light-pen-beam test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. One program, graded in OCS/PAL and OCS/NTSC on both CPU cores |
+| **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC, in a package run of 156 passed, 38 failed on each core: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239). `P1` expects a pin-6 pulse on one port captured and observes *captured=no* on port 1 and on port 2; `P7` expects one value in lines 0 to 19 after a field with no pulse and observes reads that are not one value. In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded. The page-model control is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green |
+| **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line. Hardware: not measured |
+| **Effort** | M: `agnus_beamcounter.v` (the enable bit, the latch, the read multiplexer), a light-pen input on `agnus.v` and `agnus_beamcounter.v`, and its wiring from the controller ports' pin 6 in `nanomig.v` or `minimig.v` |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Printed p. 238**, *Reading a Light Pen*, names the port, the pin and what a
 trigger does:
@@ -99,9 +102,7 @@ freezes VPOSR and VHPOSR until vertical blanking ends. In ECS it is the same
 unless LPENDIS is set, and whether it is set after reset the page does not
 say. That is why the package grades the latch in OCS and records it in ECS.
 
----
-
-## What NanoMig does
+## RTL and measurement
 
 **VPOSR and VHPOSR always read the running counter.** The read multiplexer has
 no other source —
@@ -126,59 +127,33 @@ of a BPLCON0 write and nothing else —
 `ersy <= data_in[1];` and `lace <= data_in[2];` — and the bitplane sequencer
 takes bits 6, 15, 4 and 14–12 —
 [`src/minimig-aga/agnus_bitplanedma.v#L282`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L282).
-Denise stores the whole register, and its light-pen wire is commented out —
+Denise stores the whole register, and its light-pen wire is commented out,
+`//assign lpen     = bplcon0[3];` —
 [`src/minimig-aga/denise.v#L166`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L166),
-[`#L189`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L189):
-
-```verilog
-//wire          lpen;       // light pen enable
-...
-//assign lpen     = bplcon0[3];
-```
+[`#L189`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L189).
 
 **LPENDIS is stored in ECS and read nowhere.** BEAMCON0 is written only with
 `ecs` set and resets to `{10'b0, ~ntsc, 5'b0}`, bit 13 clear; the wire that
-would name the bit is a comment —
-[`#L117-L129`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L117-L129):
-
-```verilog
-wire harddis      = beamcon0_reg[14];
-//wire lpendis      = beamcon0_reg[13];
-```
+would name the bit is a comment, `//wire lpendis      = beamcon0_reg[13];` —
+[`#L117-L129`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L117-L129).
 
 **No light-pen line reaches Agnus.** Neither `agnus`
 ([`agnus.v#L54-L100`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L54-L100))
 nor `agnus_beamcounter`
 ([`#L27-L57`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L27-L57))
 has an input for one, and no port of `nanomig.v` is one. Pin 6 of each
-controller port goes to CIA-A and nowhere else.
-
-### The pins
-
-`nanomig.v` passes its two joystick bytes, inverted, to Minimig's `_joy1` and
-`_joy2` —
-[`src/nanomig.v#L1503-L1504`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1503-L1504):
-
-```verilog
-	._joy1        (~JOY0            ), // joystick 1 [fire4,fire3,fire2,fire,up,down,left,right] (default mouse port)
-	._joy2        (~JOY1            ), // joystick 2 [fire4,fire3,fire2,fire,up,down,left,right] (default joystick port)
-```
-
+controller port goes to CIA-A and nowhere else: `nanomig.v` passes its two
+joystick bytes, inverted, to Minimig's `_joy1` and `_joy2`
+([`src/nanomig.v#L1503-L1504`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1503-L1504)),
 `userio` crosses them over, `_sjoy1 <= joy_swap ? joy1 : joy2;` with
 `joy_swap` tied to 0
 ([`src/minimig-aga/userio.v#L215-L218`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L215-L218),
 [`#L92`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L92)),
-and makes the two fire lines from bit 4, the first also from mouse button 0 —
-[`#L313-L314`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L313-L314):
-
-```verilog
-assign _fire0 = cd32pad && !cd32pad1_reg_load ? fire1_d : _sjoy1[4] & _mleft;
-assign _fire1 = cd32pad && !cd32pad2_reg_load ? fire2_d : _sjoy2[4];
-```
-
-Both lines end at CIA-A's port A, `_fire1` on PA7 and `_fire0` on PA6 —
-[`src/minimig-aga/minimig.v#L622`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L622),
-`.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),`. p. 232 gives
+and makes the two fire lines from bit 4, the first also from mouse button 0
+([`#L313-L314`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L313-L314));
+both end at CIA-A's port A, `_fire1` on PA7 and `_fire0` on PA6
+([`src/minimig-aga/minimig.v#L622`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig.v#L622),
+`.porta_in({_fire1,_fire0,_ready,_track0,_wprot,_change}),`). p. 232 gives
 port 1 bit 6 and port 2 bit 7, so `joystick0` bit 4 is port 2's pin 6 and
 `joystick1` bit 4, and `mouse_buttons` bit 0, port 1's. The package measures
 the same mapping at the ports (its `SPECIFICATION.md`, section 3, *Port
@@ -199,38 +174,37 @@ leaves fields with no pulse at all. The model is anchored and the fixture is
 live in every configuration on both cores: `CP1` to `CP6` are green, with u = 7
 colour clocks, CIA-A's port A reading $FF at idle, and all 54 input changes
 landing on their scheduled cycle, each pulse exactly 4 colour clocks wide.
+`P13`, graded through the port pins' pot lines, is green.
 
-| configuration | fx68k | TG68K | page-model control, both cores | a copy of the RTL with the pp. 238-239 latch added, both cores |
-|---|---|---|---|---|
-| OCS/PAL | 15 passed, **19 failed** | 15 passed, **19 failed** | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
-| OCS/NTSC | 15 passed, **19 failed** | 15 passed, **19 failed** | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
-| ECS/PAL | 13 passed, 0 failed; the 21 recorded | the same | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
-| ECS/NTSC | 13 passed, 0 failed; the 21 recorded | the same | 25 passed, 0 failed | 35 passed, 0 failed; the control 25 passed, 0 failed |
-
-The nineteen reds, the same in both OCS configurations and on both cores. A
-line without a claim id carries none because it is a component of a combined
-assertion, or because no claim is established by it alone:
-
-| assertion | claims | page | what it grades |
+| configuration | fx68k | TG68K | page-model control, both cores |
 |---|---|---|---|
-| `P1` | `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6` | 238, 227 | a pin-6 pulse on at least one port is captured, frozen and not current, at the position `P3(a)` and `P3(b)` require; recorded: port 1 *captured=no*, port 2 *captured=no* |
-| `P2` | `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22` | 238, 228 | pin 6 captures and pins 1–4, 5 and 9 do not |
-| `P2(ii)` | none | 238, 228 | the pin-6 pulse of field B18 is captured; its sibling `P2(i)`, the other pins' pulses are not captured, is green |
-| `P3` | `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19` | 238 | the captured position is the beam's at the pulse, exactly: V, H within a window, and one offset for every pulse |
-| `P3(a)` | `sol:8-pen.c20` | 238 | the captured V is the model line at the pulse |
-| `P3(b)`, `P3(c)` | none | 238 | the captured H lies within [H_ref(t_on), H_ref(t_on)+4+u]; the offset H − H_ref(t_on) is the same for every pulse |
-| `P4` | `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22` | 229, 238 | V8 in VPOSR bit 0, V7–V0 and H8–H1 in VHPOSR |
-| `P5` | `opus:8-lpen.c36`, `sol:8-pen.c36` | 239 | after a trigger VPOSR is frozen until the release |
-| `P6` | `opus:8-lpen.c38`, `sol:8-pen.c38` | 239 | no read in a latched window is current |
-| `P7` | `opus:8-lpen.c37`, `sol:8-pen.c37` | 239 | a field with no trigger latches at its end |
-| `P8` | `opus:8-lpen.c39` | 239 | every latch holds until the end of internal vertical blanking, and the counter is current after it |
-| `P8(release-at-20)` | `sol:8-pen.c39` | 239 | the held value is still visible up to V = 20 and the live counter from u colour clocks after it, in each of 20 windows |
-| `P9` | none | 238 | capture re-arms by itself as vertical blank ends: no hold-over, a pulse after blank is captured, in every field |
-| `P9(boundary)` | none | 238 | a pulse at line 20, the stated release line, is captured |
-| `P9(release)` | `opus:8-lpen.c12`, `sol:8-pen.c12` | 238 | no pulse is held over the release (`P9(a)`, green) and the pulse at line 20 is captured (`P9(boundary)`) |
-| `P10(a)` | `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18` | 239, 229 | with bit 3 set, pulses are captured and field ends latch |
-| `P11` | `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46` | 239 | the two-read detection method answers correctly |
-| `P12` | `opus:8-lpen.c52` | 239 | the single read during vertical blanking answers correctly |
+| OCS/PAL | 15 passed, **19 failed** | 15 passed, **19 failed** | 25 passed, 0 failed |
+| OCS/NTSC | 15 passed, **19 failed** | 15 passed, **19 failed** | 25 passed, 0 failed |
+| ECS/PAL | 13 passed, 0 failed; the 21 recorded | the same | 25 passed, 0 failed |
+| ECS/NTSC | 13 passed, 0 failed; the 21 recorded | the same | 25 passed, 0 failed |
+
+The nineteen reds are the same in both OCS configurations and on both cores:
+
+| assertion | page | what it grades |
+|---|---|---|
+| `P1` | 238, 227 | a pin-6 pulse on at least one port is captured, frozen and not current, at the position `P3(a)` and `P3(b)` require; recorded: port 1 *captured=no*, port 2 *captured=no* |
+| `P2` | 238, 228 | pin 6 captures and pins 1–4, 5 and 9 do not |
+| `P2(ii)` | 238, 228 | the pin-6 pulse of field B18 is captured; its sibling `P2(i)`, the other pins' pulses are not captured, is green |
+| `P3` | 238 | the captured position is the beam's at the pulse, exactly: V, H within a window, and one offset for every pulse |
+| `P3(a)` | 238 | the captured V is the model line at the pulse |
+| `P3(b)`, `P3(c)` | 238 | the captured H lies within [H_ref(t_on), H_ref(t_on)+4+u]; the offset H − H_ref(t_on) is the same for every pulse |
+| `P4` | 229, 238 | V8 in VPOSR bit 0, V7–V0 and H8–H1 in VHPOSR |
+| `P5` | 239 | after a trigger VPOSR is frozen until the release |
+| `P6` | 239 | no read in a latched window is current |
+| `P7` | 239 | a field with no trigger latches at its end |
+| `P8` | 239 | every latch holds until the end of internal vertical blanking, and the counter is current after it |
+| `P8(release-at-20)` | 239 | the held value is still visible up to V = 20 and the live counter from u colour clocks after it, in each of 20 windows |
+| `P9` | 238 | capture re-arms by itself as vertical blank ends: no hold-over, a pulse after blank is captured, in every field |
+| `P9(boundary)` | 238 | a pulse at line 20, the stated release line, is captured |
+| `P9(release)` | 238 | no pulse is held over the release (`P9(a)`, green) and the pulse at line 20 is captured (`P9(boundary)`) |
+| `P10(a)` | 239, 229 | with bit 3 set, pulses are captured and field ends latch |
+| `P11` | 239 | the two-read detection method answers correctly |
+| `P12` | 239 | the single read during vertical blanking answers correctly |
 
 **Nothing latches, with or without a pulse.** `P1` records that neither port's
 pulse was captured. `P7` is red because the reads in lines 0 to 19 after a
@@ -238,24 +212,48 @@ field with no pulse are not one value, and `P7(c)` is not evaluated: its
 population, the no-pulse fields whose next vertical blank reads one value, is
 empty. The ECS runs print it outright — *"every phase-B sample
 measured current (no pen capture, no end-of-field latch)"* — and the RTL above
-reads the counter the same way in both chipsets. The page-model control
-replaces 38279 and 31600 of the 90000 phase-B samples on fx68k and 41427 and
-34083 on TG68K (PAL and NTSC) with the values p. 238 and p. 239 predict, and
-the same `P1` to `P13` code grades those green.
+reads the counter the same way in both chipsets. No choice of port, pin,
+polarity or pulse width reaches a counter that has no latch in front of it.
+The page-model control replaces 38279 and 31600 of the 90000 phase-B samples
+on fx68k and 41427 and 34083 on TG68K (PAL and NTSC) with the values p. 238
+and p. 239 predict, and the same `P1` to `P13` code grades those green.
 
-**A copy of the RTL with the pp. 238-239 latch added** passes every line. The
-copy stores BPLCON0 bit 3 in `agnus_beamcounter.v`; the counter entering line
-20 releases any freeze and arms the capture; a falling edge of the AND of the
-two controller ports' pin 6, while armed, stores VPOSR and VHPOSR; the end of
-a field with nothing stored stores them; reads return the stored words. LPENDIS
-is not modelled. The run prints 240 passed, 0 failed on fx68k and on TG68K,
-which is 35 raw and 25 control lines in each of the four configurations. Its
-captures have the offset d = H − H_ref(t_on) = 2 colour clocks for each of the
-14 graded pulses in every configuration.
+Two further program variants add pulses to phase A with bit 3 set: each pulse
+is delivered on its cycle and the program finishes, and the only graded `CP1`
+lines they print are the page-model contrast's. `K17` has `CP1` and `CP1(A2)`
+red with L = 200 measured (9 passed, 2 failed); `K18` has `CP1`, `CP1(A1)` and
+`CP1(A2)` red (7 passed, 3 failed).
 
----
+## Risks and unknowns
 
-## What the others say
+- **Half of the implementations agree with NanoMig.** vAmiga and Denise have no
+  light-pen latch either. The two that have one, WinUAE and Copperline, both
+  latch at the end of a field with bit 3 set, which NanoMig does not, and
+  neither triggers from a joystick's fire line. The finding rests on pp. 238
+  and 239, not on any implementation.
+- **Hardware is not measured.** Does bit 3 alone freeze the counters? p. 239
+  says a field with no trigger latches at its end and stays latched until
+  vertical blanking ends. On real hardware, with nothing in either port: set
+  BPLCON0 bit 3 and read VPOSR twice anywhere in lines 0 to 19. Equal reads at
+  the last line's position settle it.
+- **ECS is recorded, not graded.** p. 305 gives LPENDIS no reset value, and it
+  decides whether an ECS machine that never writes BEAMCON0 shows the latch at
+  all. NanoMig's own BEAMCON0 resets bit 13 to 0, which on NanoMig's own terms
+  would leave the latched value visible, if there were one.
+- **Which port.** p. 238 and the technical reference put the pen on port 2's
+  pin 6 on the A500, and the B2000's J200 moves it to p. 238's port 1. NanoMig
+  would have to route one of its two fire lines to Agnus as well as to CIA-A.
+- **When the latch is released.** p. 239 says vertical position 20, p. 219
+  ends vertical blanking at line 20 in NTSC and 25 in PAL, and p. 79's table
+  stops it at 21 and 29. NanoMig's hardwired end of vertical blanking is
+  line 25 in PAL and 20 in NTSC, WinUAE releases at the same lines, and
+  Copperline does not release at all until the next latch. The package
+  grades the release only where every page agrees, from line 21 in NTSC and
+  29 in PAL, and reports the line.
+
+## Independent evidence
+
+### What the others say
 
 The question put to each: with BPLCON0 bit 3 set, what freezes VPOSR and
 VHPOSR, from which input, and when is it released?
@@ -280,13 +278,7 @@ trigger from a pen positioned on the screen, which is how an emulator models a
 pen, not from the level of pin 6. MiSTer and TC64, descendants, have NanoMig's
 read path and no latch, so the finding is inherited and fixed in neither line.
 
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+### What other Commodore documents say
 
 - **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF pages 5 and 25 — agrees with the manual:
 
@@ -328,15 +320,11 @@ and none decides this finding. What they are and how they were read is in
 
   BPLCON0 bit 3 is one of the bits marked y: the light-pen enable is Agnus's, the chip that has the 8371's LP* pin and, in the patent, the light-pen registers. In NanoMig, Agnus does not store it.
 
-Silent on this point: Commodore, A500/A2000 Gary specification, undated; Commodore, 6526 CIA specification, 1981; 6502.org dissection of Denise 8373R4, undated; 6502.org dissection of CIA 8520R4, undated.
-
----
-
-## Suggested change
+## Decision
 
 **One option: give Agnus a light-pen line and the latch p. 239 describes.**
-A copy of the RTL with the four changes below, and without LPENDIS, is the
-copy the Test row names; the lists after them say what it does.
+The variant that was run is a copy of the RTL with the four changes below and
+without LPENDIS:
 
 - **The line.** An input on `agnus` and `agnus_beamcounter`, driven in
   `nanomig.v` or `minimig.v` from port 2's pin 6, the A500's default on
@@ -357,80 +345,25 @@ copy the Test row names; the lists after them say what it does.
   ECS, with BEAMCON0 bit 13 set, VPOSR returns the counter (p. 305: *"on
   vertical pos read"*; the page does not say whether VHPOSR does too).
 
+There is no fix to port: MiSTer and TC64 read the running counter the same
+way, and neither line's `minimig.v` has a light-pen line into Agnus any more
+than NanoMig's `nanomig.v` does.
+
 What it would change, from the copy's runs:
 
-- all nineteen red lines of the Test row turn green on fx68k and on TG68K,
-  and so does every other line of the run: 240 passed, 0 failed on each core;
+- all nineteen red lines turn green on fx68k and on TG68K, and so does every
+  other line of the run: 240 passed, 0 failed on each core, which is 35 raw
+  and 25 control lines in each of the four configurations. The copy's
+  captures have the offset d = H − H_ref(t_on) = 2 colour clocks for each of
+  the 14 graded pulses in every configuration;
 - `K3` and `K4`, which set bit 3 in phase C and in phase A, turn `P10(b)` red
   at the ports: 34 passed, 2 failed, the run's `P10(b)` and the page-model
-  contrast's, on both cores. On NanoMig as it is `P10(b)` stays green in both
-  (see below);
+  contrast's, on both cores. On NanoMig as it is `P10(b)` stays green and the
+  run prints 15 passed, 20 failed: the nineteen reds and the page-model
+  contrast's own `P10(b)`, on both cores. `K17` and `K18` print the same on
+  the copy as on NanoMig;
 - a program that polls VPOSR with bit 3 set would see it frozen, as p. 239
   warns, and a joystick's fire button held on port 2 would latch the counters,
   as the technical reference's *"FIRE input"* implies for the A500.
 
----
-
-## What holds the finding up
-
-- **The comparators read green on the page's latch.** The page-model control
-  applies p. 238 step 4 and p. 239 to each run's own measured samples and
-  grades them with the same `P1` to `P13` code: 25 passed, 0 failed in OCS/PAL,
-  OCS/NTSC, ECS/PAL and ECS/NTSC, on fx68k and on TG68K. A copy of the RTL
-  with the latch added passes every line of the run itself, 240 passed,
-  0 failed on each core.
-- **The fixture is live.** `CP1` to `CP6` hold in every configuration: the beam
-  model is anchored on phase A, sampling is dense, pin 6 of both ports reads
-  open at CIA-A ($FF), and every scheduled pulse arrives on its cycle, 4 colour
-  clocks wide. `P13`, graded through the port pins' pot lines, is green.
-- **It does not depend on the pen.** `P7` grades p. 239's field-end latch,
-  which needs no trigger at all, and is red: after a field with no pulse the
-  reads in lines 0 to 19 are not one value. No choice of port, pin, polarity
-  or pulse width reaches a counter that has no latch in front of it.
-- **It is Agnus's, not the CPU's.** The nineteen reds and every count above are
-  the same on fx68k and TG68K.
-- **ECS shows the same and is not graded.** The ECS runs measure every phase-B
-  sample current and record 21 lines, the nineteen reds and `P2(i)` and `P9(a)`, because p. 305 does not give
-  LPENDIS's reset value. NanoMig's own BEAMCON0 resets bit 13 to 0, which on
-  NanoMig's own terms would leave the latched value visible, if there were one.
-- **`K3` and `K4` turn `P10(b)` red only where a latch is in front of the
-  counter.** They set bit 3 in phase C and in phase A. On NanoMig as it is
-  `P10(b)` stays green and the run prints 15 passed, 20 failed: the nineteen
-  reds and the page-model contrast's own `P10(b)`, on both cores. `K17` and
-  `K18` add pulses to phase A with bit 3 set; each pulse is delivered on its
-  cycle and the program finishes, and the only graded `CP1` lines they print
-  are the page-model contrast's: `K17` has `CP1` and `CP1(A2)` red with L = 200
-  measured (9 passed, 2 failed), `K18` has `CP1`, `CP1(A1)` and `CP1(A2)` red
-  (7 passed, 3 failed). `K17` and `K18` print the same on the copy of the RTL
-  with the latch.
-- **What weakens it is that half of the implementations agree with NanoMig.**
-  vAmiga and Denise have no light-pen latch either. The two that have one,
-  WinUAE and Copperline, both latch at the end of a field with bit 3 set,
-  which NanoMig does not, and neither triggers from a joystick's fire line.
-  The finding rests on pp. 238 and 239, not on any implementation; the 8371
-  specification, the A500/A2000 technical reference and the Agnus patent say
-  the same.
-
----
-
-## For the specialists
-
-1. **Does bit 3 alone freeze the counters?** p. 239 says a field with no
-   trigger latches at its end and stays latched until vertical blanking ends.
-   On real hardware, with nothing in either port: set BPLCON0 bit 3 and read
-   VPOSR twice anywhere in lines 0 to 19. Equal reads at the last line's
-   position settle it.
-2. **Which port on the machine NanoMig models.** p. 238 and the technical
-   reference put the pen on port 2's pin 6 on the A500, and the B2000's J200
-   moves it to p. 238's port 1. NanoMig would have to route one of its two fire lines
-   to Agnus as well as to CIA-A, and then a fire button held on that port
-   would latch the counters whenever bit 3 is set.
-3. **When the latch is released.** p. 239 says vertical position 20, p. 219
-   ends vertical blanking at line 20 in NTSC and 25 in PAL, and p. 79's table
-   stops it at 21 and 29. NanoMig's hardwired end of vertical blanking is
-   line 25 in PAL and 20 in NTSC, WinUAE releases at the same lines, and
-   Copperline does not release at all until the next latch. The package
-   grades the release only where every page agrees, from line 21 in NTSC and
-   29 in PAL, and reports the line.
-4. **LPENDIS after reset.** p. 305 does not give it. It decides whether an
-   ECS machine that never writes BEAMCON0 shows the latch at all.
+Closes as the header says, on the specialist's recorded yes or no.
