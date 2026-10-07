@@ -96,6 +96,4 @@ If Alice is to report what this document lists, the two duplicated bits become o
 
 It is one edit and changes one bit of one read-only register. It is **not** proposed as
 obviously correct: which value real silicon returns is the thing to establish first
-(the probe under *Risks and unknowns*). The question closes when that capture is in:
-`$22` / `$32` means apply the edit upstream first, `$23` / `$33` means the finding moves
-to the printed page.
+(the probe under *Risks and unknowns*).
