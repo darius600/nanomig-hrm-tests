@@ -15,13 +15,15 @@ in `hrm-testpipeline` enforces the header, the routing value and what follows it
 the link limit, and reports each page by the row or heading it lacks. It also
 checks that the Module row ends with one of the values above, that the Verdict of the four
 ends with its `Hardware:` clause, that no retired phrase appears, and that a withdrawn
-page's Evidence is a withdrawal evidence.
+page's Evidence is a withdrawal evidence. It checks the route against the
+Module value, the form of the Effort row, the claim-id count of the Chapter row and
+the title of a withdrawn page.
 
 ## The header of an open page
 
 **One table, the same rows in the same order on every open page.** The first
 four rows say *what am I being asked to do* before any prose is read. An absent
-value is written `none`, `unknown` or `not measured`; a row is never left out.
+value is written `none`, `unknown` or `not measured`, except that row 13 takes only the forms below; a row is never left out.
 After the thirteen rows only the optional ones follow.
 
 | # | row | what it holds |
@@ -30,15 +32,15 @@ After the thirteen rows only the optional ones follow.
 | 2 | **Filed against** | `the RTL`, `the printed page` or `the classification` |
 | 3 | **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*, or *seen in the RTL source and measured inside the module; no assertion at the ports fails* (a red on an internal signal the manual documents, which no pin shows); or *none* |
 | 4 | **What is asked of a reader** | the exact decision and its boundary first, as one bounded yes/no question, then the event that closes it. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
-| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited from MiSTer's Minimig-AGA; report there first and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code, or code that a Minimig line has fixed and NanoMig has not: the action is to port that fix, and the Module row then ends `fixed in ...`) or `no RTL action` (the printed page or the classification is wrong, not the RTL). Never `nobody`, never a person's name. Nothing follows the repository or role: a reason belongs in the Module, MiSTer or TC64 row |
+| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited from MiSTer's Minimig-AGA; report there first and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code, or code that a Minimig line has fixed and NanoMig has not: the action is to port that fix, and the Module row then ends `fixed in ...`) or `no RTL action` (the printed page or the classification is wrong, not the RTL). A page whose Module row ends `fixed in TC64` routes `NanoMig direct` to harbaum/NanoMig and MiSTer-devel/Minimig-AGA_MiSTer (port TC64's fix; MiSTer carries the same code); `fixed in MiSTer`, to harbaum/NanoMig and minimig-dev/MinimigAGA-MiST-TC64; `fixed in MiSTer and TC64`, to harbaum/NanoMig. Never `nobody`, never a person's name. Nothing follows the repository or role: a reason belongs in the Module, MiSTer or TC64 row |
 | 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown` |
 | 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software` |
-| 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids. A cell whose claim-id list is long holds it in one collapsed `<details><summary>claim ids by assertion (N)</summary> ... </details>` on one line |
-| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow. A bare `fixed` is not a value |
+| 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids. A cell with more than 12 claim ids holds them in one collapsed `<details><summary>claim ids by assertion (N)</summary> ... </details>` on one line; at 12 or fewer they stand in the cell |
+| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow, and may say that the cited code declares the behaviour not implemented, with the file:line of that declaration. A bare `fixed` is not a value |
 | 10 | **Test** | every package the page names, each with its exact command, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero |
 | 11 | **Assertions** | the red assertions by id with one expected → observed result and the package's count, or `none` and what the package records instead |
 | 12 | **Verdict of the four** | what WinUAE, vAmiga, Denise and Copperline do: split, unanimous or no vote, and, last, `Hardware:` and the hardware status |
-| 13 | **Effort** | `S`, `M` or `L` and one line of reason |
+| 13 | **Effort** | the size of the RTL change the page asks for, in exactly one of three forms: `S`, `M` or `L`, then ` — ` and what changes; `none — ` and one clause, for example no RTL change; or `none; if <condition>, S|M|L: <what changes>`. `unknown` is not a value of this row |
 
 Optional rows, after the thirteen and in this order: **See also** (at most
 three links to sibling findings), **Origin** (the document or run the finding
@@ -76,6 +78,10 @@ Amiga specialist to decide whether the RTL should change;
 is about. The mark is derived from the header, never set by hand, so it cannot
 say something the header does not.
 
+**A title that ends in [withdrawn]** marks a withdrawn page: its title ends with
+` [withdrawn]`, as an open page's may end with ` [RTL review]`, so that a search by
+register name does not read a disproven claim as a defect.
+
 ## The body of an open page
 
 Five `##` sections, in this order, with these exact headings. A `###` below
@@ -107,6 +113,10 @@ headings are free.
   that a decision belongs to a specialist or to someone else. A command stands in the
   Test row only. The phrases `decision belongs to`, `Re-run:`, `Hardware status`,
   `entry is kept` and `entry exists` appear on no page.
+- **A decision is recorded as an issue.** A decision an Amiga specialist records is
+  an issue on this repository whose title begins with the finding key, and the page
+  then links it in row 4; a maintainer closes a page filed against the RTL by the
+  RTL change its row 4 names.
 - **Each fact once.** The header summarizes and the body proves; a page has no closing recap.
 - **Sizes are defaults, nothing more.** The gate does not measure them, and a page
   that needs more writes more. Overflow never moves to a method document.
