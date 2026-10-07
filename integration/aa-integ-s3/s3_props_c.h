@@ -37,7 +37,8 @@ inline void cf_events(RunSpec& s, CfPlan& c) {
 struct CfResult {
     std::vector<uint16_t> val;      // the value read by CF2 of each observed frame
     bool beam_ok = true;            // every beam marker's re-read shows its target line, inside its frame
-    bool window_ok = true;          // CF1 before every sprite's first data read, CF2 after every end-pair read
+    bool window_ok = true;          // CF1 before every sprite's first data read, CF2 after every end-pair read, both markers inside the frame
+    int beam_n = 0, beam_off = 0;   // beam markers, and those whose re-read does not show the target line
 };
 
 inline CfResult cf_collect(const RunData& r, const CfPlan& c, int line1_expect, int line2_expect) {
@@ -52,6 +53,8 @@ inline CfResult cf_collect(const RunData& r, const CfPlan& c, int line1_expect, 
             uint16_t vp = r.ev_word(evs[q], 2), vh = r.ev_word(evs[q], 4);
             int line = ((vp & 7) << 8) | (vh >> 8);
             uint64_t tm = marker_time(r, evs[q]);
+            ++o.beam_n;
+            if (line != want_line[q]) ++o.beam_off;
             if (line != want_line[q] || !(tm >= f.t0 && tm < f.t1)) {
                 o.beam_ok = false;
                 if (std::getenv("NMH_DBG")) std::cout << "DBG cf beam: frame " << (c.first_frame + int(j)) << " event " << evs[q] << " want line 0x" << std::hex << want_line[q] << " got 0x" << line
@@ -63,7 +66,7 @@ inline CfResult cf_collect(const RunData& r, const CfPlan& c, int line1_expect, 
         for (const auto& sp : c.sprites) {
             auto a = first_read_at(r, L_x(sp.first) + 4, f.t0, f.t1);
             auto b = first_read_at(r, L_x(sp.first) + 4 + 4 * uint32_t(sp.second), f.t0, f.t1);
-            if (!a || !b || !(t1 < *a) || !(t2 > *b)) o.window_ok = false;
+            if (!a || !b || !(t1 < *a) || !(t2 > *b) || !(t1 >= f.t0) || !(t2 < f.t1)) o.window_ok = false;
         }
     }
     return o;
@@ -146,7 +149,7 @@ inline void prop_C1() {
     pre.print("the C1 runs");
     g.expect(pc_spr, "C1-PC-SPR: in F2 of every run the list of every displayed sprite is read in order up to its end pair");
     g.expect(pc_beam, "C1-PC-BEAM: in every run both beam markers' re-reads show their target lines, inside F2");
-    g.expect(pc_window, "C1-PC-WINDOW: in every run the first CF read lies before every involved sprite's first data read and the result read after every end-pair read");
+    g.expect(pc_window, "C1-PC-WINDOW: in every run the first CF read lies inside F2 and before every involved sprite's first data read and the result read lies inside F2 and after every end-pair read");
     g.expect(pc_ctrl, "C1-PC-CTRL: in every run CLXDAT bit 14 (sprite 4 to sprite 6, both even and always included) is 1");
     g.expect(pc_union, "C1-PC-UNION: in every run the union of each overlapping pair is visible as a 48-output-pixel cS span on every line 0x60-0x6F");
     g.assert_line("C1", pre.setup && pre.frame && pre.tag && pre.pixel && pc_spr && pc_beam && pc_window && pc_ctrl && pc_union, ok,
@@ -183,24 +186,33 @@ inline std::vector<C2Row> c2_rows(int data) {
 // the preconditions every C2-like run contributes to
 struct CPc {
     bool beam = true, window = true, spr = true, other = true;
-    void absorb(const RunData& r, const CfPlan& plan, const CfResult& cr, int own_bit, int other_bit) {
+    int beam_n = 0, beam_off = 0;
+    // req[j]: the other group's bit must be 1 in observed frame j (default: in every frame)
+    void absorb(const RunData& r, const CfPlan& plan, const CfResult& cr, int own_bit, int other_bit, const std::vector<char>* req = nullptr) {
         if (!cr.beam_ok) beam = false;
         if (!cr.window_ok) window = false;
+        beam_n += cr.beam_n;
+        beam_off += cr.beam_off;
         for (size_t j = 0; j < plan.ev_cf1.size(); ++j) {
             Frame f = get_frame(r, plan.first_frame + int(j));
             if (!f.ok || !list_in_order(r, f, L_x(0), 2 + 2 * 16 + 2)) spr = false;
             uint16_t val = j < cr.val.size() ? cr.val[j] : 0;
-            if (other_bit >= 0 && !((val >> other_bit) & 1)) other = false;
+            bool needed = !req || (j < req->size() ? (*req)[j] != 0 : true);
+            if (other_bit >= 0 && needed && !((val >> other_bit) & 1)) other = false;
         }
         (void)own_bit;
     }
-    void print(const std::string& p, const std::string& where, bool with_other = true) {
+    // with_beam: the re-read line is a graded precondition (C1, C4); otherwise it is a MEASURED line and the window is the precondition
+    void print(const std::string& p, const std::string& where, bool with_other = true, bool with_beam = true) {
         g.expect(spr, p + "-PC-SPR: in every observed frame of " + where + " sprite 0's list is read in order up to its end pair");
-        g.expect(beam, p + "-PC-BEAM: in every observed frame of " + where + " both beam markers' re-reads show their target lines, inside the frame");
-        g.expect(window, p + "-PC-WINDOW: in every observed frame of " + where + " the first CF read lies before sprite 0's first data read and the result read after its end-pair read");
-        if (with_other) g.expect(other, p + "-PC-OTHER: in every observed frame of " + where + " the other group's CLXDAT bit (5 for odd planes, 1 for even planes) is 1");
+        if (with_beam)
+            g.expect(beam, p + "-PC-BEAM: in every observed frame of " + where + " both beam markers' re-reads show their target lines, inside the frame");
+        else
+            g.note(p + ": " + dec(beam_n - beam_off) + " of " + dec(beam_n) + " beam markers of " + where + " re-read the target line (the re-read line is measured, not graded; " + p + "-PC-WINDOW grades the position of the two reads)");
+        g.expect(window, p + "-PC-WINDOW: in every observed frame of " + where + " the first CF read lies inside the frame and before sprite 0's first data read, and the result read lies inside the frame and after its end-pair read");
+        if (with_other) g.expect(other, p + "-PC-OTHER: in every observed frame of " + where + " the other group's CLXDAT bit (5 for odd planes, 1 for even planes) is 1, where the plane under test is odd, disabled or matching");
     }
-    bool all() const { return beam && window && spr && other; }
+    bool all(bool with_beam = true) const { return (!with_beam || beam) && window && spr && other; }
 };
 
 inline void prop_C2() {
@@ -208,12 +220,11 @@ inline void prop_C2() {
     Pre pre("C2");
     CPc pc;
     bool ok = true;
-    const int hb = mutating("C2-PC-BEAM") ? 0xE0 : 0x08;
     for (int k = 1; k <= 6; ++k) {
         if (g_mutate && k != 3) continue;
         for (int data = 1; data >= 0; --data) {
             auto rows = c2_rows(data);
-            CfPlan plan; plan.h = hb;
+            CfPlan plan;
             if (mutating("C2-PC-WINDOW")) plan.line2 = 0x68;
             for (size_t j = 0; j < rows.size(); ++j) {
                 int enbp = rows[j].enbp, mvbp = rows[j].mvbp;
@@ -231,7 +242,10 @@ inline void prop_C2() {
             pre.check(*r, 2, 1 + int(rows.size()), false, false, false);
             CfResult cr = cf_collect(*r, plan, 0x40, plan.line2);
             int own = (k & 1) ? 1 : 5, other = (k & 1) ? 5 : 1;
-            pc.absorb(*r, plan, cr, own, other);
+            // for an even plane the other (odd) group's bit is demanded in the frames where the plane is disabled or matches; the pages do not say whether it may fall with a mismatching enabled even plane
+            std::vector<char> req;
+            for (const auto& rw : rows) req.push_back((k & 1) || !(rw.enbp && data != rw.mvbp));
+            pc.absorb(*r, plan, cr, own, other, &req);
             for (size_t j = 0; j < rows.size(); ++j) {
                 uint16_t val = j < cr.val.size() ? cr.val[j] : 0;
                 bool bit = (val >> own) & 1;
@@ -261,8 +275,8 @@ inline void prop_C2() {
         }
     }
     pre.print("the C2 runs");
-    pc.print("C2", "the C2 runs");
-    g.assert_line("C2", pre.setup && pre.frame && pc.all(), ok,
+    pc.print("C2", "the C2 runs", true, false);
+    g.assert_line("C2", pre.setup && pre.frame && pc.all(false), ok,
         "C2: opus:AA-clxcon.c4 opus:AA-clxcon.c11 opus:AA-clxcon.c12 opus:AA-clxcon.c13 opus:AA-clxcon.c14 opus:AA-clxcon.c15 opus:AA-clxcon.c16 opus:AA-clxcon.c17 opus:AA-clxcon.c18 opus:AA-clxcon.c19 opus:AA-clxcon.c20 opus:AA-clxcon.c21 opus:AA-clxcon.c22 "
         "sol:AA-clxcon.c4 sol:AA-clxcon.c11 sol:AA-clxcon.c12 sol:AA-clxcon.c13 sol:AA-clxcon.c14 sol:AA-clxcon.c15 sol:AA-clxcon.c16 sol:AA-clxcon.c17 sol:AA-clxcon.c18 sol:AA-clxcon.c19 sol:AA-clxcon.c20 sol:AA-clxcon.c21 sol:AA-clxcon.c22: "
         "CLXCON bit (5 + k) (ENBPk) includes bit plane k in collision detection and bit (k - 1) (MVBPk) is the value the plane must have, and an included plane that does not match prevents the collision (p.18, p.19), for k = 1..6: "
@@ -285,7 +299,6 @@ inline C3Addr c3_address(int ai, Pre& pre, bool omit_clxcon2, bool full) {
             auto rows = c2_rows(data);
             CfPlan plan;
             if (mutating("C3-PC-WINDOW")) plan.line2 = 0x68;
-            if (mutating("C3-PC-BEAM")) plan.h = 0xE0;
             for (const auto& rw : rows) {
                 uint16_t en = k == 7 ? 0x0040 : 0x0080, mv = k == 7 ? 0x0001 : 0x0002;
                 uint16_t v2 = uint16_t((rw.enbp ? en : 0) | (rw.mvbp ? mv : 0));
@@ -301,7 +314,9 @@ inline C3Addr c3_address(int ai, Pre& pre, bool omit_clxcon2, bool full) {
             pre.check(*r, 2, 1 + int(rows.size()), false, false, false);
             CfResult cr = cf_collect(*r, plan, 0x40, plan.line2);
             int own = (k & 1) ? 1 : 5, other = (k & 1) ? 5 : 1;
-            res.pc.absorb(*r, plan, cr, own, other);
+            std::vector<char> req;
+            for (const auto& rw : rows) req.push_back((k & 1) || !(rw.enbp && data != rw.mvbp));
+            res.pc.absorb(*r, plan, cr, own, other, &req);
             for (size_t j = 0; j < rows.size(); ++j) {
                 uint16_t val = j < cr.val.size() ? cr.val[j] : 0;
                 bool bit = (val >> own) & 1;
@@ -333,13 +348,14 @@ inline void prop_C3() {
     for (int ai = 0; ai < 2; ++ai) {
         pc.beam = pc.beam && a[ai].pc.beam; pc.window = pc.window && a[ai].pc.window;
         pc.spr = pc.spr && a[ai].pc.spr; pc.other = pc.other && a[ai].pc.other;
+        pc.beam_n += a[ai].pc.beam_n; pc.beam_off += a[ai].pc.beam_off;
     }
     pre.print("the C3 runs");
-    pc.print("C3", "the C3 runs");
+    pc.print("C3", "the C3 runs", true, false);
     bool ok = a[0].ok || a[1].ok;
     std::string which = a[0].ok && a[1].ok ? "both addresses" : a[0].ok ? "0x10E" : a[1].ok ? "0x10C" : "neither address";
     g.note("C3: the whole table is satisfied with CLXCON2 written at: " + which);
-    g.assert_line("C3", pre.setup && pre.frame && pc.all(), ok,
+    g.assert_line("C3", pre.setup && pre.frame && pc.all(false), ok,
         "C3: opus:AA-clxcon2.c5 opus:AA-clxcon2.c9 opus:AA-clxcon2.c10 opus:AA-clxcon2.c12 sol:AA-clxcon2.c5 sol:AA-clxcon2.c10 sol:AA-clxcon2.c12 sol:AA-clxcon2.c16: "
         "CLXCON2 bit 7 (ENBP8) and bit 6 (ENBP7) include planes 8 and 7 in collision detection and bit 1 (MVBP8) and bit 0 (MVBP7) are their required values (p.18, p.19): "
         "the whole table of C2 holds for planes 7 and 8 with CLXCON2 written at one of the two addresses the pages give (0x10E p.8, 0x10C p.18)");
@@ -412,7 +428,6 @@ inline void prop_C5() {
         {
             CfPlan plan;
             if (mutating("C5-PC-WINDOW")) plan.line2 = 0x68;
-            if (mutating("C5-PC-BEAM")) plan.h = 0xE0;
             RunSpec s = mk({}, plan);
             auto r = run(s);
             pre.check(*r, 1, 2, false, false, false);
@@ -442,12 +457,12 @@ inline void prop_C5() {
         }
     }
     pre.print("the C5 runs");
-    pc.print("C5", "the C5 runs", false);
+    pc.print("C5", "the C5 runs", false, false);
     g.expect(pc_static, "C5-PC-STATIC: the program writes neither CLXCON (0x098) nor CLXCON2 or BPLCON4 (0x10C, 0x10E) in the C5 runs");
-    g.assert_line("C5", pre.setup && pre.frame && pc.all() && pc_static, ok_base,
+    g.assert_line("C5", pre.setup && pre.frame && pc.all(false) && pc_static, ok_base,
         "C5: sol:AA-clxcon2.c11 sol:AA-clxcon2.c13: after reset, with neither CLXCON nor CLXCON2 written, planes 7 and 8 are not included in collision detection (p.18, p.4): "
         "CLXDAT bits 1 and 5 are 1 in F2 of run A (planes 7 and 8 all ones) and of run B (all zeros)");
-    g.expect_if(pre.setup && pre.frame && pc.all() && pc_static, ok_contrast,
+    g.expect_if(pre.setup && pre.frame && pc.all(false) && pc_static, ok_contrast,
         "C5-CONTROL: the same runs with CLXCON2 written (0x00C0 in run A, 0x00C3 in run B, no CLXCON write) at every address where C3 found CLXCON2 in effect: CLXDAT bits 1 and 5 are 0");
 }
 

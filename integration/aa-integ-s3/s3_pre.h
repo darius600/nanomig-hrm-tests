@@ -41,11 +41,13 @@ struct Pre {
     bool setup = true, frame = true, tag = true, pixel = true;
     bool used_tag = false, used_pixel = false;
     uint64_t u = 0;
+    long lf_need = 0;                  // the least field length the long-frame runs of the proposition ask for, in lines
+    std::vector<long> lf_field;        // the measured field length of each long-frame run, in lines
 
     explicit Pre(const std::string& p) : pfx(p) {}
 
-    // frames first..last (1-based) are used; lf: the long frame of 2.9
-    void check(const RunData& r, int first, int last, bool lf, bool need_tag, bool need_pixel) {
+    // frames first..last (1-based) are used; lf_lines > 0: a long-frame run whose field lasts at least that many lines
+    void check(const RunData& r, int first, int last, int lf_lines, bool need_tag, bool need_pixel) {
         used_tag = used_tag || need_tag;
         used_pixel = used_pixel || need_pixel;
         if (!r.loaded || !r.released || !r.done) { setup = frame = tag = pixel = false; return; }
@@ -56,10 +58,11 @@ struct Pre {
         else {
             std::vector<uint64_t> sp;
             for (int i = first; i <= last; ++i) sp.push_back(r.tF[i] - r.tF[i - 1]);
-            if (lf) {
-                for (auto d : sp) if (iabs(int64_t(d) - int64_t(1536 * Pc)) > Pc / 8) frame = false;
-            } else {
-                for (auto d : sp) if (iabs(int64_t(d) - int64_t(sp[0])) > Pc / 8) frame = false;
+            for (auto d : sp) if (iabs(int64_t(d) - int64_t(sp[0])) > Pc / 8) frame = false;
+            if (lf_lines > 0) {
+                lf_need = std::max<long>(lf_need, lf_lines);
+                lf_field.push_back(std::lround(double(sp[0]) / double(Pc)));
+                if (sp[0] + Pc / 8 < uint64_t(lf_lines) * Pc) frame = false;
             }
         }
         if (!need_tag && !need_pixel) return;
@@ -96,7 +99,12 @@ struct Pre {
 
     void print(const std::string& where) {
         g.expect(setup, pfx + "-PC-SETUP: the setup marker 0x5E7F is seen as a write to 0x0C0000 at the port in " + where + "; the first frame fetch at COP1LC follows it");
-        g.expect(frame, pfx + "-PC-FRAME: the Copper fetches at the COP1LC address exist for every frame used in " + where + " and are equally spaced");
+        g.expect(frame, pfx + "-PC-FRAME: the Copper fetches at the COP1LC address exist for every frame used in " + where + " and are equally spaced" +
+                 (lf_need > 0 ? ", and the field of a long-frame run lasts at least " + dec(lf_need) + " lines" : std::string()));
+        if (!lf_field.empty()) {
+            long lo = *std::min_element(lf_field.begin(), lf_field.end()), hi = *std::max_element(lf_field.begin(), lf_field.end());
+            g.note(pfx + ": the field of the long-frame runs lasts " + dec(lo) + (hi != lo ? ".." + dec(hi) : std::string()) + " lines (p.29, VTOTAL = 0x05FF, LACE clear: 'so there's this many + 1 in a field' = 1536 lines)");
+        }
         if (used_tag)
             g.expect(tag, pfx + "-PC-TAG: in every graded frame of " + where + " the tag MOVEs 0x2C-0xFF are fetched with equal spacing and the output shows tag(n) for each n in increasing order");
         if (used_pixel)

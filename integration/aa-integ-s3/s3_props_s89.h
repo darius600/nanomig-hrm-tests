@@ -42,7 +42,7 @@ inline RunSpec lom_spec(const std::string& pfx, int start, int stop, bool lf, bo
 inline std::map<std::string, LomData>& lom_cache() { static std::map<std::string, LomData> c; return c; }
 
 // runs (or fetches) one pair member; folds the common preconditions into pre
-inline LomData lom_run(const std::string& pfx, int start, int stop, bool lf, bool spren, Pre& pre, bool& pc_spr, bool& pc_static, bool wide = false) {
+inline LomData lom_run(const std::string& pfx, int start, int stop, bool lf, bool spren, Pre& pre, bool& pc_spr, bool& pc_static, bool wide = false, int lf_lines = 0) {
     char key[96];
     std::snprintf(key, sizeof key, "%s|%d|%d|%d|%d|%d", g_mutate ? pfx.c_str() : "", start, stop, lf ? 1 : 0, spren ? 1 : 0, wide ? 1 : 0);
     auto it = lom_cache().find(key);
@@ -64,7 +64,7 @@ inline LomData lom_run(const std::string& pfx, int start, int stop, bool lf, boo
         }
         lom_cache()[key] = d;
     }
-    pre.check(*d.r, 1, 2, lf && !wide, true, false);
+    pre.check(*d.r, 1, 2, (lf && !wide) ? std::max(lf_lines, stop + 1) : 0, true, false);
     Frame f = get_frame(*d.r, 2);
     if (!(f.ok && all_lists_in_order(*d.r, f, 2 + 2 * (stop - start) + 2))) {
         pc_spr = false;
@@ -123,8 +123,8 @@ inline void prop_S8() {
         if (mutating("S8") && p.k == 2) { s1 = 0x48; e1 = 0x50; }                // shifted by 2^(k+1)
         int s0 = p.s0;
         if (mutating("S8-PC-STATIC") && p.k == 2) s0 = 0x41;                      // start odd, stop even
-        LomData a = lom_run("S8", s0, p.e0, p.lf, spren, pre, pc_spr, pc_static);
-        LomData b = lom_run("S8", s1, e1, p.lf, true, pre, pc_spr, pc_static, mutating("S8-PC-LOM"));
+        LomData a = lom_run("S8", s0, p.e0, p.lf, spren, pre, pc_spr, pc_static, false, p.lf ? 0x249 : 0);
+        LomData b = lom_run("S8", s1, e1, p.lf, true, pre, pc_spr, pc_static, mutating("S8-PC-LOM"), p.lf ? 0x249 : 0);
         PairResult pr = compare_pair(a, b);
         if (!pr.valid) pc_lom = false;
         long want = 1L << p.k;
@@ -167,8 +167,8 @@ inline void prop_S9() {
         if (mutating("S9") && p.k == 2) { s1 = 0x48; e1 = 0x50; }
         int s0 = p.s0;
         if (mutating("S9-PC-STATIC") && p.k == 2) s0 = 0x41;
-        LomData a = lom_run("S9", s0, p.e0, p.lf, spren, pre, pc_spr, pc_static);
-        LomData b = lom_run("S9", s1, e1, p.lf, true, pre, pc_spr, pc_static, mutating("S9-PC-LOM"));
+        LomData a = lom_run("S9", s0, p.e0, p.lf, spren, pre, pc_spr, pc_static, false, p.lf ? 0x249 : 0);
+        LomData b = lom_run("S9", s1, e1, p.lf, true, pre, pc_spr, pc_static, mutating("S9-PC-LOM"), p.lf ? 0x249 : 0);
         PairResult pr = compare_pair(a, b);
         if (!pr.valid) pc_lom = false;
         long want = 1L << p.k;

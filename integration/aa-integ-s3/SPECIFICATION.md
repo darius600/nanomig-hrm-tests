@@ -193,7 +193,7 @@ For bit 9 (and, for S15, bit 10) of a vertical value, a field longer than 512 (1
 - VTOTAL (1C8) = `0x05FF` (p.29: "It's the line number to reset the counter, so there's this many + 1 in a field")
 - BEAMCON0 (1DC) = `0x08A0`, in place of the `0x0020` of 2.1 (p.12: bit 11 LOLDIS, bit 7 VARBEAMEN, bit 5 PAL; p.24: "If the PAL bit & LOLDIS are not high, long line/short line toggle will occur")
 
-The field then has 1536 lines. The Copper tag block still covers lines 0x2C-0xFF only.
+p.29 gives the field as VTOTAL + 1 = 1536 lines with LACE clear. The number of lines is measured and printed against that sentence (2.12, PC-FRAME); the propositions that use LF ask only for the length their lists need. The Copper tag block still covers lines 0x2C-0xFF only.
 
 ### 2.10 Collision frame procedure CF
 
@@ -227,12 +227,12 @@ p.19 also says: "NOTE: Playfield 1 is all odd numbered enabled bit planes. Playf
 
 | Id | Precondition asserted before grading | Stimulus change that makes it fail |
 |---|---|---|
-| PC-FRAME | t_F(i) exists for every frame used. Consecutive t_F are equally spaced (within P/8); in the LF configuration the spacing is 1536*P. | Omit setting COPEN: no fetch at COP1LC. In LF, omit VARBEAMEN: spacing is a normal PAL field, not 1536 lines. |
+| PC-FRAME | t_F(i) exists for every frame used. Consecutive t_F are equally spaced (within P/8). In the LF configuration the field also lasts at least as many lines as the longest list of the proposition needs: 0x249 lines for S8 and S9 (the stop line 0x248 of the k = 9 list lies inside the field), 0x449 lines for S15 (k = 10). The length of the field is a MEASURED line, printed against p.29 ("so there's this many + 1 in a field": 1536 lines for VTOTAL = `0x05FF`, LACE clear); it is not a precondition. | Omit setting COPEN: no fetch at COP1LC. In LF, omit VARBEAMEN: the field is a normal PAL field, shorter than the least length. |
 | PC-TAG | In every graded frame, t_tag(n) exists for n = 0x2C..0xFF with equal spacing P (within P/32). The output shows tag(n) for each n in increasing order. | Remove the MOVE COLOR00 instructions from the tag block: no tags. |
 | PC-BPL(set) | In the graded frame, the port shows reads in the region of every plane in the set on every graded line, and no reads in the regions of planes outside it. | Clear BPLEN: no reads. |
 | PC-SPR(x) | In the graded frame, list x is read in order: word 0, word 1 once, then its data pairs, then the end pair. | Clear SPREN: no reads. |
 | PC-MOVE | Each Copper MOVE that writes a pointer or register under test is fetched in the intended frame and line with the intended data word (seen at the port). | Put a wrong data word into the list: the fetched value differs. |
-| PC-BEAM | Every beam marker's re-read shows the target line. | Target H = 0xE0: the action spills into the next line and the re-read shows line + 1. |
+| PC-BEAM | Every beam marker's re-read shows the target line. Not used by C2, C3 and C5, which rest on their window precondition; there the re-read line is a MEASURED line. | Target H = 0xE0: the action spills into the next line and the re-read shows line + 1. |
 | PC-STATIC(reg) | The program and the Copper list contain no write to reg before the check (checked on the program image). | Add such a write: the static check flags it. |
 | PC-SETUP | The setup marker `0x5E7F` is seen as a write to `0x0C0000` at the port. t_F(1) follows it by the definition of t_F (2.11). | Leave out the marker write: no marker is seen, and no frame can be anchored. |
 | PC-PIXEL | In the graded frame, t_tag(0xFF) - t_tag(0x2C) = 211 * 1816 * u clk_sys cycles for a whole number u ≥ 1 (2.11, "Output pixel"). Every count of output pixels uses this u. It is a precondition of every proposition that reads a pixel pattern or counts output pixels: B3, B4, S3-S7, S10-S14, C1. | With BEAMCON0 = `0x08A0` and HTOTAL (1C0) = `0x00E3` every line is 228 colour clocks (p.24: "Horiz line has this many + 1 280ns increments"), and the tag spacing is no whole multiple of 211 * 1816. |
@@ -734,7 +734,7 @@ Which line a start value names in absolute terms, and on which line the first da
 
 **Contrasting case.** Shift by 2^(k+1): Δ = 2^(k+1), red.
 
-For the preconditions: LF without VARBEAMEN (the field is not 1536 lines, so PC-FRAME fails); clear SPREN.
+For the preconditions: LF without VARBEAMEN (the field is a normal PAL field, shorter than 0x249 lines, so PC-FRAME fails); clear SPREN.
 
 **Reference frame.** t_F and P (2.11). Line numbers are counted relative to the reference run only.
 
@@ -1126,7 +1126,7 @@ The CLXDAT bit names are from p.19.
 
 **Preconditions.**
 
-- PC-FRAME, PC-SPR for every displayed sprite, the CF window (the first CF read's marker comes before every involved sprite's first data read, and the result marker after every end-pair read), PC-BEAM.
+- PC-FRAME, PC-SPR for every displayed sprite, the CF window (the first CF read's marker lies inside the frame and comes before every involved sprite's first data read, and the result marker lies inside the frame and after every end-pair read), PC-BEAM.
 - Result bit 14 = 1 in every run: the control pair of two even sprites, which are always included, collides, so collision detection is running.
 - The union of each overlapping pair is visible as a 24-lores-pixel (48 output pixels) cS span on lines 0x60-0x6F.
 
@@ -1184,8 +1184,8 @@ Quantifier: all six planes, every combination of enable and match value, both da
 
 **Preconditions.**
 
-- PC-FRAME, PC-BPL({1..8}), PC-SPR(0), the CF window, PC-BEAM.
-- The other group's bit (5 for odd k, 1 for even k) is 1 in every frame. That group has all its planes disabled, so its collision is continuous (p.19); this shows the sprite was displayed and detection ran.
+- PC-FRAME, PC-BPL({1..8}), PC-SPR(0), the CF window. The line on which the re-read of VPOSR/VHPOSR after each CF read lands is a MEASURED line; the window (both markers inside the frame, the first CF read before the sprite's first data read, the result read after its end pair) is what the proposition needs.
+- PC-OTHER: the other group's bit (5 for odd k, 1 for even k) is 1 in every frame for odd k, and for even k in every frame in which plane k is disabled or matches its value. That group has all its planes disabled, so its collision is continuous (p.19); this shows the sprite was displayed and detection ran. In a frame in which an enabled even plane does not match, nothing is demanded of the odd group's bit: p.19's note ("Playfield 1 is all odd numbered enabled bit planes. Playfield 2 is all even numbered enabled bit planes") does not say whether the playfield-1 collision bit may fall together with a mismatching playfield-2 plane.
 
 **Contrasting case.** The F2 and F3 rows differ only in MVBPk, and F3 and F4 only in ENBPk. Each is the other's contrast.
 
@@ -1273,7 +1273,7 @@ Quantifier "Writing to this register": two different written values are graded.
 
 **Address.** As in C3, every C4 run is made twice, each time in its own run: with CLXCON2 written at `0x10E` and at `0x10C`. C4 is graded at each address where F2 and F4 give 0, i.e. where CLXCON2 is in effect; that is C3's clause, not C4's. C4 passes if F3 and F5 give 1 at every such address, and fails otherwise. The record states the address or addresses.
 
-**Preconditions.** PC-FRAME, PC-BPL, PC-SPR(0), the CF window, PC-BEAM. At one address at least, F2 and F4 give 0 (CLXCON2 is in effect there). If neither address gives it, C4 is not graded; C3 then fails.
+**Preconditions.** PC-FRAME, PC-BPL, PC-SPR(0), the CF window. At one address at least, F2 and F4 give 0 (CLXCON2 is in effect there). If neither address gives it, C4 is not graded; C3 then fails.
 
 **Contrasting case.** Leave out the CLXCON writes in F3 and F5: bits 1 and 5 stay 0.
 
@@ -1387,7 +1387,7 @@ These are measurements of the final run, not oracles:
 
 - A chip line lasts P = 1816 clk_sys cycles, the video port shows 908 samples per output line, and 70 ns of chip time is one sample (u = 1, PC-PIXEL). The visible part of an output line is the samples 65-818.
 - A normal PAL frame (BEAMCON0 = `0x0020`) lasts 313 lines (568,408 cycles) in every run.
-- With HTOTAL = `0x00E2`, VTOTAL = `0x05FF` and BEAMCON0 = `0x08A0` the Copper restarts 2,791,192 cycles apart, which is 1537 lines of 1816 cycles; PC-FRAME of 2.12 asks for 1536 lines (p.29: "there's this many + 1 in a field").
+- With HTOTAL = `0x00E2`, VTOTAL = `0x05FF` and BEAMCON0 = `0x08A0` the Copper restarts 2,791,192 cycles apart, which is 1537 lines of 1816 cycles; p.29 gives "there's this many + 1 in a field", 1536 lines, and the PC-FRAME line prints the measured length beside it.
 - With the SSCAN2 bit of FMODE set a sprite is shown a second time 512 output pixels to the right of its first image (S11); S12 reads the first image.
 - SPRxCTL bit 4 (SH1): the k = 1 pair of S5 shows the leftmost cS pixel moved by 0 output pixels on all 128 band lines, where p.28 ("04 SH1=0 start horiz. value, 70nS increment") asks for 1. The pairs k = 2..10 move by exactly 2^(k-1) output pixels.
 
@@ -1401,13 +1401,13 @@ These are measurements of the final run, not oracles:
 
 ### 5.6 Mutations
 
-Each assertion and each precondition has `// MUTATION` records in the header of `test_aa_integ_s3.cpp`: the selector `NMH_MUTATE=<value>` changes the stimulus only (a table, a Copper list, a program variant or a register value) and runs the unchanged comparator; the record states what changed and which lines printed FAIL on each core. A mutation run grades the part of the proposition that its selector names; where that is a sub-population of the normal run, the record says so.
+Each assertion and each precondition has `// MUTATION` records in the header of `test_aa_integ_s3.cpp`: the selector `NMH_MUTATE=<value>` changes the stimulus only (a table, a Copper list, a program variant or a register value) and runs the unchanged comparator; the record states what changed and which lines printed FAIL on each core. A mutation run grades the part of the proposition that its selector names; where that is a sub-population of the normal run (S8 and S9 grade the k = 2 pair, C2 plane 3, C3 plane 7 with data 1, S5 and S5-SH10-SH3 the k = 3 pair), the record says so.
 
-Every red line has a green control through the same comparator, named in the records: S5 for S5-SH1 (the comparator for k = 2..10; the record S5-SH1 runs it green on the k = 1 pair), S6-CONTROL for S6 (the data word shifted by one 35-ns pixel), S7-CONTROL-SH1 and S7-CONTROL-SH0 for the preconditions S7-PC-SH1 and S7-PC-SH0 (SH2 in place of SH1; a data word shifted by one 35-ns pixel in place of SH0), S7-CONTROL and S7-CONTROL-V for the comparators of S7 itself, C5-CONTROL for C5 and J-CONTROL for the joint assertions. A record of kind `stimulus impossible` states a stimulus that runs while its line prints NOT GRADED because named preconditions print FAIL, and names the control on which the comparator is live; a record of kind `none impossible` states why no stimulus applies.
+Every red line has a green control through the same comparator, named in the records: S5 for S5-SH1 (the comparator for k = 2..10; the record S5-SH1 runs it green on the k = 1 pair), S6-CONTROL for S6 (the data word shifted by one 35-ns pixel), S7-CONTROL-SH1 and S7-CONTROL-SH0 for the preconditions S7-PC-SH1 and S7-PC-SH0 (SH2 in place of SH1; a data word shifted by one 35-ns pixel in place of SH0), S7-CONTROL and S7-CONTROL-V for the comparators of S7 itself, S15-CONTROL-GROUPS and S15-CONTROL-LOM for S15-PC-GROUPS and S15-PC-LOM and S16-CONTROL-ACCESS for S16-PC-ACCESS (each runs the comparator on a region that bit-plane DMA reaches: plane 1's data in the region of P_1 and plane 5's in that of P_5, two words per line; the LOM control compares two runs whose DIWSTRT differs by two lines), C5-CONTROL for C5 and J-CONTROL for the joint assertions. A record of kind `stimulus impossible` states a stimulus that runs while its line prints NOT GRADED because named preconditions print FAIL, and names the control on which the comparator is live; a record of kind `none impossible` states why no stimulus applies.
 
 ### 5.7 Results of the final run
 
-Final run of `make -k -B test`: fx68k 164 passed, 18 failed; TG68K 169 passed, 15 failed.
+Final run of `make -k -B test`: fx68k 179 passed, 9 failed; TG68K 179 passed, 9 failed.
 
 | Line | fx68k | TG68K |
 |---|---|---|
@@ -1430,26 +1430,29 @@ Final run of `make -k -B test`: fx68k 164 passed, 18 failed; TG68K 169 passed, 1
 | S7-CONTROL-SH1 | PASS | PASS |
 | S7-CONTROL-SH0 | PASS | PASS |
 | S7-CONTROL-V | PASS | PASS |
-| S8 | NOT GRADED | NOT GRADED |
-| S9 | NOT GRADED | NOT GRADED |
+| S8 | PASS | PASS |
+| S9 | PASS | PASS |
 | S10 | PASS | PASS |
 | S11 | PASS | PASS |
 | S12 | PASS | PASS |
 | S13 | PASS | PASS |
 | S14 | PASS | PASS |
 | S14-B | PASS | PASS |
+| S15-CONTROL-GROUPS | PASS | PASS |
+| S15-CONTROL-LOM | PASS | PASS |
 | S15 | NOT GRADED | NOT GRADED |
+| S16-CONTROL-ACCESS | PASS | PASS |
 | S16 | NOT GRADED | NOT GRADED |
 | C1 | PASS | PASS |
-| C2 | NOT GRADED | NOT GRADED |
-| C3 | NOT GRADED | NOT GRADED |
+| C2 | PASS | PASS |
+| C3 | PASS | PASS |
 | C4 | PASS | PASS |
-| C5 | NOT GRADED | PASS |
-| C5-CONTROL | NOT GRADED | PASS |
-| J1 | FAIL | FAIL |
+| C5 | PASS | PASS |
+| C5-CONTROL | PASS | PASS |
+| J1 | PASS | PASS |
 | J2 | FAIL | FAIL |
 | J3 | FAIL | FAIL |
 | J4 | PASS | PASS |
 | J-CONTROL | PASS | PASS |
 
-S5-SH1 and S6 print FAIL on both cores, and J1, J2 and J3 with them; S7, S8, S9, S15, S16, C2, C3 (and C5, C5-CONTROL on fx68k) print NOT GRADED because a precondition prints FAIL; the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.
+S5-SH1 and S6 print FAIL on both cores, and J2 and J3 with them; S7, S15 and S16 print NOT GRADED because a precondition prints FAIL (S7-PC-SH1 and S7-PC-SH0; S15-PC-GROUPS and S15-PC-LOM; S16-PC-ACCESS); the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.

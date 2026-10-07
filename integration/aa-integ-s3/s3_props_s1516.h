@@ -36,7 +36,7 @@ inline RunSpec uhres_spec(const std::string& pfx, int start, uint16_t stop_reg, 
     return s;
 }
 
-inline UData u_analyse(std::shared_ptr<RunData> r) {
+inline UData u_analyse(std::shared_ptr<RunData> r, uint32_t base_u = kU, uint32_t base_u2 = kU2) {
     UData d;
     d.r = r;
     Frame f = get_frame(*r, 2);
@@ -48,25 +48,49 @@ inline UData u_analyse(std::shared_ptr<RunData> r) {
     for (size_t i = acc_from(*r, f.t0); i < r->acc.size() && r->acc[i].cyc < f.t1; ++i) {
         const Acc& a = r->acc[i];
         uint32_t b = a.waddr * 2;
-        if (b >= kU && b < kU + 0x10000) {
+        if (b >= base_u && b < base_u + 0x10000) {
             if (a.wr) ++d.u_writes; else ++d.u_reads;
             if (!have || a.cyc - last >= d.P / 2) d.g.push_back(int64_t(a.cyc) - int64_t(f.t0));
             last = a.cyc;
             have = true;
-        } else if (b >= kU2 && b < kU2 + 0x10000) {
+        } else if (b >= base_u2 && b < base_u2 + 0x10000) {
             if (a.wr) ++d.u2_writes; else ++d.u2_reads;
         }
     }
     return d;
 }
 
-inline UData u_run(const std::string& pfx, int start, uint16_t stop_reg, bool lf, bool uhres, int bs, int be, bool ecs, Pre& pre, bool& pc_move) {
+inline UData u_run(const std::string& pfx, int start, uint16_t stop_reg, bool lf, bool uhres, int bs, int be, bool ecs, Pre& pre, bool& pc_move, int lf_lines = 0) {
     RunSpec s = uhres_spec(pfx, start, stop_reg, lf, uhres, bs, be, ecs);
     auto r = run(s);
-    pre.check(*r, 1, 2, lf, true, false);
+    pre.check(*r, 1, 2, lf ? std::max(lf_lines, int(stop_reg & 0x7FF) + 1) : 0, true, false);
     Frame f = get_frame(*r, 2);
     if (!moves_fetched(*r, f, intended_vb(*r), r->lay.vb_data)) pc_move = false;
     return u_analyse(r);
+}
+
+// the line-offset measures of the first and of the last group of two runs are valid
+inline bool groups_lom(const UData& a, const UData& b, long* df, long* dl) {
+    return a.ok && b.ok && !a.g.empty() && !b.g.empty() &&
+           lom_delta(b.g.front() - a.g.front(), a.P, df) && lom_delta(b.g.back() - a.g.back(), a.P, dl);
+}
+
+// a run in which DMA does reach two 64-KB regions: plane 1's data lie in the region of P_1 (0x090000), plane 5's in that of P_5 (0x0A0000)
+inline RunSpec reach_spec(const std::string& pfx, uint16_t diwstrt, bool wide, bool bplen) {
+    Std o; o.bpu = 5; o.dmacon = bplen ? 0x8380 : 0x8280; o.diwstrt = diwstrt;
+    o.ddfstop = 0x0040;                  // two words per line: the groups of one line lie well apart from those of the next
+    if (wide) { o.lf = true; o.htotal = 0x00E3; o.vtotal = 0x0138; o.beamcon0 = 0x08A0; }       // 228 colour clocks per line
+    RunSpec s = base_spec(o, pfx);
+    std::array<uint32_t, 9> pl = all_z();
+    pl[1] = P_k(1); pl[5] = P_k(5);
+    s.vb = bpl_ptrs(pl, 5);
+    EventSpec fin; fin.nvb = 4; s.ev.push_back(fin);
+    return s;
+}
+inline UData reach_run(const std::string& pfx, uint16_t diwstrt, bool wide, bool bplen, Pre& pre) {
+    auto r = run(reach_spec(pfx, diwstrt, wide, bplen));
+    pre.check(*r, 1, 2, 0, false, false);
+    return u_analyse(r, P_k(1), P_k(5));
 }
 
 // the groups lie one line apart: every gap is one line (LOM)
@@ -95,12 +119,11 @@ inline void prop_S15() {
         if (only_k >= 0 && p.k != only_k) continue;
         int s1 = p.s1, e1 = p.e1;
         if (mutating("S15") && p.k == 2) { s1 = 0x48; e1 = 0x50; }
-        UData a = u_run("S15", p.s0, uint16_t(p.e0), p.lf, uhres, 0, 0, false, pre, pc_move);
-        UData b = u_run("S15", s1, uint16_t(e1), p.lf, true, 0, 0, false, pre, pc_move);
+        UData a = u_run("S15", p.s0, uint16_t(p.e0), p.lf, uhres, 0, 0, false, pre, pc_move, p.lf ? 0x449 : 0);
+        UData b = u_run("S15", s1, uint16_t(e1), p.lf, true, 0, 0, false, pre, pc_move, p.lf ? 0x449 : 0);
         if (a.g.size() < 2) pc_groups = false;
         long df = 0, dl = 0;
-        bool v = a.ok && b.ok && !a.g.empty() && !b.g.empty() &&
-                 lom_delta(b.g.front() - a.g.front(), a.P, &df) && lom_delta(b.g.back() - a.g.back(), a.P, &dl);
+        bool v = groups_lom(a, b, &df, &dl);
         if (!v) lom_ok = false;
         long want = 1L << p.k;
         bool good = v && df == want && dl == want && consecutive_lines(a) && consecutive_lines(b);
@@ -113,17 +136,34 @@ inline void prop_S15() {
         UData b = u_run("S15", 0x40 + (1 << k), 0x50, false, true, 0, 0, false, pre, pc_move);      // start-only
         UData c = u_run("S15", 0x40, uint16_t(0x50 + (1 << k)), false, true, 0, 0, false, pre, pc_move);   // stop-only
         long bf = 0, bl = 0, cf = 0, cl = 0;
-        bool vb = a.ok && b.ok && !a.g.empty() && !b.g.empty() && lom_delta(b.g.front() - a.g.front(), a.P, &bf) && lom_delta(b.g.back() - a.g.back(), a.P, &bl);
-        bool vc = a.ok && c.ok && !a.g.empty() && !c.g.empty() && lom_delta(c.g.front() - a.g.front(), a.P, &cf) && lom_delta(c.g.back() - a.g.back(), a.P, &cl);
+        bool vb = groups_lom(a, b, &bf, &bl);
+        bool vc = groups_lom(a, c, &cf, &cl);
         if (!vb || !vc) lom_ok = false;
         long n_a = long(a.g.size()), n_b = long(b.g.size()), n_c = long(c.g.size());
         g.note("S15: k = " + dec(k) + ": start-only first group " + dec(bf) + " lines, groups " + dec(n_a) + " -> " + dec(n_b) + "; stop-only last group " + dec(cl) + " lines, groups " + dec(n_a) + " -> " + dec(n_c));
         ok = ok && vb && vc && bf == (1L << k) && bl == 0 && n_a - n_b == (1L << k) && cl == (1L << k) && cf == 0 && n_c - n_a == (1L << k);
     }
+    // controls: the comparators of S15-PC-GROUPS and S15-PC-LOM on a region that DMA does reach
+    bool ctl_groups = true, ctl_lom = true, ctl_ran = false;
+    if (!g_mutate || mutating("S15-CONTROL-GROUPS") || mutating("S15-CONTROL-LOM")) {
+        ctl_ran = true;
+        UData ra = reach_run("S15", 0x2C81, false, !mutating("S15-CONTROL-GROUPS"), pre);
+        UData rb = reach_run("S15", 0x2E81, mutating("S15-CONTROL-LOM"), true, pre);
+        long df = 0, dl = 0;
+        ctl_groups = ra.g.size() >= 2;
+        ctl_lom = groups_lom(ra, rb, &df, &dl);
+        g.note("S15 control: " + dec(long(ra.g.size())) + " groups of accesses in the region of P_1 (" + dec(ra.u_reads) + " reads, " + dec(ra.u_writes) + " writes); a DIWSTRT two lines later moved the first group " + dec(df) + " lines and the last " + dec(dl) + " lines");
+    }
     pre.print("the S15 runs");
     g.expect(pc_move, "S15-PC-MOVE: in every run F2's vertical-blank block fetches the SPRHPTH and SPRHPTL MOVEs with the intended data words");
     g.expect(pc_groups, "S15-PC-GROUPS: in every reference run the port shows at least two groups of accesses in region U in F2");
     g.expect(lom_ok, "S15-PC-LOM: every line-offset measure of the first and the last group is valid (within P/8 of a whole number of lines)");
+    if (ctl_ran) {
+        g.expect_if(pre.setup && pre.frame, ctl_groups,
+            "S15-CONTROL-GROUPS: the comparator of S15-PC-GROUPS (the port shows at least two groups of accesses in a 64-KB region in F2) applied to the region of P_1, which plane 1's bit-plane DMA reaches");
+        g.expect_if(pre.setup && pre.frame, ctl_lom,
+            "S15-CONTROL-LOM: the comparator of S15-PC-LOM (the line-offset measures of the first and the last group of two runs are valid) applied to the region of P_1 in two runs whose DIWSTRT differs by two lines");
+    }
     g.assert_line("S15", pre.setup && pre.frame && pre.tag && pc_move && pc_groups && lom_ok, ok,
         "S15: sol:AA-sprhstop.c5 opus:AA-sprhstop.c7 sol:AA-sprhstop.c11 sol:AA-sprhstop.c12 sol:AA-sprhstop.c13 sol:AA-sprhstop.c14 sol:AA-sprhstop.c15 sol:AA-sprhstop.c16 sol:AA-sprhstop.c17 sol:AA-sprhstop.c18 sol:AA-sprhstop.c19 sol:AA-sprhstop.c20 sol:AA-sprhstop.c21 "
         "sol:AA-sprhstrt.c5 opus:AA-sprhstrt.c6 sol:AA-sprhstrt.c11 sol:AA-sprhstrt.c12 sol:AA-sprhstrt.c13 sol:AA-sprhstrt.c14 sol:AA-sprhstrt.c15 sol:AA-sprhstrt.c16 sol:AA-sprhstrt.c17 sol:AA-sprhstrt.c18 sol:AA-sprhstrt.c19 sol:AA-sprhstrt.c20 sol:AA-sprhstrt.c21: "
@@ -155,9 +195,19 @@ inline void prop_S16() {
                     lom_delta(d1.g.front() - d0.g.front(), d0.P, &df) && lom_delta(d1.g.back() - d0.g.back(), d0.P, &dl) && df == 0 && dl == 0;
         ok = ok && dir0 && dir1 && u2 && same;
     }
+    bool ctl_ok = true, ctl_ran = false;
+    if (!g_mutate || mutating("S16-CONTROL-ACCESS")) {
+        ctl_ran = true;
+        UData rc = reach_run("S16", 0x2C81, false, !mutating("S16-CONTROL-ACCESS"), pre);
+        ctl_ok = rc.g.size() >= 2 && rc.u2_reads + rc.u2_writes > 0;
+        g.note("S16 control: " + dec(long(rc.g.size())) + " groups of accesses in the region of P_1 and " + dec(rc.u2_reads + rc.u2_writes) + " accesses in the region of P_5");
+    }
     pre.print("the S16 runs");
     g.expect(pc_move, "S16-PC-MOVE: in every run F2's vertical-blank block fetches the SPRHPTH and SPRHPTL MOVEs with the intended data words");
     g.expect(pc_u, "S16-PC-ACCESS: in every run the port shows at least two groups of accesses in region U and at least one access in region U2 in F2");
+    if (ctl_ran)
+        g.expect_if(pre.setup && pre.frame, ctl_ok,
+            "S16-CONTROL-ACCESS: the comparator of S16-PC-ACCESS (at least two groups of accesses in one 64-KB region and at least one access in a second one, in F2) applied to the regions of P_1 and P_5, which plane 1's and plane 5's bit-plane DMA reach");
     g.assert_line("S16", pre.setup && pre.frame && pre.tag && pc_move && pc_u, ok,
         "S16: sol:AA-sprhstop.c6 sol:AA-sprhstop.c22: with SPRHSTOP bit 15 (SPRHWRM) set the memory cycles of the UHRES sprite pointer are writes and with the bit clear they are reads (p.28), with the AA and with the ECS chip set selected: "
         "every U access is a write with SPRHWRM = 1 and a read with SPRHWRM = 0, every U2 access is a read in both runs, and the U groups lie on the same lines in both runs");
