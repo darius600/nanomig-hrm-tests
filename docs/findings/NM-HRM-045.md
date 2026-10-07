@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-dmaon-enable-composition`](../../hrm/ch8-dmaon-enable-composition): `make -C hrm/ch8-dmaon-enable-composition test`; the expected red exits nonzero |
 | **Assertions** | 1 red of 6 graded: `A2-DMAON_P278_TWO_TERM_COMPOSITION` — expected DMAON=1 with DSKEN=0, observed DMAON=0. `A1` grades p.248's reading across all eight term combinations and is green on the identical measurement basis |
 | **Verdict of the four** | **unanimous against p.278.** All four require the DSKEN term; not one implements the two-term formula as Appendix A prints it. Hardware: not measured |
-| **Effort** | none: no RTL change; the correction is one clause in the manual |
+| **Effort** | none — no RTL change: the correction is one clause in the manual |
 | **See also** | [NM-HRM-041](NM-HRM-041.md), which is about the same register's *constant* fields. This finding is only about bit 14 |
 
 ---
