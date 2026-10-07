@@ -16,10 +16,13 @@ struct VolAtt {
     int m_p2 = 0;                     // marker of the start of channel m (phase 2)
     int m_p2end = 0;
     double L[4] = {};                 // L64, L16, L40, L32
+    bool cal_const = true;            // the output is constant over each calibration window
     std::vector<Fetch> fm;            // channel m's fetches in phase 2
 };
 
-constexpr uint16_t kVolWords[3] = {0x0040, 0x0010, 0x0028};
+// The modulator's data set: the volumes 64, 16, 40, the last one twice, so that a first pass that is a word short or two words long
+// outputs the same segments (64, 16, 40) as a whole pass.
+constexpr uint16_t kVolWords[4] = {0x0040, 0x0010, 0x0028, 0x0028};
 
 inline VolAtt vol_att(int m, int n, const std::string& pid) {
     const bool liver = mut((pid + "-LIVEREV").c_str());
@@ -29,12 +32,13 @@ inline VolAtt vol_att(int m, int n, const std::string& pid) {
     RunSpec rs; rs.bin = run_bin();
     Script& s = rs.sc;
     r.pre = prefix(s);
-    poke_words(rs.pokes, kBuf[n], {0x7F7F});
-    std::vector<uint16_t> mod = {kVolWords[0], kVolWords[1], kVolWords[2]};
-    if (mut((pid + "-REV").c_str())) mod = {kVolWords[2], kVolWords[1], kVolWords[0]};
+    poke_words(rs.pokes, kBuf[n], {mut((pid + "-PAT").c_str()) ? uint16_t(0x7F00) : uint16_t(0x7F7F)});   // -PAT: two different bytes, so the output is not constant within a window
+    std::vector<uint16_t> mod = {kVolWords[0], kVolWords[1], kVolWords[2], kVolWords[3]};
+    if (mut((pid + "-REV").c_str())) mod = {kVolWords[3], kVolWords[2], kVolWords[1], kVolWords[0]};
+    mod.push_back(mod.back()); mod.push_back(mod.back());   // two words past the set repeat its last word
     poke_words(rs.pokes, kBuf[m], mod);
     s.w32(audlc(n), kBuf[n]); s.w16(audlen(n), 1); s.w16(audper(n), 200); s.w16(audvol(n), 32);
-    s.w32(audlc(m), kBuf[m]); s.w16(audlen(m), 3); s.w16(audper(m), 1500); s.w16(audvol(m), 0);
+    s.w32(audlc(m), kBuf[m]); s.w16(audlen(m), 4); s.w16(audper(m), 1500); s.w16(audvol(m), 0);
     // phase 1: channel n alone
     r.m_start = s.w16(DMACON, start_val(1u << n));
     v.i_dm_n = r.pre.logn++; s.rd(DMACONR);
@@ -74,6 +78,9 @@ inline VolAtt vol_att(int m, int n, const std::string& pid) {
     for (int i = 0; i < 4; ++i) {
         uint64_t ta = marker(r.cap, v.m_c[i] + 1);
         v.L[i] = mean_o(r.cap, ta + line, ta + 3 * line) - r.Z;
+        int32_t lo = out_at(r.cap, ta + line), hi = lo;
+        for (uint64_t t = ta + line; t < ta + 3 * line; ++t) { lo = std::min(lo, out_at(r.cap, t)); hi = std::max(hi, out_at(r.cap, t)); }
+        v.cal_const &= lo == hi;
     }
     return v;
 }
@@ -117,6 +124,13 @@ inline void run_vol_att(Checks& ck, const std::string& pid, const char* claim, i
     uint16_t a2 = logv(v.r.cap, v.i_adk2), a3 = logv(v.r.cap, v.i_adk3);
     bool adk = (a2 & 0x00FF) == (1u << m) && !(a3 & (1u << m));
     VolObs o = vol_obs(v);
+    std::string p2;   // phase 2 as it is, from the start of channel m: every segment's level (relative to Z) and length in cycles
+    {
+        auto segs = runs_of(v.r.cap, marker(v.r.cap, v.m_p2), marker(v.r.cap, v.m_p2end));
+        for (size_t i = 0; i < segs.size() && i < 8; ++i) p2 += num(double(segs[i].v) - v.r.Z) + "(" + dec((long long)segs[i].len()) + ") ";
+        p2 = dec((long long)segs.size()) + " segments in all, the first " + dec((long long)std::min<size_t>(segs.size(), 8)) + " (level(length in cycles)): " + p2;
+    }
+    ck.note(pid + " phase 2 from the start of channel " + dec(m) + ": " + p2);
     ck.note(pid + ": calibration L64=" + num(v.L[0]) + " L16=" + num(v.L[1]) + " L40=" + num(v.L[2]) + " L32=" + num(v.L[3]) + "; phase 2: segments=" + dec((long long)o.nseg) +
             " (L64 " + dec((long long)o.cnt[0]) + ", L16 " + dec((long long)o.cnt[1]) + ", L40 " + dec((long long)o.cnt[2]) + ", L32 " + dec((long long)o.n32) + ", other " + dec((long long)o.nother) +
             "), modulator fetches=" + dec((long long)v.fm.size()) + ", ADKCONR phase 2/3 = " + hex4(a2) + "/" + hex4(a3));
@@ -124,8 +138,9 @@ inline void run_vol_att(Checks& ck, const std::string& pid, const char* claim, i
     ck.expect(gd, pid + "-G-D: after each start DMACONR bit 9 and the started channel's bit read 1, for channel n and for channel m (AA p.22)");
     ck.expect(gf, pid + "-G-F: channel m makes at least 12 fetches in phase 2 and channel n at least 12 over the run (AA p.22 '00 AUD0EN')");
     ck.expect(dist, pid + "-PRE-CAL: the calibration levels L64, L16, L40 and L32 differ pairwise by more than 2 LSB (AA p.11 AUDxVOL)");
-    bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && dist;
-    const std::string un = "fixture, G-S0, G-C, G-D, G-F or the calibration";
+    ck.expect(v.cal_const, pid + "-PRE-CONST: the output is constant over each of the four calibration windows (volumes 64, 16, 40 and 32 of constant data), so a level over a window is a level over whole repetitions of any pattern the volume might give (AA p.11 '(111111=63 0nes, one zero)')");
+    bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && dist && v.cal_const;
+    const std::string un = "fixture, G-S0, G-C, G-D, G-F, the calibration or the constant output";
     auto levels_ok = [](const VolObs& q) { return q.nseg > 0 && q.n32 == 0 && q.nother == 0 && q.cycle && q.cnt[0] >= 3 && q.cnt[1] >= 3 && q.cnt[2] >= 3; };
     graded(ck, pre, adk, pid + "-ADK: in phase 2 ADKCONR bit " + dec(m) + " reads 1 and the other bits 7 to 0 read 0, and in phase 3 bit " + dec(m) + " reads 0 (AA p.10 'SET/CLR Determines if bits written with a 1 get set or cleared')", un);
     graded(ck, pre, levels_ok(o), pid + "-LEVELS: in phase 2 every segment of channel " + dec(n) + "'s output has the level L64, L16 or L40, none has L32, the segments cycle 64 -> 16 -> 40 and each value occurs at least three times (AA p.11 '" + bitname + "')", un);
@@ -141,7 +156,8 @@ struct PerAtt {
     std::vector<Fetch> fm;
 };
 
-constexpr uint16_t kPerWords[3] = {0x00C8, 0x0258, 0x015E};
+// The modulator's data set: the periods 200, 600, 350, the last one twice (as kVolWords).
+constexpr uint16_t kPerWords[4] = {0x00C8, 0x0258, 0x015E, 0x015E};
 
 inline PerAtt per_att(int m, int n, const std::string& pid) {
     const bool liver = mut((pid + "-LIVEREV").c_str());
@@ -152,11 +168,12 @@ inline PerAtt per_att(int m, int n, const std::string& pid) {
     Script& s = rs.sc;
     r.pre = prefix(s);
     poke_words(rs.pokes, kBuf[n], {0x7F80});
-    std::vector<uint16_t> mod = {kPerWords[0], kPerWords[1], kPerWords[2]};
-    if (mut((pid + "-REV").c_str())) mod = {kPerWords[2], kPerWords[1], kPerWords[0]};
+    std::vector<uint16_t> mod = {kPerWords[0], kPerWords[1], kPerWords[2], kPerWords[3]};
+    if (mut((pid + "-REV").c_str())) mod = {kPerWords[3], kPerWords[2], kPerWords[1], kPerWords[0]};
+    mod.push_back(mod.back()); mod.push_back(mod.back());   // two words past the set repeat its last word
     poke_words(rs.pokes, kBuf[m], mod);
     s.w32(audlc(n), kBuf[n]); s.w16(audlen(n), 1); s.w16(audper(n), mut((pid + "-PER").c_str()) ? 800 : 400); s.w16(audvol(n), 64);
-    s.w32(audlc(m), kBuf[m]); s.w16(audlen(m), 3); s.w16(audper(m), 3000); s.w16(audvol(m), 0);
+    s.w32(audlc(m), kBuf[m]); s.w16(audlen(m), 4); s.w16(audper(m), 3000); s.w16(audvol(m), 0);
     v.m_p1 = r.m_start = s.w16(DMACON, start_val(1u << n));
     v.i_dm_n = r.pre.logn++; s.rd(DMACONR);
     s.dly(wait_iters(10 * 227));
@@ -265,6 +282,13 @@ inline void run_per_att(Checks& ck, const std::string& pid, const char* claim, i
     uint16_t a2 = logv(v.r.cap, v.i_adk2), a3 = logv(v.r.cap, v.i_adk3);
     bool adk = (a2 & 0x00FF) == (1u << (4 + m)) && !(a3 & (1u << (4 + m)));
     PerObs o = per_obs(v);
+    std::string hist;   // every run of phase 2, from the start of channel m: colour clocks (rounded) and how many
+    {
+        std::map<long long, size_t> h;
+        for (auto& u : runs_of(v.r.cap, marker(v.r.cap, v.m_p2), marker(v.r.cap, v.m_p2end))) ++h[(long long)((u.len() + v.r.K / 2) / v.r.K)];
+        for (auto& e : h) hist += dec(e.first) + ":" + dec((long long)e.second) + " ";
+    }
+    ck.note(pid + " phase 2 from the start of channel " + dec(m) + ": run lengths in colour clocks (length:count) " + hist);
     auto ok = [](const PerObs& q) {
         return q.nruns > 0 && q.bad_trans == 0 && q.cycle && q.cnt[0] >= 3 && q.cnt[1] >= 3 && q.cnt[2] >= 3;
     };

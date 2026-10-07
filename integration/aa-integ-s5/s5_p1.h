@@ -18,7 +18,8 @@ struct Blocks {
     bool first_at_base = false;
 };
 
-inline Blocks block_check(const std::vector<Fetch>& f, uint32_t base, unsigned L, size_t from = 0) {
+// step_from: the first index whose successor is checked for the step BUFx+2k -> BUFx+2(k+1); default: from.
+inline Blocks block_check(const std::vector<Fetch>& f, uint32_t base, unsigned L, size_t from = 0, size_t step_from = ~size_t(0)) {
     Blocks b;
     std::set<uint32_t> d;
     for (size_t i = from; i < f.size(); ++i) {
@@ -33,7 +34,7 @@ inline Blocks block_check(const std::vector<Fetch>& f, uint32_t base, unsigned L
         uint32_t last = base + 2 * (L - 1);
         uint32_t want = f[i].addr == last ? base : f[i].addr + 2;
         if (f[i].addr == last && f[i + 1].addr != base) ++b.wrap_bad;
-        if (f[i + 1].addr != want) ++b.step_bad;
+        if (i >= (step_from == ~size_t(0) ? from : step_from) && f[i + 1].addr != want) ++b.step_bad;
     }
     return b;
 }
@@ -117,7 +118,10 @@ inline void p1_eval(P1Run& r) {
         c.t_stop = marker(r.cap, c.m_stop + 1);
         uint32_t lo = kBuf[c.x] - 0x40, hi = kBuf[c.x] + 0x1000;
         c.f = fetches(r.cap, lo, hi, c.t_start, c.t_stop);
-        c.b = block_check(c.f, kBuf[c.x], c.L);
+        // the step check starts at the channel's first return to BUFx (the second fetch at BUFx); a, b and c run over every fetch
+        size_t first_ret = c.f.size();
+        for (size_t i = 1; i < c.f.size(); ++i) if (c.f[i].addr == kBuf[c.x]) { first_ret = i; break; }
+        c.b = block_check(c.f, kBuf[c.x], c.L, 0, first_ret);
         uint16_t d = logv(r.cap, c.i_dmaconr);
         c.dmaconr_ok = (d & 0x200) && (d & (1u << c.x));
     }
@@ -162,14 +166,14 @@ inline void run_p1(Checks& ck) {
     print_std(ck, "P1", agg, runs.size());
     ck.expect(gd, "P1-G-D: after each start DMACONR bit 9 (DMAEN) and the channel's bit read 1 in all " + dec((long long)ncase) + " cases (AA p.22 '09 DMAEN Enable all DMA below')");
     ck.expect(gf, "P1-G-F: each channel's fetches occur: at least five fetches at the location, so at least four complete blocks, in each of the " + dec((long long)ncase) + " cases (AA p.22 '00 AUD0EN Audio channel 0 DMA enable')");
-    ck.expect(anchor, "P1-PRE-ANCHOR: the first fetch after each start is at the location written to AUDxLCH/LCL (AA p.11 'the 20 bit starting address (location)')");
+    ck.expect(anchor, "P1-PRE-ANCHOR: the first fetch inside the channel's region after each start is at the location written to AUDxLCH/LCL (AA p.11 'the 20 bit starting address (location)')");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && anchor;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F or the first-fetch anchor";
     graded(ck, pre, a_ok, "P1-A: in every case exactly L distinct addresses are fetched (AA p.11 AUDxLEN 'length (number of words)')", un);
     graded(ck, pre, b_ok, "P1-B: in every case a fetch at the last word of the block (location + 2(L-1)) is followed by a fetch at the location (AA p.6 'Used to automaticall[y] restart pointers ... the Audio sample counter (whenever the audio length count is finished)')", un);
     graded(ck, pre, c_ok, "P1-C: in every case no fetch lies outside [location, location + 2L) (AA p.11 AUDxLEN)", un);
     graded(ck, pre, a_ok && b_ok && c_ok && step_ok,
-           "P1 sol:AA-audxlen.c1 sol:AA-audxlen.c4: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the number of words of each DMA block: for every channel and every L the fetches form BUFx, BUFx+2, .. BUFx+2(L-1), BUFx, ... (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
+           "P1 sol:AA-audxlen.c1 sol:AA-audxlen.c4: AUDxLEN at 0A4 (0B4, 0C4, 0D4) is the number of words of each DMA block: for every channel and every L the fetches lie in BUFx .. BUFx+2(L-1), take every one of the L addresses and return to BUFx after BUFx+2(L-1), and from the channel's first return to BUFx on form BUFx, BUFx+2, .. BUFx+2(L-1), BUFx, ... (AA p.11 'This register contains the length (number of words) of Audio Channel x DMA data')", un);
 }
 
 } // namespace s5

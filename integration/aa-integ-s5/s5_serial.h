@@ -382,7 +382,7 @@ inline void run_p19(Checks& ck) {
     unsigned ewr[8]; for (int i = 0; i < 8; ++i) ewr[i] = e[i];
     if (mut("P19-E4")) ewr[3] = 0x5A;
     if (mut("P19-E7")) ewr[6] = 0x5A;
-    const uint64_t K0 = 8;   // clk_sys cycles per colour clock; the schedule is in units of T = 64 K cycles and checked by G-C
+    const uint64_t K0 = mut("P19-K") ? 9 : 8;   // clk_sys cycles per colour clock that the schedule is built for (units of T = 64 K0 cycles); P19-PRE-K compares it with the K measured from refresh
     const uint64_t T = 64 * K0;
     RxDrive drv; drv.marker_idx = m_ser + 1; drv.invert = mut("GRXD");
     // schedule
@@ -419,6 +419,7 @@ inline void run_p19(Checks& ck) {
     size_t ip0 = size_t(i_poll);
     uint64_t R = max_gap(c, ip0, c.log.size() - 1);
     bool gr = R > 0 && R <= 16 * K;
+    bool gk = st.frame.ok && st.frame.K == K0;
     // G-RXD: bit 11 follows the driven level, away from the edges by 2R
     bool grxd = true;
     {
@@ -454,10 +455,11 @@ inline void run_p19(Checks& ck) {
     }
     ck.note("P19: R=" + dec((long long)R) + " cycles (" + num2(double(R) / double(K)) + " CCK); frames 1..8 (reads in the interval / reads that differ) " + det);
     print_std(ck, "P19", agg, 1);
+    ck.expect(gk, "P19-PRE-K: the colour clock measured from the refresh pattern is the " + dec((long long)K0) + " system clocks that the RxD schedule is built for (SPECIFICATION.md 2.2)");
     ck.expect(gr, "P19-G-R: R, the largest interval between consecutive log stores of the SERDATR poll, is at most T/4 = 16 colour clocks (SPECIFICATION.md 2.3)");
     ck.expect(grxd, "P19-G-RXD: SERDATR bit 11 reads the level the test drives on RxD: 1 while it drives the idle level, 0 during a 12T low (AA p.27 '11 RXD RXD pin receives UART serial data for direct bit test by the micro')");
-    bool pre19 = agg.fixture && agg.s0 && agg.gc && gr && grxd;
-    const std::string un = "fixture, G-S0, G-C, G-R or G-RXD";
+    bool pre19 = agg.fixture && agg.s0 && agg.gc && gk && gr && grxd;
+    const std::string un = "fixture, G-S0, G-C, the colour-clock length, G-R or G-RXD";
     graded(ck, pre19, all_ok, "P19-DATA: for every frame k = 1..8 every read stored between sigma_k + R and lambda_(k+1) (sigma_7 + T + R for k = 7, sigma_8 for frame 8) reads e_k in bits 7 to 0 (AA p.27 'Data in this buffer is loaded from a receiving shift register whenever it is full')", un);
     graded(ck, pre19, back_ok, "P19-BACK: for the back-to-back pair e7 is read at least once between sigma_7 + T + R and lambda_8 (AA p.27)", un);
     graded(ck, pre19, all_ok && back_ok, "P19 sol:AA-serdatr.c6 sol:AA-serdatr.c7: each frame received on RxD is loaded into the receive buffer when the shift register is full and SERDATR bits 7 to 0 then read its data byte until the next frame is loaded, whether or not the program has acknowledged the previous one (AA p.27 'This address reads data from a Receive data buffer')", un);
@@ -466,17 +468,14 @@ inline void run_p19(Checks& ck) {
 // ---- P20: RBF and TBE read through SERDATR ----------------------------------------------
 
 inline void run_p20(Checks& ck) {
-    const uint64_t K0 = 8, T = 64 * K0;
+    const uint64_t K0 = mut("P20-K") ? 9 : 8, T = 64 * K0;   // K0: clk_sys cycles per colour clock that the RxD schedule is built for; P20-PRE-K compares it with the K measured from refresh
     // run A: RBF
     RunSpec ra; ra.bin = run_bin();
     Prefix pa = prefix(ra.sc, true, 119, brk_hook());
     int m_ser = ra.sc.w16(SERPER, 0x003F);
-    RxDrive drv; drv.marker_idx = m_ser + 1; drv.invert = mut("GRXD");
+    RxDrive drv, drv2; drv.marker_idx = m_ser + 1; drv.invert = drv2.invert = mut("GRXD");
     rx_frame(drv.sched, 20 * T, 0x5A, T);
-    uint64_t t_low = 40 * T;
-    drv.sched.push_back({t_low, 0});
-    drv.sched.push_back({t_low + 12 * T, 1});
-    ra.drive = [&drv](nmh::NanomigHarness& h, uint64_t cy) { drv(h, cy); };
+    ra.drive = [&drv, &drv2](nmh::NanomigHarness& h, uint64_t cy) { drv(h, cy); drv2(h, cy); };
     Script& s = ra.sc;
     s.waitb(INTREQR, 0x0800, 400);
     s.dly(wait_iters(5 * 64));
@@ -488,7 +487,11 @@ inline void run_p20(Checks& ck) {
     s.rd3(SERDATR, INTREQR);                                                   // triple 3
     int ma3 = s.w16(INTREQ, no_int ? uint16_t(0) : uint16_t(0x0800));
     s.rd3(SERDATR, INTREQR);                                                   // triple 4
-    s.poll(SERDATR, 150);
+    const uint64_t t_low = mut("P20-NOIDLE") ? 0 : 6 * T;   // the 12T low is driven 6T after the marker that follows triple 4, so that the poll reads the idle level before it; P20-NOIDLE: at the marker, so that it reads none
+    drv2.marker_idx = s.mark();
+    drv2.sched.push_back({t_low, 0});
+    drv2.sched.push_back({t_low + 12 * T, 1});
+    s.poll(SERDATR, 200);
     s.end();
     ra.cycles = 4'000'000 + 8ull * 40000;
     Cap ca = run(ra);
@@ -561,8 +564,8 @@ inline void run_p20(Checks& ck) {
     // G-RXD from run A: bit 11 during the final idle and the 12T low
     bool grxd = true;
     {
-        uint64_t tref = drv.t_ref, R = 0;
-        size_t ip0 = endA >= 151 ? endA - 151 : 0;
+        uint64_t tref = drv2.t_ref, R = 0;
+        size_t ip0 = endA >= 201 ? endA - 201 : 0;
         R = max_gap(ca, ip0, endA - 1);
         size_t n_hi = 0, n_lo = 0;
         for (size_t i = ip0; i < endA; ++i) {
@@ -570,16 +573,17 @@ inline void run_p20(Checks& ck) {
             if (ti >= tref + t_low + 2 * R && ti < tref + t_low + 12 * T) { ++n_lo; if (b != 0) grxd = false; }
             if (ti < tref + t_low - 2 * R) { ++n_hi; if (b != 1) grxd = false; }
         }
-        grxd &= n_lo > 10;
-        (void)n_hi;
+        grxd &= n_lo > 10 && n_hi > 10;
     }
     bool gbrk = (logv(ca, pa.i_adkconr) & 0x0800) == 0 && (logv(cb, pb.i_adkconr) & 0x0800) == 0;
+    bool gk = sa.frame.ok && sa.frame.K == K0;
     print_std(ck, "P20", agg, 2);
+    ck.expect(gk, "P20-PRE-K: the colour clock measured from the refresh pattern in run A is the " + dec((long long)K0) + " system clocks that the RxD schedule is built for (SPECIFICATION.md 2.2)");
     ck.expect(gbrk, "P20-G-BRK: after S0 ADKCONR bit 11 (UARTBRK) reads 0 in both runs (AA p.10 '11 UARTBRK')");
     ck.expect(grxd, "P20-G-RXD: SERDATR bit 11 reads 0 during the 12T low the test drives on RxD (AA p.27 '11 RXD')");
     ck.expect(pre_a, "P20-PRE-TRIPLES: in run A triples 2 and 3 are valid (their two SERDATR reads agree in bit 14) and INTREQR bit 11 takes both values across the four triples (AA p.25 '11 RBF'; AA p.24 'Both a set and clear operation are required to load arbitary data into this register')");
-    bool pre = agg.fixture && agg.s0 && agg.gc && gbrk && grxd && pre_a;
-    const std::string un = "fixture, G-S0, G-C, G-BRK, G-RXD or the triples";
+    bool pre = agg.fixture && agg.s0 && agg.gc && gbrk && gk && grxd && pre_a;
+    const std::string un = "fixture, G-S0, G-C, G-BRK, the colour-clock length, G-RXD or the triples";
     graded(ck, pre, a_ok && a_pat, "P20-RBF: in every valid triple of run A SERDATR bit 14 equals INTREQR bit 11, and triples 1 and 3 read (1, 1) and triples 2 and 4 read (0, 0) (AA p.27 '14 RBF Serial port Receive Buffer Full(mirror)')", un);
     graded(ck, pre, b_ok && b_pat, "P20-TBE: in every valid triple of run B SERDATR bit 13 equals INTREQR bit 0, the step-2 and step-4 triples read (1, 1) and the step-3 triple reads (0, 0) (AA p.27 '13 TBE Serial port Transmit Buffer Empty(mirror)')", un);
     graded(ck, pre, a_ok && a_pat && b_ok && b_pat, "P20 sol:AA-serdatr.c8: SERDATR bit 14 reads the same as INTREQR bit 11 (RBF) at all times and bit 13 the same as INTREQR bit 0 (TBE) in the two cases on which the pages agree (AA p.27 'Several interrupt request bits are also read at this address, along with the data')", un);

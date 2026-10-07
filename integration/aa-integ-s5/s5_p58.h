@@ -155,7 +155,7 @@ inline VolSweep vol_sweep(int x, uint16_t word, bool p7) {
     return v;
 }
 
-inline bool win_level(const VolSweep& v, int m_write, int m_next, double& out, double* dev = nullptr) {
+inline bool win_level(const VolSweep& v, int m_write, int m_next, double& out, double* dev = nullptr, double* span = nullptr) {
     const Cap& c = v.r.cap;
     uint64_t ta = marker(c, m_write + 1), tn = marker(c, m_next);
     uint64_t line = 227 * v.r.K;
@@ -163,6 +163,11 @@ inline bool win_level(const VolSweep& v, int m_write, int m_next, double& out, d
     if (!ta || !tn || t1 > tn) return false;
     out = mean_o(c, t0, t1) - v.r.Z;
     if (dev) { *dev = 0; for (uint64_t t = t0; t < t1; ++t) *dev = std::max(*dev, std::fabs(double(out_at(c, t)) - v.r.Z)); }
+    if (span) {   // the largest minus the smallest output over the window
+        int32_t lo = out_at(c, t0), hi = lo;
+        for (uint64_t t = t0; t < t1; ++t) { lo = std::min(lo, out_at(c, t)); hi = std::max(hi, out_at(c, t)); }
+        *span = double(hi) - double(lo);
+    }
     return true;
 }
 
@@ -171,12 +176,12 @@ inline void run_p67(Checks& ck) {
     const std::string pn = "P6";
     std::vector<VolSweep> sw[2];   // [0]: 0x7F7F, [1]: 0x8080
     for (int x = 0; x < nch(); ++x) {
-        sw[0].push_back(vol_sweep(x, mut("P6-PRE") ? 0x0101 : 0x7F7F, p7));
+        sw[0].push_back(vol_sweep(x, mut("P6-PRE") ? 0x0101 : (mut("P6-PAT") ? 0x7F00 : 0x7F7F), p7));   // P6-PAT: two different bytes, so the output is not constant within a window
         sw[1].push_back(vol_sweep(x, mut("P6-SIGN") ? 0x7F7F : 0x8080, p7));   // contrast: both data words 0x7F7F
     }
     PreAgg agg;
     bool gd = true, gf = true, win = true, scale = true;
-    bool lin = true, zero = true, sign = true, bit6 = true;
+    bool lin = true, zero = true, sign = true, bit6 = true, constw = true;
     for (int x = 0; x < nch(); ++x) {
         for (int d = 0; d < 2; ++d) {
             VolSweep& v = sw[d][size_t(x)];
@@ -186,8 +191,9 @@ inline void run_p67(Checks& ck) {
             gf &= v.r.f.size() >= 20;
             for (int val = 0; val <= 64; ++val) {
                 int mn = val < 64 ? v.m6[size_t(val + 1)] : (p7 ? v.m7[0] : v.m_end);
-                double dev = 0;
-                win &= win_level(v, v.m6[size_t(val)], mn, v.A6[val], &dev);
+                double dev = 0, span = 0;
+                win &= win_level(v, v.m6[size_t(val)], mn, v.A6[val], &dev, &span);
+                if (val < 64) constw &= span == 0;   // volumes below 64: the output is constant over the window
                 if (val == 0) v.zero_dev = dev;
             }
             if (p7)
@@ -223,8 +229,10 @@ inline void run_p67(Checks& ck) {
         ck.expect(win, pq + "-PRE-WIN: every measuring window starts two lines after its write marker and ends before the next write marker (SPECIFICATION.md P6 step 2)");
         ck.expect(scale, pq + "-PRE-SCALE: for data 0x7F7F the larger of |A(63)| and |A(64)| is at least 126 LSB on every channel, so the sweep spans many times the quantisation bound (AA p.11 AUDxVOL)");
         bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && win && scale;
-        const std::string un = "fixture, G-S0, G-C, G-D, G-F, the windows or the resolution";
+        const std::string un = "fixture, G-S0, G-C, G-D, G-F, the windows, the resolution or (P6) the constant output";
         if (pq == "P6") {
+            ck.expect(constw, "P6-PRE-CONST: in every measuring window of every volume below 64 the output is constant, for both data words and every channel, so a level over the window is a level over whole repetitions of any pattern the volume might give (AA p.11 '(111111=63 0nes, one zero)')");
+            pre = pre && constw;
             graded(ck, pre, lin, "P6-LIN: for both data words, every channel and every v in 0..63 and for 0x0040, |A(v) - v*A(64)/64| < 1 + v/64 LSB (AA p.11 'Bits 6,5,4,3,2,1,0 specify 65 linear volume levels')", un);
             graded(ck, pre, zero, "P6-ZERO: at v = 0 the output equals Z at every sample of the window, for both data words and every channel (AA p.11 '000000=no output')", un);
             graded(ck, pre, sign, "P6-SIGN: A(64) is positive for 0x7F7F and negative for 0x8080 on every channel (AA p.11 AUDxDAT 'twos complement signed integer')", un);

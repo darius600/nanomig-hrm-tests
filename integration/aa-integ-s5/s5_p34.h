@@ -34,7 +34,9 @@ inline void run_p3(Checks& ck) {
     std::vector<uint16_t> words;
     for (int i = 0; i < 9; ++i) words.push_back(uint16_t(B[i] * 0x0101));
     if (mut("P3-SWAP")) std::swap(words[1], words[2]);
-    ARun r = data_run(words, 4, mut("P3-SCALE") ? 0 : 0x0040, mut("P3-PER") ? 600 : 300, 0,
+    if (mut("P3-SCALE")) words[1] = 0x0202;   // contrast: word 2 is 0x02 in place of 0x7F, one data unit above word 4's 0x01
+    if (mut("P3-BYTE")) words[1] = 0x7F20;    // contrast: the second byte of word 2 is 0x20 in place of 0x7F
+    ARun r = data_run(words, 4, 0x0040, mut("P3-PER") ? 600 : 300, 0,
                     mut("P3-CHG") ? std::function<void(Script&)>([](Script& sc) {   // contrast: after every block-finished request of the channel the CPU
                         for (int i = 0; i < 4; ++i) {              //   replaces word 5 (0xFF) by 0x4040 and 0xA0A0 in turn, so that
                             sc.waitb(INTREQR, 0x0080, 60000);      //   consecutive passes read different words
@@ -49,54 +51,62 @@ inline void run_p3(Checks& ck) {
     auto ret = returns_idx(r.f, kBuf[0]);
     bool gf = ret.size() >= 4;
     bool gw = true, gp = true, ok_pass = true;
-    double L[2][9] = {};
+    double L1[2][9] = {}, L2[2][9] = {};   // level of the first and of the second byte position of each word, per pass
+    uint64_t T0[2] = {0, 0};
+    const uint64_t WL = 600 * r.K;         // one word: two samples of the period 300
     for (int p = 2; p <= 3; ++p) {
         Pass ps = pass_of(r, kBuf[0], p);
-        if (ps.fi < 0 || ps.r0 < 0 || int(ret.size()) <= p || size_t(ps.r0) + 9 > r.runs.size()) { ok_pass = false; continue; }
+        if (ps.fi < 0 || ps.r0 < 0 || int(ret.size()) <= p) { ok_pass = false; continue; }
         gw &= ps.g_w;
+        T0[p - 2] = r.runs[size_t(ps.r0)].t0;
+        if (T0[p - 2] + 9 * WL > r.cap.base + r.cap.audio.size()) { ok_pass = false; continue; }
+        // word j of the pass occupies [T0 + j WL, T0 + (j+1) WL); its byte positions are read in the middle of each half
         for (int j = 0; j < 9; ++j) {
-            const LRun& u = r.runs[size_t(ps.r0 + j)];
-            if (u.len() + r.tau < 600 * r.K || u.len() > 600 * r.K + r.tau) gp = false;
-            L[p - 2][j] = double(u.v) - r.Z;
+            L1[p - 2][j] = double(out_at(r.cap, T0[p - 2] + uint64_t(j) * WL + WL / 4)) - r.Z;
+            L2[p - 2][j] = double(out_at(r.cap, T0[p - 2] + uint64_t(j) * WL + 3 * WL / 4)) - r.Z;
         }
-        // the run after the ninth is the first of the next pass: it starts after the next anchor fetch
         std::string lv;
-        for (int j = 0; j < 9; ++j) lv += num(L[p - 2][j]) + " ";
-        ck.note("P3 pass " + dec(p) + " levels by word (bytes 00 7F 80 01 FF 60 A0 E0 20): " + lv);
+        for (int j = 0; j < 9; ++j) lv += num(L1[p - 2][j]) + "/" + num(L2[p - 2][j]) + " ";
+        ck.note("P3 pass " + dec(p) + " levels by word, first byte position/second (bytes 00 7F 80 01 FF 60 A0 E0 20): " + lv);
     }
+    // G-P: a pass of nine words of two samples of the period 300 lasts 9 * 600 colour clocks, from one pass anchor to the next
+    if (ok_pass) gp = T0[1] > T0[0] && T0[1] - T0[0] + r.tau >= 9 * WL && T0[1] - T0[0] <= 9 * WL + r.tau;
+    ck.note("P3: pass-3 anchor run starts " + dec(ok_pass ? (long long)(T0[1] - T0[0]) : 0LL) + " cycles after the pass-2 anchor run (nine words of 600 colour clocks: " + dec((long long)(9 * WL)) + ")");
     print_std(ck, "P3", agg, 1);
     ck.expect(gd, "P3-G-D: after the start DMACONR bit 9 and bit 0 read 1 (AA p.22)");
     ck.expect(gf, "P3-G-F: the channel fetches at least four times at the location, so passes 2 and 3 are followed by a next anchor (AA p.22 '00 AUD0EN')");
     ck.expect(ok_pass && gw, "P3-G-W: passes 2 and 3 are located and no run starts within tau of either anchor fetch (SPECIFICATION.md 2.10)");
-    ck.expect(ok_pass && gp, "P3-G-P: every word of passes 2 and 3 gives one run of 600 colour clocks within tau (AA p.11 AUDxPER)");
+    ck.expect(ok_pass && gp, "P3-G-P: the anchor run of pass 3 starts nine words of 600 colour clocks within tau after the anchor run of pass 2, so each word spans two samples of the period 300 (AA p.11 AUDxPER, AUDxLEN)");
     // scale: two bytes that every reading places at 1 and 127
-    bool scale = ok_pass && std::fabs(L[0][1] - L[0][3]) >= 126.0;
+    bool scale = ok_pass && std::fabs(L1[0][1] - L1[0][3]) >= 126.0;
     ck.expect(scale, "P3-PRE-SCALE: |L(0x7F) - L(0x01)| >= 126 LSB in pass 2, so the output has at least one LSB per data unit at volume 64 (measured on bytes that no reading of a byte can order differently)");
     bool pre = agg.fixture && agg.s0 && agg.gc && gd && gf && ok_pass && gw && gp && scale;
     const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W, G-P or the scale";
     // the order, by word position: 0x80 < 0xA0 < 0xE0 < 0xFF < 0x00 < 0x01 < 0x20 < 0x60 < 0x7F
     const int order[9] = {2, 6, 7, 4, 0, 3, 8, 5, 1};   // word indexes in increasing level
-    bool ord = true, same = true;
+    bool ord = true, same = true, bytes = true;
     for (int p = 0; p < 2; ++p)
-        for (int k = 0; k + 1 < 9; ++k) ord &= L[p][order[k + 1]] - L[p][order[k]] >= 1.0;
-    for (int j = 0; j < 9; ++j) same &= within(L[0][j], L[1][j], 1.0);
-    graded(ck, pre, ord, "P3-ORDER: in passes 2 and 3 the levels are strictly ordered L(0x80) < L(0xA0) < L(0xE0) < L(0xFF) < L(0x00) < L(0x01) < L(0x20) < L(0x60) < L(0x7F), each step by at least 1 LSB, in the high byte and the low byte position alike (both bytes of a word are equal and give one level)", un);
-    graded(ck, pre, same, "P3-SAME: the same byte gives the same level in pass 2 and in pass 3 (within 1 LSB)", un);
-    graded(ck, pre, ord && same, "P3 sol:AA-audxdat.c6: each byte of AUDxDAT is a two's-complement signed integer: the output level increases strictly with the byte's two's-complement value (AA p.11 'It contains 2 bytes of data (each byte is a twos complement signed integer)')", un);
+        for (int k = 0; k + 1 < 9; ++k) ord &= L1[p][order[k + 1]] - L1[p][order[k]] >= 1.0 && L2[p][order[k + 1]] - L2[p][order[k]] >= 1.0;
+    for (int j = 0; j < 9; ++j) same &= within(L1[0][j], L1[1][j], 1.0) && within(L2[0][j], L2[1][j], 1.0);
+    for (int p = 0; p < 2; ++p)
+        for (int j = 0; j < 9; ++j) bytes &= within(L1[p][j], L2[p][j], 1.0);
+    graded(ck, pre, ord, "P3-ORDER: in passes 2 and 3 the levels are strictly ordered L(0x80) < L(0xA0) < L(0xE0) < L(0xFF) < L(0x00) < L(0x01) < L(0x20) < L(0x60) < L(0x7F), each step by at least 1 LSB, in the first byte position and in the second alike", un);
+    graded(ck, pre, same, "P3-SAME: the same byte gives the same level in pass 2 and in pass 3 (within 1 LSB), in each byte position", un);
+    graded(ck, pre, bytes, "P3-BYTES: in passes 2 and 3 the two byte positions of every word, whose two bytes are equal, give the same level within 1 LSB (AA p.11 'It contains 2 bytes of data (each byte is a twos complement signed integer)')", un);
+    graded(ck, pre, ord && same && bytes, "P3 sol:AA-audxdat.c6: each byte of AUDxDAT, in either byte position, is a two's-complement signed integer: the output level increases strictly with the byte's two's-complement value (AA p.11 'It contains 2 bytes of data (each byte is a twos complement signed integer)')", un);
 }
 
 // ---- P4 ---------------------------------------------------------------------
 
 inline void run_p4(Checks& ck) {
     const uint8_t a = 0x20, b = 0x60, c = 0xA0, d = 0xE0;
-    const uint8_t W[10][2] = {{a, a}, {b, c}, {d, d}, {c, b}, {a, a}, {b, d}, {c, c}, {d, b}, {a, a}, {b, b}};
+    const uint8_t W[10][2] = {{a, a}, {b, c}, {d, d}, {c, b}, {a, a}, {b, d}, {c, c}, {d, b}, {c, c}, {b, b}};
     std::vector<uint16_t> words;
     for (int i = 0; i < 10; ++i) words.push_back(uint16_t((W[i][0] << 8) | W[i][1]));
-    if (mut("P4-SAME") || mut("P4-LIVESAME")) words[1] = uint16_t((b << 8) | b);
-    if (mut("P4-LV") || mut("P4-LIVELV")) words[1] = uint16_t((b << 8) | 0x40);   // contrast: the second byte of word 2 is 0x40, a level that is not calibrated
-    if (mut("P4-CAL")) words[6] = uint16_t((b << 8) | b);   // contrast: word 7 is (b,b) in place of (c,c), so L(c) is not calibrated apart from L(b)
+    if (mut("P4-SAME")) words[1] = uint16_t((b << 8) | b);
+    if (mut("P4-LV")) words[1] = uint16_t((b << 8) | 0x40);   // contrast: the second byte of word 2 is 0x40, a level that is not calibrated
+    if (mut("P4-CAL")) words[6] = words[8] = uint16_t((b << 8) | b);   // contrast: words 7 and 9 are (b,b) in place of (c,c), so L(c) is not calibrated apart from L(b)
     uint8_t Wl[10][2]; std::memcpy(Wl, W, sizeof Wl);
-    if (mut("P4-LIVE") || mut("P4-LIVESAME") || mut("P4-LIVELV")) { Wl[8][0] = Wl[8][1] = c; words[8] = uint16_t((c << 8) | c); }   // a live input: word 9 is (c,c), so no byte repeats across the first pass's end
     ARun r = data_run(words, 4, 0x0040, mut("P4-PER") ? 600 : 300);
     PreAgg agg; agg.add(r.st);
     note_gc(ck, "P4", r.st);
@@ -139,7 +149,7 @@ inline void run_p4(Checks& ck) {
             cal[Wl[n][0]] = double(u.v) - r.Z;
         }
         q.cal = cal.size() == 4;
-        for (auto& x : cal) for (auto& y : cal) if (x.first != y.first && within(x.second, y.second, 2.0)) q.cal = false;
+        for (auto& x : cal) for (auto& y : cal) if (x.first != y.first && within(x.second, y.second, 1.0)) q.cal = false;
         if (!(q.gw && q.gp && q.cal)) continue;
         for (int n = 0; n < 10; ++n) {
             if (Wl[n][0] == Wl[n][1]) continue;
@@ -172,7 +182,7 @@ inline void run_p4(Checks& ck) {
         PassRes& q = pr[k];
         ck.expect(q.located && q.gw, "P4-G-W-" + pn + ": pass " + pn + " is located and no run starts within tau of its anchor fetch (SPECIFICATION.md 2.10)");
         ck.expect(q.located && q.gp, "P4-G-P-" + pn + ": each equal-byte word of pass " + pn + " gives one run of 600 colour clocks within tau (AA p.11 AUDxPER)");
-        ck.expect(q.located && q.cal, "P4-PRE-CAL-" + pn + ": the four calibration levels L(a), L(b), L(c), L(d) of pass " + pn + " are pairwise distinct (more than 2 LSB apart)");
+        ck.expect(q.located && q.cal, "P4-PRE-CAL-" + pn + ": the four calibration levels L(a), L(b), L(c), L(d) of pass " + pn + " are pairwise distinct (more than 1 LSB apart)");
         use[k] = pre0 && q.located && q.gw && q.gp && q.cal;
     }
     const std::string un = "fixture, G-S0, G-C, G-D, G-F, G-W, G-P or the calibration of the pass";
