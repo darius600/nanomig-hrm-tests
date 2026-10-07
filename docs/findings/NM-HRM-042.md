@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should the disk DMA pointer pair DSKPTH/DSKPTL keep the 20 word-address bits `address_out[20:1]` (an all-ones write reads back `0xFFFFF`) although printed p.241 and p.246 call it 32 bits? The likely answer is yes, because the two pages describe the long-word write rather than the stored width. Closes when the pointer stores the width p.241 and p.246 print (`P11A` turns green), or when an Amiga specialist rejects that change; if the rejection means the two pages are wrong (they describe the long-word write, not the stored width), the page is refiled against the printed page. |
-| **Report to** | `upstream first` — Minimig-AGA (MiSTer-devel/Minimig-AGA_MiSTer) |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | unknown chip revision; the width stored by DSKPTH/DSKPTL in `agnus_diskdma`, isolated by an all-ones write to both registers and a read of `address_out`. The chipset-conditioned width is [NM-HRM-043](NM-HRM-043.md)'s |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.241 (register list) and p.246 (*DSKPTH — Pointer to Data*); p.279 (Appendix A) and p.289 (Appendix B) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P11A`: `opus:8-dsk.c34` (p.241), `opus:8-dma.c7` / `sol:8-dskpth.c1` (p.246); `P1`: `opus:8-dsk.c32` (p.241), `opus:8-dma.c11` / `sol:8-dskpth.c7` (p.246), `opus:8-appA-dskpt.c1` / `sol:8-appa-dskpth.c1` (p.279), `opus:8-appB-dskpth.c1` / `sol:8-appb-dskpth.c1`, `opus:B-dskpth.addr` (p.289); `P2`: `opus:8-appA-dskpt.c6` / `sol:8-appa-dskptl.c1` (p.279), `opus:8-appB-dskptl.c1` / `sol:8-appb-dskptl.c1`, `opus:B-dskptl.addr` (p.289); `P5`: `opus:8-appA-dskpt.c9` / `sol:8-appa-dskptl.c4` (p.279), `opus:8-appB-dskptl.c6` / `sol:8-appb-dskptl.c8` (p.289); `P8`: `opus:8-dma.c26` / `sol:8-dsklen.c15`, `opus:8-dma.c27` / `sol:8-dsklen.c16` (p.247), `opus:8-dsk.c33` (p.241), `opus:8-dma.c3` / `sol:8-dskdma.c2` (p.246); `LIVENESS` and `P9` carry no claim id in their messages |
@@ -128,10 +128,7 @@ width claim failing, not a dark fixture.
 20:1 reach two megabytes, which is every address an Agnus of any revision can
 drive. A 32-bit pointer register would be 4 GB of address space on a machine
 whose largest chip-RAM configuration is 2 MB. If anything is to change it is the
-reading of the page, not the RTL, and that is not this project's call.
+reading of the page, not the RTL.
 
-Re-run: `make -C hrm/ch8-disk-dma-pointer test`; expected red `P11A`, green
-`LIVENESS`, `P1`, `P2`, `P5`, `P8`, `P9`. Confirming the long-word-write reading refiles this finding against the
-printed page and leaves [NM-HRM-043](NM-HRM-043.md)
-untouched, because that one turns on a width the manual states twice and
-conditions on the chipset.
+[NM-HRM-043](NM-HRM-043.md) is untouched by this page, because that one turns on
+a width the manual states twice and conditions on the chipset.
