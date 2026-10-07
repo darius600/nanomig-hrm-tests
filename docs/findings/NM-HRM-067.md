@@ -161,4 +161,3 @@ holds, p. 303 and p. 126 are right and every implementation read here that
 places a blanking end ends it early; if vAmiga's $23 holds, real hardware loads
 sprites 4 to 7 during the visible part of the line, and the two pages describe
 the early channels only.
-Re-run: `make -C hrm/ch4-sprite-dma-control test`.
