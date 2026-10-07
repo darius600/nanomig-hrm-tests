@@ -5,28 +5,33 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Does p.250's table (`1 -> 01`; `0 -> 00` if following a 1) require NanoMig's payload encoder to set each clock cell from the preceding data bit, where it now emits `11` for a data 1 and `10` for a 0 after a 1? The decision belongs to an Amiga specialist, not to this repository. Closes when a specialist records that the payload clock cell must follow the preceding data bit, which sends the *Suggested change* to NanoMig as a change request, or records the constant clock as acceptable. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig. The cited lines are NanoMig's own: neither MiSTer nor TC64 has an MFM encoder in its RTL, so there is no ancestor line to file this against |
-| **Scope** | The payload path (`data_odd` / `data_even`) of NanoMig's `paula_floppy.v` at the pinned revision, read as DSKDATR words from payload word 33 for uniform fed bytes `0xFF`, `0x00` and `0x80`; chip revision unknown. The header path is read from the RTL, not measured |
-| **Software impact** | unknown; no named affected software. The page states that `trackdisk.device` masks the clock bits off |
+| **What is asked of a reader** | Does p.250's table (`1 -> 01`; `0 -> 00` if following a 1) require NanoMig's payload encoder to set each clock cell from the preceding data bit, where it now emits `11` for a data 1 and `10` for a 0 after a 1? Closes when the payload encoder sets each clock cell from the preceding data bit and `A2-MFM-ONE-ENCODES-01` and `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` turn green, or when a specialist rejects that change and records the constant clock as acceptable. |
+| **Report to** | `NanoMig direct` — harbaum/NanoMig |
+| **Scope** | The payload path (`data_odd` / `data_even`) of NanoMig's `paula_floppy.v` at the pinned revision, read at DSKDATR pop #33, the first payload word, for uniform fed bytes `0xFF`, `0x00` and `0x80`; chip revision unknown. The header path is read from the RTL, not measured |
+| **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.250 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `A1-MFM-DOUBLES-SIZE`: `opus:8-mfm.c1` / `sol:8-mfm.c1`; `A2-MFM-ONE-ENCODES-01`: `opus:8-mfm.c2` / `sol:8-mfm.c2`; `A3-MFM-ZERO-AFTER-ZERO-ENCODES-10`: `opus:8-mfm.c3` / `sol:8-mfm.c3`; `A4-MFM-ZERO-AFTER-ONE-ENCODES-00`: `opus:8-mfm.c4` / `sol:8-mfm.c4`; the `A0` liveness note carries no claim id |
-| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L467-L477); fixed: MiSTer and TC64 have no counterpart in RTL |
+| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L467-L477); MiSTer and TC64 have no counterpart in RTL; NanoMig's own |
 | **Test** | [`hrm/ch8-mfm-cell-encoding`](../../hrm/ch8-mfm-cell-encoding): `make -C hrm/ch8-mfm-cell-encoding test`; an expected red exits nonzero |
 | **Assertions** | 2 red of 4 graded (`2 passed, 2 failed`): `A2-MFM-ONE-ENCODES-01` — expected cell `01`, observed `11` (uniform `0xFF`, word `0xFFFF`); `A4-MFM-ZERO-AFTER-ONE-ENCODES-00` — expected `00`, observed `10` (uniform `0x80`, word `0xEAEA`). `A1-MFM-DOUBLES-SIZE` and `A3-MFM-ZERO-AFTER-ZERO-ENCODES-10` are green; A3 is green by coincidence |
-| **Verdict of the four** | **unanimous against NanoMig.** All four implement the page's three rules and carry the previous data bit across the word or byte boundary to do it; real Paula does not encode MFM |
+| **Verdict of the four** | **unanimous against.** All four implement the page's three rules exactly, and all four carry the previous data bit across the word or byte boundary to do it. Denise prints the manual's table as the comment above its encoder. Hardware: not measured; real Paula does not encode MFM |
 | **Effort** | S — the payload path of `paula_floppy.v` only: clock cells from two neighbouring data bits plus one carry register at the word boundary; the header path is a separate job |
 
 ---
 
 ## Source requirement
 
-**p.250**: *"The raw MFM data that must be presented to the disk controller will
-be twice as large as the unencoded data. The following table shows the
-relationship:"*
+**p.250**:
 
-               1 -> 01
-               0 -> 10   ;if following a 0
-               0 -> 00   ;if following a 1
+> "The raw MFM data that must be presented to the disk controller will be
+> twice as large as the unencoded data. The following table shows the
+> relationship:
+>
+>                1 -> 01
+>                0 -> 10   ;if following a 0
+>                0 -> 00   ;if following a 1"
+
+> "With clever manipulation, the blitter can be used to encode and decode the
+> MFM."
 
 Three rules, and two of them name a condition: a cell's clock bit depends on the
 bit before it, which is what stops two flux transitions falling adjacent. The
@@ -59,16 +64,15 @@ A conforming encoder fed uniform `0xFF` produces `0x5555`; `0xFFFF` has a flux
 transition in every cell, which is not legal MFM. A3 is green because a clock
 stuck at 1 agrees with the page on exactly the 0-after-0 row; its own message
 says a green there does not certify context-sensitivity. It reads the same
-payload word with the same extraction as the two reds, so they are not a stuck
-check. `0xEAEA` is what the RTL predicts for a `0x8080` buffer word. `A1` counts
+payload word through the same two-bit comparator as the two reds, and the same
+cell as `A4`, so they are not a stuck check. `0xEAEA` is what the RTL predicts for a `0x8080` buffer word. `A1` counts
 512 payload words of `0xAAAA` for uniform `0x00`, which p.250 and this encoder
 both give.
 
 ## Risks and unknowns
 
 - **The comparison is architectural.** Real Paula does not MFM-encode: p.250
-  adds *"With clever manipulation, the blitter can be used to encode and decode
-  the MFM."* The four witnesses are image-layer encoders that turn stored
+  adds that the blitter can encode and decode it (quoted above). The four witnesses are image-layer encoders that turn stored
   sectors into a cell stream, as NanoMig's RTL does; they are not Paula models.
 - **The header column is read from the RTL, not measured.** The package grades
   the payload path only. `mfm_encoder_checksum` forces its clock cell to `1`
@@ -78,8 +82,9 @@ both give.
   cell encodes to: DSKDATR pop #33 (`FIRST_PAYLOAD_POP_INDEX` in
   [`test_ch8-mfm-cell-encoding.cpp`](../../hrm/ch8-mfm-cell-encoding/test_ch8-mfm-cell-encoding.cpp)),
   words 0 to 31 being framing (`paula_floppy.v:484-497`). A2 grades the first
-  cell of that word, A3 and A4 the second; no assertion grades a cell whose
-  preceding bit lies in another word.
+  cell of that word (bits [15:14]), whose rule does not depend on the preceding
+  bit; A3 and A4 grade the second (bits [13:12]), whose preceding data bit is in
+  the same word; no assertion grades a context-dependent cell at a word boundary.
 - **Nothing in the normal path notices.** Nothing in AmigaDOS decodes clock
   bits, so the stream reads back correctly through `trackdisk.device`. The case
   for a change rests on software that validates or re-encodes the stream or
@@ -125,5 +130,4 @@ register, one bit holding the last data bit emitted. The odd and even halves of
 a sector are 256 words apart in the stream, so the carry must follow emitted
 order, not buffer order. The header path is a separate job.
 
-A repaired encoder is measured by the same package unchanged; `A2` and `A4` are
-the assertions that would turn green. The page closes as set out in row 4.
+A repaired encoder is measured by the same package unchanged.
