@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should `denise_sprites.v` stop letting bit 7 of the even sprite's SPR0CTL attach a pair when `aga = 0`, as p. 128 prints "valid only for odd-numbered" sprites? The decision belongs to an Amiga specialist, not to this repository. It closes when the specialist either accepts the one-term change under *Decision* or records which original-Denise behaviour the `!aga` term models, and the RTL or this page is changed to match. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer; the line is byte-identical there (and in TC64), so a fix made there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **What is asked of a reader** | Should `denise_sprites.v` stop letting bit 7 of the even sprite's SPR0CTL attach a pair when `aga = 0`, as p. 128 prints "valid only for odd-numbered" sprites, where setting it alone changes NanoMig's sprite output? Closes when the `(!aga && attach0)` term at `denise_sprites.v:474` is dropped and `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` is green, or when an Amiga specialist records that the original Denise attaches a pair from the even sprite's bit 7, in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | NanoMig's `denise_sprites.v` with `aga = 0` (the OCS/ECS mode the package drives), SPR0CTL bit 7 set alone with SPR1CTL bit 7 clear, one position (`0x40`) and one pair of sprite images; `aga = 1` is not graded (there the `!aga` term is zero). Chip revision of the original Denise: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 4 — Sprites, printed pp. 122 and 128; Appendix A, printed p. 284 (register table, "(odd sprites)") · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` carries `CH4-p128.c8`, `CH4-sctl.c4`, `CH4-attach.c27` (pp. 128, 122); `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT` carries `CH4-attach.c25`, `CH4-attach.c26`, `CH4-attach.c27`; `CODE-0000-YIELDS-TRANSPARENT-PIXEL` carries `CH4-tab45.c17` (Table 4-5, p. 122); `FIXTURE-LIVE-DATA-PATH` carries no claim id; the assertion messages cite no id for p. 284 |
+| **Chapter** | 4 — Sprite Hardware, printed pp. 122 and 128; Appendix A, printed p. 284 (register table, "(odd sprites)") · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` carries `CH4-p128.c8`, `CH4-sctl.c4`, p. 128, and `CH4-attach.c27`, p. 122; `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT` carries `CH4-attach.c25`, `CH4-attach.c26`, `CH4-attach.c27`, p. 122; `CODE-0000-YIELDS-TRANSPARENT-PIXEL` carries `CH4-tab45.c17` (Table 4-5, p. 122); `FIXTURE-LIVE-DATA-PATH` carries no claim id; the assertion messages cite no id for p. 284 |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v#L474) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v); inherited (MiSTer and TC64 have the same line) |
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites): `make -C hrm/ch4-attached-sprites test`; the expected red exits nonzero |
 | **Assertions** | 1 red of 4 graded (3 passed, 1 failed): `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` — expected: SPR0CTL bit 7 set alone leaves the sprdata trace identical to the neither-bit-set baseline; observed: the trace differs. Green on the same fixture: `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT`, `FIXTURE-LIVE-DATA-PATH`, `CODE-0000-YIELDS-TRANSPARENT-PIXEL` |
-| **Verdict of the four** | **three of four take the bit from the odd sprite only** (WinUAE, vAmiga, Denise); Copperline lets either sprite's bit attach. Hardware: the 8373R4 dissection stores bit 7 for the odd sprites only |
+| **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states; outside the emulators, the 8373R4 dissection stores bit 7 for the odd sprites only — see *What other Commodore documents say*. Hardware: not measured |
 | **Effort** | S: `denise_sprites.v` line 474 only — drop the `(!aga && attach0)` term; a narrower condition in its place, if the specialist finds the term was written for the original Denise, is the same line |
 
 ---
@@ -67,8 +67,7 @@ shows the sprite path delivers distinct known values in order before anything re
   incomplete for that chip, and the term belongs behind an OCS condition rather than
   `!aga`, which admits the ECS Denise too. If it is a workaround for one title, it
   belongs behind a narrower condition than a chipset strap.
-- **The ECS Denise specification agrees with the manual's own strength.** Its "(odd Sprites)" is a table annotation, not an explicit statement
-  that the even sprite's bit 7 is ignored.
+- **The ECS Denise specification's agreement is a table annotation.** Its "(odd Sprites)" is not an explicit statement that the even sprite's bit 7 is ignored, the same strength as the manual's own register table.
 - **The dissection is one revision and unfinished.** It speaks for the ECS Denise 8373R4
   only and is a work in progress; the sprite 0/1 cells are traced in the netlist, the
   other three pairs are read from the overview sheet.
