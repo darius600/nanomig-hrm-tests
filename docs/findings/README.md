@@ -12,7 +12,9 @@ withdrawn findings are kept apart, with their own list, in
 This page is the contract every finding page follows: one header table, five
 body sections, and a few rules about what goes where. `tools/check_findings_shape.py`
 in `hrm-testpipeline` enforces the header, the routing value, the five headings and
-the link limit, and reports each page by the row or heading it lacks.
+the link limit, and reports each page by the row or heading it lacks. It also
+checks that the Module row carries one of the values above and that a withdrawn
+page's Evidence is a withdrawal evidence.
 
 ## The header of an open page
 
@@ -27,12 +29,12 @@ After the thirteen rows only the optional ones follow.
 | 2 | **Filed against** | `the RTL`, `the printed page` or `the classification` |
 | 3 | **Evidence** | what holds the finding up, in plain words: *a test fails against the page* (with *the implementations split* when the other implementations disagree among themselves, or *because NanoMig lacks a documented bug* when the page describes a defect of the original chips); *a test passes; the page's other reading fails* (the page says two things, and a control shows the reading NanoMig does not follow fails); *seen in the RTL source; no test yet*, or *seen in the RTL source and measured inside the module; no assertion at the ports fails* (a red on an internal signal the manual documents, which no pin shows); or *none* |
 | 4 | **What is asked of a reader** | the exact decision and its boundary first, as one bounded yes/no question, then the event that closes it. If it begins *No RTL change* or *Nothing*, the rest of the page is context |
-| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited from MiSTer's Minimig-AGA; report there first and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code) or `no RTL action` (the printed page or the classification is wrong, not the RTL). Never `nobody`, never a person's name |
+| 5 | **Report to** | the routing value in backticks, then ` — `, then the repository or role that acts: `upstream first` (the code is inherited from MiSTer's Minimig-AGA; report there first and NanoMig takes the fix), `NanoMig direct` (only NanoMig's own code, or code that a Minimig line has fixed and NanoMig has not: the action is to port that fix, and the Module row then ends `fixed in ...`) or `no RTL action` (the printed page or the classification is wrong, not the RTL). Never `nobody`, never a person's name |
 | 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown` |
 | 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software` |
 | 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids |
-| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and whether the code is inherited or fixed |
-| 10 | **Test** | the package that measures it and at most two exact commands, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero |
+| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow. A bare `fixed` is not a value |
+| 10 | **Test** | every package the page names, each with its exact command, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero |
 | 11 | **Assertions** | the red assertions by id with one expected → observed result and the package's count, or `none` and what the package records instead |
 | 12 | **Verdict of the four** | what WinUAE, vAmiga, Denise and Copperline do: split, unanimous or no vote, and the hardware status |
 | 13 | **Effort** | `S`, `M` or `L` and one line of reason |
@@ -51,7 +53,7 @@ this order:
 |---|---|---|
 | 1 | **Lifecycle** | `withdrawn` |
 | 2 | **Filed against** | `—` |
-| 3 | **Evidence** | the withdrawal evidence: the measurement or passage that disproves the claim, in one sentence; not `none` |
+| 3 | **Evidence** | the withdrawal evidence: the measurement or passage that disproves the claim, in one sentence. It is never `none`, and never one of the open-page phrases (*a test fails against the page*, *seen in the RTL source; no test yet*, *seen in the RTL source and measured inside the module; ...*), which describe a live finding |
 | 4 | **What is asked of a reader** | `Nothing.` and the one sentence that stops the claim being raised again |
 | 5 | **Withdrawal reason** | why the claim does not hold, in one sentence; the full account is the page's *Why it was withdrawn* |
 | 6 | **Error class** | which recurring shape the mistake had, or `none` |
