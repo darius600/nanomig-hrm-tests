@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking): `make -C hrm/ch3-beam-counters-and-blanking test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both PAL. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: expected an average of 227.5, observed 227.0 over four lines of 227. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: expected 625 lines and 227.5, observed 625 and 227.0; its line-count half matches. The control that writes HTOTAL and measures the line it produces is green. The package reports `28 passed, 5 failed`: the other three reds are the NTSC pair, [NM-HRM-010](NM-HRM-010.md)'s, and [NM-HRM-011](NM-HRM-011.md)'s |
 | **Verdict of the four** | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate long and short lines only in NTSC. Hardware: not measured |
-| **Effort** | none: no RTL change; at most a correction to p. 304's PAL row |
+| **Effort** | none — no RTL change, at most a correction to p. 304's PAL row |
 | **See also** | [NM-HRM-010](NM-HRM-010.md) — the NTSC half of the same sentence, where the manual's two pages agree and NanoMig does not |
 
 ---
