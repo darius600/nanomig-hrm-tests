@@ -5,23 +5,27 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should a CIAAPRB read return the bit written, for each bit whose CIAADDRB bit is 1, as p.341 prints ("the corresponding bit position in the PR becomes an output"), where `ciaa.v` returns `portb_in` and a written 0 on a released line reads 1? The decision belongs to an Amiga specialist, not to this repository. It closes when `PROP-1` and `PORTB-DIRECTION` are green, or when the specialist declines and the reason is recorded here |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer. MiSTer's PRB read returns `portb_in` the same way and has no `regportb` at all; NanoMig keeps the register commented out |
+| **What is asked of a reader** | Should a CIAAPRB read return the bit written, for each bit whose CIAADDRB bit is 1, as p.341 prints ("the corresponding bit position in the PR becomes an output"), where `ciaa.v` returns `portb_in` and a written 0 on a released line reads 1? It closes when `PROP-1` and `PORTB-DIRECTION` turn green, or when an Amiga specialist rejects the change; if the rejection means p.341 is wrong for CIA-A's port B, the page is refiled against the printed page |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | CIA-A port B, CIAAPRB with CIAADDRB, all eight bits, with the port B lines released (`portb_in` = $FF) and nothing driving them; port A's PA0 passes the same comparator (`CONTROL-PA0-OUTPUT`). Chip revision: unknown |
-| **Software impact** | unknown; no named affected software. The only name in the tree is a stale comment, `minimig.v:136`: "2011-04-02 - added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data"; that register is the one commented out at `ciaa.v:267`, and no test here runs either program |
-| **Chapter** | 8 — Interface Hardware, printed p.259, and Appendix E, printed p.324; printed pp.341 and 354 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `PROP-1`: `opus:8-par.c1`, `sol:8-par.c1`, p.259; `PORTB-DIRECTION`: `sol:E-parallel.c69` to `sol:E-parallel.c76`, `opus:E-parallel-iface.c10`, p.324; `PORTB-RELEASED-CONTROL`, `CONTROL-PA0-OUTPUT` and `P1-PRE1.4/O1` carry no claim id and rest on pp.341 and 354 |
-| **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L267-L279); MiSTer has no `regportb` and TC64's is live but reaches nothing, the read mux the same in all three; fixed |
+| **Software impact** | Unreal and "some trainer", named by the comment at `minimig.v:136` ("added functional ciaa port b (parallel) register to let Unreal game work and some trainer store data") as needing the register that `ciaa.v:267` now leaves commented out; no test here runs either program, so the result is unknown |
+| **Chapter** | 8 — Interface Hardware, printed p.259; Appendix E, printed p.324; Appendix F, printed pp.341 and 354 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `PROP-1`: `opus:8-par.c1`, `sol:8-par.c1`, p.259; `PORTB-DIRECTION`: `sol:E-parallel.c69`, `sol:E-parallel.c70`, `sol:E-parallel.c71`, `sol:E-parallel.c72`, `sol:E-parallel.c73`, `sol:E-parallel.c74`, `sol:E-parallel.c75`, `sol:E-parallel.c76`, `opus:E-parallel-iface.c10`, p.324 (the same nine on the green `PORTB-WIDTH`); `PORTB-RELEASED-CONTROL` (pp.341, 354) and `P1-PRE1.4/O1` (p.341) carry no claim id; `CONTROL-PA0-OUTPUT` and each package's `FIXTURE-LIVE` carry neither a claim id nor a page |
+| **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L267-L279); MiSTer has no `regportb` and TC64's is live but reaches nothing, the read mux the same in all three; inherited |
 | **Test** | [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction): `make -C hrm/ch8-parallel-port-direction test`; [`hrm/appDE-parallel-port-ciaa`](../../hrm/appDE-parallel-port-ciaa): `make -C hrm/appDE-parallel-port-ciaa test`; [`integration/appF-cia-system`](../../integration/appF-cia-system): `make -k -C integration/appF-cia-system test`. An expected red exits nonzero |
 | **Assertions** | 2 red, each red at all eight bit positions, expected: a written 0 reads back 0 at bit n, a written 1 reads back 1; observed: 1 after the 0 and 1 after the 1. `PROP-1`, 1 of 4 in `hrm/ch8-parallel-port-direction` (`3 passed, 1 failed`), and `PORTB-DIRECTION`, 1 of 4 in `hrm/appDE-parallel-port-ciaa` (`3 passed, 1 failed`). Green in the same runs: `PORTB-RELEASED-CONTROL` in both and `CONTROL-PA0-OUTPUT` in ch8. `integration/appF-cia-system` records it, not graded: for CIA-A, `P1-PRE1.4/O1` prints a RECORDED line, not a FAIL, and CIA-A's instances are not graded on P1's PBON legs or on P1-OTHERBITS' pattern-bit clause |
-| **Verdict of the four** | **unanimous against.** All four store CIA-A's port B data register and read it back through the direction mask |
-| **Effort** | S: `ciaa.v` only — restore the commented-out `regportb` block (`:270-279`) and let the PRB read mux (`:293-294`) return it for output bits; the page itself states no change, so the size is an estimate from what it names as missing |
+| **Verdict of the four** | **unanimous against.** All four store CIA-A's port B data register and read it back through the direction mask. Hardware: not measured; the 6502.org dissection of one 8520 revision draws a PRB latch beside the DDRB latch |
+| **Effort** | none; if an Amiga specialist accepts p.341's data register for CIA-A's port B, S: `ciaa.v` only — restore the commented-out `regportb` block (`:270-279`) and let the PRB read mux (`:293-294`) return it for output bits |
 
 ---
 
 ## Source requirement
 
-**p.259**: the general-purpose parallel interface is *"bi-directional"*, and a
-port is bi-directional when a bit configured as an output carries the value
+**p.259**:
+
+> The general-purpose bi-directional parallel interface is a 25-pin connector on the back panel of the
+> computer.
+
+A port is bi-directional when a bit configured as an output carries the value
 written to it. **Appendix F, p.341**, specifies the part:
 
 > Ports A and B each consist of an 8-bit peripheral data register (PR) and an
@@ -67,28 +71,24 @@ when the reads give 0 and then 1 at bit n.
 The half that fails is the written 0: the read at `ciaa.v:293-294` returns the
 released line's 1.
 
-- `PROP-1` in [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction)
-  grades p.259's "bi-directional"
-  (`test_ch8-parallel-port-direction.cpp:300-315`):
+- `PROP-1` in [`hrm/ch8-parallel-port-direction`](../../hrm/ch8-parallel-port-direction) grades p.259's "bi-directional" (`test_ch8-parallel-port-direction.cpp:300-315`):
 
       MEASURED: PROP-1: bit 0: FAIL bit 1: FAIL bit 2: FAIL bit 3: FAIL bit 4: FAIL bit 5: FAIL bit 6: FAIL bit 7: FAIL
 
-- `PORTB-DIRECTION` in [`hrm/appDE-parallel-port-ciaa`](../../hrm/appDE-parallel-port-ciaa)
-  grades p.324's PARALLEL PORT (J8) table, which gives each of D0–D7 the
-  direction I/O and brackets them as "D0-D7 comprise an eight-bit bidirectional
-  bus" (`test_appDE-parallel-port-ciaa.cpp:359-376`):
+- `PORTB-DIRECTION` in [`hrm/appDE-parallel-port-ciaa`](../../hrm/appDE-parallel-port-ciaa) grades p.324's PARALLEL PORT (J8) table, which gives each of D0–D7 the direction I/O and brackets them as "D0-D7 comprise an eight-bit bidirectional bus" (`test_appDE-parallel-port-ciaa.cpp:359-376`):
 
       MEASURED: PORTB-DIRECTION: D0: writable=no D1: writable=no D2: writable=no D3: writable=no D4: writable=no D5: writable=no D6: writable=no D7: writable=no
 
   The same nine ids carry `PORTB-WIDTH`, which passes: a single `portb_in`
   line moves only its own PRB bit, at each of the eight.
 
-Green on the same registers and lines: `PORTB-RELEASED-CONTROL`, CIAADDRB at
-input and the lines released, reads CIAAPRB as $FF in both packages
-(`test_ch8-parallel-port-direction.cpp:274-284`,
-`test_appDE-parallel-port-ciaa.cpp:319-331`), and in ch8 `CONTROL-PA0-OUTPUT`,
-the identical comparator at CIAAPRA bit 0
-(`test_ch8-parallel-port-direction.cpp:317-328`):
+Green on the same registers and lines:
+
+- `PORTB-RELEASED-CONTROL`, CIAADDRB at input and the lines released, reads CIAAPRB as $FF in ch8 (`test_ch8-parallel-port-direction.cpp:274-284`).
+- `PORTB-RELEASED-CONTROL`, the same read, in appDE (`test_appDE-parallel-port-ciaa.cpp:319-331`).
+- `CONTROL-PA0-OUTPUT` in ch8, the identical comparator at CIAAPRA bit 0 (`test_ch8-parallel-port-direction.cpp:317-328`).
+
+The `PORTB-RELEASED-CONTROL` lines:
 
     MEASURED: PORTB-RELEASED-CONTROL: portb_in=0xFF, PRB=0xFF
     MEASURED: PORTB-RELEASED-CONTROL: DDRB=0x00 (input), portb_in=0xFF, PRB=0xFF
@@ -119,16 +119,15 @@ and the same for `JOY3`, and passes both to the chipset inverted,
 [`._joy3 (~JOY2 ),` and `._joy4 (~JOY3 ),`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L1505-L1506),
 so the eight joystick-adapter lines `minimig.v:624` routes into CIA-A's port B
 are all 1 and the PRB read at `ciaa.v:293-294` returns them. This reproduces the
-behaviour at the system level; it is not a graded red of its own.
+behaviour at the system level.
 
 ## Risks and unknowns
 
 - **Recorded, not graded, at the system's ports:** for CIA-A, `P1-PRE1.4/O1` is a
   RECORDED line, not a FAIL, and CIA-A's instances are not graded on P1's PBON
   legs or on P1-OTHERBITS' pattern-bit clause.
-- **Only released lines were swept.** A line pulled low from outside was not measured; the chip revision is unknown.
-- **CIA-A port B is this tree's four-player joystick adapter** (`minimig.v:624`
-  wires `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]})`),
+- **Only released lines were graded.** Lines held low from outside are only recorded (`portb_in` = `0x3C`, above), not graded; the chip revision is unknown.
+- **CIA-A port B is this tree's four-player joystick adapter** (`minimig.v:624` wires `.portb_in({_joy4[0],_joy4[1],_joy4[2],_joy4[3],_joy3[0],_joy3[1],_joy3[2],_joy3[3]})`),
   a real Amiga use of the connector that explains the design decision and does
   not make the port bi-directional.
 - **No handshake was graded.** `grep -rniwE 'pc|drdy|strobe|ack'` over `ciaa.v`
@@ -155,12 +154,7 @@ behaviour at the system level; it is not a graded red of its own.
 
 Copperline models the same joystick-adapter use of the connector that NanoMig
 wires and still implements the register, because the adapter overlays the input
-pins rather than replacing the port. The control is not a broken fixture: the
-port A comparator passes at PA0 in ch8, and sibling
-[`hrm/ch8-ciaa-port-direction`](../../hrm/ch8-ciaa-port-direction) finds port A's
-mechanism working at PA0 and PA1 ([NM-HRM-040](NM-HRM-040.md) is about the other
-six).
-
+pins rather than replacing the port.
 ### What other Commodore documents say
 
 - **Commodore, 6526 CIA specification, 1981**, PDF page 5 — agrees with the manual:
@@ -186,6 +180,6 @@ six).
 
 ## Decision
 
-**Open question for an Amiga specialist: should CIA-A's port B carry the data register p.341 describes?** The page states no change. What it names as missing is the write block `ciaa.v:270-279` leaves commented out (`regportb`, cleared on reset and loaded by a write to PRB) and a PRB read that returns the pin with output bits driven by it, as vAmiga and Denise read it through the direction mask. Whether NanoMig should move away from MiSTer's and TC64's read of `portb_in` is the specialist's decision.
+**Open question for an Amiga specialist: should CIA-A's port B carry the data register p.341 describes?** No change is proposed now. What is missing is the write block `ciaa.v:270-279` leaves commented out (`regportb`, cleared on reset and loaded by a write to PRB) and a PRB read that returns the pin with output bits driven by it, as vAmiga and Denise read it through the direction mask.
 
-The finding closes when `PROP-1` and `PORTB-DIRECTION` are green, or when the specialist declines and the reason is recorded here.
+The finding closes when `PROP-1` and `PORTB-DIRECTION` turn green, or when an Amiga specialist rejects the change; if the rejection means p.341 is wrong for CIA-A's port B, the page is refiled against the printed page.
