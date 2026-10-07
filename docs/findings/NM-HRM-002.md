@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch5-audio-stereo-routing`](../../hrm/ch5-audio-stereo-routing): `make -C hrm/ch5-audio-stereo-routing test`; [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation): `make -k -C integration/ch5-audio-attach-modulation test`. An expected red exits nonzero; the integration package exits nonzero on other claims' reds, and its lines for this page, `PC5-VOL`, `PC5-PER` and the `PC5 measured sides` line, are green or measured |
 | **Assertions** | 6 red, each expecting the side p. 137 prints and reading the opposite sum (values under *RTL and measurement*): `channel 0 routes right`, `channel 1 routes left`, `channel 2 routes left` and `channel 3 routes right` in `hrm/ch5-audio-stereo-routing` (0 passed, 4 failed); `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT` in `hrm/ch5-audio-volume-scale` (69 passed, 5 failed; the other three reds are [NM-HRM-025](NM-HRM-025.md)'s, per the test file), which read the same two p. 137 sides on the mixer's multiply-then-sum path |
 | **Verdict of the four** | **three against one**: WinUAE, Denise and Copperline with the pin list, vAmiga with chapter 5; outside the emulators, the 8364R7 silicon sides with the pin list, and Commodore's A500, A2000 and B2000 schematics wire the board as p. 326 describes — see *What other Commodore documents say*. Hardware: not measured on a running machine |
-| **Effort** | none — no RTL change; if p. 137 is a misprint, the correction exchanges "left" and "right" in its two sentences |
+| **Effort** | none — no RTL change (if p. 137 is a misprint, the correction exchanges "left" and "right" in its two sentences) |
 
 ---
 
