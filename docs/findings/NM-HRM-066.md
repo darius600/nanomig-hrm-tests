@@ -186,4 +186,3 @@ to come before its first use. That would make sprite 7's fate at $0030
 independent of the plane count, and move it away from Figure 6-9's by-plane
 counts with one to three lores planes or one hires plane, which is the other
 half of the decision.
-Re-run: `make -C hrm/ch7-dmacon-register-bits test`.
