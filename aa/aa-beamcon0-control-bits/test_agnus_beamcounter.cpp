@@ -62,7 +62,7 @@
 // AND THE SYNC POLARITY BITS ARE THE ONE PLACE THIS PACKAGE GOES RED. The
 //   document says of bits 2, 1 and 0:
 //
-//     HSYTRUE,VSYTRUE,CSYTRUE= These change the polarity of the sync
+//     HSYTRUE,VSYTRUE,CSYTRUE= These change the polarity of the HSY*, VSY*, & CSY* pins
 //
 //   `_hsync`, `_vsync` and `_csync` are ports of this module, so the signal the
 //   sentence is about is right here. The three wires that would read the bits
@@ -334,8 +334,8 @@ int main(int argc, char** argv) {
                  "SYNC-POLARITY-BITS-CHANGE-THE-PINS: setting HSYTRUE, VSYTRUE "
                  "and CSYTRUE changes what comes out of the module's three "
                  "sync pins, which is what the AA table means by `These change "
-                 "the polarity of the sync` [p.13] "
-                 "[claims: sol:AA-beamcon0.c19/c20/c21/c62/c63/c64 opus:AA-beamcon0.b2 opus:AA-beamcon0.b1 opus:AA-beamcon0.b0 opus:AA-beamcon0.c43]");
+                 "the polarity of the HSY*, VSY*, & CSY* pins` [p.12,13] "
+                 "[claims: sol:AA-beamcon0.c19 sol:AA-beamcon0.c20 sol:AA-beamcon0.c21 sol:AA-beamcon0.c62 sol:AA-beamcon0.c63 sol:AA-beamcon0.c64 opus:AA-beamcon0.b2 opus:AA-beamcon0.b1 opus:AA-beamcon0.b0 opus:AA-beamcon0.c43]");
     }
 
     // --- What this boundary cannot grade ------------------------------------
