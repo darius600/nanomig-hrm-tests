@@ -124,5 +124,4 @@ No RTL change. Somebody who can read `expansion.library`'s Zorro III path, or wh
 has put a real Zorro III card in a Zorro II machine, says which write the system
 actually configures on. If the page is right, NanoMig and two emulators are wrong
 together; if the page is wrong, it is wrong in the one sentence that tells a board
-designer when to stop answering. Closes as the *What is asked of a reader* row
-says. Re-run: `make -C hrm/appK-autoconfig-base-address test`.
+designer when to stop answering.
