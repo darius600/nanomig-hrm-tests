@@ -36,7 +36,7 @@ After the thirteen rows only the optional ones follow.
 | 6 | **Scope** | chip, revision and mode the finding holds for, and the edge case that was isolated, or `unknown` |
 | 7 | **Software impact** | the named software case and its result, or `unknown; no named affected software` |
 | 8 | **Chapter** | the oracle: document, edition, page, table or figure, and claim ids. A cell with more than 12 claim ids holds them in one collapsed `<details><summary>claim ids by assertion (N)</summary> ... </details>` on one line; at 12 or fewer they stand in the cell |
-| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow, and may say that the cited code declares the behaviour not implemented, with the file:line of that declaration. A bare `fixed` is not a value |
+| 9 | **Module** | the RTL under discussion, at most two links pinned at the revision below, and then, as the last words of the cell, exactly one of: `inherited` (MiSTer has the same code; a clause may say how TC64 differs), `fixed in MiSTer`, `fixed in TC64` or `fixed in MiSTer and TC64` (that Minimig line has corrected the behaviour; NanoMig has not; row 5 then routes `NanoMig direct`), or `NanoMig's own` (the cited code has no counterpart in either Minimig line). A parenthetical may follow, and may say that the cited code declares the behaviour not implemented, with the file:line of that declaration. A bare `fixed` is not a value |
 | 10 | **Test** | every package the page names, each with its exact command, or the statement that no package observes the claim. For an integration package: `make -k -C integration/<pkg> test` (or both `test-fx68k` and `test-tg68k`), and that an expected red exits nonzero |
 | 11 | **Assertions** | the red assertions by id with one expected → observed result and the package's count, or `none` and what the package records instead |
 | 12 | **Verdict of the four** | what WinUAE, vAmiga, Denise and Copperline do: split, unanimous or no vote, and, last, `Hardware:` and the hardware status |
@@ -173,9 +173,6 @@ a reader can follow the thread without going back to the register.
 | Denise | [piciji/denise](https://github.com/piciji/denise) | [`1cb7d45`](https://github.com/piciji/denise/tree/1cb7d45117893c76025d32260edb6008001344f9) · 2026-09-11 |
 | Copperline | [CopperlineHQ/Copperline](https://github.com/CopperlineHQ/Copperline) | [`726bed0`](https://github.com/CopperlineHQ/Copperline/tree/726bed00c407727c1f5bd32c7193587986638941) · 2026-09-11 |
 
-All six are checked out locally under `_emulators/` in the workspace, outside
-either repository, so a citation can be re-checked rather than trusted.
-
 ### The two Minimig lines are ancestors, not witnesses — and nothing merges them down
 
 **NanoMig was forked from MiSTer's Minimig-AGA, and there is no
@@ -203,7 +200,7 @@ neither news nor a problem. So a Minimig row is usually one sentence and nothing
 more — unless a maintained line has **changed** the code a finding is about and
 NanoMig has not picked it up. That is the only case with something to act on, and
 it gets a section. The full comparison is in
-[`../upstream-minimig-aga.md`](../evidence/upstream-minimig-aga.md).
+[`../evidence/upstream-minimig-aga.md`](../evidence/upstream-minimig-aga.md).
 
 **Both lines are stated once, in the comparison table, and nowhere else.** A
 separate header row would describe the same two implementations twice on one
@@ -255,9 +252,7 @@ there is work to do at all.
 
 ### These pages are written to be filed upstream
 
-Where a finding is inherited, it is the **ancestor's** finding. A fix in
-Minimig-AGA does not reach NanoMig by itself -- see the paragraph above:
-somebody ports it deliberately. Reporting it there is likely to get it reviewed
+Where a finding is inherited, it is the **ancestor's** finding. Reporting it there is likely to get it reviewed
 by people who know that code better than anyone here does. That is the
 `upstream first` routing value of `Report to`; a finding about the printed page
 carries `no RTL action`.
@@ -268,7 +263,7 @@ cited, the reasoning stated rather than assumed, and the `Report to` row naming
 the repository the fix belongs in. A page should be usable as the body of an
 issue with no editing beyond deleting this paragraph's worth of context.
 
-Nothing is filed anywhere without the maintainer of this repository saying so.
+Nothing is reported upstream without the maintainer of this repository saying so; a decision on a finding is recorded as an issue here.
 
 ## Second documents
 
