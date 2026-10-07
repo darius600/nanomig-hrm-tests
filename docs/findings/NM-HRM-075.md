@@ -14,7 +14,7 @@
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; an expected red exits nonzero |
 | **Assertions** | 1 red of 5 graded: `CIA-DECODE-DONTCARE` — expected `sel_cia`=1 at $A00000 and $BE0000, observed 0 at both; the package reads 4 passed, 1 failed. `CIA-AB-TWOBIT-RULE`, green in the same run, grades p. 353's two chip selects at $BFE001 and $BFD000 and, at $BFC100, where p. 353 is silent, p. 351's one select line per chip: both chips are selected there. It is not part of this finding |
 | **Verdict of the four** | **3–1 for p. 353 on the machines it describes, and no named model decodes NanoMig's window**: WinUAE's models with neither Gayle nor Fat Gary, vAmiga and Denise select the CIAs anywhere in $A00000–$BFFFFF, as p. 353's three bits do; Copperline answers only in $BFD000–$BFDFFF and $BFE000–$BFEFFF, narrower than NanoMig, and so do WinUAE's Gayle and Fat Gary models. Only a WinUAE configuration with the AGA chipset and neither gate array has NanoMig's $BF0000–$BFFFFF. At $BFC100 WinUAE's models without Gayle or Fat Gary, vAmiga and Denise select both CIAs, as NanoMig does and p. 351 predicts. Hardware: not measured |
-| **Effort** | S: `gary.v` line 190 only, comparing `cpu_address_in[23:21]` in place of `[23:16]`; upstream the ROM mirrors at $A80000–$B7FFFF in MiSTer's `gary.v` must be left to them |
+| **Effort** | S — `gary.v` line 190 only, comparing `cpu_address_in[23:21]` in place of `[23:16]`; upstream the ROM mirrors at $A80000–$B7FFFF in MiSTer's `gary.v` must be left to them |
 | **See also** | [NM-HRM-062](NM-HRM-062.md) — the same paragraph of p. 353 prints its two binary patterns interchanged |
 
 ---
