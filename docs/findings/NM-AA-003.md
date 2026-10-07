@@ -6,14 +6,14 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test passes; the page's other reading fails |
 | **What is asked of a reader** | No RTL change follows from this; NanoMig already takes all four bits as one shift field, which is what the page's own legend asks for. Question: is `ASA0` in the area-mode cell for BLTCON0 bit 12 on p. 14 a typographic slip for `ASH0`, which the same row's second column, the legend below the table and the three cells above it all print? Closes when an Amiga specialist records `ASA0` as a misprint for `ASH0`, or confirms that `ASA0` names a field of its own, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — AA documentation: whoever keeps errata for Commodore's AA specification. The defect is in a 1991 Commodore document, and the company is gone; the page is filed so that no AA claim rests on BLTCON0 bit 12 carrying a field name of its own |
+| **Report to** | `no RTL action` — AA documentation: whoever keeps errata for Commodore's AA specification |
 | **Scope** | blitter BLTCON0 bits 15-12 in area mode; bit 12 isolated by shift value 1, which sets it alone; line mode not exercised; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 14, the BLTCON0/BLTCON1 bit table (area mode left, line mode right, labelled at the foot of p. 13). Claim ids by assertion: `ASH-BITS-ARE-THE-SHIFT-VALUE-OF-A`: `sol:AA-bltcon0.c5`, `sol:AA-bltcon0.c7`, `sol:AA-bltcon0.c9`, `sol:AA-bltcon0.c11`, `sol:AA-bltcon0.c37`, `opus:AA-bltcon0.area15`, `opus:AA-bltcon0.area14`, `opus:AA-bltcon0.area13`, `opus:AA-bltcon0.area12`, `opus:AA-bltfield.c1`; `BSH-BITS-ARE-THE-SHIFT-VALUE-OF-B`: `sol:AA-bltcon1.c6`, `sol:AA-bltcon1.c8`, `sol:AA-bltcon1.c10`, `sol:AA-bltcon1.c12`, `sol:AA-bltcon1.c38`, `opus:AA-bltcon1.area15`, `opus:AA-bltcon1.area14`, `opus:AA-bltcon1.area13`, `opus:AA-bltcon1.area12`, `opus:AA-bltfield.c2`; `LF-NONE-IS-ZERO-ALL-IS-ONES`: `sol:AA-bltcon0.c42`; `LF-LINES-ARE-DISJOINT-AND-COMPLETE`: `opus:AA-bltfield.c8`; `USED-DECIDES-WHETHER-D-IS-WRITTEN`: `sol:AA-bltcon0.c41`, `sol:AA-bltcon0.c19`, `opus:AA-bltfield.c7`, `opus:AA-bltcon0.area08`. All five assertions carry claim ids |
 | **Module** | `src/minimig-aga/agnus_blitter.v:232` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_blitter.v#L232) at the pinned revision; inherited (MiSTer and TC64 carry the identical line) |
 | **Test** | [`aa/aa-blitter-function-and-shift`](../../aa/aa-blitter-function-and-shift) · `make -C aa/aa-blitter-function-and-shift test`, or `hrm/run_all.sh --in ../aa` (that one runs the whole aa/ tree, which has red packages); this package is all green, so its own make exits zero |
 | **Assertions** | none red. 5 graded assertions, all green (`5 passed, 0 failed`). The one that grades this page, `ASH-BITS-ARE-THE-SHIFT-VALUE-OF-A`: expected the same word from writing k into bits 15-12 as from shifting the A source by k places beforehand, k = 1, 2, 4, 8; observed that match on all 24 line/shift pairs where the source moves the output (8 pairs where it does not prove nothing). The other four, named under *Chapter*, do not concern BLTCON0 bit 12 |
-| **Verdict of the four** | **unanimous, and not one of them reads bit 12 apart from bits 15-13.** All four take `bltcon0[15:12]` in a single expression as the A shift value, and two of them name that field ASH. The spelling `ASA0` appears in the source of none of the six. Hardware: not measured |
+| **Verdict of the four** | **unanimous, and not one of them reads bit 12 apart from bits 15-13.** Every implementation takes `bltcon0[15:12]` in a single expression as the A shift value, and two of them name that field ASH. The spelling `ASA0` appears in the source of none of the six. Hardware: not measured |
 | **Effort** | none — no RTL change; a documentation note on p. 14 only |
 | **See also** | [NM-AA-001](NM-AA-001.md), the other place where two statements of the same register disagree inside this document |
 
@@ -42,8 +42,8 @@ be ASH3, ASH2, ASH1 and ASH0.
 This is the page's print, not a scanner's: the corpus's three independent readings
 (Tesseract at 300 dpi, the 1993 `AGA.guide` retyping, a model reading the page image
 blind to the other two) all produced `ASA0`, tagged `[3/3]  ocr+guide+model` in
-`p14.provenance.tsv` like every neighbouring row. Both blind readers of slice 2 flagged
-it without seeing each other's work: `sol:AA-bltcon0.c11` as `MISPRINT: in area mode
+`p14.provenance.tsv` like every neighbouring row. Both claim records read the cell as a
+misprint: `sol:AA-bltcon0.c11` as `MISPRINT: in area mode
 BLTCON0 bit 12 is printed ASA0`, and `opus:AA-bltcon0.area12` as `In area mode bit 12 of
 BLTCON0 is printed ASA0`, naming the line-mode column against it.
 
@@ -109,8 +109,4 @@ a name of its own, and `ASA0` occurs in the source of none of the six.
 
 No RTL change: nothing downstream was misled, because no implementation gave bit 12 a
 separate meaning, which is worth stating because a reader who trusted the cell over the
-legend would have had no way to tell. The page stays a finding about the printed page
-until an Amiga specialist records `ASA0` as a misprint for `ASH0` or confirms it as a
-field of its own, in which case it is refiled against the RTL. Re-run:
-`make -C aa/aa-blitter-function-and-shift test`; the expected result is
-`5 passed, 0 failed`.
+legend would have had no way to tell.
