@@ -5,11 +5,11 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. The red is against p. 310, not against the RTL, and the entry exists so the next reader does not take it for an implementation fault. Question: with CDANG clear, does the ECS Copper write `$040`–`$07E`, inside the `$03E`–`$07E` that Appendix C p. 310 prints, or is it blocked below `$080`, as Appendix B marks every address from `$040` to `$07E`? Closes when an Amiga specialist records that p. 310's COPCON sentence does not describe the ECS Copper (Appendix B's marks hold), or confirms that the ECS Copper writes `$040`–`$07E` with CDANG clear, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendices B and C of the *Amiga Hardware Reference Manual*, 3rd ed. The manual contradicts itself; NanoMig, both Minimig lines, all four implementations and Commodore's AA specification block the range with CDANG clear |
+| **What is asked of a reader** | No RTL change follows from this; the red is against p. 310, not against the RTL. Question: with CDANG clear, does the ECS Copper write `$040`–`$07E`, inside the `$03E`–`$07E` that Appendix C p. 310 prints, or is it blocked below `$080`, as Appendix B marks every address from `$040` to `$07E`? Closes when an Amiga specialist records that p. 310's COPCON sentence does not describe the ECS Copper (Appendix B's marks hold), or confirms that the ECS Copper writes `$040`–`$07E` with CDANG clear, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendices B and C of the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Scope** | Agnus with `ecs = 1`, Copper MOVE with CDANG clear, byte addresses `$040`–`$07E` (32 addresses). `$03E` is isolated: p. 310 reads two ways there, NanoMig does not write it, and no assertion grades it. At `ecs = 0` NanoMig matches Appendix B. Chip revision unknown; no hardware capture cited |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Appendix C, printed p. 310 (ECS COPCON) against Appendix B, printed pp. 287–290 (legend p. 287, `(E)` p. 288, rows pp. 289–290) and p. 298; Chapter 2, printed p. 26 (quoted), p. 36 and Appendix A p. 274 (cited) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids carried by the red assertions: `T16`: `ch2-appc-ecs.c21`, `COP2-copcon-ecs.c13`; `SWEEP ecs=1 cdang=0`: `COP2-copcon-ecs.c14`, `ch2-appc-ecs.c22`. `T9` carries no claim id. None of the three carries an `opus:` or `sol:` id |
+| **Chapter** | Appendix C, printed p. 310 (ECS COPCON) against Appendix B, printed pp. 287–290 (legend p. 287, `(E)` p. 288, rows pp. 289–290) and p. 298; Chapter 2, printed p. 26 (quoted), p. 36 and Appendix A p. 274 (cited) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `T16`: `ch2-appc-ecs.c21`, `COP2-copcon-ecs.c13`, p. 310; `SWEEP ecs=1 cdang=0`: `COP2-copcon-ecs.c14`, `ch2-appc-ecs.c22`, p. 310; `APPBTILDE-ECS1-BLTCON0L`, `APPBTILDE-ECS1-BLTSIZV`, `APPBTILDE-ECS1-BLTSIZH`, `APPBTILDE-ECS1-SPRHDAT`, `APPBTILDE-ECS1-DENISEID`: `COP2-copcon-ecs.c11`, `ch2-appc-ecs.c20`, p. 310; `APPBTILDE $2D`: `opus:B-bltcon0l.copper`, `sol:B-copper-tilde.c14`, p. 289; `APPBTILDE $2E`: `opus:B-bltsizv.copper`, `sol:B-copper-tilde.c15`, p. 289; `APPBTILDE $2F`: `opus:B-bltsizh.copper`, `sol:B-copper-tilde.c16`, p. 289; `APPBTILDE $3C`: `opus:B-sprhdat.copper`, `sol:B-copper-tilde.c24`, p. 290; `APPBTILDE $3E`: `opus:B-deniseid.copper`, `sol:B-copper-tilde.c25`, p. 290. `T9` and `CTRL-BLTCON0` carry no claim id |
 | **Module** | `agnus_copper.v:225` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L225) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L225); inherited (MiSTer and TC64 have the same line) |
 | **Test** | [`hrm/ch2-copper-move-range`](../../hrm/ch2-copper-move-range): `make -C hrm/ch2-copper-move-range test`; [`hrm/ch2-copper-move-sweep`](../../hrm/ch2-copper-move-sweep): `make -C hrm/ch2-copper-move-sweep test`; green control for Appendix B's reading: [`hrm/ch8-appb-copper-access-marks`](../../hrm/ch8-appb-copper-access-marks): `make -C hrm/ch8-appb-copper-access-marks test`. An expected red exits nonzero |
 | **Assertions** | 3 red. `T9` in `hrm/ch2-copper-move-range`: expected a MOVE to BLTCON0 (`$040`) to be written, observed it not written. `T16` in the same package: expected a MOVE to DSKSYNC (`$07E`) to be written, observed it not written; the package reports `14 passed, 2 failed`. `SWEEP ecs=1 cdang=0` in `hrm/ch2-copper-move-sweep`: expected accepted set `{$20-$ff}` in DA8-1 units (byte `$040` up), observed `{$40-$ff}` (byte `$080` up), 32 falsely rejected, none falsely accepted; the package reports `97 passed, 1 failed` |
@@ -55,18 +55,29 @@ of pp. 289-290 carries the `~` on all five:
 >
 > `DENISEID     ~07C     R   D(E)        Chip revision level for Denise (video out chip)`
 
-p. 288 says what `(E)` means (`appB3/p288.txt:24-27`): *"Registers denoted with an
-"(E)" in the chip column means that those registers have been changed in the
-Enhanced Chip Set (ECS)."* Appendix C's register map lists four of the five as `new`
-in ECS (`appC-audio/p298.txt:22-25`), for example
-`05A  BLTCON0L new   W  A   Blitter control 0, lower 8 bits (minterms)`. In the
-standard chip set there is no register at `$05A`, `$05C`, `$05E` or `$07C`, so on
+p. 288 says what `(E)` means (`appB3/p288.txt:24-27`):
+
+> "About the ECS registers. Registers denoted with an "(E)" in the chip column
+> means that those registers have been changed in the Enhanced Chip Set (ECS).
+> ... Certain ECS registers are completely new, others have been extended in
+> their functionality."
+
+Appendix C's register map lists four of the five as `new` in ECS
+(`appC-audio/p298.txt:22-25`):
+
+> `05A  BLTCON0L new   W  A   Blitter control 0, lower 8 bits (minterms)`
+>
+> `07C  DENISEID new   R  D   Chip revision level for Denise (video out chip)`
+
+In the standard chip set there is no register at `$05A`, `$05C`, `$05E` or `$07C`, so on
 those rows the `~` can describe only ECS. **For those addresses Appendix B says a
 Copper MOVE with CDANG clear does not write, and p. 310 says it does.**
 
 **p. 310 ties Appendices A and B to the standard chip set** in its last sentence
-(`text/p310.txt:35-36`): *"For more information on the AUDxPER register, and any
-other register in the Amiga standard chip set, see Appendices A and B."*
+(`text/p310.txt:35-36`):
+
+> "For more information on the AUDxPER register, and any other register in the
+> Amiga standard chip set, see Appendices A and B."
 
 **Chapter 2 and Appendix A defer ECS to Appendix C.** Chapter 2 gives the CDANG range
 without a chipset, `$40` to `$7E`, and *"When CDANG is 0, these registers cannot
@@ -79,9 +90,6 @@ p. 26 puts `$00` to `$3E` among the registers the Copper *"cannot affect at all"
 row, `*`: not writable by the Copper at all (`appB3/p289.txt:40`). p. 310's own
 standard-chip-set sentence, CDANG set reaching `$DFF03E` (`appC-ecs/p310.txt:31-33`),
 disagrees with both.
-
-The finding key names the pair that disagrees, NanoMig and p. 310, and does not
-prejudge which side is wrong.
 
 ## RTL and measurement
 
@@ -148,6 +156,7 @@ is the only Commodore document on this page that states the CDANG-clear range, a
 it states NanoMig's. Its COPCON entry, PDF pages 19-20:
 
 ```
+COPCON   h 02E  W   A        Coprocessor control register
                      01     CDANG     Coprocessor danger mode. Allows coprocessor
                                       access to all RGA registers if true.
                                       (if 0, access to RGA>7E)
@@ -164,9 +173,6 @@ and `BLTSIZH` (p. 7), three of the registers HRM p. 298 lists as new in ECS.
 ## Decision
 
 **Not an RTL change.** NanoMig already does what Appendix B marks and what every
-implementation does. The question is for someone who knows the ECS Agnus: whether
-p. 310's last COPCON sentence describes it. If it does not, `T9`, `T16` and the
+implementation does. If p. 310's last COPCON sentence does not describe the ECS Agnus, `T9`, `T16` and the
 `ecs=1 cdang=0` sweep grade a sentence the manual itself contradicts on pp. 289-290.
-If p. 310's reading is upheld, a fix diverges from neither Minimig line. Re-run:
-`make -C hrm/ch2-copper-move-range test` and `make -C hrm/ch2-copper-move-sweep test`
-(an expected red exits nonzero).
+If p. 310's reading is upheld, a fix diverges from neither Minimig line.
