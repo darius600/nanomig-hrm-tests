@@ -499,10 +499,23 @@ private:
             if (!top_->_ram_oe) {
                 uint16_t v = mem_[word_addr];
                 top_->ramdata_in = v;
-                uint32_t base = word_addr & ~3u;
-                uint64_t c48 = (uint64_t(mem_[(base + 1) & kRamWordMask]) << 32) |
-                               (uint64_t(mem_[(base + 2) & kRamWordMask]) << 16) |
-                                uint64_t(mem_[(base + 3) & kRamWordMask]);
+                // chip48 carries what the TN20k AGA build's SDRAM path puts on
+                // dout48: the three words that follow the read address, in burst
+                // order, wrapping inside the aligned 16-byte block.
+                // tang/nano20k/top_020.sv:871-885 instantiates misc/sdram.sv with
+                // CHIP48_BURST, a sequential burst of four 32-bit words (sdram.sv:100)
+                // that starts at the address's own column (sdram.sv:324); sdram.sv:427-470
+                // slices dout48 from the words after the read word. NanoMig's own
+                // sim/nanomig_tb.cpp:664-669 computes a different chip48 value (the
+                // words 1-3 of the 8-byte-aligned group), but its testbench never
+                // uses it: nanomig_tb.v:56 is an input that nothing reads, and
+                // nanomig_tb.v:310 takes chip48 from sdram.sv + sdr_chip_model.v.
+                // Both CPU cores get this memory model because the packages grade
+                // the chipset RTL: the fx68k board tops tie chip48 to 0 and cannot
+                // select AGA, so the harness models the AGA-capable board.
+                uint64_t c48 = 0;
+                for (uint32_t k = 1; k <= 3; ++k)
+                    c48 = (c48 << 16) | mem_[((word_addr & ~7u) | ((word_addr + k) & 7u)) & kRamWordMask];
                 top_->chip48 = c48;
                 log_.push_back({cycle_, word_addr, v, false, !top_->_ram_bhe, !top_->_ram_ble});
             }
@@ -547,11 +560,12 @@ private:
                     fastmem_[a] = nv;
                 } else {
                     top_->fastram_dout = fastmem_[a];
-                    uint32_t base = a & ~3u;
-                    top_->fastram_dout48 =
-                        (uint64_t(fastmem_[(base + 1) & (kFastWordCount - 1)]) << 32) |
-                        (uint64_t(fastmem_[(base + 2) & (kFastWordCount - 1)]) << 16) |
-                         uint64_t(fastmem_[(base + 3) & (kFastWordCount - 1)]);
+                    // The same burst model as chip48 above, on the controller's
+                    // second port (p2_dout48, sdram.sv:430-467).
+                    uint64_t d48 = 0;
+                    for (uint32_t k = 1; k <= 3; ++k)
+                        d48 = (d48 << 16) | fastmem_[((a & ~7u) | ((a + k) & 7u)) & (kFastWordCount - 1)];
+                    top_->fastram_dout48 = d48;
                 }
                 fastram_ready_level_ = !fastram_ready_level_;
                 top_->fastram_ready = fastram_ready_level_;
