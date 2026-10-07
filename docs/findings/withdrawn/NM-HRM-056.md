@@ -5,13 +5,13 @@
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
 | **Evidence** | p. 258 moves a word written from idle into the shift register at the start of the operation, and where p. 257 needs TBE clear, while a second word waits, NanoMig reads it 0 on 219 consecutive reads |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. p. 258 moves a word written from idle into the shift register at the start of the operation, so TBE returns to 1 at once, as NanoMig's does; where p. 257 needs the bit clear, while a second word waits behind a busy shift register, NanoMig holds it at 0 until the shift register takes the word. |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. |
 | **Withdrawal reason** | No page requires TBE to read 0 after a write from an idle transmitter; p. 257's clear TBE is the waiting-word case, which NanoMig keeps |
 | **Error class** | **a silence read as a requirement** |
-| **Replacement** | Green: `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in [`hrm/ch8-serdatr-read-word`](../../../hrm/ch8-serdatr-read-word) (TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0); `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit) (TBE back at 1 within 3 ticks of a write from idle) |
-| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L139) |
+| **Replacement** | Green: `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` in [`hrm/ch8-serdatr-read-word`](../../../hrm/ch8-serdatr-read-word) (TBE read 0 on 219 consecutive reads while the second word waited, then 1 with TSRE 0); `DOUBLE-BUFFER-AND-TBE` in [`hrm/ch8-serdat-transmit`](../../../hrm/ch8-serdat-transmit), `make -C hrm/ch8-serdat-transmit test` (TBE back at 1 within 3 ticks of a write from idle) |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L139); inherited, line 139 identical in MiSTer and TC64 |
 | **Test** | `make -C hrm/ch8-serdatr-read-word test`; the package's `12 passed, 2 failed` — the two reds are other assertions, and an expected red exits nonzero |
-| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Chapter** | 8 — Interface Hardware, printed pp. 257–258 (SERDATR TBE and TSRE rows; SERDAT) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
 | **Assertions** | `TBE-BIT13-TRACKS-TRANSMIT-BUFFER-EMPTY` green; `DOUBLE-BUFFER-AND-TBE` green |
 | **Verdict of the four** | **unanimous with NanoMig where p. 257 needs the bit clear**: all four keep TBE at 0 while a second word waits behind a busy shift register. After a write from idle, vAmiga, Denise and Copperline move the word into the shift register at once, as NanoMig does; WinUAE holds TBE at 0 for one `CYCLE_UNIT` in its `ser_accurate` mode |
 
