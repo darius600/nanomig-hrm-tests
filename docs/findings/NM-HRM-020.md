@@ -16,6 +16,8 @@
 | **Verdict of the four** | **all four gate it on ECS. NanoMig alone does not.** Hardware: not measured |
 | **Effort** | S — one `&& ecs` on the `BLTSIZV` decode at `agnus_blitter.v:548` |
 
+---
+
 ## Source requirement
 
 **Appendix C's ECS register map, printed p. 298**, marks `BLTSIZV $05C` **new for
