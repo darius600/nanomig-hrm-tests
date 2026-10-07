@@ -2,9 +2,10 @@
 
 Tests of the whole system rather than one module: `nanomig.v` running a 68000
 program assembled by vasm, on both CPU cores NanoMig offers (fx68k and TG68K),
-graded at `nanomig.v`'s own ports. They cover the claims of the manual that
-only show across module boundaries: a Copper list the CPU starts, an audio
-channel another channel modulates, a CIA timer the system clocks.
+graded at `nanomig.v`'s own ports. They cover the claims of the manual and the
+AA specification that only show across module boundaries: a Copper list the
+CPU starts, an audio channel another channel modulates, a CIA timer the system
+clocks.
 
 Run one package from the repository root, with Verilator and vasm
 (`vasmm68k_mot`) on the PATH:
@@ -48,8 +49,18 @@ package and core.
 | `appHJ-drive-pins` | the external disk interface and the custom chips' pin directions (appendices H and J) |
 | `appK-autoconfig` | the RESET instruction and AUTOCONFIG base-address assignment (appendix K) |
 
-Graded against the AA specification: `aa-integ-s1`, BPLCON1's horizontal
-scroll fields (AA pp. 16-17).
+## Graded against the AA specification
+
+| Package | What it grades |
+|---|---|
+| `aa-integ-s1` | BPLCON1 horizontal scroll, BYPASS, the FMODE fetch increment, bit-plane modulos, LPEN after reset, the UART break, the disk DMA pointer and the DUAL-mode beam counter (AA pp. 16-17, 23-26) |
+| `aa-integ-s2` | the Blitter pointer and modulo registers and BEAMCON0's light-pen, sync, DUAL and PAL bits (AA pp. 6-7, 12-13, 24) |
+| `aa-integ-s3` | the bit-plane and sprite pointers and data, sprite position and control, the UHRES sprite window and collision control (AA pp. 15, 18, 28) |
+| `aa-integ-s4` | the bit-plane fetch window, the display window with DIWHIGH, and the DMACON enable bits (AA pp. 21-22) |
+| `aa-integ-s5` | the audio data, length, volume and attach bits, and the serial data registers (AA pp. 11, 27) |
+| `aa-integ-s6` | sprite resolution modes, sprite widths, attachment, colour banks and their reset values (AA pp. 16-18, 24, 31) |
+| `aa-integ-s7` | which registers the Copper may write, and what DMA does with the row-function and address-pair registers (AA pp. 6, 11, 14, 23) |
+| `aa-integ-s7-rest` | the UHRES registers, the DUAL-mode beam counter and REFPTR (AA pp. 6, 15, 24, 27) |
 
 Several packages are built in part. Their `SPECIFICATION.md` names what is
 not built, by a scope decision, and what building it would take; `run_all.sh`
@@ -67,14 +78,6 @@ finding page and in [`docs/findings.md`](../docs/findings.md). A red that no
 finding names is a test still under validation or repair, and says only that
 the test and the RTL disagree. The three chapter-6 packages were checked until
 nothing was left.
-
-## Specified, not yet built
-
-These hold a `SPECIFICATION.md` and no test; `run_all.sh` prints one `SPEC`
-line for each.
-
-- against the AA specification: `aa-integ-s2` to `aa-integ-s7` and
-  `aa-integ-s7-rest`.
 
 ## Not graded against a page
 
