@@ -1,4 +1,4 @@
-# NM-HRM-009 — CLXDAT bit 15 reads as 1, not 0
+# NM-HRM-009 — CLXDAT bit 15 reads as 1, not 0 [withdrawn]
 
 | | |
 |---|---|
