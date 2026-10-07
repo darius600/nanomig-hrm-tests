@@ -7,7 +7,7 @@
 //   can be reached by writing DSKLEN and reading $01A.
 // Test class: AA_CONFORMANCE
 // Primary oracle: Commodore, Functional Specification for the Advanced Amiga
-//   Chip Set (AA), 06/07/91, PRELIMINARY. PDF page 22, the DSKBYTR entry and
+//   Chip Set (AA), 06/07/91, PRELIMINARY. PDF page 23, the DSKBYTR entry and
 //   its bit table. The document prints no page numbers of its own; the corpus
 //   numbering is the PDF's.
 // Non-goals: the disk byte itself -- putting a real byte into bits 7 to 0
@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
         c.expect(((reading >> 13) & 1) == 0 && ((writing >> 13) & 1) == 1,
                  "DISKWRITE-MIRRORS-DSKLEN-WRITE: bit 13 of DSKBYTR is bit 14 "
                  "of DSKLEN, which is what the AA entry means by calling it "
-                 "DISKWRITE [p.22] [claims: opus:AA-dskbytr.c9 opus:AA-dsklen.c6/c8 sol:AA-dskbytr.c10 sol:AA-dsklen.c8/c10]");
+                 "DISKWRITE [p.23] [claims: opus:AA-dskbytr.c9 opus:AA-dsklen.c6/c8 sol:AA-dskbytr.c10 sol:AA-dsklen.c8/c10]");
     }
 
     // --- 3. DMAON follows the enable DSKLEN carries -------------------------
@@ -243,7 +243,7 @@ int main(int argc, char** argv) {
                  "DMAON-FOLLOWS-THE-DSKLEN-ENABLE: bit 14 rises with the DMAEN "
                  "bit of DSKLEN, which is one of the three terms the AA entry "
                  "ANDs into DMAON -- the other two are DMACON's, and DMACON is "
-                 "not a port of this module [p.22] [claims: opus:AA-dskbytr.c1/c2/c8 opus:AA-dsklen.c1/c7 sol:AA-dskbytr.c1/c9 sol:AA-dsklen.c1/c7/c9]");
+                 "not a port of this module [p.23] [claims: opus:AA-dskbytr.c1/c2/c8 opus:AA-dsklen.c1/c7 sol:AA-dskbytr.c1/c9 sol:AA-dsklen.c1/c7/c9]");
     }
 
     // --- 4. The four unused cells read as the printed zero ------------------
@@ -262,7 +262,7 @@ int main(int argc, char** argv) {
         c.expect((got & m_mask) == 0,
                  "DSKBYTR-BITS-11-TO-8-READ-ZERO: the four cells the AA bit "
                  "table prints as unused read as the zero it prints for them "
-                 "[p.22] [claims: opus:AA-dskbytr.c11 sol:AA-dskbytr.c12]");
+                 "[p.23] [claims: opus:AA-dskbytr.c11 sol:AA-dskbytr.c12]");
     }
 
     // --- 5. DSKBYT is supposed to be cleared by the read --------------------
@@ -290,7 +290,7 @@ int main(int argc, char** argv) {
                  "disk byte sets bit 15 and that reading the register resets "
                  "it, so a second read with no byte in between must find it "
                  "clear. Here bit 15 is the literal one and no read moves it "
-                 "[p.22] [claims: opus:AA-dskbytr.c7 sol:AA-dskbytr.c7/c8]");
+                 "[p.23] [claims: opus:AA-dskbytr.c7 sol:AA-dskbytr.c7/c8]");
     }
 
     // --- 6. WORDEQUAL is supposed to track the sync comparison --------------
@@ -315,7 +315,7 @@ int main(int argc, char** argv) {
                  "WORDEQUAL-IS-TRUE-ONLY-WHILE-DSKSYNC-MATCHES: the AA entry "
                  "makes bit 12 true only while the incoming disk data equals "
                  "DSKSYNC, and no drive is selected, no motor is running and "
-                 "no byte is arriving. Here bit 12 is the literal one [p.22] "
+                 "no byte is arriving. Here bit 12 is the literal one [p.23] "
                  "[claims: opus:AA-dskbytr.c10 sol:AA-dskbytr.c11]");
     }
 
