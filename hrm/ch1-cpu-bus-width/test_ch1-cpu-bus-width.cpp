@@ -402,8 +402,8 @@ int main(int argc, char** argv) {
         int t = h.wait_for_dtack(NORMAL_BUDGET);
         for (int i = 0; i < 20; ++i) h.tick(); // let ldata_in's own latch
                                                 // window (!c1 && c3 &&
-                                                // enable, minimig_m68k_
-                                                // bridge.v:154, a different
+                                                // enable,
+                                                // minimig_m68k_bridge.v:154, a different
                                                 // phase than clk7n_en)
                                                 // catch up after DTACK
         uint16_t rv = h.dut->data;
