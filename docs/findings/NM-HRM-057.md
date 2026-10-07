@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`; [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; [`hrm/ch8-adkcon-and-interrupt-relations`](../../hrm/ch8-adkcon-and-interrupt-relations): `make -C hrm/ch8-adkcon-and-interrupt-relations test`; an expected red exits nonzero |
 | **Assertions** | 3 red, one per package, each one of the package's reds: `RXD-BIT11-IS-NOT-A-DIRECT-COMBINATIONAL-READ`, expected 0 `clk7_en` enables, observed 3 (`12 passed, 2 failed`); `C4`, expected 0 beats, observed 2 (`48 passed, 3 failed`); `SERDATR-BIT11-RXD-REGISTERED-NOT-DIRECT`, expected 0 edges, observed 3 (`17 passed, 2 failed`) |
 | **Verdict of the four** | **2–1 for the page, one cannot answer, and the one dissent does not match NanoMig either**. Hardware: not measured |
-| **Effort** | none; if an Amiga specialist records that "direct" requires zero lag, size unknown: the change touches `paula_uart.v:36-43` and `:234` |
+| **Effort** | none; if an Amiga specialist records that "direct" requires zero lag, S: the change touches `paula_uart.v:36-43` and `:234` |
 
 ---
 
