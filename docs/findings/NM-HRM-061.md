@@ -5,16 +5,16 @@
 | **Lifecycle** | open |
 | **Filed against** | the classification |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change. Question: should p.1's "68030" and "From 256K" sentences be reclassified as not-asserted under a fifth `reason_kind`, because they describe which machines Commodore sold and not what NanoMig's `sysctrl.v` offers? Closes when O72 either adds that `reason_kind` and chapter 1 is re-accepted with the two assertions as `record()` lines, or decides to leave them graded with this page as their explanation. |
-| **Report to** | `no RTL action` — this suite's classification: the O72 decision on a fifth `reason_kind`. This is a finding about this suite, not about the RTL or the printed page |
+| **What is asked of a reader** | No RTL change. Question: should p.1's "68030" and "From 256K" sentences be reclassified as not-asserted under a fifth `reason_kind`, because they describe which machines Commodore sold and not what NanoMig's `sysctrl.v` offers? Closes when the claim classification in hrm-testpipeline either adds that `reason_kind` and chapter 1 is re-accepted with the two assertions as `record()` lines, or keeps them graded with this page as their explanation. |
+| **Report to** | `no RTL action` — hrm-testpipeline: whoever maintains the suite's claim classification |
 | **Scope** | NanoMig's `sysctrl.v` config values `id='T'` (`system_cpu`) and `id='Y'` (`system_chipmem`) at `4495f86`; no Amiga chip is involved |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 1 — Introduction, printed p. 1 (feature list) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: `sol:1-components.c7`, `opus:1-components.c7`, p. 1. `RAM-BASE-FLOOR-BELOW-256K-ABSENT` carries no claim id; the ids `sol:1-components.c12` and `opus:1-components.c12` (p. 1) sit on the package's `record()` line, which grades only part of that sentence |
-| **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246); NanoMig's own file, in neither MiSTer nor TC64; fixed |
+| **Chapter** | 1 — Introduction, printed p. 1 (feature list) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: `sol:1-components.c7`, `opus:1-components.c7`, p. 1. `RAM-BASE-FLOOR-BELOW-256K-ABSENT` carries no claim id; the ids `sol:1-components.c12` and `opus:1-components.c12` (p. 1) sit on the package's `record()` line, which records that sentence as partially graded |
+| **Module** | `sysctrl.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/sysctrl.v#L228-L246); in neither MiSTer nor TC64; NanoMig's own |
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options): `make -C hrm/ch1-cpu-options test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both measure correctly. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: expected 4 pairwise-distinct `system_cpu` states, observed 3. `RAM-BASE-FLOOR-BELOW-256K-ABSENT`: expected a `system_chipmem` state at 256K, observed floor raw 0 documented `"512k"`. The package reports `3 passed, 2 failed` |
-| **Verdict of the four** | **No vote; not applicable, and that is the point.** No emulator has a `system_cpu` field; the sentences are about which machines Commodore sold. Hardware status: not measured |
-| **Effort** | M — option 1 touches the `reason_kind` vocabulary, four uids and two assertions in chapter 1 and its re-acceptance; no RTL change |
+| **Verdict of the four** | **not applicable, and that is the point.** No emulator has a `system_cpu` field; the sentences are about which machines Commodore sold. Hardware: not measured |
+| **Effort** | none — no RTL change; if the classification takes option 1, M: the `reason_kind` vocabulary, four claim ids and two assertions in chapter 1, and its re-acceptance |
 
 ---
 
@@ -57,8 +57,8 @@ the reds come from what page 1 names, which this board does not offer.
 
 The claim was graded at a boundary that cannot answer it. `sysctrl` is a
 configuration register in `src/misc`, the layer of NanoMig's own substitutes for
-Amiga peripherals, which O62 admitted into the unit under test with the explicit
-note that a finding there does not transfer to the shared chipset lineage. Asking
+Amiga peripherals; a finding there does not transfer to the shared chipset
+lineage, as the package's own assertion messages say. Asking
 whether a board's configuration menu offers a 68030 is not asking whether the
 Amiga chipset has been reimplemented correctly.
 
@@ -91,19 +91,18 @@ nowhere to travel.
 ## Decision
 
 No question remains for an Amiga specialist; this is entirely the suite's. The
-reds are O72 surfacing as a red instead of as a label: forty-three of chapter 1's
+reds are the open question of a fifth `reason_kind` surfacing as a red instead of as a label: forty-three of chapter 1's
 discards argue in their own evidence that no `reason_kind` fits a claim about
 hardware belonging to a machine this board is not; three classification lots
 reported it independently and split 29 `absent` to 14 `not-hardware`. These two
 claims are the same shape and were classified **testable** instead.
 
-1. **Add the fifth `reason_kind`** O72 asks for, and reclassify these two claims
-   (four uids: `sol`/`opus:1-components.c7` and `.c12`) as not-asserted under it.
+1. **Add a fifth `reason_kind`**, and reclassify these two claims
+   (`sol:1-components.c7`, `opus:1-components.c7`, `sol:1-components.c12`,
+   `opus:1-components.c12`) as not-asserted under it.
    The two assertions become `record()` lines, chapter 1 goes from 235 testable
    to 233, and it must be re-accepted.
 2. **Or leave them graded** and keep this page as the explanation a reader needs
    to not misread the reds.
 
 Either is defensible; a red with nothing next to it saying what it is, is not.
-
-Re-run: `make -C hrm/ch1-cpu-options test`.
