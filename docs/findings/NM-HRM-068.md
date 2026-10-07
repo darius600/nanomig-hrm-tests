@@ -5,18 +5,21 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. Printed p. 304 lists PAL at 227.5 colour clocks per line; printed p. 23 says every PAL line is 227 long. NanoMig makes every PAL line 227, and so do all four implementations. The entry exists so the next reader does not take the red for an implementation fault. |
-| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86) |
-| **Report to** | **nobody, as an RTL defect.** The question is p. 304's PAL row; the RTL's PAL line is the one p. 23 prints |
-| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) · `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`, claim `C-scan.c04`, and `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`, claim `opus:7-appC-beam.c3` (p. 304) |
-| **Chapter** | Appendix C — ECS, printed p. 304; 2 — Coprocessor, printed p. 23 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red, both PAL. The control that writes HTOTAL and measures the line it produces is green in the same run, and the NTSC pair beside them is [NM-HRM-010](NM-HRM-010.md)'s |
-| **Verdict of the four** | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate long and short lines only in NTSC |
+| **What is asked of a reader** | No RTL change follows from this. Question: does any PAL configuration alternate its line lengths, so that p. 304's "227.5 colorclocks per scan line" on the PAL row is right and NanoMig's constant 227 is not? Closes when an Amiga specialist records p. 304's PAL row as a misprint for p. 23's 227, or confirms that a PAL configuration alternates line lengths, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix C of the *Amiga Hardware Reference Manual*, 3rd ed. The red is against p. 304, which p. 23 of the same manual contradicts |
+| **Scope** | NanoMig's `agnus_beamcounter` on its hardwired default (VARBEAMEN=0), PAL, the line length averaged over four consecutive lines; chip revision unknown; PAL hardware not measured |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | Appendix C, printed p. 304, the V36 graphics library scan-rate list; 2 — Coprocessor, printed p. 23; 6, printed p. 194, quoted for context · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: `C-scan.c04`, p. 304; `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: `opus:7-appC-beam.c3`, p. 304. The green control carries no claim id, and neither PAL assertion carries one for p. 23 or p. 194 |
+| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86); TC64 has the same constant one bit wider; inherited |
+| **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking): `make -C hrm/ch3-beam-counters-and-blanking test`; an expected red exits nonzero |
+| **Assertions** | 2 red, both PAL. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)`: expected an average of 227.5, observed 227.0 over four lines of 227. `COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL bundled with line count)`: expected 625 lines and 227.5, observed 625 and 227.0; its line-count half matches. The control that writes HTOTAL and measures the line it produces is green. The package reports `28 passed, 5 failed`: the other three reds are the NTSC pair, [NM-HRM-010](NM-HRM-010.md)'s, and [NM-HRM-011](NM-HRM-011.md)'s |
+| **Verdict of the four** | **unanimous with NanoMig and with p. 23**: WinUAE, vAmiga, Denise and Copperline all end every PAL line at 227 colour clocks and alternate long and short lines only in NTSC; hardware not measured |
+| **Effort** | none: no RTL change; at most a correction to p. 304's PAL row |
 | **See also** | [NM-HRM-010](NM-HRM-010.md) — the NTSC half of the same sentence, where the manual's two pages agree and NanoMig does not |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Appendix C, printed p. 304**, lists the scan rates the V36 graphics library
 supports:
@@ -36,7 +39,9 @@ alternating lines of 228 and 227 average 227.5. For PAL, p. 23 says every line
 is 227, which averages 227; p. 304 prints 227.5 on the PAL row as on the NTSC
 row above it. The last sentence of p. 23 does not reconcile them: *"the copper
 sees alternating long and short lines"* describes the NTSC lines, and p. 23 has
-just said PAL has no long ones.
+just said PAL has no long ones. The finding is filed against p. 304 because p. 23
+gives the reason for the half clock and p. 304 repeats the NTSC figure on the
+PAL row.
 
 **Chapter 6, printed p. 194**, gives the figure once more and names no video
 standard:
@@ -44,9 +49,7 @@ standard:
 > During a horizontal scan line (about 63 microseconds), there are 227.5
 > "color clocks", or memory access cycles.
 
----
-
-## What NanoMig does
+## RTL and measurement
 
 **Every PAL line is 227 colour clocks.** The hardwired line length is one
 constant for both standards —
@@ -64,13 +67,11 @@ if (pal || (loldis && varbeamen))
     long_line <= 1'b0;
 ```
 
-That bit reaches only VPOSR's LOL bit,
-[`#L110`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110);
-the line ends where the counter meets the constant,
-[`#L250`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L250),
+That bit reaches only VPOSR's LOL bit
+([`#L110`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110));
+the line ends where the counter meets the constant
+([`#L250`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L250)),
 in either standard.
-
-### Measured
 
 [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking)
 drives the colour-clock input itself and counts its periods between
@@ -81,15 +82,23 @@ default:
 |---|---|---:|---:|---:|
 | PAL | 227, 227, 227, 227 | 227.0 | 227.5 | 227 |
 
-`COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)` is red, and so is the bundled form,
-whose line-count half — 625 lines over a long and a short field — matches. Two
-of the package's `28 passed, 5 failed`; two of the other three are the NTSC
-pair, [NM-HRM-010](NM-HRM-010.md), and the fifth is
-[NM-HRM-011](NM-HRM-011.md).
+`COLOUR-CLOCKS-PER-LINE-227POINT5 (PAL)` is red, and so is its bundled form.
 
----
+## Risks and unknowns
 
-## What the others say
+- **Which side is wrong is not decided.** The finding key names the pair that
+  disagrees, NanoMig and p. 304, and does not prejudge it. The page is not
+  settled by the RTL: only a PAL machine, or the PAL Agnus's documentation, says
+  whether any PAL configuration alternates line lengths.
+- **Could p. 304 mean something other than the line?** It introduces the list as
+  *"scan rates supported in the V36 graphics.library"*, a software statement,
+  beside a VGA row of 114.0. A figure the library uses for its own timing
+  calculations and the length of a line on the wire could differ; the page does
+  not say which it gives.
+- **The line count on the same row is right.** 625 lines over a long and a short
+  field is measured green in the same run, so the row is not wrong as a whole.
+
+## Independent evidence
 
 The question put to each: how long is a PAL line?
 
@@ -102,43 +111,11 @@ The question put to each: how long is a PAL line?
 | **MiSTer** | [`rtl/agnus_beamcounter.v:86`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86), [`:281-285`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L281-L285) | descendant — identical to NanoMig: `parameter HTOTAL_VAL      = 8'd227 - 8'd1;`, and the long-line bit held clear in PAL |
 | **TC64** | [`rtl/minimig/agnus_beamcounter.v:102`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L102) | descendant — the same constant, one bit wider, `parameter HTOTAL_VAL      = 9'd227 - 9'd1;` |
 
-**All four agree with NanoMig and with p. 23.** Each keeps a single line
-length of 227 for PAL and adds the 228th colour clock only on alternate NTSC
-lines. Denise states both averages in one function: 227.5 for NTSC, 227.0 for
-PAL.
-
----
-
-## Why this is filed against the page
-
-The manual contradicts itself, and the RTL takes the side of the page that
-gives the reason. p. 23 explains the half clock — long and short lines
-alternating, and only in NTSC — and p. 304 repeats the NTSC figure on the PAL
-row of a list of graphics-library scan rates. NanoMig and all four independent
-implementations build the line p. 23 describes. Nothing read here makes a PAL
-line 227.5 colour clocks on average.
-
-The finding key names the pair that disagrees, NanoMig and p. 304, and does not
-prejudge which side is wrong.
-
----
-
-## Suggested change
+## Decision
 
 Not an RTL change. Somebody with a PAL machine, or with the PAL Agnus's
-documentation, saying whether any PAL configuration alternates line lengths.
-If none does, p. 304's PAL row is a misprint and the two assertions grade a
-number the manual itself contradicts on p. 23.
-
----
-
-## For the specialists
-
-1. **Could p. 304 mean something other than the line?** It introduces the
-   list as *"scan rates supported in the V36 graphics.library"*, a software
-   statement, beside a VGA row of 114.0. A figure the library uses for its
-   own timing calculations and the length of a line on the wire could differ;
-   the page does not say which it gives.
-2. **The line count on the same row is right.** 625 lines over a long and a
-   short field is measured green in the same run, so the row is not wrong as a
-   whole.
+documentation, says whether any PAL configuration alternates line lengths. If
+none does, p. 304's PAL row is a misprint and the two assertions grade a number
+the manual itself contradicts on p. 23. Re-run:
+`make -C hrm/ch3-beam-counters-and-blanking test`; the two PAL reds stay red
+until p. 304 or the RTL changes.
