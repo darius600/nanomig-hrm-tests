@@ -115,7 +115,7 @@ specialist rules on it.
 **A claim id** such as `opus:E-extdisk-iface.c4` names one claim, a single
 falsifiable statement quoted from a printed page of the manual and classified in
 [`hrm-testpipeline`](https://github.com/darius600/hrm-testpipeline); the prefix
-`opus:` or `sol:` names which of the two independent readers recorded it
+`opus:` or `sol:` names which of the two language models, each reading the page independently, recorded it
 ([how a claim is identified](https://github.com/darius600/hrm-testpipeline/blob/main/docs/playbook/classify.md#a-claim-is-identified-by-reader-id-never-by-id)).
 
 **The status column reads `lifecycle · filed against · evidence`**, and every row
@@ -137,8 +137,7 @@ never disagree. Eight values occur:
 
 **If you have one evening: 48 of these 70 ask you to decide whether the RTL
 should change.** The other 22 are open too and ask for no RTL change: 19 question
-the printed page, 1 the classification, and 2 are source observations with no test
-behind them yet. The table below
+the printed page, 1 the classification, and 2 are source observations: no test yet, or measured only inside the module. The table below
 is sorted by key, not by how much it wants from you — so the first row is not
 the place to start. Start at one of these, whichever is nearest your own
 interest:
