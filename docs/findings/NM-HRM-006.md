@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window): `make -C hrm/ch3-ddf-fetch-window test`; an expected red exits nonzero |
 | **Assertions** | 1 red: `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE` in `hrm/ch3-ddf-fetch-window` — expected the first fetch unchanged between $0038 and $003C in lores and moved in hires; observed 135 → 143 in lores (OCS and ECS) and 127 → 135 in hires (OCS and ECS). The package reports `19 passed, 2 failed`; the other red is NM-HRM-007's |
 | **Verdict of the four** | **unanimous with NanoMig**: all four respect H3 in lores and hires, on OCS and ECS. What they gate on the chipset is register bit 1, which p.277 lists as unused. Hardware: not measured |
-| **Effort** | none — no RTL change; a documentation note on p.91 only |
+| **Effort** | none — no RTL change (a documentation note on p.91 only) |
 
 ## Source requirement
 
