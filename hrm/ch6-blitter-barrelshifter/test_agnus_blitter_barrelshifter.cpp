@@ -526,8 +526,8 @@ int main(int argc, char** argv) {
     // gate whose output becomes "A old", i.e. the masking happens BEFORE
     // the value reaches the shifter box (ch6-fig613.f06, p.199). The
     // AND-gate mechanics themselves are not constructible here - this
-    // module has no mask-related port at all (agnus_blitter_
-    // barrelshifter.v:6-13) - but the other half of the same claim, that
+    // module has no mask-related port at all
+    // (agnus_blitter_barrelshifter.v:6-13) - but the other half of the same claim, that
     // the SHIFTER performs no further masking of what it is handed, is
     // directly testable: at shift=0 the module returns new_val exactly
     // (agnus_blitter_barrelshifter.v:76, shifted_new[31:16] with
