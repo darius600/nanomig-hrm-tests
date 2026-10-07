@@ -5,16 +5,16 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the audio DMA address at `ecs = 0` take only three high bits of AUDxLCH, as pp. 139 and 266 print, instead of the five it takes in both chipsets? Closes when an Amiga specialist chooses one of the two actions under *Decision* (one central pointer mask, or declaring the core ECS-and-later) and records the choice for this page, [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md). The decision belongs to an Amiga specialist, not to this repository. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, whose `rtl/agnus_audiodma.v:80-82` holds the same three lines; NanoMig takes the fix from there, as there is no automatic merge |
+| **What is asked of a reader** | Should the audio DMA address at `ecs = 0` take only three high bits of AUDxLCH, as pp. 139 and 266 print, instead of the five it takes in both chipsets? Closes when the central pointer mask under *Decision* is made and `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` and `LCH-ECS-PORT-CHANGES-WHAT-LOADS` are green, or when an Amiga specialist records the core as ECS-and-later for this page, [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` grades `agnus_audiodma` alone, which has no chipset input (*Risks and unknowns*). |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | AUDxLCH's high field: all four channels at `agnus_audiodma` alone, which has no chipset input; channel 0 at the Agnus top with `ecs` at 0 and at 1; five bits latched in both; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 5 — Audio, printed pp. 139 and 145; Appendix A, printed p. 266; Appendix C, printed p. 298 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`: `5-p139.c1`, `5-sum.c1`, `5-loc.c1`, `5-appA-p266.c5`, `5-appA-p266.c11`, `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `5-appB-p290.c148`, `B-aud0lch.width`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, `A-audxlc.c1`, `5-appC-p298.c6`, `5-appC-p309.c6`, `A-audxlch.w1`, `C-map.lch.width`; `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`: `5-p139.c1`, `5-sum.c1`, `5-loc.c1`, `5-appA-p266.c11`, `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, `A-audxlc.c1`; `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: `5-appA-p266.c5`, `5-appB-p290.c148`, `B-aud0lch.width`, `5-appC-p298.c6`, `5-appC-p309.c6`, `A-audxlch.w1`, `C-map.lch.width`; green `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`: `5-appA-p266.c6`, `5-appB-p290.c149`, `5-appC-p298.c6`, `5-appC-p309.c1`, `5-appC-p309.c2`, `5-appC-p309.c6`, `A-audxlch.w1`, `C-map.lch.width`, `C-prose.c1`, `C-prose.lch`, `B-aud0lch.width`. The claim ids also cite pp. 290 and 309. `TOP-LEVEL-LIVENESS` carries no claim id |
+| **Chapter** | 5 — Audio, printed pp. 139 and 145; Appendix A, printed p. 266; Appendix B, printed p. 290; Appendix C, printed pp. 298 and 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`: `5-p139.c1`, `5-loc.c1`, p. 139; `5-sum.c1`, p. 145; `5-appA-p266.c5`, `5-appA-p266.c11`, `A-audxlc.c1`, `A-audxlch.w1`, p. 266; `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `5-appB-p290.c148`, `B-aud0lch.width`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, p. 290; `5-appC-p298.c6`, `C-map.lch.width`, p. 298; `5-appC-p309.c6`, p. 309; `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`: `5-p139.c1`, `5-loc.c1`, p. 139; `5-sum.c1`, p. 145; `5-appA-p266.c11`, `A-audxlc.c1`, p. 266; `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, p. 290; `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: `5-appA-p266.c5`, `A-audxlch.w1`, p. 266; `5-appB-p290.c148`, `B-aud0lch.width`, p. 290; `5-appC-p298.c6`, `C-map.lch.width`, p. 298; `5-appC-p309.c6`, p. 309; green `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`: `5-appA-p266.c6`, `A-audxlch.w1`, p. 266; `5-appB-p290.c149`, `B-aud0lch.width`, p. 290; `5-appC-p298.c6`, `C-map.lch.width`, p. 298; `5-appC-p309.c1`, `5-appC-p309.c2`, `5-appC-p309.c6`, `C-prose.c1`, `C-prose.lch`, p. 309. `TOP-LEVEL-LIVENESS` and `TEST-DATA-DELIVERY` carry no claim id |
 | **Module** | `agnus_audiodma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L80-L82) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L80-L82); inherited (MiSTer and TC64 have the same lines) |
 | **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer), two fixtures: `agnus_audiodma` alone, and the Agnus top, `agnus`, whose `ecs` input the fixture drives to 0 and to 1: `make -C hrm/ch5-audio-location-pointer test`; an expected red exits nonzero |
 | **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed: `agnus_audiodma` alone 9 passed, 1 failed; Agnus top 1 passed, 2 failed). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` (`agnus_audiodma` alone): bits 3 and 4 of AUDxLCH expected to have no effect, observed `0x40000` and `0x80000`. `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` (Agnus top, `ecs` 0): the same expectation, the same observed values. `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: AUD0LCH = $001F with AUD0LCL = $FFFF expected `0x3FFFF` at `ecs` 0 and `0xFFFFF` at `ecs` 1, observed `0xFFFFF` at both |
-| **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Hardware not measured |
-| **Effort** | M — option 1 under *Decision* adds an `ecs` input to the audio engine, connects it in `agnus.v` and masks the assembled pointer, and the same pointer assembly in the Copper and blitter ([NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md)); option 2 changes no RTL |
+| **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Hardware: not measured |
+| **Effort** | none now; if option 1 under *Decision* is chosen, M: an `ecs` input to the audio engine, connected in `agnus.v`, masking the assembled pointer, and the same pointer assembly in the Copper and blitter ([NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md)); option 2 changes no RTL |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
 
 ---
@@ -67,8 +67,7 @@ channel 0's audio DMA slot.
 | AUD0LCH = $001F, AUD0LCL = $FFFF (alone: all five bits) | `0xFFFFF` | `0xFFFFF`; the page wants `0x3FFFF` | `0xFFFFF`, as p. 266 gives |
 
 The three-bit reading would give `0` for the first two rows. The five-bit
-control `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS` (same walking one) and
-`TOP-LEVEL-LIVENESS` (AUD0LCH = $0015, AUD0LCL = $2A2A at `ecs` 1 reads `0xA9515`,
+control `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS` (same walking one: every bit lands at `address_out` bits 16–20) and the two fixtures' liveness checks, `TEST-DATA-DELIVERY` (alone) and `TOP-LEVEL-LIVENESS` (AUD0LCH = $0015, AUD0LCL = $2A2A at `ecs` 1 reads `0xA9515`,
 the word address written) are green, so the reds are not a dark fixture.
 
 ---
@@ -78,7 +77,7 @@ the word address written) are green, so the reds are not a dark fixture.
 - Real hardware is not measured; no named software depends on the width.
 - `agnus_audiodma` alone has no chipset input, so `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` grades the three-bit reading as the only one; the Agnus-top reds are per chipset.
 - Denise masks by installed chip RAM, not by Agnus revision, so the vote is three of four.
-- WinUAE is not a clean vote for the manual: `cs_agnussize` overrides its mask either way (`:2627-2644`), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` (`:2646-2648`) drops the chipset term.
+- WinUAE is not a clean vote for the manual: `cs_agnussize` overrides its mask either way ([`memory.cpp:2627-2644`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2627-L2644)), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` ([`memory.cpp:2646-2648`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2646-L2648)) drops the chipset term.
 - The patents and the 8371 specification are pre-ECS or OCS only: the location registers' own width is not stated in the patents, patent 4,777,621 is bus-level and does not name AUDxLCH, and the five-bit ECS width is outside the 8371 document.
 
 ---
@@ -129,7 +128,7 @@ the blitter (`BLTxPTH`) and audio all build the pointer from `data_in[4:0]` and
 OCS pointer narrowing anywhere in Agnus. Two coherent actions:
 
 1. **One central mask**, as Copperline does: derived from the chipset, applied to
-   the assembled pointer rather than the register write, closing all three findings at once.
+   the assembled pointer rather than the register write.
    In this RTL that needs an `ecs` input reaching the DMA engines. Sketched, not
    written, because the shape depends on how `ecs` is threaded through `agnus.v`:
 
@@ -142,7 +141,3 @@ OCS pointer narrowing anywhere in Agnus. Two coherent actions:
    out of scope, and all three findings are recorded as one scope decision.
 
 Three separate patches in three engines is the option to avoid.
-
-Re-run: `make -C hrm/ch5-audio-location-pointer test`; reds
-`LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`, `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`
-and `LCH-ECS-PORT-CHANGES-WHAT-LOADS`.
