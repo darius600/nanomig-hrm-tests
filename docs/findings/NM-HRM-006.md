@@ -7,7 +7,7 @@
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault: all four independent implementations do what NanoMig does. Question: does real Agnus ignore DDFSTRT/DDFSTOP bit H3 (register bit 2) in lores, as p.91 prints, so that $0038 and $003C fetch alike in lores? Closes when an Amiga specialist records p.91's "only respected in Hires Mode" as an erratum, or confirms that real Agnus ignores H3 in lores, in which case this page is refiled against the RTL. |
 | **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 3 of the *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Scope** | the position compare of DDFSTRT and DDFSTOP as NanoMig's `agnus_bitplanedma` implements it, one bitplane, lores and hires with the `ecs` strap off and on; isolated to register bit 2 alone ($0038 against $003C); chip revision unknown, hardware not measured |
+| **Scope** | the position compare of DDFSTRT as NanoMig's `agnus_bitplanedma` implements it (DDFSTOP's identical compare, line 349, is read, not measured), one bitplane, lores and hires with the `ecs` strap off and on; isolated to register bit 2 alone ($0038 against $003C); chip revision unknown, hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 3 — Playfield, printed p. 91 (DDFSTRT, DDFSTOP), and Appendix A, printed p. 277 (bit table) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims carried by `DDFSTRT-H3-BIT-RESPECTED-ONLY-IN-HIRES-MODE`: `opus:3-rddf.c02`, `opus:3-rddf.c03`, `sol:3-regsum-ddfstrt.c4`, `sol:3-regsum-ddfstop.c4` (p. 91), `sol:A-ddf-bits.c14` (p. 277); the register-bit-1 measurement is a recorded note and carries no claim id |
 | **Module** | `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L339) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339); inherited (MiSTer and TC64 have the same statement) |
@@ -54,8 +54,8 @@ First fetch position, one bitplane, from the package's own harness:
   whether ECS Agnus uses register bit 1 as the implementations do, is open.
 - The hires/ECS reading of 3 for $003A is recorded, not explained.
 - Two Commodore documents disagree with p.91 and with NanoMig alike, and the
-  8371 specification's own p.28 bit table agrees with p.91 on bits 7-2, so no
-  document settles it.
+  8371 specification's own p.28 bit table agrees with p.91 on bits 7-2 and marks bits 1-0 unused, so that
+  document does not settle it by itself.
 
 ## Independent evidence
 
