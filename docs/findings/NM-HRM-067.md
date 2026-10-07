@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch4-sprite-dma-control`](../../hrm/ch4-sprite-dma-control): `make -C hrm/ch4-sprite-dma-control test`; the expected red exits nonzero |
 | **Assertions** | 1 red of 8 graded: `SPRXPOS-SPRXCTL-FETCH-DURING-HBLANK` — expected all 16 SPRxPOS/SPRxCTL fetches while `hblank` is high, observed 13, with channels 6 and 7 each having at least one fetch outside; the package reports `7 passed, 1 failed`. `SPREN-GATES-EVERY-SPRITE-CHANNEL`, green in the same run, brings the same sixteen control-word fetches onto the bus |
 | **Verdict of the four** | **two of the four end blanking before the last sprite slots, and none keeps all sixteen inside it.** vAmiga ends it at $23, before eight of the sixteen slots, and rejects the $0F and $35 bounds p. 23 prints; Denise ends it before both of sprite 6's slots and both of sprite 7's, one more than the three NanoMig loses. WinUAE blanks on Denise's own counter and Copperline has no hardwired end of blanking, so neither places one on the sprite-slot grid. Hardware: not measured |
-| **Effort** | none — no RTL change; the question concerns pp. 303 and 126 |
+| **Effort** | none — no RTL change, the question concerns pp. 303 and 126 |
 
 ---
 
