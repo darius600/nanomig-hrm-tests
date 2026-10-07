@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-keyboard-events`](../../hrm/ch8-keyboard-events): `make -C hrm/ch8-keyboard-events test`; an expected red exits nonzero |
 | **Assertions** | 2 red of 15: `CAPS-LOCK-RELEASE-NOT-ACCEPTED` expected no event on release, observed an event; `CAPS-LOCK-LED-OFF-PRESS-BIT-ONE` expected bit 7 set on the second press, observed clear; the package reports `13 passed, 2 failed`. `CAPS-LOCK-DOWN-ACCEPTED` and `CAPS-LOCK-LED-ON-PRESS-BIT-ZERO` are green controls on the same stimulus path |
 | **Verdict of the four** | **3–1 against.** WinUAE, Denise and Copperline each implement the rule; vAmiga has no Caps Lock case at all and behaves as NanoMig does. Hardware: not measured |
-| **Effort** | unknown; the page states no suggested change. What it names as missing in `hid.v` is a per-key branch for `$62` and a register that remembers a press count or lock state |
+| **Effort** | none — no suggested change is filed on the page, what it names as missing in `hid.v` is a per-key branch for `$62` and a register that remembers a press count or lock state |
 
 ---
 
