@@ -7,11 +7,11 @@
 | **Evidence** | pp. 296, 297 and 307 place BRDNTRAN among the genlock features and Commodore's Denise specification ties bit 4 to the `ZD` pin, which NanoMig's Denise has no port for; `make -C hrm/ch3-horizontal-display-window test` records the seven claims as absent at this boundary |
 | **What is asked of a reader** | Nothing. BRDNTRAN keeps the border from being replaced by a genlock's video; the manual gives it no effect on the border's colour, and NanoMig's Denise has no genlock output for it to act on. |
 | **Withdrawal reason** | No printed page gives BPLCON3 bit 4 an effect on the colour the border is drawn in: pp. 296, 297 and 307 name it among the genlock features, whose signal is Denise's `ZD*` pin |
-| **Error class** | **a name read as a requirement** |
+| **Error class** | none |
 | **Replacement** | Green control: `G11-BRDRBLNK-WORKS` in [`hrm/ch3-horizontal-display-window`](../../../hrm/ch3-horizontal-display-window), bit 5 of the same register blanking the border on the same fixture; `D-BRDNTRAN-HAS-NO-EFFECT` in the same package is now a `record()` |
 | **Module** | `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v); inherited (MiSTer has the same code, both lines commented out; TC64 differs: both lines are live, and `brdntran` appears nowhere else in its file) |
 | **Test** | `make -C hrm/ch3-horizontal-display-window test` — `13 passed, 0 failed`; `D-BRDNTRAN-HAS-NO-EFFECT` is a `record()` that declines its seven claims as absent at this boundary, because BRDNTRAN acts on the `ZD*` background indicator (p. 380), which the `denise` fixture does not have. Related packages: `make -C hrm/ch7-bplcon2-live-bits-and-ecs test`, `make -C aa/aa-bplcon-bits-at-denise test` |
-| **Chapter** | 3 — Playfield; printed pp. 46, 89, 260, 296, 297, 307 and Appendix J p. 380 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `D-BRDNTRAN-HAS-NO-EFFECT`: `opus:C-gen.c09` p. 296, `sol:C-genlock.c4` p. 296, `opus:C-gen.c12` p. 297, `sol:C-genlock-ext.c16` p. 307, `opus:C-ecsbit.b04` p. 307, `sol:C-genlock-ext.c3` p. 307, `opus:C-gen.c15` p. 307. `G11-BRDRBLNK-WORKS`: `opus:C-gen.c08` p. 296, `sol:C-genlock.c3` p. 296, `opus:C-ecsbit.b05` p. 307, `sol:C-genlock-ext.c4` p. 307 |
+| **Chapter** | 3 — Playfield, printed pp. 46 and 89; 8 — Interface Hardware, p. 260; Appendix C, pp. 296, 297 and 307; Appendix J, p. 380 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `D-BRDNTRAN-HAS-NO-EFFECT`: `opus:C-gen.c09` p. 296, `sol:C-genlock.c4` p. 296, `opus:C-gen.c12` p. 297, `sol:C-genlock-ext.c16` p. 307, `opus:C-ecsbit.b04` p. 307, `sol:C-genlock-ext.c3` p. 307, `opus:C-gen.c15` p. 307. `G11-BRDRBLNK-WORKS`: `opus:C-gen.c08` p. 296, `sol:C-genlock.c3` p. 296, `opus:C-ecsbit.b05` p. 307, `sol:C-genlock-ext.c4` p. 307 |
 | **Assertions** | `D-BRDNTRAN-HAS-NO-EFFECT`: was an `expect()` requiring the border's colour with BPLCON3 = `$0010` to differ from the colour with `$0000`, red; now a `record()` with no pass/fail state. `G11-BRDRBLNK-WORKS`: green |
 | **Verdict of the four** | **none changes the border's colour**: WinUAE and Copperline implement `BRDNTRAN` as genlock keying only, Copperline with a test that asserts the colour unchanged; vAmiga and Denise model no genlock and do not read the bit. Hardware: not measured |
 
@@ -50,7 +50,7 @@ that connector as a finding, because the board has no counterpart to it
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Printed p. 296**, the new features of the ECS:
 
@@ -72,10 +72,9 @@ that connector as a finding, because the board has no counterpart to it
 > "The border areas surrounding the active display window may also be set to be
 > opaque or transparent."
 
-```
-   05                                   BRDRBLNK   Border blank
-   04                                   BRDNTRAN   Border opaque
-```
+> 05      BRDRBLNK   Border blank
+
+> 04      BRDNTRAN   Border opaque
 
 **What a genlock does with the background**, printed p. 46 and p. 89:
 
@@ -88,9 +87,7 @@ that connector as a finding, because the board has no counterpart to it
 
 **Appendix J, printed p. 380**, the Denise pin list:
 
-```
- 33      ZD*                         Background indicator       0
-```
+> 33      ZD*      Background indicator      0
 
 **Printed p. 260**, where the genlock attaches:
 
@@ -101,7 +98,7 @@ No page gives `BRDNTRAN` an effect on the colour the border is drawn in.
 
 ---
 
-## What NanoMig does
+## RTL and measurement
 
 `brdntran` is commented out at its declaration
 ([`src/minimig-aga/denise.v#L234-L235`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L234-L235))
@@ -126,7 +123,7 @@ shows bit 5 of the same register blanking the border on the same fixture.
 
 ---
 
-## What the others say
+## Independent evidence
 
 | | |
 |---|---|
