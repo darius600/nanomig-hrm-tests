@@ -356,7 +356,7 @@ than NanoMig's `nanomig.v` does.
 
 What it would change:
 
-- all nineteen red lines would turn green on fx68k and on TG68K; a private copy of the RTL with these four changes, in the form the diff above abridges, printed 240 passed, 0 failed on each core, with d = H − H_ref(t_on) = 2 colour clocks for each of the 14 graded pulses; `make test` does not run that copy, so these counts are a reading of the change, not a result of the repository's RTL;
+- all nineteen red lines would turn green on fx68k and on TG68K; a copy of the RTL with these four changes, in the form the diff above abridges, printed 240 passed, 0 failed on each core, with d = H − H_ref(t_on) = 2 colour clocks for each of the 14 graded pulses; `make test` does not run that copy, so these counts are a reading of the change, not a result of the repository's RTL;
 - a program that polls VPOSR with bit 3 set would see it frozen, as p. 239
   warns, and a joystick's fire button held on port 2 would latch the counters,
   as the technical reference's *"FIRE input"* implies for the A500.
