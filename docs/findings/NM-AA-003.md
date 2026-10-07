@@ -17,6 +17,8 @@
 | **Effort** | none — no RTL change (a documentation note on p. 14 only) |
 | **See also** | [NM-AA-001](NM-AA-001.md), the other place where two statements of the same register disagree inside this document |
 
+---
+
 ## Source requirement
 
 BLTCON0 and BLTCON1 are printed as one table. Its rows are on p. 14, and the top four read:
