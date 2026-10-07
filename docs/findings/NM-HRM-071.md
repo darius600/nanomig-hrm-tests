@@ -296,6 +296,4 @@ pixel on an ECS Denise in SuperHires?
 No RTL change. NanoMig already does what the AA specification states for the ECS
 Denise and what every implementation does. If p. 101's rule (pp. 124 and 128
 repeat it) does not hold in SuperHires, `PC2w` grades a sentence the manual
-itself hands to an appendix that does not repeat it. Re-run:
-`make -k -C integration/ch4-shres-sprite-b test`, which exits nonzero with `PC2w`
-red on both cores; `PC1`, `PC2` and `P1`–`P4` (uniform lines) are green.
+itself hands to an appendix that does not repeat it.
