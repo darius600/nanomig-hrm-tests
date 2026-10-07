@@ -5,18 +5,21 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `src/minimig-aga/cpu_wrapper.v:117`, the Zorro II RAM select, and `:639-642`, the register-48 write — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L117) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, **minimig-dev/MinimigAGA-MiST-TC64** and NanoMig, if the manual's reading is accepted. The select is **inherited**: NanoMig's is MiSTer's, and TC64 decodes the same range in its own CPU interface, so no line has a fix to port, and a fix made upstream must be ported to NanoMig deliberately, as there is no automatic merge; see *What the others say* |
-| **Test** | [`integration/appK-autoconfig`](../../integration/appK-autoconfig) — two assertions, run on both CPU cores: `P3-NOTOTHER` (`test_appK_autoconfig.cpp:878-882`) and `P3-BASE` (`:901-905`), red on fx68k and on TG68K. Both carry `sol:K-0837` and `opus:K-0869`; the id-less `P3-NOTOTHER-ASSIGNED` (`:875-877`) and `P3-BASE-ASSIGNED` (`:898-900`) come before them and are green on both cores. Their two controls on the same comparator, `P3-CONTROL-IO` (`:919-922`) and `P3-CONTROL-UNCONF` (`:934-937`), are green on both cores |
-| **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 384, 386, 388, 391, 395, 433–436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red on fx68k and 2 on TG68K (`P3-NOTOTHER`, `P3-BASE`; 25 passed, 3 failed on each core). The third red on each core, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. In the same run `P3-CONTENT`, `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED`, green on both cores, read back what was written at the base the board was given; `P3-IMG2`, green, shows the board leaving $E8xxxx on the register-48 write; and `P3-CONTROL-IO` and `P3-CONTROL-UNCONF`, green on both cores, read $0000 where `P3-NOTOTHER` and `P3-BASE` read P2: at $A00000 with the board configured at $200000, and at $400000 with the board left unconfigured |
-| **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline take the base from the byte written to register 48 and map a Zorro II memory board from that base, for its own size and nowhere else. MiSTer and TC64, descendants, select $200000–$9FFFFF once the board is configured, whatever was written, as NanoMig does |
+| **What is asked of a reader** | Decide whether a Zorro II memory board configured by a write to register 48 should answer only from the base byte written there, for the 2 MB that register 00 declares, as pp. 391 and 435 print, instead of at all of $200000–$9FFFFF as NanoMig's select does. The question stops at the board's own decode: where system software places the board is outside it. The decision belongs to an Amiga specialist, not to this repository. It closes when `cpu_wrapper.v` compares the base written and `P3-NOTOTHER` and `P3-BASE` are green on both cores, or when the specialist declines and the reason is recorded here |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, and minimig-dev/MinimigAGA-MiST-TC64, if the manual's reading is accepted. The select is inherited: NanoMig's is MiSTer's, and TC64 decodes the same range in its own CPU interface, so no line has a fix to port, and a fix made upstream must be ported to NanoMig deliberately, as there is no automatic merge |
+| **Scope** | one Zorro II memory board (register 00 size code `110`, 2 MB) in the whole design at `nanomig.v`'s ports, `fastram_config` = 1, on both CPU cores: the base byte written to register 48 ($20 and $40), the reads at $200000–$9FFFFE, and two controls, $A00000 with the board configured and $400000 with the board never configured. `fastram_config` = 3 (three boards) is read from the source only. Chip revision: unknown |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | Appendix K — Zorro Expansion Bus, printed pp. 384, 386, 388, 391, 395, 431, 433, 434, 435, 436 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `P3-NOTOTHER`: `sol:K-0837`, `opus:K-0869`, pp. 391, 433–435; `P3-BASE`: `sol:K-0837`, `opus:K-0869`, pp. 388, 391, 433, 435. No claim id: `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED` (pp. 391, 435), `P3-CONTENT` (p. 433), `P3-IMG2` (pp. 431, 435), `P3-CONTROL-IO` (p. 386), `P3-CONTROL-UNCONF` (p. 431) |
+| **Module** | `src/minimig-aga/cpu_wrapper.v:117`, the Zorro II RAM select, and `:639-642`, the register-48 write — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L117) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35); inherited (MiSTer has the same select; TC64 decodes the same range in its own file) |
+| **Test** | [`integration/appK-autoconfig`](../../integration/appK-autoconfig): `make -k -C integration/appK-autoconfig test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero |
+| **Assertions** | `P3-NOTOTHER` (`test_appK_autoconfig.cpp:878-882`): the board configured at $200000 should not also answer at $400000; the word written there, P2 = $5AA5, reads back as $5AA5. `P3-BASE` (`:901-905`): with $400000 written to register 48 the board should answer at $400000 and not at $200000; P2 reads back at $200000. Red on fx68k and on TG68K, 25 passed, 3 failed on each core; the third red, `GATE-G`, is [NM-HRM-064](NM-HRM-064.md)'s. Green on both cores in the same run, the controls on the same comparator: `P3-CONTROL-IO` and `P3-CONTROL-UNCONF` read $0000 where the reds read P2 |
+| **Verdict of the four** | **unanimous against NanoMig, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline take the base from the byte written to register 48 and map a Zorro II memory board from that base, for its own size and nowhere else. MiSTer and TC64, descendants, select $200000–$9FFFFF once the board is configured, whatever was written, as NanoMig does. Hardware: not measured |
+| **Effort** | M: `cpu_wrapper.v` only — latch the byte written to 48 (`:639-642`), compare it in `sel_z2ram` (`:117`) for the size register 00 declares, and form the RAM address (`:216-217`) from the offset into the board; with `fastram_config` = 3 each of the three boards needs its own base |
 | **See also** | [NM-HRM-064](NM-HRM-064.md), the shut-up register, red in the same package as `GATE-G`; [NM-HRM-065](NM-HRM-065.md), register 48 and a Zorro III board |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Printed p. 391**, on AUTOCONFIG:
 
@@ -89,27 +92,28 @@ to register 48, for the size register 00 declares, and nowhere else in the
 Zorro II space.** A 2 MB board configured at $200000 owns $200000–$3FFFFF;
 $400000–$9FFFFF is space software may give to another board.
 
-### Nothing on these pages predicts an answer outside the base
+Three passages on these pages could be read as predicting an answer outside
+the base; none states one (see *Risks and unknowns*). Register 08 bit 7,
+printed p. 433:
 
-- **Register 08 bit 7**, printed p. 433: "This was originally an indicator to
-  place the card in the 8 megabyte Zorro II space, when set, or anywhere it'll
-  fit, if cleared." It tells software where to put the board and does not
-  widen the board's decode. NanoMig's board reads it 0 anyway: neither half of
-  register 08 is in the Zorro II case list at `cpu_wrapper.v:568-590`, so both
-  read logical 0 through the default at `:547`.
-- **Memory wraps**, printed p. 434: "The memory is sized in 512K increments,
-  and grows from the base address upward. Memory wraps are detected". That is
-  the operating system sizing a board whose sub-size is 0001, inside the size
-  register 00 declares. NanoMig's sub-size, register 08's low nybble, reads
-  0000, "Logical size matches physical size", by the same default.
-- **Footnote 6**, printed p. 435, says the configuration registers "absolutely
-  must move out of the $00E8xxxx space" once a board is configured. NanoMig's
-  board does (`P3-IMG2`, green); the footnote says nothing about where the
-  board then answers.
+> This was originally an indicator to place the card in the 8 megabyte Zorro II
+> space, when set, or anywhere it'll fit, if cleared.
 
----
+Memory wraps, printed p. 434:
 
-## What NanoMig does
+> The memory is sized in 512K increments, and grows from the base address
+> upward. Memory wraps are detected, but the design must insure that its data
+> bus doesn't float when the sizing routine addresses memory locations that
+> aren't physically present on the board; data bus pullups or pulldowns are
+> recommended.
+
+Footnote 6, printed p. 435:
+
+> Support for this is impossible, since the configuration registers generally
+> disappear when a board is configured, and absolutely must move out of the
+> $00E8xxxx space.
+
+## RTL and measurement
 
 **The write to register 48 ends configuration and keeps nothing of the value
 written** —
@@ -123,16 +127,15 @@ if (~cfg_z3) begin
 ```
 
 The Zorro II arm reads no `cpu_dout`, and register 4A (`6'b100101`) is not
-decoded anywhere in the module. The two other arms of the same write path do
-keep the value: the Zorro III board stores `z3ram_base1 <= cpu_dout[15:12];`
+decoded anywhere in the module. The Zorro III arm stores
+`z3ram_base1 <= cpu_dout[15:12];`
 ([`#L655`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L655))
-and compares it, `wire sel_z3ram1 = (cpu_addr[31:28] == z3ram_base1) && z3ram_ena1;`
+and compares it
 ([`#L116`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L116));
-the Toccata sound card, built only with `ENABLE_TOCCATA`, stores
+the Toccata card, built only with `ENABLE_TOCCATA`, stores
 `toccata_base <= cpu_dout[7:0];`
 ([`#L634`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L634))
-and `gary.v` compares it,
-`assign sel_toccata = toccata_ena && cpu_address_in[23:16]==toccata_base;`
+and `gary.v` compares it
 ([`src/minimig-aga/gary.v#L197`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L197)).
 
 **The select then takes the whole Zorro II space** —
@@ -144,22 +147,17 @@ wire sel_z2ram  = (cpu_addr[31:24] == 8'h00) && (cpu_addr[23] ^ |cpu_addr[22:21]
 
 `cpu_addr[23:21]` of 1 to 4 is $200000–$9FFFFF. `sel_z2ram` feeds `ramsel`
 ([`#L167`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L167)),
-the request that reaches `nanomig.v`'s `fastram_sel` port: directly in the
-fx68k build,
-`assign fastram_sel = ram_sel && (fastram_ready == fastram_ready_d);`
-([`src/nanomig.v#L259`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L259)),
-and through the CPU cache in the TG68K build. The select names no base and
-no size, although register 00 declares one: with `fastram_config` = 1 it reads
-size code `110`,
-`5'b01001: autocfg_data = 4'b0110; // 2MB`
-([`#L572`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L572)).
-The module's own comment above the case list says where the design expects
-the board, `// Zorro II RAM (Up to 8 meg at 0x200000)`
+the request that reaches `nanomig.v`'s `fastram_sel` port
+([`src/nanomig.v#L259`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/nanomig.v#L259)
+in the fx68k build; through the CPU cache in the TG68K build). The select
+names no base and no size, although register 00 declares one: with
+`fastram_config` = 1 it reads size code `110`
+([`#L572`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L572)),
+and the module's own comment says where the design expects the board,
+`// Zorro II RAM (Up to 8 meg at 0x200000)`
 ([`#L567`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L567)).
-
-**Where the address lands.** In a build without `ENABLE_RAM32`, which is both
-of the package's, the RAM address is
-`{1'b0, cpu_addr[22], cpu_addr[21] | cpu_addr[23]};`
+In a build without `ENABLE_RAM32`, which is both of the package's, the RAM
+address is `{1'b0, cpu_addr[22], cpu_addr[21] | cpu_addr[23]};`
 ([`#L216-L217`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_wrapper.v#L216-L217)),
 so $800000–$9FFFFF reach the same RAM addresses as $200000–$3FFFFF, and
 $400000–$7FFFFF reach RAM addresses of their own.
@@ -168,196 +166,116 @@ $400000–$7FFFFF reach RAM addresses of their own.
 
 [`integration/appK-autoconfig`](../../integration/appK-autoconfig) runs the
 whole design at `nanomig.v`'s ports, once with each CPU core, with
-`fastram_config` = 1: one Zorro II memory board, register 00 size code `110`,
-2 MB. Its programs write a nybble of $0 to 4A and then a byte to 48, which
-carries A23-A16 (p. 435):
+`fastram_config` = 1. Its programs write a nybble of $0 to 4A and then a byte
+to 48, which carries A23-A16 (p. 435):
 
 | run | base written to 48 | after the write | read back | assertion | fx68k | TG68K |
 |---|---|---|---|---|---|---|
-| R3, R3n | $20, so $200000 | P0 = $A55A at $200000 and P1 = $3CC3 at $200002, a $0000 write to a chip-RAM word, both read | P0, P1 | `P3-CONTENT` | green | green |
-| R3n | $20, so $200000 | the same P0 and P1 reads | P0, P1 | `P3-NOTOTHER-ASSIGNED` | green | green |
+| R3, R3n | $20, so $200000 | P0 = $A55A at $200000 and P1 = $3CC3 at $200002, a $0000 write to a chip-RAM word, both read | P0, P1 | `P3-CONTENT` (R3, R3n), `P3-NOTOTHER-ASSIGNED` (R3n) | green | green |
 | R3n | $20, so $200000 | then P2 = $5AA5 at $400000, a $0000 write to a chip-RAM word, $400000 read | **P2** | `P3-NOTOTHER` | **red** | **red** |
 | R3' | $40, so $400000 | P0 and P1 at $400000 and $400002, a $0000 write to a chip-RAM word, both read | P0, P1 | `P3-BASE-ASSIGNED` | green | green |
 | R3n' | $40, so $400000 | the same, then P2 at $200000, a $0000 write to a chip-RAM word, $200000 read | **P2** | `P3-BASE` | **red** | **red** |
 | R3n at $A00000 (`prog_r3_io.s`) | $20, so $200000 | as R3n, with P2 written at $A00000 and $A00000 read | $0000 | `P3-CONTROL-IO` | green | green |
 | R3n unconfigured (`prog_r3_unconf_n.s`) | not written; 4A only | P2 at $400000, a $0000 write to a chip-RAM word, $400000 read | $0000 | `P3-CONTROL-UNCONF` | green | green |
 
-The two red lines print their claim ids and pages as
-`P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]`
-and
-`P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]`,
-and both quote p. 391's and p. 435's sentences given under *What the HRM
-says*. Each is an aggregate. `P3-NOTOTHER` (`test_appK_autoconfig.cpp:878-882`)
-is `R0 = P0 && R1 = P1V && (!done || R2 != P2)` in R3n: it passes when the
-board answers at the base it was given and the run never finishes or the
-word read at the other base differs from P2. `P3-NOTOTHER-ASSIGNED`
-(`:875-877`) grades the first two terms alone and is green on both cores, so
-the red is the last term: R3n finishes and reads P2 back at a base the board
-was not given. The line also requires register 00's memory flag and the
-$0000 write to a chip-RAM word between the write of P2 and its read
-(`P3-NOTOTHER-PRECOND`, `:870-872`), both of which hold on both cores.
-`P3-BASE` (`:901-905`) is the same aggregate over R3' and R3n':
-`P3-BASE-ASSIGNED` (`:898-900`) grades P0 and P1 read back at $400000 in R3'
-and is green, and R3n' reads P2 back at $200000, so the line is red. The
-source carries a `MUTATION P3-NOTOTHER stimulus green` record (`:40`) and a
-`MUTATION P3-BASE stimulus green` record (`:41`), each naming the two
-controls as the green runs of the same comparator, and neither red line has a
-mutation of its own. `P3-CONTROL-IO` (`:919-922`) and `P3-CONTROL-UNCONF`
-(`:934-937`) run that comparator, `!done || R2 != P2`, where the board is not
-to answer: at $A00000, Zorro II I/O expansion space in Figure K-1 (p. 386),
-with the board configured at $200000; and at $400000 with the board never
-configured. Both runs finish and read $0000, not P2, so the comparator goes
-green on a live input. The log prints R2 for each of the four runs, as
+The red lines print their claim ids and pages as
+`P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]` and
+`P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]`, and both quote
+p. 391's and p. 435's sentences. Each is an aggregate: `P3-NOTOTHER` passes
+when the board answers at the base it was given (graded alone by
+`P3-NOTOTHER-ASSIGNED`, `:875-877`, green on both cores) and the run never
+finishes or the word read at the other base differs from P2, so the red is that
+R3n finishes and reads P2 back at a base the board was not given. The
+preconditions, register 00's memory flag and the $0000 chip-RAM write between
+the write of P2 and its read (`P3-NOTOTHER-PRECOND`, `:870-872`), hold on both
+cores. `P3-BASE` is the same aggregate over R3' and R3n'
+(`P3-BASE-ASSIGNED`, `:898-900`, grades P0 and P1 at $400000). The two
+controls run the red lines' own comparator, `!done || R2 != P2`, where the board
+is not to answer: `P3-CONTROL-IO` (`:919-922`) at $A00000, Zorro II I/O
+expansion space in Figure K-1 (p. 386), with the board configured at $200000;
+`P3-CONTROL-UNCONF` (`:934-937`) at $400000 with the board never configured.
+Both finish and read $0000, not P2, so the comparator goes green on a live
+input. The log prints R2 for each of the four runs, as
 `MEASURED: P3-NOTOTHER run R3n: completion marker written, R2 = $5AA5`, the
-same for R3n', and `R2 = $0000` for the two control runs; the values are the
-same on both cores. P0 and P1 are graded by `P3-CONTENT` and by the two
-`...-ASSIGNED` lines.
+same for R3n', and `R2 = $0000` for the two control runs, the same on both
+cores.
 
-**The select, probed.** A probe program with the package's
-environment, harness and settings — a measurement, not a graded assertion —
-configures the board, writes a distinct word at nine addresses and reads each
-back, logging `nanomig.v`'s `fastram_sel` and `fastram_addr`:
+**The select, probed.** A probe program with the package's environment,
+harness and settings — a measurement, not a graded assertion — configures the
+board, writes a distinct word at nine addresses and reads each back, logging
+`nanomig.v`'s `fastram_sel` and `fastram_addr`:
 
-| CPU address | select, 48 ← $20 | select, 48 ← $40 | address at the port | read back, both bases | select, 48 never written |
-|---|---|---|---|---|---|
-| $200000 | yes | yes | $200000 | the word written at $800000 | no |
-| $3FFFFE | yes | yes | $3FFFFE | the word written at $9FFFFE | no |
-| $400000 | yes | yes | $400000 | its own word | no |
-| $5FFFFE | yes | yes | $5FFFFE | its own word | no |
-| $600000 | yes | yes | $600000 | its own word | no |
-| $7FFFFE | yes | yes | $7FFFFE | its own word | no |
-| $800000 | yes | yes | $200000 | its own word | no |
-| $9FFFFE | yes | yes | $3FFFFE | its own word | no |
-| $A00000 | no | no | — | $0000 | no |
+| CPU address | select, 48 ← $20 and 48 ← $40 | address at the port | read back, both bases | select, 48 never written |
+|---|---|---|---|---|
+| $200000, $3FFFFE | yes | $200000, $3FFFFE | the word written at $800000, at $9FFFFE | no |
+| $400000, $5FFFFE, $600000, $7FFFFE | yes | the same | each its own word | no |
+| $800000, $9FFFFE | yes | $200000, $3FFFFE | each its own word | no |
+| $A00000 | no | — | $0000 | no |
 
-Both cores give the same table. The *address at the port* is the write's;
-the TG68K build reads through its cache, so its reads reach the port as line
-fills at the eight-byte-aligned address, $3FFFF8 for $3FFFFE. The two bases
-give identical logs. Without the write to 48 no access reaches
-the port, and the reads return $FFFF at $200000 and $3FFFFE and $0000 at the
-other seven. So:
+Both cores and both bases give the same table; the two bases give identical
+logs. The *address at the port* is the write's: the TG68K build reads through
+its cache, so its reads reach the port as line fills at the eight-byte-aligned
+address, $3FFFF8 for $3FFFFE. Without the write to 48 no access reaches the
+port, and the reads return $FFFF at $200000 and $3FFFFE and $0000 at the other
+seven. So the base written is not used (told $400000, the board answers at
+$200000 exactly as when told $200000), the size declared is not used (a 2 MB
+board answers for 8 MB), and the answer stops at $A00000, Zorro II I/O space in
+Figure K-1, which reaches no select.
 
-- **the base written is not used**: told $400000, the board answers at
-  $200000 exactly as it does when told $200000;
-- **the size declared is not used**: a 2 MB board answers for 8 MB;
-- **the answer stops at the Zorro II space**: $A00000, Zorro II I/O space in
-  Figure K-1, reaches no select.
+## Risks and unknowns
 
-What a read returns outside $200000–$3FFFFF is partly the harness's: its
-fast-RAM model is a flat memory of 4M words
-([`nanomig_harness.h`](../../integration/harness/nanomig_harness.h),
-`kFastWordCount = 1u << 22`) that stores whatever reaches the port. The
-RTL-side fact is the select, and the alias of $800000–$9FFFFF onto
-$200000–$3FFFFF is the RTL's address mapping.
+- **Not measured:** real hardware, and software: nothing here measures where
+  system software places the board or what it does with the rest of the space.
+  A 2 MB board placed at $200000, as NanoMig's comment expects, also answers at
+  $400000–$9FFFFF, memory nobody was given; a program that probes the Zorro II
+  space for memory, or a second board placed there, would find it.
+- **The probe's reads outside $200000–$3FFFFF are partly the harness's:** its
+  fast-RAM model is a flat memory of 4M words
+  ([`nanomig_harness.h`](../../integration/harness/nanomig_harness.h),
+  `kFastWordCount = 1u << 22`) that stores whatever reaches the port. The
+  RTL-side fact is the select, and the alias of $800000–$9FFFFF onto
+  $200000–$3FFFFF is the RTL's address mapping. Builds with `ENABLE_RAM32` are
+  not measured.
+- **Conflicting passages:** register 08 bit 7 tells software where to put the
+  board and does not widen the board's decode; NanoMig's board reads it 0
+  anyway, since neither half of register 08 is in the Zorro II case list at
+  `cpu_wrapper.v:568-590` and both read logical 0 through the default at `:547`.
+  Memory wraps are the operating system sizing a board whose sub-size is 0001,
+  inside the size register 00 declares; NanoMig's sub-size, register 08's low
+  nybble, reads 0000, "Logical size matches physical size", by the same
+  default. Footnote 6 is about the configuration registers leaving $00E8xxxx,
+  which NanoMig's board does (`P3-IMG2`, green); it says nothing about where
+  the board then answers.
+- **Is the whole-space select a deliberate economy?** Both Minimig lines have
+  it for the memory board and not for their I/O cards, and NanoMig's address
+  map (`:199-205`, `:216`) assigns RAM by CPU address. Whether any build needs
+  its Zorro II memory anywhere but $200000 is for the maintainers of that map
+  to say.
+- **The suggested change has not been run.** Its effect with
+  `fastram_config` = 3, three Zorro II boards of 4 MB, 1 MB and 512K
+  (`:577-580`), each configured by its own write to 48, is read from the source
+  and not measured.
+- The 1987 quotations carry the page's OCR as it is, "AZ3" for A23 included.
 
-### Why the unit package does not see it
-
-[`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address)
-drives `cpu_wrapper` alone, with `ramready` and `ramdout` held at 0: nothing
-answers behind `ramsel`. It sees the configuration registers at $E8xxxx before
-and after a write, so it grades that a write to 48 configures a Zorro II board
-(`sol:K-0835`, `opus:K-0867`, green). It cannot see at which addresses the
-configured board then answers, and it records `sol:K-0837` and `opus:K-0869`,
-p. 435's "the low order register takes bits 23-16", as not graded,
-`unreachable-observable`. The integration package has the harness's fast-RAM
-model behind `nanomig.v`'s `fastram_*` port, and there the board's addresses
-are observable: `P3-NOTOTHER` and `P3-BASE` carry both ids.
-
----
-
-## What the others say
+## Independent evidence
 
 The question put to each: once a Zorro II memory board is configured, which
 addresses does it answer?
 
 | | where the base comes from, and what is compared | answers at |
 |---|---|---|
-| **WinUAE** | [`expansion.cpp:873-878`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/expansion.cpp#L873-L878): a byte write to 48 for a Zorro II board sets `expamem_hi = value & 0xff;` and `expamem_board_pointer = (expamem_hi \| (expamem_lo >> 4)) << 16;`, then calls the board's map function. For fast RAM that is [`expamem_map_fastcard`, `:1617-1631`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/expansion.cpp#L1617-L1631): `ab->start = start;` and `if (map_banks_z2(ab, ab->start >> 16, size >> 16)) {`. [`memory.cpp:3887-3893`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L3887-L3893) maps that many 64K banks from the base, `map_banks (bank, start, size, 0);`, and its check before it, [`:3876-3881`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L3876-L3881), refuses to map a Z2 board over a bank already mapped at its base, `attempting to override existing memory bank` | **the base written, for the board's size** |
-| **vAmiga** | [`Core/Components/Zorro/ZorroBoard.cpp:132-147`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Zorro/ZorroBoard.cpp#L132-L147): `case 0x48:` `baseAddr \|= (value & 0xF0) << 16;`, `state = BoardState::ACTIVE;`, `mem.updateMemSrcTables();`, and 4A adds A19-A16, `baseAddr \|= (value & 0xF0) << 12;`. [`RamExpansion.cpp:45-56`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Zorro/RamExpansion.cpp#L45-L56) marks only the board's pages, `isize firstPage = baseAddr / 0x10000;`, `for (isize i = firstPage; i < firstPage + numPages; i++) {`, `mem.cpuMemSrc[i] = MemSrc::FAST;`, in a map that [`Memory.cpp:863-865`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L863-L865) starts with every page `MemSrc::NONE`; the data offset is base-relative, [`Memory.h:24`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.h#L24) `#define FAST_RAM_STRT ramExpansion.getBaseAddr()` | **the base written, for the board's size** |
-| **Denise** | [`emulation/libami/expansionPort/expansionPort.cpp:17-24`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/expansionPort/expansionPort.cpp#L17-L24): `case 0x48: {` `baseAdr \|= (data & 0xf0) << 16;`, `boardState = BoardState::Configured;`, `add();`, and 4A `baseAdr \|= (data & 0xf0) << 12;`. `add()`, [`:50-60`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/expansionPort/expansionPort.cpp#L50-L60), maps the board's pages only, `for (int i = _firstPage; i < (_firstPage + _pages); i++) {` `agnus.mapper[i] = memoryExpansion ? Agnus::FAST_MEM : Agnus::EXPANSION;`, over a Zorro II space [`agnus/memory.cpp:703-704`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/memory.cpp#L703-L704) leaves empty, `for(int i = 0x20; i <= 0x9f; i++)` `mapper[i] = Unmapped; // auto config (e.g. fast ram)` | **the base written, for the board's size** |
-| **Copperline** | [`src/zorro.rs:1035-1046`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/zorro.rs#L1035-L1046): `EC_BASEADDRESS_PHYS => {` for a Zorro II board, `let base = u32::from(data_byte) << 16;` and `board.state = BoardState::Configured { base };`. [`:885-903`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/zorro.rs#L885-L903) records the window, `self.regions.push((base, board.ram.len() as u32, idx));`, and [`:909-917`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/zorro.rs#L909-L917) is the comparator, `let off = addr.wrapping_sub(base);` `if u64::from(off) + size as u64 <= u64::from(len) {`, which the CPU's memory path asks, [`src/cpu.rs:3594`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/cpu.rs#L3594) `if let Some((board, off)) = self.bus.mem.zorro.region_at(addr, size) {` | **the base written, for the board's size** |
-| **MiSTer** | descendant — **the same select, in its own file.** [`rtl/memory_router.v:35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35) is `assign sel_z2ram    = !cpu_addr[31:24] && (cpu_addr[23] ^ \|cpu_addr[22:21]) && z2ram_ena; // addr[23:21] = 1..4`, and the memory card's write to 48, [`rtl/cpu_wrapper.v:522-526`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cpu_wrapper.v#L522-L526), is `z2ram_ena <= 1;` with no base. Its I/O cards keep one: `toccata_base <= cpu_dout[7:0];` and `a2065_base <= cpu_dout[7:0];` ([`:530-536`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cpu_wrapper.v#L530-L536)), compared in [`rtl/gary.v:199-200`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L199-L200), `assign sel_toccata = toccata_ena && cpu_address_in[23:16]==toccata_base;` | **$200000–$9FFFFF, as NanoMig** |
-| **TC64** | descendant — **its own module, the same range.** [`rtl/minimig/minimig_autoconfig.v:92-100`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_autoconfig.v#L92-L100): `9'h048 : begin // Zorro II configures at 48`, and for the RAM board `board_configured[0] <= 1'b1;` with no base, where the Toccata card stores `toccata_base_addr <= data_in[7:0];` ([`:106`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_autoconfig.v#L106)). [rtl/soc/TG68K.vhd, lines 303-307](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/soc/TG68K.vhd#L303-L307) selects `cpuaddr(23 downto 21)` of `"001"` to `"100"`, and [`:318-319`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/soc/TG68K.vhd#L318-L319) enables it with `(sel_z2ram='1' and z2ram_ena='1')`, whatever size [`minimig_autoconfig.v:72`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_autoconfig.v#L72) declares, `2'b01 : ramsize <= 4'b0110; // 2 Meg` | **$200000–$9FFFFF, as NanoMig** |
+| **WinUAE** | [`expansion.cpp:873-878`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/expansion.cpp#L873-L878): a byte write to 48 sets `expamem_board_pointer = (expamem_hi \| (expamem_lo >> 4)) << 16;` and calls the board's map function, [`expamem_map_fastcard`, `:1617-1631`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/expansion.cpp#L1617-L1631); [`memory.cpp:3887-3893`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L3887-L3893) maps that many 64K banks from the base, and [`:3876-3881`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L3876-L3881) refuses to map a Z2 board over a bank already mapped at its base | **the base written, for the board's size** |
+| **vAmiga** | [`Core/Components/Zorro/ZorroBoard.cpp:132-147`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Zorro/ZorroBoard.cpp#L132-L147): `case 0x48:` takes `baseAddr \|= (value & 0xF0) << 16;`, and 4A adds A19-A16; [`RamExpansion.cpp:45-56`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Zorro/RamExpansion.cpp#L45-L56) marks only the board's pages `MemSrc::FAST` in a map that [`Memory.cpp:863-865`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L863-L865) starts with every page `MemSrc::NONE`; the data offset is base-relative, [`Memory.h:24`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.h#L24) | **the base written, for the board's size** |
+| **Denise** | [`emulation/libami/expansionPort/expansionPort.cpp:17-24`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/expansionPort/expansionPort.cpp#L17-L24): `case 0x48:` takes `baseAdr \|= (data & 0xf0) << 16;`, and 4A adds A19-A16; `add()`, [`:50-60`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/expansionPort/expansionPort.cpp#L50-L60), maps the board's pages only, over a Zorro II space [`agnus/memory.cpp:703-704`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/memory.cpp#L703-L704) leaves `Unmapped` | **the base written, for the board's size** |
+| **Copperline** | [`src/zorro.rs:1035-1046`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/zorro.rs#L1035-L1046): for a Zorro II board `let base = u32::from(data_byte) << 16;`; [`:885-903`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/zorro.rs#L885-L903) records the window, and [`:909-917`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/zorro.rs#L909-L917) is the comparator, which the CPU's memory path asks, [`src/cpu.rs:3594`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/cpu.rs#L3594) | **the base written, for the board's size** |
+| **MiSTer** | descendant — the same select in its own file: [`rtl/memory_router.v:35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/memory_router.v#L35); the memory card's write to 48, [`rtl/cpu_wrapper.v:522-526`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cpu_wrapper.v#L522-L526), is `z2ram_ena <= 1;` with no base, while its I/O cards keep one, `toccata_base <= cpu_dout[7:0];` and `a2065_base <= cpu_dout[7:0];` ([`:530-536`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cpu_wrapper.v#L530-L536)), compared in [`rtl/gary.v:199-200`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L199-L200) | **$200000–$9FFFFF, as NanoMig** |
+| **TC64** | descendant — its own module, the same range: [`rtl/minimig/minimig_autoconfig.v:92-100`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_autoconfig.v#L92-L100) sets `board_configured[0] <= 1'b1;` for the RAM board with no base, where the Toccata card stores `toccata_base_addr <= data_in[7:0];` ([`:106`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_autoconfig.v#L106)); [rtl/soc/TG68K.vhd, lines 303-307](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/soc/TG68K.vhd#L303-L307) selects `cpuaddr(23 downto 21)` of `"001"` to `"100"` and [`:318-319`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/soc/TG68K.vhd#L318-L319) enables it with `(sel_z2ram='1' and z2ram_ena='1')`, whatever size [`minimig_autoconfig.v:72`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_autoconfig.v#L72) declares | **$200000–$9FFFFF, as NanoMig** |
 
-**All four independent implementations take the base from the write to 48 and
-answer only from it, for the board's own size.** WinUAE and Copperline take
-the whole byte; vAmiga and Denise take its upper nybble and add A19-A16 from
-4A. None of them has a Zorro II board that answers for the whole space.
+None of the four has a Zorro II board that answers for the whole space.
+WinUAE and Copperline take the whole byte; vAmiga and Denise take its upper
+nybble and add A19-A16 from 4A.
 
-**Both Minimig lines select $200000–$9FFFFF.** MiSTer's line is NanoMig's, in
-a module of its own; TC64 writes the decode in VHDL in its CPU interface and
-reaches the same range. Both lines, and NanoMig with `ENABLE_TOCCATA`, keep a
-base for their I/O cards and compare it; only the memory board has none.
-
----
-
-## Suggested change
-
-**One option: give the Zorro II memory board a base register and compare
-against it.** In the Zorro II arm of the write path, latch the byte written
-to 48, as the Zorro III arm at `:655` and the Toccata arm at `:634` already
-latch theirs, and replace the fixed range of `sel_z2ram` with a compare of
-the address bits the declared size leaves: `cpu_addr[23:21]` for a 2 MB
-board, `cpu_addr[23:22]` for a 4 MB board. The RAM address at `:216-217` would
-then be formed from the offset into the board rather than from the CPU
-address. This has not been run here. What it would change:
-
-- with the board placed at $200000, as the RTL's comment expects, a 2 MB board
-  would stop answering at $400000–$9FFFFF;
-- a board placed anywhere else would answer where it was placed;
-- with `fastram_config` = 3 the module presents three Zorro II boards,
-  4 MB, 1 MB and 512K (`:577-580`), each configured by its own write to 48,
-  and the address map (`:199-205`, `:216`) assigns their memory by CPU
-  address. Each would need its own base. This is read from the source and not
-  measured here.
-
----
-
-## What holds the finding up
-
-- **The pages are plain on the base.** p. 391 has software tell each board
-  where to reside, p. 435 gives register 48 bits 23-16 of that address, and
-  p. 433 gives the board its size and its memory "starting at the base
-  address". p. 434 says an 8 megabyte or smaller board needs a latch and
-  comparator for its base, and p. 395 makes two boards answering one address
-  a collision. No page lets a board answer outside its window (see *Nothing on
-  these pages predicts an answer outside the base*).
-- **The comparator reads green on a live input.** In the same run
-  `P3-CONTENT` reads back P0 and P1 at the base the board was given, in both
-  runs, `P3-NOTOTHER-ASSIGNED` and `P3-BASE-ASSIGNED` do the same in R3n and
-  R3', and `P3-CONTROL-IO` and `P3-CONTROL-UNCONF` put the red lines'
-  own comparator on two inputs and are green on both cores: with the board
-  configured at $200000 a word written at $A00000 reads back $0000, and with
-  the board unconfigured a word written at $400000 reads back $0000. The
-  probe above gives the same two reads.
-- **It is the select, not the harness.** `fastram_sel` fires at both ends of
-  each 2 MB block from $200000 to $9FFFFE, and at none of them before the
-  write to 48, on both cores, whichever base was written; the code at
-  `cpu_wrapper.v:117` selects the whole range.
-- **All four implementations follow the page**, each with its base taken from
-  the write and its size from the board.
-
----
-
-## For the specialists
-
-1. **Does anything break?** NanoMig's comment expects the board at $200000.
-   Placed there, a 2 MB board also answers at $400000–$9FFFFF, memory nobody
-   was given; a program that probes the Zorro II space for memory, or a second
-   board placed there, would find it. Nothing here measures where system
-   software places the board or what it does with the rest of the space.
-2. **Is the whole-space select a deliberate economy?** Both Minimig lines have
-   it for the memory board and not for their I/O cards, and NanoMig's address
-   map assigns RAM by CPU address. Whether any build needs its Zorro II memory
-   anywhere but $200000 is for the maintainers of that map to say.
-
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+### What other Commodore documents say
 
 - **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF pages 28, 29 and 31 — agrees with the manual:
 
@@ -373,4 +291,23 @@ and none decides this finding. What they are and how they were read is in
   > "(48/4A) 7654 321 0 Base address register, write only a bits are compared with AZ3 through A16 (or fewer) to determine the base address of this board."
   <!-- corpus: a500-a2000-trm-1987/p031.txt -->
 
-  The expansion chapter's design guidelines give a board an address latch that software loads with its base, a match circuit on the high address bits for its size, and the 48/4A register as the value those bits are compared with; its notes tell a board to assume it may be placed anywhere. That is the manual's contract; NanoMig's Zorro II memory board keeps no base and matches a fixed range. The quotations carry the page's OCR as it is, "AZ3" for A23 included.
+  The expansion chapter's design guidelines give a board an address latch that software loads with its base, a match circuit on the high address bits for its size, and the 48/4A register as the value those bits are compared with; its notes tell a board to assume it may be placed anywhere. NanoMig's Zorro II memory board keeps no base and matches a fixed range.
+
+## Decision
+
+**One option: give the Zorro II memory board a base register and compare
+against it.** In the Zorro II arm of the write path, latch the byte written
+to 48, as the Zorro III arm at `:655` and the Toccata arm at `:634` already
+latch theirs, and replace the fixed range of `sel_z2ram` with a compare of
+the address bits the declared size leaves: `cpu_addr[23:21]` for a 2 MB
+board, `cpu_addr[23:22]` for a 4 MB board. The RAM address at `:216-217` would
+then be formed from the offset into the board rather than from the CPU
+address. What it would change:
+
+- with the board placed at $200000, as the RTL's comment expects, a 2 MB board
+  would stop answering at $400000–$9FFFFF;
+- a board placed anywhere else would answer where it was placed;
+- with `fastram_config` = 3 the module presents three Zorro II boards, 4 MB,
+  1 MB and 512K (`:577-580`), each configured by its own write to 48, and the
+  address map (`:199-205`, `:216`) assigns their memory by CPU address; each
+  would need its own base.
