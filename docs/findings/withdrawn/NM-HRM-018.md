@@ -5,73 +5,62 @@
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
 | **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Nothing yet. This was read from the source rather than measured by a graded assertion, and needs a test before it can ask for anything. Withdrawn as a conformance finding; the source observation remains. |
-| **Module** | `denise.v` |
-| **Test** | [`hrm/ch3-bplcon0-display-modes`](../../../hrm/ch3-bplcon0-display-modes) — `233 passed, 0 failed`; both claims declined |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **What is asked of a reader** | Nothing. p. 300 prints only the mnemonic for BPLCON0 bit 4, so no printed behaviour exists for NanoMig to diverge from. |
+| **Withdrawal reason** | The manual gives bit 4 a name and no behaviour, so the claim that the bit has no effect has nothing printed to fail against |
 | **Error class** | **a name read as a requirement** |
+| **Replacement** | none; the package declines both claims instead of grading them |
+| **Module** | `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L181); inherited, the same statement is at line 146 in MiSTer and line 153 in TC64 |
+| **Test** | [`hrm/ch3-bplcon0-display-modes`](../../../hrm/ch3-bplcon0-display-modes), `make -C hrm/ch3-bplcon0-display-modes test`; `233 passed, 0 failed`, and the two claims on this bit are declined |
+| **Chapter** | 3 — Playfield, printed p. 300 (appendix C, BPLCON0 bit table) · *Amiga Hardware Reference Manual*, 3rd ed., 1991; claim ids `opus:C-bplcon0.b04` and `sol:C-shres.c18`, both p. 300; the package grades no assertion on either |
+| **Assertions** | none graded; `opus:C-bplcon0.b04` and `sol:C-shres.c18` print `[SKIP] ... not asserted in this package` |
+| **Verdict of the four** | none. Hardware: not measured |
 
 ---
 
 ## Why it was withdrawn
 
+The claim was that bit 4 of BPLCON0 has no effect in ECS. The manual does not
+say what bit 4 does, so it cannot be wrong about it.
+
 **Printed p. 300's row reads, in full:**
 
-```
-04       SPRHWRM
-```
+> 04       SPRHWRM
 
-A mnemonic with **no description column** — unlike `06  SHRES  SuperHires 35ns
-pixel enable bit` two rows above, which shows what the manual looks like when
-it actually specifies something.
+A mnemonic with **no description column**, unlike the row two above it:
 
-The manual gives bit 4 a name and no behaviour, so there is **no printed
-behaviour for NanoMig to diverge from**.
+> 06       SHRES       SuperHires 35ns pixel enable bit
 
 The fixture could not have observed it in any case: it drives bitplanes only,
 while the mnemonic names a sprite-horizontal function.
 
----
-
-## What replaced it
-
-Both claims are now **declined** rather than asserted, with the reason printed:
-the manual states no behaviour for this bit, and the fixture drives bitplanes
-while the mnemonic names a sprite function. Neither is asserted true nor false —
-the source simply does not define anything to test.
+The package declines both claims on this bit, with that reason printed in its
+`[SKIP]` lines, and asserts neither true nor false.
 
 ---
 
 ## What remains true
 
 A source observation: `denise.v:181` gives the bit its **AGA** meaning
-(`bplcon0[4] & aga`) and no ECS meaning. That is worth knowing and is not a
-conformance failure, because the manual covers OCS and ECS and prints no ECS
-behaviour for this bit.
+(`bplcon0[4] & aga`) and no ECS meaning. This is not a conformance failure,
+because the manual covers OCS and ECS and prints no ECS behaviour for the bit.
 
 ---
 
-## What other Commodore documents say
+## Independent evidence
 
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](../README.md#second-documents).
+### What other Commodore documents say
 
-- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 5 — says something else:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 5:
 
   > "04 y PF2H0 PF2P1 BRDNTRAN"
   <!-- corpus: denise-spec-252126/p005.txt -->
 
-  In the ECS Denise specification BPLCON0 bit 4 is 'y', and 'y= register bits contained in AGNUS, not defined here.': no SPRHWRM name and no Denise function. That is compatible with the withdrawal (no printed behaviour) and with denise.v giving the bit no ECS meaning; what it adds is that the bit belongs to Agnus, where a Denise-only bitplane fixture could not observe it.
-
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989.
+  In the ECS Denise specification BPLCON0 bit 4 is 'y', and 'y= register bits contained in AGNUS, not defined here.': no SPRHWRM name and no Denise function. That is compatible with the withdrawal and with denise.v giving the bit no ECS meaning; it adds that the bit belongs to Agnus, where a Denise-only bitplane fixture could not observe it.
 
 ---
 
-## Why this entry is kept
+## Risks and unknowns
 
-A row carrying only a mnemonic was turned into a conformance finding;
-the contrast with the `SHRES` row two lines above is what settles it.
-
-This is the sharpest of the four "silence is not a requirement" withdrawals,
-because the counter-example sits on the same page.
+**Condition for filing again.** The claim would be filed again only if a
+printed page gave BPLCON0 bit 4 a described ECS behaviour. No hardware was
+measured.
