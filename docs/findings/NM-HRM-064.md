@@ -14,7 +14,7 @@
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address): `make -C hrm/appK-autoconfig-base-address test`; the same source on fx68k, [`hrm/appK-autoconfig-base-address-fx68k`](../../hrm/appK-autoconfig-base-address-fx68k): `make -C hrm/appK-autoconfig-base-address-fx68k test`; [`integration/appK-autoconfig`](../../integration/appK-autoconfig): `make -k -C integration/appK-autoconfig test`; an expected red exits nonzero. Bit 6 clear is graded green by [`hrm/appK-autoconfig-register-map`](../../hrm/appK-autoconfig-register-map): `make -C hrm/appK-autoconfig-register-map test` |
 | **Assertions** | 6 red, expected register 00 raw `0x0` after a write to 4C, observed `0xE`: `sol:K-0740`, `sol:K-0849`, `sol:K-0850`, `opus:K-0889`, `sol:K-0848`, `opus:K-0888`, the same six in the TG68K and fx68k packages (TG68K: `5 passed, 8 failed`, the other two reds [NM-HRM-065](NM-HRM-065.md)'s); the inverse control, which writes register 48 in place of 4C, is green. At the system boundary `GATE-G` is red on fx68k and on TG68K, expected a differing register image or no answer after the write to 4C, observed an identical image (25 passed, 3 failed on each core, the other two reds [NM-HRM-085](NM-HRM-085.md)'s); `GATE-G-PRECOND` and `P3-IMG2` are green on both cores |
 | **Verdict of the four** | **three of four implement it; vAmiga does not**. Hardware: not measured |
-| **Effort** | S for the one-line option: one case entry in the Zorro II register list of `cpu_wrapper.v:568-590`; the 4C handler is not sized |
+| **Effort** | S — the one-line option: one case entry in the Zorro II register list of `cpu_wrapper.v:568-590`; the 4C handler is not sized |
 
 ---
 
