@@ -5,16 +5,16 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should VPOSR bit 8 (identifier bit I0) read 0 on an Alice, giving the AA list's `$22` PAL / `$32` NTSC instead of this core's `$23` / `$33`? Whether real Alice silicon answers `$22` or `$23` is an Amiga question, not one this repository can settle. Closes on a VPOSR capture from an 8374 (the probe under *Risks and unknowns*). |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer; the identical `{2{aga}}` expression is at its `rtl/agnus_beamcounter.v:116`, and the change is one edit |
+| **What is asked of a reader** | Should VPOSR bit 8 (identifier bit I0) read 0 on an Alice, giving the AA list's `$22` PAL / `$32` NTSC instead of this core's `$23` / `$33`? Closes when `agnus_beamcounter.v:110` drives bit 8 from `1'b0` instead of the second `aga` and `VPOSR-REPORTS-THE-CHIP-IDENTIFIER` turns green, or when an Amiga specialist rejects the change on an 8374 capture reading `$23` / `$33` (the probe under *Risks and unknowns*), in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | Alice (AGA), VPOSR bits 14-8, PAL and NTSC; isolated to the duplicated `aga` term, since the NTSC `+$10` matches the list |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 29, the VPOSR entry |
-| **Module** | `src/minimig-aga/agnus_beamcounter.v:110` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110) at the pinned revision; inherited from MiSTer |
+| **Chapter** | Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, PRELIMINARY · PDF p. 29, the VPOSR entry · claim ids by assertion: `VPOSR-REPORTS-THE-CHIP-IDENTIFIER`: `opus:AA-vhpos.c6`, `opus:AA-vhpos.c7`, `opus:AA-vhpos.c8`, `opus:AA-vhpos.c9`, `opus:AA-vhpos.c10`, `opus:AA-vhpos.c11`, `opus:AA-vhpos.c12`, `opus:AA-vhpos.c13`, `opus:AA-vhpos.c14`, `opus:AA-vhpos.c15`, `opus:AA-vhpos.c16`, `opus:AA-vhpos.c17`, `opus:AA-vhpos.c18`, `opus:AA-vhpos.c19`, `opus:AA-vhpos.c20`, `opus:AA-vhpos.c21`, `opus:AA-vpos.c6`, `opus:AA-vpos.c7`, `opus:AA-vpos.c8`, `opus:AA-vpos.c9`, `opus:AA-vpos.c10`, `opus:AA-vpos.c11`, `opus:AA-vpos.c12`, `opus:AA-vpos.c13`, `opus:AA-vpos.c14`, `opus:AA-vpos.c15`, `opus:AA-vpos.c16`, `opus:AA-vpos.c17`, `opus:AA-vpos.c18`, `opus:AA-vpos.c20`, `opus:AA-vpos.c25`, `sol:AA-vpos.c2`, `sol:AA-vpos.c3`, `sol:AA-vpos.c4`, `sol:AA-vpos.c5`, `sol:AA-vpos.c6`, `sol:AA-vpos.c7`, `sol:AA-vpos.c8`, `sol:AA-vpos.c19`, `sol:AA-vpos.c26`, p. 29 |
+| **Module** | `src/minimig-aga/agnus_beamcounter.v:110` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110) at the pinned revision; inherited (MiSTer `rtl/agnus_beamcounter.v:116` and TC64 `rtl/minimig/agnus_beamcounter.v:132` carry the same `{2{aga}}` expression) |
 | **Test** | [`aa/aa-beam-position-words`](../../aa/aa-beam-position-words) · `make -C aa/aa-beam-position-words test`, or `hrm/run_all.sh --in ../aa` (that one runs the whole tree) |
 | **Assertions** | `VPOSR-REPORTS-THE-CHIP-IDENTIFIER`, red: expected `0x22` PAL / `0x32` NTSC (the AA list's Alice), observed `0x23` / `0x33`; the package has 4 graded assertions, 3 green and this one red |
 | **Verdict of the four** | **three of three against the document.** Every one of the four that models an identifier at all returns **$23** for AGA — the value this RTL returns — and none returns the document's $22. Denise casts no vote: its AGA term lands in the wrong bit position. Hardware: not measured on an 8374 |
-| **Effort** | S — one expression in `agnus_beamcounter.v:110`, one bit of one read-only register |
+| **Effort** | none; if an 8374 capture reads `$22` / `$32`, S: one expression in `agnus_beamcounter.v:110`, one bit of one read-only register |
 | **See also** | [NM-HRM-034](withdrawn/NM-HRM-034.md), withdrawn: the Hardware Reference Manual's p. 299 prints the same field as an identifier, with 10 for an OCS NTSC Agnus |
 
 ## Source requirement
