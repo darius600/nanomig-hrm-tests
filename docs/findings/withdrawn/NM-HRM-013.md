@@ -4,12 +4,17 @@
 |---|---|
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
-| **Evidence** | none |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. It was split; the surviving half is [NM-HRM-019](../NM-HRM-019.md). |
-| **Module** | `denise_sprites.v` |
-| **Test** | [`hrm/ch3-sprite-registers`](../../../hrm/ch3-sprite-registers) |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Evidence** | p. 303 prints bit 3 as `(unimplemented)`, and with SPR0CTL bit 3 set against clear the `sprdata` trace is identical at each of the four `spres` values |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time: p. 303 marks bit 3 unimplemented. The surviving half, bit 4, is [NM-HRM-019](../NM-HRM-019.md). |
+| **Withdrawal reason** | The note says which chips have the bits, not that both alter output, and p. 303 itself prints bit 3 as `(unimplemented)`, so no page requires bit 3 to be a live field |
 | **Error class** | **a scope note read as a requirement** |
+| **Replacement** | Green: `SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES` in [`hrm/ch3-sprite-registers`](../../../hrm/ch3-sprite-registers) (bit 3 alone leaves the `sprdata` trace identical at each of the four `spres` values). Bit 4 is a behaviour and is re-asserted on its own as [NM-HRM-019](../NM-HRM-019.md) |
+| **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v); inherited (MiSTer and TC64 write SPRxCTL in `denise_sprites_shifter.v` the same way, keeping bits 7 and 0 only) |
+| **Test** | `make -C hrm/ch3-sprite-registers test`; the package reads `10 passed, 1 failed`: the green assertion above is among the 10 and the one red is NM-HRM-019's, so the command exits nonzero |
+| **Chapter** | Appendix C, printed p. 303 (SPRxCTL bit 3 and bit 4 rows, and the ECS note); test chapter 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES`: `APPC-pos.c11`, `CH4-appC-position.c19`, p. 303. `SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED` is declined, so it is not an assertion and carries `C-shres-sprite.c13` as a declined claim |
+| **Assertions** | `SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES` green; `SPRXCTL-BIT3-SHSH0-UNIMPLEMENTED` declined, quoting the manual's own word, with no red or green state |
+| **Verdict of the four** | none |
+| **See also** | [NM-HRM-019](../NM-HRM-019.md) |
 
 ---
 
@@ -19,44 +24,31 @@ The finding rested on the note:
 
 > "bits 3 and 4 are in the ECS chips only"
 
-That is a statement about **which chips have them**, not a promise that both
+That is a statement about **which chips have the bits**, not a promise that both
 alter output. Requiring bit 3 to be a live field contradicts the oracle, because
 the same page settles bit 3 in the opposite direction:
 
-```
-03      SHSH0     Start horizontal (SHR mode) 35ns (unimplemented)
-```
+> 03      SHSH0     Start horizontal (SHR mode) 35ns (unimplemented)
 
-**The manual itself calls bit 3 unimplemented.**
+**The manual itself calls bit 3 unimplemented.** Bit 4 prints a behaviour and is re-asserted as [NM-HRM-019](../NM-HRM-019.md).
 
 ---
 
-## What replaced it
+## Risks and unknowns
 
-The two bits part company, and the split is what the withdrawal produced:
-
-| bit | what the manual prints | outcome |
-|---|---|---|
-| 3 | `(unimplemented)` | declined as a live field, quoting the manual's own word; `SPRXCTL-BIT3-SHSH0-INERT-AT-EVERY-SPRES` asserts it inert at every resolution, green |
-| 4 | `SHSH1  Start horizontal (SHR mode) 70ns increment` | a behaviour — re-asserted on its own as [NM-HRM-019](../NM-HRM-019.md), and red for a reason that holds |
-
-**The original finding was right that something is missing, and wrong about
-what.** That is the most useful shape a withdrawal can have.
+- **Condition for filing again.** The claim for bit 3 would be filed again only if a printed page gave SHSH0 a behaviour in place of `(unimplemented)`; p. 303 as printed does not.
+- **Reach of the green assertion.** It sets SPR0CTL bit 3 alone, with SH0 and the other bits clear, at SPR0POS `$40`, in the `denise_sprites` fixture without AGA, and compares the `sprdata` trace over hpos 0 to 511. Other positions, bit 3 together with other bits, and a chip are not measured.
+- **The second document may be a carry-over.** The ECS Denise specification below has the shape of an OCS-era table and lacks even the EV8 row.
 
 ---
 
-## What other Commodore documents say
+## Independent evidence
 
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](../README.md#second-documents).
+### What other Commodore documents say
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — **agrees with NanoMig**:
 
   > "06-04 X Not used."
   <!-- corpus: denise-spec-252126/p010.txt -->
 
-  This ECS Denise specification (it reports 8373 revisions via DENISEID) prints SPRxCTL bits 06-04 as not used and has no row for bit 03: on bit 4 it sides with NanoMig reading neither bit, against the 3rd edition's SHSH1 70ns increment; bit 3 the manual itself calls unimplemented. The table has the shape of an OCS-era table and lacks even the EV8 row, so it may be an un-updated carry-over. It bears equally on NM-HRM-019, the surviving half.
-
-Silent on this point: Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; US patent 4,874,164, Commodore-Amiga, filed 1986, granted 1989.
-
+  This ECS Denise specification (it reports 8373 revisions via DENISEID) prints SPRxCTL bits 06-04 as not used and has no row for bit 03: on bit 4 it sides with NanoMig reading neither bit, against the 3rd edition's SHSH1 70ns increment; bit 3 the manual itself calls unimplemented. It bears equally on NM-HRM-019, the surviving half.
