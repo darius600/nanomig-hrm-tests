@@ -14,7 +14,7 @@
 | **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; it prints both readings as `MEASURED` lines and grades neither. It exits nonzero on its one red, `CIA-DECODE-DONTCARE`, which is [NM-HRM-075](NM-HRM-075.md)'s |
 | **Assertions** | none: no assertion grades the claim |
 | **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's PROSE says. Hardware: not measured |
-| **Effort** | none — no RTL change, the correction is one exchange of the two printed patterns |
+| **Effort** | none — no RTL change: the correction is one exchange of the two printed patterns |
 | **Origin** | raised at classification by the appendix-F lot-E classifier; verified against the render of p.353 |
 
 ---
