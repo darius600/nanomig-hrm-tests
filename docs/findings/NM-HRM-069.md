@@ -5,17 +5,20 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if the manual's reading is accepted. NanoMig has the acknowledge and the counter from there and TC64 carries the same two, so there is no fix to port; no implementation read here holds the 68000 to one parity either — see *What the others say* |
-| **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing) — `PARITY`, claims `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60` (p. 196), run on both CPU cores and red on fx68k and on TG68K; it carries the finding. `PARITY-REF` (Figure 6-9) anchors its slot numbering. Four further claims — `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30` (`A8-BOUNDARY`) and `ch6-sysdma.c29` (`SYSDMA-C29-BOUNDARY`), pp. 194, 196 — are recorded with their reason and are not graded, see *Measured* |
-| **Chapter** | 6 — Blitter, printed pp. 194–198; 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | `PARITY` is the one red of the package, on both cores (37 passed, 1 failed each): on fx68k through both of its halves, on TG68K through its share-mode half alone. In the same run `PARITY-REF`, green on both cores, anchors the slot numbering to Figure 6-9. `A8` is a line without a claim id that passes on both cores and is not evidence for this finding |
-| **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there |
+| **What is asked of a reader** | Should the 68000 bridge or Agnus acknowledge a CPU chip-bus access only in colour clocks of the even parity, as p. 196's "only the even-numbered memory access cycles" says, where NanoMig now acknowledges it in any colour clock no DMA channel claims? The question stops at p. 196's parity; which count p. 198 means is outside it. The decision belongs to an Amiga specialist, not to this repository. It closes when the specialist accepts or declines p. 196's reading and the reason is recorded here; if accepted, when `PARITY` is green on both cores |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, if the manual's reading is accepted. MiSTer's bridge and Agnus carry the same acknowledge and counter as NanoMig, and TC64 the same two, so there is no fix to port |
+| **Scope** | the 68000's chip-bus accesses on both CPU cores (fx68k, TG68K), measured with a counting loop with no DMA but refresh (red on fx68k only) and beside a share-mode A-to-D blit (red on both); chip revision: unknown |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 6 — Blitter, printed pp. 194–198 (Figure 6-9 on p. 195, Figures 6-10 and 6-11 on pp. 196 and 197); 2 — Coprocessor, printed p. 20; Appendix A, printed p. 275 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `PARITY`: `6-system-dma.c50`, `ch6-sysdma.c25`, `6-system-dma.c60`, p. 196; `A8-BOUNDARY`, recorded and not graded: `6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, pp. 194, 196; `SYSDMA-C29-BOUNDARY`, recorded and not graded: `ch6-sysdma.c29`, p. 196; `A5-WITHDRAWN`: `6-blitter-priority.c13`, `ch6-sysdma.c62`, p. 198, and `ch6-sysdma.c53`, which the page names for the p. 198 readings and the package's `A2` line carries. `PARITY-REF` (Figure 6-9) and the `A8` line carry no claim id |
+| **Module** | `minimig_m68k_bridge.v`, `agnus.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151); inherited (MiSTer has the same code, and so has TC64) |
+| **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding |
+| **Assertions** | `PARITY` is the one red of the package, on both cores (37 passed, 1 failed each): expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45209 and 124 of 254 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `PARITY-REF` and the `A8` line pass on both cores; `A8` is not evidence for this finding |
+| **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, none consults the colour clock's parity, and all four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity. Hardware: not measured |
+| **Effort** | S: one parity term in the last branch of `agnus.v`'s priority chain (lines 255–266) or one new input to the bridge's acknowledge; not run here |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Printed p. 196**, on the 68000's share of the bus:
 
@@ -61,28 +64,9 @@ eight-slot group and planes 5 and 6 on two of the even ones.
 The sentence counts cycles and does not say on which parity the released
 cycle falls.
 
-**Read with the rest of the chapter, nothing predicts an odd slot for the
-68000.** The one sentence that could be read that way is on p. 194:
+## RTL and measurement
 
-> If a device does not request one of its allocated time slots, the slot is
-> open for other uses.
-
-It is about the four DMA devices the paragraph names — disk, audio, display
-and sprites — and does not name the 68000; p. 196 does, and says *only*.
-**Printed p. 20** and Appendix A's COPINS entry on **printed p. 275** label the
-parities the other way round. In p. 20's words the Copper "requests the bus
-only during odd-numbered memory cycles", while audio, disk, refresh, sprites
-and most low resolution display DMA "use only the even-numbered memory
-cycles"; p. 275 says the same in shorter words. Neither page says which
-cycles the 68000 uses. Whichever labels are used, every page that does gives it
-one parity, the one opposite the fixed DMA, and the reds below are CPU
-accesses on both.
-
----
-
-## What NanoMig does
-
-**It completes a CPU chip-bus access in any colour clock that no DMA channel
+**NanoMig completes a CPU chip-bus access in any colour clock that no DMA channel
 claims, of either parity.** The 68000 bridge acknowledges the CPU on the
 colour-clock phase whenever Agnus is not requesting the bus —
 [`src/minimig-aga/minimig_m68k_bridge.v#L131`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L131):
@@ -91,46 +75,26 @@ colour-clock phase whenever Agnus is not requesting the bus —
 if (!l_as && cck && ((!vpa && !(dbr && dbs)) || (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0;
 ```
 
-`cck` is high once in every colour clock, not every other one: it toggles
-every four `clk_28` cycles —
-[`src/minimig-aga/amiga_clk.v#L34-L35`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/amiga_clk.v#L34-L35),
-`if(clk7_cnt == 2'b01) begin` / `cck <= ~cck;`. And `dbr` is low exactly when
-Agnus's priority chain falls through to its last branch —
-[`src/minimig-aga/agnus.v#L255-L258`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L255-L258):
-
-```verilog
-else begin
-	// bus not allocated by agnus
-	cpu_custom = 1;
-	dbr = 0;
-```
-
-Neither module reads the colour clock's parity on the CPU's behalf. So a
+`cck` is high once in every colour clock, not every other one
+([`src/minimig-aga/amiga_clk.v#L34-L35`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/amiga_clk.v#L34-L35)),
+and `dbr` is low exactly when Agnus's priority chain falls through to its last
+branch, "bus not allocated by agnus"
+([`src/minimig-aga/agnus.v#L255-L258`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L255-L258)).
+Neither module reads the colour clock's parity on the CPU's behalf, so a
 68000 bus cycle that starts one colour clock late — after an internal
 operation of two clocks, for instance — is served in the next free colour
 clock, which is the other parity.
 
-**With the nasty bit clear, the blitter stands aside by a count.** The
-bridge raises `bls` while the CPU waits,
-[`#L145`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L145),
-`assign bls = dbs & ~l_as & l_dtack;`, and Agnus counts the colour clocks it
-stays raised —
-[`src/minimig-aga/agnus.v#L429-L433`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L429-L433):
-
-```verilog
-always @(posedge clk) if (clk7_en) begin
-	if (!cck)
-		if (!bls || bltpri) bls_cnt <= 2'b00;
-		else if (bls_cnt[1:0] != BLS_CNT_MAX) bls_cnt <= bls_cnt + 2'b01;
-end
-```
-
-with `parameter BLS_CNT_MAX = 3;` at
-[`#L109`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L109)
-and the blitter refused the bus once the count is reached,
-[`#L243`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L243),
-`else if (dma_blt && bls_cnt!=BLS_CNT_MAX) begin`. The released colour clock is
-wherever the count ends, of either parity.
+**With the nasty bit clear, the blitter stands aside by a count.** The bridge
+raises `bls` while the CPU waits
+([`#L145`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/minimig_m68k_bridge.v#L145)),
+Agnus counts the colour clocks it stays raised
+([`src/minimig-aga/agnus.v#L429-L433`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L429-L433))
+up to `parameter BLS_CNT_MAX = 3;`
+([`#L109`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L109)),
+and refuses the blitter the bus once the count is reached
+([`#L243`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus.v#L243)).
+The released colour clock is wherever the count ends, of either parity.
 
 ### Measured
 
@@ -150,74 +114,64 @@ plane 1.
 | no DMA | CPU accesses on an odd slot | **20006 of 41007** | 0 of 45209 | `PARITY` |
 | share-mode blit, from its first to its last destination write | CPU accesses on an odd slot | **125 of 243** | **124 of 254** | `PARITY` |
 
-`PARITY` grades both halves in one line, so it is red on both cores; on TG68K
-the share-mode half alone makes it red.
+`PARITY` grades both halves in one line, so it is red on both cores.
 
-**`A8` and `SYSDMA-C29` are not evidence on this page.** Their claims
-(`6-system-dma.c54`, `6-system-dma.c55`, `ch6-sysdma.c30`, and `ch6-sysdma.c29`)
-are conditional on a missed cycle: p. 196 says that *if* an instruction misses
-its even slot the 68000 waits for its next available slot. The package records
-each with the same reason, `A8-BOUNDARY` and `SYSDMA-C29-BOUNDARY`: the RAM port
-shows grants, not the 68000's readiness, so a missed cycle and its next grant
-cannot be separated from the odd-numbered-slot grants `PARITY` grades. The
-`A8` line without a claim id passes on both cores. Its measurement line shows,
-for the share-mode run, 124 missed even cycles on fx68k, 122 of them granted
-before the first free even slot and 2 exactly on it, and 125 on TG68K, 120 and
-5; the first missed pair is a fetch at $80500 followed by one at $80502, 5
-slots apart, on both cores. Accesses after a missed even cycle are thus mostly
-granted on an odd slot before the next free even slot, which is the behaviour
-`PARITY` grades.
+- **No DMA, fx68k.** The loop's `bra.s` has an internal operation of two clock
+  periods, which WinUAE, vAmiga and Denise spend as one colour clock; the next
+  fetch then lands on the other parity, and nothing in the bridge or Agnus makes
+  it wait for the even one.
+- **Share-mode blit, both cores.** A 5-slot spacing between consecutive CPU
+  accesses alternates the parity, and the first missed pair on both cores is
+  5 slots apart (see *The share-mode window and p. 198* below).
 
-**Where the odd slots come from.**
+## Risks and unknowns
 
-- **No DMA, fx68k.** 20006 of 41007 CPU accesses are on odd slots. The loop's
-  `bra.s` has an internal operation of two clock periods, which WinUAE, vAmiga
-  and Denise spend as one colour clock; the next fetch then lands on the other
-  parity, and nothing in the bridge or Agnus makes it wait for the even one.
-- **No DMA, TG68K.** 0 of 45209 accesses are on an odd slot. Its bus timing
-  in this loop never offers the chip an odd request, so the no-DMA half cannot
-  show the behaviour on this core.
-- **Share-mode blit, both cores.** 125 of 243 accesses on fx68k and 124 of 254
-  on TG68K are on odd slots. A 5-slot spacing between consecutive CPU accesses
-  alternates the parity, and the first missed pair on both cores is 5 slots
-  apart.
+- **What weakens it: nobody implements the page.** All four implementations and
+  both Minimig lines let the CPU take any colour clock DMA leaves free. The
+  finding rests on p. 196 and Figure 6-10, not on any implementation, and no
+  hardware was measured: a BRA.S loop timed with no DMA on a real Amiga would
+  settle which parity its fetches land on.
+- **The two cores differ, and neither difference is a verdict.** TG68K's loop
+  has no two-clock step, so it is green without DMA because its bus timing never
+  offers the chip an odd request, not because anything waits; beside the blit it
+  takes odd slots as fx68k does, and its red rests on the share-mode half alone.
+- **Conflicting passages.** Printed p. 194 says:
 
----
+  > If a device does not request one of its allocated time slots, the slot is
+  > open for other uses.
 
-## What the others say
+  It could be read to let the 68000 in; it is about the four DMA devices the paragraph names — disk,
+  audio, display and sprites — and does not name the 68000, where p. 196 does,
+  and says *only*. Printed p. 20 and Appendix A's COPINS entry on printed p. 275
+  label the parities the other way round: in p. 20's words the Copper "requests
+  the bus only during odd-numbered memory cycles", while audio, disk, refresh,
+  sprites and most low resolution display DMA "use only the even-numbered memory
+  cycles"; p. 275 says the same in shorter words. Neither page says which cycles
+  the 68000 uses. Whichever labels are used, every page that does gives it one
+  parity, the one opposite the fixed DMA, and the reds are CPU accesses on both.
+- **Copperline's release count is not independent of NanoMig.** Its limit of 3
+  is, by its own comment, *"Grounded in the Minimig RTL (agnus.v)"*.
+- **Not graded: the missed-cycle wait.** The claims of `A8-BOUNDARY` and
+  `SYSDMA-C29-BOUNDARY` are conditional on a missed cycle: p. 196 says that *if*
+  an instruction misses its even slot the 68000 waits for its next available
+  slot. The RAM port shows grants, not the 68000's readiness, so a missed cycle
+  and its next grant cannot be separated from the odd-numbered-slot grants
+  `PARITY` grades. The `A8` line without a claim id passes on both cores; for the
+  share-mode run its measurement line shows 124 missed even cycles on fx68k, 122
+  of them granted before the first free even slot and 2 exactly on it, and 125 on
+  TG68K, 120 and 5; the first missed pair is a fetch at $80500 followed by one at
+  $80502, 5 slots apart, on both cores. Accesses after a missed even cycle are
+  thus mostly granted on an odd slot before the next free even slot, which is the
+  behaviour `PARITY` grades.
+- **The suggested change has not been run.**
 
-The question put to each: does a CPU chip access ever wait for the parity of
-the colour clock, and where does a non-nasty blitter hand the bus back?
-
-| | code | |
-|---|---|---|
-| **WinUAE** | [`custom.cpp:12140-12161`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L12140-L12161), [`cpuemu_13.cpp:53063`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cpuemu_13.cpp#L53063), [`include/cpu_prefetch.h:376-380`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/cpu_prefetch.h#L376-L380), [`newcpu.cpp:2176`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/newcpu.cpp#L2176), [`:1055`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/newcpu.cpp#L1055), [`custom.cpp:12410-12417`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L12410-L12417), [`blitter.cpp:1756-1758`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/blitter.cpp#L1756-L1758) | <pre>while (currprefs.cpu_memory_cycle_exact &amp;&amp; quit_program &lt;= 0) {<br>&nbsp;&nbsp;&nbsp;&nbsp;struct rgabuf *r = read_rga_out();<br>&nbsp;&nbsp;&nbsp;&nbsp;if (r-&gt;alloc &lt;= 0) {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;blt_info.nasty_cnt++;</pre> a CPU access in cycle-exact mode waits one colour clock at a time **while a DMA channel holds it, and for nothing else**. BRA.S spends `do_cycles_ce000_internal(2);`, which is `x_do_cycles (clocks * cpucycleunit);` with `cpucycleunit = CYCLE_UNIT / 2;`, and the cycle-exact 68000 sets `x_do_cycles = do_cycles_ce;`, which runs one `do_cck(true);` per `CYCLE_UNIT` — so the internal operation is one colour clock, and its next fetch lands one colour clock later, on the other parity, as fx68k's does. The blitter yields on a count, `bool bstreq = blt_info.nasty_cnt >= BLIT_NASTY_CPU_STEAL_CYCLE_COUNT && !pri;`, under the comment *"blitter not in nasty mode = CPU gets one cycle if it has been waiting at least 4 cycles (all DMA cycles count, not just blitter cycles, even blitter idle cycles do count!)"* |
-| **vAmiga** | [`Core/Components/Agnus/Agnus.cpp:489-519`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L489-L519), [`Core/Components/Agnus/AgnusDma.cpp:49-50`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L49-L50), [`Core/Components/CPU/CPU.cpp:39`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CPU/CPU.cpp#L39), [`Core/Components/CPU/Moira/MoiraExec_cpp.h:841-848`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CPU/Moira/MoiraExec_cpp.h#L841-L848) | <pre>if (busOwner[pos.h] != BusOwner::NONE) {<br>...<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (++delay == 2) bls = true;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;} while (busOwner[pos.h] != BusOwner::NONE);</pre> `executeUntilBusIsFree()` runs Agnus a DMA cycle at a time **until the cycle has no owner, and assigns it to the CPU whatever its parity**, `busOwner[pos.h] = BusOwner::CPU;`. The CPU clock drives Agnus at one DMA cycle per two CPU cycles, `agnus.execute(CPU_AS_DMA_CYCLES(cycles));`, and BRA begins with `SYNC(2);`, one DMA cycle. On the CPU's second denied cycle BLS goes up and the blitter is refused, `if (bls && !bltpri()) return false;` — a count, no parity term |
-| **Denise** | [`emulation/libami/agnus/agnus.cpp:380-398`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L380-L398), [`:771-778`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L771-L778), [`emulation/libami/agnus/dma.cpp:449-450`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/dma.cpp#L449-L450), [`emulation/libami/cpu/m68000/instruction.cpp:463-464`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/cpu/m68000/instruction.cpp#L463-L464) | <pre>while (busUsage != BUS_FREE) {<br>...<br>&nbsp;&nbsp;&nbsp;&nbsp;dmaCycle();<br>&nbsp;&nbsp;&nbsp;&nbsp;countWaitCycles++;</pre> the CPU waits **only while the bus is in use**, then takes it, `busUsage = BUS_USAGE_CPU;`. Agnus advances one DMA cycle per two CPU cycles, `cycles -= 2;`, and `opBcc` begins with `SYNC(2);`, one DMA cycle. The blitter is refused on a count, `if (!blitterNasty() && (countWaitCycles > 2))`, under *"in non nasty mode, CPU gets BUS after 3 wait cycles."* — no parity term |
-| **Copperline** | [`src/bus.rs:6925-6927`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L6925-L6927), [`src/bus/dma_slots.rs:723-728`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L723-L728), [`:815-826`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L815-L826), [`:1103-1106`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L1103-L1106), [`src/bus.rs:40-50`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L40-L50), test [`src/bus/tests.rs:10965-11020`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/tests.rs#L10965-L11020) | <pre>matches!(<br>&nbsp;&nbsp;&nbsp;&nbsp;self.scheduled_dma_owner(true),<br>&nbsp;&nbsp;&nbsp;&nbsp;ChipBusOwner::Cpu \| ChipBusOwner::Idle<br>)</pre> the CPU waits `while !self.cpu_can_use_current_slot()`, which asks **only who owns the colour clock**. A non-nasty blitter yields after `BLITTER_SLOWDOWN_CPU_MISS_LIMIT` = 3 missed cycles; the comment says it does so *"not on every even slot-pair"* and that *"The old even/odd grant starved the blitter so big fills overran the frame and flickered."* Its own test `blithog_clear_busy_blitter_yields_to_cpu_only_after_starvation` starts a CPU read of DMACONR at $24 beside such a blit and asserts it ends at `0x24 + u32::from(BLITTER_SLOWDOWN_CPU_MISS_LIMIT) + 2`: three missed colour clocks, the grant at $27, a bus-free tail — and $27 is odd on its grid, which puts the fixed DMA on odd colour clocks, `if !(0x015..=0x033).contains(&hpos) \|\| hpos & 1 == 0 {`. The limit of 3 is, by its own comment, *"Grounded in the Minimig RTL (agnus.v)"*, so on the release count Copperline is not independent of NanoMig |
-| **MiSTer** | [`rtl/minimig_m68k_bridge.v:151`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151), [`rtl/agnus.v:400-405`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L400-L405) | descendant — identical to NanoMig: the same acknowledge, `if (!l_as && cck && ((!vpa && !(dbr && dbs)) \|\| (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0;`, and the same counter, `if (!bls \|\| bltpri) bls_cnt <= 2'b00;` |
-| **TC64** | [`rtl/minimig/minimig_m68k_bridge.v:206`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_m68k_bridge.v#L206), [`rtl/minimig/agnus.v:430-437`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus.v#L430-L437) | descendant — the same acknowledge, `if (!l_as && cck && ((!vpa && !(dbr && dbs)) \|\| (vpa && vma && eclk[8])) && !nrdy)`, and the same counter, which also counts in turbo mode, `if (!cck \|\| turbo)`. Nothing in either line holds the CPU to a parity |
-
-**None of the four holds the 68000 to one parity.** Each makes a CPU access
-wait while DMA owns the colour clock and for no other reason, and WinUAE,
-vAmiga and Denise spend BRA's internal operation as one colour
-clock and then fetch in the next free one, as fx68k does with no
-DMA. **Beside a non-nasty blitter all four release the bus by counting missed
-cycles** — three in WinUAE's constant, Denise's comment and Copperline's
-constant, two before vAmiga raises BLS — and none of them moves the released
-cycle to an even slot. On this point the four
-side with NanoMig and against p. 196's *only*.
-
----
-
-## The share-mode window and p. 198
+### The share-mode window and p. 198
 
 TG68K's red rests on the share-mode half alone, so it depends on where the
 blitter hands the bus back, and p. 198 is the page that says so. p. 194 makes a
 memory cycle one colour clock. What p. 198 does not fix is from which slot after
 a grant the 68000 counts as *unsatisfied*, and the package reads it three ways
-(`A5-WITHDRAWN`, claims `6-blitter-priority.c13`, `ch6-sysdma.c53`,
-`ch6-sysdma.c62`):
+(`A5-WITHDRAWN`):
 
 | the 68000 counts as unsatisfied | from, after a grant at g | spacing between grants | parity of the grants |
 |---|---|---:|---|
@@ -233,9 +187,44 @@ odd grants are therefore filed here, against p. 196, on both cores — they are
 the same acknowledge that ignores parity with no DMA. Which count p. 198 means
 is a separate question, and the package withdraws `A5` rather than choose.
 
----
+### For the specialists
 
-## Suggested change
+1. **Does a 68000 in an Amiga ever get an odd slot?** p. 196 says never, and
+   says an instruction that misses its even slot waits for the next one. No
+   implementation read here does that; each lets the CPU into a free odd
+   colour clock.
+2. **Which count does p. 198 mean?** See the table above: 4, 5 or 8 slots
+   between grants. NanoMig and, by their code, the four implementations count
+   every denied colour clock; only the reading that counts the 68000's own
+   even cycles is written in the terms of p. 196.
+
+## Independent evidence
+
+### What the others say
+
+The question put to each: does a CPU chip access ever wait for the parity of
+the colour clock, and where does a non-nasty blitter hand the bus back?
+
+| | code | |
+|---|---|---|
+| **WinUAE** | [`custom.cpp:12140-12161`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L12140-L12161), [`cpuemu_13.cpp:53063`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/cpuemu_13.cpp#L53063), [`include/cpu_prefetch.h:376-380`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/include/cpu_prefetch.h#L376-L380), [`newcpu.cpp:2176`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/newcpu.cpp#L2176), [`:1055`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/newcpu.cpp#L1055), [`custom.cpp:12410-12417`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L12410-L12417), [`blitter.cpp:1756-1758`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/blitter.cpp#L1756-L1758) | <pre>while (currprefs.cpu_memory_cycle_exact &amp;&amp; quit_program &lt;= 0) {<br>&nbsp;&nbsp;&nbsp;&nbsp;struct rgabuf *r = read_rga_out();<br>&nbsp;&nbsp;&nbsp;&nbsp;if (r-&gt;alloc &lt;= 0) {<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;break;<br>&nbsp;&nbsp;&nbsp;&nbsp;}<br>&nbsp;&nbsp;&nbsp;&nbsp;blt_info.nasty_cnt++;</pre> a CPU access in cycle-exact mode waits one colour clock at a time **while a DMA channel holds it, and for nothing else**. BRA.S spends `do_cycles_ce000_internal(2);`, which is `x_do_cycles (clocks * cpucycleunit);` with `cpucycleunit = CYCLE_UNIT / 2;`, and the cycle-exact 68000 sets `x_do_cycles = do_cycles_ce;`, which runs one `do_cck(true);` per `CYCLE_UNIT` — so the internal operation is one colour clock, and its next fetch lands one colour clock later, on the other parity, as fx68k's does. The blitter yields on a count, `bool bstreq = blt_info.nasty_cnt >= BLIT_NASTY_CPU_STEAL_CYCLE_COUNT && !pri;`, under the comment *"blitter not in nasty mode = CPU gets one cycle if it has been waiting at least 4 cycles (all DMA cycles count, not just blitter cycles, even blitter idle cycles do count!)"* |
+| **vAmiga** | [`Core/Components/Agnus/Agnus.cpp:489-519`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L489-L519), [`Core/Components/Agnus/AgnusDma.cpp:49-50`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L49-L50), [`Core/Components/CPU/CPU.cpp:39`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CPU/CPU.cpp#L39), [`Core/Components/CPU/Moira/MoiraExec_cpp.h:841-848`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/CPU/Moira/MoiraExec_cpp.h#L841-L848) | <pre>if (busOwner[pos.h] != BusOwner::NONE) {<br>...<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;if (++delay == 2) bls = true;<br><br>&nbsp;&nbsp;&nbsp;&nbsp;} while (busOwner[pos.h] != BusOwner::NONE);</pre> `executeUntilBusIsFree()` runs Agnus a DMA cycle at a time **until the cycle has no owner, and assigns it to the CPU whatever its parity**, `busOwner[pos.h] = BusOwner::CPU;`. The CPU clock drives Agnus at one DMA cycle per two CPU cycles, `agnus.execute(CPU_AS_DMA_CYCLES(cycles));`, and BRA begins with `SYNC(2);`, one DMA cycle. On the CPU's second denied cycle BLS goes up and the blitter is refused, `if (bls && !bltpri()) return false;` — a count, no parity term |
+| **Denise** | [`emulation/libami/agnus/agnus.cpp:380-398`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L380-L398), [`:771-778`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L771-L778), [`emulation/libami/agnus/dma.cpp:449-450`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/dma.cpp#L449-L450), [`emulation/libami/cpu/m68000/instruction.cpp:463-464`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/cpu/m68000/instruction.cpp#L463-L464) | <pre>while (busUsage != BUS_FREE) {<br>...<br>&nbsp;&nbsp;&nbsp;&nbsp;dmaCycle();<br>&nbsp;&nbsp;&nbsp;&nbsp;countWaitCycles++;</pre> the CPU waits **only while the bus is in use**, then takes it, `busUsage = BUS_USAGE_CPU;`. Agnus advances one DMA cycle per two CPU cycles, `cycles -= 2;`, and `opBcc` begins with `SYNC(2);`, one DMA cycle. The blitter is refused on a count, `if (!blitterNasty() && (countWaitCycles > 2))`, under *"in non nasty mode, CPU gets BUS after 3 wait cycles."* — no parity term |
+| **Copperline** | [`src/bus.rs:6925-6927`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L6925-L6927), [`src/bus/dma_slots.rs:723-728`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L723-L728), [`:815-826`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L815-L826), [`:1103-1106`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L1103-L1106), [`src/bus.rs:40-50`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus.rs#L40-L50), test [`src/bus/tests.rs:10965-11020`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/tests.rs#L10965-L11020) | <pre>matches!(<br>&nbsp;&nbsp;&nbsp;&nbsp;self.scheduled_dma_owner(true),<br>&nbsp;&nbsp;&nbsp;&nbsp;ChipBusOwner::Cpu \| ChipBusOwner::Idle<br>)</pre> the CPU waits `while !self.cpu_can_use_current_slot()`, which asks **only who owns the colour clock**. A non-nasty blitter yields after `BLITTER_SLOWDOWN_CPU_MISS_LIMIT` = 3 missed cycles; the comment says it does so *"not on every even slot-pair"* and that *"The old even/odd grant starved the blitter so big fills overran the frame and flickered."* Its own test `blithog_clear_busy_blitter_yields_to_cpu_only_after_starvation` starts a CPU read of DMACONR at $24 beside such a blit and asserts it ends at `0x24 + u32::from(BLITTER_SLOWDOWN_CPU_MISS_LIMIT) + 2`: three missed colour clocks, the grant at $27, a bus-free tail — and $27 is odd on its grid, which puts the fixed DMA on odd colour clocks, `if !(0x015..=0x033).contains(&hpos) \|\| hpos & 1 == 0 {`. |
+| **MiSTer** | [`rtl/minimig_m68k_bridge.v:151`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/minimig_m68k_bridge.v#L151), [`rtl/agnus.v:400-405`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus.v#L400-L405) | descendant — identical to NanoMig: the same acknowledge, `if (!l_as && cck && ((!vpa && !(dbr && dbs)) \|\| (vpa && vma && eclk[8])) && !nrdy) _ta_n <= 0;`, and the same counter, `if (!bls \|\| bltpri) bls_cnt <= 2'b00;` |
+| **TC64** | [`rtl/minimig/minimig_m68k_bridge.v:206`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/minimig_m68k_bridge.v#L206), [`rtl/minimig/agnus.v:430-437`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus.v#L430-L437) | descendant — the same acknowledge, `if (!l_as && cck && ((!vpa && !(dbr && dbs)) \|\| (vpa && vma && eclk[8])) && !nrdy)`, and the same counter, which also counts in turbo mode, `if (!cck \|\| turbo)`. Nothing in either line holds the CPU to a parity |
+
+**None of the four holds the 68000 to one parity.** Each makes a CPU access
+wait while DMA owns the colour clock and for no other reason, and WinUAE,
+vAmiga and Denise spend BRA's internal operation as one colour
+clock and then fetch in the next free one, as fx68k does with no
+DMA. **Beside a non-nasty blitter all four release the bus by counting missed
+cycles** — three in WinUAE's constant, Denise's comment and Copperline's
+constant, two before vAmiga raises BLS — and none of them moves the released
+cycle to an even slot. On this point the four
+side with NanoMig and against p. 196's *only*.
+
+## Decision
 
 **One option: withhold the CPU's acknowledge in colour clocks of the fixed-DMA
 parity.** Agnus has the beam position; a term on it in the last branch of the
@@ -244,7 +233,7 @@ acknowledge, would leave such a free colour clock to the blitter or to nobody
 instead of to the CPU. NanoMig's own counter puts refresh at `hpos[8:1]` = $04,
 $06, $08 and $0A (`agnus_refresh.v`) — even numbers in its counter, the slots
 Figure 6-9 calls odd — so the CPU would be held to the colour clocks whose
-`hpos[8:1]` is odd. This has not been run here. What it would change:
+`hpos[8:1]` is odd. What it would change:
 
 - the fx68k's no-DMA loop would no longer take odd slots, as TG68K's loop
   does not;
@@ -252,44 +241,3 @@ Figure 6-9 calls odd — so the CPU would be held to the colour clocks whose
   CPU one slot later, which interacts with the `A5` question above;
 - NanoMig would move away from all four implementations and both Minimig
   lines, which is the other half of the decision.
-
----
-
-## What holds the finding up
-
-- **The numbering is the page's, and checked.** Slots are counted per line
-  from the line's own refresh group, as Figure 6-9 numbers them; every
-  plane-1 fetch of the lores build lands on an odd slot (`PARITY-REF`, 15360
-  of 15360 on both cores), the first of each line at $3F.
-- **The `PARITY` comparator reads green on a live input.** The package's
-  mutation record feeds the unchanged comparator the CPU accesses inside the
-  four-plane lores fetch windows, where bitplane DMA holds the odd slots: 0 odd
-  of 50688 accesses on fx68k and 0 of 61440 on TG68K, in both halves.
-- **TG68K has no odd slot at all without DMA** (0 of 45209), and both cores
-  take odd slots in the share-mode window, so the reds are not an artefact of
-  the numbering.
-- **p. 196 is categorical and Figure 6-10 repeats it**, and no page of
-  chapter 6 gives the 68000 an odd slot.
-- **What weakens it is that nobody implements the page.** All four
-  implementations and both Minimig lines let the CPU take any colour clock
-  DMA leaves free, three of them spending BRA's internal operation as one
-  colour clock. The
-  finding rests on p. 196 and Figure 6-10, not on any implementation.
-
----
-
-## For the specialists
-
-1. **Does a 68000 in an Amiga ever get an odd slot?** p. 196 says never, and
-   says an instruction that misses its even slot waits for the next one. No
-   implementation read here does that; each lets the CPU into a free odd
-   colour clock. A BRA.S loop timed with no DMA on real hardware would settle
-   which parity its fetches land on.
-2. **Which count does p. 198 mean?** See the table above: 4, 5 or 8 slots
-   between grants. NanoMig and, by their code, the four implementations count
-   every denied colour clock; only the reading that counts the 68000's own
-   even cycles is written in the terms of p. 196.
-3. **The two cores differ, and neither difference is a verdict.** TG68K's
-   loop has no two-clock step, so it is green without DMA because its bus
-   timing never offers the chip an odd request, not because anything waits;
-   beside the blit it takes odd slots exactly as fx68k does.
