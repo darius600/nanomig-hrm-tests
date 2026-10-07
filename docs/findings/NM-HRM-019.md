@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should NanoMig's sprite shifter read SPRxCTL bit 4 (SHSH1) so that, in SuperHires, setting it alone moves the sprite's first lit sample two 35 ns samples later (p. 303's "70ns increment", half of SH0's four), where NanoMig moves it by 0? The decision belongs to an Amiga specialist, not to this repository. Closes when the RTL change is made and `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` is green, or when a specialist records bit 4 as unused on an ECS Denise, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer; its `rtl/denise_sprites_shifter.v` has the same CTL write, keeping bits 7 and 0 only, so a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **What is asked of a reader** | Should NanoMig's sprite shifter read SPRxCTL bit 4 (SHSH1) so that, in SuperHires, setting it alone moves the sprite's first lit sample two 35 ns samples later (p. 303's "70ns increment", half of SH0's four), where NanoMig moves it by 0? Closes when the RTL change is made and `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` is green, or when a specialist records bit 4 as unused on an ECS Denise, in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | ECS Denise (p. 303: "bits 3 and 4 are in the ECS chips only"), SuperHires only; isolated as SHSH1 alone against SH0 alone on sprite 0 in the `denise_sprites` fixture without AGA, sampled every 35 ns. Lores is recorded, not asserted; Hires is promised nothing. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Appendix C, printed p. 303, SPRxCTL bits 4 and 0, the ECS note and the SuperHires Warning (also p. 297, quoted in the assertion's message); quoted below: chapter 4 pp. 107 and 128, Appendix A pp. 264 and 284; test chapter 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, all carried by `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`: `C-library.c2`, `C-shr.c05`, `C-shres-sprite.c1`, `C-shres-sprite.c2`, `C-spr.c01`, `C-shres-sprite.c14`, `C-shres-sprite.c15`, `C-spr.c09`, `C-spr.c10`. Recorded beside it, not asserted: `APPC-pos.c10`, `APPC2-SPRxCTL.conf2`; withdrawn whole: `APPC-pos.c1`, `CH4-appC-position.c1`, `CH4-appC-position.c2`. No other assertion of `hrm/ch3-sprite-registers` is named on this page |
+| **Chapter** | Appendix C, printed p. 303, SPRxCTL bits 4 and 0, the ECS note and the SuperHires Warning (also p. 297, quoted in the assertion's message); quoted below: chapter 4 pp. 107 and 128, Appendix A pp. 264 and 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, all carried by `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE`: `sol:C-library.c2`, `opus:C-shr.c05`, p. 297; `sol:C-shres-sprite.c1`, `sol:C-shres-sprite.c2`, `opus:C-spr.c01`, `sol:C-shres-sprite.c14`, `sol:C-shres-sprite.c15`, `opus:C-spr.c09`, `opus:C-spr.c10`, p. 303. Recorded beside it, not asserted: `APPC-pos.c10`, `APPC2-SPRxCTL.conf2`; withdrawn whole: `APPC-pos.c1`, `CH4-appC-position.c1`, `CH4-appC-position.c2`. No other assertion of `hrm/ch3-sprite-registers` is named on this page |
 | **Module** | `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_sprites.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v); inherited (MiSTer and TC64 have the same absence) |
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers): `make -C hrm/ch3-sprite-registers test`; an expected red exits nonzero |
 | **Assertions** | 1 red: `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — expected SHSH1 alone to move the first lit sample 2 samples later (half of SH0 alone's 4), observed 0; the package reports `10 passed, 1 failed` |
-| **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as p. 303's Warning states. Hardware: the 8373R4 dissection latches the bit for sprites 0 to 3 and applies it in the sprite's data path, not in the position compare; not measured on a chip |
+| **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states; outside the emulators, the 8373R4 dissection latches the bit for sprites 0 to 3 and applies it in the sprite's data path, not in the position compare — see *What other Commodore documents say*. Hardware: not measured |
 | **Effort** | S: `denise_sprites_shifter.v` and `denise_sprites.v` only: capture bit 4 in the CTL write and apply it to the start in SuperHires |
 | **Origin** | the surviving half of the withdrawn [NM-HRM-013](withdrawn/NM-HRM-013.md); bit 3 is settled in the RTL's favour by the manual's `(unimplemented)` on the same page |
 
@@ -88,11 +88,9 @@ MEASURED: SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE: at spres=0b10 (SuperHires), 2
 
 SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1 leaves it where it was, where its row predicts 2.
 
-[`integration/ch4-sprite-registers`](../../integration/ch4-sprite-registers) specifies the same measurement at the video output: P1 sweeps the start in 70 ns steps with SHRES set and expects each step to move the sprite's edge by one 70 ns output pixel, and P2 expects only 140 ns multiples in Lores.
-
 ## Risks and unknowns
 
-- **Two Commodore-side sources disagree** (*Independent evidence*): the 8373R4 dissection sides with p. 303's row, Commodore's 1988 ECS Denise specification with NanoMig's register. Neither is the oracle: the red stands on p. 303.
+- **Two Commodore-side sources disagree** (*Independent evidence*): the 8373R4 dissection sides with p. 303's row, Commodore's 1988 ECS Denise specification with NanoMig's register.
 - **The specification's table may be carried over.** It has the shape of the OCS-era SPRxCTL table Appendix A prints on p. 284, without even that table's EV8 row.
 - **The dissection is a reading of one revision, in progress.** The latch and the output selection are traced for sprite 0; sprites 1 to 3 are read from the overview sheet.
 - **Conflicting passages.** pp. 107, 128 and 284 give the bit no function and name no chip set; the red rests on p. 303's scoping to ECS.
@@ -108,10 +106,10 @@ SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1 leav
 | **vAmiga** | [`Core/Components/Denise/Denise.cpp:171-173`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L171-L173) | <pre>(sprctl[x] & 0x10) &gt;&gt; 4);  // SHSH1 (ECS only)</pre> the lowest bit of the sprite's start; the start is then masked to the sprite pixel's width ([`:968`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L968), [`DeniseRegs.cpp:854`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/DeniseRegs.cpp#L854)), which on OCS and ECS keeps the bit only in SuperHires |
 | **Denise** | [`emulation/libami/video/denise.cpp:299`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L299) | <pre>spr.shsh10 = (value & 0x10) &gt;&gt; 3;</pre> read always, compared only when `_shres` |
 | **Copperline** | [`src/video/bitplane/sprite.rs:1857-1859`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/sprite.rs#L1857-L1859) | <pre>pub(super) fn sprite_hsub_70ns(ctl: u16) -> bool {<br>&nbsp;&nbsp;&nbsp;&nbsp;ctl & 0x0010 != 0<br>}</pre> added to the start only while SHRES is set ([`:1723`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/sprite.rs#L1723)) |
-| **MiSTer** | — | descendant — `rtl/denise_sprites.v` — the same absence: no `sprctl[4]`, `SHSH1` or `shsh1` anywhere in the file |
+| **MiSTer** | — | descendant — `rtl/denise_sprites.v` — the same absence: no `sprctl[4]`, `SHSH1` or `shsh1` anywhere in the file; its [`rtl/denise_sprites_shifter.v:91-96`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites_shifter.v#L91-L96) has the same CTL write, keeping bits 7 and 0 only |
 | **TC64** | — | descendant — `rtl/minimig/denise_sprites.v` — likewise absent. A fix is new work on both lines; neither reads bit 4 for NanoMig to have dropped |
 
-MiSTer and TC64 have never read the bit, which is the same absence NanoMig has, not a vote against it.
+### What other Commodore documents say
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — **agrees with NanoMig**:
 
@@ -130,4 +128,4 @@ MiSTer and TC64 have never read the bit, which is the same absence NanoMig has, 
 
 ## Decision
 
-Read bit 4 into the sprite's horizontal position as a 70 ns sub-position, and apply it only in SuperHires: Denise's one-liner plus its `_shres` guard is the smallest complete model; Copperline's named predicate is the tidiest. The 8373R4 makes the same move elsewhere: it leaves the start compare alone and, with the bit set, sends each 70 ns pixel out one pixel later, for sprites 0 to 3. Either form moves the first lit sample by 2 and turns the red green. The decision belongs to an Amiga specialist, and closes as the *What is asked of a reader* row says.
+Read bit 4 into the sprite's horizontal position as a 70 ns sub-position, and apply it only in SuperHires: Denise's one-liner plus its `_shres` guard is the smallest complete model; Copperline's named predicate is the tidiest. The 8373R4 makes the same move elsewhere: it leaves the start compare alone and, with the bit set, sends each 70 ns pixel out one pixel later, for sprites 0 to 3. Either form moves the first lit sample by 2 and turns the red green. It closes as the *What is asked of a reader* row says.
