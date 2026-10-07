@@ -9,12 +9,12 @@
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | OCS Agnus, BPLCON0 bit 3 set for more than twenty fields, VPOSR and VHPOSR read with a pin-6 pulse on port 1, on port 2, on both and with none; graded in OCS/PAL and OCS/NTSC, recorded not graded in ECS/PAL and ECS/NTSC (p. 305 gives LPENDIS no reset value). Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 8 — Interface Hardware, printed pp. 227, 228 (Table 8-1), 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed p. 79; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P1`: `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6`, pp. 238, 227; `P2`: `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22`, pp. 238, 228; `P3`: `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19`, p. 238; `P3(a)`: `sol:8-pen.c20`, p. 238; `P4`: `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22`, pp. 229, 238; `P5`: `opus:8-lpen.c36`, `sol:8-pen.c36`, p. 239; `P6`: `opus:8-lpen.c38`, `sol:8-pen.c38`, p. 239; `P7`: `opus:8-lpen.c37`, `sol:8-pen.c37`, p. 239; `P8`: `opus:8-lpen.c39`, p. 239; `P8(release-at-20)`: `sol:8-pen.c39`, p. 239; `P9(release)`: `opus:8-lpen.c12`, `sol:8-pen.c12`, p. 238; `P10(a)`: `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18`, pp. 239, 229; `P11`: `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46`, p. 239; `P12`: `opus:8-lpen.c52`, p. 239; `P13`, green: `opus:8-lpen.c10`, `opus:8-lpen.c11`, `sol:8-pen.c10`, `sol:8-pen.c11`, p. 238. `P2(ii)`, `P3(b)`, `P3(c)`, `P9`, `P9(boundary)` and the control `P10(b)` carry no claim id |
+| **Chapter** | 8 — Interface Hardware, printed pp. 227, 228 (Table 8-1), 229, 232, 238, 239; 7 — System Control, printed pp. 216, 219; 3 — Playfield Hardware, printed p. 79; Appendix A, printed p. 271; Appendix C, printed pp. 295, 298, 300, 305; Appendix E, printed p. 333 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · <details><summary>claim ids by assertion (43)</summary> claims by assertion: `P1`: `opus:8-lpen.c1`, `sol:8-pen.c1`, `opus:8-intro.c12`, `sol:8-overview.c6`, pp. 238, 227; `P2`: `opus:8-lpen.c16`, `sol:8-pen.c17`, `opus:8-tbl8-1.c20`, `sol:8-pin.c22`, pp. 238, 228; `P3`: `opus:8-lpen.c17`, `opus:8-lpen.c18`, `sol:8-pen.c18`, `sol:8-pen.c19`, p. 238; `P3(a)`: `sol:8-pen.c20`, p. 238; `P4`: `opus:8-regs.c18`, `opus:8-regs.c20`, `sol:8-reg.c20`, `sol:8-reg.c22`, pp. 229, 238; `P5`: `opus:8-lpen.c36`, `sol:8-pen.c36`, p. 239; `P6`: `opus:8-lpen.c38`, `sol:8-pen.c38`, p. 239; `P7`: `opus:8-lpen.c37`, `sol:8-pen.c37`, p. 239; `P8`: `opus:8-lpen.c39`, p. 239; `P8(release-at-20)`: `sol:8-pen.c39`, p. 239; `P9(release)`: `opus:8-lpen.c12`, `sol:8-pen.c12`, p. 238; `P10(a)`: `opus:8-lpen.c35`, `sol:8-pen.c35`, `opus:8-regs.c16`, `sol:8-reg.c18`, pp. 239, 229; `P11`: `opus:8-lpen.c43`, `sol:8-pen.c41`, `opus:8-lpen.c47`, `sol:8-pen.c44`, `opus:8-lpen.c48`, `sol:8-pen.c45`, `sol:8-pen.c46`, p. 239; `P12`: `opus:8-lpen.c52`, p. 239; `P13`, green: `opus:8-lpen.c10`, `opus:8-lpen.c11`, `sol:8-pen.c10`, `sol:8-pen.c11`, p. 238. `P2(ii)`, `P3(b)`, `P3(c)`, `P9`, `P9(boundary)` and the control `P10(b)` carry no claim id</details> |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L107-L115) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L113-L121); MiSTer has the same read path and TC64's is NanoMig's line for line; inherited |
 | **Test** | [`integration/ch8-light-pen-beam`](../../integration/ch8-light-pen-beam): `make -k -C integration/ch8-light-pen-beam test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. One program, graded in OCS/PAL and OCS/NTSC on both CPU cores |
 | **Assertions** | 19 red on fx68k and 19 on TG68K in each of OCS/PAL and OCS/NTSC, in a package run of 156 passed, 38 failed on each core: `P1`, `P2`, `P2(ii)`, `P3`, `P3(a)`, `P3(b)`, `P3(c)`, `P4`, `P5`, `P6`, `P7`, `P8`, `P8(release-at-20)`, `P9`, `P9(boundary)`, `P9(release)`, `P10(a)`, `P11` and `P12` (pp. 227, 228, 229, 238, 239). `P1` expects a pin-6 pulse on one port captured and observes *captured=no* on port 1 and on port 2; `P7` expects one value in lines 0 to 19 after a field with no pulse and observes reads that are not one value. In ECS/PAL and ECS/NTSC the same nineteen and `P2(i)` and `P9(a)` are recorded, not graded. The page-model control is green in all four configurations on both cores (25 passed, 0 failed each), and `P10(b)`, bit 3 clear, is green |
 | **Verdict of the four** | **split, two and two**: WinUAE and Copperline latch VPOSR and VHPOSR in OCS while BPLCON0 bit 3 is set, on a pulse from their light-pen device and, with none, at the end of the field; WinUAE releases the latch at the end of vertical blanking, Copperline holds it into the next field. vAmiga and Denise have no light-pen latch and freeze the counters only for ERSY. None of the four takes the trigger from a joystick's fire line. Hardware: not measured |
-| **Effort** | M: `agnus_beamcounter.v` (the enable bit, the latch, the read multiplexer), a light-pen input on `agnus.v` and `agnus_beamcounter.v`, and its wiring from the controller ports' pin 6 in `nanomig.v` or `minimig.v` |
+| **Effort** | M — `agnus_beamcounter.v` (the enable bit, the latch, the read multiplexer), a light-pen input on `agnus.v` and `agnus_beamcounter.v`, and its wiring from the controller ports' pin 6 in `nanomig.v` or `minimig.v` |
 
 ---
 
@@ -338,13 +338,25 @@ The four changes, without LPENDIS:
   ECS, with BEAMCON0 bit 13 set, VPOSR returns the counter (p. 305: *"on
   vertical pos read"*; the page does not say whether VHPOSR does too).
 
+```diff
+-	data_out[15:0] = {long_frame,1'b0,ecs,ntsc,2'b00,{2{aga}},long_line,4'b0000,vpos[10:8]};
++	data_out[15:0] = lp_latched ? lp_vposr : live_vposr;   // live_* = the old right-hand sides
+-	data_out[15:0] = {vpos[7:0],hpos[8:1]};
++	data_out[15:0] = lp_latched ? lp_vhposr : live_vhposr;
++	// latch on BPLCON0[3] and a falling edge of _lpen after line 20, else at end_of_frame:
++	lp_latched <= 1; lp_vposr <= live_vposr; lp_vhposr <= live_vhposr;
++	._lpen(_fire0 & _fire1)   // minimig.v, into agnus and agnus_beamcounter
+```
+
+This diff is abridged: it leaves out the enable register, the release at line 20 and the new port declarations.
+
 There is no fix to port: MiSTer and TC64 read the running counter the same
 way, and neither line's `minimig.v` has a light-pen line into Agnus any more
 than NanoMig's `nanomig.v` does.
 
 What it would change:
 
-- all nineteen red lines would turn green on fx68k and on TG68K. A copy of the RTL with these four changes, built outside the repository, printed 240 passed, 0 failed on each core, with d = H − H_ref(t_on) = 2 colour clocks for each of the 14 graded pulses; that run is not `make test` on the repository's RTL and is at most a reading of the change;
+- all nineteen red lines would turn green on fx68k and on TG68K; a private copy of the RTL with these four changes, in the form the diff above abridges, printed 240 passed, 0 failed on each core, with d = H − H_ref(t_on) = 2 colour clocks for each of the 14 graded pulses; `make test` does not run that copy, so these counts are a reading of the change, not a result of the repository's RTL;
 - a program that polls VPOSR with bit 3 set would see it frozen, as p. 239
   warns, and a joystick's fire button held on port 2 would latch the counters,
   as the technical reference's *"FIRE input"* implies for the A500.
