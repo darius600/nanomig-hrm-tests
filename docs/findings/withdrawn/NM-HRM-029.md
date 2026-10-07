@@ -4,23 +4,29 @@
 |---|---|
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
-| **Evidence** | none |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time. The assertion was logically false. |
-| **Module** | `paula_audio_channel.v` |
-| **Test** | [`hrm/ch5-audio-channel-state`](../../../hrm/ch5-audio-channel-state) — the assertion is gone |
-| **Chapter** | 5 — Audio · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
+| **Evidence** | Figure 5-8's note on p. 166 says `dmasen` is true only when LENFIN=1, an implication that absence of later `dmasen` pulses satisfies; the assertion went red because it searched for a sample where both were true |
+| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time: "only when" is satisfied by a `dmasen` that never recurs. |
+| **Withdrawal reason** | The note is the one-way implication `dmasen → LENFIN`; the assertion graded its converse, so the red reported the opposite of what the figure says |
 | **Error class** | **a one-way implication tested as a biconditional** |
+| **Replacement** | Green: `5-p166.c7` in [`hrm/ch5-audio-channel-state`](../../../hrm/ch5-audio-channel-state), which tests `dmasen → lenfin` and passes vacuously (0 samples outside the `000→001` exception carry `dmasen`); `5-p165.c9`, a direct capture of `dmasen` high at the `000→001` arc |
+| **Module** | `paula_audio_channel.v` — [`:276`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L276), [`:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L220); MiSTer has both statements at the same lines, TC64 at lines 253 and 197; inherited |
+| **Test** | `make -C hrm/ch5-audio-channel-state test`; the package prints `31 passed, 12 failed`, the twelve reds being other assertions, and an expected red exits nonzero |
+| **Chapter** | 5 — Audio, printed p. 166 (Figure 5-8, boxed NOTE) and p. 165 (the `dmasen` signal definition) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `5-p166.c7` carries `5-p166.c7` and `F58.note.dmasen`, p. 166; `5-p166.c8` carries `5-p166.c8` and `F58.note.dsr`, p. 166; `5-p165.c9` carries `5-p165.c9` and `5-sig.dmasen`, p. 165 |
+| **Assertions** | `5-p166.c7` green, vacuous: 0 samples outside the `000→001` exception carry `dmasen`; `5-p165.c9` green: `dmasen` high at the `000→001` arc; `5-p166.c8` informational `MEASURED`, not asserted: 3 `dmas` rising edges, 2 did not match AUDxDR · dmasen |
+| **Verdict of the four** | none — `dmasen` is an internal signal that appears at no pin, so the four cannot be compared |
 
 ---
 
 ## Why it was withdrawn
 
-**Figure 5-8's NOTE says, after its exception:**
+Figure 5-8's NOTE says, after its exception:
 
 > "dmasen is true only when LENFIN=1"
 
-That is the implication `dmasen → LENFIN`. It is falsified by exactly one thing:
-a sample where `dmasen` is true and `LENFIN` is not.
+The excepted case is the `000→001` transition, whose action bracket is
+`[lencntrld, AUDxDR, dmasen]`. Outside it the note is the implication
+`dmasen → LENFIN`, falsified by exactly one thing: a sample where `dmasen` is
+true and `LENFIN` is not.
 
 **The assertion searched for the opposite** — at least one later sample where
 *both* were true — and went red when none was found:
@@ -32,7 +38,7 @@ CHECK("... the note's remaining claim requires 'yes'", dmasen_true_elsewhere_at_
 ```
 
 **Absence of later `dmasen` pulses satisfies "only when". It does not violate
-it.** The red reported the opposite of what the figure says.
+it.**
 
 ---
 
@@ -46,62 +52,33 @@ counts 0 of 24 samples, the exception included). `dmasen` is observed by a
 direct capture at the `000→001` arc, where it is high. The companion formula
 `AUDxDSR = AUDxDR · dmasen` became an informational `MEASURED` note.
 
-That is a green with a caveat, stated in the assertion's own text: an
-implication no sample can trigger has not been tested.
+## What the manual prints, and what the RTL does
 
----
-
-## What the manual actually says, and what the RTL does
-
-**Figure 5-8's boxed NOTE, printed p. 166:**
+Figure 5-8's boxed NOTE, printed p. 166:
 
 > "Except for this case, dmasen is true only when LENFIN=1. Also,
 > AUDxDSR=AUDxDR · dmasen"
 
-The excepted case is the `000→001` transition, whose action bracket is
-`[lencntrld, AUDxDR, dmasen]`.
-
-**Measured:** the periodic trace does not show `dmasen` outside the exception
-(above), so it says nothing about the note's first sentence; the RTL line below
-does. The note's own AND equation holds at the first restart and at neither
-later, `lenfin`-driven one.
-
-**RTL:** `dmasen` is raised only in the idle-state DMA branch
-([`paula_audio_channel.v:276`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L276)); the block-end restart comes from
-[`:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L220), `dmas <= dmasen | lenfin`. The implemented relation is therefore
+`dmasen` is raised only in the idle-state DMA branch (`:276`); the block-end
+restart comes from `:220`, `dmas <= dmasen | lenfin`. The implemented relation is
+therefore
 
     AUDxDSR = AUDxDR ∧ (dmasen ∨ lenfin)
 
 — the `lenfin` term sits **one register level further out** than the figure puts
-it, computing the same output.
-
-## The sibling assertion is a separate question, and also not a failure
-
-The `AUDxDSR = AUDxDR · dmasen` equation compares the public `dmas` port against
-**two internal signals** reached through `--public-flat-rw`. So it asks whether
-NanoMig arranges two terms the way the figure draws them, not whether the chip
-behaves as the manual requires. An implementation is free to place the term
-wherever it likes if the output is the same, and here it is.
-
-Whether the printed arrangement is normative is a question about the figure, not
-about the design.
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](../README.md#second-documents).
-
-None of them speaks to this point.
-Silent on this point: US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
+it, computing the same output. The `AUDxDSR = AUDxDR · dmasen` equation compares
+the public `dmas` port against **two internal signals** reached through
+`--public-flat-rw`, and holds at the first restart and at neither later,
+`lenfin`-driven one. It asks whether NanoMig arranges two terms the way the
+figure draws them, not whether the chip behaves as the manual requires.
 
 ---
 
-## Why this entry is kept
+## Risks and unknowns
 
-Four other withdrawals in this register read a **permission or a silence** as a
-requirement. This is the same error **in the direction nobody was watching for**:
-a one-way implication tested both ways.
-
-It is the first of its kind here. The rule it gives: write the claim as a
-formula before writing the predicate.
+**Condition for filing again.** A sample outside the `000→001` exception in which
+`dmasen` is true and `LENFIN` is not. The periodic trace cannot show one, so the
+green on `5-p166.c7` records an implication no sample can trigger: it has not
+been tested, and the assertion's own text says so. Whether the printed placement
+of the `lenfin` term is normative is a question about the figure, not about the
+design.
