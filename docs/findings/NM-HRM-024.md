@@ -5,14 +5,14 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should AUDxLCH at `ecs = 0` latch three high bits, as pp. 139 and 266 print, instead of the five it latches in both chipsets? Closes when an Amiga specialist chooses one of the two actions under *Decision* (one central pointer mask, or declaring the core ECS-and-later) and records the choice for this page, [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md). The decision belongs to an Amiga specialist, not to this repository. |
+| **What is asked of a reader** | Should the audio DMA address at `ecs = 0` take only three high bits of AUDxLCH, as pp. 139 and 266 print, instead of the five it takes in both chipsets? Closes when an Amiga specialist chooses one of the two actions under *Decision* (one central pointer mask, or declaring the core ECS-and-later) and records the choice for this page, [NM-HRM-003](NM-HRM-003.md) and [NM-HRM-022](NM-HRM-022.md). The decision belongs to an Amiga specialist, not to this repository. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, whose `rtl/agnus_audiodma.v:80-82` holds the same three lines; NanoMig takes the fix from there, as there is no automatic merge |
 | **Scope** | AUDxLCH's high field: all four channels at `agnus_audiodma` alone, which has no chipset input; channel 0 at the Agnus top with `ecs` at 0 and at 1; five bits latched in both; chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 5 — Audio, printed pp. 139 and 145; Appendix A, printed p. 266; Appendix C, printed p. 298 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD`: `5-p139.c1`, `5-sum.c1`, `5-loc.c1`, `5-appA-p266.c5`, `5-appA-p266.c11`, `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `5-appB-p290.c148`, `B-aud0lch.width`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, `A-audxlc.c1`, `5-appC-p298.c6`, `5-appC-p309.c6`, `A-audxlch.w1`, `C-map.lch.width`; `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS`: `5-p139.c1`, `5-sum.c1`, `5-loc.c1`, `5-appA-p266.c11`, `5-appB-p290.c57`, `5-appB-p290.c92`, `5-appB-p290.c127`, `B-aud1lch.width`, `B-aud2lch.width`, `B-aud3lch.width`, `A-audxlc.c1`; `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: `5-appA-p266.c5`, `5-appB-p290.c148`, `B-aud0lch.width`, `5-appC-p298.c6`, `5-appC-p309.c6`, `A-audxlch.w1`, `C-map.lch.width`; green `LCH-IMPLEMENTS-ECS-WIDTH-FIVE-BITS`: `5-appA-p266.c6`, `5-appB-p290.c149`, `5-appC-p298.c6`, `5-appC-p309.c1`, `5-appC-p309.c2`, `5-appC-p309.c6`, `A-audxlch.w1`, `C-map.lch.width`, `C-prose.c1`, `C-prose.lch`, `B-aud0lch.width`. The claim ids also cite pp. 290 and 309. `TOP-LEVEL-LIVENESS` carries no claim id |
 | **Module** | `agnus_audiodma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_audiodma.v#L80-L82) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_audiodma.v#L80-L82); inherited (MiSTer and TC64 have the same lines) |
 | **Test** | [`hrm/ch5-audio-location-pointer`](../../hrm/ch5-audio-location-pointer), two fixtures: `agnus_audiodma` alone, and the Agnus top, `agnus`, whose `ecs` input the fixture drives to 0 and to 1: `make -C hrm/ch5-audio-location-pointer test`; an expected red exits nonzero |
-| **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` (`agnus_audiodma` alone): bits 3 and 4 of AUDxLCH expected to have no effect, observed `0x40000` and `0x80000`. `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` (Agnus top, `ecs` 0): the same expectation, the same observed values. `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: AUD0LCH = $001F with AUD0LCL = $FFFF expected `0x3FFFF` at `ecs` 0 and `0xFFFFF` at `ecs` 1, observed `0xFFFFF` at both |
+| **Assertions** | 3 red in `hrm/ch5-audio-location-pointer` (10 passed, 3 failed: `agnus_audiodma` alone 9 passed, 1 failed; Agnus top 1 passed, 2 failed). `LCH-OCS-THREE-BIT-READING-DOES-NOT-HOLD` (`agnus_audiodma` alone): bits 3 and 4 of AUDxLCH expected to have no effect, observed `0x40000` and `0x80000`. `LCH-OCS-HOLDS-ONLY-THREE-BITS-AT-REAL-ECS` (Agnus top, `ecs` 0): the same expectation, the same observed values. `LCH-ECS-PORT-CHANGES-WHAT-LOADS`: AUD0LCH = $001F with AUD0LCL = $FFFF expected `0x3FFFF` at `ecs` 0 and `0xFFFFF` at `ecs` 1, observed `0xFFFFF` at both |
 | **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Agnus.cpp:190-194`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Hardware not measured |
 | **Effort** | M — option 1 under *Decision* adds an `ecs` input to the audio engine, connects it in `agnus.v` and masks the assembled pointer, and the same pointer assembly in the Copper and blitter ([NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md)); option 2 changes no RTL |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
@@ -22,9 +22,12 @@
 ## Source requirement
 
 **Chapter 5, printed p. 139** (p. 145 repeats it as "AUDxLCH (high three bits)"):
-the location registers "contain the high three bits".
 
-**Appendix A, printed p. 266**, on `AUDxLCH`: "(high 3 bits, 5 bits if ECS)" … "18 bit starting address".
+> they "contain the high three bits"
+
+**Appendix A, printed p. 266**, on `AUDxLCH`:
+
+> "(high 3 bits, 5 bits if ECS)" … "18 bit starting address"
 
 **Appendix C, printed p. 298:**
 
