@@ -17,6 +17,8 @@
 | **Effort** | none; if an 8374 capture reads `$22` / `$32`, S: one expression in `agnus_beamcounter.v:110`, one bit of one read-only register |
 | **See also** | [NM-HRM-034](withdrawn/NM-HRM-034.md), withdrawn: the Hardware Reference Manual's p. 299 prints the same field as an identifier, with 10 for an OCS NTSC Agnus |
 
+---
+
 ## Source requirement
 
 Page 29 prints VPOSR's sixteen bits in one row of a bit table. Bit 15 is LOF, bit 7 is LOL,
