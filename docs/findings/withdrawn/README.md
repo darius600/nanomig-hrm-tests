@@ -12,8 +12,8 @@ Fourteen entries are withdrawn. They answer two questions:
 - **Would someone re-file this?** [NM-HRM-001](NM-HRM-001.md) reads as a finding
   until Table 7-5 is read, and Table 7-5 sanctions the measured value. Without
   the entry, the next reader of that page files it again.
-- **What kind of mistake was it?** Thirteen of the fourteen pages name it in an
-  `Error class` row; [NM-HRM-001](NM-HRM-001.md) says `none`. Six are one error in different forms, something the manual
+- **What kind of mistake was it?** Twelve of the fourteen pages name it in an
+  `Error class` row; [NM-HRM-001](NM-HRM-001.md) and [NM-HRM-015](NM-HRM-015.md) say `none`. Six are one error in different forms, something the manual
   does not require read as a requirement: a silence
   ([NM-HRM-009](NM-HRM-009.md), [NM-HRM-034](NM-HRM-034.md),
   [NM-HRM-056](NM-HRM-056.md), [NM-HRM-079](NM-HRM-079.md)), a scope note
