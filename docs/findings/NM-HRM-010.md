@@ -107,7 +107,7 @@ TG68K. The run prints what the verdict rests on as `MEASURED` lines before
 
 ```text
 MEASURED: P3 measured: Delta = 1288 clk_sys (161 colour clocks)
-MEASURED: P3 measured: (f_k, x_k in colour clocks) for k = 0..11 = (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227)
+MEASURED: P3 measured: (f_k, x_k in colour clocks) for k = 0..11 = (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227) (long,227) (short,227)
 MEASURED: P3 measured: of 3150 line lengths in fields 0..11, 3150 are 227 colour clocks, 0 are 228 and 0 are neither
 ```
 

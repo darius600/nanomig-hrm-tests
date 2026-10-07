@@ -39,19 +39,43 @@ window with its last word cut at the limit, which is what p. 80 says.
 
 ## What NanoMig does
 
-Both DDF comparisons force the low bit of the compared value to zero — the
-trailing `1'b0`:
-
-[`src/minimig-aga/agnus_bitplanedma.v#L339`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L339)
+**The fetch runs in whole sequences of eight colour clocks, counted from its
+start, and in hires every sequence fetches each plane twice.** The module says
+so in its own comment, *"One full display DMA sequence lasts 8 CCKs. When
+sequence restarts finish condition is checked (ddfstop position passed)."*
+(line 328). `ddfseq` counts the colour clocks of a run from zero, and the hires
+plane number is taken from its two low bits —
+[`src/minimig-aga/agnus_bitplanedma.v#L432-L441`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L432-L441)
+and [`#L460-L461`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L460-L461):
 
 ```verilog
-      if (hpos[8:1]=={ddfstrt[8:3], ddfstrt[2] & ecs, 1'b0})
+      if (ddfrun) // if enabled go to the next state
+        ddfseq <= #1 ddfseq + 5'd1;
+      else
+        ddfseq <= #1 5'd0;
+...
+  else if ((hires && bp_fmode0) || (shres && bp_fmode12)) // hires+fmode0 or shres+fmode12, up to 4 bpls (4+4)
+    plane = {3'b000,~ddfseq[0],~ddfseq[1]};
 ```
 
-Start and stop therefore both land on **even** `hpos[8:1]` positions, so the
-hires word count between them is structurally even, and nothing cuts the last
-fetch at the $D8 limit. 25 is reachable in lores; 49 is not reachable in hires
-by any register pair.
+**A run ends only at the end of a sequence.** Once the DDFSTOP comparison has
+dropped `ddfena`, the last colour clock of the sequence in progress marks the
+next sequence as the last, and the run stops at that sequence's last colour
+clock, `ddfseq_match` being `ddfseq[2:0] == 3'd7` in hires with FMODE 0 —
+[`#L417-L430`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L417-L430)
+and [`#L443-L451`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L443-L451):
+
+```verilog
+      else if ((ddfend || !vdiwena) && ddfseq_match) // cleared at the end of last bitplane DMA cycle
+        ddfrun <= #1 1'b0;
+...
+    else if (hpos[0] && (ddfseq[2:0]==7) && !ddfena)
+      ddfend <= #1 1'b1;
+```
+
+So the hires word count per plane is always even, the last sequence delivers two
+words, and nothing cuts the last fetch at the $D8 limit. 25 is reachable in
+lores; 49 is not reachable in hires by any register pair.
 
 ### Measured
 
