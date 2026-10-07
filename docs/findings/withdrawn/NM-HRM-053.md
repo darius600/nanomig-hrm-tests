@@ -194,8 +194,6 @@ the Copper write COPCON, `*02E` on p. 289, at ECS with CDANG set, and passes.
 **All four do what p. 310 and Appendix B say together**: the band closed on
 OCS whatever CDANG holds, open on ECS once CDANG is set.
 
-### What other Commodore documents say
-
 - **Commodore's AA functional specification** (06/07/91, PRELIMINARY) prints its
   register list in address order with one Copper mark, the conditional one. Its
   legend, PDF page 6, defines no `*`:
