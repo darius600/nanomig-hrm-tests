@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch1-cpu-options`](../../hrm/ch1-cpu-options): `make -C hrm/ch1-cpu-options test`; an expected red exits nonzero |
 | **Assertions** | 2 red, both measure correctly. `CPU-OPTIONS-FOUR-DISTINCT-STATES`: expected 4 pairwise-distinct `system_cpu` states, observed 3. `RAM-BASE-FLOOR-BELOW-256K-ABSENT`: expected a `system_chipmem` state at 256K, observed floor raw 0 documented `"512k"`. The package reports `3 passed, 2 failed` |
 | **Verdict of the four** | **not applicable, and that is the point.** No emulator has a `system_cpu` field; the sentences are about which machines Commodore sold. Hardware: not measured |
-| **Effort** | none; if the classification takes option 1, M: the `reason_kind` vocabulary, four claim ids and two assertions in chapter 1, and its re-acceptance |
+| **Effort** | none — no RTL change (if the classification takes option 1, M: the `reason_kind` vocabulary, four claim ids and two assertions in chapter 1, and its re-acceptance) |
 
 ---
 
