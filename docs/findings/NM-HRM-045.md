@@ -9,8 +9,8 @@
 | **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. This is a defect in one printed page, measured against another printed page of the same manual |
 | **Scope** | unknown: the page does not name a chip revision; measured on NanoMig's `paula` at the pinned revision, with DSKLEN.DMAEN and DMACON.DMAEN held true and only DMACON.DSKEN varied |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 8 — Interface Hardware, and Appendix A · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397) |
+| **Chapter** | 8 — Interface Hardware, printed p.248, Table 8-7, and Appendix A, printed p.278, DSKBYTR bit 14 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `opus:8-dskbytr.c9` / `sol:8-dskbytr.c10` (p.248), `opus:8-appA-dskbytr.c11` / `sol:8-appa-dskbytr.c11` (p.278) |
+| **Module** | `paula_floppy.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L699) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_floppy.v#L397); inherited, unchanged in MiSTer and TC64 |
 | **Test** | [`hrm/ch8-dmaon-enable-composition`](../../hrm/ch8-dmaon-enable-composition): `make -C hrm/ch8-dmaon-enable-composition test`; the expected red exits nonzero |
 | **Assertions** | 1 red of 6 graded: `A2-DMAON_P278_TWO_TERM_COMPOSITION` — expected DMAON=1 with DSKEN=0, observed DMAON=0. `A1` grades p.248's reading across all eight term combinations and is green on the identical measurement basis |
 | **Verdict of the four** | **unanimous against p.278.** All four require the DSKEN term; not one implements the two-term formula as Appendix A prints it |
@@ -39,9 +39,12 @@ This entry grades **p.278** and only p.278.
                                   ANDed with Bit09 (DMAEN) in  DMACON
 ```
 
-p.248 names three terms. p.278 names two: DSKEN, DMACON bit 04, is not among
-them, although the DMACON table directly above this row on the same page prints
-it. The readings differ on exactly one input: with DSKLEN's DMAEN armed and
+p.248 names three terms, with "all the various DMA bits must be true" standing
+in front of them; `DKSLEN` is the print's spelling of `DSKLEN` in this row, and
+the bit 13 row below it spells it `DSKLEN`. p.278 names two: DSKEN, DMACON bit
+04, is not among them, although the DMACON table directly above this row on the
+same page prints it, and p.278 offers no "and the other DMA bits" clause that
+would let it in. The readings differ on exactly one input: with DSKLEN's DMAEN armed and
 DMACON's master DMAEN true, p.248 predicts DMAON follows DSKEN and p.278
 predicts it stays 1 either way.
 
@@ -74,7 +77,8 @@ bit the CPU reads back is
 p.248 control green: `A1-DMAON_P248_THREE_TERM_COMPOSITION` (p.248,
 `opus:8-dskbytr.c9` / `sol:8-dskbytr.c10`) holds across all eight combinations
 of DSKLEN.DMAEN, DMACON.DSKEN and DMACON.DMAEN(master): DMAON reads 1 if and
-only if all three are true.
+only if all three are true. `A3`, `A4` and `A5` knock out one term each and are
+green; `A4-DMAON_REQUIRES_DMACON_DSKEN` is the DSKEN term p.278 omits.
 
 ## Risks and unknowns
 
@@ -89,7 +93,11 @@ only if all three are true.
 - **The nonzero-length term appears on no page at all.** NanoMig, vAmiga and
   Copperline require a non-empty transfer, and WinUAE and Denise do unless
   ADKCON's WORDSYNC holds the transfer waiting for a sync word; neither
-  p.248 nor p.278 names that condition. It falls outside this finding's claim,
+  p.248 nor p.278 names that condition. In NanoMig the length term gates only the
+  start of a transfer: in write mode `trackwr` stays set in `DISKDMA_ACTIVE` after
+  the count reaches zero, until the FIFO has drained
+  ([`paula_floppy.v#L1007-L1011`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_floppy.v#L1007-L1011)).
+  It falls outside this finding's claim,
   but it means neither page is a complete specification of the bit.
 
 ## Independent evidence
