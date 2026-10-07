@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should DSKPTH hold only its high three bits on OCS (`ecs` = 0), as p.289 prints, where NanoMig loads five (`P5` red), by one Agnus-revision mask shared with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and [NM-HRM-088](NM-HRM-088.md)? Closes when an Amiga specialist chooses between that mask and declaring the core ECS-and-later, and records the choice on those five pages. The decision belongs to an Amiga specialist, not to this repository. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, and only together with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and [NM-HRM-088](NM-HRM-088.md); see *Decision* |
+| **What is asked of a reader** | Should DSKPTH hold only its high three bits on OCS (`ecs` = 0), as p.289 prints, where NanoMig loads five (`P5` red), by one Agnus-revision mask shared with [NM-HRM-003](NM-HRM-003.md), [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and [NM-HRM-088](NM-HRM-088.md)? Closes when that mask makes DSKPTH load three high bits at `ecs` = 0 (`P4` and `P5` turn green), or when an Amiga specialist rejects it, also by declaring the core ECS-and-later and recording that on those five pages; if the rejection means p.289 is wrong, the page is refiled against the printed page. |
+| **Report to** | `upstream first` — Minimig-AGA (MiSTer-devel/Minimig-AGA_MiSTer) |
 | **Scope** | DSKPTH written at the `agnus` boundary with the `ecs` port at 0 and at 1, read back as the pointer the disk DMA slot drives; the page names no chip revision, so `unknown` |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix B, printed p.289 (DSKPTH and DSKPTL rows) and p.288 (the `(E)` mark); p.270 and p.266 are named for comparison · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `P4` `sol:8-appb-dskpth.c8` (p.289 composed with p.288), `P5` `sol:8-appb-dskpth.c9` (p.289), `P2` `opus:8-appB-dskpth.c6` (p.289), `P3` `opus:8-appB-dskpth.c7` / `sol:8-appb-dskpth.c10` (p.289), `P1` `sol:8-appa-dskptr.c3` (p.279, graded on [NM-HRM-044](NM-HRM-044.md)); `LIVENESS` and `COPLIVE` carry no claim id |
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56); inherited, byte-identical in MiSTer and TC64 |
 | **Test** | [`hrm/ch8-disk-pointer-ecs-and-copper`](../../hrm/ch8-disk-pointer-ecs-and-copper): `make -C hrm/ch8-disk-pointer-ecs-and-copper test` · [`hrm/ch8-disk-dma-pointer`](../../hrm/ch8-disk-dma-pointer): `make -C hrm/ch8-disk-dma-pointer test`; an expected red exits nonzero |
 | **Assertions** | 2 red of this page: `P4` expected the same `DSKPTH` write of `0x0018` to load differently at `ecs` 0 and 1, observed no difference; `P5` expected bits 4:3 clear after `0x001F` at `ecs` 0, observed them set. The package reports `4 passed, 3 failed`: the third red, `P1`, is graded on [NM-HRM-044](NM-HRM-044.md); `P2`, `P3`, `LIVENESS` and `COPLIVE` are green |
-| **Verdict of the four** | **three of the four narrow by chipset.** Copperline masks the stored pointer by Agnus revision; WinUAE and vAmiga mask the address the DMA drives, by Agnus revision; Denise masks to the installed chip RAM, not by Agnus revision |
+| **Verdict of the four** | **three of the four narrow by chipset**: Copperline masks the stored pointer; WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1621-1623`) mask the address the DMA drives, by Agnus revision. Denise does not — it masks to the installed chip RAM, not by Agnus revision. Here Copperline's has a test naming DSKPT explicitly. Hardware: not measured |
 | **Effort** | M — one central mask derived from the Agnus revision in `agnus.v`, or an `ecs` port into `agnus_diskdma` and `agnus_audiodma`; none if the core is declared ECS-and-later |
 | **See also** | [NM-HRM-003](NM-HRM-003.md) (Copper), [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) |
 
@@ -23,10 +23,9 @@
 
 **Appendix B, printed p.289**, the DSKPTH and DSKPTL rows:
 
-```
-DSKPTH     + *020   W     A (E)      Disk pointer (high 3 bits, 5 bits if ECS)
-DSKPTL     + *022   W     A          Disk pointer (low 15 bits)
-```
+> `DSKPTH     + *020   W     A (E)      Disk pointer (high 3 bits, 5 bits if ECS)`
+
+> `DSKPTL     + *022   W     A          Disk pointer (low 15 bits)`
 
 Three high bits, five if ECS: word for word what p.270 says of the blitter
 pointers and p.266 of `AUDxLCH`. **Printed p.288** defines the `(E)` mark the
