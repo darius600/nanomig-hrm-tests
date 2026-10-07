@@ -5,14 +5,14 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should `potcap[2]` in `userio.v`, the right port's X pot counter (POT1X, connector pin 5), take an external input in its update as the other three counters do, as pp.228, 234, 240 and 282 print four sensed pot inputs? Closes when an Amiga specialist names the input that carries RX on this board (the page suggests `_djoy2[5]`, unverified), or records why the right X counter is drive-only, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — Minimig-AGA (MiSTer-devel/Minimig-AGA_MiSTer), whose `userio.v` line is byte-identical to NanoMig's; NanoMig takes the fix |
+| **What is asked of a reader** | Should `potcap[2]` in `userio.v`, the right port's X pot counter (POT1X, connector pin 5), take an external input in its update as the other three counters do, as pp.228, 234, 240 and 282 print four sensed pot inputs? Closes when `potcap[2]` takes the input that carries RX and the 14 reds under *Assertions* turn green, or when an Amiga specialist records why the right X counter is drive-only, in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | unknown chip revision; NanoMig's `userio.v` at the pinned revision, the right port's pin 5 (`potcap[2]`), measured with every port-2 joystick input asserted. Port 1's X and Y and port 2's Y respond to their pins in the same runs |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 8 — Interface Hardware, pp.228 (Table 8-1), 234, 240 and Appendix A p.282 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · p.234: `opus:8-pot.c1`, `sol:8-pot.c1`; p.228: `opus:8-tbl8-1.c15` / `sol:8-pin.c17`, `opus:8-tbl8-1.c16` / `sol:8-pin.c18`; p.240: `opus:8-dio.c32`, `sol:8-dio.c30`, `opus:8-dio.c33`, `sol:8-dio.c31`; p.282: `opus:8-appa-pot.c12`, `opus:8-appa-pot.c13`, `sol:8-appa-pot.c15`; `PROP-4` carries no claim id |
-| **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L153-L176) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L174-L195); fixed: MiSTer is byte-identical, TC64 differs (it ANDs `_mthird1`, see *Independent evidence*) |
+| **Chapter** | 8 — Interface Hardware, pp.228 (Table 8-1), 234, 237 (Figure 8-6), 240 and Appendix A p.282 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · p.234: `opus:8-pot.c1`, `sol:8-pot.c1`; p.228: `opus:8-tbl8-1.c15` / `sol:8-pin.c17`, `opus:8-tbl8-1.c16` / `sol:8-pin.c18`; p.240: `opus:8-dio.c32`, `sol:8-dio.c30`, `opus:8-dio.c33`, `sol:8-dio.c31`; p.282: `opus:8-appa-pot.c12`, `opus:8-appa-pot.c13`, `sol:8-appa-pot.c15`; `PROP-4`: `opus:8-dio.c13`, `sol:8-dio.c11` (p.240), `opus:8-appa-potgo.c15`, `sol:8-appa-pot.c43` (p.282), `sol:8-fig8-6r.c15`, `sol:8-fig8-6r.c25` (p.237) |
+| **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L153-L176) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v#L174-L195); MiSTer is byte-identical; TC64 differs by build (it ANDs `_mthird1`, a constant 1 in its Chameleon builds; see *Independent evidence*): inherited |
 | **Test** | [`hrm/ch8-pot-counter-start-and-charge`](../../hrm/ch8-pot-counter-start-and-charge): `make -C hrm/ch8-pot-counter-start-and-charge test`; [`hrm/ch8-pot-pins-as-digital-io`](../../hrm/ch8-pot-pins-as-digital-io): `make -C hrm/ch8-pot-pins-as-digital-io test`; [`hrm/ch8-controller-pin-function-map`](../../hrm/ch8-controller-pin-function-map): `make -C hrm/ch8-controller-pin-function-map test`; [`hrm/ch8-potgo-register-bit-layout`](../../hrm/ch8-potgo-register-bit-layout): `make -C hrm/ch8-potgo-register-bit-layout test`; an expected red exits nonzero |
-| **Assertions** | 14 red across four packages. In `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other eight reds are [NM-HRM-038](NM-HRM-038.md)'s): `opus:8-pot.c1`, `sol:8-pot.c1`, `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12`, `opus:8-appa-pot.c13`; right connector, every joystick input asserted, 6 lines counted: expected `$0606`, observed `$0600`. In `hrm/ch8-pot-pins-as-digital-io` (33 passed, 4 failed): `opus:8-dio.c32`, `opus:8-dio.c33`, `sol:8-dio.c30`, `sol:8-dio.c31`. In `hrm/ch8-controller-pin-function-map` (25 passed, 4 failed): `opus:8-tbl8-1.c15`, `sol:8-pin.c17`, `opus:8-tbl8-1.c16`, `sol:8-pin.c18`. In `hrm/ch8-potgo-register-bit-layout` (13 passed, 1 failed): `PROP-4`. The FAIL lines of the last three packages carry the id only. Controls pass on the same measurement basis in each |
+| **Assertions** | 14 red across four packages. In `hrm/ch8-pot-counter-start-and-charge` (76 passed, 13 failed; the other eight reds are [NM-HRM-038](NM-HRM-038.md)'s): `opus:8-pot.c1`, `sol:8-pot.c1`, port 2 with every input the module reads asserted, 11 lines counted: expected both counters to count, observed `$0b00` (X stays 0); `sol:8-appa-pot.c15`, `opus:8-appa-pot.c12`, `opus:8-appa-pot.c13`, right connector with every joystick input asserted, 6 lines counted: expected `$0606`, observed `$0600`. In `hrm/ch8-pot-pins-as-digital-io` (33 passed, 4 failed): `opus:8-dio.c32`, `opus:8-dio.c33`, `sol:8-dio.c30`, `sol:8-dio.c31`, POTGOR bit 12 held at 1 through every external stimulus the fixture drives. In `hrm/ch8-controller-pin-function-map` (25 passed, 4 failed): `opus:8-tbl8-1.c15`, `sol:8-pin.c17`, `opus:8-tbl8-1.c16`, `sol:8-pin.c18`, port 2's X byte `$00` before and after maximum stimulus (port 1's `$00` → `$14`). In `hrm/ch8-potgo-register-bit-layout` (13 passed, 1 failed): `PROP-4`, with OUTRX=0 POTGOR bit 12 expected to track an external line, observed that no stimulus the fixture drives moves it. Controls pass on the same measurement basis in each |
 | **Verdict of the four** | **none reproduces it** — all four give the right-hand X counter the same external treatment as the other three. Hardware: not measured here; the documents under *Independent evidence* agree with the manual |
 | **Effort** | S — one term on the right-hand side of `potcap[2]` in `userio.v`; which input is open |
 
@@ -22,9 +22,9 @@
 
 Four printed pages state it, from three directions.
 
-**p.234**: *"There are two common types of proportional controllers: the
-'paddle' controller pair and the X-Y proportional joystick"*, each port handling
-**two** proportional inputs.
+**p.234**, each port handling **two** proportional inputs:
+
+> "There are two common types of proportional controllers: the "paddle" controller pair and the X-Y proportional joystick."
 
 **p.228, Table 8-1**: connector pin 5 is `Right POT` for a proportional
 controller pair and `POT X` for an X-Y joystick.
@@ -32,9 +32,11 @@ controller pair and `POT X` for an X-Y joystick.
 **p.282, Appendix A**: the connector table lists two pot pins per connector,
 `LEFT X LX 5 32 (POT0X)` and `RIGHT X RX 5 35 (POT1X)`.
 
-**p.240**: POTGO's four OUT/DAT pairs govern *"the entire register"* and read
-back *"the current state of the pot pins"*. Those are universal propositions,
-and one dead member falsifies each.
+**p.240**: POTGO's four OUT/DAT pairs govern the entire register and read back the current state of the pot pins:
+
+> "To use the entire register as an input, sensing the current state of the pot pins, write all 0s to POTGO."
+
+Those are universal propositions, and one dead member falsifies each.
 
 ## RTL and measurement
 
@@ -73,9 +75,6 @@ interval and counts the lines that follow:
   with the manual. The Paula dissection is the silicon of one revision (8364R7),
   and its author hedges ("pretty much"). The A500 schematic is read from the
   drawing, not quoted.
-- **TC64 is build-dependent.** Its Chameleon (TC64) builds have the same missing
-  gate as NanoMig; its MiST and SiDi builds have a live term that is a second
-  host mouse's middle button, not a joystick pin.
 
 ## Independent evidence
 
@@ -120,6 +119,3 @@ file one line above:
 ```verilog
 potcap[2] <= _djoy2[5] & joy2_pin5;   // or whichever input carries RX here
 ```
-
-Which input is correct belongs to someone who knows the wiring. The decision
-belongs to an Amiga specialist, not to this repository.
