@@ -1,4 +1,4 @@
-# NM-HRM-053 — Appendix B's `*` mark has no ECS qualifier, and nothing honours it under ECS
+# NM-HRM-053 — Appendix B's `*` mark has no ECS qualifier, and nothing honours it under ECS [withdrawn]
 
 | | |
 |---|---|
