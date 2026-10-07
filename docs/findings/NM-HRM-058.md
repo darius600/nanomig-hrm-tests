@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; an expected red exits nonzero |
 | **Assertions** | 2 red, in two packages. `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`: expected both windows in 8 to 10 bit times, observed 9.681818 (8-bit) and 10.681818 (9-bit); the package reports `12 passed, 2 failed`. `B11`: expected both in 8 to 10 bit-cells, observed 10 (8-bit) and 11 (9-bit); the package reports `48 passed, 3 failed` |
 | **Verdict of the four** | **three of four land on 10 and 11 bit times, exactly as NanoMig does**. Hardware: not measured |
-| **Effort** | none — no RTL change asked, the open question is the wording of p.256 |
+| **Effort** | none — no RTL change asked: the open question is the wording of p.256 |
 
 ---
 
