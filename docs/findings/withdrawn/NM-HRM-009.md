@@ -8,7 +8,7 @@
 | **What is asked of a reader** | Nothing. A column heading is not a specification of the bits underneath it: p. 273 gives bit 15 no value to read. |
 | **Withdrawal reason** | The expected 0 came from the assertion, not from the page; NanoMig wires bit 15 high, which contradicts nothing printed |
 | **Error class** | **a silence read as a requirement** |
-| **Replacement** | Green: `BIT15-UNUSED` in [`hrm/ch3-collision-registers`](../../../hrm/ch3-collision-registers), `make -C hrm/ch3-collision-registers test` (bit 15 unchanged between an idle read and a read after all six entities collide) |
+| **Replacement** | Green: `BIT15-UNUSED` in [`hrm/ch3-collision-registers`](../../../hrm/ch3-collision-registers) (bit 15 unchanged between an idle read and a read after all six entities collide) |
 | **Module** | `denise_collision.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_collision.v#L117); line 117 is identical in MiSTer and TC64; inherited |
 | **Test** | `make -C hrm/ch3-collision-registers test`; the package prints `32 passed, 4 failed` — the four reds are other assertions, and an expected red exits nonzero |
 | **Chapter** | Appendix A, printed p. 273 (CLXDAT bit table) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · `BIT15-UNUSED` carries `opus:A-clxdat.b15`, `sol:A-clxdat.c6`, `opus:7-appA-clxdat.c5` and `sol:7-appA-clxdat.c8`, p. 273, and `opus:7-cd.c8` and `sol:7-collision.c10`, p. 214 (the assertion message prints the first two without their prefix) |
