@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table): `make -C hrm/ch8-keycode-table test`; an expected red exits nonzero. `RIGHTALT-CONFLICT` is recorded, **graded on neither side** |
 | **Assertions** | none, deliberately. The package records that `$6E` returns `$65` and declines the six claims on one `record()` line; it reports `97 passed, 1 failed`, the red being NM-HRM-050's `CUTOUT-30` |
 | **Verdict of the four** | **unanimous with NanoMig and with p.252 and p.363**: all four name `$65` for the right Alt, and none takes the `64` both p.254 drawings print — evidence about which reading practitioners took, not about which page is right. Hardware: not measured |
-| **Effort** | none: no RTL change is asked |
+| **Effort** | none — no RTL change is asked |
 | **See also** | [NM-HRM-044](NM-HRM-044.md), the same kind of disagreement between two printed pages; [NM-HRM-050](NM-HRM-050.md), which rests on the same two drawings |
 
 ---
