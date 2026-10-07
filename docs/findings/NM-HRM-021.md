@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should NanoMig's blitter stop writing channel D when `BLTCON1` bit 7 (DOFF) is set on ECS Agnus, as Appendix C p.309 prints, where NanoMig writes D with the bit set as with it clear? Closes when the DOFF decode under *Decision* is added to `agnus_blitter.v` and `DOFF-NO-OBSERVABLE-EFFECT` in `hrm/ch6-blitter-ecs` turns green, or when an Amiga specialist rejects the change, in which case, if the rejection means p.309 is wrong, this page is refiled against the printed page. |
+| **What is asked of a reader** | Should NanoMig's blitter stop writing channel D when `BLTCON1` bit 7 (DOFF) is set on ECS Agnus, as Appendix C p.309 prints, where NanoMig writes D with the bit set as with it clear? Closes when the DOFF decode under *Decision* is added to `agnus_blitter.v` and `DOFF-NO-OBSERVABLE-EFFECT` in `hrm/ch6-blitter-ecs` turns green, or when an Amiga specialist records that NanoMig need not build DOFF; if the reason is that p.309 is wrong, this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | ECS Agnus (`ecs` input true); measured on `agnus_blitter` as a one-word area blit using channels A, C and D, with only `BLTCON1` bit 7 varied. Line mode is not measured; no chip revision is named |
 | **Software impact** | unknown; no named affected software |
