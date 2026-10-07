@@ -10,10 +10,10 @@
 | **Scope** | unknown; p.353 names no chip revision or mode. The isolated case is the choice between CIAA and CIAB by A13, A12 and A0 |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, *Hardware Connection Details* · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p.353 · claims `sol:F-signals.c64`, `sol:F-signals.c65`, `opus:F-conn.c7`, `opus:F-conn.c8` (all four marked `conflict` at classification); no assertion grades them |
-| **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L190-L192) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195); inherited, TC64 has the same A12 and A13 terms |
-| **Test** | No package grades the claim, so there is no command to run |
+| **Module** | `gary.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L190-L192) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/gary.v#L193-L195); TC64 has the same A12 and A13 terms; inherited |
+| **Test** | [`hrm/appF-cia-address-decode`](../../hrm/appF-cia-address-decode): `make -C hrm/appF-cia-address-decode test`; it prints both readings as `MEASURED` lines and grades neither. It exits nonzero on its one red, `CIA-DECODE-DONTCARE`, which is [NM-HRM-075](NM-HRM-075.md)'s |
 | **Assertions** | none: no assertion grades the claim |
-| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's prose says. Hardware not measured |
+| **Verdict of the four** | **unanimous, and all four contradict the printed patterns**: WinUAE, vAmiga, Denise and Copperline all decode the way the page's PROSE says. Hardware: not measured |
 | **Effort** | none: no RTL change; the correction is one exchange of the two printed patterns |
 | **Origin** | raised at classification by the appendix-F lot-E classifier; verified against the render of p.353 |
 
@@ -42,11 +42,14 @@ Read MSB first, `101x` is A23–A20, `xxxx` A19–A16 and `xx01` A15–A12:
 | prose, CIAB | low | high | — |
 | printed CIAB pattern | 1 | 0 | 1 |
 
-Each printed pattern carries the other chip's bits. The page's next paragraph
-also contradicts the patterns: "CIAA = BFEr01; CIAB = BFDr00". `$BFE001` has
-A13=1, A12=0 and A0=1, the prose's CIAA; `$BFD000` has A13=0, A12=1 and A0=0,
-the prose's CIAB. Prose and chosen addresses agree with each other, including
-on A0, and disagree with both patterns.
+Each printed pattern carries the other chip's bits. The next paragraph:
+
+> With future expansion in mind, we have decided on the following addresses:
+> CIAA = BFEr01; CIAB = BFDr00.
+
+`$BFE001` has A13=1, A12=0 and A0=1, the prose's CIAA; `$BFD000` has A13=0,
+A12=1 and A0=0, the prose's CIAB. Prose and chosen addresses agree with each
+other, including on A0, and disagree with both patterns.
 
 The defect is in the print, not the scan: `figures/p353.png`, rendered at 200 dpi
 from PDF page 368, shows the patterns as quoted, and the text layer reads the
@@ -54,8 +57,8 @@ same bits apart from OCR misreadings of `1`, `0` and `rrrr` (`l`, `O`, `irrr`).
 
 ## RTL and measurement
 
-Nothing is measured: no package observes the claim, and the defect was found by
-reading p.353 against itself and checked against the render.
+No assertion grades the claim; `hrm/appF-cia-address-decode` measures both
+readings at `gary`'s port and grades neither (*Test*).
 
 NanoMig's
 [`gary.v#L190-L192`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/gary.v#L190-L192)
@@ -66,14 +69,16 @@ polarity (CIAA on A12 low, CIAB on A13 low) and not the printed patterns'
 
 ## Risks and unknowns
 
-- Nothing here was measured on hardware, and only p.353 of the 3rd edition was read.
-- The suite treats the page as the oracle, so a test built from the printed
-  patterns rather than the prose would grade a correct decoder red; the four
-  claims named in *Chapter* are deliberately not adjudicated at classification.
+- Nothing here was measured on hardware.
+- A test built from the printed patterns rather than the prose would grade a
+  correct decoder red; the four claims named in *Chapter* are deliberately not
+  adjudicated at classification.
 - Which of prose or patterns the authors meant is a decision for an Amiga
   specialist; the page shows only that one exchange makes all three statements agree.
 - A0 is contradicted by three of the four: Copperline matches by address range
-  and does not look at A0.
+  and selects the register from A8-A11 alone
+  ([`cia.rs:1101-1105`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/cia.rs#L1101-L1105)),
+  so it does not look at A0.
 
 ## Independent evidence
 
