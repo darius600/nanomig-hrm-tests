@@ -21,15 +21,14 @@ confirmed it — and adjusting it to pass would delete the finding.
 
 | Oracle | Documents | Tests |
 |---|---|---|
-| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 27 graded packages |
-| Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages |
+| *Amiga Hardware Reference Manual*, 3rd edition | the original chip set (OCS) and the Enhanced Chip Set (ECS) | `hrm/`, 217 packages; `integration/`, 26 graded packages |
+| Commodore's *Functional Specification for the Advanced Amiga Chip Set (AA)* | the AGA chip set | `aa/`, 33 packages; `integration/`, 8 graded packages |
 
 **`integration/` runs whole systems** rather than one module: `nanomig.v`
 with a 68000 program assembled by vasm, on both CPU cores NanoMig offers
 (fx68k and TG68K). Twenty-six packages there are graded against the manual and
-one against the AA specification, for claims that only show across module
-boundaries, and seven more
-are specified and not yet built. A red in them becomes a finding only once a
+eight against the AA specification, for claims that only show across module
+boundaries. A red in them becomes a finding only once a
 validation has confirmed it against the page, and
 [`docs/findings.md`](docs/findings.md) names the lines that did.
 [`integration/README.md`](integration/README.md) lists the packages, what each
@@ -77,8 +76,8 @@ after looking up the variable in the package's `Makefile` (most use `SRC`,
 | test packages, `aa/` | **33** |
 | assertions, `aa/` | **184** — 179 pass, **5 fail** |
 | packages, `aa/` | 29 green, 4 carrying at least one red, **0 build errors** |
-| graded packages, `integration/` | **27**, each run on both CPU cores: 8 green, 19 carrying a red; 26 against the manual, 1 against the AA specification; 7 more specified, not yet built |
-| assertions, `integration/` | **1740** on fx68k — 1543 pass, **197 fail**; **1873** on TG68K — 1664 pass, **209 fail** |
+| graded packages, `integration/` | **34**, each run on both CPU cores: 11 green, 23 carrying a red; 26 against the manual, 8 against the AA specification |
+| assertions, `integration/` | **3702** on fx68k — 3373 pass, **329 fail**; **3760** on TG68K — 3434 pass, **326 fail** |
 | registered findings | **75**, all open — 70 against the Hardware Reference Manual and 5 against the AA specification. **50 ask you to decide whether the RTL should change**; 66 rest on a failing test, 2 were seen in the RTL source with no test yet, 4 rest on a passing test whose other reading fails, and 3 are filed against the printed page with no test yet. Withdrawn findings are kept apart, in [`docs/findings/withdrawn/`](docs/findings/withdrawn/) |
 | AA findings | **5** — two are reds of this RTL, three are filed against the printed page |
 | AA specification read | all seven slices classified, 6744 records in all: 6492 across slices 1 to 5 and 7, 252 in slice 6 |
@@ -101,7 +100,7 @@ it reaches.
 `aa/`, and each graded `integration/` package does on both cores.
 `./run_all.sh` prints `tests: 154 passed, 63 failed, 0 build errors` for `hrm/`
 and `tests: 29 passed, 4 failed, 0 build errors` for `aa/`, and one
-line per core for each of the 27 graded `integration/` packages; the table comes
+line per core for each of the 34 graded `integration/` packages; the table comes
 from such a run. `check_published_counts.py --runlog`, in the separate
 `hrm-testpipeline` repository, checks it against the run's log.
 
