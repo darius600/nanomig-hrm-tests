@@ -5,16 +5,16 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | seen in the RTL source; no test yet |
-| **What is asked of a reader** | Should `ciaa` carry the PC output and the FLAG input that p. 351 wires to the parallel port's DRDY\* and ACK\*, for a core that attaches a parallel device? No RTL change is asked for NanoMig as it stands: with the port empty a CIA-A with both would read exactly as the present one does. Closes when an Amiga specialist decides that a core attaching a parallel device must wire them, in which case the change is taken upstream, or records that a core without a parallel connector need not. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, only if a core is to drive a parallel device. MiSTer's `ciaa.v` has the same port list and the same tie-off, so there is no fix to port; MiSTer's comment at its tie-off calls the pin unused, which p. 351 does not |
-| **Scope** | CIA-A's PC output and FLAG input as p. 351 assigns them to the parallel port, with a parallel device attached; with none attached CIA-A reads as NanoMig's does. CIA-B is outside it: p. 351 marks its PC `not used` and `ciab`'s FLAG is wired to the disk index. Chip revision: unknown |
+| **What is asked of a reader** | Should `ciaa` carry the PC output and the FLAG input that p. 351 wires to the parallel port's DRDY\* and ACK\*, for a core that attaches a parallel device? No RTL change is asked for NanoMig as it stands: with the port empty a CIA-A with both would read exactly as the present one does. Closes when `ciaa` gains a PC output and a FLAG input wired to the parallel port (no package observes them, so no red turns green), or when an Amiga specialist rejects carrying them in a core without a parallel connector. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Scope** | CIA-A's PC output and FLAG input as p. 351 assigns them to the parallel port, with a parallel device attached. CIA-B is outside it: p. 351 marks its PC `not used` and `ciab`'s FLAG is wired to the disk index. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 339, 341, 345 and 351 (Port Signal Assignments); Appendix E — I/O Connectors and Interfaces, printed pp. 319, 324, 337; 8 — Interface Hardware, printed p. 259 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids by assertion: `CHIP-CAPABILITIES-FIVE` carries `opus:F-intro.c3` (p. 339); `CONTROL-CAPABILITIES-CORE` carries none. Claims classified absent and carried by no assertion: `sol:F-signals.c30`, `sol:F-signals.c31`, `opus:F-portsig.c26`, `opus:F-portsig.c27` (CIA-A's PC and FLAG, p. 351) and `sol:F-overview.c6` (p. 339's output pulse pin). `opus:F-portsig.c47` (p. 351, CIA-B's "PC...not used") is declined on `integration/appF-cia-system`'s RECORDED line. `sol:F-overview.c7` (p. 339's edge detection input) is graded green on `ciab` by `PROP-FLAG-EXISTS` |
 | **Module** | `ciaa.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/ciaa.v#L321) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/ciaa.v#L357); inherited (MiSTer has the same code, and so has TC64) |
-| **Test** | No package grades it: `ciaa` has no pin at which a test could look, and only a device on the parallel port, which NanoMig does not have, could see the difference. [`hrm/appF-cia-register-map`](../../hrm/appF-cia-register-map) records `CHIP-CAPABILITIES-FIVE` as a RECORDED line, not an assertion (`test_appF-cia-register-map.cpp:1292-1308`): `make -C hrm/appF-cia-register-map test`. [`integration/appF-cia-system`](../../integration/appF-cia-system) grades neither pin at the system's ports, and none of its assertions reads CIA-A's FLG bit: `make -k -C integration/appF-cia-system test`; an expected red exits nonzero |
+| **Test** | No package grades it: `ciaa` has no pin at which a test could look, and only a device on the parallel port, which NanoMig does not have, could see the difference. [`hrm/appF-cia-register-map`](../../hrm/appF-cia-register-map) records `CHIP-CAPABILITIES-FIVE` as a RECORDED line, not an assertion (`test_appF-cia-register-map.cpp:1292-1308`): `make -C hrm/appF-cia-register-map test`. [`integration/appF-cia-system`](../../integration/appF-cia-system) grades neither pin at the system's ports, and none of its assertions reads CIA-A's FLG bit: `make -k -C integration/appF-cia-system test`; an expected red exits nonzero. [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments) grades p. 339's edge detection input on `ciab` (`PROP-FLAG-EXISTS`, green): `make -C hrm/appF-ciab-port-assignments test`; its reds are other findings' |
 | **Assertions** | none: `hrm/appF-cia-register-map` reads `22 passed, 0 failed`, with `CHIP-CAPABILITIES-FIVE` recorded, not graded. Its control, `CONTROL-CAPABILITIES-CORE`, green, grades the three capabilities `ciaa` has, 16 pins, the serial register and three timers, from constants the test writes; neither line reads the fixture |
-| **Verdict of the four** | **split, two and two, along whether they attach a parallel device — and with nothing attached all four read as NanoMig does.** Copperline and WinUAE give CIA-A's FLAG to an attached device's acknowledge; vAmiga and Denise have no PC output and never set CIA-A's FLAG. Hardware status: not measured |
-| **Effort** | M, only if a core is to drive a parallel device: `ciaa.v` gains a PC output and a FLAG input, `minimig` brings both out to the device, and the FLAG input wants the negative edge p. 341 asks for, where `cia_int` sets the FLG bit from a level; none otherwise |
+| **Verdict of the four** | **split, two and two, along whether they attach a parallel device — and with nothing attached all four read as NanoMig does.** Copperline pulses CIA-A's PC on every port-B read or write, hands the pulse to the attached device as its strobe, and feeds the device's acknowledge into CIA-A's FLAG as a falling edge; WinUAE sets CIA-A's FLAG after each port-B write when a printer or a host parallel port is configured, strobing the host port, and again when the host port's ACK goes active; its parallel-port SCSI adapter raises the same acknowledge. vAmiga and Denise have no PC output and never set CIA-A's FLAG: in both, the FLAG input their CIA model has is driven only by the floppy index, on CIA-B. Hardware: not measured |
+| **Effort** | none; if a core is to drive a parallel device, M: `ciaa.v` gains a PC output and a FLAG input, `minimig` brings both out to the device, and the FLAG input wants the negative edge p. 341 asks for, where `cia_int` sets the FLG bit from a level |
 | **See also** | [NM-HRM-054](NM-HRM-054.md) (CIA-A's port B, the parallel port's data lines, has no data register), [NM-HRM-074](NM-HRM-074.md) (PB6 and PB7 never carry the timer output, a function of two port pins that p. 341 keeps apart from PC), [NM-HRM-063](NM-HRM-063.md) (the FLG bit is set from a level, which a CIA-A FLAG input would inherit) |
 
 ---
@@ -30,7 +30,10 @@
 > follows:
 
 **Printed p. 341** names the two pins the list ends with, and keeps them apart
-from the port pins (ports PB6 and PB7 "also provide timer output functions"):
+from the port pins:
+
+> In addition to their normal I/O operations, ports PB6 and PB7 also provide
+> timer output functions.
 
 > Handshaking occurs on data transfers using the PC output pin and the FLAG
 > input pin. PC will go low on the third cycle after a port B access. This
@@ -41,7 +44,7 @@ from the port pins (ports PB6 and PB7 "also provide timer output functions"):
 > output from another 8520 or as a general-purpose interrupt input. Any
 > negative transition on FLAG will set the FLAG interrupt bit.
 
-So the output pulse pin is PC, and the edge detection input is FLAG.
+So the output pulse pin is PC, and the edge detection input is FLAG. PB6 and PB7 are two of the sixteen port pins, whose timer outputs pp. 342 and 348–350 specify separately.
 
 **Printed p. 351**, *Port Signal Assignments*, read from the render
 (`appF/figures/p351.png`) because the text layer moves this column by a row,
@@ -164,7 +167,7 @@ RECORDED line, not an assertion: `CHIP-CAPABILITIES-FIVE`, `16-pins=yes serial-r
   on its own as well, `sol:F-overview.c7`, and there it is green:
   `PROP-FLAG-EXISTS` in
   [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments)
-  (`make -C hrm/appF-ciab-port-assignments test`) drives `ciab`'s FLAG and sees
+  drives `ciab`'s FLAG and sees
   the ICR bit set. Read as the part, the clause is satisfied by one of NanoMig's
   two CIAs; read for CIA-A, it is not.
 - **The suggested change has not been run here.**
