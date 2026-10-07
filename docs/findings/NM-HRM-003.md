@@ -5,27 +5,30 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L142-L144) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144) |
-| **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**, if it is to be reported at all — see *Suggested change* |
-| **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control), [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width) |
-| **Chapter** | 2 — Coprocessor · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 4 red: `T4` in `hrm/ch2-copper-control`; `LW1`, `LW3` and `LW4` in `hrm/ch2-copper-locreg-width`, of which `LW3` is the one that matters (*Which assertion carries the finding*) |
-| **Verdict of the four** | **three of the four narrow by chipset**, to 19 bits on OCS: Copperline masks the stored pointer, WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1623`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. The three do it in different places and the effect on a fetched address is the same |
+| **What is asked of a reader** | Should COP1LCH at `ecs = 0` latch three high bits, as pp. 273 and 309 print, instead of the five it latches in both chipsets? Closes when an Amiga specialist chooses one of the two actions under *Decision* (one central pointer mask, or declaring the core ECS-and-later) and records the choice for this page, [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md). The decision belongs to an Amiga specialist, not to this repository. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, whose `rtl/agnus_copper.v:142-144` holds the same three lines; NanoMig takes the fix from there |
+| **Scope** | COP1LCH's high field at `ecs = 0` (OCS) and at `ecs = 1` (ECS), five bits latched in both; the identical COP2LCH latch is not among the red assertions; chip revision unknown; hardware not measured |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 2 — Coprocessor; Appendix A, printed pp. 273 and 276; Appendix C, printed p. 309 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `T4`: `COP2-location-registers.c2` (pp. 273, 309); `LW1`: `COP2-cop1lch.c5`, `COP2-cop1lch-ecs.c6`, `COP2-location-registers.c2`, `ch2-appa-location-registers.c4`, `ch2-appb-table.c18`, `ch2-appc-ecs.c6`, `ch2-location-registers.c2`, `ch2-location-registers.c7`, `COP2-cop2lch.c5`, `COP2-cop-location-pointers.c7`, `COP2-location-registers.c4` (pp. 273, 309); `LW3`: `ch2-appa-location-registers.c3.s2`, `ch2-appb-table.c17.s2` (pp. 273, 309); `LW4`: `COP2-cop-location-pointers.c4`, `COP2-cop-location-pointers.c7`, `ch2-appa-copins.c140` (p. 276). All four red assertions carry claim ids |
+| **Module** | `agnus_copper.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L142-L144) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144); inherited (MiSTer and TC64 have the same three lines) |
+| **Test** | [`hrm/ch2-copper-control`](../../hrm/ch2-copper-control) and [`hrm/ch2-copper-locreg-width`](../../hrm/ch2-copper-locreg-width): `make -C hrm/ch2-copper-control test`; `make -C hrm/ch2-copper-locreg-width test`; an expected red exits nonzero |
+| **Assertions** | 4 red. `T4` in `hrm/ch2-copper-control` (27 passed, 1 failed): COP1LCH written with high word `0x001D` at `ecs = 0`, expected first-fetch word address `0x29234`, observed `0xe9234`. In `hrm/ch2-copper-locreg-width` (12 passed, 3 failed): `LW1` expects a 3-bit high field at `ecs = 0`, observed 5 bits; `LW3` expects the two chipsets to differ in width, observed the same width in both; `LW4` expects an 18-bit pointer, observed 20 (15 low + 5 high). `LW3` is the one that matters |
+| **Verdict of the four** | **three of the four narrow by chipset**, to 19 bits on OCS: Copperline masks the stored pointer, WinUAE (`memory.cpp:2619-2623`) and vAmiga (`Memory.cpp:1623`) mask the address the DMA drives. Denise does not — it masks to the installed chip RAM, not by Agnus revision. The three do it in different places and the effect on a fetched address is the same. Hardware not measured |
+| **Effort** | M — option 1 under *Decision* touches the pointer assembly of the Copper, the blitter and the audio DMA (this page, NM-HRM-022, NM-HRM-024); option 2 changes no RTL |
 | **See also** | [NM-HRM-022](NM-HRM-022.md) (blitter), [NM-HRM-024](NM-HRM-024.md) (audio) and [NM-HRM-088](NM-HRM-088.md) (bitplane) — the same decision in three other engines |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **Printed pp. 273 and 309:** OCS has three high address bits, ECS five. **Printed
 p. 276:** the location registers are 18-bit pointers.
 
 ---
 
-## What NanoMig does
+## RTL and measurement
 
-It latches five high bits with no chipset condition:
+NanoMig latches five high bits with no chipset condition:
 
 [`src/minimig-aga/agnus_copper.v#L142-L144`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L142-L144)
 
@@ -35,77 +38,66 @@ It latches five high bits with no chipset condition:
   		cop1lch[20:16] <= data_in[4:0];
 ```
 
-### Measured
-
 Five high bits in both chipsets; a 20-bit pointer, 15 low plus 5 high. The latch
 is unconditional.
 
+`LW3` carries the finding. The appendix gives **two different widths for the two
+chipsets**, so a module reporting the same width in both contradicts the manual
+whatever that width is; the finding needs only that the widths differ. `T4` shows
+the same defect on a fetch address, and `LW4` is not a separate defect: 15 + 5 = 20
+against p. 276's 18 follows from `LW1`.
+
 ---
 
-## What the others say
+## Risks and unknowns
+
+- Real hardware is not measured; no named software depends on the width.
+- Denise masks by installed chip RAM, not by Agnus revision, so the vote is three of four, not four.
+- WinUAE is not a clean vote for the manual: `cs_agnussize` overrides its mask either way (`memory.cpp:2627-2644`), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` (`:2646-2648`) drops the chipset term.
+- The second documents speak only to the OCS half of the manual's two-width statement: none of the three speaks to ECS, and the patents state the pointer register's width, not COP1LCH's directly. The `19 bits wide` on patent p023 is about bitplane pointers and reads as the byte-address width of the same 512K range, not a contradiction.
+- Patent 4,777,621 is a bus-level statement about the address the chip drives, not COP1LCH's latch, and the weakest of the agreeing rows.
+
+---
+
+## Independent evidence
 
 | | code | |
 |---|---|---|
-| **WinUAE** | [`memory.cpp:2619-2623`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623) | **narrows the BUS, not the register.** `chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear — 19 bits on OCS, on the Agnus-side chip-RAM path disk and every other DMA fetch uses. The register itself stays full width. Two caveats in the same function stop it being a clean vote for the manual: `cs_agnussize` overrides it either way (`:2627-2644`), and with JIT on, `if (currprefs.cachesize) chipmem_full_mask = chipmem_bank.allocated_size - 1` (`:2646-2648`) drops the chipset term entirely |
+| **WinUAE** | [`memory.cpp:2619-2623`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/memory.cpp#L2619-L2623) | **narrows the BUS, not the register.** `chipmem_full_mask = 0x80000 - 1` when `CSMASK_ECS_AGNUS` is clear — 19 bits on OCS, on the Agnus-side chip-RAM path disk and every other DMA fetch uses. The register itself stays full width |
 | **vAmiga** | [`Core/Components/Memory/Memory.cpp:1623`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Memory/Memory.cpp#L1623) | <pre>addr &= agnus.ptrMask;</pre> **narrows the BUS, not the register**, as WinUAE does. Every Agnus DMA read goes through this `peek16 <Accessor::AGNUS>`, the Copper's included ([`AgnusDma.cpp:264`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/AgnusDma.cpp#L264)), and [`Agnus.cpp:190-191`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L190-L191) sets `ptrMask = 0x07FFFF` for an OCS Agnus: 19 bits. The register keeps the whole high word (`cop1lc = REPLACE_HI_WORD(cop1lc, value);`, [`CopperRegs.cpp:82`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/CopperRegs.cpp#L82)) |
 | **Denise** | [`emulation/libami/agnus/copper.cpp:345-347`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L345-L347)<br>[`emulation/libami/agnus/dma.cpp:416-424`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/dma.cpp#L416-L424) | <pre>auto Copper::setCOP1LCH(uint16_t value) -&gt; void {<br>&nbsp;&nbsp;&nbsp;&nbsp;cop1lc = (cop1lc & 0xffff) \| (value &lt;&lt; 16);</pre> takes the whole write, no mask. The fetch masks with `dmaChipMemMask` (`addrBus = adr & dmaChipMemMask;`), the installed chip RAM less one, not the Agnus revision |
 | **Copperline** | [`src/chipset/agnus.rs:113-118`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L113-L118) | <pre>Self::Ocs =&gt; 0x0007_FFFF,</pre> **narrows to 19 bits on OCS** — the manual's width |
 | **MiSTer** | [`rtl/agnus_copper.v:142-144`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L142-L144) | descendant — identical to NanoMig: `cop1lch[20:16] <= data_in[4:0];`, five bits latched unconditionally |
-| **TC64** | [`rtl/minimig/agnus_copper.v:142-144`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L142-L144) | descendant — the same three lines, byte for byte. Each line's only difference from NanoMig in this file is elsewhere, lines 234-274, where both assign `copjmp1`/`copjmp2`/`strobe1`/`strobe2`/`strobe` blocking and NanoMig non-blocking — the *same* eighteen lines, the same difference, in each — and none of it touches COP1LCH. A fix here diverges from neither line |
+| **TC64** | [`rtl/minimig/agnus_copper.v:142-144`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_copper.v#L142-L144) | descendant — the same three lines, byte for byte. The file's only difference from NanoMig is at lines 234-274, where TC64 assigns `copjmp1`/`copjmp2`/`strobe1`/`strobe2`/`strobe` blocking and NanoMig non-blocking; it does not touch COP1LCH, so a fix here diverges from neither line |
 
-**Three of the four independent implementations narrow by chipset; only Denise
-does not.** Copperline narrows the register as the manual describes; WinUAE and
-vAmiga narrow the address it drives instead, which has the same effect on a
-fetched address. MiSTer and TC64 carry NanoMig's unconditional latch, inherited
-rather than independently arrived at.
-
-
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
+### What other Commodore documents say
 
 - **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
   > "Copper 47 (one channel), the audio DMA control logic 53 (four channels), the bitplane DMA control logic 57 (six channels), the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
   <!-- corpus: patent-us5103499-copper/p016.txt -->
 
-  The Copper's pointer (its program counter) is one of 25 pointer registers of 18 bits: 15 low plus 3 high word-address bits, 512K bytes (same page: the RAM address bus addresses 'one of 256K words (512K bytes)'). That is the manual's OCS width; NanoMig's pointer is 20 bits (15+5). The patent states the pointer register's width, not COP1LCH's directly; p017 says the location (backup) values are substituted into these pointers through the '18 bit adder 137'. It predates ECS, so it speaks only to the OCS half of the manual's two-width statement. The '19 bits wide' on p023 is about bitplane pointers and reads as the byte-address width of the same 512K range, not a contradiction.
+  The Copper's pointer (its program counter) is one of 25 pointer registers of 18 bits: 15 low plus 3 high word-address bits, 512K bytes (same page: the RAM address bus addresses 'one of 256K words (512K bytes)'). That is the manual's OCS width; NanoMig's pointer is 20 bits (15+5). p017 says the location (backup) values are substituted into these pointers through the '18 bit adder 137'.
 
 - **US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988**, PDF page 8 — agrees with the manual:
 
   > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
   <!-- corpus: patent-us4777621-system/p008.txt -->
 
-  Chip 61 houses the co-processor 45 and the address registers for the DMA channels (p008), and the DRAM address it generates is 18 bits — a 512K-byte reach, the manual's OCS width. This is a bus-level statement about the address the chip drives, not about COP1LCH's latch; it is the kind of narrowing the finding credits to WinUAE. Weakest of the agreeing rows; filed 1985, before ECS.
+  Chip 61 houses the co-processor 45 and the address registers for the DMA channels (p008), and the DRAM address it generates is 18 bits — a 512K-byte reach, the manual's OCS width; the kind of narrowing the finding credits to WinUAE.
 
 - **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 26 — agrees with the manual:
 
   > "COPILCH Copper first location register (high 3 bits)"
   <!-- corpus: agnus-8371-spec/p026.txt -->
 
-  The 8371 (OCS, PAL) specification gives COP1LCH three high bits (OCR 'COPILCH'), p027 calls COP1LC/COP2LC '18 bit pointer registers', and Table 2 (p032) repeats 'Co-processor first location register' with High 3 bits: the manual's OCS width, against NanoMig's unconditional five. It is an OCS document and speaks only to the OCS half of the manual's two-width statement; pp. 015 and 017 give every one of the 25 DMA channels an 18 bit pointer reaching 256K words (512K bytes).
-
-Silent on this point: Commodore, *AmigaMail* vol. 1, audio cutoff filter, 1989; Commodore, *AmigaMail* vol. 1, "The Lost Blitter Docs", 1989; Commodore, *Denise* specification, part 252126-01 (ECS), 1988; Commodore, *A500/A2000 Gary Specification*, undated; US patent 4,780,844, Commodore-Amiga, filed 1986, granted 1988; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989; 6502.org dissection of Paula 8364R7, 2023; techtravels, *Inside Paula's Floppy Controller*, part I, 2026.
+  The 8371 (OCS, PAL) specification gives COP1LCH three high bits (OCR 'COPILCH'), p027 calls COP1LC/COP2LC '18 bit pointer registers', and Table 2 (p032) repeats 'Co-processor first location register' with High 3 bits: the manual's OCS width, against NanoMig's unconditional five. pp. 015 and 017 give every one of the 25 DMA channels an 18 bit pointer reaching 256K words (512K bytes).
 
 ---
 
-## Which assertion carries the finding
+## Decision
 
-`LW3` is the one that matters. The appendix gives **two different widths for the
-two chipsets**, so a module reporting the same width in both contradicts the
-manual whatever that width happens to be. The finding does not depend on
-agreeing that OCS is three bits — only on the widths differing, which the manual
-states plainly.
-
----
-
-## Suggested change
-
-**Read with [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md), not alone.** The Copper, the blitter
+The question is in the header. **Read with [NM-HRM-022](NM-HRM-022.md) and [NM-HRM-024](NM-HRM-024.md), not alone.** The Copper, the blitter
 and the audio DMA all build their pointers the same way with no chipset
 condition. Two coherent actions:
 
@@ -114,19 +106,11 @@ condition. Two coherent actions:
 2. **Declare the core ECS-and-later**, making the manual's OCS sentences out of
    scope, and record all three as one scope decision.
 
-Three separate patches in three engines is the option to avoid.
-
----
-
-## For the specialists
-
-Three of the four independent implementations narrow an OCS fetch address to 19
-bits, the width pp. 273 and 309 print: Copperline in the register, WinUAE and
-vAmiga on the bus. Only Denise leaves the chipset out, and it masks to the
-installed chip RAM instead. The implementations side with the manual, not with
-NanoMig's unconditional five bits, and do not make the printed page the outlier.
-
-What is left to decide is scope, and it is the same decision as in
+Three separate patches in three engines is the option to avoid. What is left to decide is scope, the same decision as in
 [NM-HRM-022](NM-HRM-022.md), [NM-HRM-024](NM-HRM-024.md) and
 [NM-HRM-043](NM-HRM-043.md): whether this core models an OCS Agnus at all. The
-manual is this project's oracle and an implementation never promotes to that.
+three implementations that narrow side with the manual, not with NanoMig's
+unconditional five bits, so the printed page is not the outlier. The manual is
+this project's oracle and an implementation never promotes to that.
+
+Re-run: `make -C hrm/ch2-copper-control test` (red `T4`) and `make -C hrm/ch2-copper-locreg-width test` (red `LW1`, `LW3`, `LW4`).
