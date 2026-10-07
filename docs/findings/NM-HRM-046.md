@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Should `fdd_led` light while a drive's latched motor bit (DSKMOTOR*, PB7) is on, as the last sentence of the PB7 row on p.244 prints, instead of only while disk DMA runs (`dskstate!=DISKDMA_IDLE`)? The divergence is visible and physical, not register-level. Closes when `fdd_led` follows the latched motor (`opus:8-cia.c26` and `sol:8-cia.c24` turn green), or when an Amiga specialist or the NanoMig board maintainers reject the change; if the rejection means p.244 is wrong, the page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
+| **Report to** | `NanoMig direct` — harbaum/NanoMig and MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | Paula's disk-activity output `fdd_led` in `paula_floppy.v`, with disk DMA idle and drive 0 selected with its motor latched off, then on; chip revision unknown; hardware not measured; the per-drive lamp is not graded |
 | **Software impact** | unknown; no named affected software. The page states that no register or timing changes and that no Amiga software can observe `fdd_led`; the effect is the lamp |
 | **Chapter** | 8 — Interface Hardware, printed p.244, Table 8-5, the PB7 row · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `A5` `opus:8-cia.c26` and `A6` `sol:8-cia.c24` (the activity-light sentence, both red); `A1` `opus:8-cia.c24`, `A2` `sol:8-cia.c22`, `A3` `opus:8-cia.c25`, `A4` `sol:8-cia.c23`, `A7` `opus:8-cia.c28`, `A8` `sol:8-cia.c26` (the rest of the row, green); `A0` and `CTRL-DMA-DRIVES-FDD-LED` carry no claim id |
@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-drive-select-motor-led`](../../hrm/ch8-drive-select-motor-led): `make -C hrm/ch8-drive-select-motor-led test`; [`integration/appF-cia-system`](../../integration/appF-cia-system): `make -k -C integration/appF-cia-system test`; an expected red exits nonzero. The integration package reproduces the light at the system's ports on fx68k and TG68K, recorded, not graded |
 | **Assertions** | 2 red of 10 graded: `A5/opus:8-cia.c26` — expected `fdd_led`=1 with the motor on and DMA idle, observed 0 (0 with the motor off too); its twin `A6/sol:8-cia.c24`, the same. The package reports 8 passed, 2 failed. `integration/appF-cia-system` adds none: `P1-LP/P1-O2` and `LED-R` are RECORDED lines, and nothing in that package is graded on the light |
 | **Verdict of the four** | **unanimous against NanoMig.** All four model a drive light, and all four drive it from the motor. Two add a select term; two use DMA only to change the light's *colour*, never whether it is lit. Hardware: not measured |
-| **Effort** | S for the aggregate lamp: the one `assign` at `paula_floppy.v:972`. The page does not size a per-drive lamp, which would change the single scalar `fdd_led` port, nor the board's use of the LED |
+| **Effort** | S — for the aggregate lamp: the one `assign` at `paula_floppy.v:972`. The page does not size a per-drive lamp, which would change the single scalar `fdd_led` port, nor the board's use of the LED |
 
 ---
 
