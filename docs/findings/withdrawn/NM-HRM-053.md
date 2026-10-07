@@ -185,7 +185,7 @@ the Copper write COPCON, `*02E` on p. 289, at ECS with CDANG set, and passes.
 | | code | |
 |---|---|---|
 | **WinUAE** | [`custom.cpp:2806-2818`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L2806-L2818) | floor `0` with CDANG set on an ECS Agnus, so no address is refused; `$40` with CDANG set on OCS, `$80` with it clear |
-| **vAmiga** | [`Copper.cpp:395-402`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L395-L402) | with CDANG set, no address is illegal unless the Agnus is one of the two OCS revisions |
+| **vAmiga** | [`Copper.cpp:395-402`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Copper/Copper.cpp#L395-L402) | with CDANG set, no address is illegal unless the Agnus is one of the two OCS revisions ([`Agnus.cpp:248-251`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Agnus.cpp#L248-L251)) |
 | **Denise** | [`copper.cpp:342`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/copper.cpp#L342) | stores the floor rather than the bit: `0` with CDANG set on ECS or AGA, `$40` on OCS, `$80` with CDANG clear |
 | **Copperline** | [`dma_slots.rs:697-708`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/dma_slots.rs#L697-L708) | the band needs a non-OCS Agnus and CDANG; its tests ([`tests.rs:4165-4194`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/tests.rs#L4165-L4194)) assert `$000` and `$03E` blocked with CDANG set on OCS and reached with it set on its ECS Agnus, and its register reference gives the reason: "ECS/AGA extend the permitted range when CDANG is set" ([`02E-COPCON.md:12`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/docs/reference/custom-registers/02E-COPCON.md#L12)) |
 | **MiSTer** | [`rtl/agnus_copper.v:225`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v#L225) | descendant — identical to NanoMig |
@@ -225,5 +225,5 @@ OCS whatever CDANG holds, open on ECS once CDANG is set.
   ```
 
   It specifies a different chip set and does not decide what the ECS Copper
-  does. It states the same split as p. 310: on the old chips CDANG opens nothing
+  does. It states the rule every implementation follows: on the old chips CDANG opens nothing
   below `$040`, on the later ones everything, these three registers included.
