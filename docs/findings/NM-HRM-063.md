@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: with `flag` held at 1 across two clocked ICR reads at `ciab`'s port, should the read clear bit 4 and IR (p.346, with p.341 giving no transition to set them again), where the RTL reads `0x90` both times, so that `cia_int.v:57` sets the bit only on a negative transition of FLAG? The decision belongs to Amiga and RTL specialists, not to this repository. In NanoMig `flag` is a one-cycle pulse, so the difference shows only for a driver that holds FLAG. Closes when `cia_int.v` sets bit 4 only on a negative transition of FLAG and `PROP-FLAG-EDGE-POLARITY` turns green, or when an Amiga specialist rejects that change; if the rejection means p.341 is wrong, this page is refiled against the printed page. |
+| **What is asked of a reader** | Question: with `flag` held at 1 across two clocked ICR reads at `ciab`'s port, should the read clear bit 4 and IR (p.346, with p.341 giving no transition to set them again), where the RTL reads `0x90` both times, so that `cia_int.v:57` sets the bit only on a negative transition of FLAG? In NanoMig `flag` is a one-cycle pulse, so the difference shows only for a driver that holds FLAG. Closes when `cia_int.v` sets bit 4 only on a negative transition of FLAG and `PROP-FLAG-EDGE-POLARITY` turns green, or when an Amiga specialist rejects that change; if the rejection means p.341 is wrong, this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer and minimig-dev/MinimigAGA-MiST-TC64 |
 | **Scope** | the 8520's FLAG input and ICR bit 4 (FLG) as built into `ciab`, measured with `flag` held at 1 across a clocked ICR read (red) and with `flag` returned to 0 before the first read (control, passes); chip revision unknown; hardware not measured |
 | **Software impact** | unknown; no named affected software |
@@ -136,9 +136,7 @@ comparison and keeps the previous-state bit `cia_int.v` lacks.
 
 ## Decision
 
-Whether the Minimig line should carry an edge detector for FLAG is for Amiga
-and RTL specialists. If it does, the fix lands in both MiSTer's and TC64's
-`cia_int.v` and is ported to NanoMig deliberately; the step-3 read then returns
-bit 4 and IR clear and `PROP-FLAG-EDGE-POLARITY` turns green, with step 2 still
-reading `0x90`. If a specialist rejects the change because p.341 is wrong, this
-page is refiled against the printed page.
+Carry an edge detector for FLAG in the Minimig line's `cia_int.v`: the fix lands in
+both MiSTer's and TC64's files and is ported to NanoMig deliberately. The step-3
+read then returns bit 4 and IR clear and `PROP-FLAG-EDGE-POLARITY` turns green,
+with step 2 still reading `0x90`.
