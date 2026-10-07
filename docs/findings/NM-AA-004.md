@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Decide whether the RTL should change. The AA specification lists the identifier every Agnus reports, and this core answers one bit more than the value it gives for the part it describes. Whether real Alice silicon answers `$22` or `$23` is an Amiga question, not one this repository can settle. |
+| **What is asked of a reader** | Should VPOSR bit 8 (identifier bit I0) read 0 on an Alice, giving the AA list's `$22` PAL / `$32` NTSC instead of this core's `$23` / `$33`? Whether real Alice silicon answers `$22` or `$23` is an Amiga question, not one this repository can settle. Closes on a VPOSR capture from an 8374 (the probe under *Risks and unknowns*). |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer; the identical `{2{aga}}` expression is at its `rtl/agnus_beamcounter.v:116`, and the change is one edit |
 | **Scope** | Alice (AGA), VPOSR bits 14-8, PAL and NTSC; isolated to the duplicated `aga` term, since the NTSC `+$10` matches the list |
 | **Software impact** | unknown; no named affected software |
@@ -59,8 +59,7 @@ show the fixture reads the register.
 
 ## Risks and unknowns
 
-- **What an 8374 returns is not measured.** If it returns `$23`, this document's list
-  is wrong and the finding moves to the printed page. The AA specification is marked
+- **What an 8374 returns is not measured.** The AA specification is marked
   PRELIMINARY and dated 06/07/91, its list is a progression `20, 21, 22`, and the
   shipped Alice appears to have been one revision further on.
 - **Copperline's citation is to a table this corpus does not carry.** Its comment cites
@@ -70,10 +69,10 @@ show the fixture reads the register.
   both documents this project reads.
 - **Software dependence is unknown.** A program that probes VPOSR to tell an AGA machine
   from an ECS one may read either bit.
-- **Probe that would settle it.** Hardware: an Amiga with an 8374 Alice (A1200 or A4000),
+- **Probe that would settle it.** Hardware: an Amiga with an 8374 Alice,
   PAL, and an NTSC unit if one is to hand. Minimal read: a program that reads VPOSR
-  (`$DFF004`) and masks bits 14-8. Expected capture: `$22` PAL / `$32` NTSC supports the
-  document and the change below; `$23` / `$33` moves the finding to the printed page.
+  (`$DFF004`) and masks bits 14-8. Expected capture: `$22` / `$32` or `$23` / `$33`; *Decision* says
+  what each means.
 
 ## Independent evidence
 
