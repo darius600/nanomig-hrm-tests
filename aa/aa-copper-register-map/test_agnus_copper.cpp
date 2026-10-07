@@ -355,7 +355,7 @@ int main(int argc, char** argv) {
         // The list marks a register `~` to say the Coprocessor cannot write it
         // unless CDANG is set. agnus_copper implements that as a RANGE --
         // ir2[8:7]==00, every address below $080 (agnus_copper.v:225) -- and
-        // over 231 address-list rows the two agree on 57 of 58. SPRHDAT at
+        // over 237 address-list rows, 58 marked `~`, the range covers 59: 58 agree. SPRHDAT at
         // $078 is the single exception: it sits between BLTADAT `& ~074` and
         // LISAID `h ~07C`, both marked, and carries `&h` with no tilde at all.
         //
