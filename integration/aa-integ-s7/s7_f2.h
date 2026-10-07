@@ -61,7 +61,7 @@ inline void run_f4(Checks& ck, const std::string& sel) {
     std::vector<std::vector<Region>> regs;
     for (size_t k = 0; k < cases.size(); ++k) {
         auto& cs = cases[k];
-        const bool contrast = k == 1;   // the second case carries the contrast of a precondition selector
+        const bool contrast = k == (sel == id + "-ONLY" ? 12u : 1u);   // the second case of channel 0 (of channel 1 for ONLY) carries the contrast of a precondition selector
         s.w16(audlen(cs.c), 4); s.w16(audper(cs.c), 400); s.w16(audvol(cs.c), 0);
         uint16_t lcl = cs.lcl;
         if (sel == id && contrast) lcl = uint16_t(lcl ^ 0x0010);   // contrast: A4 flipped in the written address

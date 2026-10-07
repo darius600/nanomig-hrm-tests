@@ -591,7 +591,7 @@ Every F proposition starts from the prologue, and the Copper runs IDLE unless st
 6. **Contrasting cases.**
    - A bit of the written address flipped (A4, in the second case): every read of the channel lies outside [a, a+8), so the first-or-second clause and the one-stray clause both fail, and the population precondition still holds. Each address and its complement in the family predict different reads.
    - The one-stray clause is moved on its own by F7's STRAY contrast, which uses the same predicate.
-   - Preconditions: omit the channel's DMACON enable (DMA_CHECK fails and there are no audio reads); enable the other channel of the pair too (ONLY); write the enable before M_start (QUIET); write M_end at once after the enable (POP); write M_end before M_go (REF, an empty window); a wait that ends by its timeout (TMO).
+   - Preconditions: omit the channel's DMACON enable (DMA_CHECK fails and there are no audio reads); enable channel 0 too in the second case of channel 1 (ONLY); write the enable before M_start (QUIET); write M_end at once after the enable (POP); write M_end before M_go (REF, an empty window); a wait that ends by its timeout (TMO).
 7. **Reference frame.** The markers and the address family S0-S9 with its per-bit codes (section 1.8).
 
 ### F5. SPRxPTH/SPRxPTL hold A20-A16 and A15-A1 of sprite x's DMA address (x = 0-7)
