@@ -74,4 +74,4 @@ own starting point at 10 bit-cells and 11 (`B11`, red). Both reds come from the
 
 ## Decision
 
-No RTL change is asked. The two reds stay against p.256 until the closing event in row 4.
+No RTL change. The page closes as stated in *What is asked of a reader*.
