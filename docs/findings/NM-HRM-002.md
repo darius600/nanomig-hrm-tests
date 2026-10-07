@@ -6,10 +6,10 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. Question: is p. 137's assignment (channels 1 and 2 to the left jack, 0 and 3 to the right) a misprint of the assignment p. 326 prints (0 and 3 left, 1 and 2 right), which NanoMig follows? The red is against p. 137. Closes when an Amiga specialist records p. 137 as a misprint, or confirms p. 137 and records p. 326 as wrong, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 5 of the *Amiga Hardware Reference Manual*, 3rd ed. This is a defect in one printed page, contradicted by p. 326 of the same manual |
-| **Scope** | which side each of Paula's four audio channels reaches, at the mixer's left and right sums with all four volumes at 1 (`hrm/ch5-audio-stereo-routing` drives one channel at a time, `hrm/ch5-audio-volume-scale` a pair) and, for the whole design, at `nanomig.v`'s `audio_left` and `audio_right` on both CPU cores; the manual names no chip revision; the one silicon witness is the 8364R7 |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 5 of the *Amiga Hardware Reference Manual*, 3rd ed. |
+| **Scope** | which side each of Paula's four audio channels reaches, at the mixer's left and right sums with all four volumes at 1 (`hrm/ch5-audio-stereo-routing` drives one channel at a time, `hrm/ch5-audio-volume-scale` a pair) and, for the whole design, at `nanomig.v`'s `audio_left` and `audio_right` on both CPU cores; the quoted pages name no chip revision; the one silicon witness is the 8364R7 |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 5 — Audio, printed p. 137; Appendix E — I/O Connectors and Interfaces, printed p. 326; also quoted: Chapter 1, printed p. 4, and Appendix J, printed p. 380 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `CH1-CH2-ROUTE-LEFT` `sol:5-p137.c7` / `opus:5-chan.c2`, `CH0-CH3-ROUTE-RIGHT` `sol:5-p137.c8` / `opus:5-chan.c3` (both p. 137); the four assertions of `hrm/ch5-audio-stereo-routing` carry no claim id, and no assertion on this page carries one for p. 326, p. 4 or p. 380 |
+| **Chapter** | 5 — Audio, printed p. 137; Appendix E — I/O Connectors and Interfaces, printed p. 326; also quoted: Chapter 1, printed p. 4, and Appendix J, printed p. 380 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims: `CH1-CH2-ROUTE-LEFT` `sol:5-p137.c7` / `opus:5-chan.c2`, `CH0-CH3-ROUTE-RIGHT` `sol:5-p137.c8` / `opus:5-chan.c3` (both p. 137); the four assertions of `hrm/ch5-audio-stereo-routing` and `PC5-VOL`/`PC5-PER` of `integration/ch5-audio-attach-modulation` carry no claim id, and no assertion on this page carries one for p. 326, p. 4 or p. 380 |
 | **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L76-L77) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L76-L77); inherited (MiSTer and TC64 have the same two lines) |
 | **Test** | [`hrm/ch5-audio-stereo-routing`](../../hrm/ch5-audio-stereo-routing): `make -C hrm/ch5-audio-stereo-routing test`; [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; [`integration/ch5-audio-attach-modulation`](../../integration/ch5-audio-attach-modulation): `make -k -C integration/ch5-audio-attach-modulation test`. An expected red exits nonzero; the integration package exits nonzero on other claims' reds, and its lines for this page, `PC5-VOL`, `PC5-PER` and the `PC5 measured sides` line, are green or measured |
 | **Assertions** | 6 red, each expecting the side p. 137 prints and reading the opposite sum (values under *RTL and measurement*): `channel 0 routes right`, `channel 1 routes left`, `channel 2 routes left` and `channel 3 routes right` in `hrm/ch5-audio-stereo-routing` (0 passed, 4 failed); `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT` in `hrm/ch5-audio-volume-scale` (69 passed, 5 failed; the other three reds are NM-HRM-025's, per the test file), which read the same two p. 137 sides on the mixer's multiply-then-sum path |
@@ -30,7 +30,11 @@
 
 > AUDI — "Audio input to right (channels 1, 2) port, intended to receive audio from the modem; this input is mixed with the analog output of the right (channels 1, 2)."
 
-No other page numbers the channels on a side. Chapter 1 says only that they are split two and two (printed p. 4): "Two channels are directed into each of the two stereo audio outputs." Appendix J's Paula pin assignment (printed p. 380) names pin 31, AUDA, "Left audio" and pin 30, AUDB, "Right audio", and does not say which channels drive either.
+No other page numbers the channels on a side. Chapter 1 says only that they are split two and two (printed p. 4):
+
+> Two channels are directed into each of the two stereo audio outputs.
+
+Appendix J's Paula pin assignment (printed p. 380) names pin 31, AUDA, "Left audio" and pin 30, AUDB, "Right audio", and does not say which channels drive either.
 
 ## RTL and measurement
 
@@ -65,7 +69,7 @@ The whole design measures the same side. [`integration/ch5-audio-attach-modulati
 | **MiSTer** | [`rtl/paula_audio_mixer.v:76-77`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L76-L77) | descendant — byte-identical, confirmed by a full-file comparison: `paula_audio_mixer.v` is byte-identical across all three trees. **pin list** |
 | **TC64** | [`rtl/minimig/paula_audio_mixer.v:76-77`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula_audio_mixer.v#L76-L77) | descendant — the same two lines, unchanged; there is nowhere for a fix to diverge to. **pin list** |
 
-Commodore documents, which can agree or disagree with the manual and decide nothing here:
+### What other Commodore documents say
 
 - **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
