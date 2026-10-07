@@ -1,4 +1,4 @@
-# NM-HRM-079 — a write to the TOD counter's middle byte leaves the clock running; p. 344 stops it on a write to "the register" and does not say which
+# NM-HRM-079 — a write to the TOD counter's middle byte leaves the clock running; p. 344 stops it on a write to "the register" and does not say which [withdrawn]
 
 | | |
 |---|---|
