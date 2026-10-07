@@ -171,12 +171,11 @@
 //   REG-0x1n entry below, via kRegIds[] -- except each register's own four
 //   bits-15-12 ids (the printed '.', unused): measureRegister() flips bits
 //   0-11 only, so those ids are cited on DOT-BITS instead, the claim they
-//   actually measure (fifty-six ids: $11-$18 and $1A-$1F, four each).
-//   Register $19's own twelve bits-0-11 ids (C-shres-sprite-bits.c149-c160)
-//   are cited on REG-0x19 like every other register's, even though the
-//   inventory carries them with no assigned package -- that is a gap in
-//   the classification, not a reason to leave what this register actually
-//   measures uncited. Register $10's own sixteen ids (c1-c16, all of them,
+//   actually measure (sixty ids: $11-$1F, four each, $19's c145-c148
+//   included). Register $19's own twelve bits-0-11 ids
+//   (C-shres-sprite-bits.c149-c160) are cited on REG-0x19 like every
+//   other register's; the inventory classifies all sixteen of its ids
+//   as testable in this package. Register $10's own sixteen ids (c1-c16, all of them,
 //   bits 15-0) stay together on REG-0x10's decline: the whole register,
 //   not only its top twelve bits, is unmeasurable through this boundary.
 //   The twelve symbol ids: colour 17/18/19's nine
@@ -1142,7 +1141,9 @@ int main(int argc, char** argv) {
             "C-shres-sprite-bits.c113, C-shres-sprite-bits.c114, C-shres-sprite-bits.c115, "
             "C-shres-sprite-bits.c116 ($17), C-shres-sprite-bits.c129, "
             "C-shres-sprite-bits.c130, C-shres-sprite-bits.c131, C-shres-sprite-bits.c132 "
-            "($18), C-shres-sprite-bits.c161, C-shres-sprite-bits.c162, "
+            "($18), C-shres-sprite-bits.c145, C-shres-sprite-bits.c146, "
+            "C-shres-sprite-bits.c147, C-shres-sprite-bits.c148 ($19), "
+            "C-shres-sprite-bits.c161, C-shres-sprite-bits.c162, "
             "C-shres-sprite-bits.c163, C-shres-sprite-bits.c164 ($1A), "
             "C-shres-sprite-bits.c177, C-shres-sprite-bits.c178, C-shres-sprite-bits.c179, "
             "C-shres-sprite-bits.c180 ($1B), C-shres-sprite-bits.c193, "
