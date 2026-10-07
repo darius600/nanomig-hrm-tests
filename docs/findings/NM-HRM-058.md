@@ -65,7 +65,7 @@ own starting point at 10 bit-cells and 11 (`B11`, red). Both reds come from the
 
 ### What other Commodore documents say
 
-- **6502.org dissection of Paula 8364R7, 2023 — third-party**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
   > "the length of said shift register can be switched to 9 or to 10 Bits."
   <!-- corpus: paula-8364r7-dissection/9_9_txt.txt -->

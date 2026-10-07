@@ -118,13 +118,17 @@ SH0 moves the first lit sample by 4 samples, 140 ns, as its row says; SHSH1 leav
 
   In Commodore's ECS Denise specification (it defines SHRES and names the 8373 revisions) the SPRxCTL table gives bits 06-04 as 'Not used' and has no row for bit 3; SHSH1 and 70 ns sprite positioning appear nowhere in its 14 pages. That sides with NanoMig not reading bit 4.
 
-- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 6d, 6j1, 6a, 6c and 6k and the second pass of section 6 — agrees with the manual. *Read from the drawing, not quoted:* sheet 6d latches D4in into S0C4 on SPR0CTL's write strobe, and the second-pass sheet draws the same latch for sprites 0 to 3. S0C4 is not an input of sprite 0's position match (sheets 6a and 6c); it steers the sprite's two outputs (sheet 6j1), which reach the display as two 70 ns pixels in SuperHires (sheet 6k; see [NM-HRM-071](NM-HRM-071.md)). Setting bit 4 therefore moves the sprite one 70 ns pixel to the right: p. 303's "70ns increment", made in the data path rather than in the start compare. Outside SuperHires the register advances one bit per cycle, and bit 14 one cycle earlier is the current bit 15 except in the cycle a new word is loaded.
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 6d, 6j1, 6a, 6c and 6k and the second pass of section 6 — agrees with the manual:
+
+  *Read from the drawing, not quoted:* sheet 6d latches D4in into S0C4 on SPR0CTL's write strobe, cSPR0CTL; the second-pass sheet draws the same latch for sprites 0 to 3, S0C4 to S3C4, and none for sprites 4 to 7. S0C4 is not an input of sprite 0's position match, the line isSPR0, which sheets 6a and 6c drive from H3 to H10 against SPR0POS and from H2 against SH0. It steers the sprite's two outputs instead (sheet 6j1): with S0C4 clear, S0_AF carries bit 15 of the shift register and S0_AG bit 14; with S0C4 set, S0_AG carries bit 15 and S0_AF carries bit 14 as it was one 140 ns cycle earlier. S0_AG reaches the display only in SuperHires, where it takes the channel of sprite 4 (sheet 6k).
   <!-- drawing: denise-8373r4-dissection/sheet_028.txt -->
   <!-- drawing: denise-8373r4-dissection/sheet_039.txt -->
   <!-- drawing: denise-8373r4-dissection/sheet_034.txt -->
   <!-- drawing: denise-8373r4-dissection/sheet_025.txt -->
   <!-- drawing: denise-8373r4-dissection/sheet_027.txt -->
   <!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
+
+  In SuperHires the shift register advances two bits per 140 ns cycle and S0_AF and S0_AG are the sprite's two 70 ns pixels (see [NM-HRM-071](NM-HRM-071.md)), so setting bit 4 moves the sprite one 70 ns pixel to the right: p. 303's "70ns increment", made in the data path rather than in the start compare. Outside SuperHires the register advances one bit per cycle, and bit 14 one cycle earlier is the current bit 15 except in the cycle a new word is loaded. So bit 4 is stored and live on the 8373R4, which NanoMig does not model.
 
 ## Decision
 

@@ -166,12 +166,16 @@ inherited that absence, it did not arrive at it independently.
 
 ### What other Commodore documents say
 
-**6502.org dissection of Denise 8373R4, undated — third-party, one silicon revision**, schematic sheets 8c, 9a, 6j1, 6k and 9h — agrees with the manual. *Read from the drawing, not quoted:* in SuperHires a sprite reads COLOR(16 + 4 × second + first) from the upper sixteen registers for each pair of its pixels and shows two bits per component from one half of that register: the arrangement of p. 302's table, and WinUAE's pair lookup. A solid run of value 01 reads COLOR21, whose row the table fills with Colour 17 alone. As drawn, sprites 4 to 7 have no channel of their own in SuperHires. Its limits are in *Risks and unknowns*.
-<!-- drawing: denise-8373r4-dissection/sheet_059.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_071.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_034.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_079.txt -->
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 8c, 9a, 6j1, 6k and 9h — agrees with the manual:
+
+  *Read from the drawing, not quoted:* in SuperHires the colour-index PLA on sheet 8c sets CNA1 and CNA0 from the B and A bits of channels 0 to 3, which carry the first of the two 70 ns pixels a sprite shows per 140 ns cycle, S0_AF to S3_AF (sheet 6j1), and CNA3 and CNA2 from channels 4 to 7, which in SuperHires carry the second, S0_AG to S3_AG (sheet 6k). The rows that put the sprite pair's number into CNA3 and CNA2 act only outside SuperHires, and no SuperHires row has an attach term. CNA0 to CNA3 select one of rCOLOR16 to rCOLOR31, the sixteen upper registers (sheet 9a). In SuperHires the output stage of sheet 9h joins red outputs R0 with R2 and R1 with R3 and drives them from register bits 11 and 10 in one 70 ns half and from bits 9 and 8 in the other.
+  <!-- drawing: denise-8373r4-dissection/sheet_059.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_071.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_034.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_036.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_079.txt -->
+
+  A SuperHires sprite reads COLOR(16 + 4 × second + first) for each pair of its pixels and shows each pixel's two bits per component from one half of that register: the arrangement of p. 302's table, and the pair lookup of WinUAE that *What the test measures* sets against NanoMig. A solid run of value 01 reads COLOR21, whose row the table fills with Colour 17 alone. As drawn, sprites 4 to 7 have no channel of their own in SuperHires.
 
 ---
 

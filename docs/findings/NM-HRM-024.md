@@ -100,21 +100,21 @@ the word address written) are green, so the reds are not a dark fixture.
   > "the audio DMA control logic 53 (four channels), the bitplane DMA control logic 57 (six channels), the disk and refresh DMA control logic 61 (2 channels), and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
   <!-- corpus: patent-us5103499-copper/p016.txt -->
 
-  The four audio pointers are 18-bit registers, and p017 says the audio backup (location) value is reloaded into them through the '18 bit adder 137': a 512K reach, the manual's OCS width. NanoMig's audio `address_out` reaches word address `0xFFFFF` (20 bits).
+  The four audio channels' pointers are 18-bit registers, and p017 says the audio backup (location) value is reloaded into them through the '18 bit adder 137' — a 512K reach, the manual's OCS AUDxLCH width. NanoMig's audio address_out reaches word address 0xFFFFF (20 bits).
 
 - **US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988**, PDF page 8 — agrees with the manual:
 
   > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
   <!-- corpus: patent-us4777621-system/p008.txt -->
 
-  The DMA channels' address registers sit on chip 61 (p008), and DMA transfer to the audio generator from memory is one of the bus's listed transfers (p007); the address chip 61 drives is 18 bits, the manual's OCS reach.
+  The DMA channels' address registers sit on chip 61 (p008), and DMA transfer to the audio generator from memory is one of the bus's listed transfers (p007); the DRAM address chip 61 drives is 18 bits, the manual's OCS reach. The finding's measurement is address_out, the same observable.
 
 - **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 21 — agrees with the manual:
 
   > "AUD x LCH Audio channel x location (high 3 bits) AUD x LCL Audio channel x location (low 15 bits) This pair of registers contains. the 18 bit starting address (location) of Audio channel x (x=0,1,2,3) DMA data."
   <!-- corpus: agnus-8371-spec/p021.txt -->
 
-  Table 2 (p032) gives 'Audio channel 1 location (High 3 bits' and the same for channels 2 and 3: the manual's OCS width, against NanoMig's `address_out` bits 16-20.
+  On the 8371, AUDxLCH has three high bits and the pair holds an 18 bit starting address, and Table 2 (p032) gives 'Audio channel 1 location (High 3 bits' and the same for channels 2 and 3. That is the manual's OCS width, against NanoMig's audio address_out using bits 16-20.
 
 ---
 

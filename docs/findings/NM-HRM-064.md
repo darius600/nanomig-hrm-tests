@@ -96,7 +96,7 @@ Denise is the closest comparison: it makes NanoMig's exact promise and honours a
   > "(4C/4E) X X X X X X X X Optional “shut up’ address, a write to this ad- dress will cause the board to pass its config out and then never again respond to any address."
   <!-- corpus: a500-a2000-trm-1987/p031.txt -->
 
-  Register 08/0A carries the matching flag, 'O means this board can be shut up' (p030). The example test-RAM PAL (p046) latches SHUTUP on a write decoded at 4C and gates its outputs with it.
+  The expansion chapter's register table makes 4C a shut-up address: a write there makes the board pass config out and stop answering until RESET. Register 08/0A carries the matching flag, 'O means this board can be shut up' (p030). The example test-RAM PAL (p046) latches SHUTUP on a write decoded at 4C and gates its outputs with it.
 
 ## Decision
 

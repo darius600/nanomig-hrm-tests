@@ -71,19 +71,19 @@ The whole design measures the same side. [`integration/ch5-audio-attach-modulati
 
 ### What other Commodore documents say
 
-- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
-
-  > "Channel 0 and 3 feed the AUDL output pad, //analog "audio left" output signal channel 1 and 2 feed the AUDR output pad, //analog "audio right" output signal"
-  <!-- corpus: paula-8364r7-dissection/7_7_txt.txt -->
-
-  On the 8364R7 die channels 0 and 3 drive the pad the author labels AUDL (audio left) and 1 and 2 drive AUDR: NanoMig's ldatasum/rdatasum split and the appendix pin list, not 3rd-ed. p. 137.
-
 - **US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989**, PDF page 2 — says something else:
 
   *Read from the drawing, not quoted:* FIG. 1 draws the D/A converter for channels 0 and 1 (37) feeding LEFT AUDIO (41), and the converter for channels 2 and 3 (39) feeding RIGHT AUDIO (43).
   <!-- drawing: patent-us4829473-paula/p002.txt -->
 
   The block diagram pairs the channels by converter: 0 and 1 to the left output, 2 and 3 to the right. That is neither chapter 5's assignment (1 and 2 left) nor the appendix pin list's (0 and 3 left).
+
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+
+  > "Channel 0 and 3 feed the AUDL output pad, //analog "audio left" output signal channel 1 and 2 feed the AUDR output pad, //analog "audio right" output signal"
+  <!-- corpus: paula-8364r7-dissection/7_7_txt.txt -->
+
+  On the 8364R7 die channels 0 and 3 drive the pad the author labels AUDL (audio left) and 1 and 2 drive AUDR: NanoMig's ldatasum/rdatasum split and the appendix pin list, not 3rd-ed. p. 137.
 
 - **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF pages 259-260, 271-272 and 297-298 — speaks to the board, not to channel numbers, and **agrees with p. 326**:
 

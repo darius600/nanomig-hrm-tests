@@ -167,15 +167,17 @@ both of its halves.
 
 ### What other Commodore documents say
 
-**6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 9b, 8i, 7f to 7h and 9h — agrees with the manual. *Read from the drawing, not quoted:* the sixteen lower registers have two read decoders, rmCOLOR00 to rmCOLOR15 addressed by CMA0 to CMA3 and rsCOLOR00 to rsCOLOR15 by CSA0 to CSA3 (sheet 9b). In SuperHires the playfield PLA on sheet 8i (its rows on SH_RES#) sets C_SA1 and C_SA0 from planes 2 and 1 at shift-register position 15 and C_SA3 and C_SA2 from position 13, C_MA1 and C_MA0 from position 14 and C_MA3 and C_MA2 from position 12. Positions 15 to 12 are the four SuperHires pixels of a 140 ns cycle: sheet 7h gives planes 1 and 2 the outputs B1_Q12 to B2_Q15, while planes 3 and 4 have positions 15 and 14 (sheet 7g) and plane 5 position 15 (sheet 7f). In SuperHires the output stage of sheet 9h joins red outputs R0 with R2 and R1 with R3, drives them from register bits 11 and 10 in one 70 ns half and from bits 9 and 8 in the other, and alternates between the two read paths within each half.
-<!-- drawing: denise-8373r4-dissection/sheet_072.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_065.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_047.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_046.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_045.txt -->
-<!-- drawing: denise-8373r4-dissection/sheet_079.txt -->
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 9b, 8i, 7f to 7h and 9h — agrees with the manual:
 
-Each lower register is read for two pixels, the first and third or the second and fourth of a cycle, the grouping vAmiga uses where WinUAE pairs adjacent pixels, and each pixel shows two bits per component, the upper or the lower pair of that register, repeated to fill the component: p. 301's two bits and its table. A solid colour-1 run reads COLOR05, as in WinUAE and vAmiga, where NanoMig shows COLOR01 in full.
+  *Read from the drawing, not quoted:* the sixteen lower registers have two read decoders, rmCOLOR00 to rmCOLOR15 addressed by CMA0 to CMA3 and rsCOLOR00 to rsCOLOR15 by CSA0 to CSA3 (sheet 9b). In SuperHires the playfield PLA on sheet 8i (its rows on SH_RES#) sets C_SA1 and C_SA0 from planes 2 and 1 at shift-register position 15 and C_SA3 and C_SA2 from position 13, C_MA1 and C_MA0 from position 14 and C_MA3 and C_MA2 from position 12. Positions 15 to 12 are the four SuperHires pixels of a 140 ns cycle: sheet 7h gives planes 1 and 2 the outputs B1_Q12 to B2_Q15, while planes 3 and 4 have positions 15 and 14 (sheet 7g) and plane 5 position 15 (sheet 7f). In SuperHires the output stage of sheet 9h joins red outputs R0 with R2 and R1 with R3, drives them from register bits 11 and 10 in one 70 ns half and from bits 9 and 8 in the other, and alternates between the two read paths within each half.
+  <!-- drawing: denise-8373r4-dissection/sheet_072.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_065.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_047.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_046.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_045.txt -->
+  <!-- drawing: denise-8373r4-dissection/sheet_079.txt -->
+
+  Each lower register is read for two pixels, the first and third or the second and fourth of a cycle, the grouping vAmiga uses where WinUAE pairs adjacent pixels, and each pixel shows two bits per component, the upper or the lower pair of that register, repeated to fill the component: p. 301's two bits and its table. A solid colour-1 run reads COLOR05, as in WinUAE and vAmiga, where NanoMig shows COLOR01 in full.
 
 ---
 

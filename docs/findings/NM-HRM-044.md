@@ -103,17 +103,19 @@ The unanimity is not evidence that p.289 is right; it shows four independent imp
 
 ### What other Commodore documents say
 
-US patents 4,874,164 and 5,103,499 (one shared specification, counted once), PDF page 16, agree with the manual on p.279's side:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 16 — agrees with the manual:
 
-> "The pointer regis ters 138 are loaded with data (an address) from data bus 404 by the processor 402 or coprocessor 47 under pro gram control."
-<!-- corpus: patent-us4874164-agnus-denise/p016.txt -->
+  > "The pointer regis ters 138 are loaded with data (an address) from data bus 404 by the processor 402 or coprocessor 47 under pro gram control."
+  <!-- corpus: patent-us4874164-agnus-denise/p016.txt -->
 
-A general statement for all 25 DMA pointer registers, disk included; no protected range is mentioned. The 8371 Agnus specification (318071-01), PDF page 29:
+  A general statement for all 25 DMA pointer registers, disk included: the Copper may load them, which is p.279's side. The patent mentions no protected register range.
 
-> "These address registers must be initialized by the processor or Copper before disk DMA is enabled."
-<!-- corpus: agnus-8371-spec/p029.txt -->
+- **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 29 — agrees with the manual:
 
-The same document also has p.289's side: Table 2 marks DSKPTH '+*020' (p031) and its legend reads '* Address not writeable by co-processor.' (p034). It repeats the manual's contradiction and does not settle it.
+  > "These address registers must be initialized by the processor or Copper before disk DMA is enabled."
+  <!-- corpus: agnus-8371-spec/p029.txt -->
+
+  This is p.279's side, nearly word for word, for an OCS part. The same document also has p.289's side: Table 2 marks DSKPTH '+*020' (p031), and its legend reads '* Address not writeable by co-processor.' (p034). It therefore repeats the manual's contradiction and does not settle it.
 
 ## Decision
 

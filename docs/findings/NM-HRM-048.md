@@ -92,12 +92,12 @@ a mechanism; only WinUAE and Denise agree on this paragraph.
 
 ### What other Commodore documents say
 
-**techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 39, agrees with the manual:
+- **techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 39 — agrees with the manual:
 
-> "The candidate sequence is specific: the serializer finishes, 10i closes write gate, and delayed transition decisions still in 10v and 10e reach a drive that can no longer record them. This explains a lost tail. The current work has not established why the documented length is exactly three bits."
-<!-- corpus: techtravels-paula-floppy/p039.txt -->
+  > "The candidate sequence is specific: the serializer finishes, 10i closes write gate, and delayed transition decisions still in 10v and 10e reach a drive that can no longer record them. This explains a lost tail. The current work has not established why the documented length is exactly three bits."
+  <!-- corpus: techtravels-paula-floppy/p039.txt -->
 
-It places a silicon cause (10i closes write gate while bits are still in the 10v/10e delay chain), calls it a hypothesis, and says the three-bit length is still open (p043). Its section 6.3 explains the paragraph's other sentence as a drain race, which this finding does not grade.
+  The paper accepts the documented loss and places a silicon cause: 10i closes write gate while bits are still in the 10v/10e delay chain. It calls this a hypothesis, and says the three-bit length is still open (p043). Its section 6.3 explains the paragraph's other sentence ('may not come in') as a drain race, but the finding does not grade that sentence.
 
 ## Decision
 

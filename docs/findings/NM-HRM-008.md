@@ -156,14 +156,14 @@ they are green at the pinned revision and stayed green in that copy.
   > "NOTE: Playfield 1 is all odd numbered enabled bit planes."
   <!-- corpus: denise-spec-252126/p007.txt -->
 
-  Its CLXDAT table lists bits 01-04 as 'Playfield 1 to Sprite 0 (or 1)' and so on with no mode condition; nothing in the 14 pages makes the PF1 bit depend on PF2 or on DPF.
+  Commodore's 1988 ECS Denise specification repeats the note the manual prints in appendix A, and its CLXDAT table lists bits 01-04 as 'Playfield 1 to Sprite 0 (or 1)' and so on with no mode condition; nothing in the 14 pages makes the PF1 bit depend on PF2 or on DPF.
 
 - **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 29 — agrees with the manual:
 
   > "Fifteen bits in the collision storage register are utilized to indicate whether any of several types of overlaps has occurred: e.g., one sprite to another sprite, even bitplanes to odd bitplanes, even bitplanes to a certain sprite, or odd bitplanes to a certain sprite."
   <!-- corpus: patent-us4874164-agnus-denise/p029.txt -->
 
-  It describes the odd-bitplanes-to-sprite bit as an overlap of the odd bitplanes with a sprite, with no playfield-mode condition; p021 likewise defines objects as 'any non-zero bits used to display any of eight sprites or two playfields'.
+  Describes the odd-bitplanes-to-sprite bit as registering an overlap of the odd bitplanes with a sprite, with no playfield-mode condition; p021 likewise defines objects as 'any non-zero bits used to display any of eight sprites or two playfields'.
 
 - **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheets 7p, 7j, 7n, 4hi and 3a — **agrees with NanoMig**:
 

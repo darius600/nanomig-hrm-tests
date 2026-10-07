@@ -97,19 +97,21 @@ implementation reads the manual that way.
   > "Individual control switches 158a, 158, 158c, and 158a monitor respective ones of the lines 85a, 87a, 89a, and 91a. When a preset level is sensed, each control switch outputs a control signal 150a, 150b, 150c, and 150d to latch registers 153a, b, c, d."
   <!-- corpus: patent-us4829473-paula/p010.txt -->
 
-  The pot circuit (FIG. 5) has four identical port circuits, 83a-d; each pot line has its own sensing switch. POTGO-style bit pairs 15/14, 13/12, 11/10 and 9/8 drive the four tri-state drivers alike (p.9). No port is drive-only.
+  The patent's pot circuit (FIG. 5) has four identical port circuits, 83a-d. Each pot line has its own sensing switch, and that switch latches the free-running counter into the port's register. POTGO-style bit pairs 15/14, 13/12, 11/10 and 9/8 drive the four tri-state drivers alike (p.9). No port is drive-only. All four inputs are sensed, as the manual's four-input reading requires.
 
 - **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
 
   > "All of the channels are built pretty much in the same way, so we now focus on POT0X."
   <!-- corpus: paula-8364r7-dissection/8_8_txt.txt -->
 
-  The note names four channels, 'POT0X, POT0Y, POT1X, POT1Y', and describes POT0X as representative: a Schmitt trigger senses the pad, and the counter value is loaded into the channel register while the pad is low. It does not single POT1X out.
+  8364R7 silicon: the note names four channels, 'POT0X, POT0Y, POT1X, POT1Y', and describes POT0X as representative. A Schmitt trigger senses the pad, and the counter value is loaded into the channel register while the pad is low. POT1X is therefore a sensed input like the other three; the note does not single it out.
 
 - **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 298 — agrees with the manual:
 
   *Read from the drawing, not quoted:* sheet 4 of the A500 main board carries four pot lines side by side, POT0X, POT0Y, POT1X and POT1Y, each with a .047uF capacitor, to sheet 5, where (PDF page 300) the right joystick port's pin 5 is POT1X and pin 9 POT1Y, wired as the left port's pin 5 and pin 9 are to POT0X and POT0Y.
   <!-- drawing: a500-a2000-trm-1987/p298.txt -->
+
+  The right port's X potentiometer line exists on the board and is wired as the other three are.
 
 ## Decision
 

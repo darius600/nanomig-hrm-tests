@@ -94,14 +94,14 @@ The question put to each: how long is an NTSC line?
   > "During scan of a horizon tal line, there are typically 227.5 memory access cycles, each of which is approximately 280 nanoseconds in duration."
   <!-- corpus: patent-us4874164-agnus-denise/p025.txt -->
 
-  It says 'typically' and names no video standard. The same sentence is on patent-us5103499-copper p025.
+  Same figure as the manual, per horizontal line. It says 'typically' and names no video standard. The same sentence is on patent-us5103499-copper p025.
 
 - **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 11 — agrees with the manual:
 
   > "strobe shown above is used during the second refresh time slot of every other line, to identify lines with long counts (228)."
   <!-- corpus: denise-spec-252126/p011.txt -->
 
-  Every other line is a long line of 228 counts: the alternation NanoMig does not generate.
+  The ECS Denise specification says every other line is a long line of 228 counts. This is the alternation NanoMig does not generate.
 
 ## Decision
 

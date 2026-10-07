@@ -120,7 +120,7 @@ Where two of the four read the written 0 back as 1 on a released line, as NanoMi
   <!-- drawing: cia-8520r4-dissection/sheet_005.txt -->
   <!-- drawing: cia-8520r4-dissection/sheet_001.txt -->
 
-  Each port A line has a direction bit of its own that alone decides whether the line is driven, and a read of PRA returns the pin, output bits included, as p. 341 prints: on a released line a written 0 reads 0 and a written 1 reads 1.
+  Each port A line has a direction bit of its own that alone decides whether the line is driven, and a read of PRA returns the pin, output bits included, as p. 341 prints.
 
 ## Decision
 

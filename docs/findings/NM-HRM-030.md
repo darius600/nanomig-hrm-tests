@@ -90,12 +90,12 @@ The value never changes: Paula is not driving that address.
 
 ### What other Commodore documents say
 
-**6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
-> "Note, that the CPU can't read the DMACON register."
-<!-- corpus: paula-8364r7-dissection/6_6_txt.txt -->
+  > "Note, that the CPU can't read the DMACON register."
+  <!-- corpus: paula-8364r7-dissection/6_6_txt.txt -->
 
-Section 6ab is Paula's own DMACON copy (bits 0-4 and 9, gating its DMA requests); on the 8364R7 it has no read path, so this Paula does not answer a read of $002: NanoMig's partitioning, against the P in the appendix's chip column. ADKCON, by contrast: 'The CPU can read the ADKCON register.'
+  Section 6ab is Paula's own DMACON copy (bits 0-4 and 9, gating its DMA requests); on the 8364R7 it has no read path, so this Paula does not answer a read of $002: NanoMig's partitioning, against the P in the appendix's chip column. ADKCON, by contrast: 'The CPU can read the ADKCON register.'
 
 ## Decision
 

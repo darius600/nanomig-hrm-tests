@@ -135,7 +135,7 @@ nothing about the overlay's fate when that direction changes.
   > "OVL (OVerLay) input causes ROM to be accessed at memory location 0. This signal is typically driven by a port line so that ROM is mapped to the memory 0 at RESET time."
   <!-- corpus: gary-spec/p001.txt -->
 
-  Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)'). None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line, which sides with the manual's "the OVL bit" and not with a clear on any CIA-A write.
+  Gary takes the overlay as a level input pin (pin table: 'OVL IN HI Overlay (ROM to address 0)') driven by a port line. None of Gary's inputs carries a CIA register select or a CIA write strobe, and the spec describes no latch, so the overlay follows the level of that port line. That sides with the manual's 'the OVL bit', not with a clear on any CIA-A write.
 
 - **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 301 — agrees with the manual:
 

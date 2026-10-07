@@ -75,21 +75,21 @@ MiSTer and TC64 carry the same unconditional five-bit latch, inherited rather th
   > "and the Blitter DMA control logic 65 (four channels). For each of the 25 DMA channels, an 18 bit RAM address pointer is stored in a designated pointer register 138"
   <!-- corpus: patent-us5103499-copper/p016.txt -->
 
-  The four Blitter channels' pointers are among the 25 pointer registers of 18 bits — 15 low plus 3 high word-address bits, the manual's OCS width, against NanoMig's five (`address_out` `0xF8000`, a 20-bit word address).
+  The four Blitter channels' pointers are among the 25 pointer registers of 18 bits — 15 low plus 3 high word-address bits, the manual's OCS width. NanoMig takes five high bits from BLTxPTH (address_out 0xF8000, a 20-bit word address).
 
 - **US patent 4,777,621, Commodore-Amiga, filed 1985, granted 1988**, PDF page 8 — agrees with the manual:
 
   > "The first custom chip 61 generates a 18 bit dynamic RAM address multiplexed onto a nine bit bus 75"
   <!-- corpus: patent-us4777621-system/p008.txt -->
 
-  The blitter and the DMA address registers sit on chip 61, whose DRAM address is 18 bits, the manual's OCS reach; the finding measures `address_out`, the address the blitter DMA drives.
+  The bit map image manipulation circuitry 47 (the blitter) and the DMA address registers sit on chip 61 (p008), whose DRAM address is 18 bits — the manual's OCS reach. The finding measures address_out, the address the blitter DMA drives, so this bus-level statement bears on the same observable.
 
 - **Commodore, 8371 Agnus specification, part 318071-01, 1987, revised 1988**, PDF page 21 — agrees with the manual:
 
   > "BLT x PTH Blitter pointer to x (high 3 bits) BLT x PTL a Blitter pointer to x (low 15 bits) This pair of registers contains the 18 bit address of Blitter source"
   <!-- corpus: agnus-8371-spec/p021.txt -->
 
-  On the 8371 the blitter pointers have three high bits and an 18 bit address, and Table 2 (p031) repeats 'Blitter pointer to source C' with '(High 3 bits)': the manual's OCS width, against NanoMig's five (`address_out` `0xF8000` at `ecs = 0`).
+  On the 8371 the blitter pointers have three high bits and an 18 bit address, and Table 2 (p031) repeats 'Blitter pointer to source C' with '(High 3 bits)'. That is the manual's OCS width, against NanoMig's unconditional five (address_out 0xF8000 at ecs=0).
 
 ## Decision
 

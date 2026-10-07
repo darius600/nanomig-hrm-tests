@@ -88,23 +88,21 @@ Denise's line is the manual's sentence written as code.
 
 ### What other Commodore documents say
 
-All three agree with the manual.
-
-- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10:
+- **Commodore, *Denise* specification, part 252126-01 (ECS), 1988**, PDF page 10 — agrees with the manual:
 
   > "07 ATT Sprite attach control bit (odd Sprites)"
   <!-- corpus: denise-spec-252126/p010.txt -->
 
-  It scopes the attach bit to odd sprites, as the manual does.
+  The ECS Denise specification scopes the attach bit to odd sprites, as the manual does.
 
-- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 28:
+- **US patents 4,874,164 and 5,103,499, Commodore-Amiga, filed 1986, granted 1989 and 1992 — one shared specification, counted once**, PDF page 28 — agrees with the manual:
 
   > "For each of the odd numbered sprites, the associated control register 37 contains a bit that can be set in order to attach an odd and an even numbered sprite to pair the data for both sprites in color interpretation."
   <!-- corpus: patent-us4874164-agnus-denise/p028.txt -->
 
-  It places the attach bit in the odd sprites' control registers only; like the manual it gives the even sprite's bit 7 no role.
+  Places the attach bit in the odd sprites' control registers only, as the manual does; like the manual it gives the even sprite's bit 7 no role.
 
-- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheet 6c and the second pass of section 6:
+- **6502.org dissection of Denise 8373R4, undated — third-party, the silicon of one revision**, schematic sheet 6c and the second pass of section 6 — agrees with the manual:
 
   *Read from the drawing, not quoted:* sheet 6c draws the control cells of sprites 0 and 1 transistor by transistor. SPR1CTL's write strobe, cSPR1CTL, latches D7in into S1C7#; SPR0CTL's, cSPR0CTL, latches D0in (SH0) there but not D7in, which passes sprite 0's cell unlatched. The second-pass sheet of section 6 draws a row of bit-7 latches under cSPR7CTL, cSPR5CTL, cSPR3CTL and cSPR1CTL, with the cells under the even sprites' strobes empty.
   <!-- drawing: denise-8373r4-dissection/sheet_027.txt -->

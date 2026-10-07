@@ -162,14 +162,14 @@ pins rather than replacing the port.
   > "Ports A and B each consist of an 8-bit Peripheral Data Register (PR) and an 8-bit Data Direction Register"
   <!-- corpus: cia-6526-spec/p005.txt -->
 
-  Port B, like port A, has a PR beside its DDR, the register NanoMig's CIA-A port B lacks; the p006 register table and the p002 block diagram list PRB as a register of its own, and p006 adds a PC handshake output that pulses low after a read or write of PORT B. The same page carries the manual's read rule alongside the PR, not in place of it.
+  Port B, like port A, has an 8-bit Peripheral Data Register beside its DDR, the register NanoMig's CIA-A port B lacks; the p006 register table and the p002 block diagram list PRB as a register of its own, and p006 adds a PC handshake output that pulses low after a read or write of PORT B. The same page carries the manual's read rule alongside the PR, not in place of it.
 
 - **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 217 — agrees with the manual:
 
   > "Ports A and B each consist of an 8-bit Peripheral Data Register (PR) and an 8-bit Data Direction Register (DDR)."
   <!-- corpus: a500-a2000-trm-1987/p217.txt -->
 
-  The 8520 chapter gives each port, B included, a PR as well as a DDR, and a set DDR bit makes the matching PR bit an output.
+  The 8520 chapter gives each port, B included, a data register as well as a direction register, and a set DDR bit makes the matching PR bit an output.
 
 - **6502.org dissection of CIA 8520R4, undated — third-party, the silicon of one revision**, schematic sheets 4b, 4c and 4a — agrees with the manual:
 

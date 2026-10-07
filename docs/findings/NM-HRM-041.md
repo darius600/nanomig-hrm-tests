@@ -129,19 +129,19 @@ requirement is registered here.
 
 ### What other Commodore documents say
 
-**Techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 29:
+- **techtravels, *Inside Paula's Floppy Controller*, part I, 2026 — third-party, silicon**, PDF page 29 — agrees with the manual:
 
-> "DSKBYTR gives software the most recently received byte and selected status bits. The dissection also confirms that its DSKBYT flag, which is generated in module 10q rather than with the byte latches, is set when a byte is received and cleared when the register is read."
-<!-- corpus: techtravels-paula-floppy/p029.txt -->
+  > "DSKBYTR gives software the most recently received byte and selected status bits. The dissection also confirms that its DSKBYT flag, which is generated in module 10q rather than with the byte latches, is set when a byte is received and cleared when the register is read."
+  <!-- corpus: techtravels-paula-floppy/p029.txt -->
 
-8364R7: DSKBYT is set per byte and cleared by the read, and DATA is the received byte (B.3, p048: FDC0-FDC15, 'the low eight are the DSKBYTR byte'). p028 adds that the comparator's 'match output is also visible as the WORDEQUAL status in DSKBYTR', so all three fields are live.
+  8364R7 silicon: DSKBYT is set per byte and cleared by the read, and DATA is the received byte (B.3, p048: FDC0-FDC15, 'the low eight are the DSKBYTR byte'). p028 adds that the continuously running comparator's 'match output is also visible as the WORDEQUAL status in DSKBYTR', so all three fields are live and none is a constant.
 
-**6502.org dissection of Paula 8364R7, 2023 — third-party, silicon**, an author's note in the archive:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — agrees with the manual:
 
-> "The 8 lower outputs of said shift register I had labeled FDC0..FDC7, and that's what you get when reading the DSKBYT register."
-<!-- corpus: paula-8364r7-dissection/10_10_txt.txt -->
+  > "The 8 lower outputs of said shift register I had labeled FDC0..FDC7, and that's what you get when reading the DSKBYT register."
+  <!-- corpus: paula-8364r7-dissection/10_10_txt.txt -->
 
-DATA reads the live receive shift register, and 10_10 attaches 'a 16 Bit comparator, which scans for the sync word' to it.
+  Silicon: DATA reads the live receive shift register, and 10_10 attaches 'a 16 Bit comparator, which scans for the sync word' to it.
 
 ## Decision
 

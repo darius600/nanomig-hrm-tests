@@ -148,4 +148,4 @@ drive it in OCS as NanoMig does; WinUAE (`if (!ecs_agnus) vp &= 1;`) and Denise
   > "USE LOF--~-------------------------------------- V8"
   <!-- corpus: agnus-8371-spec/p030.txt -->
 
-  VPOSR's bit row on the 8371 has LOF at bit 15, V8 at bit 0 and nothing between: p. 285's layout, which gives bits 14-1 no value. The 8371 is the PAL part, for which p. 299 gives the identification 00, so a blank band is also p. 299's value for it, and NanoMig's `ntsc=0` leg reads it.
+  VPOSR's bit row on the 8371 has LOF at bit 15, V8 at bit 0 and nothing between: p. 285's layout, which gives bits 14-1 no value. The 8371 is the PAL part, for which p. 299 gives the identification 00, so a blank band is also p. 299's value for it, and NanoMig's ntsc=0 leg reads it.
