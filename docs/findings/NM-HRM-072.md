@@ -10,7 +10,7 @@
 | **Report to** | **MiSTer-devel/Minimig-AGA_MiSTer**. NanoMig has `paula_uart.v` from there unchanged and TC64 carries the same file, so there is no fix to port; vAmiga, Denise and Copperline each show where the waiting word's start bit goes — see *What the others say* |
 | **Test** | [`integration/ch8-disk-serial`](../../integration/ch8-disk-serial) — three assertions over the same transmit programs, run on both CPU cores, each grading p. 255's sentence "If the SERPER divisor is set to the number N, then N+1 color clocks occur ... between transmissions of output bits" at the N it samples: `P1`, NTSC; `P2`, PAL, red through its clause (ii); `P3`, NTSC at N=371. Each is red on fx68k and on TG68K. The divisor-formula claims `sol:8-serper.c8`, `c9` and `c10` are on `RECORDED` lines beside them: three sampled N cannot establish a formula for every N, and the red at N=371 is their counterexample |
 | **Chapter** | 8 — Interface Hardware, printed pp. 255, 257, 258, 259; Appendix A, printed pp. 283, 284 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 3 red on fx68k and 3 on TG68K (`P1`, `P2`, `P3`; 74 passed, 3 failed on each core, and these three are the package's only reds). In the same run the single-word captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and `1d`/`2d`, green, show that every word after the first was written before the previous word's stop bit began |
+| **Assertions** | 3 red on fx68k and 3 on TG68K (`P1`, `P2`, `P3`; 74 passed, 3 failed on each core, and these three are the package's only reds). In the same run the single-word captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each (`P1-CTRL-N0`, `P1-CTRL-N32396`, green), and `1d`/`2d`, green, show that every word after the first was written before the previous word's stop bit began |
 | **Verdict of the four** | **unanimous against NanoMig**: vAmiga, Denise and Copperline load a waiting word in the step that ends the stop bit, so its start bit follows the stop bit after N+1 colour clocks, as p. 255 says. WinUAE has no TxD pin; in its cycle-exact mode with no serial device it starts the waiting word's frame 10(N+1) colour clocks after the previous frame began, and in its loopback mode 3 colour clocks later. None adds half a colour clock |
 
 ---
@@ -128,14 +128,16 @@ and one stop bit, so every bit boundary is a change of TxD — and, for W words,
 polls TBE and writes the next word as soon as the previous one has moved into
 the shift register. It logs every change of `uart_tx` at `nanomig.v`'s ports in
 `clk_sys` cycles and measures the colour clock C from the four refresh
-accesses of each line: C = 8 cycles on every capture (`1a`, `2a`, green, each
-with a mutation that goes red). The committed output, identical on fx68k and
-TG68K:
+accesses of each line: C = 8 cycles on every capture (`1a`, `2a`, green; no
+mutation turns either red, because no stimulus a page describes moves the
+refresh slots, so they are unfalsifiable at this boundary). The committed
+output, identical on fx68k and TG68K:
 
 | assertion | capture | what is compared | measured |
 |---|---|---|---|
-| `P1` | NTSC, N=0, 371 and 32396 | every change within ±C/2 of t0 + k·(N+1)·C | N=0 10 of 10, **N=371 20 of 40**, N=32396 10 of 10 |
-| `P2`, clause (ii) | PAL, the same three N | U_N = T_N/(N+1), each run's mean bit interval T_N divided by N+1, equal for every N | U_0 = U_32396 = 8.000000, **U_371 = 8.000827**; the difference exceeds its tolerance of 0.000579 |
+| `P1` | NTSC, N=0, 371 and 32396 | every change within ±C/2 of t0 + k·(N+1)·C | N=0 10 of 10 (`P1-CTRL-N0`), **N=371 20 of 40**, N=32396 10 of 10 (`P1-CTRL-N32396`) |
+| `P1-CTRL-WITHIN` | NTSC, N=371 | the 9 bit-to-bit gaps inside each word within ±C/2 of (N+1)·C | green |
+| `P2`, clause (ii) | PAL, the same three N | U_N = T_N/(N+1), each run's mean bit interval T_N divided by N+1, equal for every N | U_0 = U_32396 = 8.000000 (`P2-CTRL-PAIR`, green), **U_371 = 8.000827**; the difference exceeds its tolerance of 0.000579 |
 | `P3` | NTSC, N=371 | the same grid as `P1`, at 372·C | **20 of 40** |
 
 On PAL the N=371 run spans 39 intervals in 116076 cycles, 12 more than
@@ -239,15 +241,21 @@ change:
 ## What holds the finding up
 
 - **The comparator is exact where the page predicts exactly.** The single-word
-  captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each, and on PAL
+  captures at N=0 and N=32396 land on `P1`'s grid 10 of 10 each
+  (`P1-CTRL-N0`, `P1-CTRL-N32396`), and on PAL
   their mean bit intervals divided by N+1 are 8.000000 cycles, one colour
-  clock, in `P2`'s clause (ii); the within-word intervals of the four-word run are all N+1 colour
-  clocks.
+  clock (`P2-CTRL-PAIR`); the within-word intervals of the four-word run are all N+1 colour
+  clocks (`P1-CTRL-WITHIN`). All three controls are green on both cores.
 - **The words are waiting.** `1d` and `2d`, green on both cores, show every
   word after the first written before the previous word's stop bit began.
+  Both turn red on both cores when the program polls TSRE instead of TBE
+  before each write (`NMH_MUTATE=P1-1D`), and `P1`, `P2` and `P3` then print
+  NOT GRADED.
 - **The unit is the page's.** C is measured on each capture from the refresh
-  slots (`1a`, `2a`, green, with mutations that go red), and each capture's
-  own field shows the standard it was run in (`1b`, `2b`).
+  slots (`1a`, `2a`, green; no mutation turns them red, as stated above), and each capture's
+  own field shows the standard it was run in (`1b`, `2b`), which turn red on
+  both cores when every capture is made on the other standard
+  (`NMH_MUTATE=STD-SWAP`).
 - **It is Paula's, not the CPU's.** Every change of TxD lies at the same
   offset from the first start bit on fx68k and on TG68K, although the two
   cores write the words at different times, and the extra time is C/2 at
