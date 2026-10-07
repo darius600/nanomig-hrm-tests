@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the disk DMA pointer pair DSKPTH/DSKPTL keep the 20 word-address bits `address_out[20:1]` (an all-ones write reads back `0xFFFFF`) although printed p.241 and p.246 call it 32 bits? The likely answer is yes, because the two pages describe the long-word write rather than the stored width. Closes when an Amiga specialist records that reading, in which case this page closes as documentation, or says the register should hold more bits. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer; `rtl/agnus_diskdma.v:56` is the same statement byte for byte (TC64 has it too), so a change would start there |
+| **What is asked of a reader** | Should the disk DMA pointer pair DSKPTH/DSKPTL keep the 20 word-address bits `address_out[20:1]` (an all-ones write reads back `0xFFFFF`) although printed p.241 and p.246 call it 32 bits? The likely answer is yes, because the two pages describe the long-word write rather than the stored width. Closes when the pointer stores the width p.241 and p.246 print (`P11A` turns green), or when an Amiga specialist rejects that change; if the rejection means the two pages are wrong (they describe the long-word write, not the stored width), the page is refiled against the printed page. |
+| **Report to** | `upstream first` — Minimig-AGA (MiSTer-devel/Minimig-AGA_MiSTer) |
 | **Scope** | unknown chip revision; the width stored by DSKPTH/DSKPTL in `agnus_diskdma`, isolated by an all-ones write to both registers and a read of `address_out`. The chipset-conditioned width is [NM-HRM-043](NM-HRM-043.md)'s |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 8 — Interface Hardware, printed p.241 (register list) and p.246 (*DSKPTH — Pointer to Data*); p.279 (Appendix A) and p.289 (Appendix B) are quoted under *Risks and unknowns* · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P11A`: `opus:8-dsk.c34` (p.241), `opus:8-dma.c7` / `sol:8-dskpth.c1` (p.246); `P1`: `opus:8-dsk.c32` (p.241), `opus:8-dma.c11` / `sol:8-dskpth.c7` (p.246), `opus:8-appA-dskpt.c1` / `sol:8-appa-dskpth.c1` (p.279), `opus:8-appB-dskpth.c1` / `sol:8-appb-dskpth.c1` (p.289); `P2`: `opus:8-appA-dskpt.c6` / `sol:8-appa-dskptl.c1` (p.279), `opus:8-appB-dskptl.c1` / `sol:8-appb-dskptl.c1` (p.289); `P5`: `opus:8-appA-dskpt.c9` / `sol:8-appa-dskptl.c4` (p.279), `opus:8-appB-dskptl.c6` / `sol:8-appb-dskptl.c8` (p.289); `P8`: `opus:8-dma.c26` / `sol:8-dsklen.c15`, `opus:8-dma.c27` / `sol:8-dsklen.c16` (p.247), `opus:8-dsk.c33` (p.241), `opus:8-dma.c3` / `sol:8-dskdma.c2` (p.246); `LIVENESS` and `P9` carry no claim id in their messages |
+| **Chapter** | 8 — Interface Hardware, printed p.241 (register list) and p.246 (*DSKPTH — Pointer to Data*); p.279 (Appendix A) and p.289 (Appendix B) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `P11A`: `opus:8-dsk.c34` (p.241), `opus:8-dma.c7` / `sol:8-dskpth.c1` (p.246); `P1`: `opus:8-dsk.c32` (p.241), `opus:8-dma.c11` / `sol:8-dskpth.c7` (p.246), `opus:8-appA-dskpt.c1` / `sol:8-appa-dskpth.c1` (p.279), `opus:8-appB-dskpth.c1` / `sol:8-appb-dskpth.c1`, `opus:B-dskpth.addr` (p.289); `P2`: `opus:8-appA-dskpt.c6` / `sol:8-appa-dskptl.c1` (p.279), `opus:8-appB-dskptl.c1` / `sol:8-appb-dskptl.c1`, `opus:B-dskptl.addr` (p.289); `P5`: `opus:8-appA-dskpt.c9` / `sol:8-appa-dskptl.c4` (p.279), `opus:8-appB-dskptl.c6` / `sol:8-appb-dskptl.c8` (p.289); `P8`: `opus:8-dma.c26` / `sol:8-dsklen.c15`, `opus:8-dma.c27` / `sol:8-dsklen.c16` (p.247), `opus:8-dsk.c33` (p.241), `opus:8-dma.c3` / `sol:8-dskdma.c2` (p.246); `LIVENESS` and `P9` carry no claim id in their messages |
 | **Module** | `agnus_diskdma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_diskdma.v#L56) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_diskdma.v#L56); inherited (MiSTer and TC64 have the same code) |
 | **Test** | [`hrm/ch8-disk-dma-pointer`](../../hrm/ch8-disk-dma-pointer): `make -C hrm/ch8-disk-dma-pointer test`; the expected red exits nonzero |
 | **Assertions** | `P11A`, red: expected 32 bits representable, observed `0xFFFFF` (20 bits). The package grades 7: `LIVENESS`, `P1`, `P2`, `P5`, `P8` and `P9` green, this one red |
-| **Verdict of the four** | **Nobody reaches 32 bits either, outside one emulator-only option.** Two keep a 32-bit variable and mask it on the DMA path (WinUAE's UAE-only Mega Chip RAM leaves it unmasked); two mask the stored value to 21 bits or fewer. Hardware: not measured here |
+| **Verdict of the four** | **nobody reaches 32 bits either, outside one emulator-only option.** Two keep a 32-bit variable and mask it on the DMA path — WinUAE's UAE-only Mega Chip RAM leaves it unmasked; two mask the stored value to 21 bits or fewer. Hardware: not measured here |
 | **Effort** | none: no RTL change is suggested; any change is to the reading of the page |
 | **See also** | [NM-HRM-043](NM-HRM-043.md) — the *chipset-conditioned* width of the same register, a different claim on a different page |
 
@@ -34,6 +34,16 @@ Two pages give the pointer a 32-bit width.
 > in Chip memory. The value must be written as a single long word to the DSKPTH
 > register ($DFF020)."
 
+**The manual does not hold that width anywhere else.** Appendix A, printed p.279:
+
+> "This pair of registers contains the 18-bit address of disk DMA data."
+
+Appendix B, printed p.289:
+
+> `DSKPTH     + *020   W     A (E)      Disk pointer (high 3 bits, 5 bits if ECS)`
+
+> `DSKPTL     + *022   W     A          Disk pointer (low 15 bits)`
+
 This finding is against the p.241/p.246 wording and only that.
 
 ## RTL and measurement
@@ -45,6 +55,7 @@ and
 
 ```verilog
 	output	reg [20:1] address_out	//chip address out current disk dma pointer
+...
 assign address_outnew[20:1] = dma ? address_out[20:1]+1'b1 : {data_in[4:0],data_in[15:1]};
 ```
 
@@ -68,9 +79,8 @@ width claim failing, not a dark fixture.
 ## Risks and unknowns
 
 - **The manual contradicts itself about this width**, and p.241/p.246's "32" is
-  the outlier. Appendix A, printed p.279, calls the pair *"the 18-bit address of
-  disk DMA data"*; Appendix B, printed p.289, splits it as *"high 3 bits, 5 bits
-  if ECS"* plus *"low 15 bits"*. A test written from a different page would grade
+  the outlier: p.279 gives 18 bits, p.289 three or five high bits plus fifteen
+  low (*Source requirement*). A test written from a different page would grade
   the same RTL on a different number; that is why this finding is stated as
   against p.241 and p.246, and why the OCS/ECS conditioning is filed separately as
   [NM-HRM-043](NM-HRM-043.md).
@@ -121,9 +131,7 @@ whose largest chip-RAM configuration is 2 MB. If anything is to change it is the
 reading of the page, not the RTL, and that is not this project's call.
 
 Re-run: `make -C hrm/ch8-disk-dma-pointer test`; expected red `P11A`, green
-`LIVENESS`, `P1`, `P2`, `P5`, `P8`, `P9`. Owner: an Amiga specialist; the code
-is inherited, so any RTL change would go to MiSTer-devel/Minimig-AGA_MiSTer
-first. Effort: none. Confirming the long-word-write reading closes this finding
-as documentation rather than as a defect, and leaves [NM-HRM-043](NM-HRM-043.md)
+`LIVENESS`, `P1`, `P2`, `P5`, `P8`, `P9`. Confirming the long-word-write reading refiles this finding against the
+printed page and leaves [NM-HRM-043](NM-HRM-043.md)
 untouched, because that one turns on a width the manual states twice and
 conditions on the chipset.
