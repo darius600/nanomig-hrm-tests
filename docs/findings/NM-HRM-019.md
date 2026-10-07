@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch3-sprite-registers`](../../hrm/ch3-sprite-registers): `make -C hrm/ch3-sprite-registers test`; an expected red exits nonzero |
 | **Assertions** | 1 red: `SPRXCTL-BIT4-SHSH1-70NS-SUPERHIRES-LIVE` — expected SHSH1 alone to move the first lit sample 2 samples later (half of SH0 alone's 4), observed 0; the package reports `10 passed, 1 failed` |
 | **Verdict of the four** | **all four implement it**, and on ECS all four confine its effect on position to SuperHires, as the page's Warning states; outside the emulators, the 8373R4 dissection latches the bit for sprites 0 to 3 and applies it in the sprite's data path, not in the position compare — see *What other Commodore documents say*. Hardware: not measured |
-| **Effort** | S: `denise_sprites_shifter.v` and `denise_sprites.v` only: capture bit 4 in the CTL write and apply it to the start in SuperHires |
+| **Effort** | S — `denise_sprites_shifter.v` and `denise_sprites.v` only: capture bit 4 in the CTL write and apply it to the start in SuperHires |
 | **Origin** | the surviving half of the withdrawn [NM-HRM-013](withdrawn/NM-HRM-013.md); bit 3 is settled in the RTL's favour by the manual's `(unimplemented)` on the same page |
 
 ---
