@@ -5,7 +5,7 @@
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
 | **Evidence** | Figure 5-8's note on p. 166 says `dmasen` is true only when LENFIN=1, an implication that absence of later `dmasen` pulses satisfies; the assertion went red because it searched for a sample where both were true |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time: "only when" is satisfied by a `dmasen` that never recurs. |
+| **What is asked of a reader** | Nothing. "Only when" is satisfied by a `dmasen` that never recurs. |
 | **Withdrawal reason** | The note is the one-way implication `dmasen → LENFIN`; the assertion graded its converse, so the red reported the opposite of what the figure says |
 | **Error class** | **a one-way implication tested as a biconditional** |
 | **Replacement** | Green: `5-p166.c7` in [`hrm/ch5-audio-channel-state`](../../../hrm/ch5-audio-channel-state), which tests `dmasen → lenfin` and passes vacuously (0 samples outside the `000→001` exception carry `dmasen`); `5-p165.c9`, a direct capture of `dmasen` high at the `000→001` arc |
@@ -44,13 +44,13 @@ it.**
 
 ## What replaced it
 
-The test now evaluates the implication `dmasen → lenfin`, and it passes
+The test evaluates the implication `dmasen → lenfin`, and it passes
 vacuously: no sample outside the `000→001` exception carries `dmasen`, and the
 package states that none can, because `dmasen` is high only while the state is
 `000` and each sample is taken after the edge that leaves it (a control trace
 counts 0 of 24 samples, the exception included). `dmasen` is observed by a
 direct capture at the `000→001` arc, where it is high. The companion formula
-`AUDxDSR = AUDxDR · dmasen` became an informational `MEASURED` note.
+`AUDxDSR = AUDxDR · dmasen` is an informational `MEASURED` note.
 
 ## What the manual prints, and what the RTL does
 
@@ -59,8 +59,8 @@ Figure 5-8's boxed NOTE, printed p. 166:
 > "Except for this case, dmasen is true only when LENFIN=1. Also,
 > AUDxDSR=AUDxDR · dmasen"
 
-`dmasen` is raised only in the idle-state DMA branch (`:276`); the block-end
-restart comes from `:220`, `dmas <= dmasen | lenfin`. The implemented relation is
+`dmasen` is raised only in the idle-state DMA branch ([`paula_audio_channel.v:276`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L276)); the block-end
+restart comes from [`:220`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_channel.v#L220), `dmas <= dmasen | lenfin`. The implemented relation is
 therefore
 
     AUDxDSR = AUDxDR ∧ (dmasen ∨ lenfin)
