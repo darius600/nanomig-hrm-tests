@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: should `paula_audio_mixer` give AUDxVOL = 64 a gain of its own on the multiply path (`ldata`/`rdata`), distinct from 63, as Table 5-9 prints 0.0 dB against -0.1 dB, where it now reads `ldatasum` 4032 for both? The decision belongs to an Amiga specialist, not to this repository. Closes when an Amiga specialist records the answer; on a yes, the change is reported to MiSTer-devel/Minimig-AGA_MiSTer and ported to NanoMig from there. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: `paula_audio_mixer.v` is byte-identical there at `da7632e`, so the code is upstream's; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **What is asked of a reader** | Question: should `paula_audio_mixer` give AUDxVOL = 64 a gain of its own on the multiply path (`ldata`/`rdata`), distinct from 63, as Table 5-9 prints 0.0 dB against -0.1 dB, where it now reads `ldatasum` 4032 for both? Closes when the change is made and the four reds under *Assertions* turn green, or when an Amiga specialist rejects it; if the rejection means Table 5-9 is wrong, this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | chip revision unknown; the manual names none. Measured on the multiply path with channel 0 only, volume register values 63, 64, 65, 96 and 127 giving the same `ldatasum`; the PWM path is correct and reaches no output |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 5 — Audio, printed p. 163, Table 5-9; Appendix A, printed p. 266, AUDxVOL · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids as the test labels print them, without reader prefix: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` `5-appA-p266.c32`, `A-audxvol.c3` (p. 266); `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63` `5-p163.c1`, `5-t59.v64`, `5-p163.c3`, `5-t59.v63` (p. 163); `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`) `5-p163.c1`, `5-t59.v64`, folded `5-vol.c2`, `5-vol.c6`, `5-p139.c13`, `5-p140.c2` (p. 163, with p. 139 and p. 140 restatements); `TABLE-5-9-HAS-65-VOLUME-LEVELS` `5-vol.c3`, `5-vol.c4` (p. 139), whose label also cites p. 266's 65 linear levels without an id. All four assertions carry claim ids |
+| **Chapter** | 5 — Audio, printed p. 163, Table 5-9; Appendix A, printed p. 266, AUDxVOL · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids by assertion: `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH`: `5-appA-p266.c32`, `A-audxvol.c3` (p. 266); `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`: `5-p163.c1`, `5-t59.v64`, `5-p163.c3`, `5-t59.v63` (p. 163); `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`): `5-p163.c1`, `5-t59.v64`, `5-vol.c2`, `5-vol.c6`, `5-p139.c13`, `5-p140.c2` (p. 163, with p. 139 and p. 140 restatements); `TABLE-5-9-HAS-65-VOLUME-LEVELS`: `5-vol.c3`, `5-vol.c4` (p. 139), whose label also cites p. 266's 65 linear levels without an id. All four assertions carry claim ids |
 | **Module** | `paula_audio_mixer.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_audio_mixer.v#L23-L33) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula_audio_mixer.v#L23-L33); inherited |
 | **Test** | [`hrm/ch5-audio-volume-scale`](../../hrm/ch5-audio-volume-scale): `make -C hrm/ch5-audio-volume-scale test`; [`hrm/ch5-audio-register-map`](../../hrm/ch5-audio-register-map): `make -C hrm/ch5-audio-register-map test`; an expected red exits nonzero |
 | **Assertions** | 4 red. `VOLUME-64-VERSUS-63-ON-THE-MULTIPLY-PATH` in `hrm/ch5-audio-register-map` (`8 passed, 1 failed`): expected `ldata` at AUDxVOL=64 to differ from AUDxVOL=63, observed 4032 for both. In `hrm/ch5-audio-volume-scale` (`69 passed, 5 failed`): `MULTIPLY-PATH-COLLAPSES-VOLUME-64-ONTO-63`, expected `ldatasum(vol0=63)` and `ldatasum(vol0=64)` to differ, observed identical; `TABLE-5-9-VOLUME-TO-DECIBEL` (`vol0=64`), expected 0.0 dB within ±0.1, observed `ldatasum=4032`, -0.137 dB; `TABLE-5-9-HAS-65-VOLUME-LEVELS`, expected 65 distinct outputs over registers 0..64, observed 64. Its two other reds, `CH1-CH2-ROUTE-LEFT` and `CH0-CH3-ROUTE-RIGHT`, are [NM-HRM-002](NM-HRM-002.md)'s |
-| **Verdict of the four** | unanimous against NanoMig's multiply path: all four clamp at 64 and keep it distinct from 63; no hardware measurement |
+| **Verdict of the four** | all four clamp at 64 and keep it distinct from 63. Hardware: not measured |
 | **Effort** | S — the `.volume` connection in `paula_audio_mixer.v` (four instances, `sv0` to `sv3`) and the width of `paula_audio_volume`'s `volume` port, as the suggested change states |
 
 ---
@@ -71,9 +71,8 @@ the same fixture and is green, and `VOLUME-65-LEVELS` is green on the PWM output
 
 - Chip revision and real hardware are not measured, and no affected software is
   on the result.
-- Both packages drive channel 0 only. `sv1` to `sv3` in `paula_audio_mixer.v` carry
-  the same construction but are not measured; what `paula_audio_volume` does with a
-  seventh bit is not examined here.
+- Both packages measure 63 against 64 on channel 0 only. `sv1` to `sv3` in
+  `paula_audio_mixer.v` carry the same construction but are not measured.
 - The PWM path shows 65 levels from five sampled volumes only.
 - Measured against the multiply path's own maximum, the whole of Table 5-9 runs
   **+0.09 to +0.18 dB high** there, and reproduces to the printed decimal on the PWM
@@ -111,8 +110,7 @@ helper itself to widen, or the mixer to special-case it:
 ```
 
 with `paula_audio_volume`'s `volume` port widened to `[6:0]`. That makes the
-multiply path agree with the PWM path already in the same design. This is a
-suggestion; the decision is the specialist's.
+multiply path agree with the PWM path already in the same design.
 
 **Confirming a fix.** Both Makefiles default to `NANOMIG ?= ../../nanomig`, the
 pinned submodule, so a bare `make` rebuilds the unmodified RTL and reproduces the
