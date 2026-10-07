@@ -10,7 +10,7 @@
 | **Scope** | Paula's serial receiver with nine data bits (SERPER bit 15 set), measured on NanoMig's `paula_uart.v` at the pinned revision; chip revision unknown; hardware not measured. The eight-data-bit frame lies inside the printed range (9.68 and 10 bit times) |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8, printed p.256 (receive-time sentence and SERPER bit-15 sentence) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`: `sol:8-serdatr.c9`, `sol:8-serdatr.c10`, p.256; `B11`: `opus:8-serial.c54`, p.256. Both assertions carry a claim id |
-| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L156-L230); inherited, identical in MiSTer and TC64 |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L156-L230); inherited (identical in MiSTer and TC64) |
 | **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; an expected red exits nonzero |
 | **Assertions** | 2 red, in two packages. `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`: expected both windows in 8 to 10 bit times, observed 9.681818 (8-bit) and 10.681818 (9-bit); the package reports `12 passed, 2 failed`. `B11`: expected both in 8 to 10 bit-cells, observed 10 (8-bit) and 11 (9-bit); the package reports `48 passed, 3 failed` |
 | **Verdict of the four** | **three of four land on 10 and 11 bit times, exactly as NanoMig does**. Hardware: not measured |
@@ -74,7 +74,4 @@ own starting point at 10 bit-cells and 11 (`B11`, red). Both reds come from the
 
 ## Decision
 
-No RTL change. The page closes when an Amiga specialist, reading p.256's "8 to
-10 bit times" against a real Paula, records that it does not cover the
-nine-data-bit frame; if the specialist finds that it does, this page is refiled
-against the RTL.
+No RTL change is asked. The two reds stay against p.256 until the closing event in row 4.
