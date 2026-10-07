@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Do BEAMCON0 bits 2, 1 and 0 (CSYTRUE, VSYTRUE, HSYTRUE), which Appendix C p. 305 prints as polarity controls for the C, V and H sync pins, change `_csync`, `_vsync` and `_hsync` on a real ECS Agnus? Closes when an Amiga specialist confirms that they do, in which case the RTL changes as under *Decision*, or records them as inert, in which case this page is refiled against the printed page. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: its `agnus_beamcounter.v` has the same commented-out declarations; a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
+| **What is asked of a reader** | Do BEAMCON0 bits 2, 1 and 0 (CSYTRUE, VSYTRUE, HSYTRUE), which Appendix C p. 305 prints as polarity controls for the C, V and H sync pins, change `_csync`, `_vsync` and `_hsync` on a real ECS Agnus? Closes when the RTL decodes them and `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`, `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`, `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN` and `SYNC-POLARITY-BITS-CHANGE-THE-PINS` turn green, or when an Amiga specialist records them as inert on a real ECS Agnus, in which case this page is refiled against the printed page. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | `agnus_beamcounter` with ECS enabled (the BEAMCON0 write is gated on it); in the HRM package each bit written alone and with every other implemented BEAMCON0 bit set, in the AA package the three set together; chip revision unknown; real-chip behaviour not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Appendix C, printed p. 305, `BEAMCON0` bit table (test chapter 7) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`: `sol:7-appC-beamcon0.c15`, `opus:7-appC-beamcon0.c15`; `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`: `sol:7-appC-beamcon0.c16`, `opus:7-appC-beamcon0.c16`; `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN`: `sol:7-appC-beamcon0.c17`, `opus:7-appC-beamcon0.c17`. Second document: Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, preliminary, p. 13 as the PDF numbers it (the document prints none); `SYNC-POLARITY-BITS-CHANGE-THE-PINS`: `sol:AA-beamcon0.c19/c20/c21/c62/c63/c64`, `opus:AA-beamcon0.b2`, `opus:AA-beamcon0.b1`, `opus:AA-beamcon0.b0`, `opus:AA-beamcon0.c43`. All four assertions carry claim ids. |
-| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148); MiSTer matches NanoMig, TC64 differs (it decodes HSYTRUE and VSYTRUE, not CSYTRUE): fixed |
+| **Chapter** | Appendix C, printed p. 305, `BEAMCON0` bit table (test chapter 7) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`: `sol:7-appC-beamcon0.c15`, `opus:7-appC-beamcon0.c15`; `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`: `sol:7-appC-beamcon0.c16`, `opus:7-appC-beamcon0.c16`; `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN`: `sol:7-appC-beamcon0.c17`, `opus:7-appC-beamcon0.c17`. Second document: Commodore, *Functional Specification for the Advanced Amiga Chip Set (AA)*, 06/07/91, preliminary, pp. 12-13 as the PDF numbers them (the document prints none); `SYNC-POLARITY-BITS-CHANGE-THE-PINS`: `sol:AA-beamcon0.c19`, `sol:AA-beamcon0.c20`, `sol:AA-beamcon0.c21`, `opus:AA-beamcon0.b2`, `opus:AA-beamcon0.b1`, `opus:AA-beamcon0.b0` (p. 12), `sol:AA-beamcon0.c62`, `sol:AA-beamcon0.c63`, `sol:AA-beamcon0.c64`, `opus:AA-beamcon0.c43` (p. 13). All four assertions carry claim ids. |
+| **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L140-L142) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148); MiSTer has the same code; TC64 differs (it decodes HSYTRUE and VSYTRUE into outputs; CSYTRUE stays unused): inherited |
 | **Test** | [`hrm/ch7-beamcon0-ecs-control-bits`](../../hrm/ch7-beamcon0-ecs-control-bits): `make -C hrm/ch7-beamcon0-ecs-control-bits test`; corroborated by [`aa/aa-beamcon0-control-bits`](../../aa/aa-beamcon0-control-bits): `make -C aa/aa-beamcon0-control-bits test`; an expected red exits nonzero |
 | **Assertions** | In the HRM package, 3 red (package `8 passed, 4 failed`; the fourth red, `P6-BEAMCON0-LOLDIS-BIT11-DISABLES-LONG-LINE-TOGGLE`, is a different claim, on [NM-HRM-033](NM-HRM-033.md)): `P11-BEAMCON0-CSYTRUE-BIT2-POLARITY-CONTROL-FOR-C-SYNC-PIN`, expected the `_csync` trace to change with bit 2 set, observed byte-for-byte identical (883 edges); `P12-BEAMCON0-VSYTRUE-BIT1-POLARITY-CONTROL-FOR-V-SYNC-PIN`, `_vsync` identical (3 edges); `P13-BEAMCON0-HSYTRUE-BIT0-POLARITY-CONTROL-FOR-H-SYNC-PIN`, `_hsync` identical (881 edges). In the AA package (`4 passed, 1 failed`), `SYNC-POLARITY-BITS-CHANGE-THE-PINS`, expected the three pins to differ somewhere, observed 0 of 260 samples |
-| **Verdict of the four** | **split**: only WinUAE implements all three; Denise implements CSYTRUE only; vAmiga and Copperline do not model them. Hardware status: not measured |
+| **Verdict of the four** | **split**: only WinUAE implements all three; Denise implements one; two do not model them at all. Hardware: not measured |
 | **Effort** | S — uncomment the three wire declarations in `agnus_beamcounter.v` and apply them to the three sync outputs |
 
 ---
@@ -63,7 +63,7 @@ The edge counts make the comparison non-vacuous. The fixture does reach BEAMCON0
 ## Risks and unknowns
 
 - Whether the bits change anything on a real ECS Agnus is not measured. Two of the four emulators model none of them, which could mean the bits are unimportant in practice, or only that no software exercises them.
-- This finding stands on the printed page, not on a consensus among implementations, and must not be reported as though everyone else did this and NanoMig did not. WinUAE implementing all three is the strongest evidence that the bits do something on real hardware: its chipset work is the longest-running reverse-engineering effort of the four and its source carries hardware measurements. WinUAE implementing all three while Denise implements one is the kind of split that usually means somebody measured one of them and nobody measured the others.
+- This finding stands on the printed page, not on a consensus among implementations, and must not be reported as though everyone else did this and NanoMig did not. WinUAE implementing all three while Denise implements one is the kind of split that usually means somebody measured one of them and nobody measured the others.
 
 ## Independent evidence
 
@@ -76,12 +76,12 @@ The edge counts make the comparison non-vacuous. The fixture does reach BEAMCON0
 | **MiSTer** | [`rtl/agnus_beamcounter.v:146-148`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L146-L148) | descendant — identical to NanoMig: `csynctrue`/`vsynctrue`/`hsynctrue` are commented-out declarations, nothing reads `beamcon0_reg[2:0]` |
 | **TC64** | [`rtl/minimig/agnus_beamcounter.v:171-173`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_beamcounter.v#L171-L173) | descendant — the three wires are **not** commented out: `wire hsynctrue = displaydual ? beamcon0_sh[0] : beamcon0_reg[0];` and likewise `vsynctrue`, feeding two new outputs, `hsyncpol`/`vsyncpol` (`:175-176`), that `agnus.v` forwards outward. `csynctrue` is declared the same way but used nowhere else; `_csync` is still formed at `:458` as `(_hsync & _vsync) \| vser` |
 
-Every line was read in a local checkout at the revision named in its link.
-
 The 1991 AA functional specification prints the same requirement, in its own bit table and in the paragraph
 
 ```
-HSYTRUE,VSYTRUE,CSYTRUE= These change the polarity of the sync
+HSYTRUE,VSYTRUE,CSYTRUE= These change the polarity of the
+ HSY*, VSY*, & CSY* pins to HSY, VSY,& CSY respectively
+ for input & output.
 ```
 
 `aa/aa-beamcon0-control-bits` runs one video line twice at the `agnus_beamcounter` boundary, once with the three bits clear and once with them set, sampling `_hsync`, `_vsync` and `_csync` once per colour clock:
@@ -95,7 +95,7 @@ The pins pulse (two levels), so the fixture is driving a beam, and the bits chan
 
 ## Decision
 
-The decision belongs to an Amiga specialist, not to this repository. One option: uncomment the three declarations and invert the outputs they name:
+Suggested change: uncomment the three declarations and invert the outputs they name:
 
 ```verilog
 wire csynctrue    = beamcon0_reg[ 2];
