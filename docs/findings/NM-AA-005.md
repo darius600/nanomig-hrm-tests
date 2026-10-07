@@ -17,6 +17,8 @@
 | **Effort** | none; if a specialist wants the long line, M: lengthening the alternate line touches the `end_of_line` comparison at `agnus_beamcounter.v:250`, which every other timing in the module hangs off |
 | **See also** | [NM-HRM-033](NM-HRM-033.md), where LOLDIS is ignored without VARBEAMEN |
 
+---
+
 ## Source requirement
 
 Below its bit table, page 24's HTOTAL entry says what a line lasts, and closes with `Active if VARBEAMEN=1 or DUAL=1.`:
