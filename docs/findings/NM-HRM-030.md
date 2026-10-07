@@ -6,14 +6,14 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this; the red is against the printed page. Question: does the `P` in the chip column of DMACONR (`$002`), printed on p. 278 and p. 289, mean that Paula answers a read of `$002`, or only that Paula holds a copy of DMACON, so that the Agnus-only answer NanoMig gives is correct? Closes when an Amiga specialist records the `P` as "holds the register" (a read answered by Agnus alone is correct), or confirms that Paula answers the read, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendices A and B of the *Amiga Hardware Reference Manual*, 3rd ed. The defect is in the printed chip column, not in the RTL |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendices A and B of the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Scope** | Paula's read of `$002` in `paula.v`; the one dissected Paula is the 8364R7; no other revision and no hardware read measured here |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 278, and Appendix B, printed p. 289 (key on p. 287), DMACONR chip column; test chapter 5 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. `DMACONR-NOT-DECODED-BY-PAULA`: `5-appA-p278.c7`, `5-appB-p289.c3`, `A-dmaconr.chip`, pp. 278 and 289; no other assertion of the package is part of this finding |
 | **Module** | `paula.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v); inherited |
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon): `make -C hrm/ch5-audio-dmacon-adkcon test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `DMACONR-NOT-DECODED-BY-PAULA`: expected the `$002` read through `paula.v` to change after `DMACON = 0x8203`, observed `0x0`, equal to the idle read `0x0`; the package reports `19 passed, 2 failed`, and the other red is not this finding's |
-| **Verdict of the four** | **three of four with NanoMig, and the fourth cannot answer**: vAmiga, Denise and Copperline keep Paula apart from Agnus and read `$002` from Agnus's DMACON alone, while routing `ADKCONR` at `$010` to Paula; WinUAE has one `DMACONR()` for the whole chip set and no separate Paula to ask. Hardware: the dissected 8364R7 gives Paula's DMACON copy no read path |
+| **Verdict of the four** | **three of four with NanoMig, and the fourth cannot answer**: vAmiga (`Memory.cpp:2411-2412`), Denise (`agnus/register.cpp:64-65`) and Copperline (`custom_regs.rs:12-27`) keep Paula apart from Agnus and read `$002` from Agnus's DMACON alone, while routing `ADKCONR` at `$010` to Paula; WinUAE has one `DMACONR()` for the whole chip set (`custom.cpp:7048`) and no separate Paula to ask. Hardware: the dissected 8364R7 gives Paula's DMACON copy no read path |
 | **Effort** | none — no RTL change; a documentation note on pp. 278 and 289 only |
 
 ---
@@ -88,6 +88,8 @@ The value never changes: Paula is not driving that address.
 | **MiSTer** | [`rtl/paula.v:147`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/paula.v#L147) | descendant — carries `assign data_out = uartdata_out \| intdata_out \| diskdata_out \| adkconr;`, no `DMACONR` term, and the comment at `:153`: `//NOTE: this register is also present in the Agnus module, //there DMACONR (read) is implemented` |
 | **TC64** | [`rtl/minimig/paula.v:166`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L166), [`:172`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/paula.v#L172) | descendant — the identical assignment and the identical comment. `DMACONR` is decoded in Agnus in all three trees; Paula answers it in none of them |
 
+### What other Commodore documents say
+
 **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
 
 > "Note, that the CPU can't read the DMACON register."
@@ -100,7 +102,4 @@ Section 6ab is Paula's own DMACON copy (bits 0-4 and 9, gating its DMA requests)
 No RTL change. Agnus decodes `DMACONR` in NanoMig, so a read of `$002` returns the
 DMA enables and the blitter's status, which is what every implementation returns.
 What fails is the appendix's statement, on the reading the test takes, that Paula
-is *one of* the chips answering it. If the `P` means "holds the register", the red
-stays against the printed chip column; if Paula answers the read, this page is
-refiled against the RTL. Re-run:
-`make -C hrm/ch5-audio-dmacon-adkcon test`.
+is *one of* the chips answering it.
