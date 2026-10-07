@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-mouse-counter-wraparound`](../../hrm/ch8-mouse-counter-wraparound): `make -C hrm/ch8-mouse-counter-wraparound test`; an expected red exits nonzero |
 | **Assertions** | 3 red, the package reports `15 passed, 3 failed`: `opus:8-limits.c15` — expected 100 state changes on every row of Table 8-2, observed 100, 100, 101, 101; `opus:8-limits.c20` (with `sol:8-mouse-limit.c17`) — expected 100 for 200 → 45, observed 101; `opus:8-limits.c21` (with `sol:8-mouse-limit.c18`) — expected 100 for 45 → 200, observed 101. The two non-wrapping rows are green in the same package |
 | **Verdict of the four** | **unanimous on the half they can answer** — 256 states per axis in all four, and not one uses 255 as a modulus. Hardware: not measured |
-| **Effort** | none: no RTL change; any correction is to the two footnotes on p.231 |
+| **Effort** | none — no RTL change: any correction is to the two footnotes on p.231 |
 
 ---
 
