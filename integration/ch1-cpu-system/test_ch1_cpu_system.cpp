@@ -1,125 +1,102 @@
-// test_ch1_cpu_system.cpp -- ch1-cpu-system. See SPECIFICATION.md for
-// every assertion's proposition, program, observed value and expected
-// value. This file only implements what SPECIFICATION.md already
-// committed to.
+// test_ch1_cpu_system.cpp -- ch1-cpu-system. See SPECIFICATION.md for every
+// assertion's proposition, program, observed value and expected value; this
+// file implements what that document commits to.
 //
 // NMH_MUTATE selects a mutated program (or configuration) in place of its
-// normal counterpart, one assertion at a time; none is exercised by a
-// plain `make test`. The normal run prints only the fixture-equivalent
-// setup, the preconditions and the assertions -- no separate line.
+// normal counterpart, one assertion at a time; a plain `make test` runs none.
+// Every program is assembled to an image and, separately, to a vasm listing;
+// the test uses a listing only after checking that it reproduces the image
+// byte for byte.
 //
-// Every line below is a measured result (run at most two simulations at a
-// time, one core each), not a prediction: "first core" = fx68k, "second
-// core" = TG68K. Baseline (no mutation): first core 52 passed/0 failed;
-// second core 108 passed/0 failed. P4 and P6's own claims (opus/sol:1-
-// guidelines.c59, c67) are declined (harness limit, see SPECIFICATION.md
-// section 1 and 10), so neither prints a FAIL in the baseline. Where a
-// mutation's own file is not loaded by a core's run at all, that core's
-// count equals its baseline and is marked "not applicable".
+// Baseline (no mutation), measured: fx68k 52 passed/0 failed, TG68K 108
+// passed/0 failed. The claims of P4 and P6 (opus/sol:1-guidelines.c59 and
+// c67) are declined (a harness-option limit, SPECIFICATION.md sections 1 and
+// 10), c65 is recorded (the port log carries no requester) and C5 is
+// recorded (no core or mode witness exists at the ports); none of them prints
+// a FAIL.
 //
-// MUTATION P1-MOVE NMH_MUTATE=P1-MOVE: every CLR.x replaced by MOVE.x #0
-//   (p1_move.bin) -- measured: first core 51/1 failed, second core 107/1
-//   failed (P1 on both). MOVE.x #0 makes a single write, no read, on both
-//   cores (case 1, .B (An): W@2274429 on the first core, W@2274317 on the
-//   second, no preceding read) -- the page's own contrast, which flips P1's
-//   read-then-write relation red through the unchanged comparator, exactly
-//   as p.13 and p.263 predict.
-// MUTATION P1A NMH_MUTATE=P1A: case 5's S_A store left out (p1_muta.bin) --
-//   measured: first core 50/1 failed (P1.a), second core 106/1 failed
-//   (P1.a). P1's own relation is gated on P1.a and is not evaluated
-//   (recorded), not a second FAIL.
-// MUTATION P1B NMH_MUTATE=P1B: case 8's effective address is T_8+8
-//   (p1_mutb.bin) -- measured: first core 50/1 failed (P1.b), second core
-//   106/1 failed (P1.b).
-// MUTATION P1C NMH_MUTATE=P1C: case 11 assembled as CLR.L while the table
-//   still names CLR.W (p1_mutc.bin) -- measured: first core 50/1 failed
-//   (P1.c), second core 106/1 failed (P1.c).
-// MUTATION C1 NMH_MUTATE=C1: an extra INTENA write follows step 2
-//   (p1_mutc1.bin) -- measured: first core 50/1 failed (C1), second core
-//   106/1 failed (C1).
-// MUTATION C2 NMH_MUTATE=C2: an extra DMACON write follows step 4
-//   (p1_mutc2.bin) -- measured: first core 50/1 failed (C2), second core
-//   106/1 failed (C2).
-// MUTATION C3 NMH_MUTATE=C3: a branch to FAILRUN precedes the normal S_END
-//   write (p1_mutc3.bin) -- measured: first core 50/1 failed (C3), second
-//   core 106/1 failed (C3).
-// MUTATION C4 NMH_MUTATE=C4: the S_START write is left out (p1_mutc4.bin) --
-//   measured: first core 49/2 failed (the peek_word fixture check, C4),
-//   second core 105/2 failed (the same two): S_START never being written
-//   also makes its own peek_word readback wrong, an independent clause.
-// MUTATION P2-LOW NMH_MUTATE=P2-LOW: every register loaded with its
-//   pattern's lower half, zero-extended (p2_low.bin) -- measured: first
-//   core 51/1 failed (P2), second core 107/1 failed (P2).
-// MUTATION P2A NMH_MUTATE=P2A: step 8's S_B write left out (p2_muta.bin) --
-//   measured: first core 49/2 failed (P2.a, P2.b), second core 105/2
-//   failed (P2.a, P2.b). P2's own relation is gated on P2.a/P2.b/P2.c and
-//   is not evaluated, not a third FAIL.
-// MUTATION P2B NMH_MUTATE=P2B: the store of D3 left out (p2_mutb.bin) --
-//   measured: first core 50/1 failed (P2.b), second core 106/1 failed
-//   (P2.b).
-// MUTATION P2C NMH_MUTATE=P2C: a TRAP #0 through an RTE-only handler runs
-//   between steps 6 and 7 (p2_mutc.bin) -- measured: first core 50/1 failed
-//   (P2.c), second core 106/1 failed (P2.c).
-// MUTATION P3A NMH_MUTATE=P3A: block 1's BRA.S replaced by NOP, falling
-//   into the guard (p3_mutnop.bin) -- measured: first core 47/4 failed (C3,
-//   P3.a, P3.b, P3.d), second core 103/4 failed (the same four, 68000-mode
-//   iteration only). P3.c stays green: the block's own X_1 self-report
-//   never runs, so P3.c's static check (run against the self-reported,
-//   now-stale X_1) finds no operand referencing it -- a known limit of
-//   this contrast, not a new claim.
-// MUTATION P3B NMH_MUTATE=P3B: the same NOP substitution (p3_mutnop.bin) --
-//   measured: first core 47/4 failed (C3, P3.a, P3.b, P3.d), second core
-//   103/4 failed (the same four, 68000-mode iteration only).
-// MUTATION P3C NMH_MUTATE=P3C: a TST.W W_3 is inserted before block 3
-//   (p3_mutc.bin) -- measured: first core 50/1 failed (P3.c), second core
-//   106/1 failed (P3.c, 68000-mode iteration only).
-// MUTATION P3D NMH_MUTATE=P3D: block 1 assembled as BRA.W while the table
-//   still names BRA.S (p3_mutd.bin) -- measured: first core 50/1 failed
-//   (P3.d), second core 106/1 failed (P3.d, 68000-mode iteration only).
-// MUTATION P5A NMH_MUTATE=P5A: case 1's TRAP #0 replaced by NOP, no
-//   exception taken (p5_muta.bin) -- measured: first core 49/3 failed (C3,
-//   P5.a, P5.c), second core 101/4 failed (C3, P5.a, P5.c, P5.b): case 1
-//   never reaching its handler branches straight to FAILRUN, so every later
-//   case's window is lost too (one aggregate P5.a/P5.c fail each, not five),
-//   S_FAIL is written (C3), and PRE_SP for e=1..5 no longer matches the
-//   68010/68020 runs (P5.b, second core only).
-// MUTATION P5B NMH_MUTATE=P5B: SUBQ.L #4,A7 inserted before case 1 in the
-//   68010 image (p5_mutb.bin) -- measured: first core 52/0 failed (not
-//   applicable: this core never loads the 68010 image), second core 104/1
-//   failed (P5.b).
-// MUTATION P5C NMH_MUTATE=P5C: an extra MOVE.W D0,S_P lands inside W_2
-//   (p5_mutc.bin) -- measured: first core 51/1 failed (P5.c), second core
-//   107/1 failed (P5.c).
-// MUTATION P6E NMH_MUTATE=P6E: every guard shortened to one word
-//   (p6_mute.bin) -- measured: first core 50/2 failed (P6 alignment,
-//   P6.e), second core 106/2 failed (the same two). P6.e goes red through
-//   its own clause: D(68000 mode) = 1 = the guard length (1 word), so
-//   "D < guard length" fails; guard_len is read back from the image
-//   (block 1's guard opcode), not from NMH_MUTATE. Shortening the guard
-//   also shifts every later X_k by a constant amount, which happens to
-//   break the alignment precondition too (a side effect of this specific
-//   mutation, not what it targets) -- P6.e is not gated on alignment, so
-//   this does not swallow P6.e's own red.
-// MUTATION P6ALIGN NMH_MUTATE=P6ALIGN: the first pair's extra pad word is
-//   left out, so X1 and X2 land at the same parity mod 4 (p6_mutalign.bin)
-//   -- measured: first core 51/1 failed (P6 alignment), second core 107/1
-//   failed (P6 alignment). P6.e and D stay green: alignment does not gate
-//   them.
+// Each record below is one stimulus mutation, replayed on both cores with the
+// built binaries (NMH_MUTATE=<selector> ./Vnanomig <package directory>). The
+// comparator and the expected value stay as they are; the program or the
+// configuration changes. The label after MUTATION is the leading token of the
+// printed line; several lines share a token (a program's fixture lines share
+// it with the program's relation, and C1 to C4 are printed in every
+// program's run) and each record says which line it reddens. "TG68K" and
+// "fx68k" give the printed totals and the red labels; "not applicable" marks
+// a mutation whose image or run the core never loads, so its totals equal the
+// baseline.
 //
-// P3's own main relation has no page-predicted contrasting case
-// (SPECIFICATION.md section 5: "None exists on the pages") -- not
-// exercised, by a scope decision, per SPECIFICATION.md itself. P5's and
-// P6's own "contrasting case" (first core vs. second core in 68000 mode)
-// spans both cores' separate executables; neither build can read the
-// other's data, so each core prints its own RECORDED frame/depth data and
-// the comparison is drawn once both outputs exist, not as a checks.expect
-// inside either binary. C5 (the record names the run's core/mode) cannot
-// be measured with anything the harness currently exposes on the ports;
-// withdrawn rather than worked around (reported to the lead). The C4
-// ordering clause ("S_START comes before every window") is asserted but
-// has no dedicated mutation of its own: reordering it would mean
-// restructuring the shared SETUP macro, which every other precondition's
-// contrast also depends on.
+// MUTATION P1 stimulus red NMH_MUTATE=NODONE-P1: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p1_mutnodone.bin); the DONE clause of every P1 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 106 passed/1 failed (P1), fx68k 50 passed/1 failed (P1).
+// MUTATION P1 stimulus red NMH_MUTATE=PEEK-P1: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p1_mutpeek.bin); the peek_word readback line of every P1 run is red; TG68K 106 passed/1 failed (P1), fx68k 50 passed/1 failed (P1).
+// MUTATION C1 stimulus red NMH_MUTATE=C1-P1: an extra INTENA write ($C000) follows step 2 (p1_mutc1.bin); TG68K 106 passed/1 failed (C1), fx68k 50 passed/1 failed (C1).
+// MUTATION C2 stimulus red NMH_MUTATE=C2-P1: an extra DMACON write ($8240) follows step 4 (p1_mutc2.bin); TG68K 106 passed/1 failed (C2), fx68k 50 passed/1 failed (C2).
+// MUTATION C3 stimulus red NMH_MUTATE=C3-P1: the S_END write is made twice (p1_mutc3.bin); TG68K 106 passed/1 failed (C3), fx68k 50 passed/1 failed (C3).
+// MUTATION C4 stimulus red NMH_MUTATE=C4-P1: the S_START write is made twice (p1_mutc4.bin); TG68K 106 passed/1 failed (C4), fx68k 50 passed/1 failed (C4).
+// MUTATION P2 stimulus red NMH_MUTATE=NODONE-P2: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p2_mutnodone.bin); the DONE clause of every P2 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 106 passed/1 failed (P2), fx68k 50 passed/1 failed (P2).
+// MUTATION P2 stimulus red NMH_MUTATE=PEEK-P2: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p2_mutpeek.bin); the peek_word readback line of every P2 run is red; TG68K 106 passed/1 failed (P2), fx68k 50 passed/1 failed (P2).
+// MUTATION C1 stimulus red NMH_MUTATE=C1-P2: an extra INTENA write ($C000) follows step 2 (p2_mutc1.bin); TG68K 106 passed/1 failed (C1), fx68k 50 passed/1 failed (C1).
+// MUTATION C2 stimulus red NMH_MUTATE=C2-P2: an extra DMACON write ($8240) follows step 4 (p2_mutc2.bin); TG68K 106 passed/1 failed (C2), fx68k 50 passed/1 failed (C2).
+// MUTATION C3 stimulus red NMH_MUTATE=C3-P2: the S_END write is made twice (p2_mutc3.bin); TG68K 106 passed/1 failed (C3), fx68k 50 passed/1 failed (C3).
+// MUTATION C4 stimulus red NMH_MUTATE=C4-P2: the S_START write is made twice (p2_mutc4.bin); TG68K 106 passed/1 failed (C4), fx68k 50 passed/1 failed (C4).
+// MUTATION P3 stimulus red NMH_MUTATE=NODONE-P3: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p3_mutnodone.bin); the DONE clause of every P3 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 102 passed/3 failed (P3 x3), fx68k 50 passed/1 failed (P3).
+// MUTATION P3 stimulus red NMH_MUTATE=PEEK-P3: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p3_mutpeek.bin); the peek_word readback line of every P3 run is red; TG68K 102 passed/3 failed (P3 x3), fx68k 50 passed/1 failed (P3).
+// MUTATION C1 stimulus red NMH_MUTATE=C1-P3: an extra INTENA write ($C000) follows step 2 (p3_mutc1.bin); TG68K 102 passed/3 failed (C1 x3), fx68k 50 passed/1 failed (C1).
+// MUTATION C2 stimulus red NMH_MUTATE=C2-P3: an extra DMACON write ($8240) follows step 4 (p3_mutc2.bin); TG68K 102 passed/3 failed (C2 x3), fx68k 50 passed/1 failed (C2).
+// MUTATION C3 stimulus red NMH_MUTATE=C3-P3: the S_END write is made twice (p3_mutc3.bin); TG68K 102 passed/3 failed (C3 x3), fx68k 50 passed/1 failed (C3).
+// MUTATION C4 stimulus red NMH_MUTATE=C4-P3: the S_START write is made twice (p3_mutc4.bin); TG68K 102 passed/3 failed (C4 x3), fx68k 50 passed/1 failed (C4).
+// MUTATION P5 stimulus red NMH_MUTATE=NODONE-P5: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p5_mutnodone.bin (68000 image) and p5_vbr_mutnodone.bin (VBR image)); the DONE clause of every P5 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 102 passed/3 failed (P5 x3), fx68k 51 passed/1 failed (P5).
+// MUTATION P5 stimulus red NMH_MUTATE=PEEK-P5: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p5_mutpeek.bin (68000 image) and p5_vbr_mutpeek.bin (VBR image)); the peek_word readback line of every P5 run is red; TG68K 102 passed/3 failed (P5 x3), fx68k 51 passed/1 failed (P5).
+// MUTATION C1 stimulus red NMH_MUTATE=C1-P5: an extra INTENA write ($C000) follows step 2 (p5_mutc1.bin (68000 image) and p5_vbr_mutc1.bin (VBR image)); TG68K 102 passed/3 failed (C1 x3), fx68k 51 passed/1 failed (C1).
+// MUTATION C2 stimulus red NMH_MUTATE=C2-P5: an extra DMACON write ($8240) follows step 4 (p5_mutc2.bin (68000 image) and p5_vbr_mutc2.bin (VBR image)); TG68K 102 passed/3 failed (C2 x3), fx68k 51 passed/1 failed (C2).
+// MUTATION C3 stimulus red NMH_MUTATE=C3-P5: the S_END write is made twice (p5_mutc3.bin (68000 image) and p5_vbr_mutc3.bin (VBR image)); TG68K 102 passed/3 failed (C3 x3), fx68k 51 passed/1 failed (C3).
+// MUTATION C4 stimulus red NMH_MUTATE=C4-P5: the S_START write is made twice (p5_mutc4.bin (68000 image) and p5_vbr_mutc4.bin (VBR image)); TG68K 102 passed/3 failed (C4 x3), fx68k 51 passed/1 failed (C4).
+// MUTATION P6 stimulus red NMH_MUTATE=NODONE-P6: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p6_mutnodone.bin); the DONE clause of every P6 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 105 passed/2 failed (P6 x2), fx68k 50 passed/1 failed (P6).
+// MUTATION P6 stimulus red NMH_MUTATE=PEEK-P6: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p6_mutpeek.bin); the peek_word readback line of every P6 run is red; TG68K 105 passed/2 failed (P6 x2), fx68k 50 passed/1 failed (P6).
+// MUTATION C1 stimulus red NMH_MUTATE=C1-P6: an extra INTENA write ($C000) follows step 2 (p6_mutc1.bin); TG68K 105 passed/2 failed (C1 x2), fx68k 50 passed/1 failed (C1).
+// MUTATION C2 stimulus red NMH_MUTATE=C2-P6: an extra DMACON write ($8240) follows step 4 (p6_mutc2.bin); TG68K 105 passed/2 failed (C2 x2), fx68k 50 passed/1 failed (C2).
+// MUTATION C3 stimulus red NMH_MUTATE=C3-P6: the S_END write is made twice (p6_mutc3.bin); TG68K 105 passed/2 failed (C3 x2), fx68k 50 passed/1 failed (C3).
+// MUTATION C4 stimulus red NMH_MUTATE=C4-P6: the S_START write is made twice (p6_mutc4.bin); TG68K 105 passed/2 failed (C4 x2), fx68k 50 passed/1 failed (C4).
+// MUTATION C4 stimulus red NMH_MUTATE=C4B-P1: S_START is written after case 1's S_A write instead of in the setup (p1_mutc4b.bin): still written once with $0001, but not before every window; TG68K 106 passed/1 failed (C4), fx68k 50 passed/1 failed (C4).
+// MUTATION P1 stimulus red NMH_MUTATE=P1-MOVE: every CLR.x replaced by MOVE.x #0 (p1_move.bin): MOVE.x #0 makes a single write and no read, the page's own contrast, so P1's read-then-write relation goes red through the unchanged comparator in all 21 cases; TG68K 107 passed/1 failed (P1), fx68k 51 passed/1 failed (P1).
+// MUTATION P1.a stimulus red NMH_MUTATE=P1A: case 5's S_A store left out (p1_muta.bin); TG68K 106 passed/1 failed (P1.a), fx68k 50 passed/1 failed (P1.a).
+// MUTATION P1.a stimulus red NMH_MUTATE=P1A-ORD: case 4's S_B write and readback moved behind case 5's S_A write (p1_mutord.bin): every case keeps one ordered S_A/S_B pair, windows 4 and 5 overlap; TG68K 106 passed/1 failed (P1.a), fx68k 50 passed/1 failed (P1.a).
+// MUTATION P1.b stimulus red NMH_MUTATE=P1B: case 8's effective address is T_8+8 (p1_mutb.bin); TG68K 106 passed/1 failed (P1.b), fx68k 50 passed/1 failed (P1.b).
+// MUTATION P1.c stimulus red NMH_MUTATE=P1C: case 11 assembled as CLR.L while the table names CLR.W (p1_mutc.bin); TG68K 106 passed/1 failed (P1.c), fx68k 50 passed/1 failed (P1.c).
+// MUTATION P1.c stimulus red NMH_MUTATE=P1C-MOVE: case 11 assembled as MOVE.L #0 while the table names MOVE.W (p1_move_mutc.bin), graded against the MOVE opcodes; TG68K 106 passed/1 failed (P1.c), fx68k 50 passed/1 failed (P1.c).
+// MUTATION P4 stimulus red NMH_MUTATE=NODONE-P4: the P4 run's program (p1_mutnodone.bin) stops in place after S_END without writing DONE; TG68K 107 passed/1 failed (P4), fx68k 52 passed/0 failed (not applicable: the first core has no 68020 run).
+// MUTATION P2 stimulus red NMH_MUTATE=P2-LOW: every register loaded with its pattern's lower half zero-extended, USP with $0000E0F0 (p2_low.bin); TG68K 107 passed/1 failed (P2), fx68k 51 passed/1 failed (P2).
+// MUTATION P2.a stimulus red NMH_MUTATE=P2A: step 8's S_B write made twice (p2_muta.bin): the window up to the first S_B stays usable; TG68K 106 passed/1 failed (P2.a), fx68k 50 passed/1 failed (P2.a).
+// MUTATION P2.b stimulus red NMH_MUTATE=P2B: the store of D3 left out (p2_mutb.bin); TG68K 106 passed/1 failed (P2.b), fx68k 50 passed/1 failed (P2.b).
+// MUTATION P2.c stimulus red NMH_MUTATE=P2C: a TRAP #0 through an RTE-only handler between steps 6 and 7 (p2_mutc.bin); TG68K 106 passed/1 failed (P2.c), fx68k 50 passed/1 failed (P2.c).
+// MUTATION P3.a stimulus red NMH_MUTATE=P3A: block 2's landing marker written twice (p3_muta.bin); TG68K 102 passed/3 failed (P3.a x3), fx68k 50 passed/1 failed (P3.a).
+// MUTATION P3.a stimulus red NMH_MUTATE=P3A-ORD: block 2's progress marker written inside block 1, so the markers run P1,P2,L1,L2,... with one S_P and one S_L write per block (p3_mutord.bin); TG68K 102 passed/3 failed (P3.a x3), fx68k 50 passed/1 failed (P3.a).
+// MUTATION P3.a stimulus red NMH_MUTATE=P3A-P6: block 2's landing marker written twice in P6's eight blocks (p6_muta.bin), the reused P3.a line; TG68K 105 passed/2 failed (P3.a x2), fx68k 50 passed/1 failed (P3.a).
+// MUTATION P3.b stimulus red NMH_MUTATE=P3B: block 1's BRA.S aimed behind the first guard word, so the guard's S_X store runs and the guard branches to L_1 (p3_mutb.bin); TG68K 102 passed/3 failed (P3.b x3), fx68k 50 passed/1 failed (P3.b).
+// MUTATION P3.b stimulus red NMH_MUTATE=P3B-P6: block 1's BRA.S aimed behind the first guard word in P6 (p6_mutb.bin), the reused P3.b line; TG68K 105 passed/2 failed (P3.b x2), fx68k 50 passed/1 failed (P3.b).
+// MUTATION P3.c stimulus red NMH_MUTATE=P3C: a TST.W W_3 (absolute long) before block 3 (p3_mutc.bin); TG68K 102 passed/3 failed (P3.c x3), fx68k 50 passed/1 failed (P3.c).
+// MUTATION P3.c stimulus red NMH_MUTATE=P3C-PC: a MOVE.W W_3(PC),D2 before block 3 (p3_mutcpc.bin); TG68K 102 passed/3 failed (P3.c x3), fx68k 50 passed/1 failed (P3.c).
+// MUTATION P3.c stimulus red NMH_MUTATE=P3C-REG: a LEA W_3(PC),A1 and a TST.W (A1) before block 3 (p3_mutcreg.bin); TG68K 102 passed/3 failed (P3.c x3), fx68k 50 passed/1 failed (P3.c).
+// MUTATION P3.c stimulus red NMH_MUTATE=P3C-P6: a MOVE.W W_3(PC),D2 before block 3 in P6 (p6_mutc.bin), the reused P3.c line; TG68K 105 passed/2 failed (P3.c x2), fx68k 50 passed/1 failed (P3.c).
+// MUTATION P3.d stimulus red NMH_MUTATE=P3D: block 1 assembled as BRA.W while the table names BRA.S (p3_mutd.bin); TG68K 102 passed/3 failed (P3.d x3), fx68k 50 passed/1 failed (P3.d).
+// MUTATION P3.d stimulus red NMH_MUTATE=P3D-P6: block 1 assembled as BRA.W while the table names BRA.S in P6, the pair's pad NOP dropped (p6_mutd.bin), the reused P3.d line; TG68K 105 passed/2 failed (P3.d x2), fx68k 50 passed/1 failed (P3.d).
+// MUTATION P3 stimulus red NMH_MUTATE=P3-WIN: the S_END write made right after the setup (p3_mutwin.bin): the run window closes before the first block, so the main relation (no read at any W_k inside it) goes red with every precondition holding; TG68K 105 passed/3 failed (P3 x3), fx68k 51 passed/1 failed (P3).
+// MUTATION P3 stimulus red NMH_MUTATE=P3-CAL: a TST.W of the far word Z before the ending (p3_mutcal.bin): the calibration line goes red; TG68K 105 passed/3 failed (P3 x3), fx68k 51 passed/1 failed (P3).
+// MUTATION P5.a stimulus red NMH_MUTATE=P5A: case 1 executes TRAP #1 with its handler also installed at vector 33 (p5_muta.bin): the exception is taken and the window populated, but the installed vector 32 is not read; TG68K 105 passed/1 failed (P5.a), fx68k 51 passed/1 failed (P5.a).
+// MUTATION P5.b stimulus red NMH_MUTATE=P5B: SUBQ.L #4,A7 inserted before case 1 in the 68010 image (p5_mutb.bin); TG68K 104 passed/1 failed (P5.b), fx68k 52 passed/0 failed (not applicable: this core never loads the 68010 image).
+// MUTATION P5.b stimulus red NMH_MUTATE=P5B-SPAN: the VBR-side image replaced by one that keeps step 3's two NOPs and differs in case 3's MOVE.W #1,CCR (p5_mutspan.bin): the images differ in a four-byte span outside step 3; TG68K 104 passed/1 failed (P5.b), fx68k 52 passed/0 failed (not applicable: this core never loads the VBR image).
+// MUTATION P5.c stimulus red NMH_MUTATE=P5C: an extra MOVE.W D0,S_P inside W_2 (p5_mutc.bin); TG68K 107 passed/1 failed (P5.c), fx68k 51 passed/1 failed (P5.c).
+// MUTATION P5 stimulus red NMH_MUTATE=P5-PAIR-0010: the 68010 run loads the 68000-mode image under cpu_config 68000: the pair (68000,68010) writes equal frames; TG68K 107 passed/1 failed (P5), fx68k 52 passed/0 failed (not applicable: the pair relations run on the second core only).
+// MUTATION P5 stimulus red NMH_MUTATE=P5-PAIR-0020: the 68020 run loads the 68000-mode image under cpu_config 68000: the pair (68000,68020) writes equal frames; TG68K 107 passed/1 failed (P5), fx68k 52 passed/0 failed (not applicable: the pair relations run on the second core only).
+// MUTATION P5 stimulus red NMH_MUTATE=P5-PAIR-1020: the 68010 run loads the VBR image under cpu_config 68020: the pair (68010,68020) writes equal frames; TG68K 107 passed/1 failed (P5), fx68k 52 passed/0 failed (not applicable: the pair relations run on the second core only).
+// MUTATION P6 stimulus red NMH_MUTATE=P6ALIGN: the first pair's extra pad word left out (p6_mutalign.bin): X1 and X2 land at the same parity mod 4; TG68K 106 passed/2 failed (P6 x2), fx68k 51 passed/1 failed (P6).
+// MUTATION P6.e stimulus red NMH_MUTATE=P6E: every guard shortened to one word, with one pad NOP per guard so every pair keeps opposite parity (p6_mute.bin): D(68000 mode) equals the guard length; TG68K 107 passed/1 failed (P6.e), fx68k 51 passed/1 failed (P6.e).
+//
+// Not mutated, because they print no graded line: P4's relation, P6's D
+// comparison, P5's per-member frames and the claims c52, c59, c64, c65 and c67
+// are RECORDED or withdrawn lines. P5's and P6's contrasting case across the two
+// cores spans two executables, and neither build can read the other's data;
+// each core prints its own RECORDED frame or depth data and the comparison is
+// drawn once both outputs exist (SPECIFICATION.md section 10).
 
 #include <cstdint>
 #include <cstdio>
@@ -129,6 +106,8 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <map>
+#include <set>
 
 #include "nanomig_harness.h"
 
@@ -261,35 +240,373 @@ std::vector<uint8_t> read_file_bytes(const std::string& path) {
     return out;
 }
 
-// P3.c's static check: the assembled image (read from disk, not the memory
-// model) contains no instruction whose data operand is the absolute address
-// of a word in [w_lo,w_hi] (inclusive, word-aligned) anywhere outside that
-// span itself. An absolute-long operand embeds its address as a 4-byte
-// big-endian value; that is what SPECIFICATION.md 5's "static check on the
-// listing" comes down to for this image.
-bool static_no_operand_in_range(const std::vector<uint8_t>& img, uint32_t org, uint32_t w_lo, uint32_t w_hi) {
-    if (img.empty()) return false;
-    for (uint32_t probe = w_lo; probe <= w_hi; probe += 2) {
-        uint8_t b0 = uint8_t(probe >> 24), b1 = uint8_t(probe >> 16), b2 = uint8_t(probe >> 8), b3 = uint8_t(probe);
-        for (size_t off = 0; off + 4 <= img.size(); off += 2) {
-            uint32_t at = org + uint32_t(off);
-            if (at >= w_lo && at <= w_hi) continue; // the guard span's own bytes
-            if (img[off] == b0 && img[off+1] == b1 && img[off+2] == b2 && img[off+3] == b3) return false;
+// ---- assembler listings and the static checks built on them --------------
+//
+// vasm's listing (-L) gives, for every source line that emits code, the
+// address and the emitted bytes, and at its end the symbol table. The test
+// uses the listing of the very program it loaded: after the listing has been
+// checked against the image byte for byte, the listing's instruction
+// boundaries and symbols are what the image holds.
+struct ListItem { uint32_t addr = 0; std::vector<uint8_t> bytes; };
+struct Listing {
+    bool ok = false;
+    std::vector<ListItem> items;            // in file order
+    std::map<std::string, uint32_t> sym;    // labels (A:) and equates (E:)
+    std::set<uint32_t> labels;              // addresses of the labels
+};
+
+int hex_value(char c) {
+    if (c >= '0' && c <= '9') return c - '0';
+    if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+    if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+    return -1;
+}
+
+std::string listing_path(const std::string& bin_path) {
+    const std::string ext = ".bin";
+    if (bin_path.size() > ext.size() && bin_path.compare(bin_path.size() - ext.size(), ext.size(), ext) == 0)
+        return bin_path.substr(0, bin_path.size() - ext.size()) + ".lst";
+    return bin_path + ".lst";
+}
+
+Listing read_listing(const std::string& path) {
+    Listing L;
+    std::FILE* f = std::fopen(path.c_str(), "rb");
+    if (!f) return L;
+    std::string text;
+    char buf[4096];
+    size_t n;
+    while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) text.append(buf, n);
+    std::fclose(f);
+    bool in_names = false;
+    size_t pos = 0;
+    while (pos < text.size()) {
+        size_t eol = text.find('\n', pos);
+        if (eol == std::string::npos) eol = text.size();
+        std::string line = text.substr(pos, eol - pos);
+        pos = eol + 1;
+        if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (line.rfind("Symbols by name:", 0) == 0) { in_names = true; continue; }
+        if (line.rfind("Symbols by value:", 0) == 0) { in_names = false; continue; }
+        if (in_names) {
+            size_t sp = line.find_first_of(" \t");
+            if (sp == std::string::npos || sp == 0) continue;
+            size_t k = line.find_first_not_of(" \t", sp);
+            if (k == std::string::npos || k + 10 > line.size()) continue;
+            char kind = line[k];
+            if ((kind != 'A' && kind != 'E') || line[k + 1] != ':') continue;
+            uint32_t v = 0;
+            bool good = true;
+            for (size_t i = 0; i < 8; ++i) {
+                int h = hex_value(line[k + 2 + i]);
+                if (h < 0) { good = false; break; }
+                v = (v << 4) | uint32_t(h);
+            }
+            if (!good) continue;
+            L.sym[line.substr(0, sp)] = v;
+            if (kind == 'A') L.labels.insert(v);
+            continue;
         }
+        // code line: "SS:AAAAAAAA HEXBYTES<spaces><tab> ..."
+        if (line.size() < 14 || line[2] != ':' || line[11] != ' ') continue;
+        if (hex_value(line[0]) < 0 || hex_value(line[1]) < 0) continue;
+        uint32_t addr = 0;
+        bool good = true;
+        for (size_t i = 3; i < 11; ++i) {
+            int h = hex_value(line[i]);
+            if (h < 0) { good = false; break; }
+            addr = (addr << 4) | uint32_t(h);
+        }
+        if (!good) continue;
+        ListItem it;
+        it.addr = addr;
+        size_t i = 12;
+        while (i + 1 < line.size() && hex_value(line[i]) >= 0 && hex_value(line[i + 1]) >= 0) {
+            it.bytes.push_back(uint8_t(hex_value(line[i]) * 16 + hex_value(line[i + 1])));
+            i += 2;
+        }
+        if (!it.bytes.empty()) L.items.push_back(std::move(it));
+    }
+    L.ok = !L.items.empty();
+    return L;
+}
+
+// The listing reproduces the image: its items are contiguous from org and
+// every byte equals the image's byte.
+bool listing_matches_image(const Listing& L, const std::vector<uint8_t>& img, uint32_t org) {
+    if (!L.ok || img.empty()) return false;
+    uint32_t next = org;
+    for (const auto& it : L.items) {
+        if (it.addr != next) return false;
+        if (size_t(it.addr - org) + it.bytes.size() > img.size()) return false;
+        for (size_t i = 0; i < it.bytes.size(); ++i)
+            if (img[it.addr - org + i] != it.bytes[i]) return false;
+        next += uint32_t(it.bytes.size());
+    }
+    return next - org == img.size();
+}
+
+struct ScanResult { bool ok = true; std::string why; };
+
+// P3.c's static check. Decodes every instruction of the listing (the 68000
+// instructions the package's programs use; any other opcode is not
+// analysable and fails the check) and follows every effective-address path
+// that reads or writes memory: absolute short/long, PC-relative, and
+// register-indirect with the address register's value tracked from the
+// instructions that set it (LEA, MOVEA, MOVE.L #imm,An). A data access whose
+// address cannot be resolved fails the check. LEA and PEA compute an address
+// without accessing it; JMP, JSR and the branches transfer control and fetch
+// from their target (that is P3.b's business). Address registers A0-A6 are
+// forgotten after an unconditional transfer and at every label; A7 is
+// tracked through the stack instructions. No data access may overlap any of
+// the byte ranges [first,last] (inclusive).
+ScanResult scan_data_accesses(const Listing& L, const std::vector<std::pair<uint32_t, uint32_t>>& regions) {
+    ScanResult res;
+    auto fail = [&](uint32_t pc, const std::string& why) {
+        if (res.ok) {
+            char b[96];
+            std::snprintf(b, sizeof(b), "at $%06X: ", pc);
+            res.ok = false;
+            res.why = std::string(b) + why;
+        }
+    };
+    struct AReg { bool known = false; uint32_t v = 0; };
+    AReg A[8];
+    std::set<uint32_t> targets = L.labels;
+    for (int pass = 0; pass < 2; ++pass) {
+        for (auto& r : A) r = AReg();
+        bool after_uncond = false;
+        for (const auto& it : L.items) {
+            const auto& b = it.bytes;
+            const uint32_t pc = it.addr;
+            if (after_uncond || targets.count(pc)) for (int i = 0; i < 7; ++i) A[i] = AReg();
+            after_uncond = false;
+            if (b.size() < 2 || (b.size() & 1)) { fail(pc, "item is not a whole number of words"); continue; }
+            auto be16 = [&](size_t off) { return uint16_t((b[off] << 8) | b[off + 1]); };
+            auto be32 = [&](size_t off) { return (uint32_t(be16(off)) << 16) | be16(off + 2); };
+            const uint16_t op = be16(0);
+            size_t ext = 2;
+
+            struct EA { enum K { Dn, An, Mem, Imm } k = Dn; bool known = false; uint32_t addr = 0; };
+            auto take = [&](int mode, int reg, int size) -> EA {
+                EA e;
+                auto step = [&](int sz) { return (sz == 1 && reg == 7) ? 2 : sz; };
+                switch (mode) {
+                case 0: e.k = EA::Dn; break;
+                case 1: e.k = EA::An; break;
+                case 2: e.k = EA::Mem; e.known = A[reg].known; e.addr = A[reg].v; break;
+                case 3: e.k = EA::Mem; e.known = A[reg].known; e.addr = A[reg].v; A[reg].v += uint32_t(step(size)); break;
+                case 4: A[reg].v -= uint32_t(step(size)); e.k = EA::Mem; e.known = A[reg].known; e.addr = A[reg].v; break;
+                case 5:
+                    if (ext + 2 > b.size()) { fail(pc, "truncated d16(An)"); break; }
+                    e.k = EA::Mem; e.known = A[reg].known;
+                    e.addr = A[reg].v + uint32_t(int32_t(int16_t(be16(ext)))); ext += 2; break;
+                case 6:
+                    e.k = EA::Mem; e.known = false; ext += 2; break; // the index register's value is not tracked
+                case 7:
+                    if (reg == 0) {
+                        if (ext + 2 > b.size()) { fail(pc, "truncated abs.W"); break; }
+                        e.k = EA::Mem; e.known = true; e.addr = uint32_t(int32_t(int16_t(be16(ext)))); ext += 2;
+                    } else if (reg == 1) {
+                        if (ext + 4 > b.size()) { fail(pc, "truncated abs.L"); break; }
+                        e.k = EA::Mem; e.known = true; e.addr = be32(ext); ext += 4;
+                    } else if (reg == 2) {
+                        if (ext + 2 > b.size()) { fail(pc, "truncated d16(PC)"); break; }
+                        e.k = EA::Mem; e.known = true;
+                        e.addr = pc + uint32_t(ext) + uint32_t(int32_t(int16_t(be16(ext)))); ext += 2;
+                    } else if (reg == 3) {
+                        e.k = EA::Mem; e.known = false; ext += 2; // the index register's value is not tracked
+                    } else if (reg == 4) {
+                        e.k = EA::Imm; ext += (size == 4) ? 4 : 2;
+                    } else fail(pc, "undefined effective address");
+                    break;
+                }
+                return e;
+            };
+            auto touch = [&](const EA& e, int size) {
+                if (e.k != EA::Mem) return;
+                if (!e.known) { fail(pc, "a data access whose address is not resolvable"); return; }
+                for (const auto& r : regions)
+                    if (e.addr <= r.second && e.addr + uint32_t(size) - 1 >= r.first) {
+                        char t[112];
+                        std::snprintf(t, sizeof(t), "a %d-byte data access at $%06X lies in guard range $%06X-$%06X",
+                                      size, e.addr, r.first, r.second);
+                        fail(pc, t);
+                    }
+            };
+            auto set_a = [&](int reg, bool known, uint32_t v) { A[reg].known = known; A[reg].v = v; };
+            auto stack_push = [&](int size) {
+                if (!A[7].known) { fail(pc, "stack pointer not tracked"); return; }
+                A[7].v -= uint32_t(size);
+                EA e; e.k = EA::Mem; e.known = true; e.addr = A[7].v; touch(e, size);
+            };
+            auto stack_pop = [&](int size) {
+                if (!A[7].known) { fail(pc, "stack pointer not tracked"); return; }
+                EA e; e.k = EA::Mem; e.known = true; e.addr = A[7].v; touch(e, size);
+                A[7].v += uint32_t(size);
+            };
+
+            const int nib = op >> 12;
+            if (nib == 1 || nib == 2 || nib == 3) {                              // MOVE, MOVEA
+                const int size = (nib == 1) ? 1 : (nib == 3) ? 2 : 4;
+                EA src = take((op >> 3) & 7, op & 7, size);
+                EA dst = take((op >> 6) & 7, (op >> 9) & 7, size);
+                touch(src, size);
+                if (((op >> 6) & 7) == 1) {                                         // MOVEA
+                    const int an = (op >> 9) & 7;
+                    if (src.k == EA::Imm && ext >= 4) {
+                        uint32_t v = (size == 2) ? uint32_t(int32_t(int16_t(be16(ext - 2)))) : be32(ext - 4);
+                        set_a(an, true, v);
+                    } else if (src.k == EA::An && A[op & 7].known) {
+                        set_a(an, true, A[op & 7].v);
+                    } else set_a(an, false, 0);
+                } else touch(dst, size);
+            } else if ((op & 0xF1C0) == 0x41C0) {                                // LEA
+                EA e = take((op >> 3) & 7, op & 7, 4);
+                const int an = (op >> 9) & 7;
+                if (e.k == EA::Mem && e.known) set_a(an, true, e.addr); else set_a(an, false, 0);
+            } else if ((op & 0xFFC0) == 0x4840 && ((op >> 3) & 7) >= 2) {        // PEA
+                take((op >> 3) & 7, op & 7, 4);
+                stack_push(4);
+            } else if ((op & 0xFFC0) == 0x4EC0) {                                // JMP
+                EA e = take((op >> 3) & 7, op & 7, 4);
+                if (e.k == EA::Mem && e.known && pass == 0) targets.insert(e.addr);
+                after_uncond = true;
+            } else if ((op & 0xFFC0) == 0x4E80) {                                // JSR
+                EA e = take((op >> 3) & 7, op & 7, 4);
+                if (e.k == EA::Mem && e.known && pass == 0) targets.insert(e.addr);
+                stack_push(4);
+                for (int i = 0; i < 7; ++i) A[i] = AReg();
+            } else if (op == 0x4E75) {                                           // RTS
+                stack_pop(4);
+                after_uncond = true;
+            } else if (op == 0x4E71 || op == 0x4AFC) {                           // NOP, ILLEGAL
+            } else if (nib == 6) {                                               // BRA, Bcc
+                const int cond = (op >> 8) & 0xF;
+                const int d8 = op & 0xFF;
+                if (cond == 1) { fail(pc, "BSR is not analysed"); }
+                else if (d8 == 0xFF) { fail(pc, "32-bit branch displacement"); }
+                else {
+                    int32_t disp = 0;
+                    if (d8 == 0) {
+                        if (b.size() < 4) fail(pc, "truncated branch");
+                        else { disp = int16_t(be16(2)); ext += 2; }
+                    } else disp = int8_t(uint8_t(d8));
+                    if (pass == 0) targets.insert(pc + 2 + uint32_t(disp));
+                    if (cond == 0) after_uncond = true;
+                }
+            } else if (nib == 7 && (op & 0x0100) == 0) {                         // MOVEQ
+            } else if (nib == 0xB && (((op >> 6) & 7) <= 3 || ((op >> 6) & 7) == 7)) { // CMP, CMPA
+                const int om = (op >> 6) & 7;
+                const int size = (om == 0) ? 1 : (om == 1 || om == 3) ? 2 : 4;
+                touch(take((op >> 3) & 7, op & 7, size), size);
+            } else if ((op & 0xF1C0) == 0x80C0 || (op & 0xF1C0) == 0x81C0) {     // DIVU.W, DIVS.W
+                touch(take((op >> 3) & 7, op & 7, 2), 2);
+            } else if (((op & 0xFF00) == 0x4200 || (op & 0xFF00) == 0x4A00 || (op & 0xFF00) == 0x4400 ||
+                        (op & 0xFF00) == 0x4600 || (op & 0xFF00) == 0x4000) && ((op >> 6) & 3) != 3) { // CLR TST NEG NOT NEGX
+                const int size = 1 << ((op >> 6) & 3);
+                touch(take((op >> 3) & 7, op & 7, size), size);
+            } else if ((op & 0xFFC0) == 0x44C0 || (op & 0xFFC0) == 0x46C0 || (op & 0xFFC0) == 0x40C0) { // MOVE to CCR/SR, from SR
+                touch(take((op >> 3) & 7, op & 7, 2), 2);
+            } else if ((op & 0xFFF0) == 0x4E60) {                                // MOVE USP
+                if (op & 8) set_a(op & 7, false, 0);
+            } else {
+                char t[64];
+                std::snprintf(t, sizeof(t), "opcode $%04X is not analysable", op);
+                fail(pc, t);
+            }
+            if (res.ok && ext != b.size()) {
+                char t[112];
+                std::snprintf(t, sizeof(t), "decoded length %d differs from the listing's %d bytes (opcode $%04X)",
+                              int(ext), int(b.size()), op);
+                fail(pc, t);
+            }
+        }
+    }
+    return res;
+}
+
+// P3.c: the program's listing reproduces its image and carries the run's
+// own X_k (k = 1..n), and no instruction accesses data in any guard range
+// W_k to W_k+11 (W_k = X_k+2).
+bool p3c_static_ok(const std::string& bin, const uint32_t* x, int n, std::string& why) {
+    auto img = read_file_bytes(bin);
+    Listing L = read_listing(listing_path(bin));
+    if (!listing_matches_image(L, img, kProgramOrg)) { why = "the listing does not reproduce the image"; return false; }
+    std::vector<std::pair<uint32_t, uint32_t>> regions;
+    for (int k = 1; k <= n; ++k) {
+        auto s = L.sym.find("X" + std::to_string(k));
+        if (s == L.sym.end() || s->second != x[k]) { why = "the listing's X" + std::to_string(k) + " is not the run's own"; return false; }
+        regions.push_back({x[k] + 2, x[k] + 2 + 11});
+    }
+    ScanResult r = scan_data_accesses(L, regions);
+    why = r.why;
+    return r.ok;
+}
+
+// P5.b's static half: the two images have the same length, and every
+// differing byte lies inside step 3's four-byte span (VBR_STEP to VBR_END in
+// both listings, each listing reproducing its image), with at least one
+// difference there.
+bool p5b_static_ok(const std::string& bin_a, const std::string& bin_b, std::string& why) {
+    auto a = read_file_bytes(bin_a);
+    auto b = read_file_bytes(bin_b);
+    Listing la = read_listing(listing_path(bin_a)), lb = read_listing(listing_path(bin_b));
+    if (!listing_matches_image(la, a, kProgramOrg) || !listing_matches_image(lb, b, kProgramOrg)) {
+        why = "a listing does not reproduce its image";
+        return false;
+    }
+    auto sa = la.sym.find("VBR_STEP"), ea = la.sym.find("VBR_END");
+    auto sb = lb.sym.find("VBR_STEP"), eb = lb.sym.find("VBR_END");
+    if (sa == la.sym.end() || ea == la.sym.end() || sb == lb.sym.end() || eb == lb.sym.end()) { why = "step 3 is not labelled"; return false; }
+    if (sa->second != sb->second || ea->second != eb->second || ea->second - sa->second != 4) {
+        why = "step 3's span is not the same four bytes in both listings";
+        return false;
+    }
+    if (a.size() != b.size()) { why = "the images differ in length"; return false; }
+    const size_t lo = sa->second - kProgramOrg, hi = lo + 4;
+    bool differs = false;
+    for (size_t i = 0; i < a.size(); ++i) {
+        if (a[i] == b[i]) continue;
+        if (i < lo || i >= hi) {
+            char t[64];
+            std::snprintf(t, sizeof(t), "byte at image offset $%zX differs outside step 3", i);
+            why = t;
+            return false;
+        }
+        differs = true;
+    }
+    if (!differs) { why = "the images do not differ in step 3"; return false; }
+    return true;
+}
+
+// P3.a's marker order: the CPU writes to S_P and S_L, in time order, are
+// exactly P1,L1,P2,L2,...,Pn,Ln -- one S_P and one S_L write per block, and
+// no other write to either.
+bool markers_in_order(const std::vector<nmh::RamAccess>& log, int n) {
+    std::vector<std::pair<uint64_t, std::pair<uint32_t, uint16_t>>> seq;
+    for (const auto& x : log)
+        if (x.is_write && (x.word_addr == wa(S_P) || x.word_addr == wa(S_L)))
+            seq.push_back({x.cycle, {x.word_addr, x.data}});
+    std::stable_sort(seq.begin(), seq.end(), [](const auto& p, const auto& q) { return p.first < q.first; });
+    if (int(seq.size()) != 2 * n) return false;
+    for (int k = 1; k <= n; ++k) {
+        if (seq[2*(k-1)].second != std::make_pair(wa(S_P), uint16_t(k))) return false;
+        if (seq[2*(k-1)+1].second != std::make_pair(wa(S_L), uint16_t(k))) return false;
     }
     return true;
 }
 
-// P5.b's static half: the two images are the same length and every
-// differing byte falls inside a single 4-byte span (SPECIFICATION.md
-// section 7 step 3: MOVEC D0,VBR vs. two NOPs -- 2 words, 4 bytes; MOVEC's
-// encoding, 4E7B 0801, happens to share its first byte with NOP's 4E71, so
-// as few as 3 bytes actually differ).
-bool images_equal_except_one_word_pair(const std::vector<uint8_t>& a, const std::vector<uint8_t>& b) {
-    if (a.empty() || a.size() != b.size()) return false;
-    int first = -1, last = -1;
-    for (size_t i = 0; i < a.size(); ++i) if (a[i] != b[i]) { if (first < 0) first = int(i); last = int(i); }
-    return first >= 0 && (last - first + 1) <= 4;
+// The macro-level contrasts (ch1.i) are selected as <contrast>-<program>,
+// e.g. C1-P2; each has its own image <stem>_mut<contrast>.bin.
+std::string pick_macro_variant(const std::string& mv, const std::string& program,
+                               const std::string& dir, const std::string& stem, const std::string& dflt) {
+    static const std::pair<const char*, const char*> kMacro[] = {
+        {"C1", "mutc1"}, {"C2", "mutc2"}, {"C3", "mutc3"}, {"C4", "mutc4"}, {"C4B", "mutc4b"},
+        {"NODONE", "mutnodone"}, {"PEEK", "mutpeek"}};
+    for (const auto& m : kMacro)
+        if (mv == std::string(m.first) + "-" + program) return dir + "/" + stem + "_" + m.second + ".bin";
+    return dflt;
 }
 
 struct Run {
@@ -595,13 +912,6 @@ Win run_window(const Result& r) {
     return w;
 }
 
-// P3.a: for block k, one CPU write of k to S_P then one of k to S_L.
-bool block_transferred(const Result& r, int k) {
-    auto sp = find_write(r.log, S_P, uint16_t(k));
-    auto sl = find_write(r.log, S_L, uint16_t(k));
-    return sp.found && sp.count>=1 && sl.found && sl.count>=1 && sp.cycle < sl.cycle;
-}
-
 } // namespace p3
 
 // ===========================================================================
@@ -754,19 +1064,13 @@ Win run_window(const Result& r) {
     return w;
 }
 
-bool block_transferred(const Result& r, int k) {
-    auto sp = find_write(r.log, S_P, uint16_t(k));
-    auto sl = find_write(r.log, S_L, uint16_t(k));
-    return sp.found && sp.count>=1 && sl.found && sl.count>=1 && sp.cycle < sl.cycle;
-}
-
 // g_k: distinct guard words read inside the run window, among the
 // guard_len words at W_k, W_k+2, .... guard_len is the guard's own
 // assembled length (6 normally; SPECIFICATION.md section 8's own reference
 // frame), never more: under P6.e's contrast (MUT_E, guard_len=1) the words
 // after the single guard word are the next block's real, executed
 // instructions, and counting reads there would count execution, not
-// prefetch (validation defect: g_of must count guard words only).
+// prefetch, so g_of counts guard words only.
 int g_of(const Result& r, const Win& w, uint32_t x_k, int guard_len) {
     int g = 0;
     for (int i = 0; i < guard_len; ++i) {
@@ -784,20 +1088,16 @@ int guard_len_of(const Result& r) { return (r.guard_opcode == 0x4AFC) ? 1 : 6; }
 
 // P3.a-P3.d, reused for every P6 run (SPECIFICATION.md section 8: "the
 // contrasts are the same as in P3"), graded over all 8 blocks.
-struct Precond { bool p3a=true, p3b=true, p3c=true, p3d=true; };
+struct Precond { bool p3a=true, p3b=true, p3c=true, p3d=true; std::string p3c_why; };
 Precond common_precond(const Result& r, const Win& win, const std::string& bin) {
     Precond p;
     if (!win.ok) { p.p3a = p.p3b = p.p3c = p.p3d = false; return p; }
-    auto img = read_file_bytes(bin);
     auto sx = find_write(r.log, S_X, 0xDEAD);
     auto sf = find_write(r.log, S_FAIL, 0xFA11);
     p.p3b = sx.count == 0 && sf.count == 0;
-    for (int k = 1; k <= 8; ++k) {
-        p.p3a = p.p3a && block_transferred(r, k);
-        p.p3d = p.p3d && p3::opcode_matches_table(kind_of(k), r.opcode[k]);
-        uint32_t Wk = r.x[k] + 2;
-        if (!static_no_operand_in_range(img, kProgramOrg, Wk, Wk + 10)) p.p3c = false;
-    }
+    p.p3a = markers_in_order(r.log, 8);
+    for (int k = 1; k <= 8; ++k) p.p3d = p.p3d && p3::opcode_matches_table(kind_of(k), r.opcode[k]);
+    p.p3c = p3c_static_ok(bin, r.x, 8, p.p3c_why);
     return p;
 }
 
@@ -826,6 +1126,12 @@ int main(int argc, char** argv) {
 
     const std::string core_label = is_tg68k ? "second core" : "first core";
 
+    // C5 (SPECIFICATION.md 2.5): no core or mode witness exists at the ports.
+    checks.record("C5 recorded, not graded: the ports show neither which core nor which mode ran. The core label of "
+                  "every line is the build's core and the mode label is the cpu_config value the test sets (the "
+                  "harness documents it only as \"00 = 68000 core behaviour\"); no graded line depends on a core "
+                  "or mode witness");
+
     // =======================================================================
     // P1 [p13] opus:1-guidelines.c60,sol:1-guidelines.c60: 68000 CLR reads
     // then writes. Graded on the first core, and the second core in 68000
@@ -839,13 +1145,12 @@ int main(int argc, char** argv) {
         // comparator, exactly as P1-MOVE already does for the main relation.
         std::string bin = dir + "/p1.bin";
         if (mv == "P1-MOVE") bin = dir + "/p1_move.bin";
+        else if (mv == "P1C-MOVE") bin = dir + "/p1_move_mutc.bin";
         else if (mv == "P1A") bin = dir + "/p1_muta.bin";
+        else if (mv == "P1A-ORD") bin = dir + "/p1_mutord.bin";
         else if (mv == "P1B") bin = dir + "/p1_mutb.bin";
         else if (mv == "P1C") bin = dir + "/p1_mutc.bin";
-        else if (mv == "C1")  bin = dir + "/p1_mutc1.bin";
-        else if (mv == "C2")  bin = dir + "/p1_mutc2.bin";
-        else if (mv == "C3")  bin = dir + "/p1_mutc3.bin";
-        else if (mv == "C4")  bin = dir + "/p1_mutc4.bin";
+        bin = pick_macro_variant(mv, "P1", dir, "p1", bin);
         auto r = p1::run(bin, 0x00);
         bool fixture_ok = r.loaded && r.released && r.done;
         checks.expect(fixture_ok, "P1 fixture: p1.bin loaded, released and reached DONE on the " + core_label);
@@ -867,10 +1172,17 @@ int main(int argc, char** argv) {
         // makes no read at all, so this comparator goes red on its own,
         // through the exact same check as the normal run.
         bool p1a_all = true, p1b_all = true, p1c_all = true, p1c_move_all = true, rel_all = true;
-        bool is_move = (mv == "P1-MOVE");
+        bool is_move = (mv == "P1-MOVE" || mv == "P1C-MOVE");
+        // P1.a: each case's window is one ordered S_A/S_B pair, and the 21
+        // windows follow in case order without overlap: open[c] < close[c] <
+        // open[c+1] for every adjacent pair.
+        uint64_t prev_close = 0;
+        bool have_prev = false;
         for (auto& cs : p1::kCases) {
             auto w = p1::window(r, cs.c);
-            p1a_all = p1a_all && w.ok;
+            p1a_all = p1a_all && w.ok && (!have_prev || prev_close < w.open);
+            prev_close = w.close;
+            have_prev = true;
             p1b_all = p1b_all && p1::precond_b_ok(r, cs);
             if (!is_move) {
                 bool c_ok = r.opcode[cs.c] == p1::expected_clr_opcode(cs.c);
@@ -881,16 +1193,16 @@ int main(int argc, char** argv) {
             }
             rel_all = rel_all && w.ok && p1::relation_ok(r, cs, w, false);
         }
-        checks.expect(p1a_all, "P1.a: every case's window is a single, ordered S_A/S_B pair (" + core_label + ")");
+        checks.expect(p1a_all, "P1.a: every case's window is a single, ordered S_A/S_B pair, and the 21 windows follow "
+                                "in case order without overlap (" + core_label + ")");
         checks.expect(p1b_all, "P1.b: every case's operand held the prefill before W_c and the readback (the CPU "
                                 "write to R_c) matches the prefill/clear pattern (" + core_label + ")");
         if (!is_move) {
             checks.expect(p1c_all, "P1.c: every case's instruction at X_c is the opcode the table names (" + core_label + ")");
         } else {
-            // New assertion (validation defect): the P1-MOVE run must still
-            // grade P1.c, against the MOVE opcode assembled in place of
-            // CLR -- had the Makefile's -m68010 silently kept assembling
-            // CLR here, this would have caught it.
+            // The P1-MOVE run grades P1.c against the MOVE opcode assembled
+            // in place of CLR: were the Makefile's -m68010 to keep assembling
+            // CLR here, this line would be red.
             checks.expect(p1c_move_all, "P1.c (P1-MOVE contrast): every case's instruction at X_c is the MOVE "
                                          "opcode assembled in place of CLR (" + core_label + ")");
         }
@@ -917,9 +1229,9 @@ int main(int argc, char** argv) {
         // cpu_config only as "00 = 68000 core behaviour" and claims no
         // 68020 bus or prefetch anywhere, so this run cannot confirm or
         // deny opus/sol:1-guidelines.c59 against p.13/p.263: recorded, not
-        // graded (lead decision).
+        // graded.
         if (is_tg68k) {
-            auto r4 = p1::run(dir + "/p1.bin", 0x03);
+            auto r4 = p1::run(mv == "NODONE-P4" ? dir + "/p1_mutnodone.bin" : dir + "/p1.bin", 0x03);
             bool fixture4_ok = r4.loaded && r4.released && r4.done;
             checks.expect(fixture4_ok, "P4 fixture: p1.bin loaded, released and reached DONE on the second core");
 
@@ -956,6 +1268,7 @@ int main(int argc, char** argv) {
         else if (mv == "P2A") bin = dir + "/p2_muta.bin";
         else if (mv == "P2B") bin = dir + "/p2_mutb.bin";
         else if (mv == "P2C") bin = dir + "/p2_mutc.bin";
+        bin = pick_macro_variant(mv, "P2", dir, "p2", bin);
         auto r = p2::run(bin, 0x00);
         bool fixture_ok = r.loaded && r.released && r.done;
         checks.expect(fixture_ok, "P2 fixture: p2.bin loaded, released and reached DONE on the " + core_label);
@@ -1039,11 +1352,14 @@ int main(int argc, char** argv) {
     }
 
     // =======================================================================
-    // P3 [p13] opus:1-guidelines.c65,sol:1-guidelines.c65: every family
-    // member reads instruction words ahead of the one it executes. Graded
-    // on the first core, and the second core in 68000/68010/68020 mode.
-    // (opus/sol:1-guidelines.c64, "All 68000 family processors", is
-    // withdrawn below: only three of five members are available.)
+    // P3 [p13]: a read at a guard word, which no executed instruction or
+    // data access explains, occurs inside the run: every family member reads
+    // instruction words ahead of the one it executes. Graded on the first
+    // core, and the second core in 68000/68010/68020 mode, as the package's
+    // property: the RAM-port log carries no requester, so the graded line
+    // carries no claim id (opus/sol:1-guidelines.c65 is recorded below, and
+    // c64, "All 68000 family processors", is withdrawn: only three of five
+    // members are available).
     // =======================================================================
     {
         struct ModeRun { std::string label; uint8_t cfg; bool applicable; };
@@ -1057,16 +1373,20 @@ int main(int argc, char** argv) {
         }
 
         for (auto& m : modes) {
-            // P3's own precondition mutants are built as 68000-mode images;
-            // they only apply to the 68000-mode iteration, reusing every
-            // label below so the mutation makes its own clause go red
-            // through the unchanged comparator (as P1-MOVE etc. already do).
+            // P3's mutants are 68000 instruction sets, so every mode loads
+            // the selected image and reuses every label below: the mutation
+            // makes its own clause go red through the unchanged comparator.
             std::string bin = dir + "/p3.bin";
-            if (m.cfg == 0x00) {
-                if (mv == "P3A" || mv == "P3B") bin = dir + "/p3_mutnop.bin";
-                else if (mv == "P3C") bin = dir + "/p3_mutc.bin";
-                else if (mv == "P3D") bin = dir + "/p3_mutd.bin";
-            }
+            if (mv == "P3A") bin = dir + "/p3_muta.bin";
+            else if (mv == "P3A-ORD") bin = dir + "/p3_mutord.bin";
+            else if (mv == "P3B") bin = dir + "/p3_mutb.bin";
+            else if (mv == "P3C") bin = dir + "/p3_mutc.bin";
+            else if (mv == "P3C-PC") bin = dir + "/p3_mutcpc.bin";
+            else if (mv == "P3C-REG") bin = dir + "/p3_mutcreg.bin";
+            else if (mv == "P3D") bin = dir + "/p3_mutd.bin";
+            else if (mv == "P3-WIN") bin = dir + "/p3_mutwin.bin";
+            else if (mv == "P3-CAL") bin = dir + "/p3_mutcal.bin";
+            bin = pick_macro_variant(mv, "P3", dir, "p3", bin);
             auto r = p3::run(bin, m.cfg);
             bool fixture_ok = r.loaded && r.released && r.done;
             checks.expect(fixture_ok, "P3 fixture: p3.bin loaded, released and reached DONE (" + m.label + ")");
@@ -1083,10 +1403,9 @@ int main(int argc, char** argv) {
             checks.expect(c3_ok, "C3: S_END written exactly once, S_FAIL never written (P3 run, " + m.label + ")");
             checks.expect(c4_ok, "C4: S_START written exactly once (P3 run, " + m.label + ")");
 
-            bool p3a = true, p3b = true, p3d = true;
+            bool p3a = markers_in_order(r.log, 4), p3b = true, p3d = true;
             int reads_at_w[5] = {0,0,0,0,0};
             for (int k = 1; k <= 4; ++k) {
-                p3a = p3a && p3::block_transferred(r, k);
                 p3d = p3d && p3::opcode_matches_table(k, r.opcode[k]);
                 uint32_t Wk = r.x[k] + 2;
                 int n = win.ok ? read_count_between(r.log, Wk, win.start, win.end) : 0;
@@ -1097,27 +1416,22 @@ int main(int argc, char** argv) {
                     p3b = p3b && sx.count==0 && sf.count==0;
                 }
             }
-            checks.expect(p3a, "P3.a: every block's stop instruction executed and transferred control (" + m.label + ")");
+            checks.expect(p3a, "P3.a: every block's stop instruction executed and transferred control: exactly one S_P "
+                                "and one S_L write per block, in the order P1,L1,P2,L2,... (" + m.label + ")");
             checks.expect(p3b, "P3.b: no guard word was executed, S_X and S_FAIL never written (" + m.label + ")");
             checks.expect(p3d, "P3.d: every block's stop instruction at X_k is the opcode family the table names (" + m.label + ")");
 
-            // P3.c, as specified: a static check on the assembled image --
-            // no instruction's data operand addresses a word in W_k to
-            // W_k+11 -- read from the .bin file on disk, not the memory
-            // model. (C2 already holds DMA off, above; the harness's
-            // RamAccess carries no requester field, so "only CPU-attributed
-            // reads are counted" cannot itself be confirmed here -- reported
-            // to the lead, not worked around.)
-            bool p3c = true;
-            {
-                auto img = read_file_bytes(bin);
-                for (int k = 1; k <= 4; ++k) {
-                    uint32_t Wk = r.x[k] + 2;
-                    if (!static_no_operand_in_range(img, kProgramOrg, Wk, Wk + 10)) p3c = false;
-                }
-            }
-            checks.expect(p3c, "P3.c: the assembled image has no instruction whose data operand addresses a "
-                                "guard word W_k to W_k+11 (" + m.label + ")");
+            // P3.c: a static check on the program's assembler listing, which
+            // must reproduce the loaded image byte for byte: no instruction's
+            // effective-address path (absolute, PC-relative or through an
+            // address register) accesses data in W_k to W_k+11. C2 holds DMA
+            // off, above. The RAM-port log carries no requester, so which
+            // requester made a read at the port is outside this check.
+            std::string p3c_why;
+            bool p3c = p3c_static_ok(bin, r.x, 4, p3c_why);
+            checks.expect(p3c, "P3.c: no instruction of the assembled program accesses data in a guard word range "
+                                "W_k to W_k+11, on any effective-address path (" + m.label + ")");
+            if (!p3c) checks.note("P3.c first violation (" + m.label + "): " + p3c_why);
 
             int reads_at_z = win.ok ? read_count_between(r.log, FARZ, win.start, win.end) : -1;
             checks.record("P3 measured reads per guard word W_1..W_4 (" + m.label + "): " +
@@ -1129,12 +1443,16 @@ int main(int argc, char** argv) {
             bool p3_precond_ok = fixture_ok && peek_ok && win.ok && p3a && p3b && p3c && p3d &&
                                  c1_ok && c2_ok && c3_ok && c4_ok;
             checks.expect_gated(p3_precond_ok, any_read_somewhere,
-                "P3 [p13] opus:1-guidelines.c65,sol:1-guidelines.c65: at least one CPU read at a guard word W_k "
-                "inside the run, showing the CPU loaded ahead of the instruction it executes (" + m.label + ")");
+                "P3 [p13]: at least one read at a guard word W_k inside the run, which no executed instruction "
+                "and no data access explains (the port log has no requester field) (" + m.label + ")");
             checks.expect(reads_at_z == 0,
                 "P3 calibration: the far word Z (never referenced, " + std::to_string(FARZ) +
-                ") shows zero CPU reads, so the counter can report absence (" + m.label + ")");
+                ") shows zero reads, so the counter can report absence (" + m.label + ")");
         }
+        checks.record("opus:1-guidelines.c65,sol:1-guidelines.c65 recorded (P3): the RAM-port log carries no "
+                       "requester, so a CPU instruction fetch cannot be told from another read at the port; "
+                       "P3's graded line counts reads at guard words and is not the claim that the CPU loads "
+                       "instructions ahead");
         checks.record("opus:1-guidelines.c64,sol:1-guidelines.c64 withdrawn (P3): \"All 68000 family processors\" "
                        "-- the 68000, 68010 and 68020 are graded above; the 68030 and 68040 are not available "
                        "(SPECIFICATION.md section 1)");
@@ -1151,6 +1469,7 @@ int main(int argc, char** argv) {
         std::string bin0 = dir + "/p5_68000.bin";
         if (mv == "P5A") bin0 = dir + "/p5_muta.bin";
         else if (mv == "P5C") bin0 = dir + "/p5_mutc.bin";
+        bin0 = pick_macro_variant(mv, "P5", dir, "p5", bin0);
         auto r0 = p5::run(bin0, 0x00);
         bool fixture0_ok = r0.loaded && r0.released && r0.done;
         checks.expect(fixture0_ok, "P5 fixture: the 68000-image loaded, released and reached DONE (" + core_label + ", 68000 mode)");
@@ -1180,9 +1499,9 @@ int main(int argc, char** argv) {
                 p5c_normal = false;
             }
         }
-        checks.expect(fixture0_ok && p5a0, "P5.a: every case was taken through its installed vector, no write to "
+        checks.expect(p5a0, "P5.a: every case was taken through its installed vector, no write to "
                                            "S_FAIL (68000 mode, " + core_label + ")");
-        checks.expect(fixture0_ok && p5c_normal,
+        checks.expect(p5c_normal,
             "P5.c: every CPU write inside each case's window lies between POST_SP_e and PRE_SP-2 (68000 mode, " + core_label + ")");
         for (int e=1;e<=5;++e) checks.record("P5 F_" + std::to_string(e) + " (68000 mode, " + core_label + "): " + p5::frame_str(frames0[e]));
 
@@ -1191,9 +1510,20 @@ int main(int argc, char** argv) {
         bool have_00 = fixture0_ok && peek0_ok && p5a0 && c1_0 && c2_0 && c3_0 && c4_0;
         bool have_10 = false, have_20 = false;
         if (is_tg68k) {
+            // The 68010 and 68020 runs load the VBR image (the 68010 run's
+            // image is the P5B contrast's own). The pair contrasts run one
+            // of the two in another mode of the same instruction set, so
+            // that two of the three runs write the same frames.
             std::string vbrbin = dir + (mv=="P5B" ? "/p5_mutb.bin" : "/p5_vbr.bin");
-            auto r1 = p5::run(vbrbin, 0x01);
-            auto r2 = p5::run(dir + "/p5_vbr.bin", 0x03);
+            std::string vbr20bin = dir + "/p5_vbr.bin";
+            vbrbin = pick_macro_variant(mv, "P5", dir, "p5_vbr", vbrbin);
+            vbr20bin = pick_macro_variant(mv, "P5", dir, "p5_vbr", vbr20bin);
+            uint8_t cfg1 = 0x01, cfg2 = 0x03;
+            if (mv == "P5-PAIR-0010") { vbrbin = dir + "/p5_68000.bin"; cfg1 = 0x00; }
+            else if (mv == "P5-PAIR-0020") { vbr20bin = dir + "/p5_68000.bin"; cfg2 = 0x00; }
+            else if (mv == "P5-PAIR-1020") { cfg1 = 0x03; }
+            auto r1 = p5::run(vbrbin, cfg1);
+            auto r2 = p5::run(vbr20bin, cfg2);
             bool fixture1_ok = r1.loaded && r1.released && r1.done;
             bool fixture2_ok = r2.loaded && r2.released && r2.done;
             checks.expect(fixture1_ok, "P5 fixture: the VBR image loaded, released and reached DONE (second core, 68010 mode)");
@@ -1236,13 +1566,13 @@ int main(int argc, char** argv) {
                     p5c2 = p5c2 && p5::writes_within_stack(frames2[e], w2.pre_sp, r2.post_sp[e]);
                 } else p5c2 = false;
             }
-            checks.expect(fixture1_ok && p5a1, "P5.a: every case was taken through its installed vector, no write "
+            checks.expect(p5a1, "P5.a: every case was taken through its installed vector, no write "
                                                "to S_FAIL (68010 mode)");
-            checks.expect(fixture2_ok && p5a2, "P5.a: every case was taken through its installed vector, no write "
+            checks.expect(p5a2, "P5.a: every case was taken through its installed vector, no write "
                                                "to S_FAIL (68020 mode)");
-            checks.expect(fixture1_ok && p5c1, "P5.c: every CPU write inside each case's window lies between "
+            checks.expect(p5c1, "P5.c: every CPU write inside each case's window lies between "
                                                "POST_SP_e and PRE_SP-2 (68010 mode)");
-            checks.expect(fixture2_ok && p5c2, "P5.c: every CPU write inside each case's window lies between "
+            checks.expect(p5c2, "P5.c: every CPU write inside each case's window lies between "
                                                "POST_SP_e and PRE_SP-2 (68020 mode)");
             for (int e=1;e<=5;++e) checks.record("P5 F_" + std::to_string(e) + " (68010 mode): " + p5::frame_str(frames1[e]));
             for (int e=1;e<=5;++e) checks.record("P5 F_" + std::to_string(e) + " (68020 mode): " + p5::frame_str(frames2[e]));
@@ -1262,15 +1592,16 @@ int main(int argc, char** argv) {
                 if (pre_sp0[e] != pre_sp1[e] || pre_sp0[e] != pre_sp2[e]) p5b_dyn = false;
             }
             // P5.b, static half: the assembled 68000-image and VBR-image
-            // binaries are equal except for exactly the one word pair of
-            // step 3 (fixed files, not the mutant variants: the mutation is
-            // exercised through the dynamic half above).
-            auto img68000 = read_file_bytes(dir + "/p5_68000.bin");
-            auto imgvbr    = read_file_bytes(dir + "/p5_vbr.bin");
-            bool p5b_static = images_equal_except_one_word_pair(img68000, imgvbr);
+            // binaries are equal except inside step 3's four bytes, which
+            // the two listings locate (the dynamic half above is exercised
+            // by the P5B contrast, this half by the P5B-SPAN contrast).
+            std::string p5b_why;
+            bool p5b_static = p5b_static_ok(dir + "/p5_68000.bin",
+                                            dir + (mv == "P5B-SPAN" ? "/p5_mutspan.bin" : "/p5_vbr.bin"), p5b_why);
             bool p5b = p5b_dyn && p5b_static;
-            checks.expect(p5b, "P5.b: PRE_SP is the same in every run for every e=1..5, and the images are equal "
-                               "except for the two words of step 3");
+            checks.expect(p5b, "P5.b: PRE_SP is the same in every run for every e=1..5, and the images differ only "
+                               "inside the four bytes of step 3 (the two words of MOVEC or NOP,NOP)");
+            if (!p5b_static) checks.note("P5.b static half: " + p5b_why);
 
             bool precond_00_10 = have_00 && have_10 && p5b;
             bool precond_00_20 = have_00 && have_20 && p5b;
@@ -1310,6 +1641,11 @@ int main(int argc, char** argv) {
         std::string bin = dir + "/p6.bin";
         if (mv == "P6E") bin = dir + "/p6_mute.bin";
         else if (mv == "P6ALIGN") bin = dir + "/p6_mutalign.bin";
+        else if (mv == "P3A-P6") bin = dir + "/p6_muta.bin";
+        else if (mv == "P3B-P6") bin = dir + "/p6_mutb.bin";
+        else if (mv == "P3C-P6") bin = dir + "/p6_mutc.bin";
+        else if (mv == "P3D-P6") bin = dir + "/p6_mutd.bin";
+        bin = pick_macro_variant(mv, "P6", dir, "p6", bin);
         auto r = p6::run(bin, 0x00);
         bool fixture_ok = r.loaded && r.released && r.done;
         checks.expect(fixture_ok, "P6 fixture: p6.bin loaded, released and reached DONE (" + core_label + ", 68000 mode)");
@@ -1326,10 +1662,12 @@ int main(int argc, char** argv) {
         auto win = p6::run_window(r);
         auto pc = p6::common_precond(r, win, bin);
         checks.expect(pc.p3a, "P3.a (reused, SPECIFICATION.md section 8): every one of the 8 blocks' stop "
-                              "instruction executed and transferred control (" + core_label + ", 68000 mode)");
+                              "instruction executed and transferred control: exactly one S_P and one S_L write "
+                              "per block, in the order P1,L1,P2,L2,... (" + core_label + ", 68000 mode)");
         checks.expect(pc.p3b, "P3.b (reused): no guard word was executed, S_X and S_FAIL never written (" + core_label + ", 68000 mode)");
-        checks.expect(pc.p3c, "P3.c (reused): the assembled image has no instruction whose data operand addresses "
-                              "a guard word (" + core_label + ", 68000 mode)");
+        checks.expect(pc.p3c, "P3.c (reused): no instruction of the assembled program accesses data in a guard "
+                              "word range W_k to W_k+11, on any effective-address path (" + core_label + ", 68000 mode)");
+        if (!pc.p3c) checks.note("P3.c (reused) first violation (" + core_label + ", 68000 mode): " + pc.p3c_why);
         checks.expect(pc.p3d, "P3.d (reused): every block's stop instruction at X_k is the opcode family the "
                               "table names (" + core_label + ", 68000 mode)");
 
@@ -1354,7 +1692,7 @@ int main(int argc, char** argv) {
             "P6.e: D(68000 mode) is less than the guard length (" + std::to_string(guard_len) + " words, " + core_label + ")");
 
         if (is_tg68k) {
-            auto r20 = p6::run(dir + "/p6.bin", 0x03);
+            auto r20 = p6::run(bin, 0x03);
             bool fixture20_ok = r20.loaded && r20.released && r20.done;
             checks.expect(fixture20_ok, "P6 fixture: p6.bin loaded, released and reached DONE (second core, 68020 mode)");
             bool peek20_ok = r20.fixture_peek == 0x0001;
@@ -1367,12 +1705,15 @@ int main(int argc, char** argv) {
             checks.expect(c4_20, "C4: S_START written exactly once (P6 run, second core, 68020 mode)");
 
             auto win20 = p6::run_window(r20);
-            auto pc20 = p6::common_precond(r20, win20, dir + "/p6.bin");
+            auto pc20 = p6::common_precond(r20, win20, bin);
             checks.expect(pc20.p3a, "P3.a (reused): every one of the 8 blocks' stop instruction executed and "
-                                    "transferred control (second core, 68020 mode)");
+                                    "transferred control: exactly one S_P and one S_L write per block, in the "
+                                    "order P1,L1,P2,L2,... (second core, 68020 mode)");
             checks.expect(pc20.p3b, "P3.b (reused): no guard word was executed, S_X and S_FAIL never written (second core, 68020 mode)");
-            checks.expect(pc20.p3c, "P3.c (reused): the assembled image has no instruction whose data operand "
-                                    "addresses a guard word (second core, 68020 mode)");
+            checks.expect(pc20.p3c, "P3.c (reused): no instruction of the assembled program accesses data in a "
+                                    "guard word range W_k to W_k+11, on any effective-address path (second core, "
+                                    "68020 mode)");
+            if (!pc20.p3c) checks.note("P3.c (reused) first violation (second core, 68020 mode): " + pc20.p3c_why);
             checks.expect(pc20.p3d, "P3.d (reused): every block's stop instruction at X_k is the opcode family "
                                     "the table names (second core, 68020 mode)");
             bool align20_ok = p6::alignment_ok(r20);
@@ -1385,10 +1726,10 @@ int main(int argc, char** argv) {
             checks.record("P6 D(68020 mode, second core) = " + std::to_string(D20));
 
             // P6 [p13] opus:1-guidelines.c67,sol:1-guidelines.c67 declined
-            // (lead decision, same reasoning as P4/c59): the harness
-            // documents cpu_config only as "00 = 68000 core behaviour" and
-            // names no 68020 prefetch depth, so "D(68020 mode) >
-            // D(68000 mode)" is recorded, not graded.
+            // (same reasoning as P4/c59): the harness documents cpu_config
+            // only as "00 = 68000 core behaviour" and names no 68020
+            // prefetch depth, so "D(68020 mode) > D(68000 mode)" is
+            // recorded, not graded.
             checks.record("P6 [p13] opus:1-guidelines.c67,sol:1-guidelines.c67 declined: measured D(68020 mode) = " +
                 std::to_string(D20) + ", D(68000 mode) = " + std::to_string(D0) + " (same image, second core) -- "
                 "the harness documents cpu_config only as \"00 = 68000 core behaviour\" and names no 68020 "

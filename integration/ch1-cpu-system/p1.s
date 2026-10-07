@@ -18,8 +18,12 @@
 ;   MUT_B     case 8's effective address is T_8+8 instead of T_8 (P1.b's
 ;             contrast)
 ;   MUT_C     case 11 is assembled as CLR.L instead of CLR.W (P1.c's
-;             contrast)
+;             contrast); together with MUT_MOVE, as MOVE.L instead of MOVE.W
+;   MUT_ORD   case 4's S_B store and readback move behind case 5's S_A
+;             store, so windows 4 and 5 overlap (P1.a's ordering contrast)
+;   MUT_C4B   S_START is written after case 1's S_A (C4's ordering contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
+;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
         include "nanomig.i"
         include "ch1.i"
@@ -34,6 +38,9 @@ start:
         move.w  #$A5A5,T_BASE+16
         lea     T_BASE+17,a0
         move.w  #$A001,S_A
+        ifd     MUT_C4B
+        move.w  #$0001,S_START          ; C4 ordering contrast: S_START after the first window opened
+        endc
 X1:     ifd     MUT_MOVE
         move.b  #0,(a0)
         else
@@ -81,8 +88,10 @@ X4:     ifd     MUT_MOVE
         else
         clr.b   4(a3)
         endc
+        ifnd    MUT_ORD
         move.w  #$B004,S_B
         move.w  T_BASE+64,R_BASE+16
+        endc
         lea     X4(pc),a6
         move.l  a6,XTAB+12
 
@@ -91,6 +100,10 @@ X4:     ifd     MUT_MOVE
         lea     T_BASE+77,a4
         ifnd    MUT_A
         move.w  #$A005,S_A
+        endc
+        ifd     MUT_ORD
+        move.w  #$B004,S_B              ; P1.a ordering contrast: window 4 closes after window 5 opened
+        move.w  T_BASE+64,R_BASE+16
         endc
 X5:     ifd     MUT_MOVE
         move.b  #0,4(a4,d1.w)
@@ -179,7 +192,11 @@ X10:    ifd     MUT_MOVE
         lea     T_BASE+172,a3
         move.w  #$A00B,S_A
 X11:    ifd     MUT_MOVE
+        ifd     MUT_C
+        move.l  #0,4(a3)               ; P1.c MOVE-contrast: assembled as MOVE.L, table still names MOVE.W
+        else
         move.w  #0,4(a3)
+        endc
         else
         ifd     MUT_C
         clr.l   4(a3)                  ; P1.c contrast: assembled as CLR.L, table still names CLR.W

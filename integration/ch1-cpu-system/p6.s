@@ -22,20 +22,27 @@
 ; copies at the same X_k mod 4. The BEQ.S pair (blocks 7-8) prepares with
 ; the 1-word CMP.W D0,D0, which by itself already shifts that pair's gap
 ; by 2 bytes, so its pad stays one word. (Confirmed against the assembled
-; listing, not derived by hand -- see the new alignment precondition.)
+; listing, not derived by hand -- see the alignment precondition.)
 ;
 ; Optional assembly-time symbols:
 ;   MUT_E   every guard is shortened to a single word, DC.W $4AFC
-;           (ILLEGAL), still never executed (P6.e's contrast)
+;           (ILLEGAL), still never executed, followed by one NOP word of
+;           padding so that every pair keeps X_k at opposite parity mod 4
+;           (P6.e's contrast)
 ;   MUT_ALIGN  the first pair's extra pad word is left out, so X1 and X2
 ;              land at the same parity mod 4 (the alignment precondition's
 ;              contrast)
+;   MUT_A   block 2's landing marker is written twice (the reused P3.a)
+;   MUT_B   block 1's BRA.S targets an instruction behind its first guard
+;           word; the guard's S_X store runs and control reaches L_1 (the
+;           reused P3.b)
+;   MUT_C   a MOVE.W W_3(PC),D2 (PC-relative data read of the guard word) is
+;           inserted before block 3 (the reused P3.c)
+;   MUT_D   block 1's stop instruction is assembled as BRA.W instead of
+;           BRA.S, and the pair's pad NOP is left out so that the pair keeps
+;           opposite parity (the reused P3.d)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
-;
-; P3.a-P3.d's own contrasts (MUT_NOP, MUT_C [static-check], MUT_D) are not
-; re-demonstrated here: SPECIFICATION.md section 8 says "the contrasts are
-; the same as in P3", so p3.s's own mutants already cover them for this
-; package (ch1-cpu-system's own scope decision, not a claim of P6's).
+;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
         include "nanomig.i"
         include "ch1.i"
@@ -49,6 +56,7 @@
 GUARD           macro
                 ifd     MUT_E
                 dc.w    $4AFC
+                nop
                 else
                 move.w  #$DEAD,(S_X).l
                 bra.w   FAILRUN
@@ -65,15 +73,28 @@ start:
         move.w  #1,S_P
         move.l  #$1000,d0
         divu.w  d1,d0
+        ifd     MUT_B
+X1:     bra.s   W1X
+W1:     nop
+W1X:    move.w  #$DEAD,(S_X).l
+        nop
+        else
+        ifd     MUT_D
+X1:     bra.w   L1
+        else
 X1:     bra.s   L1
+        endc
 W1:     GUARD
+        endc
 L1:     move.w  #1,S_L
         lea     X1,a6
         move.l  a6,XTAB6+0
 
         moveq   #0,d2                   ; parity pad (2 words: see header)
         ifnd    MUT_ALIGN
+        ifnd    MUT_D
         nop
+        endc
         endc
 
         move.w  #2,S_P
@@ -82,10 +103,16 @@ L1:     move.w  #1,S_L
 X2:     bra.s   L2
 W2:     GUARD
 L2:     move.w  #2,S_L
+        ifd     MUT_A
+        move.w  #2,S_L                  ; reused P3.a contrast: a second landing marker
+        endc
         lea     X2,a6
         move.l  a6,XTAB6+4
 
 ; ---- blocks 3-4: JMP (A0), aligned / remainder 2 -----------------------
+        ifd     MUT_C
+        move.w  W3(pc),d2               ; reused P3.c contrast: PC-relative operand read of a guard word
+        endc
         move.w  #3,S_P
         lea     L3,a0
         move.l  #$1000,d0

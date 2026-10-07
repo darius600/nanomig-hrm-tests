@@ -1,0 +1,3 @@
+; p3_mutord.s -- p3.s with MUT_ORD set: P3.a's ordering contrast (SPECIFICATION.md section 5): block 2's progress marker is written inside block 1, so the markers run P1,P2,L1,L2,...
+MUT_ORD         equ     1
+        include "p3.s"

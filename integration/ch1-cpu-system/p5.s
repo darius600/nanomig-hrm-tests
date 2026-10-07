@@ -12,12 +12,23 @@
 ; Optional assembly-time symbols:
 ;   MUT_VBR  MOVEQ #0,D0 / MOVEC D0,VBR replaces two NOPs (needed for the
 ;            68010/68020 runs; SPECIFICATION.md section 7 step 3)
-;   MUT_A    case 1's TRAP #0 is replaced by NOP (P5.a's contrast)
+;   MUT_A    case 1 executes TRAP #1 through vector 33 (handler H1 is
+;            installed there too) instead of TRAP #0 through vector 32:
+;            the exception is taken and the window is populated, but the
+;            installed vector of case 1 is not read (P5.a's contrast)
 ;   MUT_B    SUBQ.L #4,A7 is inserted before case 1 (P5.b's contrast; used
 ;            together with MUT_VBR, "in the 68010 run")
 ;   MUT_C    case 2 gets an extra MOVE.W D0,S_P before its instruction
 ;            (P5.c's contrast)
+;   MUT_SPAN case 3's MOVE.W #0,CCR becomes MOVE.W #1,CCR: the image
+;            differs from the 68000-mode image in a four-byte span of the
+;            same size as step 3's, but not in step 3 (P5.b's static
+;            contrast); step 3 keeps its two NOPs
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
+;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
+;
+; VBR_STEP and VBR_END label the span of step 3 in every variant; the test
+; reads them from the assembler listing.
 
         include "nanomig.i"
         include "ch1.i"
@@ -38,18 +49,24 @@ start:
         move.l  a0,$1C                  ; vector 7: TRAPV
         lea     H5,a0
         move.l  a0,$20                  ; vector 8: privilege violation
+        ifd     MUT_A
+        lea     H1,a0
+        move.l  a0,$84                  ; vector 33: TRAP #1
+        endc
 
 ; ---- step 3: VBR (68010/68020 runs only) --------------------------------
 ; The 68000-mode image keeps the same MOVEQ #0,D0 and replaces only the
 ; two-word MOVEC D0,VBR with two NOPs, so the two images are equal except
 ; for those two words (SPECIFICATION.md section 7 step 3).
         moveq   #0,d0
+VBR_STEP:
         ifd     MUT_VBR
         movec   d0,vbr
         else
         nop
         nop
         endc
+VBR_END:
 
 ; ---- step 4: USP --------------------------------------------------------
         movea.l #USP_INIT,a0
@@ -64,7 +81,7 @@ start:
         move.w  #$C001,S_A
         move.w  #$0000,ccr
 Y1:     ifd     MUT_A
-        nop                             ; P5.a contrast: no exception is taken
+        trap    #1                      ; P5.a contrast: vector 33, not the installed vector 32
         else
         trap    #0
         endc
@@ -93,7 +110,11 @@ H2:     move.w  #$D002,S_B
 CASE3:
         move.l  a7,PRE_SP
         move.w  #$C003,S_A
+        ifd     MUT_SPAN
+        move.w  #$0001,ccr              ; P5.b contrast: a four-byte span outside step 3 differs
+        else
         move.w  #$0000,ccr
+        endc
 Y3:     dc.w    $A000
         bra.w   FAILRUN
 H3:     move.w  #$D003,S_B

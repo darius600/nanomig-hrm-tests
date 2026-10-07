@@ -6,12 +6,13 @@
 ; Optional assembly-time symbols:
 ;   MUT_P2LOW  every register is loaded with its pattern's lower half,
 ;              zero-extended (P2's own contrasting case, P2-LOW)
-;   MUT_A      step 8's S_B write is left out, keeping the S_END write
+;   MUT_A      step 8's S_B write is made twice; the window stays usable
 ;              (P2.a's contrast)
 ;   MUT_B      the store of D3 (M_D3) is left out (P2.b's contrast)
 ;   MUT_C      a trap-0 handler (RTE only) is installed and TRAP #0 is
 ;              executed between steps 6 and 7 (P2.c's contrast)
 ;   MUT_C1/MUT_C2/MUT_C3/MUT_C4  common preconditions' contrasts (ch1.i)
+;   MUT_NODONE/MUT_PEEK  fixture contrasts (ch1.i)
 
         include "nanomig.i"
         include "ch1.i"
@@ -31,7 +32,7 @@ start:
 
 ; ---- step 2: USP ---------------------------------------------------
         ifd     MUT_P2LOW
-        movea.l #$00003040,a0
+        movea.l #$0000E0F0,a0
         else
         movea.l #$C0D0E0F0,a0
         endc
@@ -109,8 +110,9 @@ start:
         move.l  a0,M_USP
 
 ; ---- step 8 --------------------------------------------------------------
-        ifnd    MUT_A
         move.w  #$B200,S_B
+        ifd     MUT_A
+        move.w  #$B200,S_B              ; P2.a contrast: a second window-close marker
         endc
 
         ENDING
