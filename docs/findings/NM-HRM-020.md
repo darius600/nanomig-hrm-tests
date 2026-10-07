@@ -50,23 +50,17 @@ module; the red is `BLTSIZV` ignoring it, not a dead `ecs` signal.
 - Real Agnus hardware is not measured, and no named software depends on it.
 - The expectation that an OCS Agnus ignores the write comes from the "new for
   ECS" marking, not from a printed sentence saying so.
-- The assertion's message cites p.309/310 for the same marking; this page cites
-  p. 298. The two are not reconciled here.
-- WinUAE and vAmiga are recorded as gating all three registers, without a code
-  link on this page. MiSTer and TC64 are descendants and add no second reading.
 
 ## Independent evidence
 
 | | code | |
 |---|---|---|
-| **WinUAE** | — | gates all three |
-| **vAmiga** | — | gates all three |
+| **WinUAE** | [`custom.cpp:3915-3921`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L3915-L3921) | gates all three on `ecs_agnus` |
+| **vAmiga** | [`Core/Components/Agnus/Blitter/BlitterRegs.cpp:324-332`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Blitter/BlitterRegs.cpp#L324-L332) | gates all three, returning on `agnus.isOCS()` |
 | **Denise** | [`emulation/libami/agnus/register.cpp:222-224`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/register.cpp#L222-L224) | gates on `ecsAndHigher()` |
 | **Copperline** | [`src/bus/custom_regs.rs:787-792`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/bus/custom_regs.rs#L787-L792) | returns false unless the blitter's ECS registers are enabled |
 | **MiSTer** | [`rtl/agnus_blitter.v:566-569`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_blitter.v#L566-L569) | descendant — identical to NanoMig, no `&& ecs`, the same comment/code contradiction |
 | **TC64** | [`rtl/minimig/agnus_blitter.v:546-549`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_blitter.v#L546-L549) | descendant — the same four lines at the same line numbers; its whitespace-only changes in this file do not touch this decode; a fix here diverges from neither line |
-
-The manual, vAmiga and WinUAE stand on the same side, with NanoMig the outlier.
 
 ## Decision
 
