@@ -1,4 +1,4 @@
-# NM-HRM-070 — disk write DMA takes a word in every disk slot whatever FAST says, where pp. 249 and 265 give bit cells of 2 µs and 4 µs
+# NM-HRM-070 — disk write DMA takes a word in every disk slot whatever FAST says, where pp. 249 and 265 give bit cells of 2 µs and 4 µs [withdrawn]
 
 | | |
 |---|---|
