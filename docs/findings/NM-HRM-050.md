@@ -5,24 +5,26 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the `keymap` entry for HID `$64` (the key cut out of the left Shift) emit `$30`, as p.252 prints, instead of `$2B`? Closes when an Amiga specialist accepts or rejects that change to the entry, or when NanoMig makes it and the red turns green. |
-| **Report to** | `NanoMig direct` — harbaum/NanoMig. `amiga_keymap.v` is NanoMig's own file: MiSTer has no counterpart, so there is no ancestor line to file this against |
+| **What is asked of a reader** | Should the `keymap` entry for HID `$64` (the key cut out of the left Shift) emit `$30`, as p.252 prints, instead of `$2B`? Closes when NanoMig makes that change and `CUTOUT-30` turns green, or when an Amiga specialist rejects it. |
+| **Report to** | `NanoMig direct` — harbaum/NanoMig |
 | **Scope** | `keymap` entries for HID `$64` and `$32`, the two international cutout keys; a combinational translation table, so no chip revision applies; hardware not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 8 — Interface Hardware, printed p.252 (text) and p.254 (Figures 8-9 and 8-10) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `CUTOUT-30`: `opus:8-fig.c59`, `sol:8-layout.c58`, `opus:8-fig.c148`, `sol:8-layout.c152`, `opus:8-keycode.c14`, `sol:8-keycode.c13`; `KEY-$2B`: `opus:8-fig.c146`, `sol:8-layout.c150`, `opus:8-keycode.c15`, `sol:8-keycode.c14`. Both assertions this page names carry claim ids |
-| **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/amiga_keymap.v#L70-L130) · no counterpart in MiSTer; TC64 has a separate PS/2 map that emits both codes · fixed |
+| **Chapter** | 8 — Interface Hardware, printed p.252 (text) and p.254 (Figures 8-9 and 8-10) · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `CUTOUT-30`: p. 254: `opus:8-fig.c59`, `sol:8-layout.c58`, `opus:8-fig.c148`, `sol:8-layout.c152`; p. 252: `opus:8-keycode.c14`, `sol:8-keycode.c13`; `KEY-$2B`: p. 254: `opus:8-fig.c146`, `sol:8-layout.c150`; p. 252: `opus:8-keycode.c15`, `sol:8-keycode.c14`. Both assertions this page names carry claim ids |
+| **Module** | `amiga_keymap.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/misc/amiga_keymap.v#L70-L130) · no counterpart in MiSTer; TC64 has a separate PS/2 map that emits both codes; NanoMig's own |
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table): `make -C hrm/ch8-keycode-table test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `CUTOUT-30`: expected `$30` for HID `$64`, observed `$2B`; the package reports `97 passed, 1 failed` (98 assertions, among them a 94-row exhaustive sweep of the table). Control `KEY-$2B`, green: HID `$32` gives `$2B` |
-| **Verdict of the four** | **unanimous against.** All four carry both cutout keys as distinct codes, `$30` and `$2B`, in their own key tables; hardware not measured |
+| **Verdict of the four** | **unanimous against.** All four carry both cutout keys as distinct codes, `$30` and `$2B`, in their own key tables. Hardware: not measured |
 | **Effort** | S — the output of one table entry, the one for HID `$64` |
 
 ---
 
 ## Source requirement
 
-**p.252**: *"The international keyboards have two more keys that are "cut out" of
-larger keys on the USA version. These are $30, cut out from the the left shift,
-and $2B, cut out from the return key."*
+**p.252**:
+
+> "The international keyboards have two more keys that are "cut out" of
+> larger keys on the USA version. These are $30, cut out from the the left shift,
+> and $2B, cut out from the return key."
 
 Figure 8-9 (A1000) shades one key, `30`, beside the left shift. Figure 8-10
 (A500/2000/3000) shades two, `30` beside the left shift and `2B` beside Return.
@@ -85,6 +87,8 @@ line, and `$30` is the value it should carry; the entry at `:72` is right.
 | **MiSTer** | descendant — **no counterpart.** The pinned Minimig-AGA tree has no `amiga_keymap.v`, no `keymap` and no `hid.v`: `rtl/minimig.v:207` takes the already-decoded `kbd_mouse_data` as a top-level input, and the translation happens in software above the chipset |
 | **TC64** | descendant — no `amiga_keymap.v`, but a keymap of its own: builds with `MINIMIG_PS2_KEYBOARD` (`rtl/minimig/amiga_keyboard.v:70`), among them the Chameleon boards, translate PS/2 scan codes in `rtl/minimig/ciaa_ps2keyboard_map.v`, which gives the two cutout keys two codes, `$2B` (`:506`) and `$30` (`:510`), as the page does. Its MiST builds take `kbd_mouse_data` already decoded (`rtl/minimig/amiga_keyboard.v:156-202`) |
 
+### What other Commodore documents say
+
 **Commodore, *A500/A2000 Technical Reference Manual*, 1987**, PDF page 5 — agrees with the manual:
 
 > "Note: On the U.S. keyboard, the keys with codes 44 and 60 are extended to include the European keys with codes 2B and 30, respectively."
@@ -97,11 +101,4 @@ to `$2B` and never produces `$30`.
 
 ## Decision
 
-Should `amiga_keymap.v:130` emit `$30` for HID `$64`? The decision belongs to an
-Amiga specialist, not to this repository.
-
-**Suggested change:** `amiga_keymap.v:130`, `7'h2b` to `7'h30`; leave `:72`
-as it is. Re-run: `make -C hrm/ch8-keycode-table test`; the expected red
-exits nonzero, and `CUTOUT-30` is the assertion that would turn green. The
-page closes when a specialist accepts or rejects the entry change, or when
-NanoMig makes it.
+**Suggested change:** `amiga_keymap.v:130`, `7'h2b` to `7'h30`; leave `:72` as it is. `CUTOUT-30` is the assertion that would turn green.
