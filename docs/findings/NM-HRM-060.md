@@ -5,16 +5,16 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: after a CPU data write to the address of a cached instruction, must `cpu_cache_new` still return the old instruction (`$AAAA`, as p.13's "do not monitor writes" says) instead of the written word (`$CCCC`, which NanoMig returns)? Closes when an Amiga specialist records either that the cache is meant to model the processor's instruction cache, so the write path is a divergence to fix, or that it is a coherent cache of the board's own, so p.13 does not describe it and the red is no fault. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, which carries the same two lines (`rtl/cpu_cache_new.v:306-307`); NanoMig takes the fix from there |
+| **What is asked of a reader** | Question: after a CPU data write to the address of a cached instruction, must `cpu_cache_new` still return the old instruction (`$AAAA`, as p.13's "do not monitor writes" says) instead of the written word (`$CCCC`, which NanoMig returns)? It closes when `CACHE-WRITE-VISIBILITY` turns green with `CACHE-HIT-RETAINS-INSTRUCTION` and `CACR-CLEAR-INVALIDATES-CACHE` still green, or when an Amiga specialist records that `cpu_cache_new` is a coherent cache of the board's own, which p.13 does not describe. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | NanoMig's `cpu_cache_new` at its own module boundary: a CPU data write to the address of a cached instruction line, read back as an instruction; processor model and revision unknown; real hardware not measured; the chip-bus path (`CHIPRAM_CACHE`) not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 1 — Introduction, printed p. 13, General Amiga Development Guidelines · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `CACHE-HIT-RETAINS-INSTRUCTION` and `CACHE-WRITE-VISIBILITY`: `opus:1-guidelines.c70` / `sol:1-guidelines.c70`; `CACR-CLEAR-INVALIDATES-CACHE`: `opus:1-guidelines.c75`; the fixture control carries no claim id |
+| **Chapter** | 1 — Introduction, printed p. 13, General Amiga Development Guidelines · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `CACHE-HIT-RETAINS-INSTRUCTION` and `CACHE-WRITE-VISIBILITY`: `opus:1-guidelines.c70`, `sol:1-guidelines.c70`, p.13; `CACR-CLEAR-INVALIDATES-CACHE`: `opus:1-guidelines.c75`, p.13; the fixture control `CACHE-FIXTURE-DELIVERS-KNOWN-VALUE` carries no claim id |
 | **Module** | `cpu_cache_new.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cpu_cache_new.v#L296-L309); inherited from Minimig-AGA (MiSTer and TC64 carry the same statement) |
 | **Test** | [`hrm/ch1-cpu-and-instruction-cache`](../../hrm/ch1-cpu-and-instruction-cache): `make -C hrm/ch1-cpu-and-instruction-cache test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `CACHE-WRITE-VISIBILITY`: expected `$AAAA`, observed `$CCCC`; the package reports `3 passed, 1 failed`. `CACHE-HIT-RETAINS-INSTRUCTION` and `CACR-CLEAR-INVALIDATES-CACHE` are green: the cache caches and the documented `$0008` flush works |
-| **Verdict of the four** | **3–0 against, one silent.** WinUAE, vAmiga and Copperline all leave the instruction cache untouched by writes; Denise models a 68000 and has no cache to disagree with |
-| **Effort** | S if the specialists decide the instruction cache must not take writes: the `cpu_sm_iram0_we` and `cpu_sm_iram1_we` enables of the CPU write state at `cpu_cache_new.v:298-309`, and the `sdr_` twin at `:511`; none if the coherency is intended |
+| **Verdict of the four** | **3–0 against, one silent.** WinUAE, vAmiga and Copperline all implement the sentence exactly; Denise models a 68000 and has no cache to disagree with. Hardware: not measured |
+| **Effort** | none; if an Amiga specialist records that `cpu_cache_new` models the processor's instruction cache, S: the `cpu_sm_iram0_we` and `cpu_sm_iram1_we` enables of the CPU write state at `cpu_cache_new.v:298-309`, and the `sdr_` twin at `:511` |
 
 ---
 
@@ -87,7 +87,10 @@ stale `$AAAA` — `CACHE-WRITE-VISIBILITY`, red.
 
 ## Decision
 
-Whether a cached instruction must stay stale after a CPU write to its address
-is for the Minimig line to answer; the question and its closure are in the
-header. Re-run: `make -C hrm/ch1-cpu-and-instruction-cache test`; the expected
-red is `CACHE-WRITE-VISIBILITY`, and the two controls stay green.
+Must a cached instruction stay stale after a CPU write to its address? No change
+is proposed now. If an Amiga specialist records that `cpu_cache_new` models the
+processor's instruction cache, the instruction-RAM write enables of the CPU write
+state and of the chip-bus snoop path stop following writes, and the page closes
+when `CACHE-WRITE-VISIBILITY` turns green with the two controls still green; if
+the specialist records that it is a coherent cache of the board's own, which p.13
+does not describe, the page closes on that record.
