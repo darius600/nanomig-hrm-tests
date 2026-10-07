@@ -129,6 +129,3 @@ width claim failing, not a dark fixture.
 drive. A 32-bit pointer register would be 4 GB of address space on a machine
 whose largest chip-RAM configuration is 2 MB. If anything is to change it is the
 reading of the page, not the RTL.
-
-[NM-HRM-043](NM-HRM-043.md) is untouched by this page, because that one turns on
-a width the manual states twice and conditions on the chipset.
