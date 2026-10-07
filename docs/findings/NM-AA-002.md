@@ -16,6 +16,8 @@
 | **Verdict of the four** | **unanimous, and all four implement a RANGE where the document prints a per-register mark.** Every one of them blocks a Coprocessor MOVE to `$078` with CDANG clear by comparing the address against `$080`, none consults a table of marks, and so the mark SPRHDAT's row is missing is one no implementation would read. See [What the others say](#independent-evidence). Hardware: not measured |
 | **Effort** | none — no RTL change (the suggested change is a citation rule for the corpus) |
 
+---
+
 ## Source requirement
 
 The p. 6 legend defines the mark:
