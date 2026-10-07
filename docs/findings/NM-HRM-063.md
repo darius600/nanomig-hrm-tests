@@ -11,8 +11,8 @@
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed p.341 (FLAG) and p.346 (ICR read clears), with p.245 (Chapter 8), p.334 and p.379 for the pin's polarity · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `PROP-FLAG-EDGE-POLARITY`: `opus:F-handshake.c6` / `sol:F-handshake.c7` (p.341); the assertion's message cites p.346, p.245, p.334 and p.379 without a claim id, and the control carries none |
 | **Module** | `cia_int.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/cia_int.v#L57) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/cia_int.v#L81); inherited |
-| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments): `make -C hrm/appF-ciab-port-assignments test`; an expected red exits nonzero. `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-509`) is red at its second clocked ICR read; its control (`test_appF-ciab-port-assignments.cpp:749-759`) passes |
-| **Assertions** | 1 red: `PROP-FLAG-EDGE-POLARITY` — expected bit 4 and IR clear at the second read, observed `0x90` after the transition and `0x90` again after five more ticks with `flag` held (not printed by `make test`; from a run that printed the ICR reads); the package reports `7 passed, 3 failed` |
+| **Test** | [`hrm/appF-ciab-port-assignments`](../../hrm/appF-ciab-port-assignments): `make -C hrm/appF-ciab-port-assignments test`; an expected red exits nonzero. `PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-513`) is red at its second clocked ICR read; its control (`test_appF-ciab-port-assignments.cpp:761-779`) passes |
+| **Assertions** | 1 red: `PROP-FLAG-EDGE-POLARITY` — expected bit 4 and IR clear at the second read, observed `0x90` after the transition and `0x90` again after five more ticks with `flag` held (printed by `make test`); the package reports `7 passed, 3 failed` |
 | **Verdict of the four** | **unanimous, and all four implement the page**: WinUAE, vAmiga, Denise and Copperline all set the bit once per index pulse, on a transition — vAmiga and Copperline name it the pin's falling edge, the transition at which NanoMig's `flag` rises — and none of them from a held level. Hardware: not measured; the 8520R4 dissection, one revision, agrees with pp. 341 and 346 |
 | **Effort** | none; if an Amiga specialist decides the Minimig line carries an edge detector for FLAG, S: `cia_int.v` only: a previous-state register for `flag`, with the set at line 57 and the clear at line 49 made edge-based; `ciab.v` already builds the same pattern for its TOD input (`tick_del` at `ciab.v:166-169`, used as `tick & ~tick_del` at `ciab.v:246`) |
 
@@ -63,7 +63,7 @@ wide (`agnus.v:485`, `agnus_beamcounter.v:374`), and CIA-A's `flag` is tied to
 `1'b0` (`ciaa.v:321`), so in NanoMig `flag` is never held and the bit is set
 once per pulse, as the page predicts.
 
-`PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-509`) runs
+`PROP-FLAG-EDGE-POLARITY` (`test_appF-ciab-port-assignments.cpp:491-513`) runs
 on the `ciab` fixture and reads ICR only through `read_icr_clocked()`
 (`test_appF-ciab-port-assignments.cpp:320-335`): a CPU read cycle with `aen=1`,
 `rd=1`, `wr=0`, `rs=4'hD`, then one rising `clk` edge with `clk7_en=1`.
@@ -76,14 +76,14 @@ on the `ciab` fixture and reads ICR only through `read_icr_clocked()`
    register, its contents are cleared"*; p.341 gives nothing that sets it
    again).
 
-Measured, not printed by `make test`; from a run that printed the ICR reads:
+Measured, printed by `make test`:
 the step-2 read returns `0x90`, as p.341 requires; the step-3 read returns
 `0x90` again and the assertion is red there. Step 3 separates edge from
 level: a level-OR sets bit 4 again at the read (`cia_int.v:49`) and on every
 cycle after it (`cia_int.v:57`); an edge detector does not. The control
-(`test_appF-ciab-port-assignments.cpp:749-759`) runs the same steps with `flag`
+(`test_appF-ciab-port-assignments.cpp:761-779`) runs the same steps with `flag`
 returned to 0 before the first read, is reported rather than graded, and
-passes, in the same run, not printed by `make test`: `0x90`, then `0x00`. So a set bit at step 3 is the held level and
+passes, in the same run, printed by `make test`: `0x90`, then `0x00`. So a set bit at step 3 is the held level and
 nothing else.
 
 ## Risks and unknowns

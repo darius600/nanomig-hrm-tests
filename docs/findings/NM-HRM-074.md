@@ -147,11 +147,11 @@ and NanoMig's top level ties those to their idle level,
 builds `ciab` alone with its four submodules and reads `portb_out` directly;
 it reads `7 passed, 3 failed`.
 
-- `PROP-CRA-PBON` (`test_appF-ciab-port-assignments.cpp:646-658`) writes
+- `PROP-CRA-PBON` (`test_appF-ciab-port-assignments.cpp:650-662`) writes
   DDRB = $FF, PRB = $00, a timer A latch of 1 and CRA = $03 (START, PBON,
   pulse, continuous), runs two underflows and requires bit 6 of `portb_out` to
   have moved. It has not: red.
-- `PROP-CRA-OUTMODE` (`test_appF-ciab-port-assignments.cpp:672-693`) samples
+- `PROP-CRA-OUTMODE` (`test_appF-ciab-port-assignments.cpp:676-697`) samples
   bit 6 before and after each of three underflows once with OUTMODE = 1 and
   once with OUTMODE = 0, and requires the two waveforms to differ. They are
   identical: red.

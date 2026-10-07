@@ -489,7 +489,9 @@ bool prop_flag_exists(Harness& h, bool omit_drive_bug) {
 // function with its own, narrower comparator.
 // ---------------------------------------------------------------------
 bool prop_flag_edge_polarity(Harness& h, bool omit_transition_bug,
-                              bool drop_flag_before_step2_read = false) {
+                              bool drop_flag_before_step2_read = false,
+                              uint8_t* icr_step2_out = nullptr,
+                              uint8_t* icr_step3_out = nullptr) {
     h.set_flag(false);
     h.write_reg(RS_ICR, 0x90);  // set-mode (bit7=1), mask bit 4 (FLG); icr[4] is 0 post-reset.
 
@@ -501,6 +503,8 @@ bool prop_flag_edge_polarity(Harness& h, bool omit_transition_bug,
 
     for (int i = 0; i < 5; ++i) h.tick();  // flag held (or already low); no further transition.
     const uint8_t r_step3 = h.read_icr_clocked();
+    if (icr_step2_out) *icr_step2_out = r_step2;  // read-out only; does not enter the return value.
+    if (icr_step3_out) *icr_step3_out = r_step3;
     const bool bit4_clear_after_hold = (r_step3 & 0x10) == 0x00;
     const bool bit7_clear_after_hold = (r_step3 & 0x80) == 0x00;
 
@@ -733,8 +737,16 @@ int main(int argc, char** argv) {
         // (drop_flag_before_step2_read=true), rather than only in the
         // separate, ungraded control call below -- so the substitution
         // moves the assertion's OWN line, not just a note().
+        uint8_t icr_step2 = 0, icr_step3 = 0;
         const bool result = prop_flag_edge_polarity(h, MUT_A10_FLAG_EDGE_POLARITY,
-                                                      /*drop_flag_before_step2_read=*/MUT_A10_GREEN_CONTROL);
+                                                      /*drop_flag_before_step2_read=*/MUT_A10_GREEN_CONTROL,
+                                                      &icr_step2, &icr_step3);
+        {
+            char buf[96];
+            snprintf(buf, sizeof buf, "PROP-FLAG-EDGE-POLARITY ICR reads: step 2 = 0x%02X, step 3 = 0x%02X",
+                          icr_step2, icr_step3);
+            checks.note(buf);
+        }
         checks.expect(result,
             "PROP-FLAG-EDGE-POLARITY: a negative transition on FLAG sets the FLAG interrupt bit (p.341); "
             "in this fixture flag is DSKINDEX*'s active-high form, the pin itself active low (p.245, "
@@ -747,8 +759,16 @@ int main(int argc, char** argv) {
             "See the paired control below, same channel and timing, flag returned to 0 before the first "
             "read [p.341, p.346, p.245, p.334, p.379] sol:F-handshake.c7 opus:F-handshake.c6");
         Harness hc;
+        uint8_t ctrl_step2 = 0, ctrl_step3 = 0;
         const bool ctrl = prop_flag_edge_polarity(hc, /*omit_transition_bug=*/false,
-                                                   /*drop_flag_before_step2_read=*/true);
+                                                   /*drop_flag_before_step2_read=*/true,
+                                                   &ctrl_step2, &ctrl_step3);
+        {
+            char buf[96];
+            snprintf(buf, sizeof buf, "CONTROL (PROP-FLAG-EDGE-POLARITY) ICR reads: step 2 = 0x%02X, step 3 = 0x%02X",
+                          ctrl_step2, ctrl_step3);
+            checks.note(buf);
+        }
         checks.note(std::string("CONTROL (PROP-FLAG-EDGE-POLARITY, same channel and timing, same "
             "return expression -- including the bit-7 clause, unlike the withdrawn control function "
             "this replaces): the identical three steps, but flag is returned to 0 before the first "
