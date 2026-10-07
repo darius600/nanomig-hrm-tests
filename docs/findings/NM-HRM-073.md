@@ -14,7 +14,7 @@
 | **Test** | [`integration/ch2-copper-control`](../../integration/ch2-copper-control): `make -k -C integration/ch2-copper-control test` (or `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
 | **Assertions** | 5 red on each core (125 passed, 5 failed; these five are the only reds), each observed at a first fetch at A, $001000: `P4` (expected A for Run 1 and B for Run 2), `P4-Run2` (B), `P4-Run3` (B), `P4-Run3-reorder` (C) and `P4-Run3-PAIR` (B and C). `P4-CTRL` and `P4-CTRL-C` are green, fetching $001200 and $001400, and so are the preconditions `P4a`, `P4b` and `P4c` |
 | **Verdict of the four** | **unanimous against NanoMig on the package's runs**: WinUAE, vAmiga, Denise and Copperline all start Run 1 at A and Run 2 at B, where NanoMig starts Run 2 at A. Their mechanisms differ in a way the package's addresses do not separate: WinUAE, vAmiga and Copperline start at COP2LC whatever vertical blank came before the COPJMP2; Denise, like NanoMig, keeps the vertical blank's COP1LC strobe pending while Copper DMA is off, but merges it with the COPJMP2 and starts at COP1LC \| COP2LC, which for the package's lists, $001000 and $001200, is B's address. Hardware: not measured |
-| **Effort** | S: two extra clear conditions on the `strobe1` and `strobe2` latches in `agnus_copper.v` lines 250-266, not run |
+| **Effort** | S — two extra clear conditions on the `strobe1` and `strobe2` latches in `agnus_copper.v` lines 250-266, not run |
 
 ---
 
