@@ -14,7 +14,7 @@
 | **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b): `make -k -C integration/ch4-shres-sprite-b test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
 | **Assertions** | 1 red on each core: `PC2w` — expected a 16-pixel sprite lit over 32 samples (p. 101 with p. 300), observed 1920 lit and 1920 dark of 3840 interval samples (16 samples wide), the 240 boundary samples dark; `28 passed, 1 failed` on fx68k and on TG68K. `PC2w` is a precondition and carries no claim id; the colour propositions `P1`–`P4` are green on both cores for the uniform lines, and their `LA` lines are NOT GRADED while `PC2w` fails |
 | **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each — see *What other Commodore documents say*. Hardware: not measured |
-| **Effort** | none — no RTL change asked; what changes, if anything, is a printed sentence on p. 101 |
+| **Effort** | none — no RTL change asked, what changes, if anything, is a printed sentence on p. 101 |
 | **See also** | [NM-HRM-016](NM-HRM-016.md) (SuperHires sprite colour encoding), [NM-HRM-019](NM-HRM-019.md) (SHSH1, SuperHires sprite positioning) |
 
 ---
