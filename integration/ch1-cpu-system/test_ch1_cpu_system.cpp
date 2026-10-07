@@ -36,6 +36,7 @@
 // MUTATION P2 stimulus red NMH_MUTATE=PEEK-P2: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p2_mutpeek.bin); the peek_word readback line of every P2 run is red; TG68K 106 passed/1 failed (P2), fx68k 50 passed/1 failed (P2).
 // MUTATION C1 stimulus red NMH_MUTATE=C1-P2: an extra INTENA write ($C000) follows step 2 (p2_mutc1.bin); TG68K 106 passed/1 failed (C1), fx68k 50 passed/1 failed (C1).
 // MUTATION C2 stimulus red NMH_MUTATE=C2-P2: an extra DMACON write ($8240) follows step 4 (p2_mutc2.bin); TG68K 106 passed/1 failed (C2), fx68k 50 passed/1 failed (C2).
+// MUTATION C3 stimulus red NMH_MUTATE=C3F-P1: the S_FAIL clause: a branch to the failure path is made just before the S_END write, so S_FAIL is written and S_END still once (p1_mutc3f.bin); TG68K 106 passed/1 failed (C3), fx68k 50 passed/1 failed (C3).
 // MUTATION C3 stimulus red NMH_MUTATE=C3-P2: the S_END write is made twice (p2_mutc3.bin); TG68K 106 passed/1 failed (C3), fx68k 50 passed/1 failed (C3).
 // MUTATION C4 stimulus red NMH_MUTATE=C4-P2: the S_START write is made twice (p2_mutc4.bin); TG68K 106 passed/1 failed (C4), fx68k 50 passed/1 failed (C4).
 // MUTATION P3 stimulus red NMH_MUTATE=NODONE-P3: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p3_mutnodone.bin); the DONE clause of every P3 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 102 passed/3 failed (P3 x3), fx68k 50 passed/1 failed (P3).
@@ -44,7 +45,7 @@
 // MUTATION C2 stimulus red NMH_MUTATE=C2-P3: an extra DMACON write ($8240) follows step 4 (p3_mutc2.bin); TG68K 102 passed/3 failed (C2 x3), fx68k 50 passed/1 failed (C2).
 // MUTATION C3 stimulus red NMH_MUTATE=C3-P3: the S_END write is made twice (p3_mutc3.bin); TG68K 102 passed/3 failed (C3 x3), fx68k 50 passed/1 failed (C3).
 // MUTATION C4 stimulus red NMH_MUTATE=C4-P3: the S_START write is made twice (p3_mutc4.bin); TG68K 102 passed/3 failed (C4 x3), fx68k 50 passed/1 failed (C4).
-// MUTATION P5 stimulus red NMH_MUTATE=NODONE-P5: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p5_mutnodone.bin (68000 image) and p5_vbr_mutnodone.bin (VBR image)); the DONE clause of every P5 run's fixture line is red and the relations that depend on it are not evaluated; TG68K 102 passed/3 failed (P5 x3), fx68k 51 passed/1 failed (P5).
+// MUTATION P5 stimulus red NMH_MUTATE=NODONE-P5: the fixture's DONE clause: the program stops in place after the S_END write without writing DONE (p5_mutnodone.bin (68000 image) and p5_vbr_mutnodone.bin (VBR image)); the fixture line, the P5.a line and the P5.c line of every P5 run go red together (P5.a and P5.c carry the fixture condition) and the relations that depend on them are not evaluated; TG68K 96 passed/9 failed (P5 x3, P5.a x3, P5.c x3), fx68k 49 passed/3 failed (P5, P5.a, P5.c).
 // MUTATION P5 stimulus red NMH_MUTATE=PEEK-P5: the fixture's readback clause: S_START is overwritten with $0000 after the S_END write, the CPU write of $0001 stays in the log (p5_mutpeek.bin (68000 image) and p5_vbr_mutpeek.bin (VBR image)); the peek_word readback line of every P5 run is red; TG68K 102 passed/3 failed (P5 x3), fx68k 51 passed/1 failed (P5).
 // MUTATION C1 stimulus red NMH_MUTATE=C1-P5: an extra INTENA write ($C000) follows step 2 (p5_mutc1.bin (68000 image) and p5_vbr_mutc1.bin (VBR image)); TG68K 102 passed/3 failed (C1 x3), fx68k 51 passed/1 failed (C1).
 // MUTATION C2 stimulus red NMH_MUTATE=C2-P5: an extra DMACON write ($8240) follows step 4 (p5_mutc2.bin (68000 image) and p5_vbr_mutc2.bin (VBR image)); TG68K 102 passed/3 failed (C2 x3), fx68k 51 passed/1 failed (C2).
@@ -79,11 +80,11 @@
 // MUTATION P3.c stimulus red NMH_MUTATE=P3C-P6: a MOVE.W W_3(PC),D2 before block 3 in P6 (p6_mutc.bin), the reused P3.c line; TG68K 105 passed/2 failed (P3.c x2), fx68k 50 passed/1 failed (P3.c).
 // MUTATION P3.d stimulus red NMH_MUTATE=P3D: block 1 assembled as BRA.W while the table names BRA.S (p3_mutd.bin); TG68K 102 passed/3 failed (P3.d x3), fx68k 50 passed/1 failed (P3.d).
 // MUTATION P3.d stimulus red NMH_MUTATE=P3D-P6: block 1 assembled as BRA.W while the table names BRA.S in P6, the pair's pad NOP dropped (p6_mutd.bin), the reused P3.d line; TG68K 105 passed/2 failed (P3.d x2), fx68k 50 passed/1 failed (P3.d).
-// MUTATION P3 stimulus red NMH_MUTATE=P3-WIN: the S_END write made right after the setup (p3_mutwin.bin): the run window closes before the first block, so the main relation (no read at any W_k inside it) goes red with every precondition holding; TG68K 105 passed/3 failed (P3 x3), fx68k 51 passed/1 failed (P3).
+// MUTATION P3 stimulus red NMH_MUTATE=P3-WIN: the four blocks run before S_START is written, and the markers P1,L1,...,P4,L4 and then S_END follow (p3_mutwin.bin): the run window contains no block, so the main relation (no read at any W_k inside it) goes red with every precondition holding, C4 included (S_START before the first S_P, S_END after the last S_L); TG68K 105 passed/3 failed (P3 x3), fx68k 51 passed/1 failed (P3).
 // MUTATION P3 stimulus red NMH_MUTATE=P3-CAL: a TST.W of the far word Z before the ending (p3_mutcal.bin): the calibration line goes red; TG68K 105 passed/3 failed (P3 x3), fx68k 51 passed/1 failed (P3).
 // MUTATION P5.a stimulus red NMH_MUTATE=P5A: case 1 executes TRAP #1 with its handler also installed at vector 33 (p5_muta.bin): the exception is taken and the window populated, but the installed vector 32 is not read; TG68K 105 passed/1 failed (P5.a), fx68k 51 passed/1 failed (P5.a).
 // MUTATION P5.b stimulus red NMH_MUTATE=P5B: SUBQ.L #4,A7 inserted before case 1 in the 68010 image (p5_mutb.bin); TG68K 104 passed/1 failed (P5.b), fx68k 52 passed/0 failed (not applicable: this core never loads the 68010 image).
-// MUTATION P5.b stimulus red NMH_MUTATE=P5B-SPAN: the VBR-side image replaced by one that keeps step 3's two NOPs and differs in case 3's MOVE.W #1,CCR (p5_mutspan.bin): the images differ in a four-byte span outside step 3; TG68K 104 passed/1 failed (P5.b), fx68k 52 passed/0 failed (not applicable: this core never loads the VBR image).
+// MUTATION P5.b stimulus red NMH_MUTATE=P5B-SPAN: the VBR-side image replaced by one that keeps step 3's two NOPs and differs in case 3's MOVE.W #1,CCR (p5_mutspan.bin): the images differ at one byte (image offset $FB) inside case 3's four-byte MOVE.W #imm,CCR, outside step 3; TG68K 104 passed/1 failed (P5.b), fx68k 52 passed/0 failed (not applicable: this core never loads the VBR image).
 // MUTATION P5.c stimulus red NMH_MUTATE=P5C: an extra MOVE.W D0,S_P inside W_2 (p5_mutc.bin); TG68K 107 passed/1 failed (P5.c), fx68k 51 passed/1 failed (P5.c).
 // MUTATION P5 stimulus red NMH_MUTATE=P5-PAIR-0010: the 68010 run loads the 68000-mode image under cpu_config 68000: the pair (68000,68010) writes equal frames; TG68K 107 passed/1 failed (P5), fx68k 52 passed/0 failed (not applicable: the pair relations run on the second core only).
 // MUTATION P5 stimulus red NMH_MUTATE=P5-PAIR-0020: the 68020 run loads the 68000-mode image under cpu_config 68000: the pair (68000,68020) writes equal frames; TG68K 107 passed/1 failed (P5), fx68k 52 passed/0 failed (not applicable: the pair relations run on the second core only).
@@ -602,7 +603,7 @@ bool markers_in_order(const std::vector<nmh::RamAccess>& log, int n) {
 std::string pick_macro_variant(const std::string& mv, const std::string& program,
                                const std::string& dir, const std::string& stem, const std::string& dflt) {
     static const std::pair<const char*, const char*> kMacro[] = {
-        {"C1", "mutc1"}, {"C2", "mutc2"}, {"C3", "mutc3"}, {"C4", "mutc4"}, {"C4B", "mutc4b"},
+        {"C1", "mutc1"}, {"C2", "mutc2"}, {"C3", "mutc3"}, {"C3F", "mutc3f"}, {"C4", "mutc4"}, {"C4B", "mutc4b"},
         {"NODONE", "mutnodone"}, {"PEEK", "mutpeek"}};
     for (const auto& m : kMacro)
         if (mv == std::string(m.first) + "-" + program) return dir + "/" + stem + "_" + m.second + ".bin";
@@ -639,7 +640,7 @@ Run run_plain(const std::string& bin, const nmh::Config& cfg) {
 bool common_ok(const Run& r) { return r.loaded && r.released && r.done.has_value(); }
 
 // ---------------------------------------------------------------------
-// C1-C5 (SPECIFICATION.md 2.5), evaluated on any capture's log.
+// C1-C4 (SPECIFICATION.md 2.5), evaluated on any capture's log; C5 is recorded, not graded.
 // ---------------------------------------------------------------------
 bool check_c1(const std::vector<nmh::RamAccess>& log, uint16_t& r_int_out) {
     // R_INT's stored value must show bits 14-0 all zero (bit 15 masked).
@@ -659,16 +660,33 @@ bool check_c3(const std::vector<nmh::RamAccess>& log) {
     return end_hit.found && end_hit.count == 1 && fail_hit.count == 0;
 }
 bool check_c4(const std::vector<nmh::RamAccess>& log) {
-    // "S_START comes before every window": since S_START is written exactly
-    // once (checked above) and the log is chronological, it is enough that
-    // the first window-open sentinel this program uses (S_A for P1/P2/P5,
-    // S_P for P3/P6) comes later.
+    // "S_START comes before every window, and S_END comes after them": since
+    // S_START is written exactly once (checked above) and the log is
+    // chronological, it is enough that the first window-open sentinel this
+    // program uses (S_A for P1/P2/P5, S_P for P3/P6) comes later, and that
+    // the S_END write comes after the last window-close sentinel (the last
+    // S_B or S_L write).
     auto s = find_write(log, S_START, 0x0001);
     if (!(s.found && s.count == 1)) return false;
     for (const auto& x : log) {
-        if (x.is_write && (x.word_addr == wa(S_A) || x.word_addr == wa(S_P))) return x.cycle > s.cycle;
+        if (x.is_write && (x.word_addr == wa(S_A) || x.word_addr == wa(S_P))) {
+            if (!(x.cycle > s.cycle)) return false;
+            break;
+        }
     }
-    return true; // no window-open sentinel in this program
+    bool have_close = false;
+    uint64_t last_close = 0;
+    for (const auto& x : log) {
+        if (x.is_write && (x.word_addr == wa(S_B) || x.word_addr == wa(S_L))) {
+            have_close = true;
+            if (x.cycle > last_close) last_close = x.cycle;
+        }
+    }
+    if (have_close) {
+        auto e = find_write(log, S_END, 0xE0D0);
+        if (!(e.found && e.cycle > last_close)) return false;
+    }
+    return true;
 }
 
 } // namespace
@@ -1499,9 +1517,9 @@ int main(int argc, char** argv) {
                 p5c_normal = false;
             }
         }
-        checks.expect(p5a0, "P5.a: every case was taken through its installed vector, no write to "
+        checks.expect(fixture0_ok && p5a0, "P5.a: every case was taken through its installed vector, no write to "
                                            "S_FAIL (68000 mode, " + core_label + ")");
-        checks.expect(p5c_normal,
+        checks.expect(fixture0_ok && p5c_normal,
             "P5.c: every CPU write inside each case's window lies between POST_SP_e and PRE_SP-2 (68000 mode, " + core_label + ")");
         for (int e=1;e<=5;++e) checks.record("P5 F_" + std::to_string(e) + " (68000 mode, " + core_label + "): " + p5::frame_str(frames0[e]));
 
@@ -1566,13 +1584,13 @@ int main(int argc, char** argv) {
                     p5c2 = p5c2 && p5::writes_within_stack(frames2[e], w2.pre_sp, r2.post_sp[e]);
                 } else p5c2 = false;
             }
-            checks.expect(p5a1, "P5.a: every case was taken through its installed vector, no write "
+            checks.expect(fixture1_ok && p5a1, "P5.a: every case was taken through its installed vector, no write "
                                                "to S_FAIL (68010 mode)");
-            checks.expect(p5a2, "P5.a: every case was taken through its installed vector, no write "
+            checks.expect(fixture2_ok && p5a2, "P5.a: every case was taken through its installed vector, no write "
                                                "to S_FAIL (68020 mode)");
-            checks.expect(p5c1, "P5.c: every CPU write inside each case's window lies between "
+            checks.expect(fixture1_ok && p5c1, "P5.c: every CPU write inside each case's window lies between "
                                                "POST_SP_e and PRE_SP-2 (68010 mode)");
-            checks.expect(p5c2, "P5.c: every CPU write inside each case's window lies between "
+            checks.expect(fixture2_ok && p5c2, "P5.c: every CPU write inside each case's window lies between "
                                                "POST_SP_e and PRE_SP-2 (68020 mode)");
             for (int e=1;e<=5;++e) checks.record("P5 F_" + std::to_string(e) + " (68010 mode): " + p5::frame_str(frames1[e]));
             for (int e=1;e<=5;++e) checks.record("P5 F_" + std::to_string(e) + " (68020 mode): " + p5::frame_str(frames2[e]));

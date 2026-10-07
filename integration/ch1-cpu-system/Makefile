@@ -31,7 +31,7 @@ $(addsuffix .bin,$(P5_VBR)) $(addsuffix .lst,$(P5_VBR)): VASMFLAGS := -m68010 -n
 
 TEST_CPP := test_ch1_cpu_system.cpp
 PROGS    := p1 p1_move p1_move_mutc p1_muta p1_mutb p1_mutc \
-            p1_mutc1 p1_mutc2 p1_mutc3 p1_mutc4 p1_mutc4b \
+            p1_mutc1 p1_mutc2 p1_mutc3 p1_mutc3f p1_mutc4 p1_mutc4b \
             p1_mutord p1_mutnodone p1_mutpeek \
             p2 p2_low p2_muta p2_mutb p2_mutc \
             p2_mutc1 p2_mutc2 p2_mutc3 p2_mutc4 p2_mutnodone p2_mutpeek \

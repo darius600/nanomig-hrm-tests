@@ -180,7 +180,9 @@ at a sentinel or result address carrying the value the program stores there:
 C2 holds the DMA channels off, and C4 requires every sentinel write to appear
 exactly once. A read at an address is not attributed to a requester by the
 record, so a CPU instruction fetch cannot be told from another read at the
-port; every line that counts reads says so. "Before" and "after" compare
+port; P3's graded line, whose claim rests on a CPU instruction fetch, says so
+(section 5). P1's graded c60 line keeps its claim ids: its contrast P1-MOVE
+measures no read at T_c inside W_c on either core. "Before" and "after" compare
 port times. A byte address B belongs to the word at B with bit 0 cleared.
 
 ### 2.5 Common preconditions
@@ -214,6 +216,9 @@ every program and is replayed per program.
   variant ends.
   - Contrast: write S_END twice. It is no longer written exactly once, so C3
     goes red; the failure path is not taken.
+  - Contrast (S_FAIL, P1 only): branch to the failure path just before the
+    S_END write. S_FAIL is written and S_END is still written once, so C3
+    goes red on the S_FAIL clause alone.
 - **C4, sentinels are seen as CPU writes.** Every sentinel write the
   program executes appears as exactly one CPU write with the sentinel's
   data. S_START comes before every window, and S_END comes after them.
@@ -530,8 +535,8 @@ R is the interval between the CPU write of $0001 to S_START and the CPU
 write of $E0D0 to S_END. Every instruction in P3 exists on the 68000, the
 68010 and the 68020, so the same image runs in every mode.
 
-**Observation.** The Chip-memory port: the number of CPU reads at each W_k
-inside R.
+**Observation.** The Chip-memory port: the number of reads at each W_k
+inside R (the record names no requester, 2.4).
 
 **Expected relation.** At least one read at some W_k (k = 1 to 4) inside R,
 which no executed instruction and no data access explains. The test reports
@@ -594,7 +599,7 @@ of its three modes. The 68030 and 68040 are absent (see 1).
 stimulus under which a family member does not load ahead, and it states no
 depth, so no change of the stimulus has a page-predicted outcome of "no read
 at W_k". To show that the counter can report absence, the test also counts
-CPU reads at the far word Z ($1FFFFE) inside R and expects zero. Z is never
+reads at the far word Z ($1FFFFE) inside R and expects zero. Z is never
 referenced, and it lies more than 1.9 MB above every program word. This is
 a calibration of the measurement, not a page prediction: the pages set no
 maximum prefetch distance.
@@ -776,9 +781,9 @@ pairs must hold.
   - Contrast: in the 68010 run, insert `SUBQ.L #4,A7` before step 5. PRE_SP
     differs from the other runs, so P5.b goes red, and the program finishes.
   - Contrast (static): an image that keeps step 3's two `NOP`s but differs
-    from the 68000-mode image in a four-byte span elsewhere (case 3's
-    `MOVE.W #1,CCR` for `MOVE.W #0,CCR`). The span has the size of step 3's,
-    and P5.b goes red.
+    from the 68000-mode image at one byte (image offset $FB) inside case
+    3's four-byte `MOVE.W #imm,CCR` (`#1` for `#0`), outside step 3, and P5.b
+    goes red.
 - **P5.c, the window holds only the frame.** Every CPU write inside W_e
   lies at an address from POST_SP_e (the value the handler stores) up to
   PRE_SP minus 2.

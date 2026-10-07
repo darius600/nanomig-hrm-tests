@@ -98,22 +98,23 @@ SETUP           macro
 
 ; ---- common ending: FAIL: writes S_FAIL then falls into S_END --------
 ; MUT_C3 (contrast, C3): the S_END write is made twice.
-; MUT_WIN (contrast, P3's run window): the S_END write is made early by the
-; program, so it is left out here.
+; MUT_C3F (contrast, C3's S_FAIL clause): a branch to FAIL is inserted just
+; before the normal S_END write, in the program that uses this macro.
 ; MUT_PEEK (contrast, the S_START peek_word readback): S_START is overwritten
 ; with $0000 after the S_END write; the CPU write of $0001 stays in the log.
 ; MUT_NODONE (contrast, the fixture's DONE): the program stops in place
 ; without writing DONE.
 ENDING          macro
+                ifd     MUT_C3F
+                bra.w   FAILRUN
+                endc
                 bra.w   REALEND
 FAILRUN:
                 move.w  #$FA11,S_FAIL
 REALEND:
-                ifnd    MUT_WIN
                 move.w  #$E0D0,S_END
                 ifd     MUT_C3
                 move.w  #$E0D0,S_END
-                endc
                 endc
                 ifd     MUT_PEEK
                 move.w  #$0000,S_START
