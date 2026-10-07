@@ -53,7 +53,7 @@
 //     tdhi=rs$A, crb=rs$F -- exactly three TOD/alarm addresses, no fourth.
 //   - ciaa.v:370-384: cia_timerd's tlo/tme/thi ports are tdlo/tdme/tdhi;
 //     its tcr port is `crb` (rs$F, SHARED with cia_timerb's own tcr --
-//     cia_timerb.v:106-108 confirms it only ever drives bits [6:0] of a
+//     cia_timerb.v:101-103 confirms it only ever drives bits [6:0] of a
 //     $F read, never bit 7, so the two submodules' data_out contributions
 //     OR together without collision); count is `tick & ~tick_del`
 //     (ciaa.v:382, tick_del at :303-306) -- edge-detected, not level.
