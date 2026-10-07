@@ -4,8 +4,8 @@
 |---|---|
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
-| **Evidence** | none |
-| **What is asked of a reader** | Nothing. The entry is kept so the claim is not raised a second time: p. 344 names no register for the stop, and its next sentence makes a lone write to $8 end with the clock counting. |
+| **Evidence** | p. 344's stop sentence names no register and its next sentence restarts the clock after a write to $8, and `TOD-WRITE-STOPS-CLOCK` measures NanoMig stopped after a write to $A and counting after a lone write to $8 or to $9 |
+| **What is asked of a reader** | Nothing. p. 344 names no register for the stop, and its next sentence makes a lone write to $8 end with the clock counting. |
 | **Withdrawal reason** | p. 344 stops the clock on a write to "the register" and names none, so no page requires a write to $9 to stop it, and the next sentence rules out the claim's requirement that a lone write to $8 leave it stopped |
 | **Error class** | **a silence read as a requirement** |
 | **Replacement** | Green, in [`hrm/appF-cia-tod-clock-and-alarm`](../../../hrm/appF-cia-tod-clock-and-alarm): `TOD-WRITE-STOPS-CLOCK` (a write to $A stops a clock started by a write to $8 and seen to count; a lone write to $8 leaves it counting; a write to $9 is measured and not graded, because p. 344 names no register for the stop), `TOD-WRITE-STARTS-LSB-ONLY` and `TOD-WRITE-STARTS-ATOMIC-VALUE` |
@@ -13,7 +13,7 @@
 | **Test** | `make -C hrm/appF-cia-tod-clock-and-alarm test`; `TOD-WRITE-STOPS-CLOCK` is at `test_ciaa.cpp:792-869`; the package reads `44 passed, 0 failed`, its fixture-liveness check included, so nothing exits nonzero |
 | **Chapter** | Appendix F — 8520 Complex Interface Adapters, printed pp. 344 (*Time of Day Clock*, and the table *BIT NAMES for WRITE TIME/ALARM or READ TIME*), 346, 349 (Control Register B), 350, 354 · *Amiga Hardware Reference Manual*, 3rd ed., 1991. Claim ids: `TOD-WRITE-STOPS-CLOCK`: `opus:F-tod.c9`, `sol:F-tod.c10`, p. 344; `TOD-WRITE-STARTS-LSB-ONLY`: `opus:F-tod.c10`, `sol:F-tod.c11`, p. 344; `TOD-WRITE-STARTS-ATOMIC-VALUE`: `opus:F-tod.c11`, `sol:F-tod.c12`, p. 344. All three assertions carry a claim id |
 | **Assertions** | all green. `TOD-WRITE-STOPS-CLOCK` starts three fresh fixtures, writes $000000 with $8 last and gives one tick, so each clock reads $000001, then writes $00 to one register and gives one more tick: after the write to $A the count stayed at $000001, after the lone write to $8 it counted on from $000000 to $000001, and after the write to $9, recorded and not graded, it counted on to $000002. `TOD-WRITE-STARTS-LSB-ONLY` reads a write to $9 after one to $A leaving the clock stopped and the following write to $8 restarting it; `TOD-WRITE-STARTS-ATOMIC-VALUE` lands the sequence $A, $9, $8 on the value written with ticks between the writes |
-| **Verdict of the four** | **unanimous with NanoMig**: WinUAE, vAmiga, Denise and Copperline all stop the TOD clock on a write to $A, restart it on a write to $8, and leave it running across a write to $9. vAmiga's and Copperline's comments state that rule; WinUAE and Denise, in their 6526 models, put the stop on the 6526's hours register, the top one of its four |
+| **Verdict of the four** | **unanimous with NanoMig**: WinUAE, vAmiga, Denise and Copperline all stop the TOD clock on a write to $A, restart it on a write to $8, and leave it running across a write to $9. vAmiga's and Copperline's comments state that rule; WinUAE and Denise, in their 6526 models, put the stop on the 6526's hours register, the top one of its four. Hardware: not measured; the 6502.org dissection of one 8520R4 draws the stop on a write to $A and the restart on a write to $8, and no strobe of $9 reaches the count enable |
 
 ---
 
@@ -48,8 +48,8 @@ register"*, makes a write to $8 the one after which the clock counts, so under
 either reading of *the register* a lone write to $8 ends with the clock
 counting. The claim requires it stopped.
 
-**What the difference does.** A replay with the package's own harness and bus
-timing, a measurement for this page and not a graded assertion, writes to a
+**What the difference does.** A replay with the package's harness and bus
+timing, run outside the package (`make test` does not print it), so a reading of the code and not a package result, writes to a
 counting clock:
 
 | from a running clock | NanoMig reads | if a write to $9 stopped the clock |
@@ -68,8 +68,12 @@ written.
 
 ## What the HRM says
 
-**Printed p. 344**, *Time of Day Clock*, the paragraph the assertion grades,
-whole:
+**Printed p. 344**, *Time of Day Clock*:
+
+> TOD consists of a 24-bit binary counter. Positive edge transitions on this pin cause the binary
+> counter to increment.
+
+and the paragraph the assertion grades, whole:
 
 > A specific sequence of events must be followed for proper setting and reading of TOD. TOD is
 > automatically stopped whenever a write to the register occurs. The clock will not start again until
@@ -78,7 +82,9 @@ whole:
 
 The paragraph after it, on reading:
 
-> All TOD registers latch on a read of MSB event and remain latched until after a read of LSB event.
+> Since a carry from one stage to the next can occur at any time with respect to a read operation, a
+> latching function is included to keep all TOD information constant during a read sequence. All
+> TOD registers latch on a read of MSB event and remain latched until after a read of LSB event.
 
 The table under them names register 8 `LSB Event` (E7–E0), register 9 `Event 8-15`
 (E15–E8) and register A `MSB Event` (E23–E16). **Printed p. 349**, Control
@@ -108,7 +114,7 @@ $8 on its own, whether or not it stops the clock first, ends with the clock
 counting.
 
 Beyond writing the LSB event register last, the page prints no order for the
-writes. p. 349 routes a TOD write by CRB bit 7 and p. 350's bitmap repeats it;
+writes. No other page speaks to the stop. p. 349 routes a TOD write by CRB bit 7 and p. 350's bitmap repeats it;
 p. 346 lists the TOD alarm among the interrupt sources; the reset paragraph on
 p. 354 says nothing of the clock running or stopped.
 
