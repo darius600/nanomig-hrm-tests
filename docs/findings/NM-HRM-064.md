@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Question: must a Zorro II board whose register 08 bit 6 reads clear (p.433, "can be shut up") go silent after a write to register 4C (p.436), so that NanoMig has to set that bit or implement 4C, when today a 4C write leaves register 00 reading raw `0xE`? Closes when the change under *Decision* is made, with the six assertions and `GATE-G-PRECOND`, which today require bit 6 clear, regraded for a board that declares it cannot be shut up; or when a 4C handler is made and the six reds and `GATE-G` turn green; or when an Amiga specialist rejects both, in which case this page is refiled against the printed page. |
+| **What is asked of a reader** | Question: must a Zorro II board whose register 08 bit 6 reads clear (p.433, "can be shut up") go silent after a write to register 4C (p.436), so that NanoMig has to set that bit or implement 4C, when today a 4C write leaves register 00 reading raw `0xE`? Closes when the change under *Decision* is made, with the six assertions `sol:K-0740`, `sol:K-0849`, `sol:K-0850`, `opus:K-0889`, `sol:K-0848` and `opus:K-0888` and `GATE-G-PRECOND`, which today require bit 6 clear, regraded for a board that declares it cannot be shut up; or when a 4C handler is made and those six reds and `GATE-G` turn green; or when an Amiga specialist rejects both, in which case this page is refiled against the printed page. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | Zorro II memory board in NanoMig's AUTOCONFIG path (register 08 bit 6, write to register 4C), on TG68K and fx68k; the Zorro III arm sets bit 6 and is not in scope; chip revision unknown, hardware not measured |
 | **Software impact** | unknown; no named affected software |
@@ -102,6 +102,4 @@ Denise is the closest comparison: it makes NanoMig's exact promise and honours a
 
 **Suggested change: add `6'b000100: autocfg_data = 4'b1011;` to the Zorro II arm**: register 08's upper nybble, complemented as every register but 00 is, logical `0100`, bit 6 set, the other bits as they read now. That stops the board announcing a capability the Minimig family lacks, at one case entry; MiSTer's memory card needs the same line.
 
-The other direction, a handler for `6'b100110` that clears `autocfg_card` and stops the board answering, would be the first RAM-board shut-up in the family; whether it is wanted is the specialists' question.
-
-Closes as *What is asked of a reader* says. Re-run: `make -C hrm/appK-autoconfig-base-address test` and `make -k -C integration/appK-autoconfig test`; today the six reds above and `GATE-G` on both cores.
+The other direction, a handler for `6'b100110` that clears `autocfg_card` and stops the board answering, would be the first RAM-board shut-up in the family.
