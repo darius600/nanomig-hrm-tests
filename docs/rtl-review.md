@@ -5,7 +5,7 @@ to decide whether NanoMig's RTL should change. Its header says three things:
 it is open, it is filed against the RTL, and a failing test holds it up -- a
 test that measures the RTL doing something the manual does not describe.
 This suite stops there. The decision is the specialist's, and each page's
-*Suggested change* states one option, not a verdict.
+*Decision* states one option, not a verdict.
 
 **Have one evening?** Start at the register's shortlist,
 [If you have one evening](findings.md#if-you-have-one-evening): a few
