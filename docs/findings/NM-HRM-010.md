@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should NanoMig's NTSC line end one colour clock later on every other line (228 and 227 alternating, as p. 23 prints), where `agnus_beamcounter.v` ends every line at 227 and says in its own comment that the 227.5 line is not supported? The decision belongs to an Amiga specialist; whether NanoMig wants the NTSC half clock at all is a project question before it is a code one. Closes when a specialist accepts the change, in which case `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`, `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)` and `P3` are the reds that should turn green, or records that the simplification stays. |
-| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer, as a question rather than a defect: MiSTer and TC64 carry the same simplification with the same comment, so there is no fix in either to port |
+| **What is asked of a reader** | Should NanoMig's NTSC line end one colour clock later on every other line (228 and 227 alternating, as p. 23 prints), where `agnus_beamcounter.v` ends every line at 227 and says in its own comment that the 227.5 line is not supported? Whether NanoMig wants the NTSC half clock at all is a project question before it is a code one. Closes when the end-of-line comparison (line 250 of that file) lengthens every line the long-line bit marks by one colour clock and `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`, `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)` and `P3` turn green, or when an Amiga specialist records that the simplification stays. |
+| **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | NTSC lines at the hardwired line length (VARBEAMEN = 0), measured on `agnus_beamcounter`; and an interlaced ECS/NTSC display (BPLCON0 = $1204) on fx68k and on TG68K. A programmed line length is [NM-AA-005](NM-AA-005.md)'s. Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | Appendix C — ECS, printed p. 304; 2 — Coprocessor, printed pp. 23, 24; 6 — Blitter, printed p. 194 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, each with the assertion that carries it: `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`: `opus:C-scan.c02`, p. 304; `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)`: `opus:7-appC-beam.c2`, p. 304; `P3`: `ch2-vertical-beam-position.c15` to `.c19` and `COP2-vertical-beam-position.c17` to `.c22`, p. 24. The control `COLOUR-CLOCKS-PER-LINE-227POINT5 (control, no claim id)` and `PT-1`, `PT-2`, `PT-3`, `PT-5` and `PT-7` carry no claim id. p. 23 and p. 194 are quoted as context and carry none |
+| **Chapter** | Appendix C — ECS, printed p. 304; 2 — Coprocessor, printed pp. 23, 24; 6 — Blitter, printed p. 194 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, each with the assertion that carries it: `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)`: `opus:C-scan.c02`, p. 304; `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)`: `opus:7-appC-beam.c2`, p. 304; `P3`: `ch2-vertical-beam-position.c15`, `ch2-vertical-beam-position.c16`, `ch2-vertical-beam-position.c17`, `ch2-vertical-beam-position.c18`, `ch2-vertical-beam-position.c19`, `COP2-vertical-beam-position.c17`, `COP2-vertical-beam-position.c18`, `COP2-vertical-beam-position.c19`, `COP2-vertical-beam-position.c20`, `COP2-vertical-beam-position.c21`, `COP2-vertical-beam-position.c22`, p. 24. The control `COLOUR-CLOCKS-PER-LINE-227POINT5 (control, no claim id)` and `PT-1`, `PT-2`, `PT-3`, `PT-5` and `PT-7` carry no claim id. p. 23 and p. 194 are quoted as context and carry none |
 | **Module** | `agnus_beamcounter.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L86) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L86); inherited |
 | **Test** | [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking): `make -C hrm/ch3-beam-counters-and-blanking test`; [`integration/ch2-interlace-fields`](../../integration/ch2-interlace-fields): `make -k -C integration/ch2-interlace-fields test`; an expected red exits nonzero |
 | **Assertions** | `hrm/ch3-beam-counters-and-blanking`, 2 red of this finding's: `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC)` — expected an average of 227.5, observed 227.0 (227, 227, 227, 227); `COLOUR-CLOCKS-PER-LINE-227POINT5 (NTSC bundled with line count)` — the 525-line half matches, the same 227.0 average does not. The package is 28 passed, 5 failed: the other three reds are the PAL pair, [NM-HRM-068](NM-HRM-068.md)'s, and `VBLANK-DURATION-PAL-DISAGREES-WITH-MANUAL`, [NM-HRM-011](NM-HRM-011.md)'s. `integration/ch2-interlace-fields`, 1 red on each core, `P3` — expected a 228-colour-clock last line in two fields of every four at one fixed phase, observed 3150 of 3150 line lengths at 227 (31 passed, 1 failed on fx68k and on TG68K); its preconditions `PT-1`, `PT-2`, `PT-3`, `PT-5` and `PT-7` are green on both, and the gates `PT-4` (the line 0 and line 1 marks are 227 colour clocks apart) and `PT-6` print open |
-| **Verdict of the four** | **unanimous against NanoMig**: WinUAE, vAmiga, Denise and Copperline all make every other NTSC line 228 colour clocks. NanoMig toggles the bit that reports a long line and keeps every line at 227. Hardware status: not measured |
+| **Verdict of the four** | **unanimous against NanoMig**: WinUAE, vAmiga, Denise and Copperline all make every other NTSC line 228 colour clocks. NanoMig toggles the bit that reports a long line and keeps every line at 227. Hardware: not measured |
 | **Effort** | M: the end-of-line comparison at `agnus_beamcounter.v:250`, which the rest of the module's horizontal timing hangs off; the long-line toggle itself is not touched |
 | **See also** | [NM-HRM-068](NM-HRM-068.md) — the PAL row of the same sentence, where p. 23 sides with the RTL; [NM-HRM-033](NM-HRM-033.md) — the condition on the same toggle; [NM-AA-005](NM-AA-005.md) — the AA specification's HTOTAL entry, the same missing long line under a programmed line length |
 
@@ -32,7 +32,12 @@
 > PAL, they are all 227 long. The display sees all these lines as 227 1/2
 > color clocks long, while the copper sees alternating long and short lines.
 
-**Chapter 6, printed p. 194**, gives the same figure: "227.5 'color clocks'". For NTSC the pages agree: no line lasts half a colour clock, two consecutive lines last 228 and 227, and the average is p. 304's 227.5.
+**Chapter 6, printed p. 194**, gives the same figure for the line as a whole:
+
+> During a horizontal scan line (about 63 microseconds), there are 227.5
+> "color clocks", or memory access cycles.
+
+For NTSC the pages agree: no line lasts half a colour clock, two consecutive lines last 228 and 227, and the average is p. 304's 227.5.
 
 ## RTL and measurement
 
@@ -42,7 +47,7 @@
 parameter HTOTAL_VAL      = 8'd227 - 8'd1;   // line length of 227 CCKs in PAL mode (NTSC line length of 227.5 CCKs is not supported)
 ```
 
-The long-line bit exists, alternates in NTSC and is reported in VPOSR, but its own comment calls it "not used, only for better NTSC compatibility" and nothing reads it for the line length ([`#L291-L300`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L291-L300)).
+The long-line bit exists, alternates in NTSC and is reported in VPOSR ([`#L110`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L110)), but its own comment calls it "not used, only for better NTSC compatibility" and nothing reads it for the line length ([`#L291-L300`](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_beamcounter.v#L291-L300)).
 
 [`hrm/ch3-beam-counters-and-blanking`](../../hrm/ch3-beam-counters-and-blanking) counts colour-clock periods between consecutive end-of-line pulses over four lines of the hardwired default, and compares an average because a single line cannot end on half a clock. A control that writes HTOTAL = 100 under VARBEAMEN reads 101 colour clocks per line on the same comparator, so an alternating line would show.
 
@@ -65,7 +70,7 @@ MEASURED: P3 measured: of 3150 line lengths in fields 0..11, 3150 are 227 colour
 - **Not measured:** hardware. The alternation under a programmed line length is [NM-AA-005](NM-AA-005.md)'s.
 - **The RTL names the simplification itself**, so whether NanoMig wants the half clock is a project question before a code one.
 - **Does the long-line bit mislead?** VPOSR bit 7 alternates in NTSC and reports long lines that are not longer, so a program that reads it is told something the beam does not do.
-- **Is the half clock visible above the beam counter?** p. 23 says the Copper sees it: on a long line the horizontal position reaches $E3. On NanoMig it never passes $E2.
+- **Is the half clock visible above the beam counter?** p. 23 says the Copper sees it: on a long line the horizontal position reaches $E3. On NanoMig it never passes $E2, so a Copper list or a program that waits on the last horizontal position of an NTSC line sees a different line from the one the page describes.
 
 ## Independent evidence
 
@@ -100,6 +105,6 @@ The question put to each: how long is an NTSC line?
 
 ## Decision
 
-**Should the long-line bit lengthen the line it marks?** As WinUAE (`maxhpos_short + lol`) and Denise (`0xe2 + lol`) do: end a line one colour clock later when `long_line` is set, so that in NTSC consecutive lines last 228 and 227. The bit already alternates in the right standard, so the change is to the end-of-line comparison at `:250`, not to the toggle.
+**Let the long-line bit lengthen the line it marks**, as WinUAE (`maxhpos_short + lol`) and Denise (`0xe2 + lol`) do: end a line one colour clock later when `long_line` is set, so that in NTSC consecutive lines last 228 and 227. The bit already alternates in the right standard, so the change is to the end-of-line comparison at `:250`, not to the toggle.
 
-That comparison is the one every other horizontal timing in the module hangs off, and the RTL's own comments call the half clock unsupported rather than broken. Decide it together with [NM-HRM-033](NM-HRM-033.md), which is about when the same bit may toggle, and [NM-AA-005](NM-AA-005.md), which asks the same question under a programmed line length. It closes when a specialist accepts the change or records that the simplification stays.
+That comparison is the one every other horizontal timing in the module hangs off, and the RTL's own comments call the half clock unsupported rather than broken. Decide it together with [NM-HRM-033](NM-HRM-033.md), which is about when the same bit may toggle, and [NM-AA-005](NM-AA-005.md), which asks the same question under a programmed line length.
