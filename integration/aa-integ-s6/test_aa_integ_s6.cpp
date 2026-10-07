@@ -82,8 +82,8 @@
 // MUTATION SEGS-R stimulus red NMH_MUTATE=SEGS-R: case R's sprite 7 has no lines, so every row has 7 segments; TG68K FAIL, fx68k FAIL.
 // MUTATION R1-R stimulus red NMH_MUTATE=R1-R: case R runs prog_pro.bin: a prologue at PROGRAM_ORG enables Copper DMA on a one-instruction list at $088100 and jumps to the entry at PROGRAM_ORG + $40 (RP-1); TG68K FAIL, fx68k FAIL.
 // MUTATION R2-R stimulus red NMH_MUTATE=R2-R: case R's Copper list adds MOVE BPLCON4 = $0011 (RP-2); TG68K FAIL, fx68k FAIL.
-// MUTATION P7 stimulus green normal run, no selector: the assertion is red on both cores (cells AW-01 and AW-10); its green is the PASS line of P7-ctl in the same run, which grades the twelve resolution cells and AW-11 through the same comparator grade_a; the three records of P7-ctl (P7-ctl, P7-L11, P7-W11) print FAIL on both cores.
-// The contrasts AWX-01 (NMH_MUTATE=P7-W01) and AWX-10 (NMH_MUTATE=P7-W10) print a MEASURED line only: through the comparator of P7 they fail on both cores, as AW-01 and AW-10 do with ATT = 1.
+// MUTATION P7 stimulus red NMH_MUTATE=P7-W01: the AW-01 run's sprites have ATT = 0 in place of ATT = 1 (AWX-01) and are graded through the unchanged comparator of P7; TG68K FAIL, fx68k FAIL.
+// MUTATION P7 stimulus red NMH_MUTATE=P7-W10: the AW-10 run's sprites have ATT = 0 in place of ATT = 1 (AWX-10) and are graded through the unchanged comparator of P7; TG68K FAIL, fx68k FAIL.
 // MUTATION_RECORDS_END
 
 #include <set>
@@ -534,7 +534,7 @@ void prop_p7(const std::string& who) {
         all = all && cr.ok;
         if (in_ctl[i]) ctl = ctl && cr.ok;
     }
-    if (contrast_only) { g_k->note(std::string("P7 contrast ") + runs[0]->name + " through the comparator of P7: " + (all ? "holds" : "fails")); return; }
+    if (contrast_only) g_k->note(std::string("P7 contrast ") + runs[0]->name + " through the comparator of P7: " + (all ? "holds" : "fails"));
     if (!ctl_only)
         g_k->expect(all, "P7 opus:AA-sprites.c8 sol:AA-sprites.c11: sprites can be attached in every sprite resolution mode on every display resolution and at every sprite width: each group of an attached pair shows colour(16 + v) of Table 4-5 (AA p.31 'Sprites can be attached in any mode', AA p.2, AA p.28, HRM p.122; for the 32-bit and 64-bit width runs AA p.3, AA p.24, HRM p.126)");
     if (!contrast_only && (!g_mutate || ctl_only))

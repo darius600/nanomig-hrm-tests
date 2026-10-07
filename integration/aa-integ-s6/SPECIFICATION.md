@@ -905,12 +905,12 @@ M-H-00 run; the normal run ignores it.
 6. **P7 rows.** Besides the colour of every group, the comparator counts the
    segments of a row: one for type A rows, one per 16-pixel part for type B
    rows (group 7 of each part is background).
-7. **P7-ctl.** P7 is red in the normal run (9.4). The control runs the
-   comparator of P7 on the twelve cells A-<res>-<spres> and on AW-11 (the cells
-   that pass) and prints PASS; its contrasts are AX-S-00, AX-L-11 and AWX-11,
-   graded through the same comparator. The contrasts AWX-01 and AWX-10 are run
-   as MEASURED lines: the comparator fails on them, as it does on AW-01 and
-   AW-10 with ATT = 1, so they separate nothing.
+7. **P7-ctl.** The control runs the comparator of P7 on the twelve cells
+   A-<res>-<spres> and on AW-11 and prints PASS; its contrasts are AX-S-00,
+   AX-L-11 and AWX-11, graded through the same comparator. The contrasts
+   AWX-01 and AWX-10 (ATT = 0 in the AW-01 and AW-10 runs) are the contrasts of
+   P7 itself: they are graded through the comparator of P7 and print its FAIL
+   line.
 8. **R1.** While the CPU is held in reset the RAM port reads word address 0;
    the check starts at the first read of a reset vector and takes the first
    Chip memory read after the vector reads. **R2** is evaluated on the
@@ -954,24 +954,19 @@ the CORE line.
 ```text
 u = 1 samples per 70 ns of display, r = 2 rows per beam line (M-H-00 calibration rows)
 P6 solid-row widths in pixels of 140 ns: W-00 16, W-01 32, W-10 32, W-11 64
-P7 cell AW-01: band 0 row 0 shows the groups [17,18,19,20,21,22,23,24,19,0,19,28,31,28,31,0] where colour indices [17,18,19,20,21,22,23,24,17,18,19,20,21,22,23,24] are expected
-P7 cell AW-10: band 0 row 0 shows the groups [17,18,19,20,21,22,23,24,19,0,19,28,31,28,31,0] where colour indices [17,18,19,20,21,22,23,24,17,18,19,20,21,22,23,24] are expected
+P7 cell AW-01: every check holds
+P7 cell AW-10: every check holds
 P7 cell AW-11: every check holds
 P9 bits 7-5 of the index (recorded, not graded): 0 of 1536 samples differ from index 16 + (k>>1)*4 + v
 P10 bits 7-5 of the index (recorded, not graded): 0 of 1536 samples differ from index 16 + (k>>1)*4 + v
 the CPU read of LISAID ($DFF07C) at the end of the register list returned $00F8 in every run
 ```
 
-Graded counts: both builds print 58 passed, 1 failed. The FAIL line is P7.
+Graded counts: both builds print 59 passed, 0 failed.
 
-P7. The twelve cells A-<res>-<spres> and the 64-bit width run AW-11 show every
-group of every row in the colours of the table (P7-ctl prints PASS). In the two
-runs with a 4-byte fetch increment (AW-01, AW-10) the first 16-pixel part of the
-row shows the table's colours and the second part shows
-[19,0,19,28,31,28,31,0] where [17,...,24] is expected: the groups of the second
-part are those the table's 16 pixels give when each DATB word of the part is
-replaced by the DATA word of the same sprite. The same second part appears in
-type A and in type B rows.
+P7. The twelve cells A-<res>-<spres> and the three width runs AW-01, AW-10 and
+AW-11 show every group of every row in the colours of the table (P7 and P7-ctl
+print PASS).
 
 ### 9.5 Mutations
 
@@ -979,6 +974,7 @@ Every assertion, control and precondition has one record in the header of
 `test_aa_integ_s6.cpp`, selected by `NMH_MUTATE=<label>` (9.2). A mutation
 changes the stimulus and prints FAIL through the unchanged comparator on both
 builds, with every run reaching DONE. Where the mutated stimulus also changes a
-neighbouring precondition, the record lists it as "Also printing FAIL". P7 is
-the one assertion that is red in the normal run; its record names the green
-control P7-ctl, which has three records of its own (P7-ctl, P7-L11, P7-W11).
+neighbouring precondition, the record lists it as "Also printing FAIL". The
+records of P7 are NMH_MUTATE=P7-W01 and P7-W10 (ATT = 0 in the AW-01 and AW-10
+runs). The control P7-ctl has three records of its own (P7-ctl, P7-L11,
+P7-W11).
