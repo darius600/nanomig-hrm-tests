@@ -1,4 +1,4 @@
-# NM-HRM-036 — chip memory banks 1-3 stay reachable while the overlay is active
+# NM-HRM-036 — chip memory banks 1-3 stay reachable while the overlay is active [withdrawn]
 
 | | |
 |---|---|
