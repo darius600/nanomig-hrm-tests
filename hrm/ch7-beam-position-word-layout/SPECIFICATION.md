@@ -147,8 +147,8 @@ word" propositions are stated in the chapter-7 body without an ECS carve-out.
 - Proposition: VPOSW is write-only — a read of $02A should not return the
   beam-position content.
 - Expected: **RED**. The claims file records this as a deliberate, already
-  anticipated failure against the RTL it examined for classification (agnus_
-  beamcounter.v:109, by its account): the write address is also wired into
+  anticipated failure against the RTL it examined for classification
+  (agnus_beamcounter.v:109, by its account): the write address is also wired into
   the read mux. I have not opened the RTL; this package must still assert the
   manual's proposition and report the true result, not adjust it to pass.
 
