@@ -1,4 +1,4 @@
-# NM-HRM-029 — Figure 5-8's `dmasen` note does not hold outside its own exception
+# NM-HRM-029 — Figure 5-8's `dmasen` note does not hold outside its own exception [withdrawn]
 
 | | |
 |---|---|
