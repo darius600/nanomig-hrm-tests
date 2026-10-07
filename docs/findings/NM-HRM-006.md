@@ -16,6 +16,8 @@
 | **Verdict of the four** | **unanimous with NanoMig**: all four respect H3 in lores and hires, on OCS and ECS. What they gate on the chipset is register bit 1, which p.277 lists as unused. Hardware: not measured |
 | **Effort** | none — no RTL change (a documentation note on p.91 only) |
 
+---
+
 ## Source requirement
 
 **Printed p. 91**, on `DDFSTRT` and `DDFSTOP`:
