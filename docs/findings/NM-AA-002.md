@@ -14,7 +14,7 @@
 | **Test** | [`aa/aa-copper-register-map`](../../aa/aa-copper-register-map) · `make -C aa/aa-copper-register-map test` (all green, exits zero) |
 | **Assertions** | `none` red. The package reports `7 passed, 0 failed`; the one that grades this page is `SPRHDAT-078-IS-RESTRICTED`: expected blocked with CDANG clear and allowed with CDANG set, observed the same. The package also records, ungraded, that the list's W/R/S access column cannot be graded at this boundary |
 | **Verdict of the four** | **unanimous, and all four implement a RANGE where the document prints a per-register mark.** Every one of them blocks a Coprocessor MOVE to `$078` with CDANG clear by comparing the address against `$080`, none consults a table of marks, and so the mark SPRHDAT's row is missing is one no implementation would read. See [What the others say](#independent-evidence). Hardware: not measured |
-| **Effort** | none — no RTL change; the suggested change is a citation rule for the corpus |
+| **Effort** | none — no RTL change (the suggested change is a citation rule for the corpus) |
 
 ## Source requirement
 
