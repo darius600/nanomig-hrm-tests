@@ -157,5 +157,3 @@ The scratch variant above, in which a DMA cycle has already cleared `strobe1`, s
 - Run 2 would start at B and Run 3-reorder at C, and `P4` would read A and B, so `P4`, `P4-Run2` and `P4-Run3-reorder` would pass;
 - Run 3 would start at C, as on each of the four, because lines 196–199 still read the location register in the reload cycle, and `P4-Run3` and `P4-Run3-PAIR` would stay red (see *Risks and unknowns*);
 - with Copper DMA on, the reload follows a strobe within a few colour clocks, so the latch is rarely pending there; a CPU COPJMP2 in the colour clocks between the start of frame and the vertical blank's reload would start the Copper at COP2LC instead of COP1LC.
-
-Re-run: `make -k -C integration/ch2-copper-control test`; expected red `P4`, `P4-Run2`, `P4-Run3`, `P4-Run3-reorder`, `P4-Run3-PAIR` on both cores.
