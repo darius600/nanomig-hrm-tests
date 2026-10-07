@@ -1,4 +1,4 @@
-# NM-HRM-018 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect
+# NM-HRM-018 — ECS BPLCON0 bit 4 (SPRHWRM) has no effect [withdrawn]
 
 | | |
 |---|---|
