@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault: all four independent implementations do what NanoMig does. Question: does real Agnus ignore DDFSTRT/DDFSTOP bit H3 (register bit 2) in lores, as p.91 prints, so that $0038 and $003C fetch alike in lores? Closes when an Amiga specialist records p.91's "only respected in Hires Mode" as an erratum, or confirms that real Agnus ignores H3 in lores, in which case this page is refiled against the RTL. |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect: all four independent implementations do what NanoMig does. Question: does real Agnus ignore DDFSTRT/DDFSTOP bit H3 (register bit 2) in lores, as p.91 prints, so that $0038 and $003C fetch alike in lores? Closes when an Amiga specialist records p.91's "only respected in Hires Mode" as an erratum, or confirms that real Agnus ignores H3 in lores, in which case this page is refiled against the RTL. |
 | **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 3 of the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Scope** | the position compare of DDFSTRT as NanoMig's `agnus_bitplanedma` implements it (DDFSTOP's identical compare, line 349, is read, not measured), one bitplane, lores and hires with the `ecs` strap off and on; isolated to register bit 2 alone ($0038 against $003C); chip revision unknown, hardware not measured |
 | **Software impact** | unknown; no named affected software |
@@ -94,5 +94,4 @@ respected in Hires Mode" is the outlier.
 ## Decision
 
 No RTL change; the printed sentence is the only source that conditions H3 on
-hires. Settling it needs someone who knows what real Agnus does with H3 in
-lores, not a patch. Re-run: `make -C hrm/ch3-ddf-fetch-window test`.
+hires.
