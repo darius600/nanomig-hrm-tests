@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch5-audio-dmacon-adkcon`](../../hrm/ch5-audio-dmacon-adkcon): `make -C hrm/ch5-audio-dmacon-adkcon test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `DMACONR-NOT-DECODED-BY-PAULA`: expected the `$002` read through `paula.v` to change after `DMACON = 0x8203`, observed `0x0`, equal to the idle read `0x0`; the package reports `19 passed, 2 failed`, and the other red is not this finding's |
 | **Verdict of the four** | **three of four with NanoMig, and the fourth cannot answer**: vAmiga (`Memory.cpp:2411-2412`), Denise (`agnus/register.cpp:64-65`) and Copperline (`custom_regs.rs:12-27`) keep Paula apart from Agnus and read `$002` from Agnus's DMACON alone, while routing `ADKCONR` at `$010` to Paula; WinUAE has one `DMACONR()` for the whole chip set (`custom.cpp:7048`) and no separate Paula to ask. Hardware: the dissected 8364R7 gives Paula's DMACON copy no read path |
-| **Effort** | none — no RTL change; a documentation note on pp. 278 and 289 only |
+| **Effort** | none — no RTL change: a documentation note on pp. 278 and 289 only |
 
 ---
 
