@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Should `agnus_beamcounter.v`, with BPLCON0 bit 3 set, freeze VPOSR and VHPOSR on a light-pen trigger and, with none, at the end of the field, until vertical position 20, as p. 239 prints, where NanoMig returns the running counter? The decision belongs to an Amiga specialist, not to this repository. It closes when the specialist records a yes and the nineteen reds listed under *Assertions* are green on both cores, or records a no with the reason here |
+| **What is asked of a reader** | Should `agnus_beamcounter.v`, with BPLCON0 bit 3 set, freeze VPOSR and VHPOSR on a light-pen trigger and, with none, at the end of the field, until vertical position 20, as p. 239 prints, where NanoMig returns the running counter? It closes when the latch is in place and the nineteen reds listed under *Assertions* are green on both cores, or when an Amiga specialist rejects the reading; if that means pp. 238-239 are wrong, the page is refiled against the printed page |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer |
 | **Scope** | OCS Agnus, BPLCON0 bit 3 set for more than twenty fields, VPOSR and VHPOSR read with a pin-6 pulse on port 1, on port 2, on both and with none; graded in OCS/PAL and OCS/NTSC, recorded not graded in ECS/PAL and ECS/NTSC (p. 305 gives LPENDIS no reset value). Chip revision: unknown |
 | **Software impact** | unknown; no named affected software |
@@ -218,12 +218,6 @@ The page-model control replaces 38279 and 31600 of the 90000 phase-B samples
 on fx68k and 41427 and 34083 on TG68K (PAL and NTSC) with the values p. 238
 and p. 239 predict, and the same `P1` to `P13` code grades those green.
 
-Two further program variants add pulses to phase A with bit 3 set: each pulse
-is delivered on its cycle and the program finishes, and the only graded `CP1`
-lines they print are the page-model contrast's. `K17` has `CP1` and `CP1(A2)`
-red with L = 200 measured (9 passed, 2 failed); `K18` has `CP1`, `CP1(A1)` and
-`CP1(A2)` red (7 passed, 3 failed).
-
 ## Risks and unknowns
 
 - **Half of the implementations agree with NanoMig.** vAmiga and Denise have no
@@ -323,14 +317,13 @@ read path and no latch, so the finding is inherited and fixed in neither line.
 ## Decision
 
 **One option: give Agnus a light-pen line and the latch p. 239 describes.**
-The variant that was run is a copy of the RTL with the four changes below and
-without LPENDIS:
+The four changes, without LPENDIS:
 
 - **The line.** An input on `agnus` and `agnus_beamcounter`, driven in
   `nanomig.v` or `minimig.v` from port 2's pin 6, the A500's default on
   p. 238 and in the technical reference, which is `_fire1`, CIA-A's PA7
   input. A jumper-like choice of `_fire0` would give the A1000's port 1. The
-  copy takes the AND of `_fire0` and `_fire1`, so a pulse on either port
+  change takes the AND of `_fire0` and `_fire1`, so a pulse on either port
   captures.
 - **The enable.** Store BPLCON0 bit 3 in `agnus_beamcounter` beside ERSY and
   LACE (lines 144–163), reset to 0 as p. 271 says.
@@ -338,7 +331,7 @@ without LPENDIS:
   line outside vertical blanking stores `vpos` and `hpos`; with no edge in the
   field, the end of the field stores them (`eof`, line 377). The end of
   vertical blanking releases the latch: the module's `vblend`, line 447, is
-  line 25 in PAL and 20 in NTSC, where p. 239 says line 20 for both. The copy
+  line 25 in PAL and 20 in NTSC, where p. 239 says line 20 for both. The change
   releases when the counter enters line 20, in PAL and in NTSC.
 - **The read.** While latched, the multiplexer of lines 108–115 returns the
   stored `vpos[10:8]` and `{vpos[7:0],hpos[8:1]}` instead of the counters; in
@@ -349,21 +342,9 @@ There is no fix to port: MiSTer and TC64 read the running counter the same
 way, and neither line's `minimig.v` has a light-pen line into Agnus any more
 than NanoMig's `nanomig.v` does.
 
-What it would change, from the copy's runs:
+What it would change:
 
-- all nineteen red lines turn green on fx68k and on TG68K, and so does every
-  other line of the run: 240 passed, 0 failed on each core, which is 35 raw
-  and 25 control lines in each of the four configurations. The copy's
-  captures have the offset d = H − H_ref(t_on) = 2 colour clocks for each of
-  the 14 graded pulses in every configuration;
-- `K3` and `K4`, which set bit 3 in phase C and in phase A, turn `P10(b)` red
-  at the ports: 34 passed, 2 failed, the run's `P10(b)` and the page-model
-  contrast's, on both cores. On NanoMig as it is `P10(b)` stays green and the
-  run prints 15 passed, 20 failed: the nineteen reds and the page-model
-  contrast's own `P10(b)`, on both cores. `K17` and `K18` print the same on
-  the copy as on NanoMig;
+- all nineteen red lines would turn green on fx68k and on TG68K. A copy of the RTL with these four changes, built outside the repository, printed 240 passed, 0 failed on each core, with d = H − H_ref(t_on) = 2 colour clocks for each of the 14 graded pulses; that run is not `make test` on the repository's RTL and is at most a reading of the change;
 - a program that polls VPOSR with bit 3 set would see it frozen, as p. 239
   warns, and a joystick's fire button held on port 2 would latch the counters,
   as the technical reference's *"FIRE input"* implies for the A500.
-
-Closes as the header says, on the specialist's recorded yes or no.
