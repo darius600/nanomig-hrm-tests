@@ -40,7 +40,7 @@ No claim in this package needs data read from or written to a disk surface.
 ### 2.1 System and runs
 
 - AA chip set selected (harness `Config.chipset_config = 0x10`), 2 MB Chip memory (harness `Config.memory_config = 0x03`), 68000 CPU behaviour (`Config.cpu_config = 0x00`). The 68010/68020 settings add nothing here: none of these claims concerns the CPU type. S16 also runs with ECS behaviour selected (stated there).
-- **Graded build.** Every assertion of this package is graded on the TG68K build only: `nanomig.mk` builds it with `-DENABLE_AGA`, NanoMig's AGA configuration. The fx68k build is NanoMig's non-AGA configuration (`nanomig.mk` builds it without `-DENABLE_AGA`); it runs the same programs, and its results are recorded, not graded. No proposition, precondition or anchor depends on the fx68k build having an AA feature.
+- **Graded cores.** Every proposition, precondition and anchor of this package is graded (PASS or FAIL, or NOT GRADED where a precondition prints FAIL) on both cores, fx68k and TG68K. Both builds run the same programs; the chip set is selected by `chipset_config`, an input of `nanomig.v`, and not by the build, so every run of both builds selects AA (except S16's ECS runs).
 - **PAL.** The harness has no PAL setting (its `Config` fields are memory, fast RAM, CPU, chip set, floppy, video, turbo and IDE), so the program selects PAL itself: the first write of its setup is BEAMCON0 (1DC) = `0x0020`. p.12: "5 PAL", "PAL= Set appropriate decodes (in normal mode) for PAL." The long frame LF writes its own BEAMCON0 value in place of this one, with PAL also set (2.9). The PAL field is needed: D-STD's window, S8 and S15 (k = 8) use lines above 0x105, the last line of an NTSC field (HRM p.79 table: vertical blank stop "$15 (21)" NTSC, "$1D (29)" PAL, then 241 and 283 displayable lines), and 2.11 uses the PAL line length.
 - Every run starts from system reset, and the test program is the only software. Each run lasts until the last frame the proposition observes has ended; the program then executes `DONE` (`nanomig.i`), which writes `DONE_VALUE` to `DONE_ADDR` and stops in place.
 - The program writes custom registers with word writes. A pointer pair is written high word (PTH) first, then the low word (PTL).
@@ -273,12 +273,12 @@ Quantifier "x=1,...,8": all eight are graded. The table makes each PTH bit and e
 
 - PC-SETUP, PC-FRAME.
 - PC-MOVE: the sixteen pointer MOVEs are fetched in F2's VB block with the table values, before the first T_x read.
-- PC-BPL({1..n}).
+- PC-BPL({1..n}): B1-PC-BPL for the BPU = 8 run (reads in every plane's region on every graded line, none outside), B1-PC-BPLN for the BPU = n runs, n = 0..7 (reads in the regions of planes 1..n on every graded line; the planes above n are left to (b), which grades them).
 - PC-STATIC(no CPU write to 0E0-0FE after setup).
 
 **Contrasting case.** Use `l_3 + 0x0100` in the list: the first T_3 read moves up by `0x80` words.
 
-For the preconditions: clear BPLEN (PC-BPL fails); give a MOVE a wrong data word (PC-MOVE fails).
+For the preconditions: clear BPLEN (PC-BPL fails; in the BPU = 3 run, PC-BPLN fails); give a MOVE a wrong data word (PC-MOVE fails).
 
 **Reference frame.** F2 from t_F(2). "First" means earliest after t_F(2).
 
@@ -549,7 +549,12 @@ For the preconditions: as S3.
 
 ### S5. Horizontal start bits SH10-SH1
 
-**Claims (p.28):** opus:AA-sprxpos.c7; opus:AA-sprxctl.c10, c14; sol:AA-sprxctl.c24, c30. S5 is also a part of the joint assertions J1, J2 and J3 (section 3, end), which carry sol:AA-sprxpos.c4; opus:AA-sprxpos.c8; sol:AA-sprxpos.c14; opus:AA-sprxctl.c17; sol:AA-sprxctl.c31.
+**Claims (p.28):** two graded lines carry them:
+
+- the SH1 line, **S5-SH1**: opus:AA-sprxctl.c10; sol:AA-sprxctl.c24;
+- the SH10-SH2 line, **S5**: opus:AA-sprxpos.c7; opus:AA-sprxctl.c14; sol:AA-sprxctl.c30.
+
+A third line, **S5-SH10-SH3**, carries no claim id: it is the comparator of S5 for k = 3..10 alone, SPRxPOS bits 7-0, and is the part of J1 that concerns SPRxPOS. S5-SH1, S5 and S5-SH10-SH3 are also parts of the joint assertions J1, J2 and J3 (section 3, end), which carry sol:AA-sprxpos.c4; opus:AA-sprxpos.c8; sol:AA-sprxpos.c14; opus:AA-sprxctl.c17; sol:AA-sprxctl.c31.
 
 **Proposition.** The sprite's horizontal start is one value, SH10..SH0:
 
@@ -569,7 +574,7 @@ Bit SHk moves the sprite by 35 * 2^k ns.
 
 **Observation.** In F2, on every output line of band x that shows the sprite in the reference run: X = the output-pixel index of the leftmost cS pixel.
 
-**Expected.** `X(B_k + 2^k) - X(B_k) = 2^(k-1)` output pixels, for k = 1..10, every sprite x, every such line.
+**Expected.** `X(B_k + 2^k) - X(B_k) = 2^(k-1)` output pixels, for every sprite x and every such line: S5-SH1 for k = 1, S5 for k = 2..10, S5-SH10-SH3 for k = 3..10. One comparator grades all three.
 
 Page:
 
@@ -587,7 +592,7 @@ Quantifier "x": all eight sprites in every run.
 - PC-FRAME, PC-TAG, PC-SPR(x).
 - In every run, each band shows exactly one 2-output-pixel cS run on the same lines as in its reference run.
 
-**Contrasting case.** Set bit k+1 instead of bit k: the shift is 2^k output pixels, and the check for k goes red.
+**Contrasting case.** S5 and S5-SH10-SH3: set bit k+1 instead of bit k (k = 3): the shift is 2^k output pixels, and the check goes red. S5-SH1: its comparator is that of S5, which is live on k = 2..10; with the k = 1 run setting bit 2 (SH2) in place of bit 1 and the comparator applied with k = 2, S5-SH1 passes.
 
 For the preconditions: clear SPREN (no reads, no pixel).
 
@@ -949,7 +954,7 @@ For the preconditions: clear SPREN (no reads, no image).
 | e1 | CPU | 0x50, 0x08 | SPR0POS for X = 0xA0 |
 | e2 | CPU | 0x70, 0xB0 | SPR0POS for X = 0xB0 (after the column on that line) |
 | e3 | Copper | 0x90, 0x20 | SPR0POS for X = 0xC0 |
-| e4 | CPU | 0xB0, 0x08 | SPR0CTL = `0x0010` (SH1 = 1), then SPR0DATA = `0xE001` (the CTL write disables, S3) |
+| e4 | CPU | 0xB0, 0x08 | SPR0CTL = `0x0001` (SH2 = 1, 140 ns), then SPR0DATA = `0xE001` (the CTL write disables, S3) |
 | e5 | CPU | 0xC0, 0x08 | SPR0DATB = SPR0DATA = `0x8007` |
 | e6 | Copper | 0xD0, 0x20 | SPR0DATB = SPR0DATA = `0xF00F` |
 
@@ -965,13 +970,15 @@ For the preconditions: clear SPREN (no reads, no image).
 | 0x51-0x6F | X = 0xA0 | 0xE001 |
 | 0x71-0x8F | X = 0xB0 | 0xE001 |
 | 0x91-0xAF | X = 0xC0 | 0xE001 |
-| 0xB1-0xBF | one output pixel right of 0x91-0xAF | 0xE001 |
+| 0xB1-0xBF | two output pixels right of 0x91-0xAF | 0xE001 |
 | 0xC1-0xCF | same position | 0x8007 |
 | 0xD1-0xFF | same position | 0xF00F |
 
 The event lines themselves are left open.
 
 **Expected (b).** Column x is at X_x on the lines up to 0x7F where the reference shows it, and at X_x + 8 (16 output pixels right) on lines 0x81-0x9F. Only column x moves when SPRxPOS is written, which ties list x (S1) to register set x.
+
+**Graded lines.** S14 (a and b together, carrying the claim ids) and S14-B (part (b) alone, no claim id; it is the part of J4). The effect of SPRxCTL bit 4 (SH1) is not part of S14: e4 writes the SH2 bit, whose effect S5 establishes, and SH1 is graded by S5-SH1.
 
 Page:
 
@@ -982,7 +989,7 @@ Quantifier "any time": sampled at line start, in mid-line, in vertical blank, by
 
 **Preconditions.** PC-FRAME, PC-TAG, PC-BEAM, PC-MOVE; PC-SPR(x) in (b).
 
-**Contrasting case.** Omit e3: lines 0x91-0xAF stay at X = 0xB0. Omit the line-0x80 write for x = 3: column 3 stays at X_3.
+**Contrasting case.** Omit e3: lines 0x91-0xAF stay at X = 0xB0. Write SPR0CTL = `0x0000` at e4: lines 0xB1-0xFF stay at the position of 0x91-0xAF. Omit the line-0x80 write for x = 3: column 3 stays at X_3.
 
 For the preconditions: the PC-BEAM change; clear SPREN in (b).
 
@@ -1315,14 +1322,14 @@ For the preconditions: add a CLXCON write (the static check fails).
 
 ### J1-J4. Joint assertions
 
-Each claim below states something that two or more propositions grade in parts. Its id is carried by one joint assertion, and by nothing else: the part propositions carry no part of these ids. A joint assertion adds no stimulus and no observation. It passes only if every part proposition passes (on the graded build, 2.1), and fails if any part fails or is not graded. Its record names the verdict of each part.
+Each claim below states something that two or more propositions grade in parts. Its id is carried by one joint assertion, and by nothing else: the part propositions carry no part of these ids. A joint assertion adds no stimulus and no observation. It passes only if every part proposition passes (on the core that runs it), and fails if any part fails or is not graded. Its record names the verdict of each part.
 
 | Id | Claims | What the claim states | Parts, and what each grades |
 |---|---|---|---|
-| J1 | sol:AA-sprxpos.c4 | SPRxPOS is the "Sprite x Vert-Horiz start position data" (p.28) | S5: horizontal start, SPRxPOS bits 7-0 = SH10-SH3. S8: vertical start, SPRxPOS bits 15-8 = SV7-SV0. |
-| J2 | opus:AA-sprxpos.c8; sol:AA-sprxpos.c14 | SPRxPOS bits 7-0 are SH10-SH3; the "Low-order 3 bits are in SPRxCTL register below" (p.28) | S5: SH10-SH3, SH2 and SH1. S6: SH0. |
-| J3 | opus:AA-sprxctl.c17; sol:AA-sprxctl.c31 | "These 2 registers work together as position, size and feature Sprite control registers." (p.28) | Position: S5 (SH10-SH1), S6 (SH0), S8 (SV9-SV0). Size: S9 (EV9-EV0). Feature: the two functions p.28 gives these registers beyond position and size, S10 ("07 ATT Sprite attach control bit") and S12 (SH10 "free to be used by ALICE as an individual scan double enable"). |
-| J4 | opus:AA-sprxptl.c6 | "This pair of registers contains the 20 bit address of Sprite x (x=0,1,2,3,4,5,6,7) DMA data." (p.28) | S1: the 20-bit address each pair holds. S14: its part (b) ties the list read through pointer x to sprite x (a write to SPRxPOS moves exactly that column). |
+| J1 | sol:AA-sprxpos.c4 | SPRxPOS is the "Sprite x Vert-Horiz start position data" (p.28) | S5-SH10-SH3: horizontal start, SPRxPOS bits 7-0 = SH10-SH3. S8: vertical start, SPRxPOS bits 15-8 = SV7-SV0. |
+| J2 | opus:AA-sprxpos.c8; sol:AA-sprxpos.c14 | SPRxPOS bits 7-0 are SH10-SH3; the "Low-order 3 bits are in SPRxCTL register below" (p.28) | S5: SH10-SH2. S5-SH1: SH1. S6: SH0. |
+| J3 | opus:AA-sprxctl.c17; sol:AA-sprxctl.c31 | "These 2 registers work together as position, size and feature Sprite control registers." (p.28) | Position: S5 (SH10-SH2), S5-SH1 (SH1), S6 (SH0), S8 (SV9-SV0). Size: S9 (EV9-EV0). Feature: the two functions p.28 gives these registers beyond position and size, S10 ("07 ATT Sprite attach control bit") and S12 (SH10 "free to be used by ALICE as an individual scan double enable"). |
+| J4 | opus:AA-sprxptl.c6 | "This pair of registers contains the 20 bit address of Sprite x (x=0,1,2,3,4,5,6,7) DMA data." (p.28) | S1: the 20-bit address each pair holds. S14-B: part (b) of S14 ties the list read through pointer x to sprite x (a write to SPRxPOS moves exactly that column). |
 
 **Contrasting case.** The contrasting case of any part makes that part fail, and with it the joint assertion.
 
@@ -1354,7 +1361,7 @@ This section records what the build adds to the specification above: the program
 
 ### 5.1 Chip set and cores
 
-Every run sets `chipset_config = 0x10` (AA selected), except the ECS runs of S16, which set `0x08`. The chip set is an input of `nanomig.v`; it is not a property of the build. Both cores therefore run every program and both are graded: every assertion, precondition and anchor prints PASS or FAIL on the fx68k build and on the TG68K build, and a line whose precondition does not hold prints NOT GRADED. (Section 2.1 above states the TG68K build as the only graded one; the per-core results below are for both.)
+Every run sets `chipset_config = 0x10` (AA selected), except the ECS runs of S16, which set `0x08`. The chip set is an input of `nanomig.v`; it is not a property of the build. Both cores therefore run every program and both are graded: every assertion, precondition and anchor prints PASS or FAIL on the fx68k build and on the TG68K build, and a line whose precondition does not hold prints NOT GRADED.
 
 ### 5.2 Files
 
@@ -1382,6 +1389,7 @@ These are measurements of the final run, not oracles:
 - A normal PAL frame (BEAMCON0 = `0x0020`) lasts 313 lines (568,408 cycles) in every run.
 - With HTOTAL = `0x00E2`, VTOTAL = `0x05FF` and BEAMCON0 = `0x08A0` the Copper restarts 2,791,192 cycles apart, which is 1537 lines of 1816 cycles; PC-FRAME of 2.12 asks for 1536 lines (p.29: "there's this many + 1 in a field").
 - With the SSCAN2 bit of FMODE set a sprite is shown a second time 512 output pixels to the right of its first image (S11); S12 reads the first image.
+- SPRxCTL bit 4 (SH1): the k = 1 pair of S5 shows the leftmost cS pixel moved by 0 output pixels on all 128 band lines, where p.28 ("04 SH1=0 start horiz. value, 70nS increment") asks for 1. The pairs k = 2..10 move by exactly 2^(k-1) output pixels.
 
 ### 5.5 Readings the build had to fix
 
@@ -1393,11 +1401,13 @@ These are measurements of the final run, not oracles:
 
 ### 5.6 Mutations
 
-Each assertion and each precondition has `// MUTATION` records in the header of `test_aa_integ_s3.cpp`: the selector `NMH_MUTATE=<value>` changes the stimulus only (a table, a Copper list, a program variant or a register value) and runs the unchanged comparator; the record states what changed and which lines printed FAIL on each core. Every red line has a green control through the same comparator: S5-CONTROL (k = 2..10 of S5), S6-CONTROL (the data word shifted by one 35-ns pixel), S7-CONTROL, S7-CONTROL-V and S7-CONTROL-SH1 (SH2 in place of SH1 and SH0), S14-CONTROL (SPRxCTL = `0x0001` in place of `0x0010`), C5-CONTROL and J-CONTROL. Lines that print NOT GRADED in every run (S7, S8, S9, S15, S16, C5 and the joint assertions on red parts) have records of kind `none impossible`: no stimulus reaches their comparator because a precondition of the line prints FAIL.
+Each assertion and each precondition has `// MUTATION` records in the header of `test_aa_integ_s3.cpp`: the selector `NMH_MUTATE=<value>` changes the stimulus only (a table, a Copper list, a program variant or a register value) and runs the unchanged comparator; the record states what changed and which lines printed FAIL on each core. A mutation run grades the part of the proposition that its selector names; where that is a sub-population of the normal run, the record says so.
+
+Every red line has a green control through the same comparator, named in the records: S5 for S5-SH1 (the comparator for k = 2..10; the record S5-SH1 runs it green on the k = 1 pair), S6-CONTROL for S6 (the data word shifted by one 35-ns pixel), S7-CONTROL-SH1 and S7-CONTROL-SH0 for the preconditions S7-PC-SH1 and S7-PC-SH0 (SH2 in place of SH1; a data word shifted by one 35-ns pixel in place of SH0), S7-CONTROL and S7-CONTROL-V for the comparators of S7 itself, C5-CONTROL for C5 and J-CONTROL for the joint assertions. A record of kind `stimulus impossible` states a stimulus that runs while its line prints NOT GRADED because named preconditions print FAIL, and names the control on which the comparator is live; a record of kind `none impossible` states why no stimulus applies.
 
 ### 5.7 Results of the final run
 
-Final run of `make -k -B test`: fx68k 159 passed, 20 failed; TG68K 164 passed, 17 failed.
+Final run of `make -k -B test`: fx68k 164 passed, 18 failed; TG68K 169 passed, 15 failed.
 
 | Line | fx68k | TG68K |
 |---|---|---|
@@ -1410,16 +1420,24 @@ Final run of `make -k -B test`: fx68k 159 passed, 20 failed; TG68K 164 passed, 1
 | S2 | PASS | PASS |
 | S3 | PASS | PASS |
 | S4 | PASS | PASS |
-| S5 | FAIL | FAIL |
+| S5-SH1 | FAIL | FAIL |
+| S5 | PASS | PASS |
+| S5-SH10-SH3 | PASS | PASS |
 | S6 | FAIL | FAIL |
+| S6-CONTROL | PASS | PASS |
 | S7 | NOT GRADED | NOT GRADED |
+| S7-CONTROL | PASS | PASS |
+| S7-CONTROL-SH1 | PASS | PASS |
+| S7-CONTROL-SH0 | PASS | PASS |
+| S7-CONTROL-V | PASS | PASS |
 | S8 | NOT GRADED | NOT GRADED |
 | S9 | NOT GRADED | NOT GRADED |
 | S10 | PASS | PASS |
 | S11 | PASS | PASS |
 | S12 | PASS | PASS |
 | S13 | PASS | PASS |
-| S14 | FAIL | FAIL |
+| S14 | PASS | PASS |
+| S14-B | PASS | PASS |
 | S15 | NOT GRADED | NOT GRADED |
 | S16 | NOT GRADED | NOT GRADED |
 | C1 | PASS | PASS |
@@ -1427,17 +1445,11 @@ Final run of `make -k -B test`: fx68k 159 passed, 20 failed; TG68K 164 passed, 1
 | C3 | NOT GRADED | NOT GRADED |
 | C4 | PASS | PASS |
 | C5 | NOT GRADED | PASS |
+| C5-CONTROL | NOT GRADED | PASS |
 | J1 | FAIL | FAIL |
 | J2 | FAIL | FAIL |
 | J3 | FAIL | FAIL |
-| J4 | FAIL | FAIL |
+| J4 | PASS | PASS |
 | J-CONTROL | PASS | PASS |
-| S5-CONTROL | PASS | PASS |
-| S6-CONTROL | PASS | PASS |
-| S7-CONTROL | PASS | PASS |
-| S7-CONTROL-SH1 | PASS | PASS |
-| S7-CONTROL-V | PASS | PASS |
-| S14-CONTROL | PASS | PASS |
-| C5-CONTROL | NOT GRADED | PASS |
 
-S5, S6 and S14 print FAIL on both cores; S7, S8, S9, S15, S16, C2, C3 (and C5 on fx68k) print NOT GRADED because a precondition prints FAIL; the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.
+S5-SH1 and S6 print FAIL on both cores, and J1, J2 and J3 with them; S7, S8, S9, S15, S16, C2, C3 (and C5, C5-CONTROL on fx68k) print NOT GRADED because a precondition prints FAIL; the preconditions that print FAIL are listed in `out_fx68k.txt` and `out_tg68k.txt`.

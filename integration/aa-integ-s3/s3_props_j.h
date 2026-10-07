@@ -49,16 +49,17 @@ inline bool part_ok(const char* id) {
 inline void joint_assertions() {
     if (g_mutate) return;
     if (std::getenv("NMH_ONLY")) return;
-    const std::string v1 = vs("S1"), v2 = vs("S2"), v3 = vs("S3"), v4 = vs("S4"), v5 = vs("S5"), v6 = vs("S6"), v8 = vs("S8"), v9 = vs("S9"), v10 = vs("S10"), v12 = vs("S12"), v14 = vs("S14");
-    g.expect(part_ok("S5") && part_ok("S8"),
-        "J1: sol:AA-sprxpos.c4: SPRxPOS is the 'Sprite x Vert-Horiz start position data' (p.28); it passes only if S5 (horizontal start, SPRxPOS bits 7-0) and S8 (vertical start, SPRxPOS bits 15-8) pass; parts: " + v5 + "; " + v8);
-    g.expect(part_ok("S5") && part_ok("S6"),
-        "J2: opus:AA-sprxpos.c8 sol:AA-sprxpos.c14: SPRxPOS bits 7-0 are SH10-SH3 and the low-order 3 bits are in SPRxCTL (p.28); it passes only if S5 (SH10-SH3, SH2, SH1) and S6 (SH0) pass; parts: " + v5 + "; " + v6);
-    g.expect(part_ok("S5") && part_ok("S6") && part_ok("S8") && part_ok("S9") && part_ok("S10") && part_ok("S12"),
-        "J3: opus:AA-sprxctl.c17 sol:AA-sprxctl.c31: the two registers work together as position, size and feature sprite control registers (p.28); it passes only if S5, S6, S8 (position), S9 (size), S10 and S12 (feature) pass; parts: " +
-        v5 + "; " + v6 + "; " + v8 + "; " + v9 + "; " + v10 + "; " + v12);
-    g.expect(part_ok("S1") && part_ok("S14"),
-        "J4: opus:AA-sprxptl.c6: the pointer pair contains the 20 bit address of sprite x's DMA data (p.28); it passes only if S1 (the 20-bit address each pair holds) and S14 (the list read through pointer x belongs to sprite x) pass; parts: " + v1 + "; " + v14);
+    const std::string v1 = vs("S1"), v2 = vs("S2"), v3 = vs("S3"), v4 = vs("S4"), v5 = vs("S5"), v5s1 = vs("S5-SH1"), v5p = vs("S5-SH10-SH3"),
+                      v6 = vs("S6"), v8 = vs("S8"), v9 = vs("S9"), v10 = vs("S10"), v12 = vs("S12"), v14b = vs("S14-B");
+    g.expect(part_ok("S5-SH10-SH3") && part_ok("S8"),
+        "J1: sol:AA-sprxpos.c4: SPRxPOS is the 'Sprite x Vert-Horiz start position data' (p.28); it passes only if S5-SH10-SH3 (horizontal start, SPRxPOS bits 7-0 = SH10-SH3) and S8 (vertical start, SPRxPOS bits 15-8 = SV7-SV0) pass; parts: " + v5p + "; " + v8);
+    g.expect(part_ok("S5-SH1") && part_ok("S5") && part_ok("S6"),
+        "J2: opus:AA-sprxpos.c8 sol:AA-sprxpos.c14: SPRxPOS bits 7-0 are SH10-SH3 and the low-order 3 bits are in SPRxCTL (p.28); it passes only if S5 (SH10-SH2), S5-SH1 (SH1) and S6 (SH0) pass; parts: " + v5 + "; " + v5s1 + "; " + v6);
+    g.expect(part_ok("S5-SH1") && part_ok("S5") && part_ok("S6") && part_ok("S8") && part_ok("S9") && part_ok("S10") && part_ok("S12"),
+        "J3: opus:AA-sprxctl.c17 sol:AA-sprxctl.c31: the two registers work together as position, size and feature sprite control registers (p.28); it passes only if S5, S5-SH1, S6, S8 (position), S9 (size), S10 and S12 (feature) pass; parts: " +
+        v5 + "; " + v5s1 + "; " + v6 + "; " + v8 + "; " + v9 + "; " + v10 + "; " + v12);
+    g.expect(part_ok("S1") && part_ok("S14-B"),
+        "J4: opus:AA-sprxptl.c6: the pointer pair contains the 20 bit address of sprite x's DMA data (p.28); it passes only if S1 (the 20-bit address each pair holds) and S14-B (the list read through pointer x belongs to sprite x) pass; parts: " + v1 + "; " + v14b);
     g.expect(part_ok("S1") && part_ok("S2") && part_ok("S3") && part_ok("S4"),
         "J-CONTROL: the comparator of J1-J4 (every named part passed on the graded build) applied to the parts S1, S2, S3 and S4, which are graded and green: " + v1 + "; " + v2 + "; " + v3 + "; " + v4);
 }

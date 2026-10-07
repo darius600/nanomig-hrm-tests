@@ -1,9 +1,9 @@
 // s3_check.h -- grading scaffolding of package aa-integ-s3.
 //
-// Every proposition, precondition and anchor goes through Grader: PASS:/FAIL:
-// on the graded build (TG68K, built with ENABLE_AGA), RECORDED: on the other,
-// whatever the condition shows. A line whose precondition does not hold is
-// NOT GRADED, never PASS or FAIL.
+// Every proposition, precondition and anchor goes through Grader and prints
+// PASS: or FAIL: on both cores (the chip set is an input of nanomig.v, selected
+// by chipset_config, not a property of the build). A line whose precondition
+// does not hold is NOT GRADED, never PASS or FAIL.
 
 #pragma once
 
@@ -32,10 +32,9 @@ public:
 };
 
 inline Checks checks;
-inline bool g_graded = false;
 inline const char* g_mutate = nullptr;
 
-// a label printed as RECORDED on the build without ENABLE_AGA carries no claim id
+// a NOT GRADED line is a decline and carries no claim id
 inline std::string without_ids(const std::string& s) {
     std::string out, tok;
     auto flush = [&](bool space) {
@@ -53,11 +52,7 @@ inline std::string without_ids(const std::string& s) {
 
 class Grader {
 public:
-    void expect(bool cond, const std::string& label) {
-        if (g_graded) checks.expect(cond, label);
-        else checks.record(without_ids(label) + " [build without ENABLE_AGA: would have " +
-                           (cond ? "PASSed" : "FAILed") + "]");
-    }
+    void expect(bool cond, const std::string& label) { checks.expect(cond, label); }
     void expect_if(bool pre, bool cond, const std::string& label) {
         if (pre) expect(cond, label);
         else checks.record("NOT GRADED: " + without_ids(label) + " [a precondition does not hold]");

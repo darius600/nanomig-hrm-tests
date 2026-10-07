@@ -80,12 +80,15 @@ inline void prop_S5() {
             if (ref.bv.have[n] && !ref.bv.runs[n].empty()) v.push_back(n);
         return v;
     };
-    bool ok_all = true, ok_ctrl = true;
+    bool ok_sh1 = true, ok_rest = true, ok_pos = true;          // k = 1; k = 2..10; k = 3..10
+    bool ran_sh1 = false, ran_rest = false, ran_pos = false;
     for (int k = 1; k <= 10; ++k) {
-        if (g_mutate && k != 3) continue;
-        int B = k == 6 ? 0x480 : k == 10 ? 0x240 : 0x440;
+        if (g_mutate && (mutating("S5-SH1") ? k != 1 : k != 3)) continue;
+        // the SH1 mutation runs the SH2 bit in the k = 1 run, through the unchanged comparator
+        const int kk = (mutating("S5-SH1") && k == 1) ? 2 : k;
+        int B = kk == 6 ? 0x480 : kk == 10 ? 0x240 : 0x440;
         bool mut_bit = mutating("S5") && k == 3;
-        int H = B + (mut_bit ? (1 << (k + 1)) : (1 << k));
+        int H = B + (mut_bit ? (1 << (kk + 1)) : (1 << kk));
         S5Run& ref = ref_of(B);
         S5Run sh = get(H, mutating("S5-PC-BAND") && k == 3 ? 0xC000 : 0x8000, true);
         auto lines = ref_lines(ref);
@@ -101,7 +104,7 @@ inline void prop_S5() {
         }
         if (lines.size() < 8 * 2) pc_band = false;
         long bad = 0;
-        int want_shift = 1 << (k - 1);
+        int want_shift = 1 << (kk - 1);
         int first_diff = 0;
         for (int n : lines) {
             if (ref.bv.runs[n].size() != 1 || sh.bv.runs[n].size() != 1) { ++bad; continue; }
@@ -109,20 +112,28 @@ inline void prop_S5() {
             first_diff = d;
             if (d != want_shift) ++bad;
         }
-        ok_all = ok_all && bad == 0 && !lines.empty();
-        if (k >= 2) ok_ctrl = ok_ctrl && bad == 0 && !lines.empty();
-        g.note("S5: k = " + dec(k) + ": H = 0x" + hexs(B, 3) + " -> 0x" + hexs(H, 3) + ": leftmost cS pixel moved by " + dec(first_diff) +
+        const bool good = bad == 0 && !lines.empty();
+        if (k == 1) { ok_sh1 = ok_sh1 && good; ran_sh1 = true; }
+        if (k >= 2) { ok_rest = ok_rest && good; ran_rest = true; }
+        if (k >= 3) { ok_pos = ok_pos && good; ran_pos = true; }
+        g.note("S5: k = " + dec(kk) + ": H = 0x" + hexs(B, 3) + " -> 0x" + hexs(H, 3) + ": leftmost cS pixel moved by " + dec(first_diff) +
                " output pixels (page: " + dec(want_shift) + ") on " + dec(long(lines.size())) + " lines, " + dec(bad) + " lines differ");
     }
     pre.print("the S5 runs");
     g.expect(pc_spr, "S5-PC-SPR: in every run F2 reads each of the eight sprite lists once in order: word 0, word 1 once, the sixteen data pairs and the end pair");
     g.expect(pc_band, "S5-PC-BAND: in every run each band shows exactly one 2-output-pixel cS run on the same lines as in its reference run, on at least sixteen lines");
-    g.assert_line("S5", pre.setup && pre.frame && pre.tag && pre.pixel && pc_spr && pc_band, ok_all,
-        "S5: opus:AA-sprxpos.c7 opus:AA-sprxctl.c10 opus:AA-sprxctl.c14 sol:AA-sprxctl.c24 sol:AA-sprxctl.c30: "
-        "the horizontal start SH10-SH0 is one value (SPRxPOS bits 7-0 = SH10-SH3, SPRxCTL bit 0 = SH2 and bit 4 = SH1) and bit SHk moves the sprite by 35 * 2^k ns (p.28): "
-        "changing SHk alone moves the leftmost cS pixel by 2^(k-1) output pixels, for k = 1..10, for every sprite and on every line of its band");
-    g.expect_if(pre.setup && pre.frame && pre.tag && pre.pixel && pc_spr && pc_band, ok_ctrl,
-        "S5-CONTROL: the comparator of S5 (the leftmost cS pixel of every band line moves by 2^(k-1) output pixels) applied to k = 2..10, SH2 in SPRxCTL bit 0 and SH3-SH10 in SPRxPOS bits 0-7");
+    const bool pre_all = pre.setup && pre.frame && pre.tag && pre.pixel && pc_spr && pc_band;
+    if (ran_sh1)
+        g.assert_line("S5-SH1", pre_all, ok_sh1,
+            "S5-SH1: opus:AA-sprxctl.c10 sol:AA-sprxctl.c24: SPRxCTL bit 4 is SH1 and moves the sprite by 70 ns (p.28 '04 SH1=0 start horiz. value, 70nS increment'): "
+            "changing SH1 alone moves the leftmost cS pixel by 1 output pixel, for every sprite and on every line of its band");
+    if (ran_rest)
+        g.assert_line("S5", pre_all, ok_rest,
+            "S5: opus:AA-sprxpos.c7 opus:AA-sprxctl.c14 sol:AA-sprxctl.c30: the horizontal start SH10-SH2 is one value (SPRxPOS bits 7-0 = SH10-SH3 and SPRxCTL bit 0 = SH2) and bit SHk moves the sprite by 35 * 2^k ns (p.28): "
+            "changing SHk alone moves the leftmost cS pixel by 2^(k-1) output pixels, for k = 2..10, for every sprite and on every line of its band");
+    if (ran_pos)
+        g.assert_line("S5-SH10-SH3", pre_all, ok_pos,
+            "S5-SH10-SH3: the comparator of S5 (the leftmost cS pixel of every band line moves by 2^(k-1) output pixels) for k = 3..10 alone, SH3-SH10 in SPRxPOS bits 0-7 (p.28 '07-00 SH10-SH3 Sprite horizontal start value')");
 }
 
 // ---- S6 -----------------------------------------------------------------------
@@ -218,6 +229,7 @@ inline void prop_S7() {
     Rn R1f = mk("R1f", hi, 0xFFFF, true, 0x0000);
     Rn R0c = mk("R0c", lo, 0x8000, true, 0x0001, mutating("S7-CONTROL") ? 1 : 0);
     Rn R0sc = mk("R0sc", hi, mutating("S7-CONTROL-V") ? uint16_t(0x5555) : uint16_t(0xAAAA), true, 0x0001);
+    Rn R2sc = mk("R2sc", hi, mutating("S7-CONTROL-SH0") ? uint16_t(0xAAAA) : uint16_t(0x5555), true, 0x0000);
     bool pc_static = true;
     {
         // the program's writes in R0 and R0s: no SPRxCTL write
@@ -226,7 +238,7 @@ inline void prop_S7() {
                 for (int x = 0; x < 8; ++x) if (w.reg == R_SPRxCTL(x)) pc_static = false;
         if (m_r0 || m_r0s) pc_static = true;       // the contrast runs write SPRxCTL by design
     }
-    bool pc_sh1 = true, pc_sh0 = true, pc_shres = true, ok1 = true, ok2 = true, okc1 = true, okc2 = true, okc3 = true;
+    bool pc_sh1 = true, pc_sh0 = true, pc_shres = true, ok1 = true, ok2 = true, okc1 = true, okc2 = true, okc3 = true, okc4 = true;
     int nl = 0, d01 = -9, v01 = -9;
     for (int n = 0x30; n <= 0xFF; ++n) {
         const auto& a0 = R0.bv.runs[n]; const auto& a1 = R1.bv.runs[n]; const auto& a2 = R2.bv.runs[n];
@@ -258,6 +270,7 @@ inline void prop_S7() {
             if (v0 != v1) ok2 = false;
             if (vc != v1) okc2 = false;
             if (v1 == v2) pc_sh0 = false;
+            { int vsc = V(R2sc); if (v1 == vsc || v1 + vsc != 8) okc4 = false; }
         }
     }
     g.note("S7: " + dec(nl) + " lines; X(R0) - X(R1) = " + dec(d01) + " output pixels on the last line; V(R0s) = " + dec(v01) + " on the last line");
@@ -275,6 +288,8 @@ inline void prop_S7() {
         "S7-CONTROL: the comparator of S7 for SH1 (X(R) - X(R1) is 0 or 2 output pixels) applied to R0c, the lores run with SPRxCTL = 0x0001 (SH2 = 1, 140 ns), for every column on every line");
     g.expect_if(pre_ctl, okc3,
         "S7-CONTROL-SH1: the comparator of S7-PC-SH1 (X(R) - X(R1) is a fixed number of output pixels) applied to R0c, the lores run with SPRxCTL = 0x0001 (SH2 = 1, 140 ns): X(R0c) - X(R1) = 2 output pixels for every column on every line");
+    g.expect_if(pre_ctl, okc4,
+        "S7-CONTROL-SH0: the comparator of S7-PC-SH0 (V(R) differs from V(R1s)) applied to R2sc, the SHRES run with SPRxCTL = 0x0000 and DATA = DATB = 0x5555 (the 0xAAAA word shifted by one 35-ns pixel in place of the SH0 write), and V(R1s) + V(R2sc) = 8 shows the sprite is displayed, for every column on every line");
     g.expect_if(pre_ctl, okc2,
         "S7-CONTROL-V: the comparator of S7 for SH0 (V(R) = V(R1s)) applied to R0sc, the SHRES run with SPRxCTL = 0x0001 (SH2 = 1, 140 ns, four 35-ns pixels), for every column on every line");
 }

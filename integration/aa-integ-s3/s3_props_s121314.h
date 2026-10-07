@@ -38,7 +38,7 @@ struct S12Run {
 inline S12Run run_s12(const std::string& pfx, bool even_sh10, int shift, bool fmode_on, bool spren, bool sixteen_for_sh10, bool wide = false) {
     S12Run o;
     Std ss; ss.bpu = 1; ss.pal = Pal::Spr; ss.dmacon = spren ? 0x83A0 : 0x8380; ss.fmode = fmode_on ? 0x8000 : 0x0000;
-    if (wide) { ss.lf = true; ss.htotal = 0x0105; ss.vtotal = 0x0138; ss.beamcon0 = 0x08A0; }       // 262 colour clocks per line
+    if (wide) { ss.lf = true; ss.htotal = 0x00E3; ss.vtotal = 0x0138; ss.beamcon0 = 0x08A0; }       // 228 colour clocks per line
     RunSpec s = base_spec(ss, pfx);
     std::array<int, 8> nrows{};
     for (int x = 0; x < 8; ++x) {
@@ -226,12 +226,9 @@ inline uint16_t pos_for(int X, int vstart = 0x40) { return uint16_t((vstart << 8
 inline void prop_S14() {
     if (!want("S14")) return;
     Pre pre("S14");
-    bool pc_beam = true, pc_move = true, pc_spr = true, ok_a = true, ok_b = true, ok_ctrl = true;
-    // ---- (a) manual sprite 0; control variant: SPRxCTL = 0x0001 (SH2, 140 ns) instead of 0x0010 (SH1, 70 ns)
-    for (int variant = 0; variant < 2; ++variant) {
-        const bool ctrl = variant == 1;
-        if (g_mutate && ctrl && !mutating("S14-CONTROL")) continue;
-        if (g_mutate && !ctrl && mutating("S14-CONTROL")) continue;
+    bool pc_beam = true, pc_move = true, pc_spr = true, ok_a = true, ok_b = true, ran_b = false;
+    // ---- (a) manual sprite 0; the 68000 writes SPRxCTL = 0x0001 (SH2, 140 ns: two output pixels) at line 0xB0
+    for (int once = 0; once < 1; ++once) {
         Std o; o.bpu = 1; o.pal = Pal::Spr; o.dmacon = 0x8380;
         RunSpec s = base_spec(o, "S14");
         s.vb = bpl_ptrs(all_z(), 1);
@@ -244,7 +241,7 @@ inline void prop_S14() {
         EventSpec e1; e1.nvb = 2; e1.line = 0x50; e1.h = hb; e1.wr.push_back({R_SPRxPOS(0), pos_for(0xA0)}); s.ev.push_back(e1);
         EventSpec e2; e2.line = 0x70; e2.h = 0xB0; e2.wr.push_back({R_SPRxPOS(0), pos_for(0xB0)}); s.ev.push_back(e2);
         EventSpec e4; e4.line = 0xB0; e4.h = hb;
-        e4.wr.push_back({R_SPRxCTL(0), ctrl ? (mutating("S14-CONTROL") ? uint16_t(0x0000) : uint16_t(0x0001)) : uint16_t(0x0010)});
+        e4.wr.push_back({R_SPRxCTL(0), mutating("S14-e4") ? uint16_t(0x0000) : uint16_t(0x0001)});
         e4.wr.push_back({R_SPRxDATA(0), 0xE001});
         s.ev.push_back(e4);
         EventSpec e5; e5.line = 0xC0; e5.h = hb; e5.wr.push_back({R_SPRxDATB(0), 0x8007}); e5.wr.push_back({R_SPRxDATA(0), 0x8007}); s.ev.push_back(e5);
@@ -295,7 +292,7 @@ inline void prop_S14() {
             edge0 = first_one(cs);
         }
         struct Rows { int a, b, X; int extra_px; uint16_t word; };
-        const int sh1 = ctrl ? 2 : 1;       // the shift written by e4: SH1 is 1 output pixel, SH2 is 2
+        const int sh1 = 2;       // the shift written by e4: SH2 (140 ns) is two output pixels
         const Rows rows[] = {
             {0x30, 0x4F, 0x90, 0, 0xE001}, {0x51, 0x6F, 0xA0, 0, 0xE001}, {0x71, 0x8F, 0xB0, 0, 0xE001},
             {0x91, 0xAF, 0xC0, 0, 0xE001}, {0xB1, 0xBF, 0xC0, sh1, 0xE001}, {0xC1, 0xCF, 0xC0, sh1, 0x8007},
@@ -308,12 +305,13 @@ inline void prop_S14() {
                 bool good = edge0 >= 0 && pattern_at(cs, edge, rw.word) && count_ones(cs) == 2 * __builtin_popcount(rw.word);
                 if (!good) ++bad;
             }
-        g.note("S14 (a)" + std::string(ctrl ? " control" : "") + ": lines whose column is not where and what the page predicts: " + dec(bad));
-        if (ctrl) ok_ctrl = ok_ctrl && bad == 0; else ok_a = ok_a && bad == 0;
+        g.note("S14 (a): lines whose column is not where and what the page predicts: " + dec(bad));
+        ok_a = ok_a && bad == 0;
     }
     // ---- (b) eight DMA sprites, SPRxPOS written at line 0x80
     if (!g_mutate || mutating("S14-b") || mutating("S14-PC-SPR") || mutating("S14-PC-SETUP") || mutating("S14-PC-FRAME") ||
         mutating("S14-PC-TAG") || mutating("S14-PC-PIXEL") || mutating("S14-PC-BEAM") || mutating("S14-PC-MOVE")) {
+        ran_b = true;
         std::shared_ptr<RunData> rr[2];
         for (int with = 0; with < 2; ++with) {
             Std o; o.bpu = 1; o.pal = Pal::Spr; o.dmacon = mutating("S14-PC-SPR") ? 0x8380 : 0x83A0;
@@ -386,11 +384,13 @@ inline void prop_S14() {
     g.expect(pc_beam, "S14-PC-BEAM: every beam marker's re-read shows its target line, and the markers lie in F2");
     g.expect(pc_move, "S14-PC-MOVE: every Copper MOVE of the events is fetched on its event line of F2 with the intended data word");
     g.expect(pc_spr, "S14-PC-SPR: in (b) F2 reads each of the eight sprite lists once in order up to its end pair");
-    g.assert_line("S14", pre.setup && pre.frame && pre.tag && pre.pixel && pc_beam && pc_move && pc_spr, ok_a && ok_b,
+    const bool pre_all = pre.setup && pre.frame && pre.tag && pre.pixel && pc_beam && pc_move && pc_spr;
+    g.assert_line("S14", pre_all, ok_a && ok_b,
         "S14: opus:AA-sprxctl.c19 sol:AA-sprxctl.c33 opus:AA-sprxdatb.c7 sol:AA-sprxdata.c14: either processor may load the sprite registers at any time (p.28): "
         "a write of SPRxPOS, SPRxCTL, SPRxDATA or SPRxDATB by the 68000 or by the Copper takes effect from the next line on, for a manual sprite and during DMA use");
-    g.expect_if(pre.setup && pre.frame && pre.tag && pre.pixel && pc_beam && pc_move && pc_spr, ok_ctrl,
-        "S14-CONTROL: the comparator of S14 (a) applied to the run in which the 68000 writes SPRxCTL = 0x0001 (SH2, 140 ns: two output pixels) instead of 0x0010 (SH1)");
+    if (ran_b)
+        g.assert_line("S14-B", pre_all, ok_b,
+            "S14-B: part (b) of S14 alone (eight DMA sprites, SPRxPOS written at line 0x80 by the 68000 for the even and by the Copper for the odd sprites): a write to SPRxPOS of sprite x moves exactly the column of the sprite whose list is read through pointer x, from line 0x80 on (p.28 'Sprite x Vert-Horiz start position data')");
 }
 
 }  // namespace s3

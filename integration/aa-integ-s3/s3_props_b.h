@@ -15,6 +15,7 @@ void prop_B1() {
         Std o; o.bpu = bpu; o.dmacon = 0x8380;
         if (mutating("B1-b") && bpu == 3) o.bpu = 4;
         if (mutating("B1-PC-BPL")) o.dmacon = 0x8280;
+        if (mutating("B1-PC-BPLN") && bpu == 3) o.dmacon = 0x8280;
         RunSpec s = base_spec(o, "B1");
         std::array<uint32_t, 9> a{};
         for (int x = 1; x <= 8; ++x) a[x] = T_addr(x);
@@ -60,7 +61,8 @@ void prop_B1() {
         pc_move = t && (!fa[x] || *t < fa[x]->cyc);
     }
     // PC-BPL({1..8}): reads of every plane's region on every graded line, no reads outside the set
-    auto pc_bpl_of = [&](const RunData& r, int n) {
+    // outside: the planes above n are read nowhere in F2 (the part of (b) that is graded is left out of the precondition of the BPU = n runs)
+    auto pc_bpl_of = [&](const RunData& r, int n, bool outside) {
         Frame f = get_frame(r, 2);
         if (!f.ok) return false;
         for (int x = 1; x <= 8; ++x) {
@@ -70,18 +72,19 @@ void prop_B1() {
                     if (!f.tag.count(ln) || !f.tag.count(ln + 1)) return false;
                     if (count_in(r, f.tag.at(ln), f.tag.at(ln + 1), A, A + 0x3000, 1) < 1) return false;
                 }
-            } else if (count_in(r, f.t0, f.t1, A, A + 0x3000) != 0) return false;
+            } else if (outside && count_in(r, f.t0, f.t1, A, A + 0x3000) != 0) return false;
         }
         return true;
     };
-    bool pc_bpl = pc_bpl_of(*r8, 8);
+    bool pc_bpl = pc_bpl_of(*r8, 8, true);
     bool pc_static = static_no_write(r8->spec, 0x0E0, 0x0FE);
 
     // (b): with BPU = n, T_x is read in F2 if and only if x <= n
     bool b_ok = true;
-    bool b_run_ok = true;
+    bool pc_bpln = true;
     for (int n = 0; n <= 8; ++n) {
-        if (g_mutate && !mutating("B1-b")) break;
+        if (g_mutate && !mutating("B1-b") && !mutating("B1-PC-BPLN")) break;
+        if (mutating("B1-PC-BPLN") && n != 3 && n != 8) continue;
         std::shared_ptr<RunData> rn;
         if (n == 8) rn = r8; else rn = run(mk(n));
         if (n != 8) pre.check(*rn, 1, 2, false, false, false);
@@ -95,16 +98,17 @@ void prop_B1() {
             if (did != should) b_ok = false;
             got += did ? '1' : '0';
         }
-        if (n != 8 && !pc_bpl_of(*rn, n)) b_run_ok = false;
+        if (n != 8 && !pc_bpl_of(*rn, n, false)) pc_bpln = false;
         g.note("B1 (b): BPU = " + dec(n) + ": planes read in F2 (plane 1 first) " + got);
     }
-    (void)b_run_ok;
 
     pre.print("the B1 runs");
     g.expect(pc_move, "B1-PC-MOVE: the sixteen pointer MOVEs are fetched in F2's vertical-blank block with the table values, before the first T_x read");
     g.expect(pc_bpl, "B1-PC-BPL: with BPU = 8 the port shows reads in the region of every plane 1..8 on every line 0x30-0xFE of F2");
+    if (!g_mutate || mutating("B1-b") || mutating("B1-PC-BPLN"))        // the BPU = n runs are made
+        g.expect(pc_bpln, "B1-PC-BPLN: with BPU = n for every n = 0..7 the port shows reads in the region of every plane 1..n on every line 0x30-0xFE of F2");
     g.expect(pc_static, "B1-PC-STATIC: the program contains no write to BPLxPTH/BPLxPTL (0x0E0-0x0FE) after setup");
-    bool pre_all = pre.setup && pre.frame && pre.tag && pc_move && pc_bpl && pc_static;
+    bool pre_all = pre.setup && pre.frame && pre.tag && pc_move && pc_bpl && pc_bpln && pc_static;
     g.assert_line("B1", pre_all, a_ok && b_ok,
         "B1: opus:AA-bplxpth.c1 opus:AA-bplxpth.c2 opus:AA-bplxpth.c4 opus:AA-bplxpth.c6 opus:AA-bplxpth.c9 sol:AA-bplxpth.c1 sol:AA-bplxpth.c2 sol:AA-bplxpth.c3 sol:AA-bplxpth.c4 sol:AA-bplxpth.c5 sol:AA-bplxpth.c6 sol:AA-bplxpth.c7 sol:AA-bplxpth.c8 sol:AA-bplxpth.c9 sol:AA-bplxpth.c22 opus:AA-bplxptl.c1 opus:AA-bplxptl.c2 opus:AA-bplxptl.c4 opus:AA-bplxptl.c6 opus:AA-bplxptl.c10 sol:AA-bplxptl.c1 sol:AA-bplxptl.c2 sol:AA-bplxptl.c3 sol:AA-bplxptl.c4 sol:AA-bplxptl.c5 sol:AA-bplxptl.c6 sol:AA-bplxptl.c7 sol:AA-bplxptl.c8 sol:AA-bplxptl.c9 sol:AA-bplxptl.c11 sol:AA-bplxptl.c23: "
         "BPLxPTH/BPLxPTL (p.15) hold the address from which bit plane x's DMA data are fetched: with BPU = 8 the first access in F2 to T_x is a read at A_x / 2 for every x = 1..8, and with BPU = n for n = 0..8 plane x is read in F2 if and only if x <= n");
