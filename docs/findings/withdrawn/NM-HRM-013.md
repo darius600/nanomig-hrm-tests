@@ -1,4 +1,4 @@
-# NM-HRM-013 — SPRxCTL bits 3 and 4 are read nowhere
+# NM-HRM-013 — SPRxCTL bits 3 and 4 are read nowhere [withdrawn]
 
 | | |
 |---|---|
