@@ -76,4 +76,4 @@ Denise's abstention is the informative one: a register it does not implement sti
 
 ## Decision
 
-Nothing changes in the RTL. A claim about CLXCON2's address cites both pages and says which it follows and why; the p. 8 list and `custom.h` agree on `$10E`, and the alphabetical entry's `$10C` is held by no implementation. This does not repair the document, it narrows what may be cited.
+Nothing changes in the RTL. A claim about CLXCON2's address cites both pages and says which it follows and why; the p. 8 list and `custom.h` agree on `$10E`, and the alphabetical entry's `$10C` is held by no implementation. This does not repair the document, it narrows what may be cited. Of the specification's 257 register names, 92 stated on more than one page, CLXCON2 is the only one given two addresses.
