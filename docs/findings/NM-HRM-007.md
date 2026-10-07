@@ -6,7 +6,7 @@
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. |
-| **Module** | `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L339) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) |
+| **Module** | `agnus_bitplanedma.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_bitplanedma.v#L417-L461) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L417-L461) |
 | **Report to** | **nowhere yet** — NanoMig and both emulators read fetch 50, the manual's formula window uncut; the manual says the last word at $D8 is not fetched. See *For the specialists* |
 | **Test** | [`hrm/ch3-ddf-fetch-window`](../../hrm/ch3-ddf-fetch-window), [`hrm/ch3-bitplane-memory-layout`](../../hrm/ch3-bitplane-memory-layout) |
 | **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -99,11 +99,11 @@ window; none cuts the last word at $D8.
 | **vAmiga** | — | 50 words at the limits |
 | **Denise** | — | not read for this finding |
 | **Copperline** | [`src/chipset/ddf_sequencer.rs:662`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/ddf_sequencer.rs#L662) | <pre>assert_eq!(plane0 % 2, 0);</pre> two words per plane per 8-cck hires unit, tested at the standard `$3C`/`$D4` window, not at the limits |
-| **MiSTer** | [`rtl/agnus_bitplanedma.v:339,349`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L339) | descendant — identical to NanoMig: both DDF comparisons end in the trailing `1'b0` that forces start and stop onto even `hpos[8:1]` positions |
-| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:313,323`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L313) | descendant — the same two expressions, byte for byte, despite 74 differing lines elsewhere in the file, most of them the `hde` and display-window logic. Both forks share NanoMig's structurally-even fetch window; a fix diverges from neither |
+| **MiSTer** | [`rtl/agnus_bitplanedma.v:417-461`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_bitplanedma.v#L417-L461) | descendant — identical to NanoMig: lines 328 and 417-461 (`ddfseq`, `ddfrun`, `ddfend`, plane select from `ddfseq[1:0]`) match line for line, so the even count comes from the same eight-clock sequencer |
+| **TC64** | [`rtl/minimig/agnus_bitplanedma.v:393-437`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/agnus_bitplanedma.v#L393-L437) | descendant — the same sequencer, byte for byte (lines 302 and 393-437, NanoMig's 328 and 417-461 shifted by 24), despite 74 differing lines elsewhere in the file, most of them the `hde` and display-window logic. Both forks share NanoMig's eight-clock fetch sequencer; a fix diverges from neither |
 
 **Copperline states the even word count as an invariant in its own test** — which
-is NanoMig's structural argument, arrived at independently and written down as an
+is NanoMig's sequencer argument, arrived at independently and written down as an
 assertion rather than as a consequence.
 
 
