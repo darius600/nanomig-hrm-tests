@@ -156,5 +156,3 @@ and line 139 has to set `tx_tbe` on that load as it does in `TX_IDLE`, since the
 - a stop bit with a word waiting behind it would last 2N+2 `clk7_en` edges, N+1 colour clocks, and `P1`, `P2` and `P3` would read the grid p. 255 gives;
 - the waiting word's transfer into the shift register and its TBE interrupt would come one `clk7_en` edge, half a colour clock, earlier;
 - nothing would change for a word written with the transmitter idle, the window [NM-HRM-056](withdrawn/NM-HRM-056.md) reads, or for TSRE after the last word.
-
-Re-run: `make -k -C integration/ch8-disk-serial test`; expected red ids `P1`, `P2`, `P3`.
