@@ -6,9 +6,9 @@
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this; the red is against pp. 214 and 273, not against the RTL. Question: do pp. 214 and 273 need a single-playfield condition, so that CLXDAT bits 1 to 4 (playfield 1 to sprite pairs) stay clear while BPLCON0's DPF bit is clear and an enabled even bitplane misses its `CLXCON` match value, as NanoMig registers them? Closes when an Amiga specialist records that condition on p. 214's sentence and p. 273's playfield-1 rows, or confirms that the pages hold as printed, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 7 and Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. The pages print a rule that all four independent implementations and the 8373R4 silicon do not follow; `denise_collision.v` is identical in NanoMig, MiSTer and TC64 |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 7 and Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Scope** | CLXDAT bits 1 to 4 in single-playfield mode (BPLCON0 DPF clear), measured on `denise_collision.v` at the pinned revision with `CLXCON` enabling bitplane 1 (matched) and bitplane 2 (unmatched); the pages name no chip revision; the silicon reading is the ECS Denise 8373R4 only. The gate does not show where playfield 2 matches too (`BITMAP-PAIR PF1-PF2`) or where no even plane is enabled (`PLAYFIELD-ODD-EVEN`) |
-| **Software impact** | named only by the sources, not measured here: the RTL comment names Rotor, Spaceport (helicopter crash at takeoff) and Archon-1 ('sticky effect' of the player sprite); WinUAE's changelog entry on p. 214's sentence `Fixes Inferior and Sub Rally` |
+| **Software impact** | named only by the sources, not measured here: the RTL comment names Rotor, Spaceport (helicopter crash at takeoff) and Archon-1 ('sticky effect' of the player sprite); WinUAE's changelog entry on p. 214's sentence `Fixes Inferior and Sub Rally`; the Rotor attribution does not match WinUAE's changelog (*Risks and unknowns*) |
 | **Chapter** | 7 — System Control, printed p. 214 and Table 7-3 (pp. 209-213 quoted for what they leave unsaid, p. 210 named); Appendix A, printed pp. 272 and 273 (`CLXCON`, `CLXDAT`) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims by assertion: `A1-PLAYFIELD-MODE-INVARIANCE` (p. 214) `sol:7-collision.c27`, `opus:7-cd.c26`; `A3-PLAYFIELD-1-IS-ODD-BITPLANES` (p. 273) `sol:7-appA-clxdat.c6`, `opus:7-appA-clxdat.c3`; `BITMAP-PAIR PF1-SPR01` `A-clxdat.b01`, `A-clxdat.c20`, `sol:7-collision.c24`, `sol:7-appA-clxdat.c22`, `opus:7-cd.c22`, `opus:7-appA-clxdat.c19`; `PF1-SPR23` `A-clxdat.b02`, `A-clxdat.c19`, `sol:7-collision.c23`, `sol:7-appA-clxdat.c21`, `opus:7-cd.c21`, `opus:7-appA-clxdat.c18`; `PF1-SPR45` `A-clxdat.b03`, `A-clxdat.c18`, `sol:7-collision.c22`, `sol:7-appA-clxdat.c20`, `opus:7-cd.c20`, `opus:7-appA-clxdat.c17`; `PF1-SPR67` `A-clxdat.b04`, `A-clxdat.c17`, `sol:7-collision.c21`, `sol:7-appA-clxdat.c19`, `opus:7-cd.c19`, `opus:7-appA-clxdat.c16`; all nine reds carry claim ids. Green assertions the page names: `BITMAP-PAIR PF1-PF2` `A-clxdat.b00`, `A-clxdat.c21`, `sol:7-collision.c25`, `sol:7-appA-clxdat.c23`, `opus:7-cd.c23`, `opus:7-appA-clxdat.c20`; `PLAYFIELD-ODD-EVEN` `A-clxdat.note1`, `A-clxdat.note2`, `A-clxdat.c4`, `A-clxdat.c5`; `A2-BITPLANE-CONTENT-DETERMINES-COLLISION` `sol:7-collision.c28`, `opus:7-cd.c27`; `A4-PLAYFIELD-2-IS-EVEN-BITPLANES` `sol:7-appA-clxdat.c7`, `opus:7-appA-clxdat.c4` |
 | **Module** | `denise_collision.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_collision.v#L62-L63) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_collision.v#L62-L63); inherited, identical in MiSTer and TC64 |
 | **Test** | [`hrm/ch3-collision-registers`](../../hrm/ch3-collision-registers): `make -C hrm/ch3-collision-registers test` · [`hrm/ch7-collision-playfield-mode`](../../hrm/ch7-collision-playfield-mode): `make -C hrm/ch7-collision-playfield-mode test`; an expected red exits nonzero |
@@ -117,15 +117,14 @@ assert nothing about the gate and are green with it and without it.
   witnesses. The gate and the DPF latch are traced transistor by transistor (sheets
   7p and 7j); that CLXDAT bits 1 to 4 take the gated match is read from sheet 4hi,
   which draws bit 0's cell transistor by transistor and the others as blocks with
-  their inputs; the data-bus input is drawn for D0 alone (sheet 3a, where D0in
+  their inputs, noting "layout of all cells is pretty similar"; the data-bus input is drawn for D0 alone (sheet 3a, where D0in
   follows D0) and D10in is taken to be alike; sheet 7n draws the match comparison
   for planes 1 and 2 only.
 - **Both Commodore documents are table-level.** The 1988 ECS Denise specification
   does not carry the chapter-7 sentence about single versus dual playfield, and the
   patent's FIG. 12 gate diagram (PDF page 11) is illegible in the text layer; neither
   says what single-playfield mode does, so neither speaks for or against the gate.
-- **No witness cites a Commodore document for the gate.** vAmiga's gate also
-  fires in dual-playfield mode where NanoMig's does not. Its sprite–playfield check
+- **No witness cites a Commodore document for the gate.** vAmiga's sprite–playfield check
   runs only under `if (config.clxSprPlf)`
   ([`Denise.cpp:1226`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/Denise.cpp#L1226)),
   an option that defaults to `false`
