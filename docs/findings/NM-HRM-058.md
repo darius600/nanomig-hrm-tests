@@ -5,17 +5,20 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.256, not against the RTL. |
-| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L156-L230) |
-| **Report to** | **the manual.** Three of the four reference implementations land on NanoMig's numbers exactly |
-| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) `B11` |
-| **Chapter** | 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
-| **Assertions** | 2 red, in two packages |
-| **Verdict of the four** | **three of four land on 10 and 11 bit times, exactly as NanoMig does** |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.256, not against the RTL. Question: does p.256's "up to one full character-receive time (8 to 10 bit times)" describe a window that a nine-data-bit frame, which takes 11 bit times, does not fit in? Closes when an Amiga specialist records that "8 to 10" counts differently or covers only the eight-data-bit frame, or confirms that the nine-data-bit frame fits in it, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 8 of the *Amiga Hardware Reference Manual*, 3rd ed. This is a defect in one printed page, not in the RTL |
+| **Scope** | Paula's serial receiver with nine data bits (SERPER bit 15 set), measured on NanoMig's `paula_uart.v` at the pinned revision; chip revision unknown; hardware not measured. The eight-data-bit frame lies inside the printed range (9.68 and 10 bit times) |
+| **Software impact** | unknown; no named affected software |
+| **Chapter** | 8, printed p.256 (receive-time sentence and bit-15 row) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`: `sol:8-serdatr.c9`, `sol:8-serdatr.c10`, p.256; `B11`: `opus:8-serial.c54`, p.256. Both assertions carry a claim id |
+| **Module** | `paula_uart.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/paula_uart.v#L156-L230); inherited, identical in MiSTer and TC64 |
+| **Test** | [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word): `make -C hrm/ch8-serdatr-read-word test`, and independently [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface): `make -C hrm/ch8-serial-interface test`; an expected red exits nonzero |
+| **Assertions** | 2 red, in two packages. `RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`: expected both windows in 8 to 10 bit times, observed 9.681818 (8-bit) and 10.681818 (9-bit); the package reports `12 passed, 2 failed`. `B11`: expected both in 8 to 10 bit-cells, observed 10 (8-bit) and 11 (9-bit); the package reports `48 passed, 3 failed` |
+| **Verdict of the four** | **three of four land on 10 and 11 bit times, exactly as NanoMig does**; WinUAE has no receiver and gives no vote; hardware not measured |
+| **Effort** | none — no RTL change asked; the open question is the wording of p.256 |
 
 ---
 
-## What the HRM says
+## Source requirement
 
 **p.256:27** — *"up to one full character-receive time (8 to 10 bit times) to
 accept the data and clear"*.
@@ -28,60 +31,50 @@ One start bit, eight data bits and one stop bit make ten bit times, the printed
 ceiling; with nine data bits the frame is eleven. The finding rests on the
 nine-bit frame alone.
 
-## What NanoMig does
+## RTL and measurement
 
 **10 bit times for an 8-bit frame, 11 for a 9-bit frame** — at the printed
-ceiling in the short case and one past it in the long one. Two packages
-measured it independently and differ only in where they start counting: 10.0 and
-11.0 from one, 9.68 and 10.68 from the other.
-
-### Measured
+ceiling in the short case and one past it in the long one.
 
 [`hrm/ch8-serdatr-read-word`](../../hrm/ch8-serdatr-read-word) measures the
 back-to-back receive window at 9.681818 bit times for an 8-bit frame and
-10.681818 for a 9-bit frame —
-`RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, red, one of the package's `12
-passed, 2 failed`. [`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface)
-measures the same window from its own starting point at 10 bit-cells for an
-8-bit frame and 11 for a 9-bit frame — `B11`, red, one of the package's `48
-passed, 3 failed`. Both reds come from the 9-bit frame: the 8-bit values, 9.68
-and 10, lie inside 8 to 10.
+10.681818 for a 9-bit frame (`RECEIVER-FULL-CHARACTER-TIME-WINDOW-8-TO-10`, red).
+[`hrm/ch8-serial-interface`](../../hrm/ch8-serial-interface) measures it from its
+own starting point at 10 bit-cells and 11 (`B11`, red). Both reds come from the
+9-bit frame: the 8-bit values lie inside 8 to 10.
 
-## Why this is filed against the page
+## Risks and unknowns
+
+- What p.256 means by "8 to 10" is open: it may count differently, describe a
+  different interval, or be wrong. Real Paula's receive window is not measured.
+- WinUAE has no receiver, so the vote is three of four.
+- The 6502.org note states how the 8364R7 frame is built, not how long software
+  has to read it; the 10/11 is derived from it here. Silicon of one revision.
+
+## Independent evidence
 
 | | |
 |---|---|
+| **WinUAE** | **neither confirms nor contradicts.** It has no receiver: bytes arrive whole from the host (`od-win32/serial_win32.cpp:464`, `:600`); its only 10/11 constant is on the *transmit* side (`:261`), and its loopback receive time is 9 or 10 bit times **plus half a bit** (`:799`), measured to a mid-bit sample rather than as a window bound |
 | **vAmiga** | **10 / 11.** `if (recCnt >= packetLength() + 2)` — `Core/Components/Paula/UART/UARTEvents.cpp:83`, with `packetLength()` returning 9 or 8 (`UART.h:172`); the +2 is start and stop |
 | **Denise** | **10 / 11.** `unsigned bits = (serPer & 0x8000) ? 11 : 10;` — `emulation/libami/paula/uart.cpp:78`, counted at `:80` |
 | **Copperline** | **10 / 11.** `total_bits: if long { 11 } else { 10 }` — `src/chipset/paula.rs:1557`, set at shift-load rather than counted against a constant |
-| **WinUAE** | **neither confirms nor contradicts.** It has no receiver: bytes arrive whole from the host (`od-win32/serial_win32.cpp:464`, `:600`). Its only 10/11 constant is on the *transmit* side (`:261`), and its loopback receive time is 9 or 10 bit times **plus half a bit** (`:799`), measured to a mid-bit sample rather than as a window bound |
-| **MiSTer** | descendant — carries the same receiver lines, already noted on this page |
-| **TC64** | `rtl/minimig/paula_uart.v:156-230` — descendant, the identical receiver, same file, same line numbers, byte-identical, confirmed by a full-file comparison. The 10-/11-bit-time window this entry measures against p.256 is inherited unchanged by both lines; the red is against the manual in both cases, not against either RTL |
+| **MiSTer** | descendant — the same receiver lines |
+| **TC64** | descendant — `rtl/minimig/paula_uart.v:156-230`, byte-identical to NanoMig's, confirmed by a full-file comparison |
 
-**Three independent implementations arrive at exactly NanoMig's numbers.** A
-frame of one start bit, eight or nine data bits and one stop bit is ten or eleven
-bit times by construction, and the page's "8 to 10" cannot describe the eleven.
+### What other Commodore documents say
 
-So the red is real and it is not about this design. What p.256 means by "8 to
-10" — whether it counts differently, describes a different interval, or is
-simply wrong — is a question for someone who can read it against a real Paula.
-This entry records that no implementation, including the two that model the
-receiver most carefully, produces a 9-bit-frame number inside the printed range.
-
----
-
-## What other Commodore documents say
-
-Second documents, not oracles: each can agree or disagree with the manual,
-and none decides this finding. What they are and how they were read is in
-[the findings README](README.md#second-documents).
-
-- **6502.org dissection of Paula 8364R7, 2023 — third-party, the silicon of one revision**, an author's note in the archive — **agrees with NanoMig**:
+- **6502.org dissection of Paula 8364R7, 2023 — third-party**, an author's note in the archive — **agrees with NanoMig**:
 
   > "the length of said shift register can be switched to 9 or to 10 Bits."
   <!-- corpus: paula-8364r7-dissection/9_9_txt.txt -->
 
-  The RX register holds the data plus the stop bit, and one more bit holds the start bit: "When the Start Bit comes out of the shift register (there is another "hidden shift register Bit" for that), the UART sees the received frame as completed." A received character on 8364R7 is therefore start + 8 or 9 data + stop = 10 or 11 bit cells: NanoMig's numbers, and outside "8 to 10". The note states how the frame is built, not how long software has to read it; the 10/11 is derived here from that and is not in the note.
+  The RX register holds the data plus the stop bit, and one more bit holds the start bit: "When the Start Bit comes out of the shift register (there is another "hidden shift register Bit" for that), the UART sees the received frame as completed." A received character on 8364R7 is therefore start + 8 or 9 data + stop = 10 or 11 bit cells: NanoMig's numbers, and outside "8 to 10".
 
-Silent on this point: Commodore, *A500/A2000 Technical Reference Manual*, 1987; US patent 4,829,473, Commodore-Amiga, filed 1986, granted 1989.
+## Decision
 
+No RTL change. An Amiga specialist reads p.256's "8 to 10 bit times" against a
+real Paula and says whether it describes the nine-data-bit frame. If it does not,
+the red stays against the page; if it does, this page is refiled against the RTL.
+Re-run: `make -C hrm/ch8-serdatr-read-word test` and
+`make -C hrm/ch8-serial-interface test`.
