@@ -14,7 +14,7 @@
 | **Test** | [`hrm/appK-autoconfig-base-address`](../../hrm/appK-autoconfig-base-address): `make -C hrm/appK-autoconfig-base-address test`, and its fx68k build `make -C hrm/appK-autoconfig-base-address-fx68k test`; an expected red exits nonzero |
 | **Assertions** | 2 red, the same two in both builds: `sol:K-0844` and `opus:K-0881`, expected register 00 to read 0x0 (configured) after a write to register 48 with `cfg_z3` set, observed raw 0xA; the package reports `5 passed, 8 failed`, and an inverse control turns green for a Zorro II board on the identical write |
 | **Verdict of the four** | **two of four do exactly what NanoMig does; the other two have no Zorro III board to disagree with**. Hardware: not measured |
-| **Effort** | none — no RTL change; a documentation note on p. 436 only |
+| **Effort** | none — no RTL change, a documentation note on p. 436 only |
 
 ---
 
