@@ -5,15 +5,15 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. Question: should the footnotes to Table 8-2 rows 3 and 4 on p.231 (200 → 45 and 45 → 200, each printed as a true count of 100) read 101 on a counter that has 256 states? Closes when an Amiga specialist records that the footnotes' 100 is an approximation or a printed error, or confirms that the counter wraps at 255, in which case this page is refiled against the RTL. |
-| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 8 of the *Amiga Hardware Reference Manual*, 3rd ed. This is a defect in one printed page, not in the RTL |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect. Question: should the footnotes to Table 8-2 rows 3 and 4 on p.231 (200 → 45 and 45 → 200, each printed as a true count of 100) read 101 on a counter that has 256 states? Closes when an Amiga specialist records that the footnotes' 100 is an approximation or a printed error, or confirms that the counter wraps at 255, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 8 of the *Amiga Hardware Reference Manual*, 3rd ed. |
 | **Scope** | unknown: the page names no chip revision; measured on NanoMig's `userio.v` mouse counter read through JOY0DAT, the two wrapping rows of Table 8-2 against the two non-wrapping rows; hardware not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | 8 — Interface Hardware, printed p.231, Table 8-2 and its footnotes `*` and `**` · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claims, each with the assertion that carries it: `opus:8-limits.c15` (all four rows are "100 pulses"), `opus:8-limits.c20` / `sol:8-mouse-limit.c17` (footnote `*`), `opus:8-limits.c21` / `sol:8-mouse-limit.c18` (footnote `**`); the green controls are `opus:8-limits.c16` / `sol:8-mouse-limit.c13` (row 1) and `opus:8-limits.c17` / `sol:8-mouse-limit.c14` (row 2). Every assertion named here carries a claim id |
 | **Module** | `userio.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/userio.v#L219-L280) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/userio.v); inherited: MiSTer and TC64 have the same increment statement on a plain 8-bit field |
 | **Test** | [`hrm/ch8-mouse-counter-wraparound`](../../hrm/ch8-mouse-counter-wraparound): `make -C hrm/ch8-mouse-counter-wraparound test`; an expected red exits nonzero |
 | **Assertions** | 3 red, the package reports `15 passed, 3 failed`: `opus:8-limits.c15` — expected 100 state changes on every row of Table 8-2, observed 100, 100, 101, 101; `opus:8-limits.c20` (with `sol:8-mouse-limit.c17`) — expected 100 for 200 → 45, observed 101; `opus:8-limits.c21` (with `sol:8-mouse-limit.c18`) — expected 100 for 45 → 200, observed 101. The two non-wrapping rows are green in the same package |
-| **Verdict of the four** | **unanimous on the half they can answer** — 256 states per axis in all four, and not one uses 255 as a modulus; hardware not measured |
+| **Verdict of the four** | **unanimous on the half they can answer** — 256 states per axis in all four, and not one uses 255 as a modulus. Hardware: not measured |
 | **Effort** | none: no RTL change; any correction is to the two footnotes on p.231 |
 
 ---
@@ -68,4 +68,4 @@ Denise's `255` constants in its input and Paula code are in `paula/pot.cpp` and 
 
 ## Decision
 
-**Most likely no change to any RTL.** An 8-bit counter has 256 states; that is not a choice any implementation made and not one any of them could make differently. The printed worked example subtracts from 255 where the hardware wraps at 256, and the discrepancy is exactly one. The correction, if any, belongs to the manual's errata: whoever keeps them decides whether the footnotes change. The finding closes as stated in *What is asked of a reader*.
+**Most likely no change to any RTL.** An 8-bit counter has 256 states; that is not a choice any implementation made and not one any of them could make differently. The printed worked example subtracts from 255 where the hardware wraps at 256, and the discrepancy is exactly one. The finding closes as stated in *What is asked of a reader*.
