@@ -136,7 +136,7 @@ comparison and keeps the previous-state bit `cia_int.v` lacks.
 
 ## Decision
 
-Carry an edge detector for FLAG in the Minimig line's `cia_int.v`: the fix lands in
-both MiSTer's and TC64's files and is ported to NanoMig deliberately. The step-3
-read then returns bit 4 and IR clear and `PROP-FLAG-EDGE-POLARITY` turns green,
-with step 2 still reading `0x90`.
+If the Minimig line carries an edge detector for FLAG, the fix lands in both
+MiSTer's and TC64's `cia_int.v` and is ported to NanoMig; the step-3 read then
+returns bit 4 and IR clear and `PROP-FLAG-EDGE-POLARITY` turns green, with step 2
+still reading `0x90`.
