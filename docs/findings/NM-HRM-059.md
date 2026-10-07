@@ -5,8 +5,8 @@
 | **Lifecycle** | open |
 | **Filed against** | the printed page |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.265, not against the RTL. Question: does p.265's ADKCON/ADKCONR bit-15 row describe a write-only SET/CLR control, so that a read of 0 is correct? Closed when the printed-page note below is settled one way or the other. |
-| **Report to** | `no RTL action` — documentation role: the maintainer of the printed-page notes in this repository's findings register. Closure: p.265's bit-15 row is annotated as write-only, or a specialist confirms it reads back and this page is refiled against the RTL |
+| **What is asked of a reader** | No RTL change follows from this. The printed page is the likely defect, and the entry exists so the next reader does not take the red for an implementation fault. The red is against p.265, not against the RTL. Question: does p.265's ADKCON/ADKCONR bit-15 row describe a write-only SET/CLR control, so that a read of 0 is correct? Closes when an Amiga specialist records p.265's bit-15 row as write-only (a read of 0 is correct), or confirms that ADKCONR returns it, in which case this page is refiled against the RTL. |
+| **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Appendix A of the *Amiga Hardware Reference Manual*, 3rd ed. This is a defect in one printed page, not in the RTL |
 | **Scope** | Paula's ADKCONR read of bit 15; chip revision unknown; hardware read not measured |
 | **Software impact** | unknown; no named affected software |
 | **Chapter** | Appendix A, printed p. 265, ADKCON/ADKCONR bit 15; test chapter 8 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 |
@@ -71,7 +71,7 @@ what was written, `ADKCONR-BIT15-SETCLR-NEVER-READS-BACK`, red.
 ## Decision
 
 No RTL change. A documentation reader decides which reading of p.265's bit-15
-row stands. If it is write-only, p.265 gets a note and the red is recorded as
+row stands. If it is write-only, the defect is p.265's shared table and the red stays
 against the page; if it reads back, this page is refiled against the RTL and
 NanoMig's fifteen-bit `adkcon` becomes the question. Re-run:
 `make -C hrm/ch8-adkcon-and-interrupt-relations test`.
