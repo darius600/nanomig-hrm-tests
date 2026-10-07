@@ -2210,8 +2210,8 @@ int main(int argc, char** argv) {
         // appF-cia-bus-and-clock's FIXTURE-LIVENESS (counting samples that cannot distinguish the
         // real event from its absence).
         //
-        // `dmasen` is combinational, driven only while audio_state==AUDIO_STATE_0 (paula_audio_
-        // channel.v:262-280): once AUDxON is raised, audio_state stays 000 combinationally for
+        // `dmasen` is combinational, driven only while audio_state==AUDIO_STATE_0
+        // (paula_audio_channel.v:262-280): once AUDxON is raised, audio_state stays 000 combinationally for
         // AT MOST the delta-cycle before the next cck-qualified clock edge, at which point
         // audio_state itself becomes 001 -- and `Harness::tick()`'s own periodic recording (used
         // for the whole `hNote.history` trace this check reads) only samples ON a cck-qualified
