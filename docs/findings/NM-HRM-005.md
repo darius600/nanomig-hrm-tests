@@ -13,7 +13,7 @@
 | **Module** | `agnus_copper.v` **lines 384-548**, the `copper_state` machine that spends the cycles — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/agnus_copper.v#L384-L548) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_copper.v); inherited |
 | **Test** | [`hrm/ch2-copper-cycle-times`](../../hrm/ch2-copper-cycle-times): `make -C hrm/ch2-copper-cycle-times test`; [`hrm/ch2-copper-cycles`](../../hrm/ch2-copper-cycles): `make -C hrm/ch2-copper-cycles test`; an expected red exits nonzero |
 | **Assertions** | 8 red. In `hrm/ch2-copper-cycle-times` (`7 passed, 6 failed`): `P3` and `P4` (`SKIP` taken and not taken, expected 4, observed 8), `P5` (satisfied `WAIT`, 6 → 8), `P6` (`WAIT` − `MOVE`, 2 → 4), `AC5` (`SKIP`, p. 275, 4 → 8) and `AC6` (`SKIP`, 4 → 8; expository, not independent). In `hrm/ch2-copper-cycles` (`10 passed, 2 failed`): `C5` (`WAIT`, three bus grants expected) and `C6` (`WAIT` one grant more than a `MOVE` expected); the test's comment records two grants, the same as a `MOVE` |
-| **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline, read from source and not run, all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Hardware: not measured |
+| **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline, read from source and not run, all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Copperline names Minimig and vAmiga as its model for these cycles. Hardware: not measured |
 | **Effort** | none — no RTL change is asked; a timing program on a real machine would decide it |
 
 ---
@@ -28,7 +28,11 @@
 | satisfied `WAIT` | 6 |
 | `WAIT` minus `MOVE` | 2 |
 
-> The WAIT instruction requires three memory cycles and six memory cycle times.
+**p. 20:**
+
+> The WAIT instruction requires three memory cycles and six memory cycle times; it takes one extra memory cycle to wake up.
+
+**p. 275:**
 
 > Since only the odd bus cycles are requested, four memory cycle times are required per instruction (memory cycles are 280 ns.)
 
@@ -48,9 +52,9 @@ Appendix A p. 275 defines the bus cycle against the memory cycle time and gives 
 
 ## Risks and unknowns
 
-- Real hardware is not measured, and the manual's figures are not independently checked.
+- Real hardware is not measured.
 - The four emulators were read from their Copper state machines, not run. They are fewer than four independent witnesses: Copperline's comments name Minimig's `WAITSKIP1`/`WAITSKIP2` and vAmiga's `COP_WAIT1`/`COP_WAIT2` as the model for these cycles ([`:256-264`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/copper.rs#L256-L264), [`:517-525`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/copper.rs#L517-L525)), so its agreement weighs least. Its doc comment on `step_eligible_slot` still reads `MOVE/SKIP spans 4 color clocks and a WAIT 6` ([`src/chipset/copper.rs:690-694`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/copper.rs#L690-L694)), which the states it documents do not do.
-- `AC6` is expository: given `AC4` and `AC5` it cannot fail on its own, and with `AC5` and `P3` it is one measurement, not three.
+- `AC6` is expository, not independent: given `AC4` and `AC5` it cannot fail on its own, so it is no separate corroboration.
 - The US patent text below closely paraphrases the manual's own Copper-timing text, so it is not an independent measurement.
 
 ## Independent evidence
@@ -84,7 +88,7 @@ Every row counts colour clocks on a free bus, and a colour clock is one memory c
 
 ## Decision
 
-**None, and a patch would be the wrong instrument.** All four emulators produce NanoMig's numbers, so either the manual's cycle figures are wrong — which this project has documented elsewhere — or every implementation shares a misreading.
+**None, and a patch would be the wrong instrument.** All four emulators produce NanoMig's numbers, so either the manual's cycle figures are wrong or every implementation shares a misreading.
 
 **This is decidable on real hardware and by no other means available here.** A small 68k program timing a loop of `WAIT`s against a CIA timer, run on a real machine, settles it outright instead of mediating between a 1991 manual and five implementations, NanoMig and the four emulators. Both Copperline's `timing-test/` and vAmigaTS arrive independently at the same technique — probe programs booted from an ADF, results read from CRT photographs — and Copperline states the principle: *where real hardware and FS-UAE disagree, real hardware wins.*
 
