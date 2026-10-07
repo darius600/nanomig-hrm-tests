@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-dsklen-dma-arming`](../../hrm/ch8-dsklen-dma-arming): `make -C hrm/ch8-dsklen-dma-arming test`; the expected red exits nonzero |
 | **Assertions** | 1 red: `A11-DSKBUG-LAST-THREE-BITS-LOST-ON-WRITE` — expected the last three bits of the last byte lost (`0xFF` written must not read back as `0xFF`), observed `0x00FF`, all eight bits intact; the package reports `10 passed, 1 failed`. The control `A13-DSKDAT-WRITE-BYTE-COMPARATOR-LIVE` drives the identical apparatus with payload `0x00` and reads `0x0000` in the same run |
 | **Verdict of the four** | **3–1, and the one is the interesting one.** Copperline reproduces the bug on purpose, with a named constant for it, in images that keep raw MFM cells. WinUAE, vAmiga and Denise all write the last word whole and lose nothing — but WinUAE and Denise both emulate the *other* sentence of the same printed paragraph, and WinUAE calls it a Paula bug in its own comment. Hardware: documented defect, not measured here |
-| **Effort** | none: the page suggests no RTL change |
+| **Effort** | none — the page suggests no RTL change |
 
 ---
 
