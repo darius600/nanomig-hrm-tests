@@ -5,7 +5,7 @@
 | **Lifecycle** | withdrawn |
 | **Filed against** | — |
 | **Evidence** | p. 216 prints "Allows PAL line counts (313) to appear in PAL versions of the Amiga", and NanoMig counts 313 end-of-line pulses from reset to the first end-of-frame with the long-frame bit at its reset value 1 |
-| **What is asked of a reader** | Nothing. With the long-frame bit set, as it is at reset, a PAL field is 313 lines, the count p. 216 prints; a test that grades 312 must clear the bit first. |
+| **What is asked of a reader** | Nothing. With the long-frame bit set, as NanoMig sets it at reset, a PAL field is 313 lines, the count p. 216 prints; a test that grades 312 must clear the bit first. |
 | **Withdrawal reason** | The test graded 312 positions with the long-frame bit at its reset value 1; NanoMig counts 313 then, which p. 216 prints, and 312 with the bit cleared |
 | **Error class** | none |
 | **Replacement** | Green: `PAL-FIELD-312-NTSC-FIELD-262-LINES` (PAL) in [`hrm/ch3-beam-counters-and-blanking`](../../../hrm/ch3-beam-counters-and-blanking), two fields of exactly 312 lines with the bit cleared first; `CONTROL-PAL-DEFAULT-FIELD-LENGTH-313-LINES` in [`hrm/ch3-field-geometry`](../../../hrm/ch3-field-geometry), 313 end-of-line pulses from reset to the first end-of-frame |
@@ -47,7 +47,7 @@ real hardware is cited.
 | | code | |
 |---|---|---|
 | **WinUAE** | [`custom.cpp:10926`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L10926) | `if ((vpos == maxvpos + lof_store) \|\| (vpos == maxvpos_long)) {` follows the long-frame bit: 313 lines with it set, 312 with it clear, and a hard reset clears it (`lof_store = lof_display = 0;`, [`:6739`](https://github.com/tonioni/WinUAE/blob/ccc407e9c636668b99b5f19d6e9aa03ea04b3052/custom.cpp#L6739)) |
-| **vAmiga** | — | follows the long-frame bit |
+| **vAmiga** | [`Core/Components/Agnus/Beam.h:86`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Agnus/Beam.h#L86) | `isize vCntPal() const { return lof ? 313 : 312; }` follows the long-frame bit |
 | **Denise** | [`emulation/libami/agnus/agnus.cpp:178`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/agnus/agnus.cpp#L178) | `lines = ntsc ? 261 : 311;` frame restarts at `vPos == lines + lof` |
 | **Copperline** | [`src/chipset/agnus.rs:7`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/chipset/agnus.rs#L7) | `pub const PAL_LINES: u32 = 313;` non-interlaced fields are all long frames |
 | **MiSTer** | [`rtl/agnus_beamcounter.v:87`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L87), [`:330`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/agnus_beamcounter.v#L330) | descendant — the same `VTOTAL_PAL_VAL = 11'd312 - 11'd1` and the same `long_frame <= 1'b1` reset default NanoMig has; runs a 313-line PAL field for the same reason |
