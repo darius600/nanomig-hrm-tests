@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch2-copper-cycle-times`](../../hrm/ch2-copper-cycle-times): `make -C hrm/ch2-copper-cycle-times test`; [`hrm/ch2-copper-cycles`](../../hrm/ch2-copper-cycles): `make -C hrm/ch2-copper-cycles test`; an expected red exits nonzero |
 | **Assertions** | 8 red. In `hrm/ch2-copper-cycle-times` (`7 passed, 6 failed`): `P3` and `P4` (`SKIP` taken and not taken, expected 4, observed 8), `P5` (satisfied `WAIT`, 6 → 8), `P6` (`WAIT` − `MOVE`, 2 → 4), `AC5` (`SKIP`, p. 275, 4 → 8) and `AC6` (`SKIP`, 4 → 8; expository, not independent). In `hrm/ch2-copper-cycles` (`10 passed, 2 failed`): `C5` (`WAIT`, three bus grants expected) and `C6` (`WAIT` one grant more than a `MOVE` expected); the test's comment records two grants, the same as a `MOVE` |
 | **Verdict of the four** | **unanimous with NanoMig, against pp. 20 and 275**: WinUAE, vAmiga, Denise and Copperline, read from their source code and not run, all give a `MOVE` 4, a `SKIP` 8 and a satisfied `WAIT` 8 memory cycles; none gives the manual's `SKIP` 4 or `WAIT` 6. Copperline names Minimig and vAmiga as its model for these cycles. Hardware: not measured |
-| **Effort** | none — no RTL change is asked; a timing program on a real machine would decide it |
+| **Effort** | none — no RTL change is asked (a timing program on a real machine would decide it) |
 
 ---
 
