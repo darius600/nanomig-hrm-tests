@@ -1273,7 +1273,7 @@ Quantifier "Writing to this register": two different written values are graded.
 
 **Address.** As in C3, every C4 run is made twice, each time in its own run: with CLXCON2 written at `0x10E` and at `0x10C`. C4 is graded at each address where F2 and F4 give 0, i.e. where CLXCON2 is in effect; that is C3's clause, not C4's. C4 passes if F3 and F5 give 1 at every such address, and fails otherwise. The record states the address or addresses.
 
-**Preconditions.** PC-FRAME, PC-BPL, PC-SPR(0), the CF window. At one address at least, F2 and F4 give 0 (CLXCON2 is in effect there). If neither address gives it, C4 is not graded; C3 then fails.
+**Preconditions.** PC-FRAME, PC-BPL, PC-SPR(0), the CF window, PC-BEAM. At one address at least, F2 and F4 give 0 (CLXCON2 is in effect there). If neither address gives it, C4 is not graded; C3 then fails.
 
 **Contrasting case.** Leave out the CLXCON writes in F3 and F5: bits 1 and 5 stay 0.
 
