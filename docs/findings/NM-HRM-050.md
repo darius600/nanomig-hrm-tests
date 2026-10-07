@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page |
-| **What is asked of a reader** | Should the `keymap` entry for HID `$64` (the key cut out of the left Shift) emit `$30`, as p.252 prints, instead of `$2B`? Closes when NanoMig makes that change and `CUTOUT-30` turns green, or when an Amiga specialist rejects it. |
+| **What is asked of a reader** | Should the `keymap` entry for HID `$64` (`amiga_keymap.v:130`, the key cut out of the left Shift) emit `$30`, as p.252 prints, instead of `$2B`? Closes when NanoMig makes that change and `CUTOUT-30` turns green, or when an Amiga specialist rejects it. |
 | **Report to** | `NanoMig direct` — harbaum/NanoMig |
 | **Scope** | `keymap` entries for HID `$64` and `$32`, the two international cutout keys; a combinational translation table, so no chip revision applies; hardware not measured |
 | **Software impact** | unknown; no named affected software |
@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch8-keycode-table`](../../hrm/ch8-keycode-table): `make -C hrm/ch8-keycode-table test`; an expected red exits nonzero |
 | **Assertions** | 1 red, `CUTOUT-30`: expected `$30` for HID `$64`, observed `$2B`; the package reports `97 passed, 1 failed` (98 assertions, among them a 94-row exhaustive sweep of the table). Control `KEY-$2B`, green: HID `$32` gives `$2B` |
 | **Verdict of the four** | **unanimous against.** All four carry both cutout keys as distinct codes, `$30` and `$2B`, in their own key tables. Hardware: not measured |
-| **Effort** | S — the output of one table entry, the one for HID `$64` |
+| **Effort** | S — the output of one table entry, `amiga_keymap.v:130` for HID `$64` |
 
 ---
 
