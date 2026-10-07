@@ -14,7 +14,7 @@
 | **Test** | [`integration/ch6-blitter-cpu-sharing`](../../integration/ch6-blitter-cpu-sharing): `make -k -C integration/ch6-blitter-cpu-sharing test`, or `test-fx68k` and `test-tg68k` of the same package; an expected red exits nonzero. It carries the finding |
 | **Assertions** | `PARITY` is the one red of the package, on both cores (37 passed, 1 failed each): expected no CPU chip-bus access on an odd slot, both with no DMA and inside a share-mode blit's active window; observed 20006 of 41007 and 125 of 243 on odd slots on fx68k, 0 of 45209 and 124 of 254 on TG68K, so on fx68k both halves are red and on TG68K the share-mode half alone. `PARITY-REF` and the `A8` line pass on both cores; `A8` is not evidence for this finding |
 | **Verdict of the four** | **unanimous with NanoMig, against p. 196.** WinUAE, vAmiga, Denise and Copperline all make a CPU access wait only while DMA owns the colour clock, and none of them consults the colour clock's parity; WinUAE, vAmiga and Denise charge BRA's two internal clocks as one colour clock, as fx68k does. All four let a non-nasty blitter stand aside after a count of missed cycles, not at a parity, and Copperline's own test grants the CPU colour clock $27 there. Hardware: not measured |
-| **Effort** | S: one parity term in the last branch of `agnus.v`'s priority chain (lines 255–266) or one new input to the bridge's acknowledge; not run here |
+| **Effort** | S — one parity term in the last branch of `agnus.v`'s priority chain (lines 255–266) or one new input to the bridge's acknowledge; not run here |
 
 ---
 
