@@ -14,7 +14,7 @@
 | **Test** | [`hrm/ch4-attached-sprites`](../../hrm/ch4-attached-sprites): `make -C hrm/ch4-attached-sprites test`; the expected red exits nonzero |
 | **Assertions** | 1 red of 4 graded (3 passed, 1 failed): `ATTACH-BIT-VALID-ONLY-FOR-ODD-SPRITE` — expected: SPR0CTL bit 7 set alone leaves the sprdata trace identical to the neither-bit-set baseline; observed: the trace differs. Green on the same fixture: `ATTACH-BIT-ODD-SPRITE-ENABLES-ATTACHMENT`, `FIXTURE-LIVE-DATA-PATH`, `CODE-0000-YIELDS-TRANSPARENT-PIXEL` |
 | **Verdict of the four** | **three of four take the bit from the odd sprite only**, as the manual states; outside the emulators, the 8373R4 dissection stores bit 7 for the odd sprites only — see *What other Commodore documents say*. Hardware: not measured |
-| **Effort** | S: `denise_sprites.v` line 474 only — drop the `(!aga && attach0)` term; a narrower condition in its place, if the specialist finds the term was written for the original Denise, is the same line |
+| **Effort** | S — `denise_sprites.v` line 474 only — drop the `(!aga && attach0)` term; a narrower condition in its place, if the specialist finds the term was written for the original Denise, is the same line |
 
 ---
 
