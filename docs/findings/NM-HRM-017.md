@@ -5,11 +5,11 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Should NanoMig's Denise, in SuperHires with one or two bitplanes, show each pixel with two bits per component from the sixteen lower colour registers as p. 301's table encodes them (a solid colour-1 run reading COLOR05, not COLOR01 in full)? *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. Closes when the specialist decides on the evidence below. |
+| **What is asked of a reader** | Should NanoMig's Denise, in SuperHires with one or two bitplanes, show each pixel with two bits per component from the sixteen lower colour registers as p. 301's table encodes them (a solid colour-1 run reading COLOR05, not COLOR01 in full)? *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. Closes when an Amiga specialist accepts or rejects the change under *Decision*. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: the code is upstream's (the MiSTer row below shows the same `denise_colortable.v` interface and the same depth-force line); a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Scope** | NanoMig's Denise colour table and bitplane path in SuperHires at BPU = 2, COLOR00–COLOR0F; isolated through solid runs of value 0 to 3 and 18 one-bit changes to colours 0, 2 and 3; two mixed runs are driven, not graded; the Denise revision the page describes is `unknown` |
 | **Software impact** | `unknown; no named affected software` |
-| **Chapter** | 3 — Playfield · *Amiga Hardware Reference Manual*, 3rd ed., 1991, printed p. 297, 300 and 301, with the colour table on p. 301 · claim ids as the assertion messages carry them: `SHRES-REINTERPRETS-SAME-REGISTERS`: `C-shr.c06`, `C-superhires-color.c1`, p. 297; `SHRES-BITPLANE-TABLE-COLOR-00` to `-0F`: each its row id `C-shrc.rXX` and its sixteen `C-shres-bpl-bits.cNNN` ids, 288 in all; `SHRES-USES-SIXTEEN-LOWER-REGISTERS`: `C-shrc.c04`, `C-shrc.c05`; `SHRES-TWO-BITS-RESOLUTION`: `C-shrc.c01`, `C-shrc.c02`; `OCS-BASELINE-0RGB-FORMAT`: `C-shres-color.c4` to `c7`. `CONTROL-KNOWN-VALUES-ARRIVE`, `FIXTURE-DATA-PATH-LIVE` and `SELECT-REGISTER-ADDRESSES-CORRECTLY` carry no claim id, and no assertion message cites p. 300 |
+| **Chapter** | 3 — Playfield; Appendix C, printed pp. 297, 300 and 301 (the colour table on p. 301) · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids as the assertion messages carry them: `SHRES-REINTERPRETS-SAME-REGISTERS`: `C-shr.c06`, `C-superhires-color.c1`, p. 297; `SHRES-BITPLANE-TABLE-COLOR-00` to `-0F`: each its row id `C-shrc.r00` to `C-shrc.r0F` and its sixteen `C-shres-bpl-bits.cNNN` ids, and on `-00`, `-05`, `-0A` and `-0F` the legend ids `C-shrc.srcb0` to `C-shrc.srcb3` with `C-shres-symbols.c1` to `C-shres-symbols.c12`, 288 in all; `SHRES-USES-SIXTEEN-LOWER-REGISTERS`: `C-shrc.c04`, `C-shrc.c05`; `SHRES-TWO-BITS-RESOLUTION`: `C-shrc.c01`, `C-shrc.c02`; `OCS-BASELINE-0RGB-FORMAT`: `C-shres-color.c4` to `c7`. `CONTROL-KNOWN-VALUES-ARRIVE`, `FIXTURE-DATA-PATH-LIVE` and `SELECT-REGISTER-ADDRESSES-CORRECTLY` carry no claim id, and no assertion message cites p. 300 |
 | **Module** | `denise_colortable.v`, `denise.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise_colortable.v) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v); inherited (MiSTer and TC64 have the same colour-table code; their `denise.v` adds a `window_ena &&` term to the depth line) |
 | **Test** | [`hrm/ch3-shres-bitplane-colour-encoding`](../../hrm/ch3-shres-bitplane-colour-encoding): `make -C hrm/ch3-shres-bitplane-colour-encoding test` — `15 passed, 9 failed`; the nine reds are expected and the run exits nonzero |
 | **Assertions** | 9 red: `SHRES-REINTERPRETS-SAME-REGISTERS`; `SHRES-BITPLANE-TABLE-COLOR-01`, `SHRES-BITPLANE-TABLE-COLOR-02`, `SHRES-BITPLANE-TABLE-COLOR-03`, `SHRES-BITPLANE-TABLE-COLOR-05`, `SHRES-BITPLANE-TABLE-COLOR-0A`, `SHRES-BITPLANE-TABLE-COLOR-0F`; `SHRES-USES-SIXTEEN-LOWER-REGISTERS`; `SHRES-TWO-BITS-RESOLUTION`. Expected, for `SHRES-REINTERPRETS-SAME-REGISTERS`: SuperHires reads a solid colour-1 run differently from plain mode (COLOR05, `0x55AAFF` or `0x4488CC`); observed: `0x4499EE`, COLOR01 in full, in both. Each of the nine is green on a lookup that pairs adjacent pixels, and on one that pairs pixels 0/2 and 1/3, at every group alignment; the other eight are in the table under *RTL and measurement* |
@@ -97,7 +97,7 @@ so one sample per clock is one 35 ns pixel.
 
 ### Measured
 
-The package reports `15 passed, 9 failed`. Every stimulus writes the sixteen
+The package reports `15 passed, 9 failed`. Every stimulus but the four controls' writes the sixteen
 lower registers from one palette by p. 301's row formula, two bits per
 component for each colour (colour 0: red 0, green 1, blue 2; colour 1: 1, 2, 3;
 colour 2: 2, 3, 0; colour 3: 3, 0, 1), sets BPU = 2, and drives *solid runs*:
@@ -139,7 +139,7 @@ both of its halves.
   which half of it, a given pixel reads, nor what a pixel shows in the two
   positions the key marks `--`. The two lookups disagree on mixed pairs, which
   the package therefore drives but does not grade.
-- **Depth.** Every stimulus runs at BPU = 2, the ceiling p. 300 gives; one
+- **Depth.** Every SuperHires stimulus runs at BPU = 2, the ceiling p. 300 gives; one
   bitplane is not measured.
 - **The lookup columns are derived**, not run.
 - **A split witness.** WinUAE and vAmiga pair pixels, and differ from each other
@@ -181,4 +181,4 @@ Each lower register is read for two pixels, the first and third or the second an
 
 **Suggested change:** as with [NM-HRM-016](NM-HRM-016.md), `denise_colortable` needs a mode input it does not have, and at a depth of one or two bitplanes its address must reach COLOR04–COLOR0F, which `denise.v:369-370` keep out of reach. The two findings are one mechanism and should be closed together or not at all; they are kept as separate entries because they rest on separate measurements at separate boundaries.
 
-Closes when the specialist decides on this evidence. To re-run the measurement: `make -C hrm/ch3-shres-bitplane-colour-encoding test`; the nine reds are expected and the run exits nonzero.
+It closes as stated in *What is asked of a reader*. To re-run the measurement: `make -C hrm/ch3-shres-bitplane-colour-encoding test`; the nine reds are expected and the run exits nonzero.
