@@ -5,7 +5,7 @@
 | **Lifecycle** | open |
 | **Filed against** | the RTL |
 | **Evidence** | a test fails against the page; the implementations split |
-| **What is asked of a reader** | Decide whether the RTL should change. *Suggested change* states one option; the decision belongs to an Amiga specialist, not to this repository. It closes when the specialist decides on the evidence below or the observation named in *Risks and unknowns* is made. |
+| **What is asked of a reader** | Should NanoMig's Denise, in SuperHires, show sprite colours with two bits per component as p. 302's table encodes them in COLOR16–COLOR31, instead of reading those registers as ordinary twelve-bit colours? *Suggested change* under *Decision* states one option; the decision belongs to an Amiga specialist, not to this repository. It closes when the specialist decides on the evidence below or the observation named in *Risks and unknowns* is made. |
 | **Report to** | `upstream first` — MiSTer-devel/Minimig-AGA_MiSTer: the code is upstream's (the MiSTer row below shows the same code); a fix there must then be ported to NanoMig deliberately, as there is no automatic merge |
 | **Scope** | NanoMig's Denise colour table and sprite path in SuperHires, COLOR16–COLOR31; isolated through sprite 0 (COLOR17–COLOR19), sprites 2, 4 and 6, and an attached pair (COLOR20, COLOR24, COLOR28); the Denise revision the page describes is `unknown` |
 | **Software impact** | `unknown; no named affected software` |
@@ -145,8 +145,8 @@ prints, in that channel's top two bits (p. 301).
 | **vAmiga** | [`PixelEngine.h:301-305`](https://github.com/dirkwhoffmann/vAmiga/blob/35de004a2f1502c2811b9a8ebcde4d0979a98937/Core/Components/Denise/PixelEngine.h#L301-L305) | pair-encodes, ECS Denise only, from the lower sixteen registers alone; a sprite pixel is never looked up in `$10`–`$1F` |
 | **Denise** | [`denise.cpp:200`](https://github.com/piciji/denise/blob/1cb7d45117893c76025d32260edb6008001344f9/emulation/libami/video/denise.cpp#L200) | one colour table, no mode |
 | **Copperline** | [`sprite.rs:121-146`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/sprite.rs#L121-L146) | a sprite's colour is one register in every mode |
-| **MiSTer** | [`denise_colortable.v:32-35`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L32-L35) | descendant — no `shres`/`spres` port, same as NanoMig; its sprite module has the identical `spres` case, still only driving `shift` |
-| **TC64** | [`denise_colortable.v:32-35`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L32-L35) | descendant — the same lines |
+| **MiSTer** | [`denise_colortable.v:7-20`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_colortable.v#L7-L20) | descendant — no `shres`/`spres` port, same as NanoMig; its sprite module has the identical `spres` case, still only driving `shift` |
+| **TC64** | [`denise_colortable.v:7-20`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_colortable.v#L7-L20) | descendant — the same lines |
 
 **One of the four independent implementations reads the upper sixteen
 registers as the page describes: WinUAE, on ECS Denise only.** vAmiga
@@ -168,14 +168,10 @@ inherited that absence, it did not arrive at it independently.
 
 ## Decision
 
-Decide whether the RTL should change; the decision belongs to an Amiga
-specialist. **Suggested change:** the feature is absent rather than wrong, and
+**Suggested change:** the feature is absent rather than wrong, and
 adding it is not a one-line change: `denise_colortable` would need a mode input
 it does not have, and the sprite path would need to show a pixel's colour from
-the half of a register that holds it, two bits per component. For one revision
-the 8373R4 dissection answers the question of whether ECS Denise does this: in
-SuperHires it indexes the upper sixteen registers by two sprite pixels and shows
-two bits per component.
+the half of a register that holds it, two bits per component.
 
 Closes when the specialist decides on this evidence, or when the observation
 named in *Risks and unknowns* is made; to re-run the measurement,
