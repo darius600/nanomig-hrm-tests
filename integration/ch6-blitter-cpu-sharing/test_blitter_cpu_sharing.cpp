@@ -24,7 +24,7 @@
 // MUTATION A4PRE stimulus red nasty-mode blit shrunk to a near-instant one-word transfer (prog_sharing_nasty_tiny.s), via NMH_MUTATE=A4PRE
 // MUTATION A4 stimulus red BLTPRI cleared (nasty -> share), via NMH_MUTATE=A4
 // MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
-// MUTATION A4-SHARE stimulus red the no-DMA run (no blitter, so no contention) substituted for the share-mode run on the graded side, over its own first-to-last CPU access span; the reference run is unchanged, via NMH_MUTATE=A4-SHARE
+// MUTATION A4-SHARE none impossible: every share-mode blit takes chip-bus slots that the continuously ready loop uses, so no input with a live blit window leaves the loop at its free rate.
 // MUTATION A8PRE stimulus red the no-DMA run (no blitter, so no DMA access takes a slot the 68000 was ready for) substituted for the share-mode run, via NMH_MUTATE=A8PRE
 // MUTATION A8 implementation red private copy of minimig_m68k_bridge.v outside the repository in which the 68000 is not acknowledged in the first two free colour clocks after a colour clock the chipset took from it; the unchanged comparator finds an even-numbered free slot left unused between every missed even cycle and its access (111 of 111 on fx68k, 123 of 123 on TG68K; on fx68k A11 also reads red, since the display windows take colour clocks from the 68000 too), via the binary built from that copy, run with NMH_MUTATE=A8
 // MUTATION A9PRE stimulus red the four-plane run substituted with the no-DMA aligned run (no display windows), via NMH_MUTATE=A9PRE
@@ -38,7 +38,7 @@
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
 // MUTATION PARITY-REF stimulus red the lores-plane capture substituted with the no-bitplane-DMA baseline (no BPL1 reads at all), via NMH_MUTATE=PARITY-REF
 // MUTATION PARITY stimulus green no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator): PARITY is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=PARITY
-// MUTATION ORDER stimulus red the 500-word CPU copy loop substituted with a 50-word copy (shorter, nonzero span, finishes before the blit), via NMH_MUTATE=ORDER
+// MUTATION ORDER none impossible: an uncontended blit of the same size has a span fixed by its own cycle count, and no same-size uncontended stimulus lets the 68000 finish first.
 // MUTATION TAS-SPAN-PRE stimulus red the TAS.B replaced by NOP, so the TAS address shows three cycles instead of five (prog_tas_span_mut.s), via NMH_MUTATE=TAS-SPAN-PRE
 // MUTATION TAS-SPAN none impossible unfalsifiable at this boundary: the distance from the TAS read to its write is fixed by the 68000's own read-modify-write cycle and the chip set can only lengthen it, never shorten it, so no stimulus brings it down to one slot or less; replacing the TAS by another instruction changes the shape the precondition checks (TAS-SPAN-PRE) instead of the span this line grades
 // MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included; measured 0 in-window writes on fx68k (red through both the existence and the every-gap-equals-period clause) and 1 on TG68K (existence clause stays green; red only through the every-gap-equals-period clause, since a single in-window write forms no in-window gap), via NMH_MUTATE=FASTRUN
@@ -104,7 +104,6 @@ constexpr uint32_t kEcDummy   = 0x0C0002;
 // prog_copyloop.s addresses.
 constexpr uint32_t kClDst = 0x0C8800;
 constexpr uint32_t kClN   = 500;
-constexpr uint32_t kClShortN = 50; // ORDER's own mutation (prog_copyloop_tiny.s, CL_SHORT set)
 
 // prog_tas_share.s address.
 constexpr uint32_t kTasAddr = 0x0C2000;
@@ -816,7 +815,7 @@ int main(int argc, char** argv) {
         bool bbusy_ok = bbusy_cap.loaded && bbusy_cap.done.has_value() && bbusy_cap.peeks.size() == 1 &&
                          bbusy_cap.peeks[0].has_value();
         bool bbusy_busy = bbusy_ok && (*bbusy_cap.peeks[0] & 0x4000);
-        uint32_t dst_n = mutated_bbusy ? 1 : kEcDstLargeN;
+        uint32_t dst_n = kEcDstLargeN;
         auto bbusy_dst_w = write_cycles_in_range(bbusy_cap.log, word_addr(kEcDst), word_addr(kEcDst) + dst_n);
         auto bbusy_res_w = write_cycles_in_range(bbusy_cap.log, word_addr(kResults), word_addr(kResults) + 1);
         uint64_t last_dst_write = bbusy_dst_w.empty() ? 0 : bbusy_dst_w.back();
@@ -996,11 +995,9 @@ int main(int argc, char** argv) {
             return {first, last};
         };
         // Graded side: the share-mode blit's active window. A4-SHARE-PRE's
-        // mutation shrinks the blit to nothing; A4-SHARE's mutation takes the
-        // no-DMA run, with no blitter and so no contention, over its own
-        // first-to-last CPU access span.
-        const Capture& cap = (mv == "A4-SHARE-PRE") ? cap_tiny : (mv == "A4-SHARE" ? cap_base : cap_share);
-        std::pair<uint64_t, uint64_t> gw = (mv == "A4-SHARE") ? cpu_span(cap_base) : dst_span(cap);
+        // mutation shrinks the blit to nothing.
+        const Capture& cap = (mv == "A4-SHARE-PRE") ? cap_tiny : cap_share;
+        std::pair<uint64_t, uint64_t> gw = dst_span(cap);
         auto [lo, hi] = gw;
         Rate win = cpu_rate(cap, lo, hi);
         // Reference: the same loop with the bus to itself (the BASELINE
@@ -1498,10 +1495,8 @@ int main(int argc, char** argv) {
 
     // ---- ORDER [p169] a blitter copy finishes before an equal-sized CPU copy loop
     {
-        bool mutated = (mv == "ORDER");
-        std::string cl_bin = dir + (mutated ? "/prog_copyloop_tiny.bin" : "/prog_copyloop.bin");
-        Capture cl = run_capture(cl_bin, kBootBudget + kDoneRunBudget, true, {});
-        uint32_t n = mutated ? kClShortN : kClN;
+        Capture cl = run_capture(dir + "/prog_copyloop.bin", kBootBudget + kDoneRunBudget, true, {});
+        uint32_t n = kClN;
         auto cl_writes = write_cycles_in_range(cl.log, word_addr(kClDst), word_addr(kClDst) + n);
         bool cl_ok = cl.loaded && cl.done.has_value() && cl_writes.size() == n;
         uint64_t cl_first = cl_writes.empty() ? 0 : *std::min_element(cl_writes.begin(), cl_writes.end());

@@ -309,7 +309,8 @@ come.
 Mutation (`NMH_MUTATE=BBUSY-PREDICTS`): the true 200-word build is
 replaced with the true one-word (`SMALL`) build, already finished (BBUSY
 clear) by the time it is read; the unchanged "BBUSY set, more writes
-still to come" check must go red.
+still to come" check, still counting the 200-word destination range, must go
+red.
 
 ### A2 [p169,p186,p198] the CPU keeps running while the blitter works
 
@@ -413,10 +414,10 @@ so no division and no threshold enters.
 
 Expected value: the in-window rate is strictly lower than the free rate.
 
-Mutation (`NMH_MUTATE=A4-SHARE`, `stimulus red`): the graded side is the
-BASELINE run (no blitter, so no contention) over its own first-to-last CPU
-access span; the reference side is unchanged and the comparator is
-unchanged, so the two rates are equal and the check must go red.
+Mutation of A4-SHARE itself: `none impossible`. Every share-mode blit takes
+chip-bus slots that the continuously ready loop uses, so no input with a live
+blit window leaves the loop at its free rate. The graded window is the
+blit's own active window (`dst_span`) in every run.
 
 Precondition mutation (`prog_sharing_tiny.s`, `NMH_MUTATE=A4-SHARE-PRE`): the
 share-mode blit shrinks to a near-instant one-word transfer, so its active
@@ -924,11 +925,10 @@ Expected value: the blit's span is shorter.
 Measured: blit -- 8112 `clk_sys` (both cores, identical). CPU copy loop --
 44200 `clk_sys` (fx68k), 48112 `clk_sys` (TG68K).
 
-Mutation (`prog_copyloop_tiny.s`, `CL_SHORT` set, `NMH_MUTATE=ORDER`): the
-CPU copy loop shrinks to 50 words -- a nonzero span shorter than the
-blit's own, not a zero-length one that would fail by construction -- so
-it finishes before the blit; the unchanged "blit finishes first" ordering
-check must go red.
+Mutation of ORDER itself: `none impossible`. An uncontended blit of the same
+size has a span fixed by its own cycle count, and no same-size uncontended
+stimulus lets the 68000 finish first. The CPU copy loop is always the
+500-word `prog_copyloop.s`.
 
 ### TAS-WITHDRAWN [p196] TAS's read-modify-write cycle -- withdrawn
 
