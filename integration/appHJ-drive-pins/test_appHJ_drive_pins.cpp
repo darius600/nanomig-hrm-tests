@@ -168,6 +168,7 @@ struct MouseRun {
     std::vector<RamAccess> log;
     std::optional<uint16_t> fixture;
     std::vector<AppliedMouseEvent> applied;
+    size_t mouse_input_changes = 0; // changes of kbd_mouse_type/data/level seen over the run (PJ1)
 };
 
 // Runs prog_mouse.bin (or the contrast program the selector names),
@@ -216,6 +217,11 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
         for (size_t i = 0; i < events.size(); ++i) if (events[i].phase == 0 && events[i].step == 5) { skip_ev = (int)i; break; }
     }
 
+    // The harness's mouse-movement inputs, read at the start and after every
+    // cycle; PJ1 requires that they never change.
+    auto mouse_in = [&]() { return uint32_t(h.ports()->kbd_mouse_type) << 16 | uint32_t(h.ports()->kbd_mouse_data) << 8 | uint32_t(h.ports()->kbd_mouse_level); };
+    const uint32_t mouse_in0 = mouse_in();
+    uint32_t mouse_in_prev = mouse_in0;
     const uint32_t buf_w0 = word_addr(kBufBase);
     size_t samples_seen = 0;
     size_t ev_idx = 0;
@@ -224,6 +230,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     const uint64_t kMaxCycles = 10'000'000;
     for (uint64_t c = 0; c < kMaxCycles && !done_seen; ++c) {
         h.run_cycles(1);
+        { uint32_t m = mouse_in(); if (m != mouse_in_prev) { ++r.mouse_input_changes; mouse_in_prev = m; } }
         auto& lg = h.ram_log();
         for (; log_seen < lg.size(); ++log_seen) {
             const auto& a = lg[log_seen];
@@ -540,7 +547,10 @@ int main(int argc, char** argv) {
         uint8_t want_j1 = ph.use_joystick1 ? want : 0, want_j0 = ph.use_joystick1 ? 0 : want;
         if (e.j0 != want_j0 || e.j1 != want_j1 || e.mb != 0) pj1_pins_ok = false;
     }
-    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_pins_ok;
+    bool pj1_idle_ok = (mr.mouse_input_changes == 0);
+    checks.note("PJ1 mouse-movement inputs (kbd_mouse_type, kbd_mouse_data, kbd_mouse_level): " +
+                std::to_string(mr.mouse_input_changes) + " changes over the run");
+    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_pins_ok && pj1_idle_ok;
     checks.expect(pj1_ok, "PJ1 [SPECIFICATION.md 4.5]: the driver's own action record shows every scheduled "
                            "change applied, at its scheduled sample index, on the proposition's two pins only, "
                            "with no other controller-port input, mouse movement or mouse-button activity");
