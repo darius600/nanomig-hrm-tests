@@ -22,7 +22,8 @@
 // MUTATION P4 stimulus red NMH_MUTATE=P4-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 3 (prog_mouse_sw3.bin), the action record and the other preconditions staying true, so the register that P4 reads holds the other port's count; TG68K FAIL (P4; 14 passed, 1 failed), fx68k FAIL (P4; 14 passed, 1 failed).
 // MUTATION PJ1 stimulus red NMH_MUTATE=PJ1: one scheduled pin change (phase 0, step 5) is dropped while the grader keeps its plan; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 2 lines, so the window holds fewer than 3 real stored samples; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
-// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so one stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1 and no frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so in every frame the stored line 256 follows line 254: VHPOSR bits 15-8 go from $FE to $00 with V8 going from 0 to 1, not at a frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAMEEND: the sampling loop learns the frame's last line from one frame wrap and leaves it out (prog_mouse_pj2e.bin), so the stored line before line 0 is the line before the last one; the return to $00 still shows V8 going from 1 to 0 and the continuity clause holds, but the store-time gap there is twice the run's median; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: the program writes JOYTEST ($0404) after sample 8, inside phase 0's baseline window (prog_mouse_pj3.bin), so the baseline samples of JOY0DAT and JOY1DAT differ while the action record stays true; TG68K FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ1 stimulus red NMH_MUTATE=PJ3-KBDMOUSE: a mouse count is injected through kbd_mouse_* during phase 0's baseline window, which is the mouse movement PJ1's idle clause forbids; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is applied to mouse_buttons bit 1 instead of mouse_buttons bit 2, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
@@ -135,7 +136,8 @@ MousePhase kMousePhases[4] = {
 };
 
 // One stored sample: VHPOSR, JOY0DAT, JOY1DAT and VPOSR (bit 0 is V8).
-struct Sample3 { std::optional<uint16_t> v, j0, j1, vp; };
+// t is the time of the VHPOSR word's store at the Chip-memory port.
+struct Sample3 { std::optional<uint16_t> v, j0, j1, vp; std::optional<uint64_t> t; };
 
 std::vector<Sample3> extract_samples3(const std::vector<RamAccess>& log, uint32_t base_w, int count) {
     std::vector<Sample3> s(count);
@@ -145,7 +147,7 @@ std::vector<Sample3> extract_samples3(const std::vector<RamAccess>& log, uint32_
         uint32_t idx = off / 4;
         if (idx >= (uint32_t)count) continue;
         uint32_t sub = off % 4;
-        if (sub == 0) s[idx].v = a.data; else if (sub == 1) s[idx].j0 = a.data;
+        if (sub == 0) { s[idx].v = a.data; s[idx].t = a.cycle; } else if (sub == 1) s[idx].j0 = a.data;
         else if (sub == 2) s[idx].j1 = a.data; else s[idx].vp = a.data;
     }
     return s;
@@ -182,6 +184,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     NanomigHarness h(cfg);
     std::string bin = "/prog_mouse.bin";
     if (mutate == "PJ2-FRAME") bin = "/prog_mouse_pj2.bin";
+    if (mutate == "PJ2-FRAMEEND") bin = "/prog_mouse_pj2e.bin";
     if (mutate == "PJ3") bin = "/prog_mouse_pj3.bin";
     for (int i = 0; i < 4; ++i)
         if (mutate == std::string("P") + std::to_string(i + 1) + "-WRONGREG") bin = "/prog_mouse_sw" + std::to_string(i) + ".bin";
@@ -642,11 +645,29 @@ int main(int argc, char** argv) {
                            (*samples3[idx - 1].vp & 1) == 1 && (*samples3[idx].vp & 1) == 0;
         if (!frame_start) pj2_continuity_ok = false;
     }
-    bool pj2_ok = pj2_population_ok && pj2_continuity_ok;
+    // One sample is stored per line, so a line the loop missed doubles the gap
+    // between two consecutive store times, also at a frame's last line. Every
+    // gap must be at most 1.5 times the median gap of the run.
+    std::vector<uint64_t> gaps;
+    for (size_t idx = 1; idx < samples3.size(); ++idx)
+        if (samples3[idx - 1].t && samples3[idx].t) gaps.push_back(*samples3[idx].t - *samples3[idx - 1].t);
+    uint64_t gap_median = 0, gap_max = 0;
+    bool pj2_gap_ok = !gaps.empty();
+    if (!gaps.empty()) {
+        std::vector<uint64_t> sorted = gaps;
+        std::sort(sorted.begin(), sorted.end());
+        gap_median = sorted[sorted.size() / 2];
+        gap_max = sorted.back();
+        for (uint64_t g : gaps) if (2 * g > 3 * gap_median) pj2_gap_ok = false;
+    }
+    checks.note("PJ2 store-time gap between consecutive samples, in clock cycles: median " +
+                std::to_string(gap_median) + ", maximum " + std::to_string(gap_max));
+    bool pj2_ok = pj2_population_ok && pj2_continuity_ok && pj2_gap_ok;
     checks.expect(pj2_ok, "PJ2 [SPECIFICATION.md 4.5]: every hold window contains at least 3 graded samples, "
                            "and VHPOSR bits 15-8 of consecutive stored samples differ by +1 modulo 256 or "
                            "return to $00 at a frame start, where V8 "
-                           "(VPOSR bit 0) goes from 1 to 0");
+                           "(VPOSR bit 0) goes from 1 to 0, and no gap between the store times of "
+                           "consecutive samples exceeds 1.5 times the run's median gap");
 
     // P1-P4 [spec 3.7]: gated on section 4's preconditions -- a failed
     // precondition makes the propositions "not checkable", never FAIL.

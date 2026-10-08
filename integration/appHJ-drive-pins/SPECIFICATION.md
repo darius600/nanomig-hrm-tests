@@ -478,7 +478,7 @@ pair, 1=right controller pair").
 | Id | Precondition |
 |----|--------------|
 | PJ1 | The harness input log shows the scheduled changes, at the scheduled times, on the proposition's two pins. It shows no other controller-port input, mouse movement or mouse-button activity. |
-| PJ2 | Every hold window contains at least 3 graded samples. VHPOSR bits 15-8 of consecutive samples differ by +1 modulo 256, or return to $00 at the start of a frame, which VPOSR bit 0 (V8, p. 238) shows by going from 1 in the earlier sample to 0 in the later one, so the loop kept pace. |
+| PJ2 | Every hold window contains at least 3 graded samples. VHPOSR bits 15-8 of consecutive samples differ by +1 modulo 256, or return to $00 at the start of a frame, which VPOSR bit 0 (V8, p. 238) shows by going from 1 in the earlier sample to 0 in the later one. Every gap between the store times of consecutive samples is at most 1.5 times the run's median gap: one sample is stored per line, so a line the loop missed, also a frame's last line, doubles a gap. So the loop kept pace. |
 | PJ3 | In the baseline window all samples of JOY0DAT and JOY1DAT are identical: nothing else moves the counters. |
 
 The harness input that carries each pin is fixed by section 3.4 as part of the
@@ -493,6 +493,7 @@ E1-E3.
 | PJ1 | Apply one phase's schedule to the corresponding pins of the other port. | PJ1 reports the port actually driven, which is not the proposition's. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
+| PJ2 | Leave the frame's last line out of the sampling loop (the program learns that line from one frame wrap before it starts sampling). | The return to $00 still shows V8 going from 1 to 0, but the gap before it is twice the median, so PJ2 is not met. |
 | PJ3 | The program writes JOYTEST once inside the baseline window, which sets all four joystick-mouse counters at once. The harness input log is unchanged, so PJ1 and PJ2 stay met. | The baseline samples differ, so PJ3 is not met. |
 | PJ1 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. | PJ1 reports the mouse movement, and the baseline samples differ, so PJ3 is not met either. |
 
@@ -803,7 +804,8 @@ places prb at BFD100 in the CIAB map. The address is used.
 Three programs, `prog_mouse.s` (section 4), `prog_pot.s` (section 5) and
 `prog_drivelight.s` (section 6), run by `test_appHJ_drive_pins.cpp`. The
 contrasts of 8.4 are wrappers that set one symbol and include a base program:
-`prog_mouse_pj2.s` (PJ2-FRAME), `prog_mouse_pj3.s` (PJ3) and
+`prog_mouse_pj2.s` (PJ2-FRAME), `prog_mouse_pj2e.s` (PJ2-FRAMEEND),
+`prog_mouse_pj3.s` (PJ3) and
 `prog_mouse_sw0.s` to `prog_mouse_sw3.s` (P1-WRONGREG to P4-WRONGREG) include
 `prog_mouse.s`; `prog_pot_pp2.s`, `prog_pot_pp3.s` (PP2, PP3) and
 `prog_pot_p5.s`, `prog_pot_p6.s`, `prog_pot_p8.s` (P5-, P6-, P8-WRONGREG)
@@ -872,6 +874,16 @@ not graded:
 
 fdd_led never moves over the whole sequence. Both cores read identically.
 
+PJ2 prints the store-time gap between consecutive samples:
+
+    MEASURED: PJ2 store-time gap between consecutive samples, in clock
+    cycles: median 1768, maximum 1864 (fx68k)
+    MEASURED: PJ2 store-time gap between consecutive samples, in clock
+    cycles: median 1848, maximum 1848 (TG68K)
+
+The maximum is within 1.5 times the median on both cores; under PJ2-FRAME and
+PJ2-FRAMEEND it is twice the median.
+
 The DAT bit of each pot pin per step (one value per step; C7 is not graded)
 prints once per core, identically:
 
@@ -935,6 +947,7 @@ whole section's propositions to "not checkable":
 | PJ1 | `PJ1 [...]` | P1, P2, P3, P4 all become "not checkable" (section 4 gated) | 10 passed, 1 failed (PJ1) |
 | PJ2 | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
 | PJ2-FRAME | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
+| PJ2-FRAMEEND | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
 | PJ3 | `PJ3 [...]` | P1, P2, P3, P4 all become "not checkable"; PJ1 and PJ2 stay met | 10 passed, 1 failed (PJ3) |
 | PJ3-KBDMOUSE | `PJ1 [...]` and `PJ3 [...]` | the injected mouse count is the mouse movement PJ1's own idle clause forbids; P1, P2, P3, P4 all become "not checkable" | 9 passed, 2 failed (PJ1, PJ3) |
 | PP1 | `PP1 [...]` | P5, P6, P8 all become "not checkable" (section 5 gated) | 11 passed, 1 failed (PP1) |

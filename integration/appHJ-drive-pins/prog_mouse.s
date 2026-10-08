@@ -16,6 +16,20 @@ start:
         move.w  #0,BPLCON0(a0)                 ; light pen latch off (SPECIFICATION.md 3.2)
         move.w  #FIXTURE_VALUE,FIXTURE_ADDR    ; fixture, stored before anything is graded
 
+        ifd     PJ2SKIPEND
+        move.b  VHPOSR(a0),d7                  ; PJ2 contrast: learn the frame's last line from one
+.learn: move.b  VHPOSR(a0),d0                  ; frame wrap, VHPOSR bits 15-8 going to $00 from a
+        cmp.b   d7,d0                          ; value other than $FF (line 256 follows $FF)
+        beq.s   .learn
+        tst.b   d0
+        bne.s   .lnext
+        cmp.b   #$FF,d7
+        bne.s   .learned
+.lnext: move.b  d0,d7
+        bra.s   .learn
+.learned:
+        move.b  d7,d4                          ; d4 = bits 15-8 of the frame's last line
+        endif
         move.b  VHPOSR(a0),d7                  ; prime: current line value
         lea     BUFBASE,a1
         move.w  #TOTAL_SAMPLES-1,d6
@@ -30,6 +44,17 @@ start:
         cmp.b   #$FF,d0
         beq.s   .skip
 .noskip:
+        endif
+        ifd     PJ2SKIPEND
+        cmp.b   d4,d0                          ; PJ2 contrast: the frame's last line (V8 = 1) is
+        bne.s   .noend                         ; not sampled either, so the next stored sample is
+        move.w  VPOSR(a0),d1                   ; line 0 of the next frame
+        btst    #0,d1
+        beq.s   .noend
+.endsk: move.b  VHPOSR(a0),d0
+        cmp.b   d4,d0
+        beq.s   .endsk
+.noend:
         endif
         move.b  d0,d7
         move.w  VHPOSR(a0),(a1)+
