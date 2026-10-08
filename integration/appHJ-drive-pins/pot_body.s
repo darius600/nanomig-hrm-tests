@@ -1,7 +1,7 @@
 ; pot_body.s -- P5-P8 (SPECIFICATION.md section 5): four pins (POT0X,
 ; POT0Y, POT1X, POT1Y), each run through the same eight-step sequence
-; (SPECIFICATION.md 5.2 table). A wrapper sets PP2MUT, PP3MUT or WRONGREG
-; before including this file: prog_pot_pp2.s and prog_pot_pp3.s give PP2's
+; (SPECIFICATION.md 5.2 table). A wrapper sets PP2MUT, PP3MUT, or WRONGREG
+; with WRONGBIT and OTHERBIT, before including this file: prog_pot_pp2.s and prog_pot_pp3.s give PP2's
 ; and PP3's own contrasts (SPECIFICATION.md 5.5), prog_pot_p5/p6/p8.s the
 ; register contrasts of P5, P6 and P8 (5.6); the base run (prog_pot.s) sets
 ; none.

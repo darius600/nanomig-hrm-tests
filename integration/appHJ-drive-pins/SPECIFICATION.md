@@ -493,7 +493,7 @@ E1-E3.
 | PJ1 | Apply one phase's schedule to the corresponding pins of the other port. | PJ1 reports the port actually driven, which is not the proposition's. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
-| PJ2 | Leave the frame's last line out of the sampling loop (the program learns that line from one frame wrap before it starts sampling). | The return to $00 still shows V8 going from 1 to 0, but the gap before it is twice the median, so PJ2 is not met. |
+| PJ2 | Leave the frame's last line out of the sampling loop (the program learns that line from one frame wrap before it starts sampling). | The return to $00 still shows V8 going from 1 to 0, but the gap before it is about twice the median, so PJ2 is not met. |
 | PJ3 | The program writes JOYTEST once inside the baseline window, which sets all four joystick-mouse counters at once. The harness input log is unchanged, so PJ1 and PJ2 stay met. | The baseline samples differ, so PJ3 is not met. |
 | PJ1 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. | PJ1 reports the mouse movement, and the baseline samples differ, so PJ3 is not met either. |
 
@@ -806,7 +806,9 @@ places prb at BFD100 in the CIAB map. The address is used.
 
 Three programs, `prog_mouse.s` (section 4), `prog_pot.s` (section 5) and
 `prog_drivelight.s` (section 6), run by `test_appHJ_drive_pins.cpp`. The
-contrasts of 8.4 are wrappers that set one symbol and include a base program:
+contrasts of 8.4 are wrappers that set their contrast's symbols (one each;
+`prog_pot_p5.s`, `prog_pot_p6.s` and `prog_pot_p8.s` set three: WRONGREG,
+WRONGBIT and OTHERBIT) and include a base program:
 `prog_mouse_pj2.s` (PJ2-FRAME), `prog_mouse_pj2e.s` (PJ2-FRAMEEND),
 `prog_mouse_pj3.s` (PJ3) and
 `prog_mouse_sw0.s` to `prog_mouse_sw3.s` (P1-WRONGREG to P4-WRONGREG) include
@@ -885,7 +887,7 @@ PJ2 prints the store-time gap between consecutive samples:
     cycles: median 1848, maximum 1848 (TG68K)
 
 The maximum is within 1.5 times the median on both cores; under PJ2-FRAME and
-PJ2-FRAMEEND it is twice the median.
+PJ2-FRAMEEND it is about twice the median (two lines).
 
 The DAT bit of each pot pin per step (one value per step; C7 is not graded)
 prints once per core, identically:
