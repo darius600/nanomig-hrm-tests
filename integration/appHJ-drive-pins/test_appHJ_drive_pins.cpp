@@ -18,6 +18,7 @@
 // MUTATION P4 stimulus red NMH_MUTATE=P4-WRONGPORT: P4's schedule is applied to joystick1 instead of joystick0; TG68K FAIL (P4; 14 passed, 1 failed), fx68k FAIL (P4; 14 passed, 1 failed).
 // MUTATION PJ1 stimulus red NMH_MUTATE=PJ1: one scheduled pin change (phase 0, step 5) is dropped while the grader keeps its plan; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 2 lines, so the window holds fewer than 3 real stored samples; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so one stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1 and no frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: a mouse count is injected through kbd_mouse_* during phase 0's baseline window; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
 // MUTATION P5 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is redirected to the input wired for P6 (mouse_buttons bit 1) instead of P5's own (bit 2), so POT0X's DATLX bit never moves; TG68K FAIL (P5; 14 passed, 1 failed), fx68k FAIL (P5; 14 passed, 1 failed).
 // MUTATION P6 stimulus red NMH_MUTATE=P6-WRONGPIN: P6's press is redirected to P5's input (mouse_buttons bit 2); TG68K FAIL (P6; 14 passed, 1 failed), fx68k FAIL (P6; 14 passed, 1 failed).
@@ -125,17 +126,19 @@ MousePhase kMousePhases[4] = {
     {false, 3, 1},  // P4 M1V
 };
 
-struct Sample3 { std::optional<uint16_t> v, j0, j1; };
+// One stored sample: VHPOSR, JOY0DAT, JOY1DAT and VPOSR (bit 0 is V8).
+struct Sample3 { std::optional<uint16_t> v, j0, j1, vp; };
 
 std::vector<Sample3> extract_samples3(const std::vector<RamAccess>& log, uint32_t base_w, int count) {
     std::vector<Sample3> s(count);
     for (auto& a : log) {
         if (!a.is_write || a.word_addr < base_w) continue;
         uint32_t off = a.word_addr - base_w;
-        uint32_t idx = off / 3;
+        uint32_t idx = off / 4;
         if (idx >= (uint32_t)count) continue;
-        uint32_t sub = off % 3;
-        if (sub == 0) s[idx].v = a.data; else if (sub == 1) s[idx].j0 = a.data; else s[idx].j1 = a.data;
+        uint32_t sub = off % 4;
+        if (sub == 0) s[idx].v = a.data; else if (sub == 1) s[idx].j0 = a.data;
+        else if (sub == 2) s[idx].j1 = a.data; else s[idx].vp = a.data;
     }
     return s;
 }
@@ -165,7 +168,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     MouseRun r;
     Config cfg;
     NanomigHarness h(cfg);
-    r.loaded = h.load_program(dir + "/prog_mouse.bin") > 0;
+    r.loaded = h.load_program(dir + (mutate == "PJ2-FRAME" ? "/prog_mouse_pj2.bin" : "/prog_mouse.bin")) > 0;
     if (!r.loaded) return r;
     r.released = h.boot(kBootBudget).cpu_released;
 
@@ -212,7 +215,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
             const auto& a = lg[log_seen];
             if (!a.is_write) continue;
             if (a.word_addr == word_addr(kDoneAddr) && a.data == kDoneValue) { done_seen = true; }
-            if (a.word_addr == buf_w0 + 3 * samples_seen) {
+            if (a.word_addr == buf_w0 + 4 * samples_seen) {
                 // sample `samples_seen` (0-indexed) has just started being
                 // stored (its VHPOSR word). Apply any event whose threshold
                 // is already reached using this PRE-increment count, so a
@@ -592,12 +595,18 @@ int main(int argc, char** argv) {
         if (!samples3[idx - 1].v || !samples3[idx].v) continue;
         uint8_t prev_hi = uint8_t(*samples3[idx - 1].v >> 8);
         uint8_t cur_hi  = uint8_t(*samples3[idx].v >> 8);
-        if (cur_hi != uint8_t(prev_hi + 1) && cur_hi != 0) pj2_continuity_ok = false;
+        if (cur_hi == uint8_t(prev_hi + 1)) continue;
+        // The return to $00 is allowed only at the start of a frame: V8
+        // (VPOSR bit 0) was 1 in the previous sample and is 0 in this one.
+        bool frame_start = cur_hi == 0 && samples3[idx - 1].vp && samples3[idx].vp &&
+                           (*samples3[idx - 1].vp & 1) == 1 && (*samples3[idx].vp & 1) == 0;
+        if (!frame_start) pj2_continuity_ok = false;
     }
     bool pj2_ok = pj2_population_ok && pj2_continuity_ok;
     checks.expect(pj2_ok, "PJ2 [SPECIFICATION.md 4.5]: every hold window contains at least 3 graded samples, "
                            "and VHPOSR bits 15-8 of consecutive stored samples differ by +1 modulo 256 or "
-                           "return to $00 at a frame start");
+                           "return to $00 at a frame start, where V8 "
+                           "(VPOSR bit 0) goes from 1 to 0");
 
     // P1-P4 [spec 3.7]: gated on section 4's preconditions -- a failed
     // precondition makes the propositions "not checkable", never FAIL.

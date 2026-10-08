@@ -173,6 +173,7 @@ addresses on p. 229):
 
 | Register | Address | Access | Page row |
 |----------|---------|--------|----------|
+| VPOSR | $DFF004 | R | holds V8, the ninth bit of the vertical position (bit 0; p. 238) |
 | VHPOSR | $DFF006 | R | "Read vert and horiz. position of beam" (bits 15-8 are V7-V0, p. 238) |
 | JOY0DAT | $DFF00A | R | "Joystick-mouse 0 data (vert,horiz)" |
 | JOY1DAT | $DFF00C | R | "Joystick-mouse 1 data (vert,horiz)" |
@@ -213,7 +214,7 @@ addresses, the record cannot run.
   | stack | below $0FFF00, growing down | `PROGRAM_STACK` |
 
   The buffer starts above `DONE_ADDR`: section 4's run stores at least 2,048
-  samples of 6 bytes (four phases of at least 512 lines), which from
+  samples of 8 bytes (four phases of at least 512 lines), which from
   `RESULTS` would run through `DONE_ADDR`, and a stored word equal to
   `DONE_VALUE` ($600D, a possible VHPOSR value) would end the run there.
 - Programs are assembled for the 68000 (vasm's default CPU). Every register
@@ -368,8 +369,8 @@ usage: (pins 1,3=Yclock, pins 2,4=Xclock)".
 
 - It writes no counter register. JOYTEST is not used.
 - It runs a sampling loop: wait until VHPOSR bits 15-8 change, then read
-  VHPOSR, JOY0DAT and JOY1DAT, and store the three words as the next buffer
-  entry.
+  VHPOSR, JOY0DAT, JOY1DAT and VPOSR, and store the four words as the next
+  buffer entry.
 - The loop starts before the harness schedule and runs for a fixed number of
   lines longer than the schedule. The program then writes a done marker.
 
@@ -474,7 +475,7 @@ pair, 1=right controller pair").
 | Id | Precondition |
 |----|--------------|
 | PJ1 | The harness input log shows the scheduled changes, at the scheduled times, on the proposition's two pins. It shows no other controller-port input, mouse movement or mouse-button activity. |
-| PJ2 | Every hold window contains at least 3 graded samples. VHPOSR bits 15-8 of consecutive samples differ by +1 modulo 256, or return to $00 at the start of a frame (V8 is in VPOSR, p. 238), so the loop kept pace. |
+| PJ2 | Every hold window contains at least 3 graded samples. VHPOSR bits 15-8 of consecutive samples differ by +1 modulo 256, or return to $00 at the start of a frame, which VPOSR bit 0 (V8, p. 238) shows by going from 1 in the earlier sample to 0 in the later one, so the loop kept pace. |
 | PJ3 | In the baseline window all samples of JOY0DAT and JOY1DAT are identical: nothing else moves the counters. |
 
 The harness input that carries each pin is fixed by section 3.4 as part of the
@@ -487,6 +488,7 @@ E1-E3.
 |----|--------|--------|
 | PJ1 | Drop one scheduled change from the harness while the grader keeps its plan. | PJ1 reports the missing change. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
+| PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
 | PJ3 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. PJ3 covers both registers, so one connector suffices. | The baseline samples differ, so PJ3 is not met. |
 
 ### 4.6 Contrasting cases

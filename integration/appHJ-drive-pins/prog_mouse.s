@@ -2,9 +2,9 @@
 ; sampling loop over four back-to-back phases (M0H, M0V, M1H, M1V). The
 ; harness supplies the pin schedule of SPECIFICATION.md 4.2 by changing
 ; joystick0/joystick1 while this loop runs; the program itself is
-; schedule-agnostic, it only samples one triple per line change
-; (SPECIFICATION.md 3.3) for TOTAL_SAMPLES lines, covering all four
-; 512-line phases (16+192+288+16 each), then stops.
+; schedule-agnostic, it only samples four words (VHPOSR, JOY0DAT, JOY1DAT,
+; VPOSR) per line change (SPECIFICATION.md 3.3) for TOTAL_SAMPLES lines,
+; covering all four 512-line phases (16+192+288+16 each), then stops.
         include "nanomig.i"
         include "hj_defs.i"
 
@@ -23,10 +23,19 @@ start:
 .wait:  move.b  VHPOSR(a0),d0
         cmp.b   d7,d0
         beq.s   .wait
+        ifd     PJ2SKIP
+        cmp.b   #$FF,d0                        ; PJ2 contrast: line 255 is not sampled,
+        bne.s   .noskip                        ; so the next stored sample ends at low byte $00
+.skip:  move.b  VHPOSR(a0),d0                  ; without a frame start
+        cmp.b   #$FF,d0
+        beq.s   .skip
+.noskip:
+        endif
         move.b  d0,d7
         move.w  VHPOSR(a0),(a1)+
         move.w  JOY0DAT(a0),(a1)+
         move.w  JOY1DAT(a0),(a1)+
+        move.w  VPOSR(a0),(a1)+                ; V8 is bit 0 (SPECIFICATION.md 4.5, PJ2)
         dbra    d6,.loop
 
         DONE
