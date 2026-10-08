@@ -66,9 +66,9 @@
 // MUTATION P2c stimulus red NMH_MUTATE=P2-C: a fixed delay inserted between phase-2 samples, sparse enough to fail the density anchor B2/B3 -- measured FAIL on "P2c", both cores
 // MUTATION P2 stimulus red NMH_MUTATE=P2-SWAP: prog_p2_off.bin's capture (DMACON=$0000, fetches continue) graded in place of prog_p2.bin's -- measured FAIL on "P2", both cores
 // MUTATION P2-OFF stimulus red NMH_MUTATE=P2OFF-SWAP: prog_p2.bin's capture (COPEN cleared, no fetch continues) graded in place of prog_p2_off.bin's -- measured FAIL on "P2-OFF", both cores
-// MUTATION P3-APP-I stimulus red NMH_MUTATE=P3-APP-I-NODONE: prog_nodone.bin in place of prog_p1.bin; this falsifies the conjuncts that the run reaches DONE and that a refresh-asserted read exists, not the address-0 invariant -- measured FAIL on "P3-APP-I", both cores
+// P3-APP-I and P3-REFRESH are apparatus lines: no claim uid, no page sentence. Their program runs
+// are the same ones P1 and P3 grade; the only input that reaches DONE and moves nothing is REFPTR:
 // MUTATION P3-APP-I none impossible no observable effect at this boundary: p.282 lists REFPTR ($028) as writeable; NMH_MUTATE=P3-APP-I-REFPTR runs prog_p1_refptr.bin, which writes REFPTR=$8100 and reaches DONE, and every refresh-asserted read stays at word address 0 (the line stays PASS), measured on both cores
-// MUTATION P3-REFRESH stimulus red NMH_MUTATE=P3-REFRESH-NODONE: prog_nodone.bin in place of prog_p3_run_base.bin; this falsifies the conjuncts that the run reaches DONE and that a refresh-asserted access exists, not the not-in-region invariant -- measured FAIL on "P3-REFRESH", both cores
 // MUTATION P3-REFRESH none impossible no observable effect at this boundary: p.282 lists REFPTR ($028) as writeable; NMH_MUTATE=P3-REFRESH-REFPTR runs prog_p3_refptr.bin, which writes REFPTR=$8100 (byte $10200, inside region BPL, if read as a word address) and reaches DONE, and no refresh-asserted access falls inside a region (the line stays PASS), measured on both cores
 // MUTATION P3-FIX-Base stimulus red NMH_MUTATE=P3-FIX-Base-NODONE: prog_nodone.bin in place of Case Base's program -- measured FAIL on "P3-FIX-Base", both cores
 // MUTATION P3-FIX-BPL stimulus red NMH_MUTATE=P3-FIX-BPL-NODONE: prog_nodone.bin in place of Case BPL's program -- measured FAIL on "P3-FIX-BPL", both cores
@@ -174,7 +174,7 @@
 // MUTATION P6-ii-FIX stimulus red NMH_MUTATE=P6-ii-FIX-NODONE: prog_nodone.bin in place of prog_p6_wait3_b0.bin -- measured FAIL on "P6-ii-FIX", both cores
 // MUTATION P6a stimulus red NMH_MUTATE=P6-A: the C3 MOVE placed after the final WAIT (prog_p6_mut_a.bin) -- measured FAIL on "P6a", both cores
 // MUTATION P6b stimulus red NMH_MUTATE=P6-B: DMACON=$8200 (COPEN clear) (prog_p6_mut_b.bin) -- measured FAIL on "P6b", both cores
-// MUTATION P6c stimulus red NMH_MUTATE=P6-C3: BEAMCON0 written with its PAL bit clear a frame and a half after MJ, so the frames differ in length (prog_p6_mut_c3.bin) -- measured FAIL on "P6c", both cores
+// MUTATION P6c stimulus red NMH_MUTATE=P6-C3: BEAMCON0 ($1DC, p.293) written with its PAL bit 5 ("Programmable pal mode enable", p.305) clear a frame and a half after MJ, so later frames have the NTSC length (262/263 lines against PAL 312/313, p.24) and the frames differ in length (prog_p6_mut_c3.bin) -- measured FAIL on "P6c", both cores
 // MUTATION P6-BELOW stimulus red NMH_MUTATE=P6-BELOW-SWAP: the values of C1 and C3 exchanged (prog_p6_mut_swap13.bin) -- measured FAIL on "P6-BELOW", both cores
 // MUTATION P6-ORDER stimulus red NMH_MUTATE=P6-ORDER-SWAP: the values of C0 and C1 exchanged (prog_p6_mut_swap01.bin) -- measured FAIL on "P6-ORDER", both cores
 // MUTATION P6-i stimulus red NMH_MUTATE=P6-I-SWAP: prog_p6_main.bin (second WAIT unchanged) in place of prog_p6_wait2_c1.bin -- measured FAIL on "P6-i", both cores
@@ -1277,7 +1277,7 @@ int main(int argc, char** argv) {
         // signal, which is exactly why P3 uses it instead of the address
         // alone.
         CaptureR rc1 = run_capture_refresh(has("P3-APP-I-REFPTR") ? dir + "/prog_p1_refptr.bin"
-                                                                   : bin("/prog_p1.bin", {"P3-APP-I"}),
+                                                                   : dir + "/prog_p1.bin",
                                            kSamplerRunBudget, {});
         bool refresh_ok = rc1.loaded && rc1.done.has_value();
         bool any_read = false, any_refresh_read = false;
@@ -1302,7 +1302,7 @@ int main(int argc, char** argv) {
         // refresh-asserted read exists, and none of them falls inside any
         // of the nine regions.
         CaptureR rc3 = run_capture_refresh(has("P3-REFRESH-REFPTR") ? dir + "/prog_p3_refptr.bin"
-                                                                     : bin("/prog_p3_run_base.bin", {"P3-REFRESH"}),
+                                                                     : dir + "/prog_p3_run_base.bin",
                                            kSamplerRunBudget, {});
         bool part2_ok = rc3.loaded && rc3.done.has_value();
         bool part2_any_refresh_read = false, part2_none_in_region = true;

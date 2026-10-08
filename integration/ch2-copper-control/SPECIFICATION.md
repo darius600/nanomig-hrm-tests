@@ -226,9 +226,13 @@ doubler's rows only as coming "at roughly twice the rate" of the
 chipset's own horizontal sync, and no page describes the doubler. Where two
 runs' columns are compared (P6 contrast (i)), each column is counted from
 the hs edge that starts its own run's row, never as an index into the trace.
-Contrasting case: write BEAMCON0 ($1DC) with its PAL bit clear a frame
-and a half after the enable, so that the compared frames differ in length,
-and V1 fails. Setting LACE (BPLCON0 bit 2) is not used as the contrast: V1 compares
+Contrasting case: write BEAMCON0 ($1DC, p.293: "Beam counter control
+register (SHRES,PAL)") with its PAL bit clear a frame and a half after the
+enable. Bit 5 is "PAL Programmable pal mode enable" (p.305), so clearing
+it selects the NTSC frame, and the page gives the two frame sizes: "262
+NTSC (312 PAL) possible vertical positions" and "In NTSC, the fields are
+262, then 263 lines and in PAL, 312, then 313 lines" (p.24). The compared
+frames then differ in length, and V1 fails. Setting LACE (BPLCON0 bit 2) is not used as the contrast: V1 compares
 the spans between vsync edges, which cannot show whether the fields of an
 interlaced picture alternate in length (p.24: "long and short fields
 (interlace only)"). The four compared spans measure equal with LACE set
@@ -737,7 +741,12 @@ a pair whose next read in the region is any other word is not a restart.
       - `$A061,$FFFE`, `$0180,C3`
       - `$FFFF,$FFFE`
 
-      C0–C3 = $0F00, $00F0, $000F, $0FF0. Horizontal counts $60 and $A0 lie
+      C0–C3 = $0F00, $00F0, $000F, $0FF0: red, green, blue and yellow. The
+      colour register assigns "Bits 11 - 8 Red", "Bits 7 - 4 Green" and
+      "Bits 3 - 0 Blue" (p.46, Table 3-3; p.92, Table 3-15: "11 - 8 Red
+      data", "7 - 4 Green data", "3 - 0 Blue data"), and p.92 (Table 3-16)
+      lists $F00 as Red, $0F0 as Green, $00F as Blue and $FF0 as Lemon
+      yellow, with bits 15–12 unused. Horizontal counts $60 and $A0 lie
       outside horizontal blanking ("$0F to $35", p.23). Lines $60 and $A0
       lie after vertical blanking ("ends at … line 25 for PAL", p.219).
    4. Start per 2.8 (DMACON $8280).
@@ -1580,7 +1589,6 @@ header names one selector and one line.
 | p2_b | P2 | P2-OFF-FIX-DONE-NODONE, P2-FIX-STRUCT-EMPTY | FAIL: P2-OFF-FIX-DONE, P2-FIX-STRUCT |
 | p2_c | P2 | P2-A, P2-B, P2-C | FAIL: P2a, P2b, P2c |
 | p2_d | P2 | P2-SWAP, P2OFF-SWAP | FAIL: P2, P2-OFF |
-| p3_a | P3 | P3-APP-I-NODONE, P3-REFRESH-NODONE | FAIL: P3-APP-I, P3-REFRESH |
 | p3_refptr | P3 | P3-APP-I-REFPTR, P3-REFRESH-REFPTR | no line moves: PASS: P3-APP-I, P3-REFRESH |
 | p3_fix | P3 | P3-FIX-Base-NODONE, P3-FIX-BPL-NODONE, P3-FIX-SPR-NODONE, P3-FIX-AUD0-NODONE, P3-FIX-AUD1-NODONE, P3-FIX-AUD2-NODONE, P3-FIX-AUD3-NODONE, P3-FIX-DSK-NODONE, P3-FIX-BLT-NODONE, P3-FIX-COP-NODONE, P3-FIX-M-NODONE | FAIL: P3-FIX-Base, P3-FIX-BPL, P3-FIX-SPR, P3-FIX-AUD0, P3-FIX-AUD1, P3-FIX-AUD2, P3-FIX-AUD3, P3-FIX-DSK, P3-FIX-BLT, P3-FIX-COP, P3-FIX-M |
 | p3_pre | P3 | P3-B, P3-C, P3-D | FAIL: P3b, P3c, P3d |
