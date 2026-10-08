@@ -829,3 +829,247 @@ is attributed by a channel field. An access is attributed by construction:
 
 A proposition whose observation cannot be attributed this way is declined to a
 RECORDED line that gives this as the reason.
+
+---
+
+## 7. Recorded run
+
+The output of `make -k -B test-fx68k` and `make -k -B test-tg68k` in
+`integration/ch2-copper-move`, one block per core. `PASS` and `FAIL` lines are
+graded; `MEASURED` lines grade nothing; `RECORDED` lines either decline a claim
+with its reason or name a graded line that is NOT GRADED because a precondition
+it depends on does not hold.
+
+### fx68k
+
+```text
+CORE: fx68k
+RECORDED: COP2-the-move-instruction.c7 COP2-summary-of-copper-instructions.c98 are declined: "Bits 15 - 9 Not used, but should be set to 0" tells the programmer what to write; it gives no expected value for any other setting, so it only constrains the stimulus (every MOVE here has IR1 bits 15-9 = 0)
+RECORDED: ch2-the-wait-instruction.c12 ch2-using-the-copper-with-the-blitter.c4 COP2-using-the-copper-with-the-blitter.c4 are declined: "Normally, this bit is a 1" describes usual use, not a behaviour (every WAIT here has BFD = 1)
+RECORDED: ch2-summary-of-copper-instructions.c102 ch2-summary-of-copper-instructions.c103 ch2-summary-of-copper-instructions.c104 ch2-summary-of-copper-instructions.c105 ch2-summary-of-copper-instructions.c106 COP2-summary-of-copper-instructions.c105 COP2-summary-of-copper-instructions.c106 COP2-summary-of-copper-instructions.c107 are declined: they only name the fields of the WAIT and SKIP instructions (VP, HP, VE, HE, BFD); a name cannot be observed
+RECORDED: COP2-a-copper-loop-example.c4 COP2-a-copper-loop-example.c16 are declined: "always greater than $0F" and "binary 1xxx1111" are true by arithmetic and state nothing about the hardware
+RECORDED: ch2-what-is-a-copper-instruction.c2 is declined: "adds its own instruction set to the instructions already provided by the 680x0" is descriptive; its only observable consequence, that the Copper executes its own MOVE, is graded by P1
+RECORDED: ch2-about-the-copper.c5 COP2-about-the-copper.c4 are declined: "freeing the 680x0 to execute program logic" states a purpose, names no observable quantity, and the page predicts no stimulus under which the 680x0 would not be freed, so no contrasting case exists
+RECORDED: ch2-about-the-copper.c31 ch2-about-the-copper.c32 are declined: "can retrieve its instructions only from the chip RAM area": every access a test sees is at the Chip-memory port, so a fetch from anywhere else would be invisible, and the pages give no expected value for a location register that points outside Chip memory
+RECORDED: ch2-about-the-copper.c6.s2 is withdrawn from P1, P2 and P7: its existential part ("can directly affect the contents of ... chip control registers") is what they use, and the quantifier "most" is not graded (it needs an observable Copper write effect for more than half of the 256 register addresses, many of which are strobes, unused or read-only, and the pages disagree about which ranges the Copper may write)
+RECORDED: COP2-control-register.c14 is declined: the protection it describes depends on CDANG = 0 blocking $40-$7E, and p.21 and p.310 contradict p.26; no outcome for CDANG = 0 is shared by every page
+RECORDED: COP2-control-register.c9 is withdrawn from P7: only the direction every page shares is exercised (bit 1 set allows $40-$7E); what bit 1 = 0 does in $010-$07E is not specified
+RECORDED: ch2-appa-copcon.c2.s2 ch2-appb-table.c4.s2 ch2-appc-ecs.c14.s2 are declined: COPCON is write-only, its only effect is CDANG, and the pages share no outcome that differs between bit 1 = 0 and bit 1 = 1, so no test can show that a COPCON write took effect
+RECORDED: ch2-appa-copins.c2.s2 ch2-appb-table.c43.s2 are declined: COPINS is a dummy address the Copper generates on the register address bus, which is not among the outputs a test can see, and the pages state no effect of a processor write and no read value
+RECORDED: ch2-appb-table.c10.s2 is declined: DENISEID is read-only; the "R" mark gives no value, the "~" mark rests on the disputed CDANG rules, and the OCS value is unspecified, so there is no contrasting case
+RECORDED: ch2-location-registers.c3.s2 ch2-location-registers.c5.s2 are withdrawn from P5: "Low 16 bits" is graded for bits 15-1 only, bit 0 of a word address is not visible at the port, and the pages disagree about whether the register holds 15 or 16 bits
+RECORDED: ch2-appa-location-registers.c2.s2 ch2-appa-location-registers.c7.s2 ch2-appa-location-registers.c11.s2 ch2-appa-location-registers.c16.s2 ch2-appb-table.c16.s2 ch2-appb-table.c22.s2 ch2-appb-table.c26.s2 ch2-appb-table.c32.s2 ch2-appc-ecs.c3.s2 ch2-appc-ecs.c8.s2 ch2-appb-legend.c6.s2 are withdrawn from P2 and P5: the write half of "write-only" is exercised, the "only" half gives no read value and a test must not read these addresses
+PASS: P1-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and the capture holds at least six complete fields after the enable marker (7)
+PASS: P1-ATTR: the program's listing shows no CPU data access to the Copper list region $30000-$300FF or to a parked region of another channel
+FAIL: P1-PRE-A: (a) in each observed field the Copper's pass starts at $30000 and reads the 36 words of the list in address order with the data stored field 3 pass starts at $30048 and holds 37 reads; field 4 pass starts at $30048 and holds 37 reads; field 5 pass starts at $30048 and holds 37 reads; field 6 pass starts at $30048 and holds 37 reads;
+PASS: P1-CTRL-A: control for (a): the first pass, which no restart access precedes, starts at $30000 and reads the 36 words of the list in address order with the data stored
+PASS: P1-PRE-B: (b) no sprite access and no bitplane access appears at the port during the observed fields (0 in the sprite region, 0 in the bitplane region)
+PASS: P1-PRE-C: (c) each of the nine colours the list sets in COLOR00 appears in at least one row of each observed field
+MEASURED: P1 run sequences of the observed fields [FFF 555 666 878 F80 AAA 999 787 07F ][FFF 555 666 878 F80 AAA 999 787 07F ][FFF 555 666 878 F80 AAA 999 787 07F ][FFF 555 666 878 F80 AAA 999 787 07F ]
+RECORDED: NOT GRADED P1-COLOUR: the precondition(s) P1-PRE-A do not hold
+PASS: P2-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and 14 restart accesses occur after the enable marker
+PASS: P2-ATTR: the program's listing shows no CPU data access to a Copper segment region or to a parked region of another channel
+PASS: P2-PRE-A: (a) between its restart access and the next, the Copper reads segment k's six words T_k to T_k+10 in address order, with the data the segment holds
+FAIL: P2-PRE-B: (b) the Copper's first access after its read of T_k+10 is not at T_k+12 or T_k+14, so the access that follows is a restart (the first access after the read of $1AAB4 in pass 1 is $1AAB6)
+MEASURED: P2 restart accesses 1 to 14: 3400C 1AAB6 1CCD8 1F0FC 1FF0C 15560 1333E 10F1A 1010A 5200C 6200C 2200C 1200C 1200C 
+RECORDED: NOT GRADED P2-RESTART: the precondition(s) P2-PRE-B do not hold
+PASS: P3-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, the port shows its four value writes in order, and the capture holds two complete fields after the last of them
+PASS: P3-ATTR: the program's listing shows no CPU data access to the Copper list region $36000-$360FF other than the four writes of the values, or to a parked region of another channel
+PASS: P3-PRE-A: (a) between two consecutive Copper reads of $3600A there is at most one of the program's four value writes, and every value write is followed by at least one Copper read of $3600A
+PASS: P3-PRE-B: (b) every pass contains a Copper read of $3600A (9 complete passes, at least 4 needed)
+MEASURED: P3 values delivered by the Copper reads of $3600A in the interval: 0F0F 0F0F 00FF 0FF0 0A5A 05A5 05A5 ; band rows graded: 2590
+PASS: P3-MOVED: [p21 p275] COP2-copins-fields-p275.c7 COP2-copins-fields-p275.c8 ch2-appa-copins.c115 ch2-the-move-instruction.c1.s2: the value a MOVE delivers is the word RAM held at its IR2 fetch: every Copper read of $3600A returns the last value the CPU wrote there, every band row shows the low 12 bits of the word the latest such read returned, and the values delivered over the observed passes are $0F0F $00FF $0FF0 $0A5A $05A5 in this order
+PASS: P4-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and the capture holds at least six complete fields after the enable marker (7)
+PASS: P4-ATTR: the program's listing shows no CPU data access to the Copper list region $38000-$380FF or to a parked region of another channel
+PASS: P4-PRE-A: (a) in every pass of the interval the Copper reads $3800C and $3800E (the unsatisfiable WAIT) (6 complete passes, at least 4 needed)
+FAIL: P4-PRE-B: (b) every pass after the first begins with a restart access at $38000
+PASS: P4-CTRL-B: control for (b): the first pass begins with an access at $38000
+MEASURED: P4 run sequences of the observed fields [FFF 0F0 ][FFF 0F0 ][FFF 0F0 ][FFF 0F0 ]; reads of $38010 or $38012 in the interval: 6
+RECORDED: NOT GRADED P4-MOVE-AFTER-WAIT: the precondition(s) P4-PRE-B do not hold
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R1, ECS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R1, ECS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R1, ECS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R1, ECS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur between marker 3 and marker 4 and at least 4 after marker 4 (5, 6) [R1, ECS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R1, ECS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R1, ECS]
+MEASURED: P5 [R1, ECS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008 $20008 $25A60 $25A60 $25A60 $25A60 $25A60
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R2, ECS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R2, ECS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R2, ECS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R2, ECS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 3 (5, 0) [R2, ECS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, ECS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R2, ECS]
+MEASURED: P5 [R2, ECS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R1, OCS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R1, OCS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R1, OCS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R1, OCS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur between marker 3 and marker 4 and at least 4 after marker 4 (5, 6) [R1, OCS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R1, OCS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R1, OCS]
+MEASURED: P5 [R1, OCS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008 $20008 $25A60 $25A60 $25A60 $25A60 $25A60
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R2, OCS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R2, OCS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R2, OCS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R2, OCS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 3 (5, 0) [R2, OCS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
+MEASURED: P5 [R2, OCS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008
+RECORDED: NOT GRADED P5-LOCATION: a precondition of one of the four runs does not hold
+PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [fx68k core, 68000 mode]
+PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [fx68k core, 68000 mode]
+MEASURED: P6 [fx68k core, 68000 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
+PASS: P6-LONG: [p25] ch2-location-registers.c11 COP2-location-registers.c13: MOVE.L #$12345678 to $46000 writes $1234 to $46000 and $5678 to $46002, exactly one write each, and reads back as $1234 and $5678 [fx68k core, 68000 mode]
+PASS: P7-RUN: the program ran to its DONE mark and wrote markers 0, 1, 2 and 3 once each in order [ECS]
+PASS: P7-ATTR: the program's listing shows no CPU data access to a Copper list region or to the blitter destination word beyond its one clearing write and its one final read, or to a parked region of another channel [ECS]
+PASS: P7-PRE-A: (a) no blitter access occurs between marker 0 and the Copper's read of $3A002 (0) [ECS]
+PASS: P7-PRE-B: (b) the CPU's write of $0000 to $48000 occurs before the enable marker [ECS]
+FAIL: P7-PRE-C: (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100 [ECS]
+PASS: P7-CTRL-C: control for (c): the Copper reads $3A000 and $3A002 once, in the first pass [ECS]
+MEASURED: P7 [ECS] blitter writes: 1 first at $48000 data $FFFF, result word $FFFF
+PASS: P7-RUN: the program ran to its DONE mark and wrote markers 0, 1, 2 and 3 once each in order [OCS]
+PASS: P7-ATTR: the program's listing shows no CPU data access to a Copper list region or to the blitter destination word beyond its one clearing write and its one final read, or to a parked region of another channel [OCS]
+PASS: P7-PRE-A: (a) no blitter access occurs between marker 0 and the Copper's read of $3A002 (0) [OCS]
+PASS: P7-PRE-B: (b) the CPU's write of $0000 to $48000 occurs before the enable marker [OCS]
+FAIL: P7-PRE-C: (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100 [OCS]
+PASS: P7-CTRL-C: control for (c): the Copper reads $3A000 and $3A002 once, in the first pass [OCS]
+MEASURED: P7 [OCS] blitter writes: 1 first at $48000 data $FFFF, result word $FFFF
+RECORDED: NOT GRADED P7-BLIT: a precondition of one of the two runs does not hold
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run M]
+PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run M]
+PASS: P8-PRE-A: (a) run M has at least 8 graded runs (46) [run M]
+PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run M]
+MEASURED: P8 [run M] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000]
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run C]
+PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run C]
+PASS: P8-PRE-A: (a) run C has at least 2 graded runs before marker W and at least 3 more than 2 lines after it (4, 42) [run C]
+PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run C]
+MEASURED: P8 [run C] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100]
+PASS: P8-CTRL: control on the same measurement basis as P8-RESTART: every run after the first of run M and of run C, graded by the same comparator, is the run of four words the AUD0LC in force prescribes
+FAIL: P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length count finishes the channel's pointer restarts from AUD0LC: with AUD0LEN = 4 every run of fetches is $44000 $44002 $44004 $44006, and after the CPU writes AUD0LC = $44100 the runs that start more than 2 lines later are $44100 $44102 $44104 $44106
+59 passed, 14 failed
+```
+
+### TG68K
+
+```text
+CORE: tg68k
+RECORDED: COP2-the-move-instruction.c7 COP2-summary-of-copper-instructions.c98 are declined: "Bits 15 - 9 Not used, but should be set to 0" tells the programmer what to write; it gives no expected value for any other setting, so it only constrains the stimulus (every MOVE here has IR1 bits 15-9 = 0)
+RECORDED: ch2-the-wait-instruction.c12 ch2-using-the-copper-with-the-blitter.c4 COP2-using-the-copper-with-the-blitter.c4 are declined: "Normally, this bit is a 1" describes usual use, not a behaviour (every WAIT here has BFD = 1)
+RECORDED: ch2-summary-of-copper-instructions.c102 ch2-summary-of-copper-instructions.c103 ch2-summary-of-copper-instructions.c104 ch2-summary-of-copper-instructions.c105 ch2-summary-of-copper-instructions.c106 COP2-summary-of-copper-instructions.c105 COP2-summary-of-copper-instructions.c106 COP2-summary-of-copper-instructions.c107 are declined: they only name the fields of the WAIT and SKIP instructions (VP, HP, VE, HE, BFD); a name cannot be observed
+RECORDED: COP2-a-copper-loop-example.c4 COP2-a-copper-loop-example.c16 are declined: "always greater than $0F" and "binary 1xxx1111" are true by arithmetic and state nothing about the hardware
+RECORDED: ch2-what-is-a-copper-instruction.c2 is declined: "adds its own instruction set to the instructions already provided by the 680x0" is descriptive; its only observable consequence, that the Copper executes its own MOVE, is graded by P1
+RECORDED: ch2-about-the-copper.c5 COP2-about-the-copper.c4 are declined: "freeing the 680x0 to execute program logic" states a purpose, names no observable quantity, and the page predicts no stimulus under which the 680x0 would not be freed, so no contrasting case exists
+RECORDED: ch2-about-the-copper.c31 ch2-about-the-copper.c32 are declined: "can retrieve its instructions only from the chip RAM area": every access a test sees is at the Chip-memory port, so a fetch from anywhere else would be invisible, and the pages give no expected value for a location register that points outside Chip memory
+RECORDED: ch2-about-the-copper.c6.s2 is withdrawn from P1, P2 and P7: its existential part ("can directly affect the contents of ... chip control registers") is what they use, and the quantifier "most" is not graded (it needs an observable Copper write effect for more than half of the 256 register addresses, many of which are strobes, unused or read-only, and the pages disagree about which ranges the Copper may write)
+RECORDED: COP2-control-register.c14 is declined: the protection it describes depends on CDANG = 0 blocking $40-$7E, and p.21 and p.310 contradict p.26; no outcome for CDANG = 0 is shared by every page
+RECORDED: COP2-control-register.c9 is withdrawn from P7: only the direction every page shares is exercised (bit 1 set allows $40-$7E); what bit 1 = 0 does in $010-$07E is not specified
+RECORDED: ch2-appa-copcon.c2.s2 ch2-appb-table.c4.s2 ch2-appc-ecs.c14.s2 are declined: COPCON is write-only, its only effect is CDANG, and the pages share no outcome that differs between bit 1 = 0 and bit 1 = 1, so no test can show that a COPCON write took effect
+RECORDED: ch2-appa-copins.c2.s2 ch2-appb-table.c43.s2 are declined: COPINS is a dummy address the Copper generates on the register address bus, which is not among the outputs a test can see, and the pages state no effect of a processor write and no read value
+RECORDED: ch2-appb-table.c10.s2 is declined: DENISEID is read-only; the "R" mark gives no value, the "~" mark rests on the disputed CDANG rules, and the OCS value is unspecified, so there is no contrasting case
+RECORDED: ch2-location-registers.c3.s2 ch2-location-registers.c5.s2 are withdrawn from P5: "Low 16 bits" is graded for bits 15-1 only, bit 0 of a word address is not visible at the port, and the pages disagree about whether the register holds 15 or 16 bits
+RECORDED: ch2-appa-location-registers.c2.s2 ch2-appa-location-registers.c7.s2 ch2-appa-location-registers.c11.s2 ch2-appa-location-registers.c16.s2 ch2-appb-table.c16.s2 ch2-appb-table.c22.s2 ch2-appb-table.c26.s2 ch2-appb-table.c32.s2 ch2-appc-ecs.c3.s2 ch2-appc-ecs.c8.s2 ch2-appb-legend.c6.s2 are withdrawn from P2 and P5: the write half of "write-only" is exercised, the "only" half gives no read value and a test must not read these addresses
+PASS: P1-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and the capture holds at least six complete fields after the enable marker (7)
+PASS: P1-ATTR: the program's listing shows no CPU data access to the Copper list region $30000-$300FF or to a parked region of another channel
+FAIL: P1-PRE-A: (a) in each observed field the Copper's pass starts at $30000 and reads the 36 words of the list in address order with the data stored field 3 pass starts at $30048 and holds 37 reads; field 4 pass starts at $30048 and holds 37 reads; field 5 pass starts at $30048 and holds 37 reads; field 6 pass starts at $30048 and holds 37 reads;
+PASS: P1-CTRL-A: control for (a): the first pass, which no restart access precedes, starts at $30000 and reads the 36 words of the list in address order with the data stored
+PASS: P1-PRE-B: (b) no sprite access and no bitplane access appears at the port during the observed fields (0 in the sprite region, 0 in the bitplane region)
+PASS: P1-PRE-C: (c) each of the nine colours the list sets in COLOR00 appears in at least one row of each observed field
+MEASURED: P1 run sequences of the observed fields [FFF 555 666 878 F80 AAA 999 787 07F ][FFF 555 666 878 F80 AAA 999 787 07F ][FFF 555 666 878 F80 AAA 999 787 07F ][FFF 555 666 878 F80 AAA 999 787 07F ]
+RECORDED: NOT GRADED P1-COLOUR: the precondition(s) P1-PRE-A do not hold
+PASS: P2-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and 14 restart accesses occur after the enable marker
+PASS: P2-ATTR: the program's listing shows no CPU data access to a Copper segment region or to a parked region of another channel
+PASS: P2-PRE-A: (a) between its restart access and the next, the Copper reads segment k's six words T_k to T_k+10 in address order, with the data the segment holds
+FAIL: P2-PRE-B: (b) the Copper's first access after its read of T_k+10 is not at T_k+12 or T_k+14, so the access that follows is a restart (the first access after the read of $1AAB4 in pass 1 is $1AAB6)
+MEASURED: P2 restart accesses 1 to 14: 3400C 1AAB6 1CCD8 1F0FC 1FF0C 15560 1333E 10F1A 1010A 5200C 6200C 2200C 1200C 1200C 
+RECORDED: NOT GRADED P2-RESTART: the precondition(s) P2-PRE-B do not hold
+PASS: P3-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, the port shows its four value writes in order, and the capture holds two complete fields after the last of them
+PASS: P3-ATTR: the program's listing shows no CPU data access to the Copper list region $36000-$360FF other than the four writes of the values, or to a parked region of another channel
+PASS: P3-PRE-A: (a) between two consecutive Copper reads of $3600A there is at most one of the program's four value writes, and every value write is followed by at least one Copper read of $3600A
+PASS: P3-PRE-B: (b) every pass contains a Copper read of $3600A (9 complete passes, at least 4 needed)
+MEASURED: P3 values delivered by the Copper reads of $3600A in the interval: 0F0F 0F0F 00FF 0FF0 0A5A 05A5 05A5 ; band rows graded: 2590
+PASS: P3-MOVED: [p21 p275] COP2-copins-fields-p275.c7 COP2-copins-fields-p275.c8 ch2-appa-copins.c115 ch2-the-move-instruction.c1.s2: the value a MOVE delivers is the word RAM held at its IR2 fetch: every Copper read of $3600A returns the last value the CPU wrote there, every band row shows the low 12 bits of the word the latest such read returned, and the values delivered over the observed passes are $0F0F $00FF $0FF0 $0A5A $05A5 in this order
+PASS: P4-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and the capture holds at least six complete fields after the enable marker (7)
+PASS: P4-ATTR: the program's listing shows no CPU data access to the Copper list region $38000-$380FF or to a parked region of another channel
+PASS: P4-PRE-A: (a) in every pass of the interval the Copper reads $3800C and $3800E (the unsatisfiable WAIT) (6 complete passes, at least 4 needed)
+FAIL: P4-PRE-B: (b) every pass after the first begins with a restart access at $38000
+PASS: P4-CTRL-B: control for (b): the first pass begins with an access at $38000
+MEASURED: P4 run sequences of the observed fields [FFF 0F0 ][FFF 0F0 ][FFF 0F0 ][FFF 0F0 ]; reads of $38010 or $38012 in the interval: 6
+RECORDED: NOT GRADED P4-MOVE-AFTER-WAIT: the precondition(s) P4-PRE-B do not hold
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R1, ECS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R1, ECS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R1, ECS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R1, ECS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur between marker 3 and marker 4 and at least 4 after marker 4 (5, 6) [R1, ECS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R1, ECS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R1, ECS]
+MEASURED: P5 [R1, ECS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008 $20008 $25A60 $25A60 $25A60 $25A60 $25A60
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R2, ECS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R2, ECS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R2, ECS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R2, ECS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 3 (5, 0) [R2, ECS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, ECS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R2, ECS]
+MEASURED: P5 [R2, ECS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R1, OCS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R1, OCS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R1, OCS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R1, OCS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur between marker 3 and marker 4 and at least 4 after marker 4 (5, 6) [R1, OCS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R1, OCS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R1, OCS]
+MEASURED: P5 [R1, OCS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008 $20008 $25A60 $25A60 $25A60 $25A60 $25A60
+PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R2, OCS]
+PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R2, OCS]
+FAIL: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (2) [R2, OCS]
+PASS: P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (0) [R2, OCS]
+PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 3 (5, 0) [R2, OCS]
+FAIL: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
+PASS: P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
+MEASURED: P5 [R2, OCS] first $20008; restart accesses: $20008 $20008 $20008 $20008 $20008
+RECORDED: NOT GRADED P5-LOCATION: a precondition of one of the four runs does not hold
+PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [tg68k core, 68000 mode]
+PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [tg68k core, 68000 mode]
+MEASURED: P6 [tg68k core, 68000 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
+PASS: P6-LONG: [p25] ch2-location-registers.c11 COP2-location-registers.c13: MOVE.L #$12345678 to $46000 writes $1234 to $46000 and $5678 to $46002, exactly one write each, and reads back as $1234 and $5678 [tg68k core, 68000 mode]
+PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [tg68k core, 68010 mode]
+PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [tg68k core, 68010 mode]
+MEASURED: P6 [tg68k core, 68010 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
+PASS: P6-LONG: [p25] ch2-location-registers.c11 COP2-location-registers.c13: MOVE.L #$12345678 to $46000 writes $1234 to $46000 and $5678 to $46002, exactly one write each, and reads back as $1234 and $5678 [tg68k core, 68010 mode]
+PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [tg68k core, 68020 mode]
+PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [tg68k core, 68020 mode]
+MEASURED: P6 [tg68k core, 68020 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
+PASS: P6-LONG: [p25] ch2-location-registers.c11 COP2-location-registers.c13: MOVE.L #$12345678 to $46000 writes $1234 to $46000 and $5678 to $46002, exactly one write each, and reads back as $1234 and $5678 [tg68k core, 68020 mode]
+PASS: P7-RUN: the program ran to its DONE mark and wrote markers 0, 1, 2 and 3 once each in order [ECS]
+PASS: P7-ATTR: the program's listing shows no CPU data access to a Copper list region or to the blitter destination word beyond its one clearing write and its one final read, or to a parked region of another channel [ECS]
+PASS: P7-PRE-A: (a) no blitter access occurs between marker 0 and the Copper's read of $3A002 (0) [ECS]
+PASS: P7-PRE-B: (b) the CPU's write of $0000 to $48000 occurs before the enable marker [ECS]
+FAIL: P7-PRE-C: (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100 [ECS]
+PASS: P7-CTRL-C: control for (c): the Copper reads $3A000 and $3A002 once, in the first pass [ECS]
+MEASURED: P7 [ECS] blitter writes: 1 first at $48000 data $FFFF, result word $FFFF
+PASS: P7-RUN: the program ran to its DONE mark and wrote markers 0, 1, 2 and 3 once each in order [OCS]
+PASS: P7-ATTR: the program's listing shows no CPU data access to a Copper list region or to the blitter destination word beyond its one clearing write and its one final read, or to a parked region of another channel [OCS]
+PASS: P7-PRE-A: (a) no blitter access occurs between marker 0 and the Copper's read of $3A002 (0) [OCS]
+PASS: P7-PRE-B: (b) the CPU's write of $0000 to $48000 occurs before the enable marker [OCS]
+FAIL: P7-PRE-C: (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100 [OCS]
+PASS: P7-CTRL-C: control for (c): the Copper reads $3A000 and $3A002 once, in the first pass [OCS]
+MEASURED: P7 [OCS] blitter writes: 1 first at $48000 data $FFFF, result word $FFFF
+RECORDED: NOT GRADED P7-BLIT: a precondition of one of the two runs does not hold
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run M]
+PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run M]
+PASS: P8-PRE-A: (a) run M has at least 8 graded runs (46) [run M]
+PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run M]
+MEASURED: P8 [run M] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000] [4@44000]
+PASS: P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks (a colour clock is 8 cycles) [run C]
+PASS: P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel [run C]
+PASS: P8-PRE-A: (a) run C has at least 2 graded runs before marker W and at least 3 more than 2 lines after it (4, 42) [run C]
+PASS: P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (0) [run C]
+MEASURED: P8 [run C] runs (length@first address): [3@44000] [4@44000] [4@44000] [4@44000] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100] [4@44100]
+PASS: P8-CTRL: control on the same measurement basis as P8-RESTART: every run after the first of run M and of run C, graded by the same comparator, is the run of four words the AUD0LC in force prescribes
+FAIL: P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length count finishes the channel's pointer restarts from AUD0LC: with AUD0LEN = 4 every run of fetches is $44000 $44002 $44004 $44006, and after the CPU writes AUD0LC = $44100 the runs that start more than 2 lines later are $44100 $44102 $44104 $44106
+65 passed, 14 failed
+```

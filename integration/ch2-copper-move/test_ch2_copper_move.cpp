@@ -3,9 +3,57 @@
 // implements what that document commits to.
 //
 // NMH_MUTATE=<selector> runs only the proposition that owns the selector, with
-// the stimulus change the selector names; `make test` sets none.
+// the stimulus change the selector names; `make test` sets none. A record
+// names the graded line (the label passed to expect()), the selector, the
+// change of the stimulus, and what each core printed under it.
 //
-// MUTATION RECORDS (filled in below the includes)
+// MUTATION P1-RUN stimulus red NMH_MUTATE=P1-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-CTRL-A P1-PRE-A P1-PRE-B P1-PRE-C), fx68k FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-CTRL-A P1-PRE-A P1-PRE-B P1-PRE-C).
+// MUTATION P1-ATTR stimulus red NMH_MUTATE=P1-ATTR: the program reads $30000, a word of the Copper list, before it starts the Copper (prog_p1_attr); TG68K FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-A; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-A; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-A stimulus red NMH_MUTATE=P1-A: the Copper starts at $30004 (prog_p1_a) so the first pass starts at $30004, and the line is red in the unmutated run as well because every pass there starts with a read of $30048, the word after the end WAIT, while the control P1-CTRL-A is green in the unmutated run and red here; TG68K FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-C; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-C; also NOT GRADED P1-COLOUR).
+// MUTATION P1-CTRL-A stimulus red NMH_MUTATE=P1-A: the Copper starts at $30004 (prog_p1_a) so the first pass starts at $30004; TG68K FAIL (3 passed/3 failed; also FAIL P1-PRE-A P1-PRE-C; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/3 failed; also FAIL P1-PRE-A P1-PRE-C; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-B stimulus red NMH_MUTATE=P1-B: sprite DMA is enabled (DMACON <- $8020) with the eight sprite pointers at the zeroed region $4E000 (prog_p1_b) so sprite accesses appear; TG68K FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-C stimulus red NMH_MUTATE=P1-C: the WAIT at +20 of the list is $5001 instead of $6001 so the (6,6,6) band has no line; TG68K FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR).
+// MUTATION P1-COLOUR stimulus impossible NMH_MUTATE=P1-MAIN: not evaluated in the unmutated run because P1-PRE-A is red, so no change of the stimulus can make it print FAIL, the changes that would make it red are IR2 at +34 of the list set to $0F00 instead of $0F80 (P1-MAIN) and IR1 at +32 set to $0182 (COLOR01) instead of $0180 (P1-DA), both of which print NOT GRADED; TG68K NOT GRADED (5 passed/1 failed; also FAIL P1-PRE-A), fx68k NOT GRADED (5 passed/1 failed; also FAIL P1-PRE-A).
+// MUTATION P2-RUN stimulus red NMH_MUTATE=P2-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P2-PRE-A P2-PRE-B P2-RESTART), fx68k FAIL (1 passed/1 failed; also NOT GRADED P2-PRE-A P2-PRE-B P2-RESTART).
+// MUTATION P2-ATTR stimulus red NMH_MUTATE=P2-ATTR: the program reads $34000, a word of the first segment, before it starts the Copper (prog_p2_attr); TG68K FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART), fx68k FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART).
+// MUTATION P2-PRE-A stimulus red NMH_MUTATE=P2-A: the segment at $15554 holds its end WAIT first and the two MOVEs after it so the MOVEs are not read; TG68K FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART), fx68k FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART).
+// MUTATION P2-PRE-B stimulus impossible NMH_MUTATE=P2-B: the access after the read of T_k+10 is the word T_k+12 in every pass of every run, so the line is red in the unmutated run and no stimulus of the specification gives it another next access, the contrasting segment at $13332 with a WAIT for line $F0 before the end WAIT is red as well; TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
+// MUTATION P2-RESTART stimulus impossible NMH_MUTATE=P2-MAIN: not evaluated in the unmutated run because P2-PRE-B is red, so no change of the stimulus can make it print FAIL, the change that would make it red is segment 3 writing $FF80 instead of $FF00 with a segment at $1FF80 that continues the chain (P2-MAIN), which prints NOT GRADED; TG68K NOT GRADED (3 passed/1 failed; also FAIL P2-PRE-B), fx68k NOT GRADED (3 passed/1 failed; also FAIL P2-PRE-B).
+// MUTATION P3-RUN stimulus red NMH_MUTATE=P3-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P3-MOVED P3-PRE-A P3-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P3-MOVED P3-PRE-A P3-PRE-B).
+// MUTATION P3-ATTR stimulus red NMH_MUTATE=P3-ATTR: the program reads the IR2 word $3600A before it starts the Copper (prog_p3_attr); TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
+// MUTATION P3-PRE-A stimulus red NMH_MUTATE=P3-A: the four value writes follow each other within one field without a wait for the beam (prog_p3_fast); TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
+// MUTATION P3-PRE-B stimulus red NMH_MUTATE=P3-B: the WAIT at +4 of the list is $FFFF,$FFFE so the Copper stops there and never reads $3600A; TG68K FAIL (2 passed/2 failed; also FAIL P3-PRE-A; also NOT GRADED P3-MOVED), fx68k FAIL (2 passed/2 failed; also FAIL P3-PRE-A; also NOT GRADED P3-MOVED).
+// MUTATION P3-MOVED stimulus red NMH_MUTATE=P3-MAIN: the CPU writes the four values to the spare word $36010 instead of the IR2 word $3600A (prog_p3_dest); TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
+// MUTATION P4-RUN stimulus red NMH_MUTATE=P4-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P4-CTRL-B P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P4-CTRL-B P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B).
+// MUTATION P4-ATTR stimulus red NMH_MUTATE=P4-ATTR: the program reads $38000, a word of the Copper list, before it starts the Copper (prog_p4_attr); TG68K FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-PRE-A stimulus red NMH_MUTATE=P4-A: the WAIT at +4 of the list is $FFFF,$FFFE so $3800C is never read; TG68K FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-PRE-B stimulus red NMH_MUTATE=P4-B: the Copper starts at $38004 (prog_p4_b) so every pass begins at $38004, and the line is red in the unmutated run as well because every pass after the first begins with a read of $38010, the word after the end WAIT, while the control P4-CTRL-B is green in the unmutated run and red here; TG68K FAIL (3 passed/2 failed; also FAIL P4-CTRL-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-CTRL-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-CTRL-B stimulus red NMH_MUTATE=P4-B: the Copper starts at $38004 (prog_p4_b) so the first pass begins at $38004; TG68K FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-MOVE-AFTER-WAIT stimulus impossible NMH_MUTATE=P4-MAIN: not evaluated in the unmutated run because P4-PRE-B is red, so no change of the stimulus can make it print FAIL, the change that would make it red is the WAIT at +12 replaced by $C001,$FF00 (P4-MAIN), which prints NOT GRADED; TG68K NOT GRADED (4 passed/1 failed; also FAIL P4-PRE-B), fx68k NOT GRADED (4 passed/1 failed; also FAIL P4-PRE-B).
+// MUTATION P5-RUN stimulus red NMH_MUTATE=P5-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (4 passed/4 failed; also NOT GRADED P5-LOCATION), fx68k FAIL (4 passed/4 failed; also NOT GRADED P5-LOCATION).
+// MUTATION P5-ATTR stimulus red NMH_MUTATE=P5-ATTR: the program of run R1 reads $20004, a word of the first list, before it starts the Copper (prog_p5_r1_attr); TG68K FAIL (14 passed/14 failed; also FAIL P5-CTRL-A P5-CTRL-C P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (14 passed/14 failed; also FAIL P5-CTRL-A P5-CTRL-C P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
+// MUTATION P5-PRE-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a), and the line is red in the unmutated run as well because the Copper reads its first two words before the write of marker 3, while the control P5-CTRL-A is green in the unmutated run and red here; TG68K FAIL (18 passed/10 failed; also FAIL P5-CTRL-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/10 failed; also FAIL P5-CTRL-A P5-PRE-C; also NOT GRADED P5-LOCATION).
+// MUTATION P5-CTRL-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a); TG68K FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
+// MUTATION P5-PRE-B stimulus red NMH_MUTATE=P5-B: run R1 idles two passages of the beam through line $A0 per phase instead of six (prog_p5_r1_b); TG68K FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
+// MUTATION P5-PRE-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so each pass reads four words, and the line is red in the unmutated run as well because every pass starts with a read of the word after the end WAIT, while the control P5-CTRL-C is green in the unmutated run and red here; TG68K FAIL (16 passed/12 failed; also FAIL P5-CTRL-C P5-PRE-A; also NOT GRADED P5-LOCATION), fx68k FAIL (16 passed/12 failed; also FAIL P5-CTRL-C P5-PRE-A; also NOT GRADED P5-LOCATION).
+// MUTATION P5-CTRL-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so the first pass reads four words; TG68K FAIL (16 passed/12 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (16 passed/12 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
+// MUTATION P5-LOCATION stimulus impossible NMH_MUTATE=P5-R1: not evaluated in the unmutated run because P5-PRE-A and P5-PRE-C are red, so no change of the stimulus can make it print FAIL, the changes that would make it red are the halves of $00020004 written as separate words in the swapped order (P5-R1, run R1 swapped) and the COPJMP1 strobe instead of COPJMP2 in run R2 (P5-R2), both of which print NOT GRADED; TG68K NOT GRADED (20 passed/8 failed; also FAIL P5-PRE-A P5-PRE-C), fx68k NOT GRADED (20 passed/8 failed; also FAIL P5-PRE-A P5-PRE-C).
+// MUTATION P6-RUN stimulus red NMH_MUTATE=P6-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (0 passed/3 failed; also NOT GRADED P6-LONG P6-PRE-A), fx68k FAIL (0 passed/1 failed; also NOT GRADED P6-LONG P6-PRE-A).
+// MUTATION P6-PRE-A stimulus red NMH_MUTATE=P6-A: the two word writes before marker 1 are omitted (prog_p6_nopre); TG68K FAIL (3 passed/3 failed; also NOT GRADED P6-LONG), fx68k FAIL (1 passed/1 failed; also NOT GRADED P6-LONG).
+// MUTATION P6-LONG stimulus red NMH_MUTATE=P6-MAIN: the long word is $56781234 instead of $12345678 (prog_p6_value); TG68K FAIL (6 passed/3 failed), fx68k FAIL (2 passed/1 failed).
+// MUTATION P7-RUN stimulus red NMH_MUTATE=P7-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (2 passed/2 failed; also NOT GRADED P7-BLIT).
+// MUTATION P7-ATTR stimulus red NMH_MUTATE=P7-ATTR: the program writes $48000 a second time before it starts the Copper (prog_p7_attr); TG68K FAIL (6 passed/6 failed; also FAIL P7-PRE-A P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (6 passed/6 failed; also FAIL P7-PRE-A P7-PRE-C; also NOT GRADED P7-BLIT).
+// MUTATION P7-PRE-A stimulus red NMH_MUTATE=P7-A: the program enables blitter DMA, writes BLTSIZE itself and idles one field before it starts the Copper (prog_p7_a) so the blit writes $48000 before the Copper reads $3A002; TG68K FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT).
+// MUTATION P7-PRE-B stimulus red NMH_MUTATE=P7-B: the CPU write of $0000 to $48000 is omitted (prog_p7_b); TG68K FAIL (6 passed/6 failed; also FAIL P7-CTRL-C P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT).
+// MUTATION P7-PRE-C stimulus red NMH_MUTATE=P7-C: the Copper starts at $3A004 (prog_p7_c) so it never reads $3A000 and $3A002, and the line is red in the unmutated run as well because every restart starts with a read of $3A104, the word after the end WAIT, while the control P7-CTRL-C is green in the unmutated run and red here; TG68K FAIL (8 passed/4 failed; also FAIL P7-CTRL-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-CTRL-C; also NOT GRADED P7-BLIT).
+// MUTATION P7-CTRL-C stimulus red NMH_MUTATE=P7-C: the Copper starts at $3A004 (prog_p7_c) so it never reads $3A000 and $3A002; TG68K FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT).
+// MUTATION P7-BLIT stimulus impossible NMH_MUTATE=P7-MAIN: not evaluated in the unmutated run because P7-PRE-C is red, so no change of the stimulus can make it print FAIL, the change that would make it red is IR1 at $3A000 set to $0180 (COLOR00) instead of $0058 (P7-MAIN), which prints NOT GRADED; TG68K NOT GRADED (10 passed/2 failed; also FAIL P7-PRE-C), fx68k NOT GRADED (10 passed/2 failed; also FAIL P7-PRE-C).
+// MUTATION P8-RUN stimulus red NMH_MUTATE=P8-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P8-RESTART), fx68k FAIL (2 passed/2 failed; also NOT GRADED P8-RESTART).
+// MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-ATTR: the program of run M reads $44000, a word of the audio data block, before it starts the channel (prog_p8_attr), and P8-PRE-B is red as well because the CPU read lands in the channel 0 region before marker 2; TG68K FAIL (6 passed/2 failed; also FAIL P8-PRE-B; also NOT GRADED P8-RESTART), fx68k FAIL (6 passed/2 failed; also FAIL P8-PRE-B; also NOT GRADED P8-RESTART).
+// MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-A: run M writes DMACON <- $8200, without AUD0EN (prog_p8_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-RESTART).
+// MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-B: run M writes DMACON <- $8201 before marker 1 (prog_p8_early) so the channel fetches before marker 2; TG68K FAIL (6 passed/2 failed; also FAIL P8-PRE-A; also NOT GRADED P8-RESTART), fx68k FAIL (6 passed/2 failed; also FAIL P8-PRE-A; also NOT GRADED P8-RESTART).
+// MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run after the first has five words; TG68K FAIL (8 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (8 passed/2 failed; also FAIL P8-RESTART).
+// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words, while the control P8-CTRL on runs after the first is green in the unmutated run and red here, run C without the AUD0LC write (P8-C, prog_p8_c_nolc) is red in the same way; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
 
 #include <algorithm>
 #include <cstdint>
@@ -350,9 +398,9 @@ std::vector<Poke> list_words(const std::string& mv) {
     return pk;
 }
 
-// The words of the list in address order.
-std::vector<uint16_t> list_image() {
-    std::vector<Poke> pk = list_words("");
+// The words of the list in address order, as the stimulus stores them.
+std::vector<uint16_t> list_image(const std::string& mv) {
+    std::vector<Poke> pk = list_words(mv);
     std::vector<uint16_t> w;
     for (const auto& p : pk) w.push_back(p.second);
     return w;
@@ -393,7 +441,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
         ps = passes_of(rd);
     }
     // (a) one complete pass ends in each observed field, starts at the list and reads its words in order.
-    const std::vector<uint16_t> image = list_image();
+    const std::vector<uint16_t> image = list_image(mv);
     auto pass_is_list = [&](const std::vector<Acc>& v, const Pass& p) {
         if (p.last - p.first + 1 != image.size()) return false;
         for (size_t k = 0; k < image.size(); ++k)
@@ -449,14 +497,16 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     for (size_t f = 2; f < 6 && f < cf.size(); ++f) {
         rows.push_back(rows_of(r, cf[f]));
         seqs += "[" + seq_text(run_sequence(rows.back())) + "]";
-        for (uint16_t col : kColours) {
+        for (size_t i = 0; i < 9; ++i) {
+            if (image[4 * i] != 0x0180) continue; // a MOVE to another register sets no band
+            const uint16_t col = image[4 * i + 1] & 0xFFF;
             bool seen = false;
             for (const auto& x : rows.back()) if (x.rgb == col) seen = true;
             if (!seen) c_ok = false;
         }
     }
     g.pre(checks, c_ok,
-          "P1-PRE-C: (c) each of the nine colours appears in at least one row of each observed field");
+          "P1-PRE-C: (c) each of the nine colours the list sets in COLOR00 appears in at least one row of each observed field");
 
     // Expected: the run sequence of every observed field.
     bool seq_ok = cf.size() >= 6;
@@ -790,7 +840,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     std::vector<Acc> rd;
     std::vector<Pass> ps;
     if (cf.size() >= 6) {
-        rd = reads_in(r, cop, uint64_t(en), cf[5].end);
+        rd = reads_in(r, cop, m0, cf[5].end); // from marker 0: the Copper's first reads precede the write of marker 3
         ps = passes_of(rd);
     }
     auto pass_reads = [&](const Pass& p, uint32_t a) {
