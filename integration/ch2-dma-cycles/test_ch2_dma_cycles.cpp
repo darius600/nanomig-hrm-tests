@@ -522,7 +522,7 @@ RunResult run_C6(const std::string& dir, const char* bin = "/prog_c6.bin", nmh::
     return run_config(dir + bin, cfg, nopoke, {RES_DSKBYTR});
 }
 RunResult run_C6prime(const std::string& dir) { return run_config(dir + "/prog_c6_prime.bin", nmh::Config{}, nopoke); }
-RunResult run_C6_extra50(const std::string& dir) { return run_config(dir + "/prog_c6_extra50.bin", nmh::Config{}, nopoke); }
+RunResult run_C6_end50(const std::string& dir) { return run_config(dir + "/prog_c6_end50.bin", nmh::Config{}, nopoke); }
 RunResult run_C6_truncated(const std::string& dir) { return run_config(dir + "/prog_c6_trunc.bin", nmh::Config{}, nopoke); }
 
 RunResult run_C7a(const std::string& dir) { return run_config(dir + "/prog_c7a.bin", nmh::Config{}, nopoke); }
@@ -739,7 +739,7 @@ using PairList = std::vector<std::pair<int64_t, int64_t>>; // (line offset from 
 
 // [frame 0..2][segment 0..112] -> PairList, time-ordered (run.log is
 // chronological). Only valid for a run using the list_L5 layout (C5, C6,
-// C7a, C7b, and C6' -- the P7 mutation, which only substitutes one WAIT's
+// C7a, C7b, and C6' -- SELFTEST-P7's run, which only substitutes one WAIT's
 // own HP word and does not shift any segment).
 // `blocks` must be the run's OWN full declared-block list (e.g.
 // blocks_full(4) for C6): the refresh set is identified by exclusion
@@ -1052,10 +1052,10 @@ std::string copper_first_fetch_text(const Pop& p) {
 // MUTATION K4 stimulus red C3 without SPREN, NMH_MUTATE=K4; both cores: DONE=1, every sprite structure 0/86 words read in every observed frame
 // MUTATION K5 stimulus red C4-4 without BPLEN, NMH_MUTATE=K5; both cores: DONE=1, 0 fetch lines for every plane in every observed frame
 // MUTATION K6 stimulus red C6 with list L5 truncated to V_spr+V_bpl(6)+END, NMH_MUTATE=K6; both cores: DONE=1, L5 59/972 and L5b 0/12 words read in every observed frame
-// MUTATION T1 stimulus red C6-extra50 (list L5 with one extra DC.W $0180,$0000 after WAIT 50), NMH_MUTATE=T1; both cores: C5 and C6-extra50 DONE=1, 6 segments differ in access count (the unchanged segment table, so the inserted pair moves every later segment boundary)
+// MUTATION T1 stimulus red C6-end50 (list L5 with the end-of-list pair DC.W $FFFF,$FFFE in place of WAIT 50's two words, layout unchanged), NMH_MUTATE=T1; both cores: C5 and C6-end50 DONE=1, 189 segment/frame pairs differ in access count (segments 50-112, 3 frames)
 // MUTATION T2 stimulus red C6-stopself (STOP replaced by a self-branch loop, disk sequence unchanged), NMH_MUTATE=T2; DONE=1; fx68k: 342 segment lines, 32013 CPU accesses in them; tg68k: 342 segment lines, 36269
 // MUTATION T3 stimulus red C6-nospren (C6 without SPREN), NMH_MUTATE=T3; DONE=1; both cores: 339 segment lines, bpl_missing=0, spr_missing=120, disk lines per frame 113/113/113; audio lines per frame fx68k 106/105/106, tg68k 106/106/106
-// MUTATION P7 none impossible the Copper takes only the odd cycles and audio, disk, refresh, sprite and low-resolution plane DMA only the even ones (p.20), and no register or instruction makes one of those channels take an odd cycle, so no program makes an even-cycle channel delay the Copper; a channel that takes odd cycles (high-resolution planes) lies outside P7's premise, and changing the Copper's own list changes the comparison's inputs and not the clause
+// MUTATION P7 none impossible the Copper takes only the odd cycles and audio, disk, refresh, sprite and low-resolution plane DMA only the even ones (p.20), and no register or instruction moves one of those channels (audio, disk, refresh, sprite, low-resolution planes 1-4: p.20, Fig. 6-9, Fig. 6-11) to an odd cycle, so no program makes an even-cycle channel delay the Copper; the channels that take odd cycles (low-resolution planes 5 and 6, high-resolution planes, D2) lie outside P7's premise (at most four low-resolution planes), and changing the Copper's own list changes the comparison's inputs and not the clause
 // MUTATION SELFTEST-P7 stimulus red C6' (list L5 with WAIT 32 at HP=$42 instead of $40; a self-test of p7_check, whose three mismatches come from the Copper's own list), NMH_MUTATE=SELFTEST-P7; both cores: C5 and C6' DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, 3 mismatches of 339 segment/frame pairs
 // MUTATION SELFTEST-F1 none impossible the check runs on a synthetic trace built in the test and no module stimulus enters it; it is a self-test of check_f1, printed in every plain run
 // MUTATION SELFTEST-F2 none impossible the checks run on synthetic refresh groups built in the test (four slots, a moved slot, three, five) and no module stimulus enters them; it is a self-test of refresh_slots_ok and refresh_count_ok, printed in every plain run
@@ -1200,9 +1200,9 @@ int main(int argc, char** argv) {
                 not_graded(checks, "K6", unmet);
         } else if (mv == "T1") {
             RunResult c5 = run_C5(dir);
-            RunResult c6x = run_C6_extra50(dir);
+            RunResult c6x = run_C6_end50(dir);
             set_gS(c5.log, blocks_full(4), checks);
-            checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-extra50: done=" +
+            checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-end50: done=" +
                         std::to_string(c6x.done.has_value()));
             bool t1 = t1_check(c5, blocks_full(4), c6x, blocks_full(4), checks);
             checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
@@ -1229,7 +1229,7 @@ int main(int argc, char** argv) {
             std::string unmet;
             for (const Pop* q : {&pc5, &pc6p}) {
                 auto pr = analyze_population(q->run.log, q->blocks, q->starts, "R", false);
-                checks.note("P7 mutation " + q->name + ": F1F2F3=" + std::to_string(pr.f1_ok) +
+                checks.note("SELFTEST-P7 " + q->name + ": F1F2F3=" + std::to_string(pr.f1_ok) +
                             std::to_string(pr.f2_ok) + std::to_string(pr.f3_ok));
                 unmet += observation_unmet(q->name, q->run, pr);
             }
@@ -1307,7 +1307,7 @@ int main(int argc, char** argv) {
     {
         if (c0) set_gS(c0->run.log, c0->blocks, checks);
         else { checks.note("S measurement: no C0 run found"); gS = 1; }
-        checks.note("S measured (shortest refresh-group interval / 227, p.23) = " + std::to_string(gS));
+        checks.note("S measured (most common refresh-group interval / 227, p.23) = " + std::to_string(gS));
     }
 
     // C1 (program finished) and the readback path, before any line that reads a run.
@@ -1452,7 +1452,7 @@ int main(int argc, char** argv) {
                       "SPECIFICATION.md 2.2");
     }
 
-    // P1: its preconditions are F1, F2, F3 (per run), C1 and A1.
+    // P1: its preconditions are F1, F2, F2-COUNT, F3 (per run), C1 and A1.
     {
         Fold f = fold_check(all, names_all, "R", true, checks, "P1");
         std::string unmet = f.unmet + unmet_if(a1, "A1");
@@ -1621,9 +1621,8 @@ int main(int argc, char** argv) {
                    "disk-to-memory direction undone (D9). p.20");
     {
         // The Copper-block reads on an even in-line cycle, per run: how many
-        // there are, how many continue the sample directly before them and
-        // are dropped, how many remain, and the in-line cycle numbers they
-        // fall on.
+        // there are, how many continue the sample directly before them, how
+        // many do not, and the in-line cycle numbers they fall on.
         std::ostringstream m;
         for (auto& p : all) {
             auto info = measure_p6_even_reads(p.run, p.blocks);

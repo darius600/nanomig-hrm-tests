@@ -5,7 +5,7 @@ the pages of the *Amiga Hardware Reference Manual*, 3rd edition. Its author neve
 implementation under test or any existing test. Every expected value below is taken from a
 printed page and quoted. Where the pages leave a value open or disagree with each other, the
 specification says so and grades only what all of them agree on. It specifies twelve
-propositions. Eighteen of the package's 22 claims support them; four could not be used.
+propositions; P6 is withdrawn. Eighteen of the package's 22 claims support them; four could not be used.
 
 Page numbers are printed page numbers. "Fig." means a figure of the manual. "p.X" without a
 chapter means the page in the manual.
@@ -165,7 +165,8 @@ NTSC- 3,579,545 Hz PAL - 3,546,895 Hz"*. p.194: *"A memory cycle is approximatel
 duration."* One memory cycle is therefore one horizontal count at the colour clock of p.24.
 
 **S** is the number of trace time units in one memory cycle. It is measured: S is the
-shortest interval between two consecutive memory-refresh groups (§2.3), divided by 227, the
+most common interval between the first accesses of consecutive memory-refresh groups (§2.3),
+divided by 227, the
 shorter of the two line lengths p.23 gives (*"In PAL, they are all 227 long"*; NTSC alternates
 227 and 228). No constant is taken from any RTL source. F3 guards the measurement: every
 observed line's own interval must equal exactly 227·S or 228·S, or the derivation is wrong for
@@ -465,9 +466,9 @@ line prints `NOT GRADED` and the failed names, and counts as neither PASS nor FA
 precondition is part of a graded expression.
 
 - **Observation preconditions of a run:** it reached DONE (C1), its restart fetches delimit
-  the observed frames (§2.4), and F1, F2 and F3 hold. They are evaluated on the run's own
+  the observed frames (§2.4), and F1, F2, F2-COUNT and F3 hold. They are evaluated on the run's own
   declared blocks and gate every line that grades that run. A run that has not finished, or
-  has no observed frames, leaves its own F1, F2 and F3 lines NOT GRADED.
+  has no observed frames, leaves its own F1, F2, F2-COUNT and F3 lines NOT GRADED.
 - **Per proposition:** A1 gates P1–P5; K2a and K2b gate P2; K3 gates P3; K4 gates P4; K5
   gates P5; K6 gates P7; T1, T2 and T3 gate P7. A K line is NOT GRADED when the runs it
   grades have no observed frames.
@@ -498,11 +499,12 @@ precondition is part of a graded expression.
    access, all of which use only the even-numbered memory cycles."* The quantifier "only" is
    graded over every refresh access of every line in the observed frames of every run and
    mode; one line does not establish it. Within each line the first refresh access has s = 0
-   by construction, and F2 puts the next three at s = 2, 4 and 6. P1 therefore adds to F2 the
-   rest of R: every further access of a group, which on a machine that follows the pages
-   does not exist, and the check bites there. R is defined by exclusion (D7), so an access
+   by construction, and F2 puts the next three at s = 2, 4 and 6. F2-COUNT rejects every
+   further access of a group and gates P1, so P1 adds to F2 and F2-COUNT only the accesses
+   of R outside the groups they grade: a write attributed to R, and the part of a group that
+   starts before the observed frames. R is defined by exclusion (D7), so an access
    of another agent to memory no block declares falls into R.
-5. **Preconditions.** F1, F2, F3 (§2.3), A1 (§2.2), C1 (§2.6). P1 is NOT GRADED when F2, or
+5. **Preconditions.** F1, F2, F2-COUNT, F3 (§2.3), A1 (§2.2), C1 (§2.6). P1 is NOT GRADED when F2, or
    any other of them, fails in any run it covers (§2.11).
 6. **Contrasting case.** None, impossible. The four refresh slots of every line are fixed by
    the hardware (P1.2), at the offsets F2 grades, and no register and no instruction moves
@@ -531,7 +533,7 @@ precondition is part of a graded expression.
    graded over every access of both directions in every observed frame, both alone (C2a, C2b:
    every odd cycle free) and under full load (C6).
 5. **Preconditions.**
-   - F1–F3, A1, C1.
+   - F1–F3, F2-COUNT, A1, C1.
    - **K2a:** the stored DSKBYTR value has bit 14 (DMAON) = 1, and bit 13 (DISKWRITE) = 1 in
      C2a and C6 or 0 in C2b (p.248, Appendix A p.278; see D6).
    - **K2b:** the disk block receives at least one access, not counting the words of the
@@ -568,7 +570,7 @@ precondition is part of a graded expression.
    find the start of the data"*. The location-reload fetches are therefore included.
 4. **Expected value.** Every audio-block access has even s (p.20). "Only" is graded over
    every fetch of every channel at two periods, alone and under full load.
-5. **Preconditions.** F1–F3, A1, C1. **K3:** each of the four channels is active:
+5. **Preconditions.** F1–F3, F2-COUNT, A1, C1. **K3:** each of the four channels is active:
    it has at least one access, not counting the words of the Copper's lists, in each
    observed frame of each run (p.144: *"When both DMAEN and AUDxEN are set, the DMA will
    start for channel x"*).
@@ -597,7 +599,7 @@ precondition is part of a graded expression.
 4. **Expected value.** Every sprite-block access has even s (p.20). "Only" is graded over all
    eight channels and every kind of fetch, in every observed frame, alone (C3) and under full
    load (C6).
-5. **Preconditions.** F1–F3, A1, C1. **K4:** in each observed frame of C3 and C6, every word
+5. **Preconditions.** F1–F3, F2-COUNT, A1, C1. **K4:** in each observed frame of C3 and C6, every word
    of each of the eight structures is read at least once, including the use-2 control words,
    which are fetched in the VSTOP line of use 1. p.108: *"When the vertical position of the
    beam counter is equal to the VSTOP value in the sprite control words, the next two words
@@ -633,7 +635,7 @@ precondition is part of a graded expression.
    - (b) "Most": in every line with bitplane fetches, the number of bitplane fetches with even
      s is greater than the number with odd s.
    - Not graded: the parity of planes 5 and 6, and of high-resolution fetches (D2).
-5. **Preconditions.** F1–F3, A1, C1. **K5:** every enabled plane has fetches in at least
+5. **Preconditions.** F1–F3, F2-COUNT, A1, C1. **K5:** every enabled plane has fetches in at least
    as many lines of every observed frame as the display window is high. The programs write
    DIWSTRT `$2C81` and DIWSTOP `$2CC1`; p.59, Table 3-9, gives PAL VSTART `$2C` and VSTOP
    `$2C` (= `$12C`), so the window is `$12C` − `$2C` = 256 lines high. That every line of
@@ -708,7 +710,7 @@ graded, the measurement that stands in its place and the reason are in one place
    collision means the Copper never waits for these channels, so its cycles cannot move. All
    113 segments are graded, in every observed frame and mode.
 5. **Preconditions.**
-   - F1–F3, C1, K6 (both runs).
+   - F1–F3, F2-COUNT, C1, K6 (both runs).
    - **T1:** every segment has the same number of Copper accesses in both runs.
    - **T2:** no CPU-block access lies in any line spanned by a segment, in either run.
    - **T3:** in the lines of the segments in C6, bitplane fetches occur in every line; sprite
@@ -716,10 +718,11 @@ graded, the measurement that stands in its place and the reason are in one place
      `$80`–`$93`); and audio and disk accesses each occur in the segment lines of every observed
      frame, which shows both channels active while the segments run.
 6. **Contrasting case.** None for P7 itself, impossible. The Copper takes only the odd cycles
-   and audio, disk, refresh, sprite and low-resolution plane DMA take only the even ones; no
-   register and no instruction makes one of those channels take an odd cycle, so no program
-   makes an even-cycle channel delay the Copper. A channel that does take odd cycles exists
-   (high-resolution planes, D2), but it is outside P7's premise. Run **C6'** is kept as a
+   and audio, disk, refresh, sprite and low-resolution plane 1–4 DMA take only the even ones
+   (p.20, Fig. 6-9, Fig. 6-11); no register and no instruction moves one of those channels to
+   an odd cycle, so no program makes an even-cycle channel delay the Copper. The channels
+   that take odd cycles (low-resolution planes 5 and 6, high-resolution planes, D2) lie
+   outside P7's premise (P7.1: at most four low-resolution planes). Run **C6'** is kept as a
    self-test of the comparator, SELFTEST-P7: C6 with list L5' (WAIT i = 32 at HP `$42` instead
    of `$40`), compared with C5 on L5. p.22: *"The WAIT instruction causes the Copper to wait
    until the video beam counters are equal to (or greater than) the coordinates specified in
@@ -729,8 +732,10 @@ graded, the measurement that stands in its place and the reason are in one place
    - **Contrast for T2:** C6 with `STOP #$2000` replaced by a loop that branches to itself.
      The CPU then fetches in every line, and T2 fails.
    - **Contrast for T3:** C6 without SPREN. Sprite fetches are then absent, and T3 fails.
-   - **Contrast for T1:** C6 with one extra `DC.W $0180,$0000` after WAIT i = 50. Segment 50
-     then has two more accesses, and T1 fails.
+   - **Contrast for T1:** C6 with the end-of-list pair `DC.W $FFFF,$FFFE` in place of WAIT
+     i = 50's two words, the layout unchanged. p.23: the Copper then stops until the next
+     vertical blank, so segments 50 to 112 are empty in C6 and have accesses in C5, and T1
+     fails.
 7. **Reference frame.** Frame F, with segments anchored on the list's own WAITs.
 
 ### P8 — A sprite DMA channel produces a movable object
@@ -912,7 +917,7 @@ Per-core result, from `out_fx68k.txt` / `out_tg68k.txt` (`make -k -B test`):
 | P2 | PASS | PASS |
 | P3, K3 | PASS; K3: every channel has accesses in every observed frame (C1a 286/287/286, C1b 80/79/80, C6 286/287/286) | PASS (C6 287/286/287) |
 | P4, K4 | PASS | PASS |
-| P6 (withdrawn, MEASURED, not graded) | the Copper-block reads on an even in-line cycle are held continuations, all at s = 226 (the cycle before the next line's first refresh), each the sample of the same word, direction, data and byte enables one memory cycle (S) after the s = 225 sample: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b), and 24 in each of C6 NTSC/ECS, C6 PAL/OCS and C6 NTSC/OCS; none remains on an even cycle after they are dropped; no sample repeats the one before it at S/2 | identical counts |
+| P6 (withdrawn, MEASURED, not graded) | the Copper-block reads on an even in-line cycle are held continuations, all at s = 226 (the cycle before the next line's first refresh), each the sample of the same word, direction, data and byte enables one memory cycle (S) after the s = 225 sample: 24 (C5), 24 (C6), 39 (C7a), 264 (C7b), and 24 in each of C6 NTSC/ECS, C6 PAL/OCS and C6 NTSC/OCS; none remains on an even cycle once they are set aside; no sample repeats the one before it at S/2 | identical counts |
 | A1 | PASS (0 violations) | PASS |
 | P5, K5 | PASS; K5: 256 lines with fetches for every enabled plane in every observed frame | PASS |
 | K6, T1, T2, T3 | PASS; T3: audio lines per frame 106/105/106, disk lines per frame 113/113/113 | PASS (audio 106/106/106) |

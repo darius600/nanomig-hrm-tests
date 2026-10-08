@@ -1,7 +1,7 @@
-; prog_c6_extra50.s -- T1's own contrast (SPECIFICATION.md P7.6): as C6,
-; but with one extra `DC.W $0180,$0000` (MOVE COLOR00<-0) inserted right
-; after WAIT i=50's own three MOVEs. Segment 50 then has two more accesses
-; than C5's, and T1 fails for that segment.
+; prog_c6_end50.s -- T1's own contrast (SPECIFICATION.md P7.6): as C6, but the end-of-list
+; word pair `DC.W $FFFF,$FFFE` stands in place of WAIT i=50's two words; the layout is
+; unchanged. The Copper stops there until the next vertical blank (p.23), so segments 50 to
+; 112 are empty and T1 fails for them.
 
         include "nanomig.i"
         include "ch2dma.i"
@@ -12,7 +12,7 @@
 
 start:
         S0_QUIESCE
-        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,-1,0,50
+        BUILD_L5  COP_MAIN,c6_spr_tab,c6_bpl_tab,COP_SECOND,50,$FFFF,-1
         BUILD_L5B COP_SECOND
         bsr     build_structs_c3
         move.w  #(CH_AUD0)>>16,AUD0LCH(a0)
