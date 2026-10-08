@@ -75,12 +75,15 @@ Printed row: "37 LP* Light pen input I".
 
 Printed row: "78 LP* Light pen O".
 
-- **An output direction has nothing the test can see.** The test sees no chip
-  pin. No page names an effect of Agnus driving LP* that shows at an output or
-  in a register.
-- **The pages contradict each other** (see section 7.1). p. 379 gives the same
-  signal on the Original Agnus as "Light pen input I". Chapter 8 describes the
-  light pen of the A500, A2000 and A3000 as a trigger that Agnus takes in:
+- **An internal output pin's direction has no observable effect at this
+  boundary.** The test sees no chip pin. No page names an effect of Agnus
+  driving LP* that shows at an output or in a register.
+- **The other pages give the signal on other chips or describe the pen.**
+  p. 379 is the table of the Original Agnus and p. 381 the table of the Fat
+  Agnus (see section 7.1); each gives the direction of its own chip's pin.
+  p. 379 gives the signal on the Original Agnus as "Light pen input I".
+  Chapter 8 describes the light pen of the A500, A2000 and A3000 as a trigger
+  that Agnus takes in:
   - p. 238: "The pen converts this light pulse into an electrical pulse on the
     "Beam Trigger" line (pin 6)." and "This trigger signal tells the internal
     circuitry to capture and save the current contents of the beam register,
@@ -720,7 +723,7 @@ sentences.
 
 ### 7.1 Direction of LP*
 
-The pages give three different directions:
+The pages give the direction of LP* in three places:
 
 - p. 379 (Original Agnus): "37 LP* Light pen input I".
 - p. 381 (Fat Agnus): "78 LP* Light pen O".
@@ -843,15 +846,31 @@ not graded:
 
 fdd_led never moves over the whole sequence. Both cores read identically.
 
+The DAT bit of each pot pin per step (one value per step; C7 is not graded)
+prints once per core, identically:
+
+    MEASURED: P5-P8 observed DAT bit per step (C1..C8; - = not graded,
+    0/1 = the samples of the step differ, ? = no sample):
+    P5 [C1=1 C2=0 C3=1 C4=0 C5=0 C6=0 C7=- C8=1]
+    P6 [C1=1 C2=0 C3=1 C4=0 C5=0 C6=0 C7=- C8=1]
+    P7 [C1=1 C2=1 C3=1 C4=0 C5=0 C6=1 C7=- C8=1]
+    P8 [C1=1 C2=0 C3=1 C4=0 C5=0 C6=0 C7=- C8=1]
+
+The RECORDED line of opus:AHJ-326 states the boundary reason alone:
+"declined -- an internal output pin's direction has no observable effect at
+this boundary: the test sees no chip pin, and no page names a register or
+output effect of Agnus driving LP*".
+
 ### 8.4 Mutations (both cores, identically; `NMH_MUTATE=<value>`, header
 comment of `test_appHJ_drive_pins.cpp`)
 
 Every mutation runs the target precondition's or proposition's own
-comparator unchanged; a mutation never inverts a verdict. P1-P8 are gated
-on their section's own preconditions (spec 3.7): when any of a section's
-preconditions fails, that section's propositions print as a
-`RECORDED: ... not checkable` line instead of PASS/FAIL, and are not
-counted in the totals below.
+comparator unchanged; a mutation never inverts a verdict. The graded
+propositions (P1-P6 and P8) are gated on their section's own preconditions
+(spec 3.7): when any of a section's preconditions fails, that section's
+graded propositions print as a `RECORDED: ... not checkable` line instead of
+PASS/FAIL, and are not counted in the totals below. P7 is withdrawn (8.2)
+and prints no such line.
 
 Proposition (stimulus) mutations print a literal `FAIL: <label>` line
 through the named proposition's own comparator, nothing else affected:

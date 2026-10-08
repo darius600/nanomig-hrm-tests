@@ -12,48 +12,25 @@
 // the same four-phase or four-pin run; only the one named clause changes,
 // and the comparator is never inverted while a mutation is selected.
 //
-// MUTATION P1-WRONGPORT stimulus red: P1's own schedule (M0H) is applied to
-//   joystick0 instead of joystick1; JOY0DAT's lo byte stays at its baseline
-//   while P1's own E2 formula still expects it to move, via NMH_MUTATE=P1-WRONGPORT
-// MUTATION P2-WRONGPORT stimulus red: P2's schedule applied to joystick0 instead
-//   of joystick1, via NMH_MUTATE=P2-WRONGPORT
-// MUTATION P3-WRONGPORT stimulus red: P3's schedule applied to joystick1 instead
-//   of joystick0, via NMH_MUTATE=P3-WRONGPORT
-// MUTATION P4-WRONGPORT stimulus red: P4's schedule applied to joystick1 instead
-//   of joystick0, via NMH_MUTATE=P4-WRONGPORT
-// MUTATION PJ1 stimulus red: one scheduled pin change (phase 0, step 5) is
-//   dropped while the grader keeps its plan, via NMH_MUTATE=PJ1
-// MUTATION PJ2 stimulus red: phase 0's step 5 hold is shortened to 2 lines
-//   (the window then holds fewer than 3 real stored samples), via NMH_MUTATE=PJ2
-// MUTATION PJ3 stimulus red: a mouse count is injected through kbd_mouse_*
-//   during phase 0's baseline window, via NMH_MUTATE=PJ3
-// MUTATION P5-WRONGPIN stimulus red: P5's own button press is redirected to
-//   the input wired for P6 (mouse_buttons bit 1) instead of P5's own (bit 2);
-//   POT0X's own DATLX bit never moves, via NMH_MUTATE=P5-WRONGPIN
-// MUTATION P6-WRONGPIN stimulus red: P6's own press redirected to P5's input
-//   (mouse_buttons bit 2), via NMH_MUTATE=P6-WRONGPIN
-// MUTATION P8-WRONGPIN stimulus red: P8's own press redirected to joystick1
-//   bit 5 instead of joystick0 bit 5, via NMH_MUTATE=P8-WRONGPIN
-// MUTATION PP1 stimulus red: the C2 button press is omitted; PP1 reports it
-//   missing instead of grading C2, via NMH_MUTATE=PP1
-// MUTATION PP2 stimulus red: pin 5's C1 write sets POTGO bit 0 = 1
-//   (prog_pot_pp2.bin), via NMH_MUTATE=PP2
-// MUTATION PP3 stimulus red: pin 5's C1 step is shortened to 6 lines
-//   (prog_pot_pp3.bin), leaving fewer than 3 real stored samples in its
-//   window, via NMH_MUTATE=PP3
-// MUTATION FIXTURE (section 4) not exercised, by a scope decision: it and
-//   the five other fixture/DONE checks below verify only that chip-memory
-//   writes and reads and the DONE marker work at all, a plumbing
-//   precondition every other assertion in this package already depends on
-//   and would fail through if it did not hold.
-// MUTATION FIXTURE (section 5) not exercised, by a scope decision: as above.
-// MUTATION FIXTURE (section 6) not exercised, by a scope decision: as above.
-// MUTATION section 4 fixture (reaches DONE) not exercised, by a scope
-//   decision: as above.
-// MUTATION section 5 fixture (reaches DONE) not exercised, by a scope
-//   decision: as above.
-// MUTATION section 6 fixture (reaches DONE) not exercised, by a scope
-//   decision: as above.
+// MUTATION P1 stimulus red NMH_MUTATE=P1-WRONGPORT: P1's own schedule (M0H) is applied to joystick0 instead of joystick1, so JOY0DAT's low byte stays at its baseline while P1's E2 formula expects it to move; TG68K FAIL (P1; 14 passed, 1 failed), fx68k FAIL (P1; 14 passed, 1 failed).
+// MUTATION P2 stimulus red NMH_MUTATE=P2-WRONGPORT: P2's schedule is applied to joystick0 instead of joystick1; TG68K FAIL (P2; 14 passed, 1 failed), fx68k FAIL (P2; 14 passed, 1 failed).
+// MUTATION P3 stimulus red NMH_MUTATE=P3-WRONGPORT: P3's schedule is applied to joystick1 instead of joystick0; TG68K FAIL (P3; 14 passed, 1 failed), fx68k FAIL (P3; 14 passed, 1 failed).
+// MUTATION P4 stimulus red NMH_MUTATE=P4-WRONGPORT: P4's schedule is applied to joystick1 instead of joystick0; TG68K FAIL (P4; 14 passed, 1 failed), fx68k FAIL (P4; 14 passed, 1 failed).
+// MUTATION PJ1 stimulus red NMH_MUTATE=PJ1: one scheduled pin change (phase 0, step 5) is dropped while the grader keeps its plan; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 2 lines, so the window holds fewer than 3 real stored samples; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: a mouse count is injected through kbd_mouse_* during phase 0's baseline window; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
+// MUTATION P5 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is redirected to the input wired for P6 (mouse_buttons bit 1) instead of P5's own (bit 2), so POT0X's DATLX bit never moves; TG68K FAIL (P5; 14 passed, 1 failed), fx68k FAIL (P5; 14 passed, 1 failed).
+// MUTATION P6 stimulus red NMH_MUTATE=P6-WRONGPIN: P6's press is redirected to P5's input (mouse_buttons bit 2); TG68K FAIL (P6; 14 passed, 1 failed), fx68k FAIL (P6; 14 passed, 1 failed).
+// MUTATION P8 stimulus red NMH_MUTATE=P8-WRONGPIN: P8's press is redirected to joystick1 bit 5 instead of joystick0 bit 5; TG68K FAIL (P8; 14 passed, 1 failed), fx68k FAIL (P8; 14 passed, 1 failed).
+// MUTATION PP1 stimulus red NMH_MUTATE=PP1: the C2 button press is omitted, so PP1 reports it missing instead of grading C2; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION PP2 stimulus red NMH_MUTATE=PP2: pin 5's C1 write sets POTGO bit 0 = 1 (prog_pot_pp2.bin); TG68K FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION PP3 stimulus red NMH_MUTATE=PP3: pin 5's C1 step is shortened to 6 lines (prog_pot_pp3.bin), leaving fewer than 3 real stored samples in its window; TG68K FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION FIXTURE none impossible: the section 4 known-value check only verifies that chip-memory writes and reads work at all, a plumbing precondition every other assertion of the package depends on and would fail through; not exercised, by a scope decision.
+// MUTATION FIXTURE none impossible: the section 5 known-value check only verifies that chip-memory writes and reads work at all, as above; not exercised, by a scope decision.
+// MUTATION FIXTURE none impossible: the section 6 known-value check only verifies that chip-memory writes and reads work at all, as above; not exercised, by a scope decision.
+// MUTATION section none impossible: the section 4 DONE check only verifies that the program reaches DONE, a plumbing precondition every other assertion of the package depends on; not exercised, by a scope decision.
+// MUTATION section none impossible: the section 5 DONE check only verifies that the program reaches DONE, as above; not exercised, by a scope decision.
+// MUTATION section none impossible: the section 6 DONE check only verifies that the program reaches DONE, as above; not exercised, by a scope decision.
 //
 // Stimulus mapping established by this build (SPECIFICATION.md 3.4, 5.1
 // assign it to the builder), from the harness's own ports, matched against
@@ -497,8 +474,9 @@ int main(int argc, char** argv) {
         checks.record("opus:AHJ-161, sol:J-030 [SPECIFICATION.md 1.2, p.379]: declined -- a pin's direction "
                        "cannot be seen at this boundary, and no harness setting corresponds to the Original "
                        "Agnus specifically");
-        checks.record("opus:AHJ-326 [SPECIFICATION.md 1.3, p.381]: declined -- an output direction has nothing "
-                       "the test can see, and the pages contradict each other on this pin's direction");
+        checks.record("opus:AHJ-326 [SPECIFICATION.md 1.3, p.381]: declined -- an internal output pin's "
+                       "direction has no observable effect at this boundary: the test sees no chip pin, and no "
+                       "page names a register or output effect of Agnus driving LP*");
         checks.record("opus:AHJ-300, sol:J-166 [SPECIFICATION.md 1.4, p.381]: declined -- the pin is internal "
                        "to the system, between chips, with no visible effect at this boundary");
         checks.record("opus:AHJ-090, sol:H-064 [SPECIFICATION.md 1.5, p.370]: declined -- the test sees no pin "
@@ -539,9 +517,8 @@ int main(int argc, char** argv) {
 
     // Per-phase grading. Step windows are bounded by consecutive entries of
     // the driver's own action record (mr.applied's sample_index, taken from
-    // live simulation), never by the test's own hold-line constants
-    // (SPECIFICATION.md validator repair: PJ2/PP3 must be asserted from the
-    // stored samples).
+    // live simulation), never by the test's own hold-line constants, so that
+    // PJ2 and PP3 assert the window population from the stored samples.
     struct PhaseResult { bool e1_ok = true, e2_ok = true, e3_ok = true; bool pj3_ok = true; bool population_ok = true;
                           uint8_t c0 = 0; int graded_windows = 0; };
     PhaseResult pr[4];
@@ -759,11 +736,23 @@ int main(int argc, char** argv) {
             checks.record(label + " -- not checkable: a section 5 precondition (PP1, PP2 or PP3) did not hold");
         }
     }
-    checks.note("P5-P8 observed DAT-bit sequence (C1..C8, - = not graded): P5=" +
-                [&]{ std::string s; for (size_t i=0;i<pinr[0].observed_d.size();++i) s += std::to_string(pinr[0].observed_d[i]); return s; }() +
-                " P6=" + [&]{ std::string s; for (size_t i=0;i<pinr[1].observed_d.size();++i) s += std::to_string(pinr[1].observed_d[i]); return s; }() +
-                " P7=" + [&]{ std::string s; for (size_t i=0;i<pinr[2].observed_d.size();++i) s += std::to_string(pinr[2].observed_d[i]); return s; }() +
-                " P8=" + [&]{ std::string s; for (size_t i=0;i<pinr[3].observed_d.size();++i) s += std::to_string(pinr[3].observed_d[i]); return s; }());
+    // One value per step and pin: the DAT bit when every observed sample of
+    // the step reads it alike, "0/1" when they differ, "?" when the step
+    // holds none, and "-" for C7 (not graded).
+    auto dat_by_step = [&](int p) {
+        std::string s;
+        for (int step = 0; step < 8; ++step) {
+            bool saw0 = false, saw1 = false;
+            for (size_t k = 0; k < pinr[p].observed_d.size(); ++k)
+                if (pinr[p].observed_step[k] == step) (pinr[p].observed_d[k] ? saw1 : saw0) = true;
+            std::string v = expect_bit[step] < 0 ? "-" : (saw0 && saw1) ? "0/1" : saw1 ? "1" : saw0 ? "0" : "?";
+            s += (step ? " " : "") + std::string("C") + std::to_string(step + 1) + "=" + v;
+        }
+        return s;
+    };
+    checks.note("P5-P8 observed DAT bit per step (C1..C8; - = not graded, 0/1 = the samples of the step differ, "
+                "? = no sample): P5 [" + dat_by_step(0) + "] P6 [" + dat_by_step(1) + "] P7 [" + dat_by_step(2) +
+                "] P8 [" + dat_by_step(3) + "]");
 
     // P7 (POT1X): withdrawn (SPECIFICATION.md 5.1, 8.2). The input half (a
     // pressed button forcing right-port pin 5) cannot be set up at this
