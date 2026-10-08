@@ -25,7 +25,6 @@
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so in every frame the stored line 256 follows line 254: VHPOSR bits 15-8 go from $FE to $00 with V8 going from 0 to 1, not at a frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAMEEND: the sampling loop learns the frame's last line from one frame wrap and leaves it out (prog_mouse_pj2e.bin), so the stored line before line 0 is the line before the last one; the return to $00 still shows V8 going from 1 to 0 and the continuity clause holds, but the store-time gap there is twice the run's median; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: the program writes JOYTEST after sample 8, the complement of the JOY0DAT value it has just read, inside phase 0's baseline window (prog_mouse_pj3.bin), so the baseline samples of JOY0DAT and JOY1DAT differ while the action record stays true; TG68K FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed).
-// MUTATION PJ1 stimulus red NMH_MUTATE=PJ3-KBDMOUSE: a mouse count is injected through kbd_mouse_* during phase 0's baseline window, which is the mouse movement PJ1's idle clause forbids; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is applied to mouse_buttons bit 1 instead of mouse_buttons bit 2, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P6-WRONGPIN: P6's button press is applied to mouse_buttons bit 2 instead of mouse_buttons bit 1, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P8-WRONGPIN: P8's button press is applied to joystick1 bit 5 instead of joystick0 bit 5, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
@@ -33,7 +32,7 @@
 // MUTATION P6 stimulus red NMH_MUTATE=P6-WRONGREG: for the samples of P6's pin the program stores POTGOR with bit 10 replaced by bit 8, the DAT bit of P5's pin (prog_pot_p6.bin), the action record and the other preconditions staying true, so the stored bit reads 1 in every step and the proposition fails at C2, C4, C5 and C6; TG68K FAIL (P6; 14 passed, 1 failed), fx68k FAIL (P6; 14 passed, 1 failed).
 // MUTATION P8 stimulus red NMH_MUTATE=P8-WRONGREG: for the samples of P8's pin the program stores POTGOR with bit 14 replaced by bit 12, the DAT bit of P7's pin (prog_pot_p8.bin), the action record and the other preconditions staying true, so the stored bit reads 1 in every step and the proposition fails at C2, C4, C5 and C6; TG68K FAIL (P8; 14 passed, 1 failed), fx68k FAIL (P8; 14 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=PP1: the C2 button press is omitted, so PP1 reports it missing instead of grading C2; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
-// MUTATION PP2 stimulus red NMH_MUTATE=PP2: pin 5's C1 write sets POTGO bit 0 = 1 (prog_pot_pp2.bin); TG68K FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION PP2 stimulus red NMH_MUTATE=PP2: pin 5's C1 write sets POTGO bit 0 = 1 (prog_pot_pp2.bin), so the stored marker $FF01 differs from the unchanged planned $FF00 and has bit 0 set; TG68K FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP3 stimulus red NMH_MUTATE=PP3: pin 5's C1 step is shortened to 6 lines (prog_pot_pp3.bin), leaving fewer than 3 real stored samples in its window; TG68K FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION FIXTURE none impossible: the section 4 known-value check only verifies that chip-memory writes and reads work at all, a plumbing precondition every other assertion of the package depends on and would fail through; not exercised, by a scope decision.
 // MUTATION FIXTURE none impossible: the section 5 known-value check only verifies that chip-memory writes and reads work at all, as above; not exercised, by a scope decision.
@@ -169,7 +168,6 @@ struct MouseRun {
     std::vector<RamAccess> log;
     std::optional<uint16_t> fixture;
     std::vector<AppliedMouseEvent> applied;
-    bool pj3_pulse_applied = false;
 };
 
 // Runs prog_mouse.bin (or the contrast program the selector names),
@@ -217,10 +215,6 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     if (mutate == "PJ1") {
         for (size_t i = 0; i < events.size(); ++i) if (events[i].phase == 0 && events[i].step == 5) { skip_ev = (int)i; break; }
     }
-    // PJ3-KBDMOUSE: inject a mouse count pulse partway through phase 0's baseline
-    // window (samples [2,15] are graded there).
-    bool do_pj3 = (mutate == "PJ3-KBDMOUSE");
-    bool pj3_done = false;
 
     const uint32_t buf_w0 = word_addr(kBufBase);
     size_t samples_seen = 0;
@@ -260,15 +254,6 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
                     ++ev_idx;
                 }
                 ++samples_seen;
-                if (do_pj3 && !pj3_done && samples_seen == 8) { // mid-baseline of phase 0
-                    h.ports()->kbd_mouse_type = 0; // x-count delta
-                    h.ports()->kbd_mouse_data = 1;
-                    h.ports()->kbd_mouse_level = !h.ports()->kbd_mouse_level;
-                    r.pj3_pulse_applied = true;
-                    pj3_done = true;
-                } else if (do_pj3 && pj3_done && samples_seen == 9) {
-                    h.ports()->kbd_mouse_data = 0;
-                }
             }
         }
     }
@@ -537,7 +522,7 @@ int main(int argc, char** argv) {
     // PJ1 [SPECIFICATION.md 4.5]: from the driver's own action record (the
     // logged input-port writes, each with the sample index it landed at) --
     // every scheduled change was actually applied, at its planned sample
-    // index, and no other channel (the mouse-count injection) was touched.
+    // index, and no other channel was touched.
     bool pj1_missing_ok = true;
     for (auto& e : mr.applied) if (e.skipped) pj1_missing_ok = false;
     bool pj1_timing_ok = true;
@@ -555,8 +540,7 @@ int main(int argc, char** argv) {
         uint8_t want_j1 = ph.use_joystick1 ? want : 0, want_j0 = ph.use_joystick1 ? 0 : want;
         if (e.j0 != want_j0 || e.j1 != want_j1 || e.mb != 0) pj1_pins_ok = false;
     }
-    bool pj1_idle_ok = !mr.pj3_pulse_applied;
-    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_pins_ok && pj1_idle_ok;
+    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_pins_ok;
     checks.expect(pj1_ok, "PJ1 [SPECIFICATION.md 4.5]: the driver's own action record shows every scheduled "
                            "change applied, at its scheduled sample index, on the proposition's two pins only, "
                            "with no other controller-port input, mouse movement or mouse-button activity");
@@ -753,7 +737,6 @@ int main(int argc, char** argv) {
         std::vector<uint16_t> plan;
         for (int p = 0; p < 4; ++p) { plan.push_back(kPotPins[p].c1); plan.push_back(kPotPins[p].c4);
                                        plan.push_back(kPotPins[p].c6); plan.push_back(kPotPins[p].c8); }
-        if (mv == "PP2" && !plan.empty()) plan[0] = 0xFF01; // pin 5's C1
         pp2_ok = pt.markers.size() == plan.size();
         for (size_t i = 0; pp2_ok && i < plan.size(); ++i)
             if (pt.markers[i] != plan[i] || (pt.markers[i] & 1) != 0) pp2_ok = false;

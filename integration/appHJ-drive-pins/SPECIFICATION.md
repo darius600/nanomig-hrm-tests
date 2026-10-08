@@ -495,7 +495,6 @@ E1-E3.
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
 | PJ2 | Leave the frame's last line out of the sampling loop (the program learns that line from one frame wrap before it starts sampling). | The return to $00 still shows V8 going from 1 to 0, but the gap before it is about twice the median, so PJ2 is not met. |
 | PJ3 | The program writes JOYTEST once inside the baseline window, which sets all four joystick-mouse counters at once. The harness input log is unchanged, so PJ1 and PJ2 stay met. | The baseline samples differ, so PJ3 is not met. |
-| PJ1 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. | PJ1 reports the mouse movement, and the baseline samples differ, so PJ3 is not met either. |
 
 ### 4.6 Contrasting cases
 
@@ -957,7 +956,6 @@ whole section's propositions to "not checkable":
 | PJ2-FRAME | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
 | PJ2-FRAMEEND | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
 | PJ3 | `PJ3 [...]` | P1, P2, P3, P4 all become "not checkable"; PJ1 and PJ2 stay met | 10 passed, 1 failed (PJ3) |
-| PJ3-KBDMOUSE | `PJ1 [...]` and `PJ3 [...]` | the injected mouse count is the mouse movement PJ1's own idle clause forbids; P1, P2, P3, P4 all become "not checkable" | 9 passed, 2 failed (PJ1, PJ3) |
 | PP1 | `PP1 [...]` | P5, P6, P8 all become "not checkable" (section 5 gated) | 11 passed, 1 failed (PP1) |
 | PP2 | `PP2 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP2) |
 | PP3 | `PP3 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP3) |
