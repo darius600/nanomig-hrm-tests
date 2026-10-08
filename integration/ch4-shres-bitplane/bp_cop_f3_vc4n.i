@@ -1,5 +1,5 @@
-; F3 contrast V4C: the null band also inverts COLOR00-03 for the rest of the frame
-; 618 words, transcribed from SPECIFICATION.md sections 3 and 4.
+; F3 for contrast V4C: the closing band also inverts bit 11 of COLOR01 for part of its own first line
+; 658 words, transcribed from SPECIFICATION.md sections 3 and 4.
 	dc.w	$0100,$2040,$0102,$0000,$0104,$0024,$008E,$2C81
 	dc.w	$0090,$F4A1,$0092,$003C,$0094,$00D4,$0108,$0000
 	dc.w	$010A,$0000,$00E0,$0001,$00E2,$0000,$00E4,$0002
@@ -75,6 +75,11 @@
 	dc.w	$DC01,$FFFE,$0198,$0349,$019A,$078C,$DE01,$FFFE
 	dc.w	$019A,$078D,$019A,$078F,$E001,$FFFE,$019A,$078D
 	dc.w	$019A,$0789,$E201,$FFFE,$019A,$078D,$019A,$0785
-	dc.w	$E401,$FFFE,$019A,$078D,$0180,$0FA5,$0182,$0B61
-	dc.w	$0184,$072D,$0186,$03E9,$0080,$0004,$0082,$5000
+	dc.w	$E401,$FFFE,$019A,$078D,$0182,$0C9E,$0182,$0C9E
+	dc.w	$0182,$0C9E,$0182,$0C9E,$0182,$0C9E,$0182,$0C9E
+	dc.w	$0182,$0C9E,$0182,$0C9E,$0182,$0C9E,$0182,$0C9E
+	dc.w	$0182,$0C9E,$0182,$0C9E,$0182,$0C9E,$0182,$0C9E
+	dc.w	$0182,$0C9E,$0182,$0C9E,$0182,$0C9E,$0182,$0C9E
+	dc.w	$0182,$0C9E,$0182,$0C9E,$0182,$0C9E,$0182,$0C9E
+	dc.w	$0182,$0C9E,$0182,$049E,$0080,$0004,$0082,$5000
 	dc.w	$FFFF,$FFFE

@@ -256,7 +256,7 @@ A *graded pixel* is a visible pixel x on an output copy of a graded line, with x
 - Their boundaries fall on samples t_hs + φ + k·w, where t_hs is the output line's hs rising edge and φ (0 ≤ φ < w) is one phase for every line.
 - Visible pixel x of any output line is the sample t_hs + φ + x·w. The same w and φ serve every frame, because a hires period lasts the same time in every mode (p.300).
 
-Check: w and φ exist and are unique.
+Check: w and φ exist and are unique. Contrast (R0): the pattern section of both stream buffers repeats one period of 40 words (640 pixels) made of runs of 4 or 6 pixels of one value, the value changing at every run boundary. Every boundary is a colour change on every pattern line, and no sample width divides all the run lengths of a line, so no unique w and φ exist.
 
 **R1: source line to output lines.** Output lines are delimited by rising edges of horizontal sync and frames by rising edges of vertical sync, as `find_lines()` and `find_frames()` in `nanomig_harness.h` split them. The harness notes there that its scan doubler shows each source line as two output lines; the test does not assume the number. Source line k of a frame is shown on output lines m·k + Δ … m·k + Δ + m − 1. m and Δ are the one pair for which the output lines that show the run of R3 are exactly the copies of the *pure R lines*, the source lines whose fetched words all lie in the R section. Check: m and Δ exist, are unique, and are the same in every frame.
 
@@ -402,6 +402,8 @@ The quantifier "only":
 
 **6. Contrast (V2).** No stimulus inside SuperHires mode is predicted by the pages to break P2, so the contrast leaves SuperHires mode on purpose. Run F1 with BPLCON0 = $A000. C5 is then evaluated in its hires form (i = x − s) and holds for F1 in that form, and F1 is not a SuperHires frame: C5/R2 fails, P2-DIVERSITY fails (F2–F4 contribute one palette), and P2 is not graded. The test prints the verdict of P2's comparator on the frames that are usable as a MEASURED line.
 
+Live input (P2G): F1 stays a SuperHires frame, with the palette bands Q1–Q5, Z and O written with Color 0 as Q0's Color 0 in every register and Colors 1–3 as before. The preconditions and P2-DIVERSITY hold as at baseline, and P2's comparator is the same.
+
 Applied to the hires pixels, P2 fails. In hires a value-c pixel shows all of register c (p.94, Table 3-18; p.273). Under the table, bits 9–8, 5–4 and 1–0 of registers 0–3 hold Color 0's letters (row q = 0). So for c = 1, 2, 3 the lower two output bits follow Color 0's letters. In Q1 and Q3, for example, Color 1's red is 2 in both, while Color 0's red is 2 and 0.
 
 **7. Reference frame.** As P1.
@@ -474,7 +476,7 @@ A bit whose frame fails a precondition is not graded; the test records each such
 **6. Contrasts.**
 - V4a: in one band of F2 whose bit was reported OBSERVED, also invert a bit that carries a letter of another Color and was OBSERVED in its own band. The pages predict a change on pixels of that other value, so P4 fails for the first band.
 - V4b: run F2–F4 with BPLCON0 = $A000 (hires); the plan does not fix which of the three frames carries a given bit. Inverting bit 09 of COLOR01, which carries `a` of Color 0, then changes R1 of value-1 pixels (p.94, p.273), so P4.01.09 fails. Preconditions hold in hires form.
-- V4c, the null case: a band that restores Q0 without a new inversion is predicted to change nothing. It must come out not OBSERVED. It is printed before the 192 propositions as a precondition of the frame's bits. Its stimulus contrast inverts COLOR00–03 from the null band to the end of the frame, so that the Q0 lines before and after the band disagree at every pixel and no neighbour triple keeps a baseline.
+- V4c, the null case: a band that restores Q0 without a new inversion is predicted to change nothing. It must come out not OBSERVED. It is printed before the 192 propositions as a precondition of the frame's bits. Its stimulus contrast, in F2 and F3, makes the closing restore band also invert bit 11 of COLOR01 for part of its own first line: after its restore MOVE it writes the inverted value repeatedly and then restores COLOR01, so the pixels of that line differ from the baseline of their neighbour triples while the triples keep their baselines. F4 has no such contrast: the lines of its null band lie inside the lines its baseline is built from, so no compared pixel can differ from the baseline of its triple.
 - V4d, a contrast for every P4.n.b: run F2–F4 with every band inverting, besides its own bit b of register n, bit b XOR 1 of the same register. By the table that bit carries the other letter of the same component of the same Color (bits 11/10, 9/8, 7/6, 5/4, 3/2 and 1/0 each hold the upper and lower letter of one component, §3). The pages predict a change of the other encoded bit of X, which P4.n.b does not allow, so P4.n.b fails in every band where P4.n.(b XOR 1) was OBSERVED in its own band. For a bit whose partner is never OBSERVED no input can show the clause failing at this output (L1); the test lists those bits.
 
 **7. Reference frame.** R2, R3, and R5 for band boundaries.
@@ -650,7 +652,7 @@ That makes 229 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 4 + 12 (P1J).
 - P5.L's SuperHires half: FAIL, by the any-bit count as well as the allowed-bit count: all 144 bands n = 04…0F graded, 0 of 161,280 graded pixels change. Its Hires half: PASS, both clauses (17,664 graded pixels).
 - The preconditions C1–C9 (C3 over F1–F6 with both planes and the stray-read clause, C4's header values including SPR0PT–SPR7PT, C6 per frame and per line, C7's count and timing, C8's coverage and F1 diversity, C9's null-sprite reads), R0, R1 and R2's bottom lines: PASS.
 
-Every contrast of the package (the header of `test_ch4_shres_bitplane.cpp` lists each one, with the lines that move under it) was run on both cores; fx68k and TG68K print the same PASS, FAIL, RECORDED and MEASURED lines on every one. A contrast that leaves a precondition failing leaves the lines that depend on it not graded. Lines that are FAIL at baseline turn PASS under their live inputs: VLIVE (P5.L's SuperHires half, P7.3), VLIVES (P7.2), V6S (P6.2-SHR, P6.2, P7.4) and VP1JG (the eighteen q-half P4 lines and the nine P1J lines). C11G turns C11 PASS. P2 has no live input that keeps its preconditions: under C5 only F2–F4's single palette remains, P2 is not graded, and the MEASURED line of its comparator gives PASS.
+Every contrast of the package (the header of `test_ch4_shres_bitplane.cpp` lists each one, with the lines that move under it) was run on both cores; fx68k and TG68K print the same PASS, FAIL, RECORDED and MEASURED lines on every one. A contrast that leaves a precondition failing leaves the lines that depend on it not graded. Lines that are FAIL at baseline turn PASS under their live inputs: VLIVE (P5.L's SuperHires half, P7.3), VLIVES (P7.2), V6S (P6.2-SHR, P6.2, P7.4) and VP1JG (the eighteen q-half P4 lines and the nine P1J lines). C11G turns C11 PASS. P2G turns P2.R, P2.G and P2.B PASS on 223,440 pixels in 16 groups, with P2-DIVERSITY unchanged at 12 of 12.
 
 ### 10.4 F7-F10 (sprite colour frames), as measured
 

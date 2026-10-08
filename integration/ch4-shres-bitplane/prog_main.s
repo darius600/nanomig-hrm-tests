@@ -256,7 +256,11 @@ F1TAB:
 				ifd	MUT_C3P
 				include	"bp_cop_f1_vc3p.i"
 				else
+				ifd	MUT_P2G
+				include	"bp_cop_f1_vp2g.i"
+				else
 				include	"bp_cop_f1_base.i"
+				endif
 				endif
 				endif
 				endif
@@ -333,11 +337,7 @@ F4TAB:
 				ifd	MUT_C6B
 				include	"bp_cop_f4_vc6b.i"
 				else
-				ifd	MUT_V4C
-				include	"bp_cop_f4_vc4n.i"
-				else
 				include	"bp_cop_f4_base.i"
-				endif
 				endif
 				endif
 				endif
