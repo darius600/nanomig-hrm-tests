@@ -1532,8 +1532,8 @@ int main(int argc, char** argv) {
             "SIGN=1 as a fixed setup precondition (p.192's own SIGNFLAG rule "
             "for a flat, dy=0 line) and never varies it, so that precondition "
             "is not independently measured, only relied upon. "
-            "6-appa-control.c64, 6-appa-control.c87, "
-            "ch6-appa-bltcon0.line.b06.con1, ch6-appa-lf.legend.SIGN .");
+            "The SIGN ids (BLTCON1 bit 6 and the SIGN legend entry, p.268) are "
+            "graded in PKG-BLT-LINE, assertion LINE-SIGNFLAG-SETS-INITIAL-SIGN.");
     }
 
     // ---------------- LINE-MODE-SUD-SUL-AUL-BITS-4-3-2-AND-OCTANT-TABLE ----------------
@@ -1667,20 +1667,20 @@ int main(int argc, char** argv) {
             "for the bit-identity assertion above, which does not establish "
             "any specific octant's triple. BLTCON1 is write-only (p.267 "
             "'W'), so there is no port at which a wrong transcription of "
-            "any row would read back differently either. As far as this "
-            "suite's own cross-references show, these 24 ids are not "
-            "graded elsewhere in the suite: ch6-blitter-line cites only "
-            "(graded: ch6-appa-oct.select), not the individual per-octant "
-            "sud/sul/aul ids. Left to PKG-BLT-LINE, which would draw a real "
-            "line per octant against Figure 6-8 (p.190). "
-            "ch6-appa-oct0.aul, ch6-appa-oct0.sud, ch6-appa-oct0.sul, "
-            "ch6-appa-oct1.aul, ch6-appa-oct1.sud, ch6-appa-oct1.sul, "
-            "ch6-appa-oct2.aul, ch6-appa-oct2.sud, ch6-appa-oct2.sul, "
-            "ch6-appa-oct3.aul, ch6-appa-oct3.sud, ch6-appa-oct3.sul, "
-            "ch6-appa-oct4.aul, ch6-appa-oct4.sud, ch6-appa-oct4.sul, "
-            "ch6-appa-oct5.aul, ch6-appa-oct5.sud, ch6-appa-oct5.sul, "
-            "ch6-appa-oct6.aul, ch6-appa-oct6.sud, ch6-appa-oct6.sul, "
-            "ch6-appa-oct7.aul, ch6-appa-oct7.sud, ch6-appa-oct7.sul .");
+            "any row would read back differently either. The 24 octant-table-cell "
+            "ids (ch6-appa-octN.sud, ch6-appa-octN.sul, ch6-appa-octN.aul, "
+            "N = 0 to 7) are not recorded here: they are graded in PKG-BLT-LINE "
+            "(package ch6-blitter-line) by its assertions "
+            "OCTANT-MAJOR-AXIS-DIRECTION and "
+            "OCTANT-MINOR-AXIS-FIRES-AT-SIGN0, which name them in their labels. "
+            "Both assertions drive each octant's (SUD,SUL,AUL) triple through "
+            "BLTCON1 bits 4/3/2 and measure the pointer step of pixel 1 of a "
+            "line against the direction the table assigns to that octant "
+            "(Table 6-3 and Figure 6-8, p.190; appendix A p.268). "
+            "This package grades only the bit-identity assertion above and "
+            "carries no octant-cell id of its own; the stepping direction per "
+            "octant is PKG-BLT-LINE's, as the Non-goals above say. "
+            "(No id is listed on this record.)");
     }
 
     // ---------------- LINE-MODE-SING-BIT1-GATES-D-CHANNEL-WRITES-TO-FIRST-PIXEL ----------------

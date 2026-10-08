@@ -219,7 +219,7 @@
 //     ch6-linesum.c23, ch6-linesum.c24, plus the ONEDOT-specific half of
 //     6-line-mode.c3, ch6-line.c3, ch6-line.c6.
 //   LINE-SIGNFLAG-SETS-INITIAL-SIGN (p.191/192): 6-line-mode.c44,
-//     ch6-linesum.c22.
+//     ch6-linesum.c22, 6-appa-control.c64, 6-appa-control.c87, ch6-appa-bltcon0.line.b06.con1, ch6-appa-lf.legend.SIGN.
 //   LINE-SIGN-SELECTS-MODULO-BANK (p.191/192/270 -- bank-selection half
 //     only; see NOT ASSERTED for the register-summary "4*(dy-dx)"/"4*dy"
 //     phrasing this does not cover, LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-
@@ -284,7 +284,7 @@
 //     6-appa-control.c105, 6-appa-control.c106, 6-appa-control.c107,
 //     6-appa-control.c108, 6-appa-control.c109, 6-appa-control.c110,
 //     6-appa-control.c111, 6-appa-control.c112, 6-appa-control.c113,
-//     6-appa-control.c114, 6-appa-control.c115, 6-appa-control.c116 .
+//     6-appa-control.c114, 6-appa-control.c115, 6-appa-control.c116, ch6-appa-oct0.sud, ch6-appa-oct0.sul, ch6-appa-oct0.aul, ch6-appa-oct1.sud, ch6-appa-oct1.sul, ch6-appa-oct1.aul, ch6-appa-oct2.sud, ch6-appa-oct2.sul, ch6-appa-oct2.aul, ch6-appa-oct3.sud, ch6-appa-oct3.sul, ch6-appa-oct3.aul, ch6-appa-oct4.sud, ch6-appa-oct4.sul, ch6-appa-oct4.aul, ch6-appa-oct5.sud, ch6-appa-oct5.sul, ch6-appa-oct5.aul, ch6-appa-oct6.sud, ch6-appa-oct6.sul, ch6-appa-oct6.aul, ch6-appa-oct7.sud, ch6-appa-oct7.sul, ch6-appa-oct7.aul .
 //
 // NEW SPECIFICATION
 //   LINE-MODULO-VALUES-PRODUCE-DOCUMENTED-SLOPE (p.270): the appendix
@@ -1416,7 +1416,7 @@ int main(int argc, char** argv) {
             "writing it to 0 gives pixel 1 a delta of +1 (X fires too) -- BLTCON1 bit "
             "6 IS the line-error accumulator's initial sign, sampled by pixel 1's own "
             "step ('SIGNFLAG is BLTCON1's line-error sign bit', 6-line-mode.c44, "
-            "p.191; 'otherwise BLTCON1 bit SIGNFLAG = 0', ch6-linesum.c22, p.192), "
+            "p.191; 'otherwise BLTCON1 bit SIGNFLAG = 0', ch6-linesum.c22, p.192; 'SIGN Sign flag' on the BLTCON1 bit 6 row, 6-appa-control.c64, 6-appa-control.c87, ch6-appa-bltcon0.line.b06.con1, ch6-appa-lf.legend.SIGN, p.268), "
             "measured directly against agnus_blitter.v's `sign<=data_in[6]` register "
             "write (agnus_blitter.v:929-935) and its effect on pixel 1's sign_del "
             "(agnus_blitter.v:937-941)");
@@ -1715,7 +1715,7 @@ int main(int argc, char** argv) {
             "6-appa-control.c108 6-appa-control.c109 6-appa-control.c110 "
             "6-appa-control.c111 6-appa-control.c112 6-appa-control.c113 "
             "6-appa-control.c114 6-appa-control.c115 6-appa-control.c116 "
-            "ch6-linesum.c19, p.190/268), at BOTH "
+            "ch6-linesum.c19, ch6-appa-oct0.sud, ch6-appa-oct0.sul, ch6-appa-oct0.aul, ch6-appa-oct1.sud, ch6-appa-oct1.sul, ch6-appa-oct1.aul, ch6-appa-oct2.sud, ch6-appa-oct2.sul, ch6-appa-oct2.aul, ch6-appa-oct3.sud, ch6-appa-oct3.sul, ch6-appa-oct3.aul, ch6-appa-oct4.sud, ch6-appa-oct4.sul, ch6-appa-oct4.aul, ch6-appa-oct5.sud, ch6-appa-oct5.sul, ch6-appa-oct5.aul, ch6-appa-oct6.sud, ch6-appa-oct6.sul, ch6-appa-oct6.aul, ch6-appa-oct7.sud, ch6-appa-oct7.sul, ch6-appa-oct7.aul, p.190/268), at BOTH "
             "SIGNFLAG=0 and SIGNFLAG=1 (16 checks total), the major axis steps "
             "exactly one unit in the documented direction regardless of sign -- 'the "
             "direction of the drawn line vector can lie in any of eight octants' "
@@ -1834,7 +1834,7 @@ int main(int argc, char** argv) {
             "6-appa-control.c108 6-appa-control.c109 6-appa-control.c110 "
             "6-appa-control.c111 6-appa-control.c112 6-appa-control.c113 "
             "6-appa-control.c114 6-appa-control.c115 6-appa-control.c116 "
-            "ch6-linesum.c19, p.190/268)");
+            "ch6-linesum.c19, ch6-appa-oct0.sud, ch6-appa-oct0.sul, ch6-appa-oct0.aul, ch6-appa-oct1.sud, ch6-appa-oct1.sul, ch6-appa-oct1.aul, ch6-appa-oct2.sud, ch6-appa-oct2.sul, ch6-appa-oct2.aul, ch6-appa-oct3.sud, ch6-appa-oct3.sul, ch6-appa-oct3.aul, ch6-appa-oct4.sud, ch6-appa-oct4.sul, ch6-appa-oct4.aul, ch6-appa-oct5.sud, ch6-appa-oct5.sul, ch6-appa-oct5.aul, ch6-appa-oct6.sud, ch6-appa-oct6.sul, ch6-appa-oct6.aul, ch6-appa-oct7.sud, ch6-appa-oct7.sul, ch6-appa-oct7.aul, p.190/268)");
     }
 
     // ---------------- RECORDED ----------------
