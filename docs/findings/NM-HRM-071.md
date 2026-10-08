@@ -7,12 +7,12 @@
 | **Evidence** | a test fails against the page |
 | **What is asked of a reader** | No RTL change follows from this. Question: does p. 101's rule that a sprite pixel is one low-resolution pixel (140 ns) whatever the playfield's resolution hold for SuperHires sprites on the ECS Denise, or is the pixel 70 ns there, as NanoMig, all four implementations and Commodore's AA specification have it? Closes when an Amiga specialist records that p. 101's rule does not apply to a SuperHires sprite (70 ns), or confirms that it holds there at 140 ns, in which case this page is refiled against the RTL. |
 | **Report to** | `no RTL action` — HRM documentation: whoever keeps errata for Chapter 4 and Appendix C of the *Amiga Hardware Reference Manual*, 3rd ed. |
-| **Scope** | SuperHires with BPLCON0 = $1040 (one plane), BPLCON3 SPRES at 0, sprites 0 and 1 at HSTART 192 and 217, sixteen pixels wide, measured on NanoMig's design with an enhanced chip set on both CPU cores; Hires ($9000) only as the control. The original chip set is not measured; chip revision unknown; real hardware not measured |
+| **Scope** | SuperHires with BPLCON0 = $1040 (one plane), BPLCON3 SPRES at 0, sprites 0 and 1 at HSTART 192 and 217, sixteen pixels wide, measured on NanoMig's design with an enhanced chip set on both CPU cores; Hires ($9000) only as the control. `integration/ch4-shres-bitplane` adds two planes (BPLCON0 = $2040), sprite 0 at HSTART $C0 over a playfield of value 0, and Hires ($A000) in its frame F10. The original chip set is not measured; chip revision unknown; real hardware not measured |
 | **Software impact** | unknown; no named affected software |
-| **Chapter** | 4 — Sprite Hardware, printed pp. 101, 124, 128 and 131; Appendix C, printed pp. 296, 297, 300, 302 and 303; Appendix A, printed pp. 271 and 284; 1 — Introduction, printed p. 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: the only red assertion, `PC2w`, carries none; no assertion carries p. 101's `CH4-p101.c7`, `CH4-p101.c8`, `CH4-p101.c9`, `CH4-size.c6`, `CH4-size.c7`, `CH4-size.c8`, `CH4-size.c9`, p. 124's `CH4-hw.c10`, `CH4-p124.c6`, or p. 128's `CH4-p128.c3`, `CH4-res.c3` |
+| **Chapter** | 4 — Sprite Hardware, printed pp. 101, 124, 128 and 131; Appendix C, printed pp. 296, 297, 300, 302 and 303; Appendix A, printed pp. 271 and 284; 1 — Introduction, printed p. 3 · *Amiga Hardware Reference Manual*, 3rd ed., 1991 · claim ids: the red assertions `PC2w` and `C11` carry none; no assertion carries p. 101's `CH4-p101.c7`, `CH4-p101.c8`, `CH4-p101.c9`, `CH4-size.c6`, `CH4-size.c7`, `CH4-size.c8`, `CH4-size.c9`, p. 124's `CH4-hw.c10`, `CH4-p124.c6`, or p. 128's `CH4-p128.c3`, `CH4-res.c3` |
 | **Module** | `denise.v`, `denise_sprites.v` — [NanoMig](https://github.com/harbaum/NanoMig/blob/4495f86fbb0611e53649165faa36f1125e062f18/src/minimig-aga/denise.v#L391) · [Minimig-AGA](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L361); MiSTer and TC64 carry the same statements: inherited |
-| **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b): `make -k -C integration/ch4-shres-sprite-b test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
-| **Assertions** | 1 red on each core: `PC2w` — expected a 16-pixel sprite lit over 32 samples (p. 101 with p. 300), observed 1920 lit and 1920 dark of 3840 interval samples (16 samples wide), the 240 boundary samples dark; `28 passed, 1 failed` on fx68k and on TG68K. `PC2w` is a precondition and carries no claim id; the colour propositions `P1`–`P4` are green on both cores for the uniform lines, and their `LA` lines are NOT GRADED while `PC2w` fails |
+| **Test** | [`integration/ch4-shres-sprite-b`](../../integration/ch4-shres-sprite-b): `make -k -C integration/ch4-shres-sprite-b test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero. [`integration/ch4-shres-bitplane`](../../integration/ch4-shres-bitplane): `make -k -C integration/ch4-shres-bitplane test` (both cores, `test-fx68k` and `test-tg68k`); an expected red exits nonzero |
+| **Assertions** | 1 red on each core in `integration/ch4-shres-sprite-b`: `PC2w` — expected a 16-pixel sprite lit over 32 samples (p. 101 with p. 300), observed 1920 lit and 1920 dark of 3840 interval samples (16 samples wide), the 240 boundary samples dark; `28 passed, 1 failed` on fx68k and on TG68K. `PC2w` is a precondition and carries no claim id; the colour propositions `P1`–`P4` are green on both cores for the uniform lines, and their `LA` lines are NOT GRADED while `PC2w` fails. 1 red on each core in `integration/ch4-shres-bitplane`: `C11` (p. 101) — expected the run of every baseline sprite line that shows one to be 32 ± 1 hires periods long in F7, F8 and F10, observed 16 in F7 and F8 and 32 in F10; `86 passed, 46 failed` on fx68k and on TG68K. `C11` carries no claim id |
 | **Verdict of the four** | **unanimous with NanoMig and with the AA specification**: WinUAE, vAmiga, Denise and Copperline all show an ECS sprite pixel for 70 ns in SuperHires and for 140 ns in the other resolutions. None keeps p. 101's low-resolution pixel in SuperHires; outside the emulators, the 8373R4 dissection shifts a sprite out two pixels per 140 ns in SuperHires, 70 ns each — see *What other Commodore documents say*. Hardware: not measured |
 | **Effort** | none — no RTL change asked: what changes, if anything, is a printed sentence on p. 101 |
 | **See also** | [NM-HRM-016](NM-HRM-016.md) (SuperHires sprite colour encoding), [NM-HRM-019](NM-HRM-019.md) (SHSH1, SuperHires sprite positioning) |
@@ -176,6 +176,32 @@ both cores there.
 `PC2w` is a precondition of the package's own: it gates the pixel-exact grading
 of the sprites' mixed-value lines and carries no claim id.
 
+### The same width over a two-plane display
+
+[`integration/ch4-shres-bitplane`](../../integration/ch4-shres-bitplane) runs the whole design on each CPU core
+with an enhanced chip set (VPOSR chip identifier `$20`, DENISEID low byte `$FC`) and puts sprite 0, 60 lines tall at
+SPR0POS = `$5060` (HSTART `$C0`, SHSH1 and SH0 clear), over a playfield of value 0: two planes in SuperHires
+(BPLCON0 = `$2040`) in F7, F8 and F9, two planes in Hires (BPLCON0 = `$A000`) in F10. Every sprite line holds one value across
+its sixteen pixels. One sample of the video output is one hires period, 70 ns (`R0: w=1 phi=0`). The run of a sprite line is the
+longest stretch of samples that differ from the same positions on the playfield lines 31 to 35, just above the sprite, and
+`C11` requires it to be 32 ± 1 hires periods on every baseline line that shows one: p. 101's sixteen low-resolution pixels at two
+hires periods each. F9 is measured and is not in `C11`'s comparator.
+
+```text
+MEASURED: F7 baseline sprite lines: 21 graded, 21 show a run, ends [269,284], length 16..16 hires periods
+MEASURED: F8 sprite lines: 60 graded, 60 show a run, ends [269,284], length 16..16
+MEASURED: F9 sprite lines: 60 graded, 60 show a run, ends [269,284], length 16..16
+MEASURED: F10 baseline sprite lines: 12 graded, 12 show a run, ends [269,300], length 32..32
+FAIL: C11 p.101: the run of every baseline sprite line that shows one is 32 +- 1 hires periods long in F7, F8 and F10, lengths F7 16..16, F8 16..16, F10 32..32
+```
+
+fx68k and TG68K print these lines identically. In SuperHires the sprite's sixteen pixels cover 16 hires periods, 70 ns a pixel;
+in Hires the same sprite covers 32, 140 ns a pixel. Every run measured above starts at sample 269, so only the width changes with the mode. Two
+contrasts of the package are mutation builds, not run by `make test`
+(`test_ch4_shres_bitplane.cpp:161-162`, `C11`): with sprite 0's data words `$FF00` where they are `$FFFF`, the runs halve (8
+periods in F7, F8 and F9, 16 in F10) and `C11` stays red; with F7 and F8 run in Hires (BPLCON0 = `$A000`), all three graded frames
+show 32 periods and `C11` prints PASS. The sprites' colours in the same frames are [NM-HRM-016](NM-HRM-016.md)'s subject.
+
 ## Risks and unknowns
 
 - **p. 101 is categorical and no page of the HRM contradicts it on width.**
@@ -225,9 +251,12 @@ of the sprites' mixed-value lines and carries no claim id.
   the OCS configuration should follow p. 101, `shres & ecs` in line 391's
   condition is the one-term option; it has not been run here, and no assertion
   measures it.
+- **`C11` allows 32 ± 1 hires periods.** The pages fix neither where the output's hires periods fall against the sprite's 140 ns
+  start boundary nor how a period shared by a sprite pixel and a playfield pixel is shown; the band does not reach the 16 periods
+  measured in SuperHires.
 - **The claims that state p. 101's rule are graded nowhere in the suite.** The
   eleven claim ids in the *Chapter* row are classified testable, observable at
-  `denise_sprites`; `PC2w` measures their proposition without carrying them.
+  `denise_sprites`; `PC2w` and `C11` measure their proposition without carrying them.
   [`hrm/ch4-sprite-colour-registers`](../../hrm/ch4-sprite-colour-registers)
   records them as outside its subject (`OUT-OF-SUBJECT-SIZE-RESOLUTION`,
   `OUT-OF-SUBJECT-SHIFT-TIMING`) and no other package reads them. The second of
@@ -247,6 +276,11 @@ pixel on an ECS Denise in SuperHires?
 | **Copperline** | [`src/video/bitplane.rs:1009-1036`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane.rs#L1009-L1036), test [`src/video/bitplane/tests.rs:2800-2852`](https://github.com/CopperlineHQ/Copperline/blob/726bed00c407727c1f5bd32c7193587986638941/src/video/bitplane/tests.rs#L2800-L2852) | the width is counted *"in 35 ns (SuperHires) samples"*, so SPRES at 0 gives **70 ns in SuperHires** and 140 ns otherwise; of SPRES = 11 on a non-AGA chip set the code says *"ECS Super Denise accepts the SPRES encoding but retains its 70 ns sprite serializer"*; its own test `bplcon3_spres_default_upgrades_to_70ns_when_shres_is_set` draws a sprite of `data: 0x8000,` over `bplcon0: BPLCON0_SHRES,` and asserts the lit pixel covers one 70 ns column, `assert_eq!(fb[1], rgb12_to_rgba8(0));` |
 | **MiSTer** | [`rtl/denise.v:360-361`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L360-L361), [`rtl/denise.v:152`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise.v#L152), [`rtl/denise_sprites.v:107-114`](https://github.com/MiSTer-devel/Minimig-AGA_MiSTer/blob/da7632e44498840850e78966947f8770166e6e77/rtl/denise_sprites.v#L107-L114) | descendant — identical to NanoMig: `assign spres_d = (spres == 2'b00) ? shres ? 2'b10 : 2'b01 : spres;`, the same ungated `assign shres    = bplcon0[6];`, and the same shift table, `2'b10   : shift = ~c1 ^ c3;` |
 | **TC64** | [`rtl/minimig/denise.v:375-376`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L375-L376), [`rtl/minimig/denise.v:159`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise.v#L159), [`rtl/minimig/denise_sprites.v:107-114`](https://github.com/minimig-dev/MinimigAGA-MiST-TC64/blob/9e8e30844fe134dca54cea65f1bd38539dfc15ad/rtl/minimig/denise_sprites.v#L107-L114) | descendant — the same three statements, `assign spres_d = (spres == 2'b00) ? shres ? 2'b10 : 2'b01 : spres;`, `assign shres    = bplcon0[6];` and `2'b10   : shift = ~c1 ^ c3;`. Neither line keeps a SuperHires sprite at 140 ns |
+
+The width rules cited in the rows above read the playfield's resolution and not its number of bitplanes: WinUAE's
+`denise_res == RES_SUPERHIRES`, vAmiga's `shres(spriteBplcon0)`, Denise's `_shres` and Copperline's `self.shres()`. Each gives the
+70 ns pixel over `integration/ch4-shres-bitplane`'s two-plane display as over `integration/ch4-shres-sprite-b`'s one-plane one;
+that is read from the code, not run.
 
 ### What other Commodore documents say
 
