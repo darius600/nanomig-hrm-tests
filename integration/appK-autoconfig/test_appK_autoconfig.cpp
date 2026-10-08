@@ -646,10 +646,13 @@ int main(int argc, char** argv) {
                                      note_mutant_done("prog_r1_nocal", all_of_pop(r1_nocal, [](const R1Out& r) { return r.done; })); }
     if (mv == "P1-DISPANCHOR")     { r1_disp  = run_r1_set("prog_r1_c1prime", kC1);   // kC1 stays the expected colour
                                      note_mutant_done("prog_r1_c1prime", all_of_pop(r1_disp, [](const R1Out& r) { return r.done; })); }
-    const std::vector<R1Out>& r1_ledcal_feed  = mv == "P1-LEDCAL" ? r1_nocal : r1_base;
-    const std::vector<R1Out>& r1_disp_feed    = mv == "P1-DISPANCHOR" ? r1_disp : r1_base;
     const std::vector<R1Out>& r1_p1b_feed     = mv == "P1A" ? r1_nop : r1_base;
     const std::vector<R1Out>& r1_witness_feed = mv == "P1A" ? r1_nop : r1_base;
+    // The R1-family preconditions are measured on the run their target lines
+    // read: the P1A run under P1A, the P1-LEDCAL and P1-DISPANCHOR runs for
+    // their own precondition, the unmutated run otherwise.
+    const std::vector<R1Out>& r1_ledcal_feed  = mv == "P1-LEDCAL" ? r1_nocal : r1_p1b_feed;
+    const std::vector<R1Out>& r1_disp_feed    = mv == "P1-DISPANCHOR" ? r1_disp : r1_p1b_feed;
 
     // ---- FIXTURE: vector-table check, on every R1-family setting -------
     bool fdd_ever_changed_any = false;
@@ -663,7 +666,7 @@ int main(int argc, char** argv) {
         " on any CPU setting (NM-HRM-046)");
 
     // ================= P1 / P2 preconditions, printed first ===============
-    const bool p1_markers_ok = all_of_pop(r1_base, [](const R1Out& r) {
+    const bool p1_markers_ok = all_of_pop(r1_p1b_feed, [](const R1Out& r) {
         return r.loaded && r.t_v2.has_value() && r.v1_writes == 1 && r.v0_writes_before_m1 == 1; });
     checks.expect(p1_markers_ok,
         "P1-MARKERS [apparatus anchor of section 3, no claim uid]: R1 loads, the second vertical-sync leading edge "
@@ -680,7 +683,7 @@ int main(int argc, char** argv) {
         "P1-DISPANCHOR [p46,p48]: F_ref shows only COLOR00's value and black, confirming the "
         "display anchor, on every CPU setting");
 
-    const bool p1_noexc_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.loaded && r.no_exception; });
+    const bool p1_noexc_ok = all_of_pop(r1_p1b_feed, [](const R1Out& r) { return r.loaded && r.no_exception; });
     checks.expect(p1_noexc_ok,
         "P1-NOEXCEPTION [p223]: no pixel of value C_E and no write of V_E to MK_E anywhere in the "
         "run (H_E never runs), on every CPU setting");
@@ -865,12 +868,12 @@ int main(int argc, char** argv) {
         }
 
         // ---- R2 != P2, or no answer (R3n's own check): P3-NOTOTHER -------
-        const bool notother_pre = r3_live(rn_base) && board_is_zorro2_2mb_memory(rn_base.img0) &&
-                                  rn_base.scratch_before_r2;
+        const bool notother_pre = r3_live(rn_feed) && board_is_zorro2_2mb_memory(rn_feed.img0) &&
+                                  rn_feed.scratch_before_r2;
         checks.expect(notother_pre,
             "P3-NOTOTHER-PRECOND [p432,p433]: R3n loaded and ran past the window; register 00 reads type 11, "
             "memory flag set and size 110 (2 megabytes); the scratch write precedes the readback of R2");
-        note_r2(checks, "P3-NOTOTHER run R3n", rn_base);
+        note_r2(checks, "P3-NOTOTHER run R3n", rn_feed);
         if (notother_pre) {
             checks.expect(r3_assigned(rn_feed),
                 "P3-NOTOTHER-ASSIGNED [p391,p435]: in run R3n a write/readback at B1, the base written to "
