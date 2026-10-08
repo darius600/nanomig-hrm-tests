@@ -299,7 +299,7 @@ int main() {
         "execute a program that performs an AUTOCONFIG read at $E80000 -- "
         "cpu_wrapper has no address-input port (chip_addr is `output reg`, "
         "cpu_wrapper.v:60), only the internal CPU core (fx68k.sv:1473 / "
-        "TG68KdotC_Kernel.v:404) generates one, by executing instructions. "
+        "TG68KdotC_Kernel's addr_out, cpu_wrapper.v:430) generates one, by executing instructions. "
         "No port of cpu_wrapper carries an opcode; per the task's own rule "
         "that is a HALT, not something to solve by reaching outside. "
         "reason_kind: unreachable-boundary.");
