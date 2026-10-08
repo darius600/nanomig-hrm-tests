@@ -177,9 +177,14 @@ WAIT1:
         ifd     WRONGREG
         cmpa.l  #BUFBASE+768*WRONGREG,a1       ; register contrast: the samples of pin
         blo.s   .potgor                        ; WRONGREG (192 samples of 4 bytes) store
-        cmpa.l  #BUFBASE+768*(WRONGREG+1),a1   ; JOY0DAT where POTGOR is read otherwise
-        bhs.s   .potgor
-        move.w  JOY0DAT(a0),(a1)+
+        cmpa.l  #BUFBASE+768*(WRONGREG+1),a1   ; POTGOR with the pin's own DAT bit
+        bhs.s   .potgor                        ; (WRONGBIT) replaced by the DAT bit of the
+        move.w  POTGOR(a0),d0                  ; other pot pin of the same port (OTHERBIT)
+        bclr    #WRONGBIT,d0
+        btst    #OTHERBIT,d0
+        beq.s   .st
+        bset    #WRONGBIT,d0
+.st:    move.w  d0,(a1)+
         rts
         endif
 .potgor:

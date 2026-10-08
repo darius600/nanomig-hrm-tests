@@ -680,11 +680,14 @@ the preconditions hold.
    port, or on the other pot pin of the same port. Bit d stays 1, and the
    pressed pin's own DAT bit reads 0.
 
-Case 3 changes the source or bit driven, which PP1 reports (5.5), so P5, P6
-and P8 are then not checkable. Its register-side counterpart leaves PP1 true:
-for the samples of the pin under test, the program stores JOY0DAT where it
-otherwise stores POTGOR. The comparator then reads a register that does not
-carry the pin's level, and the proposition fails.
+Case 3 is run as P5-WRONGPIN, P6-WRONGPIN and P8-WRONGPIN: PP1 reports the
+source and bit actually driven, and P5, P6 and P8 are not checkable (8.4). Its
+register-side counterpart leaves PP1 true: for the samples of the pin under
+test, the program stores POTGOR with bit d replaced by the DAT bit of the other
+pot pin of the same port (P5: bit 10, P6: bit 8, P8: bit 12). That pin is
+released and driven high throughout, so p. 241 ("a 1 if it is not") and p. 240
+predict 1 where the pin under test's own bit reads 0 (C2, C4, C5, C6), and the
+proposition fails there; the other three DAT bits are read unchanged.
 
 ### 5.7 Reference frames
 
@@ -923,6 +926,9 @@ action record and every other precondition stay true:
 | P5-WRONGREG | `P5 [p.380: ...]` | 14 passed, 1 failed (P5) |
 | P6-WRONGREG | `P6 [p.380: ...]` | 14 passed, 1 failed (P6) |
 | P8-WRONGREG | `P8 [p.380: ...]` | 14 passed, 1 failed (P8) |
+
+In P5-, P6- and P8-WRONGREG the stored bit of the pin under test reads 1 in
+every step, on both cores, so the proposition fails at C2, C4, C5 and C6.
 
 Mutations that drive the wrong port or pin print `FAIL: PJ1 ...` or
 `FAIL: PP1 ...`, because the action record shows the port, source or bit
