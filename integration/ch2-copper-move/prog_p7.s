@@ -5,7 +5,7 @@
 ; Symbols this source answers to:
 ;   P7_T       address the Copper starts at (default $3A000)
 ;   P7_EARLY   the program enables blitter DMA and writes BLTSIZE itself before the Copper starts
-;   P7_NOCLEAR the CPU write of $0000 to $48000 is omitted
+;   P7_NOCLEAR the CPU write of $0000 goes to $4F100 instead of $48000
 ;   P7_ATTR    a second CPU write to $48000 before the Copper starts
 
         include "nanomig.i"
@@ -37,6 +37,8 @@ start:
         move.w  #$0000,CUSTOM+BLTDMOD_R
         ifnd    P7_NOCLEAR
         move.w  #$0000,$48000
+        else
+        move.w  #$0000,$4F100
         endc
         ifd     P7_ATTR
         move.w  #$0000,$48000

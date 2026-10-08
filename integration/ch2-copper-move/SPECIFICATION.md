@@ -830,6 +830,7 @@ is attributed by a channel field. An access is attributed by construction:
 A proposition whose observation cannot be attributed this way is declined to a
 RECORDED line that gives this as the reason.
 
+
 ---
 
 ## 7. Recorded run
