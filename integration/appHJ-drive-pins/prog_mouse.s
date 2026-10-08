@@ -75,7 +75,9 @@ start:
         ifd     PJ3TEST
         cmp.w   #TOTAL_SAMPLES-1-8,d6          ; PJ3 contrast: after sample 8 (inside phase 0's
         bne.s   .nojt                          ; baseline window) the program writes all four
-        move.w  #$0404,JOYTEST(a0)             ; joystick-mouse counters at once
+        move.w  JOY0DAT(a0),d1                 ; counters at once, with the complement of the
+        not.w   d1                             ; JOY0DAT value just read, so that the counters
+        move.w  d1,JOYTEST(a0)                 ; change whatever their values were
 .nojt:
         endif
         dbra    d6,.loop
