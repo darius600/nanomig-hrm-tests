@@ -88,8 +88,7 @@ BUILD_L5B       macro
                 endm
 
 ; Copies a static dc.w table (SPECIFICATION.md-literal content with no
-; pointer arithmetic: L0u/L0m's own WAIT word, the U sub-list, L_S1, L_AB,
-; L3x, structure_X, structure_Z, S2's structures A/B/R) to a destination.
+; pointer arithmetic: the S1 and S2 lists and structures) to a destination.
 ; \1 = destination, \2 = source table label, \3 = source table's own _end
 ; label (word count = (\3-\2)/2).
 CPY_TABLE       macro

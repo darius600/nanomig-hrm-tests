@@ -1,13 +1,16 @@
-// Test purpose: grade the memory-cycle parity of refresh, disk, audio, sprite, low-resolution
-//   bitplane and Copper accesses at the Chip-memory port against HRM p.20.
-// Test class: HRM_CONFORMANCE for P1-P7; the preconditions F1-F3, A1, K2a-K6 and T1-T3 are
-//   INTEGRATION_SMOKE checks that the exercised path is live.
+// Test purpose: grade the memory-cycle parity of refresh, disk, audio, sprite and low-resolution
+//   bitplane accesses at the Chip-memory port against HRM p.20, and that the Copper's cycles do
+//   not move when those channels run.
+// Test class: HRM_CONFORMANCE for P1-P5 and P7; the preconditions F1-F3, F2-COUNT, A1, K2a-K6
+//   and T1-T3 are INTEGRATION_SMOKE checks that the exercised path is live.
 // Primary oracle: Amiga Hardware Reference Manual, 3rd edition, p.20, p.23, p.59, pp.194-197,
 //   Appendix A p.275 and p.277 (see SPECIFICATION.md).
 // Requirement IDs: ch2-about-the-copper.c22 .c24 .c25 .c26 and COP2-about-the-copper.c27 .c29
-//   .c30 .c31 (graded); .c21 .c23 and COP2-about-the-copper.c28 are recorded, not graded.
-// Non-goals: requests and collisions (the port shows accesses), P8-P12, the blitter, the
-//   68000's own cycles, bitplanes 5-6 and high-resolution fetches.
+//   .c30 .c31 (graded); .c21 (P6, withdrawn) .c23 and COP2-about-the-copper.c28 are recorded,
+//   not graded.
+// Non-goals: requests and collisions (the port shows accesses, and its accesses carry no
+//   requester), P6, P8-P12, the blitter, the 68000's own cycles, bitplanes 5-6 and
+//   high-resolution fetches.
 //
 // test_ch2_dma_cycles.cpp -- ch2-dma-cycles. See SPECIFICATION.md for every
 // assertion's proposition, program, observed value and expected value. This
@@ -19,8 +22,7 @@
 // This file only points the harness at each program's binary and its own
 // Config, and reads back what the ports and peek_logical show.
 //
-// NMH_MUTATE selects a mutated capture (a different program, or the same
-// program analyzed against a different block declaration) in place of a
+// NMH_MUTATE selects a mutated capture (a different program) in place of a
 // proposition's normal one, one assertion at a time; none is exercised by
 // a plain `make test`.
 
@@ -174,24 +176,15 @@ int64_t in_line_cycle(const LineRef& ref, int64_t line_idx, uint64_t cycle) {
     return (int64_t)((cycle - ref.firsts[(size_t)line_idx]) / gS);
 }
 
-// How a restart fetch is told apart from other reads of the same word.
-//  Sequence       -- by address and list sequence alone: the Copper's read of
-//                    the word at one of `list_starts`. Every run of the normal
-//                    configurations has no other reader of that word, so no
-//                    parity enters the identification. A bus cycle held over
-//                    two samples is one fetch (its first sample).
-//  ParityFiltered -- used only by the alias contrasts (X-aud, X-dsk, X-bpl),
-//                    which deliberately point a DMA channel at the Copper's own
-//                    list: a same-address read on an even in-line cycle is the
-//                    aliasing channel's and is excluded. Before any line
-//                    reference exists (line_of < 0) a candidate is kept.
-enum class RestartId { Sequence, ParityFiltered };
-
 // Section 2.4: a restart fetch is the Copper's read of the word at any of
 // `list_starts` (word addresses). Frame k = [restart[k-1], restart[k])
 // (0-indexed restart[0] is restart #1).
-std::vector<uint64_t> restart_fetches(const std::vector<nmh::RamAccess>& log, const std::vector<uint32_t>& list_starts,
-                                       const LineRef& lref, RestartId id = RestartId::Sequence) {
+//
+// A restart fetch is identified by address and list sequence alone: the Copper's read of
+// the word at one of `list_starts`. No run of this package has another reader of that
+// word, so no parity enters the identification. A bus cycle held over two samples is one
+// fetch (its first sample).
+std::vector<uint64_t> restart_fetches(const std::vector<nmh::RamAccess>& log, const std::vector<uint32_t>& list_starts) {
     std::vector<uint64_t> out;
     const std::vector<bool> held = nmh::held_continuations(log, gS);
     for (size_t i = 0; i < log.size(); ++i) {
@@ -200,10 +193,6 @@ std::vector<uint64_t> restart_fetches(const std::vector<nmh::RamAccess>& log, co
         bool match = false;
         for (auto s : list_starts) if (a.word_addr == s) { match = true; break; }
         if (!match) continue;
-        if (id == RestartId::ParityFiltered) {
-            int64_t li = line_of(lref, a.cycle);
-            if (li >= 0 && in_line_cycle(lref, li, a.cycle) % 2 == 0) continue; // even-s: not the Copper
-        }
         out.push_back(a.cycle);
     }
     std::sort(out.begin(), out.end());
@@ -270,7 +259,7 @@ void set_gS(const std::vector<nmh::RamAccess>& log, const std::vector<Block>& bl
     }
 }
 
-// ---- generic per-population parity check (P1-P4, P6) -------------------
+// ---- generic per-population parity check (P1-P5) -----------------------
 
 // The four logical refresh slots of a line and where Fig. 6-9 (p.195) draws
 // them, in memory cycles from the line's first refresh slot (the cycle the
@@ -289,13 +278,18 @@ bool refresh_slots_ok(const std::vector<uint64_t>& group, uint64_t S) {
     return true;
 }
 
+// F2-COUNT's comparator: a sorted refresh group holds exactly the four entries
+// p.194 allocates ("4 cycles for memory refresh"), no more and no fewer.
+bool refresh_count_ok(const std::vector<uint64_t>& group) {
+    return group.size() == (size_t)kRefreshSlots;
+}
+
 struct ParityResult {
-    bool f1_ok = false, f2_ok = false, f3_ok = false, a1_ok = false, restarts_ok = false;
+    bool f1_ok = false, f2_ok = false, f2count_ok = false, f3_ok = false, a1_ok = false, restarts_ok = false;
     bool all_even = true, all_odd = true;
     size_t population = 0;
     size_t a1_violations = 0;
     size_t groups_checked = 0;       // refresh groups whose first access lies in the observed frames
-    size_t held_copper_dropped = 0;  // Copper-block samples dropped as held continuations
     std::map<std::string, size_t> slot_patterns; // "0,2,4,6" -> number of groups
 };
 
@@ -337,20 +331,14 @@ std::vector<std::vector<uint64_t>> refresh_groups(const std::vector<nmh::RamAcce
 }
 
 // Evaluates every access of `target_block` within the observed frames:
-// F1/F2/F3 (on the refresh-derived line grid), A1 (only meaningful for
-// the baseline run, but harmless elsewhere), and the even/odd population.
-// `rid` selects how restart fetches are identified (RestartId). With
-// `drop_held_copper`, a Copper-block sample that continues the bus cycle of
-// the raw sample directly before it (same word, direction, data and byte
-// enables, exactly one memory cycle gS earlier) is not part of the population:
-// the first sample of the held cycle is kept.
+// F1/F2/F2-COUNT/F3 (on the refresh-derived line grid), A1 (only meaningful
+// for the baseline run, but harmless elsewhere), and the even/odd population.
 ParityResult analyze_population(const std::vector<nmh::RamAccess>& log, const std::vector<Block>& blocks,
                                  const std::vector<uint32_t>& list_starts, const std::string& target_block,
-                                 bool check_a1 = false, RestartId rid = RestartId::Sequence,
-                                 bool drop_held_copper = false) {
+                                 bool check_a1 = false) {
     ParityResult r;
     LineRef lref = make_lines(log, blocks);
-    auto restarts = restart_fetches(log, list_starts, lref, rid);
+    auto restarts = restart_fetches(log, list_starts);
     auto span = observed_span(restarts);
     r.restarts_ok = span.ok;
     if (!span.ok) return r;
@@ -358,7 +346,7 @@ ParityResult analyze_population(const std::vector<nmh::RamAccess>& log, const st
     r.f1_ok = check_f1(log, blocks, span.lo, span.hi);
 
     auto groups = refresh_groups(log, blocks);
-    bool f2 = true, f3 = true;
+    bool f2 = true, f2c = true, f3 = true;
     for (size_t i = 0; i < groups.size(); ++i) {
         if (groups[i][0] < span.lo || groups[i][0] >= span.hi) continue;
         ++r.groups_checked;
@@ -372,12 +360,14 @@ ParityResult analyze_population(const std::vector<nmh::RamAccess>& log, const st
         pattern += " of " + std::to_string(groups[i].size());
         ++r.slot_patterns[pattern];
         if (!refresh_slots_ok(groups[i], gS)) f2 = false;
+        if (!refresh_count_ok(groups[i])) f2c = false;
         if (i + 1 < groups.size()) {
             uint64_t gap = groups[i + 1][0] - groups[i][0];
             if (gap != 227 * gS && gap != 228 * gS) f3 = false;
         }
     }
     r.f2_ok = f2 && r.groups_checked > 0;
+    r.f2count_ok = f2c && r.groups_checked > 0;
     r.f3_ok = f3;
 
     if (check_a1) {
@@ -389,13 +379,10 @@ ParityResult analyze_population(const std::vector<nmh::RamAccess>& log, const st
         r.a1_ok = r.a1_violations == 0;
     } else r.a1_ok = true;
 
-    std::vector<bool> held;
-    if (drop_held_copper) held = nmh::held_continuations(log, gS);
     for (size_t i = 0; i < log.size(); ++i) {
         const auto& a = log[i];
         if (a.cycle < span.lo || a.cycle >= span.hi) continue;
         if (attribute(a.word_addr, blocks) != target_block) continue;
-        if (drop_held_copper && target_block == "Copper" && held[i]) { ++r.held_copper_dropped; continue; }
         int64_t li = line_of(lref, a.cycle);
         if (li < 0 || (size_t)li >= lref.firsts.size()) continue;
         int64_t s = in_line_cycle(lref, li, a.cycle);
@@ -415,10 +402,9 @@ struct RunResult {
 };
 
 // One run together with how it is read: its declared blocks, the word addresses
-// of its list starts, and how restart fetches are identified.
+// of its list starts.
 struct Pop {
     std::string name; RunResult run; std::vector<Block> blocks; std::vector<uint32_t> starts;
-    RestartId restart = RestartId::Sequence; // ParityFiltered only for the alias contrasts
 };
 
 using Poker =std::function<void(nmh::NanomigHarness&)>;
@@ -452,11 +438,6 @@ nmh::Config mode_config(int mode) {
     }
     return c;
 }
-
-// X-aud (prog_c1a_xaud.s): audio channel 0 reads kXaudWords words from kXaudLc,
-// which straddles the start of the Copper's list.
-constexpr uint32_t kXaudLc = COP_MAIN - 0x100;
-constexpr uint32_t kXaudWords = 0x100;
 
 constexpr uint32_t COP_BLOCK_END = 0x003000; // end of COP_SECOND's reserve
 Block copper_block() { return {"Copper", wordof(COP_MAIN), wordof(COP_BLOCK_END)}; }
@@ -504,17 +485,13 @@ std::vector<Block> blocks_S2() {
 RunResult run_C0(const std::string& dir, nmh::Config cfg = nmh::Config{}) {
     return run_config(dir + "/prog_c0.bin", cfg, nopoke, {FRAME_CTR});
 }
-RunResult run_C0u(const std::string& dir) { return run_config(dir + "/prog_c0_u.bin", nmh::Config{}, nopoke); }
-RunResult run_C0m(const std::string& dir) { return run_config(dir + "/prog_c0_m.bin", nmh::Config{}, nopoke); }
-RunResult run_C0uj(const std::string& dir) { return run_config(dir + "/prog_c0_uj.bin", nmh::Config{}, nopoke); }
-RunResult run_C0f1(const std::string& dir) { return run_config(dir + "/prog_c0_f1.bin", nmh::Config{}, nopoke); }
+RunResult run_C0htotal(const std::string& dir) { return run_config(dir + "/prog_c0_htotal.bin", nmh::Config{}, nopoke); }
 RunResult run_C0_nofinish(const std::string& dir) { return run_config(dir + "/prog_c0_nofinish.bin", nmh::Config{}, nopoke); }
 
 RunResult run_C1a(const std::string& dir, bool no_aud0 = false) {
     return run_config(dir + (no_aud0 ? "/prog_c1a_noaud0.bin" : "/prog_c1a.bin"), nmh::Config{}, nopoke);
 }
 RunResult run_C1b(const std::string& dir) { return run_config(dir + "/prog_c1b.bin", nmh::Config{}, nopoke); }
-RunResult run_XAud(const std::string& dir) { return run_config(dir + "/prog_c1a_xaud.bin", nmh::Config{}, nopoke); }
 
 RunResult run_C2a(const std::string& dir) {
     return run_config(dir + "/prog_c2a.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
@@ -528,14 +505,10 @@ RunResult run_C2a_noenable(const std::string& dir) {
 RunResult run_C2a_dskpt(const std::string& dir) {
     return run_config(dir + "/prog_c2a_dskpt.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
 }
-RunResult run_XDsk(const std::string& dir) {
-    return run_config(dir + "/prog_c2a_xdsk.bin", nmh::Config{}, nopoke, {RES_DSKBYTR});
-}
 
 RunResult run_C3(const std::string& dir, bool no_spren = false) {
     return run_config(dir + (no_spren ? "/prog_c3_nospren.bin" : "/prog_c3.bin"), nmh::Config{}, nopoke);
 }
-RunResult run_XSpr(const std::string& dir) { return run_config(dir + "/prog_c3_xspr.bin", nmh::Config{}, nopoke); }
 
 RunResult run_C4(const std::string& dir, int n, bool wide_start = false, bool no_bplen = false) {
     std::string bin = "/prog_c4_" + std::to_string(n) + ".bin";
@@ -543,7 +516,6 @@ RunResult run_C4(const std::string& dir, int n, bool wide_start = false, bool no
     if (n == 4 && no_bplen) bin = "/prog_c4_4_nobplen.bin";
     return run_config(dir + bin, nmh::Config{}, nopoke);
 }
-RunResult run_XBpl(const std::string& dir) { return run_config(dir + "/prog_c4_4_xbpl.bin", nmh::Config{}, nopoke); }
 
 RunResult run_C5(const std::string& dir) { return run_config(dir + "/prog_c5.bin", nmh::Config{}, nopoke, {RES_DSKBYTR}); }
 RunResult run_C6(const std::string& dir, const char* bin = "/prog_c6.bin", nmh::Config cfg = nmh::Config{}) {
@@ -587,18 +559,19 @@ std::vector<WordRange> copper_list_words() {
 std::string unmet_if(bool ok, const std::string& name) { return ok ? std::string() : name + " "; }
 
 // The observation preconditions of one run: it reached DONE (C1), its restart
-// fetches delimit the observed frames, and F1, F2 and F3 hold.
+// fetches delimit the observed frames, and F1, F2, F2-COUNT and F3 hold.
 std::string observation_unmet(const std::string& name, const RunResult& run, const ParityResult& r) {
     std::string u = unmet_if(run.done.has_value(), name + ":C1");
     if (!r.restarts_ok) return u + name + ":restarts ";
-    return u + unmet_if(r.f1_ok, name + ":F1") + unmet_if(r.f2_ok, name + ":F2") + unmet_if(r.f3_ok, name + ":F3");
+    return u + unmet_if(r.f1_ok, name + ":F1") + unmet_if(r.f2_ok, name + ":F2") +
+           unmet_if(r.f2count_ok, name + ":F2-COUNT") + unmet_if(r.f3_ok, name + ":F3");
 }
 
 // The restart fetches of the run, as the run declares them, delimit the
 // observed frames (at least six of them, section 2.4).
 std::string span_unmet(const Pop& p) {
     LineRef lref = make_lines(p.run.log, p.blocks);
-    return unmet_if(restart_fetches(p.run.log, p.starts, lref, p.restart).size() >= 6, p.name + ":restarts");
+    return unmet_if(restart_fetches(p.run.log, p.starts).size() >= 6, p.name + ":restarts");
 }
 
 void not_graded(Checks& checks, const std::string& id, const std::string& unmet) {
@@ -619,7 +592,7 @@ bool p5a_check(const Pop& p, int n, Checks& checks, std::string& unmet) {
     int upto = std::min(n, 4);
     for (int y = 0; y < upto; ++y) {
         std::string name = "BPL" + std::to_string(y + 1);
-        auto pr = analyze_population(p.run.log, p.blocks, p.starts, name, false, p.restart);
+        auto pr = analyze_population(p.run.log, p.blocks, p.starts, name, false);
         if (y == 0) unmet += observation_unmet(p.name, p.run, pr);
         bool this_ok = pr.population > 0 && pr.all_even;
         ok = ok && this_ok;
@@ -633,7 +606,7 @@ bool p5a_check(const Pop& p, int n, Checks& checks, std::string& unmet) {
 // fetches outnumber odd-cycle ones ("most").
 bool p5b_check(const Pop& p, Checks& checks) {
     LineRef lref = make_lines(p.run.log, p.blocks);
-    auto restarts = restart_fetches(p.run.log, p.starts, lref, p.restart);
+    auto restarts = restart_fetches(p.run.log, p.starts);
     auto span = observed_span(restarts);
     if (!span.ok) { checks.note("P5b " + p.name + ": NOSPAN"); return false; }
     std::map<int64_t, std::pair<int, int>> counts; // line -> (even,odd)
@@ -663,7 +636,7 @@ bool p5b_check(const Pop& p, Checks& checks) {
 // span.
 bool k5_check(const Pop& p, const std::vector<std::string>& planes, Checks& checks) {
     LineRef lref = make_lines(p.run.log, p.blocks);
-    auto restarts = restart_fetches(p.run.log, p.starts, lref, p.restart);
+    auto restarts = restart_fetches(p.run.log, p.starts);
     if (restarts.size() < 6) { checks.note("K5 " + p.name + ": NOSPAN"); return false; }
     bool ok = true; std::ostringstream note;
     for (int f = 0; f < 3; ++f) {
@@ -712,7 +685,7 @@ std::vector<Structure> sprite_structures_c3() {
 // identification (2.4).
 bool k4_check(const Pop& p, const std::vector<Structure>& structures, Checks& checks) {
     LineRef lref = make_lines(p.run.log, p.blocks);
-    auto restarts = restart_fetches(p.run.log, p.starts, lref, p.restart);
+    auto restarts = restart_fetches(p.run.log, p.starts);
     if (restarts.size() < 6) { checks.note("K4 " + p.name + ": NOSPAN"); return false; }
     bool ok = true; std::ostringstream note;
     for (int f = 0; f < 3; ++f) {
@@ -733,7 +706,7 @@ bool k4_check(const Pop& p, const std::vector<Structure>& structures, Checks& ch
 // end).
 bool k6_check(const Pop& p, Checks& checks) {
     LineRef lref = make_lines(p.run.log, p.blocks);
-    auto restarts = restart_fetches(p.run.log, p.starts, lref, p.restart);
+    auto restarts = restart_fetches(p.run.log, p.starts);
     if (restarts.size() < 6) { checks.note("K6 " + p.name + ": NOSPAN"); return false; }
     bool ok = true; std::ostringstream note;
     for (int f = 0; f < 3; ++f) {
@@ -757,44 +730,30 @@ bool k6_check(const Pop& p, Checks& checks) {
 // after iteration 112, i.e. at word offset 60+8*113=964. Segment i
 // (SPECIFICATION.md P7.3) = the accesses after WAIT i's own two words, up
 // to and including WAIT (i+1)'s own two words: word-offset range
-// [60+8i+2, 60+8(i+1)+2). `shift_after_i` (>=0) is T1's own contrast
-// (SPECIFICATION.md P7.6): one extra DC.W pair inserted right after
-// segment `shift_after_i`'s own three MOVEs, widening that segment by 2
-// words and moving every later segment's own boundary by 2 words; -1
-// means the list is unmodified.
+// [60+8i+2, 60+8(i+1)+2).
 constexpr uint32_t kSegBase = 62; // 60+2: first word after WAIT 0
-uint32_t seg_lo_word(uint32_t cop_main_word, int i, int shift_after_i = -1) {
-    uint32_t w = cop_main_word + kSegBase + 8u * (uint32_t)i;
-    if (shift_after_i >= 0 && i > shift_after_i) w += 2;
-    return w;
-}
-uint32_t seg_hi_word(uint32_t cop_main_word, int i, int shift_after_i = -1) {
-    uint32_t w = cop_main_word + kSegBase + 8u * (uint32_t)(i + 1);
-    if (shift_after_i >= 0 && i >= shift_after_i) w += 2;
-    return w;
-}
+uint32_t seg_lo_word(uint32_t cop_main_word, int i) { return cop_main_word + kSegBase + 8u * (uint32_t)i; }
+uint32_t seg_hi_word(uint32_t cop_main_word, int i) { return cop_main_word + kSegBase + 8u * (uint32_t)(i + 1); }
 
 using PairList = std::vector<std::pair<int64_t, int64_t>>; // (line offset from segment's first access, s)
 
 // [frame 0..2][segment 0..112] -> PairList, time-ordered (run.log is
 // chronological). Only valid for a run using the list_L5 layout (C5, C6,
 // C7a, C7b, and C6' -- the P7 mutation, which only substitutes one WAIT's
-// own HP word and does not shift any segment). For a run that inserts a
-// word (T1's own contrast, run_C6_extra50), pass its own `shift_after_i`.
+// own HP word and does not shift any segment).
 // `blocks` must be the run's OWN full declared-block list (e.g.
 // blocks_full(4) for C6): the refresh set is identified by exclusion
 // (SPECIFICATION.md D7/2.2), so a run's other live DMA traffic must be
 // declared here or it is misattributed "R" and corrupts the line/refresh-
 // group construction that segments and lines are anchored on.
-std::vector<std::vector<PairList>> compute_segments(const RunResult& run, const std::vector<Block>& blocks,
-                                                      int shift_after_i = -1) {
+std::vector<std::vector<PairList>> compute_segments(const RunResult& run, const std::vector<Block>& blocks) {
     std::vector<std::vector<PairList>> out(3, std::vector<PairList>(113));
     LineRef lref = make_lines(run.log, blocks);
-    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)}, lref);
+    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)});
     if (restarts.size() < 6) return out;
     uint32_t base = wordof(COP_MAIN);
     std::array<uint32_t, 114> bounds;
-    for (int i = 0; i <= 113; ++i) bounds[(size_t)i] = seg_lo_word(base, i, shift_after_i);
+    for (int i = 0; i <= 113; ++i) bounds[(size_t)i] = seg_lo_word(base, i);
     auto seg_index = [&](uint32_t w) -> int {
         if (w < bounds[0] || w >= bounds[113]) return -1;
         size_t idx = std::upper_bound(bounds.begin(), bounds.end(), w) - bounds.begin();
@@ -830,11 +789,9 @@ bool p7_check(const RunResult& c5, const std::vector<Block>& b5, const RunResult
 }
 
 // T1: every segment has the same number of Copper accesses in both runs.
-// `shift_c6` is T1's own contrast on the C6 side (run_C6_extra50): -1 for
-// the normal (unshifted) check.
 bool t1_check(const RunResult& c5, const std::vector<Block>& b5, const RunResult& c6, const std::vector<Block>& b6,
-              Checks& checks, int shift_c6 = -1) {
-    auto s5 = compute_segments(c5, b5, -1), s6 = compute_segments(c6, b6, shift_c6);
+              Checks& checks) {
+    auto s5 = compute_segments(c5, b5), s6 = compute_segments(c6, b6);
     int mismatched = 0;
     for (int f = 0; f < 3; ++f) for (int i = 0; i < 113; ++i) if (s5[f][i].size() != s6[f][i].size()) ++mismatched;
     checks.note("T1: segments with differing access count (C5 vs C6) = " + std::to_string(mismatched));
@@ -844,7 +801,7 @@ bool t1_check(const RunResult& c5, const std::vector<Block>& b5, const RunResult
 // T2: no CPU-block access lies in any line spanned by a segment.
 bool t2_check(const RunResult& run, const std::vector<Block>& blocks, Checks& checks, const std::string& name) {
     LineRef lref = make_lines(run.log, blocks);
-    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)}, lref);
+    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)});
     auto span = observed_span(restarts);
     if (!span.ok) { checks.note("T2 " + name + ": NOSPAN"); return false; }
     uint32_t base = wordof(COP_MAIN);
@@ -874,7 +831,7 @@ bool t2_check(const RunResult& run, const std::vector<Block>& blocks, Checks& ch
 // of every observed frame (the channels are active while the segments run).
 bool t3_check(const RunResult& run, const std::vector<Block>& blocks, Checks& checks) {
     LineRef lref = make_lines(run.log, blocks);
-    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)}, lref);
+    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)});
     if (restarts.size() < 6) { checks.note("T3: NOSPAN"); return false; }
     uint32_t base = wordof(COP_MAIN);
     std::vector<std::vector<int64_t>> seg_line(3, std::vector<int64_t>(113, -1));
@@ -935,7 +892,7 @@ struct Fold {
 // `unmet`, never folded into `ok`; the caller grades the line only when
 // `unmet` is empty, and prints NOT GRADED otherwise.
 Fold fold_check(const std::vector<Pop>& all, const std::vector<std::string>& names, const std::string& target,
-                bool want_even, Checks& checks, const std::string& tag, bool drop_held_copper = false) {
+                bool want_even, Checks& checks, const std::string& tag) {
     Fold out;
     out.ok = true;
     std::ostringstream note;
@@ -943,14 +900,13 @@ Fold fold_check(const std::vector<Pop>& all, const std::vector<std::string>& nam
         const Pop* p = nullptr;
         for (const auto& c : all) if (c.name == n) { p = &c; break; }
         if (!p) { out.ok = false; out.unmet += n + ":MISSING "; note << n << ":MISSING;"; continue; }
-        auto r = analyze_population(p->run.log, p->blocks, p->starts, target, false, p->restart, drop_held_copper);
+        auto r = analyze_population(p->run.log, p->blocks, p->starts, target, false);
         out.unmet += observation_unmet(p->name, p->run, r);
         bool this_ok = r.population > 0 && (want_even ? r.all_even : r.all_odd);
         out.ok = out.ok && this_ok;
         note << n << ":pop=" << r.population << (want_even ? ",even=" : ",odd=")
              << (want_even ? r.all_even : r.all_odd);
         note << ",F1F2F3=" << r.f1_ok << r.f2_ok << r.f3_ok;
-        if (drop_held_copper) note << ",held_dropped=" << r.held_copper_dropped;
         note << (this_ok ? "" : "(FAIL)") << ";";
     }
     checks.note(tag + " per-config: " + note.str());
@@ -978,7 +934,7 @@ std::array<size_t, 3> frame_access_counts(const Pop& p, const WordRange& in, con
                                            bool with_writes) {
     std::array<size_t, 3> n = {0, 0, 0};
     LineRef lref = make_lines(p.run.log, p.blocks);
-    auto restarts = restart_fetches(p.run.log, p.starts, lref, p.restart);
+    auto restarts = restart_fetches(p.run.log, p.starts);
     if (restarts.size() < 6) return n;
     for (const auto& a : p.run.log) {
         if ((a.is_write && !with_writes) || a.word_addr < in.lo || a.word_addr >= in.hi) continue;
@@ -1017,7 +973,7 @@ bool k3_check(const Pop& p, const std::vector<WordRange>& channels, Checks& chec
     return ok;
 }
 
-// A1 (precondition of P1-P6): in the baseline configuration C0, every access in
+// A1 (precondition of P1-P5): in the baseline configuration C0, every access in
 // the observed frames is in R, the CPU block or the Copper block. Every
 // reserved block that is not the refresh set is declared (blocks_full(6):
 // Copper, four audio, disk, sprites and the null sprite, six planes), so an
@@ -1028,28 +984,16 @@ bool a1_holds(const Pop& c0, Checks& checks) {
     return pr.restarts_ok && pr.a1_ok;
 }
 
-// A1 as a contrast run needs it: a fresh C0 run, graded with the same table.
-// S is the apparatus's, measured from that run's own refresh trace; the
-// caller's S is restored.
-bool a1_precondition_run(const std::string& dir, Checks& checks) {
-    const uint64_t saved_gS = gS;
-    Pop c0{"C0", run_C0(dir), blocks_C0(), {wordof(COP_MAIN)}};
-    set_gS(c0.run.log, c0.blocks, checks);
-    bool ok = a1_holds(c0, checks);
-    gS = saved_gS;
-    return ok;
-}
-
-// P6's MEASURED line: the Copper-block reads in the observed frames that fall
+// The MEASURED line of the withdrawn P6: the Copper-block reads in the observed frames that fall
 // on an even in-line cycle, split into those that continue the bus cycle of the
 // sample directly before them (same word, direction, data and byte enables,
-// exactly one memory cycle gS earlier -- dropped from P6's population) and
+// exactly one memory cycle gS earlier) and
 // those that do not, with the in-line cycle numbers they fall on.
 struct EvenReadInfo { size_t raw_even = 0, held_even = 0, remaining_even = 0; std::set<int64_t> s_values; };
 EvenReadInfo measure_p6_even_reads(const RunResult& run, const std::vector<Block>& blocks) {
     EvenReadInfo info;
     LineRef lref = make_lines(run.log, blocks);
-    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)}, lref);
+    auto restarts = restart_fetches(run.log, {wordof(COP_MAIN)});
     auto span = observed_span(restarts);
     if (!span.ok) return info;
     const std::vector<bool> held = nmh::held_continuations(run.log, gS);
@@ -1090,16 +1034,16 @@ std::string copper_first_fetch_text(const Pop& p) {
 } // namespace
 
 // Each record names an assertion's leading label, its kind and its result, and runs on one line. NMH_MUTATE=<selector> replays it on a core; the values are what that replay printed. A mutation run evaluates and prints the line's preconditions with the comparators of the normal run first; the normal run's line on the same comparator is the green control.
-// MUTATION P1 stimulus red C0-uj (list L0uj: the Copper jumps to sub-list U, outside every declared block, right after line $80's refresh group, and U jumps back to an END word in the Copper block), NMH_MUTATE=P1; both cores: DONE=1, S=8, A1 holds, 3786 refresh-set accesses of which the even-s check fails (even=0), F1F2F3=111, offsets [0,2,4,6 of 14]x3 [0,2,4,6 of 4]x936
-// MUTATION P2 stimulus red X-dsk (C2a with list L5, DSKPT at the Copper block), NMH_MUTATE=P2; both cores: DONE=1, S=8, A1 holds, K2a DSKBYTR=F000, K2b 851/907/939 disk-block accesses per observed frame outside the Copper's list words, 5802 disk-block accesses, even=0, F1F2F3=111
-// MUTATION P3 stimulus red X-aud (C1a with list L5, AUD0LC at COP_MAIN-$100 and AUD0LEN $100 words), NMH_MUTATE=P3; both cores: DONE=1, S=8, A1 holds, K3 channel 0 158/159/154 (fx68k) and 158/159/158 (tg68k) accesses per observed frame outside the Copper's list words and channels 1-3 286/287/286, 3805 audio-block accesses, even=0, F1F2F3=111
-// MUTATION P4 stimulus red X-spr (C3 with list L3x, structure X for sprite 0), NMH_MUTATE=P4; both cores: DONE=1, S=8, A1 holds, K4 sprite 0 20/20 and null block 2/2 in every observed frame, 153 sprite-block accesses, even=0, F1F2F3=111
-// MUTATION P5 stimulus red X-bpl (C4-4 with list L5, BPL1PT at the Copper block), NMH_MUTATE=P5; both cores: DONE=1, S=8, A1 holds, K5 258 lines for the plane-1 span and 256 for planes 2-4 in every observed frame, 18345 plane-1 accesses, even=0, F1F2F3=111
-// MUTATION P6 stimulus red X-aud with the aliased span declared as the Copper block (the P3 run; held-cycle rule applied), NMH_MUTATE=P6; both cores: DONE=1, S=8, A1 holds, K6 L5 972/972 and L5b 12/12 in every observed frame, 3820 Copper-block accesses after 24 held continuations were dropped, odd=0, F1F2F3=111
+// MUTATION P1 none impossible the four refresh slots of every line are fixed by the hardware (p.194, Fig. 6-9; DMACON has no enable bit for refresh) and no register or instruction moves one to an odd cycle; another agent's access to memory no block declares joins R by exclusion (D7), which is a false attribution and not a changed refresh
+// MUTATION P2 none impossible the disk channel's slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; DSKPT, DSKLEN and ADKCON change which words are transferred, not in which cycle, and a run that aims DSKPT at the Copper's words fails only through the address attribution
+// MUTATION P3 none impossible the audio channels' slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; AUDxLC, AUDxLEN and AUDxPER change which words and how often, not in which cycle, and a run that aims a channel at the Copper's words fails only through the address attribution
+// MUTATION P4 none impossible the sprite channels' slots are fixed by the hardware (p.20, p.194) and no register or instruction moves one to an odd cycle; the sprite pointers and the data structure change which words are fetched, not in which cycle, and a run in which the Copper executes words a sprite channel reads fails only through the address attribution
+// MUTATION P5 none impossible the fetch slots of low-resolution planes 1-4 are fixed on the even cycles (Fig. 6-9, Fig. 6-11) and no register or instruction moves one to an odd cycle; DDFSTRT, DDFSTOP, BPLCON1 and the modulos change which words and lines are fetched, not their parity, a high-resolution fetch lies outside P5's premise (D2), and a run that aims plane 1 at the Copper's words fails only through the address attribution
 // MUTATION A1 stimulus red C1a graded with the normal run's table (every reserved block declared), NMH_MUTATE=A1; both cores: DONE=1, 3436 accesses outside R, the CPU block and the Copper block
-// MUTATION F1 stimulus red C0-f1 (after every STOP wake-up the CPU reads one word of the Copper block), NMH_MUTATE=F1; both cores: DONE=1, S=8, 939 groups, F1=0 F2=1 F3=1, offsets [0,2,4,6 of 4]x939
-// MUTATION F2 stimulus red C0-u (list L0u: the Copper jumps to sub-list U, outside every declared block, right after line $80's refresh group and ends there; its read of the word after U's END falls between the first two refresh slots of the restart line), NMH_MUTATE=F2; both cores: DONE=1, S=8, 939 groups, F1=1 F2=0 F3=1, offsets [0,1,2,4 of 5]x3 [0,2,4,6 of 4]x933 [0,2,4,6 of 8]x3
-// MUTATION F3 stimulus red C0-m (list L0m: the Copper reads sub-list U near HP=$70 of line $80 and U jumps back to the Copper block; U's reads form a group of their own at every second memory cycle and split the line), NMH_MUTATE=F3; both cores: DONE=1, S=8, 942 groups, F1=1 F2=1 F3=0, offsets [0,2,4,6 of 10]x3 [0,2,4,6 of 4]x939
+// MUTATION F1 none impossible the DMA slot grid is the memory cycle of the machine and no register or instruction moves a DMA channel to another phase of it; the 68000's own accesses lie on another phase and are outside F1's scope, and a CPU read of a declared block fails F1 only through the address attribution; the check's sensitivity is shown by SELFTEST-F1
+// MUTATION F2 none impossible the four refresh slots of every line are fixed by the hardware (p.194, Fig. 6-9) and no register or instruction moves one; a fifth or displaced access in the refresh set is another agent's access to memory no block declares (D7), which is a false attribution and not a changed refresh; the check's sensitivity is shown by SELFTEST-F2
+// MUTATION F2-COUNT none impossible the count of refresh cycles per line is fixed by the hardware (p.194: 4 cycles for memory refresh; DMACON has no enable bit for refresh) and no register or instruction adds or removes one; an extra entry in a group is another agent's access to memory no block declares (D7); the check's sensitivity is shown by SELFTEST-F2, whose synthetic group of five F2-COUNT must reject
+// MUTATION F3 stimulus red C0-htotal (S2 writes HTOTAL=$E0 and BEAMCON0=$00A0, VARBEAMEN with PAL kept: every line is 225 memory cycles; S taken from the normal C0 run as in every plain run), NMH_MUTATE=F3; both cores: DONE=1, S=8, 939 groups, F1=1 F2=1 F2-COUNT=1 F3=0, every observed line interval 225 S
 // MUTATION FIXTURE stimulus red C0-nofinish (the STOP loop's exit condition removed; the completion word is missing), NMH_MUTATE=FIXTURE; both cores: loaded=1, released=1, DONE=0
 // MUTATION FIXTURE-PEEK stimulus red C0-exit6 (the wait loop exits at FRAME_CTR 6; the stored word is 6 where the readback expects 7), NMH_MUTATE=FIXTURE-PEEK; both cores: DONE=1, FRAME_CTR=0006
 // MUTATION K2a stimulus red C2a with both DSKLEN writes $4000|8000 (bit 15 clear, DMAON=0), NMH_MUTATE=K2a; both cores: DONE=1, DSKBYTR=B000
@@ -1108,13 +1052,14 @@ std::string copper_first_fetch_text(const Pop& p) {
 // MUTATION K4 stimulus red C3 without SPREN, NMH_MUTATE=K4; both cores: DONE=1, every sprite structure 0/86 words read in every observed frame
 // MUTATION K5 stimulus red C4-4 without BPLEN, NMH_MUTATE=K5; both cores: DONE=1, 0 fetch lines for every plane in every observed frame
 // MUTATION K6 stimulus red C6 with list L5 truncated to V_spr+V_bpl(6)+END, NMH_MUTATE=K6; both cores: DONE=1, L5 59/972 and L5b 0/12 words read in every observed frame
-// MUTATION T1 stimulus red C6-extra50 (list L5 with one extra DC.W $0180,$0000 after WAIT 50), NMH_MUTATE=T1; both cores: C5 and C6-extra50 DONE=1, 3 segments differ in access count
+// MUTATION T1 stimulus red C6-extra50 (list L5 with one extra DC.W $0180,$0000 after WAIT 50), NMH_MUTATE=T1; both cores: C5 and C6-extra50 DONE=1, 6 segments differ in access count (the unchanged segment table, so the inserted pair moves every later segment boundary)
 // MUTATION T2 stimulus red C6-stopself (STOP replaced by a self-branch loop, disk sequence unchanged), NMH_MUTATE=T2; DONE=1; fx68k: 342 segment lines, 32013 CPU accesses in them; tg68k: 342 segment lines, 36269
 // MUTATION T3 stimulus red C6-nospren (C6 without SPREN), NMH_MUTATE=T3; DONE=1; both cores: 339 segment lines, bpl_missing=0, spr_missing=120, disk lines per frame 113/113/113; audio lines per frame fx68k 106/105/106, tg68k 106/106/106
-// MUTATION P7 stimulus red C6' (list L5 with WAIT 32 at HP=$42 instead of $40), NMH_MUTATE=P7; both cores: C5 and C6' DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, 3 mismatches of 339 segment/frame pairs
+// MUTATION P7 none impossible the Copper takes only the odd cycles and audio, disk, refresh, sprite and low-resolution plane DMA only the even ones (p.20), and no register or instruction makes one of those channels take an odd cycle, so no program makes an even-cycle channel delay the Copper; a channel that takes odd cycles (high-resolution planes) lies outside P7's premise, and changing the Copper's own list changes the comparison's inputs and not the clause
+// MUTATION SELFTEST-P7 stimulus red C6' (list L5 with WAIT 32 at HP=$42 instead of $40; a self-test of p7_check, whose three mismatches come from the Copper's own list), NMH_MUTATE=SELFTEST-P7; both cores: C5 and C6' DONE=1, F1F2F3=111 for both, K6, T1, T2 and T3 hold, 3 mismatches of 339 segment/frame pairs
 // MUTATION SELFTEST-F1 none impossible the check runs on a synthetic trace built in the test and no module stimulus enters it; it is a self-test of check_f1, printed in every plain run
-// MUTATION SELFTEST-F2 none impossible the check runs on synthetic refresh groups built in the test and no module stimulus enters it; it is a self-test of refresh_slots_ok, printed in every plain run
-// MUTATION P6-HELD-CONTROL none impossible unfalsifiable at this boundary: two genuine adjacent identical Copper accesses would be two Copper requests in adjacent memory cycles, which is the proposition P6 tests, and the RAM-port log cannot tell such a pair from one held bus cycle, so no stimulus produces the case; the control is the synthetic trace of this check
+// MUTATION SELFTEST-F2 none impossible the checks run on synthetic refresh groups built in the test (four slots, a moved slot, three, five) and no module stimulus enters them; it is a self-test of refresh_slots_ok and refresh_count_ok, printed in every plain run
+// MUTATION HELD-CONTROL none impossible unfalsifiable at this boundary: two genuine adjacent identical Copper accesses cannot be told from one held bus cycle in the RAM-port log, which carries no requester, so no stimulus produces the case; the control is the synthetic trace of this check
 //
 // Not exercised, by a scope decision: P8-P12 (video and sprite-image propositions) and
 // the blitter claims are not implemented in this package at all -- see the RECORDED lines
@@ -1136,134 +1081,7 @@ int main(int argc, char** argv) {
         // ---- Every precondition of the line under test is evaluated and ---
         // ---- printed first, with the comparator the normal run uses; a ----
         // ---- precondition that fails leaves the line NOT GRADED. ----------
-        if (mv == "P1") {
-            // C0-uj: the Copper reads sub-list U, outside every declared block,
-            // right after line $80's refresh group and jumps back into the
-            // Copper block, so the group gains accesses on odd cycles after its
-            // fourth slot while F1, F2 and F3 hold.
-            RunResult r = run_C0uj(dir);
-            set_gS(r.log, blocks_C0(), checks);
-            std::vector<Pop> tmp = {{"C0-uj", r, blocks_C0(), {wordof(COP_MAIN)}}};
-            bool a1 = a1_precondition_run(dir, checks);
-            Fold f = fold_check(tmp, {"C0-uj"}, "R", true, checks, "P1 mutation");
-            {
-                auto pr = analyze_population(r.log, blocks_C0(), {wordof(COP_MAIN)}, "R", false);
-                std::ostringstream pat;
-                for (const auto& kv : pr.slot_patterns) pat << "[" << kv.first << "]x" << kv.second << " ";
-                checks.note("C0-uj: groups=" + std::to_string(pr.groups_checked) + " offsets=" + pat.str());
-            }
-            checks.note("C0-uj: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS));
-            std::string unmet = f.unmet + unmet_if(a1, "A1");
-            if (unmet.empty())
-                checks.expect(f.ok, "P1: every refresh access lies on an even in-line cycle, in every run and mode graded. "
-                              "ch2-about-the-copper.c24 COP2-about-the-copper.c29 p.20");
-            else
-                not_graded(checks, "P1", unmet);
-        } else if (mv == "P2") {
-            RunResult r = run_XDsk(dir);
-            // The disk block's declared span (8000 words = 16000 bytes from
-            // COP_MAIN) reaches past COP_SECOND, so L5b is declared with it.
-            std::vector<Block> b = {disk_block(COP_MAIN, 8000)};
-            set_gS(r.log, b, checks);
-            std::vector<Pop> tmp = {{"X-dsk", r, b, {wordof(COP_MAIN)}, RestartId::ParityFiltered}};
-            bool a1 = a1_precondition_run(dir, checks);
-            uint16_t v = 0;
-            bool k2a = dskbytr_ok(r, true, &v);
-            auto cnt = disk_frame_counts(tmp[0], {wordof(COP_MAIN), wordof(COP_MAIN) + 8000});
-            bool k2b = all_frames_nonempty(cnt);
-            checks.note("X-dsk: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS) +
-                        " K2a DSKBYTR=" + hex(v) + " K2b disk-block accesses outside the Copper's list words per "
-                        "observed frame=" + frame_counts_text(cnt));
-            Fold f = fold_check(tmp, {"X-dsk"}, "Disk", true, checks, "P2 mutation");
-            std::string unmet = f.unmet + unmet_if(a1, "A1") + unmet_if(k2a, "K2a") + unmet_if(k2b, "K2b");
-            if (unmet.empty())
-                checks.expect(f.ok, "P2: every disk-DMA access lies on an even in-line cycle (C2a, C6; C2b's read "
-                              "direction declined, D9).");
-            else
-                not_graded(checks, "P2", unmet);
-        } else if (mv == "P3" || mv == "P6") {
-            RunResult r = run_XAud(dir);
-            // Every live block of this run is declared, or its traffic would be
-            // misattributed "R" by exclusion and corrupt the line and
-            // refresh-group construction. Audio channel 0 reads kXaudWords words
-            // from kXaudLc, which straddles the start of the Copper's list, so
-            // it reads words the Copper never reads as well as words it does;
-            // channels 1-3 are live (C1a's DMACON) at their own, non-overlapping
-            // blocks. P3 declares the span as one block, P6 declares it as the
-            // Copper block, so the same words are graded as the audio
-            // channel's (P3) and as the Copper's (P6).
-            const char* span_name = mv == "P3" ? "Shared" : "Copper";
-            std::vector<Block> b = {
-                {span_name, wordof(kXaudLc), wordof(COP_MAIN + 0x1000)},
-                {mv == "P3" ? "L5b" : "Copper", wordof(COP_SECOND), wordof(COP_SECOND + 0x100)},
-                audio_block(1), audio_block(2), audio_block(3),
-            };
-            set_gS(r.log, b, checks);
-            std::vector<Pop> tmp = {{"X-aud", r, b, {wordof(COP_MAIN)}, RestartId::ParityFiltered}};
-            bool a1 = a1_precondition_run(dir, checks);
-            if (mv == "P3") {
-                std::vector<WordRange> ch = plain_audio_ranges();
-                ch[0] = {wordof(kXaudLc), wordof(kXaudLc) + kXaudWords};
-                bool k3 = k3_check(tmp[0], ch, checks);
-                Fold f = fold_check(tmp, {"X-aud"}, "Shared", true, checks, "P3 mutation");
-                checks.note("X-aud: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS));
-                std::string unmet = f.unmet + unmet_if(a1, "A1") + unmet_if(k3, "K3");
-                if (unmet.empty())
-                    checks.expect(f.ok, "P3: every audio-DMA access, all four channels, lies on an even in-line cycle "
-                                  "(C1a, C1b, C6). ch2-about-the-copper.c22 COP2-about-the-copper.c27 p.20");
-                else
-                    not_graded(checks, "P3", unmet);
-            } else {
-                bool k6 = k6_check(tmp[0], checks);
-                Fold f = fold_check(tmp, {"X-aud"}, "Copper", false, checks, "P6 mutation", true);
-                checks.note("X-aud: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS));
-                std::string unmet = f.unmet + unmet_if(a1, "A1") + unmet_if(k6, "K6");
-                if (unmet.empty())
-                    checks.expect(f.ok, "P6: every Copper-block access lies on an odd in-line cycle, in every run and mode "
-                                  "graded (as P1), each bus cycle held over two samples counted once. p.20");
-                else
-                    not_graded(checks, "P6", unmet);
-            }
-        } else if (mv == "P5") {
-            RunResult r = run_XBpl(dir);
-            // XBPL1's declared span (COP_MAIN, +$2800 bytes) reaches past
-            // COP_SECOND (L5b); planes 2-4 (CH_BPL2-4) are still live (BPLEN)
-            // at their own, non-overlapping blocks.
-            std::vector<Block> b = {
-                {"XBPL1", wordof(COP_MAIN), wordof(COP_MAIN + 0x2800)},
-                bitplane_block(1), bitplane_block(2), bitplane_block(3),
-            };
-            set_gS(r.log, b, checks);
-            std::vector<Pop> tmp = {{"X-bpl", r, b, {wordof(COP_MAIN)}, RestartId::ParityFiltered}};
-            bool a1 = a1_precondition_run(dir, checks);
-            bool k5 = k5_check(tmp[0], {"XBPL1", "BPL2", "BPL3", "BPL4"}, checks);
-            Fold f = fold_check(tmp, {"X-bpl"}, "XBPL1", true, checks, "P5 mutation");
-            checks.note("X-bpl: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS));
-            std::string unmet = f.unmet + unmet_if(a1, "A1") + unmet_if(k5, "K5");
-            if (unmet.empty())
-                checks.expect(f.ok, "P5: (a) every access in bitplanes 1-4 lies on an even in-line cycle, in every "
-                              "config with 1-6 low-resolution planes and at both fetch starts, and in C6; (b) in every "
-                              "line with bitplane fetches, even-cycle fetches outnumber odd-cycle ones. "
-                              "ch2-about-the-copper.c26 COP2-about-the-copper.c31 p.20");
-            else
-                not_graded(checks, "P5", unmet);
-        } else if (mv == "P4") {
-            RunResult r = run_XSpr(dir);
-            set_gS(r.log, blocks_sprite(), checks);
-            std::vector<Pop> tmp = {{"X-spr", r, blocks_sprite(), {wordof(COP_MAIN)}}};
-            bool a1 = a1_precondition_run(dir, checks);
-            // Structure X (20 words) is sprite 0's; sprites 1-7 read the null
-            // block (2 words).
-            bool k4 = k4_check(tmp[0], {{"spr0", wordof(CH_SPR[0]), 20}, {"null", wordof(CH_SPR_NULL), 2}}, checks);
-            Fold f = fold_check(tmp, {"X-spr"}, "Sprite", true, checks, "P4 mutation");
-            checks.note("X-spr: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS));
-            std::string unmet = f.unmet + unmet_if(a1, "A1") + unmet_if(k4, "K4");
-            if (unmet.empty())
-                checks.expect(f.ok, "P4: every sprite-DMA access, all eight channels, lies on an even in-line cycle "
-                              "(C3, C6, S1, S2). ch2-about-the-copper.c25 COP2-about-the-copper.c30 p.20");
-            else
-                not_graded(checks, "P4", unmet);
-        } else if (mv == "A1") {
+        if (mv == "A1") {
             // The same declaration table as the normal run: every reserved
             // block that is not the refresh set. Only the program differs (C1a
             // enables audio DMA, so accesses fall into the audio blocks).
@@ -1275,32 +1093,36 @@ int main(int argc, char** argv) {
             checks.expect(pr.restarts_ok && pr.a1_ok, "A1: in the baseline configuration C0, every access in the "
                           "observed frames is either in the refresh set R, the CPU block, or the Copper block. "
                           "SPECIFICATION.md 2.2");
-        } else if (mv == "F1" || mv == "F2" || mv == "F3") {
-            // F1: C0-f1 (the CPU reads a Copper-block word after every STOP).
-            // F2: C0-u (the Copper's read of the word after U's END falls
-            // between the first two refresh slots of the restart line).
-            // F3: C0-m (the Copper reads U near horizontal position $70 of
-            // line $80 and jumps back: the reads form a group of their own).
-            const std::string pname = mv == "F1" ? "C0-f1" : mv == "F2" ? "C0-u" : "C0-m";
-            RunResult r = mv == "F1" ? run_C0f1(dir) : mv == "F2" ? run_C0u(dir) : run_C0m(dir);
-            set_gS(r.log, blocks_C0(), checks);
+        } else if (mv == "F3") {
+            // F3: C0-htotal (S2 enables the programmable beam counters and
+            // writes HTOTAL = $E0: every line is 225 memory cycles long). S is
+            // the apparatus's own constant, a property of the memory cycle and
+            // not of the line length: it is measured from the normal C0 run's
+            // refresh trace, as in the normal run, and applied to the mutated
+            // run unchanged.
+            RunResult base = run_C0(dir);
+            set_gS(base.log, blocks_C0(), checks);
+            RunResult r = run_C0htotal(dir);
             auto pr = analyze_population(r.log, blocks_C0(), {wordof(COP_MAIN)}, "R", false);
-            std::ostringstream pat;
-            for (const auto& kv : pr.slot_patterns) pat << "[" << kv.first << "]x" << kv.second << " ";
-            checks.note(pname + ": done=" + std::to_string(r.done.has_value()) + " groups=" +
-                        std::to_string(pr.groups_checked) + " F1=" + std::to_string(pr.f1_ok) +
-                        " F2=" + std::to_string(pr.f2_ok) + " F3=" + std::to_string(pr.f3_ok) + " offsets=" + pat.str());
-            std::string unmet = unmet_if(r.done.has_value(), pname + ":C1") + unmet_if(pr.restarts_ok, pname + ":restarts");
+            std::map<uint64_t, size_t> intervals; // A(n+1)-A(n) of the observed groups, in units of S (x10, to show a fraction)
+            {
+                auto groups = refresh_groups(r.log, blocks_C0());
+                auto span = observed_span(restart_fetches(r.log, {wordof(COP_MAIN)}));
+                for (size_t i = 0; i + 1 < groups.size(); ++i)
+                    if (span.ok && groups[i][0] >= span.lo && groups[i][0] < span.hi)
+                        ++intervals[(groups[i + 1][0] - groups[i][0]) * 10 / gS];
+            }
+            std::ostringstream iv;
+            for (const auto& kv : intervals) iv << "[" << (kv.first / 10.0) << " S]x" << kv.second << " ";
+            checks.note("C0-htotal: done=" + std::to_string(r.done.has_value()) + " S=" + std::to_string(gS) +
+                        " groups=" + std::to_string(pr.groups_checked) + " F1=" + std::to_string(pr.f1_ok) +
+                        " F2=" + std::to_string(pr.f2_ok) + " F2-COUNT=" + std::to_string(pr.f2count_ok) +
+                        " F3=" + std::to_string(pr.f3_ok) + " line intervals=" + iv.str());
+            std::string unmet = unmet_if(r.done.has_value(), "C0-htotal:C1") + unmet_if(pr.restarts_ok, "C0-htotal:restarts");
             if (!unmet.empty())
-                not_graded(checks, mv, unmet);
-            else if (mv == "F1")
-                checks.expect(pr.f1_ok, "F1 C0-f1: the run's DMA accesses lie on one S-cycle phase (the CPU's own "
-                              "phase is measured, not graded here, D5). SPECIFICATION.md 2.1");
-            else if (mv == "F2")
-                checks.expect(pr.f2_ok, "F2 C0-u: every refresh group in the observed frames has its four refresh "
-                              "slots at 0, 2, 4 and 6 memory cycles from its first access. p.194 Fig. 6-9 p.195");
+                not_graded(checks, "F3", unmet);
             else
-                checks.expect(pr.f3_ok, "F3 C0-m: for every pair of consecutive refresh groups in the observed "
+                checks.expect(pr.f3_ok, "F3 C0-htotal: for every pair of consecutive refresh groups in the observed "
                               "frames, A(n+1)-A(n) equals 227*S or 228*S. p.23");
         } else if (mv == "K2a") {
             RunResult r = run_C2a_noenable(dir);
@@ -1382,7 +1204,7 @@ int main(int argc, char** argv) {
             set_gS(c5.log, blocks_full(4), checks);
             checks.note("C5: done=" + std::to_string(c5.done.has_value()) + " C6-extra50: done=" +
                         std::to_string(c6x.done.has_value()));
-            bool t1 = t1_check(c5, blocks_full(4), c6x, blocks_full(4), checks, 50);
+            bool t1 = t1_check(c5, blocks_full(4), c6x, blocks_full(4), checks);
             checks.expect(t1, "T1: every segment has the same number of Copper accesses in C5 and C6.");
         } else if (mv == "T2") {
             RunResult r = run_C6(dir, "/prog_c6_stopself.bin");
@@ -1398,7 +1220,7 @@ int main(int argc, char** argv) {
             checks.expect(t3, "T3: in the lines of the segments in C6, bitplane fetches occur in every line; "
                           "sprite fetches occur in every line of segments 16-35 and 64-83 (VP $50-$63/$80-$93); audio "
                           "and disk accesses each occur in the segment lines of every observed frame.");
-        } else if (mv == "P7") {
+        } else if (mv == "SELFTEST-P7") {
             RunResult c5 = run_C5(dir);
             RunResult c6p = run_C6prime(dir);
             set_gS(c5.log, blocks_full(4), checks);
@@ -1406,7 +1228,7 @@ int main(int argc, char** argv) {
             Pop pc5{"C5", c5, blocks_full(4), {wordof(COP_MAIN)}}, pc6p{"C6'", c6p, blocks_full(4), {wordof(COP_MAIN)}};
             std::string unmet;
             for (const Pop* q : {&pc5, &pc6p}) {
-                auto pr = analyze_population(q->run.log, q->blocks, q->starts, "R", false, q->restart);
+                auto pr = analyze_population(q->run.log, q->blocks, q->starts, "R", false);
                 checks.note("P7 mutation " + q->name + ": F1F2F3=" + std::to_string(pr.f1_ok) +
                             std::to_string(pr.f2_ok) + std::to_string(pr.f3_ok));
                 unmet += observation_unmet(q->name, q->run, pr);
@@ -1418,11 +1240,10 @@ int main(int argc, char** argv) {
             unmet += unmet_if(k6a && k6b, "K6") + unmet_if(t1, "T1") + unmet_if(t2a && t2b, "T2") + unmet_if(t3, "T3");
             bool p7 = p7_check(c5, pc5.blocks, c6p, pc6p.blocks, checks);
             if (unmet.empty())
-                checks.expect(p7, "P7: for every segment i (i=0..112) and every observed frame, the list of (line "
-                              "offset, s) pairs is identical in C5 and C6 -- the channels on the even cycles never "
-                              "delay the Copper. p.20");
+                checks.expect(p7, "SELFTEST-P7: p7_check on C5 and C6' (the same comparator as P7, run on a list whose "
+                              "WAIT 32 sits at HP $42 instead of $40) finds the segment lists identical. p.22");
             else
-                not_graded(checks, "P7", unmet);
+                not_graded(checks, "SELFTEST-P7", unmet);
         } else if (mv == "FIXTURE-PEEK") {
             // C0 whose wait loop exits at frame 6: DONE is reached, and the
             // stored FRAME_CTR is 6 where the readback expects 7.
@@ -1464,7 +1285,7 @@ int main(int argc, char** argv) {
     all.push_back({"C7b", run_C7b(dir), blocks_bitplane(4), {wordof(COP_MAIN)}});
     all.push_back({"S1", run_S1(dir), blocks_S1(), {wordof(COP_MAIN)}});
     all.push_back({"S2", run_S2(dir), blocks_S2(), {wordof(COP_MAIN), wordof(COP_SECOND)}});
-    // SPECIFICATION.md 2.10 mode variants of C0, C6 and S1 (P1, P6 only):
+    // SPECIFICATION.md 2.10 mode variants of C0, C6 and S1 (P1 only):
     // no new program is needed, only a different Config per run.
     all.push_back({"C0-ntsc-ecs", run_C0(dir, mode_config(1)), blocks_C0(), {wordof(COP_MAIN)}});
     all.push_back({"C0-pal-ocs", run_C0(dir, mode_config(2)), blocks_C0(), {wordof(COP_MAIN)}});
@@ -1506,13 +1327,13 @@ int main(int argc, char** argv) {
                       "peek_logical before K2a relies on the same path for DSKBYTR.");
     }
 
-    // F1, F2, F3: their own printed, graded lines per run, before P1
+    // F1, F2, F2-COUNT, F3: their own printed, graded lines per run, before P1
     // (SPECIFICATION.md 2.1/2.3). F1 is scoped to DMA accesses (D5); the
     // CPU's own phase is measured, not graded, on a line of its own. A run
     // that did not finish, or whose restart fetches do not delimit the
-    // observed frames, leaves its three lines NOT GRADED.
+    // observed frames, leaves its four lines NOT GRADED.
     for (auto& p : all) {
-        auto pr = analyze_population(p.run.log, p.blocks, p.starts, "R", false, p.restart);
+        auto pr = analyze_population(p.run.log, p.blocks, p.starts, "R", false);
         {
             std::ostringstream pat;
             for (const auto& kv : pr.slot_patterns) pat << "[" << kv.first << "]x" << kv.second << " ";
@@ -1520,11 +1341,13 @@ int main(int argc, char** argv) {
                         " offsets(memory cycles from the first access)=" + pat.str());
         }
         std::string unmet = unmet_if(p.run.done.has_value(), p.name + ":C1") + unmet_if(pr.restarts_ok, p.name + ":restarts");
-        if (!unmet.empty()) { not_graded(checks, "F1 F2 F3 " + p.name, unmet); continue; }
+        if (!unmet.empty()) { not_graded(checks, "F1 F2 F2-COUNT F3 " + p.name, unmet); continue; }
         checks.expect(pr.f1_ok, "F1 " + p.name + ": the run's DMA accesses lie on one S-cycle phase (the CPU's own "
                       "phase is measured, not graded here, D5). SPECIFICATION.md 2.1");
         checks.expect(pr.f2_ok, "F2 " + p.name + ": every refresh group in the observed frames has its four refresh "
                       "slots at 0, 2, 4 and 6 memory cycles from its first access. p.194 Fig. 6-9 p.195");
+        checks.expect(pr.f2count_ok, "F2-COUNT " + p.name + ": every refresh group in the observed frames holds exactly "
+                      "four entries, p.194's \"4 cycles for memory refresh\". p.194 Fig. 6-9 p.195");
         checks.expect(pr.f3_ok, "F3 " + p.name + ": for every pair of consecutive refresh groups in the observed "
                       "frames, A(n+1)-A(n) equals 227*S or 228*S. p.23");
     }
@@ -1535,7 +1358,7 @@ int main(int argc, char** argv) {
         std::set<uint64_t> phases;
         if (c0) {
             LineRef lref = make_lines(c0->run.log, c0->blocks);
-            auto restarts = restart_fetches(c0->run.log, {wordof(COP_MAIN)}, lref);
+            auto restarts = restart_fetches(c0->run.log, {wordof(COP_MAIN)});
             auto span = observed_span(restarts);
             if (span.ok)
                 for (const auto& a : c0->run.log)
@@ -1568,16 +1391,24 @@ int main(int argc, char** argv) {
         checks.expect(f1_good && !f1_bad, "SELFTEST-F1: check_f1 passes a trace on one S-cycle phase and fails the "
                       "same trace with one access moved by one time unit. SPECIFICATION.md 2.1");
 
-        // F2: a group of four slots at 0, 2, 4, 6, then the second slot moved to 3 and a group of three.
+        // F2 and F2-COUNT: a group of four slots at 0, 2, 4, 6, then the second slot moved to 3, a
+        // group of three, and a group of five (the four slots and a fifth entry at 8).
         std::vector<uint64_t> g_good = {0, 2 * kSyntheticS, 4 * kSyntheticS, 6 * kSyntheticS};
         std::vector<uint64_t> g_moved = {0, 3 * kSyntheticS, 4 * kSyntheticS, 6 * kSyntheticS};
         std::vector<uint64_t> g_three = {0, 2 * kSyntheticS, 4 * kSyntheticS};
+        std::vector<uint64_t> g_five = {0, 2 * kSyntheticS, 4 * kSyntheticS, 6 * kSyntheticS, 8 * kSyntheticS};
         bool f2_good = refresh_slots_ok(g_good, kSyntheticS), f2_moved = refresh_slots_ok(g_moved, kSyntheticS),
              f2_three = refresh_slots_ok(g_three, kSyntheticS);
+        bool c_good = refresh_count_ok(g_good), c_three = refresh_count_ok(g_three), c_five = refresh_count_ok(g_five);
         checks.note("SELFTEST-F2: slots 0,2,4,6 F2=" + std::to_string(f2_good) + ", slot 2 moved to 3 F2=" +
-                    std::to_string(f2_moved) + ", three slots F2=" + std::to_string(f2_three));
-        checks.expect(f2_good && !f2_moved && !f2_three, "SELFTEST-F2: refresh_slots_ok passes four slots at "
-                      "0, 2, 4 and 6 and fails a moved slot and a group of three. p.194 Fig. 6-9 p.195");
+                    std::to_string(f2_moved) + ", three slots F2=" + std::to_string(f2_three) +
+                    "; F2-COUNT: four entries=" + std::to_string(c_good) + ", three=" + std::to_string(c_three) +
+                    ", five=" + std::to_string(c_five) + " (F2 on the five: " +
+                    std::to_string(refresh_slots_ok(g_five, kSyntheticS)) + ")");
+        checks.expect(f2_good && !f2_moved && !f2_three && c_good && !c_three && !c_five,
+                      "SELFTEST-F2: refresh_slots_ok passes four slots at 0, 2, 4 and 6 and fails a moved slot and a "
+                      "group of three; refresh_count_ok passes a group of four and fails a group of three and a group "
+                      "of five. p.194 Fig. 6-9 p.195");
 
         // Held cycle: a word sampled in two consecutive memory cycles is one
         // access; the same word two memory cycles apart, a different datum, a
@@ -1600,9 +1431,9 @@ int main(int argc, char** argv) {
         std::vector<bool> want = {false, true, true, false, false, false, false, false};
         auto kept = nmh::coalesce_adjacent(held_log, P);
         bool held_ok = held == want && kept.size() == 6 && kept[0].cycle == 1000;
-        checks.note("P6-HELD-CONTROL: continuations marked=" + std::to_string(std::count(held.begin(), held.end(), true)) +
+        checks.note("HELD-CONTROL: continuations marked=" + std::to_string(std::count(held.begin(), held.end(), true)) +
                     " of " + std::to_string(held_log.size()) + ", kept=" + std::to_string(kept.size()));
-        checks.expect(held_ok, "P6-HELD-CONTROL: dropping held continuations keeps the first sample of a held bus "
+        checks.expect(held_ok, "HELD-CONTROL: dropping held continuations keeps the first sample of a held bus "
                       "cycle and keeps identical samples that are two memory cycles apart, or differ in datum, "
                       "direction, byte enables or by a fraction of a memory cycle.");
 
@@ -1612,7 +1443,7 @@ int main(int argc, char** argv) {
     std::vector<std::string> names_all;
     for (auto& p : all) names_all.push_back(p.name);
 
-    // A1 (precondition of P1-P6): graded before the first line that depends on it.
+    // A1 (precondition of P1-P5): graded before the first line that depends on it.
     bool a1 = false;
     {
         a1 = a1_holds(*c0, checks);
@@ -1764,7 +1595,7 @@ int main(int argc, char** argv) {
             not_graded(checks, "P5", unmet);
     }
 
-    // K6 (precondition of P6 and P7): in every observed frame of C5, C6, C7a
+    // K6 (precondition of P7): in every observed frame of C5, C6, C7a
     // and C7b, every word of L5 and L5b is read at least once.
     const Pop *c5p = find("C5"), *c6p = find("C6"), *c7ap = find("C7a"), *c7bp = find("C7b");
     bool k6 = true; std::string u6;
@@ -1778,19 +1609,16 @@ int main(int argc, char** argv) {
     else
         not_graded(checks, "K6", u6);
 
-    // P6 grades the Copper block with each held bus cycle counted once: a
-    // sample that repeats the sample directly before it (same word, direction,
-    // data and byte enables) exactly one memory cycle later is the same bus
-    // cycle seen in a second sample, not a second access.
-    {
-        Fold f = fold_check(all, names_all, "Copper", false, checks, "P6", true);
-        std::string unmet = f.unmet + unmet_if(a1, "A1") + unmet_if(u6.empty() && k6, "K6");
-        if (unmet.empty())
-            checks.expect(f.ok, "P6: every Copper-block access lies on an odd in-line cycle, in every run and mode graded "
-                          "(as P1), each bus cycle held over two samples counted once. p.20");
-        else
-            not_graded(checks, "P6", unmet);
-    }
+    // P6 is withdrawn: not graded, not mutated.
+    checks.record("P6 withdrawn, ch2-about-the-copper.c21: not asserted. p.20 says the Copper requests the bus only "
+                   "during odd-numbered memory cycles, and the same sentence bundles the absence of collision and five "
+                   "DMA channels. The Chip-memory port shows accesses, and an access carries no requester: it cannot tell "
+                   "a Copper request from a transfer held for a second memory cycle, nor a Copper access from another "
+                   "channel's access to the same word, and naming the requester from Agnus's internal signals would "
+                   "make the implementation its own oracle. The Copper-block accesses on an even in-line cycle and the "
+                   "first Copper fetch after S4 are MEASURED below, not graded. P7 (the Copper's cycles do not move "
+                   "when the even-cycle channels run) observes neither the requests nor the collisions, and leaves the "
+                   "disk-to-memory direction undone (D9). p.20");
     {
         // The Copper-block reads on an even in-line cycle, per run: how many
         // there are, how many continue the sample directly before them and
@@ -1806,7 +1634,7 @@ int main(int argc, char** argv) {
             for (auto s : info.s_values) { m << (first ? "" : ",") << s; first = false; }
             m << "};";
         }
-        checks.note("P6 Copper-block reads on an even in-line cycle: " + m.str());
+        checks.note("P6 (withdrawn) Copper-block reads on an even in-line cycle: " + m.str());
         // Samples that repeat the sample before them at half a memory cycle
         // (the other sampling phase): the held-cycle rule does not apply there.
         size_t half_repeats = 0;
@@ -1815,13 +1643,13 @@ int main(int argc, char** argv) {
             for (size_t i = 0; i < p.run.log.size(); ++i)
                 if (held_half[i] && attribute(p.run.log[i].word_addr, p.blocks) == "Copper") ++half_repeats;
         }
-        checks.note("P6 Copper-block samples that repeat the sample before them at S/2, all runs = " +
+        checks.note("P6 (withdrawn) Copper-block samples that repeat the sample before them at S/2, all runs = " +
                     std::to_string(half_repeats));
     }
     {
         // The Copper's first fetch after S4, in the runs whose block tables
         // declare the Copper block: which memory cycle of its line it falls
-        // on. Not graded: p.20 says nothing about the start-up fetch.
+        // on. Not graded: the port cannot tell the Copper's request from a held transfer.
         std::string m;
         for (const char* name : {"C0", "C7a", "S2", "C2a"}) m += copper_first_fetch_text(*find(name)) + "; ";
         checks.note("Copper first fetch after S4 (memory-cycle parity of its line, not graded): " + m);
@@ -1848,7 +1676,7 @@ int main(int argc, char** argv) {
         bool p7 = p7_check(c5, c5p->blocks, c6, c6p->blocks, checks);
         std::string unmet = unmet_if(u6.empty() && k6, "K6") + unmet_if(t1, "T1") + unmet_if(t2, "T2") + unmet_if(t3, "T3");
         for (const Pop* p : {c5p, c6p}) {
-            auto pr = analyze_population(p->run.log, p->blocks, p->starts, "R", false, p->restart);
+            auto pr = analyze_population(p->run.log, p->blocks, p->starts, "R", false);
             unmet += observation_unmet(p->name, p->run, pr);
         }
         if (unmet.empty())
@@ -1858,12 +1686,6 @@ int main(int argc, char** argv) {
         else
             not_graded(checks, "P7", unmet);
     }
-
-    checks.record("ch2-about-the-copper.c21: not asserted. The sentence bundles the Copper's odd-cycle requests, the "
-                   "absence of collision, and five DMA channels. The Chip-memory port shows the accesses made, not the "
-                   "requests or the collisions, so P6 (access parity in the Copper block) and P7 (the Copper's cycles do "
-                   "not move when the even-cycle channels run) establish neither the requests nor the collision "
-                   "avoidance, and P7 leaves the disk-to-memory direction undone (D9). p.20");
 
     // P8-P12 and the blitter claims: not built, by a scope decision (a
     // video-measurement apparatus this package does not have -- frame
