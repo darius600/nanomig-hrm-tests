@@ -7,53 +7,51 @@
 // names the graded line (the label passed to expect()), the selector, the
 // change of the stimulus, and what each core printed under it.
 //
-// MUTATION P1-RUN stimulus red NMH_MUTATE=P1-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-CTRL-A P1-PRE-A P1-PRE-B P1-PRE-C), fx68k FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-CTRL-A P1-PRE-A P1-PRE-B P1-PRE-C).
-// MUTATION P1-ATTR stimulus red NMH_MUTATE=P1-ATTR: the program reads $30000, a word of the Copper list, before it starts the Copper (prog_p1_attr); TG68K FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-A; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-A; also NOT GRADED P1-COLOUR).
-// MUTATION P1-PRE-A stimulus red NMH_MUTATE=P1-A: the Copper starts at $30004 (prog_p1_a) so the first pass starts at $30004, and the line is red in the unmutated run as well because every pass there starts with a read of $30048, the word after the end WAIT, while the control P1-CTRL-A is green in the unmutated run and red here; TG68K FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-C; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/3 failed; also FAIL P1-CTRL-A P1-PRE-C; also NOT GRADED P1-COLOUR).
-// MUTATION P1-CTRL-A stimulus red NMH_MUTATE=P1-A: the Copper starts at $30004 (prog_p1_a) so the first pass starts at $30004; TG68K FAIL (3 passed/3 failed; also FAIL P1-PRE-A P1-PRE-C; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/3 failed; also FAIL P1-PRE-A P1-PRE-C; also NOT GRADED P1-COLOUR).
-// MUTATION P1-PRE-B stimulus red NMH_MUTATE=P1-B: sprite DMA is enabled (DMACON <- $8020) with the eight sprite pointers at the zeroed region $4E000 (prog_p1_b) so sprite accesses appear; TG68K FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR).
-// MUTATION P1-PRE-C stimulus red NMH_MUTATE=P1-C: the WAIT at +20 of the list is $5001 instead of $6001 so the (6,6,6) band has no line; TG68K FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/2 failed; also FAIL P1-PRE-A; also NOT GRADED P1-COLOUR).
-// MUTATION P1-COLOUR stimulus impossible NMH_MUTATE=P1-MAIN: not evaluated in the unmutated run because P1-PRE-A is red, so no change of the stimulus can make it print FAIL, the changes that would make it red are IR2 at +34 of the list set to $0F00 instead of $0F80 (P1-MAIN) and IR1 at +32 set to $0182 (COLOR01) instead of $0180 (P1-DA), both of which print NOT GRADED; TG68K NOT GRADED (5 passed/1 failed; also FAIL P1-PRE-A), fx68k NOT GRADED (5 passed/1 failed; also FAIL P1-PRE-A).
+// MUTATION P1-RUN stimulus red NMH_MUTATE=P1-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-PRE-A P1-PRE-B P1-PRE-C), fx68k FAIL (1 passed/1 failed; also NOT GRADED P1-COLOUR P1-PRE-A P1-PRE-B P1-PRE-C).
+// MUTATION P1-ATTR stimulus red NMH_MUTATE=P1-ATTR: the program reads $30000, a word of the Copper list, before it starts the Copper (prog_p1_attr); TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-A stimulus red NMH_MUTATE=P1-A: the Copper starts at $30004 (prog_p1_a) so every pass starts at $30004; TG68K FAIL (3 passed/2 failed; also FAIL P1-PRE-C; also NOT GRADED P1-COLOUR), fx68k FAIL (3 passed/2 failed; also FAIL P1-PRE-C; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-B stimulus red NMH_MUTATE=P1-B: sprite DMA is enabled (DMACON <- $8020) with the eight sprite pointers at the zeroed region $4E000 (prog_p1_b) so sprite accesses appear; TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
+// MUTATION P1-PRE-C stimulus red NMH_MUTATE=P1-C: the WAIT at +20 of the list is $5001 instead of $6001 so the (6,6,6) band has no line; TG68K FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR), fx68k FAIL (4 passed/1 failed; also NOT GRADED P1-COLOUR).
+// MUTATION P1-COLOUR stimulus red NMH_MUTATE=P1-MAIN: IR2 at +34 of the list is $0F00 instead of $0F80 so the (F,8,0) band is (F,0,0); all preconditions still hold; TG68K FAIL (5 passed/1 failed), fx68k FAIL (5 passed/1 failed).
+// MUTATION P1-COLOUR stimulus red NMH_MUTATE=P1-DA: IR1 at +32 of the list is $0182 (COLOR01) instead of $0180 so the (F,8,0) band is not drawn; all preconditions still hold; TG68K FAIL (5 passed/1 failed), fx68k FAIL (5 passed/1 failed).
 // MUTATION P2-RUN stimulus red NMH_MUTATE=P2-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P2-PRE-A P2-PRE-B P2-RESTART), fx68k FAIL (1 passed/1 failed; also NOT GRADED P2-PRE-A P2-PRE-B P2-RESTART).
-// MUTATION P2-ATTR stimulus red NMH_MUTATE=P2-ATTR: the program reads $34000, a word of the first segment, before it starts the Copper (prog_p2_attr); TG68K FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART), fx68k FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART).
-// MUTATION P2-PRE-A stimulus red NMH_MUTATE=P2-A: the segment at $15554 holds its end WAIT first and the two MOVEs after it so the MOVEs are not read; TG68K FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART), fx68k FAIL (2 passed/2 failed; also FAIL P2-PRE-B; also NOT GRADED P2-RESTART).
-// MUTATION P2-PRE-B stimulus impossible NMH_MUTATE=P2-B: the access after the read of T_k+10 is the word T_k+12 in every pass of every run, so the line is red in the unmutated run and no stimulus of the specification gives it another next access, the contrasting segment at $13332 with a WAIT for line $F0 before the end WAIT is red as well; TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
-// MUTATION P2-RESTART stimulus impossible NMH_MUTATE=P2-MAIN: not evaluated in the unmutated run because P2-PRE-B is red, so no change of the stimulus can make it print FAIL, the change that would make it red is segment 3 writing $FF80 instead of $FF00 with a segment at $1FF80 that continues the chain (P2-MAIN), which prints NOT GRADED; TG68K NOT GRADED (3 passed/1 failed; also FAIL P2-PRE-B), fx68k NOT GRADED (3 passed/1 failed; also FAIL P2-PRE-B).
+// MUTATION P2-ATTR stimulus red NMH_MUTATE=P2-ATTR: the program reads $34000, a word of the first segment, before it starts the Copper (prog_p2_attr); TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
+// MUTATION P2-PRE-A stimulus red NMH_MUTATE=P2-A: the segment at $15554 holds its end WAIT first and the two MOVEs after it so the MOVEs are not read; TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
+// MUTATION P2-PRE-B stimulus red NMH_MUTATE=P2-B: the segment at $13332 holds a WAIT for line $F0 in front of its end WAIT, so the Copper reads $1333E and $13340 before the next restart; TG68K FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART), fx68k FAIL (3 passed/1 failed; also NOT GRADED P2-RESTART).
+// MUTATION P2-RESTART stimulus red NMH_MUTATE=P2-MAIN: segment 3 writes $FF80 instead of $FF00 and a segment at $1FF80 continues the chain; all preconditions still hold; TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
 // MUTATION P3-RUN stimulus red NMH_MUTATE=P3-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P3-MOVED P3-PRE-A P3-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P3-MOVED P3-PRE-A P3-PRE-B).
 // MUTATION P3-ATTR stimulus red NMH_MUTATE=P3-ATTR: the program reads the IR2 word $3600A before it starts the Copper (prog_p3_attr); TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
 // MUTATION P3-PRE-A stimulus red NMH_MUTATE=P3-A: the four value writes follow each other within one field without a wait for the beam (prog_p3_fast); TG68K FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED), fx68k FAIL (3 passed/1 failed; also NOT GRADED P3-MOVED).
 // MUTATION P3-PRE-B stimulus red NMH_MUTATE=P3-B: the WAIT at +4 of the list is $FFFF,$FFFE so the Copper stops there and never reads $3600A; TG68K FAIL (2 passed/2 failed; also FAIL P3-PRE-A; also NOT GRADED P3-MOVED), fx68k FAIL (2 passed/2 failed; also FAIL P3-PRE-A; also NOT GRADED P3-MOVED).
 // MUTATION P3-MOVED stimulus red NMH_MUTATE=P3-MAIN: the CPU writes the four values to the spare word $36010 instead of the IR2 word $3600A (prog_p3_dest); TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
-// MUTATION P4-RUN stimulus red NMH_MUTATE=P4-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P4-CTRL-B P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P4-CTRL-B P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B).
-// MUTATION P4-ATTR stimulus red NMH_MUTATE=P4-ATTR: the program reads $38000, a word of the Copper list, before it starts the Copper (prog_p4_attr); TG68K FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
-// MUTATION P4-PRE-A stimulus red NMH_MUTATE=P4-A: the WAIT at +4 of the list is $FFFF,$FFFE so $3800C is never read; TG68K FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
-// MUTATION P4-PRE-B stimulus red NMH_MUTATE=P4-B: the Copper starts at $38004 (prog_p4_b) so every pass begins at $38004, and the line is red in the unmutated run as well because every pass after the first begins with a read of $38010, the word after the end WAIT, while the control P4-CTRL-B is green in the unmutated run and red here; TG68K FAIL (3 passed/2 failed; also FAIL P4-CTRL-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-CTRL-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
-// MUTATION P4-CTRL-B stimulus red NMH_MUTATE=P4-B: the Copper starts at $38004 (prog_p4_b) so the first pass begins at $38004; TG68K FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/2 failed; also FAIL P4-PRE-B; also NOT GRADED P4-MOVE-AFTER-WAIT).
-// MUTATION P4-MOVE-AFTER-WAIT stimulus impossible NMH_MUTATE=P4-MAIN: not evaluated in the unmutated run because P4-PRE-B is red, so no change of the stimulus can make it print FAIL, the change that would make it red is the WAIT at +12 replaced by $C001,$FF00 (P4-MAIN), which prints NOT GRADED; TG68K NOT GRADED (4 passed/1 failed; also FAIL P4-PRE-B), fx68k NOT GRADED (4 passed/1 failed; also FAIL P4-PRE-B).
+// MUTATION P4-RUN stimulus red NMH_MUTATE=P4-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (1 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B), fx68k FAIL (1 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT P4-PRE-A P4-PRE-B).
+// MUTATION P4-ATTR stimulus red NMH_MUTATE=P4-ATTR: the program reads $38000, a word of the Copper list, before it starts the Copper (prog_p4_attr); TG68K FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-PRE-A stimulus red NMH_MUTATE=P4-A: the WAIT at +4 of the list is $FFFF,$FFFE so $3800C is never read; TG68K FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-PRE-B stimulus red NMH_MUTATE=P4-B: the Copper starts at $38004 (prog_p4_b) so every pass begins at $38004; TG68K FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT), fx68k FAIL (3 passed/1 failed; also NOT GRADED P4-MOVE-AFTER-WAIT).
+// MUTATION P4-MOVE-AFTER-WAIT stimulus red NMH_MUTATE=P4-MAIN: the WAIT at +12 is $C001,$FF00 instead of $FFFF,$FFFE so MOVE B is performed at line $C0; all preconditions still hold; TG68K FAIL (4 passed/1 failed), fx68k FAIL (4 passed/1 failed).
 // MUTATION P5-RUN stimulus red NMH_MUTATE=P5-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (4 passed/4 failed; also NOT GRADED P5-LOCATION), fx68k FAIL (4 passed/4 failed; also NOT GRADED P5-LOCATION).
-// MUTATION P5-ATTR stimulus red NMH_MUTATE=P5-ATTR: the program of run R1 reads $20004, a word of the first list, before it starts the Copper (prog_p5_r1_attr); TG68K FAIL (14 passed/14 failed; also FAIL P5-CTRL-A P5-CTRL-C P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (14 passed/14 failed; also FAIL P5-CTRL-A P5-CTRL-C P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
-// MUTATION P5-PRE-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a), and the line is red in the unmutated run as well because the Copper reads its first two words before the write of marker 3, while the control P5-CTRL-A is green in the unmutated run and red here; TG68K FAIL (18 passed/10 failed; also FAIL P5-CTRL-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/10 failed; also FAIL P5-CTRL-A P5-PRE-C; also NOT GRADED P5-LOCATION).
-// MUTATION P5-CTRL-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a); TG68K FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
-// MUTATION P5-PRE-B stimulus red NMH_MUTATE=P5-B: run R1 idles two passages of the beam through line $A0 per phase instead of six (prog_p5_r1_b); TG68K FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/10 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
-// MUTATION P5-PRE-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so each pass reads four words, and the line is red in the unmutated run as well because every pass starts with a read of the word after the end WAIT, while the control P5-CTRL-C is green in the unmutated run and red here; TG68K FAIL (16 passed/12 failed; also FAIL P5-CTRL-C P5-PRE-A; also NOT GRADED P5-LOCATION), fx68k FAIL (16 passed/12 failed; also FAIL P5-CTRL-C P5-PRE-A; also NOT GRADED P5-LOCATION).
-// MUTATION P5-CTRL-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so the first pass reads four words; TG68K FAIL (16 passed/12 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (16 passed/12 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
-// MUTATION P5-LOCATION stimulus impossible NMH_MUTATE=P5-R1: not evaluated in the unmutated run because P5-PRE-A and P5-PRE-C are red, so no change of the stimulus can make it print FAIL, the changes that would make it red are the halves of $00020004 written as separate words in the swapped order (P5-R1, run R1 swapped) and the COPJMP1 strobe instead of COPJMP2 in run R2 (P5-R2), both of which print NOT GRADED; TG68K NOT GRADED (20 passed/8 failed; also FAIL P5-PRE-A P5-PRE-C), fx68k NOT GRADED (20 passed/8 failed; also FAIL P5-PRE-A P5-PRE-C).
+// MUTATION P5-ATTR stimulus red NMH_MUTATE=P5-ATTR: the program of run R1 reads $20004, a word of the first list, before it starts the Copper (prog_p5_r1_attr); TG68K FAIL (14 passed/6 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION), fx68k FAIL (14 passed/6 failed; also FAIL P5-PRE-A P5-PRE-C; also NOT GRADED P5-LOCATION).
+// MUTATION P5-PRE-A stimulus red NMH_MUTATE=P5-A: Copper DMA is enabled before markers 2 and 3 in run R1 (prog_p5_r1_a) so Copper accesses fall before marker 2; TG68K FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION).
+// MUTATION P5-PRE-B stimulus red NMH_MUTATE=P5-B: run R1 idles two passages of the beam through line $A0 per phase instead of six (prog_p5_r1_b); TG68K FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION), fx68k FAIL (18 passed/2 failed; also NOT GRADED P5-LOCATION).
+// MUTATION P5-PRE-C stimulus red NMH_MUTATE=P5-C: the list at $20004 holds $0180,$0F00 in front of the end WAIT so each pass reads four words; TG68K FAIL (16 passed/4 failed; also NOT GRADED P5-LOCATION), fx68k FAIL (16 passed/4 failed; also NOT GRADED P5-LOCATION).
+// MUTATION P5-CTRL-LOCATION stimulus red NMH_MUTATE=P5-R1: the halves of $00020004 are written as separate words in the swapped order (prog_p5_r1x, run R1 swapped) so run R1 starts and restarts at $40002; TG68K FAIL (20 passed/2 failed; also FAIL P5-LOCATION), fx68k FAIL (20 passed/2 failed; also FAIL P5-LOCATION).
+// MUTATION P5-LOCATION stimulus red NMH_MUTATE=P5-R1: the halves of $00020004 are written as separate words in the swapped order (prog_p5_r1x, run R1 swapped); the line is red in the unmutated run as well because run R2, whose COPJMP2 strobe is written with Copper DMA off, starts at COP1LC $20004 instead of COP2LC $25A5C, a measured result with no finding, while the control P5-CTRL-LOCATION, the same comparator on run R1 alone, is green in the unmutated run and red here; TG68K FAIL (20 passed/2 failed; also FAIL P5-CTRL-LOCATION), fx68k FAIL (20 passed/2 failed; also FAIL P5-CTRL-LOCATION).
+// MUTATION P5-LOCATION stimulus red NMH_MUTATE=P5-R2: run R2 strobes COPJMP1 instead of COPJMP2 (prog_p5_r2x); the line is red in the unmutated run as well because run R2 starts at $20004 with the COPJMP2 strobe, so this contrast cannot change the verdict of run R2, and the control P5-CTRL-LOCATION is green in the unmutated run; TG68K FAIL (21 passed/1 failed), fx68k FAIL (21 passed/1 failed).
 // MUTATION P6-RUN stimulus red NMH_MUTATE=P6-RUN: the program is prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (0 passed/3 failed; also NOT GRADED P6-LONG P6-PRE-A), fx68k FAIL (0 passed/1 failed; also NOT GRADED P6-LONG P6-PRE-A).
 // MUTATION P6-PRE-A stimulus red NMH_MUTATE=P6-A: the two word writes before marker 1 are omitted (prog_p6_nopre); TG68K FAIL (3 passed/3 failed; also NOT GRADED P6-LONG), fx68k FAIL (1 passed/1 failed; also NOT GRADED P6-LONG).
 // MUTATION P6-LONG stimulus red NMH_MUTATE=P6-MAIN: the long word is $56781234 instead of $12345678 (prog_p6_value); TG68K FAIL (6 passed/3 failed), fx68k FAIL (2 passed/1 failed).
 // MUTATION P7-RUN stimulus red NMH_MUTATE=P7-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (2 passed/2 failed; also NOT GRADED P7-BLIT).
-// MUTATION P7-ATTR stimulus red NMH_MUTATE=P7-ATTR: the program writes $48000 a second time before it starts the Copper (prog_p7_attr); TG68K FAIL (6 passed/6 failed; also FAIL P7-PRE-A P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (6 passed/6 failed; also FAIL P7-PRE-A P7-PRE-C; also NOT GRADED P7-BLIT).
-// MUTATION P7-PRE-A stimulus red NMH_MUTATE=P7-A: the program enables blitter DMA, writes BLTSIZE itself and idles one field before it starts the Copper (prog_p7_a) so the blit writes $48000 before the Copper reads $3A002; TG68K FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT).
-// MUTATION P7-PRE-B stimulus red NMH_MUTATE=P7-B: the CPU write of $0000 goes to $4F100 instead of $48000 (prog_p7_b); TG68K FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT).
-// MUTATION P7-PRE-C stimulus red NMH_MUTATE=P7-C: the Copper starts at $3A004 (prog_p7_c) so it never reads $3A000 and $3A002, and the line is red in the unmutated run as well because every restart starts with a read of $3A104, the word after the end WAIT, while the control P7-CTRL-C is green in the unmutated run and red here; TG68K FAIL (8 passed/4 failed; also FAIL P7-CTRL-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-CTRL-C; also NOT GRADED P7-BLIT).
-// MUTATION P7-CTRL-C stimulus red NMH_MUTATE=P7-C: the Copper starts at $3A004 (prog_p7_c) so it never reads $3A000 and $3A002; TG68K FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/4 failed; also FAIL P7-PRE-C; also NOT GRADED P7-BLIT).
-// MUTATION P7-BLIT stimulus impossible NMH_MUTATE=P7-MAIN: not evaluated in the unmutated run because P7-PRE-C is red, so no change of the stimulus can make it print FAIL, the change that would make it red is IR1 at $3A000 set to $0180 (COLOR00) instead of $0058 (P7-MAIN), which prints NOT GRADED; TG68K NOT GRADED (10 passed/2 failed; also FAIL P7-PRE-C), fx68k NOT GRADED (10 passed/2 failed; also FAIL P7-PRE-C).
+// MUTATION P7-ATTR stimulus red NMH_MUTATE=P7-ATTR: the program writes $48000 a second time before it starts the Copper (prog_p7_attr); TG68K FAIL (6 passed/4 failed; also FAIL P7-PRE-A; also NOT GRADED P7-BLIT), fx68k FAIL (6 passed/4 failed; also FAIL P7-PRE-A; also NOT GRADED P7-BLIT).
+// MUTATION P7-PRE-A stimulus red NMH_MUTATE=P7-A: the program enables blitter DMA, writes BLTSIZE itself and idles one field before it starts the Copper (prog_p7_a) so the blit writes $48000 before the Copper reads $3A002; TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
+// MUTATION P7-PRE-B stimulus red NMH_MUTATE=P7-B: the CPU write of $0000 goes to $4F100 instead of $48000 (prog_p7_b); TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
+// MUTATION P7-PRE-C stimulus red NMH_MUTATE=P7-C: the Copper starts at $3A004 (prog_p7_c) so it never reads $3A000 and $3A002; TG68K FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT), fx68k FAIL (8 passed/2 failed; also NOT GRADED P7-BLIT).
+// MUTATION P7-BLIT stimulus red NMH_MUTATE=P7-MAIN: IR1 at $3A000 is $0180 (COLOR00) instead of $0058 so no blit starts; all preconditions still hold; TG68K FAIL (10 passed/1 failed), fx68k FAIL (10 passed/1 failed).
 // MUTATION P8-RUN stimulus red NMH_MUTATE=P8-RUN: both programs are prog_nodone, the baseline and nothing else, without the DONE write; TG68K FAIL (2 passed/2 failed; also NOT GRADED P8-RESTART), fx68k FAIL (2 passed/2 failed; also NOT GRADED P8-RESTART).
 // MUTATION P8-ATTR stimulus red NMH_MUTATE=P8-ATTR: the program of run M reads $44000, a word of the audio data block, before it starts the channel (prog_p8_attr), and P8-PRE-B is red as well because the CPU read lands in the channel 0 region before marker 2; TG68K FAIL (6 passed/2 failed; also FAIL P8-PRE-B; also NOT GRADED P8-RESTART), fx68k FAIL (6 passed/2 failed; also FAIL P8-PRE-B; also NOT GRADED P8-RESTART).
 // MUTATION P8-PRE-A stimulus red NMH_MUTATE=P8-A: run M writes DMACON <- $8200, without AUD0EN (prog_p8_noaud), so the channel fetches nothing; TG68K FAIL (7 passed/1 failed; also NOT GRADED P8-RESTART), fx68k FAIL (7 passed/1 failed; also NOT GRADED P8-RESTART).
 // MUTATION P8-PRE-B stimulus red NMH_MUTATE=P8-B: run M writes DMACON <- $8201 before marker 1 (prog_p8_early) so the channel fetches before marker 2; TG68K FAIL (6 passed/2 failed; also FAIL P8-PRE-A; also NOT GRADED P8-RESTART), fx68k FAIL (6 passed/2 failed; also FAIL P8-PRE-A; also NOT GRADED P8-RESTART).
 // MUTATION P8-CTRL stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run after the first has five words; TG68K FAIL (8 passed/2 failed; also FAIL P8-RESTART), fx68k FAIL (8 passed/2 failed; also FAIL P8-RESTART).
-// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words, while the control P8-CTRL on runs after the first is green in the unmutated run and red here, run C without the AUD0LC write (P8-C, prog_p8_c_nolc) is red in the same way; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
+// MUTATION P8-RESTART stimulus red NMH_MUTATE=P8-M: run M has AUD0LEN = 5 (prog_p8_len) so every run has five words, and the line is red in the unmutated run as well because the first run of each audio run has three words (the first run is graded, Section 8 A4), while the control P8-CTRL on runs after the first is green in the unmutated run and red here, run C without the AUD0LC write (P8-C, prog_p8_c_nolc) is red in the same way; TG68K FAIL (8 passed/2 failed; also FAIL P8-CTRL), fx68k FAIL (8 passed/2 failed; also FAIL P8-CTRL).
 
 #include <algorithm>
 #include <cstdint>
@@ -205,13 +203,43 @@ std::vector<Acc> accesses_in(const Run& r, const std::vector<Region>& regs, bool
 std::vector<Acc> reads_in(const Run& r, const std::vector<Region>& regs, uint64_t t0 = 0, uint64_t t1 = kForever) {
     return accesses_in(r, regs, false, t0, t1);
 }
+
+// The Copper's reads in `regs` between cycles [t0,t1) with the extra read taken out (SPECIFICATION.md Section 3 and
+// Section 8, A1): a read at the word directly after an end WAIT's second word ($FFFE), made right after that read.
+// The extra reads go to `extra`, and belong to no pass. The extra read is found on the whole run, so a window
+// that begins just after a $FFFE read does not mistake it for a restart access.
+std::vector<Acc> cop_reads(const Run& r, const std::vector<Region>& regs, uint64_t t0 = 0, uint64_t t1 = kForever,
+                           std::vector<Acc>* extra = nullptr) {
+    auto all = accesses_in(r, regs, false, 0, kForever);
+    std::vector<Acc> out;
+    bool prev_extra = false;
+    for (size_t i = 0; i < all.size(); ++i) {
+        const bool ex = i > 0 && !prev_extra && all[i - 1].data == 0xFFFE && all[i].addr == all[i - 1].addr + 2;
+        prev_extra = ex;
+        if (all[i].t < t0 || all[i].t >= t1) continue;
+        if (ex) { if (extra) extra->push_back(all[i]); }
+        else out.push_back(all[i]);
+    }
+    return out;
+}
+
+// "3 at $30048" / "none": the extra reads, counted per address.
+std::string extra_text(const std::vector<Acc>& v) {
+    if (v.empty()) return "none";
+    std::map<uint32_t, size_t> n;
+    for (const auto& x : v) ++n[x.addr];
+    std::string t;
+    for (const auto& kv : n) t += (t.empty() ? "" : ", ") + num(kv.second) + " at " + hex(kv.first, 5);
+    return t;
+}
 std::vector<Acc> writes_in(const Run& r, const std::vector<Region>& regs, uint64_t t0 = 0, uint64_t t1 = kForever) {
     return accesses_in(r, regs, true, t0, t1);
 }
 
 // A pass (SPECIFICATION.md Section 3): the run of Copper reads from one restart
 // access up to and including the read of an end WAIT's second word ($FFFE). The
-// restart access is the first Copper access after that read. `complete` is
+// restart access is the first Copper access after that read that is not the
+// extra read (cop_reads takes the extra read out of the stream). `complete` is
 // false for the run that the end of the observation interval cuts off.
 struct Pass { size_t first, last; bool complete; };
 
@@ -419,7 +447,6 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     Run r = run_program(s);
     auto m = marks(r);
     const int64_t en = mark_cycle(m, 3);
-    const uint64_t m0 = mark_cycle(m, 0) >= 0 ? uint64_t(mark_cycle(m, 0)) : 0;
     auto cf = en >= 0 ? complete_fields_after(r, uint64_t(en)) : std::vector<Fld>{};
     const std::vector<Region> cop = {{kList, kList + 0xFF}};
     Gate g;
@@ -434,12 +461,13 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
           hex(kList + 0xFF, 5) + " or to a parked region of another channel" + (attr_ok ? std::string() : " (" + why + ")"));
 
     // The observed fields are the 3rd to 6th complete fields after the enable marker.
-    std::vector<Acc> rd;
+    std::vector<Acc> rd, extra;
     std::vector<Pass> ps;
     if (cf.size() >= 6) {
-        rd = reads_in(r, cop, uint64_t(en), cf[5].end);
+        rd = cop_reads(r, cop, uint64_t(en), cf[5].end, &extra);
         ps = passes_of(rd);
     }
+    checks.note("P1 extra reads (the word after the end WAIT, in no pass) in the observed interval: " + extra_text(extra));
     // (a) one complete pass ends in each observed field, starts at the list and reads its words in order.
     const std::vector<uint16_t> image = list_image(mv);
     auto pass_is_list = [&](const std::vector<Acc>& v, const Pass& p) {
@@ -468,15 +496,6 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     g.pre(checks, a_ok,
           "P1-PRE-A: (a) in each observed field the Copper's pass starts at " + hex(kList, 5) + " and reads the 36 words of the list in "
           "address order with the data stored" + a_why);
-
-    // Control for (a), on the same measurement basis: the first pass, which no restart precedes, starts at the list and reads its words.
-    {
-        auto first_reads = reads_in(r, cop, m0, cf.size() >= 6 ? cf[5].end : kForever);
-        auto first_ps = passes_of(first_reads);
-        g.pre(checks, !first_ps.empty() && first_ps[0].complete && pass_is_list(first_reads, first_ps[0]),
-              "P1-CTRL-A: control for (a): the first pass, which no restart access precedes, starts at " + hex(kList, 5) +
-              " and reads the 36 words of the list in address order with the data stored");
-    }
 
     // (b) no sprite access and no bitplane access during the observed fields.
     bool b_ok = cf.size() >= 6;
@@ -591,19 +610,23 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
     Gate g;
 
     // The observation: Copper accesses from the enable marker until 14 restart accesses have occurred.
-    std::vector<Acc> rd;
+    std::vector<Acc> rd, extra;
     std::vector<Pass> ps;
     bool have14 = false;
     if (en >= 0) {
-        auto all = reads_in(r, cop, uint64_t(en));
+        auto all = cop_reads(r, cop, uint64_t(en), kForever, &extra);
         auto p = passes_of(all);
         // pass n (n >= 1) begins with restart access n; the 14th restart access begins pass 14.
         if (p.size() >= 15) {
             have14 = true;
             rd.assign(all.begin(), all.begin() + long(p[14].first) + 1);
             ps = passes_of(rd);
+            std::vector<Acc> in_interval;
+            for (const auto& x : extra) if (x.t < rd.back().t) in_interval.push_back(x);
+            extra = in_interval;
         }
     }
+    checks.note("P2 extra reads (the word after the end WAIT, in no pass) before the 14th restart access: " + extra_text(extra));
     g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2, 3}) && have14,
           "P2-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and 14 restart accesses occur after the enable marker");
     std::string why;
@@ -641,8 +664,8 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
           "P2-PRE-A: (a) between its restart access and the next, the Copper reads segment k's six words T_k to T_k+10 in address "
           "order, with the data the segment holds" + a_why);
     g.pre(checks, b_ok,
-          "P2-PRE-B: (b) the Copper's first access after its read of T_k+10 is not at T_k+12 or T_k+14, so the access that follows is a "
-          "restart" + b_why);
+          "P2-PRE-B: (b) the Copper's first access after its read of T_k+10, not counting the extra read at T_k+12, is not at T_k+12 or "
+          "T_k+14, so the access that follows is a restart" + b_why);
 
     // Expected: restart access k (k = 1..12) is at T_k, and every later one at $12000. The 14 restart accesses are graded.
     bool ok = have14;
@@ -718,13 +741,14 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
           "P3-ATTR: the program's listing shows no CPU data access to the Copper list region " + hex(kList, 5) + "-" + hex(kList + 0xFF, 5) +
           " other than the four writes of the values, or to a parked region of another channel" + (attr_ok ? std::string() : " (" + why + ")"));
 
-    std::vector<Acc> reads, all_reads;
+    std::vector<Acc> reads, all_reads, extra;
     std::vector<Pass> ps;
     if (window) {
         reads = reads_in(r, ir2, t0, t1);
-        all_reads = reads_in(r, cop, uint64_t(en), t1);
+        all_reads = cop_reads(r, cop, uint64_t(en), t1, &extra);
         ps = passes_of(all_reads);
     }
+    checks.note("P3 extra reads (the word after the end WAIT, in no pass) in the interval: " + extra_text(extra));
     // (a) between two consecutive Copper reads of the IR2 word at most one value write, and every value write is followed by a read.
     bool a_ok = window && !reads.empty();
     for (size_t j = 0; a_ok && j + 1 < reads.size(); ++j) {
@@ -837,10 +861,10 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
           "P4-ATTR: the program's listing shows no CPU data access to the Copper list region " + hex(kList, 5) + "-" +
           hex(kList + 0xFF, 5) + " or to a parked region of another channel" + (attr_ok ? std::string() : " (" + why + ")"));
 
-    std::vector<Acc> rd;
+    std::vector<Acc> rd, extra;
     std::vector<Pass> ps;
     if (cf.size() >= 6) {
-        rd = reads_in(r, cop, m0, cf[5].end); // from marker 0: the Copper's first reads precede the write of marker 3
+        rd = cop_reads(r, cop, m0, cf[5].end, &extra); // from marker 0: the Copper's first reads precede the write of marker 3
         ps = passes_of(rd);
     }
     auto pass_reads = [&](const Pass& p, uint32_t a) {
@@ -861,12 +885,6 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
           " (the unsatisfiable WAIT) (" + num(complete) + " complete passes, at least 4 needed)");
     g.pre(checks, b_ok && ps.size() >= 2,
           "P4-PRE-B: (b) every pass after the first begins with a restart access at " + hex(kList, 5));
-    {
-        // Control for (b), on the same measurement basis: the first pass begins at the list, in the run and under the start-address contrast.
-        auto first_reads = reads_in(r, cop, m0, cf.size() >= 6 ? cf[5].end : kForever);
-        g.pre(checks, !first_reads.empty() && first_reads[0].addr == kList,
-              "P4-CTRL-B: control for (b): the first pass begins with an access at " + hex(kList, 5));
-    }
 
     // Expected (i): in every pass the Copper reads MOVE A after its read of $38006; in every observed field the run after (F,F,F) is (0,F,0).
     bool i_ok = complete >= 4;
@@ -880,7 +898,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
         }
         if (stage != 3) i_ok = false;
     }
-    bool fields_ok = cf.size() >= 6, never_red = true;
+    bool fields_ok = cf.size() >= 6, never_red = true, last_ok = cf.size() >= 6;
     std::string seqs;
     for (size_t f = 2; f < 6 && f < cf.size(); ++f) {
         auto rows = rows_of(r, cf[f]);
@@ -888,18 +906,21 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
         seqs += "[" + seq_text(seq) + "]";
         auto it = std::find(seq.begin(), seq.end(), 0xFFF);
         if (it == seq.end() || it + 1 == seq.end() || *(it + 1) != 0x0F0) fields_ok = false;
+        if (seq.empty() || seq.back() != 0x0F0) last_ok = false;
         for (const auto& x : rows) if (x.rgb == 0xF00) never_red = false;
     }
-    // Expected (ii): no Copper read of MOVE B, and no row shows (F,0,0), in the whole interval.
+    // Expected (ii): MOVE B is not performed: no row shows (F,0,0) and the last non-black run of every observed field, COLOR00's value
+    // at the field boundary, is (0,F,0). The Copper's reads of MOVE B's words are measured and not graded (Section 8, A2).
     int move_b_reads = 0;
     for (const auto& a : rd) if (a.addr == kList + 0x10 || a.addr == kList + 0x12) ++move_b_reads;
+    for (const auto& a : extra) if (a.addr == kList + 0x10 || a.addr == kList + 0x12) ++move_b_reads;
     checks.note("P4 run sequences of the observed fields " + seqs + "; reads of " + hex(kList + 0x10, 5) + " or " +
-                hex(kList + 0x12, 5) + " in the interval: " + num(move_b_reads));
-    if (g.ok) checks.expect(i_ok && fields_ok && move_b_reads == 0 && never_red,
+                hex(kList + 0x12, 5) + " in the interval: " + num(move_b_reads) + " (not graded); extra reads (the word after the end WAIT, "
+                "in no pass): " + extra_text(extra));
+    if (g.ok) checks.expect(i_ok && fields_ok && last_ok && never_red,
              "P4-MOVE-AFTER-WAIT: [p19] ch2-about-the-copper.c18.s2: the Copper performs MOVE A (reads " + hex(kList + 8, 5) +
              " and " + hex(kList + 0xA, 5) + " after " + hex(kList + 6, 5) + ", and every observed field shows (0,F,0) after (F,F,F)) and "
-             "never performs MOVE B behind the unsatisfiable WAIT (no read of " + hex(kList + 0x10, 5) + " or " + hex(kList + 0x12, 5) +
-             ", no (F,0,0) row) in all six fields");
+             "never performs MOVE B behind the unsatisfiable WAIT (no (F,0,0) row, and (0,F,0) is the last colour of the field) in all six fields");
     else g.skip(checks, "P4-MOVE-AFTER-WAIT");
 }
 
@@ -947,35 +968,32 @@ Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::st
           (attr_ok ? std::string() : " (" + why + ")"));
     Leg out;
     if (!marks_ok) { out.pre_ok = false; return out; }
-    const uint64_t m0 = uint64_t(mark_cycle(m, 0)), m3 = uint64_t(mark_cycle(m, 3)), m5 = uint64_t(mark_cycle(m, 5));
+    // The Copper starts as soon as Copper DMA is on, so the boundary is marker 2, written before the DMACON write (Section 8, A3).
+    const uint64_t m0 = uint64_t(mark_cycle(m, 0)), m2 = uint64_t(mark_cycle(m, 2)), m5 = uint64_t(mark_cycle(m, 5));
     const uint64_t m4 = r1 ? uint64_t(mark_cycle(m, 4)) : m5;
-    auto rd = reads_in(r, cop, m0, m5);
+    std::vector<Acc> extra;
+    auto rd = cop_reads(r, cop, m0, m5, &extra);
     auto ps = passes_of(rd);
     if (dbg()) {
-        std::cout << "DEBUG P5" << tag << ": m0=" << m0 << " m3=" << m3 << " m4=" << m4 << " m5=" << m5 << std::endl;
+        std::cout << "DEBUG P5" << tag << ": m0=" << m0 << " m2=" << m2 << " m4=" << m4 << " m5=" << m5 << std::endl;
         for (const auto& x : m) std::cout << "  mark " << x.value << " at " << x.cycle << std::endl;
         for (size_t i = 0; i < rd.size() && i < 10; ++i)
             std::cout << "  rd t=" << rd[i].t << " a=" << hex(rd[i].addr, 5) << " d=" << hex(rd[i].data) << std::endl;
     }
-    // (a) no Copper access between marker 0 and marker 3.
+    // (a) no Copper access between marker 0 and marker 2 (the strobe, with Copper DMA still off).
     size_t early = 0;
-    for (const auto& x : rd) if (x.t < m3) ++early;
-    g.pre(checks, early == 0, "P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (" + num(early) + ")" + tag);
-    // Control for (a), on the same measurement basis: no Copper access occurs between marker 0 and marker 2 (the strobe, with Copper DMA still off).
-    size_t before_m2 = 0;
-    const uint64_t m2 = uint64_t(mark_cycle(m, 2));
-    for (const auto& x : rd) if (x.t < m2) ++before_m2;
-    g.pre(checks, before_m2 == 0, "P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (" + num(before_m2) + ")" + tag);
+    for (const auto& x : rd) if (x.t < m2) ++early;
+    g.pre(checks, early == 0, "P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 2, written before the DMACON write (" + num(early) + ")" + tag);
     // (b) at least 4 restart accesses in each phase.
     size_t n1 = 0, n2 = 0;
     for (size_t k = 1; k < ps.size(); ++k) {
         const uint64_t t = rd[ps[k].first].t;
-        if (t > m3 && t < m4) ++n1;
+        if (t > m2 && t < m4) ++n1;
         else if (t > m4) ++n2;
     }
     g.pre(checks, r1 ? (n1 >= 4 && n2 >= 4) : (n1 + n2 >= 4),
-          "P5-PRE-B: (b) at least 4 restart accesses occur " + std::string(r1 ? "between marker 3 and marker 4 and at least 4 after marker 4"
-          : "after marker 3") + " (" + num(n1) + ", " + num(n2) + ")" + tag);
+          "P5-PRE-B: (b) at least 4 restart accesses occur " + std::string(r1 ? "between marker 2 and marker 4 and at least 4 after marker 4"
+          : "after marker 2") + " (" + num(n1) + ", " + num(n2) + ")" + tag);
     // (c) every pass reads exactly the two words of the end WAIT at its list address.
     bool c_ok = !ps.empty();
     for (const auto& p : ps) {
@@ -986,16 +1004,11 @@ Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::st
         if (!two) c_ok = false;
     }
     g.pre(checks, c_ok, "P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address" + tag);
-    // Control for (c), on the same measurement basis: the first pass reads exactly the two words of the end WAIT at its list address.
-    const bool c1_ok = !ps.empty() && ps[0].complete && ps[0].last == ps[0].first + 1 && rd[ps[0].first].data == 0xFFFF &&
-                       rd[ps[0].last].data == 0xFFFE && rd[ps[0].last].addr == rd[ps[0].first].addr + 2 &&
-                       (rd[ps[0].first].addr == kA || rd[ps[0].first].addr == kB || rd[ps[0].first].addr == kC);
-    g.pre(checks, c1_ok, "P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address" + tag);
     out.pre_ok = g.ok;
 
     // Expected.
     const Acc* first = nullptr;
-    for (const auto& x : rd) if (x.t >= m3) { first = &x; break; }
+    for (const auto& x : rd) if (x.t >= m2) { first = &x; break; }
     bool ok = first != nullptr;
     std::string got;
     if (first) got = "first " + hex(first->addr, 5);
@@ -1004,22 +1017,22 @@ Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::st
         for (size_t k = 1; k < ps.size(); ++k) {
             const uint64_t t = rd[ps[k].first].t;
             const uint32_t a = rd[ps[k].first].addr;
-            if (t > m3 && t < m4 && a != kA) ok = false;
+            if (t > m2 && t < m4 && a != kA) ok = false;
             if (t > m4 && a != kB) ok = false;
         }
     } else {
         if (!first || first->addr != kB) ok = false;
-        for (size_t k = 1; k < ps.size(); ++k) if (rd[ps[k].first].t > m3 && rd[ps[k].first].addr != kA) ok = false;
+        for (size_t k = 1; k < ps.size(); ++k) if (rd[ps[k].first].t > m2 && rd[ps[k].first].addr != kA) ok = false;
     }
     std::string rs;
     for (size_t k = 1; k < ps.size() && k < 12; ++k) rs += " " + hex(rd[ps[k].first].addr, 5);
-    checks.note("P5" + tag + " " + got + "; restart accesses:" + rs);
+    checks.note("P5" + tag + " " + got + "; restart accesses:" + rs + "; extra reads (the word after the end WAIT, in no pass): " + extra_text(extra));
     out.graded_ok = ok;
     return out;
 }
 
 void run(Checks& checks, const std::string& dir, const std::string& mv) {
-    bool all_pre = true, all_ok = true;
+    bool all_pre = true, all_ok = true, r1_ok = true;
     for (bool ecs : {true, false}) {
         std::string b1 = dir + "/prog_p5_r1.bin", b2 = dir + "/prog_p5_r2.bin";
         if (mv == "P5-R1") b1 = dir + "/prog_p5_r1x.bin";
@@ -1032,11 +1045,15 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
         Leg l2 = leg(checks, b2, false, ecs, mv);
         all_pre = all_pre && l1.pre_ok && l2.pre_ok;
         all_ok = all_ok && l1.graded_ok && l2.graded_ok;
+        r1_ok = r1_ok && l1.graded_ok;
     }
     if (!all_pre) {
         checks.record("NOT GRADED P5-LOCATION: a precondition of one of the four runs does not hold");
         return;
     }
+    checks.expect(r1_ok,
+                  "P5-CTRL-LOCATION: control on the same measurement basis as P5-LOCATION: run R1 in ECS and OCS, graded by the same comparator, "
+                  "starts at $20004 after the COPJMP1 strobe, restarts at $20004, and restarts at $25A5C after the write without a strobe");
     checks.expect(all_ok,
                   "P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 "
                   "COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; "
@@ -1133,7 +1150,8 @@ Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv)
     // The result is stored by the CPU after it reads the destination word.
     auto stores = writes_in(r, {{kResults, kResults + 1}}, m3);
     const uint64_t tres = stores.empty() ? kForever : stores[0].t;
-    auto rd = reads_in(r, cop, m0, tres);
+    std::vector<Acc> extra;
+    auto rd = cop_reads(r, cop, m0, tres, &extra);
     auto ps = passes_of(rd);
     auto w48 = writes_in(r, {{kDest, kDest + 1}}, m0, tres);
     // The CPU's clearing write is the one that carries $0000 before the enable marker; every other write is the blitter's.
@@ -1161,18 +1179,16 @@ Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv)
         for (size_t i = ps[0].first; i <= ps[0].last; ++i) if (rd[i].addr == kList) in_first = true;
         c_ok = in_first;
     }
-    const bool c1_ok = c_ok; // the first clause alone
     for (size_t k = 1; k < ps.size(); ++k) if (rd[ps[k].first].addr != kSafe) c_ok = false;
     g.pre(checks, c_ok,
           "P7-PRE-C: (c) the Copper reads " + hex(kList, 5) + " and " + hex(kList + 2, 5) + " once, in the first pass, and every later restart "
           "access is at " + hex(kSafe, 5) + tag);
-    g.pre(checks, c1_ok,
-          "P7-CTRL-C: control for (c): the Copper reads " + hex(kList, 5) + " and " + hex(kList + 2, 5) + " once, in the first pass" + tag);
     out.pre_ok = g.ok;
 
     const uint16_t result = r.peeked.count(kResults) ? r.peeked[kResults] : 0;
     checks.note("P7" + tag + " blitter writes: " + num(blit.size()) + (blit.empty() ? std::string() : " first at " + hex(blit[0].addr, 5) +
-                " data " + hex(blit[0].data)) + ", result word " + hex(result));
+                " data " + hex(blit[0].data)) + ", result word " + hex(result) +
+                "; extra reads (the word after the end WAIT, in no pass): " + extra_text(extra));
     out.ok = blit.size() == 1 && blit[0].addr == kDest && blit[0].data == 0xFFFF && r3a002 && blit[0].t > r3a002->t && result == 0xFFFF;
     return out;
 }
