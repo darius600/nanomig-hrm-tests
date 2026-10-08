@@ -177,6 +177,7 @@ addresses on p. 229):
 | VHPOSR | $DFF006 | R | "Read vert and horiz. position of beam" (bits 15-8 are V7-V0, p. 238) |
 | JOY0DAT | $DFF00A | R | "Joystick-mouse 0 data (vert,horiz)" |
 | JOY1DAT | $DFF00C | R | "Joystick-mouse 1 data (vert,horiz)" |
+| JOYTEST | $DFF036 | W | "Write to all four joystick-mouse counters at once" (p. 289); bits 15-10 and 7-2 of each counter (p. 282). Written only by the PJ3 contrast (4.5) |
 | POTGOR | $DFF016 | R | "Pot port data read (formerly POTINP)" |
 | POTGO | $DFF034 | W | "Pot port data write and start" |
 | BPLCON0 | $DFF100 | W | bit 3 "enables the light pen latch" (p. 229) |
@@ -372,8 +373,9 @@ usage: (pins 1,3=Yclock, pins 2,4=Xclock)".
 - It runs a sampling loop: wait until VHPOSR bits 15-8 change, then read
   VHPOSR, JOY0DAT, JOY1DAT and VPOSR, and store the four words as the next
   buffer entry.
-- The loop starts before the harness schedule and runs for a fixed number of
-  lines longer than the schedule. The program then writes a done marker.
+- The loop stores exactly TOTAL_SAMPLES = 2,048 samples, the length of the four
+  phases (4 x 512 lines); the harness applies each phase's first schedule
+  entry at that phase's first sample. The program then writes a done marker.
 
 **Harness,** on the proposition's pins a and b only, holding each entry for at
 least 8 scan lines. Here and below, lines are counted as samples stored at the
@@ -488,7 +490,7 @@ E1-E3.
 | Id | Change | Result |
 |----|--------|--------|
 | PJ1 | Drop one scheduled change from the harness while the grader keeps its plan. | PJ1 reports the missing change. |
-| PJ1 | Apply one phase's schedule to the other port, or to the other pin pair of the same port. | PJ1 reports the port or bits actually driven, which are not the proposition's two pins. |
+| PJ1 | Apply one phase's schedule to the corresponding pins of the other port. | PJ1 reports the port actually driven, which is not the proposition's. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
 | PJ3 | The program writes JOYTEST once inside the baseline window, which sets all four joystick-mouse counters at once. The harness input log is unchanged, so PJ1 and PJ2 stay met. | The baseline samples differ, so PJ3 is not met. |
@@ -496,7 +498,7 @@ E1-E3.
 
 ### 4.6 Contrasting cases
 
-In each case below the program is unchanged and all preconditions hold.
+In each case below the program is unchanged and the harness departs from the plan that PJ1 checks (4.5).
 
 1. **Other port.** Apply the same schedule to the corresponding pins of the
    other port. The byte under test stays at its baseline in every window, and
@@ -507,8 +509,9 @@ In each case below the program is unchanged and all preconditions hold.
 3. **Direction.** Swap the forward and backward phases. The byte runs through
    c0 - n instead of c0 + n, so the direction of counting is graded.
 
-Cases 1 and 2 change the pins driven, which PJ1 reports (4.5), so P1-P4 are
-then not checkable. The register-side counterpart of case 1 leaves PJ1 true:
+Case 1 is run as P1-WRONGPORT to P4-WRONGPORT: PJ1 reports the port actually
+driven, and P1-P4 are not checkable (8.4). Cases 2 and 3 are not run. The
+register-side counterpart of case 1 leaves PJ1 true:
 the program stores JOY1DAT and JOY0DAT in the other order for the phase under
 test. The register that the proposition reads then holds the other port's
 count, and the byte under test stays at its baseline in every window.
@@ -663,7 +666,8 @@ As in section 4.5, the harness input that carries each pin is fixed by section
 
 ### 5.6 Contrasting cases
 
-In each case the program still finishes and the preconditions hold.
+Cases 1 and 2 are comparisons within the base run: the program finishes and
+the preconditions hold.
 
 1. **Output.** C4 differs from C1 only in DAT bit d, with the button released.
    The page predicts 0 in C4 and 1 in C1. An implementation whose pin only
@@ -796,11 +800,15 @@ places prb at BFD100 in the CIAB map. The address is used.
 
 ## 8. Build
 
-Three programs, `prog_mouse.s` (section 4), `prog_pot.s` (section 5, with
-`prog_pot_pp2.s`/`prog_pot_pp3.s` as its own PP2/PP3 contrasts, all three
-including the shared `pot_body.s`), and `prog_drivelight.s` (section 6), run
-by `test_appHJ_drive_pins.cpp`. Fixture, buffer and CIA-B addresses used by
-the programs are in `hj_defs.i`.
+Three programs, `prog_mouse.s` (section 4), `prog_pot.s` (section 5) and
+`prog_drivelight.s` (section 6), run by `test_appHJ_drive_pins.cpp`. The
+contrasts of 8.4 are wrappers that set one symbol and include a base program:
+`prog_mouse_pj2.s` (PJ2-FRAME), `prog_mouse_pj3.s` (PJ3) and
+`prog_mouse_sw0.s` to `prog_mouse_sw3.s` (P1-WRONGREG to P4-WRONGREG) include
+`prog_mouse.s`; `prog_pot_pp2.s`, `prog_pot_pp3.s` (PP2, PP3) and
+`prog_pot_p5.s`, `prog_pot_p6.s`, `prog_pot_p8.s` (P5-, P6-, P8-WRONGREG)
+include `pot_body.s`, as `prog_pot.s` does. Fixture, buffer and CIA-B
+addresses used by the programs are in `hj_defs.i`.
 
 ### 8.1 Stimulus mapping (section 3.4, 5.1: assigned to the builder)
 

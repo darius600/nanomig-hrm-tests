@@ -170,11 +170,12 @@ struct MouseRun {
     bool pj3_pulse_applied = false;
 };
 
-// Runs prog_mouse.bin, interactively applying the schedule of
-// build_mouse_schedule() to all four phases as the sample buffer fills
-// (SPECIFICATION.md 3.3: "the harness makes each input change by counting
-// samples as they appear at the port"). `mutate` selects one of the
-// MUTATION cases in the header comment; everything else is the baseline.
+// Runs prog_mouse.bin (or the contrast program the selector names),
+// interactively applying the schedule of build_mouse_schedule() to all four
+// phases as the sample buffer fills (SPECIFICATION.md 3.3: "the harness makes
+// each input change by counting samples as they appear at the port").
+// `mutate` selects one of the header comment's mutation cases; everything
+// else is the baseline.
 MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     MouseRun r;
     Config cfg;
@@ -236,8 +237,8 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
                 // stored (its VHPOSR word). Apply any event whose threshold
                 // is already reached using this PRE-increment count, so a
                 // change never lands mid-store of the previous sample (that
-                // sample's own store, VHPOSR then JOY0DAT then JOY1DAT, is
-                // only 1-2 bus cycles from finishing) -- it takes effect no
+                // sample's own store, VHPOSR, JOY0DAT, JOY1DAT then VPOSR, is
+                // only a few bus cycles from finishing) -- it takes effect no
                 // earlier than the first sample of its own window, which
                 // the 2-line guard already discards.
                 while (ev_idx < events.size() && samples_seen >= events[ev_idx].g) {
@@ -743,7 +744,7 @@ int main(int argc, char** argv) {
     // Per-pin grading. Step windows, like section 4's, are bounded by
     // consecutive entries of the driver's own action record, and a window
     // is graded only if it holds at least 3 really-stored samples (a
-    // missing sample no longer passes silently).
+    // missing sample is not graded and counts against the window's population, PP3).
     struct PinResult { bool ok = true; int graded_windows = 0; bool population_ok = true;
                         std::vector<uint16_t> observed_d; std::vector<int> observed_step; };
     PinResult pinr[4];
