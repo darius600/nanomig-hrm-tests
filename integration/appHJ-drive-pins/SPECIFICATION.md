@@ -487,6 +487,7 @@ E1-E3.
 | Id | Change | Result |
 |----|--------|--------|
 | PJ1 | Drop one scheduled change from the harness while the grader keeps its plan. | PJ1 reports the missing change. |
+| PJ1 | Apply one phase's schedule to the other port, or to the other pin pair of the same port. | PJ1 reports the port or bits actually driven, which are not the proposition's two pins. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
 | PJ3 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. PJ3 covers both registers, so one connector suffices. | The baseline samples differ, so PJ3 is not met. |
@@ -503,6 +504,12 @@ In each case below the program is unchanged and all preconditions hold.
    baseline.
 3. **Direction.** Swap the forward and backward phases. The byte runs through
    c0 - n instead of c0 + n, so the direction of counting is graded.
+
+Cases 1 and 2 change the pins driven, which PJ1 reports (4.5), so P1-P4 are
+then not checkable. The register-side counterpart of case 1 leaves PJ1 true:
+the program stores JOY1DAT and JOY0DAT in the other order for the phase under
+test. The register that the proposition reads then holds the other port's
+count, and the byte under test stays at its baseline in every window.
 
 ### 4.7 Reference frames
 
@@ -648,6 +655,7 @@ As in section 4.5, the harness input that carries each pin is fixed by section
 | Id | Change | Result |
 |----|--------|--------|
 | PP1 | Omit the press of C2. | PP1 reports the scheduled change as missing instead of grading C2. |
+| PP1 | Apply one pin's press to the other pot pin of the same port, or to the corresponding pin of the other port. | PP1 reports the source and bit actually driven, which are not the pin under test's. |
 | PP2 | Write POTGO with bit 0 = 1 in C1. | PP2 is not met. |
 | PP3 | Shorten one step to 6 lines. | PP3 is not met. |
 
@@ -664,6 +672,12 @@ In each case the program still finishes and the preconditions hold.
 3. **Binding.** Repeat C2 with the press on the corresponding pin of the other
    port, or on the other pot pin of the same port. Bit d stays 1, and the
    pressed pin's own DAT bit reads 0.
+
+Case 3 changes the source or bit driven, which PP1 reports (5.5), so P5, P6
+and P8 are then not checkable. Its register-side counterpart leaves PP1 true:
+for the samples of the pin under test, the program stores JOY0DAT where it
+otherwise stores POTGOR. The comparator then reads a register that does not
+carry the pin's level, and the proposition fails.
 
 ### 5.7 Reference frames
 
@@ -875,17 +889,32 @@ PASS/FAIL, and are not counted in the totals below. P7 is withdrawn (8.2)
 and prints no such line.
 
 Proposition (stimulus) mutations print a literal `FAIL: <label>` line
-through the named proposition's own comparator, nothing else affected:
+through the named proposition's own comparator, nothing else affected. The
+action record and every other precondition stay true:
 
 | Mutation | Prints FAIL through | Totals (both cores) |
 |----------|---------------------|----------------------|
-| P1-WRONGPORT | `P1 [p.380: ...]` | 14 passed, 1 failed (P1) |
-| P2-WRONGPORT | `P2 [p.380: ...]` | 14 passed, 1 failed (P2) |
-| P3-WRONGPORT | `P3 [p.380: ...]` | 14 passed, 1 failed (P3) |
-| P4-WRONGPORT | `P4 [p.380: ...]` | 14 passed, 1 failed (P4) |
-| P5-WRONGPIN | `P5 [p.380: ...]` | 14 passed, 1 failed (P5) |
-| P6-WRONGPIN | `P6 [p.380: ...]` | 14 passed, 1 failed (P6) |
-| P8-WRONGPIN | `P8 [p.380: ...]` | 14 passed, 1 failed (P8) |
+| P1-WRONGREG | `P1 [p.380: ...]` | 14 passed, 1 failed (P1) |
+| P2-WRONGREG | `P2 [p.380: ...]` | 14 passed, 1 failed (P2) |
+| P3-WRONGREG | `P3 [p.380: ...]` | 14 passed, 1 failed (P3) |
+| P4-WRONGREG | `P4 [p.380: ...]` | 14 passed, 1 failed (P4) |
+| P5-WRONGREG | `P5 [p.380: ...]` | 14 passed, 1 failed (P5) |
+| P6-WRONGREG | `P6 [p.380: ...]` | 14 passed, 1 failed (P6) |
+| P8-WRONGREG | `P8 [p.380: ...]` | 14 passed, 1 failed (P8) |
+
+Mutations that drive the wrong port or pin print `FAIL: PJ1 ...` or
+`FAIL: PP1 ...`, because the action record shows the port, source or bit
+actually driven, and gate their section's propositions to "not checkable":
+
+| Mutation | Prints FAIL through | Side effect measured | Totals (both cores) |
+|----------|---------------------|----------------------|----------------------|
+| P1-WRONGPORT | `PJ1 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ1) |
+| P2-WRONGPORT | `PJ1 [...]` | as P1-WRONGPORT | 10 passed, 1 failed (PJ1) |
+| P3-WRONGPORT | `PJ1 [...]` | as P1-WRONGPORT | 10 passed, 1 failed (PJ1) |
+| P4-WRONGPORT | `PJ1 [...]` | as P1-WRONGPORT | 10 passed, 1 failed (PJ1) |
+| P5-WRONGPIN | `PP1 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP1) |
+| P6-WRONGPIN | `PP1 [...]` | as P5-WRONGPIN | 11 passed, 1 failed (PP1) |
+| P8-WRONGPIN | `PP1 [...]` | as P5-WRONGPIN | 11 passed, 1 failed (PP1) |
 
 Precondition mutations print `FAIL: <id> ...` through the precondition's own
 comparator (the same label the normal run uses, PASS there), and gate their
@@ -895,6 +924,7 @@ whole section's propositions to "not checkable":
 |----------|---------------------|------------------------|----------------------|
 | PJ1 | `PJ1 [...]` | P1, P2, P3, P4 all become "not checkable" (section 4 gated) | 10 passed, 1 failed (PJ1) |
 | PJ2 | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
+| PJ2-FRAME | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
 | PJ3 | `PJ3 [...]` | PJ1 also FAILs: the injected mouse count is also the mouse-button activity PJ1's own idle clause forbids; P1, P2, P3, P4 all become "not checkable" | 9 passed, 2 failed (PJ1, PJ3) |
 | PP1 | `PP1 [...]` | P5, P6, P8 all become "not checkable" (section 5 gated) | 11 passed, 1 failed (PP1) |
 | PP2 | `PP2 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP2) |

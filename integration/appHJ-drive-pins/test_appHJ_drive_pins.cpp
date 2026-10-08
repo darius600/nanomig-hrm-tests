@@ -12,17 +12,24 @@
 // the same four-phase or four-pin run; only the one named clause changes,
 // and the comparator is never inverted while a mutation is selected.
 //
-// MUTATION P1 stimulus red NMH_MUTATE=P1-WRONGPORT: P1's own schedule (M0H) is applied to joystick0 instead of joystick1, so JOY0DAT's low byte stays at its baseline while P1's E2 formula expects it to move; TG68K FAIL (P1; 14 passed, 1 failed), fx68k FAIL (P1; 14 passed, 1 failed).
-// MUTATION P2 stimulus red NMH_MUTATE=P2-WRONGPORT: P2's schedule is applied to joystick0 instead of joystick1; TG68K FAIL (P2; 14 passed, 1 failed), fx68k FAIL (P2; 14 passed, 1 failed).
-// MUTATION P3 stimulus red NMH_MUTATE=P3-WRONGPORT: P3's schedule is applied to joystick1 instead of joystick0; TG68K FAIL (P3; 14 passed, 1 failed), fx68k FAIL (P3; 14 passed, 1 failed).
-// MUTATION P4 stimulus red NMH_MUTATE=P4-WRONGPORT: P4's schedule is applied to joystick1 instead of joystick0; TG68K FAIL (P4; 14 passed, 1 failed), fx68k FAIL (P4; 14 passed, 1 failed).
+// MUTATION PJ1 stimulus red NMH_MUTATE=P1-WRONGPORT: P1's schedule is applied to joystick0 instead of joystick1, so the action record shows the other port's bits driven; also P1-P4 become not checkable; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ1 stimulus red NMH_MUTATE=P2-WRONGPORT: P2's schedule is applied to joystick0 instead of joystick1, so the action record shows the other port's bits driven; also P1-P4 become not checkable; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ1 stimulus red NMH_MUTATE=P3-WRONGPORT: P3's schedule is applied to joystick1 instead of joystick0, so the action record shows the other port's bits driven; also P1-P4 become not checkable; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ1 stimulus red NMH_MUTATE=P4-WRONGPORT: P4's schedule is applied to joystick1 instead of joystick0, so the action record shows the other port's bits driven; also P1-P4 become not checkable; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION P1 stimulus red NMH_MUTATE=P1-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 0 (prog_mouse_sw0.bin), the action record and the other preconditions staying true, so the register that P1 reads holds the other port's count; TG68K FAIL (P1; 14 passed, 1 failed), fx68k FAIL (P1; 14 passed, 1 failed).
+// MUTATION P2 stimulus red NMH_MUTATE=P2-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 1 (prog_mouse_sw1.bin), the action record and the other preconditions staying true, so the register that P2 reads holds the other port's count; TG68K FAIL (P2; 14 passed, 1 failed), fx68k FAIL (P2; 14 passed, 1 failed).
+// MUTATION P3 stimulus red NMH_MUTATE=P3-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 2 (prog_mouse_sw2.bin), the action record and the other preconditions staying true, so the register that P3 reads holds the other port's count; TG68K FAIL (P3; 14 passed, 1 failed), fx68k FAIL (P3; 14 passed, 1 failed).
+// MUTATION P4 stimulus red NMH_MUTATE=P4-WRONGREG: the program stores JOY1DAT and JOY0DAT in the other order for phase 3 (prog_mouse_sw3.bin), the action record and the other preconditions staying true, so the register that P4 reads holds the other port's count; TG68K FAIL (P4; 14 passed, 1 failed), fx68k FAIL (P4; 14 passed, 1 failed).
 // MUTATION PJ1 stimulus red NMH_MUTATE=PJ1: one scheduled pin change (phase 0, step 5) is dropped while the grader keeps its plan; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 2 lines, so the window holds fewer than 3 real stored samples; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so one stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1 and no frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: a mouse count is injected through kbd_mouse_* during phase 0's baseline window; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
-// MUTATION P5 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is redirected to the input wired for P6 (mouse_buttons bit 1) instead of P5's own (bit 2), so POT0X's DATLX bit never moves; TG68K FAIL (P5; 14 passed, 1 failed), fx68k FAIL (P5; 14 passed, 1 failed).
-// MUTATION P6 stimulus red NMH_MUTATE=P6-WRONGPIN: P6's press is redirected to P5's input (mouse_buttons bit 2); TG68K FAIL (P6; 14 passed, 1 failed), fx68k FAIL (P6; 14 passed, 1 failed).
-// MUTATION P8 stimulus red NMH_MUTATE=P8-WRONGPIN: P8's press is redirected to joystick1 bit 5 instead of joystick0 bit 5; TG68K FAIL (P8; 14 passed, 1 failed), fx68k FAIL (P8; 14 passed, 1 failed).
+// MUTATION PP1 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is applied to mouse_buttons bit 1 instead of mouse_buttons bit 2, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION PP1 stimulus red NMH_MUTATE=P6-WRONGPIN: P6's button press is applied to mouse_buttons bit 2 instead of mouse_buttons bit 1, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION PP1 stimulus red NMH_MUTATE=P8-WRONGPIN: P8's button press is applied to joystick1 bit 5 instead of joystick0 bit 5, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
+// MUTATION P5 stimulus red NMH_MUTATE=P5-WRONGREG: the program stores JOY0DAT where it reads POTGOR for the samples of P5's pin (prog_pot_p5.bin), the action record and the other preconditions staying true, so POTGOR's DAT bit of the pin is not what the comparator reads; TG68K FAIL (P5; 14 passed, 1 failed), fx68k FAIL (P5; 14 passed, 1 failed).
+// MUTATION P6 stimulus red NMH_MUTATE=P6-WRONGREG: the program stores JOY0DAT where it reads POTGOR for the samples of P6's pin (prog_pot_p6.bin), the action record and the other preconditions staying true, so POTGOR's DAT bit of the pin is not what the comparator reads; TG68K FAIL (P6; 14 passed, 1 failed), fx68k FAIL (P6; 14 passed, 1 failed).
+// MUTATION P8 stimulus red NMH_MUTATE=P8-WRONGREG: the program stores JOY0DAT where it reads POTGOR for the samples of P8's pin (prog_pot_p8.bin), the action record and the other preconditions staying true, so POTGOR's DAT bit of the pin is not what the comparator reads; TG68K FAIL (P8; 14 passed, 1 failed), fx68k FAIL (P8; 14 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=PP1: the C2 button press is omitted, so PP1 reports it missing instead of grading C2; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP2 stimulus red NMH_MUTATE=PP2: pin 5's C1 write sets POTGO bit 0 = 1 (prog_pot_pp2.bin); TG68K FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP2; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP3 stimulus red NMH_MUTATE=PP3: pin 5's C1 step is shortened to 6 lines (prog_pot_pp3.bin), leaving fewer than 3 real stored samples in its window; TG68K FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP3; P5, P6, P8 not checkable; 11 passed, 1 failed).
@@ -148,7 +155,10 @@ std::vector<Sample3> extract_samples3(const std::vector<RamAccess>& log, uint32_
 // plan called for, and what it changed. This is the "logged record of the
 // input ports" SPECIFICATION.md 4.5 (PJ1) and 5.5 (PP1) ask the
 // preconditions to be checked from, not the driver's `skipped` flag alone.
-struct AppliedMouseEvent { size_t sample_index; size_t planned_index; int phase; size_t step; int a, b; bool skipped; };
+// j0, j1 and mb are the values of joystick0, joystick1 and mouse_buttons read
+// back from the port right after the change: the port and bits actually driven.
+struct AppliedMouseEvent { size_t sample_index; size_t planned_index; int phase; size_t step; int a, b; bool skipped;
+                           uint8_t j0, j1, mb; };
 
 struct MouseRun {
     bool loaded = false, released = false;
@@ -168,7 +178,11 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     MouseRun r;
     Config cfg;
     NanomigHarness h(cfg);
-    r.loaded = h.load_program(dir + (mutate == "PJ2-FRAME" ? "/prog_mouse_pj2.bin" : "/prog_mouse.bin")) > 0;
+    std::string bin = "/prog_mouse.bin";
+    if (mutate == "PJ2-FRAME") bin = "/prog_mouse_pj2.bin";
+    for (int i = 0; i < 4; ++i)
+        if (mutate == std::string("P") + std::to_string(i + 1) + "-WRONGREG") bin = "/prog_mouse_sw" + std::to_string(i) + ".bin";
+    r.loaded = h.load_program(dir + bin) > 0;
     if (!r.loaded) return r;
     r.released = h.boot(kBootBudget).cpu_released;
 
@@ -235,7 +249,8 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
                         uint8_t byte = uint8_t((bit_a << ph.a_bit) | (bit_b << ph.b_bit));
                         if (ph.use_joystick1) h.ports()->joystick1 = byte; else h.ports()->joystick0 = byte;
                     }
-                    r.applied.push_back({samples_seen, e.g, e.phase, e.step, st.a, st.b, skipped});
+                    r.applied.push_back({samples_seen, e.g, e.phase, e.step, st.a, st.b, skipped,
+                                         h.ports()->joystick0, h.ports()->joystick1, h.ports()->mouse_buttons});
                     ++ev_idx;
                 }
                 ++samples_seen;
@@ -305,7 +320,11 @@ PotPin kPotPins[4] = {
     {Src::kJoystick0,    5, 14, 0xFF00, 0xBF00, 0x3F00, 0xFF00},  // P8 POT1Y
 };
 
-struct AppliedPotEvent { size_t sample_index; size_t planned_index; int pin; size_t step; bool press; bool skipped; };
+// src and bit are the source and bit the change was actually applied to;
+// mb, j0 and j1 are mouse_buttons, joystick0 and joystick1 read back from the
+// port right after it (the register the change did not touch must read 0).
+struct AppliedPotEvent { size_t sample_index; size_t planned_index; int pin; size_t step; bool press; bool skipped;
+                         Src src; int bit; uint8_t mb, j0, j1; };
 
 struct PotRun {
     bool loaded = false, released = false;
@@ -322,6 +341,9 @@ PotRun run_pot(const std::string& dir, const std::string& mutate) {
     std::string bin = dir + "/prog_pot.bin";
     if (mutate == "PP2") bin = dir + "/prog_pot_pp2.bin";
     if (mutate == "PP3") bin = dir + "/prog_pot_pp3.bin";
+    if (mutate == "P5-WRONGREG") bin = dir + "/prog_pot_p5.bin";
+    if (mutate == "P6-WRONGREG") bin = dir + "/prog_pot_p6.bin";
+    if (mutate == "P8-WRONGREG") bin = dir + "/prog_pot_p8.bin";
     Config cfg;
     NanomigHarness h(cfg);
     r.loaded = h.load_program(bin) > 0;
@@ -399,7 +421,9 @@ PotRun run_pot(const std::string& dir, const std::string& mutate) {
                             case Src::kNone: break;
                         }
                     }
-                    r.applied.push_back({samples_seen, e.g, e.pin, e.step, press, skipped});
+                    r.applied.push_back({samples_seen, e.g, e.pin, e.step, press, skipped,
+                                         pins[e.pin].src, pins[e.pin].bit,
+                                         h.ports()->mouse_buttons, h.ports()->joystick0, h.ports()->joystick1});
                     ++ev_idx;
                 }
                 ++samples_seen;
@@ -512,8 +536,21 @@ int main(int argc, char** argv) {
     for (auto& e : mr.applied) if (e.skipped) pj1_missing_ok = false;
     bool pj1_timing_ok = true;
     for (auto& e : mr.applied) if (!e.skipped && e.sample_index != e.planned_index) pj1_timing_ok = false;
+    // The port and bits actually driven, against the plan's own mapping
+    // (kMousePhases): the planned port carries exactly the scheduled pin
+    // levels on the proposition's two pins, and the other joystick port and
+    // the mouse buttons are idle.
+    bool pj1_pins_ok = true;
+    for (auto& e : mr.applied) {
+        if (e.skipped) continue;
+        const MousePhase& ph = kMousePhases[e.phase];
+        const MouseStep& st = steps[e.step];
+        uint8_t want = uint8_t(((st.a ? 0 : 1) << ph.a_bit) | ((st.b ? 0 : 1) << ph.b_bit));
+        uint8_t want_j1 = ph.use_joystick1 ? want : 0, want_j0 = ph.use_joystick1 ? 0 : want;
+        if (e.j0 != want_j0 || e.j1 != want_j1 || e.mb != 0) pj1_pins_ok = false;
+    }
     bool pj1_idle_ok = !mr.pj3_pulse_applied;
-    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_idle_ok;
+    bool pj1_ok = pj1_missing_ok && pj1_timing_ok && pj1_pins_ok && pj1_idle_ok;
     checks.expect(pj1_ok, "PJ1 [SPECIFICATION.md 4.5]: the driver's own action record shows every scheduled "
                            "change applied, at its scheduled sample index, on the proposition's two pins only, "
                            "with no other controller-port input, mouse movement or mouse-button activity");
@@ -646,6 +683,21 @@ int main(int argc, char** argv) {
     for (auto& e : pt.applied) if (e.skipped) pp1_missing_ok = false;
     bool pp1_timing_ok = true;
     for (auto& e : pt.applied) if (!e.skipped && e.sample_index != e.planned_index) pp1_timing_ok = false;
+    // The source and bit actually driven, against the plan's own mapping
+    // (kPotPins): a press leaves exactly the pin's own bit set in its own
+    // source, a release leaves every source at 0.
+    bool pp1_pins_ok = true;
+    for (auto& e : pt.applied) {
+        if (e.skipped || (e.step != 1 && e.step != 2 && e.step != 4 && e.step != 6)) continue;
+        const PotPin& plan = kPotPins[e.pin];
+        uint8_t want = e.press ? uint8_t(1u << plan.bit) : 0;
+        uint8_t want_mb = plan.src == Src::kMouseButtons ? want : 0;
+        uint8_t want_j0 = plan.src == Src::kJoystick0 ? want : 0;
+        uint8_t want_j1 = plan.src == Src::kJoystick1 ? want : 0;
+        if (plan.src == Src::kNone) want_mb = want_j0 = want_j1 = 0;
+        if (e.src != plan.src || e.bit != plan.bit || e.mb != want_mb || e.j0 != want_j0 || e.j1 != want_j1)
+            pp1_pins_ok = false;
+    }
     bool pp1_gap_ok = true;
     {
         // Steps 1(C2),2(C3) sit between markers 0(C1) and 1(C4); step 4(C5)
@@ -665,7 +717,7 @@ int main(int argc, char** argv) {
             if (e.sample_index + 6 > nm) pp1_gap_ok = false;
         }
     }
-    bool pp1_ok = pp1_missing_ok && pp1_timing_ok && pp1_gap_ok;
+    bool pp1_ok = pp1_missing_ok && pp1_timing_ok && pp1_pins_ok && pp1_gap_ok;
     checks.expect(pp1_ok, "PP1 [SPECIFICATION.md 5.5]: the driver's own action record shows the button changes "
                            "on the pin under test only, each in its intended step, at least 6 samples stored "
                            "from each of that step's markers");

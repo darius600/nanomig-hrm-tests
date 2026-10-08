@@ -33,8 +33,19 @@ start:
         endif
         move.b  d0,d7
         move.w  VHPOSR(a0),(a1)+
-        move.w  JOY0DAT(a0),(a1)+
+        ifd     SWAPPHASE
+        move.w  d6,d1                          ; register-order contrast: in phase SWAPPHASE
+        lsr.w   #8,d1                          ; (512 samples; d6 counts down from
+        lsr.w   #1,d1                          ; TOTAL_SAMPLES-1) the two joystick
+        cmp.w   #3-SWAPPHASE,d1                ; registers are stored in the other order
+        bne.s   .plain
         move.w  JOY1DAT(a0),(a1)+
+        move.w  JOY0DAT(a0),(a1)+
+        bra.s   .vpos
+        endif
+.plain: move.w  JOY0DAT(a0),(a1)+
+        move.w  JOY1DAT(a0),(a1)+
+.vpos:
         move.w  VPOSR(a0),(a1)+                ; V8 is bit 0 (SPECIFICATION.md 4.5, PJ2)
         dbra    d6,.loop
 

@@ -173,5 +173,14 @@ WAIT1:
         beq.s   .w
         move.b  d0,d7
         move.w  VHPOSR(a0),(a1)+
+        ifd     WRONGREG
+        cmpa.l  #BUFBASE+768*WRONGREG,a1       ; register contrast: the samples of pin
+        blo.s   .potgor                        ; WRONGREG (192 samples of 4 bytes) store
+        cmpa.l  #BUFBASE+768*(WRONGREG+1),a1   ; JOY0DAT where POTGOR is read otherwise
+        bhs.s   .potgor
+        move.w  JOY0DAT(a0),(a1)+
+        rts
+        endif
+.potgor:
         move.w  POTGOR(a0),(a1)+
         rts
