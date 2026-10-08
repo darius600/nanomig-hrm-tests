@@ -31,24 +31,24 @@
 // MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF, so the line 'the program-stored constant $BEEF was read back' prints FAIL -> FAIL fixture (85 passed, 47 failed)
 // MUTATION C2 none impossible: the line prints FAIL only when the program does not write DONE, and a run that never writes DONE is not an allowed mutation, so no negative DONE mutation is recorded (not exercised at this boundary)
 // MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> FAIL C1, C5/R2, R2 x2, C8 x2, P2-DIVERSITY, C5-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (23 passed, 9 failed)
-// MUTATION R0 stimulus red NMH_MUTATE=R0: the pattern section of both stream buffers repeats a 40-word period of runs of 4 or 6 pixels of one value, so every run boundary is a colour change on every pattern line and no sample width divides all the run lengths: the line 'a unique hires-period sample width w and phase phi exist' prints FAIL -> FAIL R0, C5/R2, R2 x4, C6 x6, C3, C8 x2, R1, P2-DIVERSITY, C5-F7F10, R1-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (11 passed, 19 failed)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
+// MUTATION R0 stimulus red NMH_MUTATE=R0: the pattern section of both stream buffers repeats a 40-word period of runs of 4 or 6 pixels of one value, so every run boundary is a colour change on every pattern line and the run lengths (4, 6 and 8 samples) fit more than one sample width: the line 'a unique hires-period sample width w and phase phi exist' prints FAIL -> FAIL R0, C5/R2, R2 x4, C6 x6, C3, C8 x2, R1, P2-DIVERSITY, C5-F7F10, R1-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (11 passed, 19 failed)
+// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (64 passed, 38 failed)
+// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (64 passed, 38 failed)
 // MUTATION R2 stimulus red NMH_MUTATE=R2M: F5's BPLCON0=$2040 (SuperHires instead of hires) and F6's BPLCON0=$A000 (hires instead of lores): the lines 'F5's hires pixel mapping' and 'F6's lores pixel mapping' print FAIL -> FAIL R2 x3, C4; NOT GRADED P3.H, P3.L, P7.1, P5.L; 1 line not printed (77 passed, 50 failed)
 // MUTATION R2 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000): the line 'F2-F4's SuperHires pixel mapping' prints FAIL -> FAIL R2 x2, C4; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (38 passed, 8 failed)
 // MUTATION R2 stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, the program of V4B) -> FAIL R2 x2, C4; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (38 passed, 8 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=R2B: F1's closing band also writes BPLCON1=$0011, which delays the bitplane data for the rest of the frame: the line 'the same s that fits the top Q0 lines also fits the bottom Q0 lines' prints FAIL -> FAIL R2, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (66 passed, 45 failed)
-// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window (at most 128 hires periods wide): the run of F1's pure R lines falls outside 256-576 -> FAIL C5/R2, R2, C6, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (61 passed, 50 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=R2B: F1's closing band also writes BPLCON1=$0011, which delays the bitplane data for the rest of the frame: the line 'the same s that fits the top Q0 lines also fits the bottom Q0 lines' prints FAIL -> FAIL R2, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (66 passed, 36 failed)
+// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window (at most 128 hires periods wide): the run of F1's pure R lines falls outside 256-576 -> FAIL C5/R2, R2, C6, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (61 passed, 41 failed)
 // MUTATION C6 stimulus red NMH_MUTATE=C6B: F2-F5's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window: the lines of F2, F3, F4 and F5 print FAIL -> FAIL R2 x3, C6 x4, C4, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, P7.3; 1 line not printed (28 passed, 14 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> FAIL C5/R2, R2, C3, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (61 passed, 50 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3P: F1's BPLCON0=$B000 (hires, three bitplanes): plane 3 is fetched from the unprogrammed BPL3PT, so the clause 'no other bitplane address inside a line's fetches' fails -> FAIL C5/R2, R2, C3, C4, C9, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (60 passed, 51 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> FAIL C5/R2, R2, C3, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (61 passed, 41 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3P: F1's BPLCON0=$B000 (hires, three bitplanes): plane 3 is fetched from the unprogrammed BPL3PT, so the clause 'no other bitplane address inside a line's fetches' fails -> FAIL C5/R2, R2, C3, C4, C9, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (60 passed, 42 failed)
 // MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6 -> FAIL R2 x2, C6, C3, C4, C9, C7 x2, R1, C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10; NOT GRADED P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (61 passed, 56 failed)
 // MUTATION C4 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: the pointer values of the planned header are missing -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1K x12, P1J x12, P7.3 (41 passed, 7 failed)
-// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (66 passed, 45 failed)
+// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (66 passed, 36 failed)
 // MUTATION C9 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: sprite 1 fetches from the address its pointer reached in F1's frame, past the null sprite -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1K x12, P1J x12, P7.3 (41 passed, 7 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00: the timing line prints FAIL, the band-count line holds -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (67 passed, 44 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=C7C: F1's Q3 band change is absent (11 bands instead of 12): the band-count line prints FAIL -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (67 passed, 44 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=V3A: F1 in hires with sixteen COLOR01 bands instead of the S0-S3 bands (16 bands instead of 12): the band-count line prints FAIL -> FAIL C5/R2, R2, C4, C7, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (63 passed, 48 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00: the timing line prints FAIL, the band-count line holds -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (67 passed, 35 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=C7C: F1's Q3 band change is absent (11 bands instead of 12): the band-count line prints FAIL -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (67 passed, 35 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=V3A: F1 in hires with sixteen COLOR01 bands instead of the S0-S3 bands (16 bands instead of 12): the band-count line prints FAIL -> FAIL C5/R2, R2, C4, C7, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (63 passed, 39 failed)
 // MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3: the line 'F1 Q0 diversity' (8 of 64 triples) and the line of pair coverage (0 of 203 bands) print FAIL -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (35 passed, 8 failed)
 // MUTATION C8 stimulus red NMH_MUTATE=C8: as above, the line 'F1 Q0 diversity' -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (35 passed, 8 failed)
 // MUTATION R1 stimulus red NMH_MUTATE=C4: F5's list points at itself, so the frames after F5 are decoded from repeated lines: the pairs of output copies of a graded source line differ -> FAIL R2 x2, C6, C3, C4, C9, C7 x2, R1, C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10; NOT GRADED P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (61 passed, 56 failed)
@@ -64,8 +64,8 @@
 // MUTATION P1.3R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
 // MUTATION P1.3G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
 // MUTATION P1.3B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
-// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000: only F2-F4's single palette Q0 populates the groups, 0 of 12 (c, X) combinations have two palettes -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
-// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
+// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000: only F2-F4's single palette Q0 populates the groups, 0 of 12 (c, X) combinations have two palettes -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (64 passed, 38 failed)
+// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x12 (64 passed, 38 failed)
 // MUTATION P2.R stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 49 failed)
 // MUTATION P2.G stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 49 failed)
 // MUTATION P2.B stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 49 failed)
@@ -73,9 +73,9 @@
 // MUTATION P3.L stimulus red NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC, so Lores shows 4 distinct values per component and SuperHires (7, 9, 9) no longer lies below it -> FAIL P3.L, P7.1 (84 passed, 48 failed)
 // MUTATION P7.1 stimulus red NMH_MUTATE=V3B: the Hires half as for P3.H: P7.1 prints FAIL (P3.H fails, P3.L holds) -> FAIL P3.H, P7.1 (84 passed, 48 failed)
 // MUTATION P7.1 stimulus red NMH_MUTATE=V3C: the Lores half as for P3.L: P7.1 prints FAIL (P3.H holds, P3.L fails) -> FAIL P3.L, P7.1 (84 passed, 48 failed)
-// MUTATION V4c stimulus red NMH_MUTATE=V4C: F2's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F2 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x2; NOT GRADED P4 x160, P5.L, P1K x12, P1J x12, P7.3 (54 passed, 10 failed)
-// MUTATION V4c stimulus red NMH_MUTATE=V4C: F3's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F3 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x2; NOT GRADED P4 x160, P5.L, P1K x12, P1J x12, P7.3 (54 passed, 10 failed)
-// MUTATION V4c none impossible: the F4 line cannot print FAIL through a difference: the lines of F4's null band (window lines 90-91) lie inside the population its baseline is built from (window lines 89-199), so a compared pixel with a matched triple equals the baseline of that triple by construction; only the population guard (checked=0) can fail it, and that is not a difference (unfalsifiable at this boundary)
+// MUTATION V4c stimulus red NMH_MUTATE=V4C: F2's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F2 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x3; NOT GRADED P4 x192, P5.L, P1K x12, P1J x12, P7.3 (53 passed, 11 failed)
+// MUTATION V4c stimulus red NMH_MUTATE=V4C: F3's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F3 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x3; NOT GRADED P4 x192, P5.L, P1K x12, P1J x12, P7.3 (53 passed, 11 failed)
+// MUTATION V4c stimulus red NMH_MUTATE=V4C: F4's null band also inverts bit 11 of COLOR01 for part of its own first line (after its MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F4 line prints FAIL through a difference (checked=1120, diffs=157), not through its population guard -> FAIL V4c x3; NOT GRADED P4 x192, P5.L, P1K x12, P1J x12, P7.3 (53 passed, 11 failed)
 // MUTATION P4.n0b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
 // MUTATION P4.n0b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
 // MUTATION P4.n0b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
@@ -1089,10 +1089,10 @@ bool check_frame_header(const FrameCop& fc, uint16_t expected_bplcon0, const std
 // ---- R2: "in F1-F6 the same s fits the bottom Q0 lines" --
 // re-runs find_s on the tail population (after the frame's own closing
 // band) and checks it agrees with the s already found from the top lines.
-bool check_bottom_s(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf, int close_band_idx) {
+bool check_bottom_s(const std::vector<nmh::VideoSample>& video, const GradedFrame& gf, int close_band_idx, int first_line_after = 1) {
     if (!gf.ok || close_band_idx < 0 || close_band_idx >= (int)gf.fc.bands.size()) return false;
     std::vector<int> idxs;
-    int lo = gf.fc.bands[close_band_idx].line + 1;
+    int lo = gf.fc.bands[close_band_idx].line + first_line_after;
     for (int i = lo; i <= 199 && i < (int)gf.lines.size(); ++i) idxs.push_back(i);
     if (idxs.empty() || gf.xR <= gf.xL) return false;
     SSearch ss = find_s(video, gf.lines, gf.out_of, idxs, gf.mode, gf.w, gf.phi, (long)gf.xL, (long)gf.xR);
@@ -1962,13 +1962,13 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
                 " s=" + std::to_string(f1.s) + " xL=" + std::to_string(f1.xL) + " xR=" + std::to_string(f1.xR));
 
     // "in F1-F6 the same s fits the bottom Q0 lines" (5/R2) --
-    // re-searched independently from the top-line s already found. The
-    // closing restore band is the last band of a frame, F4's the one before
-    // its null band.
+    // re-searched independently from the top-line s already found. The tail
+    // starts after the frame's last band; in F4 that is the V4c null band
+    // (band 33, two lines), so F4's tail is lines 92-199.
     for (int f = 1; f <= 6; ++f) {
         int nb = (int)gfr[f]->fc.bands.size();
-        int close_idx = f == 4 ? nb - 2 : nb - 1;
-        pre[f].r2b = pre[f].map && close_idx >= 0 && check_bottom_s(cap.video, *gfr[f], close_idx);
+        int close_idx = nb - 1;
+        pre[f].r2b = pre[f].map && close_idx >= 0 && check_bottom_s(cap.video, *gfr[f], close_idx, f == 4 ? 2 : 1);
     }
     bool r2_bottom = true;
     for (int f = 1; f <= 6; ++f) r2_bottom = r2_bottom && pre[f].r2b;
@@ -2284,8 +2284,8 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         GradedFrame& g = *gfr[f];
         if (!shr_pop(g)) continue;
         std::vector<int> idxs; for (int i=0;i<24 && i<(int)g.lines.size();++i) idxs.push_back(i);
-        int close_idx = f == 4 ? 32 : 80;
-        if ((int)g.fc.bands.size() > close_idx) { int lo=g.fc.bands[close_idx].line+1; for (int i=lo;i<=199 && i<(int)g.lines.size();++i) idxs.push_back(i); }
+        int close_idx = f == 4 ? 33 : 80;
+        if ((int)g.fc.bands.size() > close_idx) { int lo=g.fc.bands[close_idx].line+(f == 4 ? 2 : 1); for (int i=lo;i<=199 && i<(int)g.lines.size();++i) idxs.push_back(i); }
         *bls[f] = build_baseline(cap.video, g.lines, g.out_of, idxs, g.mode, g.s, g.w, g.phi, (long)g.xL, (long)g.xR);
     }
 
@@ -2321,7 +2321,7 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         }
         if (!have_band) { checks.record(std::string("V4c precondition (") + fname + "): closing restore band not decoded, NOT GRADED"); return; }
         std::string label = std::string("V4c precondition (SPECIFICATION.md 7/P4 contrast, ") + fname +
-                       "'s closing restore band): the null case changes no graded pixel (NOT OBSERVED), checked=" +
+                       std::string(f == 4 ? "'s null band" : "'s closing restore band") + "): the null case changes no graded pixel (NOT OBSERVED), checked=" +
                        std::to_string(checked) + " diffs=" + std::to_string(diffs);
         emit_line(checks, gp, true, checked > 0 && diffs == 0, label, why);
         v4c_ok[f] = gp && checked > 0 && diffs == 0;
@@ -2526,7 +2526,7 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
 
     // ---- P1J: the full key claim, letters and dashes together (SPECIFICATION.md 7/P1 item 8):
     // P1.cX, the two letters, and P1K.cX, the two dashes and every other register bit. PASS when both pass, FAIL when
-    // either fails, not graded when either is not graded and neither fails.
+    // both are graded and either fails, not graded when either is not graded.
     {
         static const char* kSuffix[3] = {"r","g","b"};
         for (int c = 0; c < 4; ++c) {
@@ -2538,10 +2538,13 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
                 std::string head = "P1J." + cx + " APPC-bplkeykey.c" + std::to_string(c) + kSuffix[comp] + " p.301: ";
                 std::string why = !g_p1 ? "P1 preconditions: " + why_p1
                                         : p1k_state[c][comp] == 3 ? std::string("P1K NOT OBSERVABLE, L1") : std::string("P1K not graded");
-                joint(a, bk,
-                      head + "P1." + cx + " (the two letters) and P1K." + cx +
-                      " (the two dashes: no other register bit carries this component of the Color) together; P1." + cx + " / P1K." + cx + ": ",
-                      head + "P1." + cx + " and P1K." + cx + " together -- NOT GRADED (" + why + ")");
+                if (a == 0 || bk == 0)
+                    checks.record(head + "P1." + cx + " and P1K." + cx + " together -- NOT GRADED (" + why + ")");
+                else
+                    checks.expect(a == 1 && bk == 1,
+                                  head + "P1." + cx + " (the two letters) and P1K." + cx +
+                                  " (the two dashes: no other register bit carries this component of the Color) together; P1." + cx + " / P1K." + cx + ": " +
+                                  (a == 1 ? "holds" : "fails") + " / " + (bk == 1 ? "holds" : "fails"));
             }
         }
     }

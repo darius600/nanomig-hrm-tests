@@ -341,7 +341,11 @@ F4TAB:
 				ifd	MUT_C6B
 				include	"bp_cop_f4_vc6b.i"
 				else
+				ifd	MUT_V4C
+				include	"bp_cop_f4_vc4n.i"
+				else
 				include	"bp_cop_f4_base.i"
+				endif
 				endif
 				endif
 				endif
