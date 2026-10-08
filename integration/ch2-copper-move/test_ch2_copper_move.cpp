@@ -1060,7 +1060,7 @@ void run(Checks& checks, const std::string& dir, const std::string& mv) {
                   "(run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)");
     checks.expect(r2_ok,
                   "P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 "
-                  "ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c1.s2 ch2-starting-the-copper-after-reset.c2.s2 "
+                  "ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c3 "
                   "ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register "
                   "(COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; "
                   "same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, "

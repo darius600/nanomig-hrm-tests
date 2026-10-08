@@ -789,9 +789,12 @@ change.
 | `ch2-location-registers.c11` | 25 | P5, P6 |
 | `ch2-location-registers.c3.s2` | 25 | P5 (bits 15-1) |
 | `ch2-location-registers.c5.s2` | 25 | P5 (bits 15-1) |
+| `ch2-location-registers.c16`, `.c17` | 25 | P5 (R2) |
 | `COP2-control-register.c9` | 26 | P7 (bit 1 set only) |
 | `COP2-control-register.c11` | 26 | P7 |
 | `COP2-control-register.c14` | 26 | D9 |
+| `ch2-jump-address-strobes.c1`, `.c7` | 26 | P5 (R2) |
+| `ch2-starting-the-copper-after-reset.c3` | 30 | P5 (R2) |
 | `COP2-a-copper-loop-example.c4` | 32 | D4 |
 | `COP2-a-copper-loop-example.c16` | 33 | D4 |
 | `COP2-using-the-copper-with-the-blitter.c4` | 35 | D2 |
@@ -817,6 +820,7 @@ change.
 | `COP2-copins-fields-p275.c7`, `.c8` | 275 | P3 |
 | `ch2-appa-copins.c115` | 275 | P3 |
 | `ch2-appa-copins.c116` | 275 | P1, P3 |
+| `ch2-appa-copins.c142`, `.c146` | 276 | P5 (R2) |
 | `ch2-appb-legend.c6.s2` | 287 | P5 |
 | `appB-note.c9` | 288 | P5, P8 |
 | `appB-note.c11` | 288 | P8 |
@@ -947,7 +951,7 @@ PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 2 (5, 0) [R2,
 PASS: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
 MEASURED: P5 [R2, OCS] first $20004; restart accesses: $20004 $20004 $20004 $20004 $20004; extra reads (the word after the end WAIT, in no pass): 5 at $20008
 PASS: P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC (run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)
-FAIL: P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c1.s2 ch2-starting-the-copper-after-reset.c2.s2 ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register (COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004
+FAIL: P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c3 ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register (COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004
 PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [fx68k core, 68000 mode]
 PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [fx68k core, 68000 mode]
 MEASURED: P6 [fx68k core, 68000 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
@@ -1052,7 +1056,7 @@ PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 2 (5, 0) [R2,
 PASS: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
 MEASURED: P5 [R2, OCS] first $20004; restart accesses: $20004 $20004 $20004 $20004 $20004; extra reads (the word after the end WAIT, in no pass): 5 at $20008
 PASS: P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC (run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)
-FAIL: P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c1.s2 ch2-starting-the-copper-after-reset.c2.s2 ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register (COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004
+FAIL: P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c3 ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register (COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004
 PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [tg68k core, 68000 mode]
 PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [tg68k core, 68000 mode]
 MEASURED: P6 [tg68k core, 68000 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
