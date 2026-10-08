@@ -199,7 +199,7 @@ directly after an end WAIT's second word ($FFFE), made after the read of that
 second word and before the next restart. It is printed as a MEASURED line and
 belongs to no pass (Section 8, A1). A *restart access* is the first Copper
 access after the Copper has read the second word ($FFFE) of its list's end WAIT
-that is not the extra read, that is, the first access at a list start. While
+that is not the extra read. While
 waiting, the Copper "does not use the memory bus at all" (p.19; p.22 "the
 Copper is off the bus"), so this access is where the Copper restarts at
 vertical blank (p.25, p.30). The moment of the restart is not used (Section 2,
@@ -490,18 +490,20 @@ S($38000). The CPU idles for 8 fields.
 
 **Observation.** Copper accesses at the port from marker 0 until the end of the
 6th field after the enable marker (the Copper's first reads precede the enable
-marker, Section 8, A3). Run sequences of the observed fields.
+marker, Section 8, A3). Rows of the six complete fields after the enable marker
+(fields 1 to 6); run sequences of fields 3 to 6.
 
 **Expected.**
 - (i) In every pass, the Copper reads $38008 and $3800A (MOVE A) after its read
-  of $38006, and in every observed field the run after (F,F,F) is (0,F,0).
-- (ii) MOVE B is not performed: in every observed field no row shows (F,0,0),
-  and the last non-black run of the field, COLOR00's value at the field
+  of $38006, and in each of fields 3 to 6 the run after (F,F,F) is (0,F,0).
+- (ii) MOVE B is not performed: in none of the six complete fields does a row
+  show (F,0,0), and in each of fields 3 to 6 the last non-black run of the field, COLOR00's value at the field
   boundary before the restart, is (0,F,0). The Copper's reads of $38010 and
   $38012 in the interval are printed as MEASURED lines and are not graded
   (Section 8, A2).
 
-"Never" is graded over the whole interval of six fields. A finite run cannot
+"Never" is graded over all six complete fields of the interval, the rows of
+each of fields 1 to 6. A finite run cannot
 establish more than that.
 Source: p.19 "When the WAIT condition has been satisfied, the Copper ... move[s]
 the specified data into the selected special-purpose register"; p.23 as quoted.
@@ -562,6 +564,13 @@ Run R1 and R2 in ECS and in OCS. All addresses are below $80000, inside the
 - R2: the first Copper access after marker 2 is at $25A5C. Every restart access
   after it is at $20004.
 
+The two runs are graded on two lines with the same comparator: P5-LOCATION
+grades run R1 (ECS and OCS), and P5-LOCATION-R2 grades run R2 (ECS and OCS).
+P5-LOCATION-R2 carries the claims R2 contradicts: p.25 (a jump address strobe
+loads the location register into the program counter), p.26 (COPJMP2 restarts
+the Copper from COP2LC), p.30 and p.276 (a strobe written before Copper DMA is
+turned on gives a known start address).
+
 "each vertical blanking interval" is graded on every restart in the interval.
 Sources: p.25 (H = most significant data at the lower address, L = least
 significant at the higher; "you write the 18-bit address by moving one long word
@@ -572,7 +581,12 @@ register is loaded into the Copper program counter"; p.26 "COPJMP2 Restart
 Copper from address contained in COP2LC"; p.25 and p.288 "Used to
 automatically restart pointers, such as the Copper program counter (during
 vertical blank)"; p.32 "You can change the value in the location registers at
-any time".
+any time"; p.30 "At power-on or reset time, you must initialize one of the Copper
+location registers (COP1LC or COP2LC) and write to its strobe address before
+Copper DMA is turned on. This ensures a known start address and known state";
+p.276 "They are transferred to the program counter whenever strobe addresses
+COPJMP1 or COPJMP2 are written" and "This insures a determined startup address
+and state".
 
 **Preconditions.**
 - (a) No Copper access occurs between marker 0 and marker 2, the marker written
@@ -584,8 +598,9 @@ any time".
 
 **Contrasting cases.**
 - Main (R1): R1' predicts $40002 (H = $0004, L = $0002) for the first access
-  and every restart, so the R1 check goes red. Main (R2): R2' predicts $20004
-  for the first access, so the R2 check goes red. The marker-4 write in R1 is
+  and every restart, so P5-LOCATION goes red. Main (R2): R2' strobes COPJMP1
+  and starts at $20004, which is what R2 measures; no contrast can make
+  P5-LOCATION-R2 greener, as it is red in the unmutated run. The marker-4 write in R1 is
   itself the contrast for "every restart at COP1LC": the restart address changes
   after it.
 - (a): enable Copper DMA directly after the strobe and before writing markers 2
@@ -849,6 +864,7 @@ RECORDED line that gives this as the reason.
 
 
 
+
 ---
 
 ## 7. Recorded run
@@ -904,8 +920,8 @@ PASS: P4-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once
 PASS: P4-ATTR: the program's listing shows no CPU data access to the Copper list region $38000-$380FF or to a parked region of another channel
 PASS: P4-PRE-A: (a) in every pass of the interval the Copper reads $3800C and $3800E (the unsatisfiable WAIT) (6 complete passes, at least 4 needed)
 PASS: P4-PRE-B: (b) every pass after the first begins with a restart access at $38000
-MEASURED: P4 run sequences of the observed fields [FFF 0F0 ][FFF 0F0 ][FFF 0F0 ][FFF 0F0 ]; reads of $38010 or $38012 in the interval: 6 (not graded); extra reads (the word after the end WAIT, in no pass): 6 at $38010
-PASS: P4-MOVE-AFTER-WAIT: [p19] ch2-about-the-copper.c18.s2: the Copper performs MOVE A (reads $38008 and $3800A after $38006, and every observed field shows (0,F,0) after (F,F,F)) and never performs MOVE B behind the unsatisfiable WAIT (no (F,0,0) row, and (0,F,0) is the last colour of the field) in all six fields
+MEASURED: P4 sampled rows per field of the interval: 625 625 625 625 625 625; run sequences of fields 3 to 6 [FFF 0F0 ][FFF 0F0 ][FFF 0F0 ][FFF 0F0 ]; reads of $38010 or $38012 in the interval: 6 (not graded); extra reads (the word after the end WAIT, in no pass): 6 at $38010
+PASS: P4-MOVE-AFTER-WAIT: [p19] ch2-about-the-copper.c18.s2: the Copper performs MOVE A (reads $38008 and $3800A after $38006, and each of fields 3 to 6 shows (0,F,0) after (F,F,F)) and never performs MOVE B behind the unsatisfiable WAIT (no (F,0,0) row in any of the six complete fields, and (0,F,0) is the last colour of each of fields 3 to 6)
 PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R1, ECS]
 PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R1, ECS]
 PASS: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 2, written before the DMACON write (0) [R1, ECS]
@@ -930,8 +946,8 @@ PASS: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 2, writt
 PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 2 (5, 0) [R2, OCS]
 PASS: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
 MEASURED: P5 [R2, OCS] first $20004; restart accesses: $20004 $20004 $20004 $20004 $20004; extra reads (the word after the end WAIT, in no pass): 5 at $20008
-PASS: P5-CTRL-LOCATION: control on the same measurement basis as P5-LOCATION: run R1 in ECS and OCS, graded by the same comparator, starts at $20004 after the COPJMP1 strobe, restarts at $20004, and restarts at $25A5C after the write without a strobe
-FAIL: P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC (R1 in ECS and OCS: $20004, then $25A5C after the write without a strobe; R2: the COP2 strobe starts at $25A5C and restarts are at $20004)
+PASS: P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC (run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)
+FAIL: P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c1.s2 ch2-starting-the-copper-after-reset.c2.s2 ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register (COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004
 PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [fx68k core, 68000 mode]
 PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [fx68k core, 68000 mode]
 MEASURED: P6 [fx68k core, 68000 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
@@ -1009,8 +1025,8 @@ PASS: P4-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once
 PASS: P4-ATTR: the program's listing shows no CPU data access to the Copper list region $38000-$380FF or to a parked region of another channel
 PASS: P4-PRE-A: (a) in every pass of the interval the Copper reads $3800C and $3800E (the unsatisfiable WAIT) (6 complete passes, at least 4 needed)
 PASS: P4-PRE-B: (b) every pass after the first begins with a restart access at $38000
-MEASURED: P4 run sequences of the observed fields [FFF 0F0 ][FFF 0F0 ][FFF 0F0 ][FFF 0F0 ]; reads of $38010 or $38012 in the interval: 6 (not graded); extra reads (the word after the end WAIT, in no pass): 6 at $38010
-PASS: P4-MOVE-AFTER-WAIT: [p19] ch2-about-the-copper.c18.s2: the Copper performs MOVE A (reads $38008 and $3800A after $38006, and every observed field shows (0,F,0) after (F,F,F)) and never performs MOVE B behind the unsatisfiable WAIT (no (F,0,0) row, and (0,F,0) is the last colour of the field) in all six fields
+MEASURED: P4 sampled rows per field of the interval: 625 625 625 625 625 625; run sequences of fields 3 to 6 [FFF 0F0 ][FFF 0F0 ][FFF 0F0 ][FFF 0F0 ]; reads of $38010 or $38012 in the interval: 6 (not graded); extra reads (the word after the end WAIT, in no pass): 6 at $38010
+PASS: P4-MOVE-AFTER-WAIT: [p19] ch2-about-the-copper.c18.s2: the Copper performs MOVE A (reads $38008 and $3800A after $38006, and each of fields 3 to 6 shows (0,F,0) after (F,F,F)) and never performs MOVE B behind the unsatisfiable WAIT (no (F,0,0) row in any of the six complete fields, and (0,F,0) is the last colour of each of fields 3 to 6)
 PASS: P5-RUN: the program ran to its DONE mark and wrote its markers once each in order [R1, ECS]
 PASS: P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel [R1, ECS]
 PASS: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 2, written before the DMACON write (0) [R1, ECS]
@@ -1035,8 +1051,8 @@ PASS: P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 2, writt
 PASS: P5-PRE-B: (b) at least 4 restart accesses occur after marker 2 (5, 0) [R2, OCS]
 PASS: P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address [R2, OCS]
 MEASURED: P5 [R2, OCS] first $20004; restart accesses: $20004 $20004 $20004 $20004 $20004; extra reads (the word after the end WAIT, in no pass): 5 at $20008
-PASS: P5-CTRL-LOCATION: control on the same measurement basis as P5-LOCATION: run R1 in ECS and OCS, graded by the same comparator, starts at $20004 after the COPJMP1 strobe, restarts at $20004, and restarts at $25A5C after the write without a strobe
-FAIL: P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC (R1 in ECS and OCS: $20004, then $25A5C after the write without a strobe; R2: the COP2 strobe starts at $25A5C and restarts are at $20004)
+PASS: P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC (run R1 in ECS and OCS: $20004 after the COPJMP1 strobe, restarts at $20004, then $25A5C after the write without a strobe)
+FAIL: P5-LOCATION-R2: [p25 p26 p30 p276] ch2-location-registers.c16 ch2-location-registers.c17 ch2-jump-address-strobes.c1 ch2-jump-address-strobes.c7 ch2-starting-the-copper-after-reset.c1.s2 ch2-starting-the-copper-after-reset.c2.s2 ch2-appa-copins.c142 ch2-appa-copins.c146: a jump strobe loads the program counter from its location register (COPJMP2 restarts from COP2LC), and a strobe written before Copper DMA is turned on gives a known start address; same comparator as P5-LOCATION, run R2 in ECS and OCS: the Copper's first fetch after the COPJMP2 strobe, written with Copper DMA off, is at $25A5C, and every restart is at $20004
 PASS: P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order [tg68k core, 68000 mode]
 PASS: P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1 [tg68k core, 68000 mode]
 MEASURED: P6 [tg68k core, 68000 mode] writes to $46000 between markers 1 and 2: 1 (data $1234), to $46002: 1 (data $5678), result words $1234 $5678
@@ -1077,11 +1093,11 @@ FAIL: P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length c
 71 passed, 2 failed
 ```
 
-**P5-LOCATION, run R2 (a measured result, no finding).** COPJMP2 is strobed
+**P5-LOCATION-R2, run R2 (a measured result, no finding).** COPJMP2 is strobed
 while Copper DMA is off. On both cores the first Copper access is at COP1LC's
 $20004, not at COP2LC's $25A5C, and every restart is at $20004 (the MEASURED
-lines for R2, ECS and OCS). P5-LOCATION is therefore red on both cores, and
-P5-CTRL-LOCATION, the same comparator on run R1 alone, is green. This is a
+lines for R2, ECS and OCS). P5-LOCATION-R2 is therefore red on both cores, and
+P5-LOCATION, the same comparator on run R1 alone, is green. This is a
 candidate for stage 5, nothing more.
 
 ---
@@ -1096,7 +1112,8 @@ have been changed to agree with it. Each rule gives its reason.
 word after a WAIT's second word before it waits or restarts. A Copper read at
 the word following an end WAIT's second word ($FFFE), before the next restart,
 is the *extra read*. It is printed as a MEASURED line and belongs to no pass.
-The restart access is the first access at a list start after it. P1 (a) and
+The restart access is the first Copper access after the end WAIT's second word
+that is not the extra read. P1 (a) and
 every pass definition follow this rule (Section 3; P1 (a); P2 (b); P3 (b);
 P4 (a), (b); P5 (c); P7 (c)).
 Reason: the first run read the word after the end WAIT in every pass on both
@@ -1128,5 +1145,4 @@ run is not graded is removed, and so is the entry for it in Section 2. P8-CTRL
 keeps grading the runs after the first, by the same comparator. In the
 recorded run the cores read three words before the first restart (red; the
 mechanism of NM-HRM-084).
-Reason: the pages do not say the first run is shorter. p.164 speaks of a data
-word that is thrown away, which does not name a count of fetches.
+Reason: the pages do not say the first run is shorter. p.164: "The length counter counts down once with each word that comes in"; the first data word, which "must be thrown away", is a word that comes in, so with p.145 step 4 (AUDxLEN is "the number of data words to be retrieved before starting at the address currently in AUDxLC") the first run also has AUD0LEN fetches.
