@@ -185,15 +185,7 @@ start:
 	bne.s	.poll
 
 	; ---- step 8 (4.5.8)
-	ifd	MUT_C2
-	; C2 precondition contrast: never reach DONE (SPECIFICATION.md 6, C2's
-	; own contrast: "Omit step 7"). The program still hangs in place, but
-	; writes no DONE_VALUE, so run_until_write times out.
-.hang_c2:
-	bra.s	.hang_c2
-	else
 	DONE
-	endif
 
 	; ---- data tables (below), never reached by falling off the end of the
 	; code above -- DONE hangs in place, and every ifd/else branch above

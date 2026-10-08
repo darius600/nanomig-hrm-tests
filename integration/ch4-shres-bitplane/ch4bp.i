@@ -60,5 +60,3 @@ FIXTUREVAL      equ     $BEEF
 
 ; C1 (OCS instead of ECS) is a harness Config change, made by the C++ test
 ; when NMH_MUTATE=C1 -- no program symbol needed; the SAME prog.bin runs.
-; C2 (never write DONE) needs its own tiny wrapper (prog_vc2.s) that
-; branches around the DONE macro directly; no data table involved.

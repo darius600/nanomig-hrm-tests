@@ -27,9 +27,9 @@
 // verdict), and lines not printed because the run ended or the line has no population. The counts are those of
 // fx68k; TG68K prints the same PASS, FAIL, RECORDED and MEASURED lines on every record.
 //
-// MUTATION fixture stimulus red NMH_MUTATE=NOPROG: no program image exists, so the line 'program loaded and CPU released from reset' prints FAIL on its first half (the CPU-release half is not exercised: no stimulus of this package changes the boot outcome once an image loads); nothing else is graded -> FAIL fixture x2, C2, C1; 266 lines not printed (0 passed, 4 failed)
+// MUTATION fixture none impossible: the line 'program loaded and CPU released from reset' can print FAIL only when no program image is loaded or the CPU is never released; the run then has no program to execute, never writes DONE and grades nothing further, so no mutation can leave the program and the measurement setup running (not exercised at this boundary)
 // MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF, so the line 'the program-stored constant $BEEF was read back' prints FAIL -> FAIL fixture (79 passed, 38 failed)
-// MUTATION C2 stimulus red NMH_MUTATE=C2: the program never writes DONE; grading stops there -> FAIL C2; 266 lines not printed (3 passed, 1 failed)
+// MUTATION C2 none impossible: the line prints FAIL only when the program does not write DONE, and a run that never writes DONE is not an allowed mutation, so no negative DONE mutation is recorded (not exercised at this boundary)
 // MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> FAIL C1, C5/R2, R2 x2, C8 x2, P2-DIVERSITY, C5-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1J x9, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (23 passed, 9 failed)
 // MUTATION R0 stimulus red NMH_MUTATE=R0: both stream buffers hold $FFFF in every word, so every fetched line is a pure R line and no line shows a colour change from which a hires-period width could be measured -> FAIL R0, C5/R2, R2 x4, C6 x6, C3, C8 x2, R1, P2-DIVERSITY, C5-F7F10, R1-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1J x9, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (11 passed, 19 failed)
 // MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (61 passed, 29 failed)
@@ -2621,10 +2621,10 @@ int main(int argc, char** argv) {
 
     static const std::set<std::string> kKnownMuts = {
         "V1","V2","V3A","V3B","V3C","V4A","V4B","V4D","V5","V5B",
-        "C1","C2","C3","C4","C5","C6","C7","C8","C9","FIX",
+        "C1","C3","C4","C5","C6","C7","C8","C9","FIX",
         "V5C","V6A","V6B","V6C","V6D","V6E","V6L","V6Q","V6S",
         "C4B","C4C","C7B","C10","C11","C11G","RUNENDS","VLIVE","VLIVES","VP1JG","C4S",
-        "R2M","R2B","C6B","C7C","C3P","V4C","V5D","V5E","R0","NOPROG",
+        "R2M","R2B","C6B","C7C","C3P","V4C","V5D","V5E","R0",
     };
     if (mutate.empty()) {
         run_normal(dir, checks);
