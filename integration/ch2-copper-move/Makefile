@@ -1,16 +1,30 @@
 # ch2-copper-move: see SPECIFICATION.md.
+#
+# Every program assembles with vasm's default 68000 mode. Every program is
+# assembled a second time with a listing (<name>.lst): the test reads the
+# listings to show that the CPU program executes no data access to a region
+# another channel uses (SPECIFICATION.md Section 6). Each listing is checked
+# against its image byte for byte before it is used.
+
+VASMFLAGS :=
 
 TEST_CPP := test_ch2_copper_move.cpp
-PROGS    := prog_p4 prog_p4_mut_extra prog_p4_mut_clearlate prog_p4_mut_swap \
-            prog_p3 prog_p3_nocopen prog_p3_nocopen_mut \
-            prog_p3_mut_wait0 prog_p3_mut_noclear prog_p3_c1 prog_p3_c2 \
-            prog_p3_g3 prog_p3_g4 prog_p3_g6 \
-            prog_p1a prog_p1a_clear prog_p1a_mut_p1p1 prog_p1a_mut_p1p2 \
-            prog_p1a_c1 prog_p1a_c2 prog_p1a_clear_c1 prog_p1a_nocopen \
-            prog_p2 prog_p2_mut_p2p1 prog_p2_c1 prog_p2_nocopen \
-            prog_p6 prog_p6_mut_p6p1 prog_p6_mut_shortcap prog_p6_nocopen prog_p6_c1 \
-            prog_p7 prog_p7_noaud0 prog_p7_noaud0_mut prog_p7_mut_p7p2 prog_p7_mut_p7p3 prog_p7_mut_p7p4 \
-            prog_p5 prog_p5_nocopen prog_p5_mut_p5p1 prog_p5_mut_p5p2 prog_p5_mut_p5p3 \
-            prog_p5_c1 prog_p5_c2 prog_p5_c3 prog_p5_mut_hlo prog_p5_mut_hhi
+PROGS    := prog_nodone \
+            prog_p1 prog_p1_a prog_p1_b prog_p1_attr \
+            prog_p2 prog_p2_attr \
+            prog_p3 prog_p3_dest prog_p3_fast prog_p3_attr \
+            prog_p4 prog_p4_b prog_p4_attr \
+            prog_p5_r1 prog_p5_r1x prog_p5_r1_a prog_p5_r1_b prog_p5_r1_attr \
+            prog_p5_r2 prog_p5_r2x \
+            prog_p6 prog_p6_value prog_p6_nopre \
+            prog_p7 prog_p7_a prog_p7_b prog_p7_c prog_p7_attr \
+            prog_p8 prog_p8_c prog_p8_len prog_p8_c_nolc prog_p8_noaud prog_p8_early prog_p8_attr
 
 include ../harness/nanomig.mk
+
+LSTS := $(addsuffix .lst,$(PROGS))
+
+%.lst: %.s $(HARNESS_DIR)/nanomig.i ch2move.i
+	$(VASM) -quiet -Fbin -I$(HARNESS_DIR) $(VASMFLAGS) -L $@ -o /dev/null $<
+
+test-fx68k test-tg68k: $(LSTS)

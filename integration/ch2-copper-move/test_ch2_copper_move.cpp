@@ -1,115 +1,25 @@
-// test_ch2_copper_move.cpp -- ch2-copper-move. See SPECIFICATION.md for
-// every proposition, its stimulus, its observation and its expected value.
-// This file only implements what SPECIFICATION.md already committed to.
+// test_ch2_copper_move.cpp -- ch2-copper-move. See SPECIFICATION.md for every
+// proposition, its stimulus, its observation and its expected value; this file
+// implements what that document commits to.
 //
-// NMH_MUTATE selects a mutated program (or a mutated grading path) in
-// place of its normal counterpart, one assertion at a time; none is
-// exercised by a plain `make test`.
+// NMH_MUTATE=<selector> runs only the proposition that owns the selector, with
+// the stimulus change the selector names; `make test` sets none.
 //
-// MUTATION P4-p1 stimulus red one extra word write lands between markers Ma and Mb, via NMH_MUTATE=P4-P1
-// MUTATION P4-p2 stimulus red the clearing loop runs after Mb instead of before Ma, via NMH_MUTATE=P4-P2
-// MUTATION P4-W1,P4-W2,P4-W3,P4-W4,P4-W5,P4-W6-D0,P4-W6-D1,P4-W7 stimulus red D0 and D1's halves exchanged, and W1's own immediate written pre-swapped, via NMH_MUTATE=P4-SWAP
-// MUTATION P3-p1,P3-i,P3-iii stimulus red the WAIT is line 0 (satisfied at once); (i) and (iii) are the
-//   page's own consequence of an instantly-satisfied WAIT, not a separate fault, via NMH_MUTATE=P3-P1
-// MUTATION P3-p2 stimulus red the clearing MOVE is removed (list starts with the WAIT), via NMH_MUTATE=P3-P2
-// MUTATION P3-ii stimulus red (C1) the WAIT is line $A0 (160) instead of $64, via NMH_MUTATE=P3-C1
-// MUTATION P3-fixture not exercised (C2) the WAIT is replaced by a park (never satisfied), so neither a
-//   WAIT-shaped nor a set-MOVE fetch ever occurs; P3-ii and P3-iv are recorded, not graded, via NMH_MUTATE=P3-C2
-// MUTATION G1 stimulus red (demonstrated once, on P3) the no-COPEN baseline also executes one CPU read inside the Copper region, via NMH_MUTATE=P3-G1
-// MUTATION G2 stimulus red (demonstrated on P3's own G1 baseline, prog_p3_nocopen.bin: DMACON started $8200) bit 7 of DMACONR reads 0
-// MUTATION G3 stimulus red (demonstrated once, on P3) COP1LCH is loaded with the decoy park D instead of L_3, via NMH_MUTATE=P3-G3
-// MUTATION G4 stimulus red (demonstrated once, on P3) the set-MOVE's data word diverges from $8004, via NMH_MUTATE=P3-G4
-// MUTATION G5 not exercised (demonstrated once, on P3) the same program run with NTSC selected, checked
-//   with the PAL rule, via a second Config on the normal binary: this boundary's own mean line length stays
-//   227.0 under NTSC selection too (both cores), so the page's own 227/228 alternation is not reproduced here
-// MUTATION G6 stimulus red (demonstrated once, on P3) the monitor loop gets extra delay per iteration, via
-//   NMH_MUTATE=P3-G6; on TG68K the same reduced sampling also carries away I4 and G5, a natural consequence
-//   of too few samples per line for either to measure anything, not a separate fault
-// MUTATION P1-p1 stimulus red half-step a_5's WAIT is replaced by a park, via NMH_MUTATE=P1-P1
-// MUTATION P1-p2 stimulus red the $D555 write is omitted, via NMH_MUTATE=P1-P2
-// MUTATION P1-set,P1-bit0 stimulus red (C1) b_0's IR1 is $009C (INTREQ) instead of INTENA, via NMH_MUTATE=P1-C1
-// MUTATION P1-set,P1-bit0 stimulus red (C2) b_0's IR2 is $8002 instead of $8001, via NMH_MUTATE=P1-C2
-// MUTATION P1-clear,P1-bit0 stimulus red b_0's IR2 is $0002 instead of $0001 in the clear list, via NMH_MUTATE=P1-CC1
-// MUTATION P2-p1 stimulus red the $AAAA write happens in step 3, before the Copper starts, via NMH_MUTATE=P2-P1.
-//   Measured, both cores identically: P2-p1, P2-ii and P2-iii,P2-iv all red (127 passed, 3 failed) -- P2-p1's
-//   own failed precondition also fails the two main checks it gates (4.5: a failed precondition never grades
-//   to a pass), not a separate fault.
-// MUTATION P2-ii,P2-iii,P2-iv stimulus red (contrasting case) $AAA8 is written instead of $AAAA, at the same
-//   point, graded against the main run's own words (specification 4.5's dedicated-mutation exception), via
-//   NMH_MUTATE=P2-C1. Measured, both cores identically: P2-ii and P2-iii,P2-iv both red (129 passed, 1 failed).
-// MUTATION P6-p1 stimulus red L6a is a WAIT (line $64) followed by a park at $0E3004, instead of a park at
-//   $0E3000, via NMH_MUTATE=P6-P1. Measured, both cores identically (PAL leg only; NTSC green): P6-p1, P6-i,
-//   P6-ii and P6-iii all red (126 passed, 4 failed) -- P6-i is the page's own consequence of a second,
-//   mid-field fetch; P6-ii and P6-iii follow P6-p1's own failed precondition (4.5).
-// MUTATION P6-p2 stimulus red the capture is short (MON_ITERS=6642, about 3 fields instead of 5), via
-//   NMH_MUTATE=P6-P2. Measured: 3 wraps on fx68k, 2 on TG68K -- short of the four-wrap bound on both, PAL leg
-//   only. P6-p1, P6-i, P6-ii and P6-iii also go red, following P6-p2's own failed precondition (4.5); both
-//   cores identically (125 passed, 5 failed).
-// MUTATION P6-p3 stimulus red (NTSC run) the same NTSC-graded capture is made with the harness's own PAL Config
-//   instead of NTSC, via NMH_MUTATE=P6-P3. Measured, both cores identically: largest kept V is $138 (the PAL
-//   value), so P6-p3 goes red, and P6-p1, P6-i, P6-ii and P6-iii follow it (4.5); NTSC leg only (125 passed,
-//   5 failed).
-// MUTATION P6-i stimulus red (contrasting case) in field 3 the CPU writes COP1LC=L6b once, with no strobe;
-//   graded against the main run's own "L6a in every field" comparator, via NMH_MUTATE=P6-C1. Measured: P6-i
-//   red on both cores (PAL leg only); the calibrated write's own marker (prog_p6.s, SEG_A_ITERS=8006) reads
-//   line $A8 on fx68k and $7C on TG68K, both inside the $64-$C8 window the guard checks (129 passed, 1 failed
-//   on both cores).
-// MUTATION G1 stimulus red (P7's own baseline) the no-AUD0EN baseline also executes one CPU read inside an
-//   audio region, via NMH_MUTATE=P7-G1. Measured, both cores identically: P7-p1 red (126 passed, 1 failed);
-//   P7-i, P7-ii and P7-iii are not graded for this stimulus (the header's own early-return rule).
-// MUTATION P7-p2 stimulus red DMACON is written $8203 (AUD0EN and AUD1EN), with AUD1LC also pointing at A,
-//   via NMH_MUTATE=P7-P2. Same early-return path as P7-G1 above; not independently re-run this round.
-// MUTATION P7-p3 stimulus red AUD0LC is set to B instead of A, via NMH_MUTATE=P7-P3. Same early-return path
-//   as P7-G1 above; not independently re-run this round.
-// MUTATION P7-p4 stimulus red AUD0LEN is 64 instead of 4, via NMH_MUTATE=P7-P4. Same early-return path as
-//   P7-G1 above; not independently re-run this round.
-// MUTATION P5-p1 stimulus red before the tenth phase-2 step the CPU waits for line 5 of the next field (V8=0
-//   and V=5, as the run's own start wait does), via NMH_MUTATE=P5-P1. Measured, both cores identically: P5-p1
-//   red through the range clause, and P5-p2 also red (a genuine vertical-blank restart now occurs, landing a
-//   fetch at D inside step 48's own window -- p.25's own "no matter what the Copper is doing" case, not a
-//   separate fault); P5-L, P5-H-low, P5-H-high and P5-phase3 follow via 4.5 (124 passed, 6 failed).
-// MUTATION P5-p2 stimulus red the park at $0C0020 is replaced by a WAIT (line 0) followed by a park at
-//   $0C0024, via NMH_MUTATE=P5-P2. Measured, both cores identically: only P5-p2 red (129 passed, 1 failed) --
-//   the landing at $0C0020 stays correct, so P5-L stays green (defect 7).
-// MUTATION P5-p3 stimulus red the ROM-overlay-clearing writes are omitted, via NMH_MUTATE=P5-P3. Measured,
-//   both cores identically: G4 and P5-p3 both red, with P5-L, P5-H-low, P5-H-high and P5-phase3 following via
-//   4.5 (124 passed, 6 failed).
-// MUTATION P5-p2 stimulus red (C1) phase 3's two words are exchanged, graded against the main run's own
-//   unchanged target ($0E9010, 4.5's dedicated-mutation exception), via NMH_MUTATE=P5-C1. Measured, both cores
-//   identically: only P5-phase3 red (129 passed, 1 failed); P5-L/P5-H-low/P5-H-high are unaffected.
-// MUTATION P5-L not exercised (C2) one extra step after the phase-1 step to $0C8000 -- MOVE.W #$4000,$DFF082
-//   only -- is a positive extension of coverage (a word write to COP1LCL alone leaves COP1LCH untouched), not
-//   a divergence from the main run: the specification's own prediction ($0C4000) is the correct landing, so
-//   this stimulus is graded the same as any other step and is expected green, via NMH_MUTATE=P5-C2. Measured,
-//   both cores identically: 130 passed, 0 failed.
-// MUTATION P5-L stimulus red (C3) the first phase-2 step strobes COPJMP1 instead of COPJMP2, graded against
-//   the main run's own unchanged target (target index 0, in the L bits 15-1 group), via NMH_MUTATE=P5-C3.
-//   Measured, both cores identically: only P5-L red (129 passed, 1 failed); the landing goes to D, not a
-//   stray fetch, so P5-p2 stays green.
-// MUTATION P5-H-low stimulus red one extra phase-1 step lands at the decoy D instead of S_H1's own A18 entry
-//   ($04F000), via NMH_MUTATE=P5-HLO. Measured, both cores identically: only P5-H-low red (129 passed,
-//   1 failed); P5-H-high is unaffected.
-// MUTATION P5-H-high stimulus red one extra phase-1 step lands at the decoy D instead of S_H1's own A19 entry
-//   ($08F000), via NMH_MUTATE=P5-HHI. Measured, both cores identically: only P5-H-high red (129 passed,
-//   1 failed); P5-H-low is unaffected.
-//
-// P1-B (the COP2LC 40-target address chain) is not built in this package.
-// P7's own contrasting case (specification P7.6, a mid-block AUD0LC write) is not built: it needs a CPU delay
-// calibrated against this run's own measured fetch timing, the same way as P6-C1's own field-3 write; not
-// reached this round.
+// MUTATION RECORDS (filled in below the includes)
 
 #include <algorithm>
-#include <array>
 #include <cstdint>
-#include <cstdlib>
 #include <cstdio>
-#include <functional>
+#include <cstdlib>
 #include <iostream>
+#include <map>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
 #include "nanomig_harness.h"
+#include "listing_scan.h"
 
 #ifndef NANOMIG_CORE_NAME
 #define NANOMIG_CORE_NAME unknown
@@ -119,17 +29,18 @@
 
 namespace {
 
-constexpr uint32_t kResults   = 0x0C0000;
+constexpr uint32_t kMarker    = 0x04F000;
 constexpr uint32_t kDoneAddr  = 0x0C0FFE;
 constexpr uint16_t kDoneValue = 0x600D;
+constexpr uint32_t kResults   = 0x0C0000;
+constexpr uint32_t kProgOrg   = 0x080400;
 constexpr uint64_t kBootBudget = 6'000'000;
-constexpr uint64_t kDoneRunBudget = 3'000'000;
-// Decoy park D ($0E8000-$0E8003, SPECIFICATION.md 4.2), written by every
-// program in this package so any Copper landing there (G3's own mutation)
-// reads a well-formed, never-satisfied WAIT rather than uninitialized RAM.
-constexpr uint32_t kDecoyD = 0x0E8000;
+// clk_sys cycles per field are measured from the vertical sync of each run;
+// this figure only sizes the run budgets (a field is 568,408 cycles in PAL).
+constexpr uint64_t kFieldCycles = 620'000;
 
-struct Checks {
+class Checks {
+public:
     void expect(bool condition, const std::string& label) {
         std::cout << (condition ? "PASS: " : "FAIL: ") << label << "\n";
         condition ? ++passed : ++failed;
@@ -139,2158 +50,1298 @@ struct Checks {
     int passed = 0, failed = 0;
 };
 
-uint32_t word_addr(uint32_t byte_addr) { return byte_addr / 2; }
+std::string hex(uint32_t v, int digits = 4) {
+    char b[16];
+    std::snprintf(b, sizeof b, "%0*X", digits, v);
+    return std::string("$") + b;
+}
 
-struct Capture {
-    bool loaded = false;
-    bool released = false;
-    std::optional<uint64_t> done;
-    std::vector<nmh::RamAccess> log;
+std::string num(uint64_t v) { return std::to_string(v); }
+
+using Poke = std::pair<uint32_t, uint16_t>; // byte address, word
+
+// Appends words at consecutive word addresses starting at `base`.
+void put(std::vector<Poke>& out, uint32_t base, std::initializer_list<uint16_t> words) {
+    for (uint16_t w : words) { out.push_back({base, w}); base += 2; }
+}
+
+struct Setup {
+    std::string bin;
+    std::vector<Poke> pokes;
+    nmh::Config cfg;
+    uint64_t budget = 12'000'000;
+    std::vector<uint32_t> peeks; // byte addresses read back after the run
 };
 
-Capture run_capture(const std::string& bin, uint64_t run_budget, nmh::Config cfg = nmh::Config{}) {
-    Capture c;
-    nmh::NanomigHarness h(cfg);
-    c.loaded = h.load_program(bin) > 0;
-    if (!c.loaded) return c;
-    c.released = h.boot(kBootBudget).cpu_released;
-    c.done = h.run_until_write(kDoneAddr, kDoneValue, run_budget);
-    c.log = h.ram_log();
-    return c;
+struct Run {
+    bool loaded = false, released = false;
+    std::optional<uint64_t> done;
+    std::vector<nmh::RamAccess> log;
+    std::vector<bool> held;
+    std::vector<nmh::VideoSample> video;
+    std::map<uint32_t, uint16_t> peeked;
+};
+
+Run run_program(const Setup& s) {
+    Run r;
+    nmh::NanomigHarness h(s.cfg);
+    r.loaded = h.load_program(s.bin) > 0;
+    if (!r.loaded) return r;
+    for (const auto& p : s.pokes) h.poke_word(p.first / 2, p.second);
+    r.released = h.boot(kBootBudget).cpu_released;
+    r.done = h.run_until_write(kDoneAddr, kDoneValue, s.budget);
+    r.log = h.ram_log();
+    r.video = h.video();
+    // The bus period is the smallest spacing between two port samples.
+    uint64_t period = 0;
+    for (size_t i = 1; i < r.log.size(); ++i) {
+        uint64_t d = r.log[i].cycle - r.log[i - 1].cycle;
+        if (d > 0 && (period == 0 || d < period)) period = d;
+    }
+    r.held = nmh::held_continuations(r.log, period);
+    for (uint32_t a : s.peeks) r.peeked[a] = h.peek_word(a / 2);
+    return r;
 }
 
-// Every write in the log at word address `w`, in cycle order.
-std::vector<uint64_t> write_cycles(const std::vector<nmh::RamAccess>& log, uint32_t w) {
-    std::vector<uint64_t> out;
-    for (const auto& a : log) if (a.is_write && a.word_addr == w) out.push_back(a.cycle);
+uint64_t budget_for(int fields) { return uint64_t(fields + 3) * kFieldCycles + 2'000'000; }
+
+// ---- markers ---------------------------------------------------------------
+
+struct Mark { uint64_t cycle; uint16_t value; };
+
+std::vector<Mark> marks(const Run& r) {
+    std::vector<Mark> out;
+    for (size_t i = 0; i < r.log.size(); ++i) {
+        const auto& a = r.log[i];
+        if (a.is_write && a.word_addr == kMarker / 2 && !r.held[i]) out.push_back({a.cycle, a.data});
+    }
     return out;
 }
 
-// Every write in the log whose word address lies in [lo,hi), in cycle order.
-std::vector<nmh::RamAccess> writes_in_range(const std::vector<nmh::RamAccess>& log, uint32_t lo, uint32_t hi) {
-    std::vector<nmh::RamAccess> out;
-    for (const auto& a : log) if (a.is_write && a.word_addr >= lo && a.word_addr < hi) out.push_back(a);
-    return out;
+// The cycle of the first write of marker value `v`; -1 if there is none.
+int64_t mark_cycle(const std::vector<Mark>& m, uint16_t v) {
+    for (const auto& x : m) if (x.value == v) return int64_t(x.cycle);
+    return -1;
 }
 
-// The data of the first write at word address `w` after cycle `after`
-// (strict), or nullopt.
-std::optional<uint16_t> data_after(const std::vector<nmh::RamAccess>& log, uint32_t w, uint64_t after) {
-    for (const auto& a : log) if (a.is_write && a.word_addr == w && a.cycle > after) return a.data;
-    return std::nullopt;
+bool marks_are(const std::vector<Mark>& m, std::initializer_list<uint16_t> want) {
+    if (m.size() != want.size()) return false;
+    size_t i = 0;
+    for (uint16_t w : want) if (m[i++].value != w) return false;
+    return true;
 }
 
-// Whether some write at word address `w`, before cycle `before` (strict),
-// carries the data `want`.
-bool wrote_before(const std::vector<nmh::RamAccess>& log, uint32_t w, uint64_t before, uint16_t want) {
-    for (const auto& a : log) if (a.is_write && a.word_addr == w && a.cycle < before && a.data == want) return true;
+// ---- Chip-memory port accesses by region --------------------------------------
+
+struct Region { uint32_t lo, hi; }; // byte addresses, inclusive
+
+bool in_regions(uint32_t byte_addr, const std::vector<Region>& regs) {
+    for (const auto& g : regs) if (byte_addr >= g.lo && byte_addr <= g.hi) return true;
     return false;
+}
+
+struct Acc { uint64_t t; uint32_t addr; uint16_t data; };
+
+constexpr uint64_t kForever = ~0ull;
+
+// Accesses at the port inside `regs` between cycles [t0,t1), a held bus cycle counted once.
+std::vector<Acc> accesses_in(const Run& r, const std::vector<Region>& regs, bool writes, uint64_t t0, uint64_t t1) {
+    std::vector<Acc> out;
+    for (size_t i = 0; i < r.log.size(); ++i) {
+        const auto& a = r.log[i];
+        if (a.is_write != writes || r.held[i] || a.cycle < t0 || a.cycle >= t1) continue;
+        if (in_regions(a.word_addr * 2, regs)) out.push_back({a.cycle, a.word_addr * 2, a.data});
+    }
+    return out;
+}
+std::vector<Acc> reads_in(const Run& r, const std::vector<Region>& regs, uint64_t t0 = 0, uint64_t t1 = kForever) {
+    return accesses_in(r, regs, false, t0, t1);
+}
+std::vector<Acc> writes_in(const Run& r, const std::vector<Region>& regs, uint64_t t0 = 0, uint64_t t1 = kForever) {
+    return accesses_in(r, regs, true, t0, t1);
+}
+
+// A pass (SPECIFICATION.md Section 3): the run of Copper reads from one restart
+// access up to and including the read of an end WAIT's second word ($FFFE). The
+// restart access is the first Copper access after that read. `complete` is
+// false for the run that the end of the observation interval cuts off.
+struct Pass { size_t first, last; bool complete; };
+
+std::vector<Pass> passes_of(const std::vector<Acc>& v) {
+    std::vector<Pass> out;
+    size_t start = 0;
+    for (size_t i = 0; i < v.size(); ++i) {
+        if (v[i].data == 0xFFFE) { out.push_back({start, i, true}); start = i + 1; }
+    }
+    if (start < v.size()) out.push_back({start, v.size() - 1, false});
+    return out;
+}
+
+// ---- video -------------------------------------------------------------------
+
+// A field is the output between two consecutive VSYNC leading edges; only the
+// fields that begin at or after cycle `t` and end before the capture does.
+struct Fld { size_t begin, end; };
+
+std::vector<Fld> complete_fields_after(const Run& r, uint64_t t) {
+    std::vector<Fld> out;
+    auto fr = nmh::find_frames(r.video);
+    for (size_t i = 1; i + 1 < fr.size(); ++i)
+        if (fr[i].begin >= t) out.push_back({fr[i].begin, fr[i].end});
+    return out;
+}
+
+// A row sample: the pixel halfway between two consecutive HSYNC leading edges
+// inside the field.
+struct Row { size_t idx; uint16_t rgb; }; // rgb = R<<8 | G<<4 | B
+
+std::vector<Row> rows_of(const Run& r, const Fld& f) {
+    std::vector<Row> out;
+    long prev_edge = -1;
+    bool prev = r.video[f.begin].hs;
+    for (size_t i = f.begin + 1; i < f.end; ++i) {
+        bool hs = r.video[i].hs;
+        if (hs && !prev) {
+            if (prev_edge >= 0) {
+                size_t mid = (size_t(prev_edge) + i) / 2;
+                const auto& v = r.video[mid];
+                out.push_back({mid, uint16_t((v.r << 8) | (v.g << 4) | v.b)});
+            }
+            prev_edge = long(i);
+        }
+        prev = hs;
+    }
+    return out;
+}
+
+// The run sequence of a field: its non-black row samples, equal neighbours collapsed.
+std::vector<uint16_t> run_sequence(const std::vector<Row>& rows) {
+    std::vector<uint16_t> out;
+    for (const auto& x : rows) {
+        if (x.rgb == 0) continue;
+        if (out.empty() || out.back() != x.rgb) out.push_back(x.rgb);
+    }
+    return out;
+}
+
+std::string seq_text(const std::vector<uint16_t>& s) {
+    std::string t;
+    for (uint16_t c : s) { char b[8]; std::snprintf(b, sizeof b, "%03X ", c); t += b; }
+    return t;
+}
+
+// The length of a colour clock in clk_sys cycles, calibrated on the run's own video: the doubled
+// output has two rows per Amiga line, and a PAL line is 227 colour clocks long (p.23). 0 if the
+// spacing of the rows is not a whole number of cycles per colour clock.
+uint64_t cck_cycles(const Run& r) {
+    std::vector<uint64_t> gaps;
+    long prev = -1;
+    bool hs = false;
+    for (size_t i = 0; i < r.video.size(); ++i) {
+        const bool now = r.video[i].hs;
+        if (now && !hs) {
+            if (prev >= 0) gaps.push_back(uint64_t(long(i) - prev));
+            prev = long(i);
+        }
+        hs = now;
+    }
+    if (gaps.size() < 100) return 0;
+    std::sort(gaps.begin(), gaps.end());
+    const uint64_t row = gaps[gaps.size() / 2];
+    const uint64_t line = 2 * row;
+    return line % 227 == 0 ? line / 227 : 0;
+}
+
+// ---- gating ------------------------------------------------------------------
+
+std::string first_word(const std::string& label) {
+    size_t e = label.find_first_of(": ");
+    return label.substr(0, e);
+}
+
+// A precondition that fails makes every line that depends on it NOT GRADED.
+struct Gate {
+    bool ok = true;
+    bool skipped = false; // the run itself failed: the preconditions that read its capture are NOT GRADED too
+    std::string unmet;
+    // The fixture: the program ran, wrote its markers and left a capture worth reading.
+    void run(Checks& c, bool cond, const std::string& label) {
+        c.expect(cond, label);
+        if (!cond) { ok = false; skipped = true; unmet += " " + first_word(label); }
+    }
+    // A precondition that reads the static listing only.
+    void stat(Checks& c, bool cond, const std::string& label) {
+        c.expect(cond, label);
+        if (!cond) { ok = false; unmet += " " + first_word(label); }
+    }
+    // A precondition that reads the capture.
+    void pre(Checks& c, bool cond, const std::string& label) {
+        if (skipped) {
+            c.record("NOT GRADED " + first_word(label) + ": the run did not produce a capture to read");
+            ok = false;
+            return;
+        }
+        c.expect(cond, label);
+        if (!cond) { ok = false; unmet += " " + first_word(label); }
+    }
+    // The line `id` is behind this gate and one of its preconditions does not hold.
+    void skip(Checks& c, const std::string& id) const {
+        c.record("NOT GRADED " + id + ": the precondition(s)" + unmet + " do not hold");
+    }
+};
+
+std::vector<lscan::Guard> parked_guards() {
+    return {{0x4C000, 0x4CFFF}, {0x4D000, 0x4DFFF}, {0x4E000, 0x4E0FF}, {0x44200, 0x442FF}};
+}
+
+// The CPU program's listing shows no data access beyond what each guard allows.
+bool listing_ok(const std::string& bin, std::vector<lscan::Guard> guards, std::string& why) {
+    for (const auto& g : parked_guards()) guards.push_back(g);
+    return lscan::guards_hold(bin, guards, kProgOrg, why);
+}
+
+bool dbg() { return std::getenv("NMH_DEBUG") != nullptr; }
+
+// The claim ids of the three tables that print "bit n of IR2 carries RDn"
+// (p.36 twice, p.274/275) and of the p.274/275 field list.
+std::string rd_ids(int bit) {
+    const std::string a = std::to_string(2 + 6 * (15 - bit));
+    const std::string b = std::to_string(15 + 6 * (15 - bit));
+    return "ch2-summary-of-copper-instructions.c" + a + " COP2-summary-of-copper-instructions.c" + a +
+           " COP2-copins-encoding.c" + a + " ch2-appa-copins.c" + b;
+}
+std::string rd_ids(int hi, int lo) {
+    std::string s;
+    for (int b = hi; b >= lo; --b) s += (s.empty() ? "" : " ") + rd_ids(b);
+    return s;
 }
 
 } // namespace
 
-// ---------------------------------------------------------------------
-// Shared instruments (SPECIFICATION.md 4.4): I1 (Copper instruction
-// fetches), I2 (the monitor loop's beam/INTENAR samples) and I4 (the
-// clk_sys-per-memory-cycle ratio), used by every Copper-driving proposition
-// below (P1-A, P3).
-namespace instr {
 
-// p.23: "In PAL, they are all 227 long" (227 colour clocks = memory
-// cycles per line).
-constexpr uint64_t kPalLineCck = 227;
+// =============================================================================
+// P1. A Copper MOVE writes its second word into the register its first word
+// names: for COLOR00, bits 11-0 appear bit for bit as the displayed colour.
+// =============================================================================
+namespace p1 {
 
-// One I2 sample: INTENAR, VPOSR, VHPOSR, in that order, and the port cycle
-// of the INTENAR store (I2: "Its time s is the port time of the INTENAR
-// store"). `s_vhposr` is the port cycle of the same sample's own VHPOSR
-// store (its third word) -- a later, separate time from `s`, needed where
-// a check's own bound is specified against the VHPOSR store itself
-// (SPECIFICATION.md P6.4(ii), defect 18), not the sample's `s`.
-struct Sample {
-    uint64_t s;
-    uint16_t intenar, vposr, vhposr;
-    uint64_t s_vhposr;
-    int V() const { return 256 * (vposr & 1) + ((vhposr >> 8) & 0xFF); }
-    int H() const { return vhposr & 0xFF; }
-};
+constexpr uint32_t kList = 0x30000;
+constexpr uint16_t kColours[9] = {0x0FFF, 0x0555, 0x0666, 0x0878, 0x0F80, 0x0AAA, 0x0999, 0x0787, 0x007F};
 
-// Parses every I2 sample from the writes the monitor loop made into
-// [buf_lo_word, buf_hi_word): three consecutive words per sample, in the
-// order the loop wrote them (INTENAR, VPOSR, VHPOSR), which is also their
-// cycle order.
-std::vector<Sample> parse_samples(const std::vector<nmh::RamAccess>& log,
-                                   uint32_t buf_lo_word, uint32_t buf_hi_word) {
-    std::vector<uint16_t> data;
-    std::vector<uint64_t> cyc;
-    for (const auto& a : log) {
-        if (a.is_write && a.word_addr >= buf_lo_word && a.word_addr < buf_hi_word) {
-            data.push_back(a.data);
-            cyc.push_back(a.cycle);
+std::vector<Poke> list_words(const std::string& mv) {
+    std::vector<Poke> pk;
+    const uint16_t waits[8] = {0x4001, 0x5001, 0x6001, 0x7001, 0x8001, 0x9001, 0xA001, 0xB001};
+    uint32_t a = kList;
+    for (int i = 0; i < 9; ++i) {
+        uint16_t ir1 = 0x0180;
+        uint16_t ir2 = kColours[i];
+        if (mv == "P1-MAIN" && i == 4) ir2 = 0x0F00;
+        if (mv == "P1-DA" && i == 4) ir1 = 0x0182;
+        put(pk, a, {ir1, ir2});
+        a += 4;
+        if (i < 8) {
+            uint16_t w = waits[i];
+            if (mv == "P1-C" && i == 2) w = 0x5001;
+            put(pk, a, {w, 0xFF00});
+            a += 4;
         }
     }
-    std::vector<Sample> out;
-    for (size_t i = 0; i + 2 < data.size(); i += 3)
-        out.push_back({cyc[i], data[i], data[i + 1], data[i + 2], cyc[i + 2]});
-    return out;
+    put(pk, a, {0xFFFF, 0xFFFE});
+    return pk;
 }
 
-// Discards samples whose V differs by more than 1 from both neighbours
-// (torn reads at the V8 boundary, I2).
-std::vector<Sample> discard_torn(const std::vector<Sample>& in) {
-    std::vector<Sample> out;
-    for (size_t i = 0; i < in.size(); ++i) {
-        bool torn = false;
-        if (i > 0 && i + 1 < in.size()) {
-            int dv_prev = std::abs(in[i].V() - in[i - 1].V());
-            int dv_next = std::abs(in[i].V() - in[i + 1].V());
-            if (dv_prev > 1 && dv_next > 1) torn = true;
-        }
-        if (!torn) out.push_back(in[i]);
+// The words of the list in address order.
+std::vector<uint16_t> list_image() {
+    std::vector<Poke> pk = list_words("");
+    std::vector<uint16_t> w;
+    for (const auto& p : pk) w.push_back(p.second);
+    return w;
+}
+
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    std::string bin = dir + "/prog_p1.bin";
+    if (mv == "P1-A") bin = dir + "/prog_p1_a.bin";
+    if (mv == "P1-B") bin = dir + "/prog_p1_b.bin";
+    if (mv == "P1-ATTR") bin = dir + "/prog_p1_attr.bin";
+    if (mv == "P1-RUN") bin = dir + "/prog_nodone.bin";
+    Setup s;
+    s.bin = bin;
+    s.pokes = list_words(mv);
+    s.budget = budget_for(9);
+    Run r = run_program(s);
+    auto m = marks(r);
+    const int64_t en = mark_cycle(m, 3);
+    const uint64_t m0 = mark_cycle(m, 0) >= 0 ? uint64_t(mark_cycle(m, 0)) : 0;
+    auto cf = en >= 0 ? complete_fields_after(r, uint64_t(en)) : std::vector<Fld>{};
+    const std::vector<Region> cop = {{kList, kList + 0xFF}};
+    Gate g;
+
+    g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2, 3}) && cf.size() >= 6,
+          "P1-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and the capture holds "
+          "at least six complete fields after the enable marker (" + num(cf.size()) + ")");
+    std::string why;
+    const bool attr_ok = listing_ok(bin, {{kList, kList + 0xFF, 0, 0}}, why);
+    g.stat(checks, attr_ok,
+          "P1-ATTR: the program's listing shows no CPU data access to the Copper list region " + hex(kList, 5) + "-" +
+          hex(kList + 0xFF, 5) + " or to a parked region of another channel" + (attr_ok ? std::string() : " (" + why + ")"));
+
+    // The observed fields are the 3rd to 6th complete fields after the enable marker.
+    std::vector<Acc> rd;
+    std::vector<Pass> ps;
+    if (cf.size() >= 6) {
+        rd = reads_in(r, cop, uint64_t(en), cf[5].end);
+        ps = passes_of(rd);
     }
-    return out;
-}
-
-struct Span { size_t begin, end; }; // [begin,end) indices into a Sample vector: one field
-
-// A wrap is where V falls by more than 200 between consecutive kept
-// samples (I2). Splits into fields at every wrap.
-std::vector<Span> find_fields(const std::vector<Sample>& s) {
-    std::vector<Span> out;
-    size_t start = 0;
-    for (size_t i = 1; i < s.size(); ++i) {
-        if (s[i - 1].V() - s[i].V() > 200) { out.push_back({start, i}); start = i; }
-    }
-    if (start < s.size()) out.push_back({start, s.size()});
-    return out;
-}
-
-// The indices, within one field, of every sample that starts a new line:
-// the first sample of each new V that persists into the following sample
-// (a single-sample blip that immediately reverts is a torn read at the V8
-// boundary that discard_torn's neighbour rule did not catch). Shared by
-// G5 (line spacing) and G6 (samples per line), so both measure the same
-// lines.
-std::vector<size_t> line_start_indices(const std::vector<Sample>& samples, const Span& fld) {
-    std::vector<size_t> out;
-    int last_v = -1;
-    for (size_t i = fld.begin; i < fld.end; ++i) {
-        if (samples[i].V() == last_v) continue;
-        bool persists = (i + 1 >= fld.end) || samples[i + 1].V() == samples[i].V();
-        if (!persists) continue;
-        out.push_back(i);
-        last_v = samples[i].V();
-    }
-    return out;
-}
-
-bool in_regions(uint32_t w, const std::vector<std::pair<uint32_t, uint32_t>>& regions) {
-    for (const auto& r : regions) if (w >= r.first && w < r.second) return true;
-    return false;
-}
-
-// I1: a Copper read is a read at the port whose address lies in a Copper
-// region.
-std::vector<nmh::RamAccess> copper_reads(const std::vector<nmh::RamAccess>& log,
-                                          const std::vector<std::pair<uint32_t, uint32_t>>& regions) {
-    std::vector<nmh::RamAccess> out;
-    for (const auto& a : log) if (!a.is_write && in_regions(a.word_addr, regions)) out.push_back(a);
-    return out;
-}
-
-// I1: an instruction fetch at X is a Copper read at X followed, as the
-// next Copper read, by a read at X+2. `reads` must already be in cycle
-// order (true of copper_reads()'s output, since ram_log() is itself
-// cycle-ordered).
-struct Fetch { uint32_t byte_addr; uint64_t t1, t2; uint16_t ir1, ir2; };
-
-struct FetchResult {
-    std::vector<Fetch> fetches;
-    std::vector<nmh::RamAccess> unpaired;
-};
-
-FetchResult pair_fetches(const std::vector<nmh::RamAccess>& reads) {
-    FetchResult r;
-    size_t i = 0;
-    while (i < reads.size()) {
-        if (i + 1 < reads.size() && reads[i + 1].word_addr == reads[i].word_addr + 1) {
-            r.fetches.push_back({reads[i].word_addr * 2, reads[i].cycle, reads[i + 1].cycle,
-                                  reads[i].data, reads[i + 1].data});
-            i += 2;
-        } else {
-            r.unpaired.push_back(reads[i]);
-            i += 1;
-        }
-    }
-    return r;
-}
-
-const Fetch* find_by_addr(const std::vector<Fetch>& v, uint32_t addr) {
-    for (const auto& f : v) if (f.byte_addr == addr) return &f;
-    return nullptr;
-}
-
-const Fetch* find_if(const std::vector<Fetch>& v, const std::function<bool(const Fetch&)>& pred) {
-    for (const auto& f : v) if (pred(f)) return &f;
-    return nullptr;
-}
-
-// A list execution: every fetch from one occurrence of `start_addr` (the
-// list's own first word, i.e. the Copper's restart point) up to, but not
-// including, the next. A fetch belongs to whichever execution's own start
-// it follows -- defined this way (by the restart fetch itself, not by any
-// sample) so that a restart which happens to precede that field's own next
-// I2 sample never gets attributed to the wrong execution.
-struct Exec { std::vector<Fetch> fetches; };
-
-std::vector<Exec> split_executions(const std::vector<Fetch>& all, uint32_t start_addr) {
-    std::vector<Exec> out;
-    for (const auto& f : all) {
-        if (f.byte_addr == start_addr) out.push_back(Exec{});
-        if (!out.empty()) out.back().fetches.push_back(f);
-    }
-    return out;
-}
-
-// G4: every Copper read's data equals the word this specification
-// prescribes for that address (SPECIFICATION.md 4.5), judged against the
-// reference table of the run actually under test -- a contrasting case's
-// own words, never the main run's (specification 4.5's "prescribed" rule).
-// `unpaired`, when given, is graded the same way (defect 28): the
-// specification puts $0000 words after every park precisely so that an
-// unpaired read of one of them is graded by G4 too, not only a paired
-// fetch's own IR1/IR2.
-bool check_g4(const std::vector<Fetch>& fetches, const std::vector<std::pair<uint32_t, uint16_t>>& ref,
-              const std::vector<nmh::RamAccess>& unpaired = {}) {
-    for (const auto& f : fetches) {
-        for (const auto& kv : ref) {
-            if (kv.first == f.byte_addr && f.ir1 != kv.second) return false;
-            if (kv.first == f.byte_addr + 2 && f.ir2 != kv.second) return false;
-        }
-    }
-    for (const auto& u : unpaired) {
-        uint32_t byte_addr = u.word_addr * 2;
-        for (const auto& kv : ref)
-            if (kv.first == byte_addr && u.data != kv.second) return false;
-    }
-    return true;
-}
-
-// I4: the clk_sys-per-memory-cycle ratio, measured from the capture
-// itself (p.24: "One horizontal count takes one cycle of the system
-// clock"), never assumed. For every run of two or more same-V samples
-// (a "line"), the ratio is (last sample's cycle - first sample's cycle) /
-// (last sample's H - first sample's H), rounded to the nearest integer.
-// A single sample's own INTENAR-to-VHPOSR gap can vary by a memory cycle
-// or so (I2: they are two separate register reads within the same loop
-// iteration), but that gap appears once at each end of a multi-sample
-// line, so it shrinks to a small fraction of the whole line's own ratio.
-// I4 passes only if every line's own ratio rounds to the same integer
-// (spec 4.4: "asserts that the ratio is constant over the capture").
-struct Ratio { bool ok = false; uint64_t kCck = 0; int lines = 0; int off = 0; };
-
-Ratio measure_ratio(const std::vector<Sample>& samples, const std::vector<Span>& fields) {
-    Ratio r;
-    std::vector<uint64_t> per_line;
-    for (const auto& fld : fields) {
-        size_t start = fld.begin;
-        for (size_t i = fld.begin + 1; i <= fld.end; ++i) {
-            bool boundary = (i == fld.end) || samples[i].V() != samples[start].V();
-            if (!boundary) continue;
-            if (i - 1 > start) {
-                int dh = samples[i - 1].H() - samples[start].H();
-                if (dh > 0) {
-                    uint64_t dc = samples[i - 1].s - samples[start].s;
-                    double ratio = (double)dc / (double)dh;
-                    per_line.push_back((uint64_t)(ratio + 0.5));
-                }
-            }
-            start = i;
-        }
-    }
-    if (per_line.empty()) return r;
-    std::sort(per_line.begin(), per_line.end());
-    uint64_t best = per_line[0]; size_t best_n = 0;
-    size_t i = 0;
-    while (i < per_line.size()) {
-        size_t j = i;
-        while (j < per_line.size() && per_line[j] == per_line[i]) ++j;
-        if (j - i > best_n) { best_n = j - i; best = per_line[i]; }
-        i = j;
-    }
-    r.kCck = best;
-    r.lines = (int)per_line.size();
-    r.off = (int)(per_line.size() - best_n);
-    r.ok = (r.off == 0);
-    return r;
-}
-
-// G5: the monitor's beam readings are sane (PAL): H in $00-$E2, V
-// non-decreasing per field, successive line starts 227 +/- tolerance
-// memory cycles apart on average (p.23). Line starts are the first
-// sample of each new V that persists into the following sample (a
-// single-sample blip that immediately reverts is a torn read at the V8
-// boundary that discard_torn's neighbour rule did not catch). A field's
-// own first line is excluded: the field boundary is a beam wrap, not a
-// sample, so the first detected "line start" can be mid-line.
-//
-// A sample's own H reading says directly how far past the true line
-// boundary it was taken (I2: the beam values are read shortly after s,
-// in program order); over a whole line's own samples, the smallest
-// (cycle - kCck*H) is the least lag-corrupted estimate of the true
-// boundary (jitter only ever adds to a read's own time, never subtracts,
-// so it is a lower bound approached, not a random walk around it). Per
-// pair this still carries the residual jitter of a single sample's own
-// three separate register reads (I2: INTENAR, then VPOSR, then VHPOSR)
-// and the rare torn read at the V/H boundary the neighbour rule does not
-// reach either -- a gross bound (40 memory cycles) catches only a
-// genuinely skipped line or lost sync. The 227-cycle line length itself
-// is checked on the *mean* of every corrected gap in the capture, which
-// only random, symmetric jitter cannot move by more than a small
-// fraction of one memory cycle: tight enough that NTSC's own 227/228
-// alternation (mean 227.5) or a wrong ratio of 7 or 9 (mean 259 or 202)
-// both fail outright.
-constexpr int64_t kGrossLineTolerance = 40;
-constexpr double kMeanLineTolerance = 0.3;
-
-struct G5Result {
-    bool ok = true;
-    int h_violations = 0, v_violations = 0, gap_violations = 0;
-    int diag_h = -1; int64_t diag_gap = 0; double mean_line = 0.0; int pairs = 0;
-};
-
-// h_max/mean_lo/mean_hi default to the PAL rule every existing caller (P4,
-// P3, P1-A, P2) relies on; P6's own NTSC run passes p.23's NTSC values
-// instead (SPECIFICATION.md P6.5) -- the gross per-pair bound stays
-// centred on 227 either way, since a 40-cycle tolerance already covers
-// NTSC's own 227/228 alternation.
-G5Result check_g5(const std::vector<Sample>& samples, const std::vector<Span>& fields, uint64_t kCck,
-                   int h_max = 0xE2, double mean_lo = (double)kPalLineCck - kMeanLineTolerance,
-                   double mean_hi = (double)kPalLineCck + kMeanLineTolerance) {
-    G5Result g;
-    if (kCck == 0) { g.ok = false; return g; }
-
-    double sum = 0.0;
-    for (const auto& fld : fields) {
-        for (size_t i = fld.begin; i < fld.end; ++i) {
-            if (samples[i].H() > h_max) { g.ok = false; ++g.h_violations; if (g.diag_h < 0) g.diag_h = samples[i].H(); }
-            if (i > fld.begin && samples[i].V() < samples[i - 1].V()) { g.ok = false; ++g.v_violations; }
-        }
-        auto idxs = line_start_indices(samples, fld);
-        std::vector<int64_t> anchor(idxs.size());
-        for (size_t k = 0; k < idxs.size(); ++k) {
-            size_t end = (k + 1 < idxs.size()) ? idxs[k + 1] : fld.end;
-            int64_t best = INT64_MAX;
-            for (size_t i = idxs[k]; i < end; ++i) {
-                int64_t v = (int64_t)samples[i].s - (int64_t)kCck * (int64_t)samples[i].H();
-                if (v < best) best = v;
-            }
-            anchor[k] = best;
-        }
-        // anchor[0] is the field's own first, possibly-partial line.
-        for (size_t k = 2; k < anchor.size(); ++k) {
-            double gap_mem = (double)(anchor[k] - anchor[k - 1]) / (double)kCck;
-            sum += gap_mem;
-            ++g.pairs;
-            int64_t delta = (int64_t)(gap_mem - (double)kPalLineCck);
-            if (delta < 0) delta = -delta;
-            if (delta > kGrossLineTolerance) {
-                g.ok = false; ++g.gap_violations;
-                if (!g.diag_gap) g.diag_gap = (int64_t)gap_mem;
-            }
-        }
-    }
-    if (g.pairs > 0) {
-        g.mean_line = sum / (double)g.pairs;
-        if (g.mean_line < mean_lo || g.mean_line > mean_hi) g.ok = false;
-    } else {
-        g.ok = false;
-    }
-    return g;
-}
-
-// G6: every interval that a check counts holds at least 5 kept samples
-// (SPECIFICATION.md 4.5). The finest interval any check in this package
-// counts is one line (G5's own unit); checked over every full line but a
-// field's own first, possibly-partial one, matching G5's own line spans.
-struct G6Result { bool ok = true; int min_count = -1; };
-
-G6Result check_g6(const std::vector<Sample>& samples, const std::vector<Span>& fields) {
-    G6Result g;
-    for (const auto& fld : fields) {
-        auto idxs = line_start_indices(samples, fld);
-        for (size_t i = 1; i + 1 < idxs.size(); ++i) {
-            int n = (int)(idxs[i + 1] - idxs[i]);
-            if (g.min_count < 0 || n < g.min_count) g.min_count = n;
-            if (n < 5) g.ok = false;
-        }
-    }
-    if (g.min_count < 0) g.ok = false;
-    return g;
-}
-
-} // namespace instr
-
-// ---------------------------------------------------------------------
-// P4 [p25]: a 680x0 long-word write puts the most significant word at the
-// lower address. See prog_p4.s.
-namespace p4 {
-
-constexpr uint32_t kScr    = 0x0E6000;
-constexpr uint32_t kMarkA  = 0x0E7000;
-constexpr uint32_t kMarkB  = 0x0E7002;
-constexpr uint64_t kBudget = kBootBudget + kDoneRunBudget;
-
-struct LongCheck { uint32_t x; uint16_t hi; uint16_t lo; const char* id; const char* name; };
-
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
-    std::string bin = dir + "/prog_p4.bin";
-    if (mutate == "P4-SWAP") bin = dir + "/prog_p4_mut_swap.bin";
-    else if (mutate == "P4-P1") bin = dir + "/prog_p4_mut_extra.bin";
-    else if (mutate == "P4-P2") bin = dir + "/prog_p4_mut_clearlate.bin";
-    Capture c = run_capture(bin, kBudget);
-    bool ran = c.loaded && c.done.has_value();
-    checks.expect(ran, "P4-fixture: prog_p4.bin ran to DONE");
-    if (!ran) return;
-
-    auto ma = write_cycles(c.log, word_addr(kMarkA));
-    auto mb = write_cycles(c.log, word_addr(kMarkB));
-    bool markers_ok = ma.size() == 1 && mb.size() == 1 && ma[0] < mb[0];
-    checks.expect(markers_ok, "P4-fixture: markers Ma and Mb each written exactly once, Ma before Mb");
-    if (!markers_ok) return;
-    const uint64_t t_ma = ma[0], t_mb = mb[0];
-
-    // The unchanged comparator: every form is graded against the same
-    // main-run expectation, D0 = $A5C33C5A / D1 = $0F1EE1F0 / W1's own
-    // immediate = $A5C33C5A, regardless of NMH_MUTATE. Under P4-SWAP the
-    // program actually writes D0, D1 and W1's own immediate pre-exchanged
-    // (SPECIFICATION.md P4.6), so every one of the eight forms goes red
-    // through this same, unmoved comparator.
-    const uint16_t hi = 0xA5C3;
-    const uint16_t lo = 0x3C5A;
-    const std::vector<LongCheck> forms = {
-        {kScr + 0x00, 0xA5C3, 0x3C5A, "P4-W1", "W1 MOVE.L #imm,(A0) at $0E6000"},
-        {kScr + 0x10, hi,     lo,     "P4-W2", "W2 MOVE.L D0,(A1)+ at $0E6010"},
-        {kScr + 0x20, hi,     lo,     "P4-W3", "W3 MOVE.L D0,-(A2) at $0E6020"},
-        {kScr + 0x30, hi,     lo,     "P4-W4", "W4 MOVE.L D0,8(A3) at $0E6030"},
-        {kScr + 0x40, hi,     lo,     "P4-W5", "W5 MOVE.L D0,abs.L at $0E6040"},
-        {kScr + 0x50, hi,     lo,     "P4-W6-D0", "W6 MOVEM.L D0/D1,(A4), D0 at $0E6050"},
-        {kScr + 0x54, 0x0F1E, 0xE1F0, "P4-W6-D1", "W6 MOVEM.L D0/D1,(A4), D1 at $0E6054"},
-        {kScr + 0x62, hi,     lo,     "P4-W7", "W7 MOVE.L D0,(A5) at $0E6062 (addr = 2 mod 4)"},
+    // (a) one complete pass ends in each observed field, starts at the list and reads its words in order.
+    const std::vector<uint16_t> image = list_image();
+    auto pass_is_list = [&](const std::vector<Acc>& v, const Pass& p) {
+        if (p.last - p.first + 1 != image.size()) return false;
+        for (size_t k = 0; k < image.size(); ++k)
+            if (v[p.first + k].addr != kList + 2 * k || v[p.first + k].data != image[k]) return false;
+        return true;
     };
-
-    for (const auto& f : forms) {
-        auto hi_w = data_after(c.log, word_addr(f.x), t_ma);
-        auto lo_w = data_after(c.log, word_addr(f.x) + 1, t_ma);
-        bool ok = hi_w && lo_w && *hi_w == f.hi && *lo_w == f.lo;
-        checks.expect(ok,
-            std::string(f.id) + " [p25] ch2-location-registers.c11,COP2-location-registers.c13: " +
-            f.name + " -- most significant word at the lower address");
-    }
-
-    // P4-p1 precondition: exactly the 16 word writes above land strictly
-    // between Ma and Mb, and nothing else.
-    auto between = writes_in_range(c.log, 0, 0x200000);
-    size_t n_between = 0;
-    bool only_expected = true;
-    for (const auto& a : between) {
-        if (a.cycle <= t_ma || a.cycle >= t_mb) continue;
-        ++n_between;
-        bool expected_addr = false;
-        for (const auto& f : forms) {
-            uint32_t w = word_addr(f.x);
-            if (a.word_addr == w || a.word_addr == w + 1) { expected_addr = true; break; }
-        }
-        if (!expected_addr) only_expected = false;
-    }
-    bool p4p1 = only_expected && n_between == 16;
-    checks.expect(p4p1,
-        "P4-p1 precondition: between Ma and Mb, exactly two word writes per long word listed (16 total), nothing else");
-
-    // P4-p2 precondition: the clearing writes to $0000 precede Ma, and
-    // they actually carry the data $0000 (not merely some write, of any
-    // value, before Ma).
-    bool cleared_before = true;
-    for (uint32_t off = 0; off < 0x80; off += 2)
-        if (!wrote_before(c.log, word_addr(kScr + off), t_ma, 0x0000)) { cleared_before = false; break; }
-    checks.expect(cleared_before, "P4-p2 precondition: the clearing writes to $0000 precede marker Ma and carry the data $0000");
-
-    checks.record("ch2-location-registers.c11 and COP2-location-registers.c13 ('when you write long words with "
-                  "the 680x0') are graded for the 68000 only here; a 68020 run of W1-W7 is not built.");
-}
-
-} // namespace p4
-
-// ---------------------------------------------------------------------
-// P3 [p19]: a MOVE after a WAIT is performed once the WAIT is satisfied,
-// and not before. See prog_p3.s. Also demonstrates the common instruments
-// G1-G6 (SPECIFICATION.md 4.5) and their own mutations; P1-A reuses the
-// same, unchanged instrument code and restates every one of G1-G6 on its
-// own captures without repeating their dedicated red mutations here -- a
-// scope decision, since G1-G6 are the shared measuring apparatus.
-namespace p3 {
-
-constexpr uint32_t kL3        = 0x0E2000;
-constexpr uint32_t kMarkM0    = 0x0E7000;
-constexpr uint32_t kMarkFinal = 0x0E7002;
-constexpr uint32_t kDmaconrSave = 0x0E7100;
-constexpr uint32_t kLogLo = 0x110000, kLogHi = 0x140000;
-// G6's own mutation adds delay to every monitor-loop iteration, so this
-// run's own budget carries headroom beyond the plain 30000-iteration cost.
-constexpr uint64_t kBudget = kBootBudget + 60'000'000;
-// nanomig.i's INTENA equate ($09A), restated for the C++ side (that header
-// is assembly-only).
-constexpr uint16_t kIntenaAddr = 0x009A;
-
-const std::vector<std::pair<uint32_t, uint32_t>> kRegions = {
-    {word_addr(kL3), word_addr(kL3) + 8},
-    {word_addr(kDecoyD), word_addr(kDecoyD) + 2},
-};
-
-// G4's own reference table for a given variant: the list content that
-// variant's own program actually assembles (specification 4.5: a
-// contrasting case is judged by its own words). P3-G4 is the one
-// exception -- its whole point is that the actual data diverges from
-// what this specification prescribes, so it stays graded against the
-// NORMAL table.
-std::vector<std::pair<uint32_t, uint16_t>> reference_words(const std::string& mutate) {
-    std::vector<std::pair<uint32_t, uint16_t>> out;
-    uint32_t addr = kL3;
-    if (mutate != "P3-P2") {
-        out.push_back({addr, kIntenaAddr}); out.push_back({addr + 2, 0x7FFF});
-        addr += 4;
-    }
-    if (mutate == "P3-C2") {
-        out.push_back({addr, 0xFFFF}); out.push_back({addr + 2, 0xFFFE});
-    } else if (mutate == "P3-P1") {
-        out.push_back({addr, 0x0001}); out.push_back({addr + 2, 0xFF00});
-    } else if (mutate == "P3-C1") {
-        out.push_back({addr, 0xA001}); out.push_back({addr + 2, 0xFF00});
-    } else {
-        out.push_back({addr, 0x6401}); out.push_back({addr + 2, 0xFF00});
-    }
-    addr += 4;
-    out.push_back({addr, kIntenaAddr}); out.push_back({addr + 2, 0x8004});
-    addr += 4;
-    out.push_back({addr, 0xFFFF}); out.push_back({addr + 2, 0xFFFE});
-    // The decoy park D, common to every variant.
-    out.push_back({kDecoyD, 0xFFFF}); out.push_back({kDecoyD + 2, 0xFFFE});
-    return out;
-}
-
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
-    std::string bin = dir + "/prog_p3.bin";
-    if (mutate == "P3-P1") bin = dir + "/prog_p3_mut_wait0.bin";
-    else if (mutate == "P3-P2") bin = dir + "/prog_p3_mut_noclear.bin";
-    else if (mutate == "P3-C1") bin = dir + "/prog_p3_c1.bin";
-    else if (mutate == "P3-C2") bin = dir + "/prog_p3_c2.bin";
-    else if (mutate == "P3-G3") bin = dir + "/prog_p3_g3.bin";
-    else if (mutate == "P3-G4") bin = dir + "/prog_p3_g4.bin";
-    else if (mutate == "P3-G6") bin = dir + "/prog_p3_g6.bin";
-
-    nmh::Config cfg;
-    if (mutate == "P3-G5") cfg.chipset_config = 0x0A; // ECS/NTSC (G5's own contrasting stimulus)
-
-    Capture c = run_capture(bin, kBudget, cfg);
-    bool ran = c.loaded && c.done.has_value();
-    checks.expect(ran, "P3-fixture: the program ran to DONE");
-    if (!ran) return;
-
-    // ---- I2 samples, fields --------------------------------------------
-    auto raw = instr::parse_samples(c.log, word_addr(kLogLo), word_addr(kLogHi));
-    auto samples = instr::discard_torn(raw);
-    auto fields = instr::find_fields(samples);
-    checks.note("P3: " + std::to_string(samples.size()) + " kept samples, " +
-                std::to_string(fields.size()) + " fields");
-
-    // ---- I1 fetches, list executions ------------------------------------
-    auto reads = instr::copper_reads(c.log, kRegions);
-    auto fr = instr::pair_fetches(reads);
-    auto execs = instr::split_executions(fr.fetches, kL3);
-
-    // ---- I4: the clk_sys-per-memory-cycle ratio -------------------------
-    auto ratio = instr::measure_ratio(samples, fields);
-    checks.expect(ratio.ok,
-        "I4 precondition (P3) [p24] ch2-the-wait-instruction: the clk_sys-per-memory-cycle ratio, "
-        "measured per line from its own first-to-last sample, is the same integer over the whole capture");
-    checks.note("I4 (P3): kCck=" + std::to_string(ratio.kCck) + " (" + std::to_string(ratio.lines - ratio.off) +
-                "/" + std::to_string(ratio.lines) + " lines agree)");
-    uint64_t kCck = ratio.ok ? ratio.kCck : 0;
-
-    // ---- G1: Copper reads are identifiable (baseline: DMACON $8200) ----
-    Capture base;
-    {
-        std::string base_bin = dir + (mutate == "P3-G1" ? "/prog_p3_nocopen_mut.bin" : "/prog_p3_nocopen.bin");
-        base = run_capture(base_bin, kBudget);
-        bool base_ran = base.loaded && base.done.has_value();
-        auto base_reads = instr::copper_reads(base.log, kRegions);
-        checks.expect(base_ran && base_reads.empty(),
-            "G1 precondition: with COPEN off, no read lands in the Copper region over the same capture");
-
-        // G2's own mutation (defect 16): the same no-COPEN baseline
-        // already shows DMACONR's bit 7 (COPEN) reading 0, the natural
-        // contrast to the main run's G2 (bits 9 and 7 set).
-        std::optional<uint16_t> base_dmaconr;
-        for (const auto& a : base.log) if (a.is_write && a.word_addr == word_addr(kDmaconrSave)) base_dmaconr = a.data;
-        checks.note(std::string("G2 mutation (prog_p3_nocopen.bin): DMACONR bit 7 (COPEN) reads ") +
-                    (base_dmaconr && (*base_dmaconr & 0x0080) ? "1 (unexpected)" : "0, as predicted"));
-    }
-
-    // ---- G2: Copper DMA is really on -----------------------------------
-    {
-        std::optional<uint16_t> val;
-        for (const auto& a : c.log)
-            if (a.is_write && a.word_addr == word_addr(kDmaconrSave)) val = a.data;
-        bool g2 = val.has_value() && (*val & 0x0200) && (*val & 0x0080);
-        checks.expect(g2, "G2 precondition: DMACONR (stored at $0E7100) has bits 9 and 7 set");
-    }
-
-    // ---- G3: Copper reads are identified over every Copper region of
-    // 4.2 that this run uses (at least D), and the first fetch after M0
-    // is at L_3 --------------------------------------------------------
-    {
-        auto m0w = write_cycles(c.log, word_addr(kMarkM0));
-        bool g3 = !m0w.empty() && !fr.fetches.empty();
-        if (g3) {
-            const instr::Fetch* first_after = nullptr;
-            for (const auto& f : fr.fetches) if (f.t1 > m0w[0]) { first_after = &f; break; }
-            g3 = first_after && first_after->byte_addr == kL3;
-        }
-        checks.expect(g3, "G3 precondition: the first Copper instruction fetch after marker M0 is at L_3 ($0E2000)");
-    }
-
-    // ---- G4: every Copper read's data is the word this run's own words
-    // prescribe (specification 4.5: a contrasting case by its own words,
-    // except P3-G4 itself, whose whole point is to diverge) ------------
-    {
-        auto ref = reference_words(mutate);
-        bool g4 = instr::check_g4(fr.fetches, ref);
-        checks.expect(g4, "G4 precondition: every Copper read's data equals the word this run's own setup prescribes for that address");
-    }
-
-    // ---- G5: the monitor's beam readings are sane (PAL rule) -----------
-    {
-        auto g5 = instr::check_g5(samples, fields, kCck);
-        checks.note("G5 (P3): mean line length=" + std::to_string(g5.mean_line) + " memory cycles over " +
-                    std::to_string(g5.pairs) + " pairs (227 +/- " + std::to_string(instr::kMeanLineTolerance) + ")");
-        if (!g5.ok) checks.note("G5 diagnostic: h_violations=" + std::to_string(g5.h_violations) +
-                                 " (first H=" + std::to_string(g5.diag_h) + ") v_violations=" + std::to_string(g5.v_violations) +
-                                 " gap_violations=" + std::to_string(g5.gap_violations) + " (first gap=" + std::to_string(g5.diag_gap) +
-                                 " mem cycles)");
-        checks.expect(g5.ok, "G5 precondition: beam readings are sane -- H in $00-$E2, V non-decreasing per field, PAL lines 227 memory cycles apart on average");
-    }
-
-    // ---- G6: every counted interval (one line) holds at least 5 kept
-    // samples, and the specified field count (3) is met -------------------
-    {
-        auto g6 = instr::check_g6(samples, fields);
-        if (!g6.ok) checks.note("G6 diagnostic: smallest line holds " + std::to_string(g6.min_count) + " samples");
-        checks.expect(g6.ok, "G6 precondition: every line holds at least 5 kept samples");
-        checks.expect(fields.size() >= 3, "G6-fields precondition: at least 3 fields are captured (specification P3.2)");
-    }
-
-    if (mutate == "P3-G5") {
-        checks.record("MUTATION P3-G5: with the same config bit ECS/PAL captures use except NTSC selected, "
-                       "the mean line length measured here is still 227.0 (both cores); p.23's own 227/228 "
-                       "alternation is not exercised at this boundary, so G5's own contrasting case is "
-                       "unfalsifiable here, not a defect in the check.");
-        return; // demonstrates G5 only; nothing below applies under NTSC
-    }
-
-    // ---- P3-fixture: a WAIT-shaped fetch and a set-MOVE fetch each
-    // occurred at least once, located by content in this run's own list,
-    // not by a fixed address (defect 7) -- "clear-MOVE fetched" is left
-    // to P3-p2 below, not bundled into this gate.
-    auto is_wait_shaped = [](const instr::Fetch& f) { return (f.ir1 & 0x0001) && f.ir2 == 0xFF00; };
-    auto is_set_shaped   = [&](const instr::Fetch& f) { return f.ir1 == kIntenaAddr && (f.ir2 & 0x8000) != 0; };
-    auto is_clear_shaped = [&](const instr::Fetch& f) { return f.ir1 == kIntenaAddr && (f.ir2 & 0x8000) == 0; };
-
-    const instr::Fetch* any_wait = instr::find_if(fr.fetches, is_wait_shaped);
-    const instr::Fetch* any_set  = instr::find_if(fr.fetches, is_set_shaped);
-    bool have_fixture = any_wait && any_set;
-    checks.expect(have_fixture, "P3-fixture: a WAIT-shaped fetch and a set-MOVE fetch each occurred at least once");
-    if (!have_fixture) {
-        if (mutate == "P3-C2")
-            checks.record("MUTATION P3-C2: neither a WAIT-shaped fetch nor a set-MOVE fetch ever occurs (the "
-                           "Copper parks permanently at the WAIT's own address before reaching the set-MOVE); "
-                           "P3-ii and P3-iv are not evaluated for this stimulus, consistent with specification "
-                           "P3.6's own prediction (bit 2 stays 0 all field, the set-MOVE is never fetched).");
-        else if (mutate == "P3-G3")
-            checks.record("MUTATION P3-G3: the Copper is diverted to the decoy park D and never fetches from "
-                           "L_3; P3-p1, P3-p2, P3-i, P3-ii, P3-iii and P3-iv are not evaluated for this stimulus "
-                           "(G3 alone carries it).");
-        return;
-    }
-
-    // ---- P3-p1: the Copper really waited, within one execution ----------
-    {
-        bool p1 = false;
-        for (size_t e = 0; e < execs.size(); ++e) {
-            const auto& ef = execs[e].fetches;
-            const instr::Fetch* w = instr::find_if(ef, is_wait_shaped);
-            const instr::Fetch* s = instr::find_if(ef, is_set_shaped);
-            if (!w || !s) continue;
-            int wait_line = (w->ir1 >> 8) & 0xFF;
-            for (const auto& sm : samples)
-                if (sm.s > w->t2 && sm.s < s->t1 && sm.V() < wait_line) { p1 = true; break; }
-            if (p1) break;
-        }
-        checks.expect(p1, "P3-p1 precondition: within one execution, a sample between the WAIT's IR2 read and the set-MOVE's IR1 read reads a line below the WAIT's own line");
-    }
-
-    // ---- P3-p2: the clearing MOVE precedes the WAIT, in every execution
-    // that has a WAIT-shaped fetch ----------------------------------------
-    {
-        bool p2 = true;
-        for (const auto& e : execs) {
-            const instr::Fetch* w = instr::find_if(e.fetches, is_wait_shaped);
-            if (!w) continue;
-            const instr::Fetch* cl = instr::find_if(e.fetches, is_clear_shaped);
-            if (!cl || !(cl->t2 < w->t1)) { p2 = false; break; }
-        }
-        checks.expect(p2, "P3-p2 precondition: the clearing MOVE is fetched, before the WAIT, in every execution");
-    }
-
-    // ---- (i) and (iii): each V-wrap field (`fields`, I2) is graded
-    // against its OWN execution's own clear-move and set-move fetches,
-    // matched positionally (field f <-> execution f: both a beam wrap and
-    // a list restart happen exactly once per field, a few memory cycles
-    // apart) and found by content, not by a fixed address (defect 3).
-    // Bounding a field's population strictly to that one field's own
-    // sample span keeps a sample that reads V=0 because the beam has
-    // wrapped, while the Copper has not yet re-fetched that field's own
-    // clear-move, out of the PREVIOUS execution's population: such a
-    // sample is excluded here (from neither field), not compared.
-    bool i_ok = true; int i_violations = 0; uint64_t diag_i_s = 0; int diag_i_v = -1;
-    bool ii_ok = true;
-    bool iii_ok = true;
-    for (const auto& s : samples) if (s.V() >= 0x66 && !(s.intenar & 0x0004)) ii_ok = false;
-    for (size_t f = 0; f < fields.size(); ++f) {
-        if (f >= execs.size()) continue;
-        const instr::Fetch* cl = instr::find_if(execs[f].fetches, is_clear_shaped);
-        const instr::Fetch* set_f = instr::find_if(execs[f].fetches, is_set_shaped);
-        for (size_t i = fields[f].begin; i < fields[f].end; ++i) {
-            const auto& s = samples[i];
-            bool bit2 = (s.intenar & 0x0004) != 0;
-            if (cl && s.V() < 0x64 && bit2 && s.s > cl->t2) {
-                i_ok = false; ++i_violations;
-                if (!diag_i_s) { diag_i_s = s.s; diag_i_v = s.V(); }
+    bool a_ok = cf.size() >= 6;
+    std::string a_why;
+    for (size_t f = 2; f < 6 && f < cf.size(); ++f) {
+        int found = 0;
+        for (const auto& p : ps) {
+            if (!p.complete) continue;
+            const uint64_t t = rd[p.last].t;
+            if (t < cf[f].begin || t >= cf[f].end) continue;
+            ++found;
+            if (!pass_is_list(rd, p)) {
+                a_ok = false;
+                a_why += " field " + num(f + 1) + " pass starts at " + hex(rd[p.first].addr, 5) + " and holds " +
+                         num(p.last - p.first + 1) + " reads;";
             }
-            if (set_f && s.s > set_f->t1 && s.V() < 0x64) iii_ok = false;
         }
+        if (found != 1) { a_ok = false; a_why += " field " + num(f + 1) + " has " + num(found) + " passes;"; }
     }
-    if (!i_ok) checks.note("P3-i diagnostic: " + std::to_string(i_violations) +
-                            " violating samples, first at cycle " + std::to_string(diag_i_s) +
-                            " V=" + std::to_string(diag_i_v));
-    checks.expect(i_ok,
-        "P3-i [p19] ch2-about-the-copper.c13.s2,ch2-about-the-copper.c18.s2: every sample below line $64, in its own field, reads INTENAR bit 2 clear from that field's own clear-MOVE onward");
-    checks.expect(ii_ok,
-        "P3-ii [p19] ch2-about-the-copper.c13.s2,ch2-about-the-copper.c18.s2: every sample at or after line $66 reads INTENAR bit 2 set");
-    checks.expect(iii_ok,
-        "P3-iii [p19] ch2-about-the-copper.c13.s2,ch2-about-the-copper.c18.s2: every sample after the set-MOVE's IR1 read, in its own field, reads line >= $64");
+    g.pre(checks, a_ok,
+          "P1-PRE-A: (a) in each observed field the Copper's pass starts at " + hex(kList, 5) + " and reads the 36 words of the list in "
+          "address order with the data stored" + a_why);
 
-    // ---- (iv): the set-MOVE is fetched exactly once per execution but
-    // the last ---------------------------------------------------------
+    // Control for (a), on the same measurement basis: the first pass, which no restart precedes, starts at the list and reads its words.
     {
-        bool iv_ok = true;
-        for (size_t e = 0; e + 1 < execs.size(); ++e) {
-            int count = 0;
-            for (const auto& f : execs[e].fetches) if (is_set_shaped(f)) ++count;
-            if (count != 1) iv_ok = false;
-        }
-        checks.expect(iv_ok,
-            "P3-iv [p19] ch2-about-the-copper.c13.s2: the set-MOVE is fetched exactly once per execution");
-    }
-}
-
-} // namespace p3
-
-// ---------------------------------------------------------------------
-// P1-A [p19-21,26,36,274-275]: a Copper MOVE writes the 16 bits of its
-// second instruction word, unchanged and bit n to bit n, into the
-// register its first word addresses. Instrument A only (INTENA read back
-// through INTENAR). See prog_p1a.s. Instrument B (COP2LC, the 40-target
-// chain) is not built in this package.
-namespace p1a {
-
-constexpr uint32_t kLA = 0x0E0000;
-constexpr uint32_t kMarkM0 = 0x0E7000;
-constexpr uint32_t kDmaconrSave = 0x0E7100;
-constexpr uint32_t kP1P2V1 = 0x0E7102, kP1P2V2 = 0x0E7104, kP1P2V3 = 0x0E7106;
-constexpr uint32_t kLogLo = 0x110000, kLogHi = 0x140000;
-constexpr uint64_t kBudget = kBootBudget + 30'000'000;
-// 64 half-steps (WAIT+MOVE, 4 words each) plus the closing park (2 words).
-constexpr uint32_t kListWords = 64 * 4 + 2;
-
-std::vector<uint16_t> walking_table() {
-    std::vector<uint16_t> P(32, 0);
-    for (int i = 0; i < 15; ++i) P[i] = (uint16_t)(1u << i);
-    for (int i = 0; i < 15; ++i) P[15 + i] = (uint16_t)(0x7FFF & ~(1u << i));
-    P[30] = 0x0000;
-    P[31] = 0x7FFF;
-    return P;
-}
-
-// G4's own reference table for a P1-A capture: the 258 words the list
-// actually assembles to for this run (is_set, mutate), matching
-// prog_p1a.s and the p1a_list_*.i files word for word.
-std::vector<std::pair<uint32_t, uint16_t>> reference_words(bool is_set, const std::string& mutate) {
-    std::vector<std::pair<uint32_t, uint16_t>> out;
-    auto P = walking_table();
-    uint32_t addr = kLA;
-    for (int i = 0; i < 32; ++i) {
-        int wait_line_a = 0x30 + 4 * i;
-        bool park_a = is_set && mutate == "P1-P1" && i == 5; // P1-p1's own mutation
-        if (park_a) { out.push_back({addr, 0xFFFF}); out.push_back({addr + 2, 0xFFFE}); }
-        else {
-            out.push_back({addr, (uint16_t)(((wait_line_a & 0xFF) << 8) | 1)});
-            out.push_back({addr + 2, 0xFF00});
-        }
-        addr += 4;
-        out.push_back({addr, 0x009A});
-        out.push_back({addr + 2, (uint16_t)(is_set ? 0x7FFF : 0xFFFF)});
-        addr += 4;
-
-        int wait_line_b = wait_line_a + 2;
-        out.push_back({addr, (uint16_t)(((wait_line_b & 0xFF) << 8) | 1)});
-        out.push_back({addr + 2, 0xFF00});
-        addr += 4;
-        uint16_t ir1_b = 0x009A;
-        uint16_t ir2_b = is_set ? (uint16_t)(0x8000 | P[i]) : P[i];
-        if (i == 0) {
-            if (is_set && mutate == "P1-C1") ir1_b = 0x009C;
-            if (is_set && mutate == "P1-C2") ir2_b = 0x8002;
-            if (!is_set && mutate == "P1-CC1") ir2_b = 0x0002;
-        }
-        out.push_back({addr, ir1_b});
-        out.push_back({addr + 2, ir2_b});
-        addr += 4;
-    }
-    out.push_back({addr, 0xFFFF});
-    out.push_back({addr + 2, 0xFFFE});
-    return out;
-}
-
-struct Run {
-    Capture c;
-    std::vector<instr::Sample> samples;
-    std::vector<instr::Span> fields;
-    std::vector<instr::Fetch> fetches;      // every paired fetch in [kLA, kLA+kListWords)
-    std::vector<instr::Exec> execs;         // fetches split at kLA (list executions)
-    instr::Ratio ratio;
-    uint64_t kCck = 0;
-    bool ok = false;
-};
-
-Run capture_and_index(const std::string& bin) {
-    Run r;
-    r.c = run_capture(bin, kBudget);
-    r.ok = r.c.loaded && r.c.done.has_value();
-    if (!r.ok) return r;
-    auto raw = instr::parse_samples(r.c.log, word_addr(kLogLo), word_addr(kLogHi));
-    r.samples = instr::discard_torn(raw);
-    r.fields = instr::find_fields(r.samples);
-    std::vector<std::pair<uint32_t, uint32_t>> regions = {{word_addr(kLA), word_addr(kLA) + kListWords}};
-    auto reads = instr::copper_reads(r.c.log, regions);
-    auto fr = instr::pair_fetches(reads);
-    r.fetches = fr.fetches;
-    r.execs = instr::split_executions(r.fetches, kLA);
-    r.ratio = instr::measure_ratio(r.samples, r.fields);
-    r.kCck = r.ratio.ok ? r.ratio.kCck : 0;
-    return r;
-}
-
-struct GradeResult {
-    bool ok = true; int violations = 0; int covered = 0; std::string first_desc;
-    std::array<int, 64> k_covered{}; std::array<int, 64> k_violations{};
-    int min_interval = -1;
-};
-
-// P1-p1's own population check (SPECIFICATION.md P1.5, P2.5): in every
-// execution but the last, every half-step's WAIT and MOVE instruction
-// fetches are present, at their own address, in list order. Shared by
-// P1-A (both its own runs) and P2 (which reuses P1-A-set's own list and
-// capture machinery, and lists P1-p1 among its own preconditions).
-struct P1P1Result { bool ok = true; int violations = 0; };
-
-P1P1Result check_p1p1_population(const std::vector<instr::Exec>& execs) {
-    P1P1Result r;
-    for (size_t e = 0; e + 1 < execs.size(); ++e) {
-        const auto& ef = execs[e].fetches;
-        bool exec_ok = ef.size() >= 128;
-        if (exec_ok) for (int j = 0; j < 128 && exec_ok; ++j)
-            if (ef[j].byte_addr != kLA + 4u * (uint32_t)j) exec_ok = false;
-        if (!exec_ok) { r.ok = false; ++r.violations; }
-    }
-    return r;
-}
-
-// Grades every hold interval, over every list execution but the last
-// (which the capture's own fixed cutoff can leave mid-list), against the
-// table P1's proposition text gives (SPECIFICATION.md P1.4). Each
-// half-step's own MOVE is found by its address ($0E0004+8h) within its own
-// execution, not by position, so a restart fetch that happens to precede
-// that field's own next I2 sample never shifts every later half-step's
-// anchor (defect 1). A half-step whose own MOVE fetch, or whose next
-// half-step's MOVE fetch, is missing (P1-p1 covers whether it should be
-// present) contributes no graded population for that one half-step.
-// `override_expected`, when given, may replace one half-step's own default
-// expected value, keyed by its own execution's MOVE fetch time (t2) -- P2
-// reuses this same population and table (SPECIFICATION.md P2.2-4) with
-// b_0's own expected value switched at the CPU's own runtime write, instead
-// of duplicating this loop.
-GradeResult grade(const std::vector<instr::Exec>& execs, const std::vector<uint16_t>& P, bool is_set,
-                   const std::vector<instr::Sample>& samples, uint64_t kM_cycles,
-                   const std::function<void(int k, uint64_t t2, uint16_t& expected)>& override_expected = nullptr) {
-    GradeResult g;
-    if (execs.size() < 2) { g.ok = false; g.first_desc = "fewer than 2 list executions captured"; return g; }
-    for (size_t e = 0; e + 1 < execs.size(); ++e) {
-        for (int k = 0; k < 64; ++k) {
-            uint32_t mv_addr = kLA + 4 + 8u * (uint32_t)k;
-            const instr::Fetch* mv = instr::find_by_addr(execs[e].fetches, mv_addr);
-            if (!mv) continue;
-            const instr::Fetch* nextmv = (k < 63)
-                ? instr::find_by_addr(execs[e].fetches, kLA + 4 + 8u * (uint32_t)(k + 1))
-                : instr::find_by_addr(execs[e + 1].fetches, kLA + 4);
-            if (!nextmv) continue;
-            uint64_t lo = mv->t2 + kM_cycles;
-            uint64_t hi = nextmv->t2;
-            if (hi <= lo) continue;
-
-            bool is_a = (k % 2 == 0);
-            int i = is_a ? k / 2 : (k - 1) / 2;
-            uint16_t expected = is_a ? (is_set ? 0x0000 : 0x7FFF)
-                                     : (is_set ? P[i] : (uint16_t)(0x7FFF & ~P[i]));
-            if (override_expected) override_expected(k, mv->t2, expected);
-
-            int covered_here = 0;
-            for (const auto& s : samples) {
-                if (s.s <= lo || s.s > hi) continue;
-                ++covered_here; ++g.covered;
-                uint16_t got = s.intenar & 0x7FFF;
-                if (got != expected) {
-                    g.ok = false; ++g.violations; ++g.k_violations[k];
-                    if (g.first_desc.empty()) {
-                        char buf[160];
-                        std::snprintf(buf, sizeof buf, "execution %zu half-step %s%d: expected $%04X got $%04X",
-                                      e, is_a ? "a_" : "b_", i, expected, got);
-                        g.first_desc = buf;
-                    }
-                }
-            }
-            g.k_covered[k] += covered_here;
-            if (covered_here > 0 && (g.min_interval < 0 || covered_here < g.min_interval)) g.min_interval = covered_here;
-        }
-    }
-    return g;
-}
-
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
-    std::string set_bin = dir + "/prog_p1a.bin";
-    if (mutate == "P1-C1") set_bin = dir + "/prog_p1a_c1.bin";
-    else if (mutate == "P1-C2") set_bin = dir + "/prog_p1a_c2.bin";
-    else if (mutate == "P1-P1") set_bin = dir + "/prog_p1a_mut_p1p1.bin";
-    else if (mutate == "P1-P2") set_bin = dir + "/prog_p1a_mut_p1p2.bin";
-    std::string clear_bin = dir + "/prog_p1a_clear.bin";
-    if (mutate == "P1-CC1") clear_bin = dir + "/prog_p1a_clear_c1.bin";
-
-    Run set_run = capture_and_index(set_bin);
-    checks.expect(set_run.ok, "P1-fixture: the set run ran to DONE");
-    Run clear_run = capture_and_index(clear_bin);
-    checks.expect(clear_run.ok, "P1-fixture: the clear run ran to DONE");
-    if (!set_run.ok || !clear_run.ok) return;
-
-    checks.note("P1-A: set run " + std::to_string(set_run.samples.size()) + " samples/" +
-                std::to_string(set_run.fields.size()) + " fields; clear run " +
-                std::to_string(clear_run.samples.size()) + " samples/" + std::to_string(clear_run.fields.size()) + " fields");
-
-    // G1's own baseline (no COPEN), shared by both captures: the fact
-    // ("no read lands in the Copper region while COPEN is off") does not
-    // depend on list content, only on DMACON, so one baseline serves
-    // both labels below. Its own red mutation stays demonstrated on P3
-    // (this file's header, and P3's own scope-decision comment).
-    Capture g1_baseline = run_capture(dir + "/prog_p1a_nocopen.bin", kBudget);
-    std::vector<std::pair<uint32_t, uint32_t>> regions = {{word_addr(kLA), word_addr(kLA) + kListWords}};
-    bool g1_base_ran = g1_baseline.loaded && g1_baseline.done.has_value();
-    bool g1_empty = instr::copper_reads(g1_baseline.log, regions).empty();
-
-    auto check_all = [&](const Run& r, const char* label, bool is_set) {
-        checks.expect(g1_base_ran && g1_empty,
-            std::string("G1 precondition (") + label + "): with COPEN off, no read lands in the Copper region over the same capture");
-
-        std::optional<uint16_t> dmaconr;
-        for (const auto& a : r.c.log) if (a.is_write && a.word_addr == word_addr(kDmaconrSave)) dmaconr = a.data;
-        bool g2 = dmaconr.has_value() && (*dmaconr & 0x0200) && (*dmaconr & 0x0080);
-        checks.expect(g2, std::string("G2 precondition (") + label + "): DMACONR has bits 9 and 7 set");
-
-        auto m0w = write_cycles(r.c.log, word_addr(kMarkM0));
-        bool g3 = !m0w.empty();
-        if (g3) {
-            const instr::Fetch* first_after = nullptr;
-            for (const auto& f : r.fetches) if (f.t1 > m0w[0]) { first_after = &f; break; }
-            g3 = first_after && first_after->byte_addr == kLA;
-        }
-        checks.expect(g3, std::string("G3 precondition (") + label + "): the first Copper instruction fetch after marker M0 is at L_A ($0E0000)");
-
-        auto ref = reference_words(is_set, mutate);
-        bool g4 = instr::check_g4(r.fetches, ref);
-        checks.expect(g4, std::string("G4 precondition (") + label + "): every Copper read's data equals the word this run's own list prescribes for that address");
-
-        auto g5 = instr::check_g5(r.samples, r.fields, r.kCck);
-        checks.note(std::string("G5 (") + label + "): mean line length=" + std::to_string(g5.mean_line) +
-                    " memory cycles over " + std::to_string(g5.pairs) + " pairs (227 +/- " +
-                    std::to_string(instr::kMeanLineTolerance) + ")");
-        checks.expect(g5.ok, std::string("G5 precondition (") + label + "): beam readings are sane -- H in $00-$E2, V non-decreasing per field, PAL lines 227 memory cycles apart on average");
-
-        auto g6 = instr::check_g6(r.samples, r.fields);
-        checks.expect(g6.ok, std::string("G6 precondition (") + label + "): every line holds at least 5 kept samples");
-    };
-    check_all(set_run, "set run", true);
-    check_all(clear_run, "clear run", false);
-
-    // ---- I4: the clk_sys-per-memory-cycle ratio, per capture, graded as
-    // the precondition the hold-interval margin (M) depends on -----------
-    checks.note("I4 (set run): kCck=" + std::to_string(set_run.ratio.kCck));
-    checks.note("I4 (clear run): kCck=" + std::to_string(clear_run.ratio.kCck));
-    checks.expect(set_run.ratio.ok, "I4 precondition (set run) [p24]: the clk_sys-per-memory-cycle ratio is the same integer over the whole capture");
-    checks.expect(clear_run.ratio.ok, "I4 precondition (clear run) [p24]: the clk_sys-per-memory-cycle ratio is the same integer over the whole capture");
-    uint64_t kM_set = 32 * set_run.kCck;
-    uint64_t kM_clear = 32 * clear_run.kCck;
-
-    // ---- P1-p1: every half-step's WAIT and MOVE instruction fetches are
-    // present, at their own address, in list order, per execution but the
-    // last, on both runs (P1.5 applies P1-p1 to both) ---------------------
-    auto check_p1p1 = [&](const Run& r, const char* label) {
-        auto res = check_p1p1_population(r.execs);
-        if (!res.ok) checks.note(std::string("P1-p1 diagnostic (") + label + "): " + std::to_string(res.violations) + " execution(s) with a missing, extra or out-of-order fetch");
-        checks.expect(res.ok, std::string("P1-p1 precondition (") + label + "): every half-step's WAIT and MOVE instruction fetches are present, at their own address, in list order, in every execution");
-    };
-    check_p1p1(set_run, "set run");
-    check_p1p1(clear_run, "clear run");
-
-    // ---- P1-p2: the instrument works, masked (p.218: bit 15 has no
-    // meaning in the read-only addresses) ---------------------------------
-    {
-        std::optional<uint16_t> v1, v2, v3;
-        for (const auto& a : set_run.c.log) {
-            if (a.is_write && a.word_addr == word_addr(kP1P2V1)) v1 = a.data;
-            if (a.is_write && a.word_addr == word_addr(kP1P2V2)) v2 = a.data;
-            if (a.is_write && a.word_addr == word_addr(kP1P2V3)) v3 = a.data;
-        }
-        bool p1p2 = v1.has_value() && v2.has_value() && v3.has_value() &&
-                    (*v1 & 0x7FFF) == 0x0000 && (*v2 & 0x7FFF) == 0x5555 && (*v3 & 0x7FFF) == 0x0000;
-        checks.expect(p1p2, "P1-p2 precondition: the CPU's own INTENA writes read back (masked $7FFF) as $0000, $5555 and $0000");
+        auto first_reads = reads_in(r, cop, m0, cf.size() >= 6 ? cf[5].end : kForever);
+        auto first_ps = passes_of(first_reads);
+        g.pre(checks, !first_ps.empty() && first_ps[0].complete && pass_is_list(first_reads, first_ps[0]),
+              "P1-CTRL-A: control for (a): the first pass, which no restart access precedes, starts at " + hex(kList, 5) +
+              " and reads the 36 words of the list in address order with the data stored");
     }
 
-    // ---- P1 (instrument A) main assertions --------------------------------
-    auto P = walking_table();
-    GradeResult gset = grade(set_run.execs, P, true, set_run.samples, kM_set);
-    GradeResult gclear = grade(clear_run.execs, P, false, clear_run.samples, kM_clear);
-
-    if (!gset.ok) checks.note("P1-set diagnostic: " + std::to_string(gset.violations) +
-                               "/" + std::to_string(gset.covered) + " graded samples violate, first: " + gset.first_desc);
-    checks.expect(gset.ok,
-        "P1-set [p19,p20,p21,p26,p36,p274,p275] ch2-about-the-copper.c13.s2,"
-        "ch2-what-is-a-copper-instruction.c4.s2,ch2-the-move-instruction.c1.s2,"
-        "COP2-copins-fields-p275.c5,COP2-copins-fields-p275.c6,"
-        "ch2-appa-copins.c8.s2,ch2-summary-of-copper-instructions.c98,ch2-summary-of-copper-instructions.c99,"
-        "ch2-summary-of-copper-instructions.c101: every hold interval, in "
-        "every execution, shows the state the table predicts (a_i clears INTENA to $0000, b_i sets it to P_i)");
-
-    if (!gclear.ok) checks.note("P1-clear diagnostic: " + std::to_string(gclear.violations) +
-                                 "/" + std::to_string(gclear.covered) + " graded samples violate, first: " + gclear.first_desc);
-    checks.expect(gclear.ok,
-        "P1-clear [p19,p20,p21,p26,p36,p274,p275] ch2-about-the-copper.c13.s2,ch2-what-is-a-copper-instruction.c4.s2,"
-        "ch2-the-move-instruction.c1.s2,COP2-copins-fields-p275.c5,COP2-copins-fields-p275.c6,"
-        "COP2-copins-fields-p275.c9: every hold interval, in every execution, shows the state the table "
-        "predicts (a_i sets INTENA to $7FFF, b_i clears it to $7FFF AND NOT P_i)");
-
-    checks.record("ch2-about-the-copper.c6.s2 ('most of the chip control registers') is graded on P1-set "
-                  "for INTENA only, as section 2 of the specification states.");
-    checks.record("ch2-appa-copins.c116 ('directly from RAM') is P2's clause (specification P2.4), graded "
-                  "there (P2-iii,P2-iv). Its own P1-B clause (J_k's own IR2 read precedes the first read at "
-                  "T[k+1]) is not built: P1-B, instrument B, is out of this package's scope.");
-    checks.record("COP2-copins-fields-p275.c9 and ch2-summary-of-copper-instructions.c100 ('the destination is "
-                  "the address supplied by the DA field') are declined on P1-set: only DA=$09A (INTENA) is "
-                  "graded here; P1-B (not built) adds $084, $086 and $08A.");
-
-    checks.expect(set_run.fields.size() >= 3, "G6-fields precondition (set run): at least 3 fields are captured (specification P1.2)");
-    checks.expect(clear_run.fields.size() >= 3, "G6-fields precondition (clear run): at least 3 fields are captured (specification P1.2)");
-
-    // ---- The 64 Table 2-2 / Appendix A IR2 row ids: one assertion per
-    // IR2 bit, graded over both runs, each carrying that bit's four row
-    // ids (defects 21, 25). Bits 0-14: walking one at b_n, walking zero
-    // at b_(15+n), in every execution, both runs -- isolating exactly the
-    // hold intervals that exercise that bit. Bit 15: neither run alone
-    // establishes it (the set run only ever writes IR2 bit 15 = 1, the
-    // clear run only ever writes 0); the two runs' own grade, taken
-    // together, do.
-    // A half-step's own MOVE fetch can be legitimately absent this run (a
-    // different precondition's own mutation, P1-p1's for instance, breaks
-    // the list from some half-step on); an empty population is then not
-    // itself a violation here (grade() already applies the same rule),
-    // only something P1-p1 itself catches -- so a bit's own check reads
-    // its covered population where one exists and is silent where none
-    // does, never failing on absence alone.
-    auto bit_ok = [&](int k) {
-        return gset.k_violations[k] == 0 && gclear.k_violations[k] == 0;
-    };
-    auto bit_covered = [&](int k) { return gset.k_covered[k] > 0 && gclear.k_covered[k] > 0; };
-    for (int n = 0; n < 15; ++n) {
-        int k = 2 * (15 + n) + 1; // b_(15+n): k = 2*i+1, i=15+n
-        int kb = 2 * n + 1;       // b_n: k = 2*i+1, i=n
-        bool ok = bit_ok(kb) && bit_ok(k);
-        bool covered = bit_covered(kb) && bit_covered(k);
-        int K = 2 + 6 * (15 - n), J = 15 + 6 * (15 - n);
-        char label[320];
-        std::snprintf(label, sizeof label,
-            "P1-bit%d [p36,p274-275] ch2-summary-of-copper-instructions.c%d,COP2-summary-of-copper-instructions.c%d,"
-            "COP2-copins-encoding.c%d,ch2-appa-copins.c%d: IR2 bit %d is carried unchanged into register bit %d, "
-            "walking one (b_%d) and walking zero (b_%d), every execution, both runs",
-            n, K, K, K, J, n, n, n, 15 + n);
-        if (!covered) checks.note(std::string("P1-bit") + std::to_string(n) + " diagnostic: empty population in at least one run (no violation on that account alone)");
-        checks.expect(ok, label);
+    // (b) no sprite access and no bitplane access during the observed fields.
+    bool b_ok = cf.size() >= 6;
+    size_t spr = 0, bpl = 0;
+    if (cf.size() >= 6) {
+        spr = reads_in(r, {{0x4E000, 0x4E0FF}}, cf[2].begin, cf[5].end).size() + writes_in(r, {{0x4E000, 0x4E0FF}}, cf[2].begin, cf[5].end).size();
+        bpl = reads_in(r, {{0x4C000, 0x4CFFF}}, cf[2].begin, cf[5].end).size() + writes_in(r, {{0x4C000, 0x4CFFF}}, cf[2].begin, cf[5].end).size();
+        b_ok = spr == 0 && bpl == 0;
     }
-    {
-        // Isolated to the a_i half-steps (even k): these are the ones
-        // whose own IR2 is fixed ($7FFF set run / $FFFF clear run) and
-        // whose result depends on nothing but bit 15's own SET/CLR role,
-        // so this stays unaffected by a b_0-only mutation (C1, C2, CC1)
-        // -- unlike gset.ok/gclear.ok as a whole, which also cover b_i. An
-        // a_i absent this run (P1-p1's own mutation breaks the list from
-        // some half-step on) is, again, not itself a violation here.
-        bool ok15 = true;
-        for (int k = 0; k < 64; k += 2) {
-            if (gset.k_violations[k] != 0) ok15 = false;
-            if (gclear.k_violations[k] != 0) ok15 = false;
+    g.pre(checks, b_ok,
+          "P1-PRE-B: (b) no sprite access and no bitplane access appears at the port during the observed fields (" +
+          num(spr) + " in the sprite region, " + num(bpl) + " in the bitplane region)");
+
+    // (c) each colour appears in at least one row of each observed field.
+    bool c_ok = cf.size() >= 6;
+    std::vector<std::vector<Row>> rows;
+    std::string seqs;
+    for (size_t f = 2; f < 6 && f < cf.size(); ++f) {
+        rows.push_back(rows_of(r, cf[f]));
+        seqs += "[" + seq_text(run_sequence(rows.back())) + "]";
+        for (uint16_t col : kColours) {
+            bool seen = false;
+            for (const auto& x : rows.back()) if (x.rgb == col) seen = true;
+            if (!seen) c_ok = false;
         }
-        checks.expect(ok15,
-            "P1-bit15 [p21,p36,p274-275] ch2-the-move-instruction.c7,ch2-summary-of-copper-instructions.c2,"
-            "COP2-summary-of-copper-instructions.c2,COP2-copins-encoding.c2,ch2-appa-copins.c15: IR2 bit 15 is "
-            "carried unchanged into the SET/CLR control input -- the set run's own grade (bit 15 = 1 throughout) "
-            "and the clear run's own grade (bit 15 = 0 throughout), together, establish it");
     }
+    g.pre(checks, c_ok,
+          "P1-PRE-C: (c) each of the nine colours appears in at least one row of each observed field");
+
+    // Expected: the run sequence of every observed field.
+    bool seq_ok = cf.size() >= 6;
+    for (const auto& rw : rows) {
+        auto seq = run_sequence(rw);
+        auto it = std::find(seq.begin(), seq.end(), kColours[0]);
+        if (it == seq.end()) { seq_ok = false; continue; }
+        const size_t i = size_t(it - seq.begin());
+        if (i > 1 || (i == 1 && seq[0] != kColours[8])) seq_ok = false;
+        if (seq.size() != i + 9) seq_ok = false;
+        for (size_t k = 0; seq_ok && k < 9; ++k) if (seq[i + k] != kColours[k]) seq_ok = false;
+    }
+    checks.note("P1 run sequences of the observed fields " + seqs);
+    if (g.ok) checks.expect(seq_ok,
+             "P1-COLOUR: [p19 p20 p21 p36 p274 p275] ch2-about-the-copper.c13.s2 ch2-what-is-a-copper-instruction.c4.s2 "
+             "ch2-the-move-instruction.c1.s2 ch2-the-move-instruction.c7 ch2-appa-copins.c8.s2 COP2-copins-fields-p275.c5 "
+             "COP2-copins-fields-p275.c6 COP2-copins-fields-p275.c9 ch2-appa-copins.c116 " + rd_ids(11, 0) + " "
+             "ch2-summary-of-copper-instructions.c98 ch2-summary-of-copper-instructions.c99 ch2-summary-of-copper-instructions.c100 "
+             "ch2-summary-of-copper-instructions.c101: in every observed field the run sequence holds, consecutively and in order, the "
+             "colours (F,F,F) (5,5,5) (6,6,6) (8,7,8) (F,8,0) (A,A,A) (9,9,9) (7,8,7) (0,7,F) set by the eight patterns of IR2 bits 11-0 "
+             "moved to COLOR00, at most the previous field's last colour (0,7,F) comes before (F,F,F), and (0,7,F) is the last colour");
+    else g.skip(checks, "P1-COLOUR");
 }
 
-} // namespace p1a
+} // namespace p1
 
-// ---------------------------------------------------------------------
-// P2 [p21,p36,p275]: the written data is the word read from RAM as the
-// instruction's second word, at each execution. Reuses P1-A-set's own
-// list, addressing and capture/index machinery (p1a::kLA, p1a::capture_and_index,
-// p1a::Run, p1a::reference_words): only the stimulus differs -- prog_p2.s
-// writes $AAAA to b_0's own IR2 word ($0E000E) once, after the first field
-// wrap (SPECIFICATION.md P2.2). See prog_p2.s.
+// =============================================================================
+// P2. IR2 bits 15-1 reach COP1LCL bits 15-1 and IR2 bits 2-0 reach COP1LCH
+// bits 2-0; shown by the address where the Copper restarts.
+// =============================================================================
 namespace p2 {
 
-constexpr uint32_t kWriteTarget = p1a::kLA + 0x0E;      // b_0's own IR2 word, $0E000E
-constexpr uint32_t kB0Addr      = p1a::kLA + 4 + 8 * 1; // b_0's own MOVE, $0E000C
-constexpr uint32_t kA1Addr      = p1a::kLA + 4 + 8 * 2; // a_1's own MOVE, $0E0014
-constexpr uint16_t kBeforeVal   = 0x8001;               // b_0's IR2 before the change
-constexpr uint16_t kMainWriteVal = 0xAAAA;              // the main run's own written value -- the fixed
-                                                          // comparator P2-C1 (4.5's dedicated-mutation
-                                                          // exception) is graded against, not its own $AAA8
+struct Seg { uint32_t t; uint16_t l, h; };
 
-// Every write at kWriteTarget whose data is `val` -- distinguishes the
-// mutation write from the earlier, unrelated list-setup write of $8001 at
-// the same address (b_0's own IR2 word is written once as ordinary list
-// content in step 3, then again, with a different value, as this
-// proposition's own stimulus).
-std::vector<uint64_t> mutation_write_cycles(const std::vector<nmh::RamAccess>& log, uint16_t val) {
-    std::vector<uint64_t> out;
-    for (const auto& a : log)
-        if (a.is_write && a.word_addr == word_addr(kWriteTarget) && a.data == val) out.push_back(a.cycle);
-    return out;
-}
+// Segment k is at T_k and writes (L, H); the next restart is at T_{k+1}.
+const std::vector<Seg> kSegs = {
+    {0x34000, 0xAAAA, 0x0001}, {0x1AAAA, 0xCCCC, 0x0001}, {0x1CCCC, 0xF0F0, 0x0001}, {0x1F0F0, 0xFF00, 0x0001},
+    {0x1FF00, 0x5554, 0x0001}, {0x15554, 0x3332, 0x0001}, {0x13332, 0x0F0E, 0x0001}, {0x10F0E, 0x00FE, 0x0001},
+    {0x100FE, 0x2000, 0x0005}, {0x52000, 0x2000, 0x0006}, {0x62000, 0x2000, 0x0002}, {0x22000, 0x2000, 0x0001},
+    {0x12000, 0x2000, 0x0001}};
 
-// G4's own reference table, with the one address this proposition's own
-// stimulus changes at runtime left out (SPECIFICATION.md P2.5: "G4 applies
-// at every address except $0E000E"); (ii) below grades that address
-// instead, against each execution's own fetch.
-bool check_g4_except(const std::vector<instr::Fetch>& fetches,
-                      const std::vector<std::pair<uint32_t, uint16_t>>& ref, uint32_t except_byte_addr) {
-    for (const auto& f : fetches) {
-        for (const auto& kv : ref) {
-            if (kv.first == except_byte_addr) continue;
-            if (kv.first == f.byte_addr && f.ir1 != kv.second) return false;
-            if (kv.first == f.byte_addr + 2 && f.ir2 != kv.second) return false;
+uint32_t target(const Seg& s) { return (uint32_t(s.h & 7) << 16) | (s.l & 0xFFFE); }
+
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    std::vector<Seg> segs = kSegs;
+    std::vector<Poke> pk;
+    // P2-MAIN: segment 3 writes $FF80 instead of $FF00 and a segment at $1FF80 continues the chain.
+    if (mv == "P2-MAIN") segs[3].l = 0xFF80;
+    for (const auto& s : segs) {
+        if (mv == "P2-A" && s.t == 0x15554) {
+            put(pk, s.t, {0xFFFF, 0xFFFE, 0x0082, s.l, 0x0080, s.h});
+        } else if (mv == "P2-B" && s.t == 0x13332) {
+            put(pk, s.t, {0x0082, s.l, 0x0080, s.h, 0xF001, 0xFF00, 0xFFFF, 0xFFFE});
+        } else {
+            put(pk, s.t, {0x0082, s.l, 0x0080, s.h, 0xFFFF, 0xFFFE});
         }
     }
-    return true;
-}
-
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
+    if (mv == "P2-MAIN") put(pk, 0x1FF80, {0x0082, 0x5554, 0x0080, 0x0001, 0xFFFF, 0xFFFE});
+    std::map<uint32_t, uint16_t> mem(pk.begin(), pk.end());
+    // The segment base each pass begins in, as the stimulus makes the Copper follow (pass 0 starts at the strobe address).
+    std::vector<uint32_t> chain;
+    for (size_t k = 0; k < 15; ++k) {
+        if (mv == "P2-MAIN") chain.push_back(k == 4 ? 0x1FF80 : kSegs[std::min<size_t>(k, 12)].t);
+        else if (mv == "P2-A") chain.push_back(kSegs[std::min<size_t>(k, 5)].t);
+        else chain.push_back(kSegs[std::min<size_t>(k, 12)].t);
+    }
     std::string bin = dir + "/prog_p2.bin";
-    uint16_t write_val = 0xAAAA;
-    if (mutate == "P2-P1") bin = dir + "/prog_p2_mut_p2p1.bin";
-    else if (mutate == "P2-C1") { bin = dir + "/prog_p2_c1.bin"; write_val = 0xAAA8; }
+    if (mv == "P2-ATTR") bin = dir + "/prog_p2_attr.bin";
+    if (mv == "P2-RUN") bin = dir + "/prog_nodone.bin";
+    Setup s;
+    s.bin = bin;
+    s.pokes = pk;
+    s.budget = budget_for(18);
+    Run r = run_program(s);
+    auto m = marks(r);
+    const int64_t en = mark_cycle(m, 3);
+    std::vector<Region> cop;
+    std::vector<lscan::Guard> guards;
+    for (const auto& sg : kSegs) { cop.push_back({sg.t, sg.t + 0x1F}); guards.push_back({sg.t, sg.t + 0x1F, 0, 0}); }
+    cop.push_back({0x1FF80, 0x1FF9F});
+    guards.push_back({0x1FF80, 0x1FF9F, 0, 0});
+    Gate g;
 
-    p1a::Run r = p1a::capture_and_index(bin);
-    checks.expect(r.ok, "P2-fixture: the program ran to DONE");
-    if (!r.ok) return;
-    checks.note("P2: " + std::to_string(r.samples.size()) + " kept samples, " + std::to_string(r.fields.size()) + " fields");
-
-    // ---- G1 (P2's own baseline: prog_p2.s with DMACON $8200, "the same
-    // program" 4.5 asks for -- P2 adds only a CPU write to the list, and no
-    // CPU read there, so this is the one difference from P1-A-set's own
-    // baseline), G2, G3, G4 (except $0E000E), G5, G6 -- restated on P2's
-    // own capture, not re-mutated here (their own red mutations stay
-    // demonstrated on P3 and P1-A, per those files' own header comments) --
-    bool g1_ok, g2, g3, g4, fields_ok;
-    instr::G5Result g5;
-    instr::G6Result g6;
-    {
-        std::vector<std::pair<uint32_t, uint32_t>> regions = {{word_addr(p1a::kLA), word_addr(p1a::kLA) + p1a::kListWords}};
-        Capture g1_baseline = run_capture(dir + "/prog_p2_nocopen.bin", p1a::kBudget);
-        bool g1_base_ran = g1_baseline.loaded && g1_baseline.done.has_value();
-        bool g1_empty = instr::copper_reads(g1_baseline.log, regions).empty();
-        g1_ok = g1_base_ran && g1_empty;
-        checks.expect(g1_ok,
-            "G1 precondition (P2): with COPEN off, no read lands in the Copper region over the same capture");
-
-        std::optional<uint16_t> dmaconr;
-        for (const auto& a : r.c.log) if (a.is_write && a.word_addr == word_addr(0x0E7100)) dmaconr = a.data;
-        g2 = dmaconr.has_value() && (*dmaconr & 0x0200) && (*dmaconr & 0x0080);
-        checks.expect(g2, "G2 precondition (P2): DMACONR has bits 9 and 7 set");
-
-        auto m0w = write_cycles(r.c.log, word_addr(0x0E7000));
-        g3 = !m0w.empty();
-        if (g3) {
-            const instr::Fetch* first_after = nullptr;
-            for (const auto& f : r.fetches) if (f.t1 > m0w[0]) { first_after = &f; break; }
-            g3 = first_after && first_after->byte_addr == p1a::kLA;
+    // The observation: Copper accesses from the enable marker until 14 restart accesses have occurred.
+    std::vector<Acc> rd;
+    std::vector<Pass> ps;
+    bool have14 = false;
+    if (en >= 0) {
+        auto all = reads_in(r, cop, uint64_t(en));
+        auto p = passes_of(all);
+        // pass n (n >= 1) begins with restart access n; the 14th restart access begins pass 14.
+        if (p.size() >= 15) {
+            have14 = true;
+            rd.assign(all.begin(), all.begin() + long(p[14].first) + 1);
+            ps = passes_of(rd);
         }
-        checks.expect(g3, "G3 precondition (P2): the first Copper instruction fetch after marker M0 is at L_A ($0E0000)");
-
-        auto ref = p1a::reference_words(true, "");
-        g4 = check_g4_except(r.fetches, ref, kWriteTarget);
-        checks.expect(g4, "G4 precondition (P2): every Copper read's data equals the word this run's own list "
-                          "prescribes for that address, except $0E000E (graded by P2-ii instead)");
-
-        g5 = instr::check_g5(r.samples, r.fields, r.kCck);
-        checks.note("G5 (P2): mean line length=" + std::to_string(g5.mean_line) + " memory cycles over " +
-                    std::to_string(g5.pairs) + " pairs (227 +/- " + std::to_string(instr::kMeanLineTolerance) + ")");
-        checks.expect(g5.ok, "G5 precondition (P2): beam readings are sane -- H in $00-$E2, V non-decreasing per field, PAL lines 227 memory cycles apart on average");
-
-        g6 = instr::check_g6(r.samples, r.fields);
-        if (!g6.ok) checks.note("G6 diagnostic (P2): smallest line holds " + std::to_string(g6.min_count) + " samples");
-        checks.expect(g6.ok, "G6 precondition (P2): every line holds at least 5 kept samples");
-
-        checks.expect(r.ratio.ok, "I4 precondition (P2) [p24]: the clk_sys-per-memory-cycle ratio is the same integer over the whole capture");
-        checks.note("I4 (P2): kCck=" + std::to_string(r.kCck));
-
-        fields_ok = r.fields.size() >= 4;
-        checks.expect(fields_ok, "G6-fields precondition (P2): at least 4 fields are captured (specification P2.2)");
     }
+    g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2, 3}) && have14,
+          "P2-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and 14 restart accesses occur after the enable marker");
+    std::string why;
+    const bool attr_ok = listing_ok(bin, guards, why);
+    g.stat(checks, attr_ok,
+          "P2-ATTR: the program's listing shows no CPU data access to a Copper segment region or to a parked region of another channel" +
+          (attr_ok ? std::string() : " (" + why + ")"));
 
-    // ---- P1-p1: every half-step's WAIT and MOVE instruction fetches are
-    // present, at their own address, in list order (specification P2.5
-    // lists P1-p1; (i) defines the population through it) -----------------
-    auto p1p1 = p1a::check_p1p1_population(r.execs);
-    if (!p1p1.ok) checks.note("P1-p1 diagnostic (P2): " + std::to_string(p1p1.violations) + " execution(s) with a missing, extra or out-of-order fetch");
-    checks.expect(p1p1.ok, "P1-p1 precondition (P2): every half-step's WAIT and MOVE instruction fetches are present, at their own address, in list order, in every execution");
-
-    // ---- the mutation write: exactly one, at word $0E000E -------------
-    auto wcyc = mutation_write_cycles(r.c.log, write_val);
-    char wbuf[16]; std::snprintf(wbuf, sizeof wbuf, "$%04X", write_val);
-    bool have_write = wcyc.size() == 1;
-    checks.expect(have_write, std::string("P2-fixture: the CPU's own write of ") + wbuf + " to $0E000E was observed exactly once");
-    if (!have_write) return;
-    const uint64_t t_write = wcyc[0];
-
-    // ---- (ii): b_0's own MOVE fetch, at every execution, carries the word
-    // held at $0E000E at that moment (SPECIFICATION.md P2.3-4) ------------
-    bool pre_seen = false, post_seen = false;
-    bool ii_ok = true;
-    std::string first_ii;
-    const uint64_t kM = 32 * r.kCck;
-    for (size_t e = 0; e + 1 < r.execs.size(); ++e) {
-        const instr::Fetch* mv = instr::find_by_addr(r.execs[e].fetches, kB0Addr);
-        if (!mv) continue;
-        const instr::Fetch* nextmv = instr::find_by_addr(r.execs[e].fetches, kA1Addr);
-        if (!nextmv) continue;
-
-        bool before = mv->t2 < t_write;
-        if (before) pre_seen = true; else post_seen = true;
-        uint16_t expect_d = before ? kBeforeVal : kMainWriteVal;
-        if (mv->ir2 != expect_d) {
-            ii_ok = false;
-            if (first_ii.empty()) {
-                char buf[160];
-                std::snprintf(buf, sizeof buf, "execution %zu: b_0's own IR2 read got $%04X, expected $%04X (%s the write)",
-                              e, mv->ir2, expect_d, before ? "before" : "after");
-                first_ii = buf;
+    // (a) pass k (k = 1..13, the passes that begin with a restart access) reads segment k's six words T_k..T_k+10 in address
+    // order, with the data the segment holds.
+    // (b) the Copper's first access after its read of T_k+10 is not at T_k+12 or T_k+14.
+    bool a_ok = have14, b_ok = have14;
+    std::string a_why, b_why;
+    if (have14) {
+        for (size_t k = 1; k < 14; ++k) {
+            const uint32_t tk = chain[k];
+            bool found = false;
+            for (size_t i = ps[k].first; i + 5 <= ps[k].last && !found; ++i) {
+                bool ok = true;
+                for (int w = 0; w < 6 && ok; ++w) if (rd[i + w].addr != tk + 2 * w || rd[i + w].data != mem[tk + 2 * w]) ok = false;
+                found = ok;
+            }
+            if (!found) { a_ok = false; a_why += " pass " + num(k) + " lacks the six words of " + hex(tk, 5) + ";"; }
+            for (size_t i = ps[k].first; i <= ps[k].last; ++i) {
+                if (rd[i].addr != tk + 10) continue;
+                const uint32_t nxt = rd[i + 1].addr;
+                if (nxt == tk + 12 || nxt == tk + 14) {
+                    b_ok = false;
+                    if (b_why.empty()) b_why = " (the first access after the read of " + hex(tk + 10, 5) + " in pass " + num(k) + " is " + hex(nxt, 5) + ")";
+                }
             }
         }
     }
+    g.pre(checks, a_ok,
+          "P2-PRE-A: (a) between its restart access and the next, the Copper reads segment k's six words T_k to T_k+10 in address "
+          "order, with the data the segment holds" + a_why);
+    g.pre(checks, b_ok,
+          "P2-PRE-B: (b) the Copper's first access after its read of T_k+10 is not at T_k+12 or T_k+14, so the access that follows is a "
+          "restart" + b_why);
 
-    checks.expect(pre_seen && post_seen,
-        "P2-p1 precondition: the CPU's own write falls strictly between two b_0 IR2 reads, with at least one "
-        "execution's own read on each side, within the capture");
-
-    // ---- (iii), (iv): every hold interval, over every MOVE of L_A, in
-    // every execution but the last, shows the state P1's own table
-    // predicts -- with b_0's own expected value switched at the CPU's own
-    // write (defect 2: the population is the whole capture, not b_0's own
-    // after-interval alone; reuses p1a::grade() with an override). The
-    // override uses the main run's own kMainWriteVal, not this run's own
-    // write_val, so that P2-C1 (4.5's dedicated-mutation exception) is
-    // graded against the unchanged comparator and the $AAA8-vs-$AAAA
-    // divergence itself is what turns this check red too, as P2-ii's own
-    // (ii) check already is -----------------------------------------------
-    auto override_b0 = [&](int k, uint64_t t2, uint16_t& expected) {
-        if (k == 1) expected = (uint16_t)((t2 < t_write ? kBeforeVal : kMainWriteVal) & 0x7FFF);
-    };
-    p1a::GradeResult g34 = p1a::grade(r.execs, p1a::walking_table(), /*is_set=*/true, r.samples, kM, override_b0);
-
-    if (!g34.ok) checks.note("P2-iii,iv diagnostic: " + std::to_string(g34.violations) + "/" +
-                              std::to_string(g34.covered) + " graded samples violate, first: " + g34.first_desc);
-
-    bool pre_ok = g1_ok && g2 && g3 && g4 && g5.ok && g6.ok && r.ratio.ok && fields_ok && p1p1.ok &&
-                  pre_seen && post_seen;
-
-    if (!ii_ok) checks.note("P2-ii diagnostic: " + first_ii);
-    checks.expect(pre_ok && ii_ok,
-        "P2-ii [p21,p275] COP2-copins-fields-p275.c5,COP2-copins-fields-p275.c6: at every execution, the data "
-        "the MOVE's own IR2 read carries is the word held at $0E000E at that moment -- $8001 before the CPU's "
-        "own write, the written value after it -- not a value fetched once and reused");
-
-    checks.expect(pre_ok && g34.ok,
-        "P2-iii,P2-iv [p21,p36,p275] ch2-the-move-instruction.c1.s2,COP2-copins-fields-p275.c5,"
-        "COP2-copins-fields-p275.c6,COP2-copins-fields-p275.c7,COP2-copins-fields-p275.c8,ch2-appa-copins.c115,"
-        "ch2-appa-copins.c116,ch2-summary-of-copper-instructions.c98,ch2-summary-of-copper-instructions.c99: "
-        "over every MOVE of L_A, in every execution but the last, the hold interval that opens M memory cycles "
-        "after each execution's own IR2 read shows the state that read's own data produces (P1's table), with "
-        "b_0's own expected value switched at the CPU's own write");
-
-    checks.record("ch2-appa-copins.c116 ('the address given by the DA field') is graded on P2-iii,P2-iv for "
-                  "DA=$09A (INTENA) only, the one address this proposition's own capture exercises; P1-B (not "
-                  "built) would add $084, $086 and $08A.");
+    // Expected: restart access k (k = 1..12) is at T_k, and every later one at $12000. The 14 restart accesses are graded.
+    bool ok = have14;
+    std::string got;
+    for (size_t k = 1; k <= 14 && have14; ++k) {
+        const uint32_t want = target(kSegs[std::min<size_t>(k - 1, 12)]);
+        const uint32_t actual = rd[ps[k].first].addr;
+        char b[16]; std::snprintf(b, sizeof b, "%05X ", actual); got += b;
+        if (actual != want) ok = false;
+    }
+    checks.note("P2 restart accesses 1 to 14: " + got);
+    if (g.ok) checks.expect(ok,
+             "P2-RESTART: [p21 p25 p36 p274 p275] " + rd_ids(15, 12) + " " + rd_ids(11, 0) + " ch2-the-move-instruction.c7: the Copper restarts at the "
+             "address IR2 bits 15-1 (COP1LCL) and IR2 bits 2-0 (COP1LCH) form: restart accesses 1 to 12 are at $1AAAA $1CCCC $1F0F0 $1FF00 "
+             "$15554 $13332 $10F0E $100FE $52000 $62000 $22000 $12000 and the 13th and 14th at $12000");
+    else g.skip(checks, "P2-RESTART");
 }
 
 } // namespace p2
 
-// ---------------------------------------------------------------------
-// P6 [p25,p30,p288]: the Copper restarts from COP1LC once per field,
-// during vertical blanking, without a strobe. See prog_p6.s.
-namespace p6 {
+// =============================================================================
+// P3. The word a MOVE delivers is the content of RAM at its IR2 fetch.
+// =============================================================================
+namespace p3 {
 
-constexpr uint32_t kL6A = 0x0E3000;
-constexpr uint32_t kL6B = 0x0E3100;
-constexpr uint32_t kL6C = 0x0E3200;
-constexpr uint32_t kMarkM0 = 0x0E7000;
-constexpr uint32_t kDmaconrSave = 0x0E7100;
-constexpr uint32_t kLogLo = 0x110000, kLogHi = 0x140000;
-constexpr uint64_t kBudget = kBootBudget + 30'000'000;
+constexpr uint32_t kList = 0x36000;
+constexpr uint32_t kIr2 = 0x3600A;
+constexpr uint16_t kValues[4] = {0x00FF, 0x0FF0, 0x0A5A, 0x05A5};
+constexpr uint16_t kInitial = 0x0F0F;
 
-const std::vector<std::pair<uint32_t, uint32_t>> kRegions = {
-    {word_addr(kL6A), word_addr(kL6A) + 8},
-    {word_addr(kL6B), word_addr(kL6B) + 8},
-    {word_addr(kL6C), word_addr(kL6C) + 8},
-};
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    std::vector<Poke> pk;
+    put(pk, kList, {0x0180, 0x0FFF, 0x8001, 0xFF00, 0x0180, kInitial, 0xFFFF, 0xFFFE});
+    if (mv == "P3-B") put(pk, kList + 4, {0xFFFF, 0xFFFE});
+    std::string bin = dir + "/prog_p3.bin";
+    if (mv == "P3-A") bin = dir + "/prog_p3_fast.bin";
+    if (mv == "P3-MAIN") bin = dir + "/prog_p3_dest.bin";
+    if (mv == "P3-ATTR") bin = dir + "/prog_p3_attr.bin";
+    if (mv == "P3-RUN") bin = dir + "/prog_nodone.bin";
+    Setup s;
+    s.bin = bin;
+    s.pokes = pk;
+    s.budget = budget_for(14);
+    Run r = run_program(s);
+    auto m = marks(r);
+    const int64_t en = mark_cycle(m, 3);
+    auto cf = en >= 0 ? complete_fields_after(r, uint64_t(en)) : std::vector<Fld>{};
+    const std::vector<Region> cop = {{kList, kList + 0xFF}};
+    const std::vector<Region> ir2 = {{kIr2, kIr2 + 1}};
+    Gate g;
 
-void push_words(std::vector<std::pair<uint32_t, uint16_t>>& out, uint32_t base, std::initializer_list<uint16_t> words) {
-    uint32_t addr = base;
-    for (uint16_t w : words) { out.push_back({addr, w}); addr += 2; }
+    // The CPU's own writes of the four values, whichever address they go to.
+    auto dest_writes = writes_in(r, {{0x3600A, 0x3600B}, {0x36010, 0x36011}}, en >= 0 ? uint64_t(en) : 0);
+    auto val_writes = writes_in(r, ir2, en >= 0 ? uint64_t(en) : 0);
+    bool four = dest_writes.size() == 4;
+    for (size_t i = 0; four && i < 4; ++i) if (dest_writes[i].data != kValues[i]) four = false;
+
+    // The observation interval: from the 3rd complete field after the enable marker until
+    // 2 complete fields after the last CPU write.
+    uint64_t t0 = 0, t1 = 0;
+    bool window = false;
+    if (cf.size() >= 3 && four) {
+        auto after = complete_fields_after(r, dest_writes.back().t);
+        if (after.size() >= 2) { t0 = cf[2].begin; t1 = after[1].end; window = true; }
+    }
+    g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2, 3}) && four && window,
+          "P3-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, the port shows its four value "
+          "writes in order, and the capture holds two complete fields after the last of them");
+    std::string why;
+    const bool attr_ok = listing_ok(bin, {{kList, kList + 9, 0, 0}, {kIr2, kIr2 + 1, 0, 4}, {kList + 0xC, kList + 0xF, 0, 0},
+                                          {0x36010, 0x36011, 0, 4}, {0x36012, kList + 0xFF, 0, 0}}, why);
+    g.stat(checks, attr_ok,
+          "P3-ATTR: the program's listing shows no CPU data access to the Copper list region " + hex(kList, 5) + "-" + hex(kList + 0xFF, 5) +
+          " other than the four writes of the values, or to a parked region of another channel" + (attr_ok ? std::string() : " (" + why + ")"));
+
+    std::vector<Acc> reads, all_reads;
+    std::vector<Pass> ps;
+    if (window) {
+        reads = reads_in(r, ir2, t0, t1);
+        all_reads = reads_in(r, cop, uint64_t(en), t1);
+        ps = passes_of(all_reads);
+    }
+    // (a) between two consecutive Copper reads of the IR2 word at most one value write, and every value write is followed by a read.
+    bool a_ok = window && !reads.empty();
+    for (size_t j = 0; a_ok && j + 1 < reads.size(); ++j) {
+        int n = 0;
+        for (const auto& w : dest_writes) if (w.t >= reads[j].t && w.t < reads[j + 1].t) ++n;
+        if (n > 1) a_ok = false;
+    }
+    for (size_t i = 0; a_ok && i < dest_writes.size(); ++i) {
+        bool followed = false;
+        for (const auto& x : reads) if (x.t > dest_writes[i].t) followed = true;
+        if (!followed) a_ok = false;
+    }
+    g.pre(checks, a_ok,
+          "P3-PRE-A: (a) between two consecutive Copper reads of " + hex(kIr2, 5) + " there is at most one of the program's four value "
+          "writes, and every value write is followed by at least one Copper read of " + hex(kIr2, 5));
+    // (b) every pass contains a Copper read of the IR2 word.
+    bool b_ok = window && !ps.empty();
+    int complete = 0;
+    for (const auto& p : ps) {
+        if (!p.complete) continue;
+        ++complete;
+        bool has = false;
+        for (size_t i = p.first; i <= p.last; ++i) if (all_reads[i].addr == kIr2) has = true;
+        if (!has) b_ok = false;
+    }
+    g.pre(checks, b_ok && complete >= 4,
+          "P3-PRE-B: (b) every pass contains a Copper read of " + hex(kIr2, 5) + " (" + num(complete) + " complete passes, at least 4 needed)");
+
+    // (i) each d_j is the last value the CPU wrote before r_j, or the initial value before the first write.
+    bool i_ok = window && !reads.empty();
+    std::string dj;
+    for (const auto& x : reads) {
+        uint16_t want = kInitial;
+        for (const auto& w : val_writes) if (w.t < x.t) want = w.data;
+        if (x.data != want) i_ok = false;
+        char b[16]; std::snprintf(b, sizeof b, "%04X ", x.data); dj += b;
+    }
+    // (iii) the values moved over the observed passes are the initial value and the four values, in this order.
+    std::vector<uint16_t> moved;
+    for (const auto& x : reads) if (moved.empty() || moved.back() != x.data) moved.push_back(x.data);
+    const std::vector<uint16_t> want_moved = {kInitial, kValues[0], kValues[1], kValues[2], kValues[3]};
+    bool iii_ok = window && moved == want_moved;
+    // (ii) the colour of every band row is the low 12 bits of the word the latest Copper read of the IR2 word delivered.
+    bool ii_ok = window;
+    size_t band = 0;
+    if (window) {
+        for (const auto& f : complete_fields_after(r, t0)) {
+            if (f.end > t1) break;
+            auto rows = rows_of(r, f);
+            long last_f = -1;
+            for (size_t i = 0; i < rows.size(); ++i) if (rows[i].rgb == 0xFFF) last_f = long(i);
+            if (last_f < 0) { ii_ok = false; continue; }
+            for (size_t i = size_t(last_f) + 1; i < rows.size(); ++i) {
+                if (rows[i].rgb == 0 || rows[i].rgb == 0xFFF) continue;
+                ++band;
+                const Acc* latest = nullptr;
+                for (const auto& x : reads) if (x.t < rows[i].idx) latest = &x;
+                if (!latest || (latest->data & 0xFFF) != rows[i].rgb) ii_ok = false;
+            }
+        }
+    }
+    ii_ok = ii_ok && band > 0;
+    checks.note("P3 values delivered by the Copper reads of " + hex(kIr2, 5) + " in the interval: " + dj + "; band rows graded: " + num(band));
+    if (g.ok) checks.expect(i_ok && ii_ok && iii_ok,
+             "P3-MOVED: [p21 p275] COP2-copins-fields-p275.c7 COP2-copins-fields-p275.c8 ch2-appa-copins.c115 "
+             "ch2-the-move-instruction.c1.s2: the value a MOVE delivers is the word RAM held at its IR2 fetch: every Copper read of " + hex(kIr2, 5) +
+             " returns the last value the CPU wrote there, every band row shows the low 12 bits of the word the latest such read returned, "
+             "and the values delivered over the observed passes are " + hex(kInitial) + " " + hex(kValues[0]) + " " + hex(kValues[1]) + " " +
+             hex(kValues[2]) + " " + hex(kValues[3]) + " in this order");
+    else g.skip(checks, "P3-MOVED");
 }
 
-// G4's own reference table: the words this run's own setup actually wrote
-// (specification 4.5's "own words" rule). Only P6-P1's own mutation
-// changes L6a's content (a WAIT instead of a park); L6b and L6c are the
-// same park-plus-six-zeros pad in every run.
-std::vector<std::pair<uint32_t, uint16_t>> reference_words(const std::string& mutate) {
-    std::vector<std::pair<uint32_t, uint16_t>> out;
-    if (mutate == "P6-P1")
-        push_words(out, kL6A, {0x6401, 0xFF00, 0xFFFF, 0xFFFE, 0x0000, 0x0000, 0x0000, 0x0000});
-    else
-        push_words(out, kL6A, {0xFFFF, 0xFFFE, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000});
-    push_words(out, kL6B, {0xFFFF, 0xFFFE, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000});
-    push_words(out, kL6C, {0xFFFF, 0xFFFE, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000});
+} // namespace p3
+
+// =============================================================================
+// P4. A MOVE that follows a WAIT is performed only once the WAIT is satisfied.
+// =============================================================================
+namespace p4 {
+
+constexpr uint32_t kList = 0x38000;
+
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    std::vector<Poke> pk;
+    put(pk, kList, {0x0180, 0x0FFF, 0x8001, 0xFF00, 0x0180, 0x00F0, 0xFFFF, 0xFFFE,
+                    0x0180, 0x0F00, 0xFFFF, 0xFFFE});
+    if (mv == "P4-MAIN") put(pk, kList + 12, {0xC001, 0xFF00});
+    if (mv == "P4-A") put(pk, kList + 4, {0xFFFF, 0xFFFE});
+    std::string bin = dir + "/prog_p4.bin";
+    if (mv == "P4-B") bin = dir + "/prog_p4_b.bin";
+    if (mv == "P4-ATTR") bin = dir + "/prog_p4_attr.bin";
+    if (mv == "P4-RUN") bin = dir + "/prog_nodone.bin";
+    Setup s;
+    s.bin = bin;
+    s.pokes = pk;
+    s.budget = budget_for(9);
+    Run r = run_program(s);
+    auto m = marks(r);
+    const int64_t en = mark_cycle(m, 3);
+    const uint64_t m0 = mark_cycle(m, 0) >= 0 ? uint64_t(mark_cycle(m, 0)) : 0;
+    auto cf = en >= 0 ? complete_fields_after(r, uint64_t(en)) : std::vector<Fld>{};
+    const std::vector<Region> cop = {{kList, kList + 0xFF}};
+    Gate g;
+
+    g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2, 3}) && cf.size() >= 6,
+          "P4-RUN: the program ran to its DONE mark, wrote markers 0, 1, 2 and 3 once each in order, and the capture holds "
+          "at least six complete fields after the enable marker (" + num(cf.size()) + ")");
+    std::string why;
+    const bool attr_ok = listing_ok(bin, {{kList, kList + 0xFF, 0, 0}}, why);
+    g.stat(checks, attr_ok,
+          "P4-ATTR: the program's listing shows no CPU data access to the Copper list region " + hex(kList, 5) + "-" +
+          hex(kList + 0xFF, 5) + " or to a parked region of another channel" + (attr_ok ? std::string() : " (" + why + ")"));
+
+    std::vector<Acc> rd;
+    std::vector<Pass> ps;
+    if (cf.size() >= 6) {
+        rd = reads_in(r, cop, uint64_t(en), cf[5].end);
+        ps = passes_of(rd);
+    }
+    auto pass_reads = [&](const Pass& p, uint32_t a) {
+        for (size_t i = p.first; i <= p.last; ++i) if (rd[i].addr == a) return true;
+        return false;
+    };
+    int complete = 0;
+    bool a_ok = true, b_ok = true;
+    for (size_t k = 0; k < ps.size(); ++k) {
+        if (ps[k].complete) {
+            ++complete;
+            if (!pass_reads(ps[k], kList + 0xC) || !pass_reads(ps[k], kList + 0xE)) a_ok = false;
+        }
+        if (k >= 1 && rd[ps[k].first].addr != kList) b_ok = false;
+    }
+    g.pre(checks, a_ok && complete >= 4,
+          "P4-PRE-A: (a) in every pass of the interval the Copper reads " + hex(kList + 0xC, 5) + " and " + hex(kList + 0xE, 5) +
+          " (the unsatisfiable WAIT) (" + num(complete) + " complete passes, at least 4 needed)");
+    g.pre(checks, b_ok && ps.size() >= 2,
+          "P4-PRE-B: (b) every pass after the first begins with a restart access at " + hex(kList, 5));
+    {
+        // Control for (b), on the same measurement basis: the first pass begins at the list, in the run and under the start-address contrast.
+        auto first_reads = reads_in(r, cop, m0, cf.size() >= 6 ? cf[5].end : kForever);
+        g.pre(checks, !first_reads.empty() && first_reads[0].addr == kList,
+              "P4-CTRL-B: control for (b): the first pass begins with an access at " + hex(kList, 5));
+    }
+
+    // Expected (i): in every pass the Copper reads MOVE A after its read of $38006; in every observed field the run after (F,F,F) is (0,F,0).
+    bool i_ok = complete >= 4;
+    for (const auto& p : ps) {
+        if (!p.complete) continue;
+        int stage = 0;
+        for (size_t i = p.first; i <= p.last; ++i) {
+            if (stage == 0 && rd[i].addr == kList + 6) stage = 1;
+            else if (stage == 1 && rd[i].addr == kList + 8) stage = 2;
+            else if (stage == 2 && rd[i].addr == kList + 0xA) stage = 3;
+        }
+        if (stage != 3) i_ok = false;
+    }
+    bool fields_ok = cf.size() >= 6, never_red = true;
+    std::string seqs;
+    for (size_t f = 2; f < 6 && f < cf.size(); ++f) {
+        auto rows = rows_of(r, cf[f]);
+        auto seq = run_sequence(rows);
+        seqs += "[" + seq_text(seq) + "]";
+        auto it = std::find(seq.begin(), seq.end(), 0xFFF);
+        if (it == seq.end() || it + 1 == seq.end() || *(it + 1) != 0x0F0) fields_ok = false;
+        for (const auto& x : rows) if (x.rgb == 0xF00) never_red = false;
+    }
+    // Expected (ii): no Copper read of MOVE B, and no row shows (F,0,0), in the whole interval.
+    int move_b_reads = 0;
+    for (const auto& a : rd) if (a.addr == kList + 0x10 || a.addr == kList + 0x12) ++move_b_reads;
+    checks.note("P4 run sequences of the observed fields " + seqs + "; reads of " + hex(kList + 0x10, 5) + " or " +
+                hex(kList + 0x12, 5) + " in the interval: " + num(move_b_reads));
+    if (g.ok) checks.expect(i_ok && fields_ok && move_b_reads == 0 && never_red,
+             "P4-MOVE-AFTER-WAIT: [p19] ch2-about-the-copper.c18.s2: the Copper performs MOVE A (reads " + hex(kList + 8, 5) +
+             " and " + hex(kList + 0xA, 5) + " after " + hex(kList + 6, 5) + ", and every observed field shows (0,F,0) after (F,F,F)) and "
+             "never performs MOVE B behind the unsatisfiable WAIT (no read of " + hex(kList + 0x10, 5) + " or " + hex(kList + 0x12, 5) +
+             ", no (F,0,0) row) in all six fields");
+    else g.skip(checks, "P4-MOVE-AFTER-WAIT");
+}
+
+} // namespace p4
+
+// =============================================================================
+// P5. One 680x0 long-word write loads a location register pair, H from the high
+// word and L from the low word; the Copper starts there after the pair's strobe,
+// and restarts from COP1LC at every vertical blank.
+// =============================================================================
+namespace p5 {
+
+constexpr uint32_t kA = 0x20004, kB = 0x25A5C, kC = 0x40002;
+
+struct Leg {
+    bool graded_ok = false; // the comparison holds
+    bool pre_ok = false;    // every precondition of the leg holds
+    std::string text;
+};
+
+// One run (R1 or R2) in one mode.
+Leg leg(Checks& checks, const std::string& bin, bool r1, bool ecs, const std::string& mv) {
+    std::vector<Poke> pk;
+    put(pk, kA, {0xFFFF, 0xFFFE});
+    put(pk, kB, {0xFFFF, 0xFFFE});
+    put(pk, kC, {0xFFFF, 0xFFFE});
+    if (mv == "P5-C") put(pk, kA, {0x0180, 0x0F00, 0xFFFF, 0xFFFE});
+    Setup s;
+    s.bin = bin;
+    s.pokes = pk;
+    s.cfg.chipset_config = ecs ? 0x08 : 0x00;
+    s.budget = budget_for(r1 ? 13 : 7);
+    Run r = run_program(s);
+    auto m = marks(r);
+    const std::string tag = std::string(" [") + (r1 ? "R1" : "R2") + ", " + (ecs ? "ECS" : "OCS") + "]";
+    const std::vector<Region> cop = {{kA, kA + 0x1B}, {kB, kB + 0x23}, {kC, kC + 0x1D}};
+    Gate g;
+    const bool marks_ok = r1 ? marks_are(m, {0, 1, 2, 3, 4, 5}) : marks_are(m, {0, 1, 2, 3, 5});
+    g.run(checks, r.loaded && r.released && r.done && marks_ok,
+          "P5-RUN: the program ran to its DONE mark and wrote its markers once each in order" + tag);
+    std::string why;
+    const bool attr_ok = listing_ok(bin, {{kA, kA + 0x1B, 0, 0}, {kB, kB + 0x23, 0, 0}, {kC, kC + 0x1D, 0, 0}}, why);
+    g.stat(checks, attr_ok,
+          "P5-ATTR: the program's listing shows no CPU data access to a Copper list region or to a parked region of another channel" + tag +
+          (attr_ok ? std::string() : " (" + why + ")"));
+    Leg out;
+    if (!marks_ok) { out.pre_ok = false; return out; }
+    const uint64_t m0 = uint64_t(mark_cycle(m, 0)), m3 = uint64_t(mark_cycle(m, 3)), m5 = uint64_t(mark_cycle(m, 5));
+    const uint64_t m4 = r1 ? uint64_t(mark_cycle(m, 4)) : m5;
+    auto rd = reads_in(r, cop, m0, m5);
+    auto ps = passes_of(rd);
+    if (dbg()) {
+        std::cout << "DEBUG P5" << tag << ": m0=" << m0 << " m3=" << m3 << " m4=" << m4 << " m5=" << m5 << std::endl;
+        for (const auto& x : m) std::cout << "  mark " << x.value << " at " << x.cycle << std::endl;
+        for (size_t i = 0; i < rd.size() && i < 10; ++i)
+            std::cout << "  rd t=" << rd[i].t << " a=" << hex(rd[i].addr, 5) << " d=" << hex(rd[i].data) << std::endl;
+    }
+    // (a) no Copper access between marker 0 and marker 3.
+    size_t early = 0;
+    for (const auto& x : rd) if (x.t < m3) ++early;
+    g.pre(checks, early == 0, "P5-PRE-A: (a) no Copper access occurs between marker 0 and marker 3 (" + num(early) + ")" + tag);
+    // Control for (a), on the same measurement basis: no Copper access occurs between marker 0 and marker 2 (the strobe, with Copper DMA still off).
+    size_t before_m2 = 0;
+    const uint64_t m2 = uint64_t(mark_cycle(m, 2));
+    for (const auto& x : rd) if (x.t < m2) ++before_m2;
+    g.pre(checks, before_m2 == 0, "P5-CTRL-A: control for (a): no Copper access occurs between marker 0 and marker 2 (" + num(before_m2) + ")" + tag);
+    // (b) at least 4 restart accesses in each phase.
+    size_t n1 = 0, n2 = 0;
+    for (size_t k = 1; k < ps.size(); ++k) {
+        const uint64_t t = rd[ps[k].first].t;
+        if (t > m3 && t < m4) ++n1;
+        else if (t > m4) ++n2;
+    }
+    g.pre(checks, r1 ? (n1 >= 4 && n2 >= 4) : (n1 + n2 >= 4),
+          "P5-PRE-B: (b) at least 4 restart accesses occur " + std::string(r1 ? "between marker 3 and marker 4 and at least 4 after marker 4"
+          : "after marker 3") + " (" + num(n1) + ", " + num(n2) + ")" + tag);
+    // (c) every pass reads exactly the two words of the end WAIT at its list address.
+    bool c_ok = !ps.empty();
+    for (const auto& p : ps) {
+        if (!p.complete) continue;
+        const bool two = p.last == p.first + 1 && rd[p.first].data == 0xFFFF && rd[p.last].data == 0xFFFE &&
+                         rd[p.last].addr == rd[p.first].addr + 2 &&
+                         (rd[p.first].addr == kA || rd[p.first].addr == kB || rd[p.first].addr == kC);
+        if (!two) c_ok = false;
+    }
+    g.pre(checks, c_ok, "P5-PRE-C: (c) every pass reads exactly the two words of the end WAIT at its list address" + tag);
+    // Control for (c), on the same measurement basis: the first pass reads exactly the two words of the end WAIT at its list address.
+    const bool c1_ok = !ps.empty() && ps[0].complete && ps[0].last == ps[0].first + 1 && rd[ps[0].first].data == 0xFFFF &&
+                       rd[ps[0].last].data == 0xFFFE && rd[ps[0].last].addr == rd[ps[0].first].addr + 2 &&
+                       (rd[ps[0].first].addr == kA || rd[ps[0].first].addr == kB || rd[ps[0].first].addr == kC);
+    g.pre(checks, c1_ok, "P5-CTRL-C: control for (c): the first pass reads exactly the two words of the end WAIT at its list address" + tag);
+    out.pre_ok = g.ok;
+
+    // Expected.
+    const Acc* first = nullptr;
+    for (const auto& x : rd) if (x.t >= m3) { first = &x; break; }
+    bool ok = first != nullptr;
+    std::string got;
+    if (first) got = "first " + hex(first->addr, 5);
+    if (r1) {
+        if (!first || first->addr != kA) ok = false;
+        for (size_t k = 1; k < ps.size(); ++k) {
+            const uint64_t t = rd[ps[k].first].t;
+            const uint32_t a = rd[ps[k].first].addr;
+            if (t > m3 && t < m4 && a != kA) ok = false;
+            if (t > m4 && a != kB) ok = false;
+        }
+    } else {
+        if (!first || first->addr != kB) ok = false;
+        for (size_t k = 1; k < ps.size(); ++k) if (rd[ps[k].first].t > m3 && rd[ps[k].first].addr != kA) ok = false;
+    }
+    std::string rs;
+    for (size_t k = 1; k < ps.size() && k < 12; ++k) rs += " " + hex(rd[ps[k].first].addr, 5);
+    checks.note("P5" + tag + " " + got + "; restart accesses:" + rs);
+    out.graded_ok = ok;
     return out;
 }
 
-// Runs and grades one P6 capture against one video standard's own bounds
-// (SPECIFICATION.md 3.3, P6.4-5). label distinguishes PAL/NTSC in printed
-// lines; std_label names the standard the *grading rule* uses (differs
-// from label only for P6-p3's own mutation, which grades a PAL capture
-// with the NTSC rule).
-void run_one(Checks& checks, const std::string& dir, const std::string& bin, nmh::Config cfg,
-             const std::string& mutate, const char* label, const char* std_label,
-             int restart_v_hi, int h_max, double mean_lo, double mean_hi, int expect_v_a, int expect_v_b) {
-    Capture c = run_capture(bin, kBudget, cfg);
-    bool ran = c.loaded && c.done.has_value();
-    checks.expect(ran, std::string("P6-fixture (") + label + "): the program ran to DONE");
-    if (!ran) return;
-
-    auto raw = instr::parse_samples(c.log, word_addr(kLogLo), word_addr(kLogHi));
-    auto samples = instr::discard_torn(raw);
-    auto fields = instr::find_fields(samples);
-    checks.note(std::string("P6 (") + label + "): " + std::to_string(samples.size()) + " kept samples, " +
-                std::to_string(fields.size()) + " fields");
-
-    auto reads = instr::copper_reads(c.log, kRegions);
-    auto fr = instr::pair_fetches(reads);
-
-    // ---- (i)'s own "reported" clause (specification P6.4(i), defect 17):
-    // every Copper read I1 pairs into no fetch is reported with its
-    // address and its nearest sample's own beam line -- not graded -------
-    for (const auto& u : fr.unpaired) {
-        uint64_t best_d = UINT64_MAX; int line = -1;
-        for (const auto& s : samples) {
-            uint64_t d = s.s > u.cycle ? s.s - u.cycle : u.cycle - s.s;
-            if (d < best_d) { best_d = d; line = s.V(); }
-        }
-        char b[128];
-        std::snprintf(b, sizeof b, "P6 (%s): unpaired Copper read at $%06X data=$%04X, nearest sample's own line $%X",
-                      label, u.word_addr * 2, u.data, line);
-        checks.note(b);
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    bool all_pre = true, all_ok = true;
+    for (bool ecs : {true, false}) {
+        std::string b1 = dir + "/prog_p5_r1.bin", b2 = dir + "/prog_p5_r2.bin";
+        if (mv == "P5-R1") b1 = dir + "/prog_p5_r1x.bin";
+        if (mv == "P5-R2") b2 = dir + "/prog_p5_r2x.bin";
+        if (mv == "P5-A") b1 = dir + "/prog_p5_r1_a.bin";
+        if (mv == "P5-B") b1 = dir + "/prog_p5_r1_b.bin";
+        if (mv == "P5-ATTR") b1 = dir + "/prog_p5_r1_attr.bin";
+        if (mv == "P5-RUN") { b1 = dir + "/prog_nodone.bin"; b2 = dir + "/prog_nodone.bin"; }
+        Leg l1 = leg(checks, b1, true, ecs, mv);
+        Leg l2 = leg(checks, b2, false, ecs, mv);
+        all_pre = all_pre && l1.pre_ok && l2.pre_ok;
+        all_ok = all_ok && l1.graded_ok && l2.graded_ok;
     }
-
-    auto ratio = instr::measure_ratio(samples, fields);
-    checks.expect(ratio.ok, std::string("I4 precondition (P6 ") + label + ") [p24]: the clk_sys-per-memory-cycle ratio is the same integer over the whole capture");
-    uint64_t kCck = ratio.ok ? ratio.kCck : 0;
-
-    // ---- G1: baseline (no COPEN) ---------------------------------------
-    bool g1_ok;
-    {
-        Capture base = run_capture(dir + "/prog_p6_nocopen.bin", kBudget, cfg);
-        bool base_ran = base.loaded && base.done.has_value();
-        auto base_reads = instr::copper_reads(base.log, kRegions);
-        g1_ok = base_ran && base_reads.empty();
-        checks.expect(g1_ok,
-            std::string("G1 precondition (P6 ") + label + "): with COPEN off, no read lands in the Copper regions over the same capture");
+    if (!all_pre) {
+        checks.record("NOT GRADED P5-LOCATION: a precondition of one of the four runs does not hold");
+        return;
     }
-    // ---- G2 -------------------------------------------------------------
-    bool g2;
-    {
-        std::optional<uint16_t> val;
-        for (const auto& a : c.log) if (a.is_write && a.word_addr == word_addr(kDmaconrSave)) val = a.data;
-        g2 = val.has_value() && (*val & 0x0200) && (*val & 0x0080);
-        checks.expect(g2, std::string("G2 precondition (P6 ") + label + "): DMACONR has bits 9 and 7 set");
-    }
-    // ---- G3 -------------------------------------------------------------
-    bool g3;
-    {
-        auto m0w = write_cycles(c.log, word_addr(kMarkM0));
-        g3 = !m0w.empty() && !fr.fetches.empty();
-        if (g3) {
-            const instr::Fetch* first_after = nullptr;
-            for (const auto& f : fr.fetches) if (f.t1 > m0w[0]) { first_after = &f; break; }
-            g3 = first_after && first_after->byte_addr == kL6A;
-        }
-        checks.expect(g3, std::string("G3 precondition (P6 ") + label + "): the first Copper instruction fetch after marker M0 is at L6a ($0E3000)");
-    }
-    // ---- G4 -------------------------------------------------------------
-    bool g4;
-    {
-        auto ref = reference_words(mutate);
-        g4 = instr::check_g4(fr.fetches, ref, fr.unpaired);
-        checks.expect(g4, std::string("G4 precondition (P6 ") + label + "): every Copper read's data equals the word this run's own setup prescribes for that address");
-    }
-    // ---- G5 ---------------------------------------------------------------
-    instr::G5Result g5;
-    {
-        g5 = instr::check_g5(samples, fields, kCck, h_max, mean_lo, mean_hi);
-        checks.note(std::string("G5 (P6 ") + label + "): mean line length=" + std::to_string(g5.mean_line) +
-                    " memory cycles over " + std::to_string(g5.pairs) + " pairs (" + std_label + " rule)");
-        checks.expect(g5.ok, std::string("G5 precondition (P6 ") + label + "): beam readings are sane for the " + std_label + " rule");
-    }
-    // ---- G6 -------------------------------------------------------------
-    instr::G6Result g6;
-    {
-        g6 = instr::check_g6(samples, fields);
-        if (!g6.ok) checks.note(std::string("G6 diagnostic (P6 ") + label + "): smallest line holds " + std::to_string(g6.min_count) + " samples");
-        checks.expect(g6.ok, std::string("G6 precondition (P6 ") + label + "): every line holds at least 5 kept samples");
-    }
-    // ---- P6-p2: at least four wraps -------------------------------------
-    bool wraps_ok;
-    {
-        int wraps = fields.empty() ? 0 : (int)fields.size() - 1;
-        checks.note(std::string("P6-p2 (") + label + "): " + std::to_string(wraps) + " wraps in the capture");
-        wraps_ok = wraps >= 4;
-        checks.expect(wraps_ok, std::string("P6-p2 precondition (P6 ") + label + "): at least four wraps fall in the capture");
-    }
-    // ---- P6-p3: the video standard selected is in effect -----------------
-    bool p6p3_ok;
-    {
-        bool any = false, ok = true;
-        int max_v_seen = -1;
-        for (size_t f = 1; f + 1 < fields.size(); ++f) {
-            int local_max = -1;
-            for (size_t i = fields[f].begin; i < fields[f].end; ++i) local_max = std::max(local_max, samples[i].V());
-            if (local_max < 0) continue;
-            any = true;
-            if (local_max > max_v_seen) max_v_seen = local_max;
-            if (local_max != expect_v_a && local_max != expect_v_b) ok = false;
-        }
-        char buf[32]; std::snprintf(buf, sizeof buf, "$%X", max_v_seen);
-        checks.note(std::string("P6-p3 (") + label + "): largest kept V per complete field, max seen=" + buf);
-        p6p3_ok = any && ok;
-        checks.expect(p6p3_ok,
-            std::string("P6-p3 precondition (P6 ") + label + ") [p24]: the video standard selected is in effect -- every "
-            "complete field's own largest kept V matches the " + std_label + " rule");
-    }
-
-    bool pre_ok = g1_ok && g2 && g3 && g4 && g5.ok && g6.ok && ratio.ok && wraps_ok && p6p3_ok;
-
-    // ---- P6-p1 and (i): fetch count and address per field ---------------
-    bool p1_ok = true, i_ok = true;
-    {
-        std::string diag_p1, diag_i;
-        for (size_t f = 1; f < fields.size(); ++f) {
-            uint64_t prev_s = samples[fields[f - 1].end - 1].s;
-            uint64_t own_last_s = samples[fields[f].end - 1].s;
-            std::vector<const instr::Fetch*> inrange;
-            for (const auto& fe : fr.fetches) if (fe.t1 > prev_s && fe.t1 <= own_last_s) inrange.push_back(&fe);
-            if (inrange.size() > 1) {
-                p1_ok = false;
-                if (diag_p1.empty()) { char b[96]; std::snprintf(b, sizeof b, "field %zu: %zu fetches", f, inrange.size()); diag_p1 = b; }
-            }
-            if (inrange.size() != 1 || inrange[0]->byte_addr != kL6A) {
-                i_ok = false;
-                if (diag_i.empty()) {
-                    char b[140];
-                    if (inrange.empty()) std::snprintf(b, sizeof b, "field %zu: no fetch", f);
-                    else std::snprintf(b, sizeof b, "field %zu: fetch at $%06X (%zu total)", f, inrange[0]->byte_addr, inrange.size());
-                    diag_i = b;
-                }
-            }
-        }
-        if (!p1_ok) checks.note(std::string("P6-p1 diagnostic (") + label + "): " + diag_p1);
-        checks.expect(pre_ok && p1_ok, std::string("P6-p1 precondition (P6 ") + label + "): between restarts the Copper is parked -- at most one instruction fetch per field");
-        if (!i_ok) checks.note(std::string("P6-i diagnostic (") + label + "): " + diag_i);
-        checks.expect(pre_ok && p1_ok && i_ok,
-            std::string("P6-i (") + label + ") [p25,p30,p288] appB-note.c9: in every field there is exactly one instruction fetch, at COP1LC's own value (L6a)");
-    }
-
-    // ---- (ii): the restart's own IR1 read lies after the previous
-    // field's last kept sample and before its own field's first sample's
-    // own VHPOSR store that reads the video standard's own
-    // vertical-blanking-end line (defect 18: the bound is that store's
-    // own cycle, not the sample's INTENAR-store time s) -------------------
-    {
-        bool ii_ok = true; int graded = 0;
-        for (size_t f = 1; f < fields.size(); ++f) {
-            uint64_t prev_s = samples[fields[f - 1].end - 1].s;
-            const instr::Fetch* restart = nullptr;
-            for (const auto& fe : fr.fetches) if (fe.t1 > prev_s) { restart = &fe; break; }
-            if (!restart) continue;
-            std::optional<uint64_t> bound_s;
-            for (size_t i = fields[f].begin; i < fields[f].end; ++i)
-                if (samples[i].V() >= restart_v_hi) { bound_s = samples[i].s_vhposr; break; }
-            if (!bound_s) continue;
-            ++graded;
-            if (!(restart->t1 > prev_s && restart->t1 < *bound_s)) ii_ok = false;
-        }
-        checks.expect(pre_ok && p1_ok && graded > 0 && ii_ok,
-            std::string("P6-ii (") + label + ") [p25,p30,p219,p79] appB-note.c9: the restart's own IR1 read lies after the "
-            "previous field's last kept sample and before its own field's first sample's own VHPOSR store reading the " + std_label + " rule's own vertical-blanking-end line");
-    }
-
-    // ---- (iii): no fetch ever at L6c -------------------------------------
-    {
-        bool iii_ok = true;
-        for (const auto& fe : fr.fetches) if (fe.byte_addr == kL6C) iii_ok = false;
-        checks.expect(pre_ok && p1_ok && iii_ok, std::string("P6-iii (") + label + ") [p25]: no fetch occurs at L6c, the COP2LC value");
-    }
-
-    // ---- P6_C1's own guard: its own calibrated write (prog_p6.s,
-    // SEG_A_ITERS) actually landed at a line in $64-$C8, as the
-    // specification's own contrasting case requires (its header comment
-    // states the calibration; this is what checks it). It also reports
-    // which field the first fetch at L6b actually falls in, per core
-    // (defect 20: measured, not assumed) -----------------------------------
-    if (mutate == "P6-C1") {
-        auto wa = write_cycles(c.log, word_addr(0x0E7004));
-        bool ok = wa.size() == 1;
-        int line = -1;
-        if (ok) {
-            for (const auto& a : c.log) if (a.is_write && a.word_addr == word_addr(0x0E7004) && a.cycle == wa[0]) line = (a.data >> 8) & 0xFF;
-            ok = line >= 0x64 && line <= 0xC8;
-        }
-        checks.note(std::string("P6-C1 (") + label + "): the calibrated write's own marker reads line $" +
-                    (line >= 0 ? [&]{ char b[8]; std::snprintf(b,sizeof b,"%X",line); return std::string(b); }() : std::string("?")));
-        checks.expect(ok, std::string("P6-C1 guard (P6 ") + label + "): the field-3 write lands at a line in $64-$C8, as SPECIFICATION.md's own contrasting case requires");
-
-        const instr::Fetch* first_l6b = nullptr;
-        for (const auto& fe : fr.fetches) if (fe.byte_addr == kL6B) { first_l6b = &fe; break; }
-        int at_field = -1;
-        if (first_l6b) for (size_t f = 0; f < fields.size(); ++f)
-            if (first_l6b->t1 >= samples[fields[f].begin].s && first_l6b->t1 <= samples[fields[f].end - 1].s) { at_field = (int)f; break; }
-        checks.note(std::string("P6-C1 (") + label + "): the first fetch at L6b falls in capture field " +
-                    (at_field >= 0 ? std::to_string(at_field) : std::string("?")));
-    }
+    checks.expect(all_ok,
+                  "P5-LOCATION: [p25 p288] COP2-location-registers.c6 COP2-location-registers.c9 ch2-location-registers.c11 "
+                  "COP2-location-registers.c13 appB-note.c9: a long-word write loads the high word into COPxLCH and the low word into COPxLCL; "
+                  "after the matching strobe the Copper's first fetch is at that address, and at every vertical blank it restarts from COP1LC "
+                  "(R1 in ECS and OCS: $20004, then $25A5C after the write without a strobe; R2: the COP2 strobe starts at $25A5C and restarts are at $20004)");
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
-    // ---- PAL run --------------------------------------------------------
-    {
-        std::string bin = dir + "/prog_p6.bin";
-        if (mutate == "P6-P1") bin = dir + "/prog_p6_mut_p6p1.bin";
-        else if (mutate == "P6-P2") bin = dir + "/prog_p6_mut_shortcap.bin";
-        else if (mutate == "P6-C1") bin = dir + "/prog_p6_c1.bin";
-        nmh::Config cfg; // ECS/PAL default
-        run_one(checks, dir, bin, cfg, mutate, "PAL", "PAL",
-                /*restart_v_hi=*/0x1E, /*h_max=*/0xE2, /*mean_lo=*/227.0 - instr::kMeanLineTolerance,
-                /*mean_hi=*/227.0 + instr::kMeanLineTolerance, /*expect_v_a=*/0x137, /*expect_v_b=*/0x138);
-    }
-    // ---- NTSC run ---------------------------------------------------------
-    {
-        std::string bin = dir + "/prog_p6.bin";
-        nmh::Config cfg;
-        cfg.chipset_config = (mutate == "P6-P3") ? 0x08 /* PAL, P6-p3's own mutation */ : 0x0A; // ECS/NTSC
-        // P6-P1, P6-P2 and P6-C1 are exercised on the PAL leg's own binary
-        // above only; this leg always loads the plain prog_p6.bin for them,
-        // so it must be graded (G4's reference words, the P6-C1 guard) as
-        // the plain, unmutated run too, not as whichever mutation the PAL
-        // leg is running. P6-P3 is the one mutation this leg itself carries
-        // (the config swap above), so its own label passes through.
-        std::string ntsc_mutate = (mutate == "P6-P3") ? mutate : std::string();
-        run_one(checks, dir, bin, cfg, ntsc_mutate, "NTSC", "NTSC",
-                /*restart_v_hi=*/0x16, /*h_max=*/0xE3, /*mean_lo=*/227.0 - instr::kMeanLineTolerance,
-                /*mean_hi=*/228.0 + instr::kMeanLineTolerance, /*expect_v_a=*/0x105, /*expect_v_b=*/0x106);
-    }
-    // ---- P6's own contrasting case: a field-3 register write is graded
-    // against the unchanged "L6a in every field" comparator above -------
-    if (mutate == "P6-C1")
-        checks.record("MUTATION P6-C1: field 3's own COP1LC write (L6b) is graded on the same, unchanged PAL "
-                      "run and comparator as the main run; P6-i is expected to diverge, at the field the "
-                      "MEASURED lines above give per core (defect 20: not assumed).");
+} // namespace p5
 
-    checks.record("COP2-location-registers.c6 and COP2-location-registers.c9 ('the register with the lower "
-                  "address always has a name ending in H') name registers; P6-iii observes only that no fetch "
-                  "occurs at COP2LC's own value, so it carries no id of its own here (the specification uses "
-                  "these two ids in P5 only; P6's own claim is appB-note.c9, already carried by P6-i and P6-ii).");
+// =============================================================================
+// P6. A 680x0 long-word write puts the most significant word at the lower word address.
+// =============================================================================
+namespace p6 {
+
+void run(Checks& checks, const std::string& dir, const std::string& mv, bool is_tg68k) {
+    struct Mode { const char* name; uint8_t cfg; };
+    std::vector<Mode> modes = {{"68000", 0x00}};
+    if (is_tg68k) { modes.push_back({"68010", 0x01}); modes.push_back({"68020", 0x03}); }
+    std::string bin = dir + "/prog_p6.bin";
+    if (mv == "P6-MAIN") bin = dir + "/prog_p6_value.bin";
+    if (mv == "P6-A") bin = dir + "/prog_p6_nopre.bin";
+    if (mv == "P6-RUN") bin = dir + "/prog_nodone.bin";
+    for (const auto& md : modes) {
+        Setup s;
+        s.bin = bin;
+        s.cfg.cpu_config = md.cfg;
+        s.budget = 3'000'000;
+        s.peeks = {kResults, kResults + 2};
+        Run r = run_program(s);
+        auto m = marks(r);
+        const std::string tag = std::string(" [") + NMH_XSTR(NANOMIG_CORE_NAME) + " core, " + md.name + " mode]";
+        Gate g;
+        g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2}),
+              "P6-RUN: the program ran to its DONE mark and wrote markers 0, 1 and 2 once each in order" + tag);
+        const int64_t m1 = mark_cycle(m, 1), m2 = mark_cycle(m, 2);
+        const uint64_t t1 = m1 >= 0 ? uint64_t(m1) : 0, t2 = m2 >= 0 ? uint64_t(m2) : 0;
+        auto w0 = writes_in(r, {{0x46000, 0x46001}}, 0, t1);
+        auto w2 = writes_in(r, {{0x46002, 0x46003}}, 0, t1);
+        g.pre(checks, !w0.empty() && !w2.empty() && w0.back().data == 0xAAAA && w2.back().data == 0x5555,
+              "P6-PRE-A: (a) the writes of $AAAA to $46000 and $5555 to $46002 occur before marker 1" + tag);
+        auto a0 = writes_in(r, {{0x46000, 0x46001}}, t1, t2);
+        auto a2 = writes_in(r, {{0x46002, 0x46003}}, t1, t2);
+        const uint16_t res0 = r.peeked.count(kResults) ? r.peeked[kResults] : 0;
+        const uint16_t res2 = r.peeked.count(kResults + 2) ? r.peeked[kResults + 2] : 0;
+        checks.note("P6" + tag + " writes to $46000 between markers 1 and 2: " + num(a0.size()) + " (data " +
+                    (a0.empty() ? std::string("none") : hex(a0[0].data)) + "), to $46002: " + num(a2.size()) + " (data " +
+                    (a2.empty() ? std::string("none") : hex(a2[0].data)) + "), result words " + hex(res0) + " " + hex(res2));
+        if (g.ok) checks.expect(a0.size() == 1 && a0[0].data == 0x1234 && a2.size() == 1 && a2[0].data == 0x5678 && res0 == 0x1234 && res2 == 0x5678,
+                 "P6-LONG: [p25] ch2-location-registers.c11 COP2-location-registers.c13: MOVE.L #$12345678 to $46000 writes $1234 to $46000 "
+                 "and $5678 to $46002, exactly one write each, and reads back as $1234 and $5678" + tag);
+    else g.skip(checks, "P6-LONG");
+    }
 }
 
 } // namespace p6
 
-// ---------------------------------------------------------------------
-// P7 [p139,p145,p147,p164,p288]: the audio pointer restarts from AUD0LC
-// whenever the length count finishes. No Copper. See prog_p7.s.
+// =============================================================================
+// P7. With COPCON bit 1 (CDANG) set, a Copper MOVE writes a register in $40-$7E:
+// a MOVE to BLTSIZE starts the blitter.
+// =============================================================================
 namespace p7 {
 
-constexpr uint32_t kBufA = 0x0E4000;
-constexpr uint32_t kBufB = 0x0E4100;
-constexpr uint32_t kDmaconrSave = 0x0E7108; // the specification's own address (P7.2, step 7)
-constexpr uint64_t kBudget = kBootBudget + 6'000'000;
+constexpr uint32_t kList = 0x3A000, kSafe = 0x3A100, kDest = 0x48000;
 
-const std::vector<std::pair<uint32_t, uint32_t>> kRegions = {
-    {word_addr(kBufA), word_addr(kBufA) + 8},
-    {word_addr(kBufB), word_addr(kBufB) + 8},
-};
+struct Leg { bool pre_ok = false, ok = false; };
 
-// Every read (not paired: audio fetches are single words, not two-word
-// instructions) in the audio regions, in cycle order.
-std::vector<nmh::RamAccess> audio_reads(const std::vector<nmh::RamAccess>& log) {
-    std::vector<nmh::RamAccess> out;
-    for (const auto& a : log) if (!a.is_write && instr::in_regions(a.word_addr, kRegions)) out.push_back(a);
+Leg leg(Checks& checks, const std::string& bin, bool ecs, const std::string& mv) {
+    std::vector<Poke> pk;
+    put(pk, kList, {mv == "P7-MAIN" ? uint16_t(0x0180) : uint16_t(0x0058), 0x0041, 0x0082, 0xA100, 0x0080, 0x0003, 0xFFFF, 0xFFFE});
+    put(pk, kSafe, {0xFFFF, 0xFFFE});
+    put(pk, kDest, {0xA5A5});
+    Setup s;
+    s.bin = bin;
+    s.pokes = pk;
+    s.cfg.chipset_config = ecs ? 0x08 : 0x00;
+    s.budget = budget_for(7);
+    s.peeks = {kResults};
+    Run r = run_program(s);
+    auto m = marks(r);
+    const std::string tag = std::string(" [") + (ecs ? "ECS" : "OCS") + "]";
+    const std::vector<Region> cop = {{kList, kList + 0x1F}, {kSafe, kSafe + 0x1F}};
+    Gate g;
+    g.run(checks, r.loaded && r.released && r.done && marks_are(m, {0, 1, 2, 3}),
+          "P7-RUN: the program ran to its DONE mark and wrote markers 0, 1, 2 and 3 once each in order" + tag);
+    std::string why;
+    const bool attr_ok = listing_ok(bin, {{kList, kList + 0x1F, 0, 0}, {kSafe, kSafe + 0x1F, 0, 0}, {kDest, kDest + 1, 1, 1},
+                                          {kDest + 2, kDest + 0xFF, 0, 0}}, why);
+    g.stat(checks, attr_ok,
+          "P7-ATTR: the program's listing shows no CPU data access to a Copper list region or to the blitter destination word beyond its "
+          "one clearing write and its one final read, or to a parked region of another channel" + tag + (attr_ok ? std::string() : " (" + why + ")"));
+    Leg out;
+    if (!marks_are(m, {0, 1, 2, 3})) return out;
+    const uint64_t m0 = uint64_t(mark_cycle(m, 0)), m3 = uint64_t(mark_cycle(m, 3));
+    // The result is stored by the CPU after it reads the destination word.
+    auto stores = writes_in(r, {{kResults, kResults + 1}}, m3);
+    const uint64_t tres = stores.empty() ? kForever : stores[0].t;
+    auto rd = reads_in(r, cop, m0, tres);
+    auto ps = passes_of(rd);
+    auto w48 = writes_in(r, {{kDest, kDest + 1}}, m0, tres);
+    // The CPU's clearing write is the one that carries $0000 before the enable marker; every other write is the blitter's.
+    std::vector<Acc> blit;
+    bool cpu_write = false;
+    for (const auto& w : w48) {
+        if (!cpu_write && w.data == 0x0000 && w.t < m3) { cpu_write = true; continue; }
+        blit.push_back(w);
+    }
+    const Acc* r3a002 = nullptr;
+    for (const auto& x : rd) if (x.addr == kList + 2) { r3a002 = &x; break; }
+    size_t before = 0;
+    for (const auto& w : blit) if (!r3a002 || w.t < r3a002->t) ++before;
+    // (a) no blitter access occurs between marker 0 and the Copper's read of $3A002.
+    g.pre(checks, !r3a002 ? blit.empty() : before == 0,
+          "P7-PRE-A: (a) no blitter access occurs between marker 0 and the Copper's read of " + hex(kList + 2, 5) + " (" + num(before) + ")" + tag);
+    // (b) the CPU's write of $0000 to the destination word occurs before the enable marker.
+    g.pre(checks, cpu_write, "P7-PRE-B: (b) the CPU's write of $0000 to " + hex(kDest, 5) + " occurs before the enable marker" + tag);
+    // (c) the Copper reads $3A000 and $3A002 once, in the first pass, and every later restart access is at $3A100.
+    int n0 = 0, n2 = 0;
+    for (const auto& x : rd) { if (x.addr == kList) ++n0; if (x.addr == kList + 2) ++n2; }
+    bool c_ok = n0 == 1 && n2 == 1 && !ps.empty();
+    if (c_ok) {
+        bool in_first = false;
+        for (size_t i = ps[0].first; i <= ps[0].last; ++i) if (rd[i].addr == kList) in_first = true;
+        c_ok = in_first;
+    }
+    const bool c1_ok = c_ok; // the first clause alone
+    for (size_t k = 1; k < ps.size(); ++k) if (rd[ps[k].first].addr != kSafe) c_ok = false;
+    g.pre(checks, c_ok,
+          "P7-PRE-C: (c) the Copper reads " + hex(kList, 5) + " and " + hex(kList + 2, 5) + " once, in the first pass, and every later restart "
+          "access is at " + hex(kSafe, 5) + tag);
+    g.pre(checks, c1_ok,
+          "P7-CTRL-C: control for (c): the Copper reads " + hex(kList, 5) + " and " + hex(kList + 2, 5) + " once, in the first pass" + tag);
+    out.pre_ok = g.ok;
+
+    const uint16_t result = r.peeked.count(kResults) ? r.peeked[kResults] : 0;
+    checks.note("P7" + tag + " blitter writes: " + num(blit.size()) + (blit.empty() ? std::string() : " first at " + hex(blit[0].addr, 5) +
+                " data " + hex(blit[0].data)) + ", result word " + hex(result));
+    out.ok = blit.size() == 1 && blit[0].addr == kDest && blit[0].data == 0xFFFF && r3a002 && blit[0].t > r3a002->t && result == 0xFFFF;
     return out;
 }
 
-struct Block { size_t begin, end; }; // [begin,end) indices into Population::all
-
-struct Population {
-    std::vector<nmh::RamAccess> all;
-    size_t first_pass_end = 0;
-    std::vector<Block> blocks; // maximal +1-word-address-stepped runs after the first pass
-};
-
-// SPECIFICATION.md 3.6, P7.3: the first pass is excluded -- the fetches
-// before the first address decrease, capped at N+1. A block is a maximal
-// run, after the first pass, whose addresses step by +1 word (+2 bytes).
-Population classify(const std::vector<nmh::RamAccess>& reads, int n) {
-    Population p;
-    p.all = reads;
-    size_t decrease_idx = reads.size();
-    for (size_t i = 1; i < reads.size(); ++i)
-        if (reads[i].word_addr < reads[i - 1].word_addr) { decrease_idx = i; break; }
-    p.first_pass_end = std::min(decrease_idx, (size_t)(n + 1));
-    size_t i = p.first_pass_end;
-    while (i < reads.size()) {
-        size_t j = i + 1;
-        while (j < reads.size() && reads[j].word_addr == reads[j - 1].word_addr + 1) ++j;
-        p.blocks.push_back({i, j});
-        i = j;
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    bool all_pre = true, all_ok = true;
+    for (bool ecs : {true, false}) {
+        std::string bin = dir + "/prog_p7.bin";
+        if (mv == "P7-A") bin = dir + "/prog_p7_a.bin";
+        if (mv == "P7-B") bin = dir + "/prog_p7_b.bin";
+        if (mv == "P7-C") bin = dir + "/prog_p7_c.bin";
+        if (mv == "P7-ATTR") bin = dir + "/prog_p7_attr.bin";
+        if (mv == "P7-RUN") bin = dir + "/prog_nodone.bin";
+        Leg l = leg(checks, bin, ecs, mv);
+        all_pre = all_pre && l.pre_ok;
+        all_ok = all_ok && l.ok;
     }
-    return p;
-}
-
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
-    std::string bin = dir + "/prog_p7.bin";
-    if (mutate == "P7-P2") bin = dir + "/prog_p7_mut_p7p2.bin";
-    else if (mutate == "P7-P3") bin = dir + "/prog_p7_mut_p7p3.bin";
-    else if (mutate == "P7-P4") bin = dir + "/prog_p7_mut_p7p4.bin";
-
-    const int n = (mutate == "P7-P4") ? 64 : 4;
-
-    Capture c = run_capture(bin, kBudget);
-    bool ran = c.loaded && c.done.has_value();
-    checks.expect(ran, "P7-fixture: the program ran to DONE");
-    if (!ran) return;
-
-    // ---- P7-p1: baseline (no AUD0EN) -- specification P7.5's own token
-    // for this run's G1 equivalent (defect 25) -----------------------------
-    bool p7p1_ok;
-    {
-        std::string base_bin = dir + (mutate == "P7-G1" ? "/prog_p7_noaud0_mut.bin" : "/prog_p7_noaud0.bin");
-        Capture base = run_capture(base_bin, kBudget);
-        bool base_ran = base.loaded && base.done.has_value();
-        auto base_reads = audio_reads(base.log);
-        p7p1_ok = base_ran && base_reads.empty();
-        checks.expect(p7p1_ok,
-            "P7-p1 precondition: with AUD0EN off, no read lands in the audio regions over the same capture");
-    }
-    // ---- P7-p2: DMACONR bits ----------------------------------------------
-    bool p7p2_ok;
-    {
-        std::optional<uint16_t> val;
-        for (const auto& a : c.log) if (a.is_write && a.word_addr == word_addr(kDmaconrSave)) val = a.data;
-        p7p2_ok = val.has_value() && (*val & 0x0200) && (*val & 0x0001) && !(*val & 0x000E);
-        checks.expect(p7p2_ok, "P7-p2 precondition: DMACONR (stored at $0E7108) has bits 9 and 0 set and bits 3-1 clear");
-    }
-
-    auto reads = audio_reads(c.log);
-    checks.note("P7: " + std::to_string(reads.size()) + " reads in the audio regions");
-    if (!reads.empty()) {
-        char buf[64];
-        std::snprintf(buf, sizeof buf, "P7: first read at word $%06X, byte $%06X, cycle %llu",
-                      reads[0].word_addr, reads[0].word_addr * 2, (unsigned long long)reads[0].cycle);
-        checks.note(buf);
-    }
-    auto pop = classify(reads, n);
-
-    // ---- the first pass's own fetch sequence, printed per this run
-    // (defect 23): reported, not graded (3.6) -------------------------------
-    {
-        std::string seq;
-        for (size_t k = 0; k < pop.first_pass_end && k < pop.all.size(); ++k) {
-            if (!seq.empty()) seq += ", ";
-            char b[16]; std::snprintf(b, sizeof b, "$%06X", pop.all[k].word_addr * 2);
-            seq += b;
-        }
-        if (pop.first_pass_end < pop.all.size()) {
-            char b[16]; std::snprintf(b, sizeof b, "$%06X", pop.all[pop.first_pass_end].word_addr * 2);
-            if (!seq.empty()) seq += ", then ";
-            seq += b;
-        }
-        checks.note("P7: the first pass's own fetch sequence: " + seq);
-    }
-
-    // ---- P7-p3: the first channel-0 fetch lies in A's buffer -- graded
-    // against the main run's own, unchanged expectation (buffer A), per
-    // SPECIFICATION.md P7.5's own "for the main-run expectation" (4.5's
-    // dedicated-mutation exception): P7-P3 points AUD0LC at B instead, so
-    // the first fetch actually lands in B, and this check catches that.
-    bool p7p3_ok;
-    {
-        p7p3_ok = !reads.empty() && reads[0].word_addr >= word_addr(kBufA) && reads[0].word_addr < word_addr(kBufA) + 4;
-        checks.expect(p7p3_ok, "P7-p3 precondition: the first channel-0 fetch lies in A's buffer");
-    }
-
-    // ---- P7-p4: at least 10 ends of counted blocks -----------------------
-    int counted = 0;
-    for (const auto& b : pop.blocks) if (b.end != pop.all.size()) ++counted;
-    checks.note("P7-p4: " + std::to_string(counted) + " counted block ends");
-    bool p7p4_ok = counted >= 10;
-    checks.expect(p7p4_ok, "P7-p4 precondition: at least 10 ends of counted blocks fall in the capture");
-
-    if (mutate == "P7-P2" || mutate == "P7-P3" || mutate == "P7-P4" || mutate == "P7-G1") {
-        checks.record("MUTATION: the preconditions above already carry this run's own red result; the main "
-                      "assertions are not graded for this stimulus.");
+    if (!all_pre) {
+        checks.record("NOT GRADED P7-BLIT: a precondition of one of the two runs does not hold");
         return;
     }
-
-    bool pre_ok = p7p1_ok && p7p2_ok && p7p3_ok && p7p4_ok;
-
-    // ---- (i): every counted block is exactly LC,LC+2,LC+4,LC+6 -----------
-    const uint32_t wlc = word_addr(kBufA);
-    bool i_ok = true; std::string diag_i;
-    for (const auto& b : pop.blocks) {
-        if (b.end == pop.all.size()) continue; // not counted: may be cut off by the capture's end
-        size_t len = b.end - b.begin;
-        bool ok = (len == 4);
-        if (ok) for (size_t k = 0; k < 4; ++k) if (pop.all[b.begin + k].word_addr != wlc + (uint32_t)k) ok = false;
-        if (!ok) {
-            i_ok = false;
-            if (diag_i.empty()) { char buf[96]; std::snprintf(buf, sizeof buf, "block at fetch index %zu: length %zu", b.begin, len); diag_i = buf; }
-        }
-    }
-    if (!i_ok) checks.note("P7-i diagnostic: " + diag_i);
-    checks.expect(pre_ok && i_ok,
-        "P7-i [p139,p145,p147,p288] appB-note.c9,appB-note.c11: every counted block is exactly LC,LC+2,LC+4,LC+6");
-
-    // ---- (ii): after the first pass, every fetch at LC+6 is followed, as
-    // the next channel-0 fetch, by a fetch at LC ---------------------------
-    bool ii_ok = true; int graded = 0;
-    for (size_t k = pop.first_pass_end; k + 1 < pop.all.size(); ++k) {
-        if (pop.all[k].word_addr == wlc + 3) {
-            ++graded;
-            if (pop.all[k + 1].word_addr != wlc) ii_ok = false;
-        }
-    }
-    checks.expect(pre_ok && graded > 0 && ii_ok,
-        "P7-ii [p139,p145,p147,p164,p288] appB-note.c9,appB-note.c11: after the first pass, every fetch at "
-        "LC+6 is followed, as the next channel-0 fetch, by a fetch at LC");
-
-    // ---- (iii): after the first pass, no read at a guard word -------------
-    bool iii_ok = true;
-    for (size_t k = pop.first_pass_end; k < pop.all.size(); ++k) {
-        uint32_t w = pop.all[k].word_addr;
-        bool guard = (w >= word_addr(kBufA) + 4 && w < word_addr(kBufA) + 8) ||
-                     (w >= word_addr(kBufB) + 4 && w < word_addr(kBufB) + 8);
-        if (guard) iii_ok = false;
-    }
-    checks.expect(pre_ok && iii_ok, "P7-iii [p164]: after the first pass, no read occurs at a guard word");
-
-    checks.record("The first pass's own fetch sequence, printed above, is reported, not graded (specification "
-                  "3.6); the first pass itself is graded in hrm/ch5-audio-dma-first-pass (finding NM-HRM-084), "
-                  "excluded here by P7's own N+1 cap.");
-    checks.record("Specification P7.6 gives a contrast for P7-i and P7-ii (a mid-block AUD0LC write); it is not "
-                  "built here (defect 22, not reached this round): it needs a CPU delay calibrated against this "
-                  "run's own measured fetch timing, the same way as P6-C1's own field-3 write. P7-iii has no "
-                  "contrast in the specification: no stimulus this package builds makes the page predict a read "
-                  "at a guard word.");
+    checks.expect(all_ok,
+                  "P7-BLIT: [p26 p270 p274] COP2-control-register.c11: with COPCON bit 1 set, a Copper MOVE to BLTSIZE ($058), a blitter control "
+                  "register in the range $40-$7E, starts the prepared blit: exactly one blitter write, at $48000 with data $FFFF, after the "
+                  "Copper's read of $3A002, and the result word is $FFFF (ECS and OCS)");
 }
 
 } // namespace p7
 
-// ---------------------------------------------------------------------
-// P5 [p25,p273,p276,p287,p290,p309]: one long-word write to COPxLCH loads
-// the whole list address; the lower-addressed register holds the high
-// bits. No monitor loop: the CPU paces itself by polling VPOSR/VHPOSR.
-// See prog_p5.s.
-namespace p5 {
+// =============================================================================
+// P8. Whenever an audio channel's length count finishes, its pointer restarts
+// from the channel's location registers.
+// =============================================================================
+namespace p8 {
 
-constexpr uint32_t kTargets[40] = {
-    0x0C0020, 0x0C0040, 0x0C0080, 0x0C0100, 0x0C0200, 0x0C0400, 0x0C0800, 0x0C1000, 0x0C2000, 0x0C4000, 0x0C8000,
-    0x0C5002, 0x0C6004, 0x0CA008, 0x0CC010,
-    0x0DFFDE, 0x0DFFBE, 0x0DFF7E, 0x0DFEFE, 0x0DFDFE, 0x0DFBFE, 0x0DF7FE, 0x0DEFFE, 0x0DDFFE, 0x0DBFFE, 0x0D7FFE,
-    0x0DAFFC, 0x0D9FFA, 0x0D5FF6, 0x0D3FEE,
-    0x01F000, 0x02F000, 0x04F000, 0x08F000, 0x10F000,
-    0x1EF000, 0x1DF000, 0x1BF000, 0x17F000, 0x0FF000,
+constexpr uint32_t kA = 0x44000, kB = 0x44100;
+struct Fetch { uint64_t t; uint32_t addr; };
+struct RunOf { size_t first, last; };
+
+// A run: a maximal sequence of consecutive channel-0 fetches in which each address is the previous one + 2.
+std::vector<RunOf> runs_of(const std::vector<Acc>& v) {
+    std::vector<RunOf> out;
+    size_t start = 0;
+    for (size_t i = 1; i <= v.size(); ++i) {
+        if (i == v.size() || v[i].addr != v[i - 1].addr + 2) {
+            if (i > start) out.push_back({start, i - 1});
+            start = i;
+        }
+    }
+    return out;
+}
+
+struct Leg {
+    bool pre_ok = false, ok = false, ok_rest = false; // ok_rest: the same comparator without the first run
 };
-constexpr uint32_t kMarkM0 = 0x0E7000;
-constexpr uint32_t kDmaconrSave = 0x0E7100;
-constexpr uint32_t kMarkLog = 0x0E7002;
-constexpr uint32_t kParkC1C3 = 0x10000E;
-constexpr uint64_t kBudget = kBootBudget + 4'000'000;
 
-void push_words(std::vector<std::pair<uint32_t, uint16_t>>& out, uint32_t base, std::initializer_list<uint16_t> words) {
-    uint32_t addr = base;
-    for (uint16_t w : words) { out.push_back({addr, w}); addr += 2; }
-}
-
-constexpr uint32_t kPhase3Park = 0x0E9010; // "P5 word-write target park" (SPECIFICATION.md 4.2)
-
-std::vector<std::pair<uint32_t, uint32_t>> regions(bool with_c1c3_park) {
-    std::vector<std::pair<uint32_t, uint32_t>> r;
-    for (uint32_t t : kTargets) r.push_back({word_addr(t), word_addr(t) + 8});
-    r.push_back({word_addr(kDecoyD), word_addr(kDecoyD) + 2});
-    r.push_back({word_addr(kPhase3Park), word_addr(kPhase3Park) + 2});
-    if (with_c1c3_park) r.push_back({word_addr(kParkC1C3), word_addr(kParkC1C3) + 2});
-    return r;
-}
-
-// G4's own reference table: the words this run's own setup actually wrote.
-std::vector<std::pair<uint32_t, uint16_t>> reference_words(const std::string& mutate) {
-    std::vector<std::pair<uint32_t, uint16_t>> out;
-    for (int i = 0; i < 40; ++i) {
-        uint32_t base = kTargets[i];
-        if (i == 0 && mutate == "P5-P2")
-            push_words(out, base, {0x0001, 0xFF00, 0xFFFF, 0xFFFE, 0x0000, 0x0000});
-        else
-            push_words(out, base, {0xFFFF, 0xFFFE, 0x0000, 0x0000, 0x0000, 0x0000});
+// One run (M or C) of the stimulus.
+Leg leg(Checks& checks, const std::string& bin, bool run_c, const std::string& mv) {
+    std::vector<Poke> pk;
+    put(pk, kA, {0x4000, 0xC000, 0x4000, 0xC000});
+    put(pk, kB, {0x2000, 0xE000, 0x2000, 0xE000});
+    Setup s;
+    s.bin = bin;
+    s.pokes = pk;
+    s.budget = budget_for(4);
+    Run r = run_program(s);
+    auto m = marks(r);
+    const std::string tag = std::string(" [run ") + (run_c ? "C" : "M") + "]";
+    const bool marks_ok = run_c ? marks_are(m, {0, 1, 2, 4, 3}) : marks_are(m, {0, 1, 2, 3});
+    const uint64_t cck = cck_cycles(r);
+    Gate g;
+    g.run(checks, r.loaded && r.released && r.done && marks_ok && cck > 0,
+          "P8-RUN: the program ran to its DONE mark, wrote its markers once each in order, and the video shows lines of 227 colour clocks "
+          "(a colour clock is " + num(cck) + " cycles)" + tag);
+    std::string why;
+    const bool attr_ok = listing_ok(bin, {{kA, kA + 0xFF, 0, 0}, {kB, kB + 0xFF, 0, 0}}, why);
+    g.stat(checks, attr_ok,
+          "P8-ATTR: the program's listing shows no CPU data access to an audio data block or to a parked region of another channel" + tag +
+          (attr_ok ? std::string() : " (" + why + ")"));
+    Leg out;
+    if (!marks_ok) return out;
+    const uint64_t m2 = uint64_t(mark_cycle(m, 2)), m3 = uint64_t(mark_cycle(m, 3));
+    const uint64_t mw = run_c ? uint64_t(mark_cycle(m, 4)) : 0;
+    auto before = reads_in(r, {{kA, kA + 0xFF}, {kB, kB + 0xFF}}, 0, m2);
+    auto f = reads_in(r, {{kA, kA + 0xFF}, {kB, kB + 0xFF}}, m2, m3);
+    auto runs = runs_of(f);
+        // Every run is graded; the last may be cut off by marker 3 and is graded on the fetches it contains.
+    auto expect_run = [&](const RunOf& ru, uint32_t base, bool is_last) {
+        const size_t n = ru.last - ru.first + 1;
+        if (n > 4) return false;
+        if (n < 4 && !is_last) return false;
+        for (size_t i = 0; i < n; ++i) if (f[ru.first + i].addr != base + 2 * i) return false;
+        return true;
+    };
+    bool ok = !runs.empty(), ok_rest = runs.size() > 1;
+    std::string rs;
+    size_t graded_before_w = 0, graded_after_w = 0;
+    for (size_t k = 0; k < runs.size(); ++k) {
+        const bool is_last = k + 1 == runs.size();
+        const uint64_t t = f[runs[k].first].t;
+        bool good;
+        if (!run_c) {
+            good = expect_run(runs[k], kA, is_last);
+        } else if (t < mw) {
+            good = expect_run(runs[k], kA, is_last);
+            ++graded_before_w;
+        } else if (t > mw + 454 * cck) {
+            good = expect_run(runs[k], kB, is_last);
+            ++graded_after_w;
+        } else {
+            good = expect_run(runs[k], kA, is_last) || expect_run(runs[k], kB, is_last);
+        }
+        if (!good) { ok = false; if (k > 0) ok_rest = false; }
+        if (k < 14) {
+            char b[64];
+            std::snprintf(b, sizeof b, " [%u@%05X]", unsigned(runs[k].last - runs[k].first + 1), f[runs[k].first].addr);
+            rs += b;
+        }
     }
-    out.push_back({kDecoyD, 0xFFFF}); out.push_back({kDecoyD + 2, 0xFFFE});
-    out.push_back({kPhase3Park, 0xFFFF}); out.push_back({kPhase3Park + 2, 0xFFFE});
-    if (mutate == "P5-C1" || mutate == "P5-C3") {
-        out.push_back({kParkC1C3, 0xFFFF}); out.push_back({kParkC1C3 + 2, 0xFFFE});
-    }
+    g.pre(checks, run_c ? (graded_before_w >= 2 && graded_after_w >= 3) : runs.size() >= 8,
+          "P8-PRE-A: (a) " + std::string(run_c ? "run C has at least 2 graded runs before marker W and at least 3 more than 2 lines after it"
+          : "run M has at least 8 graded runs") + " (" + num(run_c ? graded_before_w : runs.size()) + (run_c ? ", " + num(graded_after_w) : std::string()) + ")" + tag);
+    g.pre(checks, before.empty(), "P8-PRE-B: (b) no channel-0 fetch occurs before marker 2 (" + num(before.size()) + ")" + tag);
+    out.pre_ok = g.ok;
+    checks.note("P8" + tag + " runs (length@first address):" + rs);
+    out.ok = ok;
+    out.ok_rest = ok_rest;
     return out;
 }
 
-// One step: the byte address this specification predicts the Copper
-// lands at, and which of the 40 targets (if any) it corresponds to, for
-// the bit-group grading below (-1: phase 3, or C2's own extra step).
-struct Step { uint32_t target; int idx; };
-
-// C1 and C3's own predictions both carry "not at [the main run's own
-// target]" (SPECIFICATION.md P5.6): they are graded against the main
-// run's own, unchanged target sequence (4.5's dedicated-mutation
-// exception), so the divergence itself is what turns a step red -- not
-// against their own (correctly predicted) new landing. C2's own
-// prediction carries no such "not at": it is a positive extension of
-// coverage (see the header comment and the record() below), graded on
-// its own correctly predicted landing.
-std::vector<Step> build_steps(const std::string& mutate) {
-    std::vector<Step> out;
-    // Phase 1
-    if (mutate == "P5-C2") {
-        for (int i = 0; i < 11; ++i) out.push_back({kTargets[i], i});
-        out.push_back({0x0C4000, -1}); // C2: L alone, H keeps $000C from $0C8000
-        for (int i = 11; i < 40; ++i) out.push_back({kTargets[i], i});
-    } else {
-        for (int i = 0; i < 40; ++i) out.push_back({kTargets[i], i});
-        // P5-H-low's and P5-H-high's own mutations (defect 8): one extra
-        // phase-1 step, graded against the S_H1 entry the header names
-        // (index 32: A18; index 33: A19); prog_p5.s's own extra step lands
-        // at the decoy D instead, so the mismatch is what turns the step
-        // (and so that one bit group, and no other) red.
-        if (mutate == "P5-HLO") out.push_back({kTargets[32], 32});
-        else if (mutate == "P5-HHI") out.push_back({kTargets[33], 33});
+void run(Checks& checks, const std::string& dir, const std::string& mv) {
+    std::string bm = dir + "/prog_p8.bin", bc = dir + "/prog_p8_c.bin";
+    if (mv == "P8-M") bm = dir + "/prog_p8_len.bin";
+    if (mv == "P8-C") bc = dir + "/prog_p8_c_nolc.bin";
+    if (mv == "P8-A") bm = dir + "/prog_p8_noaud.bin";
+    if (mv == "P8-B") bm = dir + "/prog_p8_early.bin";
+    if (mv == "P8-ATTR") bm = dir + "/prog_p8_attr.bin";
+    if (mv == "P8-RUN") { bm = dir + "/prog_nodone.bin"; bc = dir + "/prog_nodone.bin"; }
+    Leg lm = leg(checks, bm, false, mv);
+    Leg lc = leg(checks, bc, true, mv);
+    if (!lm.pre_ok || !lc.pre_ok) {
+        checks.record("NOT GRADED P8-RESTART: a precondition of run M or run C does not hold");
+        return;
     }
-    // Phase 2 -- always the main run's own 40 targets, even under C3.
-    for (int i = 0; i < 40; ++i) out.push_back({kTargets[i], i});
-    // Phase 3 -- always the main run's own $0E9010, even under C1.
-    out.push_back({0x0E9010, -1});
-    return out;
+    checks.expect(lm.ok_rest && lc.ok_rest,
+                  "P8-CTRL: control on the same measurement basis as P8-RESTART: every run after the first of run M and of run C, graded "
+                  "by the same comparator, is the run of four words the AUD0LC in force prescribes");
+    checks.expect(lm.ok && lc.ok,
+                  "P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length count finishes the channel's pointer restarts from "
+                  "AUD0LC: with AUD0LEN = 4 every run of fetches is $44000 $44002 $44004 $44006, and after the CPU writes AUD0LC = $44100 the "
+                  "runs that start more than 2 lines later are $44100 $44102 $44104 $44106");
 }
 
-void run(Checks& checks, const std::string& dir, const std::string& mutate) {
-    std::string bin = dir + "/prog_p5.bin";
-    if (mutate == "P5-P1") bin = dir + "/prog_p5_mut_p5p1.bin";
-    else if (mutate == "P5-P2") bin = dir + "/prog_p5_mut_p5p2.bin";
-    else if (mutate == "P5-P3") bin = dir + "/prog_p5_mut_p5p3.bin";
-    else if (mutate == "P5-C1") bin = dir + "/prog_p5_c1.bin";
-    else if (mutate == "P5-C2") bin = dir + "/prog_p5_c2.bin";
-    else if (mutate == "P5-C3") bin = dir + "/prog_p5_c3.bin";
-    else if (mutate == "P5-HLO") bin = dir + "/prog_p5_mut_hlo.bin";
-    else if (mutate == "P5-HHI") bin = dir + "/prog_p5_mut_hhi.bin";
+} // namespace p8
 
-    Capture c = run_capture(bin, kBudget);
-    bool ran = c.loaded && c.done.has_value();
-    checks.expect(ran, "P5-fixture: the program ran to DONE");
-    if (!ran) return;
-
-    auto steps = build_steps(mutate);
-
-    // ---- markers: M0, then one per step, then the final marker ---------
-    auto m0w = write_cycles(c.log, word_addr(kMarkM0));
-    bool markers_ok = m0w.size() == 1;
-    std::vector<uint64_t> marker_cyc;
-    std::vector<uint16_t> marker_data;
-    for (size_t k = 0; markers_ok && k <= steps.size(); ++k) {
-        auto w = write_cycles(c.log, word_addr(kMarkLog) + (uint32_t)k);
-        if (w.size() != 1) { markers_ok = false; break; }
-        marker_cyc.push_back(w[0]);
-        // The data written at that cycle (I3: the VHPOSR value read).
-        uint16_t d = 0;
-        for (const auto& a : c.log) if (a.is_write && a.word_addr == word_addr(kMarkLog) + (uint32_t)k && a.cycle == w[0]) d = a.data;
-        marker_data.push_back(d);
-    }
-    checks.expect(markers_ok, "P5-fixture: marker M0 and every step marker and the final marker were each written exactly once");
-    if (!markers_ok) return;
-
-    // ---- G1: baseline (no COPEN) -----------------------------------------
-    bool g1_ok;
-    {
-        Capture base = run_capture(dir + "/prog_p5_nocopen.bin", kBudget);
-        bool base_ran = base.loaded && base.done.has_value();
-        auto base_regs = regions(false);
-        auto base_reads = instr::copper_reads(base.log, base_regs);
-        g1_ok = base_ran && base_reads.empty();
-        checks.expect(g1_ok,
-            "G1 precondition (P5): with COPEN off, no read lands in the Copper regions over the same capture");
-    }
-    // ---- G2 -----------------------------------------------------------
-    bool g2;
-    {
-        std::optional<uint16_t> val;
-        for (const auto& a : c.log) if (a.is_write && a.word_addr == word_addr(kDmaconrSave)) val = a.data;
-        g2 = val.has_value() && (*val & 0x0200) && (*val & 0x0080);
-        checks.expect(g2, "G2 precondition (P5): DMACONR has bits 9 and 7 set");
-    }
-
-    bool with_park = (mutate == "P5-C1" || mutate == "P5-C3");
-    auto regs = regions(with_park);
-    auto reads = instr::copper_reads(c.log, regs);
-    auto fr = instr::pair_fetches(reads);
-
-    // ---- G3 (with L = D): the first fetch after M0 is at D -------------
-    bool g3;
-    {
-        g3 = !fr.fetches.empty();
-        if (g3) {
-            const instr::Fetch* first_after = nullptr;
-            for (const auto& f : fr.fetches) if (f.t1 > m0w[0]) { first_after = &f; break; }
-            g3 = first_after && first_after->byte_addr == kDecoyD;
-        }
-        checks.expect(g3, "G3 precondition (P5, L=D): the first Copper instruction fetch after marker M0 is at D ($0E8000)");
-    }
-    // ---- G4: every Copper read equals this run's own prescribed word ---
-    bool g4;
-    {
-        auto ref = reference_words(mutate);
-        g4 = instr::check_g4(fr.fetches, ref, fr.unpaired);
-        checks.expect(g4, "G4 precondition (P5): every Copper read's data equals the word this run's own setup prescribes for that address");
-    }
-
-    // ---- P5-p1: every marker (first step's M_T to final) reads a line in
-    // $28-$FA, strictly increasing ----------------------------------------
-    bool p5p1_ok;
-    {
-        bool ok = true; int prev_line = -1;
-        for (uint16_t d : marker_data) {
-            int line = (d >> 8) & 0xFF;
-            if (line < 0x28 || line > 0xFA) ok = false;
-            if (prev_line >= 0 && line <= prev_line) ok = false;
-            prev_line = line;
-        }
-        p5p1_ok = ok;
-        checks.expect(ok, "P5-p1 precondition: every marker from the first step's own M_T to the final marker "
-                          "reads a line in $28-$FA, strictly higher than the one before it");
-    }
-
-    // ---- P5-p3: the ROM overlay is cleared -- each setup write below
-    // $080000 (S_H1's own $01F000, $02F000, $04F000, target indices 30-32)
-    // appears at the port with the word this run's own setup wrote there,
-    // as P1-p4 states for the same clearing (4.3; defect 11) -------------
-    bool p5p3_ok;
-    {
-        bool ok = true;
-        const uint16_t words[6] = {0xFFFF, 0xFFFE, 0x0000, 0x0000, 0x0000, 0x0000};
-        for (int idx : {30, 31, 32}) {
-            uint32_t base = word_addr(kTargets[idx]);
-            for (int w = 0; w < 6; ++w) {
-                bool found = false;
-                for (const auto& a : c.log)
-                    if (a.is_write && a.word_addr == base + (uint32_t)w && a.data == words[w]) { found = true; break; }
-                if (!found) ok = false;
-            }
-        }
-        p5p3_ok = ok;
-        checks.expect(ok, "P5-p3 precondition [p223]: the ROM overlay is cleared -- each setup write below "
-                          "$080000 ($01F000, $02F000, $04F000) appears at the port with the word written, as "
-                          "P1-p4 states for the same clearing");
-    }
-
-    // ---- P5.4: for every step, the first Copper fetch after its own
-    // marker is the landing -- graded on the landing address only (defect
-    // 7): a stray fetch elsewhere in the window is P5-p2's own concern,
-    // not this one's. At most one unpaired Copper read (the word after
-    // the previous park) may precede the landing; specification P5.4
-    // allows it and says it "is reported" -- counted, not graded --------
-    bool landing_ok = true; std::string landing_diag;
-    std::array<bool, 40> idx_ok{}; idx_ok.fill(true);
-    bool phase3_ok = true;
-    int windows_with_extra_read = 0;
-    for (size_t k = 0; k < steps.size(); ++k) {
-        uint64_t lo = marker_cyc[k], hi = marker_cyc[k + 1];
-        const instr::Fetch* first = nullptr;
-        for (const auto& f : fr.fetches) { if (f.t1 > lo && f.t1 < hi) { first = &f; break; } }
-        bool ok = first && first->byte_addr == steps[k].target;
-        if (!ok) {
-            landing_ok = false;
-            if (steps[k].idx >= 0) idx_ok[steps[k].idx] = false;
-            if (k + 1 == steps.size()) phase3_ok = false;
-            if (landing_diag.empty()) {
-                char b[96];
-                std::snprintf(b, sizeof b, "step %zu: %s", k, !first ? "no fetch" : "wrong landing");
-                landing_diag = b;
-            }
-        }
-        for (const auto& u : fr.unpaired)
-            if (u.cycle > lo && u.cycle < hi && (!first || u.cycle < first->t1)) { ++windows_with_extra_read; break; }
-    }
-    checks.note("P5: " + std::to_string(windows_with_extra_read) + " of " + std::to_string(steps.size()) +
-                " step windows hold one unpaired Copper read (the word after the previous park) before the "
-                "landing -- reported, not graded (specification P5.4)");
-    if (!landing_ok) checks.note("P5 landing diagnostic: " + landing_diag);
-
-    bool pre_ok = g1_ok && g2 && g3 && g4 && p5p1_ok && p5p3_ok;
-
-    // ---- P5-p2 (as the specification defines it): before each marker the
-    // Copper is parked -- in each step's own window, no Copper read
-    // occurs beyond the landing itself and, at most, the one unpaired
-    // read P5.4 already counts, and that read (if any) precedes the
-    // landing (defect 6) ---------------------------------------------------
-    bool p5p2_ok = true; std::string p5p2_diag;
-    for (size_t k = 0; k < steps.size(); ++k) {
-        uint64_t lo = marker_cyc[k], hi = marker_cyc[k + 1];
-        std::vector<const instr::Fetch*> paired;
-        for (const auto& f : fr.fetches) if (f.t1 > lo && f.t1 < hi) paired.push_back(&f);
-        std::vector<const nmh::RamAccess*> unpaired;
-        for (const auto& u : fr.unpaired) if (u.cycle > lo && u.cycle < hi) unpaired.push_back(&u);
-        bool ok = paired.size() <= 1 && unpaired.size() <= 1;
-        if (ok && !paired.empty() && !unpaired.empty()) ok = unpaired[0]->cycle < paired[0]->t1;
-        if (!ok) {
-            p5p2_ok = false;
-            if (p5p2_diag.empty()) {
-                char b[96];
-                std::snprintf(b, sizeof b, "step %zu: %zu fetch(es), %zu unpaired read(s)", k, paired.size(), unpaired.size());
-                p5p2_diag = b;
-            }
-        }
-    }
-    if (!p5p2_ok) checks.note("P5-p2 diagnostic: " + p5p2_diag);
-    checks.expect(p5p2_ok, "P5-p2 precondition: before each marker the Copper is parked -- no Copper read occurs "
-                           "in a step's own window beyond the landing itself and, at most, the one read P5.4 "
-                           "already reports");
-
-    // ---- bit-group verdicts (3.2, P5.4): L bits15-1 (A15-A1) from S_L1/
-    // S_L0 (target indices 0-29); H bits2-0 (A18-A16) from indices 30-32
-    // and 35-37 (A16,A17,A18, walking one then walking zero); H bits4-3
-    // (A20-A19) from indices 33-34 and 38-39 (A19,A20), each covering
-    // both phases and graded on the landing address only (defect 8) -----
-    bool l_ok = true, hlo_ok = true, hhi_ok = true;
-    for (int i = 0; i < 30; ++i) if (!idx_ok[i]) l_ok = false;
-    for (int i : {30, 31, 32, 35, 36, 37}) if (!idx_ok[i]) hlo_ok = false;
-    for (int i : {33, 34, 38, 39}) if (!idx_ok[i]) hhi_ok = false;
-    checks.expect(pre_ok && l_ok,
-        "P5-L [p25] ch2-location-registers.c11,COP2-location-registers.c13: a long-word write to COPxLCH loads "
-        "L bits 15-1 (A15-A1) of the list address correctly (the higher-addressed register, COPxLCL, holding the "
-        "low bits, its own CPU write taking effect), walking one and walking zero, every bit");
-    checks.expect(pre_ok && hlo_ok,
-        "P5-H-low [p25,p273,p287,p290,p309]: the high 3 bits (A18-A16) of the list address load correctly (the "
-        "lower-addressed register, COPxLCH, holding the high bits, its own CPU write taking effect), walking one "
-        "and walking zero");
-    checks.expect(pre_ok && hhi_ok,
-        "P5-H-high [p25,p273,p287,p290,p309]: the ECS-only high bits (A20-A19) of the list address load "
-        "correctly, walking one and walking zero");
-
-    // ---- Phase 3: the direct test of p.25's "the register with the
-    // lower address ... contains the most significant data" via two
-    // separate word writes (COP1LCH then COP1LCL) instead of one long
-    // write -- its own assertion, carrying no bit-group index (defect 9) -
-    checks.expect(pre_ok && phase3_ok,
-        "P5-phase3 [p25]: a separate word write to COP1LCH ($000E), then to COP1LCL ($9010), loads the same "
-        "18-bit address ($0E9010) a long write would -- the register at the lower address ($080) supplying the "
-        "high bits, the one at the higher address ($082) the low bits");
-
-    checks.record("ch2-location-registers.c3.s2, ch2-location-registers.c5.s2, COP2-location-registers.c6, "
-                  "COP2-location-registers.c9, ch2-appa-location-registers.c2.s2, ch2-appa-location-registers.c7.s2, "
-                  "ch2-appa-location-registers.c11.s2, ch2-appa-location-registers.c16.s2, ch2-appb-table.c16.s2, "
-                  "ch2-appb-table.c22.s2, ch2-appb-table.c26.s2, ch2-appb-table.c32.s2, ch2-appc-ecs.c3.s2, "
-                  "ch2-appc-ecs.c8.s2 and ch2-appb-legend.c6.s2 are withdrawn from P5-L, P5-H-low, P5-H-high and "
-                  "P5-phase3: each claim bundles a clause this run does not grade (c3.s2/c5.s2's own 'low 16 "
-                  "bits' against bit 0, never set here; c6/c9's own register name, not observable, and 'always' "
-                  "against every register pair in the chip set, graded here for two; the write-only ids' and "
-                  "appb-legend.c6.s2's own 'only' against a read, which no page gives a value for). An id whose "
-                  "claim bundles an ungraded clause is withdrawn whole, as ch2-about-the-copper.c6.s2 is on P1-A.");
-    if (mutate == "P5-C2")
-        checks.record("MUTATION P5-C2: the extra step's own prediction ($0C4000, COP1LCH keeps $000C from the "
-                      "$0C8000 step) is the correct landing, not a divergence from the main run; it carries no "
-                      "bit-group index, as phase 3's own step does not, and is graded by the same landing "
-                      "population as any other step (P5.4), expected green.");
+// =============================================================================
+// Claims the package declines (SPECIFICATION.md Section 1), each with its reason. A claim id sits on a
+// RECORDED line or on a graded line, never on both.
+// =============================================================================
+void declined(Checks& checks) {
+    checks.record("COP2-the-move-instruction.c7 COP2-summary-of-copper-instructions.c98 are declined: "
+                  "\"Bits 15 - 9 Not used, but should be set to 0\" tells the programmer what to write; it gives no expected value for any other "
+                  "setting, so it only constrains the stimulus (every MOVE here has IR1 bits 15-9 = 0)");
+    checks.record("ch2-the-wait-instruction.c12 ch2-using-the-copper-with-the-blitter.c4 COP2-using-the-copper-with-the-blitter.c4 are declined: "
+                  "\"Normally, this bit is a 1\" describes usual use, not a behaviour (every WAIT here has BFD = 1)");
+    checks.record("ch2-summary-of-copper-instructions.c102 ch2-summary-of-copper-instructions.c103 ch2-summary-of-copper-instructions.c104 "
+                  "ch2-summary-of-copper-instructions.c105 ch2-summary-of-copper-instructions.c106 COP2-summary-of-copper-instructions.c105 "
+                  "COP2-summary-of-copper-instructions.c106 COP2-summary-of-copper-instructions.c107 are declined: they only name the fields of "
+                  "the WAIT and SKIP instructions (VP, HP, VE, HE, BFD); a name cannot be observed");
+    checks.record("COP2-a-copper-loop-example.c4 COP2-a-copper-loop-example.c16 are declined: \"always greater than $0F\" and \"binary 1xxx1111\" "
+                  "are true by arithmetic and state nothing about the hardware");
+    checks.record("ch2-what-is-a-copper-instruction.c2 is declined: \"adds its own instruction set to the instructions already provided by the "
+                  "680x0\" is descriptive; its only observable consequence, that the Copper executes its own MOVE, is graded by P1");
+    checks.record("ch2-about-the-copper.c5 COP2-about-the-copper.c4 are declined: \"freeing the 680x0 to execute program logic\" states a purpose, "
+                  "names no observable quantity, and the page predicts no stimulus under which the 680x0 would not be freed, so no contrasting case exists");
+    checks.record("ch2-about-the-copper.c31 ch2-about-the-copper.c32 are declined: \"can retrieve its instructions only from the chip RAM area\": "
+                  "every access a test sees is at the Chip-memory port, so a fetch from anywhere else would be invisible, and the pages give no "
+                  "expected value for a location register that points outside Chip memory");
+    checks.record("ch2-about-the-copper.c6.s2 is withdrawn from P1, P2 and P7: its existential part (\"can directly affect the contents of ... chip "
+                  "control registers\") is what they use, and the quantifier \"most\" is not graded (it needs an observable Copper write effect for "
+                  "more than half of the 256 register addresses, many of which are strobes, unused or read-only, and the pages disagree about which "
+                  "ranges the Copper may write)");
+    checks.record("COP2-control-register.c14 is declined: the protection it describes depends on CDANG = 0 blocking $40-$7E, and p.21 and p.310 "
+                  "contradict p.26; no outcome for CDANG = 0 is shared by every page");
+    checks.record("COP2-control-register.c9 is withdrawn from P7: only the direction every page shares is exercised (bit 1 set allows $40-$7E); "
+                  "what bit 1 = 0 does in $010-$07E is not specified");
+    checks.record("ch2-appa-copcon.c2.s2 ch2-appb-table.c4.s2 ch2-appc-ecs.c14.s2 are declined: COPCON is write-only, its only effect is CDANG, and "
+                  "the pages share no outcome that differs between bit 1 = 0 and bit 1 = 1, so no test can show that a COPCON write took effect");
+    checks.record("ch2-appa-copins.c2.s2 ch2-appb-table.c43.s2 are declined: COPINS is a dummy address the Copper generates on the register address "
+                  "bus, which is not among the outputs a test can see, and the pages state no effect of a processor write and no read value");
+    checks.record("ch2-appb-table.c10.s2 is declined: DENISEID is read-only; the \"R\" mark gives no value, the \"~\" mark rests on the disputed "
+                  "CDANG rules, and the OCS value is unspecified, so there is no contrasting case");
+    checks.record("ch2-location-registers.c3.s2 ch2-location-registers.c5.s2 are withdrawn from P5: \"Low 16 bits\" is graded for bits 15-1 only, "
+                  "bit 0 of a word address is not visible at the port, and the pages disagree about whether the register holds 15 or 16 bits");
+    checks.record("ch2-appa-location-registers.c2.s2 ch2-appa-location-registers.c7.s2 ch2-appa-location-registers.c11.s2 "
+                  "ch2-appa-location-registers.c16.s2 ch2-appb-table.c16.s2 ch2-appb-table.c22.s2 ch2-appb-table.c26.s2 ch2-appb-table.c32.s2 "
+                  "ch2-appc-ecs.c3.s2 ch2-appc-ecs.c8.s2 ch2-appb-legend.c6.s2 are withdrawn from P2 and P5: the write half of \"write-only\" is "
+                  "exercised, the \"only\" half gives no read value and a test must not read these addresses");
 }
-
-} // namespace p5
 
 int main(int argc, char** argv) {
     const std::string dir = argc > 1 ? argv[1] : ".";
     std::printf("CORE: %s\n", NMH_XSTR(NANOMIG_CORE_NAME));
     Checks checks;
+    const bool is_tg68k = std::string(NMH_XSTR(NANOMIG_CORE_NAME)) == "tg68k";
+    const char* env = std::getenv("NMH_MUTATE");
+    const std::string mv = env ? env : "";
+    const std::string group = mv.substr(0, 2);
+    auto wanted = [&](const char* g) { return mv.empty() || group == g; };
 
-    const char* mutate_env = std::getenv("NMH_MUTATE");
-    const std::string mv = mutate_env ? mutate_env : "";
-
-    p4::run(checks, dir, mv);
-    p3::run(checks, dir, mv);
-    p1a::run(checks, dir, mv);
-    p2::run(checks, dir, mv);
-    p6::run(checks, dir, mv);
-    p7::run(checks, dir, mv);
-    p5::run(checks, dir, mv);
+    if (mv.empty()) declined(checks);
+    if (wanted("P1")) p1::run(checks, dir, mv);
+    if (wanted("P2")) p2::run(checks, dir, mv);
+    if (wanted("P3")) p3::run(checks, dir, mv);
+    if (wanted("P4")) p4::run(checks, dir, mv);
+    if (wanted("P5")) p5::run(checks, dir, mv);
+    if (wanted("P6")) p6::run(checks, dir, mv, is_tg68k);
+    if (wanted("P7")) p7::run(checks, dir, mv);
+    if (wanted("P8")) p8::run(checks, dir, mv);
 
     std::printf("%d passed, %d failed\n", checks.passed, checks.failed);
     return checks.failed == 0 ? 0 : 1;
