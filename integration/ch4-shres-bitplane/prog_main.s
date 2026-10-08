@@ -298,7 +298,11 @@ F2TAB:
 				ifd	MUT_V4C
 				include	"bp_cop_f2_vc4n.i"
 				else
+				ifd	MUT_VKEYA
+				include	"bp_cop_f2_vkeya.i"
+				else
 				include	"bp_cop_f2_base.i"
+				endif
 				endif
 				endif
 				endif

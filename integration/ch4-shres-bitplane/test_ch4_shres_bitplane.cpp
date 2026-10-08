@@ -28,134 +28,155 @@
 // fx68k; TG68K prints the same PASS, FAIL, RECORDED and MEASURED lines on every record.
 //
 // MUTATION fixture none impossible: the line 'program loaded and CPU released from reset' can print FAIL only when no program image is loaded or the CPU is never released; the run then has no program to execute, never writes DONE and grades nothing further, so no mutation can leave the program and the measurement setup running (not exercised at this boundary)
-// MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF, so the line 'the program-stored constant $BEEF was read back' prints FAIL -> FAIL fixture (79 passed, 38 failed)
+// MUTATION fixture stimulus red NMH_MUTATE=FIX: the program stores $DEAD instead of $BEEF, so the line 'the program-stored constant $BEEF was read back' prints FAIL -> FAIL fixture (85 passed, 47 failed)
 // MUTATION C2 none impossible: the line prints FAIL only when the program does not write DONE, and a run that never writes DONE is not an allowed mutation, so no negative DONE mutation is recorded (not exercised at this boundary)
-// MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> FAIL C1, C5/R2, R2 x2, C8 x2, P2-DIVERSITY, C5-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1J x9, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (23 passed, 9 failed)
-// MUTATION R0 stimulus red NMH_MUTATE=R0: the pattern section of both stream buffers repeats a 40-word period of runs of 4 or 6 pixels of one value, so every run boundary is a colour change on every pattern line and no sample width divides all the run lengths: the line 'a unique hires-period sample width w and phase phi exist' prints FAIL -> FAIL R0, C5/R2, R2 x4, C6 x6, C3, C8 x2, R1, P2-DIVERSITY, C5-F7F10, R1-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1J x9, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (11 passed, 19 failed)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (61 passed, 29 failed)
-// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (61 passed, 29 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=R2M: F5's BPLCON0=$2040 (SuperHires instead of hires) and F6's BPLCON0=$A000 (hires instead of lores): the lines 'F5's hires pixel mapping' and 'F6's lores pixel mapping' print FAIL -> FAIL R2 x3, C4; NOT GRADED P3.H, P3.L, P7.1, P5.L; 1 line not printed (71 passed, 41 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000): the line 'F2-F4's SuperHires pixel mapping' prints FAIL -> FAIL R2 x2, C4; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1J x9, P7.3 (38 passed, 8 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, the program of V4B) -> FAIL R2 x2, C4; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1J x9, P7.3 (38 passed, 8 failed)
-// MUTATION R2 stimulus red NMH_MUTATE=R2B: F1's closing band also writes BPLCON1=$0011, which delays the bitplane data for the rest of the frame: the line 'the same s that fits the top Q0 lines also fits the bottom Q0 lines' prints FAIL -> FAIL R2, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (63 passed, 27 failed)
-// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window (at most 128 hires periods wide): the run of F1's pure R lines falls outside 256-576 -> FAIL C5/R2, R2, C6, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (58 passed, 32 failed)
-// MUTATION C6 stimulus red NMH_MUTATE=C6B: F2-F5's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window: the lines of F2, F3, F4 and F5 print FAIL -> FAIL R2 x3, C6 x4, C4, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P7.1, V4c x3, P4 x192, P5.L x2, P1J x9, P7.3; 1 line not printed (28 passed, 14 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> FAIL C5/R2, R2, C3, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (58 passed, 32 failed)
-// MUTATION C3 stimulus red NMH_MUTATE=C3P: F1's BPLCON0=$B000 (hires, three bitplanes): plane 3 is fetched from the unprogrammed BPL3PT, so the clause 'no other bitplane address inside a line's fetches' fails -> FAIL C5/R2, R2, C3, C4, C9, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (57 passed, 33 failed)
-// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6 -> FAIL R2 x2, C6, C3, C4, C9, C7 x2, R1, C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10; NOT GRADED P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (55 passed, 47 failed)
-// MUTATION C4 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: the pointer values of the planned header are missing -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1J x9, P7.3 (41 passed, 7 failed)
-// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (63 passed, 27 failed)
-// MUTATION C9 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: sprite 1 fetches from the address its pointer reached in F1's frame, past the null sprite -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1J x9, P7.3 (41 passed, 7 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00: the timing line prints FAIL, the band-count line holds -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (64 passed, 26 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=C7C: F1's Q3 band change is absent (11 bands instead of 12): the band-count line prints FAIL -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (64 passed, 26 failed)
-// MUTATION C7 stimulus red NMH_MUTATE=V3A: F1 in hires with sixteen COLOR01 bands instead of the S0-S3 bands (16 bands instead of 12): the band-count line prints FAIL -> FAIL C5/R2, R2, C4, C7, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (60 passed, 30 failed)
-// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3: the line 'F1 Q0 diversity' (8 of 64 triples) and the line of pair coverage (0 of 203 bands) print FAIL -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1J x9, P7.3 (35 passed, 8 failed)
-// MUTATION C8 stimulus red NMH_MUTATE=C8: as above, the line 'F1 Q0 diversity' -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1J x9, P7.3 (35 passed, 8 failed)
-// MUTATION R1 stimulus red NMH_MUTATE=C4: F5's list points at itself, so the frames after F5 are decoded from repeated lines: the pairs of output copies of a graded source line differ -> FAIL R2 x2, C6, C3, C4, C9, C7 x2, R1, C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10; NOT GRADED P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (55 passed, 47 failed)
-// MUTATION P1.0R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.0G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.0B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.1R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.1G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.1B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.2R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.2G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.2B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.3R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.3G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P1.3B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12 (68 passed, 49 failed)
-// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000: only F2-F4's single palette Q0 populates the groups, 0 of 12 (c, X) combinations have two palettes -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (61 passed, 29 failed)
-// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x9 (61 passed, 29 failed)
-// MUTATION P2.R stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3; PASS P2.R, P2.G, P2.B (80 passed, 37 failed)
-// MUTATION P2.G stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3; PASS P2.R, P2.G, P2.B (80 passed, 37 failed)
-// MUTATION P2.B stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3; PASS P2.R, P2.G, P2.B (80 passed, 37 failed)
-// MUTATION P3.H stimulus red NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC, so Hires shows 4 distinct values per component and SuperHires (7, 9, 9) no longer lies below it -> FAIL P3.H, P7.1 (78 passed, 39 failed)
-// MUTATION P3.L stimulus red NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC, so Lores shows 4 distinct values per component and SuperHires (7, 9, 9) no longer lies below it -> FAIL P3.L, P7.1 (78 passed, 39 failed)
-// MUTATION P7.1 stimulus red NMH_MUTATE=V3B: the Hires half as for P3.H: P7.1 prints FAIL (P3.H fails, P3.L holds) -> FAIL P3.H, P7.1 (78 passed, 39 failed)
-// MUTATION P7.1 stimulus red NMH_MUTATE=V3C: the Lores half as for P3.L: P7.1 prints FAIL (P3.H holds, P3.L fails) -> FAIL P3.L, P7.1 (78 passed, 39 failed)
-// MUTATION V4c stimulus red NMH_MUTATE=V4C: F2's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F2 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x2; NOT GRADED P4 x160, P5.L, P1J x9, P7.3 (54 passed, 10 failed)
-// MUTATION V4c stimulus red NMH_MUTATE=V4C: F3's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F3 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x2; NOT GRADED P4 x160, P5.L, P1J x9, P7.3 (54 passed, 10 failed)
+// MUTATION C1 stimulus red NMH_MUTATE=C1: OCS instead of ECS (harness Config, no program change) -> FAIL C1, C5/R2, R2 x2, C8 x2, P2-DIVERSITY, C5-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x3, P1K x12, P1J x12, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 3 lines not printed (23 passed, 9 failed)
+// MUTATION R0 stimulus red NMH_MUTATE=R0: the pattern section of both stream buffers repeats a 40-word period of runs of 4 or 6 pixels of one value, so every run boundary is a colour change on every pattern line and no sample width divides all the run lengths: the line 'a unique hires-period sample width w and phase phi exist' prints FAIL -> FAIL R0, C5/R2, R2 x4, C6 x6, C3, C8 x2, R1, P2-DIVERSITY, C5-F7F10, R1-F7F10; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.2, P7.3, P7.4; 4 lines not printed (11 passed, 19 failed)
+// MUTATION C5/R2 stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000 (hires instead of SuperHires) -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
+// MUTATION C5/R2 stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=R2M: F5's BPLCON0=$2040 (SuperHires instead of hires) and F6's BPLCON0=$A000 (hires instead of lores): the lines 'F5's hires pixel mapping' and 'F6's lores pixel mapping' print FAIL -> FAIL R2 x3, C4; NOT GRADED P3.H, P3.L, P7.1, P5.L; 1 line not printed (77 passed, 50 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=V4B: F2-F4 run in hires (BPLCON0=$A000): the line 'F2-F4's SuperHires pixel mapping' prints FAIL -> FAIL R2 x2, C4; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (38 passed, 8 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=V5: F2-F4 run in hires (BPLCON0=$A000, the program of V4B) -> FAIL R2 x2, C4; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (38 passed, 8 failed)
+// MUTATION R2 stimulus red NMH_MUTATE=R2B: F1's closing band also writes BPLCON1=$0011, which delays the bitplane data for the rest of the frame: the line 'the same s that fits the top Q0 lines also fits the bottom Q0 lines' prints FAIL -> FAIL R2, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (66 passed, 45 failed)
+// MUTATION C6 stimulus red NMH_MUTATE=C6: F1's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window (at most 128 hires periods wide): the run of F1's pure R lines falls outside 256-576 -> FAIL C5/R2, R2, C6, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (61 passed, 50 failed)
+// MUTATION C6 stimulus red NMH_MUTATE=C6B: F2-F5's DIWSTRT/DIWSTOP narrowed to a 64-lores-pixel window: the lines of F2, F3, F4 and F5 print FAIL -> FAIL R2 x3, C6 x4, C4, C8; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P7.1, V4c x3, P4 x192, P5.L x2, P1K x12, P1J x12, P7.3; 1 line not printed (28 passed, 14 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3: F1's BPLCON0=$1040 (one bitplane, only plane-1 fetched) -> FAIL C5/R2, R2, C3, C4, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (61 passed, 50 failed)
+// MUTATION C3 stimulus red NMH_MUTATE=C3P: F1's BPLCON0=$B000 (hires, three bitplanes): plane 3 is fetched from the unprogrammed BPL3PT, so the clause 'no other bitplane address inside a line's fetches' fails -> FAIL C5/R2, R2, C3, C4, C9, C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (60 passed, 51 failed)
+// MUTATION C4 stimulus red NMH_MUTATE=C4: F5's list points at itself instead of F6 -> FAIL R2 x2, C6, C3, C4, C9, C7 x2, R1, C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10; NOT GRADED P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (61 passed, 56 failed)
+// MUTATION C4 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: the pointer values of the planned header are missing -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1K x12, P1J x12, P7.3 (41 passed, 7 failed)
+// MUTATION C9 stimulus red NMH_MUTATE=C9: F1's SPR0PT points at the real sprite 0 structure -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (66 passed, 45 failed)
+// MUTATION C9 stimulus red NMH_MUTATE=C4S: F2's header omits the MOVEs to SPR1PTH/SPR1PTL: sprite 1 fetches from the address its pointer reached in F1's frame, past the null sprite -> FAIL C4, C9; NOT GRADED P1 x12, P2.R, P2.G, P2.B, V4c, P4 x80, P5.L, P1K x12, P1J x12, P7.3 (41 passed, 7 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=C7: F1 band 1's WAIT at horizontal $80 instead of $00: the timing line prints FAIL, the band-count line holds -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (67 passed, 44 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=C7C: F1's Q3 band change is absent (11 bands instead of 12): the band-count line prints FAIL -> FAIL C7; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (67 passed, 44 failed)
+// MUTATION C7 stimulus red NMH_MUTATE=V3A: F1 in hires with sixteen COLOR01 bands instead of the S0-S3 bands (16 bands instead of 12): the band-count line prints FAIL -> FAIL C5/R2, R2, C4, C7, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (63 passed, 48 failed)
+// MUTATION C8 stimulus red NMH_MUTATE=C8: the pattern section restricted to values 0 and 3: the line 'F1 Q0 diversity' (8 of 64 triples) and the line of pair coverage (0 of 203 bands) print FAIL -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (35 passed, 8 failed)
+// MUTATION C8 stimulus red NMH_MUTATE=C8: as above, the line 'F1 Q0 diversity' -> FAIL C8 x2, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, V4c x3, P4 x192, P5.L, P1K x12, P1J x12, P7.3 (35 passed, 8 failed)
+// MUTATION R1 stimulus red NMH_MUTATE=C4: F5's list points at itself, so the frames after F5 are decoded from repeated lines: the pairs of output copies of a graded source line differ -> FAIL R2 x2, C6, C3, C4, C9, C7 x2, R1, C4-F7F10, C5-F7F10, C7-F7F10, C10, R1-F7F10; NOT GRADED P3.H, P3.L, P7.1, P5.L x2, C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (61 passed, 56 failed)
+// MUTATION P1.0R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.0G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.0B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.1R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.1G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.1B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.2R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.2G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.2B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.3R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.3G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1.3B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=C5: F1's BPLCON0=$A000: only F2-F4's single palette Q0 populates the groups, 0 of 12 (c, X) combinations have two palettes -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
+// MUTATION P2-DIVERSITY stimulus red NMH_MUTATE=V2: F1 run in hires (BPLCON0=$A000), the list of C5 -> FAIL C5/R2, R2, C4, P2-DIVERSITY; NOT GRADED P1 x12, P2.R, P2.G, P2.B, P3.H, P3.L, P7.1, P1J x3 (64 passed, 47 failed)
+// MUTATION P2.R stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 49 failed)
+// MUTATION P2.G stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 49 failed)
+// MUTATION P2.B stimulus green NMH_MUTATE=P2G: F1's palette bands Q1-Q5, Z and O write Color 0 as Q0's Color 0 in every register and Colors 1-3 as before, so the registers of a value-c pixel differ between the palettes only in Color c's letters; P2-DIVERSITY prints 12 of 12 as at baseline and the unchanged comparator prints PASS on 223440 pixels in 16 groups -> FAIL P1 x3, P1J x3; PASS P2.R, P2.G, P2.B (83 passed, 49 failed)
+// MUTATION P3.H stimulus red NMH_MUTATE=V3B: F5's COLOR01 sweep masked with $0CCC, so Hires shows 4 distinct values per component and SuperHires (7, 9, 9) no longer lies below it -> FAIL P3.H, P7.1 (84 passed, 48 failed)
+// MUTATION P3.L stimulus red NMH_MUTATE=V3C: F6's COLOR01 sweep masked with $0CCC, so Lores shows 4 distinct values per component and SuperHires (7, 9, 9) no longer lies below it -> FAIL P3.L, P7.1 (84 passed, 48 failed)
+// MUTATION P7.1 stimulus red NMH_MUTATE=V3B: the Hires half as for P3.H: P7.1 prints FAIL (P3.H fails, P3.L holds) -> FAIL P3.H, P7.1 (84 passed, 48 failed)
+// MUTATION P7.1 stimulus red NMH_MUTATE=V3C: the Lores half as for P3.L: P7.1 prints FAIL (P3.H holds, P3.L fails) -> FAIL P3.L, P7.1 (84 passed, 48 failed)
+// MUTATION V4c stimulus red NMH_MUTATE=V4C: F2's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F2 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x2; NOT GRADED P4 x160, P5.L, P1K x12, P1J x12, P7.3 (54 passed, 10 failed)
+// MUTATION V4c stimulus red NMH_MUTATE=V4C: F3's closing restore band also inverts bit 11 of COLOR01 for part of its own first line (after its restore MOVE it writes the inverted value 23 times and then restores COLOR01), so pixels of that line differ from their baseline triples: the F3 line prints FAIL through a difference (checked=1120, diffs=160), not through its population guard -> FAIL V4c x2; NOT GRADED P4 x160, P5.L, P1K x12, P1J x12, P7.3 (54 passed, 10 failed)
 // MUTATION V4c none impossible: the F4 line cannot print FAIL through a difference: the lines of F4's null band (window lines 90-91) lie inside the population its baseline is built from (window lines 89-199), so a compared pixel with a matched triple equals the baseline of that triple by construction; only the population guard (checked=0) can fail it, and that is not a difference (unfalsifiable at this boundary)
-// MUTATION P4.n0b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n0b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n0b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n0b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n0b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n0b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n1b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n1b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n1b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n1b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n1b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n1b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n2b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n2b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n2b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n2b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n2b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n2b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n3b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n3b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n3b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n3b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n3b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n3b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24 (56 passed, 61 failed)
-// MUTATION P4.n0b11 stimulus red NMH_MUTATE=V4A: F2 band 11 (n=00, b=11) also inverts COLOR01 bit 11, a bit of another Color -> FAIL P4 (79 passed, 38 failed)
-// MUTATION P4.n1b0 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n1b1 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n1b4 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n1b5 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n1b8 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n1b9 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n2b0 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n2b1 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n2b4 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n2b5 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n2b8 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n2b9 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n3b0 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n3b1 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n3b4 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n3b5 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n3b8 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P4.n3b9 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P5.L stimulus green NMH_MUTATE=VLIVE: (SuperHires half) F2 band 48 (n=04, b=00) also writes COLOR01=$0C9E, the mechanism of V4A, and band 49 restores it: the any-bit count over the 144 bands becomes 288 of 161280 pixels and the line prints PASS through the same comparator; P4.n4b0 turns from NOT OBSERVABLE to FAIL on the same change. The count takes every band n>=04 before P4's NOT OBSERVABLE branch, so a band whose only change lies in bits 1-0 of the component would count too; no stimulus of this package produces one -> FAIL P4; PASS P5.L, P7.3 (82 passed, 36 failed)
-// MUTATION P5.L stimulus red NMH_MUTATE=V5B: (Hires half, registers COLOR04-0F) F5's band planned to invert COLOR05 inverts COLOR01 instead -> FAIL P5.L (79 passed, 38 failed)
-// MUTATION P5.L stimulus red NMH_MUTATE=V5D: (Hires half, registers COLOR00-03) F5's band planned to invert COLOR02 inverts COLOR03 instead -> FAIL P5.L (79 passed, 38 failed)
-// MUTATION P1J.1R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.1R both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.1G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.1G both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.1B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.1B both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.2R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.2R both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.2G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.2G both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.2B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.2B both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.3R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.3R both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.3G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.3G both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION P1J.3B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so the dashes' P4 half and P1.3B both hold -> PASS P4 x18, P1J x9 (107 passed, 10 failed)
-// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4B: F8's header writes BPLCON2=$0000 instead of $0024 -> FAIL C4-F7F10; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (74 passed, 35 failed)
-// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4C: F7's list points at itself instead of F8, so F8-F10 never run -> FAIL C4-F7F10, C5-F7F10, C7-F7F10, C10; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (71 passed, 38 failed)
-// MUTATION C4-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000 -> FAIL C4-F7F10, C5-F7F10, RUN-ENDS; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (72 passed, 37 failed)
-// MUTATION C5-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000 (no s fits F7's SuperHires mapping; the hires mapping fits) -> FAIL C4-F7F10, C5-F7F10, RUN-ENDS; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (72 passed, 37 failed)
-// MUTATION C7-F7F10 stimulus red NMH_MUTATE=C7B: the block 3 band's WAIT of F7 at horizontal $80 instead of $00 -> FAIL C7-F7F10; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (74 passed, 35 failed)
-// MUTATION C10 stimulus red NMH_MUTATE=C10: F7's SPR0PT points at the null sprite -> FAIL C10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (73 passed, 34 failed)
-// MUTATION C11 stimulus red NMH_MUTATE=C11: sprite 0's data words are $FF00 where they are $FFFF (8 pixels wide): C11 stays FAIL as at baseline, and the runs halve (F7, F8 and F9 8 periods, F10 16 periods) -> no other line moves (80 passed, 37 failed)
-// MUTATION C11 stimulus green NMH_MUTATE=C11G: F7 and F8 run with BPLCON0=$A000: runs of 32 periods in F7, F8 and F10, so the same comparator prints PASS -> FAIL C4-F7F10, C5-F7F10; PASS C11; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (74 passed, 35 failed)
-// MUTATION RUN-ENDS stimulus red NMH_MUTATE=RUNENDS: F7's band at beam $5C changes COLOR00 to $0F00 for the rest of the frame: the run ends on 6 of 21 F7 baseline lines are [269,284], the other 15 lines differ from the background over the whole interval -> FAIL RUN-ENDS; NOT GRADED P6.1, P6.2, P5.U, P7.4; 3 lines not printed (75 passed, 35 failed)
+// MUTATION P4.n0b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n0b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n0b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n0b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n0b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n0b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n1b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n1b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n1b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n1b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n1b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n1b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n2b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n2b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n2b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n2b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n2b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n2b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n3b2 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n3b3 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n3b6 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n3b7 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n3b10 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n3b11 stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P4.n0b11 stimulus red NMH_MUTATE=V4A: F2 band 11 (n=00, b=11) also inverts COLOR01 bit 11, a bit of another Color -> FAIL P4 (85 passed, 47 failed)
+// MUTATION P4.n1b0 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n1b1 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n1b4 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n1b5 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n1b8 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n1b9 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n2b0 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n2b1 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n2b4 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n2b5 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n2b8 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n2b9 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n3b0 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n3b1 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n3b4 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n3b5 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n3b8 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P4.n3b9 stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit b+2 of COLOR00 instead, a bit that P4's p-half lines show live -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P5.L stimulus green NMH_MUTATE=VLIVE: (SuperHires half) F2 band 48 (n=04, b=00) also writes COLOR01=$0C9E, the mechanism of V4A, and band 49 restores it: the any-bit count over the 144 bands becomes 288 of 161280 pixels and the line prints PASS through the same comparator; P4.n4b0 turns from NOT OBSERVABLE to FAIL on the same change. The count takes every band n>=04 before P4's NOT OBSERVABLE branch, so a band whose only change lies in bits 1-0 of the component would count too; no stimulus of this package produces one -> FAIL P4; PASS P5.L, P7.3 (88 passed, 45 failed)
+// MUTATION P5.L stimulus red NMH_MUTATE=V5B: (Hires half, registers COLOR04-0F) F5's band planned to invert COLOR05 inverts COLOR01 instead -> FAIL P5.L (85 passed, 47 failed)
+// MUTATION P5.L stimulus red NMH_MUTATE=V5D: (Hires half, registers COLOR00-03) F5's band planned to invert COLOR02 inverts COLOR03 instead -> FAIL P5.L (85 passed, 47 failed)
+// MUTATION P1K.1R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes R of a value-1 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.1G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes G of a value-1 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.1B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes B of a value-1 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.2R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes R of a value-2 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.2G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes G of a value-2 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.2B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes B of a value-2 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.3R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes R of a value-3 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.3G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes G of a value-3 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.3B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes B of a value-3 pixel and the unchanged comparator prints PASS -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1K.0R stimulus red NMH_MUTATE=VKEYA: F2's band 79 (n=06, b=7), an off-key band for Color 0, also inverts bits 11, 7 and 3 of COLOR00, the upper letters of Color 0, which the closing band restores: R of the value-0 pixels changes in an off-key band -> FAIL P4, P1K x3, P1J x3; PASS P5.L, P7.3 (82 passed, 51 failed)
+// MUTATION P1K.0R stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit, so a keyed band changes both of bits 3-2 of R on the value-0 pixels -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P1K.0G stimulus red NMH_MUTATE=VKEYA: F2's band 79 (n=06, b=7), an off-key band for Color 0, also inverts bits 11, 7 and 3 of COLOR00, the upper letters of Color 0, which the closing band restores: G of the value-0 pixels changes in an off-key band -> FAIL P4, P1K x3, P1J x3; PASS P5.L, P7.3 (82 passed, 51 failed)
+// MUTATION P1K.0G stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit, so a keyed band changes both of bits 3-2 of G on the value-0 pixels -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P1K.0B stimulus red NMH_MUTATE=VKEYA: F2's band 79 (n=06, b=7), an off-key band for Color 0, also inverts bits 11, 7 and 3 of COLOR00, the upper letters of Color 0, which the closing band restores: B of the value-0 pixels changes in an off-key band -> FAIL P4, P1K x3, P1J x3; PASS P5.L, P7.3 (82 passed, 51 failed)
+// MUTATION P1K.0B stimulus red NMH_MUTATE=V4D: F2-F4, every band also flips its partner bit, so a keyed band changes both of bits 3-2 of B on the value-0 pixels -> FAIL P4 x24, P1K x3, P1J x3 (56 passed, 76 failed)
+// MUTATION P1J.0R stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band, so P1.0R fails -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1J.0R stimulus red NMH_MUTATE=VKEYA: F2's band 79 also inverts the upper letters of Color 0 in COLOR00, so P1K.0R fails -> FAIL P4, P1K x3, P1J x3; PASS P5.L, P7.3 (82 passed, 51 failed)
+// MUTATION P1J.0G stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band, so P1.0G fails -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1J.0G stimulus red NMH_MUTATE=VKEYA: F2's band 79 also inverts the upper letters of Color 0 in COLOR00, so P1K.0G fails -> FAIL P4, P1K x3, P1J x3; PASS P5.L, P7.3 (82 passed, 51 failed)
+// MUTATION P1J.0B stimulus red NMH_MUTATE=V1: F1 writes Q3x instead of Q3 for the Q3 band, so P1.0B fails -> FAIL P1 x12, P1J x3 (71 passed, 61 failed)
+// MUTATION P1J.0B stimulus red NMH_MUTATE=VKEYA: F2's band 79 also inverts the upper letters of Color 0 in COLOR00, so P1K.0B fails -> FAIL P4, P1K x3, P1J x3; PASS P5.L, P7.3 (82 passed, 51 failed)
+// MUTATION P1J.1R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.1R and P1K.1R both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.1G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.1G and P1K.1G both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.1B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.1B and P1K.1B both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.2R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.2R and P1K.2R both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.2G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.2G and P1K.2G both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.2B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.2B and P1K.2B both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.3R stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.3R and P1K.3R both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.3G stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.3G and P1K.3G both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION P1J.3B stimulus green NMH_MUTATE=VP1JG: each q-half band of COLOR01-03 inverts the matching p-half bit of COLOR00 instead, so P1.3B and P1K.3B both hold -> PASS P4 x18, P1K x9, P1J x9 (122 passed, 10 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4B: F8's header writes BPLCON2=$0000 instead of $0024 -> FAIL C4-F7F10; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (80 passed, 44 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=C4C: F7's list points at itself instead of F8, so F8-F10 never run -> FAIL C4-F7F10, C5-F7F10, C7-F7F10, C10; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (77 passed, 47 failed)
+// MUTATION C4-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000 -> FAIL C4-F7F10, C5-F7F10, RUN-ENDS; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (78 passed, 46 failed)
+// MUTATION C5-F7F10 stimulus red NMH_MUTATE=V6C: F7 runs with BPLCON0=$A000 (no s fits F7's SuperHires mapping; the hires mapping fits) -> FAIL C4-F7F10, C5-F7F10, RUN-ENDS; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (78 passed, 46 failed)
+// MUTATION C7-F7F10 stimulus red NMH_MUTATE=C7B: the block 3 band's WAIT of F7 at horizontal $80 instead of $00 -> FAIL C7-F7F10; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (80 passed, 44 failed)
+// MUTATION C10 stimulus red NMH_MUTATE=C10: F7's SPR0PT points at the null sprite -> FAIL C10; NOT GRADED C11, RUN-ENDS, P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (79 passed, 43 failed)
+// MUTATION C11 stimulus red NMH_MUTATE=C11: sprite 0's data words are $FF00 where they are $FFFF (8 pixels wide): C11 stays FAIL as at baseline, and the runs halve (F7, F8 and F9 8 periods, F10 16 periods) -> no other line moves (86 passed, 46 failed)
+// MUTATION C11 stimulus green NMH_MUTATE=C11G: F7 and F8 run with BPLCON0=$A000: runs of 32 periods in F7, F8 and F10, so the same comparator prints PASS -> FAIL C4-F7F10, C5-F7F10; PASS C11; NOT GRADED P6.1-F9PF, P6.1, P6.2, P5.U, P7.4; 3 lines not printed (80 passed, 44 failed)
+// MUTATION RUN-ENDS stimulus red NMH_MUTATE=RUNENDS: F7's band at beam $5C changes COLOR00 to $0F00 for the rest of the frame: the run ends on 6 of 21 F7 baseline lines are [269,284], the other 15 lines differ from the background over the whole interval -> FAIL RUN-ENDS; NOT GRADED P6.1, P6.2, P5.U, P7.4; 3 lines not printed (81 passed, 44 failed)
 // MUTATION R1-F7F10 none impossible: not exercised, by a scope decision: the copies of a source line are two read-outs of one stored line; no stimulus of this package changes one read-out and not the other, and none was found that does
-// MUTATION P6.1-F9PF stimulus red NMH_MUTATE=V6Q: F9's band change at line 30 writes COLOR00-0F=Q0 instead of Q1 -> FAIL P6.1-F9PF; NOT GRADED P6.1 (78 passed, 38 failed)
-// MUTATION P6.1 stimulus red NMH_MUTATE=V6A: F7 writes COLOR16-31=T0c while the expectation stays T0: the F7 clause and the F9 clause fail -> FAIL P6.1 (79 passed, 38 failed)
-// MUTATION P6.1 stimulus red NMH_MUTATE=V6E: F8 writes COLOR10-1F=T0 while the expectation stays T0c: the F8 clause fails -> FAIL P6.1 (79 passed, 38 failed)
-// MUTATION P6.1 stimulus red NMH_MUTATE=V6B: F9 writes COLOR10-1F=T0c: the F9 clause fails -> FAIL P6.1 (79 passed, 38 failed)
-// MUTATION P6.2-SHR stimulus green NMH_MUTATE=V6S: the block of F7 planned to invert COLOR20 inverts COLOR17 instead: 14 inner pixels of block 3's value-1 line change and the same comparator prints PASS -> PASS P6.2-SHR, P6.2, P7.4 (83 passed, 34 failed)
-// MUTATION P6.2-HIRES stimulus red NMH_MUTATE=V6D: the block of F10 planned to invert COLOR20 inverts COLOR17 instead -> FAIL P6.2-HIRES (79 passed, 38 failed)
-// MUTATION P6.2-LIVE stimulus red NMH_MUTATE=V6L: the block of F10 planned to invert COLOR17 inverts COLOR20 instead -> FAIL P6.2-LIVE (79 passed, 38 failed)
-// MUTATION P6.2 stimulus green NMH_MUTATE=V6S: as above: the SuperHires half, the Hires half and the Hires comparator all hold -> PASS P6.2-SHR, P6.2, P7.4 (83 passed, 34 failed)
-// MUTATION P6.2 stimulus green NMH_MUTATE=VLIVES: the block of F7 planned to invert COLOR20 inverts COLOR17 instead, with the stimulus of VLIVE -> FAIL P4; PASS P5.L, P6.2-SHR, P6.2, P7.2, P7.3, P7.4 (86 passed, 32 failed)
-// MUTATION P6.2 stimulus red NMH_MUTATE=V6D: as above: the Hires half fails -> FAIL P6.2-HIRES (79 passed, 38 failed)
-// MUTATION P5.U stimulus red NMH_MUTATE=V5C: block 2 of F7 also writes Color 0's inverted letters into the seven lower registers that hold them, block 3 restores them (the first lines of blocks 2 and 3 are spacer lines): the F7 part of the comparator fails -> FAIL P5.U (79 passed, 38 failed)
-// MUTATION P5.U stimulus red NMH_MUTATE=V5E: F8's line-30 band also writes the seven lower registers that hold Color 0's letters, inverted: the F8 part of the comparator fails -> FAIL P5.U (79 passed, 38 failed)
-// MUTATION P7.2 stimulus green NMH_MUTATE=VLIVES: the stimulus of VLIVE (a live input for P5.L's SuperHires half) and of V6S (a live input for P6.2): both halves hold and the joint prints PASS -> FAIL P4; PASS P5.L, P6.2-SHR, P6.2, P7.2, P7.3, P7.4 (86 passed, 32 failed)
-// MUTATION P7.3 stimulus green NMH_MUTATE=VLIVE: the stimulus of VLIVE (a live input for P5.L's SuperHires half): both halves hold and the joint prints PASS -> FAIL P4; PASS P5.L, P7.3 (82 passed, 36 failed)
-// MUTATION P7.4 stimulus green NMH_MUTATE=V6S: the block of F7 planned to invert COLOR20 inverts COLOR17 instead: P6.2's SuperHires half holds with P6.1, and the joint prints PASS -> PASS P6.2-SHR, P6.2, P7.4 (83 passed, 34 failed)
+// MUTATION P6.1-F9PF stimulus red NMH_MUTATE=V6Q: F9's band change at line 30 writes COLOR00-0F=Q0 instead of Q1 -> FAIL P6.1-F9PF; NOT GRADED P6.1 (84 passed, 47 failed)
+// MUTATION P6.1 stimulus red NMH_MUTATE=V6A: F7 writes COLOR16-31=T0c while the expectation stays T0: the F7 clause and the F9 clause fail -> FAIL P6.1 (85 passed, 47 failed)
+// MUTATION P6.1 stimulus red NMH_MUTATE=V6E: F8 writes COLOR10-1F=T0 while the expectation stays T0c: the F8 clause fails -> FAIL P6.1 (85 passed, 47 failed)
+// MUTATION P6.1 stimulus red NMH_MUTATE=V6B: F9 writes COLOR10-1F=T0c: the F9 clause fails -> FAIL P6.1 (85 passed, 47 failed)
+// MUTATION P6.2-SHR stimulus green NMH_MUTATE=V6S: the block of F7 planned to invert COLOR20 inverts COLOR17 instead: 14 inner pixels of block 3's value-1 line change and the same comparator prints PASS -> PASS P6.2-SHR, P6.2, P7.4 (89 passed, 43 failed)
+// MUTATION P6.2-HIRES stimulus red NMH_MUTATE=V6D: the block of F10 planned to invert COLOR20 inverts COLOR17 instead -> FAIL P6.2-HIRES (85 passed, 47 failed)
+// MUTATION P6.2-LIVE stimulus red NMH_MUTATE=V6L: the block of F10 planned to invert COLOR17 inverts COLOR20 instead -> FAIL P6.2-LIVE (85 passed, 47 failed)
+// MUTATION P6.2 stimulus green NMH_MUTATE=V6S: as above: the SuperHires half, the Hires half and the Hires comparator all hold -> PASS P6.2-SHR, P6.2, P7.4 (89 passed, 43 failed)
+// MUTATION P6.2 stimulus green NMH_MUTATE=VLIVES: the block of F7 planned to invert COLOR20 inverts COLOR17 instead, with the stimulus of VLIVE -> FAIL P4; PASS P5.L, P6.2-SHR, P6.2, P7.2, P7.3, P7.4 (92 passed, 41 failed)
+// MUTATION P6.2 stimulus red NMH_MUTATE=V6D: as above: the Hires half fails -> FAIL P6.2-HIRES (85 passed, 47 failed)
+// MUTATION P5.U stimulus red NMH_MUTATE=V5C: block 2 of F7 also writes Color 0's inverted letters into the seven lower registers that hold them, block 3 restores them (the first lines of blocks 2 and 3 are spacer lines): the F7 part of the comparator fails -> FAIL P5.U (85 passed, 47 failed)
+// MUTATION P5.U stimulus red NMH_MUTATE=V5E: F8's line-30 band also writes the seven lower registers that hold Color 0's letters, inverted: the F8 part of the comparator fails -> FAIL P5.U (85 passed, 47 failed)
+// MUTATION P7.2 stimulus green NMH_MUTATE=VLIVES: the stimulus of VLIVE (a live input for P5.L's SuperHires half) and of V6S (a live input for P6.2): both halves hold and the joint prints PASS -> FAIL P4; PASS P5.L, P6.2-SHR, P6.2, P7.2, P7.3, P7.4 (92 passed, 41 failed)
+// MUTATION P7.3 stimulus green NMH_MUTATE=VLIVE: the stimulus of VLIVE (a live input for P5.L's SuperHires half): both halves hold and the joint prints PASS -> FAIL P4; PASS P5.L, P7.3 (88 passed, 45 failed)
+// MUTATION P7.4 stimulus green NMH_MUTATE=V6S: the block of F7 planned to invert COLOR20 inverts COLOR17 instead: P6.2's SuperHires half holds with P6.1, and the joint prints PASS -> PASS P6.2-SHR, P6.2, P7.4 (89 passed, 43 failed)
 
 #include <algorithm>
 #include <array>
@@ -870,6 +891,9 @@ struct P4Verdict {
     bool observed = false; bool fail = false;
     long changed = 0, checked = 0, excluded = 0;
     long any_changed = 0; // P5.L: counts ANY bit differing, not just the allowed one
+    // P1K: per pixel value and component, the checked pixels and the OR over them of (baseline XOR observed) in all four bits
+    long vcnt[4] = {0, 0, 0, 0};
+    int xdiff[4][3] = {{0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}};
 };
 
 // Grades one perturbation band (2 graded lines, both content -- these bands
@@ -904,6 +928,10 @@ P4Verdict grade_p4_band(const std::vector<nmh::VideoSample>& video, const Graded
             pv.checked++;
             int base_c[3] = {base.r, base.g, base.b};
             int obs_c[3]  = {obs.r, obs.g, obs.b};
+            if (v >= 0 && v <= 3) {
+                pv.vcnt[v]++;
+                for (int comp = 0; comp < 3; ++comp) pv.xdiff[v][comp] |= base_c[comp] ^ obs_c[comp];
+            }
             bool any_diff = false;
             // "observed" (the allowed bit itself moved) and "no OTHER bit
             // moved" are separate questions -- a mutation (V4d) can make the
@@ -2304,9 +2332,9 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
 
     long p5l_shr_changed = 0, p5l_shr_any = 0, p5l_bands = 0, p5l_pixels = 0, p5l_bands_graded = 0;
     long not_observable = 0, not_graded_p4 = 0;
-    // P1J: per-(n,b) verdict for the joint key claim, filled as
-    // the 192-bit loop runs. 0 = not graded, 1 = NOT OBSERVABLE, 2 = PASS, 3 = FAIL.
-    int p4_state[16][12] = {};
+    // P1K reads the per-band changes of the graded bands, filled as the 192-bit loop runs.
+    std::vector<P4Verdict> p4pv(192);
+    std::vector<char> p4have(192, 0);
     std::string why_f[5];
     bool g_p4f[5] = {false, false, false, false, false};
     for (int f = 2; f <= 4; ++f) {
@@ -2341,6 +2369,8 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
             ++not_graded_p4;
             continue;
         }
+        p4pv[gi] = pv;
+        p4have[gi] = 1;
         std::string label = idtok + " p.301: bit " + std::to_string(b) + " of COLOR" + hex2(n) +
             " changes only its own place, checked=" + std::to_string(pv.checked) +
             " changed=" + std::to_string(pv.changed) + " excluded=" + std::to_string(pv.excluded);
@@ -2351,12 +2381,10 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
         if (!pv.observed && !pv.fail) {
             checks.record(label + " -- NOT OBSERVABLE (L1)");
             ++not_observable;
-            p4_state[n][b] = 1;
             continue;
         }
         bool pass = pv.observed && !pv.fail;
         checks.expect(pass, label);
-        p4_state[n][b] = pass ? 2 : 3;
     }
     checks.note("P4: " + std::to_string(not_observable) + " of 192 bits not observable (L1), " + std::to_string(not_graded_p4) + " not graded");
 
@@ -2434,28 +2462,86 @@ void grade_capture(const Capture& cap, Checks& checks, const std::string& mutate
     // the joint P5.L state: FAIL when either half fails, PASS when both pass
     int p5l_state = (p5s_state == 2 || p5h_state == 2) ? 2 : (p5s_state == 1 && p5h_state == 1) ? 1 : 0;
 
-    // ---- P1J: the full key claim, letters and dashes together
-    // (SPECIFICATION.md 7/P1 item 8) -----------------------------------
+    // ---- P1K: the two dashes of the key and every other register bit, per (Color c, component X)
+    // (SPECIFICATION.md 7/P1 item 8). Over all 192 perturbation bands of F2-F4, the bands whose bit is not one of the two
+    // letters of (c, X) leave all four bits of X of every value-c pixel as the baseline shows it, and the bands whose bit is
+    // one of the two letters change, among bits 3-2 of X, only the output bit of that letter; each letter is seen to move
+    // its own output bit in some band. The lines carry no claim id: P1J joins them with P1.
+    int p1k_state[4][3] = {};   // 0 not graded, 1 PASS, 2 FAIL, 3 NOT OBSERVABLE
     {
-        static const char* kSuffix[3]   = {"r","g","b"};
-        static const int   kUpperBit[3] = {9,5,1}; // q-half upper-letter bit, per component
+        bool gate_p1k = g_p4f[2] && g_p4f[3] && g_p4f[4];
+        std::string why_p1k;
+        for (int f = 2; f <= 4; ++f)
+            if (!g_p4f[f]) why_p1k += std::string(why_p1k.empty() ? "" : "; ") + kFrameNames6[f] + ": " + why_f[f];
+        bool all_have = true;
+        for (int gi = 0; gi < 192; ++gi) all_have = all_have && p4have[gi];
         for (int c = 0; c < 4; ++c) {
-            std::string nhex = hex2(c);
             for (int comp = 0; comp < 3; ++comp) {
-                int bu = kUpperBit[comp], blo = bu - 1;
-                int su = p4_state[c][bu], sl = p4_state[c][blo];
+                std::string id = "P1K." + std::to_string(c) + kCompName[comp];
+                std::string what = std::string("Color ") + std::to_string(c) + " " + (comp == 0 ? "red" : comp == 1 ? "green" : "blue");
+                long off_bands = 0, off_px_bands = 0, off_changed = 0, off_px = 0;
+                long key_bands = 0, key_px_bands = 0, key_sib = 0;
+                bool up_obs = false, lo_obs = false;
+                if (gate_p1k && all_have) {
+                    for (int gi = 0; gi < 192; ++gi) {
+                        BitTarget t = bit_target(plan[gi].first, plan[gi].second);
+                        const P4Verdict& pv = p4pv[gi];
+                        int d = pv.xdiff[c][comp];
+                        if (!((int)t.x == comp && t.c == c)) {
+                            ++off_bands;
+                            if (pv.vcnt[c] > 0) { ++off_px_bands; off_px += pv.vcnt[c]; }
+                            if (d != 0) ++off_changed;
+                        } else {
+                            ++key_bands;
+                            if (pv.vcnt[c] > 0) ++key_px_bands;
+                            int own = t.upper ? 8 : 4, sib = t.upper ? 4 : 8;
+                            if (d & own) { if (t.upper) up_obs = true; else lo_obs = true; }
+                            if (d & sib) ++key_sib;
+                        }
+                    }
+                }
+                if (!gate_p1k) { checks.record(id + " p.301: " + what + " -- NOT GRADED (" + why_p1k + ")"); continue; }
+                bool complete = all_have && key_bands > 0 && off_bands > 0 && off_px_bands == off_bands && key_px_bands == key_bands;
+                if (!complete) {
+                    checks.record(id + " p.301: " + what + " -- NOT GRADED (a band of the 192 was not graded or shows no value-" + std::to_string(c) + " pixel)");
+                    continue;
+                }
+                std::string label = id + " p.301: no register bit other than the two letters of " + what + " changes any of the four bits of " +
+                    kCompName[comp] + " on a value-" + std::to_string(c) + " pixel, " + std::to_string(off_changed) + " of " + std::to_string(off_bands) +
+                    " other bands change it (" + std::to_string(off_px) + " pixels checked), and each of the two letters changes only its own one of bits 3-2, " +
+                    std::to_string(key_sib) + " of " + std::to_string(key_bands) + " letter bands change the other, upper letter " +
+                    (up_obs ? "observed" : "not observed") + ", lower letter " + (lo_obs ? "observed" : "not observed");
+                bool violation = off_changed > 0 || key_sib > 0;
+                bool p1k_ok = !violation && up_obs && lo_obs;
+                if (!violation && !p1k_ok) {
+                    checks.record(label + " -- NOT OBSERVABLE (L1)");
+                    p1k_state[c][comp] = 3;
+                    continue;
+                }
+                checks.expect(p1k_ok, label);
+                p1k_state[c][comp] = p1k_ok ? 1 : 2;
+            }
+        }
+    }
+
+    // ---- P1J: the full key claim, letters and dashes together (SPECIFICATION.md 7/P1 item 8):
+    // P1.cX, the two letters, and P1K.cX, the two dashes and every other register bit. PASS when both pass, FAIL when
+    // either fails, not graded when either is not graded and neither fails.
+    {
+        static const char* kSuffix[3] = {"r","g","b"};
+        for (int c = 0; c < 4; ++c) {
+            for (int comp = 0; comp < 3; ++comp) {
                 int p1idx = c*3+comp;
-                bool p1_ok = p1s.total[p1idx] > 0 && p1s.fail[p1idx] == 0;
-                std::string label = "P1J." + std::to_string(c) + kCompName[comp] +
-                    " APPC-bplkeykey.c" + std::to_string(c) + kSuffix[comp] +
-                    " p.301: P1." + std::to_string(c) + kCompName[comp] + " (the letters) and P4.n" +
-                    nhex + "b" + std::to_string(bu) + "/b" + std::to_string(blo) +
-                    " (the dashes: no other register bit stores this component's own value) together";
-                if (!g_p1) { checks.record(label + " -- NOT GRADED (P1 preconditions: " + why_p1 + ")"); continue; }
-                if (su == 0 || sl == 0) { checks.record(label + " -- NOT GRADED (P4 half not graded)"); continue; }
-                if (su == 1 || sl == 1) { checks.record(label + " -- NOT GRADED (P4 half NOT OBSERVABLE, L1)"); continue; }
-                bool p4_ok = (su == 2) && (sl == 2);
-                checks.expect(p1_ok && p4_ok, label);
+                int a = g_p1 ? ((p1s.total[p1idx] > 0 && p1s.fail[p1idx] == 0) ? 1 : 2) : 0;
+                int bk = p1k_state[c][comp] == 3 ? 0 : p1k_state[c][comp];
+                std::string cx = std::to_string(c) + kCompName[comp];
+                std::string head = "P1J." + cx + " APPC-bplkeykey.c" + std::to_string(c) + kSuffix[comp] + " p.301: ";
+                std::string why = !g_p1 ? "P1 preconditions: " + why_p1
+                                        : p1k_state[c][comp] == 3 ? std::string("P1K NOT OBSERVABLE, L1") : std::string("P1K not graded");
+                joint(a, bk,
+                      head + "P1." + cx + " (the two letters) and P1K." + cx +
+                      " (the two dashes: no other register bit carries this component of the Color) together; P1." + cx + " / P1K." + cx + ": ",
+                      head + "P1." + cx + " and P1K." + cx + " together -- NOT GRADED (" + why + ")");
             }
         }
     }
@@ -2624,7 +2710,7 @@ int main(int argc, char** argv) {
         "C1","C3","C4","C5","C6","C7","C8","C9","FIX",
         "V5C","V6A","V6B","V6C","V6D","V6E","V6L","V6Q","V6S",
         "C4B","C4C","C7B","C10","C11","C11G","RUNENDS","VLIVE","VLIVES","VP1JG","C4S",
-        "R2M","R2B","C6B","C7C","C3P","V4C","V5D","V5E","R0","P2G",
+        "R2M","R2B","C6B","C7C","C3P","V4C","V5D","V5E","R0","P2G","VKEYA",
     };
     if (mutate.empty()) {
         run_normal(dir, checks);

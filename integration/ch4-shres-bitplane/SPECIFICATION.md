@@ -11,7 +11,7 @@ All 218 claims sit on printed page 301 (217 claims) and page 302 (1 claim), Appe
 None. Every one of the 218 claims is the basis of at least one proposition below. Three limits set how far some of them can be graded. Each limit is repeated where it applies.
 
 - **L1: the 192 table claims (`APPC-bpltab.*`) can come out "not observable".** Each one gets its own proposition (P4). But the pages never say which of the sixteen registers, or which half of a register, the chip reads for a given pixel. And the test reads one output sample per hires period (R0), so every second SuperHires pixel is hidden from it. So a register bit whose half never drives a visible pixel cannot be seen by any test with this output. P4 reports such a claim as NOT OBSERVABLE, which is neither a pass nor a failure. How many claims end up that way depends on the chip, not on the pages. For example, if the chip took the two pixels of one hires period from the two halves of one register, which the table's layout suggests but no page states, only one half of each register could ever reach a visible pixel.
-- **L2: the dashes in the key give no expected value.** The key writes each component as `ab--`, with two encoded bits and two positions marked `-`. The pages do not say what the video output shows in those two lower bit positions. The test checks only that they carry no information beyond the two encoded bits (P2). It never checks them against a value. The dashes state that those two bits are not encoded: no register bit stores them, since every bit 11–0 of COLOR00–0F carries one of the letters a–x, which P4 grades bit by bit.
+- **L2: the dashes in the key give no expected value.** The key writes each component as `ab--`, with two encoded bits and two positions marked `-`. The pages do not say what the video output shows in those two lower bit positions. The test checks only that they carry no information beyond the two encoded bits (P2). It never checks them against a value. The dashes state that those two bits are not encoded: no register bit stores them, since every bit 11–0 of COLOR00–0F carries one of the letters a–x, which P4 grades bit by bit and P1K grades per Color and component.
 - **L3: `APPC-shr.c9` (sprites) is checked for sprite 0 only.** The sprite key on p.302 names Colors 16–19. Chapter 4 assigns 17–19 to sprites 0 and 1 and says the first register of each group is never shown (p.103). So Color 16, with letters A–F, cannot appear on screen. No page says how sprites 2–7 are coloured in SuperHires mode. Nothing is specified for them.
 
 ---
@@ -327,7 +327,7 @@ Each precondition is asserted before any proposition is graded. It is followed b
 
 Page 301. The P1.cX lines carry no claim id: each key claim is graded as a whole by the joint P1J.cX of item 8, which carries its id. The sentence of APPC-shr.c8 introduces the key and is the source of the expectation (item 4), but no P1 proposition carries that id. A display that showed register c as 0x0RGB for pixel value c would pass P1: rows 00–03 of the table hold Color c's own letters in bits 11–10, 7–6 and 3–2 (§3), which are bits 3–2 of R, G and B read as 0x0RGB. So "rather than held in four" cannot fail through P1; P5.L grades it, and P7.3 carries the id.
 
-Each key claim also says that the two dashes after its letters mark bits that are not encoded. That means no register bit stores them: every bit 11–0 of COLOR00–0F carries one of the letters a–x (p.301 table), which the 192 P4 propositions grade bit by bit. P1 asserts the two letters.
+Each key claim also says that the two dashes after its letters mark bits that are not encoded. That means no register bit stores them: every bit 11–0 of COLOR00–0F carries one of the letters a–x (p.301 table), which the 192 P4 propositions grade bit by bit and P1K grades per Color and component. P1 asserts the two letters.
 
 **2. Stimulus.** Setup §4 and frame F1: palettes Q0, Q1–Q5, Z, O and S0–S3, each written as the table prescribes. Further instances are the Q0 lines of F2–F4 and lines 0–29 of F7–F9. F5, F6 and F10 are not SuperHires frames and are not P1 instances.
 
@@ -351,26 +351,32 @@ Quantifiers:
 
 **7. Reference frame.** R0 and R1 place output samples and lines, R2 gives i and s, R3 the check interval, R4 the output bits. R0 and R1 carry their own checks; the others are checked by C5, C6 and R2's bottom-line check.
 
-**8. The full key claim (12 propositions, joint with P4).** Each key claim's own sentence asserts two things at once: the two letters in bits 3-2 (graded above by P1.cX), and, through its two dashes, that no register bit stores anything else of that component for that Color (§1 L2; graded bit by bit by P4). Graded together, as P7 grades its own two-clause claims: PASS when both halves pass, FAIL when either fails, not graded when either is not graded.
-
-For Color c's component X, the register the chip reads for a value-c pixel is COLOR0c (p.94, p.273; R2). Row 0c of the p.301 table holds Color c's own letters in the register's p-half (bits 11-10, 7-6 or 3-2, per component) and Color 0's letters in its q-half (bits 9-8, 5-4 or 1-0): the dashes claim that this q-half carries no part of Color c's own X. The joint proposition is P1.cX together with the two P4 propositions that grade that q-half: P4.n0cb(u) and P4.n0cb(u-1), where u is 9 for red, 5 for green, 1 for blue.
+**8. The full key claim (12 propositions, joint with P1K).** Each key claim's own sentence asserts two things at once: the two letters in bits 3-2, graded above by P1.cX, and, through its two dashes, that no register bit stores anything else of that component for that Color (§1 L2). The second part is graded by P1K.cX over the 192 perturbation bands of F2–F4, the bands P4 grades one bit at a time. The joint proposition P1J.cX is P1.cX together with P1K.cX, graded as P7 grades its own two-clause claims: PASS when both pass, FAIL when either fails, not graded when either is not graded and neither fails. P1 and P1K carry no claim id; P1J carries it.
 
 | Id | Claim | Joint of |
 |---|---|---|
-| P1J.0R | APPC-bplkeykey.c0r | P1.0R, P4.n00b09, P4.n00b08 |
-| P1J.0G | APPC-bplkeykey.c0g | P1.0G, P4.n00b05, P4.n00b04 |
-| P1J.0B | APPC-bplkeykey.c0b | P1.0B, P4.n00b01, P4.n00b00 |
-| P1J.1R | APPC-bplkeykey.c1r | P1.1R, P4.n01b09, P4.n01b08 |
-| P1J.1G | APPC-bplkeykey.c1g | P1.1G, P4.n01b05, P4.n01b04 |
-| P1J.1B | APPC-bplkeykey.c1b | P1.1B, P4.n01b01, P4.n01b00 |
-| P1J.2R | APPC-bplkeykey.c2r | P1.2R, P4.n02b09, P4.n02b08 |
-| P1J.2G | APPC-bplkeykey.c2g | P1.2G, P4.n02b05, P4.n02b04 |
-| P1J.2B | APPC-bplkeykey.c2b | P1.2B, P4.n02b01, P4.n02b00 |
-| P1J.3R | APPC-bplkeykey.c3r | P1.3R, P4.n03b09, P4.n03b08 |
-| P1J.3G | APPC-bplkeykey.c3g | P1.3G, P4.n03b05, P4.n03b04 |
-| P1J.3B | APPC-bplkeykey.c3b | P1.3B, P4.n03b01, P4.n03b00 |
+| P1J.0R | APPC-bplkeykey.c0r | P1.0R, P1K.0R |
+| P1J.0G | APPC-bplkeykey.c0g | P1.0G, P1K.0G |
+| P1J.0B | APPC-bplkeykey.c0b | P1.0B, P1K.0B |
+| P1J.1R | APPC-bplkeykey.c1r | P1.1R, P1K.1R |
+| P1J.1G | APPC-bplkeykey.c1g | P1.1G, P1K.1G |
+| P1J.1B | APPC-bplkeykey.c1b | P1.1B, P1K.1B |
+| P1J.2R | APPC-bplkeykey.c2r | P1.2R, P1K.2R |
+| P1J.2G | APPC-bplkeykey.c2g | P1.2G, P1K.2G |
+| P1J.2B | APPC-bplkeykey.c2b | P1.2B, P1K.2B |
+| P1J.3R | APPC-bplkeykey.c3r | P1.3R, P1K.3R |
+| P1J.3G | APPC-bplkeykey.c3g | P1.3G, P1K.3G |
+| P1J.3B | APPC-bplkeykey.c3b | P1.3B, P1K.3B |
 
-For c = 0, p = q = 0: both halves of COLOR00 hold Color 0's own letters (row 00 of the table), so P1J.0X's P4 half is the "q-half of COLOR00" case, not observed under the population P4 grades (L1); P1J.0R/0G/0B are therefore not graded, by the same rule that leaves the same six P4 bits not observable. For c = 1, 2, 3, q = 0 always, so the q-half stores Color 0's letters while a value-c pixel is shown: P1J.1X/2X/3X's P4 half is exactly the eighteen q-half bits of COLOR01-03.
+**P1K.cX (12 propositions, no claim id).** In SuperHires mode the two letters of component X of Color c are the only register bits that carry X of Color c. The p.301 table places each of the two letters in eight register positions (§3); these sixteen bits are the *keyed* bits of (c, X), and each of the other 176 of the 192 register bits is *off-key* for (c, X). The pages do not say which register or half a value-c pixel reads, so no register is assumed: the line states what the key and the table say, that X of Color c is held in its two letters and nowhere else. For every band of F2–F4, compared on its graded pixels of value c with the baseline of P4 item 3 (a pixel whose triple has no baseline is excluded):
+- **Off-key bands:** none of the four bits of X changes, bits 1–0 included. This is "no other register bit carries that information".
+- **Keyed bands:** of bits 3 and 2 of X only the output bit of the inverted letter changes (upper letter: bit 3, lower letter: bit 2). Bits 1–0 may move (L2).
+- **Observed:** some keyed band of the upper letter changes bit 3 and some keyed band of the lower letter changes bit 2. A line that has no violation and lacks one of them is NOT OBSERVABLE (L1) and does not grade P1J.
+- **Population:** all 192 bands are graded (the preconditions of F2–F4 and V4c hold) and every band shows at least one graded pixel of value c; otherwise the line is not graded.
+
+The source is the key `ab--` and the table (p.301), and "There are only two bits of red, green and blue color resolution per hires pixel" (p.301). The line prints the number of off-key bands that change X (of the 176), the pixels checked, the keyed bands that change the other output bit (of the 16), and whether each letter was observed.
+
+Contrasts. VP1JG (live input for Colors 1–3): each q-half band of COLOR01–03 inverts the matching p-half bit of COLOR00 instead, so no off-key band changes X of a value-c pixel and P1K.1X–3X pass. VKEYA (Color 0): band 79 of F2, which is off-key for Color 0 in all three components, also inverts bits 11, 7 and 3 of COLOR00, the upper letters of Color 0, and the closing band restores them; X of value-0 pixels then changes in an off-key band and P1K.0R, P1K.0G and P1K.0B fail. V4D (the second clause): every band also inverts its partner bit, so a keyed band changes both output bits and the lines fail through the keyed bands.
 
 ### P2: only two bits of red, green and blue per pixel (3 propositions)
 
@@ -595,7 +601,7 @@ APPC-shr.c1 says SuperHires is coarser "than either Hires or Lores modes"; APPC-
 
 | Claims | Proposition(s) |
 |---|---|
-| APPC-bplkeykey.c0r … c3b (12) | P1J.cX, one each: the joint of P1.cX with the two P4 bits its own dashes name. P1 grades the two letters and carries no id; the `--` (no register bit stores bits 1–0) is graded by P4 over all 192 register bits. |
+| APPC-bplkeykey.c0r … c3b (12) | P1J.cX, one each: the joint of P1.cX with P1K.cX. P1 grades the two letters and P1K grades the `--` (no other register bit carries the component), over all 192 register bits, per Color and component; neither carries an id. |
 | APPC-bpltab.r00b00 … r0Fb11 (192) | P4.n.b, one each |
 | APPC-shr.c1 | P7.1 (P3.H and P3.L together) |
 | CH4-appC-context.c1 | P3.H |
@@ -610,7 +616,7 @@ APPC-shr.c1 says SuperHires is coarser "than either Hires or Lores modes"; APPC-
 | APPC-shr.c9 | P7.4 (P6.1 and the SuperHires half of P6.2 together) |
 | (none) | P6.1 (carries no id; P7.4 carries its sentence), P5.U (graded for P7.3) |
 
-That makes 229 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 4 + 12 (P1J).
+That makes 241 propositions: 12 (P1) + 12 (P1K) + 3 + 2 + 192 + 2 + 2 + 4 + 12 (P1J).
 
 ---
 
@@ -648,11 +654,12 @@ That makes 229 propositions: 12 + 3 + 2 + 192 + 2 + 2 + 4 + 12 (P1J).
 - P3.H, P3.L, P7.1: PASS. A value-1 pixel's red takes 7 distinct 4-bit values across F1's palettes, green and blue 9 each, against 16 in Hires and in Lores. The count of four belongs to P2.
 - P2 (R, G and B): FAIL. At least one (value, letters) group's graded pixels (223,440 pixels in 16 groups) do not all show the same full four-bit value. P2-DIVERSITY: PASS, 12 of 12 (c, X); 11, 11 and 12 of the 16 groups of R, G and B are populated from two or more palettes.
 - P4: the p-half bits (2, 3, 6, 7, 10, 11) of COLOR00–03, 24 propositions: PASS. The q-half bits (0, 1, 4, 5, 8, 9) of COLOR01–03, 18 propositions: FAIL; the allowed bit itself never changes a graded pixel of the band (changed=0 of 1120 graded pixels) while pixels change outside the allowed places. The q-half bits of COLOR00 (6) and the whole of COLOR04–0F (144), 150 propositions: NOT OBSERVABLE. V4c: PASS in F2, F3 and F4.
-- P1J: the nine ids for Colors 1–3 (`c1r` … `c3b`): FAIL, through the eighteen P4 bits above. The three ids for Color 0 (`c0r`, `c0g`, `c0b`): not graded, through the same six P4 bits' NOT OBSERVABLE.
+- P1K: P1K.0R, P1K.0G and P1K.0B PASS: none of the 176 off-key bands changes X of a value-0 pixel, none of the 16 keyed bands changes the other output bit, and both letters are observed. P1K.1R … P1K.3B (nine lines) FAIL: 2 of the 176 off-key bands change X of the value-c pixels.
+- P1J: the three ids for Color 0 (`c0r`, `c0g`, `c0b`): PASS, with P1 and P1K. The nine ids for Colors 1–3 (`c1r` … `c3b`): FAIL, through P1K; P1 holds.
 - P5.L's SuperHires half: FAIL, by the any-bit count as well as the allowed-bit count: all 144 bands n = 04…0F graded, 0 of 161,280 graded pixels change. Its Hires half: PASS, both clauses (17,664 graded pixels).
 - The preconditions C1–C9 (C3 over F1–F6 with both planes and the stray-read clause, C4's header values including SPR0PT–SPR7PT, C6 per frame and per line, C7's count and timing, C8's coverage and F1 diversity, C9's null-sprite reads), R0, R1 and R2's bottom lines: PASS.
 
-Every contrast of the package (the header of `test_ch4_shres_bitplane.cpp` lists each one, with the lines that move under it) was run on both cores; fx68k and TG68K print the same PASS, FAIL, RECORDED and MEASURED lines on every one. A contrast that leaves a precondition failing leaves the lines that depend on it not graded. Lines that are FAIL at baseline turn PASS under their live inputs: VLIVE (P5.L's SuperHires half, P7.3), VLIVES (P7.2), V6S (P6.2-SHR, P6.2, P7.4) and VP1JG (the eighteen q-half P4 lines and the nine P1J lines). C11G turns C11 PASS. P2G turns P2.R, P2.G and P2.B PASS on 223,440 pixels in 16 groups, with P2-DIVERSITY unchanged at 12 of 12.
+Every contrast of the package (the header of `test_ch4_shres_bitplane.cpp` lists each one, with the lines that move under it) was run on both cores; fx68k and TG68K print the same PASS, FAIL, RECORDED and MEASURED lines on every one. A contrast that leaves a precondition failing leaves the lines that depend on it not graded. Lines that are FAIL at baseline turn PASS under their live inputs: VLIVE (P5.L's SuperHires half, P7.3), VLIVES (P7.2), V6S (P6.2-SHR, P6.2, P7.4) and VP1JG (the eighteen q-half P4 lines, the nine P1K lines of Colors 1–3 and the nine P1J lines of Colors 1–3). C11G turns C11 PASS. P2G turns P2.R, P2.G and P2.B PASS on 223,440 pixels in 16 groups, with P2-DIVERSITY unchanged at 12 of 12.
 
 ### 10.4 F7-F10 (sprite colour frames), as measured
 
