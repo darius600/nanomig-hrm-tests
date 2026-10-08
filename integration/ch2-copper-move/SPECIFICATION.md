@@ -132,8 +132,11 @@ Values the pages leave open. No test may grade these:
 - The delay from a register write to its pixel on the video output, and the
   delay from a WAIT being satisfied to the following MOVE. Neither is stated.
 - What COPCON bit 1 = 0 allows in $010-$07E (item 1).
-- The first audio run after audio DMA is enabled. p.164 says: "Because of
-  pipelining in Agnus, the first data word must be thrown away."
+- Whether the Copper fetches the word after an end WAIT's second word before
+  it restarts (Section 8, A1). The printed pages do not say.
+- Whether the Copper fetches the words of a MOVE that stands behind a WAIT
+  that is never satisfied (Section 8, A2). The pages say only that the MOVE is
+  not performed.
 
 ---
 
@@ -179,7 +182,9 @@ Copper DMA is turned on"):
 long word to the register whose name ends in "H""), then a marker, then
 `MOVE.W #0,$DFF088` (COPJMP1, written), then a marker, then DMACON ←
 $8000|$0200|$0080 plus any further enable bits the proposition names (p.278:
-SET/CLR, DMAEN, COPEN), then the **enable marker**.
+SET/CLR, DMAEN, COPEN), then the **enable marker**. The Copper starts as soon
+as Copper DMA is on, so it can read before the enable marker is written
+(Section 8, A3).
 
 **Access attribution.** The harness description says the test sees "every DMA
 fetch (Copper instruction fetches, bitplane, sprite, audio, disk, refresh,
@@ -189,13 +194,18 @@ an access the harness attributes to that channel. If the harness cannot
 attribute accesses, the propositions cannot be built as specified. A builder
 must not replace attribution with an address-range rule without saying so.
 
-**Restart access and pass.** A *restart access* is the first Copper access
-after the Copper has read the second word ($FFFE) of its list's end WAIT. While
+**Restart access and pass.** The *extra read* is a Copper read at the word
+directly after an end WAIT's second word ($FFFE), made after the read of that
+second word and before the next restart. It is printed as a MEASURED line and
+belongs to no pass (Section 8, A1). A *restart access* is the first Copper
+access after the Copper has read the second word ($FFFE) of its list's end WAIT
+that is not the extra read, that is, the first access at a list start. While
 waiting, the Copper "does not use the memory bus at all" (p.19; p.22 "the
-Copper is off the bus"), so the next Copper access after that read is where the
-Copper restarts at vertical blank (p.25, p.30). The moment of the restart is not
-used (Section 2, item 5). A *pass* is the run of Copper accesses from one
-restart access up to and including the read of the end WAIT's second word.
+Copper is off the bus"), so this access is where the Copper restarts at
+vertical blank (p.25, p.30). The moment of the restart is not used (Section 2,
+item 5). A *pass* is the run of Copper accesses from one restart access up to
+and including the read of the end WAIT's second word. Every list start in the
+stimuli lies away from the word after an end WAIT.
 
 **Video sampling.** A *field* is the output between two consecutive VSYNC
 pulses. A *row* is the output between two consecutive HSYNC leading edges. The
@@ -289,7 +299,8 @@ each bit individually, by the eight patterns. Bits 15-12 are graded in P2.
 
 **Preconditions.**
 - (a) In each observed field, the Copper's pass starts at $30000 and reads the
-  36 words of the list in address order, with the data stored above.
+  36 words of the list in address order, with the data stored above. The extra
+  read at $30048 (Section 3) belongs to no pass.
 - (b) No bitplane access and no sprite access appears at the port during the
   observed fields, so nothing covers the background (p.46).
 - (c) Each of the nine colours appears in at least one row of each observed
@@ -379,9 +390,10 @@ covers every bit 15-0, each by eight (L) or four (H) patterns.
 - (a) Between its restart access and the next one, the Copper reads segment k's
   six words T_k to T_k+10 in address order, and the four MOVE words T_k to
   T_k+6 carry the data tabled.
-- (b) The Copper's first access after its read of T_k+10 is not at T_k+12 or
-  T_k+14: the Copper did not go on past the end WAIT, so the access that
-  follows is a restart (p.19, p.22: the waiting Copper does not use the bus).
+- (b) The Copper's first access after its read of T_k+10, not counting the
+  extra read at T_k+12 (Section 3), is not at T_k+12 or T_k+14: the Copper did
+  not go on past the end WAIT, so the access that follows is a restart (p.19,
+  p.22: the waiting Copper does not use the bus).
 
 **Contrasting cases.**
 - Main: change segment 3's L word from $FF00 to $FF80, and add a segment at
@@ -476,14 +488,18 @@ p.30.
 `$FFFF,$FFFE` (+12), `$0180,$0F00` (+16, MOVE B), `$FFFF,$FFFE` (+20). Then
 S($38000). The CPU idles for 8 fields.
 
-**Observation.** Copper accesses at the port from the enable marker until the
-end of the 6th field after it. Run sequences of the observed fields.
+**Observation.** Copper accesses at the port from marker 0 until the end of the
+6th field after the enable marker (the Copper's first reads precede the enable
+marker, Section 8, A3). Run sequences of the observed fields.
 
 **Expected.**
 - (i) In every pass, the Copper reads $38008 and $3800A (MOVE A) after its read
   of $38006, and in every observed field the run after (F,F,F) is (0,F,0).
-- (ii) In the whole interval there is no Copper read of $38010 or $38012
-  (MOVE B), and no row shows (F,0,0).
+- (ii) MOVE B is not performed: in every observed field no row shows (F,0,0),
+  and the last non-black run of the field, COLOR00's value at the field
+  boundary before the restart, is (0,F,0). The Copper's reads of $38010 and
+  $38012 in the interval are printed as MEASURED lines and are not graded
+  (Section 8, A2).
 
 "Never" is graded over the whole interval of six fields. A finite run cannot
 establish more than that.
@@ -497,7 +513,7 @@ the specified data into the selected special-purpose register"; p.23 as quoted.
 
 **Contrasting cases.**
 - Main: replace the WAIT at +12 by `$C001,$FF00`. The page predicts MOVE B is
-  read in every pass and (F,0,0) follows (0,F,0), so (ii) goes red.
+  performed in every pass and (F,0,0) follows (0,F,0), so (ii) goes red.
   Precondition (a) still holds, since $3800C is still read.
 - (a): replace the WAIT at +4 by `$FFFF,$FFFE`. $3800C is never read and (a)
   goes red. MOVE A is not performed either.
@@ -540,10 +556,10 @@ Run R1 and R2 in ECS and in OCS. All addresses are below $80000, inside the
 **Observation.** Copper accesses at the port, from marker 0 to marker 5.
 
 **Expected.**
-- R1: the first Copper access after marker 3 is at $20004. Every restart access
-  between marker 3 and marker 4 is at $20004. Every restart access after
+- R1: the first Copper access after marker 2 is at $20004. Every restart access
+  between marker 2 and marker 4 is at $20004. Every restart access after
   marker 4 is at $25A5C.
-- R2: the first Copper access after marker 3 is at $25A5C. Every restart access
+- R2: the first Copper access after marker 2 is at $25A5C. Every restart access
   after it is at $20004.
 
 "each vertical blanking interval" is graded on every restart in the interval.
@@ -559,11 +575,12 @@ vertical blank)"; p.32 "You can change the value in the location registers at
 any time".
 
 **Preconditions.**
-- (a) No Copper access occurs between marker 0 and marker 3.
-- (b) There are at least 4 restart accesses between marker 3 and marker 4 (R1),
-  at least 4 after marker 4 (R1), and at least 4 after marker 3 (R2).
+- (a) No Copper access occurs between marker 0 and marker 2, the marker written
+  before the DMACON write (Section 8, A3).
+- (b) There are at least 4 restart accesses between marker 2 and marker 4 (R1),
+  at least 4 after marker 4 (R1), and at least 4 after marker 2 (R2).
 - (c) Every pass reads exactly the two words of the end WAIT at its list
-  address.
+  address. The extra read (Section 3) belongs to no pass.
 
 **Contrasting cases.**
 - Main (R1): R1' predicts $40002 (H = $0004, L = $0002) for the first access
@@ -572,7 +589,7 @@ any time".
   itself the contrast for "every restart at COP1LC": the restart address changes
   after it.
 - (a): enable Copper DMA directly after the strobe and before writing markers 2
-  and 3. Copper accesses fall before marker 3 and (a) goes red.
+  and 3. Copper accesses fall before marker 2 and (a) goes red.
 - (b): idle only 2 fields in each phase. (b) goes red.
 - (c): put `$0180,$0F00` in front of the end WAIT at $20004. Each pass reads
   four words and (c) goes red.
@@ -695,9 +712,9 @@ $E000, $2000, $E000.
 
 **Observation.** Audio channel 0 accesses at the port, between marker 2 and
 marker 3. A *run* is a maximal sequence of consecutive channel-0 fetches in
-which each address is the previous one + 2. The first run after marker 2 is not
-graded (p.164: "the first data word must be thrown away"). The last run may be
-cut off by marker 3 and is graded only on the fetches it contains.
+which each address is the previous one + 2. Every run is graded, the first run
+after marker 2 included (Section 8, A4). The last run may be cut off by marker 3
+and is graded only on the fetches it contains.
 
 **Expected.**
 - M: every graded run is exactly $44000, $44002, $44004, $44006.
@@ -1074,3 +1091,50 @@ PASS: P8-CTRL: control on the same measurement basis as P8-RESTART: every run af
 FAIL: P8-RESTART: [p288] appB-note.c9 appB-note.c11: whenever the audio length count finishes the channel's pointer restarts from AUD0LC: with AUD0LEN = 4 every run of fetches is $44000 $44002 $44004 $44006, and after the CPU writes AUD0LC = $44100 the runs that start more than 2 lines later are $44100 $44102 $44104 $44106
 65 passed, 14 failed
 ```
+
+---
+
+## 8. Lead amendments
+
+Four rules added after the first run of the rebuilt package. Where one of them
+differs from the text of Sections 2 to 5, the rule prevails, and those sections
+have been changed to agree with it. Each rule gives its reason.
+
+**A1. The read after an end WAIT.** No page says whether the Copper fetches the
+word after a WAIT's second word before it waits or restarts. A Copper read at
+the word following an end WAIT's second word ($FFFE), before the next restart,
+is the *extra read*. It is printed as a MEASURED line and belongs to no pass.
+The restart access is the first access at a list start after it. P1 (a) and
+every pass definition follow this rule (Section 3; P1 (a); P2 (b); P3 (b);
+P4 (a), (b); P5 (c); P7 (c)).
+Reason: the first run read the word after the end WAIT in every pass on both
+cores, 16 cycles before the restart read. Taking the first access after the
+$FFFE read as the restart access graded a question the pages leave open, and
+turned the preconditions of P1, P2, P4, P5 and P7 red for it.
+
+**A2. A MOVE behind a WAIT that is never satisfied (P4 (ii)).** The pages say
+such a MOVE does not run. They say nothing about fetching it. P4 (ii) grades
+that MOVE's effect, the value of its target register (COLOR00) at the field
+boundary, read as this specification reads registers (the run sequence of
+Section 3), and prints the Copper's reads of its words as MEASURED.
+Reason: "no Copper read of $38010 or $38012" graded fetching, and the extra
+read of A1 is a read of $38010.
+
+**A3. P5 (a): the boundary is marker 2.** The Copper starts as soon as Copper
+DMA is on. The boundary for "no Copper access before DMA is enabled" is
+therefore the marker written before the DMACON write (marker 2 in the P5 runs),
+not the enable marker written after it. The windows of P5 that began at marker 3
+begin at marker 2, and P4 observes from marker 0 because the Copper's first
+reads precede the enable marker.
+Reason: the Copper's first two list words are read about 60 clk_sys cycles
+before the enable marker is written, so (a) with marker 3 was red for any
+stimulus that follows S(T).
+
+**A4. P8: the first audio run is graded.** With AUD0LEN = 4 the first run after
+marker 2 is graded like every other run. The earlier sentence that the first
+run is not graded is removed, and so is the entry for it in Section 2. P8-CTRL
+keeps grading the runs after the first, by the same comparator. In the
+recorded run the cores read three words before the first restart (red; the
+mechanism of NM-HRM-084).
+Reason: the pages do not say the first run is shorter. p.164 speaks of a data
+word that is thrown away, which does not name a count of fetches.
