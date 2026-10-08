@@ -367,7 +367,8 @@ usage: (pins 1,3=Yclock, pins 2,4=Xclock)".
 
 **Program.**
 
-- It writes no counter register. JOYTEST is not used.
+- It writes no counter register. JOYTEST is not used, except in the PJ3
+  contrast of section 4.5.
 - It runs a sampling loop: wait until VHPOSR bits 15-8 change, then read
   VHPOSR, JOY0DAT, JOY1DAT and VPOSR, and store the four words as the next
   buffer entry.
@@ -490,7 +491,8 @@ E1-E3.
 | PJ1 | Apply one phase's schedule to the other port, or to the other pin pair of the same port. | PJ1 reports the port or bits actually driven, which are not the proposition's two pins. |
 | PJ2 | Shorten one hold to 2 scan lines. | The window has fewer than 3 graded samples, so PJ2 is not met. |
 | PJ2 | Leave line 255 out of the sampling loop, so that a stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1. | The return to $00 is not at a frame start, so PJ2 is not met. |
-| PJ3 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. PJ3 covers both registers, so one connector suffices. | The baseline samples differ, so PJ3 is not met. |
+| PJ3 | The program writes JOYTEST once inside the baseline window, which sets all four joystick-mouse counters at once. The harness input log is unchanged, so PJ1 and PJ2 stay met. | The baseline samples differ, so PJ3 is not met. |
+| PJ1 | Inject mouse counts during the baseline, through the port list's single mouse input (`kbd_mouse_*`), on whichever connector it feeds. | PJ1 reports the mouse movement, and the baseline samples differ, so PJ3 is not met either. |
 
 ### 4.6 Contrasting cases
 
@@ -925,7 +927,8 @@ whole section's propositions to "not checkable":
 | PJ1 | `PJ1 [...]` | P1, P2, P3, P4 all become "not checkable" (section 4 gated) | 10 passed, 1 failed (PJ1) |
 | PJ2 | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
 | PJ2-FRAME | `PJ2 [...]` | P1, P2, P3, P4 all become "not checkable" | 10 passed, 1 failed (PJ2) |
-| PJ3 | `PJ3 [...]` | PJ1 also FAILs: the injected mouse count is also the mouse-button activity PJ1's own idle clause forbids; P1, P2, P3, P4 all become "not checkable" | 9 passed, 2 failed (PJ1, PJ3) |
+| PJ3 | `PJ3 [...]` | P1, P2, P3, P4 all become "not checkable"; PJ1 and PJ2 stay met | 10 passed, 1 failed (PJ3) |
+| PJ3-KBDMOUSE | `PJ1 [...]` and `PJ3 [...]` | the injected mouse count is the mouse movement PJ1's own idle clause forbids; P1, P2, P3, P4 all become "not checkable" | 9 passed, 2 failed (PJ1, PJ3) |
 | PP1 | `PP1 [...]` | P5, P6, P8 all become "not checkable" (section 5 gated) | 11 passed, 1 failed (PP1) |
 | PP2 | `PP2 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP2) |
 | PP3 | `PP3 [...]` | P5, P6, P8 all become "not checkable" | 11 passed, 1 failed (PP3) |

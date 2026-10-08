@@ -9,6 +9,7 @@ JOY1DAT         equ     $00C
 POTGOR          equ     $016            ; POTINP
 BPLCON0         equ     $100
 POTGO           equ     $034
+JOYTEST         equ     $036
 
 ; ---- CIA-B register addresses (byte access only, SPECIFICATION.md 3.1) ---
 CIAB_PRB        equ     $BFD100

@@ -23,7 +23,8 @@
 // MUTATION PJ1 stimulus red NMH_MUTATE=PJ1: one scheduled pin change (phase 0, step 5) is dropped while the grader keeps its plan; TG68K FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ1; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2: phase 0's step 5 hold is shortened to 2 lines, so the window holds fewer than 3 real stored samples; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
 // MUTATION PJ2 stimulus red NMH_MUTATE=PJ2-FRAME: the sampling loop leaves line 255 out (prog_mouse_pj2.bin), so one stored sample ends at VHPOSR bits 15-8 = $00 with V8 going from 0 to 1 and no frame start; TG68K FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ2; P1-P4 not checkable; 10 passed, 1 failed).
-// MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: a mouse count is injected through kbd_mouse_* during phase 0's baseline window; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
+// MUTATION PJ3 stimulus red NMH_MUTATE=PJ3: the program writes JOYTEST ($0404) after sample 8, inside phase 0's baseline window (prog_mouse_pj3.bin), so the baseline samples of JOY0DAT and JOY1DAT differ while the action record stays true; TG68K FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed), fx68k FAIL (PJ3; P1-P4 not checkable; 10 passed, 1 failed).
+// MUTATION PJ1 stimulus red NMH_MUTATE=PJ3-KBDMOUSE: a mouse count is injected through kbd_mouse_* during phase 0's baseline window, which is the mouse movement PJ1's idle clause forbids; TG68K FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed), fx68k FAIL (PJ1 and PJ3; P1-P4 not checkable; 9 passed, 2 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P5-WRONGPIN: P5's button press is applied to mouse_buttons bit 1 instead of mouse_buttons bit 2, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P6-WRONGPIN: P6's button press is applied to mouse_buttons bit 2 instead of mouse_buttons bit 1, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
 // MUTATION PP1 stimulus red NMH_MUTATE=P8-WRONGPIN: P8's button press is applied to joystick1 bit 5 instead of joystick0 bit 5, so the action record shows another source or bit driven; also P5, P6 and P8 become not checkable; TG68K FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed), fx68k FAIL (PP1; P5, P6, P8 not checkable; 11 passed, 1 failed).
@@ -180,6 +181,7 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     NanomigHarness h(cfg);
     std::string bin = "/prog_mouse.bin";
     if (mutate == "PJ2-FRAME") bin = "/prog_mouse_pj2.bin";
+    if (mutate == "PJ3") bin = "/prog_mouse_pj3.bin";
     for (int i = 0; i < 4; ++i)
         if (mutate == std::string("P") + std::to_string(i + 1) + "-WRONGREG") bin = "/prog_mouse_sw" + std::to_string(i) + ".bin";
     r.loaded = h.load_program(dir + bin) > 0;
@@ -211,9 +213,9 @@ MouseRun run_mouse(const std::string& dir, const std::string& mutate) {
     if (mutate == "PJ1") {
         for (size_t i = 0; i < events.size(); ++i) if (events[i].phase == 0 && events[i].step == 5) { skip_ev = (int)i; break; }
     }
-    // PJ3: inject a mouse count pulse partway through phase 0's baseline
+    // PJ3-KBDMOUSE: inject a mouse count pulse partway through phase 0's baseline
     // window (samples [2,15] are graded there).
-    bool do_pj3 = (mutate == "PJ3");
+    bool do_pj3 = (mutate == "PJ3-KBDMOUSE");
     bool pj3_done = false;
 
     const uint32_t buf_w0 = word_addr(kBufBase);

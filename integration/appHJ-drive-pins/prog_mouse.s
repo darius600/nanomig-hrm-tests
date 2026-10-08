@@ -47,6 +47,12 @@ start:
         move.w  JOY1DAT(a0),(a1)+
 .vpos:
         move.w  VPOSR(a0),(a1)+                ; V8 is bit 0 (SPECIFICATION.md 4.5, PJ2)
+        ifd     PJ3TEST
+        cmp.w   #TOTAL_SAMPLES-1-8,d6          ; PJ3 contrast: after sample 8 (inside phase 0's
+        bne.s   .nojt                          ; baseline window) the program writes all four
+        move.w  #$0404,JOYTEST(a0)             ; joystick-mouse counters at once
+.nojt:
+        endif
         dbra    d6,.loop
 
         DONE
