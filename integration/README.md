@@ -27,7 +27,7 @@ package and core.
 | `ch2-copper-move` | the Copper MOVE, the Copper location registers and the restart of pointers from them |
 | `ch2-copper-control` | Copper DMA on and off, the start after reset, the restart from COP1LC, the Copper interrupt, the masked WAIT and the blitter-finished wait |
 | `ch2-copper-beam` | the beam positions the Copper sees and the line and field geometry (pp. 22-24, 34) |
-| `ch2-dma-cycles` | which memory cycles each DMA channel uses, the Copper's odd cycles among them (p. 20, Figure 6-9) |
+| `ch2-dma-cycles` | which memory cycles each DMA channel uses, and that these channels never delay the Copper (p. 20, Figure 6-9) |
 | `ch2-interlace-fields` | interlaced fields (pp. 24, 27, 34) |
 | `ch3-playfield-system` | the playfield system bits COLOR_ON, LPEN and VBSTRT (pp. 79, 89, 229, 239, 271, 304-305) |
 | `ch4-shres-bitplane` | the SuperHires bitplane colours (p. 301) |
