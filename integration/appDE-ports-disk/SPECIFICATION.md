@@ -914,24 +914,23 @@ TG68K; the repository rows are on the repository's chipset.
 | P5-POTGO-READ | P5-POTGO | repository | POTGO word $0001 | red, P5(a) and P5(b) NOT GRADED |
 | P5-SCHEDULE | P5-SCHED | repository | joystick0 bit 0 driven in the second level interval | red, P5(a) and P5(b) NOT GRADED |
 | P5-WINDOW-COUNT | P5-SHORT | repository | third level interval 5000 cycles | red for window 2; P5(a) and P5(b) of window 2 NOT GRADED |
-| P5A-PIN5-FOLLOWS, P5B-OTHER-POT-BITS-1 | P5-PIN9 | repository | pin 9 driven instead of pin 5 in window 2 | red for window 2 on both lines |
+| P5-SCHEDULE | P5-PIN9 | repository | pin 9 driven instead of pin 5 in window 2 | red, P5(a) and P5(b) NOT GRADED |
+| P5A-PIN5-FOLLOWS | P5-BASE | private (POTINP bit 8 held at 1) | the unchanged run | red for windows 0 and 2, only this line |
+| P5B-OTHER-POT-BITS-1 | P5-BASE | private (POTINP bit 10 also follows pin 5) | the unchanged run | red for windows 0 and 2, only this line |
 | LP-FIXTURE-MARK0 | LP-FIX | repository | first fixture store holds $BEEF | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C0-IDENTITY | LP-C0 | repository | pin 3 driven in S2 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C1-DONE | LP-C1 | repository | no done mark | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C2-STORED | LP-C2 | repository | BPLCON0 word $0000, $0008 declared | red, only this precondition line; the proposition lines are NOT GRADED |
-| LP-C3-A1-READS-CURRENT | LP-A1 (oracle) | repository | 9 clk_sys per colour clock declared | red from the no-model branch; A2, A3, A4, C4 and C5 are NOT GRADED |
 | LP-C3-A1-READS-CURRENT | LP-A1W | repository | V8 of the vertical counter set for 100 reads of S5 | red, only this line |
-| LP-A2-LINE-LENGTHS, LP-C3-A3-FIELD-LENGTH | LP-STD (oracle) | repository | NTSC declared in a PAL run | red, these two lines |
 | LP-C3-A3-FIELD-LENGTH | LP-A3 | repository | NTSC selected, PAL declared | red, only this line |
-| LP-A2-LINE-LENGTHS | LP-A2 | repository | H written above $E2 inside S5 | red, with LP-C3-A1-READS-CURRENT and LP-C3-A4-FIELD-ANCHOR |
+| LP-A2-LINE-LENGTHS | LP-A2 | repository | HTOTAL $E3 and BEAMCON0 $00A0 (VARBEAMEN) written after S3: lines of 228 colour clocks | red through the line-length clause; every precondition line holds |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4W | repository | V8 of the vertical counter set for 100 reads of F2 before its pulse | red, only this line |
-| LP-C4-DENSITY | LP-C4 | repository | delay of about 3.3 lines per read | red, only this precondition line; the proposition lines are NOT GRADED |
+| LP-C4-DENSITY | LP-C4 | repository | pause of about 70 colour clocks after every 500 measurement reads | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C5-PULSES | LP-C5 | repository | pulses on pin 9 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C6-LPENDIS-CLEAR | LP-C6 | repository | BEAMCON0 $2020 | red, only this precondition line; the proposition lines are NOT GRADED |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | repository | F2 pulse at line 40 | green: the reads before the pulse are current, A4 does not move (4.1) |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | private | F2 pulse at line 40 | red, only this line |
-| LP-P1A-LATCH-HOLDS, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P1 | private | BPLCON0 word $0000 in the base run | red, with P2, P3(a), P3(b), P3(d), P4 (the repository pattern) |
-| LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P1B | private | BPLCON0 word $0008 in the bit-clear run | red, these three lines |
+| LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-BASE | second private (latch ignores bit 3) | the unchanged run | red, these three lines |
 | LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD | LP-P2A | private | F2 pulse not driven | red, with P1A, the P1 aggregate, P4 and LP-LATCH-ENABLE-AND-POSITION |
 | LP-P2-LATCH-AT-PULSE | LP-P2B | private | F3 pulse 2 colour clocks later | red, with LP-LATCH-ENABLE-AND-POSITION |
 | LP-P3B-HELD-PULSE-IGNORED | LP-P3B | private | F7 pulse at line 60 not driven | red, with P1A, P3(a), P4, the P1 aggregate and LP-LATCH-ENABLE-AND-POSITION |

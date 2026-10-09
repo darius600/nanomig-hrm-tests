@@ -9,15 +9,17 @@
 ;          program hangs instead.
 ; NO_FIX   (define before including): the fixture constant stored first
 ;          differs.
-; SLOW     (define before including): each loop body gets a delay of more
-;          than one video line (about 3.3 lines), and the loops are shorter.
-; W_AT, W_LEN (define before including, with W_V8 or W_H): the reference
-;          loop is split after W_AT reads. W_V8 sets the V8 bit of the
-;          vertical counter (VPOSW) for the next W_LEN reads and clears it
-;          again. The beam is between lines 57 and 255 there: V8 is clear, and
-;          with it set the counter is above the field's last line.
-;          W_H writes a horizontal count above $E2 (VHPOSW, with the current
-;          vertical count) and the loop goes on.
+; PAUSE    (define before including): the measurement loop runs in 92 chunks
+;          of 500 reads with a short delay loop between the chunks; the read
+;          count stays 46000.
+; VARBEAM  (define before including): after S3 the program writes HTOTAL ($E3)
+;          and BEAMCON0 with VARBEAMEN set ($00A0), so the lines have 228
+;          colour clocks.
+; W_AT, W_LEN (define before including, with W_V8): the reference loop is
+;          split after W_AT reads. W_V8 sets the V8 bit of the vertical counter
+;          (VPOSW) for the next W_LEN reads and clears it again. The beam is
+;          between lines 57 and 255 there: V8 is clear, and with it set the
+;          counter is above the field's last line.
 ; M_AT, M_LEN (define before including): the same V8 set and clear inside the
 ;          measurement loop, after M_AT of its reads, for M_LEN reads.
 
@@ -33,22 +35,9 @@ V8_OFF          macro                   ; V8 of the vertical counter clear (VPOS
         move.w  d4,VPOSW(a6)
         endm
 
-WRITE_H         macro                   ; horizontal count $F0, current vertical count (VHPOSW)
-        move.w  VHPOSR(a6),d2
-        move.b  #$F0,d2
-        move.w  d2,VHPOSW(a6)
-        endm
-
 S2_ITERS        equ 3000        ; connector-identity loop iterations
 N_REF           equ 19999       ; DBF count of the reference loop (20000 reads)
 N_MEAS          equ 45999       ; DBF count of the measurement loop (46000 reads)
-        ifd     SLOW
-N_REF_USED      equ 599
-N_MEAS_USED     equ 1999
-        else
-N_REF_USED      equ N_REF
-N_MEAS_USED     equ N_MEAS
-        endif
 
 start:
         move.w  #$2700,sr               ; supervisor, all interrupt levels masked
@@ -91,6 +80,10 @@ start:
         ifnd    NO_S3
         move.w  CFG_BEAMCON0,$DFF1DC
         endif
+        ifd     VARBEAM
+        move.w  #$00E3,$DFF1C0          ; HTOTAL: lines of 228 colour clocks
+        move.w  #$00A0,$DFF1DC          ; BEAMCON0: VARBEAMEN and PAL
+        endif
 
 ; ---- S4: BPLCON0 <- cfg_BPLCON0_ref ----------------------------------------
         move.w  CFG_BPLCON0_REF,$DFF100
@@ -105,9 +98,6 @@ start:
         ifd     W_V8
         V8_ON
         endif
-        ifd     W_H
-        WRITE_H
-        endif
         move.w  #(W_LEN-1),d0
 .refb:
         move.l  $DFF004,(a0)+
@@ -115,18 +105,14 @@ start:
         ifd     W_V8
         V8_OFF
         endif
-        move.w  #(N_REF_USED-W_AT-W_LEN),d0
+        move.w  #(N_REF-W_AT-W_LEN),d0
 .refc:
         move.l  $DFF004,(a0)+
         dbf     d0,.refc
         else
-        move.w  #N_REF_USED,d0
+        move.w  #N_REF,d0
 .ref:
         move.l  $DFF004,(a0)+
-        ifd     SLOW
-        move.w  #150,d1
-.refdly dbf     d1,.refdly
-        endif
         dbf     d0,.ref
         endif
 
@@ -147,19 +133,27 @@ start:
         move.l  $DFF004,(a0)+
         dbf     d0,.meas2
         V8_OFF
-        move.w  #(N_MEAS_USED-M_AT-M_LEN),d0
+        move.w  #(N_MEAS-M_AT-M_LEN),d0
 .meas3:
         move.l  $DFF004,(a0)+
         dbf     d0,.meas3
         else
-        move.w  #N_MEAS_USED,d0
+        ifd     PAUSE
+        move.w  #91,d7                  ; 92 chunks of 500 reads = 46000 reads
+.mchunk:
+        move.w  #499,d0
+.mread:
+        move.l  $DFF004,(a0)+
+        dbf     d0,.mread
+        move.w  #12,d1                  ; a pause of about 70 colour clocks between chunks
+.mpause dbf     d1,.mpause
+        dbf     d7,.mchunk
+        else
+        move.w  #N_MEAS,d0
 .meas:
         move.l  $DFF004,(a0)+
-        ifd     SLOW
-        move.w  #150,d1
-.measdly dbf    d1,.measdly
-        endif
         dbf     d0,.meas
+        endif
         endif
 
 ; ---- S8: done mark ---------------------------------------------------------

@@ -12,7 +12,9 @@
 // `make test`. The values that start with LP- run one contrasting light-pen
 // run (ECS, PAL, the harness's joystick1) beside the run with BPLCON0 bit 3
 // clear; FIX-LOAD and FIX-MARK0 run only the fixture lines; the others change
-// the P5 run (ECS, PAL).
+// the P5 run (ECS, PAL). LP-BASE and P5-BASE change nothing: they run the
+// unchanged light-pen or P5 run and exist for the records that name a private
+// chipset.
 //
 // Fixture and P5 records:
 // MUTATION FIXTURE-LOAD stimulus red NMH_MUTATE=FIX-LOAD: the harness loads prog_pot_missing.bin, which does not exist; the line prints FAIL and FIXTURE-MARK0 is NOT GRADED
@@ -21,9 +23,14 @@
 // MUTATION P5-C0-IDENTITY stimulus red NMH_MUTATE=C0: the harness holds the right mouse button (mouse_buttons bit 1) instead of the left one in the identity loop; neither bit 6 nor bit 7 of CIA-A port A follows and the line prints FAIL
 // MUTATION P5-POTGO-READ stimulus red NMH_MUTATE=P5-POTGO: POTGO's memory word stores $0001 instead of the declared $0000; the line prints FAIL
 // MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-SCHED: the harness also drives joystick0 bit 0 (pin 4 of the other connector) in the second level interval; the log shows changes on an input other than pin 5 and pin 9 and the line prints FAIL
+// MUTATION P5-SCHEDULE stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; the log shows pin 9 in place of pin 5 for the third and fourth level changes and the line prints FAIL, P5A-PIN5-FOLLOWS and P5B-OTHER-POT-BITS-1 are NOT GRADED
 // MUTATION P5-WINDOW-COUNT stimulus red NMH_MUTATE=P5-SHORT: the third level interval (window 2) lasts 5000 cycles, under the 300 us settle bound; it has no graded sample and the line prints FAIL for window 2
-// MUTATION P5A-PIN5-FOLLOWS stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; pin 5's bit stays 1 and the window-2 line prints FAIL
-// MUTATION P5B-OTHER-POT-BITS-1 stimulus red NMH_MUTATE=P5-PIN9: in the second low interval (window 2) joystick1 bit 5 (pin 9) is driven low instead of pin 5; POTGOR bit 10 reads 0 and the window-2 line prints FAIL
+// MUTATION P5A-PIN5-FOLLOWS implementation red NMH_MUTATE=P5-BASE private chipset: POTINP bit 8 (potcap[0] of userio.v) is held at 1 whatever pin 5 does; the pin-5 bit never reads 0 and the line prints FAIL in windows 0 and 2
+// MUTATION P5B-OTHER-POT-BITS-1 implementation red NMH_MUTATE=P5-BASE private chipset: POTINP bit 10 (potcap[1] of userio.v, pin 9 of J12) also follows the pin-5 button; it reads 0 while pin 5 is low and the line prints FAIL in windows 0 and 2
+//
+// P5A and P5B are shown red by a private copy of userio.v (outside the repository)
+// in which POTINP bit 8 is held at 1, or bit 10 also follows the pin-5 button;
+// the run is NMH_MUTATE=P5-BASE, the unchanged P5 run (ECS, PAL).
 //
 // Light-pen records. A record with "private chipset" names a run on a copy of
 // the chipset sources, outside the repository, that contain a latch following
@@ -37,26 +44,21 @@
 // MUTATION LP-C0-IDENTITY stimulus red NMH_MUTATE=LP-C0: S2 drives pin 3 instead of pin 4 of the connector under test; neither JOY0DAT nor JOY1DAT bit 1 follows and the line prints FAIL, the program still finishes
 // MUTATION LP-C1-DONE stimulus red NMH_MUTATE=LP-C1: prog_lpen_nodone.bin never stores the done mark; the line prints FAIL, every sample is still stored
 // MUTATION LP-C2-STORED stimulus red NMH_MUTATE=LP-C2: cfg_BPLCON0 holds $0000 while $0008 is declared; the port shows the read of $0000 and the line prints FAIL
-// MUTATION LP-C3-A1-READS-CURRENT oracle red NMH_MUTATE=LP-A1: the model is built with 9 clk_sys per colour clock instead of 8; no model fits the reference reads and the line prints FAIL from the no-model branch, the comparator is not reached
 // MUTATION LP-C3-A1-READS-CURRENT stimulus red NMH_MUTATE=LP-A1W: prog_lpen_v8.bin sets V8 of the vertical counter (VPOSW) for 100 reads inside the reference phase and clears it again; a model is fitted to the other reads, the flipped reads match no instant of their brackets and the line prints FAIL
-// MUTATION LP-A2-LINE-LENGTHS oracle red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; the measured pattern (all 227) is not the declared alternating one and the line prints FAIL
-// MUTATION LP-A2-LINE-LENGTHS stimulus red NMH_MUTATE=LP-A2: prog_lpen_hw.bin writes a horizontal count of $F0 (VHPOSW) inside the reference phase; the largest H read exceeds $E2 and the line prints FAIL; the counter stays displaced, so LP-C3-A1-READS-CURRENT and LP-C3-A4-FIELD-ANCHOR print FAIL as well
+// MUTATION LP-A2-LINE-LENGTHS stimulus red NMH_MUTATE=LP-A2: prog_lpen_vb.bin writes HTOTAL=$E3 and then BEAMCON0=$00A0 (VARBEAMEN, PAL) after S3, so the lines have 228 colour clocks; the model fits 313 lines of 228 colour clocks, every other precondition line holds and the line prints FAIL through its line-length clause
 // MUTATION LP-A2-LINE-LENGTHS implementation green: A2 passes in the four PAL runs on the repository's chipset and on the private chipset (the all-227 branch of the comparator; the alternating-line branch has no green control, SPECIFICATION.md 4.1)
-// MUTATION LP-C3-A3-FIELD-LENGTH oracle red NMH_MUTATE=LP-STD: the run is PAL and NTSC is declared; 313 lines are not 262 or 263 and the line prints FAIL
 // MUTATION LP-C3-A3-FIELD-LENGTH stimulus red NMH_MUTATE=LP-A3: the run is NTSC (chipset_config bit 1) and PAL is declared; 263 lines are not 312 or 313 and the line prints FAIL, no other precondition line moves
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4W: prog_lpen_m8_fx.bin (fx68k) or prog_lpen_m8_tg.bin (TG68K) sets V8 of the vertical counter (VPOSW) for 100 reads of F2 before its pulse and clears it again; those reads do not equal the model and the line prints FAIL, no other precondition line moves
 // MUTATION LP-C3-A4-FIELD-ANCHOR stimulus red NMH_MUTATE=LP-A4 private chipset: the F2 pulse is driven at line 40 instead of line 100, so the reads between line 40 and the declared pulse are held and not current; the line prints FAIL
-// MUTATION LP-C4-DENSITY stimulus red NMH_MUTATE=LP-C4: prog_lpen_slow.bin delays every loop body by about 3.3 lines, the reads are far apart and the line prints FAIL
+// MUTATION LP-C4-DENSITY stimulus red NMH_MUTATE=LP-C4: prog_lpen_pause.bin pauses for about 70 colour clocks after each 500 of the 46000 measurement reads; the read counts are unchanged, the largest gap between reads is 103 colour clocks (at most 32 allowed) and one pulse is followed by fewer than 2 reads, so the line prints FAIL; every other precondition line holds
 // MUTATION LP-C5-PULSES stimulus red NMH_MUTATE=LP-C5: the pulses are driven on pin 9 instead of pin 6; the line prints FAIL
-// MUTATION LP-C6-LPENDIS-CLEAR stimulus red NMH_MUTATE=LP-C6: BEAMCON0 is stored and declared as $2020, bit 13 set; the line prints FAIL and C2 holds
+// MUTATION LP-C6-LPENDIS-CLEAR stimulus red NMH_MUTATE=LP-C6: BEAMCON0 is stored as $2020, bit 13 set (the declared word is the stored word in every run); the line prints FAIL and C2 holds
 // MUTATION LP-P1A-LATCH-HOLDS implementation green private chipset: P1A passes in every run, PAL and NTSC, on both connectors
-// MUTATION LP-P1A-LATCH-HOLDS stimulus red NMH_MUTATE=LP-P1 private chipset: cfg_BPLCON0 stores and declares $0000 in the base run, LPEN stays clear, the reads keep following the beam and the line prints FAIL
+// MUTATION LP-P1A-LATCH-HOLDS stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven, so nothing freezes the registers in W_trig of F2 and the line prints FAIL, every precondition line holds
 // MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation green: P1B passes in every run on both connectors, on the repository's chipset and on the private chipset
-// MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR stimulus red NMH_MUTATE=LP-P1B private chipset: the bit-clear run stores and declares $0008, the first trigger freezes the registers and the line prints FAIL
 // MUTATION LP-P1B-NO-LATCH-WHEN-CLEAR implementation red NMH_MUTATE=LP-BASE second private chipset: the latch captures a pulse whatever BPLCON0 bit 3 holds (the end-of-field latch stays gated by bit 3); the bit-clear run latches and the line prints FAIL, the base run's lines pass
 // MUTATION LP-P1-LATCH-ENABLE implementation green private chipset: the aggregate passes in every run, PAL and NTSC
-// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P1 private chipset: the base run's half (P1A) prints FAIL and the aggregate prints FAIL
-// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P1B private chipset: the bit-clear run's half (P1B) prints FAIL and the aggregate prints FAIL
+// MUTATION LP-P1-LATCH-ENABLE stimulus red NMH_MUTATE=LP-P2A private chipset: the base run's half (P1A) prints FAIL and the aggregate prints FAIL
 // MUTATION LP-P1-LATCH-ENABLE implementation red NMH_MUTATE=LP-BASE second private chipset: the latch captures a pulse whatever BPLCON0 bit 3 holds; the bit-clear half prints FAIL and the aggregate prints FAIL
 // MUTATION LP-P2-LATCH-AT-PULSE implementation green private chipset: P2 passes in every run, PAL and NTSC
 // MUTATION LP-P2-LATCH-AT-PULSE stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven; the first read after the would-be pulse is a live read and the line prints FAIL
@@ -72,8 +74,8 @@
 // MUTATION LP-P4-DETERMINE-TRIGGER implementation green private chipset: P4 passes in every run, PAL and NTSC
 // MUTATION LP-P4-DETERMINE-TRIGGER stimulus red NMH_MUTATE=LP-P4A private chipset: a pulse at line 100 is added to F1, the pairs after it are equal and the blanking value is below $10500; the line prints FAIL
 // MUTATION LP-LATCH-ENABLE-AND-POSITION implementation green private chipset: the aggregate passes in every run, PAL and NTSC
-// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P1 private chipset: LPEN stays clear in the base run and the line prints FAIL
-// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P1B private chipset: the bit-clear run latches and the line prints FAIL
+// MUTATION LP-LATCH-ENABLE-AND-POSITION stimulus red NMH_MUTATE=LP-P2A private chipset: the F2 pulse is not driven, P2 and P1A print FAIL and the line prints FAIL
+// MUTATION LP-LATCH-ENABLE-AND-POSITION implementation red NMH_MUTATE=LP-BASE second private chipset: the latch captures a pulse whatever BPLCON0 bit 3 holds; the bit-clear half prints FAIL and the line prints FAIL, P2 holds
 
 #include <algorithm>
 #include <cstdint>
@@ -336,9 +338,8 @@ P5Run run_p5(const std::string& dir, const P5Opts& o) {
         r.phase_start[i] = h.cycles();
         const bool pressed = levels_low[i];
         // P5-PIN9 substitutes the driven input only in the second low
-        // interval (i==2), per SPECIFICATION.md's own contrast; the first
-        // low interval (i==0) always drives pin 5, so the precondition
-        // that pin 5 was driven at some point still holds.
+        // interval (i==2), per SPECIFICATION.md's own contrast: the schedule
+        // then has pin 9 where it requires pin 5, and its line prints FAIL.
         const bool use_pin9 = o.pin9 && (i == 2);
         drive(h, &r.ev, kPinPin5, pressed && !use_pin9, r.sched[i]);
         drive(h, &r.ev, kPinPin9, pressed && use_pin9, r.sched[i]);
@@ -403,7 +404,7 @@ void grade_p5(Checks& checks, bool ecs, bool ntsc, const P5Run& r) {
         const PinEv& e = r.ev[i];
         const bool low = (i == 0 || i == 2);
         const bool good = e.sched == r.sched[i] && e.applied == e.sched && e.on == low &&
-                          (e.pin == kPinPin5 || e.pin == kPinPin9) && e.readback == (low ? 1 : 0);
+                          e.pin == kPinPin5 && e.readback == (low ? 1 : 0);
         if (!good) sched = false;
     }
     checks.expect(c1, "P5-C1-DONE " + tag + ": the program finished (prog_pot.bin's done mark is present)");
@@ -413,7 +414,7 @@ void grade_p5(Checks& checks, bool ecs, bool ntsc, const P5Run& r) {
                   "before the sampling loop [p.240]");
     checks.expect(sched, "P5-SCHEDULE " + tag + ": the harness log shows the four level changes of pin 5 (low, high, low, high) "
                   "at their scheduled cycles, read back as set, with every controller input inactive before the first and no "
-                  "input other than pin 5 and pin 9 changing (" + sched_detail + ") [p.240]");
+                  "input other than pin 5 changing (" + sched_detail + ") [p.240]");
     const bool pre = c1 && id.ok && potgo && sched;
 
     // The other connector's pin-5 half: no input this harness drives reaches it.
@@ -744,7 +745,9 @@ std::vector<PinEvent> make_events(const LpRun& r, const Model& m, int64_t f0) {
     return ev;
 }
 
-LpRun lp_run(const std::string& dir, const LpOpts& o) {
+LpRun lp_run(const std::string& dir, const LpOpts& opts) {
+    LpOpts o = opts;
+    o.decl.beamcon0 = o.beamcon0;      // the declared word is the stored word, in every run
     LpRun r;
     r.o = o;
     nmh::Config cfg;
@@ -1301,7 +1304,6 @@ LpOpts make_opts(bool ecs, bool ntsc, int x) {
     o.prog = ecs ? "prog_lpen.bin" : "prog_lpen_ocs.bin";
     o.beamcon0 = ntsc ? 0x0000 : 0x0020;
     o.decl.ntsc = ntsc;
-    o.decl.beamcon0 = o.beamcon0;
     return o;
 }
 
@@ -1351,18 +1353,14 @@ bool run_lp_mutation(Checks& c, const std::string& dir, const std::string& mv) {
     else if (mv == "LP-C0") o.c0_pin = kPin3;
     else if (mv == "LP-C1") o.prog = "prog_lpen_nodone.bin";
     else if (mv == "LP-C2") o.bplcon0 = 0x0000;
-    else if (mv == "LP-A1") o.decl.R = kCck + 1;
     else if (mv == "LP-A1W") o.prog = "prog_lpen_v8.bin";
-    else if (mv == "LP-STD") o.decl.ntsc = true;
     else if (mv == "LP-A3") { o = make_opts(true, true, 1); o.decl.ntsc = false; }
-    else if (mv == "LP-A2") o.prog = "prog_lpen_hw.bin";
+    else if (mv == "LP-A2") o.prog = "prog_lpen_vb.bin";
     else if (mv == "LP-A4") move_to(2, 100, 40, 0x40);
     else if (mv == "LP-A4W") o.prog = (std::string(NMH_XSTR(NANOMIG_CORE_NAME)) == "tg68k") ? "prog_lpen_m8_tg.bin" : "prog_lpen_m8_fx.bin";
-    else if (mv == "LP-C4") { o.prog = "prog_lpen_slow.bin"; o.decl.exp_ref = 600; o.decl.exp_meas = 2000; }
+    else if (mv == "LP-C4") o.prog = "prog_lpen_pause.bin";
     else if (mv == "LP-C5") o.pulse_pin = kPin9;
-    else if (mv == "LP-C6") { o.beamcon0 = 0x2020; o.decl.beamcon0 = 0x2020; }
-    else if (mv == "LP-P1") { o.bplcon0 = 0x0000; o.decl.bplcon0 = 0x0000; }
-    else if (mv == "LP-P1B") { oc.bplcon0 = 0x0008; oc.decl.bplcon0 = 0x0008; }
+    else if (mv == "LP-C6") o.beamcon0 = 0x2020;
     else if (mv == "LP-P2A") drop(2, 100);
     else if (mv == "LP-P2B") move_to(3, 100, 100, 0x43);
     else if (mv == "LP-P3B") drop(7, 60);
@@ -1441,6 +1439,7 @@ int main(int argc, char** argv) {
         else if (mv == "P5-POTGO") o.cfg_potgo = 0x0001;
         else if (mv == "P5-SHORT") o.shortw = true;
         else if (mv == "P5-SCHED") o.other = true;
+        else if (mv == "P5-BASE") { /* no change: the unchanged ECS/PAL run, for the records that name a private chipset */ }
         else { std::printf("unknown NMH_MUTATE value %s\n", mv.c_str()); return 2; }
         P5Run r = run_p5(dir, o);
         grade_p5(checks, o.ecs, o.ntsc, r);
