@@ -1011,29 +1011,38 @@ control on the same RAM-log basis.
 
 ### ch6-multi.c4 [p187] a 68020 running from cache may race ahead of the blitter -- withdrawn
 
-Claim: `ch6-multi.c4`. **Withdrawn** (`checks.record()`; measured but not
-graded).
+Claim: `ch6-multi.c4`. **Withdrawn** (`checks.record()`; the TG68K counts
+are `checks.note()` measurements, graded by nothing).
 
 Proposition: "a 68020, perhaps running out of its cache, may be able to
-get at the data before the blitter has finished writing it." `cpu_config`
-selects "CPU-Type: 00 = 68000, 01 = 68010, 11 = 68020" (`nanomig.v:198`),
-feeding the TG68K core; fx68k is a fixed MC68000 implementation and does
-not read this input, so it is reported not applicable there.
+get at the data before the blitter has finished writing it."
+
+Scope decision, from the claim, the manual and the harness contract alone:
+
+- The claim is permissive ("may be able to"): no simulation outcome
+  contradicts a "may", so no stimulus can make a graded line red, and the
+  claim is withdrawn rather than graded.
+- Its consequence is a read served from the processor's internal cache. A
+  cache-served read makes no Chip-RAM access, so the RAM-port log the package
+  grades on does not show it; a test of the consequence would need a program
+  that reads the blit's destination while the blit is still writing it and
+  stores what it read, which is a fixture this package does not build.
+- The harness contract (`Config::cpu_config` in `nanomig_harness.h`) documents
+  `cpu_config` as the processor-type input of the design: 00 selects 68000
+  behaviour, and its other values select the TG68K core's 68010/68020
+  behaviour. A 68020 statement therefore has a subject on the TG68K build only;
+  on the fx68k build the claim is out of scope, and the run records that
+  scope decision as the record `MULTI-C4-SCOPE-FX68K` (`checks.record()`)
+  together with its source, the harness contract's description of
+  `cpu_config`. A scope decision is not a measurement and is not printed as
+  one.
 
 Measurement (TG68K only, no DMA): `prog_sharing.s`'s `BASELINE` build,
 run once with `cpu_config`=3 and once with `cpu_config`=0, over the same
-fixed cycle budget. Both give 9041 loop iterations -- no measurable
-difference. This contradicts nothing on the page (no DMA is competing for
-the bus in this fixture), so it is not a graded red.
-
-**Not tested.** The page's own consequence is a read of the blit's
-destination, served from a 68020's cache, before the blitter has
-finished writing it -- that needs `cpu_config`=3 *and* the cache path
-(`cpu_wrapper.v:514`, `cchip = turbochip_d && (turbodata_d || cpustate ==
-2'b00)`; `nanomig.v:208` gates it with `~ovl`, so a program would first
-have to clear the overlay with a CIA-A write) while a blit is actively
-writing the same address the CPU reads. No such stimulus is written
-here.
+fixed cycle budget; both loop-iteration counts are printed by the run
+(`checks.note()`). The counts are the only computed values of this claim.
+They contradict nothing on the page, since no blitter competes for the bus in
+this fixture.
 
 ### FASTRUN [p186] Fast memory keeps running during a nasty blit
 
@@ -1304,7 +1313,7 @@ line of the run.
 |---|---|---|
 | `6-intro.c5`, `ch6-intro.c5` | 169 | Factor not toleranced ("approximately twice as fast" has no numeric tolerance on the page); ordering asserted by ORDER above (a blitter A-to-D copy of 500 words, uncontended, finishes before a 68000 `MOVE.W` copy loop of the same 500 words). ORDER carries no claim id of its own -- only the ordering is graded, not the factor, so these ids stay withdrawn rather than moving onto ORDER's own label. |
 | `6-blitter-done-flag.c9`, `ch6-done.c11`, `ch6-done.c8` | 186 | These claims are permissive ("may not return the correct result", "may not yet be set"), so no simulation outcome contradicts them; a deterministic Verilator run cannot falsify a "may". The mechanism the page actually gives (p.186's NOTE) is deterministic, not metastable: a blit just started can be locked out of its first DMA cycle by display fetches, so `DMAF_BLTDONE` has not yet gone high, while the CPU keeps running and can observe the not-yet-set flag. BBUSY-LOCKOUT above builds that locked-out case and grades the second test (`6-blitter-done-flag.c10`, `ch6-done.c12`, `ch6-done.c10`); the first test's value there is printed as a measurement. |
-| `ch6-multi.c4` | 187 | See its own section above: `cpu_config`=3 was tried on TG68K and measured, producing no observable difference from `cpu_config`=0 in a no-DMA fixture; fx68k does not read `cpu_config` at all. The page's own consequence needs the CPU cache path too, which was not exercised. |
+| `ch6-multi.c4` | 187 | See its own section above: a permissive claim whose consequence (a read served from the processor's cache) leaves no Chip-RAM access to grade; the 68020 setting has a subject on the TG68K build only, so fx68k is recorded as out of scope with the harness contract as its source, and the two TG68K loop-iteration counts are printed as measurements. |
 | `6-system-dma.c12`, `ch6-sysdma.c10` | 194 | "The two lowest priority levels" ranks the blitter and CPU against every other DMA channel (audio, disk, sprites, copper, bitplane), not just against each other. Confirming it needs all of those channels driven simultaneously against blitter and CPU, a materially larger fixture than this package's scope. The narrower fact, that the blitter outranks the CPU specifically, is recorded as A4-SHARE-WITHDRAWN (the idless A4-SHARE line grades that share mode costs the CPU accesses; A4 grades `BLTPRI` set). Holds as a scope decision with a named fixture. |
 | `ch6-sysdma.c35` | 196 | "The 68000 is granted the cycle only if it is ready to ask for it and is the highest priority item at the time": the "only if" direction -- never granted when it has not asked or is outranked -- needs the 68000's request visible, which the RAM port does not show (see A5-WITHDRAWN). A9 grades the "if" direction: a continuously ready, otherwise unopposed 68000 is granted alternate cycles. |
 | `6-system-dma.c51`, `6-system-dma.c52`, `ch6-sysdma.c26`, `ch6-sysdma.c27` | 196 | "About half" of instruction time is an average over the 68000's own full instruction mix, with no numeric tolerance given on the page. An instruction-timing histogram compiled per core would settle it. |
@@ -1374,6 +1383,7 @@ The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines
 | `FASTRUN-LOCKOUT` | PASS | PASS |
 | `BBUSY-LOCKOUT-PRE` | PASS | PASS |
 | `BBUSY-LOCKOUT` | PASS | PASS |
+| `MULTI-C4-SCOPE-FX68K` | RECORDED | - |
 | `MULTI-C4-WITHDRAWN` | - | RECORDED |
 | `ORDER-FACTOR-NOT-ASSERTED` | RECORDED | RECORDED |
 | `DONE-FLAG-MAY-NOT-ASSERTED` | RECORDED | RECORDED |
