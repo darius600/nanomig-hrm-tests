@@ -164,10 +164,20 @@ The port-side field k is the interval [R_k, R_{k+1}). M1 record k is matched
 to the restart interval that contains the midpoint between the port times of
 the record writes that open and close M1 field k.
 
-**Anchor check.** Between the first and the last recorded wrap there are
-exactly K restarts. Pages disagree on whether the restart is at the start or
-the end of vertical blanking (section 6), and the count is the same under
-either reading.
+**Anchor check.** The M1 fields and the restarts correspond one to one, in
+order:
+
+- each of the K M1 fields, taken as the span between the port times of the
+  record writes that open and close it, holds exactly one restart;
+- the restart intervals the M1 fields are matched to (the rule above) follow
+  each other by exactly one, field after field;
+- each of those K restarts is the Copper fetch of the list's first word
+  directly after the Copper's fetch of that list's terminal `$FFFF,$FFFE` wait
+  (the stretch the definition above requires). The terminal wait is found in
+  the list as the program assembled it.
+
+Pages disagree on whether the restart is at the start or the end of vertical
+blanking (section 6); one restart per M1 field holds under either reading.
 
 ### 2.7 Measurement M3: line marks (Program T only)
 
@@ -317,6 +327,7 @@ Each variant changes only what is listed.
 | I-p | `BPL1MOD = BPL2MOD = 38` |
 | I-q | I-c, and M1 waits (M1_DELAY, section 7) between two samples |
 | I-r | I-e, and M1 waits (M1_DELAY, section 7) between two samples |
+| I-s | Both lists end in `$0000,$0000` (a MOVE to register `$000`, which the Copper cannot write, p21 and p26) in front of the `$FFFF,$FFFE` that stays in the list |
 
 ### 3.6 Preconditions of Program I
 
@@ -325,7 +336,7 @@ The contrasting case that makes each one fail is in the last column.
 | Id | Precondition | Fails in |
 |---|---|---|
 | PI-1 | The completion word was written. All K M1 records are valid (section 2.5). Every record's last V is at least 255, so no wrap is spurious. | I-j |
-| PI-2 | Anchor check of section 2.6. Every restart fetch is the first word of LISTA or of LISTB. | I-f |
+| PI-2 | Anchor check of section 2.6, with LISTA and LISTB: one restart per M1 field, in order, each the first-word fetch of LISTA or of LISTB directly after the fetch of the terminal `$FFFF,$FFFE` wait. | I-f (no restart), I-s (restarts do not follow the terminal wait) |
 | PI-3 | Interlace is active: the check of P1 holds. It is also a precondition of P4, whose retrieval lines are graded only on an interlaced run. | I-a |
 | PI-4 | Every field contains exactly 256 groups of bitplane fetches. Each group is 20 fetches of consecutive ascending word addresses. | I-h |
 | PI-5 | HCNT rises by exactly 1 in every field. | I-g |
@@ -399,6 +410,7 @@ comparison works on the least significant bits of the vertical count").
 | T-f | M1 waits (M1_DELAY, section 7) between two samples, several times longer than one line |
 | T-g | The WAIT of line 10 uses `(10, $40)`, not `(10, $E0)`; every mark stays in the list |
 | T-h | `DMACON = $8300` (COPEN not set) |
+| T-j | LISTT ends in `$0000,$0000` (as in I-s) in front of the `$FFFF,$FFFE` that stays in the list |
 
 ### 4.5 Preconditions of Program T
 
@@ -410,7 +422,7 @@ comparison works on the least significant bits of the vertical count").
 | PT-4 (gate of PT-5 and P3) | In every field, m_c(k, 1) - m_c(k, 0) is 227 or 228 colour clocks: the marks of line 0 and line 1 lie on consecutive lines, so the Copper mark of line 0 is anchored on line 0. p25 leaves open whether the restart lies at the start or at the end of vertical blanking, and a restart at the end of blanking satisfies the WAIT (0, $E0) at once, so PT-4 is printed as a gate state and is not graded. When it is closed, PT-5 and P3 are not graded. | T-c |
 | PT-5 | Every line length of section 2.7 is 227 or 228. Graded only when PT-3 and PT-4 hold, because the last line's length uses Delta and every mark of line 0 uses the anchor PT-4 gives. | T-g |
 | PT-6 (gate of P3) | Consecutive field lengths alternate between the two values p24 gives for the selected standard: 262 and 263 in NTSC, 312 and 313 in PAL. p34 reads the NTSC fields as all 262 lines, so an implementation that follows p34 closes the gate; PT-6 is printed as a gate state and is not graded, and P3 is reported as not graded, gate closed. | T-a |
-| PT-7 | Anchor check of section 2.6. | T-h |
+| PT-7 | Anchor check of section 2.6, with LISTT: one restart per M1 field, in order, each the first-word fetch of LISTT directly after the fetch of the terminal `$FFFF,$FFFE` wait. | T-h (no restart), T-j (restarts do not follow the terminal wait) |
 
 ---
 
@@ -499,8 +511,8 @@ comparison works on the least significant bits of the vertical count").
 5. **Preconditions.** PT-1, PT-2, PT-7.
 6. **Contrasting case.** T-b (PAL). p24 gives PAL fields of "312, then 313
    lines", so N_k is outside {262, 263} and the check goes red. PT-1, PT-2
-   and PT-7 still hold. The contrasts for the preconditions are T-f, T-e and
-   T-h.
+   and PT-7 still hold. The contrasts for the preconditions are T-f, T-e, T-h and
+   T-j.
 7. **Reference frame.** As in P1.
 
 ### P3: the NTSC four-field pattern
@@ -558,7 +570,7 @@ comparison works on the least significant bits of the vertical count").
    between 312 and 313 (P1) and 227 is a valid length. The contrasts for the
    preconditions are T-f (PT-1), T-e (PT-2), T-d (PT-3), T-c (PT-4), T-g
    (PT-5), T-a (PT-6; p24: long and short fields occur "interlace only") and
-   T-h (PT-7).
+   T-h and T-j (PT-7).
 7. **Reference frame.**
    - Line marks at fixed horizontal positions (section 2.7).
    - The WAIT position anchors the Copper marks (p22) and DDFSTRT anchors the
@@ -831,9 +843,9 @@ comparison works on the least significant bits of the vertical count").
 
 ## 7. Build
 
-Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_r.s`
-(I-a to I-r, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
-`prog_t_c.s` to `prog_t_i.s` (T-a, T-c to T-i, section 4.4; T-b is the same
+Files: `prog_i.s` (Program I) with variants `prog_i_a.s` to `prog_i_s.s`
+(I-a to I-s, section 3.5); `prog_t.s` (Program T) with variants `prog_t_a.s`,
+`prog_t_c.s` to `prog_t_j.s` (T-a, T-c to T-j, section 4.4; T-b is the same
 binary as T-0 with PAL selected in the harness, not a separate source);
 `m1.i` (Measurement M1, shared); `ch2.i` (register offsets Appendix B gives
 that `nanomig.i` does not, and the CIA-A address used only to release the
@@ -899,6 +911,18 @@ every field is found wherever it lies instead. p61's rule predicts the
 first address of field 1 from the last fetch of field 0 + 2 + the modulo;
 measured on both cores, the prediction (573440) equals field 1's first
 fetch (573440).
+
+**PI-2 and PT-7 (I-s, T-j).** The anchor of section 2.6 reads the terminal
+wait from the list as assembled. Measured, both cores: in the normal runs 8 of
+8 (Program I) and 13 of 13 (Program T) M1 fields hold exactly one restart, each
+directly after the Copper's fetch of the terminal wait, and the matched
+restarts are consecutive. Under I-s and T-j every field still holds exactly
+one restart and the matched restarts are still consecutive, but no restart
+follows a fetch of the terminal wait (0 of 8, 0 of 13): PI-2 and PT-7 are red
+through that clause alone, with the count of restarts unchanged. The page says
+nothing about what the Copper does after a MOVE it cannot write; I-s and T-j
+use the observed behaviour only to give the anchor an input in which the
+restarts are present but do not follow the terminal wait.
 
 **T-g.** Line 10's WAIT uses `(10, $40)`. Measured on both cores, field 0's
 line 9 then measures 536 clk_sys (67 colour clocks); 24 of the 3150 line
