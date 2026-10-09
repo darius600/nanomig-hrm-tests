@@ -21,17 +21,18 @@ was checked against the printed scan.
 | `COP2-using-the-copper-in-interlaced-mode.c7` ("Each NTSC interlaced scan displays 262 lines at a time") | Same disagreement with p24 ("262, then 263"). Only the agreed part is graded (P2): a field has 262 or 263 lines, and no two consecutive fields both have 263. |
 | `COP2-vertical-beam-position.c13` ("The first field length in the NTSC alternation is 262 lines"), `COP2-vertical-beam-position.c14` ("The next field length in the NTSC alternation is 263 lines") | p34 disagrees with c14 ("262 lines at a time", "524 lines"). Neither is graded as an expected value: P2 allows 262 or 263 for every field but requires no order and no alternation. c14 is used only as the gate of P3 (P3 is graded only when the fields do alternate between 262 and 263) and as a permitted value in P2. |
 | `COP2-using-the-copper-in-interlaced-mode.c10` ("The even-numbered lines from the second scan are interlaced with the odd-numbered lines"), and the on-screen part of `ch2-...c8`, `ch2-...c9`, `COP2-...c8` and `COP2-...c9` ("displayed", "interlaced with") | Whether the lines sit between each other on the screen depends on the vertical half-line offset of alternate fields: "the scanning circuitry vertically offsets the start of every other field by half a scan line" (p49). The test sees video only after a line doubler, and no page says what an interlaced field looks like at that output, so the page gives no expected value there. No page ties the odd field (the "first scan") to anything the hardware exposes either: not to LOF, not to the long or short field. Only the retrieval part of these claims (which memory lines a field fetches) is used, in P4. |
+| `ch2-using-the-copper-in-interlaced-mode.c19`, `COP2-using-the-copper-in-interlaced-mode.c18` ("the organization of the data in memory matches the apparent organization on the screen") | These two say that memory matches the screen, and where the lines land on the screen is not graded (the reason of the row above: no page says what an interlaced field looks like at the test's video output). P4(d) observes only the memory addresses the bitplane DMA fetches, so a design that fetched the stated addresses but displayed the lines in a different screen order would pass it. Declined. The memory-only claim `COP2-using-the-copper-in-interlaced-mode.c19` ("odd and even bitplane lines are interlaced together" in memory) is kept in P4(d). |
 | `ch2-using-the-copper-in-interlaced-mode.c11` ("In Figure 2-1 the odd field is the field shown at time t") | No page ties the odd field to anything the hardware exposes, and P4e accepts either list as the first recorded field, so P4e establishes an alternation and never which field is the odd one or which lies at time t. Declined; P4e keeps `ch2-using-the-copper-in-interlaced-mode.c20.s2`. |
 | `COP2-using-the-copper-in-interlaced-mode.c14` ("The illustrated even field occurs 16.6 milliseconds after the odd field"), and the "16.6 ms" in `ch2-...c12` | The figure label gives no precision and no tolerance. At the NTSC clock of p24 (3,579,545 Hz) and 227.5 colour clocks per line (p23, p194), 16.6 ms is 261.2 lines, and no field of whole lines lasts that long. The manual's own figures give 16.65 ms for a 262-line field and 16.72 ms for a 263-line field. The only gradable content, that the even field is the field directly after the odd field, is graded in P4(e). |
 
-Every other claim is used. The mapping is:
+Every id in this section is printed in full by the normal run as a `RECORDED:` line that gives its reason. Every other claim is used. The mapping is:
 
 | Proposition | Claims |
 |---|---|
 | P1 | `COP2-vertical-beam-position.c12`, `.c15`, `.c16`; `COP2-using-the-copper-in-interlaced-mode.c5`, `.c6`, `.c11`; `ch2-using-the-copper-in-interlaced-mode.c6`; with the LACE-clear control, `ch2-vertical-beam-position.c12` (P1-NOLACE) |
 | P2 | Agreed part of `COP2-using-the-copper-in-interlaced-mode.c3`, `.c7` and `COP2-vertical-beam-position.c14` |
 | P3 | `ch2-vertical-beam-position.c15`, `.c16`, `.c17`, `.c18`, `.c19`; `COP2-vertical-beam-position.c17`, `.c18`, `.c19`, `.c20`, `.c21`, `.c22` |
-| P4 | `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c10`, `.c12` (order only), `.c13`, `.c14`, `.c15`, `.c16`, `.c17`, `.c18`, `.c19`, `.c20.s2`; `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c18`, `.c19` |
+| P4 | `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c10`, `.c12` (order only), `.c13`, `.c14`, `.c15`, `.c16`, `.c17`, `.c18`, `.c20.s2`; `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c19` |
 | P5 | `ch2-...-interlaced-mode.c16`, `COP2-...-interlaced-mode.c15`; with the no-rewrite run, `ch2-putting-together-a-copper-instruction-list.c3` (P5-NOREWRITE) |
 | P6 | `ch2-putting-together-a-copper-instruction-list.c4`, with the no-rewrite run (P6-NOREWRITE) |
 
@@ -329,7 +330,7 @@ The contrasting case that makes each one fail is in the last column.
 | PI-4 | Every field contains exactly 256 groups of bitplane fetches. Each group is 20 fetches of consecutive ascending word addresses. | I-h |
 | PI-5 | HCNT rises by exactly 1 in every field. | I-g |
 | PI-6 | Every bitplane fetch from inside PIC returns the tag of the memory line at its address, and every recorded field has at least one such fetch. Fetches outside PIC are not covered. | I-k (tags), I-c (no fetch inside PIC) |
-| PI-7(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch (for P5). | I-l |
+| PI-7(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch (for P4 and P5). | I-l |
 | PI-7(spr) | In every field, the Copper fetch of the SPR0PT MOVEs precedes the field's first sprite-0 fetch (for P6). | I-m |
 | PI-8 | The sprite-0 structure at SPR is fetched at least once during the run (for P6). | I-i |
 | PI-9 | The LACE-clear control run (I-a) is a valid fixture: PI-1 and PI-2 hold on that run (for P1-NOLACE). | I-o |
@@ -577,9 +578,9 @@ comparison works on the least significant bits of the vertical count").
    memory that holds the lines in screen order.
    - Claims: `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval
      part), `.c10`, `.c12` (order only), `.c13`, `.c14`, `.c15`,
-     `.c16`, `.c17`, `.c18`, `.c19`, `.c20.s2`;
+     `.c16`, `.c17`, `.c18`, `.c20.s2`;
      `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part),
-     `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c18`, `.c19`.
+     `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c19`.
    - Pages 34 and 35; p62 describes the same layout.
 2. **Stimulus.** Program I (I-0), with PIC tagged by line and the lists
    LISTA / LISTB of section 3.2.
@@ -587,19 +588,23 @@ comparison works on the least significant bits of the vertical count").
    recorded fields:
    - the list the Copper restarted with (LISTA or LISTB, from the address of
      the restart fetch);
-   - the bitplane fetch addresses, grouped by line.
+   - the bitplane fetch addresses, grouped by line;
+   - the first 20-word bitplane fetch group of the field, found wherever it
+     lies from PIC upward (the identity-mapped data area; the program's own
+     code lies below PIC), by the search P5 uses, so that a first group
+     outside PIC's window is measured at its real address and not skipped.
 
    A field running LISTA is an **A-field**; one running LISTB is a
    **B-field**. A **frame** is an A-field together with the B-field directly
    after it.
 4. **Expected.**
-   - (a) The first bitplane fetch of every A-field is at PIC, and of every
-     B-field at PIC + 40; both kinds of field occur. p34: "The system retrieves data for bitplane
+   - (a) The first 20-word bitplane fetch group of every A-field starts at
+     PIC, and of every B-field at PIC + 40; both kinds of field occur. p34: "The system retrieves data for bitplane
      displays by using pointers to the starting address of the data in
      memory."
    - (b) For every two consecutive recorded fields, which alternate between
-     the two lists, the B-field's starting address minus the A-field's
-     starting address is 40 bytes, one line of a 320-pixel picture (40 bytes
+     the two lists, the B-field's starting address (the start of its first
+     20-word group) minus the A-field's starting address is 40 bytes, one line of a 320-pixel picture (40 bytes
      per line, p53), whichever of the two comes first; both orders occur.
      p34: "the starting address for the even-numbered fields is one line
      greater than the starting address for the odd-numbered fields.
@@ -611,12 +616,15 @@ comparison works on the least significant bits of the vertical count").
      1 to 6 in order.
    - (d) Every two consecutive recorded fields (an A-field and a B-field,
      in either order) together fetch memory lines 0 ... 511, each exactly
-     once. Taken in screen order (A-group 0, B-group 0, A-group 1, B-group 1,
-     ... A-group 255, B-group 255), the group addresses rise by 40 bytes at
+     once. Taken in the order A-group 0, B-group 0, A-group 1, B-group 1,
+     ... A-group 255, B-group 255, the group addresses rise by 40 bytes at
      every step: from A-group i to B-group i and from B-group i to A-group
-     i + 1. p34: "Simply, the organization of the data in
-     memory matches the apparent organization on the screen (i.e., odd and
-     even lines are interlaced together)."
+     i + 1. This grades memory only: odd and even lines are interlaced
+     together in the memory that the two fields fetch (p34: "(i.e., odd and
+     even lines are interlaced together)"). Where the lines land on the screen
+     is not observed, and the sentence's statement that memory matches the
+     screen (`ch2-using-the-copper-in-interlaced-mode.c19`,
+     `COP2-using-the-copper-in-interlaced-mode.c18`) is declined (section 1).
    - (e) Over the recorded fields the restart list strictly alternates
      between LISTA and LISTB, so every B-field is the field directly after
      an A-field. No page fixes which list the first recorded field runs.
@@ -628,7 +636,10 @@ comparison works on the least significant bits of the vertical count").
    Not graded, because no page states them:
    - which hardware field (long or short, LOF 1 or 0) runs LISTA;
    - where the lines land on the screen.
-5. **Preconditions.** PI-1 to PI-6.
+5. **Preconditions.** PI-1 to PI-6 and PI-7(bpl). The proposition attributes
+   the retrieval to the BPL1PT MOVEs of each field's list, and PI-7(bpl)
+   proves that those MOVEs are fetched before the field's first bitplane
+   fetch; with the MOVEs after the first fetch the retrieval is not theirs.
 6. **Contrasting cases.**
    - I-b (LISTB also writes PIC). The page requires "a different value for
      alternate fields". With the same value, the even memory lines 1, 3, ...,
@@ -649,13 +660,15 @@ comparison works on the least significant bits of the vertical count").
      A-group i + 1 rises by 38: the second step of (d) and the lines-once
      clause go red while the first step stays green, which the mutation run
      prints clause by clause. (a) and (e) stay green.
-   - The contrasts for the preconditions are I-j, I-f, I-a, I-h, I-g and I-k.
-     On I-a (LACE clear), PI-3 is red and P4 is reported as not graded.
+   - The contrasts for the preconditions are I-j, I-f, I-a, I-h, I-g, I-k and
+     I-l. On I-a (LACE clear), PI-3 is red and P4 is reported as not graded;
+     on I-l (the BPL1PT MOVEs after the `WAIT $2D01,$FF00`), PI-7(bpl) is red
+     and P4(a) to P4(d) are reported as not graded.
 7. **Reference frame.**
    - Field: the restart interval (M2).
    - Frame: an A-field and the next B-field.
    - Line numbering: Figure 2-1, where memory line j is screen line j + 1.
-   - Anchor checks: PI-2 and PI-4.
+   - Anchor checks: PI-2, PI-4 and PI-7(bpl).
 
 ### P5: bitplane pointers rewritten during vertical blanking start every field at the rewritten address
 
@@ -862,7 +875,8 @@ the WAIT $2D01,$FF00), the fetch of BPL1PTH lands at 10,215 colour clocks
 after the restart -- line 45 ($2D) -- while the field's first bitplane
 fetch comes earlier, at 10,049 colour clocks (line 44). PI-7(bpl) is red
 in every field under I-l, on both cores, as p22's WAIT semantics and
-p35's DIWSTRT ($2C81, line 44) predict.
+p35's DIWSTRT ($2C81, line 44) predict. Under I-l the gate closes and the
+lines P4(a) to P4(d) print as not graded, with PI-1 to PI-6 held.
 
 **The sampling blackout (PI-1, PT-1).** M1 samples the beam position in a
 tight loop. Whatever keeps the CPU away from that loop for so long that the
