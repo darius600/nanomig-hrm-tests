@@ -22,9 +22,9 @@
 // MUTATION BBUSY-PREDICTS stimulus red the true 200-word blit substituted with the one-word build (already finished, BBUSY clear), via NMH_MUTATE=BBUSY-PREDICTS
 // MUTATION SLOT-UNIT stimulus red the refresh-pattern capture substituted with the four-lores-plane build, whose bitplane DMA adds reads to the refresh reads so that its groups are not four refresh slots per line, via NMH_MUTATE=SLOT-UNIT
 // MUTATION A4PRE stimulus red nasty-mode blit shrunk to a near-instant one-word transfer (prog_sharing_nasty_tiny.s), via NMH_MUTATE=A4PRE
-// MUTATION A4 stimulus red BLTPRI cleared (nasty -> share), via NMH_MUTATE=A4
+// MUTATION A4 stimulus red BLTPRI cleared (nasty -> share): the CPU then makes Chip-memory accesses inside the blit's active window, via NMH_MUTATE=A4
 // MUTATION A4-SHARE-PRE stimulus red share-mode blit shrunk to a near-instant one-word transfer (empty active window), via NMH_MUTATE=A4-SHARE-PRE
-// MUTATION A4-SHARE none impossible: every share-mode blit takes chip-bus slots that the continuously ready loop uses, so no input with a live blit window leaves the loop at its free rate.
+// MUTATION A4-SHARE stimulus red the no-DMA reference loop substituted with a slower one (prog_sharing_slow.s: two register-only MULU.W between its counter writes, run from a copy in Chip memory outside the program's address range, so that the accesses classed as the 68000's come less often than the share-mode window's); the share-mode capture, A4-SHARE-PRE and the comparator are unchanged, via NMH_MUTATE=A4-SHARE
 // MUTATION A8PRE stimulus red the no-DMA run (no blitter, so no DMA access takes a slot the 68000 was ready for) substituted for the share-mode run, via NMH_MUTATE=A8PRE
 // MUTATION A8 implementation red private copy of minimig_m68k_bridge.v outside the repository in which the 68000 is not acknowledged in the first two free colour clocks after a colour clock the chipset took from it; the unchanged comparator finds an even-numbered free slot left unused between every missed even cycle and its access (111 of 111 on fx68k, 123 of 123 on TG68K; on fx68k A11 also reads red, since the display windows take colour clocks from the 68000 too), via the binary built from that copy, run with NMH_MUTATE=A8
 // MUTATION A9PRE stimulus red the four-plane run substituted with the no-DMA aligned run (no display windows), via NMH_MUTATE=A9PRE
@@ -38,7 +38,7 @@
 // MUTATION OPEN50 stimulus red six-plane side substituted with the four-plane capture (no reduction), via NMH_MUTATE=OPEN50
 // MUTATION PARITY-REF stimulus red the lores-plane capture substituted with the no-bitplane-DMA baseline (no BPL1 reads at all), via NMH_MUTATE=PARITY-REF
 // MUTATION PARITY stimulus green no-DMA and share-window captures substituted with the four-lores-plane in-window accesses (live, all even-slot, same unchanged comparator): PARITY is red on both cores unmutated and reads green on both with this input, via NMH_MUTATE=PARITY
-// MUTATION ORDER none impossible: an uncontended blit of the same size has a span fixed by its own cycle count, and no same-size uncontended stimulus lets the 68000 finish first.
+// MUTATION ORDER stimulus red the CPU copy loop of 500 words substituted with one of 100 words (prog_copyloop_short.s), so that it does not write the 500 destination words the unchanged predicate requires, via NMH_MUTATE=ORDER
 // MUTATION TAS-SPAN-PRE stimulus red the TAS.B replaced by NOP, so the TAS address shows three cycles instead of five (prog_tas_span_mut.s), via NMH_MUTATE=TAS-SPAN-PRE
 // MUTATION TAS-SPAN none impossible unfalsifiable at this boundary: the distance from the TAS read to its write is fixed by the 68000's own read-modify-write cycle and the chip set can only lengthen it, never shorten it, so no stimulus brings it down to one slot or less; replacing the TAS by another instruction changes the shape the precondition checks (TAS-SPAN-PRE) instead of the span this line grades
 // MUTATION FASTRUN stimulus red FR_CODE moved to chip RAM ($0C8000, prog_fastrun_chipcode.s/prog_fastrun_long_chipcode.s), FR_CNT still in fast RAM: A4 predicts zero counter writes in the blit's window, since a nasty blit denies the CPU every chip-bus cycle, fetches included; measured 0 in-window writes on fx68k (red through both the existence and the every-gap-equals-period clause) and 1 on TG68K (existence clause stays green; red only through the every-gap-equals-period clause, since a single in-window write forms no in-window gap), via NMH_MUTATE=FASTRUN
@@ -252,12 +252,6 @@ std::vector<uint64_t> read_cycles_in_range(const std::vector<nmh::RamAccess>& lo
         if (!a.is_write && a.word_addr >= word_lo && a.word_addr < word_hi)
             out.push_back(a.cycle);
     return out;
-}
-
-size_t count_in_window(const std::vector<uint64_t>& cycles, uint64_t lo, uint64_t hi) {
-    size_t n = 0;
-    for (auto c : cycles) if (c >= lo && c <= hi) ++n;
-    return n;
 }
 
 // Most frequent value (the histogram's mode), not the middle of the sorted
@@ -954,8 +948,21 @@ int main(int argc, char** argv) {
     {
         const Capture& cap = (mv == "A4") ? cap_share : (mv == "A4PRE" ? cap_nasty_tiny : cap_nasty);
         auto [lo, hi] = dst_span(cap);
-        auto sc = scratch_writes(cap);
-        size_t in_win = count_in_window(sc, lo, hi);
+        // Every CPU Chip-memory access, classified on the RAM-log basis of
+        // is_cpu_access(): a program fetch or a write to the counter.
+        size_t in_win = 0, in_win_writes = 0;
+        std::string in_win_list;
+        for (const auto& a : cap.log)
+            if (is_cpu_access(a, word_addr(kShareScratch)) && a.cycle >= lo && a.cycle <= hi) {
+                ++in_win;
+                if (a.is_write) ++in_win_writes;
+                if (in_win <= 8)
+                    in_win_list += std::string(in_win_list.empty() ? "" : ", ") + (a.is_write ? "write $" : "fetch $") +
+                                   hexs(a.word_addr * 2) + " at +" + std::to_string(a.cycle - lo) + " clk_sys";
+            }
+        checks.note("A4: window " + std::to_string(lo) + ".." + std::to_string(hi) + ", " + std::to_string(in_win) +
+                    " CPU Chip-memory access(es) inside it" + (in_win ? ": " + in_win_list : std::string("")) +
+                    " (offsets from the window's first destination write)");
         bool nontrivial = lo != hi && (hi - lo) > 2000;
         checks.expect(nontrivial,
             "A4PRE: the nasty-mode blit's active window is long enough to have contained "
@@ -963,8 +970,9 @@ int main(int argc, char** argv) {
         if (nontrivial) {
             checks.expect(in_win == 0,
                 "A4 [p198]: with DMAF_BLITHOG (BLTPRI) set the blitter keeps the bus for every available "
-                "Chip memory cycle -- the CPU writes its own counter not once during the blit's active "
-                "window (" + std::to_string(in_win) + " scratch writes)");
+                "Chip memory cycle -- the CPU makes no Chip-memory access at all (program fetch or counter "
+                "write) during the blit's active window (" + std::to_string(in_win) + " accesses, " +
+                std::to_string(in_win_writes) + " of them counter writes)");
         } else {
             not_graded(checks, "A4", "A4PRE");
         }
@@ -1002,8 +1010,12 @@ int main(int argc, char** argv) {
         Rate win = cpu_rate(cap, lo, hi);
         // Reference: the same loop with the bus to itself (the BASELINE
         // capture, first to last CPU access).
-        std::pair<uint64_t, uint64_t> rw = cpu_span(cap_base);
-        Rate ref = cpu_rate(cap_base, rw.first, rw.second);
+        // NMH_MUTATE=A4-SHARE substitutes a slower no-DMA loop for the reference.
+        Capture cap_slow;
+        if (mv == "A4-SHARE") cap_slow = run_capture(dir + "/prog_sharing_slow.bin", kShareRunBudget, false, {});
+        const Capture& cap_ref = (mv == "A4-SHARE") ? cap_slow : cap_base;
+        std::pair<uint64_t, uint64_t> rw = cpu_span(cap_ref);
+        Rate ref = cpu_rate(cap_ref, rw.first, rw.second);
         bool pre = lo != hi && win.span > 0 && ref.span > 0 && ref.n > 0;
         checks.note("A4-SHARE: CPU accesses " + std::to_string(win.n) + " in a share-mode window of " +
                     std::to_string(win.span) + " clk_sys; reference " + std::to_string(ref.n) + " in " +
@@ -1495,7 +1507,8 @@ int main(int argc, char** argv) {
 
     // ---- ORDER [p169] a blitter copy finishes before an equal-sized CPU copy loop
     {
-        Capture cl = run_capture(dir + "/prog_copyloop.bin", kBootBudget + kDoneRunBudget, true, {});
+        Capture cl = run_capture(dir + (mv == "ORDER" ? "/prog_copyloop_short.bin" : "/prog_copyloop.bin"),
+                                 kBootBudget + kDoneRunBudget, true, {});
         uint32_t n = kClN;
         auto cl_writes = write_cycles_in_range(cl.log, word_addr(kClDst), word_addr(kClDst) + n);
         bool cl_ok = cl.loaded && cl.done.has_value() && cl_writes.size() == n;
@@ -1602,9 +1615,14 @@ int main(int argc, char** argv) {
         }
     }
 
-    // ---- ch6-multi.c4 [p187] -- TG68K only; cpu_config selects
-    // "CPU-Type: 00 = 68000, 01 = 68010, 11 = 68020" (nanomig.v:198).
-    // fx68k is a fixed 68000 implementation and does not read it.
+    // ---- ch6-multi.c4 [p187] -- withdrawn. The claim is permissive ("may be
+    // able to") and its consequence, a read served from the processor's
+    // cache, makes no Chip-RAM access. `cpu_config` is the design's processor
+    // type input (harness contract, Config::cpu_config: 00 selects 68000
+    // behaviour, its other values the TG68K core's 68010/68020 behaviour), so
+    // a 68020 statement has a subject on the TG68K build only. The scope
+    // decision is a record with its source; the TG68K counts are the only
+    // values the run computes.
     if (is_tg68k) {
         nmh::Config cfg020; cfg020.cpu_config = 3;
         nmh::Config cfg000; cfg000.cpu_config = 0;
@@ -1617,18 +1635,17 @@ int main(int argc, char** argv) {
                     ", cpu_config=0 (68000): " + std::to_string(n000) +
                     " -- contradicts nothing on the page (no DMA is competing for the bus here)");
         checks.record(
-            "MULTI-C4-WITHDRAWN [p187] ch6-multi.c4: not tested -- the page's own consequence is a "
-            "read of the blit's destination, served from a 68020's cache, before the blitter has "
-            "finished writing it (\"a 68020, perhaps running out of its cache, may be able to get "
-            "at the data before the blitter has finished writing it\"). That needs cpu_config=3 "
-            "plus the cache path (cpu_wrapper.v:514 cchip = turbochip_d && (turbodata_d || "
-            "cpustate == 2'b00); nanomig.v:208 gates it with ~ovl, so a program would first have "
-            "to clear the overlay with a CIA-A write) while a blit actively writes the same "
-            "address the CPU reads -- no such stimulus is written here, so this is not tested, "
-            "not a harness gap");
+            "MULTI-C4-WITHDRAWN [p187] ch6-multi.c4: not tested -- the claim is permissive (\"may be able to get "
+            "at the data before the blitter has finished writing it\") and its consequence is a read served from "
+            "a 68020's cache, which makes no Chip-RAM access; a test would need a program that reads the blit's "
+            "destination while the blit is still writing it and stores what it read, a fixture this package "
+            "does not build, so this is not tested, not a harness gap");
     } else {
-        checks.note("ch6-multi.c4 [p187]: not applicable on fx68k (fixed 68000 implementation; "
-                    "cpu_config selects TG68K-only behaviour, nanomig.v:198)");
+        checks.record(
+            "MULTI-C4-SCOPE-FX68K [p187] ch6-multi.c4: not applicable on fx68k -- source: the harness contract "
+            "(Config::cpu_config in nanomig_harness.h) documents cpu_config as the processor-type input, 00 "
+            "selecting 68000 behaviour and its other values the TG68K core's 68010/68020 behaviour, so a 68020 "
+            "statement has a subject on the TG68K build only; a scope decision, not a measurement");
     }
 
     // ---- FASTRUN [p186] ch6-done.c9: "may be running completely
@@ -1639,8 +1656,8 @@ int main(int argc, char** argv) {
     // counting loop there, and starts a nasty blit through the Copper's
     // own list -- never through a CPU chip-bus write -- so the CPU's own
     // last chip-bus write before it jumps into fast RAM is unaffected by
-    // the blit that begins slightly afterward (A4 shows 0 CPU chip-bus
-    // accesses for the whole of a nasty blit's window otherwise). p.30's
+    // the blit that begins slightly afterward (A4 shows 0 CPU counter
+    // writes for the whole of a nasty blit's window otherwise). p.30's
     // own start sequence (COPJMP1 strobed in chip RAM while COPEN is
     // clear, then COPEN set as the one start event, from fast RAM) starts
     // the Copper running its list. p.25 has the list read again at every

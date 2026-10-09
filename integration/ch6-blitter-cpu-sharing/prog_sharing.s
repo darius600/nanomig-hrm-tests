@@ -12,7 +12,12 @@
 ; JMP (An) (8 clocks): every instruction's own bus-cycle timing (MC68000
 ; tables) is then a whole multiple of 4 clocks, so the loop's own period
 ; never straddles a slot boundary the way BRA.S's does (see SYSDMA-C29 in
-; SPECIFICATION.md). All run forever; the test runs each for a fixed cycle
+; SPECIFICATION.md). prog_sharing_slow.s (SLOW set, A4-SHARE's mutation) runs
+; the BASELINE build's loop with two register-only MULU.W instructions
+; between its counter writes, from a copy at SLOW_RAM in Chip memory outside
+; the program's own address range, so that the accesses the test classes as
+; the 68000's (a program fetch in that range, a write to the counter) come far
+; less often than the BASELINE loop's. All run forever; the test runs each for a fixed cycle
 ; budget and reads the RAM-port log, telling the CPU's own progress
 ; (writes to SHARE_SCRATCH) apart from the blitter's (writes to the
 ; SHARE_DST range) by address alone.
@@ -24,6 +29,7 @@ SHARE_SRC       equ     $0C2000
 SHARE_DST       equ     $0C4000
 
 LOOP_ORG        equ     PROGRAM_ORG+$100        ; every setup above is shorter than this
+SLOW_RAM        equ     $0C0200                 ; SLOW only: Chip memory outside kProgLo..kProgHi of the test
 
         org     PROGRAM_ORG
 
@@ -69,9 +75,19 @@ start:
         ifd     ALIGNED
         lea     LOOP,a2
         endif
+        ifd     SLOW
+        move.w  #$FFFF,d2               ; MULU.W by $FFFF takes 70 clocks, no bus cycle of its own
+        lea     LOOP,a3
+        lea     SLOW_RAM,a4
+        moveq   #4,d1
+.copy:  move.w  (a3)+,(a4)+             ; the five words of the loop below, which is position independent
+        dbra    d1,.copy
+        jmp     SLOW_RAM.l
+        else
         jmp     LOOP.l                  ; the counting loop sits at the same address in every build of
                                         ; prog_sharing.s and prog_bitplane.s, so the same instruction
                                         ; boundary has the same pair of addresses in every capture
+        endif
 
         org     LOOP_ORG
         ifd     ALIGNED
@@ -79,7 +95,15 @@ LOOP:   addq.w  #1,d0                   ; 4 clocks (2 slots)
         move.w  d0,(a1)                 ; 8 clocks (4 slots)
         jmp     (a2)                    ; 8 clocks (4 slots) -- aligned, unlike BRA.S's 10
         else
+        ifd     SLOW
+LOOP:   addq.w  #1,d0
+        move.w  d0,(a1)
+        mulu.w  d2,d4                   ; register-only work between the Chip-memory accesses
+        mulu.w  d2,d4
+        bra.s   LOOP
+        else
 LOOP:   addq.w  #1,d0
         move.w  d0,(a1)
         bra.s   LOOP
+        endif
         endif

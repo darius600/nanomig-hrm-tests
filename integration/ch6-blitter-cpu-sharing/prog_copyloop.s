@@ -9,7 +9,11 @@
 
 CL_SRC  equ     $0C8000
 CL_DST  equ     $0C8800
+        ifd     SHORT
+CL_N    equ     100                     ; ORDER's mutation: fewer words than the 500 the test expects
+        else
 CL_N    equ     500
+        endif
 
         org     PROGRAM_ORG
 

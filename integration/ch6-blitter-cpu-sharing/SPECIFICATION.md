@@ -367,15 +367,28 @@ Observed (precondition, its own id, "A4PRE"): the blit's active window
 spans enough cycles to have contained several CPU-loop iterations had the
 CPU been let through -- guards against a vacuously short window.
 
-Observed (proposition): the count of scratch-word writes inside the active
-window.
+Observed (proposition): every CPU Chip-memory access inside the active
+window, classified on the RAM-log basis the package's other CPU lines use (a
+read in the program's address range is a program fetch, a write to the counter
+word is a counter write), counted with how many of them are counter writes.
+The window is bounded by the blit's first and last destination write,
+inclusive.
 
-Expected value: precondition holds, and the count is exactly zero. If the
-precondition fails the line prints `NOT GRADED`.
+Expected value: precondition holds, and the count of CPU Chip-memory accesses
+in the window is exactly zero -- the page's sentence is about every available
+Chip memory cycle, so a program fetch counts as much as a counter write. If
+the precondition fails the line prints `NOT GRADED`.
+
+Measured: red on both cores. The nasty-mode blit's window is 8112 `clk_sys`
+long (precondition holds), no counter write falls in it, and one CPU program
+fetch does (`$8044C`, 4 `clk_sys` before the window's last destination write,
+8108 `clk_sys` after its first). The page's sentence says the blitter keeps
+the bus for every available Chip memory cycle and the window is the blit's own
+span, so the line reads red as printed on both cores and is not changed.
 
 Mutation (`prog_sharing_share.s`, `NMH_MUTATE=A4`): swaps in the
 share-mode capture for this same check; the unchanged "count is zero"
-check must go red (share mode lets some through).
+check must go red (share mode lets CPU accesses through).
 
 Precondition mutation (`prog_sharing_nasty_tiny.s`, `NASTY` and `TINY` set,
 `NMH_MUTATE=A4PRE`): the nasty-mode blit shrinks to a near-instant one-word
@@ -414,10 +427,23 @@ so no division and no threshold enters.
 
 Expected value: the in-window rate is strictly lower than the free rate.
 
-Mutation of A4-SHARE itself: `none impossible`. Every share-mode blit takes
-chip-bus slots that the continuously ready loop uses, so no input with a live
-blit window leaves the loop at its free rate. The graded window is the
-blit's own active window (`dst_span`) in every run.
+Mutation of A4-SHARE itself (`prog_sharing_slow.s`, `SLOW` set,
+`NMH_MUTATE=A4-SHARE`): the live share-mode capture stays, and a slower
+no-DMA reference stands in for `BASELINE`. It is the same counting loop with
+two register-only `MULU.W` instructions (70 clocks each, no bus cycle of their
+own) between its counter writes, copied by the program into Chip memory at
+`$0C0200`, outside the program's own address range, and run from there. The
+accesses classed as the 68000's (a read in the program's address range, a write
+to the counter word) then come far less often than in the share window. The
+copy is needed because a program that only slows its instructions down in
+place keeps the TG68K core's program-fetch rate: with the two `MULU.W` in the
+loop in place the TG68K reference measured 45209 accesses in 726528 `clk_sys`,
+exactly the `BASELINE` run's count, so the core fetches at its bus-limited
+rate whatever the instructions do. A4-SHARE-PRE stays true (the window is
+nonempty and the reference holds accesses: the counter writes) and the
+unchanged comparator reads red. Measured: the reference holds 1155 accesses in
+725864 `clk_sys` (fx68k) and 6492 in 726480 (TG68K), against 243 in 10112 and
+254 in 10200 in the share window.
 
 Precondition mutation (`prog_sharing_tiny.s`, `NMH_MUTATE=A4-SHARE-PRE`): the
 share-mode blit shrinks to a near-instant one-word transfer, so its active
@@ -918,17 +944,21 @@ copying 500 words, no DMA competing); the nasty-mode blit's own capture
 (`prog_sharing_nasty.s`, established by A4, copying the same 500 words,
 uncontended since nothing yields it a cycle).
 
-Observed: each capture's own first-to-last-destination-write span.
+Observed: each capture's own first-to-last-destination-write span, and the
+number of CPU destination writes in the fixed 500-word range.
 
-Expected value: the blit's span is shorter.
+Expected value: all 500 CPU destination writes are seen, and the blit's span
+is shorter.
 
 Measured: blit -- 8112 `clk_sys` (both cores, identical). CPU copy loop --
 44200 `clk_sys` (fx68k), 48112 `clk_sys` (TG68K).
 
-Mutation of ORDER itself: `none impossible`. An uncontended blit of the same
-size has a span fixed by its own cycle count, and no same-size uncontended
-stimulus lets the 68000 finish first. The CPU copy loop is always the
-500-word `prog_copyloop.s`.
+Mutation of ORDER itself (`prog_copyloop_short.s`, `SHORT` set,
+`NMH_MUTATE=ORDER`): the CPU copy loop copies 100 words instead of 500. The
+fixed 500-word destination range, the expected count of 500 CPU destination
+writes and the span comparison are unchanged; the loop writes only 100 of the
+words, so the predicate's requirement that all 500 expected writes were seen
+goes red (100 writes seen on both cores).
 
 ### TAS-WITHDRAWN [p196] TAS's read-modify-write cycle -- withdrawn
 
@@ -1052,7 +1082,7 @@ Proposition: "may be running completely uninhibited out of Fast memory or
 its internal cache and continue to have memory cycles." This claim sets
 no condition on the blitter itself (unlike `6-blitter-done-flag.c8`,
 graded separately below by FASTRUN-LOCKOUT): a nasty blit that denies the
-CPU all Chip-memory access (A4) is a fair, and simpler, case for it, so
+CPU nearly all Chip-memory access (A4) is a fair, and simpler, case for it, so
 `c9` stays on this nasty-blit stimulus rather than moving to
 FASTRUN-LOCKOUT's own display-locked-out one.
 
@@ -1335,7 +1365,7 @@ ids checked in total.
 
 ## RECORDED
 
-The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 37 passed, 1 failed; tg68k 37 passed, 1 failed.
+The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines; `NOT GRADED` is a line whose precondition was not met; `RECORDED` is a decline (a withdrawn or scope-limited claim). Counts: fx68k 36 passed, 2 failed; tg68k 36 passed, 2 failed.
 
 | line | fx68k | tg68k |
 |---|---|---|
@@ -1353,7 +1383,7 @@ The final run of `make -B test` on each core. `PASS` and `FAIL` are graded lines
 | `SLOT-UNIT` | PASS | PASS |
 | `A2` | PASS | PASS |
 | `A4PRE` | PASS | PASS |
-| `A4` | PASS | PASS |
+| `A4` | FAIL | FAIL |
 | `A4-SHARE-PRE` | PASS | PASS |
 | `A4-SHARE` | PASS | PASS |
 | `A4-SHARE-WITHDRAWN` | RECORDED | RECORDED |
@@ -1402,6 +1432,7 @@ capture health: base.log.size=47619 share.log.size=48282 nasty.log.size=48154 ti
 capture health: lores4.log.size=163218 hires4.log.size=173463 lores6.log.size=173456 lores4_aligned.log.size=177674 lores6_aligned.log.size=177674
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
 A2: active window 2274377..2284489, 48 scratch write(s) strictly inside it (excluding the window's own endpoints)
+A4: window 2274377..2282489, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
 A4-SHARE: CPU accesses 243 in a share-mode window of 10112 clk_sys; reference 41007 in 726488 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (190 of 242 intervals)
 A8: 40669 access pairs, 124 missed even cycle(s), 305 missed odd cycle(s), 0 with an even free slot left unused (122 granted before the first free even slot, 2 exactly on it), 0 delayed with a free ready slot, 400 spanning a line start, 6 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
@@ -1417,7 +1448,6 @@ PARITY: no-DMA (baseline) odd-slot accesses 20006 of 41007; share-mode window (b
 ORDER: CPU copy loop of 500 word(s) spans 44200 clk_sys (500 writes seen); the nasty-mode blit's own 500-word copy spans 8112 clk_sys, same yardstick (first to last destination write)
 TAS: read-to-write gap = 24 clk_sys, 5 other RAM-port access(es) between them (TAS.B, share-mode blit concurrent)
 TAS-SPAN: slot unit 8 clk_sys; the three ordinary cycles span at most 0 clk_sys; the TAS read spans 16 clk_sys and its write follows the read's first sample after 24 clk_sys
-ch6-multi.c4 [p187]: not applicable on fx68k (fixed 68000 implementation; cpu_config selects TG68K-only behaviour, nanomig.v:198)
 FASTRUN: 50-iteration -- done=y RESULTS=50 blit window=2276281..2284425 FR_CNT fast-RAM writes strictly inside=49; 2000-iteration -- done=y RESULTS=2000 blit window=2276281..2284425 FR_CNT fast-RAM writes strictly inside=75; in-window period(mode)=108 clk_sys (74 gaps), after-window period=108 clk_sys (1923 gaps), every in-window gap equals after-window period=y
 FASTRUN-LOCKOUT: done=y RESULTS=8000; Copper's own MOVE-data-word fetch at cycle=2401033; fetch window=2401049..2402321; blitter's own first DMA access at cycle=2402361; FR_CNT fast-RAM writes strictly inside the fetch window=12
 BBUSY-LOCKOUT: Copper data-word fetch at cycle 2401033; fetch window 2401049..2402321; blitter's first access at 2402369, last at 2433225; pair pending across the window: iteration 42, first store at cycle 2402372
@@ -1433,6 +1463,7 @@ capture health: base.log.size=51822 share.log.size=52429 nasty.log.size=52305 ti
 capture health: lores4.log.size=177677 hires4.log.size=177677 lores6.log.size=177677 lores4_aligned.log.size=177677 lores6_aligned.log.size=177677
 SLOT-UNIT: smallest gap between two refresh accesses = 16 clk_sys, slot unit = 8 clk_sys; modal line period = 1816 clk_sys = 227 slots (1651 of 1651 line intervals); 1652 refresh group(s) graded
 A2: active window 2274337..2284537, 50 scratch write(s) strictly inside it (excluding the window's own endpoints)
+A4: window 2274337..2282449, 1 CPU Chip-memory access(es) inside it: fetch $8044C at +8108 clk_sys (offsets from the window's first destination write)
 A4-SHARE: CPU accesses 254 in a share-mode window of 10200 clk_sys; reference 45209 in 726528 clk_sys (no-DMA run)
 A5: inside the share-mode blit's active window consecutive CPU accesses are most often 40 clk_sys apart (243 of 253 intervals)
 A8: 44815 access pairs, 125 missed even cycle(s), 116 missed odd cycle(s), 0 with an even free slot left unused (120 granted before the first free even slot, 5 exactly on it), 0 delayed with a free ready slot, 399 spanning a line start, 7 without an unimpeded gap; first missed pair: fetch $80500 -> fetch $80502, 5 slots
