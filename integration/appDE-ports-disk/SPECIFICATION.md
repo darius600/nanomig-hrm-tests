@@ -172,7 +172,7 @@ Chip-memory port shows the CPU reading the value just before the write.
   VPOSR,VHPOSR ... can be read from ... as long words". N_ref is chosen so
   that the phase covers at least 3 complete fields.
 - **S6.** BPLCON0 ← cfg_BPLCON0: $0008 in the base runs (only bit 3 set) and
-  $0000 in the P1 contrast.
+  $0000 in the bit-clear runs.
 - **S7. Measurement phase:** the same loop for N_meas iterations, covering the
   schedule of section 2.5 through line 100 of field F10.
 - **S8.** Write a done marker (a fixed word at a fixed address).
@@ -301,10 +301,10 @@ of the field.
 |---|---|---|
 | C0 | **Connector identity.** In S2 the harness drives pin 4 (RIGHT*) of harness connector A low during the first of the two fields and high in the second. Bit 1 of exactly one of JOY0DAT and JOY1DAT follows pin 4 (p.329: "Right: bit#1"; p.281: "0=left controller pair, 1=right controller pair"). If it is JOY0DAT, A is J12 (p.327). | The harness drives pin 3 (LEFT*) instead. p.329 gives Left as "bit#9", so bit 1 does not follow and C0 fails. |
 | C1 | The program finished: the done marker is present and the sample count is N_ref + N_meas (plus the S2 samples). | Remove S8. C1 fails. |
-| C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. | Declare $0008 and store $0000 in cfg_BPLCON0 (this is the P1 contrast). C2 reports the mismatch. |
-| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse. Declaring R one harness cycle too large (A1) or the other video standard than the one selected (A3) changes the expected side only. |
-| A2 | Graded line (section 2.6), not a precondition. | A VHPOSW write inside the reference phase takes H above $E2. Declaring the other video standard than the one selected changes the expected side only. |
-| C4 | Density: consecutive VHPOSR reads are at most 32 color clocks apart in every graded window, every W_blank has at least 10 reads, and after each pulse at least 2 reads fall within 64 color clocks of its rising edge. | Add a delay of more than one line to the loop body. C4 fails. |
+| C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. | Declare $0008 and store $0000 in cfg_BPLCON0. C2 reports the mismatch. |
+| C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse. |
+| A2 | Graded line (section 2.6), not a precondition. | After S3 the program writes HTOTAL = $E3 and BEAMCON0 with VARBEAMEN set, so the lines have 228 colour clocks and A2's line-length clause fails (a PAL beam of 227 colour clocks is the expectation). |
+| C4 | Density: consecutive VHPOSR reads are at most 32 color clocks apart in every graded window, every W_blank has at least 10 reads, and after each pulse at least 2 reads fall within 64 color clocks of its rising edge. | Pause for more than 32 colour clocks after every 500 reads of the measurement loop. C4 fails. |
 | C5 | The pulses are as scheduled: the harness log shows each pulse on pin 6 of the connector under test, 4 color clocks wide, at its scheduled time, and no other controller pin changes during S5–S8. | Log a pulse on pin 5 instead of pin 6. C5 fails. |
 | C6 | ECS only: BEAMCON0 was written with bit 13 (LPENDIS) = 0 (checked through C2). | BEAMCON0 bit 13 = 1. p.305: "Ignore latched pen value on vertical pos read". The V bits of the reads in W_trig then equal the model V (the moving beam), so the hold checks of P1 and P3 fail on V. |
 
@@ -371,13 +371,16 @@ is not left over from earlier.
 
 **6. Contrasting cases.**
 
-- **For P1A:** cfg_BPLCON0 = $0000, everything else identical. The pages
-  predict that every read in W_trig and W_blank equals the model value and
-  that consecutive reads differ (the P1B prediction), so P1A's equality checks
-  fail. The program finishes. C0, C1 and C3–C6 hold, and C2 records $0000.
-- **For P1B:** cfg_BPLCON0 = $0008 stored and declared in the bit-clear run.
-  The pages predict a freeze after each trigger, so P1B's checks fail. The
-  program finishes and the preconditions hold.
+- **For P1A:** the F2 pulse is not driven, so nothing freezes the registers
+  in W_trig of F2 and P1A's equality check fails there. The program finishes
+  and the preconditions hold. Storing and declaring $0000 in the base run
+  would turn P1A red only through the other half's prediction, so it is not a
+  contrast.
+- **For P1B:** a chipset that latches a pulse whatever BPLCON0 bit 3 holds
+  (a private copy, section 4.6) freezes the registers in the bit-clear run,
+  so P1B's checks fail there. The program finishes and the preconditions
+  hold. Storing and declaring $0008 in the bit-clear run is not a contrast for
+  the same reason.
 
 **7. Reference frame.** Sections 2.6 and 2.7. The line numbers of every
 window come from the model, and A4 checks the model in every field.
@@ -665,16 +668,23 @@ GRADED.
 - **Schedule.** The harness log shows the four level changes of pin 5 (low,
   high, low, high) at their scheduled cycles, each read back as set; every
   controller input is inactive before the first change; and no input other
-  than pin 5 and pin 9 of X changes. Pin 5 and pin 9 are the two lines of X
-  that P5(a) and P5(b) examine.
+  than pin 5 of X changes. Pin 5 and pin 9 are the two lines of X that P5(a)
+  and P5(b) examine, so a run that drives pin 9 where the schedule has pin 5
+  fails this precondition and grades neither.
 - Each level interval contains at least 50 graded samples.
 
 **6. Contrasting cases.**
 
-- **Main check:** in the second low interval, drive pin 9 of connector X low
-  instead of pin 5. p.240 predicts that bit 10 or 14 (DATLY/DATRY, "pin 9")
-  becomes 0 and the pin-5 bit stays 1, so the pin-5 check (P5(a)) and the
-  pin-9 check (P5(b)) fail in that interval.
+- **Schedule, pin 9:** in the second low interval, drive pin 9 of connector X
+  low instead of pin 5. The schedule precondition fails and P5(a) and P5(b)
+  are NOT GRADED in the affected windows. p.240 predicts that bit 10 or 14
+  (DATLY/DATRY, "pin 9") would become 0 and the pin-5 bit stay 1, but that is
+  the prediction of the contrast, not a defect of a bit it would grade.
+- **Implementation controls:** P5(a) and P5(b) are shown red by two private
+  copies of the chipset sources, outside the repository. In the first, POTINP
+  bit 8 is held at 1 whatever pin 5 does, so the pin-5 bit never reads 0
+  (P5(a) fails). In the second, POTINP bit 10 also follows the pin-5 button,
+  so a pin-9 bit reads 0 while pin 5 is low (P5(b) fails).
 - **C0:** the harness holds the right mouse button instead of the left one in
   the identity loop. Neither CIA-A bit follows, and the precondition fails.
 - **C1:** remove the done marker. The precondition fails.
@@ -700,14 +710,14 @@ This table summarizes the runs above; it adds nothing to them.
 |---|---|---|
 | base, J12 and J11 (cfg_BPLCON0 = $0008) | P1–P4 | all (section 2.1) |
 | cfg_BPLCON0 = $0000, both connectors | P1B (graded) | all (section 2.1) |
-| cfg_BPLCON0 = $0000 in the base run; $0008 in the bit-clear run | P1A, P1B contrasts | at least ECS/PAL, both cores |
-| F2 pulse removed; F3 pulse +2 color clocks | P2, P3(a), P4 contrasts | at least ECS/PAL, both cores |
+| latch ignoring BPLCON0 bit 3 (private chipset) | P1B, P1 and position aggregate implementation controls | ECS/PAL, both cores |
+| F2 pulse removed; F3 pulse +2 color clocks | P1A, P2, P3(a), P4 and aggregate contrasts | at least ECS/PAL, both cores |
 | extra pulse (100, $40) in F1; extra pulse (50, $40) in F8; F9 pulse moved to line 50 | P3(c), P3(d), P4 contrasts | at least ECS/PAL, both cores |
 | BEAMCON0 bit 13 = 1 | C6 contrast | ECS/PAL, both cores |
-| NTSC selected with PAL declared; VPOSW writes inside S5; VHPOSW write inside S5; loop delayed; S8 removed; pin 3 instead of pin 4 in S2 | C3 (A3, A1), A2, C4, C1, C0 contrasts | ECS/PAL, both cores |
-| other standard declared; R declared too large | A2, A3, A1 oracle-side changes | ECS/PAL, both cores |
+| NTSC selected with PAL declared; VPOSW writes inside S5; HTOTAL and BEAMCON0 (VARBEAMEN) written after S3; pauses between chunks of the measurement loop; S8 removed; pin 3 instead of pin 4 in S2 | C3 (A3, A1), A2, C4, C1, C0 contrasts | ECS/PAL, both cores |
 | pen-pressed, X the connector C0 identifies | P5 | all |
 | pin 9 instead of pin 5; right button in the identity loop; no done marker; POTGO word $0001; another input driven; short interval | P5 contrasts | at least ECS/PAL, both cores |
+| POTINP bit 8 held at 1; POTINP bit 10 also follows pin 5 (private chipsets) | P5(a), P5(b) implementation controls | ECS/PAL, both cores |
 
 Contrasts listed in the same row change fields that do not overlap, so they
 may share one run. Each contrast must still be reported red on its own.
@@ -802,13 +812,14 @@ clear.
   BPLCON0 for S4, $0C0014 BPLCON0 for S6) so that the port shows the read. A
   marker word ($0C0024) is stored between S5 and S6. `prog_lpen_ocs.s` leaves
   out S3, `prog_lpen_nodone.s` leaves out S8, `prog_lpen_fix.s` stores a
-  different first fixture constant, `prog_lpen_slow.s` puts a delay of about
-  3.3 lines in each loop body and uses 600 and 2000 reads, `prog_lpen_v8.s`
-  sets V8 of the vertical counter (VPOSW) after 3000 reads of S5 for 100 reads
-  and clears it again, `prog_lpen_m8_fx.s` and `prog_lpen_m8_tg.s` set V8 for
-  100 reads of S7, after 4800 (fx68k) or 7800 (TG68K) of them, which lie in F2
-  before its pulse on that core, and `prog_lpen_hw.s` writes a horizontal count
-  of $F0 (VHPOSW, with the current vertical count) after 19000 reads of S5.
+  different first fixture constant, `prog_lpen_pause.s` runs S7 in 92 chunks of
+  500 reads with a delay loop of about 70 colour clocks between the chunks
+  (the read counts are unchanged), `prog_lpen_v8.s` sets V8 of the vertical
+  counter (VPOSW) after 3000 reads of S5 for 100 reads and clears it again,
+  `prog_lpen_m8_fx.s` and `prog_lpen_m8_tg.s` set V8 for 100 reads of S7,
+  after 4800 (fx68k) or 7800 (TG68K) of them, which lie in F2 before its pulse
+  on that core, and `prog_lpen_vb.s` writes HTOTAL = $E3 and then BEAMCON0 =
+  $00A0 (VARBEAMEN, PAL) after S3, so that the lines have 228 colour clocks.
 - The harness waits for the first fixture store (the first write to the
   marker word, whatever it stores; the fixture line grades the value), drives
   pin 4 (or pin 3 in the contrast) of the connector under test for 400000
