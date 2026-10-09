@@ -50,8 +50,20 @@ Propositions:
 No page states what a CPU access to an address that no device answers does. p.385 names a time-out only for Zorro III cycles: "the cycle completes when a Zorro III slave responds or the bus times out, as driven by the motherboard logic". So every access to an address that may be unanswered is the last bus action of its run:
 
 - all other results are stored first;
+- a distinct pre-access marker is written to Chip memory immediately before the access (the word PRE of the program, one marker value per kind of final access), so the window below is anchored at the access and not at the start of the run;
 - a completion marker follows the access;
-- if the marker never appears, the run records "no answer" for that access. "Never appears" means no CPU access at the Chip-memory port between the access and the second vertical-sync leading edge after it (§3), a harness limit rather than a page value. It is counted in frames on the video output, so no conversion from `clk_sys` to time is needed.
+- if the completion marker never appears, the run records "no answer" for that access. "Never appears" means no completion marker at the Chip-memory port within the second vertical-sync leading edge counted from the pre-access marker (t_N, §3), a harness limit rather than a page value. It is counted in frames on the video output, so no conversion from `clk_sys` to time is needed. A completion marker that appears earlier ends the run as DONE, and the line grades the stored result; the printed label and a MEASURED line name which of the two ended the run, DONE or expiry of the window.
+
+A run is accepted as "no answer" only when all of these hold, each measured in the run and none assumed:
+
+- the pre-access marker was written, exactly once;
+- the M0 marker was written exactly once (the program did not restart), and no exception handler ran (no write of V_E to MK_E, no pixel of C_E);
+- after the pre-access marker the Chip-memory port saw no write other than the program's scratch write: no result was stored and no completion marker appeared, so no Chip-port activity stands between the access and the end of the window;
+- no equal result was stored, even if the completion marker is absent (for a write/readback, no store of the written value into the R2 slot; for an image read, an image equal to IMG0 in the IMG slot);
+- where the program has a scratch write between the access and its readback, that write appears after the pre-access marker;
+- the window expired.
+
+Where one of these fails, the "no answer" alternative of the line is false. A run that wrote neither the completion marker nor the pre-access marker, or whose window had not expired, did not run past the access and is not graded.
 
 This covers configuration space before gate G has passed, a base address before its board is configured, and an address a board has been moved away from, including configuration space once its board has been configured by the write to register 48 or shut up. Because of this rule, several checks below need a run of their own.
 
@@ -78,6 +90,7 @@ The tail runs only if Chip memory answers at A+4 onward after RESET. P1 and P2 d
 - **t_M1**: the time of the Chip-port write of V1 to MK1. Anchor check: exactly one such write in the run.
 - **Frames**: a frame lies between two consecutive leading edges of vertical sync on the video output.
 - **t_V2**: the second vertical-sync leading edge after t_M1, so (t_M1, t_V2] contains at least one complete frame. The only duration a page gives is "approximately 17 microseconds" (p.370, the DRESB- pulse for a RESET instruction); t_V2 is a harness bound that contains it many times over.
+- **t_N**: the second vertical-sync leading edge after a run's pre-access marker (§2.2), so a window of at least one complete frame follows the final risky access. It bounds "no answer" for gate G's shut-up run and for every P3 run; a run without a pre-access marker has no t_N.
 - **Visible pixel**: a pixel sample whose RGB is not (0,0,0).
 - **Reference frame F_ref**: the last complete frame before t_M1. Anchor check: F_ref contains pixels of value C1, every pixel in it is either C1 or (0,0,0), and no pixel before t_M1 has the value C2. This shows the display shows COLOR00 and nothing else: "The background color shows in any area on the display where there is no other object present and is also displayed outside the defined display window, in the border area" (p.46). For BPLCON0 bits 14-12 = 000: "Shows only a background color; no playfield is visible" (p.48).
 - **t_C2**: the first visible pixel of value C2 after t_M1, or t_V2 if there is none.
@@ -164,7 +177,7 @@ e. The RESET sequence of §2.3.
 **5. Preconditions.** Each is printed on its own line, over every CPU setting, before the proposition that rests on it. Where one prints FAIL, the proposition is recorded as not graded and is never printed as PASS or FAIL.
 
 - P1-LEDCAL, power-LED calibration: the power LED makes exactly one transition in (t_CALDIM, t_M1), where t_CALDIM is the Chip-port write of the dim-phase marker; the level before that transition is L_dim (pra bit 1 = 1), the level after it is L_bright (pra bit 1 = 0), and L_bright ≠ L_dim. No timing margin around the bright-phase marker is assumed.
-- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a MEASURED line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (the drive-LED port changes level at least once on every CPU setting). P1a is recorded as not graded where it fails, and the record names that line.
+- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a PASS or FAIL line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (the drive-LED port changes level at least once on every CPU setting), and a MEASURED line gives the level changes per setting. P1a is recorded as not graded where it fails, and the record names that line.
 - P1-DISPANCHOR, display anchor: F_ref as in §3.
 - P1-NOEXCEPTION, no exception: no pixel of value C_E and no write of V_E to MK_E anywhere in the run.
 - P1-MARKERS: the run loads, t_V2 is found, the write V1→MK1 appears exactly once, and the write V0→MK0 appears exactly once before t_M1. Writes of V0 after t_M1 are P2's record, not a precondition.
@@ -231,6 +244,8 @@ G passes when:
 
 G does not separate a PIC from a data bus that floats to all ones, which also satisfies G2 and G3. Presence is established only by P3's second expected value (IMG2 ≠ IMG0).
 
+The run prints G as GATE-G-PRESENCE, PASS or FAIL, before GATE-G-PRECOND. A control for it reads 32 words that no AUTOCONFIG device answers in place of $00E80000 (`prog_rg_nodev.s`: the program zeroes 32 words of its own results page and reads them), on the unchanged G1-G3 comparator.
+
 The PIC must still be unconfigured when the program starts. If the harness's start-up has already configured it, G fails, and the builder records that as the reason.
 
 GATE-G (run R_G'): writes $00 to the shut-up address $00E8004C, then reads IMG as the last action (§2.2), on the same "differs from IMG0, or no answer" comparator P3-IMG2 uses. "Anything written to 4C will cause a board that supports shut-up to completely disappear until the next reset" (p.436).
@@ -289,9 +304,9 @@ e. Last action (§2.2):
 
 - G passed.
 - Every run lets register 00 be read as type 11 (Zorro II), memory flag set and size field 110 (2 megabytes, the "Unextended" column of p.433), before the two 2 MB bases B1 and B2 are used. G itself accepts type 10 or 11; P3 applies to type 11 only.
-- Every run loaded and ran to the completion marker or past the second vertical-sync leading edge (§2.2).
+- Every run loaded and ran to the completion marker or to the expiry of the no-answer window counted from its pre-access marker (§2.2, t_N).
 - B1 and B2 are valid per §4 and do not overlap Chip memory.
-- The scratch write appears at the port between the writes to B1 and the reads. For the readback of R2 the condition is met when no R2 was stored: no page fixes what an access that is never answered does, so a write that never completes is not a failure of the order.
+- The scratch write appears at the port between the writes to B1 and the reads. For the readback of R2 the scratch write after the pre-access marker is measured in every run, before the store of R2 where one exists. A run in which it does not appear leaves the precondition FAIL and the lines after it not graded: a write that never completes is not an answered write, and it is not assumed to have happened.
 - The memory flag has been read. For an I/O board only the IMG expected values are graded, because the page gives no content to read back at its base.
 - P3-BASE reports, as P3-BASE-ASSIGNED, that the board answers at the base it was given in the exchanged run (R0 = P0 and R1 = P1 at B2), and grades the aggregate P3-BASE only when both exchanged runs are live.
 
@@ -351,14 +366,14 @@ c. The RESET sequence of §2.3. Its tail is MOVE.W #V2,MK2, then the last action
 - G passed.
 - P6-CONFIG: both runs load, no exception handler runs in either, and the configuration took effect before RESET: for a memory board, R0 = P0 in this run; for an I/O board, P3's IMG2 ≠ IMG0 in run R3, whose configuration writes are the same.
 - P6-WITNESS: P1's reset witness, observed in runs R6 and R6m themselves (not R1): at least one LED change in (t_M1, t_V2].
-- P6-CHIPMEM: M2 appears at the Chip-memory port, and the CPU's instruction fetches from A+4 onward appear there; both runs write the completion marker. That is, Chip memory answers at the program's addresses after RESET. The page does not promise this (p.223). If it does not happen, P6 is "not checkable on this system", recorded and not graded.
+- P6-CHIPMEM: M2 appears at the Chip-memory port, and the CPU's instruction fetches from A+4 onward appear there; both runs write the completion marker. That is, Chip memory answers at the program's addresses after RESET. The page does not promise this (p.223). The run prints it as a PASS or FAIL line before P6. If it does not happen, P6 is "not checkable on this system", recorded and not graded.
 
 **6. Contrasting cases.**
 
 - R6a and R6am: R6 and R6m with RESET replaced by NOP. The page predicts IMG3 ≠ IMG0, or "no answer", because the board stays configured and out of $00E8xxxx (p.435 fn.6; P3's note on a second PIC with an identical image applies), and R3 = P0'. This also removes P6's own reset-witness precondition P6-WITNESS: with RESET replaced by NOP no LED changes, so P6 graded directly against R6a/R6am reports "not graded", not red, through its own clause. Both runs complete, and P6-WITNESS prints FAIL on them. P6 itself is unfalsifiable by a live page-predicted stimulus at this boundary and carries no mutation, so it is green with no live mutation: a contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers.
 - For P6-WITNESS: R6a and R6am (above), and R1a for the same precondition in P2.
 - For P6-CONFIG: no contrast is driven in the R6 family; a program that leaves out the write to 48 (P3-CONTENT's contrast) would falsify it.
-- For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented.
+- For "Chip memory answers after RESET": no page predicts an outcome either way ("On some Amiga models, portions of the RAM still respond. On other models, no RAM responds", p.223), so there is no contrasting stimulus with a page-predicted result. This is stated here rather than invented. The line itself is falsified by a stimulus that is not a page-predicted contrast: R6 and R6m with the instruction stream stopping at the tail (`prog_r6_hang.s`, `prog_r6m_hang.s`), so neither M2 nor the completion marker is written.
 
 **7. Reference frame.** As P1 and P3.
 
@@ -434,7 +449,8 @@ clearing it: a page-documented event, not an assumed cycle count.
   C1'=$0C3F, RESET replaced by NOP); `prog_r1_nocal.s` (the power-LED
   calibration contrast, the write that switches to bright keeps bit 1 = 1,
   RESET replaced by NOP).
-- Gate G and its contrast: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G').
+- Gate G and its contrasts: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G', which writes the pre-access marker B4B4 before its image read); `prog_rg_nodev.s` (GATE-G-PRESENCE's mutation: the image read from 32 zeroed words of the results page).
+- Pre-access markers: every final risky access of `prog_r3.s` and its includers is preceded by a write to the word PRE ($0C00CE): $B1B1 before the IMG1 read, $B2B2 before the IMG2 read, $B3B3 before the write/readback at the other base. `prog_rg_shutup.s` writes $B4B4 to the same word before its image read.
 - P3: `prog_r3.s` (R3, and R3c/R3u/R3' select from it via an assembly
   symbol); `prog_r3_n.s` (R3n); `prog_r3_swap.s` (R3'); `prog_r3_swap_n.s`
   (R3n'); `prog_r3_c48first.s` (R3c); `prog_r3_nocfg.s` (R3u);
@@ -446,7 +462,8 @@ clearing it: a page-documented event, not an assumed cycle count.
   read at $00400000 with R3n's own ending); `prog_r3_unconf_self.s` (its
   mutation: configured at $00400000 and read there).
 - P6: `prog_r6.s` (R6, and R6a select from it); `prog_r6m.s` (R6m);
-  `prog_r6a.s` (R6a); `prog_r6am.s` (R6am).
+  `prog_r6a.s` (R6a); `prog_r6am.s` (R6am); `prog_r6_hang.s` and
+  `prog_r6m_hang.s` (P6-CHIPMEM's mutation: the stream stops at the tail).
 
 Every program shares one environment (interrupts and DMA cleared, the ROM
 overlay cleared, the exception vectors installed and the vector-table
