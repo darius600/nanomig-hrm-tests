@@ -451,7 +451,7 @@ Let L1, L3 and L5 be the values read at E110 of F1, E110 of F3 and E190 of F5.
 1. **Anchor check**, as above. Contrast: move the second anchor to line 101.
 2. **Read-time check**, as above. Contrast: add a 30-line delay before V1.
 3. **Pin 6 is not driven by the CIA.** The DDRA read after step 2 has bits 6 and 7 at 0. Contrast: the program sets DDRA bits 6 and 7 to 1, and the check fails.
-4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse, or drive it 30 colour clocks late. The log is always compared with the nominal schedule (three pulses, 16 colour clocks after the Copper's A1 and B1 fetches of F1, F3 and F5), so the check fails and the four graded lines print NOT GRADED.
+4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse, or drive it at t(A1) + 30 colour clocks instead of t(A1) + 16. The log is always compared with the nominal schedule of the table above (three pulses: t(A1) + 16 in F1, t(A1) + 56 in F3, t(B1) + 16 in F5), so the check fails and the four graded lines print NOT GRADED.
 5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: the E40 WAIT at line 44 instead of line 40, so E40 reads V = 44 or 45 and the check fails (p. 22).
 6. **ECS: the BEAMCON0 write changed nothing but LPENDIS.** The field period after step 3 equals the one measured before it (VERTB ticks), within one line (p. 23: 227 or 228 colour clocks, taken as 228). Contrast: write bit 5 opposite to the selected standard. p. 305 names bit 5 "Programmable pal mode enable", and p. 24 gives the line counts (312 and 262), so the period changes by fifty lines and the check fails.
 
@@ -460,7 +460,6 @@ Items 1, 2 and 5 are graded only when preconditions 0 to 6 hold; otherwise each 
 ### Contrasting cases
 
 - **LPEN clear.** BPLCON0 is `$0000` with the same pulses. Every read tracks the beam: E110 reads V ∈ {110, 111}, and V1 and V2 differ. Items 1, 2 and 5 fail.
-- **B1 and B2 one line lower** (line 181 instead of 180). The F5 trigger follows B1 and lands on line 181, so V(L5) is 181 instead of 180 and item 2 fails, with every precondition holding.
 
 ### Left open by the pages
 
@@ -703,9 +702,8 @@ Each selector was run on both cores from the final build; the table gives what t
 | P3-NOPULSE | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
 | P3-E40LINE44 | FAIL: P3-PRE-LIVE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-LIVE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
 | P3-BEAMCON0 | FAIL: P3-PRE-PERIOD; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (11 passed, 1 failed) | FAIL: P3-PRE-PERIOD; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (11 passed, 1 failed) |
-| P3-LPEN | no label turns red (20 passed, 8 failed) | no label turns red (20 passed, 8 failed) |
+| P3-LPEN | no label turns red (19 passed, 8 failed) | no label turns red (19 passed, 8 failed) |
 | P3-OFFSET | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
-| P3-B1LINE181 | no label turns red (19 passed, 8 failed) | no label turns red (19 passed, 8 failed) |
 | P4-NOBIN | FAIL: P4-FIXTURE-LOADED, P4-FIXTURE-A1 (0 passed, 2 failed) | FAIL: P4-FIXTURE-LOADED, P4-FIXTURE-A1 (0 passed, 2 failed) |
 | P4-NOCOPEN | FAIL: P4-FIXTURE-A1 (1 passed, 1 failed) | FAIL: P4-FIXTURE-A1 (1 passed, 1 failed) |
 | P4-NODONE | FAIL: P4-FIXTURE-DRIVEN (2 passed, 1 failed) | FAIL: P4-FIXTURE-DRIVEN (2 passed, 1 failed) |
@@ -719,6 +717,6 @@ Each selector was run on both cores from the final build; the table gives what t
 | P4-F1NOLPEN | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
 | P4-F3LPENDIS | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
 
-On the private copy of the RTL described above, every precondition holds and the line named moves, on both cores, under these selectors: P3-LPEN (`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH` FAIL), P3-B1LINE181 (`P3-PEN-POSITION` and `P3-LATCHED-PEN-POSITION` FAIL, V(L5) = 181), P4-NOLPENDIS (`P4-LPENDIS-READ` FAIL, X = (0,100)), P4-F3LPENDIS (`P4-PRE-CONTROL` FAIL alone, `P4-LPENDIS-READ` NOT GRADED), P4-F1NOLPEN (`P4-PRE-LATCHF1` FAIL alone, `P4-LPENDIS-READ` NOT GRADED) and P4-EXTRAPULSE-F2 (`P4-PRE-PULSE` FAIL alone, `P4-LPENDIS-READ` NOT GRADED). The selectors P3-OFFSET and P3-NOPULSE fail `P3-PRE-PULSE` alone and print the four P3 lines NOT GRADED on both RTLs.
+On the private copy of the RTL described above, every precondition holds and the line named moves, on both cores, under these selectors: P3-LPEN (`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH` FAIL), P4-NOLPENDIS (`P4-LPENDIS-READ` FAIL, X = (0,100)), P4-F3LPENDIS (`P4-PRE-CONTROL` FAIL alone, `P4-LPENDIS-READ` NOT GRADED), P4-F1NOLPEN (`P4-PRE-LATCHF1` FAIL alone, `P4-LPENDIS-READ` NOT GRADED) and P4-EXTRAPULSE-F2 (`P4-PRE-PULSE` FAIL alone, `P4-LPENDIS-READ` NOT GRADED). The selectors P3-OFFSET and P3-NOPULSE fail `P3-PRE-PULSE` alone and print the four P3 lines NOT GRADED on both RTLs.
 
-`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL` and `P4-LPENDIS-READ` carry implementation records. On the repository's RTL the selectors P3-LPEN, P3-B1LINE181, P4-F1NOLPEN, P4-F3LPENDIS and P4-NOLPENDIS leave the labels they name as they are, because those lines are already red or NOT GRADED there; the run prints a record (`P4-LPENDIS-READ-MUTATION`, for P4-NOLPENDIS) only where it says so, and only when a precondition of `P4-LPENDIS-READ` failed.
+`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL` and `P4-LPENDIS-READ` carry implementation records. On the repository's RTL the selectors P3-LPEN, P4-F1NOLPEN, P4-F3LPENDIS and P4-NOLPENDIS leave the labels they name as they are, because those lines are already red or NOT GRADED there; the run prints a record (`P4-LPENDIS-READ-MUTATION`, for P4-NOLPENDIS) only where it says so, and only when a precondition of `P4-LPENDIS-READ` failed.

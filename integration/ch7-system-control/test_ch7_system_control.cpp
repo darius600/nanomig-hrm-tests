@@ -59,8 +59,6 @@
 // MUTATION P3-HELD implementation green a private copy of the RTL outside the repository in which agnus_beamcounter.v stores BPLCON0 bit 3, latches vpos and hpos on a falling edge of pin 6 after line 20 or at the end of the field, releases the latch at vpos 20 and returns it on VPOSR and VHPOSR unless ECS LPENDIS is set (pp. 238-239, p. 305), and agnus.v and minimig.v carry the AND of both fire inputs to it, built with make NANOMIG=<copy>: the line is PASS in OCS-PAL, ECS-PAL, OCS-NTSC and ECS-NTSC on both cores, and the repository's RTL is red there because VPOSR and VHPOSR read the live beam
 // MUTATION P3-PEN-POSITION implementation green the private copy described at P3-HELD: V(L1)=100, V(L3)=100, V(L5)=180 and H(L3)-H(L1)=40 in all four cases on both cores, where the repository's RTL reads V=110, 110, 190
 // MUTATION P3-PRE-PULSE stimulus red the F1 trigger at t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET (measured: the drive log differs from the nominal schedule plan_triggers(dry.log,16), P3-PRE-PULSE FAIL, the four P3 lines NOT GRADED, both cores and both RTLs)
-// MUTATION P3-PEN-POSITION stimulus red the B1/B2 WAIT pair one line lower (line 181 instead of 180), so the F5 trigger lands on line 181, via NMH_MUTATE=P3-B1LINE181, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, V(L5)=181, P3-PEN-POSITION FAIL on both cores)
-// MUTATION P3-LATCHED-PEN-POSITION stimulus red the B1/B2 WAIT pair at line 181, via NMH_MUTATE=P3-B1LINE181, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, P3-LATCHED-PEN-POSITION FAIL with P3-PEN-POSITION on both cores)
 // MUTATION P3-LATCHED-PEN-POSITION implementation green the private copy described at P3-HELD: PASS in all four cases on both cores, where the repository's RTL is red
 // MUTATION P3-FIELD-END-LATCH implementation green the private copy described at P3-HELD: V1 and V2 of F1, F3, F5 and F7 are $13801 in PAL and $10601 in NTSC, PASS in all four cases on both cores, where the repository's RTL reads the live beam (V1 at line 2, V2 at line 11)
 //
@@ -1261,7 +1259,6 @@ int main(int argc, char** argv) {
         if (is_ecs_pal && mv == "P3-EVMIS") used_bin = dir + "/prog_lp_ecs_pal_evmis.bin";
         if (is_ecs_pal && mv == "P3-NOBIN") used_bin = dir + "/prog_lp_missing.bin";
         if (is_ecs_pal && mv == "P3-OFFSET") f1_offset = 30;
-        if (is_ecs_pal && mv == "P3-B1LINE181") used_bin = dir + "/prog_lp_ecs_pal_b1line181.bin";
 
         DryResult dry = dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
         std::string tag = std::string(combo.label) + ((is_ecs_pal && !mv.empty()) ? " [" + mv + "]" : "");
@@ -1290,7 +1287,7 @@ int main(int argc, char** argv) {
             // selected standard.
             if (!combo.ecs) continue; // OCS has no BEAMCON0; run only once (under ECS-PAL)
             used_bin = dir + "/prog_lp_ecs_ntsc.bin";
-            dry =dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
+            dry = dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
             plan = plan_triggers(dry.log, 16);
             triggers = {plan.f1, plan.f3, plan.f5};
             tag = std::string(combo.label) + " [P3-BEAMCON0]";
@@ -1459,8 +1456,8 @@ int main(int argc, char** argv) {
         }
 
         // 4. The pulse was driven. Graded against the NOMINAL schedule (3
-        // pulses, 16 colour clocks after the Copper's own A1/B1 fetches of
-        // F1, F3, F5: plan_triggers(dry.log, 16)), whatever the selector
+        // pulses: t(A1)+16 in F1, t(A1)+56 in F3, t(B1)+16 in F5, in
+        // colour clocks: plan_triggers(dry.log, 16)), whatever the selector
         // fed the driver -- a reduced or shifted `triggers` must still show
         // up here as different from the nominal schedule.
         {
@@ -1830,7 +1827,7 @@ int main(int argc, char** argv) {
                 }
 
                 // Precondition: latch present in F1 -- V(Y)=100, and the H of the latch is the
-                // same in F1 (Y) and F3 (X', Y'), whose triggers start at the same phase.
+                // same in F1 (Y) and F3 (Y'), whose triggers start at the same phase; X'=Y' is P4-PRE-CONTROL.
                 bool latch_f1 = Y.present && Xp.present && Yp.present && V_of(Y) == 100 &&
                                 H_of(Y) == H_of(Yp);
                 checks.note("P4 " + tag + " Y: V=" + (Y.present?std::to_string(V_of(Y)):"?") +

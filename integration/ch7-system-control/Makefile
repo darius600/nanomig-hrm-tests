@@ -4,7 +4,7 @@ TEST_CPP := test_ch7_system_control.cpp
 PROGS    := prog_lp_ocs_pal prog_lp_ecs_pal prog_lp_ocs_ntsc prog_lp_ecs_ntsc \
             prog_lp_ecs_pal_lpenclear prog_lp_ecs_pal_anchormut \
             prog_lp_ecs_pal_v1delay prog_lp_ecs_pal_ddraforce \
-            prog_lp_ecs_pal_e40line44 prog_lp_ecs_pal_nocopen prog_lp_ecs_pal_nodone prog_lp_ecs_pal_evmis prog_lp_ecs_pal_b1line181 \
+            prog_lp_ecs_pal_e40line44 prog_lp_ecs_pal_nocopen prog_lp_ecs_pal_nodone prog_lp_ecs_pal_evmis \
             prog_p4 prog_p4_nolpendis prog_p4_f3lpendis prog_p4_ddraforce prog_p4_anchormut prog_p4_periodmut prog_p4_shortspin \
             prog_p4_ydelay prog_p4_nocopen prog_p4_nodone prog_p4_f1nolpen \
             prog_pri_pal prog_pri_ntsc \

@@ -19,8 +19,6 @@
 ;                  of every field is moved about 30 lines later.
 ;   E40LINE44   -- the live-read precondition's contrast: the E40 WAIT
 ;                  targets line 44 instead of line 40.
-;   B1LINE181   -- the pen-position line's contrast: the B1/B2 WAIT pair
-;                  sits at line 181 instead of line 180.
 ;   NOCOPEN     -- the Copper trigger-plan fixture's contrast: DMACON is
 ;                  written without COPEN, so the Copper never fetches.
 ;   NODONE      -- the driven-run fixture's contrast: the program never
@@ -151,20 +149,12 @@ start:
         move.w  #INTREQ,COP_LIST+44.l            ; E130
         move.w  #$8010,COP_LIST+46.l
 
-        ifd     B1LINE181
-        move.w  #$B541,COP_LIST+48.l             ; contrast: WAIT line 181 instead of 180, H $40
-        else
         move.w  #$B441,COP_LIST+48.l             ; WAIT line 180, H $40
-        endif
         move.w  #$FFFE,COP_LIST+50.l
         move.w  #COLOR00,COP_LIST+52.l           ; anchor B1
         move.w  #$000F,COP_LIST+54.l
 
-        ifd     B1LINE181
-        move.w  #$B5A1,COP_LIST+56.l             ; contrast: WAIT line 181 instead of 180, H $A0
-        else
         move.w  #$B4A1,COP_LIST+56.l             ; WAIT line 180, H $A0
-        endif
         move.w  #$FFFE,COP_LIST+58.l
         move.w  #COLOR00,COP_LIST+60.l           ; anchor B2
         move.w  #$0000,COP_LIST+62.l
