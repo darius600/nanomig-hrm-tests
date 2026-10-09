@@ -164,7 +164,8 @@ Chip-memory port shows the CPU reading the value just before the write.
   restates the selected standard. p.305 gives no reset value for BEAMCON0, so
   the test writes it instead of assuming it. p.305's warning ("Do not write to
   this register") concerns monitors, and the value written only restates the
-  selected standard.
+  selected standard. The declared BEAMCON0 word that C2 compares is the word
+  stored in cfg_BEAMCON0, in every run.
 - **S4.** BPLCON0 ← cfg_BPLCON0_ref = $0000 (LPEN = 0, LACE = 0, no
   bitplanes).
 - **S5. Reference phase:** N_ref iterations of `MOVE.L $DFF004,(A0)+`, looped
@@ -301,12 +302,12 @@ of the field.
 |---|---|---|
 | C0 | **Connector identity.** In S2 the harness drives pin 4 (RIGHT*) of harness connector A low during the first of the two fields and high in the second. Bit 1 of exactly one of JOY0DAT and JOY1DAT follows pin 4 (p.329: "Right: bit#1"; p.281: "0=left controller pair, 1=right controller pair"). If it is JOY0DAT, A is J12 (p.327). | The harness drives pin 3 (LEFT*) instead. p.329 gives Left as "bit#9", so bit 1 does not follow and C0 fails. |
 | C1 | The program finished: the done marker is present and the sample count is N_ref + N_meas (plus the S2 samples). | Remove S8. C1 fails. |
-| C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. | Declare $0008 and store $0000 in cfg_BPLCON0. C2 reports the mismatch. |
+| C2 | The stimulus values were written: the port shows the CPU reading each configuration word, with the declared value, in the order S3, S4, S6. For BEAMCON0 this half shows that the read happened, in order; its bit 13 is graded by C6. | Declare $0008 and store $0000 in cfg_BPLCON0. C2 reports the mismatch. |
 | C3 | The anchor holds: A1, A3 and A4 (section 2.6). | A3: NTSC is selected through chipset_config while PAL is declared; the field then has 263 lines, not 312 or 313. A1: a VPOSW write inside the reference phase sets V8 of the vertical counter for 100 reads (and a second write clears it again); the model fits the other reads and those 100 disagree with it. A4: the same VPOSW writes around 100 reads of F2 before its pulse. |
-| A2 | Graded line (section 2.6), not a precondition. | After S3 the program writes HTOTAL = $E3 and BEAMCON0 with VARBEAMEN set, so the lines have 228 colour clocks and A2's line-length clause fails (a PAL beam of 227 colour clocks is the expectation). |
+| A2 | Graded line (section 2.6), not a precondition. | After S3 the program writes HTOTAL = $E3 and BEAMCON0 = $00A0 (VARBEAMEN, PAL; p.305). HTOTAL is the "Highest number count, horiz. line (VARBEAMEN=1)" (p.280) and p.23 counts a line 0-$E3 as 228 colour clocks, so A2's line-length clause (all 227 in PAL) fails. VTOTAL (p.285, VARBEAMEN=1) is not written and no page gives its reset value; that A3 still holds is measured on this chipset, not predicted. |
 | C4 | Density: consecutive VHPOSR reads are at most 32 color clocks apart in every graded window, every W_blank has at least 10 reads, and after each pulse at least 2 reads fall within 64 color clocks of its rising edge. | Pause for more than 32 colour clocks after every 500 reads of the measurement loop. C4 fails. |
 | C5 | The pulses are as scheduled: the harness log shows each pulse on pin 6 of the connector under test, 4 color clocks wide, at its scheduled time, and no other controller pin changes during S5–S8. | Log a pulse on pin 5 instead of pin 6. C5 fails. |
-| C6 | ECS only: BEAMCON0 was written with bit 13 (LPENDIS) = 0 (checked through C2). | BEAMCON0 bit 13 = 1. p.305: "Ignore latched pen value on vertical pos read". The V bits of the reads in W_trig then equal the model V (the moving beam), so the hold checks of P1 and P3 fail on V. |
+| C6 | ECS only: the BEAMCON0 word the port shows the CPU reading in S3 has bit 13 (LPENDIS) = 0. | cfg_BEAMCON0 stores $2020 (bit 13 = 1); the declared word follows it, so C2 holds, C6 fails and the propositions are NOT GRADED (p.305: "Ignore latched pen value on vertical pos read"). |
 
 ---
 
@@ -371,8 +372,10 @@ is not left over from earlier.
 
 **6. Contrasting cases.**
 
-- **For P1A:** the F2 pulse is not driven, so nothing freezes the registers
-  in W_trig of F2 and P1A's equality check fails there. The program finishes
+- **For P1A:** the F2 pulse is not driven, so the registers keep reading the
+  moving beam from the would-be pulse until the end of F2's display field
+  (p.239: "If no trigger is seen, the counters latch at the end of the display
+  field"), and P1A's equality check over W_trig of F2 fails there. The program finishes
   and the preconditions hold. Storing and declaring $0000 in the base run
   would turn P1A red only through the other half's prediction, so it is not a
   contrast.
@@ -677,7 +680,7 @@ GRADED.
 
 - **Schedule, pin 9:** in the second low interval, drive pin 9 of connector X
   low instead of pin 5. The schedule precondition fails and P5(a) and P5(b)
-  are NOT GRADED in the affected windows. p.240 predicts that bit 10 or 14
+  are NOT GRADED in all four windows. p.240 predicts that bit 10 or 14
   (DATLY/DATRY, "pin 9") would become 0 and the pin-5 bit stay 1, but that is
   the prediction of the contrast, not a defect of a bit it would grade.
 - **Implementation controls:** P5(a) and P5(b) are shown red by two private
@@ -791,7 +794,7 @@ drives `joystick1` bit 5, which moves bit 10.
 P5 and the light pen: every configuration of section 2.1 (ECS and OCS, PAL
 and NTSC). P5 selects them through `chipset_config` (bit 3 for ECS, bit 1 for
 NTSC). For the light pen, each configuration runs the pulse schedule on both
-harness connectors (`joystick0` and `joystick1` of `nanomig.v`), once with
+harness connectors (the `joystick0` and `joystick1` inputs of the harness's top level), once with
 BPLCON0 bit 3 set and once with it clear. The connector that is J12 or J11 is
 read from C0 in each run, not assumed. S3 writes BEAMCON0 with $0020 (PAL) or
 $0000 (NTSC) in the ECS runs and is left out of the OCS program. The
@@ -931,7 +934,7 @@ TG68K; the repository rows are on the repository's chipset.
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | repository | F2 pulse at line 40 | green: the reads before the pulse are current, A4 does not move (4.1) |
 | LP-C3-A4-FIELD-ANCHOR | LP-A4 | private | F2 pulse at line 40 | red, only this line |
 | LP-P1B-NO-LATCH-WHEN-CLEAR, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-BASE | second private (latch ignores bit 3) | the unchanged run | red, these three lines |
-| LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD | LP-P2A | private | F2 pulse not driven | red, with P1A, the P1 aggregate, P4 and LP-LATCH-ENABLE-AND-POSITION |
+| LP-P2-LATCH-AT-PULSE, LP-P3A-HOLD, LP-P1A-LATCH-HOLDS, LP-P1-LATCH-ENABLE, LP-LATCH-ENABLE-AND-POSITION | LP-P2A | private | F2 pulse not driven | red, these lines and P4; P3(c) NOT GRADED; every precondition line holds |
 | LP-P2-LATCH-AT-PULSE | LP-P2B | private | F3 pulse 2 colour clocks later | red, with LP-LATCH-ENABLE-AND-POSITION |
 | LP-P3B-HELD-PULSE-IGNORED | LP-P3B | private | F7 pulse at line 60 not driven | red, with P1A, P3(a), P4, the P1 aggregate and LP-LATCH-ENABLE-AND-POSITION |
 | LP-P3C-RELEASE | LP-P3C | private | pulse at line 50 of F8 | red, with P4 |
@@ -962,7 +965,7 @@ p.238 and p.239. In it BPLCON0 bit 3 enables the capture, a falling edge on pin
 of line 20 and is re-enabled then, and a field that ends without a trigger
 latches at its end. The package's own run on that copy passes every light-pen
 line in the PAL and in the NTSC runs (4.5), and the stimulus contrasts of the
-table below run on it.
+table in 4.5 run on it.
 
 P1B is green on the repository's chipset, whose registers always read the
 moving beam, and on the private chipset, where bit 3 gates the latch. A second
