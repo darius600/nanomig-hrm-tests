@@ -1,9 +1,10 @@
 // test_ch2_interlace_fields.cpp
 //
 // Integration package ch2-interlace-fields: see SPECIFICATION.md. Program I
-// and Program T each drive nanomig.v only through nanomig_harness.h's
-// ports (Config, load_program/boot/run_until_write, peek_logical(),
-// ram_log()) and are graded only against what those ports showed.
+// and Program T each drive the design only through the top-level ports that
+// nanomig_harness.h exposes (Config, load_program/boot/run_until_write,
+// peek_logical(), ram_log()) and are graded only against what those ports
+// showed.
 //
 // Design note: unlike the shorter ch6 blitter packages, Program I and
 // Program T each need to observe many complete video fields (8 PAL fields
@@ -35,7 +36,7 @@
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
 // MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
 // MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k) and NMH_MUTATE=PI-6(pop) runs prog_i_c (both lists omit the BPL1PT MOVEs, so no recorded field fetches from inside PIC, I-c); PI-6's comparator prints FAIL through the tags and through the empty population; control PI-1
-// MUTATION PI-7(bpl) stimulus red: NMH_MUTATE=PI-7(bpl) runs prog_i_l (the BPL1PT MOVEs sit after the WAIT, I-l); the comparator locates the MOVEs in the assembled list and prints FAIL
+// MUTATION PI-7(bpl) stimulus red: NMH_MUTATE=PI-7(bpl) runs prog_i_l (the BPL1PT MOVEs sit after the WAIT, I-l); the comparator locates the MOVEs in the assembled list and prints FAIL; the gate of P4 closes, so P4a, P4b, P4c and P4d print NOT GRADED; controls PI-1..PI-6
 // MUTATION PI-7(spr) stimulus red: NMH_MUTATE=PI-7(spr) runs prog_i_m (the SPR0PT MOVEs sit after the WAIT, I-m); the comparator locates the MOVEs in the assembled list and prints FAIL
 // MUTATION PI-8 stimulus red: NMH_MUTATE=PI-8 runs prog_i_i (DMACON leaves SPREN clear, I-i); PI-8's comparator prints FAIL
 // MUTATION PI-9 stimulus red: NMH_MUTATE=PI-9 runs prog_i_o as the control run (LACE clear and M1 waits between samples, I-o); PI-9's comparator prints FAIL
@@ -43,10 +44,10 @@
 // MUTATION P1 stimulus red: NMH_MUTATE=P1 runs prog_i_a (LACE clear, I-a); P1's comparator prints FAIL; controls: all 8 lengths equal, PI-1, PI-2, PI-4
 // MUTATION P1-NOLACE stimulus red: NMH_MUTATE=P1-NOLACE runs prog_i_a as the interlace run (LACE clear, I-a) and NMH_MUTATE=P1-NOLACE(ctrl) runs prog_i as the control run (LACE set); the unchanged conjunction prints FAIL; the other half is a live control; controls PI-1, PI-2, PI-4, PI-9
 // MUTATION P4a stimulus red: NMH_MUTATE=P4a runs prog_i_b (LISTB writes PIC, not PIC+40, I-b); P4a's comparator prints FAIL; controls PI-1..PI-8, P4e
-// MUTATION P4b stimulus red: NMH_MUTATE=P4b runs prog_i_b (I-b); P4b's comparator prints FAIL; controls PI-1..PI-6, P4e
-// MUTATION P4c stimulus red: NMH_MUTATE=P4c runs prog_i_b (I-b); P4c's comparator prints FAIL; controls PI-1..PI-6, P4e
-// MUTATION P4d stimulus red: NMH_MUTATE=P4d runs prog_i_b (I-b) and NMH_MUTATE=P4d(step) runs prog_i_p (both lists keep PIC and PIC+40 but BPL1MOD = BPL2MOD = 38, I-p, so A-group i to B-group i still rises by 40 and B-group i to A-group i+1 does not); P4d's comparator prints FAIL; the three clauses of the comparator print as measured lines; controls PI-1..PI-6, P4e
-// MUTATION P4e stimulus red: NMH_MUTATE=P4e runs prog_i_d (the handler never repoints COP1LC, I-d); P4e's comparator prints FAIL; controls PI-1..PI-6
+// MUTATION P4b stimulus red: NMH_MUTATE=P4b runs prog_i_b (I-b); P4b's comparator prints FAIL; controls PI-1..PI-6, PI-7(bpl), P4e
+// MUTATION P4c stimulus red: NMH_MUTATE=P4c runs prog_i_b (I-b); P4c's comparator prints FAIL; controls PI-1..PI-6, PI-7(bpl), P4e
+// MUTATION P4d stimulus red: NMH_MUTATE=P4d runs prog_i_b (I-b) and NMH_MUTATE=P4d(step) runs prog_i_p (both lists keep PIC and PIC+40 but BPL1MOD = BPL2MOD = 38, I-p, so A-group i to B-group i still rises by 40 and B-group i to A-group i+1 does not); P4d's comparator prints FAIL; the three clauses of the comparator print as measured lines; controls PI-1..PI-6, PI-7(bpl), P4e
+// MUTATION P4e stimulus red: NMH_MUTATE=P4e runs prog_i_d (the handler never repoints COP1LC, I-d); P4e's comparator prints FAIL; controls PI-1..PI-6, PI-7(bpl)
 // MUTATION P5 stimulus red: NMH_MUTATE=P5 runs prog_i_c (both lists omit the BPL1PT MOVEs, I-c); P5's comparator prints FAIL through the first 20-word fetch measured wherever it lies; controls: the search populates every field, PI-1, PI-2; PI-4, PI-6 and PI-7(bpl) do not apply
 // MUTATION P5-NOREWRITE stimulus red: NMH_MUTATE=P5-NOREWRITE runs prog_i_c as the rewrite run (both lists omit the BPL1PT MOVEs, I-c) and NMH_MUTATE=P5-NOREWRITE(ctrl) runs prog_i as the no-rewrite run (the lists rewrite, I-0); the unchanged conjunction prints FAIL; the other half is a live control; controls PI-1, PI-2, PI-10
 // MUTATION PI-10 stimulus red: NMH_MUTATE=PI-10 runs prog_i_q as the no-rewrite run (I-c and M1 waits between samples, I-q); PI-10's comparator prints FAIL
@@ -364,7 +365,15 @@ struct IAnalysis {
     std::vector<Restart> restarts;
     std::vector<IField> fields; // kI_K entries, in M1/field order 0..K-1
     bool matched = false;
+    // The first 20-word bitplane fetch group of every field, found wherever it
+    // lies from PIC upward (p5_first_groups); firstsOk is false unless every
+    // field has one. P4(a) and P4(b) grade these, not the first group inside
+    // [PIC, PIC_END).
+    std::vector<BplGroup> firsts;
+    bool firstsOk = false;
 };
+
+bool p5_first_groups(const IAnalysis& a, std::vector<BplGroup>& out);
 
 IAnalysis analyze_i(const std::string& dir, const std::string& prog) {
     IAnalysis a;
@@ -387,6 +396,7 @@ IAnalysis analyze_i(const std::string& dir, const std::string& prog) {
         f.bpl = group_reads_in(a.r, kI_PIC, kI_PIC_END, f.begin, f.end);
         a.fields[k] = f;
     }
+    a.firstsOk = p5_first_groups(a, a.firsts);
     return a;
 }
 
@@ -519,13 +529,13 @@ bool pi7_spr(const IAnalysis& a) { return move_pair_fetched_before(a, kSPR0PTH, 
 
 bool pi8_spr_fetched(const IAnalysis& a) { return read_count_range(a.r, kI_SPR, kI_SPR + 16) > 0; }
 
-// The first bitplane fetch of every field is at the address its list wrote.
+// The first 20-word bitplane fetch group of every field (found from PIC
+// upward, as P5 finds it) starts at the address its list wrote.
 bool p4a_each(const IAnalysis& a) {
-    if (!a.matched) return false;
-    for (const auto& f : a.fields) {
-        if (f.bpl.empty()) return false;
-        uint32_t want = (f.list == 'A') ? kI_PIC : kI_PIC + 40;
-        if (f.bpl.front().addr * 2 != want) return false;
+    if (!a.matched || !a.firstsOk || a.firsts.size() != a.fields.size()) return false;
+    for (size_t k = 0; k < a.fields.size(); ++k) {
+        uint32_t want = (a.fields[k].list == 'A') ? kI_PIC : kI_PIC + 40;
+        if (a.firsts[k].addr * 2 != want) return false;
     }
     return true;
 }
@@ -554,14 +564,15 @@ bool p4a(const IAnalysis& a) { return both_kinds(a) && p4a_each(a); }
 // so a run in which one kind never occurs cannot pass.
 bool p4b(const IAnalysis& a) {
     if (!p4e(a)) return false;
+    if (!a.firstsOk || a.firsts.size() != a.fields.size()) return false;
     int ab = 0, ba = 0;
     for (int k = 0; k + 1 < kI_K; ++k) {
         const auto& f0 = a.fields[(size_t)k];
-        const auto& f1 = a.fields[(size_t)k + 1];
-        if (f0.bpl.empty() || f1.bpl.empty()) return false;
-        const auto& fa = (f0.list == 'A') ? f0 : f1;
-        const auto& fb = (f0.list == 'A') ? f1 : f0;
-        if ((int64_t)fb.bpl.front().addr * 2 - (int64_t)fa.bpl.front().addr * 2 != 40) return false;
+        const auto& g0 = a.firsts[(size_t)k];
+        const auto& g1 = a.firsts[(size_t)k + 1];
+        const auto& ga = (f0.list == 'A') ? g0 : g1;
+        const auto& gb = (f0.list == 'A') ? g1 : g0;
+        if ((int64_t)gb.addr * 2 - (int64_t)ga.addr * 2 != 40) return false;
         if (f0.list == 'A') ++ab; else ++ba;
     }
     return ab >= 1 && ba >= 1;
@@ -711,7 +722,7 @@ IPre i_pre(const IAnalysis& a) {
 bool p1_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi4; }
 bool p5_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi4 && p.pi6 && p.pi7b; }
 bool p6_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi7s && p.pi8; }
-bool p4_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi3 && p.pi4 && p.pi5 && p.pi6; }
+bool p4_gate(const IPre& p)  { return p.pi1 && p.pi2 && p.pi3 && p.pi4 && p.pi5 && p.pi6 && p.pi7b; }
 
 // ---- Program I assertions: one function per label, used by the normal
 // run and by that label's mutation run alike ----------------------------
@@ -782,23 +793,23 @@ void g_P1_NOLACE(const IAnalysis& p1run, const IAnalysis& ctrl, bool pre) {
         "clear (I-a) all 8 recorded field lengths are equal");
 }
 void g_P4a(const IAnalysis& a, bool pre) {
-    if (!pre) { checks.record("P4a: NOT GRADED, a precondition (PI-1 to PI-6) did not hold on this run"); return; }
+    if (!pre) { checks.record("P4a: NOT GRADED, a precondition (PI-1 to PI-6 or PI-7(bpl)) did not hold on this run"); return; }
     checks.expect(p4a(a),
         "P4a p34 ch2-using-the-copper-in-interlaced-mode.c16 COP2-using-the-copper-in-interlaced-mode.c15: the "
-        "first bitplane fetch of every A-field is at PIC and of every B-field at PIC+40, and both kinds of "
-        "field occur");
+        "first 20-word bitplane fetch group of every A-field, found from PIC upward, starts at PIC and of every "
+        "B-field at PIC+40, and both kinds of field occur");
 }
 void g_P4b(const IAnalysis& a, bool pre) {
-    if (!pre) { checks.record("P4b: NOT GRADED, a precondition (PI-1 to PI-6) did not hold on this run"); return; }
+    if (!pre) { checks.record("P4b: NOT GRADED, a precondition (PI-1 to PI-6 or PI-7(bpl)) did not hold on this run"); return; }
     checks.expect(p4b(a),
         "P4b p34 ch2-using-the-copper-in-interlaced-mode.c17 ch2-using-the-copper-in-interlaced-mode.c18 "
         "COP2-using-the-copper-in-interlaced-mode.c16 COP2-using-the-copper-in-interlaced-mode.c17: "
         "for every two consecutive recorded fields, which alternate between the A-list and the B-list, the "
-        "B-field's starting address is 40 bytes past the A-field's (one picture line), in both orders "
-        "(A then B, B then A)");
+        "B-field's starting address (its first 20-word bitplane fetch group, found from PIC upward) is 40 bytes "
+        "past the A-field's (one picture line), in both orders (A then B, B then A)");
 }
 void g_P4c(const IAnalysis& a, bool pre) {
-    if (!pre) { checks.record("P4c: NOT GRADED, a precondition (PI-1 to PI-6) did not hold on this run"); return; }
+    if (!pre) { checks.record("P4c: NOT GRADED, a precondition (PI-1 to PI-6 or PI-7(bpl)) did not hold on this run"); return; }
     checks.expect(p4c(a),
         "P4c p34 ch2-using-the-copper-in-interlaced-mode.c10 ch2-using-the-copper-in-interlaced-mode.c13 "
         "ch2-using-the-copper-in-interlaced-mode.c14 COP2-using-the-copper-in-interlaced-mode.c12 "
@@ -807,16 +818,15 @@ void g_P4c(const IAnalysis& a, bool pre) {
         "reads 2i+1");
 }
 void g_P4d(const IAnalysis& a, bool pre) {
-    if (!pre) { checks.record("P4d: NOT GRADED, a precondition (PI-1 to PI-6) did not hold on this run"); return; }
+    if (!pre) { checks.record("P4d: NOT GRADED, a precondition (PI-1 to PI-6 or PI-7(bpl)) did not hold on this run"); return; }
     checks.expect(p4d(a),
-        "P4d p34 ch2-using-the-copper-in-interlaced-mode.c15 ch2-using-the-copper-in-interlaced-mode.c19 "
-        "COP2-using-the-copper-in-interlaced-mode.c18 COP2-using-the-copper-in-interlaced-mode.c19: every "
+        "P4d p34 ch2-using-the-copper-in-interlaced-mode.c15 COP2-using-the-copper-in-interlaced-mode.c19: every "
         "two consecutive recorded fields (an A-field and a B-field, in either order) together fetch memory "
-        "lines 0..511 each exactly once, and in screen order (A-group 0, B-group 0, A-group 1, ...) the "
-        "group addresses rise by 40 bytes at every step");
+        "lines 0..511 each exactly once, and in the order A-group 0, B-group 0, A-group 1, ... the "
+        "group addresses rise by 40 bytes at every step (memory addresses only)");
 }
 void g_P4e(const IAnalysis& a, bool pre) {
-    if (!pre) { checks.record("P4e: NOT GRADED, a precondition (PI-1 to PI-6) did not hold on this run"); return; }
+    if (!pre) { checks.record("P4e: NOT GRADED, a precondition (PI-1 to PI-6 or PI-7(bpl)) did not hold on this run"); return; }
     checks.expect(p4e(a),
         "P4e p34,p35 ch2-using-the-copper-in-interlaced-mode.c20.s2: "
         "over the recorded fields the restart list strictly alternates between LISTA and LISTB, so every "
@@ -880,6 +890,11 @@ void run_program_i_assertions(const std::string& dir) {
     g_PI8(a);
     g_PI3(a);
     g_P1(a, p1_gate(p));
+    checks.record("P1: ch2-using-the-copper-in-interlaced-mode.c1 and COP2-using-the-copper-in-interlaced-mode.c1 "
+        "(twice the normal number of vertical lines) are not graded -- for scan lines \"twice\" is not exact on the "
+        "page itself (p34 gives PAL as 312 lines normally and 625 in interlaced mode, and 625 is not 2 x 312), and "
+        "for picture lines the doubling comes from the program's data layout, graded in P4d; the concrete counts "
+        "of the same page are graded in P1 and P2");
     std::vector<int> N;
     if (p1_alternation(a, &N)) {
         std::string s;
@@ -899,15 +914,32 @@ void run_program_i_assertions(const std::string& dir) {
     g_P4a(a, p4_gate(p));
     g_P4b(a, p4_gate(p));
     g_P4c(a, p4_gate(p));
-    checks.record("P4c: ch2-using-the-copper-in-interlaced-mode.c8, .c9, COP2-using-the-copper-in-interlaced-mode.c8 "
-        "and .c9 are not graded here -- their says is about what a scan displays on screen, and P4c grades "
-        "only fetch addresses");
+    checks.record("P4c: ch2-using-the-copper-in-interlaced-mode.c8, ch2-using-the-copper-in-interlaced-mode.c9, "
+        "COP2-using-the-copper-in-interlaced-mode.c8 and COP2-using-the-copper-in-interlaced-mode.c9 are not graded "
+        "here -- their on-screen part (\"displayed\", \"interlaced with\") depends on the vertical half-line offset of "
+        "alternate fields (p49), the test sees video only after a line doubler and no page says what an interlaced "
+        "field looks like at that output, so the page gives no expected value there; P4c grades only fetch addresses");
+    checks.record("P4c: COP2-using-the-copper-in-interlaced-mode.c10 (the even-numbered lines from the second scan "
+        "are interlaced with the odd-numbered lines) is not graded -- whether the lines sit between each other on "
+        "the screen depends on the vertical half-line offset of alternate fields (p49), and no page says what an "
+        "interlaced field looks like at the test's video output; only the retrieval part of the claim is used, in P4");
     g_P4d(a, p4_gate(p));
+    checks.record("P4d: ch2-using-the-copper-in-interlaced-mode.c19 and COP2-using-the-copper-in-interlaced-mode.c18 "
+        "(the organization of the data in memory matches the apparent organization on the screen) are not graded "
+        "-- P4d observes only the memory addresses the bitplane DMA fetches, where the lines land on the screen is "
+        "not graded (SPECIFICATION.md section 1), so a design that fetched these addresses but displayed the lines "
+        "in a different screen order would pass; the memory-only COP2-using-the-copper-in-interlaced-mode.c19 "
+        "stays graded in P4d");
     g_P4e(a, p4_gate(p));
     checks.record("P4e: ch2-using-the-copper-in-interlaced-mode.c11 (Figure 2-1's odd field is the field at "
         "time t) is not graded -- P4e accepts either list as the first field and ties no field to the odd "
         "field or to time t; ch2-using-the-copper-in-interlaced-mode.c12 is not graded either, its 16.6ms "
         "figure is declined (section 1) and the id bundles that figure with the ordering claim P4e does grade");
+    checks.record("P4e: COP2-using-the-copper-in-interlaced-mode.c14 (the illustrated even field occurs 16.6 "
+        "milliseconds after the odd field) is not graded -- the figure label gives no precision and no tolerance, "
+        "at 3,579,545 Hz and 227.5 colour clocks per line 16.6 ms is 261.2 lines and no field of whole lines lasts "
+        "that long; the only gradable content, that the even field is the field directly after the odd field, is "
+        "graded in P4e");
 
     g_P5(a, p5_gate(p));
     g_P6(a, p6_gate(p));
@@ -945,6 +977,12 @@ void run_program_i_assertions(const std::string& dir) {
 
 // The controls every label of the P4 family prints: its preconditions and P4e.
 void p4_controls(const std::string& label, const IPre& p) {
+    ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-3", p.pi3); ctl(label, "PI-4", p.pi4);
+    ctl(label, "PI-5", p.pi5); ctl(label, "PI-6", p.pi6); ctl(label, "PI-7(bpl)", p.pi7b);
+}
+
+// PI-1 to PI-6 as live controls, for the run whose PI-7(bpl) is the target.
+void p4_controls_without_pi7(const std::string& label, const IPre& p) {
     ctl(label, "PI-1", p.pi1); ctl(label, "PI-2", p.pi2); ctl(label, "PI-3", p.pi3); ctl(label, "PI-4", p.pi4);
     ctl(label, "PI-5", p.pi5); ctl(label, "PI-6", p.pi6);
 }
@@ -1113,6 +1151,10 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         }
     } else if (label == "PI-7(bpl)") {
         g_PI7bpl(a);
+        // PI-7(bpl) is a precondition of P4: with the MOVEs after the first
+        // fetch the gate closes and P4a to P4d are not graded.
+        p4_controls_without_pi7(label, p);
+        g_P4a(a, p4_gate(p)); g_P4b(a, p4_gate(p)); g_P4c(a, p4_gate(p)); g_P4d(a, p4_gate(p));
         if (a.matched && !a.fields.empty()) {
             const auto& f = a.fields[0];
             uint32_t base = (f.list == 'A') ? kI_LISTA : kI_LISTB;
@@ -1505,9 +1547,10 @@ void run_program_t_assertions(const std::string& dir) {
     checks.record("P2: COP2-vertical-beam-position.c13 (\"the first field length ... is 262\"), "
         "COP2-vertical-beam-position.c14 (\"the next field length ... is 263\"), "
         "COP2-using-the-copper-in-interlaced-mode.c3 (\"an interlaced NTSC display has 524 lines\") and "
-        ".c7 (\"262 lines at a time\") are not graded -- P2 allows 262 or 263 but requires neither an "
-        "order, an alternation, nor a specific total, and the measurement (262 and 263 both occur) "
-        "contradicts .c3 and .c7");
+        "COP2-using-the-copper-in-interlaced-mode.c7 (\"262 lines at a time\") are not graded -- P2 allows 262 or "
+        "263 but requires neither an order, an alternation, nor a specific total, and the measurement (262 and "
+        "263 both occur) contradicts COP2-using-the-copper-in-interlaced-mode.c3 and "
+        "COP2-using-the-copper-in-interlaced-mode.c7");
     g_PT6(a);
     g_P3(a, t);
 }

@@ -12,12 +12,14 @@
 ; written; d0-d7 and a2-a6 are clobbered, a0 and a1 are left alone.
 ;
 ; M1_DELAY, if the includer defines it, adds a busy-wait inside the
-; sampling loop -- section 3.6's precondition contrast (I-j / T-f): "M1
-; waits about 100 microseconds between two samples", so consecutive
-; samples land many lines apart and PI-1/PT-1's own validity check (every
-; record's first V is 0, gap flag clear) must go red. The exact count is
-; this build's own tuning; it is not a page value and is guarded by the
-; very check its contrast is meant to break.
+; sampling loop -- section 3.6's precondition contrast (I-j / T-f): M1
+; waits several lines between two samples (SPECIFICATION.md section 7:
+; 3000 build-tuned iterations; measured, the first accepted V of the first
+; record is 12 on fx68k and 35 on TG68K under I-j, 122 and 3 under T-f),
+; so consecutive samples land many lines apart and PI-1/PT-1's own
+; validity check (every record's first V is 0, gap flag clear) must go
+; red. The exact count is this build's own tuning; it is not a page value
+; and is guarded by the very check its contrast is meant to break.
 ;
 ; Algorithm, verbatim from section 2.5:
 ;  1. Take a sample: read VPOSR:VHPOSR as a long twice; accept only if
