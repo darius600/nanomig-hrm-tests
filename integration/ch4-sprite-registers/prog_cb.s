@@ -6,9 +6,11 @@
 ;
 ;   IS_ECS        -- the ECS variant (decoy BLTSIZV, Copper blit 3)
 ;   CV            -- the COPCON value (default $0002)
-;   MUT_S81       -- first BLTSIZE MOVE carries $0081 (P12/P13 proposition contrast)
+;   MUT_S81       -- first BLTSIZE MOVE carries $0081 (P12 proposition contrast)
 ;   MUT_SIZH3     -- ECS: the BLTSIZH MOVE carries $0003 (P12 ECS-register contrast)
-;   MUT_NOCOP     -- DMACON without COPEN (precondition 1 contrast)
+;   MUT_NOCOP     -- DMACON without COPEN (P12 precondition 2 and P13 precondition 1 contrast)
+;   MUT_L1END     -- the Copper list ends ($FFFF,$FFFE) before the second BLTSIZE
+;                    MOVE, COPEN stays on (P12 precondition 1 contrast)
 ;   MUT_NOBLT     -- DMACON without BLTEN (precondition 2 contrast)
 ;   MUT_CPUEARLY  -- the CPU writes BLTSIZE = $0082 before M1 (P12 precondition 3)
 ;   MUT_CPUSIZH   -- ECS: the CPU writes BLTSIZH = $0001 before M1 (P12 and P13
@@ -184,6 +186,9 @@ l1tbl:
         CM      BLTBMOD,$0000
         CM      BLTCMOD,$0000
         CM      BLTDPTH,$0003
+        ifd     MUT_L1END
+        dc.w    $FFFF,$FFFE
+        endif
         CM      BLTDPTL,$0210
         CM      BLTSIZE,$0082
         ifd     IS_ECS

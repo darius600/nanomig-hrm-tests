@@ -30,8 +30,9 @@
 //   RUN-AUTOODD (prog_autoodd_nodone)           -> the AUTO-ODD slot
 //   P9-PROP, P9-PRE1, P9-PRE2, P9-PRE3, FIXTURE-CPUPTR, RUN-CPUPTR -> prog_cpuptr_*.bin
 //   P10-PROP, P10-PRE1, P10-PRE2, P10-PRE3, FIXTURE-JUMP, RUN-JUMP -> prog_jump_*.bin
-//   P11-PROP, P11-PRE1, P11-PRE3, FIXTURE-BLIT, RUN-BLIT   -> prog_blit_*.bin
-//   P12-PROP, P12-ECSREG, P12-PRE1, P12-PRE2, P12-PRE3, P12-PRE3-QUIET, P12-PRE3-SIZH,
+//   P11-PROP, P11-PRE1 (the blit is never started), P11-PRE2 (DMACON without BLTEN), P11-PRE3,
+//   FIXTURE-BLIT, RUN-BLIT                      -> prog_blit_*.bin
+//   P12-PROP, P12-ECSREG, P12-PRE1, P12-PRE2, P12-PRE2-COPEN, P12-PRE3, P12-PRE3-QUIET, P12-PRE3-SIZH,
 //   P13-PAIR1, P13-PAIR2, P13-PRE1, P13-PRE2, P13-PRE2-SIZH, P13-PRE3, FIXTURE-CB,
 //   FIXTURE-CB-NODONE (prog_cb_o2_nodone)       -> prog_cb_<o|e><2|F|0|D>[_*].bin
 //   P14-PROP-ECS, P14-PROP-OCS, P14-PRE1 (the ECS slot runs the OCS chip set),
@@ -73,26 +74,27 @@
 // MUTATION RUN-AUTOODD stimulus red NMH_MUTATE=RUN-AUTOODD: the AUTO-ODD program never writes DONE (prog_autoodd_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); the family prints RECORDED NOT GRADED
 // MUTATION P9 stimulus red NMH_MUTATE=P9-PROP: MOVE.W #$0002,SPR0PTH alone instead of the long-word write, leaving SPR0PTL at its decoy $7000 -- fx68k/TG68K: FAIL (in each of fields 2-4 the 26 reads are at $27000 and not at $25000, 26 reads in $27000-$27FFF, d=130); every precondition holds
 // MUTATION P9-PRE1 stimulus red NMH_MUTATE=P9-PRE1: after the VERTB, waits until V7-0=$0060 before each field's pointer write -- fx68k/TG68K: FAIL (26 reads of the sprite data between the head read and P_f in each of fields 2-4, 78 in all, and none after P_1 in field 1); P9 is NOT GRADED
-// MUTATION P9-PRE2 stimulus red NMH_MUTATE=P9-PRE2: DMACON=$8380 (SPREN clear, as P6's precondition 1) -- fx68k/TG68K: FAIL (DMACONR=0380); P9-PRE1 and P9-PRE3 move with it (no sprite DMA, no sprite 4) and P9 is NOT GRADED
+// MUTATION P9-PRE2 stimulus red NMH_MUTATE=P9-PRE2: DMACON=$8380 (SPREN clear, as P6's precondition 1) -- fx68k/TG68K: FAIL (DMACONR=0380); P9-PRE1 and P9-PRE3 print NOT GRADED, depends on P9-PRE2 (without sprite DMA there is no sprite-0 read and no sprite 4 to find), and P9 is NOT GRADED
 // MUTATION P9-PRE3 stimulus red NMH_MUTATE=P9-PRE3: SPR4PT=NULL in the Copper list -- fx68k/TG68K: FAIL (no sprite-4 run in any field); P9 is NOT GRADED
 // MUTATION FIXTURE-CPUPTR stimulus red NMH_MUTATE=FIXTURE-CPUPTR: $DEAD stored instead of $BEEF -- fx68k/TG68K: FAIL (read back DEAD); P9 is NOT GRADED
 // MUTATION RUN-CPUPTR stimulus red NMH_MUTATE=RUN-CPUPTR: the program never writes DONE (prog_cpuptr_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); the lines that need the run print RECORDED NOT GRADED
 // MUTATION P10 stimulus red NMH_MUTATE=P10-PROP: field 4 writes COLOR01 (not a strobe) instead of COPJMP2 -- fx68k/TG68K: FAIL (in field 4 L2's first word is not read after M_4 and L1's MOVE data word $020006 is; fields 2 and 6 read L2 and not $020006); every precondition holds
-// MUTATION P10-PRE1 stimulus red NMH_MUTATE=P10-PRE1: DMACON without COPEN -- fx68k/TG68K: FAIL (0 reads of $20000 at all); P10-PRE3 moves with it (no read of $20004) and P10 is NOT GRADED
+// MUTATION P10-PRE1 stimulus red NMH_MUTATE=P10-PRE1: DMACON without COPEN -- fx68k/TG68K: FAIL (0 reads of $20000 at all); P10-PRE3 prints NOT GRADED, depends on P10-PRE1 (without Copper reads there is no read of $20004 to precede), and P10 is NOT GRADED
 // MUTATION P10-PRE2 stimulus red NMH_MUTATE=P10-PRE2: omits field 2's marker write -- fx68k/TG68K: FAIL (M_2 missing); P10 is NOT GRADED
 // MUTATION P10-PRE3 stimulus red NMH_MUTATE=P10-PRE3: waits until V7-0=$F4 (instead of $80) before every marker -- fx68k/TG68K: FAIL (markers fall after the $20004 read, not before); P10 is NOT GRADED
 // MUTATION FIXTURE-JUMP stimulus red NMH_MUTATE=FIXTURE-JUMP: $DEAD stored instead of $BEEF -- fx68k/TG68K: FAIL (read back DEAD); P10 is NOT GRADED
 // MUTATION RUN-JUMP stimulus red NMH_MUTATE=RUN-JUMP: the program never writes DONE (prog_jump_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); the lines that need the run print RECORDED NOT GRADED
 // MUTATION P11 stimulus red NMH_MUTATE=P11-PROP: BLTCON0=$08F0 (USED cleared) -- fx68k/TG68K: FAIL (0 writes into DST1); every precondition holds
-// MUTATION P11-PRE1 stimulus red NMH_MUTATE=P11-PRE1: DMACON without BLTEN -- fx68k/TG68K: FAIL (no A reads; the same mutation also fails P11-PRE2 below); P11 is NOT GRADED
-// MUTATION P11-PRE2 stimulus red NMH_MUTATE=P11-PRE1: the same DMACON-without-BLTEN change -- fx68k/TG68K: FAIL (DMACONR bit 6=0)
+// MUTATION P11-PRE1 stimulus red NMH_MUTATE=P11-PRE1: the blit is never started, BLTSIZE is not written and BLTEN stays on (prog_blit_pre1) -- fx68k/TG68K: FAIL (no A reads in M1-M2); every other precondition holds and P11 is NOT GRADED
+// MUTATION P11-PRE2 stimulus red NMH_MUTATE=P11-PRE2: DMACON without BLTEN (prog_blit_pre2) -- fx68k/TG68K: FAIL (DMACONR=0200); P11-PRE1 prints NOT GRADED, depends on P11-PRE2, and P11 is NOT GRADED
 // MUTATION P11-PRE3 stimulus red NMH_MUTATE=P11-PRE3: an extra CPU write to Chip memory ($30300) inside the M1-M2 window -- fx68k/TG68K: FAIL (window flagged not quiet); P11 is NOT GRADED
 // MUTATION FIXTURE-BLIT stimulus red NMH_MUTATE=FIXTURE-BLIT: $DEAD stored instead of $BEEF -- fx68k/TG68K: FAIL (read back DEAD); P11 is NOT GRADED
 // MUTATION RUN-BLIT stimulus red NMH_MUTATE=RUN-BLIT: the program never writes DONE (prog_blit_nodone) -- fx68k/TG68K: FAIL (DONE not seen within the cycle budget); the lines that need the run print RECORDED NOT GRADED
 // MUTATION FIXTURE-CB stimulus red NMH_MUTATE=FIXTURE-CB: the OCS $0002 run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back o2=DEAD); P12 is NOT GRADED
-// MUTATION FIXTURE-CB stimulus red NMH_MUTATE=FIXTURE-CB-NODONE: the OCS $0002 run never writes DONE (prog_cb_o2_nodone) -- fx68k/TG68K: FAIL (read back o2=no-DONE e2=BEEF); P12-PRE1, P12-PRE2 and P12-PRE3 move with it (the run gives them nothing) and P12 is NOT GRADED
-// MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: DMACON without COPEN in both $0002 runs -- fx68k/TG68K: FAIL (no L1 read in any graded field); P12-PRE2 moves with it (DMACONR bit 7 clear) and P12 is NOT GRADED
-// MUTATION P12-PRE2 stimulus red NMH_MUTATE=P12-PRE2: DMACON without BLTEN in both $0002 runs -- fx68k/TG68K: FAIL (DMACONR=0280); P12 is NOT GRADED
+// MUTATION FIXTURE-CB stimulus red NMH_MUTATE=FIXTURE-CB-NODONE: the OCS $0002 run never writes DONE (prog_cb_o2_nodone) -- fx68k/TG68K: FAIL (read back o2=no-DONE e2=BEEF); P12-PRE1, P12-PRE2 and P12-PRE3 print NOT GRADED, depends on FIXTURE-CB (the run gives them nothing), and P12 is NOT GRADED
+// MUTATION P12-PRE1 stimulus red NMH_MUTATE=P12-PRE1: the Copper list ends ($FFFF,$FFFE) before the second BLTSIZE MOVE in both $0002 runs and COPEN stays on (prog_cb_o2_l1end, prog_cb_e2_l1end) -- fx68k/TG68K: FAIL (the list is not read through in a graded field); every other precondition holds (DMACONR=02C0) and P12 is NOT GRADED
+// MUTATION P12-PRE2 stimulus red NMH_MUTATE=P12-PRE2: DMACON without BLTEN in both $0002 runs -- fx68k/TG68K: FAIL (DMACONR=0280); P12-PRE1 holds and P12 is NOT GRADED
+// MUTATION P12-PRE2 stimulus red NMH_MUTATE=P12-PRE2-COPEN: DMACON without COPEN in both $0002 runs (prog_cb_o2_nocop, prog_cb_e2_nocop) -- fx68k/TG68K: FAIL (DMACONR=0240); P12-PRE1 prints NOT GRADED, depends on P12-PRE2 (DMAEN and COPEN), and P12 is NOT GRADED
 // MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3: the CPU writes BLTSIZE = $0082 before M1 (structural clause: one BLTSIZE store in each binary) -- fx68k/TG68K: FAIL; P12 is NOT GRADED
 // MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3-QUIET: the CPU writes $1111 to $30200 inside M1-M2 (quiet-window clause) -- fx68k/TG68K: FAIL; P12 is NOT GRADED
 // MUTATION P12-PRE3 stimulus red NMH_MUTATE=P12-PRE3-SIZH: the ECS run's CPU writes BLTSIZH = $0001 before M1 (one MOVE.W #imm,BLTSIZH($05E) in the binary) -- fx68k/TG68K: FAIL (BLTSIZH stores OCS=0 ECS=1; the quiet-window clause moves with it, 4 unexplained writes in M1-M2 on ECS); P12 is NOT GRADED
@@ -102,21 +104,21 @@
 // MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2: the CPU writes BLTSIZE = $0082 at V7-0 >= $80 in the $0000 runs, where none is declared -- fx68k/TG68K: FAIL; P13 is NOT GRADED
 // MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2-SIZH: the ECS $0000 run's CPU writes BLTSIZH = $0001 before M1 (one BLTSIZH store in the binary, none declared) -- fx68k/TG68K: FAIL (BLTSIZH stores ECS=1; no other precondition moves); P13 is NOT GRADED
 // MUTATION P13-PRE3 stimulus red NMH_MUTATE=P13-PRE3: the CPU writes $1111 to $30200 inside M1-M2 of the $0000 runs -- fx68k/TG68K: FAIL; P13 is NOT GRADED
-// MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR1: the first BLTSIZE MOVE carries $0081 in the $FFFF runs -- fx68k/TG68K: FAIL (the $0002 and $FFFF outcomes differ on both chip sets); every precondition holds
+// MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR1: the $FFFF runs are run with COPCON=$FFFD, bit 1 clear, so the Copper does not write the blitter registers (prog_cb_oF_b0, prog_cb_eF_b0) -- fx68k/TG68K: FAIL (the $0002 and $FFFF outcomes differ on both chip sets); every precondition holds
 // MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR2: the $FFFD runs are run with COPCON=$FFFF, bit 1 set, so the Copper writes the blitter registers (prog_cb_oD_b1, prog_cb_eD_b1) -- fx68k/TG68K: FAIL (the $0000 and $FFFD outcomes differ on both chip sets); every precondition holds
 // MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM: the ECS run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back ECS=DEAD); P14 is NOT GRADED
-// MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM-NODONE: the ECS run never writes DONE (prog_beam_nodone) -- fx68k/TG68K: FAIL (read back ECS=no-DONE OCS=BEEF); P14-PRE1, P14-PRE2, P14-PRE3, P14-POP and R5-ANCHOR-BEAM move with it (the run gives them nothing) and P14 is NOT GRADED
+// MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM-NODONE: the ECS run never writes DONE (prog_beam_nodone) -- fx68k/TG68K: FAIL (read back ECS=no-DONE OCS=BEEF); P14-PRE1, P14-PRE2, P14-PRE3, P14-POP and R5-ANCHOR-BEAM print NOT GRADED, depends on FIXTURE-BEAM (the run gives them nothing), P14-PRE4 (the OCS run) holds and P14 is NOT GRADED
 // MUTATION P14-PRE1 stimulus red NMH_MUTATE=P14-PRE1: the run declared ECS is configured as OCS -- fx68k/TG68K: FAIL (VPOSR identification $10, expected $30); P14 is NOT GRADED
 // MUTATION P14-PRE2 stimulus red NMH_MUTATE=P14-PRE2: BEAMCON0 = $0020 is written right after step 1 of the ECS run (prog_beam_earlypal) -- fx68k/TG68K: FAIL (ECS N=625 before M1); every other precondition holds (the identification stays $30 and $10) and P14 is NOT GRADED
 // MUTATION P14-PRE3 stimulus red NMH_MUTATE=P14-PRE3: BPLCON0 = $0200 (LACE clear) in step 1 of both runs -- fx68k/TG68K: FAIL (the two fields of a frame have the same length); P14 is NOT GRADED
 // MUTATION P14-PRE4 stimulus red NMH_MUTATE=P14-PRE4: in the OCS run COLOR00 = $0F00 is written after the third VERTB before M1 (prog_beam_o_color) -- fx68k/TG68K: FAIL (the fields before M1 of one parity differ); P14 is NOT GRADED
 // MUTATION P14-POP stimulus red NMH_MUTATE=P14-POP: three VERTB after M1 instead of eight (three BEAMCON0 writes in the OCS run instead of sixteen) -- fx68k/TG68K: FAIL (two frames after M1 on ECS instead of four, two fields after M1 on OCS instead of at least 15); P14 is NOT GRADED
-// MUTATION R5-ANCHOR-BEAM stimulus red NMH_MUTATE=R5-ANCHOR-BEAM: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (most refresh groups malformed: ECS 28144 of 29016 and OCS 25448 of 26233 on fx68k); P14-PRE2 and P14-PRE3 move with it (their scan-line counts use the same groups) and P14 is NOT GRADED
+// MUTATION R5-ANCHOR-BEAM stimulus red NMH_MUTATE=R5-ANCHOR-BEAM: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (most refresh groups malformed: ECS 28144 of 29016 and OCS 25448 of 26233 on fx68k); P14-PRE2 and P14-PRE3 print NOT GRADED, depends on R5-ANCHOR-BEAM (their scan-line counts use the same groups), and P14 is NOT GRADED
 // MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-ECS: BEAMCON0 = $0000 in the ECS run -- fx68k/TG68K: FAIL (ECS frames after M1 stay 525); every precondition holds
 // MUTATION P14 stimulus red NMH_MUTATE=P14-PROP-OCS: BPLCON0 = $0200 (LACE clear) is written at M1 in the OCS run -- fx68k/TG68K: FAIL (OCS frames after M1 are 526, not 525, and every field after M1 differs from the field before it, the first one at field 10); every precondition holds
 // MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR: the SHR-SWEEP run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back SHR-SWEEP=DEAD); P1 and P1-CONTROL are NOT GRADED
-// MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR-NODONE: the SHR-SWEEP run never writes DONE (prog_shr_nodone) -- fx68k/TG68K: FAIL (read back SHR-SWEEP=no-DONE); R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 and P1-PRE3 move with it (the run gives them nothing) and P1 and P1-CONTROL are NOT GRADED
-// MUTATION R5-ANCHOR-SHR stimulus red NMH_MUTATE=R5-ANCHOR-SHR: the VERTB wait loop of the SHR-SWEEP run reads Chip word $0100 on every pass -- fx68k/TG68K: FAIL (every refresh group malformed); P1-PRE2 and P1-PRE3 move with it (their heights use the same groups), P1 and P1-CONTROL are NOT GRADED
+// MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR-NODONE: the SHR-SWEEP run never writes DONE (prog_shr_nodone) -- fx68k/TG68K: FAIL (read back SHR-SWEEP=no-DONE); R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 and P1-PRE3 print NOT GRADED, depends on FIXTURE-SHR (the run gives them nothing), and P1 and P1-CONTROL are NOT GRADED
+// MUTATION R5-ANCHOR-SHR stimulus red NMH_MUTATE=R5-ANCHOR-SHR: the VERTB wait loop of the SHR-SWEEP run reads Chip word $0100 on every pass -- fx68k/TG68K: FAIL (every refresh group malformed); P1-PRE2 and P1-PRE3 print NOT GRADED, depends on R5-ANCHOR-SHR (their heights use the same groups), P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE1 stimulus red NMH_MUTATE=P1-PRE1: the SHR-SWEEP slot runs the Lores program (BPLCON0 = $1200) -- fx68k/TG68K: FAIL (ruler period 32, not 8); P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE2 stimulus red NMH_MUTATE=P1-PRE2: SREF with 79 scan lines (CTL $8F00, 79 data pairs) in the SHR-SWEEP run (prog_shr_sref79) -- fx68k/TG68K: FAIL (SREF block of 79 scan lines); every other precondition holds, P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE3 stimulus red NMH_MUTATE=P1-PRE3: usage 0 of the SHR-SWEEP run has VSTOP = VSTART + 5 (a fifth data pair keeps the next usages aligned) -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P1 and P1-CONTROL are NOT GRADED
@@ -991,9 +993,13 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                ", next head read " + (next_head ? std::to_string(*next_head) : std::string("none")));
         if (early > 0 || !first_after || *first_after <= *p[f] || (next_head && *first_after > *next_head)) pre1 = false;
     }
-    c.expect(pre1, "P9-PRE1: in each field, P_f precedes the first sprite-0 read at the port: no read in $25000-$25FFF or "
-             "$27000-$27FFF between the field's head read of the Copper list and P_f, and such a read after P_f "
-             "before the next field's head read (early reads counted: " + std::to_string(early_total) + ")");
+    if (!pre2) {
+        c.record("P9-PRE1: NOT GRADED, depends on P9-PRE2, which fails");
+    } else {
+        c.expect(pre1, "P9-PRE1: in each field, P_f precedes the first sprite-0 read at the port: no read in $25000-$25FFF or "
+                 "$27000-$27FFF between the field's head read of the Copper list and P_f, and such a read after P_f "
+                 "before the next field's head read (early reads counted: " + std::to_string(early_total) + ")");
+    }
 
     // ---- P9 precondition 3: sprite 4 appears (as in P6) on every field.
     // Unchanged comparator: under MUT_P9PRE3 (SPR4PT=NULL) no white run
@@ -1007,7 +1013,11 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         for (auto& ln : lines) if (find_edges(slice, ln).white_found) any_white = true;
         if (!any_white) pre3 = false;
     }
-    c.expect(pre3, "P9-PRE3: sprite 4 appears as in P6, on every field of this run");
+    if (!pre2) {
+        c.record("P9-PRE3: NOT GRADED, depends on P9-PRE2, which fails");
+    } else {
+        c.expect(pre3, "P9-PRE3: sprite 4 appears as in P6, on every field of this run");
+    }
 
     // ---- P9 (CH4-p110.c7 CH4-ptr.c10): a 68000 long-word write to SPR0PTH
     // loads both SPR0PTH and SPR0PTL. Fixed, unchanged comparator, per graded
@@ -1143,8 +1153,12 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         auto r20004 = find_read(log, kL1Base + 2, fi->first);
         if (!(r20004 && *m[i] < *r20004)) pre3 = false;
     }
-    c.expect(pre3, "P10-PRE3: M_f falls before the Copper's read of $20004 in its field, which is when the "
-             "WAIT for line $F0 completes");
+    if (!pre1) {
+        c.record("P10-PRE3: NOT GRADED, depends on P10-PRE1, which fails");
+    } else {
+        c.expect(pre3, "P10-PRE3: M_f falls before the Copper's read of $20004 in its field, which is when the "
+                 "WAIT for line $F0 completes");
+    }
 
     // ---- P10 (APPB2-legend.s1 APPB2-legend.s2 CH4-APPB-LEGEND.c022
     // CH4-APPB-LEGEND.c023 CH4-APPB-LEGEND.c024): a strobe register takes
@@ -1220,6 +1234,7 @@ std::string bin_for(const std::string& mv) {
     if (mv == "RUN-BLIT") return "prog_blit_nodone.bin";
     if (mv == "P11-PROP") return "prog_blit_prop.bin";
     if (mv == "P11-PRE1") return "prog_blit_pre1.bin";
+    if (mv == "P11-PRE2") return "prog_blit_pre2.bin";
     if (mv == "P11-PRE3") return "prog_blit_pre3.bin";
     if (mv == "FIXTURE-BLIT") return "prog_blit_fixture.bin";
     return "prog_blit.bin";
@@ -1239,8 +1254,7 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     c.expect(fx, "FIXTURE-BLIT: prog stores a known constant (BEEF) at RESULTS before anything else is trusted"
                  " (read back " + (fixture ? hex4(*fixture) : std::string("nothing")) + ")");
 
-    // Both preconditions below are graded together under NMH_MUTATE=P11-PRE1
-    // (DMACON without BLTEN), which the page predicts breaks both at once.
+    // P11-PRE1 is graded only when P11-PRE2 holds: without BLTEN no blit can run.
     auto dmaconr = r.h->peek_logical(kResults + 2);
     bool pre2 = dmaconr.has_value() && ((*dmaconr >> 9) & 1) == 1 && ((*dmaconr >> 6) & 1) == 1;
     c.expect(pre2, "P11-PRE2: RESULT+2 (DMACONR) has bits 9 and 6 set (DMAEN, BLTEN) (DMACONR=" +
@@ -1252,7 +1266,11 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
 
     // precondition 1: four reads at $30000-$30006 in M1-M2 (the blit ran)
     bool pre1 = check_full_traversal(log, kSrcBase, 4, *m1, *m2);
-    c.expect(pre1, "P11-PRE1: four reads at $30000-$30006, in M1-M2, show the blit ran");
+    if (!pre2) {
+        c.record("P11-PRE1: NOT GRADED, depends on P11-PRE2, which fails");
+    } else {
+        c.expect(pre1, "P11-PRE1: four reads at $30000-$30006, in M1-M2, show the blit ran");
+    }
 
     // precondition 3: M1-M2 is a quiet window (no CPU write inside beyond
     // the blitter's own DMA writes to DST1). A CPU write is any write NOT
@@ -1420,6 +1438,10 @@ bool p12_pre1(const Run& r) {
 bool p12_pre2(const Run& r) {
     return r.dmaconr && ((*r.dmaconr >> 9) & 1) && ((*r.dmaconr >> 7) & 1) && ((*r.dmaconr >> 6) & 1);
 }
+// the Copper can read its list only with DMAEN and COPEN set (P12-PRE2's bits 9 and 7)
+bool copper_on(const Run& r) {
+    return r.dmaconr && ((*r.dmaconr >> 9) & 1) && ((*r.dmaconr >> 7) & 1);
+}
 bool pre_structure(const Run& r) {
     return r.bin_read && r.bltsize_writes == r.exp_cpu_bltsize && r.bltsizh_writes == 0;
 }
@@ -1429,12 +1451,13 @@ struct Ovr { const char* mv; const char* key; const char* suffix; int exp_cpu; }
 const Ovr kOvr[] = {
     {"P12-PROP", "o2", "s81", 0},   {"P12-PROP", "e2", "s81", 0},
     {"P12-ECSREG", "e2", "sizh3", 0},
-    {"P12-PRE1", "o2", "nocop", 0}, {"P12-PRE1", "e2", "nocop", 0},
+    {"P12-PRE1", "o2", "l1end", 0}, {"P12-PRE1", "e2", "l1end", 0},
+    {"P12-PRE2-COPEN", "o2", "nocop", 0}, {"P12-PRE2-COPEN", "e2", "nocop", 0},
     {"P12-PRE2", "o2", "noblt", 0}, {"P12-PRE2", "e2", "noblt", 0},
     {"P12-PRE3", "o2", "cpuearly", 0}, {"P12-PRE3", "e2", "cpuearly", 0},
     {"P12-PRE3-QUIET", "o2", "cpuwr", 0}, {"P12-PRE3-QUIET", "e2", "cpuwr", 0},
     {"P12-PRE3-SIZH", "e2", "cpusizh", 0},
-    {"P13-PAIR1", "oF", "s81", 0},  {"P13-PAIR1", "eF", "s81", 0},
+    {"P13-PAIR1", "oF", "b0", 0},   {"P13-PAIR1", "eF", "b0", 0},
     {"P13-PAIR2", "oD", "b1", 0}, {"P13-PAIR2", "eD", "b1", 0},
     {"P13-PRE1", "o2", "nocop", 0}, {"P13-PRE1", "e2", "nocop", 0},
     {"P13-PRE2", "o0", "cpublt80", 0}, {"P13-PRE2", "e0", "cpublt80", 0},
@@ -1487,12 +1510,23 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
            num(e2.bltsizh_writes) + "; unexplained writes in M1-M2 OCS=" + num((long)o2.stray_writes) + " ECS=" +
            num((long)e2.stray_writes));
     if (want12) {
-        c.expect(pre1, "P12-PRE1: in each graded field the Copper reads every word of L1 up to and including the "
-                       "second BLTSIZE MOVE (OCS) and up to and including the BLTSIZH MOVE (ECS)");
-        c.expect(pre2, "P12-PRE2: RESULT+2 (DMACONR) has bits 9, 7 and 6 set (DMAEN, COPEN, BLTEN) on both chip sets"
-                       " (OCS=" + opt4(o2.dmaconr) + " ECS=" + opt4(e2.dmaconr) + ")");
-        c.expect(pre3, "P12-PRE3: the CPU never writes BLTSIZE or BLTSIZH (no such store in the program binary) and"
-                       " M1-M2 is a quiet window (every write at the port in M1-M2 is a blitter write)");
+        const bool done12 = o2.done && e2.done;
+        if (!done12) {
+            c.record("P12-PRE1: NOT GRADED, depends on FIXTURE-CB (a run did not reach DONE)");
+            c.record("P12-PRE2: NOT GRADED, depends on FIXTURE-CB (a run did not reach DONE)");
+            c.record("P12-PRE3: NOT GRADED, depends on FIXTURE-CB (a run did not reach DONE)");
+        } else {
+            if (!copper_on(o2) || !copper_on(e2)) {
+                c.record("P12-PRE1: NOT GRADED, depends on P12-PRE2 (DMAEN and COPEN), which fails");
+            } else {
+                c.expect(pre1, "P12-PRE1: in each graded field the Copper reads every word of L1 up to and including the "
+                               "second BLTSIZE MOVE (OCS) and up to and including the BLTSIZH MOVE (ECS)");
+            }
+            c.expect(pre2, "P12-PRE2: RESULT+2 (DMACONR) has bits 9, 7 and 6 set (DMAEN, COPEN, BLTEN) on both chip sets"
+                           " (OCS=" + opt4(o2.dmaconr) + " ECS=" + opt4(e2.dmaconr) + ")");
+            c.expect(pre3, "P12-PRE3: the CPU never writes BLTSIZE or BLTSIZH (no such store in the program binary) and"
+                           " M1-M2 is a quiet window (every write at the port in M1-M2 is a blitter write)");
+        }
         bool gate = fx && pre1 && pre2 && pre3;
         if (!gate) {
             c.record("P12: NOT GRADED, a precondition does not hold (FIXTURE-CB, P12-PRE1, P12-PRE2 or P12-PRE3)");
@@ -1521,23 +1555,23 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         std::string q1s;
         for (auto* r : all) {
             bool ok = p12_pre2(*r);
-            if (r->key[1] == '2' || r->key[1] == 'F') ok = ok && p12_pre1(*r);
+            if (r->key[1] == '2') ok = ok && p12_pre1(*r);
             else {
                 ok = ok && !r->fields.empty();
                 for (size_t f = 0; f < r->fields.size(); ++f) if (!r->l1[f][0]) ok = false;
             }
             q1 = q1 && ok;
         }
-        // a population to compare: the pair-1 runs show blitter accesses in every graded field
-        for (auto* r : {&o2, &oF, &e2, &eF}) {
+        // a population to compare: the $0002 runs show blitter accesses in every graded field
+        for (auto* r : {&o2, &e2}) {
             if (r->out.empty()) q1 = false;
             for (auto& f : r->out) if (f.empty()) q1 = false;
         }
         bool q2 = true, q3 = true;
         for (auto* r : all) { q2 = q2 && pre_structure(*r); q3 = q3 && pre_quiet(*r); }
-        c.expect(q1, "P13-PRE1: in every run RESULT+2 (DMACONR) has bits 9, 7 and 6 set; in the $0002 and $FFFF runs"
-                     " the Copper reads L1 through the last BLTSIZE/BLTSIZH MOVE in each graded field, in the $0000 and"
-                     " $FFFD runs it fetches L1's first word in each graded field; the $0002 and $FFFF runs show blitter"
+        c.expect(q1, "P13-PRE1: in every run RESULT+2 (DMACONR) has bits 9, 7 and 6 set; in the $0002 runs"
+                     " the Copper reads L1 through the last BLTSIZE/BLTSIZH MOVE in each graded field, in the $FFFF, $0000"
+                     " and $FFFD runs it fetches L1's first word in each graded field; the $0002 runs show blitter"
                      " accesses in every graded field");
         c.expect(q2, "P13-PRE2: the CPU stores BLTSIZE only where a contrasting case says so (store count in each binary"
                      " equals the count declared for it) and never BLTSIZH");
@@ -1710,6 +1744,12 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
                  " else is trusted (read back ECS=" + (E.done ? opt4(E.fixture) : std::string("no-DONE")) +
                  " OCS=" + (O.done ? opt4(O.fixture) : std::string("no-DONE")) + ")");
 
+    const bool both = E.done && O.done;
+    bool anc = true;
+    for (const Run* r : {&E, &O}) {
+        if (r->anc_before.total == 0 || r->anc_after.total == 0) anc = false;
+        if (r->anc_before.malformed || r->anc_after.malformed) anc = false;
+    }
     auto idv = [](const Run& r) { return r.vposr ? (long)((*r.vposr >> 8) & 0x7F) : -1L; };
     c.note("BEAM VPOSR chip identification: ECS slot $" + hex4((uint16_t)std::max(0L, idv(E))) + ", OCS slot $" +
            hex4((uint16_t)std::max(0L, idv(O))) + "; VSYNC activations ECS " + num((long)E.vs.size()) + " OCS " +
@@ -1719,42 +1759,65 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
            "; after M1: ECS " + list(E.na) + " | OCS " + list(O.na));
 
     bool pre1 = idv(E) == 0x30 && idv(O) == 0x10;
-    c.expect(pre1, "P14-PRE1: VPOSR bits 14-8 identify the NTSC Agnus of each kind -- $30 on the ECS run, $10 on the OCS run"
-                   " (read ECS=$" + hex4((uint16_t)std::max(0L, idv(E))) + " OCS=$" + hex4((uint16_t)std::max(0L, idv(O))) + ")");
+    if (!both) {
+        c.record("P14-PRE1: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
+    } else {
+        c.expect(pre1, "P14-PRE1: VPOSR bits 14-8 identify the NTSC Agnus of each kind -- $30 on the ECS run, $10 on the OCS run"
+                       " (read ECS=$" + hex4((uint16_t)std::max(0L, idv(E))) + " OCS=$" + hex4((uint16_t)std::max(0L, idv(O))) + ")");
+    }
     auto same_not625 = [](const Run& r) {
         if (r.nb.empty()) return false;
         for (long n : r.nb) if (n != r.nb[0]) return false;
         return r.nb[0] != 625;
     };
     bool pre2 = same_not625(E) && same_not625(O);
-    c.expect(pre2, "P14-PRE2: the graded frames before M1 all have the same N and it is not 625, so NTSC timing is in force"
-                   " (ECS " + list(E.nb) + ", OCS " + list(O.nb) + ")");
+    if (!both) {
+        c.record("P14-PRE2: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
+    } else if (!anc) {
+        c.record("P14-PRE2: NOT GRADED, depends on R5-ANCHOR-BEAM, which fails");
+    } else {
+        c.expect(pre2, "P14-PRE2: the graded frames before M1 all have the same N and it is not 625, so NTSC timing is in force"
+                       " (ECS " + list(E.nb) + ", OCS " + list(O.nb) + ")");
+    }
     bool pre3 = E.fields_differ_by_one && O.fields_differ_by_one;
-    c.expect(pre3, "P14-PRE3: in every graded frame before M1 the two fields differ in length by one scan line, so interlace is on");
+    if (!both) {
+        c.record("P14-PRE3: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
+    } else if (!anc) {
+        c.record("P14-PRE3: NOT GRADED, depends on R5-ANCHOR-BEAM, which fails");
+    } else {
+        c.expect(pre3, "P14-PRE3: in every graded frame before M1 the two fields differ in length by one scan line, so interlace is on");
+    }
     c.note("BEAM OCS fields (VSYNC activation to the next): " + num((long)O.fb.size()) + " before M1 (" +
            num(O.parity_before[0]) + " even, " + num(O.parity_before[1]) + " odd), " + num((long)O.fa.size()) +
            " after M1 before M2; fields before M1 of one parity identical: " + (O.stationary ? "yes" : "no") +
            "; every field after M1 identical to the field of its parity before M1: " +
            (O.fields_unchanged ? "yes" : ("no, first different field " + num(O.first_changed))));
     bool pre4 = O.stationary;
-    c.expect(pre4, "P14-PRE4: in the OCS run the fields before M1 of the same parity are identical sample for sample (colour, "
-                   "hs and vs), with at least two of each parity, so the display is stationary (fields before M1 "
-                   + num((long)O.fb.size()) + ")");
-    bool pop = !E.before.empty() && !O.before.empty() && E.after.size() == 4 && O.after.size() == 4 && O.fa.size() >= 15;
-    c.expect(pop, "P14-POP: the graded populations exist -- at least one frame before M1 and four after, on both runs, and at "
-                  "least 15 fields after M1 in the OCS run, one per BEAMCON0 value written (ECS "
-                  + num((long)E.before.size()) + "+" + num((long)E.after.size()) + ", OCS " + num((long)O.before.size()) +
-                  "+" + num((long)O.after.size()) + ", OCS fields after M1 " + num((long)O.fa.size()) + ")");
-    bool anc = true;
-    for (const Run* r : {&E, &O}) {
-        if (r->anc_before.total == 0 || r->anc_after.total == 0) anc = false;
-        if (r->anc_before.malformed || r->anc_after.malformed) anc = false;
+    if (!O.done) {
+        c.record("P14-PRE4: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
+    } else {
+        c.expect(pre4, "P14-PRE4: in the OCS run the fields before M1 of the same parity are identical sample for sample (colour, "
+                       "hs and vs), with at least two of each parity, so the display is stationary (fields before M1 "
+                       + num((long)O.fb.size()) + ")");
     }
-    c.expect(anc, "R5-ANCHOR-BEAM: in every graded frame, every refresh group has four refresh cycles (p.194) (malformed groups: ECS "
-                  + num((long)(E.anc_before.malformed + E.anc_after.malformed)) + " of " +
-                  num((long)(E.anc_before.total + E.anc_after.total)) + ", OCS " +
-                  num((long)(O.anc_before.malformed + O.anc_after.malformed)) + " of " +
-                  num((long)(O.anc_before.total + O.anc_after.total)) + ")");
+    bool pop = !E.before.empty() && !O.before.empty() && E.after.size() == 4 && O.after.size() == 4 && O.fa.size() >= 15;
+    if (!both) {
+        c.record("P14-POP: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
+    } else {
+        c.expect(pop, "P14-POP: the graded populations exist -- at least one frame before M1 and four after, on both runs, and at "
+                      "least 15 fields after M1 in the OCS run, one per BEAMCON0 value written (ECS "
+                      + num((long)E.before.size()) + "+" + num((long)E.after.size()) + ", OCS " + num((long)O.before.size()) +
+                      "+" + num((long)O.after.size()) + ", OCS fields after M1 " + num((long)O.fa.size()) + ")");
+    }
+    if (!both) {
+        c.record("R5-ANCHOR-BEAM: NOT GRADED, depends on FIXTURE-BEAM (a run did not reach DONE)");
+    } else {
+        c.expect(anc, "R5-ANCHOR-BEAM: in every graded frame, every refresh group has four refresh cycles (p.194) (malformed groups: ECS "
+                      + num((long)(E.anc_before.malformed + E.anc_after.malformed)) + " of " +
+                      num((long)(E.anc_before.total + E.anc_after.total)) + ", OCS " +
+                      num((long)(O.anc_before.malformed + O.anc_after.malformed)) + " of " +
+                      num((long)(O.anc_before.total + O.anc_after.total)) + ")");
+    }
 
     if (!(fx && pre1 && pre2 && pre3 && pre4 && pop && anc)) {
         c.record("P14: NOT GRADED, a precondition does not hold (FIXTURE-BEAM, P14-PRE1, P14-PRE2, P14-PRE3, P14-PRE4, P14-POP or R5-ANCHOR-BEAM)");
@@ -2041,7 +2104,13 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         if (r->fields.empty() || tot == 0 || bad != 0) anc = false;
         ancs += " " + r->tag + " " + num((long)bad) + " of " + num((long)tot);
     }
-    c.expect(anc, "R5-ANCHOR-SHR: in every graded field, every refresh group has four refresh cycles (p.194) (malformed groups:" + ancs + ")");
+    bool alldone = true;
+    for (auto* r : ran) alldone = alldone && r->done;
+    if (!alldone) {
+        c.record("R5-ANCHOR-SHR: NOT GRADED, depends on FIXTURE-SHR (a run did not reach DONE)");
+    } else {
+        c.expect(anc, "R5-ANCHOR-SHR: in every graded field, every refresh group has four refresh cycles (p.194) (malformed groups:" + ancs + ")");
+    }
     for (auto* r : ran) c.note("SHR " + r->tag + ": " + field_summary(*r));
 
     // ---------------------------------------------------------------- P1
@@ -2050,9 +2119,20 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
         bool pre1 = ruler_is(S, 8);
         bool pre2 = all_fields(S, sref_ok);
         bool pre3 = all_fields(S, g0_four);
-        c.expect(pre1, "P1-PRE1: the R != 0 pattern of the three ruler lines has a period of 8 output pixels, so SuperHires is active in every graded field");
-        c.expect(pre2, "P1-PRE2: SREF shows an e_A at one column on every output line of its 80 scan lines in every graded field");
-        c.expect(pre3, "P1-PRE3: group 0 has exactly 4 scan lines in every graded field");
+        if (!S.done) {
+            c.record("P1-PRE1: NOT GRADED, depends on FIXTURE-SHR (the run did not reach DONE)");
+            c.record("P1-PRE2: NOT GRADED, depends on FIXTURE-SHR (the run did not reach DONE)");
+            c.record("P1-PRE3: NOT GRADED, depends on FIXTURE-SHR (the run did not reach DONE)");
+        } else {
+            c.expect(pre1, "P1-PRE1: the R != 0 pattern of the three ruler lines has a period of 8 output pixels, so SuperHires is active in every graded field");
+            if (!anc) {
+                c.record("P1-PRE2: NOT GRADED, depends on R5-ANCHOR-SHR, which fails");
+                c.record("P1-PRE3: NOT GRADED, depends on R5-ANCHOR-SHR, which fails");
+            } else {
+                c.expect(pre2, "P1-PRE2: SREF shows an e_A at one column on every output line of its 80 scan lines in every graded field");
+                c.expect(pre3, "P1-PRE3: group 0 has exactly 4 scan lines in every graded field");
+            }
+        }
         if (!(fx && anc && pre1 && pre2 && pre3)) {
             c.record("P1-CONTROL: NOT GRADED, a precondition does not hold (FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 or P1-PRE3)");
             c.record("P1: NOT GRADED, a precondition does not hold (FIXTURE-SHR, R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 or P1-PRE3)");

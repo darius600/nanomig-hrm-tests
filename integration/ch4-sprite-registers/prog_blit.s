@@ -4,7 +4,9 @@
 ;
 ;   (no symbol)  -- the normal run
 ;   MUT_P11PROP  -- proposition contrast: BLTCON0 = $08F0 (USED cleared)
-;   MUT_P11PRE1  -- precondition 1/2 contrast: DMACON without BLTEN
+;   MUT_P11PRE1  -- precondition 1 contrast: the blit is never started (BLTSIZE
+;                   is not written), BLTEN stays on
+;   MUT_P11PRE2  -- precondition 2 contrast: DMACON without BLTEN
 ;   MUT_P11PRE3  -- precondition 3 contrast: an extra CPU write to Chip
 ;                   memory inside the M1-M2 window, breaking the quiet window
 ;   MUT_FIXTURE  -- the fixture check's own contrast: $DEAD instead of $BEEF
@@ -36,8 +38,8 @@ start:
         move.w  #$EEEE,(a1)+
         dbra    d0,.dstfill
 
-        ifd     MUT_P11PRE1
-        move.w  #$8200,DMACON(a0)      ; P11 precondition 1/2 contrast: no BLTEN
+        ifd     MUT_P11PRE2
+        move.w  #$8200,DMACON(a0)      ; P11 precondition 2 contrast: no BLTEN
         else
         move.w  #$8240,DMACON(a0)      ; SET, DMAEN, BLTEN
         endif
@@ -65,7 +67,9 @@ start:
         move.w  #$1111,BLIT_BASE+$300
         endif
 
+        ifnd    MUT_P11PRE1
         move.w  #$0044,BLTSIZE(a0)             ; starts the blit, written last
+        endif
 
         ; wait 2 VERTB, inline (no bsr/rts: a subroutine call would write the
         ; return address to the stack, itself in Chip memory, breaking the

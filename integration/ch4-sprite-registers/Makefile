@@ -8,7 +8,7 @@ PROGS    := prog_manual prog_manual_p4read prog_manual_p4write prog_manual_p4pre
             prog_auto_p7prop prog_auto_fixture prog_autoodd prog_autoodd_c1 \
             prog_cpuptr prog_cpuptr_prop prog_cpuptr_pre1 prog_cpuptr_pre2 prog_cpuptr_pre3 prog_cpuptr_fixture \
             prog_jump prog_jump_prop prog_jump_pre1 prog_jump_pre2 prog_jump_pre3 prog_jump_fixture \
-            prog_blit prog_blit_prop prog_blit_pre1 prog_blit_pre3 prog_blit_fixture
+            prog_blit prog_blit_prop prog_blit_pre1 prog_blit_pre2 prog_blit_pre3 prog_blit_fixture
 
 # NODONE (a program that never writes DONE: the contrast of every RUN-* line and of the DONE clause
 # of FIXTURE-CB, FIXTURE-BEAM and FIXTURE-SHR), LOWRD (a non-refresh read at a low address: the
@@ -21,7 +21,7 @@ PROGS    += prog_manual_nodone prog_manual_lowrd prog_manual_p4nopos prog_auto_n
 # 2 = $0002, F = $FFFF, 0 = $0000, D = $FFFD.
 PROGS    += prog_cb_o2 prog_cb_oF prog_cb_o0 prog_cb_oD \
             prog_cb_e2 prog_cb_eF prog_cb_e0 prog_cb_eD \
-            prog_cb_o2_s81 prog_cb_e2_s81 prog_cb_oF_s81 prog_cb_eF_s81 \
+            prog_cb_o2_s81 prog_cb_e2_s81 prog_cb_oF_b0 prog_cb_eF_b0 prog_cb_o2_l1end prog_cb_e2_l1end \
             prog_cb_e2_sizh3 prog_cb_o2_nocop prog_cb_o2_noblt prog_cb_o2_cpuearly \
             prog_cb_e2_nocop prog_cb_e2_noblt prog_cb_e2_cpuearly prog_cb_oD_b1 \
             prog_cb_eD_b1 prog_cb_o0_cpublt80 prog_cb_e0_cpublt80 prog_cb_o0_cpuwr \
