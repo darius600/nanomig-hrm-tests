@@ -20,10 +20,10 @@ was checked against the printed scan.
 | `COP2-using-the-copper-in-interlaced-mode.c3` ("An interlaced NTSC display has 524 lines") | p24 disagrees: "In NTSC, the fields are 262, then 263 lines", which makes 525. Table 3-13 (p79, "=525-(21\*2)") and p304 ("NTSC (525 lines, ...)") also give 525. Only the part both readings agree on is graded (P2). The total of 524 or 525 is not graded. |
 | `COP2-using-the-copper-in-interlaced-mode.c7` ("Each NTSC interlaced scan displays 262 lines at a time") | Same disagreement with p24 ("262, then 263"). Only the agreed part is graded (P2): a field has 262 or 263 lines, and no two consecutive fields both have 263. |
 | `COP2-vertical-beam-position.c13` ("The first field length in the NTSC alternation is 262 lines"), `COP2-vertical-beam-position.c14` ("The next field length in the NTSC alternation is 263 lines") | p34 disagrees with c14 ("262 lines at a time", "524 lines"). Neither is graded as an expected value: P2 allows 262 or 263 for every field but requires no order and no alternation. c14 is used only as the gate of P3 (P3 is graded only when the fields do alternate between 262 and 263) and as a permitted value in P2. |
-| `COP2-using-the-copper-in-interlaced-mode.c10` ("The even-numbered lines from the second scan are interlaced with the odd-numbered lines"), and the on-screen part of `ch2-...c8`, `ch2-...c9`, `COP2-...c8` and `COP2-...c9` ("displayed", "interlaced with") | Whether the lines sit between each other on the screen depends on the vertical half-line offset of alternate fields: "the scanning circuitry vertically offsets the start of every other field by half a scan line" (p49). The test sees video only after a line doubler, and no page says what an interlaced field looks like at that output, so the page gives no expected value there. No page ties the odd field (the "first scan") to anything the hardware exposes either: not to LOF, not to the long or short field. Only the retrieval part of these claims (which memory lines a field fetches) is used, in P4. |
+| `COP2-using-the-copper-in-interlaced-mode.c10` ("The even-numbered lines from the second scan are interlaced with the odd-numbered lines"), and the on-screen part of `ch2-...c8`, `ch2-...c9`, `COP2-...c8` and `COP2-...c9` ("displayed", "interlaced with") | Whether the lines sit between each other on the screen depends on the vertical half-line offset of alternate fields: "the scanning circuitry vertically offsets the start of every other field by half a scan line" (p49). The test sees video only after a line doubler, and no page says what an interlaced field looks like at that output, so the page gives no expected value there. No page ties the odd field (the "first scan") to anything the hardware exposes either: not to LOF, not to the long or short field. No assertion grades these four ids, not even their retrieval part: P4 grades the retrieval through other ids (the memory lines each field fetches), and these four are declined whole. |
 | `ch2-using-the-copper-in-interlaced-mode.c19`, `COP2-using-the-copper-in-interlaced-mode.c18` ("the organization of the data in memory matches the apparent organization on the screen") | These two say that memory matches the screen, and where the lines land on the screen is not graded (the reason of the row above: no page says what an interlaced field looks like at the test's video output). P4(d) observes only the memory addresses the bitplane DMA fetches, so a design that fetched the stated addresses but displayed the lines in a different screen order would pass it. Declined. The memory-only claim `COP2-using-the-copper-in-interlaced-mode.c19` ("odd and even bitplane lines are interlaced together" in memory) is kept in P4(d). |
 | `ch2-using-the-copper-in-interlaced-mode.c11` ("In Figure 2-1 the odd field is the field shown at time t") | No page ties the odd field to anything the hardware exposes, and P4e accepts either list as the first recorded field, so P4e establishes an alternation and never which field is the odd one or which lies at time t. Declined; P4e keeps `ch2-using-the-copper-in-interlaced-mode.c20.s2`. |
-| `COP2-using-the-copper-in-interlaced-mode.c14` ("The illustrated even field occurs 16.6 milliseconds after the odd field"), and the "16.6 ms" in `ch2-...c12` | The figure label gives no precision and no tolerance. At the NTSC clock of p24 (3,579,545 Hz) and 227.5 colour clocks per line (p23, p194), 16.6 ms is 261.2 lines, and no field of whole lines lasts that long. The manual's own figures give 16.65 ms for a 262-line field and 16.72 ms for a 263-line field. The only gradable content, that the even field is the field directly after the odd field, is graded in P4(e). |
+| `COP2-using-the-copper-in-interlaced-mode.c14` ("The illustrated even field occurs 16.6 milliseconds after the odd field"), and the "16.6 ms" in `ch2-...c12` | The figure label gives no precision and no tolerance. At the NTSC clock of p24 (3,579,545 Hz) and 227.5 colour clocks per line (p23, p194), 16.6 ms is 261.2 lines, and no field of whole lines lasts that long. The manual's own figures give 16.65 ms for a 262-line field and 16.72 ms for a 263-line field. The only gradable content, that the even field is the field directly after the odd field, is graded in P4(e) under `ch2-using-the-copper-in-interlaced-mode.c20.s2`; `ch2-using-the-copper-in-interlaced-mode.c12` is declined whole, as it bundles the 16.6 ms figure with that ordering claim. |
 
 Every id in this section is printed in full by the normal run as a `RECORDED:` line that gives its reason. Every other claim is used. The mapping is:
 
@@ -32,7 +32,7 @@ Every id in this section is printed in full by the normal run as a `RECORDED:` l
 | P1 | `COP2-vertical-beam-position.c12`, `.c15`, `.c16`; `COP2-using-the-copper-in-interlaced-mode.c5`, `.c6`, `.c11`; `ch2-using-the-copper-in-interlaced-mode.c6`; with the LACE-clear control, `ch2-vertical-beam-position.c12` (P1-NOLACE) |
 | P2 | Agreed part of `COP2-using-the-copper-in-interlaced-mode.c3`, `.c7` and `COP2-vertical-beam-position.c14` |
 | P3 | `ch2-vertical-beam-position.c15`, `.c16`, `.c17`, `.c18`, `.c19`; `COP2-vertical-beam-position.c17`, `.c18`, `.c19`, `.c20`, `.c21`, `.c22` |
-| P4 | `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c10`, `.c12` (order only), `.c13`, `.c14`, `.c15`, `.c16`, `.c17`, `.c18`, `.c20.s2`; `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part), `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c19` |
+| P4 | `ch2-using-the-copper-in-interlaced-mode.c10`, `.c13`, `.c14`, `.c15`, `.c16`, `.c17`, `.c18`, `.c20.s2`; `COP2-using-the-copper-in-interlaced-mode.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c19` |
 | P5 | `ch2-...-interlaced-mode.c16`, `COP2-...-interlaced-mode.c15`; with the no-rewrite run, `ch2-putting-together-a-copper-instruction-list.c3` (P5-NOREWRITE) |
 | P6 | `ch2-putting-together-a-copper-instruction-list.c4`, with the no-rewrite run (P6-NOREWRITE) |
 
@@ -171,10 +171,13 @@ order:
   record writes that open and close it, holds exactly one restart;
 - the restart intervals the M1 fields are matched to (the rule above) follow
   each other by exactly one, field after field;
-- each of those K restarts is the Copper fetch of the list's first word
-  directly after the Copper's fetch of that list's terminal `$FFFF,$FFFE` wait
-  (the stretch the definition above requires). The terminal wait is found in
-  the list as the program assembled it.
+- before each of those K restarts, the Copper's last read of a list word up
+  to the lists' terminal `$FFFF,$FFFE` waits is a read of a terminal wait (the
+  stretch the definition above requires; in Program I a restart of one list
+  follows the other list's wait). The terminal waits are found in the lists as
+  the program assembled them. A read of the word after a terminal wait is not
+  a list fetch for this clause; measured on both cores, the Copper makes one
+  such read 2 colour clocks before every restart (section 7).
 
 Pages disagree on whether the restart is at the start or the end of vertical
 blanking (section 6); one restart per M1 field holds under either reading.
@@ -336,12 +339,12 @@ The contrasting case that makes each one fail is in the last column.
 | Id | Precondition | Fails in |
 |---|---|---|
 | PI-1 | The completion word was written. All K M1 records are valid (section 2.5). Every record's last V is at least 255, so no wrap is spurious. | I-j |
-| PI-2 | Anchor check of section 2.6, with LISTA and LISTB: one restart per M1 field, in order, each the first-word fetch of LISTA or of LISTB directly after the fetch of the terminal `$FFFF,$FFFE` wait. | I-f (no restart), I-s (restarts do not follow the terminal wait) |
+| PI-2 | Anchor check of section 2.6, with LISTA and LISTB: one restart per M1 field, in order, each the first-word fetch of LISTA or of LISTB, preceded, among the list's words up to the terminal wait, by the fetch of the terminal `$FFFF,$FFFE` wait. | I-f (no restart); I-s is a self-test of the third clause on this design only, not page-predicted (section 7) |
 | PI-3 | Interlace is active: the check of P1 holds. It is also a precondition of P4, whose retrieval lines are graded only on an interlaced run. | I-a |
 | PI-4 | Every field contains exactly 256 groups of bitplane fetches. Each group is 20 fetches of consecutive ascending word addresses. | I-h |
 | PI-5 | HCNT rises by exactly 1 in every field. | I-g |
 | PI-6 | Every bitplane fetch from inside PIC returns the tag of the memory line at its address, and every recorded field has at least one such fetch. Fetches outside PIC are not covered. | I-k (tags), I-c (no fetch inside PIC) |
-| PI-7(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch (for P4 and P5). | I-l |
+| PI-7(bpl) | In every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch, the earlier of the first fetch inside PIC and the first 20-word group that P4(a), P4(b) and P5 find from PIC upward (for P4 and P5). | I-l |
 | PI-7(spr) | In every field, the Copper fetch of the SPR0PT MOVEs precedes the field's first sprite-0 fetch (for P6). | I-m |
 | PI-8 | The sprite-0 structure at SPR is fetched at least once during the run (for P6). | I-i |
 | PI-9 | The LACE-clear control run (I-a) is a valid fixture: PI-1 and PI-2 hold on that run (for P1-NOLACE). | I-o |
@@ -422,7 +425,7 @@ comparison works on the least significant bits of the vertical count").
 | PT-4 (gate of PT-5 and P3) | In every field, m_c(k, 1) - m_c(k, 0) is 227 or 228 colour clocks: the marks of line 0 and line 1 lie on consecutive lines, so the Copper mark of line 0 is anchored on line 0. p25 leaves open whether the restart lies at the start or at the end of vertical blanking, and a restart at the end of blanking satisfies the WAIT (0, $E0) at once, so PT-4 is printed as a gate state and is not graded. When it is closed, PT-5 and P3 are not graded. | T-c |
 | PT-5 | Every line length of section 2.7 is 227 or 228. Graded only when PT-3 and PT-4 hold, because the last line's length uses Delta and every mark of line 0 uses the anchor PT-4 gives. | T-g |
 | PT-6 (gate of P3) | Consecutive field lengths alternate between the two values p24 gives for the selected standard: 262 and 263 in NTSC, 312 and 313 in PAL. p34 reads the NTSC fields as all 262 lines, so an implementation that follows p34 closes the gate; PT-6 is printed as a gate state and is not graded, and P3 is reported as not graded, gate closed. | T-a |
-| PT-7 | Anchor check of section 2.6, with LISTT: one restart per M1 field, in order, each the first-word fetch of LISTT directly after the fetch of the terminal `$FFFF,$FFFE` wait. | T-h (no restart), T-j (restarts do not follow the terminal wait) |
+| PT-7 | Anchor check of section 2.6, with LISTT: one restart per M1 field, in order, each the first-word fetch of LISTT, preceded, among the list's words up to the terminal wait, by the fetch of the terminal `$FFFF,$FFFE` wait. | T-h (no restart); T-j is a self-test of the third clause on this design only, not page-predicted (section 7) |
 
 ---
 
@@ -511,8 +514,8 @@ comparison works on the least significant bits of the vertical count").
 5. **Preconditions.** PT-1, PT-2, PT-7.
 6. **Contrasting case.** T-b (PAL). p24 gives PAL fields of "312, then 313
    lines", so N_k is outside {262, 263} and the check goes red. PT-1, PT-2
-   and PT-7 still hold. The contrasts for the preconditions are T-f, T-e, T-h and
-   T-j.
+   and PT-7 still hold. The contrasts for the preconditions are T-f, T-e and
+   T-h.
 7. **Reference frame.** As in P1.
 
 ### P3: the NTSC four-field pattern
@@ -570,7 +573,7 @@ comparison works on the least significant bits of the vertical count").
    between 312 and 313 (P1) and 227 is a valid length. The contrasts for the
    preconditions are T-f (PT-1), T-e (PT-2), T-d (PT-3), T-c (PT-4), T-g
    (PT-5), T-a (PT-6; p24: long and short fields occur "interlace only") and
-   T-h and T-j (PT-7).
+   T-h (PT-7).
 7. **Reference frame.**
    - Line marks at fixed horizontal positions (section 2.7).
    - The WAIT position anchors the Copper marks (p22) and DDFSTRT anchors the
@@ -588,11 +591,12 @@ comparison works on the least significant bits of the vertical count").
    The field directly after it retrieves lines 2, 4, 6, ... Each such pair of
    fields therefore retrieves every line of the picture exactly once, from a
    memory that holds the lines in screen order.
-   - Claims: `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval
-     part), `.c10`, `.c12` (order only), `.c13`, `.c14`, `.c15`,
-     `.c16`, `.c17`, `.c18`, `.c20.s2`;
-     `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9` (retrieval part),
-     `.c12`, `.c13`, `.c15`, `.c16`, `.c17`, `.c19`.
+   - Claims: `ch2-using-the-copper-in-interlaced-mode.c10`, `.c13`, `.c14`,
+     `.c15`, `.c16`, `.c17`, `.c18`, `.c20.s2`;
+     `COP2-using-the-copper-in-interlaced-mode.c12`, `.c13`, `.c15`, `.c16`,
+     `.c17`, `.c19`. Declined, and printed as such by the run (section 1):
+     `ch2-using-the-copper-in-interlaced-mode.c8`, `.c9`, `.c11`, `.c12`, `.c19`;
+     `COP2-using-the-copper-in-interlaced-mode.c8`, `.c9`, `.c10`, `.c14`, `.c18`.
    - Pages 34 and 35; p62 describes the same layout.
 2. **Stimulus.** Program I (I-0), with PIC tagged by line and the lists
    LISTA / LISTB of section 3.2.
@@ -915,14 +919,25 @@ fetch (573440).
 **PI-2 and PT-7 (I-s, T-j).** The anchor of section 2.6 reads the terminal
 wait from the list as assembled. Measured, both cores: in the normal runs 8 of
 8 (Program I) and 13 of 13 (Program T) M1 fields hold exactly one restart, each
-directly after the Copper's fetch of the terminal wait, and the matched
-restarts are consecutive. Under I-s and T-j every field still holds exactly
-one restart and the matched restarts are still consecutive, but no restart
-follows a fetch of the terminal wait (0 of 8, 0 of 13): PI-2 and PT-7 are red
-through that clause alone, with the count of restarts unchanged. The page says
-nothing about what the Copper does after a MOVE it cannot write; I-s and T-j
-use the observed behaviour only to give the anchor an input in which the
-restarts are present but do not follow the terminal wait.
+preceded, among the list words up to the terminal wait, by the Copper's fetch
+of the terminal wait, and the matched restarts are consecutive. In every
+field, 2 colour clocks before the restart, the Copper also reads the word after
+the terminal wait ($080854 after LISTA's, $080954 after LISTB's, $081004 after
+LISTT's); the anchor does not count it. Under I-s and T-j every field still
+holds exactly one restart and the matched restarts are still consecutive, but
+no restart is preceded by a fetch of the terminal wait (0 of 8, 0 of 13). No
+page says that the Copper stops after a MOVE it cannot write; read literally,
+p25 ("Instruction fetch continues sequentially until the Copper is interrupted
+by another jump address strobe") and p30 ("No stop instruction is provided for
+the Copper") would let it go on to the terminal wait and leave PI-2 and PT-7
+green. I-s and T-j are therefore not page-predicted contrasts and not
+mutations of PI-2 and PT-7: they are self-tests of the anchor's third clause
+(`SELFTEST-PI-2-ANCHOR`, `SELFTEST-PT-7-ANCHOR`). Measured on both cores, the
+Copper fetches the MOVE's first word, fetches nothing more of the list, and
+reads the MOVE's second word 2 colour clocks before the restart; on this
+design the comparator therefore goes red through the third clause alone, with
+everything else holding. PI-2 and PT-7 keep their page-based contrasts, I-f
+and T-h.
 
 **T-g.** Line 10's WAIT uses `(10, $40)`. Measured on both cores, field 0's
 line 9 then measures 536 clk_sys (67 colour clocks); 24 of the 3150 line
