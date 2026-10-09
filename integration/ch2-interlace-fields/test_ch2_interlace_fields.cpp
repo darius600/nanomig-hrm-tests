@@ -32,7 +32,8 @@
 //
 // MUTATION FIX-I stimulus red: NMH_MUTATE=FIX-I runs prog_i_n (FIXMARK stores $DEAD, not $BEEF, I-n); the known-value comparator prints FAIL
 // MUTATION PI-1 stimulus red: NMH_MUTATE=PI-1 runs prog_i_j (M1 waits between samples, I-j); PI-1's comparator prints FAIL
-// MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f) and NMH_MUTATE=PI-2(move) runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s, so each field still holds one restart but none follows a terminal wait); PI-2's comparator prints FAIL; I-s controls: PI-1, one restart per M1 field, consecutive matched restarts
+// MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f); PI-2's comparator prints FAIL
+// MUTATION SELFTEST-PI-2-ANCHOR stimulus red: NMH_MUTATE=SELFTEST-PI-2-ANCHOR runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s); a self-test of the third clause of PI-2's comparator, not page-predicted: on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; PI-2's comparator prints FAIL under the label SELFTEST-PI-2-ANCHOR; controls: PI-1, one restart per M1 field, consecutive matched restarts
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
 // MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
 // MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k) and NMH_MUTATE=PI-6(pop) runs prog_i_c (both lists omit the BPL1PT MOVEs, so no recorded field fetches from inside PIC, I-c); PI-6's comparator prints FAIL through the tags and through the empty population; control PI-1
@@ -59,7 +60,8 @@
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL
 // MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g); PT-5's comparator prints FAIL through measured line lengths outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present
-// MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(move) runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j, so each field still holds one restart but none follows a terminal wait); PT-7's comparator prints FAIL; T-j controls: PT-1, one restart per M1 field, consecutive matched restarts
+// MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h); PT-7's comparator prints FAIL
+// MUTATION SELFTEST-PT-7-ANCHOR stimulus red: NMH_MUTATE=SELFTEST-PT-7-ANCHOR runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j); a self-test of the third clause of PT-7's comparator, not page-predicted: on this design the Copper fetches the MOVE's first word and nothing more of the list, so each field still holds one restart but none is preceded by a terminal wait; PT-7's comparator prints FAIL under the label SELFTEST-PT-7-ANCHOR; controls: PT-1, one restart per M1 field, consecutive matched restarts
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-7
 // GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-3
 // GATE PT-6 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); the gate prints closed and P3 prints "not graded, gate closed"; control PT-1
@@ -311,8 +313,8 @@ struct AnchorList { uint32_t base, span; };
 // that closes it); `oneRestart` counts the windows that hold exactly one read
 // of a list's first word; `ordered` is true when the restart interval each M1
 // field is matched to follows the previous field's by exactly one;
-// `afterTerminal` counts the windows whose restart is the Copper list fetch
-// directly after the fetch of a list's terminal wait.
+// `afterTerminal` counts the windows whose restart is preceded, among the list
+// words up to the terminal waits, by a read of a terminal wait.
 struct AnchorMeasure {
     bool listsOk = false;
     int fields = 0, oneRestart = 0, afterTerminal = 0;
@@ -368,7 +370,7 @@ AnchorMeasure measure_anchor(const Run& r, const std::vector<M1Record>& m1, uint
 std::string anchor_text(const AnchorMeasure& m) {
     if (!m.listsOk) return "a list holds no terminal $FFFF,$FFFE wait";
     return std::to_string(m.oneRestart) + " of " + std::to_string(m.fields) + " M1 fields hold exactly one restart, " +
-           std::to_string(m.afterTerminal) + " of them directly after a terminal wait, matched restarts consecutive = " +
+           std::to_string(m.afterTerminal) + " of them preceded, among the list words up to the terminal waits, by a terminal wait, matched restarts consecutive = " +
            (m.ordered ? "yes" : "no");
 }
 
@@ -586,7 +588,8 @@ uint64_t first_read_cycle(const Run& r, uint32_t wa, uint64_t begin, uint64_t en
 // same comparator serves the normal list and the variants that move them.
 bool move_pair_fetched_before(const IAnalysis& a, uint16_t regH, uint16_t regL, bool bitplane) {
     if (!a.matched) return false;
-    for (const auto& f : a.fields) {
+    for (size_t k = 0; k < a.fields.size(); ++k) {
+        const auto& f = a.fields[k];
         uint32_t listbase = (f.list == 'A') ? kI_LISTA : kI_LISTB;
         uint32_t offH = list_move_offset(a.r, listbase, regH);
         uint32_t offL = list_move_offset(a.r, listbase, regL);
@@ -597,6 +600,7 @@ bool move_pair_fetched_before(const IAnalysis& a, uint16_t regH, uint16_t regL, 
         uint64_t firstFetch = UINT64_MAX;
         if (bitplane) {
             if (!f.bpl.empty()) firstFetch = f.bpl.front().cycle;
+            if (a.firstsOk && k < a.firsts.size()) firstFetch = std::min(firstFetch, a.firsts[k].cycle);
         } else {
             for (const auto& acc : a.r.log)
                 if (!acc.is_write && acc.word_addr * 2 >= kI_SPR && acc.word_addr * 2 < kI_SPR + 16 &&
@@ -822,8 +826,8 @@ void g_PI2(const IAnalysis& a) {
     checks.expect(pi2_anchor(a),
         "PI-2: each of the 8 recorded M1 fields holds exactly one read of LISTA's or LISTB's first word "
         "between the writes that open and close it, the restart intervals the fields are matched to follow "
-        "each other one by one in field order, and each such read is the Copper list fetch directly after "
-        "the fetch of its list's terminal $FFFF,$FFFE wait (section 2.6)");
+        "each other one by one in field order, and the Copper's last read of LISTA's or LISTB's words up to "
+        "their terminal $FFFF,$FFFE waits before each such read is a read of a terminal wait (section 2.6)");
     checks.note("PI-2 measured: " + anchor_text(a.anchor));
 }
 void g_PI4(const IAnalysis& a) {
@@ -841,7 +845,8 @@ void g_PI6(const IAnalysis& a) {
 }
 void g_PI7bpl(const IAnalysis& a) {
     checks.expect(pi7_bpl(a),
-        "PI-7(bpl): in every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch");
+        "PI-7(bpl): in every field, the Copper fetch of the BPL1PT MOVEs precedes the field's first bitplane fetch "
+        "(the earlier of the first fetch inside PIC and the first 20-word group found from PIC upward)");
 }
 void g_PI7spr(const IAnalysis& a) {
     checks.expect(pi7_spr(a),
@@ -1084,7 +1089,7 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         {"PI-10", "prog_i_q"}, {"PI-11", "prog_i_r"},
         {"PI-7(bpl)", "prog_i_l"}, {"PI-7(spr)", "prog_i_m"},
         {"P6", "prog_i_e"},
-        {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-2(move)", "prog_i_s"}, {"PI-4", "prog_i_h"},
+        {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"SELFTEST-PI-2-ANCHOR", "prog_i_s"}, {"PI-4", "prog_i_h"},
         {"PI-5", "prog_i_g"}, {"PI-6", "prog_i_k"}, {"PI-6(pop)", "prog_i_c"}, {"PI-8", "prog_i_i"},
         {"FIX-I", "prog_i_n"},
     };
@@ -1218,15 +1223,20 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         if (a.m1[0].present) checks.note(label + " mutation measured: M1 record 0's first V = " + std::to_string(a.m1[0].firstV));
     } else if (label == "PI-2") {
         g_PI2(a);
-    } else if (label == "PI-2(move)") {
-        // I-s: both lists end in a MOVE the Copper cannot execute in front of
-        // the terminal wait. Every M1 field still holds exactly one
-        // restart and the matched restarts still follow each other; the
-        // restart no longer follows the fetch of a terminal wait.
+    } else if (label == "SELFTEST-PI-2-ANCHOR") {
+        // I-s: a self-test of the third clause of pi2_anchor, not a page-predicted
+        // contrast. Both lists end in a MOVE the Copper cannot execute in front
+        // of the terminal wait; on this design the Copper does not go on to the
+        // terminal wait. Every M1 field still holds exactly one restart and the
+        // matched restarts still follow each other.
         ctl(label, "PI-1", p.pi1);
         ctl(label, "every M1 field holds exactly one restart", a.anchor.listsOk && a.anchor.oneRestart == a.anchor.fields);
         ctl(label, "the matched restarts follow each other one by one", a.anchor.ordered);
-        g_PI2(a);
+        checks.expect(pi2_anchor(a),
+            "SELFTEST-PI-2-ANCHOR: PI-2's comparator on I-s -- not page-predicted: on this design the Copper "
+            "fetches the first word of the MOVE it cannot write and nothing more of the list, so each field "
+            "holds one restart and none is preceded by a read of a terminal wait; a self-test of the third clause");
+        checks.note("SELFTEST-PI-2-ANCHOR measured: " + anchor_text(a.anchor));
     } else if (label == "PI-4") {
         g_PI4(a);
     } else if (label == "PI-5") {
@@ -1558,8 +1568,8 @@ void g_PT7(const TAnalysis& a) {
     checks.expect(pt7_anchor(a),
         "PT-7: each of the 13 recorded M1 fields holds exactly one read of LISTT's first word between the "
         "writes that open and close it, the restart intervals the fields are matched to follow each other "
-        "one by one in field order, and each such read is the Copper list fetch directly after the fetch "
-        "of LISTT's terminal $FFFF,$FFFE wait (section 2.6)");
+        "one by one in field order, and the Copper's last read of LISTT's words up to its terminal "
+        "$FFFF,$FFFE wait before each such read is a read of that wait (section 2.6)");
     checks.note("PT-7 measured: " + anchor_text(a.anchor));
 }
 void g_P2(const TAnalysis& a, bool pre) {
@@ -1640,10 +1650,10 @@ void run_program_t_assertions(const std::string& dir) {
     checks.record("P2: COP2-vertical-beam-position.c13 (\"the first field length ... is 262\"), "
         "COP2-vertical-beam-position.c14 (\"the next field length ... is 263\"), "
         "COP2-using-the-copper-in-interlaced-mode.c3 (\"an interlaced NTSC display has 524 lines\") and "
-        "COP2-using-the-copper-in-interlaced-mode.c7 (\"262 lines at a time\") are not graded -- P2 allows 262 or "
-        "263 but requires neither an order, an alternation, nor a specific total, and the measurement (262 and "
-        "263 both occur) contradicts COP2-using-the-copper-in-interlaced-mode.c3 and "
-        "COP2-using-the-copper-in-interlaced-mode.c7");
+        "COP2-using-the-copper-in-interlaced-mode.c7 (\"262 lines at a time\") are not graded -- the pages disagree: "
+        "p24 gives \"262, then 263 lines\" (525 in all, as do Table 3-13 on p79 and p304) against .c3's 524 and .c7's 262 "
+        "at a time, and p34's \"262 lines at a time\" against COP2-vertical-beam-position.c14; only the part both "
+        "readings agree on is graded, in P2: every field has 262 or 263 lines and no two consecutive fields are both 263");
     g_PT6(a);
     g_P3(a, t);
 }
@@ -1662,7 +1672,7 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         {"PT-5", {"prog_t_g", true}},
         {"PT-6", {"prog_t_a", true}},
         {"PT-7", {"prog_t_h", true}},
-        {"PT-7(move)", {"prog_t_j", true}},
+        {"SELFTEST-PT-7-ANCHOR", {"prog_t_j", true}},
         {"FIX-T", {"prog_t_i", true}},
     };
     auto it = kProg.find(label);
@@ -1734,13 +1744,18 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         g_P3(a, t);
     } else if (label == "PT-7") {
         g_PT7(a);
-    } else if (label == "PT-7(move)") {
-        // T-j: LISTT ends in a MOVE the Copper cannot execute in front of the
-        // terminal wait (as I-s).
+    } else if (label == "SELFTEST-PT-7-ANCHOR") {
+        // T-j: a self-test of the third clause of pt7_anchor, not a page-predicted
+        // contrast (as I-s): LISTT ends in a MOVE the Copper cannot execute in
+        // front of the terminal wait.
         ctl(label, "PT-1", t.pt1);
         ctl(label, "every M1 field holds exactly one restart", a.anchor.listsOk && a.anchor.oneRestart == a.anchor.fields);
         ctl(label, "the matched restarts follow each other one by one", a.anchor.ordered);
-        g_PT7(a);
+        checks.expect(pt7_anchor(a),
+            "SELFTEST-PT-7-ANCHOR: PT-7's comparator on T-j -- not page-predicted: on this design the Copper "
+            "fetches the first word of the MOVE it cannot write and nothing more of the list, so each field "
+            "holds one restart and none is preceded by a read of a terminal wait; a self-test of the third clause");
+        checks.note("SELFTEST-PT-7-ANCHOR measured: " + anchor_text(a.anchor));
     } else if (label == "FIX-T") {
         g_FIX_T(a);
     }
