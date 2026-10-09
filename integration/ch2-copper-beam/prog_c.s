@@ -10,8 +10,8 @@
 ;   RUN_CNEXT     -- C-next: j = 5, WAIT(w_5+1,$50) instead of WAIT(w_5,g_5).
 ;   RUN_CR1LINE   -- j = 5, WAIT(w_5-1,$C0) instead of WAIT(w_5,$C0).
 ;   RUN_NTSC      -- NTSC (the program is the same).
-;   RUN_SLOW, RUN_HOLD, RUN_NOCOP, RUN_NODONE, RUN_NOOVL, RUN_SHORT -- as in
-;                    prog_a.s, on this list.
+;   RUN_SLOW, RUN_HOLD, RUN_NOCOP, RUN_NODONE, RUN_SHORT, RUN_COPOFF -- unused:
+;                    no wrapper sets them; prog_a.s no longer has these forms.
 
         include "nanomig.i"
         include "copbeam.i"

@@ -21,45 +21,45 @@
 // MUTATION PRE-T2 stimulus red NMH_MUTATE=A-DUP-PAL: after every 5000 samples one read of $DFF004 is stored twice, so two consecutive samples have the same V and H and H does not increase; also moves (both cores): PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-R1 stimulus red NMH_MUTATE=A-NOCOP-PAL: DMACON = $0080 (COPEN cleared) is written between two parts of the flat run, after the third field boundary the trace sees, so the later fields have no restart; also moves (both cores): P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-FIELDS stimulus red NMH_MUTATE=A-FEW-PAL: the trace buffer holds 35000 samples, fewer than 6 complete fields; also moves (both cores): P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-P3SAMPLES none impossible unfalsifiable at this boundary: the line is graded only when PRE-FIELDS and PRE-T2 hold; with PRE-T2 a complete field holds a trusted sample on each of its lines, at least 262 (p.24), so fewer than 114 trusted samples in a field needs a field of a few lines, and such a field also takes every marker line ($30 ... $FF) out of the list (PRE-ANCHOR and PRE-T1E fail with it); A-few fails PRE-FIELDS and prints this line NOT GRADED
-// MUTATION PRE-STD stimulus red NMH_MUTATE=A-STD-NTSC-PALCHIP: the NTSC program runs on a machine configured as PAL, so its chip identification names PAL while the line is graded as NTSC; also moves (both cores): P2-NTSC, PRE-P3COVER, P3-NTSC-SET FAIL to NOT GRADED; P1-ORIGIN, PRE-P3ODDEND, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
+// MUTATION PRE-P3SAMPLES none impossible no isolated stimulus at this boundary: with PRE-T2 every line of a complete field holds a trusted sample, so fewer than 114 trusted samples needs a field of fewer than 114 lines; VTOTAL with VARBEAMEN (p.285, p.305) makes such fields, but a field of fewer than 114 lines has no line 256, so one of PRE-S1A, PRE-S1B, PRE-L1, PRE-T1E, PRE-R1, PRE-P7L256 fails with it; measured with VTOTAL = 4 (6-line fields, at most 106 trusted samples) on both cores: PRE-P3SAMPLES, PRE-T1E, PRE-P2WAITED, PRE-E0 FAIL
+// MUTATION PRE-STD stimulus red NMH_MUTATE=A-STD-NTSC-PALCHIP: the NTSC program runs on a machine configured as PAL, so its chip identification names PAL while the line is graded as NTSC; also moves (both cores): P2-NTSC, PRE-P3COVER, P3-NTSC-SET FAIL to NOT GRADED; P1-ORIGIN, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
 // MUTATION PRE-ANCHOR stimulus red NMH_MUTATE=A-ANCHOR-PAL: every WAIT(v,$40) becomes WAIT(v+1,$40), so m_v lies on line v+1; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-P2WAITED stimulus red NMH_MUTATE=A-P2WAITED-PAL: an extra WAIT($7F,$40) after MARK($7F) is fetched after its target has passed, so its delay equals lambda_min; also moves (both cores): P2-PAL PASS to NOT GRADED
 // MUTATION PRE-E0 stimulus red NMH_MUTATE=A-NOE0-PAL: MARK($A0E0) after WAIT($FF,$E0) is another padding move, so m_E0 does not exist while the WAIT and the padding stay; also moves (both cores): P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-P7L256 stimulus red NMH_MUTATE=A-P7EARLY-PAL: WAIT($00,$60) and its marker precede WAIT($FF,$E0), right after m_$FF, so its second word is fetched on line 255 while m_E0 and the other tail WAITs are as in the normal run; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION P1-ORIGIN stimulus red NMH_MUTATE=A-NOH0-PAL: the sampler stores one burst of 12 samples per line, starting at H >= $10, so H = 0 is never stored while every precondition holds; also moves (both cores): P3-PAL PASS to FAIL
+// MUTATION P1-ORIGIN stimulus red NMH_MUTATE=A-NOH0-PAL: the sampler stores one burst of 12 samples per line, starting at H >= $10, so H = 0 is never stored while every precondition holds; the bursts read only H = $20 ... $B9 (fx68k) or $1E ... $C7 (TG68K), so P3-PAL is red on 46 or 41 unread even counts, $00 among them, while PRE-P3SAMPLES holds: the contrast is not isolated; also moves (both cores): P3-PAL PASS to FAIL
 // MUTATION P2-PAL stimulus red NMH_MUTATE=A-SHIFT-PAL: WAIT($80,$42) in place of WAIT($80,$40), so L($7F) and L($80) differ from 227
 // MUTATION P2-NTSC implementation green private copy of agnus_beamcounter.v, outside the repository, whose NTSC lines alternate between 228 and 227 counts (the line ends one count later when the long-line bit is set); the normal NTSC run A through the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): PRE-P3COVER, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
 // MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-SHORT-NTSC: the trace buffer holds 64 samples, so the odd count $E1 is not read; also moves (both cores): PRE-T1E, PRE-R1, PRE-FIELDS, PRE-P2WAITED, PRE-E0 PASS to FAIL; P2-NTSC, PRE-P3COVER, P3-NTSC-SET FAIL to NOT GRADED; PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, PRE-P3SAMPLES, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
 // MUTATION PRE-P3COVER implementation green the same private copy with NTSC lines of 228 and 227 counts: H >= $E0 is observed on more than 20 lines of each length, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
-// MUTATION P3-PAL implementation red private copy of agnus_beamcounter.v, outside the repository, whose PAL lines 0 to 47 end one count later (228 counts, so $E3 is read; p.23 gives $E3 to NTSC long lines only): the normal PAL run A through the unchanged comparator prints FAIL where the repository's RTL prints PASS; the lines $30 ... of the list, which P2 measures, are unaffected, so every precondition holds
+// MUTATION P3-PAL implementation red private copy of agnus_beamcounter.v, outside the repository, whose odd PAL lines end one count later (228 counts, 0 ... $E3; p.23: "In PAL, they are all 227 long", $E3 belongs to NTSC long lines): the normal PAL run A reads $E3 and the unchanged comparator prints FAIL where the repository's RTL prints PASS, every precondition holding; also moves (both cores): P2-PAL PASS to FAIL
 // MUTATION P3-NTSC-SET implementation green the same private copy with NTSC lines of 228 and 227 counts: $E3 is read, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, PRE-P3COVER FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
 // MUTATION P3-NTSC-LONGONLY none impossible unfalsifiable at this boundary: a line whose counts run 0 ... $E3 has 228 counts, so no stimulus makes a line with L(v) = 227 show $E3; it is NOT GRADED on the repository's RTL (PRE-P3COVER fails) and graded, and PASS, on the private copy of agnus_beamcounter.v with NTSC lines of 228 and 227 counts (normal NTSC run A)
 // MUTATION P7 stimulus red NMH_MUTATE=A-TAILSHIFT-PAL: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n
 // MUTATION P7-WAITED stimulus red NMH_MUTATE=A-LONGPAD-PAL: 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied; also moves (both cores): P2-PAL PASS to NOT GRADED
 // MUTATION P8-LINES stimulus red NMH_MUTATE=A-TAILSHIFT-NTSC: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n; also moves (both cores): P7 PASS to FAIL
-// MUTATION PRE-C-R1LINE stimulus red NMH_MUTATE=C-CR1LINE-PAL: WAIT(w_5,$C0) becomes WAIT(w_5-1,$C0), so r1_5 lies on line w_5-1, the line of r2_4, while every later WAIT still waits; also moves (both cores): P4 PASS to NOT GRADED
-// MUTATION PRE-C-WAITED stimulus red NMH_MUTATE=C-CLATE-PAL: the reference of k = 90 is WAIT(u_90,$C4), so the following WAIT(u_90,$B4) is fetched after its target; also moves (both cores): P4 PASS to NOT GRADED
+// MUTATION PRE-C-R1LINE stimulus red NMH_MUTATE=C-CR1LINE-PAL: WAIT(w_5,$C0) becomes WAIT(w_5-1,$C0), so r1_5 lies on line w_5-1, the line of r2_4, while every later WAIT still waits; also moves (both cores): P4, P4-A, P4-B, P4-C PASS to NOT GRADED
+// MUTATION PRE-C-WAITED stimulus red NMH_MUTATE=C-CLATE-PAL: the reference of k = 90 is WAIT(u_90,$C4), so the following WAIT(u_90,$B4) is fetched after its target; also moves (both cores): P4, P4-A, P4-B, P4-C PASS to NOT GRADED
 // MUTATION P4-A stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so D_50 changes by 2 slots; also moves (both cores): P4 PASS to FAIL
 // MUTATION P4-B stimulus red NMH_MUTATE=C-CSHIFTEND-PAL: WAIT(u_106,$D6) in place of WAIT(u_106,$D4), so D_106 is not below D_107; also moves (both cores): P4 PASS to FAIL
 // MUTATION P4-C stimulus red NMH_MUTATE=C-CNEXT-PAL: q_5 is WAIT(w_5+1,$50), so the WAIT of r2_5 is fetched after its target and did not wait; also moves (both cores): P4 PASS to FAIL
 // MUTATION P4 stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so the aggregate fails through P4-A; also moves (both cores): P4-A PASS to FAIL
-// MUTATION PRE-B-CHAIN stimulus red NMH_MUTATE=B-BCHAIN-PAL: the COP1LC moves of L_3 name L_5, so the restart after L_3 fetches L_5 and not L_4
-// MUTATION PRE-B-L255 stimulus red NMH_MUTATE=B-BLATE-PAL: in L_1 a WAIT($FF,$E0) and 16 padding moves precede WAIT($FF,h_1), so its second word is fetched on line 256
-// MUTATION PRE-B-WAITED stimulus red NMH_MUTATE=B-BWAITED-PAL: in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the latter is fetched after its target
+// MUTATION PRE-B-CHAIN stimulus red NMH_MUTATE=B-BCHAIN-PAL: the COP1LC moves of L_3 name L_5, so the restart after L_3 fetches L_5 and not L_4; also moves (both cores): P6-LARGEST FAIL to NOT GRADED; P6-LINE255, P6-NEVER, P6-CONTROL PASS to NOT GRADED
+// MUTATION PRE-B-L255 stimulus red NMH_MUTATE=B-BLATE-PAL: in L_1 a WAIT($FF,$E0) and 16 padding moves precede WAIT($FF,h_1), so its second word is fetched on line 256; also moves (both cores): P6-LARGEST FAIL to NOT GRADED; P6-LINE255, P6-NEVER, P6-CONTROL PASS to NOT GRADED
+// MUTATION PRE-B-WAITED stimulus red NMH_MUTATE=B-BWAITED-PAL: in L_4 a WAIT($FF,$80) precedes WAIT($FF,$40), so the latter is fetched after its target; also moves (both cores): P6-LARGEST FAIL to NOT GRADED; P6-LINE255, P6-NEVER, P6-CONTROL PASS to NOT GRADED
 // MUTATION P6-LINE255 stimulus red NMH_MUTATE=B-B254-PAL: in L_2 the first WAIT is for line $FE and a WAIT($FF,$30) follows it, so a_2 lies on line 254 while the preconditions still hold
 // MUTATION P6-CONTROL stimulus red NMH_MUTATE=B-BFEOFF-PAL: L_FE waits for ($FF,$FE), so $B300 is not fetched
 // MUTATION P6-LARGEST implementation green private copy of agnus_copper.v, outside the repository, whose beam match stays set while a WAIT is pending, so that WAIT($FF,$E2) ends in line $FF; the normal run B through the unchanged comparator prints PASS where the repository's RTL prints FAIL (x_0 is fetched 163 slots after a_0). NMH_MUTATE=B-BE4-PAL (L_0 waits for $E4, the specification's contrast for x_0 not fetched) leaves the line FAIL on both cores, as in the normal run: the line is red before the contrast changes anything, so the contrast discriminates nothing here
 // MUTATION P6-NEVER stimulus red NMH_MUTATE=B-BEND-PAL: L_14 waits for ($FE,$FE) in place of ($FF,$FE), which ends when line $FF begins, so x_14 is fetched before line 0 of the next field while every precondition holds
 // MUTATION PRE-P5-CALLO stimulus red NMH_MUTATE=D-DFLATLO-PAL: every plane word of D-lo is $FFFF, so there are no alternating runs
 // MUTATION PRE-P5-CALHI stimulus red NMH_MUTATE=D-DFLATHI-PAL: every plane word of D-hi is $FFFF, so there are no alternating runs
-// MUTATION PRE-P5-EDGES stimulus red NMH_MUTATE=D-DDROP-PAL: the second MOVE($180,B) of line $50 is left out, so line $50 has no A to B edge
-// MUTATION PRE-P5-WAITED stimulus red NMH_MUTATE=D-DLATE-PAL: the second WAIT of line $50 is at $3A, already satisfied when it is fetched
+// MUTATION PRE-P5-EDGES stimulus red NMH_MUTATE=D-DDROP-PAL: the second MOVE($180,B) of line $50 is left out, so line $50 has no A to B edge; also moves (both cores): P5-LO, P5-HI PASS to NOT GRADED
+// MUTATION PRE-P5-WAITED stimulus red NMH_MUTATE=D-DLATE-PAL: the second WAIT of line $50 is at $3A, already satisfied when it is fetched; also moves (both cores): P5-LO, P5-HI PASS to NOT GRADED
 // MUTATION P5-LO stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 4 * 25 * P_lo while n_$50 is 24; also moves (both cores): P5-HI PASS to FAIL
 // MUTATION P5-HI stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 8 * 25 * P_hi while n_$50 is 24; also moves (both cores): P5-LO PASS to FAIL
-// MUTATION PRE-P9-PLO stimulus red NMH_MUTATE=E-PLOFLAT-PAL: the calibration run D-lo has every plane word $FFFF, so P_lo is not valid; also moves (both cores): PRE-P5-CALLO PASS to FAIL
-// MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01; also moves (both cores): PRE-P9-ONE0 PASS to NOT GRADED
-// MUTATION PRE-P9-ONE0 stimulus red NMH_MUTATE=E-EBLACKGAP-PAL: COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line has a second run of 0
+// MUTATION PRE-P9-PLO stimulus red NMH_MUTATE=E-PLOFLAT-PAL: the calibration run D-lo has every plane word $FFFF, so P_lo is not valid; also moves (both cores): PRE-P5-CALLO PASS to FAIL; P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
+// MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01; also moves (both cores): PRE-P9-ONE0, P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
+// MUTATION PRE-P9-ONE0 stimulus red NMH_MUTATE=E-EBLACKGAP-PAL: COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line has a second run of 0; also moves (both cores): P9-A-E, P9-A-EW, P9-B, P9-A PASS to NOT GRADED
 // MUTATION P9-A-E stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
 // MUTATION P9-A-EW stimulus red NMH_MUTATE=E-EWWIDEWIN-PAL: the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
 // MUTATION P9-A stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the aggregate fails through P9-A-E; also moves (both cores): P9-A-E PASS to FAIL
@@ -703,7 +703,7 @@ std::string setstr64(const std::set<int64_t>& s) {
 }
 
 // ==== SECTION A ===============================================================
-struct APlan { bool run[2] = {true, true}; std::string bin[2]; uint8_t cfg[2]; bool label_swap = false; };
+struct APlan { bool run[2] = {true, true}; std::string bin[2]; uint8_t cfg[2]; };
 
 struct ALists {
     std::vector<Instr> list;
@@ -868,7 +868,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
     plan.bin[PAL] = "prog_a"; plan.bin[NTSC] = "prog_a_ntsc";
     plan.cfg[PAL] = kECS_PAL; plan.cfg[NTSC] = kECS_NTSC;
     if (!normal) {
-        // mv is "A-<VARIANT>-<PAL|NTSC>" or one of the standard swaps
+        // mv is "A-<VARIANT>-<PAL|NTSC>" or A-STD-NTSC-PALCHIP
         plan.run[PAL] = plan.run[NTSC] = false;
         if (mv == "A-STD-NTSC-PALCHIP") {                 // the NTSC program on a machine configured PAL
             plan.run[NTSC] = true; plan.cfg[NTSC] = kECS_PAL;
@@ -1053,7 +1053,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                                           num((long long)a.fields.size()) + " fields, at least " + num((long long)least) + " trusted samples per field)");
             else not_graded("PRE-P3SAMPLES", g.why_not_cap() + std::string(g.t2 ? "" : " PRE-T2") + std::string(g.fields ? "" : " PRE-FIELDS"));
             if (tag == NTSC) {
-                if (!g.counts()) not_graded("PRE-P3ODDEND", g.why_not_counts());
+                if (!(g.cap() && g.t2)) not_graded("PRE-P3ODDEND", g.why_not_cap() + std::string(g.t2 ? "" : " PRE-T2"));
                 else if (p3.cover) checks.expect(p3.odd_end_ok, "PRE-P3ODDEND NTSC run A: the odd count $E1, next below the last even count, is read at the end of a line");
                 else checks.record("PRE-P3ODDEND NTSC run A: not needed, only counts of one parity are read (" + std::string(p3.parity ? "odd" : "even") + ")");
                 if (!(g.counts() && g.trace() && p2pre && p2.complete))
@@ -1715,11 +1715,11 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
         if (one_tag && (Tag)ti != only) continue;
         const Tag tag = (Tag)ti;
         const std::string tg = tagname(tag);
-        Calib clo, chi; bool have_lo = false, have_hi = false;
+        Calib clo, chi; bool have_lo = false, have_hi = false, lo_cap = false;
         if (plan.lo) {
             DEData d = load_de(dir, plan.b_lo, tag, false, 0x00E0, 0x0002);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "D-lo");
-            clo = calibrate(d.vs, kWhite, kBlue, 160); have_lo = true;
+            clo = calibrate(d.vs, kWhite, kBlue, 160); have_lo = true; lo_cap = g.cap();
             checks.note("P5 " + tg + " D-lo: " + num((long long)clo.lines) + " window lines, " + num((long long)clo.bad) + " without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {" + setstr(clo.lens) + "}");
             if (g.cap()) checks.expect(clo.valid, "PRE-P5-CALLO " + tg + " D-lo: every window line shows 160 COLOR01 runs, and all COLOR01 runs and the 159 COLOR00 runs between them have one common length P_lo (" + num(clo.plen) + ")");
             else checks.record("PRE-P5-CALLO " + tg + " D-lo: NOT GRADED: precondition failed:" + g.why_not_cap());
@@ -1772,7 +1772,8 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
             const int plo = have_lo && clo.valid ? clo.plen : 0;
             EGrade e = grade_e(d.vs, kYellow, c0, plo);
             checks.note("P9 " + tg + " E: " + num((long long)e.window_lines) + " window lines, COLOR01 run lengths {" + setstr(e.c1_lens) + "}, P_lo=" + num(plo));
-            checks.expect(have_lo && clo.valid, "PRE-P9-PLO " + tg + " E: P_lo is valid in this configuration (PRE-P5-CALLO)");
+            if (have_lo && lo_cap) checks.expect(clo.valid, "PRE-P9-PLO " + tg + " E: P_lo is valid in this configuration (PRE-P5-CALLO)");
+            else checks.record("PRE-P9-PLO " + tg + " E: NOT GRADED: precondition failed: PRE-P5-CALLO");
             const bool lines_ok = e.window_lines > 0 && e.windows_per_frame_min >= 1;
             if (g.cap()) checks.expect(lines_ok, "PRE-P9-LINES " + tg + " E: every complete field has at least one window line (" + num((long long)e.window_lines) + " window lines, at least " + num((long long)(e.window_lines ? e.windows_per_frame_min : 0)) + " per field)");
             else checks.record("PRE-P9-LINES " + tg + " E: NOT GRADED: precondition failed:" + g.why_not_cap());
