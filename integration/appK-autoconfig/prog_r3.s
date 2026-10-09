@@ -29,6 +29,12 @@
 ;                  Zorro II I/O expansion space) instead of OTHER_BASE
 ;   MUT_SELF    -- with MUT_R3N, targets the configured base CONFIG_BASE
 ;                  itself instead of OTHER_BASE
+;   MUT_HANG_IMG2 -- apparatus contrast: the stream stops after the marker,
+;                  before the IMG2 read
+;   MUT_HANG_READ -- with MUT_R3N, apparatus contrast: the stream stops after
+;                  the write and the scratch write, before the readback
+;   MUT_EQSTORE -- with MUT_R3N, apparatus contrast: P2 is stored into the R2
+;                  slot, then the stream stops
 
         include "nanomig.i"
         include "common.i"
@@ -146,6 +152,9 @@ readimg2last:
         lea     IMG2,a2
         moveq   #15,d3
         move.w  #PRE_IMG2,PRE
+        ifd     MUT_HANG_IMG2
+.stop2: bra.s   .stop2                  ; no-answer contrast: the stream stops after the marker
+        endif
 .imgl2z: move.w (a0)+,(a2)+
         move.w  (a0)+,(a2)+
         dbra    d3,.imgl2z
@@ -155,6 +164,13 @@ r3n_last:
         move.w  #PRE_R2,PRE
         move.w  #P2V,NOTHER_TARGET
         move.w  #$0000,SCRATCH
+        ifd     MUT_HANG_READ
+.stop3: bra.s   .stop3                  ; no-answer contrast: the stream stops before the readback
+        endif
+        ifd     MUT_EQSTORE
+        move.w  #P2V,R2V                ; contrast: the equal result is stored, then the stream stops
+.stop4: bra.s   .stop4
+        endif
         move.w  NOTHER_TARGET,R2V
         DONE
 

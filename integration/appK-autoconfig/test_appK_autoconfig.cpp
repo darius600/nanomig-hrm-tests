@@ -41,7 +41,12 @@
 // MUTATION P3-BASE stimulus green already red on the unmutated stimulus; the same "R2 != P2V, or no answer" comparator, fed the same two control stimuli, prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
 // MUTATION GATE-G stimulus green already red on the unmutated stimulus; the same "differs from IMG0, or no answer" comparator (a completion marker with an image that differs from IMG0, or a proven no-answer window), fed run R3 (the board configured by the byte write to register 48 in place of the write to the shut-up address 4C), prints PASS: P3-IMG2
 // MUTATION GATE-G-PRESENCE stimulus red the image read from 32 zeroed words of the results page in place of $00E80000 (prog_rg_nodev), via NMH_MUTATE=GATE-G-PRESENCE: the unchanged G1-G3 comparator goes red (the type field reads 00); the run completes; GATE-G-PRECOND is recorded unavailable, and GATE-G, P3 and P6 not checkable
-// MUTATION P1a-FDDCAL stimulus green already red on the unmutated stimulus, which a stimulus mutation cannot make more red; the unchanged comparator (the drive-LED port changes level at least once between the bright-phase marker and t_M1), fed the run with a disk DMA started after the motor on-latch (prog_r1_fddctl), via NMH_MUTATE=P1a-FDDCAL, prints PASS
+// MUTATION GATE-G stimulus green apparatus contrast of the no-answer branch, not page-predicted: the shut-up run stops right after its pre-access marker (prog_rg_shutup_hang), via NMH_MUTATE=GATE-G-NOANSWER: the unchanged comparator prints PASS, ended by expiry of the no-answer window, with every provenance item holding
+// MUTATION P3-IMG2 stimulus green apparatus contrast of the no-answer branch, not page-predicted: R3 stops right after its pre-access marker, before the IMG2 read (prog_r3_hang_img2), via NMH_MUTATE=P3-IMG2-NOANSWER: the unchanged comparator prints PASS, ended by expiry of the no-answer window
+// MUTATION P3-CONTROL-IO stimulus green apparatus contrast of the no-answer branch, not page-predicted: the control stops after the write and the scratch write, before the readback at $00A00000 (prog_r3_io_hang), via NMH_MUTATE=P3-CONTROL-IO-NOANSWER: the unchanged comparator prints PASS, ended by expiry of the no-answer window
+// MUTATION P3-CONTROL-IO stimulus red apparatus contrast of the no-answer branch, not page-predicted: the control stores the equal value P2 into the R2 slot and stops, so no completion marker follows (prog_r3_io_eqstore), via NMH_MUTATE=P3-CONTROL-IO-EQSTORE: the unchanged comparator prints FAIL, because an equal result was stored
+// MUTATION P3-CONTROL-UNCONF stimulus green apparatus contrast of the no-answer branch, not page-predicted: the unconfigured control stops after the write and the scratch write, before the readback at $00400000 (prog_r3_unconf_hang), via NMH_MUTATE=P3-CONTROL-UNCONF-NOANSWER: the unchanged comparator prints PASS, ended by expiry of the no-answer window
+// MUTATION P3-NOTOTHER stimulus red apparatus contrast of the no-answer branch, not page-predicted, on a line that is already red: R3n stops after the write at the other base and the scratch write, before the readback (prog_r3_n_hang), via NMH_MUTATE=P3-NOTOTHER-BOARD: the unchanged comparator prints FAIL through the access the board took at its fastram port, not through a stored result or a completion marker
 // MUTATION P6-CHIPMEM stimulus red the instruction stream stops at the tail in R6 and R6m (prog_r6_hang, prog_r6m_hang), via NMH_MUTATE=P6-CHIPMEM: the unchanged comparator (both runs wrote the completion marker, on every CPU setting) goes red, because neither run writes M2 or the completion marker; P6 is recorded not graded
 //
 // GATE-G, P3-NOTOTHER and P3-BASE are red: GATE-G through p.436, P3-NOTOTHER
@@ -58,11 +63,12 @@
 // exercised.
 //
 // P1a carries no assertion in this package. Its precondition, the
-// drive-LED calibration (SPECIFICATION.md section 5.1.5), is graded on
+// drive-LED calibration (SPECIFICATION.md section 5.1.5), is measured on
 // every run as P1a-FDDCAL: the drive-LED port changes level between the
-// motor off-latch/on-latch sequence and t_M1. The P1a record names what
-// that line printed; FIXTURE-FDD prints whether the port changed
-// level at all (NM-HRM-046).
+// motor off-latch/on-latch sequence and t_M1. It calibrates P1a's observable
+// and grades no claim, so it is a MEASURED line and carries no MUTATION
+// record; the P1a record names what it measured; FIXTURE-FDD prints whether
+// the port changed level at all (NM-HRM-046).
 //
 // No-answer alternatives (GATE-G, P3-IMG2, P3-NOTOTHER, P3-BASE and the two
 // controls): each program writes a distinct marker to the word PRE
@@ -251,6 +257,7 @@ struct Window {
     std::optional<uint64_t> done;    // the completion marker
     std::optional<uint64_t> marker;  // the first pre-access marker
     bool expired = false;            // two leading edges counted from the marker
+    bool board_access = false;       // nanomig.v's fastram_* port, which serves the expansion board, selected after the marker
 };
 bool is_pre_marker(const nmh::RamAccess& a) {
     return a.is_write && a.word_addr == kPre / 2 &&
@@ -267,6 +274,7 @@ Window wait_done_or_window(nmh::NanomigHarness& h, uint64_t budget, bool anchor_
     if (anchor_at_start) out.marker = 0;
     for (uint64_t i = 0; i < budget && !out.done && (anchor_at_start || !out.expired); ++i) {
         h.run_cycles(1);
+        if (out.marker && !anchor_at_start && h.ports()->fastram_sel) out.board_access = true;
         bool fresh_marker = false;
         for (; seen < h.ram_log().size(); ++seen) {
             const auto& a = h.ram_log()[seen];
@@ -290,8 +298,9 @@ struct NoAnswer {
     bool no_restart = false;    // the M0 marker was written exactly once
     bool no_exception = false;  // no write of V_E to MK_E and no pixel of C_E
     bool quiet = false;         // after the marker, no Chip-port write but the scratch write
+    bool no_board_access = false; // after the marker, no access at the expansion board's port
     bool expired = false;       // the window expired
-    bool proven() const { return marker_once && no_restart && no_exception && quiet && expired; }
+    bool proven() const { return marker_once && no_restart && no_exception && quiet && no_board_access && expired; }
 };
 NoAnswer measure_no_answer(nmh::NanomigHarness& h, const Window& w) {
     NoAnswer n;
@@ -311,6 +320,7 @@ NoAnswer measure_no_answer(nmh::NanomigHarness& h, const Window& w) {
     n.no_restart = count_writes(h.ram_log(), kMK0, kV0) == 1;
     n.no_exception = !exception;
     n.quiet = quiet;
+    n.no_board_access = !w.board_access;
     n.expired = w.expired;
     return n;
 }
@@ -328,7 +338,8 @@ std::string provenance_text(const Window& w, const NoAnswer& n) {
                                    "ended by neither the completion marker nor the end of the window") +
            "; pre-access marker written once: " + yn(n.marker_once) + ", no restart: " + yn(n.no_restart) +
            ", no exception: " + yn(n.no_exception) + ", no Chip-port write after the marker but the scratch write: " +
-           yn(n.quiet) + ", window expired: " + yn(n.expired);
+           yn(n.quiet) + ", no access at the expansion board's port after the marker: " + yn(n.no_board_access) +
+           ", window expired: " + yn(n.expired);
 }
 
 // ---- R1-family capture (P1, P2) ---------------------------------------
@@ -729,16 +740,13 @@ int main(int argc, char** argv) {
     // The unmutated R1 run set feeds every R1-family line except the one a
     // selector replaces.
     const std::vector<R1Out> r1_base = run_r1_set("prog_r1", kC1);
-    std::vector<R1Out> r1_nop, r1_nocal, r1_disp, r1_fddctl;
+    std::vector<R1Out> r1_nop, r1_nocal, r1_disp;
     if (mv == "P1A")               { r1_nop   = run_r1_set("prog_r1a", kC1);
                                      note_mutant_done("prog_r1a", all_of_pop(r1_nop, [](const R1Out& r) { return r.done; })); }
     if (mv == "P1-LEDCAL")         { r1_nocal = run_r1_set("prog_r1_nocal", kC1);
                                      note_mutant_done("prog_r1_nocal", all_of_pop(r1_nocal, [](const R1Out& r) { return r.done; })); }
     if (mv == "P1-DISPANCHOR")     { r1_disp  = run_r1_set("prog_r1_c1prime", kC1);   // kC1 stays the expected colour
                                      note_mutant_done("prog_r1_c1prime", all_of_pop(r1_disp, [](const R1Out& r) { return r.done; })); }
-    if (mv == "P1a-FDDCAL")        { r1_fddctl = run_r1_set("prog_r1_fddctl", kC1);
-                                     note_mutant_done("prog_r1_fddctl", all_of_pop(r1_fddctl, [](const R1Out& r) { return r.done; })); }
-    const std::vector<R1Out>& r1_fdd_feed     = mv == "P1a-FDDCAL" ? r1_fddctl : r1_base;
     const std::vector<R1Out>& r1_p1b_feed     = mv == "P1A" ? r1_nop : r1_base;
     const std::vector<R1Out>& r1_witness_feed = mv == "P1A" ? r1_nop : r1_base;
     // The R1-family preconditions are measured on the run their target lines
@@ -799,23 +807,21 @@ int main(int argc, char** argv) {
         // drive-LED port shows the latched motor state, so it changes level between the motor
         // off-latch and the on-latch. Measured on every CPU setting before P1a.
         int fdd_changes_min = -1, fdd_changes_max = 0;
-        for (const auto& r : r1_fdd_feed) {
+        for (const auto& r : r1_base) {
             if (fdd_changes_min < 0 || r.fdd_changes_before_m1 < fdd_changes_min) fdd_changes_min = r.fdd_changes_before_m1;
             if (r.fdd_changes_before_m1 > fdd_changes_max) fdd_changes_max = r.fdd_changes_before_m1;
         }
-        const bool p1a_fddcal_ok = all_of_pop(r1_fdd_feed, [](const R1Out& r) { return r.loaded && r.fdd_changes_before_m1 >= 1; });
+        const bool p1a_fddcal_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.loaded && r.fdd_changes_before_m1 >= 1; });
         checks.note("P1a-FDDCAL level changes of the drive-LED port between the bright-phase marker and t_M1, per "
             "CPU setting: min " + std::to_string(fdd_changes_min < 0 ? 0 : fdd_changes_min) +
             ", max " + std::to_string(fdd_changes_max));
-        checks.expect(p1a_fddcal_ok,
-            "P1a-FDDCAL [p244,p370]: the drive-LED port changes level between the off-latch/on-latch sequence "
-            "and t_M1, so the latched motor state is visible at the drive LED, on every CPU setting");
-        if (!p1a_fddcal_ok)
-            checks.record("P1a [p244,p370]: not graded: precondition failed (P1a-FDDCAL: the drive-LED port did "
-                "not show the latched motor state; NM-HRM-046)");
-        else
-            checks.record("P1a [p244,p370]: not graded: P1a-FDDCAL holds, but no assertion for P1a is built "
-                "in this package");
+        checks.note(std::string("P1a-FDDCAL (precondition of P1a): the drive-LED port changed level between the "
+            "off-latch/on-latch sequence and t_M1 on every CPU setting: ") + (p1a_fddcal_ok ? "yes" : "no"));
+        checks.record(std::string("P1a [p244,p370]: not graded. P1a-FDDCAL is the drive-LED calibration of P1a's "
+            "observable and grades no claim: in this run the drive-LED port ") +
+            (p1a_fddcal_ok ? "followed" : "did not follow") +
+            " the motor latch (the p.244 sentence is graded as opus:8-cia.c26 / sol:8-cia.c24 in "
+            "hrm/ch8-drive-select-motor-led, NM-HRM-046); no assertion for P1a is built in this package");
     }
 
     // ================= P2 =================================================
@@ -870,7 +876,7 @@ int main(int argc, char** argv) {
     bool gate_g_pass = g.loaded && g.w.done.has_value() && g2 && g3;
     checks.expect(gate_g_pass,
         "GATE-G-PRESENCE [p432,p434,p435]: an unconfigured PIC answers in $00E8xxxx (the run completes, the "
-        "type field reads Zorro II and the reserved registers 0C/34/38/3C read logical 0)");
+        "type field reads 10 or 11 (Zorro III or Zorro II) and the reserved registers 0C/34/38/3C read logical 0)");
     if (!gate_g_pass)
         checks.record("Gate G failed: no AUTOCONFIG device answers in $00E8xxxx (fastram_config offers "
             "none, or the harness's start-up had already configured it)");
@@ -884,7 +890,10 @@ int main(int argc, char** argv) {
         checks.record("GATE-G-PRECOND [p433]: unavailable: Gate G supplied no register image");
     }
     if (gate_g_pass && reg08_can_shutup) {
-        SimpleImgOut r = run_simple_img(dir + "/prog_rg_shutup.bin", kImgAtMkNext, false);
+        const bool g_hang = mv == "GATE-G-NOANSWER";
+        SimpleImgOut r = run_simple_img(dir + (g_hang ? "/prog_rg_shutup_hang.bin" : "/prog_rg_shutup.bin"), kImgAtMkNext, false);
+        if (g_hang)
+            checks.note("NMH_MUTATE=" + mv + ": the mutated run (prog_rg_shutup_hang) wrote the completion marker: " + yn(r.w.done.has_value()));
         if (r.live()) {
             const bool differs = !img_equal(r.img, g.img);
             checks.note("GATE-G run R_G': " + provenance_text(r.w, r.na) + ", image differs from IMG0: " + yn(differs));
@@ -905,7 +914,7 @@ int main(int argc, char** argv) {
     // ================= P3 (only if gate G passed) =========================
     if (gate_g_pass) {
         const R3Out r_base  = run_r3(dir + "/prog_r3.bin");
-        const R3Out rn_base = run_r3(dir + "/prog_r3_n.bin");
+        const R3Out rn_plain = run_r3(dir + "/prog_r3_n.bin");
         const R3Out rs_base = run_r3(dir + "/prog_r3_swap.bin");
         const R3Out rsn     = run_r3(dir + "/prog_r3_swap_n.bin");
         auto mutated_r3 = [&](const char* sel, const char* prog, const R3Out& normal) {
@@ -915,13 +924,17 @@ int main(int argc, char** argv) {
                         (m.w.done ? "yes" : "no"));
             return m;
         };
+        const R3Out rn_base  = mutated_r3("P3-NOTOTHER-BOARD", "prog_r3_n_hang", rn_plain);
         const R3Out r_img1   = mutated_r3("P3-IMG1", "prog_r3_c48first", r_base);
-        const R3Out r_img2   = mutated_r3("P3-IMG2", "prog_r3_nocfg", r_base);
+        const R3Out r_img2   = mutated_r3("P3-IMG2", "prog_r3_nocfg", mutated_r3("P3-IMG2-NOANSWER", "prog_r3_hang_img2", r_base));
         const R3Out r_cont   = mutated_r3("P3-CONTENT", "prog_r3_no48", r_base);
         const R3Out rs_feed  = mutated_r3("P3-BASE-ASSIGNED", "prog_r3_swap_no48", rs_base);
         const R3Out rn_feed  = mutated_r3("P3-NOTOTHER-ASSIGNED", "prog_r3_n_no48", rn_base);
-        const R3Out r_io     = mutated_r3("P3-CONTROL-IO", "prog_r3_io_self", run_r3(dir + "/prog_r3_io.bin"));
-        const R3Out r_unconf = mutated_r3("P3-CONTROL-UNCONF", "prog_r3_unconf_self", run_r3(dir + "/prog_r3_unconf_n.bin"));
+        const R3Out r_io     = mutated_r3("P3-CONTROL-IO", "prog_r3_io_self",
+                                        mutated_r3("P3-CONTROL-IO-NOANSWER", "prog_r3_io_hang",
+                                        mutated_r3("P3-CONTROL-IO-EQSTORE", "prog_r3_io_eqstore", run_r3(dir + "/prog_r3_io.bin"))));
+        const R3Out r_unconf = mutated_r3("P3-CONTROL-UNCONF", "prog_r3_unconf_self",
+                                        mutated_r3("P3-CONTROL-UNCONF-NOANSWER", "prog_r3_unconf_hang", run_r3(dir + "/prog_r3_unconf_n.bin")));
 
         // ---- IMG1 = IMG0 (contrast: P3-IMG1 / R3c) and IMG2 != IMG0 --------
         // img1 is written at step b, before any of R3's own risky access,

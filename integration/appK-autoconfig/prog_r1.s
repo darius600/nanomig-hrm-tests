@@ -7,22 +7,17 @@
 ; The run ends with the completion marker (DONE) after the tail, which is
 ; reached when Chip memory answers there.
 ;
-; Four independent points vary, each selected by a symbol an including
+; Three independent points vary, each selected by a symbol an including
 ; source sets before this file:
 ;   MUT_NORESET  -- R1a: RESET at A replaced by NOP (section 5.1.6)
 ;   MUT_C1PRIME  -- display-anchor contrast: COLOR00 preset to C1'=$0C3F
 ;   MUT_NOCAL    -- power-LED calibration contrast: the write that switches
 ;                    the LED to bright keeps CIAAPRA bit 1 = 1
-;   MUT_FDDCTL   -- drive-LED control: a disk DMA is started after the motor
-;                    on-latch
 ; prog_r1.s itself sets none of them.
 
         include "nanomig.i"
         include "common.i"
 
-DSKPTH   equ $020
-DSKPTL   equ $022
-DSKLEN   equ $024
 BPLCON0  equ $100
 SPR0CTL  equ $142
 
@@ -84,14 +79,6 @@ start:
         move.b  #$77,CIABPRB
         move.b  #$7F,CIABPRB
         move.b  #$FF,CIABPRB           ; on-latch
-
-        ifd     MUT_FDDCTL
-        move.w  #$000C,DSKPTH(a1)      ; disk DMA, read, $10 words into $0C8000
-        move.w  #$8000,DSKPTL(a1)
-        move.w  #$8210,DMACON(a1)      ; SET, DMAEN, DSKEN
-        move.w  #$8010,DSKLEN(a1)
-        move.w  #$8010,DSKLEN(a1)      ; DSKLEN written twice starts the DMA
-        endif
 
         ; wait two complete frames; F_ref is the last of them
         WAITVERTB

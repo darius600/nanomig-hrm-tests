@@ -21,6 +21,9 @@ start:
         lea     IMG,a2
         moveq   #15,d3
         move.w  #PRE_RG,PRE
+        ifd     MUT_HANG_AFTER
+.stop:  bra.s   .stop                   ; no-answer contrast: the stream stops after the marker
+        endif
 .imgl:  move.w  (a0)+,(a2)+
         move.w  (a0)+,(a2)+
         dbra    d3,.imgl

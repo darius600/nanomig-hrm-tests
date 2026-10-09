@@ -38,7 +38,7 @@ Propositions:
 - Exception vectors 2, 3, 4, 8, 10 and 11 (addresses $000008, $00000C, $000010, $000020, $000028, $00002C) point to a handler H_E, which writes C_E to COLOR00, writes V_E to chip word MK_E, and then loops. The vector numbers are Motorola, not the manual. With the 68010 and 68020 settings, VBR = 0. With the 68020 setting the instruction cache stays disabled (CACR = 0), so every instruction fetch reaches the bus (Motorola, not the manual).
 - Vector-table check: the program writes H_E's address into $000020/$000022, reads it back and stores what it read. The check is that the long reads back as written; it does not depend on the RAM-port address at which the harness places $000020. This shows that RAM, not the ROM overlay (p.223), answers at the vectors. A failed check is a fixture failure and stops the package: nothing is graded.
 - Placement: the harness loads the program at PROGRAM_ORG = $080400, sets the supervisor stack to PROGRAM_STACK = $0FFF00, and keeps results at RESULTS = $0C0000 (`nanomig.i`). All three lie in $080000-$1FFFFF, which the harness maps one-to-one. MK0, MK1, MK2, MK_E, the scratch word and every stored result are distinct words in $0C0000-$0C0FFD. The completion marker is `nanomig.i`'s DONE (DONE_VALUE $600D to DONE_ADDR $0C0FFE). Below $080000 the program writes only the vectors. p.223 says the overlay ROM copy "responds starting at memory location $00000000" but not where it ends, so nothing assumes that the program's addresses answer after RESET (§2.3, P6's preconditions).
-- Chip-memory port: nanomig.v's RAM port (`ram_address`, `ram_data`, `_ram_we`, `_ram_oe`, `_ram_bhe`, `_ram_ble`), logged by the harness's `ram_log()`. It carries more than Chip memory: the harness keeps the overlay's ROM copy on it at physical byte address $780000 (`nanomig_harness.h`), and an expansion board's memory may appear on it. A Chip-memory address on it is a byte address below $200000, the 2 MB of Chip memory the harness configures (`Config.memory_config` = $03); the harness maps $080000-$1FFFFF one-to-one.
+- Chip-memory port: nanomig.v's RAM port (`ram_address`, `ram_data`, `_ram_we`, `_ram_oe`, `_ram_bhe`, `_ram_ble`), logged by the harness's `ram_log()`. It carries more than Chip memory: the harness keeps the overlay's ROM copy on it at physical byte address $780000 (`nanomig_harness.h`), an expansion board's memory does not appear on it: the CPU reaches the board through nanomig.v's `fastram_*` port (`cpu_wrapper.v` `sel_z2ram`, `nanomig.v` `fastram_sel`), which the harness serves from its own model and does not log. A Chip-memory address on it is a byte address below $200000, the 2 MB of Chip memory the harness configures (`Config.memory_config` = $03); the harness maps $080000-$1FFFFF one-to-one.
 - Marker M0: the first action of the program writes V0 to MK0. All results are CPU writes to chip words, which the test sees at the Chip-memory port with address and data.
 - CPU settings: every run of P1, P2 and P6 (R1, R6 and R6m, and their contrasts) is repeated for core A (68000), core B as 68000, core B as 68010 and core B as 68020, because p.394 speaks of "the 680x0 RESET instruction". The harness's `cpu_config` selects the core's behaviour, not its bus: with `turbo_config` = 0 "every CPU access uses the slow chip bus" (`nanomig_harness.h`), the 16-bit RAM port, on every setting. PAL and ECS are the defaults, and no page makes these propositions depend on either.
 - Every program is assembled for the 68000, vasm's default, on every CPU setting. No stimulus needs a later instruction, and with `-m68010` or higher vasm assembles `MOVE #0,<ea>` as `CLR <ea>`, which on the 68000 reads before it writes (the zero writes to BPLCON0, SPRxCTL, the scratch word, and a zero nybble or byte to a configuration register).
@@ -50,7 +50,7 @@ Propositions:
 No page states what a CPU access to an address that no device answers does. p.385 names a time-out only for Zorro III cycles: "the cycle completes when a Zorro III slave responds or the bus times out, as driven by the motherboard logic". So every access to an address that may be unanswered is the last bus action of its run:
 
 - all other results are stored first;
-- a distinct pre-access marker is written to Chip memory immediately before the access (the word PRE of the program, one marker value per kind of final access), so the window below is anchored at the access and not at the start of the run;
+- in gate G's shut-up run and every P3 run, a distinct pre-access marker is written to Chip memory immediately before the access (the word PRE of the program, one marker value per kind of final access), so the window below is anchored at the access and not at the start of the run; R_G, R6 and R6m carry none, and are graded only when the completion marker appears (G1, P6-CHIPMEM);
 - a completion marker follows the access;
 - if the completion marker never appears, the run records "no answer" for that access. "Never appears" means no completion marker at the Chip-memory port within the second vertical-sync leading edge counted from the pre-access marker (t_N, §3), a harness limit rather than a page value. It is counted in frames on the video output, so no conversion from `clk_sys` to time is needed. A completion marker that appears earlier ends the run as DONE, and the line grades the stored result; the printed label and a MEASURED line name which of the two ended the run, DONE or expiry of the window.
 
@@ -58,7 +58,7 @@ A run is accepted as "no answer" only when all of these hold, each measured in t
 
 - the pre-access marker was written, exactly once;
 - the M0 marker was written exactly once (the program did not restart), and no exception handler ran (no write of V_E to MK_E, no pixel of C_E);
-- after the pre-access marker the Chip-memory port saw no write other than the program's scratch write: no result was stored and no completion marker appeared, so no Chip-port activity stands between the access and the end of the window;
+- after the pre-access marker the Chip-memory port saw no write other than the program's scratch write, and the `fastram_*` port, which serves the expansion board, saw no access (`fastram_sel` stays low): no result was stored, no completion marker appeared and the board took no access. CPU instruction fetches at the Chip-memory port are not examined;
 - no equal result was stored, even if the completion marker is absent (for a write/readback, no store of the written value into the R2 slot; for an image read, an image equal to IMG0 in the IMG slot);
 - where the program has a scratch write between the access and its readback, that write appears after the pre-access marker;
 - the window expired.
@@ -177,7 +177,7 @@ e. The RESET sequence of §2.3.
 **5. Preconditions.** Each is printed on its own line, over every CPU setting, before the proposition that rests on it. Where one prints FAIL, the proposition is recorded as not graded and is never printed as PASS or FAIL.
 
 - P1-LEDCAL, power-LED calibration: the power LED makes exactly one transition in (t_CALDIM, t_M1), where t_CALDIM is the Chip-port write of the dim-phase marker; the level before that transition is L_dim (pra bit 1 = 1), the level after it is L_bright (pra bit 1 = 0), and L_bright ≠ L_dim. No timing margin around the bright-phase marker is assumed.
-- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a PASS or FAIL line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (the drive-LED port changes level at least once on every CPU setting), and a MEASURED line gives the level changes per setting. P1a is recorded as not graded where it fails, and the record names that line. A control for it needs a stimulus that changes the drive-LED level between the markers without the motor latch: a disk DMA started after the on-latch does (`prog_r1_fddctl.s`), and the unchanged comparator goes green on it.
+- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a MEASURED line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (whether the drive-LED port changes level at least once on every CPU setting), and a MEASURED line gives the level changes per setting. It calibrates P1a's observable and grades no claim: P1a has no assertion here, so no graded line rests on it, and it carries no MUTATION record. P1a is recorded as not graded, and the record states what the calibration measured: in the unmutated run the drive-LED port does not follow the motor latch (the p.244 sentence is graded as opus:8-cia.c26 / sol:8-cia.c24 in hrm/ch8-drive-select-motor-led, NM-HRM-046).
 - P1-DISPANCHOR, display anchor: F_ref as in §3.
 - P1-NOEXCEPTION, no exception: no pixel of value C_E and no write of V_E to MK_E anywhere in the run.
 - P1-MARKERS: the run loads, t_V2 is found, the write V1→MK1 appears exactly once, and the write V0→MK0 appears exactly once before t_M1. Writes of V0 after t_M1 are P2's record, not a precondition.
@@ -244,7 +244,7 @@ G passes when:
 
 G does not separate a PIC from a data bus that floats to all ones, which also satisfies G2 and G3. Presence is established only by P3's second expected value (IMG2 ≠ IMG0).
 
-The run prints G as GATE-G-PRESENCE, PASS or FAIL, before GATE-G-PRECOND. A control for it reads 32 words that no AUTOCONFIG device answers in place of $00E80000 (`prog_rg_nodev.s`: the program zeroes 32 words of its own results page and reads them), on the unchanged G1-G3 comparator.
+The run prints G as GATE-G-PRESENCE, PASS or FAIL, before GATE-G-PRECOND. A mutation for it reads 32 words that no AUTOCONFIG device answers in place of $00E80000 (`prog_rg_nodev.s`: the program zeroes 32 words of its own results page and reads them), on the unchanged G1-G3 comparator.
 
 The PIC must still be unconfigured when the program starts. If the harness's start-up has already configured it, G fails, and the builder records that as the reason.
 
@@ -451,6 +451,7 @@ clearing it: a page-documented event, not an assumed cycle count.
   RESET replaced by NOP).
 - Gate G and its contrasts: `prog_rg.s` (R_G); `prog_rg_shutup.s` (R_G', which writes the pre-access marker B4B4 before its image read); `prog_rg_nodev.s` (GATE-G-PRESENCE's mutation: the image read from 32 zeroed words of the results page).
 - Pre-access markers: every final risky access of `prog_r3.s` and its includers is preceded by a write to the word PRE ($0C00CE): $B1B1 before the IMG1 read, $B2B2 before the IMG2 read, $B3B3 before the write/readback at the other base. `prog_rg_shutup.s` writes $B4B4 to the same word before its image read.
+- No-answer contrasts (apparatus, not page-predicted): `prog_rg_shutup_hang.s`, `prog_r3_hang_img2.s`, `prog_r3_io_hang.s`, `prog_r3_io_eqstore.s`, `prog_r3_unconf_hang.s`, `prog_r3_n_hang.s` (§8.4).
 - P3: `prog_r3.s` (R3, and R3c/R3u/R3' select from it via an assembly
   symbol); `prog_r3_n.s` (R3n); `prog_r3_swap.s` (R3'); `prog_r3_swap_n.s`
   (R3n'); `prog_r3_c48first.s` (R3c); `prog_r3_nocfg.s` (R3u);
@@ -464,8 +465,6 @@ clearing it: a page-documented event, not an assumed cycle count.
 - P6: `prog_r6.s` (R6, and R6a select from it); `prog_r6m.s` (R6m);
   `prog_r6a.s` (R6a); `prog_r6am.s` (R6am); `prog_r6_hang.s` and
   `prog_r6m_hang.s` (P6-CHIPMEM's mutation: the stream stops at the tail).
-- P1a-FDDCAL's control: `prog_r1_fddctl.s` (R1 with a disk DMA started
-  after the motor on-latch).
 
 Every program shares one environment (interrupts and DMA cleared, the ROM
 overlay cleared, the exception vectors installed and the vector-table
@@ -489,19 +488,18 @@ once at the start of every run, including gate G's and P3's.
   writes immediately before its final risky access; it is not assumed from a
   fixed cycle count. A run ends at the completion marker (DONE), at the
   expiry of the window, or at a cycle ceiling that is a safety bound only.
-  Every line that grades such a run names which of the first two ended it, in
+  Every line that grades the result of a run's final access (GATE-G, P3-IMG2, P3-NOTOTHER, P3-BASE, P3-CONTROL-IO, P3-CONTROL-UNCONF) names which of the first two ended it, in
   its label and in a MEASURED line. Where the run ended at the window, the
   MEASURED line also gives the provenance of section 2.2: the marker written
   once, no restart, no exception, no Chip-port write after the marker but the
-  scratch write, the window expired. On every graded P3 and gate G run of
+  scratch write, no access at the board's `fastram_*` port, the window expired. On every graded P3 and gate G run of
   both cores the run ended at the completion marker.
 - Power-LED calibration: the check counts the power-LED transitions between the dim-phase marker and t_M1 in the port trace and compares the level before with the level after. It carries no tolerance window.
 - Every P3 run's register 00 read: type 11, memory flag set, size field 110
   (P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND and
   the two control preconditions print PASS on both cores).
 - Drive-LED port, run R1: no level change between the bright-phase marker
-  and t_M1 on any CPU setting of either core (P1a-FDDCAL prints FAIL; the run
-  with a disk DMA started after the on-latch shows one change per setting).
+  and t_M1 on any CPU setting of either core (P1a-FDDCAL measures "no").
 
 ### 8.4 Mutations
 
@@ -509,7 +507,7 @@ Every mutation below was run on both cores (`NMH_MUTATE=<value>`) and
 compared against its record. Each mutated program set is printed with a
 MEASURED line stating that its run wrote the completion marker. Results
 agreed between fx68k and TG68K in every case. "Newly red" means beyond the
-four red lines of the unmutated run (P1a-FDDCAL, GATE-G, P3-NOTOTHER, P3-BASE).
+three red lines of the unmutated run (GATE-G, P3-NOTOTHER, P3-BASE).
 
 | line(s) fed | `NMH_MUTATE` | stimulus change | measured, both cores |
 |---|---|---|---|
@@ -524,11 +522,11 @@ four red lines of the unmutated run (P1a-FDDCAL, GATE-G, P3-NOTOTHER, P3-BASE).
 | P3-CONTROL-IO | `P3-CONTROL-IO` | the write/readback aimed at the configured base B1 itself | P3-CONTROL-IO: FAIL (a configured memory board answers at its base, p.433) |
 | P3-CONTROL-UNCONF | `P3-CONTROL-UNCONF` | the board configured at $00400000 and the write/readback aimed there | P3-CONTROL-UNCONF: FAIL (same) |
 | P6-WITNESS | `P6` | RESET replaced by NOP in R6 and R6m (R6a, R6am) | P6-WITNESS: FAIL. P6: not graded (P6-WITNESS) |
-| GATE-G-PRESENCE | `GATE-G-PRESENCE` | the image read from 32 zeroed words of the results page in place of $00E80000 (`prog_rg_nodev`) | GATE-G-PRESENCE: FAIL (type field 00); the run completes; GATE-G-PRECOND unavailable; GATE-G, P3 and P6 not checkable |
+| GATE-G-PRESENCE | `GATE-G-PRESENCE` | the image read from 32 zeroed words of the results page in place of $00E80000 (`prog_rg_nodev`) | GATE-G-PRESENCE: FAIL (the zeroed words fail G2 and G3; the decoded type is not printed); the run completes; GATE-G-PRECOND unavailable; GATE-G, P3 and P6 not checkable |
 | P6-CHIPMEM | `P6-CHIPMEM` | the stream stops at the tail in R6 and R6m (`prog_r6_hang`, `prog_r6m_hang`) | P6-CHIPMEM: FAIL (neither run writes the completion marker); P6: not graded (P6-CHIPMEM) |
 
-Every run above also reprints P1a-FDDCAL, GATE-G, P3-NOTOTHER and P3-BASE
-unchanged (FAIL, FAIL, FAIL, FAIL) except where the selector feeds them
+Every run above also reprints GATE-G, P3-NOTOTHER and P3-BASE
+unchanged (FAIL, FAIL, FAIL) except where the selector feeds them
 (GATE-G-PRESENCE leaves the last three not checkable): a mutation gated behind
 `NMH_MUTATE` only changes the one input it names, never the others.
 
@@ -545,16 +543,26 @@ Lines without a mutation, each with its record in the test source:
 | P6-CONFIG | not exercised, by a scope decision: a program that leaves out the write to 48 in the R6 family would falsify it |
 | P6 | unfalsifiable by a live page-predicted stimulus at this boundary: the page's only contrasting case, RESET replaced by NOP, removes P6's own reset-witness precondition P6-WITNESS, so P6 against it is not graded rather than red; P6 is green with no live mutation |
 
-P1a-FDDCAL, GATE-G, P3-NOTOTHER and P3-BASE are red on the unmutated stimulus
+GATE-G, P3-NOTOTHER and P3-BASE are red on the unmutated stimulus
 and have no mutation of their own: a stimulus mutation cannot make a red line
 more red. Each has green controls on the same comparator.
 
 | red line | green control, same comparator | measured, both cores |
 |---|---|---|
-| P1a-FDDCAL (the drive-LED port changes level at least once between the bright-phase marker and t_M1) | the same comparator on `prog_r1_fddctl`, a disk DMA started after the motor on-latch (`NMH_MUTATE=P1a-FDDCAL`) | PASS: one level change per CPU setting |
 | GATE-G ("differs from IMG0, or no answer") | P3-IMG2: after the configuring write to register 48 the image differs from IMG0 (p.435 fn.6, p.431) | PASS |
 | P3-NOTOTHER, P3-BASE ("R2 != P2V, or no answer") | P3-CONTROL-IO: board configured at $00200000, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, outside the 8 MB memory space the board can occupy) | PASS: completion marker written, R2 = $0000, not equal to P2 |
 | P3-NOTOTHER, P3-BASE | P3-CONTROL-UNCONF: board left unconfigured (steps c and d skipped), read with R3n's own write/readback pair at $00400000 | PASS: completion marker written, R2 = $0000, not equal to P2 |
+
+No-answer contrasts. No unmutated run ends at the window: every unanswered access in this system completes. These runs exercise the no-answer branch of §2.2. They are apparatus contrasts, not page-predicted ones, and each is measured on both cores:
+
+| line | `NMH_MUTATE` | stimulus | measured, both cores |
+|---|---|---|---|
+| GATE-G | `GATE-G-NOANSWER` | the shut-up run stops right after its pre-access marker (`prog_rg_shutup_hang`) | PASS, ended by expiry of the no-answer window, every provenance item holding |
+| P3-IMG2 | `P3-IMG2-NOANSWER` | R3 stops right after its pre-access marker (`prog_r3_hang_img2`) | PASS, ended by expiry of the window |
+| P3-CONTROL-IO | `P3-CONTROL-IO-NOANSWER` | stops after the write and the scratch write, before the readback at $00A00000 (`prog_r3_io_hang`) | PASS, ended by expiry of the window |
+| P3-CONTROL-UNCONF | `P3-CONTROL-UNCONF-NOANSWER` | the same at $00400000, board unconfigured (`prog_r3_unconf_hang`) | PASS, ended by expiry of the window |
+| P3-CONTROL-IO | `P3-CONTROL-IO-EQSTORE` | P2 stored into the R2 slot, then the stream stops (`prog_r3_io_eqstore`) | FAIL: an equal result was stored and no completion marker followed |
+| P3-NOTOTHER | `P3-NOTOTHER-BOARD` | R3n stops after the write at $00400000 and the scratch write, before the readback (`prog_r3_n_hang`) | FAIL (already red): the board took the write, which the `fastram_*` port shows; no completion marker, no stored result |
 
 GATE-G measures red on the unmutated stimulus, on both cores: after the
 shut-up write, the PIC's register image is unchanged from IMG0, although
