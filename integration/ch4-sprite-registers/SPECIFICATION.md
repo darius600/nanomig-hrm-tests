@@ -1205,8 +1205,10 @@ graded.
 - Proposition: BLTCON0 = $08F0 (USED cleared). The page predicts no writes in
   $30200–$30209 while the A reads still occur ("USED Mode control bit to use
   destination D", p.267). The check goes red.
-- Precondition 1: DMACON without BLTEN ($8200). There are no A reads.
-- Precondition 2: the same change. Bit 6 = 0.
+- Precondition 1: the blit is never started (BLTSIZE is not written), BLTEN
+  stays on. There are no A reads.
+- Precondition 2: DMACON without BLTEN ($8200). Bit 6 = 0. No blit can run, so
+  precondition 1 is not graded.
 - Precondition 3: add a CPU write to $30200 inside the window. The quiet-window
   property fails, and the check flags the window as not quiet.
 
@@ -1375,8 +1377,10 @@ $05A–$05E are not registers ("new" on p.298). Not covered: $078, $07C
 - Proposition, ECS registers: on the ECS run, the BLTSIZH MOVE carries $0003.
   The page predicts three writes at DST3, $F0F0, $0FF0 and $FF00 at $30220,
   $30222 and $30224 ("w = Width", p.308). The check goes red.
-- Precondition 1: DMACON without COPEN. There are no list reads.
-- Precondition 2: DMACON without BLTEN. Bit 6 = 0.
+- Precondition 1: the Copper list ends ($FFFF, $FFFE) before the second BLTSIZE
+  MOVE, COPEN on. The Copper does not read the list through.
+- Precondition 2: DMACON without BLTEN. Bit 6 = 0. And separately DMACON without
+  COPEN. Bit 7 = 0, there are no list reads, and precondition 1 is not graded.
 - Precondition 3: add a CPU write BLTSIZE = $0082 before M1. The structural check
   flags it. On the ECS run, add a CPU write BLTSIZH = $0001 before M1 instead. The
   structural check flags it as well, and so does the quiet-window check, because
@@ -1417,8 +1421,8 @@ the equality is graded. Sources:
 
 **5. Preconditions.** In every run:
 
-1. P12's precondition 2. In the $0002 and $FFFF runs, also P12's precondition 1.
-   In the $0000 and $FFFD runs, the Copper fetches L1's first word in each
+1. P12's precondition 2. In the $0002 runs, also P12's precondition 1. In the
+   $FFFF, $0000 and $FFFD runs, the Copper fetches L1's first word in each
    graded field (R5, "no matter what the Copper is doing", p.25), and nothing
    more is required of its reads: no page says whether the Copper goes on
    reading its list after a MOVE it may not perform, so how far it reads L1 with
@@ -1429,8 +1433,9 @@ the equality is graded. Sources:
 
 **6. Contrasting cases.**
 
-- First pair: in the $FFFF run, the first BLTSIZE MOVE carries $0081. The page
-  predicts a different blit (P12), so the equality check goes red.
+- First pair: the $FFFF run is run with COPCON = $FFFD, bit 1 clear. On OCS the
+  Copper then cannot write the blitter registers (p.26, p.310), so the run lacks
+  the accesses of the $0002 run. The equality check goes red.
 - Second pair: the $FFFD run is run with COPCON = $FFFF, bit 1 set. The Copper
   then writes the blitter registers (P12), so this run gains accesses the $0000
   run lacks. The equality check goes red.
@@ -1612,6 +1617,12 @@ bit 3 (ECS) and bit 1 (NTSC).
 Every proposition is graded only when its fixture and its preconditions hold, in every family
 and under every mutation tag. A failing precondition prints FAIL on its own line, and the
 dependent line prints `RECORDED: <line>: NOT GRADED, a precondition does not hold (...)`.
+A precondition that cannot be measured while another line fails prints
+`RECORDED: <line>: NOT GRADED, depends on <line>`: P9-PRE1 and P9-PRE3 on P9-PRE2,
+P10-PRE3 on P10-PRE1, P11-PRE1 on P11-PRE2, P12-PRE1 on P12-PRE2 (DMAEN and COPEN),
+P14-PRE2 and P14-PRE3 on R5-ANCHOR-BEAM, and P1-PRE2 and P1-PRE3 on R5-ANCHOR-SHR. The
+preconditions that need a run which never reached DONE print the same, depending on the
+fixture line of their family (FIXTURE-CB, FIXTURE-BEAM, FIXTURE-SHR).
 Where a family has two runs (AUTO and AUTO-ODD), both run under every tag of the family.
 The RUN-* line of a program grades that it was loaded, that the CPU was released from reset and
 that DONE was reached. Its contrast is the same program without the DONE mark (`MUT_NODONE`,
