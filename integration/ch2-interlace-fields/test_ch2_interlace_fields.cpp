@@ -32,7 +32,7 @@
 //
 // MUTATION FIX-I stimulus red: NMH_MUTATE=FIX-I runs prog_i_n (FIXMARK stores $DEAD, not $BEEF, I-n); the known-value comparator prints FAIL
 // MUTATION PI-1 stimulus red: NMH_MUTATE=PI-1 runs prog_i_j (M1 waits between samples, I-j); PI-1's comparator prints FAIL
-// MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f); PI-2's comparator prints FAIL
+// MUTATION PI-2 stimulus red: NMH_MUTATE=PI-2 runs prog_i_f (DMACON leaves COPEN clear, I-f) and NMH_MUTATE=PI-2(move) runs prog_i_s (both lists end in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, I-s, so each field still holds one restart but none follows a terminal wait); PI-2's comparator prints FAIL; I-s controls: PI-1, one restart per M1 field, consecutive matched restarts
 // MUTATION PI-4 stimulus red: NMH_MUTATE=PI-4 runs prog_i_h (DMACON leaves BPLEN clear, I-h); PI-4's comparator prints FAIL
 // MUTATION PI-5 stimulus red: NMH_MUTATE=PI-5 runs prog_i_g (INTENA leaves COPER clear, I-g); PI-5's comparator prints FAIL
 // MUTATION PI-6 stimulus red: NMH_MUTATE=PI-6 runs prog_i_k (PIC filled with $0000, I-k) and NMH_MUTATE=PI-6(pop) runs prog_i_c (both lists omit the BPL1PT MOVEs, so no recorded field fetches from inside PIC, I-c); PI-6's comparator prints FAIL through the tags and through the empty population; control PI-1
@@ -59,7 +59,7 @@
 // MUTATION PT-2 stimulus red: NMH_MUTATE=PT-2 runs prog_t_e (DIWSTOP is the normal NTSC value, T-e); PT-2's comparator prints FAIL
 // MUTATION PT-3 stimulus red: NMH_MUTATE=PT-3 runs prog_t_d (line 100's mark uses H=$C0, T-d); PT-3's comparator prints FAIL
 // MUTATION PT-5 stimulus red: NMH_MUTATE=PT-5 runs prog_t_g (line 10's WAIT uses H=$40 and every mark stays live, T-g); PT-5's comparator prints FAIL through measured line lengths outside {227,228}; controls PT-1, PT-3, PT-4 and every mark present
-// MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h); PT-7's comparator prints FAIL
+// MUTATION PT-7 stimulus red: NMH_MUTATE=PT-7 runs prog_t_h (DMACON leaves COPEN clear, T-h) and NMH_MUTATE=PT-7(move) runs prog_t_j (LISTT ends in a MOVE to register $000, which the Copper cannot write, in front of the terminal wait, T-j, so each field still holds one restart but none follows a terminal wait); PT-7's comparator prints FAIL; T-j controls: PT-1, one restart per M1 field, consecutive matched restarts
 // MUTATION P2 stimulus red: NMH_MUTATE=P2 runs prog_t with PAL selected instead of NTSC (T-b); P2's comparator prints FAIL; controls PT-1, PT-2, PT-7
 // GATE PT-4 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-4 runs prog_t_c (the first WAIT is (0,$00), T-c); the gate prints closed through line 0-to-1, PT-5 and P3 print NOT GRADED; controls PT-1, PT-3
 // GATE PT-6 (printed as a MEASURED gate state, not graded; no assertion, so no MUTATION record): NMH_MUTATE=PT-6 runs prog_t_a (LACE clear, T-a); the gate prints closed and P3 prints "not graded, gate closed"; control PT-1
@@ -291,6 +291,87 @@ std::vector<int> match_m1_to_restarts(const std::vector<M1Record>& m1, uint64_t 
     return out;
 }
 
+// ---- Measurement M2 anchor: one restart per M1 field (SPECIFICATION.md 2.6) ----
+
+// Offset of the terminal `$FFFF,$FFFE` wait in the list at listbase, read from
+// the list as the program assembled it (stimulus data in chip memory, not a
+// fetch); UINT32_MAX if the list holds none within span bytes.
+uint32_t list_terminal_offset(const Run& r, uint32_t listbase, uint32_t span) {
+    for (uint32_t off = 0; off + 4 <= span; off += 4) {
+        auto w1 = W(r, listbase + off), w2 = W(r, listbase + off + 2);
+        if (w1 && w2 && *w1 == 0xFFFF && *w2 == 0xFFFE) return off;
+    }
+    return UINT32_MAX;
+}
+
+struct AnchorList { uint32_t base, span; };
+
+// What the anchor measured, clause by clause. `fields` is the number of M1
+// fields (one window each, from the write that opens the field to the write
+// that closes it); `oneRestart` counts the windows that hold exactly one read
+// of a list's first word; `ordered` is true when the restart interval each M1
+// field is matched to follows the previous field's by exactly one;
+// `afterTerminal` counts the windows whose restart is the Copper list fetch
+// directly after the fetch of a list's terminal wait.
+struct AnchorMeasure {
+    bool listsOk = false;
+    int fields = 0, oneRestart = 0, afterTerminal = 0;
+    bool ordered = false;
+    bool ok() const {
+        return listsOk && fields > 0 && oneRestart == fields && afterTerminal == fields && ordered;
+    }
+};
+
+AnchorMeasure measure_anchor(const Run& r, const std::vector<M1Record>& m1, uint64_t startCycle,
+                             const std::vector<Restart>& rs, const std::vector<int>& matched,
+                             const std::vector<AnchorList>& lists) {
+    AnchorMeasure m;
+    m.fields = (int)m1.size();
+    std::set<uint32_t> terminalWords;
+    std::vector<std::pair<uint32_t, uint32_t>> regions; // word-address ranges [lo,hi) up to the terminal wait
+    m.listsOk = true;
+    for (const auto& l : lists) {
+        uint32_t off = list_terminal_offset(r, l.base, l.span);
+        if (off == UINT32_MAX) { m.listsOk = false; continue; }
+        terminalWords.insert((l.base + off) / 2);
+        terminalWords.insert((l.base + off) / 2 + 1);
+        regions.push_back({l.base / 2, (l.base + off + 4) / 2});
+    }
+    if (!m.listsOk) return m;
+    // The reads of the lists' words, in port order: the Copper's list fetches.
+    std::vector<std::pair<uint64_t, uint32_t>> lf;
+    for (const auto& a : r.log) {
+        if (a.is_write) continue;
+        for (const auto& g : regions)
+            if (a.word_addr >= g.first && a.word_addr < g.second) { lf.push_back({a.cycle, a.word_addr}); break; }
+    }
+    std::stable_sort(lf.begin(), lf.end(), [](const auto& x, const auto& y) { return x.first < y.first; });
+    m.ordered = matched.size() == m1.size();
+    for (size_t k = 0; k < m1.size(); ++k) {
+        if (m.ordered && (matched[k] < 0 || (k > 0 && matched[k] != matched[k - 1] + 1))) m.ordered = false;
+        if (!m1[k].present) continue;
+        uint64_t opening = (k == 0) ? startCycle : m1[k - 1].closeCycle;
+        uint64_t closing = m1[k].closeCycle;
+        int n = 0, which = -1;
+        for (size_t j = 0; j < rs.size(); ++j)
+            if (rs[j].cycle > opening && rs[j].cycle <= closing) { ++n; which = (int)j; }
+        if (n != 1) continue;
+        ++m.oneRestart;
+        auto it = std::lower_bound(lf.begin(), lf.end(), rs[(size_t)which].cycle,
+                                   [](const auto& e, uint64_t c) { return e.first < c; });
+        if (it == lf.begin() || it == lf.end() || it->first != rs[(size_t)which].cycle) continue;
+        if (terminalWords.count((it - 1)->second)) ++m.afterTerminal;
+    }
+    return m;
+}
+
+std::string anchor_text(const AnchorMeasure& m) {
+    if (!m.listsOk) return "a list holds no terminal $FFFF,$FFFE wait";
+    return std::to_string(m.oneRestart) + " of " + std::to_string(m.fields) + " M1 fields hold exactly one restart, " +
+           std::to_string(m.afterTerminal) + " of them directly after a terminal wait, matched restarts consecutive = " +
+           (m.ordered ? "yes" : "no");
+}
+
 // ---- bitplane fetch grouping (20-word lines, SPECIFICATION.md 2.7) ----
 
 struct BplGroup { uint64_t cycle; uint32_t addr; int len; };
@@ -371,6 +452,7 @@ struct IAnalysis {
     // [PIC, PIC_END).
     std::vector<BplGroup> firsts;
     bool firstsOk = false;
+    AnchorMeasure anchor; // PI-2
 };
 
 bool p5_first_groups(const IAnalysis& a, std::vector<BplGroup>& out);
@@ -397,6 +479,10 @@ IAnalysis analyze_i(const std::string& dir, const std::string& prog) {
         a.fields[k] = f;
     }
     a.firstsOk = p5_first_groups(a, a.firsts);
+    std::vector<int> matched;
+    for (const auto& f : a.fields) matched.push_back(f.restart);
+    a.anchor = measure_anchor(a.r, a.m1, a.startCycle, a.restarts, matched,
+                              {{kI_LISTA, kI_LISTB - kI_LISTA}, {kI_LISTB, kI_LISTB - kI_LISTA}});
     return a;
 }
 
@@ -409,11 +495,7 @@ bool fix_i(const IAnalysis& a) {
 bool pi1_valid(const IAnalysis& a) { return ok(a.r) && a.completed && m1_all_valid(a.m1); }
 
 bool pi2_anchor(const IAnalysis& a) {
-    if (!a.m1.back().present) return false;
-    uint64_t lastClose = a.m1.back().closeCycle;
-    int n = 0;
-    for (const auto& rs : a.restarts) if (rs.cycle > a.startCycle && rs.cycle <= lastClose) ++n;
-    if (n != kI_K) return false;
+    if (!a.m1.back().present || !a.anchor.ok()) return false;
     for (const auto& f : a.fields) if (f.list != 'A' && f.list != 'B') return false;
     return true;
 }
@@ -738,9 +820,11 @@ void g_PI1(const IAnalysis& a) {
 }
 void g_PI2(const IAnalysis& a) {
     checks.expect(pi2_anchor(a),
-        "PI-2: between the first and last recorded wrap there are exactly 8 reads of LISTA's or LISTB's "
-        "first word (located by address; whether each is the first Copper fetch after $FFFF,$FFFE, as "
-        "section 2.6 defines a restart, is not itself checked)");
+        "PI-2: each of the 8 recorded M1 fields holds exactly one read of LISTA's or LISTB's first word "
+        "between the writes that open and close it, the restart intervals the fields are matched to follow "
+        "each other one by one in field order, and each such read is the Copper list fetch directly after "
+        "the fetch of its list's terminal $FFFF,$FFFE wait (section 2.6)");
+    checks.note("PI-2 measured: " + anchor_text(a.anchor));
 }
 void g_PI4(const IAnalysis& a) {
     checks.expect(pi4_groups(a),
@@ -928,8 +1012,8 @@ void run_program_i_assertions(const std::string& dir) {
         "(the organization of the data in memory matches the apparent organization on the screen) are not graded "
         "-- P4d observes only the memory addresses the bitplane DMA fetches, where the lines land on the screen is "
         "not graded (SPECIFICATION.md section 1), so a design that fetched these addresses but displayed the lines "
-        "in a different screen order would pass; the memory-only COP2-using-the-copper-in-interlaced-mode.c19 "
-        "stays graded in P4d");
+        "in a different screen order would pass; the memory-only claim of the same sentence (odd and even "
+        "lines interlaced together in memory) stays graded in P4d");
     g_P4e(a, p4_gate(p));
     checks.record("P4e: ch2-using-the-copper-in-interlaced-mode.c11 (Figure 2-1's odd field is the field at "
         "time t) is not graded -- P4e accepts either list as the first field and ties no field to the odd "
@@ -1000,7 +1084,7 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         {"PI-10", "prog_i_q"}, {"PI-11", "prog_i_r"},
         {"PI-7(bpl)", "prog_i_l"}, {"PI-7(spr)", "prog_i_m"},
         {"P6", "prog_i_e"},
-        {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-4", "prog_i_h"},
+        {"PI-1", "prog_i_j"}, {"PI-2", "prog_i_f"}, {"PI-2(move)", "prog_i_s"}, {"PI-4", "prog_i_h"},
         {"PI-5", "prog_i_g"}, {"PI-6", "prog_i_k"}, {"PI-6(pop)", "prog_i_c"}, {"PI-8", "prog_i_i"},
         {"FIX-I", "prog_i_n"},
     };
@@ -1134,6 +1218,15 @@ bool run_i_mutation(const std::string& dir, const std::string& label) {
         if (a.m1[0].present) checks.note(label + " mutation measured: M1 record 0's first V = " + std::to_string(a.m1[0].firstV));
     } else if (label == "PI-2") {
         g_PI2(a);
+    } else if (label == "PI-2(move)") {
+        // I-s: both lists end in a MOVE the Copper cannot execute in front of
+        // the terminal wait. Every M1 field still holds exactly one
+        // restart and the matched restarts still follow each other; the
+        // restart no longer follows the fetch of a terminal wait.
+        ctl(label, "PI-1", p.pi1);
+        ctl(label, "every M1 field holds exactly one restart", a.anchor.listsOk && a.anchor.oneRestart == a.anchor.fields);
+        ctl(label, "the matched restarts follow each other one by one", a.anchor.ordered);
+        g_PI2(a);
     } else if (label == "PI-4") {
         g_PI4(a);
     } else if (label == "PI-5") {
@@ -1212,6 +1305,7 @@ struct TAnalysis {
     std::vector<TField> fields;
     bool matched = false;
     std::map<uint32_t, std::vector<uint64_t>> readsByAddr; // word_addr -> cycles, ascending
+    AnchorMeasure anchor; // PT-7
 };
 
 TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc) {
@@ -1237,6 +1331,9 @@ TAnalysis analyze_t(const std::string& dir, const std::string& prog, bool ntsc) 
         if (a.m1[(size_t)k].present) f.N = a.m1[(size_t)k].lastV + 1;
         a.fields[(size_t)k] = f;
     }
+    std::vector<int> matched;
+    for (const auto& f : a.fields) matched.push_back(f.restart);
+    a.anchor = measure_anchor(a.r, a.m1, a.startCycle, a.restarts, matched, {{kT_LISTT, kT_PLANE - kT_LISTT}});
     return a;
 }
 
@@ -1274,13 +1371,7 @@ bool pt2_groups(const TAnalysis& a) {
     return true;
 }
 
-bool pt7_anchor(const TAnalysis& a) {
-    if (!a.m1.back().present) return false;
-    uint64_t lastClose = a.m1.back().closeCycle;
-    int n = 0;
-    for (const auto& rs : a.restarts) if (rs.cycle > a.startCycle && rs.cycle <= lastClose) ++n;
-    return n == kT_K;
-}
+bool pt7_anchor(const TAnalysis& a) { return a.m1.back().present && a.anchor.ok(); }
 
 // Delta = m_c(k,v) - m_b(k,v) for v = 44..254; returns true and *delta if a
 // single value holds everywhere it is defined.
@@ -1465,9 +1556,11 @@ void g_PT5(const TAnalysis& a, const TPre& t) {
 }
 void g_PT7(const TAnalysis& a) {
     checks.expect(pt7_anchor(a),
-        "PT-7: between the first and last recorded wrap there are exactly 13 reads of LISTT's first word "
-        "(located by address; whether each is the first Copper fetch after $FFFF,$FFFE, as section 2.6 "
-        "defines a restart, is not itself checked)");
+        "PT-7: each of the 13 recorded M1 fields holds exactly one read of LISTT's first word between the "
+        "writes that open and close it, the restart intervals the fields are matched to follow each other "
+        "one by one in field order, and each such read is the Copper list fetch directly after the fetch "
+        "of LISTT's terminal $FFFF,$FFFE wait (section 2.6)");
+    checks.note("PT-7 measured: " + anchor_text(a.anchor));
 }
 void g_P2(const TAnalysis& a, bool pre) {
     if (!pre) { checks.record("P2: NOT GRADED, a precondition (PT-1, PT-2 or PT-7) did not hold on this run"); return; }
@@ -1569,6 +1662,7 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         {"PT-5", {"prog_t_g", true}},
         {"PT-6", {"prog_t_a", true}},
         {"PT-7", {"prog_t_h", true}},
+        {"PT-7(move)", {"prog_t_j", true}},
         {"FIX-T", {"prog_t_i", true}},
     };
     auto it = kProg.find(label);
@@ -1639,6 +1733,13 @@ bool run_t_mutation(const std::string& dir, const std::string& label) {
         ctl(label, "the gate PT-6 is closed", !t.pt6);
         g_P3(a, t);
     } else if (label == "PT-7") {
+        g_PT7(a);
+    } else if (label == "PT-7(move)") {
+        // T-j: LISTT ends in a MOVE the Copper cannot execute in front of the
+        // terminal wait (as I-s).
+        ctl(label, "PT-1", t.pt1);
+        ctl(label, "every M1 field holds exactly one restart", a.anchor.listsOk && a.anchor.oneRestart == a.anchor.fields);
+        ctl(label, "the matched restarts follow each other one by one", a.anchor.ordered);
         g_PT7(a);
     } else if (label == "FIX-T") {
         g_FIX_T(a);

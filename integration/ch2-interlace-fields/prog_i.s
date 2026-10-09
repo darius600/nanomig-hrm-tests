@@ -22,6 +22,7 @@
 ;   I_MOD38      I-p   BPL1MOD = BPL2MOD = 38, not 40
 ;   I_NOPTRLIST + M1_DELAY   I-q   both lists omit the BPL1PT MOVEs and M1 waits between samples
 ;   I_NOSPRLIST + M1_DELAY   I-r   both lists omit the SPR0PT MOVEs and M1 waits between samples
+;   I_BADMOVE    I-s   both lists end, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
 
         include "nanomig.i"
         include "ch2.i"
@@ -222,6 +223,9 @@ i_handler:
         endif
         endif
         dc.w    INTREQ,$8010
+        ifd     I_BADMOVE
+        dc.w    $0000,$0000
+        endif
         dc.w    $FFFF,$FFFE
 
         org     LISTB
@@ -275,6 +279,9 @@ i_handler:
         endif
         endif
         dc.w    INTREQ,$8010
+        ifd     I_BADMOVE
+        dc.w    $0000,$0000
+        endif
         dc.w    $FFFF,$FFFE
 
         include "m1.i"

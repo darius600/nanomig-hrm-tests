@@ -14,6 +14,7 @@
 ;   T_LINE10_40    T-g  the WAIT of line 10 uses H=$40, not $E0
 ;   T_NOCOPEN      T-h  DMACON = $8300 (COPEN not set)
 ;   T_BADFIX       T-i  FIXMARK stores $DEAD, not $BEEF
+;   T_BADMOVE      T-j  LISTT ends, before the terminal $FFFF,$FFFE, in a MOVE the Copper cannot execute
 
         include "nanomig.i"
         include "ch2.i"
@@ -90,6 +91,9 @@ start:
 ; ---- Copper list LISTT (section 4.2) ----
         org     LISTT
         include "listt_body.i"
+        ifd     T_BADMOVE
+        dc.w    $0000,$0000
+        endif
         dc.w    $FFFF,$FFFE
 
         include "m1.i"
