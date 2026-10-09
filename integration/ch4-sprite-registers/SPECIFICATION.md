@@ -499,7 +499,8 @@ against the 35 ns grid is invisible (R2).
   The page predicts d_{2j+1} = d_{2j}, and the "+1 per step" check goes red.
 - Precondition 1: BPLCON0 = $1200. The ruler period becomes 32, so the check
   fails. This is run SHR-LORES, P2.
-- Precondition 2: DMACON without SPREN ($8380). No e_A appears.
+- Precondition 2: SREF with 79 scan lines (CTL $8F00, 79 data pairs). Its block
+  of e_A lines is one scan line short of 80.
 - Precondition 3: usage 0 with VSTOP = VSTART + 5 (CTL $4500). Group 0 has 5
   scan lines.
 
@@ -618,10 +619,10 @@ p.284 ("Not used") give the bits no function on the original chips (see 2.5).
 - Proposition: usage 1 with CTL $4C01 (SH0 instead of bit 4). The page predicts
   d_1 = 82 ("SH0 ... 140 ns increment", p.303), so the equality check goes red.
 - Precondition 1: the ECS configuration. VPOSR gives $20.
-- Precondition 2: BPLCON0 = $1240 on ECS (period 8).
+- Precondition 2: BPLCON0 = $9200 (Hires) on OCS. The ruler period is 16.
 - Precondition 3: usage 4 with CTL $6400. d_4 = 80.
 - Precondition 4: usage 0 with CTL $4500. Group 0 has 5 scan lines.
-- Precondition 5: DMACON without SPREN ($8380). No e_A appears.
+- Precondition 5: SREF with 79 scan lines, as P1's contrast for its precondition 2.
 
 **7. Reference frame.** R1–R6.
 
@@ -807,7 +808,8 @@ on every display-window line of both fields.
 - Proposition, the reference: omit the SPR4DATA write. Sprite 4 is not armed
   ("You write to SPRxDATA last because that address "arms" the sprite", p.123),
   no sprite-4 run appears, and the check goes red.
-- Precondition 1: DMACON = $83A0 (SPREN set). Bit 5 = 1.
+- Precondition 1: DMACON = $83A0 (SPREN set), with all eight sprite pointers at
+  the null sprite so that the sprite channel reads no refresh address. Bit 5 = 1.
 - Precondition 2: delay the field-B writes until V7–V0 = $80. MB then falls
   inside the display window.
 - Precondition 3: the VERTB wait loop reads a Chip word at a low address on every
@@ -1429,11 +1431,9 @@ the equality is graded. Sources:
 
 - First pair: in the $FFFF run, the first BLTSIZE MOVE carries $0081. The page
   predicts a different blit (P12), so the equality check goes red.
-- Second pair: in the $FFFD run, the CPU writes BLTSIZE = $0082 once at V7–V0 =
-  $80 of the first graded field. The CPU can always start the blitter ("Writing
-  to this register will start the blitter", p.269), so this run gains writes the
-  $0000 run lacks, whichever way the disputed case goes. The equality check goes
-  red.
+- Second pair: the $FFFD run is run with COPCON = $FFFF, bit 1 set. The Copper
+  then writes the blitter registers (P12), so this run gains accesses the $0000
+  run lacks. The equality check goes red.
 - Precondition 1: as in P12.
 - Precondition 2: a CPU write of BLTSIZE in the $0000 run. The structural check
   flags it. A CPU write of BLTSIZH ($05E) in the ECS $0000 run, which declares none,
@@ -1557,9 +1557,9 @@ writes only the PAL bit.
   BEAMCON0. Long and short fields are "interlace only" (p.24). After M1 a frame
   is then two fields of equal length, an even count. Before M1 it is two fields
   that differ by one, an odd count. The "after = before" check goes red.
-- Precondition 1: the other chip set, or PAL selected. The identification
-  differs.
-- Precondition 2: PAL selected. N = 625 before M1.
+- Precondition 1: the other chip set. The identification differs.
+- Precondition 2: in the ECS run, BEAMCON0 = $0020 written right after step 1,
+  before M1. N = 625 before M1. The identification does not change with it.
 - Precondition 3: BPLCON0 = $0200 (LACE clear) in step 1. The two fields of a
   frame before M1 have the same length, and the precondition goes red.
 - Precondition 4: in the OCS run, COLOR00 = $0F00 after the third VERTB before M1.
