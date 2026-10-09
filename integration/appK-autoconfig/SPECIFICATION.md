@@ -177,7 +177,7 @@ e. The RESET sequence of §2.3.
 **5. Preconditions.** Each is printed on its own line, over every CPU setting, before the proposition that rests on it. Where one prints FAIL, the proposition is recorded as not graded and is never printed as PASS or FAIL.
 
 - P1-LEDCAL, power-LED calibration: the power LED makes exactly one transition in (t_CALDIM, t_M1), where t_CALDIM is the Chip-port write of the dim-phase marker; the level before that transition is L_dim (pra bit 1 = 1), the level after it is L_bright (pra bit 1 = 0), and L_bright ≠ L_dim. No timing margin around the bright-phase marker is assumed.
-- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a PASS or FAIL line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (the drive-LED port changes level at least once on every CPU setting), and a MEASURED line gives the level changes per setting. P1a is recorded as not graded where it fails, and the record names that line.
+- P1a-FDDCAL, drive-LED calibration: after the "off" latch the LED is L_off, and after the "on" latch it is L_on while prb = $FF (so the /MTR line itself is high); L_on ≠ L_off. This shows the drive LED shows the latched motor state, which is what p.244 says a system reset turns off. The run prints it as a PASS or FAIL line before P1a, from the drive-LED trace between the bright-phase marker and t_M1 (the drive-LED port changes level at least once on every CPU setting), and a MEASURED line gives the level changes per setting. P1a is recorded as not graded where it fails, and the record names that line. A control for it needs a stimulus that changes the drive-LED level between the markers without the motor latch: a disk DMA started after the on-latch does (`prog_r1_fddctl.s`), and the unchanged comparator goes green on it.
 - P1-DISPANCHOR, display anchor: F_ref as in §3.
 - P1-NOEXCEPTION, no exception: no pixel of value C_E and no write of V_E to MK_E anywhere in the run.
 - P1-MARKERS: the run loads, t_V2 is found, the write V1→MK1 appears exactly once, and the write V0→MK0 appears exactly once before t_M1. Writes of V0 after t_M1 are P2's record, not a precondition.
@@ -464,6 +464,8 @@ clearing it: a page-documented event, not an assumed cycle count.
 - P6: `prog_r6.s` (R6, and R6a select from it); `prog_r6m.s` (R6m);
   `prog_r6a.s` (R6a); `prog_r6am.s` (R6am); `prog_r6_hang.s` and
   `prog_r6m_hang.s` (P6-CHIPMEM's mutation: the stream stops at the tail).
+- P1a-FDDCAL's control: `prog_r1_fddctl.s` (R1 with a disk DMA started
+  after the motor on-latch).
 
 Every program shares one environment (interrupts and DMA cleared, the ROM
 overlay cleared, the exception vectors installed and the vector-table
@@ -482,18 +484,24 @@ once at the start of every run, including gate G's and P3's.
   flag set, size field = 6 (2 MB, p.433's "Unextended" column); registers
   0C, 34, 38 and 3C read physical 1111 at both pair addresses, as p.432's
   own example and p.434-435 state for the reserved registers.
-- The second-vsync window of section 2.2 ("no CPU access ... between the
-  access and the second vertical-sync leading edge after it") is checked
-  against the video trace's own vsync edges, not assumed from a fixed
-  cycle count: a run's completion marker (when one appears) trivially
-  satisfies it, and where none appears the run is confirmed to have
-  covered at least two vsync edges before concluding "no answer". The
-  cycle count a run is given remains a safety ceiling only, never the
-  oracle.
+- The no-answer window of section 2.2 is two vertical-sync leading edges
+  counted on the run's video trace from the pre-access marker the program
+  writes immediately before its final risky access; it is not assumed from a
+  fixed cycle count. A run ends at the completion marker (DONE), at the
+  expiry of the window, or at a cycle ceiling that is a safety bound only.
+  Every line that grades such a run names which of the first two ended it, in
+  its label and in a MEASURED line. Where the run ended at the window, the
+  MEASURED line also gives the provenance of section 2.2: the marker written
+  once, no restart, no exception, no Chip-port write after the marker but the
+  scratch write, the window expired. On every graded P3 and gate G run of
+  both cores the run ended at the completion marker.
 - Power-LED calibration: the check counts the power-LED transitions between the dim-phase marker and t_M1 in the port trace and compares the level before with the level after. It carries no tolerance window.
 - Every P3 run's register 00 read: type 11, memory flag set, size field 110
   (P3-IMG-PRECOND, P3-CONTENT-PRECOND, P3-NOTOTHER-PRECOND, P3-BASE-PRECOND and
   the two control preconditions print PASS on both cores).
+- Drive-LED port, run R1: no level change between the bright-phase marker
+  and t_M1 on any CPU setting of either core (P1a-FDDCAL prints FAIL; the run
+  with a disk DMA started after the on-latch shows one change per setting).
 
 ### 8.4 Mutations
 
@@ -501,7 +509,7 @@ Every mutation below was run on both cores (`NMH_MUTATE=<value>`) and
 compared against its record. Each mutated program set is printed with a
 MEASURED line stating that its run wrote the completion marker. Results
 agreed between fx68k and TG68K in every case. "Newly red" means beyond the
-three red lines of the unmutated run (GATE-G, P3-NOTOTHER, P3-BASE).
+four red lines of the unmutated run (P1a-FDDCAL, GATE-G, P3-NOTOTHER, P3-BASE).
 
 | line(s) fed | `NMH_MUTATE` | stimulus change | measured, both cores |
 |---|---|---|---|
@@ -516,10 +524,13 @@ three red lines of the unmutated run (GATE-G, P3-NOTOTHER, P3-BASE).
 | P3-CONTROL-IO | `P3-CONTROL-IO` | the write/readback aimed at the configured base B1 itself | P3-CONTROL-IO: FAIL (a configured memory board answers at its base, p.433) |
 | P3-CONTROL-UNCONF | `P3-CONTROL-UNCONF` | the board configured at $00400000 and the write/readback aimed there | P3-CONTROL-UNCONF: FAIL (same) |
 | P6-WITNESS | `P6` | RESET replaced by NOP in R6 and R6m (R6a, R6am) | P6-WITNESS: FAIL. P6: not graded (P6-WITNESS) |
+| GATE-G-PRESENCE | `GATE-G-PRESENCE` | the image read from 32 zeroed words of the results page in place of $00E80000 (`prog_rg_nodev`) | GATE-G-PRESENCE: FAIL (type field 00); the run completes; GATE-G-PRECOND unavailable; GATE-G, P3 and P6 not checkable |
+| P6-CHIPMEM | `P6-CHIPMEM` | the stream stops at the tail in R6 and R6m (`prog_r6_hang`, `prog_r6m_hang`) | P6-CHIPMEM: FAIL (neither run writes the completion marker); P6: not graded (P6-CHIPMEM) |
 
-Every run above also reprints GATE-G, P3-NOTOTHER and P3-BASE unchanged
-(FAIL, FAIL, FAIL): a mutation gated behind `NMH_MUTATE` only changes the
-one input it names, never the others.
+Every run above also reprints P1a-FDDCAL, GATE-G, P3-NOTOTHER and P3-BASE
+unchanged (FAIL, FAIL, FAIL, FAIL) except where the selector feeds them
+(GATE-G-PRESENCE leaves the last three not checkable): a mutation gated behind
+`NMH_MUTATE` only changes the one input it names, never the others.
 
 Lines without a mutation, each with its record in the test source:
 
@@ -534,12 +545,13 @@ Lines without a mutation, each with its record in the test source:
 | P6-CONFIG | not exercised, by a scope decision: a program that leaves out the write to 48 in the R6 family would falsify it |
 | P6 | unfalsifiable by a live page-predicted stimulus at this boundary: the page's only contrasting case, RESET replaced by NOP, removes P6's own reset-witness precondition P6-WITNESS, so P6 against it is not graded rather than red; P6 is green with no live mutation |
 
-GATE-G, P3-NOTOTHER and P3-BASE are red on the unmutated stimulus and have
-no mutation of their own: a stimulus mutation cannot make a red line more
-red. Each has green controls on the same comparator.
+P1a-FDDCAL, GATE-G, P3-NOTOTHER and P3-BASE are red on the unmutated stimulus
+and have no mutation of their own: a stimulus mutation cannot make a red line
+more red. Each has green controls on the same comparator.
 
 | red line | green control, same comparator | measured, both cores |
 |---|---|---|
+| P1a-FDDCAL (the drive-LED port changes level at least once between the bright-phase marker and t_M1) | the same comparator on `prog_r1_fddctl`, a disk DMA started after the motor on-latch (`NMH_MUTATE=P1a-FDDCAL`) | PASS: one level change per CPU setting |
 | GATE-G ("differs from IMG0, or no answer") | P3-IMG2: after the configuring write to register 48 the image differs from IMG0 (p.435 fn.6, p.431) | PASS |
 | P3-NOTOTHER, P3-BASE ("R2 != P2V, or no answer") | P3-CONTROL-IO: board configured at $00200000, read at $00A00000 (Figure K-1, p.386: Zorro II I/O expansion space, outside the 8 MB memory space the board can occupy) | PASS: completion marker written, R2 = $0000, not equal to P2 |
 | P3-NOTOTHER, P3-BASE | P3-CONTROL-UNCONF: board left unconfigured (steps c and d skipped), read with R3n's own write/readback pair at $00400000 | PASS: completion marker written, R2 = $0000, not equal to P2 |

@@ -4,6 +4,11 @@
 ; section 8.1): B1=$00200000, B2=B1+size=$00400000, both multiples of the
 ; board's size inside the standard 8 MB space.
 ;
+; Every run ends with one risky access that may be unanswered (the IMG1 read,
+; the IMG2 read, or the write/readback at the other base); the word PRE gets a
+; distinct marker immediately before it, and the no-answer window is counted
+; from that marker.
+;
 ; Independent points vary, each selected by a symbol an including source
 ; sets before this file; prog_r3.s itself sets none of them:
 ;   MUT_SWAP    -- R3'/R3n': configure at B2 instead of B1 (bases exchanged)
@@ -68,6 +73,10 @@ R0V      equ     MK_NEXT+192
 R1V      equ     MK_NEXT+194
 SCRATCH  equ     MK_NEXT+196
 R2V      equ     MK_NEXT+198
+PRE      equ     MK_NEXT+200     ; pre-access marker, written immediately before the run's final risky access
+PRE_IMG1 equ     $B1B1           ; final access: the IMG1 read (R3c)
+PRE_IMG2 equ     $B2B2           ; final access: the IMG2 read (R3, R3u)
+PRE_R2   equ     $B3B3           ; final access: the write/readback at the other base (R3n family)
 
         org     PROGRAM_ORG
 
@@ -126,6 +135,7 @@ readimg1last:
         lea     AC_BASE,a0
         lea     IMG1,a2
         moveq   #15,d3
+        move.w  #PRE_IMG1,PRE
 .imgl1z: move.w (a0)+,(a2)+
         move.w  (a0)+,(a2)+
         dbra    d3,.imgl1z
@@ -135,12 +145,14 @@ readimg2last:
         lea     AC_BASE,a0
         lea     IMG2,a2
         moveq   #15,d3
+        move.w  #PRE_IMG2,PRE
 .imgl2z: move.w (a0)+,(a2)+
         move.w  (a0)+,(a2)+
         dbra    d3,.imgl2z
         DONE
 
 r3n_last:
+        move.w  #PRE_R2,PRE
         move.w  #P2V,NOTHER_TARGET
         move.w  #$0000,SCRATCH
         move.w  NOTHER_TARGET,R2V

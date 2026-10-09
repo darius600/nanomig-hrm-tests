@@ -8,6 +8,8 @@
         include "common.i"
 
 IMG      equ     MK_NEXT
+PRE      equ     MK_NEXT+200     ; pre-access marker, written immediately before the image read
+PRE_RG   equ     $B4B4
 
         org     PROGRAM_ORG
 
@@ -18,6 +20,7 @@ start:
         lea     AC_BASE,a0
         lea     IMG,a2
         moveq   #15,d3
+        move.w  #PRE_RG,PRE
 .imgl:  move.w  (a0)+,(a2)+
         move.w  (a0)+,(a2)+
         dbra    d3,.imgl

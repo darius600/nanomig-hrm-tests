@@ -39,7 +39,10 @@
 // MUTATION P6 none impossible unfalsifiable by a live page-predicted stimulus at this boundary: the page's only contrasting case for P6 (RESET replaced by NOP, R6a/R6am) also removes P6's own reset-witness precondition P6-WITNESS, so grading P6 against it reports not graded, not red, through P6's own clause (SPECIFICATION.md section 5.2 P6, "6. Contrasting cases"); a contrast that keeps the witness would need a RESET that does not drive /BUSRST, which no input of this boundary offers; P6 is green with no live mutation
 // MUTATION P3-NOTOTHER stimulus green already red on the unmutated stimulus, which a stimulus mutation cannot make more red; the same "R2 != P2V, or no answer" comparator, fed the board configured at $00200000 and read at $00A00000 (prog_r3_io) or the board left unconfigured and read at $00400000 (prog_r3_unconf_n), prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
 // MUTATION P3-BASE stimulus green already red on the unmutated stimulus; the same "R2 != P2V, or no answer" comparator, fed the same two control stimuli, prints PASS: P3-CONTROL-IO and P3-CONTROL-UNCONF
-// MUTATION GATE-G stimulus green already red on the unmutated stimulus; the same "differs from IMG0, or no answer" comparator (no completion marker, or an image that differs from IMG0), fed run R3 (the board configured by the byte write to register 48 in place of the write to the shut-up address 4C), prints PASS: P3-IMG2
+// MUTATION GATE-G stimulus green already red on the unmutated stimulus; the same "differs from IMG0, or no answer" comparator (a completion marker with an image that differs from IMG0, or a proven no-answer window), fed run R3 (the board configured by the byte write to register 48 in place of the write to the shut-up address 4C), prints PASS: P3-IMG2
+// MUTATION GATE-G-PRESENCE stimulus red the image read from 32 zeroed words of the results page in place of $00E80000 (prog_rg_nodev), via NMH_MUTATE=GATE-G-PRESENCE: the unchanged G1-G3 comparator goes red (the type field reads 00); the run completes; GATE-G-PRECOND is recorded unavailable, and GATE-G, P3 and P6 not checkable
+// MUTATION P1a-FDDCAL stimulus green already red on the unmutated stimulus, which a stimulus mutation cannot make more red; the unchanged comparator (the drive-LED port changes level at least once between the bright-phase marker and t_M1), fed the run with a disk DMA started after the motor on-latch (prog_r1_fddctl), via NMH_MUTATE=P1a-FDDCAL, prints PASS
+// MUTATION P6-CHIPMEM stimulus red the instruction stream stops at the tail in R6 and R6m (prog_r6_hang, prog_r6m_hang), via NMH_MUTATE=P6-CHIPMEM: the unchanged comparator (both runs wrote the completion marker, on every CPU setting) goes red, because neither run writes M2 or the completion marker; P6 is recorded not graded
 //
 // GATE-G, P3-NOTOTHER and P3-BASE are red: GATE-G through p.436, P3-NOTOTHER
 // and P3-BASE through pp.391 and 435. Each has green controls on the same
@@ -55,11 +58,18 @@
 // exercised.
 //
 // P1a carries no assertion in this package. Its precondition, the
-// drive-LED calibration (SPECIFICATION.md section 5.1.5), is measured on
+// drive-LED calibration (SPECIFICATION.md section 5.1.5), is graded on
 // every run as P1a-FDDCAL: the drive-LED port changes level between the
 // motor off-latch/on-latch sequence and t_M1. The P1a record names what
-// that measurement printed; FIXTURE-FDD prints whether the port changed
+// that line printed; FIXTURE-FDD prints whether the port changed
 // level at all (NM-HRM-046).
+//
+// No-answer alternatives (GATE-G, P3-IMG2, P3-NOTOTHER, P3-BASE and the two
+// controls): each program writes a distinct marker to the word PRE
+// immediately before its final risky access, and the window is two
+// vertical-sync leading edges counted from that marker. A completion marker
+// that appears first ends the run as DONE; every label and a MEASURED line
+// name which of the two ended the run (SPECIFICATION.md section 2.2).
 
 #include <array>
 #include <cstdint>
@@ -133,6 +143,12 @@ constexpr uint32_t kR3R1      = kMK_NEXT + 194;
 constexpr uint32_t kR3Scratch = kMK_NEXT + 196;
 constexpr uint32_t kR3R2      = kMK_NEXT + 198;
 constexpr uint16_t kP0v = 0xA55A, kP1v = 0x3CC3, kP2v = 0x5AA5;
+
+// The pre-access marker word of the programs that end in an access that may be
+// unanswered (prog_r3*.s, prog_rg_shutup.s), and the value each kind of final
+// access writes to it.
+constexpr uint32_t kPre = kMK_NEXT + 200;
+constexpr uint16_t kPreImg1 = 0xB1B1, kPreImg2 = 0xB2B2, kPreR2 = 0xB3B3, kPreShutup = 0xB4B4;
 
 // R6-family (prog_r6*.s)
 constexpr uint32_t kR6Mk1  = kMK_NEXT + 0;
@@ -223,34 +239,96 @@ bool board_is_zorro2_2mb_memory(const std::array<uint16_t, 32>& img0) {
     return r.type == 0b11 && r.memory && r.size == 0b110;
 }
 
-// Runs to the completion marker or to `budget` clk_sys cycles, whichever
-// comes first -- `budget` is a cycle ceiling only, a build parameter, not
-// an oracle (SPECIFICATION.md section 8.3). Section 2.2's own "no answer"
-// definition is the second vertical-sync leading edge since the run
-// started; that is checked here against the run's own video capture
-// (the anchor a "no answer" verdict rests on), not assumed from a cycle
-// count: `t_v2_found` is true once the run has demonstrably run for at
-// least that long, whether or not the marker ever appeared.
-struct DoneWait { std::optional<uint64_t> done; bool t_v2_found = false; };
-DoneWait wait_done_or_second_vsync(nmh::NanomigHarness& h, uint32_t done_word_addr, uint16_t done_value, uint64_t budget) {
-    DoneWait out;
+// The no-answer window of SPECIFICATION.md section 2.2. A run ends at the
+// completion marker, at the expiry of the window, or at `budget` clk_sys
+// cycles, whichever comes first -- `budget` is a cycle ceiling only, a build
+// parameter, not an oracle (section 8.3). The window is two vertical-sync
+// leading edges counted on the run's own video capture from the pre-access
+// marker the program writes immediately before its final risky access
+// (t_N, section 3), so a quick completion marker cannot be taken for the
+// expiry of a window it ended, and no cycle count is assumed.
+struct Window {
+    std::optional<uint64_t> done;    // the completion marker
+    std::optional<uint64_t> marker;  // the first pre-access marker
+    bool expired = false;            // two leading edges counted from the marker
+};
+bool is_pre_marker(const nmh::RamAccess& a) {
+    return a.is_write && a.word_addr == kPre / 2 &&
+           (a.data == kPreImg1 || a.data == kPreImg2 || a.data == kPreR2 || a.data == kPreShutup);
+}
+// `anchor_at_start`: the program has no pre-access marker (run R_G, which
+// must complete); the window then counts from the start of the run, and the
+// run is not cut short at its expiry.
+Window wait_done_or_window(nmh::NanomigHarness& h, uint64_t budget, bool anchor_at_start) {
+    Window out;
     size_t seen = 0;
     int vs_edges = 0;
     bool prev_vs = h.video().empty() ? false : h.video().back().vs;
-    for (uint64_t i = 0; i < budget && !out.done; ++i) {
+    if (anchor_at_start) out.marker = 0;
+    for (uint64_t i = 0; i < budget && !out.done && (anchor_at_start || !out.expired); ++i) {
         h.run_cycles(1);
+        bool fresh_marker = false;
         for (; seen < h.ram_log().size(); ++seen) {
             const auto& a = h.ram_log()[seen];
-            if (a.is_write && a.word_addr == done_word_addr && a.data == done_value) out.done = a.cycle;
+            if (a.is_write && a.word_addr == kDoneAddr / 2 && a.data == kDoneValue) out.done = a.cycle;
+            else if (!out.marker && is_pre_marker(a)) { out.marker = a.cycle; fresh_marker = true; }
         }
         if (!h.video().empty()) {
             bool vs = h.video().back().vs;
-            if (vs && !prev_vs) ++vs_edges;
+            if (out.marker && !fresh_marker && vs && !prev_vs) ++vs_edges;
             prev_vs = vs;
         }
+        out.expired = vs_edges >= 2;
     }
-    out.t_v2_found = vs_edges >= 2;
     return out;
+}
+
+// What a run must show to be accepted as "no answer" (section 2.2), measured
+// from the run's own logs after it ended. None of it is assumed.
+struct NoAnswer {
+    bool marker_once = false;   // the pre-access marker was written exactly once
+    bool no_restart = false;    // the M0 marker was written exactly once
+    bool no_exception = false;  // no write of V_E to MK_E and no pixel of C_E
+    bool quiet = false;         // after the marker, no Chip-port write but the scratch write
+    bool expired = false;       // the window expired
+    bool proven() const { return marker_once && no_restart && no_exception && quiet && expired; }
+};
+NoAnswer measure_no_answer(nmh::NanomigHarness& h, const Window& w) {
+    NoAnswer n;
+    if (!w.marker) return n;
+    int markers = 0;
+    bool exception = false, quiet = true;
+    for (const auto& a : h.ram_log()) {
+        if (is_pre_marker(a)) ++markers;
+        if (a.is_write && a.word_addr == kMK_E / 2 && a.data == kVE) exception = true;
+        if (a.is_write && a.cycle > *w.marker && !(a.word_addr == kR3Scratch / 2 && a.data == 0x0000))
+            quiet = false;
+    }
+    Color ce = decode_color(kCE);
+    for (const auto& s : h.video())
+        if (pixel_is(s, ce)) { exception = true; break; }
+    n.marker_once = markers == 1;
+    n.no_restart = count_writes(h.ram_log(), kMK0, kV0) == 1;
+    n.no_exception = !exception;
+    n.quiet = quiet;
+    n.expired = w.expired;
+    return n;
+}
+bool window_live(bool loaded, const Window& w) { return loaded && (w.done || w.expired); }
+// How the run ended, for the label of a line that grades it.
+std::string ended_by(const Window& w) {
+    if (w.done) return " [ended by: the completion marker]";
+    if (w.expired) return " [ended by: expiry of the no-answer window]";
+    return " [ended by: neither the completion marker nor the end of the window]";
+}
+std::string yn(bool b) { return b ? "yes" : "no"; }
+std::string provenance_text(const Window& w, const NoAnswer& n) {
+    if (w.done) return "ended by the completion marker";
+    return std::string(w.expired ? "ended by expiry of the no-answer window" :
+                                   "ended by neither the completion marker nor the end of the window") +
+           "; pre-access marker written once: " + yn(n.marker_once) + ", no restart: " + yn(n.no_restart) +
+           ", no exception: " + yn(n.no_exception) + ", no Chip-port write after the marker but the scratch write: " +
+           yn(n.quiet) + ", window expired: " + yn(n.expired);
 }
 
 // ---- R1-family capture (P1, P2) ---------------------------------------
@@ -420,38 +498,40 @@ R1Out run_r1(const std::string& bin, uint8_t cpu_config, uint16_t bg_color) {
     return out;
 }
 
-// ---- gate G / P3 capture (no frame waits, DONE-or-second-vsync bounded)
+// ---- gate G / P3 capture (no frame waits, DONE-or-window bounded) ------
 
 struct SimpleImgOut {
     bool loaded = false;
-    std::optional<uint64_t> done;
-    bool t_v2_found = false;
-    std::array<uint16_t, 32> img{};
+    Window w;
+    NoAnswer na;
+    std::array<uint16_t, 32> img{};   // read in every case: an image stored without the completion marker counts
+    bool live() const { return window_live(loaded, w); }
 };
 
-SimpleImgOut run_simple_img(const std::string& bin, uint32_t img_base) {
+SimpleImgOut run_simple_img(const std::string& bin, uint32_t img_base, bool anchor_at_start) {
     SimpleImgOut out;
     nmh::Config cfg = base_cfg();
     nmh::NanomigHarness h(cfg);
     out.loaded = h.load_program(bin) > 0;
     if (!out.loaded) return out;
     h.boot(kBootBudget);
-    auto w = wait_done_or_second_vsync(h, kDoneAddr / 2, kDoneValue, kSimpleBudget);
-    out.done = w.done;
-    out.t_v2_found = w.t_v2_found || out.done.has_value();
-    if (out.done) out.img = read_img(h, img_base);
+    out.w = wait_done_or_window(h, kSimpleBudget, anchor_at_start);
+    out.na = measure_no_answer(h, out.w);
+    out.img = read_img(h, img_base);
     return out;
 }
 
 struct R3Out {
     bool loaded = false;
-    std::optional<uint64_t> done;
-    bool t_v2_found = false;
+    Window w;
+    NoAnswer na;
     std::array<uint16_t, 32> img0{}, img1{}, img2{};
     std::optional<uint16_t> r0, r1, r2;
     bool alias_before_r0 = false; // a P0/P1 write below $200000 before R0's store
     bool scratch_before_r0 = false; // section 5.2 P3.5: scratch write between the writes and reads
-    bool scratch_before_r2 = false;
+    bool scratch_before_r2 = false; // the scratch write after the pre-access marker, before any store of R2
+    bool equal_stored = false;      // P2 was stored into the R2 slot, whether or not the completion marker followed
+    bool live() const { return window_live(loaded, w); }
 };
 
 R3Out run_r3(const std::string& bin) {
@@ -461,18 +541,18 @@ R3Out run_r3(const std::string& bin) {
     out.loaded = h.load_program(bin) > 0;
     if (!out.loaded) return out;
     h.boot(kBootBudget);
-    auto w = wait_done_or_second_vsync(h, kDoneAddr / 2, kDoneValue, kSimpleBudget);
-    out.done = w.done;
-    out.t_v2_found = w.t_v2_found || out.done.has_value();
+    out.w = wait_done_or_window(h, kSimpleBudget, false);
+    out.na = measure_no_answer(h, out.w);
     // Every slot is read from the harness's memory regardless of whether
     // this run's own DONE mark appeared: img0 (step a), img1 (step b) and
     // r0/r1 (step d) are always written before that run's own last,
     // possibly-unanswered action (section 2.2), so they are trustworthy
     // outright. The slot written *by* that last action (img1 for R3c,
     // img2 for R3 and its base-exchange/no-config contrasts, r2 for R3n
-    // and its contrast) is only meaningful when out.done is set; callers
-    // that grade "X, or no answer" check out.done themselves rather than
-    // trusting a default-initialised (zero) slot as a real answer.
+    // and its contrast) is only meaningful when the run ended by the
+    // completion marker or by a proven no-answer window; callers that grade
+    // "X, or no answer" check that themselves rather than trusting a
+    // default-initialised (zero) slot as a real answer.
     out.img0 = read_img(h, kR3Img0);
     out.img1 = read_img(h, kR3Img1);
     out.img2 = read_img(h, kR3Img2);
@@ -492,37 +572,47 @@ R3Out run_r3(const std::string& bin) {
     auto scratch_cycles = write_cycles(h.ram_log(), kR3Scratch, 0x0000);
     if (r0_cycle)
         for (auto c : scratch_cycles) if (c < *r0_cycle) { out.scratch_before_r0 = true; break; }
-    // The scratch write precedes the read of R2 in program order. When the
-    // read is answered, its store of R2 bounds it. When no R2 was stored, the
-    // order has nothing to bound: no page fixes what an unanswered access
-    // does, so a run that never completes the preceding write is not a
-    // failure of the order, and the condition counts as met.
-    auto r2_cycle = (out.done && out.r2) ? first_write_cycle(h.ram_log(), kR3R2, *out.r2) : std::nullopt;
-    if (r2_cycle) {
-        for (auto c : scratch_cycles) if (c < *r2_cycle) { out.scratch_before_r2 = true; break; }
-    } else {
-        out.scratch_before_r2 = true;
-    }
+    // The scratch write precedes the read of R2 in program order: measured as
+    // a write after the pre-access marker and before the first store of any
+    // value into the R2 slot. A run that never completes the write has no such
+    // scratch write, and the condition is then not met.
+    std::optional<uint64_t> r2_store;
+    for (const auto& a : h.ram_log())
+        if (a.is_write && a.word_addr == kR3R2 / 2) { r2_store = a.cycle; break; }
+    if (out.w.marker)
+        for (auto c : scratch_cycles)
+            if (c > *out.w.marker && (!r2_store || c < *r2_store)) { out.scratch_before_r2 = true; break; }
+    out.equal_stored = count_writes(h.ram_log(), kR3R2, kP2v) >= 1;
 
     return out;
 }
 
-bool r3_live(const R3Out& r) { return r.loaded && r.t_v2_found; }
+bool r3_live(const R3Out& r) { return r.live(); }
 // R0 = P0 and R1 = P1V: the board answers at the base it was given.
 bool r3_assigned(const R3Out& r) {
     return r.r0 && *r.r0 == kP0v && r.r1 && *r.r1 == kP1v;
 }
-// What the write/readback at the other base measured: the completion marker
-// and the stored R2.
+// What the write/readback at the other base measured: how the run ended, the
+// stored R2 and, where the completion marker is absent, what the no-answer
+// window rests on.
 void note_r2(Checks& c, const char* what, const R3Out& r) {
     char buf[160];
-    std::snprintf(buf, sizeof buf, "%s: completion marker %s, R2 = $%04X (P2 = $%04X)", what,
-                  r.done ? "written" : "absent", (unsigned)r.r2.value_or(0), (unsigned)kP2v);
-    c.note(buf);
+    std::snprintf(buf, sizeof buf, ", R2 = $%04X (P2 = $%04X)", (unsigned)r.r2.value_or(0), (unsigned)kP2v);
+    c.note(std::string(what) + ": " + provenance_text(r.w, r.na) + ", scratch write after the marker: " +
+           yn(r.scratch_before_r2) + ", P2 stored in the R2 slot: " + yn(r.equal_stored) + buf);
 }
 // "R2 != P2V, or no answer": the board does not answer at the address read.
+// With the completion marker the stored R2 decides. Without it, the run must
+// have shown a proven no-answer window and no equal result.
 bool r3_no_answer_or_other(const R3Out& r) {
-    return !r.done || r.r2.value_or(0x0000) != kP2v;
+    if (r.w.done) return r.r2.value_or(0x0000) != kP2v;
+    return r.na.proven() && r.scratch_before_r2 && !r.equal_stored;
+}
+// "IMG2 differs from IMG0, or no answer" for the image-last runs.
+bool r3_img2_leaves(const R3Out& r) {
+    const bool differs = !img_equal(r.img2, r.img0);
+    if (r.w.done) return differs;
+    return r.na.proven() && differs;
 }
 
 // ---- R6-family capture (P6: reuses P1's steps a-d, then RESET + tail) -
@@ -639,13 +729,16 @@ int main(int argc, char** argv) {
     // The unmutated R1 run set feeds every R1-family line except the one a
     // selector replaces.
     const std::vector<R1Out> r1_base = run_r1_set("prog_r1", kC1);
-    std::vector<R1Out> r1_nop, r1_nocal, r1_disp;
+    std::vector<R1Out> r1_nop, r1_nocal, r1_disp, r1_fddctl;
     if (mv == "P1A")               { r1_nop   = run_r1_set("prog_r1a", kC1);
                                      note_mutant_done("prog_r1a", all_of_pop(r1_nop, [](const R1Out& r) { return r.done; })); }
     if (mv == "P1-LEDCAL")         { r1_nocal = run_r1_set("prog_r1_nocal", kC1);
                                      note_mutant_done("prog_r1_nocal", all_of_pop(r1_nocal, [](const R1Out& r) { return r.done; })); }
     if (mv == "P1-DISPANCHOR")     { r1_disp  = run_r1_set("prog_r1_c1prime", kC1);   // kC1 stays the expected colour
                                      note_mutant_done("prog_r1_c1prime", all_of_pop(r1_disp, [](const R1Out& r) { return r.done; })); }
+    if (mv == "P1a-FDDCAL")        { r1_fddctl = run_r1_set("prog_r1_fddctl", kC1);
+                                     note_mutant_done("prog_r1_fddctl", all_of_pop(r1_fddctl, [](const R1Out& r) { return r.done; })); }
+    const std::vector<R1Out>& r1_fdd_feed     = mv == "P1a-FDDCAL" ? r1_fddctl : r1_base;
     const std::vector<R1Out>& r1_p1b_feed     = mv == "P1A" ? r1_nop : r1_base;
     const std::vector<R1Out>& r1_witness_feed = mv == "P1A" ? r1_nop : r1_base;
     // The R1-family preconditions are measured on the run their target lines
@@ -706,15 +799,17 @@ int main(int argc, char** argv) {
         // drive-LED port shows the latched motor state, so it changes level between the motor
         // off-latch and the on-latch. Measured on every CPU setting before P1a.
         int fdd_changes_min = -1, fdd_changes_max = 0;
-        for (const auto& r : r1_base) {
+        for (const auto& r : r1_fdd_feed) {
             if (fdd_changes_min < 0 || r.fdd_changes_before_m1 < fdd_changes_min) fdd_changes_min = r.fdd_changes_before_m1;
             if (r.fdd_changes_before_m1 > fdd_changes_max) fdd_changes_max = r.fdd_changes_before_m1;
         }
-        const bool p1a_fddcal_ok = all_of_pop(r1_base, [](const R1Out& r) { return r.loaded && r.fdd_changes_before_m1 >= 1; });
-        checks.note("P1a-FDDCAL (precondition of P1a): the drive-LED port changed level between the "
-            "off-latch/on-latch sequence and t_M1 on every CPU setting: " + std::string(p1a_fddcal_ok ? "yes" : "no") +
-            " (level changes per setting: min " + std::to_string(fdd_changes_min < 0 ? 0 : fdd_changes_min) +
-            ", max " + std::to_string(fdd_changes_max) + ")");
+        const bool p1a_fddcal_ok = all_of_pop(r1_fdd_feed, [](const R1Out& r) { return r.loaded && r.fdd_changes_before_m1 >= 1; });
+        checks.note("P1a-FDDCAL level changes of the drive-LED port between the bright-phase marker and t_M1, per "
+            "CPU setting: min " + std::to_string(fdd_changes_min < 0 ? 0 : fdd_changes_min) +
+            ", max " + std::to_string(fdd_changes_max));
+        checks.expect(p1a_fddcal_ok,
+            "P1a-FDDCAL [p244,p370]: the drive-LED port changes level between the off-latch/on-latch sequence "
+            "and t_M1, so the latched motor state is visible at the drive LED, on every CPU setting");
         if (!p1a_fddcal_ok)
             checks.record("P1a [p244,p370]: not graded: precondition failed (P1a-FDDCAL: the drive-LED port did "
                 "not show the latched motor state; NM-HRM-046)");
@@ -749,9 +844,12 @@ int main(int argc, char** argv) {
     }
 
     // ================= Gate G =============================================
-    SimpleImgOut g = run_simple_img(dir + "/prog_rg.bin", kImgAtMkNext);
+    const bool g_nodev = mv == "GATE-G-PRESENCE";
+    SimpleImgOut g = run_simple_img(dir + (g_nodev ? "/prog_rg_nodev.bin" : "/prog_rg.bin"), kImgAtMkNext, true);
+    if (g_nodev)
+        checks.note("NMH_MUTATE=" + mv + ": the mutated run (prog_rg_nodev) wrote the completion marker: " + yn(g.w.done.has_value()));
     bool g2 = false, g3 = false, reg08_can_shutup = false;
-    if (g.done) {
+    if (g.w.done) {
         // register 00's physical byte (not complemented): bits7-4 from the
         // word at AC_BASE+0, bits3-0 from the word at AC_BASE+2 (section 4,
         // Figure K-14 a)).
@@ -769,14 +867,13 @@ int main(int argc, char** argv) {
         int nib08_logical = (~nib08_phys) & 0xF;
         reg08_can_shutup = ((nib08_logical >> 2) & 1) == 0;
     }
-    bool gate_g_pass = g.loaded && g.done.has_value() && g.t_v2_found && g2 && g3;
-    if (gate_g_pass) {
-        checks.note("Gate G: an unconfigured PIC answers in $00E8xxxx (type field and reserved registers "
-            "0C/34/38/3C read as documented)");
-    } else {
+    bool gate_g_pass = g.loaded && g.w.done.has_value() && g2 && g3;
+    checks.expect(gate_g_pass,
+        "GATE-G-PRESENCE [p432,p434,p435]: an unconfigured PIC answers in $00E8xxxx (the run completes, the "
+        "type field reads Zorro II and the reserved registers 0C/34/38/3C read logical 0)");
+    if (!gate_g_pass)
         checks.record("Gate G failed: no AUTOCONFIG device answers in $00E8xxxx (fastram_config offers "
             "none, or the harness's start-up had already configured it)");
-    }
 
     // ---- Gate G precondition, then GATE-G's own check: the stimulus writes
     // $00 to the shut-up address 4C and reads the image again.
@@ -787,14 +884,18 @@ int main(int argc, char** argv) {
         checks.record("GATE-G-PRECOND [p433]: unavailable: Gate G supplied no register image");
     }
     if (gate_g_pass && reg08_can_shutup) {
-        SimpleImgOut r = run_simple_img(dir + "/prog_rg_shutup.bin", kImgAtMkNext);
-        if (r.loaded && r.t_v2_found) {
-            checks.expect(!r.done || !img_equal(r.img, g.img),
-                "GATE-G [p433,p436]: writing $00 to the shut-up address 4C makes the PIC that supports shut-up "
-                "disappear from $00E8xxxx (a differing image, or no answer)");
+        SimpleImgOut r = run_simple_img(dir + "/prog_rg_shutup.bin", kImgAtMkNext, false);
+        if (r.live()) {
+            const bool differs = !img_equal(r.img, g.img);
+            checks.note("GATE-G run R_G': " + provenance_text(r.w, r.na) + ", image differs from IMG0: " + yn(differs));
+            checks.expect(r.w.done ? differs : (r.na.proven() && differs),
+                std::string("GATE-G [p433,p436]: writing $00 to the shut-up address 4C makes the PIC that supports "
+                "shut-up disappear from $00E8xxxx (a differing image after the completion marker, or no answer: "
+                "no completion marker within two vertical-sync leading edges of the pre-access marker and no "
+                "image stored)") + ended_by(r.w));
         } else {
-            checks.record("GATE-G [p433,p436]: not graded: the shut-up run did not load or did not run past "
-                "the second vertical-sync leading edge");
+            checks.record("GATE-G [p433,p436]: not graded: the shut-up run did not load, or wrote neither the "
+                "completion marker nor the pre-access marker followed by the end of its no-answer window");
         }
     } else {
         checks.record("GATE-G [p433,p436]: not graded: Gate G failed or register 08 bit 6 indicates the board "
@@ -811,7 +912,7 @@ int main(int argc, char** argv) {
             if (mv != sel) return normal;
             R3Out m = run_r3(dir + "/" + prog + ".bin");
             checks.note(std::string("NMH_MUTATE=") + mv + ": the mutated run (" + prog + ") wrote the completion marker: " +
-                        (m.done ? "yes" : "no"));
+                        (m.w.done ? "yes" : "no"));
             return m;
         };
         const R3Out r_img1   = mutated_r3("P3-IMG1", "prog_r3_c48first", r_base);
@@ -825,7 +926,7 @@ int main(int argc, char** argv) {
         // ---- IMG1 = IMG0 (contrast: P3-IMG1 / R3c) and IMG2 != IMG0 --------
         // img1 is written at step b, before any of R3's own risky access,
         // so it is trustworthy on the unmutated run regardless of
-        // out.done. Under the R3c mutation img1 *is* the run's own last
+        // the completion marker. Under the R3c mutation img1 *is* the run's own last
         // (possibly-unanswered) action: if register 48's own decoder stops
         // answering there too, img1 stays at its unwritten (zero) default,
         // which the comparator below already reads as "not equal" to the
@@ -834,15 +935,19 @@ int main(int argc, char** argv) {
                              board_is_zorro2_2mb_memory(r_img1.img0) && board_is_zorro2_2mb_memory(r_img2.img0);
         checks.expect(img_pre,
             "P3-IMG-PRECOND [p432,p433]: the runs behind P3-IMG1 and P3-IMG2 loaded and ran to the completion "
-            "marker or past the second vertical-sync leading edge; register 00 reads type 11, memory flag set "
+            "marker or to the end of the no-answer window; register 00 reads type 11, memory flag set "
             "and size 110 (2 megabytes)");
         if (img_pre) {
             checks.expect(img_equal(r_img1.img1, r_img1.img0),
                 "P3-IMG1 [p431,p436]: the nybble write to register 4A alone does not configure the "
                 "board (register-image unchanged)");
-            checks.expect(!r_img2.done || !img_equal(r_img2.img2, r_img2.img0),
-                "P3-IMG2 [p435,p431]: after the byte write to register 48 the PIC leaves $00E8xxxx "
-                "(one AUTOCONFIG device offered; a differing register-image)");
+            checks.note("P3-IMG2 run: " + provenance_text(r_img2.w, r_img2.na) + ", image differs from IMG0: " +
+                        yn(!img_equal(r_img2.img2, r_img2.img0)));
+            checks.expect(r3_img2_leaves(r_img2),
+                std::string("P3-IMG2 [p435,p431]: after the byte write to register 48 the PIC leaves $00E8xxxx "
+                "(one AUTOCONFIG device offered; a differing register-image after the completion marker, or no "
+                "answer: no completion marker within two vertical-sync leading edges of the pre-access marker "
+                "and no image stored)") + ended_by(r_img2.w));
         } else {
             checks.record("P3-IMG1 [p431,p436]: not graded: precondition failed (P3-IMG-PRECOND)");
             checks.record("P3-IMG2 [p435,p431]: not graded: precondition failed (P3-IMG-PRECOND)");
@@ -855,7 +960,7 @@ int main(int argc, char** argv) {
                                  board_is_zorro2_2mb_memory(r_cont.img0) && board_is_zorro2_2mb_memory(rn_base.img0) &&
                                  r_cont.scratch_before_r0 && rn_base.scratch_before_r0;
         checks.expect(content_pre,
-            "P3-CONTENT-PRECOND [p432,p433]: both runs loaded and ran past the window; register 00 reads "
+            "P3-CONTENT-PRECOND [p432,p433]: both runs loaded and ran to the completion marker or to the end of the no-answer window; register 00 reads "
             "type 11, memory flag set and size 110 (2 megabytes); the scratch write precedes the readback");
         if (content_pre) {
             checks.expect(r_cont.r0 && *r_cont.r0 == kP0v && r_cont.r1 && *r_cont.r1 == kP1v &&
@@ -871,7 +976,7 @@ int main(int argc, char** argv) {
         const bool notother_pre = r3_live(rn_feed) && board_is_zorro2_2mb_memory(rn_feed.img0) &&
                                   rn_feed.scratch_before_r2;
         checks.expect(notother_pre,
-            "P3-NOTOTHER-PRECOND [p432,p433]: R3n loaded and ran past the window; register 00 reads type 11, "
+            "P3-NOTOTHER-PRECOND [p432,p433]: R3n loaded and ran to the completion marker or to the end of the no-answer window; register 00 reads type 11, "
             "memory flag set and size 110 (2 megabytes); the scratch write precedes the readback of R2");
         note_r2(checks, "P3-NOTOTHER run R3n", rn_feed);
         if (notother_pre) {
@@ -879,10 +984,11 @@ int main(int argc, char** argv) {
                 "P3-NOTOTHER-ASSIGNED [p391,p435]: in run R3n a write/readback at B1, the base written to "
                 "register 48, returns what was written (the board answers at the base it was given)");
             checks.expect(r3_assigned(rn_base) && r3_no_answer_or_other(rn_base),
-                "P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]: "
+                std::string("P3-NOTOTHER (sol:K-0837, opus:K-0869) [p391,p433-435]: "
                 "\"The software then tells each board where to reside in memory\" (p.391) and \"the "
                 "low order register takes bits 23-16\" (p.435) -- the memory board answers at the base it "
-                "was given and does not also answer at the base it was not given");
+                "was given and does not also answer at the base it was not given (R2 differs from P2 after "
+                "the completion marker, or no answer within the window)") + ended_by(rn_base.w));
         } else {
             checks.record("P3-NOTOTHER [p391,p433-435]: not graded: precondition failed (P3-NOTOTHER-PRECOND)");
         }
@@ -892,7 +998,7 @@ int main(int argc, char** argv) {
                               board_is_zorro2_2mb_memory(rs_feed.img0) && board_is_zorro2_2mb_memory(rsn.img0) &&
                               rs_feed.scratch_before_r0 && rsn.scratch_before_r2;
         checks.expect(base_pre,
-            "P3-BASE-PRECOND [p432,p433]: R3' and R3n' loaded and ran past the window; register 00 reads "
+            "P3-BASE-PRECOND [p432,p433]: R3' and R3n' loaded and ran to the completion marker or to the end of the no-answer window; register 00 reads "
             "type 11, memory flag set and size 110 (2 megabytes) in both; the scratch write precedes the "
             "readback in each");
         note_r2(checks, "P3-BASE run R3n'", rsn);
@@ -902,10 +1008,11 @@ int main(int argc, char** argv) {
                 "P3-BASE-ASSIGNED [p391,p435]: with B1 and B2 exchanged and B2 written to register 48, a "
                 "write/readback at B2 returns what was written (the board answers at the base it was given)");
             checks.expect(assigned && r3_no_answer_or_other(rsn),
-                "P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]: \"The "
+                std::string("P3-BASE (sol:K-0837, opus:K-0869) [p388,p391,p433,p435]: \"The "
                 "software then tells each board where to reside in memory\" (p.391) and \"the low "
                 "order register takes bits 23-16\" (p.435) -- with B1 and B2 exchanged the board "
-                "answers at B2 and not at B1");
+                "answers at B2 and not at B1 (R2 differs from P2 after the completion marker, or no "
+                "answer within the window)") + ended_by(rsn.w));
         } else {
             checks.record("P3-BASE-ASSIGNED [p391,p435]: not graded: precondition failed (P3-BASE-PRECOND)");
             checks.record("P3-BASE [p388,p391,p433,p435]: not graded: precondition failed (P3-BASE-PRECOND)");
@@ -914,30 +1021,31 @@ int main(int argc, char** argv) {
         // ---- green controls for P3-NOTOTHER and P3-BASE, same comparator -
         const bool io_pre = r3_live(r_io) && board_is_zorro2_2mb_memory(r_io.img0) && r_io.scratch_before_r2;
         checks.expect(io_pre,
-            "P3-CONTROL-IO-PRECOND [p432,p433]: the control run loaded and ran past the window; register 00 "
+            "P3-CONTROL-IO-PRECOND [p432,p433]: the control run loaded and ran to the completion marker or to the end of the no-answer window; register 00 "
             "reads type 11, memory flag set and size 110 (2 megabytes); the scratch write precedes the "
             "readback of R2");
         note_r2(checks, "P3-CONTROL-IO run", r_io);
         if (io_pre) {
             checks.expect(r3_no_answer_or_other(r_io),
-                "P3-CONTROL-IO [p386]: with the board configured at $00200000, the same "
+                std::string("P3-CONTROL-IO [p386]: with the board configured at $00200000, the same "
                 "write/readback at $00A00000 (Figure K-1: Zorro II I/O expansion space) does not "
-                "return what was written (R2 differs from P2, or no completion marker)");
+                "return what was written (R2 differs from P2 after the completion marker, or no answer "
+                "within the window)") + ended_by(r_io.w));
         } else {
             checks.record("P3-CONTROL-IO [p386]: not graded: precondition failed (P3-CONTROL-IO-PRECOND)");
         }
 
         const bool unconf_pre = r3_live(r_unconf) && board_is_zorro2_2mb_memory(r_unconf.img0) && r_unconf.scratch_before_r2;
         checks.expect(unconf_pre,
-            "P3-CONTROL-UNCONF-PRECOND [p432,p433]: the control run loaded and ran past the window; register "
+            "P3-CONTROL-UNCONF-PRECOND [p432,p433]: the control run loaded and ran to the completion marker or to the end of the no-answer window; register "
             "00 reads type 11, memory flag set and size 110 (2 megabytes); the scratch write precedes the "
             "readback of R2");
         note_r2(checks, "P3-CONTROL-UNCONF run", r_unconf);
         if (unconf_pre) {
             checks.expect(r3_no_answer_or_other(r_unconf),
-                "P3-CONTROL-UNCONF [p431]: with the board left unconfigured, the same "
-                "write/readback at $00400000 does not return what was written (R2 differs from P2, "
-                "or no completion marker)");
+                std::string("P3-CONTROL-UNCONF [p431]: with the board left unconfigured, the same "
+                "write/readback at $00400000 does not return what was written (R2 differs from P2 "
+                "after the completion marker, or no answer within the window)") + ended_by(r_unconf.w));
         } else {
             checks.record("P3-CONTROL-UNCONF [p431]: not graded: precondition failed (P3-CONTROL-UNCONF-PRECOND)");
         }
@@ -966,11 +1074,14 @@ int main(int argc, char** argv) {
         struct P6Pair { R6Out a, m; };
         std::vector<P6Pair> p6;
         const bool p6_nop = mv == "P6";
+        const bool p6_hang = mv == "P6-CHIPMEM";
         for (uint8_t s : settings)
-            p6.push_back({ run_r6(dir + (p6_nop ? "/prog_r6a.bin" : "/prog_r6.bin"), s, false),
-                           run_r6(dir + (p6_nop ? "/prog_r6am.bin" : "/prog_r6m.bin"), s, true) });
+            p6.push_back({ run_r6(dir + (p6_nop ? "/prog_r6a.bin" : p6_hang ? "/prog_r6_hang.bin" : "/prog_r6.bin"), s, false),
+                           run_r6(dir + (p6_nop ? "/prog_r6am.bin" : p6_hang ? "/prog_r6m_hang.bin" : "/prog_r6m.bin"), s, true) });
         if (p6_nop)
             note_mutant_done("prog_r6a, prog_r6am", all_of_pop(p6, [](const P6Pair& p) { return p.a.done && p.m.done; }));
+        if (p6_hang)
+            note_mutant_done("prog_r6_hang, prog_r6m_hang", all_of_pop(p6, [](const P6Pair& p) { return p.a.done && p.m.done; }));
 
         const bool p6_config_ok = all_of_pop(p6, [](const P6Pair& p) {
             return p.a.loaded && p.m.loaded && p.a.no_exception && p.m.no_exception &&
@@ -985,13 +1096,10 @@ int main(int argc, char** argv) {
             "after t_M1 and before the second vertical-sync leading edge, on every CPU setting");
 
         const bool p6_chipmem_ok = all_of_pop(p6, [](const P6Pair& p) { return p.a.done.has_value() && p.m.done.has_value(); });
-        if (p6_chipmem_ok) {
-            checks.note("P6 Chip memory answered at the program's addresses after RESET (the completion marker "
-                "was written by R6 and R6m) on every CPU setting");
-        } else {
-            checks.record("P6-CHIPMEM [p223]: Chip memory did not answer at the program's addresses after "
-                "RESET on some CPU setting (p.223: \"Software must assume that memory is not available\")");
-        }
+        checks.expect(p6_chipmem_ok,
+            "P6-CHIPMEM [p223]: Chip memory answers at the program's addresses after RESET (the completion "
+            "marker was written by R6 and R6m), on every CPU setting; p.223: \"Software must assume that "
+            "memory is not available\"");
 
         std::string why = failed_names({{"P6-CONFIG", p6_config_ok}, {"P6-WITNESS", p6_witness_ok},
                                         {"P6-CHIPMEM", p6_chipmem_ok}});
