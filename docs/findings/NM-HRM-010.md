@@ -57,7 +57,7 @@ The long-line bit exists, alternates in NTSC and is reported in VPOSR ([`#L110`]
 
 [`integration/ch2-interlace-fields`](../../integration/ch2-interlace-fields) shows the same at the Copper: an interlaced NTSC display whose Copper list marks each line with a `WAIT (v, $E0)` and a MOVE, timed at the chip-RAM port, with each line's first bitplane fetch standing in from line 254 on, where the marks stop because a WAIT compares only eight bits of the line. p. 24's four-field pattern needs a 228-colour-clock last line in two fields of every four. `P3` grades twelve consecutive fields at any phase and is gated by `PT-4` and `PT-6`, both open in the normal run: the fields alternate 263 and 262 lines, but every field's last line is 227 colour clocks (1816 cycles at 8 per colour clock). `PT-5` stays green because 227 is one of the two page values.
 
-The `MEASURED` lines are identical on both cores ([`test_ch2_interlace_fields.cpp:1453-1472`](../../integration/ch2-interlace-fields/test_ch2_interlace_fields.cpp) prints them):
+The `MEASURED` lines are identical on both cores ([`test_ch2_interlace_fields.cpp:1588-1607`](../../integration/ch2-interlace-fields/test_ch2_interlace_fields.cpp) prints them):
 
 ```text
 MEASURED: P3 measured: Delta = 1288 clk_sys (161 colour clocks)
