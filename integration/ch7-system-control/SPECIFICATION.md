@@ -451,8 +451,8 @@ Let L1, L3 and L5 be the values read at E110 of F1, E110 of F3 and E190 of F5.
 1. **Anchor check**, as above. Contrast: move the second anchor to line 101.
 2. **Read-time check**, as above. Contrast: add a 30-line delay before V1.
 3. **Pin 6 is not driven by the CIA.** The DDRA read after step 2 has bits 6 and 7 at 0. Contrast: the program sets DDRA bits 6 and 7 to 1, and the check fails.
-4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse. The log check fails, and item 1 goes red as well (F1 reads live).
-5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: the E40 WAIT at line 44 instead of line 40, so E40 reads V = 44 or 45 and the check fails (p. 22). Contrast through the page's freeze: hold pin 6 pressed from line 30 of F2 until the end of F2. p. 239 then predicts a freeze at line 30, so E40 and E60 of F2 both read V = 30 and the same check fails on an implementation that follows p. 239; on an implementation that never freezes the check passes.
+4. **The pulse was driven.** The test's own drive log shows each pulse at its scheduled time and nothing else on pin 6. Contrast: omit the F1 pulse, or drive it 30 colour clocks late. The log is always compared with the nominal schedule (three pulses, 16 colour clocks after the Copper's A1 and B1 fetches of F1, F3 and F5), so the check fails and the four graded lines print NOT GRADED.
+5. **The beam reads live when not latched** (item 4). It shows that the register is not stuck. Contrast: the E40 WAIT at line 44 instead of line 40, so E40 reads V = 44 or 45 and the check fails (p. 22).
 6. **ECS: the BEAMCON0 write changed nothing but LPENDIS.** The field period after step 3 equals the one measured before it (VERTB ticks), within one line (p. 23: 227 or 228 colour clocks, taken as 228). Contrast: write bit 5 opposite to the selected standard. p. 305 names bit 5 "Programmable pal mode enable", and p. 24 gives the line counts (312 and 262), so the period changes by fifty lines and the check fails.
 
 Items 1, 2 and 5 are graded only when preconditions 0 to 6 hold; otherwise each prints NOT GRADED with the failing preconditions. The claims of P3 are credited by one line that holds when items 1 and 2 both hold; items 1, 2 and 5 are component lines and carry no claim id.
@@ -460,7 +460,7 @@ Items 1, 2 and 5 are graded only when preconditions 0 to 6 hold; otherwise each 
 ### Contrasting cases
 
 - **LPEN clear.** BPLCON0 is `$0000` with the same pulses. Every read tracks the beam: E110 reads V ∈ {110, 111}, and V1 and V2 differ. Items 1, 2 and 5 fail.
-- **Trigger on line 100 at another offset in a repeat run** (t(A1) + 30 colour clocks in F1). Graded against the original table, H(L3) − H(L1) is no longer 40, so item 2 fails.
+- **B1 and B2 one line lower** (line 181 instead of 180). The F5 trigger follows B1 and lands on line 181, so V(L5) is 181 instead of 180 and item 2 fails, with every precondition holding.
 
 ### Left open by the pages
 
@@ -515,7 +515,7 @@ The anchors and the read-time check are those of P3. In addition, the store time
 
 ### Expected values
 
-- **Latch present (precondition, from p. 239 as in P3).** Y has V = 100 and H(Y) = H(X′) = H(Y′). X′ equals Y′.
+- **Latch present (precondition, from p. 239 as in P3).** Y has V = 100 and H(Y) = H(Y′). X′ equals Y′.
 - **Graded.** The pair (V8, V7–V0) of X is not (0, 100).
 - **Left open, not graded.**
   - The value of X, including its horizontal byte.
@@ -523,11 +523,11 @@ The anchors and the read-time check are those of P3. In addition, the store time
 
 ### Preconditions
 
-1. **Anchor check, the CIA pin 6 check and the drive log**, as in P3, with the same contrasts (the second anchor at line 101; DDRA bits 6 and 7 set; the F1 pulse omitted, which the drive log shows against the nominal schedule of two pulses).
+1. **Anchor check, the CIA pin 6 check and the drive log**, as in P3, with the same contrasts (the second anchor at line 101; DDRA bits 6 and 7 set; a third pulse in F2 after Y is stored, which the drive log shows against the nominal schedule of two pulses).
 2. **Read time.** Y is stored within one line (p. 23) after X, and Y′ within one line after X′, because each second read follows its BEAMCON0 write at once. Contrast: 40 poll iterations between the write and the second read.
 3. **Field period.** The field period is unchanged across all BEAMCON0 writes, measured from the VERTB ticks, within one line (p. 23, taken as 228 colour clocks). Contrast: write `$2000` in PAL. p. 305 bit 5 and p. 24 predict a change, and the check fails. The reference-frame check is NOT GRADED when this one fails, because a shorter field ends before the delay does.
 4. **Reference frame**, as above. Contrast: wait only 10 poll iterations after E250.
-5. **The latch is present in F1.** V(Y) = 100, and H(Y) = H(X′) = H(Y′). Contrast: omit the F1 pulse. Y then reads the live beam (V8 = 1) and the check fails.
+5. **The latch is present in F1.** V(Y) = 100, and H(Y) = H(Y′). Contrast: BPLCON0 LPEN clear from E60 of F1 until Y is stored, the pulses unchanged. Y then reads the live beam (V8 = 1) and the check fails.
 6. **The control field shows the latched value with LPENDIS clear.** In F3, X′ equals Y′ and V(X′) = 100. Contrast: write `$2020` at E60 of F3 as well. X′ then differs from Y′ and the check fails.
 
 The graded relation is evaluated only when every precondition above holds, and the fixture checks (program loaded, A1 fetched at least five times, driven run reached DONE) hold; otherwise it prints NOT GRADED with the failing preconditions and credits no claim.
