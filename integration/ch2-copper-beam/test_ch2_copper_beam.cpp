@@ -3,42 +3,42 @@
 // value. This file implements what SPECIFICATION.md specifies: RF1-RF4,
 // P1 to P9.
 //
-// NMH_MUTATE selects a mutated program or a re-grading of an existing
-// capture in place of the normal one, one assertion or precondition at a
-// time; none is exercised by a plain `make test`. A selected mutation runs
-// only the section that owns the mutated line, with the unchanged
+// NMH_MUTATE selects a mutated program, or the standard the harness is
+// configured for, in place of the normal one, one assertion or precondition
+// at a time; none is exercised by a plain `make test`. A selected mutation
+// runs only the section that owns the mutated line, with the unchanged
 // comparators of that section.
 //
 // The mutation records: one line per label, the value of NMH_MUTATE that selects the variant, and what it changes. SPECIFICATION.md 8.6 gives the verdicts of both cores.
 //
-// MUTATION FIX-LOAD none impossible apparatus check: it fails only when the harness cannot load the program or release the CPU, which no stimulus of this package varies (not exercised, by a scope decision)
-// MUTATION FIX-CONST stimulus red NMH_MUTATE=A-NOFIX-PAL: the program leaves out the store of $A5C3 to $0C0002, so the port logs no such write and the dependent lines are NOT GRADED; also moves (both cores): P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-DONE stimulus red NMH_MUTATE=A-NODONE-PAL: the program starts the Copper and halts before the trace and before DONE, so the completion word is never written; also moves (both cores): PRE-L1, PRE-T1E, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION FIX-LOAD stimulus red NMH_MUTATE=A-NOBIN-PAL: the run names a program of which no binary exists, so the harness loads no program and releases no CPU; also moves (both cores): FIX-CONST, PRE-DONE, PRE-S1A, PRE-S1B, PRE-L1, PRE-T1E, PRE-T2, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION FIX-CONST stimulus red NMH_MUTATE=A-NOFIX-PAL: the program leaves out the store of $A5C3 to $0C0002, so the port logs no such write and the dependent lines are NOT GRADED; also moves (both cores): PRE-DONE, PRE-S1A, PRE-S1B, PRE-L1, PRE-T1E, PRE-T2, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-DONE stimulus red NMH_MUTATE=A-NODONE-PAL: the whole program runs and halts in place of storing the completion word, so the completion word is never written; also moves (both cores): PRE-T1E, PRE-T2, PRE-R1, PRE-FIELDS, PRE-STD, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-S1A none impossible unfalsifiable at this boundary: no input of the programs changes the refresh slots (RF1)
 // MUTATION PRE-S1B none impossible unfalsifiable at this boundary: no input of the programs changes the refresh slots, so no two accesses can be made to share one (RF1)
-// MUTATION PRE-L1 stimulus red NMH_MUTATE=A-NOOVL-PAL: CIA-A is not written (step 2 left out), the overlay stays on, the CPU's writes of the list never reach Chip memory and the port logs none; the program still reaches DONE; also moves (both cores): PRE-T1E, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256 PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-T1E stimulus red NMH_MUTATE=A-SLOW-PAL: a delay of 100 dbra iterations (at least 300 slots) between 400 samples, so the events fall between samples more than 16 slots apart; also moves (both cores): PRE-T2, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-T2 stimulus red NMH_MUTATE=A-HOLD-PAL: one read of $DFF004 after polling H >= $20 is stored in every step, so H never increases between trusted samples; also moves (both cores): PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-R1 stimulus red NMH_MUTATE=A-NOCOP-PAL: DMACON = $0080 (COPEN cleared) is written after the third field boundary the trace sees, so the later fields have no restart; also moves, fx68k: PRE-T1E, PRE-ANCHOR, PRE-P7L256, P3-PAL PASS to FAIL; P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED; TG68K: PRE-T1E, PRE-ANCHOR, PRE-P7L256 PASS to FAIL; P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=A-SHORT-PAL: the trace buffer holds 64 samples, far fewer than 6 complete fields; also moves (both cores): PRE-T1E, PRE-R1, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-P3SAMPLES stimulus red NMH_MUTATE=A-SHORT-PAL: the trace buffer holds 64 samples, far fewer than 6 complete fields, so P3 is NOT GRADED and not red; also moves (both cores): PRE-T1E, PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256 PASS to FAIL; P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-STD stimulus red NMH_MUTATE=A-STD-NTSC-LABEL-PALCAP: the PAL capture is graded under the NTSC line, and its chip identification names PAL
+// MUTATION PRE-L1 stimulus red NMH_MUTATE=A-EARLYCOP-PAL: the Copper is started before the CPU writes the list, and the CPU writes it once V is in $20 .. $3F, so the Copper's first fetch of the list precedes the CPU's first write of it; the program reaches DONE and every later field runs the written list; also moves (both cores): PRE-T1E, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, P1-ORIGIN, P2-PAL, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-T1E stimulus red NMH_MUTATE=A-SLOW-PAL: the flat run is cut into 50 blocks of 1000 samples with a loop of 20 dbra iterations between two blocks (more than 16 slots, less than a line), so events fall between samples more than 16 slots apart; also moves (both cores): PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-T2 stimulus red NMH_MUTATE=A-DUP-PAL: after every 5000 samples one read of $DFF004 is stored twice, so two consecutive samples have the same V and H and H does not increase; also moves (both cores): PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-R1 stimulus red NMH_MUTATE=A-NOCOP-PAL: DMACON = $0080 (COPEN cleared) is written between two parts of the flat run, after the third field boundary the trace sees, so the later fields have no restart; also moves (both cores): P1-ORIGIN, P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-FIELDS stimulus red NMH_MUTATE=A-FEW-PAL: the trace buffer holds 35000 samples, fewer than 6 complete fields; also moves (both cores): P1-ORIGIN, P2-PAL, PRE-P3SAMPLES, P3-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-P3SAMPLES none impossible unfalsifiable at this boundary: the line is graded only when PRE-FIELDS and PRE-T2 hold; with PRE-T2 a complete field holds a trusted sample on each of its lines, at least 262 (p.24), so fewer than 114 trusted samples in a field needs a field of a few lines, and such a field also takes every marker line ($30 ... $FF) out of the list (PRE-ANCHOR and PRE-T1E fail with it); A-few fails PRE-FIELDS and prints this line NOT GRADED
+// MUTATION PRE-STD stimulus red NMH_MUTATE=A-STD-NTSC-PALCHIP: the NTSC program runs on a machine configured as PAL, so its chip identification names PAL while the line is graded as NTSC; also moves (both cores): P2-NTSC, PRE-P3COVER, P3-NTSC-SET FAIL to NOT GRADED; P1-ORIGIN, PRE-P3ODDEND, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
 // MUTATION PRE-ANCHOR stimulus red NMH_MUTATE=A-ANCHOR-PAL: every WAIT(v,$40) becomes WAIT(v+1,$40), so m_v lies on line v+1; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
 // MUTATION PRE-P2WAITED stimulus red NMH_MUTATE=A-P2WAITED-PAL: an extra WAIT($7F,$40) after MARK($7F) is fetched after its target has passed, so its delay equals lambda_min; also moves (both cores): P2-PAL PASS to NOT GRADED
-// MUTATION PRE-E0 stimulus red NMH_MUTATE=A-NOPREP-PAL: WAIT($FF,$E0), MARK($A0E0) and the padding are left out, so m_E0 does not exist; also moves (both cores): PRE-P2WAITED, PRE-P7L256 PASS to FAIL; P2-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION PRE-P7L256 stimulus red NMH_MUTATE=A-NOPREP-PAL: WAIT($FF,$E0) and the padding are left out, so the second word of WAIT(0,$60) is fetched on line 255; also moves (both cores): PRE-P2WAITED, PRE-E0 PASS to FAIL; P2-PAL, P7, P7-WAITED PASS to NOT GRADED
-// MUTATION P1-ORIGIN none impossible not exercised, by a scope decision: a write to VPOSW or VHPOSW (p.216) would move the counter and the pages would then predict the written position, not (0,0); the package never writes them
+// MUTATION PRE-E0 stimulus red NMH_MUTATE=A-NOE0-PAL: MARK($A0E0) after WAIT($FF,$E0) is another padding move, so m_E0 does not exist while the WAIT and the padding stay; also moves (both cores): P7, P7-WAITED PASS to NOT GRADED
+// MUTATION PRE-P7L256 stimulus red NMH_MUTATE=A-P7EARLY-PAL: WAIT($00,$60) and its marker precede WAIT($FF,$E0), right after m_$FF, so its second word is fetched on line 255 while m_E0 and the other tail WAITs are as in the normal run; also moves (both cores): P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION P1-ORIGIN stimulus red NMH_MUTATE=A-NOH0-PAL: the sampler stores one burst of 12 samples per line, starting at H >= $10, so H = 0 is never stored while every precondition holds; also moves (both cores): P3-PAL PASS to FAIL
 // MUTATION P2-PAL stimulus red NMH_MUTATE=A-SHIFT-PAL: WAIT($80,$42) in place of WAIT($80,$40), so L($7F) and L($80) differ from 227
 // MUTATION P2-NTSC implementation green private copy of agnus_beamcounter.v, outside the repository, whose NTSC lines alternate between 228 and 227 counts (the line ends one count later when the long-line bit is set); the normal NTSC run A through the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): PRE-P3COVER, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
-// MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-SHORT-NTSC: the trace buffer holds 64 samples, so the odd count $E1 is not read; also moves (both cores): PRE-T1E, PRE-R1, PRE-FIELDS, PRE-ANCHOR, PRE-P2WAITED, PRE-E0, PRE-P7L256, PRE-P3SAMPLES PASS to FAIL; P2-NTSC FAIL to NOT GRADED; P1-ORIGIN, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
+// MUTATION PRE-P3ODDEND stimulus red NMH_MUTATE=A-SHORT-NTSC: the trace buffer holds 64 samples, so the odd count $E1 is not read; also moves (both cores): PRE-T1E, PRE-R1, PRE-FIELDS, PRE-P2WAITED, PRE-E0 PASS to FAIL; P2-NTSC, PRE-P3COVER, P3-NTSC-SET FAIL to NOT GRADED; PRE-ANCHOR, PRE-P7L256, P1-ORIGIN, PRE-P3SAMPLES, P7, P7-WAITED, P8-LINES PASS to NOT GRADED
 // MUTATION PRE-P3COVER implementation green the same private copy with NTSC lines of 228 and 227 counts: H >= $E0 is observed on more than 20 lines of each length, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, P3-NTSC-SET FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
-// MUTATION P3-PAL implementation red NMH_MUTATE=A-STD-PAL-LABEL-NTSCCAP: the NTSC capture of the private copy of agnus_beamcounter.v with NTSC lines of 228 and 227 counts, graded under the PAL label (p.23: PAL counts end at $E2): $E3 is read, so the unchanged comparator prints FAIL; on the repository's RTL the same selector prints PASS because no NTSC count exceeds $E2; PRE-STD also fails, as the contrast is the PAL check made on an NTSC run; also moves (both cores): PRE-STD PASS to FAIL; P2-PAL, P7, P7-WAITED PASS to NOT GRADED
+// MUTATION P3-PAL implementation red private copy of agnus_beamcounter.v, outside the repository, whose PAL lines 0 to 47 end one count later (228 counts, so $E3 is read; p.23 gives $E3 to NTSC long lines only): the normal PAL run A through the unchanged comparator prints FAIL where the repository's RTL prints PASS; the lines $30 ... of the list, which P2 measures, are unaffected, so every precondition holds
 // MUTATION P3-NTSC-SET implementation green the same private copy with NTSC lines of 228 and 227 counts: $E3 is read, so the unchanged comparator prints PASS where the repository's RTL prints FAIL; also moves (both cores): P2-NTSC, PRE-P3COVER FAIL to PASS; P3-NTSC-LONGONLY NOT GRADED to PASS
 // MUTATION P3-NTSC-LONGONLY none impossible unfalsifiable at this boundary: a line whose counts run 0 ... $E3 has 228 counts, so no stimulus makes a line with L(v) = 227 show $E3; it is NOT GRADED on the repository's RTL (PRE-P3COVER fails) and graded, and PASS, on the private copy of agnus_beamcounter.v with NTSC lines of 228 and 227 counts (normal NTSC run A)
 // MUTATION P7 stimulus red NMH_MUTATE=A-TAILSHIFT-PAL: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n
-// MUTATION P7-WAITED stimulus red NMH_MUTATE=A-LONGPAD-PAL: 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied; also moves (both cores): PRE-P2WAITED PASS to FAIL; P2-PAL PASS to NOT GRADED
+// MUTATION P7-WAITED stimulus red NMH_MUTATE=A-LONGPAD-PAL: 16 further padding moves put the fetch of WAIT(0,$60) after count $60, so it is already satisfied; also moves (both cores): P2-PAL PASS to NOT GRADED
 // MUTATION P8-LINES stimulus red NMH_MUTATE=A-TAILSHIFT-NTSC: every tail WAIT(n,$60) becomes WAIT(n+1,$60), so m_(256+n) lies on line 257+n; also moves (both cores): P7 PASS to FAIL
-// MUTATION PRE-C-R1LINE stimulus red NMH_MUTATE=C-CR1LINE-PAL: WAIT(w_5,$C0) becomes WAIT(w_5+1,$C0), so r1_5 lies on line w_5+1; also moves (both cores): PRE-C-WAITED PASS to FAIL; P4 PASS to NOT GRADED
+// MUTATION PRE-C-R1LINE stimulus red NMH_MUTATE=C-CR1LINE-PAL: WAIT(w_5,$C0) becomes WAIT(w_5-1,$C0), so r1_5 lies on line w_5-1, the line of r2_4, while every later WAIT still waits; also moves (both cores): P4 PASS to NOT GRADED
 // MUTATION PRE-C-WAITED stimulus red NMH_MUTATE=C-CLATE-PAL: the reference of k = 90 is WAIT(u_90,$C4), so the following WAIT(u_90,$B4) is fetched after its target; also moves (both cores): P4 PASS to NOT GRADED
 // MUTATION P4-A stimulus red NMH_MUTATE=C-CSHIFT-PAL: WAIT(u_50,$66) in place of WAIT(u_50,$64), so D_50 changes by 2 slots; also moves (both cores): P4 PASS to FAIL
 // MUTATION P4-B stimulus red NMH_MUTATE=C-CSHIFTEND-PAL: WAIT(u_106,$D6) in place of WAIT(u_106,$D4), so D_106 is not below D_107; also moves (both cores): P4 PASS to FAIL
@@ -58,7 +58,7 @@
 // MUTATION P5-LO stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 4 * 25 * P_lo while n_$50 is 24; also moves (both cores): P5-HI PASS to FAIL
 // MUTATION P5-HI stimulus red NMH_MUTATE=D-DSHIFT-PAL: the second WAIT of line $50 is at $36+2*24+2, so w_$50 is 8 * 25 * P_hi while n_$50 is 24; also moves (both cores): P5-LO PASS to FAIL
 // MUTATION PRE-P9-PLO stimulus red NMH_MUTATE=E-PLOFLAT-PAL: the calibration run D-lo has every plane word $FFFF, so P_lo is not valid; also moves (both cores): PRE-P5-CALLO PASS to FAIL
-// MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01; also moves (both cores): PRE-P9-ONE0 PASS to FAIL
+// MUTATION PRE-P9-LINES stimulus red NMH_MUTATE=E-ENOBPL-PAL: bitplane DMA is left off, so no output line shows COLOR01; also moves (both cores): PRE-P9-ONE0 PASS to NOT GRADED
 // MUTATION PRE-P9-ONE0 stimulus red NMH_MUTATE=E-EBLACKGAP-PAL: COLOR00 = $000 and the 10th plane word of every line is $0000, so each window line has a second run of 0
 // MUTATION P9-A-E stimulus red NMH_MUTATE=E-EWIDEWIN-PAL: DIWSTRT $2C71 and DIWSTOP $2CD1 with 22 words of $FFFF per line, so the COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
 // MUTATION P9-A-EW stimulus red NMH_MUTATE=E-EWWIDEWIN-PAL: the E-widefetch capture is replaced by E-widewindow, so its COLOR01 run is 352 * P_lo; also moves (both cores): P9-A PASS to FAIL
@@ -126,7 +126,6 @@ constexpr uint64_t kRunBudgetA    = 20'000'000;
 constexpr uint64_t kRunBudgetB    = 30'000'000;
 constexpr uint64_t kRunBudgetC    = 14'000'000;
 constexpr uint64_t kRunBudgetDE   = 24'000'000;
-constexpr uint64_t kNoDoneBudget  = 3'000'000;
 
 enum Tag { PAL = 0, NTSC = 1 };
 const char* tagname(Tag t) { return t == PAL ? "PAL" : "NTSC"; }
@@ -561,38 +560,67 @@ WaitedResult waited_all(const Analysis& a, const std::vector<Instr>& list, uint3
 }
 
 // ---- common preconditions of every trace run ------------------------------------
+// the names in the given lists, each once, in order of first appearance
+std::string union_why(std::initializer_list<std::string> lists) {
+    std::string out;
+    for (const auto& l : lists) {
+        size_t i = 0;
+        while (i < l.size()) {
+            while (i < l.size() && l[i] == ' ') ++i;
+            size_t j = i;
+            while (j < l.size() && l[j] != ' ') ++j;
+            if (j > i) {
+                const std::string tok = l.substr(i, j - i);
+                if ((out + " ").find(" " + tok + " ") == std::string::npos) out += " " + tok;
+            }
+            i = j;
+        }
+    }
+    return out;
+}
+
+// Each common precondition is graded only when the lines it rests on hold;
+// otherwise it prints NOT GRADED and names them. A line is false in the
+// gate when it failed or was not graded.
+//   cap()    the run completed on a loaded, fixture-checked capture
+//   fetch()  the slots are defined and the Copper ran the list the CPU wrote
+//   trace()  fetch() and the beam trace identifies lines (RF2)
 struct Gate {
-    bool fix = false, done = false, s1 = false, l1 = false, t1e = false, t2 = false, r1 = false, fields = false;
-    bool core() const { return fix && done && s1 && l1 && t1e && t2 && r1 && fields; }
+    bool fix = false, done = false, s1 = false, l1 = false, t1e = false, t2 = false, r1 = false, fields = false, stdid = false;
+    bool cap() const { return fix && done; }
+    bool fetch() const { return fix && done && s1 && l1; }
+    bool core() const { return fix && done && s1 && l1 && t1e && t2 && r1 && fields && stdid; }
     bool trace() const { return fix && done && s1 && l1 && t1e && t2; }
-    bool counts() const { return fix && done && s1 && l1 && t2; }
-    std::string why_not_core() const {
+    bool counts() const { return fix && done && s1 && l1 && t2 && stdid; }
+    std::string why_not_cap() const {
         std::string s;
         if (!fix) s += " FIX";
         if (!done) s += " PRE-DONE";
+        return s;
+    }
+    std::string why_not_fetch() const {
+        std::string s = why_not_cap();
         if (!s1) s += " PRE-S1";
         if (!l1) s += " PRE-L1";
+        return s;
+    }
+    std::string why_not_core() const {
+        std::string s = why_not_fetch();
         if (!t1e) s += " PRE-T1E";
         if (!t2) s += " PRE-T2";
         if (!r1) s += " PRE-R1";
         if (!fields) s += " PRE-FIELDS";
+        if (!stdid) s += " PRE-STD";
         return s;
     }
     std::string why_not_counts() const {
-        std::string s;
-        if (!fix) s += " FIX";
-        if (!done) s += " PRE-DONE";
-        if (!s1) s += " PRE-S1";
-        if (!l1) s += " PRE-L1";
+        std::string s = why_not_fetch();
         if (!t2) s += " PRE-T2";
+        if (!stdid) s += " PRE-STD";
         return s;
     }
     std::string why_not_trace() const {
-        std::string s;
-        if (!fix) s += " FIX";
-        if (!done) s += " PRE-DONE";
-        if (!s1) s += " PRE-S1";
-        if (!l1) s += " PRE-L1";
+        std::string s = why_not_fetch();
         if (!t1e) s += " PRE-T1E";
         if (!t2) s += " PRE-T2";
         return s;
@@ -607,34 +635,52 @@ Gate report_common(Checks& checks, const Analysis& a, Tag tag, const std::string
     Gate g;
     const std::string tg = tagname(tag);
     const std::string rn = " run " + run + ": ";
-    checks.expect(a.cap.loaded && a.cap.released, "FIX-LOAD " + tg + rn + "program loaded and CPU released [not graded -- apparatus check, no claim uid]");
-    checks.expect(a.fixture, "FIX-CONST " + tg + rn + "the known word $A5C3 stored by the program to $0C0002 appears on the Chip-memory port with that data [not graded -- apparatus check, no claim uid]");
-    g.fix = a.cap.loaded && a.cap.released && a.fixture;
+    // a precondition whose prerequisites failed is printed NOT GRADED, naming them
+    auto not_graded = [&](const std::string& id, const std::string& why) {
+        checks.record(id + " " + tg + rn + "NOT GRADED: precondition failed:" + why);
+    };
+    const bool load = a.cap.loaded && a.cap.released;
+    checks.expect(load, "FIX-LOAD " + tg + rn + "program loaded and CPU released [not graded -- apparatus check, no claim uid]");
+    if (load) checks.expect(a.fixture, "FIX-CONST " + tg + rn + "the known word $A5C3 stored by the program to $0C0002 appears on the Chip-memory port with that data [not graded -- apparatus check, no claim uid]");
+    else not_graded("FIX-CONST", " FIX-LOAD");
+    g.fix = load && a.fixture;
     g.done = a.cap.done.has_value();
-    checks.expect(g.done, "PRE-DONE " + tg + rn + "the completion word was written");
-    checks.expect(a.s1_spacing, "PRE-S1A " + tg + rn + "refresh spacing 2S is constant through the run (RF1)");
+    if (g.fix) checks.expect(g.done, "PRE-DONE " + tg + rn + "the completion word was written");
+    else not_graded("PRE-DONE", g.why_not_cap());
+    if (g.fix) checks.expect(a.s1_spacing, "PRE-S1A " + tg + rn + "refresh spacing 2S is constant through the run (RF1)");
+    else not_graded("PRE-S1A", g.why_not_cap());
     checks.note("S1 " + tg + rn + "S=" + num(a.sref.S) + " clk_sys cycles/slot, " + num((long long)a.sref.groups_found) + " refresh groups measured");
-    checks.expect(a.s1_collision, "PRE-S1B " + tg + rn + "no two logged accesses occupy the same slot (RF1)");
-    g.s1 = a.s1_spacing && a.s1_collision;
-    g.l1 = a.l1;
-    checks.expect(a.l1, "PRE-L1 " + tg + rn + "the Copper's first fetches read the words the CPU wrote in step 3");
+    if (g.fix && a.s1_spacing) checks.expect(a.s1_collision, "PRE-S1B " + tg + rn + "no two logged accesses occupy the same slot (RF1)");
+    else not_graded("PRE-S1B", g.why_not_cap() + std::string(a.s1_spacing ? "" : " PRE-S1A"));
+    g.s1 = g.fix && a.s1_spacing && a.s1_collision;
+    g.l1 = g.fix && a.l1;
+    if (g.fix) checks.expect(a.l1, "PRE-L1 " + tg + rn + "the Copper's first fetches read the words the CPU wrote in step 3");
+    else not_graded("PRE-L1", g.why_not_cap());
     checks.note("PRE-T1 " + tg + rn + num((long long)a.rf2.t1_violations) + " of " + num((long long)a.rf2.t1_total) +
                 " consecutive-sample gaps exceed 16 slots, " + num((long long)a.rf2.t1_at_boundary) + " of them across a field boundary (measured, not graded: no page gives the CPU's cycles per instruction)");
-    g.t1e = gap_hits == 0 && events_identified > 0;
-    checks.expect(g.t1e, "PRE-T1E " + tg + rn + "no event of this run is bracketed by a step that ended before it (the clause of T1 that RF2's line identification uses): " +
-                  num((long long)gap_hits) + " events hit such a step, " + num((long long)events_identified) + " events identified");
-    g.t2 = a.rf2.t2;
-    checks.expect(a.rf2.t2, "PRE-T2 " + tg + rn + "the beam counter is live between trusted samples (RF2)");
+    const bool t1e = gap_hits == 0 && events_identified > 0;
+    if (g.fetch()) checks.expect(t1e, "PRE-T1E " + tg + rn + "no event of this run is bracketed by a step that ended before it (the clause of T1 that RF2's line identification uses): " +
+                                 num((long long)gap_hits) + " events hit such a step, " + num((long long)events_identified) + " events identified");
+    else not_graded("PRE-T1E", g.why_not_fetch());
+    g.t1e = g.fetch() && t1e;
+    if (g.cap()) checks.expect(a.rf2.t2, "PRE-T2 " + tg + rn + "the beam counter is live between trusted samples (RF2)");
+    else not_graded("PRE-T2", g.why_not_cap());
+    g.t2 = g.cap() && a.rf2.t2;
     checks.note("T2 " + tg + rn + num((long long)a.rf2.t2_violations) + " of " + num((long long)a.rf2.t2_total) +
                 " trusted-sample transitions violate T2");
-    g.r1 = a.r1.ok;
-    checks.expect(a.r1.ok, "PRE-R1 " + tg + rn + "exactly one restart between consecutive field boundaries (RF3)");
+    if (g.cap() && g.t2) checks.expect(a.r1.ok, "PRE-R1 " + tg + rn + "exactly one restart between consecutive field boundaries (RF3)");
+    else not_graded("PRE-R1", g.why_not_cap() + std::string(g.t2 ? "" : " PRE-T2"));
+    g.r1 = g.cap() && g.t2 && a.r1.ok;
     checks.note("R1 " + tg + rn + num((long long)a.r1.violations) + " of " + num((long long)a.r1.spans) +
                 " inter-boundary spans have restart count != 1");
-    g.fields = a.fields.size() >= min_fields;
-    checks.expect(g.fields, "PRE-FIELDS " + tg + rn + "at least " + num((long long)min_fields) + " complete fields traced (measured " + num((long long)a.fields.size()) + ")");
-    bool std_ok = a.std_class == (int)tag;
-    checks.expect(std_ok, "PRE-STD " + tg + rn + "the chip identification in VPOSR bits 14-8 of every sample names " + tg + " (p.299)");
+    const bool fields = a.fields.size() >= min_fields;
+    if (g.cap() && g.t2) checks.expect(fields, "PRE-FIELDS " + tg + rn + "at least " + num((long long)min_fields) + " complete fields traced (measured " + num((long long)a.fields.size()) + ")");
+    else not_graded("PRE-FIELDS", g.why_not_cap() + std::string(g.t2 ? "" : " PRE-T2"));
+    g.fields = g.cap() && g.t2 && fields;
+    const bool std_ok = a.std_class == (int)tag;
+    if (g.cap()) checks.expect(std_ok, "PRE-STD " + tg + rn + "the chip identification in VPOSR bits 14-8 of every sample names " + tg + " (p.299)");
+    else not_graded("PRE-STD", g.why_not_cap());
+    g.stdid = g.cap() && std_ok;
     return g;
 }
 
@@ -824,10 +870,8 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
     if (!normal) {
         // mv is "A-<VARIANT>-<PAL|NTSC>" or one of the standard swaps
         plan.run[PAL] = plan.run[NTSC] = false;
-        if (mv == "A-STD-NTSC-LABEL-PALCAP") {            // the PAL capture graded under the NTSC label
-            plan.run[NTSC] = true; plan.bin[NTSC] = "prog_a"; plan.cfg[NTSC] = kECS_PAL;
-        } else if (mv == "A-STD-PAL-LABEL-NTSCCAP") {     // the NTSC capture graded under the PAL label
-            plan.run[PAL] = true; plan.bin[PAL] = "prog_a_ntsc"; plan.cfg[PAL] = kECS_NTSC;
+        if (mv == "A-STD-NTSC-PALCHIP") {                 // the NTSC program on a machine configured PAL
+            plan.run[NTSC] = true; plan.cfg[NTSC] = kECS_PAL;
         } else {
             std::string rest = mv.substr(2);              // "<VARIANT>-<PAL|NTSC>"
             size_t dash = rest.rfind('-');
@@ -843,8 +887,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
         if (!plan.run[ti]) continue;
         const Tag tag = (Tag)ti;
         const std::string tg = tagname(tag);
-        const bool nodone = plan.bin[ti].find("nodone") != std::string::npos;
-        Analysis a = analyze(run_capture(dir + "/" + plan.bin[ti] + ".bin", plan.cfg[ti], nodone ? kNoDoneBudget : kRunBudgetA), bases, 0x0001, 0xFFFE);
+        Analysis a = analyze(run_capture(dir + "/" + plan.bin[ti] + ".bin", plan.cfg[ti], kRunBudgetA), bases, 0x0001, 0xFFFE);
         ALists L; L.list = decode_list(a.mem, kListBaseW); L.mk = marker_map(L.list);
 
         // ---- events, computed once -----------------------------------------
@@ -888,25 +931,46 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                 }
             }
         }
-        // SPECIFICATION.md P2: WAIT(n,$60) for n = 0 .. $37 (PAL) or 0 .. 5 (NTSC)
+        // SPECIFICATION.md P2: WAIT(n,$60) for n = 1 .. $37 (PAL) or 1 .. 5 (NTSC); WAIT($00,$60) is measured apart (w0_waited)
         auto p2waited = waited_all(a, L.list, kListBaseW, [tag](const Instr& i) {
-            return (i.h() == 0x40 && i.v() >= 0x30) || (i.h() == 0x60 && i.v() <= (tag == PAL ? 0x37 : 5));
+            return (i.h() == 0x40 && i.v() >= 0x30) || (i.h() == 0x60 && i.v() >= 1 && i.v() <= (tag == PAL ? 0x37 : 5));
         });
+        // WAIT($00,$60), the one before m_256, waited (its delay exceeds lambda_min) in every field
+        bool w0_waited = !a.rwins.empty(); size_t w0_checked = 0;
+        for (auto& w : a.rwins) {
+            auto lam0 = lambda_min(a, w);
+            if (!t0m) { w0_waited = false; break; }
+            auto dly0 = wait_delay(a, *t0m - 2, w);
+            if (!dly0 || !lam0) { w0_waited = false; continue; }
+            ++w0_checked;
+            if (*dly0 <= *lam0) w0_waited = false;
+        }
 
         // ---- preconditions ---------------------------------------------------
         Gate g = report_common(checks, a, tag, "A", 6, ev.gap_hits, ev.identified);
+        auto not_graded = [&](const std::string& id, const std::string& why) {
+            checks.record(id + " " + tg + " run A: NOT GRADED: precondition failed:" + why);
+        };
         const bool anchor_ok = anchor_checked > 0 && anchor_bad == 0;
-        checks.expect(anchor_ok, "PRE-ANCHOR " + tg + " run A: every m_v (v=$30..$FF) lies on line v (RF2), " +
-                      num((long long)(anchor_checked - anchor_bad)) + "/" + num((long long)anchor_checked) + " matched");
-        checks.expect(p2waited.all, "PRE-P2WAITED " + tg + " run A: every WAIT(v,$40) and every WAIT(n,$60) waited (delay above lambda_min), " +
-                      num((long long)p2waited.checked) + "/" + num((long long)p2waited.expected) + " measured");
+        if (g.trace()) checks.expect(anchor_ok, "PRE-ANCHOR " + tg + " run A: every m_v (v=$30..$FF) lies on line v (RF2), " +
+                                     num((long long)(anchor_checked - anchor_bad)) + "/" + num((long long)anchor_checked) + " matched");
+        else not_graded("PRE-ANCHOR", g.why_not_trace());
+        if (g.fetch()) checks.expect(p2waited.all, "PRE-P2WAITED " + tg + " run A: every WAIT(v,$40) and every WAIT(n,$60) for n >= 1 waited (delay above lambda_min), " +
+                                     num((long long)p2waited.checked) + "/" + num((long long)p2waited.expected) + " measured");
+        else not_graded("PRE-P2WAITED", g.why_not_fetch());
         const bool e0_ok = e0 && !a.rwins.empty() && e0_reached == a.rwins.size();
-        checks.expect(e0_ok, "PRE-E0 " + tg + " run A: m_E0 (after WAIT($FF,$E0)) is fetched in every field (" +
-                      num((long long)e0_reached) + "/" + num((long long)a.rwins.size()) + ")");
+        if (g.fetch()) checks.expect(e0_ok, "PRE-E0 " + tg + " run A: m_E0 (after WAIT($FF,$E0)) is fetched in every field (" +
+                                     num((long long)e0_reached) + "/" + num((long long)a.rwins.size()) + ")");
+        else not_graded("PRE-E0", g.why_not_fetch());
         const bool p7pre_ok = w256_checked > 0 && w256_ok == w256_checked && w256_checked == a.rwins.size();
-        checks.expect(p7pre_ok, "PRE-P7L256 " + tg + " run A: the second word of the WAIT before m_256 is fetched on line 256 (RF2), " +
-                      num((long long)w256_ok) + "/" + num((long long)a.rwins.size()) + " fields");
-        const bool base_ok = g.core() && anchor_ok && p2waited.all;
+        if (g.trace()) checks.expect(p7pre_ok, "PRE-P7L256 " + tg + " run A: the second word of the WAIT before m_256 is fetched on line 256 (RF2), " +
+                                     num((long long)w256_ok) + "/" + num((long long)a.rwins.size()) + " fields");
+        else not_graded("PRE-P7L256", g.why_not_trace());
+        // L(256 + n) of P2 and P3 rests on m_256 lying on line 256 and on WAIT($00,$60) having waited
+        const bool p2pre = anchor_ok && p2waited.all && p7pre_ok && w0_waited && w0_checked == a.rwins.size();
+        const std::string p2pre_why = std::string(anchor_ok ? "" : " PRE-ANCHOR") + std::string(p2waited.all ? "" : " PRE-P2WAITED") +
+                                      std::string(p7pre_ok ? "" : " PRE-P7L256") + std::string(w0_waited && w0_checked == a.rwins.size() ? "" : " P7-WAITED");
+        const bool base_ok = g.core() && p2pre;
 
         // ---- P1: field length (NOT GRADED) and origin ----------------------------
         const std::string fl = setstr(field_lengths(a));
@@ -951,7 +1015,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
         if (tag == PAL) {
             if (!base_ok || !p2.complete) {
                 checks.record("P2-PAL NOT GRADED COP2-horizontal-beam-position.c15: precondition or population failed:" + g.why_not_core() +
-                              std::string(anchor_ok ? "" : " PRE-ANCHOR") + std::string(p2waited.all ? "" : " PRE-P2WAITED") + std::string(p2.complete ? "" : " population-incomplete"));
+                              p2pre_why + std::string(p2.complete ? "" : " population-incomplete"));
             } else {
                 checks.expect(p2.all_227, "P2-PAL COP2-horizontal-beam-position.c15 [p.23,p.24]: L(v)=227 for every measured v in every complete field");
             }
@@ -959,7 +1023,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
             if (!base_ok || !p2.complete) {
                 checks.record("P2-NTSC NOT GRADED COP2-horizontal-beam-position.c10 COP2-horizontal-beam-position.c11 COP2-horizontal-beam-position.c12 "
                               "COP2-vertical-beam-position.c11: precondition or population failed:" + g.why_not_core() +
-                              std::string(anchor_ok ? "" : " PRE-ANCHOR") + std::string(p2waited.all ? "" : " PRE-P2WAITED") + std::string(p2.complete ? "" : " population-incomplete"));
+                              p2pre_why + std::string(p2.complete ? "" : " population-incomplete"));
             } else {
                 checks.expect(p2.in_set && p2.alt,
                               "P2-NTSC COP2-horizontal-beam-position.c10 COP2-horizontal-beam-position.c11 COP2-horizontal-beam-position.c12 "
@@ -983,13 +1047,19 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
             size_t least = a.fields.empty() ? 0 : (size_t)-1;
             for (auto& f : a.fields) least = std::min(least, f.hi - f.lo);
             const bool p3s = a.fields.size() >= 6 && least >= 114;
-            checks.expect(p3s, "PRE-P3SAMPLES " + tg + " run A: at least 6 complete fields, each with at least 114 trusted samples, the number of even counts $00 ... $E2 (p.23) (" +
-                          num((long long)a.fields.size()) + " fields, at least " + num((long long)least) + " trusted samples per field)");
+            // PRE-P3SAMPLES rests on PRE-FIELDS (and so on PRE-T2)
+            const bool p3s_graded = g.cap() && g.t2 && g.fields;
+            if (p3s_graded) checks.expect(p3s, "PRE-P3SAMPLES " + tg + " run A: at least 6 complete fields, each with at least 114 trusted samples, the number of even counts $00 ... $E2 (p.23) (" +
+                                          num((long long)a.fields.size()) + " fields, at least " + num((long long)least) + " trusted samples per field)");
+            else not_graded("PRE-P3SAMPLES", g.why_not_cap() + std::string(g.t2 ? "" : " PRE-T2") + std::string(g.fields ? "" : " PRE-FIELDS"));
             if (tag == NTSC) {
-                if (p3.cover) checks.expect(p3.odd_end_ok, "PRE-P3ODDEND NTSC run A: the odd count $E1, next below the last even count, is read at the end of a line");
+                if (!g.counts()) not_graded("PRE-P3ODDEND", g.why_not_counts());
+                else if (p3.cover) checks.expect(p3.odd_end_ok, "PRE-P3ODDEND NTSC run A: the odd count $E1, next below the last even count, is read at the end of a line");
                 else checks.record("PRE-P3ODDEND NTSC run A: not needed, only counts of one parity are read (" + std::string(p3.parity ? "odd" : "even") + ")");
-                if (p3.e3_graded) checks.expect(cov_ok, "PRE-P3COVER NTSC run A: H >= $E0 is observed on at least 20 distinct lines with L(v)=228 and at least 20 with L(v)=227 (" +
-                                                num((long long)p3.lines_long) + " and " + num((long long)p3.lines_short) + ")");
+                if (!(g.counts() && g.trace() && p2pre && p2.complete))
+                    not_graded("PRE-P3COVER", union_why({g.why_not_counts(), g.why_not_trace(), p2pre_why, std::string(p2.complete ? "" : " population-incomplete")}));
+                else if (p3.e3_graded) checks.expect(cov_ok, "PRE-P3COVER NTSC run A: H >= $E0 is observed on at least 20 distinct lines with L(v)=228 and at least 20 with L(v)=227 (" +
+                                                     num((long long)p3.lines_long) + " and " + num((long long)p3.lines_short) + ")");
                 else checks.record("PRE-P3COVER NTSC run A: not needed, $E3 cannot be read when only even counts are read");
             }
             if (!(g.counts() && p3s)) {
@@ -1000,7 +1070,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
                 checks.record("P3-NTSC-SET NOT GRADED: precondition failed: PRE-P3ODDEND");
             } else {
                 checks.expect(p3.set_ok, "P3-NTSC-SET [p.23]: every H is at most $E3, and every even value from $00 to $E2 and the odd value $E3 are observed (when counts of one parity only are read: every value of that parity from the lowest to the highest not above $E3)");
-                const bool pop_ok = p2.complete && anchor_ok && p2waited.all;
+                const bool pop_ok = p2.complete && p2pre;
                 if (!p3.e3_graded) {
                     checks.record("P3-NTSC-LONGONLY NOT GRADED COP2-horizontal-beam-position.c13: only even counts are read, so $E3 cannot be read");
                 } else if (!(cov_ok && pop_ok)) {
@@ -1016,17 +1086,7 @@ void section_A(Checks& checks, const std::string& dir, const std::string& mv, bo
 
         // ---- P7 -----------------------------------------------------------------------
         {
-            auto tm = L.m(0x100);
-            std::optional<int64_t> dly; std::optional<int64_t> lam;
-            bool waited = !a.rwins.empty(); size_t wchecked = 0;
-            for (auto& w : a.rwins) {
-                lam = lambda_min(a, w);
-                if (!tm) { waited = false; break; }
-                dly = wait_delay(a, *tm - 2, w);
-                if (!dly || !lam) { waited = false; continue; }
-                ++wchecked;
-                if (*dly <= *lam) waited = false;
-            }
+            const bool waited = w0_waited; const size_t wchecked = w0_checked;
             const bool pre = g.core() && anchor_ok && e0_ok && p7pre_ok;
             const bool pop = p7_identified == p7_expected;
             const std::string why = g.why_not_core() + std::string(anchor_ok ? "" : " PRE-ANCHOR") + std::string(e0_ok ? "" : " PRE-E0") + std::string(p7pre_ok ? "" : " PRE-P7L256");
@@ -1132,8 +1192,7 @@ void section_C(Checks& checks, const std::string& dir, const std::string& mv, bo
         if (!plan.run[ti]) continue;
         const Tag tag = (Tag)ti;
         const std::string tg = tagname(tag);
-        const bool nodone = plan.bin[ti].find("nodone") != std::string::npos;
-        Analysis a = analyze(run_capture(dir + "/" + plan.bin[ti] + ".bin", plan.cfg[ti], nodone ? kNoDoneBudget : kRunBudgetC), bases, 0x0001, 0xFFFE);
+        Analysis a = analyze(run_capture(dir + "/" + plan.bin[ti] + ".bin", plan.cfg[ti], kRunBudgetC), bases, 0x0001, 0xFFFE);
         ALists L; L.list = decode_list(a.mem, kListBaseW); L.mk = marker_map(L.list);
 
         // ---- events -----------------------------------------------------------------
@@ -1208,10 +1267,12 @@ void section_C(Checks& checks, const std::string& dir, const std::string& mv, bo
         Gate g = report_common(checks, a, tag, "C", 3, ev.gap_hits, ev.identified);
         const size_t r1_expected = a.rwins.size() * 14;
         const bool r1_ok = r1_checked == r1_expected && r1_expected > 0 && r1_bad == 0;
-        checks.expect(r1_ok, "PRE-C-R1LINE " + tg + " run C: r1_j lies on line w_j for every j, every complete field (RF2), " +
-                      num((long long)(r1_checked - r1_bad)) + "/" + num((long long)r1_expected) + " matched");
-        checks.expect(waited.all, "PRE-C-WAITED " + tg + " run C: every WAIT under test (the first-word and second-word WAITs of each line, and WAIT(w_j,g_j)) waited (delay above lambda_min), " +
-                      num((long long)waited.checked) + "/" + num((long long)waited.expected) + " measured");
+        if (g.trace()) checks.expect(r1_ok, "PRE-C-R1LINE " + tg + " run C: r1_j lies on line w_j for every j, every complete field (RF2), " +
+                                     num((long long)(r1_checked - r1_bad)) + "/" + num((long long)r1_expected) + " matched");
+        else checks.record("PRE-C-R1LINE " + tg + " run C: NOT GRADED: precondition failed:" + g.why_not_trace());
+        if (g.fetch()) checks.expect(waited.all, "PRE-C-WAITED " + tg + " run C: every WAIT under test (the first-word and second-word WAITs of each line, and WAIT(w_j,g_j)) waited (delay above lambda_min), " +
+                                     num((long long)waited.checked) + "/" + num((long long)waited.expected) + " measured");
+        else checks.record("PRE-C-WAITED " + tg + " run C: NOT GRADED: precondition failed:" + g.why_not_fetch());
         const bool pre = g.core() && r1_ok && waited.all;
         const std::string why = g.why_not_core() + std::string(r1_ok ? "" : " PRE-C-R1LINE") + std::string(waited.all ? "" : " PRE-C-WAITED");
 
@@ -1372,13 +1433,16 @@ void section_B(Checks& checks, const std::string& dir, const std::string& mv, bo
 
         // ---- preconditions -------------------------------------------------------------------------
         Gate g = report_common(checks, a, tag, "B", 19, ev.gap_hits, ev.identified);
-        checks.expect(chain_ok, "PRE-B-CHAIN " + tg + " run B: each restart fetches the list that the previous list named (L_FE, L_0 .. L_15, then L_15 again), at least 3 fields of L_15 (" +
-                      num((long long)a.rwins.size()) + " fields, " + num((long long)l15_windows) + " of L_15)");
+        if (g.fetch()) checks.expect(chain_ok, "PRE-B-CHAIN " + tg + " run B: each restart fetches the list that the previous list named (L_FE, L_0 .. L_15, then L_15 again), at least 3 fields of L_15 (" +
+                                     num((long long)a.rwins.size()) + " fields, " + num((long long)l15_windows) + " of L_15)");
+        else checks.record("PRE-B-CHAIN " + tg + " run B: NOT GRADED: precondition failed:" + g.why_not_fetch());
         const bool l255 = l255_expected > 0 && l255_ok == l255_expected;
-        checks.expect(l255, "PRE-B-L255 " + tg + " run B: the second word of each WAIT($FF,h_j) is fetched on line 255 (RF2), " + num((long long)l255_ok) + "/" + num((long long)l255_expected) + " fields");
+        if (g.trace()) checks.expect(l255, "PRE-B-L255 " + tg + " run B: the second word of each WAIT($FF,h_j) is fetched on line 255 (RF2), " + num((long long)l255_ok) + "/" + num((long long)l255_expected) + " fields");
+        else checks.record("PRE-B-L255 " + tg + " run B: NOT GRADED: precondition failed:" + g.why_not_trace());
         if (!l255_detail.empty()) checks.note("PRE-B-L255 " + tg + " run B: fields not on line 255:" + l255_detail);
         const bool wt = waited_expected > 0 && waited_ok == waited_expected;
-        checks.expect(wt, "PRE-B-WAITED " + tg + " run B: every WAIT($FF,$40) waited (delay above lambda_min), " + num((long long)waited_ok) + "/" + num((long long)waited_expected) + " fields");
+        if (g.fetch()) checks.expect(wt, "PRE-B-WAITED " + tg + " run B: every WAIT($FF,$40) waited (delay above lambda_min), " + num((long long)waited_ok) + "/" + num((long long)waited_expected) + " fields");
+        else checks.record("PRE-B-WAITED " + tg + " run B: NOT GRADED: precondition failed:" + g.why_not_fetch());
         const bool pre = g.core() && chain_ok && l255 && wt;
         const std::string why = g.why_not_core() + std::string(chain_ok ? "" : " PRE-B-CHAIN") + std::string(l255 ? "" : " PRE-B-L255") + std::string(wt ? "" : " PRE-B-WAITED");
 
@@ -1450,16 +1514,27 @@ VideoSet make_video_set(const Analysis& a) {
     return vs;
 }
 
-struct VGate { bool fix = false, done = false, s1 = false, l1 = false, r1 = false, fields = false;
-    bool ok() const { return fix && done && s1 && l1 && r1 && fields; }
-    std::string why() const {
+// cap(): the capture is usable (everything but the chip identification); ok(): and it is the standard asked for
+struct VGate { bool fix = false, done = false, s1 = false, l1 = false, r1 = false, fields = false, stdid = false;
+    bool cap() const { return fix && done && s1 && l1 && r1 && fields; }
+    bool ok() const { return cap() && stdid; }
+    std::string why_not_done() const {
         std::string s;
         if (!fix) s += " FIX";
         if (!done) s += " PRE-DONE";
+        return s;
+    }
+    std::string why_not_cap() const {
+        std::string s = why_not_done();
         if (!s1) s += " PRE-S1";
         if (!l1) s += " PRE-L1";
         if (!r1) s += " PRE-R1";
         if (!fields) s += " PRE-FIELDS";
+        return s;
+    }
+    std::string why() const {
+        std::string s = why_not_cap();
+        if (!stdid) s += " PRE-STD";
         return s;
     }
 };
@@ -1473,23 +1548,38 @@ VGate report_common_video(Checks& checks, const Analysis& a, const VideoSet& vs,
     VGate g;
     const std::string tg = tagname(tag);
     const std::string rn = " run " + run + ": ";
-    checks.expect(a.cap.loaded && a.cap.released, "FIX-LOAD " + tg + rn + "program loaded and CPU released [not graded -- apparatus check, no claim uid]");
-    checks.expect(a.fixture, "FIX-CONST " + tg + rn + "the known word $A5C3 stored by the program to $0C0002 appears on the Chip-memory port with that data [not graded -- apparatus check, no claim uid]");
-    g.fix = a.cap.loaded && a.cap.released && a.fixture;
+    auto not_graded = [&](const std::string& id, const std::string& why) {
+        checks.record(id + " " + tg + rn + "NOT GRADED: precondition failed:" + why);
+    };
+    const bool load = a.cap.loaded && a.cap.released;
+    checks.expect(load, "FIX-LOAD " + tg + rn + "program loaded and CPU released [not graded -- apparatus check, no claim uid]");
+    if (load) checks.expect(a.fixture, "FIX-CONST " + tg + rn + "the known word $A5C3 stored by the program to $0C0002 appears on the Chip-memory port with that data [not graded -- apparatus check, no claim uid]");
+    else not_graded("FIX-CONST", " FIX-LOAD");
+    g.fix = load && a.fixture;
     g.done = a.cap.done.has_value();
-    checks.expect(g.done, "PRE-DONE " + tg + rn + "the completion word was written");
-    checks.expect(a.s1_spacing, "PRE-S1A " + tg + rn + "refresh spacing 2S is constant through the run (RF1)");
+    if (g.fix) checks.expect(g.done, "PRE-DONE " + tg + rn + "the completion word was written");
+    else not_graded("PRE-DONE", g.why_not_done());
+    if (g.fix) checks.expect(a.s1_spacing, "PRE-S1A " + tg + rn + "refresh spacing 2S is constant through the run (RF1)");
+    else not_graded("PRE-S1A", g.why_not_done());
     checks.note("S1 " + tg + rn + "S=" + num(a.sref.S) + " clk_sys cycles/slot, " + num((long long)a.sref.groups_found) + " refresh groups measured");
-    checks.expect(a.s1_collision, "PRE-S1B " + tg + rn + "no two logged accesses occupy the same slot (RF1)");
-    g.s1 = a.s1_spacing && a.s1_collision;
-    g.l1 = a.l1;
-    checks.expect(a.l1, "PRE-L1 " + tg + rn + "the Copper's first fetches read the words the CPU wrote in step 3");
-    g.r1 = vs.r1_ok;
-    checks.expect(vs.r1_ok, "PRE-R1 " + tg + rn + "exactly one restart between consecutive field boundaries (RF3), " + num((long long)vs.r1_bad) + " of " + num((long long)vs.complete) + " output fields without");
-    g.fields = vs.complete >= 3;
-    checks.expect(g.fields, "PRE-FIELDS " + tg + rn + "at least 3 complete fields traced (measured " + num((long long)vs.complete) + ")");
+    if (g.fix && a.s1_spacing) checks.expect(a.s1_collision, "PRE-S1B " + tg + rn + "no two logged accesses occupy the same slot (RF1)");
+    else not_graded("PRE-S1B", g.why_not_done() + std::string(a.s1_spacing ? "" : " PRE-S1A"));
+    g.s1 = g.fix && a.s1_spacing && a.s1_collision;
+    g.l1 = g.fix && a.l1;
+    if (g.fix) checks.expect(a.l1, "PRE-L1 " + tg + rn + "the Copper's first fetches read the words the CPU wrote in step 3");
+    else not_graded("PRE-L1", g.why_not_done());
+    if (g.fix && g.done) checks.expect(vs.r1_ok, "PRE-R1 " + tg + rn + "exactly one restart between consecutive field boundaries (RF3), " + num((long long)vs.r1_bad) + " of " + num((long long)vs.complete) + " output fields without");
+    else not_graded("PRE-R1", g.why_not_done());
+    g.r1 = g.fix && g.done && vs.r1_ok;
+    const bool fields = vs.complete >= 3;
+    if (g.fix && g.done) checks.expect(fields, "PRE-FIELDS " + tg + rn + "at least 3 complete fields traced (measured " + num((long long)vs.complete) + ")");
+    else not_graded("PRE-FIELDS", g.why_not_done());
+    g.fields = g.fix && g.done && fields;
     const int id = results_id(a);
-    checks.expect(std_of_id(id) == (int)tag, "PRE-STD " + tg + rn + "the chip identification in VPOSR bits 14-8 names " + tg + " (p.299), measured $" + hex2(id < 0 ? 0xFF : id));
+    const bool std_ok = std_of_id(id) == (int)tag;
+    if (g.fix && g.done) checks.expect(std_ok, "PRE-STD " + tg + rn + "the chip identification in VPOSR bits 14-8 names " + tg + " (p.299), measured $" + hex2(id < 0 ? 0xFF : id));
+    else not_graded("PRE-STD", g.why_not_done());
+    g.stdid = g.fix && g.done && std_ok;
     return g;
 }
 
@@ -1631,16 +1721,16 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
             VGate g = report_common_video(checks, d.a, d.vs, tag, "D-lo");
             clo = calibrate(d.vs, kWhite, kBlue, 160); have_lo = true;
             checks.note("P5 " + tg + " D-lo: " + num((long long)clo.lines) + " window lines, " + num((long long)clo.bad) + " without 160 COLOR01 runs of one common length with the COLOR00 runs between; lengths {" + setstr(clo.lens) + "}");
-            checks.expect(g.ok() && clo.valid, "PRE-P5-CALLO " + tg + " D-lo: every window line shows 160 COLOR01 runs, and all COLOR01 runs and the 159 COLOR00 runs between them have one common length P_lo (" + num(clo.plen) + ")");
-            if (!g.ok()) checks.record("PRE-P5-CALLO " + tg + " preconditions failed:" + g.why());
+            if (g.cap()) checks.expect(clo.valid, "PRE-P5-CALLO " + tg + " D-lo: every window line shows 160 COLOR01 runs, and all COLOR01 runs and the 159 COLOR00 runs between them have one common length P_lo (" + num(clo.plen) + ")");
+            else checks.record("PRE-P5-CALLO " + tg + " D-lo: NOT GRADED: precondition failed:" + g.why_not_cap());
         }
         if (plan.hi) {
             DEData d = load_de(dir, plan.b_hi, tag, false, 0x00E0, 0x0002);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "D-hi");
             chi = calibrate(d.vs, kWhite, kBlue, 320); have_hi = true;
             checks.note("P5 " + tg + " D-hi: " + num((long long)chi.lines) + " window lines, " + num((long long)chi.bad) + " without 320 COLOR01 runs of one common length with the COLOR00 runs between; lengths {" + setstr(chi.lens) + "}");
-            checks.expect(g.ok() && chi.valid, "PRE-P5-CALHI " + tg + " D-hi: every window line shows 320 COLOR01 runs, and all COLOR01 runs and the 319 COLOR00 runs between them have one common length P_hi (" + num(chi.plen) + ")");
-            if (!g.ok()) checks.record("PRE-P5-CALHI " + tg + " preconditions failed:" + g.why());
+            if (g.cap()) checks.expect(chi.valid, "PRE-P5-CALHI " + tg + " D-hi: every window line shows 320 COLOR01 runs, and all COLOR01 runs and the 319 COLOR00 runs between them have one common length P_hi (" + num(chi.plen) + ")");
+            else checks.record("PRE-P5-CALHI " + tg + " D-hi: NOT GRADED: precondition failed:" + g.why_not_cap());
         }
         if (plan.sweep) {
             DEData d = load_de(dir, plan.b_sw, tag, true, 0x0001, 0xFFFE);
@@ -1648,9 +1738,11 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
             std::vector<Instr> list = decode_list(d.a.mem, kListBaseW);
             auto waited = waited_all(d.a, list, kListBaseW, [](const Instr&) { return true; });
             SweepRes sw = analyze_sweep(d.vs);
-            checks.expect(sw.edges_ok, "PRE-P5-EDGES " + tg + " D-sweep: A_u appears for every sweep line u in every complete field, and every output line that shows A_u shows exactly one run of it with COLOR00 ($0F0) before and after it (" +
-                          num((long long)sw.bad_lines) + " of " + num((long long)sw.lines_with_a) + " output lines not so, " + num((long long)sw.present_all.size()) + " of 140 sweep lines present in every field)");
-            checks.expect(waited.all, "PRE-P5-WAITED " + tg + " D-sweep: every sweep WAIT waited (delay above lambda_min), " + num((long long)waited.checked) + "/" + num((long long)waited.expected) + " measured");
+            if (g.cap()) checks.expect(sw.edges_ok, "PRE-P5-EDGES " + tg + " D-sweep: A_u appears for every sweep line u in every complete field, and every output line that shows A_u shows exactly one run of it with COLOR00 ($0F0) before and after it (" +
+                                       num((long long)sw.bad_lines) + " of " + num((long long)sw.lines_with_a) + " output lines not so, " + num((long long)sw.present_all.size()) + " of 140 sweep lines present in every field)");
+            else checks.record("PRE-P5-EDGES " + tg + " D-sweep: NOT GRADED: precondition failed:" + g.why_not_cap());
+            if (g.cap()) checks.expect(waited.all, "PRE-P5-WAITED " + tg + " D-sweep: every sweep WAIT waited (delay above lambda_min), " + num((long long)waited.checked) + "/" + num((long long)waited.expected) + " measured");
+            else checks.record("PRE-P5-WAITED " + tg + " D-sweep: NOT GRADED: precondition failed:" + g.why_not_cap());
             const bool pre = g.ok() && sw.edges_ok && waited.all;
             const std::string why = g.why() + std::string(sw.edges_ok ? "" : " PRE-P5-EDGES") + std::string(waited.all ? "" : " PRE-P5-WAITED");
             std::string lo_w, hi_w;
@@ -1676,15 +1768,18 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
         if (plan.e) {
             DEData d = load_de(dir, plan.b_e, tag, false, 0x00E0, 0x0002);
             VGate g = report_common_video(checks, d.a, d.vs, tag, "E");
-            const int c0 = (plan.b_e == "prog_eblack" || plan.b_e == "prog_eblackgap") ? 0 : kBlue;
+            const int c0 = kBlue;
             const int plo = have_lo && clo.valid ? clo.plen : 0;
             EGrade e = grade_e(d.vs, kYellow, c0, plo);
             checks.note("P9 " + tg + " E: " + num((long long)e.window_lines) + " window lines, COLOR01 run lengths {" + setstr(e.c1_lens) + "}, P_lo=" + num(plo));
             checks.expect(have_lo && clo.valid, "PRE-P9-PLO " + tg + " E: P_lo is valid in this configuration (PRE-P5-CALLO)");
             const bool lines_ok = e.window_lines > 0 && e.windows_per_frame_min >= 1;
-            checks.expect(lines_ok, "PRE-P9-LINES " + tg + " E: every complete field has at least one window line (" + num((long long)e.window_lines) + " window lines, at least " + num((long long)(e.window_lines ? e.windows_per_frame_min : 0)) + " per field)");
+            if (g.cap()) checks.expect(lines_ok, "PRE-P9-LINES " + tg + " E: every complete field has at least one window line (" + num((long long)e.window_lines) + " window lines, at least " + num((long long)(e.window_lines ? e.windows_per_frame_min : 0)) + " per field)");
+            else checks.record("PRE-P9-LINES " + tg + " E: NOT GRADED: precondition failed:" + g.why_not_cap());
+            // the window lines the line below grades exist only when PRE-P9-LINES holds
             const bool one0 = e.window_lines > 0 && e.bad_one0 == 0;
-            checks.expect(one0, "PRE-P9-ONE0 " + tg + " E: each window line has exactly one run of pixels of value 0 (" + num((long long)e.bad_one0) + " of " + num((long long)e.window_lines) + " do not)");
+            if (g.cap() && lines_ok) checks.expect(one0, "PRE-P9-ONE0 " + tg + " E: each window line has exactly one run of pixels of value 0 (" + num((long long)e.bad_one0) + " of " + num((long long)e.window_lines) + " do not)");
+            else checks.record("PRE-P9-ONE0 " + tg + " E: NOT GRADED: precondition failed:" + g.why_not_cap() + std::string(lines_ok ? "" : " PRE-P9-LINES"));
             const bool pre = g.ok() && have_lo && clo.valid && lines_ok && one0;
             const std::string why = g.why() + std::string(have_lo && clo.valid ? "" : " PRE-P9-PLO") + std::string(lines_ok ? "" : " PRE-P9-LINES") + std::string(one0 ? "" : " PRE-P9-ONE0");
             EGrade ew; bool have_ew = false; bool pre_ew = false;
@@ -1693,7 +1788,8 @@ void section_DE(Checks& checks, const std::string& dir, const std::string& mv, b
                 VGate gw = report_common_video(checks, dw.a, dw.vs, tag, "E-widefetch");
                 ew = grade_e(dw.vs, kYellow, kBlue, plo); have_ew = true;
                 const bool wl = ew.window_lines > 0 && ew.bad_one0 == 0 && ew.windows_per_frame_min >= 1;
-                checks.expect(wl, "PRE-P9-ONE0 " + tg + " E-widefetch: each window line has exactly one run of pixels of value 0 (" + num((long long)ew.bad_one0) + " of " + num((long long)ew.window_lines) + " do not)");
+                if (gw.cap()) checks.expect(wl, "PRE-P9-ONE0 " + tg + " E-widefetch: each window line has exactly one run of pixels of value 0 (" + num((long long)ew.bad_one0) + " of " + num((long long)ew.window_lines) + " do not)");
+                else checks.record("PRE-P9-ONE0 " + tg + " E-widefetch: NOT GRADED: precondition failed:" + gw.why_not_cap());
                 pre_ew = gw.ok() && wl;
             }
             if (!pre || (plan.ew && !pre_ew)) {

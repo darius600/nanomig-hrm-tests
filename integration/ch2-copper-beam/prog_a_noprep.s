@@ -1,3 +1,0 @@
-; prog_a_noprep.s -- A-noprep (PAL). See prog_a.s.
-RUN_NOPREP      equ     1
-        include "prog_a.s"

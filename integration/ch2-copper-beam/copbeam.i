@@ -29,10 +29,8 @@ CIAAPRA         equ     $BFE001
 FRAME_INIT      macro
                 move.w  #$7FFF,DMACON(a0)
                 move.w  #$7FFF,INTENA(a0)
-                ifnd    RUN_NOOVL
                 move.b  #$03,CIAADDRA
                 move.b  #0,CIAAPRA
-                endif
                 ifnd    RUN_NOFIX
                 move.w  #$A5C3,RESULTS+2        ; fixture constant
                 endif

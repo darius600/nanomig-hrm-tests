@@ -8,7 +8,7 @@
 ;   RUN_CSHIFTEND -- C-shift-end: k = 106, WAIT(u_106,$D6) instead of $D4.
 ;   RUN_CLATE     -- C-late: k = 90, the reference is WAIT(u_90,$C4).
 ;   RUN_CNEXT     -- C-next: j = 5, WAIT(w_5+1,$50) instead of WAIT(w_5,g_5).
-;   RUN_CR1LINE   -- j = 5, WAIT(w_5+1,$C0) instead of WAIT(w_5,$C0).
+;   RUN_CR1LINE   -- j = 5, WAIT(w_5-1,$C0) instead of WAIT(w_5,$C0).
 ;   RUN_NTSC      -- NTSC (the program is the same).
 ;   RUN_SLOW, RUN_HOLD, RUN_NOCOP, RUN_NODONE, RUN_NOOVL, RUN_SHORT -- as in
 ;                    prog_a.s, on this list.
@@ -132,7 +132,7 @@ start:
         ifd     RUN_CR1LINE
         cmpi.w  #5,d0
         bne.s   .nor1
-        addi.w  #$100,d4
+        subi.w  #$100,d4
 .nor1:
         endif
         ori.w   #$C1,d4
