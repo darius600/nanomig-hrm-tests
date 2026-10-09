@@ -759,7 +759,8 @@ memory access cycles"; section 7, item 15):
   requires every value up to $E2 (of the observed parity, without parity
   coverage) to be seen, so sampling that never reaches the end of a line
   turns the check red, not green; the sample coverage above keeps a trace
-  too short or too sparse for that from being graded.
+  too short or too sparse from being graded, but not a dense trace that
+  reads only part of every line (A-noh0): P3-PAL is graded on it and red.
 - P2's preconditions, for the NTSC line types.
 
 **Contrasting cases.**
@@ -779,9 +780,10 @@ memory access cycles"; section 7, item 15):
   A-short (NTSC) ends the trace after 64 samples, about four lines, so the
   odd count $E1 is not read.
 - Every value present, in both forms, and nothing above the page's highest
-  count: the PAL check on a chip set one of whose PAL lines is 228 counts
+  count: the PAL check on a chip set whose odd PAL lines are 228 counts
   long ($E3 appears, which p.23 gives to NTSC long lines only) is red, and
-  green on the repository's PAL lines. The NTSC check is green on a chip set
+  green on the repository's PAL lines; P2-PAL is red on it too. A chip set
+  whose PAL lines 0 to 47 are 228 counts long shows no $E3 to this sampler. The NTSC check is green on a chip set
   whose NTSC lines alternate between 228 and 227 counts, and red on one
   whose NTSC lines are all 227.
 - "$E3 only on lines with L(v) = 228": no input exists for which the pages
@@ -1437,15 +1439,24 @@ every run, so one mutation record names the id.
 Every precondition is graded only when the lines it rests on hold; otherwise
 it is printed as `RECORDED: <id> <standard> run <run>: NOT GRADED: precondition
 failed: <ids>`, so that a contrast turns red only the line it targets and the
-lines that rest on it are NOT GRADED. The common lines rest on each other as
-follows: `FIX-CONST` on `FIX-LOAD`; the other common lines on `FIX-LOAD` and
-`FIX-CONST`; `PRE-S1B` on `PRE-S1A`; `PRE-T1E` on `PRE-DONE`, `PRE-S1A/B` and
-`PRE-L1`; `PRE-R1`, `PRE-FIELDS` on `PRE-DONE` and `PRE-T2`. `PRE-STD` is a
-prerequisite of every line that grades a standard's own figures. `PRE-ANCHOR`,
-`PRE-P7L256`, `PRE-C-R1LINE` and `PRE-B-L255` rest on the common lines and on
-`PRE-T1E` and `PRE-T2` (RF2's line identification); `PRE-P2WAITED`, `PRE-E0`,
-`PRE-C-WAITED`, `PRE-B-CHAIN` and `PRE-B-WAITED` on the common lines up to
-`PRE-L1`; `PRE-P3SAMPLES` on `PRE-FIELDS`; `PRE-P9-ONE0` on `PRE-P9-LINES`.
+lines that rest on it are NOT GRADED. The common lines rest on each other as follows: `FIX-CONST` on `FIX-LOAD`;
+`PRE-DONE`, `PRE-S1A` and `PRE-L1` on `FIX-LOAD` and `FIX-CONST`; `PRE-S1B` on
+those and `PRE-S1A`; `PRE-T2` and `PRE-STD` on those and `PRE-DONE`; `PRE-T1E`
+on `PRE-DONE`, `PRE-S1A/B` and `PRE-L1`; `PRE-R1` and `PRE-FIELDS` on
+`PRE-DONE` and `PRE-T2` (in the video captures, which have no `PRE-T2`, on
+`PRE-DONE`). `PRE-STD` is a prerequisite of every line behind the gates of P1
+to P9 (P1-ORIGIN, P2, P3, `PRE-P3COVER`, P4, P5, P6, P7, P7-WAITED, P8-LINES,
+P9) and of no other precondition. `PRE-ANCHOR`, `PRE-P7L256`, `PRE-C-R1LINE`
+and `PRE-B-L255` rest on the common lines up to `PRE-L1` and on `PRE-T1E` and
+`PRE-T2`; `PRE-P2WAITED`, `PRE-E0`, `PRE-C-WAITED`, `PRE-B-CHAIN` and
+`PRE-B-WAITED` on the common lines up to `PRE-L1`; `PRE-P3SAMPLES` on `PRE-T2`
+and `PRE-FIELDS`; `PRE-P3ODDEND` on `FIX-LOAD`, `FIX-CONST`, `PRE-DONE` and
+`PRE-T2`; `PRE-P3COVER` on the common lines up to `PRE-L1`, `PRE-T2`,
+`PRE-STD`, `PRE-T1E`, P2's preconditions and P2's population; `PRE-P5-CALLO`,
+`PRE-P5-CALHI`, `PRE-P5-EDGES`, `PRE-P5-WAITED` and `PRE-P9-LINES` on their
+capture's common lines except `PRE-STD`; `PRE-P9-ONE0` on those and
+`PRE-P9-LINES`; `PRE-P9-PLO` on the common lines of the D-lo capture and
+`PRE-P5-CALLO`. The P5 and P9 lines name the capture without `run`.
 
 `PRE-T1` is a `MEASURED:` line in every trace capture of both cores: how many
 steps between consecutive samples exceed 16 slots, and how many of them lie
