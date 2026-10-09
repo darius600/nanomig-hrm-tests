@@ -378,18 +378,33 @@ counts into line 256, still before its position $60.
 Variants:
 
 - **A-LACE**: PAL, BPLCON0 = $0204 (LACE set, p.51).
-- **A-noprep**: `WAIT($FF,$E2)`, `MARK($A0E2)` and the padding removed.
-- **A-slow**: a delay of at least 300 slots between trace samples.
+- **A-noe0**: the marker `MARK($A0E2)` after `WAIT($FF,$E2)` is one more
+  padding move; the WAIT and the padding stay.
+- **A-p7early**: `WAIT($00,$60)` and its marker `MARK($0100)` come right
+  after `m_$FF`, before `WAIT($FF,$E2)`; the other tail WAITs follow the
+  padding as before.
+- **A-slow**: the flat run of samples is cut into blocks, with a delay of
+  more than 16 slots and less than one line between two blocks.
 - **A-noCop**: the CPU writes DMACON = $0080 (clears COPEN, p.30: "You can
-  also stop the Copper by disabling its ability to use DMA") after the third
-  field boundary, then keeps tracing.
+  also stop the Copper by disabling its ability to use DMA") between two
+  parts of the flat run, after the third field boundary, then keeps tracing.
+- **A-earlycop**: the Copper is started (step 5) before the CPU writes the
+  list (step 3), and the CPU writes the list once V is in $20 ... $3F; the
+  Copper's first fetch of the list precedes the CPU's first write of it.
+- **A-nodone**: the whole program, but it halts in place of storing the
+  completion word.
+- **A-noh0**: the sampler stores bursts of samples that start at H ≥ $10 and
+  end before the end of the line, so H = 0 is never stored.
+- **A-std**: the NTSC program on a machine configured as PAL (the harness
+  selects the standard; section 3.1).
 - **A-anchor**: every `WAIT(v,$40)` of the first loop becomes
   `WAIT(v+1,$40)`, with v running $30 ... $FE.
 - **A-shift**: `WAIT($80,$42)` in place of `WAIT($80,$40)`.
-- **A-hold**: the program reads the long word at $DFF004 once, after
-  polling VHPOSR until H ≥ $20, and stores that same long word in every
-  step.
-- **A-short**: PAL, the trace buffer holds 64 samples.
+- **A-dup**: the flat run, with one read of the long word at $DFF004 stored
+  twice at several places.
+- **A-short**: NTSC, the trace buffer holds 64 samples.
+- **A-few**: PAL, the trace buffer holds 35000 samples, fewer than 6 complete
+  fields.
 
 ### Run B: WAIT on line $FF beyond $E2 (PAL; NTSC; OCS)
 
@@ -588,16 +603,21 @@ Trusted samples only.
   (interlace only) ... in PAL, 312, then 313 lines" (p.34 agrees: "625 in
   interlaced mode"). A field with 313 distinct values appears, and "every
   field has 312" goes red.
-- First trusted sample at V = 0, and H = 0 (or the lowest value of the
-  observed parity) occurs: no input exists for which the pages predict a
-  field that starts on another line, or a line without its first count.
-  These clauses have no contrasting case at this boundary; the normal run
-  exercises them.
-- T1E: A-slow. Lines are missed and T1E fails.
-- T2: A-hold. Every sample is trusted (H ≥ $20), V never changes and H never
-  increases, so T2 fails while T1E still holds.
+- H = 0 (or the lowest value of the observed parity) occurs: A-noh0. The
+  sampler stores no sample with H = 0.
+  The clause "the first trusted sample of every field has V = 0" has no
+  contrasting case of its own: no input exists for which the pages predict a
+  field that starts on another line, and a trace whose field starts at
+  another V violates T2.
+- T1E: A-slow. Events fall into a delay between two blocks of samples and
+  T1E fails; the delay is shorter than a line, so T2 holds.
+- T2: A-dup. A read stored twice gives two consecutive samples with the same
+  V and H, so H does not increase and T2 fails while T1E still holds.
 - R1: A-noCop. Fields after the third have no restart and R1 fails.
-- Completion word: leave out step 7.
+- Completion word: A-nodone. The program does everything but store the
+  completion word.
+- L1: A-earlycop. The Copper's first fetch of the list precedes the CPU's
+  first write of it.
 
 **Reference frame.** RF2 and RF3. The field boundary is checked against the
 restart by R1.
@@ -647,8 +667,9 @@ color clocks long") is declined (section 1).
 
 **Preconditions.**
 
-- Every `WAIT(v,$40)`, and every `WAIT(n,$60)` for n = 0 ... $37 (PAL) or
-  0 ... 5 (NTSC), waited.
+- Every `WAIT(v,$40)`, and every `WAIT(n,$60)` for n = 1 ... $37 (PAL) or
+  1 ... 5 (NTSC), waited; `WAIT($00,$60)` waited (P7); the second word of
+  the WAIT before m_256 is fetched on line 256 (P7).
 - A-anchor: every m_v lies on line v (RF2).
 - S1, L1, T1E, T2, R1.
 
@@ -753,13 +774,16 @@ memory access cycles"; section 7, item 15):
   - NTSC check under PAL: red when the observed parity is odd, as $E3 is
     absent. When it is even, both standards give the same even values, and
     the check has no contrasting case at this boundary.
-- Sample coverage: A-short (PAL). The trace ends after 64 samples, about four
-  lines, so the sample coverage fails and P3 is NOT GRADED.
+- Sample coverage: A-few (PAL). The trace ends after 35000 samples, fewer
+  than 6 complete fields, so the field coverage fails and P3 is NOT GRADED.
+  A-short (NTSC) ends the trace after 64 samples, about four lines, so the
+  odd count $E1 is not read.
 - Every value present, in both forms, and nothing above the page's highest
-  count: the standard of the check selected against the standard of the
-  run. The NTSC capture graded as PAL ($E3 appears, p.23's long lines) is
-  red on a chip set whose NTSC lines alternate between 228 and 227 counts,
-  and green on one whose NTSC lines are all 227.
+  count: the PAL check on a chip set one of whose PAL lines is 228 counts
+  long ($E3 appears, which p.23 gives to NTSC long lines only) is red, and
+  green on the repository's PAL lines. The NTSC check is green on a chip set
+  whose NTSC lines alternate between 228 and 227 counts, and red on one
+  whose NTSC lines are all 227.
 - "$E3 only on lines with L(v) = 228": no input exists for which the pages
   predict $E3 on a short line; this clause has no contrasting case at this
   boundary.
@@ -1071,10 +1095,12 @@ moves, `WAIT(n,$60)` with `MARK($0100+n)`, for n = 0 ... N.
 
 **Contrasting cases.**
 
-- Main: A-noprep. `WAIT($00,$60)` is fetched on line 255 right after
+- Main: A-p7early. `WAIT($00,$60)` is fetched on line 255 right after
   `m_$FF`. It ends at once (p.23, quoted in P6), and m_256 lies on line 255.
-- "fetched on line 256": the same variant A-noprep. The WAIT's second word
+- "fetched on line 256": the same variant A-p7early. The WAIT's second word
   is fetched on line 255.
+- m_E2 is fetched: A-noe0. The marker is another padding move, so m_E2 does
+  not exist while the WAIT and the padding stay.
 - A-anchor, T1E, T2, R1: as in P2 and P1.
 
 **Reference frame.** RF2, anchored by A-anchor.
@@ -1385,8 +1411,11 @@ test run the variant named in 8.6 in place of the normal run. A normal run
 8. **Slot length.** S is measured in every capture of both cores from the
    refresh reads (RF1) and is 8 `clk_sys` cycles per slot in all of them. The
    refresh reads are taken from the harness's uncoalesced port log.
-9. **A-slow.** The delay between samples is a loop of 100 `dbra`
-    iterations, at least 300 slots (3.2); 400 samples are taken.
+9. **A-slow.** The 50000 samples are taken in 50 blocks of 1000 copies, with a
+    loop of 20 `dbra` iterations between two blocks. The pages give no
+    duration of an instruction, so the length of that delay is not assumed:
+    the `PRE-T1` line measures how many steps exceed 16 slots, and the delay is
+    shorter than one line because `PRE-T2` holds.
 
 ### 8.3 Preconditions beyond the specification's list
 
@@ -1404,6 +1433,19 @@ test run the variant named in 8.6 in place of the normal run. A normal run
 The common preconditions are printed once per capture, with the capture's run
 named after the standard (`PRE-DONE PAL run A: ...`); they carry the same id in
 every run, so one mutation record names the id.
+
+Every precondition is graded only when the lines it rests on hold; otherwise
+it is printed as `RECORDED: <id> <standard> run <run>: NOT GRADED: precondition
+failed: <ids>`, so that a contrast turns red only the line it targets and the
+lines that rest on it are NOT GRADED. The common lines rest on each other as
+follows: `FIX-CONST` on `FIX-LOAD`; the other common lines on `FIX-LOAD` and
+`FIX-CONST`; `PRE-S1B` on `PRE-S1A`; `PRE-T1E` on `PRE-DONE`, `PRE-S1A/B` and
+`PRE-L1`; `PRE-R1`, `PRE-FIELDS` on `PRE-DONE` and `PRE-T2`. `PRE-STD` is a
+prerequisite of every line that grades a standard's own figures. `PRE-ANCHOR`,
+`PRE-P7L256`, `PRE-C-R1LINE` and `PRE-B-L255` rest on the common lines and on
+`PRE-T1E` and `PRE-T2` (RF2's line identification); `PRE-P2WAITED`, `PRE-E0`,
+`PRE-C-WAITED`, `PRE-B-CHAIN` and `PRE-B-WAITED` on the common lines up to
+`PRE-L1`; `PRE-P3SAMPLES` on `PRE-FIELDS`; `PRE-P9-ONE0` on `PRE-P9-LINES`.
 
 `PRE-T1` is a `MEASURED:` line in every trace capture of both cores: how many
 steps between consecutive samples exceed 16 slots, and how many of them lie
@@ -1473,12 +1515,15 @@ page-conforming Copper lengthens a step. The lines that rest on RF2 are gated by
    `P6-CONTROL`, that grades that $B300 is fetched in the same field and that
    the WAIT($FF,$40) after it waited; `time($B301) - time($B300) = $40` is not
    graded, for the reason of item 4, and is measured.
-6. **P7 and P8, the contrasts.** A-noprep puts the WAIT($00,$60) on line 255, so
-   `PRE-E0` and `PRE-P7L256` fail and `P7` is NOT GRADED: a precondition never
+6. **P7 and P8, the contrasts.** A-p7early puts the WAIT($00,$60) on line 255, so
+   `PRE-P7L256` fails and `P7` is NOT GRADED: a precondition never
    depends on the clause under test, and a failed precondition makes its
-   dependent line NOT GRADED. `P7` is mutated by A-tailshift, with every
-   precondition holding, and `P7-WAITED` by A-longpad. `P8-LINES` is mutated by
-   A-tailshift on the NTSC list.
+   dependent line NOT GRADED. A-noe0 fails `PRE-E0` alone. `P7` is mutated by
+   A-tailshift, with every precondition holding, and `P7-WAITED` by A-longpad.
+   `P8-LINES` is mutated by A-tailshift on the NTSC list. `PRE-P2WAITED`
+   covers `WAIT(n,$60)` for n >= 1; `WAIT($00,$60)` waited is graded as
+   `P7-WAITED`, and `P2` is NOT GRADED when it or `PRE-P7L256` fails, since
+   L(256) rests on both.
 7. **P8, the field length.** `P8-AFTER`, `P8-NO262` and `P8` are NOT GRADED, on the
    quotations of P1's field-length record, and `COP2-vertical-beam-position.c9` is
    declined on that record. p.24 says of the end of the field: "Some minor
