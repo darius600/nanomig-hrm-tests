@@ -665,7 +665,7 @@ Measured values (not graded):
 - P3 item 2: V(L1) = 110, V(L3) = 110 and V(L5) = 190 in every case on both cores (the live beam at E110 and E190); H(L3) - H(L1) is 6, 6, 16, 16 on fx68k and -4, -4, 2, -20 on TG68K in OCS-PAL, ECS-PAL, OCS-NTSC, ECS-NTSC.
 - P3 item 5: V1 and V2 of F1, F3, F5 and F7 read the live beam on this RTL: V1 at line 2 (`$0029B` and `$0028A` on fx68k, `$00262` to `$00254` on TG68K) and V2 at line 11 or 10 (`$00B1F` to `$00A7E`), unequal, below `$10500`, in every case.
 - P3 period of the field before and after the BEAMCON0 write: 568408 and 568360 (fx68k) and 568376 and 568568 (TG68K) cycles in ECS-PAL, 477640 and 477704 (fx68k) and 477592 and 477528 (TG68K) in ECS-NTSC; the bound is one line, 1824 cycles.
-- P4 delay calibration: fx68k 166 poll iterations over the 20 lines between E110 and E130, the delay after E250 lasted 37060 cycles to X's store, X's store lies 308964 cycles after t(A1) (bound: more than 284544); TG68K 224 iterations, 36932 cycles, 308836 cycles. Y is stored 440 (fx68k) and 432 (TG68K) cycles after X. X reads V = 270 on both cores; Y reads V = 270, with H = 141 and H(X') = 90, H(Y') = 145 on fx68k and H = 124, H(X') = 74, H(Y') = 128 on TG68K.
+- P4 delay calibration: fx68k 166 poll iterations over the 20 lines between E110 and E130, the delay after E250 lasted 37060 cycles to X's store, X's store lies 308964 cycles after t(A1) (bound: more than 284544); TG68K 224 iterations, 36932 cycles, 308836 cycles. Y is stored 440 (fx68k) and 432 (TG68K) cycles after X. X reads V = 270 on both cores; Y reads V = 270, with H = 141 and H(Y') = 145 on fx68k and H = 124 and H(Y') = 128 on TG68K.
 
 ### Mutations replayed
 
@@ -702,22 +702,23 @@ Each selector was run on both cores from the final build; the table gives what t
 | P3-DDRA | FAIL: P3-PRE-DDRA; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-DDRA; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
 | P3-NOPULSE | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
 | P3-E40LINE44 | FAIL: P3-PRE-LIVE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-LIVE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
-| P3-HOLD | no label turns red (18 passed, 4 failed) | no label turns red (18 passed, 4 failed) |
-| P3-BEAMCON0 | FAIL: P3-PRE-PERIOD (10 passed, 1 failed) | FAIL: P3-PRE-PERIOD (10 passed, 1 failed) |
+| P3-BEAMCON0 | FAIL: P3-PRE-PERIOD; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (11 passed, 1 failed) | FAIL: P3-PRE-PERIOD; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (11 passed, 1 failed) |
 | P3-LPEN | no label turns red (20 passed, 8 failed) | no label turns red (20 passed, 8 failed) |
-| P3-OFFSET | no label turns red (19 passed, 8 failed) | no label turns red (19 passed, 8 failed) |
+| P3-OFFSET | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) | FAIL: P3-PRE-PULSE; NOT GRADED: P3-HELD, P3-PEN-POSITION, P3-LATCHED-PEN-POSITION, P3-FIELD-END-LATCH (18 passed, 5 failed) |
+| P3-B1LINE181 | no label turns red (19 passed, 8 failed) | no label turns red (19 passed, 8 failed) |
 | P4-NOBIN | FAIL: P4-FIXTURE-LOADED, P4-FIXTURE-A1 (0 passed, 2 failed) | FAIL: P4-FIXTURE-LOADED, P4-FIXTURE-A1 (0 passed, 2 failed) |
 | P4-NOCOPEN | FAIL: P4-FIXTURE-A1 (1 passed, 1 failed) | FAIL: P4-FIXTURE-A1 (1 passed, 1 failed) |
 | P4-NODONE | FAIL: P4-FIXTURE-DRIVEN (2 passed, 1 failed) | FAIL: P4-FIXTURE-DRIVEN (2 passed, 1 failed) |
 | P4-DDRA | FAIL: P4-PRE-DDRA (8 passed, 3 failed) | FAIL: P4-PRE-DDRA (8 passed, 3 failed) |
 | P4-ANCHOR | FAIL: P4-PRE-ANCHOR (8 passed, 3 failed) | FAIL: P4-PRE-ANCHOR (8 passed, 3 failed) |
 | P4-YDELAY | FAIL: P4-PRE-READTIME (8 passed, 3 failed) | FAIL: P4-PRE-READTIME (8 passed, 3 failed) |
-| P4-NOPULSE-F1 | FAIL: P4-PRE-PULSE (8 passed, 3 failed) | FAIL: P4-PRE-PULSE (8 passed, 3 failed) |
+| P4-EXTRAPULSE-F2 | FAIL: P4-PRE-PULSE (8 passed, 3 failed) | FAIL: P4-PRE-PULSE (8 passed, 3 failed) |
 | P4-PERIOD | FAIL: P4-PRE-PERIOD; NOT GRADED: P4-PRE-REFFRAME (7 passed, 3 failed) | FAIL: P4-PRE-PERIOD; NOT GRADED: P4-PRE-REFFRAME (7 passed, 3 failed) |
 | P4-SHORT | FAIL: P4-PRE-REFFRAME (8 passed, 3 failed) | FAIL: P4-PRE-REFFRAME (8 passed, 3 failed) |
 | P4-NOLPENDIS | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
+| P4-F1NOLPEN | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
 | P4-F3LPENDIS | no label turns red (9 passed, 2 failed) | no label turns red (9 passed, 2 failed) |
 
-On the private copy of the RTL described above, the selectors P3-HOLD (`P3-PRE-LIVE` FAIL: E40 and E60 of F2 read V = 30), P3-OFFSET (`P3-PEN-POSITION` and `P3-LATCHED-PEN-POSITION` FAIL, H(L3) - H(L1) = 26), P3-LPEN (`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH` FAIL, the contrast line PASS), P4-NOLPENDIS (`P4-LPENDIS-READ` FAIL, X = (0,100)), P4-F3LPENDIS (`P4-PRE-CONTROL` and `P4-PRE-LATCHF1` FAIL) and P4-NOPULSE-F1 (`P4-PRE-LATCHF1` and `P4-PRE-PULSE` FAIL, `P4-LPENDIS-READ` NOT GRADED) move the lines named, on both cores.
+On the private copy of the RTL described above, every precondition holds and the line named moves, on both cores, under these selectors: P3-LPEN (`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION` and `P3-FIELD-END-LATCH` FAIL), P3-B1LINE181 (`P3-PEN-POSITION` and `P3-LATCHED-PEN-POSITION` FAIL, V(L5) = 181), P4-NOLPENDIS (`P4-LPENDIS-READ` FAIL, X = (0,100)), P4-F3LPENDIS (`P4-PRE-CONTROL` FAIL alone, `P4-LPENDIS-READ` NOT GRADED), P4-F1NOLPEN (`P4-PRE-LATCHF1` FAIL alone, `P4-LPENDIS-READ` NOT GRADED) and P4-EXTRAPULSE-F2 (`P4-PRE-PULSE` FAIL alone, `P4-LPENDIS-READ` NOT GRADED). The selectors P3-OFFSET and P3-NOPULSE fail `P3-PRE-PULSE` alone and print the four P3 lines NOT GRADED on both RTLs.
 
-`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL` and `P4-LPENDIS-READ` carry implementation records; the selectors P3-OFFSET, P4-F3LPENDIS, P4-NOPULSE-F1 and P4-NOLPENDIS cannot move the lines they name on the repository's RTL, because those lines are already red or NOT GRADED there, and the run prints a record (`P3-PRE-OFFSET-MUTATION`, `P4-PRE-CONTROL-MUTATION`, `P4-PRE-LATCHF1-MUTATION`, `P4-LPENDIS-READ-MUTATION`) that says so.
+`P3-HELD`, `P3-PEN-POSITION`, `P3-LATCHED-PEN-POSITION`, `P3-FIELD-END-LATCH`, `P4-PRE-LATCHF1`, `P4-PRE-CONTROL` and `P4-LPENDIS-READ` carry implementation records. On the repository's RTL the selectors P3-LPEN, P3-B1LINE181, P4-F1NOLPEN, P4-F3LPENDIS and P4-NOLPENDIS leave the labels they name as they are, because those lines are already red or NOT GRADED there; the run prints a record (`P4-LPENDIS-READ-MUTATION`, for P4-NOLPENDIS) only where it says so, and only when a precondition of `P4-LPENDIS-READ` failed.

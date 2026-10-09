@@ -21,6 +21,9 @@
 ;                 $0020 instead of $2020 (LPENDIS never set).
 ;   F3LPENDIS  -- precondition 3's own contrast: F3's own E60 write is also
 ;                 $2020 instead of $0020 (LPENDIS set in the control field too).
+;   F1NOLPEN   -- the F1 latch precondition's contrast: BPLCON0 LPEN is clear
+;                 from E60 of F1 until Y has been stored, so the F1 pulse
+;                 latches nothing.
 ;   DDRAFORCE  -- the DDRA precondition's contrast: bits 6-7 forced to outputs.
 ;   ANCHORMUT  -- the anchor precondition's contrast: the second A anchor WAITs
 ;                 for line 101.
@@ -210,6 +213,9 @@ main_loop:
         else
         move.w  #BC_PAL|$2000,BEAMCON0(a0) ; F1: LPENDIS=1
         endif
+        ifd     F1NOLPEN
+        move.w  #$0000,BPLCON0(a0)      ; contrast: LPEN clear for the rest of F1
+        endif
         bra     .coper_done
 .maybe_f3_e60:
         cmp.w   #4,d0                    ; F3?
@@ -243,6 +249,9 @@ main_loop:
         move.w  #BC_PAL,BEAMCON0(a0)
         YDELAY_SPIN
         bsr     p4_store                 ; Y
+        ifd     F1NOLPEN
+        move.w  #$0008,BPLCON0(a0)      ; LPEN set again before F2
+        endif
         addq.w  #1,d1
         bra     main_loop
 

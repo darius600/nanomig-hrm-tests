@@ -51,12 +51,16 @@
 // MUTATION P3-PRE-DDRA stimulus red CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P3-DDRA (measured: the value read after the branch has bits 6 and 7 set, P3-PRE-DDRA FAIL, the four P3 lines NOT GRADED, both cores)
 // MUTATION P3-PRE-PULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P3-NOPULSE (measured: P3-PRE-PULSE FAIL on both cores, graded against the nominal 3-pulse schedule, the four P3 lines NOT GRADED)
 // MUTATION P3-PRE-LIVE stimulus red the E40 WAIT at line 44 instead of line 40, via NMH_MUTATE=P3-E40LINE44 (measured: E40 reads V=44 or 45, P3-PRE-LIVE FAIL, the four P3 lines NOT GRADED, both cores)
-// MUTATION P3-PRE-LIVE stimulus green pin 6 held pressed from line 30 of F2 to the end of F2 instead of the normal schedule, via NMH_MUTATE=P3-HOLD, through the unchanged comparator (measured: the line is PASS on both cores because no freeze exists to hold E40 and E60 of F2; on the private copy of the RTL described at P3-HELD the same selector turns it FAIL, E40 and E60 of F2 read V=30)
-// MUTATION P3-PRE-PERIOD stimulus red the ECS-NTSC build BEAMCON0 write ($0000) run against a PAL-configured harness (bit 5 opposite the selected standard), via NMH_MUTATE=P3-BEAMCON0 (measured: the field period after the write is the NTSC one and P3-PRE-PERIOD FAIL on both cores, through the unchanged comparator)
-// MUTATION P3-LPEN stimulus green LPEN-clear build substituted for the LPEN-set build under the same unchanged trigger schedule and comparator -- every read tracks the beam, via NMH_MUTATE=P3-LPEN (measured on both cores)
+// MUTATION P3-PRE-PERIOD stimulus red the ECS-NTSC build BEAMCON0 write ($0000) run against a PAL-configured harness (bit 5 opposite the selected standard), via NMH_MUTATE=P3-BEAMCON0 (measured: the field period after the write is the NTSC one, P3-PRE-PERIOD FAIL on both cores and on both RTLs, every other precondition PASS, the four P3 lines NOT GRADED)
+// MUTATION P3-HELD stimulus red the LPEN-clear build substituted for the LPEN-set build under the same trigger schedule, via NMH_MUTATE=P3-LPEN, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, P3-HELD FAIL on both cores; on the repository's RTL the line is red in the primary run already)
+// MUTATION P3-PEN-POSITION stimulus red the LPEN-clear build, via NMH_MUTATE=P3-LPEN, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, P3-PEN-POSITION FAIL on both cores)
+// MUTATION P3-LATCHED-PEN-POSITION stimulus red the LPEN-clear build, via NMH_MUTATE=P3-LPEN, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, P3-LATCHED-PEN-POSITION FAIL on both cores)
+// MUTATION P3-FIELD-END-LATCH stimulus red the LPEN-clear build, via NMH_MUTATE=P3-LPEN, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, P3-FIELD-END-LATCH FAIL on both cores)
 // MUTATION P3-HELD implementation green a private copy of the RTL outside the repository in which agnus_beamcounter.v stores BPLCON0 bit 3, latches vpos and hpos on a falling edge of pin 6 after line 20 or at the end of the field, releases the latch at vpos 20 and returns it on VPOSR and VHPOSR unless ECS LPENDIS is set (pp. 238-239, p. 305), and agnus.v and minimig.v carry the AND of both fire inputs to it, built with make NANOMIG=<copy>: the line is PASS in OCS-PAL, ECS-PAL, OCS-NTSC and ECS-NTSC on both cores, and the repository's RTL is red there because VPOSR and VHPOSR read the live beam
 // MUTATION P3-PEN-POSITION implementation green the private copy described at P3-HELD: V(L1)=100, V(L3)=100, V(L5)=180 and H(L3)-H(L1)=40 in all four cases on both cores, where the repository's RTL reads V=110, 110, 190
-// MUTATION P3-PEN-POSITION stimulus impossible already red on this RTL: the F1 trigger at t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET -- H(L1) is already a live read here, so no input moves the line; on the private copy described at P3-HELD the same selector turns the line FAIL on both cores (H(L3)-H(L1) is 26 instead of 40)
+// MUTATION P3-PRE-PULSE stimulus red the F1 trigger at t(A1)+30 colour clocks instead of +16, via NMH_MUTATE=P3-OFFSET (measured: the drive log differs from the nominal schedule plan_triggers(dry.log,16), P3-PRE-PULSE FAIL, the four P3 lines NOT GRADED, both cores and both RTLs)
+// MUTATION P3-PEN-POSITION stimulus red the B1/B2 WAIT pair one line lower (line 181 instead of 180), so the F5 trigger lands on line 181, via NMH_MUTATE=P3-B1LINE181, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, V(L5)=181, P3-PEN-POSITION FAIL on both cores)
+// MUTATION P3-LATCHED-PEN-POSITION stimulus red the B1/B2 WAIT pair at line 181, via NMH_MUTATE=P3-B1LINE181, run against the private copy described at P3-HELD through the unchanged comparators (measured: every precondition PASS, P3-LATCHED-PEN-POSITION FAIL with P3-PEN-POSITION on both cores)
 // MUTATION P3-LATCHED-PEN-POSITION implementation green the private copy described at P3-HELD: PASS in all four cases on both cores, where the repository's RTL is red
 // MUTATION P3-FIELD-END-LATCH implementation green the private copy described at P3-HELD: V1 and V2 of F1, F3, F5 and F7 are $13801 in PAL and $10601 in NTSC, PASS in all four cases on both cores, where the repository's RTL reads the live beam (V1 at line 2, V2 at line 11)
 //
@@ -66,12 +70,12 @@
 // MUTATION P4-PRE-DDRA stimulus red CIAADDRA bits 6-7 forced to outputs instead of fixed to inputs, via NMH_MUTATE=P4-DDRA (measured: the value read after the branch has bits 6 and 7 set, P4-PRE-DDRA FAIL, P4-LPENDIS-READ NOT GRADED, both cores)
 // MUTATION P4-PRE-ANCHOR stimulus red the second A anchor WAITs for line 101 instead of 100, via NMH_MUTATE=P4-ANCHOR (measured: P4-PRE-ANCHOR FAIL on both cores, every other precondition as in the primary run)
 // MUTATION P4-PRE-READTIME stimulus red 40 poll iterations between each BEAMCON0 write and the second read, via NMH_MUTATE=P4-YDELAY (measured: P4-PRE-READTIME FAIL on both cores, every other precondition as in the primary run)
-// MUTATION P4-PRE-PULSE stimulus red the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 (measured: P4-PRE-PULSE FAIL on both cores, graded against the nominal 2-pulse schedule)
+// MUTATION P4-PRE-PULSE stimulus red a third pulse in F2, 16 colour clocks after F2's own A1 fetch and after Y's store, via NMH_MUTATE=P4-EXTRAPULSE-F2 (measured: P4-PRE-PULSE FAIL on both cores, graded against the nominal 2-pulse schedule; on the private copy described at P3-HELD no other precondition moves)
 // MUTATION P4-PRE-PERIOD stimulus red every BEAMCON0 write has bit 5 clear (the other standard), via NMH_MUTATE=P4-PERIOD (measured: the field period changes and P4-PRE-PERIOD FAIL on both cores; P4-PRE-REFFRAME prints NOT GRADED)
 // MUTATION P4-PRE-REFFRAME stimulus red the delay after E250 is 10 poll iterations instead of the calibrated count, via NMH_MUTATE=P4-SHORT (measured: P4-PRE-REFFRAME FAIL on both cores, every other precondition as in the primary run)
-// MUTATION P4-PRE-LATCHF1 stimulus impossible already red on this RTL: the F1 trigger pulse omitted from the drive schedule, via NMH_MUTATE=P4-NOPULSE-F1 -- Y already reads the live beam (V=270), so no input moves the line; on the private copy described at P3-HELD the same selector turns the line FAIL on both cores (Y reads V=270)
-// MUTATION P4-PRE-LATCHF1 implementation green the private copy described at P3-HELD: V(Y)=100 and H(Y)=H(X')=H(Y') on both cores, where the repository's RTL reads V=270
-// MUTATION P4-PRE-CONTROL stimulus impossible already red on this RTL: the E60 write of F3 changed to $2020 instead of $0020 (LPENDIS set in the control field too), via NMH_MUTATE=P4-F3LPENDIS -- X' and Y' already read the live beam and differ, so no input moves the line; on the private copy described at P3-HELD the same selector turns the line FAIL on both cores (X' reads V8=1 and an H other than H(Y')=85, and P4-PRE-LATCHF1 turns FAIL with it because its H clause compares H(X'))
+// MUTATION P4-PRE-LATCHF1 stimulus red BPLCON0 LPEN clear from E60 of F1 until Y is stored (set again before F2), the nominal pulses unchanged, via NMH_MUTATE=P4-F1NOLPEN, run against the private copy described at P3-HELD through the unchanged comparators (measured: Y reads the live beam, V=270, P4-PRE-LATCHF1 FAIL on both cores, every other precondition PASS, P4-LPENDIS-READ NOT GRADED)
+// MUTATION P4-PRE-LATCHF1 implementation green the private copy described at P3-HELD: V(Y)=100 and H(Y)=H(Y') on both cores, where the repository's RTL reads V=270
+// MUTATION P4-PRE-CONTROL stimulus red the E60 write of F3 changed to $2020 instead of $0020 (LPENDIS set in the control field too), via NMH_MUTATE=P4-F3LPENDIS, run against the private copy described at P3-HELD through the unchanged comparators (measured: X' reads V8=1 and differs from Y', P4-PRE-CONTROL FAIL on both cores, every other precondition PASS, P4-LPENDIS-READ NOT GRADED)
 // MUTATION P4-PRE-CONTROL implementation green the private copy described at P3-HELD: X'=Y' and V(X')=100 on both cores, where the repository's RTL reads V=270 and X' differs from Y'
 // MUTATION P4-LPENDIS-READ implementation green the private copy described at P3-HELD: every precondition holds and the line is PASS on both cores (X reads V8=1), where the repository's RTL leaves it NOT GRADED because P4-PRE-LATCHF1 and P4-PRE-CONTROL are red
 // MUTATION P4-LPENDIS-READ stimulus red the E60 write of F1 changed to $0020 instead of $2020 (LPENDIS never set), via NMH_MUTATE=P4-NOLPENDIS, run against the private copy described at P3-HELD through the unchanged comparator (measured: every precondition holds, X is (0,100) and the line is FAIL on both cores); against the repository's RTL the line is NOT GRADED in the primary run and in this run
@@ -1246,7 +1250,6 @@ int main(int argc, char** argv) {
         // comment's own scope note).
         bool is_ecs_pal = combo.ecs && !combo.ntsc;
         std::string used_bin = bin;
-        std::optional<HoldWindow> hold;
 
         if (is_ecs_pal && mv == "P3-ANCHOR") used_bin = dir + "/prog_lp_ecs_pal_anchormut.bin";
         if (is_ecs_pal && mv == "P3-READTIME") used_bin = dir + "/prog_lp_ecs_pal_v1delay.bin";
@@ -1258,13 +1261,12 @@ int main(int argc, char** argv) {
         if (is_ecs_pal && mv == "P3-EVMIS") used_bin = dir + "/prog_lp_ecs_pal_evmis.bin";
         if (is_ecs_pal && mv == "P3-NOBIN") used_bin = dir + "/prog_lp_missing.bin";
         if (is_ecs_pal && mv == "P3-OFFSET") f1_offset = 30;
+        if (is_ecs_pal && mv == "P3-B1LINE181") used_bin = dir + "/prog_lp_ecs_pal_b1line181.bin";
 
         DryResult dry = dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
         std::string tag = std::string(combo.label) + ((is_ecs_pal && !mv.empty()) ? " [" + mv + "]" : "");
         // A failed fixture leaves the graded lines of this run NOT GRADED, never absent.
-        const bool items_run = !(is_ecs_pal && mv == "P3-HOLD") && mv != "P3-BEAMCON0";
         auto fixture_failed = [&](const std::string& which) {
-            if (!items_run) return;
             for (const char* l : {"P3-HELD", "P3-PEN-POSITION", "P3-LATCHED-PEN-POSITION", "P3-FIELD-END-LATCH"})
                 checks.record(std::string(l) + " " + tag + ": NOT GRADED -- the fixture check " + which + " failed");
         };
@@ -1281,30 +1283,20 @@ int main(int argc, char** argv) {
 
         std::vector<uint64_t> triggers = {plan.f1, plan.f3, plan.f5};
         if (is_ecs_pal && mv == "P3-NOPULSE") triggers = {plan.f3, plan.f5};
-        bool applying_hold = is_ecs_pal && mv == "P3-HOLD";
-        if (applying_hold) {
-            auto ticks = field_tick_cycles(dry.log);
-            // ticks[3] = start of F2 (field index 3); hold from ~line 30 of
-            // F2 to the start of F3 (ticks[4]).
-            hold = HoldWindow{ticks[3] + 30 * kLineCycles, ticks[4]};
-            triggers.clear();
-        }
 
-        bool beamcon0_mismatch = false;
         if (mv == "P3-BEAMCON0") {
             // reuse the ECS-NTSC build (BEAMCON0<-$0000) against this
             // combo's own PAL-configured harness -- bit 5 opposite the
             // selected standard.
             if (!combo.ecs) continue; // OCS has no BEAMCON0; run only once (under ECS-PAL)
             used_bin = dir + "/prog_lp_ecs_ntsc.bin";
-            beamcon0_mismatch = true;
-            dry = dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
+            dry =dry_run(used_bin, cfg_for(combo.ecs, combo.ntsc));
             plan = plan_triggers(dry.log, 16);
             triggers = {plan.f1, plan.f3, plan.f5};
             tag = std::string(combo.label) + " [P3-BEAMCON0]";
         }
 
-        DrivenResult run = driven_run(used_bin, cfg_for(combo.ecs, combo.ntsc), triggers, 4 * kCck, hold);
+        DrivenResult run = driven_run(used_bin, cfg_for(combo.ecs, combo.ntsc), triggers, 4 * kCck);
         checks.expect(run.loaded && run.done.has_value(),
             "P3-FIXTURE-DRIVEN " + tag + ": the driven run reached DONE [not graded -- apparatus check]");
         if (!run.loaded || !run.done) { fixture_failed("P3-FIXTURE-DRIVEN"); continue; }
@@ -1467,19 +1459,18 @@ int main(int argc, char** argv) {
         }
 
         // 4. The pulse was driven. Graded against the NOMINAL schedule (3
-        // pulses: F1, F3, F5), not against whatever `triggers` a mutation
-        // fed the driver -- P3-NOPULSE's own reduced `triggers` (2 entries)
-        // must still show up as short of the nominal 3, or the omission
-        // could never be caught here.
-        if (applying_hold) {
-            checks.record("P3-PRE-PULSE " + tag + ": not applicable -- this run drives a held "
-                "level (precondition 5's own contrast), not the normal 3-pulse schedule");
-        } else {
+        // pulses, 16 colour clocks after the Copper's own A1/B1 fetches of
+        // F1, F3, F5: plan_triggers(dry.log, 16)), whatever the selector
+        // fed the driver -- a reduced or shifted `triggers` must still show
+        // up here as different from the nominal schedule.
+        {
             size_t nominal = 3;
-            bool ok = run.pulses.size() == nominal;
-            for (size_t i = 0; ok && i < triggers.size() && i < run.pulses.size(); ++i) {
+            TriggerPlan nplan = plan_triggers(dry.log, 16);
+            const std::vector<uint64_t> nominal_triggers = {nplan.f1, nplan.f3, nplan.f5};
+            bool ok = nplan.ok && run.pulses.size() == nominal;
+            for (size_t i = 0; ok && i < nominal_triggers.size() && i < run.pulses.size(); ++i) {
                 uint64_t a = run.pulses[i].first;
-                if (a < triggers[i] || a > triggers[i] + 4) ok = false;
+                if (a < nominal_triggers[i] || a > nominal_triggers[i] + 4) ok = false;
             }
             checks.note("P3 " + tag + " drive log: " + std::to_string(run.pulses.size()) +
                         " pulse(s) driven, " + std::to_string(nominal) + " scheduled (nominal)");
@@ -1489,9 +1480,9 @@ int main(int argc, char** argv) {
             pre.push_back({"P3-PRE-PULSE", ok});
         }
 
-        if (!beamcon0_mismatch) {
+        {
             // 5 & item4: beam reads live before/after every trigger, every field.
-            // The same comparator runs under every selector, P3-HOLD included.
+            // The same comparator runs under every selector.
             bool ok = true;
             int checked = 0;
             for (int f = 0; f <= 7; ++f) {
@@ -1538,20 +1529,19 @@ int main(int argc, char** argv) {
             // gives the PAL field 312 lines and the NTSC field 262, fifty
             // lines apart, so a change of standard is fifty times the bound.
             bool ok = have && std::abs(pre_period - post_period) <= (int64_t)kLongLineCycles;
-            checks.note("P3 " + tag + (beamcon0_mismatch ? " BEAMCON0 period (bit 5 written opposite the selected standard): pre="
-                                                          : " BEAMCON0 period: pre=") + std::to_string(pre_period) +
+            checks.note("P3 " + tag + " BEAMCON0 period: pre=" + std::to_string(pre_period) +
                         " post=" + std::to_string(post_period) + " cycles, bound one line = " +
                         std::to_string(kLongLineCycles) + " cycles");
             checks.expect(ok,
                 "P3-PRE-PERIOD " + tag + " [p.23,p.24]: the field period measured before the BEAMCON0 "
                 "write equals the period measured after it, within one line");
-            if (!beamcon0_mismatch) pre.push_back({"P3-PRE-PERIOD", ok});
+            pre.push_back({"P3-PRE-PERIOD", ok});
         } else {
             checks.record("P3-PRE-PERIOD " + tag + ": not applicable -- BEAMCON0 does not exist "
                 "under OCS (p.305)");
         }
 
-        if (!beamcon0_mismatch && !applying_hold) {
+        {
             std::string why;
             for (const auto& p : pre) if (!p.second) why += " " + p.first;
             const std::string not_graded = ": NOT GRADED -- precondition(s) failed:" + why;
@@ -1604,13 +1594,6 @@ int main(int argc, char** argv) {
                 checks.expect(item2,
                     "P3-PEN-POSITION " + tag + " [p.238,p.239]: the latched value "
                     "is the light-pen position -- V(L1)=100, V(L3)=100, V(L5)=180, H(L3)-H(L1)=40");
-                if (is_ecs_pal && mv == "P3-OFFSET") {
-                    checks.record("P3-PRE-OFFSET-MUTATION " + tag + ": P3-PEN-POSITION is already red on this "
-                        "RTL: H(L1) (E110 of F1) is a live read here (P3-HELD already reads FAIL), so "
-                        "its value tracks the beam's own progress at line 110 regardless of where within "
-                        "the line the trigger pulse landed, and this selector cannot move the line "
-                        "(see the implementation record at P3-PEN-POSITION)");
-                }
 
                 checks.expect(item1 && item2,
                     "P3-LATCHED-PEN-POSITION " + tag + " opus:7-bp.c3 sol:7-beam.c3 opus:7-bp.c11 [p.216,p.238,p.239]: once "
@@ -1637,20 +1620,6 @@ int main(int argc, char** argv) {
                     std::string(combo.ntsc ? "not less than" : "greater than") + " $10500 (F1,F3,F5,F7)");
             }
         }
-        // P3-LPEN's own dedicated comparator: runs in addition to the main
-        // block above (mv=="P3-LPEN" sets neither beamcon0_mismatch nor
-        // applying_hold, so the main block already ran and printed items
-        // 1, 2 and 5 against the LPEN-clear build). This block is the
-        // "different, proven-live input through the same comparator" check.
-        if (is_ecs_pal && mv == "P3-LPEN") {
-            const Rec& l1 = get(2, 2);
-            bool still_live = l1.present && (V_of(l1) == 110 || V_of(l1) == 111);
-            checks.note("P3-LPEN " + tag + ": E110 of F1 reads V=" + (l1.present?std::to_string(V_of(l1)):"?") +
-                        " (live beam would be 110/111)");
-            checks.expect(still_live,
-                "P3-LPEN " + tag + " (contrast, BPLCON0 LPEN clear): every read tracks the beam "
-                "(E110 of F1 reads V in {110,111})");
-        }
     }
 
     // ================= P4 (ECS, PAL) =================
@@ -1663,6 +1632,7 @@ int main(int argc, char** argv) {
         std::string used_bin = dir + base_bin;
         if (mv == "P4-NOLPENDIS") used_bin = dir + "/prog_p4_nolpendis.bin";
         if (mv == "P4-F3LPENDIS") used_bin = dir + "/prog_p4_f3lpendis.bin";
+        if (mv == "P4-F1NOLPEN") used_bin = dir + "/prog_p4_f1nolpen.bin";
         if (mv == "P4-DDRA") used_bin = dir + "/prog_p4_ddraforce.bin";
         if (mv == "P4-ANCHOR") used_bin = dir + "/prog_p4_anchormut.bin";
         if (mv == "P4-PERIOD") used_bin = dir + "/prog_p4_periodmut.bin";
@@ -1690,7 +1660,10 @@ int main(int argc, char** argv) {
             uint64_t f1_trig = a1[kPhantomPasses + 2] + 16 * kCck;
             uint64_t f3_trig = a1[kPhantomPasses + 4] + 16 * kCck;
             std::vector<uint64_t> triggers = {f1_trig, f3_trig};
-            if (mv == "P4-NOPULSE-F1") triggers = {f3_trig};
+            // A third pulse in F2, 16 colour clocks after F2's own A1 fetch, which lies
+            // after Y's store (P4-PRE-REFFRAME): the drive log then shows one pulse more
+            // than the nominal schedule and nothing before it moves.
+            if (mv == "P4-EXTRAPULSE-F2") triggers = {f1_trig, a1[kPhantomPasses + 3] + 16 * kCck, f3_trig};
 
             DrivenResult run = driven_run(used_bin, cfg, triggers, 4 * kCck, std::nullopt, 12);
             checks.expect(run.loaded && run.done.has_value(),
@@ -1859,14 +1832,13 @@ int main(int argc, char** argv) {
                 // Precondition: latch present in F1 -- V(Y)=100, and the H of the latch is the
                 // same in F1 (Y) and F3 (X', Y'), whose triggers start at the same phase.
                 bool latch_f1 = Y.present && Xp.present && Yp.present && V_of(Y) == 100 &&
-                                H_of(Y) == H_of(Xp) && H_of(Xp) == H_of(Yp);
+                                H_of(Y) == H_of(Yp);
                 checks.note("P4 " + tag + " Y: V=" + (Y.present?std::to_string(V_of(Y)):"?") +
                             " H=" + (Y.present?std::to_string(H_of(Y)):"?") +
-                            "; H(X')=" + (Xp.present?std::to_string(H_of(Xp)):"?") +
-                            " H(Y')=" + (Yp.present?std::to_string(H_of(Yp)):"?"));
+                            "; H(Y')=" + (Yp.present?std::to_string(H_of(Yp)):"?"));
                 checks.expect(latch_f1,
                     "P4-PRE-LATCHF1 " + tag + " [p.239]: the latch is present in F1 -- V(Y)=100 and "
-                    "H(Y)=H(X')=H(Y')");
+                    "H(Y)=H(Y')");
                 pre.push_back({"P4-PRE-LATCHF1", latch_f1});
 
                 // Precondition: control field shows the latched value with LPENDIS clear.
@@ -1895,22 +1867,11 @@ int main(int argc, char** argv) {
                         "LPENDIS set, the pair (V8,V7-0) of X is not (0,100)");
                 }
 
-                if (mv == "P4-NOLPENDIS") {
+                if (mv == "P4-NOLPENDIS" && !why.empty()) {
                     checks.record("P4-LPENDIS-READ-MUTATION " + tag + ": P4-LPENDIS-READ is NOT GRADED on this RTL in the "
                         "primary run (P4-PRE-LATCHF1 and P4-PRE-CONTROL are already red: no latched pair exists for X to "
                         "differ from), so this selector, which sets LPENDIS never, cannot move it "
                         "(see the implementation record at P4-LPENDIS-READ)");
-                }
-                if (mv == "P4-F3LPENDIS") {
-                    checks.record("P4-PRE-CONTROL-MUTATION " + tag + ": P4-PRE-CONTROL is already red on this RTL "
-                        "(X' and Y' read the live beam, V=270, and differ), so setting LPENDIS in F3 as well "
-                        "cannot move it (see the implementation record at P4-PRE-CONTROL)");
-                }
-                if (mv == "P4-NOPULSE-F1") {
-                    checks.record("P4-PRE-LATCHF1-MUTATION " + tag + ": P4-PRE-LATCHF1 is already red on this RTL "
-                        "(Y reads the live beam, V=270), so omitting the F1 trigger cannot move it, but it fails "
-                        "P4-PRE-PULSE, which compares the drive log with the nominal schedule "
-                        "(see the implementation record at P4-PRE-LATCHF1)");
                 }
             } else {
                 checks.record("P4-LPENDIS-READ " + tag + ": NOT GRADED -- the fixture check P4-FIXTURE-DRIVEN failed");
