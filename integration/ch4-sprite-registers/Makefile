@@ -23,19 +23,20 @@ PROGS    += prog_cb_o2 prog_cb_oF prog_cb_o0 prog_cb_oD \
             prog_cb_e2 prog_cb_eF prog_cb_e0 prog_cb_eD \
             prog_cb_o2_s81 prog_cb_e2_s81 prog_cb_oF_s81 prog_cb_eF_s81 \
             prog_cb_e2_sizh3 prog_cb_o2_nocop prog_cb_o2_noblt prog_cb_o2_cpuearly \
-            prog_cb_e2_nocop prog_cb_e2_noblt prog_cb_e2_cpuearly prog_cb_oD_cpublt80 \
-            prog_cb_eD_cpublt80 prog_cb_o0_cpublt80 prog_cb_e0_cpublt80 prog_cb_o0_cpuwr \
+            prog_cb_e2_nocop prog_cb_e2_noblt prog_cb_e2_cpuearly prog_cb_oD_b1 \
+            prog_cb_eD_b1 prog_cb_o0_cpublt80 prog_cb_e0_cpublt80 prog_cb_o0_cpuwr \
             prog_cb_e0_cpuwr prog_cb_o2_cpuwr prog_cb_e2_cpuwr prog_cb_o2_fix \
             prog_cb_e2_cpusizh prog_cb_e0_cpusizh
 
 # BEAM (P14)
 # (prog_beam_o*: the OCS run, which writes BEAMCON0 sixteen times)
 PROGS    += prog_beam prog_beam_b0 prog_beam_nolace prog_beam_fix prog_beam_short prog_beam_lowrd \
-            prog_beam_o prog_beam_o_lace1 prog_beam_o_nolace prog_beam_o_short prog_beam_o_lowrd prog_beam_o_color
+            prog_beam_o prog_beam_o_lace1 prog_beam_o_nolace prog_beam_o_short prog_beam_o_lowrd prog_beam_o_color \
+            prog_beam_earlypal
 
 # SHR-SWEEP, SHR-LORES, BITS-OCS (P1, P2, P3)
-PROGS    += prog_shr prog_shr_nosh1 prog_shr_nospr prog_shr_g0h5 prog_shr_fix prog_shr_lowrd prog_shr_u2cl prog_shrl_sw \
-            prog_shrl prog_shrl_nospr prog_shrl_g0h5 prog_shrl_u2cl \
-            prog_shro prog_shro_u1sh0 prog_shro_shres prog_shro_u4cl prog_shro_g0h5 prog_shro_nospr
+PROGS    += prog_shr prog_shr_nosh1 prog_shr_sref79 prog_shr_g0h5 prog_shr_fix prog_shr_lowrd prog_shr_u2cl prog_shrl_sw \
+            prog_shrl prog_shrl_sref79 prog_shrl_g0h5 prog_shrl_u2cl \
+            prog_shro prog_shro_u1sh0 prog_shro_hires prog_shro_u4cl prog_shro_g0h5 prog_shro_sref79
 
 include ../harness/nanomig.mk

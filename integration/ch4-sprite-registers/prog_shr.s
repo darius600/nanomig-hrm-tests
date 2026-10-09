@@ -7,7 +7,9 @@
 ;   LORES        -- BPLCON0 = $1200 (SHR-LORES, and BITS-OCS with OCS5)
 ;   OCS5         -- the five SWP usages of BITS-OCS (P3) instead of ten
 ;   MUT_NOSH1    -- ten usages: SHSH1 cleared in every odd usage (P1 contrast)
-;   MUT_NOSPR    -- DMACON without SPREN (precondition 2 contrast)
+;   MUT_SREF79   -- SREF with 79 scan lines (CTL $8F00, 79 pairs; precondition 2 contrast)
+;   HIRES        -- OCS5 with BPLCON0 = $9200 (Hires), bit 4 clear in every usage
+;                   (P3 precondition 2 contrast)
 ;   MUT_G0H5     -- usage 0 with VSTOP = VSTART + 5 (precondition 3 contrast)
 ;   MUT_U2CL     -- ten usages: usage 2 with CTL $5400 (P2 precondition 2)
 ;   MUT_U1SH0    -- OCS5: usage 1 with CTL $4C01 (P3 proposition contrast)
@@ -73,10 +75,14 @@ start:
         dbra    d0,.col
 
         ; display (3.5), except BPLCON0
+        ifd     HIRES
+        move.w  #$9200,BPLCON0(a0)
+        else
         ifd     LORES
         move.w  #$1200,BPLCON0(a0)
         else
         move.w  #$1240,BPLCON0(a0)
+        endif
         endif
         move.w  #$0000,BPLCON1(a0)
         move.w  #$0024,BPLCON2(a0)
@@ -101,11 +107,7 @@ start:
         move.l  #COPLIST_L1,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
 
-        ifd     MUT_NOSPR
-        move.w  #$8380,DMACON(a0)               ; precondition 2 contrast: no SPREN
-        else
         move.w  #$83A0,DMACON(a0)               ; SET, DMAEN, BPLEN, COPEN, SPREN
-        endif
 
         bsr     wait_vertb
         bsr     wait_vertb
@@ -144,10 +146,17 @@ nullend:
 
 ; SREF (sprite 0, reference): POS $4050, CTL $9000, 80 pairs, end
 sreftbl:
+        ifd     MUT_SREF79
+        dc.w    $4050,$8F00
+        rept    79
+        dc.w    $FFFF,$0000
+        endr
+        else
         dc.w    $4050,$9000
         rept    80
         dc.w    $FFFF,$0000
         endr
+        endif
         dc.w    $0000,$0000
 srefend:
 
@@ -163,8 +172,17 @@ CTL1    equ     $4C01
         ifd     MUT_NOSH1
 CTL1    equ     $4C00
         else
+        ifd     HIRES
+CTL1    equ     $4C00
+        else
 CTL1    equ     $4C10
         endif
+        endif
+        endif
+        ifd     HIRES
+CTL3O   equ     $5C08
+        else
+CTL3O   equ     $5C18
         endif
         ifd     MUT_U2CL
 CTL2    equ     $5400
@@ -177,7 +195,7 @@ swptbl:
         SU0     $4064,CTL0
         SU      $4864,CTL1
         SU      $5064,$5408
-        SU      $5864,$5C18
+        SU      $5864,CTL3O
         ifd     MUT_U4CL
         SU      $6064,$6400
         else

@@ -14,7 +14,7 @@
 ;   MUT_CPUSIZH   -- ECS: the CPU writes BLTSIZH = $0001 before M1 (P12 and P13
 ;                    structural contrast: a CPU store to BLTSIZH)
 ;   MUT_CPUBLT80  -- the CPU writes BLTSIZE = $0082 at V7-0 >= $80 of the first
-;                    field inside M1-M2 (P13 pair-2 contrast, precondition 2)
+;                    field inside M1-M2 (P13 precondition 2)
 ;   MUT_CPUWR     -- the CPU writes $1111 to $30200 inside M1-M2 (P13 precondition 3)
 ;   MUT_FIXTURE   -- the fixture check's own contrast: $DEAD instead of $BEEF
 ;   MUT_NODONE    -- the program never writes DONE

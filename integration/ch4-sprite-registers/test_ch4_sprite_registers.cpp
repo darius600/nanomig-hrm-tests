@@ -40,8 +40,8 @@
 //   FIXTURE-BEAM-NODONE (prog_beam_nodone)      -> prog_beam_*.bin
 //   P1-CONTROL, P1-PRE1, P1-PRE2, P1-PRE3, P2-PROP, P2-PRE1, P2-PRE2,
 //   P2-DEP (the SHR-SWEEP slot has SHSH1 cleared everywhere), P2-PRE4,
-//   P2-PRE4-NOSPR, P3-PROP, P3-PRE1 (the BITS-OCS slot runs the ECS chip set),
-//   P3-PRE2 (the same, with BPLCON0 = $1240), P3-PRE3, P3-PRE4, P3-PRE5,
+//   P2-PRE4-SREF, P3-PROP, P3-PRE1 (the BITS-OCS slot runs the ECS chip set),
+//   P3-PRE2 (the BITS-OCS slot runs BPLCON0 = $9200), P3-PRE3, P3-PRE4, P3-PRE5,
 //   R5-ANCHOR-SHR, FIXTURE-SHR, FIXTURE-SHR-NODONE (prog_shr_nodone)
 //                                               -> prog_shr*_*.bin
 //
@@ -54,7 +54,7 @@
 // MUTATION P4-PRE2 stimulus red NMH_MUTATE=P4-PRE2: reads at V7-0=$0080 (inside the display window) instead of $00F8 -- fx68k/TG68K: FAIL (measured V(RA)=V(RB)=0080); P5 and P4 are NOT GRADED (the fields then hold 84 and 83 scan lines of the window)
 // MUTATION P5 stimulus red NMH_MUTATE=P5-PROP: field B SPR0CTL=$0001 instead of $0000 -- fx68k/TG68K: FAIL (measured dB=70, expected 68); every precondition holds and P4, which grades the same d, is red with it
 // MUTATION P5 stimulus red NMH_MUTATE=P5-REF: omits the SPR4DATA write -- fx68k/TG68K: FAIL (no sprite-4 run in either field: 0 output lines); every precondition holds and P4 is red with it
-// MUTATION P5-PRE1 stimulus red NMH_MUTATE=P5-PRE1: DMACON=$83A0 (SPREN set) -- fx68k/TG68K: FAIL (DMACONR bit 5=1); R5-ANCHOR-MANUAL moves with it (2 of 559 refresh groups malformed: the sprite DMA reads at the low pointers) and P5 and P4 are NOT GRADED
+// MUTATION P5-PRE1 stimulus red NMH_MUTATE=P5-PRE1: DMACON=$83A0 (SPREN set) after all eight sprite pointers are set to the null sprite, so the sprite DMA reads no refresh address (prog_manual_p5pre1) -- fx68k/TG68K: FAIL (DMACONR=03A0); every other precondition holds, R5-ANCHOR-MANUAL with 0 malformed refresh groups, and P5 and P4 are NOT GRADED
 // MUTATION P5-PRE2 stimulus red NMH_MUTATE=P5-PRE2: delays field B's writes until V7-0>=$0080 -- fx68k/TG68K: FAIL (measured V(MB)=0080, not <$2C; field B then holds 115 scan lines); P5 and P4 are NOT GRADED
 // MUTATION FIXTURE-MANUAL stimulus red NMH_MUTATE=FIXTURE-MANUAL: $DEAD stored instead of $BEEF -- fx68k/TG68K: FAIL (read back DEAD); P5 and P4 are NOT GRADED
 // MUTATION R5-ANCHOR-MANUAL stimulus red NMH_MUTATE=R5-ANCHOR-MANUAL: the VERTB wait loop reads Chip word $0100 on every pass, a non-refresh access at a low address -- fx68k/TG68K: FAIL (693 of 1207 refresh groups malformed on fx68k, 729 of 1242 on TG68K); P5 and P4 are NOT GRADED
@@ -62,7 +62,7 @@
 // MUTATION P6 stimulus red NMH_MUTATE=P6-PROP: S1 usage 2's CTL=$5E01 -- fx68k/TG68K: FAIL (measured d2=70, expected 68); every precondition holds
 // MUTATION P6 stimulus red NMH_MUTATE=P6-REF: S4's CTL=$6700 (VSTOP $67), 31 pairs -- fx68k/TG68K: FAIL (measured h4=31, expected 32); every precondition holds
 // MUTATION P6-PRE1 stimulus red NMH_MUTATE=P6-PRE1: DMACON=$8380 (SPREN clear) -- fx68k/TG68K: FAIL (DMACONR=0380); P6 and P7 are NOT GRADED, P8 (the AUTO-ODD run) is graded
-// MUTATION P6-PRE2 stimulus red NMH_MUTATE=P6-PRE2: a WAIT for line $60 inserted before the SPR0PT MOVEs -- fx68k/TG68K: FAIL; P6 and P7 are NOT GRADED
+// MUTATION P6-PRE2 stimulus red NMH_MUTATE=P6-PRE2: a WAIT for line $60 inserted before the SPR0PT MOVEs (prog_auto_p6pre2), which moves the SPR0PTL MOVE's data word away from the list position the plain program has it at -- fx68k/TG68K: FAIL; P6 and P7 are NOT GRADED and every other line is as in the plain run
 // MUTATION P7 stimulus red NMH_MUTATE=P7-PROP: the Copper's SPR0PT MOVEs target S2_DATA instead of S1_DATA -- fx68k/TG68K: FAIL (no reads at $25000-$25032); every precondition holds and P6, which sees the same structure at S2, stays green
 // MUTATION FIXTURE-AUTO stimulus red NMH_MUTATE=FIXTURE-AUTO: $DEAD stored instead of $BEEF in the AUTO run -- fx68k/TG68K: FAIL (read back AUTO=DEAD AUTO-ODD=BEEF); P6, P7 and P8 are NOT GRADED
 // MUTATION P8 stimulus red NMH_MUTATE=P8-PROP: the AUTO-ODD run's SPR0PTL MOVE carries $5003 instead of $5001 -- fx68k/TG68K: FAIL (the 26 reads do not start at $25000 and the display is gone, measured h4=-1); P8-PRE1 and P8-PRE2 hold, the value is odd
@@ -103,11 +103,11 @@
 // MUTATION P13-PRE2 stimulus red NMH_MUTATE=P13-PRE2-SIZH: the ECS $0000 run's CPU writes BLTSIZH = $0001 before M1 (one BLTSIZH store in the binary, none declared) -- fx68k/TG68K: FAIL (BLTSIZH stores ECS=1; no other precondition moves); P13 is NOT GRADED
 // MUTATION P13-PRE3 stimulus red NMH_MUTATE=P13-PRE3: the CPU writes $1111 to $30200 inside M1-M2 of the $0000 runs -- fx68k/TG68K: FAIL; P13 is NOT GRADED
 // MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR1: the first BLTSIZE MOVE carries $0081 in the $FFFF runs -- fx68k/TG68K: FAIL (the $0002 and $FFFF outcomes differ on both chip sets); every precondition holds
-// MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR2: the CPU writes BLTSIZE = $0082 at V7-0 >= $80 of the first field in the $FFFD runs, one store declared for them -- fx68k/TG68K: FAIL (the $0000 and $FFFD outcomes differ on both chip sets); every precondition holds
+// MUTATION P13 stimulus red NMH_MUTATE=P13-PAIR2: the $FFFD runs are run with COPCON=$FFFF, bit 1 set, so the Copper writes the blitter registers (prog_cb_oD_b1, prog_cb_eD_b1) -- fx68k/TG68K: FAIL (the $0000 and $FFFD outcomes differ on both chip sets); every precondition holds
 // MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM: the ECS run stores $DEAD instead of $BEEF -- fx68k/TG68K: FAIL (read back ECS=DEAD); P14 is NOT GRADED
 // MUTATION FIXTURE-BEAM stimulus red NMH_MUTATE=FIXTURE-BEAM-NODONE: the ECS run never writes DONE (prog_beam_nodone) -- fx68k/TG68K: FAIL (read back ECS=no-DONE OCS=BEEF); P14-PRE1, P14-PRE2, P14-PRE3, P14-POP and R5-ANCHOR-BEAM move with it (the run gives them nothing) and P14 is NOT GRADED
 // MUTATION P14-PRE1 stimulus red NMH_MUTATE=P14-PRE1: the run declared ECS is configured as OCS -- fx68k/TG68K: FAIL (VPOSR identification $10, expected $30); P14 is NOT GRADED
-// MUTATION P14-PRE2 stimulus red NMH_MUTATE=P14-PRE2: both runs configured PAL -- fx68k/TG68K: FAIL (N=625 before M1); P14-PRE1 moves with it (identification $20 and $00) and P14 is NOT GRADED
+// MUTATION P14-PRE2 stimulus red NMH_MUTATE=P14-PRE2: BEAMCON0 = $0020 is written right after step 1 of the ECS run (prog_beam_earlypal) -- fx68k/TG68K: FAIL (ECS N=625 before M1); every other precondition holds (the identification stays $30 and $10) and P14 is NOT GRADED
 // MUTATION P14-PRE3 stimulus red NMH_MUTATE=P14-PRE3: BPLCON0 = $0200 (LACE clear) in step 1 of both runs -- fx68k/TG68K: FAIL (the two fields of a frame have the same length); P14 is NOT GRADED
 // MUTATION P14-PRE4 stimulus red NMH_MUTATE=P14-PRE4: in the OCS run COLOR00 = $0F00 is written after the third VERTB before M1 (prog_beam_o_color) -- fx68k/TG68K: FAIL (the fields before M1 of one parity differ); P14 is NOT GRADED
 // MUTATION P14-POP stimulus red NMH_MUTATE=P14-POP: three VERTB after M1 instead of eight (three BEAMCON0 writes in the OCS run instead of sixteen) -- fx68k/TG68K: FAIL (two frames after M1 on ECS instead of four, two fields after M1 on OCS instead of at least 15); P14 is NOT GRADED
@@ -118,22 +118,23 @@
 // MUTATION FIXTURE-SHR stimulus red NMH_MUTATE=FIXTURE-SHR-NODONE: the SHR-SWEEP run never writes DONE (prog_shr_nodone) -- fx68k/TG68K: FAIL (read back SHR-SWEEP=no-DONE); R5-ANCHOR-SHR, P1-PRE1, P1-PRE2 and P1-PRE3 move with it (the run gives them nothing) and P1 and P1-CONTROL are NOT GRADED
 // MUTATION R5-ANCHOR-SHR stimulus red NMH_MUTATE=R5-ANCHOR-SHR: the VERTB wait loop of the SHR-SWEEP run reads Chip word $0100 on every pass -- fx68k/TG68K: FAIL (every refresh group malformed); P1-PRE2 and P1-PRE3 move with it (their heights use the same groups), P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE1 stimulus red NMH_MUTATE=P1-PRE1: the SHR-SWEEP slot runs the Lores program (BPLCON0 = $1200) -- fx68k/TG68K: FAIL (ruler period 32, not 8); P1 and P1-CONTROL are NOT GRADED
-// MUTATION P1-PRE2 stimulus red NMH_MUTATE=P1-PRE2: DMACON without SPREN in the SHR-SWEEP run -- fx68k/TG68K: FAIL (no sprite lines); P1-PRE3 moves with it, P1 and P1-CONTROL are NOT GRADED
+// MUTATION P1-PRE2 stimulus red NMH_MUTATE=P1-PRE2: SREF with 79 scan lines (CTL $8F00, 79 data pairs) in the SHR-SWEEP run (prog_shr_sref79) -- fx68k/TG68K: FAIL (SREF block of 79 scan lines); every other precondition holds, P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-PRE3 stimulus red NMH_MUTATE=P1-PRE3: usage 0 of the SHR-SWEEP run has VSTOP = VSTART + 5 (a fifth data pair keeps the next usages aligned) -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P1 and P1-CONTROL are NOT GRADED
 // MUTATION P1-CONTROL stimulus red NMH_MUTATE=P1-CONTROL: usage 2 of the SHR-SWEEP run has CTL $5400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 2 has d=80, not 82); every precondition holds
 // MUTATION P1 implementation green a private copy of the RTL outside the repository in which SPRxCTL bit 4 (SHSH1) delays the sprite's serial output by two 28 MHz clocks (70 ns) while the sprite resolution is SuperHires (denise_sprites_shifter.v and denise_sprites.v; the EBR shifter build of TG68K and the non-EBR build of fx68k), built with make NANOMIG=<copy> and run on both cores: every precondition holds, P1-CONTROL passes and P1 passes with d = 80 81 82 ... 89 in both graded fields; with the repository's RTL P1 is red on both cores (d = 80 80 82 82 84 84 86 86 88 88). The control through the same comparator on the same run is P1-CONTROL (even k, SHSH1 clear)
 // MUTATION P2-PRE1 stimulus red NMH_MUTATE=P2-PRE1: the SHR-LORES slot runs the SuperHires program (BPLCON0 = $1240) -- fx68k/TG68K: FAIL (ruler period 8, not 32); P2 is NOT GRADED
 // MUTATION P2-PRE2 stimulus red NMH_MUTATE=P2-PRE2: usage 2 of the Lores run has CTL $5400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 2 has d=80, not 82); P2 is NOT GRADED
 // MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4: usage 0 of the Lores run has VSTOP = VSTART + 5 -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P2 is NOT GRADED
-// MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4-NOSPR: DMACON without SPREN in the Lores run -- fx68k/TG68K: FAIL (no sprite lines); P2-PRE2 moves with it and P2 is NOT GRADED
+// MUTATION P2-PRE4 stimulus red NMH_MUTATE=P2-PRE4-SREF: SREF with 79 scan lines in the Lores run (prog_shrl_sref79) -- fx68k/TG68K: FAIL (SREF block of 79 scan lines); every other precondition holds and P2 is NOT GRADED
 // MUTATION P2 implementation green the private copy of the RTL described at P1 (SPRxCTL bit 4 acts in SuperHires), both cores: every precondition holds, P1 passes and P2 passes (d even on every line of every group in the Lores run); with the repository's RTL P2 prints RECORDED NOT GRADED, depends on P1, because P1 is red
 // MUTATION P2 stimulus red NMH_MUTATE=P2-PROP: the Copper switches to SuperHires after the ruler lines of the Lores run (prog_shrl_sw) -- on the private copy of the RTL described at P1, both cores: P2 FAIL with every precondition holding (the sprite lines are drawn in SuperHires, odd k give odd d); with the repository's RTL P2 is NOT GRADED, depends on P1
 // MUTATION P2 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy of the RTL described at P1, both cores: P1 FAIL and P2 NOT GRADED, depends on P1, with P2-PRE1, P2-PRE2 and P2-PRE4 holding
+// MUTATION P1 stimulus red NMH_MUTATE=P2-DEP: the SHR-SWEEP slot has SHSH1 cleared in every usage (prog_shr_nosh1) -- on the private copy of the RTL described at P1, both cores: P1 FAIL (d = 80 80 82 82 84 84 86 86 88 88: every odd k shows the d of k-1) with every precondition holding; the same comparator passes on the same RTL and the same run with SHSH1 set (P1 implementation green above)
 // MUTATION P3-PRE1 stimulus red NMH_MUTATE=P3-PRE1: the BITS-OCS slot runs the ECS chip set -- fx68k/TG68K: FAIL (VPOSR identification $20, expected $00); P3 is NOT GRADED
-// MUTATION P3-PRE2 stimulus red NMH_MUTATE=P3-PRE2: the BITS-OCS slot runs BPLCON0 = $1240 on the ECS chip set -- fx68k/TG68K: FAIL (ruler period 8, not 32); P3-PRE1 moves with it (identification $20) and P3 is NOT GRADED
+// MUTATION P3-PRE2 stimulus red NMH_MUTATE=P3-PRE2: the BITS-OCS slot runs BPLCON0 = $9200 (Hires) on OCS, bit 4 clear in every usage (prog_shro_hires) -- fx68k/TG68K: FAIL (ruler period 16, not 32); every other precondition holds and P3 is NOT GRADED
 // MUTATION P3-PRE3 stimulus red NMH_MUTATE=P3-PRE3: usage 4 has CTL $6400 (SH0 cleared) -- fx68k/TG68K: FAIL (group 4 has d=80, not 82); P3 is NOT GRADED
 // MUTATION P3-PRE4 stimulus red NMH_MUTATE=P3-PRE4: usage 0 has VSTOP = VSTART + 5 -- fx68k/TG68K: FAIL (group 0 has 5 scan lines); P3 is NOT GRADED
-// MUTATION P3-PRE5 stimulus red NMH_MUTATE=P3-PRE5: DMACON without SPREN -- fx68k/TG68K: FAIL (no sprite lines); P3-PRE3 and P3-PRE4 move with it and P3 is NOT GRADED
+// MUTATION P3-PRE5 stimulus red NMH_MUTATE=P3-PRE5: SREF with 79 scan lines (prog_shro_sref79) -- fx68k/TG68K: FAIL (SREF block of 79 scan lines); every other precondition holds and P3 is NOT GRADED
 // MUTATION P3 stimulus red NMH_MUTATE=P3-PROP: usage 1 has CTL $4C01 (SH0 instead of bit 4) -- fx68k/TG68K: FAIL (group 1 has d=82, not 80); every precondition holds
 
 #include <cstdio>
@@ -640,7 +641,6 @@ namespace autorun {
 constexpr uint32_t kMarkM1 = kMark / 2 + 0, kMarkM2 = kMark / 2 + 1;
 constexpr uint32_t kCopWord0 = 0x020000 / 2; // COPLIST_L1's own first word (field anchor, R5 2.7)
 constexpr uint32_t kSpr0PtlDataBase = 0x020000 / 2 + 7;   // base layout (see prog_auto.s)
-constexpr uint32_t kSpr0PtlDataPre2 = 0x020000 / 2 + 9;   // MUT_P6PRE2 layout (WAIT inserted)
 constexpr uint32_t kS1Base = 0x025000 / 2, kS2Base = 0x027000 / 2, kS4Base = 0x028000 / 2;
 
 // the AUTO slot
@@ -846,7 +846,7 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
 
     // ---- P7 precondition 2 / P6 precondition 2: the Copper's fetch of the
     // SPR0PTL MOVE's data word precedes the first S1/S2 read in each field.
-    uint32_t data_word = (mv == "P6-PRE2") ? kSpr0PtlDataPre2 : kSpr0PtlDataBase;
+    const uint32_t data_word = kSpr0PtlDataBase;
     bool pre1 = dma_bits_ok(A);
     bool pre2 = fetch_first_ok(A, data_word);
     c.expect(pre2, "P6-PRE2: in each graded field, the Copper's fetch of the data word of its SPR0PTL MOVE "
@@ -1435,7 +1435,7 @@ const Ovr kOvr[] = {
     {"P12-PRE3-QUIET", "o2", "cpuwr", 0}, {"P12-PRE3-QUIET", "e2", "cpuwr", 0},
     {"P12-PRE3-SIZH", "e2", "cpusizh", 0},
     {"P13-PAIR1", "oF", "s81", 0},  {"P13-PAIR1", "eF", "s81", 0},
-    {"P13-PAIR2", "oD", "cpublt80", 1}, {"P13-PAIR2", "eD", "cpublt80", 1},
+    {"P13-PAIR2", "oD", "b1", 0}, {"P13-PAIR2", "eD", "b1", 0},
     {"P13-PRE1", "o2", "nocop", 0}, {"P13-PRE1", "e2", "nocop", 0},
     {"P13-PRE2", "o0", "cpublt80", 0}, {"P13-PRE2", "e0", "cpublt80", 0},
     {"P13-PRE2-SIZH", "e0", "cpusizh", 0},
@@ -1684,13 +1684,13 @@ bool owns(const std::string& mv) { return mv.empty() || mv.rfind("P14", 0) == 0 
 void run(const std::string& dir, const std::string& mv, Checks& c) {
     // slot E: the ECS run; slot O: the OCS run; both NTSC
     std::string binE = "prog_beam.bin", binO = "prog_beam_o.bin";
-    bool cfgE_ecs = true, cfgE_ntsc = true, cfgO_ntsc = true;
+    bool cfgE_ecs = true;
     bool runE = true, runO = true;
     if (mv == "P14-PROP-ECS") { binE = "prog_beam_b0.bin"; runO = false; }
     if (mv == "P14-PROP-OCS") { binO = "prog_beam_o_lace1.bin"; runE = false; }
     if (mv == "P14-PRE4") { binO = "prog_beam_o_color.bin"; runE = false; }
     if (mv == "P14-PRE1") { cfgE_ecs = false; runO = false; }
-    if (mv == "P14-PRE2") { cfgE_ntsc = false; cfgO_ntsc = false; }
+    if (mv == "P14-PRE2") binE = "prog_beam_earlypal.bin";
     if (mv == "P14-PRE3") { binE = "prog_beam_nolace.bin"; binO = "prog_beam_o_nolace.bin"; }
     if (mv == "P14-POP") { binE = "prog_beam_short.bin"; binO = "prog_beam_o_short.bin"; }
     if (mv == "R5-ANCHOR-BEAM") { binE = "prog_beam_lowrd.bin"; binO = "prog_beam_o_lowrd.bin"; }
@@ -1702,8 +1702,8 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     if (mv == "P14-PRE1" || mv == "FIXTURE-BEAM" || mv == "FIXTURE-BEAM-NODONE") { runE = true; runO = true; }
 
     Run E, O;
-    if (runE) E = do_run(dir, "ECS NTSC", binE, cfgE_ecs, cfgE_ntsc);
-    if (runO) O = do_run(dir, "OCS NTSC", binO, false, cfgO_ntsc);
+    if (runE) E = do_run(dir, "ECS NTSC", binE, cfgE_ecs, true);
+    if (runO) O = do_run(dir, "OCS NTSC", binO, false, true);
     E.tag = "ECS NTSC"; O.tag = "OCS NTSC";
     bool fx = E.done && E.fixture && *E.fixture == 0xBEEF && O.done && O.fixture && *O.fixture == 0xBEEF;
     c.expect(fx, "FIXTURE-BEAM: both BEAM runs reach DONE and store a known constant (BEEF) at RESULT+2 before anything"
@@ -2000,20 +2000,20 @@ void run(const std::string& dir, const std::string& mv, Checks& c) {
     if (mv.rfind("P3-", 0) == 0) { wantS = false; wantL = false; }
     if (mv == "P1-CONTROL") binS = "prog_shr_u2cl.bin";
     if (mv == "P1-PRE1") binS = "prog_shrl.bin";
-    if (mv == "P1-PRE2") binS = "prog_shr_nospr.bin";
+    if (mv == "P1-PRE2") binS = "prog_shr_sref79.bin";
     if (mv == "P1-PRE3") binS = "prog_shr_g0h5.bin";
     if (mv == "P2-PROP") binL = "prog_shrl_sw.bin";
     if (mv == "P2-PRE1") binL = "prog_shr.bin";
     if (mv == "P2-PRE2") binL = "prog_shrl_u2cl.bin";
     if (mv == "P2-DEP") binS = "prog_shr_nosh1.bin";
     if (mv == "P2-PRE4") binL = "prog_shrl_g0h5.bin";
-    if (mv == "P2-PRE4-NOSPR") binL = "prog_shrl_nospr.bin";
+    if (mv == "P2-PRE4-SREF") binL = "prog_shrl_sref79.bin";
     if (mv == "P3-PROP") binO = "prog_shro_u1sh0.bin";
     if (mv == "P3-PRE1") ecsO = true;
-    if (mv == "P3-PRE2") { binO = "prog_shro_shres.bin"; ecsO = true; }
+    if (mv == "P3-PRE2") binO = "prog_shro_hires.bin";
     if (mv == "P3-PRE3") binO = "prog_shro_u4cl.bin";
     if (mv == "P3-PRE4") binO = "prog_shro_g0h5.bin";
-    if (mv == "P3-PRE5") binO = "prog_shro_nospr.bin";
+    if (mv == "P3-PRE5") binO = "prog_shro_sref79.bin";
     if (mv == "R5-ANCHOR-SHR") binS = "prog_shr_lowrd.bin";
     if (mv == "FIXTURE-SHR") binS = "prog_shr_fix.bin";
     if (mv == "FIXTURE-SHR-NODONE") binS = "prog_shr_nodone.bin";

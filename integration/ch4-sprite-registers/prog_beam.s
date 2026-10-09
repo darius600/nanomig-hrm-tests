@@ -20,6 +20,8 @@
 ;                   a non-refresh access at a low address
 ;   MUT_COLOR    -- stationarity contrast: COLOR00 = $0F00 is written after the
 ;                   third of the six VERTB before M1
+;   MUT_EARLYPAL -- precondition 2 contrast (ECS): BEAMCON0 = $0020 is
+;                   written right after step 1, before M1
 ;   MUT_FIXTURE  -- the fixture check's own contrast: $DEAD instead of $BEEF
 ;   MUT_NODONE   -- the program never writes DONE
 
@@ -40,6 +42,10 @@ start:
         move.w  #$0200,BPLCON0(a0)              ; precondition 3 contrast: LACE clear
         else
         move.w  #$0204,BPLCON0(a0)              ; step 1: COLOR, LACE
+        endif
+
+        ifd     MUT_EARLYPAL
+        move.w  #$0020,BEAMCON0(a0)             ; PAL timing before M1 (ECS)
         endif
 
         move.w  VPOSR(a0),RESULTS+0             ; step 3

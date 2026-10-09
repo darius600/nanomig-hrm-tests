@@ -17,6 +17,9 @@
 ;   MUT_P5PROP  -- P5's proposition contrast: field B SPR0CTL = $0001
 ;   MUT_P5REF   -- P5's reference contrast: omit the SPR4DATA write
 ;   MUT_P5PRE1  -- P5 precondition 1 contrast: DMACON = $83A0 (SPREN set)
+;   MUT_NULLPTR -- all eight sprite pointers at the null sprite before DMACON
+;                  (with MUT_P5PRE1: SPREN set and the sprite channel reads
+;                  no refresh address)
 ;   MUT_P5PRE2  -- P5 precondition 2 contrast: delay field B's writes
 ;                  until V7-0>=$0080
 ;   MUT_FIXTURE -- the fixture check's own contrast: $DEAD stored instead
@@ -84,6 +87,13 @@ start:
 
         move.l  #COPLIST_L1,COP1LCH(a0)
         move.w  #0,COPJMP1(a0)
+
+        ifd     MUT_NULLPTR
+        lea     SPR0PTH(a0),a1          ; every sprite pointer at the null sprite
+        moveq   #7,d1
+.np:    move.l  #NULL_SPRITE,(a1)+
+        dbra    d1,.np
+        endif
 
         ifd     MUT_P5PRE1
         move.w  #$83A0,DMACON(a0)       ; P5 precondition 1 contrast: SPREN set
