@@ -16,6 +16,8 @@
 // MUTATION PC2 stimulus red NMH_MUTATE=C2: sprite 1's own terminator word (p.108: both terminator words should be $0000) is poked to $BAD1 instead -- the terminator lies beyond CTL's VSTOP, so it is never displayed, and sprite 1's population (294 logical reads per graded frame) stays fully fetched -> FAIL PC2; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC3 stimulus red NMH_MUTATE=C3: SPR2PTH (step 5 and the Copper list) points at a separately addressed, non-null structure for sprite 2 ($2C00, sprite 0's own POS, CTL and pairs) instead of sprite 2's null structure -- sprite 2 is no longer idle and the structure is hidden under sprite 0: null2 is read 0 times of 2, the new structure 294 times, sprite 0's and sprite 1's structures stay at 294 reads (PC2 stays green), R5 and PC4 stay green -> FAIL PC3; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC4 stimulus red NMH_MUTATE=C4: band 2's WAIT changed from $8B41 to $9141 (the fifth colour-17 line of band 2) -> FAIL PC4; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC4 stimulus red NMH_MUTATE=C18: the Copper list sets COP2LC to the top chunk's COLOR00 MOVE and follows the top chunk with SKIP $0A01,$FF01 and MOVE COPJMP2 (pp.26, 31-32) -- the top chunk's colour MOVEs are fetched again until line $0A, every read before the first bitplane fetch and the list's first word read once, so only the each-once clause fails -> FAIL PC4; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION PC4 stimulus red NMH_MUTATE=C19: the Copper list sets COP2LC to the word after band 1's COLOR31 MOVE and puts MOVE COPJMP2 between band 1's COLOR29 and COLOR30 MOVEs (p.26) -- band 1's COLOR31 MOVE is never fetched, every other read keeps its place and the bounds hold, so only the every-word clause fails -> FAIL PC4; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC5 stimulus red NMH_MUTATE=C5: the COLOR00-COLOR15 <- B4 MOVEs after WAIT $C541 are left out -> FAIL PC5; NOT GRADED P1; fx68k 15 passed, 1 failed, 1 lines not graded; TG68K 15 passed, 1 failed, 1 lines not graded
 // MUTATION PC6 stimulus red NMH_MUTATE=C6: three frame waits after step 7 instead of four -- 4 Copper restarts, 1 graded frame, and the lines that grade each frame still read PASS on it -> FAIL PC6; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION PC5-BOUNDS stimulus red NMH_MUTATE=C13: COLOR00 in REF is $0000 instead of $0AAA -- the pattern's off samples and the border are zero, so the nonzero extent shrinks to the lit pattern and zero samples lie inside it -> FAIL PC5-BOUNDS; NOT GRADED PC5 P1; fx68k 14 passed, 1 failed, 2 lines not graded; TG68K 14 passed, 1 failed, 2 lines not graded
@@ -23,7 +25,7 @@
 // MUTATION R1 stimulus red NMH_MUTATE=R1S: the anchor capture runs prog.bin (SuperHires) instead of prog_c1.bin -- its pattern-line spacing measures 8 instead of 16; the run's own capture is untouched -> FAIL R1; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R5 stimulus red NMH_MUTATE=C7: the colour-17 lines of band 0 ($53-$5A), both sprites, get low=$FF00/high=$0000 instead of $FFFF/$0000 -- group 0's runs narrow to 8 visible pixels while every other group's stay equal, so the equal-length clause goes red; p.101 permits the shape change, so this is not a P2 contrast -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R5 stimulus red NMH_MUTATE=C14: the colour-18 lines of band 0 ($5C-$63) of both sprites get both data words $0000 -- one group disappears (14 groups), both 294-word structures stay fully fetched and every Copper marker line is untouched -> FAIL R5; NOT GRADED PC5 P1 P2 P3 P4; fx68k 11 passed, 1 failed, 5 lines not graded; TG68K 11 passed, 1 failed, 5 lines not graded
-// MUTATION R5 stimulus red NMH_MUTATE=C15: every data word of sprite 1 is $0000 (POS and CTL stay) -- sprite 1's 294-word structure stays fully fetched and shows nothing, so every group line has one run (the run-count clause) -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
+// MUTATION R5 stimulus red NMH_MUTATE=C15: sprite 1's data words on the colour-17 lines of band 0 ($53-$5A) are $0000 (POS, CTL and every other pair stay) -- sprite 1's 294-word structure stays fully fetched; group 0's lines show one run while every other group line keeps two runs of equal length, so only the run-count clause goes red -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R5 stimulus red NMH_MUTATE=C16: every sprite data word keeps only its bit 0 -- every run is one sample wide, all runs stay equal and every line has two, so only the interior-pixel clause goes red -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION R5 stimulus red NMH_MUTATE=C17: after the second frame wait the program stores a mark word and the test changes every data word of both sprites to its upper byte -- the first graded frame has 16-sample runs, the second 8-sample runs, each frame uniform, so only the cross-frame equal-length clause goes red; PC2, PC3 and PC4 take the data prepared for the frame they grade -> FAIL R5; NOT GRADED P1 P2 P3 P4; fx68k 12 passed, 1 failed, 4 lines not graded; TG68K 12 passed, 1 failed, 4 lines not graded
 // MUTATION P1 stimulus red NMH_MUTATE=C8: band 4's COLOR16-COLOR31 reload (after WAIT $C541) uses band 0's values instead of band 3's -- groups 12-14 stop matching band 3 (PC5 and R5 stay green: neither depends on COLOR16-COLOR31 or on colour content) -> FAIL P1 P2 P3 P4; NOT GRADED none; fx68k 13 passed, 4 failed, 0 lines not graded; TG68K 13 passed, 4 failed, 0 lines not graded
@@ -226,15 +228,16 @@ Pairs upper_byte_pairs(const Pairs& in) {
 
 // ---- mutation ids ----------------------------------------------------------
 
-// C1-C16 and R1/R1S are the stimulus selectors of the header records; NODONE
+// C1-C19 and R1/R1S are the stimulus selectors of the header records; NODONE
 // and NOPROG are the program-level ones.
-enum class Mut { NONE, C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17, R1,R1S, NODONE, NOPROG };
+enum class Mut { NONE, C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14,C15,C16,C17,C18,C19, R1,R1S, NODONE, NOPROG };
 
 std::optional<Mut> parse_mut(const std::string& s) {
     static const std::map<std::string,Mut> m = {
         {"",Mut::NONE},{"C1",Mut::C1},{"C2",Mut::C2},{"C3",Mut::C3},{"C4",Mut::C4},{"C5",Mut::C5},
         {"C6",Mut::C6},{"C7",Mut::C7},{"C8",Mut::C8},{"C9",Mut::C9},{"C10",Mut::C10},{"C11",Mut::C11},
         {"C12",Mut::C12},{"C13",Mut::C13},{"C14",Mut::C14},{"C15",Mut::C15},{"C16",Mut::C16},{"C17",Mut::C17},
+        {"C18",Mut::C18},{"C19",Mut::C19},
         {"R1",Mut::R1},{"R1S",Mut::R1S},{"NODONE",Mut::NODONE},{"NOPROG",Mut::NOPROG},
     };
     auto it = m.find(s);
@@ -280,11 +283,15 @@ CopperBuild build_copper(Mut mut) {
     pushl(0x134, kNull5);                                     // SPR5PTH/L
     pushl(0x138, kNull6);                                     // SPR6PTH/L
     pushl(0x13C, kNull7);                                     // SPR7PTH/L
+    if (mut==Mut::C18) pushl(0x084, kCopList + 2*(uint32_t)(w.size()+4)); // COP2LCH/L <- the COLOR00 MOVE (p.26, p.290)
+    const size_t c19_cop2lc = w.size();
+    if (mut==Mut::C19) pushl(0x084, 0);                       // COP2LCH/L <- patched below to the end of band 1's chunk (p.26)
 
     for (int i=0;i<16;++i) push(0x180+2*i, (i==0 && mut==Mut::C13) ? 0x0000 : kRef[i]); // COLOR00-15 <- REF (C13: COLOR00 = $0000)
     cb.mark["band0_start"] = w.size();
     for (int i=0;i<16;++i) push(0x1A0+2*i, kBandUpper[0][i]); // COLOR16-31 <- band0
     cb.mark["top_end"] = w.size();
+    if (mut==Mut::C18) { push(0x0A01, 0xFF01); push(0x08A, 0x0000); } // SKIP if VP >= $0A (p.31), else MOVE COPJMP2 (p.26)
 
     push(0x4041, 0xFFFE);
 
@@ -296,8 +303,16 @@ CopperBuild build_copper(Mut mut) {
 
     const uint16_t* band1 = (mut==Mut::C9) ? kC9Band1 : kBandUpper[1];
     cb.mark["band1_start"] = w.size();
-    for (int i=0;i<16;++i) push(0x1A0+2*i, band1[i]);         // COLOR16-31 <- band1
+    for (int i=0;i<16;++i) {
+        push(0x1A0+2*i, band1[i]);                            // COLOR16-31 <- band1
+        if (mut==Mut::C19 && i==13) push(0x08A, 0x0000);      // C19: MOVE COPJMP2 after the COLOR29 MOVE (p.26)
+    }
     cb.mark["band1_end"] = w.size();
+    if (mut==Mut::C19) {                                      // COP2LC <- the word after band 1's COLOR31 MOVE
+        uint32_t target = kCopList + 2*(uint32_t)w.size();
+        w[c19_cop2lc+1] = (uint16_t)(target>>16);
+        w[c19_cop2lc+3] = (uint16_t)(target & 0xFFFF);
+    }
 
     push(mut==Mut::C4 ? 0x9141 : 0x8B41, 0xFFFE);
 
@@ -384,7 +399,8 @@ Capture run_case(const std::string& dir, Mut mut, std::optional<Mut> copper_mut 
     poke_bitplane_buffer(h, kBplBuf, kBplWords);
     int mode = mut==Mut::C7 ? 7 : mut==Mut::C14 ? 14 : mut==Mut::C16 ? 16 : 0;
     c.pairs0 = expected_pairs(mode);
-    c.pairs1 = (mut==Mut::C15) ? Pairs(c.pairs0.size(), {0x0000,0x0000}) : c.pairs0; // C15: sprite 1 transparent
+    c.pairs1 = c.pairs0;
+    if (mut==Mut::C15) for (int i=3; i<=10; ++i) c.pairs1[i] = {0x0000,0x0000}; // C15: sprite 1 transparent on band 0's colour-17 lines
     c.pairs0_late = c.pairs0; c.pairs1_late = c.pairs1;
     if (mut == Mut::C17) { c.pairs0_late = upper_byte_pairs(c.pairs0); c.pairs1_late = upper_byte_pairs(c.pairs1); }
     poke_sprite_structure(h, kSpr0Data, 0x5050, 0xE100, c.pairs0);
